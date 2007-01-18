@@ -1,0 +1,93 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=iso-8859-1">
+		<meta name="generator" content="Adobe GoLive">
+		<title>mrLoadRet-4.0 tour</title>
+	</head>
+
+	<body bgcolor="#ffffff">
+		<p>Put mrTools-4.0 in your matlab path. Remove eveything else from your path to be sure that there are no conflicting functions. My startup.m looks like this:</p>
+		<p>addpath(genpath('/heegerlab/mrTools-4.0'));<br>
+			setpref('mrLoadRet','site','NYU');<br>
+			setpref('mrLoadRet','verbose',1);<br>
+			setpref('mrLoadRet','interpMethod','nearest');<br>
+			setpref('mrLoadRet','niftiFileExtension','.img');<br>
+		</p>
+		<p>Note the preferences specified by setpref (soon to be documented below).</p>
+		<p>Run matlab and cd to the sample data directory (mrTools-4.0/testData). This is a simple synthetic dataset that consists of a 16x16x16 spherical brain with one active voxel in a block alternation protocol (4 cycles/scan). There are 3 synthetic scans. The first one has the active voxel  at location (8,8,8). The &quot;subject&quot; moved between the first scan and the second scan so it is at location (9,9,9) in scan 2. The &quot;subject&quot; moved in the middle of scan 3 so without motion compensation, there is modulation at (8,8,8) for the first half of the run but then at (9,9,9) for the second half.</p>
+		<p>Type mrLoadRet at the matlab prompt.</p>
+		<ul>
+			<li>File - Base Anatomy - Load. Select the anat.img. Use the slice slider to move to slice 8.
+			<li>Use the min and max sliders to change contrast
+			<li>File - Analysis - Load. Select corAnal.mat in the corAnal folder. 
+		
+		</ul>
+		<p>Use the overlay popup near the bottom to switch between the co, amp, and ph overlays. Note that the overlay min, overlay max, and alpha (transparency) sliders update themselves when you switch overlays (e.g., if you set the cothresh at 0.3 and the ph max to pi).</p>
+		<ul>
+			<li>Use the scan slider and/or text field to switch between scans. Look for the activity as described above for each scan.
+			<li>Choose Correlation Analysis from the Analysis menu. This pops up a new GUI that has the parameters that were used to compute the corAnal. You can change one or more of them and recompute or just click cancel. The important point is that the analysis parameters are stored with the data.
+			
+			<li>Choose Create Rectangle ROI from the ROI menu that includes the active voxel in scan 1. Then create another one that includes the active voxel in scan 2. Restrict each of the  two ROIs (according the to current overlay sliders) using Restrict ROI from the ROI menu to include the two active voxels (one in each ROI). Then plot the mean time series for each ROI and each scan from the Plot menu using Plot Mean TSeries - All Scans, All ROIs.<li>Choose Interrogate ROI from the Plot menu. Read the instructions then click ok. Click one at a time on various voxels to see plots of those voxel time courses (with the best-it sinusoid superimposed). This feature can be generalized such that each type of overlay can have its own &quot;interrogate&quot; function.
+		</ul>
+		<p>Groups replace what was called dataTypes in mrLoadRet-3. In addition to the &quot;Raw&quot; group, there are two other groups in this dataset:</p>
+		<ul>
+			<li>Choose the MotionComp group using the group popup at the top. This is (you guessed) after applying motion compensation to the Raw group. When you change groups, the overlays disappear as they should because they corresponded to the Raw (un-motion-compensated) data. There are again 3 scans, corresponding to the original 3, but now all motion corrected with respect to the first.
+			<li>Load the corAnal for the MotionComp group. Make sure that you are in slice 8 and you will now find the active voxel at (8,8,8) for all 3 scans.<li>Choose the Averages group. This contains 1 scan which is the average of the 3 motion compensated scans. Load the corAnal. Etc.
+		</ul>
+		<p>Inspect some of the data structures:</p>
+		<ul>
+			<li>MLR
+			<li>MLR.session [This no longer contains much - just some information about the scanning session that is also in Readme]
+			<li>MLR.groups(1) <li>MLR.groups(1).scanParams(1)
+			<li>MLR.views{1}
+			<li>MLR.views{1}.baseVolumes(1)
+			<li>MLR.views{1}.analyses{1}<li>MLR.views{1}.analyses{1}.params(1)
+			<li>MLR.views{1}.analyses{1}.overlays(1)
+		</ul>
+		<p>Some of my primary goals were to separate the viewer from the analysis, make the analysis modular, and keep the analysis parameters with the results of the analysis. So far, I have prototypes of corAnal, averageTSeries, and motionComp but that's enough to give you the idea. The parameters that were used for the analysis are in MLR.views{1}.analysis{1}.params(1). You can redo exactly the same analysis by typing:</p>
+		<ul>
+			<li>view = corAnal(MLR.views{1}, MLR.views{1}.analyses{1}.params(1));</ul>
+		<p>or by choosing &quot;View/Modify Params &amp; Recompute&quot; from the Analysis menu.</p>
+		<p>You can do the corAnal from scratch by typing:</p>
+		<ul>
+			<li>params = corAnalGUI('groupName','Raw');
+			<li>corAnal(MLR.views{1}, params);
+		</ul>
+		<p>Note that the first line opens a separate GUI for corAnal. The idea is that each analysis has its own separate GUI like this one that simply allows the user to set the parameters (i.e., it doesn't do the analysis). Each analysis  has a function (like the corAnal function here) that takes two arguments: a view and the parameters structure returned by the corresponding GUI.</p>
+		<p>To start from scratch:</p>
+		<ul>
+			<li>Take note of the analysis parameters (junk frames = 0, ncycles = 4)<li>Delete everything but the Raw/TSeries subdirectory and the Anatomy subdirectory<li>Delete mrSession.mat and Readme.txt
+			<li>Type mrInitRet and fill in the dialog boxes (similar to the mrInitRet-3.1 process)
+			<li>Type mrLoadRet...
+		</ul>
+		<p>Look through the various menus and try some stuff. Under the window menu, you can open another volume view. Under the Edit menu, you can copy/paste scans from one group to another, delete scans from a group (but note that it doesn't yet rm the corresponding tseries file), and copy/paste ROIs from one view (window) to another. From the Edit menu, you can edit an overlay to change its colormap. The View menu allows you to get rid of stuff (remove analyses, remove base anatomies, etc).</p>
+		<p>Not all the features are implemented yet so some of the menu items will not execute.</p>
+		<p>Run it on a real dataset. Pick one of your datasets (e.g., from a retintopy scanning session). To get started, all you need are the original time series files (nifti format) as they come off the scanner in a subdirectory call &quot;Raw/TSeries&quot;. Then run mrAlign, mrLoadRet and mrInitRet as above. Note that you should run mrAlign (version 4.4) first so that the data are registered to the high res volume anatomy (to do so, see the documentation in the mrAlign-4.4 directory).</p>
+		<p>One nice feature of mrLoadRet-4.0 is that there is no longer a distinction between the inplane and volume views. If the data have been aligned with mrAlign, then you can load any number of base anatomies and mrLoadRet will use the alignment information to properly superimpose the overlays on whatever base anatomy is currently selected. Try this by loading the inplanes and the high res volume from your dataset, while displaying the corAnal maps. Then try loading one of the EPI runs as the base anatomy - mrLoadRet recognizes that it is a 4D file and asks you if you want to use the mean (over time) or the first frame.</p>
+		<h3>Programming conventions (partial list)</h3>
+		<p>To begin, take a look through the code in the following functions:</p>
+		<ul>
+			<li>corAnal
+			<li>corAnalGUI
+			<li>averageTSeries
+			<li>averageTSeriesGUI
+			<li>viewGet
+			<li>viewSet
+			<li>mrLoadRetGUI
+			<li>refreshMLRDisplay
+		</ul>
+		<p>In fact, you could read through all of the code because there's not that much. The GUIs have all been made using guide.</p>
+		<ol>
+			<li>Always use viewGet and viewSet for accessing fields. Never use view.fieldname. viewSet is designed to properly side-effect the global variable, not just the local copy. Note that viewGet and viewSet assume defaults (e.g., the current view) for some fields.<br>
+				<br>
+			<li>Use mrMsgBox, mrErrorDlg, mrWarnDlg, mrWaitBar, and mrCloseDlg to give messages and errors to the user. These functions switch of the 'mrLoadRet' 'verbose' preference. If the preference is off (not defined or defined to be 0) then the messages go to the matlab window instead of opening dialog boxes. Verbose preference also determines if user is queried about overwriting a file. Very useful for running scripts that are intended to be non-interactive.<br>
+				<br>
+			<li>Disclaimer: There are plenty of bugs and plenty of unimplemented features. But I am hoping that this is enough for you to get started. Glance at todoMLR.txt for a partial list of what I'm planning to do next.
+		
+		</ol>
+	</body>
+
+</html>

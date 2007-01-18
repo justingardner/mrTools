@@ -1,0 +1,137 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+
+	<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.77 [en] (Windows NT 5.0; U) [Netscape]">
+   <meta name="ROBOTS" content="NOARCHIVE">
+<LINK REL=StyleSheet HREF="http://www.cns.nyu.edu/~heegerlab/main.css" TYPE="text/css"  MEDIA=screen>
+   <title>mrAlign Users Guide</title>
+</head>
+
+	<body>
+		<h3><b><font size="+3">mrAlign (version 4.5)</font></b></h3>
+		<h3>
+			<hr width="100%">
+			<b>Getting started</b></h3>
+		<p>mrAlign is a matlab utility for aligning (or registering) MRI image volumes. We use it to align all of our data from an individual subject across scanning sessions on different days. In one scanning session, we acquire a high resolution volume anatomy. In each successive scanning session we acquire what we call &quot;inplane&quot; anatomies because they are anatomical images (like the destination) but acquired in the same slices as the functional MRI data. The high resolution volume anatomy is referred to below as the &quot;destination&quot; of the alignment and the inplane anatomy is referred to as the &quot;source&quot;. </p>
+		<p>The current implementation of mrAlign supports only Nifti file format. Nifti files have two alignment fields: qform and sform. The qform field specifies the slice prescription with respect to the scanner coordinate system. The sform field is typically not set when an image volume is initially acquired. mrAlign uses the qform fields from the source and destination to get an initial alignment (&quot;Initialize Alignment from Header&quot;). The alignment is saved in the sform field of the source (&quot;Save Alignment&quot;). </p>
+		<p> mrAlign uses an image processing algorithm to refine the alignment (&quot;Robust Intensity-Based Alignment&quot;). The algorithm is described in detail in: Nestares &amp; Heeger, Robust multiresolution alignment of MRI brain volumes, <i>Magnetic Resonance in Medicine</i>, <b>43</b>:705-715, 2000. </p>
+		<p>In principle, mrAlign can be used to align any Nifti file with any other Nifti file. However, the automatic alignment will only work accurately if the two image volumes have similar contrast. For example, some MRI acquisitions produce images in which the cerebral spinal fluid (CSF) is dark whereas others produce images in which the CSF is bright. This is a problem for the automatic alignment. Even so, the manual alignment tools can still be used and the automatic alignment is quite robust with an appropriate choice of the crop region. In the future, we will be adding capability for inverting image contrast along with other automatic alignment algorithms to extend to utility of mrAlign.</p>
+		<p>To run mrAlign:</p>
+		<ol>
+			<li>Add mrAlign to your matlab path. The easiest way to do this is to add the following lines to your startup.m file:
+				<ul>
+					<li>addpath(genpath('&lt;parent directory&gt;/mrTools-4.0'));
+				</ul>
+			<li>Run matlab and cd to the directory containing the image volumes that you want to align. Run mrAlign by typing 'mrAlign' at the matlab prompt.
+		</ol>
+		<h3>
+			<hr width="100%">
+			<b>Basic procedure</b></h3>
+		<ol>
+			<li>Load the volume: File menu - Load Destination (volume). The &quot;destination&quot; is the coordinate frame that you will be aligning to.<li>If you get the warning message &quot;No base coordinate frame in the volume header&quot;, click ok.<li>[Optional] Set the base coordinate frame: File Menu - Set Base Coordinate Frame. This sets the base coordinate frame for the &quot;destination&quot; so that when the &quot;source&quot; is aligned to the &quot;destination&quot;, it will also be aligned with respect to that global frame of reference.
+			<li>Load the inplanes: File menu - Load Source (inplane). The &quot;source&quot; is the anatomy that will be aligned to the &quot;destination&quot;.
+			<li>Initialize the alignment: Compute Alignment menu - Initialize Alignment from Header.
+			<li>View the transformed inplanes superimposed on the volume. Page through the slices and slice orientations using the &quot;Slice&quot; slider and the &quot;sagittal&quot;, &quot;coronal&quot;, and &quot;axial&quot; radio buttons to view the alignment. Use the &quot;Alpha&quot; slider to adjust the transparency of the superposition. Use the &quot;Overlay&quot; button to toggle the overlay on and off.
+			<li>[Optional] Manualy adjust the alignment using the &quot;Translation&quot; and &quot;Rotation&quot; text fields (not always necessary).
+			
+			<li>[Optional] Set the crop region.
+			<li>Compute the alignment: Compute Alignment menu - Robust Intensity-Based Alignment.
+			<li>Check the alignment: Check Alignment menu - With Intensity/Contrast Correction.
+			<li>Save the alignment: File menu - Save Alignment.
+		</ol>
+		<h3>
+			<hr width="100%">
+			<b>Aligning functionals</b></h3>
+		<p>mrAlign can be used to align inplane anatomy images with high resolution volume anatomies of the same subject's brain. It can also be used to align functional (EPI) MRI volumes with anatomical MRI volumes. For example, to align functionals to inplanes:</p>
+		<ol>
+			<li>Load the inplanes (instead of the usual volume) as the destination volume.
+			<li>Load an example functional as the source. You will be prompted to select either the first frame or the mean (over time).
+			<li>Proceed as usual (see above). Try using a very conservative crop region (cropping everything outside the brain) to make the automatic alignment work better, but you may need to rely on the manual alignment tools if the image contrasts are incompatible.
+		</ol>
+		<p>Note that if you first align the inplanes to the volume, and then align the functionals to the inplanes, then the functionals will be aligned to the volume. This is the nice feature of doing all of the alignments with respect to a base coordinate frame.</p>
+		<h3>
+			<hr width="100%">
+			<b>Standard procedure in our lab</b></h3>
+		<p>These are the procedures that we use in our lab after each scanning session.</p>
+		<p>Part I: Align the inplane anatomy to the high resolution volume anatomy.</p>
+		<ol>
+			<li>Load the high resolution volume anatomy as the destination: File menu - Load Destination (volume).  
+			<li>If you get the warning message &quot;No base coordinate frame in the volume header&quot;, click ok and then set the base coordinate frame: File Menu - Set Base Coordinate Frame. If you don't get this warning then it has already been set and you don't need to do it again.
+			<li>Load the inplanes: File menu - Load Source (inplane).
+			<li>Initialize the alignment: Compute Alignment menu - Initialize Alignment from Header.
+			
+			<li>Proceed as described above to compute, check, and save the alignment
+		</ol>
+		<p>Part II: Once the inplane anatomy has been aligned, then, proceed to align the functionals to the inplane.</p>
+		<ol>
+			<li>Load the inplane anatomy as the destination: File menu - Load Destination.  
+			<li>Load the first functional as the source: File menu - Load Source. You will be prompted to select either the first frame or the mean over time. First try using the first frame (because it has more gray/white contrast). But if it looks lousy because of poor SNR then repeat this step using the mean.
+			<li>Initialize the alignment: Compute Alignment menu - Initialize Alignment from Header. This should already give a pretty good alignment unless the subject moved a lot in between the inplanes and the first functional run. 
+			<li>[Optional] Manualy adjust the alignment using the &quot;Translation&quot; and &quot;Rotation&quot; text fields.
+			<li>Save this alignment to all of the functionals: File menu - Save Alignment to File(s). This prompts you to select one or more files and you should choose all of the functionals.
+			<li>Check the alignment for each of the functionals by loading each successively: File menu - Load Source. Optionally adjust the alignment manually using the &quot;Translation&quot; and &quot;Rotation&quot; text fields and then save it: File menu - Save Alignment
+		</ol>
+		<h3>
+			<hr width="100%">
+			<b>Buttons and sliders</b></h3>
+		<p><b>Sagittal, coronal, and axial radio buttons: </b>Select slice orientation.</p>
+		<p><b>Slice slider:</b> Select slice. You can grab the slider and move it. You can click on the arrows at either end which moves by one slice at a time. Or you can click on the slider bar which moves by 10 slices at a time.</p>
+		<p><b>Alpha slider:</b> Controls transparency of overlayed inplanes.</p>
+		<p><b>Transpose pushbutton:</b> Transposes the displayed image (note that this effects the display only; it does not nothing the alignment parameters).</p>
+		<p><b>Flip pushbutton:</b> Flips the displayed image (note that this effects the display only; it does not nothing the alignment parameters).</p>
+		<p><b>Overlay pushbutton:</b> Toggles on and off the overlay.</p>
+		<p><b>Translation and rotation text fields:</b> Enter numbers for manual adjustment to the alignment. The translation values are in mm. The rotation values are in degrees. These values are reset to zero whenever you load, initialize, or compute an alignment (from the File menu). Changing them to nonzero values will add an additional translation and/or rotation to the alignment that was just loaded or computed.</p>
+		<h3>
+			<hr width="100%">
+			<b>File menu</b></h3>
+		<p><b>Load Destination (volume):</b> (Re-)loads the destination volume file and displays it. The &quot;destination&quot; is the coordinate frame that you will be aligning to. Typically, this is a whole-brain high resolution volume anatomy. You can now use the &quot;sagittal&quot;, &quot;coronal&quot;, and &quot;axial&quot; buttons to display different slice orientations, and the &quot;Slice&quot; slider to display different slices.</p>
+		<p><b>Load Source (inplane):</b> (Re-)loads the source volume file. The &quot;source&quot; is the anatomy that will be aligned to the &quot;destination&quot;. Typically, this is an inplane anatomy (i.e., that was acquired in the same slices as the fMRI data). The inplanes are superimposed on the volume as a semi-transparent overlay. Adjust the &quot;Alpha&quot; slider to change the level of transparency. Note that unless you have a reasonable alignment, the superposition of the inplanes and volume will be arbitrary. In fact, the inplanes might not even be visible.</p>
+		<p><b>Save Alignment:</b> Saves the curent alignment, overwriting the alignment (if any) that was in the source volume file. The alignment is saved in the sform field of the Nifti header.</p>
+		<p><b>Save Alignment to File(s):</b> Saves the curent alignment to multiple, overwriting the alignments (if any) that were in the source volume files. This is convenient, for example, if you have a series of fMRI scans in the same slice prescription so that you can set all of their alignments to be the same.</p>
+		<p><b>Import Alignment:</b> Imports the alignment from a separate file (instead of reading it from the header of the source and files). Note that this resets the &quot;Translation&quot; and &quot;Rotation&quot; text fields to zeros.</p>
+		<p><b>Import and Compose Alignments:</b> Imports a pair alignments, each from a separate file, and composes them. Note that this resets the &quot;Translation&quot; and &quot;Rotation&quot; text fields to zeros.</p>
+		<p><b>Import Alignment from mrAlign-4.2 (or earlier):</b> Imports using from the older file format.</p>
+		<p><b>Export Alignment:</b> Exports the alignment to a separate file (instead of saving it in the header of the source files). This exports the alignment between the &quot;source&quot; and &quot;destination&quot;, ignoring the base coordinate frame.</p>
+		<p><b>Export Alignment to mrLoadRet-3.1 (or earlier):</b> Exports to the older file format.</p>
+		<p><b>Set Base Coordinate Frame:</b> This is an advanced feature that can be used to define a base coordinate frame for the destination volume. This sets the base coordinate frame for the &quot;destination&quot; so that when the &quot;source&quot; is aligned to the &quot;destination&quot;, it will also be aligned with respect to that global frame of reference. Nifti files have two alignment fields: qform and sform. The qform field specifies the slice prescription with respect to the scanner coordinate system. The sform field is typically not set when an image volume is initially acquired. If the sform of your &quot;destination&quot; volume is not specified, then you will get a warning message when it is loaded (&quot;No base coordinate frame in the volume header&quot;). This is ok but it means that your &quot;source&quot; will be aligned only with respect to the &quot;destination&quot;. If, on the other hand, the sform field of the &quot;destination&quot; volume is specified, then that defines a base coordinate frame and your &quot;source&quot; will be aligned not only to the &quot;destination&quot; but also with respect to that global frame of reference. To do so, load the desired destination volume. Then choose &quot;Set Base Coordinate Frame&quot;. This overwrites the sform field in the destination volume to be equal to the qform, i.e., with respect to the scanner coordinate system. We typically use this feature to set the base coordinate frame only for the high resolution volume anatomy of each subject's brain. Once it has been set, all of the data that are aligned to that high res anatomy will share the same coordinate system. <b>Warning: </b>If the base coordinate frame (sform field) of the &quot;destination&quot; is changed, then the alignment between &quot;source&quot; and &quot;destination&quot; will no longer be valid. Before changing the base coordinate frame, it is wise to use &quot;Export Alignment&quot; which saves the alignment between &quot;source&quot; and &quot;destination&quot; in a separate file, ignore the base coordinate frame. Then after changing the base coordinate frame, use &quot;Import Alignment&quot; to reload it. Otherwise, you will have to re-align from scratch.</p>
+		<p><b>Write Tif Image:</b> Saves the current display as a tif format image.</p>
+		<p><b>Quit:</b> Quits.</p>
+		<h3>
+			<hr width="100%">
+			<b>Manual Alignment menu</b></h3>
+		<p><b>Set Alignment to Identity, FlipX, FlipY, FlipZ:</b> These menu options are used for manual alignment, to be used in conjuction with the rotation and translation text boxes.</p>
+		<h3>
+			<hr width="100%">
+			<b>Compute Alignment menu</b></h3>
+		<p><b>Initialize alignment from header:</b> Computes an initial alignment from the slice prescriptions. Note that this resets the &quot;Translation&quot; and &quot;Rotation&quot; text fields to zeros.</p>
+		<p><b>Set Crop Region:</b> One of the processing steps (during contrast correction) depends on fitting a model to the image intensity histogram. If the images include a lot of pixels from outside the head then the fitting procedure will fail, the contrast correction will be messed up, and there will be no hope for the automatic alignment to work well. This menu option allows you to select a crop region for the contrast correction step. It prompts you to select the first and last slice. Then it prompts you to select one of the remaining slices and to draw (left mouse clicks) a rectangle to choose the crop region. You want to do this to have your crop region filled mostly with brain. It's ok for this crop region to be too small (i.e., some of the brain can be outside the crop region). Note that the images are not actually cropped when computing the alignment. The crop region is used only for contrast correction. To confirm that you have chosen an adequate crop use the Check Alignment (with intensity/contrast correction) to see that the image intensity and contrast within the brain is well-matched (even if the alignment is bad). The same crop region is used for the automatic alignment algorithm; only the sub-volume within the crop region is included in the calculations.</p>
+		<p><b>Compute Coarse Alignment:</b> This does an initial coarse alignment by subsampling the volumes. Useful optionally instead of adjusting the alignment manually before running &quot;Compute Alignment&quot;.</p>
+		<p><b>Compute Alignment:</b> This is what you typically use to automatically refine the alignment. It will run for 10 iterations and then prompt you asking whether or not to continue. It will prompt again after the next 10 iterations. Iterating too many times likely means that the alignment is failing and you should stop to inspect the results (see Check Alignment and Trouble Shooting below). Once the automatic alignment stops (either because it has converged or because you have selected not to continue for more iterations), the display is refereshed and the &quot;Translation&quot; and &quot;Rotation&quot; text fields are reset to zero.</p>
+		<p><b>Invert Source Contrast:</b> Not yet implemented. When implemented, this will be helpful when aligning functions to anatomical volumes because the image contrast is flipped.</p>
+		<h3>
+			<hr width="100%">
+			<b>Check Alignment menu</b></h3>
+		<p><b>With Intensity/Contrast Correction:</b> Opens a new window with three panels. The first panel displays one of the source (inplane) slices. The last panel displays the corresponding slice interpolated from the destination (volume), using the current alignment. The middle panel displays a checkerboard of the source and destination slices. Use the slider to page through the slices then click &quot;OK&quot;. The image intensity and contrast should be well-matched in the middle panel. If it is not, then set a smaller crop region (see above).</p>
+		<p><b>Without Correction:</b> Same as above but without the preprocessing steps that correct for intensity and contrast differences between the inplane and volume images. Useful mostly for debugging.</p>
+		<p><b>Joint Histogram:</b> Not yet implemented.</p>
+		<h3>
+			<hr width="100%">
+			<b>Trouble Shooting (what to do when the automatic alignment fails)</b></h3>
+		<ol>
+			<li>Use the translation and rotation text fields to manually improve the alignment before running the automatic alignment algorithm. Save the manual alignment before running the automatic alignment so that you can reload it and try again if necessary.
+			<li>Set a smaller crop region to improve the contrast correction (see above).
+			<li>Check that the voxel sizes and volume sizes are correct by inspecting the global variable ALIGN. It is best to do this after loading the volume with the &quot;Load Volume (raw orientation)&quot; option in the File menu.
+				<ol>
+					<li type="a">ALIGN.volSize: size of the volume array
+					<li type="a">ALIGN.volume: volume array. Note that ALIGN.volSize should equal size(ALIGN.volume).
+					<li type="a">ALIGN.inplanes: inplane array.
+					<li type="a">ALIGN.scaleFac: 2x3 array that specifies the voxel size. Top row is 1 over the voxel size for the inplanes. Bottom row is 1 over the voxel size for the volume.
+				</ol>
+			<li>Do the best you can with a manual alignment. If the image contrasts are not reasonably well matched then this is the best that can be done. Future versions of mrAlign will offer alternative alignment algorithms that will enable automatic alignments between images that differe more greatly in image contrast.
+		</ol>
+		<h3></h3>
+	</body>
+
+</html>
