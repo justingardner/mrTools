@@ -1,0 +1,14 @@
+
+Analysis/AverageTSeries/averageTSeries.m:    M = inv(scanXform) * baseXform;
+Analysis/AverageTSeries/averageTSeries.m:    % M = inv(baseXform) * scanXform;
+
+Analysis/ConcatTSeries/concatTSeries.m:    M = inv(scanXform) * baseXform;
+Analysis/ConcatTSeries/concatTSeries.m:    % M = inv(baseXform) * scanXform;
+
+GUI/refreshMLRDisplay.m:                shiftXform = eye(4);
+GUI/refreshMLRDisplay.m:                shiftXform(1:3,4) = - 1;
+GUI/refreshMLRDisplay.m:                xform = inv(shiftXform) * inv(overlayXform) * baseXform * shiftXform;
+
+ROI/xformROIcoords.m:shiftXform = eye(4);
+ROI/xformROIcoords.m:shiftXform(1:3,4) = - 1;
+ROI/xformROIcoords.m:xform = inv(shiftXform) * xform * shiftXform;
