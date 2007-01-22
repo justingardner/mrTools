@@ -161,8 +161,7 @@ for iscan = 1:length(scanList)
     scanXform = viewGet(view,'scanXform',scanNum,groupNum);
     % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the
     % origin.
-    shiftXform = eye(4);
-    shiftXform(1:3,4) = - 1;
+    shiftXform = shiftOriginXform;
     M = inv(shiftXform) * inv(scanXform) * baseXform * shiftXform;
 	
 	% Warp the frames
