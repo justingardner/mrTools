@@ -169,6 +169,13 @@ switch lower(field)
 		description = viewGet(view,'description',value);
 		set(handles.descriptionText,'String',description);
 
+    case {'scantext'}
+        % mlrGuiSet(view,'scanText',value);
+		set(handles.scanText,'String',num2str(value));
+		% description
+		description = viewGet(view,'description',value);
+		set(handles.descriptionText,'String',description);
+
 	case {'nslices'}
         % mlrGuiSet(view,'nslices',value);
 		value = round(value);
@@ -177,18 +184,8 @@ switch lower(field)
             set(handles.sliceSlider,'Min',1);
             set(handles.sliceSlider,'Max',value);
             % reset step
-            % *** Should do this differently to eliminate call to viewGet from this function.
-            switch viewGet(view,'viewType');
-                case 'Volume'
-                    set(handles.sliceSlider,'sliderStep',[1/(value-1),2/(value-1)]);
-                    set(handles.sliceSlider,'Visible','on');
-                case 'Surface'
-                    set(handles.sliceSlider,'sliderStep',[1/value 10/value]);
-                    set(handles.sliceSlider,'Visible','on');
-                case 'Flat'
-                    set(handles.sliceSlider,'sliderStep',[0.5 0.5]);
-                    set(handles.sliceSlider,'Visible','off');
-            end
+            set(handles.sliceSlider,'sliderStep',[1/(value-1),2/(value-1)]);
+            set(handles.sliceSlider,'Visible','on');
         else
             set(handles.sliceSlider,'Visible','off');
             set(handles.sliceText,'String',0);
@@ -201,7 +198,13 @@ switch lower(field)
 		set(handles.sliceSlider,'Value',value);
 		set(handles.sliceText,'String',num2str(value));
 		guidata(MLR.views{viewNum}.figure,handles);
-        
+
+    case {'slicetext'}
+        % mlrGuiSet(view,'sliceText',value);
+		handles.coords(handles.sliceOrientation) = value;
+		set(handles.sliceText,'String',num2str(value));
+		guidata(MLR.views{viewNum}.figure,handles);
+
 	case {'sliceorientation'}
         % mlrGuiSet(view,'sliceorientation',value);
 		sliceOrientation = value;
