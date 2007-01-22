@@ -1,7 +1,7 @@
-function volf = convXYZsep(vol, Zb, xfilter, yfilter, zfilter);
+function volf = convXYZsep(vol, xfilter, yfilter, zfilter, Zb, shape);
 % convXYZsep - separable convolution in (X,Y,Z), with border handling in Z
 %      
-% volf = convXYZsep(vol, Zb, xfilter, yfilter, zfilter);
+% volf = convXYZsep(vol, xfilter, yfilter, zfilter, Zb, shape);
 %
 % This function performs a separable convolution of a volume (vol)
 % with three kernels (xfilter, yfilter, zfilter). The convolution
@@ -29,10 +29,17 @@ function volf = convXYZsep(vol, Zb, xfilter, yfilter, zfilter);
 %
 % Oscar Nestares - 5/99
 
-% checking if only 1 filter has been passed
-if nargin==3
-   yfilter = xfilter;
-   zfilter = xfilter;
+if ieNotDefined('yfilter')
+    yfilter = xfilter;
+end
+if ieNotDefined('zfilter')
+    zfilter = xfilter;
+end
+if ieNotDefined('Zb')
+    Zb = 'zeros';
+end
+if ieNotDefined('shape')
+    shape = 'same';
 end
 
 % original volume size
@@ -43,11 +50,13 @@ Bx = (length(xfilter) - 1)/2;
 By = (length(yfilter) - 1)/2;
 Bz = (length(zfilter) - 1)/2;
 
-% temporal volume with room for the border in z
-tmp = zeros(Ny-2*By, Nx-2*Bx, Nz+2*Bz);
-
-% initial filtering in X and Y
-tmp(:,:,Bz+1:Nz+Bz) = convXYsep(vol, xfilter, yfilter);
+% initial filtering in X and Y with room for the border in z
+if strcmp(shape, 'valid') == 1
+    tmp = zeros(Ny-2*By, Nx-2*Bx, Nz+2*Bz);
+elseif strcmp(shape, 'same') == 1
+    tmp = zeros(Ny, Nx, Nz+2*Bz);
+end
+tmp(:,:,Bz+1:Nz+Bz) = convXYsep(vol, xfilter, yfilter, shape);
 
 % putting appropriate border in Z to tmp
 if strcmp(Zb, 'repeat') == 1
