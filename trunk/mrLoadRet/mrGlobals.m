@@ -10,8 +10,9 @@ global MLR
 
 % If MLR is not yet initialized then do so
 if isempty(MLR)
+    
     % Check Matlab version number
-    expectedMatlabVersion = [7.2];  % Change this after testing Matlab upgrades
+    [mrLoadRetVersion, expectedMatlabVersion] = mrLoadRetVersion;
     version = ver('Matlab');
     matlabVersion = str2num(version.Version(1:3));        
     if ~ismember(matlabVersion, expectedMatlabVersion);
@@ -19,10 +20,12 @@ if isempty(MLR)
                    '. You are running Matlab ',version.Version]);
     end
     
-    % Load session and groups structures from mrSESSION.mat
-    MLR.homeDir = pwd;
-    [session, groups, mrLoadRetVersion] = loadSession(MLR.homeDir);
+    % Initialize MLR
     MLR.version = mrLoadRetVersion;
+    MLR.homeDir = pwd;
+
+    % Load session and groups structures from mrSESSION.mat    
+    [session, groups] = loadSession(MLR.homeDir);
     MLR.session = session;
     MLR.groups = groups;
     
