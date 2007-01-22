@@ -293,7 +293,7 @@ end
 function scanSlider_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = round(get(hObject,'Value'));
-mlrGuiSet(viewNum,'scan',value);
+mlrGuiSet(viewNum,'scanText',value);
 refreshMLRDisplay(viewNum);
 
 function scanText_Callback(hObject, eventdata, handles)
@@ -321,7 +321,7 @@ end
 function sliceSlider_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = round(get(hObject,'Value'));
-mlrGuiSet(viewNum,'slice',value);
+mlrGuiSet(viewNum,'sliceText',value);
 refreshMLRDisplay(viewNum);
 
 function sliceText_Callback(hObject, eventdata, handles)
