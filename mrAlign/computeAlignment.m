@@ -1,4 +1,4 @@
-function xform = computeAlignment(inp, vol, xform, crop, maxIter, origin);
+function xform = computeAlignment(inp, vol, xform, crop, maxIter);
 % xform = computeAlignment()
 %
 % Oscar Nestares - 5/99
@@ -26,7 +26,6 @@ nzLIMIT = 16;   % if the number of inplanes is less that this, then
                 % it puts a border by replicating the first and last
                 % inplanes two times.
 permuteM = [0 1 0 0; 1 0 0 0; 0 0 1 0; 0 0 0 1];  % For swapping x and y
-
 
 % If the number of slices is too small, repeat the first and last slice
 % to avoid running out of data (the derivative computation discards the
@@ -63,7 +62,7 @@ while strcmp(userResponse, 'Yes')
         mrWaitBar(niter/maxIter,wbh);
 
         % resample volume according to initial xform
-        volInterp = interpVolume(vol, xform, inplaneSize, origin);
+        volInterp = interpVolume(vol, xform, inplaneSize);
         % Pad additional slices, if needed
         if inplaneSize(3) < nzLIMIT
             volInterp = cat(3,volInterp(:,:,1),volInterp(:,:,1),volInterp,...
@@ -71,6 +70,11 @@ while strcmp(userResponse, 'Yes')
         end
         % correct intensity & contrast of interpoted volume
         volIC = intensityContrastCorrection(volInterp, crop);
+        
+        % *** For debugging ***
+        % xform
+        % figure(1); imagesc(inpIC(:,:,9)); colormap(gray); axis image;
+        % figure(2); imagesc(volIC(:,:,9)); colormap(gray); axis image;
 
         % motion estimation (no multiresolution, no iterative)
         M = estMotion3(inpIC, volIC,...

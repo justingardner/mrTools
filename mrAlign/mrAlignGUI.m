@@ -518,10 +518,9 @@ xform(2,4) = xform(2,4) + ALIGN.volSize(2);
 xform(3,:) = -xform(3,:);
 xform(3,4) = xform(3,4) + ALIGN.volSize(3);
 
-% Shift by origin
-shiftXform = eye(4);
-shiftXform(1:3,4) = ALIGN.origin - 1;
-xform = xform * inv(shiftXform);
+% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin. 
+shiftXform = shiftOriginXform;
+xform = inv(shiftXform)* xform;
 
 % Update ALIGN structure and GUI
 ALIGN.xform = xform;
@@ -554,9 +553,8 @@ global ALIGN
 % Extract xform
 xform = ALIGN.guiXform * ALIGN.xform;
 
-% Shift by origin
-shiftXform = eye(4);
-shiftXform(1:3,4) = ALIGN.origin - 1;
+% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin. 
+shiftXform = shiftOriginXform;
 xform = xform * shiftXform;
 
 % Reverse of the logic in importAlignMenuItem_Callback (mrAlignGUI) to
@@ -714,8 +712,7 @@ end
 
 % Compute alignment
 xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, ALIGN.crop, ...
-    ALIGN.NIter, ALIGN.origin);
+xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, ALIGN.crop, ALIGN.NIter);
 ALIGN.xform = xform;
 
 % Reset GUI and refresh display
@@ -739,12 +736,11 @@ if isempty(ALIGN.xform)
 	return
 end
 
-% reduce images, setting invalid voxels near edges to NaNs
-wbh = mrMsgBox('Please wait: reducing volumes...');
+% reduce images
+wbh = mrMsgBox('Reducing volumes. Please wait...');
 lpf=[.0625 .25 .375 .25 .0625]';
-lpfSize = floor(length(lpf)/2);
-volFilt = convXYZsep(ALIGN.volume, 'repeat', lpf);
-inpFilt = convXYZsep(ALIGN.inplanes, 'repeat', lpf);
+volFilt = convXYZsep(ALIGN.volume, lpf, lpf, lpf, 'repeat', 'same');
+inpFilt = convXYZsep(ALIGN.inplanes, lpf, lpf, lpf, 'repeat', 'same');
 volReduce = volFilt(1:2:size(volFilt,1),1:2:size(volFilt,2),1:2:size(volFilt,3));
 inpReduce = inpFilt(1:2:size(inpFilt,1),1:2:size(inpFilt,2),1:2:size(inpFilt,3));
 mrCloseDlg(wbh);
@@ -755,8 +751,9 @@ xform(1:3,4) = xform(1:3,4)/2;
 crop = floor(ALIGN.crop/2);
 
 % compute alignment & expand new xform
-xform = computeAlignment(inpReduce, volReduce, xform, crop, ...
-    ALIGN.NIter, ALIGN.origin);
+xform = computeAlignment(inpReduce, volReduce, xform, crop, ALIGN.NIter);
+
+% expand xform
 xform(1:3,4) = xform(1:3,4)*2;
 ALIGN.xform = xform;
 

@@ -26,7 +26,7 @@ xform = ALIGN.xform * ALIGN.guiXform;
 hmsgbox = mrMsgBox('Please wait: interpolating slices, correcting intensity & contrast...');
 
 % interpolate the inplanes
-volInterp = interpVolume(ALIGN.volume, xform, ALIGN.inplaneSize, ALIGN.origin);
+volInterp = interpVolume(ALIGN.volume, xform, ALIGN.inplaneSize);
 inp = ALIGN.inplanes;
 
 % intensity & contrast correction

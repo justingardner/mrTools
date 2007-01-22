@@ -30,7 +30,7 @@ if ~isempty(ALIGN.volume)
 end
 if ~isempty(ALIGN.inplanes)
     overlay = transformInplanes(ALIGN.inplanes,ALIGN.volSize,xform,...
-        sliceOrientation,sliceNum,ALIGN.origin);
+        sliceOrientation,sliceNum);
     overlayRGB = rescale2rgb(overlay,ALIGN.overlayCmap,ALIGN.inplanesClip);
 end
 
@@ -123,7 +123,11 @@ dims = [size(image),3];
 rgb = cat(length(dims),r,g,b);
 
 
-function inplanesXform = transformInplanes(inplanes,volSize,xform,sliceOrientation,slice,origin)
+function inplanesXform = transformInplanes(inplanes,volSize,xform,sliceOrientation,slice)
+
+% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin. 
+shiftXform = shiftOriginXform;
+xform = inv(shiftXform) * inv(xform) * shiftXform;
 
 % Generate coordinates with meshgrid
 switch sliceOrientation
@@ -137,20 +141,15 @@ switch sliceOrientation
         z = slice * ones(volSize(1),volSize(2));
         [y,x] = meshgrid(1:volSize(2),1:volSize(1));
 end
-
-% Shift by origin (matlab indexes from 1 but nifti uses 0,0,0 as the
-% origin)
-shiftXform = eye(4);
-shiftXform(1:3,4) = origin - 1;
-
-% Transform coordinates
 dims = size(x);
 numPixels = prod(dims);
 xvec = reshape(x,1,numPixels);
 yvec = reshape(y,1,numPixels);
 zvec = reshape(z,1,numPixels);
 coords = [xvec; yvec; zvec; ones(1,numPixels)];
-coordsXform = inv(shiftXform) * inv(xform) * shiftXform * coords;
+
+% Transform coordinates
+coordsXform = xform * coords;
 xi = reshape(coordsXform(1,:),dims);
 yi = reshape(coordsXform(2,:),dims);
 zi = reshape(coordsXform(3,:),dims);
