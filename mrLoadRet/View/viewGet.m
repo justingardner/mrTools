@@ -1614,12 +1614,12 @@ switch lower(param)
         % scan = viewGet(view,'currentScan');
         fig = viewGet(view,'fignum');
         handles = guidata(fig);
-        val = get(handles.scanSlider,'Value');
+        val = round(get(handles.scanSlider,'Value'));
     case {'curslice','currentslice'}
         % slice = viewGet(view,'currentSlice');
         fig = viewGet(view,'fignum');
         handles = guidata(fig);
-        val = get(handles.sliceSlider,'Value');
+        val = round(get(handles.sliceSlider,'Value'));
     case {'curcoords','currentcoordinates'}
         % coords = viewGet(view,'currentCoordinates');
         fig = viewGet(view,'fignum');
