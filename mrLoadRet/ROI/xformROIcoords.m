@@ -30,8 +30,7 @@ if isempty(coords)
 end
 
 % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin.
-shiftXform = eye(4);
-shiftXform(1:3,4) = - 1;
+shiftXform = shiftOriginXform;
 xform = inv(shiftXform) * xform * shiftXform;
 
 % First, just transform the coords. This is insufficient because it will
