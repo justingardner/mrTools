@@ -1,5 +1,5 @@
-function volInterp = interpVolume(vol, xform, inplaneSize, origin, badval)
-% function volInterp = interpVolume(volume, xform, inplaneSize, origin, badval)
+function volInterp = interpVolume(vol, xform, inplaneSize, badval)
+% function volInterp = interpVolume(volume, xform, inplaneSize, badval)
 %
 % djh, 1/2007
 
@@ -7,22 +7,21 @@ if ieNotDefined('badval')
     badval = NaN;
 end
 
+% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin. 
+shiftXform = shiftOriginXform;
+xform = inv(shiftXform) * xform * shiftXform;
+
 % Generate coordinates
 [y,x,z] = meshgrid(1:inplaneSize(2), 1:inplaneSize(1), 1:inplaneSize(3));
-
-% Shift by origin (matlab indexes from 1 but nifti uses 0,0,0 as the
-% origin)
-shiftXform = eye(4);
-shiftXform(1:3,4) = origin - 1;
-
-% Transform coordinates
 dims = inplaneSize;
 numPixels = prod(dims);
 xvec = reshape(x,1,numPixels);
 yvec = reshape(y,1,numPixels);
 zvec = reshape(z,1,numPixels);
 coords = [xvec; yvec; zvec; ones(1,numPixels)];
-coordsXform = inv(shiftXform) * xform * shiftXform * coords;
+
+% Transform coordinates
+coordsXform = xform * coords;
 xi = reshape(coordsXform(1,:),dims);
 yi = reshape(coordsXform(2,:),dims);
 zi = reshape(coordsXform(3,:),dims);

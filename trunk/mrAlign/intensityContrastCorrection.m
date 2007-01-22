@@ -29,6 +29,10 @@ function volIC = intensityContrastCorrection(vol, crop);
 if ieNotDefined('crop')
     crop = [];
 end
+if ~isempty(crop)
+    crop(1,:) = max(crop(1,:),[2 2 2]);
+    crop(2,:) = min(crop(2,:),(size(vol) - [2 2 2]));
+end
 
 % Initialize result to be a copy of input
 volIC = vol;
@@ -77,8 +81,8 @@ end
 % Build the histogram
 II = find(~isnan(volCrop));
 % regHistogram is about 10x faster than hist
-% [h x] = hist(volCrop(II), 256);
-[h x] = regHistogram(volCrop(II), 256);
+[h x] = hist(volCrop(II), 256);
+% [h x] = regHistogram(volCrop(II), 256);
 % Normalize the histogram
 h = h/(sum(h)*mean(diff(x)));
 
@@ -147,13 +151,13 @@ B = (length(lpf)-1)/2;
 for k=1:size(vol,3)
 	volB(:,:,k) = addBorder(vol(:,:,k), B, B, 2);
 end
-Int = convXYZsep(volB, 'repeat', lpf, lpf, lpfZ);
+Int = convXYZsep(volB, lpf, lpf, lpfZ, 'repeat', 'valid');
 
 % estimate the noise as the mean local variance
 for k=1:size(Int,3)
    IntB(:,:,k) = addBorder(Int(:,:,k), B, B, 2);
 end
-Noise = convXYZsep((volB-IntB).^2, 'repeat', lpf, lpf, lpfZ);
+Noise = convXYZsep((volB-IntB).^2, lpf, lpf, lpfZ, 'repeat', 'valid');
 
 
 function imb=addBorder(im, Nx, Ny, method);

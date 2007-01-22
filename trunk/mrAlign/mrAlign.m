@@ -16,7 +16,16 @@
 
 global ALIGN
 
-ALIGN.version = mrLoadRetVersion;
+% Check Matlab version number
+[mlrVersion, expectedMatlabVersion] = mrLoadRetVersion;
+version = ver('Matlab');
+matlabVersion = str2num(version.Version(1:3));
+if ~ismember(matlabVersion, expectedMatlabVersion);
+    mrWarnDlg(['mrAlign is intended for Matlab ',num2str(expectedMatlabVersion),...
+        '. You are running Matlab ',version.Version]);
+end
+
+ALIGN.version = mlrVersion;
 
 ALIGN.volumePath = [];      % path string to volume anatomy file
 ALIGN.volume = [];          % volume matrix
@@ -39,7 +48,6 @@ ALIGN.xform = [];           % 4x4 transform matrix from inplane pixels -> volume
 ALIGN.NIter = 10;           % Number of iterations in auto alignment
 ALIGN.sliceOrientation = 1; % 1=axial, 2=coronal, 3=sagittal
 ALIGN.coords = [1,1,1];     % selected voxel
-ALIGN.origin = [0,0,0];     % origin of coordinate system. For nifti, the convention is [0,0,0]
 
 ALIGN.baseCmap = gray(256);
 ALIGN.overlayCmap = hot(256);
