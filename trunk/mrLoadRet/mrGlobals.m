@@ -12,7 +12,7 @@ global MLR
 if isempty(MLR)
     
     % Check Matlab version number
-    [mrLoadRetVersion, expectedMatlabVersion] = mrLoadRetVersion;
+    [mlrVersion, expectedMatlabVersion] = mrLoadRetVersion;
     version = ver('Matlab');
     matlabVersion = str2num(version.Version(1:3));        
     if ~ismember(matlabVersion, expectedMatlabVersion);
@@ -21,7 +21,7 @@ if isempty(MLR)
     end
     
     % Initialize MLR
-    MLR.version = mrLoadRetVersion;
+    MLR.version = mlrVersion;
     MLR.homeDir = pwd;
 
     % Load session and groups structures from mrSESSION.mat    
@@ -39,5 +39,5 @@ if isempty(MLR)
     disp(['mrLoadRet ',num2str(MLR.version),', Matlab ',matlabVersion]);
     
     % Clean up
-    clear expectedMatlabVersion version matlabVersion session groups mrLoadRetVersion
+    clear expectedMatlabVersion version matlabVersion session groups mlrVersion
 end
