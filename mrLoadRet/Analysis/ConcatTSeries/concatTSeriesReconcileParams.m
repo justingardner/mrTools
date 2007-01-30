@@ -20,6 +20,7 @@ if ieNotDefined('params')
   groupNum = viewGet([],'groupNum',groupName);
   if ~isfield(params,'scanList')
     view = newView('Volume');
+    view = viewSet(view, 'groupName', groupName)
     params.scanList = selectScans(view);
   end
   params.newGroupName = 'Concatenation';
