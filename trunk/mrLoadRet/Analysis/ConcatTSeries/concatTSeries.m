@@ -1,6 +1,6 @@
 % concatTSeries.m
 %
-%      usage: concatTSeries()
+%      usage: concatTSeries(view, params)
 %         by: justin gardner
 %       date: 10/12/06
 %    purpose: 
