@@ -43,7 +43,7 @@ end
 d = loadScan(view,params.scanNum);
 % keyboard
 % do any called for preprocessing
-% d = dopreprocess(d,params.preprocess);
+% d =       (d,params.preprocess);
 % get the stim volumes
 d = getStimVol(d);
 % make a stimulation convolution matrix
@@ -99,7 +99,7 @@ d.nFrames = viewGet(view,'nFrames',scanNum);
 d.dim(4) = d.nFrames;
 
 % Load data
-disp(sprintf('Loading scan %i from %s\n',scanNum,viewGet(view,'groupName')));
+mrDisp(sprintf('Loading scan %i from %s\n',scanNum,viewGet(view,'groupName')));
 d.data = loadTSeries(view,scanNum,'all');
 	
 % Dump junk frames
@@ -165,7 +165,7 @@ d = getfirstvol(d);
 % check if we need to only keep some vols
 if ~isempty(keepstim)
   if (min(keepstim) < 1) | (max(keepstim) > length(d.stimvol))
-    disp(sprintf('UHOH: Keepstim out of range. Ignoring'));
+    mrDisp(sprintf('UHOH: Keepstim out of range. Ignoring'));
   else
     % go through and only keep the stim values asked for
     stimvol = [];
