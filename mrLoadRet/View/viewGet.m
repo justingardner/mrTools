@@ -351,12 +351,20 @@ switch lower(param)
         val = {};
         if ~isempty(stimFileName)
             for j = 1:length(stimFileName)
+                myscreen = [];
+                mylog = [];
                 if ~isfile(stimFileName{j})
                     mrErrorDlg(sprintf('viewGet %s: Could not find stimfile %s',param,stimFileName{j}));
                 else
                     load(stimFileName{j});
                 end
-                val{j} = myscreen;
+                if isempty(myscreen)
+                    val{j} = mylog;
+                    val{j}.filetype = 'eventtimes';
+                else
+                    val{j} = myscreen;
+                    val{j}.filetype = 'traces';
+                end
             end
         end
     case {'stimfilename'}
