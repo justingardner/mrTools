@@ -41,9 +41,9 @@ end
 
 % load the scan
 d = loadScan(view,params.scanNum);
-keyboard
+% keyboard
 % do any called for preprocessing
-d = dopreprocess(d,params.preprocess);
+% d = dopreprocess(d,params.preprocess);
 % get the stim volumes
 d = getStimVol(d);
 % make a stimulation convolution matrix
@@ -65,6 +65,7 @@ r2.clip = [0 1];
 r2.colormap = hot(256);
 r2.alpha = 1;
 r2.interrogator = 'eventRelatedPlot';
+
 % install analysis
 erAnal.name = 'erAnal';  % This can be reset by editAnalysisGUI
 erAnal.type = 'erAnal';
@@ -98,7 +99,7 @@ d.nFrames = viewGet(view,'nFrames',scanNum);
 d.dim(4) = d.nFrames;
 
 % Load data
-mydisp(sprintf('Loading scan %i from %s\n',scanNum,viewGet(view,'groupName')));
+disp(sprintf('Loading scan %i from %s\n',scanNum,viewGet(view,'groupName')));
 d.data = loadTSeries(view,scanNum,'all');
 	
 % Dump junk frames
@@ -109,15 +110,29 @@ d.data = d.data(:,:,:,junkFrames+1:junkFrames+d.nFrames);
 d.dicom = viewGet(view,'dicom',scanNum);
 
 % load stimfile and set traces
-keyboard
+% keyboard
 stimfile = viewGet(view,'stimfile',scanNum);
 if length(stimfile) == 1
   d.stimfile = stimfile{1};
-  d.traces = stimfile{1}.traces;
-  d.stimtrace = stimfile{1}.stimtrace;
-  d.stimfile = rmfield(d.stimfile,'traces');
-  % get acquisition times. 2 means volume acq (we don't know slice acq)
-  d.acq = [0 2*(diff(d.traces(1,:))==1)];
+  if ~isfield(d.stimfile, 'filetype'),
+      d.stimfile.filetype = 'traces';
+  end;
+  switch d.stimfile.filetype,
+      case 'traces',
+        d.traces = stimfile{1}.traces;
+        d.stimtrace = stimfile{1}.stimtrace;
+        d.stimfile = rmfield(d.stimfile,'traces');
+        % get acquisition times. 2 means volume acq (we don't know slice acq)
+        d.acq = [0 2*(diff(d.traces(1,:))==1)];
+        d.filetype = 'traces';
+      case 'eventtimes',
+        % stimtimes_s is the stimulus onset times in seconds wrt starting
+        % the scan
+        d.stimtimes_s = stimfile{1}.stimtimes_s;
+        d.filetype = 'eventtimes';
+      otherwise,
+        mrMsgBox(sprintf('Unknown of invalid stimfile type %s',stimfile.filetype));
+  end;
 end
 d.baseline = ones(d.dim);
 
@@ -138,7 +153,31 @@ if ~any(nargin == [1 2])
   return
 end
 if exist('keepstim')~=1,keepstim = [];,end;
+switch d.filetype,
+    case 'traces',
+        d = getStimVolFromTraces(d);
+    case 'eventtimes',
+        d = getStimVolFromEventTimes(d);
+end;
+% get the first volume
+d = getfirstvol(d);
 
+% check if we need to only keep some vols
+if ~isempty(keepstim)
+  if (min(keepstim) < 1) | (max(keepstim) > length(d.stimvol))
+    disp(sprintf('UHOH: Keepstim out of range. Ignoring'));
+  else
+    % go through and only keep the stim values asked for
+    stimvol = [];
+    for i = 1:length(keepstim)
+      stimvol{i} = d.stimvol{keepstim(i)};
+    end
+    d.stimvol = stimvol;
+  end
+end
+
+
+function d = getStimVolFromTraces(d)
 % get the stim times
 stimraw = d.traces(d.stimtrace,:);
 stimraw(stimraw < 0) = 0;
@@ -161,22 +200,12 @@ for i = 1:nhdr
   d.stimvol{i} = acqnum(d.stimtimes{i});
 end
 
-% get the first volume
-d = getfirstvol(d);
 
-% check if we need to only keep some vols
-if ~isempty(keepstim)
-  if (min(keepstim) < 1) | (max(keepstim) > length(d.stimvol))
-    disp(sprintf('UHOH: Keepstim out of range. Ignoring'));
-  else
-    % go through and only keep the stim values asked for
-    stimvol = [];
-    for i = 1:length(keepstim)
-      stimvol{i} = d.stimvol{keepstim(i)};
-    end
-    d.stimvol = stimvol;
-  end
+function d = getStimVolFromEventTimes(d)
+% sort into stimuli
+nhdr = length(d.stimtimes_s);
+for i = 1:nhdr
+  d.stimtimes{i} = d.stimtimes_s{i};
+  d.pulselens(i) = i;
+  d.stimvol{i} = round(d.stimtimes_s{i} / d.tr);
 end
-
-  
-
