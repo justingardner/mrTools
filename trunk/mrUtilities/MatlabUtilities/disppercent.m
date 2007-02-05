@@ -34,8 +34,8 @@ end
 
 global gDisppercent;
 
-% systems without mydisp (print w/out return that flushes buffers)
-if exist('mydisp') ~= 3
+% systems without mrDisp (print w/out return that flushes buffers)
+if exist('mrDisp', 'file') ~= 3
   if (percentdone == -inf) && (nargin == 2)
     disp(mesg);
   end
@@ -49,9 +49,9 @@ if (percentdone == -inf)
   gDisppercent.t0 = clock;
   % default to no message
   if (nargin < 2)
-    mydisp(sprintf('00%% (00:00:00)'));
+    mrDisp(sprintf('00%% (00:00:00)'));
   else
-    mydisp(sprintf('%s 00%% (00:00:00)',mesg));
+    mrDisp(sprintf('%s 00%% (00:00:00)',mesg));
   end    
 % display total time at end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,7 +77,7 @@ elseif (percentdone == inf)
     timestr = sprintf('%i secs %i ms',numsecs,numms);
   end
   % display time string
-  mydisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\btook %s\n',timestr));
+  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\btook %s\n',timestr));
 % otherwise show update
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
@@ -89,7 +89,7 @@ else
   end
   % display percent done and estimated time to end
   if (gDisppercent.percentdone ~= floor(100*percentdone))
-    mydisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%02i%% (%s)',floor(100*percentdone),disptime(etime(clock,gDisppercent.t0)*(1/percentdone - 1))));
+    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%02i%% (%s)',floor(100*percentdone),disptime(etime(clock,gDisppercent.t0)*(1/percentdone - 1))));
   end
 end
 % remember current percent done
