@@ -21,13 +21,13 @@ function hdr=cbiCreateNiftiHeader(varargin)
 %          (if valid, qform44 takes precedence over quaternions)
 %       b) specifying a quaternion/qoffset as a parameter sets qform44 accordingly
 %       c) specifying a qform44 sets quaternions accordingly (overriding any quaternion parameters)
-%       d) if qform44 is empty, zero, or identity, qform_code=0, else qform_code=1
+%       d) if qform44 is empty, qform_code=0, else qform_code=1
 %     - Sform data will be set as follows:
 %     - a) if neither sform44 or srow_[x/y/z] are specified, will use  existing hdr info 
 %          (if valid, sform44 takes precedence over srow_[x/y/z]
 %     - b) specifying a srow_ paramater sets sform44 accordingly
 %     - c) specifying sform44 sets srows accordingly (overriding any srow parameters)
-%     - d) if sform44 is empty, zero, or identity, sform_code=0, else sform_code=1
+%     - d) if sform44 is empty, sform_code=0, else sform_code=1
 %     - Setting the matlab_datatype also sets the NIFTI data type and bitpix appropriately (and vice versa). 
 %       (note: bitpix is determined by the datatype; setting it directly has no effect) 
 %     - Setting the file name also sets the magic number
@@ -36,7 +36,7 @@ function hdr=cbiCreateNiftiHeader(varargin)
   
   if (nargin==0)
     % create empty header
-    hdr=generateHeader;
+    hdr=generateEmptyNiftiHeader;
     return
   end
   
@@ -97,9 +97,11 @@ function hdr=cbiCreateNiftiHeader(varargin)
       end
       if strcmp(varargin{currarg},'datatype')
 	hdr.matlab_datatype=cbiNiftiDatatype2Matlab(hdr.datatype);
+	hdr.bitpix=8*cbiSizeofNifti(hdr.matlab_datatype);
       end
       if strcmp(varargin{currarg},'matlab_datatype')
 	hdr.datatype=cbiMatlabDatatype2Nifti(hdr.matlab_datatype);
+	hdr.bitpix=8*cbiSizeofNifti(hdr.matlab_datatype);
       end
     end
   end
@@ -119,12 +121,16 @@ function hdr=cbiCreateNiftiHeader(varargin)
   
   % Set data size, if any
   if (input_data)
-    s=size(varargin{input_data});
+    s=size(varargin{input_data});    
     l=length(s);
-	hdr.dim(:)=0;
+    hdr.dim(:)=0;
     hdr.dim(1)=l;
     hdr.dim(2:l+1)=s;
-    hdr.slice_end=s(3)-1; % dim3 (Z) is slice direction
+    if (l>2)
+      hdr.slice_end=s(3)-1; % dim3 (Z) is slice direction
+    else
+      hdr.slice_end=0;
+    end
     % Set pixdim fields, if not set
     for n=2:l+1
       if (hdr.pixdim(n)==0)
@@ -203,13 +209,13 @@ function hdr=cbiCreateNiftiHeader(varargin)
   
   % Set qform_code, sform_code according to header
   % qform44: 
-  if (~isempty(hdr.qform44) & ~isequal(hdr.qform44,eye(4)) &  ~isequal(hdr.qform44,zeros(4)) & size(hdr.qform44)==[4,4])
+  if (~isempty(hdr.qform44))
     hdr.qform_code=1;
   else
     hdr.qform_code=0;
   end
   % sform44:
-  if (~isempty(hdr.sform44) & ~isequal(hdr.sform44,eye(4)) & ~isequal(hdr.sform44,zeros(4)) & size(hdr.sform44)==[4,4])
+  if (~isempty(hdr.sform44))
     hdr.sform_code=1;
   else
     hdr.sform_code=0;
@@ -220,10 +226,10 @@ function hdr=cbiCreateNiftiHeader(varargin)
     [pathstr,bname,ext,ver]=fileparts(hdr.hdr_name);
     switch (ext)
      case '.nii'  
-       hdr.singleFile=1;
+       hdr.single_file=1;
        hdr.magic='n+1';
      case {'.hdr','.img'}
-      hdr.singleFile=0;
+      hdr.single_file=0;
       hdr.magic='ni1';      
      otherwise
       disp('Warning: unrecognized file name field.');

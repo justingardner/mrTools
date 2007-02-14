@@ -6,7 +6,7 @@ function hdr=cbiSetNiftiQform( hdr, mtx44, trns )
 %  where R is a 3x3 rotation matrix and T a translation 3-vector
 % 
 % Sets qform44 and updates quaternions, pixdim, and qoffsets accordingly.
-% Sets qcode=1 if qform44 is not identity.
+% Sets qcode=1
 
 if (nargin<2)
   error('Must specify a header and a qform matrix (or a rotation and translation matrix')
