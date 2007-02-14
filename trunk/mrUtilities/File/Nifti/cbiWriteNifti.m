@@ -20,18 +20,27 @@ function [byteswritten,hdr]=cbiWriteNifti(fname,data,hdr,prec,subset,short_nan);
   
 
 [pathstr,bname,ext,ver]=fileparts(fname);
+
+if (~exist('subset'))
+  subset={[],[],[],[]};
+end
+if (~exist('short_nan'))
+  short_nan=1;
+end
   
 switch (ext)
  case '.nii'  
-  hdr.singleFile=1;
+  hdr.single_file=1;
   hdr.hdr_name=fname;
   hdr.img_name=fname;
   hdr.magic=sprintf('%s\0','n+1');
+  hdr.vox_offset=352;
  case {'.hdr','.img'}
   hdr.single_file=0;
   hdr.hdr_name=fullfile(pathstr,[bname '.hdr']);
   hdr.img_name=fullfile(pathstr,[bname '.img']);
   hdr.magic=sprintf('%s\0','ni1');
+  hdr.vox_offset=0; % important!
  case '.gz','.Z' % zipped
   error('No support for zipped NIFTI-1 format under Matlab.');
  otherwise
@@ -44,6 +53,14 @@ if (exist('prec') & ~isempty(prec))
 else
   hdr=cbiCreateNiftiHeader(hdr,data);
 end
+if (~strcmp(class(data),hdr.matlab_datatype))
+  disp(['Warning: scaling data from ' class(data) ' to ' hdr.matlab_datatype]);
+  disp('To avoid this, cast data to desired format before calling cbiWriteNifti, e.g.')
+  disp('cbiWriteNifti(''myfilename'',int16(data),hdr,''int16'')')
+end
+
+% get hdr scaling factor and convert data if necessary
+[data,hdr]=convertData(data,hdr,short_nan);  
 
 % Write header
 no_overwrite=0;
@@ -52,13 +69,6 @@ no_overwrite=0;
 % Prepare to write data
 if (~hdr.single_file)
   fid=fopen(hdr.img_name,'wb',hdr.endian);
-end
-
-if (~exist('subset'))
-  subset={[],[],[],[]};
-end
-if (~exist('short_nan'))
-  short_nan=1;
 end
 
 headerdim=hdr.dim(2:5); % Matlab 1-offset - hdr.dim(1) is actually hdr.dim(0)
@@ -94,14 +104,28 @@ elseif (any(loadSize(1:2)<headerdim(1:2)))
   error('no support for saving subvolumes of data; only entire z-slices may be saved.');
 end
 
+%  Write emptiness so that we can move to the right offset. (This library does not currently support extensions, which would otherwise go here)
+% 11/10/05 PJ
+if ftell(fid) < hdr.vox_offset
+  %  fwrite(fid,0,sprintf('integer*%d',(hdr.vox_offset-ftell(fid))));
+  c=hdr.vox_offset-ftell(fid);
+  if (fwrite(fid,zeros(c,1),'uint8')~=c)
+    error('error writing extension padding')    
+  end
+end
+
+
 % Move to beginning of data
-fseek(fid,hdr.vox_offset,'bof');
+status = fseek(fid,hdr.vox_offset,'bof');
+if status 
+  ferror(fid)
+end
 
 dataSize=prod(loadSize);
 writeFormat=hdr.matlab_datatype;
 switch (hdr.matlab_datatype)    
  case 'binary'
-  error('No support for binary data');
+  error('No support for binary data')
  case 'complex64'
   writeFormat=float32;
  case 'complex128'
@@ -135,8 +159,8 @@ end
 byteswritten=0;
 fseek(fid,readOrigin*bytesPerElement,'cof');
 for t=subset{4}(1):subset{4}(2)  
-  % Extract and convert current subset of data
-  saveData=convertData(data(currPos:currPos+readSize-1),hdr,short_nan);
+  % Extract current subset of data
+  saveData=data(currPos:currPos+readSize-1);
   if (strfind(hdr.matlab_datatype,'complex'))
     % Separate complex data into real and imaginary parts
     realData=real(saveData);
@@ -162,31 +186,60 @@ end
 
 fclose(fid);
 
+
 return
-
-
-function data=convertData(data,hdr,short_nan);
+  
+function [data,hdr]=convertData(data,hdr,short_nan);
 % Scales and shifts data (using hdr.scl_slope and hdr.scl_inter)
 % and changes NaN's to 0 or MAXINT for non-floating point formats
-%
-  % If data is the correct class and no scaling needed, just return
-  if (strcmp(class(data),hdr.matlab_datatype) ... 
-      & (isempty(hdr.scl_slope) | hdr.scl_slope==1) ...
-      & (isempty(hdr.scl_inter) | hdr.scl_inter==0))
-    return;
-  end
+% Returns hdr with scale factor changed (bug fixed 20060824)
 
-  % Scale and shift data
-  if (hdr.scl_slope~=1 | hdr.scl_inter~=0)
-    data=double(data);
-    data=(data-hdr.scl_inter)./hdr.scl_slope;
+% Calculate scale factor for non-floating point data
+  switch (hdr.matlab_datatype)    
+   case 'binary'
+    error('unsupported format')
+   case 'uint8'
+    MAXINT=2^8-1;
+   case {'uint16','ushort'}
+    MAXINT=2^16-1;
+   case {'uint32','uint'}
+    MAXINT=2^32-1;
+   case 'uint64'
+    MAXINT=2^64-1;
+   case 'int8'
+    MAXINT=2^7-1;
+   case {'int16','short'}
+    MAXINT=2^15-1;
+   case {'int32','int'}
+    MAXINT=2^31-1;
+   case 'int64'
+    MAXINT=2^63-1;
+   otherwise
+    MAXINT=0;
+  end
+  if (MAXINT)
+    hdr.scl_slope=max(data(:))/MAXINT;
+  end
+  
+  % Scale and shift data if scale factor is nonzero
+  if (~isnan(hdr.scl_slope) & hdr.scl_slope~=0)
+    if (hdr.scl_slope~=1 | hdr.scl_inter~=0)
+      data=double(data);
+      data=(data-hdr.scl_inter)./hdr.scl_slope;
+      switch (hdr.matlab_datatype)    
+       case {'binary','uint8','uint16','short','ushort','uint32','uint','int','uint64','int8','int16','int32','int64'}
+	data=round(data);
+       otherwise
+	% nothing
+      end
+    end
   end
     
   % Change NaNs for non-floating point datatypes
   switch (hdr.matlab_datatype)    
-   case {'binary','uint8','uint16','uint32','uint64','int8','int16','int32','int64'}
+   case {'binary','uint8','uint16','ushort','uint32','uint','int','uint64','int8','int16','int32','int64'}
     data(isnan(data))=0;
-   case 'int16'
+   case {'int16','short'}
     if (short_nan)
       data(isnan(data))=-32768;
     else
