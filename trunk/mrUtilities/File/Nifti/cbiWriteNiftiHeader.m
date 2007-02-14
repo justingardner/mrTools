@@ -62,7 +62,7 @@ if (isstr(fname))
     % This hack is necessary as sprintf on Mac OS X is broken (refuses to print \0 character)
     hdr.magic=char(zeros(1,4));
     hdr.magic(1:3)=sprintf('%s','ni1');
-   case '.gz','.Z' % zipped
+   case {'.gz','.Z'} % zipped
     error('No support for zipped NIFTI-1 format under Matlab.');
    otherwise
     error('Not a valid NIFTI-1 file name extension. Legal values are .nii, .hdr, .img');

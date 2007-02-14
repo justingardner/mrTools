@@ -5,8 +5,8 @@ function hdr=cbiSetNiftiSform( hdr, mtx44, trns )
 % hdr=cbiSetNiftiSform( hdr, R, T )
 %  where R is a 3x3 rotation matrix and T a translation 3-vector
 % 
-% Sets sform44 and updates srow_x/y/z. Sets scode=1 if sform44 is not identity.
-% 
+% Sets sform44 and updates srow_x/y/z. 
+% Sets scode=1 
 
 if (nargin<2)
   error('Must specify a header and a qform matrix (or a rotation and translation matrix')
@@ -32,4 +32,3 @@ hdr.srow_y=hdr.sform44(2,:);
 hdr.srow_z=hdr.sform44(3,:);
 
 hdr.sform_code=1;
-

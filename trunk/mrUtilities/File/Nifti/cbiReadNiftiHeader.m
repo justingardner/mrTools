@@ -20,7 +20,7 @@ function hdr = cbiReadNiftiHeader(fname)
 
 switch (ext)
  case '.nii'  
-  hdr.singleFile=1;
+  hdr.single_file=1;
   hdr.hdr_name=fname;
   hdr.img_name=fname;
  case {'.hdr','.img'}
@@ -90,7 +90,6 @@ hdr.intent_name  = char(transpose(fread(fid,16,'char')));
 hdr.magic        = char(transpose(fread(fid,4,'char')));
 
 fclose(fid);
-
 
 % Set data type
 hdr.matlab_datatype=cbiNiftiDatatype2Matlab(hdr.datatype);

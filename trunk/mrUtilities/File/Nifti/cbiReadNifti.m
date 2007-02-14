@@ -117,7 +117,10 @@ end
 
 % Open file and move to beginning of data
 fPtr=fopen(hdr.img_name,'r',hdr.endian);
-fseek(fPtr,hdr.vox_offset,'bof');
+% If single-file format, offset beyond header
+if (hdr.single_file)
+  fseek(fPtr,hdr.vox_offset,'bof');
+end
 
 dataSize=prod(loadSize);
 bytesPerElement=cbiSizeofNifti(readformat);
