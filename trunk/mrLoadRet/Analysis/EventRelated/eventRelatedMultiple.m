@@ -107,7 +107,9 @@ erAnal.d = d;
 view = viewSet(view,'newAnalysis',erAnal);
 
 % Save it
-saveAnalysis(view,erAnal.name);
+if ~isfield(params, 'suppress_save')
+    saveAnalysis(view,erAnal.name);
+end
 
 
 %%%%%%%%%%%%%%%%%%%
