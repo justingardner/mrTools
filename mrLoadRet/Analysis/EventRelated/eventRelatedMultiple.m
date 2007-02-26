@@ -152,8 +152,12 @@ for i=params.includeScans
           case 'eventtimes',
           otherwise,
             mrMsgBox(sprintf('Unknown of invalid stimfile type %s',stimfile.filetype));
-      end;
+      end
+    else
+        disp(i);
+        error('invalid number of stimulus files');
     end
+    d.filetype = stimfile.filetype;
     stimfile.tr = viewGet(view,'framePeriod',i);
     d = getStimVol(stimfile);
     d.dim = viewGet(view,'scandims',i);
