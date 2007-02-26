@@ -48,7 +48,8 @@ for overlayNum = 1:viewGet(view,'numberOfOverlays')
 		else
 			indices = find(data >= overlayClip(1) | data <= overlayClip(2));
 		end
-		ROIcoords = ROIcoords(:,indices);
+		% ROIcoords = ROIcoords(:,indices);
+		ROIcoords = xformROIcoords(coords(:,indices),inv(ROIxform)*overlayXform,ROIvoxelSize,overlayVoxelSize,[1,1,1]);
 	else
 		ROIcoords = [];
 	end
