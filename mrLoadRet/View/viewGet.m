@@ -781,7 +781,7 @@ switch lower(param)
     case{'numberofrois'}
         % n = viewGet(view,'numberofROIs')
         val = length(view.ROIs);
-    case{'currentroi'}
+    case{'currentroi','currentroinum'}
         % roiNum = viewGet(view,'currentROI')
         val = view.curROI;
     case{'roinum'}
