@@ -45,8 +45,7 @@ if (strcmp(type,'leastsq'))
   precalcmatrix = ((d.scm'*d.scm)^-1)*d.scm';
   % if this don't work then do pinv
   if length(isnan(precalcmatrix(:))) == length(precalcmatrix(:))
-    disp(sprintf('UHOH: Least squares solution of stimulus convolution'));
-    disp(sprintf('      matrix is ill-conditioned. Using pseudo inverse.'));
+    disp(sprintf('Using pseudo inverse to invert convolution matrix'));
     precalcmatrix = pinv(d.scm);
   end
 elseif (strcmp(type,'mseq'))
@@ -80,9 +79,6 @@ end
 if (~justr2)
   d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),size(precalcmatrix,1));
   d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
-  if (~isfield(d,'baseline'))
-%    d.baseline = zeros(d.dim(1),d.dim(2),d.dim(3));
-  end
 else
   R2 = zeros(d.dim(1),d.dim(2),d.dim(3));
 end  
@@ -120,12 +116,6 @@ for j = yvals
 end
 disppercent(inf);
 if (~justr2)
-  % calculate baseline
-  if ~isfield(d,'baseline')
-    d.baseline = mean(d.data(:,:,:,2:d.firstvol-1),4);
-  else
-    disp(sprintf('using precalculated baseline'));
-  end
   % reshape matrix. this also seems the fastest way to do things. we
   % could have made a matrix in the above code and then reshaped here
   % but the reallocs needed to continually add space to the matrix
@@ -136,11 +126,8 @@ if (~justr2)
     disppercent((i-min(xvals))/xvaln);
     for j = yvals
       for k = slices
-	% calculate baseline as signal before first stimulation
-	baseline = d.baseline(i,j,k);
-	if (baseline == 0),baseline = 1;,end
-	% normalize ehdr to be in percent signal change
-	d.ehdr(i,j,k,:) = 100*ehdr{j,k}(:,i)./baseline;
+	% get the ehdr
+	d.ehdr(i,j,k,:) = 100*ehdr{j,k}(:,i);
 	% now reshape into a matrix
 	d.r2(i,j,k) = r2{j,k}(i);
       end
