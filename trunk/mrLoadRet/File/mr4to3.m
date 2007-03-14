@@ -1,6 +1,7 @@
 % mr4to3.m
 %
 %      usage: mr4to3()
+%        $Id$
 %         by: justin gardner
 %       date: 03/12/07
 %    purpose: take an mrLoadRet4 directory structure and create
@@ -10,6 +11,8 @@
 %             not write over any old files.
 %             once this is run once, call with the argument 3 or 4
 %             to switch between mrLoadRet3 and mrLoadRet4
+
+
 function retval = mr4to3(vernum)
 
 % check arguments
@@ -175,16 +178,16 @@ end
 printBlockEnd;
 
 % now make links in Raw/Pfiles_preMC for the raw data
-filenames{rawGroup} = makeLinks(m.groups(rawGroup).scanParams,'Raw','Raw/Pfiles_preMC');
+filenames{rawGroup} = makeLinks(m.groups(rawGroup).scanParams,'../../Raw','Raw/Pfiles_preMC');
 
 % now make links in Raw/Pfiles to the motion comp data
 if motionCompGroup
-  filenames{motionCompGroup} = makeLinks(m.groups(motionCompGroup).scanParams,'MotionComp','Raw/Pfiles');
+  filenames{motionCompGroup} = makeLinks(m.groups(motionCompGroup).scanParams,'../../MotionComp','Raw/Pfiles');
   % we will make the originals from motionCompGroup
   originalGroup = motionCompGroup;
 else
   % use the un motion compd data if motion comp is not done
-  makeLinks(m.groups(rawGroup).scanParams,'Raw','Raw/Pfiles');
+  makeLinks(m.groups(rawGroup).scanParams,'../../Raw','Raw/Pfiles');
   originalGroup = rawGroup;
 end
 printBlockEnd;
@@ -278,8 +281,14 @@ printBlockEnd
 %%%%%%%%%%%%%%%%%%%%%%%%
 function destFilenames = makeLinks(scanParams,sourcedir,destdir)
 
+origDir = pwd;
+fprintf(sprintf('Current directory is %s \n', origDir));
+fprintf(sprintf('Entering %s \n', destdir));
+cd(destdir);
+
 scanParams = scanParams;
 printBlockBegin(sprintf('Linking %s files',sourcedir));
+
 for i = 1:length(scanParams)
   % get sourcename,
   sourceFilename = fullfile(sourcedir,'TSeries',scanParams(i).fileName);
@@ -301,7 +310,7 @@ for i = 1:length(scanParams)
     disp(sprintf('(mr4to3) Could not find original file %s',sourceFilename));
   else
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
-    mysystem(sprintf('ln -s %s %s',sourceFilename,destFilename));
+    mysystem(sprintf('ln -s %s .',sourceFilename));
   end
   % now move the hdr file
   destFilename = sprintf('%s.hdr',stripext(destFilename));
@@ -312,10 +321,13 @@ for i = 1:length(scanParams)
     disp(sprintf('(mr4to3) Could not find original file %s',sourceFilename));
   else
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
-    mysystem(sprintf('ln -s %s %s',sourceFilename,destFilename));
+    mysystem(sprintf('ln -s %s .',sourceFilename));
   end
 end
 printBlockEnd;
+
+fprintf(sprintf('Returning to %s \n', origDir));
+cd(origDir)
 
 if ~isfile('mrSession4.mat')
   mysystem('cp mrSession.mat mrSession4.mat');
