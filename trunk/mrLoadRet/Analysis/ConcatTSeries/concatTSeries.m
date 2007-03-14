@@ -13,22 +13,38 @@ if ~any(nargin == [1 2])
   return
 end
 
+% description of paramaters (used by mrDefaultParams functions)
+paramsInfo = {...
+    {'groupName',viewGet(view,'groupNames'),'Name of group from which to make concatenation'},...
+    {'newGroupName','Concatenation','Name of group that will be created'},...
+    {'description','Concatenation of [x...x]','Description that will be set to have the scannumbers that are selected'},...
+    {'filterType',1,'minmax=[0 1]','incdec=[-1 1]','Which filter to use, for now you can only turn off highpass filtering'},...
+    {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
+    {'percentSignal',1,'type=checkbox','Convert to percent signal change'},...
+    {'warp',0,'type=checkbox','Warp images based on alignment (not implemented yet)'},...
+    {'warpInterpMethod',{'nearest','bilinear'},'Interpolation method for warp (not implemented yet)'}
+	     };
 % First get parameters
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
-%  params = concatTSeriesGUI('groupName',viewGet(view,'groupName'));
-  params = concatTSeriesReconcileParams(viewGet(view,'groupName'));
+  params = mrDefaultParamsGUI(paramsInfo);
+  % no params means user hit cancel
+  if isempty(params),return,end
+  % select scans
+  view = viewSet(view, 'groupName', params.groupName);
+  params.scanList = selectScans(view);
+  if isempty(params.scanList),return,end
+  % check the parameters
+  params = mrDefaultParamsReconcile(params.groupName,params);
 else
   % Reconcile params with current status of group and ensure that it has
   % the required fields. 
-  params = concatTSeriesReconcileParams(params.groupName,params);
+  params.paramsInfo = paramsInfo;
+  params = mrDefaultParamsReconcileParams(params.groupName,params);
 end
 
 % Abort if params empty
-if ieNotDefined('params')
-  mrMsgBox('concatTSeries cancelled');
-  return
-end
+if ieNotDefined('params'),return,end
 
 % Open new view with the base group
 viewBase = newView(viewGet(view,'viewType'));
@@ -50,10 +66,10 @@ viewConcat = viewSet(viewConcat,'currentGroup',concatGroupNum);
 
 % Check that all scans in scanList have the same 
 % scanxform, scanvoxelsize, scandims
-d.tr = viewGet(viewBase,'framePeriod',params.baseScan);
-d.voxelSize = viewGet(viewBase,'scanvoxelsize',params.baseScan);
-d.dim = viewGet(viewBase,'scandims',params.baseScan);
-d.nFrames = viewGet(viewBase,'nFrames',params.baseScan);
+d.tr = viewGet(viewBase,'framePeriod',params.scanList(1));
+d.voxelSize = viewGet(viewBase,'scanvoxelsize',params.scanList(1));
+d.dim = viewGet(viewBase,'scandims',params.scanList(1));
+d.nFrames = viewGet(viewBase,'nFrames',params.scanList(1));
 d.dim(4) = d.nFrames;
 for iscan = 1:length(params.scanList)
   if (viewGet(viewBase,'framePeriod',params.scanList(iscan)) ~= d.tr)
@@ -97,7 +113,7 @@ for iscan = 1:length(params.scanList)
 	
     % Warp the frames
     for frame = 1:d.nFrames
-      d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.interpMethod);
+      d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.warpInterpMethod);
     end   
   end
   
@@ -109,6 +125,8 @@ for iscan = 1:length(params.scanList)
   % convert to percent signal change
   if params.percentSignal
     d.mean = mean(d.data,4);
+    % for means that are zero, divide by nan
+    d.mean(d.mean==0) = nan;
     disppercent(-inf, 'Converting to percent signal change');
     for i = 1:d.dim(4)
       d.data(:,:,:,i) = d.data(:,:,:,i)./d.mean;
@@ -130,15 +148,15 @@ for iscan = 1:length(params.scanList)
     scanParams.description = params.description;
     scanParams.originalFileName{1} = filename;
     scanParams.originalGroupName{1} = baseGroupName;
-    hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.baseScan));
+    hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.scanList(1)));
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
     saveScanNum = viewGet(viewConcat,'nScans');
     
     % now load up channels
     stimfile = viewGet(viewBase,'stimFile',scanNum);
-    if length(stimfile) == 1
-      concatInfo.traces = stimfile{1}.traces;
+    if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
+      concatInfo.traces = stimfile{1}.myscreen.traces;
     else
       disp(sprintf('Missing stimfile for scan %i',scanNum));
     end
@@ -153,8 +171,8 @@ for iscan = 1:length(params.scanList)
     % this way we only create traces if all of the stimfiles exist
     if isfield(concatInfo,'traces')
       stimfile = viewGet(viewBase,'stimFile',scanNum);
-      if length(stimfile) == 1
-	concatInfo = concatTraces(concatInfo,stimfile{1}.traces);
+    if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
+	concatInfo = concatTraces(concatInfo,stimfile{1}.myscreen.traces);
       else
 	concatInfo = rmfield(concatInfo,'traces')
 	disp(sprintf('Missing stimfile for scan %i',scanNum));
