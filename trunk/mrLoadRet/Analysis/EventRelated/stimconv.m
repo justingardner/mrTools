@@ -5,9 +5,6 @@
 %       date: 06/03/05
 %
 function cmatrix = stimconv(sig,n)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% make convolution matrix
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (nargin ~= 2)
   help stimconv;
