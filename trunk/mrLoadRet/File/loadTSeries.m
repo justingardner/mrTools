@@ -1,6 +1,6 @@
-function tseries = loadTSeries(view,scan,slice,frame)
+function tseries = loadTSeries(view,scan,slice,frame,x,y)
 %
-% tSeries = loadTSeries(view,scan,[slice],[frame])
+% tSeries = loadTSeries(view,scan,[slice],[frame],[x],[y])
 %
 % Loads the tSeries corresponding to the specified scan and slice. The
 % tseries files must be in <homedir>/<view>/<group>/TSeries, and must be
@@ -24,63 +24,56 @@ function tseries = loadTSeries(view,scan,slice,frame)
 % djh 2/20/2001 Removed interpolation, dumped dat files
 % JL 8/6/03 Updated to allow Analyze format.
 % djh 5/2005 Updated to mrLoadRet 4.0
+% jlg 3/2007 Streamlined code, also selection of a set of
+%            slices/frames by adding argument slice=[min max], or
+%            frame=[min max]. No longer reshapes tseries for single slice
 
 if ieNotDefined('slice')
-	slice = 'all';
+  slice = 'all';
 end
 if ieNotDefined('frame')
-    frame = [];
+  frame = [];
+end
+if ieNotDefined('x')
+  x = [];
+end
+if ieNotDefined('y')
+  y = [];
 end
 
 % Get the pathStr to the tseries file
 pathStr = viewGet(view,'tseriesPathStr',scan);
 % Error if file not found
 if ~exist(pathStr,'file')
-	mrErrorDlg(['File ',pathStr,' not found']);
+  mrErrorDlg(['File ',pathStr,' not found']);
 end
 
-% Load the tSeries
-[path,name,ext,versn] = fileparts(pathStr);
-if strcmp(slice,'all')
-    if (isnumeric(frame) & (1 <= frame) & (frame <= viewGet(view,'nframes',scan)))
-        % Load it
-        [tseries,hdr] = cbiReadNifti(pathStr,{[],[],[],frame});
-        dims = size(tseries);
-    elseif isempty(frame)
-        % Load it
-        [tseries,hdr] = cbiReadNifti(pathStr,{[],[],[],frame});
-        % Check # temporal frames
-        dims = size(tseries);
-        nFrames = dims(4);
-        if (nFrames ~= viewGet(view,'totalFrames',scan))
-            mrWarnDlg('loadTSeries: number of frames in tseries file does not match expected.');
-        end
-    else
-        mrErrorDlg(['Invalid frame number: ',num2str(frame)]);
-    end
-    % Check data size
-    dataSize = dims(1:3);
-	if (dataSize ~= viewGet(view,'dataSize',scan))
-		mrWarnDlg('loadTSeries: number of voxels in tseries does not match expected.');
-	end
-elseif (isnumeric(slice) & (1 <= slice) & (slice <= viewGet(view,'nslices',scan)))
-	% Load single slice and reshape to nFrames X nVoxels
-	[tseries,hdr] = cbiReadNifti(pathStr,{[],[],slice,[]});
-	tseries = squeeze(tseries);
-	% Reformat to nFrames x nVoxels
-	dims = size(tseries);
-	nFrames = dims(3);
-	sliceDims = dims(1:2);
-	nVoxels = prod(sliceDims);
-	tseries = reshape(tseries,[nVoxels,nFrames])';
-	% Check # voxels and # temporal frames
-	if (nFrames ~= viewGet(view,'totalFrames',scan))
-		mrWarnDlg('loadTSeries: number of frames in tseries file does not match expected.');
-	end
-	if sliceDims ~= viewGet(view,'sliceDims',scan)
-		mrWarnDlg('loadTSeries: number of voxels in tseries does not match expected.');
-	end
-else
-    mrErrorDlg(['Invalid slice number: ',slice]);
+% change slices to an array
+if strcmp(slice,'all'),slice = [];,end
+% and validate it
+if ~isempty(slice) & ((1 > min(slice)) | (max(slice) > viewGet(view,'nslices',scan)))
+  mrErrorDlg(['Invalid slice number: ',num2str(slice)]);
+  keyboard
 end
-return
+
+% validate frames
+if ~isempty(frame) & ((1 > frame) | (frame > viewGet(view,'nframes',scan)))
+  mrErrorDlg(['Invalid frame number: ',num2str(frame)]);
+end
+
+% Load it
+[tseries,hdr] = cbiReadNifti(pathStr,{x,y,slice,frame});
+dims = size(tseries);
+
+% check frame count
+if isempty(frame)
+  nFramesExpected = viewGet(view,'totalFrames',scan);
+elseif length(frame) == 1
+  nFramesExpected = 1;
+elseif length(frame) == 2
+  nFramesExpected= frame(2)-frame(1)+1;
+end
+nFrames = dims(4);
+if (nFrames ~= nFramesExpected)
+  mrWarnDlg('loadTSeries: number of frames in tseries file does not match expected.');
+end

@@ -27,11 +27,14 @@ for g = 1:length(groups)
   if nScans > 0
     % get the directory
     [tseriesDirName] = fileparts(viewGet(view,'tseriesPath',1));
-    tseriesDir = dir(sprintf('%s/*.hdr',tseriesDirName));
-    for i = 1:length(tseriesDir)
-      tseriesDir(i).match = 0;
-    end
+  else
+    tseriesDirName = fullfile(viewGet(view,'groupName'),'TSeries');
   end
+  tseriesDir = dir(sprintf('%s/*.hdr',tseriesDirName));
+  for i = 1:length(tseriesDir)
+    tseriesDir(i).match = 0;
+  end
+
   
   % look for unmatched files
   for scanNum = 1:nScans
