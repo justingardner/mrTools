@@ -1,5 +1,6 @@
 function scanList = selectScans(view,title)
 % scanList = selectScans(view,[title]);
+%	$Id$	
 %
 %   Gather a list of scans available in Inplane/TSeries
 %   and query the user for a sub-selection.
@@ -30,7 +31,7 @@ if nScans == 0
 end
 
 for i = 1:nScans
-  scanNames{i} = viewGet(view,'description',i);
+  scanNames{i} = sprintf('%s (%s)',viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
 end
 
 % Which scans to analyze?
