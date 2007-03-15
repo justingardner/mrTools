@@ -10,6 +10,9 @@ function mrErrorDlg(errstr)
 %    setpref('mrLoadRet','verbose',1);
 %
 % djh, 5/2005
+%	$Id$	
+
+
 
 if ispref('mrLoadRet','verbose')
     verbose = getpref('mrLoadRet','verbose');
@@ -19,6 +22,10 @@ end
 
 if verbose
     errordlg(errstr,'Error!');
+    error(errstr);
+else
+    disp(errstr);
+    keyboard
 end
-error(errstr);
+
 
