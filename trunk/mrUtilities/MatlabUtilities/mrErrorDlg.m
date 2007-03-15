@@ -21,11 +21,9 @@ else
 end
 
 if verbose
-    errordlg(errstr,'Error!');
-    error(errstr);
+  errordlg(errstr,'Error!');
+  error(errstr);
 else
     disp(errstr);
     keyboard
 end
-
-
