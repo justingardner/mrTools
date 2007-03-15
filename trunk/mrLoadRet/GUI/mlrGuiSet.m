@@ -167,15 +167,17 @@ switch lower(field)
 		set(handles.scanText,'String',num2str(value));
 		% description
 		description = viewGet(view,'description',value);
-		set(handles.descriptionText,'String',description);
+		%set(handles.descriptionText,'String',description);
+		set(viewGet(view,'figNum'),'Name',sprintf('mrLoadRet: %s',description));
 
     case {'scantext'}
         % mlrGuiSet(view,'scanText',value);
 		set(handles.scanText,'String',num2str(value));
 		% description
 		description = viewGet(view,'description',value);
-		set(handles.descriptionText,'String',description);
-
+		%set(handles.descriptionText,'String',description);
+		set(viewGet(view,'figNum'),'Name',sprintf('mrLoadRet: %s',description));
+		
 	case {'nslices'}
         % mlrGuiSet(view,'nslices',value);
 		value = round(value);

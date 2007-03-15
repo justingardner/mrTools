@@ -58,8 +58,17 @@ width = max(width,2*butWidth+2);
 h = figure('MenuBar','none',...
     'Units','char',...
     'Resize','off',...
-    'NumberTitle','off',...
-    'Position',[20, 10, width*xs,height*ys]);
+    'NumberTitle','off');
+
+% set the figure position
+figpos = get(h,'Position');
+figpos(3:4) = [width*xs,height*ys];
+global MLR;
+if isfield(MLR,'figpos') && isfield(MLR.figpos,'buttondlg')
+  figpos(1:2) = MLR.figpos.buttondlg(1:2);
+end
+set(h,'Position',figpos);
+
 bkColor = get(h,'Color');       
 
 %Display title text inside a frame
@@ -139,5 +148,7 @@ else
     reply = [];
 end
 
+figpos = get(h,'Position');
+MLR.figpos.buttondlg = figpos;
 close(h)
 
