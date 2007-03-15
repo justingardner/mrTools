@@ -1,4 +1,5 @@
 function [ver, expectedMatlabVersion] = mrLoadRetVersion
+%	$Id$	
 
 ver = 4.5;
-expectedMatlabVersion = [7.1 7.2];  % Change this after testing Matlab upgrades
+expectedMatlabVersion = [7.4];  % Change this after testing Matlab upgrades
