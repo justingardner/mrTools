@@ -5,7 +5,9 @@
 %       date: 10/20/06
 %    purpose: 
 %
-function view = eventRelated(view,params)
+function [view d] = eventRelated(view,params)
+
+d = [];
 
 % check arguments
 if ~any(nargin == [1 2])
@@ -65,16 +67,6 @@ for scanNum = 1:length(params.scanNum)
     [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
     % either ask the user for the single variable name, or if
     if (scanNum == 1) && (length(params.scanNum)>1)
-      vals = mrDefaultParamsGUI({{'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)}});
-      % user hit cancel
-      if isempty(vals)
-	return
-      end
-      % otherwise set the variable name
-      params.varname{params.scanNum(scanNum)} = vals.varname;
-      % if we have multiple scans, give the user the option of selecting
-      % the same varaible for all scans
-    else
       vals = mrDefaultParamsGUI({{'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)},...
 			 {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'}});
       % user hit cancel
@@ -90,9 +82,20 @@ for scanNum = 1:length(params.scanNum)
 	  scanNum = length(params.scanNum);
 	end
       end
+    else
+      vals = mrDefaultParamsGUI({{'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)}});
+      % user hit cancel
+      if isempty(vals)
+	return
+      end
+      % otherwise set the variable name
+      params.varname{params.scanNum(scanNum)} = vals.varname;
+      % if we have multiple scans, give the user the option of selecting
+      % the same varaible for all scans
     end
   end
 end
+drawnow;
 
 % create the parameters for the overlay
 dateString = datestr(now);
@@ -137,9 +140,9 @@ for scanNum = params.scanNum
     d = getStimvol(d,params.varname{scanNum});
     % make a stimulation convolution matrix
     d = makescm(d,ceil(params.hdrlen/d.tr));
-    % compute the hemodynamic responses
+    % compute the estimated hemodynamic responses
     d = getr2(d);
-    % update the curernt slice we are working on
+    % update the current slice we are working on
     currentSlice = currentSlice+numSlicesAtATime;
     % cat with what has already been computed for other slices
     ehdr = cat(3,ehdr,d.ehdr);
@@ -155,12 +158,18 @@ for scanNum = params.scanNum
   r2.data{scanNum} = d.r2;
 
   % save other eventRelated parameters
+  erAnal.d{scanNum}.ver = d.ver;
+  erAnal.d{scanNum}.filename = d.filename;
+  erAnal.d{scanNum}.filepath = d.filepath;
+  erAnal.d{scanNum}.dim = d.dim;
   erAnal.d{scanNum}.ehdr = d.ehdr;
   erAnal.d{scanNum}.nhdr = d.nhdr;
   erAnal.d{scanNum}.hdrlen = d.hdrlen;
   erAnal.d{scanNum}.tr = d.tr;
   erAnal.d{scanNum}.stimvol = d.stimvol;
   erAnal.d{scanNum}.scm = d.scm;
+  erAnal.d{scanNum}.expname = d.expname;
+  erAnal.d{scanNum}.fullpath = d.fullpath;
 end
 
 % install analysis
@@ -178,6 +187,19 @@ view = viewSet(view,'newAnalysis',erAnal);
 
 % Save it
 saveAnalysis(view,erAnal.name);
+
+% for output
+if nargout > 1
+  for i = 1:length(d)
+    erAnal.d{i}.r2 = r2.data{i};
+  end
+  % make d strucutre
+  if length(erAnal.d) == 1
+    d = erAnal.d{1}
+  else
+    d = erAnal.d;
+  end
+end
 
 %%%%%%%%%%%%%%%%%%%
 % loadScan
