@@ -7,6 +7,8 @@
 %             parses the variable information, see wiki for details on
 %             format of vairable string
 %
+%	$Id$	
+
 function [vars varinfo] = mrDefaultParamsParse(vars)
 
 % check arguments
