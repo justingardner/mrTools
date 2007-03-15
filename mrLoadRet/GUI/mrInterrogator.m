@@ -12,7 +12,7 @@
 % fignum = figure;
 % imagesc(rand(100,150));
 % mrInterrogator('init',fignum);
-function retval = mrInterrogator(event,fignum,view)
+function retval = mrInterrogator(event,fignum,viewNum)
 
 % check arguments
 if ~any(nargin == [1 2 3])
@@ -32,7 +32,7 @@ gMrInterrogator.fontname = 'Helvetica';
 
 switch (event)
  case 'init'
-   initHandler(fignum,view);
+   initHandler(fignum,viewNum);
  case 'end'
    endHandler;
  case 'mouseMove'
@@ -41,8 +41,27 @@ switch (event)
    mouseUpHandler;
  case 'mouseDown'
    mouseDownHandler;
+ case 'interrogator'
+   interrogatorHandler;
 end
     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% change in interrogator field
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function interrogatorHandler
+
+global gMrInterrogator;
+
+% get new string
+interrogator = get(gMrInterrogator.hInterrogator,'String');
+
+% if not a valid function, go back to old one
+if exist(interrogator)~=2
+  set(gMrInterrogator.hInterrogator,'String',gMrInterrogator.interrogator);
+else
+  gMrInterrogator.interrogator = interrogator;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % test whether mouse is in image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,15 +91,16 @@ if mouseInImage(x,y)
   set(gMrInterrogator.fignum,'pointer','fullcrosshair');
   % convert to overlay coordinats
   % set the xpos/ypos textbox 
-  set(gMrInterrogator.hX,'String',sprintf('x=%i',x));
-  set(gMrInterrogator.hY,'String',sprintf('y=%i',y));
+  set(gMrInterrogator.hPos,'String',sprintf('[%i %i %i]',x,y,s));
 else
   % set pointer to arrow
   set(gMrInterrogator.fignum,'pointer','arrow');
   % set strings to empty
-  set(gMrInterrogator.hX,'String','');
-  set(gMrInterrogator.hY,'String','');
+  set(gMrInterrogator.hPos,'String','');
 end
+
+% eval the old handler
+eval(gMrInterrogator.windowButtonMotionFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get current mouse position in image coordinates
@@ -94,12 +114,20 @@ xpos = round(pointerLoc(1,1));ypos=round(pointerLoc(1,2));
 
 % get the coordinate mapping
 global MLR;
-view = MLR.views{end};
-coords = viewGet(view,'curSliceBaseCoords');
+view = MLR.views{gMrInterrogator.viewNum};
+coords = viewGet(view,'curSliceOverlayCoords');
+if isempty(coords)
+  coords = viewGet(view,'curSliceBaseCoords');
+  % FIX FIX FIX this assumes 1/2 coords, there 
+  % should always be a coords that knows about 
+  % the epi, not just the overlay
+  coords(:,:,1) = round(coords(:,:,1)/2);
+  coords(:,:,2) = round(coords(:,:,2)/2);
+end
 
 if (xpos >= 1) && (xpos <= size(coords,2)) && (ypos >= 1) && (ypos <= size(coords,1))
-  x = coords(ypos,xpos,1);
-  y = coords(ypos,xpos,2);
+  x = round(coords(ypos,xpos,1));
+  y = round(coords(ypos,xpos,2));
   s = viewGet(view,'currentSlice');
 else
   x = nan;
@@ -111,6 +139,11 @@ end
 % mouseup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mouseUpHandler(fignum)
+
+global gMrInterrogator;
+
+% eval the old handler
+eval(gMrInterrogator.windowButtonUpFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mouseup
@@ -125,14 +158,16 @@ global gMrInterrogator;
 if mouseInImage(x,y)
   % Draw graph
   global MLR;
-  view = MLR.views{end};
+  view = MLR.views{gMrInterrogator.viewNum};
   overlayNum = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
   interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
   scanNum = viewGet(view,'currentScan');
   feval(interrogator,view,overlayNum,scanNum,x,y,s);
-  disp(sprintf('Mouse at %i %i %i',x,y,s));
 end
+
+% eval the old handler
+eval(gMrInterrogator.windowButtonDownFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % end the mrInterrogator
@@ -150,23 +185,34 @@ set(gMrInterrogator.fignum,'WindowButtonUpFcn',gMrInterrogator.windowButtonUpFcn
 set(gMrInterrogator.fignum,'pointer',gMrInterrogator.pointer);
 
 % turn off the text boxes
-set(gMrInterrogator.hX,'visible','off');
-set(gMrInterrogator.hY,'visible','off');
+set(gMrInterrogator.hPos,'visible','off');
+set(gMrInterrogator.hInterrogator,'visible','off');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % init the interrogator handler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function initHandler(fignum,view)
+function initHandler(fignum,viewNum)
 
 global gMrInterrogator;
+
+% see if this is a restart
+restart = 0;
+if isfield(gMrInterrogator,'fignum') && isequal(gMrInterrogator.fignum,fignum)
+  disp('(mrInterrogator) Restarting');
+  restart = 1;
+end
+
+% get figure handles
 gMrInterrogator.fignum = fignum;
 gMrInterrogator.guide = guidata(fignum);
 figure(fignum);gMrInterrogator.axesnum = gMrInterrogator.guide.axis;
 
-% remember old callbacks
-gMrInterrogator.windowButtonMotionFcn = get(fignum,'WindowButtonMotionFcn');
-gMrInterrogator.windowButtonDownFcn = get(fignum,'WindowButtonDownFcn');
-gMrInterrogator.windowButtonUpFcn = get(fignum,'WindowButtonUpFcn');
+if ~restart
+  % remember old callbacks
+  gMrInterrogator.windowButtonMotionFcn = get(fignum,'WindowButtonMotionFcn');
+  gMrInterrogator.windowButtonDownFcn = get(fignum,'WindowButtonDownFcn');
+  gMrInterrogator.windowButtonUpFcn = get(fignum,'WindowButtonUpFcn');
+end
 
 % set the callbacks appropriately
 set(fignum,'WindowButtonMotionFcn',sprintf('mrInterrogator(''mouseMove'')'));
@@ -176,9 +222,14 @@ set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'')'));
 % set pointer to crosshairs
 gMrInterrogator.pointer = get(fignum,'pointer');
 
-% set the x and y textbox
-gMrInterrogator.hX = makeTextbox('',1,2,1);
-gMrInterrogator.hY = makeTextbox('',1,1,1);
+if ~restart
+  % set the x and y textbox
+  gMrInterrogator.hPos = makeTextbox('',1,2,2);
+  gMrInterrogator.hInterrogator = makeTextentry('test','interrogator',1,5,3);
+else
+  set(gMrInterrogator.hPos,'visible','on');
+  set(gMrInterrogator.hInterrogator,'visible','on');
+end
 
 % set the x/y min/max
 a = axis(gMrInterrogator.axesnum);
@@ -188,7 +239,15 @@ gMrInterrogator.ymin = a(3);
 gMrInterrogator.ymax = a(4);
 
 % set info for callback
-gMrInterrogator.view = view;
+gMrInterrogator.viewNum = viewNum;
+
+% set interrogator field
+global MLR;
+view = MLR.views{viewNum};
+overlayNum = viewGet(view,'currentOverlay');
+analysisNum = viewGet(view,'currentAnalysis');
+gMrInterrogator.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+set(gMrInterrogator.hInterrogator,'String',gMrInterrogator.interrogator);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextbox makes an uneditable text box.
@@ -197,6 +256,22 @@ function h = makeTextbox(displayString,rownum,colnum,uisize)
 
 global gMrInterrogator;
 h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gMrInterrogator.fontsize,'FontName',gMrInterrogator.fontname,'HorizontalAlignment','Center');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% makeTextentry makes a uicontrol to handle text entry
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function h = makeTextentry(displayString,callback,rownum,colnum,uisize)
+
+% make callback string
+if isnumeric(callback)
+  callback = sprintf('mrInterrogator(%f)',callback);
+else
+  callback = sprintf('mrInterrogator(''%s'')',callback);
+end  
+
+global gMrInterrogator;
+
+h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gMrInterrogator.fontsize,'FontName',gMrInterrogator.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol

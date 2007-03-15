@@ -48,7 +48,12 @@ if ~isempty(overlayNum) & ~isempty(overlayCoords)
 		overlayIm = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
 			interpMethod,interpExtrapVal);
 		overlayCmap = viewGet(view,'overlayCmap',overlayNum);
-		overlayRange = viewGet(view,'overlayRange',overlayNum);
+		overlayRange = viewGet(view,'overlayRange', overlayNum);
+		if strcmp(viewGet(view,'overlayCtype',overlayNum),'setRangeToMax')
+		  clip = viewGet(view,'overlayClip',overlayNum);
+		  overlayRange(1) = clip(1);
+		  overlayRange(2) = min(max(overlayIm(:)),clip(2));
+		end
 		overlayRGB = rescale2rgb(overlayIm,overlayCmap,overlayRange);
 	end
 end

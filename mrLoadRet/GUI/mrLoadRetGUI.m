@@ -1226,41 +1226,14 @@ function plotMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function interrogateOverlayMenuItem_Callback(hObject, eventdata, handles)
+
 mrGlobals;
+% start the mrInterrogator
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 fig = viewGet(view,'figNum');
-mrInterrogator('init',fig,view);
+mrInterrogator('init',fig,viewNum);
 return
-keyboard
-overlayNum = viewGet(view,'currentOverlay');
-analysisNum = viewGet(view,'currentAnalysis');
-interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
-if isempty(interrogator)
-    mrErrorDlg('Interrogate Overlay: invalide interrogator function');
-end
-scan = viewGet(view,'currentScan');
-slice = viewGet(view,'currentSlice');
-overlayCoords = viewGet(view,'cursliceoverlaycoords');
-
-gui = guidata(fig);
-
-h = mrMsgBox('Left click to select voxel. Right click to quit.',1);
-button = 1;
-while (button ~=3)
-	% Select main axes of view figure for user input
-	set(0,'CurrentFigure',fig);
-	set(fig,'CurrentAxes',gui.axis);
-	[i,j,button] = ginput(1);
-	j = round(j);
-	i = round(i);
-	x = round(overlayCoords(j,i,1));
-	y = round(overlayCoords(j,i,2));
-	z = round(overlayCoords(j,i,3));
-	% Draw graph
-	feval(interrogator,view,overlayNum,scan,x,y,z);
-end
-mrCloseDlg(h);
 
 % --------------------------------------------------------------------
 function plotMeanTseriesMenu_Callback(hObject, eventdata, handles)

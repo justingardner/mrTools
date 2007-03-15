@@ -43,6 +43,7 @@ else
   params.paramsInfo = paramsInfo;
   params = mrDefaultParamsReconcileParams(params.groupName,params);
 end
+drawnow;
 
 % Abort if params empty
 if ieNotDefined('params'),return,end
@@ -134,7 +135,7 @@ for iscan = 1:length(params.scanList)
 
     disppercent(-inf, 'Converting to percent signal change');
     for i = 1:d.dim(4)
-      d.data(:,:,:,i) = d.data(:,:,:,i)./d.mean;
+      d.data(:,:,:,i) = (d.data(:,:,:,i)./d.mean)-1;
       if params.percentSignal == 2           % scale it to mean of 1,000
           params.scaleFactor = 10000;
           d.data(:,:,:,i) = d.data(:,:,:,i) * params.scaleFactor;
@@ -161,6 +162,7 @@ for iscan = 1:length(params.scanList)
     scanParams.originalGroupName{1} = baseGroupName;
     hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.scanList(1)));
     hdr.datatype = 16;                  % data *MUST* be written out as float32 b/c of the small values!!! -epm
+
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
     saveScanNum = viewGet(viewConcat,'nScans');
