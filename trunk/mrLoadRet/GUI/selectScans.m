@@ -1,6 +1,5 @@
 function scanList = selectScans(view,title)
 % scanList = selectScans(view,[title]);
-%	$Id$	
 %
 %   Gather a list of scans available in Inplane/TSeries
 %   and query the user for a sub-selection.
@@ -17,6 +16,8 @@ function scanList = selectScans(view,title)
 % 4/16/99  dbr Initial code
 % 3/30/2001, djh, added optional title string
 % 11/9/06 jlg mrLoadRet 4 conversion
+%
+% $Id$	
 
 if ieNotDefined('title')
   title = 'Choose scans';
