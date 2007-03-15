@@ -1,5 +1,6 @@
 % concatTSeries.m
 %
+%        $Id$
 %      usage: concatTSeries(view, params)
 %         by: justin gardner
 %       date: 10/12/06
@@ -120,20 +121,30 @@ for iscan = 1:length(params.scanList)
   % do other  processing here
   if params.filterType == 1
     d = myhighpass(d,params.filterCutoff);
+  elseif params.filterType == 2
+      d = detrendTSeries(d)
   end
-
+    
   % convert to percent signal change
+  warning off                           % to avoid divide by zero warnings...
   if params.percentSignal
     d.mean = mean(d.data,4);
     % for means that are zero, divide by nan
     d.mean(d.mean==0) = nan;
+
     disppercent(-inf, 'Converting to percent signal change');
     for i = 1:d.dim(4)
       d.data(:,:,:,i) = d.data(:,:,:,i)./d.mean;
+      if params.percentSignal == 2           % scale it to mean of 1,000
+          params.scaleFactor = 10000;
+          d.data(:,:,:,i) = d.data(:,:,:,i) * params.scaleFactor;
+      end
       disppercent(i/d.dim(4));
     end
     disppercent(inf);
   end
+  warning on
+  d.data(isnan(d.data))=0;              % b/c nan's can be annoying 
   
   % get the path and filename
   [path,filename,ext,versn] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
@@ -149,6 +160,7 @@ for iscan = 1:length(params.scanList)
     scanParams.originalFileName{1} = filename;
     scanParams.originalGroupName{1} = baseGroupName;
     hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.scanList(1)));
+    hdr.datatype = 16;                  % data *MUST* be written out as float32 b/c of the small values!!! -epm
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
     saveScanNum = viewGet(viewConcat,'nScans');
@@ -239,3 +251,8 @@ newacqlen = length(newacqpos);
 putnewacqpos = (lastacq+acqspace):(lastacq+acqspace+newacqlen-1);
 % put the stim traces there too
 concatInfo.traces(:,putnewacqpos) = newTraces(:,newacqpos);
+
+
+function[d] = detrendTseries(d)
+fprint('not functional yet')
+ 
