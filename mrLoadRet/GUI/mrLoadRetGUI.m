@@ -1229,6 +1229,10 @@ function interrogateOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
+fig = viewGet(view,'figNum');
+mrInterrogator('init',fig,view);
+return
+keyboard
 overlayNum = viewGet(view,'currentOverlay');
 analysisNum = viewGet(view,'currentAnalysis');
 interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
@@ -1238,7 +1242,7 @@ end
 scan = viewGet(view,'currentScan');
 slice = viewGet(view,'currentSlice');
 overlayCoords = viewGet(view,'cursliceoverlaycoords');
-fig = viewGet(view,'figNum');
+
 gui = guidata(fig);
 
 h = mrMsgBox('Left click to select voxel. Right click to quit.',1);
