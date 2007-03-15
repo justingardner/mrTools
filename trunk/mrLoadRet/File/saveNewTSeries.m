@@ -19,6 +19,9 @@ function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr)
 %
 % hdr: template for nifti header. The header is always passed through
 % cbiCreateNiftiHeader to ensure consistency with the data. Default: [];
+%
+% $Id$
+%
 
 if ieNotDefined('scanParams')
 	scanParams.fileName = [];
