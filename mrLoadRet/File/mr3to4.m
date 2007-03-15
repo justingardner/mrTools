@@ -198,6 +198,8 @@ end
 m.groups(2).name = 'MotionComp';
 m.groups(2).scanParams = m.groups(1).scanParams;
 for i = 1:length(filenames)
+  m.groups(2).scanParams(i).originalFileName{1} = m.groups(2).scanParams(i).fileName;
+  m.groups(2).scanParams(i).originalGroupName{1} = 'Raw';
   m.groups(2).scanParams(i).fileName = filenames{i};
   m.groups(2).auxParams(i).auxParams = 1;
 end
