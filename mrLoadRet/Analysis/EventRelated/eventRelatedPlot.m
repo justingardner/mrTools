@@ -1,4 +1,4 @@
-function eventRelatedPlot(view,overlayNum,scan,x,y,z)
+function eventRelatedPlot(view,overlayNum,scan,x,y,s)
 % eventRelatedPlot.m
 %
 %      usage: eventRelatedPlot()
@@ -16,21 +16,29 @@ end
 
 % get the analysis structure
 analysis = viewGet(view,'analysis');
-d = analysis.d;
+d = analysis.d{scan};
 
 % get the estimated hemodynamic responses
-ehdr = gethdr(d,x,y,z);
+[ehdr time] = gethdr(d,x,y,s);
 
 % select the window to plot into
 selectGraphWin;
 
+global MLR;
+fignum = MLR.graphFigure;
+
+% turn off menu/title etc.
+set(fignum,'MenuBar','none');
+set(fignum,'NumberTitle','off');
+set(fignum,'Name','eventRelatedPlot');
+
 % and display
-time = d.tr/2:d.tr:(d.hdrlen*d.tr);
 for i = 1:d.nhdr
-  plot(time,ehdr(i,:),getcolor(i,'.-'));
+  h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,'-')),'MarkerSize',8);
+  set(h,'MarkerFaceColor',getcolor(i));
   hold on
 end
 xlabel('Time (sec)');
 ylabel('% Signal change');
-title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,z,d.r2(x,y,z)));
+title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays.data{scan}(x,y,s)));
 xaxis(0,d.hdrlen*d.tr);
