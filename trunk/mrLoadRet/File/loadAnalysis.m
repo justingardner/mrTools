@@ -49,6 +49,10 @@ else
 		pathStr = {fullfile(startPathStr,pathStr)};
 	end
 end
+if isempty(pathStr)
+  return
+end
+
 if ~iscell(pathStr)
     pathStr = {pathStr};
 end

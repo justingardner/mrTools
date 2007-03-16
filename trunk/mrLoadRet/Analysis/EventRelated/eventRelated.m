@@ -65,33 +65,42 @@ for scanNum = 1:length(params.scanNum)
   % ask the user what the variable name is that they want ot use for the analysis
   if strfind(stimfile{1}.filetype,'mgl')
     [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
-    % either ask the user for the single variable name, or if
+    taskVarParams = {};
+    % if there is more than one task, then ask the user for that
+    if length(stimfile{1}.task)>1
+      taskVarParams{end+1} = {'taskNum',num2cell(1:length(stimfile{1}.task)),'The task you want to use'};
+    end
+    % if there are multiple phases, then ask for that
+    maxPhaseNum = 0;
+    for tnum = 1:length(stimfile{1}.task)
+      phaseNum{tnum} = num2cell(1:length(stimfile{1}.task{tnum}));
+      maxPhaseNum = max(maxPhaseNum,length(stimfile{1}.task{tnum}));
+    end
+    if maxPhaseNum > 1
+      if length(stimfile{1}.task) == 1
+	taskVarParams{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
+      else
+	taskVarParams{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
+      end
+    end
+    % set up to get the variable name from the user
+    taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
+    % give the option to use the same variable for all
     if (scanNum == 1) && (length(params.scanNum)>1)
-      vals = mrDefaultParamsGUI({{'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)},...
-			 {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'}});
-      % user hit cancel
-      if isempty(vals)
-	return
+      taskVarParams{end+1} = {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'};
+    end
+    % either ask the user for the single variable name, or if
+    varname = mrDefaultParamsGUI(taskVarParams);
+    % user hit cancel
+    if isempty(varname),return, end
+    % otherwise set the variable name
+    params.varname{params.scanNum(scanNum)} = varname;
+    % and set it for all scans if called for
+    if isfield(varname,'sameForAll') && varname.sameForAll
+      for i = 1:length(params.scanNum)
+	params.varname{params.scanNum(i)} = varname;
+	scanNum = length(params.scanNum);
       end
-      % otherwise set the variable name
-      params.varname{params.scanNum(scanNum)} = vals.varname;
-      % and set it for all scans if called for
-      if vals.sameForAll
-	for i = 1:length(params.scanNum)
-	  params.varname{params.scanNum(i)} = vals.varname;
-	  scanNum = length(params.scanNum);
-	end
-      end
-    else
-      vals = mrDefaultParamsGUI({{'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)}});
-      % user hit cancel
-      if isempty(vals)
-	return
-      end
-      % otherwise set the variable name
-      params.varname{params.scanNum(scanNum)} = vals.varname;
-      % if we have multiple scans, give the user the option of selecting
-      % the same varaible for all scans
     end
   end
 end
@@ -125,7 +134,7 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  numSlicesAtATime = floor(250000000/(8*numVolumes*prod(dims(1:2))));
+  numSlicesAtATime = floor(50000000/(8*numVolumes*prod(dims(1:2))));
   currentSlice = 1;
   ehdr = [];thisr2 = [];
 
@@ -342,140 +351,3 @@ for i = 1:nhdr
   stimvol{i} = round(stimtimes_s{i} / tr);
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% getStimvolFromVarname uses mgl/task encoded var names
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stimvolOut = getStimvolFromVarname(varnameIn,myscreen,task)
-
-% check arguments
-if ~any(nargin == [3])
-  help getStimvolFromVarname
-  return
-end
-
-% first make varname into a cell array of cell arrays.
-if isstr(varnameIn)
-  varname{1}{1} = varnameIn;
-else
-  % see if this is a cell array of strings
-  isArrayOfStr = 1;
-  for i = 1:length(varnameIn)
-    if ~isstr(varnameIn{i})
-      isArrayOfStr = 0;
-    end
-  end
-  %  now if it is an array of strings, then
-  % we only have one condition
-  if isArrayOfStr
-    varname{1} = varnameIn;
-  else
-    for i = 1:length(varnameIn)
-      if isstr(varnameIn{i})
-	varname{i}{1} = varnameIn{i};
-      else
-	varname{i} = varnameIn{i};
-      end
-    end
-  end
-end
-% get the task parameters
-e = getTaskParameters(myscreen,task);
-% now cycle over all array elements
-for i = 1:length(varname)
-  stimvol{i} = {};
-  stimnames{i} = {};
-  % cycle over all strings in varname
-  for j = 1:length(varname{i})
-    % get the value of the variable in question
-    % on each trial
-    [thisvarname varval enum] = getVarFromParameters(varname{i}{j},e);
-    % see if it is a strict variable name
-    if isempty(strfind(varname{i}{j},'='))
-      % if it is then for each particular setting
-      % of the variable, we make a stim type
-      vartypes = unique(sort(varval));
-      for k = 1:length(vartypes)
-	stimvol{i}{end+1} = varval==vartypes(k);
-	stimnames{i}{end+1} = sprintf('%s=%s',varname{i}{j},num2str(vartypes(k)));
-      end
-    end
-  end
-  % now we cycle through again, looking for any modifiers
-  % that is, if we have something like varname=[1 2 3] then
-  % it means that we only add the variable in, if it has
-  % that var set appropriately. 
-  for j = 1:length(varname{i})
-    % get the value of the variable in question
-    % on each trial
-    [thisvarname varval enum] = getVarFromParameters(varname{i}{j},e);
-    % see if it is a conditional variable, that is,
-    % one that is like var=[1 2 3].
-    if ~isempty(strfind(varname{i}{j},'='))
-      [t,r] = strtok(varname{i}{j},'=');
-      varcond = strtok(r,'=');
-      % if it is then get the conditions
-      varval = eval(sprintf('ismember(varval,%s)',varcond));
-      % if we don't have any applied conditions applied, then
-      % this is the condition
-      if isempty(stimvol{i})
-	stimvol{i}{1} = varval;
-      else
-	for k = 1:length(stimvol{i})
-	  stimvol{i}{k} = stimvol{i}{k} & varval;
-	  stimnames{i}{k} = sprintf('%s %s=%s',stimnames{i}{k},thisvarname,varcond);
-	end
-      end
-    end
-  end
-end
-% find stimvols and put into structure
-stimvolOut = {};
-for i = 1:length(stimvol)
-  for j = 1:length(stimvol{i})
-    % if we have a cell array of e that means there were multiple
-    % tasks running, so we have to select the correct task
-    if iscell(e)
-      stimvolOut{end+1} = e{enum}.trialVolume(stimvol{i}{j});
-    else
-      stimvolOut{end+1} = e{enum}.trialVolume(stimvol{i}{j});
-    end
-  end
-end
-
-% check for non-unique conditions
-if length(cell2mat(stimvolOut)) ~= length(unique(cell2mat(stimvolOut)))
-  disp(sprintf('(getstimvol) Same trial in multiple conditions.'));
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%
-% get a variable name from task parameters, could be
-% in parameter or randVars
-%%%%%%%%%%%%%%%%%%%%%%%%
-function [varname varval enum] = getVarFromParameters(varname,e)
-
-if ~iscell(e)
-  olde = e;
-  clear e;
-  e{1} = olde;
-end
-
-varval = '';
-enum = [];
-
-% remove any equal sign
-varname = strtok(varname,'=');
-for i = 1:length(e)
-  % see if it is a parameter
-  if isfield(e{i}.parameter,varname)
-    varval = e{i}.parameter.(varname);
-    enum = i;
-    % or a rand var
-  elseif isfield(e{i},'randVars') && isfield(e{i}.randVars,varname)
-    varval = e{i}.randVars.(varname);
-    enum = i;
-  end
-end
-
-if isempty(varval)
-  disp(sprintf('(getstimvol) Could not find variable name %s',varname));
-end 
