@@ -349,24 +349,24 @@ switch lower(param)
         [s g] = getScanAndGroup(view,varargin,param);
         stimFileName = viewGet(view,'stimFileName',s,g);
         val = {};
+	% cycle over all stimfiles (concatenations and averages,
+        % may have several stimfiles).
         if ~isempty(stimFileName)
-            for j = 1:length(stimFileName)
-                myscreen = [];
-                mylog = [];
-                if ~isfile(stimFileName{j})
-                    mrErrorDlg(sprintf('viewGet %s: Could not find stimfile %s',param,stimFileName{j}));
-                else
-                    load(stimFileName{j});
-                end
-                if isempty(myscreen)
-                    val{j} = mylog;
-                    val{j}.filetype = 'eventtimes';
-                else
-                    val{j} = myscreen;
-                    val{j}.filetype = 'traces';
-                end
-            end
-        end
+	  for j = 1:length(stimFileName)
+	    % load this stimfile
+	    if ~isfile(stimFileName{j})
+	      mrErrorDlg(sprintf('viewGet %s: Could not find stimfile %s',param,stimFileName{j}));
+	    else
+	      val{j}=load(stimFileName{j});
+	    end
+	    % check to see what type it is, and set the field appropriately
+	    if isfield(val{j},'mylog')
+	      val{j}.filetype = 'eventtimes';
+	    elseif isfield(val{j},'myscreen')
+	      val{j}.filetype = 'mgl';
+	    end
+	  end
+	end
     case {'stimfilename'}
         % stimFileName = viewGet(view,'stimFileName',scanNum,[groupNum]);
         % stimFileName is returned as a cell array of all stimfiles
@@ -1416,6 +1416,42 @@ switch lower(param)
                 val = analysis.overlays(overlayNum).colormap;
             end
         end
+    case {'overlayctype'}
+        % overlaycmap = viewGet(view,'overlaycmap',[overlayNum],[analysisNum])
+        % overlaycmap = viewGet(view,'overlaycmap',overlayNum,[])
+        % overlaycmap = viewGet(view,'overlaycmap',[],analysisNum)
+        % overlaycmap = viewGet(view,'overlaycmap',[],[])
+        % overlaycmap = viewGet(view,'overlaycmap',overlayNum)
+        % overlaycmap = viewGet(view,'overlaycmap')
+        if ieNotDefined('varargin')
+            analysisNum = viewGet(view,'currentAnalysis');
+            overlayNum = viewGet(view,'currentOverlay',analysisNum);
+        end
+        switch (length(varargin))
+            case 1
+                overlayNum = varargin{1};
+                analysisNum = viewGet(view,'currentAnalysis');
+            case 2
+                overlayNum = varargin{1};
+                analysisNum = varargin{2};
+        end
+        if isempty(analysisNum)
+            analysisNum = viewGet(view,'currentAnalysis');
+        end
+        if isempty(overlayNum)
+            overlayNum = viewGet(view,'currentOverlay',analysisNum);
+        end
+        analysis = viewGet(view,'analysis',analysisNum);
+        if ~isempty(analysis) & ~isempty(analysis.overlays)
+            n = viewGet(view,'numberofOverlays',analysisNum);
+            if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+	      if isfield(analysis.overlays(overlayNum),'colormapType')
+		val = analysis.overlays(overlayNum).colormapType;
+	      else
+		val = 'normal';
+	      end
+            end
+        end
     case {'overlayrange'}
         % overlayrange = viewGet(view,'overlayrange',[overlayNum],[analysisNum])
         % overlayrange = viewGet(view,'overlayrange',overlayNum,[])
@@ -1544,7 +1580,9 @@ switch lower(param)
                 val = analysis.overlays(overlayNum).interrogator;
             end
         end
-
+	if isempty(val)
+	  val = 'mrDefaultInterrogator';
+	end
         % corAnal
     case {'coranal'}
         % corAnal = viewGet(view,'corAnal')
