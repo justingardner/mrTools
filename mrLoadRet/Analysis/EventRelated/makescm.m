@@ -25,7 +25,7 @@ end
 % if we have only a single run then we set
 % the runTransitions for that single run
 if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
-  runTranstion = [1 d.dim(4)];
+  runTransition = [1 d.dim(4)];
 else
   runTransition = d.concatInfo.runTransition;
 end

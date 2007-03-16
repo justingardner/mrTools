@@ -161,9 +161,8 @@ if mouseInImage(x,y)
   view = MLR.views{gMrInterrogator.viewNum};
   overlayNum = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
-  interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
   scanNum = viewGet(view,'currentScan');
-  feval(interrogator,view,overlayNum,scanNum,x,y,s);
+  feval(gMrInterrogator.interrogator,view,overlayNum,scanNum,x,y,s);
 end
 
 % eval the old handler

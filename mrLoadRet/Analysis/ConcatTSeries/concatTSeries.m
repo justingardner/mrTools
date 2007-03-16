@@ -23,7 +23,7 @@ paramsInfo = {...
     {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
     {'percentSignal',1,'type=checkbox','Convert to percent signal change'},...
     {'warp',0,'type=checkbox','Warp images based on alignment (not implemented yet)'},...
-    {'warpInterpMethod',{'nearest','bilinear'},'Interpolation method for warp (not implemented yet)'}
+    {'warpInterpMethod',{'nearest','bilinear'},'Interpolation method for warp (not implemented yet)','contingent=warp'}
 	     };
 % First get parameters
 if ieNotDefined('params')
@@ -135,7 +135,7 @@ for iscan = 1:length(params.scanList)
 
     disppercent(-inf, 'Converting to percent signal change');
     for i = 1:d.dim(4)
-      d.data(:,:,:,i) = (d.data(:,:,:,i)./d.mean)-1;
+      d.data(:,:,:,i) = (d.data(:,:,:,i)./d.mean);
       if params.percentSignal == 2           % scale it to mean of 1,000
           params.scaleFactor = 10000;
           d.data(:,:,:,i) = d.data(:,:,:,i) * params.scaleFactor;

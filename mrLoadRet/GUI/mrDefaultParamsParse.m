@@ -81,3 +81,27 @@ for i = 1:length(vars)
     end
   end
 end
+
+% now check any contingencies
+for i = 1:length(varinfo)
+  if isfield(varinfo{i},'contingent')
+    % go look for the control variable and set it to 
+    % have a pointer to this variable
+    foundControlVariable = 0;
+    for j = 1:length(varinfo)
+      if strcmp(varinfo{i}.contingent,varinfo{j}.name)
+	foundControlVariable = 1;
+	varinfo{i}.contingentOn = j;
+	if ~isfield(varinfo{j},'controls')
+	  varinfo{j}.controls = i;
+	else
+	  varinfo{j}.controls(end+1) = i;
+	end
+      end
+    end
+    if ~foundControlVariable
+      disp(sprintf('Control variable for %s (%s) not found, ignoring contingency',varinfo{i}.name,varinfo{i}.contingent));
+    end
+  end
+end
+
