@@ -1,6 +1,6 @@
-% mrDefaultParamsReconcile.m
+% mrParamsReconcile.m
 %
-%      usage: mrDefaultParamsReconcile(params)
+%      usage: mrParamsReconcile(params)
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: A default params reconcile. This does not necessarily
@@ -8,11 +8,11 @@
 %             but if it is, then there will be a paramInfo field (for format
 %             see wiki), and variables will be validated against that structure
 %
-function [params data] = mrDefaultParamsReconcile(groupName,params,data)
+function [params data] = mrParamsReconcile(groupName,params,data)
 
 % check arguments
 if ~any(nargin == [1 2 3])
-  help mrDefaultParamsReconcile
+  help mrParamsReconcile
   return
 end
 
@@ -20,7 +20,7 @@ end
 % mrDefaultParamsGUI and we can check the parameters 
 % for consistency
 if isfield(params,'paramInfo')
-  [vars varinfo] = mrDefaultParamsParse(params.paramInfo);
+  [vars varinfo] = mrParamsParse(params.paramInfo);
   for i = 1:length(varinfo)
     useDefault = 0;
     % make sure the field exists
@@ -36,10 +36,10 @@ if isfield(params,'paramInfo')
 	% also check if there is a minmax
 	if isfield(varinfo{i},'minmax')
 	  if params.(varinfo{i}.name) < varinfo{i}.minmax(1)
-	    disp(sprintf('(mrDefaultParamsReconcile) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo.minmax(1)));
+	    disp(sprintf('(mrParamsReconcile) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo.minmax(1)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(1);
 	  elseif params.(varinfo{i}.name) > varinfo{i}.minmax(2)
-	    disp(sprintf('(mrDefaultParamsReconcile) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo.minmax(2)));
+	    disp(sprintf('(mrParamsReconcile) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo.minmax(2)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(2);
 	  end
 	end
@@ -63,9 +63,9 @@ if isfield(params,'paramInfo')
 	params.(varinfo{i}.name) = varinfo{i}.value{1};
       end
       if isnumeric(params.(varinfo{i}.name))
-	disp(sprintf('(mrDefaultParamsReconcile) Using default value for %s (%s)',varinfo{i}.name,num2str(params.(varinfo{i}.name))));
+	disp(sprintf('(mrParamsReconcile) Using default value for %s (%s)',varinfo{i}.name,num2str(params.(varinfo{i}.name))));
       else
-	disp(sprintf('(mrDefaultParamsReconcile) Using default value for %s (%s)',varinfo{i}.name,params.(varinfo{i}.name)));
+	disp(sprintf('(mrParamsReconcile) Using default value for %s (%s)',varinfo{i}.name,params.(varinfo{i}.name)));
       end
     end
   end

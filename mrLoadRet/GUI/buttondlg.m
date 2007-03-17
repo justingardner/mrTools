@@ -60,12 +60,14 @@ h = figure('MenuBar','none',...
     'Resize','off',...
     'NumberTitle','off');
 
+
 % set the figure position
 figpos = get(h,'Position');
 figpos(3:4) = [width*xs,height*ys];
-global MLR;
-if isfield(MLR,'figpos') && isfield(MLR.figpos,'buttondlg')
-  figpos(1:2) = MLR.figpos.buttondlg(1:2);
+
+mrGlobals;
+if isfield(MLR,'figloc') && isfield(MLR.figloc,'buttondlg')
+  figpos(1:2) = MLR.figloc.buttondlg(1:2);
 end
 set(h,'Position',figpos);
 
@@ -149,6 +151,6 @@ else
 end
 
 figpos = get(h,'Position');
-MLR.figpos.buttondlg = figpos;
+MLR.figloc.buttondlg = figpos;
 close(h)
 

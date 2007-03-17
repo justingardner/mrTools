@@ -31,6 +31,12 @@ plot(tSeries,'k.-');
 title(sprintf('Voxel: [%i %i %i]',x,y,s));
 xlabel('Volumes');
 ylabel('fMRI Signal');
+axis tight;
+% draw borders between rund
+concatInfo = viewGet(view,'concatInfo',scan);
+if ~isempty(concatInfo)
+  vline(concatInfo.runTransition(2:end,1)-1,'r-');
+end
 
 subplot(2,1,2);
 fftTSeries = fft(tSeries);
@@ -41,3 +47,4 @@ plot(abs(fftTSeries(1:length(fftTSeries)/2)),'k.-');
 title(sprintf('Voxel: [%i %i %i]',x,y,s));
 xlabel('FFT components');
 ylabel('FFT of fMRI Signal');
+axis tight;

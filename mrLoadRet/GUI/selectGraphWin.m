@@ -22,4 +22,8 @@ end
 if ieNotDefined('noClear') | (noClear == 0)
   clf
 end  
+
+if isfield(MLR.figloc,'graphFigure')
+  set(h,'Position',MLR.figloc.graphFigure);
+end
 return;
