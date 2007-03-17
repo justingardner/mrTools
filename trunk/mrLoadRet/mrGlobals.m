@@ -34,6 +34,17 @@ if isempty(MLR)
     
     % Initialize graph window
     MLR.graphFigure = [];
+
+    % Init the figloc
+    MLR.figloc = [];
+
+    % read the default figlocs
+    if isfile('~/.mrDefaults.mat')
+      mrDefaults = load('~/.mrDefaults.mat');
+      if isfield(mrDefaults,'figloc')
+	MLR.figloc = mrDefaults.figloc;
+      end
+    end
     
     % Inform user that mrLoadRet has started up
     disp(['mrLoadRet ',num2str(MLR.version),', Matlab ',matlabVersion]);
@@ -41,3 +52,4 @@ if isempty(MLR)
     % Clean up
     clear expectedMatlabVersion version matlabVersion session groups mlrVersion
 end
+
