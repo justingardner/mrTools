@@ -277,12 +277,13 @@ if ~strcmp(gParams.varinfo{varnum}.type,'string')
 	  set(gParams.ui.varentry(i),'Enable','on');
 	end
 	% if the controlled field is a popupmenu and has
-	% a cell of cells for its value and that is bounds
+	% a cell of cells for its value and that is in bounds
 	% then select it
 	if strcmp(gParams.varinfo{i}.type,'popupmenu') 
 	  if iscell(gParams.varinfo{i}.value{1})
 	    if (val >=1) && (val <= length(gParams.varinfo{i}.value))
 	      set(gParams.ui.varentry(i),'String',gParams.varinfo{i}.value{val});
+	      set(gParams.ui.varentry(i),'Value',1);
 	    end
 	  end
 	end
