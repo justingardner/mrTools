@@ -1,16 +1,16 @@
-% mrDefaultParamsGUI.m
+% mrtParamsDialog.m
 %
-%      usage: mrDefaultParamsGUI()
+%      usage: mrParamsDialog()
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: creates a dialog for selection of parameters
 %             see wiki for details
 %
-function params = mrDefaultParamsGUI(varargin)
+function params = mrParamsDialog(varargin)
 
 % check arguments
 if ~any(nargin == [1 2])
-  help mrDefaultParamsGUI
+  help mrParamsDialog
   return
 end
 
@@ -31,7 +31,7 @@ function params = initFigure(vars)
 global gParams;
 
 % parse the input parameter string
-[vars varinfo] = mrDefaultParamsParse(vars);
+[vars varinfo] = mrParamsParse(vars);
 gParams.varinfo = varinfo;
 
 % get variable names
@@ -57,13 +57,15 @@ else
   figure(gParams.fignum);
 end
 
+mrGlobals;
+
 numrows = length(gParams.varinfo)+1;
 numcols = 4;
 % set height of figure according to how many rows we have
-if ~isfield(gParams,'figpos')
-  figpos = get(gParams.fignum,'Position');
+if isfield(MLR.figloc,'mrParamsDialog')
+  figpos = MLR.figloc.mrParamsDialog;
 else
-  figpos = gParams.figpos;
+  figpos = get(gParams.fignum,'Position');
 end
 figpos(4) = 2*gParams.topMargin+numrows*gParams.buttonHeight+(numrows-1)*gParams.margin;
 figpos(3) = 2*gParams.leftMargin+numcols*gParams.buttonWidth+(numcols-1)*gParams.margin;
@@ -167,16 +169,18 @@ else
 end
 
 % close figure
-figpos = get(gParams.fignum,'Position');
+MLR.figloc.mrParamsDialog = get(gParams.fignum,'Position');
 close(gParams.fignum);
+
 % close help
 helpcloseHandler;
-helpFigpos = gParams.helpFigpos;
 
 clear global gParams;
-global gParams;
-gParams.figpos = figpos;
-gParams.helpFigpos = helpFigpos;
+
+% save figure locations in MLR
+mrGlobals;
+saveMrDefaults;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % handle callback functions
@@ -243,10 +247,10 @@ if ~strcmp(gParams.varinfo{varnum}.type,'string')
   % check for minmax violations
   if isfield(gParams.varinfo{varnum},'minmax')
     if (val < gParams.varinfo{varnum}.minmax(1))
-      disp(sprintf('(mrDefaultParamsGUI) Value %f lower than minimum %f',val,gParams.varinfo{varnum}.minmax(1)));
+      disp(sprintf('(mrParamsDialog) Value %f lower than minimum %f',val,gParams.varinfo{varnum}.minmax(1)));
       val = [];
     elseif (val > gParams.varinfo{varnum}.minmax(2))
-      disp(sprintf('(mrDefaultParamsGUI) Value %f greater than maximum %f',val,gParams.varinfo{varnum}.minmax(2)));
+      disp(sprintf('(mrParamsDialog) Value %f greater than maximum %f',val,gParams.varinfo{varnum}.minmax(2)));
       val = [];
     end
   end
@@ -308,11 +312,12 @@ set(gParams.helpFignum,'Name','Parameter help');
 numrows = length(gParams.varinfo)+1;
 numcols = 8;
 
+mrGlobals;
 % set the position and size
-if ~isfield(gParams,'helpFigpos') || isempty(gParams.helpFigpos)
-  figpos = get(gParams.helpFignum,'Position');
+if isfield(MLR.figloc,'mrParamsDialogHelp');
+  figpos = MLR.figloc.mrParamsDialogHelp;
 else
-  figpos = gParams.helpFigpos;
+  figpos = get(gParams.helpFignum,'Position')
 end
 figpos(4) = 2*gParams.topMargin+numrows*gParams.buttonHeight+(numrows-1)*gParams.margin;
 figpos(3) = 2*gParams.leftMargin+numcols*gParams.buttonWidth+(numcols-1)*gParams.margin;
@@ -334,7 +339,8 @@ function helpcloseHandler
 
 global gParams;
 if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
-  gParams.helpFigpos = get(gParams.helpFignum,'Position');
+  mrGlobals;
+  MLR.figloc.mrParamsDialogHelp = get(gParams.helpFignum,'Position');
   close(gParams.helpFignum);
   gParams.helpFignum = -1;
 else
@@ -368,9 +374,9 @@ function h = makeButton(displayString,callback,rownum,colnum,uisize)
 
 % make callback string
 if isnumeric(callback)
-  callback = sprintf('mrDefaultParamsGUI(%f)',callback);
+  callback = sprintf('mrParamsDialog(%f)',callback);
 else
-  callback = sprintf('mrDefaultParamsGUI(''%s'')',callback);
+  callback = sprintf('mrParamsDialog(''%s'')',callback);
 end  
 
 global gParams;
@@ -392,9 +398,9 @@ function h = makeTextentry(displayString,callback,rownum,colnum,uisize)
 
 % make callback string
 if isnumeric(callback)
-  callback = sprintf('mrDefaultParamsGUI(%f)',callback);
+  callback = sprintf('mrParamsDialog(%f)',callback);
 else
-  callback = sprintf('mrDefaultParamsGUI(''%s'')',callback);
+  callback = sprintf('mrParamsDialog(''%s'')',callback);
 end  
 
 global gParams;
@@ -406,7 +412,7 @@ h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Positio
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function h = makePopupmenu(displayString,callback,rownum,colnum,uisize)
 
-callback = sprintf('mrDefaultParamsGUI(%f)',callback);
+callback = sprintf('mrParamsDialog(%f)',callback);
 
 if ~iscell(displayString)
   choices{1} = displayString;
@@ -429,7 +435,7 @@ function h = makeCheckbox(displayString,callback,rownum,colnum,uisize)
 global gParams;
 
 % make callback string
-callback = sprintf('mrDefaultParamsGUI(%f)',callback);
+callback = sprintf('mrParamsDialog(%f)',callback);
 
 h = uicontrol('Style','checkbox','Value',str2num(displayString),'Callback',callback,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
@@ -441,10 +447,10 @@ function h = makeTextentryWithIncdec(displayString,callback,rownum,colnum,uisize
 global gParams;
 
 % make callback string
-deccallback = sprintf('mrDefaultParamsGUI(%f,%f)',callback,gParams.varinfo{callback}.incdec(1));
-inccallback = sprintf('mrDefaultParamsGUI(%f,%f)',callback,gParams.varinfo{callback}.incdec(2));
+deccallback = sprintf('mrParamsDialog(%f,%f)',callback,gParams.varinfo{callback}.incdec(1));
+inccallback = sprintf('mrParamsDialog(%f,%f)',callback,gParams.varinfo{callback}.incdec(2));
 
-callback = sprintf('mrDefaultParamsGUI(%f)',callback);
+callback = sprintf('mrParamsDialog(%f)',callback);
 
 % make inc and dec buttons
 h = uicontrol('Style','pushbutton','Callback',deccallback,'String','<','Position',getUIControlPos(rownum,colnum,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);

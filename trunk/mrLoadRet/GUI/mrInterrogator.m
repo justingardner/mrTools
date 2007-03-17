@@ -121,11 +121,13 @@ if isempty(coords)
   % FIX FIX FIX this assumes 1/2 coords, there 
   % should always be a coords that knows about 
   % the epi, not just the overlay
-  coords(:,:,1) = round(coords(:,:,1)/2);
-  coords(:,:,2) = round(coords(:,:,2)/2);
+  if ~isempty(coords)
+    coords(:,:,1) = round(coords(:,:,1)/2);
+    coords(:,:,2) = round(coords(:,:,2)/2);
+  end
 end
 
-if (xpos >= 1) && (xpos <= size(coords,2)) && (ypos >= 1) && (ypos <= size(coords,1))
+if ~isempty(coords) && (xpos >= 1) && (xpos <= size(coords,2)) && (ypos >= 1) && (ypos <= size(coords,1))
   x = round(coords(ypos,xpos,1));
   y = round(coords(ypos,xpos,2));
   s = viewGet(view,'currentSlice');

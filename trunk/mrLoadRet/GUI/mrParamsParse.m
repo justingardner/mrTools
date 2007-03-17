@@ -1,6 +1,6 @@
-% mrDefaultParamsParse.m
+% mrParamsParse.m
 %
-%      usage: mrDefaultParamsParse(vars)
+%      usage: mrParamsParse(vars)
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: called by mrDefaultParamsGUI and mrDefaultParamsReconcile
@@ -9,11 +9,11 @@
 %
 %	$Id$	
 
-function [vars varinfo] = mrDefaultParamsParse(vars)
+function [vars varinfo] = mrParamsParse(vars)
 
 % check arguments
 if ~any(nargin == [1])
-  help mrDefaultParamsParse
+  help mrParamsParse
   return
 end
 

@@ -614,7 +614,11 @@ mrWarnDlg('importOverlay not yet implemented');
 
 % --------------------------------------------------------------------
 function importROIMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('importROI not yet implemented');
+
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = importROI(view);
 
 % --------------------------------------------------------------------
 function exportMenu_Callback(hObject, eventdata, handles)
@@ -652,11 +656,22 @@ saveSession;
 function quitMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 for viewNum = 1:length(MLR.views)
-	view = MLR.views{viewNum};
-	if isview(view)
-		delete(view.figure);
-	end
+  view = MLR.views{viewNum};
+  if isview(view)
+    % remember figure location
+    MLR.figloc.mrLoadRetGUI = get(view.figure,'Position');
+    delete(view.figure);
+  end
+  if ~isempty(MLR.graphFigure)
+    MLR.figloc.graphFigure = get(MLR.graphFigure,'Position');
+    close(MLR.graphFigure);
+    MLR.graphFigure = [];
+  end
 end
+% save the view in the current directory
+save mrLastView view -V6;
+% save figloc in .mrDefaults in the home directory
+saveMrDefaults;
 clear global MLR
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -888,14 +903,14 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 % Check to see that it is a valid ROI structure and then add it.
 if isroi(MLR.clipboard)
-	view = viewSet(view,'newROI',MLR.clipboard);
+  view = viewSet(view,'newROI',MLR.clipboard);
 else
-	mrErrorDlg('Cannot paste: Invalid ROI.');
+  mrErrorDlg('Cannot paste: Invalid ROI.');
 end
 % Select it and reset view.prevCoords
 ROInum = viewGet(view,'numberofROIs');
 if (ROInum > 0)
-	view = viewSet(view,'currentROI',ROInum);
+  view = viewSet(view,'currentROI',ROInum);
 end
 refreshMLRDisplay(viewNum);
 
