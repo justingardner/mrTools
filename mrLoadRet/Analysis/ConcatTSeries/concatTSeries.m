@@ -14,7 +14,7 @@ if ~any(nargin == [1 2])
   return
 end
 
-% description of paramaters (used by mrDefaultParams functions)
+% description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
     {'groupName',viewGet(view,'groupNames'),'Name of group from which to make concatenation'},...
     {'newGroupName','Concatenation','Name of group that will be created'},...
@@ -28,7 +28,7 @@ paramsInfo = {...
 % First get parameters
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
-  params = mrDefaultParamsGUI(paramsInfo);
+  params = mrParamsDialog(paramsInfo);
   % no params means user hit cancel
   if isempty(params),return,end
   % select scans
@@ -36,12 +36,12 @@ if ieNotDefined('params')
   params.scanList = selectScans(view);
   if isempty(params.scanList),return,end
   % check the parameters
-  params = mrDefaultParamsReconcile(params.groupName,params);
+  params = mrParamsReconcile(params.groupName,params);
 else
   % Reconcile params with current status of group and ensure that it has
   % the required fields. 
   params.paramsInfo = paramsInfo;
-  params = mrDefaultParamsReconcileParams(params.groupName,params);
+  params = mrParamsReconcileParams(params.groupName,params);
 end
 drawnow;
 
