@@ -850,17 +850,17 @@ switch lower(param)
         % - date: specifies when it was created or last modified
         %
         % Check that is has the required fields
-        ROI = orderfields(val);
+	ROI = orderfields(val);
         if ~isroi(ROI)
-            mrErrorDlg('Invalid ROI');
+	  mrErrorDlg('Invalid ROI');
         end
         % Add it to view.ROIs
         pos = length(view.ROIs)+1;
         if (pos == 1)
-            % First ROI
-            view.ROIs = ROI;
+	  % First ROI
+	  view.ROIs = ROI;
         else
-            view.ROIs(pos) = ROI;
+	  view.ROIs(pos) = ROI;
         end
         % Update the gui
         stringList = {view.ROIs(:).name};

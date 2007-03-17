@@ -52,3 +52,10 @@ else
 	% return full path string
 	pathstr = fullfile(dirPath,filename);
 end
+
+% make sure that if it is a multiselect, we always return a cell array
+if isstr(pathstr) && strcmp(multiselect,'on')
+  tmp = pathstr;
+  pathstr = {};
+  pathstr{1} = tmp;
+end

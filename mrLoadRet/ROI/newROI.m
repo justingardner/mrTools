@@ -19,25 +19,25 @@ function view = newROI(view,name,select,color,xform,voxelSize)
 % djh, 7/2005 (modified from mrLoadRet-3.1)
 
 if isempty(viewGet(view,'curBase')) & ieNotDefined('xform') & ieNotDefined('voxelSize')
-	mrErrorDlg('You must load a base anatomy before creating an ROI.');
+  mrErrorDlg('You must load a base anatomy before creating an ROI.');
 end
 
 if ieNotDefined('name')
-	name=sprintf('ROI%.0f',(length(view.ROIs)+1));
+  name=sprintf('ROI%.0f',(length(view.ROIs)+1));
 end
 if ieNotDefined('select')
-	select = 1;
+  select = 1;
 end
 if ieNotDefined('color')
-	color = 'blue';
+  color = 'blue';
 end
 if ieNotDefined('xform')
-	baseNum = viewGet(view,'currentBase');
-	xform = viewGet(view,'basexform',baseNum);
+  baseNum = viewGet(view,'currentBase');
+  xform = viewGet(view,'basexform',baseNum);
 end
 if ieNotDefined('voxelSize')
-	baseNum = viewGet(view,'currentBase');
-	voxelSize = viewGet(view,'baseVoxelSize',baseNum);
+  baseNum = viewGet(view,'currentBase');
+  voxelSize = viewGet(view,'baseVoxelSize',baseNum);
 end
 
 ROI.name = name;
@@ -53,11 +53,11 @@ view = viewSet(view,'newROI',ROI);
 
 % Select it and reset view.prevCoords
 if select
-	ROInum = viewGet(view,'ROInum',name);
-	if (ROInum > 0)
-		view = viewSet(view,'currentROI',ROInum);
-		view = viewSet(view,'prevROIcoords',[]);
-	end
+  ROInum = viewGet(view,'ROInum',name);
+  if (ROInum > 0)
+    view = viewSet(view,'currentROI',ROInum);
+    view = viewSet(view,'prevROIcoords',[]);
+  end
 end
 
 return;
