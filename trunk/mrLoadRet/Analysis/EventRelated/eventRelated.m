@@ -25,7 +25,7 @@ paramsInfo = {...
 % First get parameters
 if ieNotDefined('params')
   % Get parameter values
-  params = mrDefaultParamsGUI(paramsInfo);
+  params = mrParamsDialog(paramsInfo);
   % if empty user hit cancel
   if isempty(params),return,end
   % get scans
@@ -33,12 +33,12 @@ if ieNotDefined('params')
   params.scanNum = selectScans(view);
   if isempty(params.scanNum),return,end
   % check parameters
-  params = mrDefaultParamsReconcile(viewGet(view,'groupName'),params);
+  params = mrParamsReconcile(viewGet(view,'groupName'),params);
 else
   % Reconcile params with current status of group and ensure that it has
   % the required fields. 
   params.paramsInfo = paramsInfo;  
-  params = mrDefaultParamsReconcile(viewGet(view,'groupName'),params);
+  params = mrParamsReconcile(viewGet(view,'groupName'),params);
 end
 
 % Abort if params empty
@@ -90,7 +90,7 @@ for scanNum = 1:length(params.scanNum)
       taskVarParams{end+1} = {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'};
     end
     % either ask the user for the single variable name, or if
-    varname = mrDefaultParamsGUI(taskVarParams);
+    varname = mrParamsDialog(taskVarParams);
     % user hit cancel
     if isempty(varname),return, end
     % otherwise set the variable name
@@ -111,7 +111,7 @@ dateString = datestr(now);
 r2.name = 'r2';
 r2.function = 'eventRelated';
 r2.groupName = params.groupName;
-r2.reconcileFunction = 'mrDefaultParamsReconcile';
+r2.reconcileFunction = 'mrParamsReconcile';
 r2.data = cell(1,viewGet(view,'nScans'));
 r2.date = dateString;
 r2.params = params;
@@ -186,7 +186,7 @@ erAnal.name = 'erAnal';  % This can be reset by editAnalysisGUI
 erAnal.type = 'erAnal';
 erAnal.groupName = params.groupName;
 erAnal.function = 'eventRelated';
-erAnal.reconcileFunction = 'mrDefaultParamsReconcile';
+erAnal.reconcileFunction = 'mrParamsReconcile';
 erAnal.guiFunction = 'eventRelatePlot';
 erAnal.params = params;
 erAnal.overlays = r2;
