@@ -41,13 +41,13 @@ startPathStr = viewGet(view,'dataDir');
 if ieNotDefined('pathStr')
     pathStr = getPathStrDialog(startPathStr,'Choose one or more analyses','*.mat','on');
 else
-	if iscell(pathStr)
-        for p=1:length(pathStr)
-            pathStr{p} = fullfile(startPathStr,pathStr{p});
-		end
-	else
-		pathStr = {fullfile(startPathStr,pathStr)};
-	end
+  if iscell(pathStr)
+    for p=1:length(pathStr)
+      pathStr{p} = fullfile(startPathStr,pathStr{p});
+    end
+  else
+    pathStr = {fullfile(startPathStr,pathStr)};
+  end
 end
 if isempty(pathStr)
   return

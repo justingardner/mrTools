@@ -30,7 +30,7 @@ function view = loadROI(view,filename,select)
 mrGlobals
 
 if ieNotDefined('select')
-	select = 1;
+  select = 1;
 end
 
 % Path to overlays
@@ -38,17 +38,18 @@ startPathStr = viewGet(view,'roiDir');
 
 % Complete pathStr
 if ieNotDefined('filename')
-    pathStr = getPathStrDialog(startPathStr,'Choose one or more ROIs','*.mat','on');
+  pathStr = getPathStrDialog(startPathStr,'Choose one or more ROIs','*.mat','on');
 else
-	if iscell(filename)
-		pathStr = cell(size(filename));
-		for p=1:length(pathStr)
-			pathStr{p} = fullfile(startPathStr,[filename{p},'.mat']);
-		end
-	else
-		pathStr = {fullfile(startPathStr,[filename,'.mat'])};
-	end
+  if iscell(filename)
+    pathStr = cell(size(filename));
+    for p=1:length(pathStr)
+      pathStr{p} = fullfile(startPathStr,[filename{p},'.mat']);
+    end
+  else
+    pathStr = {fullfile(startPathStr,[filename,'.mat'])};
+  end
 end
+if isempty(pathStr),return,end
 if ~iscell(pathStr)
     pathStr = {pathStr};
 end
@@ -56,23 +57,23 @@ end
 % Load the file. Loop through the variables that were loaded and add
 % each of them as a new ROI, setting roi.fieldnames as we go.
 for p = 1:length(pathStr)
-	if exist(pathStr{p},'file')
-		s = load(pathStr{p});
-		varNames = fieldnames(s);
-		roi = eval(['s.',varNames{1}]);
-		roi.name = varNames{1};
-		% Add it to the view
-		view = viewSet(view,'newROI',roi);
-		% Select it and reset view.prevCoords
-		if select
-			ROInum = viewGet(view,'numberofROIs');
-			if (ROInum > 0)
-				view = viewSet(view,'currentROI',ROInum);
-			end
-		end
-	else
-		mrWarnDlg(['ROI ',pathStr{p},' not found.']);
-	end
+  if exist(pathStr{p},'file')
+    s = load(pathStr{p});
+    varNames = fieldnames(s);
+    roi = eval(['s.',varNames{1}]);
+    roi.name = varNames{1};
+    % Add it to the view
+    view = viewSet(view,'newROI',roi);
+    % Select it and reset view.prevCoords
+    if select
+      ROInum = viewGet(view,'numberofROIs');
+      if (ROInum > 0)
+	view = viewSet(view,'currentROI',ROInum);
+      end
+    end
+  else
+    mrWarnDlg(['ROI ',pathStr{p},' not found.']);
+  end
 end
 
 return;
