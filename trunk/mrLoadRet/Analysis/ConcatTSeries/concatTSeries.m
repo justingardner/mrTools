@@ -220,7 +220,7 @@ for iscan = 1:length(params.scanList)
   mrWaitBar(iscan/length(params.scanList),waitHandle);
 end
 mrCloseDlg(waitHandle);
-toc
+toc;
 
 % Save evalstring for recomputing and params
 evalstr = ['view = newView(','''','Volume','''','); view = concatTSeries(view,params);'];
