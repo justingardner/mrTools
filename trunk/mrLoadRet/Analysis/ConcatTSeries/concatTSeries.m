@@ -89,7 +89,7 @@ end
 concatInfo.n = 0;
 concatInfo.whichScan = [];
 concatInfo.whichVolume = [];
-
+tic
 % Compute output volume
 waitHandle = mrWaitBar(0,'Concatenating tSeries.  Please wait...');
 for iscan = 1:length(params.scanList)
@@ -220,7 +220,7 @@ for iscan = 1:length(params.scanList)
   mrWaitBar(iscan/length(params.scanList),waitHandle);
 end
 mrCloseDlg(waitHandle);
-
+toc
 
 % Save evalstring for recomputing and params
 evalstr = ['view = newView(','''','Volume','''','); view = concatTSeries(view,params);'];

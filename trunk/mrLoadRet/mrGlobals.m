@@ -9,7 +9,7 @@
 global MLR
 
 % If MLR is not yet initialized then do so
-if isempty(MLR)
+if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     
     % Check Matlab version number
     [mlrVersion, expectedMatlabVersion] = mrLoadRetVersion;

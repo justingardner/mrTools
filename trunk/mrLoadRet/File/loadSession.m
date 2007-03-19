@@ -32,7 +32,7 @@ if exist(pathStr,'file')
             '. Use mrInitRet and start from scratch.']);
     end
 else
-    mrErrorDlg(['No mrSESSION.mat file in directory: ',dirPathStr]);
+%    mrErrorDlg(['No mrSESSION.mat file in directory: ',dirPathStr]);
     session = [];
     groups = [];
 end
