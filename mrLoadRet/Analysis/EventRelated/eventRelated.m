@@ -124,6 +124,7 @@ r2.alpha = 1;
 r2.colormapType = 'setRangeToMax';
 r2.interrogator = 'eventRelatedPlot';
 
+tic
 for scanNum = params.scanNum
   % decide how many slices to do at a time, this is done
   % simply to save memory -- currently our system is limited
@@ -134,7 +135,7 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  numSlicesAtATime = floor(50000000/(8*numVolumes*prod(dims(1:2))));
+  numSlicesAtATime = floor(150000000/(8*numVolumes*prod(dims(1:2))));
   currentSlice = 1;
   ehdr = [];thisr2 = [];
 
@@ -180,6 +181,7 @@ for scanNum = params.scanNum
   erAnal.d{scanNum}.expname = d.expname;
   erAnal.d{scanNum}.fullpath = d.fullpath;
 end
+toc
 
 % install analysis
 erAnal.name = 'erAnal';  % This can be reset by editAnalysisGUI
@@ -279,7 +281,7 @@ for i = 1:length(d.stimfile)
   switch d.stimfile{i}.filetype,
    case 'mgl',
     % if we have a variable name, then get the stimvols from that
-    if ~isempty(varname)
+    if ~isempty(varname) && ~isempty(varname.varname)
       stimvol = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     % otherwise get it the old style from the traces
     else
