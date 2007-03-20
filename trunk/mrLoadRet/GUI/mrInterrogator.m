@@ -22,8 +22,10 @@ end
 
 % some basic info about location of controls
 global gMrInterrogator;
+gMrInterrogator.leftMargin = 5;
 gMrInterrogator.rightMargin = 5;
 gMrInterrogator.topMargin = 5;
+gMrInterrogator.bottomMargin = 5;
 gMrInterrogator.buttonWidth = 50;
 gMrInterrogator.buttonHeight = 20;
 gMrInterrogator.margin = 5;
@@ -225,8 +227,8 @@ gMrInterrogator.pointer = get(fignum,'pointer');
 
 if ~restart
   % set the x and y textbox
-  gMrInterrogator.hPos = makeTextbox('',1,2,2);
-  gMrInterrogator.hInterrogator = makeTextentry('test','interrogator',1,5,3);
+  gMrInterrogator.hPos = makeTextbox('',1,4,2);
+  gMrInterrogator.hInterrogator = makeTextentry('test','interrogator',1,1,3);
 else
   set(gMrInterrogator.hPos,'visible','on');
   set(gMrInterrogator.hInterrogator,'visible','on');
@@ -289,7 +291,9 @@ figpos = get(gMrInterrogator.fignum,'Position');
 thisButtonWidth = gMrInterrogator.buttonWidth*uisize+(uisize-1)*gMrInterrogator.margin;
 
 % set the position for the button
-pos(1) = figpos(3)-gMrInterrogator.margin - (gMrInterrogator.buttonWidth+gMrInterrogator.margin)*(colnum-1)-gMrInterrogator.rightMargin-gMrInterrogator.buttonWidth;
-pos(2) = figpos(4)-gMrInterrogator.buttonHeight-gMrInterrogator.topMargin - (gMrInterrogator.buttonHeight+gMrInterrogator.margin)*(rownum-1);
+%pos(1) = figpos(3)-gMrInterrogator.margin - (gMrInterrogator.buttonWidth+gMrInterrogator.margin)*(colnum-1)-gMrInterrogator.rightMargin-gMrInterrogator.buttonWidth;
+%pos(2) = figpos(4)-gMrInterrogator.buttonHeight-gMrInterrogator.topMargin - (gMrInterrogator.buttonHeight+gMrInterrogator.margin)*(rownum-1);
+pos(1) = (gMrInterrogator.buttonWidth+gMrInterrogator.margin)*(colnum-1)+gMrInterrogator.leftMargin;
+pos(2) = gMrInterrogator.bottomMargin + (gMrInterrogator.buttonHeight+gMrInterrogator.margin)*(rownum-1)+gMrInterrogator.buttonHeight;
 pos(3) = thisButtonWidth;
 pos(4) = gMrInterrogator.buttonHeight;
