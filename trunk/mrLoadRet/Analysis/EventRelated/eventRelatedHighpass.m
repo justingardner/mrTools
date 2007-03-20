@@ -45,7 +45,7 @@ if strcmp(runtype,'both') || strcmp(runtype,'init')
   hipassfilt(freqs<cutoff) = 0;
 
   % and smoothly go to 1 as a gaussian for edges
-  smoothedge = 1-mygauss([1 cutoff cutoff/2 0],freqs);
+  smoothedge = 1-eventRelatedGauss([1 cutoff cutoff/2 0],freqs);
 
   % and add that smooth edge to the square filter
   hipassfilter(find(freqs>cutoff)) = smoothedge(freqs>cutoff);
@@ -110,7 +110,7 @@ if strcmp(runtype,'both') || strcmp(runtype,'filter')
       for j = 1:d.dim(2)
 	for k = 1:d.dim(3)
 	  timecourse = squeeze(d.data(i,j,k,:));
-	  timecourse = mydetrend(timecourse);
+	  timecourse = eventRelatedDetrend(timecourse);
 	  timecourse = ifft(fft(timecourse) .* hipassfilter');
 	  d.data(i,j,k,:) = real(timecourse);%abs(timecourse).*cos(angle(timecourse));
 	end
@@ -127,7 +127,7 @@ if strcmp(runtype,'both') || strcmp(runtype,'filter')
       disppercent(k/d.dim(3));
       for j = 1:d.dim(2)
 	timecourses = squeeze(d.data(:,j,k,:));
-	timecourses = mydetrend(timecourses')';
+	timecourses = eventRelatedDetrend(timecourses')';
 	timecourses = ifft(fft(timecourses,[],2) .* newhipassfilter,[],2);
 	d.data(:,j,k,:) = real(timecourses);
       end
@@ -136,7 +136,7 @@ if strcmp(runtype,'both') || strcmp(runtype,'filter')
     for i = 1:size(d.roidata,1)
       disppercent(i/size(d.roidata,1))
       timecourse = squeeze(d.roidata(i,:));
-      timecourse = mydetrend(timecourse);
+      timecourse = eventRelatedDetrend(timecourse);
       timecourse = ifft(fft(timecourse) .* hipassfilter');
       d.roidata(i,:) = real(timecourse);
     end
