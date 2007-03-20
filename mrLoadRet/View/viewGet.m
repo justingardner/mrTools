@@ -249,6 +249,27 @@ switch lower(param)
         if (nscans >= s) & (s > 0)
             val = MLR.groups(g).scanParams(s).totalFrames;
         end
+    case{'junkframestotal'}
+        % gets all junk frames from this scan and the scans this was made from
+        % n = viewGet(view,'junkFramesTotal',scanNum,[groupNum])
+        % n = viewGet([],'junkFramesTotal',scanNum,groupNum)
+        % n = viewGet(view,'junkFramesTotal',scanNum,[])
+        % n = viewGet(view,'junkFramesTotal',scanNum)
+        [s g] = getScanAndGroup(view,varargin,param);
+	% get the junk frame from this scan
+	junkFramesTotal = viewGet(view,'junkFrames',s,g);
+	if isempty(junkFramesTotal),junkFramesTotal=0;,end
+	% find the original scan num
+	[os og] = viewGet(view,'originalScanNum',s,g);
+	for osNum = 1:length(os)
+	  % get the junk frames from the original scan
+	  junkFrames = viewGet(view,'junkFramesTotal',os(osNum),og(osNum));
+	  % and add that to the total
+	  if ~isempty(junkFrames)
+	    junkFramesTotal(osNum) = junkFramesTotal+junkFrames;
+	  end
+	end
+	val = junkFramesTotal;
     case{'junkframes'}
         % n = viewGet(view,'junkFrames',scanNum,[groupNum])
         % n = viewGet([],'junkFrames',scanNum,groupNum)
