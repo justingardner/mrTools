@@ -266,7 +266,7 @@ switch lower(param)
 	  junkFrames = viewGet(view,'junkFramesTotal',os(osNum),og(osNum));
 	  % and add that to the total
 	  if ~isempty(junkFrames)
-	    junkFramesTotal(osNum) = junkFramesTotal+junkFrames;
+	    junkFramesTotal(osNum) = junkFramesTotal(osNum)+junkFrames;
 	  end
 	end
 	val = junkFramesTotal;
