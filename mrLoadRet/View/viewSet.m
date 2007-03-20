@@ -50,7 +50,7 @@ function view = viewSet(view,param,val,varargin)
 
 mrGlobals
 
-if nargin == 0
+if ieNotDefined('param')
     dispViewSetHelp;
     return
 end
@@ -171,6 +171,14 @@ switch lower(param)
         % -------------------------------------------
         % Scan
 
+    case {'niftihdr'}
+        % view = viewSet(view,'niftiHdr',scanNum,groupNum);
+        [s g] = getScanAndGroup(view,varargin,param);
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+	  MLR.groups(g).scanParams(s).niftiHdr = val;
+        end
+	
     case {'newscan','updatescan'}
         % view = viewSet(view,'newScan',scanParams);
         % val must be a scanParams structure with scanParams.fileName set
@@ -519,7 +527,6 @@ switch lower(param)
         for n = 1:length(overlays)
             view = viewSet(view,'newOverlay',overlays(n));
         end
-
     case {'deleteanalysis'}
         % view = viewSet(view,'deleteAnalysis',analysisNum);
         analysisNum = val;
@@ -1126,3 +1133,20 @@ for i = 1:length(commands)
 end
 fprintf(1,sprintf('\n'));
 disp('-----------------------------------------------------------------------');
+
+%------------------------------
+function [s g] = getScanAndGroup(view,varg,param)
+
+if ieNotDefined('varg')
+    mrErrorDlg(sprintf('viewSet %s: must specify scan.',param));
+end
+
+s = varg{1};
+if length(varg) > 1
+    g = varg{2};
+else
+    g = viewGet(view,'currentGroup');
+end
+if isempty(g)
+    g = viewGet(view,'currentGroup');
+end

@@ -498,6 +498,17 @@ switch lower(param)
                 val = transforms;
             end
         end
+    case{'niftihdr'}
+        % hdr = viewGet(view,'niftiHdr',scanNum,[groupNum])
+        % hdr = viewGet([],'niftiHdr',scanNum,groupNum)
+        % hdr = viewGet(view,'niftiHdr',scanNum,[])
+        % hdr = viewGet(view,'niftiHdr',scanNum)
+        [s g] = getScanAndGroup(view,varargin,param);
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+	  % make sure it is a nifti headr (not an analyze)
+	  val = MLR.groups(g).scanParams(s).niftiHdr;
+	end
     case{'scanxform'}
         % xform = viewGet(view,'scanXform',scanNum,[groupNum])
         % xform = viewGet([],'scanXform',scanNum,groupNum)
@@ -506,19 +517,23 @@ switch lower(param)
         [s g] = getScanAndGroup(view,varargin,param);
         nscans = viewGet(view,'nscans',g);
         if (nscans >= s) & (s > 0)
-            sformCode = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
-            if sformCode
-                % if sform has been set, then use it.
-                val = MLR.groups(g).scanParams(s).niftiHdr.sform44;
-            else
-                % If has not been set, then use the transform that
-                % transforms this image directly on to the current anatomy
-                % using the qform matrices. Note: There used to be code
-                % here that reset val if it was the identity but that was a
-                % bug (DJH 1/17/07).
-                baseqform = viewGet(view,'baseqform');
-                val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
-            end
+	  % make sure it is a nifti headr (not an analyze)
+	  if ~isfield(MLR.groups(g).scanParams(s).niftiHdr,'sform_code')
+	    return
+	  end
+	  sformCode = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
+	  if sformCode
+	    % if sform has been set, then use it.
+	    val = MLR.groups(g).scanParams(s).niftiHdr.sform44;
+	  else
+	    % If has not been set, then use the transform that
+	    % transforms this image directly on to the current anatomy
+	    % using the qform matrices. Note: There used to be code
+	    % here that reset val if it was the identity but that was a
+	    % bug (DJH 1/17/07).
+	    baseqform = viewGet(view,'baseqform');
+	    val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
+	  end
         end
     case{'scanvoxelsize'}
         % voxelSize = viewGet(view,'scanVoxelSize',scanNum,[groupNum])
