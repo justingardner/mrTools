@@ -44,7 +44,8 @@ for j = 1:2
     end
   end
   % if there is nothing to do, or the user refuses, then return 
-  if ~updateHdr || ~askuser('Ok to change nifti headers in mrSession?')
+  if ~updateHdr || ((j==1) && ~askuser('Ok to change nifti headers in mrSession?'))
+    disp('Headers appear up-to-date');
     return
   end
 end
