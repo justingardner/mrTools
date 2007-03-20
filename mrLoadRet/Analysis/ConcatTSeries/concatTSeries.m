@@ -121,7 +121,7 @@ for iscan = 1:length(params.scanList)
   
   % do other  processing here
   if params.filterType == 1
-    d = myhighpass(d,params.filterCutoff);
+    d = eventRelatedHighpass(d,params.filterCutoff);
   elseif params.filterType == 2
       d = detrendTSeries(d)
   end
