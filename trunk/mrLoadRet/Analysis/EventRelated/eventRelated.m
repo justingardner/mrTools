@@ -237,6 +237,7 @@ d.data = loadTSeries(view,scanNum,sliceNum);
 % Dump junk frames
 junkFrames = viewGet(view,'junkframes',scanNum);
 d.data = d.data(:,:,:,junkFrames+1:junkFrames+d.nFrames);
+d.junkFrames = junkFrames;
 
 % load dicom header
 d.dicom = viewGet(view,'dicom',scanNum);
@@ -289,6 +290,22 @@ for i = 1:length(d.stimfile)
     end
    case 'eventtimes',
       stimvol = getStimvolFromEventTimes(d.stimfile{i},d.tr);
+  end
+  % get how many junk frames we have
+  if isfield(d,'junkFrames')
+    junkFrames = d.junkFrames;
+  else
+    junkFrames = 0;
+  end
+  if isfield(d,'concatInfo') && isfield(d.concatInfo,'junkFrames')
+    junkFrames = junkFrames+d.concatInfo.junkFrames(i);
+  end
+  % then shift all the stimvols by that many junkvols
+  for nhdr = 1:length(stimvol)
+    % subtract junkFrames
+    stimvol{nhdr} = stimvol{nhdr}-junkFrames;
+    % and get rid of anything less than 0
+    stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
   end
   % if we have more than one stimfile, than we have to concatenate
   % together the stimvol. For this we are going to need to have
