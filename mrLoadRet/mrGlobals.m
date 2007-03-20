@@ -39,11 +39,9 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     MLR.figloc = [];
 
     % read the default figlocs
-    if isfile('~/.mrDefaults.mat')
-      mrDefaults = load('~/.mrDefaults.mat');
-      if isfield(mrDefaults,'figloc')
-	MLR.figloc = mrDefaults.figloc;
-      end
+    mrDefaults = loadMrDefaults;
+    if isfield(mrDefaults,'figloc')
+      MLR.figloc = mrDefaults.figloc;
     end
     
     % Inform user that mrLoadRet has started up
