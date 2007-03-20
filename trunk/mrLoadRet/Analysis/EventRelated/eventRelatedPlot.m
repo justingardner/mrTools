@@ -64,13 +64,14 @@ for i = 1:d.nhdr
   vline(d.stimvol{i},getcolor(i));
 end
 axis tight;
-
-
 subplot(2,2,3);
 % and display ehdr
 plotEhdr(time,ehdr);
 title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays.data{scan}(x,y,s)));
 xaxis(0,d.hdrlen*d.tr);
+if isfield(d,'stimNames')
+  legend(d.stimNames);
+end
 
 % if there is a roi, compute its average hemodynamic response
 for roinum = 1:length(roi)
