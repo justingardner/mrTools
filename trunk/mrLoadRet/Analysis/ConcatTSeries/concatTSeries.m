@@ -205,6 +205,9 @@ for iscan = 1:length(params.scanList)
   concatInfo.whichScan = [concatInfo.whichScan iscan*ones(1,d.dim(4))];
   concatInfo.whichVolume = [concatInfo.whichVolume 1:d.dim(4)];
 
+  % save the junk frames
+  concatInfo.junkFrames(concatInfo.n) = junkFrames;
+  
   % keep the highpass filter used
   if isfield(d,'hipassfilter')
     concatInfo.hipassfilter{concatInfo.n} = d.hipassfilter;
