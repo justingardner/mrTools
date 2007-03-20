@@ -135,7 +135,7 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  numSlicesAtATime = floor(150000000/(8*numVolumes*prod(dims(1:2))));
+  numSlicesAtATime = floor(250000000/(8*numVolumes*prod(dims(1:2))));
   currentSlice = 1;
   ehdr = [];thisr2 = [];
 
