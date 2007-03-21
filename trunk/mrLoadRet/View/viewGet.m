@@ -257,18 +257,24 @@ switch lower(param)
         % n = viewGet(view,'junkFramesTotal',scanNum)
         [s g] = getScanAndGroup(view,varargin,param);
 	% get the junk frame from this scan
-	junkFramesTotal = viewGet(view,'junkFrames',s,g);
-	if isempty(junkFramesTotal),junkFramesTotal=0;,end
+	junkFramesThisScan = viewGet(view,'junkFrames',s,g);
+	if isempty(junkFramesThisScan),junkFramesThisScan=0;,end
 	% find the original scan num
 	[os og] = viewGet(view,'originalScanNum',s,g);
-	for osNum = 1:length(os)
-	  % get the junk frames from the original scan
-	  junkFrames = viewGet(view,'junkFramesTotal',os(osNum),og(osNum));
-	  % and add that to the total
-	  if ~isempty(junkFrames)
-	    junkFramesTotal(osNum) = junkFramesTotal(osNum)+junkFrames;
+        if isempty(os)
+          junkFramesTotal = junkFramesThisScan;
+        else
+	  for osNum = 1:length(os)
+	    % get the junk frames from the original scan
+  	    junkFramesOriginal = viewGet(view,'junkFramesTotal',os(osNum),og(osNum));
+	    % and add that to the total
+	    if ~isempty(junkFramesOriginal)
+	      junkFramesTotal(osNum) = junkFramesOriginal+junkFramesThisScan;
+	    else
+	      junkFramesTotal(osNum) = junkFramesThisScan;
+            end
 	  end
-	end
+        end
 	val = junkFramesTotal;
     case{'junkframes'}
         % n = viewGet(view,'junkFrames',scanNum,[groupNum])
