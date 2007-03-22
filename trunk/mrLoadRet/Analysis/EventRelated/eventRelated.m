@@ -47,64 +47,8 @@ if ieNotDefined('params'),return,end
 % make sure the group is set properly
 view = viewSet(view,'groupName',params.groupName);
 
-% check for stimfile, and if it is mgl/type then ask the
-% user which variable they want to do the anlysis on
-for scanNum = 1:length(params.scanNum)
-  % make sure we are running on a set with a stimfile
-  stimfile = viewGet(view,'stimfile',params.scanNum(scanNum));
-  
-  if isempty(stimfile)
-    mrMsgBox(sprintf('No associated stimfile with scan %i in group %s',params.scanNum(scanNum),params.groupName));
-    return
-  end
-
-  % default is to not have an mgl variable name
-  params.varname{params.scanNum(scanNum)} = '';
-
-  % see if we have a stimfile from mgl, in which case we should
-  % ask the user what the variable name is that they want ot use for the analysis
-  if strfind(stimfile{1}.filetype,'mgl')
-    [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
-    taskVarParams = {};
-    % if there is more than one task, then ask the user for that
-    if length(stimfile{1}.task)>1
-      taskVarParams{end+1} = {'taskNum',num2cell(1:length(stimfile{1}.task)),'The task you want to use'};
-    end
-    % if there are multiple phases, then ask for that
-    maxPhaseNum = 0;
-    for tnum = 1:length(stimfile{1}.task)
-      phaseNum{tnum} = num2cell(1:length(stimfile{1}.task{tnum}));
-      maxPhaseNum = max(maxPhaseNum,length(stimfile{1}.task{tnum}));
-    end
-    if maxPhaseNum > 1
-      if length(stimfile{1}.task) == 1
-	taskVarParams{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
-      else
-	taskVarParams{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
-      end
-    end
-    % set up to get the variable name from the user
-    taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
-    % give the option to use the same variable for all
-    if (scanNum == 1) && (length(params.scanNum)>1)
-      taskVarParams{end+1} = {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'};
-    end
-    % either ask the user for the single variable name, or if
-    varname = mrParamsDialog(taskVarParams);
-    % user hit cancel
-    if isempty(varname),return, end
-    % otherwise set the variable name
-    params.varname{params.scanNum(scanNum)} = varname;
-    % and set it for all scans if called for
-    if isfield(varname,'sameForAll') && varname.sameForAll
-      for i = 1:length(params.scanNum)
-	params.varname{params.scanNum(i)} = varname;
-	scanNum = length(params.scanNum);
-      end
-    end
-  end
-end
-drawnow;
+%g et the name of the variable to do the evented related analysis on
+params = getEventRelatedVarname(view,params);
 
 % create the parameters for the overlay
 dateString = datestr(now);
@@ -147,7 +91,7 @@ for scanNum = params.scanNum
     % d =       (d,params.preprocess);
     % get the stim volumes, if there is a variable name used (for mgl)
     % pass that along as well
-    d = getStimvol(d,params.varname{scanNum});
+    d = getStimvol(d,params.eventRelatedVarname{scanNum});
     % make a stimulation convolution matrix
     d = makescm(d,ceil(params.hdrlen/d.tr));
     % compute the estimated hemodynamic responses
@@ -213,3 +157,80 @@ if nargout > 1
   end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function to get the variable name that the user wants
+% to do the event related analysis on, puts up a gui
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function params = getEventRelatedVarname(view,params);
+
+% check for stimfile, and if it is mgl/type then ask the
+% user which variable they want to do the anlysis on
+for scanNum = 1:length(params.scanNum)
+  % make sure we are running on a set with a stimfile
+  stimfile = viewGet(view,'stimfile',params.scanNum(scanNum));
+  
+  if isempty(stimfile)
+    mrMsgBox(sprintf('No associated stimfile with scan %i in group %s',params.scanNum(scanNum),params.groupName));
+    return
+  end
+
+  % see if we have a stimfile from mgl, in which case we should
+  % ask the user what the variable name is that they want ot use for the analysis
+  if strfind(stimfile{1}.filetype,'mgl')
+
+    % check to see what style this is, if the task variable does
+    % not have a segmentTrace then it mus be an old style, in which
+    % we used channels
+    if isfield(stimfile{1}.myscreen,'traces') && ~isfield(stimfile{1}.task{1}{1},'segmentTrace')
+      % this is the old style, get the stimtrace number
+      taskVarParams{1} = {'stimtrace',stimfile{1}.myscreen.stimtrace,'the trace number that contains the stimulus','incdec=[-1 1]',sprintf('minmax=[%i %i]',stimfile{1}.myscreen.stimtrace,size(stimfile{1}.myscreen.traces,1))};
+    else
+      % this is the new tyle, ask for a variable name
+      [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
+      taskVarParams = {};
+      % if there is more than one task, then ask the user for that
+      if length(stimfile{1}.task)>1
+	taskVarParams{end+1} = {'taskNum',num2cell(1:length(stimfile{1}.task)),'The task you want to use'};
+      end
+      % if there are multiple phases, then ask for that
+      maxPhaseNum = 0;
+      for tnum = 1:length(stimfile{1}.task)
+	phaseNum{tnum} = num2cell(1:length(stimfile{1}.task{tnum}));
+	maxPhaseNum = max(maxPhaseNum,length(stimfile{1}.task{tnum}));
+      end
+      if maxPhaseNum > 1
+	if length(stimfile{1}.task) == 1
+	  taskVarParams{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
+	else
+	  taskVarParams{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
+	end
+      end
+      % set up to get the variable name from the user
+      taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
+    end
+    
+    % give the option to use the same variable for all
+    if (scanNum == 1) && (length(params.scanNum)>1)
+      taskVarParams{end+1} = {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'};
+    end
+    % either ask the user for the single variable name, or if
+    taskVarParams = mrParamsDialog(taskVarParams);
+    % user hit cancel
+    if isempty(taskVarParams),return, end
+    % otherwise set the variables
+    taskVarParamsFieldnames = fieldnames(taskVarParams);
+    for tnum = 1:length(taskVarParamsFieldnames)
+      if ~strcmp(taskVarParamsFieldnames{tnum},'sameForAll') & ~strcmp(taskVarParamsFieldnames{tnum},'paramInfo')
+	% set it in this params
+	params.eventRelatedVarname{params.scanNum(scanNum)} = taskVarParams.(taskVarParamsFieldnames{tnum});
+	% and set it for all scans if called for
+	if isfield(taskVarParams,'sameForAll') && taskVarParams.sameForAll
+	  for i = 1:length(params.scanNum)
+	    params.eventRelatedVarname{i} = taskVarParams.eventRelatedVarname{tnum};
+	    scanNum = length(params.scanNum);
+	  end
+	end
+      end
+    end
+  end
+end
