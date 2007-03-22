@@ -34,7 +34,7 @@ for i = 1:length(d.stimfile)
       [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     % otherwise get it the old style from the traces
     else
-      stimvol = getStimvolFromTraces(d.stimfile{i});
+      stimvol = getStimvolFromTraces(d.stimfile{i},varname);
     end
    case 'eventtimes',
       stimvol = getStimvolFromEventTimes(d.stimfile{i},d.tr);
@@ -78,7 +78,11 @@ end
 % old way of getting stim vols
 % from traces
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stimvol = getStimvolFromTraces(stimfile)
+function stimvol = getStimvolFromTraces(stimfile,stimtrace)
+
+if exist('stimtrace','var')
+  stimfile.myscreen.stimtrace = stimtrace;
+end
 
 % get acquisition pulses
 acq = [0 2*(diff(stimfile.myscreen.traces(1,:))==1)];
