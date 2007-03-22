@@ -4,6 +4,7 @@
 %         by: eli merriam
 %       date: 03/20/07
 %    purpose: 
+%	$Id$	
 %
 function retval = mrUpdateNiftiHdr()
 
