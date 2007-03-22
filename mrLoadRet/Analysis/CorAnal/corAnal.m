@@ -37,7 +37,7 @@ function view = corAnal(view,params)
 %
 %
 % djh, 5/2005, updated to mrLoadRet-4.0
-% %	$Id$	
+% $Id$	
 
 
 % If corAnal is loaded, then use it. Otherwise, viewGet returns [];
