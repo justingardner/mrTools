@@ -190,7 +190,6 @@ switch lower(param)
         % view = viewSet(view,'updateScan',scanParams,scanNum);
         % Check for tseries file and (re-)build scanParams to insure
         % consistency with the nifti file.
-        
         scanParams = val;
         if ~isfield(scanParams,'fileName')
             mrErrorDlg(['scanParams.fileName must be specified']);
