@@ -5,10 +5,16 @@ mrGlobals
 
 % interpMethod and interpExtrapVal are used by calls to interp3 when
 % extracting slices from the base and overlay arrays.
-if ispref('mrLoadRet','interpMethod')
-	interpMethod = getpref('mrLoadRet','interpMethod');
+%if ispref('mrLoadRet','interpMethod')
+%  interpMethod = getpref('mrLoadRet','interpMethod');
+%else
+%  interpMethod = 'linear';
+%end
+% ispref/getpref are slow operators
+if isfield(MLR.prefs,'interpMethod')
+  interpMethod = MLR.prefs.interpMethod;
 else
-	interpMethod = 'linear';
+  interpMethod = 'linear';
 end
 interpExtrapVal = NaN;
 
@@ -307,14 +313,14 @@ for r = order
     thisCol = viewGet(view,'roiColor',r);
     % If it's a 'text' color, translate it...
     switch (thisCol)
-     case 'yellow', color = [1 1 0];
-     case 'magenta', color = [1 0 1];
-     case 'cyan', color = [0 1 1];
-     case 'red', color = [1 0 0];
-     case 'green', color = [0 1 0];
-     case 'blue', color = [0 0 1];
-     case 'white', color = [1 1 1];
-     case 'black', color = [0 0 0];
+     case {'yellow','y'}, color = [1 1 0];
+     case {'magenta','m'}, color = [1 0 1];
+     case {'cyan','c'}, color = [0 1 1];
+     case {'red','r'}, color = [1 0 0];
+     case {'green','g'}, color = [0 1 0];
+     case {'blue','b'}, color = [0 0 1];
+     case {'white','w'}, color = [1 1 1];
+     case {'black','k'}, color = [0 0 0];
      otherwise, color = [1 1 1];
     end % end switch statement
   end % end loop

@@ -154,3 +154,4 @@ figpos = get(h,'Position');
 MLR.figloc.buttondlg = figpos;
 close(h)
 
+drawnow;

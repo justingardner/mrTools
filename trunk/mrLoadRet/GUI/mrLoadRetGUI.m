@@ -8,7 +8,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 13-Nov-2006 16:56:20
+% Last Modified by GUIDE v2.5 21-Mar-2007 12:03:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1406,5 +1406,16 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = eventRelated(view);
+
+
+% --------------------------------------------------------------------
+function concatenateTSeriesMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to concatenateTSeriesMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = concatTSeries(view);
 
 

@@ -181,6 +181,7 @@ clear global gParams;
 mrGlobals;
 saveMrDefaults;
 
+drawnow;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % handle callback functions
