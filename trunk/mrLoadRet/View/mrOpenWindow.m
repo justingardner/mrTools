@@ -53,6 +53,12 @@ if isfile('mrLastView.mat')
 	view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
       end
     end
+    % read analyses
+%    if isfield(mrLastView.view,'analyses')
+%      for anum = 1:length(mrLastView.view.analyses)
+%	view = viewSet(view,'newAnalysis',mrLastView.view.analyses{anum});
+%      end
+%    end
     % add here, to load more info...
   end
 end

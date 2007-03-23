@@ -1745,6 +1745,8 @@ switch lower(param)
             case 'flat'
                 val = flatGet(view,param,varargin{:});
             otherwise
+	     
+  
                 error('Unknown type of View.');
         end
 end
@@ -1860,7 +1862,8 @@ switch lower(param)
         val = datasize(3);
 
     otherwise
-        error(['Invalid parameter for volume view: ',param]);
+     dispViewGetHelp;
+     disp(['Invalid parameter for volume view: ',param]);
 end
 return;
 
