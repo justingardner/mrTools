@@ -44,10 +44,16 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
       MLR.figloc = mrDefaults.figloc;
     end
     
+    % load preferences
+    MLR.prefs = [];
+    if ispref('mrLoadRet','interpMethod');
+      MLR.prefs.interpMethod = getpref('mrLoadRet','interpMethod');
+    end
+    
     % Inform user that mrLoadRet has started up
-    disp(['mrLoadRet ',num2str(MLR.version),', Matlab ',matlabVersion]);
+    disp(['mrLoadRet ',num2str(MLR.version),', Matlab ',num2str(matlabVersion)]);
     
     % Clean up
-    clear expectedMatlabVersion version matlabVersion session groups mlrVersion
+    clear expectedMatlabVersion version matlabVersion session groups mlrVersion mrDefaults
 end
 
