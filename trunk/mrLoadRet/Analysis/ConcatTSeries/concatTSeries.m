@@ -41,7 +41,7 @@ else
   % Reconcile params with current status of group and ensure that it has
   % the required fields. 
   params.paramsInfo = paramsInfo;
-  params = mrParamsReconcileParams(params.groupName,params);
+  params = mrParamsReconcile(params.groupName,params);
 end
 drawnow;
 
