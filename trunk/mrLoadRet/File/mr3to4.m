@@ -199,6 +199,7 @@ m.groups(2).name = 'MotionComp';
 m.groups(2).scanParams = m.groups(1).scanParams;
 for i = 1:length(filenames)
   m.groups(2).scanParams(i).originalFileName{1} = m.groups(2).scanParams(i).fileName;
+  m.groups(2).scanparams(i).junkFrames = 0;
   m.groups(2).scanParams(i).originalGroupName{1} = 'Raw';
   m.groups(2).scanParams(i).fileName = filenames{i};
   m.groups(2).auxParams(i).auxParams = 1;
@@ -241,7 +242,7 @@ for i = 1:length(scanParams)
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
     mysystem(sprintf('ln -s %s .',sourceFilename));
   end
-  % now move the hdr file
+  % now link the hdr file
   destFilename = sprintf('%s.hdr',stripext(destFilename));
   sourceFilename = sprintf('%s.hdr',stripext(sourceFilename));
   if isfile(destFilename)
@@ -252,12 +253,23 @@ for i = 1:length(scanParams)
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
     mysystem(sprintf('ln -s %s .',sourceFilename));
   end
+  % now link the dicom file
+  destFilename = sprintf('%s-header.txt',stripext(destFilename));
+  sourceFilename = sprintf('%s-header.txt',stripext(sourceFilename));
+  if isfile(destFilename)
+    disp(sprintf('%s already exists',destFilename));
+  else
+    disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
+    mysystem(sprintf('ln -s %s .',sourceFilename));
+  end
 end
 printBlockEnd;
 
 fprintf(sprintf('Returning to %s \n', origDir));
 cd(origDir)
 
+% swap session to 4
+mr3to4(4);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % draw a line separator

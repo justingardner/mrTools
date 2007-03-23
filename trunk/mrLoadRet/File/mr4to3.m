@@ -276,6 +276,9 @@ if ~debugflag
 end
 printBlockEnd
 
+% switch the mrSessions
+mr4to3(3);
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 % make links to files
 %%%%%%%%%%%%%%%%%%%%%%%%
