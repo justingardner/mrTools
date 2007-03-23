@@ -1,4 +1,12 @@
-function[overlayIm] = mrCorAnal2TFI(viewNum)
+function[overlayIm] = mrExport2SR(viewNum)
+% mrExport2SR.m
+%
+%      usage: overlayIM = mrExprt2SR(viewNum)
+%         by: eli merriam
+%       date: 03/20/07
+%    purpose: exports a MLR overlay to a Nifti file compatible with SurfRelax
+%	$Id$	
+%
 
 mrGlobals
 
