@@ -97,3 +97,31 @@ if isfield(params,'description') && ~isempty(strfind(params.description,'[x...x]
   end
 end
 
+% get scan numbers
+if isfield(params,'scanList')
+  scanNums = params.scanList;
+elseif isfield(params,'scanNum')
+  scanNums = params.scanNum;
+else
+  disp('(mrParamsReconcile) Could not find scan numbers');
+  return
+end
+% get group number
+if isfield(params,'groupName')
+  groupName = params.groupName;
+end
+groupNum = viewGet([],'groupNum',groupName);
+
+  % get the tseries name
+if ~isfield(params,'tseriesFile')
+  for iscan = 1:length(scanNums)
+    params.tseriesFile{iscan} = viewGet([],'tseriesFile',scanNums(iscan),groupNum);
+  end
+else
+  % see if the tseriesFile name matches
+  for iscan = 1:length(scanNums)
+    if ~strcmp(params.tseriesFile{iscan},viewGet([],'tseriesFile',scanNums(iscan),groupNum));
+      disp(sprintf('(mrParamsReconcile) Scan %i has filename %s which does not match previous one %s',scanNums(iscan),viewGet([],'tseriesFile',scanNums(iscan),groupNum),params.tseriesFile{iscan}));
+    end
+  end
+end  
