@@ -23,6 +23,9 @@ if ~any(nargin == [1 2 3 4])
   return
 end
 
+% get the roi directory
+roidir = viewGet(view,'roidir');
+
 % get group and scan
 if ieNotDefined('groupNum')
   groupNum = viewGet(view,'currentGroup');
@@ -30,6 +33,9 @@ end
 if ieNotDefined('scanNum')
   scanNum = viewGet(view,'currentScan');
 end
+
+% set the current group
+view = viewSet(view,'currentGroup',groupNum);
 
 % if there is no roi, ask the user to select
 if ieNotDefined('roiname')
@@ -43,6 +49,10 @@ end
 
 % load the rois in turn
 for roinum = 1:length(roiname)
+  % see if we have to past roi directory on
+  if ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
+    roiname{roinum} = fullfile(roidir,stripext(roiname{roinum}));
+  end
   % check for file
   if ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
     disp(sprintf('(loadROITSeries) Could not find roi %s',roiname{roinum}));
