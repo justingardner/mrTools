@@ -349,7 +349,7 @@ disp('===================================================================');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function printBlockEnd
 
-mydisp(sprintf('\n'));
+mrdisp(sprintf('\n'));
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function used for debugging
