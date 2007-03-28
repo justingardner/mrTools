@@ -43,7 +43,7 @@ end
 % first stimulus volume is.
 if (iscell(stimvol))
   d.firstvol = inf;
-  if isfield(d,'pulselens')
+  if exist('pulselens','var')
     if ((pulselens(1) ~= 1) && (pulselens(1) < 50)),start = 2;,else,start = 1;,end
   else
     start = 1;
