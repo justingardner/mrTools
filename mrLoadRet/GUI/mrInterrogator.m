@@ -5,14 +5,10 @@
 %       date: 03/14/07
 %    purpose: this functions sets up the figure to have an interrogator
 %             start by calling
-%             mrInterrogator('init',fignum);
+%             mrInterrogator('init',viewNum);
 %             turn off
-%             mrInterrogator('end');
-% e.g.
-% fignum = figure;
-% imagesc(rand(100,150));
-% mrInterrogator('init',fignum);
-function retval = mrInterrogator(event,fignum,viewNum)
+%             mrInterrogator('end',viewNum);
+function retval = mrInterrogator(event,viewNum)
 
 % check arguments
 if ~any(nargin == [1 2 3])
@@ -21,47 +17,47 @@ if ~any(nargin == [1 2 3])
 end
 
 % some basic info about location of controls
-global gMrInterrogator;
-gMrInterrogator.leftMargin = 5;
-gMrInterrogator.rightMargin = 5;
-gMrInterrogator.topMargin = 5;
-gMrInterrogator.bottomMargin = 5;
-gMrInterrogator.buttonWidth = 50;
-gMrInterrogator.buttonHeight = 20;
-gMrInterrogator.margin = 5;
-gMrInterrogator.fontsize = 10;
-gMrInterrogator.fontname = 'Helvetica';
+mrGlobals;
+MLR.interrogator{viewNum}.leftMargin = 5;
+MLR.interrogator{viewNum}.rightMargin = 5;
+MLR.interrogator{viewNum}.topMargin = 5;
+MLR.interrogator{viewNum}.bottomMargin = 5;
+MLR.interrogator{viewNum}.buttonWidth = 50;
+MLR.interrogator{viewNum}.buttonHeight = 20;
+MLR.interrogator{viewNum}.margin = 5;
+MLR.interrogator{viewNum}.fontsize = 10;
+MLR.interrogator{viewNum}.fontname = 'Helvetica';
 
 switch (event)
  case 'init'
-   initHandler(fignum,viewNum);
+   initHandler(viewNum);
  case 'end'
-   endHandler;
+   endHandler(viewNum);
  case 'mouseMove'
-   mouseMoveHandler;
+   mouseMoveHandler(viewNum);
  case 'mouseUp'
-   mouseUpHandler;
+   mouseUpHandler(viewNum);
  case 'mouseDown'
-   mouseDownHandler;
+   mouseDownHandler(viewNum);
  case 'interrogator'
-   interrogatorHandler;
+   interrogatorHandler(viewNum);
 end
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % change in interrogator field
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function interrogatorHandler
+function interrogatorHandler(viewNum)
 
-global gMrInterrogator;
+mrGlobals;
 
 % get new string
-interrogator = get(gMrInterrogator.hInterrogator,'String');
+interrogator = get(MLR.interrogator{viewNum}.hInterrogator,'String');
 
 % if not a valid function, go back to old one
 if exist(interrogator)~=2
-  set(gMrInterrogator.hInterrogator,'String',gMrInterrogator.interrogator);
+  set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
 else
-  gMrInterrogator.interrogator = interrogator;
+  MLR.interrogator{viewNum}.interrogator = interrogator;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,7 +65,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function retval = mouseInImage(xpos,ypos)
 
-global gMrInterrogator;
+mrGlobals;
 
 if isnan(xpos)
   retval = 0;
@@ -80,43 +76,42 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mousemove
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mouseMoveHandler(fignum)
+function mouseMoveHandler(viewNum)
 
-global gMrInterrogator;
+mrGlobals;
 
 % get pointer
-[x y s] = getMouseCoords;
+[x y s] = getMouseCoords(viewNum);
 
 % check location in bounds on image
 if mouseInImage(x,y)
   % set pointer to crosshairs
-  set(gMrInterrogator.fignum,'pointer','fullcrosshair');
+  set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
   % convert to overlay coordinats
   % set the xpos/ypos textbox 
-  set(gMrInterrogator.hPos,'String',sprintf('[%i %i %i]',x,y,s));
+  set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
 else
   % set pointer to arrow
-  set(gMrInterrogator.fignum,'pointer','arrow');
+  set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
   % set strings to empty
-  set(gMrInterrogator.hPos,'String','');
+  set(MLR.interrogator{viewNum}.hPos,'String','');
 end
 
 % eval the old handler
-eval(gMrInterrogator.windowButtonMotionFcn);
+eval(MLR.interrogator{viewNum}.windowButtonMotionFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get current mouse position in image coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x y s] = getMouseCoords
+function [x y s] = getMouseCoords(viewNum)
 
-global gMrInterrogator;
+mrGlobals;
 
-pointerLoc = get(gMrInterrogator.axesnum,'CurrentPoint');
+pointerLoc = get(MLR.interrogator{viewNum}.axesnum,'CurrentPoint');
 xpos = round(pointerLoc(1,1));ypos=round(pointerLoc(1,2));
 
 % get the coordinate mapping
-global MLR;
-view = MLR.views{gMrInterrogator.viewNum};
+view = MLR.views{viewNum};
 coords = viewGet(view,'curSliceOverlayCoords');
 if isempty(coords)
   coords = viewGet(view,'curSliceBaseCoords');
@@ -142,158 +137,160 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mouseup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mouseUpHandler(fignum)
+function mouseUpHandler(viewNum)
 
-global gMrInterrogator;
+mrGlobals;
 
 % eval the old handler
-eval(gMrInterrogator.windowButtonUpFcn);
+eval(MLR.interrogator{viewNum}.windowButtonUpFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mouseup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mouseDownHandler(fignum)
+function mouseDownHandler(viewNum)
 
-global gMrInterrogator;
+mrGlobals;
 
 % get pointer
-[x y s] = getMouseCoords;
+[x y s] = getMouseCoords(viewNum);
 
 if mouseInImage(x,y)
   % Draw graph
   global MLR;
-  view = MLR.views{gMrInterrogator.viewNum};
+  view = MLR.views{viewNum};
   overlayNum = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
   scanNum = viewGet(view,'currentScan');
-  feval(gMrInterrogator.interrogator,view,overlayNum,scanNum,x,y,s);
+  feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s);
 end
 
 % eval the old handler
-eval(gMrInterrogator.windowButtonDownFcn);
+eval(MLR.interrogator{viewNum}.windowButtonDownFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % end the mrInterrogator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function endHandler
+function endHandler(viewNum)
 
-global gMrInterrogator;
+mrGlobals;
 
 % set the callbacks back to their originals
-set(gMrInterrogator.fignum,'WindowButtonMotionFcn',gMrInterrogator.windowButtonMotionFcn);
-set(gMrInterrogator.fignum,'WindowButtonDownFcn',gMrInterrogator.windowButtonDownFcn);
-set(gMrInterrogator.fignum,'WindowButtonUpFcn',gMrInterrogator.windowButtonUpFcn);
+set(MLR.interrogator{viewNum}.fignum,'WindowButtonMotionFcn',MLR.interrogator{viewNum}.windowButtonMotionFcn);
+set(MLR.interrogator{viewNum}.fignum,'WindowButtonDownFcn',MLR.interrogator{viewNum}.windowButtonDownFcn);
+set(MLR.interrogator{viewNum}.fignum,'WindowButtonUpFcn',MLR.interrogator{viewNum}.windowButtonUpFcn);
 
 % set the pointer back
-set(gMrInterrogator.fignum,'pointer',gMrInterrogator.pointer);
+set(MLR.interrogator{viewNum}.fignum,'pointer',MLR.interrogator{viewNum}.pointer);
 
 % turn off the text boxes
-set(gMrInterrogator.hPos,'visible','off');
-set(gMrInterrogator.hInterrogator,'visible','off');
+set(MLR.interrogator{viewNum}.hPos,'visible','off');
+set(MLR.interrogator{viewNum}.hInterrogator,'visible','off');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % init the interrogator handler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function initHandler(fignum,viewNum)
+function initHandler(viewNum)
 
-global gMrInterrogator;
+mrGlobals;
+
+fignum = viewGet(MLR.views{viewNum},'figNum');
 
 % see if this is a restart
 restart = 0;
-if isfield(gMrInterrogator,'fignum') && isequal(gMrInterrogator.fignum,fignum)
+if isfield(MLR.interrogator{viewNum},'fignum') && isequal(MLR.interrogator{viewNum}.fignum,fignum)
   disp('(mrInterrogator) Restarting');
   restart = 1;
 end
 
 % get figure handles
-gMrInterrogator.fignum = fignum;
-gMrInterrogator.guide = guidata(fignum);
-figure(fignum);gMrInterrogator.axesnum = gMrInterrogator.guide.axis;
+MLR.interrogator{viewNum}.fignum = fignum;
+MLR.interrogator{viewNum}.guide = guidata(fignum);
+figure(fignum);MLR.interrogator{viewNum}.axesnum = MLR.interrogator{viewNum}.guide.axis;
 
 if ~restart
   % remember old callbacks
-  gMrInterrogator.windowButtonMotionFcn = get(fignum,'WindowButtonMotionFcn');
-  gMrInterrogator.windowButtonDownFcn = get(fignum,'WindowButtonDownFcn');
-  gMrInterrogator.windowButtonUpFcn = get(fignum,'WindowButtonUpFcn');
+  MLR.interrogator{viewNum}.windowButtonMotionFcn = get(fignum,'WindowButtonMotionFcn');
+  MLR.interrogator{viewNum}.windowButtonDownFcn = get(fignum,'WindowButtonDownFcn');
+  MLR.interrogator{viewNum}.windowButtonUpFcn = get(fignum,'WindowButtonUpFcn');
 end
 
 % set the callbacks appropriately
-set(fignum,'WindowButtonMotionFcn',sprintf('mrInterrogator(''mouseMove'')'));
-set(fignum,'WindowButtonDownFcn',sprintf('mrInterrogator(''mouseDown'')'));
-set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'')'));
+set(fignum,'WindowButtonMotionFcn',sprintf('mrInterrogator(''mouseMove'',%i)',viewNum));
+set(fignum,'WindowButtonDownFcn',sprintf('mrInterrogator(''mouseDown'',%i)',viewNum));
+set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'',%i)',viewNum));
 
 % set pointer to crosshairs
-gMrInterrogator.pointer = get(fignum,'pointer');
+MLR.interrogator{viewNum}.pointer = get(fignum,'pointer');
 
 if ~restart
   % set the x and y textbox
-  gMrInterrogator.hPos = makeTextbox('',1,4,2);
-  gMrInterrogator.hInterrogator = makeTextentry('test','interrogator',1,1,3);
+  MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
+  MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
 else
-  set(gMrInterrogator.hPos,'visible','on');
-  set(gMrInterrogator.hInterrogator,'visible','on');
+  set(MLR.interrogator{viewNum}.hPos,'visible','on');
+  set(MLR.interrogator{viewNum}.hInterrogator,'visible','on');
 end
 
 % set the x/y min/max
-a = axis(gMrInterrogator.axesnum);
-gMrInterrogator.xmin = a(1);
-gMrInterrogator.xmax = a(2);
-gMrInterrogator.ymin = a(3);
-gMrInterrogator.ymax = a(4);
+a = axis(MLR.interrogator{viewNum}.axesnum);
+MLR.interrogator{viewNum}.xmin = a(1);
+MLR.interrogator{viewNum}.xmax = a(2);
+MLR.interrogator{viewNum}.ymin = a(3);
+MLR.interrogator{viewNum}.ymax = a(4);
 
 % set info for callback
-gMrInterrogator.viewNum = viewNum;
+MLR.interrogator{viewNum}.viewNum = viewNum;
 
 % set interrogator field
 global MLR;
 view = MLR.views{viewNum};
 overlayNum = viewGet(view,'currentOverlay');
 analysisNum = viewGet(view,'currentAnalysis');
-gMrInterrogator.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
-set(gMrInterrogator.hInterrogator,'String',gMrInterrogator.interrogator);
+MLR.interrogator{viewNum}.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextbox makes an uneditable text box.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextbox(displayString,rownum,colnum,uisize)
+function h = makeTextbox(viewNum,displayString,rownum,colnum,uisize)
 
-global gMrInterrogator;
-h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gMrInterrogator.fontsize,'FontName',gMrInterrogator.fontname,'HorizontalAlignment','Center');
+mrGlobals;
+h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname,'HorizontalAlignment','Center');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextentry(displayString,callback,rownum,colnum,uisize)
+function h = makeTextentry(viewNum,displayString,callback,rownum,colnum,uisize)
 
 % make callback string
 if isnumeric(callback)
-  callback = sprintf('mrInterrogator(%f)',callback);
+  callback = sprintf('mrInterrogator(%f,%i)',callback,viewNum);
 else
-  callback = sprintf('mrInterrogator(''%s'')',callback);
+  callback = sprintf('mrInterrogator(''%s'',%i)',callback,viewNum);
 end  
 
-global gMrInterrogator;
+mrGlobals;
 
-h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gMrInterrogator.fontsize,'FontName',gMrInterrogator.fontname);
+h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function pos = getUIControlPos(rownum,colnum,uisize)
+function pos = getUIControlPos(viewNum,rownum,colnum,uisize)
 
 % get global parameters
-global gMrInterrogator;
+mrGlobals;
 
 % get figure position
-figpos = get(gMrInterrogator.fignum,'Position');
+figpos = get(MLR.interrogator{viewNum}.fignum,'Position');
 
 % set this buttons width
-thisButtonWidth = gMrInterrogator.buttonWidth*uisize+(uisize-1)*gMrInterrogator.margin;
+thisButtonWidth = MLR.interrogator{viewNum}.buttonWidth*uisize+(uisize-1)*MLR.interrogator{viewNum}.margin;
 
 % set the position for the button
-%pos(1) = figpos(3)-gMrInterrogator.margin - (gMrInterrogator.buttonWidth+gMrInterrogator.margin)*(colnum-1)-gMrInterrogator.rightMargin-gMrInterrogator.buttonWidth;
-%pos(2) = figpos(4)-gMrInterrogator.buttonHeight-gMrInterrogator.topMargin - (gMrInterrogator.buttonHeight+gMrInterrogator.margin)*(rownum-1);
-pos(1) = (gMrInterrogator.buttonWidth+gMrInterrogator.margin)*(colnum-1)+gMrInterrogator.leftMargin;
-pos(2) = gMrInterrogator.bottomMargin + (gMrInterrogator.buttonHeight+gMrInterrogator.margin)*(rownum-1)+gMrInterrogator.buttonHeight;
+%pos(1) = figpos(3)-MLR.interrogator{viewNum}.margin - (MLR.interrogator{viewNum}.buttonWidth+MLR.interrogator{viewNum}.margin)*(colnum-1)-MLR.interrogator{viewNum}.rightMargin-MLR.interrogator{viewNum}.buttonWidth;
+%pos(2) = figpos(4)-MLR.interrogator{viewNum}.buttonHeight-MLR.interrogator{viewNum}.topMargin - (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1);
+pos(1) = (MLR.interrogator{viewNum}.buttonWidth+MLR.interrogator{viewNum}.margin)*(colnum-1)+MLR.interrogator{viewNum}.leftMargin;
+pos(2) = MLR.interrogator{viewNum}.bottomMargin + (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1)+MLR.interrogator{viewNum}.buttonHeight;
 pos(3) = thisButtonWidth;
-pos(4) = gMrInterrogator.buttonHeight;
+pos(4) = MLR.interrogator{viewNum}.buttonHeight;

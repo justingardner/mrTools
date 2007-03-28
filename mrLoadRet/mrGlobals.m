@@ -46,8 +46,14 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     
     % load preferences
     MLR.prefs = [];
-    if ispref('mrLoadRet','interpMethod');
-      MLR.prefs.interpMethod = getpref('mrLoadRet','interpMethod');
+    prefs = getpref('mrLoadRet');
+    % if there are some preferences, put them into the MLR variable
+    % for easy and quicker access
+    if ~isempty(prefs)
+      prefnames = fieldnames(prefs);
+      for i = 1:length(prefnames)
+	MLR.prefs.(prefnames{i}) = getpref('mrLoadRet',prefnames{i});
+      end
     end
     
     % Inform user that mrLoadRet has started up
