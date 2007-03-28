@@ -592,9 +592,9 @@ saveROI(MLR.views{viewNum},n,1);
 function saveAllROIMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-numberROIs = 1:viewGet(viewNum,'numberofrois');
+numberROIs = viewGet(viewNum,'numberofrois');
 for n = 1:numberROIs
-	saveROI(MLR.views{viewNum},n,1);
+  saveROI(MLR.views{viewNum},n,1);
 end
 
 % --------------------------------------------------------------------
