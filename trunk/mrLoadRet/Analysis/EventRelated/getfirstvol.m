@@ -37,14 +37,17 @@ if (~isfield(d,'stimvol'))
   stimtimes = stimtimescell;
 else
   stimvol = d.stimvol;
-  pulselens = d.pulselens;
 end
 
 % now look in the stimvol structure to see where the
 % first stimulus volume is.
 if (iscell(stimvol))
   d.firstvol = inf;
-  if ((pulselens(1) ~= 1) && (pulselens(1) < 50)),start = 2;,else,start = 1;,end
+  if isfield(d,'pulselens')
+    if ((pulselens(1) ~= 1) && (pulselens(1) < 50)),start = 2;,else,start = 1;,end
+  else
+    start = 1;
+  end
   for i = start:length(stimvol)
     if (stimvol{i}(1) < d.firstvol)
       d.firstvol = stimvol{i}(1);
