@@ -46,7 +46,7 @@ for i = 1:length(d.stimfile)
     end
   end
   % get how many junk frames we have
-  if isfield(d,'junkFrames'),junkFrames = d.junkFrames;,else,junkFrames = 0;end
+  if isfield(d,'junkFrames'),junkFrames = d.junkFrames;,else,junkFrames = zeros(length(d.stimfile),1);end
   % then shift all the stimvols by that many junkvols
   for nhdr = 1:length(stimvol)
     % subtract junkFrames

@@ -49,7 +49,7 @@ if (iscell(stimvol))
     start = 1;
   end
   for i = start:length(stimvol)
-    if (stimvol{i}(1) < d.firstvol)
+    if ~isempty(stimvol{i}) && (stimvol{i}(1) < d.firstvol)
       d.firstvol = stimvol{i}(1);
     end
   end
