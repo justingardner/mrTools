@@ -22,6 +22,8 @@ paramsInfo = {...
     {'preprocess','','String of extra commands for preprocessing (see wiki for details)'}...
 };
 
+mrGlobals;
+
 % First get parameters
 if ieNotDefined('params')
   % Get parameter values
@@ -79,7 +81,12 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  numSlicesAtATime = floor(250000000/(8*numVolumes*prod(dims(1:2))));
+  if isfield(MLR.prefs,'maxBlocksize')
+    maxBlocksize = MLR.prefs.maxBlocksize;
+  else
+    maxBlocksize = 250000000;
+  end
+  numSlicesAtATime = floor(maxBlocksize/(8*numVolumes*prod(dims(1:2))));
   currentSlice = 1;
   ehdr = [];thisr2 = [];
 
