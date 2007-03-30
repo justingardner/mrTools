@@ -234,12 +234,7 @@ for scanNum = 1:length(params.scanNum)
 	% and set it for all scans if called for
 	if isfield(taskVarParams,'sameForAll') && taskVarParams.sameForAll
 	  for i = 1:length(params.scanNum)
-	    if isfield(taskVarParams,'eventRelatedVarname')
-	      params.eventRelatedVarname{i} = taskVarParams.eventRelatedVarname{tnum};
-	    else
-	      % old style
-	      params.eventRelatedVarname{i} = taskVarParams.stimtrace;
-	    end
+	    params.eventRelatedVarname{i} = taskVarParams.(taskVarParamsFieldnames{tnum});
 	  end
 	end
       end
