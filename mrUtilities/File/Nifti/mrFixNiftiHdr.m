@@ -1,53 +1,64 @@
 % mrFixHdr
 %
-%      usage: mrFixNiftiHdr(<useIdentity>,<forceUpdate>,<copyFrom>)
+%      usage: mrFixNiftiHdr(<forceUpdate>,<copyFrom>)
 %         by: justin gardner / modified from mrUpdateNiftiHdr
 %       date: 03/20/07
-%    purpose: Update all nifti headers in groups with
-%             the nifti header from the files.
+%    purpose: "Fixes" nifti headers, by copying them from the original
+%             nifti file they were created from. This is useful for undoing
+%             the problem that FSL causes when you run motion correction.
 %
 %             mrFixHdr;
 % 
-%             if useIdentity is set, sets all qform and sform
-%             matrices to the identity matrix (does not change
-%             the actual qform and sform in the nifti hdr, just
-%             in the groups, so you can always go back).
-%
 %             force update is a list of all scan and groups
 %             that should be udpated i.e. if you want to update
-%             scans 1 and 4 from group 3 and 2
+%             scans 1 and 4 from group 3 and 2.
 %
-%             mrFixNiftiHdr(0,[1 3;4 2]);
+%             mrFixNiftiHdr([1 3;4 2]);
+%
+%             If you want to copy all headers for a certain scan from
+%             the orginal, you can do (e.g. for group 2)
+%
+%             mrFixNiftiHdr(2);
 % 
 %             if copy from is set, will copy the nifti header from
 %             the scan group, set in copyFrom, so to copy from
 %             the header for scan1, group1
 %
-%             mrFixNiftiHdr(0,[1 3;4 2],[1 1]);
-%     
+%             mrFixNiftiHdr([1 3;4 2],[1 1]);
 %
-function retval = mrFixNiftiHdr(useIdentity,forceUpdate,copyFrom)
+%
+function retval = mrFixNiftiHdr(forceUpdate,copyFrom)
 
 % check arguments
-if ~any(nargin == [0 1 2 3])
+if ~any(nargin == [0 1 2])
   help mrFixNiftiHdr
   return
 end
 
 % default is to update nifti hdrs not set them to identity
-if ~exist('useIdentity','var'),useIdentity = 0;,end
 if ~exist('forceUpdate','var'),forceUpdate = [];,end
 if ~exist('copyFrom','var'),copyFrom = [];,end
 
+% set variables
+view = newView('Volume');
+mrGlobals
+updateHdr = 0;
+
+% if we get a single number for forceUpdate it means
+% that we want to do all of a certain group
+if isequal(size(forceUpdate),[1 1])
+  forceGroup = forceUpdate;
+  forceUpdate = [];
+  forceUpdate(:,1) = (1:viewGet(view,'nScans',forceGroup))';
+  forceUpdate(:,2) = forceGroup;
+end
+  
+% set the string to display
 if isempty(forceUpdate)
   dispReasonString = 'mismatch with qform44: ';
 else
   dispReasonString = '';
 end
-% set variables
-view = newView('Volume');
-mrGlobals
-updateHdr = 0;
 
 % go through this loop twice, first time is just to tell
 % user what is going to change
@@ -94,7 +105,7 @@ for passNum = 1:2
 	  % get the source header
 	  srchdr = viewGet(view,'niftiHdr',os(1),og(1));
 	  % and write the header out
-	  cbiWriteNiftiHeader(srchdr,sprintf('%s.hdr',stripext(filename)));
+	  %cbiWriteNiftiHeader(srchdr,sprintf('%s.hdr',stripext(filename)));
 	  % and change it in the view
 	  view = viewSet(view,'niftiHdr',iScan,iGroup);
 	end
