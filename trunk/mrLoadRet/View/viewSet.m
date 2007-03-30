@@ -101,7 +101,12 @@ switch lower(param)
             mlrGuiSet(view,'scan',min(nScans,1));
             mlrGuiSet(view,'analysis',1);
             mlrGuiSet(view,'analysisPopup',{'none'});
-        end
+	    % update the interrogator
+	    if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator)) 
+	      mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
+	      
+	    end
+	end
 
     case{'groupname'}
         % view = viewSet(view,'currentGroup',string);
@@ -526,6 +531,11 @@ switch lower(param)
         for n = 1:length(overlays)
             view = viewSet(view,'newOverlay',overlays(n));
         end
+	% update the interrogator
+	if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator)) 
+	  mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
+	  
+	end
     case {'deleteanalysis'}
         % view = viewSet(view,'deleteAnalysis',analysisNum);
         analysisNum = val;
@@ -570,6 +580,11 @@ switch lower(param)
         % Set current overlay
         curOverlay = viewGet(view,'currentOverlay',analysisNum);
         view = viewSet(view,'currentOverlay',curOverlay);
+	% update the interrogator
+	if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator)) 
+	  mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
+	  
+	end
 
     case{'analysisname'}
         % view = viewSet(view,'analysisname',nameString,[analysisNum]);
