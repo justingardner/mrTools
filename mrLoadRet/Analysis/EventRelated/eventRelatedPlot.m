@@ -50,7 +50,7 @@ if isempty(d)
 end
  
 % get the estimated hemodynamic responses
-[ehdr time] = gethdr(d,x,y,s);
+[ehdr time ehdrste] = gethdr(d,x,y,s);
 
 % plot the timecourse
 subplot(2,2,1:2)
@@ -60,13 +60,13 @@ xlabel('Volume number');
 ylabel('MRI signal');
 % and the stimulus times
 hold on
+axis tight;
 for i = 1:d.nhdr
   vline(d.stimvol{i},getcolor(i));
 end
-axis tight;
 subplot(2,2,3);
 % and display ehdr
-plotEhdr(time,ehdr);
+plotEhdr(time,ehdr,ehdrste);
 title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays.data{scan}(x,y,s)));
 xaxis(0,d.hdrlen*d.tr);
 if isfield(d,'stimNames')
@@ -80,18 +80,22 @@ for roinum = 1:length(roi)
   for voxnum = 1:size(roi{roinum}.coords,2)
     [ehdr(voxnum,:,:) time] = gethdr(d,roi{roinum}.coords(1:3,voxnum));
   end
-  plotEhdr(time,squeeze(mean(ehdr)));
+  plotEhdr(time,squeeze(mean(ehdr)),squeeze(std(ehdr))/sqrt(size(roi{roinum}.coords,2)));
   title(sprintf('%s (n=%i)',roi{roinum}.name,size(roi{roinum}.coords,2)));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % function to plot ehdr
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function plotEhdr(time,ehdr)
+function plotEhdr(time,ehdr,ehdrste)
 
 % and display ehdr
 for i = 1:size(ehdr,1)
-  h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,'-')),'MarkerSize',8);
+  if nargin == 2
+    h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,'-')),'MarkerSize',8);
+  else
+    h=errorbar(time,ehdr(i,:),ehdrste(i,:),ehdrste(i,:),getcolor(i,getsymbol(i,'-')),'MarkerSize',8);
+  end
   set(h,'MarkerFaceColor',getcolor(i));
   hold on
 end

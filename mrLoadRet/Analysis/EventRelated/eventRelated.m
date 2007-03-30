@@ -88,17 +88,15 @@ for scanNum = params.scanNum
   end
   numSlicesAtATime = floor(maxBlocksize/(8*numVolumes*prod(dims(1:2))));
   currentSlice = 1;
-  ehdr = [];thisr2 = [];
+  ehdr = [];ehdrste = [];thisr2 = [];
 
   for i = 1:ceil(numSlices/numSlicesAtATime)
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);;
-    % keyboard
-    % do any called for preprocessing
-    % d =       (d,params.preprocess);
-    % get the stim volumes, if there is a variable name used (for mgl)
-    % pass that along as well
+    % get the stim volumes
     d = getStimvol(d,params.eventRelatedVarname{scanNum});
+    % do any called for preprocessing
+    d = eventRelatedPreProcess(d,params.preprocess);
     % make a stimulation convolution matrix
     d = makescm(d,ceil(params.hdrlen/d.tr));
     % compute the estimated hemodynamic responses
@@ -107,11 +105,13 @@ for scanNum = params.scanNum
     currentSlice = currentSlice+numSlicesAtATime;
     % cat with what has already been computed for other slices
     ehdr = cat(3,ehdr,d.ehdr);
+    ehdrste = cat(3,ehdrste,d.ehdrste);
     thisr2 = cat(3,thisr2,d.r2);
   end
 
   % now put all the data from all the slices into the structure
   d.ehdr = ehdr;
+  d.ehdrste = ehdrste;
   d.r2 = thisr2;
   d.dim(3) = size(d.r2,3);
 
@@ -124,6 +124,7 @@ for scanNum = params.scanNum
   erAnal.d{scanNum}.filepath = d.filepath;
   erAnal.d{scanNum}.dim = d.dim;
   erAnal.d{scanNum}.ehdr = d.ehdr;
+  erAnal.d{scanNum}.ehdrste = d.ehdrste;
   erAnal.d{scanNum}.nhdr = d.nhdr;
   erAnal.d{scanNum}.hdrlen = d.hdrlen;
   erAnal.d{scanNum}.tr = d.tr;
@@ -233,11 +234,20 @@ for scanNum = 1:length(params.scanNum)
 	% and set it for all scans if called for
 	if isfield(taskVarParams,'sameForAll') && taskVarParams.sameForAll
 	  for i = 1:length(params.scanNum)
-	    params.eventRelatedVarname{i} = taskVarParams.eventRelatedVarname{tnum};
-	    scanNum = length(params.scanNum);
+	    if isfield(taskVarParams,'eventRelatedVarname')
+	      params.eventRelatedVarname{i} = taskVarParams.eventRelatedVarname{tnum};
+	    else
+	      % old style
+	      params.eventRelatedVarname{i} = taskVarParams.stimtrace;
+	    end
 	  end
 	end
       end
     end
   end
+  % break out of for look if we have sameForAll set
+  if isfield(taskVarParams,'sameForAll') && taskVarParams.sameForAll
+    break
+  end
+  taskVarParams = {};
 end
