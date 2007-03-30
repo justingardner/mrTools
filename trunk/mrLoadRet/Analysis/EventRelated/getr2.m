@@ -106,12 +106,24 @@ for j = yvals
     % subtract off column means
     colmeans = mean(timeseries,1);
     timeseries = timeseries - onesmatrix*colmeans;
+    % convert to percent signal change
+    timeseries = 100*timeseries./(onesmatrix*colmeans);
     % get hdr for the each voxel
     ehdr{j,k} = precalcmatrix*timeseries;
+    % calculate error bars, first get sum-of-squares of residual
+    % (in percent signal change)
+    sumOfSquaresResidual = sum((timeseries-d.scm*ehdr{j,k}).^2);
+    % now calculate the sum-of-squares of that error
+    % and divide by the degrees of freedom (n-k where n
+    % is the number of timepoints in the scan and k is 
+    % the number of timepoints in all the estimated hdr)
+    S2 = sumOfSquaresResidual/(length(d.volumes)-size(d.scm,2));
+    % now distribute that error to each one of the points
+    % in the hemodynamic response according to the inverse
+    % of the covariance of the stimulus convolution matrix.
+    ehdrste{j,k} = sqrt(diag(pinv(d.scm'*d.scm))*S2);
     % calculate variance accounted for by the estimated hdr
-    r2{j,k} = (1-sum((timeseries-d.scm*ehdr{j,k}).^2)./sum(timeseries.^2));
-    % make into percents
-    %ehdr{j,k} = ehdr{j,k} ./ (100*ones(size(d.scm,2),1)*colmeans);
+    r2{j,k} = (1-sumOfSquaresResidual./sum(timeseries.^2));
   end
 end
 disppercent(inf);
@@ -127,7 +139,9 @@ if (~justr2)
     for j = yvals
       for k = slices
 	% get the ehdr
-	d.ehdr(i,j,k,:) = 100*ehdr{j,k}(:,i);
+	d.ehdr(i,j,k,:) = ehdr{j,k}(:,i);
+	% and the stderror of that
+	d.ehdrste(i,j,k,:) = ehdrste{j,k}(:,i);
 	% now reshape into a matrix
 	d.r2(i,j,k) = r2{j,k}(i);
       end

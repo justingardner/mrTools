@@ -6,7 +6,7 @@
 %    purpose: retrieve the hdrs in a matrix
 %             form from the data structure
 %
-function [hdr,time] = gethdr(d,x,y,s)
+function [hdr,time,hdrste] = gethdr(d,x,y,s)
 
 if ~any(nargin == [2 4])
   help gethdr;
@@ -28,6 +28,11 @@ end
 % get the responses
 for i = 1:d.nhdr
   hdr(i,1:d.hdrlen) = d.ehdr(x,y,s,(i-1)*d.hdrlen+1:(i)*d.hdrlen);
+  if isfield(d,'ehdrste')
+    hdrste(i,1:d.hdrlen) = d.ehdrste(x,y,s,(i-1)*d.hdrlen+1:(i)*d.hdrlen);
+  else
+    hdrste = nan*ones(size(hdr));
+  end
 end
 
 % and get the time
