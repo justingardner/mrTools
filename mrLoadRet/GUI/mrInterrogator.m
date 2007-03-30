@@ -8,7 +8,7 @@
 %             mrInterrogator('init',viewNum);
 %             turn off
 %             mrInterrogator('end',viewNum);
-function retval = mrInterrogator(event,viewNum)
+function retval = mrInterrogator(event,viewNum,val)
 
 % check arguments
 if ~any(nargin == [1 2 3])
@@ -41,8 +41,22 @@ switch (event)
    mouseDownHandler(viewNum);
  case 'interrogator'
    interrogatorHandler(viewNum);
+ case 'updateInterrogator'
+   updateInterrogatorHandler(viewNum,val);
 end
     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% change the interrogator function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function updateInterrogatorHandler(viewNum,interrogator)
+
+mrGlobals;
+
+% if not a valid function, go back to old one
+if exist(interrogator)==2
+  set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
+  MLR.interrogator{viewNum}.interrogator = interrogator;
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % change in interrogator field
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,7 +230,7 @@ function initHandler(viewNum)
 
 mrGlobals;
 
-fignum = viewGet(MLR.views{viewNum},'figNum');
+fignum = viewGet(MLR.views{viewNum},'figNum')
 
 % see if this is a restart
 restart = 0;

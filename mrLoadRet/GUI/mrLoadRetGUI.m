@@ -1247,6 +1247,7 @@ function interrogateOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 % start the mrInterrogator
 viewNum = handles.viewNum;
+viewNum
 mrInterrogator('init',viewNum);
 return
 
