@@ -75,7 +75,7 @@ d.nFrames = viewGet(viewBase,'nFrames',params.scanList(1));
 d.dim(4) = d.nFrames;
 for iscan = 1:length(params.scanList)
   if (viewGet(viewBase,'framePeriod',params.scanList(iscan)) ~= d.tr)
-    mrWarnDlg('concatTSeries: These scans have different TR.');
+    mrWarnDlg(sprintf('concatTSeries: These scans have different TR. (%0.4f vs %0.4f)',viewGet(viewBase,'framePeriod',params.scanList(iscan)),d.tr));
   end
   if ~isequal(viewGet(viewBase,'scanvoxelsize',params.scanList(iscan)),d.voxelSize)
     mrErrorDlg('concatTSeries: Scans have different voxel sizes.');
