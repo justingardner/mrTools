@@ -100,6 +100,25 @@ end
 % eval the old handler
 eval(MLR.interrogator{viewNum}.windowButtonMotionFcn);
 
+% this snippet of code gets the current default interrogator
+% function. It shouldn't go in mousemove because it makes mousemvoe
+% slow--but more importantly if the users sets the interrogator
+% themselves, then they don't want to use the default. But what
+% happens if you change views or analyses? Should the interrogator change?
+if 0
+% check the interrogator
+global MLR;
+view = MLR.views{viewNum};
+overlayNum = viewGet(view,'currentOverlay');
+analysisNum = viewGet(view,'currentAnalysis');
+interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+% if it is different from current one, then reset it
+if ~strcmp(MLR.interrogator{viewNum}.interrogator,interrogator)
+  MLR.interrogator{viewNum}.interrogator = interrogator;
+  set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
+end
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get current mouse position in image coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,13 +174,17 @@ mrGlobals;
 [x y s] = getMouseCoords(viewNum);
 
 if mouseInImage(x,y)
-  % Draw graph
   global MLR;
   view = MLR.views{viewNum};
+  % make a waiting cursor
+  set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
+  % Draw graph
   overlayNum = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
   scanNum = viewGet(view,'currentScan');
   feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s);
+  % reset to full crosshair
+  set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
 end
 
 % eval the old handler
