@@ -801,8 +801,10 @@ function deleteScanMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-scanNum = viewGet(view,'currentScan');
-view = viewSet(view,'deleteScan',scanNum);
+scanList = selectScans(view);
+for iscan = 1:length(scanList)
+  view = viewSet(view,'deleteScan',scanList(iscan));
+end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
