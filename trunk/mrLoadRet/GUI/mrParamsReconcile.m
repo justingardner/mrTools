@@ -57,6 +57,19 @@ if isfield(params,'paramInfo')
     end      
     % see if we have to switch it to default
     if useDefault
+      % make sure it is not a contingent value that has been shut
+      % off, first get value it is contingent on
+      if isfield(varinfo{i},'contingent')
+	contingentValue = varinfo{varinfo{i}.contingentOn}.value;
+	if isstr(contingentValue),contingentValue = str2num(contingentValue);,end
+	% if it has been shut down, give the parameter an empty
+        % value and continue on
+	if contingentValue==0
+	  params.(varinfo{i}.name) = [];
+	  continue
+	end
+      end
+      % otherwise set the parameter to the default value
       if ~iscell(varinfo{i}.value)
 	params.(varinfo{i}.name) = varinfo{i}.value;
       else
