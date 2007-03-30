@@ -1,7 +1,7 @@
 % mrFixHdr
 %
-%      usage: mrFixHdr(<useIdentity>)
-%         by: eli merriam
+%      usage: mrFixNiftiHdr(<useIdentity>,<forceUpdate>,<copyFrom>)
+%         by: justin gardner / modified from mrUpdateNiftiHdr
 %       date: 03/20/07
 %    purpose: Update all nifti headers in groups with
 %             the nifti header from the files.
@@ -11,21 +11,39 @@
 %             if useIdentity is set, sets all qform and sform
 %             matrices to the identity matrix (does not change
 %             the actual qform and sform in the nifti hdr, just
-%             in the groups, so you can always go back)
+%             in the groups, so you can always go back).
 %
-%             mrUpdateNiftihdr(1);
+%             force update is a list of all scan and groups
+%             that should be udpated i.e. if you want to update
+%             scans 1 and 4 from group 3 and 2
 %
-function retval = mrFixHdr(useIdentity)
+%             mrFixNiftiHdr(0,[1 3;4 2]);
+% 
+%             if copy from is set, will copy the nifti header from
+%             the scan group, set in copyFrom, so to copy from
+%             the header for scan1, group1
+%
+%             mrFixNiftiHdr(0,[1 3;4 2],[1 1]);
+%     
+%
+function retval = mrFixNiftiHdr(useIdentity,forceUpdate,copyFrom)
 
 % check arguments
-if ~any(nargin == [0 1])
-  help mrFixHdr
+if ~any(nargin == [0 1 2 3])
+  help mrFixNiftiHdr
   return
 end
 
 % default is to update nifti hdrs not set them to identity
 if ~exist('useIdentity','var'),useIdentity = 0;,end
+if ~exist('forceUpdate','var'),forceUpdate = [];,end
+if ~exist('copyFrom','var'),copyFrom = [];,end
 
+if isempty(forceUpdate)
+  dispReasonString = 'mismatch with qform44: ';
+else
+  dispReasonString = '';
+end
 % set variables
 view = newView('Volume');
 mrGlobals
@@ -52,14 +70,19 @@ for passNum = 1:2
       % round to nearest 10000
       voxdim = round(voxdim*1000)/1000;
       voxdimFromQform = round(voxdimFromQform*1000)/1000;
-      if ~isequal(voxdim,voxdimFromQform)
+      if (isempty(forceUpdate) && ~isequal(voxdim,voxdimFromQform)) || ismember([iScan iGroup],forceUpdate,'rows')
+	% get original header
+	[os og] = viewGet(view,'originalScanNum',iScan,iGroup);
+	% if we want to copy from a specific one
+	if ~isempty(copyFrom)
+	  os = copyFrom(1);og = copyFrom(2);
+	end
 	updateHdr = 1;
 	% print out info about what is going on
-	[os og] = viewGet(view,'originalScanNum',iScan,iGroup);
 	if ~isempty(os)
-	  disp(sprintf('(%s:%i) pixdim [%s] mismatch with qform44: copy header from (%s:%i) to (%s:%i)',viewGet(view,'groupName',iGroup),iScan,num2str(voxdim),viewGet(view,'groupName',og(1)),os(1),viewGet(view,'groupName',iGroup),iScan));
+	  disp(sprintf('(%s:%i) pixdim [%s] %s copy header from (%s:%i) to (%s:%i)',viewGet(view,'groupName',iGroup),iScan,num2str(voxdim),dispReasonString,viewGet(view,'groupName',og(1)),os(1),viewGet(view,'groupName',iGroup),iScan));
 	else
-	  disp(sprintf('(%s:%i) pixdim [%s] mismatch with qform44: No original header to copy from',viewGet(view,'groupName',iGroup),iScan,num2str(voxdim)));
+	  disp(sprintf('(%s:%i) pixdim [%s] %s No original header to copy from',viewGet(view,'groupName',iGroup),iScan,num2str(voxdim),dispReasonString));
 	  % user will have to specify which group/scan to copy from
 	  if passNum == 2
 	    og = getnum('Which group do you want to copy from? ',1:viewGet(v,'numberOfGroups'));
