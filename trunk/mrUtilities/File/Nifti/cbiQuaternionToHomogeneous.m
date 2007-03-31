@@ -51,17 +51,17 @@ function varargout=cbiQuaternionToHomogeneous(varargin)
   end
 
   if (abs(qfac)<1e-10)
-    disp(['Invalid qfac (' num2str(qfac) '). Assuming qfac==1']);
+    disp(['(cbiQuaternionToHomgenous) Invalid qfac (' num2str(qfac) '). Assuming qfac==1']);
     qfac=1;
   end
 
   a=sqrt(1.0-(b*b+c*c+d*d));
 
   if (any(imag(a)))
-    disp('Warning: imaginary residual found in converting quaternion to homogeneous transformation.')
-    disp(['Quaternion component a=' num2str(a)])
-    disp('Assuming this is roundoff error, and forcing a=0.0.');
-    disp('If this is not what you want, you may want to reconstruct the quaternion manually from the header.')
+    disp('(cbiQuaternionToHomogenous) Imaginary residual found.')
+    %disp(['Quaternion component a=' num2str(a)])
+    %disp('Assuming this is roundoff error, and forcing a=0.0.');
+    %disp('If this is not what you want, you may want to reconstruct the quaternion manually from the header.')
     a=0;
   end
   

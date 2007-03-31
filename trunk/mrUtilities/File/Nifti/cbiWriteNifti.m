@@ -54,9 +54,9 @@ else
   hdr=cbiCreateNiftiHeader(hdr,data);
 end
 if (~strcmp(class(data),hdr.matlab_datatype))
-  disp(['Warning: scaling data from ' class(data) ' to ' hdr.matlab_datatype]);
-  disp('To avoid this, cast data to desired format before calling cbiWriteNifti, e.g.')
-  disp('cbiWriteNifti(''myfilename'',int16(data),hdr,''int16'')')
+  disp(['(cbiWriteNifti) Scaling data from ' class(data) ' to ' hdr.matlab_datatype]);
+%  disp('To avoid this, cast data to desired format before calling cbiWriteNifti, e.g.')
+%  disp('cbiWriteNifti(''myfilename'',int16(data),hdr,''int16'')')
 end
 
 % get hdr scaling factor and convert data if necessary
