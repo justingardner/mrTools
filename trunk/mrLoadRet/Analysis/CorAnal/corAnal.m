@@ -280,6 +280,10 @@ spatialnorm = params.spatialnorm{scan};
 % Load tSeries
 tSeries = loadTSeries(view, scan, slice);
 
+% Reshape the tSeries
+% ATTN: added reshapeTSeries function, since loadTSeries not longer reshapes when it loads -eli
+tSeries = reshapeTSeries(tSeries);
+
 % Remove junkFrames
 tSeries = tSeries(junkframes+1:junkframes+nframes,:);
 
