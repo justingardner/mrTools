@@ -1,4 +1,4 @@
-function refreshMLRDisplay(viewNum)
+function[img] = refreshMLRDisplay(viewNum)
 %	$Id$	
 
 mrGlobals
