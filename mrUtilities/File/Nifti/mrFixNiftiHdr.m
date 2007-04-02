@@ -107,7 +107,7 @@ for passNum = 1:2
 	  % and write the header out
 	  %cbiWriteNiftiHeader(srchdr,sprintf('%s.hdr',stripext(filename)));
 	  % and change it in the view
-	  view = viewSet(view,'niftiHdr',iScan,iGroup);
+	  view = viewSet(view,'niftiHdr',srchdr,iScan,iGroup);
 	end
       else
 	disp(sprintf('(%s:%i) pixdim [%s] matches with qform44',viewGet(view,'groupName',iGroup),iScan,num2str(voxdim)));
