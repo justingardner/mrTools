@@ -35,6 +35,14 @@ end
 
 % Assign local variable with roiName = roi
 roi = viewGet(view,'roi',roiNum);
+% now go through and fix any characters that are not allowed in
+% variable names
+swapchars = {{'-','_'},{' ','_'},{'*','s'},{'+','p'},{'%','p'},{'[','B'},{']','B'},{'(','P'},{')','P'}};
+for i = 1:length(swapchars)
+  swaplocs = strfind(roiName,swapchars{i}{1});
+  roiName(swaplocs) = swapchars{i}{2};
+end
+roiName
 eval([roiName,'=roi;']);
 
 % path to file
