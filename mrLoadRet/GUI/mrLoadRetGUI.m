@@ -8,7 +8,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 21-Mar-2007 12:03:22
+% Last Modified by GUIDE v2.5 02-Apr-2007 17:06:31
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -921,8 +921,26 @@ function editRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-view = editRoiGUI(view);
-refreshMLRDisplay(viewNum);
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+roiName = viewGet(view,'roiName',roiNum);
+roiColor = viewGet(view,'roiColor',roiNum);
+colors = {'red','green','blue','yellow','cyan','magenta','white','black'};
+% remove our color from list
+colors = setdiff(colors,roiColor);
+% and add it at the top
+colors{end+1} = roiColor;
+colors = fliplr(colors);
+% make parameter string
+roiParams = {{'name',roiName,'Name of roi, avoid using punctuation and space'},{'color',colors,'The color that the roi will display in'}};
+params = mrParamsDialog(roiParams);
+% if not empty, then change the parameters
+if ~isempty(params)
+  view = viewSet(view,'roiColor',params.color,roiNum);
+  view = viewSet(view,'roiName',params.name,roiNum);
+  refreshMLRDisplay(viewNum);
+end
 
 % --------------------------------------------------------------------
 function editBaseMenu_Callback(hObject, eventdata, handles)
@@ -1247,7 +1265,6 @@ function interrogateOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 % start the mrInterrogator
 viewNum = handles.viewNum;
-viewNum
 mrInterrogator('init',viewNum);
 return
 
@@ -1420,3 +1437,25 @@ view = MLR.views{viewNum};
 view = concatTSeries(view);
 
 
+% --------------------------------------------------------------------
+function roiCoordinatesMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to roiCoordinatesMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+scanNum = viewGet(view,'curScan');
+
+% get the coordinates
+coords = getRoiCoordinates(view,roiNum,scanNum);
+disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
+% and display them to the buffer
+for i = 1:size(coords,2)
+  disp(sprintf('%i %i %i',coords(1,i),coords(2,i),coords(3,i)));
+end

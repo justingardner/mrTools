@@ -230,7 +230,7 @@ function initHandler(viewNum)
 
 mrGlobals;
 
-fignum = viewGet(MLR.views{viewNum},'figNum')
+fignum = viewGet(MLR.views{viewNum},'figNum');
 
 % see if this is a restart
 restart = 0;

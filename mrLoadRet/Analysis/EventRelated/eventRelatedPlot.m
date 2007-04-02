@@ -34,7 +34,7 @@ set(fignum,'Name','eventRelatedPlot');
 roi = {};
 nROIs = viewGet(view,'numberOfROIs');
 for roinum = 1:nROIs
-  roicoords = getRoiCoordinates(view,scan,roinum);
+  roicoords = getRoiCoordinates(view,roinum,scan);
   % see if this is a matching roi
   if ismember([x y s],roicoords','rows')
     % get the roi
@@ -103,36 +103,3 @@ xlabel('Time (sec)');
 ylabel('% Signal change');
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% get the roi coordinates in this overlay coordinate frame
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function overlayCoords = getRoiCoordinates(view,scan,roinum)
-
-% get the base transform
-baseNum = viewGet(view,'currentBase');
-baseXform = viewGet(view,'baseXform',baseNum);
-baseVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
-
-% get the base to overlay scale factors
-baseDims = viewGet(view,'baseDims',baseNum);
-overlayDims = viewGet(view,'overlayDims',scan);
-
-% Get subset of coords corresponding to the current slice
-roiCoords = viewGet(view,'roiCoords',roinum);
-roiXform = viewGet(view,'roiXform',roinum);
-roiVoxelSize = viewGet(view,'roiVoxelSize',roinum);
-
-% Use xformROI to supersample the coordinates
-baseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-
-% and convert them into the overlay units by noting dimension
-% scale factor (is this the best way to do this?)
-if ~isempty(baseCoords)
-  overlayCoords(1,:) = round(baseCoords(1,:)*overlayDims(1)/baseDims(1));
-  overlayCoords(2,:) = round(baseCoords(2,:)*overlayDims(2)/baseDims(2));
-  overlayCoords(3,:) = baseCoords(3,:);
-else
-  overlayCoords = [];
-end
-% return the unique ones
-overlayCoords = unique(overlayCoords','rows')';

@@ -13,16 +13,24 @@ if ~any(nargin == [1 2])
   return
 end
 
+mrGlobals;
 % Complete pathStr
 if ieNotDefined('pathStr')
   % start in an roi directory
   %startPathStr = fullfile(viewGet(view,'viewType'),'ROIs');
-  startPathStr = 'Inplane/ROIs';
+  if isfield(MLR.prefs,'importROIpath')
+    startPathStr = MLR.prefs.importROIpath;
+  else
+    startPathStr = 'Inplane/ROIs';
+  end
   if ~isdir(startPathStr),startPathStr='';,end
   % get the user defined path
   pathStr = getPathStrDialog(startPathStr,'Choose roi files to import','*.mat','on');
 end
-if isempty(pathStr),return,end
+if isempty(pathStr),disp('No ROI selected');,return,end
+
+% remember the path for next
+MLR.prefs.importROIpath = fileparts(pathStr{1});
 
 % get some info
 baseNum = viewGet(view,'currentBase');
