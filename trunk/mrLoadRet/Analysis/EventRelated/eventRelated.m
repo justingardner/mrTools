@@ -189,7 +189,9 @@ for scanNum = 1:length(params.scanNum)
     % check to see what style this is, if the task variable does
     % not have a segmentTrace then it mus be an old style, in which
     % we used channels
-    if isfield(stimfile{1}.myscreen,'traces') && ~isfield(stimfile{1}.task{1}{1},'segmentTrace')
+    if isfield(stimfile{1}.myscreen,'traces') && ...
+	  ((iscell(stimfile{1}.task{1}) && ~isfield(stimfile{1}.task{1}{1},'segmentTrace')) ||...
+	   (~iscell(stimfile{1}.task{1}) && ~isfield(stimfile{1}.task{1},'segmentTrace')))
       % this is the old style, get the stimtrace number
       taskVarParams{1} = {'stimtrace',stimfile{1}.myscreen.stimtrace,'the trace number that contains the stimulus','incdec=[-1 1]',sprintf('minmax=[%i %i]',stimfile{1}.myscreen.stimtrace,size(stimfile{1}.myscreen.traces,1))};
     else
