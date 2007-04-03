@@ -8,7 +8,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 03-Apr-2007 10:09:17
+% Last Modified by GUIDE v2.5 03-Apr-2007 10:56:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1523,4 +1523,12 @@ refreshMLRDisplay(viewNum);
 if saveVolumeDirectory
   viewSet(view,'prefs','volumeDirectory',volumeDirectory);
 end
+
+
+% --------------------------------------------------------------------
+function roiCoordinates_Callback(hObject, eventdata, handles)
+% hObject    handle to roiCoordinatesMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
 
