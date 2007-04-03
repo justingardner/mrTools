@@ -19,6 +19,16 @@ mrGlobals;
 % save figloc
 if isfield(MLR,'figloc')
   figloc = MLR.figloc;
-  save '~/.mrDefaults.mat' figloc -V6;
+else
+  figloc = [];
 end
+
+if isfield(MLR,'prefs')
+  prefs = MLR.prefs;
+else
+  prefs = [];
+end
+
+
+save '~/.mrDefaults.mat' figloc prefs -V6;
 

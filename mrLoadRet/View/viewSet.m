@@ -184,6 +184,10 @@ switch lower(param)
 	  MLR.groups(g).scanParams(s).niftiHdr = val;
         end
 	
+    case{'prefs','preference','pref'}
+        % view = viewSet(view,'pref','prefname',val);
+	% set prefernce prefname to val
+	MLR.prefs.(val)=varargin{1};
     case {'newscan','updatescan'}
         % view = viewSet(view,'newScan',scanParams);
         % val must be a scanParams structure with scanParams.fileName set

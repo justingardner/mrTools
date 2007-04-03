@@ -513,6 +513,14 @@ switch lower(param)
                 val = [];
             end
         end
+    case{'prefs','preference','pref'}
+        % val = viewGet(view,'pref','prefname');
+	% return a preference value or [] if it does not exist
+	if isfield(MLR.prefs,varargin{1})
+	  val = MLR.prefs.(varargin{1});
+	else
+	  val = [];
+	end
     case{'transforms'}
         % transforms = viewGet(view,'transforms',scanNum,[groupNum]);
         % returns motion correction transformation matrices if they exists

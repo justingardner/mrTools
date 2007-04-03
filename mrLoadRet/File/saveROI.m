@@ -42,7 +42,6 @@ for i = 1:length(swapchars)
   swaplocs = strfind(roiName,swapchars{i}{1});
   roiName(swaplocs) = swapchars{i}{2};
 end
-roiName
 eval([roiName,'=roi;']);
 
 % path to file

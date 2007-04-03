@@ -35,17 +35,24 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     % Initialize graph window
     MLR.graphFigure = [];
 
-    % Init the figloc
+    % Init the figloc and prefs
     MLR.figloc = [];
+    MLR.prefs = [];
 
     % read the default figlocs
     mrDefaults = loadMrDefaults;
     if isfield(mrDefaults,'figloc')
       MLR.figloc = mrDefaults.figloc;
     end
+    if isfield(mrDefaults,'prefs')
+      MLR.prefs = mrDefaults.prefs;
+    end
     
-    % load preferences
-    MLR.prefs = [];
+    % load preferences, note that this will override
+    % any preferences set my mrDefaults. This is intended
+    % behavior. If you use setpref it means you really want it
+    % that way. Ones saved in mrDefaults are preferences 
+    % the last time you savedMrDefaults
     prefs = getpref('mrLoadRet');
     % if there are some preferences, put them into the MLR variable
     % for easy and quicker access

@@ -24,9 +24,10 @@ end
 if isfield(mrDefaults,'figloc')
   figlocNames = fieldnames(mrDefaults.figloc);
   for i = 1:length(figlocNames)
-    % if it isn't of lenght four then just remove it 
+    % if it isn't of length four then just remove it 
     if length(mrDefaults.figloc.(figlocNames{i})) ~= 4
       mrDefaults.figloc = rmfield(mrDefaults.figloc,figlocNames{i});
     end
   end
 end
+
