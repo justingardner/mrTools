@@ -30,7 +30,7 @@ for i = 1:length(d.stimfile)
   switch d.stimfile{i}.filetype,
    case 'mgl',
     % if we have a variable name, then get the stimvols from that
-    if (isstr(varname)&&~isempty(varname))|| (~isempty(varname) && isfield(varname,'varname') && ~isempty(varname.varname))
+    if (isstr(varname)&&~isempty(varname))|| (~isempty(varname) && isfield(varname,'varname') && ~isempty(varname.varname)) || (iscell(varname))
       [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     % otherwise get it the old style from the traces
     else

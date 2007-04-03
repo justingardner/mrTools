@@ -227,7 +227,13 @@ for scanNum = 1:length(params.scanNum)
     taskVarParams = mrParamsDialog(taskVarParams);
     % user hit cancel
     if isempty(taskVarParams),return, end
-    % otherwise set the variables
+    % check if we were passed a cell array, if we were
+    % then convert it
+    if (isfield(taskVarParams,'varname') && isstr(taskVarParams.varname) && ...
+	(length(taskVarParams.varname) > 1) && (taskVarParams.varname(1) == '{'))
+      taskVarParams.varname = eval(taskVarParams.varname);
+    end
+    % check the variables--deal with sameForAll
     taskVarParamsFieldnames = fieldnames(taskVarParams);
     for tnum = 1:length(taskVarParamsFieldnames)
       if ~strcmp(taskVarParamsFieldnames{tnum},'sameForAll') & ~strcmp(taskVarParamsFieldnames{tnum},'paramInfo')
