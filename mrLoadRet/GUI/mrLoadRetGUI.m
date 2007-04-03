@@ -629,7 +629,13 @@ mrWarnDlg('exportAnatomy not yet implemented');
 
 % --------------------------------------------------------------------
 function exportOverlayMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('exportOverlay not yet implemented');
+pathstr = putPathStrDialog(pwd,'Specify name of exported Nifti overlay file','*.tif');
+% pathstr = [] if aborted
+if ~isempty(pathstr)
+    mrGlobals;
+    viewNum = handles.viewNum;
+    mrExport2SR(viewNum, pathstr);
+end
 
 % --------------------------------------------------------------------
 function exportTSeriesMenuItem_Callback(hObject, eventdata, handles)
@@ -641,7 +647,13 @@ mrWarnDlg('exportROI not yet implemented');
 
 % --------------------------------------------------------------------
 function exportImageMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('exportImage not yet implemented');
+pathstr = putPathStrDialog(pwd,'Specify name of exported image file','*.tif');
+% pathstr = [] if aborted
+if ~isempty(pathstr)
+    img = refreshMLRDisplay(handles.viewNum);
+    imwrite(img, pathstr, 'tif');
+end
+
 
 % --------------------------------------------------------------------
 function readmeMenuItem_Callback(hObject, eventdata, handles)
