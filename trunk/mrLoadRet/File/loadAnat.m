@@ -1,6 +1,6 @@
-function view = loadAnat(view,anatFileName)
+function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
 %
-% view = loadAnat(view,[anatFileName])
+% view = loadAnat(view,[anatFileName],[anatFilePath])
 %
 % Loads an anatomy array and sets view.baseVolumes to include.
 %
@@ -9,6 +9,10 @@ function view = loadAnat(view,anatFileName)
 % in the <homedir>/Anatomy subdirectory. Use symbolic links to point to a
 % shared directory for volume anatomy files.
 %
+% anatFilePath is the path of where to open up the dialog. This
+% will bey returned so that the GUI can open up in the same
+% place each time.
+% 
 % djh, 1/9/98
 % 5/2005, djh, update to mrLoadRet-4.0
 
@@ -16,14 +20,20 @@ function view = loadAnat(view,anatFileName)
 % Load the anatomy file %
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
+if ieNotDefined('anatFilePath'),anatFilePath = '';end
+
 % Open dialog box to have user choose the file
 if ieNotDefined('anatFileName')
-	startPathStr = viewGet(view,'anatomyDir');
-    filterspec = {'*.img;*.nii','Nifti/Analyze files'};
-    title = 'Choose anatomy file';
-	pathStr = getPathStrDialog(startPathStr,title,filterspec);
+  if ieNotDefined('anatFilePath')
+    startPathStr = viewGet(view,'anatomyDir');
+  else
+    startPathStr = anatFilePath;
+  end
+  filterspec = {'*.img;*.nii','Nifti/Analyze files'};
+  title = 'Choose anatomy file';
+  pathStr = getPathStrDialog(startPathStr,title,filterspec);
 else
-	pathStr = fullfile(viewGet(view,'anatomyDir'),anatFileName);
+  pathStr = fullfile(viewGet(view,'anatomyDir'),anatFileName);
 end
 
 % Aborted
@@ -33,11 +43,12 @@ end
 
 % File does not exist
 if ~exist(pathStr,'file')
-    mrWarnDlg(['File ',pathStr,' not found']);
-	return
+  mrWarnDlg(['File ',pathStr,' not found']);
+  return
 end
 
 [path,name,ext,versn] = fileparts(pathStr);
+anatFilePath = path;
 
 % Load nifti file and reorder the axes and flip (site specific).
 h = mrMsgBox(['Loading volume: ',pathStr,'. Please wait']);

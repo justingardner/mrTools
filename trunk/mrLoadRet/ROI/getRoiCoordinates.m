@@ -35,4 +35,6 @@ scanCoords = round(xformROIcoords(roiCoords,inv(scanXform)*roiXform,roiVoxelSize
 
 % return the unique ones
 scanCoords = unique(scanCoords','rows')';
-scanCoords = scanCoords(1:3,:);
+if ~isempty(scanCoords)
+  scanCoords = scanCoords(1:3,:);
+end

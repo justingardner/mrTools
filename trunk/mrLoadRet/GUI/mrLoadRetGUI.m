@@ -8,7 +8,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 02-Apr-2007 17:06:31
+% Last Modified by GUIDE v2.5 03-Apr-2007 10:09:17
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1471,3 +1471,56 @@ disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
 for i = 1:size(coords,2)
   disp(sprintf('%i %i %i',coords(1,i),coords(2,i),coords(3,i)));
 end
+
+
+% --------------------------------------------------------------------
+function prefMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to prefMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% get view
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+
+% set up the dialog and ask the user to set parameters
+interpTypes = {'nearest','linear','spline','cubic'};
+prefParams = {{'site',viewGet(view,'prefs','site'),'Where you are using this code'},...
+	      {'verbose',viewGet(view,'prefs','verbose'),'minmax=[0 1]','incdec=[-1 1]','Set to 1 if you want to have dialog waitbars, set to 0 to have information printed to the terminal'},...
+	      {'interpMethod',putOnTopOfList(viewGet(view,'prefs','interpMethod'),interpTypes),'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
+	      {'maxBlocksize',viewGet(view,'prefs','maxBlocksize'),'This controls how large chunks of data we can analyze at one time. If you are running out of memory, set this value lower','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
+	      {'volumeDirectory',viewGet(view,'prefs','volumeDirectory'),'The directory to default to when you load base anatomy from the Volume directory','type=string'}};
+prefParams = mrParamsDialog(prefParams);
+
+% if they did not cancel then actually set the parameters
+if ~isempty(prefParams)
+  view = viewSet(view,'prefs','site',prefParams.site);
+  view = viewSet(view,'prefs','verbose',prefParams.verbose);
+  view = viewSet(view,'prefs','interpMethod',prefParams.interpMethod);
+  view = viewSet(view,'prefs','maxBlocksize',prefParams.maxBlocksize);
+  view = viewSet(view,'prefs','volumeDirectory',prefParams.volumeDirectory);
+end
+
+% --------------------------------------------------------------------
+function loadFromVolumeMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to loadFromVolumeMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+% get the volume directory from prefs
+volumeDirectory = viewGet(view,'prefs','volumeDirectory');
+saveVolumeDirectory = 0;
+if isempty(volumeDirectory)
+  saveVolumeDirectory = 1
+end
+% load the anatomy
+[view volumeDirectory] = loadAnat(view,'',volumeDirectory);
+refreshMLRDisplay(viewNum);
+% if volumeDirectory prefMenu was empty before, than save it now
+if saveVolumeDirectory
+  viewSet(view,'prefs','volumeDirectory',volumeDirectory);
+end
+
