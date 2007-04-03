@@ -93,8 +93,9 @@ for scanNum = params.scanNum
   for i = 1:ceil(numSlices/numSlicesAtATime)
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);;
-    % get the stim volumes
+    % get the stim volumes, if empty then abort
     d = getStimvol(d,params.eventRelatedVarname{scanNum});
+    if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
     % do any called for preprocessing
     d = eventRelatedPreProcess(d,params.preprocess);
     % make a stimulation convolution matrix
