@@ -11,6 +11,10 @@
 % Examples of a number of possible customizations are commented
 % below.
 
+if ~isfile('mrSession.mat')
+  disp('(mrLoadRet) No mrSession.mat found in current directory');
+  return
+end
 % Define and initialize global variable MLR.
 mrGlobals
 
