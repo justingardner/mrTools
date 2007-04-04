@@ -10,15 +10,16 @@
 % version of this script to customize it for that data set.
 % Examples of a number of possible customizations are commented
 % below.
+function v = mrLoadRet
 
 if ~isfile('mrSession.mat')
   disp('(mrLoadRet) No mrSession.mat found in current directory');
   return
 end
+
 % Define and initialize global variable MLR.
 mrGlobals
 
 % Open inplane window
-mrOpenWindow('Volume');
+v = mrOpenWindow('Volume');
 
-return;
