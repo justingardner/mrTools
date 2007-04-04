@@ -1,7 +1,7 @@
-function[overlayIm] = mrExport2SR(viewNum)
+function[] = mrExport2SR(viewNum, pathstr)
 % mrExport2SR.m
 %
-%      usage: overlayIM = mrExprt2SR(viewNum)
+%      usage: [] = mrExprt2SR(viewNum, pathstr)
 %         by: eli merriam
 %       date: 03/20/07
 %    purpose: exports a MLR overlay to a Nifti file compatible with SurfRelax
@@ -32,12 +32,12 @@ rotate = viewGet(view,'rotate');
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 
-basedims = viewGet(1, 'basedims');
+basedims = viewGet(view, 'basedims');
 overlayIm = zeros(basedims);
 overlayNum = viewGet(view,'currentOverlay');
 overlayData = viewGet(view,'overlayData',scan,overlayNum);
 
-
+disppercent(-inf,sprintf('Exporting resampled Nifti file: %s', pathstr));
 for baseSlice = 1:basedims(1)
     % Compute base and overlay coordinates for the current slice
     [baseCoords,overlayCoords] = getSliceCoords(view,scan,baseSlice,sliceIndex,rotate);
@@ -46,12 +46,17 @@ for baseSlice = 1:basedims(1)
     
     % Extract slice from current overlay.
     if ~isempty(overlayNum) & ~isempty(overlayCoords) & ~isempty(overlayData)
-         overlayIm(baseSlice,:,:) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
-     end
+        overlayIm(baseSlice,:,:) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
+    end
+    disppercent(baseSlice/basedims(1));
 end
 
-baseVolume = viewGet(1,'baseVolume');
-%cbiWriteNifti('ph.hdr', ph, baseVolume.hdr)
+disppercent(inf)
+baseVolume = viewGet(viewNum,'baseVolume');
+hdr = baseVolume.hdr;
+hdr.datatype = 4;                       % SurfaceViewer requires shorts
+hdr.pixdim = [1 1 1 1 1 1 1 1]';        % all pix dims must be specified here
+cbiWriteNifti(pathstr, overlayIm, hdr)
 
 return
 
