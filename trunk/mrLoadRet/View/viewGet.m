@@ -161,9 +161,9 @@ switch lower(param)
         analysis = view.analyses{analysisNum};
         if ~isempty(groupNum) & ~isempty(analysis)
             dataDir = viewGet(view,'datadir',groupNum);
-            val = fullfile(dataDir,analysis.name);
+            val = fullfile(dataDir,analysis.type);
             if ~exist(val,'dir')
-                mkdir(dataDir,analysis.name);
+                mkdir(dataDir,analysis.type);
             end
         end
     case {'overlaydir'}
