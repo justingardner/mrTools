@@ -67,7 +67,7 @@ end
 subplot(2,2,3);
 % and display ehdr
 plotEhdr(time,ehdr,ehdrste);
-title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays.data{scan}(x,y,s)));
+title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays(1).data{scan}(x,y,s)));
 xaxis(0,d.hdrlen*d.tr);
 if isfield(d,'stimNames')
   legend(d.stimNames);

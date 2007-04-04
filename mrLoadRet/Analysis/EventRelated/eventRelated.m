@@ -144,7 +144,9 @@ erAnal.groupName = params.groupName;
 erAnal.function = 'eventRelated';
 erAnal.reconcileFunction = 'mrParamsReconcile';
 erAnal.guiFunction = 'eventRelatePlot';
-erAnal.params = params;
+for scanNum = params.scanNum
+  erAnal.params{scanNum} = params;
+end
 erAnal.overlays = r2;
 erAnal.curOverlay = 1;
 erAnal.date = dateString;
