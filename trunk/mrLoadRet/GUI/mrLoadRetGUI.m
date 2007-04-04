@@ -629,7 +629,7 @@ mrWarnDlg('exportAnatomy not yet implemented');
 
 % --------------------------------------------------------------------
 function exportOverlayMenuItem_Callback(hObject, eventdata, handles)
-pathstr = putPathStrDialog(pwd,'Specify name of exported Nifti overlay file','*.tif');
+pathstr = putPathStrDialog(pwd,'Specify name of exported Nifti overlay file','*.hdr');
 % pathstr = [] if aborted
 if ~isempty(pathstr)
     mrGlobals;
