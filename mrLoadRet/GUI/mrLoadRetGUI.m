@@ -1583,17 +1583,17 @@ baseName = viewGet(view,'baseName');
 disp(sprintf('\n===== Base anatomy info ======'));
 disp(sprintf('%s',baseName));
 disp(sprintf('voxelSize=[%0.1f %0.1f %0.1f] Dims: [%i %i %i]',baseVoxelSize(1),baseVoxelSize(2),baseVoxelSize(3),baseDims(1),baseDims(2),baseDims(3)));
-disp(sprintf('qform:'));
+disp(sprintf('++++++++++++++++++++++++++ qform ++++++++++++++++++++++++++'));
 for rownum = 1:4
-  disp(sprintf('%f %f %f %f',baseQform(rownum,1),baseQform(rownum,2),baseQform(rownum,3),baseQform(rownum,4)));
+  disp(sprintf('%f\t%f\t%f\t%f',baseQform(rownum,1),baseQform(rownum,2),baseQform(rownum,3),baseQform(rownum,4)));
 end
-disp(sprintf('sform:'));
+disp(sprintf('++++++++++++++++++++++++++ sform ++++++++++++++++++++++++++'));
 for rownum = 1:4
-  disp(sprintf('%f %f %f %f',baseSform(rownum,1),baseSform(rownum,2),baseSform(rownum,3),baseSform(rownum,4)));
+  disp(sprintf('%f\t%f\t%f\t%f',baseSform(rownum,1),baseSform(rownum,2),baseSform(rownum,3),baseSform(rownum,4)));
 end
-disp(sprintf('volPermutation:'));
+disp(sprintf('+++++++++++++++++++ Volume Permutation +++++++++++++++++++++'));
 for rownum = 1:3
-  disp(sprintf('%f %f %f',baseVolPermutation(rownum,1),baseVolPermutation(rownum,2),baseVolPermutation(rownum,3)));
+  disp(sprintf('%f\t%f\t%f',baseVolPermutation(rownum,1),baseVolPermutation(rownum,2),baseVolPermutation(rownum,3)));
 end
 disp(sprintf('======================'));
 
