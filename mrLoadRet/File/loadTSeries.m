@@ -73,7 +73,7 @@ elseif length(frame) == 1
 elseif length(frame) == 2
   nFramesExpected= frame(2)-frame(1)+1;
 end
-nFrames = dims(4);
-if (nFrames ~= nFramesExpected)
-  mrWarnDlg('loadTSeries: number of frames in tseries file does not match expected.');
-end
+% nFrames = dims(4);
+% if (nFrames ~= nFramesExpected)
+%   mrWarnDlg('loadTSeries: number of frames in tseries file does not match expected.');
+% end
