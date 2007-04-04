@@ -13,24 +13,24 @@ function saveAnalysis(view,analysisName,confirm)
 % djh, 7/2006
 
 if ieNotDefined('analysisName')
-    analysisNum = viewGet(view,'currentAnalysis');
-    analysisName = viewGet(view,'analysisName',analysisNum);
+  analysisNum = viewGet(view,'currentAnalysis');
+  analysisName = viewGet(view,'analysisName',analysisNum);
 end
 if isstr(analysisName)
-    analysisNum = viewGet(view,'analysisNum',analysisName);
+  analysisNum = viewGet(view,'analysisNum',analysisName);
 elseif isnumeric(analysisName)
-	analysisNum = analysisName;
-	analysisName = viewGet(view,'analysisName',analysisNum);
+  analysisNum = analysisName;
+  analysisName = viewGet(view,'analysisName',analysisNum);
 else
-	myErrorDlg(['Bad analysis name: ',analysisName]);
+  myErrorDlg(['Bad analysis name: ',analysisName]);
 end
 
 if ieNotDefined('confirm')
-    if ispref('mrLoadRet','verbose')
-        confirm = getpref('mrLoadRet','verbose');
-    else
-        confirm = 0;
-    end
+  if ispref('mrLoadRet','verbose')
+    confirm = getpref('mrLoadRet','verbose');
+  else
+    confirm = 0;
+  end
 end
 
 % Assign local variable with analysisName = analysis
@@ -45,17 +45,17 @@ pathStr = fullfile(analysisdir,filename);
 % Write, though check for over-writing
 saveFlag = 'Yes';
 if exist([pathStr,'.mat'],'file')
-    if confirm
-        saveFlag = questdlg([pathStr,' already exists. Overwrite?'],...
+  if confirm
+    saveFlag = questdlg([pathStr,' already exists. Overwrite?'],...
             'Save Analysis?','Yes','No','No');
-	end
+  end
 end
 if strcmp(saveFlag,'Yes')
-    fprintf('Saving %s...',pathStr);
-    saveString = ['save(pathStr,','''',analysisName,'''',');'];
-    eval(saveString);
-    fprintf('done\n');
+  fprintf('Saving %s...',pathStr);
+  saveString = ['save(pathStr,','''',analysisName,'''',');'];
+  eval(saveString);
+  fprintf('done\n');
 else
-    fprintf('Analysis not saved...');
+  fprintf('Analysis not saved...');
 end
 return;
