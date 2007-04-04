@@ -1,5 +1,6 @@
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
+% $Id$	
 %
 % Creates a new mrLoadRet GUI.
 % This function was created along with mrLoadRetGui.fig using GUIDE.
