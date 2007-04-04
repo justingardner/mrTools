@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 03-Apr-2007 10:56:29
+% Last Modified by GUIDE v2.5 04-Apr-2007 09:50:05
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1531,5 +1531,70 @@ function roiCoordinates_Callback(hObject, eventdata, handles)
 % hObject    handle to roiCoordinatesMenuItem (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function infoGroupMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to infoGroupMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+groupNum = viewGet(view,'curGroup');
+groupName = viewGet(view,'groupName',groupNum);
+disp(sprintf('\n===== Group Info (%s) =====',groupName));
+groupInfo(groupNum);
+disp(sprintf('======================'));
+
+% --------------------------------------------------------------------
+function infoScanMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to infoScanMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+scanNum = viewGet(view,'curScan');
+groupNum = viewGet(view,'curGroup');
+groupName = viewGet(view,'groupName',groupNum);
+disp(sprintf('\n===== Scan Info (%s: %i) =====',groupName,scanNum));
+scanInfo(scanNum,groupNum);
+disp(sprintf('======================'));
+
+
+% --------------------------------------------------------------------
+function infoBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to infoBaseAnatomyMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+scanNum = viewGet(view,'curScan');
+groupNum = viewGet(view,'curGroup');
+baseDims = viewGet(view,'baseDims');
+baseQform = viewGet(view,'baseqform');
+baseSform = viewGet(view,'baseXform');
+baseVolPermutation = viewGet(view,'baseVolPermutation');
+baseVoxelSize = viewGet(view,'baseVoxelSize');
+baseName = viewGet(view,'baseName');
+
+disp(sprintf('\n===== Base anatomy info ======'));
+disp(sprintf('%s',baseName));
+disp(sprintf('voxelSize=[%0.1f %0.1f %0.1f] Dims: [%i %i %i]',baseVoxelSize(1),baseVoxelSize(2),baseVoxelSize(3),baseDims(1),baseDims(2),baseDims(3)));
+disp(sprintf('qform:'));
+for rownum = 1:4
+  disp(sprintf('%f %f %f %f',baseQform(rownum,1),baseQform(rownum,2),baseQform(rownum,3),baseQform(rownum,4)));
+end
+disp(sprintf('sform:'));
+for rownum = 1:4
+  disp(sprintf('%f %f %f %f',baseSform(rownum,1),baseSform(rownum,2),baseSform(rownum,3),baseSform(rownum,4)));
+end
+disp(sprintf('volPermutation:'));
+for rownum = 1:3
+  disp(sprintf('%f %f %f',baseVolPermutation(rownum,1),baseVolPermutation(rownum,2),baseVolPermutation(rownum,3)));
+end
+disp(sprintf('======================'));
 
 

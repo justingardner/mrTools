@@ -67,6 +67,7 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   originalFilename = viewGet(view,'originalFilename',s,groupNum);
   originalGroupname = viewGet(view,'originalGroupname',s,groupNum);
   stimFilename = viewGet(view,'stimFilename',s,groupNum);
+  scanDims = viewGet(view,'scanDims',s,groupNum);
   
   % display info
   disp(sprintf('%i: %s',s,description));
@@ -78,6 +79,6 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
     disp(sprintf('   StimFilename: %s',stimFilename{i}));
   end
   
-  disp(sprintf('   voxelSize=[%0.1f %0.1f %0.1f] TR=%0.4f Volumes=%i',scanVoxelSize(1),scanVoxelSize(2),scanVoxelSize(3),tr,totalFrames));
+  disp(sprintf('   voxelSize=[%0.1f %0.1f %0.1f] TR=%0.4f Dims: [%i %i %i] Volumes=%i',scanVoxelSize(1),scanVoxelSize(2),scanVoxelSize(3),tr,scanDims(1),scanDims(2),scanDims(3),totalFrames));
 end
 
