@@ -53,18 +53,18 @@ end
 
 % Get analysis parameters from corAnalGUI, using co.params if it exists
 if ieNotDefined('params')
-    if ~isempty(oldparams)
-        % Initialize analysis parameters with previous values from loaded
-        % coherence map and reconcile with current status of group.
-        params = corAnalGUI('groupName',viewGet(view,'groupName'),'params',oldparams);        
-	else
-        % Initialize analysis parameters with default values
-        params = corAnalGUI('groupName',viewGet(view,'groupName'));
-    end
+  if ~isempty(oldparams)
+    % Initialize analysis parameters with previous values from loaded
+    % coherence map and reconcile with current status of group.
+    params = corAnalGUI('groupName',viewGet(view,'groupName'),'params',oldparams);        
+  else
+    % Initialize analysis parameters with default values
+    params = corAnalGUI('groupName',viewGet(view,'groupName'));
+  end
 else
-    % Reconcile params with current status of group and ensure that params
-    % has the required fields.
-    params = corAnalReconcileParams(params.groupName,params);
+  % Reconcile params with current status of group and ensure that params
+  % has the required fields.
+  params = corAnalReconcileParams(params.groupName,params);
 end
 
 % Abort if params empty
