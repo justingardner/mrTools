@@ -168,7 +168,7 @@ switch lower(field)
 		% description
 		description = viewGet(view,'description',value);
 		%set(handles.descriptionText,'String',description);
-		set(viewGet(view,'figNum'),'Name',sprintf('mrLoadRet: %s',description));
+		set(viewGet(view,'figNum'),'Name',sprintf('%s: %s',getLastDir(MLR.homeDir),description));
 
     case {'scantext'}
         % mlrGuiSet(view,'scanText',value);
@@ -176,7 +176,8 @@ switch lower(field)
 		% description
 		description = viewGet(view,'description',value);
 		%set(handles.descriptionText,'String',description);
-		set(viewGet(view,'figNum'),'Name',sprintf('mrLoadRet: %s',description));
+		set(viewGet(view,'figNum'),'Name',sprintf('%s: %s',getLastDir(MLR.homeDir),description));
+
 		
 	case {'nslices'}
         % mlrGuiSet(view,'nslices',value);

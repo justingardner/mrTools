@@ -1484,13 +1484,24 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
-% set up the dialog and ask the user to set parameters
+% get interpTypes
 interpTypes = {'nearest','linear','spline','cubic'};
+if ~isempty(strcmp(viewGet(view,'prefs','interpMethod'),interpTypes))
+  interpTypes = putOnTopOfList(viewGet(view,'prefs','interpMethod'),interpTypes);
+end
+
+%get overwritePolicy
+overwritePolicy = {'Ask','Merge','Rename','Overwrite'};
+if ~isempty(strcmp(viewGet(view,'prefs','overwritePolicy'),overwritePolicy))
+  overwritePolicy = putOnTopOfList(viewGet(view,'prefs','overwritePolicy'),overwritePolicy);
+end
+% set up the dialog and ask the user to set parameters
 prefParams = {{'site',viewGet(view,'prefs','site'),'Where you are using this code'},...
 	      {'verbose',viewGet(view,'prefs','verbose'),'minmax=[0 1]','incdec=[-1 1]','Set to 1 if you want to have dialog waitbars, set to 0 to have information printed to the terminal'},...
-	      {'interpMethod',putOnTopOfList(viewGet(view,'prefs','interpMethod'),interpTypes),'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
+	      {'interpMethod',interpTypes,'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
 	      {'maxBlocksize',viewGet(view,'prefs','maxBlocksize'),'Size of chunks of data to analyze at a time. If you are running out of memory, set lower. A good starting value is 250000000','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
-	      {'volumeDirectory',viewGet(view,'prefs','volumeDirectory'),'The directory to default to when you load base anatomy from the Volume directory'}};
+	      {'volumeDirectory',viewGet(view,'prefs','volumeDirectory'),'The directory to default to when you load base anatomy from the Volume directory'},...
+	      {'overwritePolicy',overwritePolicy,'Method to use when analysis is going to overwrite an existing file'}};
 prefParams = mrParamsDialog(prefParams);
 
 % if they did not cancel then actually set the parameters
@@ -1500,6 +1511,7 @@ if ~isempty(prefParams)
   view = viewSet(view,'prefs','interpMethod',prefParams.interpMethod);
   view = viewSet(view,'prefs','maxBlocksize',prefParams.maxBlocksize);
   view = viewSet(view,'prefs','volumeDirectory',prefParams.volumeDirectory);
+  view = viewSet(view,'prefs','overwritePolicy',prefParams.overwritePolicy);
 end
 
 % --------------------------------------------------------------------
