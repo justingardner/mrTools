@@ -29,12 +29,15 @@ for i = 1:length(d.stimfile)
   % get the stimvol for this particular stimfile
   switch d.stimfile{i}.filetype,
    case 'mgl',
-    % if we have a variable name, then get the stimvols from that
-    if (isstr(varname)&&~isempty(varname))|| (~isempty(varname) && isfield(varname,'varname') && ~isempty(varname.varname)) || (iscell(varname))
-      [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
-    % otherwise get it the old style from the traces
-    else
+    % if we have a stimtrace then get the variables from that
+    if isfield(varname,'stimtrace')
+      stimvol = getStimvolFromTraces(d.stimfile{i},varname.stimtrace);
+    %numeric means a stimtrace,
+    elseif isnumeric(varname)
       stimvol = getStimvolFromTraces(d.stimfile{i},varname);
+    % otherwise get it using the varname
+    else
+      [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
       stimvol = getStimvolFromEventTimes(d.stimfile{i},d.tr);
