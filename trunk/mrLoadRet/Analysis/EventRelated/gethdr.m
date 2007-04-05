@@ -24,17 +24,9 @@ if nargin == 2
     return
   end
 end
-  
-% get the responses
-for i = 1:d.nhdr
-  hdr(i,1:d.hdrlen) = d.ehdr(x,y,s,(i-1)*d.hdrlen+1:(i)*d.hdrlen);
-  if isfield(d,'ehdrste')
-    hdrste(i,1:d.hdrlen) = d.ehdrste(x,y,s,(i-1)*d.hdrlen+1:(i)*d.hdrlen);
-  else
-    hdrste = nan*ones(size(hdr));
-  end
-end
 
-% and get the time
+hdr = squeeze(d.ehdr(x,y,s,:,:));
+hdrste = squeeze(d.ehdrste(x,y,s,:,:));
 time = d.tr/2:d.tr:(d.hdrlen*d.tr);
+
 
