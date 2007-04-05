@@ -5,7 +5,7 @@ function view = mrOpenWindow(viewType)
 % djh, 6/2004
 
 if ~exist('viewType','var')
-    viewType = 'Volume';
+  viewType = 'Volume';
 end
 
 mrGlobals;
