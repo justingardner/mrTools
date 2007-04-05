@@ -89,6 +89,9 @@ end
 concatInfo.n = 0;
 concatInfo.whichScan = [];
 concatInfo.whichVolume = [];
+
+
+set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
 tic
 % Compute output volume
 waitHandle = mrWaitBar(0,'Concatenating tSeries.  Please wait...');
@@ -234,6 +237,8 @@ save(fullfile(pathstr,filename),'evalstr','params','concatInfo');
 % Delete temporary viewBase and viewAverage
 deleteView(viewBase);
 deleteView(viewConcat);
+
+set(viewGet(view,'figNum'),'Pointer','arrow');drawnow
 
 return; 
 

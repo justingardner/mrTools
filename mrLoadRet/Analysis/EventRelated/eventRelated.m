@@ -41,7 +41,7 @@ r2.function = 'eventRelated';
 r2.reconcileFunction = 'mrParamsReconcile';
 r2.data = cell(1,viewGet(view,'nScans'));
 r2.date = dateString;
-r2.params = params;
+r2.params = cell(1,viewGet(view,'nScans'));
 r2.range = [0 1];
 r2.clip = [0 1];
 % colormap is made with a little bit less on the dark end
@@ -52,6 +52,7 @@ r2.colormapType = 'setRangeToMax';
 r2.interrogator = 'eventRelatedPlot';
 
 tic
+set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
 for scanNum = params.scanNum
   % decide how many slices to do at a time, this is done
   % simply to save memory -- currently our system is limited
@@ -62,9 +63,8 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  if isfield(MLR.prefs,'maxBlocksize')
-    maxBlocksize = MLR.prefs.maxBlocksize;
-  else
+  maxBlocksize = viewGet(view,'prefs','maxBlocksize');
+  if ieNotDefined('maxBlocksize')
     maxBlocksize = 250000000;
   end
   numSlicesAtATime = floor(maxBlocksize/(8*numVolumes*prod(dims(1:2))));
@@ -95,11 +95,13 @@ for scanNum = params.scanNum
   d.ehdr = ehdr;
   d.ehdrste = ehdrste;
   d.r2 = thisr2;
+
   d.dim(3) = size(d.r2,3);
 
   % save the r2 overlay
   r2.data{scanNum} = d.r2;
-
+  r2.params{scanNum} = params.scanParams{scanNum};
+  
   % save other eventRelated parameters
   erAnal.d{scanNum}.ver = d.ver;
   erAnal.d{scanNum}.filename = d.filename;
@@ -133,6 +135,8 @@ view = viewSet(view,'newAnalysis',erAnal);
 
 % Save it
 saveAnalysis(view,erAnal.name);
+
+set(viewGet(view,'figNum'),'Pointer','arrow');drawnow
 
 % for output
 if nargout > 1
