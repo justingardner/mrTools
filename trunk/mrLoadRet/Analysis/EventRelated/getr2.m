@@ -34,6 +34,9 @@ d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
 d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
 d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
 
+% turn off warnings to avoid divide by zero warning
+warning('off','MATLAB:divideByZero');
+
 % display string
 disppercent(-inf,'Calculating r2');
 % cycle through images calculating the estimated hdr and r^2s of the 
@@ -103,3 +106,4 @@ end
 % display time took
 disppercent(inf);
 
+warning('on','MATLAB:divideByZero');

@@ -67,9 +67,6 @@ if isempty(params.scanParams)
   return
 end
 
-% check parameters
-params = mrParamsReconcile([],params);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to get the variable name that the user wants
 % to do the event related analysis on, puts up a gui
@@ -170,12 +167,6 @@ for scanNum = 1:length(params.scanNum)
     scanParams{params.scanNum(scanNum)}.varname = eval(scanParams{params.scanNum(scanNum)}.varname);
   end
 
-  % if we set stimtrace for backwards compatibility make an alias
-  % to this and call it varname
-  if isfield(scanParams{params.scanNum(scanNum)},'stimtrace')
-    scanParams{params.scanNum(scanNum)}.varname = scanParams{params.scanNum(scanNum)}.stimtrace;
-  end
-  
   % if sameForAll is set, copy all parameters into all scans and break out of loop
   if isfield(scanParams{params.scanNum(scanNum)},'sameForAll') && ...
 	scanParams{params.scanNum(scanNum)}.sameForAll

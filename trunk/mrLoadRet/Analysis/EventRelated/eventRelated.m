@@ -21,11 +21,11 @@ mrGlobals;
 if ieNotDefined('params')
   % put up the gui
   params = eventRelatedGUI;
-else
-  % Reconcile params with current status of group and ensure that it has
-  % the required fields. 
-  params = mrParamsReconcile([],params);
 end
+
+% Reconcile params with current status of group and ensure that it has
+% the required fields. 
+params = mrParamsReconcile([],params);
 
 % Abort if params empty
 if ieNotDefined('params'),return,end
@@ -75,7 +75,7 @@ for scanNum = params.scanNum
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);;
     % get the stim volumes, if empty then abort
-    d = getStimvol(d,params.scanParams{scanNum}.varname);
+    d = getStimvol(d,params.scanParams{scanNum});
     if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
     % do any called for preprocessing
     d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
