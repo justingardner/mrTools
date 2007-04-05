@@ -76,7 +76,10 @@ if isfield(params,'paramInfo')
 	end
       % or a list of items
       elseif strcmp(lower(varinfo{i}.type),'popupmenu')
-	if ~any(strcmp(params.(varinfo{i}.name),varinfo{i}.value))
+	% if they are numeric items check  if the are equal, if
+        % they are string items, check if they strcmp
+	if (isnumeric(varinfo{i}.value{1}) && ~any(params.(varinfo{i}.name)==cell2mat(varinfo{i}.value)))... ||
+	  (~isnumeric(varinfo{i}.value{1}) && ~any(strcmp(params.(varinfo{i}.name),varinfo{i}.value)))
 	  useDefault = 1;
 	end
       end

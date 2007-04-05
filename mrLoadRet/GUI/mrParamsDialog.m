@@ -16,8 +16,8 @@ end
 
 % if this is a cell array, it means to open up the figure
 % using the variable name, default value pairs given
-if (nargin == 1) && iscell(varargin{1})
-  params = initFigure(varargin{1});
+if iscell(varargin{1})
+  params = initFigure(varargin{1},varargin);
 % otherwise it is a callback
 else
   handleCallbacks(varargin);
@@ -26,7 +26,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % set up figure in first palce
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function params = initFigure(vars)
+function params = initFigure(vars,otherParams)
 
 global gParams;
 
@@ -46,13 +46,19 @@ gParams.margin = 5;
 gParams.fontsize = 12;
 gParams.fontname = 'Helvetica';
 
+% see if we were passed a title
+if length(otherParams) > 1
+  titleStr = otherParams{2};
+else
+  titleStr = 'Set parameters';
+end
 % get the figure 
 if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
   % open figure, and turn off menu
   gParams.fignum = figure;
   set(gParams.fignum,'MenuBar','none');
   set(gParams.fignum,'NumberTitle','off');
-  set(gParams.fignum,'Name','Set parameters');
+  set(gParams.fignum,'Name',titleStr);
 else
   figure(gParams.fignum);
 end

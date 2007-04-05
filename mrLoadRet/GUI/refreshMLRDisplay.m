@@ -67,27 +67,27 @@ end
 
 % Compute alphaMap
 if ~ieNotDefined('overlayIm')
-	% Loop through overlays, filling in NaNs according to clip values.
-	mask = ones(size(overlayIm));
-    numOverlays = viewGet(view,'numberofOverlays');
-	for overlayNum = 1:numOverlays
-		overlayData = viewGet(view,'overlayData',scan,overlayNum);
-		if ~isempty(overlayData)
-			% Extract the slice
-			overlayIm = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
-				interpMethod,interpExtrapVal);
-			clip = viewGet(view,'overlayClip',overlayNum);
-			% Find pixels that are within clip
-			if diff(clip) > 0
-				pts = (overlayIm >= clip(1) & overlayIm <= clip(2));
-			else
-				pts = (overlayIm >= clip(1) | overlayIm <= clip(2));
-			end
-			mask = mask & pts;
-		end
-	end
-	% Finally, make the alphaMap.
-	alphaMap = repmat(alpha*mask,[1 1 3]);
+  % Loop through overlays, filling in NaNs according to clip values.
+  mask = ones(size(overlayIm));
+  numOverlays = viewGet(view,'numberofOverlays');
+  for overlayNum = 1:numOverlays
+    overlayData = viewGet(view,'overlayData',scan,overlayNum);
+    if ~isempty(overlayData)
+      % Extract the slice
+      overlayIm = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
+			  interpMethod,interpExtrapVal);
+      clip = viewGet(view,'overlayClip',overlayNum);
+      % Find pixels that are within clip
+      if diff(clip) > 0
+	pts = (overlayIm >= clip(1) & overlayIm <= clip(2));
+      else
+	pts = (overlayIm >= clip(1) | overlayIm <= clip(2));
+      end
+      mask = mask & pts;
+    end
+  end
+  % Finally, make the alphaMap.
+  alphaMap = repmat(alpha*mask,[1 1 3]);
 end
 
 % figure
@@ -97,23 +97,23 @@ end
     
 % Combine base and overlay
 if exist('baseRGB','var') & exist('overlayRGB','var')
-	img = (1-alphaMap).*baseRGB + alphaMap.*overlayRGB;
-	cmap = overlayCmap;
-	cbarRange = overlayRange;
+  img = (1-alphaMap).*baseRGB + alphaMap.*overlayRGB;
+  cmap = overlayCmap;
+  cbarRange = overlayRange;
 elseif exist('baseRGB','var')
-	img = baseRGB;
-	cmap = baseCmap;
-	cbarRange = baseClip;
+  img = baseRGB;
+  cmap = baseCmap;
+  cbarRange = baseClip;
 else
-	% If no image at this point then display blank
-	img = 0;
-	cmap = gray(1);
-	cbarRange = [0 1];
+  % If no image at this point then display blank
+  img = 0;
+  cmap = gray(1);
+  cbarRange = [0 1];
 end
 
 % If no image at this point then return
 if ieNotDefined('img')
-	return
+  return
 end
 
 % Display the image
@@ -135,7 +135,7 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 
 % Display the ROIs
 if ~isempty(baseNum) & ~isempty(baseCoords)
-	displayROIs(view);
+  displayROIs(view);
 end
 
 return
@@ -149,16 +149,16 @@ function rgb = rescale2rgb(image,cmap,clip)
 % Sets NaNs to the lowest index in the colormap
 
 if ~exist('clip','var')
-	% Choose clipping based on histogram
-	histThresh = length(image(:))/1000;
-	[cnt, val] = hist(image(:),100);
-	goodVals = find(cnt>histThresh);
-	clipMin = val(min(goodVals));
-	clipMax = val(max(goodVals));
-	clip = [clipMin,clipMax];
+  % Choose clipping based on histogram
+  histThresh = length(image(:))/1000;
+  [cnt, val] = hist(image(:),100);
+  goodVals = find(cnt>histThresh);
+  clipMin = val(min(goodVals));
+  clipMax = val(max(goodVals));
+  clip = [clipMin,clipMax];
 else
-	clipMin = clip(1);
-	clipMax = clip(2);
+  clipMin = clip(1);
+  clipMax = clip(2);
 end
 
 % Clip
