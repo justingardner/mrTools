@@ -80,6 +80,8 @@ for i = 1:length(gParams.varinfo)
     gParams.ui.varentry(i) = makeCheckbox(gParams.varinfo{i}.value,i,i,2,.25);
   elseif strcmp(gParams.varinfo{i}.type,'popupmenu') || iscell(gParams.varinfo{i}.value)
     gParams.ui.varentry(i) = makePopupmenu(gParams.varinfo{i}.value,i,i,2,3);
+  elseif strcmp(gParams.varinfo{i}.type,'statictext')
+    gParams.ui.varentry(i) = makeTextentry(gParams.varinfo{i}.value,i,i,2,3,0);
   else
     gParams.ui.varentry(i) = makeTextentry(gParams.varinfo{i}.value,i,i,2,3);
   end
@@ -396,7 +398,15 @@ h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(r
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextentry(displayString,callback,rownum,colnum,uisize)
+function h = makeTextentry(displayString,callback,rownum,colnum,uisize,editable)
+
+if ieNotDefined('editable'),editable=1;end
+
+if editable
+  style = 'edit';
+else
+  style = 'text';
+end
 
 % make callback string
 if isnumeric(callback)
@@ -407,7 +417,7 @@ end
 
 global gParams;
 
-h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol('Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makePopupmenu
