@@ -11,9 +11,35 @@
 function [params data] = mrParamsReconcile(groupName,params,data)
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if ~any(nargin == [2 3])
   help mrParamsReconcile
   return
+end
+
+if ieNotDefined('data'),data=[];,end
+
+% if params is a cell array, then call mrParamsReconcile on each
+% element of the cell array one at a time
+if iscell(params)
+  for i = 1:length(params)
+    if ~isempty(params{i})
+      mrParamsReconcile(groupName,params{i},data);
+    end
+  end
+  return
+end
+
+% get group name
+if ieNotDefined('groupName')
+  if isfield(params,'groupName')
+    groupName = params.groupName;
+  else
+    groupName = '';
+  end
+end
+% set group number
+if ~ieNotDefined('groupName')
+  groupNum = viewGet([],'groupNum',groupName);
 end
 
 % if this has the field paramInfo then it comes from'
@@ -84,57 +110,31 @@ if isfield(params,'paramInfo')
   end
 end
 
-% look for a description, and see if it has something like [x...x], that should be replaced by the scan numbers selected in scanList and groupName 
-if isfield(params,'description') && ~isempty(strfind(params.description,'[x...x]'))
-  swaploc = strfind(params.description,'[x...x]');
-  swaploc = swaploc(1);
-  % get the group name
-  if isfield(params,'groupName')
-    groupName = params.groupName;
-  else
-    groupName = '';
-  end
-  % scan numbers
-  if isfield(params,'scanList')
-    scanNames = num2str(params.scanList);
-  elseif isfield(params,'scanNum')
-    scanNames = num2str(params.scanNum);
-  else
-    scanNames = '';
-  end
-  % now make the description string
-  if ~isempty(groupName)
-    params.description = sprintf('%s%s:%s%s',params.description(1:swaploc-1),groupName,scanNames,params.description(swaploc+7:end));
-  else
-    params.description = sprintf('%s%s%s',params.description(1:swaploc-1),scanNames,params.description(swaploc+7:end));
-  end
-end
-
 % get scan numbers
 if isfield(params,'scanList')
   scanNums = params.scanList;
 elseif isfield(params,'scanNum')
   scanNums = params.scanNum;
-else
-  disp('(mrParamsReconcile) Could not find scan numbers');
-  return
 end
-% get group number
-if isfield(params,'groupName')
-  groupName = params.groupName;
-end
-groupNum = viewGet([],'groupNum',groupName);
 
+% check the scan numbers and get their associated file names
+if ~ieNotDefined('scanNums') && ~ieNotDefined('groupNum')
   % get the tseries name
-if ~isfield(params,'tseriesFile')
-  for iscan = 1:length(scanNums)
-    params.tseriesFile{iscan} = viewGet([],'tseriesFile',scanNums(iscan),groupNum);
-  end
-else
-  % see if the tseriesFile name matches
-  for iscan = 1:length(scanNums)
-    if ~strcmp(params.tseriesFile{iscan},viewGet([],'tseriesFile',scanNums(iscan),groupNum));
-      disp(sprintf('(mrParamsReconcile) Scan %i has filename %s which does not match previous one %s',scanNums(iscan),viewGet([],'tseriesFile',scanNums(iscan),groupNum),params.tseriesFile{iscan}));
+  if ~isfield(params,'tseriesFile')
+    for iscan = 1:length(scanNums)
+      params.tseriesFile{iscan} = viewGet([],'tseriesFile',scanNums(iscan),groupNum);
     end
-  end
-end  
+  else
+    % see if the tseriesFile name matches
+    for iscan = 1:length(scanNums)
+      if ~strcmp(params.tseriesFile{iscan},viewGet([],'tseriesFile',scanNums(iscan),groupNum));
+	disp(sprintf('(mrParamsReconcile) Scan %i has filename %s which does not match previous one %s',scanNums(iscan),viewGet([],'tseriesFile',scanNums(iscan),groupNum),params.tseriesFile{iscan}));
+      end
+    end
+  end  
+end
+
+% if there are field called scanParams then reconcile those as well
+if isfield(params,'scanParams') && iscell(params.scanParams)
+  mrParamsReconcile(groupName,params.scanParams);
+end
