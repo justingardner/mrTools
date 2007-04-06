@@ -52,6 +52,7 @@ end
 % get the estimated hemodynamic responses
 [ehdr time ehdrste] = gethdr(d,x,y,s);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the timecourse
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
@@ -64,15 +65,36 @@ axis tight;
 for i = 1:d.nhdr
   vline(d.stimvol{i},getcolor(i));
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 subplot(2,2,3);
-% and display ehdr
-plotEhdr(time,ehdr,ehdrste);
+% display ehdr with out lines if we have a fit
+% since we also need to plot fit
+if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
+  plotEhdr(time,ehdr,ehdrste,'');
+  for r = 1:d.nhdr
+    d.peak.fit{x,y,s,r}.smoothX = 1:.1:d.hdrlen;
+    fitTime = d.tr*(d.peak.fit{x,y,s,r}.smoothX-0.5);
+    plot(fitTime,d.peak.fit{x,y,s,r}.smoothFit,getcolor(r,'-'));
+  end
+else
+  plotEhdr(time,ehdr,ehdrste);
+end
 title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays(1).data{scan}(x,y,s)));
 xaxis(0,d.hdrlen*d.tr);
+% add peaks if they exist to the legend
 if isfield(d,'stimNames')
-  legend(d.stimNames);
+  stimNames = d.stimNames;
+  if isfield(d,'peak')
+    for i = 1:d.nhdr
+      stimNames{i} = sprintf('%s: %s=%0.2f',stimNames{i},d.peak.params.method,d.peak.amp(x,y,s,i));
+    end
+  end
+  legend(stimNames);
 end
+keyboard
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % if there is a roi, compute its average hemodynamic response
 for roinum = 1:length(roi)
   subplot(2,2,4);
@@ -87,14 +109,17 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % function to plot ehdr
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function plotEhdr(time,ehdr,ehdrste)
+function plotEhdr(time,ehdr,ehdrste,lineSymbol)
+
+% whether to plot the line inbetween points or not
+if ~exist('lineSymbol','var'),lineSymbol = '-';,end
 
 % and display ehdr
 for i = 1:size(ehdr,1)
   if nargin == 2
-    h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,'-')),'MarkerSize',8);
+    h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
   else
-    h=errorbar(time,ehdr(i,:),ehdrste(i,:),ehdrste(i,:),getcolor(i,getsymbol(i,'-')),'MarkerSize',8);
+    h=errorbar(time,ehdr(i,:),ehdrste(i,:),ehdrste(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
   end
   set(h,'MarkerFaceColor',getcolor(i));
   hold on
