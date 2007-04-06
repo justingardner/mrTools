@@ -26,7 +26,7 @@
 %             to save instead of display set
 %             'saveName=filename'
 %
-function v = mrDispOverlay(overlay,scanNum,groupNum,v,varargin)
+function analOut = mrDispOverlay(overlay,scanNum,groupNum,v,varargin)
 
 % check arguments
 if nargin < 3
@@ -39,7 +39,7 @@ eval(evalargs(varargin));
 
 % start up a mrLoadRet if we are not passed in an open one
 if ieNotDefined('v')
-  if ieNotDefined('saveName')
+  if ieNotDefined('saveName') && (nargout < 1)
     v = mrLoadRet;
   else
     % if we are saving, then don't bring up mrLoadRet
@@ -108,7 +108,14 @@ o.(overlayName).groupName = groupName;
 o.(overlayName).reconcileFunction = 'quickReconcile';
 o.(overlayName).data = cell(1,viewGet(v,'nScans'));
 for i = 1:length(scanNum)
-  o.(overlayName).data{scanNum(i)} = overlay;
+  % if overlay is a cell array then it means to set a different
+  % overlay for each scan
+  if iscell(overlay)
+    o.(overlayName).data{scanNum(i)} = overlay{i};
+  % otherwise set them all with the same scan
+  else
+    o.(overlayName).data{scanNum(i)} = overlay;
+  end
 end
 o.(overlayName).date = dateString;
 o.(overlayName).params = [];
@@ -146,11 +153,13 @@ else
   end
 end
 
-% either save it or refresh the display
-if ~ieNotDefined('saveName')
+% if we have an output argument then just return the new analysis
+% structure, if we have a savename then save it, otherwise display it
+if nargout == 1
+  analOut = viewGet(v,'curAnalysis');
+elseif ~ieNotDefined('saveName')
  v = viewSet(v,'analysisName',saveName);
  saveAnalysis(v,saveName);
- 
 else
   refreshMLRDisplay(v.viewNum);
 end
