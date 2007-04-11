@@ -21,7 +21,7 @@ if isfile('~/.mrDefaults.mat')
 end
 
 % check for any figloc that are strange
-if isfield(mrDefaults,'figloc')
+if isfield(mrDefaults,'figloc') && ~isempty(mrDefaults.figloc)
   figlocNames = fieldnames(mrDefaults.figloc);
   for i = 1:length(figlocNames)
     % if it isn't of length four then just remove it 

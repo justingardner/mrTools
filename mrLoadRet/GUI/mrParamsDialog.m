@@ -79,17 +79,19 @@ set(gParams.fignum,'Position',figpos);
 
 % make entry buttons
 for i = 1:length(gParams.varinfo)
-  gParams.ui.varname(i) = makeTextbox(gParams.varinfo{i}.name,i,1,1);
+  gParams.ui.varname(i) = makeTextbox(gParams.fignum,gParams.varinfo{i}.name,i,1,1);
   if isfield(gParams.varinfo{i},'incdec')
-    gParams.ui.varentry(i) = makeTextentryWithIncdec(gParams.varinfo{i}.value,i,i,2,3);
+    [gParams.ui.varentry(i) gParams.ui.incdec{i}(1) gParams.ui.incdec{i}(2)] =...
+	makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3);
+    enableArrows(str2num(gParams.varinfo{i}.value),i);
   elseif strcmp(gParams.varinfo{i}.type,'checkbox')
-    gParams.ui.varentry(i) = makeCheckbox(gParams.varinfo{i}.value,i,i,2,.25);
+    gParams.ui.varentry(i) = makeCheckbox(gParams.fignum,gParams.varinfo{i}.value,i,i,2,.25);
   elseif strcmp(gParams.varinfo{i}.type,'popupmenu') || iscell(gParams.varinfo{i}.value)
-    gParams.ui.varentry(i) = makePopupmenu(gParams.varinfo{i}.value,i,i,2,3);
+    gParams.ui.varentry(i) = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3);
   elseif strcmp(gParams.varinfo{i}.type,'statictext')
-    gParams.ui.varentry(i) = makeTextentry(gParams.varinfo{i}.value,i,i,2,3,0);
+    gParams.ui.varentry(i) = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3,0);
   else
-    gParams.ui.varentry(i) = makeTextentry(gParams.varinfo{i}.value,i,i,2,3);
+    gParams.ui.varentry(i) = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3);
   end
 end
 
@@ -103,9 +105,9 @@ end
 
     
 % make ok and cancel buttons
-makeButton('Help','help',numrows,1,1);
-makeButton('OK','ok',numrows,numcols,1);
-makeButton('Cancel','cancel',numrows,numcols-1,1);
+makeButton(gParams.fignum,'Help','help',numrows,1,1);
+makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
+makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
 
 % wait for user to hit ok or cancel (which sets uiresume)
 uiwait;
@@ -299,6 +301,32 @@ if ~strcmp(gParams.varinfo{varnum}.type,'string')
       end
     end
   end
+  % if the field has incdec, see how they should be grayed or not
+  if isfield(gParams.varinfo{varnum},'incdec') && isfield(gParams.varinfo{varnum},'minmax')
+    enableArrows(val,varnum)
+  end
+end
+
+% turn on or off incdec arrows depending on minmax
+function enableArrows(val,varnum)
+
+global gParams;
+
+if isfield(gParams.varinfo{varnum},'incdec') && isfield(gParams.varinfo{varnum},'minmax')
+  if isnumeric(val)
+    % turn on or off dec arrow
+    if (val+gParams.varinfo{varnum}.incdec(1)) < gParams.varinfo{varnum}.minmax(1)
+      set(gParams.ui.incdec{varnum}(1),'Enable','off');
+    else
+      set(gParams.ui.incdec{varnum}(1),'Enable','on');
+    end
+    % turn on or off inc arrow
+    if (val+gParams.varinfo{varnum}.incdec(2)) > gParams.varinfo{varnum}.minmax(2)
+      set(gParams.ui.incdec{varnum}(2),'Enable','off');
+    else
+      set(gParams.ui.incdec{varnum}(2),'Enable','on');
+    end
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%
@@ -319,7 +347,12 @@ set(gParams.helpFignum,'NumberTitle','off');
 set(gParams.helpFignum,'Name','Parameter help');
 
 % figure out how many rows
-numrows = length(gParams.varinfo)+1;
+charsPerRow = 120;
+numrows = 2;
+% add number of rows each line needs
+for i = 1:length(gParams.varinfo)
+  numrows = numrows+max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
+end
 numcols = 8;
 
 mrGlobals;
@@ -334,13 +367,15 @@ figpos(3) = 2*gParams.leftMargin+numcols*gParams.buttonWidth+(numcols-1)*gParams
 set(gParams.helpFignum,'Position',figpos);
 
 % put up the info
+rownum = 1;
 for i = 1:length(gParams.varinfo)
-  makeTextbox(gParams.varinfo{i}.name,i,1,1);
-  set(makeTextbox(gParams.varinfo{i}.description,i,2,numcols-1),'HorizontalAlignment','Left');
+  numLines = max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
+  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,2,numLines);
+  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,3,numcols-2,numLines),'HorizontalAlignment','Left');
+  rownum = rownum+numLines;
 end
-
 % make close button
-makeButton('Close','helpclose',numrows,numcols,1);
+makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1);
 
 %%%%%%%%%%%%%%%%%%%%
 % callback for helpclose
@@ -380,7 +415,7 @@ uiresume;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeButton
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeButton(displayString,callback,rownum,colnum,uisize)
+function h = makeButton(fignum,displayString,callback,rownum,colnum,uisize)
 
 % make callback string
 if isnumeric(callback)
@@ -391,20 +426,21 @@ end
 
 global gParams;
 
-h = uicontrol('Style','pushbutton','Callback',callback,'String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol('Style','pushbutton','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextbox makes an uneditable text box.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextbox(displayString,rownum,colnum,uisize)
+function h = makeTextbox(fignum,displayString,rownum,colnum,uisize,uisizev)
 
+if ~exist('uisizev'),uisizev=1;,end
 global gParams;
-h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname,'HorizontalAlignment','Right');
+h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,uisizev),'FontSize',gParams.fontsize,'FontName',gParams.fontname,'HorizontalAlignment','Right');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextentry(displayString,callback,rownum,colnum,uisize,editable)
+function h = makeTextentry(fignum,displayString,callback,rownum,colnum,uisize,editable)
 
 if ieNotDefined('editable'),editable=1;end
 
@@ -423,12 +459,12 @@ end
 
 global gParams;
 
-h = uicontrol('Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol('Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makePopupmenu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makePopupmenu(displayString,callback,rownum,colnum,uisize)
+function h = makePopupmenu(fignum,displayString,callback,rownum,colnum,uisize)
 
 callback = sprintf('mrParamsDialog(%f)',callback);
 
@@ -443,24 +479,24 @@ else
 end
 
 global gParams;
-h = uicontrol('Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname); 
+h = uicontrol('Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname); 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeCheckbox
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeCheckbox(displayString,callback,rownum,colnum,uisize)
+function h = makeCheckbox(fignum,displayString,callback,rownum,colnum,uisize)
 
 global gParams;
 
 % make callback string
 callback = sprintf('mrParamsDialog(%f)',callback);
 
-h = uicontrol('Style','checkbox','Value',str2num(displayString),'Callback',callback,'Position',getUIControlPos(rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol('Style','checkbox','Value',str2num(displayString),'Callback',callback,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry w/inc dec
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextentryWithIncdec(displayString,callback,rownum,colnum,uisize)
+function [h hl hr] = makeTextentryWithIncdec(fignum,displayString,callback,rownum,colnum,uisize)
 
 global gParams;
 
@@ -471,28 +507,33 @@ inccallback = sprintf('mrParamsDialog(%f,%f)',callback,gParams.varinfo{callback}
 callback = sprintf('mrParamsDialog(%f)',callback);
 
 % make inc and dec buttons
-h = uicontrol('Style','pushbutton','Callback',deccallback,'String','<','Position',getUIControlPos(rownum,colnum,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
-h = uicontrol('Style','pushbutton','Callback',inccallback,'String','>','Position',getUIControlPos(rownum,colnum+2,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+hl = uicontrol('Style','pushbutton','Callback',deccallback,'String','<','Position',getUIControlPos(fignum,rownum,colnum,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+hr = uicontrol('Style','pushbutton','Callback',inccallback,'String','>','Position',getUIControlPos(fignum,rownum,colnum+2,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 % make text control
-h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(rownum,colnum+1,uisize-2),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum+1,uisize-2),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function pos = getUIControlPos(rownum,colnum,uisize)
+function pos = getUIControlPos(fignum,rownum,colnum,uisize,uisizev)
 
 % get global parameters
 global gParams;
 
 % get figure position
-figpos = get(gParams.fignum,'Position');
+figpos = get(fignum,'Position');
 
 % set this buttons width
 thisButtonWidth = gParams.buttonWidth*uisize+(uisize-1)*gParams.margin;
+if ~exist('uisizev'),
+  thisButtonHeight = gParams.buttonHeight;
+else
+  thisButtonHeight = gParams.buttonHeight*uisizev+gParams.margin*(uisizev-1);
+end
 
 % set the position for the button
 pos(1) = gParams.margin + (gParams.buttonWidth+gParams.margin)*(colnum-1) + gParams.leftMargin;
-pos(2) = figpos(4)-gParams.buttonHeight-gParams.topMargin - (gParams.buttonHeight+gParams.margin)*(rownum-1);
+pos(2) = figpos(4)-thisButtonHeight-gParams.topMargin - (gParams.buttonHeight+gParams.margin)*(rownum-1);
 pos(3) = thisButtonWidth;
-pos(4) = gParams.buttonHeight;
+pos(4) = thisButtonHeight;
