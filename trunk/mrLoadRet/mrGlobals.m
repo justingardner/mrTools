@@ -36,15 +36,19 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     MLR.graphFigure = [];
 
     % Init the figloc and prefs
-    MLR.figloc = [];
-    MLR.prefs = [];
+    if ~isfield(MLR,'figloc')
+      MLR.figloc = [];
+    end
+    if ~isfield(MLR,'prefs')
+      MLR.prefs = [];
+    end
 
     % read the default figlocs
     mrDefaults = loadMrDefaults;
-    if isfield(mrDefaults,'figloc')
+    if isfield(mrDefaults,'figloc') && isempty(MLR.figloc)
       MLR.figloc = mrDefaults.figloc;
     end
-    if isfield(mrDefaults,'prefs')
+    if isfield(mrDefaults,'prefs') && isempty(MLR.prefs)
       MLR.prefs = mrDefaults.prefs;
     end
     
