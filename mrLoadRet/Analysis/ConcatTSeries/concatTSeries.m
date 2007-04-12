@@ -88,10 +88,10 @@ for iscan = 1:length(params.scanList)
     mrWarnDlg(sprintf('concatTSeries: These scans have different TR. (%0.4f vs %0.4f)',viewGet(viewBase,'framePeriod',params.scanList(iscan)),d.tr));
   end
   if ~isequal(viewGet(viewBase,'scanvoxelsize',params.scanList(iscan)),d.voxelSize)
-    mrErrorDlg('concatTSeries: Scans have different voxel sizes.');
+    disp('(concatTSeries) Scans have different voxel sizes.');
   end
   if ~isequal(viewGet(viewBase,'scandims',params.scanList(iscan)),d.dim(1:3))
-    mrErrorDlg('concatTSeries: Scans have different dimensions.');
+    disp('(concatTSeries) Scans have different dimensions.');
   end
 end
 
@@ -124,7 +124,8 @@ for iscan = 1:length(params.scanList)
     % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the
     % origin.
     shiftXform = shiftOriginXform;
-    M = inv(shiftXform) * inv(scanXform) * baseXform * shiftXform;
+    swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+    M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
 	
     % Warp the frames
     for frame = 1:d.nFrames
@@ -174,8 +175,13 @@ for iscan = 1:length(params.scanList)
     scanParams.originalFileName{1} = filename;
     scanParams.originalGroupName{1} = baseGroupName;
     hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.scanList(1)));
-    hdr.datatype = 16;                  % data *MUST* be written out as float32 b/c of the small values!!! -epm
-
+    % data *MUST* be written out as float32 b/c of the small values-epm
+    hdr.datatype = 16;
+    % if we are warping, then we need to change the sform to the
+    % sform of the scan we warped to
+    if params.warp
+      hdr.sform44 = viewGet(view,'scanXform',params.warpBaseScan,groupNum);
+    end
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
     saveScanNum = viewGet(viewConcat,'nScans');
