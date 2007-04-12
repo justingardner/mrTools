@@ -682,7 +682,7 @@ for viewNum = 1:length(MLR.views)
   end
 end
 % save the view in the current directory
-save mrLastView view -V6;
+eval(sprintf('save %s view -V6;',fullfile(MLR.homeDir,'mrLastView')));
 % save figloc in .mrDefaults in the home directory
 saveMrDefaults;
 clear global MLR

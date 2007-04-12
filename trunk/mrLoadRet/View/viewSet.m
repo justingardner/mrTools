@@ -175,9 +175,22 @@ switch lower(param)
 
         % -------------------------------------------
         % Scan
-
-    case {'niftihdr'}
-        % view = viewSet(view,'niftiHdr',scanNum,groupNum);
+ 
+     case {'stimfilename'}
+        % view = viewSet(view,'stimFilename',stimFilename,scanNum,groupNum);
+        [s g] = getScanAndGroup(view,varargin,param);
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+	  if isempty(val)
+	    MLR.groups(g).auxParams(s).stimFileName = [];
+	  else
+	    MLR.groups(g).auxParams(s).stimFileName = val;
+	  end
+	    
+        end
+   
+     case {'niftihdr'}
+        % view = viewSet(view,'niftiHdr',hdr,scanNum,groupNum);
         [s g] = getScanAndGroup(view,varargin,param);
         nscans = viewGet(view,'nscans',g);
         if (nscans >= s) & (s > 0)
@@ -252,7 +265,14 @@ switch lower(param)
                 MLR.groups(curgroup).auxParams = struct('auxParams',1);
             else
                 MLR.groups(curgroup).scanParams(nscans+1) = scanParams;
-                MLR.groups(curgroup).auxParams(nscans+1) = struct('auxParams',1);
+		% get an empty auxParams
+		auxParams = MLR.groups(curgroup).auxParams(end);
+		auxParamFields = fieldnames(auxParams);
+		for aNum = 1:length(auxParamFields)
+		  auxParams.(auxParamFields{aNum}) = [];
+		end
+		% and set it
+                MLR.groups(curgroup).auxParams(nscans+1) = auxParams;
             end
             % Reconcile analysis params and overlay data/params with tseries
             % files, adding empty data and default params to new scan.

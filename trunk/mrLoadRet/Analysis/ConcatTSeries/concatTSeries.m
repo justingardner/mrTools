@@ -35,6 +35,12 @@ if ieNotDefined('params')
   view = viewSet(view, 'groupName', params.groupName);
   params.scanList = selectScans(view);
   if isempty(params.scanList),return,end
+  % if warp is set, then ask which scan to use as base scan for warp
+  if params.warp
+    warpParams = mrParamsDialog({{'warpBaseScan',num2cell(params.scanList),'The scan that will be used as the base scan to warp all the other scans to'}});
+    if isempty(warpParams),return,end
+    params.warpBaseScan = warpParams.warpBaseScan;
+  end
   % check the parameters
   params = mrParamsReconcile(params.groupName,params);
 else

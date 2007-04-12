@@ -49,11 +49,9 @@ if isempty(d)
   reutrn
 end
  
-% get the estimated hemodynamic responses
-[ehdr time ehdrste] = gethdr(d,x,y,s);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% plot the timecourse
+% plot the timecourse for voxel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
 plot(tSeries);
@@ -67,7 +65,10 @@ for i = 1:d.nhdr
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% plot the hemodynamic response for voxel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 subplot(2,2,3);
+[ehdr time ehdrste] = gethdr(d,x,y,s);
 % display ehdr with out lines if we have a fit
 % since we also need to plot fit
 if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
@@ -75,7 +76,7 @@ if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
   for r = 1:d.nhdr
     d.peak.fit{x,y,s,r}.smoothX = 1:.1:d.hdrlen;
     fitTime = d.tr*(d.peak.fit{x,y,s,r}.smoothX-0.5);
-    plot(fitTime,d.peak.fit{x,y,s,r}.smoothFit,getcolor(r,'-'));
+    plot(fitTime+d.tr/2,d.peak.fit{x,y,s,r}.smoothFit,getcolor(r,'-'));
   end
 else
   plotEhdr(time,ehdr,ehdrste);
@@ -92,18 +93,39 @@ if isfield(d,'stimNames')
   end
   legend(stimNames);
 end
-keyboard
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% if there is a roi, compute its average hemodynamic response
+% if there is an roi at this voxel
+% then plot mean response
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for roinum = 1:length(roi)
   subplot(2,2,4);
   ehdr = [];
   for voxnum = 1:size(roi{roinum}.coords,2)
     [ehdr(voxnum,:,:) time] = gethdr(d,roi{roinum}.coords(1:3,voxnum));
+    % if there is a peak field, calculate average peak
+    if isfield(d,'peak')
+      for i = 1:d.nhdr
+	amp(i,voxnum) = d.peak.amp(roi{roinum}.coords(1),roi{roinum}.coords(2),roi{roinum}.coords(3),i);
+      end
+    end
   end
   plotEhdr(time,squeeze(mean(ehdr)),squeeze(std(ehdr))/sqrt(size(roi{roinum}.coords,2)));
   title(sprintf('%s (n=%i)',roi{roinum}.name,size(roi{roinum}.coords,2)));
+  % create a legend (only if peaks exist) to display mean amplitudes
+  if isfield(d,'peak')
+    for i = 1:d.nhdr
+      % get the stimulus name
+      if isfield(d,'stimNames')
+	stimNames{i} = d.stimNames{i};
+      else
+	stimNames{i} = '';
+      end
+      % and now append the peak info
+      stimNames{i} = sprintf('%s: median=%0.2f',stimNames{i},median(amp(i,:)));
+    end
+    legend(stimNames);
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
