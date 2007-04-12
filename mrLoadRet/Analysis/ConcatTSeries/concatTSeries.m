@@ -37,9 +37,13 @@ if ieNotDefined('params')
   if isempty(params.scanList),return,end
   % if warp is set, then ask which scan to use as base scan for warp
   if params.warp
-    warpParams = mrParamsDialog({{'warpBaseScan',num2cell(params.scanList),'The scan that will be used as the base scan to warp all the other scans to'}});
+    % create a list of scans
+    for i = 1:viewGet(view,'nScans')
+      scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
+    end
+    warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'The scan that will be used as the base scan to warp all the other scans to'}});
     if isempty(warpParams),return,end
-    params.warpBaseScan = warpParams.warpBaseScan;
+    params.warpBaseScan = find(strcmp(warpParams.warpBaseScan,scanNames));
   end
   % check the parameters
   params = mrParamsReconcile(params.groupName,params);
@@ -115,7 +119,7 @@ for iscan = 1:length(params.scanList)
   % Compute transform
   if params.warp
     % *** Not fully tested yet ***
-    baseXform = viewGet(view,'scanXform',baseScan,groupNum);
+    baseXform = viewGet(view,'scanXform',params.warpBaseScan,groupNum);
     scanXform = viewGet(view,'scanXform',scanNum,groupNum);
     % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the
     % origin.

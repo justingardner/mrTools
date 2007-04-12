@@ -145,7 +145,7 @@ switch lower(field)
 	case {'nscans'}
         % mlrGuiSet(view,'nscans',value);
 		nScans = round(value);
-		curScan = get(handles.scanSlider,'Value');
+		curScan = round(get(handles.scanSlider,'Value'));
 		if (nScans > 1)
 			set(handles.scanSlider,'Min',1);
 			set(handles.scanSlider,'Max',nScans);
