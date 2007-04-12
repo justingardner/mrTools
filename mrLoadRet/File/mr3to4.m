@@ -168,19 +168,23 @@ m.session.protocol = 'XXX';
 % make raw group
 m.groups(1).name = 'Raw';
 for i = 1:length(preMCScanParams)
-  scanParams(i).dataSize = [preMCScanParams(i).fullSize length(preMCScanParams(i).slices)];
-  scanParams(i).description = m.dataTYPES(1).scanParams(i).annotation;
-  scanParams(i).fileName = preMCScanParams(i).PfileName;
-  scanParams(i).fileType = 'Nifti';
-  scanParams(i).framePeriod = preMCScanParams(i).framePeriod;
-  scanParams(i).junkFrames = preMCScanParams(i).junkFirstFrames;
-  scanParams(i).nFrames = preMCScanParams(i).nFrames;
-  scanParams(i).niftiHdr = preMCScanParams(i).analyzeInfo;
-  scanParams(i).totalFrames = preMCScanParams(i).totalFrames;
-  scanParams(i).voxelSize = preMCScanParams(i).effectiveResolution;
-  scanParams(i).originalFileName = [];
-  scanParams(i).originalGroupName = [];
-  m.groups(1).scanParams(i) = orderfields(scanParams(i));
+  newScanParams(i).dataSize = [preMCScanParams(i).fullSize length(preMCScanParams(i).slices)];
+  newScanParams(i).description = m.dataTYPES(1).scanParams(i).annotation;
+  newScanParams(i).fileName = preMCScanParams(i).PfileName;
+  newScanParams(i).fileType = 'Nifti';
+  newScanParams(i).framePeriod = preMCScanParams(i).framePeriod;
+  newScanParams(i).junkFrames = preMCScanParams(i).junkFirstFrames;
+  newScanParams(i).nFrames = preMCScanParams(i).nFrames;
+  newScanParams(i).niftiHdr = preMCScanParams(i).analyzeInfo;
+  newScanParams(i).totalFrames = preMCScanParams(i).totalFrames;
+  newScanParams(i).voxelSize = preMCScanParams(i).effectiveResolution;
+  newScanParams(i).originalFileName = [];
+  newScanParams(i).originalGroupName = [];
+  if isscan(newScanParams(i));
+    m.groups(1).scanParams(i) = orderfields(newScanParams(i));
+  else
+    keyboard
+  end
   % get the stimfilename
   if isfield(m.mrSESSION,'doer')
     expnum = [];
@@ -200,12 +204,15 @@ end
 % make motion comp group
 m.groups(2).name = 'MotionComp';
 for i = 1:length(filenames)
-  scanParams(i).originalFileName{1} = m.groups(1).scanParams(i).fileName;
-  scanParams(i).junkFrames = 0;
-  scanParams(i).originalGroupName{1} = 'Raw';
-  scanParams(i).fileName = filenames{i};
-  m.groups(2).scanParams(i) = orderfields(scanParams(i));
-
+  newScanParams(i).originalFileName{1} = m.groups(1).scanParams(i).fileName;
+  newScanParams(i).junkFrames = 0;
+  newScanParams(i).originalGroupName{1} = 'Raw';
+  newScanParams(i).fileName = filenames{i};
+  if isscan(newScanParams(i))
+    m.groups(2).scanParams(i) = orderfields(newScanParams(i));
+  else
+    keyboard
+  end
   m.groups(2).auxParams(i).auxParams = 1;
 end
 
@@ -265,7 +272,7 @@ for i = 1:length(scanParams)
     disp(sprintf('(mr3to4) Could not find original file %s',sourceFilename));
   else
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
-    mysystem(sprintf('ln -s %s .',sourceFilename));
+    mysystem(sprintf('ln -s %s %s',sourceFilename,getLastDir(destFilename)));
   end
   % now link the dicom file
   destFilename = sprintf('%s-header.txt',stripext(destFilename));

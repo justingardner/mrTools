@@ -234,7 +234,7 @@ switch view.viewType
   zvec = reshape(zrot,1,numPixels);
   baseCoordsHomogeneous = [xvec; yvec; zvec; ones(1,numPixels)];
   baseCoords = reshape(baseCoordsHomogeneous(1:3,:)',[sliceDims 3]);
-  
+
   % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin. 
   shiftXform = shiftOriginXform;
   
