@@ -104,10 +104,15 @@ for passNum = 1:2
 	if passNum == 2
 	  % get the source header
 	  srchdr = viewGet(view,'niftiHdr',os(1),og(1));
+	  srcVoxelSize = viewGet(view,'scanVoxelSize',os(1),og(1));
 	  % and write the header out
-	  %cbiWriteNiftiHeader(srchdr,sprintf('%s.hdr',stripext(filename)));
+	  %disp(sprintf('Writing %s',sprintf('%s.hdr',stripext(filename))));
+	  srchdr = cbiWriteNiftiHeader(srchdr,sprintf('%s.hdr',stripext(filename)));
 	  % and change it in the view
 	  view = viewSet(view,'niftiHdr',srchdr,iScan,iGroup);
+	  scanParams = viewGet(view,'scanParams',iScan,iGroup);
+	  scanParams.voxelSize = srcVoxelSize;
+	  view = viewSet(view,'scanParams',scanParams,iScan,iGroup);
 	end
       else
 	disp(sprintf('(%s:%i) pixdim [%s] matches with qform44',viewGet(view,'groupName',iGroup),iScan,num2str(voxdim)));
