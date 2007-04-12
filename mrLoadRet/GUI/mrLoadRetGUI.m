@@ -815,10 +815,25 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 scanList = selectScans(view);
-for iscan = 1:length(scanList)
-  view = viewSet(view,'deleteScan',scanList(iscan));
+for iScan = 1:length(scanList)
+  % first get time series name for each one of these scans
+  % since as we delete them, then numbers stop making sense
+  tSeriesFile{iScan} = viewGet(view,'tSeriesFile',scanList(iScan));
+end
+% now go through and delete
+for iScan = 1:length(scanList)
+  % get the scan number
+  scanNum = viewGet(view,'scanNum',tSeriesFile{iScan});
+  scanNum = scanNum(1);
+  if ~isempty(scanNum)
+    view = viewSet(view,'deleteScan',scanNum);
+    disp(sprintf('Scan for file %s deleted.',tSeriesFile{iScan}));
+  else
+    disp(sprintf('(mrLoadRetGUI) Could not delete scan for file %s',tSeriesFile{iScan}));
+  end
 end
 refreshMLRDisplay(viewNum);
+disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
 
 % --------------------------------------------------------------------
 function editAnalysisMenu_Callback(hObject, eventdata, handles)
