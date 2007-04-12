@@ -111,7 +111,7 @@ for roinum = 1:length(roi)
     end
   end
   plotEhdr(time,squeeze(mean(ehdr)),squeeze(std(ehdr))/sqrt(size(roi{roinum}.coords,2)));
-  title(sprintf('%s (n=%i)',roi{roinum}.name,size(roi{roinum}.coords,2)));
+  title(sprintf('%s (n=%i)',roi{roinum}.name,size(roi{roinum}.coords,2)),'Interpreter','none');
   % create a legend (only if peaks exist) to display mean amplitudes
   if isfield(d,'peak')
     for i = 1:d.nhdr
