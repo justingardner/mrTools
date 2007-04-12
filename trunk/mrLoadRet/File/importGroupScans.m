@@ -72,27 +72,35 @@ for scanNum = 1:length(fromScanParams)
   stimFileName{scanNum} = viewGet(fromView,'stimFileName',scanNum);
 end
 % now switch back to old one
-cd(pwd);
+cd(currentDir);
 clear global MLR;
 global MLR;
 MLR = oldMLR;
 
 % now cycle over all scans in group
+disppercent(-inf,'Copying group scans');
 for scanNum = 1:length(fromScanParams)
   % make sure there is a file where we think there should be
   fromFilename = fullfile(fromDir,fromScanParams(scanNum).fileName);
-  toFilename = fullfile(toDir,fromScanParams(scanNum).fileName);
+  toFilename = fullfile(toDir,sprintf('%s_%s.img',stripext(fromScanParams(scanNum).fileName),fromName));
   if ~isfile(fromFilename)
     disp(sprintf('(importGroupScans) Could not find %s',fromFilename));
     return
   end
   % load up the file
   [data hdr] = cbiReadNifti(fromFilename);
-  % write it to our group
-  cbiWriteNifti(toFilename,data,hdr);
+  % write it to our group, making sure to ask if it already exists
+  if isfile(toFilename)
+    if askuser(sprintf('File %s already exists, overwrite',getLastDir(toFilename)))
+      cbiWriteNifti(toFilename,data,hdr);
+    end
+  else
+    cbiWriteNifti(toFilename,data,hdr);
+  end
   % add where this scan is from into description
   toScanParams = fromScanParams(scanNum);
   toScanParams.description = sprintf('%s:%s',fromName,fromScanParams(scanNum).description);
+  toScanParams.fileName = getLastDir(toFilename);
   % and now add the scan to our group
   v = viewSet(v,'newScan',toScanParams);
   % copy the stimFile over
@@ -109,5 +117,7 @@ for scanNum = 1:length(fromScanParams)
     % and set it in the view
     v = viewSet(v,'stimFileName',getLastDir(toStimFileName),scanNum);
   end
+  disppercent(scanNum/length(fromScanParams));
 end
+disppercent(inf);
 

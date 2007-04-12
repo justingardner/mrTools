@@ -135,7 +135,7 @@ if ~isdir('Anatomy')
 end
 
 % now make links in Raw/Pfiles to the motion comp data
-filenames = makeLinks(m.mrSESSION.functionals,'../../Raw/Pfiles/','MotionComp/TSeries');
+filenames = makeLinks(m.mrSESSION.functionals,'../../Raw/Pfiles/','MotionComp/TSeries','../../Raw/Pfiles_preMC');
 
 preMCScanParams = m.mrSESSION.functionals;
 for i = 1:length(filenames)
@@ -180,7 +180,7 @@ for i = 1:length(preMCScanParams)
   scanParams(i).voxelSize = preMCScanParams(i).effectiveResolution;
   scanParams(i).originalFileName = [];
   scanParams(i).originalGroupName = [];
-  m.groups(1).scanParams(i) = orderfields(scanParms(i));
+  m.groups(1).scanParams(i) = orderfields(scanParams(i));
   % get the stimfilename
   if isfield(m.mrSESSION,'doer')
     expnum = [];
@@ -200,7 +200,7 @@ end
 % make motion comp group
 m.groups(2).name = 'MotionComp';
 for i = 1:length(filenames)
-  scanParams(i).originalFileName{1} = m.groups(2).scanParams(i).fileName;
+  scanParams(i).originalFileName{1} = m.groups(1).scanParams(i).fileName;
   scanParams(i).junkFrames = 0;
   scanParams(i).originalGroupName{1} = 'Raw';
   scanParams(i).fileName = filenames{i};
@@ -222,7 +222,9 @@ mr3to4(4);
 %%%%%%%%%%%%%%%%%%%%%%%%
 % make links to files
 %%%%%%%%%%%%%%%%%%%%%%%%
-function destFilenames = makeLinks(scanParams,sourcedir,destdir)
+function destFilenames = makeLinks(scanParams,sourcedir,destdir,sourceHeaderDir)
+
+if ~exist('sourceHeaderDir'),sourceHeaderDir = '';,end
 
 origDir = pwd;
 fprintf(sprintf('Current directory is %s \n', origDir));
@@ -250,6 +252,13 @@ for i = 1:length(scanParams)
   % now link the hdr file
   destFilename = sprintf('%s.hdr',stripext(destFilename));
   sourceFilename = sprintf('%s.hdr',stripext(sourceFilename));
+  % if we have a source header dir that mean to copy the
+  % matching header from the source dir instead
+  if ~isempty(sourceHeaderDir)
+    % the filename will have the trailing _mcf.hdr taken off
+    sourceFilename = sprintf('%s.hdr',stripext(stripext(getLastDir(sourceFilename)),'_'));
+    sourceFilename = fullfile(sourceHeaderDir,sourceFilename);
+  end
   if isfile(destFilename)
     disp(sprintf('%s already exists',destFilename));
   elseif ~isfile(sourceFilename)

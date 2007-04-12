@@ -13,6 +13,7 @@ if ~any(nargin == [1])
   return
 end
 
-[pathStr lastDir] = fileparts(pathStr);
+[pathStr lastDir ext] = fileparts(pathStr);
 
+lastDir = [lastDir ext];
 
