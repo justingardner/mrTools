@@ -18,11 +18,7 @@ mrGlobals;
 if ieNotDefined('pathStr')
   % start in an roi directory
   %startPathStr = fullfile(viewGet(view,'viewType'),'ROIs');
-  if isfield(MLR.prefs,'importROIpath')
-    startPathStr = MLR.prefs.importROIpath;
-  else
-    startPathStr = 'Inplane/ROIs';
-  end
+  startPathStr = 'Inplane/ROIs';
   if ~isdir(startPathStr),startPathStr='';,end
   % get the user defined path
   pathStr = getPathStrDialog(startPathStr,'Choose roi files to import','*.mat','on');

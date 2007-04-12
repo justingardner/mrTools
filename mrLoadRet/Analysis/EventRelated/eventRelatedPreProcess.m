@@ -32,6 +32,13 @@ if ~isempty(tr)
   d.tr = tr;
 end
 
+% preprocessing for sdt experiment
+runName = getfieldstr(type,'run');
+if ~isempty(runName)
+  disp(sprintf('Running d=%s(d)',runName));
+  d = eval(sprintf('%s(d)',runName));
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % if the type has something like fieldname=num
 % it returns the num

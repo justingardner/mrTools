@@ -168,16 +168,19 @@ m.session.protocol = 'XXX';
 % make raw group
 m.groups(1).name = 'Raw';
 for i = 1:length(preMCScanParams)
-  m.groups(1).scanParams(i).dataSize = [preMCScanParams(i).fullSize length(preMCScanParams(i).slices)];
-  m.groups(1).scanParams(i).description = m.dataTYPES(1).scanParams(i).annotation;
-  m.groups(1).scanParams(i).fileName = preMCScanParams(i).PfileName;
-  m.groups(1).scanParams(i).fileType = 'Nifti';
-  m.groups(1).scanParams(i).framePeriod = preMCScanParams(i).framePeriod;
-  m.groups(1).scanParams(i).junkFrames = preMCScanParams(i).junkFirstFrames;
-  m.groups(1).scanParams(i).nFrames = preMCScanParams(i).nFrames;
-  m.groups(1).scanParams(i).niftiHdr = preMCScanParams(i).analyzeInfo;
-  m.groups(1).scanParams(i).totalFrames = preMCScanParams(i).totalFrames;
-  m.groups(1).scanParams(i).voxelSize = preMCScanParams(i).effectiveResolution;
+  scanParams(i).dataSize = [preMCScanParams(i).fullSize length(preMCScanParams(i).slices)];
+  scanParams(i).description = m.dataTYPES(1).scanParams(i).annotation;
+  scanParams(i).fileName = preMCScanParams(i).PfileName;
+  scanParams(i).fileType = 'Nifti';
+  scanParams(i).framePeriod = preMCScanParams(i).framePeriod;
+  scanParams(i).junkFrames = preMCScanParams(i).junkFirstFrames;
+  scanParams(i).nFrames = preMCScanParams(i).nFrames;
+  scanParams(i).niftiHdr = preMCScanParams(i).analyzeInfo;
+  scanParams(i).totalFrames = preMCScanParams(i).totalFrames;
+  scanParams(i).voxelSize = preMCScanParams(i).effectiveResolution;
+  scanParams(i).originalFileName = [];
+  scanParams(i).originalGroupName = [];
+  m.groups(1).scanParams(i) = orderfields(scanParms(i));
   % get the stimfilename
   if isfield(m.mrSESSION,'doer')
     expnum = [];
@@ -196,12 +199,13 @@ end
 
 % make motion comp group
 m.groups(2).name = 'MotionComp';
-m.groups(2).scanParams = m.groups(1).scanParams;
 for i = 1:length(filenames)
-  m.groups(2).scanParams(i).originalFileName{1} = m.groups(2).scanParams(i).fileName;
-  m.groups(2).scanParams(i).junkFrames = 0;
-  m.groups(2).scanParams(i).originalGroupName{1} = 'Raw';
-  m.groups(2).scanParams(i).fileName = filenames{i};
+  scanParams(i).originalFileName{1} = m.groups(2).scanParams(i).fileName;
+  scanParams(i).junkFrames = 0;
+  scanParams(i).originalGroupName{1} = 'Raw';
+  scanParams(i).fileName = filenames{i};
+  m.groups(2).scanParams(i) = orderfields(scanParams(i));
+
   m.groups(2).auxParams(i).auxParams = 1;
 end
 
@@ -213,6 +217,7 @@ if ~debugflag
   mysystem('cp mrSESSION.mat mrSESSION3.mat');
 end
 printBlockEnd
+mr3to4(4);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 % make links to files

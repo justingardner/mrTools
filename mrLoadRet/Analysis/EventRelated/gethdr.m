@@ -29,4 +29,10 @@ hdr = squeeze(d.ehdr(x,y,s,:,:));
 hdrste = squeeze(d.ehdrste(x,y,s,:,:));
 time = d.tr/2:d.tr:(d.hdrlen*d.tr);
 
-
+% if we only have one response, then we will have
+% to take the transpose to make sure that we have
+% row array
+if size(d.ehdr,4) == 1
+  hdr = hdr';
+  hdrste = hdrste';
+end

@@ -23,6 +23,9 @@ if ~isfield(d,'stimfile')
   return
 end
 
+% keep the varname that this was called with
+d.varname = varname;
+
 % depending on what kind of stimfile we have, we get the
 % stimvolumes differently
 for i = 1:length(d.stimfile)
@@ -30,10 +33,7 @@ for i = 1:length(d.stimfile)
   switch d.stimfile{i}.filetype,
    case 'mgl',
     % if we have a stimtrace then get the variables from that
-    if isfield(varname,'stimtrace')
-      stimvol = getStimvolFromTraces(d.stimfile{i},varname.stimtrace);
-    %numeric means a stimtrace,
-    elseif isnumeric(varname)
+    if isfield(varname,'stimtrace') || isnumeric(varname)
       stimvol = getStimvolFromTraces(d.stimfile{i},varname);
     % otherwise get it using the varname
     else
@@ -83,6 +83,16 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function stimvol = getStimvolFromTraces(stimfile,stimtrace)
 
+% if passed in a structure then get the stimtrace field
+if isstruct(stimtrace)
+  varname = stimtrace;
+  stimtrace = varname.stimtrace;
+  % if we are passed in how many response types there are, get it
+  if isfield(varname,'nhdr')
+    nhdr = varname.nhdr;
+  end
+end
+
 if exist('stimtrace','var')
   stimfile.myscreen.stimtrace = stimtrace;
 end
@@ -105,7 +115,8 @@ acqnum = cumsum(acq>1);
 acqnum(1:first(find(acqnum == 1))) = 1;
 
 % sort into stimuli
-nhdr = max(stimraw);
+if ieNotDefined('nhdr'),nhdr = max(stimraw);,end
+
 for i = 1:nhdr
   thisStimtimes = stimtimes(stimraw(stimtimes) == i);
   stimvol{i} = acqnum(thisStimtimes);

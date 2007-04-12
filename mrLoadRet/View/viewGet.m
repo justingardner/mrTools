@@ -171,7 +171,7 @@ switch lower(param)
         val = viewGet(view,'analysisdir',varargin{:});
 
         % group
-    case{'numberofgroups'}
+    case{'numberofgroups','numGroups','nGroups'}
         % n = viewGet(view,'numberofGroups')
         val = length(MLR.groups);
     case {'groupnames'}

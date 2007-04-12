@@ -191,14 +191,14 @@ if mouseInImage(x,y)
   global MLR;
   view = MLR.views{viewNum};
   % make a waiting cursor
-  set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
+  %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
   % Draw graph
   overlayNum = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
   scanNum = viewGet(view,'currentScan');
   feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s);
   % reset to full crosshair
-  set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
+  %set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
 end
 
 % eval the old handler
