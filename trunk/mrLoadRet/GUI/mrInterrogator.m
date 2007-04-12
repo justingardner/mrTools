@@ -138,33 +138,52 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [x y s] = getMouseCoords(viewNum)
 
+% get the view
 mrGlobals;
-
-pointerLoc = get(MLR.interrogator{viewNum}.axesnum,'CurrentPoint');
-xpos = round(pointerLoc(1,1));ypos=round(pointerLoc(1,2));
-
-% get the coordinate mapping
 view = MLR.views{viewNum};
-coords = viewGet(view,'curSliceOverlayCoords');
-if isempty(coords)
-  coords = viewGet(view,'curSliceBaseCoords');
-  % FIX FIX FIX this assumes 1/2 coords, there 
-  % should always be a coords that knows about 
-  % the epi, not just the overlay
-  if ~isempty(coords)
-    coords(:,:,1) = round(coords(:,:,1)/2);
-    coords(:,:,2) = round(coords(:,:,2)/2);
-  end
+
+% get location of pointer
+pointerLoc = get(MLR.interrogator{viewNum}.axesnum,'CurrentPoint');
+x = round(pointerLoc(1,1));
+y = round(pointerLoc(1,2));
+s = viewGet(view,'currentSlice');
+
+% FIX, FIX, FIX how to undo rotation
+% this works for the cardinal orientations, but not otherones
+% also only tested with square image. What we really need here
+% is to go from coordinates on the screen to the coordinates
+% of the baseVolume
+rotate = viewGet(view,'rotate');
+baseDims = viewGet(view,'baseDims');
+switch (rotate)
+ case {0}
+  imageXform = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+ case {90}
+  imageXform = [1 0 0 0;0 -1 0 baseDims(2)+1;0 0 1 0; 0 0 0 1];
+ case {180}
+  imageXform = [0 -1 0 baseDims(2)+1;-1 0 0 baseDims(2)+1;0 0 1 0; 0 0 0 1];
+ case {270}
+  imageXform = [-1 0 0 baseDims(1)+1;0 1 0 0;0 0 1 0; 0 0 0 1];
 end
 
-if ~isempty(coords) && (xpos >= 1) && (xpos <= size(coords,2)) && (ypos >= 1) && (ypos <= size(coords,1))
-  x = round(coords(ypos,xpos,1));
-  y = round(coords(ypos,xpos,2));
-  s = viewGet(view,'currentSlice');
-else
-  x = nan;
-  y = nan;
-  s = nan;
+% transform from base coordinates into scan coordinates
+baseXform = viewGet(view,'baseXform');
+scanXform = viewGet(view,'scanXform',viewGet(view,'curScan'));
+shiftXform = shiftOriginXform;
+transformed = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform*imageXform*[x y s 1]';
+transformed = round(transformed);
+
+x = transformed(1);
+y = transformed(2);
+s = transformed(3);
+
+% get the scan dims to make sure we haven't jumped off end
+% of scan
+scanDims = viewGet(view,'scanDims',viewGet(view,'curScan'));
+if ((x < 1) || (x > scanDims(1)) || ...
+    (y < 1) || (y > scanDims(2)) || ...
+    (s < 1) || (s > scanDims(3)))
+  x = nan;y = nan;s = nan;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

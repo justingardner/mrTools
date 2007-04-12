@@ -79,6 +79,7 @@ MLR = oldMLR;
 
 % now cycle over all scans in group
 disppercent(-inf,'Copying group scans');
+r = 0;
 for scanNum = 1:length(fromScanParams)
   % make sure there is a file where we think there should be
   fromFilename = fullfile(fromDir,fromScanParams(scanNum).fileName);
@@ -91,7 +92,10 @@ for scanNum = 1:length(fromScanParams)
   [data hdr] = cbiReadNifti(fromFilename);
   % write it to our group, making sure to ask if it already exists
   if isfile(toFilename)
-    if askuser(sprintf('File %s already exists, overwrite',getLastDir(toFilename)))
+    if ~isinf(r)
+      r = askuser(sprintf('File %s already exists, overwrite',getLastDir(toFilename)),1)
+    end
+    if r>0
       cbiWriteNifti(toFilename,data,hdr);
     end
   else
@@ -103,6 +107,7 @@ for scanNum = 1:length(fromScanParams)
   toScanParams.fileName = getLastDir(toFilename);
   % and now add the scan to our group
   v = viewSet(v,'newScan',toScanParams);
+  toScanNum = viewGet(v,'nScans');
   % copy the stimFile over
   for stimFileNum = 1:length(stimFileName{scanNum})
     % get the from and to stim file names
@@ -110,12 +115,12 @@ for scanNum = 1:length(fromScanParams)
     toStimFileName = fullfile(viewGet(v,'EtcDir'),getLastDir(stimFileName{scanNum}{stimFileNum}));
     % if it doesn't exist already, then copy it over
     if isfile(toStimFileName)
-      disp(sprintf('(importGroupScans) File %s already exists',toStimFileName));
+      disp(sprintf('(importGroupScans) Stimfile %s already exists',toStimFileName));
     else
       system(sprintf('cp %s %s',fromStimFileName,toStimFileName));
     end
     % and set it in the view
-    v = viewSet(v,'stimFileName',getLastDir(toStimFileName),scanNum);
+    v = viewSet(v,'stimFileName',getLastDir(toStimFileName),toScanNum);
   end
   disppercent(scanNum/length(fromScanParams));
 end

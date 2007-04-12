@@ -239,6 +239,13 @@ switch lower(param)
         if (nscans >= s) & (s > 0)
             val = MLR.groups(g).scanParams(s);
         end
+    case{'auxparams'}
+        % n = viewGet(view,'auxParams',scanNum,[groupNum])
+        [s g] = getScanAndGroup(view,varargin,param);
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+            val = MLR.groups(g).auxParams(s);
+        end
     case{'totalframes'}
         % n = viewGet(view,'totalFrames',scanNum,[groupNum])
         % n = viewGet([],'totalFrames',scanNum,groupNum)
@@ -403,8 +410,10 @@ switch lower(param)
         stimFileName{1} = '';
         if (nscans >= s) && (s > 0) && isfield(MLR.groups(g),'auxParams') && (length(MLR.groups(g).auxParams) >= s)
             if isfield(MLR.groups(g).auxParams(s),'stimFileName')
-                stimFileName{1} = fullfile(viewGet(view,'etcDir'),MLR.groups(g).auxParams(s).stimFileName);
-            end
+	      if ~isempty(MLR.groups(g).auxParams(s).stimFileName)
+		stimFileName{1} = fullfile(viewGet(view,'etcDir'),MLR.groups(g).auxParams(s).stimFileName);
+	      end
+	    end
         end
         % if the file does not exist, then check original
         if isempty(stimFileName{1})

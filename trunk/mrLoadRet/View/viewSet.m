@@ -186,7 +186,6 @@ switch lower(param)
 	  else
 	    MLR.groups(g).auxParams(s).stimFileName = val;
 	  end
-	    
         end
    
      case {'niftihdr'}
@@ -196,6 +195,18 @@ switch lower(param)
         if (nscans >= s) & (s > 0)
 	  MLR.groups(g).scanParams(s).niftiHdr = val;
         end
+	
+     case {'scanparams'}
+        % view = viewSet(view,'scanParams',scanParams,scanNum,groupNum);
+        [s g] = getScanAndGroup(view,varargin,param);
+	if isscan(val)
+	  nscans = viewGet(view,'nscans',g);
+	  if (nscans >= s) & (s > 0)
+	    MLR.groups(g).scanParams(s) = val;
+	  end
+	else
+	  disp(sprintf('(viewSet) Invalid scanParams'));
+	end
 	
     case{'prefs','preference','pref'}
         % view = viewSet(view,'pref','prefname',val);
