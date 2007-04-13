@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 04-Apr-2007 09:50:05
+% Last Modified by GUIDE v2.5 13-Apr-2007 09:17:17
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1625,3 +1625,10 @@ end
 disp(sprintf('======================'));
 
 
+% --------------------------------------------------------------------
+function importGroupMenuItemi_Callback(hObject, eventdata, handles)
+% hObject    handle to importGroupMenuItemi (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+importGroupScans;
