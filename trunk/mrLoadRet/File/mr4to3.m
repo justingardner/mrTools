@@ -134,7 +134,7 @@ if isdir('Anatomy')
 end
 
 % load the alignment file
-alingment = [];
+alignment = [];
 if isfile(bestRotFilename)
   printBlockBegin(sprintf('Alignment file (%s)',bestRotFilename));
   load(bestRotFilename);
