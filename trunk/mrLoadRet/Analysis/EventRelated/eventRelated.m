@@ -67,11 +67,12 @@ for scanNum = params.scanNum
   if ieNotDefined('maxBlocksize')
     maxBlocksize = 250000000;
   end
-  numSlicesAtATime = floor(maxBlocksize/(8*numVolumes*prod(dims(1:2))));
+  numSlicesAtATime = max(1,floor(maxBlocksize/(8*numVolumes*prod(dims(1:2)))));
   currentSlice = 1;
   ehdr = [];ehdrste = [];thisr2 = [];
 
   for i = 1:ceil(numSlices/numSlicesAtATime)
+    d = [];
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);;
     % get the stim volumes, if empty then abort
