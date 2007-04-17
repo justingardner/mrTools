@@ -84,6 +84,12 @@ if isfile(fullfile(pathStr,filename))
 	    % is in there in the old strucutre, copy it over
 	    if isempty(newAnal.overlays(newNum).data{scanNum}) && ~isempty(oldOverlay.data{scanNum})
 	      newAnal.overlays(newNum).data{scanNum} = oldOverlay.data{scanNum};
+	      if (isfield(newAnal.overlays(newNum),'params') && ...
+		  iscell(newAnal.overlays(newNum).params) && ...
+		  isempty(newAnal.overlays(newNum).params{newNum}))
+		% copy over overlay params
+		newAnal.overlays(newNum).params{newNum} = oldOverlay.params{scanNum};
+	      end
 	      disp(sprintf('(saveAnalysis) Merged overlay %s:%i from old analysis',oldOverlay.name,scanNum));
 	    end
 	  end
@@ -99,9 +105,25 @@ if isfile(fullfile(pathStr,filename))
     if isfield(oldAnal,'d') && isfield(newAnal,'d')
       for i = 1:length(oldAnal.d)
 	% if the new analysis doesn't have it but the old one does
-	if isempty(newAnal.d{i}) && ~isempty(oldAnal.d{i})
+	if (((length(newAnal.d)<i) || isempty(newAnal.d{i})) &&...
+	    (length(oldAnal.d)>=i) && ~isempty(oldAnal.d{i}))
 	  newAnal.d{i} = oldAnal.d{i};
 	  disp(sprintf('(saveAnalysis) Merged d{%i} from old analysis',i));
+	end
+      end
+    end
+    % if the params has fields called scanParams than those should
+    % be merged
+    if (isfield(oldAnal,'params') && isfield(oldAnal.params,'scanParams') &&...
+	isfield(newAnal,'params') && isfield(newAnal.params,'scanParams'))
+      for i = 1:length(oldAnal.params.scanParams)
+	% if the new analysis doesn't have it but the old one does
+	if (((length(newAnal.params.scanParams)<i) || ...
+	    isempty(newAnal.params.scanParams{i})) && ...
+	    (length(oldAnal.params.scanParams)>=i) && ...
+	    ~isempty(oldAnal.params.scanParams{i}))
+	  newAnal.params.scanParams{i} = oldAnal.params.scanParams{i};
+	  disp(sprintf('(saveAnalysis) Merged params.scanParams{%i} from old analysis',i));
 	end
       end
     end

@@ -85,7 +85,7 @@ for roinum = 1:length(roiname)
 	% load the whole time series as a block (i.e. a block including the min and max voxels)
 	% this is usually faster then going back and loading each time series individually
 	% but is more inefficient with memory
-	tSeriesBlock = squeeze(loadTSeries(view,scanNum,[min(s) max(s)],[],[min(x) max(x)],[min(y) max(y)]));
+	tSeriesBlock = loadTSeries(view,scanNum,[min(s) max(s)],[],[min(x) max(x)],[min(y) max(y)]);
 	% now go through and pick out the voxels that we need.
 	for voxnum = 1:rois{end}.n
 	  rois{end}.tSeries(voxnum,:) = squeeze(tSeriesBlock(x(voxnum)-min(x)+1,y(voxnum)-min(y)+1,s(voxnum)-min(s)+1,:));

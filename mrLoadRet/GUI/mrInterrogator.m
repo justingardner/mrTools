@@ -68,10 +68,12 @@ mrGlobals;
 interrogator = get(MLR.interrogator{viewNum}.hInterrogator,'String');
 
 % if not a valid function, go back to old one
-if exist(interrogator)~=2
-  set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
-else
-  MLR.interrogator{viewNum}.interrogator = interrogator;
+if isfield(MLR.interrogator{viewNum},'hInterrogator')
+  if exist(interrogator)~=2
+    set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
+  else
+    MLR.interrogator{viewNum}.interrogator = interrogator;
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

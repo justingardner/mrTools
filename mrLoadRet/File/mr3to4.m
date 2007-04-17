@@ -260,11 +260,21 @@ for i = 1:length(scanParams)
   destFilename = sprintf('%s.hdr',stripext(destFilename));
   sourceFilename = sprintf('%s.hdr',stripext(sourceFilename));
   % if we have a source header dir that mean to copy the
-  % matching header from the source dir instead
+  % matching header from the source dir instead if it exists
   if ~isempty(sourceHeaderDir)
+    revertSourceFilename = sourceFilename;
     % the filename will have the trailing _mcf.hdr taken off
-    sourceFilename = sprintf('%s.hdr',stripext(stripext(getLastDir(sourceFilename)),'_'));
+    if ~isempty(findstr('_mcf',sourceFilename))
+      sourceFilename = sprintf('%s.hdr',stripext(stripext(getLastDir(sourceFilename)),'_'));
+    else
+      sourceFilename = sprintf('%s.hdr',stripext(getLastDir(sourceFilename)));
+    end
     sourceFilename = fullfile(sourceHeaderDir,sourceFilename);
+    % if the hdr doesn't exist, then go back to the one we were
+    % going to use
+    if ~isfile(sourceFilename)
+      sourceFilename = revertSourceFilename;
+    end
   end
   if isfile(destFilename)
     disp(sprintf('%s already exists',destFilename));

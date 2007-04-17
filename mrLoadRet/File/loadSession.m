@@ -23,6 +23,11 @@ pathStr = fullfile(dirPathStr,'mrSession.mat');
 % Load mrSESSION.mat to get session and groups
 if exist(pathStr,'file')
     load(pathStr)
+    if ieNotDefined('session') 
+      mrErrorDlg(sprintf('(loadSession) No session variable in mrSession.mat (probably wrong version file)'));
+      return
+    end
+    
     % Check version numbers for consistency
     if (session.mrLoadRetVersion < version)
         mrErrorDlg(['This session was created with mrLoadRet version ',...
