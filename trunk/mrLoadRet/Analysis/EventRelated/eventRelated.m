@@ -3,7 +3,7 @@
 %      usage: view = eventRelated(view,params)
 %         by: justin gardner
 %       date: 10/20/06
-%    purpose: 
+%    purpose: same as eventRelated, but also ask for segment
 %
 function [view d] = eventRelated(view,params)
 
@@ -77,6 +77,7 @@ for scanNum = params.scanNum
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);;
     % get the stim volumes, if empty then abort
     d = getStimvol(d,params.scanParams{scanNum});
+    disp(sprintf('Using task/phase/segment: %d, %d, %d',params.scanParams{scanNum}.taskNum,params.scanParams{scanNum}.phaseNum,params.scanParams{scanNum}.segmentNum));
     if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
     % do any called for preprocessing
     d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
