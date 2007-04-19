@@ -120,9 +120,15 @@ for scanNum = 1:length(params.scanNum)
       end
       % if there are multiple phases, then ask for that
       maxPhaseNum = 0;
+      maxSegNum = 0;
       for tnum = 1:length(stimfile{1}.task)
 	phaseNum{tnum} = num2cell(1:length(stimfile{1}.task{tnum}));
 	maxPhaseNum = max(maxPhaseNum,length(stimfile{1}.task{tnum}));
+	% if there are multiple _segments_, then ask for that
+	for pnum = 1:length(stimfile{1}.task{tnum})
+	  segNum{tnum}{pnum} = num2cell(1:length(stimfile{1}.task{tnum}{pnum}.segmin));
+	  maxSegNum = max(maxSegNum,length(segNum{tnum}{pnum}));
+	end
       end
       if maxPhaseNum > 1
 	if length(stimfile{1}.task) == 1
@@ -131,6 +137,13 @@ for scanNum = 1:length(params.scanNum)
 	  taskVarParams{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
 	end
       end
+      
+      % if there is more than one segement in any of the phases, ask the user to specify
+      % should add some error checking.
+      if maxSegNum > 1
+	  taskVarParams{end+1} = {'segmentNum',1,'The segment of the task you want to use','incdec=[-1 1]'};
+      end
+      
       % set up to get the variable name from the user
       taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
     end
@@ -141,7 +154,6 @@ for scanNum = 1:length(params.scanNum)
   if (scanNum == 1) && (length(params.scanNum)>1)
     taskVarParams{end+1} = {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'};
   end
-    
   %%%%%%%%%%%%%%%%%%%%%%%
   % now we have all the dialog information, ask the user to set parameters
   if useDefault
