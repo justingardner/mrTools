@@ -82,7 +82,7 @@ if isfile(fullfile(pathStr,filename))
 	  for scanNum = 1:length(oldOverlay.data)
 	    % if it is not empty in the new structure, but
 	    % is in there in the old strucutre, copy it over
-	    if isempty(newAnal.overlays(newNum).data{scanNum}) && ~isempty(oldOverlay.data{scanNum})
+	    if ((scanNum >= length(newAnal.overlays(newNum).data)) || isempty(newAnal.overlays(newNum).data{scanNum})) && ~isempty(oldOverlay.data{scanNum})
 	      newAnal.overlays(newNum).data{scanNum} = oldOverlay.data{scanNum};
 	      if (isfield(newAnal.overlays(newNum),'params') && ...
 		  iscell(newAnal.overlays(newNum).params) && ...
