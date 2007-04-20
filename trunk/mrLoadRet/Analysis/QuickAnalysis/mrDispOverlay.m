@@ -1,6 +1,6 @@
 % mrDispOverlay.m
 %
-%      usage: mrDispOverlay(overlay,scanNum,groupNum,<view>,<parameters>
+%      usage: [view analysis] = mrDispOverlay(overlay,scanNum,groupNum,<view>,<parameters>
 %      usage: mrDispOverlay(overlay,scanNum,analysisStructure,<view>,<parameters>)
 %         by: justin gardner
 %       date: 04/04/07
@@ -26,7 +26,9 @@
 %             to save instead of display set
 %             'saveName=filename'
 %
-function v = mrDispOverlay(overlay,scanNum,groupNum,v,varargin)
+%
+%
+function [v, analysis] = mrDispOverlay(overlay,scanNum,groupNum,v,varargin)
 
 % check arguments
 if nargin < 3
@@ -37,10 +39,13 @@ end
 % get the arguments
 eval(evalargs(varargin));
 
-% start up a mrLoadRet if we are not passed in an open one
+mrLoadRetViewing = 0;
+% start up a mrLoadRet if we are not passed in a view
+% or if we are returning an analysis struct (in this
 if ieNotDefined('v')
-  if ieNotDefined('saveName')
+  if ieNotDefined('saveName') && (nargout < 2)
     v = mrLoadRet;
+    mrLoadRetViewing = 1;
   else
     % if we are saving, then don't bring up mrLoadRet
     v = newView('Volume');
@@ -148,9 +153,16 @@ end
 
 % either save it or refresh the display
 if ~ieNotDefined('saveName')
- v = viewSet(v,'analysisName',saveName);
- saveAnalysis(v,saveName);
- 
-else
+  v = viewSet(v,'analysisName',saveName);
+  saveAnalysis(v,saveName);
+end
+
+% update mr load ret if it is running
+if mrLoadRetViewing
   refreshMLRDisplay(v.viewNum);
+end
+
+% prepare the output argument
+if nargout >= 2
+  analysis = viewGet(v,'analysis',viewGet(v,'curAnalysis'));
 end

@@ -668,23 +668,27 @@ saveSession;
 % --------------------------------------------------------------------
 function quitMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
-for viewNum = 1:length(MLR.views)
-  view = MLR.views{viewNum};
-  if isview(view)
-    % remember figure location
-    MLR.figloc.mrLoadRetGUI = get(view.figure,'Position');
-    delete(view.figure);
+if isfield(MLR,'views') && ~isempty(MLR.views)
+  for viewNum = 1:length(MLR.views)
+    view = MLR.views{viewNum};
+    if isview(view)
+      % remember figure location
+      MLR.figloc.mrLoadRetGUI = get(view.figure,'Position');
+      delete(view.figure);
+    end
+    if ~isempty(MLR.graphFigure)
+      MLR.figloc.graphFigure = get(MLR.graphFigure,'Position');
+      close(MLR.graphFigure);
+      MLR.graphFigure = [];
+    end
   end
-  if ~isempty(MLR.graphFigure)
-    MLR.figloc.graphFigure = get(MLR.graphFigure,'Position');
-    close(MLR.graphFigure);
-    MLR.graphFigure = [];
-  end
+  % save the view in the current directory
+  eval(sprintf('save %s view -V6;',fullfile(MLR.homeDir,'mrLastView')));
+  % save figloc in .mrDefaults in the home directory
+  saveMrDefaults;
+else
+  closereq;
 end
-% save the view in the current directory
-eval(sprintf('save %s view -V6;',fullfile(MLR.homeDir,'mrLastView')));
-% save figloc in .mrDefaults in the home directory
-saveMrDefaults;
 clear global MLR
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
