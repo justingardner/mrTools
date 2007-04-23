@@ -331,7 +331,11 @@ switch lower(param)
         % filename = viewGet(view,'tseriesFile',scanNum,groupNum)
         % filename = viewGet([],'tseriesFile',scanNum,groupNum)
         [s g] = getScanAndGroup(view,varargin,param);
-        val = MLR.groups(g).scanParams(s).fileName;
+	if s <= length(MLR.groups(g).scanParams)
+	  val = MLR.groups(g).scanParams(s).fileName;
+	else
+	  val = [];
+	end
     case {'scannum'}
         % get scanNum (and groupNum) of a scan by its file name
         % [scanNum,groupNum] = viewGet(view,'scanNum',tseriesFileName);
@@ -341,7 +345,7 @@ switch lower(param)
         % tfilename is only done w/in the group.
         % [scanNum,groupNum] = viewGet(view,'scanNum',tseriesFileName,groupNum);
         if ieNotDefined('varargin')
-            mrErrorDlg('viewGet scanNumh: Must specify tseriesFileName.');
+            mrErrorDlg('viewGet scanNum: Must specify tseriesFileName.');
         end
         [tseriesFilePath,tseriesFileName] = fileparts(varargin{1});
         if length(varargin) > 1
@@ -487,8 +491,11 @@ switch lower(param)
         originalGroupNames = viewGet(view,'originalGroupName',s,g);
         originalScanNum = [];originalGroupNum = [];
         for i = 1:length(originalFileNames)
-            [originalScanNum(end+1),originalGroupNum(end+1)] = viewGet(view,'scanNum',originalFileNames{i},viewGet(view,'groupNum',originalGroupNames{i}));
-        end
+	  % make sure there is a valid scan to return
+	  if ~isempty(viewGet(view,'scanNum',originalFileNames{i},viewGet(view,'groupNum',originalGroupNames{i})))
+	    [originalScanNum(end+1),originalGroupNum(end+1)] = viewGet(view,'scanNum',originalFileNames{i},viewGet(view,'groupNum',originalGroupNames{i}));
+	  end
+	end
         val = originalScanNum;val2 = originalGroupNum;
     case {'originalfilename'}
         % originalFileName = viewGet(view,'originalFileName',scanNum,[groupNum]);

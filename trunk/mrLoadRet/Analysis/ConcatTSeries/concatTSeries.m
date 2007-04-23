@@ -118,7 +118,7 @@ for iscan = 1:length(params.scanList)
 	
   % Compute transform
   if params.warp
-    % *** Not fully tested yet ***
+    % get base and scan xforms
     baseXform = viewGet(view,'scanXform',params.warpBaseScan,groupNum);
     scanXform = viewGet(view,'scanXform',scanNum,groupNum);
     % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the
@@ -126,7 +126,12 @@ for iscan = 1:length(params.scanList)
     shiftXform = shiftOriginXform;
     swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
     M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
-	
+
+    % display transformation
+    disp(sprintf('Transforming time series with transformation: '));
+    for rownum = 1:4
+      disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
+    end
     % Warp the frames
     for frame = 1:d.nFrames
       d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.warpInterpMethod);

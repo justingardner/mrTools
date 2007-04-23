@@ -115,23 +115,24 @@ for scanNum = 1:length(params.scanNum)
       % this is the new tyle, ask for a variable name
       [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
       % if there is more than one task, then ask the user for that
-      if length(stimfile{1}.task)>1
-	taskVarParams{end+1} = {'taskNum',num2cell(1:length(stimfile{1}.task)),'The task you want to use'};
+      task = cellArray(stimfile{1}.task,2);
+      if length(task)>1
+	taskVarParams{end+1} = {'taskNum',num2cell(1:length(task)),'The task you want to use'};
       end
       % if there are multiple phases, then ask for that
       maxPhaseNum = 0;
       maxSegNum = 0;
-      for tnum = 1:length(stimfile{1}.task)
-	phaseNum{tnum} = num2cell(1:length(stimfile{1}.task{tnum}));
-	maxPhaseNum = max(maxPhaseNum,length(stimfile{1}.task{tnum}));
+      for tnum = 1:length(task)
+	phaseNum{tnum} = num2cell(1:length(task{tnum}));
+	maxPhaseNum = max(maxPhaseNum,length(task{tnum}));
 	% if there are multiple _segments_, then ask for that
-	for pnum = 1:length(stimfile{1}.task{tnum})
-	  segNum{tnum}{pnum} = num2cell(1:length(stimfile{1}.task{tnum}{pnum}.segmin));
+	for pnum = 1:length(task{tnum})
+	  segNum{tnum}{pnum} = num2cell(1:length(task{tnum}{pnum}.segmin));
 	  maxSegNum = max(maxSegNum,length(segNum{tnum}{pnum}));
 	end
       end
       if maxPhaseNum > 1
-	if length(stimfile{1}.task) == 1
+	if length(task) == 1
 	  taskVarParams{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
 	else
 	  taskVarParams{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};

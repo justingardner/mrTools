@@ -828,15 +828,16 @@ end
 for iScan = 1:length(scanList)
   % get the scan number
   scanNum = viewGet(view,'scanNum',tSeriesFile{iScan});
-  scanNum = scanNum(1);
   if ~isempty(scanNum)
+    scanNum = scanNum(1);
     view = viewSet(view,'deleteScan',scanNum);
     disp(sprintf('Scan for file %s deleted.',tSeriesFile{iScan}));
   else
     disp(sprintf('(mrLoadRetGUI) Could not delete scan for file %s',tSeriesFile{iScan}));
   end
+  refreshMLRDisplay(viewNum);
 end
-refreshMLRDisplay(viewNum);
+
 disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
 
 % --------------------------------------------------------------------

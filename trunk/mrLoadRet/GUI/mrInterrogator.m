@@ -172,6 +172,12 @@ end
 baseXform = viewGet(view,'baseXform');
 scanXform = viewGet(view,'scanXform',viewGet(view,'curScan'));
 shiftXform = shiftOriginXform;
+
+if isempty(scanXform) | isempty(baseXform)
+  x = nan;y = nan; s = nan;
+  return
+end
+
 transformed = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform*imageXform*[x y s 1]';
 transformed = round(transformed);
 
