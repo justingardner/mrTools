@@ -143,6 +143,9 @@ if isempty(viewGet(v,'curAnalysis'))
   end    
   a.(analName).curOverlay = 1;
   a.(analName).date = dateString;
+  if ~ieNotDefined('d')
+    a.(analName).d{scanNum} = d;
+  end
   v = viewSet(v,'newAnalysis',a.(analName));
 % or just install this overlay into the current analysis
 else

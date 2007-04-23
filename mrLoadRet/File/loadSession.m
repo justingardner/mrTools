@@ -24,7 +24,8 @@ pathStr = fullfile(dirPathStr,'mrSession.mat');
 if exist(pathStr,'file')
     load(pathStr)
     if ieNotDefined('session') 
-      mrErrorDlg(sprintf('(loadSession) No session variable in mrSession.mat (probably wrong version file)'));
+      disp(sprintf('(loadSession) No session variable in mrSession.mat (probably wrong version file)'));
+      session = [];groups = [];version = [];
       return
     end
     

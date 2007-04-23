@@ -12,7 +12,7 @@ mrGlobals
 %end
 % ispref/getpref are slow operators
 
-%disppercent(-inf,'viewGet');
+disppercent(-inf,'viewGet');
 if isfield(MLR.prefs,'interpMethod')
   interpMethod = MLR.prefs.interpMethod;
 else
@@ -33,16 +33,16 @@ rotate = viewGet(view,'rotate');
 % baseVolume.
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
-%disppercent(inf);
+disppercent(inf);
 
 % Compute base and overlay coordinates for the current slice
-%disppercent(-inf,'getSliceCoords');
+disppercent(-inf,'getSliceCoords');
 [baseCoords,overlayCoords] = getSliceCoords(view,scan,slice,sliceIndex,rotate);
 view = viewSet(view,'cursliceBaseCoords',baseCoords);
 view = viewSet(view,'cursliceOverlayCoords',overlayCoords);
-%disppercent(inf);
+disppercent(inf);
 
-%disppercent(-inf,'extractSlices');
+disppercent(-inf,'extractSlices');
 % Extract slice from base volume
 baseData = viewGet(view,'baseData',baseNum);
 if ~isempty(baseData) & ~isempty(baseCoords)
@@ -53,8 +53,8 @@ if ~isempty(baseData) & ~isempty(baseCoords)
 	baseRGB = rescale2rgb(baseIm,baseCmap,baseClip);
 end
 
-%disppercent(inf);
-%disppercent(-inf,'currentOverlay');
+disppercent(inf);
+disppercent(-inf,'currentOverlay');
 
 % Extract slice from current overlay.
 overlayNum = viewGet(view,'currentOverlay');
@@ -73,8 +73,8 @@ if ~isempty(overlayNum) & ~isempty(overlayCoords)
     overlayRGB = rescale2rgb(overlayIm,overlayCmap,overlayRange);
   end
 end
-%disppercent(inf);
-%disppercent(-inf,'alphaMap');
+disppercent(inf);
+disppercent(-inf,'alphaMap');
 
 % Compute alphaMap
 if ~ieNotDefined('overlayIm')
@@ -101,8 +101,8 @@ if ~ieNotDefined('overlayIm')
   alphaMap = repmat(alpha*mask,[1 1 3]);
 end
 
-%disppercent(inf);
-%disppercent(-inf,'combine base and overlay');
+disppercent(inf);
+disppercent(-inf,'combine base and overlay');
 
 % figure
 % image(overlayRGB)
@@ -130,8 +130,8 @@ if ieNotDefined('img')
   return
 end
 
-%disppercent(inf);
-%disppercent(-inf,'displayImage');
+disppercent(inf);
+disppercent(-inf,'displayImage');
 
 % Display the image
 fig = viewGet(view,'figNum');
@@ -141,8 +141,8 @@ image(img,'Parent',gui.axis);
 axis(gui.axis,'off');
 axis(gui.axis,'image');
 
-%disppercent(inf);
-%disppercent(-inf,'colorbar');
+disppercent(inf);
+disppercent(-inf,'colorbar');
 
 % Display colorbar
 % *** Inefficient to recompute cbar every time ***
@@ -153,13 +153,13 @@ set(gui.colorbar,'YTick',[]);
 set(gui.colorbar,'XTick',[1 64 128 192 256]);
 set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
 
-%disppercent(inf);
-%disppercent(-inf,'displayROI');
+disppercent(inf);
+disppercent(-inf,'displayROI');
 % Display the ROIs
 if ~isempty(baseNum) & ~isempty(baseCoords)
   displayROIs(view);
 end
-%disppercent(inf);
+disppercent(inf);
 
 
 return

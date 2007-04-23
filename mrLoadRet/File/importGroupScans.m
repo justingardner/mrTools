@@ -105,6 +105,9 @@ for scanNum = 1:length(fromScanParams)
   toScanParams = fromScanParams(scanNum);
   toScanParams.description = sprintf('%s:%s',fromName,fromScanParams(scanNum).description);
   toScanParams.fileName = getLastDir(toFilename);
+  % and remove any reference to originalFileName/GroupName
+  toScanParams.originalFileName = [];
+  toScanParams.originalGroupName = [];
   % and now add the scan to our group
   v = viewSet(v,'newScan',toScanParams);
   toScanNum = viewGet(v,'nScans');
