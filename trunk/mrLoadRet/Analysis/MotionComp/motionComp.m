@@ -58,6 +58,12 @@ function view = motionComp(view,params)
 % Get analysis parameters from motionCompGUI.
 % clear time series on each iteration to avoid running out of memory
 nScans = viewGet(view,'nScans');
+
+if (nScans == 0)
+    mrWarnDlg('(motionComp) No scans in group');
+    return
+end
+
 if ieNotDefined('params')
 	% Initialize analysis parameters with default values
 	params = motionCompGUI('groupName',viewGet(view,'groupName'));
