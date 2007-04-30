@@ -1651,3 +1651,18 @@ function useCurrentScanMenuItem_Callback(hObject, eventdata, handles)
 % hObject    handle to useCurrentScanMenuItem (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the tseries path/filename
+tSeriesPathStr = viewGet(v,'tSeriesPathStr',viewGet(v,'curScan'));
+% load that as an anatome
+if isfile(tSeriesPathStr)
+  v = loadAnat(MLR.views{viewNum},getLastDir(tSeriesPathStr),fileparts(tSeriesPathStr));
+  refreshMLRDisplay(viewNum);
+else
+  mrWarnDlg(sprintf('(mrLoadRetGUI) Could not find tSeries %s',tSeriesPathStr));
+end
+

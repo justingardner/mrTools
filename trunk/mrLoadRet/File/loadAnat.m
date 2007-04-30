@@ -32,8 +32,10 @@ if ieNotDefined('anatFileName')
   filterspec = {'*.img;*.nii','Nifti/Analyze files'};
   title = 'Choose anatomy file';
   pathStr = getPathStrDialog(startPathStr,title,filterspec);
-else
+elseif ieNotDefined('anatFilePath')
   pathStr = fullfile(viewGet(view,'anatomyDir'),anatFileName);
+else
+  pathStr = fullfile(anatFilePath,anatFileName);
 end
 
 % Aborted
