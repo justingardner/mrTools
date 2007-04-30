@@ -53,6 +53,11 @@ function view = motionCompWithinScan(view,params)
 
 % Get analysis parameters from motionCompGUI.
 nScans = viewGet(view,'nScans');
+if (nScans == 0)
+    mrWarnDlg('(motionCompWithinScans) No scans in group');
+    return
+end
+
 if ieNotDefined('params')
 	% Initialize analysis parameters with default values
 	params = motionCompGUI('groupName',viewGet(view,'groupName'));
