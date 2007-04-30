@@ -1296,9 +1296,17 @@ function plotMenu_Callback(hObject, eventdata, handles)
 function interrogateOverlayMenuItem_Callback(hObject, eventdata, handles)
 
 mrGlobals;
-% start the mrInterrogator
 viewNum = handles.viewNum;
-mrInterrogator('init',viewNum);
+% start or stop the interrogator
+if strcmp(get(hObject,'Checked'),'on')
+  mrInterrogator('end',viewNum);
+  set(hObject,'Checked','off');
+else 
+  % start the mrInterrogator
+  mrInterrogator('init',viewNum);
+  set(hObject,'Checked','on');
+end
+
 return
 
 % --------------------------------------------------------------------
@@ -1637,3 +1645,9 @@ function importGroupMenuItemi_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 importGroupScans;
+
+% --------------------------------------------------------------------
+function useCurrentScanMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to useCurrentScanMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

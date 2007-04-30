@@ -103,7 +103,6 @@ mrGlobals;
 if mouseInImage(x,y)
   % set pointer to crosshairs
   set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
-  % convert to overlay coordinats
   % set the xpos/ypos textbox 
   set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
 else
@@ -146,39 +145,30 @@ view = MLR.views{viewNum};
 
 % get location of pointer
 pointerLoc = get(MLR.interrogator{viewNum}.axesnum,'CurrentPoint');
-x = round(pointerLoc(1,1));
-y = round(pointerLoc(1,2));
-s = viewGet(view,'currentSlice');
+mouseX = round(pointerLoc(1,1));
+mouseY = round(pointerLoc(1,2));
 
-% FIX, FIX, FIX how to undo rotation
-% this works for the cardinal orientations, but not otherones
-% also only tested with square image. What we really need here
-% is to go from coordinates on the screen to the coordinates
-% of the baseVolume
-rotate = viewGet(view,'rotate');
-baseDims = viewGet(view,'baseDims');
-switch (rotate)
- case {0}
-  imageXform = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
- case {90}
-  imageXform = [1 0 0 0;0 -1 0 baseDims(2)+1;0 0 1 0; 0 0 0 1];
- case {180}
-  imageXform = [0 -1 0 baseDims(2)+1;-1 0 0 baseDims(2)+1;0 0 1 0; 0 0 0 1];
- case {270}
-  imageXform = [-1 0 0 baseDims(1)+1;0 1 0 0;0 0 1 0; 0 0 0 1];
-end
+% get base coordinates
+baseCoords = viewGet(view,'cursliceBaseCoords');
+% convert mouse to baseCoords
+if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
+  x = baseCoords(mouseX,mouseY,1);
+  y = baseCoords(mouseX,mouseY,2);
+  s = baseCoords(mouseX,mouseY,3);
+else
+  x = nan;y = nan; s = nan;
+  return
+end  
 
-% transform from base coordinates into scan coordinates
+% transforms from base coordinates into scan coordinates
 baseXform = viewGet(view,'baseXform');
 scanXform = viewGet(view,'scanXform',viewGet(view,'curScan'));
-shiftXform = shiftOriginXform;
-
 if isempty(scanXform) | isempty(baseXform)
   x = nan;y = nan; s = nan;
   return
 end
 
-transformed = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform*imageXform*[x y s 1]';
+transformed = inv(scanXform)*baseXform*[x y s 1]';
 transformed = round(transformed);
 
 x = transformed(1);
