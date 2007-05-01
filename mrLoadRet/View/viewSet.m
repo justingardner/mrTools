@@ -219,6 +219,8 @@ switch lower(param)
         % description, junkframes, and nframes fields are used; the other
         % fields in scanParams are reset to insure consistency with the
         % nifti file.
+	% however, if originalFileName and originalGroupName are
+	% set it will keep those (these are not required)
         %
         % view = viewSet(view,'updateScan',scanParams,scanNum);
         % Check for tseries file and (re-)build scanParams to insure
