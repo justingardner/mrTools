@@ -58,16 +58,26 @@ for g = 1:length(groups)
 
   % if we have more files in directory than that are matched,...
   if (matched < length(tseriesDir))
+    recoverable = [];
     % display the names of the hdr/img/mat files that are not matched
     for i = 1:length(tseriesDir)
-      if ~tseriesDir(i).match
-	[path baseFilename] = fileparts(tseriesDir(i).name);
-	filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
-	if isfile(filename),disp(filename),end
-	filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
-	if isfile(filename),disp(filename),end
-	filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
-	if isfile(filename),disp(filename),end
+      disp(sprintf('================ScanNum %i =============================',i));
+      [path baseFilename] = fileparts(tseriesDir(i).name);
+      [recoverable(i) scanParams{i}] = dispParams(tseriesDirName,baseFilename,tseriesDir(i).match);
+      if tseriesDir(i).match
+	disp(sprintf('Matched'));
+      end
+    end
+    % see if there are any recoverable files
+    if sum(recoverable)
+      for i = 1:length(tseriesDir)
+	if recoverable(i)
+	  if askuser(sprintf('Recover scan %i',i))
+	    disp(sprintf('Recovering scan %i',i));
+	    view = viewSet(view,'newScan',scanParams{i});
+	    tseriesDir(i).match = 1;
+	  end
+	end
       end
     end
     % and ask user if they should be deleted
@@ -89,4 +99,91 @@ for g = 1:length(groups)
     disp(sprintf('Group %s matches (%i:%i)',groups{g},length(tseriesDir),nScans));
   end
 
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% display the parameters and filename for the unlinked scan
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [recoverable scanParams] = dispParams(tseriesDirName,baseFilename,match)
+
+recoverable = 0;scanParams = [];
+% see if there is a mat file
+filename = fullfile(tseriesDirName,sprintf('%s.mat',baseFilename));
+if isfile(filename)
+  matfile = load(filename);
+  % first see if we can match the tseriesFileName with
+  % the one we have here
+  if isfield(matfile,'tseriesFileName') && isfield(matfile,'params')
+    tseriesFileName = fullfile(tseriesDirName,matfile.tseriesFileName);
+    tseriesHdrFileName = sprintf('%s.hdr',stripext(tseriesFileName));
+    % check if they are there
+    if isfile(tseriesFileName) && isfile(tseriesHdrFileName)
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      % if this is a motionComp then display its parameters
+      % and see if we can recover it
+      if isfield(matfile.params,'motionCompGroupName')
+	persistent motionCompParams;
+	% display the parameters (only if this is one that hasn't
+	% been matched, otherwise just keep a record of that
+	% param file.
+	if ~match
+	  dispMotionCompParams(matfile.params);
+	  % check how many times we have seen this
+	  targetNum = sum(structIsMember(matfile.params,motionCompParams))+1;
+	  if length(matfile.params.descriptions) >= targetNum
+	    disp(sprintf('Description: %s',matfile.params.descriptions{targetNum}));
+	    % get a view and set it to the original group
+	    v = newView('Volume');
+	    v = viewSet(v,'curGroup',viewGet(v,'groupNum',matfile.params.groupName));
+	    % read the image header
+	    hdr = cbiReadNiftiHeader(tseriesHdrFileName);
+	    % get the scan params
+	    scanParams.junkFrames = 0;
+	    scanParams.nFrames = hdr.dim(5);;
+	    scanParams.description = matfile.params.descriptions{targetNum};
+	    scanParams.fileName = getLastDir(tseriesFileName);
+	    scanParams.originalFileName{1} = viewGet(v,'tSeriesFile',matfile.params.targetScans(targetNum));
+	    scanParams.originalGroupName{1} = matfile.params.groupName;
+	    %set that we can recover this file
+	    recoverable = 1;
+	  end
+	end
+	motionCompParams{end+1} = matfile.params;
+      end
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    end
+  end
+end
+
+% if we don't know how to recover then just show files for deleting
+if ~recoverable && ~match
+  filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
+  if isfile(filename),disp(filename),end
+  filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
+  if isfile(filename),disp(filename),end
+  filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
+  if isfile(filename),disp(filename),end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% display the parameters in a motion comp params structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispMotionCompParams(params)
+
+disp(sprintf('GroupName: %s baseScan: %i baseFrame: %s robust: %i correctIntensityContrast: %i',params.groupName,params.baseScan,params.baseFrame,params.robust,params.correctIntensityContrast));
+disp(sprintf('crop: %s niters: %i interpMethod: %s targetScans: %s',num2str(params.crop),params.niters,params.interpMethod,num2str(params.targetScans)));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% find the matching struct
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = structIsMember(s,list)
+
+retval = [];
+for i = 1:length(list)
+  if isequal(s,list{i})
+    retval(i) = 1;
+  else
+    retval(i) = 0;
+  end
 end
