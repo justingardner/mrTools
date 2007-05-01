@@ -24,7 +24,9 @@ function view = corAnal(view,params)
 % spatialnorm: cell array of strings as in percentTSeries.
 %    Default: 'None'
 % tseriesfile: cell array of strings specifying tseries filenames. Or
-%    'any' to allow any match with the tseries files.
+%    'any' to allow any match with the tseries files. This is useful so
+%    that you can run the analysis on multiple data sets using the same
+%    params.
 %
 %
 % Examples:
@@ -185,6 +187,7 @@ corAnal.groupName = params.groupName;
 corAnal.function = 'corAnal';
 corAnal.reconcileFunction = 'corAnalReconcileParams';
 corAnal.guiFunction = 'corAnalGUI';
+corAnal.overlayInterpFunction = 'corAnalInterp';
 corAnal.params = params;
 corAnal.overlays =[co amp ph];
 corAnal.curOverlay = 1;
@@ -306,9 +309,12 @@ ft = fft(ptSeries);
 ft = ft(1:1+fix(size(ft, 1)/2), :);
 ampFT = 2*abs(ft)/nframes;
 
-% Compute co and amp
+% Compute co and amp (avoiding divide by zero)
 amp = ampFT(ncycles+1,:);
-co = ampFT(ncycles+1,:) ./ sqrt(sum(ampFT.^2));
+co = zeros(size(amp));
+sumAmp = sqrt(sum(ampFT.^2));
+nonzeroIndices = find(sumAmp >0);
+co(nonzeroIndices) = ampFT(ncycles+1,nonzeroIndices) ./ sumAmp(nonzeroIndices);
 
 % Calculate phase:
 % 1) add pi/2 so that it is in sine phase.

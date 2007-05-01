@@ -3,7 +3,7 @@ function [view] = saveTSeries(view,tseries,scanNum,scanParams,hdr,append)
 % view = saveTSeries(view,tseries,scanNum,[scanParams],[hdr],[append])
 %
 % Note, this function is used to OVERWRITE a tSeries. If you want
-% to save a new tSeries, you should use saveNewTSeries
+% to save a new tSeries, you should use saveNewTSeries.
 %
 % tseries: tseries array (x,y,z,t)
 % scanNum: the scan number to write to

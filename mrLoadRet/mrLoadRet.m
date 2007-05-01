@@ -1,4 +1,4 @@
-%  mrLoadRet, version 4.0 
+% mrLoadRet, version 4.0 
 %
 % AUTHOR:   DJH
 % PURPOSE:  Everything.
@@ -10,7 +10,7 @@
 % version of this script to customize it for that data set.
 % Examples of a number of possible customizations are commented
 % below.
-function v = mrLoadRet
+function mrLoadRet
 
 if ~isfile('mrSession.mat')
   disp('(mrLoadRet) No mrSession.mat found in current directory');
