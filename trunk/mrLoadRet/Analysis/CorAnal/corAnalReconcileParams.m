@@ -39,6 +39,10 @@ newdata = cell(1,nScans);
 
 % Find scans with tseries files that match those specified in
 % params.tseriesfile. Use only those scans and the corresponding params.
+% params.tseriesfile is a cell array of strings specifying tseries
+% filenames. Or it can be'any' to allow any match with the tseries files.
+% This is useful so that you can run the analysis on multiple data sets
+% using the same params.
 if ~ieNotDefined('params')
     for scan = 1:nScans
         tseriesfile = viewGet([],'tseriesFile',scan,groupNum);

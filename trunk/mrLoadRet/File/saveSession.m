@@ -2,15 +2,14 @@ function saveSession(verbose)
 % saveSession([verbose])
 %
 % verbose: ask before overwriting existing mrSession file
-%    default: getpref('mrLoadRet','verbose') or that's not set 0
+%    default: viewGet(MLR.views{1},'pref','verbose') or if that's not set 0
 % djh 5/2005
 
 mrGlobals;
 
-if ~exist('verbose','var')
-    if ispref('mrLoadRet','verbose')
-        verbose = getpref('mrLoadRet','verbose');
-    else
+if ieNotDefined('verbose')
+    verbose = viewGet([],'pref','verbose');
+    if isempty(verbose)
         verbose = 0;
     end
 end
@@ -33,4 +32,3 @@ end
 session = MLR.session;
 groups = MLR.groups;
 save(pathStr,'session','groups');
-    

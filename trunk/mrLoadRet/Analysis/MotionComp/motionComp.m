@@ -236,24 +236,23 @@ for s = 1:length(targetScans)
 	scanParams.originalGroupName{1} = viewGet(viewBase,'groupName');
 	try
 	  % remember current verbose level, but set it temporarily to 0
-	  if ispref('mrLoadRet','verbose')
-	    currentVerbose = getpref('mrLoadRet','verbose');
-	  else
+      currentVerbose = vieGet([],'pref','verbose');
+	  if isepmty(currentVerbose)
 	    currentVerbose = 0;
 	  end
-	  setpref('mrLoadRet','verbose',0);
+	  viewSet([],'pref','verbose',0);
 	  % save the time series
 	  [viewMotionComp,tseriesFileName] = saveNewTSeries(viewMotionComp,warpedTseries,scanParams,scanParams.niftiHdr);
 	catch
 	  % reset verbose preference
-	  setpref('mrLoadRet','verbose',currentVerbose);
+	  viewSet([],'pref','verbose',currentVerbose);
 	  % display error and rethrow it
 	  err = lasterror;
 	  if isfield(err,'stack'),disp(sprintf('Error in ==> %s at %i',err.stack(1).name,err.stack(1).line)); end
 	  rethrow(err);
 	end
 	% reset verbose preference
-	setpref('mrLoadRet','verbose',currentVerbose);
+	viewSet([],'pref','verbose',currentVerbose);
 	% Save evalstring for recomputing and params
 	evalstr = ['view = newView(','''','Volume','''','); view = motionComp(view,params);'];
 	[pathstr,filename,ext,versn] = fileparts(tseriesFileName);

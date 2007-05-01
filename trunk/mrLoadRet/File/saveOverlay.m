@@ -42,9 +42,8 @@ else
 end
 
 if ieNotDefined('confirm')
-    if ispref('mrLoadRet','verbose')
-        confirm = getpref('mrLoadRet','verbose');
-    else
+    confirm = viewGet([],'pref','verbose');
+    if isempty(confirm)
         confirm = 0;
     end
 end
