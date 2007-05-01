@@ -26,14 +26,6 @@ function volIC = intensityContrastCorrection(vol, crop);
 % Oscar Nestares 1999
 % 1/2007 djh, updated to mrLoadRet-4.5
 
-if ieNotDefined('crop')
-    crop = [];
-end
-if ~isempty(crop)
-    crop(1,:) = max(crop(1,:),[2 2 2]);
-    crop(2,:) = min(crop(2,:),(size(vol) - [2 2 2]));
-end
-
 % Initialize result to be a copy of input
 volIC = vol;
 
@@ -42,6 +34,15 @@ nFrames = size(vol,4);
 if nFrames > 1
     vol = mean(vol,4);
 end
+
+if ieNotDefined('crop')
+    crop = [];
+end
+if ~isempty(crop)
+    crop(1,:) = max(crop(1,:),[2 2 2]);
+    crop(2,:) = min(crop(2,:),(size(vol) - [2 2 2]));
+end
+
 
 %%% Intensity correction
 
