@@ -66,7 +66,6 @@ switch lower(field)
 		newDims = value;
 		newCoords = min(handles.coords,newDims);
 		handles.coords = min(handles.coords,newCoords);
-		guidata(MLR.views{viewNum}.figure,handles);
 
 	case {'basemin'}
 		% mlrGuiSet(view,'baseMin',value);
@@ -167,7 +166,6 @@ switch lower(field)
 		set(handles.scanText,'String',num2str(value));
 		% description
 		description = viewGet(view,'description',value);
-		%set(handles.descriptionText,'String',description);
 		set(viewGet(view,'figNum'),'Name',sprintf('%s: %s',getLastDir(MLR.homeDir),description));
 
     case {'scantext'}
@@ -175,9 +173,7 @@ switch lower(field)
 		set(handles.scanText,'String',num2str(value));
 		% description
 		description = viewGet(view,'description',value);
-		%set(handles.descriptionText,'String',description);
 		set(viewGet(view,'figNum'),'Name',sprintf('%s: %s',getLastDir(MLR.homeDir),description));
-
 		
 	case {'nslices'}
         % mlrGuiSet(view,'nslices',value);
@@ -200,19 +196,16 @@ switch lower(field)
 		handles.coords(handles.sliceOrientation) = value;
 		set(handles.sliceSlider,'Value',value);
 		set(handles.sliceText,'String',num2str(value));
-		guidata(MLR.views{viewNum}.figure,handles);
 
     case {'slicetext'}
         % mlrGuiSet(view,'sliceText',value);
 		handles.coords(handles.sliceOrientation) = value;
 		set(handles.sliceText,'String',num2str(value));
-		guidata(MLR.views{viewNum}.figure,handles);
 
 	case {'sliceorientation'}
         % mlrGuiSet(view,'sliceorientation',value);
 		sliceOrientation = value;
 		handles.sliceOrientation = sliceOrientation;
-		guidata(MLR.views{viewNum}.figure,handles);
 		% Set the correct radio button and unset the other two
 		switch sliceOrientation
 			% axial
@@ -242,11 +235,12 @@ switch lower(field)
 	case {'viewnum'}
         % mlrGuiSet(view,'viewnum',value);
 		handles.viewNum = value;
-		guidata(MLR.views{viewNum}.figure,handles);
 
 	otherwise
 		error(['Invalid field: ',field]);
 end
+guidata(MLR.views{viewNum}.figure,handles);
+
 
 function value = clipToSlider(slider,value,integerFlag)
 % Clips value so that it doesn't exceed slider limits.
