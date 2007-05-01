@@ -1174,6 +1174,15 @@ view = drawROI(view,'rectangle',1);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function createPolygonMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = newROI(view);
+view = drawROI(view,'polygon',1);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
 function deleteRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1205,6 +1214,14 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = drawROI(view,'rectangle',1);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function addPolygonMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'polygon',1);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
