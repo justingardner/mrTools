@@ -145,8 +145,8 @@ view = MLR.views{viewNum};
 
 % get location of pointer
 pointerLoc = get(MLR.interrogator{viewNum}.axesnum,'CurrentPoint');
-mouseX = round(pointerLoc(1,1));
-mouseY = round(pointerLoc(1,2));
+mouseY = round(pointerLoc(1,1));
+mouseX = round(pointerLoc(1,2));
 
 % get base coordinates
 baseCoords = viewGet(view,'cursliceBaseCoords');
