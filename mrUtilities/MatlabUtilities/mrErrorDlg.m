@@ -12,8 +12,6 @@ function mrErrorDlg(errstr)
 % djh, 5/2005
 %	$Id$	
 
-
-
 if ispref('mrLoadRet','verbose')
     verbose = getpref('mrLoadRet','verbose');
 else
@@ -24,6 +22,5 @@ if verbose
   errordlg(errstr,'Error!');
   error(errstr);
 else
-    disp(errstr);
-    keyboard
+  error(errstr);
 end

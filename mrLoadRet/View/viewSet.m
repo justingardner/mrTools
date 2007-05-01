@@ -101,12 +101,12 @@ switch lower(param)
             mlrGuiSet(view,'scan',min(nScans,1));
             mlrGuiSet(view,'analysis',1);
             mlrGuiSet(view,'analysisPopup',{'none'});
-	    % update the interrogator
-	    if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator)) 
-	      mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
-	      
-	    end
-	end
+            % update the interrogator
+            if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
+                mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
+
+            end
+        end
 
     case{'groupname'}
         % view = viewSet(view,'currentGroup',string);
@@ -175,43 +175,43 @@ switch lower(param)
 
         % -------------------------------------------
         % Scan
- 
-     case {'stimfilename'}
+
+    case {'stimfilename'}
         % view = viewSet(view,'stimFilename',stimFilename,scanNum,groupNum);
         [s g] = getScanAndGroup(view,varargin,param);
         nscans = viewGet(view,'nscans',g);
         if (nscans >= s) & (s > 0)
-	  if isempty(val)
-	    MLR.groups(g).auxParams(s).stimFileName = [];
-	  else
-	    MLR.groups(g).auxParams(s).stimFileName = val;
-	  end
+            if isempty(val)
+                MLR.groups(g).auxParams(s).stimFileName = [];
+            else
+                MLR.groups(g).auxParams(s).stimFileName = val;
+            end
         end
-   
-     case {'niftihdr'}
+
+    case {'niftihdr'}
         % view = viewSet(view,'niftiHdr',hdr,scanNum,groupNum);
         [s g] = getScanAndGroup(view,varargin,param);
         nscans = viewGet(view,'nscans',g);
         if (nscans >= s) & (s > 0)
-	  MLR.groups(g).scanParams(s).niftiHdr = val;
+            MLR.groups(g).scanParams(s).niftiHdr = val;
         end
-	
-     case {'scanparams'}
+
+    case {'scanparams'}
         % view = viewSet(view,'scanParams',scanParams,scanNum,groupNum);
         [s g] = getScanAndGroup(view,varargin,param);
-	if isscan(val)
-	  nscans = viewGet(view,'nscans',g);
-	  if (nscans >= s) & (s > 0)
-	    MLR.groups(g).scanParams(s) = val;
-	  end
-	else
-	  disp(sprintf('(viewSet) Invalid scanParams'));
-	end
-	
+        if isscan(val)
+            nscans = viewGet(view,'nscans',g);
+            if (nscans >= s) & (s > 0)
+                MLR.groups(g).scanParams(s) = val;
+            end
+        else
+            disp(sprintf('(viewSet) Invalid scanParams'));
+        end
+
     case{'prefs','preference','pref'}
         % view = viewSet(view,'pref','prefname',val);
-	% set prefernce prefname to val
-	MLR.prefs.(val)=varargin{1};
+        % set prefernce prefname to val
+        MLR.prefs.(val)=varargin{1};
     case {'newscan','updatescan'}
         % view = viewSet(view,'newScan',scanParams);
         % val must be a scanParams structure with scanParams.fileName set
@@ -276,13 +276,13 @@ switch lower(param)
                 MLR.groups(curgroup).auxParams = struct('auxParams',1);
             else
                 MLR.groups(curgroup).scanParams(nscans+1) = scanParams;
-		% get an empty auxParams
-		auxParams = MLR.groups(curgroup).auxParams(end);
-		auxParamFields = fieldnames(auxParams);
-		for aNum = 1:length(auxParamFields)
-		  auxParams.(auxParamFields{aNum}) = [];
-		end
-		% and set it
+                % get an empty auxParams
+                auxParams = MLR.groups(curgroup).auxParams(end);
+                auxParamFields = fieldnames(auxParams);
+                for aNum = 1:length(auxParamFields)
+                    auxParams.(auxParamFields{aNum}) = [];
+                end
+                % and set it
                 MLR.groups(curgroup).auxParams(nscans+1) = auxParams;
             end
             % Reconcile analysis params and overlay data/params with tseries
@@ -566,11 +566,11 @@ switch lower(param)
         for n = 1:length(overlays)
             view = viewSet(view,'newOverlay',overlays(n));
         end
-	% update the interrogator
-	if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator)) 
-	  mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
-	  
-	end
+        % update the interrogator
+        if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
+            mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
+
+        end
     case {'deleteanalysis'}
         % view = viewSet(view,'deleteAnalysis',analysisNum);
         analysisNum = val;
@@ -615,11 +615,11 @@ switch lower(param)
         % Set current overlay
         curOverlay = viewGet(view,'currentOverlay',analysisNum);
         view = viewSet(view,'currentOverlay',curOverlay);
-	% update the interrogator
-	if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator)) 
-	  mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
-	  
-	end
+        % update the interrogator
+        if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
+            mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
+
+        end
 
     case{'analysisname'}
         % view = viewSet(view,'analysisname',nameString,[analysisNum]);
@@ -724,7 +724,7 @@ switch lower(param)
                 ~isempty(view.analyses{analysisNum}.overlays)
             % Remove it and reset currentOverlay
             view.analyses{analysisNum}.overlays = ...
-                view.analysis{analysisNum}.overlays(overlayNum ~= [1:numoverlays]);
+                view.analyses{analysisNum}.overlays(overlayNum ~= [1:numoverlays]);
             if (numoverlays > 1)
                 if (curoverlay > overlayNum)
                     view = viewSet(view,'currentOverlay',curoverlay-1);
@@ -906,17 +906,17 @@ switch lower(param)
         % - date: specifies when it was created or last modified
         %
         % Check that is has the required fields
-	ROI = orderfields(val);
+        ROI = orderfields(val);
         if ~isroi(ROI)
-	  mrErrorDlg('Invalid ROI');
+            mrErrorDlg('Invalid ROI');
         end
         % Add it to view.ROIs
         pos = length(view.ROIs)+1;
         if (pos == 1)
-	  % First ROI
-	  view.ROIs = ROI;
+            % First ROI
+            view.ROIs = ROI;
         else
-	  view.ROIs(pos) = ROI;
+            view.ROIs(pos) = ROI;
         end
         % Update the gui
         stringList = {view.ROIs(:).name};

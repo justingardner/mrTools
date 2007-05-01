@@ -263,26 +263,26 @@ switch lower(param)
         % n = viewGet(view,'junkFramesTotal',scanNum,[])
         % n = viewGet(view,'junkFramesTotal',scanNum)
         [s g] = getScanAndGroup(view,varargin,param);
-	% get the junk frame from this scan
-	junkFramesThisScan = viewGet(view,'junkFrames',s,g);
-	if isempty(junkFramesThisScan),junkFramesThisScan=0;,end
-	% find the original scan num
-	[os og] = viewGet(view,'originalScanNum',s,g);
+        % get the junk frame from this scan
+        junkFramesThisScan = viewGet(view,'junkFrames',s,g);
+        if isempty(junkFramesThisScan),junkFramesThisScan=0;,end
+        % find the original scan num
+        [os og] = viewGet(view,'originalScanNum',s,g);
         if isempty(os)
-          junkFramesTotal = junkFramesThisScan;
+            junkFramesTotal = junkFramesThisScan;
         else
-	  for osNum = 1:length(os)
-	    % get the junk frames from the original scan
-  	    junkFramesOriginal = viewGet(view,'junkFramesTotal',os(osNum),og(osNum));
-	    % and add that to the total
-	    if ~isempty(junkFramesOriginal)
-	      junkFramesTotal(osNum) = junkFramesOriginal+junkFramesThisScan;
-	    else
-	      junkFramesTotal(osNum) = junkFramesThisScan;
+            for osNum = 1:length(os)
+                % get the junk frames from the original scan
+                junkFramesOriginal = viewGet(view,'junkFramesTotal',os(osNum),og(osNum));
+                % and add that to the total
+                if ~isempty(junkFramesOriginal)
+                    junkFramesTotal(osNum) = junkFramesOriginal+junkFramesThisScan;
+                else
+                    junkFramesTotal(osNum) = junkFramesThisScan;
+                end
             end
-	  end
         end
-	val = junkFramesTotal;
+        val = junkFramesTotal;
     case{'junkframes'}
         % n = viewGet(view,'junkFrames',scanNum,[groupNum])
         % n = viewGet([],'junkFrames',scanNum,groupNum)
@@ -331,11 +331,11 @@ switch lower(param)
         % filename = viewGet(view,'tseriesFile',scanNum,groupNum)
         % filename = viewGet([],'tseriesFile',scanNum,groupNum)
         [s g] = getScanAndGroup(view,varargin,param);
-	if s <= length(MLR.groups(g).scanParams)
-	  val = MLR.groups(g).scanParams(s).fileName;
-	else
-	  val = [];
-	end
+        if s <= length(MLR.groups(g).scanParams)
+            val = MLR.groups(g).scanParams(s).fileName;
+        else
+            val = [];
+        end
     case {'scannum'}
         % get scanNum (and groupNum) of a scan by its file name
         % [scanNum,groupNum] = viewGet(view,'scanNum',tseriesFileName);
@@ -387,24 +387,24 @@ switch lower(param)
         [s g] = getScanAndGroup(view,varargin,param);
         stimFileName = viewGet(view,'stimFileName',s,g);
         val = {};
-	% cycle over all stimfiles (concatenations and averages,
+        % cycle over all stimfiles (concatenations and averages,
         % may have several stimfiles).
         if ~isempty(stimFileName)
-	  for j = 1:length(stimFileName)
-	    % load this stimfile
-	    if ~isfile(stimFileName{j})
-	      mrErrorDlg(sprintf('viewGet %s: Could not find stimfile %s',param,stimFileName{j}));
-	    else
-	      val{j}=load(stimFileName{j});
-	    end
-	    % check to see what type it is, and set the field appropriately
-	    if isfield(val{j},'mylog')
-	      val{j}.filetype = 'eventtimes';
-	    elseif isfield(val{j},'myscreen')
-	      val{j}.filetype = 'mgl';
-	    end
-	  end
-	end
+            for j = 1:length(stimFileName)
+                % load this stimfile
+                if ~isfile(stimFileName{j})
+                    mrErrorDlg(sprintf('viewGet %s: Could not find stimfile %s',param,stimFileName{j}));
+                else
+                    val{j}=load(stimFileName{j});
+                end
+                % check to see what type it is, and set the field appropriately
+                if isfield(val{j},'mylog')
+                    val{j}.filetype = 'eventtimes';
+                elseif isfield(val{j},'myscreen')
+                    val{j}.filetype = 'mgl';
+                end
+            end
+        end
     case {'stimfilename'}
         % stimFileName = viewGet(view,'stimFileName',scanNum,[groupNum]);
         % stimFileName is returned as a cell array of all stimfiles
@@ -414,10 +414,10 @@ switch lower(param)
         stimFileName{1} = '';
         if (nscans >= s) && (s > 0) && isfield(MLR.groups(g),'auxParams') && (length(MLR.groups(g).auxParams) >= s)
             if isfield(MLR.groups(g).auxParams(s),'stimFileName')
-	      if ~isempty(MLR.groups(g).auxParams(s).stimFileName)
-		stimFileName{1} = fullfile(viewGet(view,'etcDir'),MLR.groups(g).auxParams(s).stimFileName);
-	      end
-	    end
+                if ~isempty(MLR.groups(g).auxParams(s).stimFileName)
+                    stimFileName{1} = fullfile(viewGet(view,'etcDir'),MLR.groups(g).auxParams(s).stimFileName);
+                end
+            end
         end
         % if the file does not exist, then check original
         if isempty(stimFileName{1})
@@ -491,11 +491,11 @@ switch lower(param)
         originalGroupNames = viewGet(view,'originalGroupName',s,g);
         originalScanNum = [];originalGroupNum = [];
         for i = 1:length(originalFileNames)
-	  % make sure there is a valid scan to return
-	  if ~isempty(viewGet(view,'scanNum',originalFileNames{i},viewGet(view,'groupNum',originalGroupNames{i})))
-	    [originalScanNum(end+1),originalGroupNum(end+1)] = viewGet(view,'scanNum',originalFileNames{i},viewGet(view,'groupNum',originalGroupNames{i}));
-	  end
-	end
+            % make sure there is a valid scan to return
+            if ~isempty(viewGet(view,'scanNum',originalFileNames{i},viewGet(view,'groupNum',originalGroupNames{i})))
+                [originalScanNum(end+1),originalGroupNum(end+1)] = viewGet(view,'scanNum',originalFileNames{i},viewGet(view,'groupNum',originalGroupNames{i}));
+            end
+        end
         val = originalScanNum;val2 = originalGroupNum;
     case {'originalfilename'}
         % originalFileName = viewGet(view,'originalFileName',scanNum,[groupNum]);
@@ -531,12 +531,13 @@ switch lower(param)
         end
     case{'prefs','preference','pref'}
         % val = viewGet(view,'pref','prefname');
-	% return a preference value or [] if it does not exist
-	if isfield(MLR.prefs,varargin{1})
-	  val = MLR.prefs.(varargin{1});
-	else
-	  val = [];
-	end
+        % val = viewGet([],'pref','prefname');
+        % return a preference value or [] if it does not exist
+        if isfield(MLR.prefs,varargin{1})
+            val = MLR.prefs.(varargin{1});
+        else
+            val = [];
+        end
     case{'transforms'}
         % transforms = viewGet(view,'transforms',scanNum,[groupNum]);
         % returns motion correction transformation matrices if they exists
@@ -557,9 +558,9 @@ switch lower(param)
         [s g] = getScanAndGroup(view,varargin,param);
         nscans = viewGet(view,'nscans',g);
         if (nscans >= s) & (s > 0)
-	  % make sure it is a nifti headr (not an analyze)
-	  val = MLR.groups(g).scanParams(s).niftiHdr;
-	end
+            % make sure it is a nifti headr (not an analyze)
+            val = MLR.groups(g).scanParams(s).niftiHdr;
+        end
     case{'scanxform'}
         % xform = viewGet(view,'scanXform',scanNum,[groupNum])
         % xform = viewGet([],'scanXform',scanNum,groupNum)
@@ -568,23 +569,23 @@ switch lower(param)
         [s g] = getScanAndGroup(view,varargin,param);
         nscans = viewGet(view,'nscans',g);
         if (nscans >= s) & (s > 0)
-	  % make sure it is a nifti headr (not an analyze)
-	  if ~isfield(MLR.groups(g).scanParams(s).niftiHdr,'sform_code')
-	    return
-	  end
-	  sformCode = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
-	  if sformCode
-	    % if sform has been set, then use it.
-	    val = MLR.groups(g).scanParams(s).niftiHdr.sform44;
-	  else
-	    % If has not been set, then use the transform that
-	    % transforms this image directly on to the current anatomy
-	    % using the qform matrices. Note: There used to be code
-	    % here that reset val if it was the identity but that was a
-	    % bug (DJH 1/17/07).
-	    baseqform = viewGet(view,'baseqform');
-	    val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
-	  end
+            % make sure it is a nifti headr (not an analyze)
+            if ~isfield(MLR.groups(g).scanParams(s).niftiHdr,'sform_code')
+                return
+            end
+            sformCode = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
+            if sformCode
+                % if sform has been set, then use it.
+                val = MLR.groups(g).scanParams(s).niftiHdr.sform44;
+            else
+                % If has not been set, then use the transform that
+                % transforms this image directly on to the current anatomy
+                % using the qform matrices. Note: There used to be code
+                % here that reset val if it was the identity but that was a
+                % bug (DJH 1/17/07).
+                baseqform = viewGet(view,'baseqform');
+                val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
+            end
         end
     case{'scanvoxelsize'}
         % voxelSize = viewGet(view,'scanVoxelSize',scanNum,[groupNum])
@@ -1190,6 +1191,26 @@ switch lower(param)
         if analysisNum & (analysisNum > 0) & (analysisNum <= n)
             val = view.analyses{analysisNum}.date;
         end
+    case {'overlayinterpfunction'}
+        % fnctn = viewGet(view,'overlayInterpFunction',[analysisNum])
+        % fnctn = viewGet(view,'overlayInterpFunction',[])
+        % fnctn = viewGet(view,'overlayInterpFunction')
+        if ieNotDefined('varargin')
+            analysisNum = viewGet(view,'currentAnalysis');
+        else
+            analysisNum = varargin{1};
+        end
+        if isempty(analysisNum)
+            analysisNum = viewGet(view,'currentAnalysis');
+        end
+        n = viewGet(view,'numberofAnalyses');
+        if analysisNum & (analysisNum > 0) & (analysisNum <= n)
+            if isfield(view.analyses{analysisNum},'overlayInterpFunction');
+                val = view.analyses{analysisNum}.overlayInterpFunction;
+            else
+                val = [];
+            end
+        end
 
         % overlay
     case{'overlays'}
@@ -1483,12 +1504,12 @@ switch lower(param)
             end
         end
     case {'overlayctype'}
-        % overlaycmap = viewGet(view,'overlaycmap',[overlayNum],[analysisNum])
-        % overlaycmap = viewGet(view,'overlaycmap',overlayNum,[])
-        % overlaycmap = viewGet(view,'overlaycmap',[],analysisNum)
-        % overlaycmap = viewGet(view,'overlaycmap',[],[])
-        % overlaycmap = viewGet(view,'overlaycmap',overlayNum)
-        % overlaycmap = viewGet(view,'overlaycmap')
+        % overlayctype = viewGet(view,'overlayctype',[overlayNum],[analysisNum])
+        % overlayctype = viewGet(view,'overlayctype',overlayNum,[])
+        % overlayctype = viewGet(view,'overlayctype',[],analysisNum)
+        % overlayctype = viewGet(view,'overlayctype',[],[])
+        % overlayctype = viewGet(view,'overlayctype',overlayNum)
+        % overlayctype = viewGet(view,'overlayctype')
         if ieNotDefined('varargin')
             analysisNum = viewGet(view,'currentAnalysis');
             overlayNum = viewGet(view,'currentOverlay',analysisNum);
@@ -1511,11 +1532,11 @@ switch lower(param)
         if ~isempty(analysis) & ~isempty(analysis.overlays)
             n = viewGet(view,'numberofOverlays',analysisNum);
             if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-	      if isfield(analysis.overlays(overlayNum),'colormapType')
-		val = analysis.overlays(overlayNum).colormapType;
-	      else
-		val = 'normal';
-	      end
+                if isfield(analysis.overlays(overlayNum),'colormapType')
+                    val = analysis.overlays(overlayNum).colormapType;
+                else
+                    val = 'normal';
+                end
             end
         end
     case {'overlayrange'}
@@ -1646,9 +1667,9 @@ switch lower(param)
                 val = analysis.overlays(overlayNum).interrogator;
             end
         end
-	if isempty(val)
-	  val = 'mrDefaultInterrogator';
-	end
+        if isempty(val)
+            val = 'mrDefaultInterrogator';
+        end
         % corAnal
     case {'coranal'}
         % corAnal = viewGet(view,'corAnal')
@@ -1769,8 +1790,6 @@ switch lower(param)
             case 'flat'
                 val = flatGet(view,param,varargin{:});
             otherwise
-	     
-  
                 error('Unknown type of View.');
         end
 end
@@ -1886,8 +1905,10 @@ switch lower(param)
         val = datasize(3);
 
     otherwise
-     dispViewGetHelp;
-     disp(['Invalid parameter for volume view: ',param]);
+        if viewGet([],'preference','verbose')
+            dispViewGetHelp;
+        end
+        disp(['Invalid parameter for volume view: ',param]);
 end
 return;
 

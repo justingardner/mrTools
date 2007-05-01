@@ -12,10 +12,9 @@ mrGlobals
 
 % interpMethod and interpExtrapVal are used by calls to interp3 when
 % extracting slices from the base and overlay arrays.
-if ispref('mrLoadRet','interpMethod')
-    interpMethod = getpref('mrLoadRet','interpMethod');
-else
-    interpMethod = 'linear';
+interpMethod = viewGet([],'pref','interpMethod');
+if isempty(interpMethod)
+  interpMethod = 'linear';
 end
 interpExtrapVal = NaN;
 

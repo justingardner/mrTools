@@ -24,27 +24,27 @@ end
 
 % update of wait bar
 if ishandle(t)
-  waitbar(x,t);
-  drawnow;
-elseif isfield(t,'disppercent')
-  disppercent(x);
-% initial call
-elseif ischar(t) 
-  % check the verbose preference
-  if ispref('mrLoadRet','verbose')
-    verbose = getpref('mrLoadRet','verbose');
-  else
-    verbose = 0;
-  end
-  % if verbose, make a window wait bar
-  if verbose
-    h = waitbar(x,t);
+    waitbar(x,t);
     drawnow;
-  % otherwise use disppercent
-  else
-    disppercent(-inf,t);
-    h.disppercent = 1;
-  end
+elseif isfield(t,'disppercent')
+    disppercent(x);
+    % initial call
+elseif ischar(t)
+    % check the verbose preference
+    if ispref('mrLoadRet','verbose')
+        verbose = getpref('mrLoadRet','verbose');
+    else
+        verbose = 0;
+    end
+    % if verbose, make a window wait bar
+    if verbose
+        h = waitbar(x,t);
+        drawnow;
+        % otherwise use disppercent
+    else
+        disppercent(-inf,t);
+        h.disppercent = 1;
+    end
 end
 return
 
@@ -56,9 +56,7 @@ setpref('mrLoadRet','verbose',0);
 startTime = mglGetSecs;
 h = mrWaitBar(0,'Test. Please wait...');
 for i=1:100
-  %ispref('mrLoadRet','verbose');
-  %getpref('mrLoadRet','verbose');
-  mrWaitBar(i/100,h);
+    mrWaitBar(i/100,h);
 end
 mrCloseDlg(h);
 mglGetSecs(startTime)
