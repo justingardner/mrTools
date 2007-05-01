@@ -70,16 +70,16 @@ switch descriptor
     case 'polygon'
         % Get polygon region using matlab's roipoly function
         polyIm = roipoly;
-        
-        % Compute image coordinates
-        polyImIndices = find(polyIm);
-        [x,y] = ind2sub(size(polyIm),polyImIndices);
-        
+                
         % Extract coordinates in base reference frame
-		baseX = baseCoords(x,y,1);
-		baseY = baseCoords(x,y,2);
-		baseZ = baseCoords(x,y,3);
-		coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,prod(size(baseX)))];
+		baseX = baseCoords(:,:,1);
+		baseY = baseCoords(:,:,2);
+		baseZ = baseCoords(:,:,3);
+        polyImIndices = find(polyIm);
+        x = baseX(polyImIndices);
+        y = baseY(polyImIndices);
+        z = baseZ(polyImIndices);
+		coords = [x'; y'; z'; ones(1,size(x))];
 		
 	otherwise
 		mrErrorDlg(['Invalid descriptor: ',descriptor]);
