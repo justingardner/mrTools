@@ -12,8 +12,8 @@ function retval = mrInterrogator(event,viewNum,val)
 
 % check arguments
 if ~any(nargin == [1 2 3])
-  help mrInterrogator
-  return
+    help mrInterrogator
+    return
 end
 
 % some basic info about location of controls
@@ -29,22 +29,22 @@ MLR.interrogator{viewNum}.fontsize = 10;
 MLR.interrogator{viewNum}.fontname = 'Helvetica';
 
 switch (event)
- case 'init'
-   initHandler(viewNum);
- case 'end'
-   endHandler(viewNum);
- case 'mouseMove'
-   mouseMoveHandler(viewNum);
- case 'mouseUp'
-   mouseUpHandler(viewNum);
- case 'mouseDown'
-   mouseDownHandler(viewNum);
- case 'interrogator'
-   interrogatorHandler(viewNum);
- case 'updateInterrogator'
-   updateInterrogatorHandler(viewNum,val);
+    case 'init'
+        initHandler(viewNum);
+    case 'end'
+        endHandler(viewNum);
+    case 'mouseMove'
+        mouseMoveHandler(viewNum);
+    case 'mouseUp'
+        mouseUpHandler(viewNum);
+    case 'mouseDown'
+        mouseDownHandler(viewNum);
+    case 'interrogator'
+        interrogatorHandler(viewNum);
+    case 'updateInterrogator'
+        updateInterrogatorHandler(viewNum,val);
 end
-    
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % change the interrogator function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,8 +54,8 @@ mrGlobals;
 
 % if not a valid function, go back to old one
 if exist(interrogator)==2
-  set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
-  MLR.interrogator{viewNum}.interrogator = interrogator;
+    set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
+    MLR.interrogator{viewNum}.interrogator = interrogator;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % change in interrogator field
@@ -69,11 +69,11 @@ interrogator = get(MLR.interrogator{viewNum}.hInterrogator,'String');
 
 % if not a valid function, go back to old one
 if isfield(MLR.interrogator{viewNum},'hInterrogator')
-  if exist(interrogator)~=2
-    set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
-  else
-    MLR.interrogator{viewNum}.interrogator = interrogator;
-  end
+    if exist(interrogator)~=2
+        set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
+    else
+        MLR.interrogator{viewNum}.interrogator = interrogator;
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,9 +84,9 @@ function retval = mouseInImage(xpos,ypos)
 mrGlobals;
 
 if isnan(xpos)
-  retval = 0;
+    retval = 0;
 else
-  retval = 1;
+    retval = 1;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,15 +101,15 @@ mrGlobals;
 
 % check location in bounds on image
 if mouseInImage(x,y)
-  % set pointer to crosshairs
-  set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
-  % set the xpos/ypos textbox 
-  set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
+    % set pointer to crosshairs
+    set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
+    % set the xpos/ypos textbox
+    set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
 else
-  % set pointer to arrow
-  set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
-  % set strings to empty
-  set(MLR.interrogator{viewNum}.hPos,'String','');
+    % set pointer to arrow
+    set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
+    % set strings to empty
+    set(MLR.interrogator{viewNum}.hPos,'String','');
 end
 
 % eval the old handler
@@ -121,17 +121,17 @@ eval(MLR.interrogator{viewNum}.windowButtonMotionFcn);
 % themselves, then they don't want to use the default. But what
 % happens if you change views or analyses? Should the interrogator change?
 if 0
-% check the interrogator
-global MLR;
-view = MLR.views{viewNum};
-overlayNum = viewGet(view,'currentOverlay');
-analysisNum = viewGet(view,'currentAnalysis');
-interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
-% if it is different from current one, then reset it
-if ~strcmp(MLR.interrogator{viewNum}.interrogator,interrogator)
-  MLR.interrogator{viewNum}.interrogator = interrogator;
-  set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
-end
+    % check the interrogator
+    global MLR;
+    view = MLR.views{viewNum};
+    overlayNum = viewGet(view,'currentOverlay');
+    analysisNum = viewGet(view,'currentAnalysis');
+    interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+    % if it is different from current one, then reset it
+    if ~strcmp(MLR.interrogator{viewNum}.interrogator,interrogator)
+        MLR.interrogator{viewNum}.interrogator = interrogator;
+        set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,20 +152,20 @@ mouseX = round(pointerLoc(1,2));
 baseCoords = viewGet(view,'cursliceBaseCoords');
 % convert mouse to baseCoords
 if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
-  x = baseCoords(mouseX,mouseY,1);
-  y = baseCoords(mouseX,mouseY,2);
-  s = baseCoords(mouseX,mouseY,3);
+    x = baseCoords(mouseX,mouseY,1);
+    y = baseCoords(mouseX,mouseY,2);
+    s = baseCoords(mouseX,mouseY,3);
 else
-  x = nan;y = nan; s = nan;
-  return
-end  
+    x = nan;y = nan; s = nan;
+    return
+end
 
 % transforms from base coordinates into scan coordinates
 baseXform = viewGet(view,'baseXform');
 scanXform = viewGet(view,'scanXform',viewGet(view,'curScan'));
 if isempty(scanXform) | isempty(baseXform)
-  x = nan;y = nan; s = nan;
-  return
+    x = nan;y = nan; s = nan;
+    return
 end
 
 transformed = inv(scanXform)*baseXform*[x y s 1]';
@@ -179,9 +179,9 @@ s = transformed(3);
 % of scan
 scanDims = viewGet(view,'scanDims',viewGet(view,'curScan'));
 if ((x < 1) || (x > scanDims(1)) || ...
-    (y < 1) || (y > scanDims(2)) || ...
-    (s < 1) || (s > scanDims(3)))
-  x = nan;y = nan;s = nan;
+        (y < 1) || (y > scanDims(2)) || ...
+        (s < 1) || (s > scanDims(3)))
+    x = nan;y = nan;s = nan;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -205,17 +205,17 @@ mrGlobals;
 [x y s] = getMouseCoords(viewNum);
 
 if mouseInImage(x,y)
-  global MLR;
-  view = MLR.views{viewNum};
-  % make a waiting cursor
-  %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
-  % Draw graph
-  overlayNum = viewGet(view,'currentOverlay');
-  analysisNum = viewGet(view,'currentAnalysis');
-  scanNum = viewGet(view,'currentScan');
-  feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s);
-  % reset to full crosshair
-  %set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
+    global MLR;
+    view = MLR.views{viewNum};
+    % make a waiting cursor
+    %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
+    % Draw graph
+    overlayNum = viewGet(view,'currentOverlay');
+    analysisNum = viewGet(view,'currentAnalysis');
+    scanNum = viewGet(view,'currentScan');
+    feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s);
+    % reset to full crosshair
+    %set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
 end
 
 % eval the old handler
@@ -252,8 +252,8 @@ fignum = viewGet(MLR.views{viewNum},'figNum');
 % see if this is a restart
 restart = 0;
 if isfield(MLR.interrogator{viewNum},'fignum') && isequal(MLR.interrogator{viewNum}.fignum,fignum)
-  disp('(mrInterrogator) Restarting');
-  restart = 1;
+    disp('(mrInterrogator) Restarting');
+    restart = 1;
 end
 
 % get figure handles
@@ -262,10 +262,10 @@ MLR.interrogator{viewNum}.guide = guidata(fignum);
 figure(fignum);MLR.interrogator{viewNum}.axesnum = MLR.interrogator{viewNum}.guide.axis;
 
 if ~restart
-  % remember old callbacks
-  MLR.interrogator{viewNum}.windowButtonMotionFcn = get(fignum,'WindowButtonMotionFcn');
-  MLR.interrogator{viewNum}.windowButtonDownFcn = get(fignum,'WindowButtonDownFcn');
-  MLR.interrogator{viewNum}.windowButtonUpFcn = get(fignum,'WindowButtonUpFcn');
+    % remember old callbacks
+    MLR.interrogator{viewNum}.windowButtonMotionFcn = get(fignum,'WindowButtonMotionFcn');
+    MLR.interrogator{viewNum}.windowButtonDownFcn = get(fignum,'WindowButtonDownFcn');
+    MLR.interrogator{viewNum}.windowButtonUpFcn = get(fignum,'WindowButtonUpFcn');
 end
 
 % set the callbacks appropriately
@@ -277,12 +277,12 @@ set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'',%i)',viewNum)
 MLR.interrogator{viewNum}.pointer = get(fignum,'pointer');
 
 if ~restart
-  % set the x and y textbox
-  MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
-  MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
+    % set the x and y textbox
+    MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
+    MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
 else
-  set(MLR.interrogator{viewNum}.hPos,'visible','on');
-  set(MLR.interrogator{viewNum}.hInterrogator,'visible','on');
+    set(MLR.interrogator{viewNum}.hPos,'visible','on');
+    set(MLR.interrogator{viewNum}.hInterrogator,'visible','on');
 end
 
 % set the x/y min/max
@@ -318,10 +318,10 @@ function h = makeTextentry(viewNum,displayString,callback,rownum,colnum,uisize)
 
 % make callback string
 if isnumeric(callback)
-  callback = sprintf('mrInterrogator(%f,%i)',callback,viewNum);
+    callback = sprintf('mrInterrogator(%f,%i)',callback,viewNum);
 else
-  callback = sprintf('mrInterrogator(''%s'',%i)',callback,viewNum);
-end  
+    callback = sprintf('mrInterrogator(''%s'',%i)',callback,viewNum);
+end
 
 mrGlobals;
 
