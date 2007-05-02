@@ -1988,10 +1988,10 @@ disp('-----------------------------------------------------------------------');
 function [s g] = getScanAndGroup(view,varg,param)
 
 if ieNotDefined('varg')
-    mrErrorDlg(sprintf('viewGet %s: must specify scan.',param));
+  s = viewGet(view,'curScan');
+else
+  s = varg{1};
 end
-
-s = varg{1};
 if length(varg) > 1
     g = varg{2};
 else
