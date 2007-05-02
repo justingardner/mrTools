@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 01-May-2007 10:10:37
+% Last Modified by GUIDE v2.5 02-May-2007 10:09:18
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1236,6 +1236,9 @@ view = drawROI(view,'rectangle',0);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function removePolygonMenuItem_Callback(hObject, eventdata, handles)
+
+% --------------------------------------------------------------------
 function restrictRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1682,4 +1685,7 @@ if isfile(tSeriesPathStr)
 else
   mrWarnDlg(sprintf('(mrLoadRetGUI) Could not find tSeries %s',tSeriesPathStr));
 end
+
+
+
 
