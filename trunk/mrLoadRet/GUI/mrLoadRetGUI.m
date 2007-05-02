@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 02-May-2007 10:09:18
+% Last Modified by GUIDE v2.5 02-May-2007 12:05:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1674,5 +1674,10 @@ else
 end
 
 
+% --------------------------------------------------------------------
+function sformScanMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to sformScanMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
 
