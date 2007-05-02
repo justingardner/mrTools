@@ -140,7 +140,7 @@ if isfile(filename)
 	    hdr = cbiReadNiftiHeader(tseriesHdrFileName);
 	    % get the scan params
 	    scanParams.junkFrames = 0;
-	    scanParams.nFrames = hdr.dim(5);;
+	    scanParams.nFrames = hdr.dim(5);
 	    scanParams.description = matfile.params.descriptions{targetNum};
 	    scanParams.fileName = getLastDir(tseriesFileName);
 	    scanParams.originalFileName{1} = viewGet(v,'tSeriesFile',matfile.params.targetScans(targetNum));
@@ -150,8 +150,24 @@ if isfile(filename)
 	  end
 	end
 	motionCompParams{end+1} = matfile.params;
-      end
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      elseif isfield(matfile.params,'aveGroupName')
+	if ~match
+	  dispAverageParams(matfile.params);
+	  % read the image header
+	  hdr = cbiReadNiftiHeader(tseriesHdrFileName);
+	  scanParams.junkFrames = 0;
+	  scanParams.nFrames = hdr.dim(5);
+	  scanParams.description = matfile.params.description;
+	  scanParams.fileName = getLastDir(tseriesFileName);
+	  scanParams.originalFileName = matfile.params.tseriesfiles;
+	  for scanNum = 1:length(matfile.params.tseriesfiles)
+	    scanParams.originalGroupName{scanNum} = matfile.params.groupName;
+	  end
+	  recoverable = 1;
+	end
+      end
+
     end
   end
 end
@@ -173,6 +189,16 @@ function dispMotionCompParams(params)
 
 disp(sprintf('GroupName: %s baseScan: %i baseFrame: %s robust: %i correctIntensityContrast: %i',params.groupName,params.baseScan,params.baseFrame,params.robust,params.correctIntensityContrast));
 disp(sprintf('crop: %s niters: %i interpMethod: %s targetScans: %s',num2str(params.crop),params.niters,params.interpMethod,num2str(params.targetScans)));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% display the parameters in a motion comp params structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispAverageParams(params)
+
+disp(sprintf('Average from GroupName: %s baseScan: %i',params.groupName,params.baseScan));
+for i = 1:length(params.tseriesfiles)
+  disp(sprintf('%i %s: %s Shift: %i Reverse: %i',params.scanList(i),params.groupName,params.tseriesfiles{i},params.shiftList(i),params.reverseList(i)));
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % find the matching struct

@@ -66,6 +66,7 @@ if displayInDialog
   paramsInfo{end+1} =  {'numVolumes',totalFrames,'editable=0','Number of volumes'};
   paramsInfo{end+1} = {'qform',scanHdr.qform44,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'};
   paramsInfo{end+1} = {'sform',scanHdr.sform44,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'};
+  paramsInfo{end+1} = {'sformCode',scanHdr.sform_code,'editable=0','If sformCode is 0 it means the sform has never been set and mrLoadRet will use the qform to compute the transform to the base anatomy. If mrAlign has been run properly, then this value should be set to 1'};
   mrParamsDialog(paramsInfo,'Scan info');
 else
   disp(sprintf('%s',description));
