@@ -208,6 +208,15 @@ switch lower(param)
             disp(sprintf('(viewSet) Invalid scanParams'));
         end
 
+    case {'scanxform','sform'}
+        % view = viewSet(view,'sform',sform,scanNum,groupNum);
+        [s g] = getScanAndGroup(view,varargin,param);
+	nscans = viewGet(view,'nscans',g);
+	if (nscans >= s) & (s > 0)
+	  MLR.groups(g).scanParams(s).niftiHdr.sform_code = 1;
+	  MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
+	end
+
     case{'prefs','preference','pref'}
         % view = viewSet(view,'pref','prefname',val);
         % set prefernce prefname to val
@@ -1189,10 +1198,10 @@ disp('-----------------------------------------------------------------------');
 function [s g] = getScanAndGroup(view,varg,param)
 
 if ieNotDefined('varg')
-    mrErrorDlg(sprintf('viewSet %s: must specify scan.',param));
+  s = viewGet(view,'curScan');
+else
+  s = varg{1};
 end
-
-s = varg{1};
 if length(varg) > 1
     g = varg{2};
 else

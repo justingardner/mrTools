@@ -583,6 +583,7 @@ switch lower(param)
                 % using the qform matrices. Note: There used to be code
                 % here that reset val if it was the identity but that was a
                 % bug (DJH 1/17/07).
+		disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
                 baseqform = viewGet(view,'baseqform');
                 val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
             end
