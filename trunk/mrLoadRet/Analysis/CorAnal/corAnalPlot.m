@@ -40,8 +40,6 @@ for roinum = 1:nROIs
   if ismember([x y z],roicoords','rows')
     % get the roi
     roi = viewGet(view,'roi',roinum);
-    % change the coordinates to our coordinates
-    roi.coords = roicoords;
   end
 end
 
