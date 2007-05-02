@@ -162,7 +162,8 @@ for iscan = 1:length(scanList)
     % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the
     % origin.
     shiftXform = shiftOriginXform;
-    M = inv(shiftXform) * inv(scanXform) * baseXform * shiftXform;
+    swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+    M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
 	
 	% Warp the frames
     for frame = 1:nFrames
@@ -171,6 +172,9 @@ for iscan = 1:length(scanList)
 
 	% Add 'em up
 	aveTSeries = aveTSeries + tseries;
+    % remember origianl file/group	
+    scanParams.originalFileName{iscan} = viewGet(viewBase,'tSeriesFile',scanNum);
+    scanParams.originalGroupName{iscan} = viewGet(viewBase,'groupName',viewGet(viewBase,'curGroup'));
     % Update waitbar
     mrWaitBar(iscan/length(scanList),waitHandle);
 end
