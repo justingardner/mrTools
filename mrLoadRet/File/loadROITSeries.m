@@ -5,8 +5,10 @@
 %       date: 03/22/07
 %    purpose: load the time series for a roi, without roiname
 %             specified, brings up selection dialog. roiname
-%             may be a cell array of rois. scanNum and groupNum
-%             default to current scan/group
+%             may be a cell array. scanNum and groupNum
+%             default to current scan/group. If roiname is a roi
+%             struct instead of a name then it will use that roi
+%             instead of loading the roi from disk
 %
 %        e.g.:
 %
@@ -40,25 +42,28 @@ view = viewSet(view,'currentGroup',groupNum);
 % if there is no roi, ask the user to select
 if ieNotDefined('roiname')
   roiname = getPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
-elseif isstr(roiname)
-  %make into a cell array
-  tmp = roiname;
-  roiname = {};
-  roiname{1} = tmp;
 end
+
+%make into a cell array
+roiname = cellArray(roiname);
 
 % load the rois in turn
 for roinum = 1:length(roiname)
   % see if we have to past roi directory on
-  if ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
+  if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
     roiname{roinum} = fullfile(roidir,stripext(roiname{roinum}));
   end
   % check for file
-  if ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
+  if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
     disp(sprintf('(loadROITSeries) Could not find roi %s',roiname{roinum}));
   else
-    % load the roi
-    roi = load(roiname{roinum});
+    % load the roi, if the name is actually a struct
+    % then assume it is an roi struct
+    if isstr(roiname{roinum})
+      roi = load(roiname{roinum});
+    else
+      roi.(roiname{roinum}.name) = roiname{roinum};
+    end
     roiFieldnames = fieldnames(roi);
     % get all the rois
     for roinum = 1:length(roiFieldnames)
@@ -107,6 +112,10 @@ function scanCoords = getROICoords(view,groupNum,scanNum,roi)
 % get the scan transforms
 scanXform = viewGet(view,'scanXform',scanNum,groupNum);
 scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
+
+if size(roi.coords,1) == 3
+  roi.coords(4,:) = 1;
+end
 
 % Use xformROI to supersample the coordinates
 scanCoords = round(xformROIcoords(roi.coords,inv(scanXform)*roi.xform,roi.voxelSize,scanVoxelSize));
