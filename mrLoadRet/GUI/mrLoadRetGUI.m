@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 02-May-2007 12:12:56
+% Last Modified by GUIDE v2.5 02-May-2007 12:27:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1687,13 +1687,51 @@ v = MLR.views{viewNum};
 % get the scanxform
 scanXform = viewGet(v,'scanxform');
 % params dialog
-paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing!'}};
-mrParamsDialog(paramsInfo);
+paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing! Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'}};
+params = mrParamsDialog(paramsInfo,'scanXform');
+
+% ask the user if they are really sure before actually changing it
+rval = 1000000000000;
+if ~isempty(params) && ~isequal(round(params.sform*rval)/rval,round(scanXform*rval)/rval)
+  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+  if strcmp(answer,'Yes')
+    v = viewSet(v,'scanXform',params.scanXform);
+  end
+end
 
 
 % --------------------------------------------------------------------
 function Untitled_1_Callback(hObject, eventdata, handles)
 % hObject    handle to Untitled_1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the scanxform
+scanXform = viewGet(v,'scanXform');
+baseXform = viewGet(v,'baseXform');
+scan2base = inv(scanXform)*baseXform;
+% params dialog
+paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and the running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'}};
+params = mrParamsDialog(paramsInfo,'scan2base transformation');
+
+rval = 1000000000000;
+if ~isempty(params) && ~isequal(round(params.scan2base*rval)/rval,round(scan2base*rval)/rval)
+  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+  if strcmp(answer,'Yes')
+    v = viewSet(v,'scanXform',inv(params.scan2base*inv(baseXform)));
+  end
+end
+
+  
+
+
+% --------------------------------------------------------------------
+function Untitled_4_Callback(hObject, eventdata, handles)
+% hObject    handle to Untitled_4 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
