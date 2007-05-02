@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 02-May-2007 12:05:53
+% Last Modified by GUIDE v2.5 02-May-2007 12:12:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1677,6 +1677,23 @@ end
 % --------------------------------------------------------------------
 function sformScanMenuItem_Callback(hObject, eventdata, handles)
 % hObject    handle to sformScanMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the scanxform
+scanXform = viewGet(v,'scanxform');
+% params dialog
+paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing!'}};
+mrParamsDialog(paramsInfo);
+
+
+% --------------------------------------------------------------------
+function Untitled_1_Callback(hObject, eventdata, handles)
+% hObject    handle to Untitled_1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
