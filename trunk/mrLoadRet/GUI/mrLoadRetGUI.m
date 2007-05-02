@@ -1618,9 +1618,7 @@ view = MLR.views{viewNum};
 scanNum = viewGet(view,'curScan');
 groupNum = viewGet(view,'curGroup');
 groupName = viewGet(view,'groupName',groupNum);
-disp(sprintf('\n===== Scan Info (%s: %i) =====',groupName,scanNum));
-scanInfo(scanNum,groupNum);
-disp(sprintf('======================'));
+scanInfo(scanNum,groupNum,1);
 
 
 % --------------------------------------------------------------------
@@ -1640,23 +1638,12 @@ baseVolPermutation = viewGet(view,'baseVolPermutation');
 baseVoxelSize = viewGet(view,'baseVoxelSize');
 baseName = viewGet(view,'baseName');
 
-disp(sprintf('\n===== Base anatomy info ======'));
-disp(sprintf('%s',baseName));
-disp(sprintf('voxelSize=[%0.1f %0.1f %0.1f] Dims: [%i %i %i]',baseVoxelSize(1),baseVoxelSize(2),baseVoxelSize(3),baseDims(1),baseDims(2),baseDims(3)));
-disp(sprintf('++++++++++++++++++++++++++ qform ++++++++++++++++++++++++++'));
-for rownum = 1:4
-  disp(sprintf('%f\t%f\t%f\t%f',baseQform(rownum,1),baseQform(rownum,2),baseQform(rownum,3),baseQform(rownum,4)));
-end
-disp(sprintf('++++++++++++++++++++++++++ sform ++++++++++++++++++++++++++'));
-for rownum = 1:4
-  disp(sprintf('%f\t%f\t%f\t%f',baseSform(rownum,1),baseSform(rownum,2),baseSform(rownum,3),baseSform(rownum,4)));
-end
-disp(sprintf('+++++++++++++++++++ Volume Permutation +++++++++++++++++++++'));
-for rownum = 1:3
-  disp(sprintf('%f\t%f\t%f',baseVolPermutation(rownum,1),baseVolPermutation(rownum,2),baseVolPermutation(rownum,3)));
-end
-disp(sprintf('======================'));
-
+paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},...
+	      {'voxelSize',baseVoxelSize,'editable=0','Voxel dimensions in mm'},...
+	      {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
+	      {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
+	      {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'}};
+mrParamsDialog(paramsInfo,'Base anatomy information');
 
 % --------------------------------------------------------------------
 function importGroupMenuItemi_Callback(hObject, eventdata, handles)

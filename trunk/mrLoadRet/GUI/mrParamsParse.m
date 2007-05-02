@@ -9,7 +9,7 @@
 %
 %	$Id$	
 
-function [vars varinfo] = mrParamsParse(vars)
+function [vars varinfo nrows ncols] = mrParamsParse(vars)
 
 % check arguments
 if ~any(nargin == [1])
@@ -17,8 +17,11 @@ if ~any(nargin == [1])
   return
 end
 
+nrows = 1;
+ncols = 4;
 % first parse the argument
 for i = 1:length(vars)
+  nrows = nrows+1;
   % if the variable is just a string, then
   % it got passed in without a default argument
   % so make it into a cell array with the second
@@ -39,8 +42,15 @@ for i = 1:length(vars)
   % type they were
   elseif length(vars{i}) >= 2
     if isnumeric(vars{i}{2})
-      vars{i}{2} = num2str(vars{i}{2});
-      varinfo{i}.type = 'numeric';
+      % check to see if it is an array
+      if isscalar(vars{i}{2})
+	vars{i}{2} = num2str(vars{i}{2});
+	varinfo{i}.type = 'numeric';
+      else
+	varinfo{i}.type = 'array';
+	nrows = nrows+size(vars{i}{2},1)-1;
+	ncols = max(ncols,1+size(vars{i}{2},2));
+      end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
     else
@@ -79,6 +89,10 @@ for i = 1:length(vars)
     elseif vars{i}{2} > varinfo{i}.minmax(2)
       vars{i}{2} = varinfo{i}.minmax(2);
     end
+  end
+  % make editable by default
+  if ~isfield(varinfo{i},'editable')
+    varinfo{i}.editable = 1;
   end
 end
 

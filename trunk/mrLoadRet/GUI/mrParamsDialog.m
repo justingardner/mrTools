@@ -31,11 +31,7 @@ function params = initFigure(vars,otherParams)
 global gParams;
 
 % parse the input parameter string
-[vars varinfo] = mrParamsParse(vars);
-gParams.varinfo = varinfo;
-
-% get variable names
-gParams.vars = vars;
+[gParams.vars gParams.varinfo numrows numcols] = mrParamsParse(vars);
 
 % some basic info about location of controls
 gParams.leftMargin = 10;
@@ -65,8 +61,6 @@ end
 
 mrGlobals;
 
-numrows = length(gParams.varinfo)+1;
-numcols = 4;
 % set height of figure according to how many rows we have
 if isfield(MLR.figloc,'mrParamsDialog')
   figpos = MLR.figloc.mrParamsDialog;
@@ -78,21 +72,26 @@ figpos(3) = 2*gParams.leftMargin+numcols*gParams.buttonWidth+(numcols-1)*gParams
 set(gParams.fignum,'Position',figpos);
 
 % make entry buttons
+rownum = 1;
 for i = 1:length(gParams.varinfo)
-  gParams.ui.varname(i) = makeTextbox(gParams.fignum,gParams.varinfo{i}.name,i,1,1);
+  gParams.ui.varname(i) = makeTextbox(gParams.fignum,gParams.varinfo{i}.name,rownum,1,1);
   if isfield(gParams.varinfo{i},'incdec')
-    [gParams.ui.varentry(i) gParams.ui.incdec{i}(1) gParams.ui.incdec{i}(2)] =...
-	makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3);
+    [gParams.ui.varentry{i} gParams.ui.incdec{i}(1) gParams.ui.incdec{i}(2)] =...
+	makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
     enableArrows(str2num(gParams.varinfo{i}.value),i);
   elseif strcmp(gParams.varinfo{i}.type,'checkbox')
-    gParams.ui.varentry(i) = makeCheckbox(gParams.fignum,gParams.varinfo{i}.value,i,i,2,.25);
+    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,.25);
   elseif strcmp(gParams.varinfo{i}.type,'popupmenu') || iscell(gParams.varinfo{i}.value)
-    gParams.ui.varentry(i) = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3);
+    gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
   elseif strcmp(gParams.varinfo{i}.type,'statictext')
-    gParams.ui.varentry(i) = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3,0);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,0);
+  elseif strcmp(gParams.varinfo{i}.type,'array')
+    gParams.ui.varentry{i} = makeArrayentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,numcols,gParams.varinfo{i}.editable);
+    rownum = rownum+size(gParams.varinfo{i}.value,1)-1;
   else
-    gParams.ui.varentry(i) = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,i,2,3);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
   end
+  rownum = rownum+1;
 end
 
 % for each value that controls another one, call the buttonHandler to
@@ -116,17 +115,27 @@ uiwait;
 if gParams.ok
   % return the var entries
   for i = 1:length(gParams.varinfo)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % for checkboxes, just return 0 or 1
     if strcmp(gParams.varinfo{i}.type,'checkbox')
-      params.(gParams.varinfo{i}.name) = num2str(get(gParams.ui.varentry(i),'Value'));
+      params.(gParams.varinfo{i}.name) = num2str(get(gParams.ui.varentry{i},'Value'));
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % for arrays, have to get all values
+    elseif strcmp(gParams.varinfo{i}.type,'array')
+      for iRows = 1:size(gParams.ui.varentry{i},1)
+	for iCols = 1:size(gParams.ui.varentry{i},2)
+	  params.(gParams.varinfo{i}.name)(iRows,iCols) = str2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+	end
+      end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % for pop up menus, get the value and look it up in the original list
     elseif strcmp(gParams.varinfo{i}.type,'popupmenu')
-      val = get(gParams.ui.varentry(i),'Value');
+      val = get(gParams.ui.varentry{i},'Value');
       % check for the contingency value if it exists
-      if isfield(varinfo{i},'contingentOn')
+      if isfield(gParams.varinfo{i},'contingentOn')
 	% get the value of the contingency
 	if strcmp(gParams.varinfo{varinfo{i}.contingentOn}.type,'popupmenu')
-	  contingentVal = get(gParams.ui.varentry(varinfo{i}.contingentOn),'Value');
+	  contingentVal = get(gParams.ui.varentry{varinfo{i}.contingentOn},'Value');
 	  contingentVal = gParams.varinfo{varinfo{i}.contingentOn}.value{contingentVal};
 	else
 	  contingentVal = gParams.varinfo{varinfo{i}.contingentOn}.value;
@@ -141,10 +150,10 @@ if gParams.ok
 	contingentVal = nan;
       end
       % if it is just a simple cell array, then it has a set of value
-      if ~iscell(varinfo{i}.value{1})
+      if ~iscell(gParams.varinfo{i}.value{1})
 	% set the value, unless the continency is not set
 	if contingentVal~=0
-	  params.(gParams.varinfo{i}.name) = varinfo{i}.value{val};
+	  params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.value{val};
 	else
 	  params.(gParams.varinfo{i}.name) = [];
 	end
@@ -165,10 +174,10 @@ if gParams.ok
 	end
       end
     else
-      params.(gParams.varinfo{i}.name) = get(gParams.ui.varentry(i),'String');
+      params.(gParams.varinfo{i}.name) = get(gParams.ui.varentry{i},'String');
     end
     % if non numeric then convert back to a number
-    if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu'}))
+    if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array'}))
       params.(gParams.varinfo{i}.name) = str2num(params.(gParams.varinfo{i}.name));
     end
   end
@@ -228,20 +237,20 @@ function buttonHandler(varnum,incdec)
 global gParams;
 
 % if this is supposed to be a number, then make sure it is.
-if ~strcmp(gParams.varinfo{varnum}.type,'string')
+if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
   if strcmp(gParams.varinfo{varnum}.type,'checkbox')
-    val = get(gParams.ui.varentry(varnum),'Value');
+    val = get(gParams.ui.varentry{varnum},'Value');
   elseif strcmp(gParams.varinfo{varnum}.type,'popupmenu')
     val = [];
     if isfield(gParams.varinfo{varnum},'controls')
       % get the value from the list of values
-      val = get(gParams.ui.varentry(varnum),'Value');
+      val = get(gParams.ui.varentry{varnum},'Value');
       val = gParams.varinfo{varnum}.value{val};
       if isstr(val),val=str2num(val);end
     end
   else
     % get the value of the text field
-    val = get(gParams.ui.varentry(varnum),'string');
+    val = get(gParams.ui.varentry{varnum},'string');
     % convert to number
     val = str2num(val);
   end
@@ -269,13 +278,13 @@ if ~strcmp(gParams.varinfo{varnum}.type,'string')
   % if we got an invalid number entry
   if isempty(val)
     if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
-      set(gParams.ui.varentry(varnum),'string',gParams.varinfo{varnum}.value);
+      set(gParams.ui.varentry{varnum},'string',gParams.varinfo{varnum}.value);
     end
     % otherwise remember this string as the default
   else
     if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
       gParams.varinfo{varnum}.value = num2str(val);
-      set(gParams.ui.varentry(varnum),'string',gParams.varinfo{varnum}.value);
+      set(gParams.ui.varentry{varnum},'string',gParams.varinfo{varnum}.value);
     end
     % now check to see if this variable controls another one
     if isfield(gParams.varinfo{varnum},'controls')
@@ -283,9 +292,9 @@ if ~strcmp(gParams.varinfo{varnum}.type,'string')
       for i = gParams.varinfo{varnum}.controls
 	% enable or disable all the controlled fields
 	if (val == 0)
-	  set(gParams.ui.varentry(i),'Enable','off');
+	  set(gParams.ui.varentry{i},'Enable','off');
 	else
-	  set(gParams.ui.varentry(i),'Enable','on');
+	  set(gParams.ui.varentry{i},'Enable','on');
 	end
 	% if the controlled field is a popupmenu and has
 	% a cell of cells for its value and that is in bounds
@@ -293,8 +302,8 @@ if ~strcmp(gParams.varinfo{varnum}.type,'string')
 	if strcmp(gParams.varinfo{i}.type,'popupmenu') 
 	  if iscell(gParams.varinfo{i}.value{1})
 	    if (val >=1) && (val <= length(gParams.varinfo{i}.value))
-	      set(gParams.ui.varentry(i),'String',gParams.varinfo{i}.value{val});
-	      set(gParams.ui.varentry(i),'Value',1);
+	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.value{val});
+	      set(gParams.ui.varentry{i},'Value',1);
 	    end
 	  end
 	end
@@ -461,6 +470,33 @@ global gParams;
 
 h = uicontrol('Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% makeArrayentry makes a uicontrol to handle array entry
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function h = makeArrayentry(fignum,array,callback,rownum,numcols,editable)
+
+if ieNotDefined('editable'),editable=1;end
+
+if editable
+  style = 'edit';
+else
+  style = 'text';
+end
+
+% make callback string
+if isnumeric(callback)
+  callback = sprintf('mrParamsDialog(%f)',callback);
+else
+  callback = sprintf('mrParamsDialog(''%s'')',callback);
+end  
+
+global gParams;
+
+for i = 1:size(array,1)
+  for j = 1:size(array,2)
+    h(i,j) = uicontrol('Style',style,'Callback',callback,'String',array(i,j),'Position',getUIControlPos(fignum,rownum+i-1,2+j-1,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+  end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makePopupmenu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
