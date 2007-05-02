@@ -561,6 +561,17 @@ switch lower(param)
             % make sure it is a nifti headr (not an analyze)
             val = MLR.groups(g).scanParams(s).niftiHdr;
         end
+    case{'sformcode'}
+        % xform = viewGet(view,'sformcode',[scanNum],[groupNum])
+        [s g] = getScanAndGroup(view,varargin,param);
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+	  if ~isfield(MLR.groups(g).scanParams(s).niftiHdr,'sform_code')
+	    val = [];
+	  else
+	    val = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
+	  end
+	end
     case{'scanxform'}
         % xform = viewGet(view,'scanXform',scanNum,[groupNum])
         % xform = viewGet([],'scanXform',scanNum,groupNum)
@@ -583,8 +594,10 @@ switch lower(param)
                 % using the qform matrices. Note: There used to be code
                 % here that reset val if it was the identity but that was a
                 % bug (DJH 1/17/07).
-		disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
-                baseqform = viewGet(view,'baseqform');
+		if viewGet(view,'prefs','verbose')
+		  disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+		end
+		baseqform = viewGet(view,'baseqform');
                 val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
             end
         end

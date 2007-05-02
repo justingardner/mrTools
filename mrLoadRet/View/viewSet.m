@@ -213,10 +213,15 @@ switch lower(param)
         [s g] = getScanAndGroup(view,varargin,param);
 	nscans = viewGet(view,'nscans',g);
 	if (nscans >= s) & (s > 0)
-	  MLR.groups(g).scanParams(s).niftiHdr.sform_code = 1;
 	  MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
 	end
-
+    case {'sformcode'}
+        % view = viewSet(view,'sformcode',sformcode,scanNum,groupNum);
+        [s g] = getScanAndGroup(view,varargin,param);
+	nscans = viewGet(view,'nscans',g);
+	if (nscans >= s) & (s > 0)
+	  MLR.groups(g).scanParams(s).niftiHdr.sform_code = val;
+	end
     case{'prefs','preference','pref'}
         % view = viewSet(view,'pref','prefname',val);
         % set prefernce prefname to val
@@ -1024,14 +1029,18 @@ switch lower(param)
 
     case {'sliceorientation'}
         % view = viewSet(view,'sliceOrientation',n);
-        switch val
+	if ~isscalar(val)
+	  switch val
             case {'sagittal'}
                 sliceOrientation = 3;
             case {'coronal'}
                 sliceOrientation = 2;
             case {'axial'}
                 sliceOrientation = 1;
-        end
+	  end
+	else
+	  sliceOrientation = val;
+	end
         mlrGuiSet(view,'sliceOrientation',sliceOrientation);
         % Update slice and nSlices
         baseNum = viewGet(view,'currentBase');
