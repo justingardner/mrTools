@@ -252,7 +252,7 @@ for s = 1:length(targetScans)
 	  rethrow(err);
 	end
 	% reset verbose preference
-	viewSet([],'pref','verbose',currentVerbose);
+	viewSet(view,'pref','verbose',currentVerbose);
 	% Save evalstring for recomputing and params
 	evalstr = ['view = newView(','''','Volume','''','); view = motionComp(view,params);'];
 	[pathstr,filename,ext,versn] = fileparts(tseriesFileName);
