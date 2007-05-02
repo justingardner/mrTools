@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 02-May-2007 12:27:51
+% Last Modified by GUIDE v2.5 02-May-2007 16:11:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -669,6 +669,16 @@ saveSession;
 function quitMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 if isfield(MLR,'views') && ~isempty(MLR.views)
+  % get settings of GUI
+  viewNum = handles.viewNum;
+  thisView = MLR.views{viewNum};
+  viewSettings.rotate = viewGet(thisView,'rotate');
+  viewSettings.curScan = viewGet(thisView,'curScan');
+  viewSettings.curSlice = viewGet(thisView,'curSlice');
+  viewSettings.curGroup = viewGet(thisView,'curGroup');
+  viewSettings.sliceOrientation = viewGet(thisView,'sliceOrientation');
+
+  % close figures
   for viewNum = 1:length(MLR.views)
     view = MLR.views{viewNum};
     if isview(view)
@@ -682,8 +692,10 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
       MLR.graphFigure = [];
     end
   end
+  
   % save the view in the current directory
-  eval(sprintf('save %s view -V6;',fullfile(MLR.homeDir,'mrLastView')));
+  view = thisView;
+  eval(sprintf('save %s view viewSettings -V6;',fullfile(MLR.homeDir,'mrLastView')));
   % save figloc in .mrDefaults in the home directory
   saveMrDefaults;
 else
@@ -837,8 +849,9 @@ for iScan = 1:length(scanList)
   end
   refreshMLRDisplay(viewNum);
 end
-
-disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
+if ~isempty(scanList)
+  disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
+end
 
 % --------------------------------------------------------------------
 function editAnalysisMenu_Callback(hObject, eventdata, handles)
@@ -1543,13 +1556,27 @@ overwritePolicy = {'Ask','Merge','Rename','Overwrite'};
 if ~isempty(strcmp(viewGet(view,'prefs','overwritePolicy'),overwritePolicy))
   overwritePolicy = putOnTopOfList(viewGet(view,'prefs','overwritePolicy'),overwritePolicy);
 end
+
+% get other defaults
+site = viewGet(view,'prefs','site');
+if isempty(site),site = 'NYU';end
+verbose = viewGet(view,'prefs','verbose');
+if isempty(verbose),verbose = 1;,end
+maxBlocksize = viewGet(view,'prefs','maxBlocksize');
+if isempty(maxBlocksize),maxBlocksize = 250000000;,end
+volumeDirectory = viewGet(view,'prefs','volumeDirectory');
+if isempty(volumeDirectory),volumeDirectory=pwd;,end
+niftiFileExtension = viewGet(view,'prefs','niftiFileExtension');
+if isempty(niftiFileExtension),niftiFileExtension='.img';,end
+
 % set up the dialog and ask the user to set parameters
-prefParams = {{'site',viewGet(view,'prefs','site'),'Where you are using this code'},...
-	      {'verbose',viewGet(view,'prefs','verbose'),'minmax=[0 1]','incdec=[-1 1]','Set to 1 if you want to have dialog waitbars, set to 0 to have information printed to the terminal'},...
+prefParams = {{'site',site,'Where you are using this code'},...
+	      {'verbose',verbose,'minmax=[0 1]','incdec=[-1 1]','Set to 1 if you want to have dialog waitbars, set to 0 to have information printed to the terminal'},...
 	      {'interpMethod',interpTypes,'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
-	      {'maxBlocksize',viewGet(view,'prefs','maxBlocksize'),'Size of chunks of data to analyze at a time. If you are running out of memory, set lower. A good starting value is 250000000','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
-	      {'volumeDirectory',viewGet(view,'prefs','volumeDirectory'),'The directory to default to when you load base anatomy from the Volume directory'},...
-	      {'overwritePolicy',overwritePolicy,'Method to use when analysis is going to overwrite an existing file'}};
+	      {'maxBlocksize',maxBlocksize,'Size of chunks of data to analyze at a time. If you are running out of memory, set lower. A good starting value is 250000000','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
+	      {'volumeDirectory',volumeDirectory,'The directory to default to when you load base anatomy from the Volume directory'},...
+	      {'overwritePolicy',overwritePolicy,'Method to use when analysis is going to overwrite an existing file'},...
+	      {'niftiFileExtension',niftiFileExtension,'Nifti file extension, usually .img'}};
 prefParams = mrParamsDialog(prefParams);
 
 % if they did not cancel then actually set the parameters
@@ -1560,6 +1587,7 @@ if ~isempty(prefParams)
   view = viewSet(view,'prefs','maxBlocksize',prefParams.maxBlocksize);
   view = viewSet(view,'prefs','volumeDirectory',prefParams.volumeDirectory);
   view = viewSet(view,'prefs','overwritePolicy',prefParams.overwritePolicy);
+  view = viewSet(view,'prefs','niftiFileExtension',prefParams.niftiFileExtension);
 end
 
 % --------------------------------------------------------------------
@@ -1686,16 +1714,20 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 % get the scanxform
 scanXform = viewGet(v,'scanxform');
+sformCode = viewGet(v,'sformCode');
 % params dialog
-paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing! Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'}};
+paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing! Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
+	      {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+
 params = mrParamsDialog(paramsInfo,'scanXform');
 
 % ask the user if they are really sure before actually changing it
-rval = 1000000000000;
-if ~isempty(params) && ~isequal(round(params.sform*rval)/rval,round(scanXform*rval)/rval)
+if ~isempty(params)
   answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
   if strcmp(answer,'Yes')
-    v = viewSet(v,'scanXform',params.scanXform);
+    v = viewSet(v,'scanXform',params.sform);
+    v = viewSet(v,'sformCode',params.sformCode);
+    refreshMLRDisplay(viewNum);
   end
 end
 
@@ -1714,15 +1746,19 @@ v = MLR.views{viewNum};
 scanXform = viewGet(v,'scanXform');
 baseXform = viewGet(v,'baseXform');
 scan2base = inv(scanXform)*baseXform;
+sformCode = viewGet(v,'sformCode');
 % params dialog
-paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and the running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'}};
+paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and then running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
+	      {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+
 params = mrParamsDialog(paramsInfo,'scan2base transformation');
 
-rval = 1000000000000;
-if ~isempty(params) && ~isequal(round(params.scan2base*rval)/rval,round(scan2base*rval)/rval)
+if ~isempty(params)
   answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
   if strcmp(answer,'Yes')
     v = viewSet(v,'scanXform',inv(params.scan2base*inv(baseXform)));
+    v = viewSet(v,'sformCode',params.sformCode);
+    refreshMLRDisplay(viewNum);
   end
 end
 
@@ -1736,3 +1772,17 @@ function Untitled_4_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
+% --------------------------------------------------------------------
+function dicomInfoCallback_Callback(hObject, eventdata, handles)
+% hObject    handle to dicomInfoCallback (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+s = viewGet(v,'curScan');
+g = viewGet(v,'curGroup');
+dicomInfo(s,g);

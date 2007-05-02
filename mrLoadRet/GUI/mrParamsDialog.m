@@ -9,7 +9,7 @@
 function params = mrParamsDialog(varargin)
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3])
   help mrParamsDialog
   return
 end
@@ -47,6 +47,9 @@ if length(otherParams) > 1
   titleStr = otherParams{2};
 else
   titleStr = 'Set parameters';
+end
+if length(otherParams) > 2
+  gParams.buttonWidth = gParams.buttonWidth*otherParams{3};
 end
 % get the figure 
 if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
@@ -134,14 +137,14 @@ if gParams.ok
       % check for the contingency value if it exists
       if isfield(gParams.varinfo{i},'contingentOn')
 	% get the value of the contingency
-	if strcmp(gParams.varinfo{varinfo{i}.contingentOn}.type,'popupmenu')
-	  contingentVal = get(gParams.ui.varentry{varinfo{i}.contingentOn},'Value');
-	  contingentVal = gParams.varinfo{varinfo{i}.contingentOn}.value{contingentVal};
+	if strcmp(gParams.varinfo{gParams.varinfo{i}.contingentOn}.type,'popupmenu')
+	  contingentVal = get(gParams.ui.varentry{gParams.varinfo{i}.contingentOn},'Value');
+	  contingentVal = gParams.varinfo{gParams.varinfo{i}.contingentOn}.value{contingentVal};
 	else
-	  contingentVal = gParams.varinfo{varinfo{i}.contingentOn}.value;
+	  contingentVal = gParams.varinfo{gParams.varinfo{i}.contingentOn}.value;
 	end
 	% make into a number if necessary and round
-	if isstr(gParams.varinfo{varinfo{i}.contingentOn}.value)
+	if isstr(gParams.varinfo{gParams.varinfo{i}.contingentOn}.value)
 	  contingentVal = round(str2num(contingentVal));
 	else
 	  contingentVal = round(contingentVal);
@@ -161,8 +164,8 @@ if gParams.ok
 	% otherwise it is a set of sets, which is probably controlled by a contingency
 	if contingentVal > 0
 	  % if the contingency value is valid, then select out of the list
-	  if ~isempty(contingentVal) && (length(contingentVal)==1) && (contingentVal > 0) && (contingentVal <= length(varinfo{i}.value))
-	    params.(gParams.varinfo{i}.name) = varinfo{i}.value{contingentVal}{val};
+	  if ~isempty(contingentVal) && (length(contingentVal)==1) && (contingentVal > 0) && (contingentVal <= length(gParams.varinfo{i}.value))
+	    params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.value{contingentVal}{val};
 	  else
 	    params.(gParams.varinfo{i}.name) = [];
 	  end
@@ -170,7 +173,7 @@ if gParams.ok
 	    params.(gParams.varinfo{i}.name) = [];
 	else	  
 	  % no contingency, just choose first one.
-	  params.(gParams.varinfo{i}.name) = varinfo{i}.value{1}{val};
+	  params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.value{1}{val};
 	end
       end
     else
@@ -304,6 +307,15 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
 	    if (val >=1) && (val <= length(gParams.varinfo{i}.value))
 	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.value{val});
 	      set(gParams.ui.varentry{i},'Value',1);
+	    end
+	  end
+	end
+	% if the controlled field is a String then select
+        % apropriate one
+	if strcmp(gParams.varinfo{i}.type,'string') 
+	  if iscell(gParams.varinfo{i}.value)
+	    if (val >=1) && (val <= length(gParams.varinfo{i}.value))
+	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.value{val});
 	    end
 	  end
 	end

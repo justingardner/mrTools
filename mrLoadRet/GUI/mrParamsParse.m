@@ -36,6 +36,9 @@ for i = 1:length(vars)
   elseif length(vars{i}) == 1
     vars{i}{2} = '0';
     varinfo{i}.type = 'numeric';
+  elseif isempty(vars{i}{2})
+    vars{i}{2} = '';
+    varinfo{i}.type = 'string';
   % default arguments have to be strings so they
   % can be put into the text fields properly. here
   % we change them into strings, but remember what
