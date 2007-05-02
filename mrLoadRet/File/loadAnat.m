@@ -100,6 +100,7 @@ base.hdr = hdr;
 base.permutationMatrix = permutationMatrix;
 base.range = [min(vol(:)) max(vol(:))];
 base.clip = defaultClip(vol);
+base.pathStr = pathStr;
 
 % Add it to the list of base volumes and select it
 view = viewSet(view,'newBase',base);

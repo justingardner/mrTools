@@ -122,4 +122,3 @@ scanCoords = round(xformROIcoords(roi.coords,inv(scanXform)*roi.xform,roi.voxelS
 
 % return the unique ones
 scanCoords = unique(scanCoords','rows')';
-
