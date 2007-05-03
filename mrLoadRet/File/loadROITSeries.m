@@ -102,7 +102,9 @@ for roinum = 1:length(roiname)
     end
   end
 end
-
+if length(rois) == 1
+  rois = rois{1};
+end
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % convert the roi coordinates into this scans coordinates
