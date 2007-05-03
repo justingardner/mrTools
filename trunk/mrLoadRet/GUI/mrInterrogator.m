@@ -97,7 +97,7 @@ function mouseMoveHandler(viewNum)
 mrGlobals;
 
 % get pointer
-[x y s] = getMouseCoords(viewNum);
+[x y s xBase yBase sBase] = getMouseCoords(viewNum);
 
 % check location in bounds on image
 if mouseInImage(x,y)
@@ -110,6 +110,11 @@ else
     set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
     % set strings to empty
     set(MLR.interrogator{viewNum}.hPos,'String','');
+end
+if mouseInImage(xBase,yBase)
+  set(MLR.interrogator{viewNum}.hPosBase,'String',sprintf('[%i %i %i]',xBase,yBase,sBase));
+else
+  set(MLR.interrogator{viewNum}.hPosBase,'String','');
 end
 
 % eval the old handler
@@ -137,7 +142,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get current mouse position in image coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x y s] = getMouseCoords(viewNum)
+function [x y s xBase yBase sBase] = getMouseCoords(viewNum)
 
 % get the view
 mrGlobals;
@@ -152,11 +157,12 @@ mouseX = round(pointerLoc(1,2));
 baseCoords = viewGet(view,'cursliceBaseCoords');
 % convert mouse to baseCoords
 if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
-    x = baseCoords(mouseX,mouseY,1);
-    y = baseCoords(mouseX,mouseY,2);
-    s = baseCoords(mouseX,mouseY,3);
+    xBase = baseCoords(mouseX,mouseY,1);
+    yBase = baseCoords(mouseX,mouseY,2);
+    sBase = baseCoords(mouseX,mouseY,3);
 else
     x = nan;y = nan; s = nan;
+    xBase = nan;yBase = nan; sBase = nan;
     return
 end
 
@@ -168,7 +174,7 @@ if isempty(scanXform) | isempty(baseXform)
     return
 end
 
-transformed = inv(scanXform)*baseXform*[x y s 1]';
+transformed = inv(scanXform)*baseXform*[xBase yBase sBase 1]';
 transformed = round(transformed);
 
 x = transformed(1);
@@ -238,7 +244,11 @@ set(MLR.interrogator{viewNum}.fignum,'pointer',MLR.interrogator{viewNum}.pointer
 
 % turn off the text boxes
 set(MLR.interrogator{viewNum}.hPos,'visible','off');
+set(MLR.interrogator{viewNum}.hPosLabel,'visible','off');
+set(MLR.interrogator{viewNum}.hPosBase,'visible','off');
+set(MLR.interrogator{viewNum}.hPosBaseLabel,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogator,'visible','off');
+set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','off');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % init the interrogator handler
@@ -279,10 +289,18 @@ MLR.interrogator{viewNum}.pointer = get(fignum,'pointer');
 if ~restart
     % set the x and y textbox
     MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
+    MLR.interrogator{viewNum}.hPosBase = makeTextbox(viewNum,'',1,6,2);
+    MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,4,2);
+    MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,6,2);
     MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
+    MLR.interrogator{viewNum}.hInterrogatorLabel = makeTextbox(viewNum,'Interrogator',2,1,3);
 else
     set(MLR.interrogator{viewNum}.hPos,'visible','on');
+    set(MLR.interrogator{viewNum}.hPosBase,'visible','on');
+    set(MLR.interrogator{viewNum}.hPosLabel,'visible','on');
+    set(MLR.interrogator{viewNum}.hPosBaseLabel,'visible','on');
     set(MLR.interrogator{viewNum}.hInterrogator,'visible','on');
+    set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','on');
 end
 
 % set the x/y min/max

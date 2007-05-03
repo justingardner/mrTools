@@ -550,6 +550,15 @@ switch lower(param)
                 val = transforms;
             end
         end
+    case{'params'}
+        % transforms = viewGet(view,'transforms',scanNum,[groupNum]);
+        % gets the .mat params file associated with this scan if it exists
+        [s g] = getScanAndGroup(view,varargin,param);
+        % get the tseries name
+        [tSeriesPath tSeriesName] = fileparts(viewGet(view,'tSeriesPathStr',s,g));
+        if isfile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
+	  val = load(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)));
+        end
     case{'niftihdr'}
         % hdr = viewGet(view,'niftiHdr',scanNum,[groupNum])
         % hdr = viewGet([],'niftiHdr',scanNum,groupNum)
