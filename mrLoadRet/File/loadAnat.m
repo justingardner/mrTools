@@ -65,17 +65,16 @@ end
 
 % Handle 4D file
 if (volumeDimension == 4)
-    buttonName = questdlg('You have selected a 4D file.',...
-		'Options for 4D files',...
-		'Mean','First frame','Cancel','Mean');
-	switch buttonName
-		case 'Mean'
-			vol = nanmean(vol,4);
-		case 'First frame'
-			vol = vol(:,:,:,1);
-		case 'Cancel'
-			return
-	end
+  paramsInfo = {{'frameNum',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',size(vol,4)),'This volume is a 4D file, to display it as an anatomy you need to choose a particular time point or take the mean over all time points. Setting this value to 0 will compute the mean, otherwise you can select a particular timepoint to display'}};
+  params = mrParamsDialog(paramsInfo,'Choose which frame of 4D file. 0 for mean');  
+  if isempty(params)
+    return
+  end
+  if params.frameNum == 0
+    vol = nanmean(vol,4);
+  else
+    vol = vol(:,:,:,params.frameNum);
+  end
 end
 
 % Warning if no alignment information in the header.
