@@ -48,7 +48,7 @@ end
 % time series for the voxel
 roiPlot = 0;
 if ~isempty(roi)
-  roi = loadROITseries(view,roi,viewGet(view,'curScan'),viewGet(view,'curGroup'));
+  roi = loadROITSeries(view,roi,viewGet(view,'curScan'),viewGet(view,'curGroup'));
   tseries = mean(roi{1}.tSeries)';
   ptseriesSte = std(100*roi{1}.tSeries/mean(tseries))'/sqrt(roi{1}.n);
   headerStr = sprintf('Times series from roi %s (n=%i)',roi{1}.name,roi{1}.n);
@@ -164,7 +164,7 @@ plot(0:(length(absft)-1),absft,'k.-');hold on
 plot(ncycles,signalAmp,'ro');
 plot(noiseFreq-1,absft(noiseFreq),'go');
 set(gca,'FontSize',fontSize);
-title(sprintf('Stimulus (red): %f Noise (Mean of green): %f SNR: %f',signalAmp,noiseAmp,snr));
+title(sprintf('Stimulus (red): %f Noise (Mean of green): %f CNR: %f',signalAmp,noiseAmp,snr));
 ylabel('Magnitude');
 xlabel('Fourier component number');
 
