@@ -38,12 +38,9 @@ if isfile('mrLastView.mat')
 	% open up base anatomy from last session
 	if isfield(mrLastView.view,'baseVolumes') 
 	  if length(mrLastView.view.baseVolumes) >= 1
-	    if isfield(mrLastView.view.baseVolumes(1),'pathStr')
-	      baseLoaded = 1;
-	      view = loadAnat(view,getLastDir(mrLastView.view.baseVolumes(1).pathStr),getPath(mrLastView.view.baseVolumes(1).pathStr));
-	      % and refresh
-	      refreshMLRDisplay(view.viewNum);
-	    end
+	    baseLoaded = 1;
+	    % Add it to the list of base volumes and select it
+	    view = viewSet(view,'newBase',mrLastView.view.baseVolumes);
 	  end
 	end
 	if baseLoaded && isfield(mrLastView,'viewSettings')

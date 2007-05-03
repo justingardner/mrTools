@@ -49,6 +49,9 @@ stimFilename = viewGet(view,'stimFilename',scanNum,groupNum);
 scanHdr = viewGet(view,'niftiHdr',scanNum,groupNum);
 scanDims = viewGet(view,'scanDims',scanNum,groupNum);
 
+% get params info
+matfile = viewGet(view,'params',scanNum,groupNum);
+fieldsToIgnore = {'tseriesfiles','groupname','description','filename'};
 % display info
 if displayInDialog
   paramsInfo = {{'description',description,'editable=0','Scan description'},...
@@ -67,6 +70,27 @@ if displayInDialog
   paramsInfo{end+1} = {'qform',scanHdr.qform44,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'};
   paramsInfo{end+1} = {'sform',scanHdr.sform44,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'};
   paramsInfo{end+1} = {'sformCode',scanHdr.sform_code,'editable=0','If sformCode is 0 it means the sform has never been set and mrLoadRet will use the qform to compute the transform to the base anatomy. If mrAlign has been run properly, then this value should be set to 1'};
+
+  % display parameters form associated matfile
+  if ~isempty(matfile) && isfield(matfile,'params')
+    fields = fieldnames(matfile.params);
+    for i = 1:length(fields)
+      % ignore fields from the list set above
+      if ~any(strcmp(lower(fields{i}),fieldsToIgnore))
+	% and fields that have groupname in them
+	if isempty(strfind(lower(fields{i}),'groupname'))
+	  % display fields that are numeric
+	  if isnumeric(matfile.params.(fields{i}))
+	    paramsInfo{end+1} = {fields{i} num2str(matfile.params.(fields{i})) 'editable=0','Parameter from associated mat file'};
+	  % or are strings
+	  elseif isstr(matfile.params.(fields{i}))
+	    paramsInfo{end+1} = {fields{i} matfile.params.(fields{i}) 'editable=0','Parameter from associated mat file'};
+	  end
+	end
+      end
+    end
+  end
+  
   mrParamsDialog(paramsInfo,'Scan info');
 else
   disp(sprintf('%s',description));
