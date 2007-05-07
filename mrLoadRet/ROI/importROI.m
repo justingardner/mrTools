@@ -32,6 +32,7 @@ MLR.prefs.importROIpath = fileparts(pathStr{1});
 baseNum = viewGet(view,'currentBase');
 xform = viewGet(view,'basexform',baseNum);
 voxelSize = viewGet(view,'baseVoxelSize',baseNum);
+baseDims = viewGet(view,'baseDims',baseNum);
 
 for roinum = 1:length(pathStr)
   % try to load the roi
@@ -41,15 +42,25 @@ for roinum = 1:length(pathStr)
     ROI.name = l.ROI.name;
     ROI.viewType = view.viewType;
     ROI.color = l.ROI.color;
-    ROI.coords(1,:) = l.ROI.coords(2,:);
-    ROI.coords(2,:) = l.ROI.coords(1,:);
-    ROI.coords(3,:) = l.ROI.coords(3,:);
+    if isfield(l.ROI,'viewType') && strcmp(l.ROI.viewType,'Gray')
+      % not sure why gray rois are different from inplane but
+      % this seems to work in conversion
+      ROI.coords(1,:) = l.ROI.coords(3,:);
+      ROI.coords(2,:) = baseDims(2)-l.ROI.coords(2,:)+1;
+      ROI.coords(3,:) = baseDims(3)-l.ROI.coords(1,:)+1;
+    else
+      % there is just an x/y flip for the inplane ROIs
+      ROI.coords(1,:) = l.ROI.coords(2,:);
+      ROI.coords(2,:) = l.ROI.coords(1,:);
+      ROI.coords(3,:) = l.ROI.coords(3,:);
+    end
     ROI.coords(4,:) = 1;
     ROI.xform = xform;
     ROI.voxelSize = voxelSize;
     ROI.date = datestr(now);
     % Add it to the view
     view = viewSet(view,'newROI',ROI);
+    ROI.coords
   end
 end
 
@@ -59,4 +70,5 @@ if exist('ROI','var')
     view = viewSet(view,'currentROI',ROInum);
     view = viewSet(view,'prevROIcoords',[]);
   end
+  refreshMLRDisplay(viewGet(view,'viewNum'));
 end
