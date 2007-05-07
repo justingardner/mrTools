@@ -114,9 +114,14 @@ if isfile(filename)
   matfile = load(filename);
   % first see if we can match the tseriesFileName with
   % the one we have here
-  if isfield(matfile,'tseriesFileName') && isfield(matfile,'params')
-    tseriesFileName = fullfile(tseriesDirName,matfile.tseriesFileName);
-    tseriesHdrFileName = sprintf('%s.hdr',stripext(tseriesFileName));
+  if isfield(matfile,'params')
+    if isfield(matfile,'tseriesFileName') 
+      tseriesFileName = fullfile(tseriesDirName,matfile.tseriesFileName);
+      tseriesHdrFileName = sprintf('%s.hdr',stripext(tseriesFileName));
+    else
+      tseriesFileName = sprintf('%s.img',fullfile(tseriesDirName,baseFilename));
+      tseriesHdrFileName = sprintf('%s.hdr',fullfile(tseriesDirName,baseFilename));
+    end
     % check if they are there
     if isfile(tseriesFileName) && isfile(tseriesHdrFileName)
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -151,18 +156,47 @@ if isfile(filename)
 	end
 	motionCompParams{end+1} = matfile.params;
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      elseif isfield(matfile.params,'aveGroupName')
+      else
 	if ~match
-	  dispAverageParams(matfile.params);
+	  % display as average
+	  if isfield(matfile.params,'aveGroupName')
+	    dispAverageParams(matfile.params);
+	  % or as a set of files
+	  else 
+	    filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
+	    if isfile(filename),disp(filename),end
+	    filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
+	    if isfile(filename),disp(filename),end
+	    filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
+	    if isfile(filename),disp(filename),end
+	  end
 	  % read the image header
 	  hdr = cbiReadNiftiHeader(tseriesHdrFileName);
 	  scanParams.junkFrames = 0;
 	  scanParams.nFrames = hdr.dim(5);
-	  scanParams.description = matfile.params.description;
+	  if isfield(matfile.params,'description')
+	    disp(sprintf('description: %s',matfile.params.description));
+	    scanParams.description = matfile.params.description;
+	  else
+	    scanParams.description = '';
+	  end	    
 	  scanParams.fileName = getLastDir(tseriesFileName);
-	  scanParams.originalFileName = matfile.params.tseriesfiles;
-	  for scanNum = 1:length(matfile.params.tseriesfiles)
-	    scanParams.originalGroupName{scanNum} = matfile.params.groupName;
+	  % get original file and group
+	  if isfield(matfile.params,'tseriesfiles')
+	    originalFiles = matfile.params.tseriesfiles;
+	  elseif isfield(matfile.params,'tseriesFile')
+	    originalFiles = matfile.params.tseriesFile;
+	  else
+	    originalFiles = {};
+	  end
+	  if isfield(matfile.params,'groupName')
+	    originalGroup = matfile.params.groupName;
+	  else
+	    originalGroup = 'Unknown';
+	  end
+	  for scanNum = 1:length(originalFiles)
+	    scanParams.orginalFiles{scanNum} = originalFiles{scanNum};
+	    scanParams.originalGroupName{scanNum} = originalGroup;
 	  end
 	  recoverable = 1;
 	end
