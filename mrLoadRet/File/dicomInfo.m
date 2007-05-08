@@ -38,9 +38,10 @@ for i = 1:length(dicom)
   % now get each field of the dicom header
   for j = 1:length(dicomFields)
     paramsInfo{j+2}{1} = dicomFields{j};
-    paramsInfo{j+2}{2}{i}{1} = dicom{i}.ACQ.(dicomFields{j});
+    paramsInfo{j+2}{2}{i} = dicom{i}.ACQ.(dicomFields{j});
     paramsInfo{j+2}{3} = 'editable=0';
     paramsInfo{j+2}{4} = 'contingent=dicomFileNum';
+    paramsInfo{j+2}{5} = 'type=string';
   end
 end
 
