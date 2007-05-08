@@ -1732,6 +1732,7 @@ if ~isempty(params)
   if strcmp(answer,'Yes')
     v = viewSet(v,'scanXform',params.sform);
     v = viewSet(v,'sformCode',params.sformCode);
+    saveSession;
     refreshMLRDisplay(viewNum);
   end
 end
@@ -1763,6 +1764,7 @@ if ~isempty(params)
   if strcmp(answer,'Yes')
     v = viewSet(v,'scanXform',inv(params.scan2base*inv(baseXform)));
     v = viewSet(v,'sformCode',params.sformCode);
+    saveSession;
     refreshMLRDisplay(viewNum);
   end
 end
