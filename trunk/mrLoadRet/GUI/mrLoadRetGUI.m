@@ -1250,6 +1250,11 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function removePolygonMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'polygon',0);
+refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function restrictRoiMenu_Callback(hObject, eventdata, handles)
