@@ -5,16 +5,14 @@ function mrWarnDlg(warnstr)
 % Calls Matlab's warndlg or warning depending on verbose preference
 %
 % To set the 'verbose' preference:
-%    setpref('mrLoadRet','verbose',0);
-%    setpref('mrLoadRet','verbose',1);
+%    mrSetPref('verbose',0);
+%    mrSetPref('verbose',1);
 %
 % djh, 5/2005
+%
+% djh, 5/2007, modified to use mrGetPref instead of Matlab's getpref
 
-if ispref('mrLoadRet','verbose')
-    verbose = getpref('mrLoadRet','verbose');
-else
-    verbose = 0;
-end
+verbose = mrGetPref('verbose');
 
 if verbose
     warndlg(warnstr);

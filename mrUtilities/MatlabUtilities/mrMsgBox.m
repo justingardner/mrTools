@@ -6,20 +6,18 @@ function h = mrMsgBox(msgstr,modal)
 % If modal is non-zero then execution is blocked until the user responds.
 %
 % To set the 'verbose' preference:
-%    setpref('mrLoadRet','verbose',0);
-%    setpref('mrLoadRet','verbose',1);
+%    mrSetPref('verbose',0);
+%    mrSetPref('verbose',1);
 %
 % djh, 5/2005
+%
+% djh, 5/2007, modified to use mrGetPref instead of Matlab's getpref
 
 if ieNotDefined('modal')
 	modal = 0;
 end
 
-if ispref('mrLoadRet','verbose')
-    verbose = getpref('mrLoadRet','verbose');
-else
-    verbose = 0;
-end
+verbose = mrGetPref('verbose');
 
 if verbose & modal
 	h = msgbox(msgstr,'','modal');

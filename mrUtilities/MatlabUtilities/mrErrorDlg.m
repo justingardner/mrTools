@@ -6,17 +6,14 @@ function mrErrorDlg(errstr)
 % an error.
 %
 % To set the 'verbose' preference:
-%    setpref('mrLoadRet','verbose',0);
-%    setpref('mrLoadRet','verbose',1);
+%    mrSetPref('verbose',0);
+%    mrSetPref('verbose',1);
 %
 % djh, 5/2005
-%	$Id$	
+%
+% djh, 5/2007, modified to use mrGetPref instead of Matlab's getpref
 
-if ispref('mrLoadRet','verbose')
-    verbose = getpref('mrLoadRet','verbose');
-else
-    verbose = 0;
-end
+verbose = mrGetPref('verbose');
 
 if verbose
   errordlg(errstr,'Error!');
