@@ -9,7 +9,7 @@ function saveOverlay(view,overlayName,analysisName,confirm)
 % analysisname: Can be either the name or the number.
 %          Default: current analysis
 % confirm: If filename already exists, prompt user to over-write. 
-%          Default: uses mrLoadRet 'verbose' preference or 0 (if preference
+%          Default: uses 'verbose' preference or 0 (if preference
 %          not defined.
 %
 % djh, 7/2004
@@ -42,7 +42,7 @@ else
 end
 
 if ieNotDefined('confirm')
-    confirm = viewGet([],'pref','verbose');
+    confirm = mrGetPref('verbose');
     if isempty(confirm)
         confirm = 0;
     end

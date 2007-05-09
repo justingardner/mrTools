@@ -7,9 +7,8 @@ function ext = niftiFileExtension()
 % djh 7/2006
 
 % Use niftiFileExtension preference or default to *.img
-if ispref('mrLoadRet','niftiFileExtension')
-    ext = getpref('mrLoadRet','niftiFileExtension');
-else
+ext = mrGetPref('niftiFileExtension');
+if isempty(ext)
     ext = '.img';
 end
 

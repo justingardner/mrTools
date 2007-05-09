@@ -1,6 +1,6 @@
 % mrParamsReconcile.m
 %
-%      usage: mrParamsReconcile(params)
+%      usage: mrParamsReconcile(groupName,params,data)
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: A default params reconcile. This does not necessarily
@@ -74,14 +74,6 @@ if isfield(params,'paramInfo')
 	if ~any(params.(varinfo{i}.name) == [0 1])
 	  useDefault = 1;
 	end
-      % or a list of items
-      elseif strcmp(lower(varinfo{i}.type),'popupmenu')
-	% if they are numeric items check  if the are equal, if
-        % they are string items, check if they strcmp
-	if (isnumeric(varinfo{i}.value{1}) && ~any(params.(varinfo{i}.name)==cell2mat(varinfo{i}.value)))... ||
-	  (~isnumeric(varinfo{i}.value{1}) && ~any(strcmp(params.(varinfo{i}.name),varinfo{i}.value)))
-	  useDefault = 1;
-	end
       end
     end      
     % see if we have to switch it to default
@@ -89,7 +81,14 @@ if isfield(params,'paramInfo')
       % make sure it is not a contingent value that has been shut
       % off, first get value it is contingent on
       if isfield(varinfo{i},'contingent')
-	contingentValue = varinfo{varinfo{i}.contingentOn}.value;
+	if isfield(params,varinfo{varinfo{i}.contingentOn}.name)
+	  contingentValue = params.(varinfo{varinfo{i}.contingentOn}.name);
+	else
+	  contingentValue = varinfo{varinfo{i}.contingentOn}.value;
+	  if iscell(contingentValue)
+	    contingentValue = contingentValue{1};
+	  end
+	end
 	if isstr(contingentValue),contingentValue = str2num(contingentValue);,end
 	% if it has been shut down, give the parameter an empty
         % value and continue on

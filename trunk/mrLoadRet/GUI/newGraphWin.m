@@ -13,6 +13,7 @@ mrGlobals
 MLR.graphFigure = figure;
 set(gcf,'CloseRequestFcn','closeGraphWin');
 selectGraphWin
-if isfield(MLR.figloc,'graphFigure')
-  set(MLR.graphFigure,'Position',MLR.figloc.graphFigure);
+figloc = mrGetFigLoc('graphFigure');
+if ~isempty(figloc)
+    set(MLR.graphFigure,'Position',figloc);
 end
