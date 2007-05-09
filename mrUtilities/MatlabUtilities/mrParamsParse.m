@@ -56,6 +56,11 @@ for i = 1:length(vars)
       end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
+      if isstr(vars{i}{2}{1})
+	varinfo{i}.popuptype = 'string';
+      else
+	varinfo{i}.popuptype = 'numeric';
+      end
     else
       varinfo{i}.type = 'string';
     end
@@ -101,6 +106,10 @@ end
 
 % now check any contingencies
 for i = 1:length(varinfo)
+  % groups are handled just like contingent
+  if isfield(varinfo{i},'group')
+    varinfo{i}.contingent = varinfo{i}.group;
+  end
   if isfield(varinfo{i},'contingent')
     % go look for the control variable and set it to 
     % have a pointer to this variable
@@ -116,8 +125,29 @@ for i = 1:length(varinfo)
 	end
       end
     end
+    % if not found, then complain
     if ~foundControlVariable
       disp(sprintf('Control variable for %s (%s) not found, ignoring contingency',varinfo{i}.name,varinfo{i}.contingent));
+    % otherwise set up the variable to be contingent.
+    % that is keep an allValues field of all possible
+    % values
+    else
+      if ~(strcmp(varinfo{i}.type,'popupmenu') && ~iscell(varinfo{i}.value{1}))
+        varinfo{i}.allValues = varinfo{i}.value;
+        varinfo{i}.value = varinfo{i}.allValues{1};
+      else
+      % if popupmenus with just a single cell array
+      % then set it up correctly
+        varinfo{i}.allValues{1} = varinfo{i}.value;
+      end
+      % for numeric values, make sure that the value is set to a number
+      if isnumeric(varinfo{i}.value) && ~strcmp(varinfo{i}.type,'checkbox')
+	varinfo{i}.value = num2str(varinfo{i}.value);
+      end
+      % and set a default for the control value. This will get
+      % reset later when the dialog starts up to have the
+      % value of the control variable
+      varinfo{i}.oldControlVal = 0;
     end
   end
 end

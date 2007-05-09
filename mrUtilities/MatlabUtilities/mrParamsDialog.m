@@ -1,4 +1,4 @@
-% mrParamsDialog.m
+% mrtParamsDialog.m
 %
 %      usage: mrParamsDialog()
 %         by: justin gardner
@@ -29,7 +29,6 @@ end
 function params = initFigure(vars,otherParams)
 
 global gParams;
-global mrDEFAULTS;
 
 % parse the input parameter string
 [gParams.vars gParams.varinfo numrows numcols] = mrParamsParse(vars);
@@ -63,9 +62,11 @@ else
   figure(gParams.fignum);
 end
 
+mrGlobals;
+
 % set height of figure according to how many rows we have
-if isfield(mrDEFAULTS.figloc,'mrParamsDialog')
-  figpos = mrDEFAULTS.figloc.mrParamsDialog;
+if isfield(MLR.figloc,'mrParamsDialog')
+  figpos = MLR.figloc.mrParamsDialog;
 else
   figpos = get(gParams.fignum,'Position');
 end
@@ -76,13 +77,17 @@ set(gParams.fignum,'Position',figpos);
 % make entry buttons
 rownum = 1;
 for i = 1:length(gParams.varinfo)
+  % make ui for varname
   gParams.ui.varname(i) = makeTextbox(gParams.fignum,gParams.varinfo{i}.name,rownum,1,1);
+  % make ui entry dependent on what type we have
   if isfield(gParams.varinfo{i},'incdec')
     [gParams.ui.varentry{i} gParams.ui.incdec{i}(1) gParams.ui.incdec{i}(2)] =...
 	makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
     enableArrows(str2num(gParams.varinfo{i}.value),i);
+  elseif strcmp(gParams.varinfo{i}.type,'string')
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
   elseif strcmp(gParams.varinfo{i}.type,'checkbox')
-    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,.25);
+    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.25);
   elseif strcmp(gParams.varinfo{i}.type,'popupmenu') || iscell(gParams.varinfo{i}.value)
     gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
   elseif strcmp(gParams.varinfo{i}.type,'statictext')
@@ -103,7 +108,6 @@ for i = 1:length(gParams.varinfo)
     buttonHandler(i);
   end
 end
-
     
 % make ok and cancel buttons
 makeButton(gParams.fignum,'Help','help',numrows,1,1);
@@ -115,82 +119,14 @@ uiwait;
 
 % check return value
 if gParams.ok
-  % return the var entries
-  for i = 1:length(gParams.varinfo)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % for checkboxes, just return 0 or 1
-    if strcmp(gParams.varinfo{i}.type,'checkbox')
-      params.(gParams.varinfo{i}.name) = num2str(get(gParams.ui.varentry{i},'Value'));
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % for arrays, have to get all values
-    elseif strcmp(gParams.varinfo{i}.type,'array')
-      for iRows = 1:size(gParams.ui.varentry{i},1)
-	for iCols = 1:size(gParams.ui.varentry{i},2)
-	  params.(gParams.varinfo{i}.name)(iRows,iCols) = str2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
-	end
-      end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % for pop up menus, get the value and look it up in the original list
-    elseif strcmp(gParams.varinfo{i}.type,'popupmenu')
-      val = get(gParams.ui.varentry{i},'Value');
-      % check for the contingency value if it exists
-      if isfield(gParams.varinfo{i},'contingentOn')
-	% get the value of the contingency
-	if strcmp(gParams.varinfo{gParams.varinfo{i}.contingentOn}.type,'popupmenu')
-	  contingentVal = get(gParams.ui.varentry{gParams.varinfo{i}.contingentOn},'Value');
-	  contingentVal = gParams.varinfo{gParams.varinfo{i}.contingentOn}.value{contingentVal};
-	else
-	  contingentVal = gParams.varinfo{gParams.varinfo{i}.contingentOn}.value;
-	end
-	% make into a number if necessary and round
-	if isstr(gParams.varinfo{gParams.varinfo{i}.contingentOn}.value)
-	  contingentVal = round(str2num(contingentVal));
-	else
-	  contingentVal = round(contingentVal);
-	end
-      else
-	contingentVal = nan;
-      end
-      % if it is just a simple cell array, then it has a set of value
-      if ~iscell(gParams.varinfo{i}.value{1})
-	% set the value, unless the continency is not set
-	if contingentVal~=0
-	  params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.value{val};
-	else
-	  params.(gParams.varinfo{i}.name) = [];
-	end
-      else
-	% otherwise it is a set of sets, which is probably controlled by a contingency
-	if contingentVal > 0
-	  % if the contingency value is valid, then select out of the list
-	  if ~isempty(contingentVal) && (length(contingentVal)==1) && (contingentVal > 0) && (contingentVal <= length(gParams.varinfo{i}.value))
-	    params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.value{contingentVal}{val};
-	  else
-	    params.(gParams.varinfo{i}.name) = [];
-	  end
-	elseif contingentVal == 0
-	    params.(gParams.varinfo{i}.name) = [];
-	else	  
-	  % no contingency, just choose first one.
-	  params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.value{1}{val};
-	end
-      end
-    else
-      params.(gParams.varinfo{i}.name) = get(gParams.ui.varentry{i},'String');
-    end
-    % if non numeric then convert back to a number
-    if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array'}))
-      params.(gParams.varinfo{i}.name) = str2num(params.(gParams.varinfo{i}.name));
-    end
-  end
-  params.paramInfo = vars;
+  params = getParams(vars);
 else
   % otherwise return empty
   params = [];
 end
 
 % close figure
-mrDEFAULTS.figloc.mrParamsDialog = get(gParams.fignum,'Position');
+MLR.figloc.mrParamsDialog = get(gParams.fignum,'Position');
 close(gParams.fignum);
 
 % close help
@@ -198,7 +134,8 @@ helpcloseHandler;
 
 clear global gParams;
 
-% save figure locations
+% save figure locations in MLR
+mrGlobals;
 saveMrDefaults;
 
 drawnow;
@@ -283,7 +220,7 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
     end
     % otherwise remember this string as the default
   else
-    if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
+    if ~any(strcmp(gParams.varinfo{varnum}.type,{'popupmenu','checkbox'}))
       gParams.varinfo{varnum}.value = num2str(val);
       set(gParams.ui.varentry{varnum},'string',gParams.varinfo{varnum}.value);
     end
@@ -297,25 +234,28 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
 	else
 	  set(gParams.ui.varentry{i},'Enable','on');
 	end
-	% if the controlled field is a popupmenu and has
-	% a cell of cells for its value and that is in bounds
-	% then select it
-	if strcmp(gParams.varinfo{i}.type,'popupmenu') 
-	  if iscell(gParams.varinfo{i}.value{1})
-	    if (val >=1) && (val <= length(gParams.varinfo{i}.value))
-	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.value{val});
-	      set(gParams.ui.varentry{i},'Value',1);
-	    end
+	% now store the value currently being displayed
+	if gParams.varinfo{i}.oldControlVal
+	  % get the current value
+	  currentValue = get(gParams.ui.varentry{i},'String');
+	  if strcmp(gParams.varinfo{i}.type,'popupmenu') 
+	    currentValue = putOnTopOfList(currentValue{get(gParams.ui.varentry{i},'Value')},currentValue);
+	  elseif strcmp(gParams.varinfo{i}.type,'checkbox') 
+	    currentValue = get(gParams.ui.varentry{i},'Value');
 	  end
+	  % and save it
+	  gParams.varinfo{i}.allValues{gParams.varinfo{i}.oldControlVal}=currentValue;
 	end
-	% if the controlled field is a String then select
-        % apropriate one
-	if strcmp(gParams.varinfo{i}.type,'string') 
-	  if iscell(gParams.varinfo{i}.value)
-	    if (val >=1) && (val <= length(gParams.varinfo{i}.value))
-	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.value{val});
-	    end
+	% switch to new value
+	if (val >=1) && (val <= length(gParams.varinfo{i}.allValues))
+	  gParams.varinfo{i}.value = gParams.varinfo{i}.allValues{val};
+	  set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.allValues{val});
+	  if strcmp(gParams.varinfo{i}.type,'popupmenu') 
+	    set(gParams.ui.varentry{i},'Value',1);
+	  elseif strcmp(gParams.varinfo{i}.type,'checkbox') 
+	    set(gParams.ui.varentry{i},'Value',gParams.varinfo{i}.value);
 	  end
+	  gParams.varinfo{i}.oldControlVal = val;
 	end
       end
     end
@@ -354,8 +294,6 @@ end
 function helpHandler
 
 global gParams;
-global mrDEFAULTS;
-
 if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
   figure(gParams.helpFignum);
 else
@@ -376,9 +314,10 @@ for i = 1:length(gParams.varinfo)
 end
 numcols = 8;
 
+mrGlobals;
 % set the position and size
-if isfield(mrDEFAULTS.figloc,'mrParamsDialogHelp');
-  figpos = mrDEFAULTS.figloc.mrParamsDialogHelp;
+if isfield(MLR.figloc,'mrParamsDialogHelp');
+  figpos = MLR.figloc.mrParamsDialogHelp;
 else
   figpos = get(gParams.helpFignum,'Position')
 end
@@ -403,10 +342,9 @@ makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1);
 function helpcloseHandler
 
 global gParams;
-global mrDEFAULTS;
-
 if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
-  mrDEFAULTS.figloc.mrParamsDialogHelp = get(gParams.helpFignum,'Position');
+  mrGlobals;
+  MLR.figloc.mrParamsDialogHelp = get(gParams.helpFignum,'Position');
   close(gParams.helpFignum);
   gParams.helpFignum = -1;
 else
@@ -585,3 +523,95 @@ pos(1) = gParams.margin + (gParams.buttonWidth+gParams.margin)*(colnum-1) + gPar
 pos(2) = figpos(4)-thisButtonHeight-gParams.topMargin - (gParams.buttonHeight+gParams.margin)*(rownum-1);
 pos(3) = thisButtonWidth;
 pos(4) = thisButtonHeight;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get paramater values from ui
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function params = getParams(vars)
+
+global gParams;
+% return the var entries
+for i = 1:length(gParams.varinfo)
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % for checkboxes, just return 0 or 1
+  if strcmp(gParams.varinfo{i}.type,'checkbox')
+    if isfield(gParams.varinfo{i},'group')
+      for j = 1:length(gParams.varinfo{i}.allValues)
+	% if this is the current one then use field val
+	if gParams.varinfo{i}.oldControlVal == j
+	  params.(gParams.varinfo{i}.name)(j) = get(gParams.ui.varentry{i},'Value');
+	else
+	  params.(gParams.varinfo{i}.name)(j) = gParams.varinfo{i}.allValues{j};
+	end
+      end
+    else
+      params.(gParams.varinfo{i}.name) = get(gParams.ui.varentry{i},'Value');
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % for arrays, have to get all values
+  elseif strcmp(gParams.varinfo{i}.type,'array')
+    for iRows = 1:size(gParams.ui.varentry{i},1)
+      for iCols = 1:size(gParams.ui.varentry{i},2)
+	params.(gParams.varinfo{i}.name)(iRows,iCols) = str2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+      end
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % for pop up menus, get the value and look it up in the original list
+  elseif strcmp(gParams.varinfo{i}.type,'popupmenu')
+    % get the current value
+    val = get(gParams.ui.varentry{i},'Value');
+    list = get(gParams.ui.varentry{i},'String');
+    % if this is a group return a cell array
+    if isfield(gParams.varinfo{i},'group')
+      for j = 1:length(gParams.varinfo{i}.allValues)
+	% if this is the current list thenuse current val
+	if gParams.varinfo{i}.oldControlVal == j
+	  params.(gParams.varinfo{i}.name){j} = list{val};	  
+	% else get the list form allValues
+	else
+	  params.(gParams.varinfo{i}.name){j} = gParams.varinfo{i}.allValues{j}{1};
+	end
+      end
+    else
+      params.(gParams.varinfo{i}.name) = list{val};
+    end
+  else
+    if isfield(gParams.varinfo{i},'group')
+      for j = 1:length(gParams.varinfo{i}.allValues)
+	% if this is the current one then use field val
+	if gParams.varinfo{i}.oldControlVal == j
+	  params.(gParams.varinfo{i}.name){j} = get(gParams.ui.varentry{i},'String');
+	else
+	  params.(gParams.varinfo{i}.name){j} = gParams.varinfo{i}.allValues{j};
+	end
+      end
+    else
+      params.(gParams.varinfo{i}.name) = get(gParams.ui.varentry{i},'String');
+    end
+  end
+  % change numeric popupmenu to number
+  if strcmp(gParams.varinfo{i}.type,'popupmenu') && strcmp(gParams.varinfo{i}.popuptype,'numeric')
+    params.(gParams.varinfo{i}.name) = str2num(params.(gParams.varinfo{i}.name));
+  end
+  % if non numeric then convert back to a number
+  if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array' 'checkbox'}))
+    if isfield(gParams.varinfo{i},'group')
+      for j = 1:length(gParams.varinfo{i}.allValues)
+	% if this is the current one then use field val
+	if isstr(params.(gParams.varinfo{i}.name){j})
+	  temp(j) = str2num(params.(gParams.varinfo{i}.name){j});
+	else
+	  temp(j) = params.(gParams.varinfo{i}.name){j};
+	end
+      end
+      params.(gParams.varinfo{i}.name) = temp;
+    else
+      params.(gParams.varinfo{i}.name) = str2num(params.(gParams.varinfo{i}.name));
+    end
+  end
+  % not enabled then set parameter to empty
+  if strcmp(get(gParams.ui.varentry{i},'Enable'),'off');
+    params.(gParams.varinfo{i}.name) = [];
+  end
+end
+params.paramInfo = vars;

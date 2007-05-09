@@ -7,9 +7,8 @@ mrGlobals
 % Get interp preferences.
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
 %disppercent(-inf,'viewGet');
-if isfield(MLR.prefs,'interpMethod')
-    interpMethod = MLR.prefs.interpMethod;
-else
+interpMethod = mrGetPref('interpMethod');
+if isempty(interpMethod)
     interpMethod = 'linear';
 end
 interpExtrapVal = NaN;
@@ -204,12 +203,12 @@ baseCoords = [];
 baseCoordsHomogeneous = [];
 baseIm = [];
 
-% viewGet 
+% viewGet
 volSize = viewGet(view,'baseDims',baseNum);
 baseData = viewGet(view,'baseData',baseNum);
 
 if ~isempty(volSize)
-    
+
     % Generate coordinates with meshgrid
     switch sliceIndex
         case 1
@@ -243,12 +242,12 @@ end
 % Extract base image
 if ~isempty(baseData)
     switch sliceIndex
-    case 1
-        baseIm = squeeze(baseData(sliceNum,:,:));
-    case 2
-        baseIm = squeeze(baseData(:,sliceNum,:));
-    case 3
-        baseIm = squeeze(baseData(:,:,sliceNum));
+        case 1
+            baseIm = squeeze(baseData(sliceNum,:,:));
+        case 2
+            baseIm = squeeze(baseData(:,sliceNum,:));
+        case 3
+            baseIm = squeeze(baseData(:,:,sliceNum));
     end
     if (rotate ~= 0)
         baseIm = imrotate(baseIm,rotate,'nearest','loose');
@@ -271,7 +270,7 @@ overlayCoords = [];
 overlayCoordsHomogeneous = [];
 overlayImages = [];
 
-% viewGet 
+% viewGet
 baseXform = viewGet(view,'baseXform',baseNum);
 overlayXform = viewGet(view,'overlayXform',scanNum);
 numOverlays = viewGet(view,'numberofoverlays',analysisNum);
@@ -341,11 +340,11 @@ for ov = 1:numOverlays
             interpMethod,interpExtrapVal);
     end
 end
-   
+
 
 
 function [x,y] = getROISlice(view,sliceNum,sliceIndex,rotate,...
-        baseNum,baseCoordsHomogeneous,imageDims,roiNum);
+    baseNum,baseCoordsHomogeneous,imageDims,roiNum);
 %
 % getROISlice: extracts ROI coords transformed to the image
 
@@ -425,7 +424,7 @@ for r = order
     [x,y] = getROISlice(view,sliceNum,sliceIndex,rotate,...
         baseNum,baseCoordsHomogeneous,imageDims,r);
     if ~isempty(x) & ~isempty(y)
-        
+
         % Draw it
         fig = viewGet(view,'figNum');
         gui = guidata(fig);

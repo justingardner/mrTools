@@ -26,7 +26,7 @@ else
 end
 
 if ieNotDefined('confirm')
-    confirm = viewGet([],'pref','verbose');
+    confirm = mrGetPref('verbose');
     if isempty(confirm)
         confirm = 0;
     end

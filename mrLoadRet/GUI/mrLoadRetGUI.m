@@ -683,11 +683,11 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     view = MLR.views{viewNum};
     if isview(view)
       % remember figure location
-      MLR.figloc.mrLoadRetGUI = get(view.figure,'Position');
+      mrSetFigLoc('mrLoadRetGUI',get(view.figure,'Position'));
       delete(view.figure);
     end
     if ~isempty(MLR.graphFigure)
-      MLR.figloc.graphFigure = get(MLR.graphFigure,'Position');
+      mrSetFigLoc('graphFigure',get(MLR.graphFigure,'Position'));
       close(MLR.graphFigure);
       MLR.graphFigure = [];
     end
@@ -696,7 +696,7 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
   % save the view in the current directory
   view = thisView;
   eval(sprintf('save %s view viewSettings -V6;',fullfile(MLR.homeDir,'mrLastView')));
-  % save figloc in .mrDefaults in the home directory
+  % save .mrDefaults in the home directory
   saveMrDefaults;
 else
   closereq;
@@ -1507,20 +1507,13 @@ view = eventRelated(view);
 
 % --------------------------------------------------------------------
 function concatenateTSeriesMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to concatenateTSeriesMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = concatTSeries(view);
 
-
 % --------------------------------------------------------------------
 function roiCoordinatesMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to roiCoordinatesMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -1542,58 +1535,8 @@ end
 
 % --------------------------------------------------------------------
 function prefMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to prefMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% get view
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
 
-% get interpTypes
-interpTypes = {'nearest','linear','spline','cubic'};
-if ~isempty(strcmp(viewGet(view,'prefs','interpMethod'),interpTypes))
-  interpTypes = putOnTopOfList(viewGet(view,'prefs','interpMethod'),interpTypes);
-end
-
-%get overwritePolicy
-overwritePolicy = {'Ask','Merge','Rename','Overwrite'};
-if ~isempty(strcmp(viewGet(view,'prefs','overwritePolicy'),overwritePolicy))
-  overwritePolicy = putOnTopOfList(viewGet(view,'prefs','overwritePolicy'),overwritePolicy);
-end
-
-% get other defaults
-site = viewGet(view,'prefs','site');
-if isempty(site),site = 'NYU';end
-verbose = viewGet(view,'prefs','verbose');
-if isempty(verbose),verbose = 1;,end
-maxBlocksize = viewGet(view,'prefs','maxBlocksize');
-if isempty(maxBlocksize),maxBlocksize = 250000000;,end
-volumeDirectory = viewGet(view,'prefs','volumeDirectory');
-if isempty(volumeDirectory),volumeDirectory=pwd;,end
-niftiFileExtension = viewGet(view,'prefs','niftiFileExtension');
-if isempty(niftiFileExtension),niftiFileExtension='.img';,end
-
-% set up the dialog and ask the user to set parameters
-prefParams = {{'site',site,'Where you are using this code'},...
-	      {'verbose',verbose,'minmax=[0 1]','incdec=[-1 1]','Set to 1 if you want to have dialog waitbars, set to 0 to have information printed to the terminal'},...
-	      {'interpMethod',interpTypes,'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
-	      {'maxBlocksize',maxBlocksize,'Size of chunks of data to analyze at a time. If you are running out of memory, set lower. A good starting value is 250000000','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
-	      {'volumeDirectory',volumeDirectory,'The directory to default to when you load base anatomy from the Volume directory'},...
-	      {'overwritePolicy',overwritePolicy,'Method to use when analysis is going to overwrite an existing file'},...
-	      {'niftiFileExtension',niftiFileExtension,'Nifti file extension, usually .img'}};
-prefParams = mrParamsDialog(prefParams);
-
-% if they did not cancel then actually set the parameters
-if ~isempty(prefParams)
-  view = viewSet(view,'prefs','site',prefParams.site);
-  view = viewSet(view,'prefs','verbose',prefParams.verbose);
-  view = viewSet(view,'prefs','interpMethod',prefParams.interpMethod);
-  view = viewSet(view,'prefs','maxBlocksize',prefParams.maxBlocksize);
-  view = viewSet(view,'prefs','volumeDirectory',prefParams.volumeDirectory);
-  view = viewSet(view,'prefs','overwritePolicy',prefParams.overwritePolicy);
-  view = viewSet(view,'prefs','niftiFileExtension',prefParams.niftiFileExtension);
-end
+mrEditPrefs;
 
 % --------------------------------------------------------------------
 function loadFromVolumeMenuItem_Callback(hObject, eventdata, handles)
@@ -1605,7 +1548,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 % get the volume directory from prefs
-volumeDirectory = viewGet(view,'prefs','volumeDirectory');
+volumeDirectory = mrGetPref('volumeDirectory');
 saveVolumeDirectory = 0;
 if isempty(volumeDirectory)
   saveVolumeDirectory = 1
@@ -1615,7 +1558,7 @@ end
 refreshMLRDisplay(viewNum);
 % if volumeDirectory prefMenu was empty before, than save it now
 if saveVolumeDirectory
-  viewSet(view,'prefs','volumeDirectory',volumeDirectory);
+  mrSetPref('volumeDirectory',volumeDirectory);
 end
 
 

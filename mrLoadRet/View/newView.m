@@ -11,7 +11,7 @@ viewNum = length(MLR.views) + 1;
 view.viewNum = viewNum;
 view.viewType = viewType;
 
-if viewGet([],'pref','verbose')
+if mrGetPref('verbose')
   switch viewType
    case 'Volume'
     disp('Initializing Volume view');

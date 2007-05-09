@@ -529,15 +529,6 @@ switch lower(param)
                 val = [];
             end
         end
-    case{'prefs','preference','pref'}
-        % val = viewGet(view,'pref','prefname');
-        % val = viewGet([],'pref','prefname');
-        % return a preference value or [] if it does not exist
-        if isfield(MLR.prefs,varargin{1})
-            val = MLR.prefs.(varargin{1});
-        else
-            val = [];
-        end
     case{'transforms'}
         % transforms = viewGet(view,'transforms',scanNum,[groupNum]);
         % returns motion correction transformation matrices if they exists
@@ -603,7 +594,7 @@ switch lower(param)
                 % using the qform matrices. Note: There used to be code
                 % here that reset val if it was the identity but that was a
                 % bug (DJH 1/17/07).
-		if viewGet(view,'prefs','verbose')
+		if mrGetPref('verbose')
 		  disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
 		end
 		baseqform = viewGet(view,'baseqform');
@@ -1928,7 +1919,7 @@ switch lower(param)
         val = datasize(3);
 
     otherwise
-        if viewGet([],'preference','verbose')
+        if mrGetPref('verbose')
             dispViewGetHelp;
         end
         disp(['Invalid parameter for volume view: ',param]);

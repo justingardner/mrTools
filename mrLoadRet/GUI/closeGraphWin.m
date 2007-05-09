@@ -13,7 +13,7 @@ if h
   if (h == get(0,'CurrentFigure'))
     MLR.graphFigure = []; 
     % save the position
-    MLR.figloc.graphFigure = get(h,'Position');
+    mrSetFigLoc('graphFigure',get(h,'Position'));
   end
 end 
 

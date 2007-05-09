@@ -2,13 +2,13 @@ function saveSession(verbose)
 % saveSession([verbose])
 %
 % verbose: ask before overwriting existing mrSession file
-%    default: viewGet(MLR.views{1},'pref','verbose') or if that's not set 0
+%    default: mrGetPref('verbose') or if that's not set 0
 % djh 5/2005
 
 mrGlobals;
 
 if ieNotDefined('verbose')
-    verbose = viewGet([],'pref','verbose');
+    verbose = mrGetPref('verbose');
     if isempty(verbose)
         verbose = 0;
     end
