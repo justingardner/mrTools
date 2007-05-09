@@ -316,7 +316,7 @@ numcols = 8;
 % set the position and size
 figpos = mrGetFigLoc('mrParamsDialogHelp');
 if isempty(figpos)
-    figpos = get(gParams.helpFignum,'Position')
+    figpos = get(gParams.helpFignum,'Position');
 end
 figpos(4) = 2*gParams.topMargin+numrows*gParams.buttonHeight+(numrows-1)*gParams.margin;
 figpos(3) = 2*gParams.leftMargin+numcols*gParams.buttonWidth+(numcols-1)*gParams.margin;
