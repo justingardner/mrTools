@@ -10,6 +10,10 @@ function pos = mrGetFigLoc(figname)
 %
 % Examples:
 %   pos = mrGetFigLoc('mrLoadRetGUI');
+%   pos = mrGetFigLoc('buttondlg');
+%   pos = mrGetFigLoc('graphFigure');
+%   pos = mrGetFigLoc('mrParamsDialog');
+%   pos = mrGetFigLoc('mrParamsDialogHelp');
 %
 % djh, 5/2007
 
