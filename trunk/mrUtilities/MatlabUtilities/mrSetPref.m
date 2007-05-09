@@ -19,3 +19,7 @@ function preferences = mrSetPref(pref,value)
 %
 % djh, 5/2007
 
+global mrDEFAULTS
+
+mrDEFAULTS.prefs = setfield(mrDEFAULTS.prefs,pref,value);
+preferences = mrDEFAULTS.prefs;

@@ -1,4 +1,4 @@
-function preferences = mrGetPref(pref,value)
+function value = mrGetPref(pref,value)
 %
 % value = mrGetPref(pref)
 %
@@ -17,3 +17,10 @@ function preferences = mrGetPref(pref,value)
 %
 % djh, 5/2007
 
+global mrDEFAULTS
+
+if isfield(mrDEFAULTS.prefs,pref)
+    value = getfield(mrDEFAULTS.prefs,pref);
+else
+    value = [];
+end

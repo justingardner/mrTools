@@ -9,24 +9,24 @@ function retval = saveMrDefaults()
 
 % check arguments
 if ~any(nargin == [0])
-  help saveMrDefaults
-  return
+    help saveMrDefaults
+    return
 end
 
 % get globals
-mrGlobals;
+global mrDEFAULTS;
 
 % save figloc
-if isfield(MLR,'figloc')
-  figloc = MLR.figloc;
+if isfield(mrDEFAULTS,'figloc')
+    figloc = mrDEFAULTS.figloc;
 else
-  figloc = [];
+    figloc = [];
 end
 
-if isfield(MLR,'prefs')
-  prefs = MLR.prefs;
+if isfield(mrDEFAULTS,'prefs')
+    prefs = mrDEFAULTS.prefs;
 else
-  prefs = [];
+    prefs = [];
 end
 
 

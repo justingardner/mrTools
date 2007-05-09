@@ -9,10 +9,12 @@ function h = mrWaitBar(x,t)
 %    handle to the waitbar.
 %
 % To set the 'verbose' preference:
-%    setpref('mrLoadRet','verbose',0);
-%    setpref('mrLoadRet','verbose',1);
+%    mrSetPref('verbose',0);
+%    mrSetPref('verbose',1);
 %
 % djh, 5/2005
+%
+% djh, 5/2007, modified to use mrGetPref instead of Matlab's getpref
 
 if ~exist('x','var')
     x=0;
@@ -21,37 +23,34 @@ if ~exist('t','var')
     t = 'Please wait';
 end
 
-
 % update of wait bar
 if ishandle(t)
     waitbar(x,t);
     drawnow;
 elseif isfield(t,'disppercent')
     disppercent(x);
-    % initial call
+    
+% initial call
 elseif ischar(t)
     % check the verbose preference
-    if ispref('mrLoadRet','verbose')
-        verbose = getpref('mrLoadRet','verbose');
-    else
-        verbose = 0;
-    end
-    % if verbose, make a window wait bar
+    verbose = mrGetPref('verbose');
     if verbose
+        % if verbose, make a window wait bar
         h = waitbar(x,t);
         drawnow;
-        % otherwise use disppercent
     else
+        % otherwise use disppercent
         disppercent(-inf,t);
         h.disppercent = 1;
     end
+    
 end
 return
 
 
 % Test/debug
-setpref('mrLoadRet','verbose',1);
-setpref('mrLoadRet','verbose',0);
+mrSetPref('verbose',1);
+mrSetPref('verbose',0);
 
 startTime = mglGetSecs;
 h = mrWaitBar(0,'Test. Please wait...');
