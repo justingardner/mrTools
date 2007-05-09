@@ -79,13 +79,15 @@ if currentMrSessionVersion ~= 4
   return
 end
 % Check that we have necessary groups
-rawGroup = 0;motionCompGroup = 0;
+rawGroup = 0;motionCompGroup = 0;averagesGroup = 0;
 for i = 1:length(m.groups)
-  if strcmp(m.groups(i).name,'Raw')
-    rawGroup = i;
-  elseif strcmp(m.groups(i).name,'MotionComp')
-    motionCompGroup = i;
-  end
+    if strcmp(m.groups(i).name,'Raw')
+        rawGroup = i;
+    elseif strcmp(m.groups(i).name,'MotionComp')
+        motionCompGroup = i;
+    elseif strcmp(m.groups(i).name, 'Averages')
+        averagesGroup = i;
+    end
 end
 
 % if there is no raw group, then quit
@@ -111,6 +113,17 @@ if motionCompGroup
   end
   printBlockEnd;
 end
+
+% print out information on Averages group
+if averagesGroup
+  printBlockBegin('Averaged files');
+  scanParams = m.groups(averagesGroup).scanParams;
+  for i = 1:length(scanParams)
+    disp(sprintf('%i: %s (%s) [%s] tr=%0.3f',i,scanParams(i).fileName,scanParams(i).description,num2str(scanParams(i).dataSize),scanParams(i).framePeriod));
+  end
+  printBlockEnd;
+end
+
 
 % look in anatomy directory for anatomy files
 if isdir('Anatomy')
@@ -168,7 +181,21 @@ end
 
 % ok, make the appropriate directories
 printBlockBegin('Making directories');
+%dirs = {'Raw/Anatomy' 'Raw/Anatomy/Inplane' 'Raw/Pfiles' 'Raw/Pfiles_preMC' 'Inplane'};
 dirs = {'Raw/Anatomy' 'Raw/Anatomy/Inplane' 'Raw/Pfiles' 'Raw/Pfiles_preMC' 'Inplane'};
+
+% if originalGroup
+%     dirs{end+1} = 'Inplane/Original';
+%     dirs{end+1} = 'Inplane/Original/TSeries';
+%     dirs{end+1} = 'Inplane/Original/TSeries/Analyze';
+% end
+
+if averagesGroup
+    dirs{end+1} = 'Inplane/Averages';
+    dirs{end+1} = 'Inplane/Averages/TSeries';
+    dirs{end+1} = 'Inplane/Averages/TSeries/Analyze';
+end
+
 for j = 1:length(dirs)
   if (~isdir(sprintf('%s',dirs{j})))
     disp(sprintf('(mr4to3) Making directory: %s',dirs{j}));
@@ -190,6 +217,11 @@ else
   makeLinks(m.groups(rawGroup).scanParams,'../../Raw','Raw/Pfiles');
   originalGroup = rawGroup;
 end
+
+if averagesGroup
+    %filenames{averagesGroup} = makeLinks(m.groups(averagesGroup).scanParams,'../../Averages','Raw/Averages');
+    filenames{averagesGroup} = makeLinks(m.groups(averagesGroup).scanParams,'../../../../Averages','Inplane/Averages/TSeries/Analyze');
+end    
 printBlockEnd;
 
 if ~isfile('Inplane/Inplane.hdr') && anatnum
@@ -243,11 +275,11 @@ for i = 1:length(scanParams)
   m.dataTYPES(1).scanParams(i).cropSize = scanParams(i).dataSize(1:2);
 
   % blocked analysis (just make up)
-  m.dataTYPES(1).blockedAnalysisParams(i).blockedAnalysis = 0;
+  m.dataTYPES(1).blockedAnalysisParams(i).blockedAnalysis = 1;
   m.dataTYPES(1).blockedAnalysisParams(i).detrend = 1;
   m.dataTYPES(1).blockedAnalysisParams(i).inhomoCorrect = 1;
   m.dataTYPES(1).blockedAnalysisParams(i).temporalNormalization = 0;
-  m.dataTYPES(1).blockedAnalysisParams(i).nCycles = 0;
+  m.dataTYPES(1).blockedAnalysisParams(i).nCycles = 10;
 
   % event analysis set to 0
   m.dataTYPES(1).eventAnalysisParams(i).eventAnalysis = 0;
@@ -268,6 +300,34 @@ for i = 1:length(scanParams)
   m.mrSESSION.functionals(i).reconParams = [];
   m.mrSESSION.functionals(i).rawFileType = 'Analyze';
 end
+
+% make the data types structure and fill out 
+% the functionals field in mrSESSION
+m.dataTYPES(2).name = 'Averages';
+scanParams = m.groups(averagesGroup).scanParams;
+for i = 1:length(scanParams)
+  % scan params
+  m.dataTYPES(2).scanParams(i).annotation = scanParams(i).description;
+  m.dataTYPES(2).scanParams(i).nFrames = scanParams(i).nFrames;
+  m.dataTYPES(2).scanParams(i).framePeriod = scanParams(i).framePeriod;
+  m.dataTYPES(2).scanParams(i).slices = [1:scanParams(i).dataSize(3)];
+  m.dataTYPES(2).scanParams(i).cropSize = scanParams(i).dataSize(1:2);
+
+  % blocked analysis (just make up)
+  m.dataTYPES(2).blockedAnalysisParams(i).blockedAnalysis = 1;
+  m.dataTYPES(2).blockedAnalysisParams(i).detrend = 1;
+  m.dataTYPES(2).blockedAnalysisParams(i).inhomoCorrect = 1;
+  m.dataTYPES(2).blockedAnalysisParams(i).temporalNormalization = 0;
+  m.dataTYPES(2).blockedAnalysisParams(i).nCycles = 10;
+
+  % event analysis set to 0
+  m.dataTYPES(2).eventAnalysisParams(i).eventAnalysis = 0;
+
+end
+
+
+
+
 if ~debugflag
   disp(sprintf('(mr4to3) Saving mrSESSION.mat'));
   mrSESSION = m.mrSESSION;
@@ -299,12 +359,14 @@ for i = 1:length(scanParams)
   if isfield(scanParams(i),'originalFileName') && ...
 	(length(scanParams(i).originalFileName) == 1)
     % append the groupName
-     destFilenames{i} = sprintf('%s_%s.img',stripext(scanParams(i).originalFileName{1}),sourcedir);
+    destFilenames{i} = sprintf('%s_%s.img',stripext(scanParams(i).originalFileName{1}),sourcedir);
     destFilename = fullfile(destdir,destFilenames{i});
+    destFilename = strcat('Scan', num2str(i), '.img');
   % otherwise just use the filename
   else
-    destFilenames{i} = scanParams(i).fileName;
-    destFilename = fullfile(destdir,scanParams(i).fileName);
+      destFilenames{i} = scanParams(i).fileName;
+      %destFilename = fullfile(destdir,scanParams(i).fileName);
+      destFilename = strcat('Scan', num2str(i), '.img');
   end
   % check to see if the img file is already there
   if isfile(destFilename)
@@ -313,7 +375,7 @@ for i = 1:length(scanParams)
     disp(sprintf('(mr4to3) Could not find original file %s',sourceFilename));
   else
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
-    mysystem(sprintf('ln -s %s .',sourceFilename));
+    mysystem(sprintf('ln -s %s %s',sourceFilename, destFilename));
   end
   % now move the hdr file
   destFilename = sprintf('%s.hdr',stripext(destFilename));
@@ -324,7 +386,7 @@ for i = 1:length(scanParams)
     disp(sprintf('(mr4to3) Could not find original file %s',sourceFilename));
   else
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
-    mysystem(sprintf('ln -s %s .',sourceFilename));
+    mysystem(sprintf('ln -s %s %s',sourceFilename, destFilename));
   end
 end
 printBlockEnd;
