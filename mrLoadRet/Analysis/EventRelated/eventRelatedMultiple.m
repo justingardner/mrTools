@@ -198,13 +198,15 @@ if ~any(nargin == [1 2])
   help getstimvol
   return
 end
+
 if exist('keepstim','var')~=1,keepstim = []; end;
 switch d.filetype,
     case 'traces',
-        d = getStimVolFromTraces(d);
+        d = getStimVolFromTraces(d.myscreen);
     case 'eventtimes',
-        d = getStimVolFromEventTimes(d);
+        d = getStimVolFromEventTimes(d.mylog, d.tr);
 end;
+
 % get the first volume
 d = getfirstvol(d);
 
@@ -247,14 +249,15 @@ for i = 1:nhdr
 end
 
 
-function d = getStimVolFromEventTimes(d)
+function d = getStimVolFromEventTimes(d, tr)
 % sort into stimuli
 nhdr = length(d.stimtimes_s);
 for i = 1:nhdr
   d.stimtimes{i} = d.stimtimes_s{i};
   d.pulselens(i) = i;
-  d.stimvol{i} = round(d.stimtimes_s{i} / d.tr);
+  d.stimvol{i} = round(d.stimtimes_s{i} / tr);
 end
+d.tr = tr;
 
 %%%%%%%%%%%%%%%%%%%
 % calcVariances
