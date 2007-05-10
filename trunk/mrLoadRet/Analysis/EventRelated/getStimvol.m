@@ -40,7 +40,7 @@ for i = 1:length(d.stimfile)
       [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
-      stimvol = getStimvolFromEventTimes(d.stimfile{i},d.tr);
+      stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr);
   end
   % set the stimnames if we don't have them already
   if ~isfield(d,'stimNames')
@@ -132,6 +132,6 @@ function stimvol = getStimvolFromEventTimes(stimfile,tr)
 nhdr = length(stimfile.stimtimes_s);
 for i = 1:nhdr
   stimtimes{i} = stimfile.stimtimes_s{i};
-  stimvol{i} = round(stimtimes_s{i} / tr);
+  stimvol{i} = round(stimtimes{i} / tr);
 end
 
