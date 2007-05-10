@@ -33,7 +33,7 @@ d.filepath = viewGet(view,'tseriespathstr',scanNum);
 % dispay string to say what we are loading
 mrDisp(sprintf('Loading scan %i from group: %s',scanNum,viewGet(view,'groupName')));
 if isempty(sliceNum)
-  myDisp(sprintf('\n'));
+  mrDisp(sprintf('\n'));
 elseif length(sliceNum) == 2
   mrDisp(sprintf(' slices=%i:%i of %i\n',sliceNum(1),sliceNum(2),viewGet(view,'nSlices',scanNum)));
 else
