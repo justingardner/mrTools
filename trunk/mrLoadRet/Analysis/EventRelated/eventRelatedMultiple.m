@@ -37,6 +37,7 @@ end;
 
 % step 1: estimate hrf using all included scans
 ehdr = 0;
+meanintensity = 0;
 [scms, volumes, nhdr] = getFullDesign(view, params);
 if nhdr<=0
     mrMsgBox('incompatible number of conditions');
@@ -51,7 +52,11 @@ for i=params.includeScans
     % compute the hemodynamic responses
     d = calcleastsqestimate(d);
     ehdr = ehdr+d.ehdr;
+    meanintensity = meanintensity+d.meanintensity;
 end
+
+meanintensity = meanintensity/length(params.includeScans);
+
 % step 2: calculate r2
 unexplainedVariance = 0;
 totalVariance = 0;
@@ -70,6 +75,7 @@ d = rmfield(d,'data');
 d.nhdr = nhdr;
 d.hdrlen = ceil(params.hdrlen/d.tr);
 d.r2 = 1-unexplainedVariance./totalVariance;
+d.meanintensity = meanintensity;
 
 % create the r2 overlay
 dateString = datestr(now);
@@ -100,7 +106,7 @@ erAnal.params = params;
 erAnal.overlays = r2;
 erAnal.curOverlay = 1;
 erAnal.date = dateString;
-erAnal.ehdr = ehdr;
+erAnal.ehdr = ehdr./repmat(meanintensity, [1,1,1,size(ehdr,4)])*100;
 erAnal.nhdr = nhdr;
 erAnal.d = d;
 
@@ -333,6 +339,7 @@ yvals = 1:d.dim(2);yvaln = length(yvals);
   
 % preallocate memory
 d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),size(precalcmatrix,1));
+d.meanintensity = zeros(d.dim(1),d.dim(2),d.dim(3));
 
 % display string
 disppercent(-inf,'Calculating hdr');
@@ -353,6 +360,7 @@ for j = yvals
     timeseries = timeseries - onesmatrix*colmeans;
     % get hdr for the each voxel
     ehdr{j,k} = precalcmatrix*timeseries;
+    d.meanintensity(:,j,k)=colmeans(:);
   end
 end
 disppercent(inf);
