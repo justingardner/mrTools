@@ -38,9 +38,8 @@ function view = averageTSeries(view,params)
 %    Default: 'Average from <groupName>' of scans: <scanList>'
 % fileName: the new tseries is saved in the specified filename.
 %    Default: 'tseries-mmddyy-hhmmss.img' or 'tseries-mmddyy-hhmmss.nii'
-%    where mmddyy = date and hhmmss = time. Calls niftiFileExtension to
-%    choose between .img and .nii, based on mrLoadRet 'niftiFileExtension'
-%    preference.
+%    where mmddyy = date and hhmmss = time. Chooses between .img and .nii,
+%    based on 'niftiFileExtension' preference.
 %
 % Also saves an auxillary file (tseriesfileName.mat) that can be used to
 % recompute as follows:

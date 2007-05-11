@@ -766,7 +766,7 @@ view = MLR.views{viewNum};
 
 % Choose nifti file to add
 tseriesDir = viewGet(view,'tseriesDir');
-pathStr = getPathStrDialog(tseriesDir,'Add scan: choose nifti file',['*',niftiFileExtension]);
+pathStr = getPathStrDialog(tseriesDir,'Add scan: choose nifti file',['*',mrGetPref('niftiFileExtension')]);
 if isempty(pathStr)
     % Aborted
     return
@@ -783,7 +783,7 @@ if strcmp(dir,tseriesDir)
     fileName = [file,ext];
 else
     % Copy file to the tseries directory
-    fileName = ['tseries-',datestr(now,'mmddyy-HHMMSS'),niftiFileExtension];
+    fileName = ['tseries-',datestr(now,'mmddyy-HHMMSS'),mrGetPref('niftiFileExtension')];
     [data,hdr] = cbiReadNifti(pathStr);
     newPathStr = fullfile(tseriesDir,fileName);
     [bytes,hdr] = cbiWriteNifti(newPathStr,data,hdr);

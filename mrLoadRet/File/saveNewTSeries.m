@@ -14,8 +14,7 @@ function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr)
 %    scanParams.nFrames = size(tseries,4);
 %    scanParams.description = '';
 %
-% Calls niftiFileExtension to choose between .img and .nii, based on
-% mrLoadRet 'niftiFileExtension' preference.
+% Chooses between .img and .nii based on 'niftiFileExtension' preference.
 %
 % hdr: template for nifti header. The header is always passed through
 % cbiCreateNiftiHeader to ensure consistency with the data. Default: [];
@@ -34,7 +33,7 @@ if ieNotDefined('hdr')
 end
 
 if isempty(scanParams.fileName)
-    scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),niftiFileExtension];
+    scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),mrGetPref('niftiFileExtension')];
 end
 filename = scanParams.fileName;
 

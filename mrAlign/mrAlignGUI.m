@@ -34,6 +34,12 @@ ALIGN.guiXform = eye(4);
 ALIGN.volSize = [64 64 64];
 ALIGN.inplaneSize = [64 64 64];
 
+% set the location of the figure
+figloc = mrGetFigLoc('mrAlignGUI');
+if ~isempty(figloc)
+    set(handles.figure1,'Position',figloc);
+end
+
 % Initialize GUI
 mrAlignGUI('sagittalRadioButton_Callback',hObject, eventdata, handles);
 set(handles.transposeButton,'Value',0);
@@ -227,9 +233,8 @@ function loadVolMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 % Prompt user to choose volume.
-if (ispref('mrLoadRet','defaultAnatomyPath'))
-	initPath = getpref('mrLoadRet','defaultAnatomyPath');
-else
+initPath = mrGetPref('volumeDirectory');
+if isempty(initPath)
     initPath = pwd;
 end
 pathStr = getPathStrDialog(initPath,'Choose vAnatomy file','*.img');
@@ -599,8 +604,13 @@ end
 % --------------------------------------------------------------------
 function quitMenuItem_Callback(hObject, eventdata, handles)
 clear global ALIGN
-delete(handles.figure1);
 
+% remember figure location
+mrSetFigLoc('mrAlignGUI',get(handles.figure1,'Position'));
+% close figure
+delete(handles.figure1);
+% save .mrDefaults in the home directory
+saveMrDefaults;
 
 % --------------------------------------------------------------------
 function manualAlignmentMenu_Callback(hObject, eventdata, handles)
@@ -872,4 +882,14 @@ axis('image'); colormap('gray'); axis('off');
 disp('Press a key to continue...')
 pause
 close(FF)
+
+
+% --------------------------------------------------------------------
+function editMenu_Callback(hObject, eventdata, handles)
+
+% --------------------------------------------------------------------
+function prefMenu_Callback(hObject, eventdata, handles)
+
+mrEditPrefs;
+
 
