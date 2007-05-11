@@ -33,9 +33,12 @@ end
 if ~isfield(params, 'includeScans')
     params.includeScans = params.scanNum;
 end;
-if ~params.scanParams{1}.sameForAll
-  mrMsgBox('eventRelated with inplace concat requires same parameters for all scans');
-  return
+
+if length(params.includeScans)==1
+    % pass
+elseif ~params.scanParams{1}.sameForAll
+    mrMsgBox('eventRelated with inplace concat requires same parameters for all scans');
+    return
 end
 
 params.hdrlen = params.scanParams{1}.hdrlen;
@@ -88,7 +91,8 @@ d = rmfield(d,'data');
 d.nhdr = nhdr;
 d.hdrlen = ceil(params.hdrlen/d.tr);
 
-ehdr = reshape(ehdr, [d.dim(1:3), nhdr, d.hdrlen]);
+ehdr = reshape(ehdr, [d.dim(1:3), d.hdrlen, nhdr]);
+ehdr = permute(ehdr, [1,2,3,5,4]);
 
 d.r2 = 1-unexplainedVariance./totalVariance;
 d.meanintensity = meanintensity;
@@ -97,8 +101,11 @@ S2 = unexplainedVariance/(size(fullscm,1)-size(fullscm,2));
 % now distribute that error to each one of the points
 % in the hemodynamic response according to the inverse
 % of the covariance of the stimulus convolution matrix.
+
 ehdrste = sqrt(S2(:)*diag(pinv(fullscm'*fullscm))');
-d.ehdrste = reshape(ehdrste, size(ehdr))./repmat(meanintensity, [1,1,1,nhdr, d.hdrlen])*100;
+ehdrste = reshape(ehdrste, [d.dim(1:3), d.hdrlen, nhdr]);
+ehdrste = permute(ehdrste, [1,2,3,5,4]);
+d.ehdrste = ehdrste./repmat(meanintensity, [1,1,1,nhdr, d.hdrlen])*100;
 
 % create the r2 overlay
 dateString = datestr(now);
