@@ -52,7 +52,7 @@ view = viewSet(view,'cursliceOverlayCoords',overlayCoords);
 if ~isempty(overlayImages)
     overlayIm = overlayImages(:,:,curOverlay);
 else
-    overayIm = [];
+    overlayIm = [];
 end
 %disppercent(inf);
 

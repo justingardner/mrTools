@@ -13,9 +13,9 @@ function preferences = mrSetPref(pref,value)
 %   mrSetPref('niftiFileExtension','.img');
 %   mrSetPref('niftiFileExtension','.nii');
 %   mrSetPref('interpMethod','nearest');
-%   mrSetPref('interpMethod','linear');
-%   mrSetPref('interpMethod','cubic');
-%   mrSetPref('overwritePolicy','ask');
+%      Options: 'nearest','linear','spline','cubic'
+%   mrSetPref('overwritePolicy','Ask');
+%      Options: 'Ask','Merge','Rename','Overwrite'
 %
 % djh, 5/2007
 
