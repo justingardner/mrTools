@@ -21,7 +21,7 @@ function [view] = saveTSeries(view,tseries,scanNum,scanParams,hdr,append)
 % get the old one
 oldScanParams = viewGet(view,'scanParams',scanNum);
 if isempty(oldScanParams)
-  disp(sprintf('saveTSeries: Scan #%i does not exist',scanNum));
+    disp(sprintf('saveTSeries: Scan #%i does not exist',scanNum));
 end
 
 % get defaults
@@ -31,7 +31,7 @@ if ieNotDefined('append'),append = 0;end
 
 % get default filename
 if isempty(scanParams.fileName)
-  scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),mrGetPref('niftiFileExtension')];
+    scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),mrGetPref('niftiFileExtension')];
 end
 filename = scanParams.fileName;
 
@@ -40,52 +40,52 @@ tseriesdir = viewGet(view,'tseriesdir');
 path = fullfile(tseriesdir,scanParams.fileName);
 
 if ~append
-  % Save tseries 
-  [byteswritten,hdr] = cbiWriteNifti(path,tseries,hdr);
+    % Save tseries
+    [byteswritten,hdr] = cbiWriteNifti(path,tseries,hdr);
 else
-  % append time series to what is already there.
-  % first get how many total frames we will have
-  oldNFrames = viewGet(view,'nFrames',scanNum);
-  newNFrames = oldNFrames+size(tseries,4);
-  % get the old header if we don't have one passed in
-  if isempty(hdr)
-    hdr = oldScanParams.niftiHdr;
-  end
-  % and set how many total frames we will have.
-  hdr.dim(5) = newNFrames;
-  scanParams.totalFrames = newNFrames;
-  scanParams.nFrames = newNFrames;
-  % now write out that header
-  hdr = cbiWriteNiftiHeader(hdr,path);
-  % now write out the new data
-  tempFilename = fullfile(tseriesdir,'___saveTSeriesAppendTemp___.img');
-  cbiWriteNifti(tempFilename,tseries,hdr);
-  % now append that file to the end of the old one
-  % make sure to get the filename with .img appended
-  [oldpath,oldname,oldext] = fileparts(path);
-  oldImgFilename = fullfile(oldpath,sprintf('%s.img',oldname));
-  % now append the files together
-  fNew = fopen(tempFilename);
-  if (fNew == -1)
-    error(sprintf('saveTSeries: Could not open temporary file %s',tempFilename));
-  end
-  fOld = fopen(oldImgFilename,'a');
-  if (fOld == -1)
-    error(sprintf('saveTSeries: Could not open file %s',oldImgFilename));
-  end
-  % now cycle through and append blocks to the old file
-  BLOCKSIZE = 512;
-  [datablock count] = fread(fNew,BLOCKSIZE,hdr.matlab_datatype);
-  while (count > 0)
-    fwrite(fOld,datablock,hdr.matlab_datatype);
+    % append time series to what is already there.
+    % first get how many total frames we will have
+    oldNFrames = viewGet(view,'nFrames',scanNum);
+    newNFrames = oldNFrames+size(tseries,4);
+    % get the old header if we don't have one passed in
+    if isempty(hdr)
+        hdr = oldScanParams.niftiHdr;
+    end
+    % and set how many total frames we will have.
+    hdr.dim(5) = newNFrames;
+    scanParams.totalFrames = newNFrames;
+    scanParams.nFrames = newNFrames;
+    % now write out that header
+    hdr = cbiWriteNiftiHeader(hdr,path);
+    % now write out the new data
+    tempFilename = fullfile(tseriesdir,'___saveTSeriesAppendTemp___.img');
+    cbiWriteNifti(tempFilename,tseries,hdr);
+    % now append that file to the end of the old one
+    % make sure to get the filename with .img appended
+    [oldpath,oldname,oldext] = fileparts(path);
+    oldImgFilename = fullfile(oldpath,sprintf('%s.img',oldname));
+    % now append the files together
+    fNew = fopen(tempFilename);
+    if (fNew == -1)
+        error(sprintf('saveTSeries: Could not open temporary file %s',tempFilename));
+    end
+    fOld = fopen(oldImgFilename,'a');
+    if (fOld == -1)
+        error(sprintf('saveTSeries: Could not open file %s',oldImgFilename));
+    end
+    % now cycle through and append blocks to the old file
+    BLOCKSIZE = 512;
     [datablock count] = fread(fNew,BLOCKSIZE,hdr.matlab_datatype);
-  end
-  % and close
-  fclose(fNew);fclose(fOld);
-  % and delete temporary file
-  delete(tempFilename);
-  [tempPath tempFilename] = fileparts(tempFilename);
-  delete(fullfile(tempPath,sprintf('%s.hdr',tempFilename)));
+    while (count > 0)
+        fwrite(fOld,datablock,hdr.matlab_datatype);
+        [datablock count] = fread(fNew,BLOCKSIZE,hdr.matlab_datatype);
+    end
+    % and close
+    fclose(fNew);fclose(fOld);
+    % and delete temporary file
+    delete(tempFilename);
+    [tempPath tempFilename] = fileparts(tempFilename);
+    delete(fullfile(tempPath,sprintf('%s.hdr',tempFilename)));
 end
 
 % Save scan params

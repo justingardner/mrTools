@@ -4,13 +4,12 @@ function saveOverlay(view,overlayName,analysisName,confirm)
 %
 % Saves an overlay to a file. The filename = overlay.name.
 %
-% overlayName: Can be either the name or the number. 
+% overlayName: Can be either the name or the number.
 %          Default: current overlay.
 % analysisname: Can be either the name or the number.
 %          Default: current analysis
-% confirm: If filename already exists, prompt user to over-write. 
-%          Default: uses 'verbose' preference or 0 (if preference
-%          not defined.
+% confirm: If filename already exists, prompt user to over-write.
+%          Default: uses 'overwritePolicy' preference.
 %
 % djh, 7/2004
 % djh, 7/2006 updated with analysisName
@@ -22,10 +21,10 @@ end
 if isstr(overlayName)
     overlayNum = viewGet(view,'overlayNum',overlayName);
 elseif isnumeric(overlayName)
-	overlayNum = overlayName;
-	overlayName = viewGet(view,'overlayName',overlayNum);
+    overlayNum = overlayName;
+    overlayName = viewGet(view,'overlayName',overlayNum);
 else
-	myErrorDlg(['Bad overlay name: ',overlayName]);
+    myErrorDlg(['Bad overlay name: ',overlayName]);
 end
 
 if ieNotDefined('analysisName')
@@ -35,23 +34,21 @@ end
 if isstr(analysisName)
     analysisNum = viewGet(view,'analysisNum',analysisName);
 elseif isnumeric(analysisName)
-	analysisNum = analysisName;
-	analysisName = viewGet(view,'analysisName',analysisNum);
+    analysisNum = analysisName;
+    analysisName = viewGet(view,'analysisName',analysisNum);
 else
-	myErrorDlg(['Bad analysis name: ',analysisName]);
+    myErrorDlg(['Bad analysis name: ',analysisName]);
 end
 
 if ieNotDefined('confirm')
-    confirm = mrGetPref('verbose');
-    if isempty(confirm)
-        confirm = 0;
-    end
+    pref = mrGetPref('overwritePolicy');
+    confirm = ~strcmp(pref,'Overwrite');
 end
 
 % Path
 filename = [analysisName,'-',overlayName];
 pathStr = fullfile(viewGet(view,'overlayDir'),filename);
-        
+
 % Assign local variable with overlayName = overlay
 overlay = viewGet(view,'overlay',overlayNum,analysisNum);
 eval([overlayName,'=overlay;']);
@@ -62,7 +59,7 @@ if exist([pathStr,'.mat'],'file')
     if confirm
         saveFlag = questdlg([pathStr,' already exists. Overwrite?'],...
             'Save Overlay?','Yes','No','No');
-	end
+    end
 end
 if strcmp(saveFlag,'Yes')
     fprintf('Saving %s...',pathStr);

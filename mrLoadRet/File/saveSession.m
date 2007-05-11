@@ -1,22 +1,20 @@
-function saveSession(verbose)
-% saveSession([verbose])
+function saveSession(confirm)
+% saveSession([confirm])
 %
-% verbose: ask before overwriting existing mrSession file
-%    default: mrGetPref('verbose') or if that's not set 0
+% confirm: ask before overwriting existing mrSession file
+%          default: 0
+%
 % djh 5/2005
 
 mrGlobals;
 
-if ieNotDefined('verbose')
-    verbose = mrGetPref('verbose');
-    if isempty(verbose)
-        verbose = 0;
-    end
+if ieNotDefined('confirm')
+    confirm = 0;
 end
 
 pathStr = fullfile(MLR.homeDir,'mrSession.mat');
 
-if verbose
+if confirm
     if exist(pathStr,'file')
         questionString = 'mrSession.mat already exists. Do you want to overwrite it?';
         buttonName = questdlg(questionString, 'Warning', 'Yes', 'No', 'No');

@@ -26,10 +26,8 @@ else
 end
 
 if ieNotDefined('confirm')
-    confirm = mrGetPref('verbose');
-    if isempty(confirm)
-        confirm = 0;
-    end
+    pref = mrGetPref('overwritePolicy');
+    confirm = ~strcmp(pref,'Overwrite');
 end
 
 % Assign local variable with roiName = roi
