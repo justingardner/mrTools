@@ -60,10 +60,11 @@ ylabel('MRI signal');
 % and the stimulus times
 hold on
 axis tight;
-for i = 1:d.nhdr
-  vline(d.stimvol{i},getcolor(i));
+if isfield(d, 'stimvol')
+  for i = 1:d.nhdr
+    vline(d.stimvol{i},getcolor(i));
+  end
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the hemodynamic response for voxel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

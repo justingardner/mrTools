@@ -33,6 +33,14 @@ if ieNotDefined('params'),return,end
 % set the group
 view = viewSet(view,'groupName',params.groupName);
 
+% inplace concatenation is handeled by a different function
+if isfield(params, 'inplaceConcat')
+    if params.inplaceConcat
+        [view d] = eventRelatedMultiple(view,params);
+        return
+    end
+end
+
 % create the parameters for the overlay
 dateString = datestr(now);
 r2.name = 'r2';
@@ -74,7 +82,7 @@ for scanNum = params.scanNum
   for i = 1:ceil(numSlices/numSlicesAtATime)
     d = [];
     % load the scan
-    d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);;
+    d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);
     % get the stim volumes, if empty then abort
     d = getStimvol(d,params.scanParams{scanNum});
     if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
