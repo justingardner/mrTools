@@ -12,20 +12,17 @@ if ~any(nargin == [1 2])
   help(mfilename)
   return
 end
-
 d = [];
 
 % First get parameters
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
-%  params = eventRelatedGUI('groupName',viewGet(view,'groupName'));
-  params.scanNum = selectScans(view);
-  params = eventRelatedReconcileParams(viewGet(view,'groupName'),params);
-else
-  % Reconcile params with current status of group and ensure that it has
-  % the required fields. 
-  params = eventRelatedReconcileParams(params.groupName,params);
+  params = eventRelatedGUI('groupName',viewGet(view,'groupName'));
 end
+
+% Reconcile params with current status of group and ensure that it has
+% the required fields. 
+params = mrParamsReconcile([],params);
 
 % Abort if params empty
 if ieNotDefined('params')
@@ -36,11 +33,18 @@ end
 if ~isfield(params, 'includeScans')
     params.includeScans = params.scanNum;
 end;
+if ~params.scanParams{1}.sameForAll
+  mrMsgBox('eventRelated with inplace concat requires same parameters for all scans');
+  return
+end
+
+params.hdrlen = params.scanParams{1}.hdrlen;
+
 
 % step 1: estimate hrf using all included scans
 ehdr = 0;
 meanintensity = 0;
-[scms, volumes, nhdr] = getFullDesign(view, params);
+[fullscm, scms, volumes, nhdr] = getFullDesign(view, params);
 if nhdr<=0
     mrMsgBox('incompatible number of conditions');
     return
@@ -83,8 +87,18 @@ end
 d = rmfield(d,'data');
 d.nhdr = nhdr;
 d.hdrlen = ceil(params.hdrlen/d.tr);
+
+ehdr = reshape(ehdr, [d.dim(1:3), nhdr, d.hdrlen]);
+
 d.r2 = 1-unexplainedVariance./totalVariance;
 d.meanintensity = meanintensity;
+d.ehdr = ehdr./repmat(meanintensity, [1,1,1,nhdr, d.hdrlen])*100;
+S2 = unexplainedVariance/(size(fullscm,1)-size(fullscm,2));
+% now distribute that error to each one of the points
+% in the hemodynamic response according to the inverse
+% of the covariance of the stimulus convolution matrix.
+ehdrste = sqrt(S2(:)*diag(pinv(fullscm'*fullscm))');
+d.ehdrste = reshape(ehdrste, size(ehdr))./repmat(meanintensity, [1,1,1,nhdr, d.hdrlen])*100;
 
 % create the r2 overlay
 dateString = datestr(now);
@@ -123,7 +137,7 @@ erAnal.params = params;
 erAnal.overlays = r2;
 erAnal.curOverlay = 1;
 erAnal.date = dateString;
-erAnal.ehdr = ehdr./repmat(meanintensity, [1,1,1,size(ehdr,4)])*100;
+erAnal.ehdr = d.ehdr;
 erAnal.nhdr = nhdr;
 erAnal.d = {d};
 
@@ -139,7 +153,7 @@ set(viewGet(view,'figNum'),'Pointer','arrow');drawnow
 %%%%%%%%%%%%%%%%%%%
 % getFullDesign
 %%%%%%%%%%%%%%%%%%%
-function [scms, volumes, nhdr] = getFullDesign(view, params)
+function [fullscm, scms, volumes, nhdr] = getFullDesign(view, params)
 scms=[];
 volumes = [];
 nhdr = [];
@@ -173,6 +187,7 @@ nhdr=length(d.stimvol);
 d.dim(4) = accumLength;
 % make a stimulation convolution matrix
 d = makescm(d,ceil(params.hdrlen/d.tr));
+fullscm = d.scm;
 for i=params.includeScans
     if d.concatInfo.runTransition(i,1)>0
         scms{i}=d.scm(d.concatInfo.runTransition(i,1):d.concatInfo.runTransition(i,2),:);
