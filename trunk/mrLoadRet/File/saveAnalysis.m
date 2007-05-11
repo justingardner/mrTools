@@ -6,9 +6,11 @@ function saveAnalysis(view,analysisName,confirm)
 %
 % analysisname: Can be either the name or the number.
 %          Default: current analysis
-% confirm: If filename already exists, prompt user to over-write.
-%          Default: uses 'verbose' preference or 0 (if preference
-%          not defined.
+% confirm: If nonzero, prompts user to determine what to do if filename
+%          already exists. Otherwise, relies of 'overwritePolicy'
+%          preference to choose what to do.
+%          Default: 0.
+%          
 %
 % djh, 7/2006
 % jlg, 4/2007 added stuff to handle overwrite
@@ -27,10 +29,7 @@ else
 end
 
 if ieNotDefined('confirm')
-    confirm = mrGetPref('verbose');
-    if isempty(confirm)
-        confirm = 0;
-    end
+    confirm = 0;
 end
 
 % Assign local variable with analysisName = analysis
@@ -55,7 +54,6 @@ if isfile(fullfile(pathStr,filename))
     if confirm || isempty(saveMethod) || (saveMethod==0)
         % ask the user what to do
         paramsInfo = {{'saveMethod',saveMethodTypes,'Choose how you want to save the variable'}};
-
         params = mrParamsDialog(paramsInfo,sprintf('%s already exists',filename));
         if isempty(params),return,end
         saveMethod = find(strcmp(params.saveMethod,saveMethodTypes));

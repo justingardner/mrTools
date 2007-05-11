@@ -7,8 +7,7 @@ function saveAnat(view,anatomyName,confirm)
 % anatomyName: Can be either the name or the number (in which case it is
 %          converted to the name). Default: current base volume.
 % confirm: If filename already exists, prompt user to over-write. 
-%          Default: uses mrLoadRet 'verbose' preference or 0 (if preference
-%          not defined.
+%          Default: uses 'overwritePolicy' preference.
 %
 % djh, 7/2006
 
@@ -26,10 +25,8 @@ else
 end
 
 if ieNotDefined('confirm')
-    confirm = viewGet([],'pref','verbose');
-    if isempty(confirm)
-        confirm = 0;
-    end
+    pref = mrGetPref('overwritePolicy');
+    confirm = ~strcmp(pref,'Overwrite');
 end
 
 % Extract data and hdr
