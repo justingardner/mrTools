@@ -16,12 +16,17 @@ if ~isempty(strcmp(mrGetPref('overwritePolicy'),overwritePolicy))
     overwritePolicy = putOnTopOfList(mrGetPref('overwritePolicy'),overwritePolicy);
 end
 
+% get niftiFileExtension
+niftiFileExtension = {'.img','.nii'};
+if ~isempty(strcmp(mrGetPref('niftiFileExtension'),niftiFileExtension))
+    niftiFileExtension = putOnTopOfList(mrGetPref('niftiFileExtension'),niftiFileExtension);
+end
+
 % get current values for other prefs
 site = mrGetPref('site');
 verbose = mrGetPref('verbose');
 maxBlocksize = mrGetPref('maxBlocksize');
 volumeDirectory = mrGetPref('volumeDirectory');
-niftiFileExtension = mrGetPref('niftiFileExtension');
 
 % set up the dialog and ask the user to set parameters
 prefParams = {{'site',site,'Where you are using this code'},...

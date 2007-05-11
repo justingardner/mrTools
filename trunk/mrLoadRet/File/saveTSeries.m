@@ -12,8 +12,7 @@ function [view] = saveTSeries(view,tseries,scanNum,scanParams,hdr,append)
 % from the nifti header. Default: Will use the old scanParams
 % append: (1 or 0) Append the passed in time series to the existing time series
 %
-% Calls niftiFileExtension to choose between .img and .nii, based on
-% mrLoadRet 'niftiFileExtension' preference.
+% Chooses between .img and .nii based on 'niftiFileExtension' preference.
 %
 % hdr: template for nifti header. The header is always passed through
 % cbiCreateNiftiHeader to ensure consistency with the data. Default: [];
@@ -32,7 +31,7 @@ if ieNotDefined('append'),append = 0;end
 
 % get default filename
 if isempty(scanParams.fileName)
-  scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),niftiFileExtension];
+  scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),mrGetPref('niftiFileExtension')];
 end
 filename = scanParams.fileName;
 

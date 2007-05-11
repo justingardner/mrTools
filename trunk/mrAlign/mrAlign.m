@@ -15,6 +15,10 @@
 %%%%%%%%%%%%%%%%%%%
 
 global ALIGN
+global mrDEFAULTS
+
+% Load .mrDefaults
+mrDEFAULTS = loadMrDefaults;
 
 % Check Matlab version number
 [mlrVersion, expectedMatlabVersion] = mrLoadRetVersion;
