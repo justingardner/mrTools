@@ -40,8 +40,8 @@ if length(varargin) == 2
         case 'groupname'
             group.name = val;
             group.scanParams = getScanParams(val);
-	    group.auxParams = [];
-     otherwise
+            group.auxParams = [];
+        otherwise
             warn('editGroupGUI: invalid initialization argument');
     end
 end
@@ -124,10 +124,10 @@ for iScan=1:nfiles
   scanParams(iScan).junkFrames = 0;
   scanParams(iScan).nFrames = hdr.dim(5);
   scanParams(iScan).niftiHdr = hdr;
+  scanParams(iScan).originalFileName{1} = fileList{iScan};
+  scanParams(iScan).originalGroupName{1} = groupname;
   scanParams(iScan).totalFrames = hdr.dim(5);
   scanParams(iScan).voxelSize = hdr.pixdim([2,3,4])';
-  scanparams(iScan).originalFileName = '';
-  scanparams(iScan).originalGroupName = '';
 end  
 
 
