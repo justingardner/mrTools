@@ -533,7 +533,7 @@ function saveAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 n = viewGet(viewNum,'currentAnalysis');
-saveAnalysis(MLR.views{viewNum},n,1);
+saveAnalysis(MLR.views{viewNum},n);
 
 % --------------------------------------------------------------------
 function saveAllAnalysisMenuItem_Callback(hObject, eventdata, handles)
@@ -541,7 +541,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 numberAnalyses = viewGet(viewNum,'numberofAnalyses');
 for n = 1:numberAnalyses
-	saveAnalysis(MLR.views{viewNum},n,1);
+	saveAnalysis(MLR.views{viewNum},n);
 end
 
 % --------------------------------------------------------------------
@@ -560,7 +560,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 n = viewGet(viewNum,'currentOverlay');
 m = viewGet(viewNum,'currentAnalysis');
-saveOverlay(MLR.views{viewNum},n,m,1);
+saveOverlay(MLR.views{viewNum},n,m);
 
 % --------------------------------------------------------------------
 function saveAllOverlayMenuItem_Callback(hObject, eventdata, handles)
@@ -569,7 +569,7 @@ viewNum = handles.viewNum;
 numberOverlays = viewGet(viewNum,'numberofOverlays');
 m = viewGet(viewNum,'currentAnalysis');
 for n = 1:numberOverlays
-	saveOverlay(MLR.views{viewNum},n,m,1);
+	saveOverlay(MLR.views{viewNum},n,m);
 end
 
 % --------------------------------------------------------------------
@@ -663,7 +663,7 @@ createReadme(MLR.session,MLR.groups);
 
 % --------------------------------------------------------------------
 function saveSessionMenuItem_Callback(hObject, eventdata, handles)
-saveSession;
+saveSession(1);
 
 % --------------------------------------------------------------------
 function quitMenuItem_Callback(hObject, eventdata, handles)
@@ -919,10 +919,10 @@ function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-if isoverlay(MLR.clipboard)
+if isoverlay(MLR.clipboard) & isanalysis(viewGet(view,'analysis'))
 	view = viewSet(view,'newOverlay',MLR.clipboard);
 else
-	mrErrorDlg('Cannot paste: Invalid overlay.');
+	mrErrorDlg('Cannot paste: Invalid overlay or analysis.');
 end
 refreshMLRDisplay(viewNum);
 
@@ -1271,7 +1271,15 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function restrictAllROIsMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('restrictAllROIs not yet implemented');
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+scan = viewGet(view,'curscan');
+nROIs = viewGet(view,'numberofROIs');
+for roinum = 1:nROIs
+    view = restrictROI(view,roinum,scan);
+end
+refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function undoRoiMenuItem_Callback(hObject, eventdata, handles)

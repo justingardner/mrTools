@@ -211,26 +211,24 @@ switch lower(param)
     case {'scanxform','sform'}
         % view = viewSet(view,'sform',sform,scanNum,groupNum);
         [s g] = getScanAndGroup(view,varargin,param);
-	nscans = viewGet(view,'nscans',g);
-	if (nscans >= s) & (s > 0)
-	  MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
-	end
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+            MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
+        end
     case {'sformcode'}
         % view = viewSet(view,'sformcode',sformcode,scanNum,groupNum);
         [s g] = getScanAndGroup(view,varargin,param);
-	nscans = viewGet(view,'nscans',g);
-	if (nscans >= s) & (s > 0)
-	  MLR.groups(g).scanParams(s).niftiHdr.sform_code = val;
-	end
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+            MLR.groups(g).scanParams(s).niftiHdr.sform_code = val;
+        end
     case {'newscan','updatescan'}
         % view = viewSet(view,'newScan',scanParams);
         % val must be a scanParams structure with scanParams.fileName set
         % to a nifti file in the tseries directory. Only the filename,
-        % description, junkframes, and nframes fields are used; the other
-        % fields in scanParams are reset to insure consistency with the
-        % nifti file.
-	% however, if originalFileName and originalGroupName are
-	% set it will keep those (these are not required)
+        % description, junkframes, nframes, originalFileName and
+        % originalGroupName fields are used; the other fields in scanParams
+        % are reset to insure consistency with the nifti file.
         %
         % view = viewSet(view,'updateScan',scanParams,scanNum);
         % Check for tseries file and (re-)build scanParams to insure
@@ -716,7 +714,7 @@ switch lower(param)
             newOverlayNum = nOverlays + 1;
         end
         % Add it to the list of overlays
-        if (newOverlayNum == 1)
+        if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)
             view.analyses{analysisNum}.overlays = overlay;
         else
             view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
@@ -1025,18 +1023,18 @@ switch lower(param)
 
     case {'sliceorientation'}
         % view = viewSet(view,'sliceOrientation',n);
-	if ~isscalar(val)
-	  switch val
-            case {'sagittal'}
-                sliceOrientation = 3;
-            case {'coronal'}
-                sliceOrientation = 2;
-            case {'axial'}
-                sliceOrientation = 1;
-	  end
-	else
-	  sliceOrientation = val;
-	end
+        if ~isscalar(val)
+            switch val
+                case {'sagittal'}
+                    sliceOrientation = 3;
+                case {'coronal'}
+                    sliceOrientation = 2;
+                case {'axial'}
+                    sliceOrientation = 1;
+            end
+        else
+            sliceOrientation = val;
+        end
         mlrGuiSet(view,'sliceOrientation',sliceOrientation);
         % Update slice and nSlices
         baseNum = viewGet(view,'currentBase');
@@ -1203,9 +1201,9 @@ disp('-----------------------------------------------------------------------');
 function [s g] = getScanAndGroup(view,varg,param)
 
 if ieNotDefined('varg')
-  s = viewGet(view,'curScan');
+    s = viewGet(view,'curScan');
 else
-  s = varg{1};
+    s = varg{1};
 end
 if length(varg) > 1
     g = varg{2};

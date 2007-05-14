@@ -8,14 +8,15 @@ function [view] = saveTSeries(view,tseries,scanNum,scanParams,hdr,append)
 % tseries: tseries array (x,y,z,t)
 % scanNum: the scan number to write to
 % scanParams: structure with the following fields: fileName, description,
-% junkFrames, nFrames. The other scanParams fields are set automatically
-% from the nifti header. Default: Will use the old scanParams
-% append: (1 or 0) Append the passed in time series to the existing time series
-%
-% Chooses between .img and .nii based on 'niftiFileExtension' preference.
-%
+%    junkFrames, nFrames. The other scanParams fields are set automatically
+%    from the nifti header. Default: Use the old scanParams.
+%    If scanParams.fileName is not set, uses a default filename
+%    'yymmdd-HHMMSS' and chooses extension (.img or .nii) based on
+%    'niftiFileExtension' preference.  
+% append: (1 or 0) Append the passed in time series to the existing time
+%    series. Default: 0.
 % hdr: template for nifti header. The header is always passed through
-% cbiCreateNiftiHeader to ensure consistency with the data. Default: [];
+%    cbiCreateNiftiHeader to ensure consistency with the data. Default: [].
 
 % check to make sure the scan exists
 % get the old one
@@ -29,9 +30,10 @@ if ieNotDefined('scanParams'),scanParams = oldScanParams;end
 if ieNotDefined('hdr'),hdr = [];end
 if ieNotDefined('append'),append = 0;end
 
-% get default filename
+% default filename
+ext = mrGetPref('niftiFileExtension')
 if isempty(scanParams.fileName)
-    scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),mrGetPref('niftiFileExtension')];
+    scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),ext];
 end
 filename = scanParams.fileName;
 
