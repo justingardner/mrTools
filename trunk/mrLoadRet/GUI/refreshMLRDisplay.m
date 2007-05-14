@@ -443,9 +443,18 @@ for r = order
                         [x(i)-w,x(i)-w,x(i)+w,x(i)+w,x(i)-w], ...
                         'Color',color,'LineWidth',lineWidth);
                 end
+                
+                % Unfortunately, this is slower without the loop
+                %
+                % y = y';
+                % x = x';
+                % line([y-w;y+w],[x-w;x-w],'Color',color,'LineWidth',lineWidth);
+                % line([y+w;y+w],[x-w;x+w],'Color',color,'LineWidth',lineWidth);
+                % line([y+w;y-w],[x+w;x+w],'Color',color,'LineWidth',lineWidth);
+                % line([y-w;y-w],[x+w;x-w],'Color',color,'LineWidth',lineWidth);
 
             case{'all perimeter','selected perimeter'}
-                % Draw only the perimeter
+                % Draw only the perimeter               
                 for i=1:length(x);
                     xMinus = find(x == x(i)-1);
                     xEquals = find(x == x(i));

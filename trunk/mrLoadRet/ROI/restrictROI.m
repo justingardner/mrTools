@@ -29,7 +29,7 @@ for overlayNum = 1:viewGet(view,'numberOfOverlays')
 	overlayData = viewGet(view,'overlayData',scan,overlayNum);
 	overlayClip = viewGet(view,'overlayClip',overlayNum);
 	overlayXform = viewGet(view,'overlayXform',scan);
-	if ~isempty(overlayData)
+	if ~isempty(overlayData) & ~isempty(ROIcoords)
         % Transform ROI coords to overlay
         shiftXform = shiftOriginXform;
         xform = inv(shiftXform) * inv(overlayXform) * ROIxform * shiftXform;

@@ -8,8 +8,7 @@ function saveAnalysis(view,analysisName,confirm)
 %          Default: current analysis
 % confirm: If nonzero, prompts user to determine what to do if filename
 %          already exists. Otherwise, relies of 'overwritePolicy'
-%          preference to choose what to do.
-%          Default: 0.
+%          preference to choose what to do. Default: 0.
 %          
 %
 % djh, 7/2006
@@ -32,20 +31,16 @@ if ieNotDefined('confirm')
     confirm = 0;
 end
 
+% Path
+analysisdir = viewGet(view,'analysisdir',[],analysisNum);
+filename = [analysisName,'.mat'];
+pathStr = analysisdir;
+
 % Assign local variable with analysisName = analysis
 analysis = viewGet(view,'analysis',analysisNum);
 eval([analysisName,'=analysis;']);
 
-% Path
-analysisdir = viewGet(view,'analysisdir',[],analysisNum);
-filename = analysisName;
-pathStr = fullfile(analysisdir,filename);
-
 % Write, though check for over-writing
-saveFlag = 'Yes';
-
-[pathStr filename] = fileparts(pathStr);
-filename = sprintf('%s.mat',filename);
 if isfile(fullfile(pathStr,filename))
     % get the preference how to deal with what to do with over-writing
     saveMethod = mrGetPref('overwritePolicy');
@@ -83,9 +78,9 @@ if isfile(fullfile(pathStr,filename))
                             newAnal.overlays(newNum).data{scanNum} = oldOverlay.data{scanNum};
                             if (isfield(newAnal.overlays(newNum),'params') && ...
                                     iscell(newAnal.overlays(newNum).params) && ...
-                                    isempty(newAnal.overlays(newNum).params{newNum}))
+                                    isempty(newAnal.overlays(newNum).params{scanNum}))
                                 % copy over overlay params
-                                newAnal.overlays(newNum).params{newNum} = oldOverlay.params{scanNum};
+                                newAnal.overlays(newNum).params{scanNum} = oldOverlay.params{scanNum};
                             end
                             disp(sprintf('(saveAnalysis) Merged overlay %s:%i from old analysis',oldOverlay.name,scanNum));
                         end
@@ -141,13 +136,11 @@ if isfile(fullfile(pathStr,filename))
     end
 end
 
-if strcmp(saveFlag,'Yes')
-    pathStr = fullfile(pathStr,filename);
-    fprintf('Saving %s...',pathStr);
-    saveString = ['save(pathStr,','''',analysisName,'''',');'];
-    eval(saveString);
-    fprintf('done\n');
-else
-    fprintf('Analysis not saved...');
-end
+% Finally, write the file
+pathStr = fullfile(pathStr,filename);
+fprintf('Saving %s...',pathStr);
+saveString = ['save(pathStr,','''',analysisName,'''',');'];
+eval(saveString);
+fprintf('done\n');
+
 return;

@@ -12,7 +12,7 @@ function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
 % anatFilePath is the path of where to open up the dialog. This
 % will bey returned so that the GUI can open up in the same
 % place each time.
-% 
+%
 % djh, 1/9/98
 % 5/2005, djh, update to mrLoadRet-4.0
 
@@ -20,22 +20,24 @@ function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
 % Load the anatomy file %
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ieNotDefined('anatFilePath'),anatFilePath = '';end
+if ieNotDefined('anatFilePath')
+    anatFilePath = ''; 
+end
 
 % Open dialog box to have user choose the file
 if ieNotDefined('anatFileName')
-  if ieNotDefined('anatFilePath')
-    startPathStr = viewGet(view,'anatomyDir');
-  else
-    startPathStr = anatFilePath;
-  end
-  filterspec = {'*.img;*.nii','Nifti/Analyze files'};
-  title = 'Choose anatomy file';
-  pathStr = getPathStrDialog(startPathStr,title,filterspec);
+    if ieNotDefined('anatFilePath')
+        startPathStr = viewGet(view,'anatomyDir');
+    else
+        startPathStr = anatFilePath;
+    end
+    filterspec = {'*.img;*.nii','Nifti/Analyze files'};
+    title = 'Choose anatomy file';
+    pathStr = getPathStrDialog(startPathStr,title,filterspec);
 elseif ieNotDefined('anatFilePath')
-  pathStr = fullfile(viewGet(view,'anatomyDir'),anatFileName);
+    pathStr = fullfile(viewGet(view,'anatomyDir'),anatFileName);
 else
-  pathStr = fullfile(anatFilePath,anatFileName);
+    pathStr = fullfile(anatFilePath,anatFileName);
 end
 
 % Aborted
@@ -45,8 +47,8 @@ end
 
 % File does not exist
 if ~exist(pathStr,'file')
-  mrWarnDlg(['File ',pathStr,' not found']);
-  return
+    mrWarnDlg(['File ',pathStr,' not found']);
+    return
 end
 
 [path,name,ext,versn] = fileparts(pathStr);
@@ -65,16 +67,16 @@ end
 
 % Handle 4D file
 if (volumeDimension == 4)
-  paramsInfo = {{'frameNum',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',size(vol,4)),'This volume is a 4D file, to display it as an anatomy you need to choose a particular time point or take the mean over all time points. Setting this value to 0 will compute the mean, otherwise you can select a particular timepoint to display'}};
-  params = mrParamsDialog(paramsInfo,'Choose which frame of 4D file. 0 for mean');  
-  if isempty(params)
-    return
-  end
-  if params.frameNum == 0
-    vol = nanmean(vol,4);
-  else
-    vol = vol(:,:,:,params.frameNum);
-  end
+    paramsInfo = {{'frameNum',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',size(vol,4)),'This volume is a 4D file, to display it as an anatomy you need to choose a particular time point or take the mean over all time points. Setting this value to 0 will compute the mean, otherwise you can select a particular timepoint to display'}};
+    params = mrParamsDialog(paramsInfo,'Choose which frame of 4D file. 0 for mean');
+    if isempty(params)
+        return
+    end
+    if params.frameNum == 0
+        vol = nanmean(vol,4);
+    else
+        vol = vol(:,:,:,params.frameNum);
+    end
 end
 
 % Warning if no alignment information in the header.

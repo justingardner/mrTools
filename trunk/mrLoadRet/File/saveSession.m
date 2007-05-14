@@ -24,7 +24,9 @@ if confirm
         end
     end
 else
-    disp('Warning: overwriting mrSession.mat');
+    if mrGetPref('verbose')
+        disp('Warning: overwriting mrSession.mat');
+    end
 end
 
 session = MLR.session;
