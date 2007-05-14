@@ -226,7 +226,7 @@ for s = 1:length(targetScans)
 	end
 	mrCloseDlg(waitHandle);
 
-	% Save tseries with modified nifti header
+	% Modify scanParams
 	scanParams = viewGet(viewBase,'scanParams',scanNum);
 	scanParams.junkFrames = 0;
 	scanParams.nFrames = nFrames;
@@ -234,25 +234,10 @@ for s = 1:length(targetScans)
 	scanParams.fileName = [];
 	scanParams.originalFileName{1} = viewGet(viewBase,'tseriesfile',scanNum);
 	scanParams.originalGroupName{1} = viewGet(viewBase,'groupName');
-	try
-	  % remember current verbose level, but set it temporarily to 0
-	  currentVerbose = mrGetPref('verbose');
-	  if isempty(currentVerbose)
-	    currentVerbose = 0;
-	  end
-	  mrSetPref('verbose',0);
-	  % save the time series
-	  [viewMotionComp,tseriesFileName] = saveNewTSeries(viewMotionComp,warpedTseries,scanParams,scanParams.niftiHdr);
-	catch
-	  % reset verbose preference
-	  mrSetPref('verbose',currentVerbose);
-	  % display error and rethrow it
-	  err = lasterror;
-	  if isfield(err,'stack'),disp(sprintf('Error in ==> %s at %i',err.stack(1).name,err.stack(1).line)); end
-	  rethrow(err);
-	end
-	% reset verbose preference
-	mrSetPref('verbose',currentVerbose);
+
+    % Save the time series
+    [viewMotionComp,tseriesFileName] = saveNewTSeries(viewMotionComp,warpedTseries,scanParams,scanParams.niftiHdr);
+
 	% Save evalstring for recomputing and params
 	evalstr = ['view = newView(','''','Volume','''','); view = motionComp(view,params);'];
 	[pathstr,filename,ext,versn] = fileparts(tseriesFileName);
