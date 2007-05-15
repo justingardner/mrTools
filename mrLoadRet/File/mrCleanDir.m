@@ -195,7 +195,7 @@ if isfile(filename)
 	    originalGroup = 'Unknown';
 	  end
 	  for scanNum = 1:length(originalFiles)
-	    scanParams.orginalFiles{scanNum} = originalFiles{scanNum};
+	    scanParams.originalFileName{scanNum} = originalFiles{scanNum};
 	    scanParams.originalGroupName{scanNum} = originalGroup;
 	  end
 	  recoverable = 1;
