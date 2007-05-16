@@ -31,7 +31,7 @@ if ieNotDefined('hdr'),hdr = [];end
 if ieNotDefined('append'),append = 0;end
 
 % default filename
-ext = mrGetPref('niftiFileExtension')
+ext = mrGetPref('niftiFileExtension');
 if isempty(scanParams.fileName)
     scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),ext];
 end
