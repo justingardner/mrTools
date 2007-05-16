@@ -49,9 +49,10 @@ end
 roiPlot = 0;
 if ~isempty(roi)
   roi = loadROITSeries(view,roi,viewGet(view,'curScan'),viewGet(view,'curGroup'));
-  tseries = mean(roi{1}.tSeries)';
-  ptseriesSte = std(100*roi{1}.tSeries/mean(tseries))'/sqrt(roi{1}.n);
-  headerStr = sprintf('Times series from roi %s (n=%i)',roi{1}.name,roi{1}.n);
+  tseries = mean(roi.tSeries)';
+  ptseriesSte = std(100*roi.tSeries/mean(tseries))'/sqrt(roi.n);
+  ptseriesSte = ptseriesSte(junkframes+1:junkframes+nframes);
+  headerStr = sprintf('Times series from roi %s (n=%i)',roi.name,roi.n);
   roiPlot = 1;
 else
   % Load tseries from file. Error if file doesn't exist.
