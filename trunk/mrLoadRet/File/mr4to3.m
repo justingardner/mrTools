@@ -229,6 +229,8 @@ if ~isfile('Inplane/Inplane.hdr') && anatnum
   [anatimg anathdr] = cbiReadNifti(fullfile('Anatomy',anatdir(anatnum).name));
   cbiWriteNifti('Inplane/Inplane.hdr',anatimg,anathdr);
   printBlockEnd;
+else
+  [anatimg anathdr] = cbiReadNifti('Inplane/Inplane.hdr');
 end
 
 % move the old mr session
@@ -303,27 +305,27 @@ end
 
 % make the data types structure and fill out 
 % the functionals field in mrSESSION
-m.dataTYPES(2).name = 'Averages';
-scanParams = m.groups(averagesGroup).scanParams;
-for i = 1:length(scanParams)
-  % scan params
-  m.dataTYPES(2).scanParams(i).annotation = scanParams(i).description;
-  m.dataTYPES(2).scanParams(i).nFrames = scanParams(i).nFrames;
-  m.dataTYPES(2).scanParams(i).framePeriod = scanParams(i).framePeriod;
-  m.dataTYPES(2).scanParams(i).slices = [1:scanParams(i).dataSize(3)];
-  m.dataTYPES(2).scanParams(i).cropSize = scanParams(i).dataSize(1:2);
+% m.dataTYPES(2).name = 'Averages';
+% scanParams = m.groups(averagesGroup).scanParams;
+% for i = 1:length(scanParams)
+%   % scan params
+%   m.dataTYPES(2).scanParams(i).annotation = scanParams(i).description;
+%   m.dataTYPES(2).scanParams(i).nFrames = scanParams(i).nFrames;
+%   m.dataTYPES(2).scanParams(i).framePeriod = scanParams(i).framePeriod;
+%   m.dataTYPES(2).scanParams(i).slices = [1:scanParams(i).dataSize(3)];
+%   m.dataTYPES(2).scanParams(i).cropSize = scanParams(i).dataSize(1:2);
 
-  % blocked analysis (just make up)
-  m.dataTYPES(2).blockedAnalysisParams(i).blockedAnalysis = 1;
-  m.dataTYPES(2).blockedAnalysisParams(i).detrend = 1;
-  m.dataTYPES(2).blockedAnalysisParams(i).inhomoCorrect = 1;
-  m.dataTYPES(2).blockedAnalysisParams(i).temporalNormalization = 0;
-  m.dataTYPES(2).blockedAnalysisParams(i).nCycles = 10;
+%   % blocked analysis (just make up)
+%   m.dataTYPES(2).blockedAnalysisParams(i).blockedAnalysis = 1;
+%   m.dataTYPES(2).blockedAnalysisParams(i).detrend = 1;
+%   m.dataTYPES(2).blockedAnalysisParams(i).inhomoCorrect = 1;
+%   m.dataTYPES(2).blockedAnalysisParams(i).temporalNormalization = 0;
+%   m.dataTYPES(2).blockedAnalysisParams(i).nCycles = 10;
 
-  % event analysis set to 0
-  m.dataTYPES(2).eventAnalysisParams(i).eventAnalysis = 0;
+%   % event analysis set to 0
+%   m.dataTYPES(2).eventAnalysisParams(i).eventAnalysis = 0;
 
-end
+% end
 
 
 
