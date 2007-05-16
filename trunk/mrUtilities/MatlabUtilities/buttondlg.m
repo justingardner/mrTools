@@ -68,7 +68,7 @@ figpos(3:4) = [width*xs,height*ys];
 figloc = mrGetFigLoc('buttondlg');
 if ~isempty(figloc)
     figpos(1:2) = figloc(1:2);
-end;
+end
 set(h,'Position',figpos);
 
 bkColor = get(h,'Color');
