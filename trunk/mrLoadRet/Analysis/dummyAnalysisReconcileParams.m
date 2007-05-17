@@ -1,3 +1,4 @@
-function params = dummyAnalysisReconcileParams(groupName,params)
+function [newparams,newdata] = dummyAnalysisReconcileParams(groupName,params,data)
 
-params = [];
+newparams = [];
+newdata = [];

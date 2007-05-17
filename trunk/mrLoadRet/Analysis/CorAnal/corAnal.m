@@ -41,6 +41,10 @@ function view = corAnal(view,params)
 % djh, 5/2005, updated to mrLoadRet-4.0
 % $Id$	
 
+if ~isview(view)
+    help corAnal
+    mrErrorDlg('(corAnal) Invalid view.')
+end
 
 % If corAnal is loaded, then use it. Otherwise, viewGet returns [];
 corAnal = viewGet(view,'corAnal');
@@ -91,18 +95,21 @@ if isempty(co)
     co.name = 'co';
     co.function = 'corAnal';
     co.reconcileFunction = 'corAnalReconcileParams';
+    co.mergeFunction = 'corAnalMergeParams';
     co.data = cell(1,nScans);
 end
 if isempty(amp)
     amp.name = 'amp';
     amp.function = 'corAnal';
     amp.reconcileFunction = 'corAnalReconcileParams';
+    amp.mergeFunction = 'corAnalMergeParams';
     amp.data = cell(1,nScans);
 end
 if isempty(ph)
     ph.name = 'ph';
     ph.function = 'corAnal';
     ph.reconcileFunction = 'corAnalReconcileParams';
+    ph.mergeFunction = 'corAnalMergeParams';
     ph.data = cell(1,nScans);
 end
 
@@ -186,6 +193,7 @@ corAnal.type = 'corAnal';
 corAnal.groupName = params.groupName;
 corAnal.function = 'corAnal';
 corAnal.reconcileFunction = 'corAnalReconcileParams';
+corAnal.mergeFunction = 'corAnalMergeParams';
 corAnal.guiFunction = 'corAnalGUI';
 corAnal.overlayInterpFunction = 'corAnalInterp';
 corAnal.params = params;
