@@ -1777,6 +1777,16 @@ switch lower(param)
         fig = viewGet(view,'fignum');
         handles = guidata(fig);
         val = get(handles.alphaSlider,'Value');
+    case {'overlaymin'}
+        % overlayMin = viewGet(view,'overlayMin');
+        fig = viewGet(view,'fignum');
+        handles = guidata(fig);
+        val = get(handles.overlayMinSlider,'Value');
+    case {'overlaymax'}
+        % overlayMax = viewGet(view,'overlayMax');
+        fig = viewGet(view,'fignum');
+        handles = guidata(fig);
+        val = get(handles.overlayMaxSlider,'Value');
     case {'rotate'}
         % rotate = viewGet(view,'rotate');
         fig = viewGet(view,'fignum');
