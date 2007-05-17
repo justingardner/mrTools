@@ -7,8 +7,8 @@ function preferences = mrSetPref(pref,value)
 % preference. Returns the preferences structure.
 %
 % Examples:
-%   mrSetPref('verbose',1);
-%   mrSetPref('verbose',0);
+%   mrSetPref('verbose','Yes');
+%   mrSetPref('verbose','No');
 %   mrSetPref('site','NYU');
 %   mrSetPref('niftiFileExtension','.img');
 %   mrSetPref('niftiFileExtension','.nii');

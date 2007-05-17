@@ -6,8 +6,8 @@ function mrErrorDlg(errstr)
 % an error.
 %
 % To set the 'verbose' preference:
-%    mrSetPref('verbose',0);
-%    mrSetPref('verbose',1);
+%    mrSetPref('verbose','Yes');
+%    mrSetPref('verbose','No');
 %
 % djh, 5/2005
 %
@@ -15,7 +15,7 @@ function mrErrorDlg(errstr)
 
 verbose = mrGetPref('verbose');
 
-if verbose
+if strcmp(verbose,'Yes')
   errordlg(errstr,'Error!');
   error(errstr);
 else

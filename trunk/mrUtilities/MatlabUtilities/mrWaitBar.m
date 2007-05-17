@@ -9,8 +9,8 @@ function h = mrWaitBar(x,t)
 %    handle to the waitbar.
 %
 % To set the 'verbose' preference:
-%    mrSetPref('verbose',0);
-%    mrSetPref('verbose',1);
+%    mrSetPref('verbose','Yes');
+%    mrSetPref('verbose','No');
 %
 % djh, 5/2005
 %
@@ -34,7 +34,7 @@ elseif isfield(t,'disppercent')
 elseif ischar(t)
     % check the verbose preference
     verbose = mrGetPref('verbose');
-    if verbose
+    if strcmp(verbose,'Yes')
         % if verbose, make a window wait bar
         h = waitbar(x,t);
         drawnow;
@@ -49,8 +49,8 @@ return
 
 
 % Test/debug
-mrSetPref('verbose',1);
-mrSetPref('verbose',0);
+mrSetPref('verbose','Yes');
+mrSetPref('verbose','No');
 
 startTime = mglGetSecs;
 h = mrWaitBar(0,'Test. Please wait...');

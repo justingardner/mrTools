@@ -6,8 +6,8 @@ function h = mrMsgBox(msgstr,modal)
 % If modal is non-zero then execution is blocked until the user responds.
 %
 % To set the 'verbose' preference:
-%    mrSetPref('verbose',0);
-%    mrSetPref('verbose',1);
+%    mrSetPref('verbose','Yes');
+%    mrSetPref('verbose','No');
 %
 % djh, 5/2005
 %
@@ -19,11 +19,11 @@ end
 
 verbose = mrGetPref('verbose');
 
-if verbose & modal
+if strcmp(verbose,'Yes') & modal
 	h = msgbox(msgstr,'','modal');
 	uiwait(h);
 	h =[];
-elseif verbose
+elseif strcmp(verbose,'Yes')
     h = msgbox(msgstr);
 	drawnow;
 else
