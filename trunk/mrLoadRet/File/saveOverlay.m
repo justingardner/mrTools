@@ -72,31 +72,24 @@ if isfile(fullfile(pathStr,filename))
     
     if saveMethod == 1
         disp('(saveOverlay) Merging with old analysis');
-        % load the old analysis
-        oldOverlay = load(fullfile(pathStr,filename));
-        oldOverlayFieldnames = fieldnames(oldOverlay);
-        oldOverlay = oldOverlay.(oldOverlayFieldnames{1});
-        % get the new analysis
-        newOverlay = eval(overlayName);
-        
-        % check if they have the same name and then try to combine them
+        % load the old overlay
+        s = load(fullfile(pathStr,filename));
+        varNames = fieldnames(s);
+        oldOverlay = s.(varNames{1});
+        oldOverlay.name = varNames{1};
+        % get the new overlay
+        newOverlay = eval(overlayName);        
+        % check if they have the same name and merge them
         if strcmp(oldOverlay.name,newOverlay.name)
-            % now try to combine them
-            for scanNum = 1:length(oldOverlay.data)
-                % if it is not empty in the new structure, but;
-                % is in there in the old strucutre, copy it over
-                if ((scanNum >= length(newOverlay.data)) || isempty(newOverlay.data{scanNum})) && ~isempty(oldOverlay.data{scanNum})
-                    newOverlay.data{scanNum} = oldOverlay.data{scanNum};
-                    if (isfield(newOverlay,'params') && ...
-                            iscell(newOverlay.params) && ...
-                            isempty(newOverlay.params{newNum}))
-                        % copy over overlay params
-                        newOverlay.params{scanNum} = oldOverlay.params{scanNum};
-                    end
-                    disp(sprintf('(saveOverlay) Merged overlay %s scan %i.',oldOverlay.name,scanNum));
-                end
-            end
+            [mergedParams,mergedData] = feval(newOverlay.mergeFunction,newOverlay.groupName,...
+                oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);            
+            newOverlay.params = mergedParams;
+            newOverlay.data = mergedData;
+            % set overlayName variable so that it will be saved below
             eval(sprintf('%s = newOverlay;',overlayName));
+            % replace overlay with the newly merged one
+            view = viewSet(view,'deleteoverlay',overlayNum,analysisNum);
+            view = viewSet(view,'newoverlay',newOverlay,analysisNum);            
         else
             mrWarnDlg('(saveOverlay) Merge failed. Save overlay aborted.');
             return

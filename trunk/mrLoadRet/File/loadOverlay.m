@@ -29,7 +29,7 @@ function view = loadOverlay(view,filename)
 % consistency.
 %
 % djh, 1/9/98
-% 6/2005, djh, update to mrLoadRet-4.0
+% 6/2005, djh, update to mrLoadRet-4
 
 mrGlobals
 
@@ -53,14 +53,14 @@ if ~iscell(pathStr)
     pathStr = {pathStr};
 end
 
-% Load the file. Loop through the variables that were loaded and add
-% each of them as a new overlay, setting overlay.fieldnames as we go.
+% Loop through the filenames, load each file, and add each of them as a new
+% overlay.
 for p = 1:length(pathStr)
 	if exist(pathStr{p},'file')
 		h = mrMsgBox(['Loading overlay: ',pathStr{p},'. Please wait']);
 		s = load(pathStr{p});
 		varNames = fieldnames(s);
-		overlay = eval(['s.',varNames{1}]);
+		overlay = s.(varNames{1});
 		overlay.name = varNames{1};
 		% Add it to the view
 		view = viewSet(view,'newOverlay',overlay);
