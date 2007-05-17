@@ -24,7 +24,7 @@ if confirm
         end
     end
 else
-    if mrGetPref('verbose')
+    if strcmp(mrGetPref('verbose'),'Yes')
         disp('Warning: overwriting mrSession.mat');
     end
 end

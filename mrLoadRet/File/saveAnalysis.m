@@ -53,74 +53,55 @@ if isfile(fullfile(pathStr,filename))
         if isempty(params),return,end
         saveMethod = find(strcmp(params.saveMethod,saveMethodTypes));
     end
-    % now we know what to do, do the different options
+    
     if saveMethod == 1
         disp(sprintf('(saveAnalysis) Merging with old analysis'));
-        % load up old analysis
-        oldAnal = load(fullfile(pathStr,filename));
-        oldAnalFieldnames = fieldnames(oldAnal);
-        oldAnal = oldAnal.(oldAnalFieldnames{1});
+        % load the old analysis
+        s = load(fullfile(pathStr,filename));
+        varNames = fieldnames(s);
+        oldAnal = s.(varNames{1});
+        oldAnal.name = varNames{1};
         % get the new analysis
-        newAnal = eval(analysisName);
-        % ok, now look at overlays field
-        for oldNum = 1:length(oldAnal.overlays)
-            oldOverlay = oldAnal.overlays(oldNum);
-            matchedOverlay = 0;
-            for newNum = 1:length(newAnal.overlays)
-                % see if there is a matching overlay
-                if strcmp(oldOverlay.name,newAnal.overlays(newNum).name)
-                    matchedOverlay = 1;
-                    % now try to combine them
-                    for scanNum = 1:length(oldOverlay.data)
-                        % if it is not empty in the new structure, but
-                        % is in there in the old strucutre, copy it over
-                        if ((scanNum >= length(newAnal.overlays(newNum).data)) || isempty(newAnal.overlays(newNum).data{scanNum})) && ~isempty(oldOverlay.data{scanNum})
-                            newAnal.overlays(newNum).data{scanNum} = oldOverlay.data{scanNum};
-                            if (isfield(newAnal.overlays(newNum),'params') && ...
-                                    iscell(newAnal.overlays(newNum).params) && ...
-                                    isempty(newAnal.overlays(newNum).params{scanNum}))
-                                % copy over overlay params
-                                newAnal.overlays(newNum).params{scanNum} = oldOverlay.params{scanNum};
-                            end
-                            disp(sprintf('(saveAnalysis) Merged overlay %s:%i from old analysis',oldOverlay.name,scanNum));
-                        end
+        newAnal = eval(analysisName);    
+        % check if they have the same name and merge them
+        if strcmp(oldAnal.name,newAnal.name)
+            [mergedParams,mergedData] = feval(newAnal.mergeFunction,newAnal.groupName,...
+                oldAnal.params,newAnal.params);            
+            newAnal.params = mergedParams;
+            % loop through overlays and merge the params and data
+            for oldNum = 1:length(oldAnal.overlays)
+                oldOverlay = oldAnal.overlays(oldNum);
+                matchedOverlay = 0;
+                for newNum = 1:length(newAnal.overlays)
+                    newOverlay = newAnal.overlays(newNum);
+                    % see if there is a matching overlay
+                    if strcmp(oldOverlay.name,newOverlay.name)
+                        matchedOverlay = 1;
+                        % now try to combine them
+                        [mergedParams,mergedData] = feval(newOverlay.mergeFunction,newOverlay.groupName,...
+                            oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);
+                        newOverlay.params = mergedParams;
+                        newOverlay.data = mergedData;
+                        newAnal.overlays(newNum) = newOverlay;
+                        disp(sprintf('(saveAnalysis) Merged overlay %s from old analysis',oldOverlay.name));
                     end
                 end
-            end
-            % if there was no match, then simply add the overlay to the analysis struct
-            if ~matchedOverlay
-                newAnal.overlays(end+1) = oldAnal.overlays(oldNum);
-                disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlay.name));
-            end
-        end
-        % if there are any d structures, then do the same thing
-        if isfield(oldAnal,'d') && isfield(newAnal,'d')
-            for i = 1:length(oldAnal.d)
-                % if the new analysis doesn't have it but the old one does
-                if (((length(newAnal.d)<i) || isempty(newAnal.d{i})) &&...
-                        (length(oldAnal.d)>=i) && ~isempty(oldAnal.d{i}))
-                    newAnal.d{i} = oldAnal.d{i};
-                    disp(sprintf('(saveAnalysis) Merged d{%i} from old analysis',i));
+                % if there was no match, then simply add the overlay to the analysis struct
+                if ~matchedOverlay
+                    newAnal.overlays(end+1) = oldOverlay;
+                    disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlay.name));
                 end
-            end
+            end                
+            % set analysisName variable so that it will be saved below
+            eval(sprintf('%s = newAnal;',analysisName));
+            % replace analysis with the newly merged one
+            view = viewSet(view,'deleteAnalysis',analysisNum);
+            view = viewSet(view,'newAnalysis',newAnal);            
+        else
+            mrWarnDlg('(saveAnalysis) Merge failed. Save analysis aborted.');
+            return
         end
-        % if the params has fields called scanParams than those should
-        % be merged
-        if (isfield(oldAnal,'params') && isfield(oldAnal.params,'scanParams') &&...
-                isfield(newAnal,'params') && isfield(newAnal.params,'scanParams'))
-            for i = 1:length(oldAnal.params.scanParams)
-                % if the new analysis doesn't have it but the old one does
-                if (((length(newAnal.params.scanParams)<i) || ...
-                        isempty(newAnal.params.scanParams{i})) && ...
-                        (length(oldAnal.params.scanParams)>=i) && ...
-                        ~isempty(oldAnal.params.scanParams{i}))
-                    newAnal.params.scanParams{i} = oldAnal.params.scanParams{i};
-                    disp(sprintf('(saveAnalysis) Merged params.scanParams{%i} from old analysis',i));
-                end
-            end
-        end
-        eval(sprintf('%s = newAnal;',analysisName));
-        % now the save name gets the same and it can overwrite the old one
+ 
     elseif saveMethod == 2
         % put up a dialog to get new save name
         [filename pathStr] = uiputfile({'*.mat'},'Enter new name to save analysis as',fullfile(pathStr,filename));
@@ -130,6 +111,7 @@ if isfile(fullfile(pathStr,filename))
         end
         % otherwise accept the filename, make sure it has a .mat extension
         filename = sprintf('%s.mat',stripext(filename));
+        
     elseif saveMethod == 3
         % this is the easiest, just overwrite
         disp(sprintf('(saveAnalysis) Overwriting old analysis'));
