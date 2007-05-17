@@ -233,7 +233,7 @@ switch lower(param)
         % view = viewSet(view,'updateScan',scanParams,scanNum);
         % Check for tseries file and (re-)build scanParams to insure
         % consistency with the nifti file.
-        scanParams = val;
+        scanParams = orderfields(val);
         if ~isfield(scanParams,'fileName')
             mrErrorDlg(['scanParams.fileName must be specified']);
         end
@@ -370,11 +370,11 @@ switch lower(param)
         % - hdr: nifti header
         % - permutation matrix: keeps track of slice orientation (see
         %   loadAnat)
-        %
+        
         % Check that val has the required fields
         baseAnatomy = orderfields(val);
         if ~isbase(baseAnatomy)
-            mrErrorDlg('Invalid anatomy');
+            mrErrorDlg('Invalid base anatomy');
         end
         % If baseVolume.name already exists then replace the existing one
         % with this new one. Otherwise, add it to the end of the baseVolumes
@@ -535,9 +535,9 @@ switch lower(param)
         % - overlays: struct array of overlays
         % - curOverlay: integer corresponding to currently selected overlay
         % - date: specifies when it was computed
-        %
+        
         % Check that is has the required fields
-        analysis = val;
+        analysis = orderfields(val);
         if ~isanalysis(analysis)
             mrErrorDlg('Invalid analysis');
         end
@@ -647,7 +647,7 @@ switch lower(param)
         % Overlay (parameter map)
 
     case{'newoverlay'}
-        % view = viewSet(view,'newoverlay',overlayStructure);
+        % view = viewSet(view,'newoverlay',overlayStructure,[analysisNum]);
         %
         % val must be a structure with fields
         % - name: string
@@ -667,20 +667,26 @@ switch lower(param)
         % - clip: [min max] to be displayed/thresholded
         % - colormap: 256x3 array of RGB values
         % - alpha: transparency value for alphaSlider
-        %
-        % Check that is has the required fields
+        
+        % Check that it has the required fields
         overlay = orderfields(val);
         if ~isoverlay(overlay)
             mrErrorDlg('Invalid overlay');
         end
-        % current group, current analsysis, and nscans
-        groupNum = viewGet(view,'currentGroup');
-        groupName = viewGet(view,'groupName',groupNum);
-        analysisNum = viewGet(view,'currentAnalysis');
-        analysisName = viewGet(view,'analysisName',analysisNum);
+        % groupName, groupNum, nScans
+        groupName = overlay.groupName;
+        groupNum = viewGet(view,'groupnum',groupName);
         nScans = viewGet(view,'nScans',groupNum);
+        % analysisNum and analysisName
+        if ieNotDefined('varargin')
+            analysisNum = viewGet(view,'currentAnalysis');
+        else
+            analysisNum = varargin{1};
+        end
+        analysisName = viewGet(view,'analysisName',analysisNum);
+        analysis = viewGet(view,'analysis',analysisNum);
         % Error if groupNames don't match
-        if ~strcmp(overlay.groupName,groupName)
+        if ~strcmp(overlay.groupName,analysis.groupName)
             mrErrorDlg(['overlay is incompatible with group: ',groupName]);
         end
         % Reconcile overlay data and params with tseries files, reordering
@@ -725,9 +731,13 @@ switch lower(param)
         view = viewSet(view,'curOverlay',newOverlayNum);
 
     case {'deleteoverlay'}
-        % view = viewSet(view,'deleteoverlay',overlayNum);
+        % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
         overlayNum = val;
-        analysisNum = viewGet(view,'currentAnalysis');
+        if ieNotDefined('varargin')
+            analysisNum = viewGet(view,'currentAnalysis');
+        else
+            analysisNum = varargin{1};
+        end
         numoverlays = viewGet(view,'numberofoverlays',analysisNum);
         curoverlay = viewGet(view,'currentOverlay',analysisNum);
         if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
@@ -914,7 +924,7 @@ switch lower(param)
         % - xform: 4x4 matrix
         % - voxelSize: 3 vector
         % - date: specifies when it was created or last modified
-        %
+        
         % Check that is has the required fields
         ROI = orderfields(val);
         if ~isroi(ROI)

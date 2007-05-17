@@ -16,11 +16,11 @@ if ~isstruct(overlay)
 end
 
 requiredFields = {'alpha','clip','colormap','data','date','function',...
-	'groupName','interrogator','name','params','range','reconcileFunction',};
+	'groupName','interrogator','name','params','range','reconcileFunction'};
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(overlay,fieldName)
-		mrWarnDlg(['Invalid overlay, missing field: ',fieldName]);
+		% mrWarnDlg(['Invalid overlay, missing field: ',fieldName]);
 		val = 0;
 	end
 end

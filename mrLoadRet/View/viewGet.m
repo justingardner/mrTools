@@ -594,7 +594,7 @@ switch lower(param)
                 % using the qform matrices. Note: There used to be code
                 % here that reset val if it was the identity but that was a
                 % bug (DJH 1/17/07).
-		if mrGetPref('verbose')
+		if strcmp(mrGetPref('verbose'),'Yes')
 		  disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
 		end
 		baseqform = viewGet(view,'baseqform');
@@ -1919,7 +1919,7 @@ switch lower(param)
         val = datasize(3);
 
     otherwise
-        if mrGetPref('verbose')
+        if strcmp(mrGetPref('verbose'),'Yes')
             dispViewGetHelp;
         end
         disp(['Invalid parameter for volume view: ',param]);

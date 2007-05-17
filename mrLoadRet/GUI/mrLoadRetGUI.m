@@ -1,6 +1,6 @@
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
-% $Id$	
+% $Id$
 %
 % Creates a new mrLoadRet GUI.
 % This function was created along with mrLoadRetGui.fig using GUIDE.
@@ -14,19 +14,19 @@ function varargout = mrLoadRetGUI(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
-	'gui_Singleton',  gui_Singleton, ...
-	'gui_OpeningFcn', @mrLoadRetGUI_OpeningFcn, ...
-	'gui_OutputFcn',  @mrLoadRetGUI_OutputFcn, ...
-	'gui_LayoutFcn',  [], ...
-	'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @mrLoadRetGUI_OpeningFcn, ...
+    'gui_OutputFcn',  @mrLoadRetGUI_OutputFcn, ...
+    'gui_LayoutFcn',  [], ...
+    'gui_Callback',   []);
 if nargin & isstr(varargin{1})
-	gui_State.gui_Callback = str2func(varargin{1});
+    gui_State.gui_Callback = str2func(varargin{1});
 end
 
 if nargout
-	[varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
 else
-	gui_mainfcn(gui_State, varargin{:});
+    gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
 
@@ -45,15 +45,15 @@ function mrLoadRetGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %    mrLoadRetGUI('viewNum',viewNum)
 % The view structure must already exist in MRL.views{viewNum}
 for index = 1:2:length(varargin)
-	field = varargin{index};
-	val = varargin{index+1};
-	switch field
-		case 'viewNum'
-			viewNum = val;
-			handles.viewNum = viewNum;
-		otherwise
-			warn('mrLoadRetGUI: invalid initialization argument')
-	end
+    field = varargin{index};
+    val = varargin{index+1};
+    switch field
+        case 'viewNum'
+            viewNum = val;
+            handles.viewNum = viewNum;
+        otherwise
+            warn('mrLoadRetGUI: invalid initialization argument')
+    end
 end
 
 % Initialize coords and slice orientation
@@ -70,38 +70,38 @@ set(handles.rotateSlider,'sliderStep',[1/360 10/360]);
 % Enable/disable various widgets depending on viewType
 viewType = viewGet(viewNum,'viewType');
 switch viewType
-	case 'Volume'
-		% Make left & right radio buttons invisible
-		set(handles.leftRadioButton,'Visible','off');
-		set(handles.rightRadioButton,'Visible','off');
-		% Initialize the slice orientation radio buttons
-		set(handles.sagittalRadioButton,'Value',1);
-		set(handles.coronalRadioButton,'Value',0);
-		set(handles.axialRadioButton,'Value',0);
-	case {'Surface'}
-		% Make slice orientation radio buttons invisible
-		set(handles.sagittalRadioButton,'Visible','off');
-		set(handles.coronalRadioButton,'Visible','off');
-		set(handles.axialRadioButton,'Visible','off');
-		% Make left & right radio buttons invisible
-		set(handles.leftRadioButton,'Visible','off');
-		set(handles.rightRadioButton,'Visible','off');
-		% Make slice slider invisible
-		set(handles.slice,'Visible','off');
-		set(handles.sliceText,'Visible','off');
-		set(handles.sliceSlider,'Visible','off');
-	case 'Flat'
-		% Make slice orientation radio buttons invisible
-		set(handles.sagittalRadioButton,'Visible','off');
-		set(handles.coronalRadioButton,'Visible','off');
-		set(handles.axialRadioButton,'Visible','off');
-		% Make slice slider invisible
-		set(handles.slice,'Visible','off');
-		set(handles.sliceText,'Visible','off');
-		set(handles.sliceSlider,'Visible','off');
-		% Initialize left & right radio buttons
-		set(handles.leftRadioButton,'Value',1);
-		set(handles.rightRadioButton,'Value',0);
+    case 'Volume'
+        % Make left & right radio buttons invisible
+        set(handles.leftRadioButton,'Visible','off');
+        set(handles.rightRadioButton,'Visible','off');
+        % Initialize the slice orientation radio buttons
+        set(handles.sagittalRadioButton,'Value',1);
+        set(handles.coronalRadioButton,'Value',0);
+        set(handles.axialRadioButton,'Value',0);
+    case {'Surface'}
+        % Make slice orientation radio buttons invisible
+        set(handles.sagittalRadioButton,'Visible','off');
+        set(handles.coronalRadioButton,'Visible','off');
+        set(handles.axialRadioButton,'Visible','off');
+        % Make left & right radio buttons invisible
+        set(handles.leftRadioButton,'Visible','off');
+        set(handles.rightRadioButton,'Visible','off');
+        % Make slice slider invisible
+        set(handles.slice,'Visible','off');
+        set(handles.sliceText,'Visible','off');
+        set(handles.sliceSlider,'Visible','off');
+    case 'Flat'
+        % Make slice orientation radio buttons invisible
+        set(handles.sagittalRadioButton,'Visible','off');
+        set(handles.coronalRadioButton,'Visible','off');
+        set(handles.axialRadioButton,'Visible','off');
+        % Make slice slider invisible
+        set(handles.slice,'Visible','off');
+        set(handles.sliceText,'Visible','off');
+        set(handles.sliceSlider,'Visible','off');
+        % Initialize left & right radio buttons
+        set(handles.leftRadioButton,'Value',1);
+        set(handles.rightRadioButton,'Value',0);
 end
 
 % Choose default command line output for mrLoadRetGUI
@@ -133,12 +133,12 @@ function figure_ResizeFcn(hObject, eventdata, handles)
 % Change the axis size to fill the figure, leaving room at the bottom for
 % the widgets.
 if exist('handles','var') & ~isempty(handles)
-	figureSize = get(handles.figure,'Position');
-	axisSize = get(handles.axis,'Position');
-	axisSize(3) = figureSize(3);
-	axisSize(4) = figureSize(4) - axisSize(2);
-	set(handles.axis,'Position',axisSize);
-	refreshMLRDisplay(viewNum);
+    figureSize = get(handles.figure,'Position');
+    axisSize = get(handles.axis,'Position');
+    axisSize(3) = figureSize(3);
+    axisSize(4) = figureSize(4) - axisSize(2);
+    set(handles.axis,'Position',axisSize);
+    refreshMLRDisplay(viewNum);
 end
 
 
@@ -153,9 +153,9 @@ function axis_DeleteFcn(hObject, eventdata, handles)
 
 function figure_DeleteFcn(hObject, eventdata, handles)
 if ~ieNotDefined('handles') & isfield(handles,'viewNum')
-	% Delete the view
-	viewNum = handles.viewNum;
-	deleteView(viewNum);
+    % Delete the view
+    viewNum = handles.viewNum;
+    deleteView(viewNum);
 end
 
 function figure_CloseRequestFcn(hObject, eventdata, handles)
@@ -177,13 +177,13 @@ function coronalRadioButton_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 view = viewSet(viewNum,'sliceOrientation','coronal');
 refreshMLRDisplay(viewNum);
-			
+
 % --- Axial
 function axialRadioButton_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 view = viewSet(viewNum,'sliceOrientation','axial');
 refreshMLRDisplay(viewNum);
-		
+
 % --- Left
 function leftRadioButton_Callback(hObject, eventdata, handles)
 % *** Not tested ***
@@ -204,9 +204,9 @@ refreshMLRDisplay(viewNum);
 % --- Group
 function groupPopup_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function groupPopup_Callback(hObject, eventdata, handles)
@@ -225,9 +225,9 @@ refreshMLRDisplay(viewNum);
 % --- ROI
 function roiPopup_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function roiPopup_Callback(hObject, eventdata, handles)
@@ -249,9 +249,9 @@ refreshMLRDisplay(viewNum);
 % --- Overlay
 function overlayPopup_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function overlayPopup_Callback(hObject, eventdata, handles)
@@ -262,9 +262,9 @@ refreshMLRDisplay(viewNum);
 % --- Base image
 function basePopup_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function basePopup_Callback(hObject, eventdata, handles)
@@ -279,16 +279,16 @@ refreshMLRDisplay(viewNum);
 function scanSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function scanText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function scanSlider_Callback(hObject, eventdata, handles)
@@ -307,16 +307,16 @@ refreshMLRDisplay(viewNum);
 function sliceSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function sliceText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function sliceSlider_Callback(hObject, eventdata, handles)
@@ -335,16 +335,16 @@ refreshMLRDisplay(viewNum);
 function baseMinSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function baseMinText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function baseMinSlider_Callback(hObject, eventdata, handles)
@@ -363,16 +363,16 @@ refreshMLRDisplay(viewNum);
 function baseMaxSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function baseMaxText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function baseMaxSlider_Callback(hObject, eventdata, handles)
@@ -391,16 +391,16 @@ refreshMLRDisplay(viewNum);
 function overlayMaxSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function overlayMaxText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function overlayMaxSlider_Callback(hObject, eventdata, handles)
@@ -419,16 +419,16 @@ refreshMLRDisplay(viewNum);
 function overlayMinSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function overlayMinText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function overlayMinSlider_Callback(hObject, eventdata, handles)
@@ -447,16 +447,16 @@ refreshMLRDisplay(viewNum);
 function alphaSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function alphaText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function alphaSlider_Callback(hObject, eventdata, handles)
@@ -475,16 +475,16 @@ refreshMLRDisplay(viewNum);
 function rotateSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
-	set(hObject,'BackgroundColor',[.9 .9 .9]);
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function rotateText_CreateFcn(hObject, eventdata, handles)
 if ispc
-	set(hObject,'BackgroundColor','white');
+    set(hObject,'BackgroundColor','white');
 else
-	set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
 function rotateSlider_Callback(hObject, eventdata, handles)
@@ -541,7 +541,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 numberAnalyses = viewGet(viewNum,'numberofAnalyses');
 for n = 1:numberAnalyses
-	saveAnalysis(MLR.views{viewNum},n);
+    saveAnalysis(MLR.views{viewNum},n);
 end
 
 % --------------------------------------------------------------------
@@ -569,7 +569,7 @@ viewNum = handles.viewNum;
 numberOverlays = viewGet(viewNum,'numberofOverlays');
 m = viewGet(viewNum,'currentAnalysis');
 for n = 1:numberOverlays
-	saveOverlay(MLR.views{viewNum},n,m);
+    saveOverlay(MLR.views{viewNum},n,m);
 end
 
 % --------------------------------------------------------------------
@@ -595,7 +595,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 numberROIs = viewGet(viewNum,'numberofrois');
 for n = 1:numberROIs
-  saveROI(MLR.views{viewNum},n,1);
+    saveROI(MLR.views{viewNum},n,1);
 end
 
 % --------------------------------------------------------------------
@@ -669,37 +669,36 @@ saveSession(1);
 function quitMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 if isfield(MLR,'views') && ~isempty(MLR.views)
-  % get settings of GUI
-  viewNum = handles.viewNum;
-  thisView = MLR.views{viewNum};
-  viewSettings.rotate = viewGet(thisView,'rotate');
-  viewSettings.curScan = viewGet(thisView,'curScan');
-  viewSettings.curSlice = viewGet(thisView,'curSlice');
-  viewSettings.curGroup = viewGet(thisView,'curGroup');
-  viewSettings.sliceOrientation = viewGet(thisView,'sliceOrientation');
-
-  % close figures
-  for viewNum = 1:length(MLR.views)
-    view = MLR.views{viewNum};
-    if isview(view)
-      % remember figure location
-      mrSetFigLoc('mrLoadRetGUI',get(view.figure,'Position'));
-      delete(view.figure);
+    viewNum = handles.viewNum;
+    thisView = MLR.views{viewNum};
+    % remember figure location
+    mrSetFigLoc('mrLoadRetGUI',get(thisView.figure,'Position'));
+    % remember GUI settings
+    viewSettings.rotate = viewGet(thisView,'rotate');
+    viewSettings.curScan = viewGet(thisView,'curScan');
+    viewSettings.curSlice = viewGet(thisView,'curSlice');
+    viewSettings.curGroup = viewGet(thisView,'curGroup');
+    viewSettings.sliceOrientation = viewGet(thisView,'sliceOrientation');
+    % close view figures
+    for viewNum = 1:length(MLR.views)
+        view = MLR.views{viewNum};
+        if isview(view)
+            delete(view.figure);
+        end
     end
+    % close graph figure, remembering figure location
     if ~isempty(MLR.graphFigure)
-      mrSetFigLoc('graphFigure',get(MLR.graphFigure,'Position'));
-      close(MLR.graphFigure);
-      MLR.graphFigure = [];
+        mrSetFigLoc('graphFigure',get(MLR.graphFigure,'Position'));
+        close(MLR.graphFigure);
+        MLR.graphFigure = [];
     end
-  end
-  
-  % save the view in the current directory
-  view = thisView;
-  eval(sprintf('save %s view viewSettings -V6;',fullfile(MLR.homeDir,'mrLastView')));
-  % save .mrDefaults in the home directory
-  saveMrDefaults;
+    % save the view in the current directory
+    view = thisView;
+    eval(sprintf('save %s view viewSettings -V6;',fullfile(MLR.homeDir,'mrLastView')));
+    % save .mrDefaults in the home directory
+    saveMrDefaults;
 else
-  closereq;
+    closereq;
 end
 clear global MLR
 
@@ -712,8 +711,8 @@ mrGlobals;
 session = editSessionGUI('session',MLR.session);
 % session is empty if aborted
 if ~isempty(session)
-	MLR.session = session;
-	saveSession(0);
+    MLR.session = session;
+    saveSession(0);
 end
 
 % --------------------------------------------------------------------
@@ -751,8 +750,8 @@ if ~isempty(group.scanParams)
 end
 % group is empty if aborted
 if ~isempty(group)
-	MLR.groups(curGroup) = group;
-	saveSession(0);
+    MLR.groups(curGroup) = group;
+    saveSession(0);
 end
 
 % --------------------------------------------------------------------
@@ -819,10 +818,10 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 if isfield(MLR.clipboard,'tseries') & isfield(MLR.clipboard,'scanParams') & ...
-		isscan(MLR.clipboard.scanParams)
-	view = saveNewTSeries(view,MLR.clipboard.tseries,MLR.clipboard.scanParams,MLR.clipboard.scanParams.niftiHdr);
+        isscan(MLR.clipboard.scanParams)
+    view = saveNewTSeries(view,MLR.clipboard.tseries,MLR.clipboard.scanParams,MLR.clipboard.scanParams.niftiHdr);
 else
-	mrErrorDlg('Cannot paste: Invalid scan.');
+    mrErrorDlg('(paste scan) Cannot paste. Clipboard does not contain a valid scan. Use Edit -> Scan -> Copy Scan.')
 end
 
 % --------------------------------------------------------------------
@@ -832,25 +831,25 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 scanList = selectScans(view);
 for iScan = 1:length(scanList)
-  % first get time series name for each one of these scans
-  % since as we delete them, then numbers stop making sense
-  tSeriesFile{iScan} = viewGet(view,'tSeriesFile',scanList(iScan));
+    % first get time series name for each one of these scans
+    % since as we delete them, then numbers stop making sense
+    tSeriesFile{iScan} = viewGet(view,'tSeriesFile',scanList(iScan));
 end
 % now go through and delete
 for iScan = 1:length(scanList)
-  % get the scan number
-  scanNum = viewGet(view,'scanNum',tSeriesFile{iScan});
-  if ~isempty(scanNum)
-    scanNum = scanNum(1);
-    view = viewSet(view,'deleteScan',scanNum);
-    disp(sprintf('Scan for file %s deleted.',tSeriesFile{iScan}));
-  else
-    disp(sprintf('(mrLoadRetGUI) Could not delete scan for file %s',tSeriesFile{iScan}));
-  end
-  refreshMLRDisplay(viewNum);
+    % get the scan number
+    scanNum = viewGet(view,'scanNum',tSeriesFile{iScan});
+    if ~isempty(scanNum)
+        scanNum = scanNum(1);
+        view = viewSet(view,'deleteScan',scanNum);
+        disp(sprintf('Scan for file %s deleted.',tSeriesFile{iScan}));
+    else
+        disp(sprintf('(mrLoadRetGUI) Could not delete scan for file %s',tSeriesFile{iScan}));
+    end
+    refreshMLRDisplay(viewNum);
 end
 if ~isempty(scanList)
-  disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
+    disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
 end
 
 % --------------------------------------------------------------------
@@ -865,14 +864,15 @@ userInput = inputdlg('Enter name for new analysis: ','New analysis');
 if ~isempty(userInput)
     analysis.name = userInput{1};
     analysis.type = 'dummy';
-	analysis.groupName = viewGet(view,'groupName',viewGet(view,'currentGroup'));
+    analysis.groupName = viewGet(view,'groupName',viewGet(view,'currentGroup'));
     analysis.function = 'dummyAnalysis';
     analysis.reconcileFunction = 'dummyAnalysisReconcileParams';
+    analysis.reconcileFunction = 'dummyAnalysisMergeParams';
     analysis.guiFunction = 'dummyAnalysisGUI';
-	analysis.params = [];
+    analysis.params = [];
     analysis.overlays =[];
-	analysis.curOverlay = [];
-	analysis.date = datestr(now);
+    analysis.curOverlay = [];
+    analysis.date = datestr(now);
     view = viewSet(view,'newanalysis',analysis);
 end
 refreshMLRDisplay(viewNum);
@@ -890,9 +890,9 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 if isanalysis(MLR.clipboard)
-	view = viewSet(view,'newAnalysis',MLR.clipboard);
+    view = viewSet(view,'newAnalysis',MLR.clipboard);
 else
-	mrErrorDlg('Cannot paste: Invalid analysis.');
+    mrErrorDlg('(paste analysis) Cannot paste. Clipboard does not contain a valid analysis. Use Edit -> Analysis -> Copy Analysis.')
 end
 refreshMLRDisplay(viewNum);
 
@@ -919,11 +919,13 @@ function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-if isoverlay(MLR.clipboard) & isanalysis(viewGet(view,'analysis'))
-	view = viewSet(view,'newOverlay',MLR.clipboard);
-else
-	mrErrorDlg('Cannot paste: Invalid overlay or analysis.');
+if ~isoverlay(MLR.clipboard)
+    mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
 end
+if ~isanalysis(viewGet(view,'analysis'))
+    mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
+end
+view = viewSet(view,'newOverlay',MLR.clipboard);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -951,14 +953,14 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 % Check to see that it is a valid ROI structure and then add it.
 if isroi(MLR.clipboard)
-  view = viewSet(view,'newROI',MLR.clipboard);
+    view = viewSet(view,'newROI',MLR.clipboard);
 else
-  mrErrorDlg('Cannot paste: Invalid ROI.');
+    mrErrorDlg('(paste ROI) Cannot paste. Clipboard does not contain a valid ROI. Use Edit -> ROI -> Copy ROI.')
 end
 % Select it and reset view.prevCoords
 ROInum = viewGet(view,'numberofROIs');
 if (ROInum > 0)
-  view = viewSet(view,'currentROI',ROInum);
+    view = viewSet(view,'currentROI',ROInum);
 end
 refreshMLRDisplay(viewNum);
 
@@ -983,9 +985,9 @@ roiParams = {{'name',roiName,'Name of roi, avoid using punctuation and space'},{
 params = mrParamsDialog(roiParams);
 % if not empty, then change the parameters
 if ~isempty(params)
-  view = viewSet(view,'roiColor',params.color,roiNum);
-  view = viewSet(view,'roiName',params.name,roiNum);
-  refreshMLRDisplay(viewNum);
+    view = viewSet(view,'roiColor',params.color,roiNum);
+    view = viewSet(view,'roiName',params.name,roiNum);
+    refreshMLRDisplay(viewNum);
 end
 
 % --------------------------------------------------------------------
@@ -1004,9 +1006,9 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 if isbase(MLR.clipboard)
-	view = viewSet(view,'newBase',MLR.clipboard);
+    view = viewSet(view,'newBase',MLR.clipboard);
 else
-	mrErrorDlg('Cannot paste: Invalid base anatomy.');
+    mrErrorDlg('(paste base anatomy) Cannot paste. Clipboard does not contain a valid scan. Use Edit -> Base Anatomy -> Copy Base Anatomy.')
 end
 refreshMLRDisplay(viewNum);
 
@@ -1094,10 +1096,10 @@ evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,',''
 eval(evalstring);
 % params is empty if GUI cancelled
 if ~isempty(params)
-	% view = analysisFunction(view,params);
-	evalstring = ['view = ',analysisFunction,'(view,params);'];
-	eval(evalstring);
-	refreshMLRDisplay(viewNum);
+    % view = analysisFunction(view,params);
+    evalstring = ['view = ',analysisFunction,'(view,params);'];
+    eval(evalstring);
+    refreshMLRDisplay(viewNum);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1119,7 +1121,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numBases = viewGet(view,'numberofbasevolumes');
 for baseNum = numBases:-1:1;
-	view = viewSet(view,'deleteBase',baseNum);
+    view = viewSet(view,'deleteBase',baseNum);
 end
 refreshMLRDisplay(viewNum);
 
@@ -1139,7 +1141,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numAnalyses = viewGet(view,'numberofAnalyses');
 for analysisNum = numAnalyses:-1:1;
-	view = viewSet(view,'deleteAnalysis',analysisNum);
+    view = viewSet(view,'deleteAnalysis',analysisNum);
 end
 refreshMLRDisplay(viewNum);
 
@@ -1159,7 +1161,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numOverlays = viewGet(view,'numberofoverlays');
 for overlayNum = numOverlays:-1:1;
-	view = viewSet(view,'deleteOverlay',overlayNum);
+    view = viewSet(view,'deleteOverlay',overlayNum);
 end
 refreshMLRDisplay(viewNum);
 
@@ -1214,7 +1216,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numrois = viewGet(view,'numberofrois');
 for roinum = numrois:-1:1;
-	view = viewSet(view,'deleteROI',roinum);
+    view = viewSet(view,'deleteROI',roinum);
 end
 refreshMLRDisplay(viewNum);
 
@@ -1345,12 +1347,12 @@ mrGlobals;
 viewNum = handles.viewNum;
 % start or stop the interrogator
 if strcmp(get(hObject,'Checked'),'on')
-  mrInterrogator('end',viewNum);
-  set(hObject,'Checked','off');
-else 
-  % start the mrInterrogator
-  mrInterrogator('init',viewNum);
-  set(hObject,'Checked','on');
+    mrInterrogator('end',viewNum);
+    set(hObject,'Checked','off');
+else
+    % start the mrInterrogator
+    mrInterrogator('init',viewNum);
+    set(hObject,'Checked','on');
 end
 
 return
@@ -1537,7 +1539,7 @@ coords = getRoiCoordinates(view,roiNum,scanNum);
 disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
 % and display them to the buffer
 for i = 1:size(coords,2)
-  disp(sprintf('%i %i %i',coords(1,i),coords(2,i),coords(3,i)));
+    disp(sprintf('%i %i %i',coords(1,i),coords(2,i),coords(3,i)));
 end
 
 
@@ -1559,14 +1561,14 @@ view = MLR.views{viewNum};
 volumeDirectory = mrGetPref('volumeDirectory');
 saveVolumeDirectory = 0;
 if isempty(volumeDirectory)
-  saveVolumeDirectory = 1
+    saveVolumeDirectory = 1
 end
 % load the anatomy
 [view volumeDirectory] = loadAnat(view,'',volumeDirectory);
 refreshMLRDisplay(viewNum);
 % if volumeDirectory prefMenu was empty before, than save it now
 if saveVolumeDirectory
-  mrSetPref('volumeDirectory',volumeDirectory);
+    mrSetPref('volumeDirectory',volumeDirectory);
 end
 
 
@@ -1623,10 +1625,10 @@ baseVoxelSize = viewGet(view,'baseVoxelSize');
 baseName = viewGet(view,'baseName');
 
 paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},...
-	      {'voxelSize',baseVoxelSize,'editable=0','Voxel dimensions in mm'},...
-	      {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
-	      {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
-	      {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'}};
+    {'voxelSize',baseVoxelSize,'editable=0','Voxel dimensions in mm'},...
+    {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
+    {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
+    {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'}};
 mrParamsDialog(paramsInfo,'Base anatomy information');
 
 % --------------------------------------------------------------------
@@ -1651,10 +1653,10 @@ v = MLR.views{viewNum};
 tSeriesPathStr = viewGet(v,'tSeriesPathStr',viewGet(v,'curScan'));
 % load that as an anatome
 if isfile(tSeriesPathStr)
-  v = loadAnat(MLR.views{viewNum},getLastDir(tSeriesPathStr),fileparts(tSeriesPathStr));
-  refreshMLRDisplay(viewNum);
+    v = loadAnat(MLR.views{viewNum},getLastDir(tSeriesPathStr),fileparts(tSeriesPathStr));
+    refreshMLRDisplay(viewNum);
 else
-  mrWarnDlg(sprintf('(mrLoadRetGUI) Could not find tSeries %s',tSeriesPathStr));
+    mrWarnDlg(sprintf('(mrLoadRetGUI) Could not find tSeries %s',tSeriesPathStr));
 end
 
 
@@ -1673,19 +1675,19 @@ scanXform = viewGet(v,'scanxform');
 sformCode = viewGet(v,'sformCode');
 % params dialog
 paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing! Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
-	      {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+    {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
 
 params = mrParamsDialog(paramsInfo,'scanXform');
 
 % ask the user if they are really sure before actually changing it
 if ~isempty(params)
-  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
-  if strcmp(answer,'Yes')
-    v = viewSet(v,'scanXform',params.sform);
-    v = viewSet(v,'sformCode',params.sformCode);
-    saveSession;
-    refreshMLRDisplay(viewNum);
-  end
+    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+    if strcmp(answer,'Yes')
+        v = viewSet(v,'scanXform',params.sform);
+        v = viewSet(v,'sformCode',params.sformCode);
+        saveSession;
+        refreshMLRDisplay(viewNum);
+    end
 end
 
 
@@ -1706,21 +1708,21 @@ scan2base = inv(scanXform)*baseXform;
 sformCode = viewGet(v,'sformCode');
 % params dialog
 paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and then running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
-	      {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+    {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
 
 params = mrParamsDialog(paramsInfo,'scan2base transformation');
 
 if ~isempty(params)
-  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
-  if strcmp(answer,'Yes')
-    v = viewSet(v,'scanXform',inv(params.scan2base*inv(baseXform)));
-    v = viewSet(v,'sformCode',params.sformCode);
-    saveSession;
-    refreshMLRDisplay(viewNum);
-  end
+    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+    if strcmp(answer,'Yes')
+        v = viewSet(v,'scanXform',inv(params.scan2base*inv(baseXform)));
+        v = viewSet(v,'sformCode',params.sformCode);
+        saveSession;
+        refreshMLRDisplay(viewNum);
+    end
 end
 
-  
+
 
 
 % --------------------------------------------------------------------

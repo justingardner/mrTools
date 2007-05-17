@@ -21,7 +21,7 @@ requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(view,fieldName)
-		mrWarnDlg(['Invalid view, missing field: ',fieldName]);
+		% mrWarnDlg(['Invalid view, missing field: ',fieldName]);
 		val = 0;
 		return
 	end

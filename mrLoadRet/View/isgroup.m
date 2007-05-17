@@ -19,7 +19,7 @@ requiredFields = {'name','scanParams'};
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(group,fieldName)
-		mrWarnDlg(['Invalid group, missing field: ',fieldName]);
+		% mrWarnDlg(['Invalid group, missing field: ',fieldName]);
 		val = 0;
 	end
 end
