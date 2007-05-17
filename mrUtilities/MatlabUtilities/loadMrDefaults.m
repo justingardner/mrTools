@@ -34,7 +34,7 @@ if ~isfield(mrDefaults.prefs,'site') | isempty(mrDefaults.prefs.site)
     mrDefaults.prefs.site = 'NYU';
 end
 if ~isfield(mrDefaults.prefs,'verbose') | isempty(mrDefaults.prefs.verbose)
-    mrDefaults.prefs.verbose = 1';
+    mrDefaults.prefs.verbose = 'Yes';
 end
 if ~isfield(mrDefaults.prefs,'maxBlocksize') | isempty(mrDefaults.prefs.maxBlocksize)
     mrDefaults.prefs.maxBlocksize = 250000000;

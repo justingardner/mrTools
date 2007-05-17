@@ -6,31 +6,36 @@ function mrEditPrefs()
 
 % get interpTypes
 interpTypes = {'nearest','linear','spline','cubic'};
-if ~isempty(strcmp(mrGetPref('interpMethod'),interpTypes))
+if find(strcmp(mrGetPref('interpMethod'),interpTypes))
     interpTypes = putOnTopOfList(mrGetPref('interpMethod'),interpTypes);
 end
 
 % get overwritePolicy
 overwritePolicy = {'Ask','Merge','Rename','Overwrite'};
-if ~isempty(strcmp(mrGetPref('overwritePolicy'),overwritePolicy))
+if find(strcmp(mrGetPref('overwritePolicy'),overwritePolicy))
     overwritePolicy = putOnTopOfList(mrGetPref('overwritePolicy'),overwritePolicy);
+end
+
+% get verbose
+verbose = {'Yes','No'};
+if find(strcmp(mrGetPref('verbose'),verbose))
+    verbose = putOnTopOfList(mrGetPref('verbose'),verbose);
 end
 
 % get niftiFileExtension
 niftiFileExtension = {'.img','.nii'};
-if ~isempty(strcmp(mrGetPref('niftiFileExtension'),niftiFileExtension))
+if find(strcmp(mrGetPref('niftiFileExtension'),niftiFileExtension))
     niftiFileExtension = putOnTopOfList(mrGetPref('niftiFileExtension'),niftiFileExtension);
 end
 
 % get current values for other prefs
 site = mrGetPref('site');
-verbose = mrGetPref('verbose');
 maxBlocksize = mrGetPref('maxBlocksize');
 volumeDirectory = mrGetPref('volumeDirectory');
 
 % set up the dialog and ask the user to set parameters
 prefParams = {{'site',site,'Where you are using this code'},...
-    {'verbose',verbose,'minmax=[0 1]','incdec=[-1 1]','Set to 1 if you want to have dialog waitbars, set to 0 to have information printed to the terminal'},...
+    {'verbose',verbose,'Yes if you want to have dialog waitbars, No to have information printed to the terminal'},...
     {'interpMethod',interpTypes,'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
     {'maxBlocksize',maxBlocksize,'Size of chunks of data to analyze at a time. If you are running out of memory, set lower. A good starting value is 250000000','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
     {'volumeDirectory',volumeDirectory,'The directory to default to when you load base anatomy from the Volume directory'},...
