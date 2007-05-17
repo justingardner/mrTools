@@ -679,6 +679,9 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     viewSettings.curSlice = viewGet(thisView,'curSlice');
     viewSettings.curGroup = viewGet(thisView,'curGroup');
     viewSettings.sliceOrientation = viewGet(thisView,'sliceOrientation');
+    viewSettings.overlayMin = viewGet(thisView,'overlayMin');
+    viewSettings.overlayMax = viewGet(thisView,'overlayMax');
+    viewSettings.alpha = viewGet(thisView,'alpha');
     % close view figures
     for viewNum = 1:length(MLR.views)
         view = MLR.views{viewNum};

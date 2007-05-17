@@ -55,7 +55,7 @@ if isfile('mrLastView.mat')
             mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
             % change slice
             mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
-            % and refresh
+	    % and refresh
             refreshMLRDisplay(view.viewNum);
         end
         % read ROIs into current view
@@ -66,11 +66,21 @@ if isfile('mrLastView.mat')
         end
 
         % read analyses
-        % if isfield(mrLastView.view,'analyses')
-        %     for anum = 1:length(mrLastView.view.analyses)
-        %         view = viewSet(view,'newAnalysis',mrLastView.view.analyses{anum});
-        %     end
-        % end
+        if isfield(mrLastView.view,'analyses')
+	  for anum = 1:length(mrLastView.view.analyses)
+	    view = viewSet(view,'newAnalysis',mrLastView.view.analyses{anum});
+	  end
+	  if anum >= 1
+            % overlay settings
+	    if isfield(mrLastView.viewSettings,'overlayMin')
+	      mlrGuiSet(view.viewNum,'overlayMin',mrLastView.viewSettings.overlayMin);
+	      mlrGuiSet(view.viewNum,'overlayMax',mrLastView.viewSettings.overlayMax);
+	      mlrGuiSet(view.viewNum,'alpha',mrLastView.viewSettings.alpha);
+	    end
+	    % and refresh
+            refreshMLRDisplay(view.viewNum);
+	  end
+        end
         % add here, to load more info...
     end
 
