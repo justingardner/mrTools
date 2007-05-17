@@ -19,7 +19,7 @@ requiredFields = {'clip','data','hdr','name','permutationMatrix','range'};
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(baseAnatomy,fieldName)
-		mrWarnDlg(['Invalid baseAnatomy, missing field: ',fieldname]);
+		% mrWarnDlg(['Invalid baseAnatomy, missing field: ',fieldName]);
 		val = 0;
 	end
 end

@@ -15,12 +15,12 @@ if ~isstruct(analysis)
 	return
 end
 
-requiredFields = {'curOverlay','date','function','groupName','guiFunction','name',...
-	'overlays','params','reconcileFunction','type'};
+requiredFields = {'curOverlay','date','function','groupName','guiFunction',...
+    'name','overlays','params','reconcileFunction','type'};
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(analysis,fieldName)
-		mrWarnDlg(['Invalid analysis, missing field: ',fieldName]);
+		% mrWarnDlg(['Invalid analysis, missing field: ',fieldName]);
 		val = 0;
 	end
 end

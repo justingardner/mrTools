@@ -11,17 +11,6 @@ viewNum = length(MLR.views) + 1;
 view.viewNum = viewNum;
 view.viewType = viewType;
 
-if mrGetPref('verbose')
-  switch viewType
-   case 'Volume'
-    disp('Initializing Volume view');
-   case 'Surface'
-    disp('Initializing Surface view');
-   case 'Flat'
-    disp('Initializing Flat view');
-  end
-end
-
 % Initialize anat
 view.baseVolumes = struct([]);
 view.curBase = [];

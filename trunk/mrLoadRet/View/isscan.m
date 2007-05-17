@@ -24,7 +24,7 @@ requiredFields = {'description','fileName','fileType','niftiHdr',...
 for f = 1:length(requiredFields)
   fieldName = requiredFields{f};
   if ~isfield(scanParams,fieldName)
-    mrWarnDlg(['Invalid scanParams, missing field:',fieldName]);
+    % mrWarnDlg(['Invalid scanParams, missing field:',fieldName]);
     val = 0;
   end
 end
@@ -34,14 +34,13 @@ scanFields = fieldnames(scanParams);
 for f = 1:length(scanFields)
   fieldName = scanFields{f};
   if ~any(strcmp(fieldName,requiredFields))
-    mrWarnDlg(sprintf('(isscan) Unknown field %s removed',fieldName));
+    % mrWarnDlg(sprintf('(isscan) Unknown field %s removed',fieldName));
     val = 0;
   end
 end
 
 % check that originalFileName and GroupName match in length
-if isfield(scanParams,'originalFileName') && isfield(scanParams,'originalGroupName')
-  if length(scanParams.originalFileName) ~= length(scanParams.originalGroupName)
-    mrWarnDlg('Invalid scanParams: originalFileName does not match originalGroupName');
-  end
+if length(scanParams.originalFileName) ~= length(scanParams.originalGroupName)
+    % mrWarnDlg('Invalid scanParams: originalFileName does not match originalGroupName');
+    val = 0;
 end

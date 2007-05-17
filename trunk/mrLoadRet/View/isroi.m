@@ -19,7 +19,7 @@ requiredFields = {'color','coords','date','name','viewType','voxelSize','xform'}
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(roi,fieldName)
-		mrWarnDlg(['Invalid ROI, missing field: ',fieldName]);
+		% mrWarnDlg(['Invalid ROI, missing field: ',fieldName]);
 		val = 0;
 	end
 end
