@@ -66,6 +66,7 @@ for iROI = 1:length(roiList)
 			end
 			sliceIndices = unique(sub2ind(sliceDims,sliceCoords(1,:),sliceCoords(2,:)));
 			tseries = loadTSeries(view,scan,slice);
+            tseries = reshapeTSeries(tseries);
 			subtSeries = tseries(junkframes+1:junkframes+nframes,sliceIndices);
 			ptSeries = percentTSeries(subtSeries,varargin{:});
 			tseriesROI{iROI,iscan} = [tseriesROI{iROI,iscan}, ptSeries];
