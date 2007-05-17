@@ -86,6 +86,12 @@ for i = 1:length(gParams.varinfo)
         gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
     elseif strcmp(gParams.varinfo{i}.type,'checkbox')
         gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.25);
+    elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
+      if isfield(gParams.varinfo{i},'buttonString')
+        gParams.ui.varentry{i} = makeButton(gParams.fignum,gParams.varinfo{i}.buttonString,i,rownum,2,3);
+      else
+        gParams.ui.varentry{i} = makeButton(gParams.fignum,'',i,rownum,2,3);
+      end	
     elseif strcmp(gParams.varinfo{i}.type,'popupmenu') || iscell(gParams.varinfo{i}.value)
         gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
     elseif strcmp(gParams.varinfo{i}.type,'statictext')
@@ -170,6 +176,21 @@ end
 function buttonHandler(varnum,incdec)
 
 global gParams;
+
+% if this is a push button then call it's callback
+if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
+  if isfield(gParams.varinfo{varnum},'callback')
+    % if the function wants the current parameter settings, pass that
+    if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
+      gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+    else
+      gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback);
+    end
+  else
+    disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
+  end
+  return
+end
 
 % if this is supposed to be a number, then make sure it is.
 if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
@@ -554,6 +575,10 @@ for i = 1:length(gParams.varinfo)
             end
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % for a push button just return whatever is in the value field
+    elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
+      params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.value;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % for pop up menus, get the value and look it up in the original list
     elseif strcmp(gParams.varinfo{i}.type,'popupmenu')
         % get the current value
@@ -592,7 +617,7 @@ for i = 1:length(gParams.varinfo)
         params.(gParams.varinfo{i}.name) = str2num(params.(gParams.varinfo{i}.name));
     end
     % if non numeric then convert back to a number
-    if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array' 'checkbox'}))
+    if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array' 'checkbox' 'pushbutton'}))
         if isfield(gParams.varinfo{i},'group')
             for j = 1:length(gParams.varinfo{i}.allValues)
                 % if this is the current one then use field val
