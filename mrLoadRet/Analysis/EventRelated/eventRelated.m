@@ -71,11 +71,7 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  maxBlocksize = mrGetPref('maxBlocksize');
-  if ieNotDefined('maxBlocksize')
-    maxBlocksize = 250000000;
-  end
-  numSlicesAtATime = max(1,floor(maxBlocksize/(8*numVolumes*prod(dims(1:2)))));
+  numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims)
   currentSlice = 1;
   ehdr = [];ehdrste = [];thisr2 = [];
 

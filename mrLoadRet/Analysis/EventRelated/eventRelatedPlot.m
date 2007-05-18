@@ -1,4 +1,4 @@
-function eventRelatedPlot(view,overlayNum,scan,x,y,s)
+function eventRelatedPlot(view,overlayNum,scan,x,y,s,roi)
 % eventRelatedPlot.m
 %
 %      usage: eventRelatedPlot()
@@ -9,7 +9,7 @@ function eventRelatedPlot(view,overlayNum,scan,x,y,s)
 
 
 % check arguments
-if ~any(nargin == [1:6])
+if ~any(nargin == [1:7])
   help eventRelatedPlot
   return
 end
@@ -28,20 +28,11 @@ fignum = MLR.graphFigure;
 set(fignum,'NumberTitle','off');
 set(fignum,'Name','eventRelatedPlot');
 
-% get the number of ROIs, we first will 
-% look to see if the user clicked on a 
-% voxel that is contained in an ROI.
-roi = {};
-nROIs = viewGet(view,'numberOfROIs');
-for roinum = 1:nROIs
-  roicoords = getRoiCoordinates(view,roinum,scan);
-  % see if this is a matching roi
-  if ismember([x y s],roicoords','rows')
-    % get the roi
-    roi{end+1} = viewGet(view,'roi',roinum);
-    % change the coordinates to our coordinates
-    roi{end}.coords = roicoords;
-  end
+% set roi coords
+for roinum = 1:length(roi)
+  roicoords = getRoiCoordinates(view,roi{roinum},scan);
+  % change the coordinates to our coordinates
+  roi{end}.coords = roicoords;
 end
 
 if isempty(d)

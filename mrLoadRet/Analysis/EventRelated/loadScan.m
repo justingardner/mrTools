@@ -1,6 +1,6 @@
 % loadScan.m
 %
-%      usage: loadScan()
+%      usage: loadScan(view,scanNum,groupNum,sliceNum)
 %         by: justin gardner
 %       date: 03/20/07
 %    purpose: loads a scan into a "d" structure
