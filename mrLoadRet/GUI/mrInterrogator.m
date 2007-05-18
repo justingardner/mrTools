@@ -201,7 +201,7 @@ mrGlobals;
 eval(MLR.interrogator{viewNum}.windowButtonUpFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% mouseup
+% mousedown
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mouseDownHandler(viewNum)
 
