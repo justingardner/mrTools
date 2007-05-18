@@ -1,4 +1,4 @@
-function corAnalPlot(view,overlayNum,scan,x,y,z)
+function corAnalPlot(view,overlayNum,scan,x,y,z,roi)
 %
 % corAnal(view,view,overlayNum,scan,x,y,z)
 %
@@ -25,30 +25,12 @@ framePeriod = viewGet(view,'framePeriod',scan);
 highpassPeriod = round(nframes/ncycles);
 
 
-% get the number of ROIs, we first will
-% look to see if the user clicked on a
-% voxel that is contained in an ROI.
-roi = [];
-if ~strcmp(viewGet(view,'showROIs'),'hide');
-    nROIs = viewGet(view,'numberOfROIs');
-else
-    nROIs = 0;
-end
-for roinum = 1:nROIs
-    roicoords = getRoiCoordinates(view,roinum,scan);
-    % see if this is a matching roi
-    if ismember([x y z],roicoords','rows')
-        % get the roi
-        roi = viewGet(view,'roi',roinum);
-    end
-end
-
 % now if we have an roi then load its time series
 % and get the mean and plot that instead of the
 % time series for the voxel
 roiPlot = 0;
 if ~isempty(roi)
-    roi = loadROITSeries(view,roi,viewGet(view,'curScan'),viewGet(view,'curGroup'));
+    roi = loadROITSeries(view,roi{1},viewGet(view,'curScan'),viewGet(view,'curGroup'));
     tseries = mean(roi.tSeries,1)';
     ptseriesSte = std(100*roi.tSeries/mean(tseries),1,1)'/sqrt(roi.n);
     ptseriesSte = ptseriesSte(junkframes+1:junkframes+nframes);

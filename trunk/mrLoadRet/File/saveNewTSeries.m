@@ -40,7 +40,7 @@ filename = scanParams.fileName;
 % Save tseries 
 tseriesdir = viewGet(view,'tseriesdir');
 path = fullfile(tseriesdir,scanParams.fileName);
-[byteswritten,hdr] = cbiWriteNifti(path,tseries,hdr);
+[byteswritten,hdr] = cbiWriteNifti(path,single(tseries),hdr,'float32');
 
 % Add new scan (note that the tseries file must already exist)
 view = viewSet(view,'newScan',scanParams);
