@@ -5,11 +5,11 @@
 %       date: 03/15/07
 %    purpose: 
 %
-function mrDefaultInterrogator(view,overlayNum,scan,x,y,s)
+function mrDefaultInterrogator(view,overlayNum,scan,x,y,s,roi)
 
 
 % check arguments
-if ~any(nargin == [1:6])
+if ~any(nargin == [1:7])
   help eventRelatedPlot
   return
 end

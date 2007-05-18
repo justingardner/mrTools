@@ -208,18 +208,29 @@ function mouseDownHandler(viewNum)
 mrGlobals;
 
 % get pointer
-[x y s] = getMouseCoords(viewNum);
+[x y s xBase yBase sBase] = getMouseCoords(viewNum);
 
 if mouseInImage(x,y)
     global MLR;
     view = MLR.views{viewNum};
     % make a waiting cursor
     %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
+    % find all rois that the user clicked on
+    roi = {};
+    nROIs = viewGet(view,'numberOfROIs');
+    for roinum = 1:nROIs
+      roicoords = getRoiCoordinates(view,roinum,0);
+      % see if this is a matching roi
+      if ismember([xBase yBase sBase],roicoords','rows')
+	% get the roi
+	roi{end+1} = viewGet(view,'roi',roinum);
+      end
+    end
     % Draw graph
     overlayNum = viewGet(view,'currentOverlay');
     analysisNum = viewGet(view,'currentAnalysis');
     scanNum = viewGet(view,'currentScan');
-    feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s);
+    feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s,roi);
     % reset to full crosshair
     %set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
 end
