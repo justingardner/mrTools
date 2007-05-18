@@ -29,7 +29,11 @@ for i = 1:length(args)
   % evaluate anything that has an equal sign in it
   if isstr(args{i}) && ~isempty(strfind(args{i},'='))
     % if the argument is a numeric, than just set it
-    if (exist(args{i}(strfind(args{i},'=')+1:end)) ~= 2) && ~isempty(str2num(args{i}(strfind(args{i},'=')+1:end)))
+    % also if the argument happens to be string, don't
+    % even do str2num on that since it gives an annoyinw warning
+    if ((exist(args{i}(strfind(args{i},'=')+1:end)) ~= 2) && ...
+	~strcmp(args{i}(strfind(args{i},'=')+1:end),'string') && ...
+	~isempty(str2num(args{i}(strfind(args{i},'=')+1:end))))
       evalstr = sprintf('%s%s;',evalstr,args{i});
     % same for a quoted string
     elseif args{i}(strfind(args{i},'=')+1)==''''
