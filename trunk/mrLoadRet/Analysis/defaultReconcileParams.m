@@ -21,15 +21,21 @@ if ieNotDefined('data'),data=[];,end
 % if params is a cell array, then call defaultReconcileParams on each
 % element of the cell array one at a time
 if iscell(params)
+  newData = cell(1,length(params));
+  newParams = cell(1,length(params));
   for i = 1:length(params)
     if ~isempty(params{i})
       if length(data) >= i
-	[params{i} data{i}] = defaultReconcileParams(groupName,params{i},data{i});
+	[thisParams thisData] = defaultReconcileParams(groupName,params{i},data);
+	newParams{thisParams.scanNum} = thisParams;
+	newData{thisParams.scanNum} = thisData{i};
       else
 	params{i} = defaultReconcileParams(groupName,params{i});
       end
     end
   end
+  data = newData;
+  params = newParams;
   return
 end
 
@@ -56,19 +62,29 @@ params = fixDescription(params);
 
 % get scan numbers
 if isfield(params,'scanList')
-  scanNums = params.scanList;
+  scanListName = 'scanList';
 elseif isfield(params,'scanNum')
-  scanNums = params.scanNum;
+  scanListName = 'scanNum';
+else
+  scanListName = '';
 end
 
-if ~ieNotDefined('scanNums') && ~ieNotDefined('groupNum')
+% get a list of fields that are associated with scan numbers
+% these will get matched to the new scan number that we get
+% below when we reconcile against the filename
+scanFields = {};
+if isfield(params,'scanParams')
+  scanFields{end+1} = 'scanParams';
+end
+
+if ~isempty(scanListName)
   % if we don't have a tseriesFile field then generate it
   % this will usually happen the first time this function
   % is called on some params
   if ~isfield(params,'tseriesFile')
     % get the tseries name
-    for iscan = 1:length(scanNums)
-      params.tseriesFile{iscan} = viewGet([],'tseriesFile',scanNums(iscan),groupNum);
+    for iscan = 1:length(params.(scanListName))
+      params.tseriesFile{iscan} = viewGet([],'tseriesFile',params.(scanListName)(iscan),groupNum);
     end
   % the second time through, we will have tseriesFile
   % so now we have to get the correct scan numbers for those
@@ -77,8 +93,9 @@ if ~ieNotDefined('scanNums') && ~ieNotDefined('groupNum')
     % starting values
     newScanNums = [];
     newdata = cell(1,viewGet([],'numScans',groupNum));
-    newScanParams = cell(1,viewGet([],'numScans',groupNum));
-    newd = cell(1,viewGet([],'numScans',groupNum));
+    for iFields = 1:length(scanFields)
+      newScanFields.(scanFields{iFields}) = cell(1,viewGet([],'numScans',groupNum));
+    end
     % see if the tseriesFile name matches
     for tnum = 1:length(params.tseriesFile)
       % get the scan number associated with the tseriesFile
@@ -89,37 +106,31 @@ if ~ieNotDefined('scanNums') && ~ieNotDefined('groupNum')
       else
 	% found it, set the scan number
 	newScanNums(end+1) = thisScanNum;
-	% if there is scan params field then fix that
-	if isfield(params,'scanParams')
-	  newScanParams{thisScanNum} = params.scanParams{scanNums(tnum)};
-	end
-	% if there is a d field then fix that
-	if isfield(params,'d')
-	  newd{thisScanNum} = params.d{scanNums(tnum)};
+	% keep the fields that go with each scan
+	for iFields = 1:length(scanFields)
+	  newScanFields.(scanFields{iFields}){thisScanNum} = ...
+	      params.(scanFields{iFields}){params.(scanListName)(tnum)};
 	end
 	% and if there is data, fix the data.
 	if ~isempty(data)
-	  newdata{end+1} = data{tnum};
+	  newdata{thisScanNum} = data{params.(scanListName)(tnum)};
+	  % fix filename and path fields
+	  if isfield(newdata{thisScanNum},'filename')
+	    newdata{thisScanNum}.filename = params.tseriesFile{tnum};
+	    newdata{thisScanNum}.filepath = fullfile(fileparts(newdata{thisScanNum}.filepath),params.tseriesFile{tnum});
+	  end
 	end
       end
     end
     % reset the scan field
-    if isfield(params,'scanList')
-      params.scanList = newScanNums;
-    elseif isfield(params,'scanNum')
-      params.scanNum = newScanNums;
-    end
+    params.(scanListName) = newScanNums;
     % and reset the data
     if ~isempty(data)
       data = newdata;
     end
-    % and reset the scanParams
-    if isfield(params,'scanParams')
-      params.scanParams = newScanParams;
-    end
-    % and reset the d field
-    if isfield(params,'d')
-      params.d = newd;
+    % and reset all the scan fields
+    for iFields = 1:length(scanFields)
+      params.(scanFields{iFields}) = newScanFields.(scanFields{iFields});
     end
   end  
 end
