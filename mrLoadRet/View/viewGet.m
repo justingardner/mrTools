@@ -215,7 +215,7 @@ switch lower(param)
         val = find(strcmp(groupName,groupNames));
 
         % scan
-    case{'nscans','numberofscans'}
+    case{'nscans','numberofscans','numscans'}
         % n = viewGet(view,'nScans',[groupNum])
         % n = viewGet([],'nScans',groupNum)
         % n = viewGet(view,'nScans',[])
