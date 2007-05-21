@@ -10,4 +10,8 @@
 %
 function [params data] = mrParamsReconcile(groupName,params,data)
 
-[params data] = defaultParamsReconcile(groupName,params,data);
+if ieNotDefined('data')
+  [params data] = defaultReconcileParams(groupName,params);
+else
+  [params data] = defaultReconcileParams(groupName,params,data);
+end
