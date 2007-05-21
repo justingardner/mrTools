@@ -88,7 +88,7 @@ for roinum = 1:length(roiname)
 	rois{end}.scanNum = scanNum;
 	rois{end}.groupNum = groupNum;
 	% convert to scan coordinates
-	rois{end}.scanCoords = getROICoords(view,groupNum,scanNum,rois{end});
+	rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum);
 	% if there are no scanCoords then set to empty and continue
 	if isempty(rois{end}.scanCoords)
 	  rois{end}.n = 0;
@@ -132,38 +132,3 @@ if length(rois) == 1
   rois = rois{1};
 end
   
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% convert the roi coordinates into this scans coordinates
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function scanCoords = getROICoords(view,groupNum,scanNum,roi)
-
-% get the scan transforms
-scanXform = viewGet(view,'scanXform',scanNum,groupNum);
-scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
-
-if isempty(scanXform) 
-  disp(sprintf('(loadROITSeries) Scan xform for %s:%i is empty. Need to run mrAlign',viewGet(view,'groupName',groupNum),scanNum));
-  scanCoords = [];
-  return
-end
-if size(roi.coords,1) == 3
-  roi.coords(4,:) = 1;
-end
-
-% Use xformROI to supersample the coordinates
-scanCoords = round(xformROIcoords(roi.coords,inv(scanXform)*roi.xform,roi.voxelSize,scanVoxelSize));
-
-% return the unique ones
-scanCoords = unique(scanCoords','rows')';
-
-% check scan dimensions
-scanDims = viewGet(view,'dims',scanNum,groupNum);
-
-% make sure we are inside scan dimensions
-xCheck = (scanCoords(1,:) >= 1) & (scanCoords(1,:) <= scanDims(1));
-yCheck = (scanCoords(2,:) >= 1) & (scanCoords(2,:) <= scanDims(2));
-sCheck = (scanCoords(3,:) >= 1) & (scanCoords(3,:) <= scanDims(3));
-
-% only return ones that are in bounds
-scanCoords = scanCoords(:,find(xCheck & yCheck & sCheck));
-

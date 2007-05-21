@@ -65,43 +65,57 @@ if isfile(fullfile(pathStr,filename))
         newAnal = eval(analysisName);    
         % check if they have the same name and merge them
         if strcmp(oldAnal.name,newAnal.name)
-            [mergedParams,mergedData] = feval(newAnal.mergeFunction,newAnal.groupName,...
-                oldAnal.params,newAnal.params);            
-            newAnal.params = mergedParams;
-            % loop through overlays and merge the params and data
-            for oldNum = 1:length(oldAnal.overlays)
-                oldOverlay = oldAnal.overlays(oldNum);
-                matchedOverlay = 0;
-                for newNum = 1:length(newAnal.overlays)
-                    newOverlay = newAnal.overlays(newNum);
-                    % see if there is a matching overlay
-                    if strcmp(oldOverlay.name,newOverlay.name)
-                        matchedOverlay = 1;
-                        % now try to combine them
-                        [mergedParams,mergedData] = feval(newOverlay.mergeFunction,newOverlay.groupName,...
-                            oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);
-                        newOverlay.params = mergedParams;
-                        newOverlay.data = mergedData;
-                        newAnal.overlays(newNum) = newOverlay;
-                        disp(sprintf('(saveAnalysis) Merged overlay %s from old analysis',oldOverlay.name));
-                    end
-                end
-                % if there was no match, then simply add the overlay to the analysis struct
-                if ~matchedOverlay
-                    newAnal.overlays(end+1) = oldOverlay;
-                    disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlay.name));
-                end
-            end                
-            % set analysisName variable so that it will be saved below
-            eval(sprintf('%s = newAnal;',analysisName));
-            % replace analysis with the newly merged one
-            view = viewSet(view,'deleteAnalysis',analysisNum);
-            view = viewSet(view,'newAnalysis',newAnal);            
+	  % reconcile the old parameters
+	  if isfield(oldAnal,'d')
+	    [oldAnal.params oldAnal.d] = feval(oldAnal.reconcileFunction,oldAnal.groupName,oldAnal.params,oldAnal.d);
+	  else
+	    oldAnal.params = feval(oldAnal.reconcileFunction,oldAnal.groupName,oldAnal.params);
+	  end
+	  % and merge them with the new ones
+	  if isfield(oldAnal,'d') && isfield(newAnal,'d')
+	    [mergedParams,newAnal.d] = ...
+		feval(newAnal.mergeFunction,newAnal.groupName,...
+		      oldAnal.params,newAnal.params,oldAnal.d,newAnal.d);    
+	  else
+	    [mergedParams,mergedData] = ...
+		feval(newAnal.mergeFunction,newAnal.groupName,...
+		      oldAnal.params,newAnal.params);    
+	  end
+	  newAnal.params = mergedParams;
+	  % loop through overlays and merge the params and data
+	  for oldNum = 1:length(oldAnal.overlays)
+	    oldOverlay = oldAnal.overlays(oldNum);
+	    matchedOverlay = 0;
+	    for newNum = 1:length(newAnal.overlays)
+	      newOverlay = newAnal.overlays(newNum);
+	      % see if there is a matching overlay
+	      if strcmp(oldOverlay.name,newOverlay.name)
+		matchedOverlay = 1;
+		% now try to combine them
+		[mergedParams,mergedData] = ...
+		    feval(newOverlay.mergeFunction,newOverlay.groupName,...
+			  oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);
+		newOverlay.params = mergedParams;
+		newOverlay.data = mergedData;
+		newAnal.overlays(newNum) = newOverlay;
+		disp(sprintf('(saveAnalysis) Merged overlay %s from old analysis',oldOverlay.name));
+	      end
+	    end
+	    % if there was no match, then simply add the overlay to the analysis struct
+	    if ~matchedOverlay
+	      newAnal.overlays(end+1) = oldOverlay;
+	      disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlay.name));
+	    end
+	  end                
+	  % set analysisName variable so that it will be saved below
+	  eval(sprintf('%s = newAnal;',analysisName));
+          % replace analysis with the newly merged one
+	  view = viewSet(view,'deleteAnalysis',analysisNum);
+	  view = viewSet(view,'newAnalysis',newAnal);            
         else
-            mrWarnDlg('(saveAnalysis) Merge failed. Save analysis aborted.');
-            return
+	  mrWarnDlg('(saveAnalysis) Merge failed. Save analysis aborted.');
+	  return
         end
- 
     elseif saveMethod == 2
         % put up a dialog to get new save name
         [filename pathStr] = uiputfile({'*.mat'},'Enter new name to save analysis as',fullfile(pathStr,filename));
