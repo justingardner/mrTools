@@ -46,7 +46,7 @@ dateString = datestr(now);
 r2.name = 'r2';
 r2.groupName = params.groupName;
 r2.function = 'eventRelated';
-r2.reconcileFunction = 'mrParamsReconcile';
+r2.reconcileFunction = 'defaultReconcileParams';
 r2.data = cell(1,viewGet(view,'nScans'));
 r2.date = dateString;
 r2.params = cell(1,viewGet(view,'nScans'));
@@ -58,6 +58,7 @@ r2.colormap = r2.colormap(end-255:end,:);
 r2.alpha = 1;
 r2.colormapType = 'setRangeToMax';
 r2.interrogator = 'eventRelatedPlot';
+r2.mergeFunction = 'defaultMergeParams';
 
 tic
 set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
@@ -71,7 +72,7 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims)
+  numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims);
   currentSlice = 1;
   ehdr = [];ehdrste = [];thisr2 = [];
 
@@ -130,7 +131,8 @@ erAnal.name = params.saveName;
 erAnal.type = 'erAnal';
 erAnal.groupName = params.groupName;
 erAnal.function = 'eventRelated';
-erAnal.reconcileFunction = 'mrParamsReconcile';
+erAnal.reconcileFunction = 'defaultReconcileParams';
+erAnal.mergeFunction = 'defaultMergeParams';
 erAnal.guiFunction = 'eventRelateGUI';
 erAnal.params = params;
 erAnal.overlays = r2;

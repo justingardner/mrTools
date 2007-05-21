@@ -28,7 +28,8 @@ d.nFrames = viewGet(view,'nFrames',scanNum);
 d.dim(4) = d.nFrames;
 d.filename = viewGet(view,'tseriesfile',scanNum);
 d.filepath = viewGet(view,'tseriespathstr',scanNum);
-[d.fullpath d.expname] = fileparts(pwd);
+d.expname = getLastDir(fileparts(fileparts(fileparts(d.filepath))));
+d.fullpath = fileparts(fileparts(fileparts(fileparts(d.filepath))));
 
 % dispay string to say what we are loading
 mrDisp(sprintf('Loading scan %i from group: %s',scanNum,viewGet(view,'groupName')));

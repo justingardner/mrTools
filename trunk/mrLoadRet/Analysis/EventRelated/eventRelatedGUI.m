@@ -67,6 +67,10 @@ if isempty(params.scanParams)
   params = [];
   return
 end
+% set the scan number
+for i = 1:length(params.scanNum)
+  params.scanParams{params.scanNum(i)}.scanNum = params.scanNum(i);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to get the variable name that the user wants
