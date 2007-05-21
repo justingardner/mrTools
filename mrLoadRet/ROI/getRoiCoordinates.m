@@ -10,6 +10,7 @@
 %             rather than the roinum
 function scanCoords = getRoiCoordinates(view,roiNum,scanNum,groupNum)
 
+scanCoords = [];
 % check arguments
 if ~any(nargin == [2 3 4])
   help getRoiCoordinates
@@ -43,6 +44,21 @@ else
   roiXform = viewGet(view,'roiXform',roiNum);
   roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
   roiCoords = viewGet(view,'roiCoords',roiNum);
+end
+
+% check stuff
+if (isempty(scanXform)) 
+  disp(sprintf('(getRoiCoordinates) scanXform for %s:%i is empty',viewGet(view,'groupName',groupNum),scanNum));
+  return
+end
+if (isempty(roiXform)) 
+  disp(sprintf('(getRoiCoordinates) roiXform is empty'));
+  return
+end
+
+% make sure we have normalized coordinates
+if (size(roiCoords,1)==3)
+  roiCoords(4,:) = 1;
 end
 
 % Use xformROI to supersample the coordinates
