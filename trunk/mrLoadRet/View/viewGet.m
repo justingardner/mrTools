@@ -1482,8 +1482,8 @@ switch lower(param)
         if ~isempty(analysis) & ~isempty(analysis.overlays)
             n = viewGet(view,'numberofOverlays',analysisNum);
             if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-                val = analysis.overlays(overlayNum).clip;
-            end
+	      val = analysis.overlays(overlayNum).clip;
+	    end
         end
     case {'overlaycmap'}
         % overlaycmap = viewGet(view,'overlaycmap',[overlayNum],[analysisNum])

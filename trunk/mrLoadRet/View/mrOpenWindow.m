@@ -58,11 +58,14 @@ if isfile('mrLastView.mat')
 	    % and refresh
             refreshMLRDisplay(view.viewNum);
         end
+
         % read ROIs into current view
         if isfield(mrLastView.view,'ROIs')
-            for roinum = 1:length(mrLastView.view.ROIs)
-                view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
-            end
+	  for roinum = 1:length(mrLastView.view.ROIs)
+	    view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
+	  end
+	  % and refresh
+	  refreshMLRDisplay(view.viewNum);
         end
 
         % read analyses
