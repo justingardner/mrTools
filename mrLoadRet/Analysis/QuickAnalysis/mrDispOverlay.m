@@ -1,7 +1,7 @@
 % mrDispOverlay.m
 %
-%      usage: [view analysis] = mrDispOverlay(overlay,scanNum,groupNum,<view>,<parameters>
-%      usage: mrDispOverlay(overlay,scanNum,analysisStructure,<view>,<parameters>)
+%      usage: [view analysis] = mrDispOverlay(overlay,scanNum,groupNum/analysisStruct,<view>)
+%      usage: mrDispOverlay(overlay,scanNum,analysisStructure,<view>)
 %         by: justin gardner
 %       date: 04/04/07
 %    purpose: displays an overlay in MrLoadRet
@@ -10,7 +10,7 @@
 %             scan and group, it will load the overlay into
 %             a bogus analysis and then display it.
 % 
-%             If you pass it an analysis sturcture then
+%             If you pass it an analysis structure as the groupNum
 %             it will add the overlay to the analysis strucutre
 %             and display that. 
 %          
