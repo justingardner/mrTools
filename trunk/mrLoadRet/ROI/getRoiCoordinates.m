@@ -30,6 +30,7 @@ if scanNum
   scanXform = viewGet(view,'scanXform',scanNum,groupNum);
   scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
 else
+  % use base xform if scanNum == 0
   view = viewSet(view,'curGroup',groupNum);
   scanXform = viewGet(view,'baseXform');
   scanVoxelSize = viewGet(view,'baseVoxelSize');
@@ -66,8 +67,9 @@ scanCoords = round(xformROIcoords(roiCoords,inv(scanXform)*roiXform,roiVoxelSize
 
 % return the unique ones
 scanCoords = unique(scanCoords','rows')';
-if ~isempty(scanCoords)
-  scanCoords = scanCoords(1:3,:);
+scanCoords = scanCoords(1:3,:);
+
+if ~isempty(scanCoords) && (scanNum ~= 0)
 
   % check scan dimensions
   scanDims = viewGet(view,'dims',scanNum,groupNum);

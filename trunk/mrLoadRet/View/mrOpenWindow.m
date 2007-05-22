@@ -44,29 +44,6 @@ if isfile('mrLastView.mat')
                 view = viewSet(view,'newBase',mrLastView.view.baseVolumes);
             end
         end
-        if baseLoaded && isfield(mrLastView,'viewSettings')
-            % slice orientation from last run
-            view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
-            % rotate
-            mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
-            % change group
-            view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
-            % change scan
-            mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
-            % change slice
-            mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
-	    % and refresh
-            refreshMLRDisplay(view.viewNum);
-        end
-
-        % read ROIs into current view
-        if isfield(mrLastView.view,'ROIs')
-	  for roinum = 1:length(mrLastView.view.ROIs)
-	    view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
-	  end
-	  % and refresh
-	  refreshMLRDisplay(view.viewNum);
-        end
 
         % read analyses
         if isfield(mrLastView.view,'analyses')
@@ -80,10 +57,33 @@ if isfile('mrLastView.mat')
 	      mlrGuiSet(view.viewNum,'overlayMax',mrLastView.viewSettings.overlayMax);
 	      mlrGuiSet(view.viewNum,'alpha',mrLastView.viewSettings.alpha);
 	    end
-	    % and refresh
-            refreshMLRDisplay(view.viewNum);
 	  end
         end
+	drawnow
+	
+        % read ROIs into current view
+        if isfield(mrLastView.view,'ROIs')
+	  for roinum = 1:length(mrLastView.view.ROIs)
+	    view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
+	    view = viewSet(view,'currentROI',roinum);
+	  end
+        end
+
+        if baseLoaded && isfield(mrLastView,'viewSettings')
+            % slice orientation from last run
+            view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
+            % rotate
+            mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
+            % change group
+            view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
+            % change scan
+            mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
+            % change slice
+            mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
+        end
+	% and refresh
+	refreshMLRDisplay(view.viewNum);
+
         % add here, to load more info...
     end
 
