@@ -1141,10 +1141,10 @@ switch lower(param)
         if analysisNum & (analysisNum > 0) & (analysisNum <= n)
             val = view.analyses{analysisNum}.function;
         end
-    case {'analysisreconcilefunction'}
-        % analysisReconcile = viewGet(view,'analysisReconcileFunction',[analysisNum])
-        % analysisReconcile = viewGet(view,'analysisReconcileFunction',[])
-        % analysisReconcile = viewGet(view,'analysisReconcileFunction')
+    case {'analysisreconcilefunction','reconcilefunction'}
+        % reconcileFunction = viewGet(view,'reconcilefunction',[analysisNum])
+        % reconcileFunction = viewGet(view,'reconcilefunction',[])
+        % reconcileFunction = viewGet(view,'reconcilefunction')
         if ieNotDefined('varargin')
             analysisNum = viewGet(view,'currentAnalysis');
         else
@@ -1159,6 +1159,26 @@ switch lower(param)
                 val = view.analyses{analysisNum}.reconcileFunction;
             else
                 val = 'defaultReconcileParams';
+            end
+        end
+    case {'analysismergefunction','mergefunction'}
+        % mergeFunction = viewGet(view,'mergefunction',[analysisNum])
+        % mergeFunction = viewGet(view,'mergefunction',[])
+        % mergeFunction = viewGet(view,'mergefunction')
+        if ieNotDefined('varargin')
+            analysisNum = viewGet(view,'currentAnalysis');
+        else
+            analysisNum = varargin{1};
+        end
+        if isempty(analysisNum)
+            analysisNum = viewGet(view,'currentAnalysis');
+        end
+        n = viewGet(view,'numberofAnalyses');
+        if analysisNum & (analysisNum > 0) & (analysisNum <= n)
+            if isfield(view.analyses{analysisNum},'mergeFunction')
+                val = view.analyses{analysisNum}.mergeFunction;
+            else
+                val = 'defaultMergeParams';
             end
         end
     case {'analysisguifunction'}
@@ -1688,6 +1708,79 @@ switch lower(param)
         if isempty(val)
             val = 'mrDefaultInterrogator';
         end
+    case {'overlayreconcilefunction'}
+        % reconcileFunction = viewGet(view,'overlayReconcileFunction',[overlayNum],[analysisNum])
+        % reconcileFunction = viewGet(view,'overlayReconcileFunction',overlayNum,[])
+        % reconcileFunction = viewGet(view,'overlayReconcileFunction',[],analysisNum)
+        % reconcileFunction = viewGet(view,'overlayReconcileFunction',[],[])
+        % reconcileFunction = viewGet(view,'overlayReconcileFunction',overlayNum)
+        % reconcileFunction = viewGet(view,'overlayReconcileFunction')
+        if ieNotDefined('varargin')
+            analysisNum = viewGet(view,'currentAnalysis');
+            overlayNum = viewGet(view,'currentOverlay',analysisNum);
+        end
+        switch (length(varargin))
+            case 1
+                overlayNum = varargin{1};
+                analysisNum = viewGet(view,'currentAnalysis');
+            case 2
+                overlayNum = varargin{1};
+                analysisNum = varargin{2};
+        end
+        if isempty(analysisNum)
+            analysisNum = viewGet(view,'currentAnalysis');
+        end
+        if isempty(overlayNum)
+            overlayNum = viewGet(view,'currentOverlay',analysisNum);
+        end
+        analysis = viewGet(view,'analysis',analysisNum);
+        if ~isempty(analysis) & ~isempty(analysis.overlays)
+            n = viewGet(view,'numberofOverlays',analysisNum);
+            if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+                if isfield(view.analyses{analysisNum},'reconcileFunction')
+                    val = analysis.overlays(overlayNum).reconcileFunction;
+                else
+                    val = 'defaultReconcileParams';
+                end
+            end
+        end
+    case {'overlaymergefunction'}
+        % mergeFunction = viewGet(view,'overlayMergeFunction',[overlayNum],[analysisNum])
+        % mergeFunction = viewGet(view,'overlayMergeFunction',overlayNum,[])
+        % mergeFunction = viewGet(view,'overlayMergeFunction',[],analysisNum)
+        % mergeFunction = viewGet(view,'overlayMergeFunction',[],[])
+        % mergeFunction = viewGet(view,'overlayMergeFunction',overlayNum)
+        % mergeFunction = viewGet(view,'overlayMergeFunction')
+        if ieNotDefined('varargin')
+            analysisNum = viewGet(view,'currentAnalysis');
+            overlayNum = viewGet(view,'currentOverlay',analysisNum);
+        end
+        switch (length(varargin))
+            case 1
+                overlayNum = varargin{1};
+                analysisNum = viewGet(view,'currentAnalysis');
+            case 2
+                overlayNum = varargin{1};
+                analysisNum = varargin{2};
+        end
+        if isempty(analysisNum)
+            analysisNum = viewGet(view,'currentAnalysis');
+        end
+        if isempty(overlayNum)
+            overlayNum = viewGet(view,'currentOverlay',analysisNum);
+        end
+        analysis = viewGet(view,'analysis',analysisNum);
+        if ~isempty(analysis) & ~isempty(analysis.overlays)
+            n = viewGet(view,'numberofOverlays',analysisNum);
+            if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+                if isfield(view.analyses{analysisNum},'mergeFunction')
+                    val = analysis.overlays(overlayNum).mergeFunction;
+                else
+                    val = 'defaultMergeParams';
+                end
+            end
+        end
+        
         % corAnal
     case {'coranal'}
         % corAnal = viewGet(view,'corAnal')
