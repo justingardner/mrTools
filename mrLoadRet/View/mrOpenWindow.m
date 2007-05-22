@@ -45,6 +45,18 @@ if isfile('mrLastView.mat')
             end
         end
 
+        if baseLoaded && isfield(mrLastView,'viewSettings')
+            % slice orientation from last run
+            view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
+            % rotate
+            mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
+            % change group
+            view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
+            % change scan
+            mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
+            % change slice
+            mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
+        end
         % read analyses
         if isfield(mrLastView.view,'analyses')
 	  for anum = 1:length(mrLastView.view.analyses)
@@ -69,18 +81,6 @@ if isfile('mrLastView.mat')
 	  end
         end
 
-        if baseLoaded && isfield(mrLastView,'viewSettings')
-            % slice orientation from last run
-            view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
-            % rotate
-            mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
-            % change group
-            view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
-            % change scan
-            mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
-            % change slice
-            mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
-        end
 	% and refresh
 	refreshMLRDisplay(view.viewNum);
 
