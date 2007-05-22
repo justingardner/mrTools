@@ -57,7 +57,7 @@ eval([overlayName,'=overlay;']);
 
 % Check for over-writing
 if isfile(fullfile(pathStr,filename))
-    
+
     % get overwrite preference or ask user
     saveMethod = mrGetPref('overwritePolicy');
     saveMethodTypes = {'Merge','Rename','Overwrite'};
@@ -69,7 +69,7 @@ if isfile(fullfile(pathStr,filename))
         if isempty(params),return,end
         saveMethod = find(strcmp(params.saveMethod,saveMethodTypes));
     end
-    
+
     if saveMethod == 1
         disp('(saveOverlay) Merging with old analysis');
         % load the old overlay
@@ -78,23 +78,23 @@ if isfile(fullfile(pathStr,filename))
         oldOverlay = s.(varNames{1});
         oldOverlay.name = varNames{1};
         % get the new overlay
-        newOverlay = eval(overlayName);        
+        newOverlay = eval(overlayName);
         % check if they have the same name and merge them
         if strcmp(oldOverlay.name,newOverlay.name)
             [mergedParams,mergedData] = feval(newOverlay.mergeFunction,newOverlay.groupName,...
-                oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);            
+                oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);
             newOverlay.params = mergedParams;
             newOverlay.data = mergedData;
             % set overlayName variable so that it will be saved below
             eval(sprintf('%s = newOverlay;',overlayName));
             % replace overlay with the newly merged one
             view = viewSet(view,'deleteoverlay',overlayNum,analysisNum);
-            view = viewSet(view,'newoverlay',newOverlay,analysisNum);            
+            view = viewSet(view,'newoverlay',newOverlay,analysisNum);
         else
             mrWarnDlg('(saveOverlay) Merge failed. Save overlay aborted.');
             return
         end
-        
+
     elseif saveMethod == 2
         % put up a dialog to get new filename
         [filename pathStr] = uiputfile({'*.mat'},'Enter new name to save overlay',fullfile(pathStr,filename));
@@ -104,7 +104,7 @@ if isfile(fullfile(pathStr,filename))
         end
         % otherwise accept the filename, make sure it has a .mat extension
         filename = [stripext(filename),'.mat'];
-        
+
     elseif saveMethod == 3
         % this is the easiest, just overwrite
         disp('(saveAnalysis) Overwriting old analysis');

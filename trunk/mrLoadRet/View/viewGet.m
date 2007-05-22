@@ -548,7 +548,7 @@ switch lower(param)
         % get the tseries name
         [tSeriesPath tSeriesName] = fileparts(viewGet(view,'tSeriesPathStr',s,g));
         if isfile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
-	  val = load(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)));
+            val = load(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)));
         end
     case{'niftihdr'}
         % hdr = viewGet(view,'niftiHdr',scanNum,[groupNum])
@@ -566,12 +566,12 @@ switch lower(param)
         [s g] = getScanAndGroup(view,varargin,param);
         nscans = viewGet(view,'nscans',g);
         if (nscans >= s) & (s > 0)
-	  if ~isfield(MLR.groups(g).scanParams(s).niftiHdr,'sform_code')
-	    val = [];
-	  else
-	    val = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
-	  end
-	end
+            if ~isfield(MLR.groups(g).scanParams(s).niftiHdr,'sform_code')
+                val = [];
+            else
+                val = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
+            end
+        end
     case{'scanxform'}
         % xform = viewGet(view,'scanXform',scanNum,[groupNum])
         % xform = viewGet([],'scanXform',scanNum,groupNum)
@@ -594,10 +594,10 @@ switch lower(param)
                 % using the qform matrices. Note: There used to be code
                 % here that reset val if it was the identity but that was a
                 % bug (DJH 1/17/07).
-		if strcmp(mrGetPref('verbose'),'Yes')
-		  disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
-		end
-		baseqform = viewGet(view,'baseqform');
+                if strcmp(mrGetPref('verbose'),'Yes')
+                    disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+                end
+                baseqform = viewGet(view,'baseqform');
                 val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
             end
         end
@@ -1155,7 +1155,11 @@ switch lower(param)
         end
         n = viewGet(view,'numberofAnalyses');
         if analysisNum & (analysisNum > 0) & (analysisNum <= n)
-            val = view.analyses{analysisNum}.reconcileFunction;
+            if isfield(view.analyses{analysisNum},'reconcileFunction')
+                val = view.analyses{analysisNum}.reconcileFunction;
+            else
+                val = 'defaultReconcileParams';
+            end
         end
     case {'analysisguifunction'}
         % analysisGui = viewGet(view,'analysisGuiFunction',[analysisNum])
@@ -1482,8 +1486,8 @@ switch lower(param)
         if ~isempty(analysis) & ~isempty(analysis.overlays)
             n = viewGet(view,'numberofOverlays',analysisNum);
             if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-	      val = analysis.overlays(overlayNum).clip;
-	    end
+                val = analysis.overlays(overlayNum).clip;
+            end
         end
     case {'overlaycmap'}
         % overlaycmap = viewGet(view,'overlaycmap',[overlayNum],[analysisNum])
@@ -2012,9 +2016,9 @@ disp('-----------------------------------------------------------------------');
 function [s g] = getScanAndGroup(view,varg,param)
 
 if ieNotDefined('varg')
-  s = viewGet(view,'curScan');
+    s = viewGet(view,'curScan');
 else
-  s = varg{1};
+    s = varg{1};
 end
 if length(varg) > 1
     g = varg{2};
