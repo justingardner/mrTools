@@ -10,7 +10,8 @@
 % version of this script to customize it for that data set.
 % Examples of a number of possible customizations are commented
 % below.
-function mrLoadRet
+
+function[v]= mrLoadRet()
 
 if ~isfile('mrSession.mat')
   disp('(mrLoadRet) No mrSession.mat found in current directory');
