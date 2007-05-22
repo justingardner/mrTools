@@ -220,8 +220,10 @@ MLR.views{1} = averageTSeries(MLR.views{1},params);
 
 MLR.views{1} = viewSet(MLR.views{1},'currentGroup',1);
 ts1 = loadTSeries(MLR.views{1},1,6);
+ts1 = reshapeTSeries(ts1);
 MLR.views{1} = viewSet(MLR.views{1},'currentGroup',2);
 ts2 = loadTSeries(MLR.views{1},1,6);
+ts2 = reshapeTSeries(ts2);
 figure; plot([ts1(9:168,2000) ts2(:,2000)]);
 
 
