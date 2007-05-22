@@ -57,6 +57,7 @@ if isfile('mrLastView.mat')
             % change slice
             mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
         end
+
         % read analyses
         if isfield(mrLastView.view,'analyses')
 	  for anum = 1:length(mrLastView.view.analyses)
@@ -72,19 +73,18 @@ if isfile('mrLastView.mat')
 	  end
         end
 	drawnow
-	
+
         % read ROIs into current view
         if isfield(mrLastView.view,'ROIs')
 	  for roinum = 1:length(mrLastView.view.ROIs)
 	    view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
-	    view = viewSet(view,'currentROI',roinum);
 	  end
+	  view = viewSet(view,'currentROI',1);
         end
 
+        % add here, to load more info...
 	% and refresh
 	refreshMLRDisplay(view.viewNum);
-
-        % add here, to load more info...
     end
 
 end
