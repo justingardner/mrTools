@@ -68,16 +68,16 @@ scanCoords = round(xformROIcoords(roiCoords,inv(scanXform)*roiXform,roiVoxelSize
 scanCoords = unique(scanCoords','rows')';
 if ~isempty(scanCoords)
   scanCoords = scanCoords(1:3,:);
+
+  % check scan dimensions
+  scanDims = viewGet(view,'dims',scanNum,groupNum);
+
+  % make sure we are inside scan dimensions
+  xCheck = (scanCoords(1,:) >= 1) & (scanCoords(1,:) <= scanDims(1));
+  yCheck = (scanCoords(2,:) >= 1) & (scanCoords(2,:) <= scanDims(2));
+  sCheck = (scanCoords(3,:) >= 1) & (scanCoords(3,:) <= scanDims(3));
+
+  % only return ones that are in bounds
+  scanCoords = scanCoords(:,find(xCheck & yCheck & sCheck));
 end
-
-% check scan dimensions
-scanDims = viewGet(view,'dims',scanNum,groupNum);
-
-% make sure we are inside scan dimensions
-xCheck = (scanCoords(1,:) >= 1) & (scanCoords(1,:) <= scanDims(1));
-yCheck = (scanCoords(2,:) >= 1) & (scanCoords(2,:) <= scanDims(2));
-sCheck = (scanCoords(3,:) >= 1) & (scanCoords(3,:) <= scanDims(3));
-
-% only return ones that are in bounds
-scanCoords = scanCoords(:,find(xCheck & yCheck & sCheck));
 
