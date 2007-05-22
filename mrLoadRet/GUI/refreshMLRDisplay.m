@@ -125,7 +125,7 @@ end
 %disppercent(-inf,'displayImage');
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
-% set(fig,'CurrentAxes',gui.axis);
+%set(fig,'CurrentAxes',gui.axis);
 image(img,'Parent',gui.axis);
 axis(gui.axis,'off');
 axis(gui.axis,'image');
@@ -429,6 +429,12 @@ for r = order
         fig = viewGet(view,'figNum');
         gui = guidata(fig);
         set(fig,'CurrentAxes',gui.axis);
+	% the code here does not seem to want to set 
+	% the current axes when mrOpenWindow
+	% starts up, causing rois to get
+	% drawn in a different figure?? jg
+%	figure(fig);
+%	axes(gui.axis);
         lineWidth = 0.5;
         w = 0.5;
         hold on
