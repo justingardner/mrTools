@@ -42,6 +42,7 @@ elseif isnumeric(analysisName)
 else
     myErrorDlg(['Bad analysis name: ',analysisName]);
 end
+mergeFunction = viewGet(view,'overlayMergeFunction',overlayNum,analysisNum);
 
 if ieNotDefined('confirm')
     confirm = 0;
@@ -81,7 +82,7 @@ if isfile(fullfile(pathStr,filename))
         newOverlay = eval(overlayName);
         % check if they have the same name and merge them
         if strcmp(oldOverlay.name,newOverlay.name)
-            [mergedParams,mergedData] = feval(newOverlay.mergeFunction,newOverlay.groupName,...
+            [mergedParams,mergedData] = feval(mergeFunction,newOverlay.groupName,...
                 oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);
             newOverlay.params = mergedParams;
             newOverlay.data = mergedData;
