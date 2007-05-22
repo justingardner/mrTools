@@ -155,6 +155,7 @@ elseif isnumeric(analysisName)
 else
     myErrorDlg(['Bad analysis name: ',analysisName]);
 end
+analysisMergeFunction = viewGet(view,'mergeFunction',analysisNum);
 
 if ieNotDefined('confirm')
     confirm = 0;
@@ -203,11 +204,11 @@ if isfile(fullfile(pathStr,filename))
             % and merge them with the new ones
             if isfield(oldAnal,'d') && isfield(newAnal,'d')
                 [mergedParams,newAnal.d] = ...
-                    feval(newAnal.mergeFunction,newAnal.groupName,...
+                    feval(analysisMergeFunction,newAnal.groupName,...
                     oldAnal.params,newAnal.params,oldAnal.d,newAnal.d);
             else
                 [mergedParams,mergedData] = ...
-                    feval(newAnal.mergeFunction,newAnal.groupName,...
+                    feval(analysisMergeFunction,newAnal.groupName,...
                     oldAnal.params,newAnal.params);
             end
             newAnal.params = mergedParams;
@@ -217,12 +218,13 @@ if isfile(fullfile(pathStr,filename))
                 matchedOverlay = 0;
                 for newNum = 1:length(newAnal.overlays)
                     newOverlay = newAnal.overlays(newNum);
+                    overlayMergeFunction = viewGet(view,'overlayMergeFunction',newNum,analysisNum);
                     % see if there is a matching overlay
                     if strcmp(oldOverlay.name,newOverlay.name)
                         matchedOverlay = 1;
                         % now try to combine them
                         [mergedParams,mergedData] = ...
-                            feval(newOverlay.mergeFunction,newOverlay.groupName,...
+                            feval(overlayMergeFunction,newOverlay.groupName,...
                             oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);
                         newOverlay.params = mergedParams;
                         newOverlay.data = mergedData;
