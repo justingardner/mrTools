@@ -52,10 +52,10 @@ if isfile(fullfile(pathStr,filename))
 
   if saveMethod == 1
     disp(sprintf('(saveAnalysis) Merging with old analysis'));
-    
+
     % load the old analysis
     view = loadAnalysis(view,filename,pathStr,'tmpAnalysis');
-    oldAnalNum = viewGet(view,'numberofAnalyses');
+    oldAnalNum = viewGet(view,'analysisNum','tmpAnalysis');
     oldAnal = viewGet(view,'analysis',oldAnalNum);
     oldType = viewGet(view,'analysisType',oldAnalNum);
     oldGroupName = viewGet(view,'analysisGroupName',oldAnalNum);
@@ -69,11 +69,11 @@ if isfile(fullfile(pathStr,filename))
     newType = viewGet(view,'analysisType',analysisNum);
     newGroupName = viewGet(view,'analysisGroupName',analysisNum);
     newParams = viewGet(view,'analysisParams',analysisNum);
-    newData = viewGet(view,'analysisData',analysisNum);    
+    newData = viewGet(view,'analysisData',analysisNum);
     numNewOverlays = viewGet(view,'numberofOverlays',analysisNum);
     newReconcileFunction = viewGet(view,'reconcileFunction',analysisNum);
-    mergeFunction = viewGet(view,'mergeFunction',analysisNum);   
-    
+    mergeFunction = viewGet(view,'mergeFunction',analysisNum);
+
     % Check if they have the same Type and merge them
     if strcmp(oldType,newType) && strcmp(oldGroupName,newGroupName)
       [oldParams oldData] = feval(oldReconcileFunction,oldGroupName,oldParams,oldData);
@@ -90,18 +90,18 @@ if isfile(fullfile(pathStr,filename))
         oldOverlayType = viewGet(view,'overlayType',oldOverlayNum,oldAnalNum);
         oldOverlayName = viewGet(view,'overlayName',oldOverlayNum,oldAnalNum);
         oldOverlayGroupName = viewGet(view,'overlayGroupName',oldOverlayNum,oldAnalNum);
-        oldOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',oldOverlayNum,oldAnalNum); 
+        oldOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',oldOverlayNum,oldAnalNum);
         matchedOverlay = 0;
-        
+
         for newOverlayNum = 1:numNewOverlays
           newOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
           newOverlayParams = viewGet(view,'overlayParams',newOverlayNum,analysisNum);
           newOverlayData = viewGet(view,'overlayData',[],newOverlayNum,analysisNum);
           newOverlayType = viewGet(view,'overlayType',newOverlayNum,analysisNum);
           newOverlayGroupName = viewGet(view,'overlayGroupName',newOverlayNum,analysisNum);
-          newOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',newOverlayNum,analysisNum); 
+          newOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',newOverlayNum,analysisNum);
           overlayMergeFunction = viewGet(view,'overlayMergeFunction',newOverlayNum,analysisNum);
-          
+
           % see if there is a matching overlay
           if strcmp(oldOverlayType,newOverlayType) && strcmp(oldOverlayGroupName,newOverlayGroupName)
             matchedOverlay = 1;
@@ -125,7 +125,7 @@ if isfile(fullfile(pathStr,filename))
           disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlayName));
         end
       end
-      
+
       % replace analysis with the newly merged one
       view = viewSet(view,'deleteAnalysis',oldAnalNum);
       view = viewSet(view,'deleteAnalysis',analysisNum);
@@ -134,7 +134,7 @@ if isfile(fullfile(pathStr,filename))
       mrWarnDlg('(saveAnalysis) Merge failed. Save analysis aborted.');
       return
     end
-    
+
   elseif saveMethod == 2
     % put up a dialog to get new save name
     [filename pathStr] = uiputfile({'*.mat'},'Enter new name to save analysis as',fullfile(pathStr,filename));
@@ -151,8 +151,10 @@ if isfile(fullfile(pathStr,filename))
   end
 end
 
-% Assign local variable with analysisName = analysis
+% Assign local variable with analysisName = analysis for later saving
+analysisNum = viewGet(view,'analysisNum',analysisName);
 analysis = viewGet(view,'analysis',analysisNum);
+analysisName = fixBadChars(analysisName);
 eval([analysisName,'=analysis;']);
 
 % Finally, write the file

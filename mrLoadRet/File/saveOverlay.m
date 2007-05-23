@@ -68,23 +68,23 @@ if isfile(fullfile(pathStr,filename))
 
   if saveMethod == 1
     disp('(saveOverlay) Merging with old analysis');
-    
+
     % load the old overlay
     view = loadOverlay(view,filename,pathStr,'tmpOverlay');
-    oldOverlayNum = viewGet(view,'numberofOverlays',analysisNum);
+    oldOverlayNum = viewGet(view,'overlayNum','tmpOverlay',analysisNum);
     oldOverlay = viewGet(view,'overlay',oldOverlayNum,analysisNum);
     oldOverlayParams = viewGet(view,'overlayParams',oldOverlayNum,analysisNum);
     oldOverlayData = viewGet(view,'overlayData',[],oldOverlayNum,analysisNum);
-    oldOverlayType = viewGet(view,'overlayType',[],oldOverlayNum,analysisNum);
-    oldOverlayGroupName = viewGet(view,'overlayGroupName',[],oldOverlayNum,analysisNum);
+    oldOverlayType = viewGet(view,'overlayType',oldOverlayNum,analysisNum);
+    oldOverlayGroupName = viewGet(view,'overlayGroupName',oldOverlayNum,analysisNum);
     oldOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',oldOverlayNum,analysisNum);
 
     % get the new overlay
     newOverlay = viewGet(view,'overlay',overlayNum,analysisNum);
     newOverlayParams = viewGet(view,'overlayParams',overlayNum,analysisNum);
     newOverlayData = viewGet(view,'overlayData',[],overlayNum,analysisNum);
-    newOverlayType = viewGet(view,'overlayType',[],overlayNum,analysisNum);
-    newOverlayGroupName = viewGet(view,'overlayGroupName',[],overlayNum,analysisNum); 
+    newOverlayType = viewGet(view,'overlayType',overlayNum,analysisNum);
+    newOverlayGroupName = viewGet(view,'overlayGroupName',overlayNum,analysisNum);
     newOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',overlayNum,analysisNum);
     overlayMergeFunction = viewGet(view,'overlayMergeFunction',overlayNum,analysisNum);
 
@@ -100,7 +100,7 @@ if isfile(fullfile(pathStr,filename))
         oldOverlayParams,newOverlayParams,oldOverlayData,newOverlayData);
       newOverlay.params = mergedParams;
       newOverlay.data = mergedData;
-      
+
       % replace overlay with the newly merged one
       view = viewSet(view,'deleteoverlay',oldOverlayNum,analysisNum);
       view = viewSet(view,'deleteoverlay',overlayNum,analysisNum);
@@ -126,8 +126,10 @@ if isfile(fullfile(pathStr,filename))
   end
 end
 
-% Assign local variable with overlayName = overlay
+% Assign local variable with overlayName = overlay for later saving
+overlayNum = viewGet(view,'overlayNum',overlayName,analysisNum);
 overlay = viewGet(view,'overlay',overlayNum,analysisNum);
+overlayName = fixBadChars(overlayName);
 eval([overlayName,'=overlay;']);
 
 % Finally, write the file
