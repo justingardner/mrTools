@@ -1,6 +1,6 @@
-function view = loadAnalysis(view,pathStr,startPathStr)
+function view = loadAnalysis(view,pathStr,startPathStr,name)
 %
-% view = loadAnalysis(view,[pathStr],[startPathStr])
+% view = loadAnalysis(view,[pathStr],[startPathStr],[name])
 %
 % Loads an analysis and adds it to view.analyses.
 %
@@ -9,6 +9,10 @@ function view = loadAnalysis(view,pathStr,startPathStr)
 % (if not specified) to be the current group's data directory. pathStr can
 % be a string specifying a single analysis file or it can be a cell array
 % of filenames to load multiple analyses at once.
+%
+% name: optional replacement name(s) for the analysis when loaded. If
+% pathStr is a cell array, then name must be a cell array of the same
+% length.
 %
 % The file must contain a structure or structures, each with the following
 % fields:
@@ -56,6 +60,12 @@ if isempty(pathStr)
   return
 end
 
+if ieNotDefined('name')
+  name = [];
+elseif ~iscell(name)
+  name = {name};
+end
+
 if ~iscell(pathStr)
     pathStr = {pathStr};
 end
@@ -68,7 +78,11 @@ for p = 1:length(pathStr)
 		s = load(pathStr{p});
 		varNames = fieldnames(s);
 		analysis = eval(['s.',varNames{1}]);
-		analysis.name = varNames{1};
+    if isempty(name)
+      analysis.name = varNames{1};
+    else
+      analysis.name = name{p};
+    end
 		% Add it to the view
 		view = viewSet(view,'newAnalysis',analysis);
 		mrCloseDlg(h);

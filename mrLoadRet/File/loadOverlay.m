@@ -1,6 +1,6 @@
-function view = loadOverlay(view,filename,startPathStr)
+function view = loadOverlay(view,filename,startPathStr,name)
 %
-% view = loadOverlay(view,[filename],[startPathStr])
+% view = loadOverlay(view,[filename],[startPathStr],[name])
 %
 % Loads an overlay (parameter map) array and adds it to view.overlays.
 %
@@ -10,6 +10,10 @@ function view = loadOverlay(view,filename,startPathStr)
 % (e.g., view.subdir/Overlays/name.mat). Filename can be a string
 % specifying an overlay file or it can be a cell array of filenames to load
 % multiple overlays at once.
+%
+% name: optional replacement name(s) for the analysis when loaded. If
+% pathStr is a cell array, then name must be a cell array of the same
+% length.
 %
 % The file must contain a structure or structures, each with the following
 % fields:
@@ -53,6 +57,13 @@ else
 		pathStr = {fullfile(startPathStr,[filename,'.mat'])};
 	end
 end
+
+if ieNotDefined('name')
+  name = [];
+elseif ~iscell(name)
+  name = {name};
+end
+
 if ~iscell(pathStr)
     pathStr = {pathStr};
 end
@@ -65,7 +76,11 @@ for p = 1:length(pathStr)
 		s = load(pathStr{p});
 		varNames = fieldnames(s);
 		overlay = s.(varNames{1});
-		overlay.name = varNames{1};
+    if isempty(name)
+      overlay.name = varNames{1};
+    else
+      overlay.name = name{p};
+    end
 		% Add it to the view
 		view = viewSet(view,'newOverlay',overlay);
 		mrCloseDlg(h);

@@ -58,10 +58,10 @@ if isfile(fullfile(pathStr,filename))
     disp(sprintf('(saveAnalysis) Merging with old analysis'));
     
     % load the old analysis
-    view = loadAnalysis(view,filename,pathStr);
+    view = loadAnalysis(view,filename,pathStr,'tmpAnalysis');
     oldAnalNum = viewGet(view,'numberofAnalyses');
     oldAnal = viewGet(view,'analysis',oldAnalNum);
-    oldName = viewGet(view,'analysisName',oldAnalNum);
+    oldType = viewGet(view,'analysisType',oldAnalNum);
     oldGroupName = viewGet(view,'analysisGroupName',oldAnalNum);
     oldParams = viewGet(view,'analysisParams',oldAnalNum);
     oldData = viewGet(view,'analysisData',oldAnalNum);
@@ -70,7 +70,7 @@ if isfile(fullfile(pathStr,filename))
 
     % get the new analysis
     newAnal = viewGet(view,'analysis',analysisNum);
-    newName = viewGet(view,'analysisName',analysisNum);
+    newType = viewGet(view,'analysisType',analysisNum);
     newGroupName = viewGet(view,'analysisGroupName',analysisNum);
     newParams = viewGet(view,'analysisParams',analysisNum);
     newData = viewGet(view,'analysisData',analysisNum);    
@@ -78,8 +78,8 @@ if isfile(fullfile(pathStr,filename))
     newReconcileFunction = viewGet(view,'reconcileFunction',analysisNum);
     mergeFunction = viewGet(view,'mergeFunction',analysisNum);   
     
-    % Check if they have the same name and merge them
-    if strcmp(oldName,newName) && strcmp(oldGroupName,newGroupName)
+    % Check if they have the same Type and merge them
+    if strcmp(oldType,newType) && strcmp(oldGroupName,newGroupName)
       [oldParams oldData] = feval(oldReconcileFunction,oldGroupName,oldParams,oldData);
       [newParams newData] = feval(newReconcileFunction,newGroupName,newParams,newData);
       [mergedParams,mergedData] = feval(mergeFunction,newGroupName,oldParams,newParams,oldData,newData);
@@ -91,6 +91,7 @@ if isfile(fullfile(pathStr,filename))
         oldOverlay = viewGet(view,'overlay',oldOverlayNum,oldAnalNum);
         oldOverlayParams = viewGet(view,'overlayParams',oldOverlayNum,oldAnalNum);
         oldOverlayData = viewGet(view,'overlayData',[],oldOverlayNum,oldAnalNum);
+        oldOverlayType = viewGet(view,'overlayType',oldOverlayNum,oldAnalNum);
         oldOverlayName = viewGet(view,'overlayName',oldOverlayNum,oldAnalNum);
         oldOverlayGroupName = viewGet(view,'overlayGroupName',oldOverlayNum,oldAnalNum);
         oldOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',oldOverlayNum,oldAnalNum); 
@@ -100,13 +101,13 @@ if isfile(fullfile(pathStr,filename))
           newOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
           newOverlayParams = viewGet(view,'overlayParams',newOverlayNum,analysisNum);
           newOverlayData = viewGet(view,'overlayData',[],newOverlayNum,analysisNum);
-          newOverlayName = viewGet(view,'overlayName',newOverlayNum,analysisNum);
+          newOverlayType = viewGet(view,'overlayType',newOverlayNum,analysisNum);
           newOverlayGroupName = viewGet(view,'overlayGroupName',newOverlayNum,analysisNum);
           newOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',newOverlayNum,analysisNum); 
           overlayMergeFunction = viewGet(view,'overlayMergeFunction',newOverlayNum,analysisNum);
           
           % see if there is a matching overlay
-          if strcmp(oldOverlayName,newOverlayName) && strcmp(oldOverlayGroupName,newOverlayGroupName)
+          if strcmp(oldOverlayType,newOverlayType) && strcmp(oldOverlayGroupName,newOverlayGroupName)
             matchedOverlay = 1;
             % reconcile them
             [oldOverlayParams oldOverlayData] = feval(oldOverlayReconcileFunction,oldOverlayGroupName,...
@@ -119,13 +120,13 @@ if isfile(fullfile(pathStr,filename))
             newOverlay.params = mergedParams;
             newOverlay.data = mergedData;
             newAnal.overlays(newOverlayNum) = newOverlay;
-            disp(sprintf('(saveAnalysis) Merged overlay %s from old analysis',oldOverlay.name));
+            disp(sprintf('(saveAnalysis) Merged overlay %s from old analysis',oldOverlayName));
           end
         end
         % if there was no match, then simply add the overlay to the analysis struct
         if ~matchedOverlay
           view = viewSet(view,'newoverlay',oldOverlay,analysisNum);
-          disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlay.name));
+          disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlayName));
         end
       end
       
