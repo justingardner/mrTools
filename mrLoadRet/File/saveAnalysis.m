@@ -36,10 +36,6 @@ analysisdir = viewGet(view,'analysisdir',[],analysisNum);
 filename = [analysisName,'.mat'];
 pathStr = analysisdir;
 
-% Assign local variable with analysisName = analysis
-analysis = viewGet(view,'analysis',analysisNum);
-eval([analysisName,'=analysis;']);
-
 % Write, though check for over-writing
 if isfile(fullfile(pathStr,filename))
   % get the preference how to deal with what to do with over-writing
@@ -154,6 +150,10 @@ if isfile(fullfile(pathStr,filename))
     disp(sprintf('(saveAnalysis) Overwriting old analysis'));
   end
 end
+
+% Assign local variable with analysisName = analysis
+analysis = viewGet(view,'analysis',analysisNum);
+eval([analysisName,'=analysis;']);
 
 % Finally, write the file
 pathStr = fullfile(pathStr,filename);
