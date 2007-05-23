@@ -115,6 +115,7 @@ for iscan = 1:length(params.scanList)
   % Dump junk frames
   junkFrames = viewGet(viewBase,'junkframes',scanNum);
   nFrames = viewGet(viewBase,'nFrames',scanNum);
+  d.dim(4) = nFrames;
   d.data = d.data(:,:,:,junkFrames+1:junkFrames+nFrames);
 	
   % Compute transform
