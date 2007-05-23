@@ -114,7 +114,8 @@ for iscan = 1:length(params.scanList)
 	
   % Dump junk frames
   junkFrames = viewGet(viewBase,'junkframes',scanNum);
-  d.data = d.data(:,:,:,junkFrames+1:junkFrames+d.nFrames);
+  nFrames = viewGet(viewBase,'nFrames',scanNum);
+  d.data = d.data(:,:,:,junkFrames+1:junkFrames+nFrames);
 	
   % Compute transform
   if params.warp
@@ -193,11 +194,12 @@ for iscan = 1:length(params.scanList)
     
     % now load up channels
     stimfile = viewGet(viewBase,'stimFile',scanNum);
-    if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
-      concatInfo.traces = stimfile{1}.myscreen.traces;
-    else
-      disp(sprintf('Missing stimfile for scan %i',scanNum));
-    end
+    % This code is no longer necessary--should be removed once tested
+    %if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
+    %  concatInfo.traces = stimfile{1}.myscreen.traces;
+    %else
+    %  disp(sprintf('Missing stimfile for scan %i',scanNum));
+    %end
   % for subsequent scans, we are going to append
   else
     oldScanParams = viewGet(viewConcat,'scanParams',saveScanNum);
@@ -205,17 +207,18 @@ for iscan = 1:length(params.scanList)
     oldScanParams.originalGroupName{end+1} = baseGroupName;
     viewConcat = saveTSeries(viewConcat,d.data,saveScanNum,oldScanParams,[],1);
 
+    % This code is no longer necessary--should be removed once tested
     % now append traces (but only if we have a traces field
     % this way we only create traces if all of the stimfiles exist
-    if isfield(concatInfo,'traces')
-      stimfile = viewGet(viewBase,'stimFile',scanNum);
-    if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
-	concatInfo = concatTraces(concatInfo,stimfile{1}.myscreen.traces);
-      else
-	concatInfo = rmfield(concatInfo,'traces')
-	disp(sprintf('Missing stimfile for scan %i',scanNum));
-      end
-    end
+    %if isfield(concatInfo,'traces')
+    %  stimfile = viewGet(viewBase,'stimFile',scanNum);
+    %if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
+    %	concatInfo = concatTraces(concatInfo,stimfile{1}.myscreen.traces);
+    %  else
+    %	concatInfo = rmfield(concatInfo,'traces')
+    %	disp(sprintf('Missing stimfile for scan %i',scanNum));
+    %  end
+    %end
   end   
   % remember some info about where data comes from
   concatInfo.n = concatInfo.n+1;
