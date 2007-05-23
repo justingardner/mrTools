@@ -45,6 +45,9 @@ if ieNotDefined('pathStr')
     return
 end
 
+% Strip extension to make sure it is .mat
+pathStr = [stripext(pathStr),'.mat'];
+
 % File does not exist
 if ~exist(pathStr,'file')
     mrWarnDlg(['File ',pathStr,' not found']);
