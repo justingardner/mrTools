@@ -1408,6 +1408,38 @@ switch lower(param)
         val = analysis.overlays(overlayNum).name;
       end
     end
+  case {'overlaytype'}
+    % overlayType = viewGet(view,'overlayType',[overlayNum],[analysisNum])
+    % overlayType = viewGet(view,'overlayType',overlayNum,[])
+    % overlayType = viewGet(view,'overlayType',[],analysisNum)
+    % overlayType = viewGet(view,'overlayType',[],[])
+    % overlayType = viewGet(view,'overlayType',overlayNum)
+    % overlayType = viewGet(view,'overlayType')
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    end
+    switch (length(varargin))
+      case 1
+        overlayNum = varargin{1};
+        analysisNum = viewGet(view,'currentAnalysis');
+      case 2
+        overlayNum = varargin{1};
+        analysisNum = varargin{2};
+    end
+    if isempty(analysisNum)
+      analysisNum = viewGet(view,'currentAnalysis');
+    end
+    if isempty(overlayNum)
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    end
+    analysis = viewGet(view,'analysis',analysisNum);
+    if ~isempty(analysis) & ~isempty(analysis.overlays)
+      n = viewGet(view,'numberofOverlays',analysisNum);
+      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+        val = analysis.overlays(overlayNum).type;
+      end
+    end
   case{'overlayxform'}
     % xform = viewGet(view,'overlayXform',scanNum)
     if ieNotDefined('varargin')
