@@ -9,26 +9,26 @@ function saveAnalysis(view,analysisName,confirm)
 % confirm: If nonzero, prompts user to determine what to do if filename
 %          already exists. Otherwise, relies of 'overwritePolicy'
 %          preference to choose what to do. Default: 0.
-%          
+%
 %
 % djh, 7/2006
 % jlg, 4/2007 added stuff to handle overwrite
 
 if ieNotDefined('analysisName')
-    analysisNum = viewGet(view,'currentAnalysis');
-    analysisName = viewGet(view,'analysisName',analysisNum);
+  analysisNum = viewGet(view,'currentAnalysis');
+  analysisName = viewGet(view,'analysisName',analysisNum);
 end
 if isstr(analysisName)
-    analysisNum = viewGet(view,'analysisNum',analysisName);
+  analysisNum = viewGet(view,'analysisNum',analysisName);
 elseif isnumeric(analysisName)
-    analysisNum = analysisName;
-    analysisName = viewGet(view,'analysisName',analysisNum);
+  analysisNum = analysisName;
+  analysisName = viewGet(view,'analysisName',analysisNum);
 else
-    myErrorDlg(['Bad analysis name: ',analysisName]);
+  myErrorDlg(['Bad analysis name: ',analysisName]);
 end
 
 if ieNotDefined('confirm')
-    confirm = 0;
+  confirm = 0;
 end
 
 % Path
@@ -42,94 +42,116 @@ eval([analysisName,'=analysis;']);
 
 % Write, though check for over-writing
 if isfile(fullfile(pathStr,filename))
-    % get the preference how to deal with what to do with over-writing
-    saveMethod = mrGetPref('overwritePolicy');
-    saveMethodTypes = {'Merge','Rename','Overwrite'};
-    saveMethod = find(strcmp(saveMethod,saveMethodTypes));
-    if confirm || isempty(saveMethod) || (saveMethod==0)
-        % ask the user what to do
-        paramsInfo = {{'saveMethod',saveMethodTypes,'Choose how you want to save the variable'}};
-        params = mrParamsDialog(paramsInfo,sprintf('%s already exists',filename));
-        if isempty(params),return,end
-        saveMethod = find(strcmp(params.saveMethod,saveMethodTypes));
+  % get the preference how to deal with what to do with over-writing
+  saveMethod = mrGetPref('overwritePolicy');
+  saveMethodTypes = {'Merge','Rename','Overwrite'};
+  saveMethod = find(strcmp(saveMethod,saveMethodTypes));
+  if confirm || isempty(saveMethod) || (saveMethod==0)
+    % ask the user what to do
+    paramsInfo = {{'saveMethod',saveMethodTypes,'Choose how you want to save the variable'}};
+    params = mrParamsDialog(paramsInfo,sprintf('%s already exists',filename));
+    if isempty(params),return,end
+    saveMethod = find(strcmp(params.saveMethod,saveMethodTypes));
+  end
+
+  if saveMethod == 1
+    disp(sprintf('(saveAnalysis) Merging with old analysis'));
+    
+    % load the old analysis
+    view = loadAnalysis(fullfile(pathStr,filename));
+    oldAnalNum = viewGet(view,'numberofAnalyses');
+    oldAnal = viewGet(view,'analysis',oldAnalNum);
+    oldName = viewGet(view,'analysisName',oldAnalNum);
+    oldGroupName = viewGet(view,'analysisGroupName',oldAnalNum);
+    oldParams = viewGet(view,'analysisParams',oldAnalNum);
+    oldData = viewGet(view,'analysisData',oldAnalNum);
+    numOldOverlays = viewGet(view,'numberofOverlays',oldAnalNum);
+    oldReconcileFunction = viewGet(view,'reconcileFunction',oldAnalNum);
+    
+    % get the new analysis
+    newAnal = viewGet(view,'analysis',analysisNum);
+    newName = viewGet(view,'analysisName',analysisNum);
+    newGroupName = viewGet(view,'analysisGroupName',analysisNum);
+    newParams = viewGet(view,'analysisParams',analysisNum);
+    newData = viewGet(view,'analysisData',analysisNum);    
+    numNewOverlays = viewGet(view,'numberofOverlays',analysisNum);
+    newReconcileFunction = viewGet(view,'reconcileFunction',analysisNum);
+    mergeFunction = viewGet(view,'mergeFunction',analysisNum);   
+    
+    % Check if they have the same name and merge them
+    if strcmp(oldName,newName) && strcmp(oldGroupName,newGroupName)
+      [oldParams oldData] = feval(oldReconcileFunction,oldGroupName,oldParams,oldData);
+      [newParams newData] = feval(newReconcileFunction,newGroupName,newParams,newData);
+      [mergedParams,mergedData] = feval(mergeFunction,newGroupName,oldParams,newParams,oldData,newData);
+      newAnal.params = mergedParams;
+      newAnal.d = mergedData;
+
+      % loop through overlays and merge the params and data
+      for oldOverlayNum = 1:numOldOverlays
+        oldOverlay = viewGet(view,'overlay',oldOverlayNum,oldAnalNum);
+        oldOverlayParams = viewGet(view,'overlayParams',oldOverlayNum,oldAnalNum);
+        oldOverlayData = viewGet(view,'overlayData',[],oldOverlayNum,oldAnalNum);
+        oldOverlayName = viewGet(view,'overlayName',[],oldOverlayNum,oldAnalNum);
+        oldOverlayGroupName = viewGet(view,'overlayGroupName',[],oldOverlayNum,oldAnalNum);
+        oldOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',oldOverlayNum,oldAnalNum); 
+        matchedOverlay = 0;
+        
+        for newOverlayNum = 1:numNewOverlays
+          newOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
+          newOverlayParams = viewGet(view,'overlayParams',newOverlayNum,analysisNum);
+          newOverlayData = viewGet(view,'overlayData',[],newOverlayNum,analysisNum);
+          newOverlayName = viewGet(view,'overlayName',[],newOverlayNum,analysisNum);
+          newOverlayGroupName = viewGet(view,'overlayGroupName',[],newOverlayNum,analysisNum);
+          newOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',newOverlayNum,analysisNum); 
+          overlayMergeFunction = viewGet(view,'overlayMergeFunction',newOverlayNum,analysisNum);
+          
+          % see if there is a matching overlay
+          if strcmp(oldOverlayName,newOverlayName) && strcmp(oldOverlayGroupName,newOverlayGroupName)
+            matchedOverlay = 1;
+            % reconcile them
+            [oldOverlayParams oldOverlayData] = feval(oldOverlayReconcileFunction,oldOverlayGroupName,...
+              oldOverlayParams,oldOverlayData);
+            [newOverlayParams newOverlayData] = feval(newOverlayReconcileFunction,newOverlayGroupName,...
+              newOverlayParams,newOverlayData);
+            % and combine them
+            [mergedParams,mergedData] = feval(overlayMergeFunction,newOverlayGroupName,...
+              oldOverlayParams,newOverlayParams,oldOverlayData,newOverlayData);
+            newOverlay.params = mergedParams;
+            newOverlay.data = mergedData;
+            newAnal.overlays(newOverlayNum) = newOverlay;
+            disp(sprintf('(saveAnalysis) Merged overlay %s from old analysis',oldOverlay.name));
+          end
+        end
+        % if there was no match, then simply add the overlay to the analysis struct
+        if ~matchedOverlay
+          view = viewSet(view,'newoverlay',oldOverlay,analysisNum);
+          disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlay.name));
+        end
+      end
+      
+      % replace analysis with the newly merged one
+      view = viewSet(view,'deleteAnalysis',oldAnalNum);
+      view = viewSet(view,'deleteAnalysis',analysisNum);
+      view = viewSet(view,'newAnalysis',newAnal);
+    else
+      mrWarnDlg('(saveAnalysis) Merge failed. Save analysis aborted.');
+      return
     end
     
-    if saveMethod == 1
-        disp(sprintf('(saveAnalysis) Merging with old analysis'));
-        % load the old analysis
-        s = load(fullfile(pathStr,filename));
-        varNames = fieldnames(s);
-        oldAnal = s.(varNames{1});
-        oldAnal.name = varNames{1};
-        % get the new analysis
-        newAnal = eval(analysisName);    
-        % check if they have the same name and merge them
-        if strcmp(oldAnal.name,newAnal.name)
-	  % reconcile the old parameters
-	  if isfield(oldAnal,'d')
-	    [oldAnal.params oldAnal.d] = feval(oldAnal.reconcileFunction,oldAnal.groupName,oldAnal.params,oldAnal.d);
-	  else
-	    oldAnal.params = feval(oldAnal.reconcileFunction,oldAnal.groupName,oldAnal.params);
-	  end
-	  % and merge them with the new ones
-	  if isfield(oldAnal,'d') && isfield(newAnal,'d')
-	    [mergedParams,newAnal.d] = ...
-		feval(newAnal.mergeFunction,newAnal.groupName,...
-		      oldAnal.params,newAnal.params,oldAnal.d,newAnal.d);    
-	  else
-	    [mergedParams,mergedData] = ...
-		feval(newAnal.mergeFunction,newAnal.groupName,...
-		      oldAnal.params,newAnal.params);    
-	  end
-	  newAnal.params = mergedParams;
-	  % loop through overlays and merge the params and data
-	  for oldNum = 1:length(oldAnal.overlays)
-	    oldOverlay = oldAnal.overlays(oldNum);
-	    matchedOverlay = 0;
-	    for newNum = 1:length(newAnal.overlays)
-	      newOverlay = newAnal.overlays(newNum);
-	      % see if there is a matching overlay
-	      if strcmp(oldOverlay.name,newOverlay.name)
-		matchedOverlay = 1;
-		% now try to combine them
-		[mergedParams,mergedData] = ...
-		    feval(newOverlay.mergeFunction,newOverlay.groupName,...
-			  oldOverlay.params,newOverlay.params,oldOverlay.data,newOverlay.data);
-		newOverlay.params = mergedParams;
-		newOverlay.data = mergedData;
-		newAnal.overlays(newNum) = newOverlay;
-		disp(sprintf('(saveAnalysis) Merged overlay %s from old analysis',oldOverlay.name));
-	      end
-	    end
-	    % if there was no match, then simply add the overlay to the analysis struct
-	    if ~matchedOverlay
-	      newAnal.overlays(end+1) = oldOverlay;
-	      disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlay.name));
-	    end
-	  end                
-	  % set analysisName variable so that it will be saved below
-	  eval(sprintf('%s = newAnal;',analysisName));
-          % replace analysis with the newly merged one
-	  view = viewSet(view,'deleteAnalysis',analysisNum);
-	  view = viewSet(view,'newAnalysis',newAnal);            
-        else
-	  mrWarnDlg('(saveAnalysis) Merge failed. Save analysis aborted.');
-	  return
-        end
-    elseif saveMethod == 2
-        % put up a dialog to get new save name
-        [filename pathStr] = uiputfile({'*.mat'},'Enter new name to save analysis as',fullfile(pathStr,filename));
-        % user hit cancel
-        if isequal(filename,0)
-            return
-        end
-        % otherwise accept the filename, make sure it has a .mat extension
-        filename = sprintf('%s.mat',stripext(filename));
-        
-    elseif saveMethod == 3
-        % this is the easiest, just overwrite
-        disp(sprintf('(saveAnalysis) Overwriting old analysis'));
+  elseif saveMethod == 2
+    % put up a dialog to get new save name
+    [filename pathStr] = uiputfile({'*.mat'},'Enter new name to save analysis as',fullfile(pathStr,filename));
+    % user hit cancel
+    if isequal(filename,0)
+      return
     end
+    % otherwise accept the filename, make sure it has a .mat extension
+    filename = sprintf('%s.mat',stripext(filename));
+
+  elseif saveMethod == 3
+    % this is the easiest, just overwrite
+    disp(sprintf('(saveAnalysis) Overwriting old analysis'));
+  end
 end
 
 % Finally, write the file
