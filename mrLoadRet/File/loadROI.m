@@ -43,10 +43,11 @@ else
     if iscell(filename)
         pathStr = cell(size(filename));
         for p=1:length(pathStr)
-            pathStr{p} = fullfile(startPathStr,[filename{p},'.mat']);
+          pathStr{p} = fullfile(startPathStr,filename{p});
+          pathStr{p} = [stripext(pathStr{p}),'.mat'];
         end
     else
-        pathStr = {fullfile(startPathStr,[filename,'.mat'])};
+        pathStr = {[stripext(fullfile(startPathStr,filename)),'.mat']};
     end
 end
 if isempty(pathStr),return,end
