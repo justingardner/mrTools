@@ -892,8 +892,9 @@ function pasteAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-if isanalysis(MLR.clipboard)
-    view = viewSet(view,'newAnalysis',MLR.clipboard);
+analysis = isanalysis(MLR.clipboard);'
+if analysis
+    view = viewSet(view,'newAnalysis',analysis);
 else
     mrErrorDlg('(paste analysis) Cannot paste. Clipboard does not contain a valid analysis. Use Edit -> Analysis -> Copy Analysis.')
 end
@@ -922,13 +923,14 @@ function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-if ~isoverlay(MLR.clipboard)
+overlay = isoverlay(MLR.clipboard);
+if ~overlay
     mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
 end
 if ~isanalysis(viewGet(view,'analysis'))
     mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
 end
-view = viewSet(view,'newOverlay',MLR.clipboard);
+view = viewSet(view,'newOverlay',overlay);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------

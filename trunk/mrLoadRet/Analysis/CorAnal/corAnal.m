@@ -144,11 +144,6 @@ else
     amp.range = [0 1]
 end
 
-% Fill clip fields
-co.clip = co.range;
-amp.clip = amp.range;
-ph.clip = ph.range;
-
 % Fill colormap fields, keeping previous if already exists
 if ~isfield(co,'colormap')
     co.colormap = jet(256);
@@ -158,17 +153,6 @@ if ~isfield(amp,'colormap')
 end
 if ~isfield(ph,'colormap')
     ph.colormap = hsv(256);
-end
-
-% Fill alpha fields, keeping previous if already exists
-if ~isfield(co,'alpha')
-    co.alpha = 1;
-end
-if ~isfield(amp,'alpha')
-    amp.alpha = 1;
-end
-if ~isfield(ph,'alpha')
-    ph.alpha = 1;
 end
 
 % Set date field
