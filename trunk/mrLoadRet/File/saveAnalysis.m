@@ -58,7 +58,7 @@ if isfile(fullfile(pathStr,filename))
     disp(sprintf('(saveAnalysis) Merging with old analysis'));
     
     % load the old analysis
-    view = loadAnalysis(view,fullfile(pathStr,filename));
+    view = loadAnalysis(view,filename,pathStr);
     oldAnalNum = viewGet(view,'numberofAnalyses');
     oldAnal = viewGet(view,'analysis',oldAnalNum);
     oldName = viewGet(view,'analysisName',oldAnalNum);
@@ -67,7 +67,7 @@ if isfile(fullfile(pathStr,filename))
     oldData = viewGet(view,'analysisData',oldAnalNum);
     numOldOverlays = viewGet(view,'numberofOverlays',oldAnalNum);
     oldReconcileFunction = viewGet(view,'reconcileFunction',oldAnalNum);
-    
+
     % get the new analysis
     newAnal = viewGet(view,'analysis',analysisNum);
     newName = viewGet(view,'analysisName',analysisNum);

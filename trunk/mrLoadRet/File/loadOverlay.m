@@ -1,13 +1,15 @@
-function view = loadOverlay(view,filename)
+function view = loadOverlay(view,filename,startPathStr)
 %
-% view = loadOverlay(view,[filename])
+% view = loadOverlay(view,[filename],[startPathStr])
 %
 % Loads an overlay (parameter map) array and adds it to view.overlays.
 %
 % If filename is not specified, prompts user to select a file. If filename
-% is specified, it loads from view.subdir/Overlays/name.mat. Filename can
-% be a string specifying an overlay file or it can be a cell array of
-% filenames to load multiple overlays at once.
+% is specified, it is assumed to be relative to startPathStr which is
+% assumed (if not specified) to be the current group's data directory
+% (e.g., view.subdir/Overlays/name.mat). Filename can be a string
+% specifying an overlay file or it can be a cell array of filenames to load
+% multiple overlays at once.
 %
 % The file must contain a structure or structures, each with the following
 % fields:
@@ -34,7 +36,9 @@ function view = loadOverlay(view,filename)
 mrGlobals
 
 % Path to overlays
-startPathStr = viewGet(view,'overlayDir');
+if ieNotDefined('startPathStr')
+  startPathStr = viewGet(view,'overlayDir');
+end
 
 % Complete pathStr
 if ieNotDefined('filename')

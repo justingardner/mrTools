@@ -554,12 +554,12 @@ switch lower(param)
         newAnalysisName = analysis.name;
         newAnalysisNum = [];
         nAnalyses = viewGet(view,'numberofAnalyses');
-        for num = 1:nAnalyses
-            analysisName = viewGet(view,'analysisName',num);
-            if strcmp(newAnalysisName,analysisName)
-                newAnalysisNum = num;
-            end
-        end
+%         for num = 1:nAnalyses
+%             analysisName = viewGet(view,'analysisName',num);
+%             if strcmp(newAnalysisName,analysisName)
+%                 newAnalysisNum = num;
+%             end
+%         end
         if isempty(newAnalysisNum)
             newAnalysisNum = nAnalyses + 1;
         end
@@ -710,12 +710,12 @@ switch lower(param)
         newOverlayName = overlay.name;
         newOverlayNum = [];
         nOverlays = viewGet(view,'numberofOverlays',analysisNum);
-        for num = 1:nOverlays
-            overlayName = viewGet(view,'overlayName',num,analysisNum);
-            if strcmp(newOverlayName,overlayName)
-                newOverlayNum = num;
-            end
-        end
+%         for num = 1:nOverlays
+%             overlayName = viewGet(view,'overlayName',num,analysisNum);
+%             if strcmp(newOverlayName,overlayName)
+%                 newOverlayNum = num;
+%             end
+%         end
         if isempty(newOverlayNum)
             newOverlayNum = nOverlays + 1;
         end

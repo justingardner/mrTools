@@ -32,8 +32,8 @@ end
 % Reconcile params and data with current tseries and put the old and new
 % params and data in the same order corresponding to that of the current
 % tseries/scans. [This is now done by saveOverlay and saveAnalysis]
-% [oldParams,oldData] = corAnalReconcileParams(groupName,oldParams,oldData);
-% [mergedParams,mergedData] = corAnalReconcileParams(groupName,newParams,newData);
+%[oldParams,oldData] = corAnalReconcileParams(groupName,oldParams,oldData);
+%[mergedParams,mergedData] = corAnalReconcileParams(groupName,newParams,newData);
 mergedParams = newParams;
 mergedData = newData;
 
@@ -51,3 +51,4 @@ for scan = 1:nScans
     mergedData{scan} = oldData{scan};
   end
 end
+
