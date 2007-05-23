@@ -174,7 +174,8 @@ if isempty(scanXform) | isempty(baseXform)
     return
 end
 
-transformed = inv(scanXform)*baseXform*[xBase yBase sBase 1]';
+shiftXform = shiftOriginXform;
+transformed = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform*[xBase yBase sBase 1]';
 transformed = round(transformed);
 
 x = transformed(1);
