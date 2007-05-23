@@ -118,12 +118,13 @@ for i=params.includeScans(1)
     r2.data{i}=d.r2;
 end;
 r2.date = dateString;
-r2.params = params;
+% r2.params = params;
 r2.range = [0 1];
 r2.clip = [0 1];
 r2.params = cell(1,viewGet(view,'nScans'));
 for i=params.includeScans
     r2.params{i} = params.scanParams{i};
+    r2.params{i}.scanNum = i;
 end;
 % colormap is made with a little bit less on the dark end
 r2.colormap = hot(312);
