@@ -51,9 +51,10 @@ else
   if iscell(pathStr)
     for p=1:length(pathStr)
       pathStr{p} = fullfile(startPathStr,pathStr{p});
+      pathStr{p} = [stripext(pathStr{p}),'.mat'];
     end
   else
-    pathStr = {fullfile(startPathStr,pathStr)};
+    pathStr = {[stripext(fullfile(startPathStr,pathStr)),'.mat']};
   end
 end
 if isempty(pathStr)

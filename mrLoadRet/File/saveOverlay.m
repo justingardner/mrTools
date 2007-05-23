@@ -100,7 +100,7 @@ if isfile(fullfile(pathStr,filename))
         oldOverlayParams,newOverlayParams,oldOverlayData,newOverlayData);
       newOverlay.params = mergedParams;
       newOverlay.data = mergedData;
-
+      
       % replace overlay with the newly merged one
       view = viewSet(view,'deleteoverlay',oldOverlayNum,analysisNum);
       view = viewSet(view,'deleteoverlay',overlayNum,analysisNum);
