@@ -58,7 +58,7 @@ if isfile(fullfile(pathStr,filename))
     disp(sprintf('(saveAnalysis) Merging with old analysis'));
     
     % load the old analysis
-    view = loadAnalysis(fullfile(pathStr,filename));
+    view = loadAnalysis(view,fullfile(pathStr,filename));
     oldAnalNum = viewGet(view,'numberofAnalyses');
     oldAnal = viewGet(view,'analysis',oldAnalNum);
     oldName = viewGet(view,'analysisName',oldAnalNum);

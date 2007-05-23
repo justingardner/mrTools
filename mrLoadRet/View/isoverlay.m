@@ -25,20 +25,21 @@ for f = 1:length(requiredFields)
 end
 
 % Optional fields and defaults
-optionalFields = {'date',dateString;
-  'type',overlay.name;
-  'alpha',1;
-  'clip',overlay.range;
-  'colormap',jet(256);
+optionalFields = {'date',datestr(now);
+  'type','overlay.name';
+  'alpha','1';
+  'clip','overlay.range';
+  'colormap','jet(256)';
   'interrogator','mrDefaultInterrogator';
   'reconcileFunction','defaultReconcileFunction';
   'mergeFunction','defaultMergeFunction';
-  'data',[]};
+  'data','[]'};
 for f = 1:length(optionalFields)
 	fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
-  if ~isfield(analysis,fieldName)
-    analysis.fieldName = default;
+  if ~isfield(overlay,fieldName)  
+    evalstr = ['overlay.',fieldName,'=',default,';'];
+    eval(evalstr);
   end
 end
 

@@ -181,10 +181,11 @@ corAnal.mergeFunction = 'corAnalMergeParams';
 corAnal.guiFunction = 'corAnalGUI';
 corAnal.overlayInterpFunction = 'corAnalInterp';
 corAnal.params = params;
-corAnal.overlays =[co amp ph];
-corAnal.curOverlay = 1;
 corAnal.date = dateString;
 view = viewSet(view,'newanalysis',corAnal);
+view = viewSet(view,'newoverlay',co);
+view = viewSet(view,'newoverlay',amp);
+view = viewSet(view,'newoverlay',ph);
 
 % Save it
 saveAnalysis(view,corAnal.name);

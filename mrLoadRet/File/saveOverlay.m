@@ -74,7 +74,7 @@ if isfile(fullfile(pathStr,filename))
     disp('(saveOverlay) Merging with old analysis');
     
     % load the old overlay
-    view = loadOverlay(fullfile(pathStr,filename));
+    view = loadOverlay(view,fullfile(pathStr,filename));
     oldOverlayNum = viewGet(view,'numberofOverlays',analysisNum);
     oldOverlay = viewGet(view,'overlay',oldOverlayNum,analysisNum);
     oldOverlayParams = viewGet(view,'overlayParams',oldOverlayNum,analysisNum);

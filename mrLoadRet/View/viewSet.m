@@ -538,7 +538,7 @@ switch lower(param)
         
         % Check that is has the required fields
         analysis = isanalysis(val);
-        if ~analysis
+        if ~isstruct(analysis)
             mrErrorDlg('Invalid analysis');
         end
         % Error if groupNames don't match
@@ -670,7 +670,7 @@ switch lower(param)
         
         % Check that it has the required fields
         overlay = isoverlay(val);
-        if ~overlay
+        if ~isstruct(overlay)
             mrErrorDlg('Invalid overlay');
         end
         % groupName, groupNum, nScans
