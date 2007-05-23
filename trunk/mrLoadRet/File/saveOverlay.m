@@ -51,10 +51,6 @@ end
 filename = [analysisName,'-',overlayName,'.mat'];
 pathStr = viewGet(view,'overlayDir');
 
-% Assign local variable with overlayName = overlay
-overlay = viewGet(view,'overlay',overlayNum,analysisNum);
-eval([overlayName,'=overlay;']);
-
 % Check for over-writing
 if isfile(fullfile(pathStr,filename))
 
@@ -74,12 +70,12 @@ if isfile(fullfile(pathStr,filename))
     disp('(saveOverlay) Merging with old analysis');
     
     % load the old overlay
-    view = loadOverlay(view,filename,pathStr);
+    view = loadOverlay(view,filename,pathStr,'tmpOverlay');
     oldOverlayNum = viewGet(view,'numberofOverlays',analysisNum);
     oldOverlay = viewGet(view,'overlay',oldOverlayNum,analysisNum);
     oldOverlayParams = viewGet(view,'overlayParams',oldOverlayNum,analysisNum);
     oldOverlayData = viewGet(view,'overlayData',[],oldOverlayNum,analysisNum);
-    oldOverlayName = viewGet(view,'overlayName',[],oldOverlayNum,analysisNum);
+    oldOverlayType = viewGet(view,'overlayType',[],oldOverlayNum,analysisNum);
     oldOverlayGroupName = viewGet(view,'overlayGroupName',[],oldOverlayNum,analysisNum);
     oldOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',oldOverlayNum,analysisNum);
 
@@ -87,13 +83,13 @@ if isfile(fullfile(pathStr,filename))
     newOverlay = viewGet(view,'overlay',overlayNum,analysisNum);
     newOverlayParams = viewGet(view,'overlayParams',overlayNum,analysisNum);
     newOverlayData = viewGet(view,'overlayData',[],overlayNum,analysisNum);
-    newOverlayName = viewGet(view,'overlayName',[],overlayNum,analysisNum);
+    newOverlayType = viewGet(view,'overlayType',[],overlayNum,analysisNum);
     newOverlayGroupName = viewGet(view,'overlayGroupName',[],overlayNum,analysisNum); 
     newOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',overlayNum,analysisNum);
     overlayMergeFunction = viewGet(view,'overlayMergeFunction',overlayNum,analysisNum);
 
-    % check if they have the same name and merge them
-    if strcmp(oldOverlayName,newOverlayName) && strcmp(oldOverlayGroupName,newOverlayGroupName)
+    % check if they have the same Type and merge them
+    if strcmp(oldOverlayType,newOverlayType) && strcmp(oldOverlayGroupName,newOverlayGroupName)
       % reconcile them
       [oldOverlayParams oldOverlayData] = feval(oldOverlayReconcileFunction,oldOverlayGroupName,...
         oldOverlayParams,oldOverlayData);
@@ -129,6 +125,10 @@ if isfile(fullfile(pathStr,filename))
     disp('(saveAnalysis) Overwriting old analysis');
   end
 end
+
+% Assign local variable with overlayName = overlay
+overlay = viewGet(view,'overlay',overlayNum,analysisNum);
+eval([overlayName,'=overlay;']);
 
 % Finally, write the file
 pathStr = fullfile(pathStr,filename);
