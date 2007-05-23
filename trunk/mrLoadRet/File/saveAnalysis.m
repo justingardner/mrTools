@@ -91,8 +91,8 @@ if isfile(fullfile(pathStr,filename))
         oldOverlay = viewGet(view,'overlay',oldOverlayNum,oldAnalNum);
         oldOverlayParams = viewGet(view,'overlayParams',oldOverlayNum,oldAnalNum);
         oldOverlayData = viewGet(view,'overlayData',[],oldOverlayNum,oldAnalNum);
-        oldOverlayName = viewGet(view,'overlayName',[],oldOverlayNum,oldAnalNum);
-        oldOverlayGroupName = viewGet(view,'overlayGroupName',[],oldOverlayNum,oldAnalNum);
+        oldOverlayName = viewGet(view,'overlayName',oldOverlayNum,oldAnalNum);
+        oldOverlayGroupName = viewGet(view,'overlayGroupName',oldOverlayNum,oldAnalNum);
         oldOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',oldOverlayNum,oldAnalNum); 
         matchedOverlay = 0;
         
@@ -100,8 +100,8 @@ if isfile(fullfile(pathStr,filename))
           newOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
           newOverlayParams = viewGet(view,'overlayParams',newOverlayNum,analysisNum);
           newOverlayData = viewGet(view,'overlayData',[],newOverlayNum,analysisNum);
-          newOverlayName = viewGet(view,'overlayName',[],newOverlayNum,analysisNum);
-          newOverlayGroupName = viewGet(view,'overlayGroupName',[],newOverlayNum,analysisNum);
+          newOverlayName = viewGet(view,'overlayName',newOverlayNum,analysisNum);
+          newOverlayGroupName = viewGet(view,'overlayGroupName',newOverlayNum,analysisNum);
           newOverlayReconcileFunction = viewGet(view,'overlayReconcileFunction',newOverlayNum,analysisNum); 
           overlayMergeFunction = viewGet(view,'overlayMergeFunction',newOverlayNum,analysisNum);
           
