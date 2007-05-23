@@ -56,27 +56,32 @@ anatFilePath = path;
 
 % Load nifti file and reorder the axes and flip (site specific).
 h = mrMsgBox(['Loading volume: ',pathStr,'. Please wait']);
-[vol,hdr] = cbiReadNifti(pathStr);
-mrCloseDlg(h);
+hdr = cbiReadNiftiHeader(pathStr);
 
 % Error if it dimension is greater than 4D.
-volumeDimension = length(size(vol));
+volumeDimension = hdr.dim(1);
 if (volumeDimension > 4)
     mrErrorDlg(['Volume must be 3D or 4D. This file contains a ',num2str(volumeDimension),'D array.']);
 end
 
 % Handle 4D file
 if (volumeDimension == 4)
-    paramsInfo = {{'frameNum',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',size(vol,4)),'This volume is a 4D file, to display it as an anatomy you need to choose a particular time point or take the mean over all time points. Setting this value to 0 will compute the mean, otherwise you can select a particular timepoint to display'}};
+    paramsInfo = {{'frameNum',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',hdr.dim(5)),'This volume is a 4D file, to display it as an anatomy you need to choose a particular time point or take the mean over all time points. Setting this value to 0 will compute the mean, otherwise you can select a particular timepoint to display'}};
     params = mrParamsDialog(paramsInfo,'Choose which frame of 4D file. 0 for mean');
     if isempty(params)
         return
     end
+    % if frameNum is set to 0, take the mean
     if params.frameNum == 0
-        vol = nanmean(vol,4);
+      [vol hdr] = cbiReadNifti(pathStr);
+      vol = nanmean(vol,4);
+    % other wise single time slice
     else
-        vol = vol(:,:,:,params.frameNum);
+      [vol hdr] = cbiReadNifti(pathStr,{[] [] [] params.frameNum});
     end
+else
+  % if 3D file just load
+  [vol hdr] = cbiReadNifti(pathStr);
 end
 
 % Warning if no alignment information in the header.
