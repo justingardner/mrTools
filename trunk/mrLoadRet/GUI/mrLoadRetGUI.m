@@ -892,7 +892,7 @@ function pasteAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-analysis = isanalysis(MLR.clipboard);'
+analysis = isanalysis(MLR.clipboard);
 if analysis
     view = viewSet(view,'newAnalysis',analysis);
 else
