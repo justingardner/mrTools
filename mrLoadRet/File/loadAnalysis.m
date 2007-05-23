@@ -1,13 +1,14 @@
-function view = loadAnalysis(view,pathStr)
+function view = loadAnalysis(view,pathStr,startPathStr)
 %
-% view = loadAnalysis(view,pathStr)
+% view = loadAnalysis(view,[pathStr],[startPathStr])
 %
 % Loads an analysis and adds it to view.analyses.
 %
 % If pathStr is not specified, prompts user to select a file. If pathStr is
-% specified, it is assumed to be relative to the current group's data
-% directory. pathStr can be a string specifying a single analysis file or
-% it can be a cell array of filenames to load multiple analyses at once.
+% specified, it is assumed to be relative to startPathStr which is assumed
+% (if not specified) to be the current group's data directory. pathStr can
+% be a string specifying a single analysis file or it can be a cell array
+% of filenames to load multiple analyses at once.
 %
 % The file must contain a structure or structures, each with the following
 % fields:
@@ -35,7 +36,9 @@ function view = loadAnalysis(view,pathStr)
 mrGlobals
 
 % Path to analyses
-startPathStr = viewGet(view,'dataDir');
+if ieNotDefined('startPathStr')
+  startPathStr = viewGet(view,'dataDir');
+end
 
 % Complete pathStr
 if ieNotDefined('pathStr')
