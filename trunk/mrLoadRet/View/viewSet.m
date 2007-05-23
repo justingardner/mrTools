@@ -537,8 +537,8 @@ switch lower(param)
         % - date: specifies when it was computed
         
         % Check that is has the required fields
-        analysis = orderfields(val);
-        if ~isanalysis(analysis)
+        analysis = isanalysis(val);
+        if ~analysis
             mrErrorDlg('Invalid analysis');
         end
         % Error if groupNames don't match
@@ -669,8 +669,8 @@ switch lower(param)
         % - alpha: transparency value for alphaSlider
         
         % Check that it has the required fields
-        overlay = orderfields(val);
-        if ~isoverlay(overlay)
+        overlay = isoverlay(val);
+        if ~overlay
             mrErrorDlg('Invalid overlay');
         end
         % groupName, groupNum, nScans
