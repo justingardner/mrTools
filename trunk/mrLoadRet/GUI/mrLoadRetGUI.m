@@ -893,7 +893,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 analysis = isanalysis(MLR.clipboard);
-if analysis
+if isstruct(analysis)
     view = viewSet(view,'newAnalysis',analysis);
 else
     mrErrorDlg('(paste analysis) Cannot paste. Clipboard does not contain a valid analysis. Use Edit -> Analysis -> Copy Analysis.')
@@ -924,10 +924,10 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 overlay = isoverlay(MLR.clipboard);
-if ~overlay
+if ~isstruct(overlay)
     mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
 end
-if ~isanalysis(viewGet(view,'analysis'))
+if ~isstruct(isanalysis(viewGet(view,'analysis')))
     mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
 end
 view = viewSet(view,'newOverlay',overlay);

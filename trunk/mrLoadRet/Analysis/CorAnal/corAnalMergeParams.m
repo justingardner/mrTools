@@ -34,6 +34,8 @@ end
 % tseries/scans. [This is now done by saveOverlay and saveAnalysis]
 % [oldParams,oldData] = corAnalReconcileParams(groupName,oldParams,oldData);
 % [mergedParams,mergedData] = corAnalReconcileParams(groupName,newParams,newData);
+mergedParams = newParams;
+mergedData = newData;
 
 % Get nScans
 groupNum = viewGet([],'groupNum',groupName);
