@@ -51,10 +51,11 @@ else
 	if iscell(filename)
 		pathStr = cell(size(filename));
 		for p=1:length(pathStr)
-			pathStr{p} = fullfile(startPathStr,[filename{p},'.mat']);
+			pathStr{p} = fullfile(startPathStr,filename{p});
+      pathStr{p} = [stripext(pathStr{p}),'.mat'];
 		end
 	else
-		pathStr = {fullfile(startPathStr,[filename,'.mat'])};
+		pathStr = {[stripext(fullfile(startPathStr,filename)),'.mat']};
 	end
 end
 
@@ -67,6 +68,7 @@ end
 if ~iscell(pathStr)
     pathStr = {pathStr};
 end
+
 
 % Loop through the filenames, load each file, and add each of them as a new
 % overlay.
