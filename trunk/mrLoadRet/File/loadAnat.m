@@ -46,7 +46,7 @@ if ieNotDefined('pathStr')
 end
 
 % Strip extension to make sure it is .mat
-pathStr = [stripext(pathStr),'.mat'];
+pathStr = [stripext(pathStr),'.img'];
 
 % File does not exist
 if ~exist(pathStr,'file')
