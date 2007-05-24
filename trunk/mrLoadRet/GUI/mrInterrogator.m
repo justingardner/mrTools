@@ -218,8 +218,15 @@ if mouseInImage(x,y)
     %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
     % find all rois that the user clicked on
     roi = {};
-    nROIs = viewGet(view,'numberOfROIs');
-    for roinum = 1:nROIs
+    switch lower(viewGet(view,'showROIs'))
+     case {'hide'}
+      roinums = [];
+     case {'selected','selected perimeter'}
+      roinums = viewGet(view,'currentROI');
+     case {'all','all perimeter'}
+      roinums = 1:viewGet(view,'nROIs');
+    end
+    for roinum = roinums
       roicoords = getRoiCoordinates(view,roinum,0);
       % see if this is a matching roi
       if ismember([xBase yBase sBase],roicoords','rows')
