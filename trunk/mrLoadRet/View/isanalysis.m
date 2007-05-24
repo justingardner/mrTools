@@ -1,4 +1,4 @@
-function val = isscan(analysis)
+function val = isanalysis(analysis)
 % function val = isview(analysis)
 % 
 % djh, 2007
@@ -27,18 +27,20 @@ end
 
 % Optional fields and defaults
 optionalFields = {'date',datestr(now);
-  'type','analysis.name';
-  'overlays','[]';
-  'curOverlay','[]';
-  'reconcileFunction','defaultReconcileFunction';
-  'mergeFunction','defaultMergeFunction';
-  'd','[]'};
+  'type',analysis.name;
+  'overlays',[];
+  'curOverlay',[];
+  'reconcileFunction','defaultReconcileParams';
+  'mergeFunction','defaultMergeParams';
+  'd',[]};
 for f = 1:length(optionalFields)
-	fieldName = optionalFields{f,1};
+  fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
   if ~isfield(analysis,fieldName)
-    evalstr = ['analysis.',fieldName,'=',default,';'];
-    eval(evalstr);
+    % use eval args to set the fields properly
+    varargin{1} = sprintf('analysis.%s',fieldName);
+    varargin{2} = default;
+    eval(evalargs(varargin));
   end
 end
 

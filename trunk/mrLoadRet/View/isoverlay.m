@@ -1,4 +1,4 @@
-function val = isscan(overlay)
+function val = isoverlay(overlay)
 % function val = isview(overlay)
 % 
 % djh, 2007
@@ -26,20 +26,22 @@ end
 
 % Optional fields and defaults
 optionalFields = {'date',datestr(now);
-  'type','overlay.name';
-  'alpha','1';
-  'clip','overlay.range';
-  'colormap','jet(256)';
+  'type',overlay.name;
+  'alpha',1;
+  'clip',overlay.range;
+  'colormap',jet(256);
   'interrogator','mrDefaultInterrogator';
   'reconcileFunction','defaultReconcileFunction';
   'mergeFunction','defaultMergeFunction';
-  'data','[]'};
+  'data',[]};
 for f = 1:length(optionalFields)
-	fieldName = optionalFields{f,1};
+  fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
   if ~isfield(overlay,fieldName)  
-    evalstr = ['overlay.',fieldName,'=',default,';'];
-    eval(evalstr);
+    % use eval args to set the fields properly
+    varargin{1} = sprintf('overlay.%s',fieldName);
+    varargin{2} = default;
+    eval(evalargs(varargin),1);
   end
 end
 
