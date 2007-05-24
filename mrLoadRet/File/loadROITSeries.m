@@ -72,7 +72,7 @@ for roinum = 1:length(roiname)
     % from a loaded roi
     if isstr(roiname{roinum})
       roi = load(roiname{roinum});
-    elseif isnum(roiname{roinum})
+    elseif isnumeric(roiname{roinum})
       roi = viewGet(view,'roi',roiname{roinum});
     else
       roi.(roiname{roinum}.name) = roiname{roinum};
