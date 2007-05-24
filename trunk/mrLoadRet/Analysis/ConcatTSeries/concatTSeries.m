@@ -109,7 +109,7 @@ for iscan = 1:length(params.scanList)
   scanNum = params.scanList(iscan);
   
   % Load it
-  mrdisp(sprintf('\nLoading scan %i from %s\n',scanNum,viewGet(viewBase,'groupName')));
+  mrDisp(sprintf('\nLoading scan %i from %s\n',scanNum,viewGet(viewBase,'groupName')));
   d.data = loadTSeries(viewBase,scanNum,'all');
 	
   % Dump junk frames

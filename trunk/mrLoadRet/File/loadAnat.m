@@ -61,8 +61,13 @@ anatFilePath = path;
 h = mrMsgBox(['Loading volume: ',pathStr,'. Please wait']);
 hdr = cbiReadNiftiHeader(pathStr);
 
+% get volume dimension...
+% hdr.dim(1) should probably be the number of dimensions
+% but some files don't seem to have this set properly
+% so this check seems to work
+volumeDimension = sum(hdr.dim(2:end)~=1);
+
 % Error if it dimension is greater than 4D.
-volumeDimension = hdr.dim(1);
 if (volumeDimension > 4)
     mrErrorDlg(['Volume must be 3D or 4D. This file contains a ',num2str(volumeDimension),'D array.']);
 end
