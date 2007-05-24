@@ -4,7 +4,8 @@
 %      by: justin gardner
 %    date: 01/21/99
 % purpose: draws a vertical line on the current axis
-%
+%          returns handles 
+%          hpos can be an array of positions
 function h = vline(hpos,linetype)
 
 ax = axis;
