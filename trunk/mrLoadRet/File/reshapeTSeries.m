@@ -14,22 +14,10 @@ function tseries = reshapeTSeries(tseries)
 %   return
 % end
 
-view = newView('Volume');
-mrGlobals
-
-% Load single slice and reshape to nFrames X nVoxels
-tseries = squeeze(tseries);
 % Reformat to nFrames x nVoxels
+tseries = squeeze(tseries);
 dims = size(tseries);
 nFrames = dims(3);
 sliceDims = dims(1:2);
 nVoxels = prod(sliceDims);
 tseries = reshape(tseries,[nVoxels,nFrames])';
-
-% % Check # voxels and # temporal frames
-% if (nFrames ~= viewGet(view,'totalFrames',scan))
-%     mrWarnDlg('loadTSeries: number of frames in tseries file does not match expected.');
-% end
-% if sliceDims ~= viewGet(view,'sliceDims',scan)
-%     mrWarnDlg('loadTSeries: number of voxels in tseries does not match expected.');
-% end
