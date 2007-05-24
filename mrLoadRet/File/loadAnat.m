@@ -65,7 +65,7 @@ hdr = cbiReadNiftiHeader(pathStr);
 % hdr.dim(1) should probably be the number of dimensions
 % but some files don't seem to have this set properly
 % so this check seems to work
-volumeDimension = sum(hdr.dim(2:end)~=1);
+volumeDimension = sum((hdr.dim(2:end)~=1)&(hdr.dim(2:end)~=0));
 
 % Error if it dimension is greater than 4D.
 if (volumeDimension > 4)
