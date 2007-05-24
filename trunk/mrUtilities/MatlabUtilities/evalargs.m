@@ -21,6 +21,11 @@
 %               var1=1 str=1
 %             will do
 %               var1='str'
+%
+%             when eval is called, this will print out
+%             what the variables are being set to. If
+%             you want it to run quietly, do:
+%             eval(evalargs({'gVerbose=0','var1',...}));
 function evalstr = evalargs(args,alwaysUseNextArg)
 
 if ~any(nargin == [1 2])
