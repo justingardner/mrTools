@@ -1,6 +1,6 @@
 % evalargs.m
 %
-%      usage: evalargs(varargin)
+%      usage: evalargs(varargin,<alwaysUseNextArg>)
 %         by: justin gardner
 %       date: 12/13/05
 %    purpose: passed in varargin, returns a string
@@ -15,21 +15,34 @@
 %             function fun(varargin)
 %             eval(evalargs(varargin));
 %
-function evalstr = evalargs(args)
+%             if alwaysUseNextArg is set, then instead of
+%             interpreting
+%             fun('var1','str')
+%               var1=1 str=1
+%             will do
+%               var1='str'
+function evalstr = evalargs(args,alwaysUseNextArg)
 
-if nargin ~= 1
+if ~any(nargin == [1 2])
   help evalargs;
   return
 end
+
+if ~exist('alwaysUseNextArg','var'),alwaysUseNextArg=1;end
 
 evalstr = 'global gVerbose;oldgVerbose=gVerbose;gVerbose=1;';
 % check arguments in
 skipnext = 0;
 for i = 1:length(args)
+  % skip if called for
+  if skipnext
+    skipnext = 0;
+    continue
+  end
   % evaluate anything that has an equal sign in it
   if isstr(args{i}) && ~isempty(strfind(args{i},'='))
     % if the argument is a numeric, than just set it
-    % also if the argument happens to be string, don't
+    % also if the argument happens to be a function, don't
     % even do str2num on that since it gives an annoyinw warning
     if ((exist(args{i}(strfind(args{i},'=')+1:end)) ~= 2) && ...
 	~strcmp(args{i}(strfind(args{i},'=')+1:end),'string') && ...
@@ -50,10 +63,15 @@ for i = 1:length(args)
   % by whether the next argument is a string or not. If it is not
   % a string then it means to set the variable to that argument
   elseif isstr(args{i})
-    if (length(args) >= (i+1)) && ~isstr(args{i+1})
+    if (length(args) >= (i+1)) && (~isstr(args{i+1}) || alwaysUseNextArg)
       % set the variable to the next argument
-      evalstr = sprintf('%s%s=varargin{%i};',evalstr,args{i},i+1);
-      evalstr = sprintf('%sif gVerbose,disp(sprintf(''setting: %s=varargin{%i}''));,end,',evalstr,args{i},i+1);
+      if ~isstr(args{i+1})
+	evalstr = sprintf('%s%s=varargin{%i};',evalstr,args{i},i+1);
+	evalstr = sprintf('%sif gVerbose,disp(sprintf(''setting: %s=varargin{%i}''));,end,',evalstr,args{i},i+1);
+      else
+	evalstr = sprintf('%s%s=''%s'';',evalstr,args{i},args{i+1});
+	evalstr = sprintf('%sif gVerbose,disp(sprintf(''setting: %s=''''%s''''''));,end,',evalstr,args{i},args{i+1});
+      end
       skipnext = 1;
     else
       % just set the variable to one, since the next argument
