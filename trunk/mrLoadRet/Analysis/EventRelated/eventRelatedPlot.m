@@ -54,7 +54,7 @@ hold on
 axis tight;
 if isfield(d, 'stimvol')
   for i = 1:d.nhdr
-    vlineHandle = vline(d.stimvol{i},getcolor(i+1));
+    vlineHandle = vline(d.stimvol{i},getcolor(i));
     legendHandle(i+1) = vlineHandle(1);
     nStimvol(i) = length(d.stimvol{i});
     if isfield(d,'stimNames')
