@@ -25,9 +25,6 @@ if ieNotDefined('pathStr')
 end
 if isempty(pathStr),disp('No ROI selected');,return,end
 
-% remember the path for next
-MLR.prefs.importROIpath = fileparts(pathStr{1});
-
 % get some info
 baseNum = viewGet(view,'currentBase');
 xform = viewGet(view,'basexform',baseNum);

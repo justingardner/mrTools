@@ -26,9 +26,13 @@ if nargin == 2
 end
 
 hdr = squeeze(d.ehdr(x,y,s,:,:));
-hdrste = squeeze(d.ehdrste(x,y,s,:,:));
-time = d.tr/2:d.tr:(d.hdrlen*d.tr);
 
+if nargout >= 2
+  time = d.tr/2:d.tr:(d.hdrlen*d.tr);
+end
+if nargout >=3
+  hdrste = squeeze(d.ehdrste(x,y,s,:,:));
+end
 % if we only have one response, then we will have
 % to take the transpose to make sure that we have
 % row array
