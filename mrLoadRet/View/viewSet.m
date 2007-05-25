@@ -91,9 +91,13 @@ switch lower(param)
     case{'currentgroup','curgroup'}
         % view = viewSet(view,'currentGroup',n);
         if (view.curGroup ~= val)
+	    % save loaded analysis if there are any
+	    view.loadedAnalyses{view.curGroup} = view.analyses;
+	    MLR.view{view.viewNum} = view;
+	    % set the current group
             view.curGroup = val;
-            view.analyses = [];
-            views.curAnalysis = [];
+	    view.analyses = [];
+	    view.curAnalysis = [];
             % Update the gui
             mlrGuiSet(view,'group',val);
             nScans = viewGet(view,'nScans',val);
@@ -101,11 +105,19 @@ switch lower(param)
             mlrGuiSet(view,'scan',min(nScans,1));
             mlrGuiSet(view,'analysis',1);
             mlrGuiSet(view,'analysisPopup',{'none'});
+            mlrGuiSet(view,'overlay',1);
+            mlrGuiSet(view,'overlayPopup',{'none'});
             % update the interrogator
             if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
                 mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
 
             end
+	    % load up saved analysis if they exist
+	    if length(view.loadedAnalyses)>=val
+	      for i = 1:length(view.loadedAnalyses{view.curGroup})
+		view = viewSet(view,'newAnalysis',view.loadedAnalyses{view.curGroup}{i});
+	      end
+	    end
         end
 
     case{'groupname'}
