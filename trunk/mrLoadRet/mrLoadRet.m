@@ -21,6 +21,20 @@ end
 % Define and initialize global variable MLR.
 mrGlobals
 
+% check to make sure we are not being run from another data directory
+% since mrLoadRet is designed only to be run on one data directory at a time
+if isempty(strfind(pwd,viewGet([],'homeDir')))
+  % check to see if there is a session mismatch
+  [thisSession thisGroups] = loadSession(pwd);
+  if ~isempty(thisSession) && (~isequal(thisSession,MLR.session) || ~isequal(thisGroups,MLR.groups))
+    disp(sprintf('(mrLoadRet) Current path: %s does not match',pwd));
+    disp(sprintf('(mrLoadRet) homeDir: %s in MLR global',viewGet([],'homeDir')));
+    disp(sprintf('(mrLoadRet) If you are trying to run two mrLoadRet sessions on different'));
+    disp(sprintf('(mrLoadRet) datasets, you should run two separate matlab processes instead'));
+    return
+  end
+end
+
 % Open inplane window
 v = mrOpenWindow('Volume');
 
