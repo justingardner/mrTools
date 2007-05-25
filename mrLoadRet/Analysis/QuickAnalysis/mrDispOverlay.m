@@ -5,15 +5,32 @@
 %         by: justin gardner
 %       date: 04/04/07
 %    purpose: displays an overlay in MrLoadRet
-%             if called without a view will run
-%             mrLoadRet to display a view. If you pass
-%             scan and group, it will load the overlay into
-%             a bogus analysis and then display it.
+%
+%             For example, to display a map for scan 1, group 2:
+%             Where map has dimensions size(map) = [x y s]
 % 
-%             If you pass it an analysis structure as the groupNum
-%             it will add the overlay to the analysis strucutre
-%             and display that. 
-%          
+%             mrDispOverlay(map,1,2)
+%
+%             If you want to install maps for several scans, make
+%             map into a cell array of maps of the correct
+%             dimensions and do
+%
+%             mrDispOverlay(map,[1 2],2);
+%           
+%             If you want to install the overlay into an existing
+%             analysis, rather than a group (say erAnal), pass
+%             that analysis instead of the group
+% 
+%             mrDispOverlay(map,1,erAnal);
+%
+%             If you want to install the map into an existing
+%             view, you can pass that (or empty if you don't want
+%             to display at all)
+%
+%             mrDispOverlay(map,1,erAnal,[]);
+%
+%             You can also set optional parameters
+%
 %             Some parameters you can set
 %             'overlayName=name'
 %             'cmap',colormap
@@ -26,6 +43,8 @@
 %             to save instead of display set
 %             'saveName=filename'
 %
+%             e.g.
+%             mrDispOverlay(map,1,erAnal,[],'overlayName=myMap');
 %
 %
 function [v, analysis] = mrDispOverlay(overlay,scanNum,groupNum,v,varargin)
@@ -40,6 +59,7 @@ end
 eval(evalargs(varargin));
 
 mrLoadRetViewing = 0;
+viewShouldBeDeleted = 0;
 % start up a mrLoadRet if we are not passed in a view
 % or if we are returning an analysis struct (in this
 if ieNotDefined('v')
@@ -49,6 +69,7 @@ if ieNotDefined('v')
   else
     % if we are saving, then don't bring up mrLoadRet
     v = newView('Volume');
+    viewShouldBeDeleted = 1;
   end
 end
 
@@ -65,6 +86,9 @@ end
 v = viewSet(v,'curGroup',groupNum);
 mlrGuiSet(v.viewNum,'scanText',scanNum(1));
 groupName = viewGet(v,'groupName',groupNum);
+
+% make the overlay into a cell array, if it is not already.
+overlay = cellArray(overlay);
 
 % get some default parameters
 if ieNotDefined('overlayName')
@@ -113,7 +137,12 @@ o.(overlayName).groupName = groupName;
 o.(overlayName).reconcileFunction = 'quickReconcile';
 o.(overlayName).data = cell(1,viewGet(v,'nScans'));
 for i = 1:length(scanNum)
-  o.(overlayName).data{scanNum(i)} = overlay;
+  if length(overlay) >= i
+    o.(overlayName).data{scanNum(i)} = overlay{i};
+  else
+    disp(sprintf('(mrDispOverlay) Only %i overlays found for %i scans',length(overlay),length(scanNum)));
+  return
+  end
 end
 o.(overlayName).date = dateString;
 o.(overlayName).params = [];
@@ -168,4 +197,9 @@ end
 % prepare the output argument
 if nargout >= 2
   analysis = viewGet(v,'analysis',viewGet(v,'curAnalysis'));
+end
+
+% delete view
+if viewShouldBeDeleted
+  deleteView(v);
 end
