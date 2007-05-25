@@ -16,4 +16,9 @@ elseif (nargin ~= 2)
 end
 
 a = axis;
+
+% default to what is already there
+if isempty(xmin),xmin = a(1);end
+if isempty(xmax),xmax = a(2);end
+
 axis([xmin xmax a(3) a(4)]);
