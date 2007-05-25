@@ -215,8 +215,8 @@ viewNum = handles.viewNum;
 % Update the group number
 viewSet(viewNum,'curGroup',get(hObject,'Value'));
 % Delete the overlays
-MLR.views{viewNum}.analyses = [];
-MLR.views{viewNum}.curAnalysis = [];
+%MLR.views{viewNum}.analyses = [];
+%MLR.views{viewNum}.curAnalysis = [];
 % Update nScans
 mlrGuiSet(viewNum,'nScans',viewGet(viewNum,'nScans'));
 % Refresh the display

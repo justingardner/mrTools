@@ -84,8 +84,8 @@ if ~isempty(overlayIm)
     overlayRange = viewGet(view,'overlayRange',curOverlay);
     if strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMax')
         clip = viewGet(view,'overlayClip',curOverlay);
-        overlayRange(1) = clip(1);
-        overlayRange(2) = min(max(overlayIm(:)),clip(2));
+        overlayRange(1) = max(clip(1),min(overlayIm(mask)));
+        overlayRange(2) = min(max(overlayIm(mask)),clip(2));
     end
     overlayRGB = rescale2rgb(overlayIm,overlayCmap,overlayRange);
 else
