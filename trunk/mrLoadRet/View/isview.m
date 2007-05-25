@@ -36,4 +36,8 @@ end
 % Confirm that MLR.views{viewNum} and view have the same fields
 names1 = fieldnames(MLR.views{view.viewNum});
 names2 = fieldnames(view);
-val = all(strcmp(names1,names2));
+if length(names1) == length(names2)
+  val = all(strcmp(names1,names2));
+else
+  val = 0;
+end
