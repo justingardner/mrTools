@@ -117,6 +117,8 @@ switch lower(param)
 	      for i = 1:length(view.loadedAnalyses{view.curGroup})
 		view = viewSet(view,'newAnalysis',view.loadedAnalyses{view.curGroup}{i});
 	      end
+	      % delete the analyses from the loaded cache
+	      view.loadedAnalyses{view.curGroup} = {};
 	    end
         end
 
@@ -1030,7 +1032,24 @@ switch lower(param)
 
         % -------------------------------------------
         % Figure and GUI
-
+    case 'roicache'
+       % view = viewSet(view,'ROICache',roidata);
+       roiID = viewGet(view,'ROICacheID');
+       % add to the cache
+       MLR.caches{view.viewNum}.roiCache = ...
+	   mrCache('add',MLR.caches{view.viewNum}.roiCache,roiID,val);
+    case 'basecache'
+       % view = viewSet(view,'baseCache',basedata);
+       baseID = viewGet(view,'baseCacheID');
+       % add to the cache
+       MLR.caches{view.viewNum}.baseCache = ...
+	   mrCache('add',MLR.caches{view.viewNum}.baseCache,baseID,val);
+    case 'overlaycache'
+       % view = viewSet(view,'overlayCache',overlaydata);
+       overlayID = viewGet(view,'overlayCacheID');
+       % add to the cache
+       MLR.caches{view.viewNum}.overlayCache = ...
+	   mrCache('add',MLR.caches{view.viewNum}.overlayCache,overlayID,val);
     case {'figure'}
         % view = viewSet(view,'figure',handle);
         view.figure = val;
