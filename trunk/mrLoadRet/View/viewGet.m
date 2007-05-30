@@ -633,7 +633,7 @@ switch lower(param)
     end
 
     % baseVolume (anatomy)
-  case{'numberofbasevolumes'}
+  case{'numberofbasevolumes','numBase'}
     % n = viewGet(view,'numberofBaseVolumes')
     val = length(view.baseVolumes);
   case {'curbase','currentbase'}
@@ -867,7 +867,10 @@ switch lower(param)
     val = view.curROI;
   case{'roicacheid'}
     % cacheID = viewGet(view,'ROICacheID')
-    val = sprintf('%i',viewGet(view,'sliceIndex'));;
+    rotate = viewGet(view,'rotate');
+    curBase = viewGet(view,'curBase');
+    sliceIndex = viewGet(view,'baseSliceIndex');
+    val = sprintf('%i%i%i%i',curBase,sliceIndex,rotate);
     for i = 1:length(view.ROIs);
       val = sprintf('%s%s%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
     end
@@ -879,7 +882,11 @@ switch lower(param)
 	mrCache('find',MLR.caches{view.viewNum}.roiCache,roiID);
   case{'basecacheid'}
     % cacheID = viewGet(view,'baseCacheID')
-    val = sprintf('%i_%i',viewGet(view,'currentBase'),viewGet(view,'curSlice'));
+    rotate = viewGet(view,'rotate');
+    currentBase = viewGet(view,'currentBase');
+    clip = viewGet(view,'baseClip',currentBase);
+    currentSlice = viewGet(view,'curSlice');
+    val = sprintf('%i_%i_%i_%s',currentBase,currentSlice,rotate,num2str(clip));
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
@@ -908,8 +915,9 @@ switch lower(param)
 	overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
 	curBase = viewGet(view,'currentBase');
 	scanNum = viewGet(view,'curScan');
+	rotate = viewGet(view,'rotate');
 	% calculate string
-	val = sprintf('%i_%i_%i_%i_%i_%s_%s_%s',scanNum,curBase,curSlice,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType);
+	val = sprintf('%i_%i_%i_%i_%i_%s_%s_%s_%i',scanNum,curBase,curSlice,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType,rotate);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;

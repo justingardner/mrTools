@@ -383,9 +383,14 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     % calculate for every slice in the roi the coordinates
     % in the image domain
     for roiSlice = roiSlices
-      baseCoordsHomogeneous(3,:) = roiSlice;
+      % first set baseCOordsHomogeneous to look like it is for this
+      % slice of the roi (all that changes is the slice index)
+      baseCoordsHomogeneous(sliceIndex,:) = roiSlice;
+      % now get all the indexes from the roi with this slice
       roiIndexesThisSlice = find(baseCoords(sliceIndex,:)==roiSlice);
+      % find them in the baseCoordsHomogenous
       [roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,roiIndexesThisSlice)',baseCoordsHomogeneous(1:3,:)','rows');
+      % transform them into image coordinates
       [thisx,thisy] = ind2sub(imageDims,baseIndices);
       x = [x thisx'];y = [y thisy'];
       s = [s baseCoords(sliceIndex,roiIndexesThisSlice(roiIndices))];
@@ -424,29 +429,13 @@ switch option
         return
 end
 
+if mglGetKeys(57)
+  view = viewSet(view,'roiCache','clear');
+end
 % Loop through ROIs in order
 roi = viewGet(view,'ROICache');
 if isempty(roi)
   for r = order
-    if (r == s)
-      % Selected ROI: set color=white
-      roi(r).color = [1 1 1];
-    else
-        % Non-selected ROI, get roi color
-        thisCol = viewGet(view,'roicolor',r);
-        % If it's a 'text' roi(r).color, translate it...
-        switch (thisCol)
-            case {'yellow','y'}, roi(r).color = [1 1 0];
-            case {'magenta','m'}, roi(r).color = [1 0 1];
-            case {'cyan','c'}, roi(r).color = [0 1 1];
-            case {'red','r'}, roi(r).color = [1 0 0];
-            case {'green','g'}, roi(r).color = [0 1 0];
-            case {'blue','b'}, roi(r).color = [0 0 1];
-            case {'white','w'}, roi(r).color = [1 1 1];
-            case {'black','k'}, roi(r).color = [0 0 0];
-            otherwise, roi(r).color = [1 1 1];
-        end % end switch statement
-    end % end loop
     % Get ROI coords transformed to the image  
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
 				   baseNum,baseCoordsHomogeneous,imageDims,r);
@@ -471,64 +460,80 @@ w = 0.5;
 hold on
 
 for r = order
+  if (r == s)
+    % Selected ROI: set color=white
+    color = [1 1 1];
+  else
+    % Non-selected ROI, get roi color
+    thisCol = viewGet(view,'roicolor',r);
+    % If it's a 'text' color, translate it...
+    switch (thisCol)
+     case {'yellow','y'}, color = [1 1 0];
+     case {'magenta','m'}, color = [1 0 1];
+     case {'cyan','c'}, color = [0 1 1];
+     case {'red','r'}, color = [1 0 0];
+     case {'green','g'}, color = [0 1 0];
+     case {'blue','b'}, color = [0 0 1];
+     case {'white','w'}, color = [1 1 1];
+     case {'black','k'}, color = [0 0 0];
+     otherwise, color = [1 1 1];
+    end % end switch statement
+  end
   % get image coords for this slice
   x = roi(r).x(roi(r).s==sliceNum);y = roi(r).y(roi(r).s==sliceNum);
-    if ~isempty(x) & ~isempty(y)
-
-        switch option
-
-            case{'all','selected'}
-                % Draw the lines around each pixel, w=1/2 because you don't
-                % want to connect the centers of the pixels, rather you want to
-                % draw around each pixel, e.g, from (x-.5,y-.5) to (x+.5,y-.5).
-                for i=1:length(x);
-                    line([y(i)-w,y(i)+w,y(i)+w,y(i)-w,y(i)-w],...
-                        [x(i)-w,x(i)-w,x(i)+w,x(i)+w,x(i)-w], ...
-                        'Color',roi(r).color,'LineWidth',lineWidth);
-                end
+  if ~isempty(x) & ~isempty(y)
+    switch option
+     case{'all','selected'}
+      % Draw the lines around each pixel, w=1/2 because you don't
+      % want to connect the centers of the pixels, rather you want to
+      % draw around each pixel, e.g, from (x-.5,y-.5) to (x+.5,y-.5).
+      for i=1:length(x);
+	line([y(i)-w,y(i)+w,y(i)+w,y(i)-w,y(i)-w],...
+	     [x(i)-w,x(i)-w,x(i)+w,x(i)+w,x(i)-w], ...
+	     'Color',color,'LineWidth',lineWidth);
+      end
                 
-                % Unfortunately, this is slower without the loop
-                %
-                % y = y';
-                % x = x';
-                % line([y-w;y+w],[x-w;x-w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
-                % line([y+w;y+w],[x-w;x+w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
-                % line([y+w;y-w],[x+w;x+w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
-                % line([y-w;y-w],[x+w;x-w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
+      % Unfortunately, this is slower without the loop
+      %
+      % y = y';
+      % x = x';
+      % line([y-w;y+w],[x-w;x-w],'color',color,'LineWidth',lineWidth);
+      % line([y+w;y+w],[x-w;x+w],'color',color,'LineWidth',lineWidth);
+      % line([y+w;y-w],[x+w;x+w],'color',color,'LineWidth',lineWidth);
+      % line([y-w;y-w],[x+w;x-w],'color',color,'LineWidth',lineWidth);
 
-            case{'all perimeter','selected perimeter'}
-                % Draw only the perimeter               
-                for i=1:length(x);
-                    xMinus = find(x == x(i)-1);
-                    xEquals = find(x == x(i));
-                    xPlus = find(x == x(i)+1);
-                    if isempty(xMinus)
-                        line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',roi(r).color,'LineWidth',lineWidth);
-                    else
-                        if ~any(y(i) == y(xMinus))
-                            line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',roi(r).color,'LineWidth',lineWidth);
-                        end
-                    end
-                    if isempty(xPlus)
-                        line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
-                    else
-                        if ~any(y(i) == y(xPlus))
-                            line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
-                        end
-                    end
-                    if ~isempty(xEquals)
-                        if ~any(y(i) == y(xEquals)-1)
-                            line([y(i)+w,y(i)+w],[x(i)-w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
-                        end
-                        if ~any(find(y(i) == y(xEquals)+1))
-                            line([y(i)-w,y(i)-w],[x(i)-w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
-                        end
-                    end
-                end
-        end
+     case{'all perimeter','selected perimeter'}
+      % Draw only the perimeter               
+      for i=1:length(x);
+	xMinus = find(x == x(i)-1);
+	xEquals = find(x == x(i));
+	xPlus = find(x == x(i)+1);
+	if isempty(xMinus)
+	  line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',color,'LineWidth',lineWidth);
+	else
+	  if ~any(y(i) == y(xMinus))
+	    line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',color,'LineWidth',lineWidth);
+	  end
+	end
+	if isempty(xPlus)
+	  line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+	else
+	  if ~any(y(i) == y(xPlus))
+	    line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+	  end
+	end
+	if ~isempty(xEquals)
+	  if ~any(y(i) == y(xEquals)-1)
+	    line([y(i)+w,y(i)+w],[x(i)-w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+	  end
+	  if ~any(find(y(i) == y(xEquals)+1))
+	    line([y(i)-w,y(i)-w],[x(i)-w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+	  end
+	end
+      end
     end
-    hold off
-
+  end
+  hold off
 end
 
 return;
