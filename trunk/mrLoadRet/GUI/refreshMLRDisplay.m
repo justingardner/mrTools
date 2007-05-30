@@ -24,40 +24,35 @@ sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 
 % Compute base coordinates and extract baseIm for the current slice
 %disppercent(-inf,'extract base image');
-b = viewGet(view,'baseCache');
-if isempty(b)
-  [baseIm,baseCoords,baseCoordsHomogeneous] = ...
+base = viewGet(view,'baseCache');
+if isempty(base)
+  [base.im,baseCoords,base.coordsHomogeneous] = ...
       getBaseSlice(view,slice,sliceIndex,rotate,baseNum);
   view = viewSet(view,'cursliceBaseCoords',baseCoords);
-  b.baseDims = size(baseIm);
+  base.dims = size(base.im);
 
   % Rescale base volume
-  if ~isempty(baseIm)
-    baseCmap = gray(256);
-    baseClip = viewGet(view,'baseClip',baseNum);
-    baseRGB = rescale2rgb(baseIm,baseCmap,baseClip);
+  if ~isempty(base.im)
+    base.cmap = gray(256);
+    base.clip = viewGet(view,'baseClip',baseNum);
+    base.RGB = rescale2rgb(base.im,base.cmap,base.clip);
   else
-    baseRGB = [];
+    base.RGB = [];
   end
   % save extracted image
-  b.baseRGB = baseRGB;
-  b.baseCmap = baseCmap;
-  b.baseClip = baseClip;
-  b.baseCoordsHomogeneous = baseCoordsHomogeneous;
-  b.baseIm = baseIm;
-  view = viewSet(view,'baseCache',b);
+  view = viewSet(view,'baseCache',base);
 end
 %disppercent(inf);
 
 % Extract overlay images and overlay coords, and alphaMap
 %disppercent(-inf,'extract overlay images');
-o = viewGet(view,'overlayCache');
-if isempty(o)
+overlay = viewGet(view,'overlayCache');
+if isempty(overlay)
   curOverlay = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
   [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
       getOverlaySlice(view,scan,slice,sliceIndex,rotate,...
-			   baseNum,b.baseCoordsHomogeneous,b.baseDims,...
+			   baseNum,base.coordsHomogeneous,base.dims,...
 			   analysisNum,interpMethod,interpExtrapVal);
   view = viewSet(view,'cursliceOverlayCoords',overlayCoords);
   if ~isempty(overlayImages)
@@ -67,7 +62,7 @@ if isempty(o)
   end
 
   numOverlays = viewGet(view,'numberofOverlays');
-  mask = ones(size(b.baseIm));
+  mask = ones(size(base.im));
   % Loop through overlays, filling in NaNs according to clip values.
   if ~isempty(overlayImages)
     for ov = 1:numOverlays
@@ -83,35 +78,28 @@ if isempty(o)
     end
   end
   % Finally, make the alphaMap.
-  alphaMap = repmat(alpha*mask,[1 1 3]);
+  overlay.alphaMap = repmat(alpha*mask,[1 1 3]);
 
   % Rescale current overlay.
   if ~isempty(overlayIm)
-    overlayCmap = viewGet(view,'overlayCmap',curOverlay);
-    overlayRange = viewGet(view,'overlayRange',curOverlay);
+    overlay.cmap = viewGet(view,'overlayCmap',curOverlay);
+    overlay.range = viewGet(view,'overlayRange',curOverlay);
     if strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMax')
       clip = viewGet(view,'overlayClip',curOverlay);
       if ~isempty(overlayIm(mask))
-	overlayRange(1) = max(clip(1),min(overlayIm(mask)));
-	overlayRange(2) = min(max(overlayIm(mask)),clip(2));
+	overlay.range(1) = max(clip(1),min(overlayIm(mask)));
+	overlay.range(2) = min(max(overlayIm(mask)),clip(2));
       else
-	overlayRange = clip;
+	overlay.range = clip;
       end
     end
-    overlayRGB = rescale2rgb(overlayIm,overlayCmap,overlayRange);
+    overlay.RGB = rescale2rgb(overlayIm,overlay.cmap,overlay.range);
   else
-    overlayRGB = [];
+    overlay.RGB = [];
   end
 
   % save in cache
-  if ~isempty(overlayRGB)
-    o.overlayRange = overlayRange;
-    o.overlayCmap = overlayCmap;
-  end
-  o.overlayRGB = overlayRGB;
-  o.alphaMap = alphaMap;
-
-  view = viewSet(view,'overlayCache',o);
+  view = viewSet(view,'overlayCache',overlay);
   %disppercent(inf);
   disp(sprintf('Recalculated overlay'));
 else
@@ -125,14 +113,14 @@ end
 
 % Combine base and overlay
 %disppercent(-inf,'combine base and overlay');
-if ~isempty(b.baseRGB) & ~isempty(o.overlayRGB)
-    img = (1-o.alphaMap).*b.baseRGB + o.alphaMap.*o.overlayRGB;
-    cmap = o.overlayCmap;
-    cbarRange = o.overlayRange;
-elseif ~isempty(b.baseRGB)
-    img = b.baseRGB;
-    cmap = b.baseCmap;
-    cbarRange = b.baseClip;
+if ~isempty(base.RGB) & ~isempty(overlay.RGB)
+    img = (1-overlay.alphaMap).*base.RGB + overlay.alphaMap.*overlay.RGB;
+    cmap = overlay.cmap;
+    cbarRange = overlay.range;
+elseif ~isempty(base.RGB)
+    img = base.RGB;
+    cmap = base.cmap;
+    cbarRange = base.clip;
 else
     % If no image at this point then display blank
     img = 0;
@@ -170,7 +158,7 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 % Display the ROIs
 %disppercent(-inf,'displayROI');
 displayROIs(view,slice,sliceIndex,rotate,...
-    baseNum,b.baseCoordsHomogeneous,b.baseDims);
+    baseNum,base.coordsHomogeneous,base.dims);
 %disppercent(inf);
 toc
 disppercent(-inf,'rendering');
@@ -372,7 +360,7 @@ end
 
 
 
-function [baseCoords] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
+function [baseCoords x y s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
     baseNum,baseCoordsHomogeneous,imageDims,roiNum);
 %
 % getROIBaseCoordsSlice: extracts ROI coords transformed to the
@@ -390,6 +378,18 @@ roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
 if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     % Use xformROI to supersample the coordinates
     baseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
+    roiSlices = unique(baseCoords(sliceIndex,:));
+    x = [];y = []; s = [];
+    % calculate for every slice in the roi the coordinates
+    % in the image domain
+    for roiSlice = roiSlices
+      baseCoordsHomogeneous(3,:) = roiSlice;
+      roiIndexesThisSlice = find(baseCoords(sliceIndex,:)==roiSlice);
+      [roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,roiIndexesThisSlice)',baseCoordsHomogeneous(1:3,:)','rows');
+      [thisx,thisy] = ind2sub(imageDims,baseIndices);
+      x = [x thisx'];y = [y thisy'];
+      s = [s baseCoords(sliceIndex,roiIndexesThisSlice(roiIndices))];
+    end
 end
 
 
@@ -448,10 +448,10 @@ if isempty(roi)
         end % end switch statement
     end % end loop
     % Get ROI coords transformed to the image  
-    roi(r).baseCoords = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
-        baseNum,baseCoordsHomogeneous,imageDims,r);
-    [roiCoordsSlice,roiIndices,baseIndices] = intersect(roi(r).baseCoords(1:3,:)',baseCoordsHomogeneous(1:3,:)','rows');
-    [roi(r).x,roi(r).y] = ind2sub(imageDims,baseIndices);
+    [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
+				   baseNum,baseCoordsHomogeneous,imageDims,r);
+    %[roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,:)',baseCoordsHomogeneous(1:3,:)','rows');
+    %[x,y] = ind2sub(imageDims,baseIndices);
   end
   view = viewSet(view,'ROICache',roi);
 end
@@ -471,11 +471,8 @@ w = 0.5;
 hold on
 
 for r = order
-  % get base coords for this slice
-  % can this be made faster??
-  %[roiCoordsSlice,roiIndices,baseIndices] = intersect(roi(r).baseCoords(1:3,:)',baseCoordsHomogeneous(1:3,:)','rows');
-  %[x,y] = ind2sub(imageDims,baseIndices);
-  x = roi(r).x;y = roi(r).y;
+  % get image coords for this slice
+  x = roi(r).x(roi(r).s==sliceNum);y = roi(r).y(roi(r).s==sliceNum);
     if ~isempty(x) & ~isempty(y)
 
         switch option
