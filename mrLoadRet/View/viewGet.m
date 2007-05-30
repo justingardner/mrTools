@@ -914,7 +914,6 @@ switch lower(param)
       curOverlay = view.analyses{analysisNum}.curOverlay;
       if ~isempty(curOverlay)
 	clip = view.analyses{analysisNum}.overlays(curOverlay).clip;
-	overlayType = view.analyses{analysisNum}.overlays(curOverlay).colormapType;
 	overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
 	baseNames = viewGet(view,'baseNames');
 	curBase = viewGet(view,'currentBase');
@@ -922,7 +921,7 @@ switch lower(param)
 	rotate = viewGet(view,'rotate');
 	sliceIndex = viewGet(view,'baseSliceIndex');
 	% calculate string
-	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%s_%i',scanNum,baseNames{curBase},curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType,rotate);
+	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i',scanNum,baseNames{curBase},curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;

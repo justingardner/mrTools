@@ -16,6 +16,7 @@ if (isempty(h) | h == 0) | ~ishandle(h)
   newGraphWin;
 else
   set(0,'CurrentFigure',h);
+  figure(h);
 end
 
 % Clear the figure
