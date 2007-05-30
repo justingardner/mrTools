@@ -867,7 +867,10 @@ switch lower(param)
     val = view.curROI;
   case{'roicacheid'}
     % cacheID = viewGet(view,'ROICacheID')
-    val = sprintf('%i',viewGet(view,'curSlice'));
+    val = sprintf('%i',viewGet(view,'sliceIndex'));;
+    for i = 1:length(view.ROIs);
+      val = sprintf('%s%s%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
+    end
   case{'roicache'}
     % cacheVal = viewGet(view,'ROICache')
     roiID = viewGet(view,'ROICacheID');
@@ -904,8 +907,9 @@ switch lower(param)
 	overlayType = view.analyses{analysisNum}.overlays(curOverlay).colormapType;
 	overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
 	curBase = viewGet(view,'currentBase');
+	scanNum = viewGet(view,'curScan');
 	% calculate string
-	val = sprintf('%i_%i_%i_%i_%s_%s_%s',curBase,curSlice,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType);
+	val = sprintf('%i_%i_%i_%i_%i_%s_%s_%s',scanNum,curBase,curSlice,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;
