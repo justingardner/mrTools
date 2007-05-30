@@ -33,6 +33,11 @@ site = mrGetPref('site');
 maxBlocksize = mrGetPref('maxBlocksize');
 volumeDirectory = mrGetPref('volumeDirectory');
 
+% get values for cache sizes
+roiCacheSize = mrGetPref('roiCacheSize');
+baseCacheSize = mrGetPref('baseCacheSize');
+overlayCacheSize = mrGetPref('overlayCacheSize');
+
 % set up the dialog and ask the user to set parameters
 prefParams = {{'site',site,'Where you are using this code'},...
     {'verbose',verbose,'Yes if you want to have dialog waitbars, No to have information printed to the terminal'},...
@@ -40,7 +45,10 @@ prefParams = {{'site',site,'Where you are using this code'},...
     {'maxBlocksize',maxBlocksize,'Size of chunks of data to analyze at a time. If you are running out of memory, set lower. A good starting value is 250000000','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
     {'volumeDirectory',volumeDirectory,'The directory to default to when you load base anatomy from the Volume directory'},...
     {'overwritePolicy',overwritePolicy,'Method to use when analysis is going to overwrite an existing file'},...
-    {'niftiFileExtension',niftiFileExtension,'Nifti file extension, usually .img'}};
+    {'niftiFileExtension',niftiFileExtension,'Nifti file extension, usually .img'},...
+    {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 1.','minmax=[0 inf]','incdec=[-1 1]'},...
+    {'baseCacheSize',baseCacheSize,'Size of base image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},...
+    {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'}};
 prefParams = mrParamsDialog(prefParams);
 
 % if they did not cancel then actually set the parameters
@@ -52,4 +60,7 @@ if ~isempty(prefParams)
     mrSetPref('volumeDirectory',prefParams.volumeDirectory);
     mrSetPref('overwritePolicy',prefParams.overwritePolicy);
     mrSetPref('niftiFileExtension',prefParams.niftiFileExtension);
+    mrSetPref('roiCacheSize',prefParams.roiCacheSize);
+    mrSetPref('baseCacheSize',prefParams.baseCacheSize);
+    mrSetPref('overlayCacheSize',prefParams.overlayCacheSize);
 end

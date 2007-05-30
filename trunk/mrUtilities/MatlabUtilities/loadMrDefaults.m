@@ -45,6 +45,15 @@ end
 if ~isfield(mrDefaults.prefs,'niftiFileExtension') | isempty(mrDefaults.prefs.niftiFileExtension)
     mrDefaults.prefs.niftiFileExtension = '.img';
 end
+if ~isfield(mrDefaults.prefs,'roiCacheSize') | isempty(mrDefaults.prefs.roiCacheSize)
+  mrDefaults.prefs.roiCacheSize = 0;
+end
+if ~isfield(mrDefaults.prefs,'overlayCacheSize') | isempty(mrDefaults.prefs.overlayCacheSize)
+  mrDefaults.prefs.overlayCacheSize = 0;
+end
+if ~isfield(mrDefaults.prefs,'baseCacheSize') | isempty(mrDefaults.prefs.baseCacheSize)
+  mrDefaults.prefs.baseCacheSize = 0;
+end
 
 % check for any figloc that are strange
 if ~isempty(mrDefaults.figloc)
