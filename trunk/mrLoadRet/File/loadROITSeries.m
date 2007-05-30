@@ -75,7 +75,7 @@ for roinum = 1:length(roiname)
     elseif isnumeric(roiname{roinum})
       roi = viewGet(view,'roi',roiname{roinum});
     else
-      roi.(roiname{roinum}.name) = roiname{roinum};
+      roi.(fixBadChars(roiname{roinum}.name)) = roiname{roinum};
     end
     roiFieldnames = fieldnames(roi);
     % get all the rois
