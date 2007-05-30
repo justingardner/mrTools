@@ -80,7 +80,6 @@ switch lower(command(1))
     end
   % clear cache
   case {'c'}
-   disp('(mrCache) Clear');
    retval1 = mrCache('init',cache.n);
 end
 
