@@ -1567,13 +1567,13 @@ prefParams = mrEditPrefs;
 % if changes, check for change in cache size
 if ~isempty(prefParams)
   if (roiCacheSize ~= prefParams.roiCacheSize)
-    v = viewSet(v,'roiCache','clear');
+    v = viewSet(v,'roiCache','init');
   end
   if (baseCacheSize ~= prefParams.baseCacheSize)
-    v = viewSet(v,'baseCache','clear');
+    v = viewSet(v,'baseCache','init');
   end
   if (overlayCacheSize ~= prefParams.overlayCacheSize)
-    v = viewSet(v,'overlayCache','clear');
+    v = viewSet(v,'overlayCache','init');
   end
 end
 
