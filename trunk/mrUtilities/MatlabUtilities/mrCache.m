@@ -1,7 +1,7 @@
 % mrCache.m
 %
 %        $Id$
-%      usage: mrCache(cache,command,data)
+%      usage: mrCache(cache,command,id,data)
 %         by: justin gardner
 %       date: 05/29/07
 %    purpose: implements a simple cache for use with
@@ -12,8 +12,8 @@
 %             c = mrCache('add',c,'dataid',data); % add data
 %             [cachedData c] = mrCache('find',c,'dataid');
 %             
-%             to clear the cache
-%             c = mrCache('clear',c);
+%             to clear the cache of all id's with string 'str'
+%             c = mrCache('clear',c,'str');
 function [retval1 retval2] = mrCache(command,cache,id,data)
 
 % check arguments
@@ -37,7 +37,6 @@ switch lower(command(1))
     % init other fields
     cache.data = cell(1,cache.n);
     cache.id = cell(1,cache.n);
-%    cache.id = zeros(1,cache.n); 
     cache.accessed = zeros(1,cache.n); 
     % and return
     retval1 = cache;
@@ -45,7 +44,6 @@ switch lower(command(1))
    case {'a'}
     % see if it is already in cache
     cacheNum = find(strcmp(cache.id,id));
-%    cacheNum = find(cache.id==id);
     if isempty(cacheNum)
       % if not, add it in to the place that has
       % been accessed the longest time ago
@@ -54,7 +52,6 @@ switch lower(command(1))
     % set the cache data and id
     if ~isempty(cacheNum)
       cache.id{cacheNum} = id;
-%     cache.id(cacheNum) = id;
       cache.data{cacheNum} = data;
       % set the accessed field so that everyone
       % else gets 1 added 
@@ -64,9 +61,8 @@ switch lower(command(1))
     % return the cache
     retval1 = cache;
    % find an item in the cache
- case {'f'}
+   case {'f'}
     cacheNum = find(strcmp(cache.id,id));
-%    cacheNum = find(cache.id==id);
     if isempty(cacheNum)
       retval1 = [];
       retval2 = cache;
@@ -74,12 +70,21 @@ switch lower(command(1))
       % set the accessed field so that this one is youngest
       cache.accessed = cache.accessed+1;
       cache.accessed(cacheNum) = min(cache.accessed)-1;
-      % return the data
+      % return the data and cache
       retval1 = cache.data{cacheNum};
       retval2 = cache;
     end
   % clear cache
   case {'c'}
-   retval1 = mrCache('init',cache.n);
+   % look for any id that contains the string
+   for i = 1:length(cache.id)
+      % and clear it
+      if ~isempty(findstr(cache.id{i},id))
+	cache.id{i} = '';
+	cache.data{i} = [];
+	cache.accessed(i) = max(cache.accessed)+1;
+      end
+    end
+    retval1 = cache;
 end
 

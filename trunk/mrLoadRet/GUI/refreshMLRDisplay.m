@@ -49,14 +49,15 @@ if isempty(base)
   end
   % save extracted image
   view = viewSet(view,'baseCache',base);
+  %disppercent(inf);disp('Recomputed base');
+else
+  %disppercent(inf);
 end
-%disppercent(inf);
 
 % Extract overlay images and overlay coords, and alphaMap
 %disppercent(-inf,'extract overlay images');
 overlay = viewGet(view,'overlayCache');
 if isempty(overlay)
-  disppercent(-inf,sprintf('Recalculated overlay'));
   curOverlay = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
   [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
@@ -109,7 +110,7 @@ if isempty(overlay)
 
   % save in cache
   view = viewSet(view,'overlayCache',overlay);
-  disppercent(inf);
+  %disppercent(inf);disp('Recomputed overlay');
 else
   %disppercent(inf);
 end
@@ -164,16 +165,13 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 %disppercent(inf);
 
 % Display the ROIs
-%disppercent(-inf,'displayROI');
 displayROIs(view,slice,sliceIndex,rotate,...
     baseNum,base.coordsHomogeneous,base.dims);
-%disppercent(inf);
 
 %disppercent(-inf,'rendering');
 drawnow
-%disppercent(inf);
+%disppercent(inf);toc
 
-toc
 return
 
 
@@ -439,10 +437,15 @@ switch option
         return
 end
 
+% get figure
+fig = viewGet(view,'figNum');
+gui = guidata(fig);
+set(fig,'CurrentAxes',gui.axis);
+
 % Loop through ROIs in order
+%disppercent(-inf,sprintf('Extracting ROI coordinates'));
 roi = viewGet(view,'ROICache');
 if isempty(roi)
-  disppercent(-inf,sprintf('Recalculated ROI coordinates'));
   for r = order
     % Get ROI coords transformed to the image  
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
@@ -451,13 +454,14 @@ if isempty(roi)
     %[x,y] = ind2sub(imageDims,baseIndices);
   end
   view = viewSet(view,'ROICache',roi);
-  disppercent(inf);
+  %disppercent(inf);disp('Recomputed ROI coordinates');
+else
+  %disppercent(inf);
 end
 
+
+%disppercent(-inf,'Drawing ROI');
 % Draw it
-fig = viewGet(view,'figNum');
-gui = guidata(fig);
-set(fig,'CurrentAxes',gui.axis);
 % the code here does not seem to want to set 
 % the current axes when mrOpenWindow
 % starts up, causing rois to get
@@ -544,7 +548,7 @@ for r = order
   end
   hold off
 end
-
+%disppercent(inf);
 return;
 
 
