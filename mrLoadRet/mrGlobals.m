@@ -39,6 +39,9 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     % Initialize graph window
     MLR.graphFigure = [];
 
+    % setup caches
+    MLR.caches = {};
+    
     % Inform user that mrLoadRet has started up
     disp(['mrLoadRet ',num2str(MLR.version),', Matlab ',num2str(matlabVersion)]);
 
