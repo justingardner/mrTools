@@ -1541,6 +1541,7 @@ scanNum = viewGet(view,'curScan');
 
 % get the coordinates
 coords = getROICoordinates(view,roiNum,scanNum);
+
 disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
 % and display them to the buffer
 for i = 1:size(coords,2)
