@@ -24,19 +24,18 @@ sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 
 % for debugging, clears caches
 if (exist('mglGetKeys')==3) &&  mglGetKeys(57)
-  view = viewSet(view,'roiCache','clear');
-  view = viewSet(view,'overlayCache','clear');
-  view = viewSet(view,'baseCache','clear');
+  view = viewSet(view,'roiCache','init');
+  view = viewSet(view,'overlayCache','init');
+  view = viewSet(view,'baseCache','init');
 end
 
 
 % Compute base coordinates and extract baseIm for the current slice
-%disppercent(-inf,'extract base image');
+disppercent(-inf,'extract base image');
 base = viewGet(view,'baseCache');
 if isempty(base)
-  [base.im,baseCoords,base.coordsHomogeneous] = ...
+  [base.im,base.coords,base.coordsHomogeneous] = ...
       getBaseSlice(view,slice,sliceIndex,rotate,baseNum);
-  view = viewSet(view,'cursliceBaseCoords',baseCoords);
   base.dims = size(base.im);
 
   % Rescale base volume
@@ -49,22 +48,22 @@ if isempty(base)
   end
   % save extracted image
   view = viewSet(view,'baseCache',base);
-  %disppercent(inf);disp('Recomputed base');
+  disppercent(inf);disp('Recomputed base');
 else
-  %disppercent(inf);
+  disppercent(inf);
 end
+view = viewSet(view,'cursliceBaseCoords',base.coords);
 
 % Extract overlay images and overlay coords, and alphaMap
-%disppercent(-inf,'extract overlay images');
+disppercent(-inf,'extract overlay images');
 overlay = viewGet(view,'overlayCache');
 if isempty(overlay)
   curOverlay = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
-  [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
+  [overlayImages,overlay.coords,overlayCoordsHomogeneous] = ...
       getOverlaySlice(view,scan,slice,sliceIndex,rotate,...
 			   baseNum,base.coordsHomogeneous,base.dims,...
 			   analysisNum,interpMethod,interpExtrapVal);
-  view = viewSet(view,'cursliceOverlayCoords',overlayCoords);
   if ~isempty(overlayImages)
     overlayIm = overlayImages(:,:,curOverlay);
   else
@@ -110,10 +109,11 @@ if isempty(overlay)
 
   % save in cache
   view = viewSet(view,'overlayCache',overlay);
-  %disppercent(inf);disp('Recomputed overlay');
+  disppercent(inf);disp('Recomputed overlay');
 else
-  %disppercent(inf);
+  disppercent(inf);
 end
+view = viewSet(view,'cursliceOverlayCoords',overlay.coords);
   
 % figure
 % image(overlayRGB)
@@ -170,7 +170,8 @@ displayROIs(view,slice,sliceIndex,rotate,...
 
 %disppercent(-inf,'rendering');
 drawnow
-%disppercent(inf);toc
+%disppercent(inf);
+toc
 
 return
 
@@ -443,7 +444,7 @@ gui = guidata(fig);
 set(fig,'CurrentAxes',gui.axis);
 
 % Loop through ROIs in order
-%disppercent(-inf,sprintf('Extracting ROI coordinates'));
+disppercent(-inf,sprintf('Extracting ROI coordinates'));
 roi = viewGet(view,'ROICache');
 if isempty(roi)
   for r = order
@@ -454,9 +455,9 @@ if isempty(roi)
     %[x,y] = ind2sub(imageDims,baseIndices);
   end
   view = viewSet(view,'ROICache',roi);
-  %disppercent(inf);disp('Recomputed ROI coordinates');
+  disppercent(inf);disp('Recomputed ROI coordinates');
 else
-  %disppercent(inf);
+  disppercent(inf);
 end
 
 
