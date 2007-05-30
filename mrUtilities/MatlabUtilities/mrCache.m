@@ -12,8 +12,8 @@
 %             c = mrCache('add',c,'dataid',data); % add data
 %             [cachedData c] = mrCache('find',c,'dataid');
 %             
-%             
-%
+%             to clear the cache
+%             c = mrCache('clear',c);
 function [retval1 retval2] = mrCache(command,cache,id,data)
 
 % check arguments
@@ -78,5 +78,9 @@ switch lower(command(1))
       retval1 = cache.data{cacheNum};
       retval2 = cache;
     end
+  % clear cache
+  case {'c'}
+   disp('(mrCache) Clear');
+   retval1 = mrCache('init',cache.n);
 end
 
