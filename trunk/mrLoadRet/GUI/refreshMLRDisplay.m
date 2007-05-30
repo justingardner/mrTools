@@ -56,6 +56,7 @@ end
 %disppercent(-inf,'extract overlay images');
 overlay = viewGet(view,'overlayCache');
 if isempty(overlay)
+  disppercent(-inf,sprintf('Recalculated overlay'));
   curOverlay = viewGet(view,'currentOverlay');
   analysisNum = viewGet(view,'currentAnalysis');
   [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
@@ -108,8 +109,7 @@ if isempty(overlay)
 
   % save in cache
   view = viewSet(view,'overlayCache',overlay);
-  %disppercent(inf);
-  disp(sprintf('Recalculated overlay'));
+  disppercent(inf);
 else
   %disppercent(inf);
 end

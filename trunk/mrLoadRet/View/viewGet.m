@@ -886,7 +886,8 @@ switch lower(param)
     currentBase = viewGet(view,'currentBase');
     clip = viewGet(view,'baseClip',currentBase);
     currentSlice = viewGet(view,'curSlice');
-    val = sprintf('%i_%i_%i_%s',currentBase,currentSlice,rotate,num2str(clip));
+    sliceIndex = viewGet(view,'baseSliceIndex');
+    val = sprintf('%i_%i_%i_%i_%s',currentBase,currentSlice,sliceIndex,rotate,num2str(clip));
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
@@ -916,8 +917,9 @@ switch lower(param)
 	curBase = viewGet(view,'currentBase');
 	scanNum = viewGet(view,'curScan');
 	rotate = viewGet(view,'rotate');
+	sliceIndex = viewGet(view,'baseSliceIndex');
 	% calculate string
-	val = sprintf('%i_%i_%i_%i_%i_%s_%s_%s_%i',scanNum,curBase,curSlice,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType,rotate);
+	val = sprintf('%i_%i_%i_%i_%i_%i_%s_%s_%s_%i',scanNum,curBase,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType,rotate);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;
