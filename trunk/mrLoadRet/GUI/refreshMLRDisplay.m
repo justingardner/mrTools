@@ -22,6 +22,14 @@ baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 %disppercent(inf);
 
+% for debugging, clears caches
+if (exist('mglGetKeys')==3) &&  mglGetKeys(57)
+  view = viewSet(view,'roiCache','clear');
+  view = viewSet(view,'overlayCache','clear');
+  view = viewSet(view,'baseCache','clear');
+end
+
+
 % Compute base coordinates and extract baseIm for the current slice
 %disppercent(-inf,'extract base image');
 base = viewGet(view,'baseCache');
@@ -160,10 +168,12 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 displayROIs(view,slice,sliceIndex,rotate,...
     baseNum,base.coordsHomogeneous,base.dims);
 %disppercent(inf);
-toc
-disppercent(-inf,'rendering');
+
+%disppercent(-inf,'rendering');
 drawnow
-disppercent(inf);
+%disppercent(inf);
+
+toc
 return
 
 
@@ -429,12 +439,10 @@ switch option
         return
 end
 
-if mglGetKeys(57)
-  view = viewSet(view,'roiCache','clear');
-end
 % Loop through ROIs in order
 roi = viewGet(view,'ROICache');
 if isempty(roi)
+  disppercent(-inf,sprintf('Recalculated ROI coordinates'));
   for r = order
     % Get ROI coords transformed to the image  
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
@@ -443,6 +451,7 @@ if isempty(roi)
     %[x,y] = ind2sub(imageDims,baseIndices);
   end
   view = viewSet(view,'ROICache',roi);
+  disppercent(inf);
 end
 
 % Draw it
