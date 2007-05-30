@@ -30,7 +30,7 @@ set(fignum,'Name','eventRelatedPlot');
 
 % set roi coords
 for roinum = 1:length(roi)
-  roicoords = getRoiCoordinates(view,roi{roinum},scan);
+  roicoords = getROICoordinates(view,roi{roinum},scan);
   % change the coordinates to our coordinates
   roi{end}.coords = roicoords;
 end
