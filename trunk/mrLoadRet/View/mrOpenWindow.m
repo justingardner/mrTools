@@ -59,6 +59,7 @@ if isfile('mrLastView.mat')
             mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
             % change group
             view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
+	    mlrGuiSet(view.viewNum,'group',mrLastView.viewSettings.curGroup);
             % change scan
             mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
             % change slice
@@ -92,6 +93,7 @@ if isfile('mrLastView.mat')
         % add here, to load more info...
 	% and refresh
 	refreshMLRDisplay(view.viewNum);
+	close
     end
 
 end
@@ -110,6 +112,7 @@ if ~baseLoaded
         view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
         % and refresh
         refreshMLRDisplay(view.viewNum);
+	close;
     end
 end
 
