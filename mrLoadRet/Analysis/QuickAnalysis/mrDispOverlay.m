@@ -159,7 +159,6 @@ if isempty(viewGet(v,'curAnalysis'))
   a.(analName).type = analName;
   a.(analName).groupName = groupName;
   a.(analName).function = '';
-  a.(analName).reconcileFunction = 'quickReconcile';
   a.(analName).guiFunction = '';
   a.(analName).params = [];
   % if user didn't pass in an overlay, they are probably
@@ -191,6 +190,9 @@ end
 
 % update mr load ret if it is running
 if mrLoadRetViewing
+  v = viewSet(v,'curGroup',groupNum);
+  mlrGuiSet(v,'group',groupNum);
+  mlrGuiSet(v.viewNum,'scan',scanNum(1));
   refreshMLRDisplay(v.viewNum);
 end
 
