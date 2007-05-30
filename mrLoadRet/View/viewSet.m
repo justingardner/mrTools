@@ -413,14 +413,13 @@ switch lower(param)
         end
         % Set it to be the current base Volume
         view = viewSet(view,'curBase',newBaseNum);
-        % clear the caches... We do this since, the user
-	% might have removed a base anatomy and loaded
-	% up another base anatomy with the same name
-	% this could happen if the user is fixing
-	% the sform for instance
-	view = viewSet(view,'baseCache','clear');
-	view = viewSet(view,'overlayCache','clear');
-	view = viewSet(view,'roiCache','clear');
+        % clear the caches of any reference to a base with
+	% the same name (if it is reloaded, the base may
+	% have changed its xform for instance and so the
+	% caches need to be recomputed)
+	view = viewSet(view,'baseCache','clear',baseAnatomy.name);
+	view = viewSet(view,'overlayCache','clear',baseAnatomy.name);
+	view = viewSet(view,'roiCache','clear',baseAnatomy.name);
 	% Update the gui
         stringList = {view.baseVolumes(:).name};
         mlrGuiSet(view,'basePopup',stringList);
@@ -603,8 +602,8 @@ switch lower(param)
             mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
 
         end
-	% clear the overlay cache
-	view = viewSet(view,'overlayCache','clear');
+	% completely clear the overlay cache
+	view = viewSet(view,'overlayCache','init');
     case {'deleteanalysis'}
         % view = viewSet(view,'deleteAnalysis',analysisNum);
         analysisNum = val;
@@ -1045,9 +1044,15 @@ switch lower(param)
     case 'roicache'
        % view = viewSet(view,'ROICache',roidata);
        % view = viewSet(view,'ROICache','clear');
-       if isstr(val) && (strcmp(val,'clear'))
-	 % clear the cache
-	 MLR.caches{view.viewNum}.roiCache = mrCache('init',mrGetPref('roiCacheSize'));
+       if isstr(val)
+	 if strcmp(val,'clear')
+	   % clear the cache
+	   MLR.caches{view.viewNum}.roiCache = ...
+	       mrCache('clear',MLR.caches{view.viewNum}.roiCache,varargin{1});
+	 else
+	   % init the cache
+	   MLR.caches{view.viewNum}.roiCache = mrCache('init',mrGetPref('roiCacheSize'));
+	 end
        % add to the cache
        else
 	 roiID = viewGet(view,'ROICacheID');
@@ -1057,9 +1062,15 @@ switch lower(param)
     case 'basecache'
        % view = viewSet(view,'baseCache',basedata);
        % view = viewSet(view,'baseCache','clear');
-       if isstr(val) && (strcmp(val,'clear'))
-	 % clear the cache
-	 MLR.caches{view.viewNum}.baseCache = mrCache('init',mrGetPref('baseCacheSize'));
+       if isstr(val)
+	 if strcmp(val,'clear')
+	   % clear the cache
+	   MLR.caches{view.viewNum}.baseCache = ...
+	       mrCache('clear',MLR.caches{view.viewNum}.baseCache,varargin{1});
+	 else
+	   % init the cache
+	   MLR.caches{view.viewNum}.baseCache = mrCache('init',mrGetPref('baseCacheSize'));
+	 end
        % add to the cache
        else
 	 baseID = viewGet(view,'baseCacheID');
@@ -1069,12 +1080,18 @@ switch lower(param)
     case 'overlaycache'
        % view = viewSet(view,'overlayCache',overlaydata);
        % view = viewSet(view,'overlayCache','clear');
-       if isstr(val) && (strcmp(val,'clear'))
-	 % clear the cache
-	 MLR.caches{view.viewNum}.overlayCache = mrCache('init',mrGetPref('overlayCacheSize'));
+       if isstr(val)
+	 if strcmp(val,'clear')
+	   % clear the cache
+	   MLR.caches{view.viewNum}.overlayCache = ...
+	       mrCache('clear',MLR.caches{view.viewNum}.overlayCache,varargin{1});
+	 else
+	   % init the cache
+	   MLR.caches{view.viewNum}.overlayCache = mrCache('init',mrGetPref('overlayCacheSize'));
+	 end
+       % add to the cache
        else
 	 overlayID = viewGet(view,'overlayCacheID');
-	 % add to the cache
 	 MLR.caches{view.viewNum}.overlayCache = ...
 	   mrCache('add',MLR.caches{view.viewNum}.overlayCache,overlayID,val);
        end

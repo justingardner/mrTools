@@ -10,7 +10,14 @@ end
 
 mrGlobals;
 
+% startup a view
 view = newView(viewType);
+
+% init the caches
+view = viewSet(view,'roiCache','init');
+view = viewSet(view,'overlayCache','init');
+view = viewSet(view,'baseCache','init');
+
 % view is empty if it failed to initialize
 if ~isempty(view)
     fig = mrLoadRetGUI('viewNum',view.viewNum);

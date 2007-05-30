@@ -868,11 +868,12 @@ switch lower(param)
   case{'roicacheid'}
     % cacheID = viewGet(view,'ROICacheID')
     rotate = viewGet(view,'rotate');
+    baseNames = viewGet(view,'baseNames');
     curBase = viewGet(view,'curBase');
     sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%i%i%i%i',curBase,sliceIndex,rotate);
+    val = sprintf('%s_%i_%i_%i',baseNames{curBase},sliceIndex,rotate);
     for i = 1:length(view.ROIs);
-      val = sprintf('%s%s%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
+      val = sprintf('%s_%s_%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
     end
   case{'roicache'}
     % cacheVal = viewGet(view,'ROICache')
@@ -883,11 +884,12 @@ switch lower(param)
   case{'basecacheid'}
     % cacheID = viewGet(view,'baseCacheID')
     rotate = viewGet(view,'rotate');
+    baseNames = viewGet(view,'baseNames');
     currentBase = viewGet(view,'currentBase');
     clip = viewGet(view,'baseClip',currentBase);
     currentSlice = viewGet(view,'curSlice');
     sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%i_%i_%i_%i_%s',currentBase,currentSlice,sliceIndex,rotate,num2str(clip));
+    val = sprintf('%s_%i_%i_%i_%s',baseNames{currentBase},currentSlice,sliceIndex,rotate,num2str(clip));
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
@@ -914,12 +916,13 @@ switch lower(param)
 	clip = view.analyses{analysisNum}.overlays(curOverlay).clip;
 	overlayType = view.analyses{analysisNum}.overlays(curOverlay).colormapType;
 	overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
+	baseNames = viewGet(view,'baseNames');
 	curBase = viewGet(view,'currentBase');
 	scanNum = viewGet(view,'curScan');
 	rotate = viewGet(view,'rotate');
 	sliceIndex = viewGet(view,'baseSliceIndex');
 	% calculate string
-	val = sprintf('%i_%i_%i_%i_%i_%i_%s_%s_%s_%i',scanNum,curBase,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType,rotate);
+	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%s_%i',scanNum,baseNames{curBase},curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),overlayType,rotate);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;
