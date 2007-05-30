@@ -6,6 +6,13 @@
 %       date: 05/29/07
 %    purpose: implements a simple cache for use with
 %             refreshMLRDisplay in mrLoadRet
+%       e.g.:
+%             c = mrCache('init',10); % init a cache of size 10
+%             data = 'whatever';
+%             c = mrCache('add',c,'dataid',data); % add data
+%             [cachedData c] = mrCache('find',c,'dataid');
+%             
+%             
 %
 function [retval1 retval2] = mrCache(command,cache,id,data)
 
@@ -45,13 +52,15 @@ switch lower(command(1))
       cacheNum = first(find(max(cache.accessed)==cache.accessed));
     end
     % set the cache data and id
-    cache.id{cacheNum} = id;
-%    cache.id(cacheNum) = id;
-    cache.data{cacheNum} = data;
-    % set the accessed field so that everyone
-    % else gets 1 added 
-    cache.accessed = cache.accessed+1;
-    cache.accessed(cacheNum) = min(cache.accessed)-1;
+    if ~isempty(cacheNum)
+      cache.id{cacheNum} = id;
+%     cache.id(cacheNum) = id;
+      cache.data{cacheNum} = data;
+      % set the accessed field so that everyone
+      % else gets 1 added 
+      cache.accessed = cache.accessed+1;
+      cache.accessed(cacheNum) = min(cache.accessed)-1;
+    end
     % return the cache
     retval1 = cache;
    % find an item in the cache
