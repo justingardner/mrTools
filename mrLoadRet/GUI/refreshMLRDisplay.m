@@ -3,6 +3,7 @@ function [img] = refreshMLRDisplay(viewNum)
 
 mrGlobals
 
+tic
 % Get current view and baseNum.
 % Get interp preferences.
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
@@ -23,76 +24,100 @@ sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 
 % Compute base coordinates and extract baseIm for the current slice
 %disppercent(-inf,'extract base image');
-[baseIm,baseCoords,baseCoordsHomogeneous] = ...
-    getBaseSlice(view,slice,sliceIndex,rotate,baseNum);
-view = viewSet(view,'cursliceBaseCoords',baseCoords);
-baseDims = size(baseIm);
-%disppercent(inf);
+b = viewGet(view,'baseCache');
+if isempty(b)
+  [baseIm,baseCoords,baseCoordsHomogeneous] = ...
+      getBaseSlice(view,slice,sliceIndex,rotate,baseNum);
+  view = viewSet(view,'cursliceBaseCoords',baseCoords);
+  b.baseDims = size(baseIm);
 
-% Rescale base volume
-%disppercent(-inf,'rescale base');
-if ~isempty(baseIm)
+  % Rescale base volume
+  if ~isempty(baseIm)
     baseCmap = gray(256);
     baseClip = viewGet(view,'baseClip',baseNum);
     baseRGB = rescale2rgb(baseIm,baseCmap,baseClip);
-else
+  else
     baseRGB = [];
+  end
+  % save extracted image
+  b.baseRGB = baseRGB;
+  b.baseCmap = baseCmap;
+  b.baseClip = baseClip;
+  b.baseCoordsHomogeneous = baseCoordsHomogeneous;
+  b.baseIm = baseIm;
+  view = viewSet(view,'baseCache',b);
 end
 %disppercent(inf);
 
 % Extract overlay images and overlay coords, and alphaMap
 %disppercent(-inf,'extract overlay images');
-curOverlay = viewGet(view,'currentOverlay');
-analysisNum = viewGet(view,'currentAnalysis');
-[overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
-    getOverlaySlice(view,scan,slice,sliceIndex,rotate,...
-    baseNum,baseCoordsHomogeneous,baseDims,...
-    analysisNum,interpMethod,interpExtrapVal);
-view = viewSet(view,'cursliceOverlayCoords',overlayCoords);
-if ~isempty(overlayImages)
+o = viewGet(view,'overlayCache');
+if isempty(o)
+  curOverlay = viewGet(view,'currentOverlay');
+  analysisNum = viewGet(view,'currentAnalysis');
+  [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
+      getOverlaySlice(view,scan,slice,sliceIndex,rotate,...
+			   baseNum,b.baseCoordsHomogeneous,b.baseDims,...
+			   analysisNum,interpMethod,interpExtrapVal);
+  view = viewSet(view,'cursliceOverlayCoords',overlayCoords);
+  if ~isempty(overlayImages)
     overlayIm = overlayImages(:,:,curOverlay);
-else
+  else
     overlayIm = [];
-end
-%disppercent(inf);
+  end
 
-%disppercent(-inf,'alphaMap');
-numOverlays = viewGet(view,'numberofOverlays');
-mask = ones(size(baseIm));
-% Loop through overlays, filling in NaNs according to clip values.
-if ~isempty(overlayImages)
+  numOverlays = viewGet(view,'numberofOverlays');
+  mask = ones(size(b.baseIm));
+  % Loop through overlays, filling in NaNs according to clip values.
+  if ~isempty(overlayImages)
     for ov = 1:numOverlays
-        im = overlayImages(:,:,ov);
-        clip = viewGet(view,'overlayClip',ov);
-        % Find pixels that are within clip
-        if diff(clip) > 0
-            pts = (im >= clip(1) & im <= clip(2));
-        else
-            pts = (im >= clip(1) | im <= clip(2));
-        end
-        mask = mask & pts;
+      im = overlayImages(:,:,ov);
+      clip = viewGet(view,'overlayClip',ov);
+      % Find pixels that are within clip
+      if diff(clip) > 0
+	pts = (im >= clip(1) & im <= clip(2));
+      else
+	pts = (im >= clip(1) | im <= clip(2));
+      end
+      mask = mask & pts;
     end
-end
-% Finally, make the alphaMap.
-alphaMap = repmat(alpha*mask,[1 1 3]);
-%disppercent(inf);
+  end
+  % Finally, make the alphaMap.
+  alphaMap = repmat(alpha*mask,[1 1 3]);
 
-% Rescale current overlay.
-%disppercent(-inf,'rescale overlay');
-if ~isempty(overlayIm)
+  % Rescale current overlay.
+  if ~isempty(overlayIm)
     overlayCmap = viewGet(view,'overlayCmap',curOverlay);
     overlayRange = viewGet(view,'overlayRange',curOverlay);
     if strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMax')
-        clip = viewGet(view,'overlayClip',curOverlay);
-        overlayRange(1) = max(clip(1),min(overlayIm(mask)));
-        overlayRange(2) = min(max(overlayIm(mask)),clip(2));
+      clip = viewGet(view,'overlayClip',curOverlay);
+      if ~isempty(overlayIm(mask))
+	overlayRange(1) = max(clip(1),min(overlayIm(mask)));
+	overlayRange(2) = min(max(overlayIm(mask)),clip(2));
+      else
+	overlayRange = clip;
+      end
     end
     overlayRGB = rescale2rgb(overlayIm,overlayCmap,overlayRange);
-else
+  else
     overlayRGB = [];
-end
-%disppercent(inf);
+  end
 
+  % save in cache
+  if ~isempty(overlayRGB)
+    o.overlayRange = overlayRange;
+    o.overlayCmap = overlayCmap;
+  end
+  o.overlayRGB = overlayRGB;
+  o.alphaMap = alphaMap;
+
+  view = viewSet(view,'overlayCache',o);
+  %disppercent(inf);
+  disp(sprintf('Recalculated overlay'));
+else
+  %disppercent(inf);
+end
+  
 % figure
 % image(overlayRGB)
 % colormap(overlayCmap)
@@ -100,14 +125,14 @@ end
 
 % Combine base and overlay
 %disppercent(-inf,'combine base and overlay');
-if ~isempty(baseRGB) & ~isempty(overlayRGB)
-    img = (1-alphaMap).*baseRGB + alphaMap.*overlayRGB;
-    cmap = overlayCmap;
-    cbarRange = overlayRange;
-elseif ~isempty(baseRGB)
-    img = baseRGB;
-    cmap = baseCmap;
-    cbarRange = baseClip;
+if ~isempty(b.baseRGB) & ~isempty(o.overlayRGB)
+    img = (1-o.alphaMap).*b.baseRGB + o.alphaMap.*o.overlayRGB;
+    cmap = o.overlayCmap;
+    cbarRange = o.overlayRange;
+elseif ~isempty(b.baseRGB)
+    img = b.baseRGB;
+    cmap = b.baseCmap;
+    cbarRange = b.baseClip;
 else
     % If no image at this point then display blank
     img = 0;
@@ -126,6 +151,7 @@ end
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
 %set(fig,'CurrentAxes',gui.axis);
+cla
 image(img,'Parent',gui.axis);
 axis(gui.axis,'off');
 axis(gui.axis,'image');
@@ -144,9 +170,12 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 % Display the ROIs
 %disppercent(-inf,'displayROI');
 displayROIs(view,slice,sliceIndex,rotate,...
-    baseNum,baseCoordsHomogeneous,baseDims);
+    baseNum,b.baseCoordsHomogeneous,b.baseDims);
 %disppercent(inf);
-
+toc
+disppercent(-inf,'rendering');
+drawnow
+disppercent(inf);
 return
 
 
@@ -343,13 +372,13 @@ end
 
 
 
-function [x,y] = getROISlice(view,sliceNum,sliceIndex,rotate,...
+function [baseCoords] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
     baseNum,baseCoordsHomogeneous,imageDims,roiNum);
 %
-% getROISlice: extracts ROI coords transformed to the image
+% getROIBaseCoordsSlice: extracts ROI coords transformed to the
+% base image
 
-x = [];
-y = [];
+baseCoords = [];
 
 % viewGet
 baseXform = viewGet(view,'baseXform',baseNum);
@@ -360,10 +389,7 @@ roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
 
 if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     % Use xformROI to supersample the coordinates
-    tmpCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-    [roiCoordsSlice,roiIndices,baseIndices] = intersect(tmpCoords',baseCoordsHomogeneous','rows');
-    % Get corresponding image slice coordinates
-    [x,y] = ind2sub(imageDims,baseIndices);
+    baseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
 end
 
 
@@ -399,45 +425,59 @@ switch option
 end
 
 % Loop through ROIs in order
-for r = order
+roi = viewGet(view,'ROICache');
+if isempty(roi)
+  for r = order
     if (r == s)
-        % Selected ROI: set color=white
-        color = [1 1 1];
+      % Selected ROI: set color=white
+      roi(r).color = [1 1 1];
     else
-        % Non-selected ROI, get color
-        thisCol = viewGet(view,'roiColor',r);
-        % If it's a 'text' color, translate it...
+        % Non-selected ROI, get roi color
+        thisCol = viewGet(view,'roicolor',r);
+        % If it's a 'text' roi(r).color, translate it...
         switch (thisCol)
-            case {'yellow','y'}, color = [1 1 0];
-            case {'magenta','m'}, color = [1 0 1];
-            case {'cyan','c'}, color = [0 1 1];
-            case {'red','r'}, color = [1 0 0];
-            case {'green','g'}, color = [0 1 0];
-            case {'blue','b'}, color = [0 0 1];
-            case {'white','w'}, color = [1 1 1];
-            case {'black','k'}, color = [0 0 0];
-            otherwise, color = [1 1 1];
+            case {'yellow','y'}, roi(r).color = [1 1 0];
+            case {'magenta','m'}, roi(r).color = [1 0 1];
+            case {'cyan','c'}, roi(r).color = [0 1 1];
+            case {'red','r'}, roi(r).color = [1 0 0];
+            case {'green','g'}, roi(r).color = [0 1 0];
+            case {'blue','b'}, roi(r).color = [0 0 1];
+            case {'white','w'}, roi(r).color = [1 1 1];
+            case {'black','k'}, roi(r).color = [0 0 0];
+            otherwise, roi(r).color = [1 1 1];
         end % end switch statement
     end % end loop
-
-    % Get ROI coords transformed to the image
-    [x,y] = getROISlice(view,sliceNum,sliceIndex,rotate,...
+    % Get ROI coords transformed to the image  
+    roi(r).baseCoords = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
         baseNum,baseCoordsHomogeneous,imageDims,r);
-    if ~isempty(x) & ~isempty(y)
+    [roiCoordsSlice,roiIndices,baseIndices] = intersect(roi(r).baseCoords(1:3,:)',baseCoordsHomogeneous(1:3,:)','rows');
+    [roi(r).x,roi(r).y] = ind2sub(imageDims,baseIndices);
+  end
+  view = viewSet(view,'ROICache',roi);
+end
 
-        % Draw it
-        fig = viewGet(view,'figNum');
-        gui = guidata(fig);
-        set(fig,'CurrentAxes',gui.axis);
-	% the code here does not seem to want to set 
-	% the current axes when mrOpenWindow
-	% starts up, causing rois to get
-	% drawn in a different figure?? jg
+% Draw it
+fig = viewGet(view,'figNum');
+gui = guidata(fig);
+set(fig,'CurrentAxes',gui.axis);
+% the code here does not seem to want to set 
+% the current axes when mrOpenWindow
+% starts up, causing rois to get
+% drawn in a different figure?? jg
 %	figure(fig);
 %	axes(gui.axis);
-        lineWidth = 0.5;
-        w = 0.5;
-        hold on
+lineWidth = 0.5;
+w = 0.5;
+hold on
+
+for r = order
+  % get base coords for this slice
+  % can this be made faster??
+  %[roiCoordsSlice,roiIndices,baseIndices] = intersect(roi(r).baseCoords(1:3,:)',baseCoordsHomogeneous(1:3,:)','rows');
+  %[x,y] = ind2sub(imageDims,baseIndices);
+  x = roi(r).x;y = roi(r).y;
+    if ~isempty(x) & ~isempty(y)
+
         switch option
 
             case{'all','selected'}
@@ -447,17 +487,17 @@ for r = order
                 for i=1:length(x);
                     line([y(i)-w,y(i)+w,y(i)+w,y(i)-w,y(i)-w],...
                         [x(i)-w,x(i)-w,x(i)+w,x(i)+w,x(i)-w], ...
-                        'Color',color,'LineWidth',lineWidth);
+                        'Color',roi(r).color,'LineWidth',lineWidth);
                 end
                 
                 % Unfortunately, this is slower without the loop
                 %
                 % y = y';
                 % x = x';
-                % line([y-w;y+w],[x-w;x-w],'Color',color,'LineWidth',lineWidth);
-                % line([y+w;y+w],[x-w;x+w],'Color',color,'LineWidth',lineWidth);
-                % line([y+w;y-w],[x+w;x+w],'Color',color,'LineWidth',lineWidth);
-                % line([y-w;y-w],[x+w;x-w],'Color',color,'LineWidth',lineWidth);
+                % line([y-w;y+w],[x-w;x-w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
+                % line([y+w;y+w],[x-w;x+w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
+                % line([y+w;y-w],[x+w;x+w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
+                % line([y-w;y-w],[x+w;x-w],'Roi(R).Color',roi(r).color,'LineWidth',lineWidth);
 
             case{'all perimeter','selected perimeter'}
                 % Draw only the perimeter               
@@ -466,25 +506,25 @@ for r = order
                     xEquals = find(x == x(i));
                     xPlus = find(x == x(i)+1);
                     if isempty(xMinus)
-                        line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',color,'LineWidth',lineWidth);
+                        line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',roi(r).color,'LineWidth',lineWidth);
                     else
                         if ~any(y(i) == y(xMinus))
-                            line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',color,'LineWidth',lineWidth);
+                            line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',roi(r).color,'LineWidth',lineWidth);
                         end
                     end
                     if isempty(xPlus)
-                        line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+                        line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
                     else
                         if ~any(y(i) == y(xPlus))
-                            line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+                            line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
                         end
                     end
                     if ~isempty(xEquals)
                         if ~any(y(i) == y(xEquals)-1)
-                            line([y(i)+w,y(i)+w],[x(i)-w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+                            line([y(i)+w,y(i)+w],[x(i)-w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
                         end
                         if ~any(find(y(i) == y(xEquals)+1))
-                            line([y(i)-w,y(i)-w],[x(i)-w, x(i)+w],'Color',color,'LineWidth',lineWidth);
+                            line([y(i)-w,y(i)-w],[x(i)-w, x(i)+w],'Color',roi(r).color,'LineWidth',lineWidth);
                         end
                     end
                 end
