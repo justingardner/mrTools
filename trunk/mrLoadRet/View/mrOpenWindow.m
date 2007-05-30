@@ -93,6 +93,8 @@ if isfile('mrLastView.mat')
         % add here, to load more info...
 	% and refresh
 	refreshMLRDisplay(view.viewNum);
+	% this is to close the roi window that pops up
+	% when this bug is fixed, this can be removed.
 	close
     end
 
@@ -112,7 +114,9 @@ if ~baseLoaded
         view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
         % and refresh
         refreshMLRDisplay(view.viewNum);
-	close;
+	% this is to close the roi window that pops up
+	% when this bug is fixed, this can be removed.
+	close
     end
 end
 
