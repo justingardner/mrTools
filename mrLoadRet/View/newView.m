@@ -39,8 +39,8 @@ view.curslice.overlayCoords = [];
 MLR.views{viewNum} = view;
 
 % add the caches
-MLR.caches{viewNum}.roiCache = mrCache('init',15);
-MLR.caches{viewNum}.overlayCache = mrCache('init',15);
-MLR.caches{viewNum}.baseCache = mrCache('init',15);
+view = viewSet(view,'roiCache','clear');
+view = viewSet(view,'overlayCache','clear');
+view = viewSet(view,'baseCache','clear');
 
 return;

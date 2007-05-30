@@ -1,4 +1,4 @@
-function mrEditPrefs()
+function prefParams = mrEditPrefs()
 %
 % Dialog box for changing mrDEFAULTS.prefs
 %

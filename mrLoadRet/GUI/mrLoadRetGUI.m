@@ -1552,7 +1552,30 @@ end
 % --------------------------------------------------------------------
 function prefMenu_Callback(hObject, eventdata, handles)
 
-mrEditPrefs;
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% remember old cache sizes
+roiCacheSize = mrGetPref('roiCacheSize');
+baseCacheSize = mrGetPref('baseCacheSize');
+overlayCacheSize = mrGetPref('overlayCacheSize');
+
+% prefs dialog
+prefParams = mrEditPrefs;
+
+% if changes, check for change in cache size
+if ~isempty(prefParams)
+  if (roiCacheSize ~= prefParams.roiCacheSize)
+    v = viewSet(v,'roiCache','clear');
+  end
+  if (baseCacheSize ~= prefParams.baseCacheSize)
+    v = viewSet(v,'baseCache','clear');
+  end
+  if (overlayCacheSize ~= prefParams.overlayCacheSize)
+    v = viewSet(v,'overlayCache','clear');
+  end
+end
 
 % --------------------------------------------------------------------
 function loadFromVolumeMenuItem_Callback(hObject, eventdata, handles)

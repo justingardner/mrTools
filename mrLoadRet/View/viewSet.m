@@ -1045,38 +1045,35 @@ switch lower(param)
     case 'roicache'
        % view = viewSet(view,'ROICache',roidata);
        % view = viewSet(view,'ROICache','clear');
-       roiID = viewGet(view,'ROICacheID');
-       % clear the cache
        if isstr(val) && (strcmp(val,'clear'))
-	 MLR.caches{view.viewNum}.roiCache = ...
-	     mrCache('clear',MLR.caches{view.viewNum}.roiCache,roiID);
+	 % clear the cache
+	 MLR.caches{view.viewNum}.roiCache = mrCache('init',mrGetPref('roiCacheSize'));
        % add to the cache
        else
+	 roiID = viewGet(view,'ROICacheID');
 	 MLR.caches{view.viewNum}.roiCache = ...
 	     mrCache('add',MLR.caches{view.viewNum}.roiCache,roiID,val);
        end
     case 'basecache'
        % view = viewSet(view,'baseCache',basedata);
        % view = viewSet(view,'baseCache','clear');
-       baseID = viewGet(view,'baseCacheID');
-       % clear the cache
        if isstr(val) && (strcmp(val,'clear'))
-	 MLR.caches{view.viewNum}.baseCache = ...
-	     mrCache('clear',MLR.caches{view.viewNum}.baseCache,baseID);
+	 % clear the cache
+	 MLR.caches{view.viewNum}.baseCache = mrCache('init',mrGetPref('baseCacheSize'));
        % add to the cache
        else
+	 baseID = viewGet(view,'baseCacheID');
 	 MLR.caches{view.viewNum}.baseCache = ...
 	     mrCache('add',MLR.caches{view.viewNum}.baseCache,baseID,val);
        end
     case 'overlaycache'
        % view = viewSet(view,'overlayCache',overlaydata);
        % view = viewSet(view,'overlayCache','clear');
-       overlayID = viewGet(view,'overlayCacheID');
-       % clear the cache
        if isstr(val) && (strcmp(val,'clear'))
-	 MLR.caches{view.viewNum}.overlayCache = ...
-	     mrCache('clear',MLR.caches{view.viewNum}.overlayCache,overlayID);
+	 % clear the cache
+	 MLR.caches{view.viewNum}.overlayCache = mrCache('init',mrGetPref('overlayCacheSize'));
        else
+	 overlayID = viewGet(view,'overlayCacheID');
 	 % add to the cache
 	 MLR.caches{view.viewNum}.overlayCache = ...
 	   mrCache('add',MLR.caches{view.viewNum}.overlayCache,overlayID,val);
