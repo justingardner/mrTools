@@ -3,11 +3,19 @@ function [img] = refreshMLRDisplay(viewNum)
 
 mrGlobals
 
-tic
+% for debugging/performance tests
+% set to 0 for no info
+% set to 1 for info on caching
+% set to 2 for all info
+% if you want to comment out all of this, replace the string
+% "if verbose" to "%if verbose"
+verbose = 0;
+if verbose,tic,end
+
 % Get current view and baseNum.
 % Get interp preferences.
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
-%disppercent(-inf,'viewGet');
+if verbose>1,disppercent(-inf,'viewGet');,end
 interpMethod = mrGetPref('interpMethod');
 if isempty(interpMethod)
     interpMethod = 'linear';
@@ -20,7 +28,7 @@ alpha = viewGet(view,'alpha');
 rotate = viewGet(view,'rotate');
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
-%disppercent(inf);
+if verbose>1,disppercent(inf);,end
 
 % for debugging, clears caches
 if (exist('mglGetKeys')==3) &&  mglGetKeys(57)
@@ -31,7 +39,7 @@ end
 
 
 % Compute base coordinates and extract baseIm for the current slice
-disppercent(-inf,'extract base image');
+if verbose,disppercent(-inf,'extract base image');,end
 base = viewGet(view,'baseCache');
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
@@ -48,14 +56,14 @@ if isempty(base)
   end
   % save extracted image
   view = viewSet(view,'baseCache',base);
-  disppercent(inf);disp('Recomputed base');
+  if verbose,disppercent(inf);disp('Recomputed base');end
 else
-  disppercent(inf);
+  if verbose,disppercent(inf);end
 end
 view = viewSet(view,'cursliceBaseCoords',base.coords);
 
 % Extract overlay images and overlay coords, and alphaMap
-disppercent(-inf,'extract overlay images');
+if verbose,disppercent(-inf,'extract overlay images');end
 overlay = viewGet(view,'overlayCache');
 if isempty(overlay)
   curOverlay = viewGet(view,'currentOverlay');
@@ -109,9 +117,9 @@ if isempty(overlay)
 
   % save in cache
   view = viewSet(view,'overlayCache',overlay);
-  disppercent(inf);disp('Recomputed overlay');
+  if verbose,disppercent(inf);disp('Recomputed overlay');end
 else
-  disppercent(inf);
+  if verbose,disppercent(inf);end
 end
 view = viewSet(view,'cursliceOverlayCoords',overlay.coords);
   
@@ -121,7 +129,7 @@ view = viewSet(view,'cursliceOverlayCoords',overlay.coords);
 % return
 
 % Combine base and overlay
-%disppercent(-inf,'combine base and overlay');
+if verbose>1,disppercent(-inf,'combine base and overlay');,end
 if ~isempty(base.RGB) & ~isempty(overlay.RGB)
     img = (1-overlay.alphaMap).*base.RGB + overlay.alphaMap.*overlay.RGB;
     cmap = overlay.cmap;
@@ -136,7 +144,7 @@ else
     cmap = gray(1);
     cbarRange = [0 1];
 end
-%disppercent(inf);
+if verbose>1,disppercent(inf);,end
 
 % If no image at this point then return
 if ieNotDefined('img')
@@ -144,7 +152,7 @@ if ieNotDefined('img')
 end
 
 % Display the image
-%disppercent(-inf,'displayImage');
+if verbose>1,disppercent(-inf,'displayImage');,end
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
 %set(fig,'CurrentAxes',gui.axis);
@@ -152,26 +160,26 @@ cla
 image(img,'Parent',gui.axis);
 axis(gui.axis,'off');
 axis(gui.axis,'image');
-%disppercent(inf);
+if verbose>1,disppercent(inf);,end
 
 % Display colorbar
-%disppercent(-inf,'colorbar');
+if verbose>1,disppercent(-inf,'colorbar');,end
 % set(fig,'CurrentAxes',gui.colorbar);
 cbar = rescale2rgb([1:256],cmap,[1,256]);
 image(cbar,'Parent',gui.colorbar);
 set(gui.colorbar,'YTick',[]);
 set(gui.colorbar,'XTick',[1 64 128 192 256]);
 set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
-%disppercent(inf);
+if verbose>1,disppercent(inf);,end
 
 % Display the ROIs
 displayROIs(view,slice,sliceIndex,rotate,...
-    baseNum,base.coordsHomogeneous,base.dims);
+    baseNum,base.coordsHomogeneous,base.dims,verbose);
 
-%disppercent(-inf,'rendering');
+if verbose>1,disppercent(-inf,'rendering');,end
 drawnow
-%disppercent(inf);
-toc
+if verbose>1,disppercent(inf);,end
+if verbose,toc,end
 
 return
 
@@ -409,7 +417,7 @@ end
 
 %-------------------------------------------------------------------------
 function displayROIs(view,sliceNum,sliceIndex,rotate,...
-    baseNum,baseCoordsHomogeneous,imageDims);
+    baseNum,baseCoordsHomogeneous,imageDims,verbose);
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -444,9 +452,10 @@ gui = guidata(fig);
 set(fig,'CurrentAxes',gui.axis);
 
 % Loop through ROIs in order
-disppercent(-inf,sprintf('Extracting ROI coordinates'));
+if verbose,disppercent(-inf,sprintf('Extracting ROI coordinates'));end
 roi = viewGet(view,'ROICache');
 if isempty(roi)
+  if ~verbose,disppercent(-inf,'Recomputing ROI coordinates'),end
   for r = order
     % Get ROI coords transformed to the image  
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
@@ -455,13 +464,14 @@ if isempty(roi)
     %[x,y] = ind2sub(imageDims,baseIndices);
   end
   view = viewSet(view,'ROICache',roi);
-  disppercent(inf);disp('Recomputed ROI coordinates');
+  if verbose,disppercent(inf);disp('Recomputed ROI coordinates');end
+  if ~verbose,disppercent(inf);end
 else
-  disppercent(inf);
+  if verbose,disppercent(inf);end
 end
 
 
-%disppercent(-inf,'Drawing ROI');
+if verbose>1,disppercent(-inf,'Drawing ROI');,end
 % Draw it
 % the code here does not seem to want to set 
 % the current axes when mrOpenWindow
@@ -549,7 +559,7 @@ for r = order
   end
   hold off
 end
-%disppercent(inf);
+if verbose>1,disppercent(inf);,end
 return;
 
 
