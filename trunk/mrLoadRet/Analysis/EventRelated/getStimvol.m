@@ -1,10 +1,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getstimvol.m
 %
-%      usage: d = getStimvol(d)
+%      usage: d = getStimvol(d,varname)
 %         by: justin gardner
 %       date: 12/21/05
-%    purpose: gets the stimulus vols from the traces
+%    purpose: gets the stimulus vols. varname
+%             can be a variable name or can be 
+%             a structure with fields: 
+%             taskNum,phaseNum,segmentNum, and varname
+%       e.g.: 
+%             d = getStimvol(d,'orientation');
+%        
+%             v.taskNum = 2;
+%             v.phaseNum = 2;
+%             v.segmentNum = 1;
+%             v.varname = 'orientation';
+%             d = getStimvol(d,'orientation');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function d = getStimvol(d,varname)
