@@ -919,9 +919,10 @@ switch lower(param)
 	curBase = viewGet(view,'currentBase');
 	scanNum = viewGet(view,'curScan');
 	rotate = viewGet(view,'rotate');
+	alpha = viewGet(view,'alpha');
 	sliceIndex = viewGet(view,'baseSliceIndex');
 	% calculate string
-	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i',scanNum,baseNames{curBase},curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate);
+	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i',scanNum,baseNames{curBase},curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;
