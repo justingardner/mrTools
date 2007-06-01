@@ -1733,7 +1733,8 @@ v = MLR.views{viewNum};
 % get the scanxform
 scanXform = viewGet(v,'scanXform');
 baseXform = viewGet(v,'baseXform');
-scan2base = inv(scanXform)*baseXform;
+shiftXform = shiftOriginXform;
+scan2base = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform;
 sformCode = viewGet(v,'sformCode');
 % params dialog
 paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and then running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
@@ -1744,7 +1745,7 @@ params = mrParamsDialog(paramsInfo,'scan2base transformation');
 if ~isempty(params)
     answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
     if strcmp(answer,'Yes')
-        v = viewSet(v,'scanXform',inv(params.scan2base*inv(baseXform)));
+        v = viewSet(v,'scanXform',inv(shiftXform*params.scan2base*inv(shiftXform)*inv(baseXform)));
         v = viewSet(v,'sformCode',params.sformCode);
         saveSession;
         refreshMLRDisplay(viewNum);

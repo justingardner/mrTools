@@ -39,6 +39,7 @@ roidir = viewGet(view,'roidir');
 if ieNotDefined('groupNum')
   groupNum = viewGet(view,'currentGroup');
 end
+groupName = viewGet(view,'groupName',groupNum);
 if ieNotDefined('scanList')
   scanList = viewGet(view,'currentScan');
 end
@@ -102,7 +103,7 @@ for roinum = 1:length(roiname)
 	% set the n
 	rois{end}.n = length(x);
 	% load the tseries, voxel-by-voxel
-	disppercent(-inf,sprintf('Loading tSeries for %s',rois{end}.name));
+	disppercent(-inf,sprintf('Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
         % for now we always load by block, but if memory is an issue, we can
         % switch this if statement and load voxels indiviudally from file
 	if 0
