@@ -1,6 +1,6 @@
-% getRoiCoordinates.m
+% getROICoordinates.m
 %
-%      usage: scanCoords = getRoiCoordinates(view,roiNum,<scanNum>,<groupNum>)
+%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>)
 %         by: justin gardner
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
@@ -8,12 +8,12 @@
 %             coordinates. 
 %             if roinum is a structure, works on the structure
 %             rather than the roinum
-function scanCoords = getRoiCoordinates(view,roiNum,scanNum,groupNum)
+function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum)
 
 scanCoords = [];
 % check arguments
 if ~any(nargin == [2 3 4])
-  help getRoiCoordinates
+  help getROICoordinates
   return
 end
 
@@ -35,6 +35,24 @@ else
   scanXform = viewGet(view,'baseXform');
   scanVoxelSize = viewGet(view,'baseVoxelSize');
 end  
+
+% if roiNum is a string try to load it
+if isstr(roiNum)
+  roiname = fullfile(viewGet(view,'roidir'),fixBadChars(roiNum));
+  roiname = sprintf('%s.mat',stripext(roiname));
+  if ~isfile(roiname)
+    disp(sprintf('(getROICoordinates) Could not find roi %s',roiNum));
+    return
+  end
+  r = load(roiname);
+  f = fieldnames(r);
+  if length(f) >= 1
+    roiNum = r.(f{1});
+  else
+    disp(sprintf('(getROICoordinates) Could not find roi in file %s',roiNum));
+    return
+  end
+end
 
 % get the roi transforms
 if isstruct(roiNum)
