@@ -31,6 +31,9 @@ if ~isempty(figloc)
     set(fig,'Position',figloc);
 end
 
+% set the keyoard accelerator
+%mrAcceleratorKeys('init',view.viewNum);
+
 % Initialize the scan slider
 nScans = viewGet(view,'nScans');
 mlrGuiSet(view,'nScans',nScans);
@@ -64,7 +67,10 @@ if isfile('mrLastView.mat')
             mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
             % change slice
             mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
-        end
+	    nScans = viewGet(view,'nScans');
+	    mlrGuiSet(view,'nScans',nScans);
+
+	end
 
         % read analyses
         if isfield(mrLastView.view,'analyses')
