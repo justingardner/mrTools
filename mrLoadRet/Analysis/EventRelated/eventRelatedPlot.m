@@ -17,7 +17,7 @@ end
 % get the analysis structure
 analysis = viewGet(view,'analysis');
 d = analysis.d{scan};
-
+d.r2 = analysis.overlays(1).data{scan};
 % select the window to plot into
 selectGraphWin;
 
@@ -30,10 +30,12 @@ set(fignum,'Name','eventRelatedPlot');
 
 % set roi coords
 for roinum = 1:length(roi)
-  roicoords = getROICoordinates(view,roi{roinum},scan);
-  % change the coordinates to our coordinates
-  roi{end}.coords = roicoords;
+  % get scan coordinates
+  roi{end}.scanCoords = getROICoordinates(view,roi{roinum},scan);
 end
+
+% get cutoff value
+cutoffr2 = viewGet(view,'overlayMin');
 
 if isempty(d)
   disp('No analysis');
@@ -105,17 +107,27 @@ end
 for roinum = 1:length(roi)
   subplot(2,2,4);
   ehdr = [];
-  for voxnum = 1:size(roi{roinum}.coords,2)
-    [ehdr(voxnum,:,:) time] = gethdr(d,roi{roinum}.coords(1:3,voxnum));
-    % if there is a peak field, calculate average peak
-    if isfield(d,'peak')
-      for i = 1:d.nhdr
-	amp(i,voxnum) = d.peak.amp(roi{roinum}.coords(1),roi{roinum}.coords(2),roi{roinum}.coords(3),i);
+  roin = 0;
+  for voxnum = 1:size(roi{roinum}.scanCoords,2)
+    x = roi{roinum}.scanCoords(1,voxnum);
+    y = roi{roinum}.scanCoords(2,voxnum);
+    s = roi{roinum}.scanCoords(3,voxnum);
+    if d.r2(x,y,s) >= cutoffr2
+      roin = roin+1;
+      [ehdr(roin,:,:) time] = gethdr(d,x,y,s);
+      % if there is a peak field, calculate average peak
+      if isfield(d,'peak')
+	for i = 1:d.nhdr
+	  amp(i,roin) = d.peak.amp(x,y,s,i);
+	end
       end
     end
   end
-  plotEhdr(time,squeeze(mean(ehdr)),squeeze(std(ehdr))/sqrt(size(roi{roinum}.coords,2)));
-  title(sprintf('%s (n=%i)',roi{roinum}.name,size(roi{roinum}.coords,2)),'Interpreter','none');
+  % plot the average of the ehdrs that beat the r2 cutoff
+  if roin
+    plotEhdr(time,squeeze(mean(ehdr)),squeeze(std(ehdr))/sqrt(size(roi{roinum}.scanCoords,2)));
+  end
+  title(sprintf('%s (n=%i/%i)',roi{roinum}.name,roin,size(roi{roinum}.scanCoords,2)),'Interpreter','none');
   % create a legend (only if peaks exist) to display mean amplitudes
   if isfield(d,'peak')
     for i = 1:d.nhdr
