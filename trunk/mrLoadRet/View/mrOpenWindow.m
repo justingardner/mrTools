@@ -43,7 +43,9 @@ mlrGuiSet(view,'nSlices',0);
 
 baseLoaded = 0;
 if isfile('mrLastView.mat')
-    mrLastView=load('mrLastView');
+  disppercent(-inf,'Loading mrLastView');
+  mrLastView=load('mrLastView');
+  disppercent(inf);
     % if the old one exists, then set up fields
     if isfield(mrLastView,'view')
         % open up base anatomy from last session

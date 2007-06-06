@@ -85,13 +85,8 @@ for i = 1:length(args)
       evalstr = sprintf('%sif gVerbose,disp(sprintf(''setting: %s=1''));,end,',evalstr,args{i});
     end
   else
-    % report error, if we got here, and this is not an 
-    % argument to skip
+    % skip anythin we don't know about
     if ~skipnext
-      disp(sprintf('UHOH: Unknown argument type'));
-      help evalargs;
-      gVerbose = oldgVerbose;
-      return
     else
       skipnext = 0;
     end
