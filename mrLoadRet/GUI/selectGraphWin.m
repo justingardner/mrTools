@@ -1,4 +1,4 @@
-function selectGraphWin(noClear)
+function h = selectGraphWin(noClear)
 %
 % selectGraphWin
 %
