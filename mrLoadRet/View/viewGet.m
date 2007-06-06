@@ -433,6 +433,58 @@ switch lower(param)
       end
     end
     val = stimFileName;
+  case {'eyepos'}
+    % eyepos = viewGet(view,'eyepos',scanNum,[groupNum]);
+    [s g] = getScanAndGroup(view,varargin,param);
+    [eyeposFileName eyeposNum] = viewGet(view,'eyeposFileName',s,g);
+    val = {};
+    % cycle over all eyepos files (concatenations and averages,
+    if ~isempty(eyeposFileName)
+      for j = 1:length(eyeposFileName)
+        % load this eyepos file
+        if ~isfile(sprintf('%s.mat',stripext(eyeposFileName{j})))
+          mrErrorDlg(sprintf('viewGet %s: Could not find eyepos file %s',param,eyeposFileName{j}));
+        else
+          eyepos=load(eyeposFileName{j});
+	  f = fieldnames(eyepos);
+	  % here we get the proper scan. 
+	  val{j} = eyepos.(f{1}).scan{eyeposNum{j}};
+	  val{j}.hdr = rmfield(eyepos.(f{1}),'scan');
+        end
+      end
+    end
+  case {'eyeposfilename'}
+    % eyeposFileName = viewGet(view,'eyeposFileName',scanNum,[groupNum]);
+    % eyeposFileName is returned as a cell array of all eyepos files
+    % associated with the scan
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    eyeposFileName{1} = '';
+    if (nscans >= s) && (s > 0) && isfield(MLR.groups(g),'auxParams') && (length(MLR.groups(g).auxParams) >= s)
+      if isfield(MLR.groups(g).auxParams(s),'eyeposFileName')
+        if ~isempty(MLR.groups(g).auxParams(s).eyeposFileName)
+          eyeposFileName{1} = fullfile(viewGet(view,'etcDir'),MLR.groups(g).auxParams(s).eyeposFileName);
+	  eyeposNum{1} = MLR.groups(g).auxParams(s).eyeposNum;
+	end
+      end
+    end
+    % if the file does not exist, then check original
+    if isempty(eyeposFileName{1})
+      eyeposFileName = {};
+      eyeposNum = {};
+      [os og] = viewGet(view,'originalScanNum',s,g);
+      if ~isempty(os)
+        for osnum = 1:length(os)
+          [newEyeposFileNames newEyeposNum] = viewGet(view,'eyeposFileName',os(osnum),og(osnum));
+          for j = 1:length(newEyeposFileNames)
+            eyeposFileName{end+1} = newEyeposFileNames{j};
+            eyeposNum{end+1} = newEyeposNum{j};
+          end
+        end
+      end
+    end
+    val = eyeposFileName;
+    val2 = eyeposNum;
   case {'tr'}
     % tr = viewGet(view,'tr',scanNum,[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);

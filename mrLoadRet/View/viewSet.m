@@ -202,6 +202,20 @@ switch lower(param)
             end
         end
 
+    case {'eyepos'}
+        % view = viewSet(view,'eyepos',eyeposFilename,eyeposNum,scanNum,groupNum);
+        [s g] = getScanAndGroup(view,varargin(2:end),varargin{1});
+        nscans = viewGet(view,'nscans',g);
+        if (nscans >= s) & (s > 0)
+            if isempty(val)
+                MLR.groups(g).auxParams(s).eyeposFileName = [];
+                MLR.groups(g).auxParams(s).eyeposNum = [];
+            else
+                MLR.groups(g).auxParams(s).eyeposFileName = val;
+                MLR.groups(g).auxParams(s).eyeposNum = varargin{1};
+            end
+        end
+
     case {'niftihdr'}
         % view = viewSet(view,'niftiHdr',hdr,scanNum,groupNum);
         [s g] = getScanAndGroup(view,varargin,param);
