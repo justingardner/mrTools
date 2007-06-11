@@ -19,8 +19,9 @@ function pos = mrGetFigLoc(figname)
 
 global mrDEFAULTS
 
-if isfield(mrDEFAULTS.figloc,figname)
-    pos = getfield(mrDEFAULTS.figloc,figname);
+if ~isempty(mrDEFAULTS) && isfield(mrDEFAULTS.figloc,figname)
+    % pos = getfield(mrDEFAULTS.figloc,figname);
+    pos = mrDEFAULTS.figloc.(figname);
 else
     pos = [];
 end
