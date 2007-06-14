@@ -1520,6 +1520,14 @@ view = MLR.views{viewNum};
 view = eventRelated(view);
 
 
+function GlmMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = eventRelatedGlm(view);
+
+
+% --------------------------------------------------------------------
 % --------------------------------------------------------------------
 function concatenateTSeriesMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
