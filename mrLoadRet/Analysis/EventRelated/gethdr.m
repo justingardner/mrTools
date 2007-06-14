@@ -26,12 +26,23 @@ if nargin == 2
 end
 
 hdr = squeeze(d.ehdr(x,y,s,:,:));
+hdrlen = d.hdrlen;
+
+if isfield(d, 'hrf')
+    hdr = hdr*d.hrf';
+    hdrlen = size(d.hrf,1);
+end
 
 if nargout >= 2
-  time = d.tr/2:d.tr:(d.hdrlen*d.tr);
+  time = d.tr/2:d.tr:(hdrlen*d.tr);
 end
 if nargout >=3
   hdrste = squeeze(d.ehdrste(x,y,s,:,:));
+  % not sure about this part
+  if isfield(d, 'hrf')
+     hdrste = hdrste*d.hrf';
+  end
+
 end
 % if we only have one response, then we will have
 % to take the transpose to make sure that we have
