@@ -182,13 +182,7 @@ end
 % ok, make the appropriate directories
 printBlockBegin('Making directories');
 %dirs = {'Raw/Anatomy' 'Raw/Anatomy/Inplane' 'Raw/Pfiles' 'Raw/Pfiles_preMC' 'Inplane'};
-dirs = {'Raw/Anatomy' 'Raw/Anatomy/Inplane' 'Raw/Pfiles' 'Raw/Pfiles_preMC' 'Inplane'};
-
-% if originalGroup
-%     dirs{end+1} = 'Inplane/Original';
-%     dirs{end+1} = 'Inplane/Original/TSeries';
-%     dirs{end+1} = 'Inplane/Original/TSeries/Analyze';
-% end
+dirs = {'Raw/Anatomy' 'Raw/Anatomy/Inplane' 'Raw/Pfiles' 'Raw/Pfiles_preMC' 'Inplane','Inplane/Original','Inplane/Original/TSeries','Inplane/Original/TSeries/Analyze'};
 
 if averagesGroup
     dirs{end+1} = 'Inplane/Averages';
@@ -212,9 +206,13 @@ if motionCompGroup
   filenames{motionCompGroup} = makeLinks(m.groups(motionCompGroup).scanParams,'../../MotionComp','Raw/Pfiles');
   % we will make the originals from motionCompGroup
   originalGroup = motionCompGroup;
+  % also make link into tseries
+  makeLinks(m.groups(motionCompGroup).scanParams,'../../../../MotionComp','Inplane/Original/TSeries/Analyze');
 else
   % use the un motion compd data if motion comp is not done
   makeLinks(m.groups(rawGroup).scanParams,'../../Raw','Raw/Pfiles');
+  % also make link into tseries
+  makeLinks(m.groups(rawGroup).scanParams,'../../../../Raw','Inplane/Original/TSeries/Analyze');
   originalGroup = rawGroup;
 end
 
@@ -305,27 +303,29 @@ end
 
 % make the data types structure and fill out 
 % the functionals field in mrSESSION
-% m.dataTYPES(2).name = 'Averages';
-% scanParams = m.groups(averagesGroup).scanParams;
-% for i = 1:length(scanParams)
-%   % scan params
-%   m.dataTYPES(2).scanParams(i).annotation = scanParams(i).description;
-%   m.dataTYPES(2).scanParams(i).nFrames = scanParams(i).nFrames;
-%   m.dataTYPES(2).scanParams(i).framePeriod = scanParams(i).framePeriod;
-%   m.dataTYPES(2).scanParams(i).slices = [1:scanParams(i).dataSize(3)];
-%   m.dataTYPES(2).scanParams(i).cropSize = scanParams(i).dataSize(1:2);
+if averagesGroup
+  m.dataTYPES(2).name = 'Averages';
+  scanParams = m.groups(averagesGroup).scanParams;
+  for i = 1:length(scanParams)
+    % scan params
+    m.dataTYPES(2).scanParams(i).annotation = scanParams(i).description;
+    m.dataTYPES(2).scanParams(i).nFrames = scanParams(i).nFrames;
+    m.dataTYPES(2).scanParams(i).framePeriod = scanParams(i).framePeriod;
+    m.dataTYPES(2).scanParams(i).slices = [1:scanParams(i).dataSize(3)];
+    m.dataTYPES(2).scanParams(i).cropSize = scanParams(i).dataSize(1:2);
 
-%   % blocked analysis (just make up)
-%   m.dataTYPES(2).blockedAnalysisParams(i).blockedAnalysis = 1;
-%   m.dataTYPES(2).blockedAnalysisParams(i).detrend = 1;
-%   m.dataTYPES(2).blockedAnalysisParams(i).inhomoCorrect = 1;
-%   m.dataTYPES(2).blockedAnalysisParams(i).temporalNormalization = 0;
-%   m.dataTYPES(2).blockedAnalysisParams(i).nCycles = 10;
+    % blocked analysis (just make up)
+    m.dataTYPES(2).blockedAnalysisParams(i).blockedAnalysis = 1;
+    m.dataTYPES(2).blockedAnalysisParams(i).detrend = 1;
+    m.dataTYPES(2).blockedAnalysisParams(i).inhomoCorrect = 1;
+    m.dataTYPES(2).blockedAnalysisParams(i).temporalNormalization = 0;
+    m.dataTYPES(2).blockedAnalysisParams(i).nCycles = 10;
 
-%   % event analysis set to 0
-%   m.dataTYPES(2).eventAnalysisParams(i).eventAnalysis = 0;
+    % event analysis set to 0
+    m.dataTYPES(2).eventAnalysisParams(i).eventAnalysis = 0;
 
-% end
+  end
+end
 
 
 
