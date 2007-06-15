@@ -27,7 +27,7 @@ else
   return
 end
 
-figure;
+selectGraphWin;
 plots = 3;plotnum = 0;
 
 % now plot the fields
