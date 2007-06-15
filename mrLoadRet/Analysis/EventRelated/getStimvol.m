@@ -141,8 +141,8 @@ function stimvol = getStimvolFromEventTimes(stimfile,tr)
 
 % sort into stimuli
 nhdr = length(stimfile.stimtimes_s);
+stimvol = cell(1, nhdr);
 for i = 1:nhdr
-  stimtimes{i} = stimfile.stimtimes_s{i};
-  stimvol{i} = round(stimtimes{i} / tr);
+  stimvol{i} = round(stimfile.stimtimes_s{i}(:) / tr)';
 end
 
