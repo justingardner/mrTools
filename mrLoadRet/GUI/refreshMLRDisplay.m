@@ -28,6 +28,19 @@ alpha = viewGet(view,'alpha');
 rotate = viewGet(view,'rotate');
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+% if no base then clear axis and return
+if isempty(baseNum)
+  fig = viewGet(view,'figNum');
+  gui = guidata(fig);
+  mlrGuiSet(view,'basemin',0);
+  mlrGuiSet(view,'basemax',0);
+  set(fig,'CurrentAxes',gui.axis);
+  cla
+  set(fig,'CurrentAxes',gui.colorbar);
+  cla
+  axis off
+  return
+end
 if verbose>1,disppercent(inf);,end
 
 % for debugging, clears caches
