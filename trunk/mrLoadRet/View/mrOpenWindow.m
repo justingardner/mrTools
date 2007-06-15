@@ -57,20 +57,21 @@ if isfile('mrLastView.mat')
             end
         end
 
+	% change group
+	view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
+	mlrGuiSet(view.viewNum,'group',mrLastView.viewSettings.curGroup);
+	nScans = viewGet(view,'nScans');
+	mlrGuiSet(view,'nScans',nScans);
+
         if baseLoaded && isfield(mrLastView,'viewSettings')
             % slice orientation from last run
             view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
             % rotate
             mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
-            % change group
-            view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
-	    mlrGuiSet(view.viewNum,'group',mrLastView.viewSettings.curGroup);
             % change scan
             mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
             % change slice
             mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
-	    nScans = viewGet(view,'nScans');
-	    mlrGuiSet(view,'nScans',nScans);
 
 	end
 

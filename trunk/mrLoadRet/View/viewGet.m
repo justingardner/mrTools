@@ -712,6 +712,15 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b);
     end
+  case {'currentbasename','curbasename'}
+    % baseName = viewGet(view,'currentBaseName')
+    baseNames = viewGet(view,'baseNames');
+    curBase = viewGet(view,'curBase');
+    if isempty(curBase)
+      baseName = 'NoBase';
+    else
+      baseName = baseNames{curBase};
+    end
   case {'basenames'}
     % baseNames = viewGet(view,'baseNames')
     if ieNotDefined('varargin')
@@ -920,10 +929,9 @@ switch lower(param)
   case{'roicacheid'}
     % cacheID = viewGet(view,'ROICacheID')
     rotate = viewGet(view,'rotate');
-    baseNames = viewGet(view,'baseNames');
-    curBase = viewGet(view,'curBase');
+    baseName = viewGet(view,'curBaseName');
     sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%s_%i_%i_%i',baseNames{curBase},sliceIndex,rotate);
+    val = sprintf('%s_%i_%i_%i',baseName,sliceIndex,rotate);
     for i = 1:length(view.ROIs);
       val = sprintf('%s_%s_%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
     end
@@ -936,12 +944,12 @@ switch lower(param)
   case{'basecacheid'}
     % cacheID = viewGet(view,'baseCacheID')
     rotate = viewGet(view,'rotate');
-    baseNames = viewGet(view,'baseNames');
+    baseName = viewGet(view,'curBaseName');
     currentBase = viewGet(view,'currentBase');
     clip = viewGet(view,'baseClip',currentBase);
     currentSlice = viewGet(view,'curSlice');
     sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%s_%i_%i_%i_%s',baseNames{currentBase},currentSlice,sliceIndex,rotate,num2str(clip));
+    val = sprintf('%s_%i_%i_%i_%s',baseName,currentSlice,sliceIndex,rotate,num2str(clip));
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
@@ -965,16 +973,19 @@ switch lower(param)
       curSlice = round(get(handles.sliceSlider,'Value'));
       curOverlay = view.analyses{analysisNum}.curOverlay;
       if ~isempty(curOverlay)
-	clip = view.analyses{analysisNum}.overlays(curOverlay).clip;
+	% get all clips
+	clip = [];
+	for i = 1:length(view.analyses{analysisNum}.overlays)
+	  clip = [clip view.analyses{analysisNum}.overlays(i).clip];
+	end
 	overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
-	baseNames = viewGet(view,'baseNames');
-	curBase = viewGet(view,'currentBase');
+	baseName = viewGet(view,'curBaseName');
 	scanNum = viewGet(view,'curScan');
 	rotate = viewGet(view,'rotate');
 	alpha = viewGet(view,'alpha');
 	sliceIndex = viewGet(view,'baseSliceIndex');
 	% calculate string
-	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i',scanNum,baseNames{curBase},curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha);
+	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;
