@@ -717,9 +717,9 @@ switch lower(param)
     baseNames = viewGet(view,'baseNames');
     curBase = viewGet(view,'curBase');
     if isempty(curBase)
-      baseName = 'NoBase';
+      val = 'NoBase';
     else
-      baseName = baseNames{curBase};
+      val = baseNames{curBase};
     end
   case {'basenames'}
     % baseNames = viewGet(view,'baseNames')
