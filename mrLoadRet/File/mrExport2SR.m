@@ -24,12 +24,23 @@ view = viewGet(viewNum,'view');
 % Get values from the GUI
 scan = viewGet(view,'curscan');
 alpha = viewGet(view,'alpha');
-rotate = viewGet(view,'rotate');
+%rotate = viewGet(view,'rotate');
 
 % sliceIndex depends both on sliceOrientation and on the orientation
 % of baseVolume.
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+
+% jg: don't think that this code is handling rotate
+% correctly. when the overlay gets stored in the overlayIn
+% if rotate is sent to something other than 0 then the dimensions
+% don't match. also, why should this code even bother to save
+% the image rotated? why not always save in the same way that
+% the base anatomy is stored since that is probably what is expeted.
+% so, always set sliceIndex to 1 and rotate = 0 no matter what
+% the user settings are...
+rotate = 0;
+sliceIndex = 1;
 
 basedims = viewGet(view, 'basedims');
 overlayIm = zeros(basedims);
@@ -45,7 +56,7 @@ for baseSlice = 1:basedims(1)
     
     % Extract slice from current overlay.
     if ~isempty(overlayNum) & ~isempty(overlayCoords) & ~isempty(overlayData)
-        overlayIm(baseSlice,:,:) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
+      overlayIm(baseSlice,:,:) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
     end
     disppercent(baseSlice/basedims(1));
 end
