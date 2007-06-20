@@ -72,7 +72,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       end
 
       % get the nifti filename
-      filename = viewGet(view, 'tseriesPath', iScan, iGroup);
+      filename = viewGet(v, 'tseriesPath', iScan, iGroup);
       % check if it is there
       if isfile(filename)
 	% load the header
@@ -80,7 +80,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
 	% set the sform
 	hdr = cbiSetNiftiSform(hdr,sform);
 	% and write it back
-	hdr = cbiWriteNiftiHeader(hdr,pathStr{p});
+	hdr = cbiWriteNiftiHeader(hdr,filename);
 	% now save it in the session
 	v = viewSet(v,'niftiHdr',hdr,iScan,iGroup);
       else
@@ -95,7 +95,7 @@ saveSession
 % also remove any base anatomies from mrLastView if it is
 % there since those might have a different sform
 if isfile('mrLastView.mat')
-  disp(sprintf('(mrUpdateNiftiHdr) Removing base anatomies from mrLastView'));
+  disp(sprintf('(saveSform) Removing base anatomies from mrLastView'));
   load mrLastView
   view.baseVolumes = [];
   save mrLastView view viewSettings
