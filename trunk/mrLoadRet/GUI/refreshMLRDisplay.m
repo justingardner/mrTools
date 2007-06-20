@@ -43,7 +43,7 @@ if isempty(baseNum)
 end
 if verbose>1,disppercent(inf);,end
 
-% for debugging, clears caches
+% for debugging, clears caches when user holds down shift key
 if (exist('mglGetKeys')==3) &&  mglGetKeys(57)
   view = viewSet(view,'roiCache','init');
   view = viewSet(view,'overlayCache','init');
