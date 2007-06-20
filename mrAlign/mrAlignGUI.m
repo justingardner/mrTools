@@ -899,4 +899,14 @@ function exportMrLoadRet4_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+global ALIGN
 
+% Extract sform
+if ~isempty(ALIGN.volumeHdr)
+  sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
+else
+  mrWarnDlg('(mrAlignGUI) Volume header does not exist yet');
+  return
+end
+% save sform to mrLoadRet4
+saveSform(sform);
