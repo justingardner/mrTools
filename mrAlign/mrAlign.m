@@ -60,4 +60,6 @@ disp(['mrAlign (version ',num2str(ALIGN.version),')']);
 
 mrAlignGUI
 
+clear  mlrVersion expectedMatlabVersion version matlabVersion
+
 return
