@@ -70,29 +70,34 @@ alpha = repmat(1/prod(sampRate),[1 size(coords,2)]);
 % partial volume.
 %
 for ioff=1:length(xoffsets)
-	xoff=xoffsets(ioff);
-	for yoff=yoffsets
-		for zoff=zoffsets
-			% Add offset
-			tmpNewCoords(1:3,:) = coords(1:3,:) + ...
-				repmat([xoff;yoff;zoff],[1,size(coords,2)]);
-			% Transform
-			tmpNewCoords = xform * tmpNewCoords;
-			% Round and subtract minPos
-			tmpNewCoords(1:3,:) = round(tmpNewCoords(1:3,:)) - ...
-				repmat(minPos(1:3),[1,size(tmpNewCoords,2)]);
-			% Convert to indices
-			indices = sub2ind(dims,tmpNewCoords(1,:),tmpNewCoords(2,:),tmpNewCoords(3,:));
-			% Accumulate partial volume. Need to do it in a loop
-			% instead of:
-			%    accum(indices) = accum(indices) + alpha;
-			% because an index can appear twice in indices and we want
-			% to accumulate them both.
-			for jj=1:length(indices)
-				accum(indices(jj)) = accum(indices(jj)) + alpha(jj);
-			end
-		end
-	end
+  xoff=xoffsets(ioff);
+  for yoff=yoffsets
+    for zoff=zoffsets
+      % Add offset
+      tmpNewCoords(1:3,:) = coords(1:3,:) + repmat([xoff;yoff;zoff],[1,size(coords,2)]);
+      % Transform
+      tmpNewCoords = xform * tmpNewCoords;
+      % Round and subtract minPos
+      tmpNewCoords(1:3,:) = round(tmpNewCoords(1:3,:)) - repmat(minPos(1:3),[1,size(tmpNewCoords,2)]);
+      % jg: make sure that tmpNewCoords doesn't go to zero--this
+      % seems to happen because of a rounding error from the above
+      % statement.
+      if sum(tmpNewCoords(:)==0)
+	disp(sprintf('(xformROIcoords) Zero index corrected'));
+	tmpNewCoords((tmpNewCoords(:)==0)) = 1;
+      end
+      % Convert to indices
+      indices = sub2ind(dims,tmpNewCoords(1,:),tmpNewCoords(2,:),tmpNewCoords(3,:));
+      % Accumulate partial volume. Need to do it in a loop
+      % instead of:
+      %    accum(indices) = accum(indices) + alpha;
+      % because an index can appear twice in indices and we want
+      % to accumulate them both.
+      for jj=1:length(indices)
+	accum(indices(jj)) = accum(indices(jj)) + alpha(jj);
+      end
+    end
+  end
 end
 
 % Build newROIcoords
