@@ -58,6 +58,10 @@ ptseries = percentTSeries(tseries,...
     'temporalNormalization', 'No');
 
 % calculate mean cycle
+if rem(nframes,ncycles)
+  disp(sprintf('(corAnalPlot) Scan has %i frames, not evenly divisible by %i cycles',nframes,ncycles));
+  return
+end
 singleCycle = mean(reshape(ptseries,nframes/ncycles,ncycles)');
 singleCycleSte = std(reshape(ptseries,nframes/ncycles,ncycles)')/sqrt(ncycles);
 
