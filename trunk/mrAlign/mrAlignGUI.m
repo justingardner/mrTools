@@ -265,6 +265,19 @@ h = mrMsgBox('Loading inplanes. Please wait');
 [vData,hdr] = cbiReadNifti(ALIGN.inplanePath);
 mrCloseDlg(h);
 
+% check rank of qform/sform if these are not full rank
+% then something bad has probably happened--this will most
+% likely later cause mrAlign to choke--let the user know
+% here that something has gone wrong. For now, allow the user
+% to continue (since they may want to manually set alignment
+if rank(hdr.qform44) ~= 4
+  mrWarnDlg('(mrAlignGUI) Volume qform is not full rank (This is probably a corrupted file');
+end
+
+if hdr.sform_code && (rank(hdr.sform44) ~= 4)
+  mrWarnDlg('(mrAlignGUI) Volume sform is not full rank (This is probably a corrupted file');
+end
+
 % Handle 4D file
 inplaneDimension = length(size(vData));
 if (inplaneDimension == 4)
@@ -561,14 +574,17 @@ global ALIGN
 
 % Set xform to identity, but scaled by voxel sizes
 % *** Not yet test/debugged ***
+% jg: These were set to 1/voxelSize which I believe
+% was wrong. Flipped these and now this seems to work
+% correctly
 inplaneXform = eye(4);
-inplaneXform(1,1) = 1 / ALIGN.inplaneVoxelSize(1);
-inplaneXform(2,2) = 1 / ALIGN.inplaneVoxelSize(2);
-inplaneXform(3,3) = 1 / ALIGN.inplaneVoxelSize(3);
+inplaneXform(1,1) = ALIGN.inplaneVoxelSize(1);
+inplaneXform(2,2) = ALIGN.inplaneVoxelSize(2);
+inplaneXform(3,3) = ALIGN.inplaneVoxelSize(3);
 volumeXform = eye(4);
-volumeXform(1,1) = 1 / ALIGN.volumeVoxelSize(1);
-volumeXform(2,2) = 1 / ALIGN.volumeVoxelSize(2);
-volumeXform(3,3) = 1 / ALIGN.volumeVoxelSize(3);
+volumeXform(1,1) = ALIGN.volumeVoxelSize(1);
+volumeXform(2,2) = ALIGN.volumeVoxelSize(2);
+volumeXform(3,3) = ALIGN.volumeVoxelSize(3);
 ALIGN.xform = inv(volumeXform) * inplaneXform;
 
 % Reset GUI
@@ -615,7 +631,12 @@ function computeAlignmentMenu_Callback(hObject, eventdata, handles)
 function initializeMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
-% Error if there's no alignment information in the header.
+if ~isfield(ALIGN.volumeHdr,'qform44') || ~isfield(ALIGN.inplaneHdr,'qform44')
+  mrWarnDlg('(mrAlignGUI) Need to load both src and dest images');
+  return
+end
+
+  % Error if there's no alignment information in the header.
 % This would happen if these were analyze, not nifti, files.
 if isempty(ALIGN.volumeHdr.qform44)
     mrErrorDlg('No alignment information in the volume header.');
@@ -877,6 +898,18 @@ h = mrMsgBox('Loading volume. Please wait');
 volumeDimension = length(size(vData));
 mrCloseDlg(h);
 
+% check rank of qform/sform if these are not full rank
+% then something bad has probably happened--this will most
+% likely later cause mrAlign to choke--let the user know
+% here that something has gone wrong. For now, allow the user
+% to continue (since they may want to manually set alignment
+if rank(hdr.qform44) ~= 4
+  mrWarnDlg('(mrAlignGUI) Volume qform is not full rank (This is probably a corrupted file');
+end
+if rank(hdr.sform44) ~= 4
+  mrWarnDlg('(mrAlignGUI) Volume sform is not full rank (This is probably a corrupted file');
+end
+
 % Handle 4D file
 volumeDimension = length(size(vData));
 if (volumeDimension == 4)
@@ -934,3 +967,83 @@ setAlignGUI(handles,'nSlices',ALIGN.volSize(ALIGN.sliceOrientation));
 set(handles.sliceSlider,'value',ALIGN.coords(ALIGN.sliceOrientation));
 sagittalRadioButton_Callback(hObject, eventdata, handles);
 refreshAlignDisplay(handles);
+
+
+% --------------------------------------------------------------------
+function setSform_Callback(hObject, eventdata, handles)
+% hObject    handle to setSform (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global ALIGN
+
+paramsInfo = {};
+if ~isempty(ALIGN.volumeHdr)
+  paramsInfo{end+1}{1} = 'destQform';
+  paramsInfo{end}{2} = ALIGN.volumeHdr.qform44;
+  paramsInfo{end}{3} = 'editable=0';
+  paramsInfo{end}{4} = 'Qform is the transformation to magnet coordinates';
+  paramsInfo{end+1}{1} = 'destSform';
+  paramsInfo{end}{2} = ALIGN.volumeHdr.sform44;
+  paramsInfo{end}{3} = 'editable=0';
+  paramsInfo{end}{4} = 'Sform is set by mrAlign to be to the transfomration to the coordinates of the base volume anatomy';
+end
+if ~isempty(ALIGN.inplaneHdr)
+  paramsInfo{end+1}{1} = 'srcQform';
+  paramsInfo{end}{2} = ALIGN.inplaneHdr.qform44;
+  paramsInfo{end}{3} = 'editable=0';
+  paramsInfo{end}{4} = 'Qform is the transformation to magnet coordinates';
+  paramsInfo{end+1}{1} = 'srcSform';
+  paramsInfo{end}{2} = ALIGN.volumeHdr.sform44 * ALIGN.xform;
+
+  paramsInfo{end}{4} = 'Sform is set by mrAlign to be to the transfomration to the coordinates of the base volume anatomy';
+end
+
+% put up dialog
+params = mrParamsDialog(paramsInfo,'Set sform of source directly');
+
+% user hit cancel
+if isempty(params) || ~isfield(params,'srcSform')
+  return
+end
+
+% set the transform 
+ALIGN.inplaneHdr.sform44 = params.srcSform;
+ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+
+% --------------------------------------------------------------------
+function setSourceToDestination_Callback(hObject, eventdata, handles)
+% hObject    handle to setSourceToDestination (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+global ALIGN
+
+% get srcToDestXform
+paramsInfo = {};
+if ~isempty(ALIGN.volumeHdr) && ~isempty(ALIGN.inplaneHdr)
+  paramsInfo{end+1}{1} = 'srcToDestXform';
+  paramsInfo{end}{2} = ALIGN.xform;
+  paramsInfo{end}{4} = 'Transformation from source to destination coordinate system';
+end
+
+% put up dialog
+params = mrParamsDialog(paramsInfo,'Set xfrom of source to dest');
+
+% user hit cancel
+if isempty(params)
+  return
+end
+
+% set the transform 
+ALIGN.xform = params.srcToDestXform;
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
