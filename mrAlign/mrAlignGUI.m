@@ -230,7 +230,6 @@ function fileMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function loadVolMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
 
 % Prompt user to choose volume.
 initPath = mrGetPref('volumeDirectory');
@@ -238,71 +237,9 @@ if isempty(initPath)
     initPath = pwd;
 end
 pathStr = getPathStrDialog(initPath,'Choose vAnatomy file','*.img');
-ALIGN.volumePath = pathStr;
+if isempty(pathStr),return,end
 
-% Load volume and header
-h = mrMsgBox('Loading volume. Please wait');
-[vData,hdr] = cbiReadNifti(ALIGN.volumePath);
-volumeDimension = length(size(vData));
-mrCloseDlg(h);
-
-% Handle 4D file
-volumeDimension = length(size(vData));
-if (volumeDimension == 4)
-    buttonName = questdlg('You have selected a 4D file.',...
-		'Options for 4D files',...
-		'Mean','First frame','Cancel','Mean');
-	switch buttonName
-		case 'Mean'
-			vData = mean(vData,4);
-		case 'First frame'
-			vData = vData(:,:,:,1);
-		case 'Cancel'
-			return
-	end
-end
-
-% Warning if no (qform) alignment information in the header.
-% qform is initialized to identity by default in cbiReadNiftiHeader.
-if ~(hdr.qform_code)
-    mrWarnDlg('No alignment information in the volume header.');
-end
-
-% Warning if no (sform) base coordinate frame in the header.
-% sform is initialized to identity by default in cbiReadNiftiHeader.
-if ~(hdr.sform_code)
-    mrWarnDlg('No base coordinate frame in the volume header.');
-end
-
-% Extract permutation matrix to keep track of slice orientation
-[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
-permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
-
-% Update ALIGN structure and GUI
-ALIGN.volume = vData;
-ALIGN.volumeHdr = hdr;
-ALIGN.volumePermutation = permutationMatrix;
-ALIGN.volSize = size(ALIGN.volume);
-ALIGN.volumeVoxelSize = hdr.pixdim([2,3,4]);
-ALIGN.coords = min(ALIGN.coords,ALIGN.volSize);
-ALIGN.volumeClip = clipRange(ALIGN.volume);
-
-% If both inplane and volume are loaded, then use the sforms from each for
-% the alignment. Otherwise, use identity.
-if ~isempty(ALIGN.volumeHdr) & ~isempty(ALIGN.inplaneHdr)
-	ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
-else
-    ALIGN.xform = eye(4);
-end
-
-% Refresh GUI
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-setAlignGUI(handles,'nSlices',ALIGN.volSize(ALIGN.sliceOrientation));
-set(handles.sliceSlider,'value',ALIGN.coords(ALIGN.sliceOrientation));
-sagittalRadioButton_Callback(hObject, eventdata, handles);
-refreshAlignDisplay(handles);
+mrAlignLoadVol(pathStr,hObject,eventdata,handles);
 
 function cRange = clipRange(image)
 % Choose clipping based on histogram
@@ -320,6 +257,7 @@ global ALIGN
 % Prompt user to choose inplanes. 
 initPath = pwd;
 pathStr = getPathStrDialog(initPath,'Choose inplane anatomy file','*.img');
+if isempty(pathStr),return,end
 ALIGN.inplanePath = pathStr;
 
 % Load inplane file and header
@@ -370,12 +308,14 @@ else
 	ALIGN.xform = eye(4);
 end
 
+% allow source to be loaded as destination
+set(handles.loadSourceAsDestination,'Enable','on');
+
 % Refresh GUI
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
-
 % --------------------------------------------------------------------
 function saveAlignMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
@@ -910,3 +850,87 @@ else
 end
 % save sform to mrLoadRet4
 saveSform(sform);
+
+
+% --------------------------------------------------------------------
+function loadSourceAsDestination_Callback(hObject, eventdata, handles)
+% hObject    handle to loadSourceAsDestination (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+global ALIGN
+mrAlignLoadVol(ALIGN.inplanePath,hObject,eventdata,handles);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function load volume anatomy (taken out of loadVol) since
+% it is reused by loadSourceAsDestination
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mrAlignLoadVol(pathStr,hObject,eventdata,handles)
+
+global ALIGN
+ALIGN.volumePath = pathStr;
+
+% Load volume and header
+h = mrMsgBox('Loading volume. Please wait');
+[vData,hdr] = cbiReadNifti(ALIGN.volumePath);
+volumeDimension = length(size(vData));
+mrCloseDlg(h);
+
+% Handle 4D file
+volumeDimension = length(size(vData));
+if (volumeDimension == 4)
+    buttonName = questdlg('You have selected a 4D file.',...
+		'Options for 4D files',...
+		'Mean','First frame','Cancel','Mean');
+	switch buttonName
+		case 'Mean'
+			vData = mean(vData,4);
+		case 'First frame'
+			vData = vData(:,:,:,1);
+		case 'Cancel'
+			return
+	end
+end
+
+% Warning if no (qform) alignment information in the header.
+% qform is initialized to identity by default in cbiReadNiftiHeader.
+if ~(hdr.qform_code)
+    mrWarnDlg('No alignment information in the volume header.');
+end
+
+% Warning if no (sform) base coordinate frame in the header.
+% sform is initialized to identity by default in cbiReadNiftiHeader.
+if ~(hdr.sform_code)
+    mrWarnDlg('No base coordinate frame in the volume header.');
+end
+
+% Extract permutation matrix to keep track of slice orientation
+[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
+permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+
+% Update ALIGN structure and GUI
+ALIGN.volume = vData;
+ALIGN.volumeHdr = hdr;
+ALIGN.volumePermutation = permutationMatrix;
+ALIGN.volSize = size(ALIGN.volume);
+ALIGN.volumeVoxelSize = hdr.pixdim([2,3,4]);
+ALIGN.coords = min(ALIGN.coords,ALIGN.volSize);
+ALIGN.volumeClip = clipRange(ALIGN.volume);
+
+% If both inplane and volume are loaded, then use the sforms from each for
+% the alignment. Otherwise, use identity.
+if ~isempty(ALIGN.volumeHdr) & ~isempty(ALIGN.inplaneHdr)
+	ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
+else
+    ALIGN.xform = eye(4);
+end
+
+% Refresh GUI
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+setAlignGUI(handles,'nSlices',ALIGN.volSize(ALIGN.sliceOrientation));
+set(handles.sliceSlider,'value',ALIGN.coords(ALIGN.sliceOrientation));
+sagittalRadioButton_Callback(hObject, eventdata, handles);
+refreshAlignDisplay(handles);
