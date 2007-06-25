@@ -22,7 +22,7 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum);
 rois = {};
 
 % check arguments
-if ~any(nargin == [0 1 2 3 4])
+if ~any(nargin == [1 2 3 4])
   help loadROITSeries
   return
 end

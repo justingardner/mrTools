@@ -8,6 +8,8 @@
 %             coordinates. 
 %             if roinum is a structure, works on the structure
 %             rather than the roinum
+%             if roinum is a string, will load the roi from
+%             the directory
 function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum)
 
 scanCoords = [];

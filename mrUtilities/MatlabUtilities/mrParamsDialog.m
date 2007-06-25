@@ -17,8 +17,11 @@ end
 % if this is a cell array, it means to open up the figure
 % using the variable name, default value pairs given
 if iscell(varargin{1})
-    params = initFigure(varargin{1},varargin);
-    % otherwise it is a callback
+  % if empty paramsInfo just return
+  if isempty(varargin{1}),params = [];return,end
+  % otherwise init the dialog
+  params = initFigure(varargin{1},varargin);
+  % otherwise it is a callback
 else
     handleCallbacks(varargin);
 end
