@@ -28,8 +28,10 @@ if iscell(params)
       if length(data) >= i
 	[thisParams thisData] = defaultReconcileParams(groupName,params{i},data);
 	if isfield(thisParams,'scanNum')
-	  newParams{thisParams.scanNum} = thisParams;
-	  newData{thisParams.scanNum} = thisData{i};
+	  if ~isempty(thisParams.scanNum)
+	    newParams{thisParams.scanNum} = thisParams;
+	    newData{thisParams.scanNum} = thisData{i};
+	  end
 	elseif ~isempty(thisParams)
 	  newParams{i} = thisParams;
 	  newData{i} = thisData{i};

@@ -46,7 +46,7 @@ end
 
 % Complete pathStr
 if ieNotDefined('pathStr')
-    pathStr = getPathStrDialog(startPathStr,'Choose one or more analyses','*.mat','on');
+  pathStr = getPathStrDialog(startPathStr,'Choose one or more analyses','*.mat','on');
 else
   if iscell(pathStr)
     for p=1:length(pathStr)
@@ -68,28 +68,28 @@ elseif ~iscell(name)
 end
 
 if ~iscell(pathStr)
-    pathStr = {pathStr};
+  pathStr = {pathStr};
 end
 
 % Load the file. Loop through the variables that were loaded and add
 % each of them as a new analysis, setting analysis.fieldnames as we go.
 for p = 1:length(pathStr)
-	if exist(pathStr{p},'file')
-		h = mrMsgBox(['Loading analysis: ',pathStr{p},'. Please wait']);
-		s = load(pathStr{p});
-		varNames = fieldnames(s);
-		analysis = eval(['s.',varNames{1}]);
+  if exist(pathStr{p},'file')
+    h = mrMsgBox(['Loading analysis: ',pathStr{p},'. Please wait']);
+    s = load(pathStr{p});
+    varNames = fieldnames(s);
+    analysis = eval(['s.',varNames{1}]);
     if isempty(name)
       analysis.name = varNames{1};
     else
       analysis.name = name{p};
     end
-		% Add it to the view
-		view = viewSet(view,'newAnalysis',analysis);
-		mrCloseDlg(h);
-	else
-		mrWarnDlg(['Analysis ',pathStr{p},' not found.']);
-	end
+    % Add it to the view
+    view = viewSet(view,'newAnalysis',analysis);
+    mrCloseDlg(h);
+  else
+    mrWarnDlg(['Analysis ',pathStr{p},' not found.']);
+  end
 end
 
 return;

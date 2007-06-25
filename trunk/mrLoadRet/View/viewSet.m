@@ -733,7 +733,9 @@ switch lower(param)
         overlay.data = data;
         % Check that it has the correct number of scans
         if (length(overlay.data) ~= nScans)
-            mrErrorDlg('Invalid overlay, incorrect number of scans.');
+	  %mrErrorDlg('Invalid overlay, incorrect number of scans.');
+	  mrWarnDlg('Invalid overlay, incorrect number of scans.');
+	  return;
         end
         % Check that the data arrays for each scan are the correct size
         for s = 1:nScans
@@ -1237,10 +1239,12 @@ for v = find(view.viewNum ~= [1:length(MLR.views)])
                     curGroupName,analysis.params);
                 for ov = 1:viewGet(view,'numberofOverlays',a);
                     overlay = viewGet(v,'overlay',ov,a);
-                    [params,data] = feval(overlay.reconcileFunction,...
+		    if ~isempty(overlay)
+		      [params,data] = feval(overlay.reconcileFunction,...
                         curGroupName,overlay.params,overlay.data);
-                    MLR.views{v}.analyses{a}.overlays(ov).params = params;
-                    MLR.views{v}.analyses{a}.overlays(ov).data = data;
+		      MLR.views{v}.analyses{a}.overlays(ov).params = params;
+		      MLR.views{v}.analyses{a}.overlays(ov).data = data;
+		    end
                 end
             end
         end

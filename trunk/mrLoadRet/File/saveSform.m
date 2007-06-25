@@ -42,9 +42,16 @@ v = newView('Volume');
 mrGlobals
 % just make sure that the home dir matches
 if ~strcmp(MLR.homeDir,path)
-  mrWarnDlg(sprintf('(saveSform) Could not open a view to %s',getLastDir(path)));
+  answer = questdlg(sprintf('mrLoadRet is open on sesion %s? Ok to close and open on %s',getLastDir(MLR.homeDir),getLastDir(path)));
+  if ~strcmp(answer,'Yes')
+    mrWarnDlg(sprintf('(saveSform) Could not open a view to %s',getLastDir(path)));
+    deleteView(v);
+    return
+  end
+  % clear MLR and start over
   deleteView(v);
-  return
+  clear global MLR;
+  v = newView('Volume');
 end
 
 % ask the user which groups to export to

@@ -1,9 +1,11 @@
 % loadScan.m
 %
-%      usage: loadScan(view,scanNum,groupNum,sliceNum)
+%      usage: loadScan(view,scanNum,groupNum,<sliceNum>)
 %         by: justin gardner
 %       date: 03/20/07
 %    purpose: loads a scan into a "d" structure
+%             sliceNum is either [] for all slices,
+%             slice numbers for slices you want or 0 to not load data
 %
 function d = loadScan(view,scanNum,groupNum,sliceNum)
 
@@ -35,17 +37,26 @@ d.fullpath = fileparts(fileparts(fileparts(fileparts(d.filepath))));
 mrDisp(sprintf('Loading scan %i from group: %s',scanNum,viewGet(view,'groupName')));
 if isempty(sliceNum)
   mrDisp(sprintf('\n'));
+elseif isequal(sliceNum,0)
+  mrDisp(sprintf('\n'));
 elseif length(sliceNum) == 2
   mrDisp(sprintf(' slices=%i:%i of %i\n',sliceNum(1),sliceNum(2),viewGet(view,'nSlices',scanNum)));
 else
   mrDisp(sprintf(' slices=%i of %i\n',sliceNum(1),viewGet(view,'nSlices',scanNum)));
 end
+
 % load the data
-d.data = loadTSeries(view,scanNum,sliceNum);
+if ~isequal(sliceNum,0)
+  d.data = loadTSeries(view,scanNum,sliceNum);
+else
+  d.data = [];
+end
 	
 % Dump junk frames
 junkFrames = viewGet(view,'junkframes',scanNum);
-d.data = d.data(:,:,:,junkFrames+1:junkFrames+d.nFrames);
+if ~isempty(d.data)
+  d.data = d.data(:,:,:,junkFrames+1:junkFrames+d.nFrames);
+end
 % junk frames total is used by getStimvol to adjust
 % volumes according to how many volumes have been thrown out
 d.junkFrames = viewGet(view,'junkFramesTotal',scanNum);

@@ -98,9 +98,9 @@ for scanNum = params.scanNum
   end
 
   % now put all the data from all the slices into the structure
-  d.ehdr = ehdr;
-  d.ehdrste = ehdrste;
-  d.r2 = thisr2;
+  d.ehdr = single(ehdr);
+  d.ehdrste = single(ehdrste);
+  d.r2 = single(thisr2);
 
   d.dim(3) = size(d.r2,3);
 
