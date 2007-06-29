@@ -186,8 +186,10 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 if verbose>1,disppercent(inf);,end
 
 % Display the ROIs
-displayROIs(view,slice,sliceIndex,rotate,...
-    baseNum,base.coordsHomogeneous,base.dims,verbose);
+if viewGet(view,'numberOfROIs');
+  displayROIs(view,slice,sliceIndex,rotate,...
+	      baseNum,base.coordsHomogeneous,base.dims,verbose);
+end
 
 if verbose>1,disppercent(-inf,'rendering');,end
 drawnow
