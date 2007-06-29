@@ -3,7 +3,7 @@
 %      usage: importROI(view,pathStr)
 %         by: justin gardner
 %       date: 03/16/07
-%    purpose: import pathStr
+%    purpose: import roi from mrLoadRet 3.1 version to 4.5
 %
 function view = importROI(view,pathStr)
 
