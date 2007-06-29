@@ -1,15 +1,15 @@
 % mrtParamsDialog.m
 %
-%      usage: mrParamsDialog()
+%      usage: mrParamsDialog(paramsInfo,<titleString>,<buttonWidth>,<callback>)
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: creates a dialog for selection of parameters
 %             see wiki for details
 %
-function params = mrParamsDialog(varargin)
+function [params params2] = mrParamsDialog(varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if ~any(nargin == [1 2 3 4 5])
     help mrParamsDialog
     return
 end
@@ -20,7 +20,7 @@ if iscell(varargin{1})
   % if empty paramsInfo just return
   if isempty(varargin{1}),params = [];return,end
   % otherwise init the dialog
-  params = initFigure(varargin{1},varargin);
+  [params params2] = initFigure(varargin{1},varargin);
   % otherwise it is a callback
 else
     handleCallbacks(varargin);
@@ -29,7 +29,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % set up figure in first palce
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function params = initFigure(vars,otherParams)
+function [params params2] = initFigure(vars,otherParams)
 
 global gParams;
 global mrDEFAULTS;
@@ -48,12 +48,14 @@ gParams.fontname = 'Helvetica';
 
 % see if we were passed a title
 if length(otherParams) > 1
-    titleStr = otherParams{2};
+  titleStr = otherParams{2};
 else
-    titleStr = 'Set parameters';
+  titleStr = 'Set parameters';
 end
 if length(otherParams) > 2
+  if ~isempty(otherParams{3})
     gParams.buttonWidth = gParams.buttonWidth*otherParams{3};
+  end
 end
 % get the figure
 if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
@@ -116,8 +118,25 @@ for i = 1:length(gParams.varinfo)
     end
 end
 
-% make ok and cancel buttons
+% make help button
 makeButton(gParams.fignum,'Help','help',numrows,1,1);
+
+% see if this has a callback, in which case we don't
+% need to make ok/cancel buttons
+if length(otherParams) > 3
+  gParams.callback = otherParams{4};
+  % if another argument is specified that should
+  % be sent as an argument to the callback function
+  if length(otherParams) > 4
+    gParams.callbackArg = otherParams{5};
+  end
+  params = gParams.fignum;
+  params2 = getParams(vars);
+  return
+else
+  gParams.callback = [];
+end
+% make ok and cancel buttons
 makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
 makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
 
@@ -126,11 +145,12 @@ uiwait;
 
 % check return value
 if gParams.ok
-    params = getParams(vars);
+  params = getParams(vars);
 else
-    % otherwise return empty
-    params = [];
+  % otherwise return empty
+  params = [];
 end
+params2 = [];
 
 % close figure
 mrSetFigLoc('mrParamsDialog',get(gParams.fignum,'Position'));
@@ -285,6 +305,15 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
     if isfield(gParams.varinfo{varnum},'incdec') && isfield(gParams.varinfo{varnum},'minmax')
         enableArrows(val,varnum)
     end
+end
+% update params
+if ~isempty(gParams.callback)
+  gParams.params = getParams(gParams.vars);
+  if isfield(gParams,'callbackArg')
+    feval(gParams.callback,gParams.params,gParams.callbackArg);
+  else
+    feval(gParams.callback,gParams.params);
+  end    
 end
 
 % turn on or off incdec arrows depending on minmax
