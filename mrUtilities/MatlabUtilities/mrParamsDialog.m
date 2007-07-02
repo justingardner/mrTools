@@ -10,8 +10,8 @@ function [params params2] = mrParamsDialog(varargin)
 
 % check arguments
 if ~any(nargin == [1 2 3 4 5])
-    help mrParamsDialog
-    return
+  help mrParamsDialog
+  return
 end
 
 % if this is a cell array, it means to open up the figure
@@ -23,7 +23,7 @@ if iscell(varargin{1})
   [params params2] = initFigure(varargin{1},varargin);
   % otherwise it is a callback
 else
-    handleCallbacks(varargin);
+  handleCallbacks(varargin);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,27 +49,31 @@ gParams.fontname = 'Helvetica';
 % see if we were passed a title
 if length(otherParams) > 1
   titleStr = otherParams{2};
+  gParams.figlocstr = sprintf('mrParamsDialog_%s',fixBadChars(titleStr));
 else
   titleStr = 'Set parameters';
+  gParams.figlocstr = 'mrParamsDialog';
 end
 if length(otherParams) > 2
   if ~isempty(otherParams{3})
     gParams.buttonWidth = gParams.buttonWidth*otherParams{3};
   end
 end
+
 % get the figure
 if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
-    % open figure, and turn off menu
-    gParams.fignum = figure;
-    set(gParams.fignum,'MenuBar','none');
-    set(gParams.fignum,'NumberTitle','off');
-    set(gParams.fignum,'Name',titleStr);
+  % open figure, and turn off menu
+  gParams.fignum = figure;
 else
-    figure(gParams.fignum);
+  figure(gParams.fignum);
 end
+set(gParams.fignum,'MenuBar','none');
+set(gParams.fignum,'NumberTitle','off');
+set(gParams.fignum,'Name',titleStr);
+set(gParams.fignum,'closeRequestFcn','mrParamsDialog(''close'')');
 
 % set height of figure according to how many rows we have
-figpos = mrGetFigLoc('mrParamsDialog');
+figpos = mrGetFigLoc(gParams.figlocstr);
 if isempty(figpos)
     figpos = get(gParams.fignum,'Position');
 end
@@ -152,19 +156,7 @@ else
 end
 params2 = [];
 
-% close figure
-mrSetFigLoc('mrParamsDialog',get(gParams.fignum,'Position'));
-close(gParams.fignum);
-
-% close help
-helpcloseHandler;
-
-clear global gParams;
-
-% save figure locations .mrDefaults
-saveMrDefaults;
-
-drawnow;
+closeHandler;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % handle callback functions
@@ -175,22 +167,24 @@ event = args{1};
 
 % if it is a number than an entry field has been updated
 if ~isstr(event)
-    if length(args) == 1
-        buttonHandler(event);
-    else
-        buttonHandler(event,args{2});
-    end
+  if length(args) == 1
+    buttonHandler(event);
+  else
+    buttonHandler(event,args{2});
+  end
 else
-    switch lower(event)
-        case {'ok'}
-            okHandler;
-        case {'help'}
-            helpHandler;
-        case {'helpclose'}
-            helpcloseHandler;
-        case {'cancel'}
-            cancelHandler;
-    end
+  switch lower(event)
+   case {'ok'}
+    okHandler;
+   case {'help'}
+    helpHandler;
+   case {'close'}
+    closeHandler;
+   case {'helpclose'}
+    helpcloseHandler;
+   case {'cancel'}
+    cancelHandler;
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%
@@ -385,6 +379,26 @@ for i = 1:length(gParams.varinfo)
 end
 % make close button
 makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1);
+
+%%%%%%%%%%%%%%%%%%%%
+% callback for close
+%%%%%%%%%%%%%%%%%%%%
+function closeHandler
+
+global gParams;
+global mrDEFAULTS;
+
+% close figure
+mrSetFigLoc(gParams.figlocstr,get(gParams.fignum,'Position'));
+delete(gParams.fignum);
+
+% close help
+helpcloseHandler;
+
+clear global gParams;
+
+% save figure locations .mrDefaults
+saveMrDefaults;
 
 %%%%%%%%%%%%%%%%%%%%
 % callback for helpclose
