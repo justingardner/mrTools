@@ -16,9 +16,14 @@ function value = mrGetPref(pref,value)
 %   mrGetPref('volumeDirectory');
 %
 % djh, 5/2007
+% %	$Id$	
+
 
 global mrDEFAULTS
 
+% read the preferences and figlocs
+mrDEFAULTS = loadMrDefaults;
+    
 if isfield(mrDEFAULTS.prefs,pref)
     value = getfield(mrDEFAULTS.prefs,pref);
 else
