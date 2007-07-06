@@ -37,7 +37,3 @@ end
 
 % Open inplane window
 v = mrOpenWindow('Volume');
-
-% Closes extra window that pops up for unknown reason. Get rid of this when
-% bug is fixed.
-% close
