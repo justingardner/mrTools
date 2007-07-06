@@ -1,43 +1,81 @@
-function val = isview(view)
-% function val = isview(view)
+function [tf view] =  isview(view)
+% function [tf view] =  isview(view)
+%
+% Checks to see if it is a valid view structure. Can be called with
+% either one or two output arguments:
+%
+% tf =  isview(view)
+% [tf view] =  isview(view)
+%
+% tf is logical 1 (true) if view is a valid view structure.
+% tf is logical 0 (false) if it is not.
 % 
-% djh, 2004
+% If called with two output arguments then an attempt is made to make it
+% into a valid view structure by setting optional fields to default
+% values.
+% 
+% djh, 2007
 
 mrGlobals
 
-if ieNotDefined('view')
-    val = 0;
-    return
+if (nargout == 2)
+  % Add optional fields and return true if the view with optional fields is
+  % valid.
+  requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
+    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice'};
+  optionalFields = {}
+else
+  % Return 0 if the overlay structure is missing any fields required or
+  % optional (since w/out changing the analysis structure it is invalid).
+  requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
+    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice'};
+  optionalFields = {};
 end
 
+% Initialize return value
+tf = true;
+if ieNotDefined('view')
+    tf = false;
+    return
+end
 if ~isstruct(view)
-	val = 0;
+	tf = false;
 	return
 end
 
-% Check that it has the required fields
-requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
-    'analyses','curAnalysis','ROIs','curROI'};
+% Check required fields
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(view,fieldName)
 		% mrWarnDlg(['Invalid view, missing field: ',fieldName]);
-		val = 0;
-		return
+		tf = false;
 	end
 end
 
+% Optional fields and defaults
+for f = 1:size(optionalFields,1)
+  fieldName = optionalFields{f,1};
+  default = optionalFields{f,2};
+  if ~isfield(view,fieldName)  
+    % use eval args to set the fields properly
+    varargin{1} = sprintf('view.%s',fieldName);
+    varargin{2} = default;
+    eval(evalargs(varargin),1);
+  end
+end
+view = orderfields(view);
+
 % Check that viewNum is a number
 if ~isnumeric(view.viewNum);
-    val = 0;
+    tf = false;
     return
 end
 
 % Confirm that MLR.views{viewNum} and view have the same fields
-names1 = fieldnames(MLR.views{view.viewNum});
+names1 = fieldnames(orderfields(MLR.views{view.viewNum}));
 names2 = fieldnames(view);
 if length(names1) == length(names2)
-  val = all(strcmp(names1,names2));
+  tf = all(strcmp(names1,names2));
 else
-  val = 0;
+  tf = false;
 end

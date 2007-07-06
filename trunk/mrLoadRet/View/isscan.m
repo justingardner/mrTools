@@ -1,46 +1,79 @@
-function val = isscan(scanParams)
-% function val = isview(scanParams)
+function [tf scanParams] =  isscan(scanParams)
+% function [tf scanParams] =  isscan(scanParams)
+%
+% Checks to see if it is a valid scanParams structure. Can be called with
+% either one or two output arguments:
+%
+% tf =  isscan(scanParams)
+% [tf scanParams] =  isscan(scanParams)
+%
+% tf is logical 1 (true) if scanParams is a valid scanParams structure.
+% tf is logical 0 (false) if it is not.
+% 
+% If called with two output arguments then an attempt is made to make it
+% into a valid scanParams structure by setting optional fields to default
+% values.
 % 
 % djh, 2007
 % jlg, 4/2007 check for unknown fields
+% djh, 7/2007 allow optional fields with defaults
 
-val = 1;
-
-if ieNotDefined('scanParams')
-    val = 0;
-    return
+if (nargout == 2)
+  % Add optional fields and return true if the scanParams with optional fields is
+  % valid.
+  requiredFields = {'description','fileName','fileType','niftiHdr',...
+    'voxelSize','totalFrames','junkFrames','nFrames',...
+    'dataSize','framePeriod','originalGroupName'};
+  optionalFields = {'originalFileName',scanParams.fileName};
+else
+  % Return 0 if the overlay structure is missing any fields required or
+  % optional (since w/out changing the analysis structure it is invalid).
+  requiredFields = {'description','fileName','fileType','niftiHdr',...
+    'voxelSize','totalFrames','junkFrames','nFrames',...
+    'dataSize','framePeriod','originalFileName','originalGroupName'};
+  optionalFields = {};
 end
 
+% Initialize return value
+tf = true;
+if ieNotDefined('scanParams')
+    tf = false;
+    return
+end
 if ~isstruct(scanParams)
-	val = 0;
+	tf = false;
 	return
 end
 
-requiredFields = {'description','fileName','fileType','niftiHdr',...
-		  'voxelSize','totalFrames','junkFrames','nFrames',...
-		  'dataSize','framePeriod','originalFileName','originalGroupName'};
-
-% check for missing fields
+% Check required fields
 for f = 1:length(requiredFields)
-  fieldName = requiredFields{f};
-  if ~isfield(scanParams,fieldName)
-    % mrWarnDlg(['Invalid scanParams, missing field:',fieldName]);
-    val = 0;
-  end
+	fieldName = requiredFields{f};
+	if ~isfield(scanParams,fieldName)
+		% mrWarnDlg(['Invalid scanParams, missing field: ',fieldName]);
+		tf = false;
+	end
 end
 
+% Optional fields and defaults
+for f = 1:size(optionalFields,1)
+  fieldName = optionalFields{f,1};
+  default = optionalFields{f,2};
+  if ~isfield(scanParams,fieldName)  
+    % use eval args to set the fields properly
+    varargin{1} = sprintf('scanParams.%s',fieldName);
+    varargin{2} = default;
+    eval(evalargs(varargin),1);
+  end
+end
+scanParams = orderfields(scanParams);
+
 % check for unknown fields
+allFields = {requiredFields{:}, optionalFields{:}};
 scanFields = fieldnames(scanParams);
 for f = 1:length(scanFields)
   fieldName = scanFields{f};
-  if ~any(strcmp(fieldName,requiredFields))
+  if ~any(strcmp(fieldName,allFields))
     % mrWarnDlg(sprintf('(isscan) Unknown field %s removed',fieldName));
-    val = 0;
+    tf = false;
   end
-end
-
-% check that originalFileName and GroupName match in length
-if length(scanParams.originalFileName) ~= length(scanParams.originalGroupName)
-    % mrWarnDlg('Invalid scanParams: originalFileName does not match originalGroupName');
-    val = 0;
 end
