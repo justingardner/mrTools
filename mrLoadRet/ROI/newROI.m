@@ -40,13 +40,13 @@ if ieNotDefined('voxelSize')
   voxelSize = viewGet(view,'baseVoxelSize',baseNum);
 end
 
+% Set required fields. Additional (optional) optional fields are set by
+% isroi which is called by viewSet newROI.
 ROI.name = name;
 ROI.viewType = view.viewType;
 ROI.color = color;
-ROI.coords = [];
 ROI.xform = xform;
 ROI.voxelSize = voxelSize;
-ROI.date = datestr(now);
 
 % Add it to the view
 view = viewSet(view,'newROI',ROI);

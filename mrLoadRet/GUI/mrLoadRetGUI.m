@@ -892,8 +892,8 @@ function pasteAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-analysis = isanalysis(MLR.clipboard);
-if isstruct(analysis)
+[check analysis] = isanalysis(MLR.clipboard);
+if check
     view = viewSet(view,'newAnalysis',analysis);
 else
     mrErrorDlg('(paste analysis) Cannot paste. Clipboard does not contain a valid analysis. Use Edit -> Analysis -> Copy Analysis.')
@@ -923,11 +923,11 @@ function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-overlay = isoverlay(MLR.clipboard);
-if ~isstruct(overlay)
+[check overlay] = isoverlay(MLR.clipboard);
+if ~check
     mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
 end
-if ~isstruct(isanalysis(viewGet(view,'analysis')))
+if ~isanalysis(viewGet(view,'analysis'))
     mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
 end
 view = viewSet(view,'newOverlay',overlay);
@@ -957,8 +957,9 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 % Check to see that it is a valid ROI structure and then add it.
-if isroi(MLR.clipboard)
-    view = viewSet(view,'newROI',MLR.clipboard);
+[check roi] = isroi(MLR.clipboard);
+if check
+    view = viewSet(view,'newROI',roi);
 else
     mrErrorDlg('(paste ROI) Cannot paste. Clipboard does not contain a valid ROI. Use Edit -> ROI -> Copy ROI.')
 end
@@ -1010,8 +1011,9 @@ function pasteBaseMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-if isbase(MLR.clipboard)
-    view = viewSet(view,'newBase',MLR.clipboard);
+[check base] = isbase(MLR.clipboard);
+if check
+    view = viewSet(view,'newBase',base);
 else
     mrErrorDlg('(paste base anatomy) Cannot paste. Clipboard does not contain a valid scan. Use Edit -> Base Anatomy -> Copy Base Anatomy.')
 end
