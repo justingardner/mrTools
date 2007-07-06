@@ -10,6 +10,7 @@ function saveAnat(view,anatomyName,confirm)
 %          Default: uses 'overwritePolicy' preference.
 %
 % djh, 7/2006
+% $Id$	
 
 if ieNotDefined('anatomyName')
     anatomyNum = viewGet(view,'currentBase');
@@ -33,6 +34,12 @@ end
 baseVolume = viewGet(view,'baseVolume',anatomyNum);
 data = baseVolume.data;
 hdr = baseVolume.hdr;
+
+% set the file extension
+niftiFileExtension = mrGetPref('niftiFileExtension');
+if isempty(niftiFileExtension)
+    niftiFileExtension = '.img';
+end
 
 % Path
 pathStr = fullfile(viewGet(view,'anatomydir'),[anatomyName,niftiFileExtension]);
