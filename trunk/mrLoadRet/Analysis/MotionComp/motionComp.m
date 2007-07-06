@@ -196,55 +196,63 @@ for s = 1:length(targetScans)
     scanNum = targetScans(s);
     % clear old tseries 
     clear tseries warpedTseries;    
-	% Load tseries and dump junk frames
-	tseries = loadTSeries(viewBase,scanNum,'all');
-	junkFrames = viewGet(viewBase,'junkframes',scanNum);
-	nFrames = viewGet(viewBase,'nFrames',scanNum);
-	tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
+    % Load tseries and dump junk frames
+    tseries = loadTSeries(viewBase,scanNum,'all');
+    junkFrames = viewGet(viewBase,'junkframes',scanNum);
+    nFrames = viewGet(viewBase,'nFrames',scanNum);
+    tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
     if correctIntensityContrast
         tseriesIC = intensityContrastCorrection(tseries,crop);
-	else
-		tseriesIC = tseries;
+    else
+        tseriesIC = tseries;
     end
-		
-	% Initialize the warped time series to zeros and fill the base frame.
-	warpedTseries = zeros(size(tseries));
-    
+        
     % Loop through frames of target scan
-	waitHandle = mrWaitBar(0,['Computing motion compensation for scan ',num2str(scanNum),'.  Please wait...']);
-	transforms = cell(1,nFrames);
-	M = eye(4);
-	for frame = 1:nFrames
-		mrWaitBar(frame/nFrames,waitHandle)
+    waitHandle = mrWaitBar(0,['Computing motion compensation for scan ',num2str(scanNum),'.  Please wait...']);
+    transforms = cell(1,nFrames);
+    M = eye(4);
+    
+    % estimate motion params
+    for frame = 1:nFrames
+        mrWaitBar(frame/nFrames,waitHandle)
         vol = tseriesIC(:,:,:,frame);
         % Compute rigid-body motion estimate with respect to baseMean
         M = estMotionIter3(baseMean,vol,niters,M,1,robust,crop);
         % Collect the transform
         transforms{frame} = M;
-        % Warp the volume
-        warpedTseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
-	end
-	mrCloseDlg(waitHandle);
+    end
+    clear tseriesIC    
 
-	% Modify scanParams
-	scanParams = viewGet(viewBase,'scanParams',scanNum);
-	scanParams.junkFrames = 0;
-	scanParams.nFrames = nFrames;
-	scanParams.description = ['Full ' descriptions{s}];
-	scanParams.fileName = [];
-	scanParams.originalFileName{1} = viewGet(viewBase,'tseriesfile',scanNum);
-	scanParams.originalGroupName{1} = viewGet(viewBase,'groupName');
+    % Implement motion comp
+    % Initialize the warped time series to zeros and fill the base frame.
+    warpedTseries = zeros(size(tseries));
+    for frame = 1:nFrames
+        % Warp the volume
+        warpedTseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),transforms{frame},NaN,0,interpMethod);
+    end
+        
+    mrCloseDlg(waitHandle);
+
+    % Modify scanParams
+    scanParams = viewGet(viewBase,'scanParams',scanNum);
+    scanParams.junkFrames = 0;
+    scanParams.nFrames = nFrames;
+    scanParams.description = ['Full ' descriptions{s}];
+    scanParams.fileName = [];
+    scanParams.originalFileName{1} = viewGet(viewBase,'tseriesfile',scanNum);
+    scanParams.originalGroupName{1} = viewGet(viewBase,'groupName');
 
     % Save the time series
     [viewMotionComp,tseriesFileName] = saveNewTSeries(viewMotionComp,warpedTseries,scanParams,scanParams.niftiHdr);
 
-	% Save evalstring for recomputing and params
-	evalstr = ['view = newView(','''','Volume','''','); view = motionComp(view,params);'];
-	[pathstr,filename,ext,versn] = fileparts(tseriesFileName);
-	tseriesdir = viewGet(viewMotionComp,'tseriesdir');
-	save(fullfile(tseriesdir,filename),'evalstr','params','transforms','tseriesFileName');
+    % Save evalstring for recomputing and params
+    evalstr = ['view = newView(','''','Volume','''','); view = motionComp(view,params);'];
+    [pathstr,filename,ext,versn] = fileparts(tseriesFileName);
+    tseriesdir = viewGet(viewMotionComp,'tseriesdir');
+    save(fullfile(tseriesdir,filename),'evalstr','params','transforms','tseriesFileName');
 
 end 
+
 
 % Delete temporary views
 deleteView(viewBase);
