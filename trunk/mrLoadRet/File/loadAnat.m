@@ -107,24 +107,13 @@ permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 % Add it to the view %
 %%%%%%%%%%%%%%%%%%%%%%
 
-% Set structure fields
+% Set required structure fields (additional fields are set to default
+% values when viewSet calls isbase).
 base.name = name;
 base.data = vol;
 base.hdr = hdr;
 base.permutationMatrix = permutationMatrix;
-base.range = [min(vol(:)) max(vol(:))];
-base.clip = defaultClip(vol);
 
 % Add it to the list of base volumes and select it
 view = viewSet(view,'newBase',base);
 
-
-
-function clip = defaultClip(image)
-% Choose default clipping based on histogram
-histThresh = length(image(:))/1000;
-[cnt, val] = hist(image(:),100);
-goodVals = find(cnt>histThresh);
-clipMin = val(min(goodVals));
-clipMax = val(max(goodVals));
-clip = [clipMin,clipMax];

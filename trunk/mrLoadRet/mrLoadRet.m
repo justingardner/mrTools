@@ -11,7 +11,7 @@
 % Examples of a number of possible customizations are commented
 % below.
 
-function[v]= mrLoadRet()
+function [v]= mrLoadRet()
 
 if ~isfile('mrSession.mat')
   disp('(mrLoadRet) No mrSession.mat found in current directory');
@@ -38,3 +38,6 @@ end
 % Open inplane window
 v = mrOpenWindow('Volume');
 
+% Closes extra window that pops up for unknown reason. Get rid of this when
+% bug is fixed.
+close

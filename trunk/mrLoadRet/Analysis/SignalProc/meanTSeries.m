@@ -32,7 +32,6 @@ tseries = cell(length(roiList),length(scanList));
 tseriesAll = tseriesROI(view, groupNum, roiList, scanList, varargin{:});
 
 % Loop through ROIs & scans and slices, computing means across voxels.
-
 for iROI = 1:length(roiList)
     for iscan = 1:length(scanList)
         tseries{iROI,iscan} = mean(tseriesAll{iROI,iscan},2);
