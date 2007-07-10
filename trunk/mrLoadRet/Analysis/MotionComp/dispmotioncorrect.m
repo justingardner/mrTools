@@ -70,7 +70,7 @@ hline(0);
 % now convert to axis angle and plot the angle
 for i = 1:size(d.motioncorrect.mat,1)
   R = squeeze(d.motioncorrect.mat(i,1:3,1:3));
-  theta(i) = r2d(2 * acos(0.5 * sqrt(trace(R)+1)));
+  theta(i) = 2 * acosd(0.5 * sqrt(trace(R)+1));
 end
 plotnum = plotnum+1;
 subplot(plots,1,plotnum);
