@@ -199,9 +199,19 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
   if isfield(gParams.varinfo{varnum},'callback')
     % if the function wants the current parameter settings, pass that
     if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
-      gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+      % if it wants optional arguments, pass that
+      if isfield(gParams.varinfo{varnum},'callbackArgs')
+	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArgs,getParams(gParams.vars));
+      else
+	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+      end
     else
-      gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback);
+      % if it wants optional arguments, pass that
+      if isfield(gParams.varinfo{varnum},'callbackArgs')
+	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArgs);
+      else
+	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback);
+      end
     end
   else
     disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
