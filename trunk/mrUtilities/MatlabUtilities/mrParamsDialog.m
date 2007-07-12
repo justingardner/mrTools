@@ -312,7 +312,7 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
     end
 end
 % update params
-if ~isempty(gParams.callback)
+if isfield(gParams,'callback') && ~isempty(gParams.callback)
   gParams.params = getParams(gParams.vars);
   if isfield(gParams,'callbackArg')
     feval(gParams.callback,gParams.params,gParams.callbackArg);
