@@ -71,12 +71,34 @@ for i = 1:length(vars)
   varinfo{i}.description = '';
   % check for options
   if length(vars{i}) > 2
+    skipNext = 0;
     for j = 3:length(vars{i})
+      % skip this argument
+      if skipNext
+	skipNext = 0;
+	continue;
+      end
       % if this looks like a description then save it as a
-      % description
-      if (length(strfind(vars{i}{j},'=')) ~= 1) || ...
+      % description, descriptions either have no equal sign
+      % and are not a single word, or have an equal sign but
+      % have spaces before the equal sign
+      if ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
 	    ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
 	varinfo{i}.description = vars{i}{j};
+      % now look for settings that involve the next parameter
+      % i.e. onest that are like 'varname',varvalue. These are
+      % distinugished from comments by the fact that the varname
+      % has no equal sign but is a single word
+      elseif ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) == 0)) && (j < (length(vars{i})))
+	% we are going to call evalargs but we want the variables
+	% set as a part of gParams (also do it quietly)--> that is
+	% evalargs, will do the parsing of the variable=value strings
+	varargin{1} = 'gVerbose = 0';
+	varargin{2} = sprintf('varinfo{i}.%s',vars{i}{j});
+	varargin{3} = vars{i}{j+1};
+        % set the argument
+	eval(evalargs(varargin));
+	skipNext = 1;
       else
 	% we are going to call evalargs but we want the variables
 	% set as a part of gParams (also do it quietly)--> that is

@@ -1,4 +1,4 @@
-% mrtParamsDialog.m
+% mrParamsDialog.m
 %
 %      usage: mrParamsDialog(paramsInfo,<titleString>,<buttonWidth>,<callback>)
 %         by: justin gardner
@@ -125,6 +125,7 @@ end
 % make help button
 makeButton(gParams.fignum,'Help','help',numrows,1,1);
 
+gParams.callback = [];
 % see if this has a callback, in which case we don't
 % need to make ok/cancel buttons
 if length(otherParams) > 3
@@ -200,15 +201,15 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
     % if the function wants the current parameter settings, pass that
     if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
       % if it wants optional arguments, pass that
-      if isfield(gParams.varinfo{varnum},'callbackArgs')
-	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArgs,getParams(gParams.vars));
+      if isfield(gParams.varinfo{varnum},'callbackArg')
+	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,getParams(gParams.vars));
       else
 	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
       end
     else
       % if it wants optional arguments, pass that
-      if isfield(gParams.varinfo{varnum},'callbackArgs')
-	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArgs);
+      if isfield(gParams.varinfo{varnum},'callbackArg')
+	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg);
       else
 	gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback);
       end
