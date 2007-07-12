@@ -23,3 +23,4 @@ global mrDEFAULTS
 
 mrDEFAULTS.prefs = setfield(mrDEFAULTS.prefs,pref,value);
 preferences = mrDEFAULTS.prefs;
+saveMrDefaults;
