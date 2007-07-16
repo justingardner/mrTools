@@ -53,13 +53,17 @@ if isfile('mrLastView.mat')
       if length(mrLastView.view.baseVolumes) >= 1
         baseLoaded = 1;
         % Add it to the list of base volumes and select it
-        view = viewSet(view,'newBase',mrLastView.view.baseVolumes);
+	for i = 1:length(mrLastView.view.baseVolumes)
+	  view = viewSet(view,'newBase',mrLastView.view.baseVolumes(i));
+	end
       end
     end
 
     % change group
-    view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
-    mlrGuiSet(view.viewNum,'group',mrLastView.viewSettings.curGroup);
+    if isfield(mrLastView,'viewSettings')
+      view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
+      mlrGuiSet(view.viewNum,'group',mrLastView.viewSettings.curGroup);
+    end
     nScans = viewGet(view,'nScans');
     mlrGuiSet(view,'nScans',nScans);
 
