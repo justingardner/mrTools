@@ -995,7 +995,7 @@ if ~isempty(ALIGN.inplaneHdr)
   paramsInfo{end+1}{1} = 'srcSform';
   paramsInfo{end}{2} = ALIGN.volumeHdr.sform44 * ALIGN.xform;
 
-  paramsInfo{end}{4} = 'Sform is set by mrAlign to be to the transfomration to the coordinates of the base volume anatomy';
+  paramsInfo{end}{3} = 'Sform is set by mrAlign to be to the transfomration to the coordinates of the base volume anatomy';
 end
 
 % put up dialog
