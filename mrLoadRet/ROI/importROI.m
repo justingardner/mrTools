@@ -18,12 +18,16 @@ mrGlobals;
 if ieNotDefined('pathStr')
   % start in an roi directory
   %startPathStr = fullfile(viewGet(view,'viewType'),'ROIs');
-  startPathStr = 'Inplane/ROIs';
+  startPathStr = mrGetPref('importROIPath');
+  if isempty(startPathStr)
+    startPathStr = 'Inplane/ROIs';
+  end
   if ~isdir(startPathStr),startPathStr='';,end
   % get the user defined path
   pathStr = getPathStrDialog(startPathStr,'Choose roi files to import','*.mat','on');
 end
 if isempty(pathStr),disp('No ROI selected');,return,end
+mrSetPref('importROIPath',fileparts(pathStr{1}));
 
 % get some info
 baseNum = viewGet(view,'currentBase');
@@ -57,7 +61,7 @@ for roinum = 1:length(pathStr)
     ROI.date = datestr(now);
     % Add it to the view
     view = viewSet(view,'newROI',ROI);
-    ROI.coords
+    %ROI.coords
   end
 end
 
