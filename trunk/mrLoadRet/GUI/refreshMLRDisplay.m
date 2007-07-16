@@ -398,6 +398,7 @@ function [baseCoords x y s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,.
 baseCoords = [];
 
 % viewGet
+baseDims = viewGet(view,'baseDims');
 baseXform = viewGet(view,'baseXform',baseNum);
 baseVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
 roiCoords = viewGet(view,'roiCoords',roiNum);
@@ -417,11 +418,42 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     baseCoordsHomogeneous(sliceIndex,:) = roiSlice;
     % now get all the indexes from the roi with this slice
     roiIndexesThisSlice = find(baseCoords(sliceIndex,:)==roiSlice);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % converting to linear coordinates before doing the
+    % intersection increases the speed (about a
+    % factor of 3 on my G5) since intersect by
+    % rows appears to be quite a bit slower (jg).
+    thisROICoords = baseCoords(1:3,roiIndexesThisSlice);
+    % remove any roi coordinates that are outside the base dimensions
+    % since sub2ind will complain about these
+    thisROICoords(:,...
+ 		  ((thisROICoords(1,:) < 1) | ...
+ 		   (thisROICoords(1,:) > baseDims(1)) | ...
+ 		   (thisROICoords(2,:) < 1) | ...
+ 		   (thisROICoords(2,:) > baseDims(2)) | ...
+ 		   (thisROICoords(3,:) < 1) | ...
+ 		   (thisROICoords(3,:) > baseDims(3)))) = nan;
+    % convert to linear coordinates
+    roiBaseCoordsLinear = sub2ind(baseDims,thisROICoords(1,:),thisROICoords(2,:),thisROICoords(3,:));
+    baseCoordsLinear = sub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
     % find them in the baseCoordsHomogenous
-    [roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,roiIndexesThisSlice)',baseCoordsHomogeneous(1:3,:)','rows');
+    [roiCoordsSlice,roiIndices,baseIndices] = intersect(roiBaseCoordsLinear,baseCoordsLinear);
     % transform them into image coordinates
     [thisx,thisy] = ind2sub(imageDims,baseIndices);
-    x = [x thisx'];y = [y thisy'];
+    x = [x thisx];y = [y thisy];
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % this is the old way, using intersect by rows
+    %[roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,roiIndexesThisSlice)',baseCoordsHomogeneous(1:3,:)','rows');
+    % transform them into image coordinates
+    %[thisx,thisy] = ind2sub(imageDims,baseIndices);
+    %x = [x thisx'];y = [y thisy'];
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
     s = [s baseCoords(sliceIndex,roiIndexesThisSlice(roiIndices))];
   end
 end
@@ -463,12 +495,15 @@ if verbose,disppercent(-inf,sprintf('Extracting ROI coordinates'));end
 roi = viewGet(view,'ROICache');
 if isempty(roi)
   if ~verbose,disppercent(-inf,'Recomputing ROI coordinates'),end
+  k = 0;
   for r = order
     % Get ROI coords transformed to the image
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
       baseNum,baseCoordsHomogeneous,imageDims,r);
     %[roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,:)',baseCoordsHomogeneous(1:3,:)','rows');
     %[x,y] = ind2sub(imageDims,baseIndices);
+    k = k+1;
+    disppercent(k/length(order));
   end
   view = viewSet(view,'ROICache',roi);
   if verbose,disppercent(inf);disp('Recomputed ROI coordinates');end
