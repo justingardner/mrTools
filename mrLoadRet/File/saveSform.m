@@ -74,7 +74,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       curhdr = viewGet(v, 'niftiHdr', iScan, iGroup);
 
       % check to see if it is a change (this is just to print user info)
-      if ~isequal(curhdr.sform44,sform)
+      if ~isfield(curhdr,'sform44') || ~isequal(curhdr.sform44,sform)
 	disp(sprintf('Nifti hdr for scan %i in %s group has been modified', iScan, viewGet(v, 'groupName',iGroup)));
       end
 
