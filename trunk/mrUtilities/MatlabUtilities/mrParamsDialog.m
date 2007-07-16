@@ -312,13 +312,15 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
     end
 end
 % update params
-if isfield(gParams,'callback') && ~isempty(gParams.callback)
-  gParams.params = getParams(gParams.vars);
-  if isfield(gParams,'callbackArg')
-    feval(gParams.callback,gParams.params,gParams.callbackArg);
-  else
-    feval(gParams.callback,gParams.params);
-  end    
+if isfield(gParams, 'callback')
+    if ~isempty(gParams.callback)
+      gParams.params = getParams(gParams.vars);
+      if isfield(gParams,'callbackArg')
+        feval(gParams.callback,gParams.params,gParams.callbackArg);
+      else
+        feval(gParams.callback,gParams.params);
+      end    
+    end
 end
 
 % turn on or off incdec arrows depending on minmax
