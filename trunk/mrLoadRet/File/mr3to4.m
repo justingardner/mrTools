@@ -78,7 +78,7 @@ if currentMrSessionVersion ~= 3
 end
 
 % print out information on raw group
-printBlockBegin('PFiles_preMC files');
+printBlockBegin('PFiles');
 scanParams = m.dataTYPES.scanParams;
 functionals = m.mrSESSION.functionals;
 for i = 1:length(functionals)
