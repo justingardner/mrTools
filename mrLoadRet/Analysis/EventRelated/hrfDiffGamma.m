@@ -53,7 +53,7 @@ h_intp = interp1(t, HRF, tr/2:tr:max(t));
 % remove mean
 h_intp = h_intp - mean(h_intp);
 % normalize
-h_intp = h_intp / norm(h_intp'); % normalize
+h_intp = h_intp / norm(h_intp'); 
 
 
 if params.incDeriv
@@ -71,9 +71,9 @@ if params.incDeriv
     % normalize
     hd_intp = hd_intp / norm(hd_intp');
 
-    % return as column vectors
+    % return as column vectors, zero at time zero
     hrf = [h_intp; hd_intp]';
 else
-    % return as column vector
+    % return as column vector, zero at time zero
     hrf = h_intp';
 end
