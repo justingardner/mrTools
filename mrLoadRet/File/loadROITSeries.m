@@ -1,3 +1,4 @@
+function rois = loadROITSeries(view,roiname,scanList,groupNum);
 % loadROITSeries.m
 %
 %      usage: rois = loadROITSeries(view,<roiname>,<scanList>,<groupNum>)
@@ -14,10 +15,10 @@
 %
 %        e.g.:
 %
-%v = newView('Volume')
-%rois = loadROITSeries(v,[],1,1);
+% v = newView('Volume')
+% rois = loadROITSeries(v,[],1,1);
 %
-function rois = loadROITSeries(view,roiname,scanList,groupNum);
+% see also tseriesROI
 
 rois = {};
 
