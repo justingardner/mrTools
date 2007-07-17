@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 02-May-2007 16:11:50
+% Last Modified by GUIDE v2.5 17-Jul-2007 14:06:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -512,6 +512,41 @@ view = loadAnat(MLR.views{viewNum});
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function loadFromVolumeMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+% get the volume directory from prefs
+volumeDirectory = mrGetPref('volumeDirectory');
+saveVolumeDirectory = 0;
+if isempty(volumeDirectory)
+    saveVolumeDirectory = 1
+end
+% load the anatomy
+[view volumeDirectory] = loadAnat(view,'',volumeDirectory);
+refreshMLRDisplay(viewNum);
+% if volumeDirectory prefMenu was empty before, than save it now
+if saveVolumeDirectory
+    mrSetPref('volumeDirectory',volumeDirectory);
+end
+
+% --------------------------------------------------------------------
+function useCurrentScanMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the tseries path/filename
+tSeriesPathStr = viewGet(v,'tSeriesPathStr',viewGet(v,'curScan'));
+% load that as an anatome
+if isfile(tSeriesPathStr)
+    v = loadAnat(MLR.views{viewNum},getLastDir(tSeriesPathStr),fileparts(tSeriesPathStr));
+    refreshMLRDisplay(viewNum);
+else
+    mrWarnDlg(sprintf('(mrLoadRetGUI) Could not find tSeries %s',tSeriesPathStr));
+end
+
+% --------------------------------------------------------------------
 function saveAnatomyMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -606,6 +641,10 @@ function importAnatomyMenuItem_Callback(hObject, eventdata, handles)
 mrWarnDlg('importAnatomy not yet implemented');
 
 % --------------------------------------------------------------------
+function importGroupMenuItem_Callback(hObject, eventdata, handles)
+importGroupScans;
+
+% --------------------------------------------------------------------
 function importTSeriesMenuItem_Callback(hObject, eventdata, handles)
 mrWarnDlg('importTSeries not yet implemented');
 
@@ -615,7 +654,6 @@ mrWarnDlg('importOverlay not yet implemented');
 
 % --------------------------------------------------------------------
 function importROIMenuItem_Callback(hObject, eventdata, handles)
-
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -629,6 +667,10 @@ function exportAnatomyMenuItem_Callback(hObject, eventdata, handles)
 mrWarnDlg('exportAnatomy not yet implemented');
 
 % --------------------------------------------------------------------
+function exportTSeriesMenuItem_Callback(hObject, eventdata, handles)
+mrWarnDlg('exportTSeries not yet implemented');
+
+% --------------------------------------------------------------------
 function exportOverlayMenuItem_Callback(hObject, eventdata, handles)
 pathstr = putPathStrDialog(pwd,'Specify name of exported Nifti overlay file','*.hdr');
 % pathstr = [] if aborted
@@ -637,10 +679,6 @@ if ~isempty(pathstr)
     viewNum = handles.viewNum;
     mrExport2SR(viewNum, pathstr);
 end
-
-% --------------------------------------------------------------------
-function exportTSeriesMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('exportTSeries not yet implemented');
 
 % --------------------------------------------------------------------
 function exportROIMenuItem_Callback(hObject, eventdata, handles)
@@ -758,6 +796,17 @@ if ~isempty(group)
 end
 
 % --------------------------------------------------------------------
+function infoGroupMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+groupNum = viewGet(view,'curGroup');
+groupName = viewGet(view,'groupName',groupNum);
+disp(sprintf('\n===== Group Info (%s) =====',groupName));
+groupInfo(groupNum);
+disp(sprintf('======================'));
+
+% --------------------------------------------------------------------
 function editScanMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -854,6 +903,30 @@ end
 if ~isempty(scanList)
     disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
 end
+
+% --------------------------------------------------------------------
+function transformsMenuItem_Callback(hObject, eventdata, handles)
+mrWarnDlg('transforms not yet implemented');
+
+% --------------------------------------------------------------------
+function dicomInfoMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+s = viewGet(v,'curScan');
+g = viewGet(v,'curGroup');
+dicomInfo(s,g);
+
+% --------------------------------------------------------------------
+function infoScanMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+scanNum = viewGet(view,'curScan');
+groupNum = viewGet(view,'curGroup');
+groupName = viewGet(view,'groupName',groupNum);
+scanInfo(scanNum,groupNum,1);
 
 % --------------------------------------------------------------------
 function editAnalysisMenu_Callback(hObject, eventdata, handles)
@@ -1027,6 +1100,55 @@ view = MLR.views{viewNum};
 view = editBaseGUI(view);
 refreshMLRDisplay(viewNum);
 
+% --------------------------------------------------------------------
+function infoBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+scanNum = viewGet(view,'curScan');
+groupNum = viewGet(view,'curGroup');
+baseDims = viewGet(view,'baseDims');
+baseQform = viewGet(view,'baseqform');
+baseSform = viewGet(view,'baseXform');
+baseVolPermutation = viewGet(view,'baseVolPermutation');
+baseVoxelSize = viewGet(view,'baseVoxelSize');
+baseName = viewGet(view,'baseName');
+
+paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},...
+    {'voxelSize',baseVoxelSize,'editable=0','Voxel dimensions in mm'},...
+    {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
+    {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
+    {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'}};
+mrParamsDialog(paramsInfo,'Base anatomy information');
+
+% --------------------------------------------------------------------
+function prefMenu_Callback(hObject, eventdata, handles)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% remember old cache sizes
+roiCacheSize = mrGetPref('roiCacheSize');
+baseCacheSize = mrGetPref('baseCacheSize');
+overlayCacheSize = mrGetPref('overlayCacheSize');
+
+% prefs dialog
+prefParams = mrEditPrefs;
+
+% if changes, check for change in cache size
+if ~isempty(prefParams)
+  if (roiCacheSize ~= prefParams.roiCacheSize)
+    v = viewSet(v,'roiCache','init');
+  end
+  if (baseCacheSize ~= prefParams.baseCacheSize)
+    v = viewSet(v,'baseCache','init');
+  end
+  if (overlayCacheSize ~= prefParams.overlayCacheSize)
+    v = viewSet(v,'overlayCache','init');
+  end
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function windowMenu_Callback(hObject, eventdata, handles)
 
@@ -1081,12 +1203,34 @@ view = MLR.views{viewNum};
 view = motionCompBetweenScans(view);
 
 % --------------------------------------------------------------------
+function tsStatsMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = timeSeriesStats(view);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
 function corAnalMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = corAnal(view);
 refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function eventRelatedMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = eventRelated(view);
+
+% --------------------------------------------------------------------
+function GlmMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = eventRelatedGlm(view);
 
 % --------------------------------------------------------------------
 function recomputeAnalysisMenuItem_Callback(hObject, eventdata, handles)
@@ -1514,20 +1658,6 @@ d.ver = 4;
 dispmotioncorrect(d);
 
 
-% --------------------------------------------------------------------
-function eventRelatedMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = eventRelated(view);
-
-
-function GlmMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = eventRelatedGlm(view);
-
 
 % --------------------------------------------------------------------
 % --------------------------------------------------------------------
@@ -1559,144 +1689,11 @@ for i = 1:size(coords,2)
 end
 
 
-% --------------------------------------------------------------------
-function prefMenu_Callback(hObject, eventdata, handles)
-
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-
-% remember old cache sizes
-roiCacheSize = mrGetPref('roiCacheSize');
-baseCacheSize = mrGetPref('baseCacheSize');
-overlayCacheSize = mrGetPref('overlayCacheSize');
-
-% prefs dialog
-prefParams = mrEditPrefs;
-
-% if changes, check for change in cache size
-if ~isempty(prefParams)
-  if (roiCacheSize ~= prefParams.roiCacheSize)
-    v = viewSet(v,'roiCache','init');
-  end
-  if (baseCacheSize ~= prefParams.baseCacheSize)
-    v = viewSet(v,'baseCache','init');
-  end
-  if (overlayCacheSize ~= prefParams.overlayCacheSize)
-    v = viewSet(v,'overlayCache','init');
-  end
-end
-
-% --------------------------------------------------------------------
-function loadFromVolumeMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to loadFromVolumeMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-% get the volume directory from prefs
-volumeDirectory = mrGetPref('volumeDirectory');
-saveVolumeDirectory = 0;
-if isempty(volumeDirectory)
-    saveVolumeDirectory = 1
-end
-% load the anatomy
-[view volumeDirectory] = loadAnat(view,'',volumeDirectory);
-refreshMLRDisplay(viewNum);
-% if volumeDirectory prefMenu was empty before, than save it now
-if saveVolumeDirectory
-    mrSetPref('volumeDirectory',volumeDirectory);
-end
 
 
 % --------------------------------------------------------------------
 function roiCoordinates_Callback(hObject, eventdata, handles)
-% hObject    handle to roiCoordinatesMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-
-% --------------------------------------------------------------------
-function infoGroupMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to infoGroupMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-groupNum = viewGet(view,'curGroup');
-groupName = viewGet(view,'groupName',groupNum);
-disp(sprintf('\n===== Group Info (%s) =====',groupName));
-groupInfo(groupNum);
-disp(sprintf('======================'));
-
-% --------------------------------------------------------------------
-function infoScanMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to infoScanMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-scanNum = viewGet(view,'curScan');
-groupNum = viewGet(view,'curGroup');
-groupName = viewGet(view,'groupName',groupNum);
-scanInfo(scanNum,groupNum,1);
-
-
-% --------------------------------------------------------------------
-function infoBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to infoBaseAnatomyMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-scanNum = viewGet(view,'curScan');
-groupNum = viewGet(view,'curGroup');
-baseDims = viewGet(view,'baseDims');
-baseQform = viewGet(view,'baseqform');
-baseSform = viewGet(view,'baseXform');
-baseVolPermutation = viewGet(view,'baseVolPermutation');
-baseVoxelSize = viewGet(view,'baseVoxelSize');
-baseName = viewGet(view,'baseName');
-
-paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},...
-    {'voxelSize',baseVoxelSize,'editable=0','Voxel dimensions in mm'},...
-    {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
-    {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
-    {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'}};
-mrParamsDialog(paramsInfo,'Base anatomy information');
-
-% --------------------------------------------------------------------
-function importGroupMenuItemi_Callback(hObject, eventdata, handles)
-% hObject    handle to importGroupMenuItemi (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-importGroupScans;
-
-% --------------------------------------------------------------------
-function useCurrentScanMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to useCurrentScanMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-mrGlobals;
-% get the view
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-% get the tseries path/filename
-tSeriesPathStr = viewGet(v,'tSeriesPathStr',viewGet(v,'curScan'));
-% load that as an anatome
-if isfile(tSeriesPathStr)
-    v = loadAnat(MLR.views{viewNum},getLastDir(tSeriesPathStr),fileparts(tSeriesPathStr));
-    refreshMLRDisplay(viewNum);
-else
-    mrWarnDlg(sprintf('(mrLoadRetGUI) Could not find tSeries %s',tSeriesPathStr));
-end
 
 
 % --------------------------------------------------------------------
@@ -1732,10 +1729,6 @@ end
 
 % --------------------------------------------------------------------
 function Untitled_1_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 mrGlobals;
 % get the view
 viewNum = handles.viewNum;
@@ -1765,24 +1758,4 @@ end
 
 
 
-% --------------------------------------------------------------------
-function Untitled_4_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-
-% --------------------------------------------------------------------
-function dicomInfoCallback_Callback(hObject, eventdata, handles)
-% hObject    handle to dicomInfoCallback (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-mrGlobals;
-% get the view
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-s = viewGet(v,'curScan');
-g = viewGet(v,'curGroup');
-dicomInfo(s,g);
