@@ -90,7 +90,7 @@ for i = 1:length(gParams.varinfo)
     if isfield(gParams.varinfo{i},'incdec')
         [gParams.ui.varentry{i} gParams.ui.incdec{i}(1) gParams.ui.incdec{i}(2)] =...
             makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
-        enableArrows(str2num(gParams.varinfo{i}.value),i);
+        enableArrows(mrStr2num(gParams.varinfo{i}.value),i);
     elseif strcmp(gParams.varinfo{i}.type,'string')
         gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
     elseif strcmp(gParams.varinfo{i}.type,'checkbox')
@@ -230,13 +230,13 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
             % get the value from the list of values
             val = get(gParams.ui.varentry{varnum},'Value');
             val = gParams.varinfo{varnum}.value{val};
-            if isstr(val),val=str2num(val);end
+            if isstr(val),val=mrStr2num(val);end
         end
     else
         % get the value of the text field
         val = get(gParams.ui.varentry{varnum},'string');
         % convert to number
-        val = str2num(val);
+        val = mrStr2num(val);
     end
     % check for incdec (this is for buttons that increment or decrement
     % the values, if one of these was passed, we will have by how much
@@ -555,7 +555,7 @@ global gParams;
 % make callback string
 callback = sprintf('mrParamsDialog(%f)',callback);
 
-h = uicontrol('Style','checkbox','Value',str2num(displayString),'Callback',callback,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol('Style','checkbox','Value',mrStr2num(displayString),'Callback',callback,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry w/inc dec
@@ -630,7 +630,7 @@ for i = 1:length(gParams.varinfo)
     elseif strcmp(gParams.varinfo{i}.type,'array')
         for iRows = 1:size(gParams.ui.varentry{i},1)
             for iCols = 1:size(gParams.ui.varentry{i},2)
-                params.(gParams.varinfo{i}.name)(iRows,iCols) = str2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+                params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
             end
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -673,22 +673,22 @@ for i = 1:length(gParams.varinfo)
     end
     % change numeric popupmenu to number
     if strcmp(gParams.varinfo{i}.type,'popupmenu') && strcmp(gParams.varinfo{i}.popuptype,'numeric')
-        params.(gParams.varinfo{i}.name) = str2num(params.(gParams.varinfo{i}.name));
+        params.(gParams.varinfo{i}.name) = mrStr2num(params.(gParams.varinfo{i}.name));
     end
     % if non numeric then convert back to a number
-    if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array' 'checkbox' 'pushbutton'}))
+    if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array' 'checkbox' 'pushbutton','statictext'}))
         if isfield(gParams.varinfo{i},'group')
             for j = 1:length(gParams.varinfo{i}.allValues)
                 % if this is the current one then use field val
                 if isstr(params.(gParams.varinfo{i}.name){j})
-                    temp(j) = str2num(params.(gParams.varinfo{i}.name){j});
+                    temp(j) = mrStr2num(params.(gParams.varinfo{i}.name){j});
                 else
                     temp(j) = params.(gParams.varinfo{i}.name){j};
                 end
             end
             params.(gParams.varinfo{i}.name) = temp;
         else
-            params.(gParams.varinfo{i}.name) = str2num(params.(gParams.varinfo{i}.name));
+            params.(gParams.varinfo{i}.name) = mrStr2num(params.(gParams.varinfo{i}.name));
         end
     end
     % not enabled then set parameter to empty
@@ -697,3 +697,5 @@ for i = 1:length(gParams.varinfo)
     end
 end
 params.paramInfo = vars;
+
+  

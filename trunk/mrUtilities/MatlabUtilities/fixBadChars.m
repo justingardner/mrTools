@@ -30,11 +30,11 @@ for i = 1:length(fixList)
   % if any found replace them
   if ~isempty(swaplocs)
     newstr = '';
-    swaplocs = [0 swaplocs];
+    swaplocs = [-length(fixList{i}{1})+1 swaplocs];
     for j = 2:length(swaplocs)
-      newstr = sprintf('%s%s%s',newstr,str(swaplocs(j-1)+1:swaplocs(j)-1),fixList{i}{2});
+      newstr = sprintf('%s%s%s',newstr,str((swaplocs(j-1)+length(fixList{i}{1})):swaplocs(j)-1),fixList{i}{2});
     end
-    str = sprintf('%s%s',newstr,str(swaplocs(end)+1:end));
+    str = sprintf('%s%s',newstr,str((swaplocs(end)+length(fixList{i}{1})):end));
   end
 end
 
