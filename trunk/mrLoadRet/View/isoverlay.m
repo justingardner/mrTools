@@ -26,8 +26,8 @@ if (nargout == 2)
     'clip',overlay.range;
     'colormap',jet(256);
     'interrogator','mrDefaultInterrogator';
-    'reconcileFunction','defaultReconcileFunction';
-    'mergeFunction','defaultMergeFunction';
+    'reconcileFunction','defaultReconcileParams';
+    'mergeFunction','defaultMergeParams';
     'data',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or

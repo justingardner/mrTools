@@ -118,7 +118,7 @@ end
 
 % Set params field, merging with previous params
 if ~isempty(oldparams)
-    params = corAnalMergeParams(oldparams,params);
+    params = corAnalMergeParams(groupName,oldparams,params);
 end
 co.params = params;
 amp.params = params;
@@ -192,19 +192,6 @@ saveAnalysis(view,corAnal.name);
 
 return;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function params = corAnalMergeParams(oldParams,newParams);
-
-params = oldParams;
-scans = find(newParams.recompute);
-for s = scans
-    params.recompute(s) = newParams.recompute(s);
-    params.ncycles(s) = newParams.ncycles(s);
-    params.detrend{s} = newParams.detrend{s};
-    params.spatialnorm{s} = newParams.spatialnorm{s};
-end
-params.tseriesfile = newParams.tseriesfile;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
