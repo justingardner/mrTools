@@ -126,3 +126,5 @@ if ~baseLoaded
   end
 end
 
+% reset some preferences
+mrSetPref('importROIPath','');
