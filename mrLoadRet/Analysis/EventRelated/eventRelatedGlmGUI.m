@@ -60,7 +60,10 @@ else
 end
 
 % if empty user hit cancel
-if isempty(params.hrfParams),return,end
+if isempty(params.hrfParams),
+    params = [];
+    return
+end
 
 % get scans
 view = viewSet(view,'groupName',params.groupName);

@@ -41,7 +41,7 @@ for runnum = 1:size(runTransition,1)
   % make stimulus convolution matrix
   for stimnum = 1:length(d.stimvol)
     % make an array containing the stimulus times
-    stimarray = zeros(1,(runTransition(runnum,2)-runTransition(runnum,1))*d.supersampling+1);
+    stimarray = zeros(1,(runTransition(runnum,2)-runTransition(runnum,1)+1)*d.supersampling);
     % only use stimvols that are within this runs volume numbers
     stimarray(d.stimvol{stimnum}(find((d.stimvol{stimnum}>=runTransition(runnum,1)*d.supersampling) & ...
         (d.stimvol{stimnum}<=runTransition(runnum,2)*d.supersampling)))-runTransition(runnum,1)*d.supersampling+1) = 1;
@@ -50,9 +50,7 @@ for runnum = 1:size(runTransition,1)
     % remove mean 
     m = m-repmat(mean(m), size(m,1), 1);
     % downsample
-    m = cumsum(m,1);
-    mid_tr = floor(d.supersampling/2)+1;
-    m = diff([zeros(1, size(m,2));m(mid_tr:d.supersampling:end, :)]);
+    m = downsample(m, d.supersampling);
     % stack stimcmatrices horizontally
     scm = [scm, m];
   end
@@ -65,4 +63,8 @@ d.nhdr = length(d.stimvol);
 d.scm = allscm;
 d.hdrlen = size(hrf,2);
 d.volumes = 1:d.dim(4);
+d.simulatedhrf = downsample(hrf, d.supersampling)*d.supersampling;
 
+function ds = downsample(s, factor)
+  a = cumsum(s, 1);
+  ds = diff([zeros(1, size(s,2));a(factor:factor:end,:)]);

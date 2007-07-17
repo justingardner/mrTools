@@ -73,11 +73,15 @@ for scanNum = params.scanNum
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);
     params.hrfParams.tmax = params.scanParams{scanNum}.hdrlen+d.tr/2;
+    
+    d.supersampling = params.trSupersampling;
+
     % get the stim volumes, if empty then abort
     d = getStimvol(d,params.scanParams{scanNum});
     if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
+    
     % do any called for preprocessing
-    hrf = feval(params.hrfModel, d.tr*d.supersampling, params.hrfParams);
+    hrf = feval(params.hrfModel, d.tr/d.supersampling, params.hrfParams);
     
     d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
     % make a stimulation convolution matrix
@@ -105,7 +109,9 @@ for scanNum = params.scanNum
   r2.params{scanNum} = params.scanParams{scanNum};
   
   % save other eventRelated parameters
-  erAnal.d{scanNum}.hrf = hrf;
+  erAnal.d{scanNum}.hrf = d.simulatedhrf;
+  erAnal.d{scanNum}.actualhrf = hrf;
+  erAnal.d{scanNum}.trsupersampling = d.supersampling;
   erAnal.d{scanNum}.ver = d.ver;
   erAnal.d{scanNum}.filename = d.filename;
   erAnal.d{scanNum}.filepath = d.filepath;
@@ -115,11 +121,17 @@ for scanNum = params.scanNum
   erAnal.d{scanNum}.nhdr = d.nhdr;
   erAnal.d{scanNum}.hdrlen = d.hdrlen;
   erAnal.d{scanNum}.tr = d.tr;
-  erAnal.d{scanNum}.stimvol = d.stimvol;
   erAnal.d{scanNum}.stimNames = d.stimNames;
   erAnal.d{scanNum}.scm = d.scm;
   erAnal.d{scanNum}.expname = d.expname;
   erAnal.d{scanNum}.fullpath = d.fullpath;
+
+  stimvol = d.stimvol;
+  for i=1:length(stimvol)
+      stimvol{i} = unique(ceil(stimvol{i}/d.supersampling));
+  end
+  erAnal.d{scanNum}.stimvol = stimvol;
+
 end
 toc
 
