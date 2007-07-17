@@ -51,4 +51,3 @@ for scan = 1:nScans
     mergedData{scan} = oldData{scan};
   end
 end
-
