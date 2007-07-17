@@ -594,7 +594,7 @@ switch lower(param)
       end
     end
   case{'params'}
-    % transforms = viewGet(view,'transforms',scanNum,[groupNum]);
+    % params = viewGet(view,'params',scanNum,[groupNum]);
     % gets the .mat params file associated with this scan if it exists
     [s g] = getScanAndGroup(view,varargin,param);
     % get the tseries name
@@ -2167,49 +2167,28 @@ switch lower(param)
   case {'tseriessize'}
     % size of entire tseries: [ysize xsize zsize nframes]
     %
-    % tseriessize = viewGet(view,'tseriessize',scanNum,[groupNum])
+    % tseriessize = viewGet(view,'tseriessize',[scanNum],[groupNum])
     % tseriessize = viewGet(view,'tseriessize',scanNum,[])
     % tseriessize = viewGet(view,'tseriessize',scanNum)
-    if ieNotDefined('varargin')
-      mrErrorDlg('viewGet tseriessize: must specify scan.');
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      datasize = viewGet(view,'datasize',s,g);
+      nframes = viewGet(view,'nframes',s,g);
+      val = [datasize nframes];
     end
-    scan = varargin{1};
-    switch length(varargin)
-      case 1
-        groupNum = viewGet(view,'currentGroup');
-      case 2
-        groupNum = varargin{2};
-    end
-    if isempty(groupNum)
-      groupNum = viewGet(view,'currentGroup');
-    end
-    datasize = viewGet(view,'dataSize',scan,groupNum);
-    nframes = viewGet(view,'nFrames',scan,groupNum);
-    val = [datasize nframes];
 
   case {'datasize','dims'}
     % dims of single temporal frame of functional volume (same as size
     % of parameter map) for a given scan.
     %
-    % datasize = viewGet(view,'datasize',scanNum,[groupNum])
+    % datasize = viewGet(view,'datasize',[scanNum],[groupNum])
     % datasize = viewGet(view,'datasize',scanNum,[])
     % datasize = viewGet(view,'datasize',scanNum)
-    if ieNotDefined('varargin')
-      mrErrorDlg('viewGet datasize: must specify scan.');
-    end
-    scan = varargin{1};
-    switch length(varargin)
-      case 1
-        groupNum = viewGet(view,'currentGroup');
-      case 2
-        groupNum = varargin{2};
-    end
-    if isempty(groupNum)
-      groupNum = viewGet(view,'currentGroup');
-    end
-    nscans = viewGet(view,'nscans',groupNum);
-    if (nscans >= scan) & (scan > 0)
-      val = MLR.groups(groupNum).scanParams(scan).dataSize;
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      val = MLR.groups(g).scanParams(s).dataSize;
     end
 
   case {'slicedims'}
@@ -2217,47 +2196,47 @@ switch lower(param)
     % volume (same as dims of single slice of parameter map) for a
     % given scan.
     %
-    % slicedims = viewGet(view,'slicedims',scanNum,[groupNum])
+    % slicedims = viewGet(view,'slicedims',[scanNum],[groupNum])
     % slicedims = viewGet(view,'slicedims',scanNum,[])
     % slicedims = viewGet(view,'slicedims',scanNum)
-    if ieNotDefined('varargin')
-      mrErrorDlg('viewGet slicedims: must specify scan.');
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      datasize = viewGet(view,'datasize',s,g);
+      val = datasize(1:2);
     end
-    scan = varargin{1};
-    switch length(varargin)
-      case 1
-        groupNum = viewGet(view,'currentGroup');
-      case 2
-        groupNum = varargin{2};
-    end
-    if isempty(groupNum)
-      groupNum = viewGet(view,'currentGroup');
-    end
-    datasize = viewGet(view,'datasize',scan,groupNum);
-    val = datasize(1:2);
 
   case {'nslices'}
-    % nslices for a given scan
-    %
-    % nslices = viewGet(view,'nslices',scanNum,[groupNum])
+    % nslices = viewGet(view,'nslices',[scanNum],[groupNum])
     % nslices = viewGet(view,'nslices',scanNum,[])
     % nslices = viewGet(view,'nslices',scanNum)
-    if ieNotDefined('varargin')
-      mrErrorDlg('viewGet nslices: must specify scan.');
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      datasize = viewGet(view,'datasize',s,g);
+      val = datasize(3);
     end
-    scan = varargin{1};
-    switch length(varargin)
-      case 1
-        groupNum = viewGet(view,'currentGroup');
-      case 2
-        groupNum = varargin{2};
+    
+  case{'sliceorder'}
+    % n = viewGet(view,'sliceOrder',[scanNum],[groupNum])
+    % n = viewGet(view,'sliceOrder',scanNum,[])
+    % n = viewGet(view,'sliceOrder',scanNum)
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      nslices = viewGet(view,'nslices',s,g);
+      if strcmp(mrGetPref('site'),'NYU')
+        if isodd(nslices)
+          val = [1:2:nslices,2:2:nslices-1];
+        else
+          val = [2:2:nslices,1:2:nslices-1];
+        end
+      else
+        mrWarnDlg('Slice ordering is unknown for this site. Using default order: [1:nslices]. If this is incorrect, then edit viewGet sliceOrder to add the convention for your site.');
+        val = [1:nslices];
+      end
     end
-    if isempty(groupNum)
-      groupNum = viewGet(view,'currentGroup');
-    end
-    datasize = viewGet(view,'datasize',scan,groupNum);
-    val = datasize(3);
-
+    
   otherwise
     if strcmp(mrGetPref('verbose'),'Yes')
       dispViewGetHelp;
