@@ -70,7 +70,7 @@ for i = 1:length(d.stimfile)
       [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
-      stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr*samplingf);
+      stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf);
   end
   % set the stimnames if we don't have them already
   if ~isfield(d,'stimNames')
@@ -168,10 +168,10 @@ stimvol = cell(1, nhdr);
 
 if isfield(stimfile, 'stimdurations_s')
   for i = 1:nhdr
-    z = zeros(1, 1+ceil(max(stimfile.stimtimes_s)/tr));
+    z = zeros(1, 1+ceil(max(stimfile.stimtimes_s{i})/tr));
     for event=1:length(stimfile.stimtimes_s{i})
         onset = max(stimfile.stimtimes_s{i}(event), 0)/tr;
-        offset = max(onset, onset+stimfile.stimduration_s{i}(event))/tr;
+        offset = max(onset, onset+(stimfile.stimdurations_s{i}(event)-eps)/tr);
         z(round(onset:offset)+1)=1;
     end
     stimvol{i} = unique(find(z))-1;
