@@ -23,6 +23,8 @@ elseif (nargin ~= 2)
   return
 end
 
+% make sure hrf starts from zero
+hrf = hrf-repmat(hrf(1,:), size(hrf,1), 1);
 % if we have only a single run then we set
 % the runTransitions for that single run
 if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
@@ -39,11 +41,18 @@ for runnum = 1:size(runTransition,1)
   % make stimulus convolution matrix
   for stimnum = 1:length(d.stimvol)
     % make an array containing the stimulus times
-    stimarray = zeros(1,runTransition(runnum,2)-runTransition(runnum,1)+1);
+    stimarray = zeros(1,(runTransition(runnum,2)-runTransition(runnum,1))*d.supersampling+1);
     % only use stimvols that are within this runs volume numbers
-    stimarray(d.stimvol{stimnum}(find((d.stimvol{stimnum}>=runTransition(runnum,1)) & (d.stimvol{stimnum}<=runTransition(runnum,2))))-runTransition(runnum,1)+1) = 1;
+    stimarray(d.stimvol{stimnum}(find((d.stimvol{stimnum}>=runTransition(runnum,1)*d.supersampling) & ...
+        (d.stimvol{stimnum}<=runTransition(runnum,2)*d.supersampling)))-runTransition(runnum,1)*d.supersampling+1) = 1;
     m = convn(stimarray', hrf);
     m = m(1:length(stimarray),:);
+    % remove mean 
+    m = m-repmat(mean(m), size(m,1), 1);
+    % downsample
+    m = cumsum(m,1);
+    mid_tr = floor(d.supersampling/2)+1;
+    m = diff([zeros(1, size(m,2));m(mid_tr:d.supersampling:end, :)]);
     % stack stimcmatrices horizontally
     scm = [scm, m];
   end

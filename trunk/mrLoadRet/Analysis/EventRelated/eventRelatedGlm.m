@@ -73,11 +73,12 @@ for scanNum = params.scanNum
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);
     params.hrfParams.tmax = params.scanParams{scanNum}.hdrlen+d.tr/2;
-    hrf = feval(params.hrfModel, d.tr, params.hrfParams);
     % get the stim volumes, if empty then abort
     d = getStimvol(d,params.scanParams{scanNum});
     if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
     % do any called for preprocessing
+    hrf = feval(params.hrfModel, d.tr*d.supersampling, params.hrfParams);
+    
     d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
     % make a stimulation convolution matrix
     
