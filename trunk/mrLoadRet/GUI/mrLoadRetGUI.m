@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 17-Jul-2007 14:06:22
+% Last Modified by GUIDE v2.5 17-Jul-2007 14:23:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -905,8 +905,66 @@ if ~isempty(scanList)
 end
 
 % --------------------------------------------------------------------
-function transformsMenuItem_Callback(hObject, eventdata, handles)
+function transformsMenu_Callback(hObject, eventdata, handles)
 mrWarnDlg('transforms not yet implemented');
+
+% --------------------------------------------------------------------
+function sformScanMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to sformScanMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the scanxform
+scanXform = viewGet(v,'scanxform');
+sformCode = viewGet(v,'sformCode');
+% params dialog
+paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing! Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
+    {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+
+params = mrParamsDialog(paramsInfo,'scanXform');
+
+% ask the user if they are really sure before actually changing it
+if ~isempty(params)
+    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+    if strcmp(answer,'Yes')
+        v = viewSet(v,'scanXform',params.sform);
+        v = viewSet(v,'sformCode',params.sformCode);
+        saveSession;
+        refreshMLRDisplay(viewNum);
+    end
+end
+
+% --------------------------------------------------------------------
+function scan2BaseMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the scanxform
+scanXform = viewGet(v,'scanXform');
+baseXform = viewGet(v,'baseXform');
+shiftXform = shiftOriginXform;
+scan2base = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform;
+sformCode = viewGet(v,'sformCode');
+% params dialog
+paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and then running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
+    {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+
+params = mrParamsDialog(paramsInfo,'scan2base transformation');
+
+if ~isempty(params)
+    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+    if strcmp(answer,'Yes')
+        v = viewSet(v,'scanXform',inv(shiftXform*params.scan2base*inv(shiftXform)*inv(baseXform)));
+        v = viewSet(v,'sformCode',params.sformCode);
+        saveSession;
+        refreshMLRDisplay(viewNum);
+    end
+end
 
 % --------------------------------------------------------------------
 function dicomInfoMenuItem_Callback(hObject, eventdata, handles)
@@ -1172,13 +1230,6 @@ view = mrOpenWindow('Flat');
 function analysisMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function averageTSeriesMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = averageTSeries(view);
-
-% --------------------------------------------------------------------
 function motionCompMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1201,6 +1252,20 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = motionCompBetweenScans(view);
+
+% --------------------------------------------------------------------
+function averageTSeriesMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = averageTSeries(view);
+
+% --------------------------------------------------------------------
+function concatenateTSeriesMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = concatTSeries(view);
 
 % --------------------------------------------------------------------
 function tsStatsMenuItem_Callback(hObject, eventdata, handles)
@@ -1226,7 +1291,7 @@ view = MLR.views{viewNum};
 view = eventRelated(view);
 
 % --------------------------------------------------------------------
-function GlmMenuItem_Callback(hObject, eventdata, handles)
+function glmMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -1488,12 +1553,32 @@ view = MLR.views{viewNum};
 view = viewSet(view,'showROIs','hide');
 refreshMLRDisplay(viewNum);
 
+% --------------------------------------------------------------------
+function roiCoordinatesMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+scanNum = viewGet(view,'curScan');
+
+% get the coordinates
+coords = getROICoordinates(view,roiNum,scanNum);
+
+disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
+% and display them to the buffer
+for i = 1:size(coords,2)
+    disp(sprintf('%i %i %i',coords(1,i),coords(2,i),coords(3,i)));
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plotMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function interrogateOverlayMenuItem_Callback(hObject, eventdata, handles)
-
 mrGlobals;
 viewNum = handles.viewNum;
 % start or stop the interrogator
@@ -1522,6 +1607,16 @@ scanList = viewGet(view,'currentScan');
 plotMeanTSeries(view, groupNum, roiList, scanList);
 
 % --------------------------------------------------------------------
+function plotMeanTseriesCurrentSelect_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+groupNum = viewGet(view,'currentGroup');
+roiList = viewGet(view,'currentROI');
+scanList = selectScans(view);
+plotMeanTSeries(view, groupNum, roiList, scanList);
+
+% --------------------------------------------------------------------
 function plotMeanTseriesCurrentAll_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1542,6 +1637,16 @@ scanList = viewGet(view,'currentScan');
 plotMeanTSeries(view, groupNum, roiList, scanList);
 
 % --------------------------------------------------------------------
+function plotMeanTseriesAllSelect_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+groupNum = viewGet(view,'currentGroup');
+roiList = [1:viewGet(view,'numberofROIs')];
+scanList = viewGet(view,'currentScan');
+plotMeanTSeries(view, groupNum, roiList, scanList);
+
+% --------------------------------------------------------------------
 function plotMeanTseriesAllAll_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1551,13 +1656,8 @@ roiList = [1:viewGet(view,'numberofROIs')];
 scanList = [1:viewGet(view,'nscans')];
 plotMeanTSeries(view, groupNum, roiList, scanList);
 
-
 % --------------------------------------------------------------------
 function plotMeanFourierAmpMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to plotMeanFourierAmpMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpCurrentCurrent_Callback(hObject, eventdata, handles)
@@ -1569,6 +1669,15 @@ roiList = viewGet(view,'currentROI');
 scanList = viewGet(view,'currentScan');
 plotMeanFourierAmp(view, groupNum, roiList, scanList);
 
+% --------------------------------------------------------------------
+function plotMeanFourierAmpCurrentSelect_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+groupNum = viewGet(view,'currentGroup');
+roiList = viewGet(view,'currentROI');
+scanList = selectScans(view);
+plotMeanFourierAmp(view, groupNum, roiList, scanList);
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpCurrentAll_Callback(hObject, eventdata, handles)
@@ -1579,7 +1688,6 @@ groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
 scanList = [1:viewGet(view,'nscans')];
 plotMeanFourierAmp(view, groupNum, roiList, scanList);
-
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpAllCurrent_Callback(hObject, eventdata, handles)
@@ -1592,28 +1700,6 @@ scanList = viewGet(view,'currentScan');
 plotMeanFourierAmp(view, groupNum, roiList, scanList);
 
 % --------------------------------------------------------------------
-function plotMeanFourierAmpAllAll_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-groupNum = viewGet(view,'currentGroup');
-roiList = [1:viewGet(view,'numberofROIs')];
-scanList = [1:viewGet(view,'nscans')];
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
-
-
-% --------------------------------------------------------------------
-function plotMeanFourierAmpCurrentSelect_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-groupNum = viewGet(view,'currentGroup');
-roiList = viewGet(view,'currentROI');
-scanList = selectScans(view);
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
-
-
-% --------------------------------------------------------------------
 function plotMeanFourierAmpAllSelect_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1623,28 +1709,15 @@ roiList = [1:viewGet(view,'numberofROIs')];
 scanList = selectScans(view);
 plotMeanFourierAmp(view, groupNum, roiList, scanList);
 
-
 % --------------------------------------------------------------------
-function plotMeanTseriesCurrentSelect_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-groupNum = viewGet(view,'currentGroup');
-roiList = viewGet(view,'currentROI');
-scanList = selectScans(view);
-plotMeanTSeries(view, groupNum, roiList, scanList);
-
-
-% --------------------------------------------------------------------
-function plotMeanTseriesAllSelect_Callback(hObject, eventdata, handles)
+function plotMeanFourierAmpAllAll_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
-scanList = viewGet(view,'currentScan');
-plotMeanTSeries(view, groupNum, roiList, scanList);
-
+scanList = [1:viewGet(view,'nscans')];
+plotMeanFourierAmp(view, groupNum, roiList, scanList);
 
 % --------------------------------------------------------------------
 function plotMotionCorrectionMatrices_Callback(hObject, eventdata, handles)
@@ -1656,104 +1729,6 @@ d.scanNum = viewGet(view,'curScan');
 d.expname = '';
 d.ver = 4;
 dispmotioncorrect(d);
-
-
-
-% --------------------------------------------------------------------
-% --------------------------------------------------------------------
-function concatenateTSeriesMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = concatTSeries(view);
-
-% --------------------------------------------------------------------
-function roiCoordinatesMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-
-% get the roi
-roiNum = viewGet(view,'currentROI');
-if isempty(roiNum),return,end
-
-scanNum = viewGet(view,'curScan');
-
-% get the coordinates
-coords = getROICoordinates(view,roiNum,scanNum);
-
-disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
-% and display them to the buffer
-for i = 1:size(coords,2)
-    disp(sprintf('%i %i %i',coords(1,i),coords(2,i),coords(3,i)));
-end
-
-
-
-
-% --------------------------------------------------------------------
-function roiCoordinates_Callback(hObject, eventdata, handles)
-
-
-
-% --------------------------------------------------------------------
-function sformScanMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to sformScanMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-mrGlobals;
-% get the view
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-% get the scanxform
-scanXform = viewGet(v,'scanxform');
-sformCode = viewGet(v,'sformCode');
-% params dialog
-paramsInfo = {{'sform',scanXform,'The sform is usually set by mrAlign to specify the transformation from the scan coordinates to the volume anatomy coordinates. Only change this here if you know what you are doing! Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
-    {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
-
-params = mrParamsDialog(paramsInfo,'scanXform');
-
-% ask the user if they are really sure before actually changing it
-if ~isempty(params)
-    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
-    if strcmp(answer,'Yes')
-        v = viewSet(v,'scanXform',params.sform);
-        v = viewSet(v,'sformCode',params.sformCode);
-        saveSession;
-        refreshMLRDisplay(viewNum);
-    end
-end
-
-
-% --------------------------------------------------------------------
-function Untitled_1_Callback(hObject, eventdata, handles)
-mrGlobals;
-% get the view
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-% get the scanxform
-scanXform = viewGet(v,'scanXform');
-baseXform = viewGet(v,'baseXform');
-shiftXform = shiftOriginXform;
-scan2base = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform;
-sformCode = viewGet(v,'sformCode');
-% params dialog
-paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and then running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
-    {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
-
-params = mrParamsDialog(paramsInfo,'scan2base transformation');
-
-if ~isempty(params)
-    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
-    if strcmp(answer,'Yes')
-        v = viewSet(v,'scanXform',inv(shiftXform*params.scan2base*inv(shiftXform)*inv(baseXform)));
-        v = viewSet(v,'sformCode',params.sformCode);
-        saveSession;
-        refreshMLRDisplay(viewNum);
-    end
-end
 
 
 

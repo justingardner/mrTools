@@ -11,6 +11,8 @@ function tseriesROI = tseriesROI(view, groupNum, roiList, scanList, varargin)
 %
 % tseries: cell array (nROIs x nScans), each element of which is nFrames x nVoxels matrix
 %
+% see also loadROITSeries
+%
 % djh 9/2005
 
 if ieNotDefined('groupNum')
