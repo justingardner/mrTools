@@ -24,12 +24,12 @@ if (pathStr==0),return,end
 % now look for that sessions mrSession
 mrSessionPath = fullfile(pathStr,'mrSession.mat');
 if ~isfile(mrSessionPath)
-  disp(sprintf('(importGroupScans) Could not find mrSession in %s',getPath(pathStr)));
+  disp(sprintf('(importGroupScans) Could not find mrSession in %s',fileparts(pathStr)));
   return
 end
 mrSession = load(mrSessionPath);
 if ~isfield(mrSession,'session') || ~isfield(mrSession,'groups')
-  disp(sprintf('(importGroupScans) Unknown format for mrSession in %s',getPath(pathStr)));
+  disp(sprintf('(importGroupScans) Unknown format for mrSession in %s',fileparts(pathStr)));
   return
 end
 
