@@ -1,18 +1,24 @@
 function im = clip(im, cmin, cmax)
 % clip(im, cmin, cmax)
 %	Clips image values between cmin and cmax.
-%	Cmin and cmax default to 0 and 1 respectively if not specified.
+%	Default values for cmin and cmax based on image histogram.
 %
-% HISTORY:
-%
-%  2002.04.10 RFD (bob@white.stanford.edu): updated horribly inefficient 
-%   and obscure code.
+
+if ieNotDefined('cmin') | ieNotDefined('cmax')
+    imvec = im(:);
+    histThresh = length(imvec)/1000;
+    [cnt, val] = hist(imvec,100);
+    goodVals = find(cnt>histThresh);
+    clipMin = val(min(goodVals));
+    clipMax = val(max(goodVals));
+    cRange = [clipMin,clipMax];
+end
 
 if ~exist('cmin')
-  cmin=0;
+  cmin = cRange(1);
 end
 if ~exist('cmax')
-  cmax=1;
+  cmax = cRange(2);
 end
 
 im(im<cmin) = cmin;
@@ -20,11 +26,3 @@ im(im>cmax) = cmax;
 
 return
 
-
-% result=im;
-% 
-% index = find(im < cmin);
-% result(index) = cmin * ones(size(index));
-% 
-% index = find(im > cmax);
-% result(index) = cmax * ones(size(index));

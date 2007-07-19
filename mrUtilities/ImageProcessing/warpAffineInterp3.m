@@ -9,8 +9,7 @@ function result = warpAffineInterp3(tseries,frame,A,sliceTimes,badVal,method)
 %    for the last row.
 % badVal: if a transformed point is outside of the volume, badVal is used
 %    (default = 0).
-% border:  number of voxels to put in the border (default = 0, no border).
-% method:
+% method:  'nearest', 'linear', 'cubic', or 'spline' (default = 'linear')
 %
 % result: output volume, same size as one frame of tseries
 %
@@ -25,9 +24,6 @@ if ieNotDefined('sliceTimes')
 end
 if ieNotDefined('badVal')
   badVal = 0;
-end
-if ieNotDefined('B')
-  B = 0;
 end
 if ieNotDefined('method')
   method = 'linear';

@@ -1,7 +1,7 @@
-function M = estMotionInterp3(tseries1,tseries2,frame1,frame2,numIters,Minitial,sliceTimes,rotFlag,robustFlag,crop,CB,SC)
+function M = estMotionInterp3(tseries1,tseries2,frame1,frame2,numIters,Minitial,sliceTimes,rotFlag,robustFlag,phaseFlag,crop,CB,SC)
 %
 % function M = estMotionInterp3(tseries1,tseries2,frame1,frame2,...
-%              [numIters],[Minitial],[sliceTimes],[rotFlag],[robustFlag],[crop])
+%              [numIters],[Minitial],[sliceTimes],[rotFlag],[robustFlag],[phaseFlag],[crop])
 %
 % tseries1 and tseries2 are time series of volumes (4d arrays)
 % frame1 and frame2 are corresponding frames from each of the tseries that
@@ -13,9 +13,16 @@ function M = estMotionInterp3(tseries1,tseries2,frame1,frame2,numIters,Minitial,
 % crop specifies border size to crop/ignore  around all sides of the volume. 
 %     Should be of the form [ymin xmin zmin; ymax xmax zmax]
 %     Default crops 2 pixel border: [2 2 2; (size(vol1) - [2 2 2])].
-% rotFlag: passed to estMotion3 (if True, contrains rigid body motion)
+% rotFlag: passed to estMotion3 (if True, contrains rigid body motion).
+%     Default: 1
 % robustFlag is passed to estMotion3 (if True, uses robust
-%     M-estimator).
+%     M-estimator). Default: 0.
+% phaseFlag: If True, treats the input volumes as containing the phase of
+%     complex-values (on the unit circle in the complex plane) and computes
+%     the motion estimates on the complex values. This is useful if the
+%     image intensities in the volumes are from a periodic domain such that
+%     the "brightest" and "darkest" intensities are actually very similar
+%     to each other. Default: 0.
 %
 % M is 4x4 translation+rotation or affine transform matrix: X' = M X
 % where X=(x,y,1) is starting position in homogeneous coords
@@ -51,6 +58,9 @@ end
 if ieNotDefined('robustFlag')
     robustFlag = 0;
 end
+if ~exist('phaseFlag','var')
+    phaseFlag = 0;
+end
 if ieNotDefined('crop')
     crop = [2 2 2; (size(vol1) - [2 2 2])];
 end
@@ -66,7 +76,7 @@ for iter=1:numIters
   Mhalf1=real(sqrtm(inv(M)));
   volWarp1=warpAffineInterp3(tseries1,frame1,Mhalf1,sliceTimes);
   volWarp2=warpAffineInterp3(tseries2,frame2,Mhalf2,sliceTimes);
-  deltaM=estMotion3(volWarp1,volWarp2,rotFlag,robustFlag,crop,CB,SC);
+  deltaM=estMotion3(volWarp1,volWarp2,rotFlag,robustFlag,phaseFlag,crop,CB,SC);
   M=deltaM*M;
 end
 
@@ -91,7 +101,7 @@ tseries=zeros([size(in),2]);
 tseries=zeros([size(in),2]);
 tseries(:,:,:,1) = vol1;
 tseries(:,:,:,2) = vol2;
-estMotionInterp3(tseries,tseries,1,2,20)
+estMotionInterp3(tseries,tseries,1,2,3)
 
 
 % zone plate volumes
