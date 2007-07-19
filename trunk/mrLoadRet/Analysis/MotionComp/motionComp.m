@@ -189,7 +189,7 @@ for frame = 1:nFrames
   else
     % Compute rigid-body motion estimate
     vol = tseriesIC(:,:,:,frame);
-    M = estMotionIter3(baseVol,vol,niters,M,1,robust,crop);
+    M = estMotionIter3(baseVol,vol,niters,M,1,robust,0,crop);
   end
   % Warp the volume
   warpedTseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
@@ -241,7 +241,7 @@ for s = 1:length(targetScans)
     mrWaitBar(frame/nFrames,waitHandle)
     vol = tseriesIC(:,:,:,frame);
     % Compute rigid-body motion estimate with respect to baseMean
-    M = estMotionIter3(baseMean,vol,niters,M,1,robust,crop);
+    M = estMotionIter3(baseMean,vol,niters,M,1,robust,0,crop);
     % Collect the transform
     transforms{frame} = M;
   end

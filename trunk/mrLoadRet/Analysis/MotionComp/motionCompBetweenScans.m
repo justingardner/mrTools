@@ -167,7 +167,7 @@ for s = 1:length(targetScans)
     end
     % Estimate motion between mean volumes
     disp(['Computing motion estimates for scan ',num2str(scanNum),'...'])
-    transform = estMotionIter3(baseMean,targetMean,niters,eye(4),1,robust,crop);
+    transform = estMotionIter3(baseMean,targetMean,niters,eye(4),1,robust,0,crop);
     disp(['Computing motion estimates for scan ',num2str(scanNum),'... done'])
     
     % jg: warp/transform each frame of the time series, rather than saving

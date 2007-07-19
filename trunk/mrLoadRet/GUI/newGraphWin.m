@@ -12,7 +12,7 @@ function newGraphWin
 mrGlobals
 MLR.graphFigure = figure;
 set(gcf,'CloseRequestFcn','closeGraphWin');
-selectGraphWin
+selectGraphWin;
 figloc = mrGetFigLoc('graphFigure');
 if ~isempty(figloc)
     set(MLR.graphFigure,'Position',figloc);
