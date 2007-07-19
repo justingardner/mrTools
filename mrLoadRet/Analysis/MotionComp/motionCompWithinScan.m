@@ -179,7 +179,7 @@ for s = 1:length(targetScans)
     else
       % Compute rigid-body motion estimate
       vol = tseriesIC(:,:,:,frame);
-      M = estMotionIter3(baseVol,vol,niters,M,1,robust,crop);
+      M = estMotionIter3(baseVol,vol,niters,M,1,robust,0,crop);
     end
     % Collect the transform
     transforms{frame} = M;
