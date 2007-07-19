@@ -926,76 +926,6 @@ switch lower(param)
   case{'currentroi','currentroinum'}
     % roiNum = viewGet(view,'currentROI')
     val = view.curROI;
-  case{'roicacheid'}
-    % cacheID = viewGet(view,'ROICacheID')
-    rotate = viewGet(view,'rotate');
-    baseName = viewGet(view,'curBaseName');
-    sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%s_%i_%i_%i',baseName,sliceIndex,rotate);
-    for i = 1:length(view.ROIs);
-      val = sprintf('%s_%s_%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
-    end
-  case{'roicache'}
-    % cacheVal = viewGet(view,'ROICache')
-    roiID = viewGet(view,'ROICacheID');
-    % and retrieve from the cache
-    [val MLR.caches{view.viewNum}.roiCache] = ...
-	mrCache('find',MLR.caches{view.viewNum}.roiCache,roiID);
-  case{'basecacheid'}
-    % cacheID = viewGet(view,'baseCacheID')
-    rotate = viewGet(view,'rotate');
-    baseName = viewGet(view,'curBaseName');
-    currentBase = viewGet(view,'currentBase');
-    clip = viewGet(view,'baseClip',currentBase);
-    currentSlice = viewGet(view,'curSlice');
-    sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%s_%i_%i_%i_%s',baseName,currentSlice,sliceIndex,rotate,num2str(clip));
-  case{'basecache'}
-    % cacheVal = viewGet(view,'baseCache')
-    baseID = viewGet(view,'baseCacheID');
-    % and retrieve from the cache
-    [val MLR.caches{view.viewNum}.baseCache] = ...
-	mrCache('find',MLR.caches{view.viewNum}.baseCache,baseID);
-  case{'overlaycacheid'}
-    % cacheID = viewGet(view,'overlayCacheID')
-    %curSlice = viewGet(view,'curSlice');
-    %analysisNum = viewGet(view,'currentAnalysis');
-    %curOverlay = viewGet(view,'currentOverlay');
-    %clip = viewGet(view,'overlayClip',curOverlay);
-    %overlayType = viewGet(view,'overlayCtype',curOverlay);
-    %overlayRange = viewGet(view,'overlayRange',curOverlay);
-    % forgoe viewgets, and just grab stuff here explicitly
-    % this saves about 100ms
-    val = -1;
-    analysisNum = view.curAnalysis;
-    if ~isempty(analysisNum)
-      handles = guidata(view.figure);
-      curSlice = round(get(handles.sliceSlider,'Value'));
-      curOverlay = view.analyses{analysisNum}.curOverlay;
-      if ~isempty(curOverlay)
-	% get all clips
-	clip = [];
-	for i = 1:length(view.analyses{analysisNum}.overlays)
-	  clip = [clip view.analyses{analysisNum}.overlays(i).clip];
-	end
-	overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
-	baseName = viewGet(view,'curBaseName');
-	scanNum = viewGet(view,'curScan');
-	rotate = viewGet(view,'rotate');
-	alpha = viewGet(view,'alpha');
-	sliceIndex = viewGet(view,'baseSliceIndex');
-	% calculate string
-	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha);
-      end
-    end
-     %    val = curSlice*analysisNum*curOverlay;
- case{'overlaycache'}
-    % cacheVal = viewGet(view,'overlayCache')
-    % get the overlay ID
-    overlayID = viewGet(view,'overlayCacheID');
-    % and retrieve from the cache
-    [val MLR.caches{view.viewNum}.overlayCache] = ...
-	mrCache('find',MLR.caches{view.viewNum}.overlayCache,overlayID);
   case{'roinum'}
     % roiNum = viewGet(view,'roiNum',roiName)
     if ieNotDefined('varargin')
@@ -1154,6 +1084,79 @@ switch lower(param)
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).date;
     end
+    
+    % Cache
+  case{'roicacheid'}
+    % cacheID = viewGet(view,'ROICacheID')
+    rotate = viewGet(view,'rotate');
+    baseName = viewGet(view,'curBaseName');
+    sliceIndex = viewGet(view,'baseSliceIndex');
+    val = sprintf('%s_%i_%i_%i',baseName,sliceIndex,rotate);
+    for i = 1:length(view.ROIs);
+      val = sprintf('%s_%s_%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
+    end
+  case{'roicache'}
+    % cacheVal = viewGet(view,'ROICache')
+    roiID = viewGet(view,'ROICacheID');
+    % and retrieve from the cache
+    [val MLR.caches{view.viewNum}.roiCache] = ...
+	mrCache('find',MLR.caches{view.viewNum}.roiCache,roiID);
+  case{'basecacheid'}
+    % cacheID = viewGet(view,'baseCacheID')
+    rotate = viewGet(view,'rotate');
+    baseName = viewGet(view,'curBaseName');
+    currentBase = viewGet(view,'currentBase');
+    clip = viewGet(view,'baseClip',currentBase);
+    currentSlice = viewGet(view,'curSlice');
+    sliceIndex = viewGet(view,'baseSliceIndex');
+    val = sprintf('%s_%i_%i_%i_%s',baseName,currentSlice,sliceIndex,rotate,num2str(clip));
+  case{'basecache'}
+    % cacheVal = viewGet(view,'baseCache')
+    baseID = viewGet(view,'baseCacheID');
+    % and retrieve from the cache
+    [val MLR.caches{view.viewNum}.baseCache] = ...
+	mrCache('find',MLR.caches{view.viewNum}.baseCache,baseID);
+  case{'overlaycacheid'}
+    % cacheID = viewGet(view,'overlayCacheID')
+    %curSlice = viewGet(view,'curSlice');
+    %analysisNum = viewGet(view,'currentAnalysis');
+    %curOverlay = viewGet(view,'currentOverlay');
+    %clip = viewGet(view,'overlayClip',curOverlay);
+    %overlayType = viewGet(view,'overlayCtype',curOverlay);
+    %overlayRange = viewGet(view,'overlayRange',curOverlay);
+    % forgoe viewgets, and just grab stuff here explicitly
+    % this saves about 100ms
+    val = -1;
+    analysisNum = view.curAnalysis;
+    if ~isempty(analysisNum)
+      handles = guidata(view.figure);
+      curSlice = round(get(handles.sliceSlider,'Value'));
+      curOverlay = view.analyses{analysisNum}.curOverlay;
+      if ~isempty(curOverlay)
+	% get all clips
+	clip = [];
+	for i = 1:length(view.analyses{analysisNum}.overlays)
+	  clip = [clip view.analyses{analysisNum}.overlays(i).clip];
+	end
+	overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
+	baseName = viewGet(view,'curBaseName');
+	scanNum = viewGet(view,'curScan');
+	rotate = viewGet(view,'rotate');
+	alpha = viewGet(view,'alpha');
+	sliceIndex = viewGet(view,'baseSliceIndex');
+	% calculate string
+	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha);
+      end
+    end
+     %    val = curSlice*analysisNum*curOverlay;
+ case{'overlaycache'}
+    % cacheVal = viewGet(view,'overlayCache')
+    % get the overlay ID
+    overlayID = viewGet(view,'overlayCacheID');
+    % and retrieve from the cache
+    [val MLR.caches{view.viewNum}.overlayCache] = ...
+	mrCache('find',MLR.caches{view.viewNum}.overlayCache,overlayID);
+
 
     % analysis
   case{'numberofanalyses'}
