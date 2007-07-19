@@ -63,7 +63,8 @@ d.nhdr = length(d.stimvol);
 d.scm = allscm;
 d.hdrlen = size(hrf,2);
 d.volumes = 1:d.dim(4);
-d.simulatedhrf = downsample(hrf, d.supersampling)*d.supersampling;
+d.simulatedhrf = convn(ones(d.supersampling,1), hrf);
+d.simulatedhrf = downsample(d.simulatedhrf, d.supersampling);
 
 function ds = downsample(s, factor)
   a = cumsum(s, 1);
