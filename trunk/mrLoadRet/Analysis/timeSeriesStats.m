@@ -202,11 +202,11 @@ tSeries = reshapeTSeries(tSeries);
 % Remove junkFrames
 tSeries = tSeries(junkframes+1:junkframes+nframes,:);
 
-tsMeanSeries = mean(tSeries);
-tsMedianSeries = median(tSeries);
-tsStdSeries = std(tSeries);
-tsMaxFrameDiffSeries = max(abs(tSeries(2:end,:)-tSeries(1:end-1,:)));
-tsMaxMedianDiffSeries = max(abs(tSeries - repmat(tsMedianSeries,[nframes,1])));
+tsMeanSeries = nanmean(tSeries);
+tsMedianSeries = nanmedian(tSeries);
+tsStdSeries = nanstd(tSeries);
+tsMaxFrameDiffSeries = nanmax(abs(tSeries(2:end,:)-tSeries(1:end-1,:)));
+tsMaxMedianDiffSeries = nanmax(abs(tSeries - repmat(tsMedianSeries,[nframes,1])));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
