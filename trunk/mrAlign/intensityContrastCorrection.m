@@ -107,9 +107,7 @@ limit = 4;  % 4*std
 for f=1:nFrames
     frame = volIC(:,:,:,f);
     frame = (frame - mu)/sqrt(sigma2);
-    low = frame < -limit;
-    high = frame > limit;
-    frame = frame .* ((~low) & (~high)) + (-limit)*low + limit*high;
+    frame = clip(frame,-limit,limit);
     volIC(:,:,:,f) = frame;
 end
 
