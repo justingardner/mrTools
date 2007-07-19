@@ -660,16 +660,6 @@ global ALIGN
 ALIGN.crop = selectCropRegion(ALIGN.inplanes);
 
 % --------------------------------------------------------------------
-function invertContrastMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-
-mrErrorDlg('Invert contrast not yet implemented.');
-
-ALIGN.inplanes = - ALIGN.inplanes;
-ALIGN.inplanesClip = clipRange(ALIGN.inplanes);
-refreshAlignDisplay(handles);
-
-% --------------------------------------------------------------------
 function fineMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
@@ -693,7 +683,6 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
-
 function coarseMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
@@ -733,6 +722,10 @@ setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
+
+% --------------------------------------------------------------------
+function reverseContrastAlignment_Callback(hObject, eventdata, handles)
+
 
 % --------------------------------------------------------------------
 function mutualInformationMenuItem_Callback(hObject, eventdata, handles)
@@ -1046,4 +1039,6 @@ setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
+
+
 
