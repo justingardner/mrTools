@@ -20,7 +20,7 @@ end
 
 % remove from the string any nan/inf for testing
 % since these are valid strings to have.
-teststr = fixBadChars(str,{{'nan',''},{'inf',''}});
+teststr = fixBadChars(str,{{'nan',''},{'inf',''},{'e',''}});
 
 % check if the string is a valid function or if it has
 % any characters in it
