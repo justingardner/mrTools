@@ -614,10 +614,10 @@ switch lower(param)
     % update the interrogator
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
-
     end
     % completely clear the overlay cache
     view = viewSet(view,'overlayCache','init');
+    
   case {'deleteanalysis'}
     % view = viewSet(view,'deleteAnalysis',analysisNum);
     analysisNum = val;

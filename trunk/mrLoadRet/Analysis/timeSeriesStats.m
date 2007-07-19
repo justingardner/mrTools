@@ -178,10 +178,10 @@ mrCloseDlg(waitHandle);
 
 % Fill range fields 
 tsMean.range = findRange(tsMean.data);
-tsMedian.range = findRange(tsMean.data);
-tsStd.range = findRange(tsMean.data);
-tsMaxFrameDiff.range = findRange(tsMean.data);
-tsMaxMedianDiff.range = findRange(tsMean.data);
+tsMedian.range = findRange(tsMedian.data);
+tsStd.range = findRange(tsStd.data);
+tsMaxFrameDiff.range = findRange(tsMaxFrameDiff.data);
+tsMaxMedianDiff.range = findRange(tsMaxMedianDiff.data);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
