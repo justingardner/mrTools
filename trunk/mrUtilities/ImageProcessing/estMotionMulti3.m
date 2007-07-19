@@ -1,19 +1,21 @@
 function M = estMotionMulti3(vol1,vol2,iters,Minitial,rotFlag,robustFlag,CB,SC)
 %
-% function  M = estMotionMulti3(vol1,vol2,iters,Minitial,rotFlag,robustFlag)
+% function  M = estMotionMulti3(vol1,vol2,[iters],[Minitial],[rotFlag],[robustFlag])
+%
+% This function calls itself recursively to do multiscale motion estimation.
 %
 % vol1 and vol2 are volumes, 3d arrays
-% iters is vector of number of iterations to run at each
-%   successive scale. default is: [3] that runs 3 iterations at
-%   the base scale.
-% Minitial is initial guess for M.  Default is 4x4 identity matrix.
-% 
-% This function calls itself recursively.
 %
 % M is 4x4 translation+rotation transform matrix (in homogeneous coordinates)
 %          or affine transform matrix
 %
-% Uses least-squares or robust M-estimation depending on robustFlag
+% iters is vector of number of iterations to run at each
+%   successive scale. default is: [3] that runs 3 iterations at
+%   the base scale.
+%
+% Minitial is initial guess for M.  Default is 4x4 identity matrix.
+%
+% See estMotion3 for descriptions of other optional parameters.
 %
 % Bugs and limitations:
 % - should check that images are big enough for requested number
@@ -37,7 +39,6 @@ end
 if ~exist('SC')
   SC = [];
 end
-
 if ~exist('iters')
   iters=[3];
 elseif isempty(iters)
@@ -71,7 +72,7 @@ end
 
 % Iterate, warping and refining estimates
 if (iters(1) > 0)
-  M=estMotionIter3(vol1,vol2,iters(1),M,rotFlag,robustFlag,[],CB,SC);
+  M=estMotionIter3(vol1,vol2,iters(1),M,rotFlag,robustFlag,0,[],CB,SC);
 end
 
 return;

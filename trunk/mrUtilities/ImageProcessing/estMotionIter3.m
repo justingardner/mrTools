@@ -1,26 +1,34 @@
-function M = estMotionIter3(vol1,vol2,numIters,Minitial,rotFlag,robustFlag,crop,CB,SC)
+function M = estMotionIter3(vol1,vol2,numIters,Minitial,rotFlag,robustFlag,phaseFlag,crop,CB,SC)
 %
-% function M = estMotionIter3(vol1,vol2,numIters,Minitial,[rotFlag],[robustFlag],[crop])
+% function M = estMotionIter3(vol1,vol2,numIters,[Minitial],[rotFlag],[robustFlag],[phaseFlag],[crop])
 %
 % vol1 and vol2 are volumes, 3d arrays
-% numIters is number of iterations to run
-% Minitial is initial guess for M.  Default is 3x3 identity matrix.
-% crop specifies border size to crop/ignore  around all sides of the volume. 
-%     Should be of the form [ymin xmin zmin; ymax xmax zmax]
-%     Default crops 2 pixel border: [2 2 2; (size(vol1) - [2 2 2])].
 %
-% M is 4x4 translation+rotation or affine transform matrix: X' = M X
+% numIters is number of iterations to run. Each iteration warps the volumes
+% according to the previous estimate, and estimates the residual motion.
+%
+% M (returned value) is 4x4 translation+rotation or affine transform matrix: X' = M X
 % where X=(x,y,1) is starting position in homogeneous coords
 % and X'=(x',y'',1) is ending position
 %
-% where X=(x,y,z,1) is starting position in homogeneous coords
-% and X'=(x',y',z',1) is ending position
+% Minitial is initial guess for M. Default is 4x4 identity matrix.
 %
-% Each iteration warps the volumes according to the previous
-% estimate, and estimates the residual motion.
+% rotFlag: If True, then M is a rotation+translation, otherwise, is a
+% general affine transform. Default: 1.
 %
-% robustFlag is passed to estMotion3 (if activated, uses robust
-% M-estimator).
+% robustFlag: If True, uses robust M-estimator (see robustMest) with
+% parameters CB and SC. Default: 0.
+%
+% phaseFlag: If True, treats the input volumes as containing the phase of
+% complex-values (on the unit circle in the complex plane) and computes the
+% motion estimates on the complex values. This is useful if the image
+% intensities in the volumes are from a periodic domain such that the
+% "brightest" and "darkest" intensities are actually very similar to each
+% other. Default: 0.
+%
+% crop specifies border size to crop/ignore  around all sides of the volume.
+%     Should be of the form [ymin xmin zmin; ymax xmax zmax]
+%     Default crops 2 pixel border: [2 2 2; (size(vol1) - [2 2 2])].
 
 % default values
 if ieNotDefined('robustFlag')
@@ -28,6 +36,9 @@ if ieNotDefined('robustFlag')
 end
 if ieNotDefined('rotFlag')
     rotFlag = 1;
+end
+if ~exist('phaseFlag','var')
+    phaseFlag = 0;
 end
 if ieNotDefined('crop')
     crop = [2 2 2; (size(vol1) - [2 2 2])];
@@ -53,7 +64,7 @@ for iter=1:numIters
   Mhalf1=real(sqrtm(inv(M)));
   volWarp1=warpAffine3(vol1,Mhalf1);
   volWarp2=warpAffine3(vol2,Mhalf2);
-  deltaM=estMotion3(volWarp1,volWarp2,rotFlag,robustFlag,crop,CB,SC);
+  deltaM=estMotion3(volWarp1,volWarp2,rotFlag,robustFlag,phaseFlag,crop,CB,SC);
   M=deltaM*M;
 end
 
@@ -92,8 +103,8 @@ AaffRob
 
 % test crop
 crop = [2 2 2; (size(in) - [2 2 2])];
-ArotRob = estMotionIter3(vol1,vol2,Niter,[],1,1,crop)
-ArotRob = estMotionIter3(vol1,vol2,Niter,[],1,1,[])
+ArotRob = estMotionIter3(vol1,vol2,Niter,[],1,1,0,crop)
+ArotRob = estMotionIter3(vol1,vol2,Niter,[],1,1,0,[])
 
 % rotation in x,y
 theta=.03;
