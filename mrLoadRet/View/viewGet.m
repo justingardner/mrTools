@@ -2041,17 +2041,23 @@ switch lower(param)
     % co = viewGet(view,'co')
     m = viewGet(view,'analysisNum','corAnal');
     n = viewGet(view,'overlayNum','co',m);
-    val = viewGet(view,'overlay',n,m);
+    if m & n
+      val = viewGet(view,'overlay',n,m);
+    end
   case {'amp'}
     % amp = viewGet(view,'amp')
     m = viewGet(view,'analysisNum','corAnal');
     n = viewGet(view,'overlayNum','amp',m);
-    val = viewGet(view,'overlay',n,m);
+    if m & n
+      val = viewGet(view,'overlay',n,m);
+    end
   case {'ph'}
     % ph = viewGet(view,'ph')
     m = viewGet(view,'analysisNum','corAnal');
     n = viewGet(view,'overlayNum','ph',m);
-    val = viewGet(view,'overlay',n,m);
+    if m & n
+      val = viewGet(view,'overlay',n,m);
+    end
   case {'ncycles'}
     % ncycles = viewGet(view,'ncycles',scanNum)
     if ieNotDefined('varargin')
