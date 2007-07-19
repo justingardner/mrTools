@@ -725,7 +725,26 @@ refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
 function reverseContrastAlignment_Callback(hObject, eventdata, handles)
+global ALIGN
+if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
+	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
+	return
+end
+if isempty(ALIGN.xform) 
+	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
+	return
+end
 
+% Compute alignment
+xform = ALIGN.guiXform * ALIGN.xform;
+xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 1, ALIGN.crop, ALIGN.NIter);
+ALIGN.xform = xform;
+
+% Reset GUI and refresh display
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
 function mutualInformationMenuItem_Callback(hObject, eventdata, handles)
