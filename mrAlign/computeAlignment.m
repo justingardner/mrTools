@@ -1,4 +1,4 @@
-function xform = computeAlignment(inp, vol, xform, crop, maxIter);
+function xform = computeAlignment(inp, vol, xform, contrastReverse, crop, maxIter);
 % xform = computeAlignment()
 %
 % Oscar Nestares - 5/99
@@ -16,6 +16,7 @@ function xform = computeAlignment(inp, vol, xform, crop, maxIter);
 %               entirely sure what it was).
 % djh 5/2004 -  Added crop.
 % djh 1/2007 -  Update to mrAlign-4.5
+% djh 7/2007 -  Added contrastReverse param
 
 inplaneSize = size(inp);
 volumeSize = size(vol);
@@ -43,6 +44,11 @@ mrCloseDlg(wbh);
 
 % correct intensity & contrast of inplanes 
 inpIC = intensityContrastCorrection(inp, crop);
+if contrastReverse
+    limit = 4; % threshold used by intensityContrastCorrection
+    inpIC = inpIC * (pi/limit);
+    inpIC = -inpIC;
+end
 
 % Loop until the approximate maximum displacement is less than MINDISP, or
 % the maximum number of iterations is reached. The maximum displacement is
@@ -70,16 +76,19 @@ while strcmp(userResponse, 'Yes')
         end
         % correct intensity & contrast of interpoted volume
         volIC = intensityContrastCorrection(volInterp, crop);
-        
+        if contrastReverse
+            volIC = volIC * (pi/limit);
+        end
         % *** For debugging ***
         % xform
         % figure(1); imagesc(inpIC(:,:,9)); colormap(gray); axis image;
         % figure(2); imagesc(volIC(:,:,9)); colormap(gray); axis image;
-
+        
         % motion estimation (no multiresolution, no iterative)
         M = estMotion3(inpIC, volIC,...
             1,...	      % rotFlag
             1,...	      % robustFlag
+            contrastReverse,... % treat image intensities as phase valued
             crop,...      % crop
             CB,...        % cutoff parameter for robust estimation
             SC);          % scale parameter for robust estimation

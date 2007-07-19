@@ -683,7 +683,7 @@ end
 
 % Compute alignment
 xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, ALIGN.crop, ALIGN.NIter);
+xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 0, ALIGN.crop, ALIGN.NIter);
 ALIGN.xform = xform;
 
 % Reset GUI and refresh display
@@ -722,7 +722,7 @@ xform(1:3,4) = xform(1:3,4)/2;
 crop = floor(ALIGN.crop/2);
 
 % compute alignment & expand new xform
-xform = computeAlignment(inpReduce, volReduce, xform, crop, ALIGN.NIter);
+xform = computeAlignment(inpReduce, volReduce, xform, 0, crop, ALIGN.NIter);
 
 % expand xform
 xform(1:3,4) = xform(1:3,4)*2;
