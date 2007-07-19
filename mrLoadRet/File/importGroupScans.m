@@ -25,6 +25,9 @@ if (pathStr==0),return,end
 mrSessionPath = fullfile(pathStr,'mrSession.mat');
 if ~isfile(mrSessionPath)
   disp(sprintf('(importGroupScans) Could not find mrSession in %s',fileparts(pathStr)));
+  disp(sprintf('                   Make sure you clicked on the directory'));
+  disp(sprintf('                   with the mrSession.mat file (not the group'))
+  disp(sprintf('                   directory you wanted to import)'))
   return
 end
 mrSession = load(mrSessionPath);
