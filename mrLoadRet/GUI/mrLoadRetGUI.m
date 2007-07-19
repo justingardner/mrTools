@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 17-Jul-2007 14:23:02
+% Last Modified by GUIDE v2.5 19-Jul-2007 18:30:18
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1128,6 +1128,27 @@ if ~isempty(params)
 end
 
 % --------------------------------------------------------------------
+function infoROIMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+roiNum = viewGet(view,'currentROI');
+roiName = viewGet(view,'roiName',roiNum);
+roiDate = viewGet(view,'roidate',roiNum);
+roiColor = viewGet(view,'roicolor',roiNum);
+roiVoxelSize = viewGet(view,'roivoxelsize',roiNum);
+roiVolume = viewGet(view,'roivolume',roiNum);
+roiXform = viewGet(view,'roixform',roiNum);
+
+paramsInfo = {{'name',roiName,'editable=0','The name of the ROI'},...
+  {'date',roiDate,'editable=0','The date of creation'},...
+  {'color',roiColor,'editable=0','ROI color'},...
+  {'voxelsize',roiVoxelSize,'editable=0','Voxel dimensions in mm'},...
+  {'volume',roiVolume,'editable=0','Volume of ROI in cubic mm'},...
+  {'xform',roiXform,'editable=0','xform matrix specifies the transformation to the base coordinate system'}};
+mrParamsDialog(paramsInfo,'ROI information');
+
+% --------------------------------------------------------------------
 function editBaseMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1176,7 +1197,7 @@ paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},
     {'voxelSize',baseVoxelSize,'editable=0','Voxel dimensions in mm'},...
     {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
     {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
-    {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'}};
+    {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to base coordinate system'}};
 mrParamsDialog(paramsInfo,'Base anatomy information');
 
 % --------------------------------------------------------------------
@@ -1729,7 +1750,6 @@ d.scanNum = viewGet(view,'curScan');
 d.expname = '';
 d.ver = 4;
 dispmotioncorrect(d);
-
 
 
 
