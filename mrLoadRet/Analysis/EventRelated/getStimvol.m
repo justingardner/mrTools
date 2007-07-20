@@ -77,6 +77,9 @@ for i = 1:length(d.stimfile)
         end
       case 'eventtimes',
         stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf, impulse);
+        if isfield(d.stimfile{i}, 'stimNames')
+            d.stimNames = d.stimfile{i}.stimNames;
+        end
       case 'afni',
         stimvol = getStimvolFromStimTS(d.stimfile{i});
         d.stimNames = d.stimfile{i}.stimNames;
