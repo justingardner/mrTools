@@ -12,6 +12,8 @@
 %
 function retval = mrStr2num(str)
 
+retval = [];
+
 % check arguments
 if ~any(nargin == [1])
   help mrStr2num
@@ -20,13 +22,19 @@ end
 
 % remove from the string any nan/inf for testing
 % since these are valid strings to have.
-teststr = fixBadChars(str,{{'nan',''},{'inf',''},{'e',''}});
+teststr = fixBadChars(lower(str),{{'nan',''},{'inf',''},{'-',''}});
 
-% check if the string is a valid function or if it has
-% any characters in it
-if any(exist(teststr) == [2 3 5]) || any(regexp(teststr,'[a-zA-Z]')) 
-  % then return empty
-  retval = [];
-else
-  retval = str2num(str);
+% now go through the string and check
+% to see if any space delimited part of
+% it is actually a function
+while ~isempty(teststr)
+  [tok teststr] = strtok(teststr,' ');
+  % if the token is a function then return, this is not a number
+  if any(exist(tok) == [2 3 5])
+    return;
+  end
 end
+
+% whatever made it here is not a function,
+% so run str2num on it
+retval = str2num(str);
