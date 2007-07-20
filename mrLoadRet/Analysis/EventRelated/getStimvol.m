@@ -1,4 +1,4 @@
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getstimvol.m
 %
 %      usage: d = getStimvol(d,varname)
@@ -22,16 +22,16 @@ function d = getStimvol(d,varname)
 
 % check arguments
 if ~any(nargin == [1 2])
-  help getstimvol
-  return
+    help getstimvol
+    return
 end
 
 if ~exist('varname','var'),varname = ''; end
 
 % check to make sure we have a stimfile
 if ~isfield(d,'stimfile')
-  disp(sprintf('(getStimvol) stimFile is not loaded'));
-  return
+    disp(sprintf('(getStimvol) stimFile is not loaded'));
+    return
 end
 
 % keep the varname that this was called with
@@ -50,61 +50,64 @@ end
 
 %check if supersampling is supported for all runs
 for i = 1:length(d.stimfile)
-  if strcmp(d.stimfile{i}.filetype,'mgl') && ( samplingf~=1 )
-      disp(sprintf('TR supersampling not supported for mgl files. using default (1.0)'));
-      samplingf = 1;
-  end
+    if strcmp(d.stimfile{i}.filetype,'mgl') && ( samplingf~=1 )
+        disp(sprintf('TR supersampling not supported for mgl files. using default (1.0)'));
+        samplingf = 1;
+    end
 end
 
 % depending on what kind of stimfile we have, we get the
 % stimvolumes differently
 for i = 1:length(d.stimfile)
-  % get the stimvol for this particular stimfile
-  switch d.stimfile{i}.filetype,
-   case 'mgl',
-    % if we have a stimtrace then get the variables from that
-    if isfield(varname,'stimtrace') || isnumeric(varname)
-      stimvol = getStimvolFromTraces(d.stimfile{i},varname);
-    % otherwise get it using the varname
-    else
-      [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
+    % get the stimvol for this particular stimfile
+    switch d.stimfile{i}.filetype,
+      case 'mgl',
+        % if we have a stimtrace then get the variables from that
+        if isfield(varname,'stimtrace') || isnumeric(varname)
+            stimvol = getStimvolFromTraces(d.stimfile{i},varname);
+            % otherwise get it using the varname
+        else
+            [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
+        end
+      case 'eventtimes',
+        stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf);
+      case 'afni',
+        stimvol = getStimvolFromStimTS(d.stimfile{i});
+        d.stimNames = d.stimfile{i}.stimNames;
     end
-   case 'eventtimes',
-      stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf);
-  end
-  % set the stimnames if we don't have them already
-  if ~isfield(d,'stimNames')
-    for stimNameNum = 1:length(stimvol)
-      d.stimNames{stimNameNum} = num2str(stimNameNum);
+    % set the stimnames if we don't have them already
+    if ~isfield(d,'stimNames')
+        for stimNameNum = 1:length(stimvol)
+            d.stimNames{stimNameNum} = num2str(stimNameNum);
+        end
     end
-  end
-  % get how many junk frames we have
-  if isfield(d,'junkFrames'),junkFrames = d.junkFrames; else junkFrames = zeros(length(d.stimfile),1);end
-  % then shift all the stimvols by that many junkvols
-  for nhdr = 1:length(stimvol)
-    % subtract junkFrames
-    stimvol{nhdr} = stimvol{nhdr}-junkFrames(i)*samplingf;
-    % and get rid of anything less than 0
-    stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
-  end
-  % if we have more than one stimfile, than we have to concatenate
-  % together the stimvol. For this we are going to need to have
-  % a concatInfo field
-  if (i > 1)
-    % check for valid concatInfo
-    if ~isfield(d,'concatInfo')
-      disp(sprintf('(getStimvol) No concatInfo found for multiple stimfiles'));
-      return
-    end
-    % now add the number of volumes encountered from the previous runs
-    % to the stimvol and concatenate on to general stimvol
+    % get how many junk frames we have
+    if isfield(d,'junkFrames'),junkFrames = d.junkFrames; else junkFrames = zeros(length(d.stimfile),1);end
+    % then shift all the stimvols by that many junkvols
     for nhdr = 1:length(stimvol)
-      d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
+        % subtract junkFrames
+        stimvol{nhdr} = stimvol{nhdr}-junkFrames(i)*samplingf;
+        % and get rid of anything less than 0
+        stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
     end
-  % on first file, we just set stimvol in the d field
-  else
-    d.stimvol = stimvol;
-  end
+    % if we have more than one stimfile, than we have to concatenate
+    % together the stimvol. For this we are going to need to have
+    % a concatInfo field
+    if (i > 1)
+        % check for valid concatInfo
+        if ~isfield(d,'concatInfo')
+            disp(sprintf('(getStimvol) No concatInfo found for multiple stimfiles'));
+            return
+        end
+        % now add the number of volumes encountered from the previous runs
+        % to the stimvol and concatenate on to general stimvol
+        for nhdr = 1:length(stimvol)
+            d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
+        end
+        % on first file, we just set stimvol in the d field
+    else
+        d.stimvol = stimvol;
+    end
 end
 
 % return the actual TR supersampling factor
@@ -118,16 +121,16 @@ function stimvol = getStimvolFromTraces(stimfile,stimtrace)
 
 % if passed in a structure then get the stimtrace field
 if isstruct(stimtrace)
-  varname = stimtrace;
-  stimtrace = varname.stimtrace;
-  % if we are passed in how many response types there are, get it
-  if isfield(varname,'nhdr')
-    nhdr = varname.nhdr;
-  end
+    varname = stimtrace;
+    stimtrace = varname.stimtrace;
+    % if we are passed in how many response types there are, get it
+    if isfield(varname,'nhdr')
+        nhdr = varname.nhdr;
+    end
 end
 
 if exist('stimtrace','var')
-  stimfile.myscreen.stimtrace = stimtrace;
+    stimfile.myscreen.stimtrace = stimtrace;
 end
 
 % get acquisition pulses
@@ -152,8 +155,8 @@ if ieNotDefined('nhdr'),nhdr = max(stimraw); end
 
 stimvol = cell(1, nhdr);
 for i = 1:nhdr
-  thisStimtimes = stimtimes(stimraw(stimtimes) == i);
-  stimvol{i} = acqnum(thisStimtimes);
+    thisStimtimes = stimtimes(stimraw(stimtimes) == i);
+    stimvol{i} = acqnum(thisStimtimes);
 end
 
 
@@ -167,17 +170,31 @@ nhdr = length(stimfile.stimtimes_s);
 stimvol = cell(1, nhdr);
 
 if isfield(stimfile, 'stimdurations_s')
-  for i = 1:nhdr
-    z = zeros(1, 1+ceil(max(stimfile.stimtimes_s{i})/tr));
-    for event=1:length(stimfile.stimtimes_s{i})
-        onset = max(stimfile.stimtimes_s{i}(event), 0)/tr;
-        offset = max(onset, onset+(stimfile.stimdurations_s{i}(event)-eps)/tr);
-        z(round(onset:offset)+1)=1;
+    for i = 1:nhdr
+        z = zeros(1, 1+ceil(max(stimfile.stimtimes_s{i})/tr));
+        for event=1:length(stimfile.stimtimes_s{i})
+            onset = max(stimfile.stimtimes_s{i}(event), 0)/tr;
+            offset = max(onset, onset+(stimfile.stimdurations_s{i}(event)-eps)/tr);
+            z(round(onset:offset)+1)=1;
+        end
+        stimvol{i} = unique(find(z))-1;
     end
-    stimvol{i} = unique(find(z))-1;
-  end
 else
-  for i = 1:nhdr
-    stimvol{i} = round(stimfile.stimtimes_s{i}(:) / tr)';
-  end
+    for i = 1:nhdr
+        stimvol{i} = round(stimfile.stimtimes_s{i}(:) / tr)';
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% stimvol from AFNI file type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function stimvol = getStimvolFromStimTS(stimfile)
+
+stimTimes = find(stimfile.stimts == 1);
+[nvols, nhdr] = size(stimfile.stimts);
+
+stimvol = cell(1, nhdr);
+
+for i = 1:nhdr
+    stimvol{i}=find(stimfile.stimts(:,i))';
 end
