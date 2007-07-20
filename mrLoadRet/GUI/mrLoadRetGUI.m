@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 19-Jul-2007 18:30:18
+% Last Modified by GUIDE v2.5 20-Jul-2007 09:52:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -545,6 +545,18 @@ if isfile(tSeriesPathStr)
 else
     mrWarnDlg(sprintf('(mrLoadRetGUI) Could not find tSeries %s',tSeriesPathStr));
 end
+
+% --------------------------------------------------------------------
+function loadFlatMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to loadFlatMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+v = loadFlat(v);
+refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function saveAnatomyMenuItem_Callback(hObject, eventdata, handles)
@@ -1750,7 +1762,6 @@ d.scanNum = viewGet(view,'curScan');
 d.expname = '';
 d.ver = 4;
 dispmotioncorrect(d);
-
 
 
 
