@@ -766,6 +766,22 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).data;
     end
+  case {'basecoords'}
+    % basedata = viewGet(view,'baseCoords',[baseNum])
+    % basedata = viewGet(view,'baseCoords',[])
+    % basedata = viewGet(view,'baseCoords')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).coords;
+    end
   case {'baseclip'}
     % baseclip = viewGet(view,'baseclip',[baseNum])
     % baseclip = viewGet(view,'baseclip',[])
