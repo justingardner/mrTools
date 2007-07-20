@@ -32,38 +32,51 @@ if ieNotDefined('useDefault')
   useDefault = 0;
 end
 
-% set the parameter string
-paramsInfo = {...
-    {'groupName',groupNames,'Name of group from which to do eventRelated analysis'},...
-    {'saveName','glmAnal','File name to try to save as'},...
-    {'hrfModel','hrfDiffGamma','Name of the function that defines the hrf used in glm'},...
-    {'trSupersampling', 1, 'TR supersampling factor (1=no supersampling) The reulting design matrix will be downsampled'},...
-};
 
-% Get parameter values
-if useDefault
-  params = mrParamsDefault(paramsInfo);
-else
-  params = mrParamsDialog(paramsInfo);
+% check if some parameters are alreay set
+if ieNotDefined('params')
+  params.saveName = 'glmAnal';
+  params.hrfModel ='hrfDiffGamma';
+  params.trSupersampling = 1;
 end
 
-% if empty user hit cancel
-if isempty(params),return,end
+askForParams = 1;
 
-% get hrf model parameters
-hrfParamsInfo = feval(params.hrfModel, 'params');
+while askForParams
+    % set the parameter string
+    paramsInfo = {...
+        {'groupName',groupNames,'Name of group from which to do eventRelated analysis'},...
+        {'saveName',params.saveName,'File name to try to save as'},...
+        {'hrfModel',params.hrfModel,'Name of the function that defines the hrf used in glm'},...
+        {'trSupersampling', params.trSupersampling, 'minmax=[1 100]', 'TR supersampling factor (1=no supersampling) reulting design matrix will be downsampled afterwards'},...
+    };
 
-if useDefault
-  params.hrfParams = mrParamsDefault(hrfParamsInfo);
-else
-  params.hrfParams = mrParamsDialog(hrfParamsInfo);
+    % Get parameter values
+    if useDefault
+      params = mrParamsDefault(paramsInfo);
+    else
+      params = mrParamsDialog(paramsInfo);
+    end
+
+    % if empty user hit cancel
+    if isempty(params),return,end
+
+    % get hrf model parameters
+    hrfParamsInfo = feval(params.hrfModel, 'params');
+
+    if useDefault
+      params.hrfParams = mrParamsDefault(hrfParamsInfo);
+    else
+      params.hrfParams = mrParamsDialog(hrfParamsInfo, sprintf('hrfModel:%s', params.hrfModel));
+    end
+    % if empty user hit cancel, go back
+    if isempty(params.hrfParams) && ~useDefault
+        askForParams = 1;
+    else
+        askForParams = 0;
+    end
 end
 
-% if empty user hit cancel
-if isempty(params.hrfParams),
-    params = [];
-    return
-end
 
 if ~isfield(params.hrfParams, 'description')
     params.hrfParams.description = params.hrfModel;
