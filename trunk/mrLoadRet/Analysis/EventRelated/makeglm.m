@@ -44,7 +44,7 @@ for runnum = 1:size(runTransition,1)
     stimarray = zeros(1,(runTransition(runnum,2)-runTransition(runnum,1)+1)*d.supersampling);
     % only use stimvols that are within this runs volume numbers
     stimarray(d.stimvol{stimnum}(find((d.stimvol{stimnum}>=runTransition(runnum,1)*d.supersampling) & ...
-        (d.stimvol{stimnum}<=runTransition(runnum,2)*d.supersampling)))-runTransition(runnum,1)*d.supersampling+1) = 1;
+        (d.stimvol{stimnum}<=runTransition(runnum,2)*d.supersampling)))-runTransition(runnum,1)*d.supersampling+1) = 1/d.supersampling;
     m = convn(stimarray', hrf);
     m = m(1:length(stimarray),:);
     % remove mean 
@@ -63,9 +63,14 @@ d.nhdr = length(d.stimvol);
 d.scm = allscm;
 d.hdrlen = size(hrf,2);
 d.volumes = 1:d.dim(4);
-d.simulatedhrf = convn(ones(d.supersampling,1), hrf);
-d.simulatedhrf = downsample(d.simulatedhrf, d.supersampling);
+d.simulatedhrf = downsample(hrf, d.supersampling);
 
 function ds = downsample(s, factor)
+  % downsample a signal by factor. the original and downsampled signals
+  % have equal integrals.
+  %
+  % to downsamlple conserving the amplitude use: 
+  %     ds = downsample(s, factor) / factor;
+  
   a = cumsum(s, 1);
   ds = diff([zeros(1, size(s,2));a(factor:factor:end,:)]);

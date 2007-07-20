@@ -75,6 +75,8 @@ for scanNum = params.scanNum
     params.hrfParams.tmax = params.scanParams{scanNum}.hdrlen+d.tr/2;
     
     d.supersampling = params.trSupersampling;
+    % use the duration of stimuli/events in the design matrix
+    d.impulse = 0; 
 
     % get the stim volumes, if empty then abort
     d = getStimvol(d,params.scanParams{scanNum});
