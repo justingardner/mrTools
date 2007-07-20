@@ -1700,7 +1700,7 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
 scanList = viewGet(view,'currentScan');
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
+plotMeanFourierAmp(view, groupNum, roiList, scanList,  'detrend', 'Linear');
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpCurrentSelect_Callback(hObject, eventdata, handles)
@@ -1710,7 +1710,7 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
 scanList = selectScans(view);
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
+plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpCurrentAll_Callback(hObject, eventdata, handles)
@@ -1720,7 +1720,7 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
 scanList = [1:viewGet(view,'nscans')];
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
+plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpAllCurrent_Callback(hObject, eventdata, handles)
@@ -1730,7 +1730,7 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
 scanList = viewGet(view,'currentScan');
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
+plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpAllSelect_Callback(hObject, eventdata, handles)
@@ -1740,7 +1740,7 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
 scanList = selectScans(view);
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
+plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
 function plotMeanFourierAmpAllAll_Callback(hObject, eventdata, handles)
@@ -1750,7 +1750,7 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
 scanList = [1:viewGet(view,'nscans')];
-plotMeanFourierAmp(view, groupNum, roiList, scanList);
+plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
 function plotMotionCorrectionMatrices_Callback(hObject, eventdata, handles)
