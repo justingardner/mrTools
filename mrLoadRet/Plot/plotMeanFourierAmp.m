@@ -102,7 +102,7 @@ plotScansFourierAmp(MLR.views{1},[],[],[],'detrend','None','spatialNormalization
 function maxy = dispFourierAmp(ffts,nframes,framePeriod,groupName,scanNum,ncycles,roiName,description)
 
 % Compute mean fourier amplitude
-meanfft = mean(ffts,2);
+meanfft = nanmean(ffts,2);
 meanfft = meanfft / (nframes/2);
 frequencies = [0:nframes-1]/(nframes*framePeriod);
 meanfft = meanfft(1:floor(nframes/2));
@@ -112,7 +112,7 @@ frequencies = frequencies(1:floor(nframes/2));
 % frequency values
 noiseFrequencies = ceil(length(meanfft)*2/3):length(meanfft);
 noiseAmplitude = meanfft(noiseFrequencies);
-meanNoiseAmplitude = mean(noiseAmplitude);
+meanNoiseAmplitude = nanmean(noiseAmplitude);
 lowestNoiseFrequency = frequencies(min(noiseFrequencies));
 noiseFrequencies = frequencies(noiseFrequencies);
 
