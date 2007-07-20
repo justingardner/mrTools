@@ -268,6 +268,16 @@ if ~isempty(volSize)
       [y,x] = meshgrid(1:volSize(2),1:volSize(1));
   end
 
+  % if there are baseCoords associated with this base
+  % then use those instead of image coordinates (this
+  % is the case for flat files)
+  baseCoords = viewGet(view,'baseCoords');
+  if ~isempty(baseCoords)
+    x = baseCoords(:,:,3);
+    y = 256-baseCoords(:,:,1);
+    z = 256-baseCoords(:,:,2);
+  end
+
   % Rotate coordinates
   if (rotate ~= 0)
     x = imrotate(x,rotate,'nearest','loose');
@@ -404,6 +414,7 @@ baseVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
 roiCoords = viewGet(view,'roiCoords',roiNum);
 roiXform = viewGet(view,'roiXform',roiNum);
 roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
+realBaseCoords = viewGet(view,'baseCoords',baseNum);
 
 if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
   % Use xformROI to supersample the coordinates
@@ -415,7 +426,9 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
   for roiSlice = roiSlices
     % first set baseCOordsHomogeneous to look like it is for this
     % slice of the roi (all that changes is the slice index)
-    baseCoordsHomogeneous(sliceIndex,:) = roiSlice;
+    if isempty(realBaseCoords)
+      baseCoordsHomogeneous(sliceIndex,:) = roiSlice;
+    end
     % now get all the indexes from the roi with this slice
     roiIndexesThisSlice = find(baseCoords(sliceIndex,:)==roiSlice);
 
@@ -425,25 +438,15 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     % factor of 3 on my G5) since intersect by
     % rows appears to be quite a bit slower (jg).
     thisROICoords = baseCoords(1:3,roiIndexesThisSlice);
-    % remove any roi coordinates that are outside the base dimensions
-    % since sub2ind will complain about these
-    thisROICoords(:,...
- 		  ((thisROICoords(1,:) < 1) | ...
- 		   (thisROICoords(1,:) > baseDims(1)) | ...
- 		   (thisROICoords(2,:) < 1) | ...
- 		   (thisROICoords(2,:) > baseDims(2)) | ...
- 		   (thisROICoords(3,:) < 1) | ...
- 		   (thisROICoords(3,:) > baseDims(3)))) = nan;
     % convert to linear coordinates
-    roiBaseCoordsLinear = sub2ind(baseDims,thisROICoords(1,:),thisROICoords(2,:),thisROICoords(3,:));
-    baseCoordsLinear = sub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
+    roiBaseCoordsLinear = mysub2ind(baseDims,thisROICoords(1,:),thisROICoords(2,:),thisROICoords(3,:));
+    baseCoordsLinear = mysub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
     % find them in the baseCoordsHomogenous
     [roiCoordsSlice,roiIndices,baseIndices] = intersect(roiBaseCoordsLinear,baseCoordsLinear);
     % transform them into image coordinates
     [thisx,thisy] = ind2sub(imageDims,baseIndices);
     x = [x thisx];y = [y thisy];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % this is the old way, using intersect by rows
@@ -599,3 +602,17 @@ if verbose>1,disppercent(inf);,end
 return;
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% sub2ind that doesn't choke on coordinates
+% outside of dims (just inserts nans for those
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function linear = mysub2ind(dims,x,y,z)
+
+badCoords = find((x < 1) | (x > dims(1)) | ...
+		 (y < 1) | (y > dims(2)) | ...
+		 (z < 1) | (z > dims(3)));
+x(badCoords) = nan;
+y(badCoords) = nan;
+z(badCoords) = nan;
+
+linear = sub2ind(dims,x,y,z);
