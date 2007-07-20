@@ -132,3 +132,5 @@ for scanNum = 1:length(fromScanParams)
 end
 disppercent(inf);
 
+
+deleteView(v);
