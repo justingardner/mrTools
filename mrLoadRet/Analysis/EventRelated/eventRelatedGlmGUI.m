@@ -65,6 +65,10 @@ if isempty(params.hrfParams),
     return
 end
 
+if ~isfield(params.hrfParams, 'description')
+    params.hrfParams.description = params.hrfModel;
+end
+
 % get scans
 view = viewSet(view,'groupName',params.groupName);
 if useDefault

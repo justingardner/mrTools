@@ -48,10 +48,16 @@ else
     samplingf = 1;
 end
 
+if isfield(d, 'impulse')
+    impulse = d.impulse;
+else
+    impulse = 1;
+end
+
 %check if supersampling is supported for all runs
 for i = 1:length(d.stimfile)
-    if strcmp(d.stimfile{i}.filetype,'mgl') && ( samplingf~=1 )
-        disp(sprintf('TR supersampling not supported for mgl files. using default (1.0)'));
+    if ~strcmp(d.stimfile{i}.filetype,'eventtimes') && ( samplingf~=1 )
+        disp(sprintf('TR supersampling not supported for mgl or afni files. using default (1.0)'));
         samplingf = 1;
     end
 end
@@ -70,7 +76,7 @@ for i = 1:length(d.stimfile)
             [stimvol d.stimNames] = getStimvolFromVarname(varname,d.stimfile{i}.myscreen,d.stimfile{i}.task);
         end
       case 'eventtimes',
-        stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf);
+        stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf, impulse);
       case 'afni',
         stimvol = getStimvolFromStimTS(d.stimfile{i});
         d.stimNames = d.stimfile{i}.stimNames;
@@ -163,26 +169,26 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % stimvol from Farshad's file type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stimvol = getStimvolFromEventTimes(stimfile,tr)
+function stimvol = getStimvolFromEventTimes(stimfile,tr,impulse)
 
 % sort into stimuli
 nhdr = length(stimfile.stimtimes_s);
 stimvol = cell(1, nhdr);
 
-if isfield(stimfile, 'stimdurations_s')
-    for i = 1:nhdr
-        z = zeros(1, 1+ceil(max(stimfile.stimtimes_s{i})/tr));
-        for event=1:length(stimfile.stimtimes_s{i})
-            onset = max(stimfile.stimtimes_s{i}(event), 0)/tr;
-            offset = max(onset, onset+(stimfile.stimdurations_s{i}(event)-eps)/tr);
-            z(round(onset:offset)+1)=1;
-        end
-        stimvol{i} = unique(find(z))-1;
+if ~impulse && isfield(stimfile, 'stimdurations_s')
+  for i = 1:nhdr
+    z = zeros(1, 1+ceil(max(stimfile.stimtimes_s{i})/tr));
+    for event=1:length(stimfile.stimtimes_s{i})
+        onset = max(stimfile.stimtimes_s{i}(event), 0)/tr;
+        offset = max(onset, onset+(stimfile.stimdurations_s{i}(event)-eps)/tr);
+        z(round(onset:offset)+1)=1;
     end
+    stimvol{i} = unique(find(z))-1;
+  end
 else
-    for i = 1:nhdr
-        stimvol{i} = round(stimfile.stimtimes_s{i}(:) / tr)';
-    end
+  for i = 1:nhdr
+    stimvol{i} = round(stimfile.stimtimes_s{i}(:) / tr)';
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
