@@ -92,12 +92,26 @@ for i = 1:length(x)
     % find nearest point in curvature
     dist = (flat.gLocs2d(:,1)-x(i)).^2+(flat.gLocs2d(:,2)-y(j)).^2;
     flat.pos(i,j) = first(find(min(dist)==dist));
-    flat.map(i,j,1) = flat.curvature(flat.pos(i,j));
-    flat.map(i,j,2) = flat.curvature(flat.pos(i,j));
-    flat.baseCoord(i,j,:) = flat.gLocs3d(flat.pos(i,j),:);
+    % points that are greater than a distance of 5 away are
+    % probably not in the flat patch so mask them out
+    if (min(dist) < 5)
+      flat.mask(i,j) = 1;
+      flat.baseCoords(i,j,:) = flat.gLocs3d(flat.pos(i,j),:);
+      flat.map(i,j) = flat.curvature(flat.pos(i,j));
+    else
+      flat.mask(i,j) = 0;
+      flat.baseCoords(i,j,:) = [0 0 0];
+      flat.map(i,j) = 0;
+      end
   end
 end
 disppercent(inf);
+
+% now blur/upsample image
+flat.blurMap(:,:) = blur(flat.map(:,:));
+flat.median = median(flat.blurMap(:));
+flat.thresholdMap(:,:) = (flat.blurMap(:,:)>median(flat.blurMap(:)))*0.5+0.5;
+flat.thresholdMap(~flat.mask(:)) = 0;
 
 % Extract permutation matrix to keep track of slice orientation.
 % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
@@ -105,14 +119,14 @@ disppercent(inf);
 [q,r] = qr(inv(hdr.qform44(1:3,1:3)));
 permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 
-
 % now generate a base 
-base.data = flat.map;
+base.data(:,:,1) = flat.thresholdMap;
+base.data(:,:,2) = flat.blurMap;
 base.hdr = hdr;
 base.name = getLastDir(pathStr);
 base.permutationMatrix = permutationMatrix;
-base.coords = flat.baseCoord;
-
+base.coords = flat.baseCoords;
+base.clip = [0 1];
 
 v = viewSet(v,'newBase',base);
 
