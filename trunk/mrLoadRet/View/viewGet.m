@@ -766,10 +766,10 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).data;
     end
-  case {'basecoords'}
-    % basedata = viewGet(view,'baseCoords',[baseNum])
-    % basedata = viewGet(view,'baseCoords',[])
-    % basedata = viewGet(view,'baseCoords')
+  case {'basecoordmap'}
+    % basedata = viewGet(view,'baseCoordMap',[baseNum])
+    % basedata = viewGet(view,'baseCoordMap',[])
+    % basedata = viewGet(view,'baseCoordMap')
     if ieNotDefined('varargin')
       b = viewGet(view,'currentBase');
     else
@@ -780,7 +780,7 @@ switch lower(param)
     end
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      val = view.baseVolumes(b).coords;
+      val = view.baseVolumes(b).coordMap;
     end
   case {'baseclip'}
     % baseclip = viewGet(view,'baseclip',[baseNum])
@@ -829,6 +829,10 @@ switch lower(param)
     baseVolume = viewGet(view,'baseVolume',b);
     if ~isempty(baseVolume)
       val = size(baseVolume.data);
+      % for an image with only one slice
+      if length(val) == 2
+	val(3) = 1;
+      end
     end
   case {'basexform'}
     % basexform = viewGet(view,'basexform',[baseNum])
