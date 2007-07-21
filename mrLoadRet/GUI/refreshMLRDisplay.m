@@ -271,11 +271,16 @@ if ~isempty(volSize)
   % if there are baseCoords associated with this base
   % then use those instead of image coordinates (this
   % is the case for flat files)
-  baseCoords = viewGet(view,'baseCoords');
-  if ~isempty(baseCoords)
-    x = baseCoords(:,:,3);
-    y = 256-baseCoords(:,:,1);
-    z = 256-baseCoords(:,:,2);
+  baseCoordMap = viewGet(view,'baseCoordMap');
+  if ~isempty(baseCoordMap)
+    % only use the baseCoordMap for when the slice
+    % in the third dimension (no other view of a 
+    % flat map is really valid).
+    if sliceIndex==3
+      x = baseCoordMap.coords(:,:,sliceNum,1);
+      y = baseCoordMap.coords(:,:,sliceNum,2);
+      z = baseCoordMap.coords(:,:,sliceNum,3);
+    end
   end
 
   % Rotate coordinates
@@ -360,7 +365,6 @@ else
   end
 end
 
-
 %-------------------------------------------------------------------------
 function overlayImages = corAnalInterp(view,scanNum,...
   imageDims,analysisNum,overlayCoords,interpMethod,interpExtrapVal);
@@ -414,7 +418,12 @@ baseVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
 roiCoords = viewGet(view,'roiCoords',roiNum);
 roiXform = viewGet(view,'roiXform',roiNum);
 roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
-realBaseCoords = viewGet(view,'baseCoords',baseNum);
+% get the mapping between the image plane and the
+% actual voxel numbers. This will be non-empty for flat surfaces
+baseCoordMap = viewGet(view,'baseCoordMap',baseNum);
+if isfield(baseCoordMap,'dims')
+  baseDims = baseCoordMap.dims;
+end
 
 if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
   % Use xformROI to supersample the coordinates
@@ -426,7 +435,7 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
   for roiSlice = roiSlices
     % first set baseCOordsHomogeneous to look like it is for this
     % slice of the roi (all that changes is the slice index)
-    if isempty(realBaseCoords)
+    if isempty(baseCoordMap)
       baseCoordsHomogeneous(sliceIndex,:) = roiSlice;
     end
     % now get all the indexes from the roi with this slice
@@ -519,6 +528,12 @@ end
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
 
+% get the base coordinate map. This will be empty
+% for all volumes except for flat maps which do
+% not have a simple transformation mapping between
+% image coordinates and their underlying coordinates
+baseCoordMap = viewGet(view,'baseCoordMap',baseNum);
+
 % Draw it
 if verbose>1,disppercent(-inf,'Drawing ROI');,end
 lineWidth = 0.5;
@@ -544,7 +559,13 @@ for r = order
     end % end switch statement
   end
   % get image coords for this slice
-  x = roi(r).x(roi(r).s==sliceNum);y = roi(r).y(roi(r).s==sliceNum);
+  if isempty(baseCoordMap)
+    % for regular volumes, only get coordinates that match slice
+    x = roi(r).x(roi(r).s==sliceNum);y = roi(r).y(roi(r).s==sliceNum);
+  else
+    % for flat maps, all coordinates are possible
+    x = roi(r).x;y = roi(r).y;s = roi(r).s;
+  end
   if ~isempty(x) & ~isempty(y)
     switch option
       case{'all','selected'}
