@@ -22,11 +22,11 @@ if (nargout == 2)
   requiredFields = {'data','hdr','name','permutationMatrix'};
   optionalFields = {'range',[min(base.data(:)) max(base.data(:))];
 		    'clip',defaultClip(base.data);
-		    'coords',[]};
+		    'coordMap',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
-  requiredFields = {'clip','coords','data','hdr','name','permutationMatrix','range'};
+  requiredFields = {'clip','coordMap','data','hdr','name','permutationMatrix','range'};
   optionalFields = {};
 end
 
