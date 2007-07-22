@@ -26,7 +26,7 @@ if ieNotDefined('flatFileName')
   end
   filterspec = {'*.mat','Matlab flat file'};
   title = 'Choose flat file';
-  pathStr = getPathStrDialog(startPathStr,title,filterspec);
+  pathStr = getPathStrDialog(startPathStr,title,filterspec,'on');
 else
   pathStr = flatFileName;
 end
@@ -58,9 +58,20 @@ end
 % load the anatomy file header
 hdr = cbiReadNiftiHeader(anatPathStr);
 
+% Extract permutation matrix to keep track of slice orientation.
+% This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
+% make changes here, please update that function as well.
+[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
+permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+
+% get parameters for renderinf flat maps
+paramsInfo = {{'resolution',1,'minmax=[1 inf]','incdec=[-1 1]','Resolution of flat map. Make number larger for finer resolution. The finer the resolution the longer it will take to render the flat map'},...
+	      {'threshold',1,'type=checkbox','Threshold the flat map to two levels of gray (one for low and one for high curvature)'}};
+params = mrParamsDialog(paramsInfo,'Flat map rendering options');
+if isempty(params),return,end
+drawnow
 % now go through all flat file names, load and convert
-% into images
-flat = {};maxWidth = -inf;maxHeight = -inf;
+% into images, then into base anatomies
 for fileNum = 1:length(pathStr)
   % Strip extension to make sure it is .mat
   filename = [stripext(pathStr{fileNum}),'.mat'];
@@ -72,90 +83,83 @@ for fileNum = 1:length(pathStr)
   end
 
   % load the flat file
-  flat{end+1} = load(filename);
+  flat = load(filename);
 
   % check its fields
-  if ~isfield(flat{end},'curvature') || ~isfield(flat{end},'gLocs2d') || ~isfield(flat{end},'gLocs3d')
-    mrWarnDlg(sprintf('(loadFlat{End}) %s is not a flat{end} file generated using SurfRelax',pathStr));
+  if ~isfield(flat,'curvature') || ~isfield(flat,'gLocs2d') || ~isfield(flat,'gLocs3d')
+    mrWarnDlg(sprintf('(loadFlat) %s is not a flat file generated using SurfRelax',pathStr));
     continue
   end
 
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  % generate the flat{end} image
+  % generate the flat image
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % first get coordinates
-  xmin = min(flat{end}.gLocs2d(:,1));
-  xmax = max(flat{end}.gLocs2d(:,1));
-  ymin = min(flat{end}.gLocs2d(:,2));
-  ymax = max(flat{end}.gLocs2d(:,2));
-  x = xmin:xmax;
-  y = ymin:ymax;
+  xmin = min(flat.gLocs2d(:,1));
+  xmax = max(flat.gLocs2d(:,1));
+  ymin = min(flat.gLocs2d(:,2));
+  ymax = max(flat.gLocs2d(:,2));
+  x = xmin:(1/params.resolution):xmax;
+  y = ymin:(1/params.resolution):ymax;
 
-  % now interp the curvature
-  disppercent(-inf,sprintf('Creating flat image for %s',filename));
+  % now we need to interp the curvature on to a regular
+  % grid. we do this by finding the x,y point that is closest
+  % to the one on the grid.
+  h = mrWaitBar(0,sprintf('Creating flat image for %s',filename));
   for i = 1:length(x)
-    disppercent(i/length(x));
+    mrWaitBar(i/length(x),h);
     for j = 1:length(y)
       % find nearest point in curvature
-      dist = (flat{end}.gLocs2d(:,1)-x(i)).^2+(flat{end}.gLocs2d(:,2)-y(j)).^2;
-      flat{end}.pos(i,j) = first(find(min(dist)==dist));
+      dist = (flat.gLocs2d(:,1)-x(i)).^2+(flat.gLocs2d(:,2)-y(j)).^2;
+      flat.pos(i,j) = first(find(min(dist)==dist));
       % points that are greater than a distance of 5 away are
-      % probably not in the flat{end} patch so mask them out
+      % probably not in the flat patch so mask them out
       if (min(dist) < 5)
-	flat{end}.mask(i,j) = 1;
-	flat{end}.baseCoords(i,j,:) = flat{end}.gLocs3d(flat{end}.pos(i,j),:);
-	flat{end}.map(i,j) = flat{end}.curvature(flat{end}.pos(i,j));
+	flat.mask(i,j) = 1;
+	flat.baseCoords(i,j,:) = flat.gLocs3d(flat.pos(i,j),:);
+	flat.map(i,j) = flat.curvature(flat.pos(i,j));
       else
-	flat{end}.mask(i,j) = 0;
-	flat{end}.baseCoords(i,j,:) = [0 0 0];
-	flat{end}.map(i,j) = 0;
+	flat.mask(i,j) = 0;
+	flat.baseCoords(i,j,:) = [0 0 0];
+	flat.map(i,j) = 0;
       end
     end
   end
-  disppercent(inf);
+  mrCloseDlg(h);
 
-  % now blur/upsample image
-  flat{end}.blurMap(:,:) = blur(flat{end}.map(:,:));
-  flat{end}.median = median(flat{end}.blurMap(:));
-  flat{end}.thresholdMap(:,:) = (flat{end}.blurMap(:,:)>median(flat{end}.blurMap(:)))*0.5+0.25;
-  %flat{end}.thresholdMap = blur(flat{end}.thresholdMap);
-  flat{end}.thresholdMap(~flat{end}.mask(:)) = 0;
-  flat{end}.blurMap(~flat{end}.mask(:)) = 0;
+  % now blur image
+  flat.blurMap(:,:) = blur(flat.map(:,:));
+  % threshold image
+  flat.median = median(flat.blurMap(:));
+  flat.thresholdMap(:,:) = (flat.blurMap(:,:)>median(flat.blurMap(:)))*0.5+0.25;
+  flat.thresholdMap = blur(flat.thresholdMap);
+  % mask out points not on map
+  flat.thresholdMap(~flat.mask(:)) = 0;
 
-  % set the maximum width and height of the images
-  maxWidth = max(size(flat{end}.thresholdMap,1),maxWidth);
-  maxHeight = max(size(flat{end}.thresholdMap,1),maxHeight);
+  % now generate a base structure
+  clear base;
+  base.hdr = hdr;
+  base.name = getLastDir(pathStr{fileNum});
+  base.permutationMatrix = permutationMatrix;
+
+  % load all the flat maps into the base. We
+  % need to make all the flat images have
+  % the same width and height.
+  if params.threshold
+    base.data(:,:,1) = flat.thresholdMap;
+    base.range = [0 1];
+    base.clip = [0 1];
+  else
+    base.data(:,:,1) = flat.map;
+  end    
+  base.coordMap.coords(:,:,1,1) = flat.baseCoords(:,:,3);
+  base.coordMap.coords(:,:,1,2) = hdr.dim(3)-flat.baseCoords(:,:,1)+1;
+  base.coordMap.coords(:,:,1,3) = hdr.dim(4)-flat.baseCoords(:,:,2)+1;
+  base.coordMap.dims = hdr.dim([2 3 4])';
+
+  v = viewSet(v,'newBase',base);
 end
 
-% no flats made, then return
-if isempty(flat)
-  return
-end
-
-% Extract permutation matrix to keep track of slice orientation.
-% This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
-% make changes here, please update that function as well.
-[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
-permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
-
-% now generate a base structure
-base.hdr = hdr;
-base.name = getLastDir(pathStr{1});
-base.clip = [0 1];
-base.permutationMatrix = permutationMatrix;
-
-% load all the flat maps into the base. We
-% need to make all the flat images have
-% the same width and height.
-for i = 1:length(flat)
-  base.data(:,:,i) = flat{i}.thresholdMap;
-  base.coordMap.coords(:,:,i,1) = flat{end}.baseCoords(:,:,3);
-  base.coordMap.coords(:,:,i,2) = hdr.dim(3)-flat{end}.baseCoords(:,:,1);
-  base.coordMap.coords(:,:,i,3) = hdr.dim(4)-flat{end}.baseCoords(:,:,2);
-  base.coordMap.dims = hdr.dim(2:4)';
-end
-
-v = viewSet(v,'newBase',base);
 
 
