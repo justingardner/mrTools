@@ -918,7 +918,7 @@ end
 
 % --------------------------------------------------------------------
 function transformsMenu_Callback(hObject, eventdata, handles)
-mrWarnDlg('transforms not yet implemented');
+%mrWarnDlg('transforms not yet implemented');
 
 % --------------------------------------------------------------------
 function sformScanMenuItem_Callback(hObject, eventdata, handles)
