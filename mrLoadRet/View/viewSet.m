@@ -315,13 +315,15 @@ switch lower(param)
       else
         MLR.groups(curgroup).scanParams(nscans+1) = scanParams;
         % get an empty auxParams
-        auxParams = MLR.groups(curgroup).auxParams(end);
-        auxParamFields = fieldnames(auxParams);
-        for aNum = 1:length(auxParamFields)
-          auxParams.(auxParamFields{aNum}) = [];
+        if isfield(MLR.groups(curgroup),'auxParams') && (length(MLR.groups(curgroup).auxParams) >= nscans)
+          auxParams = MLR.groups(curgroup).auxParams(nscans);
+          auxParamFields = fieldnames(auxParams);
+          for aNum = 1:length(auxParamFields)
+            auxParams.(auxParamFields{aNum}) = [];
+          end
+          % and add it to the list
+          MLR.groups(curgroup).auxParams(nscans+1) = auxParams;
         end
-        % and set it
-        MLR.groups(curgroup).auxParams(nscans+1) = auxParams;
       end
       % Reconcile analysis params and overlay data/params with tseries
       % files, adding empty data and default params to new scan.
@@ -1220,7 +1222,7 @@ for a = 1:viewGet(view,'numberofAnalyses')
   analysisParams = viewGet(view,'analysisParams',a);
   view.analyses{a}.params = feval(analysisReconcileFunction,curGroupName,analysisParams);
   for ov = 1:viewGet(view,'numberofOverlays',a);
-    overlay = viewGet(v,'overlay',ov,a);
+    overlay = viewGet(view,'overlay',ov,a);
     if ~isempty(overlay)
       overlayReconcileFunction = viewGet(view,'overlayReconcileFunction',ov,a);
       overlayParams = viewGet(view,'overlayParams',ov,a);
