@@ -87,11 +87,6 @@ motionCompGroupName = params.motionCompGroupName;
 descriptions  = params.descriptions;
 tseriesfiles = params.tseriesfiles;
 
-% *** Temporary warning until it is implemented and tested
-if sliceTimeCorrection
-  mrWarnDlg('Slice time correction not yet implemented');
-end
-
 % Open new view with the base group
 viewBase = newView(viewGet(view,'viewType'));
 groupNum = viewGet(viewBase,'groupNum',groupName);
@@ -125,15 +120,20 @@ viewMotionComp = viewSet(viewMotionComp,'currentGroup',motionCompGroupNum);
 % according to motion estimates and save new tseries.
 for s = 1:length(targetScans)
   scanNum = targetScans(s);
-  % clear old tseries
-  clear tseries warpedTseries;
 
-  % Load tseries and dump junk frames
+  % Load tseries 
   tseries = loadTSeries(viewBase,scanNum,'all');
   junkFrames = viewGet(viewBase,'junkframes',scanNum);
   nFrames = viewGet(viewBase,'nFrames',scanNum);
-  tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
+  totalFrames = viewGet(viewBase,'totalFrames',scanNum);
   
+  % Slice order for slice time correction
+  if sliceTimeCorrection
+    sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+  else
+    sliceTimes = [];
+  end
+
   % Intensity/contrast correction
   if correctIntensityContrast
     tseriesIC = intensityContrastCorrection(tseries,crop);
@@ -141,25 +141,19 @@ for s = 1:length(targetScans)
     tseriesIC = tseries;
   end
   
-  % Slice order for slice time correction
-  if sliceTimeCorrection
-    sliceOrder = viewGet(viewBase,'sliceOrder',scanNum);
-  else
-    sliceOrder = [];
-  end
-
   % Get volume corresponding to base frame.  Other frames will be motion
   % compensated to this one.
   switch baseFrame
     case 'first'
-      baseF = 1;
+      baseF = junkFrames+1;
       baseVol = tseriesIC(:,:,:,baseF);
     case 'last'
       baseF = size(tseriesIC,4);
       baseVol = tseriesIC(:,:,:,baseF);
     case 'mean'
       baseF = 0;
-      baseVol = nanmean(tseriesIC,4);
+      tseriesCrop = tseriesIC(:,:,:,junkFrames+1:junkFrames+nFrames);
+      baseVol = nanmean(tseriesCrop,4);
     otherwise
       mrErrorDlg('Invalid base frame');
   end
@@ -170,28 +164,43 @@ for s = 1:length(targetScans)
   % Loop: computing motion estimates and warping the volumes to
   % compensate for the motion in each temporal frame.
   waitHandle = mrWaitBar(0,['Computing motion compensation for scan ',num2str(scanNum),'.  Please wait...']);
-  transforms = cell(1,nFrames);
   M = eye(4);
-  for frame = 1:nFrames
-    mrWaitBar(frame/nFrames,waitHandle)
+  transforms = cell(1,totalFrames);
+  for frame = 1:totalFrames
+    mrWaitBar(frame/totalFrames,waitHandle)
     if (frame == baseF)
       M = eye(4);
     else
+      if (frame <= junkFrames)
+        Minitial = eye(4);
+      else
+        Minitial = M;
+      end
       % Compute rigid-body motion estimate
-      vol = tseriesIC(:,:,:,frame);
-      M = estMotionIter3(baseVol,vol,niters,M,1,robust,0,crop);
+      if sliceTimeCorrection
+        if strcmp(baseFrame,'mean')
+          M = estMotionInterp3(baseVol,tseriesIC,1,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
+        else
+          M = estMotionInterp3(tseriesIC,tseriesIC,baseF,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
+        end
+      else
+        vol = tseriesIC(:,:,:,frame);
+        M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
+      end
     end
     % Collect the transform
     transforms{frame} = M;
     % Warp the volume
-    warpedTseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
+    if sliceTimeCorrection
+      warpedTseries(:,:,:,frame) = warpAffineInterp3(tseries,frame,M,sliceTimes,NaN,interpMethod);
+    else
+      warpedTseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
+    end
   end
   mrCloseDlg(waitHandle);
 
   % Save tseries with modified nifti header
   scanParams = viewGet(viewBase,'scanParams',scanNum);
-  scanParams.junkFrames = 0;
-  scanParams.nFrames = nFrames;
   scanParams.description = ['Within ' descriptions{s}];
   scanParams.fileName = [];
   scanParams.originalFileName{1} = viewGet(viewBase,'tseriesfile',scanNum);
@@ -203,6 +212,9 @@ for s = 1:length(targetScans)
   [pathstr,filename,ext,versn] = fileparts(tseriesFileName);
   tseriesdir = viewGet(viewMotionComp,'tseriesdir');
   save(fullfile(tseriesdir,filename),'evalstr','params','transforms','tseriesFileName');
+  
+  % clear temporary tseries
+  clear tseries tseriesIC warpedTseries tseriesCrop;
 
 end
 

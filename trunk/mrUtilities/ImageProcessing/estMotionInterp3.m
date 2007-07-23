@@ -4,6 +4,8 @@ function M = estMotionInterp3(tseries1,tseries2,frame1,frame2,numIters,Minitial,
 %              [numIters],[Minitial],[sliceTimes],[rotFlag],[robustFlag],[phaseFlag],[crop])
 %
 % tseries1 and tseries2 are time series of volumes (4d arrays)
+%     If either tseries has only 1 frame then that frame is used with no
+%     slice time correction.
 % frame1 and frame2 are corresponding frames from each of the tseries that
 %     are being compared.
 % numIters is number of iterations to run
@@ -37,15 +39,13 @@ function M = estMotionInterp3(tseries1,tseries2,frame1,frame2,numIters,Minitial,
 %
 % DJH 7/2007, modified from estMotionIter3
 
-vol1 = tseries1(:,:,:,frame1);
-vol2 = tseries2(:,:,:,frame2);
-
 % default values
+tseries1Size = size(tseries1);
 if ieNotDefined('numIters')
     numIters=3;
 end
 if ieNotDefined('sliceTimes')
-  sliceTimes = zeros(1,size(vol1,3));
+  sliceTimes = zeros(1,tseries1Size(3));
 end
 if ieNotDefined('Minitial')
     M=eye(4);
@@ -62,7 +62,7 @@ if ~exist('phaseFlag','var')
     phaseFlag = 0;
 end
 if ieNotDefined('crop')
-    crop = [2 2 2; (size(vol1) - [2 2 2])];
+    crop = [2 2 2; (tseries1Size(1:3) - [2 2 2])];
 end
 if ieNotDefined('CB')
     CB = [];
@@ -71,11 +71,22 @@ if ieNotDefined('SC')
     SC = [];
 end
 
+nframes1 = size(tseries1,4);
+nframes2 = size(tseries2,4);
+
 for iter=1:numIters
   Mhalf2=real(sqrtm(M));
   Mhalf1=real(sqrtm(inv(M)));
-  volWarp1=warpAffineInterp3(tseries1,frame1,Mhalf1,sliceTimes);
-  volWarp2=warpAffineInterp3(tseries2,frame2,Mhalf2,sliceTimes);
+  if (nframes1 == 1)
+    volWarp1=warpAffine3(tseries1(:,:,:,1),Mhalf1);
+  else
+    volWarp1=warpAffineInterp3(tseries1,frame1,Mhalf1,sliceTimes);
+  end
+  if (nframes2 == 1)
+    volWarp2=warpAffine3(tseries1(:,:,:,1),Mhalf2);
+  else
+    volWarp2=warpAffineInterp3(tseries2,frame2,Mhalf2,sliceTimes);
+  end
   deltaM=estMotion3(volWarp1,volWarp2,rotFlag,robustFlag,phaseFlag,crop,CB,SC);
   M=deltaM*M;
 end
@@ -102,6 +113,8 @@ tseries=zeros([size(in),2]);
 tseries(:,:,:,1) = vol1;
 tseries(:,:,:,2) = vol2;
 estMotionInterp3(tseries,tseries,1,2,3)
+estMotionInterp3(vol1,tseries,1,2,3)
+estMotionInterp3(vol1,vol2,1,1,3)
 
 
 % zone plate volumes

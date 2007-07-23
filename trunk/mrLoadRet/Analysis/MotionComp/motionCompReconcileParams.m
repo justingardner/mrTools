@@ -26,7 +26,7 @@ if ieNotDefined('params')
   newparams.groupName = groupName;
   newparams.baseScan = 1;
   newparams.baseFrame = 'first';
-  newparams.sliceTimeCorrection = 0;
+  newparams.sliceTimeCorrection = 1;
   newparams.robust = 0;
   newparams.correctIntensityContrast = 0;
   newparams.crop = [];

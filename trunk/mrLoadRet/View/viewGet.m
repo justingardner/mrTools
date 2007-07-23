@@ -2266,6 +2266,16 @@ switch lower(param)
       end
     end
     
+  case{'slicetimes'}
+    % n = viewGet(view,'sliceTimes',[scanNum],[groupNum])
+    % n = viewGet(view,'sliceTimes',scanNum,[])
+    % n = viewGet(view,'sliceTimes',scanNum)
+    [s g] = getScanAndGroup(view,varargin,param);
+    sliceOrder = viewGet(view,'sliceOrder',s,g);
+    nslices = viewGet(view,'nslices',s,g);
+    val = zeros(1,nslices);
+    val(sliceOrder) = [0:nslices-1]/nslices;
+    
   otherwise
     if strcmp(mrGetPref('verbose'),'Yes')
       dispViewGetHelp;

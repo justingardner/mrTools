@@ -1082,6 +1082,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = editOverlayGUI(view);
+view = viewSet(view,'overlayCache','init');
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
