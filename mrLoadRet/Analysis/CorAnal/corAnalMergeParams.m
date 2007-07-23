@@ -48,6 +48,8 @@ for scan = 1:nScans
     mergedParams.detrend(scan) = oldParams.detrend(scan);
     mergedParams.spatialnorm(scan) = oldParams.spatialnorm(scan);
     mergedParams.tseriesfile(scan) = oldParams.tseriesfile(scan);
-    mergedData{scan} = oldData{scan};
+    if iscell(oldData)
+      mergedData{scan} = oldData{scan};
+    end
   end
 end
