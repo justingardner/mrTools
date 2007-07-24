@@ -32,7 +32,7 @@ if ieNotDefined('params')
   newparams.crop = [];
   newparams.niters = 3;
   newparams.motionCompGroupName = 'MotionComp';
-  newparams.interpMethod = 'cubic';
+  newparams.interpMethod = 'linear';
   newparams.targetScans = [1:nScans];
   newparams.tseriesfiles = tseriesfiles;
   newparams.descriptions = descriptions;

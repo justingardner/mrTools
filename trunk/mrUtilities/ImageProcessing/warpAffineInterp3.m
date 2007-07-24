@@ -62,15 +62,25 @@ return;
 %%% Debug
 
 slice=[0 0 0; 0.1 0.1 0.1; 0.2 0.2 0.2]';
-tseries=ones(3,3,4,2);
+tseries=ones(3,3,4,3);
 for z=1:4
   tseries(:,:,z,1)=slice+z;
 end
 tseries(:,:,:,2)=tseries(:,:,:,1)+4;
+tseries(:,:,:,3)=tseries(:,:,:,2)+4;
+%tseries(:,:,:,4)=tseries(:,:,:,3)+4;
+
+tseries(:,:,:,1)
+tseries(:,:,:,2)
 
 A = eye(4);
 sliceTimes = [0 .25 .5 .75];
 
 res=warpAffineInterp3(tseries,2,A,sliceTimes,NaN)
+res=warpAffineInterp3(tseries,2,A,sliceTimes,NaN,'cubic')
+
 res=warpAffineInterp3(tseries,1,A,sliceTimes,NaN)
 res=warpAffineInterp3(tseries,1,A,sliceTimes,NaN,'nearest')
+
+
+

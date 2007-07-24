@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 20-Jul-2007 09:52:22
+% Last Modified by GUIDE v2.5 24-Jul-2007 18:17:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1288,6 +1288,13 @@ view = MLR.views{viewNum};
 view = motionCompBetweenScans(view);
 
 % --------------------------------------------------------------------
+function sliceTimeCorrectMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = sliceTimeCorrect(view);
+
+% --------------------------------------------------------------------
 function averageTSeriesMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1763,6 +1770,7 @@ d.scanNum = viewGet(view,'curScan');
 d.expname = '';
 d.ver = 4;
 dispmotioncorrect(d);
+
 
 
 
