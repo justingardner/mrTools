@@ -23,6 +23,7 @@ function view = motionCompWithinScan(view,params)
 %    Default [].
 % niters: number of iterations in the motion estimation.
 %    Default 3.
+% sliceTimeCorrection: Performs slice time correction if True.
 % interpMethod: 'nearest', 'linear', 'cubic', or 'spline' as in interp3.
 % tseriesfiles: cell array of strings the same length as targetScans,
 %    specifying the tseries filenames. Or 'any' to allow any match with the
