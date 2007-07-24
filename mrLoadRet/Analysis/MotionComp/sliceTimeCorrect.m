@@ -114,7 +114,7 @@ for s = 1:length(targetScans)
   for frame = 1:totalFrames
     mrWaitBar(frame/totalFrames,waitHandle)
     tgrid = tgrid + 1;
-    interpn(tseries,ygrid,xgrid,zgrid,tgrid,interpMethod,NaN);
+    warpedTseries(:,:,:,frame) = interpn(tseries,ygrid,xgrid,zgrid,tgrid,interpMethod,NaN);
   end
   mrCloseDlg(waitHandle);
 
