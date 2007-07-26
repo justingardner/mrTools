@@ -42,33 +42,6 @@ if isempty(d)
   reutrn
 end
  
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% plot the timecourse for voxel
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-subplot(2,2,1:2)
-tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
-legendHandle(1) = plot(tSeries,'k.-');
-legendStr{1} = 'TSeries';
-xlabel('Volume number');
-ylabel('MRI signal');
-% and the stimulus times
-hold on
-axis tight;
-if isfield(d, 'stimvol')
-  for i = 1:d.nhdr
-    vlineHandle = vline(d.stimvol{i},getcolor(i));
-    legendHandle(i+1) = vlineHandle(1);
-    nStimvol(i) = length(d.stimvol{i});
-    if isfield(d,'stimNames')
-      legendStr{i+1} = sprintf('%s (n=%i)',d.stimNames{i},nStimvol(i));
-    else
-      legendStr{i+1} = sprintf('%i (n=%i)',i,nStimvol(i));
-    end
-  end
-end
-legend(legendHandle,legendStr);
-% get distribution of ISI
-%diff(sort(cell2mat(d.stimvol)));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the hemodynamic response for voxel
@@ -143,6 +116,36 @@ for roinum = 1:length(roi)
     legend(stimNames);
   end
 end
+
+drawnow;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% plot the timecourse for voxel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+subplot(2,2,1:2)
+tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
+legendHandle(1) = plot(tSeries,'k.-');
+legendStr{1} = 'TSeries';
+xlabel('Volume number');
+ylabel('MRI signal');
+% and the stimulus times
+hold on
+axis tight;
+if isfield(d, 'stimvol')
+  for i = 1:d.nhdr
+    vlineHandle = vline(d.stimvol{i},getcolor(i));
+    legendHandle(i+1) = vlineHandle(1);
+    nStimvol(i) = length(d.stimvol{i});
+    if isfield(d,'stimNames')
+      legendStr{i+1} = sprintf('%s (n=%i)',d.stimNames{i},nStimvol(i));
+    else
+      legendStr{i+1} = sprintf('%i (n=%i)',i,nStimvol(i));
+    end
+  end
+end
+legend(legendHandle,legendStr);
+% get distribution of ISI
+%diff(sort(cell2mat(d.stimvol)));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % function to plot ehdr
