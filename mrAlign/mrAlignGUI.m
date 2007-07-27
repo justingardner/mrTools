@@ -286,7 +286,7 @@ if (inplaneDimension == 4)
 		'Mean','First frame','Cancel','Mean');
 	switch buttonName
 		case 'Mean'
-			vData = mean(vData,4);
+			vData = nanmean(vData,4);
 		case 'First frame'
 			vData = vData(:,:,:,1);
 		case 'Cancel'
@@ -930,7 +930,7 @@ if (volumeDimension == 4)
 		'Mean','First frame','Cancel','Mean');
 	switch buttonName
 		case 'Mean'
-			vData = mean(vData,4);
+			vData = nanmean(vData,4);
 		case 'First frame'
 			vData = vData(:,:,:,1);
 		case 'Cancel'
