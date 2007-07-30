@@ -248,6 +248,15 @@ histThresh = length(image(:))/1000;
 goodVals = find(cnt>histThresh);
 clipMin = val(min(goodVals));
 clipMax = val(max(goodVals));
+% Handle degenerate case such as image filled with NaNs
+if isempty(clipMin)
+    clipMin = 0;
+    clipMax = 1;
+end
+% Handle degenerate case in which clipMax = clipMin
+if (clipMax == clipMin)
+    clipMax = clipMax+1;
+end
 cRange = [clipMin,clipMax];
 
 % --------------------------------------------------------------------
@@ -726,6 +735,9 @@ refreshAlignDisplay(handles);
 % --------------------------------------------------------------------
 function reverseContrastAlignment_Callback(hObject, eventdata, handles)
 global ALIGN
+
+mrWarnDlg('This feature is not yet debugged. Do not use.');
+
 if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
 	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
 	return

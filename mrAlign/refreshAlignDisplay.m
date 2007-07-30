@@ -88,26 +88,14 @@ end
 function rgb = rescale2rgb(image,cmap,clip)
 %function rgb = rescale2rgb(image,cmap,[clipMin,clipMax])
 
-if ~exist('clip','var')
-    % Choose clipping based on histogram
-    histThresh = length(image(:))/1000;
-    [cnt, val] = hist(image(:),100);
-    goodVals = find(cnt>histThresh);
-    clipMin = val(min(goodVals));
-    clipMax = val(max(goodVals));
-    clip = [clipMin,clipMax];
-else
-    clipMin = clip(1);
-    clipMax = clip(2);
-end
-
 % Clip
-result = image;
-result(find(image < clipMin)) = clipMin;
-result(find(image > clipMax)) = clipMax;
+clipMin = clip(1);
+clipMax = clip(2);
+image(image < clipMin) = clipMin;
+image(image > clipMax) = clipMax;
 
 % Scale
-indices = round(255 * (result-clipMin)/(clipMax-clipMin)) + 1;
+indices = round(255 * (image-clipMin)/(clipMax-clipMin)) + 1;
 indices = max(1,min(indices,size(cmap,1)));
 
 % Extract r,g,b components
