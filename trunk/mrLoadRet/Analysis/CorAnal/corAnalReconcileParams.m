@@ -24,16 +24,16 @@ newparams.detrend = cell(1,nScans);
 newparams.spatialnorm = cell(1,nScans);
 newparams.tseriesfile = cell(1,nScans);
 for scan = 1:nScans
-    newparams.detrend{scan} = 'None';
-    newparams.spatialnorm{scan} = 'None';
-    tseriesfile = viewGet([],'tseriesFile',scan,groupNum);
-    newparams.tseriesfile{scan} = tseriesfile;
-    newdata{scan} = [];
+  newparams.detrend{scan} = 'None';
+  newparams.spatialnorm{scan} = 'None';
+  tseriesfile = viewGet([],'tseriesFile',scan,groupNum);
+  newparams.tseriesfile{scan} = tseriesfile;
+  newdata{scan} = [];
 end
 
 % Initialize newdata
 if ieNotDefined('data')
-    data = cell(1,nScans);
+  data = cell(1,nScans);
 end
 newdata = cell(1,nScans);
 
@@ -44,20 +44,20 @@ newdata = cell(1,nScans);
 % This is useful so that you can run the analysis on multiple data sets
 % using the same params.
 if ~ieNotDefined('params')
-    for scan = 1:nScans
-        tseriesfile = viewGet([],'tseriesFile',scan,groupNum);
-        if strcmp(params.tseriesfile,'any')
-            match = scan;
-        else
-            match = find(strcmp(tseriesfile,{params.tseriesfile{:}}));
-        end
-        if match
-            newparams.recompute(scan) = params.recompute(match);
-            newparams.ncycles(scan) = params.ncycles(match);
-            newparams.detrend{scan} = params.detrend{match};
-            newparams.spatialnorm{scan} = params.spatialnorm{match};
-            newparams.tseriesfile{scan} = tseriesfile;
-            newdata{scan} = data{match};
-        end
+  for scan = 1:nScans
+    tseriesfile = viewGet([],'tseriesFile',scan,groupNum);
+    if strcmp(params.tseriesfile,'any')
+      match = scan;
+    else
+      match = find(strcmp(tseriesfile,{params.tseriesfile{:}}));
     end
+    if match
+      newparams.recompute(scan) = params.recompute(match);
+      newparams.ncycles(scan) = params.ncycles(match);
+      newparams.detrend{scan} = params.detrend{match};
+      newparams.spatialnorm{scan} = params.spatialnorm{match};
+      newparams.tseriesfile{scan} = tseriesfile;
+      newdata{scan} = data{match};
+    end
+  end
 end
