@@ -16,7 +16,7 @@ function varargout = motionCompGUI(varargin)
 %
 % djh, 7/2004
 
-% Last Modified by GUIDE v2.5 17-Jul-2007 16:42:25
+% Last Modified by GUIDE v2.5 31-Jul-2007 13:26:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -190,6 +190,9 @@ else
   baseFrameStrings = get(handles.baseFramePopup,'String');
   baseFrameValue = get(handles.baseFramePopup,'Value');
   params.baseFrame = baseFrameStrings{baseFrameValue};
+  sliceTimeStrings = get(handles.sliceTimePopup,'String');
+  sliceTimeValue = get(handles.sliceTimePopup,'Value');
+  params.sliceTimeString = sliceTimeStrings{sliceTimeValue};
   params.sliceTimeCorrection = get(handles.sliceTimeCheckbox,'Value');
   params.robust = get(handles.robustCheckbox,'Value');
   params.correctIntensityContrast = get(handles.intensityContrastCheckbox,'Value');
@@ -326,6 +329,14 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function baseFramePopup_Callback(hObject, eventdata, handles)
+
+% --- sliceTimePopup.
+function sliceTimePopup_Callback(hObject, eventdata, handles)
+
+function sliceTimePopup_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
 % --- cropButton.
 function cropButton_Callback(hObject, eventdata, handles)

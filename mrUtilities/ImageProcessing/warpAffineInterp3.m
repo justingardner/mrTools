@@ -42,9 +42,7 @@ end
 coords = [xgrid(:)'; ygrid(:)'; zgrid(:)'];
 homogeneousCoords = [coords; ones(1,size(coords,2))];
 warpedCoords = A*homogeneousCoords;
-% Slice time correction. Interpolated to the end of each TR. Would have to
-% add 1/2 to interpolate to the middle of each TR but that busts the last
-% frame of the tseries.
+% Slice time correction
 for slice = 1:size(tgrid,3)
   tgrid(:,:,slice) = tgrid(:,:,slice) - sliceTimes(slice);
 end

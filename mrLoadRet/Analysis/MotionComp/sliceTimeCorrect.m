@@ -59,6 +59,7 @@ end
 % Retrieve parameters
 targetScans = params.targetScans;
 interpMethod = params.interpMethod;
+sliceTimeString = params.sliceTimeString;
 groupName = params.groupName;
 motionCompGroupName = params.motionCompGroupName;
 descriptions  = params.descriptions;
@@ -93,12 +94,25 @@ for s = 1:length(targetScans)
   nFrames = viewGet(viewBase,'nFrames',scanNum);
   totalFrames = viewGet(viewBase,'totalFrames',scanNum);
   
-  % Slice order for slice time correction
-  sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
-
-  % Initialize the warped time series to zeros.
+  % Get slice times and replicate the last frame for slice time correction
   warpedTseries = zeros(size(tseries));
   
+  % Replicate last frame of tseries
+  tseries(:,:,:,end+1) = tseries(:,:,:,end);
+  
+  % Get slice times
+  sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+  switch sliceTimeString
+    case 'end of TR'
+      sliceTimes = sliceTimes;
+    case 'middle of TR'
+      sliceTimes = sliceTimes - 0.5;
+    case 'beginning of TR'
+      sliceTimes = sliceTimes - 1;
+    otherwise
+      mrErrorDlg('Invalid slice times');
+  end
+
   % Make grids for interpn
   [Ny Nx Nz Nt] = size(tseries);
   [ygrid,xgrid,zgrid,tgrid] = ndgrid(1:Ny,1:Nx,1:Nz,0);

@@ -24,6 +24,10 @@ function view = motionCompWithinScan(view,params)
 % niters: number of iterations in the motion estimation.
 %    Default 3.
 % sliceTimeCorrection: Performs slice time correction if True.
+% sliceTimeString: Specifies slice time correction:
+%    'beginning of TR'
+%    'middle of TR'
+%    'end of TR' (default)
 % interpMethod: 'nearest', 'linear', 'cubic', or 'spline' as in interp3.
 % tseriesfiles: cell array of strings the same length as targetScans,
 %    specifying the tseries filenames. Or 'any' to allow any match with the
@@ -78,6 +82,7 @@ end
 baseFrame = params.baseFrame;
 targetScans = params.targetScans;
 sliceTimeCorrection = params.sliceTimeCorrection;
+sliceTimeString = params.sliceTimeString;
 robust = params.robust;
 correctIntensityContrast = params.correctIntensityContrast;
 crop = params.crop;
@@ -128,13 +133,28 @@ for s = 1:length(targetScans)
   nFrames = viewGet(viewBase,'nFrames',scanNum);
   totalFrames = viewGet(viewBase,'totalFrames',scanNum);
   
-  % Slice order for slice time correction
+  % Initialize the warped time series to zeros.
+  warpedTseries = zeros(size(tseries));
+  
+  % Get slice times and replicate the last frame of tseries for slice time
+  % correction
   if sliceTimeCorrection
     sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+    tseries(:,:,:,end+1) = tseries(:,:,:,end);
+    switch sliceTimeString
+      case 'end of TR'
+        sliceTimes = sliceTimes;
+      case 'middle of TR'
+        sliceTimes = sliceTimes - 0.5;
+      case 'beginning of TR'
+        sliceTimes = sliceTimes - 1;
+      otherwise
+        mrErrorDlg('Invalid slice times');
+    end
   else
     sliceTimes = [];
   end
-
+  
   % Intensity/contrast correction
   if correctIntensityContrast
     tseriesIC = intensityContrastCorrection(tseries,crop);
@@ -158,10 +178,7 @@ for s = 1:length(targetScans)
     otherwise
       mrErrorDlg('Invalid base frame');
   end
-
-  % Initialize the warped time series to zeros.
-  warpedTseries = zeros(size(tseries));
-
+  
   % Loop: computing motion estimates and warping the volumes to
   % compensate for the motion in each temporal frame.
   waitHandle = mrWaitBar(0,['Computing motion compensation for scan ',num2str(scanNum),'.  Please wait...']);

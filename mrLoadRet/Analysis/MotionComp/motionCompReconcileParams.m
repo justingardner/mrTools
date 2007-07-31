@@ -27,6 +27,7 @@ if ieNotDefined('params')
   newparams.baseScan = 1;
   newparams.baseFrame = 'first';
   newparams.sliceTimeCorrection = 1;
+  newparams.sliceTimeString = 'middle of TR';
   newparams.robust = 0;
   newparams.correctIntensityContrast = 0;
   newparams.crop = [];
@@ -42,6 +43,7 @@ else
   newparams.baseScan = params.baseScan;
   newparams.baseFrame = params.baseFrame;
   newparams.sliceTimeCorrection = params.sliceTimeCorrection;
+  newparams.sliceTimeString = params.sliceTimeString;
   newparams.robust = params.robust;
   newparams.correctIntensityContrast = params.correctIntensityContrast;
   newparams.crop = params.crop;
