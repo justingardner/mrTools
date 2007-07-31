@@ -30,6 +30,10 @@ function view = motionComp(view,params)
 % niters: number of iterations in the motion estimation.
 %    Default 3.
 % sliceTimeCorrection: Performs slice time correction if True.
+% sliceTimeString: Specifies slice time correction:
+%    'beginning of TR'
+%    'middle of TR'
+%    'end of TR' (default)
 % interpMethod: 'nearest', 'linear', 'cubic', or 'spline' as in interp3.
 % tseriesfiles: cell array of strings the same length as targetScans,
 %    specifying the tseries filenames. Or 'any' to allow any match with the
@@ -85,6 +89,7 @@ baseScan = params.baseScan;
 baseFrame = params.baseFrame;
 targetScans = params.targetScans;
 sliceTimeCorrection = params.sliceTimeCorrection;
+sliceTimeString = params.sliceTimeString;
 robust = params.robust;
 correctIntensityContrast = params.correctIntensityContrast;
 crop = params.crop;
@@ -130,13 +135,6 @@ if isempty(motionCompGroupNum)
 end
 viewMotionComp = viewSet(viewMotionComp,'currentGroup',motionCompGroupNum);
 
-% Slice order for slice time correction
-if sliceTimeCorrection
-  sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
-else
-  sliceTimes = [];
-end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Within scan motion compensation on base scan %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,6 +146,28 @@ junkFrames = viewGet(viewBase,'junkframes',scanNum);
 nFrames = viewGet(viewBase,'nFrames',scanNum);
 totalFrames = viewGet(viewBase,'totalFrames',scanNum);
 
+% Initialize the warped time series to zeros.
+warpedTseries = zeros(size(tseries));
+ 
+% Get slice times and replicate the last frame of tseries for slice time
+% correction 
+if sliceTimeCorrection
+  sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+  tseries(:,:,:,end+1) = tseries(:,:,:,end);
+  switch sliceTimeString
+    case 'end of TR'
+      sliceTimes = sliceTimes;
+    case 'middle of TR'
+      sliceTimes = sliceTimes - 0.5;
+    case 'beginning of TR'
+      sliceTimes = sliceTimes - 1;
+    otherwise
+      mrErrorDlg('Invalid slice times');
+  end
+else
+  sliceTimes = [];
+end
+
 % Intensity/contrast correction
 if correctIntensityContrast
   tseriesIC = intensityContrastCorrection(tseries,crop);
@@ -155,7 +175,7 @@ else
   tseriesIC = tseries;
 end
 
-% Get volume corresponding to base frame.  Other frames will be motion
+% Get volume corresponding to base frame. Other frames will be motion
 % compensated to this one.
 switch baseFrame
   case 'first'
@@ -171,9 +191,6 @@ switch baseFrame
   otherwise
     mrErrorDlg('Invalid base frame');
 end
-
-% Initialize the warped time series to zeros.
-warpedTseries = zeros(size(tseries));
 
 % Loop: computing motion estimates and warping the volumes to
 % compensate for the motion in each temporal frame.
@@ -234,24 +251,35 @@ for s = 1:length(targetScans)
   nFrames = viewGet(viewBase,'nFrames',scanNum);
   totalFrames = viewGet(viewBase,'totalFrames',scanNum);
   
-  % Slice order for slice time correction
+  % Initialize the warped time series to zeros. Need to re-initialize this
+  % for each scan because number of frames can differ. 
+  warpedTseries = zeros(size(tseries));
+  
+  % Get slice times and replicate the last frame of tseries for slice time
+  % correction
   if sliceTimeCorrection
-    sliceOrder = viewGet(viewBase,'sliceOrder',scanNum);
+    sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+    tseries(:,:,:,end+1) = tseries(:,:,:,end);
+    switch sliceTimeString
+      case 'end of TR'
+        sliceTimes = sliceTimes;
+      case 'middle of TR'
+        sliceTimes = sliceTimes - 0.5;
+      case 'beginning of TR'
+        sliceTimes = sliceTimes - 1;
+      otherwise
+        mrErrorDlg('Invalid slice times');
+    end
   else
-    sliceOrder = [];
+    sliceTimes = [];
   end
-
+  
   % Intensity/contrast correction
   if correctIntensityContrast
     tseriesIC = intensityContrastCorrection(tseries,crop);
   else
     tseriesIC = tseries;
   end
-  
-  % Initialize the warped time series to zeros.
-  % Need to re-initialize this for each scan because number of frames can
-  % differ
-  warpedTseries = zeros(size(tseries));
   
   % Loop through frames of target scan and estimate motion params
   waitHandle = mrWaitBar(0,['Computing motion estimates for scan ',num2str(scanNum),'.  Please wait...']);
