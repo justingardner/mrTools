@@ -736,7 +736,7 @@ refreshAlignDisplay(handles);
 function reverseContrastAlignment_Callback(hObject, eventdata, handles)
 global ALIGN
 
-mrWarnDlg('This feature is not yet debugged. Do not use.');
+mrWarnDlg('Warning: This feature is not yet fully debugged. It should be used only for the first frame of a high resolution EPI.');
 
 if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
 	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
