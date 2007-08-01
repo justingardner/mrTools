@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 24-Jul-2007 18:17:34
+% Last Modified by GUIDE v2.5 01-Aug-2007 14:00:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -998,6 +998,33 @@ groupNum = viewGet(view,'curGroup');
 groupName = viewGet(view,'groupName',groupNum);
 scanInfo(scanNum,groupNum,1);
 
+
+% --------------------------------------------------------------------
+function linkStimfileMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+% Choose stimfile to add
+etcDir = viewGet(view,'etcDir');
+pathStr = getPathStrDialog(etcDir,'Link Stimfile: choose matlab file');
+if isempty(pathStr)
+    % Aborted
+    return
+end
+if ~exist(pathStr,'file')
+    mrErrorDlg('Invalid stimfile file');
+end
+
+% Copy the nifti file to the tseries directory
+[dir,file,ext,versn] = fileparts(pathStr);
+if strcmp(dir,etcDir)
+    % If stimfile is already in the Etc directory
+    fileName = [file,ext];
+    viewSet(view, 'stimfilename', fileName);
+else
+    mrErrorDlg('Stimfile must be in the Etc directory');
+end
+
 % --------------------------------------------------------------------
 function editAnalysisMenu_Callback(hObject, eventdata, handles)
 
@@ -1770,7 +1797,6 @@ d.scanNum = viewGet(view,'curScan');
 d.expname = '';
 d.ver = 4;
 dispmotioncorrect(d);
-
 
 
 
