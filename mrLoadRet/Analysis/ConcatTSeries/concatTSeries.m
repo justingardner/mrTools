@@ -16,7 +16,7 @@ end
 
 % description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
-    {'groupName',viewGet(view,'groupNames'),'Name of group from which to make concatenation'},...
+    {'groupName',putOnTopOfList(viewGet(view,'groupName'),viewGet(view,'groupNames')),'Name of group from which to make concatenation'},...
     {'newGroupName','Concatenation','Name of group that will be created'},...
     {'description','Concatenation of [x...x]','Description that will be set to have the scannumbers that are selected'},...
     {'filterType',1,'minmax=[0 1]','incdec=[-1 1]','Which filter to use, for now you can only turn off highpass filtering'},...
@@ -118,7 +118,11 @@ for iscan = 1:length(params.scanList)
   nFrames = viewGet(viewBase,'nFrames',scanNum);
   d.dim(4) = nFrames;
   d.data = d.data(:,:,:,junkFrames+1:junkFrames+nFrames);
-	
+
+  % get the total junked frames. This is the number of frames
+  % we have junked here, plus whatever has been junked in previous ones
+  totalJunkedFrames(iscan) = junkFrames+viewGet(viewBase,'totalJunkedFrames',scanNum);
+  
   % Compute transform
   if params.warp
     % get base and scan xforms
@@ -182,6 +186,7 @@ for iscan = 1:length(params.scanList)
     scanParams.description = params.description;
     scanParams.originalFileName{1} = filename;
     scanParams.originalGroupName{1} = baseGroupName;
+    scanParams.totalJunkedFrames = totalJunkedFrames;
     hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.scanList(1)));
     % data *MUST* be written out as float32 b/c of the small values-epm
     hdr.datatype = 16;
@@ -208,6 +213,7 @@ for iscan = 1:length(params.scanList)
     oldScanParams = viewGet(viewConcat,'scanParams',saveScanNum);
     oldScanParams.originalFileName{end+1} = filename;
     oldScanParams.originalGroupName{end+1} = baseGroupName;
+    oldScanParams.totalJunkedFrames = totalJunkedFrames;
     viewConcat = saveTSeries(viewConcat,d.data,saveScanNum,oldScanParams,[],1);
 
     % This code is no longer necessary--should be removed once tested
