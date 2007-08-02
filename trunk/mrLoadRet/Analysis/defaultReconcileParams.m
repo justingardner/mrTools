@@ -18,11 +18,24 @@ end
 
 if ieNotDefined('data'),data=[];,end
 
+% get group name
+if ieNotDefined('groupName')
+  if isfield(params,'groupName')
+    groupName = params.groupName;
+  else
+    groupName = '';
+  end
+end
+% set group number
+if ~ieNotDefined('groupName')
+  groupNum = viewGet([],'groupNum',groupName);
+end
+
 % if params is a cell array, then call defaultReconcileParams on each
 % element of the cell array one at a time
 if iscell(params)
-  newData = cell(1,length(params));
-  newParams = cell(1,length(params));
+  newData = cell(1,viewGet([],'numScans',groupNum));
+  newParams = cell(1,viewGet([],'numScans',groupNum));
   for i = 1:length(params)
     if ~isempty(params{i})
       if length(data) >= i
@@ -44,19 +57,6 @@ if iscell(params)
   data = newData;
   params = newParams;
   return
-end
-
-% get group name
-if ieNotDefined('groupName')
-  if isfield(params,'groupName')
-    groupName = params.groupName;
-  else
-    groupName = '';
-  end
-end
-% set group number
-if ~ieNotDefined('groupName')
-  groupNum = viewGet([],'groupNum',groupName);
 end
 
 % if this has the field paramInfo then it comes from'

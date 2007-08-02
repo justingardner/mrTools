@@ -585,7 +585,11 @@ switch lower(param)
       mrErrorDlg(['analysis is incompatible with group: ',curGroupName]);
     end
     % Reconcile analysis params with group
-    analysis.params = feval(analysis.reconcileFunction,curGroupName,analysis.params);
+    if isfield(analysis,'d')
+      [analysis.params analysis.d] = feval(analysis.reconcileFunction,curGroupName,analysis.params,analysis.d);
+    else
+      analysis.params = feval(analysis.reconcileFunction,curGroupName,analysis.params);
+    end
     % If analysis.name already exists then replace the existing one with
     % this new one. Otherwise, add it to the end of the analysis list.
     newAnalysisName = analysis.name;
@@ -619,7 +623,7 @@ switch lower(param)
     end
     % completely clear the overlay cache
     view = viewSet(view,'overlayCache','init');
-    
+
   case {'deleteanalysis'}
     % view = viewSet(view,'deleteAnalysis',analysisNum);
     analysisNum = val;
@@ -726,7 +730,7 @@ switch lower(param)
     analysis = viewGet(view,'analysis',analysisNum);
     % Error if groupNames don't match
     if ~strcmp(overlay.groupName,analysis.groupName)
-      mrErrorDlg(['overlay is incompatible with group: ',groupName]);
+      mrErrorDlg(['(viewSet) overlay is incompatible with group: ',groupName]);
     end
     % Reconcile overlay data and params with tseries files, reordering
     % them as necessary.
@@ -736,14 +740,14 @@ switch lower(param)
     % Check that it has the correct number of scans
     if (length(overlay.data) ~= nScans)
       %mrErrorDlg('Invalid overlay, incorrect number of scans.');
-      mrWarnDlg('Invalid overlay, incorrect number of scans.');
+      mrWarnDlg('(viewSet) Invalid overlay, incorrect number of scans.');
       return;
     end
     % Check that the data arrays for each scan are the correct size
     for s = 1:nScans
       overlayDims = viewGet(view,'dims',s,groupNum);
       if (~isempty(overlay.data{s})) & (size(overlay.data{s}) ~= overlayDims)
-        mrErrorDlg('Invalid overlay, incorrect data array size.');
+        mrErrorDlg('(viewSet) Invalid overlay, incorrect data array size.');
       end
     end
     % If overlay.name already exists then replace the existing one with
@@ -1240,16 +1244,20 @@ for v = find(view.viewNum ~= [1:length(MLR.views)])
     group = viewGet(v,'currentGroup');
     if (group == curgroup)
       for a = 1:viewGet(v,'numberofAnalyses')
-        analysisReconcileFunction = viewGet(view,'reconcilefunction',a);
-        analysisParams = viewGet(view,'analysisParams',a);
+	% jg-changed the viewGet(view... to viewGet(v... in
+	% the lines below since that seems like what is wanted?
+        analysisReconcileFunction = viewGet(v,'reconcilefunction',a);
+        analysisParams = viewGet(v,'analysisParams',a);
         MLR.views{v}.analyses{a}.params = feval(analysisReconcileFunction,...
           curGroupName,analysisParams);
-        for ov = 1:viewGet(view,'numberofOverlays',a);
+	% view->v
+        for ov = 1:viewGet(v,'numberofOverlays',a);
           overlay = viewGet(v,'overlay',ov,a);
           if ~isempty(overlay)
-            overlayReconcileFunction = viewGet(view,'overlayReconcileFunction',ov,a);
-            overlayParams = viewGet(view,'overlayParams',ov,a);
-            overlayData = viewGet(view,'overlaydata',[],ov,a);
+	    % view->v
+            overlayReconcileFunction = viewGet(v,'overlayReconcileFunction',ov,a);
+            overlayParams = viewGet(v,'overlayParams',ov,a);
+            overlayData = viewGet(v,'overlaydata',[],ov,a);
             [params,data] = feval(overlayReconcileFunction,...
               curGroupName,overlayParams,overlayData);
             MLR.views{v}.analyses{a}.overlays(ov).params = params;
