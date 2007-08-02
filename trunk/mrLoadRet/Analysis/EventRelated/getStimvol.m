@@ -99,6 +99,7 @@ for i = 1:length(d.stimfile)
         % and get rid of anything less than 0
         stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
     end
+
     % if we have more than one stimfile, than we have to concatenate
     % together the stimvol. For this we are going to need to have
     % a concatInfo field

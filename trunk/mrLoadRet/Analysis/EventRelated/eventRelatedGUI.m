@@ -43,7 +43,7 @@ paramsInfo = {...
 if useDefault
   params = mrParamsDefault(paramsInfo);
 else
-  params = mrParamsDialog(paramsInfo);
+  params = mrParamsDialog(paramsInfo,'Event Related Parameters');
 end
 
 % if empty user hit cancel

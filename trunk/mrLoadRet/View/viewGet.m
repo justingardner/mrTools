@@ -256,33 +256,25 @@ switch lower(param)
     if (nscans >= s) & (s > 0)
       val = MLR.groups(g).scanParams(s).totalFrames;
     end
-  case{'junkframestotal'}
+  case{'junkframestotal','totaljunkedframes'}
     % gets all junk frames from this scan and the scans this was made from
-    % n = viewGet(view,'junkFramesTotal',scanNum,[groupNum])
-    % n = viewGet([],'junkFramesTotal',scanNum,groupNum)
-    % n = viewGet(view,'junkFramesTotal',scanNum,[])
-    % n = viewGet(view,'junkFramesTotal',scanNum)
+    % n = viewGet(view,'totalJunkedFrames',scanNum,[groupNum])
+    % n = viewGet([],'totalJunkedFrames',scanNum,groupNum)
+    % n = viewGet(view,'totalJunkedFrames',scanNum,[])
+    % n = viewGet(view,'totalJunkedFrames',scanNum)
     [s g] = getScanAndGroup(view,varargin,param);
-    % get the junk frame from this scan
-    junkFramesThisScan = viewGet(view,'junkFrames',s,g);
-    if isempty(junkFramesThisScan),junkFramesThisScan=0;,end
-    % find the original scan num
-    [os og] = viewGet(view,'originalScanNum',s,g);
-    if isempty(os)
-      junkFramesTotal = junkFramesThisScan;
-    else
-      for osNum = 1:length(os)
-        % get the junk frames from the original scan
-        junkFramesOriginal = viewGet(view,'junkFramesTotal',os(osNum),og(osNum));
-        % and add that to the total
-        if ~isempty(junkFramesOriginal)
-          junkFramesTotal(osNum) = junkFramesOriginal+junkFramesThisScan;
-        else
-          junkFramesTotal(osNum) = junkFramesThisScan;
-        end
-      end
+    % get the frames that _have already been_ junked from this scan
+    val = [];
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0) & isfield(MLR.groups(g).scanParams(s),'totalJunkedFrames')
+      val = MLR.groups(g).scanParams(s).totalJunkedFrames;
     end
-    val = junkFramesTotal;
+    if isempty(val)
+      % figure out how many time series 
+      numTimeSeries = max(1,length(viewGet(view,'originalFilename',s,g)));
+      % add just set the totalJunkedFrames to 0 for each one
+      val = zeros(1,numTimeSeries);
+    end
   case{'junkframes'}
     % n = viewGet(view,'junkFrames',scanNum,[groupNum])
     % n = viewGet([],'junkFrames',scanNum,groupNum)

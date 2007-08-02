@@ -43,3 +43,22 @@ else
     groups = [];
 end
 
+% check that all scanParams are valid. This is useful if the
+% scanParams optional fields have changed, so that old session
+% files can be compatible with changes
+for g = 1:length(groups)
+  clear newScanParams;
+  for s = 1:length(groups(g).scanParams)
+    % go through and validate scanParams
+    [tf newScanParams(s)] = isscan(groups(g).scanParams(s));
+    newScanParams(s).totalJunkedFrames = [];
+    % check for invalid scna
+    if ~tf
+      mrWarnDlg(sprintf('(loadSession) Scan %i in group %i is invalid',s,g));
+    end
+  end
+  % now set the scan params to this newly validated scanParams. Normally this
+  % won't change anything, but if a new field has been added, then the new
+  % scanParams will include a default value on this field
+  groups(g).scanParams = newScanParams;
+end

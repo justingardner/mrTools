@@ -23,14 +23,16 @@ if (nargout == 2)
   % valid.
   requiredFields = {'description','fileName','fileType','niftiHdr',...
     'voxelSize','totalFrames','junkFrames','nFrames',...
-    'dataSize','framePeriod','originalGroupName'};
-  optionalFields = {'originalFileName',scanParams.fileName};
+    'dataSize','framePeriod'};
+  optionalFields = {'originalGroupName',[];
+		    'originalFileName',scanParams.fileName;
+		    'totalJunkedFrames',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'description','fileName','fileType','niftiHdr',...
     'voxelSize','totalFrames','junkFrames','nFrames',...
-    'dataSize','framePeriod','originalFileName','originalGroupName'};
+    'dataSize','framePeriod','originalFileName','originalGroupName','totalJunkedFrames'};
   optionalFields = {};
 end
 
@@ -49,7 +51,7 @@ end
 for f = 1:length(requiredFields)
 	fieldName = requiredFields{f};
 	if ~isfield(scanParams,fieldName)
-		% mrWarnDlg(['Invalid scanParams, missing field: ',fieldName]);
+		 mrWarnDlg(['Invalid scanParams, missing field: ',fieldName]);
 		tf = false;
 	end
 end
@@ -59,10 +61,8 @@ for f = 1:size(optionalFields,1)
   fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
   if ~isfield(scanParams,fieldName)  
-    % use eval args to set the fields properly
-    varargin{1} = sprintf('scanParams.%s',fieldName);
-    varargin{2} = default;
-    eval(evalargs(varargin),1);
+    % set argument
+    scanParams.(fieldName) = default;
   end
 end
 scanParams = orderfields(scanParams);

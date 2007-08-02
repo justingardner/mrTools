@@ -48,6 +48,8 @@ originalGroupname = viewGet(view,'originalGroupname',scanNum,groupNum);
 stimFilename = viewGet(view,'stimFilename',scanNum,groupNum);
 scanHdr = viewGet(view,'niftiHdr',scanNum,groupNum);
 scanDims = viewGet(view,'scanDims',scanNum,groupNum);
+junkFrames = viewGet(view,'junkFrames',scanNum,groupNum);
+totalJunkedFrames = viewGet(view,'totalJunkedFrames',scanNum,groupNum);
 
 % get params info
 matfile = viewGet(view,'params',scanNum,groupNum);
@@ -67,6 +69,8 @@ if displayInDialog
   paramsInfo{end+1} =  {'dims',scanDims,'editable=0','Dimensions of scan'};
   paramsInfo{end+1} =  {'TR',tr,'editable=0','TR'};
   paramsInfo{end+1} =  {'numVolumes',totalFrames,'editable=0','Number of volumes'};
+  paramsInfo{end+1} =  {'junkFrames',junkFrames,'editable=0','Number of junk frames'};
+  paramsInfo{end+1} =  {'totalJunkedFrames',totalJunkedFrames,'editable=0','Number of junk frames that have already been discarded from this time series (this is useful for aligning the volume number of a stimulus set in a stimulus file with the volumes in the time series)'};
   paramsInfo{end+1} = {'qform',scanHdr.qform44,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'};
   paramsInfo{end+1} = {'sform',scanHdr.sform44,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'};
   paramsInfo{end+1} = {'sformCode',scanHdr.sform_code,'editable=0','If sformCode is 0 it means the sform has never been set and mrLoadRet will use the qform to compute the transform to the base anatomy. If mrAlign has been run properly, then this value should be set to 1'};
