@@ -40,9 +40,9 @@ cutoffr2 = viewGet(view,'overlayMin');
 
 if isempty(d)
   disp('No analysis');
-  reutrn
+  return
 end
-<<<<<<< eventRelatedPlot.m
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the timecourse for voxel
