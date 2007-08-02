@@ -178,10 +178,10 @@ mrCloseDlg(waitHandle);
 
 % Fill range fields 
 tsMean.range = findRange(tsMean.data);
-tsMedian.range = findRange(tsMedian.data);
-tsStd.range = findRange(tsStd.data);
-tsMaxFrameDiff.range = findRange(tsMaxFrameDiff.data);
-tsMaxMedianDiff.range = findRange(tsMaxMedianDiff.data);
+tsMedian.range = findRange(tsMean.data);
+tsStd.range = findRange(tsMean.data);
+tsMaxFrameDiff.range = findRange(tsMean.data);
+tsMaxMedianDiff.range = findRange(tsMean.data);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -202,11 +202,11 @@ tSeries = reshapeTSeries(tSeries);
 % Remove junkFrames
 tSeries = tSeries(junkframes+1:junkframes+nframes,:);
 
-tsMeanSeries = nanmean(tSeries);
-tsMedianSeries = nanmedian(tSeries);
-tsStdSeries = nanstd(tSeries);
-tsMaxFrameDiffSeries = nanmax(abs(tSeries(2:end,:)-tSeries(1:end-1,:)));
-tsMaxMedianDiffSeries = nanmax(abs(tSeries - repmat(tsMedianSeries,[nframes,1])));
+tsMeanSeries = mean(tSeries);
+tsMedianSeries = median(tSeries);
+tsStdSeries = std(tSeries);
+tsMaxFrameDiffSeries = max(abs(tSeries(2:end,:)-tSeries(1:end-1,:)));
+tsMaxMedianDiffSeries = max(abs(tSeries - repmat(tsMedianSeries,[nframes,1])));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
