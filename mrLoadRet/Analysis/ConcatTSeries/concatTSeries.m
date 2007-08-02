@@ -61,6 +61,7 @@ if ieNotDefined('params'),return,end
 % Open new view with the base group
 viewBase = newView(viewGet(view,'viewType'));
 groupNum = viewGet(viewBase,'groupNum',params.groupName);
+
 if (groupNum == 0)
   mrErrorDlg('concatTSeries: ',groupName,' does not exist.');
 end
@@ -170,7 +171,7 @@ for iscan = 1:length(params.scanList)
   
   % get the path and filename
   [path,filename,ext,versn] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
-  baseGroupName = viewGet(view,'groupName');
+  baseGroupName = viewGet(viewBase,'groupName');
 
   % Save TSeries (using header of 1st scan on scanList as the template for
   % the nifti header), and add it as a new scan.
@@ -195,6 +196,7 @@ for iscan = 1:length(params.scanList)
     
     % now load up channels
     stimfile = viewGet(viewBase,'stimFile',scanNum);
+%    keyboard
     % This code is no longer necessary--should be removed once tested
     %if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
     %  concatInfo.traces = stimfile{1}.myscreen.traces;
