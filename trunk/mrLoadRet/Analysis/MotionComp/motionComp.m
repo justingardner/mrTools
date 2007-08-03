@@ -104,14 +104,14 @@ motionCompGroupName = params.motionCompGroupName;
 interpMethod = params.interpMethod;
 descriptions  = params.descriptions;
 tseriesfiles = params.tseriesfiles;
+tSmooth = params.tSmooth;
 
 % temporal smoothing option.
-% nSmooth of 3 smooths +/- 1 frame
-nSmooth = 5;
-if exist('nSmooth', 'var')
-    nSmooth = 2*fix(nSmooth/2) + 1;
+tSmooth = 5;
+if tSmooth ~= 0
+    tSmooth = 2*fix(tSmooth/2) + 1;
 else
-    nSmooth = 1;
+    tSmooth = 1;
 end
 
 % Open new view with the base group
@@ -227,12 +227,11 @@ for frame = 1:totalFrames
                 M = estMotionInterp3(tseriesIC,tseriesIC,baseF,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
             end
         else
-            frameMin = frame - fix(nSmooth/2);
+            frameMin = frame - fix(tSmooth/2);
             if frameMin < 1, frameMin = 1; end
-            frameMax = frame + fix(nSmooth/2);
+            frameMax = frame + fix(tSmooth/2);
             if frameMax > nFrames, frameMax = nFrames; end
-            vol = mean(tseriesIC(:,:,:,frameMin:frameMax), 4);
-            %vol = tseriesIC(:,:,:,frame);
+            vol = nanmean(tseriesIC(:,:,:,frameMin:frameMax), 4);
             M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
         end
     end
@@ -314,11 +313,11 @@ for s = 1:length(targetScans)
         if sliceTimeCorrection
             M = estMotionInterp3(baseVol,tseriesIC,1,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
         else
-            frameMin = frame - fix(nSmooth/2);
+            frameMin = frame - fix(tSmooth/2);
             if frameMin < 1, frameMin = 1; end
-            frameMax = frame + fix(nSmooth/2);
+            frameMax = frame + fix(tSmooth/2);
             if frameMax > nFrames, frameMax = nFrames; end
-            vol = mean(tseriesIC(:,:,:,frameMin:frameMax), 4);
+            vol = nanmean(tseriesIC(:,:,:,frameMin:frameMax), 4);
             M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
         end
         % Collect the transform
