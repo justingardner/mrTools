@@ -64,7 +64,7 @@ function view = motionComp(view,params)
 % clear time series on each iteration to avoid running out of
 % memory
 %
-%	$Id$	
+% $Id$	
 %
 nScans = viewGet(view,'nScans');
 
@@ -107,7 +107,7 @@ tseriesfiles = params.tseriesfiles;
 
 % temporal smoothing option.
 % nSmooth of 3 smooths +/- 1 frame
-nSmooth = 1;
+nSmooth = 5;
 if exist('nSmooth', 'var')
     nSmooth = 2*fix(nSmooth/2) + 1;
 else
@@ -245,6 +245,7 @@ for frame = 1:totalFrames
 end
 mrCloseDlg(waitHandle);
 
+
 % Finally, compute mean over time (ignoring junkFrames)
 baseMean = nanmean(warpedTseries(:,:,:,junkFrames+1:junkFrames+nFrames),4);
 if correctIntensityContrast
@@ -318,7 +319,6 @@ for s = 1:length(targetScans)
             frameMax = frame + fix(nSmooth/2);
             if frameMax > nFrames, frameMax = nFrames; end
             vol = mean(tseriesIC(:,:,:,frameMin:frameMax), 4);
-            % vol = tseriesIC(:,:,:,frame);
             M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
         end
         % Collect the transform
