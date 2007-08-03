@@ -1,6 +1,6 @@
-function view = newROI(view,name,select,color,xform,voxelSize)
+function view = newROI(view,name,select,color,xform,voxelSize,coords)
 
-% function view = newROI(view,[name],[select],[color],[xform],[voxelSize])
+% function view = newROI(view,[name],[select],[color],[xform],[voxelSize],[coords])
 %
 % Makes new empty ROI, adds it to view.ROIs, and selects it.
 %
@@ -15,6 +15,9 @@ function view = newROI(view,name,select,color,xform,voxelSize)
 %    Default:  uses the xform from the current base anatomy
 % voxelSize: 3-vector specifying the voxel size of the ROI
 %    Default: uses the voxel size of the current base anatomy
+% coords: 4xN array of ROI coordinates (bottom row filled with ones) in the
+%    reference frame of the xform.
+%    Default: []
 %
 % djh, 7/2005 (modified from mrLoadRet-3.1)
 
@@ -39,6 +42,9 @@ if ieNotDefined('voxelSize')
   baseNum = viewGet(view,'currentBase');
   voxelSize = viewGet(view,'baseVoxelSize',baseNum);
 end
+if ieNotDefined('coords')
+  coords = [];
+end
 
 % Set required fields. Additional (optional) optional fields are set by
 % isroi which is called by viewSet newROI.
@@ -47,6 +53,7 @@ ROI.viewType = view.viewType;
 ROI.color = color;
 ROI.xform = xform;
 ROI.voxelSize = voxelSize;
+ROI.coords = coords;
 
 % Add it to the view
 view = viewSet(view,'newROI',ROI);
