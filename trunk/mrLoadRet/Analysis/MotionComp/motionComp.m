@@ -61,7 +61,11 @@ function view = motionComp(view,params)
 % DJH 7/2006, updated to MLR4
 % jlg 11/2006, save originalFilename and GroupName in scanParams
 % Get analysis parameters from motionCompGUI.
-% clear time series on each iteration to avoid running out of memory
+% clear time series on each iteration to avoid running out of
+% memory
+%
+%	$Id$	
+%
 nScans = viewGet(view,'nScans');
 
 if (nScans == 0)
@@ -195,8 +199,7 @@ switch baseFrame
     baseVol = tseriesIC(:,:,:,baseF);
   case 'mean'
     baseF = 0;
-    tseriesCrop = tseriesIC(:,:,:,junkFrames+1:junkFrames+nFrames);
-    baseVol = nanmean(tseriesCrop,4);
+    baseVol = nanmean(tseriesIC(:,:,:,junkFrames+1:junkFrames+nFrames),4);
   otherwise
     mrErrorDlg('Invalid base frame');
 end
@@ -242,14 +245,13 @@ end
 mrCloseDlg(waitHandle);
 
 % Finally, compute mean over time (ignoring junkFrames)
-tseriesCrop = warpedTseries(:,:,:,junkFrames+1:junkFrames+nFrames);
-baseMean = nanmean(tseriesCrop,4);
+baseMean = nanmean(warpedTseries(:,:,:,junkFrames+1:junkFrames+nFrames),4);
 if correctIntensityContrast
     baseMean = intensityContrastCorrection(baseMean,crop);
 end
 
 % clear temporary tseries
-clear tseries tseriesIC warpedTseries tseriesCrop;
+clear tseries tseriesIC warpedTseries;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Loop through target scans, perform motion estimation for each frame, %
