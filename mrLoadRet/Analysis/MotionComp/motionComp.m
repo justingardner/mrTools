@@ -100,6 +100,8 @@ interpMethod = params.interpMethod;
 descriptions  = params.descriptions;
 tseriesfiles = params.tseriesfiles;
 
+% temporal smoothing option.
+% nSmooth of 3 smooths +/- 1 frame
 nSmooth = 1;
 if exist('nSmooth', 'var')
     nSmooth = 2*fix(nSmooth/2) + 1;
@@ -313,14 +315,15 @@ for s = 1:length(targetScans)
             frameMax = frame + fix(nSmooth/2);
             if frameMax > nFrames, frameMax = nFrames; end
             vol = mean(tseriesIC(:,:,:,frameMin:frameMax), 4);
-%             vol = tseriesIC(:,:,:,frame);
+            % vol = tseriesIC(:,:,:,frame);
             M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
         end
         % Collect the transform
         transforms{frame} = M;
     end
+    clear tseriesIC;
     mrCloseDlg(waitHandle);
-
+    
     % warp the images according to the motion estimates
     waitHandle = mrWaitBar(0,['Warping image volumes for scan ',num2str(scanNum),'.  Please wait...']);
     warpedTseries = zeros(size(tseries));
@@ -333,7 +336,8 @@ for s = 1:length(targetScans)
         end
     end
     mrCloseDlg(waitHandle);
-
+    clear tseries;
+    
     % Save tseries with modified nifti header
     scanParams = viewGet(viewBase,'scanParams',scanNum);
     scanParams.description = ['Full ' descriptions{s}];
@@ -349,7 +353,7 @@ for s = 1:length(targetScans)
     save(fullfile(tseriesdir,filename),'evalstr','params','transforms','tseriesFileName');
 
     % clear temporary tseries
-    clear tseries tseriesIC warpedTseries;
+    clear warpedTseries;
 
 end
 
