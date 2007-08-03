@@ -137,8 +137,6 @@ paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]', 'How m
 
 paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton', 'Crop the images.  This affects the intensity/contrast correction.  Important for high-res images'};
 
-%ATTN need to fix this!
-params.tSmooth = 0;
 paramsInfo{15} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]', 'How much temporal smoothing.  Only applied to estimate head motion, not to final time series'};
 
 % put up dialog
@@ -164,7 +162,7 @@ if ~isempty(mrParams)
   mrParams = rmfield(mrParams,'paramInfo');
   mrParams = rmfield(mrParams,'scanNum');
   % order fields
-  mrParams = orderfields(mrParams,{'groupName','baseScan','baseFrame','sliceTimeCorrection','sliceTimeString','robust','correctIntensityContrast','crop','niters','motionCompGroupName','interpMethod','targetScans','tseriesfiles','descriptions'});
+  mrParams = orderfields(mrParams,{'groupName','baseScan','baseFrame','sliceTimeCorrection','sliceTimeString','robust','correctIntensityContrast','crop','niters','motionCompGroupName','interpMethod','targetScans','tseriesfiles','descriptions', 'tSmooth'});
 end
 
 
