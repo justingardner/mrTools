@@ -9,6 +9,7 @@ function newparams = motionCompReconcileParams(groupName,params)
 % motionCompBetweenScans, and motionCompWithinScan).
 %
 % djh 7/2006
+% $Id$	
 
 groupNum = viewGet([],'groupNum',groupName);
 nScans = viewGet([],'nscans',groupNum);
@@ -37,6 +38,7 @@ if ieNotDefined('params')
   newparams.targetScans = [1:nScans];
   newparams.tseriesfiles = tseriesfiles;
   newparams.descriptions = descriptions;
+  newparams.tSmooth = 0;
 else
   % Set newparams according to params, reconciling with tseries files.
   newparams.groupName = params.groupName;
@@ -50,6 +52,7 @@ else
   newparams.niters = params.niters;
   newparams.motionCompGroupName = params.motionCompGroupName;
   newparams.interpMethod = params.interpMethod;
+  newparams.tSmooth = params.tSmooth;
   % Find scans with tseries files that match those specified in
   % params.tseriesfiles. Use only those scans and the corresponding
   % params.
