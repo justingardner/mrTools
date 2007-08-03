@@ -1,8 +1,9 @@
-function view = combineROIs(view,roi1,roi2,action,name)
+function view = combineROIs(view,roi1,roi2,action)
 
 % function view = combineROIs(view,roi1,roi2,action,[name])
 %
 % Logical combination (union, intersection, xor, set difference) of ROIs.
+% Modifies roi1 by combining it with roi2
 %
 % roi1 and roi2 can be either ROI names, ROI numbers, or empty (for current ROI).
 % Default: current ROI
@@ -10,8 +11,6 @@ function view = combineROIs(view,roi1,roi2,action,name)
 % action must be empty or one of the following strings: 
 %     'Intersection', 'Union', 'XOR', 'A not B'
 % If empty, then 'Intersection' is used as the default.
-%
-% name: string specifying name of new ROI
 %
 % djh 8/2007
 
@@ -22,7 +21,7 @@ end
 if isstr(roi1)
   roi1 = viewGet(view,'roiNum',roi1);
 end
-if ~isnum(roi1) | (roi1 < 1) | (roi1 > nROIs)
+if ~isnumeric(roi1) | (roi1 < 1) | (roi1 > nROIs)
   mrErrorDlg('Invalid ROI');
 end
 if ieNotDefined('roi2')
@@ -31,14 +30,11 @@ end
 if isstr(roi2)
   roi2 = viewGet(view,'roiNum',roi2);
 end
-if ~isnum(roi2) | (roi2 < 1) | (roi2 > nROIs)
+if ~isnumeric(roi2) | (roi2 < 1) | (roi2 > nROIs)
   mrErrorDlg('Invalid ROI');
 end
 if ieNotDefined('action')
   action = 'Intersection';
-end
-if ieNotDefined('name')
-  name = [];
 end
 
 % Get coordinates
@@ -67,17 +63,19 @@ coords2 = roiCoords2';
 % Combine
 switch action
   case 'Intersection'
-     coords = intersect(coords1,coords2,'rows');
+     newCoords = intersect(coords1,coords2,'rows');
   case 'Union'
-     coords = union(coords1,coords2,'rows');
+     newCoords = union(coords1,coords2,'rows');
   case 'XOR'
-     coords = setxor(coords,coords2,'rows');
+     newCoords = setxor(coords,coords2,'rows');
   case 'A not B'
-     coords = setdiff(coords1,coords2,'rows');
+     newCoords = setdiff(coords1,coords2,'rows');
 end
 
 % Transpose back 
-coords = coords';
+newCoords = newCoords';
 
-% Make new ROI
-view = newROI(view,name,[],[],roiXform1,roiVoxelSize1,coords);
+% Select ROI and modify it
+view = viewSet(view,'currentROI',roi1);
+view = modifyROI(view,roiCoords1,roiXform1,roiVoxelSize1,0);
+view = modifyROI(view,newCoords,roiXform1,roiVoxelSize1,1);

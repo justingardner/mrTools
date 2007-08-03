@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 01-Aug-2007 14:00:37
+% Last Modified by GUIDE v2.5 03-Aug-2007 09:17:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1540,6 +1540,21 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = drawROI(view,'polygon',0);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function combineROIMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+roiNames = viewGet(view,'roiNames');
+paramInfo = {...
+  {'Title','Combine ROIs'},...
+  {'currentROI',viewGet(view,'roiName'),'editable=0','Current ROI'},...
+  {'otherROI',roiNames,'The selected ROI is combined with the current ROI.'},...
+  {'action',{'Intersection', 'Union', 'XOR', 'A not B'},'Select action for combining ROIs.'}};
+params = mrParamsDialog(paramInfo);
+view = combineROIs(view,params.currentROI,params.otherROI,params.action);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------

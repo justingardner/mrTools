@@ -14,8 +14,9 @@ function view = modifyROI(view,coords,xform,voxelSize,sgn)
 % is used along with the voxel size of the ROI when transforming the
 % coordinates.
 %
-% sgn: If sgn~=0 [default, adds user-specified coordinates to selected ROI
-% in current slice. If sgn==0, removes those coordinates from the ROI.
+% sgn: If sgn = True [default], adds user-specified coordinates to selected
+% ROI in current slice. If sgn = False, removes those coordinates from the
+% ROI.
 %
 % djh, 7/2005 (modified from mrLoadRet-3.1)
 
