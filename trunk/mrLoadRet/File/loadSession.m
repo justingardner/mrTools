@@ -57,8 +57,10 @@ for g = 1:length(groups)
       mrWarnDlg(sprintf('(loadSession) Scan %i in group %i is invalid',s,g));
     end
   end
-  % now set the scan params to this newly validated scanParams. Normally this
-  % won't change anything, but if a new field has been added, then the new
-  % scanParams will include a default value on this field
-  groups(g).scanParams = newScanParams;
+  if exist('newScanParams','var')
+    % now set the scan params to this newly validated scanParams. Normally this
+    % won't change anything, but if a new field has been added, then the new
+    % scanParams will include a default value on this field
+    groups(g).scanParams = newScanParams;
+  end
 end
