@@ -43,7 +43,7 @@ if iscell(params)
 	if isfield(thisParams,'scanNum')
 	  if ~isempty(thisParams.scanNum)
 	    newParams{thisParams.scanNum} = thisParams;
-	    newData{thisParams.scanNum} = thisData{i};
+	    newData{thisParams.scanNum} = thisData{thisParams.scanNum};
 	  end
 	elseif ~isempty(thisParams)
 	  newParams{i} = thisParams;
