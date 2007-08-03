@@ -8,9 +8,9 @@
 %             initial portion that parses input arguments taken
 %             from motionComp.m
 %
-% params = motionCompGUI('groupName','Raw');
-% params = motionCompGUI('params',params);
-% params = motionCompGUI('groupName','Raw','params',params);
+% params = motionCompGUImrParams('groupName','Raw');
+% params = motionCompGUImrParams('params',params);
+% params = motionCompGUImrParams('groupName','Raw','params',params);
 function mrParams = motionCompGUImrParams(varargin)
 
 mrParams = [];
@@ -83,7 +83,7 @@ for i = 1:length(params.targetScans)
   includeScans{params.targetScans(i)} = 1;
 end
 paramsInfo{11} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'Scan selector. Use this to choose which scans to include'};
-paramsInfo{14} = {'include',includeScans,'type=checkbox','group=scanNum'};
+paramsInfo{14} = {'include',includeScans,'type=checkbox','group=scanNum', 'Check this to include a particular scan, uncheck to skip'};
 
 % Initialize tseriesfiles
 tseriesfiles = cell(1,nScans);
@@ -115,27 +115,31 @@ end
 paramsInfo{1} = {'motionCompGroupName',putOnTopOfList(motionCompGroupName,groupNames),'Group name to put the motion compensated scans into'};
 
 % Initialize base scan popup
-paramsInfo{3} = {'baseScan',params.baseScan,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans)};
+paramsInfo{3} = {'baseScan',params.baseScan,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans), 'Specifies the scan that everything else will be aligned to'};
 
 % Initialize base frame popup
 baseFrameStrings = {'first','last','mean'};
-paramsInfo{4} = {'baseFrame',putOnTopOfList(params.baseFrame,baseFrameStrings)};
+paramsInfo{4} = {'baseFrame',putOnTopOfList(params.baseFrame,baseFrameStrings), 'Specifies which frame (or mean) to align to.  First frame can be bad choice b/c of different T2 contrast'};
 
 % Initialize interp method popup
 interpMethodStrings = {'nearest','linear','cubic','spline'};
-paramsInfo{2} = {'interpMethod',putOnTopOfList(params.interpMethod,interpMethodStrings)};
+paramsInfo{2} = {'interpMethod',putOnTopOfList(params.interpMethod,interpMethodStrings), 'Interpolation method used to warp the images'};
 
 % Initialize checkboxes
 sliceTimeStrings = {'beginning of TR','middle of TR','end of TR'};
-paramsInfo{7} = {'sliceTimeCorrection',params.sliceTimeCorrection,'type=checkbox'};
-paramsInfo{8} = {'sliceTimeString',putOnTopOfList(params.sliceTimeString,sliceTimeStrings)};
-paramsInfo{9} = {'robust',params.robust,'type=checkbox'};
-paramsInfo{10} = {'correctIntensityContrast',params.correctIntensityContrast,'type=checkbox'};
+paramsInfo{7} = {'sliceTimeCorrection',params.sliceTimeCorrection,'type=checkbox', 'Apply slice time correction along with motion compensation.  Not appropriate for 3D scans.'};
+paramsInfo{8} = {'sliceTimeString',putOnTopOfList(params.sliceTimeString,sliceTimeStrings),'Which point in time the slices should be aligned to. May loose first and last frames'};
+paramsInfo{9} = {'robust',params.robust,'type=checkbox', 'Robust contrast estimator, should be used if images are noisy with lots of outliers'};
+paramsInfo{10} = {'correctIntensityContrast',params.correctIntensityContrast,'type=checkbox', 'Normalize contrast and intensity, use if images have fall-off from surface coil, 3D acquisition, or saturation bands'};
 
 % Initialize niters
-paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]'};
+paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]', 'How many iterations to estimate the optimal transform (use more for high-res images)'};
 
-paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton'};
+paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton', 'Crop the images.  This affects the intensity/contrast correction.  Important for high-res images'};
+
+%ATTN need to fix this!
+params.tSmooth = 0;
+paramsInfo{15} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]', 'How much temporal smoothing.  Only applied to estimate head motion, not to final time series'};
 
 % put up dialog
 mrParams = mrParamsDialog(paramsInfo,'Set motionComp parameters');
