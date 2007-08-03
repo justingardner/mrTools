@@ -7,7 +7,7 @@
 %             parses the variable information, see wiki for details on
 %             format of vairable string
 %
-%	$Id$	
+%	$Id$
 
 function [vars varinfo nrows ncols] = mrParamsParse(vars)
 
@@ -32,34 +32,34 @@ for i = 1:length(vars)
     vars{i}{1} = thisvars;
     vars{i}{2} = '0';
     varinfo{i}.type = 'numeric';
-  % no default argument
+    % no default argument
   elseif length(vars{i}) == 1
     vars{i}{2} = '0';
     varinfo{i}.type = 'numeric';
   elseif isempty(vars{i}{2})
     vars{i}{2} = '';
     varinfo{i}.type = 'string';
-  % default arguments have to be strings so they
-  % can be put into the text fields properly. here
-  % we change them into strings, but remember what
-  % type they were
+    % default arguments have to be strings so they
+    % can be put into the text fields properly. here
+    % we change them into strings, but remember what
+    % type they were
   elseif length(vars{i}) >= 2
     if isnumeric(vars{i}{2})
       % check to see if it is an array
       if isscalar(vars{i}{2})
-	vars{i}{2} = num2str(vars{i}{2});
-	varinfo{i}.type = 'numeric';
+        vars{i}{2} = num2str(vars{i}{2});
+        varinfo{i}.type = 'numeric';
       else
-	varinfo{i}.type = 'array';
-	nrows = nrows+size(vars{i}{2},1)-1;
-	ncols = max(ncols,1+size(vars{i}{2},2));
+        varinfo{i}.type = 'array';
+        nrows = nrows+size(vars{i}{2},1)-1;
+        ncols = max(ncols,1+size(vars{i}{2},2));
       end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
       if isstr(vars{i}{2}{1})
-	varinfo{i}.popuptype = 'string';
+        varinfo{i}.popuptype = 'string';
       else
-	varinfo{i}.popuptype = 'numeric';
+        varinfo{i}.popuptype = 'numeric';
       end
     else
       varinfo{i}.type = 'string';
@@ -75,38 +75,38 @@ for i = 1:length(vars)
     for j = 3:length(vars{i})
       % skip this argument
       if skipNext
-	skipNext = 0;
-	continue;
+        skipNext = 0;
+        continue;
       end
       % if this looks like a description then save it as a
       % description, descriptions either have no equal sign
       % and are not a single word, or have an equal sign but
       % have spaces before the equal sign
       if ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
-	    ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
-	varinfo{i}.description = vars{i}{j};
-      % now look for settings that involve the next parameter
-      % i.e. onest that are like 'varname',varvalue. These are
-      % distinugished from comments by the fact that the varname
-      % has no equal sign but is a single word
+          ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
+        varinfo{i}.description = vars{i}{j};
+        % now look for settings that involve the next parameter
+        % i.e. onest that are like 'varname',varvalue. These are
+        % distinugished from comments by the fact that the varname
+        % has no equal sign but is a single word
       elseif ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) == 0)) && (j < (length(vars{i})))
-	% we are going to call evalargs but we want the variables
-	% set as a part of gParams (also do it quietly)--> that is
-	% evalargs, will do the parsing of the variable=value strings
-	varargin{1} = 'gVerbose = 0';
-	varargin{2} = sprintf('varinfo{i}.%s',vars{i}{j});
-	varargin{3} = vars{i}{j+1};
+        % we are going to call evalargs but we want the variables
+        % set as a part of gParams (also do it quietly)--> that is
+        % evalargs, will do the parsing of the variable=value strings
+        varargin{1} = 'gVerbose = 0';
+        varargin{2} = sprintf('varinfo{i}.%s',vars{i}{j});
+        varargin{3} = vars{i}{j+1};
         % set the argument
-	eval(evalargs(varargin));
-	skipNext = 1;
+        eval(evalargs(varargin));
+        skipNext = 1;
       else
-	% we are going to call evalargs but we want the variables
-	% set as a part of gParams (also do it quietly)--> that is
-	% evalargs, will do the parsing of the variable=value strings
-	setparam{1} = 'gVerbose = 0';
-	setparam{2} = sprintf('varinfo{i}.%s',vars{i}{j});
+        % we are going to call evalargs but we want the variables
+        % set as a part of gParams (also do it quietly)--> that is
+        % evalargs, will do the parsing of the variable=value strings
+        setparam{1} = 'gVerbose = 0';
+        setparam{2} = sprintf('varinfo{i}.%s',vars{i}{j});
         % set the argument
-	eval(evalargs(setparam));
+        eval(evalargs(setparam));
       end
     end
   end
@@ -133,38 +133,38 @@ for i = 1:length(varinfo)
     varinfo{i}.contingent = varinfo{i}.group;
   end
   if isfield(varinfo{i},'contingent')
-    % go look for the control variable and set it to 
+    % go look for the control variable and set it to
     % have a pointer to this variable
     foundControlVariable = 0;
     for j = 1:length(varinfo)
       if strcmp(varinfo{i}.contingent,varinfo{j}.name)
-	foundControlVariable = 1;
-	varinfo{i}.contingentOn = j;
-	if ~isfield(varinfo{j},'controls')
-	  varinfo{j}.controls = i;
-	else
-	  varinfo{j}.controls(end+1) = i;
-	end
+        foundControlVariable = 1;
+        varinfo{i}.contingentOn = j;
+        if ~isfield(varinfo{j},'controls')
+          varinfo{j}.controls = i;
+        else
+          varinfo{j}.controls(end+1) = i;
+        end
       end
     end
     % if not found, then complain
     if ~foundControlVariable
       disp(sprintf('Control variable for %s (%s) not found, ignoring contingency',varinfo{i}.name,varinfo{i}.contingent));
-    % otherwise set up the variable to be contingent.
-    % that is keep an allValues field of all possible
-    % values
+      % otherwise set up the variable to be contingent.
+      % that is keep an allValues field of all possible
+      % values
     else
       if ~(strcmp(varinfo{i}.type,'popupmenu') && ~iscell(varinfo{i}.value{1}))
         varinfo{i}.allValues = varinfo{i}.value;
         varinfo{i}.value = varinfo{i}.allValues{1};
       else
-      % if popupmenus with just a single cell array
-      % then set it up correctly
+        % if popupmenus with just a single cell array
+        % then set it up correctly
         varinfo{i}.allValues{1} = varinfo{i}.value;
       end
       % for numeric values, make sure that the value is set to a number
       if isnumeric(varinfo{i}.value) && ~strcmp(varinfo{i}.type,'checkbox')
-	varinfo{i}.value = num2str(varinfo{i}.value);
+        varinfo{i}.value = num2str(varinfo{i}.value);
       end
       % and set a default for the control value. This will get
       % reset later when the dialog starts up to have the
