@@ -7,11 +7,13 @@
 %             mrLoadRet window gets auto placed somewhere 
 %             where it is not visible (like on a second monitor
 %             that is no longer visible). If newpos is provided
-%             it can be array of length 2 specifying [x y] pos
+%             it can be array of length 2 specifying [x y]
 %             or an array of length 4 specifying [x y w h]. 
-%             Default is to move the window to the top left
+%             Default is to move the window to the bottom left
 %             corner of the primary display without changing
-%             with and height
+%             with and height--if it is deemed to be off the
+%             primary display.
+% 
 %
 function retval = mrMoveWindow(newpos)
 
