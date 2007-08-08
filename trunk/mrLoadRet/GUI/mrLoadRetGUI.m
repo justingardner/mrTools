@@ -746,11 +746,14 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
         close(MLR.graphFigure);
         MLR.graphFigure = [];
     end
+    drawnow
+    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving mrLastView and mrDefaults'));
     % save the view in the current directory
     view = thisView;
     eval(sprintf('save %s view viewSettings -V6;',fullfile(MLR.homeDir,'mrLastView')));
     % save .mrDefaults in the home directory
     saveMrDefaults;
+    disppercent(inf);
 else
     closereq;
 end
