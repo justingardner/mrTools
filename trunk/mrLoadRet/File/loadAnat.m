@@ -60,6 +60,9 @@ anatFilePath = path;
 % Load nifti file and reorder the axes and flip (site specific).
 h = mrMsgBox(['Loading volume: ',pathStr,'. Please wait']);
 hdr = cbiReadNiftiHeader(pathStr);
+if ishandle(h)
+  close(h)
+end
 
 % get volume dimension...
 % hdr.dim(1) should probably be the number of dimensions

@@ -123,6 +123,15 @@ end
 % return the actual TR supersampling factor
 d.supersampling = samplingf;
 
+% update the eventRelatedVarname
+if isfield(d,'eventRelatedVarname')
+  if isfield(d.varname,'varname')
+    d.eventRelatedVarname = d.varname.varname;
+  else
+    d.eventRelatedVarname = d.varname;
+  end
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % old way of getting stim vols
 % from traces

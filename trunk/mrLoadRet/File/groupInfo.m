@@ -6,14 +6,15 @@
 %    purpose: print out information about scans in group
 %       e.g.: groupInfo(1);
 %             groupInfo('Raw');
-function retval = groupInfo(groupNum)
+function retval = groupInfo(groupNum,verbose)
 
 % check arguments
-if ~any(nargin == [0 1])
+if ~any(nargin == [0 1 2])
   help groupInfo
   return
 end
 
+if ieNotDefined('verbose'),verbose = 1;end
 view = newView('Volume');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,7 +69,7 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   originalGroupname = viewGet(view,'originalGroupname',s,groupNum);
   stimFilename = viewGet(view,'stimFilename',s,groupNum);
   scanDims = viewGet(view,'scanDims',s,groupNum);
-  
+
   % display info
   disp(sprintf('%i: %s',s,description));
   disp(sprintf('   Filename: %s GroupName: %s',filename,groupName));
@@ -80,5 +81,14 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   end
   
   disp(sprintf('   voxelSize=[%0.1f %0.1f %0.1f] TR=%0.4f Dims: [%i %i %i] Volumes=%i',scanVoxelSize(1),scanVoxelSize(2),scanVoxelSize(3),tr,scanDims(1),scanDims(2),scanDims(3),totalFrames));
+
+  % if verbose is set above 1, then show scan transform
+  if verbose >1 
+    scanXform = viewGet(view,'scanXform',s,groupNum);
+    disp(sprintf('   scanXform:'));
+    for i = 1:4
+      disp(sprintf('   %0.3f %0.3f %0.3f %0.3f',scanXform(i,1),scanXform(i,2),scanXform(i,3),scanXform(i,4)));
+    end
+  end
 end
 
