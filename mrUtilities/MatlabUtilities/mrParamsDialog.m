@@ -409,7 +409,7 @@ delete(gParams.fignum);
 helpcloseHandler;
 
 clear global gParams;
-
+drawnow
 % save figure locations .mrDefaults
 saveMrDefaults;
 

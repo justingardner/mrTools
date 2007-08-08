@@ -100,6 +100,9 @@ if isfile('mrLastView.mat')
         view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
       end
       view = viewSet(view,'currentROI',1);
+      if isfield(mrLastView.viewSettings,'showROIs')
+	view = viewSet(view,'showROIs',mrLastView.viewSettings.showROIs);
+      end
     end
 
     % add here, to load more info...

@@ -122,6 +122,12 @@ if isfile(fullfile(pathStr,filename))
         % if there was no match, then simply add the overlay to the analysis struct
         if ~matchedOverlay
           view = viewSet(view,'newoverlay',oldOverlay,analysisNum);
+	  % we have added the overlay to the one in the mlr structure,
+	  % but below we are using newAnal to set the new analysis,
+	  % so we retrieve the overlays and stick it on to our
+          % newAnal structure
+	  updatedAnalysis = viewGet(view,'analysis',analysisNum);
+	  newAnal.overlays = updatedAnalysis.overlays;
           disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlayName));
         end
       end
