@@ -171,7 +171,7 @@ switch lower(param)
     val = viewGet(view,'analysisdir',varargin{:});
 
     % group
-  case{'numberofgroups','numGroups','nGroups'}
+  case{'numberofgroups','numgroups','ngroups'}
     % n = viewGet(view,'numberofGroups')
     val = length(MLR.groups);
   case {'groupnames'}
@@ -1171,7 +1171,7 @@ switch lower(param)
 
 
     % analysis
-  case{'numberofanalyses'}
+  case{'numberofanalyses','nanalyses','numanalyses'}
     % n = viewGet(view,'numberofAnalyses')
     val = length(view.analyses);
   case{'currentanalysis','curanalysis'}
@@ -2332,18 +2332,55 @@ end
 % sort everything
 [commands sortedIndex] = sort(commands);
 
+maxlen = -inf;
 % now print out
 for i = 1:length(commands)
   disp(commands{i});
+  lens(i) = length(commands{i});
   if length(commandComments)>=sortedIndex(i)
     disp(commandComments{sortedIndex(i)});
   end
 end
 
+maxlen = median(lens)+4;
+nColumns = 6;
 disp(sprintf('\n'));
 disp('------------------------- All possible parameters ---------------------');
+columnNum = 1;
+currentChar = '.';
 for i = 1:length(commands)
-  fprintf(1,commands{i});
+  % make a command with enough spaces
+  if ~isempty(commands{i})
+    % get this command, remove ',' and replace with /
+    thisCommand = fixBadChars(commands{i}(2:end-1),{''',''','/'});
+    % if we are switching the start letter, then put a new line
+    if thisCommand(1) ~= currentChar
+      currentChar = thisCommand(1);
+      if columnNum ~= 1
+	fprintf(1,sprintf('\n'));
+      end
+      fprintf(1,'(%s): ',upper(currentChar));
+      columnNum = 1;
+    elseif columnNum == 1
+      fprintf(1,'     ');
+    end
+    % find out how many columns we need to print out this key word
+    thisColumns = ceil((length(thisCommand)+1)/maxlen);
+    % now fill up that many columns worth of space
+    dispcommand = sprintf(' ');
+    dispcommand = repmat(dispcommand,1,thisColumns*maxlen);
+    % insert the command name
+    dispcommand(1:(length(thisCommand))) = thisCommand;
+    % and update what column we are on
+    columnNum = columnNum + thisColumns;
+    % print the command
+    mrDisp(dispcommand);
+    % print out new line if we have printed all columns
+    if columnNum > nColumns
+      fprintf(1,sprintf('\n'));
+      columnNum = 1;
+    end
+  end
 end
 fprintf(1,sprintf('\n'));
 disp('-----------------------------------------------------------------------');
