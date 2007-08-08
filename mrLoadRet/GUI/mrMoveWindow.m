@@ -37,39 +37,41 @@ defaultYpos = 0;
 mrGlobals
 
 for viewNum = 1:length(MLR.views)
-  if ~isempty(MLR.views{viewNum});
+  if isview(MLR.views{viewNum})
     % get this view
-    v = MLR.view{viewNum};
-    % get its screen position and print
-    pos = get(viewGet(v,'fignum'),'Position');
-    disp(sprintf('(mrMoveWindow) View %i is at [%i %i %i %i]',viewNum,pos(1),pos(2),pos(3),pos(4)));
-    % if it is out of bounds, then move it
-    if ieNotDefined('newpos')
-      outOfBounds = 0;
-      if ((pos(1)+pos(3)) < minXpos) || (pos(1) > maxXpos)
-	outOfBounds = 1;
-	pos(1) = defaultXpos;
-      end
-      if ((pos(2)+pos(4)) < minYpos) || (pos(2) > maxYpos)
-	outOfBounds = 1;
-	pos(2) = defaultYpos;
-      end
-    else
-      % set the position according to passed in values
-      outOfBounds = 1;
-      if length(newpos) == 2
-	pos(1:2) = newpos(1:2);
-      elseif length(newpos) == 4
-	pos = newpos;
+    v = MLR.views{viewNum};
+    if ishandle(viewGet(v,'fignum'))
+      % get its screen position and print
+      pos = get(viewGet(v,'fignum'),'Position');
+      disp(sprintf('(mrMoveWindow) View %i is at [%i %i %i %i]',viewNum,pos(1),pos(2),pos(3),pos(4)));
+      % if it is out of bounds, then move it
+      if ieNotDefined('newpos')
+	outOfBounds = 0;
+	if ((pos(1)+pos(3)) < minXpos) || (pos(1) > maxXpos)
+	  outOfBounds = 1;
+	  pos(1) = defaultXpos;
+	end
+	if ((pos(2)+pos(4)) < minYpos) || (pos(2) > maxYpos)
+	  outOfBounds = 1;
+	  pos(2) = defaultYpos;
+	end
       else
-	disp(sprintf('(mrMoveWindow) Newpos not length of 2 or 4'));
+	% set the position according to passed in values
+	outOfBounds = 1;
+	if length(newpos) == 2
+	  pos(1:2) = newpos(1:2);
+	elseif length(newpos) == 4
+	  pos = newpos;
+	else
+	  disp(sprintf('(mrMoveWindow) Newpos not length of 2 or 4'));
+	end
       end
-    end
-    % now actually move
-    if outOfBounds
-      disp(sprintf('(mrMoveWindow) View %i has been moved to [%i %i %i %i]',viewNum,pos(1),pos(2),pos(3),pos(4)));
-      set(viewGet(v,'fignum'),'Position',pos);
-      refreshMLRDisplay(viewNum);
+      % now actually move
+      if outOfBounds
+	disp(sprintf('(mrMoveWindow) View %i has been moved to [%i %i %i %i]',viewNum,pos(1),pos(2),pos(3),pos(4)));
+	set(viewGet(v,'fignum'),'Position',pos);
+	refreshMLRDisplay(viewNum);
+      end
     end
   end
 end
