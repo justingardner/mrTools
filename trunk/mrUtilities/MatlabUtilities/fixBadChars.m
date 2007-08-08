@@ -1,11 +1,13 @@
 % fixBadChars.m
 %
-%      usage: str = fixBadChars(str)
+%      usage: str = fixBadChars(str,<fixList>)
 %         by: justin gardner
 %       date: 04/20/07
 %    purpose: takes a string and replaces bad characters not
 %    allowed in variable names like space or * with variable name acceptable characters
-%
+%             you can also provide your own fixlist, i.e. pairs of
+%             things that are the match and replacement, e.g.
+%             fixBadChars('remove *this* and replace with that',{'*this*','that'})
 function str = fixBadChars(str,fixList)
 
 % check arguments
