@@ -16,6 +16,12 @@ end
 % get the arguments
 eval(evalargs(varargin));
 
+% if called with params, then just display
+if ~ieNotDefined('params')
+  dispParams(params);
+  return
+end
+
 % get a view
 view = newView('Volume');
 
@@ -203,3 +209,47 @@ for scanNum = 1:length(params.scanNum)
   taskVarParams = {};
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% just display parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispParams(params)
+
+paramsInfo = {};
+paramsInfo{end+1} = {'analyzedScans',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',length(params.scanNum)),'editable=0'};
+% get parameters for each scan
+for i = 1:length(params.scanNum)
+  scanNum{i} = params.scanNum(i);
+  description{i} = params.scanParams{i}.description;
+  hdrlen{i} = params.scanParams{i}.hdrlen;
+  preprocess{i} = params.scanParams{i}.preprocess;
+  if isfield(params.scanParams{i},'taskNum')
+    taskNum{i} = params.scanParams{i}.taskNum;
+  end
+  if isfield(params.scanParams{i},'phaseNum')
+    phaseNum{i} = params.scanParams{i}.phaseNum;
+  end
+  if isfield(params.scanParams{i},'segmentNum')
+    segmentNum{i} = params.scanParams{i}.segmentNum;
+  end
+  if isfield(params.scanParams{i},'varname')
+    varname{i} = params.scanParams{i}.varname;
+  end
+end
+paramsInfo{end+1} = {'scanNum',scanNum,'group=analyzedScans','type=numeric','editable=0','scan number'};
+paramsInfo{end+1} = {'tseriesFile',params.tseriesFile,'group=analyzedScans','type=string','editable=0','Name of timeseries that was analyzed'};
+paramsInfo{end+1} = {'description',description,'group=analyzedScans','type=string','editable=0','Description of the analysis'};
+paramsInfo{end+1} = {'hdrlen',hdrlen,'group=analyzedScans','type=numeric','editable=0','Length of response in seconds to calculate'};
+paramsInfo{end+1} = {'preprocess',preprocess,'group=analyzedScans','type=string','editable=0','String of extra commands for preprocessing. Normally you will not need to set anything here, but this allows you to do corrections to the stimvols that are calculated so that you can modify the analysis. (see wiki for details)'};
+if ~ieNotDefined('taskNum')
+  paramsInfo{end+1} = {'taskNum',taskNum,'group=analyzedScans','type=numeric','editable=0','The task you want to use'};
+end
+if ~ieNotDefined('phaseNum')
+  paramsInfo{end+1} = {'phaseNum',phaseNum,'group=analyzedScans','type=numeric','editable=0','The phase of the task you want to use'};
+end
+if ~ieNotDefined('segmentNum')
+  paramsInfo{end+1} = {'segmentNum',segmentNum,'group=analyzedScans','type=numeric','editable=0','The segment of the task you want to use'};
+end
+if ~ieNotDefined('varname')
+  paramsInfo{end+1} = {'varname',varname,'group=analyzedScans','type=string','editable=0','The variable that was analyzed'};
+end
+mrParamsDialog(paramsInfo,'Event Related parameters');
