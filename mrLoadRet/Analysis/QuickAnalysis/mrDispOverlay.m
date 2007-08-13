@@ -39,6 +39,7 @@
 %             'clip',[0 1]
 %             'interrogator=interrogatorName'
 %             'analName=analysisName'
+%             'd',d 
 %
 %             to save instead of display set
 %             'saveName=filename'
@@ -177,8 +178,13 @@ if isempty(viewGet(v,'curAnalysis'))
   v = viewSet(v,'newAnalysis',a.(analName));
 % or just install this overlay into the current analysis
 else
+  % install overlay
   if ~isempty(overlay)
     v = viewSet(v,'newOverlay',o.(overlayName));
+  end
+  % install d structure
+  if ~ieNotDefined('d')
+    v = viewSet(v,'newd',d,scanNum);
   end
 end
 

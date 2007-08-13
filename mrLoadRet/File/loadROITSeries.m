@@ -1,4 +1,4 @@
-function rois = loadROITSeries(view,roiname,scanList,groupNum);
+function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
 % loadROITSeries.m
 %
 %      usage: rois = loadROITSeries(view,<roiname>,<scanList>,<groupNum>)
@@ -12,21 +12,28 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum);
 %             instead of loading the roi from disk. Also, if roiname
 %             is a number or cell array of numbers then it will use
 %             the corresponding ROI from the view.
-%
 %        e.g.:
 %
 % v = newView('Volume')
 % rois = loadROITSeries(v,[],1,1);
+%
+%             to load the roi coordinates, but not the time series
+%       
+% v = newView('Volume')
+% rois = loadROITSeries(v,[],1,1,'loadType=none');
 %
 % see also tseriesROI
 
 rois = {};
 
 % check arguments
-if ~any(nargin == [1 2 3 4])
+if nargin < 1
   help loadROITSeries
   return
 end
+
+% evaluate other arguments
+eval(evalargs(varargin));
 
 % no view specified
 if ieNotDefined('view')
@@ -55,6 +62,19 @@ end
 
 %make into a cell array
 roiname = cellArray(roiname);
+
+% set the way to load the time series
+% possible values are 'vox' which loads each
+% time series voxel by voxel (slow but less memory
+% intensive), or 'block' which loads the block
+% of the image around the ROI and then subselects
+% the voxels needed (default--fast). Note, both
+% block and vox will return the same voxel time
+% series, they just differ in how they access the data
+% from disk. Set to 'none' to not load the time series.
+if ieNotDefined('loadType')
+  loadType = 'block';
+end
 
 % load the rois in turn
 for roinum = 1:length(roiname)
@@ -107,13 +127,14 @@ for roinum = 1:length(roiname)
         disppercent(-inf,sprintf('Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
         % for now we always load by block, but if memory is an issue, we can
         % switch this if statement and load voxels indiviudally from file
-        if 0
+        if strcmp(loadType,'vox')
           % load each voxel time series indiviudally
           for voxnum = 1:rois{end}.n
             rois{end}.tSeries(voxnum,:) = squeeze(loadTSeries(view,scanNum,s(voxnum),[],x(voxnum),y(voxnum)));
             disppercent(voxnum/rois{end}.n);
           end
-        else
+	  disppercent(inf);
+        elseif strcmp(loadType,'block');
           % load the whole time series as a block (i.e. a block including the min and max voxels)
           % this is usually faster then going back and loading each time series individually
           % but is more inefficient with memory
@@ -124,8 +145,11 @@ for roinum = 1:length(roiname)
             disppercent(voxnum/rois{end}.n);
           end
           clear tSeriesBlock;
-        end
-        disppercent(inf);
+	  disppercent(inf);
+        else
+	  disppercent(inf);
+	  disp(sprintf('(loadROITSeries) Not loading time series (loadType=%s)',loadType));
+	end
       end
     end
   end

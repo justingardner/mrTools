@@ -92,6 +92,18 @@ if isfile('mrLastView.mat')
         end
       end
     end
+    % read loaded analyses
+    if isfield(mrLastView.view,'loadedAnalyses')
+      for g = 1:length(mrLastView.view.loadedAnalyses)
+	view = viewSet(view,'loadedAnalyses', mrLastView.view.loadedAnalyses{g},g);
+      end
+    end
+    % read which scan we were on in for each group
+    if isfield(mrLastView.view,'groupScanNum')
+      for g = 1:length(mrLastView.view.groupScanNum)
+	view = viewSet(view,'groupScanNum', mrLastView.view.groupScanNum(g),g);
+      end
+    end
     drawnow
 
     % read ROIs into current view

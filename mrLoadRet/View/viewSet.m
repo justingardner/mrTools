@@ -92,7 +92,9 @@ switch lower(param)
     % view = viewSet(view,'currentGroup',n);
     if (view.curGroup ~= val)
       % save loaded analysis if there are any
-      view.loadedAnalyses{view.curGroup} = view.analyses;
+      view = viewSet(view,'loadedAnalyses',view.analyses,view.curGroup);
+      % save the current scan number
+      view = viewSet(view,'groupScanNum',viewGet(view,'curScan'),view.curGroup);
       MLR.view{view.viewNum} = view;
       % set the current group
       view.curGroup = val;
@@ -102,7 +104,8 @@ switch lower(param)
       mlrGuiSet(view,'group',val);
       nScans = viewGet(view,'nScans',val);
       mlrGuiSet(view,'nScans',nScans);
-      mlrGuiSet(view,'scan',min(nScans,1));
+      scanNum = viewGet(view,'groupScanNum',view.curGroup);
+      mlrGuiSet(view,'scan',min(nScans,scanNum));
       mlrGuiSet(view,'analysis',1);
       mlrGuiSet(view,'analysisPopup',{'none'});
       mlrGuiSet(view,'overlay',1);
@@ -113,15 +116,32 @@ switch lower(param)
 
       end
       % load up saved analysis if they exist
-      if length(view.loadedAnalyses)>=val
-        for i = 1:length(view.loadedAnalyses{view.curGroup})
-          view = viewSet(view,'newAnalysis',view.loadedAnalyses{view.curGroup}{i});
-        end
-        % delete the analyses from the loaded cache
-        view.loadedAnalyses{view.curGroup} = {};
+      loadedAnalyses = viewGet(view,'loadedAnalyses',val);
+      for i = 1:length(loadedAnalyses)
+	view = viewSet(view,'newAnalysis',loadedAnalyses{i});
       end
+      % delete the analyses from the loaded cache
+      view = viewSet(view,'loadedAnalyses',{},view.curGroup);
     end
 
+  case {'loadedanalyses'}
+    % view = viewSet(view,'loadedAnalyses',analyses,groupNum);
+    % this is used to remember the analyses that were loaded
+    % for a group for switching between groups
+    groupNum = varargin{1};
+    if (groupNum >=1 ) && (groupNum <= viewGet(view,'numGroups'))
+      view.loadedAnalyses{groupNum} = val;
+    end
+  case {'groupscannum'}
+    % view = viewSet(view,'groupScanNum',scanNum,groupNum);
+    % this is used to remember which scan we were on when
+    % we switch between groups
+    groupNum = varargin{1};
+    if (groupNum >=1 ) && (groupNum <= viewGet(view,'numGroups'))
+      if ~isempty(val)
+	view.groupScanNum(groupNum) = val;
+      end
+    end
   case{'groupname'}
     % view = viewSet(view,'currentGroup',string);
     n = viewGet(view,'groupnum',val);
@@ -467,6 +487,19 @@ switch lower(param)
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
     numBases = viewGet(view,'numberofBaseVolumes');
+    % first save rotation, curSlice and sliceIndex
+    % for this base image
+    curBase = viewGet(view,'curBase');
+    rotate = viewGet(view,'rotate');
+    curSlice = viewGet(view,'curSlice');
+    sliceOrientation = viewGet(view,'sliceOrientation');
+    % set the current state of the gui in the base
+    if (curBase > 0) & (curBase <= numBases)
+      view.baseVolumes(curBase).rotate = rotate;
+      view.baseVolumes(curBase).curSlice = curSlice;
+      view.baseVolumes(curBase).sliceOrientation = sliceOrientation;
+    end
+    % now switch to new base
     if (baseNum > 0) & (baseNum <= numBases)
       view.curBase = baseNum;
       % update popup menu and sliders
@@ -481,11 +514,27 @@ switch lower(param)
       mlrGuiSet(view,'baseMaxRange',baseRange);
       mlrGuiSet(view,'baseMin',baseClip(1));
       mlrGuiSet(view,'baseMax',baseClip(2));
+      % get the last know settings for this base
+      baseCurSlice = viewGet(view,'baseCurSlice',baseNum);
+      baseSliceOrientation = viewGet(view,'baseSliceOrientation',baseNum);
+      baseRotate = viewGet(view,'baseRotate',baseNum);
+      % set the slice orientation if there is a valid one saved
+      if ~isempty(baseSliceOrientation)
+	viewSet(view,'sliceOrientation',baseSliceOrientation);
+      end
       % update nSlices and reset slice to be within range
       sliceIndex = viewGet(view,'basesliceindex',baseNum);
       nSlices = baseDims(sliceIndex);
       curSlice = viewGet(view,'curSlice');
-      mlrGuiSet(view,'slice',max(1,min(curSlice,nSlices)));
+      % if the base has a current slice set, then use that
+      if isempty(baseCurSlice) || (baseCurSlice > nSlices)
+	mlrGuiSet(view,'slice',max(1,min(curSlice,nSlices)));
+      else
+	mlrGuiSet(view,'slice',baseCurSlice);
+      end
+      if ~isempty(baseRotate)
+	mlrGuiSet(view,'rotate',baseRotate);
+      end
       mlrGuiSet(view,'nSlices',nSlices);
     end
 
@@ -623,7 +672,21 @@ switch lower(param)
     end
     % completely clear the overlay cache
     view = viewSet(view,'overlayCache','init');
+    % Set current overlay
+    if isfield(val,'curOverlay')
+      view = viewSet(view,'currentOverlay',val.curOverlay);
+    end
 
+  case {'interrogator'}
+    % view = viewSet(view,'interrogator',interrogator);
+    numAnalyses = viewGet(view,'numberofAnalyses');
+    curAnalysis = viewGet(view,'currentAnalysis');
+    if ~isempty(curAnalysis) & (curAnalysis >= 1) & (curAnalysis <= numAnalyses)
+      curOverlay = viewGet(view,'currentOverlay');
+      if ~isempty(curOverlay) & (curOverlay >= 1) & (curOverlay <= viewGet(view,'numOverlays'))
+	view.analyses{curAnalysis}.overlays(curOverlay).interrogator = val;
+      end
+    end
   case {'deleteanalysis'}
     % view = viewSet(view,'deleteAnalysis',analysisNum);
     analysisNum = val;
@@ -689,6 +752,26 @@ switch lower(param)
     % -------------------------------------------
     % Overlay (parameter map)
 
+  case{'newd'}
+    % view = viewSet(view,'newd',dStructure,scanNum,[analysisNum]);
+    if ieNotDefined('varargin')
+      mrErrorDlg('(viewSet:newd) No passed in scanNum');
+    end
+    scanNum = varargin{1};
+    if length(varargin) == 1
+      anum = viewGet(view,'curAnalysis');
+    else
+      anum = varargin{2};
+    end
+    if (anum > 0) && (anum <= viewGet(view,'numAnalyses'))
+      if (scanNum > 0) && (scanNum <= viewGet(view,'nScans'))
+	view.analyses{anum}.d{scanNum} = val;
+      else
+	mrErrorDlg(sprintf('(viewSet:newd) Scan %i out of range',scanNum));
+      end
+    else
+      mrErrorDlg(sprintf('(viewSet:newd) Analysis %i out of range',anum));
+    end
   case{'newoverlay'}
     % view = viewSet(view,'newoverlay',overlayStructure,[analysisNum]);
     %
@@ -844,6 +927,11 @@ switch lower(param)
       end
     else
       mlrGuiSet(view,'overlay',1);
+    end
+    % update the interrogator
+    if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
+      mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
+
     end
 
   case 'overlayname'

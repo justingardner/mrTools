@@ -22,11 +22,14 @@ if (nargout == 2)
   requiredFields = {'data','hdr','name','permutationMatrix'};
   optionalFields = {'range',[min(base.data(:)) max(base.data(:))];
 		    'clip',defaultClip(base.data);
-		    'coordMap',[]};
+		    'coordMap',[];
+		    'rotate',[];
+		    'curSlice',[];
+		    'sliceOrientation',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
-  requiredFields = {'clip','coordMap','data','hdr','name','permutationMatrix','range'};
+  requiredFields = {'clip','coordMap','curSlice','data','hdr','name','permutationMatrix','range','rotate','sliceOrientation'};
   optionalFields = {};
 end
 
@@ -55,10 +58,7 @@ for f = 1:size(optionalFields,1)
   fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
   if ~isfield(base,fieldName)  
-    % use eval args to set the fields properly
-    varargin{1} = sprintf('base.%s',fieldName);
-    varargin{2} = default;
-    eval(evalargs(varargin),1);
+    base.(fieldName) = default;
   end
 end
 base = orderfields(base);

@@ -54,8 +54,8 @@ mrGlobals;
 
 % if not a valid function, go back to old one
 if exist(interrogator)==2
-    set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
-    MLR.interrogator{viewNum}.interrogator = interrogator;
+  set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
+  MLR.interrogator{viewNum}.interrogator = interrogator;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % change in interrogator field
@@ -69,11 +69,15 @@ interrogator = get(MLR.interrogator{viewNum}.hInterrogator,'String');
 
 % if not a valid function, go back to old one
 if isfield(MLR.interrogator{viewNum},'hInterrogator')
-    if exist(interrogator)~=2
-        set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
-    else
-        MLR.interrogator{viewNum}.interrogator = interrogator;
-    end
+  if exist(interrogator)~=2
+    set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
+  else
+    MLR.interrogator{viewNum}.interrogator = interrogator;
+    % and set the interrogator for the overlay
+    global MLR;
+    v= MLR.views{viewNum};
+    v = viewSet(v,'interrogator',interrogator);
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
