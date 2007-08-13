@@ -1431,6 +1431,11 @@ numAnalyses = viewGet(view,'numberofAnalyses');
 for analysisNum = numAnalyses:-1:1;
     view = viewSet(view,'deleteAnalysis',analysisNum);
 end
+% also, go through and delete all "laodedAnalyses", i.e.
+% analysis that are loaded in ohter groups
+for g = 1:viewGet(view,'numGroups');
+  view = viewSet(view,'loadedAnalyses',[],g);
+end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -1553,13 +1558,14 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 roiNames = viewGet(view,'roiNames');
 paramInfo = {...
-  {'Title','Combine ROIs'},...
   {'currentROI',viewGet(view,'roiName'),'editable=0','Current ROI'},...
   {'otherROI',roiNames,'The selected ROI is combined with the current ROI.'},...
   {'action',{'Intersection', 'Union', 'XOR', 'A not B'},'Select action for combining ROIs.'}};
-params = mrParamsDialog(paramInfo);
-view = combineROIs(view,params.currentROI,params.otherROI,params.action);
-refreshMLRDisplay(viewNum);
+params = mrParamsDialog(paramInfo,'Combine ROIs');
+if ~isempty(params)
+  view = combineROIs(view,params.currentROI,params.otherROI,params.action);
+  refreshMLRDisplay(viewNum);
+end
 
 % --------------------------------------------------------------------
 function restrictRoiMenu_Callback(hObject, eventdata, handles)

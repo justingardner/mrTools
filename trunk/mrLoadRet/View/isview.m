@@ -23,12 +23,13 @@ if (nargout == 2)
   % valid.
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
     'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice'};
-  optionalFields = {}
+  optionalFields = {'loadedAnalyses',{};
+		    'groupScanNum',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
-    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice'};
+    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum'};
   optionalFields = {};
 end
 
@@ -57,10 +58,7 @@ for f = 1:size(optionalFields,1)
   fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
   if ~isfield(view,fieldName)  
-    % use eval args to set the fields properly
-    varargin{1} = sprintf('view.%s',fieldName);
-    varargin{2} = default;
-    eval(evalargs(varargin),1);
+    view.(fieldName) = default;
   end
 end
 view = orderfields(view);

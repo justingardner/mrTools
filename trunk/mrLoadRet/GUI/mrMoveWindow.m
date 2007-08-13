@@ -30,8 +30,8 @@ minYpos = 0;
 maxYpos = 800;
 
 % default positions to change to
-defaultXpos = 0;
-defaultYpos = 0;
+defaultXpos = 1;
+defaultYpos = 1;
 
 % get mrGlobals
 mrGlobals

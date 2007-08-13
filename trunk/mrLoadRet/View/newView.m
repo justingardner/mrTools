@@ -38,6 +38,9 @@ view.curslice.overlayCoords = [];
 % Add the new view to the list of views
 MLR.views{viewNum} = view;
 
+% validate view (add any optional fields);
+[tf view] = isview(view);
+
 % add the caches
 MLR.caches{viewNum} = [];
 

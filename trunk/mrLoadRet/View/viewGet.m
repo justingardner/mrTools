@@ -115,6 +115,42 @@ switch lower(param)
     if isdir(etcDir)
       val = etcDir;
     end
+  case {'loadedanalyses'}
+    % loadedanalyses = viewGet(view,'loadedAnalyses',[groupNum])
+    % this stores all the loaded analyses so that we can switch
+    % between groups
+    if ieNotDefined('varargin')
+      groupNum = viewGet(view,'currentGroup');
+    else
+      groupNum = varargin{1};
+    end
+    if isempty(groupNum)
+      groupNum = viewGet(view,'currentGroup');
+    end
+    if ~isempty(groupNum)
+      if (groupNum >= 1) && (groupNum <= length(view.loadedAnalyses))
+	val = view.loadedAnalyses{groupNum};
+      end
+    end
+  case {'groupscannum'}
+    % groupscannum = viewGet(view,'groupscannum',[groupNum])
+    % this stores what scan number we were on when we switch 
+    % between groups
+    if ieNotDefined('varargin')
+      groupNum = viewGet(view,'currentGroup');
+    else
+      groupNum = varargin{1};
+    end
+    if isempty(groupNum)
+      groupNum = viewGet(view,'currentGroup');
+    end
+    if ~isempty(groupNum)
+      if (groupNum >= 1) && (groupNum <= length(view.groupScanNum))
+	val = view.groupScanNum(groupNum);
+      end
+    end
+    % default to scan 1
+    if isempty(val),val = 1;end
   case {'tseriesdir'}
     % tseriesdir = viewGet(view,'tseriesdir',[groupNum])
     % tseriesdir = viewGet(view,'tseriesdir',[])
@@ -790,6 +826,54 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).clip;
     end
+  case {'baserotate'}
+    % baserotate = viewGet(view,'baserotate',[baseNum])
+    % baserotate = viewGet(view,'baserotate',[])
+    % baserotate = viewGet(view,'baserotate')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).rotate;
+    end
+  case {'basecurslice','baseslice'}
+    % baseslice = viewGet(view,'baseslice',[baseNum])
+    % baseslice = viewGet(view,'baseslice',[])
+    % baseslice = viewGet(view,'baseslice')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).curSlice;
+    end
+  case {'basesliceorientation'}
+    % basesliceOrientation = viewGet(view,'baseSliceOrientation',[baseNum])
+    % basesliceOrientation = viewGet(view,'baseSliceOrientation',[])
+    % basesliceOrientation = viewGet(view,'baseSliceOrientation')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).sliceOrientation;
+    end
   case {'baserange'}
     % baserange = viewGet(view,'baserange',[baseNum])
     % baserange = viewGet(view,'baserange',[])
@@ -1173,7 +1257,20 @@ switch lower(param)
     % analysis
   case{'numberofanalyses','nanalyses','numanalyses'}
     % n = viewGet(view,'numberofAnalyses')
-    val = length(view.analyses);
+    % n = viewGet(view,'numberofAnalyses',[groupNum])
+    if ieNotDefined('varargin')
+      val = length(view.analyses);
+    else
+      % if this is the current group
+      % then just get it
+      if varargin{1} == viewGet(view,'curGroup')
+	val = length(view.analyses);
+      elseif (varargin{1} > 0) && (varargin{1} <= viewGet(view,'nGroups'))
+	val = length(view.loadedAnalyses{varargin{1}});
+      else
+	val = [];
+      end
+    end
   case{'currentanalysis','curanalysis'}
     % n = viewGet(view,'currentAnalysis')
     val = view.curAnalysis;
@@ -1191,6 +1288,7 @@ switch lower(param)
     % analysis = viewGet(view,'analysis',[analysisNum])
     % analysis = viewGet(view,'analysis',[])
     % analysis = viewGet(view,'analysis')
+    % analysis = viewGet(view,'analysis',[analysisNum],[groupNum])
     if ieNotDefined('varargin')
       analysisNum = viewGet(view,'currentAnalysis');
     else
@@ -1199,9 +1297,20 @@ switch lower(param)
     if isempty(analysisNum)
       analysisNum = viewGet(view,'currentAnalysis');
     end
-    n = viewGet(view,'numberofAnalyses');
+    % if the user passed in group num, then that
+    % means to check the "loadedAnalyses" for that group
+    if length(varargin) <= 1
+      groupNum = viewGet(view,'curGroup');
+    else
+      groupNum = varargin{2};
+    end
+    n = viewGet(view,'numberofAnalyses',groupNum);
     if analysisNum & (analysisNum > 0) & (analysisNum <= n)
-      val = view.analyses{analysisNum};
+      if groupNum == viewGet(view,'curGroup')
+	val = view.analyses{analysisNum};
+      else
+	val = view.loadedAnalyses{groupNum}{analysisNum};
+      end
     end
   case {'analysisnames'}
     % analysisNames = viewGet(view,'analysisNames')
@@ -1421,7 +1530,7 @@ switch lower(param)
     if ~isempty(analysis)
       val = analysis.overlays;
     end
-  case{'numberofoverlays'}
+  case{'numberofoverlays','numoverlays','noverlays'}
     % n = viewGet(view,'numberofOverlays',[analysisNum])
     % n = viewGet(view,'numberofOverlays',[])
     % n = viewGet(view,'numberofOverlays')
@@ -2111,8 +2220,10 @@ switch lower(param)
   case {'curscan','currentscan'}
     % scan = viewGet(view,'currentScan');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = round(get(handles.scanSlider,'Value'));
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = round(get(handles.scanSlider,'Value'));
+    end
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');
     fig = viewGet(view,'fignum');
