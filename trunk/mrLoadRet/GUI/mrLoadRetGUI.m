@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 03-Aug-2007 09:17:00
+% Last Modified by GUIDE v2.5 16-Aug-2007 12:10:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1823,5 +1823,15 @@ d.expname = '';
 d.ver = 4;
 dispmotioncorrect(d);
 
+
+% --------------------------------------------------------------------
+function plotsDisplayEPIImages_Callback(hObject, eventdata, handles)
+% hObject    handle to plotsDisplayEPIImages (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+mrEpiMovie(view);
 
 
