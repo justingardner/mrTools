@@ -1053,7 +1053,7 @@ paramsInfo = {};
 if ~isempty(ALIGN.volumeHdr) && ~isempty(ALIGN.inplaneHdr)
   paramsInfo{end+1}{1} = 'srcToDestXform';
   paramsInfo{end}{2} = ALIGN.xform;
-  paramsInfo{end}{4} = 'Transformation from source to destination coordinate system';
+  paramsInfo{end}{3} = 'Transformation from source to destination coordinate system';
 end
 
 % put up dialog

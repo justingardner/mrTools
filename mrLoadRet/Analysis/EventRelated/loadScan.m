@@ -33,6 +33,13 @@ d.filepath = viewGet(view,'tseriespathstr',scanNum);
 d.expname = getLastDir(fileparts(fileparts(fileparts(d.filepath))));
 d.fullpath = fileparts(fileparts(fileparts(fileparts(d.filepath))));
 
+% adjust tr for 3d sequence
+if viewGet(view,'3D',scanNum)
+  nSlices = viewGet(view,'nSlices',scanNum);
+  disp(sprintf('(loadScan) 3D sequence. Adjusting TR from %0.2f to %0.2f',d.tr,d.tr*nSlices));
+  d.tr = d.tr*nSlices;
+end
+
 % dispay string to say what we are loading
 mrDisp(sprintf('Loading scan %i from group: %s',scanNum,viewGet(view,'groupName')));
 if isempty(sliceNum)

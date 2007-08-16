@@ -513,7 +513,27 @@ switch lower(param)
     end
     val = eyeposFileName;
     val2 = eyeposNum;
-  case {'tr'}
+ case {'3d'}
+    % is3d = viewGet(view,'tr',scanNum,[groupNum]);
+    % returns whether sequence is 3d or not
+    [s g] = getScanAndGroup(view,varargin,param);
+    % first get dicom
+    dicom = viewGet(view,'dicom',s,g);
+    val = [];
+    if isempty(dicom)
+      return
+    end
+    for i = 1:length(dicom)
+      if isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'MR_Acquisition_Type_')
+	thisval = strcmp(dicom{i}.ACQ.MR_Acquisition_Type_,'3D');
+      end
+      if (isempty(val))
+	val = thisval;
+      elseif (val ~= thisval)
+	disp(sprintf('(viewGet:3D) Data collected with both 3D and 2D sequence types'))
+      end
+    end
+ case {'tr'}
     % tr = viewGet(view,'tr',scanNum,[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
     % first get dicom
@@ -525,7 +545,7 @@ switch lower(param)
     for i = 1:length(dicom)
       if isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'Repetition_Time')
         thistr = dicom{i}.ACQ.Repetition_Time/1000;
-        if (isempty(val))
+	if (isempty(val))
           val = thistr;
         elseif (val ~= thistr)
           disp(sprintf('(viewGet) Data collected with different TR: %0.2f vs %0.2f',val,thistr));
