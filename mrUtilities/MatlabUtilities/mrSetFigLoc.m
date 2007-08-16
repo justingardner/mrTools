@@ -24,3 +24,4 @@ end
 % crashes on MATLAB Version 7.4.0.287 (R2007a) if figloc field does not exist
 
 mrDEFAULTS.figloc.(figname) = pos; % dynamic field assignment creats field if not present
+saveMrDefaults
