@@ -26,13 +26,21 @@ gMrEpiMovie.c = mrCache('init',1000);
 gMrEpiMovie.animating = 0;
 gMrEpiMovie.stopAnimating = 0;
 
+% get max frames and slices
+maxFrames = -inf;
+maxSlices = -inf;
+for scanNum = 1:viewGet(v,'nScans')
+  maxFrames = max(maxFrames,viewGet(v,'nFrames',scanNum));
+  maxSlices = max(maxSlices,viewGet(v,'nSlices',scanNum));
+end
+
 % set up params dialog
 paramsInfo = {};
-paramsInfo{end+1} = {'scanNum',1,sprintf('minmax=[1 %i]',viewGet(v,'nScans')),sprintf('incdec=[-1 1]'),'Choose scan to view'};
+paramsInfo{end+1} = {'scanNum',1,sprintf('minmax=[1 %i]',viewGet(v,'nScans')),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view'};
 paramsInfo{end+1} = {'scanNumMovie',0,'type=pushbutton','buttonString=Animate over scans','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','scanNum','Press to animate over scans'};
-paramsInfo{end+1} = {'sliceNum',1,sprintf('minmax=[1 %i]',viewGet(v,'nSlices',1)),sprintf('incdec=[-1 1]'),'Choose slice number to view'};
+paramsInfo{end+1} = {'sliceNum',1,sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view'};
 paramsInfo{end+1} = {'sliceNumMovie',0,'type=pushbutton','buttonString=Animate over slices','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','sliceNum','Press to animate over slices'};
-paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',viewGet(v,'nFrames',1)),sprintf('incdec=[-1 1]'),'Choose frame to view'};
+paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view'};
 paramsInfo{end+1} = {'frameNumMovie',0,'type=pushbutton','buttonString=Animate over frames','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','frameNum','Press to animate over frames'};
 
 % display dialog
@@ -142,7 +150,12 @@ drawnow
 %%%%%%%%%%%%%%%%%%%%%%%%%
 function mrEpiMovieClose
 
-clear global gMrEpiMovie
+% clear the global
+global gMrEpiMovie;
 gMrEpiMovie.stopAnimating = 1;
+gMrEpiMovie.v = [];
+gMrEpiMovie.c = [];
+
+% close the graph window
 selectGraphWin;
 closeGraphWin;
