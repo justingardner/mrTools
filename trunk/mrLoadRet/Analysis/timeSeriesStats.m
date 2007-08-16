@@ -44,6 +44,7 @@ if ieNotDefined('params')
   n = viewGet(view,'nScans',groupNum);
   params.groupName = groupName;
   params.scanList = selectScans(view);%[1:n];
+  if isempty(params.scanList),return,end
 end
 
 % Reconcile params with current status of group and ensure that params
