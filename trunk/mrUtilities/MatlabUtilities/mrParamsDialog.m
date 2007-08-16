@@ -9,7 +9,7 @@
 function [params params2] = mrParamsDialog(varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3 4 5])
+if ~any(nargin == [1 2 3 4 5 6])
   help mrParamsDialog
   return
 end
@@ -132,11 +132,17 @@ if length(otherParams) > 3
   gParams.callback = otherParams{4};
   % if another argument is specified that should
   % be sent as an argument to the callback function
-  if length(otherParams) > 4
+  if (length(otherParams) > 4) && ~isempty(otherParams{5})
     gParams.callbackArg = otherParams{5};
   end
   params = gParams.fignum;
   params2 = getParams(vars);
+  % if another argument is specified than put up 
+  % an ok button with the callback
+  if (length(otherParams) > 5)
+    gParams.okCallback = otherParams{6};
+    makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
+  end
   return
 else
   gParams.callback = [];
@@ -438,7 +444,12 @@ function okHandler
 
 global gParams;
 gParams.ok = 1;
-uiresume;
+if isfield(gParams,'okCallback')
+  feval(gParams.okCallback);
+  closeHandler;
+else
+  uiresume;
+end
 
 %%%%%%%%%%%%%%%%%%%%
 % callback for cancel

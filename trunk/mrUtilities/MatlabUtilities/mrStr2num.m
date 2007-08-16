@@ -30,7 +30,14 @@ teststr = fixBadChars(lower(str),{{'nan',''},{'inf',''},{'-',''}});
 while ~isempty(teststr)
   [tok teststr] = strtok(teststr,' ');
   % if the token is a function then return, this is not a number
-  if any(exist(tok) == [2 3 5])
+  if any(exist(tok) == [3 5])
+    return;
+  end
+  % check to see if it is an m-file, make sure to put the .m on
+  % otherwise, matlab will pick up regular files (for some reason
+  % I had a file called "1" which caused a lot of problems :-)
+  tok = sprintf('%s.m',stripext(tok));
+  if any(exist(tok) == [2])
     return;
   end
 end
