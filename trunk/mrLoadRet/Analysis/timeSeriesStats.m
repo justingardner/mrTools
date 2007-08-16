@@ -43,7 +43,7 @@ if ieNotDefined('params')
   groupNum = viewGet(view,'groupNum',groupName);
   n = viewGet(view,'nScans',groupNum);
   params.groupName = groupName;
-  params.scanList = [1:n];
+  params.scanList = selectScans(view);%[1:n];
 end
 
 % Reconcile params with current status of group and ensure that params
