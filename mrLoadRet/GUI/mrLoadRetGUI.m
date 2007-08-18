@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 16-Aug-2007 12:10:04
+% Last Modified by GUIDE v2.5 17-Aug-2007 20:06:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1833,5 +1833,16 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 mrEpiMovie(view);
+
+
+% --------------------------------------------------------------------
+function plotSpikeDetection_Callback(hObject, eventdata, handles)
+% hObject    handle to plotSpikeDetection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+mrSpikeDetector(view);
 
 
