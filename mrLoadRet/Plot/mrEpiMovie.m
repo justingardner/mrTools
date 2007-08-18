@@ -138,6 +138,11 @@ end
 
 selectGraphWin;
 
+% always make it so that the h dimension is longer than v dimension
+if size(epiImage,1) > size(epiImage,2)
+  epiImage = epiImage';
+end
+
 % display image
 imagesc(epiImage);
 colormap('gray');

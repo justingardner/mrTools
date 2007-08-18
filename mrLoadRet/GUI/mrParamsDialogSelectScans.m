@@ -47,11 +47,11 @@ for i = 1:nScans
   includeScans{i} = defaultSelected(i);
 end
 paramsInfo{end+1} = {'scanNum',initScan,'round=1','incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'Scan selector. Use this to choose which scans to include'};
-paramsInfo{end+1} = {'include',includeScans,'type=checkbox','group=scanNum', 'Check this to include a particular scan, uncheck to skip'};
+paramsInfo{end+1} = {'include',includeScans,'type=checkbox','group=scanNum', 'Check this to include a particular scan, uncheck to skip.'};
 includeNum = length(paramsInfo);
 paramsInfo{end+1} = {'filename',filename,'group=scanNum','type=String','editable=0','Filename of scan'};
-paramsInfo{end+1} = {'description',description,'group=scanNum','type=String','editable=0','Filename of scan'};
-paramsInfo{end+1} = {'selectAll',[],'type=pushbutton','buttonString=Select all scans','callback',@selectAll,'callbackArg',includeNum};
+paramsInfo{end+1} = {'description',description,'group=scanNum','type=String','editable=0','Description of scan'};
+paramsInfo{end+1} = {'selectAll',[],'type=pushbutton','buttonString=Select all scans','callback',@selectAll,'callbackArg',includeNum,'Click to include all scans'};
 
 %%%%%%%%%%%%%%%%%%%
 %%   selectAll   %%
