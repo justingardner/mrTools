@@ -461,6 +461,22 @@ switch lower(param)
       end
     end
     val = stimFileName;
+  case {'spikeinfo'}
+    % eyepos = viewGet(view,'spikeinfo',scanNum,[groupNum]);
+    val = [];
+    [s g] = getScanAndGroup(view,varargin,param);
+    nScans = viewGet(view,'nscans',g);
+    nGroups = viewGet(view,'nGroups');
+    if (g > 0) & (g < nGroups) & (nScans >= s) & (s > 0)
+      if isfield(MLR.groups(g).auxParams(s),'spikeinfo')
+	val = MLR.groups(g).auxParams(s).spikeinfo;
+	% check tSeries name
+	if isfield(val,'filename') & ~strcmp(val.filename,viewGet(view,'tSeriesFile',s,g))
+	  val = [];
+	end
+      end
+    end
+    
   case {'eyepos'}
     % eyepos = viewGet(view,'eyepos',scanNum,[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
