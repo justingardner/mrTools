@@ -171,7 +171,7 @@ for slicenum = 1:spikeinfo.dim(3)
   plot(spikeinfo.sliceMeans(slicenum,:),getcolor(slicenum+coloroffset,'.-'));
   hold on
 end
-title(sprintf('Slice means: %s\nSpikes found=%i (criterion=%f)',spikeinfo.filename,spikeinfo.n,spikeinfo.criterion),'interpreter','none');
+title(sprintf('%s:%i %s (%s)\nSpikes found=%i (criterion=%0.1f)',viewGet(v,'groupName',spikeinfo.groupNum),spikeinfo.scanNum,viewGet(v,'description',spikeinfo.scanNum,spikeinfo.groupNum),spikeinfo.filename,spikeinfo.n,spikeinfo.criterion),'interpreter','none');
 
 % plot arrows where artificats may be occurring
 ytop = 90;
@@ -205,8 +205,8 @@ for slicenum = 1:spikeinfo.dim(3)
   xmax = xmax+textextent(3);
 end
 
-xlabel('TR number');
-ylabel('% signal change');
+xlabel(sprintf('Volume number\nNote that spike detection is done on each FFT component not on the mean of the slice.'));
+ylabel('Mean over each slice (% signal change)');
 zoom on
 
 fignum = 0;
@@ -313,7 +313,7 @@ image(fftimage);
 title(sprintf('FFT\nslice=%i TR=%i',thisslice,thistime));
 % and fix up axis
 axis off
-axis square
+axis equal
 zoom on
 colormap([gray(256) ;gray(256)*[[0 0 0];[0 1 0];[0 0 1]]]);
 
@@ -364,6 +364,10 @@ else
   end
 end
 
+if size(d,2) < size(d,1)
+  d = d';
+end
+
 % scale image values to between 0 and 1
 imagemax = max(max(d));
 imagemin = min(min(d));
@@ -379,6 +383,6 @@ d = floor(255*d);
 if (nargout == 0)
   image(fliplr(d));
   colormap(gray(256));
-  axis square
   axis off
+  axis equal
 end

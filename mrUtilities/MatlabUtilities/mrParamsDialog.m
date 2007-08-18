@@ -215,13 +215,13 @@ global gParams;
 if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
   if isfield(gParams.varinfo{varnum},'callback')
     args = {};getVars = 0;
-    % if the function wants the current parameter settings, pass that
-    if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
-      arg{end+1} = getParams(gParams.vars);
-    end
     % if it wants optional arguments, pass that
     if isfield(gParams.varinfo{varnum},'callbackArg')
       args{end+1} = gParams.varinfo{varnum}.callbackArg;
+    end
+    % if the function wants the current parameter settings, pass that
+    if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
+      args{end+1} = getParams(gParams.vars);
     end
     % create the string to call the function
     funcall = 'gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback';
