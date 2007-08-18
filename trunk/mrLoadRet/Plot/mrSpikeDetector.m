@@ -29,7 +29,7 @@ spikeinfo = viewGet(v,'spikeinfo',scanNum,groupNum);
 
 if isempty(spikeinfo)
   % ask user how to recalculate
-  paramsInfo{1} = {'criterion',criterion,'incdec=[-1 1]','minmax=[0 inf]','Criterion for spike detection. This is the number of standard deviations above the mean a fourier component has to be to be considered a spike. Default value is 10'};
+  paramsInfo{1} = {'criterion',criterion,'incdec=[-1 1]','minmax=[0 inf]','Criterion for spike detection. Spike detection works by computing the mean and standard deviation of each fourier component of the images across time. If a fourier component on any single volume exceeds criterion standard deviations of the mean, it is considered to be a spike. Default value is 10. i.e. A fourier component has to be 10 standard deviations greater from the mean to be considered to be a spike.'};
   paramsInfo = mrParamsDialogSelectScans(v,groupNum,paramsInfo,scanNum);
   params = mrParamsDialog(paramsInfo,'mrSpikeDetector params');
   if isempty(params),return,end
@@ -43,8 +43,8 @@ if isempty(spikeinfo)
   spikeinfo = viewGet(v,'spikeinfo',scanNum,groupNum);
 end
 if dispfigs
-  spikePlot(v,spikeinfo);
   spikePlotController(v,spikeinfo);
+  spikePlot(v,spikeinfo);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -232,8 +232,8 @@ spikeInfoScans = putOnTopOfList(sprintf('%i: %s (%i spikes)',spikeinfo.scanNum,v
 
 % now put up a control dialog
 spikeinfo.v = v;
-paramsInfo{1}  = {'scanNum',spikeInfoScans};
-paramsInfo{end+1} = {'recompute',[],'type=pushbutton','buttonString=Recompute spike detection','callback',@spikePlotRecomputeCallback,'callbackArg',spikeinfo};
+paramsInfo{1}  = {'scanNum',spikeInfoScans,'Scan number to view'};
+paramsInfo{end+1} = {'recompute',[],'type=pushbutton','buttonString=Recompute spike detection','callback',@spikePlotRecomputeCallback,'callbackArg',spikeinfo,'Recomputer spike detection'};
 if spikeinfo.n > 0
   paramsInfo{end+1} = {'spikeNum',1,sprintf('minmax=[1 %i]',spikeinfo.n),'incdec=[-1 1]','round=1','Which spike to display'};
 else

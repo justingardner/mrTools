@@ -18,6 +18,10 @@ end
 % get the analysis structure
 analysis = viewGet(view,'analysis');
 d = analysis.d{scan};
+if isempty(d)
+  disp(sprintf('(eventRelatedPlot) Event related not for scan %i',scan));
+  return
+end
 d.r2 = analysis.overlays(1).data{scan};
 % select the window to plot into
 selectGraphWin;
@@ -49,7 +53,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
-legendHandle(1) = plot(tSeries,'k.-');
 legendStr{1} = 'TSeries';
 xlabel('Volume number');
 ylabel('MRI signal');
@@ -59,7 +62,6 @@ axis tight;
 if isfield(d, 'stimvol')
   for i = 1:d.nhdr
     vlineHandle = vline(d.stimvol{i},getcolor(i));
-    %legendHandle(i+1) = vlineHandle(1);
     nStimvol(i) = length(d.stimvol{i});
     if isfield(d,'stimNames')
       legendStr{i+1} = sprintf('%s (n=%i)',d.stimNames{i},nStimvol(i));
@@ -68,7 +70,7 @@ if isfield(d, 'stimvol')
     end
   end
 end
-legend(legendHandle,legendStr);
+legend(legendStr);
 % get distribution of ISI
 %diff(sort(cell2mat(d.stimvol)));
 
