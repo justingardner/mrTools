@@ -236,6 +236,13 @@ switch lower(param)
       end
     end
 
+  case {'spikeinfo'}
+    % view = viewSet(view,'spikeinfo',spikeinfo,scanNum,groupNum);
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).auxParams(s).spikeinfo = val;
+    end
   case {'niftihdr'}
     % view = viewSet(view,'niftiHdr',hdr,scanNum,groupNum);
     [s g] = getScanAndGroup(view,varargin,param);

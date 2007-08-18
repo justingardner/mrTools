@@ -1,6 +1,6 @@
 % mrParamsDialog.m
 %
-%      usage: mrParamsDialog(paramsInfo,<titleString>,<buttonWidth>,<callback>)
+%      usage: mrParamsDialog(paramsInfo,<titleString>,<buttonWidth>,<callback>,<callbackArg>,<okCallback>)
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: creates a dialog for selection of parameters
@@ -32,6 +32,16 @@ end
 function [params params2] = initFigure(vars,otherParams)
 
 global gParams;
+
+% close any existing one
+if isfield(gParams,'fignum')
+  if isfield(gParams,'okCallback')
+    feval(gParams.okCallback);
+  end
+  closeHandler;
+  global gParams;
+end
+
 global mrDEFAULTS;
 
 % parse the input parameter string
@@ -204,22 +214,23 @@ global gParams;
 % if this is a push button then call it's callback
 if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
   if isfield(gParams.varinfo{varnum},'callback')
+    args = {};getVars = 0;
     % if the function wants the current parameter settings, pass that
     if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
-      % if it wants optional arguments, pass that
-      if isfield(gParams.varinfo{varnum},'callbackArg')
-        gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,getParams(gParams.vars));
-      else
-        gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
-      end
-    else
-      % if it wants optional arguments, pass that
-      if isfield(gParams.varinfo{varnum},'callbackArg')
-        gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg);
-      else
-        gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback);
-      end
+      arg{end+1} = getParams(gParams.vars);
     end
+    % if it wants optional arguments, pass that
+    if isfield(gParams.varinfo{varnum},'callbackArg')
+      args{end+1} = gParams.varinfo{varnum}.callbackArg;
+    end
+    % create the string to call the function
+    funcall = 'gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback';
+    for i = 1:length(args)
+      funcall = sprintf('%s,args{%i}',funcall,i);
+    end
+    funcall = sprintf('%s);',funcall);
+    % and call it
+    eval(funcall);
   else
     disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
   end

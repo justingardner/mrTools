@@ -19,7 +19,7 @@ ehdr=[];r2 = [];
 % precalculate the normal equation (this dramatically speeds up things)
 precalcmatrix = ((d.scm'*d.scm)^-1)*d.scm';
 % if this don't work then do pinv
-if length(isnan(precalcmatrix(:))) == length(precalcmatrix(:))
+if sum(isnan(precalcmatrix(:))) == length(precalcmatrix(:))
   disp(sprintf('Using pseudo inverse to invert convolution matrix'));
   precalcmatrix = pinv(d.scm);
 end

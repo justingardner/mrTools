@@ -1843,6 +1843,6 @@ function plotSpikeDetection_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-mrSpikeDetector(view);
+mrSpikeDetector(view,viewGet(view,'curScan'),viewGet(view,'curGroup'));
 
 
