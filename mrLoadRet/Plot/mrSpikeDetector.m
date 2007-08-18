@@ -256,7 +256,7 @@ if scanNum ~= spikeinfo.scanNum
   spikeinfo = viewGet(v,'spikeinfo',scanNum,spikeinfo.groupNum);
   spikePlotController(v,spikeinfo);
   spikePlot(v,spikeinfo);
-elseif params.spikeNum
+elseif isfield(params,'spikeNum')
   selectGraphWin(1);hold on
   subplot(2,2,3);cla;subplot(2,2,4);cla;
   spikePlotImage(spikeinfo.v,spikeinfo,params.spikeNum);
