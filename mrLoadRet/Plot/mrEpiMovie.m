@@ -88,7 +88,7 @@ while (gMrEpiMovie.stopAnimating ~=1)
     eval(sprintf('%s = i;',type));
     % load image
     mrEpiMovieDispImage(scanNum,sliceNum,frameNum);
-    pause(.1);
+    pause(.02);
     i = (mod(i,n))+1;
 end
 
