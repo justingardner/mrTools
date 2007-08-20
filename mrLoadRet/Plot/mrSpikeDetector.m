@@ -1,5 +1,6 @@
 % spikedetector.m
 %
+%        $Id$	
 %      usage: spikeinfo = mrSpikeDetector(scanNum,groupNum,<'criterion=10'>,<'dispfigs=1'>
 %         by: justin gardner
 %       date: 01/09/06
@@ -30,13 +31,14 @@ spikeinfo = viewGet(v,'spikeinfo',scanNum,groupNum);
 if isempty(spikeinfo)
   % ask user how to recalculate
   paramsInfo{1} = {'criterion',criterion,'incdec=[-1 1]','minmax=[0 inf]','Criterion for spike detection. Spike detection works by computing the mean and standard deviation of each fourier component of the images across time. If a fourier component on any single volume exceeds criterion standard deviations of the mean, it is considered to be a spike. Default value is 10. i.e. A fourier component has to be 10 standard deviations greater from the mean to be considered to be a spike.'};
+  paramsInfo{2} = {'useMedian', 0, 'type=checkbox', 'Use the median and interquartile range to calculate the center and spread of the data.  This is useful if the data are very noisy.'};
   paramsInfo = mrParamsDialogSelectScans(v,groupNum,paramsInfo,scanNum);
   params = mrParamsDialog(paramsInfo,'mrSpikeDetector params');
   if isempty(params),return,end
   % go through and recalculate
   scanNums = find(params.include);
   for s = scanNums
-    spikeinfo = calcSpikeInfo(v,s,groupNum,params.criterion);
+    spikeinfo = calcSpikeInfo(v,s,groupNum,params);
     v = viewSet(v,'spikeinfo',spikeinfo,s,groupNum);
   end
   % now get back the one we want
@@ -50,7 +52,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   calcSpikeInfo   %%
 %%%%%%%%%%%%%%%%%%%%%%%
-function spikeinfo = calcSpikeInfo(v,scanNum,groupNum,criterion)
+function spikeinfo = calcSpikeInfo(v,scanNum,groupNum,params)
 
 % load TSeries
 spikeinfo.scanNum = scanNum;
@@ -66,12 +68,21 @@ end
 v = viewSet(v,'curGroup',groupNum);
 disppercent(-inf,sprintf('(mrSpikeDetector) Loading time series for scan %i, group %i',scanNum,groupNum));
 spikeinfo.data = loadTSeries(v,scanNum);
+% Dump junk frames
+junkFrames = viewGet(v, 'junkframes', scanNum);
+nFrames = viewGet(v, 'nFrames', scanNum);
+spikeinfo.data = spikeinfo.data(:,:,:,junkFrames+1:junkFrames+nFrames);
+
 spikeinfo.dim = size(spikeinfo.data);
 disppercent(inf);
 
 % skip some frames in the beginning to account
 % for saturation
-startframe = min(5,spikeinfo.dim(4));
+if junkFrames < 5
+    startframe = min(5,spikeinfo.dim(4));
+else
+    startframe = 1;
+end
 
 % compute fourier transform of data
 % calculating fourier transform of data
@@ -86,13 +97,22 @@ end
 disppercent(inf);
 
 % get mean and std
-disppercent(-inf,'(mrSpikeDetector) Calculating mean and std');
-for slicenum = 1:spikeinfo.dim(3)
-  disppercent(slicenum/spikeinfo.dim(3));
-  meandata(:,:,slicenum) = squeeze(mean(data(:,:,slicenum,:),4));
-  stddata(:,:,slicenum) = squeeze(std(data(:,:,slicenum,:),0,4));
+if params.useMedian
+    disppercent(-inf,'(mrSpikeDetector) Calculating median and iqr');
+    for slicenum = 1:spikeinfo.dim(3)
+        disppercent(slicenum/spikeinfo.dim(3));
+        meandata(:,:,slicenum) = squeeze(median(data(:,:,slicenum,:),4));
+        stddata(:,:,slicenum) = squeeze(iqr(data(:,:,slicenum,:),4));
+    end
+else
+    disppercent(-inf,'(mrSpikeDetector) Calculating mean and std');
+    for slicenum = 1:spikeinfo.dim(3)
+        meandata(:,:,slicenum) = squeeze(mean(data(:,:,slicenum,:),4));
+        stddata(:,:,slicenum) = squeeze(std(data(:,:,slicenum,:),0,4));
+    end
 end
 disppercent(inf);
+
 
 % now subtract off mean and see
 % if there are any points above std criterion
@@ -103,14 +123,14 @@ for i = startframe:spikeinfo.dim(4)
   data(:,:,:,i) = squeeze(data(:,:,:,i))-meandata;
   % see if any voxels are larger then expected
   for slicenum = 1:spikeinfo.dim(3)
-    [spikex spikey] = find(squeeze(data(:,:,slicenum,i)) > criterion*squeeze(stddata(:,:,slicenum)));
+    [spikex spikey] = find(squeeze(data(:,:,slicenum,i)) > params.criterion*squeeze(stddata(:,:,slicenum)));
     if ~isempty(spikex)
       slice(end+1) = slicenum;
       time(end+1) = i;
       numspikes(end+1) = length(spikex);
       spikelocs{end+1}.x = spikex;
       spikelocs{end}.y = spikey;
-      spikelocs{end}.linear = find(squeeze(data(:,:,slicenum,i)) > criterion*squeeze(stddata(:,:,slicenum)));
+      spikelocs{end}.linear = find(squeeze(data(:,:,slicenum,i)) > params.criterion*squeeze(stddata(:,:,slicenum)));
     end
   end
 end
@@ -143,7 +163,7 @@ spikeinfo.slice = slice;
 spikeinfo.time = time;
 spikeinfo.numspikes = numspikes;
 spikeinfo.spikelocs = spikelocs;
-spikeinfo.criterion = criterion;
+spikeinfo.criterion = params.criterion;
 spikeinfo.sliceMeans = single(sliceMeans);
 spikeinfo = rmfield(spikeinfo,'data');
 
