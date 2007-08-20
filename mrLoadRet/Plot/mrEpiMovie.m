@@ -82,16 +82,14 @@ scanNum = params.scanNum;
 sliceNum = params.sliceNum;
 frameNum = params.frameNum;
 
-for i = 1:n
-  % check to see if we have to return
-  if gMrEpiMovie.stopAnimating
-    gMrEpiMovie.animating = 0;
-    return
-  end
-  % set the variable
-  eval(sprintf('%s = i;',type));
-  % load image
-  mrEpiMovieDispImage(scanNum,sliceNum,frameNum);
+i = 1;
+while (gMrEpiMovie.stopAnimating ~=1)
+    % set the variable
+    eval(sprintf('%s = i;',type));
+    % load image
+    mrEpiMovieDispImage(scanNum,sliceNum,frameNum);
+    pause(.1);
+    i = (mod(i,n))+1;
 end
 
 % go back to original frame
