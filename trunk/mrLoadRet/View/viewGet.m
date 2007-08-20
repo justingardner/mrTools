@@ -33,6 +33,8 @@ function [val val2] = viewGet(view,param,varargin)
 % 11/2006 jlg added help and
 % originalScanNum,originalFileName,originalGroupName, scanNum,
 % dicomName, dicom, stimFileName, stimFile, concatInfo, transforms, TR
+%	$Id$	
+
 mrGlobals
 
 % if ieNotDefined('view'), error('No view defined.'); end
@@ -467,8 +469,8 @@ switch lower(param)
     [s g] = getScanAndGroup(view,varargin,param);
     nScans = viewGet(view,'nscans',g);
     nGroups = viewGet(view,'nGroups');
-    if (g > 0) & (g < nGroups) & (nScans >= s) & (s > 0)
-      if isfield(MLR.groups(g).auxParams(s),'spikeinfo')
+    if (g > 0) & (g < nGroups) & (length(MLR.groups(g).auxParams) >= s) & (s > 0)
+        if isfield(MLR.groups(g).auxParams(s),'spikeinfo')
 	val = MLR.groups(g).auxParams(s).spikeinfo;
 	% check tSeries name
 	if isfield(val,'filename') & ~strcmp(val.filename,viewGet(view,'tSeriesFile',s,g))
