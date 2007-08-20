@@ -12,7 +12,8 @@ function out = mrUpSample(im, nLevels, filt)
 %
 % 99.08.16 RFD wrote it, based on upBlur (and helpful
 %				comments from DJH)
-% 07.08.19, EPM added 3D upsampling
+% 07.08.19, EPM added upsampling across slices
+% $Id$	
 
 if nLevels ~= fix(nLevels)
     error('nLevels must be an integer!!!');
@@ -36,27 +37,31 @@ if (nLevels >= 1)
     else
         out = im;
         [nrows ncols nslices nframes] = size(out);
-        % Do the rows:
+
+        disppercent(-inf,'(mrUpSample) upsampling the rows');
         out = reshape(out,[nrows ncols*nslices*nframes]);
         out = upConv(out, filt, 'zero', [2 1]);
         nrows = nrows*2;
         out = reshape(out,[nrows ncols nslices nframes]);
+        disppercent(inf);
 
-        % Do the cols:
+        disppercent(-inf,'(mrUpSample) upsampling the columns');
         out = permute(out,[2 1 3 4]);
         out = reshape(out,[ncols nrows*nslices*nframes]);
         out = upConv(out, filt, 'zero', [2 1]);
         ncols = ncols*2;
         out = reshape(out,[ncols nrows nslices nframes]);
         out = permute(out,[2 1 3 4]);
-
-        % Do the slices
+        disppercent(inf);
+        
+        disppercent(-inf,'(mrUpSample) upsampling the slices');
         out = permute(out,[3 2 1 4]);
         out = reshape(out,[nslices ncols*nrows*nframes]);
         out = upConv(out, filt, 'zero', [2 1]);
         nslices = nslices*2;
         out = reshape(out,[nslices ncols nrows nframes]);
         out = permute(out,[3 2 1 4]);
+        disppercent(inf);
     end
 else
     out = im;
