@@ -2491,7 +2491,7 @@ for i = 1:length(commands)
   end
 end
 
-maxlen = median(lens)+4;
+maxlen = round(median(lens)+4);
 nColumns = 6;
 disp(sprintf('\n'));
 disp('------------------------- All possible parameters ---------------------');
