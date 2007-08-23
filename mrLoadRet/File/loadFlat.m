@@ -87,7 +87,7 @@ for fileNum = 1:length(pathStr)
 
   % check its fields
   if ~isfield(flat,'curvature') || ~isfield(flat,'gLocs2d') || ~isfield(flat,'gLocs3d')
-    mrWarnDlg(sprintf('(loadFlat) %s is not a flat file generated using SurfRelax',pathStr));
+    mrWarnDlg(sprintf('(loadFlat) %s is not a flat file generated using SurfRelax',pathStr{fileNum}));
     continue
   end
 

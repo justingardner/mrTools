@@ -69,7 +69,9 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   originalGroupname = viewGet(view,'originalGroupname',s,groupNum);
   stimFilename = viewGet(view,'stimFilename',s,groupNum);
   scanDims = viewGet(view,'scanDims',s,groupNum);
-
+  totalJunkedFrames = viewGet(view,'totalJunkedFrames',s,groupNum);
+  junkFrames = viewGet(view,'junkFrames',s,groupNum);
+  
   % display info
   disp(sprintf('%i: %s',s,description));
   disp(sprintf('   Filename: %s GroupName: %s',filename,groupName));
@@ -79,7 +81,8 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   for i = 1:length(stimFilename)
     disp(sprintf('   StimFilename: %s',stimFilename{i}));
   end
-  
+
+  disp(sprintf('   junkFrames=[%s] totalJunkedFrames=[%s]',num2str(junkFrames),num2str(totalJunkedFrames)));
   disp(sprintf('   voxelSize=[%0.1f %0.1f %0.1f] TR=%0.4f Dims: [%i %i %i] Volumes=%i',scanVoxelSize(1),scanVoxelSize(2),scanVoxelSize(3),tr,scanDims(1),scanDims(2),scanDims(3),totalFrames));
 
   % if verbose is set above 1, then show scan transform
