@@ -63,7 +63,7 @@ for f = 1:size(optionalFields,1)
   if ~isfield(scanParams,fieldName)  
     % set argument
     scanParams.(fieldName) = default;
-    mrWarnDlg(sprintf('(isscan) Setting default field %s',fieldName));
+%    mrWarnDlg(sprintf('(isscan) Setting default field %s',fieldName));
   end
 end
 scanParams = orderfields(scanParams);
@@ -74,7 +74,7 @@ scanFields = fieldnames(scanParams);
 for f = 1:length(scanFields)
   fieldName = scanFields{f};
   if ~any(strcmp(fieldName,allFields))
-    mrWarnDlg(sprintf('(isscan) Unknown field %s removed',fieldName));
+%    mrWarnDlg(sprintf('(isscan) Unknown field %s removed',fieldName));
     tf = false;
   end
 end
