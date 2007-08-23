@@ -95,7 +95,7 @@ switch lower(param)
       view = viewSet(view,'loadedAnalyses',view.analyses,view.curGroup);
       % save the current scan number
       view = viewSet(view,'groupScanNum',viewGet(view,'curScan'),view.curGroup);
-      MLR.view{view.viewNum} = view;
+      MLR.views{view.viewNum} = view;
       % set the current group
       view.curGroup = val;
       view.analyses = [];
@@ -1407,7 +1407,7 @@ for i = 1:length(commands)
   end
 end
 
-maxlen = median(lens)+4;
+maxlen = round(median(lens)+4);
 nColumns = 6;
 disp(sprintf('\n'));
 disp('------------------------- All possible parameters ---------------------');
