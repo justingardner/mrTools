@@ -129,65 +129,66 @@ end
 % Compute output volume
 aveTSeries = zeros([scanDims(1) scanDims(2) scanDims(3) nFrames]);
 waitHandle = mrWaitBar(0,'Computing average tSeries.  Please wait...');
+nSlices = viewGet(view,'nSlices', baseScan);
+
 for iscan = 1:length(scanList)
     scanNum = scanList(iscan);
     reverse = reverseList(iscan);
     shift = shiftList(iscan);
-    
-    % Load it
-    tseries = loadTSeries(viewBase,scanNum,'all');
-    
-    % Dump junk frames
-    junkFrames = viewGet(viewBase,'junkframes',scanNum);
-    tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
-    
-    % Time shift
-    if (shift > 0)
-        tseries = cat(4, tseries(:,:,:,[nFrames-shift+1:nFrames]), tseries(:,:,:,[1:nFrames-shift]));
-    end
-    if (shift < 0)
-        shift = -shift;
-        tseries = cat(4, tseries(:,:,:,[shift+1:nFrames]), tseries(:,:,:,[1:shift]));
-    end
 
-    % Time reverse
-    if reverse
-        tseries = flipdim(tseries,4);
-    end
-    
-    % Compute transform
-    % *** Not fully tested yet ***
-    baseXform = viewGet(view,'scanXform',baseScan,groupNum);
-    scanXform = viewGet(view,'scanXform',scanNum,groupNum);
+    for iSlice = 1:nSlices
 
-    % only warp if needed
-    if sum(sum(baseXform - scanXform)) ~= 0
-        % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the  origin.
-        shiftXform = shiftOriginXform;
-        swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
-        M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
+        % Load it
+        tseries = loadTSeries(viewBase,scanNum,iSlice);
         
-        % Warp the frames
-        waitHandle = mrWaitBar(0,['Warping image volumes for scan ', num2str(iscan)]);
-        for frame = 1:nFrames
-            mrWaitBar(frame/nFrames,waitHandle)
-            tseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
-        end  
-        mrCloseDlg(waitHandle);
+        % Dump junk frames
+        junkFrames = viewGet(viewBase,'junkframes',scanNum);
+        tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
+
+        
+        % Time shift
+        tseries = circshift(tseries, [0 0 0 shift]);
+        
+        % Time reverse
+        if reverse
+            tseries = flipdim(tseries,4);
+        end
+        
+        % Compute transform
+        % *** Not fully tested yet ***
+        baseXform = viewGet(view,'scanXform',baseScan,groupNum);
+        scanXform = viewGet(view,'scanXform',scanNum,groupNum);
+        
+        % only warp if needed
+        if sum(sum(baseXform - scanXform)) ~= 0
+            % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the  origin.
+            shiftXform = shiftOriginXform;
+            swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+            M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
+            
+            % Warp the frames
+            waitHandle = mrWaitBar(0,['Warping image volumes for scan ', num2str(iscan)]);
+            for frame = 1:nFrames
+                mrWaitBar(frame/nFrames,waitHandle)
+                tseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
+            end  
+            mrCloseDlg(waitHandle);
+        end
+        
+        % Add 'em up
+        tmp = cat(5, aveTSeries(:,:,iSlice,:), tseries);
+        aveTSeries(:,:,iSlice,:) = nansum(tmp,5);
+
+        % Update waitbar
+        mrWaitBar( iscan/length(scanList) + (iSlice/nSlices * 1/length(scanList)) ,waitHandle);
     end
-    
-    % Add 'em up
-    aveTSeries = cat(5, aveTSeries, tseries);
-    aveTSeries = nansum(aveTSeries, 5);
-    
+
     % remember origianl file/group	
     scanParams.originalFileName{iscan} = viewGet(viewBase,'tSeriesFile',scanNum);
     scanParams.originalGroupName{iscan} = viewGet(viewBase,'groupName',viewGet(viewBase,'curGroup'));
     
-    % Update waitbar
-    mrWaitBar(iscan/length(scanList),waitHandle);
 end
-
+  
 % Divide by number of scans in scanList
 aveTSeries = aveTSeries / length(scanList);
 mrCloseDlg(waitHandle);
