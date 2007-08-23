@@ -110,6 +110,13 @@ if ~isempty(scanListName)
       % check for empty
       if isempty(thisScanNum)
 	disp(sprintf('(defaultReconcileParams) Ignoring scan with tseriesFilename: %s because it no longer exists',params.tseriesFile{tnum}));
+      % Not sure why the below happens--essentially there is no scanNum associated
+      % with the tseries filename. Since there isn't any associated info
+      % for that timeseries filename, we need to drop it as well (otherwise
+      % the code will crash below because it can't find the correct
+      % scanparams for the tseriesfile.
+      elseif length(params.(scanListName)) < tnum
+	disp(sprintf('(defaultReconcileParms) No associated scanParams/scanNum for analysis on %s',params.tseriesFile{tnum}));
       else
 	% found it, set the scan number
 	newScanNums(end+1) = thisScanNum;
