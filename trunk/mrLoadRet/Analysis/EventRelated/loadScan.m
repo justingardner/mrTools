@@ -66,8 +66,16 @@ if ~isempty(d.data)
 end
 % junk frames total is used by getStimvol to adjust
 % volumes according to how many volumes have been thrown out
-d.junkFrames = junkFrames+viewGet(view,'totalJunkedFrames',scanNum);
-
+d.junkFrames = viewGet(view,'totalJunkedFrames',scanNum);
+% we need to add the junk frames junked here to the first
+% of the array 'totalJunkedFrames' (one for each scan), or
+% if that array is empty then we only have to condiser the
+% first junkFrames
+if isempty(d.junkFrames)
+  d.junkFrames = junkFrames;
+else
+  d.junkFrames(1) = d.junkFrames(1)+junkFrames;
+end
 % load dicom header
 d.dicom = viewGet(view,'dicom',scanNum);
 
