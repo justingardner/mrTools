@@ -409,7 +409,7 @@ function [baseCoords x y s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,.
 % getROIBaseCoordsSlice: extracts ROI coords transformed to the
 % base image
 
-baseCoords = [];
+baseCoords = [];x = [];y = [];s = [];
 
 % viewGet
 baseDims = viewGet(view,'baseDims');
