@@ -63,7 +63,7 @@ if displayInDialog
     paramsInfo{end+1} = {sprintf('Original%i',i) sprintf('%s: %s',originalGroupname{i},originalFilename{i}) 'editable=0' 'Name of original group and filename that this scan came from'};
   end
   for i = 1:length(stimFilename)
-    paramsInfo{end+1} = {sprintf('Stimfile%i',i) stimFilename{i} 'editable=0' 'Name of stim file'};
+    paramsInfo{end+1} = {sprintf('Stimfile%i',i) getLastDir(stimFilename{i}) 'editable=0' 'Name of stim file'};
   end
   paramsInfo{end+1} = {'voxelSize',scanVoxelSize,'editable=0','Voxel dimensions in mm'};
   paramsInfo{end+1} =  {'dims',scanDims,'editable=0','Dimensions of scan'};

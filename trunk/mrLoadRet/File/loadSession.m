@@ -51,7 +51,6 @@ for g = 1:length(groups)
   for s = 1:length(groups(g).scanParams)
     % go through and validate scanParams
     [tf newScanParams(s)] = isscan(groups(g).scanParams(s));
-    newScanParams(s).totalJunkedFrames = [];
     % check for invalid scna
     if ~tf
       mrWarnDlg(sprintf('(loadSession) Scan %i in group %i is invalid',s,g));
