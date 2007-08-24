@@ -179,10 +179,10 @@ mrCloseDlg(waitHandle);
 
 % Fill range fields 
 tsMean.range = findRange(tsMean.data);
-tsMedian.range = findRange(tsMean.data);
+tsMedian.range = findRange(tsMedian.data);
 tsStd.range = findRange(tsMean.data);
-tsMaxFrameDiff.range = findRange(tsMean.data);
-tsMaxMedianDiff.range = findRange(tsMean.data);
+tsMaxFrameDiff.range = findRange(tsMaxFrameDiff.data);
+tsMaxMedianDiff.range = findRange(tsMaxMedianDiff.data);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -203,11 +203,11 @@ tSeries = reshapeTSeries(tSeries);
 % Remove junkFrames
 tSeries = tSeries(junkframes+1:junkframes+nframes,:);
 
-tsMeanSeries = mean(tSeries);
-tsMedianSeries = median(tSeries);
-tsStdSeries = std(tSeries);
-tsMaxFrameDiffSeries = max(abs(tSeries(2:end,:)-tSeries(1:end-1,:)));
-tsMaxMedianDiffSeries = max(abs(tSeries - repmat(tsMedianSeries,[nframes,1])));
+tsMeanSeries = nanmean(tSeries);
+tsMedianSeries = nanmedian(tSeries);
+tsStdSeries = nanstd(tSeries);
+tsMaxFrameDiffSeries = nanmax(abs(tSeries(2:end,:)-tSeries(1:end-1,:)));
+tsMaxMedianDiffSeries = nanmax(abs(tSeries - repmat(tsMedianSeries,[nframes,1])));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -223,6 +223,7 @@ for scan=1:nScans
     ampMax = max([ampMax max(data{scan}(:))]);
   end
 end
+keyboard
 if (ampMin <= ampMax)
   range = [ampMin ampMax];
 else
