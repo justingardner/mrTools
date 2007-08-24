@@ -180,7 +180,7 @@ mrCloseDlg(waitHandle);
 % Fill range fields 
 tsMean.range = findRange(tsMean.data);
 tsMedian.range = findRange(tsMedian.data);
-tsStd.range = findRange(tsMean.data);
+tsStd.range = findRange(tsStd.data);
 tsMaxFrameDiff.range = findRange(tsMaxFrameDiff.data);
 tsMaxMedianDiff.range = findRange(tsMaxMedianDiff.data);
 
@@ -223,7 +223,6 @@ for scan=1:nScans
     ampMax = max([ampMax max(data{scan}(:))]);
   end
 end
-keyboard
 if (ampMin <= ampMax)
   range = [ampMin ampMax];
 else
