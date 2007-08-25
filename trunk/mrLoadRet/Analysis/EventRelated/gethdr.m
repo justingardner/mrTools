@@ -47,7 +47,8 @@ end
 % if we only have one response, then we will have
 % to take the transpose to make sure that we have
 % row array
-if size(d.ehdr,4) == 1
+if size(d.ehdr,4) == 1 & nargout >=3
   hdr = hdr';
   hdrste = hdrste';
 end
+
