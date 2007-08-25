@@ -1,5 +1,6 @@
 % gethdr.m
 %
+%        $Id$	
 %      usage: gethdr(d,x,y,s)
 %         by: justin gardner
 %       date: 08/21/03
