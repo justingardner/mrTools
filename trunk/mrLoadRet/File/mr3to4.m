@@ -180,8 +180,9 @@ for i = 1:length(preMCScanParams)
   newScanParams(i).voxelSize = preMCScanParams(i).effectiveResolution;
   newScanParams(i).originalFileName = [];
   newScanParams(i).originalGroupName = [];
-  if isscan(newScanParams(i));
-    m.groups(1).scanParams(i) = orderfields(newScanParams(i));
+  [tf thisScanParams] = isscan(newScanParams(i));
+  if isscan(thisScanParams);
+    m.groups(1).scanParams(i) = orderfields(thisScanParams);
   else
     keyboard
   end
@@ -208,8 +209,9 @@ for i = 1:length(filenames)
   newScanParams(i).junkFrames = 0;
   newScanParams(i).originalGroupName{1} = 'Raw';
   newScanParams(i).fileName = filenames{i};
-  if isscan(newScanParams(i))
-    m.groups(2).scanParams(i) = orderfields(newScanParams(i));
+  [tf thisScanParams] = isscan(newScanParams(i));
+  if isscan(thisScanParams)
+    m.groups(2).scanParams(i) = orderfields(thisScanParams);
   else
     keyboard
   end
