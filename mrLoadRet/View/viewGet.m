@@ -469,16 +469,15 @@ switch lower(param)
     [s g] = getScanAndGroup(view,varargin,param);
     nScans = viewGet(view,'nscans',g);
     nGroups = viewGet(view,'nGroups');
-    if (g > 0) & (g < nGroups) & (length(MLR.groups(g).auxParams) >= s) & (s > 0)
-        if isfield(MLR.groups(g).auxParams(s),'spikeinfo')
+    if (g > 0) &  (length(MLR.groups(g).auxParams) >= s) & (s > 0)
+      if isfield(MLR.groups(g).auxParams(s),'spikeinfo')
 	val = MLR.groups(g).auxParams(s).spikeinfo;
-	% check tSeries name
-	if isfield(val,'filename') & ~strcmp(val.filename,viewGet(view,'tSeriesFile',s,g))
-	  val = [];
-	end
+ 	% check tSeries name
+        if isfield(val,'filename') & ~strcmp(val.filename,viewGet(view,'tSeriesFile',s,g))
+          val = [];
+        end
       end
     end
-    
   case {'eyepos'}
     % eyepos = viewGet(view,'eyepos',scanNum,[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
