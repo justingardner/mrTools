@@ -14,6 +14,11 @@ if ~any(nargin == [1 2 3 4])
   return
 end
 
+if ~isview(view)
+  disp(sprintf('(loadScan) First argument is not a view'));
+  return
+end
+
 % default to loading all slices
 if ~exist('groupNum','var'),groupNum = [];end
 if ~exist('sliceNum','var'),sliceNum = [];end
@@ -22,8 +27,13 @@ if ~exist('sliceNum','var'),sliceNum = [];end
 if ~isempty(groupNum)
   view = viewSet(view,'curGroup',groupNum);
 end
+groupNum = viewGet(view,'curGroup');
+
 % load parameters
 d.ver = 4.5;
+d.scanNum = scanNum;
+d.groupNum = groupNum;
+d.description = viewGet(view,'description',scanNum);
 d.tr = viewGet(view,'framePeriod',scanNum);
 d.voxelSize = viewGet(view,'scanvoxelsize',scanNum);
 d.nFrames = viewGet(view,'nFrames',scanNum);
@@ -33,11 +43,9 @@ d.filepath = viewGet(view,'tseriespathstr',scanNum);
 d.expname = getLastDir(fileparts(fileparts(fileparts(d.filepath))));
 d.fullpath = fileparts(fileparts(fileparts(fileparts(d.filepath))));
 
-% adjust tr for 3d sequence
+% print out tr for 3d scans to make sure it is right
 if viewGet(view,'3D',scanNum)
-  nSlices = viewGet(view,'nSlices',scanNum);
-  disp(sprintf('(loadScan) 3D sequence. Adjusting TR from %0.2f to %0.2f',d.tr,d.tr*nSlices));
-  d.tr = d.tr*nSlices;
+  disp(sprintf('(loadScan) 3D sequence. TR is %0.2f',d.tr));
 end
 
 % dispay string to say what we are loading
@@ -82,9 +90,17 @@ d.dicom = viewGet(view,'dicom',scanNum);
 % load stimfile and set traces
 d.stimfile = viewGet(view,'stimfile',scanNum);
 
+if length(d.junkFrames) ~= length(d.stimfile)
+  if (d.junkFrames == 0)
+    disp(sprintf('(loadScan) Setting total junk frames for all scans to 0'));
+    d.junkFrames = zeros(1,length(d.stimfile));
+  end
+end
+
 % get any concat info
 d.concatInfo = viewGet(view,'concatInfo',scanNum);
 
 % get dimensions
 d.dim = size(d.data);
+
 
