@@ -21,6 +21,11 @@ function preferences = mrSetPref(pref,value)
 
 global mrDEFAULTS
 
+% if mrDEFAULTS is empty, then we should try to load it
+if isempty(mrDEFAULTS)
+  mrDEFAULTS = loadMrDefaults;
+end
+
 mrDEFAULTS.prefs = setfield(mrDEFAULTS.prefs,pref,value);
 preferences = mrDEFAULTS.prefs;
 saveMrDefaults;
