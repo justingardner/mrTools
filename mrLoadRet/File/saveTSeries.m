@@ -44,6 +44,7 @@ path = fullfile(tseriesdir,scanParams.fileName);
 if ~append
     % Save tseries
     [byteswritten,hdr] = cbiWriteNifti(path,tseries,hdr);
+    scanParams.niftiHdr = hdr;
 else
     % append time series to what is already there.
     % first get how many total frames we will have
@@ -59,6 +60,7 @@ else
     scanParams.nFrames = newNFrames;
     % now write out that header
     hdr = cbiWriteNiftiHeader(hdr,path);
+    scanParams.niftiHdr = hdr;
     % now write out the new data
     tempFilename = fullfile(tseriesdir,'___saveTSeriesAppendTemp___.img');
     cbiWriteNifti(tempFilename,tseries,hdr);
