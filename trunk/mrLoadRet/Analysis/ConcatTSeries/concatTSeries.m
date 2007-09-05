@@ -17,13 +17,13 @@ end
 % description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
     {'groupName',putOnTopOfList(viewGet(view,'groupName'),viewGet(view,'groupNames')),'Name of group from which to make concatenation'},...
-    {'newGroupName','Concatenation','Name of group that will be created'},...
+    {'newGroupName','Concatenation','Name of group to which concatenation will be saved. If group does not already exist, it will be created.'},...
     {'description','Concatenation of [x...x]','Description that will be set to have the scannumbers that are selected'},...
     {'filterType',1,'minmax=[0 1]','incdec=[-1 1]','Which filter to use, for now you can only turn off highpass filtering'},...
     {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
     {'percentSignal',1,'type=checkbox','Convert to percent signal change'},...
-    {'warp',0,'type=checkbox','Warp images based on alignment (not implemented yet)'},...
-    {'warpInterpMethod',{'nearest','bilinear'},'Interpolation method for warp (not implemented yet)','contingent=warp'}
+    {'warp',0,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days.'},...
+    {'warpInterpMethod',{'nearest','bilinear'},'Interpolation method for warp','contingent=warp'}
 	     };
 % First get parameters
 if ieNotDefined('params')
@@ -95,12 +95,12 @@ for iscan = 1:length(params.scanList)
     disp('(concatTSeries) Scans have different dimensions.');
   end
 end
+disp(sprintf('(concatTSeries) FramePeriod for scan is: %0.2f',d.tr));
 
 % initialize some things
 concatInfo.n = 0;
 concatInfo.whichScan = [];
 concatInfo.whichVolume = [];
-
 
 set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
 tic
@@ -149,7 +149,7 @@ for iscan = 1:length(params.scanList)
   if params.filterType == 1
     d = eventRelatedHighpass(d,params.filterCutoff);
   elseif params.filterType == 2
-      d = detrendTSeries(d)
+    d = detrendTSeries(d)
   end
     
   % convert to percent signal change
