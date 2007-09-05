@@ -1111,10 +1111,11 @@ refreshMLRDisplay(viewNum);
 function editOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = editOverlayGUI(view);
-view = viewSet(view,'overlayCache','init');
-refreshMLRDisplay(viewNum);
+editOverlayGUImrParams(viewNum);
+% view = MLR.views{viewNum};
+% view = editOverlayGUI(view);
+% view = viewSet(view,'overlayCache','init');
+% refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function editRoiMenu_Callback(hObject, eventdata, handles)
