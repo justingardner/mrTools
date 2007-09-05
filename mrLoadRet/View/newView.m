@@ -41,6 +41,10 @@ MLR.views{viewNum} = view;
 % validate view (add any optional fields);
 [tf view] = isview(view);
 
+% add it back to the globals, in case it has changed
+MLR.views{viewNum} = view;
+
+
 % add the caches
 MLR.caches{viewNum} = [];
 
