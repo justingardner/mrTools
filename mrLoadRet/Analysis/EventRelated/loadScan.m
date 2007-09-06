@@ -69,6 +69,9 @@ else
   d.data = [];
 end
 	
+% set the number of slices approriately
+d.dim(3) = size(d.data,3);
+
 % Dump junk frames
 junkFrames = viewGet(view,'junkframes',scanNum);
 if ~isempty(d.data)

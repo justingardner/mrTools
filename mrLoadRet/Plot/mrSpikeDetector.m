@@ -41,6 +41,7 @@ if isempty(spikeinfo)
     spikeinfo = calcSpikeInfo(v,s,groupNum,params);
     v = viewSet(v,'spikeinfo',spikeinfo,s,groupNum);
   end
+  saveSession;
   % now get back the one we want
   spikeinfo = viewGet(v,'spikeinfo',scanNum,groupNum);
 end
