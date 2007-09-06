@@ -36,7 +36,9 @@ d.groupNum = groupNum;
 d.description = viewGet(view,'description',scanNum);
 d.tr = viewGet(view,'framePeriod',scanNum);
 d.voxelSize = viewGet(view,'scanvoxelsize',scanNum);
+d.xform = viewGet(view,'scanXform',scanNum);
 d.nFrames = viewGet(view,'nFrames',scanNum);
+d.dim = viewGet(view,'scanDims',scanNum);
 d.dim(4) = d.nFrames;
 d.filename = viewGet(view,'tseriesfile',scanNum);
 d.filepath = viewGet(view,'tseriespathstr',scanNum);
@@ -99,8 +101,4 @@ end
 
 % get any concat info
 d.concatInfo = viewGet(view,'concatInfo',scanNum);
-
-% get dimensions
-d.dim = size(d.data);
-
 
