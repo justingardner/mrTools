@@ -21,41 +21,42 @@ if (nargout == 2)
   % fields is valid.
   requiredFields = {'function','groupName','name','params','range'};
   optionalFields = {'date',datestr(now);
-    'type',overlay.name;
-    'alpha',1;
-    'clip',overlay.range;
-    'colormap',jet(256);
-    'interrogator','mrDefaultInterrogator';
-    'reconcileFunction','defaultReconcileParams';
-    'mergeFunction','defaultMergeParams';
-    'data',[]};
+                    'type',overlay.name;
+                    'alpha',1;
+                    'clip',overlay.range;
+                    'colormap',jet(256);
+                    'interrogator','mrDefaultInterrogator';
+                    'reconcileFunction','defaultReconcileParams';
+                    'mergeFunction','defaultMergeParams';
+                    'colormapType', 'normal';
+                    'data',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'function','groupName','name','params','range',...
-    'date','type','alpha','clip','colormap',...
-    'interrogator','reconcileFunction','mergeFunction','data'};
+                    'date','type','alpha','clip','colormap',...
+                    'interrogator','reconcileFunction','mergeFunction','data'};
   optionalFields = {};
 end
 
 % Initialize return value
 tf = true;
 if ieNotDefined('overlay')
-    tf = false;
-    return
+  tf = false;
+  return
 end
 if ~isstruct(overlay)
-	tf = false;
-	return
+  tf = false;
+  return
 end
 
 % Check required fields
 for f = 1:length(requiredFields)
-	fieldName = requiredFields{f};
-	if ~isfield(overlay,fieldName)
-		% mrWarnDlg(['Invalid overlay, missing field: ',fieldName]);
-		tf = false;
-	end
+  fieldName = requiredFields{f};
+  if ~isfield(overlay,fieldName)
+    % mrWarnDlg(['Invalid overlay, missing field: ',fieldName]);
+    tf = false;
+  end
 end
 
 % Optional fields and defaults
