@@ -13,7 +13,8 @@ function [tf overlay] =  isoverlay(overlay)
 % If called with two output arguments then an attempt is made to make it
 % into a valid overlay structure by setting optional fields to default
 % values.
-% 
+%
+% $Id$	
 % djh, 2007
 
 if (nargout == 2)
