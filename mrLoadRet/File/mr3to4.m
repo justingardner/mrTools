@@ -79,7 +79,7 @@ end
 
 % print out information on raw group
 printBlockBegin('PFiles');
-scanParams = m.dataTYPES.scanParams;
+scanParams = m.dataTYPES(1).scanParams;
 functionals = m.mrSESSION.functionals;
 for i = 1:length(functionals)
   disp(sprintf('%i: %s [%s] tr=%0.3f',i,functionals(i).PfileName,num2str(functionals(i).effectiveResolution),functionals(i).framePeriod));
