@@ -26,7 +26,15 @@ if isempty(viewGet(view,'curBase')) & ieNotDefined('xform') & ieNotDefined('voxe
 end
 
 if ieNotDefined('name')
-  name=sprintf('ROI%.0f',(length(view.ROIs)+1));
+  % go through roi names and get the largest numbered
+  % roi name, i.e. ROI4 then make then new name ROI5
+  maxnum = 0;
+  for i = 1:length(view.ROIs)
+    if regexp(view.ROIs(i).name,'^ROI\d+$')
+      maxnum = max(maxnum,str2num(view.ROIs(i).name(4:end)));
+    end
+  end
+  name=sprintf('ROI%.0f',maxnum+1);
 end
 if ieNotDefined('select')
   select = 1;
