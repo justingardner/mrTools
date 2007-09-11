@@ -26,7 +26,7 @@ if nargin == 2
   end
 end
 
-hdr = squeeze(d.ehdr(x,y,s,:,:));
+hdr = shiftdim(d.ehdr(x,y,s,:,:), 3);
 hdrlen = d.hdrlen;
 
 if isfield(d, 'hrf')
@@ -38,7 +38,7 @@ if nargout >= 2
   time = d.tr/2:d.tr:(hdrlen*d.tr);
 end
 if nargout >=3
-  hdrste = squeeze(d.ehdrste(x,y,s,:,:));
+  hdrste = shiftdim(d.ehdrste(x,y,s,:,:), 3);
   % not sure about this part
   if isfield(d, 'hrf')
      hdrste = hdrste*d.hrf';
@@ -48,8 +48,8 @@ end
 % if we only have one response, then we will have
 % to take the transpose to make sure that we have
 % row array
-if size(d.ehdr,4) == 1 & nargout >=3
-  hdr = hdr';
-  hdrste = hdrste';
-end
+% if size(d.ehdr,4) == 1 & nargout >=3
+%  hdr = hdr';
+%  hdrste = hdrste';
+% end
 
