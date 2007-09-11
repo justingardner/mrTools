@@ -46,8 +46,13 @@ if ~isfield(mrDefaults.prefs,'niftiFileExtension') | isempty(mrDefaults.prefs.ni
     mrDefaults.prefs.niftiFileExtension = '.img';
 end
 if ~isfield(mrDefaults.prefs,'roiCacheSize') | isempty(mrDefaults.prefs.roiCacheSize)
-  mrDefaults.prefs.roiCacheSize = 3;
-end
+  mrDefaults.prefs.roiCacheSize = 50;
+% this is added since when we went to single roi caches
+% we need to have a larger roi cache size--this will convert
+% everyone who had the default 3 to 50
+elseif (mrDefaults.prefs.roiCacheSize == 3)
+  mrDefaults.prefs.roiCacheSize = 50;
+end  
 if ~isfield(mrDefaults.prefs,'overlayCacheSize') | isempty(mrDefaults.prefs.overlayCacheSize)
   mrDefaults.prefs.overlayCacheSize = 20;
 end
