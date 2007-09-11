@@ -85,8 +85,21 @@ if (volumeDimension == 4)
     end
     % if frameNum is set to 0, take the mean
     if params.frameNum == 0
-      [vol hdr] = cbiReadNifti(pathStr);
-      vol = nanmean(vol,4);
+      % either load the whole thing, or if it is too large,
+      % then load volume by volume
+      if 8*prod(hdr.dim(2:5)) < mrGetPref('maxBlocksize')
+	[vol hdr] = cbiReadNifti(pathStr);
+	vol = nanmean(vol,4);
+      else
+	% too large, load volume by volume
+	vol = zeros(hdr.dim(2:4)');
+	disppercent(-inf,sprintf('(loadAnat) Reading %s',getLastDir(pathStr)));
+	for i = 1:hdr.dim(5)
+	  vol = vol + (1/hdr.dim(5))*cbiReadNifti(pathStr,{[],[],[],i});
+	  disppercent(i/hdr.dim(5));
+	end
+	disppercent(inf);
+      end
     % other wise single time slice
     else
       [vol hdr] = cbiReadNifti(pathStr,{[] [] [] params.frameNum});
