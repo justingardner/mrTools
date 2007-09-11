@@ -38,9 +38,11 @@ groupName = viewGet(view,'groupName',groupNum);
 view = viewSet(view,'curGroup',groupNum);
 
 % grab info
+disppercent(-inf,'(scanInfo) Gathering scan info');
 description = viewGet(view,'description',scanNum,groupNum);
 scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
-tr = viewGet(view,'framePeriod',scanNum,groupNum);
+tr = viewGet(view,'TR',scanNum,groupNum);
+framePeriod = viewGet(view,'framePeriod',scanNum,groupNum);
 totalFrames = viewGet(view,'totalFrames',scanNum,groupNum);
 filename = viewGet(view,'tSeriesFile',scanNum,groupNum);
 originalFilename = viewGet(view,'originalFilename',scanNum,groupNum);
@@ -52,6 +54,7 @@ junkFrames = viewGet(view,'junkFrames',scanNum,groupNum);
 totalJunkedFrames = viewGet(view,'totalJunkedFrames',scanNum,groupNum);
 
 % get params info
+nCols = 2;
 matfile = viewGet(view,'params',scanNum,groupNum);
 fieldsToIgnore = {'tseriesfiles','groupname','description','filename'};
 % display info
@@ -62,15 +65,30 @@ if displayInDialog
   for i = 1:length(originalFilename)
     paramsInfo{end+1} = {sprintf('Original%i',i) sprintf('%s: %s',originalGroupname{i},originalFilename{i}) 'editable=0' 'Name of original group and filename that this scan came from'};
   end
-  for i = 1:length(stimFilename)
-    paramsInfo{end+1} = {sprintf('Stimfile%i',i) getLastDir(stimFilename{i}) 'editable=0' 'Name of stim file'};
+  if ~isempty(stimFilename)
+    % make stimfiles into sets of 4 (otherwise it takes too much room in the
+    % dialog for long concatenations or averages).
+    for j = 1:ceil(length(stimFilename)/4)
+      stimfileNames = getLastDir(stimFilename{(j-1)*4+1});
+      firstStimfile = ((j-1)*4+1);
+      lastStimfile = min(length(stimFilename),j*4);
+      for i = firstStimfile+1:lastStimfile
+	stimfileNames = sprintf('%s, %s',stimfileNames,getLastDir(stimFilename{i}));
+      end
+      if lastStimfile == firstStimfile
+	paramsInfo{end+1} = {sprintf('stimFilenames%i',lastStimfile),stimfileNames,'editable=0','Names of associated stimfiles'};
+      else
+	paramsInfo{end+1} = {sprintf('stimFilenames%ito%i',firstStimfile,lastStimfile),stimfileNames,'editable=0','Names of associated stimfiles'};
+      end
+    end
   end
   paramsInfo{end+1} = {'voxelSize',scanVoxelSize,'editable=0','Voxel dimensions in mm'};
   paramsInfo{end+1} =  {'dims',scanDims,'editable=0','Dimensions of scan'};
-  paramsInfo{end+1} =  {'TR',tr,'editable=0','TR'};
+  paramsInfo{end+1} =  {'TR',tr,'editable=0','TR. This is retrieved frome the dicom header information.'};
+  paramsInfo{end+1} =  {'framePeriod',framePeriod,'editable=0','Time each volume takes to acquire. Note that this is usually the same as TR, except for 3D scans in which this should be number of slices times the TR.'};
   paramsInfo{end+1} =  {'numVolumes',totalFrames,'editable=0','Number of volumes'};
   paramsInfo{end+1} =  {'junkFrames',junkFrames,'editable=0','Number of junk frames'};
-  paramsInfo{end+1} =  {'totalJunkedFrames',totalJunkedFrames,'editable=0','Number of junk frames that have already been discarded from this time series (this is useful for aligning the volume number of a stimulus set in a stimulus file with the volumes in the time series)'};
+  paramsInfo{end+1} =  {'totalJunkedFrames',num2str(totalJunkedFrames),'type=string','editable=0','Number of junk frames that have already been discarded from this time series (this is useful for aligning the volume number of a stimulus set in a stimulus file with the volumes in the time series)'};
   paramsInfo{end+1} = {'qform',scanHdr.qform44,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'};
   paramsInfo{end+1} = {'sform',scanHdr.sform44,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'};
   paramsInfo{end+1} = {'sformCode',scanHdr.sform_code,'editable=0','If sformCode is 0 it means the sform has never been set and mrLoadRet will use the qform to compute the transform to the base anatomy. If mrAlign has been run properly, then this value should be set to 1'};
@@ -94,8 +112,8 @@ if displayInDialog
       end
     end
   end
-  
-  mrParamsDialog(paramsInfo,'Scan info');
+  disppercent(inf);
+  mrParamsDialog(paramsInfo,'Scan info',nCols);
 else
   disp(sprintf('%s',description));
   disp(sprintf('Filename: %s GroupName: %s',filename,groupName));
