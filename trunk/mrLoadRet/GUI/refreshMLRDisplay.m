@@ -503,25 +503,19 @@ switch option
 end
 
 % Loop through ROIs in order
-if verbose,disppercent(-inf,sprintf('Extracting ROI coordinates'));end
-roi = viewGet(view,'ROICache');
-if isempty(roi)
-  if ~verbose,disppercent(-inf,'Recomputing ROI coordinates'),end
-  k = 0;
-  for r = order
+for r = order
+  % look in cache for roi
+  roiCache = viewGet(view,'ROICache',r);
+  % if not found
+  if isempty(roiCache)
+    disppercent(-inf,sprintf('Computing ROI coordinates for ROI %i',r));
     % Get ROI coords transformed to the image
-    [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
-      baseNum,baseCoordsHomogeneous,imageDims,r);
-    %[roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,:)',baseCoordsHomogeneous(1:3,:)','rows');
-    %[x,y] = ind2sub(imageDims,baseIndices);
-    k = k+1;
-    disppercent(k/length(order));
+    [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,r);
+    view = viewSet(view,'ROICache',roi(r),r);
+    disppercent(inf);
+  else
+    roi(r) = roiCache;
   end
-  view = viewSet(view,'ROICache',roi);
-  if verbose,disppercent(inf);disp('Recomputed ROI coordinates');end
-  if ~verbose,disppercent(inf);end
-else
-  if verbose,disppercent(inf);end
 end
 
 % get figure
