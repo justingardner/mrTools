@@ -40,6 +40,10 @@ if ieNotDefined('params')
   params.trSupersampling = 1;
 end
 
+if ~isfield(params, 'contrast')
+    params.contrast = [];
+end
+
 askForParams = 1;
 
 while askForParams
@@ -49,6 +53,7 @@ while askForParams
         {'saveName',params.saveName,'File name to try to save as'},...
         {'hrfModel',params.hrfModel,'Name of the function that defines the hrf used in glm'},...
         {'trSupersampling', params.trSupersampling, 'minmax=[1 100]', 'TR supersampling factor (1=no supersampling) reulting design matrix will be downsampled afterwards'},...
+        {'contrast', params.contrast, 'Vector defining the contrast of interest. Leave empty for general glm'},...
     };
 
     % Get parameter values
@@ -109,7 +114,7 @@ end
 % function to get the variable name that the user wants
 % to do the event related analysis on, puts up a gui
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function scanParams = getEventRelatedParams(view,params,useDefault);
+function scanParams = getEventRelatedParams(view,params,useDefault)
 
 % make the output as long as the number of scans
 scanParams = cell(1,viewGet(view,'nScans',viewGet(view,'groupNum',params.groupName)));
