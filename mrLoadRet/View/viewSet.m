@@ -836,7 +836,13 @@ switch lower(param)
     % Check that the data arrays for each scan are the correct size
     for s = 1:nScans
       overlayDims = viewGet(view,'dims',s,groupNum);
-      if (~isempty(overlay.data{s})) & (size(overlay.data{s}) ~= overlayDims)
+      overlaySize = size(overlay.data{s});
+      % if the overlay only has one slice, then we need
+      % to add the 1 to the last dimension
+      if length(overlaySize) == 2
+	overlaySize(3) = 1;
+      end
+      if (~isempty(overlay.data{s})) & ~isequal(overlaySize,overlayDims)
         mrErrorDlg('(viewSet) Invalid overlay, incorrect data array size.');
       end
     end
@@ -1159,7 +1165,7 @@ switch lower(param)
     % -------------------------------------------
     % Figure and GUI
   case 'roicache'
-    % view = viewSet(view,'ROICache',roidata);
+    % view = viewSet(view,'ROICache',roidata,[roiNum]);
     % view = viewSet(view,'ROICache','clear');
     if isstr(val)
       if strcmp(val,'clear')
@@ -1172,7 +1178,13 @@ switch lower(param)
       end
       % add to the cache
     else
-      roiID = viewGet(view,'ROICacheID');
+      if ~isempty(varargin)
+	% with another argument, then we set the roi cache for
+	% a specific ROI
+	roiID = viewGet(view,'ROICacheID',varargin{1});
+      else
+	roiID = viewGet(view,'ROICacheID');
+      end
       MLR.caches{view.viewNum}.roiCache = ...
         mrCache('add',MLR.caches{view.viewNum}.roiCache,roiID,val);
     end

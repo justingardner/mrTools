@@ -4,6 +4,10 @@ function view = newView(viewType)
 %
 % djh, 6/2004
 
+if nargin == 0
+  viewType = 'Volume';
+end
+
 % Define and initialize global variable MLR.
 mrGlobals
 

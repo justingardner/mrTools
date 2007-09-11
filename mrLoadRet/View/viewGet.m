@@ -1066,7 +1066,11 @@ switch lower(param)
     end
     ROIname = varargin{1};
     ROInames = {view.ROIs(:).name};
-    val = find(strcmp(ROIname,ROInames));
+    % note that it is possible to have more than one
+    % ROI with the same name, so pick the last one in
+    % the list, since we usually are getting the number
+    % for the last ROI that was just created
+    val = last(find(strcmp(ROIname,ROInames)));
   case{'roi'}
     % roi = viewGet(view,'roi',[roiNum])
     % roi = viewGet(view,'roi',[])
@@ -1221,16 +1225,31 @@ switch lower(param)
     % Cache
   case{'roicacheid'}
     % cacheID = viewGet(view,'ROICacheID')
+    % cacheID = viewGet(view,'ROICacheID',roinum)
+    if ieNotDefined('varargin')
+      % if we are not passed in a specific ROI, then
+      % we are doing all ROIs
+      roiNums = 1:length(view.ROIs);
+    else
+      roiNums = varargin{1};
+    end
     rotate = viewGet(view,'rotate');
     baseName = viewGet(view,'curBaseName');
     sliceIndex = viewGet(view,'baseSliceIndex');
     val = sprintf('%s_%i_%i_%i',baseName,sliceIndex,rotate);
-    for i = 1:length(view.ROIs);
+    for i = roiNums
       val = sprintf('%s_%s_%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
     end
   case{'roicache'}
     % cacheVal = viewGet(view,'ROICache')
-    roiID = viewGet(view,'ROICacheID');
+    % cacheVal = viewGet(view,'ROICache',roinum)
+    if ieNotDefined('varargin')
+      % if we are not passed in a specific ROI, then
+      % we are doing all ROIs
+      roiID = viewGet(view,'ROICacheID');
+    else
+      roiID = viewGet(view,'ROICacheID',varargin{1});
+    end
     % and retrieve from the cache
     [val MLR.caches{view.viewNum}.roiCache] = ...
 	mrCache('find',MLR.caches{view.viewNum}.roiCache,roiID);
