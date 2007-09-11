@@ -34,9 +34,23 @@ if ieNotDefined('params'),return,end
 % set the group
 view = viewSet(view,'groupName',params.groupName);
 
+if ~isempty(params.contrast)
+    contrast = str2num(params.contrast);
+    % check if the contrast is defined correctly
+    if isempty(contrast),
+        mrErrorDlg('invalid contrast. must be a vector');
+    end
+else
+    contrast = [];
+end
+
 % create the parameters for the overlay
 dateString = datestr(now);
-r2.name = 'r2';
+if isempty(contrast)
+    r2.name = 'r2';
+else
+    r2.name = 'r2c';
+end
 r2.groupName = params.groupName;
 r2.function = 'eventRelatedGlm';
 r2.reconcileFunction = 'defaultReconcileParams';
@@ -89,8 +103,30 @@ for scanNum = params.scanNum
     % make a stimulation convolution matrix
     
     d = makeglm(d,hrf);
-    % compute the estimated hemodynamic responses
-    d = getr2(d);
+    
+    if isempty(contrast)
+        % compute the estimated hemodynamic responses
+        d = getr2(d);
+    else
+        % check that contrast has the same number of columns as the
+        % design matrix
+        if size(d.scm,2)~=size(contrast,2)*size(hrf,2)
+            ehdr = [];
+            ehdrste = [];
+            thisr2 = [];
+            mrErrorDlg( sprintf('contrast incompatible with scan %d', scanNum) );
+        end
+        % expand the contrast to a matrix with one row per hrf column
+        nhr = size(hrf,2);
+        c = zeros( size(contrast)*nhr );
+        for h=1:nhr
+            c(h:nhr:end, h:nhr:end) = contrast;
+        end
+        disp(c);
+        % compute the estimated hemodynamic responses for the given
+        % contrast, discounting any effect of other orthogonal contrasts
+        d = getGlmContrast(d, c);
+    end
     % update the current slice we are working on
     currentSlice = currentSlice+numSlicesAtATime;
     % cat with what has already been computed for other slices
@@ -139,7 +175,11 @@ toc
 
 % install analysis
 erAnal.name = params.saveName;
-erAnal.type = 'glmAnal';
+if isempty(contrast)
+    erAnal.type = 'glmAnal';
+else
+    erAnal.type = 'glmcAnal';
+end
 erAnal.groupName = params.groupName;
 erAnal.function = 'eventRelatedGlm';
 erAnal.reconcileFunction = 'defaultReconcileParams';
