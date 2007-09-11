@@ -81,6 +81,10 @@ end
 
 % Build the histogram
 II = find(~isnan(volCrop));
+if isempty(II)
+   disp(crop); 
+   error('The cropped volume is empty');
+end
 % regHistogram is about 10x faster than hist
 [h x] = hist(volCrop(II), 256);
 % [h x] = regHistogram(volCrop(II), 256);
