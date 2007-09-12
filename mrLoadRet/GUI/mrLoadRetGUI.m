@@ -1196,7 +1196,7 @@ for bnum = 1:viewGet(view,'numberOfBaseVolumes')
     baseMatch{end+1} = viewGet(view,'baseName',bnum);
   end
 end
-if isempty(baseMatch),baseMatch = 'No matching base anatomy',end
+if isempty(baseMatch),baseMatch = 'No matching base anatomy';,end
 if length(baseMatch)==1,baseMatch = baseMatch{1};end
 
 paramsInfo = {{'name',roiName,'editable=0','The name of the ROI'},...
