@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 17-Aug-2007 20:06:07
+% Last Modified by GUIDE v2.5 12-Sep-2007 10:15:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1914,5 +1914,74 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 mrSpikeDetector(view,viewGet(view,'curScan'),viewGet(view,'curGroup'));
+
+
+% --------------------------------------------------------------------
+function EditAnalysisInfoMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to EditAnalysisInfoMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+disppercent(-inf,'Gathering analysis info');
+% get the current analysis
+a = viewGet(v,'Analysis',viewGet(v,'curAnalysis'));
+
+% get fields
+fields = fieldnames(a);
+fields = setdiff(fields,{'d','overlays','params','curOverlay'});
+
+% make into a display
+paramsInfo = {};
+for fnum = 1:length(fields)
+  if ~isstruct(fields)
+    paramsInfo{end+1} = {fields{fnum},a.(fields{fnum}),'editable=0'};
+  end
+end
+
+% check d
+if isfield(a,'d')
+  for dnum = 1:length(a.d)
+    dExists(dnum) = ~isempty(a.d{dnum});
+  end
+  paramsInfo{end+1} = {sprintf('dScans'),num2str(find(dExists)),'editable=0',sprintf('Scans that d structure exists for')};
+end
+
+% check overlays
+for onum = 1:length(a.overlays)
+  for snum = 1:length(a.overlays(onum).data)
+    overlayExists(snum) = ~isempty(a.overlays(onum).data{snum});
+  end
+  % make params for this
+  paramsInfo{end+1} = {sprintf('overlay%i',onum),a.overlays(onum).name,'editable=0',sprintf('Name of overlay %i',onum)};
+  paramsInfo{end+1} = {sprintf('overlay%iScans',onum),num2str(find(overlayExists)),'editable=0',sprintf('Scans that overlay %s exists for',a.overlays(onum).name)};
+end
+
+paramsInfo{end+1} = {'params',[],'View analysis parameters','type=pushbutton','buttonString=View analysis parameters','callback',@viewAnalysisParams,'callbackArg',v};
+
+disppercent(inf);
+
+% display parameters
+mrParamsDialog(paramsInfo);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function to view params
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = viewAnalysisParams(v)
+
+% bogus return value
+retval = [];
+
+% get analysis info
+curAnalysis = viewGet(v,'curAnalysis');
+params = viewGet(v,'analysisParams',curAnalysis);
+guiFunction = viewGet(v,'analysisGuiFunction',curAnalysis);
+groupName = viewGet(v,'analysisGroupName',curAnalysis);
+
+% params = guiFunction('groupName',groupName,'params',params);
+evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
+
+eval(evalstring);
 
 
