@@ -63,9 +63,22 @@ r2.clip = [0 1];
 r2.colormap = hot(312);
 r2.colormap = r2.colormap(end-255:end,:);
 r2.alpha = 1;
-r2.colormapType = 'setRangeToMax';
 r2.interrogator = 'eventRelatedPlot';
 r2.mergeFunction = 'defaultMergeParams';
+
+if ~isempty(contrast)
+    amps = cell(1,size(contrast,1));
+    for i = 1:size(contrast,1)
+        amp = r2;
+        amp.name = ['c ', num2str(contrast(i,:))];
+        amp.range = [-0.25 0.25];
+        amp.clip = [-0.25 0.25];
+        amp.colormap = jet(256);
+        amps{i} = amp;
+    end
+end
+
+r2.colormapType = 'setRangeToMax';
 
 tic
 set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
@@ -122,7 +135,6 @@ for scanNum = params.scanNum
         for h=1:nhr
             c(h:nhr:end, h:nhr:end) = contrast;
         end
-        disp(c);
         % compute the estimated hemodynamic responses for the given
         % contrast, discounting any effect of other orthogonal contrasts
         d = getGlmContrast(d, c);
@@ -145,6 +157,22 @@ for scanNum = params.scanNum
   % save the r2 overlay
   r2.data{scanNum} = d.r2;
   r2.params{scanNum} = params.scanParams{scanNum};
+  
+  if ~isempty(contrast)
+      % for all contrasts report the amplitude of the 1st component of the hrf
+      % first, calculate the amplitude of modulation of the 1st component
+      temp = d.simulatedhrf(:,1);
+      sc = max(temp)-min(temp);
+      for j = 1:size(contrast,1)
+          temp = squeeze(d.ehdr(:,:,:,j,1))*sc;
+          amps{j}.data{scanNum} = temp;
+          mx = max(temp(:));
+          mn = min(temp(:));
+          amps{j}.clip = [ min([mn,amps{j}.clip(1)]), max([amps{j}.clip(2),mx])];
+          amps{j}.params{scanNum} = params.scanParams{scanNum};
+      end
+  end
+
   
   % save other eventRelated parameters
   erAnal.d{scanNum}.hrf = d.simulatedhrf;
@@ -186,10 +214,17 @@ erAnal.reconcileFunction = 'defaultReconcileParams';
 erAnal.mergeFunction = 'defaultMergeParams';
 erAnal.guiFunction = 'eventRelatedGlmGUI';
 erAnal.params = params;
-erAnal.overlays = r2;
-erAnal.curOverlay = 1;
+% erAnal.overlays = r2;
+% erAnal.curOverlay = 1;
 erAnal.date = dateString;
 view = viewSet(view,'newAnalysis',erAnal);
+view = viewSet(view,'newoverlay',r2);
+
+if ~isempty(contrast)
+    for i = 1:size(contrast,1)
+        view = viewSet(view,'newoverlay',amps{i});
+    end
+end
 
 % Save it
 saveAnalysis(view,erAnal.name);
