@@ -164,6 +164,11 @@ makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
 % wait for user to hit ok or cancel (which sets uiresume)
 uiwait;
 
+% this can happen if we have opened up (and closed a second
+% mrParamsDialog--this should be removed when this function
+% is fixed to be able to run multiple simultaneous mrParamsDialogs;
+if ieNotDefined('gParams'),params=[];params2=[];return,end
+
 % check return value
 if gParams.ok
   params = getParams(vars);
