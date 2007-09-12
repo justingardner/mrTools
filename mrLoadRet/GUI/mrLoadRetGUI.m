@@ -1210,6 +1210,79 @@ paramsInfo = {{'name',roiName,'editable=0','The name of the ROI'},...
   {'ROIScanCoords',[],'type=pushbutton','buttonString=Show scan coordinates','callback',@showCurrentROIScanCoords,'callbackArg',view,'Print the coordinates transformed into the scan coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'}};
 mrParamsDialog(paramsInfo,'ROI information');
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = showCurrentROIScanCoords(view)
+
+retval = [];
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+% get the current scan number
+scanNum = viewGet(view,'curScan');
+% get the coordinates
+coords = getROICoordinates(view,roiNum,scanNum);
+
+% and display them to the buffer
+disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
+dispCoords(coords);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = showCurrentROICoords(view)
+
+retval = [];
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+% just get roi coordinates
+coords = viewGet(view,'ROICoords',roiNum);
+
+% display to buffer
+disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
+dispCoords(coords);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, also called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispCoords(coords)
+
+% if shift is held down then just dump as an array
+% that can be used
+if (exist('mglGetKeys')==3) && mglGetKeys(57)
+  % just dump as an array
+  disp(sprintf('Setting variable ROICoords'));
+  evalin('base',sprintf('ROICoords = [%s;%s;%s];',num2str(coords(1,:)),num2str(coords(2,:)),num2str(coords(3,:))));
+  return
+end
+% and display them to the buffer
+numCols = 20;
+xline = 'x:';yline = 'y:';sline = 's:';colnum = 0;
+for i = 1:size(coords,2)
+  xline = sprintf('%s%4.0i',xline,coords(1,i));
+  yline = sprintf('%s%4.0i',yline,coords(2,i));
+  sline = sprintf('%s%4.0i',sline,coords(3,i));
+  colnum = colnum + 1;
+  if (colnum == numCols)
+    disp(sprintf('Coordinates %i:%i',i-numCols+1,i));
+    disp(xline);disp(yline);disp(sline);
+    colnum = 0;
+    xline = 'x:';yline = 'y:';sline = 's:';
+  end
+
+end
+if colnum
+    disp(sprintf('Coordinates %i:%i',i-colnum+1,size(coords,2)));
+  disp(xline);disp(yline);disp(sline);
+  colnum = 0;
+end
+
 % --------------------------------------------------------------------
 function editBaseMenu_Callback(hObject, eventdata, handles)
 
@@ -1663,88 +1736,6 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = viewSet(view,'showROIs','hide');
 refreshMLRDisplay(viewNum);
-
-% --------------------------------------------------------------------
-function roiCoordinatesMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-
-% call helper function
-showCurrentROIScanCoords(view);
-
-%%%%%%
-% helper function, also called by ROI Info
-%%%%%%
-function retval = showCurrentROIScanCoords(view)
-
-retval = [];
-
-% get the roi
-roiNum = viewGet(view,'currentROI');
-if isempty(roiNum),return,end
-
-% get the current scan number
-scanNum = viewGet(view,'curScan');
-% get the coordinates
-coords = getROICoordinates(view,roiNum,scanNum);
-
-% and display them to the buffer
-disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
-dispCoords(coords);
-
-%%%%%%
-% helper function, also called by ROI Info
-%%%%%%
-function retval = showCurrentROICoords(view)
-
-retval = [];
-
-% get the roi
-roiNum = viewGet(view,'currentROI');
-if isempty(roiNum),return,end
-
-% just get roi coordinates
-coords = viewGet(view,'ROICoords',roiNum);
-
-% display to buffer
-disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
-dispCoords(coords);
-
-%%%%%%
-% display coordinates
-%%%%%%
-function dispCoords(coords)
-
-% if shift is held down then just dump as an array
-% that can be used
-if (exist('mglGetKeys')==3) && mglGetKeys(57)
-  % just dump as an array
-  disp(sprintf('Setting variable ROICoords'));
-  evalin('base',sprintf('ROICoords = [%s;%s;%s];',num2str(coords(1,:)),num2str(coords(2,:)),num2str(coords(3,:))));
-  return
-end
-% and display them to the buffer
-numCols = 20;
-xline = 'x:';yline = 'y:';sline = 's:';colnum = 0;
-for i = 1:size(coords,2)
-  xline = sprintf('%s%4.0i',xline,coords(1,i));
-  yline = sprintf('%s%4.0i',yline,coords(2,i));
-  sline = sprintf('%s%4.0i',sline,coords(3,i));
-  colnum = colnum + 1;
-  if (colnum == numCols)
-    disp(sprintf('Coordinates %i:%i',i-numCols+1,i));
-    disp(xline);disp(yline);disp(sline);
-    colnum = 0;
-    xline = 'x:';yline = 'y:';sline = 's:';
-  end
-
-end
-if colnum
-    disp(sprintf('Coordinates %i:%i',i-colnum+1,size(coords,2)));
-  disp(xline);disp(yline);disp(sline);
-  colnum = 0;
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plotMenu_Callback(hObject, eventdata, handles)
