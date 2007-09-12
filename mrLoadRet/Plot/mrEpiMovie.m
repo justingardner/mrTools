@@ -144,7 +144,7 @@ end
 % display image
 imagesc(epiImage);
 colormap('gray');
-axis equal; axis off
+axis equal; axis tight; axis off
 title(sprintf('Scan: %i slice %i\nframe %i',scanNum,sliceNum,frameNum));
 drawnow
 
