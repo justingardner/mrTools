@@ -34,9 +34,7 @@ scm2 = d.scm*contrasts';
 scm2 = scm2 - scm1*(pinv(scm1)*scm2);
 
 % hemodynamic responses are estimated only for the specified contrasts
-disp(d.nhdr)
 d.nhdr = size(scm2,2)/d.hdrlen;
-disp(d.nhdr)
 
 % precalculate the normal equation (this dramatically speeds up things)
 precalcmatrix1 = ((scm1'*scm1)^-1)*scm1';
