@@ -21,7 +21,7 @@ mrGlobals;
 % First geteventRelatedGlmReconcileParams parameters
 if ieNotDefined('params')
   % put up the gui
-  params = eventRelatedGlmGUI;
+  params = eventRelatedGlmGUI('groupName',viewGet(view,'groupName'));
 end
 
 % Reconcile params with current status of group and ensure that it has

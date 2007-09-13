@@ -129,7 +129,7 @@ for roinum = 1:length(roi)
   end
   % plot the average of the ehdrs that beat the r2 cutoff
   if roin
-    plotEhdr(time,squeeze(mean(ehdr)),squeeze(std(ehdr))/sqrt(size(roi{roinum}.scanCoords,2)));
+    plotEhdr(time,shiftdim(mean(ehdr),1),shiftdim(std(ehdr),1)/sqrt(size(roi{roinum}.scanCoords,2)));
   end
   title(sprintf('%s (n=%i/%i)',roi{roinum}.name,roin,size(roi{roinum}.scanCoords,2)),'Interpreter','none');
   % create a legend (only if peaks exist) to display mean amplitudes

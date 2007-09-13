@@ -16,6 +16,12 @@ end
 % get the arguments
 eval(evalargs(varargin));
 
+% if called with params, then just display
+if ~ieNotDefined('params')
+  dispParams(params);
+  return
+end
+
 % get a view
 view = newView('Volume');
 
@@ -60,7 +66,7 @@ while askForParams
     if useDefault
       params = mrParamsDefault(paramsInfo);
     else
-      params = mrParamsDialog(paramsInfo);
+      params = mrParamsDialog(paramsInfo, 'GLM parameters');
     end
 
     % if empty user hit cancel
