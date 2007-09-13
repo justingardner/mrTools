@@ -1925,6 +1925,9 @@ mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
+% no current anatomy, just return
+if isempty(viewGet(v,'curAnalysis')),return;end
+
 disppercent(-inf,'Gathering analysis info');
 % get the current analysis
 a = viewGet(v,'Analysis',viewGet(v,'curAnalysis'));
