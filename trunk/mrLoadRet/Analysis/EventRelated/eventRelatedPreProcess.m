@@ -35,8 +35,13 @@ end
 % preprocessing for sdt experiment
 runName = getfieldstr(type,'run');
 if ~isempty(runName)
-  disp(sprintf('Running d=%s(d)',runName));
-  d = eval(sprintf('%s(d)',runName));
+  if exist(sprintf('%s.m',stripext(runName)))==2
+    disp(sprintf('Running d=%s(d)',runName));
+    d = eval(sprintf('%s(d)',runName));
+  else
+    disp(sprintf('(eventRelatedPreProcess) Could not find preprocess script %s',runName));
+    keyboard
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
