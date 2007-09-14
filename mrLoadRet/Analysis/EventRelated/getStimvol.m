@@ -203,15 +203,15 @@ if ~impulse && isfield(stimfile, 'stimdurations_s')
   for i = 1:nhdr
     z = zeros(1, 1+ceil(max(stimfile.stimtimes_s{i})/tr));
     for event=1:length(stimfile.stimtimes_s{i})
-      onset = max(stimfile.stimtimes_s{i}(event), 0)/tr;
+      onset = eps + max(stimfile.stimtimes_s{i}(event), 0)/tr;
       offset = max(onset, onset+(stimfile.stimdurations_s{i}(event)-eps)/tr);
-      z(round(onset:offset)+1)=1;
+      z(ceil(onset):ceil(offset))=1;
     end
-    stimvol{i} = unique(find(z))-1;
+    stimvol{i} = unique(find(z));
   end
 else
   for i = 1:nhdr
-    stimvol{i} = round(stimfile.stimtimes_s{i}(:) / tr)';
+    stimvol{i} = ceil(eps + stimfile.stimtimes_s{i}(:) / tr)';
   end
 end
 

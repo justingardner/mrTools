@@ -159,19 +159,26 @@ function plotEcontrast(econt,econtste)
 % display econt
 cla;
 h = bar(econt');
+if size(econt,2)==1
+    econt = econt';
+    econtste = econtste';
+    xaxis = 'contrast';
+else
+    xaxis = 'hrf component';
+end
 if nargin==2
     hold on;
     for i=1:length(h)
         % location of the bar
-        x = get(get(h(1),'Children'),'XData');
+        x = get(get(h(i),'Children'),'XData');
         % find the center of the bar
         x = (x(2,:)+x(3,:))/2;
-        herr = errorbar(x, econt(i,:), econtste(i,:));
+        herr = errorbar(x, econt(i,:), econtste(i,:), 'k');
         temp = get(herr, 'Children');
         set(temp(1), 'visible', 'off');
     end
 end
-xlabel('hrf component');
+xlabel(xaxis);
 ylabel('beta');
 
 

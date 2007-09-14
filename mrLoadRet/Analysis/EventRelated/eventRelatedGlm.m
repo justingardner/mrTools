@@ -63,7 +63,7 @@ r2.clip = [0 1];
 r2.colormap = hot(312);
 r2.colormap = r2.colormap(end-255:end,:);
 r2.alpha = 1;
-r2.interrogator = 'eventRelatedPlot';
+r2.interrogator = 'glmContrastPlot';
 r2.mergeFunction = 'defaultMergeParams';
 
 if ~isempty(contrast)
@@ -159,6 +159,7 @@ for scanNum = params.scanNum
   r2.params{scanNum} = params.scanParams{scanNum};
   
   if ~isempty(contrast)
+      stimNames = cell(1,size(contrast,1));
       % for all contrasts report the amplitude of the 1st component of the hrf
       % first, calculate the amplitude of modulation of the 1st component
       temp = d.simulatedhrf(:,1);
@@ -170,7 +171,11 @@ for scanNum = params.scanNum
           mn = min(temp(:));
           amps{j}.clip = [ min([mn,amps{j}.clip(1)]), max([amps{j}.clip(2),mx])];
           amps{j}.params{scanNum} = params.scanParams{scanNum};
+          
+          stimNames{j} = ['c ', num2str(contrast(i,:))];
       end
+  else
+      stimNames = d.stimNames;
   end
 
   
@@ -187,7 +192,7 @@ for scanNum = params.scanNum
   erAnal.d{scanNum}.nhdr = d.nhdr;
   erAnal.d{scanNum}.hdrlen = d.hdrlen;
   erAnal.d{scanNum}.tr = d.tr;
-  erAnal.d{scanNum}.stimNames = d.stimNames;
+  erAnal.d{scanNum}.stimNames = stimNames;
   erAnal.d{scanNum}.scm = d.scm;
   erAnal.d{scanNum}.expname = d.expname;
   erAnal.d{scanNum}.fullpath = d.fullpath;
