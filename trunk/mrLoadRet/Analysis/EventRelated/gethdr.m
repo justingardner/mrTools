@@ -41,7 +41,7 @@ if nargout >=3
   hdrste = shiftdim(d.ehdrste(x,y,s,:,:), 3);
   % not sure about this part
   if isfield(d, 'hrf')
-     hdrste = hdrste*d.hrf';
+     hdrste = sqrt(hdrste.^2*abs(d.hrf)');
   end
 
 end
