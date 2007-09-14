@@ -172,7 +172,7 @@ for scanNum = params.scanNum
           amps{j}.clip = [ min([mn,amps{j}.clip(1)]), max([amps{j}.clip(2),mx])];
           amps{j}.params{scanNum} = params.scanParams{scanNum};
           
-          stimNames{j} = ['c ', num2str(contrast(i,:))];
+          stimNames{j} = ['c ', num2str(contrast(j,:))];
       end
   else
       stimNames = d.stimNames;
