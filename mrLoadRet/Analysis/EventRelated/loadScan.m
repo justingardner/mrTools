@@ -13,7 +13,7 @@ if ~any(nargin == [1 2 3 4])
   help('loadScan');
   return
 end
-
+d = [];
 if ~isview(view)
   disp(sprintf('(loadScan) First argument is not a view'));
   return
