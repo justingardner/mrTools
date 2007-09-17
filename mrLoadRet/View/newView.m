@@ -10,6 +10,7 @@ end
 
 % Define and initialize global variable MLR.
 mrGlobals
+if isempty(MLR.session),return,end
 
 viewNum = length(MLR.views) + 1;
 view.viewNum = viewNum;
