@@ -4,15 +4,24 @@
 %      usage: concatTSeries(view, params)
 %         by: justin gardner
 %       date: 10/12/06
-%    purpose: 
+%    purpose: concatenate time series together.
+%             to just get a default parameter structure
+% 
+%             v = newView;
+%             [v params] = concatTSeries(v,[],'justGetParams=1','defaultParams=1');
 %
-function view = concatTSeries(view,params)
+function [view params] = concatTSeries(view,params,varargin)
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3 4])
   help concatTSeries
   return
 end
+
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 % description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
@@ -28,12 +37,20 @@ paramsInfo = {...
 % First get parameters
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
-  params = mrParamsDialog(paramsInfo);
+  if defaultParams
+    params = mrParamsDefault(paramsInfo);
+  else
+    params = mrParamsDialog(paramsInfo);
+  end
   % no params means user hit cancel
   if isempty(params),return,end
   % select scans
   view = viewSet(view, 'groupName', params.groupName);
-  params.scanList = selectScans(view);
+  if defaultParams
+    params.scanList = 1:viewGet(view,'nScans');
+  else
+    params.scanList = selectScans(view);
+  end
   if isempty(params.scanList),return,end
   % if warp is set, then ask which scan to use as base scan for warp
   if params.warp
@@ -58,6 +75,9 @@ drawnow;
 % Abort if params empty
 if ieNotDefined('params'),return,end
 
+% if just getting params then return
+if justGetParams,return,end
+  
 % Open new view with the base group
 viewBase = newView(viewGet(view,'viewType'));
 groupNum = viewGet(viewBase,'groupNum',params.groupName);
