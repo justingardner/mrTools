@@ -897,6 +897,10 @@ function deleteScanMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
+if viewGet(view,'nScans') == 0
+  disp(sprintf('(mrLoadRetGUI) No scans in group %s to delete',viewGet(view,'groupName')));
+  return
+end
 scanList = selectScans(view);
 for iScan = 1:length(scanList)
     % first get time series name for each one of these scans
