@@ -13,6 +13,8 @@ if ~any(nargin == [1 2])
   return
 end
 
+mrMsgBox('(importROI) Note that to import an ROI from the old mrLoadRet, you MUST have the same anatomy image loaded that the ROI was defined on. For example, if it is an inplane ROI, you must have that inplane as the current anatomy. If it is a 3D volume, you will need that 3D volume. Also, make sure that the anatomy has been correctly registered to your base anatomy by mrAlign and has its sform set appropriately. Old mrLoadRet ROIs do not have any alignment information and are just a list of voxels for a particular anatomy image.');
+
 mrGlobals;
 % Complete pathStr
 if ieNotDefined('pathStr')
