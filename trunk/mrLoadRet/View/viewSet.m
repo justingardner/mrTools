@@ -90,6 +90,15 @@ switch lower(param)
 
   case{'currentgroup','curgroup'}
     % view = viewSet(view,'currentGroup',n);
+    % view = viewSet(view,'currentGroup','groupName')
+    if isstr(val)
+      % convert to a groupNum if we got passed in a groupname
+      groupNum = viewGet(view,'groupNum',val);
+      if isempty(groupNum)
+	disp(sprintf('(viewSet:curGroup) No group %s found',val));
+      end
+      val = groupNum;
+    end
     if (view.curGroup ~= val)
       % save loaded analysis if there are any
       view = viewSet(view,'loadedAnalyses',view.analyses,view.curGroup);
