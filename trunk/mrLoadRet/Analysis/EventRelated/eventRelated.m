@@ -5,22 +5,43 @@
 %       date: 10/20/06
 %    purpose: same as eventRelated, but also ask for segment
 %
-function [view d] = eventRelated(view,params)
+%             if you just want a default parameter structure you
+%             can do:
+% 
+%             v = newView;
+%             [v params] = eventRelated(v,[],'justGetParams=1','defaultParams=1')
+%
+function [view d] = eventRelated(view,params,varargin)
 
 d = [];
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3 4])
   help eventRelated
   return
 end
 
 mrGlobals;
 
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+
 % First get parameters
 if ieNotDefined('params')
   % put up the gui
-  params = eventRelatedGUI('groupName',viewGet(view,'groupName'));;
+  if defaultParams
+    params = eventRelatedGUI('groupName',viewGet(view,'groupName'),'useDefault');
+  else
+    params = eventRelatedGUI('groupName',viewGet(view,'groupName'));
+  end
+end
+
+% just return parameters
+if justGetParams
+  d = params;
+  return
 end
 
 % Reconcile params with current status of group and ensure that it has
