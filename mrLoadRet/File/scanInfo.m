@@ -37,6 +37,11 @@ groupName = viewGet(view,'groupName',groupNum);
 % set the group and scan
 view = viewSet(view,'curGroup',groupNum);
 
+if (scanNum < 1) || (scanNum > viewGet(view,'nScans'))
+  disp(sprintf('(scanInfo) Could not find scan %i in group %s',scanNum,groupName));
+  return
+end
+
 % grab info
 disppercent(-inf,'(scanInfo) Gathering scan info');
 description = viewGet(view,'description',scanNum,groupNum);
