@@ -32,7 +32,7 @@ if nScans == 0
 end
 
 for i = 1:nScans
-  scanNames{i} = sprintf('%s (%s)',viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
+  scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
 end
 
 % Which scans to analyze?
