@@ -30,6 +30,10 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
 
     % Load session and groups structures from mrSESSION.mat
     [session, groups] = loadSession(MLR.homeDir);
+    % check session
+    if isempty(session)
+      disp(sprintf('(mrGlobals) Could not find mrSession in %s',MLR.homeDir));
+    end
     MLR.session = session;
     MLR.groups = groups;
 
