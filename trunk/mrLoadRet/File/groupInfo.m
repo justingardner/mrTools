@@ -6,6 +6,9 @@
 %    purpose: print out information about scans in group
 %       e.g.: groupInfo(1);
 %             groupInfo('Raw');
+%
+%             to get info on all groups:
+%             groupInfo
 function retval = groupInfo(groupNum,verbose)
 
 % check arguments
@@ -20,24 +23,27 @@ view = newView('Volume');
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % get the correct group
 %%%%%%%%%%%%%%%%%%%%%%%%%
-% if groupNum was not given, then default to MotionComp then Raw
+% if groupNum was not given then display info about all groups
 if ieNotDefined('groupNum')
-  motionCompGroupNum = [];rawGroupNum = [];
-  for g = 1:viewGet(view,'numberOfGroups')
-    if strcmp('MotionComp',viewGet(view,'groupName',g))
-      motionCompGroupNum = g;
-    elseif strcmp('Raw',viewGet(view,'groupName',g))
-      rawGroupNum = g;
-    end
+  subject = viewGet(view,'subject');
+  description = viewGet(view,'sessionDescription');
+  magnet = viewGet(view,'magnet');
+  operator = viewGet(view,'operator');
+  coil = viewGet(view,'coil');
+  protocol = viewGet(view,'protocol');
+  homeDir = viewGet(view,'homeDir');
+  disp(sprintf('%s',repmat('=',1,40)));
+  disp(sprintf('homeDir: %s',homeDir));
+  disp(sprintf('description: %s',description));
+  disp(sprintf('operator: %s subject: %s',operator,subject));
+  disp(sprintf('magnet: %s coil: %s protocol %s',magnet,coil,protocol));
+  disp(sprintf('%s',repmat('=',1,40)));
+  for g = 1:viewGet(view,'nGroups')
+    groupName = viewGet(view,'groupName',g);
+    numScans = viewGet(view,'nScans',g);
+    disp(sprintf('%i: %s (%i scans)',g,groupName,numScans));
   end
-  if ~isempty(motionCompGroupNum)
-    groupNum = motionCompGroupNum;
-  elseif ~isempty(rawGroupNum)
-    groupNum = rawGroupNum;
-  else
-    disp(sprintf('(groupInfo): Could not find a Raw or MotionComp group'));
-    return
-  end
+  return
 end
 
 % if groupNum is a string, then user passed in a name rather than
