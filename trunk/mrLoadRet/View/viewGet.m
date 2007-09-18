@@ -26,7 +26,7 @@ function [val val2] = viewGet(view,param,varargin)
 % n = viewGet(view,'nScans',groupNum);
 % n = viewGet([],'nScans',groupNum);
 %
-% See comments in the source code for the full set of parameters and for
+% Type viewGet w/out any arguments for the full set of parameters and for
 % optional arguments.
 %
 % 6/2004 djh
@@ -72,6 +72,21 @@ switch lower(param)
   case {'subject'}
     % subject = viewGet(view,'subject')
     val = MLR.session.subject;
+  case {'sessiondescription'}
+    % subject = viewGet(view,'sessionDescription')
+    val = MLR.session.description;
+  case {'operator'}
+    % subject = viewGet(view,'operator')
+    val = MLR.session.operator;
+  case {'magnet'}
+    % subject = viewGet(view,'magnet')
+    val = MLR.session.magnet;
+  case {'coil'}
+    % subject = viewGet(view,'coil')
+    val = MLR.session.coil;
+  case {'protocol'}
+    % subject = viewGet(view,'protocol')
+    val = MLR.session.protocol;
 
     % subdirectories
   case {'homedir','homedirectory','sessiondirectory'}
