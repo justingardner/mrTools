@@ -42,8 +42,8 @@ end
 
 % add on any of the other parameters that were passed in
 if ~ieNotDefined('taskNum'),v.taskNum = taskNum;end
-if ~ieNotDefined('phaseNum'),v.phaseNum = taskNum;end
-if ~ieNotDefined('segmentNum'),v.segmentNum = taskNum;end
+if ~ieNotDefined('phaseNum'),v.phaseNum = phaseNum;end
+if ~ieNotDefined('segmentNum'),v.segmentNum = segmentNum;end
 
 % keep the varname that this was called with
 d.varname = v;
