@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 12-Sep-2007 10:15:06
+% Last Modified by GUIDE v2.5 19-Sep-2007 18:07:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -901,28 +901,8 @@ if viewGet(view,'nScans') == 0
   disp(sprintf('(mrLoadRetGUI) No scans in group %s to delete',viewGet(view,'groupName')));
   return
 end
-scanList = selectScans(view);
-for iScan = 1:length(scanList)
-    % first get time series name for each one of these scans
-    % since as we delete them, then numbers stop making sense
-    tSeriesFile{iScan} = viewGet(view,'tSeriesFile',scanList(iScan));
-end
-% now go through and delete
-for iScan = 1:length(scanList)
-    % get the scan number
-    scanNum = viewGet(view,'scanNum',tSeriesFile{iScan});
-    if ~isempty(scanNum)
-        scanNum = scanNum(1);
-        view = viewSet(view,'deleteScan',scanNum);
-        disp(sprintf('Scan for file %s deleted.',tSeriesFile{iScan}));
-    else
-        disp(sprintf('(mrLoadRetGUI) Could not delete scan for file %s',tSeriesFile{iScan}));
-    end
-    refreshMLRDisplay(viewNum);
-end
-if ~isempty(scanList)
-    disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
-end
+view = mrDeleteScans(view);
+refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function transformsMenu_Callback(hObject, eventdata, handles)
@@ -1598,6 +1578,32 @@ view = viewSet(view,'deleteROI',roinum);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function removeManyROIMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to removeManyROIMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+numrois = viewGet(v,'numberofrois');
+% put up a dialog with rois to delete
+roinames = viewGet(v,'roiNames');
+paramsDialog = {};
+for roinum = 1:length(roinames)
+  paramsDialog{end+1} = {roinames{roinum},0,'type=checkbox',sprintf('Remove ROI %i: %s',roinum,roinames{roinum})};
+end
+params = mrParamsDialog(paramsDialog,'Select ROIs to remove');
+if ~isempty(params)
+  % now go through and delete anything the user selected
+  for roinum = 1:length(roinames)
+    if params.(roinames{roinum})
+      v = viewSet(v,'deleteROI',viewGet(v,'roinum',roinames{roinum}));
+    end
+  end
+  refreshMLRDisplay(viewNum);
+end
+
+% --------------------------------------------------------------------
 function deleteAllROIsMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1990,5 +1996,7 @@ groupName = viewGet(v,'analysisGroupName',curAnalysis);
 evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
 
 eval(evalstring);
+
+
 
 
