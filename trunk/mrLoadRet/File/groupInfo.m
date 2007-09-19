@@ -9,6 +9,9 @@
 %
 %             to get info on all groups:
 %             groupInfo
+% 
+%             to print info on groups with scanXforms
+%             groupInfo('Raw',1)
 function retval = groupInfo(groupNum,verbose)
 
 % check arguments
@@ -17,31 +20,52 @@ if ~any(nargin == [0 1 2])
   return
 end
 
-if ieNotDefined('verbose'),verbose = 1;end
+if ieNotDefined('verbose'),verbose = 0;end
 view = newView('Volume');
 
+% check home dir
+homeDir = viewGet(view,'homeDir');
+if ~isequal(homeDir,pwd)
+  disp(sprintf('(groupInfo) Current directory (%s) is not the home directory of the session',getLastDir(pwd)));
+  return
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
-% get the correct group
+% groupInfo with no arguments
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % if groupNum was not given then display info about all groups
 if ieNotDefined('groupNum')
+  % get session info
   subject = viewGet(view,'subject');
   description = viewGet(view,'sessionDescription');
   magnet = viewGet(view,'magnet');
   operator = viewGet(view,'operator');
   coil = viewGet(view,'coil');
   protocol = viewGet(view,'protocol');
-  homeDir = viewGet(view,'homeDir');
+  % display session info
   disp(sprintf('%s',repmat('=',1,40)));
   disp(sprintf('homeDir: %s',homeDir));
   disp(sprintf('description: %s',description));
   disp(sprintf('operator: %s subject: %s',operator,subject));
-  disp(sprintf('magnet: %s coil: %s protocol %s',magnet,coil,protocol));
+  disp(sprintf('magnet: %s coil: %s protocol: %s',magnet,coil,protocol));
   disp(sprintf('%s',repmat('=',1,40)));
+  % display each group
   for g = 1:viewGet(view,'nGroups')
+    % get group info
     groupName = viewGet(view,'groupName',g);
     numScans = viewGet(view,'nScans',g);
-    disp(sprintf('%i: %s (%i scans)',g,groupName,numScans));
+    % use du to get disk usage
+    [status result] = system(sprintf('du -k -d 0 %s',viewGet(view,'datadir',g)));
+    dirSize = str2num(strtok(result));
+    if (dirSize > 1000000)
+      dirSize = sprintf('%0.1fG',dirSize/1000000);
+    elseif (dirSize > 1000)
+      dirSize = sprintf('%0.1fM',dirSize/1000);
+    else
+      dirSize = sprintf('%iK',dirSize);
+    end
+    % display group info
+    disp(sprintf('%i: %s (%i scans) %s',g,groupName,numScans,dirSize));
   end
   return
 end
@@ -91,8 +115,8 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   disp(sprintf('   junkFrames=[%s] totalJunkedFrames=[%s]',num2str(junkFrames),num2str(totalJunkedFrames)));
   disp(sprintf('   voxelSize=[%0.1f %0.1f %0.1f] TR=%0.4f Dims: [%i %i %i] Volumes=%i',scanVoxelSize(1),scanVoxelSize(2),scanVoxelSize(3),tr,scanDims(1),scanDims(2),scanDims(3),totalFrames));
 
-  % if verbose is set above 1, then show scan transform
-  if verbose >1 
+  % if verbose is set to 1 or above, then show scan transform
+  if verbose >= 1 
     scanXform = viewGet(view,'scanXform',s,groupNum);
     disp(sprintf('   scanXform:'));
     for i = 1:4
