@@ -24,7 +24,7 @@ for i = 1:length(vars)
     if isstr(contingentValue),contingentValue = str2num(contingentValue);,end
     % if it has been shut down, give the parameter an empty
     % value and continue on
-    if contingentValue==0
+    if isequal(contingentValue,0)
       params.(varinfo{i}.name) = [];
       continue
     end
