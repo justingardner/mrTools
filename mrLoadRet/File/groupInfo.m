@@ -25,8 +25,8 @@ view = newView('Volume');
 
 % check home dir
 homeDir = viewGet(view,'homeDir');
-if ~isequal(homeDir,pwd)
-  disp(sprintf('(groupInfo) Current directory (%s) is not the home directory of the session',getLastDir(pwd)));
+if isempty(strfind(pwd,getLastDir(homeDir)))
+  disp(sprintf('(groupInfo) Current directory (%s) is not in the home directory of the session (%s)',getLastDir(pwd),getLastDir(homeDir)));
   return
 end
 
