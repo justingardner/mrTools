@@ -901,7 +901,7 @@ if viewGet(view,'nScans') == 0
   disp(sprintf('(mrLoadRetGUI) No scans in group %s to delete',viewGet(view,'groupName')));
   return
 end
-view = mrDeleteScans(view);
+view = deleteScans(view);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------

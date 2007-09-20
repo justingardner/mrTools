@@ -1,17 +1,22 @@
-% mrDeleteScans.m
+% deleteScans.m
 %
 %        $Id$
-%      usage: mrDeleteScans(v,<scanList>,<groupName/Num>)
+%      usage: deleteScans(<v>,<scanList>,<groupName/Num>)
 %         by: justin gardner
 %       date: 09/19/07
 %    purpose: delete scans
 %
-function v = mrDeleteScans(v,scanList,group)
+function v = deleteScans(v,scanList,group)
 
 % check arguments
 if ~any(nargin == [1 2 3])
   help mrDeleteScans
   return
+end
+
+% get a view if not passed in one.
+if ieNotDefined(v)
+  v = newView;
 end
 
 % set group if passed in
