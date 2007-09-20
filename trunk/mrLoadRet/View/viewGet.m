@@ -637,6 +637,8 @@ switch lower(param)
     if (nscans >= s) & (s > 0)
       if isfield(MLR.groups(g).scanParams(s),'originalFileName')
         val = MLR.groups(g).scanParams(s).originalFileName;
+	% if originalFilename is the same as the filename
+	% then return empty
         if strcmp(val,MLR.groups(g).scanParams(s).fileName)
           val = [];
         end

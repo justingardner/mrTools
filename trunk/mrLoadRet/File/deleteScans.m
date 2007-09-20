@@ -9,14 +9,32 @@
 function v = deleteScans(v,scanList,group)
 
 % check arguments
-if ~any(nargin == [1 2 3])
-  help mrDeleteScans
+if ~any(nargin == [0 1 2 3])
+  help deleteScans
   return
 end
 
 % get a view if not passed in one.
-if ieNotDefined(v)
+if ieNotDefined('v')
+  % get a new view
   v = newView;
+  % remember to delete it when we exit this funciton
+  % unless the user wants it
+  if nargout ==0
+    deleteViewWhenDone = 1;
+  end
+  % choose a group
+  groupNames = viewGet(v,'groupNames');
+  params = mrParamsDialog({{'groupName',groupNames,'Choose a group from which to delete scans'}},'Choose a group from which to delete scans');
+  if isempty(params)
+    if deleteViewWhenDone
+      deleteView(v);
+    end   
+    return
+  end
+  v = viewSet(v,'curGroup',params.groupName);
+else
+  deleteViewWhenDone = 0;
 end
 
 % set group if passed in
@@ -58,4 +76,8 @@ for iScan = 1:length(scanList)
 end
 if ~isempty(scanList)
     disp(sprintf('To remove the nifti files for these deleted scans run mrCleanDir'));
+end
+
+if deleteViewWhenDone
+  deleteView(v);
 end
