@@ -5,6 +5,9 @@
 %       date: 03/17/07
 %    purpose: load default positions
 %
+% Note that the mrDefaults file is usually saved in ~/.mrDefaults
+% but that location can be overridden (see mrDefaultsFilename.m)
+%
 function mrDefaults = loadMrDefaults()
 
 mrDefaults = [];
@@ -16,8 +19,9 @@ if ~any(nargin == [0])
 end
 
 % load the defaults or set them to default values
-if isfile('~/.mrDefaults.mat')
-  mrDefaults = load('~/.mrDefaults.mat');
+defaultsFilename = mrDefaultsFilename;
+if isfile(defaultsFilename)
+  mrDefaults = load(defaultsFilename);
 else
     mrDefaults.prefs = [];
     mrDefaults.figloc = [];

@@ -17,6 +17,9 @@ function preferences = mrSetPref(pref,value)
 %   mrSetPref('overwritePolicy','Ask');
 %      Options: 'Ask','Merge','Rename','Overwrite'
 %
+% Note that the mrDefaults file is usually saved in ~/.mrDefaults
+% but that location can be overridden (see mrDefaultsFilename.m)
+%
 % djh, 5/2007
 
 global mrDEFAULTS

@@ -15,6 +15,9 @@ function value = mrGetPref(pref,value)
 %   mrGetPref('maxBlockSize');
 %   mrGetPref('volumeDirectory');
 %
+% Note that the mrDefaults file is usually saved in ~/.mrDefaults
+% but that location can be overridden (see mrDefaultsFilename.m)
+%
 % djh, 5/2007
 % %	$Id$	
 
@@ -22,8 +25,10 @@ function value = mrGetPref(pref,value)
 global mrDEFAULTS
 
 % read the preferences and figlocs
-mrDEFAULTS = loadMrDefaults;
-    
+if isempty(mrDEFAULTS)
+  mrDEFAULTS = loadMrDefaults;
+end
+
 if isfield(mrDEFAULTS.prefs,pref)
     value = getfield(mrDEFAULTS.prefs,pref);
 else
