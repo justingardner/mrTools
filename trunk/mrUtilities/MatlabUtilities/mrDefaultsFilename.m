@@ -19,7 +19,7 @@ if ~any(nargin == [0])
 end
 
 if ispref('mrLoadRet','mrDefaultsFilename')
-  defaultsFilename = getPref('mrLoadRet','mrDefaultsFilename');
+  defaultsFilename = getpref('mrLoadRet','mrDefaultsFilename');
 else
   defaultsFilename = '~/.mrDefaults';
 end
