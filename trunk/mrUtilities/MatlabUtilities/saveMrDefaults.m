@@ -5,6 +5,9 @@
 %       date: 03/17/07
 %    purpose: save default positions
 %
+% Note that the mrDefaults file is usually saved in ~/.mrDefaults
+% but that location can be overridden (see mrDefaultsFilename.m)
+%
 function retval = saveMrDefaults()
 
 % check arguments
@@ -30,4 +33,5 @@ else
 end
 
 
-save '~/.mrDefaults.mat' figloc prefs -V6;
+eval(sprintf('save %s figloc prefs -V6;',mrDefaultsFilename));
+
