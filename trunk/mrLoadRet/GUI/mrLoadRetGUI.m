@@ -1992,6 +1992,17 @@ params = viewGet(v,'analysisParams',curAnalysis);
 guiFunction = viewGet(v,'analysisGuiFunction',curAnalysis);
 groupName = viewGet(v,'analysisGroupName',curAnalysis);
 
+% check for function
+while exist(sprintf('%s.m',stripext(guiFunction))) ~= 2
+  paramsInfo = {{'GUIFunction',guiFunction,sprintf('The GUI function for this analysis, %s, was not found. If you want to specify another function name you can enter that here and try again.',guiFunction)}};
+  paramsGUIFunction = mrParamsDialog(paramsInfo,sprintf('GUI function: %s not found',guiFunction));
+  if isempty(paramsGUIFunction) || strcmp(paramsGUIFunction.GUIFunction,guiFunction)
+    return
+  else
+    guiFunction = paramsGUIFunction.GUIFunction;
+  end
+end
+
 % params = guiFunction('groupName',groupName,'params',params);
 evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
 
