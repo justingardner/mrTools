@@ -226,7 +226,7 @@ for frame = 1:totalFrames
         M = estMotionInterp3(tseriesIC,tseriesIC,baseF,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
       end
     else
-      frameMin = frame - fix(tSmootho/2);
+      frameMin = frame - fix(tSmooth/2);
       if frameMin < 1, frameMin = 1; end
       frameMax = frame + fix(tSmooth/2);
       if frameMax > nFrames, frameMax = nFrames; end
