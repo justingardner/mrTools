@@ -510,7 +510,7 @@ for r = order
   if isempty(roiCache)
     disppercent(-inf,sprintf('Computing ROI coordinates for ROI %i',r));
     % Get ROI coords transformed to the image
-    [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,r);
+    [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,baseNum,round(baseCoordsHomogeneous),imageDims,r);
     view = viewSet(view,'ROICache',roi(r),r);
     disppercent(inf);
   else
