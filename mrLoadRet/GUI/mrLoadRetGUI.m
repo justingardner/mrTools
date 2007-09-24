@@ -1063,7 +1063,25 @@ function editAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-view = editAnalysisGUI(view);
+%view = editAnalysisGUI(view);
+
+paramsInfo{1} = {'name',viewGet(view,'analysisName'),'Name of analysis'};
+paramsInfo{end+1} = {'date',viewGet(view,'analysisDate'),'editable=0','Date analysis was done (not editable)'};
+paramsInfo{end+1} = {'function',viewGet(view,'analysisFunction'),'editable=0','Function with which analysis was done (not editable)'};
+paramsInfo{end+1} = {'groupName',viewGet(view,'analysisGroupName'),'editable=0','Group on which analysis was done (not editable)'};
+paramsInfo{end+1} = {'GUIFunction',viewGet(view,'analysisGUIFunction'),'GUI function for analysis'};
+paramsInfo{end+1} = {'reconcileFunction',viewGet(view,'analysisReconcileFunction'),'Reconcile function for analysis'};
+paramsInfo{end+1} = {'mergeFunction',viewGet(view,'analysisMergeFunction'),'Merge function for analysis'};
+paramsInfo{end+1} = {'type',viewGet(view,'analysisType'),'Type of analysis'};
+
+params = mrParamsDialog(paramsInfo,'Edit analysis');
+if ~isempty(params)
+  view = viewSet(view,'analysisName',params.name);
+  view = viewSet(view,'analysisGUIFunction',params.GUIFunction);
+  view = viewSet(view,'analysisReconcileFunction',params.reconcileFunction);
+  view = viewSet(view,'analysisMergeFunction',params.mergeFunction);
+  view = viewSet(view,'analysisType',params.type);
+end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
