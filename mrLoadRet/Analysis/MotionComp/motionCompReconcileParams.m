@@ -52,7 +52,11 @@ else
   newparams.niters = params.niters;
   newparams.motionCompGroupName = params.motionCompGroupName;
   newparams.interpMethod = params.interpMethod;
-  newparams.tSmooth = params.tSmooth;
+  if ~isfield(params,'tSmooth')
+    newparams.tSmooth = 0;
+  else
+    newparams.tSmooth = params.tSmooth;
+  end
   % Find scans with tseries files that match those specified in
   % params.tseriesfiles. Use only those scans and the corresponding
   % params.
