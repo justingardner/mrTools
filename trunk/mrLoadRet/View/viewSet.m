@@ -839,7 +839,11 @@ switch lower(param)
     % Check that it has the correct number of scans
     if (length(overlay.data) ~= nScans)
       %mrErrorDlg('Invalid overlay, incorrect number of scans.');
-      mrWarnDlg('(viewSet) Invalid overlay, incorrect number of scans.');
+      if isempty(data)
+	disp('(viewSet) No data in overlay');
+      else
+	disp('(viewSet) Invalid overlay, incorrect number of scans.');
+      end
       return;
     end
     % Check that the data arrays for each scan are the correct size
