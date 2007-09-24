@@ -135,18 +135,19 @@ dateString = datestr(now);
 o.(overlayName).name = overlayName;
 o.(overlayName).function = '';
 o.(overlayName).groupName = groupName;
-o.(overlayName).reconcileFunction = 'quickReconcile';
+o.(overlayName).reconcileFunction = 'defaultReconcileParams';
 o.(overlayName).data = cell(1,viewGet(v,'nScans'));
+o.(overlayName).params.scanNum = [];
 for i = 1:length(scanNum)
   if length(overlay) >= i
     o.(overlayName).data{scanNum(i)} = overlay{i};
+    o.(overlayName).params.scanNum(end+1) = i;
   else
     disp(sprintf('(mrDispOverlay) Only %i overlays found for %i scans',length(overlay),length(scanNum)));
   return
   end
 end
 o.(overlayName).date = dateString;
-o.(overlayName).params = [];
 o.(overlayName).range = range;
 o.(overlayName).clip = clip;
 o.(overlayName).colormap = cmap;
@@ -161,7 +162,8 @@ if isempty(viewGet(v,'curAnalysis'))
   a.(analName).groupName = groupName;
   a.(analName).function = '';
   a.(analName).guiFunction = '';
-  a.(analName).params = [];
+  a.(analName).params.scanNum = scanNum;
+  a.(analName).reconcileFunction = 'defaultReconcileParams';
   % if user didn't pass in an overlay, they are probably
   % using this to install something into the d strucutre
   % instead.
