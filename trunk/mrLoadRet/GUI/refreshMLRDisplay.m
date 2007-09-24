@@ -425,6 +425,10 @@ if isfield(baseCoordMap,'dims')
   baseDims = baseCoordMap.dims;
 end
 
+% make sure that baseCoords are rounded (they may not be
+% if we are working with a baseCoordMap'd flat map
+baseCoordsHomogeneous = round(baseCoordsHomogeneous);
+
 if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
   % Use xformROI to supersample the coordinates
   baseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
@@ -450,8 +454,15 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     % convert to linear coordinates
     roiBaseCoordsLinear = mysub2ind(baseDims,thisROICoords(1,:),thisROICoords(2,:),thisROICoords(3,:));
     baseCoordsLinear = mysub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
-    % find them in the baseCoordsHomogenous
-    [roiCoordsSlice,roiIndices,baseIndices] = intersect(roiBaseCoordsLinear,baseCoordsLinear);
+    % find the roi coordinates that exist in the base coordinates, these will
+    % be the coordinates for which we should draw the ROI. Note that instead
+    % of doing this with intersect as before (commented out), we now do it
+    % with ismember since this correctly returns baseCoordsIndices even if there are
+    % duplicates which can happen with flat maps
+    %[roiCoordsSlice,roiIndices,baseIndices] = intersect(roiBaseCoordsLinear,baseCoordsLinear);
+    [baseIndices roiIndices] = ismember(baseCoordsLinear,roiBaseCoordsLinear);
+    baseIndices = find(baseIndices);
+    roiIndices = roiIndices(baseIndices);
     % transform them into image coordinates
     [thisx,thisy] = ind2sub(imageDims,baseIndices);
     x = [x thisx];y = [y thisy];
@@ -464,7 +475,6 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     %[thisx,thisy] = ind2sub(imageDims,baseIndices);
     %x = [x thisx'];y = [y thisy'];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
     
     s = [s baseCoords(sliceIndex,roiIndexesThisSlice(roiIndices))];
   end
