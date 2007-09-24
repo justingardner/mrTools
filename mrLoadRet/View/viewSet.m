@@ -764,6 +764,47 @@ switch lower(param)
       view.analyses{analysisNum}.name = val;
       mlrGuiSet(view,'analysisPopup',viewGet(view,'analysisNames'));
     end
+  case{'analysisguifunction'}
+    % view = viewSet(view,'analysisGUIFunction',GUIFunctionString,[analysisNum]);
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+    else
+      analysisNum = varargin{1};
+    end
+    if ~isempty(analysisNum)
+      view.analyses{analysisNum}.guiFunction = val;
+    end
+  case{'analysismergefunction'}
+    % view = viewSet(view,'analysisMergeFunction',mergeFunctionString,[analysisNum]);
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+    else
+      analysisNum = varargin{1};
+    end
+    if ~isempty(analysisNum)
+      view.analyses{analysisNum}.mergeFunction = val;
+    end
+  case{'analysisreconcilefunction'}
+    % view = viewSet(view,'analysisReconcileFunction',reconcileFunctionString,[analysisNum]);
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+    else
+      analysisNum = varargin{1};
+    end
+    if ~isempty(analysisNum)
+      view.analyses{analysisNum}.reconcileFunction = val;
+    end
+
+  case{'analysistype'}
+    % view = viewSet(view,'analysisType',typeString,[analysisNum]);
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+    else
+      analysisNum = varargin{1};
+    end
+    if ~isempty(analysisNum)
+      view.analyses{analysisNum}.type = val;
+    end
 
     % -------------------------------------------
     % Overlay (parameter map)
@@ -1097,6 +1138,8 @@ switch lower(param)
     else
       view.ROIs(pos) = ROI;
     end
+    % clear the cache of any old reference to this roi
+    view = viewSet(view,'ROICache','clear',ROI.name);
     % Update the gui
     stringList = {view.ROIs(:).name};
     mlrGuiSet(view,'roiPopup',stringList);
@@ -1179,7 +1222,7 @@ switch lower(param)
     % Figure and GUI
   case 'roicache'
     % view = viewSet(view,'ROICache',roidata,[roiNum]);
-    % view = viewSet(view,'ROICache','clear');
+    % view = viewSet(view,'ROICache','clear',roiName);
     if isstr(val)
       if strcmp(val,'clear')
         % clear the cache
@@ -1203,7 +1246,7 @@ switch lower(param)
     end
   case 'basecache'
     % view = viewSet(view,'baseCache',basedata);
-    % view = viewSet(view,'baseCache','clear');
+    % view = viewSet(view,'baseCache','clear',baseName);
     if isstr(val)
       if strcmp(val,'clear')
         % clear the cache
@@ -1221,7 +1264,7 @@ switch lower(param)
     end
   case 'overlaycache'
     % view = viewSet(view,'overlayCache',overlaydata);
-    % view = viewSet(view,'overlayCache','clear');
+    % view = viewSet(view,'overlayCache','clear',overlayName);
     if isstr(val)
       if strcmp(val,'clear')
         % clear the cache
