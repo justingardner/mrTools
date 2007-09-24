@@ -25,8 +25,9 @@ view = newView('Volume');
 
 % check home dir
 homeDir = viewGet(view,'homeDir');
-if isempty(strfind(pwd,getLastDir(homeDir)))
-  disp(sprintf('(groupInfo) Current directory (%s) is not in the home directory of the session (%s)',getLastDir(pwd),getLastDir(homeDir)));
+if ~isequal(homeDir,pwd)
+  disp(sprintf('(groupInfo) Current directory (%s) is not the home directory of the session',getLastDir(pwd)));
+  deleteView(view);
   return
 end
 
@@ -67,6 +68,7 @@ if ieNotDefined('groupNum')
     % display group info
     disp(sprintf('%i: %s (%i scans) %s',g,groupName,numScans,dirSize));
   end
+  deleteView(view);
   return
 end
 
@@ -77,12 +79,14 @@ if isstr(groupNum)
   groupNum = viewGet(view,'groupNum',groupName);
   if isempty(groupNum)
     disp(sprintf('(groupInfo): No group %s',groupName));
+    deleteView(view);
     return
   end
 end
 
 if (groupNum < 1) | (groupNum > viewGet(view,'numberOfGroups'))
   disp(sprintf('(groupInfo): No group number %i',groupNum));
+  deleteView(view);
   return
 end
 groupName = viewGet(view,'groupName',groupNum);
@@ -125,3 +129,4 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   end
 end
 
+deleteView(view);

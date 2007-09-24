@@ -160,8 +160,6 @@ if ~isempty(scanListName)
       end
     end
   end  
-else
-  data = {};
 end
 
 % if there is a field called scanParams then reconcile those as well
