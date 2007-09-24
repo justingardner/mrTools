@@ -83,6 +83,9 @@ scanFields = {};
 if isfield(params,'scanParams')
   scanFields{end+1} = 'scanParams';
 end
+if isfield(params,'tseriesFile')
+  scanFields{end+1} = 'tseriesFile';
+end
 
 if ~isempty(scanListName)
   % if we don't have a tseriesFile field then generate it
@@ -138,19 +141,31 @@ if ~isempty(scanListName)
     end
     % reset the scan field
     params.(scanListName) = newScanNums;
+    % if there are no valid scan numbers then warn and return empty data
+    if isempty(newScanNums)
+      disp(sprintf('(defaultReconcileParams) No valid scans'));
+      data = {};
     % and reset the data
-    if ~isempty(data)
-      data = newdata;
+    else
+      if ~isempty(data)
+	data = newdata;
+      end
     end
     % and reset all the scan fields
     for iFields = 1:length(scanFields)
-      params.(scanFields{iFields}) = newScanFields.(scanFields{iFields});
+      if isempty(newScanNums)
+	params.(scanFields{iFields}) = {};
+      else
+	params.(scanFields{iFields}) = newScanFields.(scanFields{iFields});
+      end
     end
   end  
+else
+  data = {};
 end
 
 % if there is a field called scanParams then reconcile those as well
-if isfield(params,'scanParams') && iscell(params.scanParams)
+if isfield(params,'scanParams') && iscell(params.scanParams) && ~isempty(params.scanParams)
   defaultReconcileParams(groupName,params.scanParams);
 end
 
