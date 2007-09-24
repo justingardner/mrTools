@@ -83,9 +83,6 @@ scanFields = {};
 if isfield(params,'scanParams')
   scanFields{end+1} = 'scanParams';
 end
-if isfield(params,'tseriesFile')
-  scanFields{end+1} = 'tseriesFile';
-end
 
 if ~isempty(scanListName)
   % if we don't have a tseriesFile field then generate it
@@ -102,6 +99,7 @@ if ~isempty(scanListName)
   else
     % starting values
     newScanNums = [];
+    newTSeriesFile = {};
     newdata = cell(1,viewGet([],'numScans',groupNum));
     for iFields = 1:length(scanFields)
       newScanFields.(scanFields{iFields}) = cell(1,viewGet([],'numScans',groupNum));
@@ -128,6 +126,8 @@ if ~isempty(scanListName)
 	  newScanFields.(scanFields{iFields}){thisScanNum} = ...
 	      params.(scanFields{iFields}){params.(scanListName)(tnum)};
 	end
+	% keep the tseries filename
+	newTSeriesFile{end+1} = params.tseriesFile{tnum};
 	% and if there is data, fix the data.
 	if ~isempty(data)
 	  newdata{thisScanNum} = data{params.(scanListName)(tnum)};
@@ -141,6 +141,7 @@ if ~isempty(scanListName)
     end
     % reset the scan field
     params.(scanListName) = newScanNums;
+    params.tseriesFile = newTSeriesFile;
     % if there are no valid scan numbers then warn and return empty data
     if isempty(newScanNums)
       disp(sprintf('(defaultReconcileParams) No valid scans'));
