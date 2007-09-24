@@ -1191,7 +1191,8 @@ paramsInfo = {{'name',roiName,'editable=0','The name of the ROI'},...
   {'xform',roiXform,'editable=0','xform matrix specifies the transformation to the base coordinate system'},...
   {'baseMatch',baseMatch,'editable=0','The base volume that has the same voxel size and xform as this ROI. This is the base volume on which the ROI was originally defined. If there is no matching base anatomy, it means that the ROI was defined on a different base volume than the one you have loaded.'},...
   {'ROICoords',[],'type=pushbutton','buttonString=Show ROI coordinates','callback',@showCurrentROICoords,'callbackArg',view,'Print the coordinates for this ROI into the matlab window. Note that these will be the actual ROI coordinates not transformed into the scan coordinates. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'},...
-  {'ROIScanCoords',[],'type=pushbutton','buttonString=Show scan coordinates','callback',@showCurrentROIScanCoords,'callbackArg',view,'Print the coordinates transformed into the scan coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'}};
+  {'ROIScanCoords',[],'type=pushbutton','buttonString=Show scan coordinates','callback',@showCurrentROIScanCoords,'callbackArg',view,'Print the coordinates transformed into the scan coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'},...
+  {'findROI',[],'type=pushbutton','buttonString=Find ROI','callback',@findROI,'callbackArg',view,'Go to the closest slice for which this ROI has some coordinates.'}};
 mrParamsDialog(paramsInfo,'ROI information');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1266,6 +1267,39 @@ if colnum
   disp(xline);disp(yline);disp(sline);
   colnum = 0;
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = findROI(view)
+
+retval = [];
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+% get roi coordinates
+coords = viewGet(view,'ROICoords',roiNum);
+
+if isempty(coords)
+  msgbox('ROI %s has no voxels in the current anatomy',viewGet(view,'roiName',roiNum));
+  return
+end
+
+% get current slice
+curSlice = viewGet(view,'curSlice');
+
+% go find the ROI
+sliceIndex = viewGet(view,'baseSliceIndex');
+
+% find the closest slice
+distanceToCurrentSlice = abs(coords(sliceIndex,:)-curSlice);
+closestSlice = coords(sliceIndex,first(find(min(distanceToCurrentSlice)==distanceToCurrentSlice)));
+
+% set the slice
+mlrGuiSet(view.viewNum,'slice',closestSlice);
+refreshMLRDisplay(view.viewNum);
 
 % --------------------------------------------------------------------
 function editBaseMenu_Callback(hObject, eventdata, handles)
