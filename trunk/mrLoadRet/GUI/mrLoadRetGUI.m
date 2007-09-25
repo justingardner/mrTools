@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 19-Sep-2007 18:07:41
+% Last Modified by GUIDE v2.5 25-Sep-2007 12:15:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1291,39 +1291,6 @@ if colnum
   colnum = 0;
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% helper function, called by ROI Info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function retval = findROI(view)
-
-retval = [];
-
-% get the roi
-roiNum = viewGet(view,'currentROI');
-if isempty(roiNum),return,end
-
-% get roi coordinates
-coords = viewGet(view,'ROICoords',roiNum);
-
-if isempty(coords)
-  msgbox('ROI %s has no voxels in the current anatomy',viewGet(view,'roiName',roiNum));
-  return
-end
-
-% get current slice
-curSlice = viewGet(view,'curSlice');
-
-% go find the ROI
-sliceIndex = viewGet(view,'baseSliceIndex');
-
-% find the closest slice
-distanceToCurrentSlice = abs(coords(sliceIndex,:)-curSlice);
-closestSlice = coords(sliceIndex,first(find(min(distanceToCurrentSlice)==distanceToCurrentSlice)));
-
-% set the slice
-mlrGuiSet(view.viewNum,'slice',closestSlice);
-refreshMLRDisplay(view.viewNum);
-
 % --------------------------------------------------------------------
 function editBaseMenu_Callback(hObject, eventdata, handles)
 
@@ -2066,5 +2033,15 @@ evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,',''
 eval(evalstring);
 
 
+% --------------------------------------------------------------------
+function findCurrentROIMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to findCurrentROIMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+v = findROI(v);
 
 
