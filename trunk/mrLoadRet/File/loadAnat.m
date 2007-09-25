@@ -124,6 +124,18 @@ permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 % Add it to the view %
 %%%%%%%%%%%%%%%%%%%%%%
 
+% now check for an assoicated .mat file, this is created by
+% mrLoadRet and contains parameters for the base anatomy.
+% (it is the base structure minus the data and hdr) This is
+% essential for flat files
+matFilename = sprintf('%s.mat',stripext(pathStr));
+if isfile(matFilename)
+  l = load(matFilename);
+  if isfield(l,'base')
+    base = l.base;
+  end
+end
+
 % Set required structure fields (additional fields are set to default
 % values when viewSet calls isbase).
 base.name = name;
