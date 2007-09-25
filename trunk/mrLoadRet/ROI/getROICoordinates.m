@@ -86,8 +86,10 @@ end
 scanCoords = round(xformROIcoords(roiCoords,inv(scanXform)*roiXform,roiVoxelSize,scanVoxelSize));
 
 % return the unique ones
-scanCoords = unique(scanCoords','rows')';
-scanCoords = scanCoords(1:3,:);
+if ~isempty(scanCoords)
+  scanCoords = unique(scanCoords','rows')';
+  scanCoords = scanCoords(1:3,:);
+end
 
 if ~isempty(scanCoords) && (scanNum ~= 0)
 
