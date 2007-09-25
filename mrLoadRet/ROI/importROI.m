@@ -64,6 +64,8 @@ for roinum = 1:length(pathStr)
     % Add it to the view
     view = viewSet(view,'newROI',ROI);
     %ROI.coords
+  else
+    disp(sprintf('(importROI) No ROI variable found in mat file'));
   end
 end
 
