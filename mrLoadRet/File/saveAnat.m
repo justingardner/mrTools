@@ -35,6 +35,12 @@ baseVolume = viewGet(view,'baseVolume',anatomyNum);
 data = baseVolume.data;
 hdr = baseVolume.hdr;
 
+% also get the base structure, and remove the data and hdr
+% this will get saved along with the nifti file
+base = viewGet(view,'base',anatomyNum);
+base.data = [];
+base.hdr = [];
+
 % set the file extension
 niftiFileExtension = mrGetPref('niftiFileExtension');
 if isempty(niftiFileExtension)
@@ -47,16 +53,18 @@ pathStr = fullfile(viewGet(view,'anatomydir'),[anatomyName,niftiFileExtension]);
 % Write, though check for over-writing
 saveFlag = 'Yes';
 if exist([pathStr,'.mat'],'file')
-    if confirm
-        saveFlag = questdlg([pathStr,' already exists. Overwrite?'],...
-            'Save Overlay?','Yes','No','No');
-	end
+  if confirm
+    saveFlag = questdlg([pathStr,' already exists. Overwrite?'],...
+			'Save Overlay?','Yes','No','No');
+  end
 end
 if strcmp(saveFlag,'Yes')
-    fprintf('Saving %s...',pathStr);
-    [byteswritten,hdr] = cbiWriteNifti(pathStr,data,hdr);
-    fprintf('done\n');
+  fprintf('Saving %s...',pathStr);
+  [byteswritten,hdr] = cbiWriteNifti(pathStr,data,hdr);
+  % also write out the base structure as a .mat file
+  eval(sprintf('save %s.mat base',stripext(pathStr)));
+  fprintf('done\n');
 else
-    fprintf('Anatomy not saved...');
+  fprintf('Anatomy not saved...');
 end
 return;
