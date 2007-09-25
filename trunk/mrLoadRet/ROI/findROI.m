@@ -16,7 +16,7 @@ if ~any(nargin == [1])
   return
 end
 
-if ~isempty(viewGet(v,'baseCoordMap'))
+if ~isempty(viewGet(view,'baseCoordMap'))
   disp(sprintf('(findROI) Base anatomy cannot be flat to look for an ROI'));
   return
 end
