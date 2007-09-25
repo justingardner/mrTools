@@ -848,6 +848,22 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).data;
     end
+  case {'base'}
+    % basedata = viewGet(view,'base',[baseNum])
+    % basedata = viewGet(view,'base',[])
+    % basedata = viewGet(view,'base')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b);
+    end
   case {'basecoordmap'}
     % basedata = viewGet(view,'baseCoordMap',[baseNum])
     % basedata = viewGet(view,'baseCoordMap',[])
