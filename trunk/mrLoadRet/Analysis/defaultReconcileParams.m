@@ -8,6 +8,9 @@
 %             but if it is, then there will be a paramInfo field (for format
 %             see wiki), and variables will be validated against that structure
 %
+%             The main purpose of this function is to match
+%             timeseries filenames with scan numbers
+%
 function [params data] = defaultReconcileParams(groupName,params,data)
 
 % check arguments
@@ -31,8 +34,10 @@ if ~ieNotDefined('groupName')
   groupNum = viewGet([],'groupNum',groupName);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % if params is a cell array, then call defaultReconcileParams on each
 % element of the cell array one at a time
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if iscell(params)
   newData = cell(1,viewGet([],'numScans',groupNum));
   newParams = cell(1,viewGet([],'numScans',groupNum));
@@ -59,14 +64,23 @@ if iscell(params)
   return
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % if this has the field paramInfo then it comes from'
 % mrDefaultParamsGUI and we can check the parameters 
 % for consistency
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 params = checkParams(params);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % look for a description, and see if it has something like [x...x], that should be replaced by the scan numbers selected in scanList and groupName 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 params = fixDescription(params);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Next we do the meat of this program, we match scanNumbers
+% with tseriesFilenames - so that the data will stay with
+% the actual timeseries that it was generated with
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get scan numbers
 if isfield(params,'scanList')
   scanListName = 'scanList';
