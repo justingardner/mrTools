@@ -16,7 +16,21 @@ if ~any(nargin == [2])
   return
 end
 
+% handle empty lists correctly
+if isempty(inList)
+  inList = {};
+end
+if isempty(topVal)
+  topVal = {};
+end
+
+% make sure inList is a cell array
+inList = cellArray(inList);
+
+% put the top val at the top of list
 outList{1} = topVal;
+
+% and add everybody else
 inList = setdiff(inList,topVal);
 for i = 1:length(inList)
   outList{end+1} = inList{i};
