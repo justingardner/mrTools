@@ -1899,6 +1899,29 @@ switch lower(param)
         val = analysis.overlays(overlayNum).clip;
       end
     end
+  case {'alphaoverlay'}
+    % overlayclip = viewGet(view,'alphaOverlay')
+    analysisNum = viewGet(view,'currentAnalysis');
+    overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    analysis = viewGet(view,'analysis',analysisNum);
+    if ~isempty(analysis) & ~isempty(analysis.overlays)
+      n = viewGet(view,'numberofOverlays',analysisNum);
+      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+        val = analysis.overlays(overlayNum).alphaOverlay;
+      end
+    end
+  case {'alphaoverlayexponent'}
+    % overlayclip = viewGet(view,'alphaOverlayExponent')
+    val = 1;
+    analysisNum = viewGet(view,'currentAnalysis');
+    overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    analysis = viewGet(view,'analysis',analysisNum);
+    if ~isempty(analysis) & ~isempty(analysis.overlays)
+      n = viewGet(view,'numberofOverlays',analysisNum);
+      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+        val = analysis.overlays(overlayNum).alphaOverlayExponent;
+      end
+    end
   case {'overlaycmap'}
     % overlaycmap = viewGet(view,'overlaycmap',[overlayNum],[analysisNum])
     % overlaycmap = viewGet(view,'overlaycmap',overlayNum,[])

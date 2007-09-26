@@ -1166,7 +1166,7 @@ colors{end+1} = roiColor;
 colors = fliplr(colors);
 % make parameter string
 roiParams = {{'name',roiName,'Name of roi, avoid using punctuation and space'},{'color',colors,'The color that the roi will display in'}};
-params = mrParamsDialog(roiParams);
+params = mrParamsDialog(roiParams,'Edit ROI');
 % if not empty, then change the parameters
 if ~isempty(params)
     view = viewSet(view,'roiColor',params.color,roiNum);
@@ -2001,7 +2001,7 @@ paramsInfo{end+1} = {'params',[],'View analysis parameters','type=pushbutton','b
 disppercent(inf);
 
 % display parameters
-mrParamsDialog(paramsInfo);
+mrParamsDialog(paramsInfo,'Analysis Info');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % helper function to view params
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

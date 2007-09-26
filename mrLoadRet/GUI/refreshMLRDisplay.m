@@ -90,6 +90,11 @@ if isempty(overlay)
     overlayIm = [];
   end
 
+  % get the number of the overlay that shoudl be
+  % used as an alpha map. This allows the alpha
+  % to be set according to another overlay
+  alphaOverlay = viewGet(view,'overlayNum',viewGet(view,'alphaOverlay'));
+
   numOverlays = viewGet(view,'numberofOverlays');
   mask = ones(size(base.im));
   % Loop through overlays, filling in NaNs according to clip values.
@@ -104,11 +109,38 @@ if isempty(overlay)
         pts = (im >= clip(1) | im <= clip(2));
       end
       mask = mask & pts;
+      % if this is the alpha overlay then keep it.
+      if ov == alphaOverlay
+	alphaOverlayImage = im;
+      end
     end
   end
-  % Finally, make the alphaMap.
-  overlay.alphaMap = repmat(alpha*mask,[1 1 3]);
-
+  % Finally, make the alphaMap. Normally this is just set
+  % to 0 or 1 so that voxels are hard thresholded. If the
+  % overlay has an alphaOverlay field set to the name
+  % of another overlay, then we will use the values in
+  % that overlay to set the alpha
+  if isempty(alphaOverlay)
+    overlay.alphaMap = repmat(alpha*mask,[1 1 3]);
+  else
+    % get the range of the alpha overlay
+    range = viewGet(view,'overlayRange',alphaOverlay);
+    % handle setRangeToMax
+    if strcmp(viewGet(view,'overlayCtype',alphaOverlay),'setRangeToMax')
+      maxRange = max(clip(1),min(alphaOverlayImage(mask)));
+      if ~isempty(maxRange),range(1) = maxRange;end
+      minRange = min(max(alphaOverlayImage(mask)),clip(2));
+      if ~isempty(minRange),range(2) = minRange;end
+    end
+    % now compute the alphaOverlay as a number from
+    % 0 to 1 of the range
+    alphaOverlayImage = alpha*((alphaOverlayImage-range(1))./diff(range));
+    alphaOverlayImage(alphaOverlayImage>alpha) = alpha;
+    alphaOverlayImage(alphaOverlayImage<0) = 0;
+    alphaOverlayImage = alphaOverlayImage.^viewGet(view,'alphaOverlayExponent');
+    overlay.alphaMap = repmat(alphaOverlayImage.*mask,[1 1 3]); 
+  end   
+  
   % Rescale current overlay.
   if ~isempty(overlayIm)
     overlay.cmap = viewGet(view,'overlayCmap',curOverlay);
