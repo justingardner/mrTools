@@ -142,6 +142,13 @@ for i = 1:length(scanNum)
   if length(overlay) >= i
     o.(overlayName).data{scanNum(i)} = overlay{i};
     o.(overlayName).params.scanNum(end+1) = i;
+  % if we are passed in one overlay but multiple scans
+  % then we install the same overlay for all the scans
+  elseif length(overlay) == 1
+    disp(sprintf('(mrDispOverlay) Only 1 overlay passed in. Installing that overlay for scan %i',scanNum(i)));
+    o.(overlayName).data{scanNum(i)} = overlay{1};
+    o.(overlayName).params.scanNum(end+1) = i;
+  % otherwise something is wrong
   else
     disp(sprintf('(mrDispOverlay) Only %i overlays found for %i scans',length(overlay),length(scanNum)));
   return
