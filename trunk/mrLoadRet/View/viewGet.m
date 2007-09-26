@@ -883,9 +883,11 @@ switch lower(param)
       val = view.baseVolumes(b).coordMap;
       % see if the coordMap is calculated for the correct cortical depth
       if ~isempty(val) && (~isfield(val,'corticalDepth') || (val.corticalDepth ~= corticalDepth))
-	% if not, then we have to do it
-	val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
-	val.corticalDepth = corticalDepth;
+	if isfield(val,'innerCoords') && isfield(val,'outerCoords')
+	  % if not, then we have to do it
+	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
+	  val.corticalDepth = corticalDepth;
+	end
       end
     end
   case {'baseclip'}
