@@ -30,13 +30,17 @@ if (nargout == 2)
                     'reconcileFunction','defaultReconcileParams';
                     'mergeFunction','defaultMergeParams';
                     'colormapType', 'normal';
-                    'data',[]};
+                    'data',[];
+		    'alphaOverlay',[];
+		    'alphaOverlayExponent',1;
+		   };
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'function','groupName','name','params','range',...
                     'date','type','alpha','clip','colormap',...
-                    'interrogator','reconcileFunction','mergeFunction','data'};
+                    'interrogator','reconcileFunction','mergeFunction',...
+		    'data','alphaOverlay','alphaOverlayExponent'};
   optionalFields = {};
 end
 
