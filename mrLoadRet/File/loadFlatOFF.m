@@ -11,7 +11,7 @@ function base = loadFlatOFF(flatFileName)
 
 % check arguments
 if ~any(nargin == [0 1 2])
-  help loadFlatPatch
+  help loadFlatOFF
   return
 end
 
@@ -23,47 +23,39 @@ end
 % init arguments
 if nargin == 0
   % Open dialog box to have user choose the file
-  if ieNotDefined('flatFileName')
-    if ieNotDefined('flatFilePath')
-      startPathStr = mrGetPref('volumeDirectory');
-    else
-      startPathStr = flatFilePath;
-    end
-    filterspec = {'*Flat*off','Matlab flat file'};
-    title = 'Choose flat OFF file';
-    pathStr = getPathStrDialog(startPathStr,title,filterspec,'on');
-  else
-    pathStr = flatFileName;
-  end
-
+  startPathStr = mrGetPref('volumeDirectory');
+  filterspec = {'*Flat*off','Matlab flat file'};
+  title = 'Choose flat OFF file';
+  flatFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
   % make into a cell array
-  pathStr = cellArray(pathStr);
-
+  flatFileName = cellArray(flatFileName);
   % Aborted
-  if ieNotDefined('pathStr')
+  if ieNotDefined('flatFileName')
     disp(sprintf('(loadFlatOFF) loading flat patch aborted'));
     return
-  else
-    loadFlatNew(pathStr{1});
   end
+end
 
-elseif  nargin == 1
-  % if we are passed in a string, then this is a file name
-  if isstr(flatFileName)
-    basename = sprintf('%s.off', stripext(flatFileName));
-    % check for file
-    if isfile(flatFileName)
-      % read file
-      surf.flat = loadSurfOFF(flatFileName);
-    else
-      disp(sprintf('(loadFlatOFF) %s does not exist', flatFileName));
-      return;
-    end
-    % check that it is indeed a patch
-    if ~isfield(surf.flat, 'nPatch')
-      disp(sprintf('(loadFlatOFF) %s is not a flat patch file', flatFileName))
-      return;
-    end
+% only take one flat file for now
+if iscell(flatFileName)
+  flatFileName =   flatFileName{1};
+end
+
+% if we are passed in a string, then this is a file name
+if isstr(flatFileName)
+  basename = sprintf('%s.off', stripext(flatFileName));
+  % check for file
+  if isfile(flatFileName)
+    % read file
+    surf.flat = loadSurfOFF(flatFileName);
+  else
+    disp(sprintf('(loadFlatOFF) %s does not exist', flatFileName));
+    return;
+  end
+  % check that it is indeed a patch
+  if ~isfield(surf.flat, 'nPatch')
+    disp(sprintf('(loadFlatOFF) %s is not a flat patch file', flatFileName))
+    return;
   end
 end
 
@@ -152,7 +144,6 @@ params = mrParamsDialog(paramsInfo, 'loadFlatPatch', []);
 % calculate the base anatomy structure
 base = calcFlatBase(surf, params);
 
-keyboard
 return;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -269,9 +260,9 @@ flat.thresholdMap(~flat.mask(:)) = 0;
 % now generate a base structure
 clear base;
 base.hdr = flat.hdr;
-[pathstr, base.name] = fileparts(params.flatFileName)
+[pathstr, base.name] = fileparts(params.flatFileName);
 base.permutationMatrix = surf.anat.permutationMatrix;
-base.params = params;
+% base.params = params;
 
 % load all the flat maps into the base. We
 % need to make all the flat images have
