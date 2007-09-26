@@ -24,7 +24,7 @@ end
 if nargin == 0
   % Open dialog box to have user choose the file
   startPathStr = mrGetPref('volumeDirectory');
-  filterspec = {'*Flat*off','Matlab flat file'};
+  filterspec = {'*.off','SurfRelax off flat file';'*.*','All files'};
   title = 'Choose flat OFF file';
   flatFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
   % make into a cell array
