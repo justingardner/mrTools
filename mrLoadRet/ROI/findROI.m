@@ -24,12 +24,14 @@ end
 roiNum = viewGet(view,'currentROI');
 if isempty(roiNum),return,end
 
-% get the current scan number
-scanNum = viewGet(view,'curScan');
-% get roi coordinates
-coords = getROICoordinates(view,roiNum,scanNum);
+% get roi coordinates from the cache
+roiCache = viewGet(view,'ROICache',viewGet(view,'currentROI'));
+if isempty(roiCache)
+  disp(sprintf('(findROI) ROI cache is emtpy (probably you are not viewing ROIs)'));
+  return
+end
 
-if isempty(coords)
+if isempty(roiCache.s)
   msgbox(sprintf('ROI %s has no voxels in the current anatomy',viewGet(view,'roiName',roiNum)));
   return
 end
@@ -37,12 +39,9 @@ end
 % get current slice
 curSlice = viewGet(view,'curSlice');
 
-% go find the ROI
-sliceIndex = viewGet(view,'baseSliceIndex');
-
 % find the closest slice
-distanceToCurrentSlice = abs(coords(sliceIndex,:)-curSlice);
-closestSlice = coords(sliceIndex,first(find(min(distanceToCurrentSlice)==distanceToCurrentSlice)));
+distanceToCurrentSlice = abs(roiCache.s-curSlice);
+closestSlice = roiCache.s(first(find(min(distanceToCurrentSlice)==distanceToCurrentSlice)));
 
 % set the slice
 mlrGuiSet(view.viewNum,'slice',closestSlice);
