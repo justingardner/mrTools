@@ -1292,7 +1292,7 @@ switch lower(param)
     % view = viewSet(view,'cursliceoverlaycoords',array);
     view.curslice.overlayCoords = val;
 
-  case {'sliceorientation'}
+  case {'sliceorientation','baseSliceIndex'}
     % view = viewSet(view,'sliceOrientation',n);
     if ~isscalar(val)
       switch val
