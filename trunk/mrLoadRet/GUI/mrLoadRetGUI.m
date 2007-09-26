@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 25-Sep-2007 12:15:29
+% Last Modified by GUIDE v2.5 26-Sep-2007 10:29:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2045,3 +2045,28 @@ v = MLR.views{viewNum};
 v = findROI(v);
 
 
+% --------------------------------------------------------------------
+function overlayInfoMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to overlayInfoMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% get the current overlay
+o = viewGet(v,'overlay');
+
+% get the fields and set some fields to not print
+overlayFields = fieldnames(o);
+ignoreFields = {'colormap','data','params'};
+
+% set up the paramsInfo to display
+paramsInfo = {};
+for i = 1:length(overlayFields)
+  if ~ismember(overlayFields{i},ignoreFields)
+    paramsInfo{end+1} = {overlayFields{i},o.(overlayFields{i}),'editable=0'};
+  end
+end
+
+mrParamsDialog(paramsInfo,'Overlay Info');
