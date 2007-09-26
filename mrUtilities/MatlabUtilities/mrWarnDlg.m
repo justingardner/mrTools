@@ -18,5 +18,5 @@ if strcmp(verbose,'Yes')
     warndlg(warnstr);
 	drawnow;
 else
-    warning(warnstr);
+  disp(sprintf('Warning: %s',warnstr));
 end
