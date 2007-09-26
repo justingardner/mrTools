@@ -526,14 +526,22 @@ switch lower(param)
       % set base min and max sliders
       baseClip = viewGet(view,'baseClip',baseNum);
       baseRange = viewGet(view,'baseRange',baseNum);
+      baseType = viewGet(view,'baseType',baseNum);
       mlrGuiSet(view,'baseMinRange',baseRange);
       mlrGuiSet(view,'baseMaxRange',baseRange);
       mlrGuiSet(view,'baseMin',baseClip(1));
       mlrGuiSet(view,'baseMax',baseClip(2));
+      mlrGuiSet(view,'baseType',baseType);
       % get the last know settings for this base
       baseCurSlice = viewGet(view,'baseCurSlice',baseNum);
       baseSliceOrientation = viewGet(view,'baseSliceOrientation',baseNum);
       baseRotate = viewGet(view,'baseRotate',baseNum);
+      % if this is a flat then we need to set the sliceIndex to 3
+      % since we shouldn't be able to view in any other
+      % configuration
+      if baseType
+	baseSliceOrientation = 1;
+      end
       % set the slice orientation if there is a valid one saved
       if ~isempty(baseSliceOrientation)
 	viewSet(view,'sliceOrientation',baseSliceOrientation);

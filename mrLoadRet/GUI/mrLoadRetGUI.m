@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 26-Sep-2007 10:29:00
+% Last Modified by GUIDE v2.5 26-Sep-2007 17:15:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -68,41 +68,16 @@ set(handles.groupPopup,'String',viewGet([],'groupNames'));
 set(handles.rotateSlider,'sliderStep',[1/360 10/360]);
 
 % Enable/disable various widgets depending on viewType
-viewType = viewGet(viewNum,'viewType');
-switch viewType
-    case 'Volume'
-        % Make left & right radio buttons invisible
-        set(handles.leftRadioButton,'Visible','off');
-        set(handles.rightRadioButton,'Visible','off');
-        % Initialize the slice orientation radio buttons
-        set(handles.sagittalRadioButton,'Value',1);
-        set(handles.coronalRadioButton,'Value',0);
-        set(handles.axialRadioButton,'Value',0);
-    case {'Surface'}
-        % Make slice orientation radio buttons invisible
-        set(handles.sagittalRadioButton,'Visible','off');
-        set(handles.coronalRadioButton,'Visible','off');
-        set(handles.axialRadioButton,'Visible','off');
-        % Make left & right radio buttons invisible
-        set(handles.leftRadioButton,'Visible','off');
-        set(handles.rightRadioButton,'Visible','off');
-        % Make slice slider invisible
-        set(handles.slice,'Visible','off');
-        set(handles.sliceText,'Visible','off');
-        set(handles.sliceSlider,'Visible','off');
-    case 'Flat'
-        % Make slice orientation radio buttons invisible
-        set(handles.sagittalRadioButton,'Visible','off');
-        set(handles.coronalRadioButton,'Visible','off');
-        set(handles.axialRadioButton,'Visible','off');
-        % Make slice slider invisible
-        set(handles.slice,'Visible','off');
-        set(handles.sliceText,'Visible','off');
-        set(handles.sliceSlider,'Visible','off');
-        % Initialize left & right radio buttons
-        set(handles.leftRadioButton,'Value',1);
-        set(handles.rightRadioButton,'Value',0);
-end
+% removed the switch here, since we always have one viewType
+
+% Initialize the slice orientation radio buttons
+set(handles.sagittalRadioButton,'Value',1);
+set(handles.coronalRadioButton,'Value',0);
+set(handles.axialRadioButton,'Value',0);
+set(handles.corticalDepth,'Visible','off');
+set(handles.corticalDepthSlider,'Visible','off');
+set(handles.corticalDepthSlider,'Value',0.5);
+set(handles.corticalDepthText,'Visible','off');
 
 % Choose default command line output for mrLoadRetGUI
 handles.output = hObject;
@@ -2070,3 +2045,58 @@ for i = 1:length(overlayFields)
 end
 
 mrParamsDialog(paramsInfo,'Overlay Info');
+
+
+% --- Executes on slider movement.
+function corticalDepthSlider_Callback(hObject, eventdata, handles)
+% hObject    handle to corticalDepthSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+value = get(hObject,'Value');
+mlrGuiSet(viewNum,'corticalDepth',value);
+refreshMLRDisplay(viewNum);
+
+
+% --- Executes during object creation, after setting all properties.
+function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to corticalDepthSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function corticalDepthText_Callback(hObject, eventdata, handles)
+% hObject    handle to corticalDepthText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of corticalDepthText as text
+%        str2double(get(hObject,'String')) returns contents of corticalDepthText as a double
+
+viewNum = handles.viewNum;
+value = str2num(get(hObject,'String'));
+mlrGuiSet(viewNum,'corticalDepth',value);
+refreshMLRDisplay(viewNum);
+
+% --- Executes during object creation, after setting all properties.
+function corticalDepthText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to corticalDepthText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+

@@ -57,6 +57,24 @@ switch lower(field)
 		% Set the basePopup string array
 		set(handles.basePopup,'String',value);
 
+	case {'basetype'}
+	        % mlrGuiSet(view,'baseType',value);
+		% value = 0 for regular or 1 for flat
+		if value == 0
+		  set(handles.sagittalRadioButton,'Visible','on');
+		  set(handles.coronalRadioButton,'Visible','on');
+		  set(handles.axialRadioButton,'Visible','on');
+		  set(handles.corticalDepth,'Visible','off');
+		  set(handles.corticalDepthSlider,'Visible','off');
+		  set(handles.corticalDepthText,'Visible','off');
+		elseif value == 1
+		  set(handles.sagittalRadioButton,'Visible','off');
+		  set(handles.coronalRadioButton,'Visible','off');
+		  set(handles.axialRadioButton,'Visible','off');
+		  set(handles.corticalDepth,'Visible','on');
+		  set(handles.corticalDepthSlider,'Visible','on');
+		  set(handles.corticalDepthText,'Visible','on');
+		end
 	case {'basevolume'}
 		% Choose the baseVolume
 		set(handles.basePopup,'Value',value);
@@ -197,11 +215,17 @@ switch lower(field)
 		set(handles.sliceSlider,'Value',value);
 		set(handles.sliceText,'String',num2str(value));
 
-    case {'slicetext'}
+         case {'slicetext'}
         % mlrGuiSet(view,'sliceText',value);
 		handles.coords(handles.sliceOrientation) = value;
 		set(handles.sliceText,'String',num2str(value));
 
+        case {'corticaldepth'}
+        % mlrGuiSet(view,'corticalDepth',value);
+		value = min(value,1);value = max(value,0);
+		value = round(value*100)/100;
+		set(handles.corticalDepthSlider,'Value',value);
+		set(handles.corticalDepthText,'String',num2str(value));
 	case {'sliceorientation'}
         % mlrGuiSet(view,'sliceorientation',value);
 		sliceOrientation = value;

@@ -878,7 +878,15 @@ switch lower(param)
     end
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
+      % get cortical depth
+      corticalDepth = viewGet(view,'corticalDepth');
       val = view.baseVolumes(b).coordMap;
+      % see if the coordMap is calculated for the correct cortical depth
+      if ~isempty(val) && (~isfield(val,'corticalDepth') || (val.corticalDepth ~= corticalDepth))
+	% if not, then we have to do it
+	val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
+	val.corticalDepth = corticalDepth;
+      end
     end
   case {'baseclip'}
     % baseclip = viewGet(view,'baseclip',[baseNum])
@@ -959,6 +967,23 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).range;
+    end
+  case {'basetype'}
+    % baserange = viewGet(view,'baserange',[baseNum])
+    % baserange = viewGet(view,'baserange',[])
+    % baserange = viewGet(view,'baserange')
+    % 0 is for a regular volume, 1 is for a flat
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = ~isempty(view.baseVolumes(b).coordMap);
     end
   case {'basedims'}
     % basedims = viewGet(view,'basedims',[baseNum])
@@ -1269,7 +1294,14 @@ switch lower(param)
     rotate = viewGet(view,'rotate');
     baseName = viewGet(view,'curBaseName');
     sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%s_%i_%i_%i',baseName,sliceIndex,rotate);
+    % need to recalculate overlay if this is aflat
+    % and the cortical depth has changed
+    if viewGet(view,'baseType')
+      corticalDepth = viewGet(view,'corticalDepth');
+    else
+      corticalDepth = 0;
+    end
+    val = sprintf('%s_%i_%i_%i_%0.2f',baseName,sliceIndex,rotate,corticalDepth);
     for i = roiNums
       val = sprintf('%s_%s_%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
     end
@@ -1294,7 +1326,13 @@ switch lower(param)
     clip = viewGet(view,'baseClip',currentBase);
     currentSlice = viewGet(view,'curSlice');
     sliceIndex = viewGet(view,'baseSliceIndex');
-    val = sprintf('%s_%i_%i_%i_%s',baseName,currentSlice,sliceIndex,rotate,num2str(clip));
+    % only use the corticalDepth if this is a flat
+    if viewGet(view,'baseType')
+      corticalDepth = viewGet(view,'corticalDepth');
+    else
+      corticalDepth = 0;
+    end
+    val = sprintf('%s_%i_%i_%i_%s_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),corticalDepth);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
@@ -1329,8 +1367,15 @@ switch lower(param)
 	rotate = viewGet(view,'rotate');
 	alpha = viewGet(view,'alpha');
 	sliceIndex = viewGet(view,'baseSliceIndex');
+	% need to recalculate overlay if this is aflat
+	% and the cortical depth has changed
+	if viewGet(view,'baseType')
+	  corticalDepth = viewGet(view,'corticalDepth');
+	else
+	  corticalDepth = 0;
+	end
 	% calculate string
-	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha);
+	val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i_%0.2f',scanNum,baseName,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha,corticalDepth);
       end
     end
      %    val = curSlice*analysisNum*curOverlay;
@@ -2366,6 +2411,11 @@ switch lower(param)
     fig = viewGet(view,'fignum');
     handles = guidata(fig);
     val = get(handles.rotateSlider,'Value');
+  case {'corticaldepth'}
+    % rotate = viewGet(view,'rotate');
+    fig = viewGet(view,'fignum');
+    handles = guidata(fig);
+    val = get(handles.corticalDepthSlider,'Value');
   case {'sliceorientation'}
     % sliceorientation = viewGet(view,'sliceorientation');
     fig = viewGet(view,'fignum');
