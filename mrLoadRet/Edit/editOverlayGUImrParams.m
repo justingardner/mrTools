@@ -21,7 +21,9 @@ function retval = editOverlayGUImrParams(viewNum)
   overlayNum = viewGet(v,'currentOverlay', analysisNum);
   overlayRange = viewGet(v,'overlayRange', overlayNum, analysisNum);
   overlayName = viewGet(v, 'overlayName', overlayNum, analysisNum);
-  
+  alphaOverlay = viewGet(v,'alphaOverlay');
+  alphaOverlayExponent = viewGet(v,'alphaOverlayExponent');
+
   % set up params dialog
   paramsInfo = {};
   paramsInfo{end+1} = {'overlayCmap', {'default','hot','hsv','pink','cool','bone','copper','flag',...
@@ -34,6 +36,8 @@ function retval = editOverlayGUImrParams(viewNum)
   paramsInfo{end+1} = {'overlayCtype', {'normal', 'setRangeToMax'}, 'setRangeToMax scales the colormap to overlayMin-overlayMax, as in R2 maps'};
   paramsInfo{end+1} = {'overlayRangeMin', overlayRange(1), 'the lower bound on the colormap'};
   paramsInfo{end+1} = {'overlayRangeMax', overlayRange(2), 'the upper bound on the colormap'};
+  paramsInfo{end+1} = {'alphaOverlay', alphaOverlay, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.'};
+  paramsInfo{end+1} = {'alphaOverlayExponent', alphaOverlayExponent, 'minmax=[0 inf]','incdec=[-0.1 0.1]','If you are using an alphaOverlay, this sets an exponent on the alphaOverlay to pass through. For example, if you just want the value from the overlay to be the alpha value then set this to 1. If you want to have it so that lower values get accentuated (usually this is the case), set the exponent to less than 1, but greater than 0. The alpha values are passed through the function alpha = alpha.^alphaOverlayExponent'};
 %   paramsInfo{end+1} = {'overlayName', overlayName, 'The name for the overlay (e.g., co, am, or ph)'};
 
   % display dialog
@@ -44,6 +48,7 @@ function retval = editOverlayGUImrParams(viewNum)
 
 function mrCmapCallback(params, v)
 
+  disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
   v = viewSet(v,'overlayCache','init');
   
   % get the current overlay
@@ -79,12 +84,16 @@ function mrCmapCallback(params, v)
 %   % set the name of the overlay
 %   o.name = params.overlayName;
   
+  o.alphaOverlay = params.alphaOverlay;
+  o.alphaOverlayExponent = params.alphaOverlayExponent;
+
   % set the new overlay
   v = viewSet(v,'newOverlay', o);
 
   % and refresh
   refreshMLRDisplay(v.viewNum);
 
+  disppercent(inf);
   return;
 
 
