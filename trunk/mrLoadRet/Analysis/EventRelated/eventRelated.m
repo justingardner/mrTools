@@ -3,7 +3,7 @@
 %      usage: view = eventRelated(view,params)
 %         by: justin gardner
 %       date: 10/20/06
-%    purpose: same as eventRelated, but also ask for segment
+%    purpose: event related data analysis
 %
 %             if you just want a default parameter structure you
 %             can do:

@@ -5,9 +5,10 @@
 %       date: 07/28/04
 %       e.g.: makescm(d)
 %    purpose: makes a stimulation convolution matrix
-%             for data series. must have getstimtimes already
-%             run on it. if d.hdrlen is set then you can
-%             just pass in the data structure
+%             for data series. this correctly handles
+%             run boundarys. it uses the stimulus volumes
+%             found in d.stimvol. if hdrlen is not passed in
+%             then it uses d.hdrlen (if it exists).
 %
 function d = makescm(d,hdrlen)
 
