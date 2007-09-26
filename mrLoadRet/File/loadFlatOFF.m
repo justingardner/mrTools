@@ -24,7 +24,7 @@ end
 if nargin == 0
   % Open dialog box to have user choose the file
   startPathStr = mrGetPref('volumeDirectory');
-  filterspec = {'*.off','SurfRelax off flat file';'*.*','All files'};
+  filterspec = {'*lat*.off','SurfRelax off flat file';'*.*','All files'};
   title = 'Choose flat OFF file';
   flatFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
   % make into a cell array
@@ -46,7 +46,7 @@ if isstr(flatFileName)
   basename = sprintf('%s.off', stripext(flatFileName));
   % check for file
   if isfile(flatFileName)
-    % read file
+    % load the file
     surf.flat = loadSurfOFF(flatFileName);
   else
     disp(sprintf('(loadFlatOFF) %s does not exist', flatFileName));
@@ -70,19 +70,20 @@ else
 end
 
 % contents of the current directory
-params.flatDir = fileparts(flatFileName);
+[params.flatDir params.flatFileName] = fileparts(flatFileName);
 dirContents = dir(params.flatDir);
+
 
 % grab the white matter file name from the parent name
 if exist(fullfile(params.flatDir, surf.flat.parentSurfaceName), 'file')
-  params.wmFileName{1} = fullfile(params.flatDir, surf.flat.parentSurfaceName);
+  params.wmFileName{1} = surf.flat.parentSurfaceName;
 else
   % if it the parent surface doesn't exist, guess the WM name
   disp(sprintf('(loadFloatPatch) %s does not exist.  Guessing the WM surface name', surf.flat.parentSurfaceName))
   params.wmFileName = {};
   for i=2:length(dirContents)
     if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'WM')) & (regexp(dirContents(i).name, '.off'))
-      params.wmFileName{end+1} = fullfile(params.flatDir, dirContents(i).name);
+      params.wmFileName{end+1} = dirContents(i).name;
     end
   end
 end
@@ -93,7 +94,7 @@ end
 params.gmFileName = {};
 for i=2:length(dirContents)
   if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'GM')) & (regexp(dirContents(i).name, '.off'))
-    params.gmFileName{end+1} = fullfile(params.flatDir, dirContents(i).name);
+    params.gmFileName{end+1} = dirContents(i).name;
   end
 end
 % ATTN still need to add recursive directory searching
@@ -105,7 +106,7 @@ params.curvFileName = {};
 params.calcCurvFlag = 1;
 for i=2:length(dirContents)
   if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'Curv')) & (regexp(dirContents(i).name, '.vff'))
-    params.curvFileName{end+1} = fullfile(params.flatDir, dirContents(i).name);
+    params.curvFileName{end+1} = dirContents(i).name;
     params.calcCurvFlag = 0;
   end
 end
@@ -115,28 +116,33 @@ end
 params.anatFileName = {};
 for i=2:length(dirContents)
   if (regexp(dirContents(i).name, '.hdr'))
-    params.anatFileName{end+1} = fullfile(params.flatDir, dirContents(i).name);
+    params.anatFileName{end+1} = dirContents(i).name;
   end
 end
 
 % parse the parameters
 paramsInfo = {};
-paramsInfo{end+1} = {'flatDir', params.flatDir, 'editable=0'};
-paramsInfo{end+1} = {'whichHemi', params.whichHemi, 'editable=0'};
-paramsInfo{end+1} = {'flatFileName', flatFileName, 'editable=0'};
-paramsInfo{end+1} = {'wmFileName', params.wmFileName};
-paramsInfo{end+1} = {'gmFileName', params.gmFileName};
+paramsInfo{end+1} = {'flatDir', params.flatDir, 'editable=0', 'directory path for the flat .off surface file'};
+paramsInfo{end+1} = {'whichHemi', params.whichHemi, 'editable=0', 'the hemisphere that the patch comes from -- not really important'};
+paramsInfo{end+1} = {'flatFileName', params.flatFileName, 'editable=0', 'name of the flat patch, either input on the command line or chosen by the file selector'};
+paramsInfo{end+1} = {'wmFileName', params.wmFileName, 'name of the surface at the white/gray boundary (i.e., the inner surface'};
+paramsInfo{end+1} = {'gmFileName', params.gmFileName, 'name of the surface at the gray/pial boundary (i.e., the outer surface)'};
 if params.calcCurvFlag == 1;
-  paramsInfo{end+1} = {'curvFileName', 'will calculate curvature on the fly', 'editable=0'};
-  paramsInfo{end+1} = {'calcCurvFlag', 1, 'type=checkbox'};
+  paramsInfo{end+1} = {'curvFileName', 'will calculate curvature on the fly', 'editable=0', 'name of the curvatue file'};
+  paramsInfo{end+1} = {'calcCurvFlag', 1, 'type=checkbox', 'whether or not to recalculate the curvature on the file -- requires surffilt'};
 else
-  paramsInfo{end+1} = {'curvFileName', params.curvFileName};
-  paramsInfo{end+1} = {'calcCurvFlag', 0, 'type=checkbox'};
+  paramsInfo{end+1} = {'curvFileName', params.curvFileName, 'name of the curvature file'};
+  paramsInfo{end+1} = {'calcCurvFlag', 0, 'type=checkbox', 'whether or not to recaculate the curvature on the fly -- requires surffilt'};
 end
-paramsInfo{end+1} = {'anatFileName', params.anatFileName};
-paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]'};
-paramsInfo{end+1} = {'threshold', 0, 'type=checkbox'};
+paramsInfo{end+1} = {'anatFileName', params.anatFileName, 'base anatomy file, must be a valid nifti file in register with the session'};
+paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
+paramsInfo{end+1} = {'threshold', 0, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
+
 params = mrParamsDialog(paramsInfo, 'loadFlatPatch', []);
+
+if isempty(params)
+  return;
+end
 
 % load the rest of the surfaces
 [surf, params] = loadSurfHandler(surf, params);
@@ -154,10 +160,10 @@ function [surf, params] = loadSurfHandler(surf, params)
 % now load the rest of the surfaces
 
 % load the white matter surface
-surf.wm = loadSurfOFF(params.wmFileName);
+surf.wm = loadSurfOFF(fullfile(params.flatDir, params.wmFileName));
 
 % load the gray matter surface
-surf.gm = loadSurfOFF(params.gmFileName);
+surf.gm = loadSurfOFF(fullfile(params.flatDir, params.gmFileName));
 
 % load the curvature
 if params.calcCurvFlag==1
@@ -172,16 +178,18 @@ if params.calcCurvFlag==1
   else
     % calculate the curvature
     disppercent(-inf, sprintf('(loadFlatOFF) calculating surface curvature'));
-    system(sprintf('surffilt -mcurv -iter 1 %s %s', params.wmFileName, params.curvFileName));
+    system(sprintf('surffilt -mcurv -iter 1 %s %s', ...
+                   fullfile(params.flatDir, params.wmFileName), ...
+                   fullfile(params.flatDir, params.curvFileName)));
     disppercent(inf);
   end
 end
 % read in the curvature file
-[surf.curv, hdr] = tfiReadVFF(params.curvFileName);
+[surf.curv, hdr] = tfiReadVFF(fullfile(params.flatDir, params.curvFileName));
 surf.curv = surf.curv';           % needs to be transposed;
 
 % read in the anatomy file
-[surf.anat.data  surf.anat.hdr] = cbiReadNifti(params.anatFileName);
+[surf.anat.data  surf.anat.hdr] = cbiReadNifti(fullfile(params.flatDir, params.anatFileName));
 
 % Extract permutation matrix to keep track of slice orientation.
 % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
@@ -190,7 +198,6 @@ surf.curv = surf.curv';           % needs to be transposed;
 surf.anat.permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 
 return
-
 
 
 
@@ -262,7 +269,16 @@ clear base;
 base.hdr = flat.hdr;
 [pathstr, base.name] = fileparts(params.flatFileName);
 base.permutationMatrix = surf.anat.permutationMatrix;
-% base.params = params;
+
+base.coordMap.flatDir = params.flatDir;
+base.coordMap.whichHemi = params.whichHemi;
+base.coordMap.flatFileName = params.flatFileName;
+base.coordMap.innerFileName = params.wmFileName;
+base.coordMap.outerFileName = params.gmFileName;
+base.coordMap.curvFileName = params.curvFileName;
+base.coordMap.anatFileName = params.anatFileName;
+base.coordMap.flatRes = params.flatRes;
+base.coordMap.threshold = params.threshold;
 
 % load all the flat maps into the base. We
 % need to make all the flat images have
@@ -411,3 +427,69 @@ surf.tris = surf.tris'+1;
 fclose(fid);
 
 return;
+
+function [data,hdr]=tfiReadVFF( filename )
+% [data,hdr]=tfiReadVFF( filename )
+% 
+% Loads data in .vff format
+%
+
+% 
+
+endofhdr=0;
+hdr.byteorder='b';
+f=fopen( filename, 'rb');
+str=fgetl(f);
+while (~endofhdr & ~isempty(str))
+  [a,c]=sscanf(str,'size=%i %i %i;');
+  if (c==3)
+    hdr.size=[a(2) a(1) a(3)];
+  end
+  [a,c]=sscanf(str,'aspect=%f %f %f;');
+  if (c==3)
+    hdr.aspect=[a(2) a(1) a(3)];
+  end
+  [a,c]=sscanf(str,'value=%i %f;');
+  if (c==2)
+    hdr.scale=a(2);
+    hdr.offset=a(1);
+  end
+  [a,c]=sscanf(str,'bits=%i;');
+  if (c==1)
+    hdr.bits=a(1);
+    hdr.bytes=a(1)/8;
+  end
+  [a,c]=sscanf(str,'byte_order=%s');
+  if (c==1)
+    switch (a)
+     case 'little_endian;'
+      hdr.byteorder='l';
+     case 'big_endian;'
+      hdr.byteorder='b';
+    end
+  end
+  if (length(str)==1 & double(str)==12)
+    endofhdr=1;
+    break
+  end
+  str=fgetl(f);
+end
+fclose(f)
+
+prec=['uint' num2str(hdr.bits)];
+
+f=fopen( filename, 'rb',hdr.byteorder);
+while (double(fgetl(f))~=12)
+end
+
+data=fread(f,prod(hdr.size),prec);
+fclose(f);
+
+% scale - only for 16-bit ushorts
+if (hdr.bits==16)
+  VFF_MAX_USHORT=2^16-1;
+  data=(data-(VFF_MAX_USHORT-hdr.offset))*hdr.scale;
+end
+
+% rearrange into x,y,z order
+data=permute(data,[2,1,3]);
