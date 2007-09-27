@@ -557,7 +557,9 @@ for r = order
     % Get ROI coords transformed to the image
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,baseNum,round(baseCoordsHomogeneous),imageDims,r);
     % init field for drawing roi perimeter
-    roi(r).perimeterLines = [];
+    maxSlice = max(roi(r).s);if isempty(maxSlice),maxSlice = 1;end
+    roi(r).perimeterLines(maxSlice).x = [];
+    roi(r).perimeterLines(maxSlice).y = [];
     view = viewSet(view,'ROICache',roi(r),r);
     disppercent(inf);
   else
@@ -603,6 +605,7 @@ for r = order
   else
     % for flat maps, all coordinates are possible
     x = roi(r).x;y = roi(r).y;s = roi(r).s;
+    sliceNum = 1;
   end
   if ~isempty(x) & ~isempty(y)
     switch option
@@ -629,40 +632,38 @@ for r = order
         % Draw only the perimeter
 	% first compute the lines that need to be 
 	% drawn so that they can be cached
-	if isempty(roi(r).perimeterLines)
+	if isempty(roi(r).perimeterLines(sliceNum).x)
 	  disppercent(-inf,sprintf('Computing ROI perimeter for ROI %i',r));
-	  roi(r).perimeterLines.x = [];
-	  roi(r).perimeterLines.y = [];
 	  for i=1:length(x);
 	    xMinus = find(x == x(i)-1);
 	    xEquals = find(x == x(i));
 	    xPlus = find(x == x(i)+1);
 	    if isempty(xMinus)
-	      roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
-	      roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)-w]';
+	      roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
+	      roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)-w]';
 	    else
 	      if ~any(y(i) == y(xMinus))
-		roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
-		roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)-w]';
+		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
+		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)-w]';
 	      end
 	    end
 	    if isempty(xPlus)
-	      roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
-	      roi(r).perimeterLines.y(:,end+1) = [x(i)+w, x(i)+w]';
+	      roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
+	      roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)+w, x(i)+w]';
 	    else
 	      if ~any(y(i) == y(xPlus))
-		roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
-		roi(r).perimeterLines.y(:,end+1) = [x(i)+w, x(i)+w]';
+		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
+		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)+w, x(i)+w]';
 	      end
 	    end
 	    if ~isempty(xEquals)
 	      if ~any(y(i) == y(xEquals)-1)
-		roi(r).perimeterLines.x(:,end+1) = [y(i)+w,y(i)+w]';
-		roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)+w]';
+		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)+w,y(i)+w]';
+		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
 	      end
 	      if ~any(find(y(i) == y(xEquals)+1))
-		roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)-w]';
-		roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)+w]';
+		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)-w]';
+		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
 	      end
 	    end
 	    disppercent(i/length(x));
@@ -672,7 +673,7 @@ for r = order
 	  disppercent(inf);
 	end
 	% now render those lines
-	line(roi(r).perimeterLines.x,roi(r).perimeterLines.y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
+	line(roi(r).perimeterLines(sliceNum).x,roi(r).perimeterLines(sliceNum).y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
     end
   end
 end
