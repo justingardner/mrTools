@@ -57,7 +57,21 @@ switch lower(field)
 		% Set the basePopup string array
 		set(handles.basePopup,'String',value);
 
-	case {'basetype'}
+	case {'showrois'}
+	        % mlrGuiSet(view,'showrois',value);
+		
+		% figure out which menu item should be checked
+		onItem = find(strcmp(value,{'all','all perimeter','selected','selected perimeter','hide'}));
+		onOrOff = {'off','off','off','off','off'};
+		onOrOff{onItem} = 'on';
+		% turn the check marks on/off
+		set(handles.showAllMenuItem,'Checked',onOrOff{1});
+		set(handles.showAllPerimeterMenuItem,'Checked',onOrOff{2});
+		set(handles.showSelectedMenuItem,'Checked',onOrOff{3});
+		set(handles.showSelectedPerimeterMenuItem,'Checked',onOrOff{4});
+		set(handles.hideROIsMenuItem,'Checked',onOrOff{5});
+		
+        case {'basetype'}
 	        % mlrGuiSet(view,'baseType',value);
 		% value = 0 for regular or 1 for flat
 		if value == 0
