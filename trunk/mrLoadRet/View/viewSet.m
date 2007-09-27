@@ -1233,9 +1233,11 @@ switch lower(param)
     % view = viewSet(view,'ROICache','clear',roiName);
     if isstr(val)
       if strcmp(val,'clear')
-        % clear the cache
-        MLR.caches{view.viewNum}.roiCache = ...
-          mrCache('clear',MLR.caches{view.viewNum}.roiCache,varargin{1});
+	if isfield(MLR.caches{view.viewNum},'roiCache')
+	  % clear the cache
+	  MLR.caches{view.viewNum}.roiCache = ...
+	      mrCache('clear',MLR.caches{view.viewNum}.roiCache, varargin{1});
+	end
       else
         % init the cache
         MLR.caches{view.viewNum}.roiCache = mrCache('init',mrGetPref('roiCacheSize'));
