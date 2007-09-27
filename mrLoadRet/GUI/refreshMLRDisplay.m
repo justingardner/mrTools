@@ -9,7 +9,7 @@ mrGlobals
 % set to 2 for all info
 % if you want to comment out all of this, replace the string
 % "if verbose" to "%if verbose"
-verbose = 2;
+verbose = 0;
 if verbose,tic,end
 
 % Get current view and baseNum.
