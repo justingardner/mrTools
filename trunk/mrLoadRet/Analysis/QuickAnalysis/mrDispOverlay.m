@@ -147,7 +147,7 @@ for i = 1:length(scanNum)
   elseif length(overlay) == 1
     disp(sprintf('(mrDispOverlay) Only 1 overlay passed in. Installing that overlay for scan %i',scanNum(i)));
     o.(overlayName).data{scanNum(i)} = overlay{1};
-    o.(overlayName).params.scanNum(end+1) = i;
+    o.(overlayName).params.scanNum(end+1) = scanNum(i);
   % otherwise something is wrong
   else
     disp(sprintf('(mrDispOverlay) Only %i overlays found for %i scans',length(overlay),length(scanNum)));
