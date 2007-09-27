@@ -69,8 +69,20 @@ switch descriptor
         
     case 'polygon'
         % Get polygon region using matlab's roipoly function
-        polyIm = roipoly;
-                
+	if strcmp(mrGetPref('roiPolygonMethod'),'roipoly')
+	  % this is sometimes very slow if you have a lot
+	  % of lines already drawn on the figure.
+	  % i.e. if you have rois already being displayed
+	  polyIm = roipoly;
+	else
+	  % this doesn't have to redraw lines all the time
+	  % so it is faster for some versions of matlab
+	  % but has the disadvantage that you don't get
+	  % to see the lines connecting the points.
+	  [x y a] = getimage;
+	  [xi yi] = getpts;
+	  polyIm = roipoly(a,xi,yi);
+	end
         % Extract coordinates in base reference frame
 		baseX = baseCoords(:,:,1);
 		baseY = baseCoords(:,:,2);
