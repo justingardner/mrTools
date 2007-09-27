@@ -35,7 +35,7 @@ end
 
 if ~exist('alwaysUseNextArg','var'),alwaysUseNextArg=1;end
 
-evalstr = 'global gVerbose;oldgVerbose=gVerbose;gVerbose=1;';
+evalstr = 'global gVerbose;oldgVerbose=gVerbose;gVerbose=0;';
 % check arguments in
 skipnext = 0;
 for i = 1:length(args)
