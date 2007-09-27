@@ -108,8 +108,7 @@ if isfile(fullfile(pathStr,filename))
             % reconcile them
             [oldOverlayParams oldOverlayData] = feval(oldOverlayReconcileFunction,oldOverlayGroupName,...
               oldOverlayParams,oldOverlayData);
-            [newOverlayParams newOverlayData] = feval(newOverlayReconcileFunction,newOverlayGroupName,...
-              newOverlayParams,newOverlayData);
+            [newOverlayParams newOverlayData] = feval(newOverlayReconcileFunction,newOverlayGroupName,newOverlayParams,newOverlayData);
             % and combine them
             [mergedParams,mergedData] = feval(overlayMergeFunction,newOverlayGroupName,...
               oldOverlayParams,newOverlayParams,oldOverlayData,newOverlayData);
