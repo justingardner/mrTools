@@ -6,22 +6,36 @@
 %    purpose: same as eventRelated, but uses canonical hrf instead of
 %             deconvolution
 %
-function [view d] = eventRelatedGlm(view,params)
+function [view d] = eventRelatedGlm(view,params,varargin)
 
 d = [];
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3 4])
   help eventRelated
   return
 end
 
 mrGlobals;
 
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+
 % First geteventRelatedGlmReconcileParams parameters
 if ieNotDefined('params')
   % put up the gui
-  params = eventRelatedGlmGUI('groupName',viewGet(view,'groupName'));
+  if defaultParams
+    params = eventRelatedGlmGUI('groupName',viewGet(view,'groupName'),'useDefault');
+  else
+    params = eventRelatedGlmGUI('groupName',viewGet(view,'groupName'));
+  end
+end
+
+if justGetParams
+  d = params;
+  return
 end
 
 % Reconcile params with current status of group and ensure that it has
