@@ -199,7 +199,10 @@ end
 if verbose>1,disppercent(-inf,'displayImage');,end
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
-cla
+% note: This cla here is VERY important. Otherwise
+% we keep drawing over old things on the axis and
+% the rendering gets impossibly slow... -j.
+cla(gui.axis);
 image(img,'Parent',gui.axis);
 axis(gui.axis,'off');
 axis(gui.axis,'image');
@@ -627,6 +630,7 @@ for r = order
 	% first compute the lines that need to be 
 	% drawn so that they can be cached
 	if isempty(roi(r).perimeterLines)
+	  disppercent(-inf,sprintf('Computing ROI perimeter for ROI %i',r));
 	  roi(r).perimeterLines.x = [];
 	  roi(r).perimeterLines.y = [];
 	  for i=1:length(x);
@@ -661,9 +665,11 @@ for r = order
 		roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)+w]';
 	      end
 	    end
+	    disppercent(i/length(x));
 	  end
 	  % save the roi with the lines in the cache,
 	  view = viewSet(view,'ROICache',roi(r),r);
+	  disppercent(inf);
 	end
 	% now render those lines
 	line(roi(r).perimeterLines.x,roi(r).perimeterLines.y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
