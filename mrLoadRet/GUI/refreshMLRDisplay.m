@@ -9,7 +9,7 @@ mrGlobals
 % set to 2 for all info
 % if you want to comment out all of this, replace the string
 % "if verbose" to "%if verbose"
-verbose = 0;
+verbose = 2;
 if verbose,tic,end
 
 % Get current view and baseNum.
@@ -196,14 +196,18 @@ if ieNotDefined('img')
 end
 
 % Display the image
-if verbose>1,disppercent(-inf,'displayImage');,end
+if verbose>1,disppercent(-inf,'Clearing figure');,end
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
 % note: This cla here is VERY important. Otherwise
 % we keep drawing over old things on the axis and
 % the rendering gets impossibly slow... -j.
 cla(gui.axis);
+if verbose>1,disppercent(inf);,end
+if verbose>1,disppercent(-inf,'Displaying image');,end
 image(img,'Parent',gui.axis);
+if verbose>1,disppercent(inf);,end
+if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(gui.axis,'off');
 axis(gui.axis,'image');
 if verbose>1,disppercent(inf);,end
@@ -313,9 +317,11 @@ if ~isempty(volSize)
     % only use the baseCoordMap for when the slice
     % in the third dimension (no other view of a 
     % flat map is really valid).
-    x = baseCoordMap.coords(:,:,sliceNum,1);
-    y = baseCoordMap.coords(:,:,sliceNum,2);
-    z = baseCoordMap.coords(:,:,sliceNum,3);
+    if sliceIndex == 3
+      x = baseCoordMap.coords(:,:,sliceNum,1);
+      y = baseCoordMap.coords(:,:,sliceNum,2);
+      z = baseCoordMap.coords(:,:,sliceNum,3);
+    end
   end
 
   % Rotate coordinates
