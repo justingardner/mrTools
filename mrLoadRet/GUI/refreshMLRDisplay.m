@@ -199,10 +199,12 @@ end
 if verbose>1,disppercent(-inf,'displayImage');,end
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
+cla
 image(img,'Parent',gui.axis);
 axis(gui.axis,'off');
 axis(gui.axis,'image');
 if verbose>1,disppercent(inf);,end
+
 
 % Display colorbar
 if verbose>1,disppercent(-inf,'colorbar');,end
@@ -551,6 +553,8 @@ for r = order
     disppercent(-inf,sprintf('Computing ROI coordinates for ROI %i',r));
     % Get ROI coords transformed to the image
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,baseNum,round(baseCoordsHomogeneous),imageDims,r);
+    % init field for drawing roi perimeter
+    roi(r).perimeterLines = [];
     view = viewSet(view,'ROICache',roi(r),r);
     disppercent(inf);
   else
@@ -562,11 +566,8 @@ end
 fig = viewGet(view,'figNum');
 gui = guidata(fig);
 
-% get the base coordinate map. This will be empty
-% for all volumes except for flat maps which do
-% not have a simple transformation mapping between
-% image coordinates and their underlying coordinates
-baseCoordMap = viewGet(view,'baseCoordMap',baseNum);
+% see if this is a flat
+baseType = viewGet(view,'baseType',baseNum);
 
 % Draw it
 if verbose>1,disppercent(-inf,'Drawing ROI');,end
@@ -593,7 +594,7 @@ for r = order
     end % end switch statement
   end
   % get image coords for this slice
-  if isempty(baseCoordMap)
+  if baseType == 0
     % for regular volumes, only get coordinates that match slice
     x = roi(r).x(roi(r).s==sliceNum);y = roi(r).y(roi(r).s==sliceNum);
   else
@@ -623,33 +624,49 @@ for r = order
 
       case{'all perimeter','selected perimeter'}
         % Draw only the perimeter
-        for i=1:length(x);
-          xMinus = find(x == x(i)-1);
-          xEquals = find(x == x(i));
-          xPlus = find(x == x(i)+1);
-          if isempty(xMinus)
-            line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
-          else
-            if ~any(y(i) == y(xMinus))
-              line([y(i)-w,y(i)+w],[x(i)-w, x(i)-w],'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
-            end
-          end
-          if isempty(xPlus)
-            line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
-          else
-            if ~any(y(i) == y(xPlus))
-              line([y(i)-w,y(i)+w],[x(i)+w, x(i)+w],'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
-            end
-          end
-          if ~isempty(xEquals)
-            if ~any(y(i) == y(xEquals)-1)
-              line([y(i)+w,y(i)+w],[x(i)-w, x(i)+w],'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
-            end
-            if ~any(find(y(i) == y(xEquals)+1))
-              line([y(i)-w,y(i)-w],[x(i)-w, x(i)+w],'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
-            end
-          end
-        end
+	% first compute the lines that need to be 
+	% drawn so that they can be cached
+	if isempty(roi(r).perimeterLines)
+	  roi(r).perimeterLines.x = [];
+	  roi(r).perimeterLines.y = [];
+	  for i=1:length(x);
+	    xMinus = find(x == x(i)-1);
+	    xEquals = find(x == x(i));
+	    xPlus = find(x == x(i)+1);
+	    if isempty(xMinus)
+	      roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
+	      roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)-w]';
+	    else
+	      if ~any(y(i) == y(xMinus))
+		roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
+		roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)-w]';
+	      end
+	    end
+	    if isempty(xPlus)
+	      roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
+	      roi(r).perimeterLines.y(:,end+1) = [x(i)+w, x(i)+w]';
+	    else
+	      if ~any(y(i) == y(xPlus))
+		roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)+w]';
+		roi(r).perimeterLines.y(:,end+1) = [x(i)+w, x(i)+w]';
+	      end
+	    end
+	    if ~isempty(xEquals)
+	      if ~any(y(i) == y(xEquals)-1)
+		roi(r).perimeterLines.x(:,end+1) = [y(i)+w,y(i)+w]';
+		roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)+w]';
+	      end
+	      if ~any(find(y(i) == y(xEquals)+1))
+		roi(r).perimeterLines.x(:,end+1) = [y(i)-w,y(i)-w]';
+		roi(r).perimeterLines.y(:,end+1) = [x(i)-w, x(i)+w]';
+	      end
+	    end
+	  end
+	  % save the roi with the lines in the cache,
+	  view = viewSet(view,'ROICache',roi(r),r);
+	end
+	% now render those lines
+	line(roi(r).perimeterLines.x,roi(r).perimeterLines.y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
     end
   end
 end

@@ -1121,7 +1121,7 @@ switch lower(param)
       case{'all','selected','all perimeter','selected perimeter','hide'}
         view.showROIs = val;
     end
-
+    mlrGuiSet(view,'showROIs',val);
   case {'newroi'}
     % view = viewSet(view,'newROI',roiStructure);
     % val must be a structure with the following required fields
