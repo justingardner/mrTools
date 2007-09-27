@@ -530,7 +530,9 @@ function loadFlatMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
-v = loadFlat(v);
+% v = loadFlat(v);
+base = loadFlatOFF;
+viewSet(v, 'newbase', base);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
