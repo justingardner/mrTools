@@ -215,6 +215,11 @@ flat.locsInner = surf.wm.vtcs(flat.whichInx,:);
 flat.locsOuter = surf.gm.vtcs(flat.whichInx,:);
 flat.hdr       = surf.anat.hdr;
 
+% voxScale = [params.flatRes params.flatRes params.flatRes];
+% flat.hdr = cbiSetNiftiQform(flat.hdr, flat.hdr.qform44*diag([1./voxScale 1]));
+% flat.hdr = cbiSetNiftiSform(flat.hdr, flat.hdr.sform44*diag([1./voxScale 1]));
+
+
 % this X-Y swaping only changes the orientation of the image
 % isn't a crucial step
 flat.locsFlat = [flat.locsFlat(:,2) flat.locsFlat(:,1) flat.locsFlat(:,3)];
@@ -268,16 +273,19 @@ yi = [1:(1/params.flatRes):imSize(2)]';
 
 flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
 
-% loop over x, y, and z coordinates
+% grid the 3d coords
 for i=1:3
-  % grid the 3d coords
-  flat.baseCoordsInner(:,:,i) =  griddata(x,y, flat.locsInner(:,i), xi, yi,'nearest');
-  flat.baseCoordsOuter(:,:,i) =  griddata(x,y, flat.locsOuter(:,i), xi, yi,'nearest');
-
-  % mask out-of-patch values
-  flat.baseCoordsInner(:,:,i) =  flat.baseCoordsInner(:,:,i) .* ~isnan(flat.map);
-  flat.baseCoordsOuter(:,:,i) =  flat.baseCoordsOuter(:,:,i) .* ~isnan(flat.map);
+  flat.baseCoordsInner(:,:,i) =  griddata(x,y, flat.locsInner(:,i), xi, yi,'linear');
+  flat.baseCoordsOuter(:,:,i) =  griddata(x,y, flat.locsOuter(:,i), xi, yi,'linear');
 end
+
+% mask out out-of-brain coords
+flat.baseCoordsInner(isnan(flat.map)) = 0;
+flat.baseCoordsOuter(isnan(flat.map)) = 0;
+
+% get rid of any NaN's
+flat.baseCoordsInner(~isfinite(flat.baseCoordsInner)) = 0;
+flat.baseCoordsOuter(~isfinite(flat.baseCoordsOuter)) = 0;
 
 % base.map = mrUpSample(base.map);
 
