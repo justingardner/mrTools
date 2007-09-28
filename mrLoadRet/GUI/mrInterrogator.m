@@ -116,7 +116,7 @@ else
     set(MLR.interrogator{viewNum}.hPos,'String','');
 end
 if mouseInImage(xBase,yBase)
-  set(MLR.interrogator{viewNum}.hPosBase,'String',sprintf('[%i %i %i]',xBase,yBase,sBase));
+  set(MLR.interrogator{viewNum}.hPosBase,'String',sprintf('[%0.4g %0.4g %0.4g]',xBase,yBase,sBase));
 else
   set(MLR.interrogator{viewNum}.hPosBase,'String','');
 end
