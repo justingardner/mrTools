@@ -91,7 +91,7 @@ switch descriptor
         x = baseX(polyImIndices);
         y = baseY(polyImIndices);
         z = baseZ(polyImIndices);
-		coords = [x'; y'; z'; ones(1,length(x))];
+	coords = [x'; y'; z'; ones(1,length(x))];
 		
 	otherwise
 		mrErrorDlg(['Invalid descriptor: ',descriptor]);
