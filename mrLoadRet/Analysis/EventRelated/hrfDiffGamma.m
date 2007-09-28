@@ -60,7 +60,7 @@ h_intp = h_intp / norm(h_intp');
 if params.incDeriv
     
     % take the derivative
-    HRFD = diff([HRF,0]);
+    HRFD = [diff(HRF), 0];
     
     % subsample hrf derivative
     hd_intp = interp1(t, HRFD, tr/2:tr:max(t));

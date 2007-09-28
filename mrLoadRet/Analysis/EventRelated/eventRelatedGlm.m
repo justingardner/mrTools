@@ -114,7 +114,7 @@ for scanNum = params.scanNum
   for i = 1:ceil(numSlices/numSlicesAtATime)
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);
-    params.hrfParams.tmax = params.scanParams{scanNum}.hdrlen+d.tr/2;
+    % params.hrfParams.tmax = params.scanParams{scanNum}.hdrlen+d.tr/2;
     
     d.supersampling = params.trSupersampling;
     % use the duration of stimuli/events in the design matrix
@@ -195,7 +195,8 @@ for scanNum = params.scanNum
 
   
   % save other eventRelated parameters
-  erAnal.d{scanNum}.hrf = d.simulatedhrf;
+  t = d.tr*(0.5:size(d.simulatedhrf,1));
+  erAnal.d{scanNum}.hrf = d.simulatedhrf(t<=params.scanParams{scanNum}.hdrlen,:);
   erAnal.d{scanNum}.actualhrf = hrf;
   erAnal.d{scanNum}.trsupersampling = d.supersampling;
   erAnal.d{scanNum}.ver = d.ver;

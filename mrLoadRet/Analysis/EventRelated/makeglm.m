@@ -29,8 +29,10 @@ hrf = hrf-repmat(hrf(1,:), size(hrf,1), 1);
 % the runTransitions for that single run
 if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
   runTransition = [1 d.dim(4)];
+  hipassfilter = [];
 else
   runTransition = d.concatInfo.runTransition;
+  hipassfilter = d.concatInfo.hipassfilter;
 end
 
 % go through each run of the experiment
@@ -51,6 +53,10 @@ for runnum = 1:size(runTransition,1)
     m = m-repmat(mean(m), size(m,1), 1);
     % downsample
     m = downsample(m, d.supersampling);
+    % apply the same filter as original data
+    if ~isempty(hipassfilter)
+        m = real(ifft(fft(m) .* repmat(hipassfilter{runnum}', 1, size(m,2)) ));
+    end
     % stack stimcmatrices horizontally
     scm = [scm, m];
   end
