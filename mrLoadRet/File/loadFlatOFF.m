@@ -14,7 +14,7 @@ if ~any(nargin == [0 1 2])
   help loadFlatOFF
   return
 end
-
+base = [];
 if ~exist('mrParamsDialog')
   disp(sprintf('(loadFlatOFF) You must have mrTools in your path to run this'));
   return
@@ -24,16 +24,16 @@ end
 if nargin == 0
   % Open dialog box to have user choose the file
   startPathStr = mrGetPref('volumeDirectory');
-  filterspec = {'*lat*.off','SurfRelax off flat file';'*.*','All files'};
+  filterspec = {'*.off','SurfRelax off file';'*lat.off','SurfRelax off flat file';'*.*','All files'};
   title = 'Choose flat OFF file';
   flatFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
-  % make into a cell array
-  flatFileName = cellArray(flatFileName);
   % Aborted
-  if ieNotDefined('flatFileName')
+  if isempty(flatFileName)
     disp(sprintf('(loadFlatOFF) loading flat patch aborted'));
     return
   end
+  % make into a cell array
+  flatFileName = cellArray(flatFileName);
 end
 
 % only take one flat file for now
