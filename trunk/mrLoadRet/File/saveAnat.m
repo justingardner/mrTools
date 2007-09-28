@@ -1,6 +1,6 @@
-function saveAnat(view,anatomyName,confirm)
+function saveAnat(view,anatomyName,confirm,saveAs)
 %
-% saveOverlay(view,[anatomyName],[confirm])
+% saveOverlay(view,[anatomyName],[confirm],[saveAs])
 %
 % Saves a base anatomy as a nifti file: anatomyName.img
 %
@@ -8,28 +8,31 @@ function saveAnat(view,anatomyName,confirm)
 %          converted to the name). Default: current base volume.
 % confirm: If filename already exists, prompt user to over-write. 
 %          Default: uses 'overwritePolicy' preference.
+%  saveAs: If 1, then asks user for where to put anatomy (default=0)
 %
 % djh, 7/2006
 % $Id$	
 
 if ieNotDefined('anatomyName')
-    anatomyNum = viewGet(view,'currentBase');
-    anatomyName = viewGet(view,'baseName',anatomyNum);
+  anatomyNum = viewGet(view,'currentBase');
+  anatomyName = viewGet(view,'baseName',anatomyNum);
 end
 if isstr(anatomyName)
-    anatomyNum = viewGet(view,'baseNum',anatomyName);
+  anatomyNum = viewGet(view,'baseNum',anatomyName);
 elseif isnumeric(anatomyName)
-	anatomyNum = anatomyName;
-	anatomyName = viewGet(view,'baseName',anatomyNum);
+  anatomyNum = anatomyName;
+  anatomyName = viewGet(view,'baseName',anatomyNum);
 else
-	myErrorDlg(['Invalide base volume (anatomy) name: ',anatomyName]);
+  myErrorDlg(['Invalid base volume (anatomy) name: ',anatomyName]);
 end
 
 if ieNotDefined('confirm')
-    pref = mrGetPref('overwritePolicy');
-    confirm = ~strcmp(pref,'Overwrite');
+  pref = mrGetPref('overwritePolicy');
+  confirm = ~strcmp(pref,'Overwrite');
 end
-
+if ieNotDefined('saveAs')
+  saveAs = 0;
+end
 % Extract data and hdr
 baseVolume = viewGet(view,'baseVolume',anatomyNum);
 data = baseVolume.data;
@@ -44,12 +47,29 @@ base.hdr = [];
 % set the file extension
 niftiFileExtension = mrGetPref('niftiFileExtension');
 if isempty(niftiFileExtension)
-    niftiFileExtension = '.img';
+  niftiFileExtension = '.img';
 end
 
 % Path
-pathStr = fullfile(viewGet(view,'anatomydir'),[anatomyName,niftiFileExtension]);
-        
+if saveAs
+  % get default path
+  global saveAnatPath;
+  if isempty(saveAnatPath)
+    saveAnatPath = mrGetPref('volumeDirectory');
+  end
+  % ask user for where to put it
+  [anatomyName,saveAnatPath] = uiputfile({sprintf('*%s',niftiFileExtension),'Nifti files'},'Save base anatomy as...',fullfile(saveAnatPath,[anatomyName niftiFileExtension]));
+  % if cancel
+  if anatomyName == 0
+    saveAnatPath = mrGetPref('volumeDirectory');
+    return
+  end
+  anatomyName = stripext(anatomyName);
+  % make into a path
+  pathStr = fullfile(saveAnatPath,[anatomyName,niftiFileExtension]);
+else
+  pathStr = fullfile(viewGet(view,'anatomydir'),[anatomyName,niftiFileExtension]);
+end  
 % Write, though check for over-writing
 saveFlag = 'Yes';
 if exist([pathStr,'.mat'],'file')

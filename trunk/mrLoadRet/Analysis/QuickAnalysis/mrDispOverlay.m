@@ -141,7 +141,7 @@ o.(overlayName).params.scanNum = [];
 for i = 1:length(scanNum)
   if length(overlay) >= i
     o.(overlayName).data{scanNum(i)} = overlay{i};
-    o.(overlayName).params.scanNum(end+1) = i;
+    o.(overlayName).params.scanNum(end+1) = scanNum(i);
   % if we are passed in one overlay but multiple scans
   % then we install the same overlay for all the scans
   elseif length(overlay) == 1
