@@ -52,7 +52,8 @@ if ~isempty(params.contrast)
     contrast = str2num(params.contrast);
     % check if the contrast is defined correctly
     if isempty(contrast),
-        mrErrorDlg('invalid contrast. must be a vector');
+      mrErrorDlg('invalid contrast. must be a vector');
+      return
     end
 else
     contrast = [];
