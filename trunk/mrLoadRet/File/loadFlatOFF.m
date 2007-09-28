@@ -136,7 +136,7 @@ else
 end
 paramsInfo{end+1} = {'anatFileName', params.anatFileName, 'base anatomy file, must be a valid nifti file in register with the session'};
 paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
-paramsInfo{end+1} = {'threshold', 0, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
+paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
 
 params = mrParamsDialog(paramsInfo, 'loadFlatPatch', []);
 
@@ -219,50 +219,78 @@ flat.hdr       = surf.anat.hdr;
 % isn't a crucial step
 flat.locsFlat = [flat.locsFlat(:,2) flat.locsFlat(:,1) flat.locsFlat(:,3)];
 
-% make the lookup table
-% first get coordinates
-xmin = min(flat.locsFlat(:,1));
-xmax = max(flat.locsFlat(:,1));
-ymin = min(flat.locsFlat(:,2));
-ymax = max(flat.locsFlat(:,2));
-x = xmin:(1/params.flatRes):xmax;
-y = ymin:(1/params.flatRes):ymax;
+% % make the lookup table
+% % first get coordinates
+% xmin = min(flat.locsFlat(:,1));
+% xmax = max(flat.locsFlat(:,1));
+% ymin = min(flat.locsFlat(:,2));
+% ymax = max(flat.locsFlat(:,2));
+% x = xmin:(1/params.flatRes):xmax;
+% y = ymin:(1/params.flatRes):ymax;
 
-% now we need to interp the curvature on to a regular
-% grid. we do this by finding the x,y point that is closest
-% to the one on the grid.
-disppercent(-Inf, 'interpolating surface')
-for i = 1:length(x)
-  disppercent(i/length(x));
-  for j = 1:length(y)
-    % find nearest point in curvature
-    dist = (flat.locsFlat(:,1)-x(i)).^2+(flat.locsFlat(:,2)-y(j)).^2;
-    flat.pos(i,j) = first(find(min(dist)==dist));
-    % points that are greater than a distance of 5 away are
-    % probably not in the flat patch so mask them out
-    if (min(dist) < 5)
-      flat.mask(i,j) = 1;
-      flat.baseCoordsInner(i,j,:) = flat.locsInner(flat.pos(i,j),:);
-      flat.baseCoordsOuter(i,j,:) = flat.locsOuter(flat.pos(i,j),:);
-      flat.map(i,j) = flat.curvature(flat.pos(i,j), :);
-    else
-      flat.mask(i,j) = 0;
-      flat.baseCoordsInner(i,j,:) = [0 0 0];
-      flat.baseCoordsOuter(i,j,:) = [0 0 0];
-      flat.map(i,j) = 0;
-    end
-  end
+% % now we need to interp the curvature on to a regular
+% % grid. we do this by finding the x,y point that is closest
+% % to the one on the grid.
+% disppercent(-Inf, 'interpolating surface')
+% for i = 1:length(x)
+%   disppercent(i/length(x));
+%   for j = 1:length(y)
+%     % find nearest point in curvature
+%     dist = (flat.locsFlat(:,1)-x(i)).^2+(flat.locsFlat(:,2)-y(j)).^2;
+%     flat.pos(i,j) = first(find(min(dist)==dist));
+%     % points that are greater than a distance of 5 away are
+%     % probably not in the flat patch so mask them out
+%     if (min(dist) < 5)
+%       flat.mask(i,j) = 1;
+%       flat.baseCoordsInner(i,j,:) = flat.locsInner(flat.pos(i,j),:);
+%       flat.baseCoordsOuter(i,j,:) = flat.locsOuter(flat.pos(i,j),:);
+%       flat.map(i,j) = flat.curvature(flat.pos(i,j), :);
+%     else
+%       flat.mask(i,j) = 0;
+%       flat.baseCoordsInner(i,j,:) = [0 0 0];
+%       flat.baseCoordsOuter(i,j,:) = [0 0 0];
+%       flat.map(i,j) = 0;
+%     end
+%   end
+% end
+% disppercent(inf)
+
+flat.minLocsFlat = min(flat.locsFlat);
+flat.locsFlat(:,1) = flat.locsFlat(:,1) - flat.minLocsFlat(1) + 1;
+flat.locsFlat(:,2) = flat.locsFlat(:,2) - flat.minLocsFlat(2) + 1;
+
+imSize = round(max(flat.locsFlat));
+
+x = flat.locsFlat(:,1);
+y = flat.locsFlat(:,2);
+xi = [1:(1/params.flatRes):imSize(1)];
+yi = [1:(1/params.flatRes):imSize(2)]';
+
+flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
+
+% loop over x, y, and z coordinates
+for i=1:3
+  % grid the 3d coords
+  flat.baseCoordsInner(:,:,i) =  griddata(x,y, flat.locsInner(:,i), xi, yi,'nearest');
+  flat.baseCoordsOuter(:,:,i) =  griddata(x,y, flat.locsOuter(:,i), xi, yi,'nearest');
+
+  % mask out-of-patch values
+  flat.baseCoordsInner(:,:,i) =  flat.baseCoordsInner(:,:,i) .* ~isnan(flat.map);
+  flat.baseCoordsOuter(:,:,i) =  flat.baseCoordsOuter(:,:,i) .* ~isnan(flat.map);
 end
-disppercent(inf)
+
+% base.map = mrUpSample(base.map);
 
 % now blur image
 flat.blurMap(:,:) = blur(flat.map(:,:));
 % threshold image
-flat.median = median(flat.blurMap(:));
-flat.thresholdMap(:,:) = (flat.blurMap(:,:)>median(flat.blurMap(:)))*0.5+0.25;
+flat.thresholdMap(:,:) = (flat.blurMap(:,:)>nanmedian(flat.blurMap(:)))*0.5+0.25;
+% flat.medianVal = nanmedian(flat.blurMap(:));
+% flat.blurMap(flat.blurMap<flat.medianVal) = -1;
+% flat.blurMap(flat.blurMap>flat.medianVal) = 1;
 flat.thresholdMap = blur(flat.thresholdMap);
-% mask out points not on map
-flat.thresholdMap(~flat.mask(:)) = 0;
+flat.thresholdMap(isnan(flat.map)) = 0;
+
 
 % now generate a base structure
 clear base;
@@ -314,18 +342,6 @@ base.clip = base.range;
 % save(savename, 'base');
 % v = viewSet(v,'newBase',base);
 
-
-% ATTN: mrLoadRet ver 3 method
-% % grid the data
-% imSize = round([max(flat.locsFlat)]);
-% base.map = NaN*ones(imSize(1:2));
-% x = flat.locsFlat(:,1);
-% y = flat.locsFlat(:,2);
-% z = flat.curvature;
-% yi = [1:imSize(1)]';
-% xi = [1:imSize(2)];
-% base.map(:,:) = griddata(x,y,z,xi,yi,'linear');
-% base.map = mrUpSample(base.map);
 
 
 % loadSurfOFF.m
