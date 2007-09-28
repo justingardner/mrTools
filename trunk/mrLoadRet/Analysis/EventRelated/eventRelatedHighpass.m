@@ -1,13 +1,13 @@
 % myhighpass.m
 %
-%      usage: myhighpass(d,cutoff)
+%      usage: eventRelatedHighpass(d,cutoff)
 %         by: justin gardner
 %       date: 06/27/05
 %
-function d = myhighpass(d,cutoff,runtype)
+function d = eventRelatedHighpass(d,cutoff,runtype)
 
 if ~any(nargin == [2 3])
-  help myhighpass;
+  help eventRelatedHighpass;
   return
 end
 if exist('runtype')~=1,runtype = 'both';,end
