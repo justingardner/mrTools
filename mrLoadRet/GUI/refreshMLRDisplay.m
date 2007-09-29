@@ -666,12 +666,12 @@ for r = order
 	    % now make back into x,y coordinates
 	    [vx vy] = ind2sub(imageDims+1,vlines);
 	    % now do the same for the horizontal lines
-	    hlines = sort(sub2ind(imageDims,[x x],[y y+1]));
+	    hlines = sort(sub2ind(imageDims+1,[x x],[y y+1]));
 	    duplicates = diff(hlines)==0;
 	    duplicates = [duplicates 0];
 	    duplicates(find(duplicates)+1) = 1;
 	    hlines = hlines(~duplicates);
-	    [hx hy] = ind2sub(imageDims,hlines);
+	    [hx hy] = ind2sub(imageDims+1,hlines);
 	    % and make them into lines (draw -0.5 and +0.5 so
 	    % that we draw around the pixel not through the center
 	    % and note that x/y are flipped
