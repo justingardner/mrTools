@@ -76,11 +76,16 @@ switch descriptor
 	  polyIm = roipoly;
 	else
 	  % this doesn't have to redraw lines all the time
-	  % so it is faster for some versions of matlab
+	  % so it is faster
 	  % but has the disadvantage that you don't get
 	  % to see the lines connecting the points.
 	  [x y a] = getimage;
 	  [xi yi] = getpts;
+	  % draw the lines temporarily
+	  if ~isempty(xi)
+	    line([xi;xi(1)],[yi;yi(1)]);
+	    drawnow;
+	  end
 	  polyIm = roipoly(a,xi,yi);
 	end
         % Extract coordinates in base reference frame

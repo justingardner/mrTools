@@ -532,8 +532,10 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 % v = loadFlat(v);
 base = loadFlatOFF;
-viewSet(v, 'newbase', base);
-refreshMLRDisplay(viewNum);
+if ~isempty(base)
+  viewSet(v, 'newbase', base);
+  refreshMLRDisplay(viewNum);
+end
 
 % --------------------------------------------------------------------
 function saveAnatomyMenuItem_Callback(hObject, eventdata, handles)
@@ -1304,21 +1306,7 @@ function infoBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-scanNum = viewGet(view,'curScan');
-groupNum = viewGet(view,'curGroup');
-baseDims = viewGet(view,'baseDims');
-baseQform = viewGet(view,'baseqform');
-baseSform = viewGet(view,'baseXform');
-baseVolPermutation = viewGet(view,'baseVolPermutation');
-baseVoxelSize = viewGet(view,'baseVoxelSize');
-baseName = viewGet(view,'baseName');
-
-paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},...
-    {'voxelSize',baseVoxelSize,'editable=0','Voxel dimensions in mm'},...
-    {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
-    {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
-    {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to base coordinate system'}};
-mrParamsDialog(paramsInfo,'Base anatomy information');
+baseInfo(view);
 
 % --------------------------------------------------------------------
 function prefMenu_Callback(hObject, eventdata, handles)
