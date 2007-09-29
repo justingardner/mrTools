@@ -639,44 +639,88 @@ for r = order
 	% first compute the lines that need to be 
 	% drawn so that they can be cached
 	if isempty(roi(r).perimeterLines(sliceNum).x)
-	  disppercent(-inf,sprintf('Computing ROI perimeter for ROI %i',r));
-	  for i=1:length(x);
-	    xMinus = find(x == x(i)-1);
-	    xEquals = find(x == x(i));
-	    xPlus = find(x == x(i)+1);
-	    if isempty(xMinus)
-	      roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
-	      roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)-w]';
-	    else
-	      if ~any(y(i) == y(xMinus))
+	  % removing the loop from this algorithm speeds things
+	  % up dramatically. Calculating the perimeter before
+	  % for a medium size ROI on the flat could easily take 30
+	  % seconds on my intel mac. With this verison it takes
+	  % less than 30ms. yeah :-)...-jg.
+	  if 1 % set to 0 to run old version
+	    % first get positions of all vertical lines
+	    % this includes one on either side of each voxel
+	    % and then make that into a linear coordinate
+	    % and sort them. Note the +1 on imageDims
+	    % is to allow for voxels that are at the edge of the image
+	    vlines = sort(sub2ind(imageDims+1,[x x+1],[y y]));
+	    % now we look for any lines that are duplicates
+	    % that means they belong to two voxels, so that
+	    % they should not be drawn. we look for duplicates
+	    % as ones in which the voxel number is the same
+	    % as the next one in the list.
+	    duplicates = diff(vlines)==0;
+	    % and add the last one in.
+	    duplicates = [duplicates 0];
+	    % make sure to score both copies as duplicates
+	    duplicates(find(duplicates)+1) = 1;
+	    % now get everything that is not a duplicate
+	    vlines = vlines(~duplicates);
+	    % now make back into x,y coordinates
+	    [vx vy] = ind2sub(imageDims+1,vlines);
+	    % now do the same for the horizontal lines
+	    hlines = sort(sub2ind(imageDims,[x x],[y y+1]));
+	    duplicates = diff(hlines)==0;
+	    duplicates = [duplicates 0];
+	    duplicates(find(duplicates)+1) = 1;
+	    hlines = hlines(~duplicates);
+	    [hx hy] = ind2sub(imageDims,hlines);
+	    % and make them into lines (draw -0.5 and +0.5 so
+	    % that we draw around the pixel not through the center
+	    % and note that x/y are flipped
+	    roi(r).perimeterLines(sliceNum).x(1:2,:) = [vy-0.5 hy-0.5;vy+0.5 hy-0.5];
+	    roi(r).perimeterLines(sliceNum).y(1:2,:) = [vx-0.5 hx-0.5;vx-0.5 hx+0.5];
+	  else
+	    % old version
+	    disppercent(-inf,sprintf('Computing ROI perimeter for ROI %i',r));
+	    for i=1:length(x);
+	      xMinus = find(x == x(i)-1);
+	      xEquals = find(x == x(i));
+	      xPlus = find(x == x(i)+1);
+	      if isempty(xMinus)
 		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
 		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)-w]';
+	      else
+		if ~any(y(i) == y(xMinus))
+		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
+		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)-w]';
+		end
 	      end
-	    end
-	    if isempty(xPlus)
-	      roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
-	      roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)+w, x(i)+w]';
-	    else
-	      if ~any(y(i) == y(xPlus))
+	      if isempty(xPlus)
 		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
 		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)+w, x(i)+w]';
+	      else
+		if ~any(y(i) == y(xPlus))
+		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
+		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)+w, x(i)+w]';
+		end
 	      end
+	      if ~isempty(xEquals)
+		if ~any(y(i) == y(xEquals)-1)
+		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)+w,y(i)+w]';
+		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
+		end
+		if ~any(find(y(i) == y(xEquals)+1))
+		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)-w]';
+		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
+		end
+	      end
+	      disppercent(i/length(x));
 	    end
-	    if ~isempty(xEquals)
-	      if ~any(y(i) == y(xEquals)-1)
-		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)+w,y(i)+w]';
-		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
-	      end
-	      if ~any(find(y(i) == y(xEquals)+1))
-		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)-w]';
-		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
-	      end
-	    end
-	    disppercent(i/length(x));
+	    disppercent(inf);
+	    % save the roi with the lines in the cache,note
+	    % we only do this for the old version, since
+	    % the new version is fast enough that it is not
+	    % really worth caching.
+	    view = viewSet(view,'ROICache',roi(r),r);
 	  end
-	  % save the roi with the lines in the cache,
-	  view = viewSet(view,'ROICache',roi(r),r);
-	  disppercent(inf);
 	end
 	% now render those lines
 	line(roi(r).perimeterLines(sliceNum).x,roi(r).perimeterLines(sliceNum).y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);

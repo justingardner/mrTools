@@ -173,7 +173,7 @@ if params.calcCurvFlag==1
   % check for the SurfRelax program called 'surffilt'
   [status,result] = system('surffilt');
   if status ~= 0
-    disp(sprintf('(loadFlatOFF) something is wrong with the surfrelax installation'))
+    disp(sprintf('(loadFlatOFF) Could not run the SurfRelax program surffilt. Make sure that you have SurfRelax correctly installed on your system.'))
     return;
   else
     % calculate the curvature
