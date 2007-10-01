@@ -5,15 +5,21 @@
 %         by: justin gardner
 %       date: 10/12/06
 %    purpose: concatenate time series together.
-%             to just get a default parameter structure
+%
+%             to just get a default parameter structure:
 % 
 %             v = newView;
-%             [v params] = concatTSeries(v,[],'justGetParams=1','defaultParams=1');
+%             [v params] = concatTSeries(v,[],'justGetParams=1','defaultParams=1','scanList=[1 2]');
+%
+%             Note that justGetParams,defualtParams and scanList are independent parameters, so
+%             if you want, say to bring up the GUI to set the params, but not run the analysis, you
+%             can do:
+%             [v params] = concatTSeries(v,[],'justGetParams=1');
 %
 function [view params] = concatTSeries(view,params,varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3 4])
+if ~any(nargin == [1 2 3 4 5])
   help concatTSeries
   return
 end
@@ -46,7 +52,9 @@ if ieNotDefined('params')
   if isempty(params),return,end
   % select scans
   view = viewSet(view, 'groupName', params.groupName);
-  if defaultParams
+  if ~ieNotDefined('scanList')
+    params.scanList = scanList;
+  elseif defaultParams
     params.scanList = 1:viewGet(view,'nScans');
   else
     params.scanList = selectScans(view);
