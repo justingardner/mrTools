@@ -45,7 +45,7 @@ if ~isempty(runName)
     disp(sprintf('Running d=%s(%s)',runFun,runArgs));
     d = eval(sprintf('%s(%s)',runFun,runArgs));
   else
-    disp(sprintf('(eventRelatedPreProcess) Could not find preprocess script %s',runName));
+    disp(sprintf('(eventRelatedPreProcess) Could not find preprocess script %s',runFun));
     keyboard
   end
 end
