@@ -559,7 +559,9 @@ function saveAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 n = viewGet(viewNum,'currentAnalysis');
-saveAnalysis(MLR.views{viewNum},n);
+if ~isempty(n)
+  saveAnalysis(MLR.views{viewNum},n);
+end
 
 % --------------------------------------------------------------------
 function saveAllAnalysisMenuItem_Callback(hObject, eventdata, handles)
@@ -726,11 +728,13 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
         MLR.graphFigure = [];
     end
     drawnow
-    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving ./mrLastView and %s',mrDefaultsFilename));
+    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving %s/mrLastView',MLR.homeDir));
     % save the view in the current directory
     view = thisView;
     eval(sprintf('save %s view viewSettings -V6;',fullfile(MLR.homeDir,'mrLastView')));
     % save .mrDefaults in the home directory
+    disppercent(inf);
+    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving %s',mrDefaultsFilename));
     saveMrDefaults;
     disppercent(inf);
 else
@@ -2019,23 +2023,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
-% get the current overlay
-o = viewGet(v,'overlay');
-
-% get the fields and set some fields to not print
-overlayFields = fieldnames(o);
-ignoreFields = {'colormap','data','params'};
-
-% set up the paramsInfo to display
-paramsInfo = {};
-for i = 1:length(overlayFields)
-  if ~ismember(overlayFields{i},ignoreFields)
-    paramsInfo{end+1} = {overlayFields{i},o.(overlayFields{i}),'editable=0'};
-  end
-end
-
-mrParamsDialog(paramsInfo,'Overlay Info');
-
+overlayInfo(v);
 
 % --- Executes on slider movement.
 function corticalDepthSlider_Callback(hObject, eventdata, handles)
