@@ -41,6 +41,8 @@ switch (event)
         mouseDownHandler(viewNum);
     case 'interrogator'
         interrogatorHandler(viewNum);
+    case 'defaultInterrogators'
+        defaultInterrogatorsHandler(viewNum);
     case 'updateInterrogator'
         updateInterrogatorHandler(viewNum,val);
 end
@@ -51,6 +53,11 @@ end
 function updateInterrogatorHandler(viewNum,interrogator)
 
 mrGlobals;
+v = MLR.views{viewNum};
+
+% set list of interrogators
+interrogatorList = getDefaultInterrogators(v);
+set(MLR.interrogator{viewNum}.hInterrogatorLabel,'String',interrogatorList);
 
 % if not a valid function, go back to old one
 if exist(interrogator)==2
@@ -77,6 +84,29 @@ if isfield(MLR.interrogator{viewNum},'hInterrogator')
     global MLR;
     v= MLR.views{viewNum};
     v = viewSet(v,'interrogator',interrogator);
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% change in interrogator field
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function defaultInterrogatorsHandler(viewNum)
+
+mrGlobals;
+
+% get which item was chosen
+value = get(MLR.interrogator{viewNum}.hInterrogatorLabel,'Value');
+if value > 1
+  % get the interrogator string
+  interrogatorList = get(MLR.interrogator{viewNum}.hInterrogatorLabel,'String');
+  newInterrogator = interrogatorList{value};
+  % set the popupmenu back to the top value
+  set(MLR.interrogator{viewNum}.hInterrogatorLabel,'Value',1);
+  % see if the interrogator exists
+  if exist(newInterrogator)==2
+    % set the string
+    set(MLR.interrogator{viewNum}.hInterrogator,'String',newInterrogator);
+    MLR.interrogator{viewNum}.interrogator = newInterrogator;
   end
 end
 
@@ -279,7 +309,7 @@ set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','off');
 function initHandler(viewNum)
 
 mrGlobals;
-
+v = MLR.views{viewNum};
 fignum = viewGet(MLR.views{viewNum},'figNum');
 
 % see if this is a restart
@@ -309,6 +339,9 @@ set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'',%i)',viewNum)
 % set pointer to crosshairs
 MLR.interrogator{viewNum}.pointer = get(fignum,'pointer');
 
+% get default interrogators
+interrogatorList = getDefaultInterrogators(v);
+
 if ~restart
     % set the x and y textbox
     MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
@@ -316,7 +349,7 @@ if ~restart
     MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,4,2);
     MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,6,2);
     MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
-    MLR.interrogator{viewNum}.hInterrogatorLabel = makeTextbox(viewNum,'Interrogator',2,1,3);
+    MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',2,1,3);
 else
     set(MLR.interrogator{viewNum}.hPos,'visible','on');
     set(MLR.interrogator{viewNum}.hPosBase,'visible','on');
@@ -369,6 +402,32 @@ mrGlobals;
 h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% makePopupmenu
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function h = makePopupmenu(viewNum,displayString,callback,rownum,colnum,uisize)
+
+% make callback string
+if isnumeric(callback)
+  callback = sprintf('mrInterrogator(%f,%i)',callback,viewNum);
+else
+  callback = sprintf('mrInterrogator(''%s'',%i)',callback,viewNum);
+end
+
+if ~iscell(displayString)
+  choices{1} = displayString;
+else
+  if iscell(displayString{1})
+    choices = displayString{1};
+  else
+    choices = displayString;
+  end
+end
+
+mrGlobals;
+h = uicontrol('Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function pos = getUIControlPos(viewNum,rownum,colnum,uisize)
@@ -389,3 +448,21 @@ pos(1) = (MLR.interrogator{viewNum}.buttonWidth+MLR.interrogator{viewNum}.margin
 pos(2) = MLR.interrogator{viewNum}.bottomMargin + (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1)+MLR.interrogator{viewNum}.buttonHeight;
 pos(3) = thisButtonWidth;
 pos(4) = MLR.interrogator{viewNum}.buttonHeight;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get default interrogators
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function interrogatorList = getDefaultInterrogators(v);
+
+defaultInterrogators = mrGetPref('defaultInterrogators');
+% make the comma delimited string into a list
+interrogatorList = {};
+while ~isempty(defaultInterrogators)
+  [interrogatorList{end+1} defaultInterrogators] = strtok(defaultInterrogators,',');
+end
+% put the interrogator associated with this overlay on the list
+overlayInterrogator = viewGet(v,'interrogator');
+if ~isempty(overlayInterrogator)
+  interrogatorList{end+1} = overlayInterrogator;
+end
+interrogatorList = putOnTopOfList('Interrogator',interrogatorList);
