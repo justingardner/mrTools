@@ -169,7 +169,6 @@ surf.gm = loadSurfOFF(fullfile(params.flatDir, params.gmFileName));
 if params.calcCurvFlag==1
   params.baseName = stripext(params.wmFileName);
   params.curvFileName = sprintf('%s_Curv.vff', params.baseName);
-  setenv('DYLD_LIBRARY_PATH', '/Users/eli/src/TFI/sw/lib/');
   % check for the SurfRelax program called 'surffilt'
   [status,result] = system('surffilt');
   if status ~= 0
