@@ -263,7 +263,7 @@ if mouseInImage(x,y)
     for roinum = roinums
       roicoords = getROICoordinates(view,roinum,0);
       % see if this is a matching roi
-      if ismember([xBase yBase sBase],roicoords','rows')
+      if ismember(round([xBase yBase sBase]),roicoords','rows')
 	% get the roi
 	roi{end+1} = viewGet(view,'roi',roinum);
       end

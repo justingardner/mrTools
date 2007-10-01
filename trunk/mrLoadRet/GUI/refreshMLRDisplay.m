@@ -138,6 +138,7 @@ if isempty(overlay)
     alphaOverlayImage(alphaOverlayImage>alpha) = alpha;
     alphaOverlayImage(alphaOverlayImage<0) = 0;
     alphaOverlayImage = alphaOverlayImage.^viewGet(view,'alphaOverlayExponent');
+    alphaOverlayImage(isnan(alphaOverlayImage)) = 0;
     overlay.alphaMap = repmat(alphaOverlayImage.*mask,[1 1 3]); 
   end   
   
@@ -559,7 +560,7 @@ for r = order
   roiCache = viewGet(view,'ROICache',r);
   % if not found
   if isempty(roiCache)
-    disppercent(-inf,sprintf('Computing ROI coordinates for ROI %i',r));
+    disppercent(-inf,sprintf('Computing ROI coordinates for %i:%s',r,viewGet(view,'roiName',r)));
     % Get ROI coords transformed to the image
     [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,baseNum,round(baseCoordsHomogeneous),imageDims,r);
     % init field for drawing roi perimeter
