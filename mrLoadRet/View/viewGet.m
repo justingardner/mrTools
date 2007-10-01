@@ -2166,7 +2166,7 @@ switch lower(param)
       end
     end
     if isempty(val)
-      val = 'mrDefaultInterrogator';
+      val = 'timecoursePlot';
     end
   case {'overlaygroupname'}
     % groupName = viewGet(view,'overlayGroupName',[overlayNum],[analysisNum])

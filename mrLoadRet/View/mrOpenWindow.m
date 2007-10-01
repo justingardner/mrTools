@@ -54,6 +54,11 @@ if isfile('mrLastView.mat')
         baseLoaded = 1;
         % Add it to the list of base volumes and select it
 	for i = 1:length(mrLastView.view.baseVolumes)
+	  % make sure sliceOrientation is not 0
+	  if mrLastView.view.baseVolumes(i).sliceOrientation == 0
+	    mrLastView.view.baseVolumes(i).sliceOrientation = 1;
+	  end
+	  % install the base
 	  view = viewSet(view,'newBase',mrLastView.view.baseVolumes(i));
 	end
       end
