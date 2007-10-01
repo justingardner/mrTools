@@ -35,9 +35,15 @@ end
 % preprocessing for sdt experiment
 runName = getfieldstr(type,'run');
 if ~isempty(runName)
-  if exist(sprintf('%s.m',stripext(runName)))==2
-    disp(sprintf('Running d=%s(d)',runName));
-    d = eval(sprintf('%s(d)',runName));
+  % get run functiona and arguments
+  [runFun runName] = strtok(runName,'()');
+  [runArgs] = strtok(runName,'()');
+  % default to passing the d
+  if isempty(runArgs),runArgs = 'd';end
+  % now see if it is a function and if so, run it
+  if exist(sprintf('%s.m',stripext(runFun)))==2
+    disp(sprintf('Running d=%s(%s)',runFun,runArgs));
+    d = eval(sprintf('%s(%s)',runFun,runArgs));
   else
     disp(sprintf('(eventRelatedPreProcess) Could not find preprocess script %s',runName));
     keyboard

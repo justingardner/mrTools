@@ -8,7 +8,7 @@
 function params = eventRelatedGlmGUI(varargin)
 
 % check arguments
-if ~any(nargin == [0 1 2 3 4])
+if ~any(nargin == [0 1 2 3 4 5])
   help eventRelatedGUI
   return
 end
@@ -95,7 +95,9 @@ end
 
 % get scans
 view = viewSet(view,'groupName',params.groupName);
-if useDefault
+if ~ieNotDefined('scanList')
+  params.scanNum = scanList;
+elseif useDefault
   params.scanNum = 1:viewGet(view,'nScans');
 else
   params.scanNum = selectScans(view);

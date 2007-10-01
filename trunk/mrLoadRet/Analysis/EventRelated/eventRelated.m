@@ -9,14 +9,19 @@
 %             can do:
 % 
 %             v = newView;
-%             [v params] = eventRelated(v,[],'justGetParams=1','defaultParams=1')
+%             [v params] = eventRelated(v,[],'justGetParams=1','defaultParams=1','scanList=1')
+%
+%             Note that justGetParams,defualtParams and scanList are independent parameters, so
+%             if you want, say to bring up the GUI to set the params, but not run the analysis, you
+%             can do:
+%             [v params] = eventRelated(v,[],'justGetParams=1');
 %
 function [view d] = eventRelated(view,params,varargin)
 
 d = [];
 
 % check arguments
-if ~any(nargin == [1 2 3 4])
+if ~any(nargin == [1 2 3 4 5])
   help eventRelated
   return
 end
@@ -27,14 +32,15 @@ mrGlobals;
 eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('scanList'),scanList = [];end
 
 % First get parameters
 if ieNotDefined('params')
   % put up the gui
   if defaultParams
-    params = eventRelatedGUI('groupName',viewGet(view,'groupName'),'useDefault');
+    params = eventRelatedGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList);
   else
-    params = eventRelatedGUI('groupName',viewGet(view,'groupName'));
+    params = eventRelatedGUI('groupName',viewGet(view,'groupName'),'scanList',scanList);
   end
 end
 
