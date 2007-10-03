@@ -27,23 +27,35 @@ cmat = zeros(nEv, nEv);
 cmat(1:size(contrasts,1),:) = contrasts;
 
 % design matrix exclding the contrast of interest
-scm1 = d.scm*null(cmat);
 scm2 = d.scm*contrasts';
 
-%orthogonalize scm2 w.r.t. scm1
-scm2 = scm2 - scm1*(pinv(scm1)*scm2);
+nullmat = null(cmat);
+if isempty(nullmat)
+    scm1 = [];
+else
+    scm1 = d.scm*nullmat;
+    %orthogonalize scm2 w.r.t. scm1
+    scm2 = scm2 - scm1*(pinv(scm1)*scm2);
+end
 
 % hemodynamic responses are estimated only for the specified contrasts
 d.nhdr = size(scm2,2)/d.hdrlen;
 
 % precalculate the normal equation (this dramatically speeds up things)
-precalcmatrix1 = ((scm1'*scm1)^-1)*scm1';
+if ~isempty(scm1)
+    precalcmatrix1 = ((scm1'*scm1)^-1)*scm1';
+    % if this don't work then do pinv
+    if sum(isnan(precalcmatrix1(:))) == length(precalcmatrix1(:))
+        disp(sprintf('Using pseudo inverse to invert convolution matrix'));
+        precalcmatrix1 = pinv(scm1);
+    end
+end
+
 precalcmatrix2 = ((scm2'*scm2)^-1)*scm2';
 
 % if this don't work then do pinv
-if sum(isnan(precalcmatrix1(:))) == length(precalcmatrix1(:))
+if sum(isnan(precalcmatrix2(:))) == length(precalcmatrix2(:))
   disp(sprintf('Using pseudo inverse to invert convolution matrix'));
-  precalcmatrix1 = pinv(scm1);
   precalcmatrix2 = pinv(scm2);
 end
 
@@ -87,7 +99,11 @@ for j = yvals
     % convert to percent signal change
     timeseries = 100*timeseries./(onesmatrix*colmeans);
     % get hdr for the each voxel
-    resid1 = timeseries - scm1*precalcmatrix1*timeseries;
+    if isempty(scm1)
+        resid1 = timeseries;
+    else
+        resid1 = timeseries - scm1*precalcmatrix1*timeseries;
+    end
     ehdr{j,k} = precalcmatrix2*resid1;
     % calculate error bars, first get sum-of-squares of residual
     % (in percent signal change)
