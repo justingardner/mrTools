@@ -145,10 +145,14 @@ if isempty(params)
 end
 
 % load the rest of the surfaces
+disppercent(-inf,'Loading surfaces');
 [surf, params] = loadSurfHandler(surf, params);
+disppercent(inf);
 
 % calculate the base anatomy structure
+disppercent(-inf,'Computing curvature image and coordinates');
 base = calcFlatBase(surf, params);
+disppercent(inf);
 
 return;
 

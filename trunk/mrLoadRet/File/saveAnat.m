@@ -58,7 +58,7 @@ if saveAs
     saveAnatPath = mrGetPref('volumeDirectory');
   end
   % ask user for where to put it
-  [anatomyName,saveAnatPath] = uiputfile({sprintf('*%s',niftiFileExtension),'Nifti files'},'Save base anatomy as...',fullfile(saveAnatPath,[anatomyName niftiFileExtension]));
+  [anatomyName,saveAnatPath] = uiputfile({sprintf('*%s',niftiFileExtension),'Nifti files'},sprintf('Save base anatomy %s as...',base.name),fullfile(saveAnatPath,[anatomyName niftiFileExtension]));
   % if cancel
   if anatomyName == 0
     saveAnatPath = mrGetPref('volumeDirectory');
