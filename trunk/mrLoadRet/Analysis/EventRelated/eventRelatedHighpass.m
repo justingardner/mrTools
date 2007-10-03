@@ -39,10 +39,10 @@ if strcmp(runtype,'both') || strcmp(runtype,'init')
   times = 0:d.tr:(d.tr*(n-1));
 
   % now make a high-pass cutoff
-  hipassfilt = ones(1,n);
+  hipassfilter = ones(1,n);
 
   % knock out frequncies below cutoff
-  hipassfilt(freqs<cutoff) = 0;
+  hipassfilter(freqs<cutoff) = 0;
 
   % and smoothly go to 1 as a gaussian for edges
   smoothedge = 1-eventRelatedGauss([1 cutoff cutoff/2 0],freqs);
