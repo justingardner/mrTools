@@ -1,4 +1,4 @@
-% makescm.m
+% makeglm.m
 %
 %      usage: makeglm(d,hrf)
 %         by: farshad moradi
