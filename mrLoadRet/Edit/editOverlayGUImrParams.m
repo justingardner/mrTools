@@ -29,6 +29,7 @@ function retval = editOverlayGUImrParams(viewNum)
   paramsInfo{end+1} = {'overlayCmap', {'default','hot','hsv','pink','cool','bone','copper','flag',...
                    'hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap' 'coolCmap'},...
                       'List of possible colormaps'};
+  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overla colormap'};
   paramsInfo{end+1} = {'numColors', 256, 'first argument to the colormap function'};
   paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function'};
   paramsInfo{end+1} = {'flipCmap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap'};
@@ -65,6 +66,19 @@ function mrCmapCallback(params, v)
     end
   end
 
+  % see if we need to call a function
+  if ~isempty(params.userDefinedCmap)
+    % look for the m function
+    if exist(sprintf('%s.m',params.userDefinedCmap))
+      colormap = eval(sprintf('%s(%i)',params.userDefinedCmap,params.numColors));
+      if isequal(size(colormap),[params.numColors 3])
+	o.colormap = colormap;
+      else
+	disp(sprintf('(editOverlay) Function %s must return a %ix%i array',params.userDefinedCmap,params.numColors,3));
+      end
+    end
+  end
+    
   % flip the cmap
   if params.flipCmap
     o.colormap = flipud(o.colormap);
@@ -382,3 +396,4 @@ function range = readRange
   range = str2num(range{1});
 
   return;
+

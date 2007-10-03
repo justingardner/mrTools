@@ -25,6 +25,16 @@ d.r2 = analysis.overlays(1).data{scan};
 % select the window to plot into
 selectGraphWin;
 
+% check to see if there is a regular event related analysis
+for anum = 1:viewGet(view,'nAnalyses')
+  if strcmp(viewGet(view,'analysisType',anum),'erAnal')
+    % get the event related headers
+    erAnalysis = viewGet(view,'analysis',anum);
+    der = erAnalysis.d{scan};
+    clear erAnalysis
+  end
+end
+
 global MLR;
 fignum = MLR.graphFigure;
 
@@ -66,7 +76,14 @@ if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
     plot(fitTime+d.tr/2,d.peak.fit{x,y,s,r}.smoothFit,getcolor(r,'-'));
   end
 else
-  plotEhdr(time,ehdr,ehdrste);
+  % if there is deconvolution data, display that too
+  if exist('der','var')
+    [deconvEhdr deconvTime deconvEhdrste] = gethdr(der,x,y,s);
+    plotEhdr(deconvTime,deconvEhdr,deconvEhdrste,'');
+    plotEhdr(time,ehdr,ehdrste,'-',0);
+  else
+    plotEhdr(time,ehdr,ehdrste);
+  end
 end
 title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays(1).data{scan}(x,y,s)));
 xaxis(0,max(time));
@@ -136,17 +153,30 @@ drawnow;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % function to plot ehdr
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function plotEhdr(time,ehdr,ehdrste,lineSymbol)
+function plotEhdr(time,ehdr,ehdrste,lineSymbol,drawSymbols)
 
 % whether to plot the line inbetween points or not
 if ~exist('lineSymbol','var'),lineSymbol = '-';,end
+if ~exist('drawSymbols','var'),drawSymbols = 1;,end
 
 % and display ehdr
 for i = 1:size(ehdr,1)
   if nargin == 2
-    h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
+    % draw with symbols, no error bars
+    if drawSymbols
+      h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
+    % draw without symbols, no error bars
+    else
+      h=plot(time,ehdr(i,:),getcolor(i,lineSymbol));
+    end
   else
-    h=errorbar(time,ehdr(i,:),ehdrste(i,:),ehdrste(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
+    % draw with symbols, and error bars
+    if drawSymbols
+      h=errorbar(time,ehdr(i,:),ehdrste(i,:),ehdrste(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
+    % draw without symbols, and error bars
+    else
+      h=errorbar(time,ehdr(i,:),ehdrste(i,:),ehdrste(i,:),getcolor(i,lineSymbol));
+    end
   end
   set(h,'MarkerFaceColor',getcolor(i));
   hold on
