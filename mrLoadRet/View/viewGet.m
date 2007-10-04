@@ -767,7 +767,7 @@ switch lower(param)
     end
 
     % baseVolume (anatomy)
-  case{'numberofbasevolumes','numBase'}
+  case{'numberofbasevolumes','numbase'}
     % n = viewGet(view,'numberofBaseVolumes')
     val = length(view.baseVolumes);
   case {'curbase','currentbase'}
@@ -1294,7 +1294,23 @@ switch lower(param)
       roiNums = varargin{1};
     end
     rotate = viewGet(view,'rotate');
-    baseName = viewGet(view,'curBaseName');
+    % go through all the bases and look for
+    % the first one with a matching xform. We
+    % do this because flat maps all have the
+    % same baseXform and so there is no need
+    % to recompute them for each base map--
+    % this is commented out for the time being
+    % since we need to fix things up in refreshMLRDisplay
+    % before this will be useful -jg.
+    %baseXform = viewGet(view,'baseXform');
+    baseMatch = viewGet(view,'curbase');
+    %for bnum = 1:viewGet(view,'numBase')
+    %  if isequal(baseXform,viewGet(view,'baseXform',bnum))
+    %	baseMatch = bnum;
+    %	break;
+    %  end
+    %end
+    baseName = viewGet(view,'baseName',baseMatch);
     sliceIndex = viewGet(view,'baseSliceIndex');
     % need to recalculate overlay if this is aflat
     % and the cortical depth has changed

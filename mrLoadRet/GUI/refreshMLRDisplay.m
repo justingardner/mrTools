@@ -474,10 +474,45 @@ baseCoordsHomogeneous = round(baseCoordsHomogeneous);
 if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
   % Use xformROI to supersample the coordinates
   baseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-  roiSlices = unique(baseCoords(sliceIndex,:));
-  x = [];y = []; s = [];
+  
   % calculate for every slice in the roi the coordinates
   % in the image domain
+  if 0
+    disppercent(inf);
+    disppercent(-inf,'finding coordinates in base');
+    % get base and roi coordinates linearly (this is so that
+    % we don't have to intersect "by rows" which is slower
+    % than working with linear indexes by about a factor of 3 -j.
+    if isempty(baseCoordMap)
+      inplaneIndexes = setdiff(1:3,sliceIndex);
+      baseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),baseCoordsHomogeneous(inplaneIndexes(1),:),baseCoordsHomogeneous(inplaneIndexes(2),:));
+      roiBaseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),baseCoords(inplaneIndexes(1),:),baseCoords(inplaneIndexes(2),:));
+      % we use ismember here since it will keep duplicates.
+      % in this case we have duplicate roi coordinates that will
+      % be found (since we are ignoring which slice we are on).
+      [roiIndices baseIndices] = ismember(roiBaseCoordsLinear,baseCoordsLinear);
+      roiIndices = find(roiIndices);
+      baseIndices = baseIndices(roiIndices);
+    else
+      % for flat maps, we have only one slice and all coordinates
+      % are important to match
+      baseCoordsLinear = mysub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
+      roiBaseCoordsLinear = mysub2ind(baseDims,baseCoords(1,:),baseCoords(2,:),baseCoords(3,:));
+      % we use ismember here since it will keep duplicates.
+      % in this case the base may have multiple coordinates, but
+      % the roi will have unique coordinates, so we switch
+      % the order of arguments from above
+      [baseIndices roiIndices] = ismember(baseCoordsLinear,roiBaseCoordsLinear);
+      baseIndices = find(baseIndices);
+      roiIndices = roiIndices(baseIndices);
+    end
+    % now transform the coordinates that exist in this
+    % base into image coordinates
+    [x,y] = ind2sub(imageDims,baseIndices);
+    s = baseCoords(sliceIndex,roiIndices);
+  else
+  roiSlices = unique(baseCoords(sliceIndex,:));
+  x = [];y = []; s = [];
   for roiSlice = roiSlices
     % first set baseCOordsHomogeneous to look like it is for this
     % slice of the roi (all that changes is the slice index)
@@ -519,6 +554,7 @@ if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     s = [s baseCoords(sliceIndex,roiIndexesThisSlice(roiIndices))];
+  end
   end
 end
 
@@ -738,11 +774,21 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function linear = mysub2ind(dims,x,y,z)
 
-badCoords = find((x < 1) | (x > dims(1)) | ...
-		 (y < 1) | (y > dims(2)) | ...
-		 (z < 1) | (z > dims(3)));
-x(badCoords) = nan;
-y(badCoords) = nan;
-z(badCoords) = nan;
+if nargin == 4
+  badCoords = find((x < 1) | (x > dims(1)) | ...
+		   (y < 1) | (y > dims(2)) | ...
+		   (z < 1) | (z > dims(3)));
+  x(badCoords) = nan;
+  y(badCoords) = nan;
+  z(badCoords) = nan;
 
-linear = sub2ind(dims,x,y,z);
+  linear = sub2ind(dims,x,y,z);
+else
+  badCoords = find((x < 1) | (x > dims(1)) | ...
+		   (y < 1) | (y > dims(2)));
+  x(badCoords) = nan;
+  y(badCoords) = nan;
+
+  linear = sub2ind(dims,x,y);
+end
+

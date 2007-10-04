@@ -83,8 +83,8 @@ switch descriptor
 	  [xi yi] = getpts;
 	  % draw the lines temporarily
 	  if ~isempty(xi)
-	    line([xi;xi(1)],[yi;yi(1)]);
-	    drawnow;
+%	    line([xi;xi(1)],[yi;yi(1)]);
+%	    drawnow;
 	  end
 	  polyIm = roipoly(a,xi,yi);
 	end
