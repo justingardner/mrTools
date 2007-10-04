@@ -1,8 +1,8 @@
-function [img] = refreshMLRDisplay(viewNum)
+function [img base roi] = refreshMLRDisplay(viewNum)
 %	$Id$
 
 mrGlobals
-
+img = [];base = [];roi = [];
 % for debugging/performance tests
 % set to 0 for no info
 % set to 1 for info on caching
@@ -224,10 +224,12 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 if verbose>1,disppercent(inf);,end
 
 % Display the ROIs
+drawnow;
 nROIs = viewGet(view,'numberOfROIs');
 if nROIs
-  displayROIs(view,slice,sliceIndex,rotate,...
-    baseNum,base.coordsHomogeneous,base.dims,verbose);
+  roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+else
+  roi = [];
 end
 
 if verbose>1,disppercent(-inf,'rendering');,end
@@ -444,124 +446,85 @@ for ov = 1:numOverlays
 end
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% getROIBaseCoords: extracts ROI coords transformed to the base image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function roiBaseCoords= getROIBaseCoords(view,baseNum,roiNum);
 
-function [baseCoords x y s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,...
-  baseNum,baseCoordsHomogeneous,imageDims,roiNum);
-%
-% getROIBaseCoordsSlice: extracts ROI coords transformed to the
-% base image
-
-baseCoords = [];x = [];y = [];s = [];
+roiBaseCoords = [];
 
 % viewGet
-baseDims = viewGet(view,'baseDims');
 baseXform = viewGet(view,'baseXform',baseNum);
 baseVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
 roiCoords = viewGet(view,'roiCoords',roiNum);
 roiXform = viewGet(view,'roiXform',roiNum);
 roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
-% get the mapping between the image plane and the
-% actual voxel numbers. This will be non-empty for flat surfaces
-baseCoordMap = viewGet(view,'baseCoordMap',baseNum);
-if isfield(baseCoordMap,'dims')
-  baseDims = baseCoordMap.dims;
-end
-
-% make sure that baseCoords are rounded (they may not be
-% if we are working with a baseCoordMap'd flat map
-baseCoordsHomogeneous = round(baseCoordsHomogeneous);
 
 if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
   % Use xformROI to supersample the coordinates
-  baseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-  
-  % calculate for every slice in the roi the coordinates
-  % in the image domain
-  if 0
-    disppercent(inf);
-    disppercent(-inf,'finding coordinates in base');
-    % get base and roi coordinates linearly (this is so that
-    % we don't have to intersect "by rows" which is slower
-    % than working with linear indexes by about a factor of 3 -j.
-    if isempty(baseCoordMap)
-      inplaneIndexes = setdiff(1:3,sliceIndex);
-      baseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),baseCoordsHomogeneous(inplaneIndexes(1),:),baseCoordsHomogeneous(inplaneIndexes(2),:));
-      roiBaseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),baseCoords(inplaneIndexes(1),:),baseCoords(inplaneIndexes(2),:));
-      % we use ismember here since it will keep duplicates.
-      % in this case we have duplicate roi coordinates that will
-      % be found (since we are ignoring which slice we are on).
-      [roiIndices baseIndices] = ismember(roiBaseCoordsLinear,baseCoordsLinear);
-      roiIndices = find(roiIndices);
-      baseIndices = baseIndices(roiIndices);
-    else
-      % for flat maps, we have only one slice and all coordinates
-      % are important to match
-      baseCoordsLinear = mysub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
-      roiBaseCoordsLinear = mysub2ind(baseDims,baseCoords(1,:),baseCoords(2,:),baseCoords(3,:));
-      % we use ismember here since it will keep duplicates.
-      % in this case the base may have multiple coordinates, but
-      % the roi will have unique coordinates, so we switch
-      % the order of arguments from above
-      [baseIndices roiIndices] = ismember(baseCoordsLinear,roiBaseCoordsLinear);
-      baseIndices = find(baseIndices);
-      roiIndices = roiIndices(baseIndices);
-    end
-    % now transform the coordinates that exist in this
-    % base into image coordinates
-    [x,y] = ind2sub(imageDims,baseIndices);
-    s = baseCoords(sliceIndex,roiIndices);
-  else
-  roiSlices = unique(baseCoords(sliceIndex,:));
-  x = [];y = []; s = [];
-  for roiSlice = roiSlices
-    % first set baseCOordsHomogeneous to look like it is for this
-    % slice of the roi (all that changes is the slice index)
-    if isempty(baseCoordMap)
-      baseCoordsHomogeneous(sliceIndex,:) = roiSlice;
-    end
-    % now get all the indexes from the roi with this slice
-    roiIndexesThisSlice = find(baseCoords(sliceIndex,:)==roiSlice);
+  roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
+end
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % converting to linear coordinates before doing the
-    % intersection increases the speed (about a
-    % factor of 3 on my G5) since intersect by
-    % rows appears to be quite a bit slower (jg).
-    thisROICoords = baseCoords(1:3,roiIndexesThisSlice);
-    % convert to linear coordinates
-    roiBaseCoordsLinear = mysub2ind(baseDims,thisROICoords(1,:),thisROICoords(2,:),thisROICoords(3,:));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% getROIImageCoords: get the roiBaseCoords as x,y and s positions for this
+% particular view of the volume (i.e these are coorinates that can
+% be plotted on the image.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [x y s]= getROIImageCoords(view,roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims);
+
+x=[];y=[];s=[];
+
+if ~isempty(roiBaseCoords)
+  % make sure that baseCoords are rounded (they may not be
+  % if we are working with a baseCoordMap'd flat map
+  baseCoordsHomogeneous = round(baseCoordsHomogeneous);
+
+  % base dims
+  baseDims = viewGet(view,'baseDims');
+  % get the mapping between the image plane and the
+  % actual voxel numbers. This will be non-empty for flat surfaces
+  baseCoordMap = viewGet(view,'baseCoordMap',baseNum);
+  if isfield(baseCoordMap,'dims')
+    baseDims = baseCoordMap.dims;
+  end
+
+  % get base and roi coordinates linearly (this is so that
+  % we don't have to intersect "by rows" which is slower
+  % than working with linear indexes by about a factor of 3 -j.
+  if isempty(baseCoordMap)
+    inplaneIndexes = setdiff(1:3,sliceIndex);
+    baseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),baseCoordsHomogeneous(inplaneIndexes(1),:),baseCoordsHomogeneous(inplaneIndexes(2),:));
+    roiBaseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),roiBaseCoords(inplaneIndexes(1),:),roiBaseCoords(inplaneIndexes(2),:));
+    % we use ismember here since it will keep duplicates.
+    % in this case we have duplicate roi coordinates that will
+    % be found (since we are ignoring which slice we are on-so
+    % that we can calculate all the base coordinates irregardless
+    % of which slice it is on.
+    [roiIndices baseIndices] = ismember(roiBaseCoordsLinear,baseCoordsLinear);
+    roiIndices = find(roiIndices);
+    baseIndices = baseIndices(roiIndices);
+  else
+    % for flat maps, we have only one slice and all coordinates
+    % are important to match
     baseCoordsLinear = mysub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
-    % find the roi coordinates that exist in the base coordinates, these will
-    % be the coordinates for which we should draw the ROI. Note that instead
-    % of doing this with intersect as before (commented out), we now do it
-    % with ismember since this correctly returns baseCoordsIndices even if there are
-    % duplicates which can happen with flat maps
-    %[roiCoordsSlice,roiIndices,baseIndices] = intersect(roiBaseCoordsLinear,baseCoordsLinear);
+    roiBaseCoordsLinear = mysub2ind(baseDims,roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
+    % we use ismember here since it will keep duplicates.
+    % in this case the base may have multiple coordinates, but
+    % the roi will have unique coordinates, so we switch
+    % the order of arguments from above
     [baseIndices roiIndices] = ismember(baseCoordsLinear,roiBaseCoordsLinear);
     baseIndices = find(baseIndices);
     roiIndices = roiIndices(baseIndices);
-    % transform them into image coordinates
-    [thisx,thisy] = ind2sub(imageDims,baseIndices);
-    x = [x thisx];y = [y thisy];
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % this is the old way, using intersect by rows
-    %[roiCoordsSlice,roiIndices,baseIndices] = intersect(baseCoords(1:3,roiIndexesThisSlice)',baseCoordsHomogeneous(1:3,:)','rows');
-    % transform them into image coordinates
-    %[thisx,thisy] = ind2sub(imageDims,baseIndices);
-    %x = [x thisx'];y = [y thisy'];
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    s = [s baseCoords(sliceIndex,roiIndexesThisSlice(roiIndices))];
   end
-  end
+  % now transform the coordinates that exist in this
+  % base into image coordinates
+  [x,y] = ind2sub(imageDims,baseIndices);
+  s = roiBaseCoords(sliceIndex,roiIndices);
 end
 
 
 %-------------------------------------------------------------------------
-function displayROIs(view,sliceNum,sliceIndex,rotate,...
-  baseNum,baseCoordsHomogeneous,imageDims,verbose);
+function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -571,6 +534,7 @@ function displayROIs(view,sliceNum,sliceIndex,rotate,...
 % 'all perimeter'
 % 'selected perimeter'
 % 'hide'
+roi = {};
 
 s = viewGet(view,'currentroi');
 n = viewGet(view,'numberOfROIs');
@@ -596,17 +560,14 @@ for r = order
   roiCache = viewGet(view,'ROICache',r);
   % if not found
   if isempty(roiCache)
-    disppercent(-inf,sprintf('Computing ROI coordinates for %i:%s',r,viewGet(view,'roiName',r)));
-    % Get ROI coords transformed to the image
-    [baseCoords roi(r).x roi(r).y roi(r).s] = getROIBaseCoords(view,sliceNum,sliceIndex,rotate,baseNum,round(baseCoordsHomogeneous),imageDims,r);
-    % init field for drawing roi perimeter
-    maxSlice = max(roi(r).s);if isempty(maxSlice),maxSlice = 1;end
-    roi(r).perimeterLines(maxSlice).x = [];
-    roi(r).perimeterLines(maxSlice).y = [];
-    view = viewSet(view,'ROICache',roi(r),r);
+    disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    % Get ROI coords transformed to the base dimensions
+    roi{r}.roiBaseCoords = getROIBaseCoords(view,baseNum,r);
+    % save to cache
+    view = viewSet(view,'ROICache',roi{r},r);
     disppercent(inf);
   else
-    roi(r) = roiCache;
+    roi{r} = roiCache;
   end
 end
 
@@ -621,33 +582,72 @@ baseType = viewGet(view,'baseType',baseNum);
 if verbose>1,disppercent(-inf,'Drawing ROI');,end
 lineWidth = 0.5;
 w = 0.5;
+
+% get which color to draw the selected ROI in
+selectedROIColor = mrGetPref('selectedROIColor');
+if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
+
 for r = order
   if (r == s)
     % Selected ROI: set color=white
-    color = [1 1 1];
+    color = selectedROIColor;
   else
     % Non-selected ROI, get roi color
-    thisCol = viewGet(view,'roicolor',r);
-    % If it's a 'text' color, translate it...
-    switch (thisCol)
-      case {'yellow','y'}, color = [1 1 0];
-      case {'magenta','m'}, color = [1 0 1];
-      case {'cyan','c'}, color = [0 1 1];
-      case {'red','r'}, color = [1 0 0];
-      case {'green','g'}, color = [0 1 0];
-      case {'blue','b'}, color = [0 0 1];
-      case {'white','w'}, color = [1 1 1];
-      case {'black','k'}, color = [0 0 0];
-      otherwise, color = [1 1 1];
+    color = viewGet(view,'roicolor',r);
+  end
+  % then transform them to the image coordinates
+  % see if they are in the cached version
+  % of the roi. We store here by baseName and
+  % sliceIndex. Many different base anatomies
+  % may use the same cached roi (since they
+  % might have the same xform--i.e. for flat images).
+  % but then each base and each sliceIndex of the
+  % base needs to have its imageCoords calculated
+  baseName = fixBadChars(viewGet(view,'baseName',baseNum));
+  if ((~isfield(roi{r},baseName)) || ...
+      (length(roi{r}.(baseName)) < sliceIndex) || ...
+      (isempty(roi{r}.(baseName){sliceIndex})))
+    disppercent(-inf,sprintf('Computing ROI image coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    [x y s] = getROIImageCoords(view,roi{r}.roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims);
+    % keep the coordinates
+    roi{r}.(baseName){sliceIndex}.x = x;
+    roi{r}.(baseName){sliceIndex}.y = y;
+    roi{r}.(baseName){sliceIndex}.s = s;
+    disppercent(inf);
+    % save in cache
+    view = viewSet(view,'ROICache',roi{r},r);
+  else
+    % just get the coordinates out of the cached ones
+    x = roi{r}.(baseName){sliceIndex}.x;
+    y = roi{r}.(baseName){sliceIndex}.y;
+    s = roi{r}.(baseName){sliceIndex}.s;
+  end
+  
+  % If it's a 'text' color, translate it...
+  if isstr(color)
+    switch (color)
+     case {'yellow','y'}, color = [1 1 0];
+     case {'magenta','m'}, color = [1 0 1];
+     case {'cyan','c'}, color = [0 1 1];
+     case {'red','r'}, color = [1 0 0];
+     case {'green','g'}, color = [0 1 0];
+     case {'blue','b'}, color = [0 0 1];
+     case {'white','w'}, color = [1 1 1];
+     case {'black','k'}, color = [0 0 0];
+     otherwise, color = [1 1 1];
     end % end switch statement
   end
+  roi{r}.color = color;
   % get image coords for this slice
   if baseType == 0
     % for regular volumes, only get coordinates that match slice
-    x = roi(r).x(roi(r).s==sliceNum);y = roi(r).y(roi(r).s==sliceNum);
+    x = x(s==sliceNum);y = y(s==sliceNum);
   else
     % for flat maps, all coordinates are possible
-    x = roi(r).x;y = roi(r).y;s = roi(r).s;
+    % so we just keep all the slices. Note that if
+    % we ever make flat maps with multiple slices, then
+    % we will have to fix this up here to take that
+    % into account.
     sliceNum = 1;
   end
   if ~isempty(x) & ~isempty(y)
@@ -661,106 +661,62 @@ for r = order
             [x(i)-w,x(i)-w,x(i)+w,x(i)+w,x(i)-w], ...
             'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
         end
-
         % Unfortunately, this is slower without the loop
-        %
-        % y = y';
-        % x = x';
+        %y = y';x = x';
         % line([y-w;y+w],[x-w;x-w],'color',color,'LineWidth',lineWidth);
         % line([y+w;y+w],[x-w;x+w],'color',color,'LineWidth',lineWidth);
         % line([y+w;y-w],[x+w;x+w],'color',color,'LineWidth',lineWidth);
         % line([y-w;y-w],[x+w;x-w],'color',color,'LineWidth',lineWidth);
 
+ 	% compute the saved lines, so that functions like mrPrint
+        % can use them
+	roi{r}.lines.x = [y-w y+w y+w y-w;y+w y+w y-w y-w];
+	roi{r}.lines.y = [x-w x-w x+w x+w;x-w x+w x+w x-w];
+	view = viewSet(view,'ROICache',roi{r},r);
+
       case{'all perimeter','selected perimeter'}
         % Draw only the perimeter
-	% first compute the lines that need to be 
-	% drawn so that they can be cached
-	if isempty(roi(r).perimeterLines(sliceNum).x)
-	  % removing the loop from this algorithm speeds things
-	  % up dramatically. Calculating the perimeter before
-	  % for a medium size ROI on the flat could easily take 30
-	  % seconds on my intel mac. With this verison it takes
-	  % less than 30ms. yeah :-)...-jg.
-	  if 1 % set to 0 to run old version
-	    % first get positions of all vertical lines
-	    % this includes one on either side of each voxel
-	    % and then make that into a linear coordinate
-	    % and sort them. Note the +1 on imageDims
-	    % is to allow for voxels that are at the edge of the image
-	    vlines = sort(sub2ind(imageDims+1,[x x+1],[y y]));
-	    % now we look for any lines that are duplicates
-	    % that means they belong to two voxels, so that
-	    % they should not be drawn. we look for duplicates
-	    % as ones in which the voxel number is the same
-	    % as the next one in the list.
-	    duplicates = diff(vlines)==0;
-	    % and add the last one in.
-	    duplicates = [duplicates 0];
-	    % make sure to score both copies as duplicates
-	    duplicates(find(duplicates)+1) = 1;
-	    % now get everything that is not a duplicate
-	    vlines = vlines(~duplicates);
-	    % now make back into x,y coordinates
-	    [vx vy] = ind2sub(imageDims+1,vlines);
-	    % now do the same for the horizontal lines
-	    hlines = sort(sub2ind(imageDims+1,[x x],[y y+1]));
-	    duplicates = diff(hlines)==0;
-	    duplicates = [duplicates 0];
-	    duplicates(find(duplicates)+1) = 1;
-	    hlines = hlines(~duplicates);
-	    [hx hy] = ind2sub(imageDims+1,hlines);
-	    % and make them into lines (draw -0.5 and +0.5 so
-	    % that we draw around the pixel not through the center
-	    % and note that x/y are flipped
-	    roi(r).perimeterLines(sliceNum).x(1:2,:) = [vy-0.5 hy-0.5;vy+0.5 hy-0.5];
-	    roi(r).perimeterLines(sliceNum).y(1:2,:) = [vx-0.5 hx-0.5;vx-0.5 hx+0.5];
-	  else
-	    % old version
-	    disppercent(-inf,sprintf('Computing ROI perimeter for ROI %i',r));
-	    for i=1:length(x);
-	      xMinus = find(x == x(i)-1);
-	      xEquals = find(x == x(i));
-	      xPlus = find(x == x(i)+1);
-	      if isempty(xMinus)
-		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
-		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)-w]';
-	      else
-		if ~any(y(i) == y(xMinus))
-		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
-		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)-w]';
-		end
-	      end
-	      if isempty(xPlus)
-		roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
-		roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)+w, x(i)+w]';
-	      else
-		if ~any(y(i) == y(xPlus))
-		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)+w]';
-		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)+w, x(i)+w]';
-		end
-	      end
-	      if ~isempty(xEquals)
-		if ~any(y(i) == y(xEquals)-1)
-		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)+w,y(i)+w]';
-		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
-		end
-		if ~any(find(y(i) == y(xEquals)+1))
-		  roi(r).perimeterLines(sliceNum).x(:,end+1) = [y(i)-w,y(i)-w]';
-		  roi(r).perimeterLines(sliceNum).y(:,end+1) = [x(i)-w, x(i)+w]';
-		end
-	      end
-	      disppercent(i/length(x));
-	    end
-	    disppercent(inf);
-	    % save the roi with the lines in the cache,note
-	    % we only do this for the old version, since
-	    % the new version is fast enough that it is not
-	    % really worth caching.
-	    view = viewSet(view,'ROICache',roi(r),r);
-	  end
-	end
+	% removing the loop from this algorithm speeds things
+	% up dramatically. Calculating the perimeter before
+	% for a medium size ROI on the flat could easily take 30
+	% seconds on my intel mac. With this verison it takes
+	% less than 30ms. yeah :-)...-jg.
+	% first get positions of all vertical lines
+	% this includes one on either side of each voxel
+	% and then make that into a linear coordinate
+	% and sort them. Note the +1 on imageDims
+	% is to allow for voxels that are at the edge of the image
+	vlines = sort(sub2ind(imageDims+1,[x x+1],[y y]));
+	% now we look for any lines that are duplicates
+	% that means they belong to two voxels, so that
+	% they should not be drawn. we look for duplicates
+	% as ones in which the voxel number is the same
+	% as the next one in the list.
+	duplicates = diff(vlines)==0;
+	% and add the last one in.
+	duplicates = [duplicates 0];
+	% make sure to score both copies as duplicates
+	duplicates(find(duplicates)+1) = 1;
+	% now get everything that is not a duplicate
+	vlines = vlines(~duplicates);
+	% now make back into x,y coordinates
+	[vx vy] = ind2sub(imageDims+1,vlines);
+	% now do the same for the horizontal lines
+	hlines = sort(sub2ind(imageDims+1,[x x],[y y+1]));
+	duplicates = diff(hlines)==0;
+	duplicates = [duplicates 0];
+	duplicates(find(duplicates)+1) = 1;
+	hlines = hlines(~duplicates);
+	[hx hy] = ind2sub(imageDims+1,hlines);
+	% and make them into lines (draw -0.5 and +0.5 so
+	% that we draw around the pixel not through the center
+	% and note that x/y are flipped
+	roi{r}.lines.x = [vy-0.5 hy-0.5;vy+0.5 hy-0.5];
+	roi{r}.lines.y = [vx-0.5 hx-0.5;vx-0.5 hx+0.5];
+	% save to cache (since other functions like mrPrint need this
+	view = viewSet(view,'ROICache',roi{r},r);
 	% now render those lines
-	line(roi(r).perimeterLines(sliceNum).x,roi(r).perimeterLines(sliceNum).y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
+	line(roi{r}.lines.x,roi{r}.lines.y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
     end
   end
 end

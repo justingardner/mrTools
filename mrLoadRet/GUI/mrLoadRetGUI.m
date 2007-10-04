@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 27-Sep-2007 22:14:39
+% Last Modified by GUIDE v2.5 04-Oct-2007 11:02:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2089,3 +2089,13 @@ n = viewGet(viewNum,'currentBase');
 saveAnat(MLR.views{viewNum},n,1,1);
 
 
+% --------------------------------------------------------------------
+function printMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to printMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+mrPrint(v);
