@@ -41,6 +41,13 @@ if isempty(defaultInterrogators)
   defaultInterrogators = '';
 end
 
+% get defaultInterrogators
+selectedROIColor = mrGetPref('selectedROIColor');
+if isempty(selectedROIColor)
+  selectedROIColor = {'white'};
+end
+selectedROIColor = putOnTopOfList(selectedROIColor,{'yellow','magenta','cyan','red','green','blue','white','black'});
+
 % get current values for other prefs
 site = mrGetPref('site');
 maxBlocksize = mrGetPref('maxBlocksize');
@@ -59,6 +66,7 @@ prefParams = {{'site',site,'Where you are using this code'},...
     {'volumeDirectory',volumeDirectory,'The directory to default to when you load base anatomy from the Volume directory'},...
     {'overwritePolicy',overwritePolicy,'Method to use when analysis is going to overwrite an existing file'},...
     {'niftiFileExtension',niftiFileExtension,'Nifti file extension, usually .img'},...
+    {'selectedROIColor',selectedROIColor,'What color to use to draw the selected ROI. Note that you will have to cause the display to refresh--e.g. change slices to have this take effect'},...
     {'roiPolygonMethod',roiPolygonMethod,'Method used to create ROI polygons. The default roipoly function calls the line drawing function which can be very slow if you have already drawn a buch of lines (i.e. have some ROIs displaying). If you choose getpts instead, you will not have the lines drawn between points as you draw the ROI, but it will be much faster.'},...
     {'defaultInterrogators',defaultInterrogators,'This is a comma separated list that contains interrogators that you can use.'},...
     {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 50.','minmax=[0 inf]','incdec=[-1 1]'},...
@@ -76,6 +84,7 @@ if ~isempty(prefParams)
     mrSetPref('overwritePolicy',prefParams.overwritePolicy);
     mrSetPref('niftiFileExtension',prefParams.niftiFileExtension);
     mrSetPref('roiPolygonMethod',prefParams.roiPolygonMethod);
+    mrSetPref('selectedROIColor',prefParams.selectedROIColor);
     mrSetPref('defaultInterrogators',prefParams.defaultInterrogators);
     mrSetPref('roiCacheSize',prefParams.roiCacheSize);
     mrSetPref('baseCacheSize',prefParams.baseCacheSize);
