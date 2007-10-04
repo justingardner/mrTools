@@ -43,6 +43,6 @@ function retval = getOverlayData(v)
 retval = [];
 % get the current overlay
 o = viewGet(v,'overlay');
-
+disp(sprintf('(overlayInfo) Setting variable overlayData'));
 assignin('base','overlayData',o.data);
 
