@@ -14,6 +14,7 @@ mrGlobals;
 h = MLR.graphFigure;
 if (isempty(h) | h == 0) | ~ishandle(h)
   newGraphWin;
+  h = MLR.graphFigure;
 else
   set(0,'CurrentFigure',h);
   figure(h);
