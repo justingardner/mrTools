@@ -40,6 +40,7 @@ end
 if ~isempty(roi)
   paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
   paramsInfo{end+1} = {'roiColor',{'default','yellow','magenta','cyan','red','green','blue','white','black'},'Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
+  paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
 end
 
 params = mrParamsDialog(paramsInfo,'Print figure options');;
@@ -161,12 +162,29 @@ for rnum = 1:length(roi)
 	    x = roi{rnum}.lines.x-xCenter;
 	    y = roi{rnum}.lines.y-yCenter;
 	    d = sqrt(x.^2+y.^2);
-	    % set all values greater than the radius to nan
-	    x(d>circd) = nan;
-	    y(d>circd) = nan;
-	    % set them back in the strucutre
-	    roi{rnum}.lines.x = x+xCenter;
-	    roi{rnum}.lines.y = y+yCenter;
+	    if strcmp(params.roiOutOfBoundsMethod,'Max radius')
+	      % find the angle of all points
+	      ang = atan(y./x);
+	      ysign = (y > 0)*2-1;
+	      xsign = (x > 0)*2-1;
+	      newx = circd*cos(ang);
+	      newy = circd*sin(ang);
+	      % now reset all points past the maximum radius
+	      % with values at the outermost edge of the aperture
+	      x(d>circd) = newx(d>circd);
+	      y(d>circd) = newy(d>circd);
+	      % set them back in the structure
+	      roi{rnum}.lines.x = xsign.*abs(x)+xCenter;
+	      roi{rnum}.lines.y = ysign.*abs(y)+yCenter;
+	    else
+	      % set all values greater than the radius to nan
+	      x(d>circd) = nan;
+	      y(d>circd) = nan;
+	      
+	      % set them back in the strucutre
+	      roi{rnum}.lines.x = x+xCenter;
+	      roi{rnum}.lines.y = y+yCenter;
+	    end
 	  end
 	  if strcmp(params.roiColor,'default')
 	    color = roi{rnum}.color;

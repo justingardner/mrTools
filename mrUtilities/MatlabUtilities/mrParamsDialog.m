@@ -47,10 +47,16 @@ global mrDEFAULTS;
 % parse the input parameter string
 [gParams.vars gParams.varinfo numrows numcols] = mrParamsParse(vars);
 
+% get maximum length of var name
+maxChars = 0;
+for i = 1:length(gParams.vars)
+  maxChars = max(length(gParams.vars{i}{1}),maxChars);
+end  
+
 % some basic info about location of controls
 gParams.leftMargin = 10;
 gParams.topMargin = 10;
-gParams.buttonWidth = 100;
+gParams.buttonWidth = min(max(100,maxChars*7),200);
 gParams.buttonHeight = 20;
 gParams.margin = 5;
 gParams.fontsize = 12;

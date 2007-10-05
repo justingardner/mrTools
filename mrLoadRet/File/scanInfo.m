@@ -59,7 +59,7 @@ junkFrames = viewGet(view,'junkFrames',scanNum,groupNum);
 totalJunkedFrames = viewGet(view,'totalJunkedFrames',scanNum,groupNum);
 
 % get params info
-nCols = 2;
+nCols = 1;
 matfile = viewGet(view,'params',scanNum,groupNum);
 fieldsToIgnore = {'tseriesfiles','groupname','description','filename'};
 % display info
