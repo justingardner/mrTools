@@ -95,7 +95,8 @@ for roinum = 1:length(roiname)
     if isstr(roiname{roinum})
       roi = load(roiname{roinum});
     elseif isnumeric(roiname{roinum})
-      roi = viewGet(view,'roi',roiname{roinum});
+      thisroi = viewGet(view,'roi',roiname{roinum});
+      roi.(fixBadChars(thisroi.name)) = thisroi;
     else
       roi.(fixBadChars(roiname{roinum}.name)) = roiname{roinum};
     end
