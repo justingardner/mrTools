@@ -454,12 +454,11 @@ pos(4) = MLR.interrogator{viewNum}.buttonHeight;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function interrogatorList = getDefaultInterrogators(v);
 
-defaultInterrogators = mrGetPref('defaultInterrogators');
-% make the comma delimited string into a list
-interrogatorList = {};
-while ~isempty(defaultInterrogators)
-  [interrogatorList{end+1} defaultInterrogators] = strtok(defaultInterrogators,',');
+interrogatorList = mrGetPref('defaultInterrogators');
+if isstr(interrogatorList)
+  interrogatorList = commaDelimitedToCell(interrogatorList);
 end
+
 % put the interrogator associated with this overlay on the list
 overlayInterrogator = viewGet(v,'interrogator');
 if ~isempty(overlayInterrogator)
