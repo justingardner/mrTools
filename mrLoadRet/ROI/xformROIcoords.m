@@ -19,6 +19,22 @@ function newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,samp
 % 7/19/02 djh, Modified to maintain equal volumes
 % 8/2005 djh, Updated to mrLoadRet-4.0
 
+% if roiMatchMode is set to No transform, return the
+% coordinates if the xform and voxel sizes match 
+roiMatchMethod = mrGetPref('roiMatchMethod');
+if strcmp(roiMatchMethod,'No transform')
+  % check, accounting for round off error
+  roundVal = 10000000;
+  xformRound = round(xform*roundVal)/roundVal;
+  inputVoxSizeRound = round(inputVoxSize*roundVal)/roundVal;
+  outputVoxSizeRound = round(outputVoxSize*roundVal)/roundVal;
+  % now check for identity xform and same voxel sizes
+  if isequal(xformRound,eye(4)) && isequal(inputVoxSizeRound,outputVoxSizeRound)
+    newcoords = coords;
+    return
+  end
+end
+
 if ~exist('sampRate','var')
 	sampRate = ceil(inputVoxSize ./ outputVoxSize) .* [4,4,4];
 	sampRate = 2*floor(sampRate/2) + 1;

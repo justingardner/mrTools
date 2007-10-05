@@ -23,7 +23,7 @@ if (nargout == 2)
   optionalFields = {'range',[min(base.data(:)) max(base.data(:))];
 		    'clip',defaultClip(base.data);
 		    'coordMap',[];
-		    'rotate',[];
+		    'rotate',0;
 		    'curSlice',[];
 		    'sliceOrientation',[]};
 else

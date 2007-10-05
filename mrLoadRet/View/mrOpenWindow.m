@@ -74,6 +74,9 @@ if isfile('mrLastView.mat')
 
     if baseLoaded && isfield(mrLastView,'viewSettings')
       % slice orientation from last run
+      if isfield(mrLastView.viewSettings,'curBase')
+	view = viewSet(view,'curBase',mrLastView.viewSettings.curBase);
+      end
       view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
       % rotate
       mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
