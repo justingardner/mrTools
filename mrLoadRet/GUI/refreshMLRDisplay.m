@@ -651,73 +651,56 @@ for r = order
     sliceNum = 1;
   end
   if ~isempty(x) & ~isempty(y)
-    switch option
-      case{'all','selected'}
-        % Draw the lines around each pixel, w=1/2 because you don't
-        % want to connect the centers of the pixels, rather you want to
-        % draw around each pixel, e.g, from (x-.5,y-.5) to (x+.5,y-.5).
-        for i=1:length(x);
-          line([y(i)-w,y(i)+w,y(i)+w,y(i)-w,y(i)-w],...
-            [x(i)-w,x(i)-w,x(i)+w,x(i)+w,x(i)-w], ...
-            'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
-        end
-        % Unfortunately, this is slower without the loop
-        %y = y';x = x';
-        % line([y-w;y+w],[x-w;x-w],'color',color,'LineWidth',lineWidth);
-        % line([y+w;y+w],[x-w;x+w],'color',color,'LineWidth',lineWidth);
-        % line([y+w;y-w],[x+w;x+w],'color',color,'LineWidth',lineWidth);
-        % line([y-w;y-w],[x+w;x-w],'color',color,'LineWidth',lineWidth);
-
- 	% compute the saved lines, so that functions like mrPrint
-        % can use them
-	roi{r}.lines.x = [y-w y+w y+w y-w;y+w y+w y-w y-w];
-	roi{r}.lines.y = [x-w x-w x+w x+w;x-w x+w x+w x-w];
-	view = viewSet(view,'ROICache',roi{r},r);
-
-      case{'all perimeter','selected perimeter'}
-        % Draw only the perimeter
-	% removing the loop from this algorithm speeds things
-	% up dramatically. Calculating the perimeter before
-	% for a medium size ROI on the flat could easily take 30
-	% seconds on my intel mac. With this verison it takes
-	% less than 30ms. yeah :-)...-jg.
-	% first get positions of all vertical lines
-	% this includes one on either side of each voxel
-	% and then make that into a linear coordinate
-	% and sort them. Note the +1 on imageDims
-	% is to allow for voxels that are at the edge of the image
-	vlines = sort(sub2ind(imageDims+1,[x x+1],[y y]));
-	% now we look for any lines that are duplicates
-	% that means they belong to two voxels, so that
-	% they should not be drawn. we look for duplicates
-	% as ones in which the voxel number is the same
-	% as the next one in the list.
-	duplicates = diff(vlines)==0;
-	% and add the last one in.
-	duplicates = [duplicates 0];
-	% make sure to score both copies as duplicates
-	duplicates(find(duplicates)+1) = 1;
-	% now get everything that is not a duplicate
-	vlines = vlines(~duplicates);
-	% now make back into x,y coordinates
-	[vx vy] = ind2sub(imageDims+1,vlines);
-	% now do the same for the horizontal lines
-	hlines = sort(sub2ind(imageDims+1,[x x],[y y+1]));
-	duplicates = diff(hlines)==0;
-	duplicates = [duplicates 0];
-	duplicates(find(duplicates)+1) = 1;
-	hlines = hlines(~duplicates);
-	[hx hy] = ind2sub(imageDims+1,hlines);
-	% and make them into lines (draw -0.5 and +0.5 so
-	% that we draw around the pixel not through the center
-	% and note that x/y are flipped
-	roi{r}.lines.x = [vy-0.5 hy-0.5;vy+0.5 hy-0.5];
-	roi{r}.lines.y = [vx-0.5 hx-0.5;vx-0.5 hx+0.5];
-	% save to cache (since other functions like mrPrint need this
-	view = viewSet(view,'ROICache',roi{r},r);
-	% now render those lines
-	line(roi{r}.lines.x,roi{r}.lines.y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
+    % decide whether we are drawing perimeters or not
+    doPerimeter = ismember(option,{'all perimeter','selected perimeter'});
+    % removing the loop from this algorithm speeds things
+    % up dramatically. Calculating the perimeter before
+    % for a medium size ROI on the flat could easily take 30
+    % seconds on my intel mac. With this verison it takes
+    % less than 30ms. yeah :-)...-jg.
+    % first get positions of all vertical lines
+    % this includes one on either side of each voxel
+    % and then make that into a linear coordinate
+    % and sort them. Note the +1 on imageDims
+    % is to allow for voxels that are at the edge of the image
+    vlines = sort(sub2ind(imageDims+1,[x x+1],[y y]));
+    % now we look for any lines that are duplicates
+    % that means they belong to two voxels, so that
+    % they should not be drawn. we look for duplicates
+    % as ones in which the voxel number is the same
+    % as the next one in the list.
+    duplicates = diff(vlines)==0;
+    % and add the last one in.
+    duplicates = [duplicates 0];
+    if doPerimeter
+      % make sure to score both copies as duplicates
+      % only necessary for perimeter drawing, for
+      % drawing all boundaries, we need to keep
+      % at least one
+      duplicates(find(duplicates)+1) = 1;
     end
+    % now get everything that is not a duplicate
+    vlines = vlines(~duplicates);
+    % now make back into x,y coordinates
+    [vx vy] = ind2sub(imageDims+1,vlines);
+    % now do the same for the horizontal lines
+    hlines = sort(sub2ind(imageDims+1,[x x],[y y+1]));
+    duplicates = diff(hlines)==0;
+    duplicates = [duplicates 0];
+    if doPerimeter
+      duplicates(find(duplicates)+1) = 1;
+    end
+    hlines = hlines(~duplicates);
+    [hx hy] = ind2sub(imageDims+1,hlines);
+    % and make them into lines (draw -0.5 and +0.5 so
+    % that we draw around the pixel not through the center
+    % and note that x/y are flipped
+    roi{r}.lines.x = [vy-0.5 hy-0.5;vy+0.5 hy-0.5];
+    roi{r}.lines.y = [vx-0.5 hx-0.5;vx-0.5 hx+0.5];
+    % save to cache (since other functions like mrPrint need this
+    view = viewSet(view,'ROICache',roi{r},r);
+    % now render those lines
+    line(roi{r}.lines.x,roi{r}.lines.y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
   end
 end
 if verbose>1,disppercent(inf);,end
