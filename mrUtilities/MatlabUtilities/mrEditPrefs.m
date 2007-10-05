@@ -35,11 +35,19 @@ if find(strcmp(mrGetPref('roiPolygonMethod'),roiPolygonMethod))
 end
 
 % get defaultInterrogators
+systemInterrogators = {'timecoursePlot','makeFlat'};
 defaultInterrogators = mrGetPref('defaultInterrogators');
 if isempty(defaultInterrogators)
 %  defaultInterrogators = 'mrDefaultInterrogator';
   defaultInterrogators = '';
 end
+% only show ones that are not systemInterrgators and
+% make into a comma delimited list so that the user
+% can edit it easily
+if isstr(defaultInterrogators)
+  defaultInterrogators = commaDelimitedToCell(defaultInterrogators);
+end
+defaultInterrogators = cellToCommaDelimited(setdiff(defaultInterrogators,systemInterrogators));
 
 % get selectedROIColor
 selectedROIColor = mrGetPref('selectedROIColor');
@@ -93,9 +101,11 @@ if ~isempty(prefParams)
     mrSetPref('niftiFileExtension',prefParams.niftiFileExtension);
     mrSetPref('roiPolygonMethod',prefParams.roiPolygonMethod);
     mrSetPref('selectedROIColor',prefParams.selectedROIColor);
-    mrSetPref('defaultInterrogators',prefParams.defaultInterrogators);
+    mrSetPref('defaultInterrogators',union(commaDelimitedToCell(prefParams.defaultInterrogators),systemInterrogators));
     mrSetPref('roiCacheSize',prefParams.roiCacheSize);
     mrSetPref('roiMatchMethod',prefParams.roiMatchMethod);
     mrSetPref('baseCacheSize',prefParams.baseCacheSize);
     mrSetPref('overlayCacheSize',prefParams.overlayCacheSize);
 end
+
+
