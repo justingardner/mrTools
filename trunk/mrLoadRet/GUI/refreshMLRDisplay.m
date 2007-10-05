@@ -701,6 +701,9 @@ for r = order
     view = viewSet(view,'ROICache',roi{r},r);
     % now render those lines
     line(roi{r}.lines.x,roi{r}.lines.y,'Color',color,'LineWidth',lineWidth,'Parent',gui.axis);
+  else
+    roi{r}.lines.x = [];
+    roi{r}.lines.y = [];
   end
 end
 if verbose>1,disppercent(inf);,end
