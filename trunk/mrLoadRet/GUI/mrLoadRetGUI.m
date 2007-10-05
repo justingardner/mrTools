@@ -705,6 +705,7 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     % remember figure location
     mrSetFigLoc('mrLoadRetGUI',get(thisView.figure,'Position'));
     % remember GUI settings
+    viewSettings.curBase = viewGet(thisView,'curBase');
     viewSettings.rotate = viewGet(thisView,'rotate');
     viewSettings.curScan = viewGet(thisView,'curScan');
     viewSettings.curSlice = viewGet(thisView,'curSlice');

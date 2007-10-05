@@ -24,7 +24,9 @@ else
 end
 
 % grab the image
+disppercent(-inf,'(mrPrint) Rerendering image');
 [img base roi] = refreshMLRDisplay(viewGet(v,'viewNum'));
+disppercent(inf);
 
 % first get parameters that the user wants to display
 paramsInfo = {};
@@ -48,11 +50,15 @@ fig = viewGet(v,'figNum');
 gui = guidata(fig);
 
 % grab the colorbar data
-cmap = squeeze(get(get(gui.colorbar,'children'),'CData'));
+H = get(gui.colorbar,'children');
+cmap = squeeze(get(H(end),'CData'));
 
 % display in graph window
 f = selectGraphWin;
+keyboard
+clf(f);drawnow;
 
+set(f,'Name','Print figure');
 set(f,'NumberTitle','off');
 set(f,'color',params.backgroundColor)
 
@@ -70,8 +76,10 @@ elseif strcmp(params.maskType,'Remove black')
   mask(:,:,3) = (base.im<=blackValue);
 elseif strcmp(params.maskType,'Circular')
   % find the largest circular aperture
-  x = (1:size(base.im,2))-(size(base.im,2)/2);
-  y = (1:size(base.im,1))-(size(base.im,1)/2);
+  xCenter = (size(base.im,2)/2);
+  yCenter = (size(base.im,1)/2);
+  x = (1:size(base.im,2))-xCenter;
+  y = (1:size(base.im,1))-yCenter;
   [x y] = meshgrid(x,y);
   % now compute the distance from the center for
   % every point
@@ -80,14 +88,14 @@ elseif strcmp(params.maskType,'Circular')
   % are no black voxels
   maxd = max(d(:));
   mind = min(d(:));
-  for thisd = maxd:-1:mind
-    if ~any(base.im(d<=thisd)<=blackValue)
+  for circd = maxd:-1:mind
+    if ~any(base.im(d<=circd)<=blackValue)
       break;
     end
   end
-  mask(:,:,1) = (d>thisd);
-  mask(:,:,2) = (d>thisd);
-  mask(:,:,3) = (d>thisd);
+  mask(:,:,1) = (d>circd);
+  mask(:,:,2) = (d>circd);
+  mask(:,:,3) = (d>circd);
 end
 
 
@@ -136,14 +144,38 @@ H = title(params.title);
 set(H,'Color',foregroundColor);
 set(H,'FontSize',16);
 
+drawnow;
+
 % draw the roi
 sliceNum = viewGet(v,'currentSlice');
+disppercent(-inf,'(mrPrint) Rendering ROIs');
 for rnum = 1:length(roi)
   % check for lines
   if params.roiLineWidth > 0
     if ~isempty(roi{rnum})
       if isfield(roi{rnum},'lines')
 	if ~isempty(roi{rnum}.lines.x)
+	  % if we have a circular apertuer then we need to
+	  % fix all the x and y points so they don't go off the end
+	  if strcmp(params.maskType,'Circular')
+	    % get the distance
+	    x = roi{rnum}.lines.x-xCenter;
+	    y = roi{rnum}.lines.y-yCenter;
+	    d = sqrt(x.^2+y.^2);
+	    % find the angle of all points
+	    ang = atan(y./x);
+	    ysign = (y > 0)*2-1;
+	    xsign = (x > 0)*2-1;
+	    newx = circd*cos(ang);
+	    newy = circd*sin(ang);
+	    % now reset all points past the maximum radius
+	    % with values at the outermost edge of the aperture
+	    x(d>circd) = newx(d>circd);
+	    y(d>circd) = newy(d>circd);
+	    % set them back in the strucutre
+	    roi{rnum}.lines.x = xsign.*abs(x)+xCenter;
+	    roi{rnum}.lines.y = ysign.*abs(y)+yCenter;
+	  end
 	  if strcmp(params.roiColor,'default')
 	    color = roi{rnum}.color;
 	  else
@@ -156,6 +188,7 @@ for rnum = 1:length(roi)
     end
   end
 end
+disppercent(inf);
 
 % bring up print dialog
 global mrPrintWarning
@@ -163,4 +196,6 @@ if isempty(mrPrintWarning)
   mrWarnDlg('(mrPrint) If you are having trouble getting colors to print correctly, try exporting the figure to an eps (use its File/Export Setup menu) and printing that');
   mrPrintWarning = 1;
 end
-printpreview(f);
+printdlg(f);
+%printpreview(f);
+
