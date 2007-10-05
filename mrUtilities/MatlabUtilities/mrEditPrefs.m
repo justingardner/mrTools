@@ -41,12 +41,19 @@ if isempty(defaultInterrogators)
   defaultInterrogators = '';
 end
 
-% get defaultInterrogators
+% get selectedROIColor
 selectedROIColor = mrGetPref('selectedROIColor');
 if isempty(selectedROIColor)
-  selectedROIColor = {'white'};
+  selectedROIColor = 'white';
 end
 selectedROIColor = putOnTopOfList(selectedROIColor,{'yellow','magenta','cyan','red','green','blue','white','black'});
+
+% get roiMatchMethod
+roiMatchMethod = mrGetPref('roiMatchMethod');
+if isempty(roiMatchMethod)
+  roiMatchMethod = 'Normal';
+end
+roiMatchMethod = putOnTopOfList(roiMatchMethod,{'Normal','No transform'});
 
 % get current values for other prefs
 site = mrGetPref('site');
@@ -68,6 +75,7 @@ prefParams = {{'site',site,'Where you are using this code'},...
     {'niftiFileExtension',niftiFileExtension,'Nifti file extension, usually .img'},...
     {'selectedROIColor',selectedROIColor,'What color to use to draw the selected ROI. Note that you will have to cause the display to refresh--e.g. change slices to have this take effect'},...
     {'roiPolygonMethod',roiPolygonMethod,'Method used to create ROI polygons. The default roipoly function calls the line drawing function which can be very slow if you have already drawn a buch of lines (i.e. have some ROIs displaying). If you choose getpts instead, you will not have the lines drawn between points as you draw the ROI, but it will be much faster.'},...
+    {'roiMatchMethod',roiMatchMethod,'If you are transforming an ROI to an image which has the same voxel dimensions and the same transform, you can use ''No transform'' to have the code just pass the voxels back instead of going through the normal transformation process. While this is fast it may leave holes in the ROI. The ''Normal'' transformation process will add some partial volumed voxels, which is the default. It is a bit slower, but does not leave wholes in the ROI'},...
     {'defaultInterrogators',defaultInterrogators,'This is a comma separated list that contains interrogators that you can use.'},...
     {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 50.','minmax=[0 inf]','incdec=[-1 1]'},...
     {'baseCacheSize',baseCacheSize,'Size of base image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},...
@@ -87,6 +95,7 @@ if ~isempty(prefParams)
     mrSetPref('selectedROIColor',prefParams.selectedROIColor);
     mrSetPref('defaultInterrogators',prefParams.defaultInterrogators);
     mrSetPref('roiCacheSize',prefParams.roiCacheSize);
+    mrSetPref('roiMatchMethod',prefParams.roiMatchMethod);
     mrSetPref('baseCacheSize',prefParams.baseCacheSize);
     mrSetPref('overlayCacheSize',prefParams.overlayCacheSize);
 end
