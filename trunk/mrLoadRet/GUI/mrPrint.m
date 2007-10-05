@@ -33,13 +33,13 @@ paramsInfo = {};
 paramsInfo{end+1} = {'title',sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,'description')),'Title of figure'};
 paramsInfo{end+1} = {'backgroundColor',{'white','black'},'Background color, either white or black'};
 paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'Location of colorbar, select None if you do not want a colorbar'};
+paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
 if flatAnat
   paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black removes all pixels that are black as defined by blackValue'};
 end
 if ~isempty(roi)
-  paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs. Note that ROIs will only draw if you are drawing ROI perimeters.'};
+  paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
   paramsInfo{end+1} = {'roiColor',{'default','yellow','magenta','cyan','red','green','blue','white','black'},'Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
-paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
 end
 
 params = mrParamsDialog(paramsInfo,'Print figure options');;
@@ -157,23 +157,16 @@ for rnum = 1:length(roi)
 	  % if we have a circular apertuer then we need to
 	  % fix all the x and y points so they don't go off the end
 	  if strcmp(params.maskType,'Circular')
-	    % get the distance
+	    % get the distance from center
 	    x = roi{rnum}.lines.x-xCenter;
 	    y = roi{rnum}.lines.y-yCenter;
 	    d = sqrt(x.^2+y.^2);
-	    % find the angle of all points
-	    ang = atan(y./x);
-	    ysign = (y > 0)*2-1;
-	    xsign = (x > 0)*2-1;
-	    newx = circd*cos(ang);
-	    newy = circd*sin(ang);
-	    % now reset all points past the maximum radius
-	    % with values at the outermost edge of the aperture
-	    x(d>circd) = newx(d>circd);
-	    y(d>circd) = newy(d>circd);
+	    % set all values greater than the radius to nan
+	    x(d>circd) = nan;
+	    y(d>circd) = nan;
 	    % set them back in the strucutre
-	    roi{rnum}.lines.x = xsign.*abs(x)+xCenter;
-	    roi{rnum}.lines.y = ysign.*abs(y)+yCenter;
+	    roi{rnum}.lines.x = x+xCenter;
+	    roi{rnum}.lines.y = y+yCenter;
 	  end
 	  if strcmp(params.roiColor,'default')
 	    color = roi{rnum}.color;
