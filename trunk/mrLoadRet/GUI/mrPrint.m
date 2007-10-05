@@ -55,7 +55,6 @@ cmap = squeeze(get(H(end),'CData'));
 
 % display in graph window
 f = selectGraphWin;
-keyboard
 clf(f);drawnow;
 
 set(f,'Name','Print figure');
