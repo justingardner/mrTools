@@ -536,20 +536,20 @@ function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHom
 % 'hide'
 roi = {};
 
-s = viewGet(view,'currentroi');
+selectedROI = viewGet(view,'currentroi');
 n = viewGet(view,'numberOfROIs');
 
 % Order in which to draw the ROIs
 option = viewGet(view,'showROIs');
 switch option
   case{'all','all perimeter'}
-    if s
-      order = [1:s-1,s+1:n,s];
+    if selectedROI
+      order = [1:selectedROI-1,selectedROI+1:n,selectedROI];
     else
       order = 1:n;
     end
   case{'selected','selected perimeter'}
-    order = s;
+    order = selectedROI;
   otherwise
     return
 end
@@ -588,7 +588,7 @@ selectedROIColor = mrGetPref('selectedROIColor');
 if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
 
 for r = order
-  if (r == s)
+  if (r == selectedROI)
     % Selected ROI: set color=white
     color = selectedROIColor;
   else
