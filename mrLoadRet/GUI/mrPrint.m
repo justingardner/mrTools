@@ -35,12 +35,13 @@ paramsInfo{end+1} = {'backgroundColor',{'white','black'},'Background color, eith
 paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'Location of colorbar, select None if you do not want a colorbar'};
 paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
 if flatAnat
-  paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black removes all pixels that are black as defined by blackValue'};
+  paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
 end
 if ~isempty(roi)
   paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
   paramsInfo{end+1} = {'roiColor',{'default','yellow','magenta','cyan','red','green','blue','white','black'},'Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
   paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
+  paramsInfo{end+1} = {'roiLabels',1,'type=checkbox','Print ROI name at center coordinate of ROI'};
 end
 
 params = mrParamsDialog(paramsInfo,'Print figure options');;
@@ -148,6 +149,7 @@ drawnow;
 
 % draw the roi
 sliceNum = viewGet(v,'currentSlice');
+label = {};
 disppercent(-inf,'(mrPrint) Rendering ROIs');
 for rnum = 1:length(roi)
   % check for lines
@@ -155,6 +157,22 @@ for rnum = 1:length(roi)
     if ~isempty(roi{rnum})
       if isfield(roi{rnum},'lines')
 	if ~isempty(roi{rnum}.lines.x)
+	  % get color
+	  if strcmp(params.roiColor,'default')
+	    color = roi{rnum}.color;
+	  else
+	    color = params.roiColor;
+	  end
+	  % labels for rois, just create here
+	  % and draw later so they are always on top
+	  if params.roiLabels
+	    x = roi{rnum}.lines.x;
+	    y = roi{rnum}.lines.y;
+	    label{end+1}.x = median(x(~isnan(x)));
+	    label{end}.y = median(y(~isnan(y)));
+	    label{end}.str = viewGet(v,'roiName',rnum);
+	    label{end}.color = color;
+	  end
 	  % if we have a circular apertuer then we need to
 	  % fix all the x and y points so they don't go off the end
 	  if strcmp(params.maskType,'Circular')
@@ -186,17 +204,20 @@ for rnum = 1:length(roi)
 	      roi{rnum}.lines.y = y+yCenter;
 	    end
 	  end
-	  if strcmp(params.roiColor,'default')
-	    color = roi{rnum}.color;
-	  else
-	    color = params.roiColor;
-	  end
 	  % draw the lines
 	  line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth);
 	end
       end
     end
   end
+end
+for i = 1:length(label)
+  h = text(label{i}.x,label{i}.y,label{i}.str);
+  set(h,'Color',foregroundColor);
+  set(h,'Interpreter','None');
+  set(h,'EdgeColor',label{i}.color);
+  set(h,'BackgroundColor',params.backgroundColor);
+  set(h,'FontSize',10);
 end
 disppercent(inf);
 
