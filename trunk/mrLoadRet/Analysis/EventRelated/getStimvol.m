@@ -84,7 +84,7 @@ for i = 1:length(d.stimfile)
       stimvol = getStimvolFromTraces(d.stimfile{i},v);
     else
       % otherwise get it using the name of the variable
-      if ~exist('getStimvolFromVarname',2)
+      if exist('getStimvolFromVarname')~=2
 	mrErrorDlg('(getStimvol) The function getStimvol is missing from your path. Make sure that mgl is in your path');
       end
       [stimvol d.stimNames] = getStimvolFromVarname(v,d.stimfile{i}.myscreen,d.stimfile{i}.task);
