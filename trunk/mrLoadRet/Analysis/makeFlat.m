@@ -130,6 +130,15 @@ if isempty(params)
   return;
 end
 
+% check for directory
+if ~isdir(params.surfDir)
+  params.surfDir = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy directory');
+  % user hits cancel
+  if params.surfDir == 0
+    return
+  end
+end
+
 % load the surfaces
 [surf, params] = loadSurfHandler(params);
 
