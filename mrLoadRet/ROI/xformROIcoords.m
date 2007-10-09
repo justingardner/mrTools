@@ -30,7 +30,7 @@ if strcmp(roiMatchMethod,'No transform')
   outputVoxSizeRound = round(outputVoxSize*roundVal)/roundVal;
   % now check for identity xform and same voxel sizes
   if isequal(xformRound,eye(4)) && isequal(inputVoxSizeRound,outputVoxSizeRound)
-    newcoords = coords;
+    newcoords = round(coords);
     return
   end
 end
