@@ -1295,14 +1295,17 @@ switch lower(param)
     end
     rotate = viewGet(view,'rotate');
     % go through all the bases and look for
-    % the first one with a matching xform. We
-    % do this because flat maps all have the
-    % same baseXform and so there is no need
-    % to recompute them for each base map
+    % the first one with a matching xform and 
+    % voxel size. We do this because flat maps
+    % all have the same baseXform and voxle size
+    % and so there is no need to recompute them
+    % for each base map
     baseXform = viewGet(view,'baseXform');
+    baseVoxelSize = viewGet(view,'baseVoxelSize');
     baseMatch = viewGet(view,'curbase');
     for bnum = 1:viewGet(view,'numBase')
-      if isequal(baseXform,viewGet(view,'baseXform',bnum))
+      if (isequal(baseXform,viewGet(view,'baseXform',bnum)) && ...
+	  isequal(baseVoxelSize,viewGet(view,'baseVoxelSize',bnum)))
     	baseMatch = bnum;
     	break;
       end
