@@ -1320,6 +1320,10 @@ mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
+% get settings from start
+interpMethod = mrGetPref('interpMethod');
+selectedROIColor = mrGetPref('selectedROIColor');
+
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
 baseCacheSize = mrGetPref('baseCacheSize');
@@ -1340,6 +1344,19 @@ if ~isempty(prefParams)
     v = viewSet(v,'overlayCache','init');
   end
 end
+
+% check to see if interpolation method has changed
+if ~strcmp(interpMethod,prefParams.interpMethod)
+  % dump overlay cache and redraw
+  v = viewSet(v,'overlayCache','init');
+  refreshMLRDisplay(v.viewNum);
+end
+
+% check to see if interpolation method has changed
+if ~strcmp(selectedROIColor,prefParams.selectedROIColor)
+  refreshMLRDisplay(v.viewNum);
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function windowMenu_Callback(hObject, eventdata, handles)
