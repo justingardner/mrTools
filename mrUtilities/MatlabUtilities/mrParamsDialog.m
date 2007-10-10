@@ -246,6 +246,12 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
     disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
   end
   return
+else
+  % handle callbacks for non-push buttons
+  if isfield(gParams.varinfo{varnum},'callback')
+    % create the string to call the function
+    feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+  end
 end
 
 % if this is supposed to be a number, then make sure it is.

@@ -39,8 +39,26 @@ if ~isempty(baseCoordMap)
   paramsInfo{end+1} = {'outerFileName',baseCoordMap.outerFileName,'editable=0','Name of outer mesh (aka white matter mesh) from which this flat map was created'};
   paramsInfo{end+1} = {'curvFileName',baseCoordMap.curvFileName,'editable=0','Name of curvature file from which this flat map was created'};
   paramsInfo{end+1} = {'anatFileName',baseCoordMap.anatFileName,'editable=0','Name of anatomy file from which the xform for this flat map was taken'};
+  paramsInfo{end+1} = {'viewFlatOnSurface',[],'type=pushbutton','buttonString=View flat on surface','callback',@viewFlatOnSurface,'passParams=1','Click to view flat on the surface meshes'};
 end
 
 
 % bring up dialog
 mrParamsDialog(paramsInfo,'Base anatomy information');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   viewFlatOnSurface   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function params = viewFlatOnSurface(params,varargin);
+
+thispwd = pwd;
+if isdir(params.flatDir)
+  cd(params.flatDir);
+else
+  pathStr = uigetdir(mrGetPref('volumeDirectory','Find anatomy directory'));
+  if pathStr == 0,return,end
+  cd(pathStr);
+end
+
+mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName);
+cd(thispwd);
