@@ -55,7 +55,8 @@ if isfile('mrLastView.mat')
         % Add it to the list of base volumes and select it
 	for i = 1:length(mrLastView.view.baseVolumes)
 	  % make sure sliceOrientation is not 0
-	  if mrLastView.view.baseVolumes(i).sliceOrientation == 0
+	  if ~isfield(mrLastView.view.baseVolumes(i),'sliceOrientation') ...
+		|| isequal(mrLastView.view.baseVolumes(i).sliceOrientation,0)
 	    mrLastView.view.baseVolumes(i).sliceOrientation = 1;
 	  end
 	  % install the base
