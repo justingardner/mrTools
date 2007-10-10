@@ -13,6 +13,14 @@ if ~any(nargin == [1 5])
   return
 end
 
+% if passed in a string check to see if
+% it needs an extension
+if isstr(flat)
+  if isfile(sprintf('%s.off',stripext(flat)));
+    flat = sprintf('%s.off',stripext(flat));
+  end
+end
+
 % see how we are being called
 if (nargin == 1) && isstr(flat) && ~isfile(flat)
   event = flat;
@@ -38,6 +46,8 @@ switch (event)
   sliderHandler;
  case {'edit'}
   editHandler;
+ otherwise
+  disp(sprintf('(mrFlatViewer) Unknown event'));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -137,7 +147,8 @@ else
 end
 % Now give choice of viewing gray or white
 paramsInfo{end+1} = {'whichSurface',{'Gray matter','White matter','3D Anatomy','Patch'},'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
-paramsInfo{end+1} = {'patchColoring',{'Uniform','Rostral in red','Left in red','Dorsal in red'},'Choose how to color the patch','callback',@patchColoringCallback};
+gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Compressed areas in red','Stretched areas in red','High areal distortion in red'};
+paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
 mrParamsDialog(paramsInfo,'View flat patch location on surface');
 
 
@@ -150,7 +161,7 @@ return
 function patchColoringCallback(params)
 
 global gFlatViewer
-gFlatViewer.patchColoring = find(strcmp(params.patchColoring,{'Uniform','Rostral in red','Left in red','Dorsal in red'}));
+gFlatViewer.patchColoring = find(strcmp(params.patchColoring,gFlatViewer.patchColoringTypes));
 if gFlatViewer.whichSurface == 3
   hPos = round(get(gFlatViewer.hSliders.h,'Value'));
   dispVolume(3,hPos);
@@ -426,10 +437,16 @@ plot(gmNodes(:,1), gmNodes(:,2), 'y.', 'markersize', 1);
 % plot the patch nodes, displaying both deep and superficial surfaces
 co = getPatchColoring;
 wmco = co(find( round(wmPatchNodes(:,sliceIndex))==slice),:);
+% make into magenta vs blue
+i = wmco(:,1);
+wmco(:,1) = i;
+wmco(:,2) = 0;
+wmco(:,3) = max(i,1-i);
+
 wmPatchNodes = wmPatchNodes( find( round(wmPatchNodes(:,sliceIndex))==slice), : );
 
 if gFlatViewer.patchColoring == 1
-  plot(wmPatchNodes(:,1), wmPatchNodes(:,2), '.', 'markersize', 1,'Color',co(1,:));
+  plot(wmPatchNodes(:,1), wmPatchNodes(:,2), '.', 'markersize', 1,'Color',[1 0 1]);
 % otherwise each pixel has to be set
 else
   for i = 1:length(wmPatchNodes(:,1))
@@ -463,18 +480,104 @@ global gFlatViewer;
 % get the patch vertices
 patchVtcs = gFlatViewer.flat.patch2parent(:,2);
 
+title('');
 % one is uniform, 2-4 are red/blue
-if gFlatViewer.patchColoring > 1
-  co = gFlatViewer.surfaces.GM.vtcs(patchVtcs,gFlatViewer.patchColoring-1)';
-  co = (co-min(co))./(max(co)-min(co));
-  % intermediate values turn to gray, so avoid them
-  co((co>0.3)&(co<0.5)) = 0.3;
-  co((co>0.5)&(co<0.7)) = 0.7;
-else
+switch gFlatViewer.patchColoring
+ % uniform
+ case 1
   % make everybody red
   co = ones(1,gFlatViewer.flat.Nvtcs);
+  % anatomical directions
+ case {2,3,4}
+  co = gFlatViewer.surfaces.GM.vtcs(patchVtcs,gFlatViewer.patchColoring-1)';
+  co = (co-min(co))./(max(co)-min(co));
+  % curvature
+ case 5
+  % get curvature
+  curv = gFlatViewer.curv(patchVtcs)';
+  curv = (curv-min(curv))./(max(curv)-min(curv));
+  % flatten distribution
+  co = flattenDistribution(curv);
+ % Areal distortion
+ case {6,7,8}
+  tris = gFlatViewer.flat.tris;
+  % get area in volume
+  volumeArea = getTriangleArea(gFlatViewer.surfaces.GM.vtcs(patchVtcs,:),tris);
+  patchArea = getTriangleArea(gFlatViewer.flat.vtcs,tris);
+  % get the distortion as the ratio of the area in the
+  % patch to the volume
+  trisDistortion = patchArea./volumeArea;
+  % now convert this into a color for each vertex
+  distortion = ones(1,length(patchVtcs));
+  % note that this is a shortcut, it just
+  % sets each vertex to one value of the distortion
+  % even though the vertex may belong to many triangles
+  distortion(tris(:,1)) = trisDistortion;
+  distortion(tris(:,2)) = trisDistortion;
+  distortion(tris(:,3)) = trisDistortion;
+  % normalize
+  if gFlatViewer.patchColoring < 8
+    co = (distortion-min(distortion))./(max(distortion)-min(distortion));
+    co = flattenDistribution(co);
+    % invert colors
+    distortion = log10(distortion);
+    if gFlatViewer.patchColoring == 7
+      co = 1-co;
+      title(sprintf('Stretch: max=%0.2fx median=%0.2fx mean=%0.2fx',10^max(distortion),10^median(distortion(distortion>0)),10^mean(distortion(distortion>0))));
+    else
+      title(sprintf('Compression: max=%0.2fx median=%0.2fx mean=%0.2fx',10^abs(min(distortion)),10^abs(median(distortion(distortion<0))),10^abs(mean(distortion(distortion<0)))));
+    end
+  else
+    % set the colors to the absolute value
+    % of the log of the distortion. This scales
+    % so that doubling or halving the area from
+    % the volume to the patch give you the same
+    % number. Anything above 10x distortion is 1
+    distortion = abs(log10(distortion));
+    co = distortion;
+    co(co>1) = 1;
+    % print out some statistics
+    distortion = 10.^distortion;
+    title(sprintf('Distortion: max=%0.2fx median=%0.2fx mean=%0.2fx',max(distortion),median(distortion),mean(distortion)));
+  end
 end
+
+% intermediate values turn to gray, so avoid them
+co((co>0.3)&(co<0.5)) = 0.3;
+co((co>0.5)&(co<0.7)) = 0.7;
 
 % make into RGB
 co(2:3,:) = [1-co;1-co];
 co = co';
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getTriangleArea   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function area = getTriangleArea(vtcs,tris)
+
+% get length of a each side of triangles
+a = sqrt(sum((vtcs(tris(:,1),:)-vtcs(tris(:,2),:))'.^2));
+b = sqrt(sum((vtcs(tris(:,2),:)-vtcs(tris(:,3),:))'.^2));
+c = sqrt(sum((vtcs(tris(:,3),:)-vtcs(tris(:,1),:))'.^2));
+
+% get semiperimeter (i.e. 1/2 perimeter)
+p = (a+b+c)/2;
+
+% use Heron's formula for size of triangle given side lengths
+area = sqrt(p.*(p-a).*(p-b).*(p-c));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   flattenDistribution   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function co = flattenDistribution(co,nbins)
+
+if ~exist('nbins','var'),nbins = 10;end
+
+% sort the values
+[co sortIndex] = sort(co);
+% get binsize
+binSize = floor(length(co)/nbins);
+% and even number of values back into each bin
+for i = 1:nbins
+  co(sortIndex((i-1)*binSize+1:min(length(co),i*binSize))) = i/nbins;
+end
