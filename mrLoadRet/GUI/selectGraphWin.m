@@ -11,6 +11,13 @@ function h = selectGraphWin(noClear)
 
 mrGlobals;
 
+% if there is no mrLoadRet running, just return a figure
+if isempty(MLR.views)
+  h = figure;
+  return
+end
+
+% get figure from MLR variable
 h = MLR.graphFigure;
 if (isempty(h) | h == 0) | ~ishandle(h)
   newGraphWin;

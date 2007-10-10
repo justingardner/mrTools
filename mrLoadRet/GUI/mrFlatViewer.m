@@ -5,10 +5,10 @@
 %       date: 10/09/07
 %    purpose: 
 %
-function retval = mrFlatViewer(flat,GM,WM,curv)
+function retval = mrFlatViewer(flat,GM,WM,curv,anat)
 
 % check arguments
-if ~any(nargin == [1 4])
+if ~any(nargin == [1 5])
   help mrFlatViewer
   return
 end
@@ -22,16 +22,18 @@ else
   if ieNotDefined('GM'),GM = {};end
   if ieNotDefined('WM'),WM = {};end
   if ieNotDefined('curv'),curv = {};end
+  if ieNotDefined('anat'),anat = {};end
   % make everybody a cell array
   flat = cellArray(flat);
   GM = cellArray(GM);
   WM = cellArray(WM);
   curv = cellArray(curv);
+  anat = cellArray(anat);
 end
 
 switch (event)
  case 'init'
-  initHandler(flat,GM,WM,curv);
+  initHandler(flat,GM,WM,curv,anat);
  case {'vSlider','hSlider'}
   sliderHandler;
  case {'edit'}
@@ -41,7 +43,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %%   init handler   %%
 %%%%%%%%%%%%%%%%%%%%%%
-function initHandler(flat,GM,WM,curv)
+function initHandler(flat,GM,WM,curv,anat)
 
 global gFlatViewer;
 
@@ -72,8 +74,18 @@ end
 gFlatViewer.curv = loadVFF(curv{1})';
 disppercent(inf);
 
+% load the volume
+if isempty(anat)
+  anat{1} = 'jg041001.hdr';
+end
+if isfile(anat{1})
+  [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(anat{1});
+else
+  gFlatViewer.anat = [];
+end
+
+% select the window
 gFlatViewer.f = selectGraphWin;
-%gFlatViewer.f = gcf;
 
 % positions on figure
 figLeft = 10;figBottom = 10;
@@ -88,15 +100,12 @@ gFlatViewer.hSliders.hText = uicontrol('Style','Edit','Position',[figLeft+slider
 
 
 % set they we are viewing white matter
-gFlatViewer.whichSurface= 1;
-
+gFlatViewer.whichSurface = 1;
+gFlatViewer.patchColoring = 1;
 % and display surface
 dispSurface;
-
-axis off;axis equal;colormap(gray);axis tight;
-camup('manual');
-set(gca,'CLim',[-1.2 1.2]);
 setViewAngle(0,0);
+
 editable = 0;
 
 % set up the parameters
@@ -121,14 +130,33 @@ if ~editable && (length(curv) == 1)
 else
   paramsInfo{end+1} = {'curvature',curv,'The curvature file'};
 end
+if ~editable && (length(anat) == 1)
+  paramsInfo{end+1} = {'anatomy',anat{1},'editable=0','The 3D anatomy file'};
+else
+  paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file'};
+end
 % Now give choice of viewing gray or white
-paramsInfo{end+1} = {'whichSurface',{'Gray matter','White matter'},'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
+paramsInfo{end+1} = {'whichSurface',{'Gray matter','White matter','3D Anatomy','Patch'},'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
+paramsInfo{end+1} = {'patchColoring',{'Uniform','Rostral in red','Left in red','Dorsal in red'},'Choose how to color the patch','callback',@patchColoringCallback};
 mrParamsDialog(paramsInfo,'View flat patch location on surface');
 
 
 close(gFlatViewer.f);
 return
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   patchColoringCallback   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function patchColoringCallback(params)
+
+global gFlatViewer
+gFlatViewer.patchColoring = find(strcmp(params.patchColoring,{'Uniform','Rostral in red','Left in red','Dorsal in red'}));
+if gFlatViewer.whichSurface == 3
+  hPos = round(get(gFlatViewer.hSliders.h,'Value'));
+  dispVolume(3,hPos);
+else
+  dispSurface;
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   whichSurfaceCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,12 +165,82 @@ function whichSurfaceCallback(params)
 global gFlatViewer;
 
 % get which surface to draw
-whichSurface = find(strcmp(params.whichSurface,{'Gray matter','White matter'}));
-if whichSurface ~= gFlatViewer.whichSurface
+lastWhichSurface = gFlatViewer.whichSurface;
+whichSurface = find(strcmp(params.whichSurface,{'Gray matter','White matter','3D Anatomy','Patch'}));
+if whichSurface ~= lastWhichSurface
+  % set which surface and display
   gFlatViewer.whichSurface = whichSurface;
-  dispSurface;
+  % 1,2 are surfaces
+  if whichSurface <= 2
+    % if we are displaying the 3D anatomy, 
+    % then switch to the surface view
+    if lastWhichSurface > 2
+      switchToSurface;
+    else
+      dispSurface;
+    end
+  % 3 is the volume
+  elseif whichSurface == 3
+    % switch to the volume view
+    switchToVolume;
+  else
+    % switch to the volume view
+    switchToFlat;
+  end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   switchToSurface   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function switchToSurface
+
+global gFlatViewer;
+set(gFlatViewer.hSliders.v,'Visible','on');
+set(gFlatViewer.hSliders.vText,'Visible','on');
+set(gFlatViewer.hSliders.h,'Visible','on');
+set(gFlatViewer.hSliders.hText,'Visible','on');
+set(gFlatViewer.hSliders.h,'SliderStep',[15 45]./360);
+set(gFlatViewer.hSliders.h,'Value',0);
+set(gFlatViewer.hSliders.h,'Min',-180);
+set(gFlatViewer.hSliders.h,'Max',180);
+set(gFlatViewer.hSliders.h,'TooltipString','Rotate around z-axis');
+set(gFlatViewer.hSliders.v,'Value',0);
+set(gFlatViewer.hSliders.vText,'String',0);
+set(gFlatViewer.hSliders.hText,'String',0);
+dispSurface;
+setViewAngle(0,0);
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%   switchToVolume   %%
+%%%%%%%%%%%%%%%%%%%%%%%%
+function switchToVolume
+
+global gFlatViewer;
+initSlice = 127;
+set(gFlatViewer.hSliders.h,'Visible','on');
+set(gFlatViewer.hSliders.hText,'Visible','on');
+set(gFlatViewer.hSliders.v,'Visible','off');
+set(gFlatViewer.hSliders.vText,'Visible','off');
+set(gFlatViewer.hSliders.h,'SliderStep',[1 16]./256);
+set(gFlatViewer.hSliders.h,'Value',initSlice);
+set(gFlatViewer.hSliders.h,'Min',1);
+set(gFlatViewer.hSliders.h,'Max',256);
+set(gFlatViewer.hSliders.h,'TooltipString','Change viewing slice');
+set(gFlatViewer.hSliders.hText,'String',num2str(initSlice));
+dispVolume(3,initSlice);
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%   switchToFlat   %%
+%%%%%%%%%%%%%%%%%%%%%%
+function switchToFlat
+
+global gFlatViewer;
+initSlice = 127;
+set(gFlatViewer.hSliders.v,'Visible','off');
+set(gFlatViewer.hSliders.vText,'Visible','off');
+set(gFlatViewer.hSliders.h,'Visible','off');
+set(gFlatViewer.hSliders.hText,'Visible','off');
+dispSurface;
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   sliderHandler   %%
@@ -159,7 +257,11 @@ vPos = round(get(gFlatViewer.hSliders.v,'Value'));
 set(gFlatViewer.hSliders.hText,'String',num2str(hPos));
 set(gFlatViewer.hSliders.vText,'String',num2str(vPos));
 
-setViewAngle(hPos,vPos);
+if gFlatViewer.whichSurface <= 2
+  setViewAngle(hPos,vPos);
+else
+  dispVolume(3,hPos);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   editHandler   %%
@@ -183,7 +285,11 @@ set(gFlatViewer.hSliders.v,'Value',vPos);
 set(gFlatViewer.hSliders.hText,'String',num2str(hPos));
 set(gFlatViewer.hSliders.vText,'String',num2str(vPos));
 
-setViewAngle(hPos,vPos);
+if gFlatViewer.whichSurface <= 2
+  setViewAngle(hPos,vPos);
+else
+  dispVolume(3,hPos);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%   setViewAngle   %%
@@ -217,20 +323,29 @@ end
 function dispSurface
 
 global gFlatViewer;
-
 figure(gFlatViewer.f);
+
+% get the patch vertices
+patchVtcs = gFlatViewer.flat.patch2parent(:,2);
+
 % get the vertexes/triangles and curvature
 if gFlatViewer.whichSurface == 1
   vtcs = gFlatViewer.surfaces.WM.vtcs;
   tris = gFlatViewer.surfaces.WM.tris;
-else
+  c = gFlatViewer.curv;
+elseif gFlatViewer.whichSurface == 2
   vtcs = gFlatViewer.surfaces.GM.vtcs;
   tris = gFlatViewer.surfaces.GM.tris;
-end
-  
-c = gFlatViewer.curv;
+  c = gFlatViewer.curv;
+else
+  vtcs = gFlatViewer.flat.vtcs;
+  tris = gFlatViewer.flat.tris;
+  c = gFlatViewer.curv(patchVtcs);
+%  c = (c-min(c))./((max(c)-min(c)))>0.5;
+  view([0 90]);
+end  
 
-% make vertices into center
+% move vertices into center
 vtcs(:,1) = vtcs(:,1)-mean(vtcs(:,1));
 vtcs(:,2) = vtcs(:,2)-mean(vtcs(:,2));
 vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
@@ -238,16 +353,128 @@ vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
 % clear the axis
 cla;
 
-% and draw the surface
+% get the colors that we want to show for that patch
+co = getPatchColoring;
+
+% now set the overlay
+if gFlatViewer.whichSurface <= 2
+  overlay = NaN(length(c),3);
+  overlay(patchVtcs,1) = co(:,1);
+  overlay(patchVtcs,2:3) = co(:,2:3);
+else
+  overlay(:,1) = co(:,1);
+  overlay(:,2:3) = co(:,2:3);
+end
+
+% draw the surface and the overlay
 patch('vertices', vtcs, 'faces', tris, ...
       'FaceVertexCData', c, ...
       'facecolor', 'interp', ...
       'edgecolor', 'none');
-
-% and draw the patch in red
-overlay = NaN(length(c),3);
-overlay(gFlatViewer.flat.patch2parent(:,2),1) = 1;
-overlay(gFlatViewer.flat.patch2parent(:,2),2:3) = 0;
 patch('vertices', vtcs, 'faces', tris, ...
       'FaceVertexCData', overlay, 'FaceVertexAlphaData', overlay(:,1)*.1, ...
       'FaceColor', 'interp', 'Edgecolor','none','FaceAlpha',.6);
+
+% set axis stuff
+axis off;axis equal;colormap(gray);axis tight;
+camup('manual');
+set(gca,'CLim',[-1.2 1.2]);
+
+%%%%%%%%%%%%%%
+% dispVolume
+%%%%%%%%%%%%%%
+function dispVolume(sliceIndex,slice)
+
+global gFlatViewer;
+figure(gFlatViewer.f);
+cla;
+
+% display a slice of the anatomy image
+switch sliceIndex
+  case {1}
+   img = gFlatViewer.anat.data(slice,:);
+  case {2}
+   img = gFlatViewer.anat.data(:,slice,:);
+  case {3}
+   img = gFlatViewer.anat.data(:,:,slice);
+end
+imagesc(img);
+colormap(gray);
+axis image;
+axis off;
+hold on
+
+
+set(gca,'CLim',[min(img(:)) max(img(:))]);
+% display patch and white matter/gray matter
+whichInx = gFlatViewer.flat.patch2parent(:,2);
+wmPatchNodes = gFlatViewer.surfaces.WM.vtcs(whichInx,:);
+gmPatchNodes = gFlatViewer.surfaces.GM.vtcs(whichInx,:);
+
+% get full white matter/gray matter nodes
+wmNodes = gFlatViewer.surfaces.WM.vtcs;
+gmNodes = gFlatViewer.surfaces.GM.vtcs;
+
+% Plot the nodes for the gray/white matter surfaces
+wmNodes = wmNodes( find( round(wmNodes(:,sliceIndex))==slice), : );
+plot(wmNodes(:,1), wmNodes(:,2), 'w.', 'markersize', 1);
+
+gmNodes = gmNodes( find( round(gmNodes(:,sliceIndex))==slice), : );
+plot(gmNodes(:,1), gmNodes(:,2), 'y.', 'markersize', 1);
+
+
+% plot the patch nodes, displaying both deep and superficial surfaces
+co = getPatchColoring;
+wmco = co(find( round(wmPatchNodes(:,sliceIndex))==slice),:);
+wmPatchNodes = wmPatchNodes( find( round(wmPatchNodes(:,sliceIndex))==slice), : );
+
+if gFlatViewer.patchColoring == 1
+  plot(wmPatchNodes(:,1), wmPatchNodes(:,2), '.', 'markersize', 1,'Color',co(1,:));
+% otherwise each pixel has to be set
+else
+  for i = 1:length(wmPatchNodes(:,1))
+    plot(wmPatchNodes(i,1), wmPatchNodes(i,2), '.', 'markersize', 1,'Color',wmco(i,:)');
+  end
+end
+
+gmco = co(find( round(gmPatchNodes(:,sliceIndex))==slice),:);
+gmPatchNodes = gmPatchNodes( find( round(gmPatchNodes(:,sliceIndex))==slice), : );
+% uniform patch coloring
+if gFlatViewer.patchColoring == 1
+  plot(gmPatchNodes(:,1), gmPatchNodes(:,2), '.', 'markersize', 1,'Color',co(1,:));
+% otherwise each pixel has to be set
+else
+  for i = 1:length(gmPatchNodes(:,1))
+    plot(gmPatchNodes(i,1), gmPatchNodes(i,2), '.', 'markersize', 1,'Color',gmco(i,:));
+  end
+end
+
+view([0 90]);
+
+return;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getPatchColoring   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function co = getPatchColoring
+
+global gFlatViewer;
+
+% get the patch vertices
+patchVtcs = gFlatViewer.flat.patch2parent(:,2);
+
+% one is uniform, 2-4 are red/blue
+if gFlatViewer.patchColoring > 1
+  co = gFlatViewer.surfaces.GM.vtcs(patchVtcs,gFlatViewer.patchColoring-1)';
+  co = (co-min(co))./(max(co)-min(co));
+  % intermediate values turn to gray, so avoid them
+  co((co>0.3)&(co<0.5)) = 0.3;
+  co((co>0.5)&(co<0.7)) = 0.7;
+else
+  % make everybody red
+  co = ones(1,gFlatViewer.flat.Nvtcs);
+end
+
+% make into RGB
+co(2:3,:) = [1-co;1-co];
+co = co';
