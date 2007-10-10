@@ -1,5 +1,6 @@
 % makeFlat.m
 %
+%       $Id$	
 %      usage: makeFlat()
 %         by: eli merriam
 %       date: 09/27/07
