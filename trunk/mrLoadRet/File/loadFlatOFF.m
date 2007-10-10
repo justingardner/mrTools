@@ -59,90 +59,100 @@ if isstr(flatFileName)
   end
 end
 
-% guess which hemisphere
-if regexp(flatFileName, 'left') 
-  params.whichHemi = 'left';
-elseif regexp(flatFileName, 'right') 
-  params.whichHemi = 'right';
+% if we not passed in a params struct, build one
+if isstruct(flatFileName)
+  params = flatFileName;
+  if isfile(fullfile(params.flatDir, params.flatFileName))
+    % load the file
+    surf.flat = loadSurfOFF(fullfile(params.flatDir, params.flatFileName));
+  end
 else
-  disp('(loadFlatOFF) Cannot guess hemisphere.  The user must choose')
-  params.whichHemi = {'left', 'right'};
-end
-
-% contents of the current directory
-[params.flatDir params.flatFileName] = fileparts(flatFileName);
-dirContents = dir(params.flatDir);
-
-
-% grab the white matter file name from the parent name
-if exist(fullfile(params.flatDir, surf.flat.parentSurfaceName), 'file')
-  params.wmFileName{1} = surf.flat.parentSurfaceName;
-else
-  % if it the parent surface doesn't exist, guess the WM name
-  disp(sprintf('(loadFloatPatch) %s does not exist.  Guessing the WM surface name', surf.flat.parentSurfaceName))
-  params.wmFileName = {};
-  for i=2:length(dirContents)
-    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'WM')) & (regexp(dirContents(i).name, '.off'))
-      params.wmFileName{end+1} = dirContents(i).name;
+  % guess which hemisphere
+  if regexp(flatFileName, 'left') 
+    params.whichHemi = 'left';
+  elseif regexp(flatFileName, 'right') 
+    params.whichHemi = 'right';
+  else
+    disp('(loadFlatOFF) Cannot guess hemisphere.  The user must choose')
+    params.whichHemi = {'left', 'right'};
+  end
+  
+  % contents of the current directory
+  [params.flatDir params.flatFileName] = fileparts(flatFileName);
+  dirContents = dir(params.flatDir);
+  
+  
+  % grab the white matter file name from the parent name
+  if exist(fullfile(params.flatDir, surf.flat.parentSurfaceName), 'file')
+    params.innerFileName{1} = surf.flat.parentSurfaceName;
+  else
+    % if it the parent surface doesn't exist, guess the WM name
+    disp(sprintf('(loadFloatPatch) %s does not exist.  Guessing the WM surface name', surf.flat.parentSurfaceName))
+    params.innerFileName = {};
+    for i=2:length(dirContents)
+      if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'WM')) & (regexp(dirContents(i).name, '.off'))
+        params.innerFileName{end+1} = dirContents(i).name;
+      end
     end
   end
-end
-% ATTN still need to add recursive directory searching
+  % ATTN still need to add recursive directory searching
+  
+  
+  % guess the GM surface
+  params.outerFileName = {};
+  for i=2:length(dirContents)
+    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'GM')) & (regexp(dirContents(i).name, '.off'))
+      params.outerFileName{end+1} = dirContents(i).name;
+    end
+  end
+  % ATTN still need to add recursive directory searching
+  
+  
+  % need to guess the Curv surface
+  % this may be empty, in which case, we'll calculate one
+  params.curvFileName = {};
+  params.calcCurvFlag = 1;
+  for i=2:length(dirContents)
+    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'Curv')) & (regexp(dirContents(i).name, '.vff'))
+      params.curvFileName{end+1} = dirContents(i).name;
+      params.calcCurvFlag = 0;
+    end
+  end
+  
+  % guess the anatomy file
+  % there may be many suitable anatomy files; list them all
+  params.anatFileName = {};
+  for i=2:length(dirContents)
+    if (regexp(dirContents(i).name, '.hdr'))
+      params.anatFileName{end+1} = dirContents(i).name;
+    end
+  end
 
+  % parse the parameters
+  paramsInfo = {};
+  paramsInfo{end+1} = {'flatDir', params.flatDir, 'editable=0', 'directory path for the flat .off surface file'};
+  paramsInfo{end+1} = {'whichHemi', params.whichHemi, 'editable=0', 'the hemisphere that the patch comes from -- not really important'};
+  paramsInfo{end+1} = {'flatFileName', params.flatFileName, 'editable=0', 'name of the flat patch, either input on the command line or chosen by the file selector'};
+  paramsInfo{end+1} = {'innerFileName', params.innerFileName, 'name of the surface at the white/gray boundary (i.e., the inner surface'};
+  paramsInfo{end+1} = {'outerFileName', params.outerFileName, 'name of the surface at the gray/pial boundary (i.e., the outer surface)'};
+  if params.calcCurvFlag == 1;
+    paramsInfo{end+1} = {'curvFileName', 'will calculate curvature on the fly', 'editable=0', 'name of the curvatue file'};
+    paramsInfo{end+1} = {'calcCurvFlag', 1, 'type=checkbox', 'whether or not to recalculate the curvature on the file -- requires surffilt'};
+  else
+    paramsInfo{end+1} = {'curvFileName', params.curvFileName, 'name of the curvature file'};
+    paramsInfo{end+1} = {'calcCurvFlag', 0, 'type=checkbox', 'whether or not to recaculate the curvature on the fly -- requires surffilt'};
+  end
+  paramsInfo{end+1} = {'anatFileName', params.anatFileName, 'base anatomy file, must be a valid nifti file in register with the session'};
+  paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
+  paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
+  
+  params = mrParamsDialog(paramsInfo, 'loadFlatPatch', []);
 
-% guess the GM surface
-params.gmFileName = {};
-for i=2:length(dirContents)
-  if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'GM')) & (regexp(dirContents(i).name, '.off'))
-    params.gmFileName{end+1} = dirContents(i).name;
+  if isempty(params)
+    return;
   end
 end
-% ATTN still need to add recursive directory searching
 
-
-% need to guess the Curv surface
-% this may be empty, in which case, we'll calculate one
-params.curvFileName = {};
-params.calcCurvFlag = 1;
-for i=2:length(dirContents)
-  if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'Curv')) & (regexp(dirContents(i).name, '.vff'))
-    params.curvFileName{end+1} = dirContents(i).name;
-    params.calcCurvFlag = 0;
-  end
-end
-
-% guess the anatomy file
-% there may be many suitable anatomy files; list them all
-params.anatFileName = {};
-for i=2:length(dirContents)
-  if (regexp(dirContents(i).name, '.hdr'))
-    params.anatFileName{end+1} = dirContents(i).name;
-  end
-end
-
-% parse the parameters
-paramsInfo = {};
-paramsInfo{end+1} = {'flatDir', params.flatDir, 'editable=0', 'directory path for the flat .off surface file'};
-paramsInfo{end+1} = {'whichHemi', params.whichHemi, 'editable=0', 'the hemisphere that the patch comes from -- not really important'};
-paramsInfo{end+1} = {'flatFileName', params.flatFileName, 'editable=0', 'name of the flat patch, either input on the command line or chosen by the file selector'};
-paramsInfo{end+1} = {'wmFileName', params.wmFileName, 'name of the surface at the white/gray boundary (i.e., the inner surface'};
-paramsInfo{end+1} = {'gmFileName', params.gmFileName, 'name of the surface at the gray/pial boundary (i.e., the outer surface)'};
-if params.calcCurvFlag == 1;
-  paramsInfo{end+1} = {'curvFileName', 'will calculate curvature on the fly', 'editable=0', 'name of the curvatue file'};
-  paramsInfo{end+1} = {'calcCurvFlag', 1, 'type=checkbox', 'whether or not to recalculate the curvature on the file -- requires surffilt'};
-else
-  paramsInfo{end+1} = {'curvFileName', params.curvFileName, 'name of the curvature file'};
-  paramsInfo{end+1} = {'calcCurvFlag', 0, 'type=checkbox', 'whether or not to recaculate the curvature on the fly -- requires surffilt'};
-end
-paramsInfo{end+1} = {'anatFileName', params.anatFileName, 'base anatomy file, must be a valid nifti file in register with the session'};
-paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
-paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
-
-params = mrParamsDialog(paramsInfo, 'loadFlatPatch', []);
-
-if isempty(params)
-  return;
-end
 
 % load the rest of the surfaces
 disppercent(-inf,'Loading surfaces');
@@ -164,14 +174,14 @@ function [surf, params] = loadSurfHandler(surf, params)
 % now load the rest of the surfaces
 
 % load the white matter surface
-surf.wm = loadSurfOFF(fullfile(params.flatDir, params.wmFileName));
+surf.wm = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
 
 % load the gray matter surface
-surf.gm = loadSurfOFF(fullfile(params.flatDir, params.gmFileName));
+surf.gm = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
 
 % load the curvature
 if params.calcCurvFlag==1
-  params.baseName = stripext(params.wmFileName);
+  params.baseName = stripext(params.innerFileName);
   params.curvFileName = sprintf('%s_Curv.vff', params.baseName);
   % check for the SurfRelax program called 'surffilt'
   [status,result] = system('surffilt');
@@ -182,7 +192,7 @@ if params.calcCurvFlag==1
     % calculate the curvature
     disppercent(-inf, sprintf('(loadFlatOFF) calculating surface curvature'));
     system(sprintf('surffilt -mcurv -iter 1 %s %s', ...
-                   fullfile(params.flatDir, params.wmFileName), ...
+                   fullfile(params.flatDir, params.innerFileName), ...
                    fullfile(params.flatDir, params.curvFileName)));
     disppercent(inf);
   end
@@ -274,6 +284,8 @@ y = flat.locsFlat(:,2);
 xi = [1:(1/params.flatRes):imSize(1)];
 yi = [1:(1/params.flatRes):imSize(2)]';
 
+yi = flipud(yi);
+
 flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
 
 % grid the 3d coords
@@ -312,8 +324,8 @@ base.permutationMatrix = surf.anat.permutationMatrix;
 base.coordMap.flatDir = params.flatDir;
 base.coordMap.whichHemi = params.whichHemi;
 base.coordMap.flatFileName = params.flatFileName;
-base.coordMap.innerFileName = params.wmFileName;
-base.coordMap.outerFileName = params.gmFileName;
+base.coordMap.innerFileName = params.innerFileName;
+base.coordMap.outerFileName = params.outerFileName;
 base.coordMap.curvFileName = params.curvFileName;
 base.coordMap.anatFileName = params.anatFileName;
 base.coordMap.flatRes = params.flatRes;
