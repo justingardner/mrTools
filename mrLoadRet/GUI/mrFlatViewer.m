@@ -49,7 +49,7 @@ global gFlatViewer;
 
 disppercent(-inf,'(mrFlatView) Loading surfaces');
 % load the flat
-gFlatViewer.flat = loadSurfOFF(flat{1});
+gFlatViewer.flat = loadSurfOFF(sprintf('%s.off',stripext(flat{1})));
 if isempty(gFlatViewer.flat) || ~isfield(gFlatViewer.flat,'parentSurfaceName');
   disp(sprintf('(mrFlatViewer) %s is not a flat file',flat{1}));
   return
