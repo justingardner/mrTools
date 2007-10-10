@@ -60,5 +60,5 @@ else
   cd(pathStr);
 end
 
-mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName);
+mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName);
 cd(thispwd);
