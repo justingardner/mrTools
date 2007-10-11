@@ -47,7 +47,7 @@ switch (event)
  case {'edit'}
   editHandler;
  otherwise
-  disp(sprintf('(mrFlatViewer) Unknown event'));
+  disp(sprintf('(mrFlatViewer) Could not find flat file %s',event));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -363,6 +363,10 @@ vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
 
 % clear the axis
 cla;
+
+% not sure why, but this is necessary to set up
+% the axis so that right is right...
+imagesc(0);
 
 % get the colors that we want to show for that patch
 co = getPatchColoring;

@@ -55,6 +55,7 @@ thispwd = pwd;
 if isdir(params.flatDir)
   cd(params.flatDir);
 else
+  mrWarnDlg(sprintf('Directory %s does not exist, please find the anatomy folder',params.flatDir));
   pathStr = uigetdir(mrGetPref('volumeDirectory','Find anatomy directory'));
   if pathStr == 0,return,end
   cd(pathStr);

@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 04-Oct-2007 11:02:00
+% Last Modified by GUIDE v2.5 10-Oct-2007 21:21:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2117,3 +2117,33 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
 mrPrint(v);
+
+
+% --------------------------------------------------------------------
+function flatViewerMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to flatViewerMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% get the flat files info which
+% is stored in the baseCoordMap
+params = viewGet(v,'baseCoordMap');
+
+% switch directories to the flatDir, asking
+% the user to find it if it does not exist
+thispwd = pwd;
+if isdir(params.flatDir)
+  cd(params.flatDir);
+else
+  mrWarnDlg(sprintf('Directory %s does not exist, please find the anatomy folder',params.flatDir));
+  pathStr = uigetdir(mrGetPref('volumeDirectory','Find anatomy directory'));
+  if pathStr == 0,return,end
+  cd(pathStr);
+end
+
+% now bring up the flat viewer
+mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName);
+cd(thispwd);

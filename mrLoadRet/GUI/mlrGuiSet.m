@@ -81,6 +81,7 @@ switch lower(field)
 		  set(handles.corticalDepth,'Visible','off');
 		  set(handles.corticalDepthSlider,'Visible','off');
 		  set(handles.corticalDepthText,'Visible','off');
+		  set(handles.flatViewerMenuItem,'Enable','off');
 		elseif value == 1
 		  set(handles.sagittalRadioButton,'Visible','off');
 		  set(handles.coronalRadioButton,'Visible','off');
@@ -88,6 +89,7 @@ switch lower(field)
 		  set(handles.corticalDepth,'Visible','on');
 		  set(handles.corticalDepthSlider,'Visible','on');
 		  set(handles.corticalDepthText,'Visible','on');
+		  set(handles.flatViewerMenuItem,'Enable','on');
 		end
 	case {'basevolume'}
 		% Choose the baseVolume
