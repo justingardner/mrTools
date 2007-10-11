@@ -29,6 +29,11 @@ eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
+interpTypes = {'nearest','linear','spline','cubic'};
+if find(strcmp(mrGetPref('interpMethod'),interpTypes))
+  interpTypes = putOnTopOfList(mrGetPref('interpMethod'),interpTypes);
+end
+
 % description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
     {'groupName',putOnTopOfList(viewGet(view,'groupName'),viewGet(view,'groupNames')),'Name of group from which to make concatenation'},...
@@ -38,7 +43,7 @@ paramsInfo = {...
     {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
     {'percentSignal',1,'type=checkbox','Convert to percent signal change'},...
     {'warp',0,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days.'},...
-    {'warpInterpMethod',{'nearest','bilinear'},'Interpolation method for warp','contingent=warp'}
+    {'warpInterpMethod',interpTypes,'Interpolation method for warp','contingent=warp'}
 	     };
 % First get parameters
 if ieNotDefined('params')
