@@ -329,7 +329,6 @@ for s = 1:length(targetScans)
   
   % warp the images according to the motion estimates
   waitHandle = mrWaitBar(0,['Warping image volumes for scan ',num2str(scanNum),'.  Please wait...']);
-  warpedTseries = zeros(size(tseries));
   for frame = 1:totalFrames
     mrWaitBar(frame/totalFrames,waitHandle)
     if sliceTimeCorrection
