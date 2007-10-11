@@ -228,7 +228,7 @@ if isfinite(nFrames)
     totalFrames = handles.group.scanParams(curScan).totalFrames;
     nFrames = min([nFrames,totalFrames]);
     handles.group.scanParams(curScan).nFrames = nFrames;
-    handles.group.scanParams(curScan).junkFrames = totalFrames - nFrames;
+%    handles.group.scanParams(curScan).junkFrames = totalFrames - nFrames;
     guidata(hObject, handles);
 end
 setScan(handles,curScan);
