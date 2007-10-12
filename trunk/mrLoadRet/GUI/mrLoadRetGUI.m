@@ -1343,18 +1343,18 @@ if ~isempty(prefParams)
   if (overlayCacheSize ~= prefParams.overlayCacheSize)
     v = viewSet(v,'overlayCache','init');
   end
-end
 
-% check to see if interpolation method has changed
-if ~strcmp(interpMethod,prefParams.interpMethod)
-  % dump overlay cache and redraw
-  v = viewSet(v,'overlayCache','init');
-  refreshMLRDisplay(v.viewNum);
-end
+  % check to see if interpolation method has changed
+  if ~strcmp(interpMethod,prefParams.interpMethod)
+    % dump overlay cache and redraw
+    v = viewSet(v,'overlayCache','init');
+    refreshMLRDisplay(v.viewNum);
+  end
 
-% check to see if interpolation method has changed
-if ~strcmp(selectedROIColor,prefParams.selectedROIColor)
-  refreshMLRDisplay(v.viewNum);
+  % check to see if interpolation method has changed
+  if ~strcmp(selectedROIColor,prefParams.selectedROIColor)
+    refreshMLRDisplay(v.viewNum);
+  end
 end
 
 
