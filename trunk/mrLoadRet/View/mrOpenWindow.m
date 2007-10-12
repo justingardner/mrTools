@@ -40,6 +40,8 @@ mlrGuiSet(view,'nScans',nScans);
 mlrGuiSet(view,'scan',min(1,nScans));
 % Initialize the slice slider
 mlrGuiSet(view,'nSlices',0);
+% init showROIs to all perimeter
+view = viewSet(view,'showROIs','all perimeter');
 
 baseLoaded = 0;
 if isfile('mrLastView.mat')
