@@ -1601,13 +1601,13 @@ numrois = viewGet(v,'numberofrois');
 roinames = viewGet(v,'roiNames');
 paramsDialog = {};
 for roinum = 1:length(roinames)
-  paramsDialog{end+1} = {roinames{roinum},0,'type=checkbox',sprintf('Remove ROI %i: %s',roinum,roinames{roinum})};
+  paramsDialog{end+1} = {fixBadChars(roinames{roinum}),0,'type=checkbox',sprintf('Remove ROI %i: %s',roinum,roinames{roinum})};
 end
 params = mrParamsDialog(paramsDialog,'Select ROIs to remove');
 if ~isempty(params)
   % now go through and delete anything the user selected
   for roinum = 1:length(roinames)
-    if params.(roinames{roinum})
+    if params.(fixBadChars(roinames{roinum}))
       v = viewSet(v,'deleteROI',viewGet(v,'roinum',roinames{roinum}));
     end
   end
