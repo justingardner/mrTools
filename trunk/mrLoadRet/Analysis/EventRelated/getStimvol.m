@@ -112,6 +112,12 @@ for i = 1:length(d.stimfile)
     stimvol{nhdr} = stimvol{nhdr}-junkFrames(i)*samplingf;
     % and get rid of anything less than 0
     stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
+    % check for stimvol overrun
+    runlen = diff(d.concatInfo.runTransition(i,:))+1;
+    if ~isempty(find(stimvol{nhdr}>runlen))
+      disp(sprintf('(getStimvol) Removing %i event(s) from concatenated scan %i:%s since they happen after the last volume (%i) of the scan ',length(find(stimvol{nhdr}>runlen)),i,d.concatInfo.filename{i},runlen));
+      stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}<=runlen);
+    end
   end
 
   % if we have more than one stimfile, than we have to concatenate
