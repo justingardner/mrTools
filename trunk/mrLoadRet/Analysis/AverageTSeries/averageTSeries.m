@@ -62,18 +62,18 @@ function view = averageTSeries(view,params)
 % Get analysis parameters from averageTSeriesGUI.
 nScans = viewGet(view,'nScans');
 if ieNotDefined('params')
-    % Initialize analysis parameters with default values
-    params = averageTSeriesGUI('groupName',viewGet(view,'groupName'));
+  % Initialize analysis parameters with default values
+  params = averageTSeriesGUI('groupName',viewGet(view,'groupName'));
 else
-    % Reconcile params with current status of group and ensure that it has
-    % the required fields. 
-    params = averageTSeriesReconcileParams(params.groupName,params);
+  % Reconcile params with current status of group and ensure that it has
+  % the required fields. 
+  params = averageTSeriesReconcileParams(params.groupName,params);
 end
 
 % Abort if params empty
 if ieNotDefined('params')
-    mrMsgBox('averageTSeries cancelled');
-    return
+  mrMsgBox('averageTSeries cancelled');
+  return
 end
 
 % Retrieve parameters
@@ -90,7 +90,7 @@ interpMethod = params.interpMethod;
 viewBase = newView(viewGet(view,'viewType'));
 groupNum = viewGet(viewBase,'groupNum',groupName);
 if (groupNum == 0)
-    mrErrorDlg('averageTSeries: ',groupName,' does not exist.');
+  mrErrorDlg('averageTSeries: ',groupName,' does not exist.');
 end
 viewBase = viewSet(viewBase,'currentGroup',groupNum);
 
@@ -99,8 +99,8 @@ viewBase = viewSet(viewBase,'currentGroup',groupNum);
 viewAverage = newView(viewGet(view,'viewType'));
 aveGroupNum = viewGet(viewAverage,'groupNum',aveGroupName);
 if isempty(aveGroupNum)
-    view = viewSet(view,'newgroup',aveGroupName);
-    aveGroupNum = viewGet(viewAverage,'groupNum',aveGroupName);
+  view = viewSet(view,'newgroup',aveGroupName);
+  aveGroupNum = viewGet(viewAverage,'groupNum',aveGroupName);
 end
 viewAverage = viewSet(viewAverage,'currentGroup',aveGroupNum);
 
@@ -112,18 +112,18 @@ voxelSize = viewGet(viewBase,'scanvoxelsize',baseScan);
 scanDims = viewGet(viewBase,'scandims',baseScan);
 scanXform = viewGet(viewBase,'scanxform',baseScan);
 for iscan = 1:length(scanList)
-    if (viewGet(viewBase,'nFrames',scanList(iscan)) ~= nFrames)
-        mrErrorDlg('Can not average these scans because they have different numFrames.');
-    end
-    if (viewGet(viewBase,'framePeriod',scanList(iscan)) ~= framePeriod)
-        mrWarnDlg('These scans  have different frame periods.');
-    end
-    if find(viewGet(viewBase,'scanvoxelsize',scanList(iscan)) ~= voxelSize)
-        mrErrorDlg('Can not average these scans because they have different voxel sizes.');
-    end
-    if find(viewGet(viewBase,'scandims',scanList(iscan)) ~= scanDims)
-        mrErrorDlg('Can not average these scans because they have different sizes.');
-    end
+  if (viewGet(viewBase,'nFrames',scanList(iscan)) ~= nFrames)
+    mrErrorDlg('Can not average these scans because they have different numFrames.');
+  end
+  if (viewGet(viewBase,'framePeriod',scanList(iscan)) ~= framePeriod)
+    mrWarnDlg('These scans  have different frame periods.');
+  end
+  %     if any(viewGet(viewBase,'scanvoxelsize',scanList(iscan)) ~= voxelSize)
+  %         mrErrorDlg('Can not average these scans because they have different voxel sizes.');
+  %     end
+  if any(viewGet(viewBase,'scandims',scanList(iscan)) ~= scanDims)
+    mrErrorDlg('Can not average these scans because they have different sizes.');
+  end
 end
 
 % Compute output volume
@@ -132,63 +132,62 @@ waitHandle = mrWaitBar(0,'Computing average tSeries.  Please wait...');
 nSlices = viewGet(view,'nSlices', baseScan);
 
 for iscan = 1:length(scanList)
-    scanNum = scanList(iscan);
-    reverse = reverseList(iscan);
-    shift = shiftList(iscan);
+  scanNum = scanList(iscan);
+  reverse = reverseList(iscan);
+  shift = shiftList(iscan);
 
-    for iSlice = 1:nSlices
-
-        % Load it
-        tseries = loadTSeries(viewBase,scanNum,iSlice);
-        
-        % Dump junk frames
-        junkFrames = viewGet(viewBase,'junkframes',scanNum);
-        tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
-
-        
-        % Time shift
-        tseries = circshift(tseries, [0 0 0 shift]);
-        
-        % Time reverse
-        if reverse
-            tseries = flipdim(tseries,4);
-        end
-        
-        % Compute transform
-        % *** Not fully tested yet ***
-        baseXform = viewGet(view,'scanXform',baseScan,groupNum);
-        scanXform = viewGet(view,'scanXform',scanNum,groupNum);
-        
-        % only warp if needed
-        if sum(sum(baseXform - scanXform)) ~= 0
-            % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the  origin.
-            shiftXform = shiftOriginXform;
-            swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
-            M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
-            
-            % Warp the frames
-            waitHandle = mrWaitBar(0,['Warping image volumes for scan ', num2str(iscan)]);
-            for frame = 1:nFrames
-                mrWaitBar(frame/nFrames,waitHandle)
-                tseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
-            end  
-            mrCloseDlg(waitHandle);
-        end
-        
-        % Add 'em up
-        tmp = cat(5, aveTSeries(:,:,iSlice,:), tseries);
-        aveTSeries(:,:,iSlice,:) = nansum(tmp,5);
-
-        % Update waitbar
-        mrWaitBar( iscan/length(scanList) + (iSlice/nSlices * 1/length(scanList)) ,waitHandle);
-    end
-
-    % remember origianl file/group	
-    scanParams.originalFileName{iscan} = viewGet(viewBase,'tSeriesFile',scanNum);
-    scanParams.originalGroupName{iscan} = viewGet(viewBase,'groupName',viewGet(viewBase,'curGroup'));
-    
-end
+  tseries = loadTSeries(viewBase,scanNum);
   
+  % Dump junk frames
+  junkFrames = viewGet(viewBase,'junkframes',scanNum);
+  tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
+
+  
+  % Time shift
+  tseries = circshift(tseries, [0 0 0 shift]);
+  
+  % Time reverse
+  if reverse
+    tseries = flipdim(tseries,4);
+  end
+  
+  % Compute transform
+  % *** Not fully tested yet ***
+  baseXform = viewGet(view,'scanXform',baseScan,groupNum);
+  scanXform = viewGet(view,'scanXform',scanNum,groupNum);
+  
+  % only warp if needed
+  if sum(sum(baseXform - scanXform)) ~= 0
+    % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the  origin.
+    shiftXform = shiftOriginXform;
+    swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+    M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
+    
+    % Warp the frames
+    waitHandle = mrWaitBar(0,['Warping image volumes for scan ', num2str(iscan)]);
+    for frame = 1:nFrames
+      mrWaitBar(frame/nFrames,waitHandle);
+      tseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
+    end  
+    mrCloseDlg(waitHandle);
+  end
+  
+  % Add 'em up
+  
+  for iSlice = 1:nSlices
+    tmp = cat(5, aveTSeries(:,:,iSlice,:), tseries(:,:,iSlice,:));
+    aveTSeries(:,:,iSlice,:) = nansum(tmp,5);
+  end
+  % Update waitbar
+  %mrWaitBar( iscan/length(scanList) + (iSlice/nSlices * 1/length(scanList)) ,waitHandle);
+  mrWaitBar( iscan/length(scanList), waitHandle);
+
+  % remember origianl file/group	
+  scanParams.originalFileName{iscan} = viewGet(viewBase,'tSeriesFile',scanNum);
+  scanParams.originalGroupName{iscan} = viewGet(viewBase,'groupName',viewGet(viewBase,'curGroup'));
+  
+end
+
 % Divide by number of scans in scanList
 aveTSeries = aveTSeries / length(scanList);
 mrCloseDlg(waitHandle);
