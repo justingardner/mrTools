@@ -8,6 +8,13 @@ function [data,hdr]=loadVFF( filename )
 
 endofhdr=0;
 hdr.byteorder='b';
+
+data=[];hdr=[];
+filename = sprintf('%s.vff',stripext(filename));
+if ~isfile(filename)
+  disp(sprintf('(loadVFF) Could not open %s',filename));
+  return
+end
 f=fopen( filename, 'rb');
 str=fgetl(f);
 while (~endofhdr & ~isempty(str))
