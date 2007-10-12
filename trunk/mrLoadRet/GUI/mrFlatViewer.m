@@ -150,12 +150,14 @@ else
 end
 % Now give choice of viewing gray or white
 paramsInfo{end+1} = {'whichSurface',{'Gray matter','White matter','3D Anatomy','Patch'},'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
-gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Compressed areas in red','Stretched areas in red','High areal distortion in red'};
+gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High areal distortion in red'};
 paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
-mrParamsDialog(paramsInfo,'View flat patch location on surface');
+params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
 
-
-close(gFlatViewer.f);
+if isempty(params)
+  close(gFlatViewer.f);
+else
+end
 return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -398,6 +400,11 @@ axis off;axis equal;colormap(gray);axis tight;
 camup('manual');
 set(gca,'CLim',[-1.2 1.2]);
 
+if gFlatViewer.whichSurface <= 2
+  hPos = round(get(gFlatViewer.hSliders.h,'Value'));
+  vPos = round(get(gFlatViewer.hSliders.v,'Value'));
+  setViewAngle(hPos,vPos);
+end
 %%%%%%%%%%%%%%
 % dispVolume
 %%%%%%%%%%%%%%
@@ -499,14 +506,17 @@ switch gFlatViewer.patchColoring
   co = gFlatViewer.surfaces.GM.vtcs(patchVtcs,gFlatViewer.patchColoring-1)';
   co = (co-min(co))./(max(co)-min(co));
   % curvature
- case 5
+ case {5,6}
   % get curvature
   curv = gFlatViewer.curv(patchVtcs)';
   curv = (curv-min(curv))./(max(curv)-min(curv));
+  if gFlatViewer.patchColoring == 6
+    curv = 1-curv;
+  end
   % flatten distribution
   co = flattenDistribution(curv);
  % Areal distortion
- case {6,7,8}
+ case {7,8,9}
   tris = gFlatViewer.flat.tris;
   % get area in volume
   volumeArea = getTriangleArea(gFlatViewer.surfaces.GM.vtcs(patchVtcs,:),tris);
@@ -523,12 +533,12 @@ switch gFlatViewer.patchColoring
   distortion(tris(:,2)) = trisDistortion;
   distortion(tris(:,3)) = trisDistortion;
   % normalize
-  if gFlatViewer.patchColoring < 8
+  if gFlatViewer.patchColoring < 9
     co = (distortion-min(distortion))./(max(distortion)-min(distortion));
     co = flattenDistribution(co);
     % invert colors
     distortion = log10(distortion);
-    if gFlatViewer.patchColoring == 7
+    if gFlatViewer.patchColoring == 8
       co = 1-co;
       title(sprintf('Stretch: max=%0.2fx median=%0.2fx mean=%0.2fx',10^max(distortion),10^median(distortion(distortion>0)),10^mean(distortion(distortion>0))));
     else

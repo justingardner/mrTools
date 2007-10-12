@@ -76,7 +76,7 @@ elseif strcmp(params.maskType,'Remove black')
   mask(:,:,2) = (base.im<=blackValue);
   mask(:,:,3) = (base.im<=blackValue);
 elseif strcmp(params.maskType,'Circular')
-  % find the largest circular aperture
+  % find the largest circular aperture the fits the image
   xCenter = (size(base.im,2)/2);
   yCenter = (size(base.im,1)/2);
   x = (1:size(base.im,2))-xCenter;
@@ -99,25 +99,73 @@ elseif strcmp(params.maskType,'Circular')
   mask(:,:,3) = (d>circd);
 end
 
-
 % get foregroundColor
 if strcmp(params.backgroundColor,'white')
   foregroundColor = [0 0 0];
 else
   foregroundColor = [1 1 1];
 end
-  
+
 % mask out the image
 if strcmp(params.backgroundColor,'white')
   img(mask) = 1;
 else
   img(mask) = 0;
 end
-  
+
 % display the image
 colormap(cmap);
 image(img);
 axis equal; axis off;axis tight;hold on
+
+% calcuate directions
+params.plotDirections = 0;
+if params.plotDirections
+  % calculate gradient on baseCoords
+  baseCoords = viewGet(v,'cursliceBaseCoords');
+  baseCoords(baseCoords==0) = nan;
+
+  fxx = baseCoords(round(end/2),:,1);
+  fxx = fxx(~isnan(fxx));
+  fxx = fxx(end)-fxx(1);
+  fxy = baseCoords(:,round(end/2),1);
+  fxy = fxy(~isnan(fxy));
+  fxy = fxy(end)-fxy(1);
+
+  fyx = baseCoords(round(end/2),:,2);
+  fyx = fyx(~isnan(fyx));
+  fyx = fyx(end)-fyx(1);
+  fyy = baseCoords(:,round(end/2),2);
+  fyy = fyy(~isnan(fyy));
+  fyy = fyy(end)-fyy(1);
+
+  fzx = baseCoords(round(end/2),:,3);
+  fzx = fzx(~isnan(fzx));
+  fzx = fzx(end)-fzx(1);
+  fzy = baseCoords(:,round(end/2),3);
+  fzy = fzy(~isnan(fzy));
+  fzy = fzy(end)-fzy(1);
+
+%samplingSize = 4;
+%[fxx fxy] = gradient(baseCoords(1:samplingSize:end,1:samplingSize:end,1));
+%[fyx fyy] = gradient(baseCoords(1:samplingSize:end,1:samplingSize:end,2));
+%[fzx fzy] = gradient(baseCoords(1:samplingSize:end,1:samplingSize:end,3));
+
+% get mean direction 
+%fxx = mean(fxx(~isnan(fxx(:))));fxy = mean(fxy(~isnan(fxy)));
+%fyx = mean(fyx(~isnan(fyx(:))));fyy = mean(fyy(~isnan(fyy)));
+%fzx = mean(fzx(~isnan(fzx(:))));fzy = mean(fzy(~isnan(fzy)));
+
+  startx = 0.15;starty = 0.8;maxlength = 0.075;
+  scale = maxlength/max(abs([fxx fxy fyx fyy fzx fzy]));
+
+  annotation('textarrow',startx+[scale*fzx 0],starty+[scale*fzy 0],'String','Left','HeadStyle','none');
+  annotation('arrow',startx+[0 scale*fzx],starty+[0 scale*fzy]);
+  annotation('textarrow',startx+[-scale*fxx 0],starty+[-scale*fxy 0],'String','Dorsal','HeadStyle','none');
+  annotation('arrow',startx+[0 -scale*fxx],starty+[0 -scale*fxy]);
+  annotation('textarrow',startx+[scale*fyx 0],starty+[scale*fyy 0],'String','Anterior','HeadStyle','none');
+  annotation('arrow',startx+[0 scale*fyx],starty+[0 scale*fyy]);
+end
 
 % display the colormap
 if ~strcmp(params.colorbarLoc,'None')
@@ -227,6 +275,6 @@ if isempty(mrPrintWarning)
   mrWarnDlg('(mrPrint) If you are having trouble getting colors to print correctly, try exporting the figure to an eps (use its File/Export Setup menu) and printing that');
   mrPrintWarning = 1;
 end
-printdlg(f);
+%printdlg(f);
 %printpreview(f);
 
