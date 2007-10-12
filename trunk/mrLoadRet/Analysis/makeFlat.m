@@ -148,6 +148,8 @@ end
 
 
 % find the vertex closests to the starting point
+% need to swap X and Y
+params.startCoord = [params.startCoord(2) params.startCoord(1) params.startCoord(3)];
 params.startVertex = dsearchn(surf.inner.vtcs, params.startCoord);
 
 % set the name of the patch to cut
@@ -165,16 +167,21 @@ params.flatFileName = sprintf('%s_Flat_%i_%i_%i_Rad%i.off', ...
 % cut and flatten the surface
 myCutAndFlatten(params)
 
-% make it into a MLR4 base anatomy
-base = loadFlatOFF(params);
+if isfile(fullfile(params.flatDir, params.flatFileName))
+  % make it into a MLR4 base anatomy
+  base = loadFlatOFF(params);
 
-% install it
-disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.patchFileName));
-if ~isempty(base)
-  viewNum = 1;                          % dunno how to figure out the right view num
-  viewSet(viewNum, 'newbase', base);
-  refreshMLRDisplay(viewNum);
+  % install it
+  disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
+  if ~isempty(base)
+    viewNum = 1;                          % dunno how to figure out the right view num
+    viewSet(viewNum, 'newbase', base);
+    refreshMLRDisplay(viewNum);
+  end
 end
+
+% remove the 3d patch b/c it isn't need for anything
+system(sprintf('rm -rf %s', fullfile(params.flatDir, params.patchFileName)));
 
 return;
 
@@ -195,7 +202,7 @@ else
   % cut and flatten
   degenFlag = 1; 
   distanceInc = 0;
-
+  
   while degenFlag ~= 0
     disp(sprintf('(makeFlat) Cutting patch with radius of %i mm', params.patchRadius+distanceInc))
     % cut the patch from the 3d mesh
@@ -208,21 +215,21 @@ else
     % flatten the patch
     disppercent(-inf, sprintf('(makeFlat) Flattening surface'));
     [degenFlag result] = system(sprintf('FlattenSurface.tcl %s %s %s', ...
-                                     fullfile(params.flatDir, params.innerFileName), ...
-                                     fullfile(params.flatDir, params.patchFileName), ...
-                                     fullfile(params.flatDir, params.flatFileName)));
+                                        fullfile(params.flatDir, params.innerFileName), ...
+                                        fullfile(params.flatDir, params.patchFileName), ...
+                                        fullfile(params.flatDir, params.flatFileName)));
     disppercent(inf);
-
+    
     % if FlattenSurface failed, most likely b/c surfcut made a bad patch
     % increase the distance by one and try again.
-    if degenFlag ~= 0
-      disp(sprintf('(makeFlat) Patch is degenerate with distance of %i, increasing distance and recutting', params.patchRadius+distanceInc))
+    if (degenFlag ~= 0 ) && askuser('(makeFlat) Patch is degenerate, should I increase distance and reflatten?')
+      distanceInc = distanceInc + 1;
+    else
+      degenFlag = 0;
+      return;
     end
-    distanceInc = distanceInc + 1;
-  end
 
-  % remove the 3d patch b/c it isn't need for anything
-  system(sprintf('rm -rf %s', fullfile(params.flatDir, params.patchFileName)));
+  end
   
 end
 
