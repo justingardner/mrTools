@@ -50,8 +50,12 @@ for passNum = 1:2
 	  updateHdr = 1;
 	  % first pass, just display string if something has changed
 	  if passNum==1
-	    disp(sprintf('Nifti hdr for scan %i in %s group has been modified', iScan, viewGet(view, 'groupName',iGroup)));
-	  % second pass, actually do it.
+	    if max(curhdr.sform44-hdr.sform44) > 0.00001
+	      disp(sprintf('Nifti hdr for scan %i in %s group has been modified', iScan, viewGet(view, 'groupName',iGroup)));
+	    else
+	      disp(sprintf('Nifti hdr for scan %i in %s group has been modified (but difference is less than 0.00001)', iScan, viewGet(view, 'groupName',iGroup)));
+	    end
+	    % second pass, actually do it.
 	  else
 	    disp(sprintf('Updating nifti hdr for scan %i in %s group', iScan, viewGet(view, 'groupName',iGroup)));
 	    view = viewSet(view,'niftiHdr',hdr,iScan,iGroup);
