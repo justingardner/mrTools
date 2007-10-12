@@ -1,6 +1,6 @@
 % mrFlatViewer.m
 %
-%      usage: mrFlatViewer(flatname)
+%      usage: mrFlatViewer(flatname,GM,WM,curv,anat)
 %         by: modified by jg from surfViewer by eli merriam
 %       date: 10/09/07
 %    purpose: 
@@ -64,6 +64,9 @@ if isempty(gFlatViewer.flat) || ~isfield(gFlatViewer.flat,'parentSurfaceName');
   disp(sprintf('(mrFlatViewer) %s is not a flat file',flat{1}));
   return
 end
+
+% remove any paths
+gFlatViewer.flat.parentSurfaceName = getLastDir(gFlatViewer.flat.parentSurfaceName);
 
 % load up the surfaces
 if isempty(WM)
