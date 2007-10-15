@@ -1122,6 +1122,10 @@ switch lower(param)
         view.showROIs = val;
     end
     mlrGuiSet(view,'showROIs',val);
+  case {'labelrois'}
+    % view = viewSet(view,'labelrois',val);
+    view.labelROIs = val;
+    mlrGuiSet(view,'labelROIs',val);
   case {'newroi'}
     % view = viewSet(view,'newROI',roiStructure);
     % val must be a structure with the following required fields

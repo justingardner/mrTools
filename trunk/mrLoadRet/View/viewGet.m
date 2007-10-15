@@ -1113,6 +1113,9 @@ switch lower(param)
   case {'showrois'}
     % show = viewGet(view,'showROIs')
     val = view.showROIs;
+  case {'labelrois'}
+    % show = viewGet(view,'showROIs')
+    val = view.labelROIs;
   case{'numberofrois','numrois','nrois'}
     % n = viewGet(view,'numberofROIs')
     val = length(view.ROIs);
