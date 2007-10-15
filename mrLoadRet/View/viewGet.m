@@ -1319,14 +1319,7 @@ switch lower(param)
       end
     end
     baseName = viewGet(view,'baseName',baseMatch);
-    % need to recalculate overlay if this is aflat
-    % and the cortical depth has changed
-    if viewGet(view,'baseType')
-      corticalDepth = viewGet(view,'corticalDepth');
-    else
-      corticalDepth = 0;
-    end
-    val = sprintf('%s_%i_%0.2f',baseName,rotate,corticalDepth);
+    val = sprintf('%s_%i',baseName,rotate);
     for i = roiNums
       val = sprintf('%s_%s_%i',val,view.ROIs(i).name,size(view.ROIs(i).coords,2));
     end
