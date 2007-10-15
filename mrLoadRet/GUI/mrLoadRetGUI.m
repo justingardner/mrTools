@@ -715,6 +715,7 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     viewSettings.overlayMax = viewGet(thisView,'overlayMax');
     viewSettings.alpha = viewGet(thisView,'alpha');
     viewSettings.showROIs = viewGet(thisView,'showROIs');
+    viewSettings.labelROIs = viewGet(thisView,'labelROIs');
     % close view figures
     for viewNum = 1:length(MLR.views)
         view = MLR.views{viewNum};

@@ -51,6 +51,9 @@ distanceToCurrentSlice = abs(s-curSlice);
 closestSlice = s(first(find(min(distanceToCurrentSlice)==distanceToCurrentSlice)));
 
 % set the slice
-mlrGuiSet(view.viewNum,'slice',closestSlice);
-refreshMLRDisplay(view.viewNum);
-
+if ~isempty(closestSlice)
+  mlrGuiSet(view.viewNum,'slice',closestSlice);
+  refreshMLRDisplay(view.viewNum);
+else
+  mrWarnDlg(sprintf('(findROI) Could not find ROI %i: %s in base anatomy',roiNum,viewGet(view,'roiname',roiNum)));
+end

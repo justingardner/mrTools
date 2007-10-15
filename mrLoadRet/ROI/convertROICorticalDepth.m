@@ -87,6 +87,7 @@ if ~isempty(whichROI)
 	% add the coordinates to our list
 	roiBaseCoordsLinear = union(roiBaseCoordsLinear,baseCoordMap(isInROI));
       end
+      roiBaseCoordsLinear = roiBaseCoordsLinear(~isnan(roiBaseCoordsLinear));
       % now convert back to regular coords
       roiBaseCoords = [];
       [roiBaseCoords(1,:) roiBaseCoords(2,:) roiBaseCoords(3,:)] = ind2sub(baseDims,roiBaseCoordsLinear);
@@ -114,10 +115,7 @@ if ~isempty(whichROI)
   end
   v = viewSet(v,'currentROI',currentROI);
   if needToRefresh
-    % only need to refresh if we are on a different cortical depth
-    if (viewGet(v,'corticalDepth') ~= params.referenceDepth)
-      refreshMLRDisplay(viewGet(v,'viewNum'));
-    end
+    refreshMLRDisplay(viewGet(v,'viewNum'));
   end
 end
 
