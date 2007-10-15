@@ -606,6 +606,13 @@ for r = order
   % but then each base and each sliceIndex of the
   % base needs to have its imageCoords calculated
   baseName = fixBadChars(viewGet(view,'baseName',baseNum));
+  % for bases with a baseCoord, need to recalculate roi
+  % image coords if the cortical depth has changed
+  if viewGet(view,'baseType',baseNum)
+    % note we only keep cortical depth to a precision of 1 decimal place
+    corticalDepth = sprintf('%0.1g',viewGet(view,'corticalDepth'));
+    baseName = sprintf('%s%s',baseName,fixBadChars(corticalDepth,{'.','_'}));
+  end
   if ((~isfield(roi{r},baseName)) || ...
       (length(roi{r}.(baseName)) < sliceIndex) || ...
       (isempty(roi{r}.(baseName){sliceIndex})))
