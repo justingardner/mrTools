@@ -865,7 +865,7 @@ switch lower(param)
       val = view.baseVolumes(b);
     end
   case {'basecoordmap'}
-    % basedata = viewGet(view,'baseCoordMap',[baseNum])
+    % basedata = viewGet(view,'baseCoordMap',[baseNum],[corticalDepth])
     % basedata = viewGet(view,'baseCoordMap',[])
     % basedata = viewGet(view,'baseCoordMap')
     if ieNotDefined('varargin')
@@ -876,16 +876,21 @@ switch lower(param)
     if isempty(b)
       b = viewGet(view,'currentBase');
     end
+    % get cortical depth
+    if ieNotDefined('varargin') || (length(varargin)<2)
+      corticalDepth = viewGet(view,'corticalDepth');
+    else
+      corticalDepth = varargin{2};
+    end
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      % get cortical depth
-      corticalDepth = viewGet(view,'corticalDepth');
       val = view.baseVolumes(b).coordMap;
       % see if the coordMap is calculated for the correct cortical depth
       if ~isempty(val) && (~isfield(val,'corticalDepth') || (val.corticalDepth ~= corticalDepth))
 	if isfield(val,'innerCoords') && isfield(val,'outerCoords')
 	  % if not, then we have to do it
-	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
+%	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
+	  val.coords = val.innerCoords + corticalDepth*(val.outerCoords-val.innerCoords);
 	  val.corticalDepth = corticalDepth;
 	end
       end
@@ -2434,8 +2439,12 @@ switch lower(param)
   case {'corticaldepth'}
     % rotate = viewGet(view,'rotate');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = get(handles.corticalDepthSlider,'Value');
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = get(handles.corticalDepthSlider,'Value');
+    else
+      val = 0.5;
+    end
   case {'sliceorientation'}
     % sliceorientation = viewGet(view,'sliceorientation');
     fig = viewGet(view,'fignum');

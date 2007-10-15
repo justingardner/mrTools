@@ -77,7 +77,6 @@ switch lower(field)
 		set(handles.showSelectedMenuItem,'Checked',onOrOff{3});
 		set(handles.showSelectedPerimeterMenuItem,'Checked',onOrOff{4});
 		set(handles.hideROIsMenuItem,'Checked',onOrOff{5});
-		
         case {'basetype'}
 	        % mlrGuiSet(view,'baseType',value);
 		% value = 0 for regular or 1 for flat
@@ -89,6 +88,7 @@ switch lower(field)
 		  set(handles.corticalDepthSlider,'Visible','off');
 		  set(handles.corticalDepthText,'Visible','off');
 		  set(handles.flatViewerMenuItem,'Enable','off');
+		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
 		elseif value == 1
 		  set(handles.sagittalRadioButton,'Visible','off');
 		  set(handles.coronalRadioButton,'Visible','off');
@@ -97,6 +97,7 @@ switch lower(field)
 		  set(handles.corticalDepthSlider,'Visible','on');
 		  set(handles.corticalDepthText,'Visible','on');
 		  set(handles.flatViewerMenuItem,'Enable','on');
+		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
 		end
 	case {'basevolume'}
 		% Choose the baseVolume
