@@ -126,6 +126,9 @@ if isfile('mrLastView.mat')
       if isfield(mrLastView.viewSettings,'showROIs')
 	view = viewSet(view,'showROIs',mrLastView.viewSettings.showROIs);
       end
+      if isfield(mrLastView.viewSettings,'labelROIs')
+	view = viewSet(view,'labelROIs',mrLastView.viewSettings.labelROIs);
+      end
     end
 
     % add here, to load more info...
