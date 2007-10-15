@@ -266,6 +266,7 @@ for i = 1:length(label)
   set(h,'EdgeColor',label{i}.color);
   set(h,'BackgroundColor',params.backgroundColor);
   set(h,'FontSize',10);
+  set(h,'HorizontalAlignment','center');
 end
 disppercent(inf);
 

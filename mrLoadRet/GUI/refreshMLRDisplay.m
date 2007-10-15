@@ -538,6 +538,7 @@ function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHom
 roi = {};
 
 selectedROI = viewGet(view,'currentroi');
+labelROIs = viewGet(view,'labelROIs');
 n = viewGet(view,'numberOfROIs');
 
 % Order in which to draw the ROIs
@@ -707,6 +708,28 @@ for r = order
     roi{r}.lines.y = [];
   end
 end
+
+% label them, if labelROIs is set
+if labelROIs
+  for r = order
+    % get x, y lines for this roi on this slice (calculated above)
+    x = roi{r}.lines.x(~isnan(roi{r}.lines.x));
+    y = roi{r}.lines.y(~isnan(roi{r}.lines.y));
+    if ~isempty(x) & ~isempty(y)
+      % draw roi label text
+      h = text(median(x),median(y),viewGet(view,'roiName',r),'Parent',gui.axis);
+      % and set properties
+      set(h,'Color','w');
+      set(h,'Interpreter','None');
+      set(h,'EdgeColor',roi{r}.color);
+      set(h,'BackgroundColor','k');
+      set(h,'FontSize',10);
+      set(h,'HorizontalAlignment','center');
+    end
+  end
+end
+
+
 if verbose>1,disppercent(inf);,end
 return;
 

@@ -57,6 +57,13 @@ switch lower(field)
 		% Set the basePopup string array
 		set(handles.basePopup,'String',value);
 
+	case {'labelrois'}
+	        % mlrGuiSet(view,'labelrois',value);
+		if value
+		  set(handles.labelsROIsMenuItem,'Checked','on');
+		else
+		  set(handles.labelsROIsMenuItem,'Checked','off');
+		end
 	case {'showrois'}
 	        % mlrGuiSet(view,'showrois',value);
 		
