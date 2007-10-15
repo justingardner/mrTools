@@ -235,10 +235,11 @@ switch lower(field)
 	case {'slice'}
         % mlrGuiSet(view,'slice',value);
 		value = clipToSlider(handles.sliceSlider,value,1);
-		handles.coords(handles.sliceOrientation) = value;
-		set(handles.sliceSlider,'Value',value);
-		set(handles.sliceText,'String',num2str(value));
-
+		if ~isempty(value)
+		  handles.coords(handles.sliceOrientation) = value;
+		  set(handles.sliceSlider,'Value',value);
+		  set(handles.sliceText,'String',num2str(value));
+		end
          case {'slicetext'}
         % mlrGuiSet(view,'sliceText',value);
 		handles.coords(handles.sliceOrientation) = value;

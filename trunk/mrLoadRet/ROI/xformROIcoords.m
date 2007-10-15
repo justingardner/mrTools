@@ -19,20 +19,20 @@ function newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,samp
 % 7/19/02 djh, Modified to maintain equal volumes
 % 8/2005 djh, Updated to mrLoadRet-4.0
 
-% if roiMatchMode is set to No transform, return the
-% coordinates if the xform and voxel sizes match 
-roiMatchMethod = mrGetPref('roiMatchMethod');
-if strcmp(roiMatchMethod,'No transform')
-  % check, accounting for round off error
-  roundVal = 10000000;
-  xformRound = round(xform*roundVal)/roundVal;
-  inputVoxSizeRound = round(inputVoxSize*roundVal)/roundVal;
-  outputVoxSizeRound = round(outputVoxSize*roundVal)/roundVal;
-  % now check for identity xform and same voxel sizes
-  if isequal(xformRound,eye(4)) && isequal(inputVoxSizeRound,outputVoxSizeRound)
-    newcoords = round(coords);
-    return
-  end
+% check for no transform, accounting for round off error
+roundVal = 10000000;
+xformRound = round(xform*roundVal)/roundVal;
+inputVoxSizeRound = round(inputVoxSize*roundVal)/roundVal;
+outputVoxSizeRound = round(outputVoxSize*roundVal)/roundVal;
+% now check for identity xform and same voxel sizes
+if isequal(xformRound,eye(4)) && isequal(inputVoxSizeRound,outputVoxSizeRound)
+  coords = round(coords);
+  % get unique coordinates, do it as a linear array since it is faster
+  maxCoord = repmat(max(coords(:)),1,3);
+  coordsLinear = unique(mrSub2ind(maxCoord,coords(1,:),coords(2,:),coords(3,:)));
+  [newcoords(1,:) newcoords(2,:) newcoords(3,:)] = ind2sub(maxCoord,coordsLinear);
+  newcoords(4,:) = 1;
+  return
 end
 
 if ~exist('sampRate','var')
@@ -104,6 +104,7 @@ for ioff=1:length(xoffsets)
       end
       % Convert to indices
       indices = sub2ind(dims,tmpNewCoords(1,:),tmpNewCoords(2,:),tmpNewCoords(3,:));
+      indices = indices(~isnan(indices));
       % Accumulate partial volume. Need to do it in a loop
       % instead of:
       %    accum(indices) = accum(indices) + alpha;
@@ -130,6 +131,15 @@ if ~isempty(indices)
 else
   newcoords = [];
 end
+
+% this is just here to check the coordinates created by
+% not going through this logic, but just returing what
+% was there
+%if ~ieNotDefined('testnewcoords')
+%  a = sort(mrSub2ind([256 256 256],newcoords(1,:),newcoords(2,:),newcoords(3,:)));
+%  b = sort(mrSub2ind([256 256 256],testnewcoords(1,:),testnewcoords(2,:),testnewcoords(3,:)));
+%  disp(sprintf('Consistency check: %i',isequal(a,b)));
+%end
 
 return;
 
