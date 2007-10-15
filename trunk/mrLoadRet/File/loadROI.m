@@ -1,6 +1,6 @@
-function view = loadROI(view,filename,select)
+function view = loadROI(view,filename,select,startPathStr)
 %
-% view = loadROI(view,[filename],[select])
+% view = loadROI(view,[filename],[select],[startPath])
 %
 % Loads an ROI and adds it to view.ROIs.
 %
@@ -33,8 +33,10 @@ if ieNotDefined('select')
     select = 1;
 end
 
-% Path to overlays
-startPathStr = viewGet(view,'roiDir');
+% Path to roi
+if ieNotDefined('startPathStr')
+  startPathStr = viewGet(view,'roiDir');
+end
 
 % Complete pathStr
 if ieNotDefined('filename')
