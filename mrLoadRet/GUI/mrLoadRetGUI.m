@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 15-Oct-2007 10:32:32
+% Last Modified by GUIDE v2.5 15-Oct-2007 16:10:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2183,10 +2183,24 @@ refreshMLRDisplay(viewNum);
 
 
 % --------------------------------------------------------------------
-function convertRoiMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertRoiMenuItem (see GCBO)
+function convertCorticalDepthRoiMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to convertCorticalDepthRoiMenuItem (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+v = convertROICorticalDepth(v);
+
+
+% --------------------------------------------------------------------
+function convertRoiToBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to convertRoiToBaseAnatomyMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
 
 mrGlobals;
 viewNum = handles.viewNum;

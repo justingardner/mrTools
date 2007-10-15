@@ -56,23 +56,7 @@ if ~isempty(params)
     if isfield(params,fixBadChars(roinames{roinum})) && params.(fixBadChars(roinames{roinum}))
       % get the roi
       roi = viewGet(v,'ROI',roinum);
-      % look in cache for converted coordinates
-      roiCache = viewGet(v,'ROICache',roinum);
-      if isempty(roiCache)
-	disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',roinum,roinames{roinum}));
-	% viewGet
-	roiCoords = viewGet(v,'roiCoords',roinum);
-	roiXform = viewGet(v,'roiXform',roinum);
-	roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
-	if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
-	  % Use xformROI to supersample the coordinates
-	  roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-	else
-	  roiBaseCoords = [];
-	end
-      else
-	roiBaseCoords = roiCache.roiBaseCoords;
-      end
+      roiBaseCoords = getROIBaseCoords(v,roinum,baseXform,baseVoxelSize);
       if ~isempty(roiBaseCoords)
 	disp(sprintf('(convertROI) Converting ROI %i:%s',roinum,roinames{roinum}));
 	% valid roi coordinates, change the roi
@@ -93,4 +77,27 @@ if ~isempty(params)
   if needToRefresh
     refreshMLRDisplay(viewGet(v,'viewNum'));
   end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getROIBaseCoords   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function roiBaseCoords = getROIBaseCoords(v,roinum,baseXform,baseVoxelSize)
+
+% look in cache for converted coordinates
+roiCache = viewGet(v,'ROICache',roinum);
+if isempty(roiCache)
+  disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',roinum,viewGet(v,'roiName',roinum)));
+  %viewGet
+  roiCoords = viewGet(v,'roiCoords',roinum);
+  roiXform = viewGet(v,'roiXform',roinum);
+  roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
+  if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
+    % Use xformROI to supersample the coordinates
+    roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
+  else
+    roiBaseCoords = [];
+  end
+else
+  roiBaseCoords = roiCache.roiBaseCoords;
 end

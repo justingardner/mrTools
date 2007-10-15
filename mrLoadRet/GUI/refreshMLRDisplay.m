@@ -494,8 +494,8 @@ if ~isempty(roiBaseCoords)
   % than working with linear indexes by about a factor of 3 -j.
   if isempty(baseCoordMap)
     inplaneIndexes = setdiff(1:3,sliceIndex);
-    baseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),baseCoordsHomogeneous(inplaneIndexes(1),:),baseCoordsHomogeneous(inplaneIndexes(2),:));
-    roiBaseCoordsLinear = mysub2ind(baseDims(inplaneIndexes),roiBaseCoords(inplaneIndexes(1),:),roiBaseCoords(inplaneIndexes(2),:));
+    baseCoordsLinear = mrSub2ind(baseDims(inplaneIndexes),baseCoordsHomogeneous(inplaneIndexes(1),:),baseCoordsHomogeneous(inplaneIndexes(2),:));
+    roiBaseCoordsLinear = mrSub2ind(baseDims(inplaneIndexes),roiBaseCoords(inplaneIndexes(1),:),roiBaseCoords(inplaneIndexes(2),:));
     % we use ismember here since it will keep duplicates.
     % in this case we have duplicate roi coordinates that will
     % be found (since we are ignoring which slice we are on-so
@@ -507,8 +507,8 @@ if ~isempty(roiBaseCoords)
   else
     % for flat maps, we have only one slice and all coordinates
     % are important to match
-    baseCoordsLinear = mysub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
-    roiBaseCoordsLinear = mysub2ind(baseDims,roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
+    baseCoordsLinear = mrSub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
+    roiBaseCoordsLinear = mrSub2ind(baseDims,roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
     % we use ismember here since it will keep duplicates.
     % in this case the base may have multiple coordinates, but
     % the roi will have unique coordinates, so we switch
@@ -733,28 +733,4 @@ end
 if verbose>1,disppercent(inf);,end
 return;
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% sub2ind that doesn't choke on coordinates
-% outside of dims (just inserts nans for those
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function linear = mysub2ind(dims,x,y,z)
-
-if nargin == 4
-  badCoords = find((x < 1) | (x > dims(1)) | ...
-		   (y < 1) | (y > dims(2)) | ...
-		   (z < 1) | (z > dims(3)));
-  x(badCoords) = nan;
-  y(badCoords) = nan;
-  z(badCoords) = nan;
-
-  linear = sub2ind(dims,x,y,z);
-else
-  badCoords = find((x < 1) | (x > dims(1)) | ...
-		   (y < 1) | (y > dims(2)));
-  x(badCoords) = nan;
-  y(badCoords) = nan;
-
-  linear = sub2ind(dims,x,y);
-end
 
