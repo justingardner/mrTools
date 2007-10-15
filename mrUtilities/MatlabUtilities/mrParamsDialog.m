@@ -89,7 +89,7 @@ set(gParams.fignum,'Name',titleStr);
 set(gParams.fignum,'closeRequestFcn','mrParamsDialog(''close'')');
 
 % set height of figure according to how many rows we have
-figpos = mrGetFigLoc(gParams.figlocstr);
+figpos = mrGetFigLoc(fixBadChars(gParams.figlocstr));
 if isempty(figpos)
   figpos = get(gParams.fignum,'Position');
 end
@@ -436,7 +436,7 @@ global gParams;
 global mrDEFAULTS;
 
 % close figure
-mrSetFigLoc(gParams.figlocstr,get(gParams.fignum,'Position'));
+mrSetFigLoc(fixBadChars(gParams.figlocstr),get(gParams.fignum,'Position'));
 delete(gParams.fignum);
 
 % close help
