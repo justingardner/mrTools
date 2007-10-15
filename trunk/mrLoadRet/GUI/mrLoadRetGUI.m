@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 10-Oct-2007 21:21:38
+% Last Modified by GUIDE v2.5 15-Oct-2007 10:32:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2147,3 +2147,49 @@ end
 % now bring up the flat viewer
 mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName);
 cd(thispwd);
+
+
+% --------------------------------------------------------------------
+function labelsROIsMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to labelsROIsMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% switch labels on/off
+labelROIs = viewGet(v,'labelROIs');
+viewSet(v,'labelROIs',~labelROIs');
+
+% redisplay
+refreshMLRDisplay(viewNum);
+
+
+% --------------------------------------------------------------------
+function loadFromVolumeDirectoryROIMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to loadFromVolumeDirectoryROIMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the volume directory from prefs
+volumeDirectory = mrGetPref('volumeDirectory');
+% load the rois
+v = loadROI(v,[],[],volumeDirectory);
+% and refresh
+refreshMLRDisplay(viewNum);
+
+
+% --------------------------------------------------------------------
+function convertRoiMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to convertRoiMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+v = convertROI(v);
