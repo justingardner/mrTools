@@ -88,6 +88,12 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
 	hdr = cbiSetNiftiSform(hdr,sform);
 	% and write it back
 	hdr = cbiWriteNiftiHeader(hdr,filename);
+	% read it back, (I think there is a slight numerical
+	% difference in the sform44 from when it is
+	% written to when it is read). This doesn't
+	% affect anything, but gives better consistency
+	% checking for mrUpdateNiftiHeader
+	hdr = cbiReadNiftiHeader(filename);
 	% now save it in the session
 	v = viewSet(v,'niftiHdr',hdr,iScan,iGroup);
       else
