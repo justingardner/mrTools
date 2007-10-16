@@ -34,10 +34,10 @@ if isempty(baseNum)
   gui = guidata(fig);
   mlrGuiSet(view,'basemin',0);
   mlrGuiSet(view,'basemax',0);
-  set(fig,'CurrentAxes',gui.axis);
-  cla
+%  set(fig,'CurrentAxes',gui.axis);
+  cla(gui.axis,'reset');
   set(fig,'CurrentAxes',gui.colorbar);
-  cla
+  cla(gui.colorbar,'reset');
   axis off
   return
 end
@@ -672,10 +672,10 @@ for r = order
     % and then make that into a linear coordinate
     % and sort them. Note the +1 on imageDims
     % is to allow for voxels that are at the edge of the image
-    % also notice the transpose of the imageDims and switching
+    % also notice the flip of the imageDims and switching
     % of y and x. This is so that we can get consecutive line
     % segments (see below).
-    vlines = sort(sub2ind(imageDims'+1,[y y],[x x+1]));
+    vlines = sort(sub2ind(fliplr(imageDims)+1,[y y],[x x+1]));
     % now we look for any lines that are duplicates
     % that means they belong to two voxels, so that
     % they should not be drawn. we look for duplicates
@@ -711,8 +711,8 @@ for r = order
     vlinesTop = fliplr(vlinesflip(diff([vlinesflip inf])~=-1));
     % now convert the top and bottom coordinates back
     % to image coordinates
-    [vty vtx] = ind2sub(imageDims'+1,vlinesTop);
-    [vby vbx] = ind2sub(imageDims'+1,vlinesBottom);
+    [vty vtx] = ind2sub(fliplr(imageDims)+1,vlinesTop);
+    [vby vbx] = ind2sub(fliplr(imageDims)+1,vlinesBottom);
     % now do the same for the horizontal lines
     hlines = sort(sub2ind(imageDims+1,[x x],[y y+1]));
     duplicates = diff(hlines)==0;
