@@ -40,7 +40,7 @@ if ieNotDefined('select')
   select = 1;
 end
 if ieNotDefined('color')
-  color = 'blue';
+  color = 'black';
 end
 if ieNotDefined('xform')
   baseNum = viewGet(view,'currentBase');
