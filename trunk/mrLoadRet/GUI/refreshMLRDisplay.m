@@ -431,7 +431,10 @@ if ~isempty(zData) & ~isempty(overlayCoords)
     overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
     interpMethod,interpExtrapVal);
   overlayImages(:,:,ampNum) = abs(zInterp);
-  overlayImages(:,:,phNum) = angle(zInterp);
+  % make sure that the angles go from 0-2*pi
+  ang = angle(zInterp);
+  ang(ang < 0) = ang(ang<0)+2*pi;
+  overlayImages(:,:,phNum) = ang;
 end
 
 % Loop through other overlays and extract images using normal interpolation
