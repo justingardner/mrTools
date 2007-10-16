@@ -672,7 +672,10 @@ for r = order
     % and then make that into a linear coordinate
     % and sort them. Note the +1 on imageDims
     % is to allow for voxels that are at the edge of the image
-    vlines = sort(sub2ind(imageDims+1,[x x+1],[y y]));
+    % also notice the transpose of the imageDims and switching
+    % of y and x. This is so that we can get consecutive line
+    % segments (see below).
+    vlines = sort(sub2ind(imageDims'+1,[y y],[x x+1]));
     % now we look for any lines that are duplicates
     % that means they belong to two voxels, so that
     % they should not be drawn. we look for duplicates
@@ -690,8 +693,26 @@ for r = order
     end
     % now get everything that is not a duplicate
     vlines = vlines(~duplicates);
-    % now make back into x,y coordinates
-    [vx vy] = ind2sub(imageDims+1,vlines);
+    % now we look for consecutive line segments
+    % so that we can just draw a single line. This
+    % speeds things up because each line segment
+    % that matlab draws is an independent child
+    % and reducing the number of things it has
+    % to keep track of helps things out a lot.
+    % so, first we look for the start of a line.
+    % this is any index which the difference from
+    % its neighbor is greater than one (i.e.
+    % the next vertical line being drawn does not
+    % happen in the next voxel).
+    vlinesBottom = vlines(diff([vlines inf])~=1);
+    % now we flip everything and look for the other
+    % end of the line in the same way.
+    vlinesflip = fliplr(vlines);
+    vlinesTop = fliplr(vlinesflip(diff([vlinesflip inf])~=-1));
+    % now convert the top and bottom coordinates back
+    % to image coordinates
+    [vty vtx] = ind2sub(imageDims'+1,vlinesTop);
+    [vby vbx] = ind2sub(imageDims'+1,vlinesBottom);
     % now do the same for the horizontal lines
     hlines = sort(sub2ind(imageDims+1,[x x],[y y+1]));
     duplicates = diff(hlines)==0;
@@ -700,12 +721,16 @@ for r = order
       duplicates(find(duplicates)+1) = 1;
     end
     hlines = hlines(~duplicates);
-    [hx hy] = ind2sub(imageDims+1,hlines);
+    hlinesRight = hlines(diff([hlines inf])~=1);
+    hlinesflip = fliplr(hlines);
+    hlinesLeft = fliplr(hlinesflip(diff([hlinesflip inf])~=-1));
+    [hlx hly] = ind2sub(imageDims+1,hlinesLeft);
+    [hrx hry] = ind2sub(imageDims+1,hlinesRight);
     % and make them into lines (draw -0.5 and +0.5 so
     % that we draw around the pixel not through the center
     % and note that x/y are flipped
-    roi{r}.lines.x = [vy-0.5 hy-0.5;vy+0.5 hy-0.5];
-    roi{r}.lines.y = [vx-0.5 hx-0.5;vx-0.5 hx+0.5];
+    roi{r}.lines.x = [vty-0.5 hly-0.5;vby+0.5 hry-0.5];
+    roi{r}.lines.y = [vtx-0.5 hlx-0.5;vbx-0.5 hrx+0.5];
     % save to cache (since other functions like mrPrint need this
     view = viewSet(view,'ROICache',roi{r},r);
     % now render those lines
