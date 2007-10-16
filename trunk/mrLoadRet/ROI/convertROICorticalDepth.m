@@ -31,7 +31,7 @@ paramsInfo{end+1} = {'conversionType',{'Project through depth','Restrict to refe
 paramsInfo{end+1} = {'referenceDepth',corticalDepth,'min=0','max=1','incdec=[-0.1 0.1]','The cortical depth to start from'};
 paramsInfo{end+1} = {'minDepth',0,'min=0','max=1','incdec=[-0.1 0.1]','The start depth'};
 paramsInfo{end+1} = {'depthStep',0.1,'min=0','max=1','incdec=[-0.1 0.1]','The depth step (i.e. we will go from minDepth:depthStep:maxDepth (skipping the reference depth), including or excluding voxels'};
-paramsInfo{end+1} = {'maxDepth',1,'min=0','max=1','incdec=[-0.1 0.1]','The end depth'};
+paramsInfo{end+1} = {'maxDepth',max(0.5,corticalDepth),'min=0','max=1','incdec=[-0.1 0.1]','The end depth'};
 
 params = mrParamsDialog(paramsInfo,'ROI cortical depth conversion');
 if isempty(params),return,end
