@@ -1,11 +1,11 @@
 % mrFlatViewer.m
 %
-%      usage: mrFlatViewer(flatname,GM,WM,curv,anat)
+%      usage: mrFlatViewer(flatname,outer,inner,curv,anat)
 %         by: modified by jg from surfViewer by eli merriam
 %       date: 10/09/07
 %    purpose: 
 %
-function retval = mrFlatViewer(flat,GM,WM,curv,anat)
+function retval = mrFlatViewer(flat,outer,inner,curv,anat)
 
 % check arguments
 if ~any(nargin == [1 5])
@@ -27,21 +27,21 @@ if (nargin == 1) && isstr(flat) && ~isfile(flat)
 else
   event = 'init';
   % set defaults
-  if ieNotDefined('GM'),GM = {};end
-  if ieNotDefined('WM'),WM = {};end
+  if ieNotDefined('outer'),outer = {};end
+  if ieNotDefined('inner'),inner = {};end
   if ieNotDefined('curv'),curv = {};end
   if ieNotDefined('anat'),anat = {};end
   % make everybody a cell array
   flat = cellArray(flat);
-  GM = cellArray(GM);
-  WM = cellArray(WM);
+  outer = cellArray(outer);
+  inner = cellArray(inner);
   curv = cellArray(curv);
   anat = cellArray(anat);
 end
 
 switch (event)
  case 'init'
-  initHandler(flat,GM,WM,curv,anat);
+  initHandler(flat,outer,inner,curv,anat);
  case {'vSlider','hSlider'}
   sliderHandler;
  case {'edit'}
@@ -53,7 +53,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %%   init handler   %%
 %%%%%%%%%%%%%%%%%%%%%%
-function initHandler(flat,GM,WM,curv,anat)
+function initHandler(flat,outer,inner,curv,anat)
 
 global gFlatViewer;
 
@@ -69,20 +69,20 @@ end
 gFlatViewer.flat.parentSurfaceName = getLastDir(gFlatViewer.flat.parentSurfaceName);
 
 % load up the surfaces
-if isempty(WM)
-  WM{1} = gFlatViewer.flat.parentSurfaceName;
+if isempty(inner)
+  inner{1} = gFlatViewer.flat.parentSurfaceName;
 end
-gFlatViewer.surfaces.WM = loadSurfOFF(WM{1});
+gFlatViewer.surfaces.inner = loadSurfOFF(inner{1});
 
 % load the gray
-if isempty(GM)
-  GM{1} = sprintf('%sGM.off',strtok(stripext(WM{1}),'WM'));
+if isempty(outer)
+  outer{1} = sprintf('%sGM.off',strtok(stripext(inner{1}),'inner'));
 end
-gFlatViewer.surfaces.GM = loadSurfOFF(GM{1});
+gFlatViewer.surfaces.outer = loadSurfOFF(outer{1});
 
 % load the curvature
 if isempty(curv)
-  curv{1} = sprintf('%s_Curv.vff',stripext(WM{1}));
+  curv{1} = sprintf('%s_Curv.vff',stripext(inner{1}));
 end
 gFlatViewer.curv = loadVFF(curv{1})';
 disppercent(inf);
@@ -128,15 +128,15 @@ if ~editable && (length(flat) == 1)
 else
   paramsInfo{end+1} = {'flatFile',flat,'The flat patch file'};
 end
-if ~editable && (length(GM) == 1)
-  paramsInfo{end+1} = {'GMSurface',GM{1},'editable=0','The gray matter file'};
+if ~editable && (length(outer) == 1)
+  paramsInfo{end+1} = {'outerSurface',outer{1},'editable=0','The outer (gray matter) file'};
 else
-  paramsInfo{end+1} = {'GMSurface',GM,'The gray matter file'};
+  paramsInfo{end+1} = {'outerSurface',outer,'The outer (gray matter) file'};
 end
-if ~editable && (length(WM) == 1)
-  paramsInfo{end+1} = {'WMSurface',WM{1},'editable=0','The white matter file'};
+if ~editable && (length(inner) == 1)
+  paramsInfo{end+1} = {'innerSurface',inner{1},'editable=0','The inner (white matter) file'};
 else
-  paramsInfo{end+1} = {'WMSurface',WM,'The white matter file'};
+  paramsInfo{end+1} = {'innerSurface',inner,'The inner (white matter) file'};
 end
 if ~editable && (length(curv) == 1)
   paramsInfo{end+1} = {'curvature',curv{1},'editable=0','The curvature file'};
@@ -149,8 +149,9 @@ else
   paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file'};
 end
 % Now give choice of viewing gray or white
-paramsInfo{end+1} = {'whichSurface',{'Gray matter','White matter','3D Anatomy','Patch'},'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
-gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High areal distortion in red'};
+gFlatViewer.whichSurfaceTypes = {'Outer (Gray matter) surface','Inner (White matter) surface','3D Anatomy','Patch'};
+paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
+gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High outer areal distortion in red','High inner areal distortion in red'};
 paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
 params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
 
@@ -182,7 +183,7 @@ global gFlatViewer;
 
 % get which surface to draw
 lastWhichSurface = gFlatViewer.whichSurface;
-whichSurface = find(strcmp(params.whichSurface,{'Gray matter','White matter','3D Anatomy','Patch'}));
+whichSurface = find(strcmp(params.whichSurface,gFlatViewer.whichSurfaceTypes));
 if whichSurface ~= lastWhichSurface
   % set which surface and display
   gFlatViewer.whichSurface = whichSurface;
@@ -346,12 +347,12 @@ patchVtcs = gFlatViewer.flat.patch2parent(:,2);
 
 % get the vertexes/triangles and curvature
 if gFlatViewer.whichSurface == 1
-  vtcs = gFlatViewer.surfaces.WM.vtcs;
-  tris = gFlatViewer.surfaces.WM.tris;
+  vtcs = gFlatViewer.surfaces.outer.vtcs;
+  tris = gFlatViewer.surfaces.outer.tris;
   c = gFlatViewer.curv;
 elseif gFlatViewer.whichSurface == 2
-  vtcs = gFlatViewer.surfaces.GM.vtcs;
-  tris = gFlatViewer.surfaces.GM.tris;
+  vtcs = gFlatViewer.surfaces.inner.vtcs;
+  tris = gFlatViewer.surfaces.inner.tris;
   c = gFlatViewer.curv;
 else
   vtcs = gFlatViewer.flat.vtcs;
@@ -433,12 +434,12 @@ hold on
 set(gca,'CLim',[min(img(:)) max(img(:))]);
 % display patch and white matter/gray matter
 whichInx = gFlatViewer.flat.patch2parent(:,2);
-wmPatchNodes = gFlatViewer.surfaces.WM.vtcs(whichInx,:);
-gmPatchNodes = gFlatViewer.surfaces.GM.vtcs(whichInx,:);
+wmPatchNodes = gFlatViewer.surfaces.inner.vtcs(whichInx,:);
+gmPatchNodes = gFlatViewer.surfaces.outer.vtcs(whichInx,:);
 
 % get full white matter/gray matter nodes
-wmNodes = gFlatViewer.surfaces.WM.vtcs;
-gmNodes = gFlatViewer.surfaces.GM.vtcs;
+wmNodes = gFlatViewer.surfaces.inner.vtcs;
+gmNodes = gFlatViewer.surfaces.outer.vtcs;
 
 % Plot the nodes for the gray/white matter surfaces
 wmNodes = wmNodes( find( round(wmNodes(:,sliceIndex))==slice), : );
@@ -503,7 +504,7 @@ switch gFlatViewer.patchColoring
   co = ones(1,gFlatViewer.flat.Nvtcs);
   % anatomical directions
  case {2,3,4}
-  co = gFlatViewer.surfaces.GM.vtcs(patchVtcs,gFlatViewer.patchColoring-1)';
+  co = gFlatViewer.surfaces.outer.vtcs(patchVtcs,gFlatViewer.patchColoring-1)';
   co = (co-min(co))./(max(co)-min(co));
   % curvature
  case {5,6}
@@ -516,10 +517,16 @@ switch gFlatViewer.patchColoring
   % flatten distribution
   co = flattenDistribution(curv);
  % Areal distortion
- case {7,8,9}
+ case {7,8,9,10}
   tris = gFlatViewer.flat.tris;
   % get area in volume
-  volumeArea = getTriangleArea(gFlatViewer.surfaces.GM.vtcs(patchVtcs,:),tris);
+  if gFlatViewer.patchColoring == 10
+    % use inner surface
+    volumeArea = getTriangleArea(gFlatViewer.surfaces.inner.vtcs(patchVtcs,:),tris);
+  else
+    % use outer surface
+    volumeArea = getTriangleArea(gFlatViewer.surfaces.outer.vtcs(patchVtcs,:),tris);
+  end
   patchArea = getTriangleArea(gFlatViewer.flat.vtcs,tris);
   % get the distortion as the ratio of the area in the
   % patch to the volume
