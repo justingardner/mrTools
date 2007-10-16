@@ -1,5 +1,6 @@
 % mrSub2ind.m
 %
+%        $Id$	
 %      usage: mrSub2ind()
 %         by: justin gardner
 %       date: 10/15/07
