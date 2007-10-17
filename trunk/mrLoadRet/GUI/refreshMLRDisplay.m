@@ -16,15 +16,8 @@ if verbose,tic,end
 % Get interp preferences.
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
 if verbose>1,disppercent(-inf,'viewGet');,end
-interpMethod = mrGetPref('interpMethod');
-if isempty(interpMethod)
-  interpMethod = 'linear';
-end
-interpExtrapVal = NaN;
 view = viewGet(viewNum,'view');
-scan = viewGet(view,'curscan');
 slice = viewGet(view,'curslice');
-alpha = viewGet(view,'alpha');
 rotate = viewGet(view,'rotate');
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
@@ -78,88 +71,9 @@ view = viewSet(view,'cursliceBaseCoords',base.coords);
 if verbose,disppercent(-inf,'extract overlay images');end
 overlay = viewGet(view,'overlayCache');
 if isempty(overlay)
-  curOverlay = viewGet(view,'currentOverlay');
-  analysisNum = viewGet(view,'currentAnalysis');
-  [overlayImages,overlay.coords,overlayCoordsHomogeneous] = ...
-    getOverlaySlice(view,scan,slice,sliceIndex,rotate,...
-    baseNum,base.coordsHomogeneous,base.dims,...
-    analysisNum,interpMethod,interpExtrapVal);
-  if ~isempty(overlayImages)
-    overlayIm = overlayImages(:,:,curOverlay);
-  else
-    overlayIm = [];
-  end
-
-  % get the number of the overlay that shoudl be
-  % used as an alpha map. This allows the alpha
-  % to be set according to another overlay
-  alphaOverlay = viewGet(view,'overlayNum',viewGet(view,'alphaOverlay'));
-
-  numOverlays = viewGet(view,'numberofOverlays');
-  mask = ones(size(base.im));
-  % Loop through overlays, filling in NaNs according to clip values.
-  if ~isempty(overlayImages)
-    for ov = 1:numOverlays
-      im = overlayImages(:,:,ov);
-      clip = viewGet(view,'overlayClip',ov);
-      % Find pixels that are within clip
-      if diff(clip) > 0
-        pts = (im >= clip(1) & im <= clip(2));
-      else
-        pts = (im >= clip(1) | im <= clip(2));
-      end
-      mask = mask & pts;
-      % if this is the alpha overlay then keep it.
-      if ov == alphaOverlay
-	alphaOverlayImage = im;
-      end
-    end
-  end
-  % Finally, make the alphaMap. Normally this is just set
-  % to 0 or 1 so that voxels are hard thresholded. If the
-  % overlay has an alphaOverlay field set to the name
-  % of another overlay, then we will use the values in
-  % that overlay to set the alpha
-  if isempty(alphaOverlay)
-    overlay.alphaMap = repmat(alpha*mask,[1 1 3]);
-  else
-    % get the range of the alpha overlay
-    range = viewGet(view,'overlayRange',alphaOverlay);
-    % handle setRangeToMax
-    if strcmp(viewGet(view,'overlayCtype',alphaOverlay),'setRangeToMax')
-      maxRange = max(clip(1),min(alphaOverlayImage(mask)));
-      if ~isempty(maxRange),range(1) = maxRange;end
-      minRange = min(max(alphaOverlayImage(mask)),clip(2));
-      if ~isempty(minRange),range(2) = minRange;end
-    end
-    % now compute the alphaOverlay as a number from
-    % 0 to 1 of the range
-    alphaOverlayImage = alpha*((alphaOverlayImage-range(1))./diff(range));
-    alphaOverlayImage(alphaOverlayImage>alpha) = alpha;
-    alphaOverlayImage(alphaOverlayImage<0) = 0;
-    alphaOverlayImage = alphaOverlayImage.^viewGet(view,'alphaOverlayExponent');
-    alphaOverlayImage(isnan(alphaOverlayImage)) = 0;
-    overlay.alphaMap = repmat(alphaOverlayImage.*mask,[1 1 3]); 
-  end   
-  
-  % Rescale current overlay.
-  if ~isempty(overlayIm)
-    overlay.cmap = viewGet(view,'overlayCmap',curOverlay);
-    overlay.range = viewGet(view,'overlayRange',curOverlay);
-    if strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMax')
-      clip = viewGet(view,'overlayClip',curOverlay);
-      if ~isempty(overlayIm(mask))
-        overlay.range(1) = max(clip(1),min(overlayIm(mask)));
-        overlay.range(2) = min(max(overlayIm(mask)),clip(2));
-      else
-        overlay.range = clip;
-      end
-    end
-    overlay.RGB = rescale2rgb(overlayIm,overlay.cmap,overlay.range);
-  else
-    overlay.RGB = [];
-  end
-
+  baseXform = viewGet(view,'baseXform',baseNum);
+  % compute the overlay
+  overlay = computeOverlay(view,baseXform,base.coordsHomogeneous,base.dims);
   % save in cache
   view = viewSet(view,'overlayCache',overlay);
   if verbose,disppercent(inf);disp('Recomputed overlay');end
@@ -239,51 +153,9 @@ if verbose,toc,end
 
 return
 
-
-%-------------------------------------------------------------------------
-function rgb = rescale2rgb(image,cmap,clip)
-%
-% function rgb = rescale2rgb(image,cmap,[clipMin,clipMax])
-%
-% Clips top and bottom tails of image histogram.
-% Sets NaNs to the lowest index in the colormap
-
-if ~exist('clip','var')
-  % Choose clipping based on histogram
-  histThresh = length(image(:))/1000;
-  [cnt, val] = hist(image(:),100);
-  goodVals = find(cnt>histThresh);
-  clipMin = val(min(goodVals));
-  clipMax = val(max(goodVals));
-  clip = [clipMin,clipMax];
-else
-  clipMin = clip(1);
-  clipMax = clip(2);
-end
-
-% Clip
-result = image;
-result(find(image < clipMin)) = clipMin;
-result(find(image > clipMax)) = clipMax;
-
-% Scale
-indices = round(255 * (result-clipMin)/(clipMax-clipMin)) + 1;
-indices = max(1,min(indices,size(cmap,1)));
-
-% Extract r,g,b components
-r = zeros(size(image));
-g = zeros(size(image));
-b = zeros(size(image));
-r(:) = cmap(indices,1);
-g(:) = cmap(indices,2);
-b(:) = cmap(indices,3);
-
-% Stuff them into rgb
-dims = [size(image),3];
-rgb = cat(length(dims),r,g,b);
-
-
-%-------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%
+%%   getBaseSlice   %%
+%%%%%%%%%%%%%%%%%%%%%%
 function [baseIm,baseCoords,baseCoordsHomogeneous] = ...
   getBaseSlice(view,sliceNum,sliceIndex,rotate,baseNum)
 %
@@ -360,94 +232,6 @@ if ~isempty(baseData)
 end
 
 return
-
-
-%-------------------------------------------------------------------------
-function [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
-  getOverlaySlice(view,...
-  scanNum,sliceNum,sliceIndex,rotate,...
-  baseNum,baseCoordsHomogeneous,imageDims,...
-  analysisNum,interpMethod,interpExtrapVal);
-%
-% getOverlaySlice: extracts overlay image and corresponding coordinates
-
-overlayCoords = [];
-overlayCoordsHomogeneous = [];
-overlayImages = [];
-
-% viewGet
-baseXform = viewGet(view,'baseXform',baseNum);
-overlayXform = viewGet(view,'overlayXform',scanNum);
-numOverlays = viewGet(view,'numberofoverlays',analysisNum);
-interpFnctn = viewGet(view,'overlayInterpFunction',analysisNum);
-
-% Transform base coords corresponding to this slice/image to overlay
-% coordinate frame.
-% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin.
-shiftXform = shiftOriginXform;
-if ~isempty(overlayXform) & ~isempty(baseXform) & ~isempty(baseCoordsHomogeneous)
-  xform = inv(shiftXform) * inv(overlayXform) * baseXform * shiftXform;
-  % Transform coordinates
-  overlayCoordsHomogeneous = xform * baseCoordsHomogeneous;
-  overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[imageDims 3]);
-end
-
-% Extract overlayImages
-if ~isempty(interpFnctn)
-  overlayImages = feval(interpFnctn,view,scanNum,imageDims,...
-    analysisNum,overlayCoords,interpMethod,interpExtrapVal);
-else
-  overlayImages = zeros([imageDims,numOverlays]);
-  for ov = 1:numOverlays
-    overlayData = viewGet(view,'overlayData',scanNum,ov,analysisNum);
-    if ~isempty(overlayData) & ~isempty(overlayCoords)
-      % Extract the slice
-      overlayImages(:,:,ov) = interp3(overlayData,...
-        overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
-        interpMethod,interpExtrapVal);
-    end
-  end
-end
-
-%-------------------------------------------------------------------------
-function overlayImages = corAnalInterp(view,scanNum,...
-  imageDims,analysisNum,overlayCoords,interpMethod,interpExtrapVal);
-%
-% corAnalInterp: special case for corAnal. Need to treat amp/ph as complex
-% valued.
-
-% Initialize
-numOverlays = viewGet(view,'numberofoverlays',analysisNum);
-overlayImages = zeros([imageDims,numOverlays]);
-
-% Interpolate complex values for amp and ph
-ampNum = viewGet(view,'overlayNum','amp',analysisNum);
-phNum = viewGet(view,'overlayNum','ph',analysisNum);
-ampData = viewGet(view,'overlaydata',scanNum,ampNum,analysisNum);
-phData = viewGet(view,'overlaydata',scanNum,phNum,analysisNum);
-zData = ampData .* exp(i*phData);
-if ~isempty(zData) & ~isempty(overlayCoords)
-  zInterp = interp3(zData,...
-    overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
-    interpMethod,interpExtrapVal);
-  overlayImages(:,:,ampNum) = abs(zInterp);
-  % make sure that the angles go from 0-2*pi
-  ang = angle(zInterp);
-  ang(ang < 0) = ang(ang<0)+2*pi;
-  overlayImages(:,:,phNum) = ang;
-end
-
-% Loop through other overlays and extract images using normal interpolation
-% methods. 
-for ov = setdiff(1:numOverlays,[phNum ampNum])
-  overlayData = viewGet(view,'overlayData',scanNum,ov,analysisNum);
-  if ~isempty(overlayData) & ~isempty(overlayCoords)
-    % Extract the slice
-    overlayImages(:,:,ov) = interp3(overlayData,...
-      overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
-      interpMethod,interpExtrapVal);
-  end
-end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -527,7 +311,9 @@ if ~isempty(roiBaseCoords)
 end
 
 
-%-------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%
+%%   displayROIs   %%
+%%%%%%%%%%%%%%%%%%%%%
 function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
 %
 % displayROIs: draws the ROIs in the current slice.

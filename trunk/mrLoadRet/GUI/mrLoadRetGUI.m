@@ -2146,7 +2146,7 @@ else
 end
 
 % now bring up the flat viewer
-mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName);
+mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName,viewNum);
 cd(thispwd);
 
 
