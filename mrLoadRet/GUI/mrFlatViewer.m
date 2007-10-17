@@ -57,6 +57,7 @@ end
 function initHandler(flat,outer,inner,curv,anat,viewNum)
 
 global gFlatViewer;
+gFlatViewer = [];
 
 disppercent(-inf,'(mrFlatView) Loading surfaces');
 % load the flat
@@ -160,6 +161,7 @@ gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dor
 if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
 end
+gFlatViewer.patchColoringTypes{end+1} = 'None';
 paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
 if ~isempty(gFlatViewer.viewNum)
   paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
@@ -400,52 +402,19 @@ end
 
 % get the roi overlay
 if isfield(gFlatViewer,'viewNum') && gFlatViewer.displayROIs
-  % recomput roiOverlay
+  % recompute roiOverlay
   if ~isfield(gFlatViewer,'roiOverlays') || ...
 	length(gFlatViewer.roiOverlays) < gFlatViewer.whichSurface || ...
 	isempty(gFlatViewer.roiOverlays{gFlatViewer.whichSurface})
-    disppercent(-inf,'(mrFlatViewer) Computing ROI Overlay');
-    roiOverlay = overlay;
-    roiOverlay(:) = nan;
-    v = viewGet([],'view',gFlatViewer.viewNum);
-    numROIs = viewGet(v,'numROIs');
-    baseXform = viewGet(v,'baseXform');
-    baseVoxelSize = [1 1 1];
+
+    % get the vertices for which to calculate the roi overlay
     if gFlatViewer.whichSurface <= 2
       baseCoords = round(vtcs);
     else
       baseCoords = round(gFlatViewer.surfaces.inner.vtcs(patchVtcs,:));
     end
-    tmp = baseCoords(:,2);
-    baseCoords(:,2) = baseCoords(:,1);
-    baseCoords(:,1) = tmp;
-  
-    % deal with selected ROI color
-    selectedROI = viewGet(v,'currentroi');
-    selectedROIColor = color2RGB(mrGetPref('selectedROIColor'));
-    if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
-  
-    for roinum = 1:numROIs
-      % get ROI info
-      roiCoords = viewGet(v,'roiCoords',roinum);
-      roiXform = viewGet(v,'roiXform',roinum);
-      roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
-      if roinum ~= selectedROI
-	roiColorRGB = viewGet(v,'roiColorRGB',roinum);
-      else
-	roiColorRGB = selectedROIColor;
-      end
-      % get the base coord that match the roi
-      roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-      roiBaseCoords = roiBaseCoords(1:3,:)';
-      roiVertices = find(ismember(baseCoords,roiBaseCoords,'rows'));
-      % and set them to the roi color
-      roiOverlay(roiVertices,1) = roiColorRGB(1);
-      roiOverlay(roiVertices,2) = roiColorRGB(2);
-      roiOverlay(roiVertices,3) = roiColorRGB(3);
-      disppercent(inf);
-    end
-    gFlatViewer.roiOverlays{gFlatViewer.whichSurface} = roiOverlay;
+    % and compute them
+    gFlatViewer.roiOverlays{gFlatViewer.whichSurface} = computeROIOverlay(baseCoords);
   end
   % get the overlay from the global
   roiOverlay = gFlatViewer.roiOverlays{gFlatViewer.whichSurface};
@@ -457,7 +426,6 @@ end
 vtcs(:,1) = vtcs(:,1)-mean(vtcs(:,1));
 vtcs(:,2) = vtcs(:,2)-mean(vtcs(:,2));
 vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
-
 
 % draw the surface and the overlay
 patch('vertices', vtcs, 'faces', tris, ...
@@ -661,10 +629,19 @@ switch gFlatViewer.patchColoring
   baseDims = [size(baseCoords,2) 1];
   % get the view
   v = viewGet([],'view',gFlatViewer.viewNum);
-  overlay = computeOverlay(v,baseXform,baseCoords,baseDims);
-  overlay.RGB(overlay.alphaMap==0) = nan;
-  co = squeeze(overlay.RGB);
+  if ~isempty(viewGet(v,'currentOverlay'))
+    overlay = computeOverlay(v,baseXform,baseCoords,baseDims);
+    overlay.RGB(overlay.alphaMap==0) = nan;
+    co = squeeze(overlay.RGB);
+  else
+    co = zeros(size(baseCoords,2),3);
+    co(:) = nan;
+  end
   alpha = 1;
+  return
+ case {length(gFlatViewer.patchColoringTypes)}
+  co = ones(gFlatViewer.flat.Nvtcs,3);
+  co(:) = nan;
   return
 end
 
@@ -707,3 +684,64 @@ binSize = floor(length(co)/nbins);
 for i = 1:nbins
   co(sortIndex((i-1)*binSize+1:min(length(co),i*binSize))) = i/nbins;
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   computeROIOverlay   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function roiOverlay = computeROIOverlay(baseCoords);
+
+global gFlatViewer;
+roiOverlay = [];
+disppercent(-inf,'(mrFlatViewer) Computing ROI Overlay');
+
+% get view information
+v = viewGet([],'view',gFlatViewer.viewNum);
+numROIs = viewGet(v,'numROIs');
+baseXform = viewGet(v,'baseXform');
+baseVoxelSize = [1 1 1];
+% swap x/y
+tmp = baseCoords(:,2);
+baseCoords(:,2) = baseCoords(:,1);
+baseCoords(:,1) = tmp;
+  
+% init the overlay
+roiOverlay = zeros(size(baseCoords,1),3);
+roiOverlay(:) = nan;
+
+% deal with selected ROI color
+selectedROI = viewGet(v,'currentroi');
+selectedROIColor = color2RGB(mrGetPref('selectedROIColor'));
+if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
+
+% get which ROIs to do
+showROIs = viewGet(v,'showROIs');
+if strcmp(showROIs,'none')
+  return
+end
+if strfind(showROIs,'selected')
+  rois = selectedROI;
+else
+  rois = 1:numROIs;
+end
+
+for roinum = rois
+  % get ROI info
+  roiCoords = viewGet(v,'roiCoords',roinum);
+  roiXform = viewGet(v,'roiXform',roinum);
+  roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
+  if roinum ~= selectedROI
+    roiColorRGB = viewGet(v,'roiColorRGB',roinum);
+  else
+    roiColorRGB = selectedROIColor;
+  end
+  % get the base coord that match the roi
+  roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
+  roiBaseCoords = roiBaseCoords(1:3,:)';
+  roiVertices = find(ismember(baseCoords,roiBaseCoords,'rows'));
+  % and set them to the roi color
+  roiOverlay(roiVertices,1) = roiColorRGB(1);
+  roiOverlay(roiVertices,2) = roiColorRGB(2);
+  roiOverlay(roiVertices,3) = roiColorRGB(3);
+  disppercent(roinum/numROIs);
+end
+disppercent(inf);
