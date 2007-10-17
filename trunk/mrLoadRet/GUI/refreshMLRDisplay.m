@@ -422,20 +422,7 @@ for r = order
   end
   
   % If it's a 'text' color, translate it...
-  if isstr(color)
-    switch (color)
-     case {'yellow','y'}, color = [1 1 0];
-     case {'magenta','m'}, color = [1 0 1];
-     case {'cyan','c'}, color = [0 1 1];
-     case {'red','r'}, color = [1 0 0];
-     case {'green','g'}, color = [0 1 0];
-     case {'blue','b'}, color = [0 0 1];
-     case {'white','w'}, color = [1 1 1];
-     case {'black','k'}, color = [0 0 0];
-     otherwise, color = [1 1 1];
-    end % end switch statement
-  end
-  roi{r}.color = color;
+  roi{r}.color = color2RGB(color);
   % get image coords for this slice
   if baseType == 0
     % for regular volumes, only get coordinates that match slice

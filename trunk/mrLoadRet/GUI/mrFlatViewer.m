@@ -119,6 +119,7 @@ gFlatViewer.hSliders.hText = uicontrol('Style','Edit','Position',[figLeft+slider
 % set they we are viewing white matter
 gFlatViewer.whichSurface = 1;
 gFlatViewer.patchColoring = 1;
+gFlatViewer.displayROIs = 0;
 % and display surface
 dispSurface;
 setViewAngle(0,0);
@@ -160,6 +161,11 @@ if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
 end
 paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
+if ~isempty(gFlatViewer.viewNum)
+  paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
+end
+
+% put up dialog
 params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
 
 if isempty(params)
@@ -188,10 +194,13 @@ function whichSurfaceCallback(params)
 
 global gFlatViewer;
 
+% set the roi drawing
+lastDisplayROIs = gFlatViewer.displayROIs;
+gFlatViewer.displayROIs = params.displayROIs;
 % get which surface to draw
 lastWhichSurface = gFlatViewer.whichSurface;
 whichSurface = find(strcmp(params.whichSurface,gFlatViewer.whichSurfaceTypes));
-if whichSurface ~= lastWhichSurface
+if (whichSurface ~= lastWhichSurface) || (lastDisplayROIs ~= params.displayROIs)
   % set which surface and display
   gFlatViewer.whichSurface = whichSurface;
   % 1,2 are surfaces
@@ -369,11 +378,6 @@ else
   view([0 90]);
 end  
 
-% move vertices into center
-vtcs(:,1) = vtcs(:,1)-mean(vtcs(:,1));
-vtcs(:,2) = vtcs(:,2)-mean(vtcs(:,2));
-vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
-
 % clear the axis
 cla;
 
@@ -394,6 +398,67 @@ else
   overlay(:,2:3) = co(:,2:3);
 end
 
+% get the roi overlay
+if isfield(gFlatViewer,'viewNum') && gFlatViewer.displayROIs
+  % recomput roiOverlay
+  if ~isfield(gFlatViewer,'roiOverlays') || ...
+	length(gFlatViewer.roiOverlays) < gFlatViewer.whichSurface || ...
+	isempty(gFlatViewer.roiOverlays{gFlatViewer.whichSurface})
+    disppercent(-inf,'(mrFlatViewer) Computing ROI Overlay');
+    roiOverlay = overlay;
+    roiOverlay(:) = nan;
+    v = viewGet([],'view',gFlatViewer.viewNum);
+    numROIs = viewGet(v,'numROIs');
+    baseXform = viewGet(v,'baseXform');
+    baseVoxelSize = [1 1 1];
+    if gFlatViewer.whichSurface <= 2
+      baseCoords = round(vtcs);
+    else
+      baseCoords = round(gFlatViewer.surfaces.inner.vtcs(patchVtcs,:));
+    end
+    tmp = baseCoords(:,2);
+    baseCoords(:,2) = baseCoords(:,1);
+    baseCoords(:,1) = tmp;
+  
+    % deal with selected ROI color
+    selectedROI = viewGet(v,'currentroi');
+    selectedROIColor = color2RGB(mrGetPref('selectedROIColor'));
+    if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
+  
+    for roinum = 1:numROIs
+      % get ROI info
+      roiCoords = viewGet(v,'roiCoords',roinum);
+      roiXform = viewGet(v,'roiXform',roinum);
+      roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
+      if roinum ~= selectedROI
+	roiColorRGB = viewGet(v,'roiColorRGB',roinum);
+      else
+	roiColorRGB = selectedROIColor;
+      end
+      % get the base coord that match the roi
+      roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
+      roiBaseCoords = roiBaseCoords(1:3,:)';
+      roiVertices = find(ismember(baseCoords,roiBaseCoords,'rows'));
+      % and set them to the roi color
+      roiOverlay(roiVertices,1) = roiColorRGB(1);
+      roiOverlay(roiVertices,2) = roiColorRGB(2);
+      roiOverlay(roiVertices,3) = roiColorRGB(3);
+      disppercent(inf);
+    end
+    gFlatViewer.roiOverlays{gFlatViewer.whichSurface} = roiOverlay;
+  end
+  % get the overlay from the global
+  roiOverlay = gFlatViewer.roiOverlays{gFlatViewer.whichSurface};
+else
+  roiOverlay = [];
+end
+
+% move vertices into center
+vtcs(:,1) = vtcs(:,1)-mean(vtcs(:,1));
+vtcs(:,2) = vtcs(:,2)-mean(vtcs(:,2));
+vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
+
+
 % draw the surface and the overlay
 patch('vertices', vtcs, 'faces', tris, ...
       'FaceVertexCData', c, ...
@@ -402,6 +467,11 @@ patch('vertices', vtcs, 'faces', tris, ...
 patch('vertices', vtcs, 'faces', tris, ...
       'FaceVertexCData', overlay, ...
       'FaceColor', 'interp', 'Edgecolor','none','FaceAlpha',alpha);
+if ~isempty(roiOverlay)
+  patch('vertices', vtcs, 'faces', tris, ...
+	'FaceVertexCData', roiOverlay, ...
+	'FaceColor', 'interp', 'Edgecolor','none','FaceAlpha',.4);
+end
 
 % set axis stuff
 axis off;axis equal;colormap(gray);axis tight;

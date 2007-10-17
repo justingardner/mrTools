@@ -1226,6 +1226,16 @@ switch lower(param)
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).color;
     end
+  case{'roicolorrgb'}
+    % roicolor = viewGet(view,'roicolorRGB',[roiNum])
+    % roicolor = viewGet(view,'roicolorRGB',[])
+    % roicolor = viewGet(view,'roicolorRGB')
+    if ieNotDefined('varargin')
+      roicolor = viewGet(view,'roiColor');
+    else
+      roicolor = viewGet(view,'roiColor',varargin{1});
+    end
+    val = color2RGB(roicolor);
   case{'roixform'}
     % roixform = viewGet(view,'roixform',[roiNum])
     % roixform = viewGet(view,'roixform',[])
