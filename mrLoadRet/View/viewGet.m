@@ -55,7 +55,14 @@ switch lower(param)
 
   case {'view'}
     % view = viewGet(view,'view')
-    val = view;
+    % view = viewGet([],'view',viewNum)
+    if length(varargin) == 1
+      if (varargin{1} > 0) && (varargin{1} <= length(MLR.views))
+	val = MLR.views{varargin{1}};
+      end
+    else
+      val = view;
+    end
   case {'viewtype','type'}
     % viewType = viewGet(view,'viewType')
     val = view.viewType;
