@@ -57,8 +57,9 @@ if ~isempty(params)
   for roinum = 1:length(roinames)
     if isfield(params,fixBadChars(roinames{roinum})) && params.(fixBadChars(roinames{roinum}))
       % get the roi
-      roi = viewGet(v,'ROI',roinum);
-      roiBaseCoords = getROIBaseCoords(v,roinum,baseXform,baseVoxelSize);
+      thisroinum = viewGet(v,'roinum',roinames{roinum});
+      roi = viewGet(v,'ROI',thisroinum);
+      roiBaseCoords = getROIBaseCoords(v,thisroinum,baseXform,baseVoxelSize);
       if ~isempty(roiBaseCoords)
 	if strcmp(params.convertType,'Convert')
 	  disp(sprintf('(convertROI) Converting ROI %i:%s',roinum,roinames{roinum}));
@@ -70,7 +71,7 @@ if ~isempty(params)
 	roi.xform = baseXform;
 	roi.voxelSize = baseVoxelSize;
 	% remove the roi
-	v = viewSet(v,'deleteROI',roinum);
+	v = viewSet(v,'deleteROI',thisroinum);
 	% and add it back with the new coordinates
 	v = viewSet(v,'newROI',roi);
 	needToRefresh = 1;
