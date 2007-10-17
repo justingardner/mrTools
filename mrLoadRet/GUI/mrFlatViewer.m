@@ -1,14 +1,14 @@
 % mrFlatViewer.m
 %
-%      usage: mrFlatViewer(flatname,outer,inner,curv,anat)
+%      usage: mrFlatViewer(flatname,outer,inner,curv,anat,viewNum)
 %         by: modified by jg from surfViewer by eli merriam
 %       date: 10/09/07
 %    purpose: 
 %
-function retval = mrFlatViewer(flat,outer,inner,curv,anat)
+function retval = mrFlatViewer(flat,outer,inner,curv,anat,viewNum)
 
 % check arguments
-if ~any(nargin == [1 5])
+if ~any(nargin == [1 2 3 4 5 6])
   help mrFlatViewer
   return
 end
@@ -31,6 +31,7 @@ else
   if ieNotDefined('inner'),inner = {};end
   if ieNotDefined('curv'),curv = {};end
   if ieNotDefined('anat'),anat = {};end
+  if ieNotDefined('viewNum'),viewNum = [];end
   % make everybody a cell array
   flat = cellArray(flat);
   outer = cellArray(outer);
@@ -41,7 +42,7 @@ end
 
 switch (event)
  case 'init'
-  initHandler(flat,outer,inner,curv,anat);
+  initHandler(flat,outer,inner,curv,anat,viewNum);
  case {'vSlider','hSlider'}
   sliderHandler;
  case {'edit'}
@@ -53,7 +54,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %%   init handler   %%
 %%%%%%%%%%%%%%%%%%%%%%
-function initHandler(flat,outer,inner,curv,anat)
+function initHandler(flat,outer,inner,curv,anat,viewNum)
 
 global gFlatViewer;
 
@@ -96,6 +97,9 @@ if isfile(anat{1})
 else
   gFlatViewer.anat = [];
 end
+
+% save the view
+gFlatViewer.viewNum = viewNum;
 
 % select the window
 gFlatViewer.f = selectGraphWin;
@@ -152,6 +156,9 @@ end
 gFlatViewer.whichSurfaceTypes = {'Outer (Gray matter) surface','Inner (White matter) surface','3D Anatomy','Patch'};
 paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
 gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High outer areal distortion in red','High inner areal distortion in red'};
+if ~isempty(gFlatViewer.viewNum)
+  gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
+end
 paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
 params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
 
@@ -375,7 +382,7 @@ cla;
 imagesc(0);
 
 % get the colors that we want to show for that patch
-co = getPatchColoring;
+[co alpha] = getPatchColoring;
 
 % now set the overlay
 if gFlatViewer.whichSurface <= 2
@@ -393,8 +400,8 @@ patch('vertices', vtcs, 'faces', tris, ...
       'facecolor', 'interp', ...
       'edgecolor', 'none');
 patch('vertices', vtcs, 'faces', tris, ...
-      'FaceVertexCData', overlay, 'FaceVertexAlphaData', overlay(:,1)*.1, ...
-      'FaceColor', 'interp', 'Edgecolor','none','FaceAlpha',.6);
+      'FaceVertexCData', overlay, ...
+      'FaceColor', 'interp', 'Edgecolor','none','FaceAlpha',alpha);
 
 % set axis stuff
 axis off;axis equal;colormap(gray);axis tight;
@@ -488,14 +495,15 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   getPatchColoring   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function co = getPatchColoring
+function [co alpha] = getPatchColoring
 
 global gFlatViewer;
+
+alpha = 0.6;
 
 % get the patch vertices
 patchVtcs = gFlatViewer.flat.patch2parent(:,2);
 
-title('');
 % one is uniform, 2-4 are red/blue
 switch gFlatViewer.patchColoring
  % uniform
@@ -520,12 +528,12 @@ switch gFlatViewer.patchColoring
  case {7,8,9,10}
   tris = gFlatViewer.flat.tris;
   % get area in volume
-  if gFlatViewer.patchColoring == 10
-    % use inner surface
-    volumeArea = getTriangleArea(gFlatViewer.surfaces.inner.vtcs(patchVtcs,:),tris);
-  else
+  if gFlatViewer.patchColoring == 9
     % use outer surface
     volumeArea = getTriangleArea(gFlatViewer.surfaces.outer.vtcs(patchVtcs,:),tris);
+  else
+    % use inner surface
+    volumeArea = getTriangleArea(gFlatViewer.surfaces.inner.vtcs(patchVtcs,:),tris);
   end
   patchArea = getTriangleArea(gFlatViewer.flat.vtcs,tris);
   % get the distortion as the ratio of the area in the
@@ -564,6 +572,30 @@ switch gFlatViewer.patchColoring
     distortion = 10.^distortion;
     title(sprintf('Distortion: max=%0.2fx median=%0.2fx mean=%0.2fx',max(distortion),median(distortion),mean(distortion)));
   end
+ %current overlay
+ case {11}
+  baseXform = gFlatViewer.anat.hdr.sform44;
+  whichInx = gFlatViewer.flat.patch2parent(:,2);
+  % get the coordinates from the right surface
+  if gFlatViewer.whichSurface == 1
+    baseCoords = gFlatViewer.surfaces.outer.vtcs(whichInx,:);
+  else
+    baseCoords = gFlatViewer.surfaces.inner.vtcs(whichInx,:);    
+  end
+  % swap x/y
+  temp = baseCoords(:,2);
+  baseCoords(:,2) = baseCoords(:,1);
+  baseCoords(:,1) = temp;
+  baseCoords(:,4) = 1;
+  baseCoords = baseCoords';
+  baseDims = [size(baseCoords,2) 1];
+  % get the view
+  v = viewGet([],'view',gFlatViewer.viewNum);
+  overlay = computeOverlay(v,baseXform,baseCoords,baseDims);
+  overlay.RGB(overlay.alphaMap==0) = nan;
+  co = squeeze(overlay.RGB);
+  alpha = 1;
+  return
 end
 
 % intermediate values turn to gray, so avoid them
@@ -601,7 +633,7 @@ if ~exist('nbins','var'),nbins = 10;end
 [co sortIndex] = sort(co);
 % get binsize
 binSize = floor(length(co)/nbins);
-% and even number of values back into each bin
+% add even number of values back into each bin
 for i = 1:nbins
   co(sortIndex((i-1)*binSize+1:min(length(co),i*binSize))) = i/nbins;
 end
