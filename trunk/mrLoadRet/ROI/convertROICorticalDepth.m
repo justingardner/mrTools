@@ -62,7 +62,7 @@ currentROI = viewGet(v,'currentROI');
 % now go through and do conversion
 if ~isempty(whichROI)
   needToRefresh = 0;
-  % now go through and delete anything the user selected
+  % now go through and convert anything the user selected
   for roinum = 1:length(roinames)
     if whichROI.(fixBadChars(roinames{roinum}))
       needToRefresh = 1;
@@ -72,6 +72,11 @@ if ~isempty(whichROI)
       roi = viewGet(v,'ROI');
       % get the roiBaseCoords
       roiBaseCoords = getROIBaseCoords(v,roinum,baseXform,baseVoxelSize);
+      if isempty(roiBaseCoords)
+        disppercent(inf);
+        disp(sprintf('(convertROICorticalDepth) %s has no coordinates on this flat',roinames{roinum}));
+        continue;
+      end
       roiBaseCoordsLinear = mrSub2ind(baseDims,roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
       % now find which baseCoords are in the current roi
       isInROI = ismember(referenceBaseCoordMap,roiBaseCoordsLinear);
