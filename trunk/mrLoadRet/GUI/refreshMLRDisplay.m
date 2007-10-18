@@ -380,8 +380,12 @@ if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
 
 for r = order
   if (r == selectedROI)
-    % Selected ROI: set color=white
-    color = selectedROIColor;
+    % Selected ROI: set color
+    if strcmp(selectedROIColor,'none')
+      color = viewGet(view,'roicolor',r);
+    else
+      color = selectedROIColor;
+    end
   else
     % Non-selected ROI, get roi color
     color = viewGet(view,'roicolor',r);

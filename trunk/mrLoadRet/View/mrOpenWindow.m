@@ -42,6 +42,7 @@ mlrGuiSet(view,'scan',min(1,nScans));
 mlrGuiSet(view,'nSlices',0);
 % init showROIs to all perimeter
 view = viewSet(view,'showROIs','all perimeter');
+view = viewSet(view,'labelROIs',1);
 
 baseLoaded = 0;
 if isfile('mrLastView.mat')

@@ -34,6 +34,8 @@ if isstr(color)
    case {'purple','p'}, color = [160 32 240]/255;
    case {'white','w'}, color = [1 1 1];
    case {'black','k'}, color = [0 0 0];
-   otherwise, color = [1 1 1];
+   otherwise, color = [];
   end % end switch statement
 end
+
+if isempty(color),color = [1 1 1];end

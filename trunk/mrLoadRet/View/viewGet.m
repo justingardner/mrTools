@@ -1254,6 +1254,24 @@ switch lower(param)
     else
       val = eye(3);
     end
+  case{'roinotes'}
+    % roinotesm = viewGet(view,'roinotes',[roiNum])
+    % roinotes = viewGet(view,'roinotes',[])
+    % roinotes = viewGet(view,'roinotes')
+    if ieNotDefined('varargin')
+      r = viewGet(view,'currentROI');
+    else
+      r = varargin{1};
+    end
+    if isempty(r)
+      r = viewGet(view,'currentROI');
+    end
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).notes;
+    else
+      val = '';
+    end
   case{'roivoxelsize'}
     % roivoxelsize = viewGet(view,'roivoxelsize',[roiNum])
     % roivoxelsize = viewGet(view,'roivoxelsize',[])
