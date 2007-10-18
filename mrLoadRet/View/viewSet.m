@@ -1130,7 +1130,7 @@ switch lower(param)
     view.labelROIs = val;
     mlrGuiSet(view,'labelROIs',val);
   case {'newroi'}
-    % view = viewSet(view,'newROI',roiStructure);
+    % view = viewSet(view,'newROI',roiStructure,<replaceDuplicate>);
     % val must be a structure with the following required fields
     % - name: string
     % - viewType:
@@ -1139,20 +1139,31 @@ switch lower(param)
     % - xform: 4x4 matrix
     % - voxelSize: 3 vector
     % - date: specifies when it was created or last modified
+    % if replaceDuplicate=1 then if the roi already exists
+    % than it will replace the new one.
 
     % Check that is has the required fields
     [check ROI] = isroi(val);
     if ~check
       mrErrorDlg('Invalid ROI');
     end
+    if length(varargin) > 0
+      replaceDuplicates = varargin{1};
+    else
+      replaceDuplicates = 0;
+    end
     % check to make sure the name is unique
     roiNames = viewGet(view,'roiNames');
     nameMatch = find(strcmp(ROI.name,roiNames));
     while ~isempty(nameMatch)
-      paramsInfo{1} = {'roiName',ROI.name,'Change the name to a unique ROI name'};
-      paramsInfo{2} = {'replace',0,'type=checkbox','Check to replace the loaded ROI with the same name'};
-      params = mrParamsDialog(paramsInfo,'Non unique ROI name, please change');
-      if isempty(params),tf=0;return,end
+      if ~replaceDuplicates
+	paramsInfo{1} = {'roiName',ROI.name,'Change the name to a unique ROI name'};
+	paramsInfo{2} = {'replace',0,'type=checkbox','Check to replace the loaded ROI with the same name'};
+	params = mrParamsDialog(paramsInfo,'Non unique ROI name, please change');
+	if isempty(params),tf=0;return,end
+      else
+	params.replace = replaceDuplicates;
+      end
       if params.replace
 	% if replace, then delete the existing one
 	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',ROI.name));
