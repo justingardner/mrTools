@@ -1145,7 +1145,11 @@ switch lower(param)
     % ROI with the same name, so pick the last one in
     % the list, since we usually are getting the number
     % for the last ROI that was just created
-    val = last(find(strcmp(ROIname,ROInames)));
+    val = find(strcmp(ROIname,ROInames));
+    if length(val) > 1
+      mrWarnDlg(sprintf('(viewGet) you have multiple ROIs with the name %s',ROIname));
+      val = last(val);
+    end
   case{'roi'}
     % roi = viewGet(view,'roi',[roiNum])
     % roi = viewGet(view,'roi',[])
