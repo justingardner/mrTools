@@ -1272,7 +1272,7 @@ for roinum = 1:nROIs
   colors = putOnTopOfList(viewGet(v,'roiColor',roinum),color2RGB);
   paramsInfo{end+1} = {sprintf('%sName',fixBadChars(roiNames{roinum})),roiNames{roinum},'Name of roi, avoid using punctuation and space'};
   paramsInfo{end+1} = {sprintf('%sColor',fixBadChars(roiNames{roinum})),colors,sprintf('The color that roi %s will display in',roiNames{roinum})};
-  paramsInfo{end+1} = {sprintf('%sNotes',roiNames{roinum}),roiNotes,sprintf('Note for roi %s',roiNames{roinum})};
+  paramsInfo{end+1} = {sprintf('%sNotes',fixBadChars(roiNames{roinum})),roiNotes,sprintf('Note for roi %s',roiNames{roinum})};
 end
 if isempty(paramsInfo),return,end
 params = mrParamsDialog(paramsInfo,'Edit Many ROIs');
