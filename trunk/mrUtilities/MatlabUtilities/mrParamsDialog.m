@@ -267,8 +267,13 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
 else
   % handle callbacks for non-push buttons
   if isfield(gParams.varinfo{varnum},'callback')
-    % create the string to call the function
-    feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+    if isfield(gParams.varinfo{varnum},'callbackArg')
+      % create the string to call the function
+      feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,getParams(gParams.vars));
+    else
+      % create the string to call the function
+      feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+    end
   end
 end
 
