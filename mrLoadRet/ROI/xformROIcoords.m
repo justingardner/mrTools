@@ -19,6 +19,11 @@ function newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,samp
 % 7/19/02 djh, Modified to maintain equal volumes
 % 8/2005 djh, Updated to mrLoadRet-4.0
 
+% check for empty coords
+if isempty(coords)
+  newcoords = [];
+  return
+end
 % check for no transform, accounting for round off error
 roundVal = 10000000;
 xformRound = round(xform*roundVal)/roundVal;

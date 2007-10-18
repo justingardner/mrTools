@@ -63,13 +63,37 @@ coords2 = roiCoords2';
 % Combine
 switch action
   case 'Intersection'
-     newCoords = intersect(coords1,coords2,'rows');
+     if isempty(coords1)
+       newCoords = coords1;
+     elseif isempty(coords2)
+       newCoords = coords2;
+     else       
+       newCoords = intersect(coords1,coords2,'rows');
+     end
   case 'Union'
-     newCoords = union(coords1,coords2,'rows');
+     if isempty(coords1)
+       newCoords = coords2;
+     elseif isempty(coords2)
+       newCoords = coords1;
+     else       
+       newCoords = union(coords1,coords2,'rows');
+     end
   case 'XOR'
-     newCoords = setxor(coords,coords2,'rows');
+     if isempty(coords1)
+       newCoords = coords2;
+     elseif isempty(coords2)
+       newCoords = coords1;
+     else       
+       newCoords = setxor(coords,coords2,'rows');
+     end
   case 'A not B'
-     newCoords = setdiff(coords1,coords2,'rows');
+     if isempty(coords1)
+       newCoords = coords1;
+     elseif isempty(coords2)
+       newCoords = coords1;
+     else       
+       newCoords = setdiff(coords1,coords2,'rows');
+     end
 end
 
 % Transpose back 
