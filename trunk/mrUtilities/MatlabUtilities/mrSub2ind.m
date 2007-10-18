@@ -15,6 +15,8 @@ if ~any(nargin == [3 4])
   return
 end
 
+if isempty(x),linear = [];return;end
+
 if nargin == 4
   badCoords = find((x < 1) | (x > dims(1)) | ...
 		   (y < 1) | (y > dims(2)) | ...
