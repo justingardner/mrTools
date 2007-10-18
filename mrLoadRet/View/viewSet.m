@@ -502,6 +502,13 @@ switch lower(param)
     end
     mlrGuiSet(view,'basePopup',stringList);
 
+  case{'rotate'}
+    % view = viewSet(view,'rotate',rotation);
+    curBase = viewGet(view,'curBase');
+    numBases = viewGet(view,'numberofBaseVolumes');
+    if (curBase > 0) & (curBase <= numBases)
+      view.baseVolumes(curBase).rotate = val;
+    end
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
