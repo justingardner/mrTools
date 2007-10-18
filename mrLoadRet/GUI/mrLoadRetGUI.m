@@ -306,6 +306,59 @@ value = str2num(get(hObject,'String'));
 mlrGuiSet(viewNum,'slice',value);
 refreshMLRDisplay(viewNum);
 
+% --- Executes on slider movement.
+function corticalDepthSlider_Callback(hObject, eventdata, handles)
+% hObject    handle to corticalDepthSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+value = get(hObject,'Value');
+mlrGuiSet(viewNum,'corticalDepth',value);
+refreshMLRDisplay(viewNum);
+
+
+% --- Executes during object creation, after setting all properties.
+function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to corticalDepthSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+function corticalDepthText_Callback(hObject, eventdata, handles)
+% hObject    handle to corticalDepthText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of corticalDepthText as text
+%        str2double(get(hObject,'String')) returns contents of corticalDepthText as a double
+
+viewNum = handles.viewNum;
+value = str2num(get(hObject,'String'));
+mlrGuiSet(viewNum,'corticalDepth',value);
+refreshMLRDisplay(viewNum);
+
+% --- Executes during object creation, after setting all properties.
+function corticalDepthText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to corticalDepthText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
 % --- baseMin
 function baseMinSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
@@ -545,6 +598,16 @@ n = viewGet(viewNum,'currentBase');
 saveAnat(MLR.views{viewNum},n,1);
 
 % --------------------------------------------------------------------
+function SaveAsMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to SaveAsMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+n = viewGet(viewNum,'currentBase');
+saveAnat(MLR.views{viewNum},n,1,1);
+
+% --------------------------------------------------------------------
 function fileAnalysisMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -609,6 +672,22 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = loadROI(MLR.views{viewNum});
 refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function loadFromVolumeDirectoryROIMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to loadFromVolumeDirectoryROIMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the volume directory from prefs
+volumeDirectory = mrGetPref('volumeDirectory');
+% load the rois
+v = loadROI(v,[],[],volumeDirectory);
+% and refresh
+refreshMLRDisplay(viewNum);
+
 
 % --------------------------------------------------------------------
 function saveROIMenuItem_Callback(hObject, eventdata, handles)
@@ -695,6 +774,17 @@ createReadme(MLR.session,MLR.groups);
 % --------------------------------------------------------------------
 function saveSessionMenuItem_Callback(hObject, eventdata, handles)
 saveSession(1);
+
+% --------------------------------------------------------------------
+function printMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to printMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+mrPrint(v);
 
 % --------------------------------------------------------------------
 function quitMenuItem_Callback(hObject, eventdata, handles)
@@ -1144,18 +1234,23 @@ roiNum = viewGet(v,'currentROI');
 if isempty(roiNum),return,end
 roiName = viewGet(v,'roiName',roiNum);
 roiColor = viewGet(v,'roiColor',roiNum);
+roiNotes = viewGet(v,'roiNotes',roiNum);
 
 % get the list of colors, putting our color on top
 colors = putOnTopOfList(roiColor,color2RGB);
 
 % make parameter string
-roiParams = {{'name',roiName,'Name of roi, avoid using punctuation and space'},{'color',colors,'The color that the roi will display in'}};
-params = mrParamsDialog(roiParams,'Edit ROI');
+roiParams{1} = {'name',roiName,'Name of roi, avoid using punctuation and space'};
+roiParams{2} = {'color',colors,'The color that the roi will display in'};
+roiParams{3} = {'notes',roiNotes,'Brief notes about the ROI'};
+
+params = mrParamsDialog(roiParams,'Edit ROI',1.5);
 
 % if not empty, then change the parameters
 if ~isempty(params)
   v = viewSet(v,'roiColor',params.color,roiNum);
   v = viewSet(v,'roiName',params.name,roiNum);
+  v = viewSet(v,'roiNotes',params.notes,roiNum);
   refreshMLRDisplay(viewNum);
 end
 
@@ -1203,14 +1298,20 @@ nROIs = viewGet(v,'numROIs');
 
 if nROIs == 0,return,end
 paramsInfo = {};
+colors = putOnTopOfList(viewGet(v,'roiColor'),color2RGB);
+colors{end+1} = 'No change';
 % get color to set all ROIs to
-paramsInfo{end+1} = {'color',putOnTopOfList(viewGet(v,'roiColor'),color2RGB),'Color for all ROIs'};
-params = mrParamsDialog(paramsInfo,'Edit All ROIs');
+paramsInfo{end+1} = {'color',colors,'Color for all ROIs'};
+paramsInfo{end+1} = {'notes',viewGet(v,'roiNotes'),'Notes for all ROIs'};
+params = mrParamsDialog(paramsInfo,'Edit All ROIs',1.5);
 
 % if not empty, then change the parameters
 if ~isempty(params)
   for roinum = 1:nROIs
-    v = viewSet(v,'roiColor',params.color,roinum);
+    if ~strcmp(params.color,'No change')
+      v = viewSet(v,'roiColor',params.color,roinum);
+    end
+    v = viewSet(v,'roiNotes',params.notes,roinum);
   end
   refreshMLRDisplay(viewNum);
 end
@@ -1220,45 +1321,47 @@ end
 function infoROIMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-roiNum = viewGet(view,'currentROI');
-roiName = viewGet(view,'roiName',roiNum);
-roiDate = viewGet(view,'roidate',roiNum);
-roiColor = viewGet(view,'roicolor',roiNum);
-roiVoxelSize = viewGet(view,'roivoxelsize',roiNum);
-roiVolume = viewGet(view,'roivolume',roiNum);
-roiXform = viewGet(view,'roixform',roiNum);
+v = MLR.views{viewNum};
+roiNum = viewGet(v,'currentROI');
+roiName = viewGet(v,'roiName',roiNum);
+roiDate = viewGet(v,'roidate',roiNum);
+roiColor = viewGet(v,'roicolor',roiNum);
+roiVoxelSize = viewGet(v,'roivoxelsize',roiNum);
+roiVolume = viewGet(v,'roivolume',roiNum);
+roiXform = viewGet(v,'roixform',roiNum);
+roiNotes = viewGet(v,'roiNotes',roiNum);
 
 % check to see which base anatomy this roi aligns with
 baseMatch = {};
-for bnum = 1:viewGet(view,'numberOfBaseVolumes')
+for bnum = 1:viewGet(v,'numberOfBaseVolumes')
   % get the base voxelSize and xfrom
-  baseVoxelSize = viewGet(view,'baseVoxelSize',bnum);
-  baseXform = viewGet(view,'baseXform',bnum);
+  baseVoxelSize = viewGet(v,'baseVoxelSize',bnum);
+  baseXform = viewGet(v,'baseXform',bnum);
   % if it matches, then put it in thee list of matching base names
   if isequal(baseXform,roiXform) && isequal(baseVoxelSize,roiVoxelSize)
-    baseMatch{end+1} = viewGet(view,'baseName',bnum);
+    baseMatch{end+1} = viewGet(v,'baseName',bnum);
   end
 end
 if isempty(baseMatch),baseMatch = 'No matching base anatomy';,end
 if length(baseMatch)==1,baseMatch = baseMatch{1};end
 
 paramsInfo = {{'name',roiName,'editable=0','The name of the ROI'},...
+  {'notes',roiNotes,'editable=0','Notes associated with ROI'},...
   {'date',roiDate,'editable=0','The date of creation'},...
   {'color',roiColor,'editable=0','ROI color'},...
   {'voxelsize',roiVoxelSize,'editable=0','Voxel dimensions in mm'},...
   {'volume',roiVolume,'editable=0','Volume of ROI in cubic mm'},...
   {'xform',roiXform,'editable=0','xform matrix specifies the transformation to the base coordinate system'},...
   {'baseMatch',baseMatch,'editable=0','The base volume that has the same voxel size and xform as this ROI. This is the base volume on which the ROI was originally defined. If there is no matching base anatomy, it means that the ROI was defined on a different base volume than the one you have loaded.'},...
-  {'ROICoords',[],'type=pushbutton','buttonString=Show ROI coordinates','callback',@showCurrentROICoords,'callbackArg',view,'Print the coordinates for this ROI into the matlab window. Note that these will be the actual ROI coordinates not transformed into the scan coordinates. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'},...
-  {'ROIScanCoords',[],'type=pushbutton','buttonString=Show scan coordinates','callback',@showCurrentROIScanCoords,'callbackArg',view,'Print the coordinates transformed into the scan coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'}};
+  {'ROICoords',[],'type=pushbutton','buttonString=Show ROI coordinates','callback',@showCurrentROICoords,'callbackArg',v,'Print the coordinates for this ROI into the matlab window. Note that these will be the actual ROI coordinates not transformed into the scan coordinates. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'},...
+  {'ROIScanCoords',[],'type=pushbutton','buttonString=Show scan coordinates','callback',@showCurrentROIScanCoords,'callbackArg',v,'Print the coordinates transformed into the scan coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'}};
 
 % give ability to findROI for non baseCoordMapped ROIs
-if isempty(viewGet(view,'baseCoordMap'))
-  paramsInfo{end+1} = {'findROI',[],'type=pushbutton','buttonString=Find ROI','callback',@findROI,'callbackArg',view,'Go to the closest slice for which this ROI has some coordinates.'};
+if isempty(viewGet(v,'baseCoordMap'))
+  paramsInfo{end+1} = {'findROI',[],'type=pushbutton','buttonString=Find ROI','callback',@findROI,'callbackArg',v,'Go to the closest slice for which this ROI has some coordinates.'};
 end
 
-mrParamsDialog(paramsInfo,'ROI information');
+mrParamsDialog(paramsInfo,'ROI information',1.5);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % helper function, called by ROI Info
@@ -1613,7 +1716,8 @@ function newRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-view = newROI(view);
+[view userCancel] = newROI(view);
+if userCancel,return,end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -1621,7 +1725,8 @@ function createRectangleMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-view = newROI(view);
+[view userCancel] = newROI(view);
+if userCancel,return,end
 view = drawROI(view,'rectangle',1);
 refreshMLRDisplay(viewNum);
 
@@ -1630,7 +1735,8 @@ function createPolygonMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-view = newROI(view);
+[view userCancel] = newROI(view);
+if userCancel,return,end
 view = drawROI(view,'polygon',1);
 refreshMLRDisplay(viewNum);
 
@@ -1774,6 +1880,33 @@ view = viewSet(view,'ROIcoords',prevCoords);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function convertCorticalDepthRoiMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to convertCorticalDepthRoiMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+v = convertROICorticalDepth(v);
+
+
+% --------------------------------------------------------------------
+function convertRoiToBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to convertRoiToBaseAnatomyMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+v = convertROI(v);
+
+
+% --------------------------------------------------------------------
 function showRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1815,6 +1948,23 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = viewSet(view,'showROIs','hide');
 refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function labelsROIsMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to labelsROIsMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% switch labels on/off
+labelROIs = viewGet(v,'labelROIs');
+viewSet(v,'labelROIs',~labelROIs');
+
+% redisplay
+refreshMLRDisplay(viewNum);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plotMenu_Callback(hObject, eventdata, handles)
@@ -2101,82 +2251,6 @@ v = MLR.views{viewNum};
 
 overlayInfo(v);
 
-% --- Executes on slider movement.
-function corticalDepthSlider_Callback(hObject, eventdata, handles)
-% hObject    handle to corticalDepthSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-value = get(hObject,'Value');
-mlrGuiSet(viewNum,'corticalDepth',value);
-refreshMLRDisplay(viewNum);
-
-
-% --- Executes during object creation, after setting all properties.
-function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to corticalDepthSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-
-function corticalDepthText_Callback(hObject, eventdata, handles)
-% hObject    handle to corticalDepthText (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of corticalDepthText as text
-%        str2double(get(hObject,'String')) returns contents of corticalDepthText as a double
-
-viewNum = handles.viewNum;
-value = str2num(get(hObject,'String'));
-mlrGuiSet(viewNum,'corticalDepth',value);
-refreshMLRDisplay(viewNum);
-
-% --- Executes during object creation, after setting all properties.
-function corticalDepthText_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to corticalDepthText (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --------------------------------------------------------------------
-function SaveAsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to SaveAsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-n = viewGet(viewNum,'currentBase');
-saveAnat(MLR.views{viewNum},n,1,1);
-
-
-% --------------------------------------------------------------------
-function printMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to printMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-
-mrPrint(v);
-
-
 % --------------------------------------------------------------------
 function flatViewerMenuItem_Callback(hObject, eventdata, handles)
 % hObject    handle to flatViewerMenuItem (see GCBO)
@@ -2205,65 +2279,5 @@ end
 % now bring up the flat viewer
 mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName,viewNum);
 cd(thispwd);
-
-
-% --------------------------------------------------------------------
-function labelsROIsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to labelsROIsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-
-% switch labels on/off
-labelROIs = viewGet(v,'labelROIs');
-viewSet(v,'labelROIs',~labelROIs');
-
-% redisplay
-refreshMLRDisplay(viewNum);
-
-
-% --------------------------------------------------------------------
-function loadFromVolumeDirectoryROIMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to loadFromVolumeDirectoryROIMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-% get the volume directory from prefs
-volumeDirectory = mrGetPref('volumeDirectory');
-% load the rois
-v = loadROI(v,[],[],volumeDirectory);
-% and refresh
-refreshMLRDisplay(viewNum);
-
-
-% --------------------------------------------------------------------
-function convertCorticalDepthRoiMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertCorticalDepthRoiMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-
-v = convertROICorticalDepth(v);
-
-
-% --------------------------------------------------------------------
-function convertRoiToBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertRoiToBaseAnatomyMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-
-v = convertROI(v);
 
 

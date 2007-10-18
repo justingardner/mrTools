@@ -1,4 +1,4 @@
-function view = newROI(view,name,select,color,xform,voxelSize,coords)
+function [view  userCancel] = newROI(view,name,select,color,xform,voxelSize,coords)
 
 % function view = newROI(view,[name],[select],[color],[xform],[voxelSize],[coords])
 %
@@ -21,6 +21,7 @@ function view = newROI(view,name,select,color,xform,voxelSize,coords)
 %
 % djh, 7/2005 (modified from mrLoadRet-3.1)
 
+userCancel = 1;
 if isempty(viewGet(view,'curBase')) & ieNotDefined('xform') & ieNotDefined('voxelSize')
   mrErrorDlg('You must load a base anatomy before creating an ROI.');
 end
@@ -53,26 +54,33 @@ end
 if ieNotDefined('coords')
   coords = [];
 end
+colors = putOnTopOfList(color,color2RGB);
+roiParams{1} = {'name',name,'Name of roi, avoid using punctuation and space'};
+roiParams{2} = {'color',colors,'The color that the roi will display in'};
+roiParams{3} = {'notes','','Brief notes about the ROI'};
+params = mrParamsDialog(roiParams,'Create a new ROI');
+if isempty(params),return,end
 
 % Set required fields. Additional (optional) optional fields are set by
 % isroi which is called by viewSet newROI.
-ROI.name = name;
+ROI.name = params.name;
 ROI.viewType = view.viewType;
-ROI.color = color;
+ROI.color = params.color;
 ROI.xform = xform;
 ROI.voxelSize = voxelSize;
 ROI.coords = coords;
+ROI.notes = params.notes;
 
 % Add it to the view
 view = viewSet(view,'newROI',ROI);
 
 % Select it and reset view.prevCoords
 if select
-  ROInum = viewGet(view,'ROInum',name);
+  ROInum = viewGet(view,'ROInum',ROI.name);
   if (ROInum > 0)
     view = viewSet(view,'currentROI',ROInum);
     view = viewSet(view,'prevROIcoords',[]);
   end
 end
-
+userCancel = 0;
 return;

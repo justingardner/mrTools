@@ -393,11 +393,9 @@ imagesc(0);
 % now set the overlay
 if gFlatViewer.whichSurface <= 2
   overlay = NaN(length(c),3);
-  overlay(patchVtcs,1) = co(:,1);
-  overlay(patchVtcs,2:3) = co(:,2:3);
+  overlay(patchVtcs,:) = co;
 else
-  overlay(:,1) = co(:,1);
-  overlay(:,2:3) = co(:,2:3);
+  overlay(:,:) = co;
 end
 
 % get the roi overlay
@@ -406,7 +404,6 @@ if isfield(gFlatViewer,'viewNum') && gFlatViewer.displayROIs
   if ~isfield(gFlatViewer,'roiOverlays') || ...
 	length(gFlatViewer.roiOverlays) < gFlatViewer.whichSurface || ...
 	isempty(gFlatViewer.roiOverlays{gFlatViewer.whichSurface})
-
     % get the vertices for which to calculate the roi overlay
     if gFlatViewer.whichSurface <= 2
       baseCoords = round(vtcs);
@@ -496,30 +493,48 @@ plot(gmNodes(:,1), gmNodes(:,2), 'y.', 'markersize', 1);
 
 % plot the patch nodes, displaying both deep and superficial surfaces
 co = getPatchColoring;
-wmco = co(find( round(wmPatchNodes(:,sliceIndex))==slice),:);
-% make into magenta vs blue
-i = wmco(:,1);
-wmco(:,1) = i;
-wmco(:,2) = 0;
-wmco(:,3) = max(i,1-i);
+if ~isnan(co(1))
+  wmco = co(find( round(wmPatchNodes(:,sliceIndex))==slice),:);
+  % make into magenta vs blue
+  i = wmco(:,1);
+  wmco(:,1) = i;
+  wmco(:,2) = 0;
+  wmco(:,3) = max(i,1-i);
+else
+  wmco(1:length(find( round(wmPatchNodes(:,sliceIndex))==slice)),1)=1;
+  wmco(1:length(find( round(wmPatchNodes(:,sliceIndex))==slice)),2)=1;
+  wmco(1:length(find( round(wmPatchNodes(:,sliceIndex))==slice)),3)=1;
+end
 
 wmPatchNodes = wmPatchNodes( find( round(wmPatchNodes(:,sliceIndex))==slice), : );
 
-if gFlatViewer.patchColoring == 1
-  plot(wmPatchNodes(:,1), wmPatchNodes(:,2), '.', 'markersize', 1,'Color',[1 0 1]);
-% otherwise each pixel has to be set
+if any(gFlatViewer.patchColoring == [1 length(gFlatViewer.patchColoringTypes)])
+  % draw all the points in the same color (if there are any)
+  if ~ieNotDefined('wmco')
+    plot(wmPatchNodes(:,1), wmPatchNodes(:,2), '.', 'markersize', 1,'Color',wmco(1,:));
+  end
+  % otherwise each pixel has to be set
 else
   for i = 1:length(wmPatchNodes(:,1))
     plot(wmPatchNodes(i,1), wmPatchNodes(i,2), '.', 'markersize', 1,'Color',wmco(i,:)');
   end
 end
 
-gmco = co(find( round(gmPatchNodes(:,sliceIndex))==slice),:);
+if ~isnan(co(1))
+  gmco = co(find( round(gmPatchNodes(:,sliceIndex))==slice),:);
+else
+  gmco(1:length(find( round(gmPatchNodes(:,sliceIndex))==slice)),1)=1;
+  gmco(1:length(find( round(gmPatchNodes(:,sliceIndex))==slice)),2)=1;
+  gmco(1:length(find( round(gmPatchNodes(:,sliceIndex))==slice)),3)=0;
+end
 gmPatchNodes = gmPatchNodes( find( round(gmPatchNodes(:,sliceIndex))==slice), : );
 % uniform patch coloring
-if gFlatViewer.patchColoring == 1
-  plot(gmPatchNodes(:,1), gmPatchNodes(:,2), '.', 'markersize', 1,'Color',co(1,:));
-% otherwise each pixel has to be set
+if any(gFlatViewer.patchColoring == [1 length(gFlatViewer.patchColoringTypes)])
+  % draw all the points in the same color (if there are any)
+  if ~ieNotDefined('gmco')
+    plot(gmPatchNodes(:,1), gmPatchNodes(:,2), '.', 'markersize', 1,'Color',gmco(1,:));
+  end
+  % otherwise each pixel has to be set
 else
   for i = 1:length(gmPatchNodes(:,1))
     plot(gmPatchNodes(i,1), gmPatchNodes(i,2), '.', 'markersize', 1,'Color',gmco(i,:));
@@ -639,9 +654,9 @@ switch gFlatViewer.patchColoring
   end
   alpha = 1;
   return
+ % no coloring
  case {length(gFlatViewer.patchColoringTypes)}
-  co = ones(gFlatViewer.flat.Nvtcs,3);
-  co(:) = nan;
+  co = nan;
   return
 end
 
@@ -710,8 +725,7 @@ roiOverlay(:) = nan;
 
 % deal with selected ROI color
 selectedROI = viewGet(v,'currentroi');
-selectedROIColor = color2RGB(mrGetPref('selectedROIColor'));
-if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
+selectedROIColor = mrGetPref('selectedROIColor');
 
 % get which ROIs to do
 showROIs = viewGet(v,'showROIs');
@@ -732,7 +746,11 @@ for roinum = rois
   if roinum ~= selectedROI
     roiColorRGB = viewGet(v,'roiColorRGB',roinum);
   else
-    roiColorRGB = selectedROIColor;
+    if strcmp(selectedROIColor,'none')
+      roiColorRGB = viewGet(v,'roiColorRGB',roinum);
+    else
+      roiColorRGB = color2RGB(selectedROIColor);
+    end
   end
   % get the base coord that match the roi
   roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));

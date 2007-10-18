@@ -1217,6 +1217,18 @@ switch lower(param)
       view.ROIs(roiNum).color = val;
     end
 
+  case 'roinotes'
+    % v = viewSet(v,'roiNotes',notes,[roiNum]);
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).notes = val;
+    end
+
   case 'roiname'
     % view = viewSet(view,'roiName',nameString,[roiNum]);
     curRoi = viewGet(view,'currentRoi');

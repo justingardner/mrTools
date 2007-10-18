@@ -22,7 +22,8 @@ if (nargout == 2)
   requiredFields = {'name','viewType','voxelSize','xform'};
   optionalFields = {'coords',[];
     'date',datestr(now);
-    'color','blue'};
+    'color','blue';
+    'notes',''};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
