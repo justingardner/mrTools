@@ -57,6 +57,27 @@ if ~iscell(pathStr)
     pathStr = {pathStr};
 end
 
+% check for any name collision here
+roiNames = viewGet(view,'roiNames');
+nameCollision = 0;nameCollisionStr = '';
+for p = 1:length(pathStr)
+  loadNames{p} = stripext(getLastDir(pathStr{p}));
+  if any(strcmp(loadNames{p},roiNames))
+    nameCollision(p) = 1;
+    nameCollisionStr = sprintf('%s ''%s''',nameCollisionStr,loadNames{p});
+  else
+    nameCollision(p) = 0;
+  end
+end
+replaceDuplicates = 0;
+if any(nameCollision)
+  paramsInfo{1} = {'nameCollision',{'Replace all','Deal with individually'},sprintf('ROIs %s are already loaded. For these ROIs, you can either just replace with the new ones from disk, or be asked individually what to do about them.',nameCollisionStr)};
+  params = mrParamsDialog(paramsInfo,sprintf('Some ROIs are already loaded',nameCollisionStr));
+  if isempty(params),return,end
+  if strcmp(params.nameCollision,'Replace all')
+    replaceDuplicates = 1;
+  end
+end
 % Load the file. Loop through the variables that were loaded and add
 % each of them as a new ROI, setting roi.fieldnames as we go.
 for p = 1:length(pathStr)
@@ -66,13 +87,15 @@ for p = 1:length(pathStr)
         roi = eval(['s.',varNames{1}]);
         roi.name = varNames{1};
         % Add it to the view
-        view = viewSet(view,'newROI',roi);
-        % Select it and reset view.prevCoords
-        if select
+        [view tf] = viewSet(view,'newROI',roi,replaceDuplicates);
+	if tf
+	  % Select it and reset view.prevCoords
+	  if select
             ROInum = viewGet(view,'numberofROIs');
             if (ROInum > 0)
-                view = viewSet(view,'currentROI',ROInum);
+	      view = viewSet(view,'currentROI',ROInum);
             end
+	  end
         end
     else
         mrWarnDlg(['ROI ',pathStr{p},' not found.']);
