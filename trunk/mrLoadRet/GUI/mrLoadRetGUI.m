@@ -1268,9 +1268,11 @@ paramsInfo = {};
 for roinum = 1:nROIs
   % get name and colors for each roi
   roiNames{roinum} = viewGet(v,'roiName',roinum);
+  roiNotes = viewGet(v,'roiNotes',roinum);
   colors = putOnTopOfList(viewGet(v,'roiColor',roinum),color2RGB);
   paramsInfo{end+1} = {sprintf('%sName',fixBadChars(roiNames{roinum})),roiNames{roinum},'Name of roi, avoid using punctuation and space'};
   paramsInfo{end+1} = {sprintf('%sColor',fixBadChars(roiNames{roinum})),colors,sprintf('The color that roi %s will display in',roiNames{roinum})};
+  paramsInfo{end+1} = {sprintf('%sNotes',roiNames{roinum}),roiNotes,sprintf('Note for roi %s',roiNames{roinum})};
 end
 if isempty(paramsInfo),return,end
 params = mrParamsDialog(paramsInfo,'Edit Many ROIs');
@@ -1281,6 +1283,7 @@ if ~isempty(params)
     roiName = fixBadChars(roiNames{roinum});
     v = viewSet(v,'roiColor',params.(sprintf('%sColor',roiName)),roinum);
     v = viewSet(v,'roiName',params.(sprintf('%sName',roiName)),roinum);
+    v = viewSet(v,'roiNotes',params.(sprintf('%sNotes',roiName)),roinum);
   end
   refreshMLRDisplay(viewNum);
 end
