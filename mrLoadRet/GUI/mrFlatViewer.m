@@ -72,15 +72,56 @@ gFlatViewer.flat.parentSurfaceName = getLastDir(gFlatViewer.flat.parentSurfaceNa
 
 % load up the surfaces
 if isempty(inner)
+  % guess the names
   inner{1} = gFlatViewer.flat.parentSurfaceName;
+  % guess anything with the right stem
+  innerDir = dir(sprintf('%s*.off',strtok(stripext(inner{1}),'WM')));
+  for i = 1:length(innerDir)
+    % don't choose anything we already have or with GM, flat or patch in the title
+    if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'GM')) && isempty(strfind(lower(innerDir(i).name),'flat')) && isempty(strfind(lower(innerDir(i).name),'patch'))
+      inner{end+1} = innerDir(i).name;
+    end
+  end
 end
-gFlatViewer.surfaces.inner = loadSurfOFF(inner{1});
 
-% load the gray
-if isempty(outer)
-  outer{1} = sprintf('%sGM.off',strtok(stripext(inner{1}),'inner'));
+% now try to find the first loadable one
+for i = 1:length(inner)
+  gFlatViewer.surfaces.inner = myLoadSurface(inner{i});
+  if ~isempty(gFlatViewer.surfaces.inner),break,end
 end
-gFlatViewer.surfaces.outer = loadSurfOFF(outer{1});
+% if we didn't load anything then quit
+if isempty(gFlatViewer.surfaces.inner)
+  return
+else
+  inner = putOnTopOfList(inner{i},inner);
+end
+inner{end+1} = 'Find file';
+
+% load the outer surface
+if isempty(outer)
+  % if we weren't passed in anything try to find them
+  outer{1} = sprintf('%sGM.off',strtok(stripext(inner{1}),'WM'));
+  % guess anything with the right stem
+  outerDir = dir(sprintf('%s*.off',strtok(stripext(inner{1}),'WM')));
+  for i = 1:length(outerDir)
+    % don't choose anything we already have or with WM, flat or patch in the title
+    if ~any(strcmp(outerDir(i).name,outer)) && isempty(strfind(outerDir(i).name,'WM')) && isempty(strfind(lower(outerDir(i).name),'flat')) && isempty(strfind(lower(outerDir(i).name),'patch'))
+      outer{end+1} = outerDir(i).name;
+    end
+  end
+end
+% now try to find the first loadable one
+for i = 1:length(outer)
+  gFlatViewer.surfaces.outer = myLoadSurface(outer{i});
+  if ~isempty(gFlatViewer.surfaces.outer),break,end
+end
+% if we didn't load anything then quit
+if isempty(gFlatViewer.surfaces.outer)
+  return
+else
+  outer = putOnTopOfList(outer{i},outer);
+end
+outer{end+1} = 'Find file';
 
 % load the curvature
 if isempty(curv)
@@ -135,14 +176,14 @@ else
   paramsInfo{end+1} = {'flatFile',flat,'The flat patch file'};
 end
 if ~editable && (length(outer) == 1)
-  paramsInfo{end+1} = {'outerSurface',outer{1},'editable=0','The outer (gray matter) file'};
+  paramsInfo{end+1} = {'outer',outer{1},'editable=0','The outer (gray matter) file'};
 else
-  paramsInfo{end+1} = {'outerSurface',outer,'The outer (gray matter) file'};
+  paramsInfo{end+1} = {'outer',outer,'The outer (gray matter) file','callback',@switchSurface,'callbackArg=outer'};
 end
 if ~editable && (length(inner) == 1)
-  paramsInfo{end+1} = {'innerSurface',inner{1},'editable=0','The inner (white matter) file'};
+  paramsInfo{end+1} = {'inner',inner{1},'editable=0','The inner (white matter) file'};
 else
-  paramsInfo{end+1} = {'innerSurface',inner,'The inner (white matter) file'};
+  paramsInfo{end+1} = {'inner',inner,'The inner (white matter) file','callback',@switchSurface,'callbackArg=inner'};
 end
 if ~editable && (length(curv) == 1)
   paramsInfo{end+1} = {'curvature',curv{1},'editable=0','The curvature file'};
@@ -198,7 +239,11 @@ global gFlatViewer;
 
 % set the roi drawing
 lastDisplayROIs = gFlatViewer.displayROIs;
-gFlatViewer.displayROIs = params.displayROIs;
+if isfield(params,'displayROIs')
+  gFlatViewer.displayROIs = params.displayROIs;
+else
+  params.displayROIs = gFlatViewer.displayROIs;
+end
 % get which surface to draw
 lastWhichSurface = gFlatViewer.whichSurface;
 whichSurface = find(strcmp(params.whichSurface,gFlatViewer.whichSurfaceTypes));
@@ -222,6 +267,18 @@ if (whichSurface ~= lastWhichSurface) || (lastDisplayROIs ~= params.displayROIs)
     % switch to the volume view
     switchToFlat;
   end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   refreshFlatViewer   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function refreshFlatViewer
+
+global gFlatViewer;
+if any(gFlatViewer.whichSurface == [1 2 4])
+  dispSurface;
+else
+  dispVolume;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -763,3 +820,79 @@ for roinum = rois
   disppercent(roinum/numROIs);
 end
 disppercent(inf);
+
+%%%%%%%%%%%%%%%%%%%%%
+%%   selectFiles   %%
+%%%%%%%%%%%%%%%%%%%%%
+function switchSurface(whichSurface,params)
+
+global gFlatViewer;
+
+% if the user wants to find a new file
+addFilename = 0;
+if strcmp(params.(whichSurface),'Find file')
+  [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'});
+  % uigetfile seems to return a path with filesep at end
+  if length(pathname) && (pathname(end)==filesep)
+    pathname = pathname(1:end-1);
+  end
+  % see if file is in a different path
+  if ~strcmp(pwd,pathname)
+    filename = fullfile(pathname,filename);
+  end
+  addFilename = 1;
+else
+  filename = params.(whichSurface);
+end
+
+% try to load it
+disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
+if filename ~= 0
+  surf = myLoadSurface(filename);
+else
+  surf = [];
+end
+if ~isempty(surf)
+  gFlatViewer.surfaces.(whichSurface)=surf;
+  % set the correct one to display
+  gFlatViewer.whichSurface = find(strcmp(whichSurface,{'outer','inner'}));
+  % and change the ui control
+  global gParams;
+  set(gParams.ui.varentry{6},'Value',gFlatViewer.whichSurface)
+  % add the filename to the control if necessary
+  if addFilename
+    currentChoices = get(gParams.ui.varentry{gFlatViewer.whichSurface+1},'String');
+    currentChoices = setdiff(currentChoices,'Find file');
+    currentChoices = putOnTopOfList(filename,currentChoices);
+    currentChoices{end+1} = 'Find file';
+    set(gParams.ui.varentry{gFlatViewer.whichSurface+1},'String',currentChoices)
+    set(gParams.ui.varentry{gFlatViewer.whichSurface+1},'Value',1)
+  end
+else
+  global gParams;
+  % switch back to first on list
+  currentChoices = get(gParams.ui.varentry{gFlatViewer.whichSurface+1},'String');
+  set(gParams.ui.varentry{gFlatViewer.whichSurface+1},'Value',1)
+  gFlatViewer.surfaces.(whichSurface)=myLoadSurface(currentChoices{1});
+end
+% refresh the view
+refreshFlatViewer;
+
+disppercent(inf);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%   myLoadSurface   %%
+%%%%%%%%%%%%%%%%%%%%%%%
+function surf = myLoadSurface(filename)
+
+global gFlatViewer;
+% load the surface
+surf = loadSurfOFF(filename);
+if isempty(surf),return,end
+
+% check that it has the correct number of vertices
+if ~isequal(gFlatViewer.flat.nParent(1:2),[surf.Nvtcs surf.Ntris]')
+  disp(sprintf('(mrFlatViewer) Surface %s does not match patch Nvtcs: %i vs %i, Ntris: %i vs %i',filename,gFlatViewer.flat.nParent(1),surf.Nvtcs,gFlatViewer.flat.nParent(2),surf.Ntris));
+  surf = [];
+  return
+end
