@@ -18,7 +18,7 @@ if ~any(nargin == [1])
 end
 
 nrows = 1;
-ncols = 4;
+ncols = 2;
 % first parse the argument
 for i = 1:length(vars)
   nrows = nrows+1;
@@ -112,6 +112,10 @@ for i = 1:length(vars)
   end
   % make sure type is in lower case
   varinfo{i}.type = lower(varinfo{i}.type);
+  % only keep two columns for checkbox
+  if ~strcmp(varinfo{i}.type,'checkbox')
+    ncols = max(ncols,4);
+  end
   % check for minmax violation
   if strcmp(varinfo{i}.type,'numeric') && isfield(varinfo{i},'minmax')
     if vars{i}{2} < varinfo{i}.minmax(1)

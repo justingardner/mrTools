@@ -93,8 +93,23 @@ figpos = mrGetFigLoc(fixBadChars(gParams.figlocstr));
 if isempty(figpos)
   figpos = get(gParams.fignum,'Position');
 end
-figpos(4) = 2*gParams.topMargin+numrows*gParams.buttonHeight+(numrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+numcols*gParams.buttonWidth+(numcols-1)*gParams.margin;
+% if we have more than 30 rows then split into multiple columns
+% but at most we make 6 multi columns
+figMultiCols = min(ceil(numrows/30),6);
+figrows = ceil(numrows/figMultiCols);
+figcols = numcols*figMultiCols;
+% for really big ones, reduce the button size
+if (numcols > 2) && (figMultiCols > 3)
+  gParams.buttonWidth = round(gParams.buttonWidth/2);
+end
+% set them in gParams
+gParams.figrows = figrows;
+gParams.figMultiCols = figMultiCols;
+gParams.numcols = numcols;
+gParams.numrows = numrows;
+% set the figure position
+figpos(4) = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
+figpos(3) = 2*gParams.leftMargin+figcols*gParams.buttonWidth+(figcols-1)*gParams.margin;
 set(gParams.fignum,'Position',figpos);
 
 % make entry buttons
@@ -110,7 +125,7 @@ for i = 1:length(gParams.varinfo)
   elseif strcmp(gParams.varinfo{i}.type,'string')
     gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
   elseif strcmp(gParams.varinfo{i}.type,'checkbox')
-    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.25);
+    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.5);
   elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
     if isfield(gParams.varinfo{i},'buttonString')
       gParams.ui.varentry{i} = makeButton(gParams.fignum,gParams.varinfo{i}.buttonString,i,rownum,2,3);
@@ -138,9 +153,6 @@ for i = 1:length(gParams.varinfo)
   end
 end
 
-% make help button
-makeButton(gParams.fignum,'Help','help',numrows,1,1);
-
 gParams.callback = [];
 % see if this has a callback, in which case we don't
 % need to make ok/cancel buttons
@@ -164,9 +176,15 @@ else
   gParams.callback = [];
 end
 % make ok and cancel buttons
-makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
-makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
-
+if gParams.numcols > 2
+  makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
+  makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
+  makeButton(gParams.fignum,'Help','help',numrows,1,1);
+else
+  makeButton(gParams.fignum,'OK','ok',numrows,numcols+0.5,0.5);
+  makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-0.1,0.5);
+  makeButton(gParams.fignum,'Help','help',numrows,numcols-1,0.5);
+end  
 % wait for user to hit ok or cancel (which sets uiresume)
 uiwait;
 
@@ -400,7 +418,7 @@ set(gParams.helpFignum,'Name','Parameter help');
 
 % figure out how many rows
 charsPerRow = 120;
-numrows = 2;
+numrows = 1;
 % add number of rows each line needs
 for i = 1:length(gParams.varinfo)
   numrows = numrows+max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
@@ -412,8 +430,9 @@ figpos = mrGetFigLoc('mrParamsDialogHelp');
 if isempty(figpos)
   figpos = get(gParams.helpFignum,'Position');
 end
-figpos(4) = 2*gParams.topMargin+numrows*gParams.buttonHeight+(numrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+numcols*gParams.buttonWidth+(numcols-1)*gParams.margin;
+gParams.numcols = numcols;
+figpos(4) = 2*gParams.topMargin+gParams.figrows*gParams.buttonHeight+(gParams.figrows-1)*gParams.margin;
+figpos(3) = 2*gParams.leftMargin+gParams.figMultiCols*numcols*gParams.buttonWidth+(gParams.figMultiCols*numcols-1)*gParams.margin;
 set(gParams.helpFignum,'Position',figpos);
 
 % put up the info
@@ -624,6 +643,18 @@ function pos = getUIControlPos(fignum,rownum,colnum,uisize,uisizev)
 % get global parameters
 global gParams;
 
+% if we have too many parameters, we make them into two columns
+multiCol = ceil(rownum/gParams.figrows);
+if multiCol > 1
+  % always make sure that the last row end up on the
+  % last row even if we have multiple columns
+  if rownum == gParams.numrows
+    rownum = gParams.figrows;
+  else
+    rownum = rownum-gParams.figrows*(multiCol-1);
+  end
+  colnum = colnum+gParams.numcols*(multiCol-1);
+end
 % get figure position
 figpos = get(fignum,'Position');
 
