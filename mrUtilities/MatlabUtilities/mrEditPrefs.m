@@ -54,7 +54,7 @@ selectedROIColor = mrGetPref('selectedROIColor');
 if isempty(selectedROIColor)
   selectedROIColor = 'white';
 end
-selectedROIColor = putOnTopOfList(selectedROIColor,{'yellow','magenta','cyan','red','green','blue','white','black'});
+selectedROIColor = putOnTopOfList(selectedROIColor,color2RGB);
 
 % get current values for other prefs
 site = mrGetPref('site');

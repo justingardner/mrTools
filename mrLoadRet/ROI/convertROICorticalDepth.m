@@ -31,7 +31,7 @@ paramsInfo{end+1} = {'conversionType',{'Project through depth','Restrict to refe
 paramsInfo{end+1} = {'referenceDepth',corticalDepth,'min=0','max=1','incdec=[-0.1 0.1]','The cortical depth to start from'};
 paramsInfo{end+1} = {'minDepth',0,'min=0','max=1','incdec=[-0.1 0.1]','The start depth'};
 paramsInfo{end+1} = {'depthStep',0.1,'min=0','max=1','incdec=[-0.1 0.1]','The depth step (i.e. we will go from minDepth:depthStep:maxDepth (skipping the reference depth), including or excluding voxels'};
-paramsInfo{end+1} = {'maxDepth',max(0.5,corticalDepth),'min=0','max=1','incdec=[-0.1 0.1]','The end depth'};
+paramsInfo{end+1} = {'maxDepth',max(1,corticalDepth),'min=0','max=1','incdec=[-0.1 0.1]','The end depth'};
 
 params = mrParamsDialog(paramsInfo,'ROI cortical depth conversion');
 if isempty(params),return,end
@@ -44,7 +44,7 @@ for roinum = 1:length(roinames)
   helpinfo = sprintf('Convert cortical depth of ROI %i: %s',roinum,roinames{roinum});
   paramsDialog{end+1} = {fixBadChars(roinames{roinum}),0,'type=checkbox',helpinfo};
 end
-
+paramsDialog{end+1} = {'all',0,'type=checkbox','Select all ROIs'};
 % put up dialog
 whichROI = mrParamsDialog(paramsDialog,sprintf('Select ROIs to convert cortical depth'));
 
@@ -64,7 +64,7 @@ if ~isempty(whichROI)
   needToRefresh = 0;
   % now go through and convert anything the user selected
   for roinum = 1:length(roinames)
-    if whichROI.(fixBadChars(roinames{roinum}))
+    if whichROI.(fixBadChars(roinames{roinum})) || whichROI.all
       needToRefresh = 1;
       disppercent(-inf,sprintf('(convertROICorticalDepth) Processing ROI %i:%s',roinum,roinames{roinum}));
       % get the roi
