@@ -1836,12 +1836,20 @@ roiNames = viewGet(view,'roiNames');
 paramInfo = {...
   {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'editable=0','The ROI that will be combined with the otherROI'},...
   {'otherROI',roiNames,'The otherROI is combined with the combineROI and the result is put into combineROI.'},...
-  {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'Select action for combining ROIs.'}};
+  {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'Select action for combining ROIs.'},...
+  {'combine',0,'type=pushbutton','callback',@doCombine','passParams=1','callbackArg',view,'buttonString=Do combination','Click this button to do the combination. This is the same as hitting OK but won''t close the dialog so you can continue to do more combinations'}};
 params = mrParamsDialog(paramInfo,'Combine ROIs');
 if ~isempty(params)
   view = combineROIs(view,params.combineROI,params.otherROI,params.action);
   refreshMLRDisplay(viewNum);
 end
+
+function retval = doCombine(view,params)
+
+retval = 1;
+disp(sprintf('(doCombine) %s %s %s',params.combineROI,params.action,params.otherROI));
+view = combineROIs(view,params.combineROI,params.otherROI,params.action);
+refreshMLRDisplay(viewGet(view,'viewNum'));
 
 % --------------------------------------------------------------------
 function restrictRoiMenu_Callback(hObject, eventdata, handles)

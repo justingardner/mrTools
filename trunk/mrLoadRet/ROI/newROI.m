@@ -72,11 +72,18 @@ ROI.coords = coords;
 ROI.notes = params.notes;
 
 % Add it to the view
-view = viewSet(view,'newROI',ROI);
+[view tf]= viewSet(view,'newROI',ROI);
+ 
+% The user could still have canceled (when there is a name conflict)
+% so check for that
+if ~tf,return,end
+
+% also get the ROI back, because the name may have changed (if
+% there was a conflict)
+ROInum = viewGet(view,'nROIs');
 
 % Select it and reset view.prevCoords
 if select
-  ROInum = viewGet(view,'ROInum',ROI.name);
   if (ROInum > 0)
     view = viewSet(view,'currentROI',ROInum);
     view = viewSet(view,'prevROIcoords',[]);

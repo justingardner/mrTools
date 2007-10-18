@@ -1,4 +1,4 @@
-function view = viewSet(view,param,val,varargin)
+function [view tf] = viewSet(view,param,val,varargin)
 %
 %   view = viewSet(view,param,val,varargin)
 %
@@ -54,6 +54,9 @@ if ieNotDefined('param')
   dispViewSetHelp;
   return
 end
+
+% the return value tf signifies whether the viewSet was successful
+tf = 1;
 
 if ieNotDefined('view'), mrErrorDlg('No view specified.'); end
 if ieNotDefined('param'), mrErrorDlg('No parameter specified'); end
@@ -1142,6 +1145,24 @@ switch lower(param)
     if ~check
       mrErrorDlg('Invalid ROI');
     end
+    % check to make sure the name is unique
+    roiNames = viewGet(view,'roiNames');
+    nameMatch = find(strcmp(ROI.name,roiNames));
+    while ~isempty(nameMatch)
+      paramsInfo{1} = {'roiName',ROI.name,'Change the name to a unique ROI name'};
+      paramsInfo{2} = {'replace',0,'type=checkbox','Check to replace the loaded ROI with the same name'};
+      params = mrParamsDialog(paramsInfo,'Non unique ROI name, please change');
+      if isempty(params),tf=0;return,end
+      if params.replace
+	% if replace, then delete the existing one
+	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',ROI.name));
+	roiNames = viewGet(view,'roiNames');
+      else
+	% change the name
+	ROI.name = params.roiName;
+      end
+      nameMatch = find(strcmp(ROI.name,roiNames));
+    end
     % Add it to view.ROIs
     pos = length(view.ROIs)+1;
     if (pos == 1)
@@ -1236,6 +1257,16 @@ switch lower(param)
       roiNum = varargin{1};
     else
       roiNum = curRoi;
+    end
+    % check to make sure the name is unique
+    roiNames = viewGet(view,'roiNames');
+    nameMatch = find(strcmp(val,roiNames));
+    while ~isempty(nameMatch) && (nameMatch~=roiNum)
+      paramsInfo{1} = {'roiName',val,'Change the name to a unique ROI name'};
+      params = mrParamsDialog(paramsInfo,'Non unique ROI name, please change');
+      if isempty(params),tf=0;return,end
+      val = params.roiName;
+      nameMatch = find(strcmp(val,roiNames));
     end
     if ~isempty(roiNum)
       view.ROIs(roiNum).name = val;
