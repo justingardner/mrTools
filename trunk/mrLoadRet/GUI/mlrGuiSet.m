@@ -280,7 +280,7 @@ switch lower(field)
         value = clipToSlider(handles.rotateSlider,value);
 		set(handles.rotateSlider,'Value',value);
 		set(handles.rotateText,'String',num2str(value));
-		
+		viewSet(view,'rotate',value);
 	case {'viewnum'}
         % mlrGuiSet(view,'viewnum',value);
 		handles.viewNum = value;
