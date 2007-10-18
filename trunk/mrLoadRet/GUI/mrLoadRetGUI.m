@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 15-Oct-2007 16:10:24
+% Last Modified by GUIDE v2.5 17-Oct-2007 19:40:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1137,27 +1137,84 @@ refreshMLRDisplay(viewNum);
 function editRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-view = MLR.views{viewNum};
+v = MLR.views{viewNum};
+
 % get the roi
-roiNum = viewGet(view,'currentROI');
+roiNum = viewGet(v,'currentROI');
 if isempty(roiNum),return,end
-roiName = viewGet(view,'roiName',roiNum);
-roiColor = viewGet(view,'roiColor',roiNum);
-colors = {'red','green','blue','yellow','cyan','magenta','white','black'};
-% remove our color from list
-colors = setdiff(colors,roiColor);
-% and add it at the top
-colors{end+1} = roiColor;
-colors = fliplr(colors);
+roiName = viewGet(v,'roiName',roiNum);
+roiColor = viewGet(v,'roiColor',roiNum);
+
+% get the list of colors, putting our color on top
+colors = putOnTopOfList(roiColor,color2RGB);
+
 % make parameter string
 roiParams = {{'name',roiName,'Name of roi, avoid using punctuation and space'},{'color',colors,'The color that the roi will display in'}};
 params = mrParamsDialog(roiParams,'Edit ROI');
+
 % if not empty, then change the parameters
 if ~isempty(params)
-    view = viewSet(view,'roiColor',params.color,roiNum);
-    view = viewSet(view,'roiName',params.name,roiNum);
-    refreshMLRDisplay(viewNum);
+  v = viewSet(v,'roiColor',params.color,roiNum);
+  v = viewSet(v,'roiName',params.name,roiNum);
+  refreshMLRDisplay(viewNum);
 end
+
+% --------------------------------------------------------------------
+function editManyROIsMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to editManyROIsMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+nROIs = viewGet(v,'numROIs');
+
+paramsInfo = {};
+for roinum = 1:nROIs
+  % get name and colors for each roi
+  roiNames{roinum} = viewGet(v,'roiName',roinum);
+  colors = putOnTopOfList(viewGet(v,'roiColor',roinum),color2RGB);
+  paramsInfo{end+1} = {sprintf('%sName',fixBadChars(roiNames{roinum})),roiNames{roinum},'Name of roi, avoid using punctuation and space'};
+  paramsInfo{end+1} = {sprintf('%sColor',fixBadChars(roiNames{roinum})),colors,sprintf('The color that roi %s will display in',roiNames{roinum})};
+end
+if isempty(paramsInfo),return,end
+params = mrParamsDialog(paramsInfo,'Edit Many ROIs');
+
+% if not empty, then change the parameters
+if ~isempty(params)
+  for roinum = 1:nROIs
+    roiName = fixBadChars(roiNames{roinum});
+    v = viewSet(v,'roiColor',params.(sprintf('%sColor',roiName)),roinum);
+    v = viewSet(v,'roiName',params.(sprintf('%sName',roiName)),roinum);
+  end
+  refreshMLRDisplay(viewNum);
+end
+
+
+% --------------------------------------------------------------------
+function editAllROIsMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to editAllROIsMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+nROIs = viewGet(v,'numROIs');
+
+if nROIs == 0,return,end
+paramsInfo = {};
+% get color to set all ROIs to
+paramsInfo{end+1} = {'color',putOnTopOfList(viewGet(v,'roiColor'),color2RGB),'Color for all ROIs'};
+params = mrParamsDialog(paramsInfo,'Edit All ROIs');
+
+% if not empty, then change the parameters
+if ~isempty(params)
+  for roinum = 1:nROIs
+    v = viewSet(v,'roiColor',params.color,roinum);
+  end
+  refreshMLRDisplay(viewNum);
+end
+
 
 % --------------------------------------------------------------------
 function infoROIMenuItem_Callback(hObject, eventdata, handles)
@@ -1671,12 +1728,12 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 roiNames = viewGet(view,'roiNames');
 paramInfo = {...
-  {'currentROI',viewGet(view,'roiName'),'editable=0','Current ROI'},...
-  {'otherROI',roiNames,'The selected ROI is combined with the current ROI.'},...
+  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'editable=0','The ROI that will be combined with the otherROI'},...
+  {'otherROI',roiNames,'The otherROI is combined with the combineROI and the result is put into combineROI.'},...
   {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'Select action for combining ROIs.'}};
 params = mrParamsDialog(paramInfo,'Combine ROIs');
 if ~isempty(params)
-  view = combineROIs(view,params.currentROI,params.otherROI,params.action);
+  view = combineROIs(view,params.combineROI,params.otherROI,params.action);
   refreshMLRDisplay(viewNum);
 end
 
@@ -2208,3 +2265,5 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
 v = convertROI(v);
+
+
