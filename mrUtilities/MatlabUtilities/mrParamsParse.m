@@ -56,8 +56,17 @@ for i = 1:length(vars)
       end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
+      % see if the default argument is a string
       if isstr(vars{i}{2}{1})
         varinfo{i}.popuptype = 'string';
+	% if it is a cell (contingent variable, check its first member
+      elseif iscell(vars{i}{2}{1})
+	if isstr(vars{i}{2}{1}{1})
+	  varinfo{i}.popuptype = 'string';
+	else
+	  varinfo{i}.popuptype = 'numeric';
+	end
+      % otherwise numeric
       else
         varinfo{i}.popuptype = 'numeric';
       end
@@ -158,12 +167,22 @@ for i = 1:length(varinfo)
       % that is keep an allValues field of all possible
       % values
     else
-      if ~(strcmp(varinfo{i}.type,'popupmenu') && ~iscell(varinfo{i}.value{1}))
+      % first deal with popupmenus that have a cell array of values usually
+      if strcmp(varinfo{i}.type,'popupmenu')
+	% now, if it has a cell array of cell arrays then it wants 
+        % to switch between these values
+	if iscell(varinfo{i}.value{1})
+	  varinfo{i}.allValues = varinfo{i}.value;
+	  varinfo{i}.value = varinfo{i}.allValues{1};
+	else
+	  % otherwise, just a single cell array
+	  varinfo{i}.allValues{1} = varinfo{i}.value;
+	end
+      % other types
+      elseif iscell(varinfo{i}.value)
         varinfo{i}.allValues = varinfo{i}.value;
         varinfo{i}.value = varinfo{i}.allValues{1};
       else
-        % if popupmenus with just a single cell array
-        % then set it up correctly
         varinfo{i}.allValues{1} = varinfo{i}.value;
       end
       % for numeric values, make sure that the value is set to a number

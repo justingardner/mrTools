@@ -21,7 +21,8 @@ if isempty(inList)
   inList = {};
 end
 if isempty(topVal)
-  topVal = {};
+  outList = inList;
+  return
 end
 
 % make sure inList is a cell array
