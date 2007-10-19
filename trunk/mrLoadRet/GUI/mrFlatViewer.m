@@ -144,16 +144,19 @@ outer{end+1} = 'Find file';
 
 % load the curvature
 if isempty(curv)
-  % guess any vff file
-  curvDir = dir('*.vff');
-  for i = 1:length(curvDir)
-    curv{i} = curvDir(i).name;
-  end
   curvGuess = sprintf('%s_Curv.vff',stripext(inner{1}));
   if isfile(curvGuess)
-    curv = putOnTopOfList(curvGuess,curv);
+    curv{1} = curvGuess;
   end
 end
+% add any vff file
+curvDir = dir('*.vff');
+for i = 1:length(curvDir)
+  if ~any(strcmp(curvDir(i).name,curv))
+    curv{end+1} = curvDir(i).name;
+  end
+end
+
 for i = 1:length(curv)
   gFlatViewer.curv = myLoadCurvature(curv{1});
   if ~isempty(gFlatViewer.curv),break,end
@@ -166,19 +169,18 @@ else
 end
 disppercent(inf);
 
-% load the volume
-if isempty(anat)
-  % guess any nifti file
-  anatDir = dir('*.hdr');
-  for i = 1:length(anatDir)
-    anat{i} = anatDir(i).name;
+% guess any nifti file for anatomy
+anatDir = dir('*.hdr');
+for i = 1:length(anatDir)
+  if ~any(strcmp(anatDir(i).name,anat))
+    anat{end+1} = anatDir(i).name;
   end
-  % check for 'canonical hdr'
-  anatCanonicalDir = dir('../*.hdr');
-  for i= 1:length(anatCanonicalDir)
-    if find(strcmp(anatCanonicalDir(i).name,anat))
-      anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
-    end
+end
+% check for 'canonical hdr'
+anatCanonicalDir = dir('../*.hdr');
+for i= 1:length(anatCanonicalDir)
+  if find(strcmp(anatCanonicalDir(i).name,anat))
+    anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
   end
 end
 if isfile(anat{1})
@@ -589,8 +591,9 @@ axis image;
 axis off;
 hold on
 
-
-set(gca,'CLim',[min(img(:)) max(img(:))]);
+if min(img(:)) ~= max(img(:))
+  set(gca,'CLim',[min(img(:)) max(img(:))]);
+end
 % display patch and white matter/gray matter
 whichInx = gFlatViewer.flat.patch2parent(:,2);
 wmPatchNodes = gFlatViewer.surfaces.inner.vtcs(whichInx,:);
