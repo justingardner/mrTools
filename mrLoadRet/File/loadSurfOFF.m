@@ -1,6 +1,6 @@
 % loadSurfOFF.m
 %
-%      usage: surf = loadSurfOFF(surffile)
+%      usage: surf = loadSurfOFF(surffile,<loadOnlyHeader>)
 %         by: eli merriam
 %       date: 09/25/07
 %    purpose: Loading an OFF binary surface into Matlab
@@ -21,13 +21,15 @@
 % The surf structure consists of the following variables
 % vtcs,tris,Nvtcs,Ntris,Nedges (nParent,nPatch,patch2parent)
 %
-function surf = loadSurfOFF(surffile)
+function surf = loadSurfOFF(surffile,loadOnlyHeader)
 
 % check arguments
-if ~any(nargin == [1])
+if ~any(nargin == [1 2])
   help loadSurfOFF
   return
 end
+
+if ieNotDefined('loadOnlyHeader'),loadOnlyHeader = 0;end
 
 % put on .off
 surffile = sprintf('%s.off',stripext(surffile));
@@ -80,6 +82,9 @@ if (count~=3) error('error reading file!'); end
 surf.Nvtcs  = Ninfo(1);
 surf.Ntris  = Ninfo(2);
 surf.Nedges = Ninfo(3);
+
+% return here if we only want the header
+if loadOnlyHeader,return,end
 
 [surf.vtcs, count] = fread(fid, surf.Nvtcs*3, 'float32');
 if (count ~= 3*surf.Nvtcs) error('error reading file!'); end
