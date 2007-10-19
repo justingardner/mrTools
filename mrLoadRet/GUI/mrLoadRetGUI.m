@@ -1302,19 +1302,22 @@ nROIs = viewGet(v,'numROIs');
 if nROIs == 0,return,end
 paramsInfo = {};
 colors = putOnTopOfList(viewGet(v,'roiColor'),color2RGB);
-colors{end+1} = 'No change';
 % get color to set all ROIs to
-paramsInfo{end+1} = {'color',colors,'Color for all ROIs'};
-paramsInfo{end+1} = {'notes',viewGet(v,'roiNotes'),'Notes for all ROIs'};
+paramsInfo{end+1} = {'changeColor',0,'type=checkbox','Click to change color of all ROIs'};
+paramsInfo{end+1} = {'color',colors,'type=popupmenu','contingent=changeColor','Color for all ROIs'};
+paramsInfo{end+1} = {'changeNotes',0,'type=checkbox','Click to change notes of all ROIs'};
+paramsInfo{end+1} = {'notes',viewGet(v,'roiNotes'),'contingent=changeNotes','Notes for all ROIs'};
 params = mrParamsDialog(paramsInfo,'Edit All ROIs',1.5);
 
 % if not empty, then change the parameters
 if ~isempty(params)
   for roinum = 1:nROIs
-    if ~strcmp(params.color,'No change')
+    if ~isempty(params.color)
       v = viewSet(v,'roiColor',params.color,roinum);
     end
-    v = viewSet(v,'roiNotes',params.notes,roinum);
+    if ~isempty(params.notes)
+      v = viewSet(v,'roiNotes',params.notes,roinum);
+    end
   end
   refreshMLRDisplay(viewNum);
 end
