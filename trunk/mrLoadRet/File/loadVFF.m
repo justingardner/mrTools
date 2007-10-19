@@ -17,6 +17,7 @@ if ~isfile(filename)
 end
 f=fopen( filename, 'rb');
 str=fgetl(f);
+
 while (~endofhdr & ~isempty(str))
   [a,c]=sscanf(str,'size=%i %i %i;');
   if (c==3)
