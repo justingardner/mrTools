@@ -1,5 +1,6 @@
 % mrFlatViewer.m
 %
+%       $Id$	
 %      usage: mrFlatViewer(flatname,outer,inner,curv,anat,viewNum)
 %         by: justin gardner, originally based on surfViewer by eli merriam
 %       date: 10/09/07
