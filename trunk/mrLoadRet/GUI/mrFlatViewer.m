@@ -460,6 +460,11 @@ if abs(hPos) == 179,hPos = sign(hPos)*179;,end
 % set the camera taret to center
 camtarget([0 0 0]);
 
+% set the size of the field of view in degrees
+% i.e. 90 would be very wide and 1 would be ver
+% narrow. 7 seems to fit the whole brain nicely
+camva(7);
+
 % set the view angle
 view(hPos,vPos);
 
