@@ -1,10 +1,14 @@
-function [data,hdr]=loadVFF( filename )
-% [data,hdr]=tfiReadVFF( filename )
+function [data,hdr]=loadVFF( filename, loadOnlyHeader )
+% [data,hdr]=tfiReadVFF( filename, <loadOnlyHeader>)
 % 
 % Loads data in .vff format
 %
 % this function is borrowed from Jonas' TFI distribution
 % 
+
+% default to load data and hdr
+if ieNotDefined('loadOnlyHeader'),loadOnlyHeader=0;end
+
 
 endofhdr=0;
 hdr.byteorder='b';
@@ -53,6 +57,7 @@ while (~endofhdr & ~isempty(str))
   str=fgetl(f);
 end
 fclose(f);
+if loadOnlyHeader,return,end
 
 prec=['uint' num2str(hdr.bits)];
 
