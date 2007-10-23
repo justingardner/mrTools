@@ -163,7 +163,11 @@ end
 curvDir = dir('*.vff');
 for i = 1:length(curvDir)
   if ~any(strcmp(curvDir(i).name,curv))
-    curv{end+1} = curvDir(i).name;
+    % check length of file matches our patch
+    [vffdata vffhdr] = loadVFF(curvDir(i).name,1);
+    if isequal(gFlatViewer.flat.nParent(1),vffhdr.size(3))
+      curv{end+1} = curvDir(i).name;
+    end
   end
 end
 
@@ -229,6 +233,8 @@ editable = 0;
 
 % set up the parameters
 paramsInfo = {};
+gFlatViewer.guiloc.whichSurface = 1;
+gFlatViewer.guiloc.filenames = 3;
 % Now give choice of viewing gray or white
 gFlatViewer.whichSurfaceTypes = {'Outer (Gray matter) surface','Inner (White matter) surface','3D Anatomy','Patch'};
 paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
@@ -239,6 +245,7 @@ end
 gFlatViewer.patchColoringTypes{end+1} = 'None';
 paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
 if ~isempty(gFlatViewer.viewNum)
+  gFlatViewer.guiloc.filenames = gFlatViewer.guiloc.filenames+1;
   paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
 end
 if ~editable && (length(flat) == 1)
@@ -943,10 +950,10 @@ addFilename = 0;
 if strcmp(params.(whichSurface),'Find file')
   if strcmp(whichSurface,'curv')
     [filename, pathname] = uigetfile({'*.vff','VFF Curvature files (*.vff)'});
-    whichControl = 7;
+    whichControl = gFlatViewer.guiloc.filenames+3;
   else
     [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'});
-    whichControl = 4+find(strcmp(whichSurface,{'outer','inner'}));
+    whichControl = gFlatViewer.guiloc.filenames+find(strcmp(whichSurface,{'outer','inner'}));
   end
   % uigetfile seems to return a path with filesep at end
   if length(pathname) && (pathname(end)==filesep)
@@ -966,10 +973,10 @@ disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curv')
     file = myLoadCurvature(filename);
-    whichControl = 7;
+    whichControl = gFlatViewer.guiloc.filenames+3;;
   else
     file = myLoadSurface(filename);
-    whichControl = 4+find(strcmp(whichSurface,{'outer','inner'}));
+    whichControl = gFlatViewer.guiloc.filenames+find(strcmp(whichSurface,{'outer','inner'}));
   end
 else
   file = [];
@@ -984,15 +991,15 @@ if ~isempty(file)
   end    
   % and change the ui control
   global gParams;
-  set(gParams.ui.varentry{1},'Value',gFlatViewer.whichSurface)
+  set(gParams.ui.varentry{gFlatViewer.guiloc.whichSurface},'Value',gFlatViewer.whichSurface)
   % add the filename to the control if necessary
   if addFilename
     currentChoices = get(gParams.ui.varentry{gFlatViewer.whichSurface+1},'String');
     currentChoices = setdiff(currentChoices,'Find file');
     currentChoices = putOnTopOfList(filename,currentChoices);
     currentChoices{end+1} = 'Find file';
-    set(gParams.ui.varentry{gFlatViewer.whichSurface+1},'String',currentChoices)
-    set(gParams.ui.varentry{gFlatViewer.whichSurface+1},'Value',1)
+    set(gParams.ui.varentry{gFlatViewer.guiloc.filenames+gFlatViewer.whichSurface},'String',currentChoices)
+    set(gParams.ui.varentry{gFlatViewer.guiloc.filenames+gFlatViewer.whichSurface},'Value',1)
   end
 else
   global gParams;
