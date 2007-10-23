@@ -71,7 +71,7 @@ disppercent(-inf,'(mrFlatView) Loading surfaces');
 [flatPath flat{1}] = fileparts(sprintf('%s.off',stripext(flat{1})));
 flatdir = dir(sprintf('%s/*.off', flatPath));
 
-gFlatViewer.flat = loadSurfOFF(sprintf('%s/%s.off', flatPath, stripext(flat{1})));
+gFlatViewer.flat = loadSurfOFF(fullfile(flatPath, sprintf('%s.off', stripext(flat{1}))));
 if isempty(gFlatViewer.flat) || ~isfield(gFlatViewer.flat,'parentSurfaceName');
   disp(sprintf('(mrFlatViewer) %s is not a flat file',flat{1}));
   return
@@ -80,7 +80,7 @@ end
 % look for flats with same parent
 for i = 1:length(flatdir)
   if ~isempty(strcmp(lower(flatdir(i).name),'flat')) || ~isempty(strcmp(lower(flatdir(i).name),'patch'))
-    flatfile = loadSurfOFF(sprintf('%s/%s', flatPath, flatdir(i).name),1);
+    flatfile = loadSurfOFF(fullfile(flatPath, flatdir(i).name),1);
     if isfield(flatfile,'parentSurfaceName')
       if strcmp(flatfile.parentSurfaceName,gFlatViewer.flat.parentSurfaceName)
 	if ~strcmp(flatdir(i).name,flat)
@@ -101,7 +101,7 @@ if isempty(inner)
 end
 
 % guess anything with the right stem
-innerDir = dir(sprintf('%s/%s*.off', flatPath, strtok(stripext(inner{1}),'WM')));
+innerDir = dir(sprintf('%s*.off',fullfile(flatPath,strtok(stripext(inner{1}),'WM'))));
 for i = 1:length(innerDir)
   % don't choose anything we already have or with GM, flat or patch in the title
   if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'GM')) && (isempty(strfind(lower(innerDir(i).name),'flat')) || ~isempty(strfind(lower(innerDir(i).name),'inflate'))) && isempty(strfind(lower(innerDir(i).name),'patch'))
@@ -115,7 +115,7 @@ end
 
 % now try to find the first loadable one
 for i = 1:length(inner)
-  gFlatViewer.surfaces.inner = myLoadSurface(sprintf('%s/%s', flatPath, inner{i}));
+  gFlatViewer.surfaces.inner = myLoadSurface(fullfile(flatPath, inner{i}));
   if ~isempty(gFlatViewer.surfaces.inner),break,end
 end
 % if we didn't load anything then quit
@@ -940,7 +940,7 @@ global gFlatViewer;
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.flatFile));
-gFlatViewer.flat = loadSurfOFF(sprintf('%s/%s', params.flatPath, params.flatFile));
+gFlatViewer.flat = loadSurfOFF(fullfile(params.flatPath, params.flatPatch));
 % switch to flat view
 global gParams
 refreshFlatViewer([],[],1);
@@ -980,10 +980,10 @@ end
 disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curv')
-    file = myLoadCurvature(sprintf('%s/%s', params.flatPath, filename));
+    file = myLoadCurvature(fullfile(params.flatPath, filename));
     whichControl = gFlatViewer.guiloc.filenames+3;;
   else
-    file = myLoadSurface(sprintf('%s/%s', params.flatPath, filename));
+    file = myLoadSurface(fullfile(params.flatPath, filename));
     whichControl = gFlatViewer.guiloc.filenames+find(strcmp(whichSurface,{'outer','inner'}));
   end
 else
@@ -1015,9 +1015,9 @@ else
   currentChoices = get(gParams.ui.varentry{whichControl},'String');
   set(gParams.ui.varentry{whichControl},'Value',1)
   if ~strcmp(whichSurface,'curv')
-    gFlatViewer.surfaces.(whichSurface)=myLoadSurface(sprintf('%s/%s', params.flatPath, currentChoices{1}));
+    gFlatViewer.surfaces.(whichSurface) = myLoadSurface(fullfile(params.flatPath, currentChoices{1}));
   else
-    gFlatViewer.curv=myLoadCurvature(sprintf('%s/%s', params.flatPath, currentChoices{1}));
+    gFlatViewer.curv = myLoadCurvature(fullfile(params.flatPath, currentChoices{1}));
   end
 end
 refreshFlatViewer([],[],1);
