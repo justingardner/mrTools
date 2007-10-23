@@ -20,6 +20,12 @@ end
 % Delete it
 MLR.views{viewNum} = [];
 
+% check to see if there are any valid views, if not, clear MLR
+for i = 1:length(MLR.views)
+  if ~isempty(MLR.views{i}),return,end
+end
+clear global MLR;
+
 % Remove it and update viewNum for all of the remaining views
 % (busted because doens't update local variables) 
 %

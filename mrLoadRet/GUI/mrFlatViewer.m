@@ -75,6 +75,7 @@ end
 flatdir = dir('*.off');
 for i = 1:length(flatdir)
   if ~isempty(strcmp(lower(flatdir(i).name),'flat')) || ~isempty(strcmp(lower(flatdir(i).name),'patch'))
+   % load just the header
     flatfile = loadSurfOFF(flatdir(i).name,1);
     if isfield(flatfile,'parentSurfaceName')
       if strcmp(flatfile.parentSurfaceName,gFlatViewer.flat.parentSurfaceName)
@@ -100,7 +101,11 @@ innerDir = dir(sprintf('%s*.off',strtok(stripext(inner{1}),'WM')));
 for i = 1:length(innerDir)
   % don't choose anything we already have or with GM, flat or patch in the title
   if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'GM')) && (isempty(strfind(lower(innerDir(i).name),'flat')) || ~isempty(strfind(lower(innerDir(i).name),'inflate'))) && isempty(strfind(lower(innerDir(i).name),'patch'))
-    inner{end+1} = innerDir(i).name;
+    % check to make sure it has the correct number of vertices
+    surf = loadSurfOFF(innerDir(i).name,1);
+    if isequal(gFlatViewer.flat.nParent(1:2),[surf.Nvtcs surf.Ntris]')
+      inner{end+1} = innerDir(i).name;
+    end
   end
 end
 
@@ -127,7 +132,11 @@ outerDir = dir(sprintf('%s*.off',strtok(stripext(inner{1}),'WM')));
 for i = 1:length(outerDir)
   % don't choose anything we already have or with WM, flat or patch in the title
   if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'WM')) && (isempty(strfind(lower(innerDir(i).name),'flat')) || ~isempty(strfind(lower(innerDir(i).name),'inflate'))) && isempty(strfind(lower(innerDir(i).name),'patch'))
-    outer{end+1} = outerDir(i).name;
+    % check to make sure it has the correct number of vertices
+    surf = loadSurfOFF(outerDir(i).name,1);
+    if isequal(gFlatViewer.flat.nParent(1:2),[surf.Nvtcs surf.Ntris]')
+      outer{end+1} = outerDir(i).name;
+    end
   end
 end
 % now try to find the first loadable one
@@ -220,6 +229,18 @@ editable = 0;
 
 % set up the parameters
 paramsInfo = {};
+% Now give choice of viewing gray or white
+gFlatViewer.whichSurfaceTypes = {'Outer (Gray matter) surface','Inner (White matter) surface','3D Anatomy','Patch'};
+paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
+gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High outer areal distortion in red','High inner areal distortion in red'};
+if ~isempty(gFlatViewer.viewNum)
+  gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
+end
+gFlatViewer.patchColoringTypes{end+1} = 'None';
+paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
+if ~isempty(gFlatViewer.viewNum)
+  paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
+end
 if ~editable && (length(flat) == 1)
   paramsInfo{end+1} = {'flatFile',flat{1},'editable=0','The flat patch file'};
 else
@@ -244,18 +265,6 @@ if ~editable && (length(anat) == 1)
   paramsInfo{end+1} = {'anatomy',anat{1},'editable=0','The 3D anatomy file'};
 else
   paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file','callback',@switchAnatomy};
-end
-% Now give choice of viewing gray or white
-gFlatViewer.whichSurfaceTypes = {'Outer (Gray matter) surface','Inner (White matter) surface','3D Anatomy','Patch'};
-paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
-gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High outer areal distortion in red','High inner areal distortion in red'};
-if ~isempty(gFlatViewer.viewNum)
-  gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
-end
-gFlatViewer.patchColoringTypes{end+1} = 'None';
-paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
-if ~isempty(gFlatViewer.viewNum)
-  paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
 end
 
 % put up dialog
@@ -903,7 +912,7 @@ disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatomy));
 % switch to 3D anatomy view
 global gParams
 gFlatViewer.whichSurface = 3;
-set(gParams.ui.varentry{6},'Value',gFlatViewer.whichSurface)
+set(gParams.ui.varentry{1},'Value',gFlatViewer.whichSurface)
 refreshFlatViewer([],[],1);
 disppercent(inf);
 
@@ -934,10 +943,10 @@ addFilename = 0;
 if strcmp(params.(whichSurface),'Find file')
   if strcmp(whichSurface,'curv')
     [filename, pathname] = uigetfile({'*.vff','VFF Curvature files (*.vff)'});
-    whichControl = 1+find(strcmp(whichSurface,{'outer','inner'}));
+    whichControl = 7;
   else
     [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'});
-    whichControl = 4;
+    whichControl = 4+find(strcmp(whichSurface,{'outer','inner'}));
   end
   % uigetfile seems to return a path with filesep at end
   if length(pathname) && (pathname(end)==filesep)
@@ -957,10 +966,10 @@ disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curv')
     file = myLoadCurvature(filename);
-    whichControl = 4;
+    whichControl = 7;
   else
     file = myLoadSurface(filename);
-    whichControl = 1+find(strcmp(whichSurface,{'outer','inner'}));
+    whichControl = 4+find(strcmp(whichSurface,{'outer','inner'}));
   end
 else
   file = [];
@@ -975,7 +984,7 @@ if ~isempty(file)
   end    
   % and change the ui control
   global gParams;
-  set(gParams.ui.varentry{6},'Value',gFlatViewer.whichSurface)
+  set(gParams.ui.varentry{1},'Value',gFlatViewer.whichSurface)
   % add the filename to the control if necessary
   if addFilename
     currentChoices = get(gParams.ui.varentry{gFlatViewer.whichSurface+1},'String');
