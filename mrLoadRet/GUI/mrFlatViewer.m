@@ -62,21 +62,25 @@ function retval = initHandler(flat,outer,inner,curv,anat,viewNum)
 
 global gFlatViewer;
 gFlatViewer = [];
+gFlatViewer.mismatchWarning = 0;
 
 disppercent(-inf,'(mrFlatView) Loading surfaces');
 % get more flats
 % load the flat
-gFlatViewer.flat = loadSurfOFF(sprintf('%s.off',stripext(flat{1})));
+
+[flatPath flat{1}] = fileparts(sprintf('%s.off',stripext(flat{1})));
+flatdir = dir(sprintf('%s/*.off', flatPath));
+
+gFlatViewer.flat = loadSurfOFF(sprintf('%s/%s.off', flatPath, stripext(flat{1})));
 if isempty(gFlatViewer.flat) || ~isfield(gFlatViewer.flat,'parentSurfaceName');
   disp(sprintf('(mrFlatViewer) %s is not a flat file',flat{1}));
   return
 end
+
 % look for flats with same parent
-flatdir = dir('*.off');
 for i = 1:length(flatdir)
   if ~isempty(strcmp(lower(flatdir(i).name),'flat')) || ~isempty(strcmp(lower(flatdir(i).name),'patch'))
-   % load just the header
-    flatfile = loadSurfOFF(flatdir(i).name,1);
+    flatfile = loadSurfOFF(sprintf('%s/%s', flatPath, flatdir(i).name),1);
     if isfield(flatfile,'parentSurfaceName')
       if strcmp(flatfile.parentSurfaceName,gFlatViewer.flat.parentSurfaceName)
 	if ~strcmp(flatdir(i).name,flat)
@@ -97,13 +101,13 @@ if isempty(inner)
 end
 
 % guess anything with the right stem
-innerDir = dir(sprintf('%s*.off',strtok(stripext(inner{1}),'WM')));
+innerDir = dir(sprintf('%s/%s*.off', flatPath, strtok(stripext(inner{1}),'WM')));
 for i = 1:length(innerDir)
   % don't choose anything we already have or with GM, flat or patch in the title
   if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'GM')) && (isempty(strfind(lower(innerDir(i).name),'flat')) || ~isempty(strfind(lower(innerDir(i).name),'inflate'))) && isempty(strfind(lower(innerDir(i).name),'patch'))
     % check to make sure it has the correct number of vertices
-    surf = loadSurfOFF(innerDir(i).name,1);
-    if isequal(gFlatViewer.flat.nParent(1:2),[surf.Nvtcs surf.Ntris]')
+    surf = myLoadSurface(innerDir(i).name, flatPath,1);
+    if ~isempty(surf)
       inner{end+1} = innerDir(i).name;
     end
   end
@@ -111,7 +115,7 @@ end
 
 % now try to find the first loadable one
 for i = 1:length(inner)
-  gFlatViewer.surfaces.inner = myLoadSurface(inner{i});
+  gFlatViewer.surfaces.inner = myLoadSurface(sprintf('%s/%s', flatPath, inner{i}));
   if ~isempty(gFlatViewer.surfaces.inner),break,end
 end
 % if we didn't load anything then quit
@@ -128,20 +132,20 @@ if isempty(outer)
   outer{1} = sprintf('%sGM.off',strtok(stripext(inner{1}),'WM'));
 end
 % guess anything with the right stem
-outerDir = dir(sprintf('%s*.off',strtok(stripext(inner{1}),'WM')));
+outerDir = dir(sprintf('%s*.off',fullfile(flatPath,strtok(stripext(inner{1}),'WM'))));
 for i = 1:length(outerDir)
   % don't choose anything we already have or with WM, flat or patch in the title
   if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'WM')) && (isempty(strfind(lower(innerDir(i).name),'flat')) || ~isempty(strfind(lower(innerDir(i).name),'inflate'))) && isempty(strfind(lower(innerDir(i).name),'patch'))
     % check to make sure it has the correct number of vertices
-    surf = loadSurfOFF(outerDir(i).name,1);
-    if isequal(gFlatViewer.flat.nParent(1:2),[surf.Nvtcs surf.Ntris]')
+    surf = myLoadSurface(outerDir(i).name, flatPath, 1);
+    if ~isempty(surf)
       outer{end+1} = outerDir(i).name;
     end
   end
 end
 % now try to find the first loadable one
 for i = 1:length(outer)
-  gFlatViewer.surfaces.outer = myLoadSurface(outer{i});
+  gFlatViewer.surfaces.outer = myLoadSurface(sprintf('%s',outer{i}), flatPath);
   if ~isempty(gFlatViewer.surfaces.outer),break,end
 end
 % if we didn't load anything then quit
@@ -154,25 +158,25 @@ outer{end+1} = 'Find file';
 
 % load the curvature
 if isempty(curv)
-  curvGuess = sprintf('%s_Curv.vff',stripext(inner{1}));
+  curvGuess = sprintf('%s_Curv.vff', fullfile(flatPath, stripext(inner{1})));
   if isfile(curvGuess)
-    curv{1} = curvGuess;
+    curv{1} = getLastDir(curvGuess);
   end
 end
 % add any vff file
-curvDir = dir('*.vff');
+curvDir = dir(sprintf('%s/*.vff', flatPath));
 for i = 1:length(curvDir)
   if ~any(strcmp(curvDir(i).name,curv))
     % check length of file matches our patch
-    [vffdata vffhdr] = loadVFF(curvDir(i).name,1);
-    if isequal(gFlatViewer.flat.nParent(1),vffhdr.size(3))
+    vffhdr = myLoadCurvature(curvDir(i).name, flatPath, 1);
+    if ~isempty(vffhdr)
       curv{end+1} = curvDir(i).name;
     end
   end
 end
 
 for i = 1:length(curv)
-  gFlatViewer.curv = myLoadCurvature(curv{1});
+  gFlatViewer.curv = myLoadCurvature(sprintf('%s', fullfile(flatPath, curv{1})));
   if ~isempty(gFlatViewer.curv),break,end
 end
 % if we didn't load anything then quit
@@ -183,15 +187,18 @@ else
 end
 disppercent(inf);
 
+% from now on, complain for mismatch of surface nodes and patches
+gFlatViewer.mismatchWarning = 1;
+
 % guess any nifti file for anatomy
-anatDir = dir('*.hdr');
+anatDir = dir(sprintf('%s/*.hdr', flatPath));
 for i = 1:length(anatDir)
   if ~any(strcmp(anatDir(i).name,anat))
     anat{end+1} = anatDir(i).name;
   end
 end
 % check for 'canonical hdr'
-anatCanonicalDir = dir('../*.hdr');
+anatCanonicalDir = dir(sprintf('%s/../*.hdr', flatPath));
 for i= 1:length(anatCanonicalDir)
   if find(strcmp(anatCanonicalDir(i).name,anat))
     anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
@@ -248,6 +255,7 @@ if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.guiloc.filenames = gFlatViewer.guiloc.filenames+1;
   paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
 end
+paramsInfo{end+1} = {'flatPath', flatPath,'editable=0','The directory path to the flat file'};
 if ~editable && (length(flat) == 1)
   paramsInfo{end+1} = {'flatFile',flat{1},'editable=0','The flat patch file'};
 else
@@ -932,7 +940,7 @@ global gFlatViewer;
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.flatFile));
-gFlatViewer.flat = loadSurfOFF(params.flatFile);
+gFlatViewer.flat = loadSurfOFF(sprintf('%s/%s', params.flatPath, params.flatFile));
 % switch to flat view
 global gParams
 refreshFlatViewer([],[],1);
@@ -972,10 +980,10 @@ end
 disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curv')
-    file = myLoadCurvature(filename);
+    file = myLoadCurvature(sprintf('%s/%s', params.flatPath, filename));
     whichControl = gFlatViewer.guiloc.filenames+3;;
   else
-    file = myLoadSurface(filename);
+    file = myLoadSurface(sprintf('%s/%s', params.flatPath, filename));
     whichControl = gFlatViewer.guiloc.filenames+find(strcmp(whichSurface,{'outer','inner'}));
   end
 else
@@ -1007,9 +1015,9 @@ else
   currentChoices = get(gParams.ui.varentry{whichControl},'String');
   set(gParams.ui.varentry{whichControl},'Value',1)
   if ~strcmp(whichSurface,'curv')
-    gFlatViewer.surfaces.(whichSurface)=myLoadSurface(currentChoices{1});
+    gFlatViewer.surfaces.(whichSurface)=myLoadSurface(sprintf('%s/%s', params.flatPath, currentChoices{1}));
   else
-    gFlatViewer.curv=myLoadCurvature(currentChoices{1});
+    gFlatViewer.curv=myLoadCurvature(sprintf('%s/%s', params.flatPath, currentChoices{1}));
   end
 end
 refreshFlatViewer([],[],1);
@@ -1019,16 +1027,29 @@ disppercent(inf);
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   myLoadSurface   %%
 %%%%%%%%%%%%%%%%%%%%%%%
-function surf = myLoadSurface(filename)
+function surf = myLoadSurface(filename,filepath,onlyLoadHeader)
+
+% default to loading data
+if ieNotDefined('onlyLoadHeader'),onlyLoadHeader = 0;end
+
+% put on path
+if ~ieNotDefined('filepath')
+  filename = fullfile(filepath,filename);
+end
 
 global gFlatViewer;
 % load the surface
-surf = loadSurfOFF(filename);
+surf = loadSurfOFF(filename,onlyLoadHeader);
 if isempty(surf),return,end
 
 % check that it has the correct number of vertices
 if ~isequal(gFlatViewer.flat.nParent(1:2),[surf.Nvtcs surf.Ntris]')
-  disp(sprintf('(mrFlatViewer) Surface %s does not match patch Nvtcs: %i vs %i, Ntris: %i vs %i',filename,gFlatViewer.flat.nParent(1),surf.Nvtcs,gFlatViewer.flat.nParent(2),surf.Ntris));
+  % dispaly warning, but only if mismatchWarning is set,
+  % this way when we first load surfaces just for checking it
+  % won't complain
+  if gFlatViewer.mismatchWarning
+    mrWarnDlg(sprintf('(mrFlatViewer) Surface %s does not match patch Nvtcs: %i vs %i, Ntris: %i vs %i',filename,gFlatViewer.flat.nParent(1),surf.Nvtcs,gFlatViewer.flat.nParent(2),surf.Ntris));
+  end
   surf = [];
   return
 end
@@ -1036,17 +1057,35 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   myLoadCurvature   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function curv = myLoadCurvature(filename)
+function curv = myLoadCurvature(filename,filepath,onlyLoadHeader)
+
+% default to loading data
+if ieNotDefined('onlyLoadHeader'),onlyLoadHeader = 0;end
+
+% put on path
+if ~ieNotDefined('filepath')
+  filename = fullfile(filepath,filename);
+end
 
 global gFlatViewer;
 % load the curvature
-curv = loadVFF(filename)';
-if isempty(curv),return,end
+[curv curvhdr] = loadVFF(filename,onlyLoadHeader);
 
-% check that it has the correct number of vertices
-if ~isequal(gFlatViewer.flat.nParent(1),size(curv,1))
-  disp(sprintf('(mrFlatViewer) Curvature file %s does not match patch Nvtcs: %i vs %i',filename,gFlatViewer.flat.nParent(1),size(curv,1)));
+% % check that it has the correct number of vertices
+if ~isequal(gFlatViewer.flat.nParent(1), curvhdr.size(3))
+  % dispaly warning, but only if mismatchWarning is set,
+  % this way when we first load surfaces just for checking it
+  % won't complain
+  if gFlatViewer.mismatchWarning
+    mrWarnDlg(sprintf('(mrFlatViewer) Curvature file %s does not match patch Nvtcs: %i vs %i',filename,gFlatViewer.flat.nParent(1), curvhdr.size(3)));
+  end
   curv = [];
   return
 end
 
+% return header only
+if onlyLoadHeader
+  curv = curvhdr;
+else 
+  curv = curv';
+end
