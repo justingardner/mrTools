@@ -121,8 +121,9 @@ for iscan = 1:length(params.scanList)
   if (viewGet(viewBase,'framePeriod',params.scanList(iscan)) ~= d.tr)
     mrWarnDlg(sprintf('concatTSeries: These scans have different TR. (%0.4f vs %0.4f)',viewGet(viewBase,'framePeriod',params.scanList(iscan)),d.tr));
   end
-  if ~isequal(viewGet(viewBase,'scanvoxelsize',params.scanList(iscan)),d.voxelSize)
-    disp('(concatTSeries) Scans have different voxel sizes.');
+  baseVoxelSize = viewGet(viewBase,'scanvoxelsize',params.scanList(iscan));
+  if ~isequal(baseVoxelSize,d.voxelSize)
+    disp('(concatTSeries) Scans have different voxel sizes %i:[%s]~=[%s].',params.scanList(iscan),num2str(baseVoxelSize),num2str(params.scanList(iscan)));
   end
   if ~isequal(viewGet(viewBase,'scandims',params.scanList(iscan)),d.dim(1:3))
     disp('(concatTSeries) Scans have different dimensions.');
