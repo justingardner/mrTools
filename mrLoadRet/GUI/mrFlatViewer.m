@@ -52,7 +52,7 @@ switch (event)
  case {'edit'}
   editHandler;
  otherwise
-  disp(sprintf('(mrFlatViewer) Could not find flat file %s',event));
+  disp(sprintf('(mrFlatViewer) Could not find flat file %s',flat{1}));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -63,7 +63,7 @@ function retval = initHandler(flat,outer,inner,curv,anat,viewNum)
 global gFlatViewer;
 gFlatViewer = [];
 gFlatViewer.mismatchWarning = 0;
-
+retval = [];
 disppercent(-inf,'(mrFlatView) Loading surfaces');
 % get more flats
 % load the flat
