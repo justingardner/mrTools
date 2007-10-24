@@ -4,15 +4,24 @@
 % PURPOSE:  Everything.
 % DATE:     June, 2004
 %
-% This is the default mrLoadRet script that simply opens an
-% inplaneView window.  You are encouraged to put a copy of this
-% file in each of your data directories and modify the copied
-% version of this script to customize it for that data set.
-% Examples of a number of possible customizations are commented
-% below.
+% usually, just run as
+% mrLoadRet
+%
+% to run mrLoadRet without loading mrLastView (i.e. this
+% will run mrLoadRet fresh without remembering your settings
+% and keeping your loaded analyses, base volumes and ROIs from
+% your last session).
+% mrLoadRet([]);
+%
+% to load a different mrLastView
+% mrLoadRet('mrLastView2');
+%
+function [v]= mrLoadRet(mrLastView)
 
-function [v]= mrLoadRet()
-
+% default to 
+if nargin < 1
+  mrLastView = 'mrLastView.mat';
+end
 if ~isfile('mrSession.mat')
   disp('(mrLoadRet) No mrSession.mat found in current directory');
   return
@@ -36,4 +45,4 @@ if isempty(strfind(pwd,viewGet([],'homeDir')))
 end
 
 % Open inplane window
-v = mrOpenWindow('Volume');
+v = mrOpenWindow('Volume',mrLastView);
