@@ -55,7 +55,15 @@ fromGroup = mrSession.groups(fromGroupNum).name;
 toGroupNum = viewGet(v,'groupNum',params.toGroup);
 toGroup = params.toGroup;
 fromDir = fullfile(fullfile(pathStr,fromGroup),'TSeries');
+if ~isdir(fromDir)
+  disp(sprintf('(importGroupScans) Could not find directory %s',fromDir));
+  return
+end
 toDir = fullfile(fullfile(viewGet(v,'homeDir'),toGroup),'TSeries');
+if ~isdir(toDir)
+  disp(sprintf('(importGroupScans) Could not find directory %s',toDir));
+  return
+end
 fromScanParams = mrSession.groups(fromGroupNum).scanParams;
 fromAuxParams = mrSession.groups(fromGroupNum).auxParams;
 fromName = getLastDir(pathStr);
