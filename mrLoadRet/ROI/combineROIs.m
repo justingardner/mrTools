@@ -1,12 +1,15 @@
-function view = combineROIs(view,roi1,roi2,action)
+function view = combineROIs(view,roi1,roi2,action,newName)
 
-% function view = combineROIs(view,roi1,roi2,action,[name])
+% function view = combineROIs(view,roi1,roi2,action,[newName])
 %
 % Logical combination (union, intersection, xor, set difference) of ROIs.
 % Modifies roi1 by combining it with roi2
 %
 % roi1 and roi2 can be either ROI names, ROI numbers, or empty (for current ROI).
 % Default: current ROI
+%
+% if newName is specified, will create a new ROI with that name
+% otherwise roi1 is modified
 %
 % action must be empty or one of the following strings: 
 %     'Intersection', 'Union', 'XOR', 'A not B'
@@ -100,6 +103,15 @@ end
 newCoords = newCoords';
 
 % Select ROI and modify it
-view = viewSet(view,'currentROI',roi1);
-view = modifyROI(view,roiCoords1,roiXform1,roiVoxelSize1,0);
-view = modifyROI(view,newCoords,roiXform1,roiVoxelSize1,1);
+if ieNotDefined('newName')
+  view = viewSet(view,'currentROI',roi1);
+  view = modifyROI(view,roiCoords1,roiXform1,roiVoxelSize1,0);
+  view = modifyROI(view,newCoords,roiXform1,roiVoxelSize1,1);
+% make a new one
+else
+  roi = viewGet(view,'ROI',roi1);
+  roi.name = newName;
+  roi.coords = newCoords;
+  view = viewSet(view,'newROI',roi);
+  view = viewSet(view,'currentROI',viewGet(view,'roiNum',newName));
+end
