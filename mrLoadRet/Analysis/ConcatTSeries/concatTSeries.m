@@ -123,7 +123,7 @@ for iscan = 1:length(params.scanList)
   end
   baseVoxelSize = viewGet(viewBase,'scanvoxelsize',params.scanList(iscan));
   if ~isequal(baseVoxelSize,d.voxelSize)
-    disp('(concatTSeries) Scans have different voxel sizes %i:[%s]~=[%s].',params.scanList(iscan),num2str(baseVoxelSize),num2str(params.scanList(iscan)));
+    disp(sprintf('(concatTSeries) Scans have different voxel sizes %i:[%s]~=[%s].',params.scanList(iscan),num2str(baseVoxelSize),num2str(params.scanList(iscan))));
   end
   if ~isequal(viewGet(viewBase,'scandims',params.scanList(iscan)),d.dim(1:3))
     disp('(concatTSeries) Scans have different dimensions.');
