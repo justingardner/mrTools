@@ -178,6 +178,13 @@ switch lower(param)
         mlrGuiSet(MLR.views{v},'groupPopup',stringList);
       end
     end
+    % make directories
+    if ~isdir(fullfile(MLR.homeDir,val))
+      mkdir(fullfile(MLR.homeDir,val));
+    end
+    if ~isdir(fullfile(MLR.homeDir,val,'TSeries'))
+      mkdir(fullfile(MLR.homeDir,val,'TSeries'));
+    end
     % Save mrSession
     saveSession;
 
