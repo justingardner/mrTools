@@ -1,11 +1,15 @@
-function view = mrOpenWindow(viewType)
+function view = mrOpenWindow(viewType,mrLastView)
 %
 %  view = openWindow(viewType)
 %
 % djh, 6/2004
 
-if ~exist('viewType','var')
-  viewType = 'Volume';
+if ieNotDefined('viewType'),viewType = 'Volume';end
+% note we don't use ieNotDefined here, because
+% if mrLastView is empty then the user doesn't
+% want to ignore mrLastView
+if ~exist('mrLastView','var')
+  mrLastView = 'mrLastView.mat';
 end
 
 mrGlobals;
@@ -45,9 +49,9 @@ view = viewSet(view,'showROIs','all perimeter');
 view = viewSet(view,'labelROIs',1);
 
 baseLoaded = 0;
-if isfile('mrLastView.mat')
-  disppercent(-inf,'Loading mrLastView');
-  mrLastView=load('mrLastView');
+if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
+  disppercent(-inf,sprintf('Loading %s',mrLastView));
+  mrLastView=load(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
   if isfield(mrLastView,'view')
