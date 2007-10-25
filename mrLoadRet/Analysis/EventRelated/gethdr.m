@@ -30,7 +30,7 @@ hdr = shiftdim(d.ehdr(x,y,s,:,:), 3);
 hdrlen = d.hdrlen;
 
 if isfield(d, 'hrf')
-    hdr = hdr*d.hrf';
+    hdr = hdr*(d.hrf')-mean(d.hrf));
     hdrlen = size(d.hrf,1);
 end
 
