@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 17-Oct-2007 19:40:09
+% Last Modified by GUIDE v2.5 25-Oct-2007 15:58:59
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -519,13 +519,29 @@ function rotateSlider_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
 mlrGuiSet(viewNum,'rotate',value);
-refreshMLRDisplay(viewNum);
+v = viewGet([],'view',viewNum);
+fig = viewGet(v,'figNum');
+gui = guidata(fig);
+
+if (viewGet(v,'baseType') == 2)
+  feval('view',gui.axis,viewGet(v,'rotateSurface'),0);
+else
+  refreshMLRDisplay(viewNum);
+end
 
 function rotateText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
 mlrGuiSet(viewNum,'rotate',value);
-refreshMLRDisplay(viewNum);
+v = viewGet([],'view',viewNum);
+fig = viewGet(v,'figNum');
+gui = guidata(fig);
+
+if (viewGet(v,'baseType') == 2)
+  feval('view',gui.axis,viewGet(v,'rotateSurface'),0);
+else
+  refreshMLRDisplay(viewNum);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function fileMenu_Callback(hObject, eventdata, handles)
@@ -564,6 +580,7 @@ mrGlobals;
 % get the view
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
+
 % get the tseries path/filename
 tSeriesPathStr = viewGet(v,'tSeriesPathStr',viewGet(v,'curScan'));
 % load that as an anatome
@@ -585,6 +602,21 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 % v = loadFlat(v);
 base = loadFlatOFF;
+if ~isempty(base)
+  viewSet(v, 'newbase', base);
+  refreshMLRDisplay(viewNum);
+end
+
+% --------------------------------------------------------------------
+function loadSurfaceMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to loadSurfaceMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+base = loadSurface;
 if ~isempty(base)
   viewSet(v, 'newbase', base);
   refreshMLRDisplay(viewNum);
@@ -789,6 +821,12 @@ mrPrint(v);
 % --------------------------------------------------------------------
 function quitMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+mrGlobals;
+homeDir = viewGet(v,'homeDir');
+
 if isfield(MLR,'views') && ~isempty(MLR.views)
     viewNum = handles.viewNum;
     thisView = MLR.views{viewNum};
@@ -806,6 +844,12 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     viewSettings.alpha = viewGet(thisView,'alpha');
     viewSettings.showROIs = viewGet(thisView,'showROIs');
     viewSettings.labelROIs = viewGet(thisView,'labelROIs');
+    % close graph figure, remembering figure location
+    if ~isempty(MLR.graphFigure)
+        mrSetFigLoc('graphFigure',get(MLR.graphFigure,'Position'));
+        close(MLR.graphFigure);
+        MLR.graphFigure = [];
+    end
     % close view figures
     for viewNum = 1:length(MLR.views)
         view = MLR.views{viewNum};
@@ -813,17 +857,11 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
             delete(view.figure);
         end
     end
-    % close graph figure, remembering figure location
-    if ~isempty(MLR.graphFigure)
-        mrSetFigLoc('graphFigure',get(MLR.graphFigure,'Position'));
-        close(MLR.graphFigure);
-        MLR.graphFigure = [];
-    end
     drawnow
-    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving %s/mrLastView',MLR.homeDir));
+    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving %s/mrLastView',homeDir));
     % save the view in the current directory
     view = thisView;
-    eval(sprintf('save %s view viewSettings -V6;',fullfile(MLR.homeDir,'mrLastView')));
+    eval(sprintf('save %s view viewSettings -V6;',fullfile(homeDir,'mrLastView')));
     % save .mrDefaults in the home directory
     disppercent(inf);
     disppercent(-inf,sprintf('(mrLoadRetGUI) Saving %s',mrDefaultsFilename));
@@ -2297,5 +2335,6 @@ end
 % now bring up the flat viewer
 mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName,viewNum);
 cd(thispwd);
+
 
 

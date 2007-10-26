@@ -117,8 +117,7 @@ end
 % Extract permutation matrix to keep track of slice orientation.
 % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
 % make changes here, please update that function as well.
-[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
-permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+permutationMatrix = getPermutationMatrix(hdr);
 
 %%%%%%%%%%%%%%%%%%%%%%
 % Add it to the view %
@@ -128,6 +127,7 @@ permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 % mrLoadRet and contains parameters for the base anatomy.
 % (it is the base structure minus the data and hdr) This is
 % essential for flat files
+
 matFilename = sprintf('%s.mat',stripext(pathStr));
 if isfile(matFilename)
   l = load(matFilename);

@@ -21,6 +21,7 @@ slice = viewGet(view,'curslice');
 rotate = viewGet(view,'rotate');
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+baseType = viewGet(view,'baseType',baseNum);
 % if no base then clear axis and return
 if isempty(baseNum)
   fig = viewGet(view,'figNum');
@@ -120,7 +121,27 @@ gui = guidata(fig);
 cla(gui.axis);
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Displaying image');,end
-image(img,'Parent',gui.axis);
+if baseType <= 1
+  image(img,'Parent',gui.axis);
+else
+  % get the base surface
+  baseSurface = viewGet(view,'baseSurface');
+  % make sure we are rendering with OpenGL
+  fig = viewGet(view,'figNum');
+  set(fig,'Renderer','OpenGL');
+  % display the surface
+  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',gui.axis);
+  % set up the camera angles
+  camup(gui.axis,'manual');
+  % set the camera taret to center
+  camtarget(gui.axis,[0 0 0]);
+  % set the size of the field of view in degrees
+  % i.e. 90 would be very wide and 1 would be ver
+  % narrow. 9 seems to fit the whole brain nicely
+  camva(gui.axis,9);
+  % set the view angle
+  feval('view',gui.axis,viewGet(view,'rotateSurface'),0);
+end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(gui.axis,'off');
@@ -138,10 +159,14 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 if verbose>1,disppercent(inf);,end
 
 % Display the ROIs
-drawnow;
+if baseType <= 1
+  drawnow;
+end
 nROIs = viewGet(view,'numberOfROIs');
 if nROIs
-  roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+%  if baseType <= 1
+    roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+%  end
 else
   roi = [];
 end
@@ -305,7 +330,7 @@ if ~isempty(roiBaseCoords)
     roiIndices = roiIndices(baseIndices);
   end
   % now transform the coordinates that exist in this
-  % base into image coordinates
+  % base into image coordinates.
   [x,y] = ind2sub(imageDims,baseIndices);
   s = roiBaseCoords(sliceIndex,roiIndices);
 end
@@ -424,9 +449,44 @@ for r = order
     y = roi{r}.(baseName){sliceIndex}.y;
     s = roi{r}.(baseName){sliceIndex}.s;
   end
-  
   % If it's a 'text' color, translate it...
   roi{r}.color = color2RGB(color);
+  % decide whether we are drawing perimeters or not
+  doPerimeter = ismember(option,{'all perimeter','selected perimeter'});
+  if baseType == 2
+    baseSurface = viewGet(view,'baseSurface');
+    if doPerimeter
+      disppercent(-inf,'(refreshMLRDisplay) Computing perimeter');
+      baseCoordMap = viewGet(view,'baseCoordMap');
+      newy = [];
+      for i = 1:length(y)
+	% find all the triangles that this vertex belongs to
+	[row col] = find(ismember(baseCoordMap.tris,y(i)));
+	% get all the neighboring vertices
+	neighboringVertices = baseCoordMap.tris(row,:);
+	neighboringVertices = setdiff(neighboringVertices(:),y(i));
+	% if there are any neighboring vertices that are 
+	% not in he roi then this vertex is an edge
+	numNeighbors(i) = length(neighboringVertices);
+	numROINeighbors(i) = sum(ismember(neighboringVertices,y));
+	if numNeighbors(i) ~= numROINeighbors(i)
+	  newy = union(newy,baseCoordMap.tris(row(1),:));
+	end
+	disppercent(i/length(y));
+      end
+      disppercent(inf);
+      disp(sprintf('%i/%i edges',length(newy),length(y)));
+      y = newy;
+    end
+    % display the surface
+    roiColors = zeros(size(baseSurface.vtcs));
+    roiColors(:) = nan;
+    roiColors(y,1) = roi{r}.color(1);
+    roiColors(y,2) = roi{r}.color(2);
+    roiColors(y,3) = roi{r}.color(3);
+    patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',gui.axis);
+    continue
+  end
   % get image coords for this slice
   if baseType == 0
     % for regular volumes, only get coordinates that match slice
@@ -440,8 +500,6 @@ for r = order
     sliceNum = 1;
   end
   if ~isempty(x) & ~isempty(y)
-    % decide whether we are drawing perimeters or not
-    doPerimeter = ismember(option,{'all perimeter','selected perimeter'});
     % removing the loop from this algorithm speeds things
     % up dramatically. Calculating the perimeter before
     % for a medium size ROI on the flat could easily take 30
@@ -520,7 +578,7 @@ for r = order
     roi{r}.lines.y = [];
   end
 end
-
+if baseType == 2,return,end
 % label them, if labelROIs is set
 if labelROIs
   for r = order

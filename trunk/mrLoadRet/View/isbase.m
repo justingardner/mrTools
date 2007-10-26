@@ -25,11 +25,12 @@ if (nargout == 2)
 		    'coordMap',[];
 		    'rotate',0;
 		    'curSlice',[];
-		    'sliceOrientation',[]};
+		    'sliceOrientation',[],;
+		    'type',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
-  requiredFields = {'clip','coordMap','curSlice','data','hdr','name','permutationMatrix','range','rotate','sliceOrientation'};
+  requiredFields = {'clip','coordMap','curSlice','data','hdr','name','permutationMatrix','range','rotate','sliceOrientation','type'};
   optionalFields = {};
 end
 
@@ -63,7 +64,10 @@ for f = 1:size(optionalFields,1)
 end
 base = orderfields(base);
 
-
+% auto set the base type if it is set to empty
+if isempty(base.type)
+  base.type = ~isempty(base.coordMap);
+end
 
 function clip = defaultClip(image)
 % Choose default clipping based on histogram

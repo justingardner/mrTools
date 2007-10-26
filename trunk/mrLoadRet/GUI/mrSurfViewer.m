@@ -37,6 +37,10 @@ elseif (nargin == 1) && isstr(outerSurface)
     innerSurface{1} = sprintf('%sWM.off',strtok(stripext(outerSurface),'GM'));
     clear outerSurface;
     outerSurface{1} = sprintf('%sGM.off',strtok(stripext(innerSurface{1}),'WM'));
+  else
+    innerSurface{1} = outerSurface;
+    clear outerSurface;
+    outerSurface{1} = innerSurface{1};
   end
   event = 'init';
   innerCoords = {};
@@ -104,12 +108,16 @@ end
 outerCoords = putOnTopOfList('Same as surface',allSurfaces);
 
 % check for an inner surface
-innerSurface = sprintf('%sWM.off',strtok(stripext(outerSurface{1}),'GM'));
-if ismember(innerSurface,allSurfaces)
-  innerSurface = putOnTopOfList(innerSurface,allSurfaces);
-  gSurfViewer.innerSurface = myLoadSurface(innerSurface{1});
-else
-  innerSurface = putOnTopOfList('None',allSurfaces);
+if isempty(innerSurface)
+  innerSurface = sprintf('%sWM.off',strtok(stripext(outerSurface{1}),'GM'));
+  if ismember(innerSurface,allSurfaces)
+    innerSurface = putOnTopOfList(innerSurface,allSurfaces);
+    gSurfViewer.innerSurface = myLoadSurface(innerSurface{1});
+  else
+    innerSurface = putOnTopOfList('None',allSurfaces);
+  end
+elseif length(innerSurface) == 1
+  innerSurface = putOnTopOfList(innerSurface{1},allSurfaces);
 end
 innerCoords = putOnTopOfList('Same as surface',allSurfaces);
 gSurfViewer.outerCoords = [];
@@ -162,7 +170,7 @@ gSurfViewer.mismatchWarning = 1;
 
 % select the window
 gSurfViewer.f = selectGraphWin;
-
+set(gSurfViewer.f,'Renderer','OpenGL');
 % positions on figure
 figLeft = 10;figBottom = 10;
 sliderWidth = 20;sliderLength = 200;spacer = 10;
@@ -197,10 +205,11 @@ paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file','callback',@switchAnat
 
 
 % put up dialog
-params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
+params = mrParamsDialog(paramsInfo,'View surface');
+
+close(gSurfViewer.f);
 
 if isempty(params)
-  close(gSurfViewer.f);
   retval = [];
 else
   retval = params;
@@ -409,10 +418,6 @@ elseif gSurfViewer.whichSurface == 4
   c = gSurfViewer.curv;
 end  
 
-% not sure why, but this is necessary to set up
-% the axis so that right is right...
-imagesc(0);
-
 % move vertices into center
 vtcs(:,1) = vtcs(:,1)-mean(vtcs(:,1));
 vtcs(:,2) = vtcs(:,2)-mean(vtcs(:,2));
@@ -463,15 +468,26 @@ if min(img(:)) ~= max(img(:))
   set(gca,'CLim',[min(img(:)) max(img(:))]);
 end
 % display patch and white matter/gray matter
-wmNodes = gSurfViewer.innerSurface.vtcs;
-gmNodes = gSurfViewer.outerSurface.vtcs;
+innerNodes = gSurfViewer.innerSurface.vtcs;
+outerNodes = gSurfViewer.outerSurface.vtcs;
 
 % Plot the nodes for the gray/white matter surfaces
-wmNodes = wmNodes( find( round(wmNodes(:,sliceIndex))==slice), : );
-plot(wmNodes(:,1), wmNodes(:,2), 'w.', 'markersize', 1);
+innerNodes = innerNodes( find( round(innerNodes(:,sliceIndex))==slice), : );
+plot(innerNodes(:,1), innerNodes(:,2), '.', 'markersize', 1, 'Color', [0.7 0.7 0.7]);
 
-gmNodes = gmNodes( find( round(gmNodes(:,sliceIndex))==slice), : );
-plot(gmNodes(:,1), gmNodes(:,2), 'y.', 'markersize', 1);
+outerNodes = outerNodes( find( round(outerNodes(:,sliceIndex))==slice), : );
+plot(outerNodes(:,1), outerNodes(:,2), 'y.', 'markersize', 1,'Color',[0.7 0.7 0]);
+
+if ~isempty(gSurfViewer.innerCoords)
+  innerCoordNodes = gSurfViewer.innerCoords.vtcs;
+  innerCoordNodes = innerCoordNodes( find( round(innerCoordNodes(:,sliceIndex))==slice), : );
+  plot(innerCoordNodes(:,1), innerCoordNodes(:,2), 'w.', 'markersize', 1);
+end
+if ~isempty(gSurfViewer.outerCoords)
+  outerCoordNodes = gSurfViewer.outerCoords.vtcs;
+  outerCoordNodes = outerCoordNodes( find( round(outerCoordNodes(:,sliceIndex))==slice), : );
+  plot(outerCoordNodes(:,1), outerCoordNodes(:,2), 'y.', 'markersize', 1);
+end
 
 view([0 90]);
 
