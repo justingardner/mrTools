@@ -17,6 +17,7 @@ if verbose,tic,end
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
 if verbose>1,disppercent(-inf,'viewGet');,end
 view = viewGet(viewNum,'view');
+fig = viewGet(view,'figNum');
 slice = viewGet(view,'curslice');
 rotate = viewGet(view,'rotate');
 baseNum = viewGet(view,'currentBase');
@@ -455,7 +456,7 @@ for r = order
   doPerimeter = ismember(option,{'all perimeter','selected perimeter'});
   if baseType == 2
     baseSurface = viewGet(view,'baseSurface');
-    if doPerimeter
+    if 0 %%doPerimeter
       disppercent(-inf,'(refreshMLRDisplay) Computing perimeter');
       baseCoordMap = viewGet(view,'baseCoordMap');
       newy = [];
