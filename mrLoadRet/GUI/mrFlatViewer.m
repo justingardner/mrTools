@@ -204,8 +204,8 @@ for i= 1:length(anatCanonicalDir)
     anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
   end
 end
-if isfile(anat{1})
-  [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(anat{1});
+if isfile(fullfile(flatPath, '../', anat{1}))
+  [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(flatPath, '../', anat{1}));
 else
   gFlatViewer.anat = [];
 end
@@ -940,7 +940,7 @@ global gFlatViewer;
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.flatFile));
-gFlatViewer.flat = loadSurfOFF(fullfile(params.flatPath, params.flatPatch));
+gFlatViewer.flat = loadSurfOFF(fullfile(params.flatPath, params.flatFile));
 % switch to flat view
 global gParams
 refreshFlatViewer([],[],1);
