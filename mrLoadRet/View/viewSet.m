@@ -473,8 +473,6 @@ switch lower(param)
     else
       view.baseVolumes(newBaseNum) = baseAnatomy;
     end
-    % Set it to be the current base Volume
-    view = viewSet(view,'curBase',newBaseNum);
     % clear the caches of any reference to a base with
     % the same name (if it is reloaded, the base may
     % have changed its xform for instance and so the
@@ -485,6 +483,8 @@ switch lower(param)
     % Update the gui
     stringList = {view.baseVolumes(:).name};
     mlrGuiSet(view,'basePopup',stringList);
+    % Set it to be the current base Volume
+    view = viewSet(view,'curBase',newBaseNum);
 
   case {'deletebase'}
     % view = viewSet(view,'deletebase',baseNum);

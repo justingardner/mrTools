@@ -180,24 +180,68 @@ function [x y s xBase yBase sBase] = getMouseCoords(viewNum)
 
 % get the view
 mrGlobals;
-view = MLR.views{viewNum};
+view = viewGet([],'view',viewNum);
+baseType = viewGet(view,'baseType');
 
 % get location of pointer
 pointerLoc = get(MLR.interrogator{viewNum}.axesnum,'CurrentPoint');
-mouseY = round(pointerLoc(1,1));
-mouseX = round(pointerLoc(1,2));
 
-% get base coordinates
-baseCoords = viewGet(view,'cursliceBaseCoords');
-% convert mouse to baseCoords
-if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
+if baseType <= 1
+  mouseY = round(pointerLoc(1,1));
+  mouseX = round(pointerLoc(1,2));
+
+  % get base coordinates
+  baseCoords = viewGet(view,'cursliceBaseCoords');
+  % convert mouse to baseCoords
+  if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
     xBase = baseCoords(mouseX,mouseY,1);
     yBase = baseCoords(mouseX,mouseY,2);
     sBase = baseCoords(mouseX,mouseY,3);
-else
+  else
     x = nan;y = nan; s = nan;
     xBase = nan;yBase = nan; sBase = nan;
     return
+  end
+else
+  baseSurface = viewGet(view,'baseSurface');
+
+  if 0
+    keyboard
+    vtcs(:,2) = baseSurface.vtcs(:,1)-mean(baseSurface.vtcs(:,1));
+    vtcs(:,1) = baseSurface.vtcs(:,2)-mean(baseSurface.vtcs(:,2));
+    vtcs(:,3) = baseSurface.vtcs(:,3)-mean(baseSurface.vtcs(:,3));
+    % get the view vector (this is the ray that
+    % passes through the front and back axis bounding
+    % box that is returned by CurrentPoint
+    viewVector = pointerLoc(2,:)-pointerLoc(1,:);
+    % normalize, to unit length
+    viewVector = viewVector/sqrt(sum(viewVector.^2));
+    % project the surface points on to this vector
+    nVtcs = size(vtcs,1);
+    baseProjection = vtcs*viewVector';
+    % get distance of each vertex to line
+    viewVector = repmat(viewVector,nVtcs,1);
+    viewStart = repmat(pointerLoc(1,:),nVtcs,1);
+    baseProjection = repmat(baseProjection,1,3);
+    baseDist = sqrt(sum((vtcs-(baseProjection.*viewVector+viewStart)).^2,2));
+    disp(sprintf('baseDist=%0.2f',min(baseDist)));
+  end
+  yBase = pointerLoc(1,1)+mean(baseSurface.vtcs(:,1));
+  xBase = pointerLoc(1,2)+mean(baseSurface.vtcs(:,2));
+  sBase = pointerLoc(1,3)+mean(baseSurface.vtcs(:,3));
+  xBase = nan;
+  if 0
+    % calculate distance
+    cursorPos = repmat([xBase yBase sBase],nVtcs,1);
+    baseDist = sqrt(sum((baseSurface.vtcs-cursorPos).^2,2));
+    [minDist minPos] = min(baseDist);
+
+    if min(baseDist) <20
+      keyboard
+    end
+
+  end
+  
 end
 
 % transforms from base coordinates into scan coordinates

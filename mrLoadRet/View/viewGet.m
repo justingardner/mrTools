@@ -902,6 +902,47 @@ switch lower(param)
 	end
       end
     end
+  case {'basesurface'}
+    % basedata = viewGet(view,'baseSurface',[baseNum],[corticalDepth])
+    % basedata = viewGet(view,'baseSurface',[])
+    % basedata = viewGet(view,'baseSurface')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    % get cortical depth
+    if ieNotDefined('varargin') || (length(varargin)<2)
+      corticalDepth = viewGet(view,'corticalDepth');
+    else
+      corticalDepth = varargin{2};
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      % get coordmap
+      coordMap = view.baseVolumes(b).coordMap;
+      if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
+	% find intermideate values
+	vtcs = coordMap.innerVtcs + corticalDepth*(coordMap.outerVtcs-coordMap.innerVtcs);
+	val.tris = coordMap.tris;
+      elseif isfield(coordMap,'innerVtcs')
+	% if only inner is present then just return that
+	vtcs = coordMap.innerVtcs;
+	val.tris = coordMap.tris;
+      else
+	vtcs = [];
+	val.tris = [];
+      end
+      % center surface
+      if ~isempty(vtcs)
+	val.vtcs(:,1) = vtcs(:,2)-mean(vtcs(:,2));
+	val.vtcs(:,2) = vtcs(:,1)-mean(vtcs(:,1));
+	val.vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
+      end
+    end
   case {'baseclip'}
     % baseclip = viewGet(view,'baseclip',[baseNum])
     % baseclip = viewGet(view,'baseclip',[])
@@ -986,7 +1027,7 @@ switch lower(param)
     % baserange = viewGet(view,'baserange',[baseNum])
     % baserange = viewGet(view,'baserange',[])
     % baserange = viewGet(view,'baserange')
-    % 0 is for a regular volume, 1 is for a flat
+    % 0 is for a regular volume, 1 is for a flat, 2 is for a surface
     if ieNotDefined('varargin')
       b = viewGet(view,'currentBase');
     else
@@ -997,7 +1038,7 @@ switch lower(param)
     end
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      val = ~isempty(view.baseVolumes(b).coordMap);
+      val = view.baseVolumes(b).type;
     end
   case {'basedims'}
     % basedims = viewGet(view,'basedims',[baseNum])
@@ -2465,9 +2506,29 @@ switch lower(param)
     val = get(handles.overlayMaxSlider,'Value');
   case {'rotate'}
     % rotate = viewGet(view,'rotate');
-    fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = get(handles.rotateSlider,'Value');
+    baseType = viewGet(view,'baseType');
+    % rotation is dependent on the base type
+    % since surfaces aren't rotated in the 
+    % same way, they are rotated through
+    % rotateSurface
+    if baseType <= 1
+      fig = viewGet(view,'fignum');
+      handles = guidata(fig);
+      val = get(handles.rotateSlider,'Value');
+    else
+      val = 0;
+    end
+  case {'rotatesurface'}
+    % rotate = viewGet(view,'rotateSurface');
+    baseType = viewGet(view,'baseType');
+    if baseType == 2
+      fig = viewGet(view,'fignum');
+      handles = guidata(fig);
+      % 360- is so that the anatomy rotates correct direction
+      val = 360-get(handles.rotateSlider,'Value');
+    else
+      val = 0;
+    end
   case {'corticaldepth'}
     % rotate = viewGet(view,'rotate');
     fig = viewGet(view,'fignum');

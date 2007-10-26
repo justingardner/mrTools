@@ -61,8 +61,7 @@ hdr = cbiReadNiftiHeader(anatPathStr);
 % Extract permutation matrix to keep track of slice orientation.
 % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
 % make changes here, please update that function as well.
-[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
-permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+permutationMatrix = getPermutationMatrix(hdr);
 
 % get parameters for renderinf flat maps
 paramsInfo = {{'resolution',1,'minmax=[1 inf]','incdec=[-1 1]','Resolution of flat map. Make number larger for finer resolution. The finer the resolution the longer it will take to render the flat map'},...

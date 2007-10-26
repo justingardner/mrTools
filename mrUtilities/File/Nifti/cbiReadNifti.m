@@ -48,6 +48,22 @@ if (~exist('short_nan'))
 end
 
 hdr=cbiReadNiftiHeader(fname);
+
+% this is a bit of a hack, but the pixdim
+% can be at most 2^15-1 which is a problem
+% for base surface images which just
+% contains info about each vertex. So
+% we check for that condition and fix
+% the dimension here
+if (hdr.dim(2) ==1) && (hdr.dim(3) == 2^15-1)
+  dataDir = dir(sprintf('%s.img',stripext(fname)));
+  dataBytes = dataDir(1).bytes/(hdr.bitpix/8);
+  if dataBytes ~= hdr.dim(3)
+    disp(sprintf('(cbiReadNifti) Image dimension 2 greater than nifti max (%i), fixing and rereading %i bytes',hdr.dim(3),dataBytes))
+    hdr.dim(3) = dataBytes;
+  end
+end
+
 headerdim=hdr.dim(2:5); % Matlab 1-offset - hdr.dim(1) is actually hdr.dim(0)
 headerdim(headerdim==0)=1; % Force null dimensions to be 1
 is5D=0;
