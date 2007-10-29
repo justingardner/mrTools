@@ -215,6 +215,7 @@ gFlatViewer.viewNum = viewNum;
 
 % select the window
 gFlatViewer.f = selectGraphWin;
+set(gFlatViewer.f,'renderer','OpenGL');
 
 % positions on figure
 figLeft = 10;figBottom = 10;
@@ -248,6 +249,7 @@ paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@wh
 gFlatViewer.patchColoringTypes = {'Uniform','Rostral in red','Right in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High outer areal distortion in red','High inner areal distortion in red'};
 if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
+  gFlatViewer.patchColoringTypes{end+1} = 'Current overlay with patch';
 end
 gFlatViewer.patchColoringTypes{end+1} = 'None';
 paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
@@ -776,7 +778,7 @@ switch gFlatViewer.patchColoring
     title(sprintf('Distortion: max=%0.2fx median=%0.2fx mean=%0.2fx',max(distortion),median(distortion),mean(distortion)));
   end
  %current overlay
- case {11}
+ case {11,12}
   baseXform = gFlatViewer.anat.hdr.sform44;
   whichInx = gFlatViewer.flat.patch2parent(:,2);
   % get the coordinates from the right surface
@@ -795,6 +797,7 @@ switch gFlatViewer.patchColoring
   % get the view
   v = viewGet([],'view',gFlatViewer.viewNum);
   if ~isempty(viewGet(v,'currentOverlay'))
+    % and get the overlay
     overlay = computeOverlay(v,baseXform,baseCoords,baseDims);
     overlay.RGB(overlay.alphaMap==0) = nan;
     co = squeeze(overlay.RGB);
@@ -803,6 +806,26 @@ switch gFlatViewer.patchColoring
     co(:) = nan;
   end
   alpha = 1;
+  if gFlatViewer.patchColoring==12
+    % get curvature
+    curv = gFlatViewer.curv(patchVtcs)';
+    % the default curvature mapping is to use the
+    % gray colortable clipping values at -1.2 and 1.2
+    % and mapping them lineraly into the colortable.
+    % This is what is specified by sending a scalar value
+    % to the patch command. So we replicate that here to
+    % draw the patch
+    cmap = brighten(gray,-0.5);
+    curv(curv>1.2) = 1.2;
+    curv(curv<-1.2) = -1.2;
+    curv = round((size(cmap,1)-1)*(curv-min(curv))./(max(curv)-min(curv))+1);
+    % set all the points that don't show up in the overlay
+    % with the curvature slightly darkened
+    noOverlayPoints = find(isnan(co(:,1)));
+    co(noOverlayPoints,1) = cmap(curv(noOverlayPoints),1);
+    co(noOverlayPoints,2) = cmap(curv(noOverlayPoints),2);
+    co(noOverlayPoints,3) = cmap(curv(noOverlayPoints),3);
+  end
   return
  % no coloring
  case {length(gFlatViewer.patchColoringTypes)}
