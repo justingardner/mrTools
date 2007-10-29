@@ -35,6 +35,9 @@ if ~isempty(figloc)
   set(fig,'Position',figloc);
 end
 
+% set the renderer to OpenGL
+set(fig,'Renderer','OpenGL')
+
 % set the keyoard accelerator
 %mrAcceleratorKeys('init',view.viewNum);
 

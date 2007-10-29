@@ -6,6 +6,11 @@ function [view tf] = viewSet(view,param,val,varargin)
 % MLR.views{viewNum}. Modifies the global variable MLR.views{viewNum} as
 % well as the local and returned copy.
 %
+% ====================================================================
+% Type viewSet w/out any arguments for the full set of parameters and for
+% optional arguments.
+% ====================================================================
+%
 % Examples:
 %
 % view = viewSet(view,'currentGroup',n);
@@ -43,8 +48,6 @@ function [view tf] = viewSet(view,param,val,varargin)
 % base, overlay, or ROI. Please follow this convention if you add to this
 % function.
 %
-% See comments in the source code for the full set of parameters and for
-% optional arguments.
 %
 % 6/2004 djh
 
@@ -513,9 +516,19 @@ switch lower(param)
     % view = viewSet(view,'rotate',rotation);
     curBase = viewGet(view,'curBase');
     numBases = viewGet(view,'numberofBaseVolumes');
+    baseType = viewGet(view,'baseType');
     if (curBase > 0) & (curBase <= numBases)
-      view.baseVolumes(curBase).rotate = val;
+      % surfaces are rotated differently, the
+      % rotate field causes surfaceRotate to
+      % change rather than rotate. So we
+      % need to set the appropriate field
+      if baseType <= 1
+	view.baseVolumes(curBase).rotate = val;
+      else
+	view.baseVolumes(curBase).coordMap.rotate = val;
+      end
     end
+      
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
@@ -577,6 +590,20 @@ switch lower(param)
 	mlrGuiSet(view,'rotate',baseRotate);
       end
       mlrGuiSet(view,'nSlices',nSlices);
+    end
+
+  case 'basecoordmappath'
+    % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
+    curBase = viewGet(view,'currentBase');
+    if ~isempty(varargin)
+      baseNum = varargin{1};
+    else
+      baseNum = curBase;
+    end
+    if ~isempty(baseNum)
+      if isfield(view.baseVolumes(baseNum),'coordMap')
+	view.baseVolumes(baseNum).coordMap.flatDir = val;
+      end
     end
 
   case 'basemin'

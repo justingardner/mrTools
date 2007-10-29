@@ -6,6 +6,11 @@ function [val val2] = viewGet(view,param,varargin)
 % Access to these structures should go through this routine and through
 % viewSet.
 %
+% ====================================================================
+% Type viewGet w/out any arguments for the full set of parameters and for
+% optional arguments.
+% ====================================================================
+%
 % view can be either a view structure or a viewNum which is interpreted as
 % MLR.views{viewNum}. For some params (e.g., 'subject', 'groupNum'), view
 % can be [].
@@ -25,9 +30,6 @@ function [val val2] = viewGet(view,param,varargin)
 % groupNum = viewGet(view,'currentGroup');
 % n = viewGet(view,'nScans',groupNum);
 % n = viewGet([],'nScans',groupNum);
-%
-% Type viewGet w/out any arguments for the full set of parameters and for
-% optional arguments.
 %
 % 6/2004 djh
 % 11/2006 jlg added help and
@@ -871,6 +873,28 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b);
     end
+  case {'basecoordmappath'}
+    % basedata = viewGet(view,'baseCoordMapPath',[baseNum],[corticalDepth])
+    % basedata = viewGet(view,'baseCoordMapPath',[])
+    % basedata = viewGet(view,'baseCoordMapPath')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    val = [];
+    if b & (b > 0) & (b <= n)
+      if isfield(view.baseVolumes(b),'coordMap') 
+	if isfield(view.baseVolumes(b).coordMap,'flatDir')
+	  val = view.baseVolumes(b).coordMap.flatDir;
+	else
+	end
+      end
+    end
   case {'basecoordmap'}
     % basedata = viewGet(view,'baseCoordMap',[baseNum],[corticalDepth])
     % basedata = viewGet(view,'baseCoordMap',[])
@@ -938,9 +962,9 @@ switch lower(param)
       end
       % center surface
       if ~isempty(vtcs)
-	val.vtcs(:,1) = vtcs(:,2)-mean(vtcs(:,2));
-	val.vtcs(:,2) = vtcs(:,1)-mean(vtcs(:,1));
-	val.vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
+	val.vtcs(:,1) = vtcs(:,2);
+	val.vtcs(:,2) = vtcs(:,1);
+	val.vtcs(:,3) = vtcs(:,3);
       end
     end
   case {'baseclip'}
@@ -973,7 +997,16 @@ switch lower(param)
     end
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      val = view.baseVolumes(b).rotate;
+      baseType = viewGet(view,'baseType',b);
+      if baseType <= 1
+	val = view.baseVolumes(b).rotate;
+      else
+	if isfield(view.baseVolumes(b).coordMap,'rotate')
+	  val = view.baseVolumes(b).coordMap.rotate;
+	else
+	  val = 0;
+	end
+      end
     end
   case {'basecurslice','baseslice'}
     % baseslice = viewGet(view,'baseslice',[baseNum])
