@@ -170,7 +170,8 @@ gSurfViewer.mismatchWarning = 1;
 
 % select the window
 gSurfViewer.f = selectGraphWin;
-set(gSurfViewer.f,'Renderer','OpenGL');
+set(gSurfViewer.f,'renderer','OpenGL');
+
 % positions on figure
 figLeft = 10;figBottom = 10;
 sliderWidth = 20;sliderLength = 200;spacer = 10;
@@ -422,6 +423,10 @@ end
 vtcs(:,1) = vtcs(:,1)-mean(vtcs(:,1));
 vtcs(:,2) = vtcs(:,2)-mean(vtcs(:,2));
 vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
+
+% not sure why, but this is necessary to set up
+% the axis so that right is right...
+imagesc(0);
 
 % draw the surface
 patch('vertices', vtcs, 'faces', tris, ...

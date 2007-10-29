@@ -127,15 +127,15 @@ if baseType <= 1
 else
   % get the base surface
   baseSurface = viewGet(view,'baseSurface');
-  % make sure we are rendering with OpenGL
-  fig = viewGet(view,'figNum');
-  set(fig,'Renderer','OpenGL');
+  % not sure why, but this is necessary to set up
+  % the axis so that right is right...
+  imagesc(0);
   % display the surface
   patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',gui.axis);
   % set up the camera angles
-  camup(gui.axis,'manual');
-  % set the camera taret to center
-  camtarget(gui.axis,[0 0 0]);
+  camup(gui.axis,[0 0 1]);
+  % set the camera taret to center of surface
+  camtarget(gui.axis,mean(baseSurface.vtcs))
   % set the size of the field of view in degrees
   % i.e. 90 would be very wide and 1 would be ver
   % narrow. 9 seems to fit the whole brain nicely

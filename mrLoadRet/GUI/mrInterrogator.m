@@ -203,45 +203,20 @@ if baseType <= 1
     return
   end
 else
+  % handle getting coordinates for surface
   baseSurface = viewGet(view,'baseSurface');
-
-  if 0
-    keyboard
-    vtcs(:,2) = baseSurface.vtcs(:,1)-mean(baseSurface.vtcs(:,1));
-    vtcs(:,1) = baseSurface.vtcs(:,2)-mean(baseSurface.vtcs(:,2));
-    vtcs(:,3) = baseSurface.vtcs(:,3)-mean(baseSurface.vtcs(:,3));
-    % get the view vector (this is the ray that
-    % passes through the front and back axis bounding
-    % box that is returned by CurrentPoint
-    viewVector = pointerLoc(2,:)-pointerLoc(1,:);
-    % normalize, to unit length
-    viewVector = viewVector/sqrt(sum(viewVector.^2));
-    % project the surface points on to this vector
-    nVtcs = size(vtcs,1);
-    baseProjection = vtcs*viewVector';
-    % get distance of each vertex to line
-    viewVector = repmat(viewVector,nVtcs,1);
-    viewStart = repmat(pointerLoc(1,:),nVtcs,1);
-    baseProjection = repmat(baseProjection,1,3);
-    baseDist = sqrt(sum((vtcs-(baseProjection.*viewVector+viewStart)).^2,2));
-    disp(sprintf('baseDist=%0.2f',min(baseDist)));
-  end
-  yBase = pointerLoc(1,1)+mean(baseSurface.vtcs(:,1));
-  xBase = pointerLoc(1,2)+mean(baseSurface.vtcs(:,2));
-  sBase = pointerLoc(1,3)+mean(baseSurface.vtcs(:,3));
-  xBase = nan;
-  if 0
-    % calculate distance
-    cursorPos = repmat([xBase yBase sBase],nVtcs,1);
-    baseDist = sqrt(sum((baseSurface.vtcs-cursorPos).^2,2));
-    [minDist minPos] = min(baseDist);
-
-    if min(baseDist) <20
-      keyboard
+  baseDims = viewGet(view,'baseDims');
+  pos = [];xBase = nan; yBase = nan; sBase = nan;
+  % check mouse bounding box coords against baseDims
+  % for a quick check to see if we are in the volume
+  if all(pointerLoc(2,:)<=baseDims) || all(pointerLoc(2,:) >= 0)
+    % then use select3d which is slooow, but accurate
+    hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
+    pos = select3d(hobj(1));
+    if ~isempty(pos)
+      xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
-
-  end
-  
+  end      
 end
 
 % transforms from base coordinates into scan coordinates

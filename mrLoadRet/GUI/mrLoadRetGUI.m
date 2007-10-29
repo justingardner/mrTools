@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 25-Oct-2007 15:58:59
+% Last Modified by GUIDE v2.5 29-Oct-2007 10:05:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -851,10 +851,14 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
         MLR.graphFigure = [];
     end
     % close view figures
-    for viewNum = 1:length(MLR.views)
-        view = MLR.views{viewNum};
+    % keep a local copy of everything since
+    % the last view that is deleted will
+    % clear the MLR global
+    views = MLR.views;
+    for viewNum = 1:length(views)
+        view = views{viewNum};
         if isview(view)
-            delete(view.figure);
+	  delete(view.figure);
         end
     end
     drawnow
@@ -1666,16 +1670,8 @@ function graphMenuItem_Callback(hObject, eventdata, handles)
 newGraphWin;
 
 % --------------------------------------------------------------------
-function volumeMenuItem_Callback(hObject, eventdata, handles)
-view = mrOpenWindow('Volume');
-
-% --------------------------------------------------------------------
-function surfaceMenuItem_Callback(hObject, eventdata, handles)
-view = mrOpenWindow('Surface');
-
-% --------------------------------------------------------------------
-function flatMenuItem_Callback(hObject, eventdata, handles)
-view = mrOpenWindow('Flat');
+function newWindowMenuItem_Callback(hObject, eventdata, handles)
+view = mrOpenWindow('',[]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function analysisMenu_Callback(hObject, eventdata, handles)
@@ -2319,17 +2315,18 @@ v = MLR.views{viewNum};
 % get the flat files info which
 % is stored in the baseCoordMap
 params = viewGet(v,'baseCoordMap');
-
+flatPath = viewGet(v,'baseCoordMapPath');
 % switch directories to the flatDir, asking
 % the user to find it if it does not exist
 thispwd = pwd;
-if isdir(params.flatDir)
-  cd(params.flatDir);
+if isdir(flatPath)
+  cd(flatPath);
 else
-  mrWarnDlg(sprintf('Directory %s does not exist, please find the anatomy folder',params.flatDir));
+  mrWarnDlg(sprintf('Directory %s does not exist, please find the anatomy folder',flatPath));
   pathStr = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy folder from which this flat was created');
   if pathStr == 0,return,end
   cd(pathStr);
+  viewSet(v,'baseCoordMapPath',pathStr);
 end
 
 % now bring up the flat viewer
