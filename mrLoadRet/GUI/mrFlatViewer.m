@@ -575,14 +575,33 @@ vtcs(:,1) = vtcs(:,1)-mean(vtcs(:,1));
 vtcs(:,2) = vtcs(:,2)-mean(vtcs(:,2));
 vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
 
+% convert the curvature to grayscale values
+% note the 1.2 is because that is what we set
+% the clim values to be to make them look nice
+cmap = gray;
+c(c>1.2) = 1.2;
+c(c<-1.2) = -1.2;
+c = round((size(cmap,1)-1)*(c-min(c))./(max(c)-min(c))+1);
+
+% now make a combined overlay which has the grayscale
+% values for the surface and the overlay values for
+% where the patch is.
+combinedOverlay(:,1) = cmap(c);
+combinedOverlay(:,2) = cmap(c);
+combinedOverlay(:,3) = cmap(c);
+overlayPoints = ~isnan(overlay(:,1));
+combinedOverlay(overlayPoints,:) = alpha*overlay(overlayPoints,:)+(1-alpha)*combinedOverlay(overlayPoints,:);
+
+patch('vertices', vtcs, 'faces', tris,'FaceVertexCData', combinedOverlay, 'facecolor', 'interp','edgecolor', 'none');
+
 % draw the surface and the overlay
-patch('vertices', vtcs, 'faces', tris, ...
-      'FaceVertexCData', c, ...
-      'facecolor', 'interp', ...
-      'edgecolor', 'none');
-patch('vertices', vtcs, 'faces', tris, ...
-      'FaceVertexCData', overlay, ...
-      'FaceColor', 'interp', 'Edgecolor','none','FaceAlpha',alpha);
+%patch('vertices', vtcs, 'faces', tris, ...
+%      'FaceVertexCData', c, ...
+%      'facecolor', 'interp', ...
+%      'edgecolor', 'none');
+%patch('vertices', vtcs, 'faces', tris, ...
+%      'FaceVertexCData', overlay, ...
+%      'FaceColor', 'interp', 'Edgecolor','none','FaceAlpha',alpha);
 if ~isempty(roiOverlay)
   patch('vertices', vtcs, 'faces', tris, ...
 	'FaceVertexCData', roiOverlay, ...
@@ -805,7 +824,7 @@ switch gFlatViewer.patchColoring
     co = zeros(size(baseCoords,2),3);
     co(:) = nan;
   end
-  alpha = 1;
+  alpha = viewGet(v,'alpha');
   if gFlatViewer.patchColoring==12
     % get curvature
     curv = gFlatViewer.curv(patchVtcs)';
@@ -825,6 +844,15 @@ switch gFlatViewer.patchColoring
     co(noOverlayPoints,1) = cmap(curv(noOverlayPoints),1);
     co(noOverlayPoints,2) = cmap(curv(noOverlayPoints),2);
     co(noOverlayPoints,3) = cmap(curv(noOverlayPoints),3);
+    % set all the points that are in the overlay to be correctply
+    % alpha blended with the patch points
+    overlayPoints = find(~isnan(co(:,1)));
+    co(overlayPoints,1) = alpha*co(overlayPoints,1)+(1-alpha)*cmap(curv(overlayPoints),1);
+    co(overlayPoints,2) = alpha*co(overlayPoints,2)+(1-alpha)*cmap(curv(overlayPoints),2);
+    co(overlayPoints,3) = alpha*co(overlayPoints,3)+(1-alpha)*cmap(curv(overlayPoints),3);
+    % now set the alpha to 1, since we have already done the alpha
+    % blending here.
+    alpha = 1;
   end
   return
  % no coloring
