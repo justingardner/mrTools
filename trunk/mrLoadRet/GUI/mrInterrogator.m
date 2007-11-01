@@ -209,11 +209,14 @@ else
   pos = [];xBase = nan; yBase = nan; sBase = nan;
   % check mouse bounding box coords against baseDims
   % for a quick check to see if we are in the volume
-  if all(pointerLoc(2,:)<=baseDims) || all(pointerLoc(2,:) >= 0)
+  if ~isempty(baseDims) && all(pointerLoc(1,:)<=baseDims) && all(pointerLoc(1,:) >= 0)
     % then use select3d which is slooow, but accurate
     hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
-    pos = select3d(hobj(1));
+    [pos v vi] = select3d(hobj(1));
+    % convert the index to the coordinates
     if ~isempty(pos)
+      baseCoordMap = viewGet(view,'baseCoordMap');
+      pos = squeeze(baseCoordMap.coords(1,vi,1,:));
       xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
   end      
