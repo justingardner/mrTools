@@ -1781,8 +1781,10 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 baseNum = viewGet(view,'currentBase');
-view = viewSet(view,'deleteBase',baseNum);
-refreshMLRDisplay(viewNum);
+if ~isempty(baseNum)
+  view = viewSet(view,'deleteBase',baseNum);
+  refreshMLRDisplay(viewNum);
+end
 
 % --------------------------------------------------------------------
 function deleteAllBasesMenuItem_Callback(hObject, eventdata, handles)
