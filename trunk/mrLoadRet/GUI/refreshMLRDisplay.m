@@ -29,11 +29,11 @@ if isempty(baseNum)
   gui = guidata(fig);
   mlrGuiSet(view,'basemin',0);
   mlrGuiSet(view,'basemax',0);
-%  set(fig,'CurrentAxes',gui.axis);
   cla(gui.axis,'reset');
   set(fig,'CurrentAxes',gui.colorbar);
   cla(gui.colorbar,'reset');
-  axis off
+  axis(gui.axis,'off');
+  axis(gui.colorbar,'off');
   return
 end
 if verbose>1,disppercent(inf);,end
@@ -127,11 +127,12 @@ if baseType <= 1
 else
   % get the base surface
   baseSurface = viewGet(view,'baseSurface');
-  % not sure why, but this is necessary to set up
-  % the axis so that right is right...
-  imagesc(0);
   % display the surface
   patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',gui.axis);
+  % make sure x direction is normal to make right/right
+  set(gui.axis,'XDir','normal');
+  set(gui.axis,'YDir','normal');
+  set(gui.axis,'ZDir','normal');
   % set up the camera angles
   camup(gui.axis,[0 0 1]);
   % set the camera taret to center of surface
