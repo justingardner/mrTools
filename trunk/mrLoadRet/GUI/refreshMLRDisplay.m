@@ -50,7 +50,7 @@ if verbose,disppercent(-inf,'extract base image');,end
 base = viewGet(view,'baseCache');
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
-    getBaseSlice(view,slice,sliceIndex,rotate,baseNum);
+    getBaseSlice(view,slice,sliceIndex,rotate,baseNum,baseType);
   base.dims = size(base.im);
 
   % Rescale base volume
@@ -124,6 +124,12 @@ if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Displaying image');,end
 if baseType <= 1
   image(img,'Parent',gui.axis);
+  % set the renderer to painters (this seems
+  % to avoid some weird gliches in the OpenGL
+  % renderer. It also appears about 20ms or so
+  % faster for displaying images as opposed
+  % to the 3D surfaces.
+  set(fig,'Renderer','painters')
 else
   % get the base surface
   baseSurface = viewGet(view,'baseSurface');
@@ -143,6 +149,11 @@ else
   camva(gui.axis,9);
   % set the view angle
   feval('view',gui.axis,viewGet(view,'rotateSurface'),0);
+  % set the renderer to OpenGL, this makes rendering
+  % *much* faster -- from about 30 seconds to 30ms
+  % it is also marginally faster than the zbuffer
+  % renderer (order of 5-10 ms)
+  set(fig,'Renderer','OpenGL')
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
@@ -184,7 +195,7 @@ return
 %%   getBaseSlice   %%
 %%%%%%%%%%%%%%%%%%%%%%
 function [baseIm,baseCoords,baseCoordsHomogeneous] = ...
-  getBaseSlice(view,sliceNum,sliceIndex,rotate,baseNum)
+  getBaseSlice(view,sliceNum,sliceIndex,rotate,baseNum,baseType)
 %
 % getBaseSlice: extracts base image and corresponding coordinates
 
@@ -195,6 +206,11 @@ baseIm = [];
 % viewGet
 volSize = viewGet(view,'baseDims',baseNum);
 baseData = viewGet(view,'baseData',baseNum);
+
+% get the crop type
+% for regular images we want loose, for
+% flat maps, we want crop
+if baseType == 0,cropType = 'loose';else cropType = 'crop';end
 
 if ~isempty(volSize)
 
@@ -228,9 +244,9 @@ if ~isempty(volSize)
 
   % Rotate coordinates
   if (rotate ~= 0)
-    x = imrotate(x,rotate,'nearest','crop');
-    y = imrotate(y,rotate,'nearest','crop');
-    z = imrotate(z,rotate,'nearest','crop');
+    x = imrotate(x,rotate,'nearest',cropType);
+    y = imrotate(y,rotate,'nearest',cropType);
+    z = imrotate(z,rotate,'nearest',cropType);
   end
 
   % Reformat base coordinates
@@ -254,7 +270,7 @@ if ~isempty(baseData)
       baseIm = squeeze(baseData(:,:,sliceNum));
   end
   if (rotate ~= 0)
-    baseIm = imrotate(baseIm,rotate,'nearest','crop');
+    baseIm = imrotate(baseIm,rotate,'nearest',cropType);
   end
 end
 

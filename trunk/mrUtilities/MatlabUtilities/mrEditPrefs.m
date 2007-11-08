@@ -35,7 +35,7 @@ if find(strcmp(mrGetPref('roiPolygonMethod'),roiPolygonMethod))
 end
 
 % get defaultInterrogators
-systemInterrogators = {'timecoursePlot','makeFlat'};
+systemInterrogators = {'timecoursePlot','makeFlat','searchForVoxel'};
 defaultInterrogators = mrGetPref('defaultInterrogators');
 if isempty(defaultInterrogators)
 %  defaultInterrogators = 'mrDefaultInterrogator';

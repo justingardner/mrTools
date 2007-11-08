@@ -29,14 +29,20 @@ end
 hdr = shiftdim(d.ehdr(x,y,s,:,:), 3);
 hdrlen = d.hdrlen;
 
+% check if this is a glm analysis
+% then we scale the hrd 
 if isfield(d, 'hrf')
-    hdr = hdr*(d.hrf'-mean(d.hrf));
+%    hdr = hdr*(d.hrf'-mean(d.hrf));
+    hdr = hdr*d.hrf';
     hdrlen = size(d.hrf,1);
 end
 
+% return the time as well if asked for
 if nargout >= 2
   time = d.tr/2:d.tr:(hdrlen*d.tr);
 end
+
+% return the standard error
 if nargout >=3
   hdrste = shiftdim(d.ehdrste(x,y,s,:,:), 3);
   % not sure about this part
