@@ -79,6 +79,12 @@ else
   % if there is deconvolution data, display that too
   if exist('der','var')
     [deconvEhdr deconvTime deconvEhdrste] = gethdr(der,x,y,s);
+    % note that we need to subtract the mean of the glm ehdr
+    % to match the event related and the glm data. This is
+    % because the glm has the mean subtracted from the columns
+    % i.e. the glm gives an estimate of the response *before*
+    % mean subtraction
+    deconvEhdr = deconvEhdr-repmat(mean(ehdr,2),1,size(deconvEhdr,2));
     plotEhdr(deconvTime,deconvEhdr,deconvEhdrste,'');
     plotEhdr(time,ehdr,ehdrste,'-',0);
   else
