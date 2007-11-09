@@ -123,13 +123,13 @@ cla(gui.axis);
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Displaying image');,end
 if baseType <= 1
-  image(img,'Parent',gui.axis);
   % set the renderer to painters (this seems
   % to avoid some weird gliches in the OpenGL
   % renderer. It also appears about 20ms or so
   % faster for displaying images as opposed
   % to the 3D surfaces.
   set(fig,'Renderer','painters')
+  image(img,'Parent',gui.axis);
 else
   % get the base surface
   baseSurface = viewGet(view,'baseSurface');
