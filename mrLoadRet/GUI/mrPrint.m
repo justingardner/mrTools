@@ -16,11 +16,12 @@ end
 
 mrGlobals;
 
-% see if this a flat or not
-if isempty(viewGet(v,'baseCoordMap'))
-  flatAnat = 0;
-else
-  flatAnat = 1;
+% get base type
+baseType = viewGet(v,'baseType');
+
+if baseType > 1
+  mrWarnDlg('(mrPrint) Not yet implemented for surfaces');
+  return
 end
 
 % grab the image
@@ -34,7 +35,7 @@ paramsInfo{end+1} = {'title',sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,
 paramsInfo{end+1} = {'backgroundColor',{'white','black'},'Background color, either white or black'};
 paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'Location of colorbar, select None if you do not want a colorbar'};
 paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
-if flatAnat
+if baseType == 1
   paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
 end
 if ~isempty(roi)
@@ -42,8 +43,10 @@ if ~isempty(roi)
   paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
   paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
   paramsInfo{end+1} = {'roiLabels',1,'type=checkbox','Print ROI name at center coordinate of ROI'};
-  paramsInfo{end+1} = {'smoothROI',0,'type=checkbox','Smooth the ROI boundaries'};
-  paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=smoothROI'};
+  if baseType == 1
+    paramsInfo{end+1} = {'smoothROI',0,'type=checkbox','Smooth the ROI boundaries'};
+    paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=smoothROI'};
+  end
 end
 paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
 
@@ -69,11 +72,11 @@ set(f,'color',params.backgroundColor)
 % value to consider to be "black" in image
 blackValue = 0;
 
-if ~flatAnat,params.maskType = 'None';end
+if baseType~=1,params.maskType = 'None';end
 
 % get the mask
 if strcmp(params.maskType,'None')
-  mask = ones(size(img));
+  mask = zeros(size(img));
 elseif strcmp(params.maskType,'Remove black')
   mask(:,:,1) = (base.im<=blackValue);
   mask(:,:,2) = (base.im<=blackValue);
@@ -132,7 +135,7 @@ if params.upSampleFactor > 1
   end
 end
 
-if ~isempty(roi) && params.smoothROI
+if (baseType == 1) && ~isempty(roi) && params.smoothROI
   % get the roiImage and mask
   [roiImage roiMask] = getROIPerimeterRGB(v,roi,size(img),params);
   % now set img correctly
@@ -147,10 +150,12 @@ if ~isempty(roi) && params.smoothROI
 end
 
 % mask out the image
-if strcmp(params.backgroundColor,'white')
-  img = (1-mask).*img + mask;
-else
-  img = (1-mask).*img;
+if ~strcmp(params.maskType,'None')
+  if strcmp(params.backgroundColor,'white')
+    img = (1-mask).*img + mask;
+  else
+    img = (1-mask).*img;
+  end
 end
 img(img<0) = 0;img(img>1) = 1;
 
@@ -376,9 +381,15 @@ for r=1:length(roi)
   y = roi{r}.(baseName){sliceIndex}.y;
   s = roi{r}.(baseName){sliceIndex}.s;
  
-  % NOTE: Need to put check here for whether the roi coordinates
-  % are for this slice for non flat maps
-  
+  % check for regular images
+  baseType = viewGet(v,'baseType');
+  if baseType == 0
+    %FIX FIX, must select correct voxels for 2D inplanes
+    %    voxelsOnThisSlice = find(s==viewGet(v,'curSlice'));
+%    x = x(voxelsOnThisSlice);
+%    y = y(voxelsOnThisSlice);
+  end
+    
   % upSample the coords
   x = x.*params.upSampleFactor;
   y = y.*params.upSampleFactor;
