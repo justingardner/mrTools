@@ -45,7 +45,7 @@ if ~isempty(roi)
   paramsInfo{end+1} = {'smoothROI',0,'type=checkbox','Smooth the ROI boundaries'};
   paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=smoothROI'};
 end
-paramsInfo{end+1} = {'upSampleFactor',1,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 2]','How much to upsample image by'};
+paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
 
 params = mrParamsDialog(paramsInfo,'Print figure options');;
 if isempty(params),return,end
@@ -109,16 +109,18 @@ else
   foregroundColor = [1 1 1];
 end
 
+% convert upSampleFactor into power of 2
+params.upSampleFactor = 2^params.upSampleFactor;
 % up sample if called for
 if params.upSampleFactor > 1
-  upSampImage(:,:,1) = mrUpSample(img(:,:,1),params.upSampleFactor);
-  upSampImage(:,:,2) = mrUpSample(img(:,:,2),params.upSampleFactor);
-  upSampImage(:,:,3) = mrUpSample(img(:,:,3),params.upSampleFactor);
-  upSampMask(:,:,1) = params.upSampleFactor*upBlur(double(mask(:,:,1)),params.upSampleFactor/2);
-  upSampMask(:,:,2) = params.upSampleFactor*upBlur(double(mask(:,:,2)),params.upSampleFactor/2);
-  upSampMask(:,:,3) = params.upSampleFactor*upBlur(double(mask(:,:,3)),params.upSampleFactor/2);
+  upSampImage(:,:,1) = upSample(img(:,:,1),log2(params.upSampleFactor));
+  upSampImage(:,:,2) = upSample(img(:,:,2),log2(params.upSampleFactor));
+  upSampImage(:,:,3) = upSample(img(:,:,3),log2(params.upSampleFactor));
+  upSampMask(:,:,1) = upBlur(double(mask(:,:,1)),log2(params.upSampleFactor));
+  upSampMask(:,:,2) = upBlur(double(mask(:,:,2)),log2(params.upSampleFactor));
+  upSampMask(:,:,3) = upBlur(double(mask(:,:,3)),log2(params.upSampleFactor));
   img = upSampImage;
-  mask = upSampMask;
+  mask = upSampMask/max(upSampMask(:));;
   % make sure we clip to 0 and 1
   mask(mask<0) = 0;mask(mask>1) = 1;
   img(img<0) = 0;img(img>1) = 1;
@@ -130,7 +132,7 @@ if params.upSampleFactor > 1
   end
 end
 
-if params.smoothROI
+if ~isempty(roi) && params.smoothROI
   % get the roiImage and mask
   [roiImage roiMask] = getROIPerimeterRGB(v,roi,size(img),params);
   % now set img correctly
@@ -407,9 +409,11 @@ for r=1:length(roi)
   roiBits = zeros(upSampImSize);
   roiBits(sub2ind(upSampImSize,hiResY,hiResX)) = 1;
             
-  % blur it some 
-  roiBits = round(blur(roiBits,2));
-
+  % blur it some, but only need to do this
+  % if we haven't already upsampled
+  if params.upSampleFactor <= 2
+    roiBits = round(blur(roiBits,2));
+  end
   
   if (params.filledPerimeter)
     % Do the ROI plotting using the image processing

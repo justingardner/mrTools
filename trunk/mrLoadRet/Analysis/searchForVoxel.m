@@ -11,7 +11,7 @@ function retval = searchForVoxel(v,overlayNum,scan,x,y,s,roi,varargin)
 % get the view number
 viewNum = viewGet(v,'viewNum');
 
-% ask voxel number
+% get parameters
 paramsInfo = {};
 scanDims = viewGet(v,'scanDims');
 baseName = viewGet(v,'baseName');
@@ -25,11 +25,11 @@ paramsInfo{end+1} = {'s',s,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',sca
 paramsInfo{end+1} = {'color',color2RGB,'Choose color to display voxel in'};
 params = mrParamsDialog(paramsInfo,'Look for voxel');
 if isempty(params)
-  % refresh and retrun
+  % if user hit cancel, then refresh
+  % display to remove any marked voxel and return
   refreshMLRDisplay(viewNum);
   return
 end
-
 
 % switch to the chosen base
 if ~strcmp(baseName,params.baseName)
@@ -73,7 +73,8 @@ match = (overlayCoords(:,:,1) == params.x) & (overlayCoords(:,:,2) == params.y) 
 
 % no match, give up
 if isempty(find(match))
-  disp(sprintf('(searchForVoxel) No matching voxel'));
+  mrWarnDlg(sprintf('(searchForVoxel) No matching voxel'));
+  hold off
   return
 end
 
@@ -83,3 +84,4 @@ for i = 1:length(x)
   plot(x,y,'.','Color',color2RGB(params.color));
 end
 
+hold off

@@ -35,9 +35,18 @@ params.startCoord = xformROIcoords([x;y;s;1], inv(baseSform)*scanXform, baseVoxe
 % parse the parameters
 paramsInfo = {};
 if ~isempty(baseCoordMap)
+  % guess which hemisphere
+  if regexp(baseCoordMap.flatFileName, 'left') 
+    whichHemi = 'left';
+  elseif regexp(baseCoordMap.flatFileName, 'right') 
+    whichHemi = 'right';
+  else
+    disp('(makeFlat) Cannot guess hemisphere.  The user must choose')
+    whichHemi = {'left', 'right'};
+  end
   % we can get all of the file names from the baseCoordMap
   paramsInfo{end+1} = {'flatDir',baseCoordMap.flatDir,'editable=0','Directory from which this flat map was originally created'};
-  paramsInfo{end+1} = {'whichHemi', baseCoordMap.whichHemi, 'editable=0'};
+  paramsInfo{end+1} = {'whichHemi', whichHemi, 'editable=0'};
   paramsInfo{end+1} = {'flatFileName',baseCoordMap.flatFileName,'editable=0','Name of original off file from which this flat map was created'};
   paramsInfo{end+1} = {'innerFileName',baseCoordMap.innerFileName,'editable=0','Name of inner mesh (aka gray matter mesh) from which this flat map was created'};
   paramsInfo{end+1} = {'outerFileName',baseCoordMap.outerFileName,'editable=0','Name of outer mesh (aka white matter mesh) from which this flat map was created'};
