@@ -36,15 +36,20 @@
 function result = upConv(im,filt,edges,step,start,stop,res)
 
 %% THIS CODE IS NOT ACTUALLY USED! (MEX FILE IS CALLED INSTEAD)
-
-fprintf(1,'Warning: You should compile the MEX code for "upConv", found in the MEX subdirectory.  It is much faster.\n');
-
+global upConvWarning
+if ieNotDefined('upConvWarning')
+  fprintf(1,'===================================================================\n');
+  fprintf(1,'(upConv) Warning: You should compile the MEX code for "upConv", found in the MEX subdirectory.  It is much faster.\n');
+  fprintf(1,'===================================================================\n');
+end
 %------------------------------------------------------------
 %% OPTIONAL ARGS:
 
 if (exist('edges') == 1) 
   if (strcmp(edges,'reflect1') ~= 1)
-    warning('Using REFLECT1 edge-handling (use MEX code for other options).');
+    if ieNotDefined('upConvWarning')
+      fprintf(1,'(upConv) Using REFLECT1 edge-handling (use MEX code for other options).\n');
+    end
   end
 end
 
@@ -62,7 +67,7 @@ end
 
 % A multiple of step
 if (exist('stop') ~= 1)
-  stop = step .* (floor((start-ones(size(start)))./step)+size(im))
+  stop = step .* (floor((start-ones(size(start)))./step)+size(im));
 end	
 
 if ( ceil((stop(1)+1-start(1)) / step(1)) ~= size(im,1) )
@@ -71,6 +76,9 @@ end
 if ( ceil((stop(2)+1-start(2)) / step(2)) ~= size(im,2) )
   error('Bad X result dimension');
 end
+
+% all warn about all this stuff once!
+upConvWarning=1;
 
 %------------------------------------------------------------
 
