@@ -19,7 +19,7 @@ end
 
 % Delete it
 MLR.views{viewNum} = [];
-
+MLR.caches{viewNum} = [];
 % check to see if there are any valid views, if not, clear MLR
 for i = 1:length(MLR.views)
   if ~isempty(MLR.views{i}),return,end
