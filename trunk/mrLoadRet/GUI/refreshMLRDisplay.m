@@ -244,9 +244,9 @@ if ~isempty(volSize)
 
   % Rotate coordinates
   if (rotate ~= 0)
-    x = imrotate(x,rotate,'nearest',cropType);
-    y = imrotate(y,rotate,'nearest',cropType);
-    z = imrotate(z,rotate,'nearest',cropType);
+    x = imrotate(x,rotate,'bilinear',cropType);
+    y = imrotate(y,rotate,'bilinear',cropType);
+    z = imrotate(z,rotate,'bilinear',cropType);
   end
 
   % Reformat base coordinates
@@ -270,7 +270,7 @@ if ~isempty(baseData)
       baseIm = squeeze(baseData(:,:,sliceNum));
   end
   if (rotate ~= 0)
-    baseIm = imrotate(baseIm,rotate,'nearest',cropType);
+    baseIm = imrotate(baseIm,rotate,'bilinear',cropType);
   end
 end
 
