@@ -126,12 +126,12 @@ if ~ieNotDefined('isfile') & ~ieNotDefined('hdr')
     
     % prompt user for output name
     if ieNotDefined('outName')
-        pathStr = putPathStrDialog(pwd,'Specify name of upsampled Nifti file',['*' niftiFileExtension]);
+        outName = putPathStrDialog(pwd,'Specify name of upsampled Nifti file',['*' niftiFileExtension]);
     end
     
     % write the file
-    fprintf('Saving %s...\n', pathStr);
-    [byteswritten,hdr] = cbiWriteNifti(pathStr, data, hdr);
+    fprintf('Saving %s...\n', outName);
+    [byteswritten,hdr] = cbiWriteNifti(outName, data, hdr);
         
 else
     % if input was not a file, return the upsampled data
