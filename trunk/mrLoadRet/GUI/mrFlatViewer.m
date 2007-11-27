@@ -974,7 +974,7 @@ global gFlatViewer;
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatomy));
-[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(params.anatomy);
+[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(params.flatPath, params.anatomy));
 % switch to 3D anatomy view
 global gParams
 gFlatViewer.whichSurface = 3;
