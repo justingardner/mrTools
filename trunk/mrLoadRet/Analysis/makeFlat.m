@@ -7,8 +7,8 @@
 %    purpose: 
 %
 function retval = makeFlat(view, overlayNum, scan, x, y, s, roi) 
-  
-  
+
+
 % check arguments
 if ~any(nargin == [4 5 6 7])
   help mrFlatFromCoord
@@ -35,35 +35,37 @@ params.startCoord = xformROIcoords([x;y;s;1], inv(baseSform)*scanXform, baseVoxe
 % parse the parameters
 paramsInfo = {};
 if ~isempty(baseCoordMap)
-  % guess which hemisphere
-  if regexp(baseCoordMap.flatFileName, 'left') 
-    whichHemi = 'left';
-  elseif regexp(baseCoordMap.flatFileName, 'right') 
-    whichHemi = 'right';
-  else
-    disp('(makeFlat) Cannot guess hemisphere.  The user must choose')
-    whichHemi = {'left', 'right'};
+  if ~isfield(baseCoordMap, 'innerFileName')
+    startPathStr = baseCoordMap.flatDir;
+    filterspec = {'*.off','SurfRelax off file';'*WM*.off', 'SurfRelax OFF WM file'; '*.*','All files'};
+    title = 'Choose WM OFF file';    
+    innerFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
+    [params.flatDir baseCoordMap.innerFileName] = fileparts(innerFileName{1});
+    % Aborted
+    if isempty(innerFileName)
+      disp(sprintf('(makeFlat) loading inner (WM) file aborted'));
+      return
+    end
   end
   % we can get all of the file names from the baseCoordMap
-  paramsInfo{end+1} = {'flatDir',baseCoordMap.flatDir,'editable=0','Directory from which this flat map was originally created'};
-  paramsInfo{end+1} = {'whichHemi', whichHemi, 'editable=0'};
-  paramsInfo{end+1} = {'flatFileName',baseCoordMap.flatFileName,'editable=0','Name of original off file from which this flat map was created'};
-  paramsInfo{end+1} = {'innerFileName',baseCoordMap.innerFileName,'editable=0','Name of inner mesh (aka gray matter mesh) from which this flat map was created'};
-  paramsInfo{end+1} = {'outerFileName',baseCoordMap.outerFileName,'editable=0','Name of outer mesh (aka white matter mesh) from which this flat map was created'};
-  paramsInfo{end+1} = {'curvFileName',baseCoordMap.curvFileName,'editable=0','Name of curvature file from which this flat map was created'};
-  paramsInfo{end+1} = {'anatFileName',baseCoordMap.anatFileName,'editable=0','Name of anatomy file from which the xform for this flat map was taken'};
+  paramsInfo{end+1} = {'flatDir', baseCoordMap.flatDir,'editable=0','Directory from which this flat map was originally created'};
+  paramsInfo{end+1} = {'flatFileName', baseCoordMap.flatFileName,'editable=0','Name of original off file from which this flat map was created'};
+  paramsInfo{end+1} = {'innerFileName', baseCoordMap.innerFileName,'editable=0','Name of inner mesh (aka gray matter mesh) from which this flat map was created'};
+  paramsInfo{end+1} = {'outerFileName', baseCoordMap.outerFileName,'editable=0','Name of outer mesh (aka white matter mesh) from which this flat map was created'};
+  paramsInfo{end+1} = {'curvFileName', baseCoordMap.curvFileName,'editable=0','Name of curvature file from which this flat map was created'};
+  paramsInfo{end+1} = {'anatFileName', baseCoordMap.anatFileName,'editable=0','Name of anatomy file from which the xform for this flat map was taken'};
   paramsInfo{end+1} = {'calcCurvFlag', 0, 'editable=0'};
 
 else
   % we will have to build a list of file names...
   % Open dialog box to have user choose the file
   startPathStr = mrGetPref('volumeDirectory');
-  filterspec = {'*.off','SurfRelax off file';'*lat.off','SurfRelax off flat file';'*.*','All files'};
+  filterspec = {'*.off','SurfRelax OFF file';'*WM*.off','SurfRelax off gray matter file'; '*.*','All files'};
   title = 'Choose flat OFF file';
   innerFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
   % Aborted
   if isempty(innerFileName)
-    disp(sprintf('(makeFlat) loading innter file aborted'));
+    disp(sprintf('(makeFlat) loading inner (WM) file aborted'));
     return
   end
   % make into a cell array
@@ -71,7 +73,7 @@ else
 
   % only take one inner file for now
   if iscell(innerFileName)
-    innerFileName =   innerFileName{1};
+    innerFileName = innerFileName{1};
   end
 
   % guess which hemisphere
@@ -107,29 +109,29 @@ else
     end
   end
 
-% guess the anatomy file
-% there may be many suitable anatomy files; list them all
-params.anatFileName = {};
-for i=2:length(dirContents)
-  if (regexp(dirContents(i).name, '.hdr'))
-    params.anatFileName{end+1} = dirContents(i).name;
+  % guess the anatomy file
+  % there may be many suitable anatomy files; list them all
+  params.anatFileName = {};
+  for i=2:length(dirContents)
+    if (regexp(dirContents(i).name, '.hdr'))
+      params.anatFileName{end+1} = dirContents(i).name;
+    end
   end
-end
 
-% parse the parameters
-paramsInfo = {};
-paramsInfo{end+1} = {'flatDir', params.flatDir, 'editable=0', 'directory path for the inner .off surface file'};
-paramsInfo{end+1} = {'whichHemi', params.whichHemi, 'editable=0', 'the hemisphere that the patch comes from -- not really important'};
-paramsInfo{end+1} = {'innerFileName', strcat(params.innerFileName, '.off'), 'name of the surface at the white/gray boundary (i.e., the inner surface'};
-paramsInfo{end+1} = {'outerFileName', params.outerFileName, 'name of the surface at the gray/pial boundary (i.e., the outer surface)'};
-if params.calcCurvFlag == 1;
-  paramsInfo{end+1} = {'curvFileName', 'will calculate curvature on the fly', 'editable=0', 'name of the curvatue file'};
-  paramsInfo{end+1} = {'calcCurvFlag', 1, 'type=checkbox', 'whether or not to recalculate the curvature on the file -- requires surffilt'};
-else
-  paramsInfo{end+1} = {'curvFileName', params.curvFileName, 'name of the curvature file'};
-  paramsInfo{end+1} = {'calcCurvFlag', 0, 'type=checkbox', 'whether or not to recaculate the curvature on the fly -- requires surffilt'};
-end
-paramsInfo{end+1} = {'anatFileName', params.anatFileName, 'base anatomy file, must be a valid nifti file in register with the session'};
+  % parse the parameters
+  paramsInfo = {};
+  paramsInfo{end+1} = {'flatDir', params.flatDir, 'editable=0', 'directory path for the inner .off surface file'};
+  paramsInfo{end+1} = {'whichHemi', params.whichHemi, 'editable=0', 'the hemisphere that the patch comes from -- not really important'};
+  paramsInfo{end+1} = {'innerFileName', params.innerFileName, 'name of the surface at the white/gray boundary (i.e., the inner surface)'};
+  paramsInfo{end+1} = {'outerFileName', params.outerFileName, 'name of the surface at the gray/pial boundary (i.e., the outer surface)'};
+  if params.calcCurvFlag == 1;
+    paramsInfo{end+1} = {'curvFileName', 'will calculate curvature on the fly', 'editable=0', 'name of the curvatue file'};
+    paramsInfo{end+1} = {'calcCurvFlag', 1, 'type=checkbox', 'whether or not to recalculate the curvature on the file -- requires surffilt'};
+  else
+    paramsInfo{end+1} = {'curvFileName', params.curvFileName, 'name of the curvature file'};
+    paramsInfo{end+1} = {'calcCurvFlag', 0, 'type=checkbox', 'whether or not to recaculate the curvature on the fly -- requires surffilt'};
+  end
+  paramsInfo{end+1} = {'anatFileName', params.anatFileName, 'base anatomy file, must be a valid nifti file in register with the session'};
 end
 
 
@@ -137,6 +139,8 @@ paramsInfo{end+1} = {'startCoord', params.startCoord(1:3)', 'start flattening fr
 paramsInfo{end+1} = {'patchRadius', 50, 'round=1', 'incdec=[-5 5]', 'flat patch radius'};
 paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
 paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
+paramsInfo{end+1} = {'flattenMethod', {'surfRelax', 'mrFlatMesh'},'use either surfRelax or mrFlatMesh'};
+
 params = mrParamsDialog(paramsInfo, 'makeFlat', []);
 
 if isempty(params)
@@ -155,7 +159,6 @@ end
 % load the surfaces
 [surf, params] = loadSurfHandler(params);
 
-
 % find the vertex closests to the starting point
 % need to swap X and Y
 params.startCoord = [params.startCoord(2) params.startCoord(1) params.startCoord(3)];
@@ -173,11 +176,18 @@ params.flatFileName = sprintf('%s_Flat_%i_%i_%i_Rad%i.off', ...
                               params.startCoord(1), params.startCoord(2), params.startCoord(3), ...
                               params.patchRadius);
 
-% cut and flatten the surface
-myCutAndFlatten(params)
+if params.flattenMethod == 'surfRelax'
+  disp(sprintf('Flattening using SurfRelax'))
+  myCutAndFlatten(params);
+elseif params.flattenMethod == 'mrFlatMesh'
+  disp(sprintf('Flattening using the mrVista mrFlatMesh'))
+  [surf, params] = runMrFlatMesh(surf, params)
+  writeOFF(surf, params);
+end
 
+% make it into a MLR4 base anatomy
 if isfile(fullfile(params.flatDir, params.flatFileName))
-  % make it into a MLR4 base anatomy
+
   base = loadFlatOFF(params);
 
   % install it
@@ -189,10 +199,14 @@ if isfile(fullfile(params.flatDir, params.flatFileName))
   end
 end
 
-% remove the 3d patch b/c it isn't need for anything
-system(sprintf('rm -rf %s', fullfile(params.flatDir, params.patchFileName)));
+% remove the 3d patch, b/c it isn't need for anything
+if isfile(fullfile(params.flatDir, params.patchFileName))
+  system(sprintf('rm -rf %s', fullfile(params.flatDir, params.patchFileName)));
+end
 
 return;
+
+
 
 function myCutAndFlatten(params)
 
@@ -257,8 +271,8 @@ surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
 surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
 
 % % read in the curvature file
-% [surf.curv, hdr] = tfiReadVFF(fullfile(params.flatDir, params.curvFileName));
-% surf.curv = surf.curv';           % needs to be transposed;
+[surf.curv, hdr] = tfiReadVFF(fullfile(params.flatDir, params.curvFileName));
+surf.curv = surf.curv';           % needs to be transposed;
 
 % read in the anatomy file
 [surf.anat.data  surf.anat.hdr] = cbiReadNifti(fullfile(params.flatDir, params.anatFileName));
@@ -271,3 +285,73 @@ surf.anat.permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 
 return
 
+
+function[surf, params] = runMrFlatMesh(surf, params)
+
+mesh.vertices       = surf.inner.vtcs;
+mesh.faceIndexList  = surf.inner.tris;
+mesh.rgba           = surf.curv;
+
+figure(999)
+Hp = patch('vertices', mesh.vertices, 'faces', mesh.faceIndexList);
+mesh.normal = get(Hp,'vertexnormals');
+close(999);
+
+surf.flat = myUnfoldMeshFromGUI(mesh, params.startCoord, params.patchRadius);
+
+
+return;
+
+
+
+% writeOFF.m
+%
+%      usage: writeOFF()
+%         by: eli merriam
+%       date: 10/25/07
+%    purpose: 
+%
+function retval = writeOFF(surf, params)
+
+% check arguments
+if ~any(nargin == [ 0 1 2])
+  help writeOFF
+  return
+end
+
+% Vertices
+vertices = [surf.flat.locs2d(:,2) surf.flat.locs2d(:,1)] - 2;
+vertices = cat(1, vertices', zeros(1, length(vertices)));
+
+% triangles(1) is number of vert/triangle: 3
+% triangles(2:4) are the vertices of the triangles
+% triangles(5) is color: 0
+triangles =  surf.flat.uniqueFaceIndexList'-1;
+triangles = cat(1, ones(1,length(triangles))*3, triangles, zeros(1,length(triangles),1));
+
+patch2parent = surf.flat.vertsToUnique(surf.flat.insideNodes);
+
+% write the OFF format file 
+fid = fopen(fullfile(params.flatDir, params.flatFileName), 'w', 'ieee-be');
+fprintf(fid, '#PATCH\n');
+fprintf(fid, '#parent_surface=%s\n', fullfile(params.flatDir, params.innerFileName));
+fprintf(fid, '#parent_dimensions=%i %i %i\n', surf.inner.Nvtcs,  surf.inner.Ntris, 1);
+fprintf(fid, '#patch_dimensions=%i %i %i\n', length(vertices), length(triangles), 1 );
+fprintf(fid, '#parent_vertex_indexes:\n');
+for i=1:length(surf.flat.uniqueVertices)
+  fprintf(fid, '#%i %i\n', i-1, patch2parent(i)-1);
+end
+
+fprintf(fid, 'OFF BINARY\n');
+fwrite(fid, [size(vertices,2) size(triangles,2) 0], 'int32'); 
+
+% Vertices
+fwrite(fid, vertices, 'float32');
+
+% Faces
+fwrite(fid, triangles, 'int32');
+
+% Close file
+fclose(fid);
+
+return;
