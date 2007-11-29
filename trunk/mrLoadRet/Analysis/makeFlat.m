@@ -271,7 +271,7 @@ surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
 surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
 
 % % read in the curvature file
-[surf.curv, hdr] = tfiReadVFF(fullfile(params.flatDir, params.curvFileName));
+[surf.curv, hdr] = loadVFF(fullfile(params.flatDir, params.curvFileName));
 surf.curv = surf.curv';           % needs to be transposed;
 
 % read in the anatomy file
