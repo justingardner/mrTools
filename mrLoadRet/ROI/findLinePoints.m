@@ -10,7 +10,8 @@ function [x, y] = findLinePoints(p1,p2);
 %            (Was returning column vectors instead of row.)
 %
 % 2007.12.1  EPM added to MLR4
-%
+% $Id$	
+
 
 x1 = p1(1); y1 = p1(2);
 x2 = p2(1); y2 = p2(2);
