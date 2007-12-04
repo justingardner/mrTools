@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 29-Oct-2007 10:05:26
+% Last Modified by GUIDE v2.5 01-Dec-2007 13:42:15
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1878,6 +1878,16 @@ view = drawROI(view,'polygon',1);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function createLineMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+[view userCancel] = newROI(view);
+if userCancel,return,end
+view = drawROI(view,'line',1);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
 function deleteRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1946,6 +1956,14 @@ view = drawROI(view,'polygon',1);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function addLineMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'line',1);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
 function removeRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1962,6 +1980,14 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = drawROI(view,'polygon',0);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function removeLineMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'line',0);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -2335,5 +2361,19 @@ end
 mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName,viewNum);
 cd(thispwd);
 
+% --------------------------------------------------------------------
+function calcDistMenu_Callback(hObject, eventdata, handles)
 
 
+% --------------------------------------------------------------------
+function calcDistMenuItemSeg_Callback(hObject, eventdata, handles)
+% hObject    handle to flatViewerMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% [view userCancel] = newROI(view);
+% if userCancel,return,end
+view = calcDist(v, 'segments'); % ,'polygon',1);
+refreshMLRDisplay(viewNum);

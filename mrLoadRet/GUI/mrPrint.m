@@ -42,9 +42,10 @@ if ~isempty(roi)
   paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
   paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
   paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
-  paramsInfo{end+1} = {'roiLabels',1,'type=checkbox','Print ROI name at center coordinate of ROI'};
+  paramsInfo{end+1} = {'roiLabels',0,'type=checkbox','Print ROI name at center coordinate of ROI'};
   if baseType == 1
-    paramsInfo{end+1} = {'smoothROI',0,'type=checkbox','Smooth the ROI boundaries'};
+    paramsInfo{end+1} = {'smoothROI',1,'type=checkbox','Smooth the ROI boundaries'};
+    paramsInfo{end+1} = {'whichROIisMask',0,'incdec=[-1 1]', 'minmax=[0 inf]', 'Which ROI to use as a mask. 0 does no masking'};
     paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=smoothROI'};
   end
 end
@@ -137,7 +138,7 @@ end
 
 if (baseType == 1) && ~isempty(roi) && params.smoothROI
   % get the roiImage and mask
-  [roiImage roiMask] = getROIPerimeterRGB(v,roi,size(img),params);
+  [roiImage roiMask dataMask] = getROIPerimeterRGB(v,roi,size(img),params);
   % now set img correctly
   [roiY roiX] = find(roiMask);
   for i = 1:length(roiX)
@@ -147,6 +148,17 @@ if (baseType == 1) && ~isempty(roi) && params.smoothROI
       end
     end
   end
+end
+
+% ROI-based masking
+if params.whichROIisMask
+  dataMask = permute(dataMask, [2 1]);
+  dataMask = 1-repmat(dataMask, [1 1 3]);
+  
+  img = (1-dataMask) .* img; 
+  baseMask = base.RGB;
+  baseMask = dataMask .* baseMask;
+  img = img + baseMask;
 end
 
 % mask out the image
@@ -419,50 +431,55 @@ for r=1:length(roi)
   % Draw the whole ROI into an image
   roiBits = zeros(upSampImSize);
   roiBits(sub2ind(upSampImSize,hiResY,hiResX)) = 1;
-            
+
   % blur it some, but only need to do this
   % if we haven't already upsampled
   if params.upSampleFactor <= 2
     roiBits = round(blur(roiBits,2));
   end
   
-  if (params.filledPerimeter)
-    % Do the ROI plotting using the image processing
-    % toolbox's morphological ops
-                    
-    % Dilate, erode, fill
-    se=strel('disk',32);
-    tmat=imdilate(logical(roiBits),se);
-    se=strel('disk',32);
-    tmat=imerode(logical(tmat),se);
-    tmat=imfill(tmat,'holes');
-    tmat=tmat-min(tmat(:));
-    roiBits=bwperim(tmat);
-    se=strel('square',params.roiLineWidth*2);
-                    
-    roiBits=double(imdilate(logical(roiBits),se));
-                    
-                    
+  % is it a mask roi?
+  if r==params.whichROIisMask
+    dataMask = roiBits;
   else
-    % grow the region and subtract
-    % create a circular filter of ones
-    e = exp(-([-params.roiLineWidth:params.roiLineWidth]./params.roiLineWidth).^2);
-    filt = (e'*e)>.367;
-    roiBits = (conv2(roiBits,double(filt),'same')>0.1)-roiBits;
-  end
-                
-  % get color
-  if strcmp(params.roiColor,'default')
-    color = roi{r}.color;
-  else
-    color = color2RGB(params.roiColor);
-  end
+    if (params.filledPerimeter)
+      % Do the ROI plotting using the image processing
+      % toolbox's morphological ops
+      
+      % Dilate, erode, fill
+      se=strel('disk',32);
+      tmat=imdilate(logical(roiBits),se);
+      se=strel('disk',32);
+      tmat=imerode(logical(tmat),se);
+      tmat=imfill(tmat,'holes');
+      tmat=tmat-min(tmat(:));
+      roiBits=bwperim(tmat);
+      se=strel('square',params.roiLineWidth*2);
+      
+      roiBits=double(imdilate(logical(roiBits),se));
+      
+    else
+      % grow the region and subtract
+      % create a circular filter of ones
+      e = exp(-([-params.roiLineWidth:params.roiLineWidth]./params.roiLineWidth).^2);
+      filt = (e'*e)>.367;
+      roiBits = (conv2(roiBits,double(filt),'same')>0.1)-roiBits;
+    end
     
-  % convert to rgb
-  roiRGB(:,:,1) = roiRGB(:,:,1) + roiBits.*color(1);
-  roiRGB(:,:,2) = roiRGB(:,:,2) + roiBits.*color(2);
-  roiRGB(:,:,3) = roiRGB(:,:,3) + roiBits.*color(3);
-  roiMask = roiMask | roiBits;
-  disppercent(r/length(roi));
-end 
+    % get color
+    if strcmp(params.roiColor,'default')
+      color = roi{r}.color;
+    else
+      color = color2RGB(params.roiColor);
+    end
+    
+    % convert to rgb
+    roiRGB(:,:,1) = roiRGB(:,:,1) + roiBits.*color(1);
+    roiRGB(:,:,2) = roiRGB(:,:,2) + roiBits.*color(2);
+    roiRGB(:,:,3) = roiRGB(:,:,3) + roiBits.*color(3);
+    roiMask = roiMask | roiBits;
+    disppercent(r/length(roi));
+  end 
+end    
 disppercent(inf);
+
