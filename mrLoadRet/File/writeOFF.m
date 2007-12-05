@@ -14,7 +14,10 @@ function retval = writeOFF(surf, outName)
 surf.tris = surf.tris - 1;
 
 surf.tris = cat(1, repmat(3,1,length(surf.tris)), surf.tris', repmat(0,1,length(surf.tris)));
+
+surf.vtcs = [surf.vtcs(:,2) surf.vtcs(:,1) surf.vtcs(:,3)];
 surf.vtcs = surf.vtcs' - 2;
+
 
 fid = fopen(outName, 'w', 'ieee-be');
 
