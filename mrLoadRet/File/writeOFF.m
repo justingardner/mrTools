@@ -11,8 +11,8 @@ function retval = writeOFF(surf, outName)
 % write the OFF format file
 
 % undo what loadSurfOFF did in loading surface into matlab
-surf.tris = cat(1, repmat(3,1,length(surf.tris)), surf.tris, repmat(0,1,length(surf.tris)));
-surf.vtcs = surf.vtcs - 2;
+surf.tris = cat(1, repmat(3,1,length(surf.tris)), surf.tris', repmat(0,1,length(surf.tris)));
+surf.vtcs = surf.vtcs' - 2;
 
 fid = fopen(outName, 'w', 'ieee-be');
 
