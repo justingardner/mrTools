@@ -1,4 +1,4 @@
-function view = averageTSeries(view,params)
+function [view params] = averageTSeries(view,params,varargin)
 %
 % function averageTSeries(view,[params])
 %
@@ -55,9 +55,32 @@ function view = averageTSeries(view,params)
 %
 % view = averageTSeries(view);
 %
+% To just get parameters
+% [view params] = averageTSeries(view,[],'justGetParams=1','defaultParams=1','scanList=[1 8]');
 %
 % djh, 7/2006
 % $Id$	
+
+% check arguments
+if ~any(nargin == [1 2 3 4 5])
+  help averageTSeries
+  return
+end
+
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+
+% if we are just getting default parameters then
+% get them by calling the reconcile function
+if defaultParams
+  if ieNotDefined('scanList')
+    params = averageTSeriesReconcileParams(viewGet(view,'groupName'),[]);
+  else
+    params = averageTSeriesReconcileParams(viewGet(view,'groupName'),[],'scanList',scanList);
+  end
+end
 
 % Get analysis parameters from averageTSeriesGUI.
 nScans = viewGet(view,'nScans');
@@ -75,6 +98,9 @@ if ieNotDefined('params')
   mrMsgBox('averageTSeries cancelled');
   return
 end
+
+% if just getting params then return
+if justGetParams,return,end
 
 % Retrieve parameters
 scanList = params.scanList;
