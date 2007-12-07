@@ -163,6 +163,9 @@ for scanNum = 1:length(params.scanNum)
       % this is the old style, get the stimtrace number
       taskVarParams{end+1} = {'stimtrace',stimfile{1}.myscreen.stimtrace,'the trace number that contains the stimulus','incdec=[-1 1]',sprintf('minmax=[%i %i]',stimfile{1}.myscreen.stimtrace,size(stimfile{1}.myscreen.traces,1))};
     else
+      if exist('getTaskVarnames') ~= 2
+	mrErrorDlg('(eventRelatedGUI) MGL function getTaskVarnames is not in path. You must have mgl in the path to extract stimulus timing information from an mgl stim file');
+      end
       % this is the new tyle, ask for a variable name
       [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
       % if there is more than one task, then ask the user for that
