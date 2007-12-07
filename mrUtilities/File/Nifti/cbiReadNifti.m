@@ -182,7 +182,7 @@ else
       [d,count]=fread(fPtr,readSize,readformat);
       if (count~=readSize) 
 	fclose(fPtr);
-	error(['Error reading file ' hdr.img_name]);
+	error(sprintf('(cbiReadNifti) Expected to read %i values from %s, but only read %i',readSize,hdr.img_name,count));
       end
       d=reshape(d,headerdim(1:3)');
       xsub=subset{1}(1):subset{1}(2);
