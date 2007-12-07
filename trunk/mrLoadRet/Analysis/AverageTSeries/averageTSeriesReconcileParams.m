@@ -1,4 +1,4 @@
-function newparams = averageTSeriesReconcileParams(groupName,params)
+function newparams = averageTSeriesReconcileParams(groupName,params,varargin)
 % params = averageTSeriesReconcileParams(groupName,[params])
 %
 % Checks for consistency between averageTSeries parameters and current
@@ -13,6 +13,9 @@ function newparams = averageTSeriesReconcileParams(groupName,params)
 groupNum = viewGet([],'groupNum',groupName);
 nScans = viewGet([],'nscans',groupNum);
 
+% evaluate other arguments
+eval(evalargs(varargin));
+
 % Get tseries filenames for this group
 tseriesfiles = cell(1,nScans);
 for scan = 1:nScans
@@ -21,11 +24,16 @@ end
 
 if ieNotDefined('params')
     % Use default params
-    scanList = [1:nScans];
+    if ieNotDefined('scanList')
+      scanList = [1:nScans];
+    end
     newparams.scanList = scanList;
     newparams.shiftList = zeros(size(scanList));
     newparams.reverseList = zeros(size(scanList));
-    newparams.tseriesfiles = tseriesfiles;
+    newparams.tseriesfiles = {};
+    for i = 1:length(scanList)
+      newparams.tseriesfiles{end+1} = tseriesfiles{scanList(i)};
+    end
     newparams.baseScan = 1;
     newparams.groupName = groupName;
     newparams.aveGroupName = 'Averages';
