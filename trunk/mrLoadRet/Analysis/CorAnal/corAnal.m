@@ -1,4 +1,4 @@
-function view = corAnal(view,params)
+function [view params] = corAnal(view,params,varargin)
 %
 % view = corAnal(view,[params])
 % 
@@ -37,14 +37,27 @@ function view = corAnal(view,params)
 %
 % view = corAnal(view);
 %
+% To just get parameters
+% [view params] = corAnal(view,[],'justGetParams=1','defaultParams=1');
 %
 % djh, 5/2005, updated to mrLoadRet-4.0
 % $Id$	
+
+% check arguments
+if ~any(nargin == [1 2 3 4 5])
+  help corAnal
+  return
+end
 
 if ~isview(view)
     help corAnal
     mrErrorDlg('(corAnal) Invalid view.')
 end
+
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 % If corAnal is loaded, then use it. Otherwise, viewGet returns [];
 corAnal = viewGet(view,'corAnal');
@@ -55,6 +68,12 @@ if ~isempty(corAnal)
     oldparams = corAnal.params;
 else
     oldparams = [];
+end
+
+% if we are just getting default parameters then
+% get them by calling the reconcile function
+if defaultParams
+  params = corAnalReconcileParams(viewGet(view,'groupName'),[]);
 end
 
 % Get analysis parameters from corAnalGUI, using co.params if it exists
@@ -78,6 +97,9 @@ if ieNotDefined('params')
     mrMsgBox('corAnal cancelled',1);
     return
 end
+
+% if just getting params then return
+if justGetParams,return,end
 
 % Change group, get nScans
 groupName = params.groupName;
