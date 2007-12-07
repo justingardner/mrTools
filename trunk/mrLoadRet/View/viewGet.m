@@ -738,7 +738,7 @@ switch lower(param)
         % here that reset val if it was the identity but that was a
         % bug (DJH 1/17/07).
         if strcmp(mrGetPref('verbose'),'Yes')
-          disp('(viewGet) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+          disp('(viewGet:scanXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
         end
         baseqform = viewGet(view,'baseqform');
         val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
