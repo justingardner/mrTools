@@ -39,10 +39,10 @@ if ~isempty(baseCoordMap)
     startPathStr = baseCoordMap.flatDir;
     filterspec = {'*.off','SurfRelax off file';'*WM*.off', 'SurfRelax OFF WM file'; '*.*','All files'};
     title = 'Choose WM OFF file';    
-    innerFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
-    [params.flatDir baseCoordMap.innerFileName] = fileparts(innerFileName{1});
+    inner = getPathStrDialog(startPathStr,title,filterspec,'on');
+    [params.flatDir baseCoordMap.innerFileName] = fileparts(inner{1});
     % Aborted
-    if isempty(innerFileName)
+    if isempty(inner)
       disp(sprintf('(makeFlat) loading inner (WM) file aborted'));
       return
     end
@@ -176,10 +176,10 @@ params.flatFileName = sprintf('%s_Flat_%i_%i_%i_Rad%i.off', ...
                               params.startCoord(1), params.startCoord(2), params.startCoord(3), ...
                               params.patchRadius);
 
-if params.flattenMethod == 'surfRelax'
+if strcmp(params.flattenMethod, 'surfRelax')
   disp(sprintf('Flattening using SurfRelax'))
   myCutAndFlatten(params);
-elseif params.flattenMethod == 'mrFlatMesh'
+elseif strcmp(params.flattenMethod, 'mrFlatMesh')
   disp(sprintf('Flattening using the mrVista mrFlatMesh'))
   [surf, params] = runMrFlatMesh(surf, params)
   writeOFF(surf, params);
