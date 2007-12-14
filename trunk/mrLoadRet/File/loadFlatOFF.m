@@ -15,7 +15,7 @@ if ~any(nargin == [0 1 2])
   return;
 end
 base = [];
-if ~exist('mrParamsDialog')
+if ~exist('mrParamsDialog');
   disp(sprintf('(loadFlatOFF) You must have mrTools in your path to run this'));
   return;
 end
@@ -31,48 +31,83 @@ if nargin == 0
   flatFile = flatFile{1};
 end
 
-if isstr(flatFile)
+if isstr(flatFile);
   % check to see if we are passed in a file name
-  if ~isfile(flatFile)
+  if ~isfile(flatFile);
     disp(sprintf('(loadFlatOFF) %s does not exist', flatFile));
     return;
   end
-  % load the file
+  % load the with mrFlatViewer
   params = mrFlatViewer(flatFile);
-  
+  % this returns a param structure, which unfortunally has all of the wrong names
+  % for now, just translate them...
+  params.flatDir = params.flatPath;
+  params.flatFileName = params.flatFile;
+  params.innerFileName = params.inner;
+  params.outerFileName = params.outer;
+  params.curvFileName = params.curv;
+  params.anatFileName = params.anatomy;
+  % mrFlatViewer  will create the gFlatViewer global structure
+  % we can then use that for a lot of the further processing
+  global gFlatViewer
 end
 
 % could be passed in a params structure, rather than a flat file
-if isstruct(flatFile)
+% this is the case when loadFlatOFF is called from makeFlat
+if isstruct(flatFile);
   params = flatFile;
+  if isfile(fullfile(params.flatDir, params.flatFileName));
+    flatFile = loadSurfOFF(fullfile(params.flatDir, params.flatFileName));
+    surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
+    surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
+    surf.curv = loadVFF(fullfile(params.flatDir, params.curvFileName));
+    anat.hdr = cbiReadNiftiHeader(fullfile(params.flatDir, params.anatFileName));
+  end
 end
 
 % just crap out if the params still doesn't exist
-if ieNotDefined('params')
+if ieNotDefined('params');
   disp(sprintf('(loadFlatOFF) loading flat patch aborted'));
   return;
 end
 
-% grab the pre-loaded surfaces from the global variable
-global gFlatViewer
 
-% get two additional parameters
-paramsInfo = {};
-paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
-paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
-flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
-
-% check for 
-if isempty(flatParams)
-  return;
+% get two additional parameters if they were not passed in before
+if ~any(isfield(params, {'threshold', 'flatRes'}));
+  paramsInfo = {};
+  paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
+  paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
+  flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
+  % check for cancel
+  if isempty(flatParams);
+    return;
+  end
+else
+  flatParams.threshold = params.threshold;
+  flatParams.flatRes = params.flatRes;
 end
 
-flat.whichInx  = gFlatViewer.flat.patch2parent(:,2); 
-flat.locsFlat  = gFlatViewer.flat.vtcs;
-flat.curvature = gFlatViewer.curv(flat.whichInx);
-flat.locsInner = gFlatViewer.surfaces.inner.vtcs(flat.whichInx,:);
-flat.locsOuter = gFlatViewer.surfaces.outer.vtcs(flat.whichInx,:);
-flat.hdr       = gFlatViewer.anat.hdr;
+% check to see if we got here from the flatViewer
+% we need to translate a few variable names if we did
+if ~ieNotDefined('gFlatViewer');
+  flat.whichInx  = gFlatViewer.flat.patch2parent(:,2); 
+  flat.locsFlat  = gFlatViewer.flat.vtcs;
+  flat.curvature = gFlatViewer.curv(flat.whichInx);
+  flat.locsInner = gFlatViewer.surfaces.inner.vtcs(flat.whichInx,:);
+  flat.locsOuter = gFlatViewer.surfaces.outer.vtcs(flat.whichInx,:);
+  flat.hdr       = gFlatViewer.anat.hdr;
+elseif ~isempty(flatFile);
+  % or maybe we got here from loading a flatFile
+  flat.whichInx  = flatFile.patch2parent(:,2); 
+  flat.locsFlat  = flatFile.vtcs;
+  flat.locsInner = surf.inner.vtcs(flat.whichInx,:);
+  flat.locsOuter = surf.outer.vtcs(flat.whichInx,:);
+  flat.curvature = surf.curv(flat.whichInx);
+  flat.hdr       = anat.hdr;
+else
+  disp(sprintf('(loadFlatOFF) cannot find paramters needed to make base anatomy'));
+end  
+
 
 % this X-Y swaping only changes the orientation of the image
 % isn't a crucial step
@@ -91,6 +126,7 @@ yi = [1:(1/flatParams.flatRes):imSize(2)]';
 
 yi = flipud(yi);
 
+warning off
 flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
 
 % grid the 3d coords
@@ -99,6 +135,7 @@ for i=1:3
   flat.baseCoordsOuter(:,:,i) =  griddata(x,y, flat.locsOuter(:,i), xi, yi,'linear');
 end
 
+warning on
 % mask out out-of-brain coords
 flat.baseCoordsInner(isnan(flat.map)) = 0;
 flat.baseCoordsOuter(isnan(flat.map)) = 0;
@@ -123,7 +160,7 @@ flat.thresholdMap(isnan(flat.map)) = 0;
 % now generate a base structure
 clear base;
 base.hdr = flat.hdr;
-base.name = getLastDir(params.flatFile);
+base.name = getLastDir(params.flatFileName);
 
 % Extract permutation matrix to keep track of slice orientation.
 % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
@@ -131,15 +168,12 @@ base.name = getLastDir(params.flatFile);
 [q,r] = qr(inv(base.hdr.qform44(1:3,1:3)));
 base.permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 
-base.coordMap.flatPath = params.flatPath;
-base.coordMap.flatFile = params.flatFile;
-base.coordMap.inner = params.inner;
-if isfield(params, 'midFileName')
-  base.coordMap.midFileName = params.midFileName;  
-end
-base.coordMap.outer = params.outer;
-base.coordMap.curv = params.curv;
-base.coordMap.anatomy = params.anatomy;
+base.coordMap.flatDir = params.flatDir;
+base.coordMap.flatFileName = params.flatFileName;
+base.coordMap.innerFileName = params.innerFileName;
+base.coordMap.outerFileName = params.outerFileName;
+base.coordMap.curvFileName = params.curvFileName;
+base.coordMap.anatFileName = params.anatFileName;
 base.coordMap.flatRes = flatParams.flatRes;
 base.coordMap.threshold = flatParams.threshold;
 
