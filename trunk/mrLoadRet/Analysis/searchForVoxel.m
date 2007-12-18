@@ -37,7 +37,8 @@ if ~strcmp(baseName,params.baseName)
 end
 
 % now switch to the appropriate orientation and slice
-if viewGet(v,'baseType') == 0
+baseType = viewGet(v,'baseType');
+if baseType == 0
   % check orientation
   whichSliceOrientation = find(strcmp(params.baseOrientation,sliceOrientations));
   % if user didn't ask for the default, set orientation apporpriately
@@ -60,6 +61,7 @@ if viewGet(v,'baseType') == 0
     mlrGuiSet(viewNum,'slice',sliceNum);
   end
 end
+
 % refresh the display
 refreshMLRDisplay(viewNum);
 hold on
@@ -67,21 +69,32 @@ hold on
 % get the refreshed view
 v = viewGet([],'view',viewNum);
   
-% get coords of chosen voxel
-overlayCoords = round(viewGet(v,'cursliceOverlayCoords'));
-match = (overlayCoords(:,:,1) == params.x) & (overlayCoords(:,:,2) == params.y) & (overlayCoords(:,:,3) == params.s);
-
-% no match, give up
-if isempty(find(match))
-  mrWarnDlg(sprintf('(searchForVoxel) No matching voxel'));
-  hold off
-  return
-end
-
 % and then display the voxel
-[y x] = find(match);
-for i = 1:length(x)
-  plot(x,y,'.','Color',color2RGB(params.color));
+if baseType <= 1
+  % get coords of chosen voxel
+  overlayCoords = round(viewGet(v,'cursliceOverlayCoords'));
+  match = (overlayCoords(:,:,1) == params.x) & (overlayCoords(:,:,2) == params.y) & (overlayCoords(:,:,3) == params.s);
+
+  % no match, give up
+  if isempty(find(match))
+    mrWarnDlg(sprintf('(searchForVoxel) No matching voxel'));
+    hold off
+    return
+  end
+
+  [y x] = find(match);
+  for i = 1:length(x)
+    plot(x,y,'.','Color',color2RGB(params.color));
+  end
+else
+  % if we need to display on a surface,
+  % first get base coord of point
+  baseXform = viewGet(v,'baseXform');
+  scanXform = viewGet(v,'scanXform',viewGet(v,'curScan'));
+  shiftXform = shiftOriginXform;
+  baseVoxel = round(inv(shiftXform)*inv(baseXform)*scanXform*shiftXform*[params.x params.y params.s 1]');
+  % and plot
+  plot3(baseVoxel(1),baseVoxel(2),baseVoxel(3),'.','Color',color2RGB(params.color),'MarkerSize',30);
 end
 
 hold off
