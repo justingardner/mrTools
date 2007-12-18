@@ -170,6 +170,15 @@ for i= 1:length(anatCanonicalDir)
     anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
   end
 end
+% if no files found, then ask user to go look for it
+if isempty(anat)
+  [filename, pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'},'Find 3D anatomy file');
+  if isempty(filename),return,end
+  if ~isCurrentPath(pathname)
+    filename = fullfile(pathname,filename);
+  end
+  anat{1} = filename;
+end
 if isfile(anat{1})
   [gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(anat{1});
 else
@@ -508,6 +517,16 @@ view([0 90]);
 
 return;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% check for current path
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function tf = isCurrentPath(pathname)
+
+if length(pathname) && (pathname(end)==filesep)
+  pathname = pathname(1:end-1);
+end
+tf = strcmp(pwd,pathname);
+
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   switchAnatomy   %%
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -521,10 +540,7 @@ if strcmp(params.anatomy,'Find file')
   % update the control that displays the choices
   % first check to see if this is a new path
   global gParams;
-  if length(pathname) && (pathname(end)==filesep)
-    pathname = pathname(1:end-1);
-  end
-  if ~strcmp(pwd,pathname)
+  if ~isCurrentPath(pathname)
     filename = fullfile(pathname,filename);
   end
   whichControl = gSurfViewer.guiloc.filenames+6;
@@ -564,12 +580,8 @@ if strcmp(params.(whichSurface),'Find file')
     [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'});
     whichControl = gSurfViewer.guiloc.filenames+find(strcmp(whichSurface,{'outerSurface','outerCoords','innerSurface','innerCoords'}));
   end
-  % uigetfile seems to return a path with filesep at end
-  if length(pathname) && (pathname(end)==filesep)
-    pathname = pathname(1:end-1);
-  end
   % see if file is in a different path
-  if ~strcmp(pwd,pathname)
+  if ~isCurrentPath(pathname)
     filename = fullfile(pathname,filename);
   end
   addFilename = 1;
