@@ -91,7 +91,7 @@ disppercent(-inf,'(mrSurfaceView) Loading surfaces');
 % load the surface
 gSurfViewer.outerSurface = loadSurfOFF(sprintf('%s.off',stripext(outerSurface{1})));
 if isempty(gSurfViewer.outerSurface)
-  disp(sprintf('(mrSurfaceViewer) %s is not a surface file',outer{1}));
+  disp(sprintf('(mrSurfaceViewer) %s is not a surface file',outerSurface{1}));
   return
 end
 
@@ -516,16 +516,6 @@ end
 view([0 90]);
 
 return;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-% check for current path
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-function tf = isCurrentPath(pathname)
-
-if length(pathname) && (pathname(end)==filesep)
-  pathname = pathname(1:end-1);
-end
-tf = strcmp(pwd,pathname);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   switchAnatomy   %%
