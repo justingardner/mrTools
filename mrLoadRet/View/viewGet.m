@@ -2515,8 +2515,14 @@ switch lower(param)
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = round(get(handles.sliceSlider,'Value'));
+    % check if running the gui
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = round(get(handles.sliceSlider,'Value'));
+    else
+      % if not then return something sensible
+      val = 1;
+    end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
     fig = viewGet(view,'fignum');
@@ -2574,8 +2580,14 @@ switch lower(param)
   case {'sliceorientation'}
     % sliceorientation = viewGet(view,'sliceorientation');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = handles.sliceOrientation;
+    % check if running with the gui
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = handles.sliceOrientation;
+    else
+      % if not running, just default to something sensible.
+      val = 1;
+    end
   case {'cursliceoverlaycoords'}
     % overlayCoords = viewGet(view,'cursliceoverlaycoords');
     val = view.curslice.overlayCoords;
