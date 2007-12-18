@@ -205,7 +205,7 @@ if baseType <= 1
 else
   % handle getting coordinates for surface
   baseSurface = viewGet(view,'baseSurface');
-  baseDims = viewGet(view,'baseDims');
+  baseDims = viewGet(view,'baseSurfaceDims');
   pos = [];xBase = nan; yBase = nan; sBase = nan;
   % check mouse bounding box coords against baseDims
   % for a quick check to see if we are in the volume
