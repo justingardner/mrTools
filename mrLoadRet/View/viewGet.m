@@ -1093,6 +1093,25 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).type;
     end
+  case {'basesurfacedims'}
+    % basedims = viewGet(view,'basedims',[baseNum])
+    % basedims = viewGet(view,'basedims',[])
+    % basedims = viewGet(view,'basedims')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    baseType = viewGet(view,'baseType',b);
+    if baseType == 2
+      baseDims = view.baseVolumes(b).coordMap.dims;
+      val(1) = baseDims(2);
+      val(2) = baseDims(1);
+      val(3) = baseDims(3);
+    end
   case {'basedims'}
     % basedims = viewGet(view,'basedims',[baseNum])
     % basedims = viewGet(view,'basedims',[])
