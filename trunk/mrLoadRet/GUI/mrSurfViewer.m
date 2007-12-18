@@ -106,6 +106,7 @@ for i = 1:length(surfDir)
   end
 end
 outerCoords = putOnTopOfList('Same as surface',allSurfaces);
+outerCoords {end+1} = 'Find file';
 
 % check for an inner surface
 if isempty(innerSurface)
@@ -120,6 +121,8 @@ elseif length(innerSurface) == 1
   innerSurface = putOnTopOfList(innerSurface{1},allSurfaces);
 end
 innerCoords = putOnTopOfList('Same as surface',allSurfaces);
+innerCoords {end+1} = 'Find file';
+innerSurface{end+1} = 'Find file';
 gSurfViewer.outerCoords = [];
 gSurfViewer.innerCoords = [];
 
@@ -136,6 +139,12 @@ for i = 1:length(curvDir)
   end
 end
 
+% check to see if we have any possible curvatures
+if isempty(curv)
+  mrWarnDlg(sprintf('(mrSurfViewer) Could not find a matching .vff curvature file. You will need to use the SurfRelax tool surffilt to generate one. It is usually invoked by doing: surffilt -mcurv -iter 2 %s %s_curv.vff',outerSurface{1},stripext(outerSurface{1})));
+  return
+end
+
 % if we didn't load anything then quit
 for i = 1:length(curv)
   gSurfViewer.curv = myLoadCurvature(curv{i},filepath);
@@ -145,6 +154,7 @@ if isempty(gSurfViewer.curv)
   return
 end
 disppercent(inf);
+curv{end+1} = 'Find file';
 
 % guess any nifti file for anatomy
 anatDir = dir('*.hdr');
@@ -165,7 +175,7 @@ if isfile(anat{1})
 else
   gSurfViewer.anat = [];
 end
-
+anat{end+1} = 'Find file';
 gSurfViewer.mismatchWarning = 1;
 
 % select the window
@@ -505,6 +515,28 @@ function switchAnatomy(params)
 
 global gSurfViewer;
 
+% check for find file
+if strcmp(params.anatomy,'Find file')
+  [filename, pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'});
+  % update the control that displays the choices
+  % first check to see if this is a new path
+  global gParams;
+  if length(pathname) && (pathname(end)==filesep)
+    pathname = pathname(1:end-1);
+  end
+  if ~strcmp(pwd,pathname)
+    filename = fullfile(pathname,filename);
+  end
+  whichControl = gSurfViewer.guiloc.filenames+6;
+  currentChoices = get(gParams.ui.varentry{whichControl},'String');
+  currentChoices = setdiff(currentChoices,'Find file');
+  currentChoices = putOnTopOfList(filename,currentChoices);
+  currentChoices{end+1} = 'Find file';
+  set(gParams.ui.varentry{whichControl},'String',currentChoices)
+  set(gParams.ui.varentry{whichControl},'Value',1)
+  params.anatomy = filename;
+end
+
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
 [gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(params.anatomy);
@@ -527,7 +559,7 @@ addFilename = 0;
 if strcmp(params.(whichSurface),'Find file')
   if strcmp(whichSurface,'curv')
     [filename, pathname] = uigetfile({'*.vff','VFF Curvature files (*.vff)'});
-    whichControl = gSurfViewer.guiloc.filenames+4;
+    whichControl = gSurfViewer.guiloc.filenames+5;
   else
     [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'});
     whichControl = gSurfViewer.guiloc.filenames+find(strcmp(whichSurface,{'outerSurface','outerCoords','innerSurface','innerCoords'}));
@@ -550,7 +582,7 @@ disppercent(-inf,sprintf('(mrSurfViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curv')
     file = myLoadCurvature(filename);
-    whichControl = gSurfViewer.guiloc.filenames+4;
+    whichControl = gSurfViewer.guiloc.filenames+5;
   else
     file = myLoadSurface(filename);
     whichControl = gSurfViewer.guiloc.filenames+find(strcmp(whichSurface,{'outerSurface','outerCoords','innerSurface','innerCoords'}));
@@ -571,12 +603,12 @@ if ~isempty(file)
   set(gParams.ui.varentry{1},'Value',gSurfViewer.whichSurface)
   % add the filename to the control if necessary
   if addFilename
-    currentChoices = get(gParams.ui.varentry{gSurfViewer.whichSurface+1},'String');
+    currentChoices = get(gParams.ui.varentry{whichControl},'String');
     currentChoices = setdiff(currentChoices,'Find file');
     currentChoices = putOnTopOfList(filename,currentChoices);
     currentChoices{end+1} = 'Find file';
-    set(gParams.ui.varentry{gSurfViewer.whichSurface+1},'String',currentChoices)
-    set(gParams.ui.varentry{gSurfViewer.whichSurface+1},'Value',1)
+    set(gParams.ui.varentry{whichControl},'String',currentChoices)
+    set(gParams.ui.varentry{whichControl},'Value',1)
   end
 else
   global gParams;
@@ -640,6 +672,9 @@ global gSurfViewer;
 % load the curvature
 [curv curvhdr] = loadVFF(filename,onlyLoadHeader);
 
+if isempty(curvhdr)
+  return
+end
 % % check that it has the correct number of vertices
 if ~isequal(gSurfViewer.outerSurface.Nvtcs, curvhdr.size(3))
   % dispaly warning, but only if mismatchWarning is set,
