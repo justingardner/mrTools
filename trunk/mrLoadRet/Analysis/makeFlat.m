@@ -11,7 +11,7 @@ function retval = makeFlat(view, overlayNum, scan, x, y, s, roi)
 
 % check arguments
 if ~any(nargin == [4 5 6 7])
-  help mrFlatFromCoord
+  help makeFlat
   return
 end
 
@@ -29,8 +29,7 @@ baseCoordMap = viewGet(view,'baseCoordMap');
 scanXform = viewGet(view,'scanXform',scan);
 scanVoxelSize = viewGet(view,'scanVoxelSize',scan);
 
-params.startCoord = xformROIcoords([x;y;s;1], inv(baseSform)*scanXform, baseVoxelSize, baseVoxelSize);
-
+params.startCoord = viewGet(view,'mouseDownBaseCoords');
 
 % parse the parameters
 paramsInfo = {};
@@ -50,7 +49,7 @@ if ~isempty(baseCoordMap)
   % we can get all of the file names from the baseCoordMap
   paramsInfo{end+1} = {'flatDir', baseCoordMap.flatDir,'editable=0','Directory from which this flat map was originally created'};
   paramsInfo{end+1} = {'flatFileName', baseCoordMap.flatFileName,'editable=0','Name of original off file from which this flat map was created'};
-  paramsInfo{end+1} = {'innerFileName', baseCoordMap.innerFileName,'editable=0','Name of inner mesh (aka gray matter mesh) from which this flat map was created'};
+  paramsInfo{end+1} = {'innerFileName', sprintf('%s.off', stripext(baseCoordMap.innerFileName)),'editable=0','Name of inner mesh (aka gray matter mesh) from which this flat map was created'};
   paramsInfo{end+1} = {'outerFileName', baseCoordMap.outerFileName,'editable=0','Name of outer mesh (aka white matter mesh) from which this flat map was created'};
   paramsInfo{end+1} = {'curvFileName', baseCoordMap.curvFileName,'editable=0','Name of curvature file from which this flat map was created'};
   paramsInfo{end+1} = {'anatFileName', baseCoordMap.anatFileName,'editable=0','Name of anatomy file from which the xform for this flat map was taken'};
@@ -61,7 +60,7 @@ else
   % Open dialog box to have user choose the file
   startPathStr = mrGetPref('volumeDirectory');
   filterspec = {'*.off','SurfRelax OFF file';'*WM*.off','SurfRelax off gray matter file'; '*.*','All files'};
-  title = 'Choose flat OFF file';
+  title = 'Choose WM OFF file';
   innerFileName = getPathStrDialog(startPathStr,title,filterspec,'on');
   % Aborted
   if isempty(innerFileName)
@@ -122,7 +121,7 @@ else
   paramsInfo = {};
   paramsInfo{end+1} = {'flatDir', params.flatDir, 'editable=0', 'directory path for the inner .off surface file'};
   paramsInfo{end+1} = {'whichHemi', params.whichHemi, 'editable=0', 'the hemisphere that the patch comes from -- not really important'};
-  paramsInfo{end+1} = {'innerFileName', params.innerFileName, 'name of the surface at the white/gray boundary (i.e., the inner surface)'};
+  paramsInfo{end+1} = {'innerFileName', sprintf('%s.off', stripext(params.innerFileName)), 'name of the surface at the white/gray boundary (i.e., the inner surface)'};
   paramsInfo{end+1} = {'outerFileName', params.outerFileName, 'name of the surface at the gray/pial boundary (i.e., the outer surface)'};
   if params.calcCurvFlag == 1;
     paramsInfo{end+1} = {'curvFileName', 'will calculate curvature on the fly', 'editable=0', 'name of the curvatue file'};
