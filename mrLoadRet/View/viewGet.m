@@ -487,6 +487,26 @@ switch lower(param)
       end
     end
     val = stimFileName;
+  case{'mousedownscancoords'}
+    % scanCoords = viewGet(view,'mouseDownScanCoords')  
+    viewNum = viewGet(view,'viewNum');
+    if isfield(MLR,'interrogator')
+      if length(MLR.interrogator) >= viewNum
+	if isfield(MLR.interrogator{viewNum},'mouseDownScanCoords')
+	  val = MLR.interrogator{viewNum}.mouseDownScanCoords;
+	end
+      end
+    end
+  case{'mousedownbasecoords'}
+    % baseCoords = viewGet(view,'mouseDownBaseCoords')  
+    viewNum = viewGet(view,'viewNum');
+    if isfield(MLR,'interrogator')
+      if length(MLR.interrogator) >= viewNum
+	if isfield(MLR.interrogator{viewNum},'mouseDownBaseCoords')
+	  val = MLR.interrogator{viewNum}.mouseDownBaseCoords;
+	end
+      end
+    end
   case {'spikeinfo'}
     % eyepos = viewGet(view,'spikeinfo',scanNum,[groupNum]);
     val = [];
