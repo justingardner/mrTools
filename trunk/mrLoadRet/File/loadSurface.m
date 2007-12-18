@@ -17,7 +17,7 @@ base = [];
 % Open dialog box to have user choose the file
 startPathStr = mrGetPref('volumeDirectory');
 filterspec = {'*.off','Off Surface file (*.off)'};
-title = 'Choose surface file';
+title = 'Choose outer surface file';
 pathStr = getPathStrDialog(startPathStr,title,filterspec,'off');
 
 % Aborted
