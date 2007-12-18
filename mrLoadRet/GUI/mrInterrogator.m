@@ -267,6 +267,11 @@ mrGlobals;
 % get pointer
 [x y s xBase yBase sBase] = getMouseCoords(viewNum);
 
+% set the points in the global, so that they
+% are accessible by doing a viewGet
+MLR.interrogator{viewNum}.mouseDownBaseCoords = [xBase yBase sBase];
+MLR.interrogator{viewNum}.mouseDownScanCoords = [x y s];
+
 if mouseInImage(x,y)
     global MLR;
     view = MLR.views{viewNum};
@@ -290,10 +295,11 @@ if mouseInImage(x,y)
 	roi{end+1} = viewGet(view,'roi',roinum);
       end
     end
-    % Draw graph
+    % get some info
     overlayNum = viewGet(view,'currentOverlay');
     analysisNum = viewGet(view,'currentAnalysis');
     scanNum = viewGet(view,'currentScan');
+    % call interrogator
     feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s,roi);
     % reset to full crosshair
     %set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
