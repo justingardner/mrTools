@@ -421,6 +421,9 @@ set(gParams.helpFignum,'MenuBar','none');
 set(gParams.helpFignum,'NumberTitle','off');
 set(gParams.helpFignum,'Name','Parameter help');
 
+% set close handler
+set(gParams.helpFignum,'DeleteFcn',@helpcloseHandler);
+
 % figure out how many rows
 charsPerRow = 120;
 numrows = 1;
@@ -435,21 +438,36 @@ figpos = mrGetFigLoc('mrParamsDialogHelp');
 if isempty(figpos)
   figpos = get(gParams.helpFignum,'Position');
 end
-gParams.numcols = numcols;
-figpos(4) = 2*gParams.topMargin+gParams.figrows*gParams.buttonHeight+(gParams.figrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+gParams.figMultiCols*numcols*gParams.buttonWidth+(gParams.figMultiCols*numcols-1)*gParams.margin;
+
+% if we have more than 30 rows then split into multiple columns
+% but at most we make 6 multi columns
+figMultiCols = min(ceil(numrows/30),6);
+figrows = ceil(numrows/figMultiCols);
+figcols = numcols*figMultiCols;
+% for really big ones, reduce the button size
+if (numcols > 2) && (figMultiCols > 3)
+  gParams.buttonWidth = round(gParams.buttonWidth/2);
+end
+gParams.help.numcols = numcols;
+gParams.help.numrows = numrows;
+gParams.help.figrows = figrows;
+gParams.help.figMultiCols = figMultiCols;
+
+figpos(4) = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
+figpos(3) = 2*gParams.leftMargin+gParams.help.figMultiCols*numcols*gParams.buttonWidth+(gParams.help.figMultiCols*numcols-1)*gParams.margin;
 set(gParams.helpFignum,'Position',figpos);
 
 % put up the info
 rownum = 1;
 for i = 1:length(gParams.varinfo)
   numLines = max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
-  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,2,numLines);
-  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,3,numcols-2,numLines),'HorizontalAlignment','Left');
+  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,2,numLines,1);
+  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,3,numcols-2,numLines,1),'HorizontalAlignment','Left');
   rownum = rownum+numLines;
 end
+
 % make close button
-makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1);
+makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1,1);
 
 %%%%%%%%%%%%%%%%%%%%
 % callback for close
@@ -474,14 +492,14 @@ saveMrDefaults;
 %%%%%%%%%%%%%%%%%%%%
 % callback for helpclose
 %%%%%%%%%%%%%%%%%%%%
-function helpcloseHandler
+function helpcloseHandler(varargin)
 
 global gParams;
 global mrDEFAULTS;
 
 if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
   mrSetFigLoc('mrParamsDialogHelp',get(gParams.helpFignum,'Position'));
-  close(gParams.helpFignum);
+  delete(gParams.helpFignum);
   gParams.helpFignum = -1;
 else
   if ~isfield(gParams,'helpFigpos')
@@ -515,8 +533,9 @@ uiresume;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeButton
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeButton(fignum,displayString,callback,rownum,colnum,uisize)
+function h = makeButton(fignum,displayString,callback,rownum,colnum,uisize,isHelpDialog)
 
+if ieNotDefined('isHelpDialog'),isHelpDialog=0;end
 % make callback string
 if isnumeric(callback)
   callback = sprintf('mrParamsDialog(%f)',callback);
@@ -526,16 +545,17 @@ end
 
 global gParams;
 
-h = uicontrol('Style','pushbutton','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol('Style','pushbutton','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,[],isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextbox makes an uneditable text box.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextbox(fignum,displayString,rownum,colnum,uisize,uisizev)
+function h = makeTextbox(fignum,displayString,rownum,colnum,uisize,uisizev,isHelpDialog)
 
-if ~exist('uisizev'),uisizev=1;,end
+if ieNotDefined('isHelpDialog'),isHelpDialog=0;end
+if ieNotDefined('uisizev'),uisizev=1;,end
 global gParams;
-h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,uisizev),'FontSize',gParams.fontsize,'FontName',gParams.fontname,'HorizontalAlignment','Right');
+h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,uisizev,isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname,'HorizontalAlignment','Right');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
@@ -643,29 +663,42 @@ h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Positio
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function pos = getUIControlPos(fignum,rownum,colnum,uisize,uisizev)
+function pos = getUIControlPos(fignum,rownum,colnum,uisize,uisizev,isHelpDialog)
+
+if ieNotDefined('isHelpDialog'),isHelpDialog = 0;end
 
 % get global parameters
 global gParams;
 
 % if we have too many parameters, we make them into two columns
-multiCol = ceil(rownum/gParams.figrows);
+% help and regular dialogs may have different numbers of rows/cols
+if ~isHelpDialog
+  figrows = gParams.figrows;
+  numrows = gParams.numrows;
+  numcols = gParams.numcols;
+else
+  figrows = gParams.help.figrows;
+  numrows = gParams.help.numrows;
+  numcols = gParams.help.numcols;
+end
+multiCol = ceil(rownum/figrows);
 if multiCol > 1
   % always make sure that the last row end up on the
   % last row even if we have multiple columns
-  if rownum == gParams.numrows
-    rownum = gParams.figrows;
+  if rownum == numrows
+    rownum = figrows;
   else
-    rownum = rownum-gParams.figrows*(multiCol-1);
+    rownum = rownum-figrows*(multiCol-1);
   end
-  colnum = colnum+gParams.numcols*(multiCol-1);
+  colnum = colnum+numcols*(multiCol-1);
 end
+
 % get figure position
 figpos = get(fignum,'Position');
 
 % set this buttons width
 thisButtonWidth = gParams.buttonWidth*uisize+(uisize-1)*gParams.margin;
-if ~exist('uisizev'),
+if ieNotDefined('uisizev'),
   thisButtonHeight = gParams.buttonHeight;
 else
   thisButtonHeight = gParams.buttonHeight*uisizev+gParams.margin*(uisizev-1);
