@@ -15,9 +15,7 @@ if ~any(nargin == [1])
 end
 
 % make sure that there is no file separator at end of pathname
-if length(pathname) && (pathname(end)==filesep)
-  pathname = pathname(1:end-1);
-end
+pathname = stripfilesep(pathname);
 
 % cheng against current path
 tf = strcmp(pwd,pathname);
