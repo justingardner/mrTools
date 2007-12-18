@@ -49,8 +49,13 @@ MLR.views{viewNum} = view;
 % add it back to the globals, in case it has changed
 MLR.views{viewNum} = view;
 
-
 % add the caches
 MLR.caches{viewNum} = [];
+
+% init the caches
+view = viewSet(view,'roiCache','init');
+view = viewSet(view,'overlayCache','init');
+view = viewSet(view,'baseCache','init');
+
 
 return;
