@@ -204,7 +204,7 @@ for i= 1:length(anatCanonicalDir)
     anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
   end
 end
-if isfile(fullfile(flatPath, '../', anat{1}))
+if (length(anat)>=1) && isfile(fullfile(flatPath, '../', anat{1}))
   [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(flatPath, '../', anat{1}));
 else
   gFlatViewer.anat = [];
