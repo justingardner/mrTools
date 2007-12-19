@@ -102,22 +102,22 @@ switch lower(field)
 		if value == 2
 		  set(handles.createRoiMenu,'Enable','off');
 		  set(handles.addRoiMenu,'Enable','off');
-		  set(handles.combineROIMenuItem,'Enable','off');
-		  set(handles.restrictRoiMenu,'Enable','off');
 		  set(handles.removeRoiMenu,'Enable','off');
-		  set(handles.undoRoiMenuItem,'Enable','off');
-		  set(handles.convertRoiMenuItem,'Enable','off');
+%		  set(handles.combineROIMenuItem,'Enable','off');
+%		  set(handles.restrictRoiMenu,'Enable','off');
+%		  set(handles.undoRoiMenuItem,'Enable','off');
+%		  set(handles.convertRoiMenuItem,'Enable','off');
 		  set(handles.rotateSlider,'SliderStep',[15 45]./360);
 		  set(handles.flatViewerMenuItem,'Enable','off');
 		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
 		else
 		  set(handles.createRoiMenu,'Enable','on');
 		  set(handles.addRoiMenu,'Enable','on');
-		  set(handles.combineROIMenuItem,'Enable','on');
-		  set(handles.restrictRoiMenu,'Enable','on');
 		  set(handles.removeRoiMenu,'Enable','on');
-		  set(handles.undoRoiMenuItem,'Enable','on');
-		  set(handles.convertRoiMenuItem,'Enable','on');
+%		  set(handles.combineROIMenuItem,'Enable','on');
+%		  set(handles.restrictRoiMenu,'Enable','on');
+%		  set(handles.undoRoiMenuItem,'Enable','on');
+%		  set(handles.convertRoiMenuItem,'Enable','on');
 		  set(handles.rotateSlider,'SliderStep',[1 45]./360);
 		end		  
 	case {'basevolume'}
