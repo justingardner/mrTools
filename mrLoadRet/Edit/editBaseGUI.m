@@ -1,118 +1,94 @@
-function varargout = editBaseGUI(varargin)
-% view = editBaseGUI(view);
+% editBaseGUI.m
 %
-% GUI for editing base volumes.
-% Created by GUIDE.
+%        $Id$
+%      usage: v = editBaseGUI(v)
+%         by: justin gardner
+%       date: 12/19/07
+%    purpose: edit base information
 %
-% djh 7/2003
+function v = editBaseGUI(v)
 
-% Last Modified by GUIDE v2.5 03-Aug-2006 18:52:30
-
-% Begin initialization code - DO NOT EDIT
-gui_Singleton = 1;
-gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @editBaseGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @editBaseGUI_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
-if nargin && ischar(varargin{1})
-    gui_State.gui_Callback = str2func(varargin{1});
+% check arguments
+if ~any(nargin == [1])
+  help editBaseGUI
+  return
 end
 
-if nargout
-    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
-else
-    gui_mainfcn(gui_State, varargin{:});
-end
-% End initialization code - DO NOT EDIT
-
-
-% --- Executes just before editBaseGUI is made visible.
-function editBaseGUI_OpeningFcn(hObject, eventdata, handles, varargin)
-
-% Parse varargin
-% Must be called as follows:
-%    editBaseGUI(view)
-if length(varargin) < 1
-	mrErrorDlg('editBaseGUI: invalid initialization argument');
-end
-view = varargin{1};
-if ~isview(view)
-	mrErrorDlg('editBaseGUI: invalid initialization argument');
+% Get current base
+baseNum = viewGet(v,'curBase');
+if isempty(baseNum)
+  mrWarnDlg('(editBaseGUI) No loaded base anatomy');
+  return
 end
 
-% Current base
-baseNum = viewGet(view,'curBase');
-baseName = viewGet(view,'baseName',baseNum);
-baseRange = viewGet(view,'baseRange',baseNum);
+% get associated information
+baseName = viewGet(v,'baseName',baseNum);
+baseRange = viewGet(v,'baseRange',baseNum);
+baseClip = viewGet(v,'baseClip',baseNum);
+baseGamma = viewGet(v,'baseGamma',baseNum);
 
-% Initialize handles
-handles.view = view;
-handles.baseNum = baseNum;
-set(handles.nameEditText,'String',baseName);
-set(handles.minEditText,'String',num2str(baseRange(1)));
-set(handles.maxEditText,'String',num2str(baseRange(2)));
+paramsInfo = {};
+paramsInfo{end+1} = {'baseName',baseName,'The name of the base anatomy','callback',@editBaseCallback,'callbackArg',v};
+paramsInfo{end+1} = {'baseRange',baseRange,'The range of values in the base anatomy','callback',@editBaseCallback,'callbackArg',v};
+paramsInfo{end+1} = {'baseMin',baseClip(1),'incdec=[-10 10]','The lower clip value of the base image.','callback',@editBaseCallback,'callbackArg',v};
+paramsInfo{end+1} = {'baseMax',baseClip(2),'incdec=[-10 10]','The upper clip value of the base image','callback',@editBaseCallback,'callbackArg',v};
+paramsInfo{end+1} = {'baseGamma',baseGamma,'incdec=[-0.1 0.1]','minmax=[0 inf]','The gamma to use to display the base image','callback',@editBaseCallback,'callbackArg',v};
+paramsInfo{end+1} = {'setDefaults',0,'type=pushbutton','buttonString','Set defaults','callback',@defaultEditBaseCallback,'callbackArg',v};
+% display parameters
+params = mrParamsDialog(paramsInfo,'Edit base info');
 
-% Update handles structure
-guidata(hObject, handles);
-
-% UIWAIT makes editBaseGUI wait for user response (see UIRESUME)
-uiwait(handles.editBaseDialog);
-
-
-% --- Outputs from editBaseGUI
-function varargout = editBaseGUI_OutputFcn(hObject, eventdata, handles) 
-% Returns view
-if ~isempty(handles)
-    varargout{1} = handles.view;
-    close(handles.editBaseDialog);
-else
-    varargout{1} = [];
+% user hit cancel
+if isempty(params)
+  v = viewSet(v,'baseName',baseName,baseNum);
+  v = viewSet(v,'baseRange',baseRange,baseNum);
+  v = viewSet(v,'baseMin',baseClip(1),baseNum);
+  v = viewSet(v,'baseMax',baseClip(2),baseNum);
+  return
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   editBaseCallback   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function editBaseCallback(v,params)
 
-% --- nameEditText
-function nameEditText_Callback(hObject, eventdata, handles)
+% get current baseNum
+baseNum = viewGet(v,'curBase');
 
-function nameEditText_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% change info
+v = viewSet(v,'baseName',params.baseName,baseNum);
+v = viewSet(v,'baseRange',params.baseRange,baseNum);
+v = viewSet(v,'baseMin',params.baseMin,baseNum);
+v = viewSet(v,'baseMax',params.baseMax,baseNum);
+v = viewSet(v,'baseGamma',params.baseGamma,baseNum);
 
+% refresh the display
+refreshMLRDisplay(viewGet(v,'viewNum'));
 
-% --- minEditText
-function minEditText_Callback(hObject, eventdata, handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   default clipping values taken from isbase   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function clip = defaultEditBaseCallback(v)
 
-function minEditText_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% get current baseNum
+baseNum = viewGet(v,'curBase');
 
+% get base image
+b = viewGet(v,'base',baseNum);
+image = b.data;
 
-% --- maxEditText
-function maxEditText_Callback(hObject, eventdata, handles)
+% Choose default clipping based on histogram
+histThresh = length(image(:))/1000;
+[cnt, val] = hist(image(:),100);
+goodVals = find(cnt>histThresh);
+clipMin = val(min(goodVals));
+clipMax = val(max(goodVals));
+clip = [clipMin,clipMax];
 
-function maxEditText_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+v = viewSet(v,'baseMin',clipMin,baseNum);
+v = viewSet(v,'baseMax',clipMax,baseNum);
+v = viewSet(v,'baseRange',[min(image(:)) max(image(:))]);
+v = viewSet(v,'baseGamma',1);
 
-
-% --- okPushButton.
-function okPushButton_Callback(hObject, eventdata, handles)
-view = handles.view;
-nameString = get(handles.nameEditText,'String');
-view = viewSet(view,'baseName',nameString,handles.baseNum);
-minString = get(handles.minEditText,'String');
-maxString = get(handles.maxEditText,'String');
-view = viewSet(view,'baseRange',[str2num(minString),str2num(maxString)],handles.baseNum);
-handles.view = view;
-guidata(hObject, handles);
-uiresume;
-
-
-% --- cancelPushButton
-function cancelPushButton_Callback(hObject, eventdata, handles)
-uiresume;
+% refresh the display
+refreshMLRDisplay(viewGet(v,'viewNum'));
 
