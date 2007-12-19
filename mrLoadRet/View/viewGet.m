@@ -1076,6 +1076,22 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).range;
     end
+  case {'basegamma'}
+    % baseGamma = viewGet(view,'baseGamma',[baseNum])
+    % baseGamma = viewGet(view,'baseGamma',[])
+    % baseGamma = viewGet(view,'baseGamma')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).gamma;
+    end
   case {'basetype'}
     % baserange = viewGet(view,'baserange',[baseNum])
     % baserange = viewGet(view,'baserange',[])
@@ -1494,6 +1510,7 @@ switch lower(param)
     baseName = viewGet(view,'curBaseName');
     currentBase = viewGet(view,'currentBase');
     clip = viewGet(view,'baseClip',currentBase);
+    gamma = viewGet(view,'baseGamma',currentBase);
     currentSlice = viewGet(view,'curSlice');
     sliceIndex = viewGet(view,'baseSliceIndex');
     % only use the corticalDepth if this is a flat
@@ -1502,7 +1519,7 @@ switch lower(param)
     else
       corticalDepth = 0;
     end
-    val = sprintf('%s_%i_%i_%i_%s_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),corticalDepth);
+    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepth);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');

@@ -592,7 +592,7 @@ switch lower(param)
       mlrGuiSet(view,'nSlices',nSlices);
     end
 
-  case 'basecoordmappath'
+  case{'basecoordmappath'}
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
     curBase = viewGet(view,'currentBase');
     if ~isempty(varargin)
@@ -606,7 +606,7 @@ switch lower(param)
       end
     end
 
-  case 'basemin'
+  case{'basemin'}
     % view = viewSet(view,'basemin',number,[baseNum]);
     curBase = viewGet(view,'currentBase');
     if ~isempty(varargin)
@@ -621,7 +621,7 @@ switch lower(param)
       mlrGuiSet(view,'baseMin',val);
     end
 
-  case 'basemax'
+  case{'basemax'}
     % view = viewSet(view,'basemax',number,[baseNum]);
     curBase = viewGet(view,'currentBase');
     if ~isempty(varargin)
@@ -636,7 +636,7 @@ switch lower(param)
       mlrGuiSet(view,'baseMax',val);
     end
 
-  case 'baserange'
+  case{'baserange'}
     % view = viewSet(view,'baserange',[min max],[baseNum]);
     range = val;
     curBase = viewGet(view,'currentBase');
@@ -654,6 +654,19 @@ switch lower(param)
         mlrGuiSet(view,'baseMin',clip(1));
         mlrGuiSet(view,'baseMax',clip(2));
       end
+    end
+
+  case{'basegamma'}
+    % view = viewSet(view,'baseGamma',gamma,[baseNum]);
+    gamma = val;
+    curBase = viewGet(view,'currentBase');
+    if ieNotDefined('varargin')
+      baseNum = curBase;
+    else
+      baseNum = varargin{1};
+    end
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).gamma = gamma;
     end
 
   case{'basename'}
