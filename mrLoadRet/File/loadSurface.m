@@ -53,7 +53,14 @@ else
   outer = loadSurfOFF(params.outerCoords);
 end
 
-base.coordMap.inner = params.innerSurface;
+% save names
+base.coordMap.innerFileName = params.innerSurface;
+base.coordMap.innerCoordsFileName = params.innerCoords;
+base.coordMap.outerFileName = params.outerSurface;
+base.coordMap.outerCoordsFileName = params.outerCoords;
+base.coordMap.curvFileName = params.curv;
+base.coordMap.anatFileName = params.anatomy;
+% save coords
 base.coordMap.innerCoords(1,:,1,1)  = inner.vtcs(:,2);
 base.coordMap.innerCoords(1,:,1,2)  = inner.vtcs(:,1);
 base.coordMap.innerCoords(1,:,1,3)  = inner.vtcs(:,3);
@@ -65,8 +72,6 @@ base.coordMap.outerCoords(1,:,1,2)  = outer.vtcs(:,1);
 base.coordMap.outerCoords(1,:,1,3)  = outer.vtcs(:,3);
 base.coordMap.outerVtcs = outerSurface.vtcs;
 base.coordMap.coords = base.coordMap.innerCoords;
-base.coordMap.curv = params.curv;
-base.coordMap.anatomy = params.anatomy;
 base.coordMap.dims = base.hdr.dim([3 2 4])';
 base.type = 2;
 
