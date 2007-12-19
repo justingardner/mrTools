@@ -910,7 +910,9 @@ switch gFlatViewer.patchColoring
   return
  % no coloring
  case {length(gFlatViewer.patchColoringTypes)}
-  co = nan;
+  % make everyone nan
+  co = ones(gFlatViewer.flat.Nvtcs,3);
+  co(:) = nan;
   return
 end
 
