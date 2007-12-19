@@ -69,7 +69,6 @@ end
 
 % just crap out if the params still doesn't exist
 if ieNotDefined('params');
-  disp(sprintf('(loadFlatOFF) loading flat patch aborted'));
   return;
 end
 

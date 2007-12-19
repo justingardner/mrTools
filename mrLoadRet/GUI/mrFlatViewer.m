@@ -70,6 +70,7 @@ disppercent(-inf,'(mrFlatView) Loading surfaces');
 
 [flatPath flat{1}] = fileparts(sprintf('%s.off',stripext(flat{1})));
 flatdir = dir(sprintf('%s/*.off', flatPath));
+gFlatViewer.flatPath = flatPath;
 
 gFlatViewer.flat = loadSurfOFF(fullfile(flatPath, sprintf('%s.off', stripext(flat{1}))));
 if isempty(gFlatViewer.flat) || ~isfield(gFlatViewer.flat,'parentSurfaceName');
@@ -680,6 +681,11 @@ global gFlatViewer;
 figure(gFlatViewer.f);
 cla;
 
+if length(size(gFlatViewer.anat.data)) < 3
+  disp(sprintf('(mrFlatViewer) Could not display image becuase it does not have 3 dimensions'));
+  return
+end
+
 % display a slice of the anatomy image
 switch sliceIndex
   case {1}
@@ -868,16 +874,17 @@ switch gFlatViewer.patchColoring
   baseDims = [size(baseCoords,2) 1];
   % get the view
   v = viewGet([],'view',gFlatViewer.viewNum);
-  if ~isempty(viewGet(v,'currentOverlay'))
+  if ~isempty(v) & ~isempty(viewGet(v,'currentOverlay'))
     % and get the overlay
     overlay = computeOverlay(v,baseXform,baseCoords,baseDims);
     overlay.RGB(overlay.alphaMap==0) = nan;
     co = squeeze(overlay.RGB);
+    alpha = viewGet(v,'alpha');
   else
     co = zeros(size(baseCoords,2),3);
     co(:) = nan;
+    alpha = 1;
   end
-  alpha = viewGet(v,'alpha');
   if gFlatViewer.patchColoring==12
     % get curvature
     curv = gFlatViewer.curv(patchVtcs)';
@@ -1063,20 +1070,13 @@ global gFlatViewer;
 addFilename = 0;
 if strcmp(params.(whichSurface),'Find file')
   if strcmp(whichSurface,'curv')
-    [filename, pathname] = uigetfile({'*.vff','VFF Curvature files (*.vff)'});
+    [filename, pathname] = uigetfile({'*.vff','VFF Curvature files (*.vff)'},'Select curvature file',gFlatViewer.flatPath);
     whichControl = gFlatViewer.guiloc.filenames+3;
   else
-    [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'});
-    whichControl = gFlatViewer.guiloc.filenames+find(strcmp(whichSurface,{'outer','inner'}));
+    [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'},'Select surface',gFlatViewer.flatPath);
+    whichControl = gFlatViewer.guiloc.filenames+1+find(strcmp(whichSurface,{'outer','inner'}));
   end
-  % uigetfile seems to return a path with filesep at end
-  if length(pathname) && (pathname(end)==filesep)
-    pathname = pathname(1:end-1);
-  end
-  % see if file is in a different path
-  if ~strcmp(pwd,pathname)
-    filename = fullfile(pathname,filename);
-  end
+  filename = getRelativePath(gFlatViewer.flatPath,fullfile(pathname,filename));
   addFilename = 1;
 else
   filename = params.(whichSurface);
@@ -1090,11 +1090,12 @@ if filename ~= 0
     whichControl = gFlatViewer.guiloc.filenames+3;;
   else
     file = myLoadSurface(fullfile(params.flatPath, filename));
-    whichControl = gFlatViewer.guiloc.filenames+find(strcmp(whichSurface,{'outer','inner'}));
+    whichControl = gFlatViewer.guiloc.filenames+1+find(strcmp(whichSurface,{'outer','inner'}));
   end
 else
   file = [];
 end
+
 if ~isempty(file)
   if strcmp(whichSurface,'curv')
     gFlatViewer.(whichSurface)=file;
