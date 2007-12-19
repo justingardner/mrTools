@@ -39,8 +39,8 @@ if isstr(flatFile);
   end
   % load the with mrFlatViewer
   params = mrFlatViewer(flatFile);
-
   if isempty(params),return,end
+
   % this returns a param structure, which unfortunally has all of the wrong names
   % for now, just translate them...
   params.flatDir = params.flatPath;
