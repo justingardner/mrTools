@@ -5,7 +5,7 @@
 %       date: 09/28/07
 %    purpose: 
 %
-function baseInfo(view)
+function baseInfo(v)
 
 % check arguments
 if ~any(nargin == [1])
@@ -14,16 +14,19 @@ if ~any(nargin == [1])
 end
 
 % get base info
-scanNum = viewGet(view,'curScan');
-groupNum = viewGet(view,'curGroup');
-baseDims = viewGet(view,'baseDims');
-baseQform = viewGet(view,'baseqform');
-baseSform = viewGet(view,'baseXform');
-baseVolPermutation = viewGet(view,'baseVolPermutation');
-baseVoxelSize = viewGet(view,'baseVoxelSize');
-baseName = viewGet(view,'baseName');
-baseCoordMap = viewGet(view,'baseCoordMap');
-baseType = viewGet(view,'baseType');
+scanNum = viewGet(v,'curScan');
+groupNum = viewGet(v,'curGroup');
+baseDims = viewGet(v,'baseDims');
+baseQform = viewGet(v,'baseqform');
+baseSform = viewGet(v,'baseXform');
+baseVolPermutation = viewGet(v,'baseVolPermutation');
+baseVoxelSize = viewGet(v,'baseVoxelSize');
+baseName = viewGet(v,'baseName');
+baseCoordMap = viewGet(v,'baseCoordMap');
+baseGamma = viewGet(v,'baseGamma');
+baseRange = viewGet(v,'baseRange');
+baseClip = viewGet(v,'baseClip');
+baseType = viewGet(v,'baseType');
 
 % set parameters
 paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},...
@@ -31,6 +34,9 @@ paramsInfo = {{'baseName',baseName,'editable=0','The name of the base anatomy'},
     {'baseDims',baseDims,'editable=0','Dimensions of base anatomy'},...
     {'qform',baseQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'},...
     {'sform',baseSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to base coordinate system'},...
+    {'clip',baseClip,'editable=0','Clip values for display'},...
+    {'range',baseRange,'editable=0','Range of values in anatomy image'},...
+    {'gamma',baseGamma,'editable=0','Gamma for display'},...
     {'baseType',baseType,'editable=0','Type of base. 0 = inplane. 1 = flat. 2 = surface'}};
 
 % add baseCoordMap info for flat files
