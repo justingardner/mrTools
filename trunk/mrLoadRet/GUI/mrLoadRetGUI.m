@@ -2375,5 +2375,9 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 % [view userCancel] = newROI(view);
 % if userCancel,return,end
-view = calcDist(v, 'segments'); % ,'polygon',1);
-refreshMLRDisplay(viewNum);
+if ~exist('calcDist')~= 2
+  mrWarnDlg('(mrLoadRetGUI) You need to install the mrGray tools to use the function calcDist');
+else
+  view = calcDist(v, 'segments'); % ,'polygon',1);
+  refreshMLRDisplay(viewNum);
+end
