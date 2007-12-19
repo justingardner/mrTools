@@ -209,10 +209,15 @@ else
   pos = [];xBase = nan; yBase = nan; sBase = nan;
   % check mouse bounding box coords against baseDims
   % for a quick check to see if we are in the volume
-  if ~isempty(baseDims) && all(pointerLoc(1,:)<=baseDims) && all(pointerLoc(1,:) >= 0)
+  if all(pointerLoc(1,:) >= 0)
     % then use select3d which is slooow, but accurate
     hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
-    [pos v vi] = select3d(hobj(1));
+    % make sure we are using the correct object (should be the 3D
+    % brain). Use end here because with searchForVoxel we plot a
+    % point on the image and the brain object always seems to be
+    % last. But if this is not always the case, then we may need
+    % to do a little more work here to find the correct object
+    [pos v vi] = select3d(hobj(end));
     % convert the index to the coordinates
     if ~isempty(pos)
       baseCoordMap = viewGet(view,'baseCoordMap');
