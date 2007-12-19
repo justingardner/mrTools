@@ -264,17 +264,6 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
     disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
   end
   return
-else
-  % handle callbacks for non-push buttons
-  if isfield(gParams.varinfo{varnum},'callback')
-    if isfield(gParams.varinfo{varnum},'callbackArg')
-      % create the string to call the function
-      feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,getParams(gParams.vars));
-    else
-      % create the string to call the function
-      feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
-    end
-  end
 end
 
 % if this is supposed to be a number, then make sure it is.
@@ -380,7 +369,20 @@ if isfield(gParams, 'callback')
   end
 end
 
+% handle callbacks for non-push buttons
+if isfield(gParams.varinfo{varnum},'callback')
+  if isfield(gParams.varinfo{varnum},'callbackArg')
+    % create the string to call the function
+    feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,getParams(gParams.vars));
+  else
+    % create the string to call the function
+    feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % turn on or off incdec arrows depending on minmax
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function enableArrows(val,varnum)
 
 global gParams;
