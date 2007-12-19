@@ -44,6 +44,9 @@ for i = 1:length(vars)
     % we change them into strings, but remember what
     % type they were
   elseif length(vars{i}) >= 2
+    if islogical(vars{i}{2})
+      vars{i}{2} = double(vars{i}{2});
+    end
     if isnumeric(vars{i}{2})
       % check to see if it is an array
       if isscalar(vars{i}{2})
