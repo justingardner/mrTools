@@ -18,7 +18,9 @@ function retval = editOverlayGUImrParams(viewNum)
 
   % Get the original overlay
   analysisNum = viewGet(v,'currentAnalysis');
+  if isempty(analysisNum),mrWarnDlg('(editOverlayGUI) No current analysis');return,end
   overlayNum = viewGet(v,'currentOverlay', analysisNum);
+  if isempty(overlayNum),mrWarnDlg('(editOverlayGUI) No current overlay');return,end
   overlayRange = viewGet(v,'overlayRange', overlayNum, analysisNum);
   overlayName = viewGet(v, 'overlayName', overlayNum, analysisNum);
   alphaOverlay = viewGet(v,'alphaOverlay');
