@@ -165,10 +165,7 @@ base.hdr = flat.hdr;
 base.name = getLastDir(params.flatFileName);
 
 % Extract permutation matrix to keep track of slice orientation.
-% This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
-% make changes here, please update that function as well.
-[q,r] = qr(inv(base.hdr.qform44(1:3,1:3)));
-base.permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+base.permutationMatrix = getPermutationMatrix(base.hdr);
 
 base.coordMap.flatDir = params.flatDir;
 base.coordMap.flatFileName = params.flatFileName;
