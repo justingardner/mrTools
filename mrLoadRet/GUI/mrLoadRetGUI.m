@@ -1606,8 +1606,8 @@ refreshMLRDisplay(viewNum);
 function editBaseMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = editBaseGUI(view);
+v = MLR.views{viewNum};
+v = editBaseGUI(v);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
