@@ -102,7 +102,7 @@ if isempty(inner)
     inner{1} = gFlatViewer.flat.parentSurfaceName;
   else
     % go look for it
-    [filename pathname] = uigetfile({'*.off','Surface file (*.off)'},sprintf('Find parent surface %s',gFlatViewer.flat.parentSurfaceName));
+    [filename pathname] = uigetfile({'*.off','Surface file (*.off)'},sprintf('Find parent surface %s',gFlatViewer.flat.parentSurfaceName),flatPath);
     if isempty(filename),return,end
     filename = fullfile(getRelativePath(flatPath,pathname),filename);
     % save it
@@ -152,7 +152,7 @@ if isempty(outer)
     outer{1} = filename;
   else
     % go look for it
-    [filename pathname] = uigetfile({'*.off','Surface file (*.off)'},sprintf('Find outer surface'));
+    [filename pathname] = uigetfile({'*.off','Surface file (*.off)'},sprintf('Find outer surface'),flatPath);
     if isempty(filename),return,end
     filename = fullfile(getRelativePath(flatPath,pathname),filename);
     % set mismatch warning on, so we check to see if there is a mismatch
@@ -197,7 +197,7 @@ if isempty(curv)
     curv{1} = getLastDir(curvGuess);
   else
     % go look for it
-    [filename pathname] = uigetfile({'*.vff','Curvature file (*.vff)'},sprintf('Find curvature file'));
+    [filename pathname] = uigetfile({'*.vff','Curvature file (*.vff)'},sprintf('Find curvature file'),flatPath);
     if isempty(filename),return,end
     filename = fullfile(getRelativePath(flatPath,pathname),filename);
     % set mismatch warning on, so we check to see if there is a mismatch
@@ -252,7 +252,7 @@ for i= 1:length(anatCanonicalDir)
 end
 if isempty(anat)
   % go look for it
-  [filename pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'},sprintf('Find 3D anatomy'));
+  [filename pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'},sprintf('Find 3D anatomy'),flatPath);
   if isempty(filename),return,end
   filename = fullfile(getRelativePath(flatPath,pathname),filename);
   anat{1} = filename;
