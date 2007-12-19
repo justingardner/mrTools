@@ -23,6 +23,7 @@ rotate = viewGet(view,'rotate');
 baseNum = viewGet(view,'currentBase');
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 baseType = viewGet(view,'baseType',baseNum);
+baseGamma = viewGet(view,'baseGamma',baseNum);
 % if no base then clear axis and return
 if isempty(baseNum)
   fig = viewGet(view,'figNum');
@@ -57,7 +58,7 @@ if isempty(base)
   if ~isempty(base.im)
     base.cmap = gray(256);
     base.clip = viewGet(view,'baseClip',baseNum);
-    base.RGB = rescale2rgb(base.im,base.cmap,base.clip);
+    base.RGB = rescale2rgb(base.im,base.cmap,base.clip,baseGamma);
   else
     base.RGB = [];
   end
@@ -164,7 +165,7 @@ if verbose>1,disppercent(inf);,end
 
 % Display colorbar
 if verbose>1,disppercent(-inf,'colorbar');,end
-cbar = rescale2rgb([1:256],cmap,[1,256]);
+cbar = rescale2rgb([1:256],cmap,[1,256],baseGamma);
 image(cbar,'Parent',gui.colorbar);
 set(gui.colorbar,'YTick',[]);
 set(gui.colorbar,'XTick',[1 64 128 192 256]);
