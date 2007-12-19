@@ -11,10 +11,10 @@
 % Clips top and bottom tails of image histogram.
 % Sets NaNs to the lowest index in the colormap
 %
-function rgb = rescale2rgb(image,cmap,clip)
+function rgb = rescale2rgb(image,cmap,clip,gamma)
 
 % check arguments
-if ~any(nargin == [3])
+if ~any(nargin == [2 3 4])
   help rescale2rgb
   return
 end
@@ -32,13 +32,18 @@ else
   clipMax = clip(2);
 end
 
+% default is gamma of 1
+if ~exist('gamma','var')
+  gamma = 1;
+end
+
 % Clip
 result = image;
 result(find(image < clipMin)) = clipMin;
 result(find(image > clipMax)) = clipMax;
 
 % Scale
-indices = round(255 * (result-clipMin)/(clipMax-clipMin)) + 1;
+indices = round(255 * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
 indices = max(1,min(indices,size(cmap,1)));
 
 % Extract r,g,b components
