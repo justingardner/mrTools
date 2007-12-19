@@ -151,7 +151,7 @@ if (baseType == 1) && ~isempty(roi) && params.smoothROI
 end
 
 % ROI-based masking
-if params.whichROIisMask
+if isfield(params,'whichROIisMask') && params.whichROIisMask
   dataMask = permute(dataMask, [2 1]);
   dataMask = 1-repmat(dataMask, [1 1 3]);
   
