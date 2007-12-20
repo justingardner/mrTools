@@ -2375,9 +2375,10 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 % [view userCancel] = newROI(view);
 % if userCancel,return,end
-if ~exist('calcDist')~= 2
+if ~exist('dijkstra') == 3
   mrWarnDlg('(mrLoadRetGUI) You need to install the mrGray tools to use the function calcDist');
 else
-  view = calcDist(v, 'segments'); % ,'polygon',1);
+  dist = calcDist(v, 'segments'); % ,'polygon',1);
+  disp(sprintf('Distance been pts A and B: %2.4f', dist(2)));
   refreshMLRDisplay(viewNum);
 end
