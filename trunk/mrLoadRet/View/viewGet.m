@@ -1028,6 +1028,22 @@ switch lower(param)
 	end
       end
     end
+  case {'basetilt'}
+    % baserotate = viewGet(view,'baseTilt',[baseNum])
+    % baserotate = viewGet(view,'baseTilt',[])
+    % baserotate = viewGet(view,'baseTilt')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).tilt;
+    end
   case {'basecurslice','baseslice'}
     % baseslice = viewGet(view,'baseslice',[baseNum])
     % baseslice = viewGet(view,'baseslice',[])

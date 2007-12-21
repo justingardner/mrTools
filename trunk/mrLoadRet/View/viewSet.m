@@ -529,6 +529,19 @@ switch lower(param)
       end
     end
       
+  case{'tilt'}
+    % view = viewSet(view,'tilt',tilt);
+    curBase = viewGet(view,'curBase');
+    numBases = viewGet(view,'numberofBaseVolumes');
+    baseType = viewGet(view,'baseType');
+    if (curBase > 0) & (curBase <= numBases)
+      % surfaces are the ones that can be tilted.
+      if baseType == 2
+	view.baseVolumes(curBase).tilt = val;
+	mlrGuiSet(view,'baseTilt',val);
+      end
+    end
+      
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
@@ -553,15 +566,13 @@ switch lower(param)
       % set basedims
       baseDims = viewGet(view,'baseDims',baseNum);
       mlrGuiSet(view,'baseDims',baseDims);
-      % set base min and max sliders
+      % set gamma sliders
       baseClip = viewGet(view,'baseClip',baseNum);
       baseRange = viewGet(view,'baseRange',baseNum);
       baseType = viewGet(view,'baseType',baseNum);
-      mlrGuiSet(view,'baseMinRange',baseRange);
-      mlrGuiSet(view,'baseMaxRange',baseRange);
-      mlrGuiSet(view,'baseMin',baseClip(1));
-      mlrGuiSet(view,'baseMax',baseClip(2));
+      baseGamma = viewGet(view,'baseGamma',baseNum);
       mlrGuiSet(view,'baseType',baseType);
+      mlrGuiSet(view,'baseGamma',baseGamma);
       % get the last know settings for this base
       baseCurSlice = viewGet(view,'baseCurSlice',baseNum);
       baseSliceOrientation = viewGet(view,'baseSliceOrientation',baseNum);
@@ -590,6 +601,10 @@ switch lower(param)
 	mlrGuiSet(view,'rotate',baseRotate);
       end
       mlrGuiSet(view,'nSlices',nSlices);
+      baseTilt = viewGet(view,'baseTilt',baseNum);
+      if baseType == 2
+	mlrGuiSet(view,'baseTilt',baseTilt);
+      end
     end
 
   case{'basecoordmappath'}
@@ -617,9 +632,6 @@ switch lower(param)
     if ~isempty(baseNum)
       view.baseVolumes(baseNum).clip(1) = val;
     end
-    if (baseNum == curBase)
-      mlrGuiSet(view,'baseMin',val);
-    end
 
   case{'basemax'}
     % view = viewSet(view,'basemax',number,[baseNum]);
@@ -631,9 +643,6 @@ switch lower(param)
     end
     if ~isempty(baseNum)
       view.baseVolumes(baseNum).clip(2) = val;
-    end
-    if (baseNum == curBase)
-      mlrGuiSet(view,'baseMax',val);
     end
 
   case{'baserange'}
@@ -647,13 +656,6 @@ switch lower(param)
     end
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).range = range;
-      if (baseNum == curBase)
-        mlrGuiSet(view,'baseMinRange',range);
-        mlrGuiSet(view,'baseMaxRange',range);
-        clip = view.baseVolumes(baseNum).clip;
-        mlrGuiSet(view,'baseMin',clip(1));
-        mlrGuiSet(view,'baseMax',clip(2));
-      end
     end
 
   case{'basegamma'}
@@ -667,6 +669,9 @@ switch lower(param)
     end
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).gamma = gamma;
+    end
+    if (baseNum == curBase)
+      mlrGuiSet(view,'baseGamma',gamma);
     end
 
   case {'basexform','basesform'}
