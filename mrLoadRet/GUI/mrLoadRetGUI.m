@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 01-Dec-2007 13:42:15
+% Last Modified by GUIDE v2.5 21-Dec-2007 11:08:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1046,13 +1046,18 @@ params = mrParamsDialog(paramsInfo,'scanXform');
 
 % ask the user if they are really sure before actually changing it
 if ~isempty(params)
-    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
-    if strcmp(answer,'Yes')
-        v = viewSet(v,'scanXform',params.sform);
-        v = viewSet(v,'sformCode',params.sformCode);
-        saveSession;
-        refreshMLRDisplay(viewNum);
-    end
+  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+  if strcmp(answer,'Yes')
+    v = viewSet(v,'scanXform',params.sform);
+    v = viewSet(v,'sformCode',params.sformCode);
+    saveSession;
+    % clear the caches
+    v = viewSet(v,'roiCache','init');
+    v = viewSet(v,'overlayCache','init');
+    v = viewSet(v,'baseCache','init');
+    % and refresh
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 % --------------------------------------------------------------------
@@ -1068,19 +1073,24 @@ shiftXform = shiftOriginXform;
 scan2base = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform;
 sformCode = viewGet(v,'sformCode');
 % params dialog
-paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign and then saving out the proper transform to this scan file and then running mrUpdateNiftiHdr. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
+paramsInfo = {{'scan2base',scan2base,'This tells you the transformation from the scan coordinates to the base coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign. Also, any fix made here only changes the mrSession it does not change the original nifti header, so if you run mrUpdateNiftiHdr your change here will be overwritten.'},...
     {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
 
 params = mrParamsDialog(paramsInfo,'scan2base transformation');
 
 if ~isempty(params)
-    answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign/mrUpdateNifitHdr. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
-    if strcmp(answer,'Yes')
-        v = viewSet(v,'scanXform',inv(shiftXform*params.scan2base*inv(shiftXform)*inv(baseXform)));
-        v = viewSet(v,'sformCode',params.sformCode);
-        saveSession;
-        refreshMLRDisplay(viewNum);
-    end
+  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign. Also, any changes made here are only made to the mrSession variable they are not saved in the nifti header and will be overwritten if you ever call mrUpdateNifitHdr)?');
+  if strcmp(answer,'Yes')
+    v = viewSet(v,'scanXform',inv(shiftXform*params.scan2base*inv(baseXform)*inv(shiftXform)));
+    v = viewSet(v,'sformCode',params.sformCode);
+    saveSession;
+    % clear the caches
+    v = viewSet(v,'roiCache','init');
+    v = viewSet(v,'overlayCache','init');
+    v = viewSet(v,'baseCache','init');
+    % and refresh
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 % --------------------------------------------------------------------
@@ -1609,6 +1619,85 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 v = editBaseGUI(v);
 refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function baseTransformsMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to baseTransformsMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function baseSformMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to baseSformMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the scanxform
+baseXform = viewGet(v,'basexform');
+sformCode = viewGet(v,'basesformCode');
+% params dialog
+paramsInfo = {{'sform',baseXform,'The sform is usually set by mrAlign to specify the transformation from the base coordinates to the volume anatomy coordinates. Only change this here if you really know what you are doing!'},...
+    {'sformCode',sformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+
+params = mrParamsDialog(paramsInfo,'baseXform');
+
+% ask the user if they are really sure before actually changing it
+if ~isempty(params)
+  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign.');
+  if strcmp(answer,'Yes')
+    v = viewSet(v,'baseXform',params.sform);
+    v = viewSet(v,'baseSformCode',params.sformCode);
+    saveSession;
+    % clear the caches
+    v = viewSet(v,'roiCache','init');
+    v = viewSet(v,'overlayCache','init');
+    v = viewSet(v,'baseCache','init');
+    % and refresh
+    refreshMLRDisplay(viewNum);
+  end
+end
+
+
+% --------------------------------------------------------------------
+function base2scanMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to base2scanMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+% get the view
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+% get the scanxform
+scanXform = viewGet(v,'scanXform');
+baseXform = viewGet(v,'baseXform');
+shiftXform = shiftOriginXform;
+base2scan = inv(shiftXform)*inv(baseXform)*scanXform*shiftXform;
+baseSformCode = viewGet(v,'baseSformCode');
+% params dialog
+paramsInfo = {{'base2scan',base2scan,'This tells you the transformation from the base coordinates to the scan coordinates. If you have set the sfroms properly with mrAlign this should give an easily interpretable value. For instance if you have the same slices, but voxels are twice as big in the scan, then the diagonal elements should have 0.5 in them. This can be fixed here, but should only be done if you really know what you are doing. Otherwise this should be fixed by rerunning mrAlign.'},...
+    {'baseSformCode',baseSformCode,'incdec=[-1 1]','minmax=[0 inf]','This gets set to 1 if mrAlign changes the sform. If it is 0 it means the sform has never been set. If you set this to 0 then mrLoadRet will ignore the sform as if it has never been set. If you want to change the above sform, make sure that this is 1'}};
+
+params = mrParamsDialog(paramsInfo,'base2scan transformation');
+
+if ~isempty(params)
+  answer = questdlg('Are you sure you want to change the sform (Normally you should fix problems with the sform by rerunning mrAlign.');
+  if strcmp(answer,'Yes')
+    v = viewSet(v,'baseXform',inv(shiftXform*params.base2scan*inv(scanXform)*inv(shiftXform)));
+    v = viewSet(v,'baseSformCode',params.baseSformCode);
+    saveSession;
+    % clear the caches
+    v = viewSet(v,'roiCache','init');
+    v = viewSet(v,'overlayCache','init');
+    v = viewSet(v,'baseCache','init');
+    % and refresh
+    refreshMLRDisplay(viewNum);
+  end
+end
+
 
 % --------------------------------------------------------------------
 function infoBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
@@ -2382,3 +2471,5 @@ else
   disp(sprintf('Distance been pts A and B: %2.4f', dist(2)));
   refreshMLRDisplay(viewNum);
 end
+
+
