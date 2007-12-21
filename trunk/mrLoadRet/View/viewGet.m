@@ -1186,6 +1186,25 @@ switch lower(param)
       % placeholder when base images not loaded
       val = eye(4);
     end
+  case {'basesformcode'}
+    % baseSformCode = viewGet(view,'baseSformCode',[baseNum])
+    % baseSformCode = viewGet(view,'baseSformCode',[])
+    % baseSformCode = viewGet(view,'baseSformCode')
+    if ieNotDefined('varargin')
+      b = viewGet(view,'currentBase');
+    else
+      b = varargin{1};
+    end
+    if isempty(b)
+      b = viewGet(view,'currentBase');
+    end
+    baseVolume = viewGet(view,'baseVolume',b);
+    if ~isempty(baseVolume)
+      val = baseVolume.hdr.sform_code;
+    else
+      % placeholder when base images not loaded
+      val = [];
+    end
   case {'basevolpermutation'}
     % basevolpermutation = viewGet(view,'basevolpermutation',[baseNum])
     % basevolpermutation = viewGet(view,'basevolpermutation',[])

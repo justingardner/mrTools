@@ -669,6 +669,36 @@ switch lower(param)
       view.baseVolumes(baseNum).gamma = gamma;
     end
 
+  case {'basexform','basesform'}
+    % view = viewSet(view,'basesform',sform,[baseNum]);
+    curBase = viewGet(view,'currentBase');
+    if ieNotDefined('varargin')
+      baseNum = curBase;
+    else
+      baseNum = varargin{1};
+    end
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      % get base header
+      hdr = view.baseVolumes(baseNum).hdr;
+      % set sform, but don't necessarily set sform_code
+      sform_code = hdr.sform_code;
+      hdr = cbiSetNiftiSform(hdr,val);
+      hdr.sform_code = sform_code;
+      % reset in structure
+      view.baseVolumes(baseNum).hdr = hdr;
+    end
+
+  case {'basesformcode'}
+    % view = viewSet(view,'baseSformCode',sformCode,[baseNum]);
+    curBase = viewGet(view,'currentBase');
+    if ieNotDefined('varargin')
+      baseNum = curBase;
+    else
+      baseNum = varargin{1};
+    end
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes) 
+      view.baseVolumes(baseNum).hdr.sform_code = val;
+    end
   case{'basename'}
     % view = viewSet(view,'basename',nameString,[baseNum]);
     if ieNotDefined('varargin')
