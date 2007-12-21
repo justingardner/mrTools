@@ -103,21 +103,20 @@ switch lower(field)
 		  set(handles.createRoiMenu,'Enable','off');
 		  set(handles.addRoiMenu,'Enable','off');
 		  set(handles.removeRoiMenu,'Enable','off');
-%		  set(handles.combineROIMenuItem,'Enable','off');
-%		  set(handles.restrictRoiMenu,'Enable','off');
-%		  set(handles.undoRoiMenuItem,'Enable','off');
-%		  set(handles.convertRoiMenuItem,'Enable','off');
 		  set(handles.rotateSlider,'SliderStep',[15 45]./360);
+		  set(handles.baseTiltSlider,'SliderStep',[15 45]./360);
+		  set(handles.baseTiltSlider,'Visible','on');
+		  set(handles.baseTiltText,'Visible','on');
+		  set(handles.baseTilt,'Visible','on');
 		  set(handles.flatViewerMenuItem,'Enable','off');
 		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
 		else
+		  set(handles.baseTiltSlider,'Visible','off');
+		  set(handles.baseTiltText,'Visible','off');
+		  set(handles.baseTilt,'Visible','off');
 		  set(handles.createRoiMenu,'Enable','on');
 		  set(handles.addRoiMenu,'Enable','on');
 		  set(handles.removeRoiMenu,'Enable','on');
-%		  set(handles.combineROIMenuItem,'Enable','on');
-%		  set(handles.restrictRoiMenu,'Enable','on');
-%		  set(handles.undoRoiMenuItem,'Enable','on');
-%		  set(handles.convertRoiMenuItem,'Enable','on');
 		  set(handles.rotateSlider,'SliderStep',[1 45]./360);
 		end		  
 	case {'basevolume'}
@@ -130,31 +129,15 @@ switch lower(field)
 		newCoords = min(handles.coords,newDims);
 		handles.coords = min(handles.coords,newCoords);
 
-	case {'basemin'}
-		% mlrGuiSet(view,'baseMin',value);
-		value = clipToSlider(handles.baseMinSlider,value);
-		set(handles.baseMinSlider,'Value',value);
-		set(handles.baseMinText,'String',num2str(value));
-		 
-	case {'baseminrange'}
-		% mlrGuiSet(view,'baseMinRange',[min,max]);
-        if value(2) > value(1)
-            set(handles.baseMinSlider,'Min',value(1));
-            set(handles.baseMinSlider,'Max',value(2));
-        end
-
-	case {'basemax'}
+	case {'basegamma'}
+		% mlrGuiSet(view,'baseGamma',value);
+		set(handles.baseGammaSlider,'Value',value);
+		set(handles.baseGammaText,'String',num2str(value));
+ 
+        case {'basetilt'}
 		% mlrGuiSet(view,'baseMax',value);
-		value = clipToSlider(handles.baseMaxSlider,value);
-		set(handles.baseMaxSlider,'Value',value);
-		set(handles.baseMaxText,'String',num2str(value));
-
-	case {'basemaxrange'}
-		% mlrGuiSet(view,'baseMinRange',[min,max]);
-        if value(2) > value(1)
-            set(handles.baseMaxSlider,'Min',value(1));
-            set(handles.baseMaxSlider,'Max',value(2));
-        end
+		set(handles.baseTiltSlider,'Value',value);
+		set(handles.baseTiltText,'String',num2str(value));
 
 	case {'analysispopup'}
 		% mlrGuiSet(view,'analysisPopup',strings);

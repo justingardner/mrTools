@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 21-Dec-2007 11:08:40
+% Last Modified by GUIDE v2.5 21-Dec-2007 15:14:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -359,8 +359,8 @@ end
 
 
 
-% --- baseMin
-function baseMinSlider_CreateFcn(hObject, eventdata, handles)
+% --- baseGamma
+function baseGammaSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
     set(hObject,'BackgroundColor',[.9 .9 .9]);
@@ -368,27 +368,27 @@ else
     set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
-function baseMinText_CreateFcn(hObject, eventdata, handles)
+function baseGammaText_CreateFcn(hObject, eventdata, handles)
 if ispc
     set(hObject,'BackgroundColor','white');
 else
     set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
-function baseMinSlider_Callback(hObject, eventdata, handles)
+function baseGammaSlider_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
-viewSet(handles.viewNum,'baseMin',value);
+viewSet(handles.viewNum,'baseGamma',value);
 refreshMLRDisplay(viewNum);
 
-function baseMinText_Callback(hObject, eventdata, handles)
+function baseGammaText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'baseMin',value);
+viewSet(viewNum,'baseGamma',value);
 refreshMLRDisplay(viewNum);
 
-% --- baseMax
-function baseMaxSlider_CreateFcn(hObject, eventdata, handles)
+% --- baseTilt
+function baseTiltSlider_CreateFcn(hObject, eventdata, handles)
 usewhitebg = 1;
 if usewhitebg
     set(hObject,'BackgroundColor',[.9 .9 .9]);
@@ -396,24 +396,38 @@ else
     set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
-function baseMaxText_CreateFcn(hObject, eventdata, handles)
+function baseTiltText_CreateFcn(hObject, eventdata, handles)
 if ispc
     set(hObject,'BackgroundColor','white');
 else
     set(hObject,'BackgroundColor',get(0,'defaultUicontrolBackgroundColor'));
 end
 
-function baseMaxSlider_Callback(hObject, eventdata, handles)
+function baseTiltSlider_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
-viewSet(viewNum,'baseMax',value);
-refreshMLRDisplay(viewNum);
+viewSet(viewNum,'tilt',value);
+v = viewGet([],'view',viewNum);
 
-function baseMaxText_Callback(hObject, eventdata, handles)
+if (viewGet(v,'baseType') == 2)
+  setMLRViewAngle(v);
+else
+  refreshMLRDisplay(viewNum);
+end
+
+function baseTiltText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'baseMax',value);
-refreshMLRDisplay(viewNum);
+viewSet(viewNum,'tilt',value);
+v = viewGet([],'view',viewNum);
+fig = viewGet(v,'figNum');
+gui = guidata(fig);
+
+if (viewGet(v,'baseType') == 2)
+  feval('view',gui.axis,viewGet(v,'rotateSurface'),viewGet(v,'baseTilt'));
+else
+  refreshMLRDisplay(viewNum);
+end
 
 % --- overlayMax
 function overlayMaxSlider_CreateFcn(hObject, eventdata, handles)
@@ -520,11 +534,9 @@ viewNum = handles.viewNum;
 value = get(hObject,'Value');
 mlrGuiSet(viewNum,'rotate',value);
 v = viewGet([],'view',viewNum);
-fig = viewGet(v,'figNum');
-gui = guidata(fig);
 
 if (viewGet(v,'baseType') == 2)
-  feval('view',gui.axis,viewGet(v,'rotateSurface'),0);
+  setMLRViewAngle(v);
 else
   refreshMLRDisplay(viewNum);
 end
@@ -537,11 +549,6 @@ v = viewGet([],'view',viewNum);
 fig = viewGet(v,'figNum');
 gui = guidata(fig);
 
-if (viewGet(v,'baseType') == 2)
-  feval('view',gui.axis,viewGet(v,'rotateSurface'),0);
-else
-  refreshMLRDisplay(viewNum);
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function fileMenu_Callback(hObject, eventdata, handles)
