@@ -149,7 +149,7 @@ else
   % narrow. 9 seems to fit the whole brain nicely
   camva(gui.axis,9);
   % set the view angle
-  feval('view',gui.axis,viewGet(view,'rotateSurface'),0);
+  setMLRViewAngle(view);
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms
   % it is also marginally faster than the zbuffer
