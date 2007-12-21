@@ -546,9 +546,12 @@ viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
 mlrGuiSet(viewNum,'rotate',value);
 v = viewGet([],'view',viewNum);
-fig = viewGet(v,'figNum');
-gui = guidata(fig);
 
+if (viewGet(v,'baseType') == 2)
+  setMLRViewAngle(v);
+else
+  refreshMLRDisplay(viewNum);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function fileMenu_Callback(hObject, eventdata, handles)
