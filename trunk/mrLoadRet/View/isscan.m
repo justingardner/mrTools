@@ -26,14 +26,14 @@ if (nargout == 2)
     'dataSize','framePeriod'};
   optionalFields = {'originalGroupName',[];
 		    'originalFileName',scanParams.fileName;
-		    'totalJunkedFrames',[],
-		    'talXform',[]};
+		    'totalJunkedFrames',[]}
+
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'description','fileName','fileType','niftiHdr',...
     'voxelSize','totalFrames','junkFrames','nFrames',...
-    'dataSize','framePeriod','originalFileName','originalGroupName','totalJunkedFrames','talXform'};
+    'dataSize','framePeriod','originalFileName','originalGroupName','totalJunkedFrames'};
   optionalFields = {};
 end
 
