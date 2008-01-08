@@ -88,6 +88,7 @@ switch lower(field)
 		  set(handles.corticalDepthSlider,'Visible','off');
 		  set(handles.corticalDepthText,'Visible','off');
 		  set(handles.flatViewerMenuItem,'Enable','off');
+                  set(handles.calcDistMenu, 'Enable', 'off');
 		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
 		elseif value >= 1
 		  set(handles.sagittalRadioButton,'Visible','off');
@@ -97,6 +98,7 @@ switch lower(field)
 		  set(handles.corticalDepthSlider,'Visible','on');
 		  set(handles.corticalDepthText,'Visible','on');
 		  set(handles.flatViewerMenuItem,'Enable','on');
+                  set(handles.calcDistMenu, 'Enable', 'on');
 		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
 		end
 		if value == 2
@@ -109,6 +111,7 @@ switch lower(field)
 		  set(handles.baseTiltText,'Visible','on');
 		  set(handles.baseTilt,'Visible','on');
 		  set(handles.flatViewerMenuItem,'Enable','off');
+                  set(handles.calcDistMenu, 'Enable', 'off');
 		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
 		else
 		  set(handles.baseTiltSlider,'Visible','off');
