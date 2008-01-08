@@ -18,7 +18,7 @@ function [tf scanParams] =  isscan(scanParams)
 % jlg, 4/2007 check for unknown fields
 % djh, 7/2007 allow optional fields with defaults
 
-if (nargout == 2)
+ if (nargout == 2)
   % Add optional fields and return true if the scanParams with optional fields is
   % valid.
   requiredFields = {'description','fileName','fileType','niftiHdr',...
@@ -26,7 +26,7 @@ if (nargout == 2)
     'dataSize','framePeriod'};
   optionalFields = {'originalGroupName',[];
 		    'originalFileName',scanParams.fileName;
-		    'totalJunkedFrames',[]}
+		    'totalJunkedFrames',[]};
 
 else
   % Return 0 if the overlay structure is missing any fields required or
