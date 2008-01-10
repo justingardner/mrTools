@@ -735,11 +735,95 @@ switch lower(param)
         val = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
       end
     end
-  case{'scanxform'}
-    % xform = viewGet(view,'scanXform',scanNum,[groupNum])
-    % xform = viewGet([],'scanXform',scanNum,groupNum)
-    % xform = viewGet(view,'scanXform',scanNum,[])
-    % xform = viewGet(view,'scanXform',scanNum)
+  case{'scanvol2tal'}
+    % xform = viewGet(view,'scanVol2tal',[scanNum],[groupNum])
+    % This will return the xform matrix that specifies the
+    % transformation from volume coordinates to talairach
+    % coordinates of the base volume that this scan was aligned to.
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      val = MLR.groups(g).scanParams(s).vol2tal;
+    end
+  case{'scanvol2mag'}
+    % xform = viewGet(view,'scanVol2mag',[scanNum],[groupNum])
+    % This will return the xform matrix that specifies the
+    % transformation from volume coordinates to the magnet
+    % coordinates of the base volume that this scan was aligned to.
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      val = MLR.groups(g).scanParams(s).vol2mag;
+    end
+  case{'scan2tal'}
+    % xform = viewGet(view,'scan2tal',[scanNum],[groupNum])
+    % This will return the xform matrix that specifies the
+    % transformation from this scan to the volume
+    % in talairach coordinates. Note that this also has
+    % composited the shiftOriginXform.
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      sform_code = viewGet(view,'sformCode',s,g);
+      scanSform = viewGet(view,'scanSform',s,g);
+      if ~isempty(scanSform)
+	if (sform_code == 3)
+	  val = scanSform * shiftOriginXform;
+	elseif (sform_code == 1)
+	  vol2tal = viewGet(view,'scanVol2tal',s,g);
+	  vol2mag = viewGet(view,'scanVol2mag',s,g);
+	  if ~isempty(vol2tal) && ~isempty(vol2mag)
+	    val = vol2tal * inv(vol2mag) * scanSform * shiftOriginXform;
+	  end
+	end
+      end
+    end      
+  case{'scan2mag','scanxform'}
+    % xform = viewGet(view,'scan2mag',[scanNum],[groupNum])
+    % The scan2mag xform specifies the xform from the scan
+    % to the volume in magnet coordinates. 
+    % If the sform_code is set to 1, then this is the same
+    % as scanSform *except* that the origin has been shifted
+    % to start at 0,0,0. i.e. It is scanSform * shiftOriginXform
+    %
+    % Note that before adding the talairach xform code, scan2mag
+    % was called scanxform and the code assumed that the sform
+    % of the scan contained this xform. If you ask for scanXform
+    % you will get the scan2mag xform, but it does *not* have
+    % the shiftOriginXform composited so as to be compatible
+    % with the old code
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      sform_code = viewGet(view,'sformCode',s,g);
+      scanSform = viewGet(view,'scanSform',s,g);
+      if ~isempty(scanSform)
+	if (sform_code == 1)
+	  val = scanSform * shiftOriginXform;
+	elseif (sform_code == 3)
+	  vol2tal = viewGet(view,'scanVol2tal',s,g);
+	  vol2mag = viewGet(view,'scanVol2mag',s,g);
+	  if ~isempty(vol2tal) && ~isempty(vol2mag)
+	    val = vol2mag * inv(vol2tal) * scanSform * shiftOriginXform;
+	  end
+	end
+      end
+      if strcmp(lower(param),'scanxform') && ~isempty(val)
+	val = val * inv(shiftOriginXform);
+      end
+    end
+  case{'scansform'}
+    % sform = viewGet(view,'scanSform',[scanNum],[groupNum])
+    % The scanSform is the sform set in the nifti header.
+    % If the sform_code is set to 1, then this field has
+    % been set by mrAlign to be the tansformation from this
+    % scan to the volume in magnet coordinates. Note that
+    % scanSform does not shift the origin to start at 0,0,0
+    % You usually will need to composite this sform with
+    % shiftOriginXform to get the scan2mag xform.
+    % If the sform_code is set to 3, then this field has
+    % been set by mrAlign to be the transformation from 
+    % this scan to the volume in talairach coordinates.
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
     if (nscans >= s) & (s > 0)
@@ -809,8 +893,6 @@ switch lower(param)
     val = find(strcmp(baseName,baseNames));
   case{'basevolume','baseanatomy'}
     % basevolume = viewGet(view,'baseVolume',[baseNum])
-    % basevolume = viewGet(view,'baseVolume',[])
-    % basevolume = viewGet(view,'baseVolume')
     if ieNotDefined('varargin')
       b = viewGet(view,'currentBase');
     else
@@ -847,64 +929,28 @@ switch lower(param)
     end
   case {'basename'}
     % basename = viewGet(view,'basename',[baseNum])
-    % basename = viewGet(view,'basename',[])
-    % basename = viewGet(view,'basename')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).name;
     end
   case {'basedata'}
     % basedata = viewGet(view,'basedata',[baseNum])
-    % basedata = viewGet(view,'basedata',[])
-    % basedata = viewGet(view,'basedata')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).data;
     end
   case {'base'}
     % basedata = viewGet(view,'base',[baseNum])
-    % basedata = viewGet(view,'base',[])
-    % basedata = viewGet(view,'base')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b);
     end
   case {'basecoordmappath'}
     % basedata = viewGet(view,'baseCoordMapPath',[baseNum],[corticalDepth])
-    % basedata = viewGet(view,'baseCoordMapPath',[])
-    % basedata = viewGet(view,'baseCoordMapPath')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     val = [];
     if b & (b > 0) & (b <= n)
@@ -917,16 +963,7 @@ switch lower(param)
     end
   case {'basecoordmap'}
     % basedata = viewGet(view,'baseCoordMap',[baseNum],[corticalDepth])
-    % basedata = viewGet(view,'baseCoordMap',[])
-    % basedata = viewGet(view,'baseCoordMap')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     % get cortical depth
     if ieNotDefined('varargin') || (length(varargin)<2)
       corticalDepth = viewGet(view,'corticalDepth');
@@ -948,16 +985,7 @@ switch lower(param)
     end
   case {'basesurface'}
     % basedata = viewGet(view,'baseSurface',[baseNum],[corticalDepth])
-    % basedata = viewGet(view,'baseSurface',[])
-    % basedata = viewGet(view,'baseSurface')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     % get cortical depth
     if ieNotDefined('varargin') || (length(varargin)<2)
       corticalDepth = viewGet(view,'corticalDepth');
@@ -989,32 +1017,14 @@ switch lower(param)
     end
   case {'baseclip'}
     % baseclip = viewGet(view,'baseclip',[baseNum])
-    % baseclip = viewGet(view,'baseclip',[])
-    % baseclip = viewGet(view,'baseclip')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).clip;
     end
   case {'baserotate'}
     % baserotate = viewGet(view,'baserotate',[baseNum])
-    % baserotate = viewGet(view,'baserotate',[])
-    % baserotate = viewGet(view,'baserotate')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       baseType = viewGet(view,'baseType',b);
@@ -1030,97 +1040,43 @@ switch lower(param)
     end
   case {'basetilt'}
     % baserotate = viewGet(view,'baseTilt',[baseNum])
-    % baserotate = viewGet(view,'baseTilt',[])
-    % baserotate = viewGet(view,'baseTilt')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).tilt;
     end
   case {'basecurslice','baseslice'}
     % baseslice = viewGet(view,'baseslice',[baseNum])
-    % baseslice = viewGet(view,'baseslice',[])
-    % baseslice = viewGet(view,'baseslice')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).curSlice;
     end
   case {'basesliceorientation'}
     % basesliceOrientation = viewGet(view,'baseSliceOrientation',[baseNum])
-    % basesliceOrientation = viewGet(view,'baseSliceOrientation',[])
-    % basesliceOrientation = viewGet(view,'baseSliceOrientation')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).sliceOrientation;
     end
   case {'baserange'}
     % baserange = viewGet(view,'baserange',[baseNum])
-    % baserange = viewGet(view,'baserange',[])
-    % baserange = viewGet(view,'baserange')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).range;
     end
   case {'basegamma'}
     % baseGamma = viewGet(view,'baseGamma',[baseNum])
-    % baseGamma = viewGet(view,'baseGamma',[])
-    % baseGamma = viewGet(view,'baseGamma')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).gamma;
     end
   case {'basetype'}
     % baserange = viewGet(view,'baserange',[baseNum])
-    % baserange = viewGet(view,'baserange',[])
-    % baserange = viewGet(view,'baserange')
     % 0 is for a regular volume, 1 is for a flat, 2 is for a surface
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).type;
@@ -1129,14 +1085,7 @@ switch lower(param)
     % basedims = viewGet(view,'basedims',[baseNum])
     % basedims = viewGet(view,'basedims',[])
     % basedims = viewGet(view,'basedims')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     baseType = viewGet(view,'baseType',b);
     if baseType == 2
       baseDims = view.baseVolumes(b).coordMap.dims;
@@ -1148,15 +1097,7 @@ switch lower(param)
     % basedims = viewGet(view,'basedims',[baseNum])
     % basedims = viewGet(view,'basedims',[])
     % basedims = viewGet(view,'basedims')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
-    baseVolume = viewGet(view,'baseVolume',b);
+    [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
       val = size(baseVolume.data);
       % for an image with only one slice
@@ -1164,19 +1105,94 @@ switch lower(param)
 	val(3) = 1;
       end
     end
-  case {'basexform'}
-    % basexform = viewGet(view,'basexform',[baseNum])
-    % basexform = viewGet(view,'basexform',[])
-    % basexform = viewGet(view,'basexform')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
+  case{'base2tal'}
+    % xform = viewGet(view,'base2tal',[baseNum])
+    % This will return the xform matrix that specifies the
+    % transformation from this base to the volume
+    % in talairach coordinates. Note that this also has
+    % composited the shiftOriginXform.
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numBase');
+    if (b > 0) && (b <= n)
+      sform_code = viewGet(view,'baseSformCode',b);
+      baseSform = viewGet(view,'baseSform',b);
+      if ~isempty(baseSform)
+	if (sform_code == 3)
+	  val = baseSform * shiftOriginXform;
+	elseif (sform_code == 1)
+	  vol2mag = viewGet(view,'baseVol2mag',b);
+	  vol2tal = viewGet(view,'baseVol2tal',b);
+	  if ~isempty(vol2mag) && ~isempty(vol2tal)
+	    val = vol2tal * inv(vol2mag) * baseSform * shiftOriginXform;
+	  end
+	end
+      end
     end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
+  case{'base2mag','basexform'}
+    % xform = viewGet(view,'base2mag',[baseNum])
+    % The base2mag xform specifies the xform from the base
+    % to the volume in magnet coordinates. 
+    % If the sform_code is set to 1, then this is the same
+    % as baseSform *except* that the origin has been shifted
+    % to start at 0,0,0. i.e. It is baseSform * shiftOriginXform
+    %
+    % Note that previous to adding the talairach transformation
+    % code, base2mag used to be called baseXform which used
+    % to be assumed to be the same as baseSform (note that
+    % if you ask for basexform then shiftOriginXform is *not*
+    % composited with the transformation--since this is the
+    % way the old code worked).
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numBase');
+    if (b > 0) && (b <= n)
+      sform_code = viewGet(view,'baseSformCode',b);
+      baseSform = viewGet(view,'baseSform',b);
+      if ~isempty(baseSform)
+	if (sform_code == 1)
+	  val = baseSform * shiftOriginXform;
+	elseif (sform_code == 3)
+	  vol2mag = viewGet(view,'baseVol2mag',b);
+	  vol2tal = viewGet(view,'baseVol2tal',b);
+	  if ~isempty(vol2mag) && ~isempty(vol2tal)
+	    val = vol2mag * inv(vol2tal) * baseSform * shiftOriginXform;
+	  end
+	end
+      end
+      % if we are being asked for baseXform
+      if strcmp(lower(param),'basexform') && ~isempty(val)
+	val = val * inv(shiftOriginXform);
+      end
     end
-    baseVolume = viewGet(view,'baseVolume',b);
+  case {'basevol2tal'}
+    % basexform = viewGet(view,'baseVol2tal',[baseNum])
+    % This will return the xform matrix that specifies the
+    % transformation from volume coordinates to talairach
+    % coordinates of the base volume that this base was aligned to.
+    [b baseVolume] = getBaseNum(view,varargin);
+    if ~isempty(baseVolume)
+      val = baseVolume.vol2tal;
+    end
+  case {'basevol2mag'}
+    % basexform = viewGet(view,'baseVol2mag',[baseNum])
+    % This will return the xform matrix that specifies the
+    % transformation from volume coordinates to magnet
+    % coordinates of the base volume that this base was aligned to.
+    [b baseVolume] = getBaseNum(view,varargin);
+    if ~isempty(baseVolume)
+      val = baseVolume.vol2mag;
+    end
+  case {'basesform'}
+    % baseSform = viewGet(view,'baseSform',[baseNum])
+    % This returns the sform in the nifit header
+    % which if the sform_code is set to 1 by mrAlign
+    % should be the xformation of the base to the
+    % volume in magnet coordinates. Note that if
+    % this base is the "canonical" volume then 
+    % this is the same as the qform.
+    % if sform_code is set to 3 then this is the
+    % trasnformation of the base to the volume in
+    % talairach coordinates
+    [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
       val = baseVolume.hdr.sform44;
     else
@@ -1185,17 +1201,7 @@ switch lower(param)
     end
   case {'baseqform'}
     % basexform = viewGet(view,'baseqform',[baseNum])
-    % basexform = viewGet(view,'baseqform',[])
-    % basexform = viewGet(view,'baseqform')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
-    baseVolume = viewGet(view,'baseVolume',b);
+    [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
       val = baseVolume.hdr.qform44;
     else
@@ -1204,17 +1210,7 @@ switch lower(param)
     end
   case {'basesformcode'}
     % baseSformCode = viewGet(view,'baseSformCode',[baseNum])
-    % baseSformCode = viewGet(view,'baseSformCode',[])
-    % baseSformCode = viewGet(view,'baseSformCode')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
-    baseVolume = viewGet(view,'baseVolume',b);
+    [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
       val = baseVolume.hdr.sform_code;
     else
@@ -1223,17 +1219,7 @@ switch lower(param)
     end
   case {'basevolpermutation'}
     % basevolpermutation = viewGet(view,'basevolpermutation',[baseNum])
-    % basevolpermutation = viewGet(view,'basevolpermutation',[])
-    % basevolpermutation = viewGet(view,'basevolpermutation')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
-    baseVolume = viewGet(view,'baseVolume',b);
+    [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
       val = baseVolume.permutationMatrix;
     else
@@ -1242,21 +1228,11 @@ switch lower(param)
     end
   case {'basesliceindex'}
     % basesliceindex = viewGet(view,'basesliceindex',[baseNum])
-    % basesliceindex = viewGet(view,'basesliceindex',[])
-    % basesliceindex = viewGet(view,'basesliceindex')
-    %
     % This admittedly arcane logic is also used in mrAlignGUI. If you
     % change this code, please make corresponding changes in that
     % function. Permutation matrix is set by loadAnat using even more
     % arcane logic.
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
+    b = getBaseNum(view,varargin);
     sliceOrientation = viewGet(view,'sliceOrientation');
     permutation = viewGet(view,'baseVolPermutation',b);
     switch sliceOrientation
@@ -1270,17 +1246,7 @@ switch lower(param)
     val = index;
   case {'basevoxelsize'}
     % basevoxelsize = viewGet(view,'basevoxelsize',[baseNum])
-    % basevoxelsize = viewGet(view,'basevoxelsize',[])
-    % basevoxelsize = viewGet(view,'basevoxelsize')
-    if ieNotDefined('varargin')
-      b = viewGet(view,'currentBase');
-    else
-      b = varargin{1};
-    end
-    if isempty(b)
-      b = viewGet(view,'currentBase');
-    end
-    baseVolume = viewGet(view,'baseVolume',b);
+    [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
       val = baseVolume.hdr.pixdim([2,3,4])';;
     end
@@ -1316,16 +1282,7 @@ switch lower(param)
     end
   case{'roi'}
     % roi = viewGet(view,'roi',[roiNum])
-    % roi = viewGet(view,'roi',[])
-    % roi = viewGet(view,'roi')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r);
@@ -1345,32 +1302,14 @@ switch lower(param)
     end
   case{'roiname'}
     % roiName = viewGet(view,'roiName',[roiNum])
-    % roiName = viewGet(view,'roiName',[])
-    % roiName = viewGet(view,'roiName')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).name;
     end
   case{'roicoords'}
     % roiCoords = viewGet(view,'roiCoords',[roiNum])
-    % roiCoords = viewGet(view,'roiCoords',[])
-    % roiCoords = viewGet(view,'roiCoords')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).coords;
@@ -1380,16 +1319,7 @@ switch lower(param)
     val = view.prevROIcoords;
   case{'roicolor'}
     % roicolor = viewGet(view,'roicolor',[roiNum])
-    % roicolor = viewGet(view,'roicolor',[])
-    % roicolor = viewGet(view,'roicolor')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).color;
@@ -1406,34 +1336,64 @@ switch lower(param)
     val = color2RGB(roicolor);
   case{'roixform'}
     % roixform = viewGet(view,'roixform',[roiNum])
-    % roixform = viewGet(view,'roixform',[])
-    % roixform = viewGet(view,'roixform')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    % this returns the roiXform which is the xform
+    % of the roi to the volume in magnet coordinates.
+    % It is *not* shifted by shiftOriginXform;
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).xform;
     else
       val = eye(3);
     end
+  case{'roivol2mag'}
+    % roiVol2mag = viewGet(view,'roiVol2mag',[roiNum])
+    % returns the xform of the volume coordinates to
+    % the magnet coordinates for the canonical volume
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).vol2mag;
+    end
+  case{'roivol2tal'}
+    % roiVol2tal = viewGet(view,'roiVol2tal',[roiNum])
+    % returns the xform of the volume coordinates to
+    % the talairach coordinates for the canonical volume
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).vol2tal;
+    end
+  case{'roi2mag'}
+    % roi2mag = viewGet(view,'roi2mag',[roiNum])
+    % roi2mag returns the transformation of the roi
+    % to the volume in magnet coordinates. It has
+    % composited on it the shiftOriginXform. 
+    % The only difference between this and roiXform
+    % is the incluson of the shiftOriginXform
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).xform * shiftOriginXform;
+    end
+  case{'roi2tal'}
+    % roi2tal = viewGet(view,'roi2tal',[roiNum])
+    % roi2tal returns the transformation of the roi
+    % to the volume in talairach coordinates. It has
+    % composited on it the shiftOriginXform. 
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      vol2tal = viewGet(view,'roiVol2tal',r);
+      vol2mag = viewGet(view,'roiVol2mag',r);
+      if ~isempty(vol2tal) && ~isempty(vol2mag)
+	val = vol2tal * inv(vol2mag) * view.ROIs(r).xform * shiftOriginXform;
+      end
+    end
+  
   case{'roinotes'}
     % roinotesm = viewGet(view,'roinotes',[roiNum])
-    % roinotes = viewGet(view,'roinotes',[])
-    % roinotes = viewGet(view,'roinotes')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).notes;
@@ -1442,32 +1402,14 @@ switch lower(param)
     end
   case{'roivoxelsize'}
     % roivoxelsize = viewGet(view,'roivoxelsize',[roiNum])
-    % roivoxelsize = viewGet(view,'roivoxelsize',[])
-    % roivoxelsize = viewGet(view,'roivoxelsize')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).voxelSize;
     end
   case('roivolume')
     % roivolume = viewGet(view,'roivolume',[roiNum])
-    % roivolume = viewGet(view,'roivolume',[])
-    % roivolume = viewGet(view,'roivolume')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       roiVoxelSize = view.ROIs(r).voxelSize;
@@ -1478,16 +1420,7 @@ switch lower(param)
     end
   case{'roidate'}
     % roidate = viewGet(view,'roidate',[roiNum])
-    % roidate = viewGet(view,'roidate',[])
-    % roidate = viewGet(view,'roidate')
-    if ieNotDefined('varargin')
-      r = viewGet(view,'currentROI');
-    else
-      r = varargin{1};
-    end
-    if isempty(r)
-      r = viewGet(view,'currentROI');
-    end
+    r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).date;
@@ -2931,4 +2864,29 @@ else
 end
 if isempty(g)
   g = viewGet(view,'currentGroup');
+end
+
+function [b baseVolume] = getBaseNum(view,varg)
+
+if ieNotDefined('varg')
+  b = viewGet(view,'currentBase');
+else
+  b = varg{1};
+end
+if isempty(b)
+  b = viewGet(view,'currentBase');
+end
+if nargout == 2
+  baseVolume = viewGet(view,'baseVolume',b);
+end
+
+function r= getRoiNum(view,varg)
+
+if ieNotDefined('varg')
+  r = viewGet(view,'currentROI');
+else
+  r = varg{1};
+end
+if isempty(r)
+  r = viewGet(view,'currentROI');
 end
