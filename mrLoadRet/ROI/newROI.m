@@ -1,6 +1,6 @@
-function [view  userCancel] = newROI(view,name,select,color,xform,voxelSize,coords)
+function [view  userCancel] = newROI(view,name,select,color,xform,voxelSize,coords,vol2tal,vol2mag)
 
-% function view = newROI(view,[name],[select],[color],[xform],[voxelSize],[coords])
+% function view = newROI(view,[name],[select],[color],[xform],[voxelSize],[coords],[xform_code],[vol2tal],[vol2mag])
 %
 % Makes new empty ROI, adds it to view.ROIs, and selects it.
 %
@@ -47,6 +47,14 @@ if ieNotDefined('xform')
   baseNum = viewGet(view,'currentBase');
   xform = viewGet(view,'basexform',baseNum);
 end
+if ieNotDefined('vol2mag')
+  baseNum = viewGet(view,'currentBase');
+  vol2mag = viewGet(view,'baseVol2mag',baseNum);
+end
+if ieNotDefined('vol2tal')
+  baseNum = viewGet(view,'currentBase');
+  vol2tal = viewGet(view,'baseVol2tal',baseNum);
+end
 if ieNotDefined('voxelSize')
   baseNum = viewGet(view,'currentBase');
   voxelSize = viewGet(view,'baseVoxelSize',baseNum);
@@ -70,6 +78,8 @@ ROI.xform = xform;
 ROI.voxelSize = voxelSize;
 ROI.coords = coords;
 ROI.notes = params.notes;
+ROI.vol2mag = vol2mag;
+ROI.vol2tal = vol2tal;
 
 % Add it to the view
 [view tf]= viewSet(view,'newROI',ROI);
