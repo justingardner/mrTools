@@ -9,6 +9,17 @@
 %             to "steal" the view so that you can get information
 %             from the command line about what is being display
 %
+%             the preferred usage of this is to substitute this
+%             function call every place that requires a view:
+%
+%             viewGet(getMLRView,....
+%             viewSet(getMLRView,...
+%              
+%             viewSet returns a modified view, but also updates
+%             the global, so if you always reget the view from
+%             the global using getMLRView, this should give
+%             expected results.
+%
 function v = getMLRView()
 
 % check arguments
