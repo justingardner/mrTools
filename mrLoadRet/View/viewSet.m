@@ -284,9 +284,61 @@ switch lower(param)
     else
       disp(sprintf('(viewSet) Invalid scanParams'));
     end
-
-  case {'scanxform','sform'}
-    % view = viewSet(view,'sform',sform,scanNum,groupNum);
+  case {'scanvol2tal'}
+    % view = viewSet(view,'scanvol2tal',vol2tal,[scanNum],[groupNum]);
+    % set the vol2tal transform for the specified scan. 
+    % This specifies the transformation from volume coordinates to talairach
+    % coordinates of the base volume that this scan was aligned to.
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    % check that the passed in xform is 4x4
+    if ~isequal(size(val),[4 4])
+      mrErrorDlg('(viewSet) scanVol2tal transform should be a 4x4 matrix');
+    end
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).scanParams(s).vol2tal = val;
+    end
+  case {'scanvol2mag'}
+    % view = viewSet(view,'scanvol2mag',vol2mag,[scanNum],[groupNum]);
+    % set the vol2mag transform for the specified scan. 
+    % This specifies the transformation from volume coordinates to magnet
+    % coordinates of the base volume that this scan was aligned to.
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    % check that the passed in xform is 4x4
+    if ~isequal(size(val),[4 4])
+      mrErrorDlg('(viewSet) scanVol2mag transform should be a 4x4 matrix');
+    end
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).scanParams(s).vol2mag = val;
+    end
+  case {'scanxform'}
+    % view = viewSet(view,'scanXform',sform,scanNum,groupNum);
+    % This will set the scan sform to the passed in sform
+    % and set the sform_code to 1
+    % viewSet of scanXform is redundant with scanSform
+    % and the latter is the preferred method because
+    % it does not assume that the sform should be
+    % in magnet coordinates.
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
+      MLR.groups(g).scanParams(s).niftiHdr.sform_code = 1;
+    end
+  case {'scansform','sform'}
+    % view = viewSet(view,'scanSform',sform,scanNum,groupNum);
+    % The scanSform is the sform set in the nifti header.
+    % If the sform_code is set to 1, then this field has
+    % been set by mrAlign to be the tansformation from this
+    % scan to the volume in magnet coordinates, 
+    % If the sform_code is set to 3, then this field has
+    % been set by mrAlign to be the tansformation from this
+    % scan to the volume in talairach coordinates, 
+    % You will need to viewSet the sform_code for the scan
+    % accordingly if you change the scanSform.
+    % viewSet of scanXform assumes that the sform is
+    % in magnet coordinates.
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
     if (nscans >= s) & (s > 0)
@@ -609,12 +661,7 @@ switch lower(param)
 
   case{'basecoordmappath'}
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
-    curBase = viewGet(view,'currentBase');
-    if ~isempty(varargin)
-      baseNum = varargin{1};
-    else
-      baseNum = curBase;
-    end
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum)
       if isfield(view.baseVolumes(baseNum),'coordMap')
 	view.baseVolumes(baseNum).coordMap.flatDir = val;
@@ -623,24 +670,14 @@ switch lower(param)
 
   case{'basemin'}
     % view = viewSet(view,'basemin',number,[baseNum]);
-    curBase = viewGet(view,'currentBase');
-    if ~isempty(varargin)
-      baseNum = varargin{1};
-    else
-      baseNum = curBase;
-    end
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum)
       view.baseVolumes(baseNum).clip(1) = val;
     end
 
   case{'basemax'}
     % view = viewSet(view,'basemax',number,[baseNum]);
-    curBase = viewGet(view,'currentBase');
-    if ~isempty(varargin)
-      baseNum = varargin{1};
-    else
-      baseNum = curBase;
-    end
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum)
       view.baseVolumes(baseNum).clip(2) = val;
     end
@@ -648,12 +685,7 @@ switch lower(param)
   case{'baserange'}
     % view = viewSet(view,'baserange',[min max],[baseNum]);
     range = val;
-    curBase = viewGet(view,'currentBase');
-    if ieNotDefined('varargin')
-      baseNum = curBase;
-    else
-      baseNum = varargin{1};
-    end
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).range = range;
     end
@@ -661,12 +693,7 @@ switch lower(param)
   case{'basegamma'}
     % view = viewSet(view,'baseGamma',gamma,[baseNum]);
     gamma = val;
-    curBase = viewGet(view,'currentBase');
-    if ieNotDefined('varargin')
-      baseNum = curBase;
-    else
-      baseNum = varargin{1};
-    end
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).gamma = gamma;
     end
@@ -674,14 +701,55 @@ switch lower(param)
       mlrGuiSet(view,'baseGamma',gamma);
     end
 
-  case {'basexform','basesform'}
-    % view = viewSet(view,'basesform',sform,[baseNum]);
-    curBase = viewGet(view,'currentBase');
-    if ieNotDefined('varargin')
-      baseNum = curBase;
-    else
-      baseNum = varargin{1};
+  case {'basevol2mag'}
+    % view = viewSet(view,'baseVol2mag',xform,[baseNum]);
+    % This specifies the transformation from volume coordinates to magnet
+    % coordinates of the base volume that this base was aligned to.
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).vol2mag = val;
     end
+  case {'basevol2tal'}
+    % view = viewSet(view,'baseVol2tal',xform,[baseNum]);
+    % This specifies the transformation from volume coordinates to talairach
+    % coordinates of the base volume that this base was aligned to.
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).vol2tal = val;
+    end
+  case {'basexform'}
+    % view = viewSet(view,'baseXform',sform,[baseNum]);
+    % set the base sform to the passed in value and
+    % sets the base sform_code to 1
+    % viewSet of baseXform is redundant with baseSform
+    % and the latter is the preferred method because
+    % it does not assume that the sform should be
+    % in magnet coordinates.
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      % get base header
+      hdr = view.baseVolumes(baseNum).hdr;
+      % set sform
+      hdr = cbiSetNiftiSform(hdr,val);
+      hdr.sform_code = 1;
+      % reset in structure
+      view.baseVolumes(baseNum).hdr = hdr;
+    end
+  case {'basesform'}
+    % view = viewSet(view,'basesform',sform,[baseNum]);
+    % This returns the sform of the base, which should
+    % be set by mrAlign.
+    % This is the transformation from the base to
+    % volume in magnet coordinates when the sform_code
+    % of the base is set to 1.
+    % This is the transformation from the base to
+    % volume in talairach coordinates when the sform_code
+    % of the base is set to 3.
+    % You will need to viewSet the sform_code for the base
+    % accordingly if you change the baseSform.
+    % viewSet of baseXform assumes that the sform is
+    % in magnet coordinates.
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       % get base header
       hdr = view.baseVolumes(baseNum).hdr;
@@ -695,22 +763,13 @@ switch lower(param)
 
   case {'basesformcode'}
     % view = viewSet(view,'baseSformCode',sformCode,[baseNum]);
-    curBase = viewGet(view,'currentBase');
-    if ieNotDefined('varargin')
-      baseNum = curBase;
-    else
-      baseNum = varargin{1};
-    end
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes) 
       view.baseVolumes(baseNum).hdr.sform_code = val;
     end
   case{'basename'}
     % view = viewSet(view,'basename',nameString,[baseNum]);
-    if ieNotDefined('varargin')
-      baseNum = viewGet(view,'curBase');
-    else
-      baseNum = varargin{1};
-    end
+    baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum)
       view.baseVolumes(baseNum).name = val;
       mlrGuiSet(view,'basePopup',viewGet(view,'baseNames'));
@@ -1350,6 +1409,36 @@ switch lower(param)
       view.ROIs(roiNum).notes = val;
     end
 
+  case 'roivol2mag'
+    % v = viewSet(v,'roiVol2mag',xform,[roiNum]);
+    % sets the xform of the volume coordinates to
+    % the magnet coordinates for the canonical volume
+    % for the called for roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).vol2mag = val;
+    end
+
+  case 'roivol2tal'
+    % v = viewSet(v,'roiVol2mag',xform,[roiNum]);
+    % sets the xform of the volume coordinates to
+    % the talairach coordinates for the canonical volume
+    % for the called for roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).vol2tal = val;
+    end
+
   case 'roiname'
     % view = viewSet(view,'roiName',nameString,[roiNum]);
     curRoi = viewGet(view,'currentRoi');
@@ -1690,4 +1779,13 @@ else
 end
 if isempty(g)
   g = viewGet(view,'currentGroup');
+end
+
+function baseNum = getBaseNum(view,varg)
+
+curBase = viewGet(view,'currentBase');
+if ieNotDefined('varg')
+  baseNum = curBase;
+else
+  baseNum = varg{1};
 end
