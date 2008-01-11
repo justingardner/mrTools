@@ -814,7 +814,7 @@ switch lower(param)
 	    disp('(viewGet:scanXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
 	  end
 	  baseqform = viewGet(view,'baseqform');
-	  val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44 * shiftOriginXform;
+	  val = MLR.groups(g).scanParams(s).niftiHdr.qform44 * shiftOriginXform;
 	end
       end
       if strcmp(lower(param),'scanxform') && ~isempty(val)
@@ -853,8 +853,7 @@ switch lower(param)
         if strcmp(mrGetPref('verbose'),'Yes')
           disp('(viewGet:scanXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
         end
-        baseqform = viewGet(view,'baseqform');
-        val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44;
+        val = MLR.groups(g).scanParams(s).niftiHdr.qform44;
       end
     end
   case{'scanvoxelsize'}
