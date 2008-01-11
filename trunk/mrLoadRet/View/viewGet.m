@@ -1165,6 +1165,15 @@ switch lower(param)
 	  if ~isempty(vol2mag) && ~isempty(vol2tal)
 	    val = vol2mag * inv(vol2tal) * baseSform * shiftOriginXform;
 	  end
+	elseif (sform_code == 0)
+	  % If sform has not been set, then use the transform that
+	  % transforms this image directly on to the current anatomy
+	  % using the qform matrices. 
+	  if strcmp(mrGetPref('verbose'),'Yes')
+	    disp('(viewGet:baseXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+	  end
+	  baseqform = viewGet(view,'baseqform');
+	  val = baseqform * shiftOriginXform;
 	end
       end
       % if we are being asked for baseXform
