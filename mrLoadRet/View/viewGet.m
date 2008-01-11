@@ -806,6 +806,15 @@ switch lower(param)
 	  if ~isempty(vol2tal) && ~isempty(vol2mag)
 	    val = vol2mag * inv(vol2tal) * scanSform * shiftOriginXform;
 	  end
+	elseif (sform_code == 0)
+	  % If sform has not been set, then use the transform that
+	  % transforms this image directly on to the current anatomy
+	  % using the qform matrices. 
+	  if strcmp(mrGetPref('verbose'),'Yes')
+	    disp('(viewGet:scanXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+	  end
+	  baseqform = viewGet(view,'baseqform');
+	  val = pinv(baseqform)*MLR.groups(g).scanParams(s).niftiHdr.qform44 * shiftOriginXform;
 	end
       end
       if strcmp(lower(param),'scanxform') && ~isempty(val)
