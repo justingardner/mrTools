@@ -1,4 +1,4 @@
-function value = mrGetPref(pref,value)
+function value = mrGetPref(pref)
 %
 % value = mrGetPref(pref)
 %

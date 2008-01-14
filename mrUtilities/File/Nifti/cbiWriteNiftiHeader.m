@@ -71,7 +71,12 @@ if (isstr(fname))
     hdr.endian='native';
   end
   if (hdr.single_file)
-    fid=fopen(fname,'w',hdr.endian);
+    if exist(fname,'file')
+      fid=fopen(fname,'r+',hdr.endian);
+      frewind(fid);
+    else
+      fid=fopen(fname,'w',hdr.endian);
+    end
   else
     fid=fopen(hdr.hdr_name,'w',hdr.endian);
   end
@@ -82,7 +87,7 @@ end
 
 % Write header with minimal checking
 
-c=fwrite(fid,348,'int32');                   % sizeof_hdr
+c=fwrite(fid,348,'int32');                  % sizeof_hdr
 c=fwrite(fid,zeros(10,1),'char');           % data_type (unused)
 c=fwrite(fid,zeros(18,1),'char');           % db_name (unused)
 c=fwrite(fid,0,'int32');                    % extents (unused)
