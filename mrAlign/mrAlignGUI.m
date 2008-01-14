@@ -510,16 +510,21 @@ xform = ALIGN.guiXform * ALIGN.xform;
 
 % Handle 3D vs 4D file
 dimension = length(size(data));
+volSize = ALIGN.volSize;
 switch dimension
   case 3
     % Call interpVolume, but using the inverse of 'xform' (compare
     % 'transformInplanes' with 'interpVolume.m'
-    interpData = interpVolume(data,inv(xform),ALIGN.volSize);
+    interpData = interpVolume(data,inv(xform),volSize);
   case 4
-    interpData = zeros(size(data));
+    nFrames = size(data,4);
+    interpData = zeros([volSize,nFrames]);
+    wbh = mrWaitBar(0,'Computing alignment...');
     for f = 1:size(data,4);
-      interpData(:,:,:,f) = interpVolume(data(:,:,:,f),inv(xform),ALIGN.volSize);
+      mrWaitBar(f/nFrames,wbh);
+      interpData(:,:,:,f) = interpVolume(data(:,:,:,f),inv(xform),volSize);
     end
+    mrCloseDlg(wbh);
   otherwise
     mrErrorDlg('saveAlignedSource: Invalid source volume, must be either 3D or 4D');
 end        
@@ -528,8 +533,9 @@ end
 hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.sform44);
 hdr = cbiSetNiftiQform(hdr,ALIGN.volumeHdr.qform44);
 
-%Save
+% Save and clear
 [byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
+clear interpData data
 
 % --------------------------------------------------------------------
 function importMenu_Callback(hObject, eventdata, handles)
