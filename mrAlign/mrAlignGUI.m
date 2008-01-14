@@ -490,6 +490,14 @@ for p = 1:length(pathStr)
 end
 
 % --------------------------------------------------------------------
+function saveAlignedDestinationMenuItem_Callback(hObject, eventdata, handles)
+
+
+% --------------------------------------------------------------------
+function saveAlignedSourceMenuItem_Callback(hObject, eventdata, handles)
+
+
+% --------------------------------------------------------------------
 function importMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1085,6 +1093,5 @@ setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
-
 
 
