@@ -26,6 +26,13 @@ xi = reshape(coordsXform(1,:),dims);
 yi = reshape(coordsXform(2,:),dims);
 zi = reshape(coordsXform(3,:),dims);
 
+min(coordsXform(1,:))
+min(coordsXform(2,:))
+min(coordsXform(3,:))
+max(coordsXform(1,:))
+max(coordsXform(2,:))
+max(coordsXform(3,:))
+
 % Interpolate
 % Note: interp3 treats x and y in right-handed coordinate system, not in
 % matrix index order so we need to swap them here. See example code below.
