@@ -485,7 +485,20 @@ end
 function saveAlignedSourceMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 if isempty(ALIGN.inplanes)
-  mrErrorDlg('Must load source (inplanes) first before it can be resampled and saved');
+  mrErrorDlg('saveAlignedSource: Must load source (inplanes) first before it can be resampled and saved');
+  return
+end
+
+% Prompt user for filename(s)
+ext = mrGetPref('niftiFileExtension');
+if strcmp(ext,'.nii')
+  filterspec = {'*.nii';'*.img'};
+else
+  filterspec = {'*.img';'*.nii'};
+end
+pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
+if isempty(pathStr)
+  mrWarnDlg('saveAlignedSource aborted');
   return
 end
 
@@ -495,14 +508,28 @@ end
 % Compose xform
 xform = ALIGN.guiXform * ALIGN.xform;
 
-% Call interpVolume, but using the inverse of 'xform' (compare
-% 'transformInplanes' with 'interpVolume.m'
-interpData = interpVolume(data,inv(xform),ALIGN.volSize);
+% Handle 3D vs 4D file
+dimension = length(size(data));
+switch dimension
+  case 3
+    % Call interpVolume, but using the inverse of 'xform' (compare
+    % 'transformInplanes' with 'interpVolume.m'
+    interpData = interpVolume(data,inv(xform),ALIGN.volSize);
+  case 4
+    interpData = zeros(size(data));
+    for f = 1:size(data,4);
+      interpData(:,:,:,f) = interpVolume(data(:,:,:,f),inv(xform),ALIGN.volSize);
+    end
+  otherwise
+    mrErrorDlg('saveAlignedSource: Invalid source volume, must be either 3D or 4D');
+end        
 
 % Change header
+hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.sform44);
+hdr = cbiSetNiftiQform(hdr,ALIGN.volumeHdr.qform44);
 
-% Save
-[byteswritten,hdr] = cbiWriteNifti(fname,interpInplane,hdr);
+%Save
+[byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
 
 % --------------------------------------------------------------------
 function importMenu_Callback(hObject, eventdata, handles)
