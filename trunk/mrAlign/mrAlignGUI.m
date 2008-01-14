@@ -452,14 +452,6 @@ ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
 hdr = cbiWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
 
 % --------------------------------------------------------------------
-function setBaseCoordinateFrameMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-
-sform = ALIGN.volumeHdr.qform44;
-ALIGN.volumeHdr = cbiSetNiftiSform(ALIGN.volumeHdr,sform);
-hdr = cbiWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
-
-% --------------------------------------------------------------------
 function saveAlignToFileMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
@@ -490,12 +482,27 @@ for p = 1:length(pathStr)
 end
 
 % --------------------------------------------------------------------
-function saveAlignedDestinationMenuItem_Callback(hObject, eventdata, handles)
-
-
-% --------------------------------------------------------------------
 function saveAlignedSourceMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+if isempty(ALIGN.inplanes)
+  mrErrorDlg('Must load source (inplanes) first before it can be resampled and saved');
+  return
+end
 
+% Reload
+[data,hdr] = cbiReadNifti(ALIGN.inplanePath);
+
+% Compose xform
+xform = ALIGN.guiXform * ALIGN.xform;
+
+% Call interpVolume, but using the inverse of 'xform' (compare
+% 'transformInplanes' with 'interpVolume.m'
+interpData = interpVolume(data,inv(xform),ALIGN.volSize);
+
+% Change header
+
+% Save
+[byteswritten,hdr] = cbiWriteNifti(fname,interpInplane,hdr);
 
 % --------------------------------------------------------------------
 function importMenu_Callback(hObject, eventdata, handles)
@@ -672,6 +679,14 @@ pathstr = putPathStrDialog(pwd,'Specify alignment file','*.mat');
 if ~isempty(pathstr)
     save(pathstr,'rot','trans','scaleFac','mrAlignVersion');
 end
+
+% --------------------------------------------------------------------
+function setBaseCoordinateFrameMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+
+sform = ALIGN.volumeHdr.qform44;
+ALIGN.volumeHdr = cbiSetNiftiSform(ALIGN.volumeHdr,sform);
+hdr = cbiWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
 
 % --------------------------------------------------------------------
 function writeTifMenuItem_Callback(hObject, eventdata, handles)
