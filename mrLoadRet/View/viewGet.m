@@ -792,7 +792,7 @@ switch lower(param)
     [sTo gTo] = getScanAndGroup(view,varargin,param,3);   
     nscansFrom = viewGet(view,'nscans',gFrom);
     nscansTo = viewGet(view,'nscans',gTo);
-    if && (nscansFrom >= sFrom) && (sFrom > 0) && (nscansTo >= sTo) && (sTo > 0)
+    if (nscansFrom >= sFrom) && (sFrom > 0) && (nscansTo >= sTo) && (sTo > 0)
       scan2talFrom = viewGet(view,'scan2tal',sFrom,gFrom); % check if the FROMscan has a tal xform
       if ~isempty(scan2talFrom) % if the FROMscan has a Tal xform
 	scan2talTo = viewGet(view,'scan2tal',sTo,gTo); % check TOscan
