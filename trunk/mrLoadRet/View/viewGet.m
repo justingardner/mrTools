@@ -2956,6 +2956,9 @@ end
 if isempty(g)
   g = viewGet(view,'currentGroup');
 end
+if isempty(s)
+  s = viewGet(view,'curScan');
+end
 
 function [b baseVolume] = getBaseNum(view,varg,argnum)
 
