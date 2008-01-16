@@ -152,9 +152,12 @@ else
 end
 
 if mouseInImage(xTal, yTal)
+  set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
+  set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.4g %0.4g %0.4g]',xTal,yTal,zTal));
 else
-  set(MLR.interrogator{viewNum}.hPosTal,'String','');
+  set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
+  set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
 end
   
 
@@ -397,7 +400,7 @@ if ~restart
     MLR.interrogator{viewNum}.hPosTal = makeTextbox(viewNum,'',1,8,2);
     MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,4,2);
     MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,6,2);
-    MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Tal',2,8,2);
+    MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Talairach',2,8,2);
     MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
     MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',2,1,3);
 else
