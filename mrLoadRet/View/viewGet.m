@@ -724,7 +724,7 @@ switch lower(param)
       % make sure it is a nifti headr (not an analyze)
       val = MLR.groups(g).scanParams(s).niftiHdr;
     end
-  case{'sformcode'}
+  case{'sformcode','scansformcode'}
     % xform = viewGet(view,'sformcode',[scanNum],[groupNum])
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
@@ -778,6 +778,77 @@ switch lower(param)
 	end
       end
     end      
+  case{'base2scan'}
+    % xform = viewGet(view,'base2scan',[scanNum],[groupNum],[baseNum])
+    % This will return the xform matrix that specifies the
+    % transformation from base coordinates to scan coordinates
+    % It checks whether the scan and the base are in magnet or Talairach
+    % coordinates, and deals with the case when they are not in the
+    % same space
+    %  Note that this also has composited the shiftOriginXform.
+    [s g] = getScanAndGroup(view,varargin,param);   
+    nscans = viewGet(view,'nscans',g);
+    b = getBaseNum(view,varargin,3);
+    n = viewGet(view,'numBase');
+    if (b > 0) && (b <= n) && (nscans >= s) && (s > 0)
+      scan2tal = viewGet(view,'scan2tal',s,g);
+      if ~isempty(scan2tal) % The scan has a Tal xform
+	base2tal = viewGet(view,'base2tal',b); % check base
+	if ~isempty(base2tal) % -CASE 1-: both the scan and the base have a Tal xform
+	  val = inv(scan2tal) * base2tal; % use it
+	else %  -CASE 2-: the scan has a Tal xform but the base does not
+	  scan2mag = viewGet(view,'scan2mag',s,g); % check if the scan has a Mag xform
+	  if ~isempty(scan2mag) % if it does,
+	    base2mag = viewGet(view,'base2mag',b); % check if the base has a mag xform too
+	    if ~isempty(base2mag) % if they both do, use that, but give a warning
+	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
+			     ['WARNING: Ignoring the scan talairach transformation, because scan'...
+			     'has a Talairach transformation, but the base does not. Coordinates'...
+			      'are being converted through the magnet coordinate frame. If you wanted'...
+			      'the transformations to use Talairach coordinates instead of magnet '...
+			      'coordinates, you need to use mrAlign to export the talairach transformation to the base']);
+	      val = inv(scan2mag) * base2mag;
+	    else % if the base doesn't have either xform, that's an error. Give a warning and use the identity matrix
+	      oneTimeWarning(sprintf('noBaseXform_%i_%i_%i',s,g,b),...
+			     ['ERROR: Base does not have a transform for magnet or talairach space. '...
+			     'Using the identity matrix to transform from base to scan. Run mrAlign to fix the base.']);
+	      val = eye(4);
+	    end
+	  else % if the scan does not have a mag xform and the base does not have a tal xform
+	    oneTimeWarning(sprintf('incompatibleB1S3_%i_%i_%i',s,g,b),...
+			   ['Base and Scan are not compatible: Base is in Magnet space and Scan is in Talairach space. '...
+			    'Using the identity matrix to transform from base to scan. Run mrAlign to get base and scan into the same space.']);
+	    val = eye(4);
+	  end
+	end
+      else % The scan doesn't have a Tal xform...
+	scan2mag = viewGet(view,'scan2mag',s,g); 
+	if ~isempty(scan2mag) % ... but the scan does have a mag transform
+	  base2mag = viewGet(view,'base2mag',b); % check the base:
+	  if ~isempty(base2mag) % -CASE 3-: both base and scan have mag transform %*** check if base has tal so can tell user that ignoring it ***
+	    val = inv(scan2mag) * base2mag; % use it
+	    base2tal = viewGet(view,'base2tal',b); % but check if base had a Tal xform so can warn user that it's being ignored
+	    if ~isempty(base2tal)
+	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
+			     ['WARNING: Ignoring the base talairach transformation, because the base has a talairach '...
+			     'transformation but the scan does not. Coordinates are being converted through the magnet'...
+			     'coordinate frame. If you want convert using the talairach transformations, you need '...
+			     'to export a talairach transformation to the scan by running  mrAlign.']); 
+	    end
+	  else % -CASE 4-: Scan has a mag xform but base does not (and scan doesn't have a tal xform, bc already checked that)
+	    oneTimeWarning(sprintf('incompatibleB3S1_%i_%i_%i',s,g,b),...
+			   ['Base and Scan are not compatible: Scan is in magnet space and Base is not. Using the '...
+			    'identity matrix to transform from base to scan. Run mrAlign to get base and scan into the same space.']);
+	    val = eye(4);
+	  end
+	else % error if scan has neither a base nor a tal transform
+	  oneTimeWarning(sprintf('unknownSformCode_%i_%i_%i',s,g,b),...
+			 ['Scan is neither in Magnet space nor in Talairach Space. Using the identity matrix '...
+			  'to transform from base to scan. Run mrAlign to fix the scan.']);
+	  val = eye(4)/3;
+	end
+      end
+    end
   case{'scan2mag','scanxform'}
     % xform = viewGet(view,'scan2mag',[scanNum],[groupNum])
     % The scan2mag xform specifies the xform from the scan
@@ -811,7 +882,8 @@ switch lower(param)
 	  % transforms this image directly on to the current anatomy
 	  % using the qform matrices. 
 	  if strcmp(mrGetPref('verbose'),'Yes')
-	    disp('(viewGet:scanXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+	    oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),['(viewGet:scanXform) sform is not set. Using qform to align '...
+		 'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
 	  end
 	  baseqform = viewGet(view,'baseqform');
 	  val = MLR.groups(g).scanParams(s).niftiHdr.qform44 * shiftOriginXform;
@@ -850,8 +922,9 @@ switch lower(param)
         % using the qform matrices. Note: There used to be code
         % here that reset val if it was the identity but that was a
         % bug (DJH 1/17/07).
-        if strcmp(mrGetPref('verbose'),'Yes')
-          disp('(viewGet:scanXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+        if strcmp(mrGetPref('verbose'),'Yes') 
+	  oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),['(viewGet:scanXform) sform is not set. Using qform to align '...
+	       'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
         end
         val = MLR.groups(g).scanParams(s).niftiHdr.qform44;
       end
@@ -1168,8 +1241,9 @@ switch lower(param)
 	  % If sform has not been set, then use the transform that
 	  % transforms this image directly on to the current anatomy
 	  % using the qform matrices. 
-	  if strcmp(mrGetPref('verbose'),'Yes')
-	    disp('(viewGet:baseXform) sform is not set. Using qform to align to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this');
+	  if strcmp(mrGetPref('verbose'),'Yes') 
+	    oneTimeWarning(sprintf('noBaseSform_%i',b),['(viewGet:baseXform) sform is not set. Using qform to align '...
+		 'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
 	  end
 	  baseqform = viewGet(view,'baseqform');
 	  val = baseqform * shiftOriginXform;
@@ -2883,12 +2957,13 @@ if isempty(g)
   g = viewGet(view,'currentGroup');
 end
 
-function [b baseVolume] = getBaseNum(view,varg)
+function [b baseVolume] = getBaseNum(view,varg,argnum)
 
-if ieNotDefined('varg')
+if ieNotDefined('argnum'),argnum = 1;end
+if ieNotDefined('varg') || (length(varg) < argnum)
   b = viewGet(view,'currentBase');
 else
-  b = varg{1};
+  b = varg{argnum};
 end
 if isempty(b)
   b = viewGet(view,'currentBase');
@@ -2907,3 +2982,15 @@ end
 if isempty(r)
   r = viewGet(view,'currentROI');
 end
+
+
+function oneTimeWarning(fieldCheck,warnText)
+global gMLRWarning
+fieldCheck = fixBadChars(fieldCheck);
+if ~isfield(gMLRWarning,fieldCheck)
+  gMLRWarning.(fieldCheck) = 1;
+  mrWarnDlg(warnText)
+end
+
+
+
