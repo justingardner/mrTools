@@ -19,5 +19,6 @@ if strcmp(verbose,'Yes')
   errordlg(errstr,'Error!');
   error(errstr);
 else
-  error(errstr);
+  disp(sprintf('mrERROR: %s',errstr));
+  keyboard
 end
