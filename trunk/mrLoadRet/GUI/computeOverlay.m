@@ -1,14 +1,14 @@
 % computeOverlay.m
 %
 %        $Id$
-%      usage: overlay = computeOverlay(view,baseXform,baseCoordsHomogeneous,baseDims)
+%      usage: overlay = computeOverlay(view,base2overlay,baseCoordsHomogeneous,baseDims)
 %         by: David Heeger
 %       date: 10/16/07
 %    purpose: this used to live within the refreshMLRDisplay
 %             function, but has been pulled out so that it
-%             can be called by other functions
+%             can be called by other functions (e.g. mrPrint)-jg
 %
-function overlay = computeOverlay(view,baseXform,baseCoordsHomogeneous,baseDims)
+function overlay = computeOverlay(view,base2overlay,baseCoordsHomogeneous,baseDims)
 
 % check arguments
 if ~any(nargin == [4])
@@ -29,7 +29,7 @@ interpExtrapVal = NaN;
 
 % pull out overlay for this slice
 [overlayImages,overlay.coords,overlayCoordsHomogeneous] = ...
-    getOverlaySlice(view,scan,baseXform,baseCoordsHomogeneous,baseDims,...
+    getOverlaySlice(view,scan,base2overlay,baseCoordsHomogeneous,baseDims,...
 			 analysisNum,interpMethod,interpExtrapVal);
 if ~isempty(overlayImages)
   overlayIm = overlayImages(:,:,curOverlay);
@@ -111,7 +111,7 @@ end
 %%   getOverlaySlice   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 function [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
-  getOverlaySlice(view,scanNum,baseXform,baseCoordsHomogeneous,imageDims,...
+  getOverlaySlice(view,scanNum,base2overlay,baseCoordsHomogeneous,imageDims,...
 		       analysisNum,interpMethod,interpExtrapVal);
 %
 % getOverlaySlice: extracts overlay image and corresponding coordinates
@@ -121,18 +121,14 @@ overlayCoordsHomogeneous = [];
 overlayImages = [];
 
 % viewGet
-overlayXform = viewGet(view,'overlayXform',scanNum);
 numOverlays = viewGet(view,'numberofoverlays',analysisNum);
 interpFnctn = viewGet(view,'overlayInterpFunction',analysisNum);
 
 % Transform base coords corresponding to this slice/image to overlay
 % coordinate frame.
-% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin.
-shiftXform = shiftOriginXform;
-if ~isempty(overlayXform) & ~isempty(baseXform) & ~isempty(baseCoordsHomogeneous)
-  xform = inv(shiftXform) * inv(overlayXform) * baseXform * shiftXform;
+if ~isempty(base2overlay) & ~isempty(baseCoordsHomogeneous)
   % Transform coordinates
-  overlayCoordsHomogeneous = xform * baseCoordsHomogeneous;
+  overlayCoordsHomogeneous = base2overlay * baseCoordsHomogeneous;
   overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[imageDims 3]);
 end
 
