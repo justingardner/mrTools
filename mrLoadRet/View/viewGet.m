@@ -778,74 +778,76 @@ switch lower(param)
 	end
       end
     end      
-  case{'base2scan'}
-    % xform = viewGet(view,'base2scan',[scanNum],[groupNum],[baseNum])
+  case{'scan2scan'}
+    % xform = viewGet(view,'scan2scan',[fromScanNum],[fromGroupNum],[toScanNum],[toGroupNum])
     % This will return the xform matrix that specifies the
-    % transformation from base coordinates to scan coordinates
-    % It checks whether the scan and the base are in magnet or Talairach
+    % transformation from coordinates of the 'From' scan to coordinates of the 'To' scan
+    % (E.g., given x,y,s from the 'From' Scan, multiply by the xform calculated in this
+    % call to convert to x',y',s' in the 'To' scan.)
+    % It checks whether the scans are each in magnet or Talairach               base = To, scan = From
     % coordinates, and deals with the case when they are not in the
     % same space
     %  Note that this also has composited the shiftOriginXform.
-    [s g] = getScanAndGroup(view,varargin,param);   
-    nscans = viewGet(view,'nscans',g);
-    b = getBaseNum(view,varargin,3);
-    n = viewGet(view,'numBase');
-    if (b > 0) && (b <= n) && (nscans >= s) && (s > 0)
-      scan2tal = viewGet(view,'scan2tal',s,g);
-      if ~isempty(scan2tal) % The scan has a Tal xform
-	base2tal = viewGet(view,'base2tal',b); % check base
-	if ~isempty(base2tal) % -CASE 1-: both the scan and the base have a Tal xform
-	  val = inv(scan2tal) * base2tal; % use it
-	else %  -CASE 2-: the scan has a Tal xform but the base does not
-	  scan2mag = viewGet(view,'scan2mag',s,g); % check if the scan has a Mag xform
-	  if ~isempty(scan2mag) % if it does,
-	    base2mag = viewGet(view,'base2mag',b); % check if the base has a mag xform too
-	    if ~isempty(base2mag) % if they both do, use that, but give a warning
-	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
-			     ['WARNING: Ignoring the scan talairach transformation, because scan'...
-			     'has a Talairach transformation, but the base does not. Coordinates'...
+    [sFrom gFrom] = getScanAndGroup(view,varargin,param);   
+    [sTo gTo] = getScanAndGroup(view,varargin,param,3);   
+    nscansFrom = viewGet(view,'nscans',gFrom);
+    nscansTo = viewGet(view,'nscans',gTo);
+    if && (nscansFrom >= sFrom) && (sFrom > 0) && (nscansTo >= sTo) && (sTo > 0)
+      scan2talFrom = viewGet(view,'scan2tal',sFrom,gFrom); % check if the FROMscan has a tal xform
+      if ~isempty(scan2talFrom) % if the FROMscan has a Tal xform
+	scan2talTo = viewGet(view,'scan2tal',sTo,gTo); % check TOscan
+	if ~isempty(scan2talTo) % -CASE 1-: both scans have a Tal xform
+	  val = inv(scan2talTo) * scan2talFrom; % use it
+	else %  -CASE 2-: the FROMscan has a Tal xform but the TOscan doesn't
+	  scan2magFrom = viewGet(view,'scan2mag',sFrom,gFrom); % check if the FROMscan has a Mag xform
+	  if ~isempty(scan2magFrom) % if it does,
+	    scan2magTo = viewGet(view,'scan2mag',sTo,gTo); % check if the TOscan has a Mag xform too
+	    if ~isempty(scan2magTo) % if they both do, use that, but give a warning
+	      oneTimeWarning(sprintf('scanMismatch_%i_%i_%i_%i',sFrom,gFrom,sTo,gTo),...
+			     ['WARNING: Ignoring the scan talairach transformation, because FROM scan'...
+			     'has a Talairach transformation, but TO scan does not. Coordinates'...
 			      'are being converted through the magnet coordinate frame. If you wanted'...
 			      'the transformations to use Talairach coordinates instead of magnet '...
-			      'coordinates, you need to use mrAlign to export the talairach transformation to the base']);
-	      val = inv(scan2mag) * base2mag;
-	    else % if the base doesn't have either xform, that's an error. Give a warning and use the identity matrix
-	      oneTimeWarning(sprintf('noBaseXform_%i_%i_%i',s,g,b),...
-			     ['ERROR: Base does not have a transform for magnet or talairach space. '...
-			     'Using the identity matrix to transform from base to scan. Run mrAlign to fix the base.']);
+			      'coordinates, you need to use mrAlign to export the talairach transformation to the TO scan']);
+	      val = inv(scan2magTo) * scan2magFrom;
+	    else % if the TOscan doesn't have either xform, that's an error. Give a warning and use the identity matrix
+	      oneTimeWarning(sprintf('noScanXform_%i_%i_%i_%i',sFrom,gFrom,sTo,gTo),...
+			     ['ERROR: TO scan does not have a transform for magnet or talairach space. '...
+			     'Using the identity matrix to transform from scan to scan. Run mrAlign to fix the TO scan.']);
 	      val = eye(4);
 	    end
-	  else % if the scan does not have a mag xform and the base does not have a tal xform
-	    oneTimeWarning(sprintf('incompatibleB1S3_%i_%i_%i',s,g,b),...
-			   ['Base and Scan are not compatible: Base is in Magnet space and Scan is in Talairach space. '...
-			    'Using the identity matrix to transform from base to scan. Run mrAlign to get base and scan into the same space.']);
+	  else % if the FROM scan does not have a mag xform and the TO scan does not have a tal xform
+	    oneTimeWarning(sprintf('incompatibleScans_%i_%i_%i_%i',sFrom,gFrom,sTo,gTo),...
+			   ['Scans are not compatible: FROM scan is in Talairach space but TO scan is not. '...
+			    'Using the identity matrix to transform from base to scan. Run mrAlign to get scans into the same space.']);
 	    val = eye(4);
 	  end
 	end
-      else % The scan doesn't have a Tal xform...
-	scan2mag = viewGet(view,'scan2mag',s,g); 
-	if ~isempty(scan2mag) % ... but the scan does have a mag transform
-	  base2mag = viewGet(view,'base2mag',b); % check the base:
-	  if ~isempty(base2mag) % -CASE 3-: both base and scan have mag transform %*** check if base has tal so can tell user that ignoring it ***
-	    val = inv(scan2mag) * base2mag; % use it
-	    base2tal = viewGet(view,'base2tal',b); % but check if base had a Tal xform so can warn user that it's being ignored
-	    if ~isempty(base2tal)
-	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
-			     ['WARNING: Ignoring the base talairach transformation, because the base has a talairach '...
-			     'transformation but the scan does not. Coordinates are being converted through the magnet'...
+      else % The FROM scan doesn't have a Tal xform...
+	scan2magFrom = viewGet(view,'scan2mag',sFrom,gFrom); 
+	if ~isempty(scan2magFrom) % ... but the FROM scan does have a mag transform
+	  scan2magTo = viewGet(view,'scan2mag',sTo,gTo); % check the TO scan
+	  if ~isempty(scan2magTo) % -CASE 3-: both scans have mag transform 
+	    val = inv(scan2magTo) * scan2magFrom; % use it
+	    scan2talTo = viewGet(view,'base2tal',sTo,gTo); % but check if TO scan had a Tal xform so can warn user that it's being ignored
+	    if ~isempty(scan2talTo)
+	      oneTimeWarning(sprintf('scanMismatch_%i_%i_%i_%i',sFrom,gFrom,sTo,gTo),...
+			     ['WARNING: Ignoring the TO scans talairach transformation, because the TO scan has a talairach '...
+			     'transformation but the FROM scan does not. Coordinates are being converted through the magnet'...
 			     'coordinate frame. If you want convert using the talairach transformations, you need '...
-			     'to export a talairach transformation to the scan by running  mrAlign.']); 
+			     'to export a talairach transformation to the TO scan by running  mrAlign.']); 
 	    end
-	  else % -CASE 4-: Scan has a mag xform but base does not (and scan doesn't have a tal xform, bc already checked that)
-	    oneTimeWarning(sprintf('incompatibleB3S1_%i_%i_%i',s,g,b),...
-			   ['Base and Scan are not compatible: Scan is in magnet space and Base is not. Using the '...
-			    'identity matrix to transform from base to scan. Run mrAlign to get base and scan into the same space.']);
+	  else % -CASE 4-: FROM scan has a mag xform but TO scan does not (and scan doesn't have a tal xform, bc already checked that)
+	    oneTimeWarning(sprintf('incompatibleScans_%i_%i_%i_%i',sFrom,gFrom,sTo,gTo),...
+			   ['Scans are not compatible: FROM scan is in magnet space but TO scan is not. Using the '...
+			    'identity matrix to transform from scan to scan. Run mrAlign to get scans into the same space.']);
 	    val = eye(4);
 	  end
 	else % error if scan has neither a base nor a tal transform
-	  oneTimeWarning(sprintf('unknownSformCode_%i_%i_%i',s,g,b),...
-			 ['Scan is neither in Magnet space nor in Talairach Space. Using the identity matrix '...
-			  'to transform from base to scan. Run mrAlign to fix the scan.']);
-	  val = eye(4)/3;
+	  oneTimeWarning(sprintf('unknownSformCode_%i_%i_%i_%i',sFrom,gFrom,sTo,gTo),...
+			 ['FROM scan is neither in Magnet space nor in Talairach Space. Using the identity matrix '...
+			  'to transform from scan to scan. Run mrAlign to fix the scan.']);
+	  val = eye(4);
 	end
       end
     end
@@ -1252,6 +1254,77 @@ switch lower(param)
       % if we are being asked for baseXform
       if strcmp(lower(param),'basexform') && ~isempty(val)
 	val = val * inv(shiftOriginXform);
+      end
+    end
+  case{'base2scan'}
+    % xform = viewGet(view,'base2scan',[scanNum],[groupNum],[baseNum])
+    % This will return the xform matrix that specifies the
+    % transformation from base coordinates to scan coordinates
+    % It checks whether the scan and the base are in magnet or Talairach
+    % coordinates, and deals with the case when they are not in the
+    % same space
+    %  Note that this also has composited the shiftOriginXform.
+    [s g] = getScanAndGroup(view,varargin,param);   
+    nscans = viewGet(view,'nscans',g);
+    b = getBaseNum(view,varargin,3);
+    n = viewGet(view,'numBase');
+    if (b > 0) && (b <= n) && (nscans >= s) && (s > 0)
+      scan2tal = viewGet(view,'scan2tal',s,g);
+      if ~isempty(scan2tal) % The scan has a Tal xform
+	base2tal = viewGet(view,'base2tal',b); % check base
+	if ~isempty(base2tal) % -CASE 1-: both the scan and the base have a Tal xform
+	  val = inv(scan2tal) * base2tal; % use it
+	else %  -CASE 2-: the scan has a Tal xform but the base does not
+	  scan2mag = viewGet(view,'scan2mag',s,g); % check if the scan has a Mag xform
+	  if ~isempty(scan2mag) % if it does,
+	    base2mag = viewGet(view,'base2mag',b); % check if the base has a mag xform too
+	    if ~isempty(base2mag) % if they both do, use that, but give a warning
+	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
+			     ['WARNING: Ignoring the scan talairach transformation, because scan'...
+			     'has a Talairach transformation, but the base does not. Coordinates'...
+			      'are being converted through the magnet coordinate frame. If you wanted'...
+			      'the transformations to use Talairach coordinates instead of magnet '...
+			      'coordinates, you need to use mrAlign to export the talairach transformation to the base']);
+	      val = inv(scan2mag) * base2mag;
+	    else % if the base doesn't have either xform, that's an error. Give a warning and use the identity matrix
+	      oneTimeWarning(sprintf('noBaseXform_%i_%i_%i',s,g,b),...
+			     ['ERROR: Base does not have a transform for magnet or talairach space. '...
+			     'Using the identity matrix to transform from base to scan. Run mrAlign to fix the base.']);
+	      val = eye(4);
+	    end
+	  else % if the scan does not have a mag xform and the base does not have a tal xform
+	    oneTimeWarning(sprintf('incompatibleB1S3_%i_%i_%i',s,g,b),...
+			   ['Base and Scan are not compatible: Scan is in Talairach space (and not magnet space) but Base is not. '...
+			    'Using the identity matrix to transform from base to scan. Run mrAlign to get base and scan into the same space.']);
+	    val = eye(4);
+	  end
+	end
+      else % The scan doesn't have a Tal xform...
+	scan2mag = viewGet(view,'scan2mag',s,g); 
+	if ~isempty(scan2mag) % ... but the scan does have a mag transform
+	  base2mag = viewGet(view,'base2mag',b); % check the base:
+	  if ~isempty(base2mag) % -CASE 3-: both base and scan have mag transform 
+	    val = inv(scan2mag) * base2mag; % use it
+	    base2tal = viewGet(view,'base2tal',b); % but check if base had a Tal xform so can warn user that it's being ignored
+	    if ~isempty(base2tal)
+	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
+			     ['WARNING: Ignoring the base talairach transformation, because the base has a talairach '...
+			     'transformation but the scan does not. Coordinates are being converted through the magnet'...
+			     'coordinate frame. If you want convert using the talairach transformations, you need '...
+			     'to export a talairach transformation to the scan by running  mrAlign.']); 
+	    end
+	  else % -CASE 4-: Scan has a mag xform but base does not (and scan doesn't have a tal xform, bc already checked that)
+	    oneTimeWarning(sprintf('incompatibleB3S1_%i_%i_%i',s,g,b),...
+			   ['Base and Scan are not compatible: Scan is in magnet space and Base is not. Using the '...
+			    'identity matrix to transform from base to scan. Run mrAlign to get base and scan into the same space.']);
+	    val = eye(4);
+	  end
+	else % error if scan has neither a base nor a tal transform
+	  oneTimeWarning(sprintf('unknownSformCode_%i_%i_%i',s,g,b),...
+			 ['Scan is neither in Magnet space nor in Talairach Space. Using the identity matrix '...
+			  'to transform from base to scan. Run mrAlign to fix the scan.']);
+	  val = eye(4)/3;
+	end
       end
     end
   case {'basevol2tal'}
@@ -2941,23 +3014,21 @@ fprintf(1,sprintf('\n'));
 disp('-----------------------------------------------------------------------');
 
 %------------------------------
-function [s g] = getScanAndGroup(view,varg,param)
+function [s g] = getScanAndGroup(view,varg,param,argnum)
 
-if ieNotDefined('varg')
+if ieNotDefined('argnum'), argnum = 1; end
+if ieNotDefined('varg') || (length(varg) < argnum)
   s = viewGet(view,'curScan');
 else
-  s = varg{1};
+  s = varg{argnum};
 end
-if length(varg) > 1
-  g = varg{2};
+if length(varg) > argnum
+  g = varg{argnum+1};
 else
   g = viewGet(view,'currentGroup');
 end
 if isempty(g)
   g = viewGet(view,'currentGroup');
-end
-if isempty(s)
-  s = viewGet(view,'curScan');
 end
 
 function [b baseVolume] = getBaseNum(view,varg,argnum)
