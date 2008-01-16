@@ -131,7 +131,7 @@ function mouseMoveHandler(viewNum)
 mrGlobals;
 
 % get pointer
-[x y s xBase yBase sBase] = getMouseCoords(viewNum);
+[x y s xBase yBase sBase xTal yTal zTal] = getMouseCoords(viewNum);
 
 % check location in bounds on image
 if mouseInImage(x,y)
@@ -150,6 +150,13 @@ if mouseInImage(xBase,yBase)
 else
   set(MLR.interrogator{viewNum}.hPosBase,'String','');
 end
+
+if mouseInImage(xTal, yTal)
+  set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.4g %0.4g %0.4g]',xTal,yTal,zTal));
+else
+  set(MLR.interrogator{viewNum}.hPosTal,'String','');
+end
+  
 
 % eval the old handler
 eval(MLR.interrogator{viewNum}.windowButtonMotionFcn);
@@ -176,7 +183,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get current mouse position in image coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x y s xBase yBase sBase] = getMouseCoords(viewNum)
+function [x y s xBase yBase sBase xTal yTal zTal] = getMouseCoords(viewNum)
 
 % get the view
 mrGlobals;
@@ -200,6 +207,7 @@ if baseType <= 1
   else
     x = nan;y = nan; s = nan;
     xBase = nan;yBase = nan; sBase = nan;
+    xTal = nan; yTal = nan; zTal = nan;
     return
   end
 else
@@ -227,17 +235,20 @@ else
   end      
 end
 
-% transforms from base coordinates into scan coordinates
-baseXform = viewGet(view,'baseXform');
-scanXform = viewGet(view,'scanXform',viewGet(view,'curScan'));
-if isempty(scanXform) | isempty(baseXform)
-    x = nan;y = nan; s = nan;
-    return
+% transform from base coordinates to talairach coordinates, if the base has a talairach transform defined
+base2tal = viewGet(view,'base2tal'); % keyboard
+if(~isempty(base2tal))
+  talCoords = round(base2tal * [xBase yBase sBase 1]');
+  xTal = talCoords(1); yTal = talCoords(2); zTal = talCoords(3);
+else
+  xTal = nan; yTal = nan; zTal = nan;
 end
 
-shiftXform = shiftOriginXform;
-transformed = inv(shiftXform)*inv(scanXform)*baseXform*shiftXform*[xBase yBase sBase 1]';
-transformed = round(transformed);
+
+% transform from base coordinates into scan coordinates
+base2scan = viewGet(view,'base2scan');
+if isempty(base2scan), x = nan; y=nan; s=nan; return,  end
+transformed = round(base2scan*[xBase yBase sBase 1]');
 
 x = transformed(1);
 y = transformed(2);
@@ -251,6 +262,8 @@ if ((x < 1) || (x > scanDims(1)) || ...
         (s < 1) || (s > scanDims(3)))
     x = nan;y = nan;s = nan;
 end
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mouseup
@@ -270,7 +283,7 @@ function mouseDownHandler(viewNum)
 mrGlobals;
 
 % get pointer
-[x y s xBase yBase sBase] = getMouseCoords(viewNum);
+[x y s xBase yBase sBase xTal yTal zTal] = getMouseCoords(viewNum);
 
 % set the points in the global, so that they
 % are accessible by doing a viewGet
@@ -333,6 +346,8 @@ set(MLR.interrogator{viewNum}.hPos,'visible','off');
 set(MLR.interrogator{viewNum}.hPosLabel,'visible','off');
 set(MLR.interrogator{viewNum}.hPosBase,'visible','off');
 set(MLR.interrogator{viewNum}.hPosBaseLabel,'visible','off');
+set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
+set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogator,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','off');
 
@@ -379,15 +394,19 @@ if ~restart
     % set the x and y textbox
     MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
     MLR.interrogator{viewNum}.hPosBase = makeTextbox(viewNum,'',1,6,2);
+    MLR.interrogator{viewNum}.hPosTal = makeTextbox(viewNum,'',1,8,2);
     MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,4,2);
     MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,6,2);
+    MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Tal',2,8,2);
     MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
     MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',2,1,3);
 else
     set(MLR.interrogator{viewNum}.hPos,'visible','on');
     set(MLR.interrogator{viewNum}.hPosBase,'visible','on');
+    set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
     set(MLR.interrogator{viewNum}.hPosLabel,'visible','on');
     set(MLR.interrogator{viewNum}.hPosBaseLabel,'visible','on');
+    set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
     set(MLR.interrogator{viewNum}.hInterrogator,'visible','on');
     set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','on');
 end
