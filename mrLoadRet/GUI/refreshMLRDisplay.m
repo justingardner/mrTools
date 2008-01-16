@@ -74,9 +74,10 @@ view = viewSet(view,'cursliceBaseCoords',base.coords);
 if verbose,disppercent(-inf,'extract overlay images');end
 overlay = viewGet(view,'overlayCache');
 if isempty(overlay)
-  baseXform = viewGet(view,'baseXform',baseNum);
+  % get the transform from the base to the scan
+  base2scan = viewGet(view,'base2scan',[],[],baseNum);
   % compute the overlay
-  overlay = computeOverlay(view,baseXform,base.coordsHomogeneous,base.dims);
+  overlay = computeOverlay(view,base2scan,base.coordsHomogeneous,base.dims);
   % save in cache
   view = viewSet(view,'overlayCache',overlay);
   if verbose,disppercent(inf);disp('Recomputed overlay');end

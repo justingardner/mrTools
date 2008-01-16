@@ -857,7 +857,6 @@ switch gFlatViewer.patchColoring
   end
  %current overlay
  case {11,12}
-  baseXform = gFlatViewer.anat.hdr.sform44;
   whichInx = gFlatViewer.flat.patch2parent(:,2);
   % get the coordinates from the right surface
   if gFlatViewer.whichSurface == 1
@@ -875,8 +874,10 @@ switch gFlatViewer.patchColoring
   % get the view
   v = viewGet([],'view',gFlatViewer.viewNum);
   if ~isempty(v) & ~isempty(viewGet(v,'currentOverlay'))
+    % get the base2scan xform
+    base2scan = viewGet(v,'base2scan');
     % and get the overlay
-    overlay = computeOverlay(v,baseXform,baseCoords,baseDims);
+    overlay = computeOverlay(v,base2scan,baseCoords,baseDims);
     overlay.RGB(overlay.alphaMap==0) = nan;
     co = squeeze(overlay.RGB);
     alpha = viewGet(v,'alpha');
