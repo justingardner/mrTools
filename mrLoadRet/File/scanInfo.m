@@ -57,6 +57,8 @@ scanHdr = viewGet(view,'niftiHdr',scanNum,groupNum);
 scanDims = viewGet(view,'scanDims',scanNum,groupNum);
 junkFrames = viewGet(view,'junkFrames',scanNum,groupNum);
 totalJunkedFrames = viewGet(view,'totalJunkedFrames',scanNum,groupNum);
+vol2mag = viewGet(view,'scanVol2mag',scanNum,groupNum);
+vol2tal = viewGet(view,'scanVol2tal',scanNum,groupNum);
 
 % get params info
 nCols = 1;
@@ -96,6 +98,8 @@ if displayInDialog
   paramsInfo{end+1} =  {'totalJunkedFrames',num2str(totalJunkedFrames),'type=string','editable=0','Number of junk frames that have already been discarded from this time series (this is useful for aligning the volume number of a stimulus set in a stimulus file with the volumes in the time series)'};
   paramsInfo{end+1} = {'qform',scanHdr.qform44,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'};
   paramsInfo{end+1} = {'sform',scanHdr.sform44,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'};
+  paramsInfo{end+1} = {'vol2mag',vol2mag,'editable=0','This is the xformation that takes the canonical base that this scan was aligned to into magnet coordinates. To set this field, you can use export from mrAlign.'};
+  paramsInfo{end+1} = {'vol2tal',scanHdr.sform44,'editable=0','This is the xformation that takes the canonical base that this scan was aligned to into talairach coordinates. To set this field, you can export talairach coordinates from mrAlign.'};
   paramsInfo{end+1} = {'sformCode',scanHdr.sform_code,'editable=0','If sformCode is 0 it means the sform has never been set and mrLoadRet will use the qform to compute the transform to the base anatomy. If mrAlign has been run properly, then this value should be set to 1'};
 
   % display parameters form associated matfile
