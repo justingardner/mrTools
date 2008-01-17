@@ -1,6 +1,6 @@
-function [view  userCancel] = newROI(view,name,select,color,xform,voxelSize,coords,vol2tal,vol2mag)
+function [view  userCancel] = newROI(view,name,select,color,xform,voxelSize,coords,xformCode,vol2tal,vol2mag)
 
-% function view = newROI(view,[name],[select],[color],[xform],[voxelSize],[coords],[xform_code],[vol2tal],[vol2mag])
+% function view = newROI(view,[name],[select],[color],[xform],[voxelSize],[coords],[xformCode],[vol2tal],[vol2mag])
 %
 % Makes new empty ROI, adds it to view.ROIs, and selects it.
 %
@@ -45,7 +45,18 @@ if ieNotDefined('color')
 end
 if ieNotDefined('xform')
   baseNum = viewGet(view,'currentBase');
-  xform = viewGet(view,'basexform',baseNum);
+  xform = viewGet(view,'baseSform',baseNum);
+end
+if ieNotDefined('voxelSize')
+  baseNum = viewGet(view,'currentBase');
+  voxelSize = viewGet(view,'baseVoxelSize',baseNum);
+end
+if ieNotDefined('coords')
+  coords = [];
+end
+if ieNotDefined('xformCode')
+  baseNum = viewGet(view,'currentBase');
+  xformCode = viewGet(view,'baseSformCode',baseNum);
 end
 if ieNotDefined('vol2mag')
   baseNum = viewGet(view,'currentBase');
@@ -55,13 +66,7 @@ if ieNotDefined('vol2tal')
   baseNum = viewGet(view,'currentBase');
   vol2tal = viewGet(view,'baseVol2tal',baseNum);
 end
-if ieNotDefined('voxelSize')
-  baseNum = viewGet(view,'currentBase');
-  voxelSize = viewGet(view,'baseVoxelSize',baseNum);
-end
-if ieNotDefined('coords')
-  coords = [];
-end
+
 colors = putOnTopOfList(color,color2RGB);
 roiParams{1} = {'name',name,'Name of roi, avoid using punctuation and space'};
 roiParams{2} = {'color',colors,'The color that the roi will display in'};
@@ -75,6 +80,7 @@ ROI.name = params.name;
 ROI.viewType = view.viewType;
 ROI.color = params.color;
 ROI.xform = xform;
+ROI.xformCode = xformCode;
 ROI.voxelSize = voxelSize;
 ROI.coords = coords;
 ROI.notes = params.notes;
