@@ -54,7 +54,7 @@ end
 if ieNotDefined('coords')
   coords = [];
 end
-if ieNotDefined('xformCode')
+if ieNotDefined('sformCode')
   baseNum = viewGet(view,'currentBase');
   xformCode = viewGet(view,'baseSformCode',baseNum);
 end
