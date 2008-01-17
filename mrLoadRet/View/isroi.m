@@ -24,13 +24,13 @@ if (nargout == 2)
 		    'date',datestr(now);
 		    'color','blue';
 		    'notes','';
-		    'xformCode',1;
+		    'sformCode',1;
 		    'vol2mag',[];
 		    'vol2tal',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
-  requiredFields = {'color','coords','date','name','viewType','voxelSize','xform','xformCode','vol2mag','vol2tal'};
+  requiredFields = {'color','coords','date','name','viewType','voxelSize','xform','sformCode','vol2mag','vol2tal'};
   optionalFields = {};
 end
 
