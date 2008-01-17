@@ -1268,7 +1268,7 @@ switch lower(param)
     nscans = viewGet(view,'nscans',g);
     b = getBaseNum(view,varargin,3);
     n = viewGet(view,'numBase');
-    if (b > 0) && (b <= n) && (nscans >= s) && (s > 0)
+    if (b > 0) & (b <= n) & (nscans >= s) & (s > 0)
       scan2tal = viewGet(view,'scan2tal',s,g);
       if ~isempty(scan2tal) % The scan has a Tal xform
 	base2tal = viewGet(view,'base2tal',b); % check base
