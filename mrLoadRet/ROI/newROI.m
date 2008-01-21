@@ -56,7 +56,7 @@ if ieNotDefined('coords')
 end
 if ieNotDefined('sformCode')
   baseNum = viewGet(view,'currentBase');
-  xformCode = viewGet(view,'baseSformCode',baseNum);
+  sformCode = viewGet(view,'baseSformCode',baseNum);
 end
 if ieNotDefined('vol2mag')
   baseNum = viewGet(view,'currentBase');
