@@ -778,13 +778,57 @@ switch lower(param)
 	end
       end
     end      
+  case{'scan2mag','scanxform'}
+    % xform = viewGet(view,'scan2mag',[scanNum],[groupNum])
+    % The scan2mag xform specifies the xform from the scan
+    % to the volume in magnet coordinates. 
+    % If the sform_code is set to 1, then this is the same
+    % as scanSform *except* that the origin has been shifted
+    % to start at 0,0,0. i.e. It is scanSform * shiftOriginXform
+    %
+    % Note that before adding the talairach xform code, scan2mag
+    % was called scanxform and the code assumed that the sform
+    % of the scan contained this xform. If you ask for scanXform
+    % you will get the scan2mag xform, but it does *not* have
+    % the shiftOriginXform composited so as to be compatible
+    % with the old code
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      sform_code = viewGet(view,'sformCode',s,g);
+      scanSform = viewGet(view,'scanSform',s,g);
+      if ~isempty(scanSform)
+	if (sform_code == 1)
+	  val = scanSform * shiftOriginXform;
+	elseif (sform_code == 3)
+	  vol2tal = viewGet(view,'scanVol2tal',s,g);
+	  vol2mag = viewGet(view,'scanVol2mag',s,g);
+	  if ~isempty(vol2tal) && ~isempty(vol2mag)
+	    val = vol2mag * inv(vol2tal) * scanSform * shiftOriginXform;
+	  end
+	elseif (sform_code == 0)
+	  % If sform has not been set, then use the transform that
+	  % transforms this image directly on to the current anatomy
+	  % using the qform matrices. 
+	  if strcmp(mrGetPref('verbose'),'Yes')
+	    oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),['(viewGet:scanXform) sform is not set. Using qform to align '...
+		 'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
+	  end
+	  baseqform = viewGet(view,'baseqform');
+	  val = MLR.groups(g).scanParams(s).niftiHdr.qform44 * shiftOriginXform;
+	end
+      end
+      if strcmp(lower(param),'scanxform') && ~isempty(val)
+	val = val * inv(shiftOriginXform);
+      end
+    end
   case{'scan2scan'}
     % xform = viewGet(view,'scan2scan',[fromScanNum],[fromGroupNum],[toScanNum],[toGroupNum])
     % This will return the xform matrix that specifies the
     % transformation from coordinates of the 'From' scan to coordinates of the 'To' scan
     % (E.g., given x,y,s from the 'From' Scan, multiply by the xform calculated in this
     % call to convert to x',y',s' in the 'To' scan.)
-    % It checks whether the scans are each in magnet or Talairach               base = To, scan = From
+    % It checks whether the scans are each in magnet or Talairach              
     % coordinates, and deals with the case when they are not in the
     % same space
     %  Note that this also has composited the shiftOriginXform.
@@ -849,50 +893,6 @@ switch lower(param)
 			  'to transform from scan to scan. Run mrAlign to fix the scan.']);
 	  val = eye(4);
 	end
-      end
-    end
-  case{'scan2mag','scanxform'}
-    % xform = viewGet(view,'scan2mag',[scanNum],[groupNum])
-    % The scan2mag xform specifies the xform from the scan
-    % to the volume in magnet coordinates. 
-    % If the sform_code is set to 1, then this is the same
-    % as scanSform *except* that the origin has been shifted
-    % to start at 0,0,0. i.e. It is scanSform * shiftOriginXform
-    %
-    % Note that before adding the talairach xform code, scan2mag
-    % was called scanxform and the code assumed that the sform
-    % of the scan contained this xform. If you ask for scanXform
-    % you will get the scan2mag xform, but it does *not* have
-    % the shiftOriginXform composited so as to be compatible
-    % with the old code
-    [s g] = getScanAndGroup(view,varargin,param);
-    nscans = viewGet(view,'nscans',g);
-    if (nscans >= s) & (s > 0)
-      sform_code = viewGet(view,'sformCode',s,g);
-      scanSform = viewGet(view,'scanSform',s,g);
-      if ~isempty(scanSform)
-	if (sform_code == 1)
-	  val = scanSform * shiftOriginXform;
-	elseif (sform_code == 3)
-	  vol2tal = viewGet(view,'scanVol2tal',s,g);
-	  vol2mag = viewGet(view,'scanVol2mag',s,g);
-	  if ~isempty(vol2tal) && ~isempty(vol2mag)
-	    val = vol2mag * inv(vol2tal) * scanSform * shiftOriginXform;
-	  end
-	elseif (sform_code == 0)
-	  % If sform has not been set, then use the transform that
-	  % transforms this image directly on to the current anatomy
-	  % using the qform matrices. 
-	  if strcmp(mrGetPref('verbose'),'Yes')
-	    oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),['(viewGet:scanXform) sform is not set. Using qform to align '...
-		 'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
-	  end
-	  baseqform = viewGet(view,'baseqform');
-	  val = MLR.groups(g).scanParams(s).niftiHdr.qform44 * shiftOriginXform;
-	end
-      end
-      if strcmp(lower(param),'scanxform') && ~isempty(val)
-	val = val * inv(shiftOriginXform);
       end
     end
   case{'scansform'}
@@ -1280,9 +1280,9 @@ switch lower(param)
 	    base2mag = viewGet(view,'base2mag',b); % check if the base has a mag xform too
 	    if ~isempty(base2mag) % if they both do, use that, but give a warning
 	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
-			     ['WARNING: Ignoring the scan talairach transformation, because scan'...
-			     'has a Talairach transformation, but the base does not. Coordinates'...
-			      'are being converted through the magnet coordinate frame. If you wanted'...
+			     ['WARNING: Ignoring the scan talairach transformation, because scan '...
+			     'has a Talairach transformation, but the base does not. Coordinates '...
+			      'are being converted through the magnet coordinate frame. If you wanted '...
 			      'the transformations to use Talairach coordinates instead of magnet '...
 			      'coordinates, you need to use mrAlign to export the talairach transformation to the base']);
 	      val = inv(scan2mag) * base2mag;
@@ -1309,7 +1309,7 @@ switch lower(param)
 	    if ~isempty(base2tal)
 	      oneTimeWarning(sprintf('scanBaseMismatch_%i_%i_%i',s,g,b),...
 			     ['WARNING: Ignoring the base talairach transformation, because the base has a talairach '...
-			     'transformation but the scan does not. Coordinates are being converted through the magnet'...
+			     'transformation but the scan does not. Coordinates are being converted through the magnet '...
 			     'coordinate frame. If you want convert using the talairach transformations, you need '...
 			     'to export a talairach transformation to the scan by running  mrAlign.']); 
 	    end
@@ -1323,7 +1323,78 @@ switch lower(param)
 	  oneTimeWarning(sprintf('unknownSformCode_%i_%i_%i',s,g,b),...
 			 ['Scan is neither in Magnet space nor in Talairach Space. Using the identity matrix '...
 			  'to transform from base to scan. Run mrAlign to fix the scan.']);
-	  val = eye(4)/3;
+	  val = eye(4);
+	end
+      end
+    end
+  case{'base2roi'}
+    % xform = viewGet(view,'base2roi',[roiNum],[baseNum])
+    % This will return the xform matrix that specifies the
+    % transformation from base coordinates to ROI coordinates
+    % It checks whether the ROI and the base are in magnet or Talairach
+    % coordinates, and deals with the case when they are not in the
+    % same space
+    %  Note that this also has composited the shiftOriginXform.
+    b = getBaseNum(view,varargin,2);
+    n = viewGet(view,'numBase');
+    r = getRoiNum(view,varargin);    
+    nRois = viewGet(view,'numrois'); 
+    if (b > 0) & (b <= n) & (nRois >= r) & (r > 0)   
+      roi2tal = viewGet(view,'roi2tal',r);
+      if ~isempty(roi2tal) % The roi has a Tal xform   %**************************
+	base2tal = viewGet(view,'base2tal',b); % check base
+	if ~isempty(base2tal) % -CASE 1-: both the roi and the base have a Tal xform
+	  val = inv(roi2tal) * base2tal; % use it
+	else %  -CASE 2-: the roi has a Tal xform but the base does not
+	  roi2mag = viewGet(view,'roi2mag',r); % check if the roi has a Mag xform
+	  if ~isempty(roi2mag) % if it does,
+	    base2mag = viewGet(view,'base2mag',b); % check if the base has a mag xform too
+	    if ~isempty(base2mag) % if they both do, use that, but give a warning
+	      oneTimeWarning(sprintf('roiBaseMismatch_%i_%i',r,b),...
+			     ['WARNING: Ignoring the roi talairach transformation, because roi'...
+			     'has a Talairach transformation, but the base does not. Coordinates'...
+			      'are being converted through the magnet coordinate frame. If you wanted'...
+			      'the transformations to use Talairach coordinates instead of magnet '...
+			      'coordinates, you need to use mrAlign to export the talairach transformation to the base']);
+	      val = inv(roi2mag) * base2mag;
+	    else % if the base doesn't have either xform, that's an error. Give a warning and use the identity matrix
+	      oneTimeWarning(sprintf('noBaseXform_%i_%i',r,b),...
+			     ['ERROR: Base does not have a transform for magnet or talairach space. '...
+			     'Using the identity matrix to transform from base to scan. Run mrAlign to fix the base.']);
+	      val = eye(4);
+	    end
+	  else % if the roi does not have a mag xform and the base does not have a tal xform
+	    oneTimeWarning(sprintf('incompatibleRoiBase_%i_%i',r,b),...
+			   ['Base and ROI are not compatible: ROI is in Talairach space (and not magnet space) but Base is not. '...
+			    'Using the identity matrix to transform from base to ROI. Run mrAlign to get base and ROI into the same space.']);
+	    val = eye(4);
+	  end
+	end
+      else % The ROI doesn't have a Tal xform...
+	roi2mag = viewGet(view,'roi2mag',r); 
+	if ~isempty(roi2mag) % ... but the ROI does have a mag transform
+	  base2mag = viewGet(view,'base2mag',b); % check the base:
+	  if ~isempty(base2mag) % -CASE 3-: both base and ROI have mag transform 
+	    val = inv(roi2mag) * base2mag; % use it
+	    base2tal = viewGet(view,'base2tal',b); % but check if base had a Tal xform so can warn user that it's being ignored
+	    if ~isempty(base2tal)
+	      oneTimeWarning(sprintf('roiBaseMismatch_%i_%i',r,b),...
+			     ['WARNING: Ignoring the base talairach transformation, because the base has a talairach '...
+			     'transformation but the ROI does not. Coordinates are being converted through the magnet'...
+			     'coordinate frame. If you want convert using the talairach transformations, you need '...
+			     'to export a talairach transformation to the ROI by running  mrAlign.']); 
+	    end
+	  else % -CASE 4-: ROI has a mag xform but base does not (and ROI doesn't have a tal xform, bc already checked that)
+	    oneTimeWarning(sprintf('incompatibleRoiBase_%i_%i',r,b),...
+			   ['Base and Scan are not compatible: Scan is in magnet space and Base is not. Using the '...
+			    'identity matrix to transform from base to scan. Run mrAlign to get base and scan into the same space.']);
+	    val = eye(4);
+	  end
+	else % error if ROI has neither a base nor a tal transform
+	  oneTimeWarning(sprintf('unknownSformCode_%i_%i',r,b),...
+			 ['ROI is neither in Magnet space nor in Talairach Space. Using the identity matrix '...
+			  'to transform from base to ROI. Run mrAlign to fix the ROI.']);
+	  val = eye(4);
 	end
       end
     end
@@ -1498,18 +1569,6 @@ switch lower(param)
       roicolor = viewGet(view,'roiColor',varargin{1});
     end
     val = color2RGB(roicolor);
-  case{'roixform'}
-    % roixform = viewGet(view,'roixform',[roiNum])
-    % this returns the roiXform which is the xform
-    % of the roi to the volume in magnet coordinates.
-    % It is *not* shifted by shiftOriginXform;
-    r = getRoiNum(view,varargin);
-    n = viewGet(view,'numberofROIs');
-    if r & (r > 0) & (r <= n)
-      val = view.ROIs(r).xform;
-    else
-      val = eye(3);
-    end
   case{'roivol2mag'}
     % roiVol2mag = viewGet(view,'roiVol2mag',[roiNum])
     % returns the xform of the volume coordinates to
@@ -1517,7 +1576,7 @@ switch lower(param)
     r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
-      val = view.ROIs(r).vol2mag;
+      val = view.ROIs(r).vol2mag; 
     end
   case{'roivol2tal'}
     % roiVol2tal = viewGet(view,'roiVol2tal',[roiNum])
@@ -1528,7 +1587,17 @@ switch lower(param)
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).vol2tal;
     end
-  case{'roi2mag'}
+  case{'roisformcode'} %**************
+    % roiSformCode = viewGet(view,'roiSformCode',[roiNum])
+    % returns the sFormCode of the transform saved in
+    % view.ROIs(r).sformcode, which is the sformcode of the 
+    % base on which the ROI was originally defined.
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).sformCode;
+    end
+  case{'roi2mag','roixform'}
     % roi2mag = viewGet(view,'roi2mag',[roiNum])
     % roi2mag returns the transformation of the roi
     % to the volume in magnet coordinates. It has
@@ -1538,7 +1607,21 @@ switch lower(param)
     r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
-      val = view.ROIs(r).xform * shiftOriginXform;
+      sform_code = viewGet(view,'roiSformCode',r);
+      if (sform_code == 1)
+	val = view.ROIs(r).xform * shiftOriginXform;
+      elseif (sform_code == 3)
+	vol2tal = viewGet(view,'roiVol2tal',r);
+	vol2mag = viewGet(view,'roiVol2mag',r);
+	if ~isempty(vol2tal) && ~isempty(vol2mag)
+	  val = vol2mag * inv(vol2tal) * view.ROIs(r).xform * shiftOriginXform;
+	end
+      end
+      if strcmp(lower(param),'scanxform') && ~isempty(val)
+	val = val * inv(shiftOriginXform);
+      end
+    else
+      val = eye(4);
     end
   case{'roi2tal'}
     % roi2tal = viewGet(view,'roi2tal',[roiNum])
@@ -1548,13 +1631,19 @@ switch lower(param)
     r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
-      vol2tal = viewGet(view,'roiVol2tal',r);
-      vol2mag = viewGet(view,'roiVol2mag',r);
-      if ~isempty(vol2tal) && ~isempty(vol2mag)
-	val = vol2tal * inv(vol2mag) * view.ROIs(r).xform * shiftOriginXform;
+      sform_code = viewGet(view,'roisformCode',r);
+      if (sform_code == 3)
+	val = view.ROIs(r).xform * shiftOriginXform;
+      elseif (sform_code == 1)
+	vol2tal = viewGet(view,'roiVol2tal',r);
+	vol2mag = viewGet(view,'roiVol2mag',r);
+	if ~isempty(vol2tal) && ~isempty(vol2mag)
+	  val = vol2tal * inv(vol2mag) * view.ROIs(r).xform * shiftOriginXform;
+	end
       end
+    else
+      val = eye(4);
     end
-  
   case{'roinotes'}
     % roinotesm = viewGet(view,'roinotes',[roiNum])
     r = getRoiNum(view,varargin);
@@ -3049,12 +3138,13 @@ if nargout == 2
   baseVolume = viewGet(view,'baseVolume',b);
 end
 
-function r= getRoiNum(view,varg)
+function r= getRoiNum(view,varg,argnum)
 
-if ieNotDefined('varg')
+if ieNotDefined('argnum'), argnum = 1; end
+if ieNotDefined('varg') || (length(varg) < argnum)
   r = viewGet(view,'currentROI');
 else
-  r = varg{1};
+  r = varg{argnum};
 end
 if isempty(r)
   r = viewGet(view,'currentROI');
@@ -3063,10 +3153,14 @@ end
 
 function oneTimeWarning(fieldCheck,warnText)
 global gMLRWarning
+verbose = mrGetPref('verbose');
 fieldCheck = fixBadChars(fieldCheck);
 if ~isfield(gMLRWarning,fieldCheck)
   gMLRWarning.(fieldCheck) = 1;
   mrWarnDlg(warnText)
+  if strcmp(verbose,'Yes')
+    disp(sprintf('Warning: %s',warnText)); % I like to see it on the command line even if my verbose is set to yes...
+  end
 end
 
 
