@@ -344,7 +344,7 @@ switch lower(param)
     if (nscans >= s) & (s > 0)
       MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
     end
-  case {'sformcode'}
+  case {'sformcode','scansformcode'}
     % view = viewSet(view,'sformcode',sformcode,scanNum,groupNum);
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
@@ -1438,6 +1438,19 @@ switch lower(param)
     end
     if ~isempty(roiNum)
       view.ROIs(roiNum).vol2tal = val;
+    end
+ 
+  case 'roisformcode'
+    % v = viewSet(v,'roisformcode',sformcode,[roiNum]);
+    % sets the sformcode for the roiXform
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).sformCode = val;
     end
 
   case 'roiname'
