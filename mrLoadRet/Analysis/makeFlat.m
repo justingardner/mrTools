@@ -102,7 +102,7 @@ else
   params.curvFileName = {};
   params.calcCurvFlag = 1;
   for i=2:length(dirContents)
-    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'Curv')) & (regexp(dirContents(i).name, '.vff'))
+    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'curv')) & (regexp(dirContents(i).name, '.vff'))
       params.curvFileName{end+1} = dirContents(i).name;
       params.calcCurvFlag = 0;
     end
@@ -176,12 +176,12 @@ params.flatFileName = sprintf('%s_Flat_%i_%i_%i_Rad%i.off', ...
                               params.patchRadius);
 
 if strcmp(params.flattenMethod, 'surfRelax')
-  disp(sprintf('Flattening using SurfRelax'))
+  disp(sprintf('Flattening using SurfRelax'));
   myCutAndFlatten(params);
 elseif strcmp(params.flattenMethod, 'mrFlatMesh')
-  disp(sprintf('Flattening using the mrVista mrFlatMesh'))
-  [surf, params] = runMrFlatMesh(surf, params)
-  writeOFF(surf, params);
+  disp(sprintf('Flattening using the mrVista mrFlatMesh'));
+  [surf, params] = runMrFlatMesh(surf, params);
+  writePatchOFF(surf, params);
 end
 
 % make it into a MLR4 base anatomy
@@ -287,6 +287,7 @@ return
 
 function[surf, params] = runMrFlatMesh(surf, params)
 
+
 mesh.vertices       = surf.inner.vtcs;
 mesh.faceIndexList  = surf.inner.tris;
 mesh.rgba           = surf.curv;
@@ -310,7 +311,7 @@ return;
 %       date: 10/25/07
 %    purpose: 
 %
-function retval = writeOFF(surf, params)
+function retval = writePatchOFF(surf, params)
 
 % check arguments
 if ~any(nargin == [ 0 1 2])
@@ -319,7 +320,7 @@ if ~any(nargin == [ 0 1 2])
 end
 
 % Vertices
-vertices = [surf.flat.locs2d(:,2) surf.flat.locs2d(:,1)] - 2;
+vertices = [surf.flat.locs2d(:,1) surf.flat.locs2d(:,2)] - 2;
 vertices = cat(1, vertices', zeros(1, length(vertices)));
 
 % triangles(1) is number of vert/triangle: 3
