@@ -698,7 +698,7 @@ end
 imagesc(img);
 colormap(gray);
 axis image;
-axis off;
+% axis off;
 hold on
 
 if min(img(:)) ~= max(img(:))
@@ -719,7 +719,6 @@ plot(wmNodes(:,1), wmNodes(:,2), 'w.', 'markersize', 1);
 
 gmNodes = gmNodes( find( round(gmNodes(:,sliceIndex))==slice), : );
 plot(gmNodes(:,1), gmNodes(:,2), 'y.', 'markersize', 1);
-
 
 % plot the patch nodes, displaying both deep and superficial surfaces
 co = getPatchColoring;
@@ -772,7 +771,6 @@ else
 end
 
 view([0 90]);
-
 return;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
