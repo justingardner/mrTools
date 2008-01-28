@@ -232,7 +232,7 @@ else
     % convert the index to the coordinates
     if ~isempty(pos)
       baseCoordMap = viewGet(view,'baseCoordMap');
-      pos = squeeze(baseCoordMap.coords(1,vi,1,:));
+      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
       xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
   end      
