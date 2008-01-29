@@ -24,10 +24,14 @@ set(fignum,'MenuBar','none');
 set(fignum,'NumberTitle','off');
 set(fignum,'Name','mrDefaultInterrogator');
 
+junkFrames = viewGet(view, 'junkFrames', s);
+nFrames = viewGet(view,'nFrames',scan);
+
 tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
+tSeries = tSeries(junkFrames+1:junkFrames+nFrames);
+
 
 % get the mean and trend
-[nFrames, nVoxels] = size(tSeries); 
 model = [(1:nFrames);ones(1,nFrames)]';
 wgts = model \ tSeries;
 fit = model*wgts;
