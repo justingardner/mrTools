@@ -26,9 +26,17 @@ set(fignum,'Name','mrDefaultInterrogator');
 
 tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
 
+% get the mean and trend
+[nFrames, nVoxels] = size(tSeries); 
+model = [(1:nFrames);ones(1,nFrames)]';
+wgts = model \ tSeries;
+fit = model*wgts;
+
 subplot(2,1,1);
 plot(tSeries,'k.-');
-title(sprintf('Voxel: [%i %i %i]',x,y,s));
+hold on;
+plot(fit, 'r-');
+title(sprintf('Voxel: [%i, %i, %i], mean=%0.2f, trend=%0.2f (%% sig change)',x,y,s,wgts(2), 100*wgts(1)/wgts(2)));
 xlabel('Volumes');
 ylabel('fMRI Signal');
 axis tight;
