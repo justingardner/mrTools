@@ -24,10 +24,11 @@ set(fignum,'MenuBar','none');
 set(fignum,'NumberTitle','off');
 set(fignum,'Name','mrDefaultInterrogator');
 
-junkFrames = viewGet(view, 'junkFrames', s);
+junkFrames = viewGet(view, 'junkFrames', scan);
 nFrames = viewGet(view,'nFrames',scan);
 
 tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
+jSeries = tSeries(1:junkFrames);
 tSeries = tSeries(junkFrames+1:junkFrames+nFrames);
 
 
@@ -37,9 +38,9 @@ wgts = model \ tSeries;
 fit = model*wgts;
 
 subplot(2,1,1);
-plot(tSeries,'k.-');
-hold on;
-plot(fit, 'r-');
+plot(tSeries, 'k.-');
+hold on
+plot(fit, '-', 'Color', [.5 .5 .5]);
 title(sprintf('Voxel: [%i, %i, %i], mean=%0.2f, trend=%0.2f (%% sig change)',x,y,s,wgts(2), 100*wgts(1)/wgts(2)));
 xlabel('Volumes');
 ylabel('fMRI Signal');
