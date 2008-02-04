@@ -105,6 +105,9 @@ for i = 1:length(surfDir)
     allSurfaces{end+1} = surfDir(i).name;
   end
 end
+
+outerSurface = putOnTopOfList(outerSurface{1},allSurfaces);
+outerSurface{end+1} = 'Find file';
 outerCoords = putOnTopOfList('Same as surface',allSurfaces);
 outerCoords {end+1} = 'Find file';
 
