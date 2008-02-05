@@ -30,11 +30,12 @@ if (nargout == 2)
 		    'type',[],;
 		    'gamma',1,;
 		    'vol2tal',[];
-		    'vol2mag',[]};
+		    'vol2mag',[];
+                    'talPoints',[] };
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
-  requiredFields = {'clip','coordMap','curSlice','data','hdr','name','permutationMatrix','range','rotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag'};
+  requiredFields = {'clip','coordMap','curSlice','data','hdr','name','permutationMatrix','range','rotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag','talPoints'};
   optionalFields = {};
 end
 
