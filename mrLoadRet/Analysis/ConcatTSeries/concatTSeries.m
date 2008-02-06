@@ -117,7 +117,16 @@ d.voxelSize = viewGet(viewBase,'scanvoxelsize',params.scanList(1));
 d.dim = viewGet(viewBase,'scandims',params.scanList(1));
 d.nFrames = viewGet(viewBase,'nFrames',params.scanList(1));
 d.dim(4) = d.nFrames;
+d.sform = viewGet(viewBase,'scanSform',params.scanList(1));
+if ~params.warp
+  d.vol2mag = viewGet(viewBase,'scanVol2mag',params.scanList(1));
+  d.vol2tal = viewGet(viewBase,'scanVol2tal',params.scanList(1));
+else
+  d.vol2mag = viewGet(viewBase,'scanVol2mag',params.warpBaseScan);
+  d.vol2tal = viewGet(viewBase,'scanVol2tal',params.warpBaseScan);
+end
 for iscan = 1:length(params.scanList)
+  % check frame period for mismatch
   if (viewGet(viewBase,'framePeriod',params.scanList(iscan)) ~= d.tr)
     mrWarnDlg(sprintf('concatTSeries: These scans have different TR. (%0.4f vs %0.4f)',viewGet(viewBase,'framePeriod',params.scanList(iscan)),d.tr));
   end
@@ -127,8 +136,24 @@ for iscan = 1:length(params.scanList)
   if ~isequal(round(baseVoxelSize*roundoff)/roundoff,round(d.voxelSize*roundoff)/roundoff)
     disp(sprintf('(concatTSeries) Scans have different voxel sizes %i:[%s]~=[%s]',params.scanList(iscan),num2str(baseVoxelSize),num2str(d.voxelSize)));
   end
+  % check the scan dims
   if ~isequal(viewGet(viewBase,'scandims',params.scanList(iscan)),d.dim(1:3))
     disp('(concatTSeries) Scans have different dimensions.');
+  end
+  % check the scan sforms
+  if ~isequal(viewGet(viewBase,'scanSform',params.scanList(iscan)),d.sform)
+    % this is only an issue if warp is  not set
+    if ~params.warp
+      mrWarnDlg(sprintf('(concatTSeries) Sform for scan %s:%i does not match %s:%i. This means that they have different slice prescriptions. Usually you should select warp in this case so that the different scans are all warped together to look like the base scan. You have not selected warp.',params.groupName,params.scanList(iscan),params.groupName,params.scanList(1)));
+    end
+  end
+  % check the vol2mag and vol2tal
+  if (~isequal(viewGet(viewBase,'scanVol2mag',params.scanList(iscan)),d.vol2mag) || ...
+      ~isequal(viewGet(viewBase,'scanVol2tal',params.scanList(iscan)),d.vol2tal))
+    % this is only an issue if warp is  not set
+    if ~params.warp
+      mrWarnDlg(sprintf('(concatTSeries) The scanVol2mag/scanVol2tal for scan %s:%i does not match %s:%i. This means that they have been aligned to different volume anatomies. Usually you should select warp in this case so that the different scans are all warped together to look like the base scan. You have not selected warp.',params.groupName,params.scanList(iscan),params.groupName,params.scanList(1)));
+    end
   end
 end
 disp(sprintf('(concatTSeries) FramePeriod for scan is: %0.2f',d.tr));
@@ -161,17 +186,18 @@ for iscan = 1:length(params.scanList)
   
   % Compute transform
   if params.warp
-    % get base and scan xforms
-    baseXform = viewGet(view,'scanXform',params.warpBaseScan,groupNum);
-    scanXform = viewGet(view,'scanXform',scanNum,groupNum);
-    % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the
-    % origin.
-    shiftXform = shiftOriginXform;
+    % get the scan2scan xform
+    scan2scan = viewGet(view,'scan2scan',params.warpBaseScan,groupNum,scanNum,groupNum);
+    
+    % swapXY seems to be needed here, presumably becuase of the way that 
+    % warpAffine3 works.
     swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
-    M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
+
+    % compute transformation matrix
+    M = swapXY * scan2scan * swapXY;
 
     % display transformation
-    disp(sprintf('Transforming time series with transformation: '));
+    disp(sprintf('Transforming %s:%i to match %s:%i with transformation: ',params.groupName,scanNum,params.groupName,params.warpBaseScan));
     for rownum = 1:4
       disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
     end
@@ -223,6 +249,9 @@ for iscan = 1:length(params.scanList)
     scanParams.originalFileName{1} = filename;
     scanParams.originalGroupName{1} = baseGroupName;
     scanParams.totalJunkedFrames = totalJunkedFrames;
+    scanParams.vol2mag = d.vol2mag;
+    scanParams.vol2tal = d.vol2tal;
+
     hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.scanList(1)));
     % data *MUST* be written out as float32 b/c of the small values-epm
     hdr.datatype = 16;
@@ -230,7 +259,8 @@ for iscan = 1:length(params.scanList)
     % sform of the scan we warped to
     if params.warp
       hdr.sform44 = viewGet(view,'scanXform',params.warpBaseScan,groupNum);
-    end
+      hdr.sform_code = viewGet(view,'scanSformCode',params.warpBaseScan,groupNum);
+     end
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
     saveScanNum = viewGet(viewConcat,'nScans');
