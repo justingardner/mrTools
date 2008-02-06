@@ -3122,7 +3122,10 @@ end
 if isempty(s)
   s = viewGet(view,'curScan');
 end
-
+% if group is a string, then convert it to a number
+if isstr(g)
+  g = viewGet(view,'groupNum',g);
+end
 function [b baseVolume] = getBaseNum(view,varg,argnum)
 
 if ieNotDefined('argnum'),argnum = 1;end
