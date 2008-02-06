@@ -840,8 +840,13 @@ switch lower(param)
       scan2talFrom = viewGet(view,'scan2tal',sFrom,gFrom); % check if the FROMscan has a tal xform
       if ~isempty(scan2talFrom) % if the FROMscan has a Tal xform
 	scan2talTo = viewGet(view,'scan2tal',sTo,gTo); % check TOscan
-	if ~isempty(scan2talTo) % -CASE 1-: both scans have a Tal xform
-	  val = inv(scan2talTo) * scan2talFrom; % use it
+	if ~isempty(scan2talTo) % -CASE 1-: both scans have a Tal xform, then use it
+          % first check if they are the same, then just return identity matrix, so there's no roundoff error when compute the inverse
+	  if isequal(scan2talTo, scan2talFrom)
+            val = eye(4);
+          else
+            val = inv(scan2talTo) * scan2talFrom; 
+          end
 	else %  -CASE 2-: the FROMscan has a Tal xform but the TOscan doesn't
 	  scan2magFrom = viewGet(view,'scan2mag',sFrom,gFrom); % check if the FROMscan has a Mag xform
 	  if ~isempty(scan2magFrom) % if it does,
@@ -853,7 +858,12 @@ switch lower(param)
 			      'are being converted through the magnet coordinate frame. If you wanted'...
 			      'the transformations to use Talairach coordinates instead of magnet '...
 			      'coordinates, you need to use mrAlign to export the talairach transformation to the TO scan']);
-	      val = inv(scan2magTo) * scan2magFrom;
+              if isequal(scan2magTo,scan2magFrom) % if they're the same, avoid the roundoff errors of calling inv
+                val = eye(4);
+              else
+                val = inv(scan2magTo) * scan2magFrom;
+              end
+              
 	    else % if the TOscan doesn't have either xform, that's an error. Give a warning and use the identity matrix
 	      oneTimeWarning(sprintf('noScanXform_%i_%i_%i_%i',sFrom,gFrom,sTo,gTo),...
 			     ['ERROR: TO scan does not have a transform for magnet or talairach space. '...
