@@ -137,6 +137,8 @@ framePeriod = viewGet(viewBase,'framePeriod',baseScan);
 voxelSize = viewGet(viewBase,'scanvoxelsize',baseScan);
 scanDims = viewGet(viewBase,'scandims',baseScan);
 scanXform = viewGet(viewBase,'scanxform',baseScan);
+vol2mag = viewGet(viewBase,'scanVol2mag',baseScan);
+vol2tal = viewGet(viewBase,'scanVol2tal',baseScan);
 for iscan = 1:length(scanList)
   if (viewGet(viewBase,'nFrames',scanList(iscan)) ~= nFrames)
     mrErrorDlg('Can not average these scans because they have different numFrames.');
@@ -178,17 +180,27 @@ for iscan = 1:length(scanList)
   end
   
   % Compute transform
-  % *** Not fully tested yet ***
-  baseXform = viewGet(view,'scanXform',baseScan,groupNum);
-  scanXform = viewGet(view,'scanXform',scanNum,groupNum);
+  scan2scan = viewGet(view,'scan2scan',baseScan,groupNum,scanNum,groupNum);
+
+  % remove round off errors, for identity check
+  scan2scanIdentityCheck = scan2scan;
+  scan2scanIdentityCheck(abs(scan2scan)<(eps*100)) = 0;
+  scan2scanIdentityCheck(abs(scan2scan-1)<(eps*100)) = 1;
   
   % only warp if needed
-  if sum(sum(baseXform - scanXform)) ~= 0
-    % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the  origin.
-    shiftXform = shiftOriginXform;
+  if ~isequal(scan2scanIdentityCheck,eye(4))
+    % swapXY seems to be needed here, presumably becuase of the way that 
+    % warpAffine3 works.
     swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
-    M = swapXY * inv(shiftXform) * inv(scanXform) * baseXform * shiftXform * swapXY;
+
+    % compute transform
+    M = swapXY * scan2scan * swapXY;
     
+    % display transformation
+    disp(sprintf('Transforming %s:%i to match %s:%i with transformation: ',groupName,scanNum,groupName,baseScan));
+    for rownum = 1:4
+      disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
+    end
     % Warp the frames
     waitHandle = mrWaitBar(0,['Warping image volumes for scan ', num2str(iscan)]);
     for frame = 1:nFrames
@@ -224,6 +236,8 @@ scanParams.fileName = [];
 scanParams.junkFrames = 0;
 scanParams.nFrames = nFrames;
 scanParams.description = description;
+scanParams.vol2mag = vol2mag;
+scanParams.vol2tal = vol2tal;
 hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',baseScan));
 [viewAverage,tseriesFileName] = saveNewTSeries(viewAverage,aveTSeries,scanParams,hdr);
 
