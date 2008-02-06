@@ -182,13 +182,8 @@ for iscan = 1:length(scanList)
   % Compute transform
   scan2scan = viewGet(view,'scan2scan',baseScan,groupNum,scanNum,groupNum);
 
-  % remove round off errors, for identity check
-  scan2scanIdentityCheck = scan2scan;
-  scan2scanIdentityCheck(abs(scan2scan)<(eps*100)) = 0;
-  scan2scanIdentityCheck(abs(scan2scan-1)<(eps*100)) = 1;
-  
   % only warp if needed
-  if ~isequal(scan2scanIdentityCheck,eye(4))
+  if ~isequal(scan2scan, eye(4))
     % swapXY seems to be needed here, presumably becuase of the way that 
     % warpAffine3 works.
     swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
