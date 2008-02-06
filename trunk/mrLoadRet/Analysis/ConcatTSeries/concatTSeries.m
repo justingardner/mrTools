@@ -42,7 +42,7 @@ paramsInfo = {...
     {'filterType',1,'minmax=[0 1]','incdec=[-1 1]','Which filter to use, for now you can only turn off highpass filtering'},...
     {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
     {'percentSignal',1,'type=checkbox','Convert to percent signal change'},...
-    {'warp',0,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days.'},...
+    {'warp',1,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days. If the scans have the same slice prescription this will not do anything.'},...
     {'warpInterpMethod',interpTypes,'Interpolation method for warp','contingent=warp'}
 	     };
 % First get parameters
@@ -189,22 +189,24 @@ for iscan = 1:length(params.scanList)
     % get the scan2scan xform
     scan2scan = viewGet(view,'scan2scan',params.warpBaseScan,groupNum,scanNum,groupNum);
     
-    % swapXY seems to be needed here, presumably becuase of the way that 
-    % warpAffine3 works.
-    swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+    if ~isequal(scan2scan,eye(4))
+      % swapXY seems to be needed here, presumably becuase of the way that 
+      % warpAffine3 works.
+      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
 
-    % compute transformation matrix
-    M = swapXY * scan2scan * swapXY;
+      % compute transformation matrix
+      M = swapXY * scan2scan * swapXY;
 
-    % display transformation
-    disp(sprintf('Transforming %s:%i to match %s:%i with transformation: ',params.groupName,scanNum,params.groupName,params.warpBaseScan));
-    for rownum = 1:4
-      disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
+      % display transformation
+      disp(sprintf('Transforming %s:%i to match %s:%i with transformation: ',params.groupName,scanNum,params.groupName,params.warpBaseScan));
+      for rownum = 1:4
+	disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
+      end
+      % Warp the frames
+      for frame = 1:d.nFrames
+	d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.warpInterpMethod);
+      end   
     end
-    % Warp the frames
-    for frame = 1:d.nFrames
-      d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.warpInterpMethod);
-    end   
   end
   
   % do other  processing here
