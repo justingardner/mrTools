@@ -35,11 +35,7 @@ end
 
 
 if strcmp(method, 'roi')
-  coords = viewGet(view, 'roicoords');
-  coords = cat(1,coords(2,:), coords(1,:), coords(3,:))';
-  
-  roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-  
+  disp(sprintf('(calcDist) ROI method not implemented'));
 else
   % Select main axes of view figure for user input
   fig = viewGet(view,'figNum');
