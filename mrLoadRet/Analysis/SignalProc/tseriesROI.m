@@ -35,20 +35,19 @@ tseriesROI = cell(length(roiList),length(scanList));
 for iROI = 1:length(roiList)
   roi = roiList(iROI);
   roiCoords = viewGet(view,'roiCoords',roi);
-  roiXform = viewGet(view,'roiXform',roi);
   roiVoxelSize = viewGet(view,'roiVoxelSize',roi);
 
   for iscan = 1:length(scanList)
     scan = scanList(iscan);
-    scanXform = viewGet(view,'scanXform',scan);
     scanVoxelSize = viewGet(view,'scanVoxelSize',scan);
     scanDims = viewGet(view,'scanDims',scan);
     sliceDims = scanDims([1,2]);
     junkframes = viewGet(view,'junkFrames',scan);
     nframes = viewGet(view,'nFrames',scan);
-
+    scan2roi = viewGet(view,'scan2roi',roi,scan);
+    
     % Transform ROI it to the coordinates of the scan
-    coords = round(xformROIcoords(roiCoords,inv(scanXform)*roiXform,roiVoxelSize,scanVoxelSize));
+    coords = round(xformROIcoords(roiCoords,inv(scan2roi),roiVoxelSize,scanVoxelSize));
     if isempty(coords)
       slices = [];
     else
