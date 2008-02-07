@@ -811,10 +811,10 @@ switch lower(param)
 	  % transforms this image directly on to the current anatomy
 	  % using the qform matrices. 
 	  if strcmp(mrGetPref('verbose'),'Yes')
-	    oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),['(viewGet:scanXform) sform is not set. Using qform to align '...
+	    oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),...
+                ['(viewGet:scanXform) sform is not set. Using qform to align '...
 		 'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
 	  end
-	  baseqform = viewGet(view,'baseqform');
 	  val = MLR.groups(g).scanParams(s).niftiHdr.qform44 * shiftOriginXform;
 	end
       end
@@ -854,7 +854,8 @@ switch lower(param)
 			      'instead of magnet coordinates, you need to use '...
                               'mrAlign to export the talairach transformation to the scan']);
 	      val = inv(roi2mag) * scan2mag;
-	    else % if the base doesn't have either xform, that's an error. Give a warning and use the identity matrix
+	    else % if the scan doesn't have either xform, that's an error.
+                 % Give a warning and use the identity matrix
 	      oneTimeWarning(sprintf('noScanXform_%i_%i_%i',r,s,g),...
 			     ['ERROR: Scan does not have a transform for '...
                               'magnet or talairach space. '...
@@ -876,8 +877,9 @@ switch lower(param)
 	if ~isempty(roi2mag) % ... but the ROI does have a mag transform
 	  scan2mag = viewGet(view,'scan2mag',s,g); % check the scan:
 	  if ~isempty(scan2mag) % -CASE 3-: both scan and ROI have mag transform 
-	    val = inv(roi2mag) * scan2mag; % use it
-	    scan2tal = viewGet(view,'scan2tal',s,g); % but check if scan had a Tal xform so can warn user that it's being ignored
+	    val = inv(roi2mag) * scan2mag; % use it;
+           % but check if scan had a Tal xform so can warn user that it's being ignored
+	    scan2tal = viewGet(view,'scan2tal',s,g); 
 	    if ~isempty(scan2tal)
 	      oneTimeWarning(sprintf('roiScanMismatch_%i_%i_%i',r,s,g),...
 			     ['WARNING: Ignoring the scan talairach transformation, '...
@@ -889,7 +891,8 @@ switch lower(param)
 			      'to export a talairach transformation to the '...
                               'ROI by running  mrAlign.']); 
 	    end
-	  else % -CASE 4-: ROI has a mag xform but scan does not (and ROI doesn't have a tal xform, bc already checked that)
+	  else % -CASE 4-: ROI has a mag xform but scan does not
+               % (and ROI doesn't have a tal xform, bc already checked that)
 	    oneTimeWarning(sprintf('incompatibleRoiScan_%i_%i_%i',r,s,g),...
 			   ['ROI and Scan are not compatible: ROI is in magnet '...
                             'space and Scan is not. Using the '...
@@ -1045,7 +1048,8 @@ switch lower(param)
         % here that reset val if it was the identity but that was a
         % bug (DJH 1/17/07).
         if strcmp(mrGetPref('verbose'),'Yes') 
-	  oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),['(viewGet:scanXform) sform is not set. Using qform to align '...
+	  oneTimeWarning(sprintf('noScanSform_%i_%i',s,g),...
+              ['(viewGet:scanXform) sform is not set. Using qform to align '...
 	       'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
         end
         val = MLR.groups(g).scanParams(s).niftiHdr.qform44;
@@ -1364,9 +1368,9 @@ switch lower(param)
 	  % transforms this image directly on to the current anatomy
 	  % using the qform matrices. 
 	  if strcmp(mrGetPref('verbose'),'Yes') 
-	    oneTimeWarning(sprintf('noBaseSform_%i',b),['(viewGet:baseXform) sform is not '...
-                                'set. Using qform to align '...
-                                'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
+	    oneTimeWarning(sprintf('noBaseSform_%i',b),...
+                       ['(viewGet:baseXform) sform is not set. Using qform to align '...
+                        'to base anatomy. Run mrAlign then mrUpdateNiftiHdr to fix this']);
 	  end
 	  baseqform = viewGet(view,'baseqform');
 	  val = baseqform * shiftOriginXform;
