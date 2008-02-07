@@ -7,12 +7,16 @@ function newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,samp
 % volumes above thresh to maintain ROI volume.
 % 
 % coords: 4xN matrix of coordinates (x,y,z,1).
-% xform: 4x4 homogeneous transform
+% xform: 4x4 homogeneous transform. Note that this xform should be
+% the xform from the roi to whatever coordinates you wanted. This
+% function used to also add the shiftOriginXform transforms on to
+% shift from 0,0,0 based to 1,1,1 but now assumes that those have
+% already been composited on to the xform.
 % inputVoxSize: 3-vector, size of voxels (mm) in coords
 % outputVoxSize: 3-vector, size of voxels (mm) in newCoords
 % sampRate: 3-vector, supersampling rate for each dimension
 %           default is odd number >= 4x ratio of inputVoxSize/outputVoxSize
-%
+% 
 % newcoords: 4xN matrix of (x,y,z,1) 
 %
 % djh, 8/98.  Modified from ROIcoords/transformROI.m in mrLoadRet-1
@@ -40,19 +44,15 @@ if isequal(xformRound,eye(4)) && isequal(inputVoxSizeRound,outputVoxSizeRound)
   return
 end
 
-if ~exist('sampRate','var')
-	sampRate = ceil(inputVoxSize ./ outputVoxSize) .* [4,4,4];
-	sampRate = 2*floor(sampRate/2) + 1;
+if ieNotDefined('sampRate')
+  sampRate = ceil(inputVoxSize ./ outputVoxSize) .* [4,4,4];
+  sampRate = 2*floor(sampRate/2) + 1;
 end
 
 if isempty(coords)
-	newcoords = [];
-	return;
+  newcoords = [];
+  return;
 end
-
-% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin.
-shiftXform = shiftOriginXform;
-xform = inv(shiftXform) * xform * shiftXform;
 
 % First, just transform the coords. This is insufficient because it will
 % leave holes if the input voxels are larger than the output voxels.
@@ -154,13 +154,13 @@ return;
 
 coords1 = [0; 0; 0; 1];
 coords2 = [1 2 3 4;
-	       1 1 1 1;
-	       1 1 1 1;
-		   1 1 1 1];
+	   1 1 1 1;
+	   1 1 1 1;
+	   1 1 1 1];
 xform = [1 0 0 0;
-	     0 1 0 0;
-	     0 0 1 0.5;
-	     0 0 0 1];
+	 0 1 0 0;
+	 0 0 1 0.5;
+	 0 0 0 1];
 inputVoxSize = [1,1,1];
 outputVoxSize = [1,1,1/2];
 xformROIcoords(coords1,xform,inputVoxSize,outputVoxSize)

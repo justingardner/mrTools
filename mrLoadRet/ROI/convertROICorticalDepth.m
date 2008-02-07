@@ -49,7 +49,6 @@ paramsDialog{end+1} = {'all',0,'type=checkbox','Select all ROIs'};
 whichROI = mrParamsDialog(paramsDialog,sprintf('Select ROIs to convert cortical depth'));
 
 % get base info
-baseXform = viewGet(v,'baseXform');
 baseVoxelSize = viewGet(v,'baseVoxelSize');
 baseCoordMap = viewGet(v,'baseCoordMap',[],params.referenceDepth);
 baseDims = baseCoordMap.dims;
@@ -71,7 +70,7 @@ if ~isempty(whichROI)
       v = viewSet(v,'curROI',roinum);
       roi = viewGet(v,'ROI');
       % get the roiBaseCoords
-      roiBaseCoords = getROIBaseCoords(v,roinum,baseXform,baseVoxelSize);
+      roiBaseCoords = getROICoordinates(v,roinum,0);
       if isempty(roiBaseCoords)
         disppercent(inf);
         disp(sprintf('(convertROICorticalDepth) %s has no coordinates on this flat',roinames{roinum}));
@@ -98,19 +97,20 @@ if ~isempty(whichROI)
       [roiBaseCoords(1,:) roiBaseCoords(2,:) roiBaseCoords(3,:)] = ind2sub(baseDims,roiBaseCoordsLinear);
       roiBaseCoords(4,:) = 1;
       % set the coordinates
+      base2roi = viewGet(v,'base2roi');
       if strcmp(params.conversionType,'Project through depth')
 	% add them to the ROI
-	v = modifyROI(v,roiBaseCoords,baseXform,baseVoxelSize,1);
+	v = modifyROI(v,roiBaseCoords,base2roi,baseVoxelSize,1);
       else
 	% get current coords
 	curROICoords = viewGet(v,'roiCoords',roinum);
 	% remove them from the ROI
-	v = modifyROI(v,roiBaseCoords,baseXform,baseVoxelSize,0);
+	v = modifyROI(v,roiBaseCoords,base2roi,baseVoxelSize,0);
 	% but make sure we have the voxels at the reference depth
 	roiBaseCoords = [];
 	[roiBaseCoords(1,:) roiBaseCoords(2,:) roiBaseCoords(3,:)] = ind2sub(baseDims,roiBaseCoordsReferenceLinear);
 	roiBaseCoords(4,:) = 1;
-	v = modifyROI(v,roiBaseCoords,baseXform,baseVoxelSize,1);
+	v = modifyROI(v,roiBaseCoords,base2roi,baseVoxelSize,1);
 	% and save for undo (note we do this instead of allowing
 	% modifyROI to do it since we have called modifyROI twice)
 	v = viewSet(v,'prevROIcoords',curROICoords);
@@ -124,25 +124,3 @@ if ~isempty(whichROI)
   end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   getROIBaseCoords   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-function roiBaseCoords = getROIBaseCoords(v,roinum,baseXform,baseVoxelSize)
-
-% look in cache for converted coordinates
-roiCache = viewGet(v,'ROICache',roinum);
-if isempty(roiCache)
-  disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',roinum,viewGet(v,'roiName',roinum)));
-  %viewGet
-  roiCoords = viewGet(v,'roiCoords',roinum);
-  roiXform = viewGet(v,'roiXform',roinum);
-  roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
-  if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
-    % Use xformROI to supersample the coordinates
-    roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-  else
-    roiBaseCoords = [];
-  end
-else
-  roiBaseCoords = roiCache.roiBaseCoords;
-end

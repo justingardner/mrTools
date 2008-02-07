@@ -60,3 +60,77 @@ if isempty(viewGet(v,'baseCoordMap'))
 end
 
 mrParamsDialog(paramsInfo,'ROI information',1.5);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = showCurrentROIScanCoords(view)
+
+retval = [];
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+% get the current scan number
+scanNum = viewGet(view,'curScan');
+% get the coordinates
+coords = getROICoordinates(view,roiNum,scanNum);
+
+% and display them to the buffer
+disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
+dispCoords(coords);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = showCurrentROICoords(view)
+
+retval = [];
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+% just get roi coordinates
+coords = viewGet(view,'ROICoords',roiNum);
+
+% display to buffer
+disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
+dispCoords(coords);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, also called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispCoords(coords)
+
+% if shift is held down then just dump as an array
+% that can be used
+if (exist('mglGetKeys')==3) && mglGetKeys(57)
+  % just dump as an array
+  disp(sprintf('Setting variable ROICoords'));
+  evalin('base',sprintf('ROICoords = [%s;%s;%s];',num2str(coords(1,:)),num2str(coords(2,:)),num2str(coords(3,:))));
+  return
+end
+% and display them to the buffer
+numCols = 20;
+xline = 'x:';yline = 'y:';sline = 's:';colnum = 0;
+for i = 1:size(coords,2)
+  xline = sprintf('%s%4.0i',xline,coords(1,i));
+  yline = sprintf('%s%4.0i',yline,coords(2,i));
+  sline = sprintf('%s%4.0i',sline,coords(3,i));
+  colnum = colnum + 1;
+  if (colnum == numCols)
+    disp(sprintf('Coordinates %i:%i',i-numCols+1,i));
+    disp(xline);disp(yline);disp(sline);
+    colnum = 0;
+    xline = 'x:';yline = 'y:';sline = 's:';
+  end
+
+end
+if colnum
+    disp(sprintf('Coordinates %i:%i',i-colnum+1,size(coords,2)));
+  disp(xline);disp(yline);disp(sline);
+  colnum = 0;
+end
+

@@ -59,7 +59,7 @@ if ~isempty(params)
       % get the roi
       thisroinum = viewGet(v,'roinum',roinames{roinum});
       roi = viewGet(v,'ROI',thisroinum);
-      roiBaseCoords = getROIBaseCoords(v,thisroinum,baseXform,baseVoxelSize);
+      roiBaseCoords = getROICoordinates(v,thisroinum,0);
       if ~isempty(roiBaseCoords)
 	if strcmp(params.convertType,'Convert')
 	  disp(sprintf('(convertROI) Converting ROI %i:%s',roinum,roinames{roinum}));
@@ -87,25 +87,3 @@ if ~isempty(params)
   end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   getROIBaseCoords   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-function roiBaseCoords = getROIBaseCoords(v,roinum,baseXform,baseVoxelSize)
-
-% look in cache for converted coordinates
-roiCache = viewGet(v,'ROICache',roinum);
-if isempty(roiCache)
-  disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',roinum,viewGet(v,'roiName',roinum)));
-  %viewGet
-  roiCoords = viewGet(v,'roiCoords',roinum);
-  roiXform = viewGet(v,'roiXform',roinum);
-  roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
-  if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
-    % Use xformROI to supersample the coordinates
-    roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
-  else
-    roiBaseCoords = [];
-  end
-else
-  roiBaseCoords = roiCache.roiBaseCoords;
-end

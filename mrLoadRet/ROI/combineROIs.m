@@ -41,12 +41,11 @@ if ieNotDefined('action')
 end
 
 % Get coordinates
-roiXform1 = viewGet(view,'roiXform',roi1);
 roiVoxelSize1 = viewGet(view,'roiVoxelSize',roi1);
 roiCoords1 = viewGet(view,'roiCoords',roi1);
-roiXform2 = viewGet(view,'roiXform',roi2);
 roiVoxelSize2 = viewGet(view,'roiVoxelSize',roi2);
 roiCoords2 = viewGet(view,'roiCoords',roi2);
+roi2roi = viewGet(view,'roi2roi',roi2,roi1);
 
 % Transform coords or roi2, using xformROIcoords to supersample the
 % coordinates
@@ -56,7 +55,8 @@ end
 if (size(roiCoords2,1)==3)
   roiCoords2(4,:) = 1;
 end
-roiCoords2 = round(xformROIcoords(roiCoords2,inv(roiXform1)*roiXform2,roiVoxelSize2,roiVoxelSize1));
+
+roiCoords2 = round(xformROIcoords(roiCoords2,roi2roi,roiVoxelSize2,roiVoxelSize1));
 
 
 % Transpose because matlab functions work on rows, not cols
@@ -105,8 +105,10 @@ newCoords = newCoords';
 % Select ROI and modify it
 if ieNotDefined('newName')
   view = viewSet(view,'currentROI',roi1);
-  view = modifyROI(view,roiCoords1,roiXform1,roiVoxelSize1,0);
-  view = modifyROI(view,newCoords,roiXform1,roiVoxelSize1,1);
+  % add coordinates, they are all roi1 coordinates, so we pass
+  % the identity as the xform
+  view = modifyROI(view,roiCoords1,eye(4),roiVoxelSize1,0);
+  view = modifyROI(view,newCoords,eye(4),roiVoxelSize1,1);
 % make a new one
 else
   roi = viewGet(view,'ROI',roi1);
