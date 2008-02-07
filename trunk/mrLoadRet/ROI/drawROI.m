@@ -131,8 +131,8 @@ end
 
 % Modify ROI
 baseNum = viewGet(view,'currentBase');
-xform = viewGet(view,'basexform',baseNum);
+base2roi = viewGet(view,'base2roi',[],baseNum);
 voxelSize = viewGet(view,'baseVoxelSize',baseNum);
-view = modifyROI(view,coords,xform,voxelSize,sgn);
+view = modifyROI(view,coords,base2roi,voxelSize,sgn);
 
 

@@ -6,9 +6,8 @@ function view = modifyROI(view,coords,xform,voxelSize,sgn)
 % coords: 4xN array of ROI coordinates (bottom row filled with ones) in the
 % reference frame of the xform.
 %
-% xform: 4x4 homogeneous transform matrix that transforms coords to the
-% global reference frame. This xform is multiplied with the ROI xform to
-% transform coords to the ROI's reference frame.
+% xform: 4x4 homogeneous transform matrix that transforms the coords to the
+% current rois coordinate reference frame. 
 %
 % voxelSize: 3-vector providing voxel size of new coordinates in mm. This
 % is used along with the voxel size of the ROI when transforming the
@@ -34,9 +33,8 @@ curCoords = viewGet(view,'roiCoords',ROInum);
 view = viewSet(view,'prevROIcoords',curCoords);
 
 % Transform to ROI reference frame
-roiXform = viewGet(view,'roiXform',ROInum);
 roiVoxelSize = viewGet(view,'roiVoxelSize',ROInum);
-newCoords = xformROIcoords(coords,inv(roiXform)*xform,voxelSize,roiVoxelSize);
+newCoords = xformROIcoords(coords,xform,voxelSize,roiVoxelSize);
 
 % Merge/remove coordinates
 if sgn

@@ -4,7 +4,7 @@
 %         by: justin gardner
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
-%             if scanNum is 0, then will compute in base
+%             if scanNum is 0, then will compute in the current base
 %             coordinates. 
 %             if roinum is a structure, works on the structure
 %             rather than the roinum
@@ -27,63 +27,52 @@ if ieNotDefined('scanNum')
   scanNum = viewGet(view,'currentScan');
 end
 
-% get the scan transforms
-if scanNum
-  scanXform = viewGet(view,'scanXform',scanNum,groupNum);
-  scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
-else
-  % use base xform if scanNum == 0
-  view = viewSet(view,'curGroup',groupNum);
-  scanXform = viewGet(view,'baseXform');
-  scanVoxelSize = viewGet(view,'baseVoxelSize');
-end  
-
 % if roiNum is a string try to load it
+nROIs = viewGet(view,'numROIs');
 if isstr(roiNum)
-  roiname = fullfile(viewGet(view,'roidir'),fixBadChars(roiNum));
-  roiname = sprintf('%s.mat',stripext(roiname));
-  if ~isfile(roiname)
-    disp(sprintf('(getROICoordinates) Could not find roi %s',roiNum));
+  view = loadROI(view,roiNum);
+  roiNum = viewGet(view,'nROIs');
+  if roiNum == nROIs
+    disp(sprintf('(getROICoordinates) Could not load ROI'));
     return
   end
-  r = load(roiname);
-  f = fieldnames(r);
-  if length(f) >= 1
-    roiNum = r.(f{1});
-  else
-    disp(sprintf('(getROICoordinates) Could not find roi in file %s',roiNum));
+% if it is a struct use newRoi to set it into the view
+elseif isstruct(roiNum)
+  view = viewSet(view,'newROI',roiNum,1);
+  roiNum = viewGet(view,'nROIs');
+  if roiNum == nROIs
+    disp(sprintf('(getROICoordinates) Invalid ROI passed in'));
     return
   end
 end
 
 % get the roi transforms
-if isstruct(roiNum)
-  roiXform = roiNum.xform;
-  roiVoxelSize = roiNum.voxelSize;
-  roiCoords = roiNum.coords;
-else
-  roiXform = viewGet(view,'roiXform',roiNum);
-  roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
-  roiCoords = viewGet(view,'roiCoords',roiNum);
-end
-
-% check stuff
-if (isempty(scanXform)) 
-  disp(sprintf('(getRoiCoordinates) scanXform for %s:%i is empty',viewGet(view,'groupName',groupNum),scanNum));
-  return
-end
-if (isempty(roiXform)) 
-  disp(sprintf('(getRoiCoordinates) roiXform is empty'));
-  return
-end
+roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
+roiCoords = viewGet(view,'roiCoords',roiNum);
 
 % make sure we have normalized coordinates
 if (size(roiCoords,1)==3)
   roiCoords(4,:) = 1;
 end
 
+% get the scan transforms
+if scanNum
+  scan2roi = viewGet(view,'scan2roi',roiNum,scanNum,groupNum);
+  scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
+else
+  % use base xform if scanNum == 0
+  view = viewSet(view,'curGroup',groupNum);
+  scan2roi = viewGet(view,'base2roi',roiNum);
+  scanVoxelSize = viewGet(view,'baseVoxelSize');
+end  
+
+if (isempty(scan2roi)) 
+  disp(sprintf('(getRoiCoordinates) No xform available'));
+  return
+end
+
 % Use xformROI to supersample the coordinates
-scanCoords = round(xformROIcoords(roiCoords,inv(scanXform)*roiXform,roiVoxelSize,scanVoxelSize));
+scanCoords = round(xformROIcoords(roiCoords,inv(scan2roi),roiVoxelSize,scanVoxelSize));
 
 % return the unique ones
 if ~isempty(scanCoords)
