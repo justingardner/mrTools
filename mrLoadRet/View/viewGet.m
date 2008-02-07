@@ -784,7 +784,7 @@ switch lower(param)
     % to the volume in magnet coordinates. 
     % If the sform_code is set to 1, then this is the same
     % as scanSform *except* that the origin has been shifted
-    % to start at 0,0,0. i.e. It is scanSform * shiftOriginXform
+    % to start at 1,1,1. i.e. It is scanSform * shiftOriginXform
     %
     % Note that before adding the talairach xform code, scan2mag
     % was called scanxform and the code assumed that the sform
@@ -1024,7 +1024,7 @@ switch lower(param)
     % If the sform_code is set to 1, then this field has
     % been set by mrAlign to be the tansformation from this
     % scan to the volume in magnet coordinates. Note that
-    % scanSform does not shift the origin to start at 0,0,0
+    % scanSform does not shift the origin to start at 1,1,1
     % You usually will need to composite this sform with
     % shiftOriginXform to get the scan2mag xform.
     % If the sform_code is set to 3, then this field has
@@ -1341,7 +1341,7 @@ switch lower(param)
     % to the volume in magnet coordinates. 
     % If the sform_code is set to 1, then this is the same
     % as baseSform *except* that the origin has been shifted
-    % to start at 0,0,0. i.e. It is baseSform * shiftOriginXform
+    % to start at 1,1,1. i.e. It is baseSform * shiftOriginXform
     %
     % Note that previous to adding the talairach transformation
     % code, base2mag used to be called baseXform which used
