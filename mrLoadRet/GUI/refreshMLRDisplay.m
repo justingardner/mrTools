@@ -285,15 +285,14 @@ function roiBaseCoords= getROIBaseCoords(view,baseNum,roiNum);
 roiBaseCoords = [];
 
 % viewGet
-baseXform = viewGet(view,'baseXform',baseNum);
 baseVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
 roiCoords = viewGet(view,'roiCoords',roiNum);
-roiXform = viewGet(view,'roiXform',roiNum);
 roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
+base2roi = viewGet(view,'base2roi',roiNum,baseNum);
 
-if ~isempty(roiCoords) & ~isempty(roiXform) & ~isempty(baseXform)
+if ~isempty(roiCoords) & ~isempty(base2roi)
   % Use xformROI to supersample the coordinates
-  roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
+  roiBaseCoords = round(xformROIcoords(roiCoords,inv(base2roi),roiVoxelSize,baseVoxelSize));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

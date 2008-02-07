@@ -974,7 +974,6 @@ disppercent(-inf,'(mrFlatViewer) Computing ROI Overlay');
 % get view information
 v = viewGet([],'view',gFlatViewer.viewNum);
 numROIs = viewGet(v,'numROIs');
-baseXform = viewGet(v,'baseXform');
 baseVoxelSize = [1 1 1];
 % swap x/y
 tmp = baseCoords(:,2);
@@ -1003,7 +1002,7 @@ end
 for roinum = rois
   % get ROI info
   roiCoords = viewGet(v,'roiCoords',roinum);
-  roiXform = viewGet(v,'roiXform',roinum);
+  base2roi = viewGet(v,'base2roi',roinum);
   roiVoxelSize = viewGet(v,'roiVoxelSize',roinum);
   if roinum ~= selectedROI
     roiColorRGB = viewGet(v,'roiColorRGB',roinum);
@@ -1015,7 +1014,7 @@ for roinum = rois
     end
   end
   % get the base coord that match the roi
-  roiBaseCoords = round(xformROIcoords(roiCoords,inv(baseXform)*roiXform,roiVoxelSize,baseVoxelSize));
+  roiBaseCoords = round(xformROIcoords(roiCoords,inv(base2roi),roiVoxelSize,baseVoxelSize));
   roiBaseCoords = roiBaseCoords(1:3,:)';
   roiVertices = find(ismember(baseCoords,roiBaseCoords,'rows'));
   % and set them to the roi color
