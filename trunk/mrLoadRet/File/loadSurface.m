@@ -39,6 +39,13 @@ base.permutationMatrix = getPermutationMatrix(base.hdr);
 base.data(1,:,1) = loadVFF(params.curv);
 base.range = [-1.5 1.5];
 base.clip = [-1.5 1.5];
+
+% get the vol2mag and vol2tal fields from the volume anatomy
+% do it using a subfunction so don't confuse the two 'base' structure variables
+anatomyMatFile = sprintf('%s.mat',stripext(params.anatomy));
+base.vol2tal = getBaseField(anatomyMatFile,'vol2tal');
+base.vol2mag = getBaseField(anatomyMatFile,'vol2mag');
+
 % load the inner and outer coords
 innerSurface = loadSurfOFF(params.innerSurface);
 outerSurface = loadSurfOFF(params.outerSurface);
@@ -76,3 +83,15 @@ base.coordMap.dims = base.hdr.dim([3 2 4])';
 base.type = 2;
 
 cd(thispwd);
+
+
+function val = getBaseField(matFilename,fieldname)
+if ~exist(matFilename,'file') % if the anatomy doesn't have these fields set
+  val = [];
+else % if the volume anatomy has the fields, use them
+  load(matFilename);
+  eval(sprintf('val = base.%s;',fieldname))
+end
+
+
+  
