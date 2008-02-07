@@ -326,6 +326,28 @@ switch lower(param)
       MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
       MLR.groups(g).scanParams(s).niftiHdr.sform_code = 1;
     end
+  case {'base2scan'}
+    % view = viewSet(view,'base2scan',base2scan)
+    % This will set the base sform such that the base2scan
+    % will come out as the input matrix. This is a very
+    % specialized setting that should only really be used
+    % as a last resort--usually mrAlign will give the right
+    % transforms. But this allows for a quick way to get things
+    % right. Will set the sform_code to 1.
+    scan2mag = viewGet(view,'scan2mag');
+    view = viewSet(view,'baseSform',scan2mag*val*inv(shiftOriginXform));
+    view = viewSet(view,'baseSformCode',1);
+  case {'scan2base'}
+    % view = viewSet(view,'scan2base',scan2base)
+    % This will set the scan sform such that the scan2base
+    % will come out as the input matrix. This is a very
+    % specialized setting that should only really be used
+    % as a last resort--usually mrAlign will give the right
+    % transforms. But this allows for a quick way to get things
+    % right. Will set the sform_code to 1.
+    base2mag = viewGet(view,'base2mag');
+    view = viewSet(view,'scanSform',base2mag*val*inv(shiftOriginXform));
+    view = viewSet(view,'scanSformCode',1);
   case {'scansform','sform'}
     % view = viewSet(view,'scanSform',sform,scanNum,groupNum);
     % The scanSform is the sform set in the nifti header.
