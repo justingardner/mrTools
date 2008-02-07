@@ -10,7 +10,7 @@
 %             to get info on all groups:
 %             groupInfo
 % 
-%             to print info on groups with scanXforms
+%             to print info on groups with scanSforms
 %             groupInfo('Raw',1)
 function retval = groupInfo(groupNum,verbose)
 
@@ -121,10 +121,10 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
 
   % if verbose is set to 1 or above, then show scan transform
   if verbose >= 1 
-    scanXform = viewGet(view,'scanXform',s,groupNum);
-    disp(sprintf('   scanXform:'));
+    scanSform = viewGet(view,'scanSform',s,groupNum);
+    disp(sprintf('   scanSform:'));
     for i = 1:4
-      disp(sprintf('   %0.3f %0.3f %0.3f %0.3f',scanXform(i,1),scanXform(i,2),scanXform(i,3),scanXform(i,4)));
+      disp(sprintf('   %0.3f %0.3f %0.3f %0.3f',scanSform(i,1),scanSform(i,2),scanSform(i,3),scanSform(i,4)));
     end
   end
 end
