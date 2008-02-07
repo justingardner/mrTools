@@ -60,7 +60,7 @@ hdr.scl_slope = 1;
 hdr.endian = 'l';
 hdr.pixdim = [1 1 1 1 0 0 0 0]';        % all pix dims must be specified here
                                         %cbiWriteNifti(pathstr, overlayIm, hdr);
-cbiWriteNifti(pathstr, overlayIm);
+cbiWriteNifti(sprintf('%s.hdr',stripext(pathstr)), overlayIm);
 
 return
 
@@ -74,10 +74,9 @@ overlayCoords = [];
 % selected slice.
 baseNum = viewGet(view,'currentBase');
 if baseNum
-    volSize = viewGet(view,'baseDims',baseNum);
-    baseXform = viewGet(view,'baseXform',baseNum);
+  volSize = viewGet(view,'baseDims',baseNum);
 else
-    return
+  return
 end
 
 % Generate coordinates with meshgrid
@@ -93,19 +92,15 @@ zvec = reshape(z,1,numPixels);
 baseCoordsHomogeneous = [xvec; yvec; zvec; ones(1,numPixels)];
 baseCoords = reshape(baseCoordsHomogeneous(1:3,:)',[sliceDims 3]);
 
-% Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin. 
-shiftXform = shiftOriginXform;
-
 % Transform to overlay coordinates
 overlayNum = viewGet(view,'currentOverlay');
 if overlayNum
-    overlayXform = viewGet(view,'overlayXform',scanNum);
-    if ~isempty(overlayXform)
-        xform = inv(shiftXform) * inv(overlayXform) * baseXform * shiftXform;
-        % Transform coordinates
-        overlayCoordsHomogeneous = xform * baseCoordsHomogeneous;
-        overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[sliceDims 3]);
-    end
+  base2scan = viewGet(view,'base2scan',scanNum,[],baseNum);
+  if ~isempty(base2scan)
+    % Transform coordinates
+    overlayCoordsHomogeneous = base2scan * baseCoordsHomogeneous;
+    overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[sliceDims 3]);
+  end
 end
 
 
