@@ -21,12 +21,10 @@ scanNum = viewGet(view,'curScan');
 groupNum = viewGet(view,'curGroup');
 baseDims = viewGet(view,'baseDims');
 baseQform = viewGet(view,'baseqform');
-baseSform = viewGet(view,'baseXform');
 baseVolPermutation = viewGet(view,'baseVolPermutation');
 baseVoxelSize = viewGet(view,'baseVoxelSize');
 baseName = viewGet(view,'baseName');
 baseCoordMap = viewGet(view,'baseCoordMap');
-scanXform = viewGet(view,'scanXform',scan);
 scanVoxelSize = viewGet(view,'scanVoxelSize',scan);
 
 params.startCoord = viewGet(view,'mouseDownBaseCoords');

@@ -131,12 +131,11 @@ end
 viewAverage = viewSet(viewAverage,'currentGroup',aveGroupNum);
 
 % Check that all scans in scanList have the same nframes, frameperiod,
-% scanxform, scanvoxelsize, scandims
+% scanvoxelsize, scandims
 nFrames = viewGet(viewBase,'nFrames',baseScan);
 framePeriod = viewGet(viewBase,'framePeriod',baseScan);
 voxelSize = viewGet(viewBase,'scanvoxelsize',baseScan);
 scanDims = viewGet(viewBase,'scandims',baseScan);
-scanXform = viewGet(viewBase,'scanxform',baseScan);
 vol2mag = viewGet(viewBase,'scanVol2mag',baseScan);
 vol2tal = viewGet(viewBase,'scanVol2tal',baseScan);
 for iscan = 1:length(scanList)

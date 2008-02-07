@@ -111,7 +111,7 @@ end
 viewConcat = viewSet(viewConcat,'currentGroup',concatGroupNum);
 
 % Check that all scans in scanList have the same 
-% scanxform, scanvoxelsize, scandims
+% scanvoxelsize, scandims
 d.tr = viewGet(viewBase,'framePeriod',params.scanList(1));
 d.voxelSize = viewGet(viewBase,'scanvoxelsize',params.scanList(1));
 d.dim = viewGet(viewBase,'scandims',params.scanList(1));
@@ -260,7 +260,7 @@ for iscan = 1:length(params.scanList)
     % if we are warping, then we need to change the sform to the
     % sform of the scan we warped to
     if params.warp
-      hdr.sform44 = viewGet(view,'scanXform',params.warpBaseScan,groupNum);
+      hdr.sform44 = viewGet(view,'scanSform',params.warpBaseScan,groupNum);
       hdr.sform_code = viewGet(view,'scanSformCode',params.warpBaseScan,groupNum);
      end
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
