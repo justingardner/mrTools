@@ -48,10 +48,8 @@ if baseType == 0
   % first get which dimension we are looking at
   baseSliceIndex = viewGet(v,'baseSliceIndex');
   % now find voxel in base coordinates
-  baseXform = viewGet(v,'baseXform');
-  scanXform = viewGet(v,'scanXform',viewGet(v,'curScan'));
-  shiftXform = shiftOriginXform;
-  baseVoxel = round(inv(shiftXform)*inv(baseXform)*scanXform*shiftXform*[params.x params.y params.s 1]');
+  scan2base = inv(viewGet(v,'base2scan'));
+  baseVoxel = round(scan2base*[params.x params.y params.s 1]');
   % now get the slice to switch to
   sliceNum = baseVoxel(baseSliceIndex);
   % make sure the asked for slice exists
@@ -89,10 +87,9 @@ if baseType <= 1
 else
   % if we need to display on a surface,
   % first get base coord of point
-  baseXform = viewGet(v,'baseXform');
-  scanXform = viewGet(v,'scanXform',viewGet(v,'curScan'));
-  shiftXform = shiftOriginXform;
-  baseVoxel = round(inv(shiftXform)*inv(baseXform)*scanXform*shiftXform*[params.x params.y params.s 1]');
+  scan2base = inv(viewGet(v,'base2scan'));
+  baseVoxel = round(scan2base*[params.x params.y params.s 1]');
+  
   % and plot
   plot3(baseVoxel(1),baseVoxel(2),baseVoxel(3),'.','Color',color2RGB(params.color),'MarkerSize',30);
 end
