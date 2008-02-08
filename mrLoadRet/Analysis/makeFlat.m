@@ -285,9 +285,10 @@ figure(999)
 Hp = patch('vertices', mesh.vertices, 'faces', mesh.faceIndexList);
 normals = get(Hp,'vertexnormals');
 % convert to unit normals
-[normals,unit_normals] = colnorm(normals');
-mesh.normal = unit_normals';
-clear normals unit_normals;
+% [normals,unit_normals] = colnorm(normals');
+% mesh.normal = unit_normals';
+% clear normals unit_normals;
+mesh.normals = normals;
 close(999);
 
 surf.flat = flattenSurfaceMFM(mesh, params.startCoord, params.patchRadius);
@@ -313,7 +314,7 @@ if ~any(nargin == [ 0 1 2])
 end
 
 % Vertices
-vertices = [surf.flat.locs2d(:,2) surf.flat.locs2d(:,1)] - 2;
+vertices = [surf.flat.locs2d(:,1) surf.flat.locs2d(:,2)] - 2;
 vertices = cat(1, vertices', zeros(1, length(vertices)));
 
 % triangles(1) is number of vert/triangle: 3
