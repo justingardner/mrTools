@@ -288,7 +288,7 @@ normals = get(Hp,'vertexnormals');
 % [normals,unit_normals] = colnorm(normals');
 % mesh.normal = unit_normals';
 % clear normals unit_normals;
-mesh.normals = normals;
+mesh.normal = normals;
 close(999);
 
 surf.flat = flattenSurfaceMFM(mesh, params.startCoord, params.patchRadius);
