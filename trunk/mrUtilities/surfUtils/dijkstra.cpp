@@ -12,9 +12,16 @@
 extern void _main();
 
 #include <stdlib.h>
-#include <iostream.h>
 #include <stdio.h>
-#include <conio.h>
+#include "conio.h"
+#ifdef _WIN32
+	#include <conio.h> */
+	#include <iostream.h>
+
+#else
+	#include <curses.h>
+#endif
+
 #include <ctype.h>
 #include <memory.h>
 #include <time.h>
@@ -68,9 +75,15 @@ extern void _main();
 //***************************************************************************
 
 #include <stdlib.h>
-#include <iostream.h>
 #include <stdio.h>
+#ifdef _WIN32
 #include <conio.h>
+#include <iostream.h>
+
+#else
+#include "conio.h"
+#endif
+
 
 #include "fibheap.h"
 
@@ -174,13 +187,13 @@ int X;
 //=========================================================
 // Print()
 //=========================================================
-
+/*
 void FibHeapNode::Print()
 {
      if (NegInfinityFlag)
 	 cout << "-inf.";
 }
-
+*/
 //***************************************************************************
 //===========================================================================
 // FibHeap Constructor
@@ -465,7 +478,7 @@ int Result;
 // value for each node along the root list, then it calls itself on each
 // child list.   
 //========================================================================
-
+/*
 void FibHeap::Print(FibHeapNode *Tree, FibHeapNode *theParent)
 {
 FibHeapNode* Temp = NULL;
@@ -487,12 +500,14 @@ FibHeapNode* Temp = NULL;
 
 	Temp = Temp->Right;
 
+	#ifdef _WIN32
 	if (kbhit() && getch() == 27)
 	{
 	    cout << "Hit a key to resume or ESC to break\n";
 	    if (getch() == 27)
                 break;
         }
+	#endif
      } while (Temp != NULL && Temp != Tree);
      mexPrintf( "\n" );
 
@@ -515,7 +530,7 @@ FibHeapNode* Temp = NULL;
          cin >> ch;
      }
 }
-
+*/
 //===========================================================================
 //===========================================================================
 
@@ -732,7 +747,7 @@ public:
       virtual int  operator <(FibHeapNode& RHS);
 
       virtual void operator =(double NewKeyVal );
-      virtual void Print();
+      //virtual void Print();
 
       double GetKeyValue() { return N; };       /* !!!! */
       void SetKeyValue(double n) { N = n; };
@@ -741,13 +756,13 @@ public:
       void SetIndexValue( long int v) { IndexV = v; };
 
 };
-
+/*
 void HeapNode::Print()
 {
      FibHeapNode::Print();
      mexPrintf( "%f (%d)" , N , IndexV );
 }
-
+*/
 void HeapNode::operator =(double NewKeyVal)
 {
      HeapNode Temp;
