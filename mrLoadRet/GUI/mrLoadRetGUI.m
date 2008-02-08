@@ -418,13 +418,15 @@ end
 function baseTiltText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
+if value < 0,value = 0;end
+if value > 360,value = 360;end
 viewSet(viewNum,'tilt',value);
 v = viewGet([],'view',viewNum);
 fig = viewGet(v,'figNum');
 gui = guidata(fig);
 
 if (viewGet(v,'baseType') == 2)
-  feval('view',gui.axis,viewGet(v,'rotateSurface'),viewGet(v,'baseTilt'));
+  setMLRViewAngle(v);
 else
   refreshMLRDisplay(viewNum);
 end
