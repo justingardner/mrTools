@@ -15,18 +15,8 @@ if ~any(nargin == [4 5 6 7])
   return
 end
 
-
 % get base info
-scanNum = viewGet(view,'curScan');
-groupNum = viewGet(view,'curGroup');
-baseDims = viewGet(view,'baseDims');
-baseQform = viewGet(view,'baseqform');
-baseVolPermutation = viewGet(view,'baseVolPermutation');
-baseVoxelSize = viewGet(view,'baseVoxelSize');
-baseName = viewGet(view,'baseName');
 baseCoordMap = viewGet(view,'baseCoordMap');
-scanVoxelSize = viewGet(view,'scanVoxelSize',scan);
-
 params.startCoord = viewGet(view,'mouseDownBaseCoords');
 
 % parse the parameters
@@ -100,7 +90,7 @@ else
   params.curvFileName = {};
   params.calcCurvFlag = 1;
   for i=2:length(dirContents)
-    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'curv')) & (regexp(dirContents(i).name, '.vff'))
+    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'Curv')) & (regexp(dirContents(i).name, '.vff'))
       params.curvFileName{end+1} = dirContents(i).name;
       params.calcCurvFlag = 0;
     end
@@ -235,7 +225,7 @@ else
     % flatten the patch
     disppercent(-inf, sprintf('(makeFlat) Flattening surface'));
     [degenFlag result] = system(sprintf('FlattenSurface.tcl %s %s %s', ...
-                                        fullfile(params.flatDir, params.innerFileName), ...
+                                        fullfile(params.flatDir, params.outerFileName), ...
                                         fullfile(params.flatDir, params.patchFileName), ...
                                         fullfile(params.flatDir, params.flatFileName)));
     disppercent(inf);
@@ -285,17 +275,22 @@ return
 
 function[surf, params] = runMrFlatMesh(surf, params)
 
-
-mesh.vertices       = surf.inner.vtcs;
+corticalDepth = 0.5;
+mesh.vertices = surf.inner.vtcs+corticalDepth*(surf.outer.vtcs-surf.inner.vtcs);
 mesh.faceIndexList  = surf.inner.tris;
 mesh.rgba           = surf.curv;
 
+% get surface normals
 figure(999)
 Hp = patch('vertices', mesh.vertices, 'faces', mesh.faceIndexList);
-mesh.normal = get(Hp,'vertexnormals');
+normals = get(Hp,'vertexnormals');
+% convert to unit normals
+[normals,unit_normals] = colnorm(normals');
+mesh.normal = unit_normals';
+clear normals unit_normals;
 close(999);
 
-surf.flat = myUnfoldMeshFromGUI(mesh, params.startCoord, params.patchRadius);
+surf.flat = flattenSurfaceMFM(mesh, params.startCoord, params.patchRadius);
 
 
 return;
@@ -318,7 +313,7 @@ if ~any(nargin == [ 0 1 2])
 end
 
 % Vertices
-vertices = [surf.flat.locs2d(:,1) surf.flat.locs2d(:,2)] - 2;
+vertices = [surf.flat.locs2d(:,2) surf.flat.locs2d(:,1)] - 2;
 vertices = cat(1, vertices', zeros(1, length(vertices)));
 
 % triangles(1) is number of vert/triangle: 3
