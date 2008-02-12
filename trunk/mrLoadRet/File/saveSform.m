@@ -1,16 +1,23 @@
 % saveSform.m
 %
 %        $Id$
-%      usage: saveSform(sform)
+%      usage: saveSform(sform,[basesformcode],[vol2tal],[vol2mag])
 %         by: justin gardner
 %       date: 06/20/07
 %    purpose: saves sform to mrLoadRet-4.5 mrSession variable and
 %             changes header in epis
 %
-function retval = saveSform(sform)
+function retval = saveSform(sform,basesformcode,vol2tal,vol2mag)
 
 % check arguments
-if ~any(nargin == [1])
+if nargin == 1
+  basesformcode = 1;
+  vol2tal = [];
+  vol2mag = [];
+elseif nargin == 2
+  vol2tal = [];
+  vol2mag = [];
+elseif ~(nargin == 4)
   help saveSform
   return
 end
@@ -42,7 +49,7 @@ v = newView('Volume');
 mrGlobals
 % just make sure that the home dir matches
 if ~strcmp(MLR.homeDir,path)
-  answer = questdlg(sprintf('mrLoadRet is open on sesion %s? Ok to close and open on %s',getLastDir(MLR.homeDir),getLastDir(path)));
+  answer = questdlg(sprintf('mrLoadRet is open on session %s? Ok to close and open on %s',getLastDir(MLR.homeDir),getLastDir(path)));
   if ~strcmp(answer,'Yes')
     mrWarnDlg(sprintf('(saveSform) Could not open a view to %s',getLastDir(path)));
     deleteView(v);
@@ -86,6 +93,9 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
 	hdr = cbiReadNiftiHeader(filename);
 	% set the sform
 	hdr = cbiSetNiftiSform(hdr,sform);
+	% if the alignment was to a Tal base, need to set the sform_code correctly
+	hdr.sform_code = basesformcode;
+	
 	% and write it back
 	hdr = cbiWriteNiftiHeader(hdr,filename);
 	% read it back, (I think there is a slight numerical
@@ -96,6 +106,21 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
 	hdr = cbiReadNiftiHeader(filename);
 	% now save it in the session
 	v = viewSet(v,'niftiHdr',hdr,iScan,iGroup);
+        
+        % save the vol2tal and vol2mag fields
+        % only save them if they're not empty, otherwise leave it unchanged
+        if ~isempty(vol2tal)
+          % check if there's already a vol2tal there that is being overwritten
+          oldVol2tal = viewGet(v,'scanvol2tal',iScan,iGroup);
+          if ~isempty(oldVol2tal)
+            % since aligning to the volume, need to overwrite with the new vol2tal, but warn:
+            mrWarnDlg('(saveSform) Overwriting an old Tal xForm');
+          end
+          v = viewSet(v,'scanvol2tal',vol2tal,iScan,iGroup);
+        end
+        if ~isempty(vol2mag)
+          v = viewSet(v,'scanvol2mag',vol2mag,iScan,iGroup);
+        end
       else
 	disp(sprintf('(saveSform) Could not open file %s',filename));
       end
