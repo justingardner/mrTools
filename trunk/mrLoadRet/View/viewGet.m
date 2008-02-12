@@ -154,7 +154,7 @@ switch lower(param)
       groupNum = viewGet(view,'currentGroup');
     end
     if ~isempty(groupNum)
-      if (groupNum >= 1) && (groupNum <= length(view.loadedAnalyses))
+      if (groupNum >= 1) & (groupNum <= length(view.loadedAnalyses))
 	val = view.loadedAnalyses{groupNum};
       end
     end
@@ -3055,6 +3055,7 @@ switch lower(param)
       handles = guidata(fig);
       val = round(get(handles.scanSlider,'Value'));
     end
+    if isempty(val),val = 1;end
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');
     fig = viewGet(view,'fignum');
