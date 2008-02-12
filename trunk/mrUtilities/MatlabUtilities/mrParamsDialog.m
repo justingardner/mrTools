@@ -57,7 +57,11 @@ end
 gParams.leftMargin = 10;
 gParams.topMargin = 10;
 gParams.buttonWidth = min(max(100,maxChars*7),200);
-gParams.buttonHeight = 20;
+if strcmp(computer,'MACI')
+  gParams.buttonHeight = 26;
+else
+  gParams.buttonHeight = 20;
+end  
 gParams.margin = 5;
 gParams.fontsize = 12;
 gParams.fontname = 'Helvetica';
