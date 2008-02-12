@@ -90,7 +90,7 @@ else
   params.curvFileName = {};
   params.calcCurvFlag = 1;
   for i=2:length(dirContents)
-    if (regexp(dirContents(i).name, params.whichHemi)) & (regexp(dirContents(i).name, 'Curv')) & (regexp(dirContents(i).name, '.vff'))
+    if (regexp(dirContents(i).name, params.whichHemi)) & (regexpi(dirContents(i).name, 'Curv')) & (regexp(dirContents(i).name, '.vff'))
       params.curvFileName{end+1} = dirContents(i).name;
       params.calcCurvFlag = 0;
     end
