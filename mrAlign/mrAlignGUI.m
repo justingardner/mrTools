@@ -10,7 +10,7 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @mrAlignGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [], ...
                    'gui_Callback',   []);
-if nargin & isstr(varargin{1})
+if nargin && isstr(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -260,6 +260,47 @@ h = mrMsgBox('Loading volume. Please wait');
 volumeDimension = length(size(vData));
 mrCloseDlg(h);
 
+% Load associated .mat file for the volume (used in mrLR for bases,
+% and needed here for keeping track of Talairach information). If
+% no such .mat file exists, create it. (If user doesn't use mrLR,
+% they can just ignore this extra file
+matFilename = sprintf('%s.mat',stripext(pathStr));
+if ~exist(matFilename,'file') % if base doesn't already have an associated mat file
+  ALIGN.volBase.name = pathStr;
+  ALIGN.volBase.data = vData;
+  ALIGN.volBase.hdr = hdr;
+  ALIGN.volBase.permutationMatrix = getPermutationMatrix(hdr);
+  % check if it's a canonical volume, and if so, use qform as vol2mag
+  roundErr = 100000;
+  if isequal(round(hdr.qform44*roundErr),round(hdr.sform44*roundErr))
+    mrWarnDlg(['Attention mrLoadRet users: This destination volume '...
+              ' seems to be a canonical base volume. We are treating it '...
+              ' as the main volume to which everything will be aligned.'...
+              ' In particular, using the transformation of this volume'...
+              ' to magnet space (e.g. its q-form) as the base.vol2mag.'...
+              ' If this is not correct, then you need to fix the base'...
+              ' structure in mrLoadRet.']);
+    ALIGN.volBase.vol2mag = hdr.qform44;
+  end % if not, will be automatically set to [] by isbase()
+  % check if it's a talairach base, and if so, use sform as vol2tal
+  if hdr.sform_code == 3 % if there's no .mat file but it's a Tal base
+    mrWarnDlg(['Attention mrLoadRet users: This destination volume'...
+              ' seems to be a canonical base volume with Talairach'...
+              ' coordinates defined. Using the transformation of this volume' ...
+              ' to Talairach space (e.g. its s-form) as the base.vol2tal,'...
+              ' and using its transformation to magnet space (e.g. its'...
+              ' qform) as base.vol2mag. If this is not correct, then you' ...
+              ' need to fix the base structure in mrLoadRet.']);
+    ALIGN.volBase.vol2tal = hdr.sform44;
+    ALIGN.volBase.vol2mag = hdr.qform44;
+  end % if not, will autmatically set vol2tal = []  
+else % if there already is a base file
+  load(matFilename); % then load it
+  ALIGN.volBase = base; clear base
+end
+[tf ALIGN.volBase] = isbase(ALIGN.volBase); % make sure it has all the right fields;
+
+
 % check rank of qform/sform if these are not full rank
 % then something bad has probably happened--this will most
 % likely later cause mrAlign to choke--let the user know
@@ -369,6 +410,25 @@ h = mrMsgBox('Loading inplanes. Please wait');
 [vData,hdr] = cbiReadNifti(ALIGN.inplanePath);
 mrCloseDlg(h);
 
+% Load associated .mat file for the inplanes (used in mrLR for bases,
+% and needed here for keeping track of Talairach information). If
+% no such .mat file exists, create it. (If user doesn't use mrLR,
+% they can just ignore this extra file
+matFilename = sprintf('%s.mat',stripext(pathStr));
+if ~exist(matFilename,'file') % if base doesn't already have an associated mat file
+  ALIGN.inplaneBase.name = pathStr;
+  ALIGN.inplaneBase.data = vData;
+  ALIGN.inplaneBase.hdr = hdr;
+  ALIGN.inplaneBase.permutationMatrix = getPermutationMatrix(hdr);
+  ALIGN.inplaneBase.vol2mag = []; % will inherit these from the destination volume
+  ALIGN.inplaneBase.vol2tal = [];
+else % if there already is a base file
+  load(matFilename); % then load it
+  ALIGN.inplaneBase = base; clear base
+end
+[tf ALIGN.inplaneBase] = isbase(ALIGN.inplaneBase); % make sure it has all the right fields;
+
+
 % check rank of qform/sform if these are not full rank
 % then something bad has probably happened--this will most
 % likely later cause mrAlign to choke--let the user know
@@ -449,14 +509,23 @@ global ALIGN
 
 sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
 ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
+ALIGN.inplaneHdr.sform_code = ALIGN.volumeHdr.sform_code;
 hdr = cbiWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
 
+%also save the base structure with the appropriate vol2mag and vol2tal
+ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
+ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
+base = ALIGN.inplaneBase;
+matFilename = sprintf('%s.mat',stripext(base.name));
+eval(sprintf('save %s base',matFilename))
+clear base
 % --------------------------------------------------------------------
 function saveAlignToFileMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 % Extract sform
 sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
+sform_code = ALIGN.volumeHdr.sform_code;
 
 % Prompt user for filename(s)
 ext = mrGetPref('niftiFileExtension');
@@ -475,6 +544,7 @@ for p = 1:length(pathStr)
 	if exist(pathStr{p},'file')
 		hdr = cbiReadNiftiHeader(pathStr{p});
 		hdr = cbiSetNiftiSform(hdr,sform);
+                hdr.sform_code = sform_code;
 		hdr = cbiWriteNiftiHeader(hdr,pathStr{p});
 	else
 		mrWarnDlg(['File ',pathStr{p},' not found.']);
@@ -537,6 +607,14 @@ hdr = cbiSetNiftiQform(hdr,ALIGN.volumeHdr.qform44);
 [byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
 clear interpData data
 
+% also save the base structure with the appropriate vol2mag and vol2tal
+%also save the base structure with the appropriate vol2mag and vol2tal
+ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
+ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
+base = ALIGN.inplaneBase;
+matFilename = sprintf('%s.mat',stripext(base.name));
+eval(sprintf('save %s base',matFilename))
+clear base
 % --------------------------------------------------------------------
 function importMenu_Callback(hObject, eventdata, handles)
 
@@ -717,9 +795,25 @@ end
 function setBaseCoordinateFrameMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
-sform = ALIGN.volumeHdr.qform44;
-ALIGN.volumeHdr = cbiSetNiftiSform(ALIGN.volumeHdr,sform);
-hdr = cbiWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
+% check sform_code
+sform_code = ALIGN.volumeHdr.sform_code;
+
+if sform_code == 3 % just set the vol2tal and vol2mag fields
+  ALIGN.volBase.vol2tal = ALIGN.volumeHdr.sform44;
+  ALIGN.volBase.vol2mag = ALIGN.volumeHdr.qform44;
+else % if sform_code is 0 or 1, set sform = qform and get vol2mag.
+  sform = ALIGN.volumeHdr.qform44;
+  ALIGN.volumeHdr = cbiSetNiftiSform(ALIGN.volumeHdr,sform);
+  hdr = cbiWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
+  ALIGN.volBase.vol2mag = sform; % set the vol2mag field
+end
+  
+%also save the matFile for the base, to save vol2mag and vol2tal
+base = ALIGN.volBase;
+matFilename = sprintf('%s.mat',stripext(base.name));
+eval(sprintf('save %s base',matFilename));
+clear base % so don't get confused with the inplane base
+
 
 % --------------------------------------------------------------------
 function writeTifMenuItem_Callback(hObject, eventdata, handles)
@@ -1056,12 +1150,21 @@ global ALIGN
 % Extract sform
 if ~isempty(ALIGN.volumeHdr)
   sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
+  sform_code = ALIGN.volumeHdr.sform_code;
 else
   mrWarnDlg('(mrAlignGUI) Volume header does not exist yet');
   return
 end
+if ~isempty(ALIGN.volBase)
+  vol2mag = ALIGN.volBase.vol2mag;
+  vol2tal = ALIGN.volBase.vol2tal;
+else
+  mrWarnDlg('(mrAlignGUI) No volume loaded');
+  return
+end
+
 % save sform to mrLoadRet4
-saveSform(sform);
+saveSform(sform,sform_code,vol2tal,vol2mag);
 
 
 % --------------------------------------------------------------------
