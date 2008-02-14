@@ -86,12 +86,12 @@ global gSurfViewer;
 gSurfViewer.mismatchWarning = 0;
 filepath = '';
 
-disppercent(-inf,'(mrSurfaceView) Loading surfaces');
+disppercent(-inf,'(mrSurfViewer) Loading surfaces');
 
 % load the surface
 gSurfViewer.outerSurface = loadSurfOFF(sprintf('%s.off',stripext(outerSurface{1})));
 if isempty(gSurfViewer.outerSurface)
-  disp(sprintf('(mrSurfaceViewer) %s is not a surface file',outerSurface{1}));
+  disp(sprintf('(mrSurfViewer) %s is not a surface file',outerSurface{1}));
   return
 end
 
