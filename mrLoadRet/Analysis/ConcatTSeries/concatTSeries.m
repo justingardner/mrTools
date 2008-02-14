@@ -65,15 +65,19 @@ if ieNotDefined('params')
     params.scanList = selectScans(view);
   end
   if isempty(params.scanList),return,end
-  % if warp is set, then ask which scan to use as base scan for warp
+  % if warp is set, then ask which scan to use as base scan for warp, unless set by default
   if params.warp
-    % create a list of scans
-    for i = 1:viewGet(view,'nScans')
-      scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
+    if defaultParams
+      params.warpBaseScan = params.scanList(1);
+    else
+      % create a list of scans
+      for i = 1:viewGet(view,'nScans')
+        scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
+      end
+      warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'The scan that will be used as the base scan to warp all the other scans to'}});
+      if isempty(warpParams),return,end
+      params.warpBaseScan = find(strcmp(warpParams.warpBaseScan,scanNames));
     end
-    warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'The scan that will be used as the base scan to warp all the other scans to'}});
-    if isempty(warpParams),return,end
-    params.warpBaseScan = find(strcmp(warpParams.warpBaseScan,scanNames));
   end
   % check the parameters
   params = mrParamsReconcile(params.groupName,params);
