@@ -32,11 +32,11 @@ elseif (nargin == 1) && isstr(outerSurface)
   if ~isempty(strfind(outerSurface,'WM'))
     innerSurface{1} = outerSurface;
     clear outerSurface;
-    outerSurface{1} = sprintf('%sGM.off',strtok(stripext(innerSurface{1}),'WM'));
+    outerSurface{1} = sprintf('%sGM.off',stripext(stripext(innerSurface{1}),'WM'));
   elseif ~isempty(strfind(outerSurface,'GM'))
-    innerSurface{1} = sprintf('%sWM.off',strtok(stripext(outerSurface),'GM'));
+    innerSurface{1} = sprintf('%sWM.off',stripext(stripext(outerSurface),'GM'));
     clear outerSurface;
-    outerSurface{1} = sprintf('%sGM.off',strtok(stripext(innerSurface{1}),'WM'));
+    outerSurface{1} = sprintf('%sGM.off',stripext(stripext(innerSurface{1}),'WM'));
   else
     innerSurface{1} = outerSurface;
     clear outerSurface;
@@ -113,7 +113,7 @@ outerCoords {end+1} = 'Find file';
 
 % check for an inner surface
 if isempty(innerSurface)
-  innerSurface = sprintf('%sWM.off',strtok(stripext(outerSurface{1}),'GM'));
+  innerSurface = sprintf('%sWM.off',stripext(stripext(outerSurface{1}),'GM'));
   if ismember(innerSurface,allSurfaces)
     innerSurface = putOnTopOfList(innerSurface,allSurfaces);
     gSurfViewer.innerSurface = myLoadSurface(innerSurface{1});
