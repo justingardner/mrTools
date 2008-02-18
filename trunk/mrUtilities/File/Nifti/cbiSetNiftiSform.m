@@ -33,7 +33,7 @@ hdr.srow_z=hdr.sform44(3,:);
 
 % only reset sform_code if had been 0 (eg unset)
 % otherwise don't change it (because may be =3, not =1)
-if ~hdr.sform_code
+if isequal(hdr.sform_code,0) || isempty(hdr.sform_code)
   hdr.sform_code=1;
 end
 
