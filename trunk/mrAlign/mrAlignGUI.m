@@ -265,7 +265,7 @@ mrCloseDlg(h);
 % no such .mat file exists, create it. (If user doesn't use mrLR,
 % they can just ignore this extra file
 matFilename = sprintf('%s.mat',stripext(pathStr));
-if ~exist(matFilename,'file') % if base doesn't already have an associated mat file
+if ~(exist(matFilename,'file')==2) % if base doesn't already have an associated mat file
   ALIGN.volBase.name = pathStr;
   ALIGN.volBase.data = vData;
   ALIGN.volBase.hdr = hdr;
@@ -415,7 +415,7 @@ mrCloseDlg(h);
 % no such .mat file exists, create it. (If user doesn't use mrLR,
 % they can just ignore this extra file
 matFilename = sprintf('%s.mat',stripext(pathStr));
-if ~exist(matFilename,'file') % if base doesn't already have an associated mat file
+if ~(exist(matFilename,'file')==2) % if base doesn't already have an associated mat file
   ALIGN.inplaneBase.name = pathStr;
   ALIGN.inplaneBase.data = vData;
   ALIGN.inplaneBase.hdr = hdr;
@@ -423,8 +423,17 @@ if ~exist(matFilename,'file') % if base doesn't already have an associated mat f
   ALIGN.inplaneBase.vol2mag = []; % will inherit these from the destination volume
   ALIGN.inplaneBase.vol2tal = [];
 else % if there already is a base file
-  load(matFilename); % then load it
-  ALIGN.inplaneBase = base; clear base
+  load(matFilename); % then load it;
+  if (exist('base')==1)  % check that this mat file actually has a base saved to it;
+    ALIGN.inplaneBase = base; clear base;
+  else % if some other mat file, make the base
+    ALIGN.inplaneBase.name = pathStr;
+    ALIGN.inplaneBase.data = vData;
+    ALIGN.inplaneBase.hdr = hdr;
+    ALIGN.inplaneBase.permutationMatrix = getPermutationMatrix(hdr);
+    ALIGN.inplaneBase.vol2mag = []; % will inherit these from the destination volume
+    ALIGN.inplaneBase.vol2tal = [];
+  end
 end
 [tf ALIGN.inplaneBase] = isbase(ALIGN.inplaneBase); % make sure it has all the right fields;
 
