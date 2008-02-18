@@ -216,9 +216,9 @@ function hdr=cbiCreateNiftiHeader(varargin)
   end
   % sform44:
   if (~isempty(hdr.sform44))
-    % only change sform_code if it was 0
+    % only change sform_code if it hasn't been set
     % otherwise leave it unchanged (since it could be =3,not =1)
-    if ~hdr.sform_code
+    if isequal(hdr.sform_code,0) || isempty(hdr.sform_code)
       hdr.qform_code=1;
     end
   else
