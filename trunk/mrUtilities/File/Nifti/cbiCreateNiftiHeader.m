@@ -27,7 +27,7 @@ function hdr=cbiCreateNiftiHeader(varargin)
 %          (if valid, sform44 takes precedence over srow_[x/y/z]
 %     - b) specifying a srow_ paramater sets sform44 accordingly
 %     - c) specifying sform44 sets srows accordingly (overriding any srow parameters)
-%     - d) if sform44 is empty, sform_code=0, else sform_code=1
+%     - d) if sform44 is empty, sform_code=0, else sform_code is left unchanged
 %     - Setting the matlab_datatype also sets the NIFTI data type and bitpix appropriately (and vice versa). 
 %       (note: bitpix is determined by the datatype; setting it directly has no effect) 
 %     - Setting the file name also sets the magic number
@@ -216,7 +216,11 @@ function hdr=cbiCreateNiftiHeader(varargin)
   end
   % sform44:
   if (~isempty(hdr.sform44))
-    hdr.sform_code=1;
+    % only change sform_code if it was 0
+    % otherwise leave it unchanged (since it could be =3,not =1)
+    if ~hdr.sform_code
+      hdr.qform_code=1;
+    end
   else
     hdr.sform_code=0;
   end
