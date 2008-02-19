@@ -77,6 +77,12 @@ for i = 1:length(vars)
       varinfo{i}.type = 'string';
     end
   end
+  % check to see if name is valid
+  fixedName = fixBadChars(vars{i}{1});
+  if ~strcmp(fixedName,vars{i}{1})
+    disp(sprintf('(mrParamsParse) Changing variable name %s to %s',vars{i}{1},fixedName));
+    vars{i}{1} = fixedName;
+  end
   % set info in varinfo
   varinfo{i}.name = vars{i}{1};
   varinfo{i}.value = vars{i}{2};
