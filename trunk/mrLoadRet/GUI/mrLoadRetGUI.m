@@ -948,7 +948,7 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'curGroup');
 groupName = viewGet(view,'groupName',groupNum);
 disp(sprintf('\n===== Group Info (%s) =====',groupName));
-groupInfo(groupNum);
+groupInfo(groupNum,0,1);
 disp(sprintf('======================'));
 
 % --------------------------------------------------------------------
