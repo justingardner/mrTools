@@ -78,7 +78,7 @@ if (~strcmp(fl,'OFF BINARY'))
 end
 
 [Ninfo, count] = fread(fid, 3, 'int32');
-if (count~=3) error('error reading file!'); end
+if (count~=3), error('error reading file!'); end
 surf.Nvtcs  = Ninfo(1);
 surf.Ntris  = Ninfo(2);
 surf.Nedges = Ninfo(3);
@@ -87,18 +87,18 @@ surf.Nedges = Ninfo(3);
 if loadOnlyHeader,return,end
 
 [surf.vtcs, count] = fread(fid, surf.Nvtcs*3, 'float32');
-if (count ~= 3*surf.Nvtcs) error('error reading file!'); end
+if (count ~= 3*surf.Nvtcs), error('error reading file!'); end
 
 [surf.tris, count] =  fread(fid, surf.Ntris*5, 'int32');
-if (count ~= 5*surf.Ntris) error('error reading file!'); end
+if (count ~= 5*surf.Ntris), error('error reading file!'); end
 
 surf.vtcs = reshape(surf.vtcs, 3, surf.Nvtcs);
 surf.tris = reshape(surf.tris, 5, surf.Ntris);
 
 surf.vtcs = surf.vtcs';
 
-%% ATTN ATTN ATTN %%
-%% for some reason, I needed to add 2 to the vtcs to make them line up with the anatomy files.
+ %% ATTN ATTN ATTN %%
+ %% for some reason, I needed to add 2 to the vtcs to make them line up with the anatomy files.
 surf.vtcs = [surf.vtcs(:,2) surf.vtcs(:,1) surf.vtcs(:,3)]; % swaping x and y
 surf.vtcs = surf.vtcs + 2;              % adding '2' here, but not sure why -epm
 
