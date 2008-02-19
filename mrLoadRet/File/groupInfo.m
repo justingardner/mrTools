@@ -12,15 +12,16 @@
 % 
 %             to print info on groups with scanSforms
 %             groupInfo('Raw',1)
-function retval = groupInfo(groupNum,verbose)
+function retval = groupInfo(groupNum,verbose,dispDialog)
 
 % check arguments
-if ~any(nargin == [0 1 2])
+if ~any(nargin == [0 1 2 3])
   help groupInfo
   return
 end
 
 if ieNotDefined('verbose'),verbose = 0;end
+if ieNotDefined('dispDialog'),dispDialog = 0;end
 view = newView('Volume');
 
 % check home dir
@@ -92,6 +93,7 @@ end
 groupName = viewGet(view,'groupName',groupNum);
 
 % now go through scans and print information
+paramsInfo = {};
 for s = 1:viewGet(view,'numberOfScans',groupNum)
   % grab info
   description = viewGet(view,'description',s,groupNum);
@@ -105,6 +107,8 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   scanDims = viewGet(view,'scanDims',s,groupNum);
   totalJunkedFrames = viewGet(view,'totalJunkedFrames',s,groupNum);
   junkFrames = viewGet(view,'junkFrames',s,groupNum);
+  
+  paramsInfo{end+1} = {sprintf('Scan%02i',s),sprintf('%s: %i volumes',description,totalFrames),'editable=0'};
   
   % display info
   disp(sprintf('%i: %s',s,description));
@@ -129,4 +133,7 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
   end
 end
 
+if dispDialog
+  mrParamsDialog(paramsInfo,'groupInfo',1.5);
+end
 deleteView(view);
