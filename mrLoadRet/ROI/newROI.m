@@ -43,9 +43,20 @@ end
 if ieNotDefined('color')
   color = 'black';
 end
+if ieNotDefined('sformCode')
+  baseNum = viewGet(view,'currentBase');
+  sformCode = viewGet(view,'baseSformCode',baseNum);
+end
 if ieNotDefined('xform')
   baseNum = viewGet(view,'currentBase');
-  xform = viewGet(view,'baseSform',baseNum);
+  % if the baseSformCode == 0 then use the bases Qform matrix
+  % since it means that the alignment has not been set.
+  if viewGet(view,'baseSformCode',baseNum) == 0
+    xform = viewGet(view,'baseQform',baseNum);
+    sformCode = 0;
+  else
+    xform = viewGet(view,'baseSform',baseNum);
+  end
 end
 if ieNotDefined('voxelSize')
   baseNum = viewGet(view,'currentBase');
@@ -53,10 +64,6 @@ if ieNotDefined('voxelSize')
 end
 if ieNotDefined('coords')
   coords = [];
-end
-if ieNotDefined('sformCode')
-  baseNum = viewGet(view,'currentBase');
-  sformCode = viewGet(view,'baseSformCode',baseNum);
 end
 if ieNotDefined('vol2mag')
   baseNum = viewGet(view,'currentBase');
