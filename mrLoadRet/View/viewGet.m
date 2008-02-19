@@ -1770,6 +1770,15 @@ switch lower(param)
       sform_code = viewGet(view,'roiSformCode',r);
       if (sform_code == 1)
 	val = view.ROIs(r).xform * shiftOriginXform;
+      % if the sform_code was set to 0, then either
+      % it has a xform that came from the bases qform
+      % or none at all (in which case return identity)
+      elseif (sform_code == 0)
+	if isempty(view.ROIs(r).xform)
+	  val = eye(4) * shiftOriginXform;
+	else
+	  val = view.ROIs(r).xform * shiftOriginXform;
+	end
       elseif (sform_code == 3)
 	vol2tal = viewGet(view,'roiVol2tal',r);
 	vol2mag = viewGet(view,'roiVol2mag',r);
