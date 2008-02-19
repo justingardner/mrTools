@@ -38,12 +38,13 @@ if isstr(roiNum)
   end
 % if it is a struct use newRoi to set it into the view
 elseif isstruct(roiNum)
-  view = viewSet(view,'newROI',roiNum,1);
-  roiNum = viewGet(view,'nROIs');
-  if roiNum == nROIs
+  [tf roiNum] = isroi(roiNum); 
+  if ~tf
     disp(sprintf('(getROICoordinates) Invalid ROI passed in'));
     return
   end
+  view = viewSet(view,'newROI',roiNum,1);
+  roiNum = viewGet(view,'ROINum',roiNum.name);
 end
 
 % get the roi transforms
