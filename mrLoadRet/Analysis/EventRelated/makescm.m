@@ -31,6 +31,13 @@ else
   runTransition = d.concatInfo.runTransition;
 end
 
+if isfield(d, 'hipassfilter')
+    hipassfilter = d.hipassfilter;
+else
+    hipassfilter = [];
+end
+
+
 % go through each run of the experiment
 allscm = [];
 for runnum = 1:size(runTransition,1)
@@ -43,10 +50,18 @@ for runnum = 1:size(runTransition,1)
     % only use stimvols that are within this runs volume numbers
     stimarray(d.stimvol{stimnum}(find((d.stimvol{stimnum}>=runTransition(runnum,1)) & (d.stimvol{stimnum}<=runTransition(runnum,2))))-runTransition(runnum,1)+1) = 1;
     % stack stimcmatrices horizontally
-    scm = [scm stimconv(stimarray,hdrlen)];
+    m= stimconv(stimarray,hdrlen);
+    % apply the same filter as original data
+    if ~isempty(hipassfilter)
+        m = real(ifft(fft(m) .* repmat(hipassfilter{runnum}', 1, size(m,2)) ));
+        m = m-repmat(mean(m,1),size(m,1),1);
+    end
+
+    scm = [scm, m];
   end
   % stack this run's stimcmatrix on to the last one
-  allscm = [allscm;scm];
+  
+  allscm = [allscm; scm];
 end
 
 % set values

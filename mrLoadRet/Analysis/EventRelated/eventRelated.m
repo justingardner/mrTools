@@ -60,6 +60,10 @@ if ieNotDefined('params'),return,end
 % set the group
 view = viewSet(view,'groupName',params.groupName);
 
+if ~isfield(params, 'applyHipass')
+    params.applyHipass = 0;
+end
+
 % inplace concatenation is handeled by a different function
 if isfield(params, 'inplaceConcat')
     if params.inplaceConcat
@@ -104,7 +108,6 @@ for scanNum = params.scanNum
   ehdr = [];ehdrste = [];thisr2 = [];
 
   for i = 1:ceil(numSlices/numSlicesAtATime)
-    d = [];
     % load the scan
     d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);
     % get the stim volumes, if empty then abort
@@ -113,6 +116,9 @@ for scanNum = params.scanNum
     % do any called for preprocessing
     d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
     % make a stimulation convolution matrix
+    if params.applyHipass
+        d.hipassfilter = d.concatInfo.hipassfilter;
+    end
     d = makescm(d,ceil(params.scanParams{scanNum}.hdrlen/d.tr));
     % compute the estimated hemodynamic responses
     d = getr2(d);
@@ -179,7 +185,7 @@ if nargout > 1
   end
   % make d strucutre
   if length(erAnal.d) == 1
-    d = erAnal.d{1}
+    d = erAnal.d{1};
   else
     d = erAnal.d;
   end
