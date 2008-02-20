@@ -17,6 +17,24 @@ end
 % parse the input parameter string
 [vars varinfo] = mrParamsParse(paramInfo);
 for i = 1:length(vars)
+  % if it is a group, then return the cell array of all values
+  if isfield(varinfo{i},'group')
+    if strcmp(varinfo{i}.type,'numeric') || strcmp(varinfo{i}.type,'checkbox')
+      % if it is something that should be numeric, than make
+      % it into an array
+      for j = 1:length(varinfo{i}.allValues)
+	if isstr(varinfo{i}.allValues{j})
+	  params.(varinfo{i}.name)(j) = str2num(varinfo{i}.allValues{j});
+	else
+	  params.(varinfo{i}.name)(j) = varinfo{i}.allValues{j};
+	end
+      end
+      % otherwise, just copy the list of parameters
+    else
+      params.(varinfo{i}.name) = varinfo{i}.allValues;
+    end
+    continue;
+  end
   % make sure it is not a contingent value that has been shut
   % off, first get value it is contingent on
   if isfield(varinfo{i},'contingent')
