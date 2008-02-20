@@ -54,6 +54,9 @@ paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]'
 params = mrParamsDialog(paramsInfo,'Print figure options');;
 if isempty(params),return,end
 
+% just so the code won't break. smoothROI is only fro baseType = 1
+if ~isfield(params,'smoothROI') params.smoothROI = 0;end
+
 % get the gui, so that we can extract colorbar
 fig = viewGet(v,'figNum');
 gui = guidata(fig);
@@ -242,12 +245,14 @@ if ~strcmp(params.colorbarLoc,'None')
   set(H,'XColor',foregroundColor);
   set(H,'YColor',foregroundColor);
   set(get(H,'Title'),'String',params.colorbarTitle);
+  set(get(H,'Title'),'Interpreter','none');
   set(get(H,'Title'),'Color',foregroundColor);
   set(get(H,'Title'),'FontSize',14);
 end
 
 % create a title
 H = title(params.title);
+set(H,'Interpreter','none');
 set(H,'Color',foregroundColor);
 set(H,'FontSize',16);
 
