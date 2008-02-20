@@ -1018,6 +1018,16 @@ switch lower(param)
 	end
       end
     end
+  case{'scanqform'}
+    % sform = viewGet(view,'scanQform',[scanNum],[groupNum])
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      % get the field
+      if isfield(MLR.groups(g).scanParams(s).niftiHdr,'qform44')
+	val = MLR.groups(g).scanParams(s).niftiHdr.qform44;
+      end
+    end
   case{'scansform'}
     % sform = viewGet(view,'scanSform',[scanNum],[groupNum])
     % The scanSform is the sform set in the nifti header.

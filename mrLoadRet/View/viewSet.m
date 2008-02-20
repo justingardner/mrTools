@@ -1058,7 +1058,12 @@ switch lower(param)
     % them as necessary.
     [params,data] = feval(overlay.reconcileFunction,groupName,overlay.params,overlay.data);
     overlay.params = params;
-    overlay.data = data;
+    for scanNum = 1:length(data)
+      % to save memory, we keep overlays as single precision
+      % (commented out now)
+      %overlay.data{scanNum} = single(data{scanNum});
+      overlay.data{scanNum} = data{scanNum};
+    end
     % Check that it has the correct number of scans
     if (length(overlay.data) ~= nScans)
       %mrErrorDlg('Invalid overlay, incorrect number of scans.');
