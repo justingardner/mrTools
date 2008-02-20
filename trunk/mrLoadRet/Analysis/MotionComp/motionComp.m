@@ -1,4 +1,4 @@
-function view = motionComp(view,params)
+function [view  params] = motionComp(view,params,varargin)
 %
 % view = motionComp(view,[params])
 %
@@ -57,6 +57,14 @@ function view = motionComp(view,params)
 %
 % view = motionComp(view);
 %
+% You can also just get a parameters structure in the following
+% ways:
+%
+%  v = newView;
+%  [v params] = motionComp(v,[],'justGetParams=1');
+%  [v params] = motionComp(v,[],'justGetParams=1','defaultParams=1');
+%  [v params] = motionComp(v,[],'justGetParams=1','defaultParams=1','scanList=[1 2]');
+%
 %
 % DJH 7/2006, updated to MLR4
 % jlg 11/2006, save originalFilename and GroupName in scanParams
@@ -68,6 +76,12 @@ function view = motionComp(view,params)
 %
 nScans = viewGet(view,'nScans');
 
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('scanList'),scanList = [];end
+
 if (nScans == 0)
   mrWarnDlg('(motionComp) No scans in group');
   return
@@ -76,7 +90,7 @@ end
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
   %    params = motionCompGUI('groupName',viewGet(view,'groupName'));
-  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'));
+  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'),'defaultParams',defaultParams,'scanList',scanList);
 else
   % Reconcile params with current status of group and ensure that it has
   % the required fields.
@@ -89,6 +103,9 @@ if ieNotDefined('params')
   return
 end
 
+% if just getting params then return
+if justGetParams,return,end
+ 
 % Retrieve parameters
 baseScan = params.baseScan;
 baseFrame = params.baseFrame;

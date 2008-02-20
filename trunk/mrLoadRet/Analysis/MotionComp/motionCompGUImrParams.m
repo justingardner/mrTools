@@ -15,10 +15,12 @@ function mrParams = motionCompGUImrParams(varargin)
 
 mrParams = [];
 % check arguments
-if ~any(nargin == [2 4])
+if ~any(nargin == [2 4 6 8])
   help motionCompGUImrParams
   return
 end
+
+defaultParams = 0;
 
 % Parse varargin
 for index = 1:2:length(varargin)
@@ -29,6 +31,10 @@ for index = 1:2:length(varargin)
       groupName = val;
     case 'params'
       params = val;
+    case 'defaultParams'
+      defaultParams = val;
+    case 'scanList'
+      scanList = val;
     otherwise
       mrWarnDlg('Invalid initialization argument')
   end
@@ -140,7 +146,20 @@ paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonStri
 paramsInfo{15} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]', 'How much temporal smoothing.  Only applied to estimate head motion, not to final time series'};
 
 % put up dialog
-mrParams = mrParamsDialog(paramsInfo,'Set motionComp parameters');
+if defaultParams
+  mrParams = mrParamsDefault(paramsInfo);
+  % if a scan list has been specified then
+  % only select the scans from the scan list
+  if ~ieNotDefined('scanList') 
+    if (min(scanList) < 1) || (max(scanList) > nScans)
+      mrErrorDlg('(motionCompGUImrParams) scanList include scans that do not exist');
+    end
+    mrParams.include(:) = 0;
+    mrParams.include(scanList) = 1;
+  end
+else
+  mrParams = mrParamsDialog(paramsInfo,'Set motionComp parameters');
+end
 
 if ~isempty(mrParams)
   % do some clean up on the parameters
