@@ -54,6 +54,9 @@ originalFilename = viewGet(view,'originalFilename',scanNum,groupNum);
 originalGroupname = viewGet(view,'originalGroupname',scanNum,groupNum);
 stimFilename = viewGet(view,'stimFilename',scanNum,groupNum);
 scanHdr = viewGet(view,'niftiHdr',scanNum,groupNum);
+scanQform = viewGet(view,'scanQform',scanNum,groupNum);
+scanSform = viewGet(view,'scanSform',scanNum,groupNum);
+scanSformCode = viewGet(view,'scanSformCode',scanNum,groupNum);
 scanDims = viewGet(view,'scanDims',scanNum,groupNum);
 junkFrames = viewGet(view,'junkFrames',scanNum,groupNum);
 totalJunkedFrames = viewGet(view,'totalJunkedFrames',scanNum,groupNum);
@@ -96,9 +99,9 @@ if displayInDialog
   paramsInfo{end+1} =  {'numVolumes',totalFrames,'editable=0','Number of volumes'};
   paramsInfo{end+1} =  {'junkFrames',junkFrames,'editable=0','Number of junk frames'};
   paramsInfo{end+1} =  {'totalJunkedFrames',num2str(totalJunkedFrames),'type=string','editable=0','Number of junk frames that have already been discarded from this time series (this is useful for aligning the volume number of a stimulus set in a stimulus file with the volumes in the time series)'};
-  paramsInfo{end+1} = {'qform',scanHdr.qform44,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'};
-  paramsInfo{end+1} = {'sform',scanHdr.sform44,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'};
-  paramsInfo{end+1} = {'sformCode',scanHdr.sform_code,'editable=0','If sformCode is 0 it means the sform has never been set and mrLoadRet will use the qform to compute the transform to the base anatomy. If mrAlign has been run properly, then this value should be set to 1'};
+  paramsInfo{end+1} = {'qform',scanQform,'editable=0','Qform matrix specifies the transformation to the scanner coordinate frame'};
+  paramsInfo{end+1} = {'sform',scanSform,'editable=0','Sform matrix is set by mrAlign and usually specifies the transformation to the volume anatomy'};
+  paramsInfo{end+1} = {'sformCode',scanSformCode,'editable=0','If sformCode is 0 it means the sform has never been set and mrLoadRet will use the qform to compute the transform to the base anatomy. If mrAlign has been run properly, then this value should be set to 1'};
   paramsInfo{end+1} = {'vol2mag',vol2mag,'editable=0','This is the xformation that takes the canonical base that this scan was aligned to into magnet coordinates. To set this field, you can use export from mrAlign.'};
   paramsInfo{end+1} = {'vol2tal',vol2tal,'editable=0','This is the xformation that takes the canonical base that this scan was aligned to into talairach coordinates. To set this field, you can export talairach coordinates from mrAlign.'};
 
@@ -138,12 +141,12 @@ else
   % display qform and sform
   disp(sprintf('++++++++++++++++++++++++++ qform ++++++++++++++++++++++++++'));
   for rownum = 1:4
-    disp(sprintf('%f\t%f\t%f\t%f',scanHdr.qform44(rownum,1),scanHdr.qform44(rownum,2),scanHdr.qform44(rownum,3),scanHdr.qform44(rownum,4)));
+    disp(sprintf('%f\t%f\t%f\t%f',scanQform(rownum,1),scanQform(rownum,2),scanQform(rownum,3),scanQform(rownum,4)));
   end
 
   disp(sprintf('++++++++++++++++++++++++++ sform ++++++++++++++++++++++++++'));
   for rownum = 1:4
-    disp(sprintf('%f\t%f\t%f\t%f',scanHdr.sform44(rownum,1),scanHdr.sform44(rownum,2),scanHdr.sform44(rownum,3),scanHdr.sform44(rownum,4)));
+    disp(sprintf('%f\t%f\t%f\t%f',scanSform(rownum,1),scanSform(rownum,2),scanSform(rownum,3),scanSform(rownum,4)));
   end
 end
 
