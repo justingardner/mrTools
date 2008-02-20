@@ -117,7 +117,7 @@ end
 
 % guess anything with the right stem
 if checkForMore
-  innerDir = dir(sprintf('%s*.off',fullfile(flatPath,strtok(stripext(inner{1}),'WM'))));
+  innerDir = dir(sprintf('%s*.off',fullfile(flatPath,stripext(stripext(inner{1}),'WM'))));
   for i = 1:length(innerDir)
     % don't choose anything we already have or with GM, flat or patch in the title
     if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'GM')) && (isempty(strfind(lower(innerDir(i).name),'flat')) || ~isempty(strfind(lower(innerDir(i).name),'inflate'))) && isempty(strfind(lower(innerDir(i).name),'patch'))
@@ -148,7 +148,7 @@ inner{end+1} = 'Find file';
 % load the outer surface
 if isempty(outer)
   % if we weren't passed in anything try to find them
-  filename = sprintf('%sGM.off',strtok(stripext(inner{1}),'WM'));
+  filename = sprintf('%sGM.off',stripext(stripext(inner{1}),'WM'));
   if isfile(fullfile(flatPath,filename))
     outer{1} = filename;
   else
@@ -164,7 +164,7 @@ if isempty(outer)
 end
 % guess anything with the right stem
 if checkForMore
-  outerDir = dir(sprintf('%s*.off',fullfile(flatPath,strtok(stripext(inner{1}),'WM'))));
+  outerDir = dir(sprintf('%s*.off',fullfile(flatPath,stripext(stripext(inner{1}),'WM'))));
   for i = 1:length(outerDir)
     % don't choose anything we already have or with WM, flat or patch in the title
     if ~any(strcmp(innerDir(i).name,inner)) && isempty(strfind(innerDir(i).name,'WM')) && (isempty(strfind(lower(innerDir(i).name),'flat')) || ~isempty(strfind(lower(innerDir(i).name),'inflate'))) && isempty(strfind(lower(innerDir(i).name),'patch'))
