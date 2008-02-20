@@ -9,12 +9,10 @@
 %             to just get a default parameter structure:
 % 
 %             v = newView;
+%             [v params] = concatTSeries(v,[],'justGetParams=1');
+%             [v params] = concatTSeries(v,[],'justGetParams=1','defaultParams=1');
 %             [v params] = concatTSeries(v,[],'justGetParams=1','defaultParams=1','scanList=[1 2]');
 %
-%             Note that justGetParams,defualtParams and scanList are independent parameters, so
-%             if you want, say to bring up the GUI to set the params, but not run the analysis, you
-%             can do:
-%             [v params] = concatTSeries(v,[],'justGetParams=1');
 %
 function [view params] = concatTSeries(view,params,varargin)
 
