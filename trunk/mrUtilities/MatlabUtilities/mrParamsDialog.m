@@ -97,9 +97,9 @@ figpos = mrGetFigLoc(fixBadChars(gParams.figlocstr));
 if isempty(figpos)
   figpos = get(gParams.fignum,'Position');
 end
-% if we have more than 30 rows then split into multiple columns
+% if we have more than 25 rows then split into multiple columns
 % but at most we make 6 multi columns
-figMultiCols = min(ceil(numrows/30),6);
+figMultiCols = min(ceil(numrows/25),6);
 figrows = ceil(numrows/figMultiCols);
 figcols = numcols*figMultiCols;
 % for really big ones, reduce the button size
@@ -445,9 +445,9 @@ if isempty(figpos)
   figpos = get(gParams.helpFignum,'Position');
 end
 
-% if we have more than 30 rows then split into multiple columns
+% if we have more than 25 rows then split into multiple columns
 % but at most we make 6 multi columns
-figMultiCols = min(ceil(numrows/30),6);
+figMultiCols = min(ceil(numrows/25),6);
 figrows = ceil(numrows/figMultiCols);
 figcols = numcols*figMultiCols;
 % for really big ones, reduce the button size
