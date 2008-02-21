@@ -42,9 +42,9 @@ switch (ext)
   hdr.magic=sprintf('%s\0','ni1');
   hdr.vox_offset=0; % important!
  case '.gz','.Z' % zipped
-  error('No support for zipped NIFTI-1 format under Matlab.');
+  mrErrorDlg('No support for zipped NIFTI-1 format under Matlab.');
  otherwise
-  error('Not a valid NIFTI-1 file name extension. Legal values are .nii, .hdr, .img');
+  mrErrorDlg('Not a valid NIFTI-1 file name extension. Legal values are .nii, .hdr, .img');
 end
 
 % Ensure header matches data
@@ -69,7 +69,7 @@ no_overwrite=0;
 % Prepare to write data
 if (~hdr.single_file)
   fid=fopen(hdr.img_name,'wb',hdr.endian);
-  if fid == -1,error(sprintf('(cbiWriteNiftiHeader) Could not open file %s',fname));end
+  if fid == -1,mrErrorDlg(sprintf('(cbiWriteNiftiHeader) Could not open file %s',fname));end
 end
 
 headerdim=hdr.dim(2:5); % Matlab 1-offset - hdr.dim(1) is actually hdr.dim(0)
@@ -77,7 +77,7 @@ headerdim(headerdim==0)=1; % Force null dimensions to be 1
 is5D=0;
 if (hdr.dim(6)>1)
   if (hdr.dim(5)>1)
-    error('No support for 5D data with multiple time points!');
+    mrErrorDlg('No support for 5D data with multiple time points!');
   end
   is5D=1;
   headerdim(4)=hdr.dim(6);
@@ -89,7 +89,7 @@ for n=1:4
   if (length(subset{n})==1)
     subset{n}=[subset{n} subset{n}];    
   elseif (length(subset{n})>2)
-    error('subset should be a scalar or 2-vector');
+    mrErrorDlg('subset should be a scalar or 2-vector');
   end
   if (isempty(subset{n}))
     loadSize(n)=headerdim(n);
@@ -100,9 +100,9 @@ for n=1:4
 end
 
 if (any(loadSize>headerdim(1:4)))
-  error('subset index larger than image dimensions!');
+  mrErrorDlg('subset index larger than image dimensions!');
 elseif (any(loadSize(1:2)<headerdim(1:2)))
-  error('no support for saving subvolumes of data; only entire z-slices may be saved.');
+  mrErrorDlg('no support for saving subvolumes of data; only entire z-slices may be saved.');
 end
 
 %  Write emptiness so that we can move to the right offset. (This library does not currently support extensions, which would otherwise go here)
@@ -111,7 +111,7 @@ if ftell(fid) < hdr.vox_offset
   %  fwrite(fid,0,sprintf('integer*%d',(hdr.vox_offset-ftell(fid))));
   c=hdr.vox_offset-ftell(fid);
   if (fwrite(fid,zeros(c,1),'uint8')~=c)
-    error('error writing extension padding')    
+    mrErrorDlg('error writing extension padding')    
   end
 end
 
@@ -126,15 +126,15 @@ dataSize=prod(loadSize);
 writeFormat=hdr.matlab_datatype;
 switch (hdr.matlab_datatype)    
  case 'binary'
-  error('No support for binary data')
+  mrErrorDlg('No support for binary data')
  case 'complex64'
   writeFormat=float32;
  case 'complex128'
   writeFormat=float64;
  case 'RGB'
-  error('No support for RGB data');
+  mrErrorDlg('No support for RGB data');
  case {'complex256','float128'}
-  error('No support for 128-bit data on this platform!');
+  mrErrorDlg('No support for 128-bit data on this platform!');
 end
 
 bytesPerElement=cbiSizeofNifti(writeFormat);
@@ -176,7 +176,7 @@ for t=subset{4}(1):subset{4}(2)
   byteswritten=byteswritten+count;
   if (count~=readSize)
     fclose(fid);
-    error(['Error writing to file ' hdr.img_name]);
+    mrErrorDlg(['Error writing to file ' hdr.img_name]);
   end
   if (readOffset>0)
     % fseek to next time point
@@ -198,7 +198,7 @@ function [data,hdr]=convertData(data,hdr,short_nan);
 % Calculate scale factor for non-floating point data
   switch (hdr.matlab_datatype)    
    case 'binary'
-    error('unsupported format')
+    mrErrorDlg('unsupported format')
    case 'uint8'
     MAXINT=2^8-1;
    case {'uint16','ushort'}
