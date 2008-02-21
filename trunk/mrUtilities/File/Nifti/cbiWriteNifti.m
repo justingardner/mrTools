@@ -69,6 +69,7 @@ no_overwrite=0;
 % Prepare to write data
 if (~hdr.single_file)
   fid=fopen(hdr.img_name,'wb',hdr.endian);
+  if fid == -1,error(sprintf('(cbiWriteNiftiHeader) Could not open file %s',fname));end
 end
 
 headerdim=hdr.dim(2:5); % Matlab 1-offset - hdr.dim(1) is actually hdr.dim(0)
