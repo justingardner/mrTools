@@ -15,7 +15,7 @@ end
 
 % new view
 mrGlobals;
-v = newView('Volume');
+v = newView;
 
 % go find the group that user wants to load here
 pathStr = uigetdir(MLR.homeDir,'Select session you want to import from');
@@ -78,7 +78,7 @@ oldMLR = MLR;
 clear global MLR;
 currentDir = pwd;
 cd(pathStr);
-fromView = newView('Volume');
+fromView = newView;
 for scanNum = 1:length(fromScanParams)
   stimFileName{scanNum} = viewGet(fromView,'stimFileName',scanNum);
 end

@@ -16,7 +16,7 @@ titlestr = d.expname;
   
 % get motion correct
 titlestr = sprintf('%s scan=%i',d.expname,d.scanNum);
-view = newView('Volume');
+view = newView;
 motioncorrect = viewGet(view,'transforms',d.scanNum,d.groupNum);
 if ~isempty(motioncorrect)
   for i = 1:length(motioncorrect)

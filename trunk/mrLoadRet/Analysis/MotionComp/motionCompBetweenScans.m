@@ -43,7 +43,7 @@ function view = motionCompBetweenScans(view,params)
 % Examples:
 %
 % params = motionCompGUI('groupName','Raw');
-% view = newView('Volume');
+% view = newView;
 % view = motionCompBetweenScans(view,params);
 %
 % view = motionCompBetweenScans(view);

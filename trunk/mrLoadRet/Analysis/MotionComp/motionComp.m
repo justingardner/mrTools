@@ -52,7 +52,7 @@ function [view  params] = motionComp(view,params,varargin)
 % Examples:
 %
 % params = motionCompGUImrParams('groupName','Raw');
-% view = newView('Volume');
+% view = newView;
 % view = motionComp(view,params);
 %
 % view = motionComp(view);

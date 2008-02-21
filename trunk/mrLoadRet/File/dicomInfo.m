@@ -14,7 +14,7 @@ if ~any(nargin == [2])
   return
 end
 
-v = newView('Volume');
+v = newView;
 dicom = viewGet(v,'dicom',scanNum,groupNum);
 originalFileName = viewGet(v,'originalFileName',scanNum,groupNum);
 originalGroupName = viewGet(v,'originalGroupName',scanNum,groupNum);

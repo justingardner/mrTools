@@ -192,7 +192,7 @@ end
 function crop = thisSelectCropRegion(params)
 
 params.baseScan
-view = newView('Volume');
+view = newView;
 % Load first frame of base scan
 volume = loadTSeries(view,params.baseScan,'all',1);
 % and get crop region

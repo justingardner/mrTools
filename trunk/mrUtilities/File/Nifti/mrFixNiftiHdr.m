@@ -40,7 +40,7 @@ if ~exist('forceUpdate','var'),forceUpdate = [];,end
 if ~exist('copyFrom','var'),copyFrom = [];,end
 
 % set variables
-view = newView('Volume');
+view = newView;
 mrGlobals
 updateHdr = 0;
 

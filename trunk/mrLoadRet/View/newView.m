@@ -1,6 +1,6 @@
 function view = newView(viewType)
 %
-%  view = newView(viewType)
+%  v = newView
 %
 % djh, 6/2004
 

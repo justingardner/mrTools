@@ -13,7 +13,7 @@ if ~any(nargin == [0])
   return
 end
 
-view = newView('Volume');
+view = newView;
 
 % check for unlinked files
 groups = viewGet(view,'groupNames');
@@ -139,7 +139,7 @@ if isfile(filename)
 	  if length(matfile.params.descriptions) >= targetNum
 	    disp(sprintf('Description: %s',matfile.params.descriptions{targetNum}));
 	    % get a view and set it to the original group
-	    v = newView('Volume');
+	    v = newView;
 	    v = viewSet(v,'curGroup',viewGet(v,'groupNum',matfile.params.groupName));
 	    % read the image header
 	    hdr = cbiReadNiftiHeader(tseriesHdrFileName);

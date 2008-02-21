@@ -14,12 +14,12 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
 %             the corresponding ROI from the view.
 %        e.g.:
 %
-% v = newView('Volume')
+% v = newView
 % rois = loadROITSeries(v,[],1,1);
 %
 %             to load the roi coordinates, but not the time series
 %       
-% v = newView('Volume')
+% v = newView
 % rois = loadROITSeries(v,[],1,1,'loadType=none');
 %
 % see also tseriesROI
@@ -37,7 +37,7 @@ eval(evalargs(varargin));
 
 % no view specified
 if ieNotDefined('view')
-  view = newView('Volume');
+  view = newView;
 end
 
 % get the roi directory

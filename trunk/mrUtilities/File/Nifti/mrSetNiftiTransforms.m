@@ -24,7 +24,7 @@ if ~any(nargin == 3)
 end
 
 % set variables
-view = newView('Volume');
+view = newView;
 mrGlobals
 updateHdr = 0;
 

@@ -22,7 +22,7 @@ function view = sliceTimeCorrect(view,params)
 % Examples:
 %
 % params = motionCompGUI('groupName','Raw');
-% view = newView('Volume');
+% view = newView;
 % view = sliceTimeCorrect(view,params);
 %
 % view = sliceTimeCorrect(view);
