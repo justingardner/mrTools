@@ -27,7 +27,7 @@ end
 if ~exist('useIdentity','var'),useIdentity = 0;,end
 
 % set variables
-view = newView('Volume');
+view = newView;
 mrGlobals
 updateHdr = 0;
 

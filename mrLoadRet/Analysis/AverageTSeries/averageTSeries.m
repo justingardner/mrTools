@@ -50,7 +50,7 @@ function [view params] = averageTSeries(view,params,varargin)
 % Examples:
 %
 % params = averageTSeriesGUI('groupName','Raw');
-% view = newView('Volume');
+% view = newView;
 % view = averageTSeries(view,params);
 %
 % view = averageTSeries(view);

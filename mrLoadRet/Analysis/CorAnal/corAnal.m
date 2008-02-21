@@ -32,7 +32,7 @@ function [view params] = corAnal(view,params,varargin)
 % Examples:
 %
 % params = corAnalGUI('groupName','Raw');
-% view = newView('Volume');
+% view = newView;
 % view = corAnal(view,params);
 %
 % view = corAnal(view);

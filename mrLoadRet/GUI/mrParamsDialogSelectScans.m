@@ -5,7 +5,7 @@
 %       date: 08/17/07
 %    purpose: add parameterInfo to select scans
 %       e.g.:
-%             v = newView('Volume');
+%             v = newView;
 %             paramsInfo = mrParamsDialogSelectScans(v,1);
 %             params = mrParamsDialog(paramsInfo);
 %             if ~isempty(params)

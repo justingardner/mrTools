@@ -22,7 +22,7 @@ end
 
 if ieNotDefined('verbose'),verbose = 0;end
 if ieNotDefined('dispDialog'),dispDialog = 0;end
-view = newView('Volume');
+view = newView;
 
 % check home dir
 homeDir = viewGet(view,'homeDir');

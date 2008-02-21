@@ -23,7 +23,7 @@ if ~ieNotDefined('params')
 end
 
 % get a view
-view = newView('Volume');
+view = newView;
 
 % get the group names
 if ieNotDefined('groupName')

@@ -69,7 +69,7 @@ if ieNotDefined('v')
     mrLoadRetViewing = 1;
   else
     % if we are saving, then don't bring up mrLoadRet
-    v = newView('Volume');
+    v = newView;
     viewShouldBeDeleted = 1;
   end
 end

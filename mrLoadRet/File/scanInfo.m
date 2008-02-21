@@ -16,7 +16,7 @@ end
 
 if ~exist('displayInDialog','var'),displayInDialog = 0;end
 
-view = newView('Volume');
+view = newView;
 
 % if groupNum is a string, then user passed in a name rather than
 % a number

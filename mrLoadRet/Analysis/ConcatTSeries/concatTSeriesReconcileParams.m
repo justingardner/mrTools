@@ -19,7 +19,7 @@ if ieNotDefined('params')
   params.groupName = groupName;
   groupNum = viewGet([],'groupNum',groupName);
   if ~isfield(params,'scanList')
-    view = newView('Volume');
+    view = newView;
     view = viewSet(view, 'groupName', groupName)
     params.scanList = selectScans(view);
   end

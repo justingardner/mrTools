@@ -229,7 +229,7 @@ colormap gray(256)
 axis image
 
 % Test/Debug for mrLoadRet
-view = newView('Volume');
+view = newView;
 scan = 1;
 junkFrames = viewGet(view,'junkframes',scan);
 nFrames = viewGet(view,'nframes',scan);

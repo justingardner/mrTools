@@ -45,7 +45,7 @@ end
 
 % start a view in the corresponding location
 cd(path);
-v = newView('Volume');
+v = newView;
 mrGlobals
 % just make sure that the home dir matches
 if ~strcmp(MLR.homeDir,path)
@@ -58,7 +58,7 @@ if ~strcmp(MLR.homeDir,path)
   % clear MLR and start over
   deleteView(v);
   clear global MLR;
-  v = newView('Volume');
+  v = newView;
 end
 
 % ask the user which groups to export to

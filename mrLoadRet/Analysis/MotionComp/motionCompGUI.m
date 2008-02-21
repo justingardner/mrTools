@@ -340,7 +340,7 @@ end
 
 % --- cropButton.
 function cropButton_Callback(hObject, eventdata, handles)
-view = newView('Volume');
+view = newView;
 baseScan = get(handles.baseScanPopup,'Value');
 % Load first frame
 volume = loadTSeries(view,baseScan,'all',1);
