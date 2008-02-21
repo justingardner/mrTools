@@ -73,17 +73,19 @@ if (isstr(fname))
   if (hdr.single_file)
     if exist(fname,'file')
       fid=fopen(fname,'r+',hdr.endian);
+      if fid == -1,error(sprintf('(cbiWriteNiftiHeader) Could not open file %s',fname));end
       frewind(fid);
     else
       fid=fopen(fname,'w',hdr.endian);
+      if fid == -1,error(sprintf('(cbiWriteNiftiHeader) Could not open file %s',fname));end
     end
   else
     fid=fopen(hdr.hdr_name,'w',hdr.endian);
+    if fid == -1,error(sprintf('(cbiWriteNiftiHeader) Could not open file %s',fname));end
   end
 else
   fid=fname;
 end
-
 
 % Write header with minimal checking
 
