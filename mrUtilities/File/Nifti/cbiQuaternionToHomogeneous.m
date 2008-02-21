@@ -51,7 +51,17 @@ function varargout=cbiQuaternionToHomogeneous(varargin)
   end
 
   if (abs(qfac)<1e-10)
-    disp(['(cbiQuaternionToHomgenous) Invalid qfac (' num2str(qfac) '). Assuming qfac==1']);
+    % This used to make a warning, but the nifti documentation
+    % suggests that it is correct to assume that qfac should
+    % be set to 1 if we are reading NIFTI-1 headers...so,
+    % the warning has been removed:
+    %
+    %Method 2 uses a factor qfac which is either -1 or 1; qfac is
+    %stored in the otherwise unused pixdim[0].  If pixdim[0]=0.0 (which
+    %should not occur), we take qfac=1.  Of course, pixdim[0] is only used
+    %when reading a NIFTI-1 header, not when reading an ANALYZE 7.5
+    %header.
+%    disp(['(cbiQuaternionToHomgenous) Invalid qfac (' num2str(qfac) '). Assuming qfac==1']);
     qfac=1;
   end
 
