@@ -28,6 +28,7 @@ function [data,hdr]=cbiReadNifti(fname,subset,prec,short_nan)
 %             'native' - data are returned as stored in file (no scaling). Only works for loading
 %              contiguous data (entire volumes).
 %             'double' - data are returned in Matlab standard double precision format (default)
+%             'single' - data are returned in Matlab single precision format
 %  short_nan: NaN handling for signed short (int16) data. If 1, will treat -32768 (smallest 
 %             representable number) as NaN, reserving -32767..32767 for scaled data; otherwise
 %             treats -32786 as a real value. Default is 1. 
@@ -243,10 +244,17 @@ end
 fclose(fPtr);
 
 % Scaling
-if (strcmp(prec,'double') && hdr.scl_slope~=0)  
+if ((strcmp(prec,'double')||strcmp(prec,'single')) && hdr.scl_slope~=0)  
   % NaN handling for int16 data
   if (hdr.datatype==4 & short_nan) 
     data(data==-32768)=NaN;
   end
-  data=data.*hdr.scl_slope+hdr.scl_inter;
+  % convert to signle precision down here--probably better to read
+  % in the data as a single, but that requires changing a lot of
+  % code above -jg.
+  if strcmp(prec,'double')
+    data=data.*hdr.scl_slope+hdr.scl_inter;
+  else
+    data=single(data).*hdr.scl_slope+hdr.scl_inter;
+  end
 end

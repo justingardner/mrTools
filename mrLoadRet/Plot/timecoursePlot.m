@@ -20,9 +20,8 @@ global MLR;
 fignum = MLR.graphFigure;
 
 % turn off menu/title etc.
-set(fignum,'MenuBar','none');
 set(fignum,'NumberTitle','off');
-set(fignum,'Name','mrDefaultInterrogator');
+set(fignum,'Name','timecoursePlot');
 
 junkFrames = viewGet(view, 'junkFrames', scan);
 nFrames = viewGet(view,'nFrames',scan);

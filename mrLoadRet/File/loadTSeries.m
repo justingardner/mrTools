@@ -1,6 +1,6 @@
-function tseries = loadTSeries(view,scan,slice,frame,x,y)
+function tseries = loadTSeries(view,scan,slice,frame,x,y,precision)
 %
-% tSeries = loadTSeries(view,scan,[slice],[frame],[x],[y])
+% tSeries = loadTSeries(view,scan,[slice],[frame],[x],[y],[precision])
 %
 % Loads the tSeries corresponding to the specified scan and slice. The
 % tseries files must be in <homedir>/<view>/<group>/TSeries, and must be
@@ -14,6 +14,8 @@ function tseries = loadTSeries(view,scan,slice,frame,x,y)
 %
 % frame: optional number specifying which temporal frame to load. Ignored
 % if slice is specified. Default: [] (load all frames).
+%
+% precision: precision of data returned, default is 'double' can be 'single'
 %
 % tseries: If a single slice is specified, tseries is returned as aa 2D
 % matrix (nFrames x nVoxels). If slice is 'all' then the tseries is
@@ -40,6 +42,7 @@ end
 if ieNotDefined('y')
   y = [];
 end
+if ieNotDefined('precision'), precision = 'double';end
 
 % Get the pathStr to the tseries file
 pathStr = viewGet(view,'tseriesPathStr',scan);
@@ -62,7 +65,7 @@ if ~isempty(frame) & ((1 > frame) | (frame > viewGet(view,'nframes',scan)))
 end
 
 % Load it
-[tseries,hdr] = cbiReadNifti(pathStr,{x,y,slice,frame});
+[tseries,hdr] = cbiReadNifti(pathStr,{x,y,slice,frame},precision);
 dims = size(tseries);
 
 % check frame count

@@ -1,15 +1,17 @@
 % loadScan.m
 %
-%      usage: loadScan(view,scanNum,groupNum,<sliceNum>)
+%      usage: loadScan(view,scanNum,groupNum,<sliceNum>,<precision>)
 %         by: justin gardner
 %       date: 03/20/07
 %    purpose: loads a scan into a "d" structure
 %             sliceNum is either [] for all slices,
-%             slice numbers for slices you want or 0 to not load data
+%             slice numbers for slices you want or 0 to not load
+%             data
+%             precision defaults to 'double' can also be 'single' 
 %
-function d = loadScan(view,scanNum,groupNum,sliceNum)
+function d = loadScan(view,scanNum,groupNum,sliceNum,precision)
 
-if ~any(nargin == [1 2 3 4])
+if ~any(nargin == [1 2 3 4 5])
   help('loadScan');
   return
 end
@@ -22,6 +24,7 @@ end
 % default to loading all slices
 if ~exist('groupNum','var'),groupNum = [];end
 if ~exist('sliceNum','var'),sliceNum = [];end
+if ieNotDefined('precision'),precision = 'double';end
 
 % set the group number
 if ~isempty(groupNum)
@@ -64,7 +67,7 @@ end
 
 % load the data
 if ~isequal(sliceNum,0)
-  d.data = loadTSeries(view,scanNum,sliceNum);
+  d.data = loadTSeries(view,scanNum,sliceNum,[],[],[],precision);
 else
   d.data = [];
 end
