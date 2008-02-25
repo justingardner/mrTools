@@ -103,13 +103,20 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims);
+  [numSlicesAtATime rawNumSlices] = getNumSlicesAtATime(numVolumes,dims);
+  if (rawNumSlices < 1)
+    numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims,'single');
+    disp(sprintf('(eventRelated) Single slice cannot fit in memory. Using single precision'));
+    precision = 'single';
+  else
+    precision = 'double';
+  end
   currentSlice = 1;
   ehdr = [];ehdrste = [];thisr2 = [];
 
   for i = 1:ceil(numSlices/numSlicesAtATime)
     % load the scan
-    d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);
+    d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)],precision);
     % get the stim volumes, if empty then abort
     d = getStimvol(d,params.scanParams{scanNum});
     if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
