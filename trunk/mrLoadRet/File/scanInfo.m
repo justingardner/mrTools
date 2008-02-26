@@ -25,12 +25,14 @@ if isstr(groupNum)
   groupNum = viewGet(view,'groupNum',groupName);
   if isempty(groupNum)
     disp(sprintf('(groupInfo): No group %s',groupName));
+    deleteView(view);
     return
   end
 end
 
 if (groupNum < 1) | (groupNum > viewGet(view,'numberOfGroups'))
   disp(sprintf('(groupInfo): No group number %i',groupNum));
+  deleteView(view);
   return
 end
 groupName = viewGet(view,'groupName',groupNum);
@@ -39,6 +41,7 @@ view = viewSet(view,'curGroup',groupNum);
 
 if (scanNum < 1) || (scanNum > viewGet(view,'nScans'))
   disp(sprintf('(scanInfo) Could not find scan %i in group %s',scanNum,groupName));
+  deleteView(view);
   return
 end
 
@@ -149,5 +152,7 @@ else
     disp(sprintf('%f\t%f\t%f\t%f',scanSform(rownum,1),scanSform(rownum,2),scanSform(rownum,3),scanSform(rownum,4)));
   end
 end
+
+deleteView(view);
 
 
