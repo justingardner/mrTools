@@ -14,9 +14,9 @@ function mrWarnDlg(warnstr)
 
 verbose = mrGetPref('verbose');
 
+% always display warning on command line
+disp(sprintf('Warning: %s',warnstr));
 if strcmp(verbose,'Yes')
-    warndlg(warnstr);
-	drawnow;
-else
-  disp(sprintf('Warning: %s',warnstr));
+  warndlg(warnstr);
+  drawnow;
 end
