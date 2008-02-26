@@ -12,6 +12,12 @@ end
 mrGlobals
 if isempty(MLR.session),return,end
 
+% check to make sure that we are not opening up MLR
+% in a different home directory from where it started
+if ~strcmp(pwd,MLR.homeDir) && isfile('mrSession.mat')
+  mrWarnDlg(sprintf('(newView) MLR is open to a session in directory %s, but your current directory is %s. If you meant to open a new session for the current directory and not for the one in the MLR global, you will need to close your mrLoadRet and deleteView all open views (alternatively, clear global MLR)',MLR.homeDir,pwd));
+end
+
 viewNum = length(MLR.views) + 1;
 view.viewNum = viewNum;
 view.viewType = viewType;
