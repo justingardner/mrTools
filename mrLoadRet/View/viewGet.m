@@ -3440,17 +3440,3 @@ if isempty(r)
 end
 
 
-function oneTimeWarning(fieldCheck,warnText)
-global gMLRWarning
-verbose = mrGetPref('verbose');
-fieldCheck = fixBadChars(fieldCheck);
-if ~isfield(gMLRWarning,fieldCheck)
-  gMLRWarning.(fieldCheck) = 1;
-  mrWarnDlg(warnText)
-  if strcmp(verbose,'Yes')
-    disp(sprintf('Warning: %s',warnText)); % I like to see it on the command line even if my verbose is set to yes...
-  end
-end
-
-
-
