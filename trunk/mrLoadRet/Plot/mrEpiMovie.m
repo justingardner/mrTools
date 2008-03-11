@@ -36,9 +36,9 @@ end
 
 % set up params dialog
 paramsInfo = {};
-paramsInfo{end+1} = {'scanNum',1,sprintf('minmax=[1 %i]',viewGet(v,'nScans')),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view'};
+paramsInfo{end+1} = {'scanNum',viewGet(v,'currentScan'),sprintf('minmax=[1 %i]',viewGet(v,'nScans')),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view'};
 paramsInfo{end+1} = {'scanNumMovie',0,'type=pushbutton','buttonString=Animate over scans','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','scanNum','Press to animate over scans'};
-paramsInfo{end+1} = {'sliceNum',1,sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view'};
+paramsInfo{end+1} = {'sliceNum',viewGet(v,'curSlice'),sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view'};
 paramsInfo{end+1} = {'sliceNumMovie',0,'type=pushbutton','buttonString=Animate over slices','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','sliceNum','Press to animate over slices'};
 paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view'};
 paramsInfo{end+1} = {'frameNumMovie',0,'type=pushbutton','buttonString=Animate over frames','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','frameNum','Press to animate over frames'};
