@@ -104,7 +104,7 @@ for scanNum = params.scanNum
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
   [numSlicesAtATime rawNumSlices] = getNumSlicesAtATime(numVolumes,dims);
-  if (rawNumSlices < 1)
+  if (rawNumSlices < 0.75)
     numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims,'single');
     disp(sprintf('(eventRelated) Single slice cannot fit in memory. Using single precision'));
     precision = 'single';

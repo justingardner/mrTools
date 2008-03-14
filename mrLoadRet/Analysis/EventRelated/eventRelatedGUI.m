@@ -54,7 +54,10 @@ else
 end
 
 % if empty user hit cancel
-if isempty(params),return,end
+if isempty(params)
+  deleteView(view);
+  return
+end
 
 % get scans
 view = viewSet(view,'groupName',params.groupName);
@@ -67,6 +70,7 @@ else
 end
 if isempty(params.scanNum)
   params = [];
+  deleteView(view);
   return
 end
 
@@ -74,6 +78,7 @@ end
 params.scanParams = getEventRelatedParams(view,params,useDefault);
 if isempty(params.scanParams)
   params = [];
+  deleteView(view);
   return
 end
 % set the scan number
@@ -81,6 +86,7 @@ for i = 1:length(params.scanNum)
   params.scanParams{params.scanNum(i)}.scanNum = params.scanNum(i);
 end
 
+deleteView(view);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to get the variable name that the user wants
 % to do the event related analysis on, puts up a gui
