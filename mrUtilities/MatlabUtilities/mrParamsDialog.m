@@ -189,6 +189,38 @@ else
   makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-0.1,0.5);
   makeButton(gParams.fignum,'Help','help',numrows,numcols-1,0.5);
 end  
+
+% set the input control to the first field that is editable
+focusSet = 0;
+if isfield(gParams,'ui') && isfield(gParams.ui,'varentry')
+  % set the first editable field to have the keyboard focus
+  for i = 1:length(gParams.varinfo)
+    if gParams.varinfo{i}.editable
+      % check to see if it is an array of handles
+      if isequal(size(gParams.ui.varentry{i}),[1 1])
+	H = gParams.ui.varentry{i};
+      else
+	H = gParams.ui.varentry{i}(1);
+      end
+      % confirm that we have a handle
+      if ishandle(H)
+	uicontrol(H);
+	focusSet = 1;
+	break;
+      end
+    end
+  end
+end
+
+% if focus has not been set, then set the focus to the figure
+% so the keyboard handler will let you Esc to cancel / enter to ok
+if ~focusSet
+  figure(gParams.fignum);
+end
+
+% set keyboard function
+set(gParams.fignum,'KeyPressFcn',@mrParamsKeyPressFcn);
+
 % wait for user to hit ok or cancel (which sets uiresume)
 uiwait;
 
@@ -207,6 +239,20 @@ end
 params2 = [];
 
 closeHandler;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% handle keyboard
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mrParamsKeyPressFcn(figHandle,keyEvent)
+
+switch (keyEvent.Key)
+  case {'return'}
+   okHandler;
+  case {'escape'}
+   closeHandler;
+  case {'f1'}
+   helpHandler;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % handle callback functions
