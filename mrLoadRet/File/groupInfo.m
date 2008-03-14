@@ -12,6 +12,11 @@
 % 
 %             to print info on groups with scanSforms
 %             groupInfo('Raw',1)
+%
+%             an optional return argument returns a structure
+%             with the group information
+%             info = groupInfo('Raw');
+%
 function retval = groupInfo(groupNum,verbose,dispDialog)
 
 % check arguments
@@ -54,22 +59,24 @@ if ieNotDefined('groupNum')
   % display each group
   for g = 1:viewGet(view,'nGroups')
     % get group info
-    groupName = viewGet(view,'groupName',g);
-    numScans = viewGet(view,'nScans',g);
+    retval(g).groupName = viewGet(view,'groupName',g);
+    retval(g).numScans = viewGet(view,'nScans',g);
     % use du to get disk usage
     [status result] = system(sprintf('du -k -d 0 %s',viewGet(view,'datadir',g)));
-    dirSize = str2num(strtok(result));
-    if (dirSize > 1000000)
-      dirSize = sprintf('%0.1fG',dirSize/1000000);
-    elseif (dirSize > 1000)
-      dirSize = sprintf('%0.1fM',dirSize/1000);
+    retval(g).dirSize = str2num(strtok(result));
+    if (retval(g).dirSize > 1000000)
+      dirSize = sprintf('%0.1fG',retval(g).dirSize/1000000);
+    elseif (retval(g).dirSize > 1000)
+      dirSize = sprintf('%0.1fM',retval(g).dirSize/1000);
     else
-      dirSize = sprintf('%iK',dirSize);
+      dirSize = sprintf('%iK',retval(g).dirSize);
     end
     % display group info
-    disp(sprintf('%i: %s (%i scans) %s',g,groupName,numScans,dirSize));
+    disp(sprintf('%i: %s (%i scans) %s',g,retval(g).groupName,retval(g).numScans,dirSize));
   end
   deleteView(view);
+  % don't return anything unless asked for
+  if nargout == 0,clear retval,end
   return
 end
 
@@ -96,39 +103,43 @@ groupName = viewGet(view,'groupName',groupNum);
 paramsInfo = {};
 for s = 1:viewGet(view,'numberOfScans',groupNum)
   % grab info
-  description = viewGet(view,'description',s,groupNum);
-  scanVoxelSize = viewGet(view,'scanVoxelSize',s,groupNum);
-  tr = viewGet(view,'framePeriod',s,groupNum);
-  totalFrames = viewGet(view,'totalFrames',s,groupNum);
-  filename = viewGet(view,'tSeriesFile',s,groupNum);
-  originalFilename = viewGet(view,'originalFilename',s,groupNum);
-  originalGroupname = viewGet(view,'originalGroupname',s,groupNum);
-  stimFilename = viewGet(view,'stimFilename',s,groupNum);
-  scanDims = viewGet(view,'scanDims',s,groupNum);
-  totalJunkedFrames = viewGet(view,'totalJunkedFrames',s,groupNum);
-  junkFrames = viewGet(view,'junkFrames',s,groupNum);
+  retval(s).description = viewGet(view,'description',s,groupNum);
+  retval(s).scanVoxelSize = viewGet(view,'scanVoxelSize',s,groupNum);
+  retval(s).tr = viewGet(view,'framePeriod',s,groupNum);
+  retval(s).totalFrames = viewGet(view,'totalFrames',s,groupNum);
+  retval(s).filename = viewGet(view,'tSeriesFile',s,groupNum);
+  retval(s).originalFilename = viewGet(view,'originalFilename',s,groupNum);
+  retval(s).originalGroupname = viewGet(view,'originalGroupname',s,groupNum);
+  retval(s).stimFilename = viewGet(view,'stimFilename',s,groupNum);
+  retval(s).scanDims = viewGet(view,'scanDims',s,groupNum);
+  retval(s).totalJunkedFrames = viewGet(view,'totalJunkedFrames',s,groupNum);
+  retval(s).junkFrames = viewGet(view,'junkFrames',s,groupNum);
   
-  paramsInfo{end+1} = {sprintf('Scan%02i',s),sprintf('%s: %i volumes',description,totalFrames),'editable=0'};
+  paramsInfo{end+1} = {sprintf('Scan%02i',s),sprintf('%s: %i volumes',retval(s).description,retval(s).totalFrames),'editable=0'};
   
   % display info
-  disp(sprintf('%i: %s',s,description));
-  disp(sprintf('   Filename: %s GroupName: %s',filename,groupName));
-  for i = 1:length(originalFilename)
-    disp(sprintf('   Original Filename: %s Group: %s',originalFilename{i},originalGroupname{i}));
+  disp(sprintf('%i: %s',s,retval(s).description));
+  disp(sprintf('   Filename: %s GroupName: %s',retval(s).filename,groupName));
+  for i = 1:length(retval(s).originalFilename)
+    disp(sprintf('   Original Filename: %s Group: %s',retval(s).originalFilename{i},retval(s).originalGroupname{i}));
   end
-  for i = 1:length(stimFilename)
-    disp(sprintf('   StimFilename: %s',stimFilename{i}));
+  for i = 1:length(retval(s).stimFilename)
+    disp(sprintf('   StimFilename: %s',retval(s).stimFilename{i}));
   end
 
-  disp(sprintf('   junkFrames=[%s] totalJunkedFrames=[%s]',num2str(junkFrames),num2str(totalJunkedFrames)));
-  disp(sprintf('   voxelSize=[%0.1f %0.1f %0.1f] TR=%0.4f Dims: [%i %i %i] Volumes=%i',scanVoxelSize(1),scanVoxelSize(2),scanVoxelSize(3),tr,scanDims(1),scanDims(2),scanDims(3),totalFrames));
+  disp(sprintf('   junkFrames=[%s] totalJunkedFrames=[%s]',num2str(retval(s).junkFrames),num2str(retval(s).totalJunkedFrames)));
+  disp(sprintf('   voxelSize=[%0.1f %0.1f %0.1f] TR=%0.4f Dims: [%i %i %i] Volumes=%i',retval(s).scanVoxelSize(1),retval(s).scanVoxelSize(2),retval(s).scanVoxelSize(3),retval(s).tr,retval(s).scanDims(1),retval(s).scanDims(2),retval(s).scanDims(3),retval(s).totalFrames));
 
   % if verbose is set to 1 or above, then show scan transform
   if verbose >= 1 
-    scanSform = viewGet(view,'scanSform',s,groupNum);
-    disp(sprintf('   scanSform:'));
-    for i = 1:4
-      disp(sprintf('   %0.3f %0.3f %0.3f %0.3f',scanSform(i,1),scanSform(i,2),scanSform(i,3),scanSform(i,4)));
+    retval(s).scanSform = viewGet(view,'scanSform',s,groupNum);
+    if ~isempty(retval(s).scanSform)
+      disp(sprintf('   scanSform:'));
+      for i = 1:4
+	disp(sprintf('   %0.3f %0.3f %0.3f %0.3f',retval(s).scanSform(i,1),retval(s).scanSform(i,2),retval(s).scanSform(i,3),retval(s).scanSform(i,4)));
+      end
+    else
+      disp(sprintf('   scanSform: []'));
     end
   end
 end
@@ -137,3 +148,6 @@ if dispDialog
   mrParamsDialog(paramsInfo,'groupInfo',1.5);
 end
 deleteView(view);
+
+% don't return anything unless asked for
+if nargout == 0,clear retval,end
