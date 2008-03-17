@@ -246,7 +246,7 @@ for frame = 1:totalFrames
       frameMin = frame - fix(tSmooth/2);
       if frameMin < 1, frameMin = 1; end
       frameMax = frame + fix(tSmooth/2);
-      if frameMax > nFrames, frameMax = nFrames; end
+      if frameMax > totalFrames, frameMax = totalFrames; end
       vol = nanmean(tseriesIC(:,:,:,frameMin:frameMax), 4);
       M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
     end
@@ -318,7 +318,7 @@ for s = 1:length(targetScans)
   
   % Loop through frames of target scan and estimate motion params
   waitHandle = mrWaitBar(0,['Computing motion estimates for scan ',num2str(scanNum),'.  Please wait...']);
-  transforms = cell(1,nFrames);
+  transforms = cell(1,totalFrames);
   M = eye(4);
   for frame = 1:totalFrames
     mrWaitBar(frame/totalFrames,waitHandle)
@@ -334,10 +334,11 @@ for s = 1:length(targetScans)
       frameMin = frame - fix(tSmooth/2);
       if frameMin < 1, frameMin = 1; end
       frameMax = frame + fix(tSmooth/2);
-      if frameMax > nFrames, frameMax = nFrames; end
+      if frameMax > totalFrames, frameMax = totalFrames; end
       vol = nanmean(tseriesIC(:,:,:,frameMin:frameMax), 4);
       M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
     end
+    disp(fprintf('Frame #%i, Trasform: %f ',frame,M));
     % Collect the transform
     transforms{frame} = M;
   end
