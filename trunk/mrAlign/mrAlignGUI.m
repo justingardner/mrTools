@@ -1255,3 +1255,11 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 
+% --------------------------------------------------------------------
+function talMenu_Callback(hObject, eventdata, handles)
+
+% --------------------------------------------------------------------
+function setTalPnts_Callback(hObject, eventdata, handles)
+
+% --------------------------------------------------------------------
+function exportTalXform_Callback(hObject, eventdata, handles)
