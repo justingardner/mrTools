@@ -338,7 +338,6 @@ for s = 1:length(targetScans)
       vol = nanmean(tseriesIC(:,:,:,frameMin:frameMax), 4);
       M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
     end
-    disp(fprintf('Frame #%i, Trasform: %f ',frame,M));
     % Collect the transform
     transforms{frame} = M;
   end
