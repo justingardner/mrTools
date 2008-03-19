@@ -1,7 +1,7 @@
 % mrCache.m
 %
 %        $Id$
-%      usage: mrCache(cache,command,id,data)
+%      usage: mrCache(command,cache,id,data)
 %         by: justin gardner
 %       date: 05/29/07
 %    purpose: implements a simple cache for use with
