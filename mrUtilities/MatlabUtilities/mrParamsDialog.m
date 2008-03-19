@@ -1,6 +1,6 @@
 % mrParamsDialog.m
 %
-%      usage: mrParamsDialog(paramsInfo,<titleString>,<buttonWidth>,<callback>,<callbackArg>,<okCallback>)
+%      usage: mrParamsDialog(paramsInfo,<titleString>,<buttonWidth>,<callback>,<callbackArg>,<okCallback>,<cancelCallback>)
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: creates a dialog for selection of parameters
@@ -9,7 +9,7 @@
 function [params params2] = mrParamsDialog(varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3 4 5 6])
+if ~any(nargin == [1 2 3 4 5 6 7])
   help mrParamsDialog
   return
 end
@@ -175,6 +175,13 @@ if length(otherParams) > 3
     gParams.okCallback = otherParams{6};
     makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
   end
+  % if a final argument is specified than put up 
+  % an ok button with the callback
+  if (length(otherParams) > 6)
+    gParams.cancelCallback = otherParams{7};
+    makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
+  end
+  makeButton(gParams.fignum,'Help','help',numrows,1,1);
   return
 else
   gParams.callback = [];
@@ -580,7 +587,12 @@ function cancelHandler
 
 global gParams;
 gParams.ok = 0;
-uiresume;
+if isfield(gParams,'cancelCallback')
+  feval(gParams.cancelCallback);
+  closeHandler;
+else
+  uiresume;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeButton
