@@ -37,6 +37,9 @@ for fnum = 1:length(paramFields)
     % numeric
     if strcmp(gParams.varinfo{match}.type,'numeric')
       set(gParams.ui.varentry{match},'String',num2str(params.(paramFields{fnum})));
+    % numeric
+    elseif strcmp(gParams.varinfo{match}.type,'checkbox')
+      set(gParams.ui.varentry{match},'Value',params.(paramFields{fnum}));
     % array
     elseif strcmp(gParams.varinfo{match}.type,'array')
       if isequal(size(gParams.varinfo{match}.value),size(params.(paramFields{fnum})))
