@@ -1,13 +1,12 @@
-function imb=putborde(im,Nx,Ny,method);
-% PUTBORDE Puts a border to an image:
-%	method=1 -> consider the image periodical
+function imb=addBorder(im, Nx, Ny, method);
+% addBorder -  Adds a border to an image:
+%	method=1 -> consider the image periodic
 %	method=2 -> specular
 %	method=3 -> repeat the edge pixel
 %	
-%	imb=putborde(im,Nx,Ny,method);
+%	imb = addBorder(im,Nx,Ny,method);
 %
-% ON 10/96
-%
+% ON - 10/96 (from putborde)
 
 [sy sx]=size(im);
 imb=zeros(sy+2*Ny,sx+2*Nx);
@@ -37,10 +36,8 @@ elseif method==3
 		imb(Ny+1:sy+Ny,k+sx+Nx)=im(:,sx);
 	end
 	for k=1:Ny
-%		imb(k,Nx+1:sx+Nx)=im(1,:);
-%		imb(k+sy+Ny,Nx+1:sx+Nx)=im(sy,:);
-		imb(k,:)=imb(Ny+1,:);
-		imb(k+sy+Ny,:)=imb(Ny+sy,:);
+		imb(k,Nx+1:sx+Nx)=im(1,:);
+		imb(k+sy+Ny,Nx+1:sx+Nx)=im(sy,:);
 	end
 else
 	error('Not a valid value for method')
