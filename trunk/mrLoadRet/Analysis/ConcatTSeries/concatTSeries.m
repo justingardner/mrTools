@@ -94,7 +94,7 @@ if ieNotDefined('params'),return,end
 if justGetParams,return,end
   
 % Open new view with the base group
-viewBase = newView(viewGet(view,'viewType'));
+viewBase = newView;
 groupNum = viewGet(viewBase,'groupNum',params.groupName);
 
 if (groupNum == 0)
@@ -104,7 +104,7 @@ viewBase = viewSet(viewBase,'currentGroup',groupNum);
 
 % Open new view and set its group to the average group name. Create the
 % group if necessary.
-viewConcat = newView(viewGet(view,'viewType'));
+viewConcat = newView;
 concatGroupNum = viewGet(viewConcat,'groupNum',params.newGroupName);
 if isempty(concatGroupNum)
   view = viewSet(view,'newgroup',params.newGroupName);
@@ -199,7 +199,7 @@ for iscan = 1:length(params.scanList)
   % Compute transform
   if params.warp
     % get the scan2scan xform
-    scan2scan = viewGet(view,'scan2scan',params.warpBaseScan,groupNum,scanNum,groupNum);
+    scan2scan = viewGet(viewBase,'scan2scan',params.warpBaseScan,groupNum,scanNum,groupNum);
     
     if ~isequal(scan2scan,eye(4))
       % swapXY seems to be needed here, presumably becuase of the way that 
@@ -276,8 +276,8 @@ for iscan = 1:length(params.scanList)
     % if we are warping, then we need to change the sform to the
     % sform of the scan we warped to
     if params.warp
-      hdr.sform44 = viewGet(view,'scanSform',params.warpBaseScan,groupNum);
-      hdr.sform_code = viewGet(view,'scanSformCode',params.warpBaseScan,groupNum);
+      hdr.sform44 = viewGet(viewBase,'scanSform',params.warpBaseScan,groupNum);
+      hdr.sform_code = viewGet(viewBase,'scanSformCode',params.warpBaseScan,groupNum);
      end
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
@@ -346,7 +346,7 @@ mrCloseDlg(waitHandle);
 toc;
 
 % Save evalstring for recomputing and params
-evalstr = ['view = newView(','''','Volume','''','); view = concatTSeries(view,params);'];
+evalstr = ['view = newView; view = concatTSeries(view,params);'];
 tseriesdir = viewGet(viewConcat,'tseriesdir');
 [pathstr,filename,ext,versn] = fileparts(fullfile(tseriesdir,tseriesFileName));
 save(fullfile(pathstr,filename),'evalstr','params','concatInfo');
