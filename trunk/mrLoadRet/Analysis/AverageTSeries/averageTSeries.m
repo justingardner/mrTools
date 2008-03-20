@@ -140,7 +140,7 @@ vol2mag = viewGet(viewBase,'scanVol2mag',baseScan);
 vol2tal = viewGet(viewBase,'scanVol2tal',baseScan);
 for iscan = 1:length(scanList)
   if (viewGet(viewBase,'nFrames',scanList(iscan)) ~= nFrames)
-    mrErrorDlg('Can not average these scans because they have different numFrames.');
+    mrErrorDlg('(averageTSeries) Can not average these scans because they have different numFrames.');
   end
   if (viewGet(viewBase,'framePeriod',scanList(iscan)) ~= framePeriod)
     mrWarnDlg('These scans  have different frame periods.');
@@ -149,7 +149,7 @@ for iscan = 1:length(scanList)
   %         mrErrorDlg('Can not average these scans because they have different voxel sizes.');
   %     end
   if any(viewGet(viewBase,'scandims',scanList(iscan)) ~= scanDims)
-    mrErrorDlg('Can not average these scans because they have different sizes.');
+    disp(sprintf('(averageTSeries) Scan %i has a different size from the base scan',scanList(iscan)));
   end
 end
 
