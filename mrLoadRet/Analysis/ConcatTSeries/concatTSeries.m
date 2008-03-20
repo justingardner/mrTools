@@ -114,19 +114,25 @@ viewConcat = viewSet(viewConcat,'currentGroup',concatGroupNum);
 
 % Check that all scans in scanList have the same 
 % scanvoxelsize, scandims
-d.tr = viewGet(viewBase,'framePeriod',params.scanList(1));
-d.voxelSize = viewGet(viewBase,'scanvoxelsize',params.scanList(1));
-d.dim = viewGet(viewBase,'scandims',params.scanList(1));
-d.nFrames = viewGet(viewBase,'nFrames',params.scanList(1));
-d.dim(4) = d.nFrames;
-d.sform = viewGet(viewBase,'scanSform',params.scanList(1));
+
+% get the base scan, if we are doing a warp then choose
+% the warpBaseScan, otherwise choose the first scan in the scan list
 if ~params.warp
-  d.vol2mag = viewGet(viewBase,'scanVol2mag',params.scanList(1));
-  d.vol2tal = viewGet(viewBase,'scanVol2tal',params.scanList(1));
+  baseScanNum = params.scanList(1);
 else
-  d.vol2mag = viewGet(viewBase,'scanVol2mag',params.warpBaseScan);
-  d.vol2tal = viewGet(viewBase,'scanVol2tal',params.warpBaseScan);
+  baseScanNum = params.warpBaseScan;
 end
+
+% get info about scan
+d.tr = viewGet(viewBase,'framePeriod',baseScanNum);
+d.voxelSize = viewGet(viewBase,'scanvoxelsize',baseScanNum);
+d.dim = viewGet(viewBase,'scandims',baseScanNum);
+d.nFrames = viewGet(viewBase,'nFrames',baseScanNum);
+d.dim(4) = d.nFrames;
+d.sform = viewGet(viewBase,'scanSform',baseScanNum);
+d.vol2mag = viewGet(viewBase,'scanVol2mag',baseScanNum);
+d.vol2tal = viewGet(viewBase,'scanVol2tal',baseScanNum);
+
 for iscan = 1:length(params.scanList)
   % check frame period for mismatch
   if (viewGet(viewBase,'framePeriod',params.scanList(iscan)) ~= d.tr)
@@ -146,7 +152,7 @@ for iscan = 1:length(params.scanList)
   if ~isequal(viewGet(viewBase,'scanSform',params.scanList(iscan)),d.sform)
     % this is only an issue if warp is  not set
     if ~params.warp
-      mrWarnDlg(sprintf('(concatTSeries) Sform for scan %s:%i does not match %s:%i. This means that they have different slice prescriptions. Usually you should select warp in this case so that the different scans are all warped together to look like the base scan. You have not selected warp.',params.groupName,params.scanList(iscan),params.groupName,params.scanList(1)));
+      mrWarnDlg(sprintf('(concatTSeries) Sform for scan %s:%i does not match %s:%i. This means that they have different slice prescriptions. Usually you should select warp in this case so that the different scans are all warped together to look like the base scan. You have not selected warp.',params.groupName,params.scanList(iscan),params.groupName,baseScanNum));
     end
   end
   % check the vol2mag and vol2tal
@@ -154,7 +160,7 @@ for iscan = 1:length(params.scanList)
       ~isequal(viewGet(viewBase,'scanVol2tal',params.scanList(iscan)),d.vol2tal))
     % this is only an issue if warp is  not set
     if ~params.warp
-      mrWarnDlg(sprintf('(concatTSeries) The scanVol2mag/scanVol2tal for scan %s:%i does not match %s:%i. This means that they have been aligned to different volume anatomies. Usually you should select warp in this case so that the different scans are all warped together to look like the base scan. You have not selected warp.',params.groupName,params.scanList(iscan),params.groupName,params.scanList(1)));
+      mrWarnDlg(sprintf('(concatTSeries) The scanVol2mag/scanVol2tal for scan %s:%i does not match %s:%i. This means that they have been aligned to different volume anatomies. Usually you should select warp in this case so that the different scans are all warped together to look like the base scan. You have not selected warp.',params.groupName,params.scanList(iscan),params.groupName,baseScanNum));
     end
   end
 end
@@ -206,7 +212,7 @@ for iscan = 1:length(params.scanList)
       end
       % Warp the frames
       for frame = 1:d.nFrames
-	d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.warpInterpMethod);
+	d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.warpInterpMethod,d.dim);
       end   
     end
   end
@@ -256,7 +262,7 @@ for iscan = 1:length(params.scanList)
     scanParams.vol2mag = d.vol2mag;
     scanParams.vol2tal = d.vol2tal;
 
-    hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',params.scanList(1)));
+    hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',baseScanNum));
     % data *MUST* be written out as float32 b/c of the small values-epm
     hdr.datatype = 16;
     % if we are warping, then we need to change the sform to the
