@@ -1,6 +1,6 @@
-function result = warpAffine3(in,A,badVal,B,method)
+function result = warpAffine3(in,A,badVal,B,method,outSize)
 %
-% function result = warpAffine3(in,A,[badVal],[border],[method])
+% function result = warpAffine3(in,A,[badVal],[border],[method],[outSize])
 %
 % in: input volume, 3D array
 % A: 3x4 affine transform matrix or a 4x4 matrix with [0 0 0 1]
@@ -9,10 +9,11 @@ function result = warpAffine3(in,A,badVal,B,method)
 %    (default = 0).
 % border: number of voxels to put in the border (default = 0, no border).
 % method:  'nearest', 'linear', 'cubic', or 'spline' (default = 'linear')
+% outSize: optional specification of output size defaults to input
+%          size. Should be a 1x3 vector like what size returns
 %
-% result: output volume, same size as in
+% result: output volume
 %
-% 10/99, on - added Border parameter to permit nearest neighbor interpolation at the edges
 %
 
 if ieNotDefined('badVal')
@@ -24,13 +25,17 @@ end
 if ieNotDefined('method')
     method = 'linear';
 end
-
+if ieNotDefined('outSize')
+  outSize = size(in);
+end
 if (size(A,1)>3)
     A = A(1:3,:);
 end
 
 % original size
-[NyO NxO NzO] = size(in);
+NyO = outSize(1);
+NxO = outSize(2);
+NzO = outSize(3);
 
 % Compute coordinates corresponding to input volume
 % and transformed coordinates for result
@@ -68,7 +73,7 @@ else
             result = resultReal + j*resultImag;
         end
     else
-        result = interp3(xgrid,ygrid,zgrid,in,warpedCoords(1,:),warpedCoords(2,:),warpedCoords(3,:),...
+        result = interp3(in,warpedCoords(1,:),warpedCoords(2,:),warpedCoords(3,:),...
             method, badVal);
     end
 end

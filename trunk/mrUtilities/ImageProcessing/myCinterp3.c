@@ -47,9 +47,9 @@ void myCinterp3(double *vol,int nslice,int size1,int size2,int npts,
      wb=modf(*(xR+nptsR+i),&b);b--;
      wc=modf(*(xR+2*nptsR+i),&c);c--;*/
 
-   if (a<0 || a>=size2R-1 || 
-	 b<0 || b>=size1R-1 ||
-         c<0 || c>=nslice-1 ) fR[i]=badvalR;
+   if (xM<1 || xM>size2R || 
+       yM<1 || yM>size1R ||
+       zM<1 || zM>nslice ) fR[i]=badvalR;
      else { 
       
      index=c*saglen+a*size1R+b;
