@@ -146,7 +146,11 @@ for iscan = 1:length(params.scanList)
   end
   % check the scan dims
   if ~isequal(viewGet(viewBase,'scandims',params.scanList(iscan)),d.dim(1:3))
-    disp('(concatTSeries) Scans have different dimensions.');
+    if params.warp
+      disp('(concatTSeries) Scans have different dimensions.');
+    else
+      mrErrorDlg('(concatTSeries) Must choose warp in order to concat scans with different sizes.');
+    end
   end
   % check the scan sforms
   if ~isequal(viewGet(viewBase,'scanSform',params.scanList(iscan)),d.sform)
@@ -180,13 +184,13 @@ for iscan = 1:length(params.scanList)
   
   % Load it
   mrDisp(sprintf('\nLoading scan %i from %s\n',scanNum,viewGet(viewBase,'groupName')));
-  d.data = loadTSeries(viewBase,scanNum,'all');
+  tSeries = loadTSeries(viewBase,scanNum,'all');
 	
   % Dump junk frames
   junkFrames = viewGet(viewBase,'junkframes',scanNum);
   nFrames = viewGet(viewBase,'nFrames',scanNum);
   d.dim(4) = nFrames;
-  d.data = d.data(:,:,:,junkFrames+1:junkFrames+nFrames);
+  tSeries = tSeries(:,:,:,junkFrames+1:junkFrames+nFrames);
 
   % get the total junked frames. This is the number of frames
   % we have junked here, plus whatever has been junked in previous ones
@@ -212,9 +216,13 @@ for iscan = 1:length(params.scanList)
       end
       % Warp the frames
       for frame = 1:d.nFrames
-	d.data(:,:,:,frame) = warpAffine3(d.data(:,:,:,frame),M,NaN,0,params.warpInterpMethod,d.dim);
-      end   
+	d.data(:,:,:,frame) = warpAffine3(tSeries(:,:,:,frame),M,NaN,0,params.warpInterpMethod,d.dim);
+      end 
+    else
+      d.data = tSeries; % if didn't warp, just set data
     end
+  else
+    d.data = tSeries; % if didn't warp, just set data
   end
   
   % do other  processing here
@@ -262,7 +270,7 @@ for iscan = 1:length(params.scanList)
     scanParams.vol2mag = d.vol2mag;
     scanParams.vol2tal = d.vol2tal;
 
-    hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',baseScanNum));
+    hdr = cbiReadNiftiHeader(viewGet(viewBase,'tseriesPath',baseScanNum));
     % data *MUST* be written out as float32 b/c of the small values-epm
     hdr.datatype = 16;
     % if we are warping, then we need to change the sform to the
