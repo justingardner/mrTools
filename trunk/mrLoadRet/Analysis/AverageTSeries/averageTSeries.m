@@ -199,7 +199,7 @@ for iscan = 1:length(scanList)
     waitHandle = mrWaitBar(0,['Warping image volumes for scan ', num2str(iscan)]);
     for frame = 1:nFrames
       mrWaitBar(frame/nFrames,waitHandle);
-      tseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod);
+      tseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),M,NaN,0,interpMethod,scanDims);
     end  
     mrCloseDlg(waitHandle);
   end
