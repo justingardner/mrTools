@@ -48,7 +48,7 @@ warpedCoords=A*homogeneousCoords;
 if B~=0
     % Put a border by replicating edge voxels.
     for k =1:size(in,3)
-        inB(:,:,k) = putborde(in(:,:,k),B,B,3);
+        inB(:,:,k) = addBorder(in(:,:,k),B,B,3);
     end
     % Repeat the first and last slices
     in = cat(3,repmat(inB(:,:,1),[1 1 B]), inB, repmat(inB(:,:,end),[1 1 B]));
