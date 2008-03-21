@@ -104,7 +104,7 @@ for ioff=1:length(xoffsets)
       % seems to happen because of a rounding error from the above
       % statement.
       if sum(tmpNewCoords(:)==0)
-	disp(sprintf('(xformROIcoords) Zero index corrected'));
+	%disp(sprintf('(xformROIcoords) Zero index corrected'));
 	tmpNewCoords((tmpNewCoords(:)==0)) = 1;
       end
       % Convert to indices
