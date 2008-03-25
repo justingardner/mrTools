@@ -105,7 +105,7 @@ if ieNotDefined('colormapType')
 end
 if ieNotDefined('interrogator')
   if ieNotDefined('anal')
-    interrogator = 'mrDefaultInterrogator';
+    interrogator = 'timecoursePlot';
   else
     if isfield(anal,'overlays')
       interrogatorFound = 0;
@@ -115,7 +115,7 @@ if ieNotDefined('interrogator')
 	end
       end
       if ~interrogatorFound
-	interrogator = 'mrDefaultInterrogator';
+	interrogator = 'timecoursePlot';
       end
     end
   end
