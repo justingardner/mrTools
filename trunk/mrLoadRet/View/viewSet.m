@@ -373,6 +373,14 @@ switch lower(param)
     if (nscans >= s) & (s > 0)
       MLR.groups(g).scanParams(s).niftiHdr.sform_code = val;
     end
+  case {'scanvoxelsize'}
+    % view = viewSet(view,'scanVoxelSize',voxelSize,scanNum,groupNum);
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).scanParams(s).voxelSize = val;
+      MLR.groups(g).scanParams(s).niftiHdr.pixdim(2:4) = val;
+    end
   case {'newscan','updatescan'}
     % view = viewSet(view,'newScan',scanParams);
     % val must be a scanParams structure with scanParams.fileName set
