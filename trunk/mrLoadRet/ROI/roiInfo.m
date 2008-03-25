@@ -52,7 +52,9 @@ paramsInfo = {{'name',roiName,'editable=0','The name of the ROI'},...
   {'vol2tal',vol2tal,'editable=0','xform matrix specifies the transformation of the canonical base volume to talairach coordinates'},...
   {'baseMatch',baseMatch,'editable=0','The base volume that has the same voxel size and xform as this ROI. This is the base volume on which the ROI was originally defined. If there is no matching base anatomy, it means that the ROI was defined on a different base volume than the one you have loaded.'},...
   {'ROICoords',[],'type=pushbutton','buttonString=Show ROI coordinates','callback',@showCurrentROICoords,'callbackArg',v,'Print the coordinates for this ROI into the matlab window. Note that these will be the actual ROI coordinates not transformed into the scan coordinates. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'},...
-  {'ROIScanCoords',[],'type=pushbutton','buttonString=Show scan coordinates','callback',@showCurrentROIScanCoords,'callbackArg',v,'Print the coordinates transformed into the scan coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'}};
+  {'ROIScanCoords',[],'type=pushbutton','buttonString=Show scan coordinates','callback',@showCurrentROIScanCoords,'callbackArg',v,'Print the coordinates transformed into the scan coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'},...
+  {'ROIBaseCoords',[],'type=pushbutton','buttonString=Show base coordinates','callback',@showCurrentROIBaseCoords,'callbackArg',v,'Print the coordinates transformed into the base coordinates for thie ROI to the matlab window. If you want the variable ROICoords set to the coordinates in your matlab workspace, you can hold the shift key down as you press this button (note that you have to have mgl in your path for this to work).'}};
+
 
 % give ability to findROI for non baseCoordMapped ROIs
 if isempty(viewGet(v,'baseCoordMap'))
@@ -76,6 +78,26 @@ if isempty(roiNum),return,end
 scanNum = viewGet(view,'curScan');
 % get the coordinates
 coords = getROICoordinates(view,roiNum,scanNum);
+
+% and display them to the buffer
+disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
+dispCoords(coords);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% helper function, called by ROI Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = showCurrentROIBaseCoords(view)
+
+retval = [];
+
+% get the roi
+roiNum = viewGet(view,'currentROI');
+if isempty(roiNum),return,end
+
+% get the current scan number
+scanNum = viewGet(view,'curScan');
+% get the coordinates
+coords = getROICoordinates(view,roiNum,0);
 
 % and display them to the buffer
 disp(sprintf('ROI %s: n=%i',viewGet(view,'roiName',roiNum),size(coords,2)));
