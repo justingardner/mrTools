@@ -65,4 +65,20 @@ for f = 1:size(optionalFields,1)
     eval(evalargs(varargin),1);
   end
 end
+
+% remove any fields that are not required or optional
+roiFieldNames = fieldnames(roi);
+for f = 1:length(roiFieldNames)
+  % check required fields
+  if ~any(strcmp(roiFieldNames{f},requiredFields))
+    % check optional fields, (only check first column of
+    % field names, not the default values...
+    match = strcmp(roiFieldNames{f},optionalFields);
+    if ~any(match(:,1))
+      roi = rmfield(roi,roiFieldNames{f});
+    end
+  end
+end
+
+% order the fields
 roi = orderfields(roi);
