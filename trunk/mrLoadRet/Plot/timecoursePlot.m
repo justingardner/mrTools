@@ -3,7 +3,8 @@
 %      usage: timecoursePlot()
 %         by: justin gardner
 %       date: 03/15/07
-%    purpose: 
+%    purpose: a default interrogator function that plots 
+%             the time series and its fft
 %
 function timecoursePlot(view,overlayNum,scan,x,y,s,roi)
 
