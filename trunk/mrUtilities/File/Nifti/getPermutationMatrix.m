@@ -16,5 +16,10 @@ end
 % Extract permutation matrix to keep track of slice orientation.
 % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
 % make changes here, please update that function as well.
-[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
+if hdr.sform_code >= 1
+  % use sform if sform_code is set to 1
+  [q,r] = qr(inv(hdr.sform44(1:3,1:3)));
+else
+  [q,r] = qr(inv(hdr.qform44(1:3,1:3)));
+end
 permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
