@@ -1249,6 +1249,7 @@ end
 
 % check d
 if isfield(a,'d')
+  dExists = [];
   for dnum = 1:length(a.d)
     dExists(dnum) = ~isempty(a.d{dnum});
   end
