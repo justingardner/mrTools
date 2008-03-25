@@ -94,6 +94,12 @@ switch lower(param)
     % -------------------------------------------
     % Group
 
+  case{'currentscan','curscan'}
+    % view = viewSet(view,'currentScan',n);
+    nScans = viewGet(view,'nScans');
+    if ((val > 0) && (val <= nScans))
+      mlrGuiSet(view,'scan',val);
+    end
   case{'currentgroup','curgroup'}
     % view = viewSet(view,'currentGroup',n);
     % view = viewSet(view,'currentGroup','groupName')
