@@ -223,7 +223,7 @@ paramsInfo{end+1} = {'outerSurface',outerSurface,'The outer (gray matter) surfac
 paramsInfo{end+1} = {'outerCoords',outerCoords,'The outer (gray matter) surface that contains the coordinates for the display surface. Usually this is the same as the outerSurface, but if you have an inflated surface, the display surface and the coords surface will be different','callback',@switchFile,'callbackArg=outerCoords'};
 paramsInfo{end+1} = {'innerSurface',innerSurface,'The inner (white matter) display surface','callback',@switchFile,'callbackArg=innerSurface'};
 paramsInfo{end+1} = {'innerCoords',innerCoords,'The inner (white matter) coords surface','callback',@switchFile,'callbackArg=innerCoords'};
-paramsInfo{end+1} = {'curv',curv,'The curvature file','callback',@switchFile,'callbackArg=curv'};
+paramsInfo{end+1} = {'curv',curv,'The curvature file. This is a file that is usually created by Jonas'' TFI command surffilt: surffilt -mcurv -iter 1 whiteMatter.off curvFileName.vff.','callback',@switchFile,'callbackArg=curv'};
 paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file','callback',@switchAnatomy};
 
 

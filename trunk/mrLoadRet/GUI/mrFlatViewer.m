@@ -328,7 +328,7 @@ else
   paramsInfo{end+1} = {'inner',inner,'The inner (white matter) file','callback',@switchFile,'callbackArg=inner'};
 end
 if ~editable && (length(curv) == 1)
-  paramsInfo{end+1} = {'curv',curv{1},'editable=0','The curvature file'};
+  paramsInfo{end+1} = {'curv',curv{1},'editable=0','The curvature file. This is a file that is usually created by Jonas'' TFI command surffilt: surffilt -mcurv -iter 1 whiteMatter.off curvFileName.vff.'};
 else
   paramsInfo{end+1} = {'curv',curv,'The curvature file','callback',@switchFile,'callbackArg=curv'};
 end
