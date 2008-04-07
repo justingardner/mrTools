@@ -149,7 +149,9 @@ if isfile(fullfile(pathStr,filename))
     end
     % otherwise accept the filename, make sure it has a .mat extension
     filename = sprintf('%s.mat',stripext(filename));
-
+    % change the analysis name
+    view = viewSet(view,'analysisName',stripext(filename),analysisNum);
+    analysisName = viewGet(view,'analysisName',analysisNum);
   elseif saveMethod == 3
     % this is the easiest, just overwrite
     disp(sprintf('(saveAnalysis) Overwriting old analysis'));
