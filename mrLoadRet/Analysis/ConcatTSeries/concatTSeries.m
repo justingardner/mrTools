@@ -251,8 +251,7 @@ for iscan = 1:length(params.scanList)
     disppercent(inf);
   end
   warning on
-  d.data(isnan(d.data))=0;              % b/c nan's can be annoying 
-  
+
   % get the path and filename
   [path,filename,ext,versn] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
   baseGroupName = viewGet(viewBase,'groupName');
