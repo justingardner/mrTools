@@ -371,6 +371,12 @@ switch lower(param)
     nscans = viewGet(view,'nscans',g);
     if (nscans >= s) & (s > 0)
       MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
+      % now get the pix dimensions
+      [q r] = qr(val);
+      pixdim = diag(r(1:3,1:3));
+      disp(sprintf('(viewSet:scanSform) The implied pixel dims are being reset to [%0.2f %0.2f %0.2f]',pixdim(1),pixdim(2),pixdim(3)));
+      MLR.groups(g).scanParams(s).niftiHdr.pixdim(2:4) = pixdim;
+      MLR.groups(g).scanParams(s).voxelSize = pixdim';
     end
   case {'sformcode','scansformcode'}
     % view = viewSet(view,'sformcode',sformcode,scanNum,groupNum);
@@ -796,6 +802,11 @@ switch lower(param)
       hdr.sform_code = sform_code;
       % reset in structure
       view.baseVolumes(baseNum).hdr = hdr;
+      % now get the pix dimensions
+      [q r] = qr(val);
+      pixdim = diag(r(1:3,1:3));
+      disp(sprintf('(viewSet:baseSform) The implied pixel dims are being reset to [%0.2f %0.2f %0.2f]',pixdim(1),pixdim(2),pixdim(3)));
+      view.baseVolumes(baseNum).hdr.pixdim(2:4) = pixdim;
     end
 
   case {'basesformcode'}
@@ -949,6 +960,18 @@ switch lower(param)
 
     end
 
+  case{'analysisinterrogator'}
+    % view = viewSet(view,'analysisInterrogator',interrogatorName,[analysisNum]);
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+    else
+      analysisNum = varargin{1};
+    end
+    if ~isempty(analysisNum)
+      for i = 1:viewGet(view,'nOverlays')
+	view.analyses{analysisNum}.overlays(i).interrogator = val;
+      end
+    end
   case{'analysisname'}
     % view = viewSet(view,'analysisname',nameString,[analysisNum]);
     if ieNotDefined('varargin')
@@ -1610,7 +1633,7 @@ switch lower(param)
     mlrGuiSet(view,'sliceOrientation',sliceOrientation);
     % Update slice and nSlices
     baseNum = viewGet(view,'currentBase');
-    if ~isempty(baseNum)
+    if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum'))
       baseDims = viewGet(view,'basedims',baseNum);
       sliceIndex = viewGet(viewNum,'baseSliceIndex',baseNum);
       nSlices = baseDims(sliceIndex);
