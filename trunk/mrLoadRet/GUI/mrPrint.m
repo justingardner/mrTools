@@ -393,98 +393,100 @@ end
 
 disppercent(-inf,'(mrPrint) Calculating smoothed ROIs');
 for r=1:length(roi)
-  % get the x and y image coordinates
-  x = roi{r}.(baseName){sliceIndex}.x;
-  y = roi{r}.(baseName){sliceIndex}.y;
-  s = roi{r}.(baseName){sliceIndex}.s;
- 
-  % check for regular images
-  baseType = viewGet(v,'baseType');
-  if baseType == 0
-    %FIX FIX, must select correct voxels for 2D inplanes
-    %    voxelsOnThisSlice = find(s==viewGet(v,'curSlice'));
-%    x = x(voxelsOnThisSlice);
-%    y = y(voxelsOnThisSlice);
-  end
+  if ~isempty(roi{r})
+    % get the x and y image coordinates
+    x = roi{r}.(baseName){sliceIndex}.x;
+    y = roi{r}.(baseName){sliceIndex}.y;
+    s = roi{r}.(baseName){sliceIndex}.s;
     
-  % upSample the coords
-  x = x.*params.upSampleFactor;
-  y = y.*params.upSampleFactor;
-            
-  upSampSq = params.upSampleFactor^2;
-  n = length(x)*upSampSq;
-  hiResX = zeros(1,n);
-  hiResY = zeros(1,n);
-            
-  for ii=1:params.upSampleFactor
-    offsetX = (ii-params.upSampleFactor-.5)+params.upSampleFactor/2;
-    for jj=1:params.upSampleFactor
-      offsetY = (jj-params.upSampleFactor-.5)+params.upSampleFactor/2;
-      hiResX((ii-1)*params.upSampleFactor+jj:upSampSq:end) = x+offsetX;
-      hiResY((ii-1)*params.upSampleFactor+jj:upSampSq:end) = y+offsetY;
+    % check for regular images
+    baseType = viewGet(v,'baseType');
+    if baseType == 0
+      %FIX FIX, must select correct voxels for 2D inplanes
+      %    voxelsOnThisSlice = find(s==viewGet(v,'curSlice'));
+      %    x = x(voxelsOnThisSlice);
+      %    y = y(voxelsOnThisSlice);
     end
-  end
-            
-  hiResX = round(hiResX);
-  hiResY = round(hiResY);
-            
-  goodVals=find((hiResX>0) & (hiResY>0) & (hiResX<upSampImSize(2)) & (hiResY<upSampImSize(1)));
-            
-  hiResX=hiResX(goodVals);
-  hiResY=hiResY(goodVals);
-            
-  % Draw the whole ROI into an image
-  roiBits = zeros(upSampImSize);
-  roiBits(sub2ind(upSampImSize,hiResY,hiResX)) = 1;
+    
+    % upSample the coords
+    x = x.*params.upSampleFactor;
+    y = y.*params.upSampleFactor;
+    
+    upSampSq = params.upSampleFactor^2;
+    n = length(x)*upSampSq;
+    hiResX = zeros(1,n);
+    hiResY = zeros(1,n);
+    
+    for ii=1:params.upSampleFactor
+      offsetX = (ii-params.upSampleFactor-.5)+params.upSampleFactor/2;
+      for jj=1:params.upSampleFactor
+        offsetY = (jj-params.upSampleFactor-.5)+params.upSampleFactor/2;
+        hiResX((ii-1)*params.upSampleFactor+jj:upSampSq:end) = x+offsetX;
+        hiResY((ii-1)*params.upSampleFactor+jj:upSampSq:end) = y+offsetY;
+      end
+    end
+    
+    hiResX = round(hiResX);
+    hiResY = round(hiResY);
+    
+    goodVals=find((hiResX>0) & (hiResY>0) & (hiResX<upSampImSize(2)) & (hiResY<upSampImSize(1)));
+    
+    hiResX=hiResX(goodVals);
+    hiResY=hiResY(goodVals);
+    
+    % Draw the whole ROI into an image
+    roiBits = zeros(upSampImSize);
+    roiBits(sub2ind(upSampImSize,hiResY,hiResX)) = 1;
 
-  % blur it some, but only need to do this
-  % if we haven't already upsampled
-  if params.upSampleFactor <= 2
-    roiBits = round(blur(roiBits,2));
+    % blur it some, but only need to do this
+    % if we haven't already upsampled
+    if params.upSampleFactor <= 2
+      roiBits = round(blur(roiBits,2));
+    end
+    
+    % is it a mask roi?
+    if r==params.whichROIisMask
+      dataMask = roiBits;
+    else
+      if (params.filledPerimeter)
+        % Do the ROI plotting using the image processing
+        % toolbox's morphological ops
+        
+        % Dilate, erode, fill
+        se=strel('disk',32);
+        tmat=imdilate(logical(roiBits),se);
+        se=strel('disk',32);
+        tmat=imerode(logical(tmat),se);
+        tmat=imfill(tmat,'holes');
+        tmat=tmat-min(tmat(:));
+        roiBits=bwperim(tmat);
+        se=strel('square',params.roiLineWidth*2);
+        
+        roiBits=double(imdilate(logical(roiBits),se));
+        
+      else
+        % grow the region and subtract
+        % create a circular filter of ones
+        e = exp(-([-params.roiLineWidth:params.roiLineWidth]./params.roiLineWidth).^2);
+        filt = (e'*e)>.367;
+        roiBits = (conv2(roiBits,double(filt),'same')>0.1)-roiBits;
+      end
+      
+      % get color
+      if strcmp(params.roiColor,'default')
+        color = roi{r}.color;
+      else
+        color = color2RGB(params.roiColor);
+      end
+      
+      % convert to rgb
+      roiRGB(:,:,1) = roiRGB(:,:,1) + roiBits.*color(1);
+      roiRGB(:,:,2) = roiRGB(:,:,2) + roiBits.*color(2);
+      roiRGB(:,:,3) = roiRGB(:,:,3) + roiBits.*color(3);
+      roiMask = roiMask | roiBits;
+      disppercent(r/length(roi));
+    end 
   end
-  
-  % is it a mask roi?
-  if r==params.whichROIisMask
-    dataMask = roiBits;
-  else
-    if (params.filledPerimeter)
-      % Do the ROI plotting using the image processing
-      % toolbox's morphological ops
-      
-      % Dilate, erode, fill
-      se=strel('disk',32);
-      tmat=imdilate(logical(roiBits),se);
-      se=strel('disk',32);
-      tmat=imerode(logical(tmat),se);
-      tmat=imfill(tmat,'holes');
-      tmat=tmat-min(tmat(:));
-      roiBits=bwperim(tmat);
-      se=strel('square',params.roiLineWidth*2);
-      
-      roiBits=double(imdilate(logical(roiBits),se));
-      
-    else
-      % grow the region and subtract
-      % create a circular filter of ones
-      e = exp(-([-params.roiLineWidth:params.roiLineWidth]./params.roiLineWidth).^2);
-      filt = (e'*e)>.367;
-      roiBits = (conv2(roiBits,double(filt),'same')>0.1)-roiBits;
-    end
-    
-    % get color
-    if strcmp(params.roiColor,'default')
-      color = roi{r}.color;
-    else
-      color = color2RGB(params.roiColor);
-    end
-    
-    % convert to rgb
-    roiRGB(:,:,1) = roiRGB(:,:,1) + roiBits.*color(1);
-    roiRGB(:,:,2) = roiRGB(:,:,2) + roiBits.*color(2);
-    roiRGB(:,:,3) = roiRGB(:,:,3) + roiBits.*color(3);
-    roiMask = roiMask | roiBits;
-    disppercent(r/length(roi));
-  end 
 end    
 disppercent(inf);
 
