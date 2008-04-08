@@ -80,5 +80,11 @@ for f = 1:length(roiFieldNames)
   end
 end
 
+% if roi coords doesn't have the fourth dimension then
+% set it to 1
+if ~isempty(roi.coords) && (size(roi.coords,1) == 3)
+  roi.coords(4,:) = 1;
+end
+
 % order the fields
 roi = orderfields(roi);
