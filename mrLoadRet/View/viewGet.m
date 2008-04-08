@@ -3089,23 +3089,39 @@ switch lower(param)
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = handles.coords;
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = handles.coords;
+    else
+      val = [];
+    end
   case {'alpha'}
     % alpha = viewGet(view,'alpha');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = get(handles.alphaSlider,'Value');
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = get(handles.alphaSlider,'Value');
+    else
+      val = 1;
+    end
   case {'overlaymin'}
     % overlayMin = viewGet(view,'overlayMin');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = get(handles.overlayMinSlider,'Value');
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = get(handles.overlayMinSlider,'Value');
+    else
+      val = 0;
+    end
   case {'overlaymax'}
     % overlayMax = viewGet(view,'overlayMax');
     fig = viewGet(view,'fignum');
-    handles = guidata(fig);
-    val = get(handles.overlayMaxSlider,'Value');
+    if ~isempty(fig)
+      handles = guidata(fig);
+      val = get(handles.overlayMaxSlider,'Value');
+    else
+      val = 1;
+    end
   case {'rotate'}
     % rotate = viewGet(view,'rotate');
     baseType = viewGet(view,'baseType');
@@ -3115,8 +3131,12 @@ switch lower(param)
     % rotateSurface
     if baseType <= 1
       fig = viewGet(view,'fignum');
-      handles = guidata(fig);
-      val = get(handles.rotateSlider,'Value');
+      if ~isempty(fig)
+	handles = guidata(fig);
+	val = get(handles.rotateSlider,'Value');
+      else
+	val = 0;
+      end
     else
       val = 0;
     end
@@ -3125,9 +3145,13 @@ switch lower(param)
     baseType = viewGet(view,'baseType');
     if baseType == 2
       fig = viewGet(view,'fignum');
-      handles = guidata(fig);
-      % 360- is so that the anatomy rotates correct direction
-      val = 360-get(handles.rotateSlider,'Value');
+      if ~isempty(fig)
+	handles = guidata(fig);
+	% 360- is so that the anatomy rotates correct direction
+	val = 360-get(handles.rotateSlider,'Value');
+      else
+	val = 0;
+      end
     else
       val = 0;
     end
