@@ -38,6 +38,16 @@ void myCinterp3(double *vol,int nslice,int size1,int size2,int npts,
      xM = *(xR+i);
      yM = *(xR+nptsR+i);
      zM = *(xR+2*nptsR+i);
+
+     // handle boundary conditions properly. if you are
+     // right exactly on the edge, then move the coordinate
+     // over by just a little, so that you don't try to
+     // dereference a value outside the volume (even though
+     // you would be multiplying that value by a weight of 0).
+     if (xM == size2R) xM=xM-0.00000001;
+     if (yM == size1R) yM=yM-0.00000001;
+     if (zM == nslice) zM=zM-0.00000001;
+
      /* distances to nearest lower integer coordinate */
      a = (int) xM; wa = xM - a; a--;
      b = (int) yM; wb = yM - b; b--;
@@ -46,7 +56,6 @@ void myCinterp3(double *vol,int nslice,int size1,int size2,int npts,
      /*     wa=modf(*(xR+i),&a);a--;
      wb=modf(*(xR+nptsR+i),&b);b--;
      wc=modf(*(xR+2*nptsR+i),&c);c--;*/
-
    if (xM<1 || xM>size2R || 
        yM<1 || yM>size1R ||
        zM<1 || zM>nslice ) fR[i]=badvalR;
