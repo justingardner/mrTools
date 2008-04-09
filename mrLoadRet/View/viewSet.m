@@ -853,13 +853,13 @@ switch lower(param)
     % Check that is has the required fields
     [check analysis] = isanalysis(val);
     if ~check
-      mrErrorDlg('Invalid analysis');
+      mrWarnDlg('(viewSet:newAnalysis) Invalid analysis');
     end
     % Error if groupNames don't match
     curGroupNum = viewGet(view,'currentGroup');
     curGroupName = viewGet(view,'groupName',curGroupNum);
     if ~strcmp(analysis.groupName,curGroupName)
-      mrErrorDlg(['analysis is incompatible with group: ',curGroupName]);
+      mrWarnDlg(['(viewSet:newAnalysis) Analysis is incompatible with group: ',curGroupName]);
     end
     % Reconcile analysis params with group
     if isfield(analysis,'d')
