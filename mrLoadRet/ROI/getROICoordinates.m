@@ -27,14 +27,21 @@ if ieNotDefined('scanNum')
   scanNum = viewGet(view,'currentScan');
 end
 
-% if roiNum is a string try to load it
+% if roiNum is a string see if it is loaded, otherwise
+% try to load it
 nROIs = viewGet(view,'numROIs');
 if isstr(roiNum)
-  view = loadROI(view,roiNum);
-  roiNum = viewGet(view,'nROIs');
-  if roiNum == nROIs
-    disp(sprintf('(getROICoordinates) Could not load ROI'));
-    return
+  if isempty(viewGet(view,'roiNum',roiNum))
+    % roi is not loaded in. get it
+    view = loadROI(view,roiNum);
+    roiNum = viewGet(view,'nROIs');
+    if roiNum == nROIs
+      disp(sprintf('(getROICoordinates) Could not load ROI'));
+      return
+    end
+  else
+    % roi is already installed, just get it
+    roiNum = viewGet(view,'roiNum',roiNum);
   end
 % if it is a struct use newRoi to set it into the view
 elseif isstruct(roiNum)
