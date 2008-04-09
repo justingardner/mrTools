@@ -171,6 +171,11 @@ switch lower(param)
   case {'newgroup'}
     % view = viewSet(view,'newGroup',groupName);
     newgroup.name = val;
+    % check to see if we already have the group
+    if any(strcmp(newgroup.name,viewGet(view,'groupNames')))
+      mrWarnDlg(sprintf('(viewSet:newGroup) Group %s already exists',newgroup.name));
+      return
+    end
     newgroup.scanParams = [];
     newgroup.auxParams = [];
     % Add it to MLR.groups
