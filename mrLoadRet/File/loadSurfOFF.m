@@ -1,9 +1,10 @@
 % loadSurfOFF.m
 %
 %      usage: surf = loadSurfOFF(surffile,<loadOnlyHeader>)
-%         by: eli merriam
+%         by: jonas larsson (adapted to mrLoadRet by eli merriam)
 %       date: 09/25/07
 %    purpose: Loading an OFF binary surface into Matlab
+%   $Id$	
 %
 % This code was ripped directly from Jonas Larsson's tfiReadOFF code
 % the main difference is that this code returns a neat structure,
