@@ -101,6 +101,7 @@ for g = 1:length(groups)
 
 end
 
+deleteView(view);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % display the parameters and filename for the unlinked scan
