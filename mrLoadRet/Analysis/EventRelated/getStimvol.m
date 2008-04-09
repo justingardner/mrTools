@@ -113,13 +113,13 @@ for i = 1:length(d.stimfile)
     % and get rid of anything less than 0
     stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
     % check for stimvol overrun
-    if ~isfield(d,'concatInfo')
+    if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
         runlen = d.dim(4)*samplingf;
     else
         runlen = diff(d.concatInfo.runTransition(i,:))*samplingf+1;
     end
     if ~isempty(find(stimvol{nhdr}>runlen,1))
-      if ~isfield(d,'concatInfo')
+      if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
          disp(sprintf('(getStimvol) Removing %i event(s) from scan since they happen after the last volume of the scan ',length(find(stimvol{nhdr}>runlen))));
       else
          disp(sprintf('(getStimvol) Removing %i event(s) from concatenated scan %i:%s since they happen after the last volume (%i) of the scan ',length(find(stimvol{nhdr}>runlen)),i,d.concatInfo.filename{i},runlen));
@@ -133,7 +133,7 @@ for i = 1:length(d.stimfile)
   % a concatInfo field
   if (i > 1)
     % check for valid concatInfo
-    if ~isfield(d,'concatInfo')
+    if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
       disp(sprintf('(getStimvol) No concatInfo found for multiple stimfiles'));
       return
     end
