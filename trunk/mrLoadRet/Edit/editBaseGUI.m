@@ -26,6 +26,7 @@ baseName = viewGet(v,'baseName',baseNum);
 baseRange = viewGet(v,'baseRange',baseNum);
 baseClip = viewGet(v,'baseClip',baseNum);
 baseGamma = viewGet(v,'baseGamma',baseNum);
+baseCoordMap = viewGet(v,'baseCoordMap',baseNum);
 
 paramsInfo = {};
 paramsInfo{end+1} = {'baseName',baseName,'The name of the base anatomy','callback',@editBaseCallback,'callbackArg',v};
@@ -34,10 +35,28 @@ paramsInfo{end+1} = {'baseMin',baseClip(1),'incdec=[-10 10]','The lower clip val
 paramsInfo{end+1} = {'baseMax',baseClip(2),'incdec=[-10 10]','The upper clip value of the base image','callback',@editBaseCallback,'callbackArg',v};
 paramsInfo{end+1} = {'baseGamma',baseGamma,'incdec=[-0.1 0.1]','minmax=[0 inf]','The gamma to use to display the base image','callback',@editBaseCallback,'callbackArg',v};
 paramsInfo{end+1} = {'setDefaults',0,'type=pushbutton','buttonString','Set defaults','callback',@defaultEditBaseCallback,'callbackArg',v};
+
+% deal with coordMap fields
+if ~isempty(baseCoordMap)
+  baseCoordMapFields = fields(baseCoordMap);
+  editableBaseCoordMapFields = {};
+  for fieldNum = 1:length(baseCoordMapFields)
+    % look for fields that are filenames or directories.
+    % these are the ones we allow editing on
+    if isstr(baseCoordMap.(baseCoordMapFields{fieldNum}))
+      if ~isempty(strfind(baseCoordMapFields{fieldNum},'FileName')) || ~isempty(strfind(baseCoordMapFields{fieldNum},'Dir'))
+	editableBaseCoordMapFields{end+1} = baseCoordMapFields{fieldNum};
+	paramsInfo{end+1} = {baseCoordMapFields{fieldNum},baseCoordMap.(baseCoordMapFields{fieldNum}),sprintf('Name of %s from which this surface/flat was generated')};
+      end
+    end
+  end
+end
+
+
 % display parameters
 params = mrParamsDialog(paramsInfo,'Edit base info');
 
-% user hit cancel
+% user hit cancel, so return parameters back to what they used to be
 if isempty(params)
   v = viewSet(v,'baseName',baseName,baseNum);
   v = viewSet(v,'baseRange',baseRange,baseNum);
@@ -46,6 +65,20 @@ if isempty(params)
   return
 end
 
+% for the baseCoordMap fields, we only set them after user hit ok, not on the fly
+if ~isempty(baseCoordMap) && ~isempty(params)
+  fieldChange = 0;
+  for fieldNum = 1:length(editableBaseCoordMapFields)
+    if ~strcmp(baseCoordMap.(editableBaseCoordMapFields{fieldNum}),params.(editableBaseCoordMapFields{fieldNum}))
+      baseCoordMap.(editableBaseCoordMapFields{fieldNum}) = params.(editableBaseCoordMapFields{fieldNum});
+      fieldChange = 1;
+    end
+  end
+  if fieldChange
+    mrWarnDlg('(editBaseGUI) Note that changing the names of surfaces in the base structure does not actually change the surface/flat map. If you want to change the surfaces used, you will need to use Load Flat or Load Surface to create a new flat/surface.');
+    viewSet(v,'baseCoordMap',baseCoordMap,baseNum);
+  end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   editBaseCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
