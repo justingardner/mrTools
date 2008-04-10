@@ -192,16 +192,16 @@ else
   base.data(:,:,1) = flat.map;
 end    
 
-base.coordMap.coords(:,:,1,1) = flat.baseCoordsInner(:,:,2);
-base.coordMap.coords(:,:,1,2) = flat.baseCoordsInner(:,:,1);
+base.coordMap.coords(:,:,1,1) = flat.baseCoordsInner(:,:,1);
+base.coordMap.coords(:,:,1,2) = flat.baseCoordsInner(:,:,2);
 base.coordMap.coords(:,:,1,3) = flat.baseCoordsInner(:,:,3);
 
-base.coordMap.innerCoords(:,:,1,1) = flat.baseCoordsInner(:,:,2);
-base.coordMap.innerCoords(:,:,1,2) = flat.baseCoordsInner(:,:,1);
+base.coordMap.innerCoords(:,:,1,1) = flat.baseCoordsInner(:,:,1);
+base.coordMap.innerCoords(:,:,1,2) = flat.baseCoordsInner(:,:,2);
 base.coordMap.innerCoords(:,:,1,3) = flat.baseCoordsInner(:,:,3);
 
-base.coordMap.outerCoords(:,:,1,1) = flat.baseCoordsOuter(:,:,2);
-base.coordMap.outerCoords(:,:,1,2) = flat.baseCoordsOuter(:,:,1);
+base.coordMap.outerCoords(:,:,1,1) = flat.baseCoordsOuter(:,:,1);
+base.coordMap.outerCoords(:,:,1,2) = flat.baseCoordsOuter(:,:,2);
 base.coordMap.outerCoords(:,:,1,3) = flat.baseCoordsOuter(:,:,3);
 
 base.coordMap.dims = flat.hdr.dim([2 3 4])';
