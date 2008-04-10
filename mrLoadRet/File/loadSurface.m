@@ -60,6 +60,12 @@ else
   outer = loadSurfOFF(params.outerCoords);
 end
 
+% now convert all surfaces to array coordinates
+innerSurface = xformSurfaceWorld2Array(innerSurface,base.hdr);
+outerSurface = xformSurfaceWorld2Array(outerSurface,base.hdr);
+inner = xformSurfaceWorld2Array(inner,base.hdr);
+outer = xformSurfaceWorld2Array(outer,base.hdr);
+
 % save names
 base.coordMap.innerFileName = params.innerSurface;
 base.coordMap.innerCoordsFileName = params.innerCoords;
@@ -68,14 +74,14 @@ base.coordMap.outerCoordsFileName = params.outerCoords;
 base.coordMap.curvFileName = params.curv;
 base.coordMap.anatFileName = params.anatomy;
 % save coords
-base.coordMap.innerCoords(1,:,1,1)  = inner.vtcs(:,2);
-base.coordMap.innerCoords(1,:,1,2)  = inner.vtcs(:,1);
+base.coordMap.innerCoords(1,:,1,1)  = inner.vtcs(:,1);
+base.coordMap.innerCoords(1,:,1,2)  = inner.vtcs(:,2);
 base.coordMap.innerCoords(1,:,1,3)  = inner.vtcs(:,3);
 base.coordMap.innerVtcs = innerSurface.vtcs;
 base.coordMap.tris = innerSurface.tris;
 base.coordMap.outer = params.outerSurface;
-base.coordMap.outerCoords(1,:,1,1)  = outer.vtcs(:,2);
-base.coordMap.outerCoords(1,:,1,2)  = outer.vtcs(:,1);
+base.coordMap.outerCoords(1,:,1,1)  = outer.vtcs(:,1);
+base.coordMap.outerCoords(1,:,1,2)  = outer.vtcs(:,2);
 base.coordMap.outerCoords(1,:,1,3)  = outer.vtcs(:,3);
 base.coordMap.outerVtcs = outerSurface.vtcs;
 base.coordMap.coords = base.coordMap.innerCoords;

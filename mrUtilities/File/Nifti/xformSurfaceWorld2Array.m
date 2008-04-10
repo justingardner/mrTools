@@ -9,7 +9,12 @@
 %             array coordinates that specify the
 %             voxel number in 1-based matlab coordinates
 %             in the 3D anatomy. surf is a surface
-%             returned by loadSurfOFF
+%             returned by loadSurfOFF. Note that
+%             this function places a field originalVtcs
+%             in the surface structure once it is run,
+%             so it is possible to call this function
+%             as many times as you want without affecting
+%             the coordinates
 %
 function surf = xformSurfaceWorld2Array(surf,hdr)
 

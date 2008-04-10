@@ -98,23 +98,6 @@ surf.tris = reshape(surf.tris, 5, surf.Ntris);
 
 surf.vtcs = surf.vtcs';
 
-
-% SurfRelax shifts the coordinate frame by the "offset", which is an analyze
-% field. This is in the nifti header as fields 6:8 which actually should
-% be the pixel dimensions *not* the offset
-origin = [1 1 1];
-surf.vtcs(:,1) = surf.vtcs(:,1) + origin(1);
-surf.vtcs(:,2) = surf.vtcs(:,2) + origin(2);
-surf.vtcs(:,3) = surf.vtcs(:,3) + origin(3);
-% SurfRelax uses the pixdim fields 6:8 to represent the origin offset, this is usually [1 1 1]. That is
-% why we have to add [1 1 1] here. But because the pixdim(6:8) is actually supposed to be the pixel size
-% this might not be correct. In fact, really old files (e.g. Mike Landy's anatomy) had their pixdim
-% fields set incorrectly to [-1 -1 -1], meaning that instead of adding 1 here, we needed to subtract 1.
-
-% The coordinates start at 0 in C and 1 in matlab, so we offset by 1.
-surf.vtcs = surf.vtcs + 1;
-surf.vtcs = [surf.vtcs(:,2) surf.vtcs(:,1) surf.vtcs(:,3)]; % swaping x and y
-
 % first entry is # of vertices per face (always 3); last entry is # of colors per face (only 0 allowed)
 surf.tris = surf.tris(2:4,:); 
 % 1-offset for matlab

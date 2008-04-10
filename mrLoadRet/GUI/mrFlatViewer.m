@@ -260,6 +260,7 @@ if isempty(anat)
 end
 if (length(anat)>=1) && isfile(fullfile(flatPath, anat{1}))
   [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(flatPath, anat{1}));
+  gFlatViewer = xformSurfaces(gFlatViewer);
 else
   gFlatViewer.anat = [];
 end
@@ -715,10 +716,10 @@ gmNodes = gFlatViewer.surfaces.outer.vtcs;
 
 % Plot the nodes for the gray/white matter surfaces
 wmNodes = wmNodes( find( round(wmNodes(:,sliceIndex))==slice), : );
-plot(wmNodes(:,1), wmNodes(:,2), 'w.', 'markersize', 1);
+plot(wmNodes(:,2), wmNodes(:,1), 'w.', 'markersize', 1);
 
 gmNodes = gmNodes( find( round(gmNodes(:,sliceIndex))==slice), : );
-plot(gmNodes(:,1), gmNodes(:,2), 'y.', 'markersize', 1);
+plot(gmNodes(:,2), gmNodes(:,1), 'y.', 'markersize', 1);
 
 % plot the patch nodes, displaying both deep and superficial surfaces
 co = getPatchColoring;
@@ -740,12 +741,12 @@ wmPatchNodes = wmPatchNodes( find( round(wmPatchNodes(:,sliceIndex))==slice), : 
 if any(gFlatViewer.patchColoring == [1 length(gFlatViewer.patchColoringTypes)])
   % draw all the points in the same color (if there are any)
   if ~ieNotDefined('wmco')
-    plot(wmPatchNodes(:,1), wmPatchNodes(:,2), '.', 'markersize', 1,'Color',wmco(1,:));
+    plot(wmPatchNodes(:,2), wmPatchNodes(:,1), '.', 'markersize', 1,'Color',wmco(1,:));
   end
   % otherwise each pixel has to be set
 else
   for i = 1:length(wmPatchNodes(:,1))
-    plot(wmPatchNodes(i,1), wmPatchNodes(i,2), '.', 'markersize', 1,'Color',wmco(i,:)');
+    plot(wmPatchNodes(i,2), wmPatchNodes(i,1), '.', 'markersize', 1,'Color',wmco(i,:)');
   end
 end
 
@@ -761,12 +762,12 @@ gmPatchNodes = gmPatchNodes( find( round(gmPatchNodes(:,sliceIndex))==slice), : 
 if any(gFlatViewer.patchColoring == [1 length(gFlatViewer.patchColoringTypes)])
   % draw all the points in the same color (if there are any)
   if ~ieNotDefined('gmco')
-    plot(gmPatchNodes(:,1), gmPatchNodes(:,2), '.', 'markersize', 1,'Color',gmco(1,:));
+    plot(gmPatchNodes(:,2), gmPatchNodes(:,1), '.', 'markersize', 1,'Color',gmco(1,:));
   end
   % otherwise each pixel has to be set
 else
   for i = 1:length(gmPatchNodes(:,1))
-    plot(gmPatchNodes(i,1), gmPatchNodes(i,2), '.', 'markersize', 1,'Color',gmco(i,:));
+    plot(gmPatchNodes(i,2), gmPatchNodes(i,1), '.', 'markersize', 1,'Color',gmco(i,:));
   end
 end
 
@@ -862,10 +863,7 @@ switch gFlatViewer.patchColoring
   else
     baseCoords = gFlatViewer.surfaces.inner.vtcs(whichInx,:);    
   end
-  % swap x/y
-  temp = baseCoords(:,2);
-  baseCoords(:,2) = baseCoords(:,1);
-  baseCoords(:,1) = temp;
+  % make homogenous
   baseCoords(:,4) = 1;
   baseCoords = baseCoords';
   baseDims = [size(baseCoords,2) 1];
@@ -975,10 +973,6 @@ disppercent(-inf,'(mrFlatViewer) Computing ROI Overlay');
 v = viewGet([],'view',gFlatViewer.viewNum);
 numROIs = viewGet(v,'numROIs');
 baseVoxelSize = [1 1 1];
-% swap x/y
-tmp = baseCoords(:,2);
-baseCoords(:,2) = baseCoords(:,1);
-baseCoords(:,1) = tmp;
   
 % init the overlay
 roiOverlay = zeros(size(baseCoords,1),3);
@@ -1035,6 +1029,7 @@ global gFlatViewer;
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatomy));
 [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(params.flatPath, params.anatomy));
+gFlatViewer = xformSurfaces(gFlatViewer);
 % switch to 3D anatomy view
 global gParams
 gFlatViewer.whichSurface = 3;
@@ -1099,6 +1094,7 @@ if ~isempty(file)
     gFlatViewer.(whichSurface)=file;
   else
     gFlatViewer.surfaces.(whichSurface)=file;
+    gFlatViewer = xformSurfaces(gFlatViewer);
     % set the correct one to display
     gFlatViewer.whichSurface = find(strcmp(whichSurface,{'outer','inner'}));
   end    
@@ -1198,3 +1194,17 @@ if onlyLoadHeader
 else 
   curv = curv';
 end
+
+% function that handles conversion of surface vtcs from 
+% Jonas' world coordinates to array coordinates. This
+% is usually just an offset that is read from the nifti
+% header as the undocumented fields pixdim(6:8), but
+% may in the future be a complete nifti style xform
+function gFlatViewer = xformSurfaces(gFlatViewer)
+
+surfaces = {'inner','outer'};
+for surfNum = 1:length(surfaces)
+  % and store them back as the vtcs
+  gFlatViewer.surfaces.(surfaces{surfNum}) = xformSurfaceWorld2Array(gFlatViewer.surfaces.(surfaces{surfNum}),gFlatViewer.anat.hdr);
+end
+

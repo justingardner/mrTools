@@ -64,6 +64,9 @@ if isstruct(flatFile);
     surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
     surf.curv = loadVFF(fullfile(params.flatDir, params.curvFileName));
     anat.hdr = cbiReadNiftiHeader(fullfile(params.flatDir, params.anatFileName));
+    % now do necessary world2array xformation here
+    surf.outer = xformSurfaceWorld2Array(surf.outer,anat.hdr);
+    surf.inner = xformSurfaceWorld2Array(surf.inner,anat.hdr);
   end
 end
 
