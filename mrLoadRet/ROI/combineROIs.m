@@ -87,7 +87,7 @@ switch action
      elseif isempty(coords2)
        newCoords = coords1;
      else       
-       newCoords = setxor(coords,coords2,'rows');
+       newCoords = setxor(coords1,coords2,'rows');
      end
   case 'A not B'
      if isempty(coords1)
