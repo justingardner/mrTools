@@ -28,6 +28,8 @@ end
 % get the base CoordMap for the current flat patch
 corticalDepth = viewGet(view, 'corticalDepth');
 baseCoordMap = viewGet(view,'baseCoordMap');
+baseHdr = viewGet(view, 'basehdr');
+
 if isempty(baseCoordMap)
   sprintf(disp('You cannot use this function unless you are viewing a flatpatch with a baseCoordMap'));
   return;
@@ -75,8 +77,11 @@ end
 % load the appropriate surface files
 disp(sprintf('Loading %s', baseCoordMap.innerFileName));
 surf.inner = loadSurfOFF(fullfile(baseCoordMap.flatDir, baseCoordMap.innerFileName));
+surf.inner = xformSurfaceWorld2Array(surf.inner, baseHdr);
+
 disp(sprintf('Loading %s', baseCoordMap.outerFileName));
 surf.outer = loadSurfOFF(fullfile(baseCoordMap.flatDir, baseCoordMap.outerFileName));
+surf.outer = xformSurfaceWorld2Array(surf.outer, baseHdr);
 
 % build up a mrMesh-style structure, taking account of the current corticalDepth
 mesh.vertices = surf.inner.vtcs+corticalDepth*(surf.outer.vtcs-surf.inner.vtcs);

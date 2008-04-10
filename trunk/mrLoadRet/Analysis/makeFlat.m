@@ -122,7 +122,7 @@ else
 end
 
 
-paramsInfo{end+1} = {'startCoord', params.startCoord(1:3)', 'start flattening from here'};
+paramsInfo{end+1} = {'startCoord', params.startCoord(1:3), 'start flattening from here'};
 paramsInfo{end+1} = {'patchRadius', 50, 'round=1', 'incdec=[-5 5]', 'flat patch radius'};
 paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
 paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
@@ -143,12 +143,13 @@ if ~isdir(params.flatDir)
   end
 end
 
+% get the nifti header for base anatomy
+params.baseHdr = viewGet(view, 'basehdr');
+
 % load the surfaces
 [surf, params] = loadSurfHandler(params);
 
 % find the vertex closests to the starting point
-% need to swap X and Y
-params.startCoord = [params.startCoord(2) params.startCoord(1) params.startCoord(3)];
 params.startVertex = dsearchn(surf.inner.vtcs, params.startCoord);
 
 % set the name of the patch to cut
@@ -180,7 +181,7 @@ if isfile(fullfile(params.flatDir, params.flatFileName))
   % install it
   disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
   if ~isempty(base)
-    viewNum = 1;                          % dunno how to figure out the right view num
+    viewNum = viewGet(view, 'viewNum');
     viewSet(viewNum, 'newbase', base);
     refreshMLRDisplay(viewNum);
   end
@@ -251,24 +252,24 @@ function [surf, params] = loadSurfHandler(params)
 % we have already loaded the flat patch
 % now load the rest of the surfaces
 
-% load the white matter surface
-surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
-
-% load the gray matter surface
-surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
-
-% % read in the curvature file
-[surf.curv, hdr] = loadVFF(fullfile(params.flatDir, params.curvFileName));
-surf.curv = surf.curv';           % needs to be transposed;
-
 % read in the anatomy file
 [surf.anat.data  surf.anat.hdr] = cbiReadNifti(fullfile(params.flatDir, params.anatFileName));
 
+% load the white matter surface
+surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
+surf.inner = xformSurfaceWorld2Array(surf.inner, surf.anat.hdr);
+
+% load the gray matter surface
+surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
+surf.outer = xformSurfaceWorld2Array(surf.outer, surf.anat.hdr);
+
+% % read in the curvature file
+[surf.curv, hdr] = loadVFF(fullfile(params.flatDir, params.curvFileName));
+% needs to be transposed to match the order of the vertices
+surf.curv = surf.curv';           
+
 % Extract permutation matrix to keep track of slice orientation.
-% This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
-% make changes here, please update that function as well.
-[q,r] = qr(inv(surf.anat.hdr.qform44(1:3,1:3)));
-surf.anat.permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+surf.anat.permutationMatrix = getPermutationMatrix(surf.anat.hdr);
 
 return
 
