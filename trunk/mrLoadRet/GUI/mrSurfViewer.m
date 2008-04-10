@@ -121,8 +121,14 @@ if isempty(innerSurface)
     innerSurface = putOnTopOfList('None',allSurfaces);
   end
 elseif length(innerSurface) == 1
-  innerSurface = putOnTopOfList(innerSurface{1},allSurfaces);
+  if ismember(innerSurface{1},allSurfaces)
+    innerSurface = putOnTopOfList(innerSurface{1},allSurfaces);
+    gSurfViewer.innerSurface = myLoadSurface(innerSurface{1});
+  else
+    innerSurface = putOnTopOfList('None',allSurfaces);
+  end
 end
+
 innerCoords = putOnTopOfList('Same as surface',allSurfaces);
 innerCoords {end+1} = 'Find file';
 innerSurface{end+1} = 'Find file';
@@ -184,6 +190,7 @@ if isempty(anat)
 end
 if isfile(anat{1})
   [gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(anat{1});
+  gSurfViewer = xformSurfaces(gSurfViewer);
 else
   gSurfViewer.anat = [];
 end
@@ -500,20 +507,20 @@ outerNodes = gSurfViewer.outerSurface.vtcs;
 
 % Plot the nodes for the gray/white matter surfaces
 innerNodes = innerNodes( find( round(innerNodes(:,sliceIndex))==slice), : );
-plot(innerNodes(:,1), innerNodes(:,2), '.', 'markersize', 1, 'Color', [0.7 0.7 0.7]);
+plot(innerNodes(:,2), innerNodes(:,1), '.', 'markersize', 1, 'Color', [0.7 0.7 0.7]);
 
 outerNodes = outerNodes( find( round(outerNodes(:,sliceIndex))==slice), : );
-plot(outerNodes(:,1), outerNodes(:,2), 'y.', 'markersize', 1,'Color',[0.7 0.7 0]);
+plot(outerNodes(:,2), outerNodes(:,1), 'y.', 'markersize', 1,'Color',[0.7 0.7 0]);
 
 if ~isempty(gSurfViewer.innerCoords)
   innerCoordNodes = gSurfViewer.innerCoords.vtcs;
   innerCoordNodes = innerCoordNodes( find( round(innerCoordNodes(:,sliceIndex))==slice), : );
-  plot(innerCoordNodes(:,1), innerCoordNodes(:,2), 'w.', 'markersize', 1);
+  plot(innerCoordNodes(:,2), innerCoordNodes(:,1), 'w.', 'markersize', 1);
 end
 if ~isempty(gSurfViewer.outerCoords)
   outerCoordNodes = gSurfViewer.outerCoords.vtcs;
   outerCoordNodes = outerCoordNodes( find( round(outerCoordNodes(:,sliceIndex))==slice), : );
-  plot(outerCoordNodes(:,1), outerCoordNodes(:,2), 'y.', 'markersize', 1);
+  plot(outerCoordNodes(:,2), outerCoordNodes(:,1), 'y.', 'markersize', 1);
 end
 
 view([0 90]);
@@ -549,6 +556,7 @@ end
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
 [gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(params.anatomy);
+gSurfViewer = xformSurfaces(gSurfViewer);
 % switch to 3D anatomy view
 global gParams
 gSurfViewer.whichSurface = 5;
@@ -626,6 +634,8 @@ else
     gSurfViewer.curv=myLoadCurvature(currentChoices{1});
   end
 end
+% xform coordinates to array coordinates
+gSurfViewer = xformSurfaces(gSurfViewer);
 refreshFlatViewer([],1);
 
 disppercent(inf);
@@ -698,3 +708,19 @@ if onlyLoadHeader
 else 
   curv = curv';
 end
+
+% function that handles conversion of surface vtcs from 
+% Jonas' world coordinates to array coordinates. This
+% is usually just an offset that is read from the nifti
+% header as the undocumented fields pixdim(6:8), but
+% may in the future be a complete nifti style xform
+function gSurfViewer = xformSurfaces(gSurfViewer)
+
+surfaces = {'innerSurface','outerSurface','outerCoords','innerCoords'};
+for surfNum = 1:length(surfaces)
+  if isfield(gSurfViewer,surfaces{surfNum}) && ~isempty(gSurfViewer.(surfaces{surfNum}))
+    % and store them back as the vtcs
+    gSurfViewer.(surfaces{surfNum}) = xformSurfaceWorld2Array(gSurfViewer.(surfaces{surfNum}),gSurfViewer.anat.hdr);
+  end
+end
+
