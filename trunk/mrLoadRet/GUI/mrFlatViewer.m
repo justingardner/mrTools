@@ -64,7 +64,7 @@ global gFlatViewer;
 gFlatViewer = [];
 gFlatViewer.mismatchWarning = 0;
 retval = [];
-disppercent(-inf,'(mrFlatView) Loading surfaces');
+disppercent(-inf,'(mrFlatViewer) Loading surfaces');
 % get more flats
 % load the flat
 
