@@ -714,6 +714,14 @@ switch lower(param)
 	view.baseVolumes(baseNum).coordMap.flatDir = val;
       end
     end
+  case{'basecoordmap'}
+    % view = viewSet(view,'basecoordmap',baseCoordMap,[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum)
+      if isfield(view.baseVolumes(baseNum),'coordMap')
+	view.baseVolumes(baseNum).coordMap = val;
+      end
+    end
 
   case{'basemin'}
     % view = viewSet(view,'basemin',number,[baseNum]);
