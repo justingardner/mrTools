@@ -454,6 +454,8 @@ switch lower(param)
         % check to see what type it is, and set the field appropriately
         if isfield(val{j},'mylog')
           val{j}.filetype = 'eventtimes';
+        elseif isfield(val{j},'stimts')
+          val{j}.filetype = 'afni';
         elseif isfield(val{j},'myscreen')
           val{j}.filetype = 'mgl';
         end
@@ -1157,6 +1159,13 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).data;
+    end
+  case {'basehdr'}
+    % basedata = viewGet(view,'basehdr',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).hdr;
     end
   case {'base'}
     % basedata = viewGet(view,'base',[baseNum])
