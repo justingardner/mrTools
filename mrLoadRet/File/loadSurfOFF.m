@@ -41,6 +41,7 @@ if ~isfile(surffile)
   return
 end
 
+surf.filename = surffile;
 fid = fopen(surffile, 'r', 'ieee-be');
 fl = fgetl(fid);
 if (~strcmp(fl,'OFF BINARY'))
