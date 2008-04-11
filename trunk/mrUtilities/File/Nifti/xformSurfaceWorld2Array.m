@@ -40,8 +40,6 @@ end
 vtcs(:,4) = 1;
 % now do conversion
 vtcs = world2array*vtcs';
-% and add 1 to convert from C-style 0 offset to Matlab-style 1 offset
-vtcs(1:3,:) = vtcs(1:3,:)+1;
 % and store them back as the vtcs
 surf.vtcs = vtcs(1:3,:)';
 
