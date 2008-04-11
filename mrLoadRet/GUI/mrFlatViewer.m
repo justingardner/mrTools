@@ -558,6 +558,12 @@ else
   camup([0 0 1]);
 end
 
+% make sure x direction is normal to make right/right
+set(gca,'XDir','normal');
+set(gca,'YDir','normal');
+set(gca,'ZDir','normal');
+
+
 %%%%%%%%%%%%%%%%%%%%%
 %%   dispSurface   %%
 %%%%%%%%%%%%%%%%%%%%%
