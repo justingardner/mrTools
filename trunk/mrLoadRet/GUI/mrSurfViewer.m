@@ -396,9 +396,6 @@ if abs(vPos) == 90,vPos = sign(vPos)*91;,end
 if abs(hPos) == 90,hPos = sign(hPos)*91;,end
 if abs(hPos) == 179,hPos = sign(hPos)*179;,end
 
-% set the camera taret to center
-camtarget([0 0 0]);
-
 % set the size of the field of view in degrees
 % i.e. 90 would be very wide and 1 would be ver
 % narrow. 7 seems to fit the whole brain nicely
@@ -414,6 +411,11 @@ if (vPos >= 90) || (vPos < -90)
 else
   camup([0 0 1]);
 end
+
+% make sure x direction is normal to make right/right
+set(gca,'XDir','normal');
+set(gca,'YDir','normal');
+set(gca,'ZDir','normal');
 
 %%%%%%%%%%%%%%%%%%%%%
 %%   dispSurface   %%
@@ -465,7 +467,6 @@ patch('vertices', vtcs, 'faces', tris, ...
 
 % set axis stuff
 axis off;axis equal;colormap(gray);axis tight;
-camup('manual');
 set(gca,'CLim',[-1.2 1.2]);
 
 if gSurfViewer.whichSurface <= 4
