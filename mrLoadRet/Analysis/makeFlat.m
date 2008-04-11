@@ -315,7 +315,7 @@ if ~any(nargin == [ 0 1 2])
 end
 
 % Vertices
-vertices = [surf.flat.locs2d(:,1) surf.flat.locs2d(:,2)] - 2;
+vertices = [surf.flat.locs2d(:,1) surf.flat.locs2d(:,2)];
 vertices = cat(1, vertices', zeros(1, length(vertices)));
 
 % triangles(1) is number of vert/triangle: 3
