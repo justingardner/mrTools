@@ -27,6 +27,9 @@ end
 % use jonas' function to get the world2array xform
 world2array = mlrXFormFromHeader(hdr,'world2array');
 
+% display the shift we are using
+disp(sprintf('(xformSurfaceWorld2Array) Shifting surface %s coordinates by [%0.1f %0.1f %0.1f]',surf.filename,world2array(1,4),world2array(2,4),world2array(3,4)));
+
 % check to see if we have already xformd or not
 if isfield(surf,'originalVtcs')
   vtcs = surf.originalVtcs;
