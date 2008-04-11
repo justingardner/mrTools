@@ -45,7 +45,7 @@ for roinum = 1:length(pathStr)
     ROI.name = l.ROI.name;
     ROI.viewType = view.viewType;
     ROI.color = l.ROI.color;
-    if isfield(l.ROI,'viewType') && strcmp(l.ROI.viewType,'Gray')
+    if isfield(l.ROI,'viewType') && ~strcmp(l.ROI.viewType,'Inplane')
       % not sure why gray rois are different from inplane but
       % this seems to work in conversion
       ROI.coords(1,:) = l.ROI.coords(3,:);
