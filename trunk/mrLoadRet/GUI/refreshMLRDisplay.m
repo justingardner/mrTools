@@ -131,16 +131,19 @@ if baseType <= 1
   set(fig,'Renderer','painters')
   image(img,'Parent',gui.axis);
 else
+  % set the renderer to OpenGL, this makes rendering
+  % *much* faster -- from about 30 seconds to 30ms
+  % it is also marginally faster than the zbuffer
+  % renderer (order of 5-10 ms)
+  set(fig,'Renderer','OpenGL')
   % get the base surface
   baseSurface = viewGet(view,'baseSurface');
   % display the surface
   patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',gui.axis);
   % make sure x direction is normal to make right/right
-  set(gui.axis,'XDir','normal');
+  set(gui.axis,'XDir','reverse');
   set(gui.axis,'YDir','normal');
   set(gui.axis,'ZDir','normal');
-  % set up the camera angles
-  camup(gui.axis,[0 0 1]);
   % set the camera taret to center of surface
   camtarget(gui.axis,mean(baseSurface.vtcs))
   % set the size of the field of view in degrees
@@ -149,11 +152,6 @@ else
   camva(gui.axis,9);
   % set the view angle
   setMLRViewAngle(view);
-  % set the renderer to OpenGL, this makes rendering
-  % *much* faster -- from about 30 seconds to 30ms
-  % it is also marginally faster than the zbuffer
-  % renderer (order of 5-10 ms)
-  set(fig,'Renderer','OpenGL')
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
