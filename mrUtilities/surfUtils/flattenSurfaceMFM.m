@@ -275,8 +275,10 @@ if ~isempty(zeroAreaList), fprintf('Zero 2D area (nodes): %.0f\n',zeroAreaList);
 % of mass of each 2D face.  
 % I think cogs means center-of-gravity (BW).  I am not sure we use this
 % any more, and I am not sure we use the areaList stuff above, either.
-figure; subplot(1,3,1)
-[areaErrorMap,meanX,meanY] =  mfmAreaErrorMap(unfoldMesh, nFaces, unfolded2D,errorList);
+if (showFigures)
+  figure; subplot(1,3,1)
+  [areaErrorMap,meanX,meanY] =  mfmAreaErrorMap(unfoldMesh, nFaces, unfolded2D,errorList);
+end
 
 %--------------------------------------------
 %Step 4.  The unfoldMesh is complete. Now we adjust the spacing of the
@@ -371,7 +373,9 @@ unfoldMeshSummary.insideNodes = mesh.insideNodes;
 unfoldMeshSummary.UniqueToVerts = mesh.UniqueToVerts;
 unfoldMeshSummary.vertsToUnique = mesh.vertsToUnique;
 
-unfoldPlotFlatMesh(unfoldMeshSummary.locs2d, unfoldMeshSummary.uniqueFaceIndexList, unfoldMesh.uniqueCols)
+if showFigures
+  unfoldPlotFlatMesh(unfoldMeshSummary.locs2d, unfoldMeshSummary.uniqueFaceIndexList, unfoldMesh.uniqueCols)
+end
 
 str = sprintf('\n****** End mrFlatMesh  %s *****\n',datestr(endTime));
 disp(sprintf(str));
