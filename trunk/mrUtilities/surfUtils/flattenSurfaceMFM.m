@@ -27,7 +27,7 @@ NUMBLURSTEPS       = 1; % Blur the curvature map a little in a connection-depend
 scaleFactor = [1 1 1];
 statusHandle = 0;
 busyHandle = 0;
-showFigures = 1;
+showFigures = 0;
 
 if (length(startCoords)~=3), error ('Error: you must enter 3 start coords'); end
 if ieNotDefined('spacingMethod'), spacingMethod = 'None'; end
@@ -91,7 +91,7 @@ disp(sprintf(str));
 % At this point, we can use the connection matrix to perform some fast
 % smoothing on the curvature map. Also possibly a relaxation / smoothing on
 % the actual mesh?
-for t=1:10
+for t=1:NUMBLURSTEPS
   mesh.uniqueCols = connectionBasedSmooth(mesh.connectionMatrix, mesh.uniqueCols(:,1));
 end
 
