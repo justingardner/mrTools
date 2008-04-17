@@ -59,7 +59,7 @@ else
   % make everybody a cell array
   outerSurface = cellArray(outerSurface);
   outerCoords = cellArray(outerCoords);
-  innerSurface = cellArray(innerCoords);
+  innerSurface = cellArray(innerSurface);
   innerCoords = cellArray(innerCoords);
   curv = cellArray(curv);
   anat = cellArray(anat);
@@ -237,8 +237,9 @@ paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file','callback',@switchAnat
 % put up dialog
 params = mrParamsDialog(paramsInfo,'View surface');
 
-close(gSurfViewer.f);
-
+if ishandle(gSurfViewer.f)
+  close(gSurfViewer.f);
+end
 if isempty(params)
   retval = [];
 else
