@@ -67,6 +67,7 @@ inner = xformSurfaceWorld2Array(inner,base.hdr);
 outer = xformSurfaceWorld2Array(outer,base.hdr);
 
 % save names
+base.coordMap.path = filepath;
 base.coordMap.innerFileName = params.innerSurface;
 base.coordMap.innerCoordsFileName = params.innerCoords;
 base.coordMap.outerFileName = params.outerSurface;
