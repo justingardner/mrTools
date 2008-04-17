@@ -130,6 +130,20 @@ cacheStr = sprintf('%i_%i_%i',scanNum,sliceNum,frameNum);
 if isempty(epiImage)
   % read from disk
   epiImage = loadTSeries(v,scanNum,sliceNum,frameNum);
+
+  % Choose a sensible clipping value
+  histThresh = length(epiImage(:))/1000;
+  [cnt, val] = hist(epiImage(:),100);
+  goodVals = find(cnt>histThresh);
+  clipMin = val(min(goodVals));
+  clipMax = val(max(goodVals));
+
+  % and convert the image
+  epiImage(epiImage<clipMin) = clipMin;
+  epiImage(epiImage>clipMax) = clipMax;
+  if (clipMax-clipMin) > 0
+    epiImage = 255*(epiImage-clipMin)./(clipMax-clipMin);
+  end
   % and save in cache
   gMrEpiMovie.c = mrCache('add',gMrEpiMovie.c,cacheStr,epiImage);
 end
@@ -142,8 +156,8 @@ if size(epiImage,1) > size(epiImage,2)
 end
 
 % display image
-imagesc(epiImage);
-colormap('gray');
+image(epiImage);
+colormap(gray(256));
 axis equal; axis tight; axis off
 title(sprintf('Scan: %i slice %i\nframe %i',scanNum,sliceNum,frameNum));
 drawnow
