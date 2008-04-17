@@ -98,6 +98,7 @@ switch lower(field)
 		  set(handles.corticalDepthSlider,'Visible','on');
 		  set(handles.corticalDepthText,'Visible','on');
 		  set(handles.flatViewerMenuItem,'Enable','on');
+		  set(handles.flatViewerMenuItem,'Label','Flat Viewer');
                   set(handles.calcDistMenu, 'Enable', 'on');
 		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
 		end
@@ -110,7 +111,8 @@ switch lower(field)
 		  set(handles.baseTiltSlider,'Visible','on');
 		  set(handles.baseTiltText,'Visible','on');
 		  set(handles.baseTilt,'Visible','on');
-		  set(handles.flatViewerMenuItem,'Enable','off');
+		  set(handles.flatViewerMenuItem,'Enable','on');
+		  set(handles.flatViewerMenuItem,'Label','Surface Viewer');
                   set(handles.calcDistMenu, 'Enable', 'off');
 		  set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
 		else
