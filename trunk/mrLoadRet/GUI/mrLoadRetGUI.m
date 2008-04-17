@@ -2341,9 +2341,15 @@ else
   viewSet(v,'baseCoordMapPath',pathStr);
 end
 
-% now bring up the flat viewer
-mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName,viewNum);
-cd(thispwd);
+baseType = viewGet(v,'baseType');
+if baseType == 1
+  % now bring up the flat viewer
+  mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName,viewNum);
+else
+  mrSurfViewer(params.outerFileName,params.outerCoordsFileName,params.innerFileName,params.innerCoordsFileName,params.curvFileName,params.anatFileName);
+end
+
+  cd(thispwd);
 
 % --------------------------------------------------------------------
 function calcDistMenu_Callback(hObject, eventdata, handles)
