@@ -17,6 +17,11 @@ end
 % get the current overlay
 o = viewGet(v,'overlay');
 
+if isempty(o)
+  disp(sprintf('(overlayInfo) No current overlay'));
+  return
+end
+
 % get the fields and set some fields to not print
 overlayFields = fieldnames(o);
 ignoreFields = {'colormap','data','params'};
