@@ -710,8 +710,13 @@ switch lower(param)
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum)
+      baseType = viewGet(view,'baseType',baseNum);
       if isfield(view.baseVolumes(baseNum),'coordMap')
-	view.baseVolumes(baseNum).coordMap.flatDir = val;
+	if baseType == 1
+	  view.baseVolumes(baseNum).coordMap.flatDir = val;
+	elseif baseType == 2
+	  view.baseVolumes(baseNum).coordMap.path = val;
+	end
       end
     end
   case{'basecoordmap'}

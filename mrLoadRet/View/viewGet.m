@@ -1183,7 +1183,8 @@ switch lower(param)
       if isfield(view.baseVolumes(b),'coordMap') 
 	if isfield(view.baseVolumes(b).coordMap,'flatDir')
 	  val = view.baseVolumes(b).coordMap.flatDir;
-	else
+	elseif isfield(view.baseVolumes(b).coordMap,'path')
+	  val = view.baseVolumes(b).coordMap.path;
 	end
       end
     end
