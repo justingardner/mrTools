@@ -343,10 +343,12 @@ end
 params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
 
 if isempty(params)
-  close(gFlatViewer.f);
   retval = [];
 else
   retval = params;
+end
+if ishandle(gFlatViewer.f)
+  close(gFlatViewer.f);
 end
 return
 
