@@ -158,7 +158,7 @@ if ~isempty(scanListName)
     params.tseriesFile = newTSeriesFile;
     % if there are no valid scan numbers then warn and return empty data
     if isempty(newScanNums)
-      disp(sprintf('(defaultReconcileParams) No valid scans'));
+      disp(sprintf('(defaultReconcileParams) All the previous scans that had been analyzed in this analysis no longer exists.'));
       data = {};
     % and reset the data
     else
