@@ -282,14 +282,7 @@ switch lower(param)
     % n = viewGet([],'nScans',groupNum)
     % n = viewGet(view,'nScans',[])
     % n = viewGet(view,'nScans')
-    if ieNotDefined('varargin')
-      g = viewGet(view,'currentGroup');
-    else
-      g = varargin{1};
-    end
-    if isempty(g)
-      g = viewGet(view,'currentGroup');
-    end
+    g = getGroup(view,varargin);
     val = length(MLR.groups(g).scanParams);
   case{'scanparams'}
     % n = viewGet(view,'scanParams',scanNum,[groupNum])
@@ -3336,7 +3329,9 @@ switch lower(param)
 end
 return;
 
-%------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   dispViewGetHelp   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
 function dispViewGetHelp()
 
 % open this file and scan the text
@@ -3422,7 +3417,27 @@ end
 fprintf(1,sprintf('\n'));
 disp('-----------------------------------------------------------------------');
 
-%------------------------------
+%%%%%%%%%%%%%%%%%%
+%%   getGroup   %%
+%%%%%%%%%%%%%%%%%%
+function g = getGroup(view,varg)
+
+if ieNotDefined('varg')
+  g = viewGet(view,'currentGroup');
+else
+  g = varg{1};
+end
+if isempty(g)
+  g = viewGet(view,'currentGroup');
+end
+% if group is a string, then convert it to a number
+if isstr(g)
+  g = viewGet(view,'groupNum',g);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getScanAndGroup   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
 function [s g] = getScanAndGroup(view,varg,param,argnum)
 
 if ieNotDefined('argnum'), argnum = 1; end
@@ -3446,6 +3461,10 @@ end
 if isstr(g)
   g = viewGet(view,'groupNum',g);
 end
+
+%%%%%%%%%%%%%%%%%%%%
+%%   getBaseNum   %%
+%%%%%%%%%%%%%%%%%%%%
 function [b baseVolume] = getBaseNum(view,varg,argnum)
 
 if ieNotDefined('argnum'),argnum = 1;end
@@ -3461,6 +3480,9 @@ if nargout == 2
   baseVolume = viewGet(view,'baseVolume',b);
 end
 
+%%%%%%%%%%%%%%%%%%%
+%%   getRoiNum   %%
+%%%%%%%%%%%%%%%%%%%
 function r= getRoiNum(view,varg,argnum)
 
 if ieNotDefined('argnum'), argnum = 1; end
@@ -3468,6 +3490,9 @@ if ieNotDefined('varg') || (length(varg) < argnum)
   r = viewGet(view,'currentROI');
 else
   r = varg{argnum};
+  if isstr(r)
+    r = viewGet(view,'roiNum',r);
+  end
 end
 if isempty(r)
   r = viewGet(view,'currentROI');

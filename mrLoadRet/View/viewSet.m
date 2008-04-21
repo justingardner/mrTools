@@ -1107,7 +1107,7 @@ switch lower(param)
     analysis = viewGet(view,'analysis',analysisNum);
     % Error if groupNames don't match
     if ~strcmp(overlay.groupName,analysis.groupName)
-      mrErrorDlg(['(viewSet) overlay is incompatible with group: ',groupName]);
+      mrErrorDlg(['(viewSet:newOverlay) overlay is incompatible with group: ',groupName]);
     end
     % Reconcile overlay data and params with tseries files, reordering
     % them as necessary.
@@ -1123,9 +1123,9 @@ switch lower(param)
     if (length(overlay.data) ~= nScans)
       %mrErrorDlg('Invalid overlay, incorrect number of scans.');
       if isempty(data)
-	disp('(viewSet) No data in overlay');
+	disp('(viewSet:newOverlay) No data in overlay');
       else
-	disp('(viewSet) Invalid overlay, incorrect number of scans.');
+	disp('(viewSet:newOverlay) Invalid overlay, incorrect number of scans.');
       end
       return;
     end
@@ -1139,7 +1139,7 @@ switch lower(param)
 	overlaySize(3) = 1;
       end
       if (~isempty(overlay.data{s})) & ~isequal(overlaySize,overlayDims)
-        mrErrorDlg('(viewSet) Invalid overlay, incorrect data array size.');
+        mrErrorDlg('(viewSet:newOverlay) Invalid overlay, incorrect data array size.');
       end
     end
     % If overlay.name already exists then replace the existing one with
@@ -1775,7 +1775,9 @@ for v = find(view.viewNum ~= [1:length(MLR.views)])
 end
 
 
-%------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   dispViewSetHelp   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
 function dispViewSetHelp()
 
 % open this file and scan the text
@@ -1860,7 +1862,9 @@ end
 fprintf(1,sprintf('\n'));
 disp('-----------------------------------------------------------------------');
 
-%------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getScanAndGroup   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
 function [s g] = getScanAndGroup(view,varg,param)
 
 if ieNotDefined('varg')
@@ -1876,7 +1880,14 @@ end
 if isempty(g)
   g = viewGet(view,'currentGroup');
 end
+% if group is a string, then convert it to a number
+if isstr(g)
+  g = viewGet(view,'groupNum',g);
+end
 
+%%%%%%%%%%%%%%%%%%%%
+%%   getBaseNum   %%
+%%%%%%%%%%%%%%%%%%%%
 function baseNum = getBaseNum(view,varg)
 
 curBase = viewGet(view,'currentBase');
