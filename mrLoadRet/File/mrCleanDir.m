@@ -1,17 +1,25 @@
 % mrCleanDir.m
 %
-%      usage: mrCleanDir()
+%      usage: mrCleanDir(<force>)
 %         by: justin gardner
 %       date: 10/20/06
-%    purpose: 
+%    purpose: Removes (or recovers) scans that have been deleted
+%             using deleteScans. DeleteScans simpy removes the scan
+%             from the MLR mrSession variable, but does not destroy
+%             the original file. This deletes the nifti files
+%             Call with force=1 if you want to remove all files
+%             without being asked what to do. Default is to be asked
+% 
 %
-function retval = mrCleanDir()
+function retval = mrCleanDir(force)
 
 % check arguments
-if ~any(nargin == [0])
+if ~any(nargin == [0 1])
   help mrCleanDir
   return
 end
+
+if ieNotDefined('force'),force = 0;end
 
 view = newView;
 
@@ -71,7 +79,7 @@ for g = 1:length(groups)
     % see if there are any recoverable files
     if sum(recoverable)
       for i = 1:length(tseriesDir)
-	if recoverable(i)
+	if recoverable(i) && ~force
 	  if askuser(sprintf('Recover scan %i',i))
 	    disp(sprintf('Recovering scan %i',i));
 	    view = viewSet(view,'newScan',scanParams{i});
@@ -81,7 +89,7 @@ for g = 1:length(groups)
       end
     end
     % and ask user if they should be deleted
-    if askuser(sprintf('Delete files from group %s',groups{g}))
+    if force | askuser(sprintf('Delete files from group %s',groups{g}))
       for i = 1:length(tseriesDir)
 	if ~tseriesDir(i).match
 	  [path baseFilename] = fileparts(tseriesDir(i).name);
