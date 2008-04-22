@@ -730,6 +730,17 @@ switch lower(param)
         val = MLR.groups(g).scanParams(s).niftiHdr.sform_code;
       end
     end
+  case{'scanqformcode'}
+    % xform = viewGet(view,'qformCode',[scanNum],[groupNum])
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      if ~isfield(MLR.groups(g).scanParams(s).niftiHdr,'qform_code')
+        val = [];
+      else
+        val = MLR.groups(g).scanParams(s).niftiHdr.qform_code;
+      end
+    end
   case{'scanvol2tal'}
     % xform = viewGet(view,'scanVol2tal',[scanNum],[groupNum])
     % This will return the xform matrix that specifies the
