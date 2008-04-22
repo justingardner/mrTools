@@ -20,7 +20,7 @@ ehdr=[];r2 = [];
 precalcmatrix = ((d.scm'*d.scm)^-1)*d.scm';
 % if this don't work then do pinv
 if sum(isnan(precalcmatrix(:))) == length(precalcmatrix(:))
-  disp(sprintf('Using pseudo inverse to invert convolution matrix'));
+  disp(sprintf('(getr2) Using pseudo inverse to invert convolution matrix'));
   precalcmatrix = pinv(d.scm);
 end
 
@@ -38,7 +38,7 @@ d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
 warning('off','MATLAB:divideByZero');
 
 % display string
-disppercent(-inf,'Calculating r2');
+disppercent(-inf,'(getr2) Calculating r2');
 % cycle through images calculating the estimated hdr and r^2s of the 
 % estimate.
 %
@@ -88,7 +88,7 @@ disppercent(inf);
 % but the reallocs needed to continually add space to the matrix
 % seems to be slower than the loops needed here to reconstruct
 % the matrix from the {} arrays.
-disppercent(-inf,'Reshaping matrices');
+disppercent(-inf,'(getr2) Reshaping matrices');
 for i = xvals
   disppercent((i-min(xvals))/xvaln);
   for j = yvals

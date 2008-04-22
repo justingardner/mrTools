@@ -1,6 +1,6 @@
 % loadScan.m
 %
-%      usage: loadScan(view,scanNum,groupNum,<sliceNum>,<precision>)
+%      usage: loadScan(view,scanNum,groupNum,<sliceNum>,<precision>,<x>,<y>)
 %         by: justin gardner
 %       date: 03/20/07
 %    purpose: loads a scan into a "d" structure
@@ -8,10 +8,12 @@
 %             slice numbers for slices you want or 0 to not load
 %             data
 %             precision defaults to 'double' can also be 'single' 
+%             x and y are either [] for all rows and cols, or
+%             a [min max] for which rows,cols you want
 %
-function d = loadScan(view,scanNum,groupNum,sliceNum,precision)
+function d = loadScan(view,scanNum,groupNum,sliceNum,precision,x,y)
 
-if ~any(nargin == [1 2 3 4 5])
+if ~any(nargin == [1 2 3 4 5 6 7])
   help('loadScan');
   return
 end
@@ -24,6 +26,8 @@ end
 % default to loading all slices
 if ~exist('groupNum','var'),groupNum = [];end
 if ~exist('sliceNum','var'),sliceNum = [];end
+if ~exist('x','var'),x = [];end
+if ~exist('y','var'),y = [];end
 if ieNotDefined('precision'),precision = 'double';end
 
 % set the group number
@@ -54,26 +58,43 @@ if viewGet(view,'3D',scanNum)
 end
 
 % dispay string to say what we are loading
-mrDisp(sprintf('Loading scan %i from group: %s',scanNum,viewGet(view,'groupName')));
-if isempty(sliceNum)
-  mrDisp(sprintf('\n'));
-elseif isequal(sliceNum,0)
-  mrDisp(sprintf('\n'));
-elseif length(sliceNum) == 2
-  mrDisp(sprintf(' slices=%i:%i of %i\n',sliceNum(1),sliceNum(2),viewGet(view,'nSlices',scanNum)));
-else
-  mrDisp(sprintf(' slices=%i of %i\n',sliceNum(1),viewGet(view,'nSlices',scanNum)));
+mrDisp(sprintf('(loadScan) Loading scan %i from group: %s',scanNum,viewGet(view,'groupName')));
+if length(sliceNum) == 2
+  if sliceNum(1) ~= sliceNum(2)
+    mrDisp(sprintf(' slices=%i:%i of %i',sliceNum(1),sliceNum(2),viewGet(view,'nSlices',scanNum)));
+  else
+    mrDisp(sprintf(' slice=%i of %i',sliceNum(1),viewGet(view,'nSlices',scanNum)));
+  end
+elseif length(sliceNum) == 1
+  mrDisp(sprintf(' slice=%i of %i',sliceNum(1),viewGet(view,'nSlices',scanNum)));
 end
+if length(x) == 2
+  if (x(1) ~= 1) || (x(2) ~= d.dim(1))
+    mrDisp(sprintf(' x=%i:%i of %i',x(1),x(2),d.dim(1)));
+  elseif (x(1) == x(2))
+    mrDisp(sprintf(' x=%i of %i',x(1),d.dim(1)));
+  end      
+elseif length(x) == 1
+  mrDisp(sprintf(' x=%i of %i',x(1),d.dim(1)));
+end
+if length(y) == 2
+  if (y(1) ~= 1) || (y(2) ~= d.dim(2))
+    mrDisp(sprintf(' y=%i:%i of %i',y(1),y(2),d.dim(2)));
+  end
+elseif length(y) == 1
+  mrDisp(sprintf(' y=%i of %i',y(1),d.dim(2)));
+end
+mrDisp(sprintf('\n'));
 
 % load the data
 if ~isequal(sliceNum,0)
-  d.data = loadTSeries(view,scanNum,sliceNum,[],[],[],precision);
+  d.data = loadTSeries(view,scanNum,sliceNum,[],x,y,precision);
 else
   d.data = [];
 end
 	
-% set the number of slices approriately
-d.dim(3) = size(d.data,3);
+% set the size of data appropriately
+d.dim = size(d.data);
 
 % Dump junk frames
 junkFrames = viewGet(view,'junkframes',scanNum);
