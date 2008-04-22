@@ -103,38 +103,55 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  [numSlicesAtATime rawNumSlices] = getNumSlicesAtATime(numVolumes,dims);
-  if (rawNumSlices < 0.75)
-    numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims,'single');
-    disp(sprintf('(eventRelated) Single slice cannot fit in memory. Using single precision'));
-    precision = 'single';
-  else
-    precision = 'double';
-  end
+  [numSlicesAtATime rawNumSlices numRowsAtATime precision] = getNumSlicesAtATime(numVolumes,dims);
   currentSlice = 1;
   ehdr = [];ehdrste = [];thisr2 = [];
 
   for i = 1:ceil(numSlices/numSlicesAtATime)
-    % load the scan
-    d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)],precision);
-    % get the stim volumes, if empty then abort
-    d = getStimvol(d,params.scanParams{scanNum});
-    if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
-    % do any called for preprocessing
-    d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
-    % make a stimulation convolution matrix
-    if params.applyHipass
+    % calculate which slices we are working on
+    thisSlices = [currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)];
+    % set the row we are working on
+    currentRow = 1;
+    % clear variables that will hold the output for the slices we
+    % are working on
+    sliceEhdr = [];sliceEhdrste = [];sliceR2 = [];
+    for j = 1:ceil(dims(1)/numRowsAtATime)
+      % load the scan
+      thisRows = [currentRow min(dims(1),currentRow+numRowsAtATime-1)];
+      d = loadScan(view,scanNum,[],thisSlices,precision,thisRows);
+      % get the stim volumes, if empty then abort
+      d = getStimvol(d,params.scanParams{scanNum});
+      if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
+      % do any called for preprocessing
+      d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
+      % make a stimulation convolution matrix
+      if params.applyHipass
         d.hipassfilter = d.concatInfo.hipassfilter;
+      end
+      d = makescm(d,ceil(params.scanParams{scanNum}.hdrlen/d.tr));
+      % compute the estimated hemodynamic responses
+      d = getr2(d);
+      % update the current row we are working on
+      currentRow = currentRow+numRowsAtATime;
+      % if we are calculating full slice, then just pass that on
+      if numRowsAtATime == dims(1)
+	sliceEhdr = d.ehdr;
+	sliceEhdrste = d.ehdrste;
+	sliceR2 = d.r2;
+      % working on a subset of rows, cat together with what
+      % has been computed for other rows
+      else
+	sliceEhdr = cat(1,sliceEhdr,d.ehdr);
+	sliceEhdrste = cat(1,sliceEhdrste,d.ehdrste);
+	sliceR2 = cat(1,sliceR2,d.r2);
+      end
     end
-    d = makescm(d,ceil(params.scanParams{scanNum}.hdrlen/d.tr));
-    % compute the estimated hemodynamic responses
-    d = getr2(d);
     % update the current slice we are working on
     currentSlice = currentSlice+numSlicesAtATime;
     % cat with what has already been computed for other slices
-    ehdr = cat(3,ehdr,d.ehdr);
-    ehdrste = cat(3,ehdrste,d.ehdrste);
-    thisr2 = cat(3,thisr2,d.r2);
+    ehdr = cat(3,ehdr,sliceEhdr);
+    ehdrste = cat(3,ehdrste,sliceEhdrste);
+    thisr2 = cat(3,thisr2,sliceR2);
   end
 
   % now put all the data from all the slices into the structure
