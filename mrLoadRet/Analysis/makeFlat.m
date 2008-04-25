@@ -178,6 +178,9 @@ end
 if isfile(fullfile(params.flatDir, params.flatFileName))
 
   base = loadFlatOFF(params);
+  % get the vol2mag and vol2tal for the base from which the flat patch was defined
+  base.vol2mag = params.vol2mag;
+  base.vol2tal = params.vol2tal;
 
   % install it
   disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
@@ -255,6 +258,16 @@ function [surf, params] = loadSurfHandler(params)
 
 % read in the anatomy file
 [surf.anat.data  surf.anat.hdr] = cbiReadNifti(fullfile(params.flatDir, params.anatFileName));
+% get vol2tal and vol2mag from the anatomy file
+matFileName = [stripext(params.anatFileName) '.mat'];
+if(exist([params.flatDir '/' matFileName]))
+  load([params.flatDir '/' matFileName]);
+  params.vol2mag = base.vol2mag;
+  params.vol2tal = base.vol2tal;
+else
+  params.vol2mag = [];
+  params.vol2tal = [];
+end
 
 % load the white matter surface
 surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
