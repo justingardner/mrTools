@@ -262,8 +262,10 @@ function [surf, params] = loadSurfHandler(params)
 matFileName = [stripext(params.anatFileName) '.mat'];
 if(exist([params.flatDir '/' matFileName]))
   load([params.flatDir '/' matFileName]);
+  [tf base] = isbase(base);
   params.vol2mag = base.vol2mag;
   params.vol2tal = base.vol2tal;
+  clear base
 else
   params.vol2mag = [];
   params.vol2tal = [];
