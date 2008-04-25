@@ -17,13 +17,14 @@ end
 
 % get base info
 baseCoordMap = viewGet(view,'baseCoordMap');
+baseCoordMapPath = viewGet(view,'baseCoordMapPath');
 params.startCoord = viewGet(view,'mouseDownBaseCoords');
 
 % parse the parameters
 paramsInfo = {};
 if ~isempty(baseCoordMap)
   if ~isfield(baseCoordMap, 'innerFileName')
-    startPathStr = baseCoordMap.flatDir;
+    startPathStr = baseCoordMapPath;
     filterspec = {'*.off','SurfRelax off file';'*WM*.off', 'SurfRelax OFF WM file'; '*.*','All files'};
     title = 'Choose WM OFF file';    
     inner = getPathStrDialog(startPathStr,title,filterspec,'on');
@@ -35,7 +36,7 @@ if ~isempty(baseCoordMap)
     end
   end
   % we can get all of the file names from the baseCoordMap
-  paramsInfo{end+1} = {'flatDir', baseCoordMap.flatDir,'editable=0','Directory from which this flat map was originally created'};
+  paramsInfo{end+1} = {'flatDir', baseCoordMapPath,'editable=0','Directory from which this flat map was originally created'};
   paramsInfo{end+1} = {'flatFileName', baseCoordMap.flatFileName,'editable=0','Name of original off file from which this flat map was created'};
   paramsInfo{end+1} = {'innerFileName', sprintf('%s.off', stripext(baseCoordMap.innerFileName)),'editable=0','Name of inner mesh (aka gray matter mesh) from which this flat map was created'};
   paramsInfo{end+1} = {'outerFileName', baseCoordMap.outerFileName,'editable=0','Name of outer mesh (aka white matter mesh) from which this flat map was created'};
@@ -126,7 +127,7 @@ paramsInfo{end+1} = {'startCoord', params.startCoord(1:3), 'start flattening fro
 paramsInfo{end+1} = {'patchRadius', 50, 'round=1', 'incdec=[-5 5]', 'flat patch radius'};
 paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
 paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
-paramsInfo{end+1} = {'flattenMethod', {'surfRelax', 'mrFlatMesh'},'use either surfRelax or mrFlatMesh'};
+paramsInfo{end+1} = {'flattenMethod', {'mrFlatMesh','surfRelax'},'use either surfRelax or mrFlatMesh'};
 
 params = mrParamsDialog(paramsInfo, 'makeFlat', []);
 
