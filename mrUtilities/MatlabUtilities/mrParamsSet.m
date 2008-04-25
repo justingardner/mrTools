@@ -40,7 +40,7 @@ for fnum = 1:length(paramFields)
     % numeric
     elseif strcmp(gParams.varinfo{match}.type,'checkbox')
       set(gParams.ui.varentry{match},'Value',params.(paramFields{fnum}));
-    % array
+      % array
     elseif strcmp(gParams.varinfo{match}.type,'array')
       if isequal(size(gParams.varinfo{match}.value),size(params.(paramFields{fnum})))
 	for matrixX = 1:size(params.(paramFields{fnum}),1)
@@ -59,6 +59,18 @@ for fnum = 1:length(paramFields)
       else
 	disp(sprintf('(mrParamsSet) %s is not a valid option for variable %s',params.(paramFields{fnum}),paramFields{fnum}));
       end
+    % push button. Don't do anything
+    elseif strcmp(gParams.varinfo{match}.type,'pushbutton')
+    % string
+    elseif strcmp(gParams.varinfo{match}.type,'string')
+      % check if we are grouped
+      if isfield(gParams.varinfo{match},'contingentOn')
+	contingentValue = params.(gParams.varinfo{gParams.varinfo{match}.contingentOn}.name);
+	stringValue = gParams.varinfo{match}.allValues{contingentValue};
+      else
+	params.(paramFields{fnum});
+      end
+      set(gParams.ui.varentry{match},'String',stringValue);
     % unimplemented type
     else
       disp(sprintf('(mrParamsSet) Setting of type %s not implemented yet',gParams.varinfo{match}.type));
