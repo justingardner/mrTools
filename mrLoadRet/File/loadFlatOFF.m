@@ -77,7 +77,7 @@ end
 
 
 % get two additional parameters if they were not passed in before
-if ~any(isfield(params, {'threshold', 'flatRes', 'flipLR'}));
+if ~any(isfield(params, {'threshold', 'flatRes'}));
   paramsInfo = {};
   paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
   paramsInfo{end+1} = {'flipFlag', 0, 'type=checkbox', 'Some patches come out flipped.  Use this option to correct this problem'};
@@ -90,7 +90,7 @@ if ~any(isfield(params, {'threshold', 'flatRes', 'flipLR'}));
 else
   flatParams.threshold = params.threshold;
   flatParams.flatRes = params.flatRes;
-  flatParams.flatRes = 0;
+  flatParams.flipFlag = 0;
 end
 
 % check to see if we got here from the flatViewer
