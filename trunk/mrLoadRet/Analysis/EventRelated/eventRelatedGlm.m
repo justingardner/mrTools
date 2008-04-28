@@ -50,7 +50,16 @@ if ieNotDefined('params'),return,end
 view = viewSet(view,'groupName',params.groupName);
 
 if ~isempty(params.contrast)
-    contrast = str2num(params.contrast);
+    if strcmpi(params.contrast, 'all')
+        scanNum = params.scanNum(1);
+        disp(sprintf('Getting number of conditions from scan %d', scanNum)); 
+        d = loadScan(view, scanNum, [], 0);
+        d = getStimvol(d,params.scanParams{scanNum});
+        contrast=eye(length(d.stimvol));
+        disp(sprintf('%d conditions found', length(d.stimvol)));
+    else
+        contrast = str2num(params.contrast);
+    end
     % check if the contrast is defined correctly
     if isempty(contrast),
       mrErrorDlg('invalid contrast. must be a vector');
@@ -108,35 +117,44 @@ for scanNum = params.scanNum
   dims = viewGet(view,'dims',scanNum);
   % choose how many slices based on trying to keep a certain
   % amount of data in the memory
-  numSlicesAtATime = getNumSlicesAtATime(numVolumes,dims);
+  [numSlicesAtATime rawNumSlices numRowsAtATime precision] = getNumSlicesAtATime(numVolumes,dims);
+  
   currentSlice = 1;
   ehdr = [];ehdrste = [];thisr2 = [];
 
   for i = 1:ceil(numSlices/numSlicesAtATime)
-    % load the scan
-    d = loadScan(view,scanNum,[],[currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)]);
-    % params.hrfParams.tmax = params.scanParams{scanNum}.hdrlen+d.tr/2;
+    % calculate which slices we are working on
+    thisSlices = [currentSlice min(numSlices,currentSlice+numSlicesAtATime-1)];
+    % set the row we are working on
+    currentRow = 1;
+    % clear variables that will hold the output for the slices we
+    % are working on
+    sliceEhdr = [];sliceEhdrste = [];sliceR2 = [];
+    for j = 1:ceil(dims(1)/numRowsAtATime)
+      % load the scan
+      thisRows = [currentRow min(dims(1),currentRow+numRowsAtATime-1)];
+      d = loadScan(view,scanNum,[],thisSlices,precision,thisRows);
     
-    d.supersampling = params.trSupersampling;
-    % use the duration of stimuli/events in the design matrix
-    d.impulse = 0; 
+      d.supersampling = params.trSupersampling;
+      % use the duration of stimuli/events in the design matrix
+      d.impulse = 0; 
 
-    % get the stim volumes, if empty then abort
-    d = getStimvol(d,params.scanParams{scanNum});
-    if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
+      % get the stim volumes, if empty then abort
+      d = getStimvol(d,params.scanParams{scanNum});
+      if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
     
-    % do any called for preprocessing
-    hrf = feval(params.hrfModel, d.tr/d.supersampling, params.hrfParams);
+      % do any called for preprocessing
+      hrf = feval(params.hrfModel, d.tr/d.supersampling, params.hrfParams);
     
-    d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
-    % make a stimulation convolution matrix
+      d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
+      % make a stimulation convolution matrix
     
-    d = makeglm(d,hrf);
+      d = makeglm(d,hrf);
     
-    if isempty(contrast)
+      if isempty(contrast)
         % compute the estimated hemodynamic responses
         d = getr2(d);
-    else
+      else
         % check that contrast has the same number of columns as the
         % design matrix
         if size(d.scm,2)~=size(contrast,2)*size(hrf,2)
@@ -154,19 +172,34 @@ for scanNum = params.scanNum
         % compute the estimated hemodynamic responses for the given
         % contrast, discounting any effect of other orthogonal contrasts
         d = getGlmContrast(d, c);
+      end
+      % update the current row we are working on
+      currentRow = currentRow+numRowsAtATime;
+      % if we are calculating full slice, then just pass that on
+      if numRowsAtATime == dims(1)
+        sliceEhdr = d.ehdr;
+        sliceEhdrste = d.ehdrste;
+        sliceR2 = d.r2;
+      % working on a subset of rows, cat together with what
+      % has been computed for other rows
+      else
+        sliceEhdr = cat(1,sliceEhdr,d.ehdr);
+        sliceEhdrste = cat(1,sliceEhdrste,d.ehdrste);
+        sliceR2 = cat(1,sliceR2,d.r2);
+      end
     end
     % update the current slice we are working on
     currentSlice = currentSlice+numSlicesAtATime;
     % cat with what has already been computed for other slices
-    ehdr = cat(3,ehdr,d.ehdr);
-    ehdrste = cat(3,ehdrste,d.ehdrste);
-    thisr2 = cat(3,thisr2,d.r2);
+    ehdr = cat(3,ehdr,sliceEhdr);
+    ehdrste = cat(3,ehdrste,sliceEhdrste);
+    thisr2 = cat(3,thisr2,sliceR2);
   end
 
   % now put all the data from all the slices into the structure
-  d.ehdr = ehdr;
-  d.ehdrste = ehdrste;
-  d.r2 = thisr2;
+  d.ehdr = single(ehdr);
+  d.ehdrste = single(ehdrste);
+  d.r2 = single(thisr2);
 
   d.dim(3) = size(d.r2,3);
 
@@ -188,7 +221,17 @@ for scanNum = params.scanNum
           amps{j}.clip = [ min([mn,amps{j}.clip(1)]), max([amps{j}.clip(2),mx])];
           amps{j}.params{scanNum} = params.scanParams{scanNum};
           
-          stimNames{j} = ['c ', num2str(contrast(j,:))];
+          if nnz(contrast(j,:))==1
+              dummy = find(contrast(j,:)~=0);
+              if length(d.stimNames)>=dummy
+                stimNames{j} = d.stimNames{dummy};
+              else
+                stimNames{j} = sprintf('C_%d', dummy);
+              end
+          else
+            stimNames{j} = ['c ', num2str(contrast(j,:))];
+          end
+          amps{j}.name = stimNames{j};
       end
   else
       stimNames = d.stimNames;

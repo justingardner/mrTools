@@ -46,7 +46,7 @@ if ~isempty(scm1)
     precalcmatrix1 = ((scm1'*scm1)^-1)*scm1';
     % if this don't work then do pinv
     if sum(isnan(precalcmatrix1(:))) == length(precalcmatrix1(:))
-        disp(sprintf('Using pseudo inverse to invert convolution matrix'));
+        disp(sprintf('(getGlmContrast) Using pseudo inverse to invert convolution matrix'));
         precalcmatrix1 = pinv(scm1);
     end
 end
@@ -55,7 +55,7 @@ precalcmatrix2 = ((scm2'*scm2)^-1)*scm2';
 
 % if this don't work then do pinv
 if sum(isnan(precalcmatrix2(:))) == length(precalcmatrix2(:))
-  disp(sprintf('Using pseudo inverse to invert convolution matrix'));
+  disp(sprintf('(getGlmContrast) Using pseudo inverse to invert convolution matrix'));
   precalcmatrix2 = pinv(scm2);
 end
 
@@ -73,7 +73,7 @@ d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
 warning('off','MATLAB:divideByZero');
 
 % display string
-disppercent(-inf,'Calculating r2');
+disppercent(-inf,'(getGlmContrast) Calculating r2');
 % cycle through images calculating the estimated hdr and r^2s of the 
 % estimate.
 %
@@ -128,7 +128,7 @@ disppercent(inf);
 % but the reallocs needed to continually add space to the matrix
 % seems to be slower than the loops needed here to reconstruct
 % the matrix from the {} arrays.
-disppercent(-inf,'Reshaping matrices');
+disppercent(-inf,'(getGlmContrast) Reshaping matrices');
 for i = xvals
   disppercent((i-min(xvals))/xvaln);
   for j = yvals
