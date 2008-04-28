@@ -77,9 +77,10 @@ end
 
 
 % get two additional parameters if they were not passed in before
-if ~any(isfield(params, {'threshold', 'flatRes'}));
+if ~any(isfield(params, {'threshold', 'flatRes', 'flipLR'}));
   paramsInfo = {};
   paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
+  paramsInfo{end+1} = {'flipFlag', 0, 'type=checkbox', 'Some patches come out flipped.  Use this option to correct this problem'};
   paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
   flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
   % check for cancel
@@ -123,11 +124,19 @@ flat.locsFlat(:,2) = flat.locsFlat(:,2) - flat.minLocsFlat(2) + 1;
 
 imSize = round(max(flat.locsFlat));
 
-x = flat.locsFlat(:,1);
-y = flat.locsFlat(:,2);
+if flatParams.flipFlag == 1
+  disp(sprintf('(loadFlatOFF) Flipping flat patch'))
+  x = flat.locsFlat(:,2);
+  y = flat.locsFlat(:,1);
+else
+  x = flat.locsFlat(:,1);
+  y = flat.locsFlat(:,2);
+end
+
 xi = [1:(1/flatParams.flatRes):imSize(1)];
 yi = [1:(1/flatParams.flatRes):imSize(2)]';
 
+% why is this flip required???  -epm
 yi = flipud(yi);
 
 warning off
