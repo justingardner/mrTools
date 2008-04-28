@@ -90,6 +90,7 @@ if ~any(isfield(params, {'threshold', 'flatRes', 'flipLR'}));
 else
   flatParams.threshold = params.threshold;
   flatParams.flatRes = params.flatRes;
+  flatParams.flatRes = 0;
 end
 
 % check to see if we got here from the flatViewer
