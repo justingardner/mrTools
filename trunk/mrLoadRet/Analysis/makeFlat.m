@@ -292,23 +292,83 @@ return
 
 function[surf, params] = runMrFlatMesh(surf, params)
 
+% project the surface out to an intermediate cortical deapth
 corticalDepth = 0.5;
 mesh.vertices = surf.inner.vtcs+corticalDepth*(surf.outer.vtcs-surf.inner.vtcs);
+
+% create the mesh structure that mrFlatMesh expects
 mesh.faceIndexList  = surf.inner.tris;
 mesh.rgba           = surf.curv;
+mesh.normal = surf.inner.vtcs - surf.outer.vtcs;
 
-% get surface normals
-figure(999)
-Hp = patch('vertices', mesh.vertices, 'faces', mesh.faceIndexList);
-normals = get(Hp,'vertexnormals');
-% convert to unit normals
-% [normals,unit_normals] = colnorm(normals');
-% mesh.normal = unit_normals';
-% clear normals unit_normals;
-mesh.normal = normals;
-close(999);
-
+% run a modified version of the mrFlatMesh code
+% this outputs and flattened surface
 surf.flat = flattenSurfaceMFM(mesh, params.startCoord, params.patchRadius);
+
+% old method of calculating the surface normals
+% figure(999)
+% Hp = patch('vertices', mesh.vertices, 'faces', mesh.faceIndexList);
+% normals = get(Hp,'vertexnormals');
+% close(999);
+
+% we need to figure out whether the flattened patch has been flipped
+% during flattening
+
+patch2parent = surf.flat.vertsToUnique(surf.flat.insideNodes);
+vIn   = surf.inner.vtcs(patch2parent,:);
+vOut  = surf.outer.vtcs(patch2parent,:);
+vFlat = surf.flat.locs2d;
+f     = surf.flat.uniqueFaceIndexList;
+
+% this is the command to view the patch, in 2D or 3D
+%hp = patch('vertices', v, 'faces', f, 'facecolor','none','edgecolor','black');
+
+% loop through all of the faces
+disppercent(-inf,'Checking winding direction');
+for iFace = 1:length(f);
+  % grab a triangle for inner 3D suface
+  triIn = vIn(f(iFace,:),:);
+  % grab a triangle for outer 3D suface
+  triOut = vOut(f(iFace,:),:);
+  % calculate the vector normal to the center of the two triangles
+  triNorm = (mean(triIn) - mean(triOut)) + mean(triIn);
+  % this is a formula that takes the vertices of the triangle and
+  % computes the winding direction relative to a fourth point, which
+  % is in this case the normal.  i.e. do the vertices of the triangle
+  % go in a CW or CCW direction with respect to the normal. If this
+  % determinant is positive the direction is CW and if the determinant
+  % is negative it is CCW. see wikipedia:
+  % http://en.wikipedia.org/wiki/Orientation_(topology)
+  wrapDir(iFace) = det([cat(2,triIn, [1 1 1]'); triNorm 1]);
+  
+  % now do the same for the triangles in the flatpatch
+  triFlat = vFlat(f(iFace,:),:);
+  % in the flat patch, the z-dimension is always 0
+  triFlat(:,3) = 0;
+  % we want to compute the winding direction from above the surface
+  % (i.e., the direction that we are viewing the surface from)
+  triFlatNorm = [0 0 1];
+  % same formula as above
+  wrapDirFlat(iFace) = det([cat(2,triFlat, [1 1 1]'); triFlatNorm 1]);
+  disppercent(iFace/length(f));
+end
+disppercent(inf)
+
+% now check to see if the winding directions for the flat patch and 3D
+% surface are the same or different. Note that because of the
+% flattening process, some of the triangles may switch winding
+% direction. But whether we should view the patch from above or below
+% is decided by which view produces the least number of mismatches in
+% winding direction.
+match =    sum( sign(wrapDir) == sign(wrapDirFlat) );
+misMatch = sum( sign(wrapDir) ~= sign(wrapDirFlat) );
+
+if misMatch > match
+  disp(sprintf('(makeFlat) X-Y flipping the flat patch...'));
+  surf.flat.locs2d = cat(2, surf.flat.locs2d(:,2), surf.flat.locs2d(:,1));
+else
+  disp(sprintf('(makeFlat) The patch is oriented properly, not going to flip it...'));
+end
 
 
 return;
