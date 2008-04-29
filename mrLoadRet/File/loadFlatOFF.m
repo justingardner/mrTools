@@ -126,7 +126,7 @@ flat.locsFlat(:,2) = flat.locsFlat(:,2) - flat.minLocsFlat(2) + 1;
 imSize = round(max(flat.locsFlat));
 
 if flatParams.flipFlag == 1
-  disp(sprintf('(loadFlatOFF) Flipping flat patch'))
+  disp(sprintf('(loadFlatOFF) flipFlag was set to 1, so X-Y flipping flat patch'))
   x = flat.locsFlat(:,2);
   y = flat.locsFlat(:,1);
 else
