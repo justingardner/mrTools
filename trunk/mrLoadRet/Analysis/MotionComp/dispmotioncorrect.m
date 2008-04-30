@@ -75,5 +75,7 @@ end
 plotnum = plotnum+1;
 subplot(plots,1,plotnum);
 plot(theta,'ko');
+xaxis(1,size(d.motioncorrect.mat,1));
 ylabel('Rotation (degrees)');
 xlabel('Image number');
+
