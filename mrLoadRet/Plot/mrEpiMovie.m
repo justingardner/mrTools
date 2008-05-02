@@ -147,8 +147,8 @@ if ~isfield(params,'warp'),params.warp = 0;end
 % check input arguments
 nFrames = viewGet(v,'nFrames',params.scanNum);
 nSlices = viewGet(v,'nSlices',params.scanNum);
-frameNum = min(params.frameNum,nFrames);
-sliceNum = min(params.sliceNum,nSlices);
+params.frameNum = min(params.frameNum,nFrames);
+params.sliceNum = min(params.sliceNum,nSlices);
 
 % check cache for image
 if params.warp
