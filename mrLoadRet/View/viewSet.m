@@ -917,7 +917,9 @@ switch lower(param)
     if isfield(val,'curOverlay')
       view = viewSet(view,'currentOverlay',val.curOverlay);
     end
-
+    if ~isempty(viewGet(view,'fignum'))
+      refreshMLRDisplay(viewGet(view,'viewNum'));
+    end
   case {'interrogator'}
     % view = viewSet(view,'interrogator',interrogator);
     numAnalyses = viewGet(view,'numberofAnalyses');
