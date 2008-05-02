@@ -47,33 +47,6 @@ if isempty(d)
   return
 end
 
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % plot the timecourse for voxel
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% subplot(2,2,1:2)
-% tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
-% legendStr{1} = 'TSeries';
-% xlabel('Volume number');
-% ylabel('MRI signal');
-% % and the stimulus times
-% hold on
-% axis tight;
-% if isfield(d, 'stimvol')
-%   for i = 1:d.nhdr
-%     vlineHandle = vline(d.stimvol{i},getcolor(i));
-%     nStimvol(i) = length(d.stimvol{i});
-%     if isfield(d,'stimNames')
-%       legendStr{i+1} = sprintf('%s (n=%i)',d.stimNames{i},nStimvol(i));
-%     else
-%       legendStr{i+1} = sprintf('%i (n=%i)',i,nStimvol(i));
-%     end
-%   end
-% end
-% legend(legendStr);
-% % get distribution of ISI
-% %diff(sort(cell2mat(d.stimvol)));
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the hemodynamic response for voxel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -150,11 +123,40 @@ end
 
 drawnow;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% plot the timecourse for voxel
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% save info in a global so that we can plot the time course later, since this takes
+% a long time to load the tseries
+global gEventRelatedPlot;
+% make a lighter view
+v = newView;
+v = viewSet(v,'curGroup',viewGet(view,'curGroup'));
+v = viewSet(v,'curScan',viewGet(view,'curScan'));
+gEventRelatedPlot.v = v;
+
+gEventRelatedPlot.scan = scan;
+gEventRelatedPlot.vox = [x y s];
+gEventRelatedPlot.d = d;
+gEventRelatedPlot.d.ehdr = [];
+gEventRelatedPlot.d.ehdrste = [];
+gEventRelatedPlot.d.r2 = [];
+gEventRelatedPlot.h = [];
+
+% now put up a button that will call gEventRelatedPlotTSeries below when it is clicked
+% but only if this is a long scan
+if viewGet(view,'nFrames') > 500
+  figpos = get(fignum,'position');
+  gEventRelatedPlot.h = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotTSeries,'String','Plot the time series','Position',[figpos(3)/20 5*figpos(4)/8 9*figpos(3)/10 figpos(4)/4]);
+else
+  eventRelatedPlotTSeries;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   function to plot the time series for the voxel   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function eventRelatedPlotTSeries(varargin)
+
+global gEventRelatedPlot
 subplot(2,2,1:2)
-tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
+tSeries = squeeze(loadTSeries(gEventRelatedPlot.v,gEventRelatedPlot.scan,gEventRelatedPlot.vox(3),[],gEventRelatedPlot.vox(1),gEventRelatedPlot.vox(2)));
 legendHandle(1) = plot(tSeries,'k.-');
 legendStr{1} = 'TSeries';
 xlabel('Volume number');
@@ -162,6 +164,7 @@ ylabel('MRI signal');
 % and the stimulus times
 hold on
 axis tight;
+d = gEventRelatedPlot.d;
 if isfield(d, 'stimvol')
   for i = 1:d.nhdr
     vlineHandle = vline(d.stimvol{i},getcolor(i));
@@ -178,6 +181,10 @@ legend(legendHandle,legendStr);
 % get distribution of ISI
 %diff(sort(cell2mat(d.stimvol)));
 
+if ~isempty(gEventRelatedPlot.h)
+  set(gEventRelatedPlot.h,'Visible','off');
+end
+clear global gEventRelatedPlot;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % function to plot ehdr
 %%%%%%%%%%%%%%%%%%%%%%%%%
