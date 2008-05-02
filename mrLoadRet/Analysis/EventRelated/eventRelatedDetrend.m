@@ -1,6 +1,6 @@
 % mydetrend.m
 %
-%      usage: mydetrend(data,dispfig)
+%      usage: mydetrend(data,<demean>,<dispfig>)
 %         by: justin gardner
 %       date: 07/05/05
 %    purpose: detrend a vector. if data is
@@ -8,12 +8,15 @@
 %             along the columns.
 %       e.g.: mydetrend(rand(1,51)+(0:1:50)*0.1+3,1)
 %
-function retval = mydetrend(data,dispfig)
+function retval = eventRelatedDetrend(data,demean,dispfig)
 
 % check command line arguments
 if (nargin == 1)
+  demean = 0;
   dispfig = 0;
-elseif (nargin ~= 2)
+elseif (nargin == 2)
+  dispfig = 0;
+elseif (nargin ~= 3)
   help mydetrend;
   return
 end
@@ -31,10 +34,14 @@ A = [(0:1/(n-1):1)' ones(n,1)];
 
 % get the slope and offsets
 regcoef = ((A'*A)^-1)*A'*data;
-%regcoef = pinv(A)*data;
 
 % take out the slope
-retval = data-A(:,1)*regcoef(1,:);
+if demean
+  retval = data-A*regcoef;
+else
+  retval = data-A(:,1)*regcoef(1,:);
+
+end
 
 % plot it
 if dispfig
