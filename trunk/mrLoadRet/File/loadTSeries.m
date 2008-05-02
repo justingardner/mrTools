@@ -1,6 +1,6 @@
 function tseries = loadTSeries(view,scan,slice,frame,x,y,precision)
 %
-% tSeries = loadTSeries(view,scan,[slice],[frame],[x],[y],[precision])
+% tSeries = loadTSeries(view,[scan],[slice],[frame],[x],[y],[precision])
 %
 % Loads the tSeries corresponding to the specified scan and slice. The
 % tseries files must be in <homedir>/<view>/<group>/TSeries, and must be
@@ -30,6 +30,9 @@ function tseries = loadTSeries(view,scan,slice,frame,x,y,precision)
 %            slices/frames by adding argument slice=[min max], or
 %            frame=[min max]. No longer reshapes tseries for single slice
 
+if ieNotDefined('scan')
+  scan = viewGet(view,'curScan');
+end
 if ieNotDefined('slice')
   slice = 'all';
 end
