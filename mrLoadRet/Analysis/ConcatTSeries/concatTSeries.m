@@ -32,17 +32,28 @@ if find(strcmp(mrGetPref('interpMethod'),interpTypes))
   interpTypes = putOnTopOfList(mrGetPref('interpMethod'),interpTypes);
 end
 
+% check to see if any of the scans in this group have a non identity scan2scan
+needToWarp = 0;
+for i = 2:viewGet(view,'nScans')
+  if ~isequal(viewGet(view,'scan2scan',1,[],i),eye(4))
+    needToWarp = 1;
+  end
+end
+
 % description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
     {'groupName',putOnTopOfList(viewGet(view,'groupName'),viewGet(view,'groupNames')),'Name of group from which to make concatenation'},...
     {'newGroupName','Concatenation','Name of group to which concatenation will be saved. If group does not already exist, it will be created.'},...
     {'description','Concatenation of [x...x]','Description that will be set to have the scannumbers that are selected'},...
-    {'filterType',1,'minmax=[0 1]','incdec=[-1 1]','Which filter to use, for now you can only turn off highpass filtering'},...
+    {'filterType',1,'minmax=[0 2]','incdec=[-1 1]','Which filter to use. Set to 0 for no filtering. Set to 1 for detrending followed by highpass filtering using the cutoff below. Set to 2 for detrending only.'},...
     {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
-    {'percentSignal',1,'type=checkbox','Convert to percent signal change'},...
-    {'warp',1,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days. If the scans have the same slice prescription this will not do anything.'},...
-    {'warpInterpMethod',interpTypes,'Interpolation method for warp','contingent=warp'}
-	     };
+    {'percentSignal',1,'type=checkbox','Convert to percent signal change'}};
+    if needToWarp
+      paramsInfo{end+1} = {'warp',1,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days. If the scans have the same slice prescription this will not do anything.'};
+      paramsInfo{end+1} = {'warpInterpMethod',interpTypes,'Interpolation method for warp','contingent=warp'};
+    end
+    paramsInfo{end+1} = {'projectOutMeanVector',0,'type=checkbox','Project out a mean vector defined from one roi out of the data. This is used if you want to remove a global component that is estimated as the mean over some roi from your data. If you select this you will be asked to choose one roi for defining the mean vector of what you want to project out and another roi from which you want to project out.'};
+
 % First get parameters
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
@@ -53,7 +64,10 @@ if ieNotDefined('params')
   end
   % no params means user hit cancel
   if isempty(params),return,end
+  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % select scans
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   view = viewSet(view, 'groupName', params.groupName);
   if ~ieNotDefined('scanList')
     params.scanList = scanList;
@@ -63,19 +77,30 @@ if ieNotDefined('params')
     params.scanList = selectScans(view);
   end
   if isempty(params.scanList),return,end
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % if warp is set, then ask which scan to use as base scan for warp, unless set by default
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if ~needToWarp,params.warp = 0;params.warpInterpMethod = interpTypes{1};end
   if params.warp
     if defaultParams
       params.warpBaseScan = params.scanList(1);
     else
-      % create a list of scans
+      % create a list of scans to ask user which scan to use as the base scan
       for i = 1:viewGet(view,'nScans')
-        scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
+	scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
       end
       warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'The scan that will be used as the base scan to warp all the other scans to'}});
       if isempty(warpParams),return,end
       params.warpBaseScan = find(strcmp(warpParams.warpBaseScan,scanNames));
     end
+  end
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Get rois for doing projection
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  if params.projectOutMeanVector
+    params.projectOutMeanVectorParams = projectOutMeanVectorParams(view);
+    if isempty(params.projectOutMeanVectorParams),return,end
   end
   % check the parameters
   params = mrParamsReconcile(params.groupName,params);
@@ -102,7 +127,7 @@ if (groupNum == 0)
 end
 viewBase = viewSet(viewBase,'currentGroup',groupNum);
 
-% Open new view and set its group to the average group name. Create the
+% Open new view and set its group to the concat group name. Create the
 % group if necessary.
 viewConcat = newView;
 concatGroupNum = viewGet(viewConcat,'groupNum',params.newGroupName);
@@ -181,6 +206,8 @@ tic
 waitHandle = mrWaitBar(0,'Concatenating tSeries.  Please wait...');
 for iscan = 1:length(params.scanList)
   scanNum = params.scanList(iscan);
+
+  viewBase = viewSet(viewBase,'curScan',params.scanList(iscan));
   
   % Load it
   mrDisp(sprintf('\nLoading scan %i from %s\n',scanNum,viewGet(viewBase,'groupName')));
@@ -194,7 +221,15 @@ for iscan = 1:length(params.scanList)
 
   % get the total junked frames. This is the number of frames
   % we have junked here, plus whatever has been junked in previous ones
-  totalJunkedFrames(iscan) = junkFrames+viewGet(viewBase,'totalJunkedFrames',scanNum);
+  thisTotalJunkedFrames = viewGet(viewBase,'totalJunkedFrames',scanNum);
+  if length(thisTotalJunkedFrames > 1)
+    % give warning if there are non-zero total junked frames
+    if sum(thisTotalJunkedFrames) ~= 0
+      disp(sprintf('(concatTSeries) This scan has multiple total junked frames [%s] -- i.e. it looks like an average or a concat. Using a junk frame count of %i',num2str(thisTotalJunkedFrames),median(thisTotalJunkedFrames)));
+    end
+    thisTotalJunkedFrames = median(thisTotalJunkedFrames);
+  end    
+  totalJunkedFrames(iscan) = junkFrames+thisTotalJunkedFrames;
   
   % Compute transform
   if params.warp
@@ -229,7 +264,24 @@ for iscan = 1:length(params.scanList)
   if params.filterType == 1
     d = eventRelatedHighpass(d,params.filterCutoff);
   elseif params.filterType == 2
-    d = detrendTSeries(d)
+    d = detrendTSeries(d);
+  end
+  
+  if params.projectOutMeanVector
+    % project out the mena vector calculated from the selected roi
+    [projection d.data] = projectOutMeanVector(viewBase,params.projectOutMeanVectorParams,[],d.data);
+    % then keep some of the information about the projection
+    d.projection.originalTSeries = projection.originalTSeries;
+    d.projection.finalTSeries = projection.finalTSeries;
+ 
+    d.projection.scanCoords = projection.scanCoords;
+    d.projection.sourceName = projection.sourceName;
+    d.projection.sourceMeanVector = projection.sourceMeanVector;
+
+    d.projection.normalizedProjectionMagnitude = reshape(projection.normalizedProjectionMagnitude,d.dim(1),d.dim(2),d.dim(3));
+    d.projection.projectionMagnitude = reshape(projection.projectionMagnitude,d.dim(1),d.dim(2),d.dim(3));
+    d.projection.reconProjectionMagnitude = reshape(projection.reconProjectionMagnitude,d.dim(1),d.dim(2),d.dim(3));
+  
   end
     
   % convert to percent signal change
@@ -239,7 +291,7 @@ for iscan = 1:length(params.scanList)
     % for means that are zero, divide by nan
     d.mean(d.mean==0) = nan;
 
-    disppercent(-inf, 'Converting to percent signal change');
+    disppercent(-inf, '(concatTSeries) Converting to percent signal change');
     for i = 1:d.dim(4)
       d.data(:,:,:,i) = (d.data(:,:,:,i)./d.mean);
       if params.percentSignal == 2           % scale it to mean of 1,000
@@ -277,20 +329,13 @@ for iscan = 1:length(params.scanList)
     if params.warp
       hdr.sform44 = viewGet(viewBase,'scanSform',params.warpBaseScan,groupNum);
       hdr.sform_code = viewGet(viewBase,'scanSformCode',params.warpBaseScan,groupNum);
-     end
+    end
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
     saveScanNum = viewGet(viewConcat,'nScans');
     
     % now load up channels
     stimfile = viewGet(viewBase,'stimFile',scanNum);
-%    keyboard
-    % This code is no longer necessary--should be removed once tested
-    %if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
-    %  concatInfo.traces = stimfile{1}.myscreen.traces;
-    %else
-    %  disp(sprintf('Missing stimfile for scan %i',scanNum));
-    %end
   % for subsequent scans, we are going to append
   else
     oldScanParams = viewGet(viewConcat,'scanParams',saveScanNum);
@@ -299,18 +344,6 @@ for iscan = 1:length(params.scanList)
     oldScanParams.totalJunkedFrames = totalJunkedFrames;
     viewConcat = saveTSeries(viewConcat,d.data,saveScanNum,oldScanParams,[],1);
 
-    % This code is no longer necessary--should be removed once tested
-    % now append traces (but only if we have a traces field
-    % this way we only create traces if all of the stimfiles exist
-    %if isfield(concatInfo,'traces')
-    %  stimfile = viewGet(viewBase,'stimFile',scanNum);
-    %if (length(stimfile) == 1) && isfield(stimfile{1},'myscreen') && isfield(stimfile{1}.myscreen,'traces')
-    %	concatInfo = concatTraces(concatInfo,stimfile{1}.myscreen.traces);
-    %  else
-    %	concatInfo = rmfield(concatInfo,'traces')
-    %	disp(sprintf('Missing stimfile for scan %i',scanNum));
-    %  end
-    %end
   end   
   % remember some info about where data comes from
   concatInfo.n = concatInfo.n+1;
@@ -332,6 +365,11 @@ for iscan = 1:length(params.scanList)
     concatInfo.hipassfilter{concatInfo.n} = d.hipassfilter;
   end
   
+  % keep the projection info if that was used
+  if isfield(d,'projection')
+    projectionConcat{concatInfo.n} = d.projection;
+  end
+    
   % update the runtransition field, which keeps the beginning
   % and end volume of each run
   totalVolumes = length(concatInfo.whichVolume);
@@ -344,13 +382,18 @@ end
 mrCloseDlg(waitHandle);
 toc;
 
+% if we have done projection, then save an overlay
+if params.projectOutMeanVector
+  mrDispOverlay(projectionConcat{1}.normalizedProjectionMagnitude,saveScanNum,[],viewConcat,'overlayName=Projection Magnitude','saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[-1 1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat{1},'colormapType=setRangeToMax','interrogator=projectOutMeanVectorPlot');
+end
+
 % Save evalstring for recomputing and params
 evalstr = ['view = newView; view = concatTSeries(view,params);'];
 tseriesdir = viewGet(viewConcat,'tseriesdir');
 [pathstr,filename,ext,versn] = fileparts(fullfile(tseriesdir,tseriesFileName));
 save(fullfile(pathstr,filename),'evalstr','params','concatInfo');
 
-% Delete temporary viewBase and viewAverage
+% Delete temporary viewBase and viewConcat
 deleteView(viewBase);
 deleteView(viewConcat);
 
@@ -379,6 +422,17 @@ putnewacqpos = (lastacq+acqspace):(lastacq+acqspace+newacqlen-1);
 concatInfo.traces(:,putnewacqpos) = newTraces(:,newacqpos);
 
 
-function[d] = detrendTseries(d)
-fprint('not functional yet')
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   detrend tSeries   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function d = detrendTSeries(d)
+
+disppercent(-inf,sprintf('(concatTSeries:detrendTSeries) Detrending data'));
+d.data = reshape(eventRelatedDetrend(reshape(d.data,prod(d.dim(1:3)),d.dim(4))')',d.dim(1),d.dim(2),d.dim(3),d.dim(4));
+disppercent(inf);
+
+
+
+
+
  
