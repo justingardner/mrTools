@@ -43,7 +43,11 @@ result(find(image < clipMin)) = clipMin;
 result(find(image > clipMax)) = clipMax;
 
 % Scale
-indices = round(255 * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
+if isequal(clipMax-clipMin,0)
+  rgb = [];return
+else
+  indices = round(255 * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
+end
 indices = max(1,min(indices,size(cmap,1)));
 
 % Extract r,g,b components
