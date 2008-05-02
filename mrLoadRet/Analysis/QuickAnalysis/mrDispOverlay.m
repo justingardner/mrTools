@@ -95,6 +95,7 @@ overlay = cellArray(overlay);
 if ieNotDefined('overlayName')
   overlayName = 'mrDispOverlay';
 end
+overlayName = fixBadChars(overlayName);
 if ieNotDefined('cmap')
   % colormap is made with a little bit less on the dark end
   cmap = hot(312);
