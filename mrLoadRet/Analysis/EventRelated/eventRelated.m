@@ -125,7 +125,7 @@ for scanNum = params.scanNum
       % do any called for preprocessing
       d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
       % make a stimulation convolution matrix
-      if params.applyHipass
+      if params.applyHipass && isfield(d.concatInfo,'hipassfilter');
         d.hipassfilter = d.concatInfo.hipassfilter;
       end
       d = makescm(d,ceil(params.scanParams{scanNum}.hdrlen/d.tr));
