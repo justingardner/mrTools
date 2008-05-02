@@ -32,9 +32,10 @@ inList = cellArray(inList);
 outList{1} = topVal;
 
 % and add everybody else
-inList = setdiff(inList,topVal);
 for i = 1:length(inList)
-  outList{end+1} = inList{i};
+  if ~isequal(inList{i},topVal)
+    outList{end+1} = inList{i};
+  end
 end
 
 
