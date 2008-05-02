@@ -45,7 +45,7 @@ for iROI = 1:nROIs
       plot(time,ts,'k.-');
       % Ticks and labels
       headerStr = [roiName,' Scan ',num2str(scan)];
-      title(headerStr);
+      title(headerStr,'interpreter','none');
       set(gca,'XLim',ceil([0,nframes*framePeriod]));
       xlabel('Time (sec)');
       ylabel('fMRI response');

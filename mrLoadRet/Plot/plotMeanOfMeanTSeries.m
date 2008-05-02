@@ -63,7 +63,7 @@ for iROI = 1:nROIs
 
 	% Ticks and labels
 	headerStr = ['Times series from ',roiName,', group ',groupName,', scans: ',num2str(scanList)];
-	title(headerStr);
+	title(headerStr,'interpreter','none');
 	set(gca,'XLim',ceil([0,nframes*framePeriod]));
 	xlabel('Time (sec)');
 	ylabel('fMRI response');
