@@ -137,7 +137,7 @@ if signalFrequency ~= 0
 else
   headerStr = sprintf('%s\nNoise (%0.4fHz and above) = %0.2f',headerStr,lowestNoiseFrequency,meanNoiseAmplitude);
 end  
-title(headerStr);
+title(headerStr,'interpreter','none');
 xlim([0 max(frequencies)]);
 xlabel('Frequency (Hz)');
 ylabel('Fourier Amplitude');
