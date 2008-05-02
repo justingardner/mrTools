@@ -67,10 +67,33 @@ totalJunkedFrames = viewGet(view,'totalJunkedFrames',scanNum,groupNum);
 vol2mag = viewGet(view,'scanVol2mag',scanNum,groupNum);
 vol2tal = viewGet(view,'scanVol2tal',scanNum,groupNum);
 
-% get params info
-nCols = 1;
 matfile = viewGet(view,'params',scanNum,groupNum);
 fieldsToIgnore = {'tseriesfiles','groupname','description','filename'};
+extraFields = {};extraFieldsValue = {};
+% get extra parameters form associated matfile
+if ~isempty(matfile) && isfield(matfile,'params')
+  fields = fieldnames(matfile.params);
+  for i = 1:length(fields)
+    % ignore fields from the list set above
+    if ~any(strcmp(lower(fields{i}),fieldsToIgnore))
+      % and fields that have groupname in them
+      if isempty(strfind(lower(fields{i}),'groupname'))
+	% display fields that are numeric
+	if isnumeric(matfile.params.(fields{i}))
+	  extraFields{end+1} = fields{i};
+	  extraFieldsValue{end+1} = num2str(matfile.params.(fields{i}));
+	% or are strings
+	elseif isstr(matfile.params.(fields{i}))
+	  extraFields{end+1} = fields{i};
+	  extraFieldsValue{end+1} = matfile.params.(fields{i});
+	end
+      end
+    end
+  end
+end
+
+% get params info
+nCols = 1;
 % display info
 if displayInDialog
   paramsInfo = {{'description',description,'editable=0','Scan description'},...
@@ -110,25 +133,11 @@ if displayInDialog
   paramsInfo{end+1} = {'vol2mag',vol2mag,'editable=0','This is the xformation that takes the canonical base that this scan was aligned to into magnet coordinates. To set this field, you can use export from mrAlign.'};
   paramsInfo{end+1} = {'vol2tal',vol2tal,'editable=0','This is the xformation that takes the canonical base that this scan was aligned to into talairach coordinates. To set this field, you can export talairach coordinates from mrAlign.'};
 
-  % display parameters form associated matfile
-  if ~isempty(matfile) && isfield(matfile,'params')
-    fields = fieldnames(matfile.params);
-    for i = 1:length(fields)
-      % ignore fields from the list set above
-      if ~any(strcmp(lower(fields{i}),fieldsToIgnore))
-	% and fields that have groupname in them
-	if isempty(strfind(lower(fields{i}),'groupname'))
-	  % display fields that are numeric
-	  if isnumeric(matfile.params.(fields{i}))
-	    paramsInfo{end+1} = {fields{i} num2str(matfile.params.(fields{i})) 'editable=0','Parameter from associated mat file'};
-	  % or are strings
-	  elseif isstr(matfile.params.(fields{i}))
-	    paramsInfo{end+1} = {fields{i} matfile.params.(fields{i}) 'editable=0','Parameter from associated mat file'};
-	  end
-	end
-      end
-    end
+  % display extra parameters form associated matfile
+  for i = 1:length(extraFields)
+    paramsInfo{end+1} = {extraFields{i} extraFieldsValue{i} 'editable=0','Parameter from associated mat file'};
   end
+
   disppercent(inf);
   mrParamsDialog(paramsInfo,'Scan info',nCols);
 else
@@ -156,6 +165,11 @@ else
   disp(sprintf('++++++++++++++++++++++++++ sform ++++++++++++++++++++++++++'));
   for rownum = 1:4
     disp(sprintf('%f\t%f\t%f\t%f',scanSform(rownum,1),scanSform(rownum,2),scanSform(rownum,3),scanSform(rownum,4)));
+  end
+  
+  % display extra fields
+  for i = 1:length(extraFields)
+    disp(sprintf('%s: %s',extraFields{i},extraFieldsValue{i}));
   end
 end
   disp(sprintf('sformCode: %i',scanSformCode));
