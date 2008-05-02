@@ -94,7 +94,9 @@ else
 end
 	
 % set the size of data appropriately
-d.dim = size(d.data);
+if ~isempty(d.data)
+  d.dim = size(d.data);
+end
 
 % Dump junk frames
 junkFrames = viewGet(view,'junkframes',scanNum);
