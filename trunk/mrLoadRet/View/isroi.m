@@ -19,8 +19,9 @@ function [tf roi] =  isroi(roi)
 if (nargout == 2)
   % Add optional fields and return true if the roi with optional
   % fields is valid.
-  requiredFields = {'name','viewType','voxelSize','xform'};
-  optionalFields = {'coords',[];
+  requiredFields = {'name','voxelSize','xform'};
+  optionalFields = {'viewType',[];
+		    'coords',[];
 		    'date',datestr(now);
 		    'color','blue';
 		    'notes','';
