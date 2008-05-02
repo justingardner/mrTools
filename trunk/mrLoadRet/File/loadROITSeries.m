@@ -39,7 +39,10 @@ eval(evalargs(varargin));
 if ieNotDefined('view')
   view = newView;
 end
-
+if ~isview(view)
+  disp(sprintf('(loadROITSeries) Passed in view is not valid'));
+  return
+end
 % get the roi directory
 roidir = viewGet(view,'roidir');
 
@@ -125,7 +128,7 @@ for roinum = 1:length(roiname)
         % set the n
         rois{end}.n = length(x);
         % load the tseries, voxel-by-voxel
-        disppercent(-inf,sprintf('Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
+        disppercent(-inf,sprintf('(loadROITSeries) Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
         % for now we always load by block, but if memory is an issue, we can
         % switch this if statement and load voxels indiviudally from file
         if strcmp(loadType,'vox')
