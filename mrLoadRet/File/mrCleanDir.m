@@ -230,7 +230,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function dispMotionCompParams(params)
 
-disp(sprintf('GroupName: %s baseScan: %i baseFrame: %s robust: %i correctIntensityContrast: %i',params.groupName,params.baseScan,params.baseFrame,params.robust,params.correctIntensityContrast));
+if isfield('params', 'correctIntensityContrast') 
+  % this must be an old motionComp params.  that field doesn't exist anymore
+  disp(sprintf('GroupName: %s baseScan: %i baseFrame: %s robust: %i correctIntensityContrast: %i',params.groupName,params.baseScan,params.baseFrame,params.robust,params.correctIntensityContrast));
+else
+  disp(sprintf('GroupName: %s baseScan: %i baseFrame: %s robust: %i gradIntensityCorrection: %i',params.groupName,params.baseScan,params.baseFrame,params.robust,params.gradIntensityCorrection));
+end
+
 disp(sprintf('crop: %s niters: %i interpMethod: %s targetScans: %s',num2str(params.crop),params.niters,params.interpMethod,num2str(params.targetScans)));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
