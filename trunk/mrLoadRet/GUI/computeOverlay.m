@@ -101,6 +101,15 @@ if ~isempty(overlayIm)
     else
       overlay.range = clip;
     end
+  elseif strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMaxAroundZero')
+    clip = viewGet(view,'overlayClip',curOverlay);
+    if ~isempty(overlayIm(mask))
+      maxval = max(abs(overlayIm(mask)));
+      overlay.range(1) = -maxval;
+      overlay.range(2) = maxval;
+    else
+      overlay.range = clip;
+    end
   end
   overlay.RGB = rescale2rgb(overlayIm,overlay.cmap,overlay.range);
 else
