@@ -204,10 +204,12 @@ set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
 tic
 % Compute output volume
 waitHandle = mrWaitBar(0,'Concatenating tSeries.  Please wait...');
+view = viewSet(view,'curGroup',groupNum);
 for iscan = 1:length(params.scanList)
   scanNum = params.scanList(iscan);
 
   viewBase = viewSet(viewBase,'curScan',params.scanList(iscan));
+  view = viewSet(view,'curScan',scanNum);
   
   % Load it
   mrDisp(sprintf('\nLoading scan %i from %s\n',scanNum,viewGet(viewBase,'groupName')));
@@ -269,19 +271,26 @@ for iscan = 1:length(params.scanList)
   
   if params.projectOutMeanVector
     % project out the mena vector calculated from the selected roi
-    [projection d.data] = projectOutMeanVector(viewBase,params.projectOutMeanVectorParams,[],d.data);
-    % then keep some of the information about the projection
-    d.projection.originalTSeries = projection.originalTSeries;
-    d.projection.finalTSeries = projection.finalTSeries;
- 
-    d.projection.scanCoords = projection.scanCoords;
-    d.projection.sourceName = projection.sourceName;
-    d.projection.sourceMeanVector = projection.sourceMeanVector;
+    [projection d.data] = projectOutMeanVector(view,params.projectOutMeanVectorParams,[],d.data);
+    % make projection into cell array
+    projection = cellArray(projection);
+    % start up values
+    d.projection.linearCoords = [];
+    d.projection.normProjectionMagnitude = [];
+    d.projection.reconProjectionMagnitude = [];
+    for roinum = 1:length(projection)
+      % then keep some of the information about the projection
+      d.projection.sourceName = projection{roinum}.sourceName;
+      d.projection.sourceMeanVector = projection{roinum}.sourceMeanVector;
 
-    d.projection.normalizedProjectionMagnitude = reshape(projection.normalizedProjectionMagnitude,d.dim(1),d.dim(2),d.dim(3));
-    d.projection.projectionMagnitude = reshape(projection.projectionMagnitude,d.dim(1),d.dim(2),d.dim(3));
-    d.projection.reconProjectionMagnitude = reshape(projection.reconProjectionMagnitude,d.dim(1),d.dim(2),d.dim(3));
-  
+      % gather together other info.
+      d.projection.normProjectionMagnitude = ...
+	  [d.projection.normProjectionMagnitude ; projection{roinum}.normProjectionMagnitude];
+      d.projection.reconProjectionMagnitude = ...
+	  [d.projection.reconProjectionMagnitude ; projection{roinum}.reconProjectionMagnitude];
+      d.projection.linearCoords = ...
+	  [d.projection.linearCoords ; projection{roinum}.linearCoords];
+    end
   end
     
   % convert to percent signal change
@@ -384,7 +393,10 @@ toc;
 
 % if we have done projection, then save an overlay
 if params.projectOutMeanVector
-  mrDispOverlay(projectionConcat{1}.normalizedProjectionMagnitude,saveScanNum,[],viewConcat,'overlayName=Projection Magnitude','saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[-1 1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat{1},'colormapType=setRangeToMax','interrogator=projectOutMeanVectorPlot');
+  % make overlay
+  overlay = zeros(viewGet(viewConcat,'scanDims',saveScanNum));
+  overlay(projectionConcat{1}.linearCoords) = projectionConcat{1}.normProjectionMagnitude;
+  mrDispOverlay(overlay,saveScanNum,[],viewConcat,'overlayName=r','saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat{1},'colormapType=setRangeToMaxAroundZero','interrogator=projectOutMeanVectorPlot');
 end
 
 % Save evalstring for recomputing and params
