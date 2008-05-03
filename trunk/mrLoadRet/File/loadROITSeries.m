@@ -81,6 +81,10 @@ end
 
 % load the rois in turn
 for roinum = 1:length(roiname)
+  % if the name is a string which is an already loaded roi
+  if isstr(roiname{roinum}) & ~isempty(viewGet(view,'roinum',getLastDir(roiname{roinum})))
+    roiname{roinum} = viewGet(view,'roinum',roiname{roinum});
+  end
   % see if we have to paste roi directory on
   if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
     roiname{roinum} = fullfile(roidir,stripext(roiname{roinum}));
@@ -99,6 +103,7 @@ for roinum = 1:length(roiname)
       roi = load(roiname{roinum});
     elseif isnumeric(roiname{roinum})
       thisroi = viewGet(view,'roi',roiname{roinum});
+      clear roi;
       roi.(fixBadChars(thisroi.name)) = thisroi;
     else
       roi.(fixBadChars(roiname{roinum}.name)) = roiname{roinum};
