@@ -526,7 +526,7 @@ ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
 ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
 base = ALIGN.inplaneBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
-base.data = [];
+base.data = [];base.hdr = [];
 eval(sprintf('save %s base',matFilename))
 clear base
 % --------------------------------------------------------------------
@@ -623,7 +623,7 @@ ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
 ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
 base = ALIGN.inplaneBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
-base.data = [];
+base.data = [];base.hdr = [];
 eval(sprintf('save %s base',matFilename))
 clear base
 % --------------------------------------------------------------------
@@ -822,7 +822,7 @@ end
 %also save the matFile for the base, to save vol2mag and vol2tal
 base = ALIGN.volBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
-base.data = [];
+base.data = [];base.hdr = [];
 eval(sprintf('save %s base',matFilename));
 clear base % so don't get confused with the inplane base
 
