@@ -196,6 +196,9 @@ erAnal.overlays = r2;
 erAnal.curOverlay = 1;
 erAnal.date = dateString;
 view = viewSet(view,'newAnalysis',erAnal);
+if ~isempty(viewGet(view,'fignum'))
+  refreshMLRDisplay(viewGet(view,'viewNum'));
+end
 
 % Save it
 saveAnalysis(view,erAnal.name);
