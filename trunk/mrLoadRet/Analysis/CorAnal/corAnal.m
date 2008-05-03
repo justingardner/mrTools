@@ -208,6 +208,9 @@ view = viewSet(view,'newanalysis',corAnal);
 view = viewSet(view,'newoverlay',co);
 view = viewSet(view,'newoverlay',amp);
 view = viewSet(view,'newoverlay',ph);
+if ~isempty(viewGet(view,'fignum'))
+  refreshMLRDisplay(viewGet(view,'viewNum'));
+end
 
 % Save it
 saveAnalysis(view,corAnal.name);
