@@ -414,12 +414,7 @@ switch lower(param)
     val2 = groupNumMatch;
   case {'concatinfo'}
     % concatInfo = viewGet(view,'stimfile',scanNum,[groupNum]);
-    if ieNotDefined('varargin')
-      mrErrorDlg(sprintf('viewGet %s: must specify scan.',param));
-    end
-    s = varargin{1};
-    if length(varargin) > 1,g = varargin{2};else,g = viewGet(view,'currentGroup');,end
-    if isempty(g),g = viewGet(view,'currentGroup');end
+    [s g] = getScanAndGroup(view,varargin,param);
     [tseriesPath,tseriesFile] = fileparts(viewGet(view,'tseriesPath',s,g));
     % check for mat file
     matFileName = fullfile(tseriesPath,sprintf('%s.mat',tseriesFile));
@@ -2387,7 +2382,7 @@ switch lower(param)
     if ~isempty(analysis)
       val = length(analysis.overlays);
     end
-  case{'currentoverlay'}
+  case{'currentoverlay','curoverlay'}
     % n = viewGet(view,'currentOverlay',[analysisNum])
     % n = viewGet(view,'currentOverlay',[])
     % n = viewGet(view,'currentOverlay')
@@ -2580,7 +2575,9 @@ switch lower(param)
         if isempty(scan)
           val = analysis.overlays(overlayNum).data;
         else
-          val = analysis.overlays(overlayNum).data{scan};
+	  if length(analysis.overlays(overlayNum).data) >= scan
+	    val = analysis.overlays(overlayNum).data{scan};
+	  end
         end
       end
     end
