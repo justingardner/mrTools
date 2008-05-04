@@ -279,6 +279,7 @@ for iscan = 1:length(params.scanList)
     d.projection.normProjectionMagnitude = projection.normProjectionMagnitude;
     d.projection.reconProjectionMagnitude = projection.reconProjectionMagnitude;
     d.projection.linearCoords = projection.linearCoords;
+    clear projection;
   end
     
   % convert to percent signal change
