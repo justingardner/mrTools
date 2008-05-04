@@ -27,7 +27,7 @@ nScans = viewGet(view,'nScans');
 
 %Check for zero:
 if nScans == 0
-  myErrorDlg('No scans found!');
+  mrErrorDlg('No scans found!');
   return
 end
 
