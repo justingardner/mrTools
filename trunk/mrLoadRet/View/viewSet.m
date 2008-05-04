@@ -99,6 +99,9 @@ switch lower(param)
     nScans = viewGet(view,'nScans');
     if ((val > 0) && (val <= nScans))
       mlrGuiSet(view,'scan',val);
+      view.curScan = val;
+    else
+      disp(sprintf('(viewSet) Scan %i out of range [%i:%i]',val,1,nScans));
     end
   case{'currentgroup','curgroup'}
     % view = viewSet(view,'currentGroup',n);

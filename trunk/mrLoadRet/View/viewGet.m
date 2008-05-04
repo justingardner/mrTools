@@ -3084,6 +3084,8 @@ switch lower(param)
     if ~isempty(fig)
       handles = guidata(fig);
       val = round(get(handles.scanSlider,'Value'));
+    else
+      val = view.curScan;
     end
     if isempty(val),val = 1;end
   case {'curslice','currentslice'}

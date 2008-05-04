@@ -22,7 +22,7 @@ if (nargout == 2)
   % Add optional fields and return true if the view with optional fields is
   % valid.
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
-    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice'};
+    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','curScan'};
   optionalFields = {'loadedAnalyses',{};
 		    'groupScanNum',[];
 		    'labelROIs',0};
@@ -30,7 +30,7 @@ else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
-    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs'};
+    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan'};
   optionalFields = {};
 end
 
