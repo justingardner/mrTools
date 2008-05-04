@@ -20,7 +20,7 @@
 %  
 %             Alternatively, a params structure can be passed in which has 
 %             the fields sourceROI and target ROI
-%             params.sourceROI = 'left_patch';params.targetROI = [];params.tSeries = data;
+%             params.sourceROI = 'left_patch';params.targetROI = [];
 %             projectOutMeanVector(v,params);
 %          
 %             e.g. To remove the mean component calculated from l_mt from r_mt
@@ -52,34 +52,29 @@ else
   params.sourceROI = sourceROI;
   params.targetROI = targetROI;
 end
-if ~ieNotDefined('tSeries'),params.tSeries = tSeries;end
-
-% if no passed in data, then we will load it from disk
-if ~isfield(params,'tSeries')
-  params.tSeries = [];
-end
+if ieNotDefined('tSeries'),tSeries = [];end
 
 % get the source and target tSeries
 if isempty(params.sourceROI)
   % passed in argument is empty make an roi of the whole scan
-  sourceROI = makeROIofAllVoxels(v,'source',params.tSeries);
+  sourceROI = makeROIofAllVoxels(v,'source',tSeries);
 elseif isnumeric(params.sourceROI) && ~isscalar(params.sourceROI)
   % passed in argument is a tSeries. Convert to an roi.
   sourceROI = makeROIfromTSeries(v,params.sourceROI,'source');
 else
   % passed in argument is an roi or list of rois. So combine it
   % into a single roi and load it in
-  sourceROI = loadROIList(v,params.sourceROI,params.tSeries);
+  sourceROI = loadROIList(v,params.sourceROI,tSeries);
 end
 if isempty(params.targetROI)
   % passed in argument is empty make an roi of the whole scan
-  targetROI = makeROIofAllVoxels(v,'target',params.tSeries);
+  targetROI = makeROIofAllVoxels(v,'target',tSeries);
 elseif isnumeric(params.targetROI) && ~isscalar(params.targetROI)
   % passed in argument is a tSeries. Convert to an roi.
   targetROI = makeROIfromTSeries(v,params.targetROI,'target');
 else
   % passed in argument is an roi
-  targetROI = loadROIList(v,params.targetROI,params.tSeries);
+  targetROI = loadROIList(v,params.targetROI,tSeries);
 end
 
 % get the frame numbers over which to work
@@ -97,16 +92,24 @@ else
   disp(sprintf('(projectOutMeanVector) Scan is a concatenation. Projecting out separately for each of the %i concatenated scans',concatInfo.n));
 end
 
+% compute mean tSeries.
+if sourceROI.n > 1
+  meanVectorAllFrames = nanmean(sourceROI.tSeries);
+else
+  meanVectorAllFrames = sourceROI.tSeries;
+end
+% keep the ROI names
+targetROI.sourceName = sourceROI.name;
+% now dump sourceROI to conserve space
+clear sourceROI
+
 % cycle over each segment of a concat. If this is a single
 % scan then we will be doing the whole thing in one pass
 for i = 1:length(frameNums)
-  % compute mean tSeries.
-  sourceNames = '';
-  meanVector = sourceROI.tSeries(:,frameNums{i});
-  if sourceROI.n > 1
-    meanVector = mean(meanVector);
-  end
 
+  % ge this mean vector
+  meanVector = meanVectorAllFrames(frameNums{i});
+  
   % demean/detrend meanVector
   meanVector = eventRelatedDetrend(meanVector',1)';
 
@@ -116,34 +119,34 @@ for i = 1:length(frameNums)
   % project data on to meanVector
   % compute the magnitude of the projection of the targetROI tseries
   % on to the mean vector of the source ROI. Need to detrend/demean first
-  tSeries = eventRelatedDetrend(targetROI.tSeries(:,frameNums{i})')';
-  targetROI.projectionMagnitude(:,i) = tSeries*meanVector';
+  targetROI.tSeries(:,frameNums{i}) = eventRelatedDetrend(targetROI.tSeries(:,frameNums{i})')';
+  targetROI.projectionMagnitude(:,i) = targetROI.tSeries(:,frameNums{i})*meanVector';
 
   % now compute the normalized projection magnitude. This is the
   % projection magnitude divided by the length of the tSeries. This
   % gives a value of -1 to 1 which tells how much of the original vector
   % lies along the projection direction (and in which direction)
-  targetROI.normProjectionMagnitude(:,i) = targetROI.projectionMagnitude(:,i)./sqrt(sum(eventRelatedDetrend(tSeries',1)'.^2,2));
+  targetROI.normProjectionMagnitude(:,i) = targetROI.projectionMagnitude(:,i)./sqrt(sum(eventRelatedDetrend(targetROI.tSeries(:,frameNums{i})',1)'.^2,2));
 
   % remove that component
-  targetROI.tSeries(:,frameNums{i}) = tSeries-targetROI.projectionMagnitude(:,i)*meanVector;
+  targetROI.tSeries(:,frameNums{i}) = targetROI.tSeries(:,frameNums{i})-targetROI.projectionMagnitude(:,i)*meanVector;
 
   % Calculate this magnitude with the respect to the final vector magnitude
   % so we can reconstruct original vector easily.
   targetROI.reconProjectionMagnitude(:,i) = targetROI.projectionMagnitude(:,i)./sqrt(sum(eventRelatedDetrend(targetROI.tSeries(:,frameNums{i})',1)'.^2,2));
 
   % if there was data passed in, then put these tSeries back into data
-  if ~isempty(params.tSeries) && (nargout == 2)
+  if ~isempty(tSeries) && (nargout == 2)
     disppercent(-inf,sprintf('(projectOutMeanVector) Putting data from roi %s into output data structure',targetROI.name));
     % special case if the roi contains all voxels
     if strcmp(targetROI.name,'allVoxels_target')
-      params.tSeries(:,:,:,frameNums{i}) = reshape(targetROI.tSeries,size(params.tSeries,1),size(params.tSeries,2),size(params.tSeries,3),length(frameNums{i}));
+      tSeries(:,:,:,frameNums{i}) = reshape(targetROI.tSeries,size(tSeries,1),size(tSeries,2),size(tSeries,3),length(frameNums{i}));
     else
       % go frame by frame and copy the voxels in this roi to the output structure
       for frameNum = 1:length(frameNums{i})
-	linearCoords = sub2ind(size(params.tSeries),targetROI.scanCoords(1,:),targetROI.scanCoords(2,:),targetROI.scanCoords(3,:),frameNums{i}(frameNum)*ones(1,targetROI.n));
-	params.tSeries(linearCoords) = targetROI.tSeries(:,frameNum);
-	disppercent(frameNum/size(params.tSeries,4));
+	linearCoords = sub2ind(size(tSeries),targetROI.scanCoords(1,:),targetROI.scanCoords(2,:),targetROI.scanCoords(3,:),frameNums{i}(frameNum)*ones(1,targetROI.n));
+	tSeries(linearCoords) = targetROI.tSeries(:,frameNum);
+	disppercent(frameNum/size(tSeries,4));
       end
     end
     disppercent(inf);
@@ -153,19 +156,12 @@ end
 
 % and clear the tseries in the targetROI if we are passing back the
 % data as an array
-if ~isempty(params.tSeries) && (nargout == 2)
+if ~isempty(tSeries) && (nargout == 2)
   targetROI.tSeries = [];
 end
 
-% keep the ROI names
-targetROI.sourceName = sourceROI.name;
-
-
 % get linear coordinates, since that is usually easier
 targetROI.linearCoords = sub2ind(viewGet(v,'scanDims'),targetROI.scanCoords(1,:),targetROI.scanCoords(2,:),targetROI.scanCoords(3,:))';
-
-% return the tSeries
-tSeries = params.tSeries;
 
 return
 
