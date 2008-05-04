@@ -71,7 +71,11 @@ if ~isempty(scanListName)
       end
       % and copy the data
       if ~isempty(newData)
-	mergedData{thisScanNum} = oldData{thisScanNum};
+	if length(oldData)>=thisScanNum
+	  mergedData{thisScanNum} = oldData{thisScanNum};
+	else
+	  mergedData{thisScanNum} = [];
+	end
       end
     end
   end
