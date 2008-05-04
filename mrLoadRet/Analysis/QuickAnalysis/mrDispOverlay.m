@@ -16,6 +16,12 @@
 %             dimensions and do
 %
 %             mrDispOverlay(map,[1 2],2);
+%
+%             If you want to install multiple maps for a single scan, make
+%             a cell array of maps of all the maps you want to associate
+%             with the scan and do.
+%
+%             mrDispOverlay(map,1,2,[],'overlayNames',{'map1name','map2name'});
 %           
 %             If you want to install the overlay into an existing
 %             analysis, rather than a group (say erAnal), pass
@@ -92,10 +98,6 @@ groupName = viewGet(v,'groupName',groupNum);
 overlay = cellArray(overlay);
 
 % get some default parameters
-if ieNotDefined('overlayName')
-  overlayName = 'mrDispOverlay';
-end
-overlayName = fixBadChars(overlayName);
 if ieNotDefined('cmap')
   % colormap is made with a little bit less on the dark end
   cmap = hot(312);
@@ -104,6 +106,27 @@ end
 if ieNotDefined('colormapType')
   colormapType = 'setRangeToMax';
 end
+if ieNotDefined('range')
+  range = [0 1];
+end
+if ieNotDefined('clip')
+  clip = [0 1];
+end
+if ieNotDefined('analName')
+  analName = 'mrDispOverlayAnal';
+end
+
+% first get an overlayName
+if ieNotDefined('overlayName')
+  if ieNotDefined('overlayNames')
+    overlayName = 'mrDispOverlay';
+  else
+    overlayName = overlayNames{1};
+  end
+end
+overlayName = fixBadChars(overlayName);
+
+% now look for an interrogator name
 if ieNotDefined('interrogator')
   if ieNotDefined('anal')
     interrogator = 'timecoursePlot';
@@ -121,47 +144,76 @@ if ieNotDefined('interrogator')
     end
   end
 end
-if ieNotDefined('range')
-  range = [0 1];
-end
-if ieNotDefined('clip')
-  clip = [0 1];
-end
-if ieNotDefined('analName')
-  analName = 'mrDispOverlayAnal';
-end
 
-% create the parameters for the overlay
-dateString = datestr(now);
-o.(overlayName).name = overlayName;
-o.(overlayName).function = '';
-o.(overlayName).groupName = groupName;
-o.(overlayName).reconcileFunction = 'defaultReconcileParams';
-o.(overlayName).data = cell(1,viewGet(v,'nScans'));
-o.(overlayName).params.scanNum = [];
-for i = 1:length(scanNum)
-  if length(overlay) >= i
-    o.(overlayName).data{scanNum(i)} = overlay{i};
-    o.(overlayName).params.scanNum(end+1) = scanNum(i);
-  % if we are passed in one overlay but multiple scans
-  % then we install the same overlay for all the scans
-  elseif length(overlay) == 1
-    disp(sprintf('(mrDispOverlay) Only 1 overlay passed in. Installing that overlay for scan %i',scanNum(i)));
-    o.(overlayName).data{scanNum(i)} = overlay{1};
-    o.(overlayName).params.scanNum(end+1) = scanNum(i);
-  % otherwise something is wrong
+% if there is only one scan and multiple overlays,
+% it means to install many overlays for the single scan
+if length(scanNum) == 1
+  % we have multiple overlays
+  numOverlays = length(overlay);
+  % get overlay names
+  if ieNotDefined('overlayNames') 
+    for i = 1:numOverlays
+      overlayNames{i} = sprintf('%s%i',overlayName,i);
+    end
+  end
+  % make sure to fill out any missing overlay names
+  for i = (length(overlayNames)+1):numOverlays
+    overlayNames{i} = sprintf('%s%i',overlayName,i);
+  end
+else
+  numOverlays = 1;
+end
+disp(sprintf('(mrDispOverlay) Num overlays: %i',numOverlays));
+
+for onum = 1:numOverlays
+  % create the parameters for the overlay
+  dateString = datestr(now);
+  % set name, if more than one overlay per scan
+  % then number them in order.
+  if numOverlays == 1
+    o(onum).name = overlayName;
   else
-    disp(sprintf('(mrDispOverlay) Only %i overlays found for %i scans',length(overlay),length(scanNum)));
-  return
+    o(onum).name = overlayNames{onum};
+  end
+  o(onum).function = '';
+  o(onum).groupName = groupName;
+  o(onum).reconcileFunction = 'defaultReconcileParams';
+  o(onum).data = cell(1,viewGet(v,'nScans'));
+  o(onum).params.scanNum = [];
+  o(onum).date = dateString;
+  o(onum).range = range;
+  o(onum).clip = clip;
+  o(onum).colormap = cmap;
+  o(onum).alpha = 1;
+  o(onum).colormapType = colormapType;
+  o(onum).interrogator = interrogator;
+  % now setup the date field
+  % if we have multiple overlays, then it means
+  % we have a single scan which we are installying
+  % multiple overlays (this could be relaxed int he
+  % future to have multiple overlays for multiple scans)...
+  if numOverlays > 1
+    o(onum).data{scanNum(1)} = overlay{onum};
+    o(onum).params.scanNum = scanNum(1);
+  else
+    for i = 1:length(scanNum)
+      if length(overlay) >= i
+	o(onum).data{scanNum(i)} = overlay{i};
+	o(onum).params.scanNum(end+1) = scanNum(i);
+	% if we are passed in one overlay but multiple scans
+	% then we install the same overlay for all the scans
+      elseif length(overlay) == 1
+	disp(sprintf('(mrDispOverlay) Only 1 overlay passed in. Installing that overlay for scan %i',scanNum(i)));
+	o(onum).data{scanNum(i)} = overlay{1};
+	o(onum).params.scanNum(end+1) = scanNum(i);
+	% otherwise something is wrong
+      else
+	disp(sprintf('(mrDispOverlay) Only %i overlays found for %i scans',length(overlay),length(scanNum)));
+	return
+      end
+    end
   end
 end
-o.(overlayName).date = dateString;
-o.(overlayName).range = range;
-o.(overlayName).clip = clip;
-o.(overlayName).colormap = cmap;
-o.(overlayName).alpha = 1;
-o.(overlayName).colormapType = colormapType;
-o.(overlayName).interrogator = interrogator;
 
 % see if we need to install a bogus analysis
 if isempty(viewGet(v,'curAnalysis'))
@@ -176,7 +228,7 @@ if isempty(viewGet(v,'curAnalysis'))
   % using this to install something into the d strucutre
   % instead.
   if ~isempty(overlay)
-    a.(analName).overlays = o.(overlayName);
+    a.(analName).overlays = o;
   else
     a.(analName).overlays = [];
   end    
@@ -190,7 +242,9 @@ if isempty(viewGet(v,'curAnalysis'))
 else
   % install overlay
   if ~isempty(overlay)
-    v = viewSet(v,'newOverlay',o.(overlayName));
+    for onum = 1:length(o)
+      v = viewSet(v,'newOverlay',o(onum));
+    end
   end
   % install d structure
   if ~ieNotDefined('d')
