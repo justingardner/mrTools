@@ -55,6 +55,13 @@ if ~isempty(overlayImages)
     else
       pts = (im >= clip(1) | im <= clip(2));
     end
+    % do not clip out for any points that are set to nan
+    % this can happen if the current overlay does not
+    % exist for this scan
+    if ov ~= curOverlay
+      pts = pts | isnan(im);
+    end
+    % now make the mask
     mask = mask & pts;
     % if this is the alpha overlay then keep it.
     if ov == alphaOverlay
@@ -154,6 +161,8 @@ else
       overlayImages(:,:,ov) = interp3(overlayData,...
         overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
         interpMethod,interpExtrapVal);
+    else
+      overlayImages(:,:,ov) = nan;
     end
   end
 end
