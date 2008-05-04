@@ -381,10 +381,28 @@ toc;
 
 % if we have done projection, then save an overlay
 if params.projectOutMeanVector
-  % make overlay
-  overlay = zeros(viewGet(viewConcat,'scanDims',saveScanNum));
-  overlay(projectionConcat{1}.linearCoords) = projectionConcat{1}.normProjectionMagnitude;
-  mrDispOverlay(overlay,saveScanNum,[],viewConcat,'overlayName=mag','saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat{1},'colormapType=setRangeToMaxAroundZero','interrogator=projectOutMeanVectorPlot');
+  % make overlay for each scan in concatenation
+  meanOverlay = zeros(viewGet(viewConcat,'scanDims',saveScanNum));
+  for i = 1:length(projectionConcat)
+    % create an overlay
+    overlay{i} = zeros(viewGet(viewConcat,'scanDims',saveScanNum));
+    overlay{i}(projectionConcat{i}.linearCoords) = projectionConcat{i}.normProjectionMagnitude;
+    % make a mean overlay as well
+    meanOverlay = meanOverlay+overlay{i}/length(projectionConcat);
+    % make a name for the overlay
+    overlayNames{i} = sprintf('mag%i',i);
+    % remove the field since it now stored in the overlay
+    projectionConcat{i} = rmfield(projectionConcat{i},'normProjectionMagnitude');
+  end
+  if length(projectionConcat) > 1
+    % add the mean overlay
+    overlay{end+1} = meanOverlay;
+    overlayNames{end+1} = sprintf('magmean');
+  else
+    overlayNames{1} = 'mag';
+  end
+  % and save an analysis with the overlays
+  mrDispOverlay(overlay,saveScanNum,[],viewConcat,'overlayNames',overlayNames,'saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat,'colormapType=setRangeToMaxAroundZero','interrogator=projectOutMeanVectorPlot');
 end
 
 % Save evalstring for recomputing and params
