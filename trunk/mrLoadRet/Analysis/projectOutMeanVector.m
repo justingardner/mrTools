@@ -227,7 +227,7 @@ end
 dims = viewGet(v,'scanDims');
 % the y/x flip here is intentional. it is so that the
 % coordinates match when we reshape the tSeries matrix below
-[y x s] = meshgrid(1:dims(1),1:dims(2),1:dims(3));
+[y x s] = meshgrid(1:dims(2),1:dims(1),1:dims(3));
 roi.coords = [reshape(x,1,prod(dims)) ; reshape(y,1,prod(dims)) ; reshape(s,1,prod(dims))];
 roi.coords(4,:) = 1;
 
