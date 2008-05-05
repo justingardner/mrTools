@@ -50,8 +50,10 @@ elseif isstruct(roiNum)
     disp(sprintf('(getROICoordinates) Invalid ROI passed in'));
     return
   end
+  currentROI = viewGet(view,'currentROI');
   view = viewSet(view,'newROI',roiNum,1);
   roiNum = viewGet(view,'ROINum',roiNum.name);
+  view = viewSet(view,'currentROI',currentROI);
 end
 
 % get the roi transforms
@@ -101,4 +103,6 @@ if ~isempty(scanCoords) && (scanNum ~= 0)
   % only return ones that are in bounds
   scanCoords = scanCoords(:,find(xCheck & yCheck & sCheck));
 end
+
+
 
