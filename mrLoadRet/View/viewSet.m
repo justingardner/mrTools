@@ -209,6 +209,10 @@ switch lower(param)
     % view = viewSet(view,'deleteGroup',groupNum);
     groupnum = val;
     groupName = viewGet(view,'groupName',groupnum);
+    % confirm with user
+    if ~strcmp(questdlg(sprintf('Are you sure you want to delete group %s?',groupName),'Delete group'),'Yes')
+      return
+    end
     if strcmp(groupName,'Raw')
       mrWarnDlg('Cannot delete Raw group');
       return
@@ -935,6 +939,7 @@ switch lower(param)
     analysisNum = val;
     numAnalyses = viewGet(view,'numberofAnalyses');
     curAnalysis = viewGet(view,'currentAnalysis');
+    if isempty(curAnalysis),return,end
     % Remove it and reset currentAnalysis
     view.analyses = {view.analyses{analysisNum ~= [1:numAnalyses]}};
     if (numAnalyses > 1)
@@ -1115,6 +1120,7 @@ switch lower(param)
     % them as necessary.
     [params,data] = feval(overlay.reconcileFunction,groupName,overlay.params,overlay.data);
     overlay.params = params;
+    overlay.data = [];
     for scanNum = 1:length(data)
       % to save memory, we keep overlays as single precision
       % (commented out now)
