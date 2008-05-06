@@ -23,11 +23,9 @@ if isempty(d)
   return
 end
 d.r2 = analysis.overlays(1).data{scan};
-% select the window to plot into
-selectGraphWin;
 
-global MLR;
-fignum = MLR.graphFigure;
+% select the window to plot into
+fignum = selectGraphWin;
 
 % turn off menu/title etc.
 set(fignum,'NumberTitle','off');
@@ -77,6 +75,31 @@ if isfield(d,'stimNames')
   legend(stimNames);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   make a global so that we can compute things that take   %%
+%%   a long time only when user presses a button             %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+global gEventRelatedPlot;
+% make a lighter view
+v = newView;
+v = viewSet(v,'curGroup',viewGet(view,'curGroup'));
+v = viewSet(v,'curScan',viewGet(view,'curScan'));
+gEventRelatedPlot.v = v;
+
+gEventRelatedPlot.scan = scan;
+gEventRelatedPlot.vox = [x y s];
+gEventRelatedPlot.d = d;
+gEventRelatedPlot.d.ehdr = [];
+gEventRelatedPlot.d.ehdrste = [];
+gEventRelatedPlot.plotTSeriesHandle = [];
+gEventRelatedPlot.computeErrorBarsHandle = [];
+gEventRelatedPlot.roi = roi;
+gEventRelatedPlot.time = time;
+gEventRelatedPlot.cutoffr2 = cutoffr2;
+
+% set the delete function, so that we can delete the global we create
+set(fignum,'DeleteFcn',@eventRelatedCloseWindow);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % if there is an roi at this voxel
 % then plot mean response
@@ -85,6 +108,9 @@ for roinum = 1:length(roi)
   subplot(2,2,4);
   ehdr = [];
   roin = 0;
+  % first go for the quick and dirty way, which is
+  % to load up the computed hemodynamic responses
+  % and average them. 
   for voxnum = 1:size(roi{roinum}.scanCoords,2)
     x = roi{roinum}.scanCoords(1,voxnum);
     y = roi{roinum}.scanCoords(2,voxnum);
@@ -102,7 +128,7 @@ for roinum = 1:length(roi)
   end
   % plot the average of the ehdrs that beat the r2 cutoff
   if roin
-    plotEhdr(time,shiftdim(mean(ehdr),1),shiftdim(std(ehdr),1)/sqrt(size(roi{roinum}.scanCoords,2)));
+    plotEhdr(time,shiftdim(mean(ehdr),1));
   end
   title(sprintf('%s (n=%i/%i)',roi{roinum}.name,roin,size(roi{roinum}.scanCoords,2)),'Interpreter','none');
   % create a legend (only if peaks exist) to display mean amplitudes
@@ -119,32 +145,18 @@ for roinum = 1:length(roi)
     end
     legend(stimNames);
   end
+  % put up button whose call back will be to compute the error bars
+  figpos = get(fignum,'position');
+  gEventRelatedPlot.computeErrorBarsHandle = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotComputeErrorBars,'String','Compute error bars','Position',[figpos(3)/2+figpos(3)/20 figpos(4)/24 figpos(3)/2-figpos(3)/8 figpos(4)/14]);
 end
 
 drawnow;
 
-% save info in a global so that we can plot the time course later, since this takes
-% a long time to load the tseries
-global gEventRelatedPlot;
-% make a lighter view
-v = newView;
-v = viewSet(v,'curGroup',viewGet(view,'curGroup'));
-v = viewSet(v,'curScan',viewGet(view,'curScan'));
-gEventRelatedPlot.v = v;
-
-gEventRelatedPlot.scan = scan;
-gEventRelatedPlot.vox = [x y s];
-gEventRelatedPlot.d = d;
-gEventRelatedPlot.d.ehdr = [];
-gEventRelatedPlot.d.ehdrste = [];
-gEventRelatedPlot.d.r2 = [];
-gEventRelatedPlot.h = [];
-
-% now put up a button that will call gEventRelatedPlotTSeries below when it is clicked
-% but only if this is a long scan
+% now put up a button that will call gEventRelatedPlotTSeries below
+% when it is clicked but only if this is a long scan
 if viewGet(view,'nFrames') > 500
   figpos = get(fignum,'position');
-  gEventRelatedPlot.h = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotTSeries,'String','Plot the time series','Position',[figpos(3)/20 5*figpos(4)/8 9*figpos(3)/10 figpos(4)/4]);
+  gEventRelatedPlot.plotTSeriesHandle = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotTSeries,'String','Plot the time series','Position',[figpos(3)/20 5*figpos(4)/8 9*figpos(3)/10 figpos(4)/4]);
 else
   eventRelatedPlotTSeries;
 end
@@ -154,6 +166,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function eventRelatedPlotTSeries(varargin)
 
+disppercent(-inf,'(eventRelatedPlot) Plotting time series');
 global gEventRelatedPlot
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(gEventRelatedPlot.v,gEventRelatedPlot.scan,gEventRelatedPlot.vox(3),[],gEventRelatedPlot.vox(1),gEventRelatedPlot.vox(2)));
@@ -162,6 +175,7 @@ legendStr{1} = 'TSeries';
 xlabel('Volume number');
 ylabel('MRI signal');
 % and the stimulus times
+
 hold on
 axis tight;
 d = gEventRelatedPlot.d;
@@ -181,10 +195,57 @@ legend(legendHandle,legendStr);
 % get distribution of ISI
 %diff(sort(cell2mat(d.stimvol)));
 
-if ~isempty(gEventRelatedPlot.h)
-  set(gEventRelatedPlot.h,'Visible','off');
+if ~isempty(gEventRelatedPlot.plotTSeriesHandle)
+  set(gEventRelatedPlot.plotTSeriesHandle,'Visible','off');
 end
-clear global gEventRelatedPlot;
+
+disppercent(inf);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   eventRelatedPlotComputeErrorBars   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function eventRelatedPlotComputeErrorBars(varargin)
+
+global gEventRelatedPlot
+v = gEventRelatedPlot.v;
+roi = gEventRelatedPlot.roi;
+d = gEventRelatedPlot.d;
+cutoffr2 = gEventRelatedPlot.cutoffr2;
+
+subplot(2,2,4)
+
+% get the time series
+roi = loadROITSeries(v,roi{1});
+
+n = 0;
+for voxnum = 1:roi.n
+  % get coordinates
+  x = roi.scanCoords(1,voxnum);
+  y = roi.scanCoords(2,voxnum);
+  s = roi.scanCoords(3,voxnum);
+  if d.r2(x,y,s) > cutoffr2
+    n = n+1;
+    meanTimecourse(n,:) = roi.tSeries(voxnum,:);
+  end
+end
+
+yowsa = meanTimecourse;
+if n == 0
+  disp(sprintf('(eventRelatedPlot) No voxels met r2 > %0.3f',cutoffr2));
+elseif n > 1
+  meanTimecourse = mean(meanTimecourse);
+end
+
+% compute the event related analysis and the error bars
+er = getr2timecourse(meanTimecourse,d.nhdr,d.hdrlen,d.scm,d.tr);
+
+% plot them
+plotEhdr(er.time,er.ehdr,er.ehdrste);
+
+if ~isempty(gEventRelatedPlot.computeErrorBarsHandle)
+  set(gEventRelatedPlot.computeErrorBarsHandle,'Visible','off');
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % function to plot ehdr
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -195,7 +256,7 @@ if ~exist('lineSymbol','var'),lineSymbol = '-';,end
 
 % and display ehdr
 for i = 1:size(ehdr,1)
-  if nargin == 2
+  if ieNotDefined('ehdrste')
     h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
   else
     h=errorbar(time,ehdr(i,:),ehdrste(i,:),ehdrste(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
@@ -206,4 +267,9 @@ end
 xlabel('Time (sec)');
 ylabel('% Signal change');
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   eventRelateCloseWindow   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function eventRelatedCloseWindow(varargin)
 
+clear global gEventRelatedPlot;
