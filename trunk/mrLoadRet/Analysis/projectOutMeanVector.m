@@ -105,9 +105,10 @@ clear sourceROI
 
 % cycle over each segment of a concat. If this is a single
 % scan then we will be doing the whole thing in one pass
+disppercent(sprintf('(projectOutMeanVector) Projecting out vector.'));
 for i = 1:length(frameNums)
 
-  % ge this mean vector
+  % get this mean vector
   meanVector = meanVectorAllFrames(frameNums{i});
   
   % demean/detrend meanVector
@@ -123,10 +124,16 @@ for i = 1:length(frameNums)
   targetROI.projectionMagnitude(:,i) = targetROI.tSeries(:,frameNums{i})*meanVector';
 
   % now compute the normalized projection magnitude. This is the
-  % projection magnitude divided by the length of the tSeries. This
-  % gives a value of -1 to 1 which tells how much of the original vector
-  % lies along the projection direction (and in which direction)
-  targetROI.normProjectionMagnitude(:,i) = targetROI.projectionMagnitude(:,i)./sqrt(sum(eventRelatedDetrend(targetROI.tSeries(:,frameNums{i})',1)'.^2,2));
+  % projection magnitude divided by the norm of the tSeries. 
+  % This computation is equivalent to the Pearson's correlation
+  % coefficient which is cov(x,y)/std(x)*std(y). The reason
+  % is that this in matlab format this is:
+  % (x-mean(x))*(y-mean(y)'/(std(x)*std(y)*(n-1))
+  % y is mean subtracted, so this gets rid of the means in the numerator
+  % the x,y are divided by there norms, so the denominator
+  % becomes 1. So effectively, if you take the dot product of
+  % x and y which are mean subtracted and normalized: it is r!
+  targetROI.r(:,i) = targetROI.projectionMagnitude(:,i)./sqrt(sum(eventRelatedDetrend(targetROI.tSeries(:,frameNums{i})',1)'.^2,2));
 
   % remove that component
   targetROI.tSeries(:,frameNums{i}) = targetROI.tSeries(:,frameNums{i})-targetROI.projectionMagnitude(:,i)*meanVector;
@@ -137,7 +144,6 @@ for i = 1:length(frameNums)
 
   % if there was data passed in, then put these tSeries back into data
   if ~isempty(tSeries) && (nargout == 2)
-    disppercent(-inf,sprintf('(projectOutMeanVector) Putting data from roi %s into output data structure',targetROI.name));
     % special case if the roi contains all voxels
     if strcmp(targetROI.name,'allVoxels_target')
       tSeries(:,:,:,frameNums{i}) = reshape(targetROI.tSeries,size(tSeries,1),size(tSeries,2),size(tSeries,3),length(frameNums{i}));
@@ -146,13 +152,13 @@ for i = 1:length(frameNums)
       for frameNum = 1:length(frameNums{i})
 	linearCoords = sub2ind(size(tSeries),targetROI.scanCoords(1,:),targetROI.scanCoords(2,:),targetROI.scanCoords(3,:),frameNums{i}(frameNum)*ones(1,targetROI.n));
 	tSeries(linearCoords) = targetROI.tSeries(:,frameNum);
-	disppercent(frameNum/size(tSeries,4));
       end
     end
-    disppercent(inf);
   end
   targetROI.sourceMeanVector(i,:) = meanVector;
+  disppercent(i/length(frameNums));
 end
+disppercent(inf);
 
 % and clear the tseries in the targetROI if we are passing back the
 % data as an array
@@ -168,17 +174,17 @@ return
 smartfig('projectOutMeanVector');
 % make an overlay
 overlay = zeros(viewGet(v,'scanDims'));
-overlay(params.targetROI{1}.linearCoords) = params.targetROI{1}.normProjectionMagnitude;
+overlay(params.targetROI{1}.linearCoords) = params.targetROI{1}.r;
 
 % find largest 
-maxMatch = first(find((max(params.targetROI{1}.normProjectionMagnitude) == params.targetROI{1}.normProjectionMagnitude)));
+maxMatch = first(find((max(params.targetROI{1}.r) == params.targetROI{1}.r)));
 x = params.targetROI{1}.coords(1,maxMatch);
 y = params.targetROI{1}.coords(2,maxMatch);
 s = params.targetROI{1}.coords(3,maxMatch);
 plot(tSeries(maxMatch,:));hold on
 plot(params.targetROI{1}.projectionMagnitude(maxMatch)*meanVector,'r')
 plot(params.targetROI{1}.tSeriesRemoved(maxMatch,:),'k');
-title(sprintf('Voxel: [%i %i %i] projection mag: %0.3f',x,y,s,params.targetROI{1}.normProjectionMagnitude(maxMatch)));
+title(sprintf('Voxel: [%i %i %i] projection mag: %0.3f',x,y,s,params.targetROI{1}.r(maxMatch)));
 legend('Original','Projection component','Projection Removed');
 xlabel('Time (TR)');
 ylabel('MRI Signal')

@@ -276,7 +276,7 @@ for iscan = 1:length(params.scanList)
     d.projection.sourceName = projection.sourceName;
     d.projection.sourceMeanVector = projection.sourceMeanVector;
     % and the information about the projection magnitude
-    d.projection.normProjectionMagnitude = projection.normProjectionMagnitude;
+    d.projection.r = projection.r;
     d.projection.reconProjectionMagnitude = projection.reconProjectionMagnitude;
     d.projection.linearCoords = projection.linearCoords;
     clear projection;
@@ -387,20 +387,20 @@ if params.projectOutMeanVector
   for i = 1:length(projectionConcat)
     % create an overlay
     overlay{i} = zeros(viewGet(viewConcat,'scanDims',saveScanNum));
-    overlay{i}(projectionConcat{i}.linearCoords) = projectionConcat{i}.normProjectionMagnitude;
+    overlay{i}(projectionConcat{i}.linearCoords) = projectionConcat{i}.r;
     % make a mean overlay as well
     meanOverlay = meanOverlay+overlay{i}/length(projectionConcat);
     % make a name for the overlay
-    overlayNames{i} = sprintf('mag%i',i);
+    overlayNames{i} = sprintf('r%i',i);
     % remove the field since it now stored in the overlay
-    projectionConcat{i} = rmfield(projectionConcat{i},'normProjectionMagnitude');
+    projectionConcat{i} = rmfield(projectionConcat{i},'r');
   end
   if length(projectionConcat) > 1
     % add the mean overlay
     overlay{end+1} = meanOverlay;
-    overlayNames{end+1} = sprintf('magmean');
+    overlayNames{end+1} = sprintf('mean_r');
   else
-    overlayNames{1} = 'mag';
+    overlayNames{1} = 'r';
   end
   % and save an analysis with the overlays
   mrDispOverlay(overlay,saveScanNum,[],viewConcat,'overlayNames',overlayNames,'saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat,'colormapType=setRangeToMaxAroundZero','interrogator=projectOutMeanVectorPlot');
