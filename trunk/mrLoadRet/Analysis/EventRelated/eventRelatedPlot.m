@@ -96,6 +96,8 @@ gEventRelatedPlot.computeErrorBarsHandle = [];
 gEventRelatedPlot.roi = roi;
 gEventRelatedPlot.time = time;
 gEventRelatedPlot.cutoffr2 = cutoffr2;
+gEventRelatedPlot.computingErrorBars = 0;
+gEventRelatedPlot.loadingTimecourse = 0;
 
 % set the delete function, so that we can delete the global we create
 set(fignum,'DeleteFcn',@eventRelatedCloseWindow);
@@ -111,7 +113,9 @@ for roinum = 1:length(roi)
   % first go for the quick and dirty way, which is
   % to load up the computed hemodynamic responses
   % and average them. 
+  disppercent(-inf,'(eventRelatedPlot) Computing mean hdr');
   for voxnum = 1:size(roi{roinum}.scanCoords,2)
+    disppercent(voxnum,size(roi{roinum}.scanCoords,2));
     x = roi{roinum}.scanCoords(1,voxnum);
     y = roi{roinum}.scanCoords(2,voxnum);
     s = roi{roinum}.scanCoords(3,voxnum);
@@ -125,6 +129,7 @@ for roinum = 1:length(roi)
 	end
       end
     end
+    disppercent(voxnum/size(roi{roinum}.scanCoords,2));
   end
   % plot the average of the ehdrs that beat the r2 cutoff
   if roin
@@ -148,6 +153,7 @@ for roinum = 1:length(roi)
   % put up button whose call back will be to compute the error bars
   figpos = get(fignum,'position');
   gEventRelatedPlot.computeErrorBarsHandle = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotComputeErrorBars,'String','Compute error bars','Position',[figpos(3)/2+figpos(3)/20 figpos(4)/24 figpos(3)/2-figpos(3)/8 figpos(4)/14]);
+  disppercent(inf);
 end
 
 drawnow;
@@ -166,8 +172,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function eventRelatedPlotTSeries(varargin)
 
-disppercent(-inf,'(eventRelatedPlot) Plotting time series');
 global gEventRelatedPlot
+if gEventRelatedPlot.loadingTimecourse
+  disp(sprintf('(eventRelatedPlot) Still loading timecourse. Please wait.'));
+  return
+end
+gEventRelatedPlot.loadingTimecourse = 1;
+
+disppercent(-inf,'(eventRelatedPlot) Plotting time series');
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(gEventRelatedPlot.v,gEventRelatedPlot.scan,gEventRelatedPlot.vox(3),[],gEventRelatedPlot.vox(1),gEventRelatedPlot.vox(2)));
 legendHandle(1) = plot(tSeries,'k.-');
@@ -207,6 +219,11 @@ disppercent(inf);
 function eventRelatedPlotComputeErrorBars(varargin)
 
 global gEventRelatedPlot
+if gEventRelatedPlot.computingErrorBars
+  disp(sprintf('(eventRelatedPlot) Still computing error bars. Please wait.'));
+  return
+end
+gEventRelatedPlot.computingErrorBars = 1;
 v = gEventRelatedPlot.v;
 roi = gEventRelatedPlot.roi;
 d = gEventRelatedPlot.d;
