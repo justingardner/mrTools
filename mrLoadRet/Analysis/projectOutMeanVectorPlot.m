@@ -27,14 +27,14 @@ overlayNum = viewGet(view,'curOverlay');
 overlayName = viewGet(view,'overlayName');
 
 % figure out which d it corresponds to.
-if strcmp(overlayName,'mag')
+if strcmp(overlayName,'r')
   dnum = 1;
 elseif ~isempty(regexp(overlayName,'[0-9]+'))
   numloc = regexp(overlayName,'[0-9]+');
   dnum = str2num(overlayName(numloc:end));
   concatInfo = viewGet(view,'concatInfo',scan);
   frameNums = concatInfo.runTransition(dnum,:);
-elseif strcmp(overlayName,'magmean');
+elseif strcmp(overlayName,'mean_r');
   disp(sprintf('(projectOutMeanVectorPlot) No plot for mean'));
   return
 else
@@ -92,7 +92,7 @@ end
 
 xlabel('Time (TR)');
 ylabel('Normalized magnitude');
-title(sprintf('Voxel: [%i %i %i] Projection magnitude: %0.3f Projection ROI: %s\nMagnitude of component left in projection direction: %f',x,y,s,normMag,d{dnum}.sourceName,leftoverMag),'Interpreter','none');
+title(sprintf('Voxel: [%i %i %i] r: %0.3f Projection ROI: %s\nMagnitude of component left in projection direction: %f',x,y,s,normMag,d{dnum}.sourceName,leftoverMag),'Interpreter','none');
 
 subplot(2,1,2);
 plot(abs(fft(tSeries)),'k.-');hold on
