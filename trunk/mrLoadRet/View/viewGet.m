@@ -1684,11 +1684,16 @@ switch lower(param)
       mrErrorDlg('viewGet roiNum: must specify ROI name');
     end
     ROIname = varargin{1};
+    % if no ROIs are loaded than return empty
+    if viewGet(view,'nROIs') == 0
+      return
+    end
     ROInames = {view.ROIs(:).name};
     % note that it is possible to have more than one
     % ROI with the same name, so pick the last one in
     % the list, since we usually are getting the number
-    % for the last ROI that was just created
+    % for the last ROI that was just created (This should not
+    % happen anymore since viewSet checks for duplicates).
     val = find(strcmp(ROIname,ROInames));
     if length(val) > 1
       mrWarnDlg(sprintf('(viewGet) you have multiple ROIs with the name %s',ROIname));
