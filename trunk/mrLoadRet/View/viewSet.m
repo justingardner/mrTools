@@ -209,8 +209,14 @@ switch lower(param)
     % view = viewSet(view,'deleteGroup',groupNum);
     groupnum = val;
     groupName = viewGet(view,'groupName',groupnum);
+    nScans = viewGet(view,'nScans');
     % confirm with user
-    if ~strcmp(questdlg(sprintf('Are you sure you want to delete group %s?',groupName),'Delete group'),'Yes')
+    if nScans > 0
+      queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
+    else
+      queststr = sprintf('Are you sure you want to delete empty group: %s?',groupName);
+    end
+    if ~strcmp(questdlg(queststr,'Delete group'),'Yes')
       return
     end
     if strcmp(groupName,'Raw')
