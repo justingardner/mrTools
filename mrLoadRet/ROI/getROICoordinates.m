@@ -50,10 +50,10 @@ elseif isstruct(roiNum)
     disp(sprintf('(getROICoordinates) Invalid ROI passed in'));
     return
   end
-  currentROI = viewGet(view,'currentROI');
+  currentROIname = viewGet(view,'roiName');
   view = viewSet(view,'newROI',roiNum,1);
   roiNum = viewGet(view,'ROINum',roiNum.name);
-  view = viewSet(view,'currentROI',currentROI);
+  view = viewSet(view,'currentROI',viewGet(view,'ROINum',currentROIname));
 end
 
 % get the roi transforms
