@@ -25,6 +25,16 @@
 %          
 %             e.g. To remove the mean component calculated from l_mt from r_mt
 %             r_mt = projectOutMeanVector(v,'l_mt','r_mt');
+%
+%             If you want to use this for two matrices without a
+%             view, view can be set to []:
+%
+%             noise = rand(1,1000);
+%             for i = 1:50
+%                signal(i,:) = noise+rand(1,1000);
+%             end
+%             p = projectOutMeanVector([],noise,signal);
+% 
 %    
 function [targetROI tSeries] = projectOutMeanVector(v,sourceROI,targetROI,tSeries)
 
@@ -78,11 +88,18 @@ else
 end
 
 % get the frame numbers over which to work
-% first check if this is a concat
-concatInfo = viewGet(v,'concatInfo');
+% first check if this is a concat and get nFrames
+if isview(v)
+  concatInfo = viewGet(v,'concatInfo');
+  nFrames = viewGet(v,'nFrames');
+else
+  concatInfo = [];
+  nFrames = size(sourceROI.tSeries,2);
+end
+  
 if isempty(concatInfo)
   % no concatInfo, just do all frames at once
-  frameNums{1} = 1:viewGet(v,'nFrames');
+  frameNums{1} = 1:nFrames;
 else
   % get each block of frames from each scan
   % since we want to project out on a scan by scan basis
@@ -105,7 +122,7 @@ clear sourceROI
 
 % cycle over each segment of a concat. If this is a single
 % scan then we will be doing the whole thing in one pass
-disppercent(sprintf('(projectOutMeanVector) Projecting out vector.'));
+disppercent(-inf,sprintf('(projectOutMeanVector) Projecting out vector.'));
 for i = 1:length(frameNums)
 
   % get this mean vector
@@ -167,7 +184,9 @@ if ~isempty(tSeries) && (nargout == 2)
 end
 
 % get linear coordinates, since that is usually easier
-targetROI.linearCoords = sub2ind(viewGet(v,'scanDims'),targetROI.scanCoords(1,:),targetROI.scanCoords(2,:),targetROI.scanCoords(3,:))';
+if isview(v)
+  targetROI.linearCoords = sub2ind(viewGet(v,'scanDims'),targetROI.scanCoords(1,:),targetROI.scanCoords(2,:),targetROI.scanCoords(3,:))';
+end
 
 return
 
@@ -203,8 +222,8 @@ roi.name = name;
 roi.voxelSize = [nan nan nan];
 roi.xform = eye(4);
 roi.notes = sprintf('%s data passed into function projectOutMeanVector',name);
-roi.n = size(tSeries,1);
 [tf roi] = isroi(roi);
+roi.n = size(tSeries,1);
 roi.tSeries = tSeries;
 roi.coords = [];
 roi.scanCoords = [];
