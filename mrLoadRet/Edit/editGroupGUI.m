@@ -120,7 +120,21 @@ for iScan=1:nfiles
   scanParams(iScan).description = 'description';
   scanParams(iScan).fileName = fileList{iScan};
   scanParams(iScan).fileType = 'Nifti';
-  scanParams(iScan).framePeriod = hdr.pixdim(5)/1000;
+  % scanParams(iScan).framePeriod = hdr.pixdim(5)/1000;
+  disp('(editGroupGUI) checking time units in nifti file')
+  niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
+  niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
+  if niftiTimeUnit == 8 % seconds
+    scanParams(iScan).framePeriod = hdr.pixdim(5)./1;
+  elseif niftiTimeUnit == 16 % milliseconds
+    scanParams(iScan).framePeriod = hdr.pixdim(5)./1000;
+  elseif niftiTimeUnit == 32 % microseconds
+    scanParams(iScan).framePeriod = hdr.pixdim(5)./10e6;
+  end
+  if strcmp(lower(mrGetPref('verbose')),'yes')
+    % 8 -> 10^0, 16 -> 10^3, 32-> 10^6
+    disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
+  end
   scanParams(iScan).junkFrames = 0;
   scanParams(iScan).nFrames = hdr.dim(5);
   scanParams(iScan).niftiHdr = hdr;
