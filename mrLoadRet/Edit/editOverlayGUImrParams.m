@@ -41,6 +41,7 @@ function retval = editOverlayGUImrParams(viewNum)
   paramsInfo{end+1} = {'interrogator', interrogator, 'Set the interrogator function name','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'alphaOverlay', alphaOverlay, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.','callback',@mrCmapCallback,'callbackArg',v};
  paramsInfo{end+1} = {'alphaOverlayExponent', alphaOverlayExponent, 'minmax=[0 inf]','incdec=[-0.1 0.1]','If you are using an alphaOverlay, this sets an exponent on the alphaOverlay to pass through. For example, if you just want the value from the overlay to be the alpha value then set this to 1. If you want to have it so that lower values get accentuated (usually this is the case), set the exponent to less than 1, but greater than 0. The alpha values are passed through the function alpha = alpha.^alphaOverlayExponent','callback',@mrCmapCallback,'callbackArg',v};
+  paramsInfo{end+1} = {'setAll', 0, 'type=pushbutton','Set all overlays to have them same settings','callback',@mrCmapSetAllCallback,'callbackArg',v,'buttonString=Set all overlays','passParams=1'};
 %   paramsInfo{end+1} = {'overlayName', overlayName, 'The name for the overlay (e.g., co, am, or ph)'};
 
   % display dialog
@@ -114,6 +115,39 @@ function mrCmapCallback(v,params)
   disppercent(inf);
   return;
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mrCmapSetAllCallback   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = mrCmapSetAllCallback(v,params)
+retval = [];
+hWaitBar = mrWaitBar(0,'(editOverlayGUImrParams) Setting overlays to have same parameters');
+
+% get the current overlay
+currentOverlayNum = viewGet(v,'curOverlay');
+currentOverlayName = viewGet(v,'overlayname',currentOverlayNum);
+currentOverlay = viewGet(v,'overlay',currentOverlayNum);
+nOverlays = viewGet(v,'numOverlays');
+
+% a list of fields which should be copied
+copyFields = {'alpha','alphaOverlayExponent','interrogator','clip','colormap','colormapType','range'};
+% now go through each overlay and set the fields the same one
+
+for onum = 1:nOverlays
+  o = viewGet(v,'overlay',onum);
+  % copy fields from the current overlay
+  for fnum = 1:length(copyFields)
+    o.(copyFields{fnum}) = currentOverlay.(copyFields{fnum});
+  end
+  % now set it back
+  v = viewSet(v,'newOverlay',o);
+  mrWaitBar(onum/nOverlays,hWaitBar);
+end
+
+% set back the current overlay to the original one
+v = viewSet(v,'curOverlay',viewGet(v,'overlayNum',currentOverlayName));
+
+mrCloseDlg(hWaitBar);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   mrEpiMovieClose   %%
