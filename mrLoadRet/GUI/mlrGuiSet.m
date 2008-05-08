@@ -191,6 +191,7 @@ switch lower(field)
 		value = clipToSlider(handles.alphaSlider,value);
 		set(handles.alphaSlider,'Value',value);
 		set(handles.alphaText,'String',num2str(value));
+		set(handles.alphaSlider,'sliderStep',[0.1 0.5]);
 
 	case {'nscans'}
         % mlrGuiSet(view,'nscans',value);
