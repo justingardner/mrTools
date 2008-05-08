@@ -68,9 +68,10 @@ switch descriptor
     baseZ = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],3);
     coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,prod(size(baseX)))];
     
-  case 'polygon'
+ case 'polygon'
+    roiPolygonMethod = mrGetPref('roiPolygonMethod');
     % Get polygon region using matlab's roipoly function
-    if strcmp(mrGetPref('roiPolygonMethod'),'roipoly')
+    if strcmp(roiPolygonMethod,'roipoly')
       % this is sometimes very slow if you have a lot
       % of lines already drawn on the figure.
       % i.e. if you have rois already being displayed
@@ -81,7 +82,11 @@ switch descriptor
       % but has the disadvantage that you don't get
       % to see the lines connecting the points.
       [x y a] = getimage;
-      [xi yi] = getpts;
+      if strcmp(roiPolygonMethod,'getptsNoDoubleClick')
+	[xi yi] = getptsNoDoubleClick;
+      else
+	[xi yi] = getpts;
+      end
       % draw the lines temporarily
       if ~isempty(xi)
         %	    line([xi;xi(1)],[yi;yi(1)]);
