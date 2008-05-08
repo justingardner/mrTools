@@ -446,7 +446,23 @@ switch lower(param)
       scanParams.nFrames = scanParams.totalFrames;
     end
     scanParams.dataSize = hdr.dim([2,3,4])';
-    scanParams.framePeriod = hdr.pixdim(5)/1000;
+    % scanParams.framePeriod = hdr.pixdim(5)/1000;
+    % see definitions for NIFTI_UNITS in nifti1.h
+    % space units are multiples of 1, time units multiples of 8 up to 64
+    disp('(viewSet) checking time units in nifti file')
+    niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
+    niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
+    if niftiTimeUnit == 8 % seconds
+      scanParams.framePeriod = hdr.pixdim(5)./1;
+    elseif niftiTimeUnit == 16 % milliseconds
+      scanParams.framePeriod = hdr.pixdim(5)./1000;
+    elseif niftiTimeUnit == 32 % microseconds
+      scanParams.framePeriod = hdr.pixdim(5)./10e6;
+    end
+    if strcmp(lower(mrGetPref('verbose')),'yes')
+      % 8 -> 10^0, 16 -> 10^3, 32-> 10^6
+      disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
+    end
     % check for field that tells what the original
     % filename is. if it is not passed in
     % then just set it to the current name and group
