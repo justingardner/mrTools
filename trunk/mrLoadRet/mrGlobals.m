@@ -47,7 +47,7 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     MLR.caches = {};
     
     % Inform user that mrLoadRet has started up
-    disp(['mrLoadRet ',num2str(MLR.version),', Matlab ',num2str(matlabVersion)]);
+    oneTimeWarning('mrLoadRetVersion',['(mrGlobals) mrLoadRet ',num2str(MLR.version),', Matlab ',num2str(matlabVersion)],1);
 
     % Clean up
     clear expectedMatlabVersion version matlabVersion session groups mlrVersion 

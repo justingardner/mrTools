@@ -163,7 +163,7 @@ if length(scanNum) == 1
 else
   numOverlays = 1;
 end
-disp(sprintf('(mrDispOverlay) Num overlays: %i',numOverlays));
+%disp(sprintf('(mrDispOverlay) Num overlays: %i',numOverlays));
 
 for onum = 1:numOverlays
   % create the parameters for the overlay
