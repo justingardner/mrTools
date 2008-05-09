@@ -98,8 +98,9 @@ if ieNotDefined('params')
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Get rois for doing projection
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  if params.projectOutMeanVector
-    params.projectOutMeanVectorParams = projectOutMeanVectorParams(view);
+  if params.projectOutMeanVector || defaultParams
+    % projectOutMeanVectorParams
+    params.projectOutMeanVectorParams = projectOutMeanVectorParams(view,defaultParams);
     if isempty(params.projectOutMeanVectorParams),return,end
   end
   % check the parameters
