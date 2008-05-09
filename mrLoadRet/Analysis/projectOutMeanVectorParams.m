@@ -1,20 +1,27 @@
 % projectOutMeanVectorParams.m
 %
 %        $Id$
-%      usage: projectOutMeanVectorParams(v)
+%      usage: projectOutMeanVectorParams(v,<defaultParams>)
 %         by: justin gardner
 %       date: 05/02/08
 %    purpose: Get the parameters for projectOutMeanVectorParams
+%             Set defaultParams=1 if you just want to get default params
 %
-function params = projectOutMeanVectorParams(v)
+function params = projectOutMeanVectorParams(v,defaultParams)
 
 % check arguments
-if ~any(nargin == [1])
+if ~any(nargin == [1 2])
   help projectOutMeanVectorParams
   return
 end
 
 params = [];
+
+if ~ieNotDefined('defaultParams') && (defaultParams == 1)
+  params.sourceROI = [];
+  params.targetROI = [];
+  return
+end
 
 % ask the user which rois to use as the source ROI
 roiNames = viewGet(v,'roiNames');
