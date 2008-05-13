@@ -103,6 +103,10 @@ junkFrames = viewGet(view,'junkframes',scanNum);
 if ~isempty(d.data)
   d.data = d.data(:,:,:,junkFrames+1:junkFrames+d.nFrames);
 end
+% adjust number of volumes to account for the frames that
+% we have just junked
+d.dim(4) = size(d.data,4);
+
 % junk frames total is used by getStimvol to adjust
 % volumes according to how many volumes have been thrown out
 d.junkFrames = viewGet(view,'totalJunkedFrames',scanNum);
