@@ -47,7 +47,7 @@ paramsInfo = {...
     {'description','Concatenation of [x...x]','Description that will be set to have the scannumbers that are selected'},...
     {'filterType',1,'minmax=[0 2]','incdec=[-1 1]','Which filter to use. Set to 0 for no filtering. Set to 1 for detrending followed by highpass filtering using the cutoff below. Set to 2 for detrending only.'},...
     {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
-    {'percentSignal',1,'type=checkbox','Convert to percent signal change'}};
+    {'percentSignal',1,'type=checkbox','Convert to percent signal change. This is done by simply dividing by the mean, so that you get a timecourse where the mean is 1. (The mean is not subtracted out so that if subsequent analysis tries to divide by mean again it will not affect the time series)'}};
     if needToWarp
       paramsInfo{end+1} = {'warp',1,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days. If the scans have the same slice prescription this will not do anything.'};
       paramsInfo{end+1} = {'warpInterpMethod',interpTypes,'Interpolation method for warp','contingent=warp'};
@@ -405,6 +405,19 @@ if params.projectOutMeanVector
   end
   % and save an analysis with the overlays
   mrDispOverlay(overlay,saveScanNum,[],viewConcat,'overlayNames',overlayNames,'saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat,'colormapType=setRangeToMaxAroundZero','interrogator=projectOutMeanVectorPlot');
+  % check to see if projection analysis is loaded in concatenation group.
+  % if it is unload it and reload it
+  curMLRGroup = viewGet(view,'curGroup');
+  view = viewSet(view,'curGroup',concatGroupNum)
+  analysisNames = viewGet(view,'analysisNames');
+  if any(strcmp('projectionAnal',analysisNames))
+    disp(sprintf('(concatTSeries) Projection anal is loaded in projection group. Reloading with current analysis'));
+    projectionAnalysisNum = find(strcmp('projectionAnal',analysisNames));
+    view = viewSet(view,'deleteAnalysis',projectionAnalysisNum);
+    view = loadAnalysis(view,fullfile('projectionAnal','projectionAnal.mat'));
+  end
+  % reset back to original group
+  view = viewSet(view,'curGroup',curMLRGroup);
 end
 
 % Save evalstring for recomputing and params
