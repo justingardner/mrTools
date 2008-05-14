@@ -179,6 +179,11 @@ for onum = 1:numOverlays
   o(onum).groupName = groupName;
   o(onum).reconcileFunction = 'defaultReconcileParams';
   o(onum).data = cell(1,viewGet(v,'nScans'));
+  if ieNotDefined('params')
+    o(onum).params = [];
+  else
+    o(onum).params = params;
+  end
   o(onum).params.scanNum = [];
   o(onum).date = dateString;
   o(onum).range = range;
