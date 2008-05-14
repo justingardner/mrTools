@@ -1192,6 +1192,8 @@ switch lower(param)
     else
       view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
     end
+    % clear overlay cache
+    view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
     % Update the gui
     mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum));
     % Set it to be the current overlay
