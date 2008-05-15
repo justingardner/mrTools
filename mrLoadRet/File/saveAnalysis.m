@@ -120,13 +120,22 @@ if isfile(fullfile(pathStr,filename))
         end
         % if there was no match, then simply add the overlay to the analysis struct
         if ~matchedOverlay
-          view = viewSet(view,'newoverlay',oldOverlay,analysisNum);
+          %view = viewSet(view,'newoverlay',oldOverlay,analysisNum);
 	  % we have added the overlay to the one in the mlr structure,
 	  % but below we are using newAnal to set the new analysis,
 	  % so we retrieve the overlays and stick it on to our
           % newAnal structure
-	  updatedAnalysis = viewGet(view,'analysis',analysisNum);
-	  newAnal.overlays = updatedAnalysis.overlays;
+	  %updatedAnalysis = viewGet(view,'analysis',analysisNum);
+	  %newAnal.overlays = updatedAnalysis.overlays;
+	  
+	  % this used to do the above to tack on an old overlay, but that
+	  % didn't work if there was a combination of old overlays and
+	  % new overlays (since it overwrote newAnal.overlays, it undid
+	  % anything that was done above when you found a matchedOverlay).
+	  % so now we just tack on the overlay. Note that it should
+	  % already be reconciled, since the old analysis was installed
+	  % into MLR. So this should be the same as above -jg.
+	  newAnal.overlays(end+1) = oldOverlay;
           disp(sprintf('(saveAnalysis) Added overlay %s from old analysis',oldOverlayName));
         end
       end
