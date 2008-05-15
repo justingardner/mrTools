@@ -17,7 +17,7 @@ if isempty(d)
   return
 end
 d.r2 = analysis.overlays(1).data{scan};
-rOverlay = viewGet(v,'overlay');
+rOverlay = viewGet(v,'overlay',viewGet(v,'overlayNum','r'));
 d.r = rOverlay.data{scan};
 
 % select the window to plot into
@@ -39,6 +39,7 @@ title(sprintf('Projected out\n[%i %i %i]',x,y,s));
 subplot(1,3,1);
 ehdr = d.projectionEhdr;
 plotEhdr(time,ehdr,[],'-');
+ylabel('Normalized response');
 if isempty(rOverlay.params.roiName)
   title(sprintf('Seed voxel\n[%i %i %i] r2=%0.3f',rOverlay.params.x,rOverlay.params.y,rOverlay.params.s,d.r2(rOverlay.params.x,rOverlay.params.y,rOverlay.params.s)));
 else

@@ -68,7 +68,7 @@ if strcmp('erAnal',viewGet(v,'analysisType'));
   r = reshape(p.r,d.dim(1),d.dim(2),d.dim(3));
   
   % install the overlay
-  mrDispOverlay(r,viewGet(v,'curScan'),viewGet(v,'curGroup'),v,'overlayName=r','interrogator=erCorrelationPlot','params.x',x,'params.y',y,'params.s',s,sprintf('params.roiName=%s',roiName),'params.roiN',roiN,'range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType=setRangeToMaxAroundZero','d',d);
+  mrDispOverlay(r,viewGet(v,'curScan'),viewGet(v,'curGroup'),v,'overlayName=r','interrogator=erCorrelationPlot','params.x',x,'params.y',y,'params.s',s,'params.roiName',roiName,'params.roiN',roiN,'range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType=setRangeToMaxAroundZero','d',d);
 
   % refresh display
   refreshMLRDisplay(viewGet(v,'viewNum'));
