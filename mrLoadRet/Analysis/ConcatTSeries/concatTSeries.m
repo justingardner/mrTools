@@ -204,7 +204,7 @@ concatInfo.whichVolume = [];
 set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
 tic
 % Compute output volume
-waitHandle = mrWaitBar(0,'Concatenating tSeries.  Please wait...');
+waitHandle = mrWaitBar(0,'(concatTSeries) Concatenating tSeries.  Please wait...');
 view = viewSet(view,'curGroup',groupNum);
 for iscan = 1:length(params.scanList)
   scanNum = params.scanList(iscan);
@@ -213,7 +213,7 @@ for iscan = 1:length(params.scanList)
   view = viewSet(view,'curScan',scanNum);
   
   % Load it
-  mrDisp(sprintf('\nLoading scan %i from %s\n',scanNum,viewGet(viewBase,'groupName')));
+  mrDisp(sprintf('\n(concatTSeries) Loading scan %i from %s\n',scanNum,viewGet(viewBase,'groupName')));
   tSeries = loadTSeries(viewBase,scanNum,'all');
 	
   % Dump junk frames
@@ -367,6 +367,8 @@ for iscan = 1:length(params.scanList)
   % keep the projection info if that was used
   if isfield(d,'projection')
     projectionConcat{concatInfo.n} = d.projection;
+    concatInfo.projection{concatInfo.n}.sourceName = d.projection.sourceName;
+    concatInfo.projection{concatInfo.n}.sourceMeanVector = d.projection.sourceMeanVector;
   end
     
   % update the runtransition field, which keeps the beginning
