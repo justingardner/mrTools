@@ -94,15 +94,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if strcmp(runtype,'both') || strcmp(runtype,'filter')
   if ~isfield(d,'hipassfilter')
-    disp(sprintf('UHOH: Must run myhighpass(d,cutoff,''init'') first'));
+    disp(sprintf('(eventRelatedHighpass): Must run myhighpass(d,cutoff,''init'') first'));
     return
   end
   hipassfilter = d.hipassfilter;
   if isfield(d,'hipasscutoff')
     % go through the data, detrend and apply filter in fourier domain
-    disppercent(-inf,sprintf('Applying temporal hipass filter (cutoff=%0.03f Hz)',d.hipasscutoff));
+    disppercent(-inf,sprintf('(eventRelatedHighpass) Applying temporal hipass filter (cutoff=%0.03f Hz)',d.hipasscutoff));
   else
-    disppercent(-inf,sprintf('Applying temporal hipass filter'))
+    disppercent(-inf,sprintf('(eventRelatedHighpass) Applying temporal hipass filter'))
   end    
   if (0)
     for i = 1:d.dim(1)

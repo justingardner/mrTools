@@ -1,27 +1,38 @@
 % makescm.m
 %
-%      usage: makescm(d,hdrlen)
+%      usage: makescm(d,<hdrlen>,<applyFiltering>)
 %         by: justin gardner
 %       date: 07/28/04
 %       e.g.: makescm(d)
 %    purpose: makes a stimulation convolution matrix
 %             for data series. this correctly handles
-%             run boundarys. it uses the stimulus volumes
+%             run boundaries. it uses the stimulus volumes
 %             found in d.stimvol. if hdrlen is not passed in
 %             then it uses d.hdrlen (if it exists).
+%             applyFiltering defaults to 0, but if it
+%             is set will apply the hipass filtering or
+%             projection in d.concatInfo to the columns
+%             of the scm.
 %
-function d = makescm(d,hdrlen)
+function d = makescm(d,hdrlen,applyFiltering)
 
-if (nargin == 1)
+% check arguments
+if ~any(nargin == [1 2 3])
+  help makescm
+  return
+end
+
+% set hdrlen
+if ieNotDefined('hdrlen')
   if (isfield(d,'hdrlen'))
     hdrlen = d.hdrlen;
   else
     hdrlen = 25;
   end
-elseif (nargin ~= 2)
-  help makescm;
-  return
 end
+
+% default to not apply filtering that concatTSeries did
+if ieNotDefined('applyFiltering'), applyFiltering = 0;end
 
 % if we have only a single run then we set
 % the runTransitions for that single run
@@ -30,13 +41,6 @@ if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
 else
   runTransition = d.concatInfo.runTransition;
 end
-
-if isfield(d, 'hipassfilter')
-    hipassfilter = d.hipassfilter;
-else
-    hipassfilter = [];
-end
-
 
 % go through each run of the experiment
 allscm = [];
@@ -50,13 +54,24 @@ for runnum = 1:size(runTransition,1)
     % only use stimvols that are within this runs volume numbers
     stimarray(d.stimvol{stimnum}(find((d.stimvol{stimnum}>=runTransition(runnum,1)) & (d.stimvol{stimnum}<=runTransition(runnum,2))))-runTransition(runnum,1)+1) = 1;
     % stack stimcmatrices horizontally
-    m= stimconv(stimarray,hdrlen);
+    m = stimconv(stimarray,hdrlen);
     % apply the same filter as original data
-    if ~isempty(hipassfilter)
-        m = real(ifft(fft(m) .* repmat(hipassfilter{runnum}', 1, size(m,2)) ));
-        m = m-repmat(mean(m,1),size(m,1),1);
+    if applyFiltering
+      % check for what filtering was done
+      if isfield(d,'concatInfo') 
+	% apply hipass filter
+	if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{runnum})
+	  m = real(ifft(fft(m) .* repmat(d.concatInfo.hipassfilter{runnum}', 1, size(m,2)) ));
+	end
+	% project out the mean vector
+	if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{runnum})
+	  projectionWeight = d.concatInfo.projection{runnum}.sourceMeanVector * m;
+	  m = m - d.concatInfo.projection{runnum}.sourceMeanVector'*projectionWeight;
+	end
+	% now remove mean
+	m = m-repmat(mean(m,1),size(m,1),1);
+      end
     end
-
     scm = [scm, m];
   end
   % stack this run's stimcmatrix on to the last one
