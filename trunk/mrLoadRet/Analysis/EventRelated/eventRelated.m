@@ -60,8 +60,8 @@ if ieNotDefined('params'),return,end
 % set the group
 view = viewSet(view,'groupName',params.groupName);
 
-if ~isfield(params, 'applyHipass')
-    params.applyHipass = 0;
+if ~isfield(params, 'applyFiltering')
+  params.applyFiltering = 0;
 end
 
 % inplace concatenation is handeled by a different function
@@ -125,10 +125,7 @@ for scanNum = params.scanNum
       % do any called for preprocessing
       d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
       % make a stimulation convolution matrix
-      if params.applyHipass && isfield(d.concatInfo,'hipassfilter');
-        d.hipassfilter = d.concatInfo.hipassfilter;
-      end
-      d = makescm(d,ceil(params.scanParams{scanNum}.hdrlen/d.tr));
+      d = makescm(d,ceil(params.scanParams{scanNum}.hdrlen/d.tr),params.applyFiltering);
       % compute the estimated hemodynamic responses
       d = getr2(d);
       % update the current row we are working on
