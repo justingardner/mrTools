@@ -46,6 +46,8 @@
 %             'interrogator=interrogatorName'
 %             'analName=analysisName'
 %             'd',d 
+%              to set an arbitrary params
+%              'params.x',x
 %
 %             to save instead of display set
 %             'saveName=filename'
