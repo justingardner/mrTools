@@ -2059,8 +2059,7 @@ switch lower(param)
     val = -1;
     analysisNum = view.curAnalysis;
     if ~isempty(analysisNum)
-      handles = guidata(view.figure);
-      curSlice = round(get(handles.sliceSlider,'Value'));
+      curSlice = viewGet(view,'curSlice');
       curOverlay = view.analyses{analysisNum}.curOverlay;
       if ~isempty(curOverlay)
 	% get all clips
@@ -3101,8 +3100,13 @@ switch lower(param)
       handles = guidata(fig);
       val = round(get(handles.sliceSlider,'Value'));
     else
-      % if not then return something sensible
-      val = 1;
+      % if not then return value in structure
+      if isfield(view.curslice,'sliceNum')
+	val = view.curslice.sliceNum;
+      else
+	% never set in structure. Default to 1
+	val = 1;
+      end
     end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
@@ -3199,7 +3203,6 @@ switch lower(param)
   case {'curslicebasecoords'}
     % baseCoords = viewGet(view,'curslicebasecoords');
     val = view.curslice.baseCoords;
-
   otherwise
     % viewType dependent
     switch(lower(view.viewType))
