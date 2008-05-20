@@ -29,6 +29,30 @@ if isempty(mrDEFAULTS)
   mrDEFAULTS = loadMrDefaults;
 end
 
+% get pref names and defaults
+[prefNames prefDefaults] = mrGetPref;
+
+% check for a known preference
+prefNum = find(strcmp(lower(pref),lower(prefNames)));
+if isempty(prefNum)
+  % print message for unknown preference
+  disp(sprintf('(mrSetPref) Unknown preference %s',pref));
+else
+  % this will fix the caps on the prefs name
+  pref = prefNames{prefNum};
+  % check for a known default
+  if ~isempty(prefDefaults{prefNum})
+    prefDefaultNum = find(strcmp(lower(value),lower(prefDefaults{prefNum})));
+    % print message if it is not known
+    if isempty(prefDefaultNum)
+      disp(sprintf('(mrSetPref) Value %s for preference %s is not known',value,pref));
+    else
+      % fix caps
+      value = prefDefaults{prefNum}{prefDefaultNum};
+    end
+  end
+end
+
 mrDEFAULTS.prefs = setfield(mrDEFAULTS.prefs,pref,value);
 preferences = mrDEFAULTS.prefs;
 saveMrDefaults;

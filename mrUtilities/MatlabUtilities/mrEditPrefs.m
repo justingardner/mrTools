@@ -4,41 +4,26 @@ function prefParams = mrEditPrefs()
 %
 % jg & djh, 5/2007
 
-% get interpTypes
-interpTypes = {'nearest','linear','spline','cubic'};
-if find(strcmp(mrGetPref('interpMethod'),interpTypes))
-    interpTypes = putOnTopOfList(mrGetPref('interpMethod'),interpTypes);
-end
+% get pref names /defaults
+[prefNames prefDefaults] = mrGetPref();
 
-% get overwritePolicy
-overwritePolicy = {'Ask','Merge','Rename','Overwrite'};
-if find(strcmp(mrGetPref('overwritePolicy'),overwritePolicy))
-    overwritePolicy = putOnTopOfList(mrGetPref('overwritePolicy'),overwritePolicy);
-end
-
-% get verbose
-verbose = {'Yes','No'};
-if find(strcmp(mrGetPref('verbose'),verbose))
-    verbose = putOnTopOfList(mrGetPref('verbose'),verbose);
-end
-
-% get niftiFileExtension
-niftiFileExtension = {'.img','.nii'};
-if find(strcmp(mrGetPref('niftiFileExtension'),niftiFileExtension))
-    niftiFileExtension = putOnTopOfList(mrGetPref('niftiFileExtension'),niftiFileExtension);
-end
-
-% get roiPolygonMethod
-roiPolygonMethod = {'roipoly','getpts','getptsNoDoubleClick'};
-if find(strcmp(mrGetPref('roiPolygonMethod'),roiPolygonMethod))
-  roiPolygonMethod = putOnTopOfList(mrGetPref('roiPolygonMethod'),roiPolygonMethod);
+% cycle through prefance name list/defaults
+% and make variables that have their value
+for i = 1:length(prefNames)
+  % if there is a defaults list, then
+  % make the variable have a cell array with
+  % the current setting + all the choices
+  if ~isempty(prefDefaults{i}) && ~isempty(find(strcmp(mrGetPref(prefNames{i}),prefDefaults{i})))
+    eval(sprintf('%s = putOnTopOfList(mrGetPref(prefNames{i}),prefDefaults{i});',prefNames{i}));
+  else
+    eval(sprintf('%s = mrGetPref(prefNames{i});',prefNames{i}));
+  end
 end
 
 % get defaultInterrogators
-systemInterrogators = {'timecoursePlot','makeFlat','searchForVoxel'};
+systemInterrogators = mrGetPref('systemInterrogators');
 defaultInterrogators = mrGetPref('defaultInterrogators');
 if isempty(defaultInterrogators)
-%  defaultInterrogators = 'mrDefaultInterrogator';
   defaultInterrogators = '';
 end
 % only show ones that are not systemInterrgators and
@@ -49,29 +34,10 @@ if isstr(defaultInterrogators)
 end
 defaultInterrogators = cellToCommaDelimited(setdiff(defaultInterrogators,systemInterrogators));
 
-% get selectedROIColor
-selectedROIColor = mrGetPref('selectedROIColor');
-if isempty(selectedROIColor)
-  selectedROIColor = 'white';
-end
-colors = color2RGB;
-colors{end+1} = 'none';
-selectedROIColor = putOnTopOfList(selectedROIColor,colors);
-
-% get current values for other prefs
-site = mrGetPref('site');
-maxBlocksize = mrGetPref('maxBlocksize');
-volumeDirectory = mrGetPref('volumeDirectory');
-
-% get values for cache sizes
-roiCacheSize = mrGetPref('roiCacheSize');
-baseCacheSize = mrGetPref('baseCacheSize');
-overlayCacheSize = mrGetPref('overlayCacheSize');
-
 % set up the dialog and ask the user to set parameters
 prefParams = {{'site',site,'Where you are using this code'},...
     {'verbose',verbose,'Yes if you want to have dialog waitbars, No to have information printed to the terminal'},...
-    {'interpMethod',interpTypes,'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
+    {'interpMethod',interpMethod,'Type of interpolation to use. Normally this is set to nearest for nearest neighbor interpolation'},...
     {'maxBlocksize',maxBlocksize,'Size of chunks of data to analyze at a time. If you are running out of memory, set lower. A good starting value is 250000000','minmax=[0 inf]','incdec=[-10000000 10000000]'},...
     {'volumeDirectory',volumeDirectory,'The directory to default to when you load base anatomy from the Volume directory'},...
     {'overwritePolicy',overwritePolicy,'Method to use when analysis is going to overwrite an existing file'},...
@@ -95,7 +61,7 @@ if ~isempty(prefParams)
     mrSetPref('niftiFileExtension',prefParams.niftiFileExtension);
     mrSetPref('roiPolygonMethod',prefParams.roiPolygonMethod);
     mrSetPref('selectedROIColor',prefParams.selectedROIColor);
-    mrSetPref('defaultInterrogators',union(commaDelimitedToCell(prefParams.defaultInterrogators),systemInterrogators));
+    mrSetPref('defaultInterrogators',commaDelimitedToCell(prefParams.defaultInterrogators));
     mrSetPref('roiCacheSize',prefParams.roiCacheSize);
     mrSetPref('baseCacheSize',prefParams.baseCacheSize);
     mrSetPref('overlayCacheSize',prefParams.overlayCacheSize);
