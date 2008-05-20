@@ -451,7 +451,6 @@ switch lower(param)
     % scanParams.framePeriod = hdr.pixdim(5)/1000;
     % see definitions for NIFTI_UNITS in nifti1.h
     % space units are multiples of 1, time units multiples of 8 up to 64
-    disp('(viewSet) checking time units in nifti file')
     niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
     niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
     if niftiTimeUnit == 8 % seconds
@@ -461,6 +460,7 @@ switch lower(param)
     elseif niftiTimeUnit == 32 % microseconds
       scanParams.framePeriod = hdr.pixdim(5)./10e6;
     end
+    disp(sprintf('(viewSet) framePeriod set to: %f',scanParams.framePeriod))
     if strcmp(lower(mrGetPref('verbose')),'yes')
       % 8 -> 10^0, 16 -> 10^3, 32-> 10^6
       disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
