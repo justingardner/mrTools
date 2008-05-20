@@ -98,8 +98,10 @@ switch lower(param)
     % view = viewSet(view,'currentScan',n);
     nScans = viewGet(view,'nScans');
     if ((val > 0) && (val <= nScans))
-      mlrGuiSet(view,'scan',val);
-      view.curScan = val;
+      if viewGet(view,'curScan') ~= val
+	view.curScan = val;
+	mlrGuiSet(view,'scan',val);
+      end
     else
       disp(sprintf('(viewSet) Scan %i out of range [%i:%i]',val,1,nScans));
     end
@@ -1658,6 +1660,16 @@ switch lower(param)
     % view = viewSet(view,'figure',handle);
     view.figure = val;
 
+  case {'curslice'}
+    % view = viewSet(view,'curSlice',sliceNum);
+    if (val > 0) && (val <= viewGet(view,'nSlices'))
+      if viewGet(view,'curSlice') ~= val
+	view.curslice.sliceNum = val;
+	mlrGuiSet(view,'slice',val);
+      end
+    else
+      disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,viewGet(view,'nSlices')));
+    end
   case {'curslicebasecoords'}
     % view = viewSet(view,'curslicebasecoords',array);
     view.curslice.baseCoords = val;
