@@ -1,4 +1,4 @@
-function [img base roi] = refreshMLRDisplay(viewNum)
+function [img base roi overlay] = refreshMLRDisplay(viewNum)
 %	$Id$
 
 mrGlobals
@@ -112,9 +112,12 @@ if ieNotDefined('img')
   return
 end
 
+% if no figure, then just return, this is being called just to create the overlay
+fig = viewGet(view,'figNum');
+if isempty(fig),return,end
+
 % Display the image
 if verbose>1,disppercent(-inf,'Clearing figure');,end
-fig = viewGet(view,'figNum');
 gui = guidata(fig);
 % note: This cla here is VERY important. Otherwise
 % we keep drawing over old things on the axis and
