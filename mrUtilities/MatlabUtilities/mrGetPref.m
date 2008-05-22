@@ -25,7 +25,7 @@ function [value prefDefaults] = mrGetPref(pref)
 % %	$Id$	
 
 % with no arguments, return a list of possible preferences
-prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators'};
+prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','importROIPath'};
 if nargin == 0
   % set the defaults for preference we have defaults for
   prefDefaults{length(prefNames)} = [];
