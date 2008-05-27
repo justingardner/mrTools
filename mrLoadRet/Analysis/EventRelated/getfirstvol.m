@@ -12,29 +12,34 @@ if (nargin ~= 1)
 end
 
 if (~isfield(d,'stimvol'))
-  % calculate the times of the stimuli
-  % get the stim times
-  stimraw = d.channels(d.stimchannel,:);
-  stimraw(stimraw < 0) = 0;
-  stimtimes = find([0 (diff(stimraw)~=0)]);
+  if isfield(d,'channels')
+    % calculate the times of the stimuli
+    % get the stim times
+    stimraw = d.channels(d.stimchannel,:);
+    stimraw(stimraw < 0) = 0;
+    stimtimes = find([0 (diff(stimraw)~=0)]);
   
-  % get the image number
-  acqnum = cumsum(d.acq>1);
+    % get the image number
+    acqnum = cumsum(d.acq>1);
 
-  % set the beginning acqnum to 1, so that
-  % any event that happens before the first
-  % acquistion pulse is assumed to happen
-  % during the first acquisition pulse.
-  acqnum(1:first(find(acqnum == 1))) = 1;
+    % set the beginning acqnum to 1, so that
+    % any event that happens before the first
+    % acquistion pulse is assumed to happen
+    % during the first acquisition pulse.
+    acqnum(1:first(find(acqnum == 1))) = 1;
 
-  % sort into stimuli
-  nhdr = max(stimraw);
-  for i = 1:nhdr
-    stimtimescell{i} = stimtimes(stimraw(stimtimes) == i);
-    pulselens(i) = i;
-    stimvol{i} = acqnum(stimtimescell{i});
+    % sort into stimuli
+    nhdr = max(stimraw);
+    for i = 1:nhdr
+      stimtimescell{i} = stimtimes(stimraw(stimtimes) == i);
+      pulselens(i) = i;
+      stimvol{i} = acqnum(stimtimescell{i});
+    end
+    stimtimes = stimtimescell;
+  else
+    disp(sprintf('(getfirstvol) No stimvol in d structure'));
+    return
   end
-  stimtimes = stimtimescell;
 else
   stimvol = d.stimvol;
 end
