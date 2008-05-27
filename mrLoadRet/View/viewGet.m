@@ -3194,15 +3194,7 @@ switch lower(param)
     end
   case {'sliceorientation'}
     % sliceorientation = viewGet(view,'sliceorientation');
-    fig = viewGet(view,'fignum');
-    % check if running with the gui
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = handles.sliceOrientation;
-    else
-      % if not running, get from view variable
-      val = view.sliceOrientation;
-    end
+    val = view.sliceOrientation;
   case {'cursliceoverlaycoords'}
     % overlayCoords = viewGet(view,'cursliceoverlaycoords');
     val = view.curslice.overlayCoords;
