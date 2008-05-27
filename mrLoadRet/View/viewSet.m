@@ -94,6 +94,14 @@ switch lower(param)
     % -------------------------------------------
     % Group
 
+  case{'sliceorientation'}
+    % view = viewSet(view,'sliceOrientation',val);
+    if ((val > 0) && (val <= 3))
+      if viewGet(view,'sliceOrientation') ~= val
+	view.sliceOrientation = val;
+	mlrGuiSet(view,'sliceOrientation',val);
+      end
+    end
   case{'currentscan','curscan'}
     % view = viewSet(view,'currentScan',n);
     nScans = viewGet(view,'nScans');

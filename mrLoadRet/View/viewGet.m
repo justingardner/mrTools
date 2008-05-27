@@ -3157,7 +3157,13 @@ switch lower(param)
 	handles = guidata(fig);
 	val = get(handles.rotateSlider,'Value');
       else
-	val = 0;
+	% otherwise gui is not running get from the structure
+	curBase = viewGet(view,'curBase');
+	if ~isempty(curBase)
+	  val = view.baseVolumes(curBase).rotate;
+	else
+	  val = 0;
+	end
       end
     else
       val = 0;
@@ -3194,8 +3200,8 @@ switch lower(param)
       handles = guidata(fig);
       val = handles.sliceOrientation;
     else
-      % if not running, just default to something sensible.
-      val = 1;
+      % if not running, get from view variable
+      val = view.sliceOrientation;
     end
   case {'cursliceoverlaycoords'}
     % overlayCoords = viewGet(view,'cursliceoverlaycoords');
