@@ -287,7 +287,7 @@ switch lower(field)
     set(handles.coronalRadioButton,'Value',0);
     set(handles.axialRadioButton,'Value',0);
   end
-
+  viewSet(view,'sliceOrientation',sliceOrientation);
  case {'rotate'}
   % mlrGuiSet(view,'rotate',value);
   value = clipToSlider(handles.rotateSlider,value);
