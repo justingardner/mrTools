@@ -96,6 +96,20 @@ switch lower(param)
 
   case{'sliceorientation'}
     % view = viewSet(view,'sliceOrientation',val);
+    if isstr(val)
+      switch(val)
+       case {'axial'}
+	  val = 1;
+       case {'coronal'}
+	  val = 2;
+       case {'sagittal'}
+	  val = 3;
+       otherwise
+	  mrWarnDlg(sprintf('(viewSet) Unknown sliceOrientation %s',val));
+	  val = 0;
+      end
+    end
+	  
     if ((val > 0) && (val <= 3))
       if viewGet(view,'sliceOrientation') ~= val
 	view.sliceOrientation = val;
