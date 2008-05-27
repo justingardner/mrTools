@@ -137,6 +137,9 @@ for scanNum = 1:length(params.scanNum)
       end
       % this is the new tyle, ask for a variable name
       [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
+      if isempty(varnames)
+	mrErrorDlg('(eventRelatedGUI) No varnames found in stimfile');
+      end
       % if there is more than one task, then ask the user for that
       task = cellArray(stimfile{1}.task,2);
       if length(task)>1
