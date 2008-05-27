@@ -24,6 +24,11 @@ if ~any(nargin == [4 5])
   return
 end
 
+% make sure this has non-zero mean (otherwise event-related code
+% which converts to percent signal change will divide by a value
+% close to zero which causes the responses to to have strange magnitudes)
+timecourses = timecourses+1;
+
 % make sure every dimension has more than one timecourse
 % even if we have to repeat.
 for i = 1:2
