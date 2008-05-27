@@ -29,7 +29,7 @@ end
 mrGlobals;
 
 % other arguments
-eval(evalargs(varargin));
+eval(evalargs(varargin,[],[],{'justGetParams','defaultParams','scanList'}));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('scanList'),scanList = [];end
