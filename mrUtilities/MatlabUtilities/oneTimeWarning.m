@@ -18,6 +18,9 @@
 %             as is to the matlab buffer), set the justPrint
 %             argument to 1
 %
+%             To reset the warning so that it will dislay again, do
+%             oneTimeWarning('someWarning',0);
+%
 
 function oneTimeWarning(fieldCheck,warnText,justPrint)
 
@@ -27,11 +30,23 @@ if ~any(nargin == [2 3])
   return
 end
 
+% get the warning variable
 global gMLRWarning
-verbose = mrGetPref('verbose');
+
+% make sure the field check name is a valid field name
 fieldCheck = fixBadChars(fieldCheck);
-if ~isfield(gMLRWarning,fieldCheck)
+
+% reset warning, if called with a number
+if ~isstr(warnText)
+  gMLRWarning.(fieldCheck) = [];
+  return
+end
+
+% if the warning field is not set then...
+if ~isfield(gMLRWarning,fieldCheck) | isempty(gMLRWarning.(fieldCheck))
+  % set the field to 1 so that it won't print out the next time
   gMLRWarning.(fieldCheck) = 1;
+  % and print out a warning
   if ieNotDefined('justPrint')
     mrWarnDlg(warnText)
   else
