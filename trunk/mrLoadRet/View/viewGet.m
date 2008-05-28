@@ -3206,10 +3206,6 @@ switch lower(param)
     switch(lower(view.viewType))
       case 'volume'
         val = volumeGet(view,param,varargin{:});
-      case 'surface'
-        val = surfaceGet(view,param,varargin{:});
-      case 'flat'
-        val = flatGet(view,param,varargin{:});
       otherwise
         error('Unknown type of View.');
     end
@@ -3319,29 +3315,6 @@ switch lower(param)
       dispViewGetHelp;
     end
     disp(['Invalid parameter for volume view: ',param]);
-end
-return;
-
-%------------------------------
-function val  = surfaceGet(view,param,varargin)
-
-val = [];
-switch lower(param)
-
-  otherwise
-    error(['Invalid parameter for gray view: ',param]);
-end
-return;
-
-
-%------------------------------
-function val  = flatGet(view,param,varargin)
-
-val = [];
-switch lower(param)
-
-  otherwise
-    error(['Invalid parameter for gray view: ',param]);
 end
 return;
 

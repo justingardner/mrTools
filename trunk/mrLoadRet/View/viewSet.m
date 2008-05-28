@@ -715,7 +715,7 @@ switch lower(param)
       end
       % set the slice orientation if there is a valid one saved
       if ~isempty(baseSliceOrientation)
-	viewSet(view,'sliceOrientation',baseSliceOrientation);
+	view = viewSet(view,'sliceOrientation',baseSliceOrientation);
       end
       % update nSlices and reset slice to be within range
       sliceIndex = viewGet(view,'basesliceindex',baseNum);
@@ -1662,13 +1662,16 @@ switch lower(param)
 
   case {'curslice'}
     % view = viewSet(view,'curSlice',sliceNum);
-    if (val > 0) && (val <= viewGet(view,'nSlices'))
+    baseDims = viewGet(view,'baseDims');
+    sliceIndex = viewGet(view,'basesliceindex');
+    nSlices = baseDims(sliceIndex);
+    if (val > 0) && (val <= nSlices)
       if viewGet(view,'curSlice') ~= val
 	view.curslice.sliceNum = val;
 	mlrGuiSet(view,'slice',val);
       end
     else
-      disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,viewGet(view,'nSlices')));
+      disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,nSlices));
     end
   case {'curslicebasecoords'}
     % view = viewSet(view,'curslicebasecoords',array);
@@ -1693,24 +1696,24 @@ switch lower(param)
       sliceOrientation = val;
     end
     if ((sliceOrientation > 0) && (sliceOrientation <= 3))
-      if viewGet(view,'sliceOrientation') ~= sliceOrientation
-	view.sliceOrientation = sliceOrientation;
+      % set slice orientation in view
+      view.sliceOrientation = sliceOrientation;
+      % Update slice and nSlices
+      baseNum = viewGet(view,'currentBase');
+      if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum'))
 	mlrGuiSet(view,'sliceOrientation',sliceOrientation);
-	% Update slice and nSlices
-	baseNum = viewGet(view,'currentBase');
-	if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum'))
-	  baseDims = viewGet(view,'basedims',baseNum);
-	  sliceIndex = viewGet(viewNum,'baseSliceIndex',baseNum);
-	  nSlices = baseDims(sliceIndex);
-	  coords = viewGet(view,'curCoords');
-	  slice = coords(sliceOrientation);
-	  mlrGuiSet(view,'nSlices',nSlices);
-	  mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
-	end
+	baseDims = viewGet(view,'basedims',baseNum);
+	sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+	nSlices = baseDims(sliceIndex);
+	coords = viewGet(view,'curCoords');
+	slice = coords(sliceOrientation);
+	mlrGuiSet(view,'nSlices',nSlices);
+	mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
       end
     end
 
-  otherwise
+ otherwise
+   mrWarnDlg(sprintf('(viewSet) Unknown parameter %s',param));
 end
 
 % Side effect the global variable
