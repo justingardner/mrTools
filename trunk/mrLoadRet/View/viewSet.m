@@ -94,28 +94,6 @@ switch lower(param)
     % -------------------------------------------
     % Group
 
-  case{'sliceorientation'}
-    % view = viewSet(view,'sliceOrientation',val);
-    if isstr(val)
-      switch(val)
-       case {'axial'}
-	  val = 1;
-       case {'coronal'}
-	  val = 2;
-       case {'sagittal'}
-	  val = 3;
-       otherwise
-	  mrWarnDlg(sprintf('(viewSet) Unknown sliceOrientation %s',val));
-	  val = 0;
-      end
-    end
-	  
-    if ((val > 0) && (val <= 3))
-      if viewGet(view,'sliceOrientation') ~= val
-	view.sliceOrientation = val;
-	mlrGuiSet(view,'sliceOrientation',val);
-      end
-    end
   case{'currentscan','curscan'}
     % view = viewSet(view,'currentScan',n);
     nScans = viewGet(view,'nScans');
@@ -1701,7 +1679,7 @@ switch lower(param)
     view.curslice.overlayCoords = val;
 
   case {'sliceorientation','baseSliceIndex'}
-    % view = viewSet(view,'sliceOrientation',n);
+   % view = viewSet(view,'sliceOrientation',n);
     if ~isscalar(val)
       switch val
         case {'sagittal'}
@@ -1714,68 +1692,30 @@ switch lower(param)
     else
       sliceOrientation = val;
     end
-    mlrGuiSet(view,'sliceOrientation',sliceOrientation);
-    % Update slice and nSlices
-    baseNum = viewGet(view,'currentBase');
-    if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum'))
-      baseDims = viewGet(view,'basedims',baseNum);
-      sliceIndex = viewGet(viewNum,'baseSliceIndex',baseNum);
-      nSlices = baseDims(sliceIndex);
-      coords = viewGet(view,'curCoords');
-      slice = coords(sliceOrientation);
-      mlrGuiSet(view,'nSlices',nSlices);
-      mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
+    if ((sliceOrientation > 0) && (sliceOrientation <= 3))
+      if viewGet(view,'sliceOrientation') ~= sliceOrientation
+	view.sliceOrientation = sliceOrientation;
+	mlrGuiSet(view,'sliceOrientation',sliceOrientation);
+	% Update slice and nSlices
+	baseNum = viewGet(view,'currentBase');
+	if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum'))
+	  baseDims = viewGet(view,'basedims',baseNum);
+	  sliceIndex = viewGet(viewNum,'baseSliceIndex',baseNum);
+	  nSlices = baseDims(sliceIndex);
+	  coords = viewGet(view,'curCoords');
+	  slice = coords(sliceOrientation);
+	  mlrGuiSet(view,'nSlices',nSlices);
+	  mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
+	end
+      end
     end
 
   otherwise
-    % viewType dependent
-    switch(view.viewType)
-      case 'Volume'
-        view = volumeSet(view,param,val,varargin{:});
-      case 'Surface'
-        view = surfaceSet(view,param,val,varargin{:});
-      case 'Flat'
-        view = flatSet(view,param,val,varargin{:});
-    end
 end
 
 % Side effect the global variable
 MLR.views{viewNum} = view;
 
-return;
-
-
-%------------------------------
-function view = volumeSet(view,param,val,varargin)
-
-switch lower(param)
-  case {'foo'}
-    view.foo = val;
-  otherwise
-    error(['Invalid parameter for inplane view: ',param]);
-end
-return;
-
-%------------------------------
-function view = surfaceSet(view,param,val,varargin)
-
-switch lower(param)
-  case {'foo'}
-    view.foo = val;
-  otherwise
-    error(['Invalid parameter for gray view: ',param]);
-end
-return;
-
-%------------------------------
-function view = flatSet(view,param,val,varargin)
-
-switch lower(param)
-  case {'foo'}
-    view.foo = val;
-  otherwise
-    error(['Invalid parameter for flat view: ',param]);
-end
 return;
 
 %----------------------------------------------------------
