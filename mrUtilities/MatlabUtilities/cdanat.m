@@ -14,11 +14,6 @@ if ~any(nargin == [0])
   return
 end
 
-global mrDEFAULTS;
-if isempty(mrDEFAULTS)
-  mrDEFAULTS = loadMrDefaults;
-end
-
 volDir = mrGetPref('volumeDirectory');
 if isdir(volDir)
   cd(volDir);
