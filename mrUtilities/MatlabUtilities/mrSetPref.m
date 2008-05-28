@@ -20,7 +20,15 @@ function preferences = mrSetPref(pref,value)
 % Note that the mrDefaults file is usually saved in ~/.mrDefaults
 % but that location can be overridden (see mrDefaultsFilename.m)
 %
+% you can reset a value back to its default value by doing
+%
+%  mrSetPref('interpMethod');
 % djh, 5/2007
+
+if ~any(nargin == [1 2])
+  help mrSetPref;
+  return
+end
 
 global mrDEFAULTS
 
@@ -34,6 +42,22 @@ end
 
 % check for a known preference
 prefNum = find(strcmp(lower(pref),lower(prefNames)));
+
+% check if value is not set, if so then reset with default
+if ieNotDefined('value')
+  if ~isempty(prefNum) && ~isempty(prefDefaults{prefNum})
+    if iscell(prefDefaults{prefNum}) 
+      value = prefDefaults{prefNum}{1};
+    else
+      value = prefDefaults{prefNum};
+    end
+  else
+    mrWarnDlg(sprintf('(mrSetPref) No default value for preference %s',pref));
+    value = [];
+  end
+end
+
+
 if isempty(prefNum)
   % print message for unknown preference
   disp(sprintf('(mrSetPref) Unknown preference %s',pref));
@@ -41,7 +65,7 @@ else
   % this will fix the caps on the prefs name
   pref = prefNames{prefNum};
   % check for a known default
-  if ~isempty(prefDefaults{prefNum})
+  if ~isempty(prefDefaults{prefNum}) && iscell(prefDefaults{prefNum})
     prefDefaultNum = find(strcmp(lower(value),lower(prefDefaults{prefNum})));
     % print message if it is not known
     if isempty(prefDefaultNum)

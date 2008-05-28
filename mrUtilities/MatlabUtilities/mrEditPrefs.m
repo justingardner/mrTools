@@ -7,13 +7,13 @@ function prefParams = mrEditPrefs()
 % get pref names /defaults
 [prefNames prefDefaults] = mrGetPref();
 
-% cycle through prefance name list/defaults
+% cycle through preference name list/defaults
 % and make variables that have their value
 for i = 1:length(prefNames)
   % if there is a defaults list, then
   % make the variable have a cell array with
   % the current setting + all the choices
-  if ~isempty(prefDefaults{i}) && ~isempty(find(strcmp(mrGetPref(prefNames{i}),prefDefaults{i})))
+  if ~isempty(prefDefaults{i}) && iscell(prefDefaults{i}) && ~isempty(find(strcmp(mrGetPref(prefNames{i}),prefDefaults{i})))
     eval(sprintf('%s = putOnTopOfList(mrGetPref(prefNames{i}),prefDefaults{i});',prefNames{i}));
   else
     eval(sprintf('%s = mrGetPref(prefNames{i});',prefNames{i}));
@@ -45,7 +45,7 @@ prefParams = {{'site',site,'Where you are using this code'},...
     {'selectedROIColor',selectedROIColor,'What color to use to draw the selected ROI.'},...
     {'roiPolygonMethod',roiPolygonMethod,'Method used to create ROI polygons. The default roipoly function calls the line drawing function which can be very slow if you have already drawn a buch of lines (i.e. have some ROIs displaying). If you choose getpts instead, you will not have the lines drawn between points as you draw the ROI, but it will be much faster. getptsNoDoubleClick is similar to getpts but instead of double-click to end the selection you hit the return key (on some machines Matlab''s idea of what constitutes a double-click can be very slow)'},...
     {'defaultInterrogators',defaultInterrogators,'This is a comma separated list that contains interrogators that you can use.'},...
-    {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 50.','minmax=[0 inf]','incdec=[-1 1]'},...
+    {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 100.','minmax=[0 inf]','incdec=[-1 1]'},...
     {'baseCacheSize',baseCacheSize,'Size of base image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},...
     {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'}};
 prefParams = mrParamsDialog(prefParams,'Set mrTools preferences');
