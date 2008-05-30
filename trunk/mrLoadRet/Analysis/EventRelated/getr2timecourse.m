@@ -27,7 +27,10 @@ end
 % make sure this has non-zero mean (otherwise event-related code
 % which converts to percent signal change will divide by a value
 % close to zero which causes the responses to to have strange magnitudes)
-timecourses = timecourses+1;
+if max(abs(mean(timecourses,2))) < 1e-10
+  disp(sprintf('(getr2timecourse) Adding 1 to timecourses because timecourses apparently have 0 mean'));
+  timecourses = timecourses+1;
+end
 
 % make sure every dimension has more than one timecourse
 % even if we have to repeat.
