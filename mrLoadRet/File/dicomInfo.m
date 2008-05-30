@@ -48,7 +48,7 @@ for i = 1:length(dicom)
   end
 end
 
-mrParamsDialog(paramsInfo,'Dicom parameters',2);
+mrParamsDialog(paramsInfo,'Dicom parameters');
 
   
   
