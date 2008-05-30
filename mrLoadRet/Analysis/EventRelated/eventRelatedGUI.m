@@ -18,7 +18,8 @@ eval(evalargs(varargin));
 
 % if called with params, then just display
 if ~ieNotDefined('params')
-  dispParams(params);
+  retval = dispParams(params);
+  if isempty(retval),params = [];end
   return
 end
 
@@ -227,7 +228,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % just display parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function dispParams(params)
+function retval = dispParams(params)
 
 paramsInfo = {};
 paramsInfo{end+1} = {'analyzedScans',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',length(params.scanNum)),'editable=0'};
@@ -267,4 +268,4 @@ end
 if ~ieNotDefined('varname')
   paramsInfo{end+1} = {'varname',varname,'group=analyzedScans','type=string','editable=0','The variable that was analyzed'};
 end
-mrParamsDialog(paramsInfo,'Event Related parameters');
+retval = mrParamsDialog(paramsInfo,'Event Related parameters');
