@@ -19,6 +19,11 @@ function pos = mrGetFigLoc(figname)
 
 global mrDEFAULTS
 
+% if mrDEFAULTS is empty, then we should try to load it
+if isempty(mrDEFAULTS)
+  mrDEFAULTS = loadMrDefaults;
+end
+
 if ~isempty(mrDEFAULTS) && isfield(mrDEFAULTS.figloc,figname)
     % pos = getfield(mrDEFAULTS.figloc,figname);
     pos = mrDEFAULTS.figloc.(figname);

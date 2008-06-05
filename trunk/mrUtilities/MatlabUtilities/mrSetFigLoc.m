@@ -16,6 +16,11 @@ function mrSetFigLoc(figname,pos)
 
 global mrDEFAULTS
 
+% if mrDEFAULTS is empty, then we should try to load it
+if isempty(mrDEFAULTS)
+  mrDEFAULTS = loadMrDefaults;
+end
+
 if ieNotDefined('pos')
     pos = [100 100 560 420];
 end
