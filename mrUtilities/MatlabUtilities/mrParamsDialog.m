@@ -535,7 +535,6 @@ makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1,1);
 function closeHandler
 
 global gParams;
-global mrDEFAULTS;
 
 % close figure
 mrSetFigLoc(fixBadChars(gParams.figlocstr),get(gParams.fignum,'Position'));
@@ -555,7 +554,6 @@ saveMrDefaults;
 function helpcloseHandler(varargin)
 
 global gParams;
-global mrDEFAULTS;
 
 if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
   mrSetFigLoc('mrParamsDialogHelp',get(gParams.helpFignum,'Position'));
