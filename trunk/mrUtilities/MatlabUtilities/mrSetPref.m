@@ -65,7 +65,7 @@ else
   % this will fix the caps on the prefs name
   pref = prefNames{prefNum};
   % check for a known default
-  if ~isempty(prefDefaults{prefNum}) && iscell(prefDefaults{prefNum})
+  if ~isempty(prefDefaults{prefNum}) && iscell(prefDefaults{prefNum}) && ~iscell(prefDefaults{prefNum}{1})
     prefDefaultNum = find(strcmp(lower(value),lower(prefDefaults{prefNum})));
     % print message if it is not known
     if isempty(prefDefaultNum)
