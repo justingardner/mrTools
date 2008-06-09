@@ -9,10 +9,10 @@ function eventRelatedContrast(view,overlayNum,scan,x,y,s,roi)
 
 mrGlobals
 
-CONDCONTRAST = [2 3];
-NUMRESAMPLES = 100;
+CONDCONTRAST = [1 2];
+NUMRESAMPLES = 1000;
 EPOCH = 20;
-ALPHA = 0.4;
+ALPHA = 0.05;
 [B,A] = butter(5,[0.05 0.9]);
 curGroup = viewGet(view,'curgroup');
 curScan = viewGet(view,'curscan');
@@ -105,7 +105,7 @@ subplot(3,2,4); plot(vectorTime,100*(theta(:,CONDCONTRAST(2)) - theta(:,CONDCONT
 handleWaitBar = mrWaitBar(0,'Resampling contrasts...');
 for kk = 1:NUMRESAMPLES
 
-  dsgM = erConRandDsg2(dsgM);
+  dsgM = erConRandDsg1(dsgM);
   dsgMconvmtx = erConGenConvMtx(dsgM,EPOCH);
 
   resampleThetaThis(:,kk) = dsgMconvmtx \ voxelTSthis;
