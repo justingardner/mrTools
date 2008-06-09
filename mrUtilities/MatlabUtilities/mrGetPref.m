@@ -25,7 +25,7 @@ function [value prefDefaults] = mrGetPref(pref)
 % %	$Id$	
 
 % with no arguments, return a list of possible preferences
-prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','importROIPath'};
+prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','importROIPath','magnet','coil','pulseSequence'};
 
 % set the defaults for preference we have defaults for
 prefDefaults{length(prefNames)} = [];
@@ -42,6 +42,9 @@ prefDefaults{find(strcmp('volumeDirectory',prefNames))} = '';
 prefDefaults{find(strcmp('roiCacheSize',prefNames))} = 100;
 prefDefaults{find(strcmp('baseCacheSize',prefNames))} = 50;
 prefDefaults{find(strcmp('overlayCacheSize',prefNames))} = 50;
+prefDefaults{find(strcmp('magnet',prefNames))} = {{'Allegra 3T','other'}};
+prefDefaults{find(strcmp('coil',prefNames))} = {{'Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
+prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
 
 if nargin == 0
   % return arguments

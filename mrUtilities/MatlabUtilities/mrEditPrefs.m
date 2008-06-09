@@ -13,7 +13,7 @@ for i = 1:length(prefNames)
   % if there is a defaults list, then
   % make the variable have a cell array with
   % the current setting + all the choices
-  if ~isempty(prefDefaults{i}) && iscell(prefDefaults{i}) && ~isempty(find(strcmp(mrGetPref(prefNames{i}),prefDefaults{i})))
+  if ~isempty(prefDefaults{i}) && iscell(prefDefaults{i}) && ~iscell(prefDefaults{i}{1}) && ~isempty(find(strcmp(mrGetPref(prefNames{i}),prefDefaults{i})))
     eval(sprintf('%s = putOnTopOfList(mrGetPref(prefNames{i}),prefDefaults{i});',prefNames{i}));
   else
     eval(sprintf('%s = mrGetPref(prefNames{i});',prefNames{i}));

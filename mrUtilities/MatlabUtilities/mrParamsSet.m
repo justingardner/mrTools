@@ -36,7 +36,19 @@ for fnum = 1:length(paramFields)
   if match
     % numeric
     if strcmp(gParams.varinfo{match}.type,'numeric')
-      set(gParams.ui.varentry{match},'String',num2str(params.(paramFields{fnum})));
+      % check if this is a group
+      if isfield(gParams.varinfo{match},'group')
+	groupVar = gParams.varinfo{match}.group;
+	% keep values for each one of the group
+	for i = 1:length(params.(paramFields{fnum}))
+	  gParams.varinfo{match}.allValues{i} = params.(paramFields{fnum})(i);
+	end
+	% and set the current value in the gui
+	set(gParams.ui.varentry{match},'String',num2str(params.(paramFields{fnum})(params.(groupVar))));
+      else
+	% simple numeric
+	set(gParams.ui.varentry{match},'String',num2str(params.(paramFields{fnum})));
+      end
     % numeric
     elseif strcmp(gParams.varinfo{match}.type,'checkbox')
       set(gParams.ui.varentry{match},'Value',params.(paramFields{fnum}));
@@ -53,22 +65,35 @@ for fnum = 1:length(paramFields)
       end
     % popupmenu
     elseif strcmp(gParams.varinfo{match}.type,'popupmenu')
-      value = find(strcmp(params.(paramFields{fnum}),gParams.varinfo{match}.value));
-      if ~isempty(value)
-	set(gParams.ui.varentry{match},'Value',value);
+      % check if this is a group
+      if isfield(gParams.varinfo{match},'group')
+	% Don't do anything for a group parameter--fix later if you need this
       else
-	disp(sprintf('(mrParamsSet) %s is not a valid option for variable %s',params.(paramFields{fnum}),paramFields{fnum}));
+	value = find(strcmp(params.(paramFields{fnum}),gParams.varinfo{match}.value));
+	if ~isempty(value)
+	  set(gParams.ui.varentry{match},'Value',value);
+	else
+	  disp(sprintf('(mrParamsSet) %s is not a valid option for variable %s',params.(paramFields{fnum}),paramFields{fnum}));
+	end
       end
     % push button. Don't do anything
     elseif strcmp(gParams.varinfo{match}.type,'pushbutton')
     % string
     elseif strcmp(gParams.varinfo{match}.type,'string')
-      % check if we are grouped
-      if isfield(gParams.varinfo{match},'contingentOn')
+      % check if we are group'd
+      if isfield(gParams.varinfo{match},'group')
+	groupVar = gParams.varinfo{match}.group;
+	% keep values for each one of the group
+	for i = 1:length(params.(paramFields{fnum}))
+	  gParams.varinfo{match}.allValues{i} = params.(paramFields{fnum}){i};
+	end
+	stringValue = params.(paramFields{fnum}){params.(groupVar)};
+      % check if we are contingentOn
+      elseif isfield(gParams.varinfo{match},'contingentOn')
 	contingentValue = params.(gParams.varinfo{gParams.varinfo{match}.contingentOn}.name);
 	stringValue = gParams.varinfo{match}.allValues{contingentValue};
       else
-	params.(paramFields{fnum});
+	stringValue = params.(paramFields{fnum});
       end
       set(gParams.ui.varentry{match},'String',stringValue);
     % unimplemented type
