@@ -3,15 +3,13 @@
 %      usage: mrInit(<sessionParams>,<groupParams>,<justGetParams=1>,<defaultParams=1>)
 %         by: justin gardner
 %       date: 06/09/08
-%    purpose: Init the session variables. ususally just call with no arguments
-%             and it will put up dialogs to set variables. 
+%    purpose: Init the session variables. usually just call with no arguments
+%             and it will put up dialogs to set variables:
+%
+%             mrInit
 %
 %             This is an alternative to using mrInitRet (it does the same thing, but with
-%             a different UI).
-%
-%             To run with the GUI, do:
-%        
-%             mrInit
+%             a different GUI).
 %
 %             You can also just get parameters:
 % 
@@ -23,6 +21,7 @@
 %             mrInit(sessionParams,groupParams);
 %
 %             You can use mrSetPref to set preferences for magnet/coil and pulseSequence names
+%             that will come down as choices in the GUI
 %
 function [sessionParams groupParams] = mrInit(sessionParams,groupParams,varargin)
 
@@ -31,6 +30,7 @@ if ~any(nargin == [0 1 2 3 4])
   help mrInit
   return
 end
+eval(evalargs(varargin));
 
 % some variables
 if ieNotDefined('justGetParams'),justGetParams=0;end
@@ -203,8 +203,12 @@ if ~justGetParams
       end
       % check for stimfiles field and add to aux params if found
       if isfield(groupParams,'stimFile')
-	% remove descriptive text when saving
-	groups(1).auxParams(iScan).stimFileName = strtok(groupParams.stimFile{iScan},':');
+	if ~strcmp(groupParams.stimFile{iScan},'None')
+	  % remove descriptive text when saving
+	  groups(1).auxParams(iScan).stimFileName = strtok(groupParams.stimFile{iScan},':');
+	else
+	  groups(1).auxParams(iScan).stimFileName = '';
+	end	  
       end
     end  
     % tag on auxParams to groups if it wasn't set above
@@ -232,9 +236,14 @@ end
 %%   mrInitCopyParameters %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function params = mrInitCopyParameters(params)
-copyTo = buttonDlg('Copy parameters to scans:',params.name);
+
+% put a button dialog to choose which scans to copy parameters to
+copyTo = buttondlg('Copy parameters to scans:',params.name);
+
+% user cancel
 if isempty(copyTo),return,end
 
+% go copy parameters
 for i = 1:length(copyTo)
   if copyTo(i)
     params.description{i} = params.description{params.scanNum};
@@ -270,6 +279,7 @@ end
 for i = length(stimFileMatch)+1:length(totalFrames)
   stimFileMatch{end+1} = putOnTopOfList('None',cellcat(stimFileNames,{'None'}));
 end
+
 %%%%%%%%%%%%%%%%%%%%
 % get stimFileNums
 %%%%%%%%%%%%%%%%%%%%
