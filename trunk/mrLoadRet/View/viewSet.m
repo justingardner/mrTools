@@ -1277,7 +1277,7 @@ switch lower(param)
 
     end
 
-  case 'overlayname'
+  case {'overlayname'}
     % view = viewSet(view,'overlayname',nameString,[overlayNum]);
     if ieNotDefined('varargin')
       overlayNum = viewGet(view,'currentOverlay');
@@ -1291,7 +1291,7 @@ switch lower(param)
       mlrGuiSet(view,'overlaypopup',viewGet(view,'overlayNames',analysisNum));
     end
 
-  case 'overlaycmap'
+  case {'overlaycmap'}
     % view = viewSet(view,'overlaycmap',cmapName,[overlayNum]);
     if ieNotDefined('varargin')
       overlayNum = viewGet(view,'currentOverlay');
@@ -1305,7 +1305,7 @@ switch lower(param)
       view.analyses{analysisNum}.overlays(overlayNum).colormap = eval(evalstr);
     end
 
-  case 'overlaymin'
+  case {'overlaymin'}
     % view = viewSet(view,'overlaymin',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');
     if ieNotDefined('varargin')
@@ -1322,7 +1322,7 @@ switch lower(param)
       end
     end
 
-  case 'overlaymax'
+  case {'overlaymax'}
     % view = viewSet(view,'overlaymax',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');
     if ieNotDefined('varargin')
@@ -1339,7 +1339,7 @@ switch lower(param)
       end
     end
 
-  case 'overlayrange'
+  case {'overlayrange'}
     % view = viewSet(view,'overlayrange',[min max],[overlayNum]);
     range = val;
     curOverlay = viewGet(view,'currentOverlay');
@@ -1361,7 +1361,7 @@ switch lower(param)
       end
     end
 
-  case 'alpha'
+  case {'alpha'}
     % view = viewSet(view,'alpha',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');
     if ~isempty(varargin)
@@ -1502,7 +1502,7 @@ switch lower(param)
     % view = viewSet(view,'prevROICoords',array);
     view.prevROIcoords = val;
 
-  case 'roicolor'
+  case {'roicolor'}
     % view = viewSet(view,'roiColor',color,[roiNum]);
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
@@ -1514,7 +1514,7 @@ switch lower(param)
       view.ROIs(roiNum).color = val;
     end
 
-  case 'roinotes'
+  case {'roinotes'}
     % v = viewSet(v,'roiNotes',notes,[roiNum]);
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
@@ -1526,7 +1526,7 @@ switch lower(param)
       view.ROIs(roiNum).notes = val;
     end
 
-  case 'roivol2mag'
+  case {'roivol2mag'}
     % v = viewSet(v,'roiVol2mag',xform,[roiNum]);
     % sets the xform of the volume coordinates to
     % the magnet coordinates for the canonical volume
@@ -1541,7 +1541,7 @@ switch lower(param)
       view.ROIs(roiNum).vol2mag = val;
     end
 
-  case 'roivol2tal'
+  case {'roivol2tal'}
     % v = viewSet(v,'roiVol2mag',xform,[roiNum]);
     % sets the xform of the volume coordinates to
     % the talairach coordinates for the canonical volume
@@ -1556,7 +1556,7 @@ switch lower(param)
       view.ROIs(roiNum).vol2tal = val;
     end
  
-  case 'roisformcode'
+  case {'roisformcode'}
     % v = viewSet(v,'roisformcode',sformcode,[roiNum]);
     % sets the sformcode for the roiXform
     curRoi = viewGet(view,'currentRoi');
@@ -1569,7 +1569,7 @@ switch lower(param)
       view.ROIs(roiNum).sformCode = val;
     end
 
-  case 'roiname'
+  case {'roiname'}
     % view = viewSet(view,'roiName',nameString,[roiNum]);
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
@@ -1594,7 +1594,7 @@ switch lower(param)
 
     % -------------------------------------------
     % Figure and GUI
-  case 'roicache'
+  case {'roicache'}
     % view = viewSet(view,'ROICache',roidata,[roiNum]);
     % view = viewSet(view,'ROICache','clear',roiName);
     if isstr(val)
@@ -1620,7 +1620,7 @@ switch lower(param)
       MLR.caches{view.viewNum}.roiCache = ...
         mrCache('add',MLR.caches{view.viewNum}.roiCache,roiID,val);
     end
-  case 'basecache'
+  case {'basecache'}
     % view = viewSet(view,'baseCache',basedata);
     % view = viewSet(view,'baseCache','clear',baseName);
     if isstr(val)
@@ -1638,7 +1638,7 @@ switch lower(param)
       MLR.caches{view.viewNum}.baseCache = ...
         mrCache('add',MLR.caches{view.viewNum}.baseCache,baseID,val);
     end
-  case 'overlaycache'
+  case {'overlaycache'}
     % view = viewSet(view,'overlayCache',overlaydata);
     % view = viewSet(view,'overlayCache','clear',overlayName);
     if isstr(val)
