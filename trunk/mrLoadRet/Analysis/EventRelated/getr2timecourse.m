@@ -70,3 +70,6 @@ if ~ieNotDefined('tr')
   outd.time = tr/2:tr:(hdrlen*tr);
 end
 
+outd = rmfield(outd,'data');
+
+
