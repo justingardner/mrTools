@@ -19,7 +19,10 @@ function [value prefDefaults] = mrGetPref(pref)
 % but that location can be overridden (see mrDefaultsFilename.m)
 %
 %   mrGetPref with no arguments returns a list of known preference and known default values
-%   [prefNames prefefaults] = mrGetPref;
+%   [prefNames prefDefaults] = mrGetPref;
+%
+%   if you type mrGetPref alone, it will print out all known preferences
+%   mrGetPref;
 %
 % djh, 5/2007
 % %	$Id$	
@@ -47,8 +50,32 @@ prefDefaults{find(strcmp('coil',prefNames))} = {{'Siemens birdcage','Nova birdca
 prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
 
 if nargin == 0
-  % return arguments
-  value = prefNames;
+  if nargout > 0
+    % return arguments
+    value = prefNames;
+  else
+    % print out list of preferences
+    for i = 1:length(prefNames)
+      %get the preference
+      prefValue =  mrGetPref(prefNames{i});
+      % print it out
+      if isnumeric(prefValue)
+	disp(sprintf('%s: %s',prefNames{i},num2str(prefValue)));
+      elseif isstr(prefValue)
+	disp(sprintf('%s: %s',prefNames{i},prefValue));
+      elseif iscell(prefValue)
+	mrDisp(sprintf('%s:',prefNames{i}));
+	for j = 1:length(prefValue)
+	  if isnumeric(prefValue{j})
+	    mrDisp(sprintf(' %s',num2str(prefValue{j})));
+	  elseif isstr(prefValue{j})
+	    mrDisp(sprintf(' ''%s''',prefValue{j}));
+	  end
+	end
+	mrDisp(sprintf('\n'));
+      end
+    end
+  end
   return
 end
 
