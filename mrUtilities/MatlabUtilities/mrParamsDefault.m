@@ -29,6 +29,12 @@ for i = 1:length(vars)
 	  params.(varinfo{i}.name)(j) = varinfo{i}.allValues{j};
 	end
       end
+    % check for popupmenu
+    elseif strcmp(varinfo{i}.type,'popupmenu')
+      % take the top of the popup list
+      for j = 1:length(varinfo{i}.allValues)
+	params.(varinfo{i}.name){j} = varinfo{i}.allValues{j}{1};
+      end
       % otherwise, just copy the list of parameters
     else
       params.(varinfo{i}.name) = varinfo{i}.allValues;
