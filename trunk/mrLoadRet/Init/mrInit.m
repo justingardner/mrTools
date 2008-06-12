@@ -96,7 +96,7 @@ if ieNotDefined('groupParams')
   else
     % get info about scans that live in Raw/TSeries
     scanDirName = 'Raw/TSeries';
-    scanDir = dir(fullfile(scanDirName,'/*.img'));
+    scanDir = dir(fullfile(scanDirName,['/*' mrGetPref('niftiFileExtension')]));
     nScans=0;scanNames = {};descriptions = {};totalFrames = {};nFrames = {};junkFrames = {};
     for i = 1:length(scanDir);
       % read the nifti header
