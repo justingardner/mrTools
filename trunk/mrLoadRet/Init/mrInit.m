@@ -41,15 +41,15 @@ if ieNotDefined('sesssionParams')
   % get some defaults
   if isfile('mrSession.mat')
     load mrSession
-    magnet = putOnTopOfList(session.magnet,mrGetPref('Magnet'));
+    magnet = putOnTopOfList(session.magnet,mrGetPref('magnet'));
     coil = putOnTopOfList(session.coil,mrGetPref('coil'));
     pulseSequence = putOnTopOfList(session.protocol,mrGetPref('pulseSequence'));
     description = session.description;
     subject = session.subject;
     operator = session.operator;
   else
-    magnet = mrGetPref('Magnet');
-    coil = mrGetPref('Coil');
+    magnet = mrGetPref('magnet');
+    coil = mrGetPref('coil');
     pulseSequence = mrGetPref('pulseSequence');
     description = '';
     subject = '';
@@ -165,7 +165,7 @@ if ~justGetParams
     session.subject = sessionParams.subject;
     session.operator = sessionParams.operator;
     session.magnet = sessionParams.magnet;
-    session.coil = sessionParams.coil;
+    session.coil = sessionParams.coil
     session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pulseSequenceText);
     % create groups variables
     groups(1).name = 'Raw';
@@ -223,10 +223,14 @@ if ~justGetParams
 	movefile('mrSession.mat','mrSession.old.mat');
 	disp(sprintf('(mrInit) Saving new mrSession'));
 	save mrSession session groups;
+	% disp(sprintf('(mrInit) Creating new Readme'));
+	mrReadme(session, groups);
       end
     else
       disp(sprintf('(mrInit) Saving new mrSession'));
       save mrSession session groups;
+      disp(sprintf('(mrInit) Creating Readme'));
+      mrReadme(session, groups);
     end
   else
     disp(sprintf('(mrInit) No session information saved'));
