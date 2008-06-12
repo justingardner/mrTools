@@ -6,6 +6,11 @@ function createReadme(session, groups)
 % djh, 5/2005
 % based on Ben Backus' version for mrLoadRet 2.*
 
+if nargin < 2
+  help createReadme
+  return
+end
+
 % Check if a Readme file already exists
 if exist('Readme.txt','file')
     questionString = 'Readme.txt already exists. Do you want to continue, which will create a new file called Readme.txt?';
