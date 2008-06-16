@@ -45,8 +45,18 @@ if ieNotDefined('pathStr')
     return
 end
 
-% Strip extension to make sure it is .mat
-pathStr = [stripext(pathStr),'.img'];
+% Check whether extension of the file is img or nii
+% matlab function "fileparts" takes the last .foo as extension!
+[dummypath,dummyname,extension,dummversion] = fileparts(pathStr);
+% extension is not .nii or .img
+if ~any(strcmp(extension,{'.nii', '.img'}))
+    mrWarnDlg(['File type ',extension,' is not a valid anatomy file format']);
+    return
+else
+  % debug
+  % mrDisp(sprintf('(loadAnat) using file %s, ext=%s',pathStr, extension));
+end
+
 
 % File does not exist
 if ~exist(pathStr,'file')
