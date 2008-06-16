@@ -47,14 +47,11 @@ end
 
 % Check whether extension of the file is img or nii
 % matlab function "fileparts" takes the last .foo as extension!
-[dummypath,dummyname,extension,dummversion] = fileparts(pathStr);
+[path,name,extension,versn] = fileparts(pathStr);
 % extension is not .nii or .img
 if ~any(strcmp(extension,{'.nii', '.img'}))
     mrWarnDlg(['File type ',extension,' is not a valid anatomy file format']);
     return
-else
-  % debug
-  % mrDisp(sprintf('(loadAnat) using file %s, ext=%s',pathStr, extension));
 end
 
 
@@ -64,7 +61,6 @@ if ~exist(pathStr,'file')
     return
 end
 
-[path,name,ext,versn] = fileparts(pathStr);
 anatFilePath = path;
 
 % Load nifti file and reorder the axes and flip (site specific).
