@@ -34,7 +34,7 @@ paramsInfo{end+1} = {'baseRange',baseRange,'The range of values in the base anat
 paramsInfo{end+1} = {'baseMin',baseClip(1),'incdec=[-10 10]','The lower clip value of the base image.','callback',@editBaseCallback,'callbackArg',v};
 paramsInfo{end+1} = {'baseMax',baseClip(2),'incdec=[-10 10]','The upper clip value of the base image','callback',@editBaseCallback,'callbackArg',v};
 paramsInfo{end+1} = {'baseGamma',baseGamma,'incdec=[-0.1 0.1]','minmax=[0 inf]','The gamma to use to display the base image','callback',@editBaseCallback,'callbackArg',v};
-paramsInfo{end+1} = {'setDefaults',0,'type=pushbutton','buttonString','Set defaults','callback',@defaultEditBaseCallback,'callbackArg',v};
+paramsInfo{end+1} = {'setDefaults',0,'type=pushbutton','buttonString','Set defaults','callback',@defaultEditBaseCallback,'callbackArg',v,'passParams=1'};
 
 % deal with coordMap fields
 if ~isempty(baseCoordMap)
@@ -100,7 +100,7 @@ refreshMLRDisplay(viewGet(v,'viewNum'));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   default clipping values taken from isbase   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function clip = defaultEditBaseCallback(v)
+function clip = defaultEditBaseCallback(v,params)
 
 % get current baseNum
 baseNum = viewGet(v,'curBase');
@@ -125,3 +125,9 @@ v = viewSet(v,'baseGamma',1);
 % refresh the display
 refreshMLRDisplay(viewGet(v,'viewNum'));
 
+% reset the parameters
+params.baseMin = clipMin;
+params.baseMax = clipMax;
+params.baseRange = [min(image(:)) max(image(:))];
+params.baseGamma = 1;
+mrParamsSet(params);
