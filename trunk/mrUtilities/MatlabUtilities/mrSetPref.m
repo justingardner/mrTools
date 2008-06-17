@@ -44,7 +44,7 @@ end
 prefNum = find(strcmp(lower(pref),lower(prefNames)));
 
 % check if value is not set, if so then reset with default
-if ieNotDefined('value')
+if ~exist('value','var')
   if ~isempty(prefNum) && ~isempty(prefDefaults{prefNum})
     if iscell(prefDefaults{prefNum}) 
       value = prefDefaults{prefNum}{1};
@@ -69,7 +69,7 @@ else
     prefDefaultNum = find(strcmp(lower(value),lower(prefDefaults{prefNum})));
     % print message if it is not known
     if isempty(prefDefaultNum)
-      disp(sprintf('(mrSetPref) Value %s for preference %s is not known',value,pref));
+      mrWarnDlg(sprintf('(mrSetPref) Value %s for preference %s is not known',value,pref));
     else
       % fix caps
       value = prefDefaults{prefNum}{prefDefaultNum};
