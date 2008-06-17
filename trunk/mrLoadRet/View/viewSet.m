@@ -8,7 +8,9 @@ function [view tf] = viewSet(view,param,val,varargin)
 %
 % ====================================================================
 % Type viewSet w/out any arguments for the full set of parameters and for
-% optional arguments.
+% optional arguments. If you want help on a specific parameter, you 
+% can also do:
+% viewSet([],'parameterName','help')
 % ====================================================================
 %
 % Examples:
@@ -55,6 +57,9 @@ mrGlobals
 
 if ieNotDefined('param')
   dispViewSetHelp;
+  return
+elseif ~ieNotDefined('val') && ieNotDefined('varargin') && isstr(val) && strcmp(lower(val),'help')
+  dispViewSetHelp(param);
   return
 end
 
@@ -1664,7 +1669,11 @@ switch lower(param)
     % view = viewSet(view,'curSlice',sliceNum);
     baseDims = viewGet(view,'baseDims');
     sliceIndex = viewGet(view,'basesliceindex');
-    nSlices = baseDims(sliceIndex);
+    if ~isempty(baseDims)
+      nSlices = baseDims(sliceIndex);
+    else
+      nSlices = 0;
+    end
     if (val > 0) && (val <= nSlices)
       if viewGet(view,'curSlice') ~= val
 	view.curslice.sliceNum = val;
@@ -1685,11 +1694,11 @@ switch lower(param)
    % view = viewSet(view,'sliceOrientation',n);
     if ~isscalar(val)
       switch val
-        case {'sagittal'}
+        case 'sagittal'
           sliceOrientation = 3;
-        case {'coronal'}
+        case 'coronal'
           sliceOrientation = 2;
-        case {'axial'}
+        case 'axial'
           sliceOrientation = 1;
       end
     else
@@ -1787,7 +1796,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   dispViewSetHelp   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function dispViewSetHelp()
+function dispViewSetHelp(param)
 
 % open this file and scan the text
 fid = fopen(which('viewSet'));
@@ -1814,6 +1823,19 @@ for i = 1:length(C{1})
     collectComments = 1;
     commands{end+1} = C{2}{i};
   end
+end
+
+% if the user wants help on a particular command
+if ~ieNotDefined('param')
+  % find the command
+  commandNum = find(strcmp(sprintf('''%s''',lower(param)),commands));
+  % if found, print out the comments
+  if ~isempty(commandNum) && (commandNum > 0) && (commandNum <= length(commandComments)) && ~isempty(commandComments{commandNum})
+    disp(commandComments{commandNum});
+  else
+    disp(sprintf('(viewSet) No viewSet for %s',param));
+  end
+  return
 end
 
 % sort everything
