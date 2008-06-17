@@ -216,8 +216,6 @@ switch lower(field)
   value = clipToSlider(handles.scanSlider,value,1);
   set(handles.scanSlider,'Value',value);
   set(handles.scanText,'String',num2str(value));
-  % set curent scan in view
-  view = viewSet(view,'curScan',value);
   % description
   description = viewGet(view,'description',value);
   set(viewGet(view,'figNum'),'Name',sprintf('%s: %s',getLastDir(MLR.homeDir),description));
@@ -251,12 +249,12 @@ switch lower(field)
     handles.coords(handles.sliceOrientation) = value;
     set(handles.sliceSlider,'Value',value);
     set(handles.sliceText,'String',num2str(value));
-    view = viewSet(view,'curSlice',value);
   end
  case {'slicetext'}
   % mlrGuiSet(view,'sliceText',value);
   handles.coords(handles.sliceOrientation) = value;
   set(handles.sliceText,'String',num2str(value));
+  view = viewSet(view,'curSlice',value);
 
  case {'corticaldepth'}
   % mlrGuiSet(view,'corticalDepth',value);

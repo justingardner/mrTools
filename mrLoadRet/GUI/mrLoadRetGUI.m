@@ -267,15 +267,28 @@ else
 end
 
 function scanSlider_Callback(hObject, eventdata, handles)
+
+% get view/viewNum
+mrGlobals;
 viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+
 value = round(get(hObject,'Value'));
 mlrGuiSet(viewNum,'scanText',value);
+view = viewSet(view,'curScan',value);
 refreshMLRDisplay(viewNum);
 
 function scanText_Callback(hObject, eventdata, handles)
+
+% get view/viewNum
+mrGlobals;
 viewNum = handles.viewNum;
-value = str2num(get(hObject,'String'));
+view = MLR.views{viewNum};
+
+value = round(str2num(get(hObject,'String')));
 mlrGuiSet(viewNum,'scan',value);
+view = viewSet(view,'curScan',value);
+viewSet(view,'curScan',get(handles.scanSlider,'Value'));
 refreshMLRDisplay(viewNum);
 
 % --- Slice
@@ -295,15 +308,29 @@ else
 end
 
 function sliceSlider_Callback(hObject, eventdata, handles)
+
+% get view/viewNum
+mrGlobals;
 viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+
 value = round(get(hObject,'Value'));
 mlrGuiSet(viewNum,'sliceText',value);
+% set the current slice (get the value from the slider
+% since that will be properly clipped by the mlrGuiSet call above)
+viewSet(view,'curSlice',get(handles.sliceSlider,'Value'));
 refreshMLRDisplay(viewNum);
 
 function sliceText_Callback(hObject, eventdata, handles)
+
+% get view/viewNum
+mrGlobals;
 viewNum = handles.viewNum;
-value = str2num(get(hObject,'String'));
+view = MLR.views{viewNum};
+
+value = round(str2num(get(hObject,'String')));
 mlrGuiSet(viewNum,'slice',value);
+viewSet(view,'curSlice',value);
 refreshMLRDisplay(viewNum);
 
 % --- Executes on slider movement.
