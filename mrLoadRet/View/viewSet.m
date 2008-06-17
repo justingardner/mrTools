@@ -728,9 +728,9 @@ switch lower(param)
       curSlice = viewGet(view,'curSlice');
       % if the base has a current slice set, then use that
       if isempty(baseCurSlice) || (baseCurSlice > nSlices)
-	mlrGuiSet(view,'slice',max(1,min(curSlice,nSlices)));
+	view = viewSet(view,'curSlice',max(1,min(curSlice,nSlices)));
       else
-	mlrGuiSet(view,'slice',baseCurSlice);
+	view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
       end
       if ~isempty(baseRotate)
 	mlrGuiSet(view,'rotate',baseRotate);
