@@ -2,13 +2,15 @@ function [val val2] = viewGet(view,param,varargin)
 %
 %   val = viewGet(view,param,varargin)
 %
-% Read the parameters of a view (inplane, gray, or flat).
+% Read the parameters of a view
 % Access to these structures should go through this routine and through
 % viewSet.
 %
 % ====================================================================
 % Type viewGet w/out any arguments for the full set of parameters and for
-% optional arguments.
+% optional arguments. If you want help on a specific parameter, you 
+% can also do:
+% viewGet([],'parameterName','help')
 % ====================================================================
 %
 % view can be either a view structure or a viewNum which is interpreted as
@@ -43,8 +45,10 @@ mrGlobals
 if ieNotDefined('param')
   dispViewGetHelp;
   return
+elseif ~ieNotDefined('varargin') && (length(varargin)==1) && isstr(varargin{1}) && strcmp(lower(varargin{1}),'help')
+  dispViewGetHelp(param);
+  return
 end
-
 % If 'view' is a viewNum, find the corresponding view structure
 if isnumeric(view) & ~isempty(view)
   view = MLR.views{view};
@@ -351,6 +355,9 @@ switch lower(param)
       val = MLR.groups(g).scanParams(s).nFrames;
     end
   case{'frameperiod'}
+    % Frame period is the time from one volume to the next.
+    % It is initially extracted from the nifti header. It
+    % is *not* necessarily the TR.
     % framePeriod = viewGet(view,'framePeriod',scanNum,[groupNum])
     % framePeriod = viewGet([],'framePeriod',scanNum,groupNum)
     % framePeriod = viewGet(view,'framePeriod',scanNum,[])
@@ -585,6 +592,9 @@ switch lower(param)
       end
     end
  case {'tr'}
+    % TR is the TR of the pulse sequence. It is *not* necessarily
+    % the time between volumes (framePeriod). The TR is extracted
+    % from the DICOM header
     % tr = viewGet(view,'tr',scanNum,[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
     % first get dicom
@@ -2152,6 +2162,35 @@ switch lower(param)
 	val = view.loadedAnalyses{groupNum}{analysisNum};
       end
     end
+ case {'d'}
+    % The d structure is a data structure that contains
+    % outcomes of analyses that are not overlays. For
+    % example, event-related analyses have a d strucutre
+    % with the estimated hemodynamic responses and other
+    % computed fields
+    % d = viewGet(view,'d',[scanNum],[analysisNum])
+    if ieNotDefined('varargin')
+      scanNum = viewGet(view,'currentScan');
+    else
+      scanNum = varargin{1};
+    end
+    if isempty(scanNum)
+      scanNum = viewGet(view,'currentScan');
+    end
+    % get analysis num
+    if length(varargin) <= 1
+      analysisNum = viewGet(view,'currentAnalysis');
+    else
+      analysisNum = varargin{2};
+    end
+    n = viewGet(view,'numberofAnalyses');
+    if analysisNum & (analysisNum > 0) & (analysisNum <= n)
+      if isfield(view.analyses{analysisNum},'d')
+	if ~isempty(scanNum) && (scanNum > 0 ) && (scanNum <= length(view.analyses{analysisNum}.d))
+	  val = view.analyses{analysisNum}.d{scanNum};
+	end
+      end
+    end
   case {'analysisnames'}
     % analysisNames = viewGet(view,'analysisNames')
     if ~isempty(view.analyses)
@@ -3084,29 +3123,15 @@ switch lower(param)
     val = view.figure;
   case {'curscan','currentscan'}
     % scan = viewGet(view,'currentScan');
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = round(get(handles.scanSlider,'Value'));
-    else
-      val = view.curScan;
-    end
+    val = view.curScan;
     if isempty(val),val = 1;end
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');
-    fig = viewGet(view,'fignum');
-    % check if running the gui
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = round(get(handles.sliceSlider,'Value'));
+    if isfield(view.curslice,'sliceNum')
+      val = view.curslice.sliceNum;
     else
-      % if not then return value in structure
-      if isfield(view.curslice,'sliceNum')
-	val = view.curslice.sliceNum;
-      else
-	% never set in structure. Default to 1
-	val = 1;
-      end
+      % never set in structure. Default to 1
+      val = 1;
     end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
@@ -3124,7 +3149,14 @@ switch lower(param)
       handles = guidata(fig);
       val = get(handles.alphaSlider,'Value');
     else
-      val = 1;
+      % get alpha from analysis structure
+      overlayNum = viewGet(view,'currentOverlay');
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+	val = view.analyses{analysisNum}.overlays(overlayNum).alpha;
+      else
+	val = 1;
+      end
     end
   case {'overlaymin'}
     % overlayMin = viewGet(view,'overlayMin');
@@ -3133,7 +3165,14 @@ switch lower(param)
       handles = guidata(fig);
       val = get(handles.overlayMinSlider,'Value');
     else
-      val = 0;
+      % get overlayMin from analysis structure
+      overlayNum = viewGet(view,'currentOverlay');
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+	val = view.analyses{analysisNum}.overlays(overlayNum).clip(1);
+      else
+	val = 0;
+      end
     end
   case {'overlaymax'}
     % overlayMax = viewGet(view,'overlayMax');
@@ -3142,7 +3181,14 @@ switch lower(param)
       handles = guidata(fig);
       val = get(handles.overlayMaxSlider,'Value');
     else
-      val = 1;
+      % get overlayMax from analysis structure
+      overlayNum = viewGet(view,'currentOverlay');
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+	val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
+      else
+	val = 1;
+      end
     end
   case {'rotate'}
     % rotate = viewGet(view,'rotate');
@@ -3321,7 +3367,7 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   dispViewGetHelp   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function dispViewGetHelp()
+function dispViewGetHelp(param)
 
 % open this file and scan the text
 fid = fopen(which('viewGet'));
@@ -3348,6 +3394,19 @@ for i = 1:length(C{1})
     collectComments = 1;
     commands{end+1} = C{2}{i};
   end
+end
+
+% if the user wants help on a particular command
+if ~ieNotDefined('param')
+  % find the command
+  commandNum = find(strcmp(sprintf('''%s''',lower(param)),commands));
+  % if found, print out the comments
+  if ~isempty(commandNum) && (commandNum > 0) && (commandNum <= length(commandComments)) && ~isempty(commandComments{commandNum})
+    disp(commandComments{commandNum});
+  else
+    disp(sprintf('(viewGet) No viewGet for %s',param));
+  end
+  return
 end
 
 % sort everything
