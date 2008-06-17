@@ -38,7 +38,7 @@ end
 if verbose>1,disppercent(inf);,end
 
 % for debugging, clears caches when user holds down shift key
-if any(strcmp(get(gcf,'CurrentModifier'),'shift'))
+if ~isempty(fig) && any(strcmp(get(fig,'CurrentModifier'),'shift'))
   disp(sprintf('(refreshMLRDisplay) Dumping caches'));
   view = viewSet(view,'roiCache','init');
   view = viewSet(view,'overlayCache','init');
