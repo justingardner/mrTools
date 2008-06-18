@@ -177,6 +177,8 @@ if ~justGetParams
       scanParams(iScan).dataSize = hdr.dim([2,3,4])';
       scanParams(iScan).description = groupParams.description{iScan};
       scanParams(iScan).fileName = groupParams.name{iScan};
+      scanParams(iScan).originalFileName{1} = groupParams.name{iScan}; % otherwise motionComp has problems 
+      scanParams(iScan).originalGroupName{1} = groups(1).name; % ditto
       scanParams(iScan).fileType = 'Nifti';
       niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
       niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
