@@ -56,7 +56,7 @@ if baseType == 0
   baseDims = viewGet(v,'baseDims');
   if ((sliceNum > 0) && (sliceNum <= baseDims(baseSliceIndex)))
     % if so, switch to it
-    mlrGuiSet(viewNum,'slice',sliceNum);
+    viewSet(v,'curSlice',sliceNum);
   end
 end
 

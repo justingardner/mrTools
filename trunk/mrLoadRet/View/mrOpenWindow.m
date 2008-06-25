@@ -87,7 +87,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       % change scan
       mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
       % change slice
-      mlrGuiSet(view.viewNum,'slice',mrLastView.viewSettings.curSlice);
+      viewSet(view,'curSlice',mrLastView.viewSettings.curSlice);
     end
 
     % read analyses
