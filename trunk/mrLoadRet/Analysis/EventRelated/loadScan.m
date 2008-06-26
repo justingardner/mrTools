@@ -1,6 +1,6 @@
 % loadScan.m
 %
-%      usage: loadScan(view,scanNum,groupNum,<sliceNum>,<precision>,<x>,<y>)
+%      usage: loadScan(view,<scanNum>,<groupNum>,<sliceNum>,<precision>,<x>,<y>)
 %         by: justin gardner
 %       date: 03/20/07
 %    purpose: loads a scan into a "d" structure
@@ -24,11 +24,12 @@ if ~isview(view)
 end
 
 % default to loading all slices
-if ~exist('groupNum','var'),groupNum = [];end
 if ~exist('sliceNum','var'),sliceNum = [];end
 if ~exist('x','var'),x = [];end
 if ~exist('y','var'),y = [];end
 if ieNotDefined('precision'),precision = 'double';end
+if ieNotDefined('scanNum'),scanNum = viewGet(view,'curScan');end
+if ieNotDefined('groupNum'),groupNum = viewGet(view,'curGroup');end
 
 % set the group number
 if ~isempty(groupNum)
