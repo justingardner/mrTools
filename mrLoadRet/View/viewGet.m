@@ -1681,6 +1681,8 @@ switch lower(param)
     val = view.showROIs;
   case {'labelrois'}
     % show = viewGet(view,'showROIs')
+    % returns a boolean that is set to 1 if
+    % ROI labels are turned on, or 0 if not.
     val = view.labelROIs;
   case{'numberofrois','numrois','nrois'}
     % n = viewGet(view,'numberofROIs')
@@ -1690,12 +1692,24 @@ switch lower(param)
     val = view.curROI;
   case{'roinum'}
     % roiNum = viewGet(view,'roiNum',roiName)
+    % This will return the roiNum that correspondes
+    % to the passed in name, if that roi is loaded into
+    % the view. If roiName is a number, it will return
+    % that number if roiNum is a valid roiNum.
     if ieNotDefined('varargin')
       mrErrorDlg('viewGet roiNum: must specify ROI name');
     end
     ROIname = varargin{1};
     % if no ROIs are loaded than return empty
-    if viewGet(view,'nROIs') == 0
+    nROIs = viewGet(view,'nROIs');
+    if nROIs == 0
+      return
+    end
+    % check for number
+    if isscalar(ROIname)
+      if (ROIname >= 1) && (ROIname <= viewGet(view,'nROIs'))
+	val = round(ROIname);
+      end
       return
     end
     ROInames = {view.ROIs(:).name};
