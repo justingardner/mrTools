@@ -7,12 +7,12 @@
 %             call with -inf for init
 %             call with percent to update
 %             call with inf to end
-%       e.g.:disppercent(-inf,'Doing stuff');
-%            disppercent(.5);
-%            disppercent(inf);
+%       e.g.:
 %
+%disppercent(-inf,'Doing stuff');for i =  1:30;mglWaitSecs(0.1);disppercent(i/30);end;elapsedTime = disppercent(inf);
 function retval = disppercent(percentdone,mesg)
 
+retval = nan;
 if ~isunix
   if percentdone == -inf
     disp(mesg);
@@ -57,10 +57,10 @@ if (percentdone == -inf)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif (percentdone == inf)
   % get elapsed time
-  numsecs = etime(clock,gDisppercent.t0);
+  elapsedTime = etime(clock,gDisppercent.t0);
   % separate seconds and milliseconds
-  numms = round(1000*(numsecs-floor(numsecs)));
-  numsecs = floor(numsecs);
+  numms = round(1000*(elapsedTime-floor(elapsedTime)));
+  numsecs = floor(elapsedTime);
   % if over a minute then display minutes separately
   if numsecs>60
     nummin = floor(numsecs/60);
@@ -78,6 +78,7 @@ elseif (percentdone == inf)
   end
   % display time string
   mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\btook %s\n',timestr));
+  retval = elapsedTime;
 % otherwise show update
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
