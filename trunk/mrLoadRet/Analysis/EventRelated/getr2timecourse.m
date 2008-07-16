@@ -66,6 +66,12 @@ else
   outd.ehdrste = squeeze(outd.ehdrste(1,1,:,:,:));
 end
 
+% get dimensions right
+if nhdr == 1
+  outd.ehdr = outd.ehdr';
+  outd.ehdrste = outd.ehdrste';
+end
+
 if ~ieNotDefined('tr')
   outd.time = tr/2:tr:(hdrlen*tr);
 end
