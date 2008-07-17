@@ -402,7 +402,7 @@ d = floor(255*d);
 
 % only display with no output arguments
 if (nargout == 0)
-  image(fliplr(d));
+  image(d);
   colormap(gray(256));
   axis off
   axis equal
