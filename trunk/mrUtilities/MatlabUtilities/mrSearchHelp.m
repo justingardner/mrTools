@@ -22,7 +22,7 @@ function [  ]=mrSearchHelp( expression, options )
 
 if nargin < 2
   % '-r -l ;
-  options = '-r -u -n';
+  options = '-If \.m$ -r -u -n';
 end
 
 if nargin < 1
