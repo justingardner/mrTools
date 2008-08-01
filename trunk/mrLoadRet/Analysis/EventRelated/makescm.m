@@ -37,7 +37,7 @@ if ieNotDefined('applyFiltering'), applyFiltering = 0;end
 % if we have only a single run then we set
 % the runTransitions for that single run
 if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
-  runTransition = [1 d.dim(4)];
+  runTransition = [1 d.dim(end)];
 else
   runTransition = d.concatInfo.runTransition;
 end
@@ -83,5 +83,5 @@ end
 d.nhdr = length(d.stimvol);
 d.scm = allscm;
 d.hdrlen = hdrlen;
-d.volumes = 1:d.dim(4);
+d.volumes = 1:d.dim(end);
 
