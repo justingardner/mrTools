@@ -608,7 +608,7 @@ end
 
 global gParams;
 
-h = uicontrol('Style','pushbutton','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,[],isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol(fignum,'Style','pushbutton','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,[],isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextbox makes an uneditable text box.
@@ -618,7 +618,7 @@ function h = makeTextbox(fignum,displayString,rownum,colnum,uisize,uisizev,isHel
 if ieNotDefined('isHelpDialog'),isHelpDialog=0;end
 if ieNotDefined('uisizev'),uisizev=1;,end
 global gParams;
-h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,uisizev,isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname,'HorizontalAlignment','Right');
+h = uicontrol(fignum,'Style','text','String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,uisizev,isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname,'HorizontalAlignment','Right');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
@@ -642,7 +642,7 @@ end
 
 global gParams;
 
-h = uicontrol('Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol(fignum,'Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeArrayentry makes a uicontrol to handle array entry
@@ -668,7 +668,7 @@ global gParams;
 
 for i = 1:size(array,1)
   for j = 1:size(array,2)
-    h(i,j) = uicontrol('Style',style,'Callback',callback,'String',array(i,j),'Position',getUIControlPos(fignum,rownum+i-1,2+j-1,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+    h(i,j) = uicontrol(fignum,'Style',style,'Callback',callback,'String',array(i,j),'Position',getUIControlPos(fignum,rownum+i-1,2+j-1,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
   end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -689,7 +689,7 @@ else
 end
 
 global gParams;
-h = uicontrol('Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol(fignum,'Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeCheckbox
@@ -701,7 +701,7 @@ global gParams;
 % make callback string
 callback = sprintf('mrParamsDialog(%f)',callback);
 
-h = uicontrol('Style','checkbox','Value',mrStr2num(displayString),'Callback',callback,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol(fignum,'Style','checkbox','Value',mrStr2num(displayString),'Callback',callback,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry w/inc dec
@@ -717,11 +717,11 @@ inccallback = sprintf('mrParamsDialog(%f,%f)',callback,gParams.varinfo{callback}
 callback = sprintf('mrParamsDialog(%f)',callback);
 
 % make inc and dec buttons
-hl = uicontrol('Style','pushbutton','Callback',deccallback,'String','<','Position',getUIControlPos(fignum,rownum,colnum,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
-hr = uicontrol('Style','pushbutton','Callback',inccallback,'String','>','Position',getUIControlPos(fignum,rownum,colnum+2,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+hl = uicontrol(fignum,'Style','pushbutton','Callback',deccallback,'String','<','Position',getUIControlPos(fignum,rownum,colnum,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+hr = uicontrol(fignum,'Style','pushbutton','Callback',inccallback,'String','>','Position',getUIControlPos(fignum,rownum,colnum+2,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 % make text control
-h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum+1,uisize-2),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol(fignum,'Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum+1,uisize-2),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol
