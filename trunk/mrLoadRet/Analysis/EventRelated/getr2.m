@@ -11,11 +11,12 @@
 %             d needs to have a stimulus convolution matrix
 %             in d.scm
 %
-function d = getr2(d)
+function d = getr2(d,verbose)
 
 % init some variables
 ehdr=[];r2 = [];
 
+if ieNotDefined('verbose'),verbose = 1;end
 % precalculate the normal equation (this dramatically speeds up things)
 precalcmatrix = ((d.scm'*d.scm)^-1)*d.scm';
 % if this don't work then do pinv
@@ -38,7 +39,7 @@ d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
 warning('off','MATLAB:divideByZero');
 
 % display string
-disppercent(-inf,'(getr2) Calculating r2');
+if verbose,disppercent(-inf,'(getr2) Calculating r2');end
 % cycle through images calculating the estimated hdr and r^2s of the 
 % estimate.
 %
@@ -50,7 +51,6 @@ disppercent(-inf,'(getr2) Calculating r2');
 % was by far the faster by a factor of about 2-3. 
 onesmatrix = ones(length(d.volumes),1);
 for j = yvals
-  disppercent(max((j-min(yvals))/yvaln,0.1));
   for k = slices
     % get the time series we are working on
     % this includes all the rows of one column from one slice
@@ -80,17 +80,17 @@ for j = yvals
     % calculate variance accounted for by the estimated hdr
     r2{j,k} = (1-sumOfSquaresResidual./sum(timeseries.^2));
   end
+  if verbose,disppercent(max((j-min(yvals))/yvaln,0.1));end
 end
-disppercent(inf);
+if verbose,disppercent(inf);end
 
 % reshape matrix. this also seems the fastest way to do things. we
 % could have made a matrix in the above code and then reshaped here
 % but the reallocs needed to continually add space to the matrix
 % seems to be slower than the loops needed here to reconstruct
 % the matrix from the {} arrays.
-disppercent(-inf,'(getr2) Reshaping matrices');
+if verbose,disppercent(-inf,'(getr2) Reshaping matrices');end
 for i = xvals
-  disppercent((i-min(xvals))/xvaln);
   for j = yvals
     for k = slices
       % get the ehdr
@@ -101,9 +101,10 @@ for i = xvals
       d.r2(i,j,k) = r2{j,k}(i);
     end
   end
+  if verbose,disppercent((i-min(xvals))/xvaln);end
 end
 
 % display time took
-disppercent(inf);
+if verbose,disppercent(inf);end
 
 warning('on','MATLAB:divideByZero');
