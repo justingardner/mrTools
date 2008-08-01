@@ -46,7 +46,7 @@ view = viewSet(view,'labelROIs',1);
 
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
-  disppercent(-inf,sprintf('Loading %s',mrLastView));
+  disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
   mrLastView=load(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
