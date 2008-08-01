@@ -53,7 +53,7 @@ d.dim = size(d.data);
 d.volumes = 1:d.dim(4);
 
 % compute the event related analysis
-outd = getr2(d);
+outd = getr2(d,0);
 
 % and parse back fields
 if size(timecourses,1)==1
@@ -76,6 +76,7 @@ if ~ieNotDefined('tr')
   outd.time = tr/2:tr:(hdrlen*tr);
 end
 
+outd.covar = pinv(d.scm'*d.scm);
 outd = rmfield(outd,'data');
 
 
