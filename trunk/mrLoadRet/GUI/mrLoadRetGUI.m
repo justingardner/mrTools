@@ -863,57 +863,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
-mrGlobals;
-homeDir = viewGet(v,'homeDir');
-
-if isfield(MLR,'views') && ~isempty(MLR.views)
-    viewNum = handles.viewNum;
-    thisView = MLR.views{viewNum};
-    % remember figure location
-    mrSetFigLoc('mrLoadRetGUI',get(thisView.figure,'Position'));
-    % remember GUI settings
-    viewSettings.curBase = viewGet(thisView,'curBase');
-    viewSettings.rotate = viewGet(thisView,'rotate');
-    viewSettings.curScan = viewGet(thisView,'curScan');
-    viewSettings.curSlice = viewGet(thisView,'curSlice');
-    viewSettings.curGroup = viewGet(thisView,'curGroup');
-    viewSettings.sliceOrientation = viewGet(thisView,'sliceOrientation');
-    viewSettings.overlayMin = viewGet(thisView,'overlayMin');
-    viewSettings.overlayMax = viewGet(thisView,'overlayMax');
-    viewSettings.alpha = viewGet(thisView,'alpha');
-    viewSettings.showROIs = viewGet(thisView,'showROIs');
-    viewSettings.labelROIs = viewGet(thisView,'labelROIs');
-    % close graph figure, remembering figure location
-    if ~isempty(MLR.graphFigure)
-        mrSetFigLoc('graphFigure',get(MLR.graphFigure,'Position'));
-        close(MLR.graphFigure);
-        MLR.graphFigure = [];
-    end
-    % close view figures
-    % keep a local copy of everything since
-    % the last view that is deleted will
-    % clear the MLR global
-    views = MLR.views;
-    for viewNum = 1:length(views)
-        view = views{viewNum};
-        if isview(view)
-	  delete(view.figure);
-        end
-    end
-    drawnow
-    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving %s/mrLastView',homeDir));
-    % save the view in the current directory
-    view = thisView;
-    eval(sprintf('save %s view viewSettings -V6;',fullfile(homeDir,'mrLastView')));
-    % save .mrDefaults in the home directory
-    disppercent(inf);
-    disppercent(-inf,sprintf('(mrLoadRetGUI) Saving %s',mrDefaultsFilename));
-    saveMrDefaults;
-    disppercent(inf);
-else
-    closereq;
-end
-clear global MLR
+mrQuit(1,v);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function editMenu_Callback(hObject, eventdata, handles)
