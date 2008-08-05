@@ -82,13 +82,13 @@ for i = 1:length(hemi)
     disp(sprintf('(mlrImportFreeSurfer) Could not find inflated surface %s',getLastDir(surfFile,2)));
   end
 
-%  curvFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.curvFile));
-%  if isfile(curvFile)
-%    [curv, fnum] = freesurfer_read_curv();
-%  eval(sprintf('save %s %s -V6;', fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Curv.mat')), 'curv'));
-%  else
-%    disp(sprintf('(mlrImportFreeSurfer) Could not find curvature file %s',getLastDir(curvFile)));
-%  end
+  curvFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.curvFile));
+  if isfile(curvFile)
+    [curv, fnum] = freesurfer_read_curv();
+    saveVFF(fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Curv.vff')), curv)
+  else
+    disp(sprintf('(mlrImportFreeSurfer) Could not find curvature file %s',getLastDir(curvFile)));
+  end
 end
 
 % convert the volume to mlr volume
@@ -131,3 +131,4 @@ return;
 % h.qoffset_x = -1*(h.dim(2)-1)/2;
 % h.sform_code = 0;
 % cbiWriteNiftiHeader(h, sprintf(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr'))));
+
