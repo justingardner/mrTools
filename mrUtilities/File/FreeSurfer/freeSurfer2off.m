@@ -1,16 +1,16 @@
-% fs2off.m
+% freeSurfer2off.m
 %
 %        $Id$
-%      usage: fs2off(fsSurf, offSurf)
+%      usage: freeSurfer2off(fsSurf, offSurf)
 %         by: eli merriam
 %       date: 07/11/07
 %    purpose: 
 %
-function[] = fs2off(fsSurf, offSurf)
+function[] = freeSurfer2off(fsSurf, offSurf)
 
 % check arguments
 if (nargin ~= 2)
-  help fs2off
+  help freeSurfer2off
   return
 end
 
