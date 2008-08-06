@@ -34,7 +34,7 @@ hemiNames = {'left', 'right'};
 outDir    = fullfile(pwd,'surfRelax');
 
 paramsInfo = {...
-    {'freeSurferDir',fullfile(getenv('SUBJECTS_DIR'), baseName),'directory where the freeSurfer files live'}, ...
+    {'freeSurferDir',pwd,'directory where the freeSurfer files live'}, ...
     {'outDir', outDir,'directory that OFF surfaces will be written to'}, ...
     {'wmFile', wmFile, 'name of the surface defining the white/gray boundry'}, ...
     {'gmFile', gmFile, 'name of the surface defining the gray/pial boundry'}, ...
@@ -63,7 +63,7 @@ for i = 1:length(hemi)
   else
     disp(sprintf('(mlrImportFreeSurfer) Could not find inner (white matter) surface %s',getLastDir(surfFile,2)));
   end
-  
+
   % convert outer surface
   surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.gmFile));
   outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_GM.off'));
@@ -84,8 +84,8 @@ for i = 1:length(hemi)
 
   curvFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.curvFile));
   if isfile(curvFile)
-    [curv, fnum] = freesurfer_read_curv();
-    saveVFF(fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Curv.vff')), curv)
+    [curv, fnum] = freesurfer_read_curv(curvFile);
+    saveVFF(fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Curv.vff')), -curv)
   else
     disp(sprintf('(mlrImportFreeSurfer) Could not find curvature file %s',getLastDir(curvFile)));
   end
