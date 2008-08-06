@@ -1,6 +1,6 @@
 % disppercent.m
 %
-%      usage: disppercent(percentdone)
+
 %         by: justin gardner
 %       date: 10/05/04
 %    purpose: display percent done
@@ -13,38 +13,22 @@
 function retval = disppercent(percentdone,mesg)
 
 retval = nan;
-if ~isunix
-  if percentdone == -inf
-    disp(mesg);
-  end
-  return
-end
-
 % check command line arguments
 if ((nargin ~= 1) && (nargin ~= 2))
   help disppercent;
   return
 end
 
-% global to turn off printing
-global gVerbose;
-if ~gVerbose
-  return
-end
-
+% global for disppercent
 global gDisppercent;
-
-% systems without mrDisp (print w/out return that flushes buffers)
-if exist('mrDisp', 'file') ~= 3
-  if (percentdone == -inf) && (nargin == 2)
-    disp(mesg);
-  end
-  return
-end
 
 % if this is an init then remember time
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (percentdone == -inf)
+  % global to turn off printing
+  global gVerbose;
+  gDisppercent.verbose = gVerbose;
+  if ~gVerbose,return,end
   % set starting time
   gDisppercent.t0 = clock;
   % default to no message
@@ -53,9 +37,11 @@ if (percentdone == -inf)
   else
     mrDisp(sprintf('%s 00%% (00:00:00)',mesg));
   end    
+
 % display total time at end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif (percentdone == inf)
+  if ~gDisppercent.verbose,return,end
   % get elapsed time
   elapsedTime = etime(clock,gDisppercent.t0);
   % separate seconds and milliseconds
@@ -82,6 +68,7 @@ elseif (percentdone == inf)
 % otherwise show update
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
+  if ~gDisppercent.verbose,return,end
   % avoid things that will end up dividing by 0
   if (percentdone >= 1)
     percentdone = .99;
