@@ -425,6 +425,7 @@ function dispSurface
 
 global gSurfViewer;
 figure(gSurfViewer.f);
+set(gSurfViewer.f,'renderer','OpenGL');
 
 % clear the axis
 cla;
@@ -484,7 +485,7 @@ function dispVolume(sliceIndex,slice)
 global gSurfViewer;
 figure(gSurfViewer.f);
 cla reset;
-drawnow;
+set(gSurfViewer.f,'renderer','painters');
 
 % display a slice of the anatomy image
 switch sliceIndex
@@ -525,9 +526,7 @@ if ~isempty(gSurfViewer.outerCoords)
   outerCoordNodes = outerCoordNodes( find( round(outerCoordNodes(:,sliceIndex))==slice), : );
   plot(outerCoordNodes(:,2), outerCoordNodes(:,1), 'y.', 'markersize', 1);
 end
-
-view([0 90]);
-
+drawnow
 return;
 
 %%%%%%%%%%%%%%%%%%%%%%%
