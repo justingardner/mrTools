@@ -483,7 +483,8 @@ function dispVolume(sliceIndex,slice)
 
 global gSurfViewer;
 figure(gSurfViewer.f);
-cla;
+cla reset;
+drawnow;
 
 % display a slice of the anatomy image
 switch sliceIndex
