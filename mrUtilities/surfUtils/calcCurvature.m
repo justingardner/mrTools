@@ -1,18 +1,25 @@
 % calcCurvature.m
 %
 %        $Id$ 
-%      usage: calcCurvature(innerSurfaceName,outerSurfaceName)
+%      usage: calcCurvature(innerSurfaceName,outerSurfaceName,<'nSmooth=2'>,<'vertexList',1:nVtcs>)
 %         by: eli merriam & justin gardner
 %       date: 08/05/08
-%    purpose: 
+%    purpose: compute curvature of the innerSurface. Pass in the names of the inner
+%             and outer surfaces and it will return an array that has the curvature
+%             values. You can save this using saveVFF. nSmooth is how many smoothing
+%             passes to do. Default is 2. vertexList is the vertices you want
+%             to compute the curvature on, default is all vertices.
 %
-function m = calcCurvature(innerSurfaceName,outerSurfaceName)
+function m = calcCurvature(innerSurfaceName,outerSurfaceName,varargin)
 
 % check arguments
-if ~any(nargin == [2])
+if ~any(nargin == [2 3])
   help calcCurvature
   return
 end
+
+nSmooth = [];vertexList = [];
+getArgs(varargin,{'nSmooth=2','vertexList=[]'});
 
 % off surface
 innerSurfaceName = sprintf('%s.off',stripext(innerSurfaceName));
@@ -38,24 +45,31 @@ surf.uniqueFaceIndexList = innerSurf.tris;
 connectionMatrix = findConnectionMatrix(surf);
 clear surf;
 
+connectionMatrix = double(connectionMatrix);
 % compute vertex normals
 vertexNormals = outerSurf.vtcs-innerSurf.vtcs;
 
+% allocate space for m
+m = zeros(1,innerSurf.Nvtcs);
+
 disppercent(-inf,'(calcCurvature) Calculating curvature');
-for iVertex = 1:innerSurf.Nvtcs
+if isempty(vertexList),vertexList = 1:innerSurf.Nvtcs;end
+for iVertex = vertexList
   % find neighbors of this vertex.
-  vertexNeighbors = find(connectionMatrix(:,iVertex));
+  vertexNeighbors = find(connectionMatrix(:,vertexList(iVertex)));
   % and also the neighbors of those neighbors
   [vertexNeighbors whichColumn] = find(connectionMatrix(:,vertexNeighbors));
   vertexNeighbors = unique(vertexNeighbors);
+  [vertexNeighbors whichColumn] = find(connectionMatrix(:,vertexNeighbors));
+  vertexNeighbors = unique(vertexNeighbors);
   % get x, y and z coordinates of neighbors relative to current vertex
-  x = innerSurf.vtcs(vertexNeighbors,1)-innerSurf.vtcs(iVertex,1);
-  y = innerSurf.vtcs(vertexNeighbors,2)-innerSurf.vtcs(iVertex,2);
-  z = innerSurf.vtcs(vertexNeighbors,3)-innerSurf.vtcs(iVertex,3);
+  x = innerSurf.vtcs(vertexNeighbors,1)-innerSurf.vtcs(vertexList(iVertex),1);
+  y = innerSurf.vtcs(vertexNeighbors,2)-innerSurf.vtcs(vertexList(iVertex),2);
+  z = innerSurf.vtcs(vertexNeighbors,3)-innerSurf.vtcs(vertexList(iVertex),3);
   % get the rotation matrix that rotates coordinates so
   % that the normal at this vertex is [0 0 1];
   % first extract normal
-  normal = vertexNormals(iVertex,:);  
+  normal = vertexNormals(vertexList(iVertex),:);  
   normal = normal/norm(normal);
   % now projext normal on to YZ plane
   normalX = [normal(2:3)];normalX = normalX/norm(normalX);
@@ -86,7 +100,7 @@ for iVertex = 1:innerSurf.Nvtcs
   end
   R = rotateX*rotateY;
   if 0
-    normal = vertexNormals(iVertex,:);  
+    normal = vertexNormals(vertexList(iVertex),:);  
     normal = normal/norm(normal);
     normal = normal*R;
     if (normal(1) > 0.1) || (normal(2) > 0.1) || (normal(3) < 0.9)
@@ -107,22 +121,28 @@ for iVertex = 1:innerSurf.Nvtcs
   pCurvature = eig(A);
   % get the mean curvature
   m(iVertex) = mean(pCurvature);
-  disppercent(iVertex/innerSurf.Nvtcs);
+  disppercent(iVertex/length(vertexList));
 end
 disppercent(inf);
 
-m = connectionBasedSmooth(connectionMatrix,m);
+% invert colors
+m = -m;
+
+% and smooth
+for i=1:nSmooth
+  m = connectionBasedSmooth(connectionMatrix,m);
+end
 
 if 0
 surfname = fullfile(mrGetPref('volumeDirectory'),'jg19710606/jg041001ver2/jg_left_WM');
 surf = loadSurfOFF(surfname);
 surf.uniqueVertices = surf.vtcs;
 surf.uniqueFaceIndexList = surf.tris;
-connectionMatrix = findConnectionMatrix(surf);
+connectionMatrix = double(findConnectionMatrix(surf));
 d = dijkstra(connectionMatrix,10);
 
 innerSurfname = fullfile(mrGetPref('volumeDirectory'),'jg19710606/jg041001ver2/jg_left_WM');
 outerSurfname = fullfile(mrGetPref('volumeDirectory'),'jg19710606/jg041001ver2/jg_left_GM');
-calcCurvature(innerSurfname,outerSurfname);
+m = calcCurvature(innerSurfname,outerSurfname);
 end
 
