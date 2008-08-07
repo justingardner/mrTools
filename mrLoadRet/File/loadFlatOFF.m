@@ -45,8 +45,8 @@ if isstr(flatFile);
   % for now, just translate them...
   params.flatDir = params.flatPath;
   params.flatFileName = params.flatFile;
-  params.innerFileName = params.inner;
-  params.outerFileName = params.outer;
+  params.innerCoordsFileName = params.inner;
+  params.outerCoordsFileName = params.outer;
   params.curvFileName = params.curv;
   params.anatFileName = params.anatomy;
   % mrFlatViewer  will create the gFlatViewer global structure
@@ -60,8 +60,8 @@ if isstruct(flatFile);
   params = flatFile;
   if isfile(fullfile(params.flatDir, params.flatFileName));
     flatFile = loadSurfOFF(fullfile(params.flatDir, params.flatFileName));
-    surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerFileName));
-    surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerFileName));
+    surf.inner = loadSurfOFF(fullfile(params.flatDir, params.innerCoordsFileName));
+    surf.outer = loadSurfOFF(fullfile(params.flatDir, params.outerCoordsFileName));
     surf.curv = loadVFF(fullfile(params.flatDir, params.curvFileName));
     anat.hdr = cbiReadNiftiHeader(fullfile(params.flatDir, params.anatFileName));
     % now do necessary world2array xformation here
@@ -181,8 +181,8 @@ base.permutationMatrix = getPermutationMatrix(base.hdr);
 
 base.coordMap.flatDir = params.flatDir;
 base.coordMap.flatFileName = params.flatFileName;
-base.coordMap.innerFileName = params.innerFileName;
-base.coordMap.outerFileName = params.outerFileName;
+base.coordMap.innerFileName = params.innerCoordsFileName;
+base.coordMap.outerFileName = params.outerCoordsFileName;
 base.coordMap.curvFileName = params.curvFileName;
 base.coordMap.anatFileName = params.anatFileName;
 base.coordMap.flatRes = flatParams.flatRes;
