@@ -344,7 +344,7 @@ f     = surf.flat.uniqueFaceIndexList;
 
 % loop through all of the faces
 disppercent(-inf,'Checking winding direction');
-warpDir = zeros(1,length(f));warpDirFlat = zeros(1,length(f));
+wrapDir = zeros(1,length(f));wrapDirFlat = zeros(1,length(f));
 for iFace = 1:length(f);
   % grab a triangle for inner 3D suface
   triIn = vIn(f(iFace,:),:);
@@ -383,7 +383,7 @@ disppercent(inf)
 match =    sum( sign(wrapDir) == sign(wrapDirFlat) );
 misMatch = sum( sign(wrapDir) ~= sign(wrapDirFlat) );
 
-if misMatch > match
+if misMatch < match
   disp(sprintf('(makeFlat) X-Y flipping the flat patch...'));
   surf.flat.locs2d = cat(2, surf.flat.locs2d(:,2), surf.flat.locs2d(:,1));
 else
