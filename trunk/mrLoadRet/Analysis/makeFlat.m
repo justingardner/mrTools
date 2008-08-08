@@ -143,7 +143,7 @@ end
 
 
 paramsInfo{end+1} = {'startCoord', params.startCoord(1:3), 'start flattening from here'};
-paramsInfo{end+1} = {'patchRadius', 50, 'round=1', 'incdec=[-5 5]', 'Flat patch radius in mm'};
+paramsInfo{end+1} = {'patchRadius', 75, 'round=1', 'incdec=[-5 5]', 'Flat patch radius in mm'};
 paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'the resolution of the flat patch -- a value of 2 doubles the resolution'};
 paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'thresholding the surface makes the background two-tone (binary curvature)'};
 paramsInfo{end+1} = {'flattenMethod', {'mrFlatMesh','surfRelax'},'use either surfRelax or mrFlatMesh'};
@@ -383,7 +383,7 @@ disppercent(inf)
 match =    sum( sign(wrapDir) == sign(wrapDirFlat) );
 misMatch = sum( sign(wrapDir) ~= sign(wrapDirFlat) );
 
-if misMatch < match
+if misMatch > match
   disp(sprintf('(makeFlat) X-Y flipping the flat patch...'));
   surf.flat.locs2d = cat(2, surf.flat.locs2d(:,2), surf.flat.locs2d(:,1));
 else
