@@ -911,7 +911,7 @@ switch lower(param)
       mrWarnDlg(['(viewSet:newAnalysis) Analysis is incompatible with group: ',curGroupName]);
     end
     % Reconcile analysis params with group
-    if isfield(analysis,'d')
+    if isfield(analysis,'d') && ~isempty(analysis.d)
       [analysis.params analysis.d] = feval(analysis.reconcileFunction,curGroupName,analysis.params,analysis.d);
     else
       analysis.params = feval(analysis.reconcileFunction,curGroupName,analysis.params);
