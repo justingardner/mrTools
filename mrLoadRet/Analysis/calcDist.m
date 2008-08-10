@@ -75,12 +75,12 @@ end
 
 
 % load the appropriate surface files
-disp(sprintf('Loading %s', baseCoordMap.innerFileName));
-surf.inner = loadSurfOFF(fullfile(baseCoordMap.flatDir, baseCoordMap.innerFileName));
+disp(sprintf('Loading %s', baseCoordMap.innerCoordsFileName));
+surf.inner = loadSurfOFF(fullfile(baseCoordMap.path, baseCoordMap.innerCoordsFileName));
 surf.inner = xformSurfaceWorld2Array(surf.inner, baseHdr);
 
-disp(sprintf('Loading %s', baseCoordMap.outerFileName));
-surf.outer = loadSurfOFF(fullfile(baseCoordMap.flatDir, baseCoordMap.outerFileName));
+disp(sprintf('Loading %s', baseCoordMap.outerCoordsFileName));
+surf.outer = loadSurfOFF(fullfile(baseCoordMap.path, baseCoordMap.outerCoordsFileName));
 surf.outer = xformSurfaceWorld2Array(surf.outer, baseHdr);
 
 % build up a mrMesh-style structure, taking account of the current corticalDepth
