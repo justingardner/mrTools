@@ -49,7 +49,7 @@ end
 % matlab function "fileparts" takes the last .foo as extension!
 [path,name,extension,versn] = fileparts(pathStr);
 % extension is not .nii or .img
-if ~any(strcmp(extension,{'.nii', '.img'}))
+if ~any(strcmp(extension,{'.nii', '.img', '.hdr'}))
     mrWarnDlg(['File type ',extension,' is not a valid anatomy file format']);
     return
 end
