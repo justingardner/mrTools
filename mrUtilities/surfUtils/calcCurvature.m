@@ -1,14 +1,17 @@
 % calcCurvature.m
 %
 %        $Id$ 
-%      usage: calcCurvature(innerSurfaceName,outerSurfaceName,<'nSmooth=2'>,<'vertexList',1:nVtcs>)
+%      usage: m = calcCurvature(innerSurfaceName,outerSurfaceName,<'nSmooth=2'>)
 %         by: eli merriam & justin gardner
 %       date: 08/05/08
 %    purpose: compute curvature of the innerSurface. Pass in the names of the inner
 %             and outer surfaces and it will return an array that has the curvature
-%             values. You can save this using saveVFF. nSmooth is how many smoothing
-%             passes to do. Default is 2. vertexList is the vertices you want
-%             to compute the curvature on, default is all vertices.
+%             values. You can save this using saveVFF. e.g.
+%
+%             m = calcCurvature('jg_left_WM','jg_left_GM');
+%             saveVFF('jg_left_WM_curv.vff',m);
+%
+%             nSmooth is how many smoothing passes to do. Default is 2.
 %
 function m = calcCurvature(innerSurfaceName,outerSurfaceName,varargin)
 
@@ -20,6 +23,11 @@ end
 
 nSmooth = [];vertexList = [];
 getArgs(varargin,{'nSmooth=2','vertexList=[]'});
+
+% NOTE the vertexList functionality is not fully implemented (and)
+% thus not documented above since if you want to compute the curvature
+% just on a subset of vertices, you will have to recreate the connectionMatrix
+% to do the smoothing correctly.
 
 % off surface
 innerSurfaceName = sprintf('%s.off',stripext(innerSurfaceName));
@@ -45,7 +53,6 @@ surf.uniqueFaceIndexList = innerSurf.tris;
 connectionMatrix = findConnectionMatrix(surf);
 clear surf;
 
-connectionMatrix = double(connectionMatrix);
 % compute vertex normals
 vertexNormals = outerSurf.vtcs-innerSurf.vtcs;
 
