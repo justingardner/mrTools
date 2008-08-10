@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 21-Dec-2007 15:14:22
+% Last Modified by GUIDE v2.5 09-Aug-2008 14:10:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -631,8 +631,8 @@ else
 end
 
 % --------------------------------------------------------------------
-function loadFlatMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to loadFlatMenuItem (see GCBO)
+function importFlatMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to importFlatMenuItem (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -640,22 +640,22 @@ mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 % v = loadFlat(v);
-base = loadFlatOFF;
+base = importFlatOFF;
 if ~isempty(base)
   viewSet(v, 'newbase', base);
   refreshMLRDisplay(viewNum);
 end
 
 % --------------------------------------------------------------------
-function loadSurfaceMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to loadSurfaceMenuItem (see GCBO)
+function importSurfaceMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to importSurfaceMenuItem (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
-base = loadSurface;
+base = importSurfaceOFF;
 if ~isempty(base)
   viewSet(v, 'newbase', base);
   refreshMLRDisplay(viewNum);
@@ -761,6 +761,13 @@ refreshMLRDisplay(viewNum);
 
 
 % --------------------------------------------------------------------
+function importROIMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = importROI(view);
+
+% --------------------------------------------------------------------
 function saveROIMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -780,10 +787,6 @@ end
 function importMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function importAnatomyMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('importAnatomy not yet implemented');
-
-% --------------------------------------------------------------------
 function importGroupMenuItem_Callback(hObject, eventdata, handles)
 importGroupScans;
 
@@ -794,13 +797,6 @@ mrWarnDlg('importTSeries not yet implemented');
 % --------------------------------------------------------------------
 function importOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrWarnDlg('importOverlay not yet implemented');
-
-% --------------------------------------------------------------------
-function importROIMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = importROI(view);
 
 % --------------------------------------------------------------------
 function exportMenu_Callback(hObject, eventdata, handles)
@@ -2321,9 +2317,9 @@ end
 baseType = viewGet(v,'baseType');
 if baseType == 1
   % now bring up the flat viewer
-  mrFlatViewer(params.flatFileName,params.outerFileName,params.innerFileName,params.curvFileName,params.anatFileName,viewNum);
+  mrFlatViewer(params.flatFileName,params.outerCoordsFileName,params.innerCoordsFileName,params.curvFileName,params.anatFileName,viewNum);
 else
-  mrSurfViewer(params.outerFileName,params.outerCoordsFileName,params.innerFileName,params.innerCoordsFileName,params.curvFileName,params.anatFileName);
+  mrSurfViewer(params.outerSurfaceFileName,params.outerCoordsFileName,params.innerSurfaceFileName,params.innerCoordsFileName,params.curvFileName,params.anatFileName);
 end
 
   cd(thispwd);
