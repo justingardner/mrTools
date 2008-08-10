@@ -1190,9 +1190,7 @@ switch lower(param)
     val = [];
     if b & (b > 0) & (b <= n)
       if isfield(view.baseVolumes(b),'coordMap') 
-	if isfield(view.baseVolumes(b).coordMap,'flatDir')
-	  val = view.baseVolumes(b).coordMap.flatDir;
-	elseif isfield(view.baseVolumes(b).coordMap,'path')
+	if ~isempty(view.baseVolumes(b).coordMap)
 	  val = view.baseVolumes(b).coordMap.path;
 	end
       end
