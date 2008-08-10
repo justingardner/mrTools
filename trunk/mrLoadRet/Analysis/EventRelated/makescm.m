@@ -12,7 +12,8 @@
 %             applyFiltering defaults to 0, but if it
 %             is set will apply the hipass filtering or
 %             projection in d.concatInfo to the columns
-%             of the scm.
+%             of the scm. d should have the following fields:
+%             {dim,stimvol,<concatInfo>,<hdrlen>}
 %
 function d = makescm(d,hdrlen,applyFiltering)
 
