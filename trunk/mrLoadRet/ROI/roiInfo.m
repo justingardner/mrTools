@@ -57,7 +57,7 @@ paramsInfo = {{'name',roiName,'editable=0','The name of the ROI'},...
 
 
 % give ability to findROI for non baseCoordMapped ROIs
-if isempty(viewGet(v,'baseCoordMap'))
+if viewGet(view,'baseType') == 0
   paramsInfo{end+1} = {'findROI',[],'type=pushbutton','buttonString=Find ROI','callback',@findROI,'callbackArg',v,'Go to the closest slice for which this ROI has some coordinates.'};
 end
 
