@@ -436,17 +436,17 @@ if gSurfViewer.whichSurface == 1
   tris = gSurfViewer.outerSurface.tris;
   c = gSurfViewer.curv;
 elseif gSurfViewer.whichSurface == 2
-  if isempty(gSurfViewer.outerCoords),return,end
+  if ~isfield(gSurfViewer,'outerCoords') || isempty(gSurfViewer.outerCoords),return,end
   vtcs = gSurfViewer.outerCoords.vtcs;
   tris = gSurfViewer.outerCoords.tris;
   c = gSurfViewer.curv;
 elseif gSurfViewer.whichSurface == 3
-  if isempty(gSurfViewer.innerSurface),return,end
+  if ~isfield(gSurfViewer,'innerSurface') || isempty(gSurfViewer.innerSurface),return,end
   vtcs = gSurfViewer.innerSurface.vtcs;
   tris = gSurfViewer.innerSurface.tris;
   c = gSurfViewer.curv;
 elseif gSurfViewer.whichSurface == 4
-  if isempty(gSurfViewer.innerCoords),return,end
+  if ~isfield(gSurfViewer,'innerCoords') || isempty(gSurfViewer.innerCoords),return,end
   vtcs = gSurfViewer.innerCoords.vtcs;
   tris = gSurfViewer.innerCoords.tris;
   c = gSurfViewer.curv;
