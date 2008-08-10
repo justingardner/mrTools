@@ -42,21 +42,22 @@ end
 % Initialize return value
 tf = true;
 if ieNotDefined('base')
-    tf = false;
-    return
+  tf = false;
+  return
 end
 if ~isstruct(base)
-	tf = false;
-	return
+  tf = false;
+  return
 end
 
 % Check required fields
 for f = 1:length(requiredFields)
-	fieldName = requiredFields{f};
-	if ~isfield(base,fieldName)
-		% mrWarnDlg(['Invalid base, missing field: ',fieldName]);
-		tf = false;
-	end
+  fieldName = requiredFields{f};
+  if ~isfield(base,fieldName)
+    % mrWarnDlg(['Invalid base, missing field: ',fieldName]);
+    tf = false;
+    return
+  end
 end
 
 % Optional fields and defaults
@@ -74,6 +75,15 @@ if isempty(base.type)
   base.type = ~isempty(base.coordMap);
 end
 
+% validate coordMap field
+if ~isempty(base.coordMap) && any(base.type==[1 2]);
+  [tf base.coordMap] = validateCoordMap(base.coordMap,base.type);
+  if ~tf,disp(sprintf('(isbase) Invalid baseCoordMap'));end
+end
+
+%%%%%%%%%%%%%%%%%%%%%
+%%   defaultClip   %%
+%%%%%%%%%%%%%%%%%%%%%
 function clip = defaultClip(image)
 % Choose default clipping based on histogram
 histThresh = length(image(:))/1000;
@@ -82,3 +92,84 @@ goodVals = find(cnt>histThresh);
 clipMin = val(min(goodVals));
 clipMax = val(max(goodVals));
 clip = [clipMin,clipMax];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   validateCoordMap   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [tf coordMap] = validateCoordMap(coordMap,baseType)
+
+% First, we fix old coordMaps to have correctly named fields
+if isfield(coordMap,'flatDir')
+  newCoordMap.path = coordMap.flatDir;
+  newCoordMap.dims = coordMap.dims;
+  newCoordMap.flatFileName = coordMap.flatFileName;
+  newCoordMap.innerCoordsFileName = coordMap.innerFileName;
+  newCoordMap.outerCoordsFileName = coordMap.outerFileName;
+  newCoordMap.curvFileName = coordMap.curvFileName;
+  newCoordMap.anatFileName = coordMap.anatFileName;
+  if isfield(coordMap,'coords')
+    newCoordMap.coords = coordMap.coords;
+  end
+  newCoordMap.innerCoords = coordMap.innerCoords;
+  newCoordMap.outerCoords = coordMap.outerCoords;
+  coordMap = newCoordMap;
+elseif isfield(coordMap,'innerFileName')
+  newCoordMap.path = coordMap.path;
+  newCoordMap.dims = coordMap.dims;
+  newCoordMap.innerSurfaceFileName = coordMap.innerFileName;
+  newCoordMap.innerCoordsFileName = coordMap.innerCoordsFileName;
+  newCoordMap.outerSurfaceFileName = coordMap.outerFileName;
+  newCoordMap.outerCoordsFileName = coordMap.outerCoordsFileName;
+  newCoordMap.curvFileName = coordMap.curvFileName;
+  newCoordMap.anatFileName = coordMap.anatFileName;
+  if isfield(coordMap,'coords')
+    newCoordMap.coords = coordMap.coords;
+  end
+  newCoordMap.innerCoords = coordMap.innerCoords;
+  newCoordMap.outerCoords = coordMap.outerCoords;
+  newCoordMap.innerVtcs = coordMap.innerVtcs;
+  newCoordMap.outerVtcs = coordMap.outerVtcs;
+  newCoordMap.tris = coordMap.tris;
+  if isfield(coordMap,'rotate')
+    newCoordMap.rotate = coordMap.rotate;
+  end
+  coordMap = newCoordMap;
+end
+
+if baseType == 1
+  requiredFields = {'path','dims','flatFileName','innerCoordsFileName','outerCoordsFileName','curvFileName','anatFileName','innerCoords','outerCoords'};
+  optionalFields = {'coords',[]};
+elseif baseType == 2
+  requiredFields = {'path','dims','innerSurfaceFileName','innerCoordsFileName','outerSurfaceFileName','outerCoordsFileName','curvFileName','anatFileName','innerCoords','outerCoords','innerVtcs','outerVtcs','tris'};
+  optionalFields = {'coords',[];'rotate',0};
+end  
+
+% Check required fields
+tf = true;
+for f = 1:length(requiredFields)
+  fieldName = requiredFields{f};
+  if ~isfield(coordMap,fieldName)
+    tf = false;
+  end
+end
+
+% Optional fields and defaults
+for f = 1:size(optionalFields,1)
+  fieldName = optionalFields{f,1};
+  default = optionalFields{f,2};
+  if ~isfield(coordMap,fieldName)  
+    coordMap.(fieldName) = default;
+  end
+end
+
+% make sure the filenames are set correctly
+if baseType == 2
+  if strcmp(coordMap.innerCoordsFileName,'Same as surface')
+    coordMap.innerCoordsFileName = coordMap.innerSurfaceFileName;
+  end
+  if strcmp(coordMap.outerCoordsFileName,'Same as surface')
+    coordMap.outerCoordsFileName = coordMap.outerSurfaceFileName;
+  end
+end
+
+  

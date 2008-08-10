@@ -748,11 +748,7 @@ switch lower(param)
     if ~isempty(baseNum)
       baseType = viewGet(view,'baseType',baseNum);
       if isfield(view.baseVolumes(baseNum),'coordMap')
-	if baseType == 1
-	  view.baseVolumes(baseNum).coordMap.flatDir = val;
-	elseif baseType == 2
-	  view.baseVolumes(baseNum).coordMap.path = val;
-	end
+	view.baseVolumes(baseNum).coordMap.path = val;
       end
     end
   case{'basecoordmap'}
