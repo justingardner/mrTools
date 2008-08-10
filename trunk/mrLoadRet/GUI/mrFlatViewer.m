@@ -1,10 +1,21 @@
 % mrFlatViewer.m
 %
 %       $Id$	
-%      usage: mrFlatViewer(flatname,outer,inner,curv,anat,viewNum)
+%      usage: params = mrFlatViewer(flat,<outer>,<inner>,<curv>,<anat>,<viewNum>)
 %         by: justin gardner, originally based on surfViewer by eli merriam
 %       date: 10/09/07
-%    purpose: 
+%    purpose: Displays a flattened patch. Flat can be a name of a file:
+%
+%             mrFlatViewer('jg_left_MT_flat');
+%
+%             or can be a structure that specifies the location of a patch
+%             defined by a point/radius:
+%
+%             flat.path = pwd;
+%             flat.parentSurfaceName = 'jg_left_WM';
+%             flat.startPoint = [200 50 100];
+%             flat.radius = 50;
+%             params = mrFlatViewer(flat);
 %
 function retval = mrFlatViewer(flat,outer,inner,curv,anat,viewNum)
 
@@ -65,17 +76,30 @@ gFlatViewer = [];
 gFlatViewer.mismatchWarning = 0;
 retval = [];
 disppercent(-inf,'(mrFlatViewer) Loading surfaces');
-% get more flats
+
 % load the flat
+if isstr(flat{1})
+  [flatPath flat{1}] = fileparts(sprintf('%s.off',stripext(flat{1})));
+  flatdir = dir(fullfile(flatPath,'*.off'));
+  gFlatViewer.path = flatPath;
 
-[flatPath flat{1}] = fileparts(sprintf('%s.off',stripext(flat{1})));
-flatdir = dir(sprintf('%s/*.off', flatPath));
-gFlatViewer.flatPath = flatPath;
+  gFlatViewer.flat = loadSurfOFF(fullfile(flatPath, sprintf('%s.off', stripext(flat{1}))));
+  if isempty(gFlatViewer.flat) || ~isfield(gFlatViewer.flat,'parentSurfaceName');
+    disp(sprintf('(mrFlatViewer) %s is not a flat file',flat{1}));
+    return
+  end
+  % remove any paths
+  gFlatViewer.flat.parentSurfaceName = getLastDir(gFlatViewer.flat.parentSurfaceName);
 
-gFlatViewer.flat = loadSurfOFF(fullfile(flatPath, sprintf('%s.off', stripext(flat{1}))));
-if isempty(gFlatViewer.flat) || ~isfield(gFlatViewer.flat,'parentSurfaceName');
-  disp(sprintf('(mrFlatViewer) %s is not a flat file',flat{1}));
-  return
+else
+  % if this is a structure, then we are being called from makeFlat
+  % with coordinates and a radius
+  flatdir = [];
+  gFlatViewer.path = flat{1}.path;
+  flatPath = flat{1}.path;
+  gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,flat{1}.startPoint,flat{1}.parentSurfaceName);
+  if isempty(gFlatViewer.flat),return,end
+  flat{1} = gFlatViewer.flat.name;
 end
 
 % look for flats with same parent
@@ -91,9 +115,6 @@ for i = 1:length(flatdir)
     end
   end
 end
-
-% remove any paths
-gFlatViewer.flat.parentSurfaceName = getLastDir(gFlatViewer.flat.parentSurfaceName);
 
 % load up the surfaces
 checkForMore = 1;
@@ -227,7 +248,7 @@ for i = 1:length(curv)
 end
 % if we didn't load anything then quit
 if isempty(gFlatViewer.curv)
-  mrWarnDlg(sprintf('(mrFlatViewer) Could not find a matching .vff curvature file. You will need to use the SurfRelax tool surffilt to generate one. It is usually invoked by doing: surffilt -mcurv -iter 2 %s %s_curv.vff',outer{1},stripext(outer{1})));
+  mrWarnDlg(sprintf('(mrFlatViewer) Could not find a matching .vff curvature file. You will need to use calcCurvature to compute a curvature file from the inner (WM) and outer (GM) surfaces.',outer{1},stripext(outer{1})));
   return
 else
   curv = putOnTopOfList(curv{i},curv);
@@ -312,39 +333,53 @@ if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.guiloc.filenames = gFlatViewer.guiloc.filenames+1;
   paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
 end
-paramsInfo{end+1} = {'flatPath', flatPath,'editable=0','The directory path to the flat file'};
-if ~editable && (length(flat) == 1)
-  paramsInfo{end+1} = {'flatFile',flat{1},'editable=0','The flat patch file'};
+paramsInfo{end+1} = {'path', flatPath,'editable=0','The directory path to the flat file'};
+if isfield(gFlatViewer.flat,'radius')
+  paramsInfo{end+1} = {'flatFileName',flat{1},'editable=1','The flat patch file'};
+  paramsInfo{end+1} = {'radius',gFlatViewer.flat.radius,'incdec=[-5 5]','minmax=[1 inf]','callback',@setFlatRadius,'Set the radius in mm of the flat patch'};
+  paramsInfo{end+1} = {'x',gFlatViewer.flat.startPoint(1),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start x position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
+  paramsInfo{end+1} = {'y',gFlatViewer.flat.startPoint(2),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start y position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
+  paramsInfo{end+1} = {'z',gFlatViewer.flat.startPoint(3),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start z position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
+elseif ~editable && (length(flat) == 1)
+  paramsInfo{end+1} = {'flatFileName',flat{1},'editable=0','The flat patch file'};
 else
-  paramsInfo{end+1} = {'flatFile',flat,'The flat patch file','callback',@switchFlat};
+  paramsInfo{end+1} = {'flatFileName',flat,'The flat patch file','callback',@switchFlat};
 end
 if ~editable && (length(outer) == 1)
-  paramsInfo{end+1} = {'outer',outer{1},'editable=0','The outer (gray matter) file'};
+  paramsInfo{end+1} = {'outerCoordsFileName',outer{1},'editable=0','The outer (gray matter) file'};
 else
-  paramsInfo{end+1} = {'outer',outer,'The outer (gray matter) file','callback',@switchFile,'callbackArg=outer'};
+  paramsInfo{end+1} = {'outerCoordsFileName',outer,'The outer (gray matter) file','callback',@switchFile,'callbackArg=outerCoordsFileName'};
 end
 if ~editable && (length(inner) == 1)
-  paramsInfo{end+1} = {'inner',inner{1},'editable=0','The inner (white matter) file'};
+  paramsInfo{end+1} = {'innerCoordsFileName',inner{1},'editable=0','The inner (white matter) file'};
 else
-  paramsInfo{end+1} = {'inner',inner,'The inner (white matter) file','callback',@switchFile,'callbackArg=inner'};
+  paramsInfo{end+1} = {'innerCoordsFileName',inner,'The inner (white matter) file','callback',@switchFile,'callbackArg=innerCoordsFileName'};
 end
 if ~editable && (length(curv) == 1)
-  paramsInfo{end+1} = {'curv',curv{1},'editable=0','The curvature file. This is a file that is usually created by Jonas'' TFI command surffilt: surffilt -mcurv -iter 1 whiteMatter.off curvFileName.vff.'};
+  paramsInfo{end+1} = {'curvFileName',curv{1},'editable=0','The curvature file. This is a file that can be created from the inner (WM) and outer (GM)  surface with the command calcCurvature'};
 else
-  paramsInfo{end+1} = {'curv',curv,'The curvature file','callback',@switchFile,'callbackArg=curv'};
+  paramsInfo{end+1} = {'curvFileName',curv,'The curvature file','callback',@switchFile,'callbackArg=curvFileName'};
 end
 if ~editable && (length(anat) == 1)
-  paramsInfo{end+1} = {'anatomy',anat{1},'editable=0','The 3D anatomy file'};
+  paramsInfo{end+1} = {'anatFileName',anat{1},'editable=0','The 3D anatomy file'};
 else
-  paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file','callback',@switchAnatomy};
+  paramsInfo{end+1} = {'anatFileName',anat,'The 3D anatomy file','callback',@switchAnatomy};
 end
 
 % put up dialog
-params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
-
+if isfield(gFlatViewer.flat,'radius')
+  params = mrParamsDialog(paramsInfo,'Set parameters for flat patch');
+else
+  params = mrParamsDialog(paramsInfo,'View flat patch location on surface');
+end
 if isempty(params)
   retval = [];
 else
+  params.flatFileName = setext(fixBadChars(stripext(params.flatFileName)),'off');
+  % return also the startVertex if this is a radius /start position
+  if isfield(gFlatViewer.flat,'startVertex')
+    params.startVertex = gFlatViewer.flat.startVertex;
+  end
   retval = params;
 end
 if ishandle(gFlatViewer.f)
@@ -474,11 +509,29 @@ function switchToFlat
 
 global gFlatViewer;
 initSlice = 127;
-set(gFlatViewer.hSliders.v,'Visible','off');
-set(gFlatViewer.hSliders.vText,'Visible','off');
-set(gFlatViewer.hSliders.h,'Visible','off');
-set(gFlatViewer.hSliders.hText,'Visible','off');
-dispSurface;
+% turn off sliders if this is a real flattened flat
+if ~isfield(gFlatViewer.flat,'radius')
+  set(gFlatViewer.hSliders.v,'Visible','off');
+  set(gFlatViewer.hSliders.vText,'Visible','off');
+  set(gFlatViewer.hSliders.h,'Visible','off');
+  set(gFlatViewer.hSliders.hText,'Visible','off');
+  dispSurface;
+else
+  set(gFlatViewer.hSliders.v,'Visible','on');
+  set(gFlatViewer.hSliders.vText,'Visible','on');
+  set(gFlatViewer.hSliders.h,'Visible','on');
+  set(gFlatViewer.hSliders.hText,'Visible','on');
+  set(gFlatViewer.hSliders.h,'SliderStep',[15 45]./360);
+  set(gFlatViewer.hSliders.h,'Value',0);
+  set(gFlatViewer.hSliders.h,'Min',-180);
+  set(gFlatViewer.hSliders.h,'Max',180);
+  set(gFlatViewer.hSliders.h,'TooltipString','Rotate around z-axis');
+  set(gFlatViewer.hSliders.v,'Value',0);
+  set(gFlatViewer.hSliders.vText,'String',0);
+  set(gFlatViewer.hSliders.hText,'String',0);
+  dispSurface;
+  setViewAngle(0,0);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   sliderHandler   %%
@@ -495,7 +548,7 @@ vPos = round(get(gFlatViewer.hSliders.v,'Value'));
 set(gFlatViewer.hSliders.hText,'String',num2str(hPos));
 set(gFlatViewer.hSliders.vText,'String',num2str(vPos));
 
-if gFlatViewer.whichSurface <= 2
+if any(gFlatViewer.whichSurface == [1 2 4])
   setViewAngle(hPos,vPos);
 else
   dispVolume(3,hPos);
@@ -591,7 +644,10 @@ else
   tris = gFlatViewer.flat.tris;
   c = gFlatViewer.curv(patchVtcs);
 %  c = (c-min(c))./((max(c)-min(c)))>0.5;
-  view([0 90]);
+  %  if this is a real flat, then view from above
+  if ~isfield(gFlatViewer.flat,'radius')
+    view([0 90]);
+  end
 end  
 
 % clear the axis
@@ -1036,7 +1092,7 @@ global gFlatViewer;
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatomy));
-[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(params.flatPath, params.anatomy));
+[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(params.path, params.anatomy));
 gFlatViewer = xformSurfaces(gFlatViewer);
 % switch to 3D anatomy view
 global gParams
@@ -1053,8 +1109,8 @@ function switchFlat(params)
 global gFlatViewer;
 
 % load the anatomy and view
-disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.flatFile));
-gFlatViewer.flat = loadSurfOFF(fullfile(params.flatPath, params.flatFile));
+disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.flatFileName));
+gFlatViewer.flat = loadSurfOFF(fullfile(params.path, params.flatFileName));
 % switch to flat view
 global gParams
 refreshFlatViewer([],[],1);
@@ -1070,14 +1126,14 @@ global gFlatViewer;
 % if the user wants to find a new file
 addFilename = 0;
 if strcmp(params.(whichSurface),'Find file')
-  if strcmp(whichSurface,'curv')
-    [filename, pathname] = uigetfile({'*.vff','VFF Curvature files (*.vff)'},'Select curvature file',gFlatViewer.flatPath);
+  if strcmp(whichSurface,'curvFileName')
+    [filename, pathname] = uigetfile({'*.vff','VFF Curvature files (*.vff)'},'Select curvature file',gFlatViewer.path);
     whichControl = gFlatViewer.guiloc.filenames+3;
   else
-    [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'},'Select surface',gFlatViewer.flatPath);
-    whichControl = gFlatViewer.guiloc.filenames+1+find(strcmp(whichSurface,{'outer','inner'}));
+    [filename, pathname] = uigetfile({'*.off','OFF Surface files (*.off)'},'Select surface',gFlatViewer.path);
+    whichControl = gFlatViewer.guiloc.filenames+1+find(strcmp(whichSurface,{'outerCoordsFileName','innerCoordsFileName'}));
   end
-  filename = getRelativePath(gFlatViewer.flatPath,fullfile(pathname,filename));
+  filename = getRelativePath(gFlatViewer.path,fullfile(pathname,filename));
   addFilename = 1;
 else
   filename = params.(whichSurface);
@@ -1086,25 +1142,31 @@ end
 % try to load it
 disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
 if filename ~= 0
-  if strcmp(whichSurface,'curv')
-    file = myLoadCurvature(fullfile(params.flatPath, filename));
+  if strcmp(whichSurface,'curvFileName')
+    file = myLoadCurvature(fullfile(params.path, filename));
     whichControl = gFlatViewer.guiloc.filenames+3;;
   else
-    file = myLoadSurface(fullfile(params.flatPath, filename));
-    whichControl = gFlatViewer.guiloc.filenames+1+find(strcmp(whichSurface,{'outer','inner'}));
+    file = myLoadSurface(fullfile(params.path, filename));
+    whichControl = gFlatViewer.guiloc.filenames+1+find(strcmp(whichSurface,{'outerCoordsFileName','innerCoordsFileName'}));
   end
 else
   file = [];
 end
 
+% get the proper field name.
+whichSurfaceTypes = {'outerCoordsFileName','innerCoordsFileName','curvFileName','anatFileName'};
+whichFieldName    = {'outer',              'inner',              'curv',        'anat'        };
+surfaceFieldName = whichFieldName{find(strcmp(whichSurface,whichSurfaceTypes))};
+
+% get which surface field it is
 if ~isempty(file)
-  if strcmp(whichSurface,'curv')
-    gFlatViewer.(whichSurface)=file;
+  if strcmp(whichSurface,'curvFileName')
+    gFlatViewer.(surfaceFieldName)=file;
   else
-    gFlatViewer.surfaces.(whichSurface)=file;
+    gFlatViewer.surfaces.(surfaceFieldName)=file;
     gFlatViewer = xformSurfaces(gFlatViewer);
     % set the correct one to display
-    gFlatViewer.whichSurface = find(strcmp(whichSurface,{'outer','inner'}));
+    gFlatViewer.whichSurface = find(strcmp(whichSurface,{'outerCoordsFileName','innerCoordsFileName'}));
   end    
   % and change the ui control
   global gParams;
@@ -1124,9 +1186,9 @@ else
   currentChoices = get(gParams.ui.varentry{whichControl},'String');
   set(gParams.ui.varentry{whichControl},'Value',1)
   if ~strcmp(whichSurface,'curv')
-    gFlatViewer.surfaces.(whichSurface) = myLoadSurface(fullfile(params.flatPath, currentChoices{1}));
+    gFlatViewer.surfaces.(whichSurface) = myLoadSurface(fullfile(params.path, currentChoices{1}));
   else
-    gFlatViewer.curv = myLoadCurvature(fullfile(params.flatPath, currentChoices{1}));
+    gFlatViewer.curv = myLoadCurvature(fullfile(params.path, currentChoices{1}));
   end
 end
 refreshFlatViewer([],[],1);
@@ -1216,3 +1278,118 @@ for surfNum = 1:length(surfaces)
   gFlatViewer.surfaces.(surfaces{surfNum}) = xformSurfaceWorld2Array(gFlatViewer.surfaces.(surfaces{surfNum}),gFlatViewer.anat.hdr);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   makeFlatFromRadius   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function flat = makeFlatFromRadius(flat,radius,startPoint,surfFileName)
+
+if nargin == 4
+  % make sure we have an off
+  surfFileName = setext(surfFileName,'off');
+  % get the surface name and load it
+  flat.parentSurfaceName = getLastDir(surfFileName);
+  surf = loadSurfOFF(fullfile(flat.path,surfFileName));
+  if isempty(surf),flat =[];return;end
+  % create a connection matrix
+  mesh.uniqueVertices = surf.vtcs;
+  mesh.uniqueFaceIndexList = surf.tris;
+  mesh.connectionMatrix = findConnectionMatrix(mesh);
+  % note that here, we could pass in a scaling. As long
+  % as the volume is 1x1x1 mm, the scaling is in mm though.
+  flat.distanceMatrix = find3DNeighbourDists(mesh);
+  % keep the parent name
+  flat.parentSurfaceName = surfFileName;
+  % and parent info
+  flat.nParent = [surf.Nvtcs surf.Ntris surf.Nedges];
+  flat.parent.tris = surf.tris;
+  flat.parent.vtcs = surf.vtcs;
+end
+if nargin >= 3
+  % get the nearest vertex to the start point in the surface
+  flat.startVertex = assignToNearest(flat.parent.vtcs,startPoint);
+  % and remember those coordinates
+  flat.startPoint = round(flat.parent.vtcs(flat.startVertex,:));
+  % compute distance from start vertex to every other vertex
+  flat.distance = dijkstra(flat.distanceMatrix,flat.startVertex);
+end
+flat.radius = radius;
+% now get what vertexes are within specified radius
+flat.patch2parent = [];
+flat.patch2parent(:,1) = 1:sum(flat.distance < flat.radius);
+flat.patch2parent(:,2) = find(flat.distance < flat.radius);
+% fill in some fields
+flat.Nvtcs = size(flat.patch2parent,1);
+% get the triangles corresponding to this patch
+whichParentTris = ismember(flat.parent.tris,flat.patch2parent(:,2));
+whichParentTris = find(sum(whichParentTris')==3);
+flat.tris = flat.parent.tris(whichParentTris,:);
+flat.Ntris = size(flat.tris,1);
+% convert those tris to flat vertexs
+[tf flat.tris] = ismember(flat.tris(:),flat.patch2parent(:,2));
+flat.tris = reshape(flat.tris,flat.Ntris,3);
+% get vertices
+flat.vtcs = flat.parent.vtcs(flat.patch2parent(:,2),:);
+% fill out rest of fields
+flat.Nedges = flat.Nvtcs+flat.Ntris-1;
+flat.nPatch = [flat.Nvtcs flat.Ntris flat.Nedges];
+% set the name of the patch
+flat.name = sprintf('%s_Flat_%i_%i_%i_Rad%i.off',stripext(flat.parentSurfaceName),flat.startPoint(1),flat.startPoint(2),flat.startPoint(3),flat.radius);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%   setFlatRadius   %%
+%%%%%%%%%%%%%%%%%%%%%%%
+function setFlatRadius(params)
+
+global gFlatViewer;
+
+% see if we need to change name
+updateName = 0;
+if isempty(params.flatFileName) || strcmp(gFlatViewer.flat.name,params.flatFileName)
+  updateName = 1;
+end
+
+% reset the patch for the current selected radius
+gFlatViewer.flat = makeFlatFromRadius(gFlatViewer.flat,params.radius);
+
+% and update name
+if (updateName)
+  params.flatFileName = gFlatViewer.flat.name;
+end
+
+% reset parameters
+mrParamsSet(params);
+
+% and refresh
+refreshFlatViewer([],[],1);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   setFlatStartPoint   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function setFlatStartPoint(params)
+
+global gFlatViewer;
+
+% see if we need to change name
+updateName = 0;
+if isempty(params.flatFileName) || strcmp(gFlatViewer.flat.name,params.flatFileName)
+  updateName = 1;
+end
+
+% reset the patch for the current selected radius
+gFlatViewer.flat = makeFlatFromRadius(gFlatViewer.flat,params.radius,[params.x params.y params.z]);
+
+% and update location of startPoint
+params.x = gFlatViewer.flat.startPoint(1);
+params.y = gFlatViewer.flat.startPoint(2);
+params.z = gFlatViewer.flat.startPoint(3);
+
+% and update name
+if (updateName)
+  params.flatFileName = gFlatViewer.flat.name;
+end
+
+% reset parameters
+mrParamsSet(params);
+
+% and refresh
+refreshFlatViewer([],[],1);
