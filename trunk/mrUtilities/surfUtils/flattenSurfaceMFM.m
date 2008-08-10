@@ -1,4 +1,4 @@
-function[unfoldMeshSummary] = flattenSurfaceMFM(mesh, startCoords, perimDist);
+function [unfoldMeshSummary] = flattenSurfaceMFM(mesh, startCoords, perimDist);
 % Author: Wade
 % Purpose:
 %    Unfolds a properly triangulated mesh using Floater/Tutte's sparse
@@ -32,20 +32,22 @@ showFigures = 0;
 if (length(startCoords)~=3), error ('Error: you must enter 3 start coords'); end
 if ieNotDefined('spacingMethod'), spacingMethod = 'None'; end
 if ieNotDefined('gridSpacing'), gridSpacing = 0.4; end
+%verbose = strcmp(mrGetPref('Verbose'),'Yes');
+verbose = 1;
 
 [adjustSpacing, spacingMethod] = xlateSpacing(spacingMethod);
 
 startTime=now;
-str = sprintf('\n****** mrFlatMesh %s *****\n',datestr(now));
-disp(sprintf(str));
+str = sprintf('****** mrFlatMesh %s *****',datestr(now));
+if verbose,disp(sprintf(str));end
 
 scaleFactorFromMesh = [1 1 1];
 
 if ieNotDefined('scaleFactorFromMesh')
   errordlg('No mesh scale factor. You must create a new (modern) mesh.'); 
 end
-str = sprintf('Scale factor %.03f,%.03f,%.03f\n',scaleFactorFromMesh);
-disp(sprintf(str));
+str = sprintf('Scale factor %.03f,%.03f,%.03f',scaleFactorFromMesh);
+if verbose,disp(sprintf(str));end
 scaleFactor=scaleFactorFromMesh; % mm per voxel
 
 %-------------------------------------------------
@@ -73,20 +75,20 @@ mesh.uniqueFaceIndexList=findUniqueFaceIndexList(mesh);
 
 % Now we find the connection matrix: 
 % a sparse matrix of nxn points where M(i,j) is 1 if i and j are connected
-statusStringAdd(statusHandle,'Finding connection matrix.');
+if verbose,statusStringAdd(statusHandle,'Finding connection matrix.');end
 [mesh.connectionMatrix]=findConnectionMatrix(mesh);
 sumCon=sum(mesh.connectionMatrix);
 mesh.uniqueCols=mesh.uniqueCols(:,1);
 
 if(NUMBLURSTEPS>0)
-  statusStringAdd(statusHandle,'Blurring colormap.');
+  if verbose,statusStringAdd(statusHandle,'Blurring colormap.');end
   for t=1:NUMBLURSTEPS
     mesh.uniqueCols=(mesh.connectionMatrix*mesh.uniqueCols(:))./sumCon(:);
   end
 end
 
 str=sprintf('%d connections found',length(mesh.connectionMatrix));
-disp(sprintf(str));
+if verbose,disp(sprintf(str));end
 
 % At this point, we can use the connection matrix to perform some fast
 % smoothing on the curvature map. Also possibly a relaxation / smoothing on
@@ -95,7 +97,7 @@ for t=1:NUMBLURSTEPS
   mesh.uniqueCols = connectionBasedSmooth(mesh.connectionMatrix, mesh.uniqueCols(:,1));
 end
 
-statusStringAdd(statusHandle,'Checking group perimeter.');
+if verbose,statusStringAdd(statusHandle,'Checking group perimeter.');end
 
 % Check to make sure that this is a clean surface: no edge points yet.
 edgeList=findGroupPerimeter(mesh,1:length(mesh.uniqueVertices));
@@ -103,10 +105,11 @@ if (~isempty(edgeList))
   error('Error - initial mesh is not closed!');
   return;
 else
-  str = sprintf('Initial mesh is closed.\n'); disp(sprintf(str));
+  str = sprintf('Initial mesh is closed.');
+  if verbose,disp(sprintf(str));end
 end
 
-statusStringAdd(statusHandle,'Finding closest mesh point.');
+if verbose,statusStringAdd(statusHandle,'Finding closest mesh point.');end
 
 % Find the nearest mesh point to the startCoords (Euclidian distance).
 [startNode,snDist]=assignToNearest(mesh.uniqueVertices,startCoords); 
@@ -114,16 +117,16 @@ statusStringAdd(statusHandle,'Finding closest mesh point.');
 % Print the distance from the gray matter and warn if you're more than 15
 % voxels away
 str=sprintf('Start node %d selected at %d voxel units from input coords.',startNode,sqrt(snDist));
-disp(sprintf(str));
+if verbose,disp(sprintf(str));end
 if (sqrt(snDist)>15)
   beep;
   str=sprintf('** Warning: mesh node far from start coord. Expect trouble.');
-  statusStringAdd(statusHandle,str)
+  if verbose,statusStringAdd(statusHandle,str);end
 end
 
 % Find the distance of all nodes from the start node so that we can unfold
 % just a sub-region of the whole mesh 
-statusStringAdd(statusHandle,'Finding distances from start node');
+if verbose,statusStringAdd(statusHandle,'Finding distances from start node');end
 
 % To this point, we are in a voxel framework: 
 % Everything has been scaled in the mrReadMrM function. 
@@ -131,8 +134,8 @@ statusStringAdd(statusHandle,'Finding distances from start node');
 % D is the connection matrix using the true (non-squared) distance.
 D = sqrt(find3DNeighbourDists(mesh,scaleFactor)); 
 
-str=sprintf('Mean inter-node distance: %.03f\n',full(sum(sum(D)))/nnz(D));
-disp(sprintf(str));
+str=sprintf('Mean inter-node distance: %.03f',full(sum(sum(D)))/nnz(D));
+if verbose,disp(sprintf(str));end
 
 % Find distances from the startNode to all the nodes
 % Have replaced mrManDist with 'dijkstra' mex file to get around potential rounding errors.
@@ -145,9 +148,9 @@ mesh.dist=dijkstra(D,startNode);
 mesh.perimDist=perimDist;
 messageString=sprintf('Perimeter minimum distance=%d',perimDist);
 
-statusStringAdd(statusHandle,messageString);
-statusStringAdd(statusHandle,'Using threshold to find perimeter(s).');
-statusStringAdd(statusHandle,'Defining perimeters.');
+if verbose,statusStringAdd(statusHandle,messageString);end
+if verbose,statusStringAdd(statusHandle,'Using threshold to find perimeter(s).');end
+if verbose,statusStringAdd(statusHandle,'Defining perimeters.');end
 
 [perimeterEdges,eulerCondition]=findLegalPerimeters(mesh,perimDist);
 
@@ -156,11 +159,11 @@ statusStringAdd(statusHandle,'Defining perimeters.');
 
 % FIND ALL THE PERIMETERS AND TAKE THE BIGGEST ONE
 messageString=sprintf('Euler number for this set=%d',eulerCondition);
-statusStringAdd(statusHandle,messageString);
+if verbose,statusStringAdd(statusHandle,messageString);end
 
 uniquePerimPoints=unique(perimeterEdges(:));
 messageString=sprintf('%d unique perimeter points found.',length(uniquePerimPoints));
-statusStringAdd(statusHandle,messageString);
+if verbose,statusStringAdd(statusHandle,messageString);end
 
 [orderedUniquePerimeterPoints,biggest]=orderMeshPerimeterPointsAll(mesh,perimeterEdges);
 nPerims=size(orderedUniquePerimeterPoints);
@@ -170,14 +173,14 @@ orderedUniquePerimeterPoints=orderedUniquePerimeterPoints{biggest}.points;
 tempConMat=mesh.connectionMatrix; % save it for later
 mesh.connectionMatrix(orderedUniquePerimeterPoints,:)=0;
 mesh.connectionMatrix(:,orderedUniquePerimeterPoints)=0;
-statusStringAdd(statusHandle,'Doing flood fill.');
+if verbose,statusStringAdd(statusHandle,'Doing flood fill.');end
 
 [insideNodes,insideNodeStruct]=floodFillFindPerim(mesh,Inf,startNode,busyHandle);
 insideNodes=[insideNodes(:);orderedUniquePerimeterPoints(:)];
 mesh.connectionMatrix=tempConMat;
 [perimeterEdges,eulerCondition]=findGroupPerimeter(mesh,insideNodes);
-str = sprintf('Euler condition=%d\n',eulerCondition);
-disp(sprintf(str));
+str = sprintf('Euler condition=%d',eulerCondition);
+if verbose,disp(sprintf(str));end
 
 % We now have a fully-connected mesh, and we have identified perimeter and
 % inside nodes.  We are ready to build the portion of the mesh that we will
@@ -200,8 +203,10 @@ disp(sprintf(str));
 % process.
 %-------------------------------------------------
 
+verbose = strcmp(mrGetPref('Verbose'),'Yes');
+
 % Find the N and P connection matrices
-statusStringAdd(statusHandle,'Finding sub-mesh connection matrix.');
+if verbose,statusStringAdd(statusHandle,'Finding sub-mesh connection matrix.');end
 [N, P, unfoldMesh.internalNodes] = findNPConnection(unfoldMesh);
 
 % Here we find the squared 3D distance from each point to its neighbours.
@@ -216,14 +221,14 @@ P = fullConMatScaled(unfoldMesh.internalNodes,unfoldMesh.orderedUniquePerimeterP
 % Assign the initial perimeter points - they're going to go in a circle for now...
 numPerimPoints=length(unfoldMesh.orderedUniquePerimeterPoints);
 
-statusStringAdd(statusHandle,'Assigning perimeter points');
+if verbose,statusStringAdd(statusHandle,'Assigning perimeter points');end
 
 % Can set distances around circle to match actual distances from the center. 
 unfoldMesh.X_zero = assignPerimeterPositions(perimDist,unfoldMesh); 
 
 
 % THIS IS WHERE WE SOLVE THE POSITION EQUATION - THIS EQUATION IS THE HEART OF THE ROUTINE!
-statusStringAdd(statusHandle, 'Solving position equation.');
+if verbose,statusStringAdd(statusHandle, 'Solving position equation.');end
 X =(speye(size(N)) - N) \ (sparse(P * unfoldMesh.X_zero));
 
 % Remember what these variables are: 
@@ -269,7 +274,7 @@ areaList2D=findFaceArea(unfoldMesh.connectionMatrix,unfolded2D,unfoldMesh.unique
 % just to spare the user.
 errorList = areaList3D./(areaList2D + eps);
 zeroAreaList = find(areaList2D == 0);
-if ~isempty(zeroAreaList), fprintf('Zero 2D area (nodes): %.0f\n',zeroAreaList); end
+if ~isempty(zeroAreaList), fprintf('Zero 2D area (nodes): %.0f',zeroAreaList); end
 
 % In order to plot this as a nice picture, we want to find the (x,y) center
 % of mass of each 2D face.  
@@ -291,7 +296,7 @@ end
 
 if (adjustSpacing)
   str = sprintf('Spacing points (method = %s)',spacingMethod);
-  disp(sprintf(str));
+  if verbose,disp(sprintf(str));end
   
   unfoldMesh.maxFractionDist = 0.8;
   unfoldMesh.gridSpacing = gridSpacing;
@@ -377,8 +382,8 @@ if showFigures
   unfoldPlotFlatMesh(unfoldMeshSummary.locs2d, unfoldMeshSummary.uniqueFaceIndexList, unfoldMesh.uniqueCols)
 end
 
-str = sprintf('\n****** End mrFlatMesh  %s *****\n',datestr(endTime));
-disp(sprintf(str));
+str = sprintf('****** End mrFlatMesh  %s *****',datestr(endTime));
+if verbose,disp(sprintf(str));end
 
 return;
 
