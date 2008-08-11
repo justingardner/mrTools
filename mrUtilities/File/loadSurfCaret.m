@@ -1,16 +1,16 @@
-% loadCaret.m
+% loadSurfCaret.m
 %
 %        $Id$ 
-%      usage: loadCaretSurface(coordFilename,<topoFilename>,<'dispSurface=0'>)
+%      usage: loadSurfCaret(coordFilename,<topoFilename>,<'dispSurface=0'>)
 %         by: justin gardner
 %       date: 08/10/08
 %    purpose: load a caret surface, if you want to display, set dispSurface=1
 %
-function surf = loadCaretSurface(coordFilename,topoFilename,varargin)
+function surf = loadSurfCaret(coordFilename,topoFilename,varargin)
 
 % check arguments
 if ~any(nargin == [1 2 3])
-  help loadCaretSurface
+  help loadSurfCaret
   return
 end
 
@@ -47,7 +47,7 @@ surf.tris = topo.data;
 % display the surface
 if dispSurface
   m = calcCurvature(surf);
-  smartfig('loadCaretSurface','reuse');clf
+  smartfig('loadSurfCaret','reuse');clf
   patch('vertices', surf.vtcs, 'faces', surf.tris,'FaceVertexCData', m,'facecolor','interp','edgecolor','none');
   axis equal
 end
@@ -60,7 +60,7 @@ function d = openCaretFile(filename);
 d = [];
 % check if files exist
 if ~isfile(filename)
-  disp(sprintf('(loadCaretSurface) Could not open file %s',filename));
+  disp(sprintf('(loadSurfCaret) Could not open file %s',filename));
   return
 end
 
