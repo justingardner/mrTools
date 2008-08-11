@@ -12,11 +12,15 @@
 %             saveVFF('jg_left_WM_curv.vff',m);
 %
 %             nSmooth is how many smoothing passes to do. Default is 2.
-%
+%             
+%             The outerSurface is used just for calculating surface normals.
+%             If it is omitted, then surface normals are computed from the
+%             triangle faces. Both innerSurfaceName and outerSurfaceName may
+%             by surface structures returned by loadSurfOFF.
 function m = calcCurvature(innerSurfaceName,outerSurfaceName,varargin)
 
 % check arguments
-if ~any(nargin == [2 3])
+if ~any(nargin == [1 2 3])
   help calcCurvature
   return
 end
@@ -29,22 +33,44 @@ getArgs(varargin,{'nSmooth=2','vertexList=[]'});
 % just on a subset of vertices, you will have to recreate the connectionMatrix
 % to do the smoothing correctly.
 
-% off surface
-innerSurfaceName = sprintf('%s.off',stripext(innerSurfaceName));
-outerSurfaceName = sprintf('%s.off',stripext(outerSurfaceName));
 
-% load the surfaces
-if isfile(innerSurfaceName)
-  innerSurf = loadSurfOFF(innerSurfaceName);
+% load the inner surfaces
+if isstr(innerSurfaceName)
+  innerSurfaceName = sprintf('%s.off',stripext(innerSurfaceName));
+  if isfile(innerSurfaceName)
+    innerSurf = loadSurfOFF(innerSurfaceName);
+  else
+    disp(sprintf('(calcCurvature) Could not find file %s',innerSurfaceName));
+    return
+  end
 else
-  disp(sprintf('(calcCurvature) Could not find file %s',innerSurfaceName));
-  return
+  % passed in field is a surface structure
+  innerSurf = innerSurfaceName;
 end
-if isfile(outerSurfaceName)
-  outerSurf = loadSurfOFF(outerSurfaceName);
+
+% load the outer surface
+if ~ieNotDefined('outerSurfaceName')
+  if isstr(outerSurfaceName)
+    outerSurfaceName = sprintf('%s.off',stripext(outerSurfaceName));
+    if isfile(outerSurfaceName)
+      outerSurf = loadSurfOFF(outerSurfaceName);
+    else
+      disp(sprintf('(calcCurvature) Could not find file %s',outerSurfaceName));
+      return
+    end
+  else
+    % passed in field is a surface structure
+    outerSurf = outerSurfaceName;
+  end
+  % compute vertex normals
+  vertexNormals = outerSurf.vtcs-innerSurf.vtcs;
 else
-  disp(sprintf('(calcCurvature) Could not find file %s',innerSurfaceName));
-  return
+  % no outer surface, compute the surface normals
+  if isfield(innerSurf,'normals')
+    vertexNormals = innerSurf.normals;
+  else
+    vertexNormals = calcSurfaceNormals(innerSurf);
+  end
 end
 
 % get the connection matrix between each vertex
@@ -52,9 +78,6 @@ surf.uniqueVertices = innerSurf.vtcs;
 surf.uniqueFaceIndexList = innerSurf.tris;
 connectionMatrix = findConnectionMatrix(surf);
 clear surf;
-
-% compute vertex normals
-vertexNormals = outerSurf.vtcs-innerSurf.vtcs;
 
 % allocate space for m
 m = zeros(1,innerSurf.Nvtcs);
