@@ -1,10 +1,11 @@
 % loadSurfCaret.m
 %
 %        $Id$ 
-%      usage: loadSurfCaret(coordFilename,<topoFilename>,<'dispSurface=0'>)
+%      usage: surf = loadSurfCaret(coordFilename,<topoFilename>,<'dispSurface=0'>)
 %         by: justin gardner
 %       date: 08/10/08
 %    purpose: load a caret surface, if you want to display, set dispSurface=1
+%             returned surface is in same format as returned by loadSurfOFF
 %
 function surf = loadSurfCaret(coordFilename,topoFilename,varargin)
 
