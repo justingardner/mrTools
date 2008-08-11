@@ -698,8 +698,9 @@ vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
 % note the 1.2 is because that is what we set
 % the clim values to be to make them look nice
 cmap = gray;
-c(c>1.2) = 1.2;
-c(c<-1.2) = -1.2;
+limval = 1.2;
+c(c>limval) = limval;
+c(c<-limval) = -limval;
 c = round((size(cmap,1)-1)*(c-min(c))./(max(c)-min(c))+1);
 
 % now make a combined overlay which has the grayscale
