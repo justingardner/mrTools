@@ -68,7 +68,7 @@ encoding = 'ASCII';
 % first make the coord file
 M.encoding{1} = encoding;
 M.num_nodes = surf.Nvtcs;
-M.index = (1:M.num_nodes)';
+M.index = (0:(M.num_nodes-1))';
 M.data = surf.vtcs;
 % and save
 caret_save(setext(surfFilename,'coord'),M);
@@ -93,6 +93,7 @@ end
 fprintf(fid,'BeginHeader\n');
 fprintf(fid,'Encoding ASCII\n');
 fprintf(fid,'EndHeader\n');
+fprintf(fid,'tag-version 1\n');
 fprintf(fid,'volume_anatomy_file %s\n',params.anatomy);
 fprintf(fid,'FIDUCIALcoord_file %s\n',setext(surfFilename,'coord'));
 fprintf(fid,'CLOSEDtopo_file %s\n',setext(surfFilename,'topo'));
@@ -102,6 +103,7 @@ fclose(fid);
 
 % Following function is available for download from:
 % http://www.bangor.ac.uk/~pss412/imaging/surface_stats.htm
+% modified slightly to add tag-version 1 and number of nodes in topo file
 %%%%%%%%%%%%%%%%%%%%
 %%   caret_save   %%
 % Jörn Diedrichsen %
@@ -140,7 +142,8 @@ switch (type)
         if (~isfield(M,'header'))
             M.header{1}='BeginHeader';
             M.header{2}=['encoding ' M.encoding{1}];
-            M.header{3}='EndHeader';
+	    M.header{3} = 'configuration_id FIDUCIAL';
+            M.header{4}='EndHeader';
         end;
         for line=1:length(M.header) 
             fprintf(fid,'%s\n',M.header{line});
@@ -162,13 +165,15 @@ switch (type)
         M.header{1}='BeginHeader';
         M.header{2}=['encoding ' M.encoding{1}];
         M.header{3}='filetype topo';
-        M.header{4}='perimeter_id CUT';
+        M.header{4}='perimeter_id CLOSED';
         M.header{5}='EndHeader';
+        M.header{6}='tag-version 1';
         end;
         for line=1:length(M.header) 
             fprintf(fid,'%s\n',M.header{line});
         end;
         M.data=M.data-1;
+	fprintf(fid,'%i\n',M.num_tiles);
         if (strcmp(M.encoding,'ASCII'))
             format_str=['%d %d %d\n'];
             fprintf(fid,format_str,M.data');
