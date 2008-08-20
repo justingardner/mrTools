@@ -1,4 +1,4 @@
-function tseries = meanTseries(view, groupNum, roiList, scanList, varargin)
+function tseries = meanTSeries(view, groupNum, roiList, scanList, varargin)
 %
 % tseries = meanTseries(view, groupNum, roiList, scanList, [param1], [value1], [param2], [value2])
 % 
@@ -34,7 +34,7 @@ tseriesAll = tseriesROI(view, groupNum, roiList, scanList, varargin{:});
 % Loop through ROIs & scans and slices, computing means across voxels.
 for iROI = 1:length(roiList)
     for iscan = 1:length(scanList)
-        tseries{iROI,iscan} = mean(tseriesAll{iROI,iscan},2);
+        tseries{iROI,iscan} = nanmean(tseriesAll{iROI,iscan},2);
     end
 end
 return
