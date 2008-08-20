@@ -48,13 +48,20 @@ for iROI = 1:length(roiList)
     
     % Transform ROI it to the coordinates of the scan
     coords = round(xformROIcoords(roiCoords,inv(scan2roi),roiVoxelSize,scanVoxelSize));
+
+    % remove any coords with slices that are out of bounds
+    badCoords = (coords(3,:) < 1) | (coords(3,:) > scanDims(3));
+    coords = coords(:,~badCoords);
+    
     if isempty(coords)
       slices = [];
     else
       slices = coords(3,:);
       slices = unique(slices);
     end
+    
 
+    
     disp(['Loading tseries from scan ',num2str(scan)]);
     for islice = 1:length(slices)
       slice = slices(islice);
