@@ -243,6 +243,14 @@ end
 if isempty(params)
   retval = [];
 else
+  % set names appropriately for "same as surface"
+  if strcmp(params.outerCoords,'Same as surface')
+    params.outerCoords = params.outerSurface;
+  end
+  if strcmp(params.innerCoords,'Same as surface')
+    params.innerCoords = params.innerSurface;
+  end
+  % return params
   retval = params;
 end
 return
