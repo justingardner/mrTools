@@ -8,7 +8,7 @@
 function [hrf] = hrfDiffGamma(tr, params)
 
 if ~any(nargin == [1 2])
-  help gethdr;
+  help hrfDiffGamma
   return
 end
 
