@@ -420,7 +420,7 @@ switch lower(param)
     val = scanNumMatch;
     val2 = groupNumMatch;
   case {'concatinfo'}
-    % concatInfo = viewGet(view,'stimfile',scanNum,[groupNum]);
+    % concatInfo = viewGet(view,'concatInfo',[scanNum],[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
     [tseriesPath,tseriesFile] = fileparts(viewGet(view,'tseriesPath',s,g));
     % check for mat file
