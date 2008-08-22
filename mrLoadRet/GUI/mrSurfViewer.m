@@ -669,7 +669,8 @@ surf = loadSurfOFF(filename,onlyLoadHeader);
 if isempty(surf),return,end
 
 % check that it has the correct number of vertices
-if ~isequal([gSurfViewer.outerSurface.Nvtcs gSurfViewer.outerSurface.Ntris],[surf.Nvtcs surf.Ntris])
+%if ~isequal([gSurfViewer.outerSurface.Nvtcs gSurfViewer.outerSurface.Ntris],[surf.Nvtcs surf.Ntris])
+if ~isequal(gSurfViewer.outerSurface.Nvtcs,surf.Nvtcs);
   % dispaly warning, but only if mismatchWarning is set,
   % this way when we first load surfaces just for checking it
   % won't complain
