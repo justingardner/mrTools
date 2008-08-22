@@ -1,15 +1,37 @@
 % disppercent.m
 %
-
 %         by: justin gardner
 %       date: 10/05/04
+%      usage: disppercent(percentdone,message)
 %    purpose: display percent done
-%             call with -inf for init
-%             call with percent to update
-%             call with inf to end
+%             Start by calling with a negative value:
+%             disppercent(-inf,'Message to display');
+%
+%             Update by calling with percent done:
+%             disppercent(0.5);
+% 
+%             Finish by calling with inf (elapsedTime is in seconds):
+%             elapsedTime = disppercent(inf);
+%
+%             If you want to change the message before calling with inf:
+%             disppercent(0.5,'New message to display');
+% 
+%             Also, if you have an inner loop within an outer loop, you
+%             can call like the following:
+%             n1 = 15;n2 = 10;
+%             disppercent(-1/n1); % init with how much the outer loop increments
+%             for i = 1:n1
+%               for j = 1:n2
+%                  pause(0.1);
+%                  disppercent((i-1)/n1,j/n2);
+%               end
+%               disppercent(i/n1,sprintf('Made it through %i/%i iterations of outer loop',i,n1));
+%             end
+%             disppercent(inf);
+%
 %       e.g.:
 %
-%disppercent(-inf,'Doing stuff');for i =  1:30;mglWaitSecs(0.1);disppercent(i/30);end;elapsedTime = disppercent(inf);
+%disppercent(-inf,'Doing stuff');for i =  1:30;pause(0.1);disppercent(i/30);end;elapsedTime = disppercent(inf);
 function retval = disppercent(percentdone,mesg)
 
 retval = nan;
@@ -24,7 +46,7 @@ global gDisppercent;
 
 % if this is an init then remember time
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (percentdone == -inf)
+if (percentdone < 0)
   % global to turn off printing
   global gVerbose;
   gDisppercent.verbose = gVerbose;
@@ -34,10 +56,17 @@ if (percentdone == -inf)
   % default to no message
   if (nargin < 2)
     mrDisp(sprintf('00%% (00:00:00)'));
+    gDisppercent.mesg = '';
   else
     mrDisp(sprintf('%s 00%% (00:00:00)',mesg));
+    gDisppercent.mesg = mesg;
   end    
-
+  if isinf(percentdone)
+    gDisppercent.increment = 0;
+  else
+    gDisppercent.increment = abs(percentdone);
+  end
+    
 % display total time at end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif (percentdone == inf)
@@ -69,14 +98,51 @@ elseif (percentdone == inf)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
   if ~gDisppercent.verbose,return,end
+  
+  % keep track of what increments percent done is being called in
+  if (gDisppercent.increment == 0) & (percentdone > 0)
+    gDisppercent.increment = percentdone;
+  end
+  % a negative value on percent done, simply means
+  % how much each increment of percent done is.
+  if percentdone < 0
+    gDisppercent.increment = -percentdone;
+    percentdone = 0;
+  end
+  % see if we should reprint message
+  newmesg = '';
+  if nargin == 2
+    if isstr(mesg)
+      if ~strcmp(mesg,gDisppercent.mesg)
+	newmesg = sprintf('%s%s ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg);
+	gDisppercent.mesg = mesg;
+      end
+    % otherwise if the second argument is a number,
+    % it means we have a secondary value for percent done
+    % i.e. the first number is the large increments and
+    % the second number is what percentage of the large
+    % increments has been done (useful for when you are
+    % doing loops within loops).
+    elseif isscalar(mesg)
+      % make percent done into value computed by summing
+      % percentdone with the increment passed in mesg.
+      percentdone = percentdone + gDisppercent.increment*mesg;
+    end
+  end
+      
   % avoid things that will end up dividing by 0
   if (percentdone >= 1)
     percentdone = .99;
   elseif (percentdone <= 0)
     percentdone = 0.01;
   end
+
   % display percent done and estimated time to end
-  if (gDisppercent.percentdone ~= floor(100*percentdone))
+  if ~isempty(newmesg)
+    % always display if there is a new message
+    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%02i%% (%s)',newmesg,floor(100*percentdone),disptime(etime(clock,gDisppercent.t0)*(1/percentdone - 1))));
+  % display only if we have update by a percent or more
+  elseif (gDisppercent.percentdone ~= floor(100*percentdone))
     mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%02i%% (%s)',floor(100*percentdone),disptime(etime(clock,gDisppercent.t0)*(1/percentdone - 1))));
   end
 end
