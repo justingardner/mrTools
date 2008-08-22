@@ -114,7 +114,11 @@ if isfield(coordMap,'flatDir')
   newCoordMap.outerCoords = coordMap.outerCoords;
   coordMap = newCoordMap;
 elseif isfield(coordMap,'innerFileName')
-  newCoordMap.path = coordMap.path;
+  if isfield(coordMap,'path')
+    newCoordMap.path = coordMap.path;
+  else
+    newCoordMap.path = '';
+  end
   newCoordMap.dims = coordMap.dims;
   newCoordMap.innerSurfaceFileName = coordMap.innerFileName;
   newCoordMap.innerCoordsFileName = coordMap.innerCoordsFileName;
