@@ -22,7 +22,7 @@ if (nargout == 2)
   % Add optional fields and return true if the view with optional fields is
   % valid.
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
-    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','curScan','sliceOrientation'};
+		    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','curScan','sliceOrientation'};
   optionalFields = {'loadedAnalyses',{};
 		    'groupScanNum',[];
 		    'labelROIs',0};
@@ -30,28 +30,28 @@ else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
-    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan','sliceOrientation'};
+		    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan','sliceOrientation'};
   optionalFields = {};
 end
 
 % Initialize return value
 tf = true;
 if ieNotDefined('view')
-    tf = false;
-    return
+  tf = false;
+  return
 end
 if ~isstruct(view)
-	tf = false;
-	return
+  tf = false;
+  return
 end
 
 % Check required fields
 for f = 1:length(requiredFields)
-	fieldName = requiredFields{f};
-	if ~isfield(view,fieldName)
-		% mrWarnDlg(['Invalid view, missing field: ',fieldName]);
-		tf = false;
-	end
+  fieldName = requiredFields{f};
+  if ~isfield(view,fieldName)
+    % mrWarnDlg(['Invalid view, missing field: ',fieldName]);
+    tf = false;
+  end
 end
 
 % Optional fields and defaults
@@ -65,9 +65,9 @@ end
 view = orderfields(view);
 
 % Check that viewNum is a number
-if ~isnumeric(view.viewNum);
-    tf = false;
-    return
+if ~isfield(view,'viewNum') || ~isnumeric(view.viewNum);
+  tf = false;
+  return
 end
 
 % Confirm that MLR.views{viewNum} and view have the same fields
