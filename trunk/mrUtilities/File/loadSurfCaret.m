@@ -47,9 +47,9 @@ surf.tris = topo.data;
 
 % display the surface
 if dispSurface
-  m = calcCurvature(surf);
+  surf.m = calcCurvature(surf);
   smartfig('loadSurfCaret','reuse');clf
-  patch('vertices', surf.vtcs, 'faces', surf.tris,'FaceVertexCData', m,'facecolor','interp','edgecolor','none');
+  patch('vertices', surf.vtcs, 'faces', surf.tris,'FaceVertexCData', surf.m,'facecolor','interp','edgecolor','none');
   axis equal
 end
 
