@@ -12,9 +12,20 @@
 %             d = getStimvol(d,'orientation');
 %             d = getStimvol(d,'orientation','taskNum=2');
 %             d = getStimvol(d,'orintation','taskNum=2','phaseNum=2','segmentNum=1');
+% 
+%             d must have the field stimfile, tr, dim
+%             optionally concatInfo, junkFrames, impulse, supersampling, 
+% 
+%             alternatively, pass in view with the correct group and scan settings
+%             and optional arguments (impulse and supersampling for using eventtimes);
+%             v = newView;
+%             v = viewSet(v,'curGroup',3);
+%             v = viewSet(v,'curScan',1);
+%             [stimvol stimNames var] = getStimvol(v,'orientation');
+%            
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function d = getStimvol(d,stimVariable,varargin)
+function [d stimNames var] = getStimvol(d,stimVariable,varargin)
 
 % check arguments
 if (nargin < 1)
@@ -23,9 +34,29 @@ if (nargin < 1)
 end
 
 % evaluate other arguments
-eval(evalargs(varargin));
+taskNum=[];phaseNum=[];segmentNum=[];stimfile=[];tr=[];nFrames=[];concatInfo=[];
+junkFrames=[];impulse=[];supersampling=[];
+getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[]});
 
 if ~exist('stimVariable','var'),stimVariable = ''; end
+
+% if we are passed in a view instead
+if isview(d)
+  % change the names of the variable appropriately
+  v = d;d = [];
+  % set up d structure
+  d.dim = viewGet(v,'scanDims');
+  d.stimfile = viewGet(v,'stimFile');
+  d.tr = viewGet(v,'framePeriod');
+  d.concatInfo = viewGet(v,'concatInfo');
+  d.junkFrames = viewGet(v,'totalJunkedFrames');
+  % and optional arguments (only necessary for eventtimes)
+  if ~isempty(supersampling),d.supersampling = supersampling;end
+  if ~isempty(impulse),d.impulse=impulse;end
+  returnOnlyStimvol = 1;
+else
+  returnOnlyStimvol = 0;
+end
 
 % check to make sure we have a stimfile
 if ~isfield(d,'stimfile')
@@ -35,18 +66,18 @@ end
 
 % convert simple string stimVariable into a structure
 if isstr(stimVariable)
-  v.varname = stimVariable;
+  var.varname = stimVariable;
 else
-  v = stimVariable;
+  var = stimVariable;
 end
 
 % add on any of the other parameters that were passed in
-if ~ieNotDefined('taskNum'),v.taskNum = taskNum;end
-if ~ieNotDefined('phaseNum'),v.phaseNum = phaseNum;end
-if ~ieNotDefined('segmentNum'),v.segmentNum = segmentNum;end
+if ~ieNotDefined('taskNum'),var.taskNum = taskNum;end
+if ~ieNotDefined('phaseNum'),var.phaseNum = phaseNum;end
+if ~ieNotDefined('segmentNum'),var.segmentNum = segmentNum;end
 
 % keep the varname that this was called with
-d.varname = v;
+d.varname = var;
 
 % TR supersampling
 if isfield(d,'supersampling')
@@ -80,14 +111,14 @@ for i = 1:length(d.stimfile)
   switch d.stimfile{i}.filetype,
    case 'mgl',
     % if we have a stimtrace then get the variables from that
-    if isfield(v,'stimtrace') || isnumeric(v)
-      stimvol = getStimvolFromTraces(d.stimfile{i},v);
+    if isfield(var,'stimtrace') || isnumeric(var)
+      stimvol = getStimvolFromTraces(d.stimfile{i},var);
     else
       % otherwise get it using the name of the variable
       if exist('getStimvolFromVarname')~=2
 	mrErrorDlg('(getStimvol) The function getStimvol is missing from your path. Make sure that mgl is in your path');
       end
-      [stimvol d.stimNames] = getStimvolFromVarname(v,d.stimfile{i}.myscreen,d.stimfile{i}.task);
+      [stimvol d.stimNames] = getStimvolFromVarname(var,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
     stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf, impulse);
@@ -114,7 +145,7 @@ for i = 1:length(d.stimfile)
     stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
     % check for stimvol overrun
     if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
-        runlen = d.dim(4)*samplingf;
+        runlen = d.dim(end)*samplingf;
     else
         runlen = diff(d.concatInfo.runTransition(i,:))*samplingf+1;
     end
@@ -160,6 +191,11 @@ if isfield(d,'eventRelatedVarname')
   end
 end
 
+% change into return names
+stimNames = d.stimNames;
+if returnOnlyStimvol
+  d = d.stimvol;
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % old way of getting stim vols
 % from traces

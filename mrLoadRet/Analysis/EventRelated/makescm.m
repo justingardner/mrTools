@@ -8,20 +8,43 @@
 %             for data series. this correctly handles
 %             run boundaries. it uses the stimulus volumes
 %             found in d.stimvol. if hdrlen is not passed in
-%             then it uses d.hdrlen (if it exists).
+%             then it uses d.hdrlen (if it exists). hdrlen is in volumes.
 %             applyFiltering defaults to 0, but if it
 %             is set will apply the hipass filtering or
 %             projection in d.concatInfo to the columns
 %             of the scm. d should have the following fields:
 %             {dim,stimvol,<concatInfo>,<hdrlen>}
 %
-function d = makescm(d,hdrlen,applyFiltering)
+%             Can also be used by passing in view and stimvol
+%             v = newView;
+%             v = viewSet(v,'curGroup','Concatenation'):
+%             v = viewSet(v,'curScan',1);
+%             stimvol= getStimvol(v,'orientation');
+%             scm = makescm(v,20,0,stimvol);
+%
+function d = makescm(d,hdrlen,applyFiltering,stimvol)
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if ~any(nargin == [1 2 3 4])
   help makescm
   return
 end
+
+% deal with calling by view instead of d structure
+returnOnlySCM = 0;
+if isview(d)
+  v = d;d = [];
+  d.concatInfo = viewGet(v,'concatInfo');
+  d.dim = viewGet(v,'scanDims');
+  if isempty(stimvol)
+    disp(sprintf('(makescm) Must pass in stimvol'));
+    return
+  else
+    d.stimvol = stimvol;
+  end
+  returnOnlySCM = 1;
+end
+  
 
 % set hdrlen
 if ieNotDefined('hdrlen')
@@ -86,3 +109,6 @@ d.scm = allscm;
 d.hdrlen = hdrlen;
 d.volumes = 1:d.dim(end);
 
+if returnOnlySCM
+  d = d.scm;
+end
