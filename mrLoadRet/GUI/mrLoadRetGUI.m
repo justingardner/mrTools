@@ -2274,7 +2274,7 @@ function plotsDisplayEPIImages_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-mrEpiMovie(view);
+mlrDisplayEPI(view);
 
 
 % --------------------------------------------------------------------
@@ -2285,7 +2285,7 @@ function plotSpikeDetection_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-mrSpikeDetector(view,viewGet(view,'curScan'),viewGet(view,'curGroup'));
+mlrSpikeDetector(view,viewGet(view,'curScan'),viewGet(view,'curGroup'));
 
 
 % --------------------------------------------------------------------
