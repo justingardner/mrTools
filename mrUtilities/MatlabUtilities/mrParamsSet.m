@@ -44,12 +44,34 @@ for fnum = 1:length(paramFields)
 	  gParams.varinfo{match}.allValues{i} = params.(paramFields{fnum})(i);
 	end
 	% and set the current value in the gui
-	set(gParams.ui.varentry{match},'String',num2str(params.(paramFields{fnum})(params.(groupVar))));
+	currentVal = params.(paramFields{fnum})(params.(groupVar));
+	set(gParams.ui.varentry{match},'String',num2str(currentVal));
+      
       else
 	% simple numeric
-	set(gParams.ui.varentry{match},'String',num2str(params.(paramFields{fnum})));
+	currentVal = params.(paramFields{fnum});
+	set(gParams.ui.varentry{match},'String',num2str(currentVal));
       end
-    % numeric
+      % check for minmax, so that we can turn arrows off and on appropriately
+      if isfield(gParams.varinfo{match},'minmax')
+	minmax = gParams.varinfo{match}.minmax;
+	if isfield(gParams.ui,'incdec')
+	  incdecUI = gParams.ui.incdec{match};
+	  if ~isempty(incdecUI)
+	    if currentVal == min(minmax)
+	      set(incdecUI(1),'Enable','off');
+	    else
+	      set(incdecUI(1),'Enable','on');
+	    end
+	    if currentVal == max(minmax)
+	      set(incdecUI(2),'Enable','off');
+	    else
+	      set(incdecUI(2),'Enable','on');
+	    end
+	  end
+	end
+      end	  
+    % checkbox
     elseif strcmp(gParams.varinfo{match}.type,'checkbox')
       set(gParams.ui.varentry{match},'Value',params.(paramFields{fnum}));
       % array
