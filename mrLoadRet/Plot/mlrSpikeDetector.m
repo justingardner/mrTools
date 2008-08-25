@@ -1,7 +1,7 @@
 % spikedetector.m
 %
 %        $Id$	
-%      usage: spikeinfo = mrSpikeDetector(scanNum,groupNum,<'criterion=10'>,<'dispfigs=1'>
+%      usage: spikeinfo = mlrSpikeDetector(scanNum,groupNum,<'criterion=10'>,<'dispfigs=1'>
 %         by: justin gardner
 %       date: 01/09/06
 %    purpose: looks for spiking artifact in data set
@@ -11,11 +11,11 @@
 %             component has to be to be considered a
 %             spike. (default=10)
 %
-function v = mrSpikeDetector(v,scanNum,groupNum,varargin)
+function v = mlrSpikeDetector(v,scanNum,groupNum,varargin)
 
 % check arguments
 if nargin < 3
-  help mrSpikeDetector
+  help mlrSpikeDetector
   return
 end
 
@@ -33,7 +33,7 @@ if isempty(spikeinfo)
   paramsInfo{1} = {'criterion',criterion,'incdec=[-1 1]','minmax=[0 inf]','Criterion for spike detection. Spike detection works by computing the mean and standard deviation of each fourier component of the images across time. If a fourier component on any single volume exceeds criterion standard deviations of the mean, it is considered to be a spike. Default value is 10. i.e. A fourier component has to be 10 standard deviations greater from the mean to be considered to be a spike.'};
   paramsInfo{2} = {'useMedian', 0, 'type=checkbox', 'Use the median and interquartile range to calculate the center and spread of the data.  This is useful if the data are very noisy.'};
   paramsInfo = mrParamsDialogSelectScans(v,groupNum,paramsInfo,scanNum);
-  params = mrParamsDialog(paramsInfo,'mrSpikeDetector params');
+  params = mrParamsDialog(paramsInfo,'mlrSpikeDetector params');
   if isempty(params),return,end
   % go through and recalculate
   scanNums = find(params.include);
@@ -60,14 +60,14 @@ spikeinfo.scanNum = scanNum;
 spikeinfo.groupNum = groupNum;
 spikeinfo.filename = viewGet(v,'tSeriesFile',scanNum,groupNum);
 if isempty(spikeinfo.filename)
-  disp(sprintf('(mrSpikeDetector) Could not find scan %i in group %i',scanNum,groupNum));
+  disp(sprintf('(mlrSpikeDetector) Could not find scan %i in group %i',scanNum,groupNum));
   spikeinfo = [];
   return
 end
   
 % load file
 v = viewSet(v,'curGroup',groupNum);
-disppercent(-inf,sprintf('(mrSpikeDetector) Loading time series for scan %i, group %i',scanNum,groupNum));
+disppercent(-inf,sprintf('(mlrSpikeDetector) Loading time series for scan %i, group %i',scanNum,groupNum));
 spikeinfo.data = loadTSeries(v,scanNum);
 % Dump junk frames
 junkFrames = viewGet(v, 'junkframes', scanNum);
@@ -87,7 +87,7 @@ end
 
 % compute fourier transform of data
 % calculating fourier transform of data
-disppercent(-inf,'(mrSpikeDetector) Calculating FFT');
+disppercent(-inf,'(mlrSpikeDetector) Calculating FFT');
 data = zeros(spikeinfo.dim);
 for i = startframe:spikeinfo.dim(4)
   disppercent(i/spikeinfo.dim(4));
@@ -99,14 +99,14 @@ disppercent(inf);
 
 % get mean and std
 if params.useMedian
-    disppercent(-inf,'(mrSpikeDetector) Calculating median and iqr');
+    disppercent(-inf,'(mlrSpikeDetector) Calculating median and iqr');
     for slicenum = 1:spikeinfo.dim(3)
         disppercent(slicenum/spikeinfo.dim(3));
         meandata(:,:,slicenum) = squeeze(median(data(:,:,slicenum,:),4));
         stddata(:,:,slicenum) = squeeze(iqr(data(:,:,slicenum,:),4));
     end
 else
-    disppercent(-inf,'(mrSpikeDetector) Calculating mean and std');
+    disppercent(-inf,'(mlrSpikeDetector) Calculating mean and std');
     for slicenum = 1:spikeinfo.dim(3)
         meandata(:,:,slicenum) = squeeze(mean(data(:,:,slicenum,:),4));
         stddata(:,:,slicenum) = squeeze(std(data(:,:,slicenum,:),0,4));
@@ -118,7 +118,7 @@ disppercent(inf);
 % now subtract off mean and see
 % if there are any points above std criterion
 slice = [];time = [];numspikes = [];spikelocs = {};
-disppercent(-inf,'(mrSpikeDetector) Looking for spikes');
+disppercent(-inf,'(mlrSpikeDetector) Looking for spikes');
 for i = startframe:spikeinfo.dim(4)
   disppercent(i/spikeinfo.dim(4));
   data(:,:,:,i) = squeeze(data(:,:,:,i))-meandata;
@@ -138,10 +138,10 @@ end
 disppercent(inf);
 if length(slice)
   disp(sprintf('======================================================'));
-  disp(sprintf('(mrSpikeDetector) Found %i spikes in scan %i, group %i',length(slice),scanNum,groupNum));
+  disp(sprintf('(mlrSpikeDetector) Found %i spikes in scan %i, group %i',length(slice),scanNum,groupNum));
   disp(sprintf('======================================================'));
 else
-  disp(sprintf('(mrSpikeDetector) No spikes in scan %i, group %i',scanNum,groupNum));
+  disp(sprintf('(mlrSpikeDetector) No spikes in scan %i, group %i',scanNum,groupNum));
 end
 
 % compute timecourse means for each 
@@ -209,7 +209,7 @@ if spikeinfo.n < 50
     drawnow;
   end
 else
-  disp(sprintf('(mrSpikeDetector) Too many spikes (%i) to display arrows on graphs',spikeinfo.n));
+  disp(sprintf('(mlrSpikeDetector) Too many spikes (%i) to display arrows on graphs',spikeinfo.n));
 end
 
 % print out slice labels
@@ -260,7 +260,7 @@ if spikeinfo.n > 0
 else
   paramsInfo{end+1} = {'noSpikes','No spikes found','editable=0','type=string','No spikes found in scan'};
 end  
-mrParamsDialog(paramsInfo,'mrSpikeDetector',[],@spikePlotCallback,spikeinfo,@spikePlotOKCallback);
+mrParamsDialog(paramsInfo,'mlrSpikeDetector',[],@spikePlotCallback,spikeinfo,@spikePlotOKCallback);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -301,7 +301,7 @@ close;
 selectGraphWin;
 closeGraphWin;
 spikeinfo.v = viewSet(spikeinfo.v,'spikeinfo',[],spikeinfo.scanNum,spikeinfo.groupNum);
-mrSpikeDetector(spikeinfo.v,spikeinfo.scanNum,spikeinfo.groupNum);
+mlrSpikeDetector(spikeinfo.v,spikeinfo.scanNum,spikeinfo.groupNum);
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotImage   %%
 %%%%%%%%%%%%%%%%%%%%%%%%

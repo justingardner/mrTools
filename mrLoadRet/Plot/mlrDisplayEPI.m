@@ -1,26 +1,26 @@
-% mrEpiMovie.m
+% mlrDisplayEPI.m
 %
 %        $Id$
-%      usage: mrEpiMovie(<v>,<groupNum>)
+%      usage: mlrDisplayEPI(<v>,<groupNum>)
 %         by: justin gardner
 %       date: 08/16/07
 %    purpose: display epis as a movie for inspection
 %
-function retval = mrEpiMovie(v,groupNum)
+function retval = mlrDisplayEPI(v,groupNum)
 
 % check arguments
 if ~any(nargin == [0 1 2])
-  help mrEpiMovie
+  help mlrDisplayEPI
   return
 end
 
-global gMrEpiMovie;
+global gMLRDisplayEPI;
 
 if ieNotDefined('v'),
   v = newView;
-  gMrEpiMovie.deleteViewAtEnd = 1;
+  gMLRDisplayEPI.deleteViewAtEnd = 1;
 else
-  gMrEpiMovie.deleteViewAtEnd = 0;
+  gMLRDisplayEPI.deleteViewAtEnd = 0;
 end
 
 if ~ieNotDefined('groupNum')
@@ -28,17 +28,17 @@ if ~ieNotDefined('groupNum')
 end
 
 % keep v
-gMrEpiMovie.v = v;
+gMLRDisplayEPI.v = v;
 
 % setup a cache
-gMrEpiMovie.c = mrCache('init',1000);
+gMLRDisplayEPI.c = mrCache('init',1000);
 
 % set animating flag
-gMrEpiMovie.animating = 0;
-gMrEpiMovie.stopAnimating = 0;
+gMLRDisplayEPI.animating = 0;
+gMLRDisplayEPI.stopAnimating = 0;
 
 % get interpMethod
-gMrEpiMovie.interpMethod = mrGetPref('interpMethod');
+gMLRDisplayEPI.interpMethod = mrGetPref('interpMethod');
 
 % get max frames and slices
 maxFrames = -inf;
@@ -62,39 +62,39 @@ end
 paramsInfo = {};
 paramsInfo{end+1} = {'scanNum',viewGet(v,'currentScan'),sprintf('minmax=[1 %i]',viewGet(v,'nScans')),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view'};
 paramsInfo{end+1} = {'scanDescription',descriptions,'editable=0','group=scanNum','type=string','Description for scan'};
-paramsInfo{end+1} = {'scanNumMovie',0,'type=pushbutton','buttonString=Animate over scans','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','scanNum','Press to animate over scans'};
+paramsInfo{end+1} = {'scanNumMovie',0,'type=pushbutton','buttonString=Animate over scans','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','scanNum','Press to animate over scans'};
 paramsInfo{end+1} = {'sliceNum',viewGet(v,'curSlice'),sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view'};
-paramsInfo{end+1} = {'sliceNumMovie',0,'type=pushbutton','buttonString=Animate over slices','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','sliceNum','Press to animate over slices'};
+paramsInfo{end+1} = {'sliceNumMovie',0,'type=pushbutton','buttonString=Animate over slices','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','sliceNum','Press to animate over slices'};
 paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view'};
-paramsInfo{end+1} = {'frameNumMovie',0,'type=pushbutton','buttonString=Animate over frames','callback',@mrEpiMovieAnimate,'passParams=1','callbackArg','frameNum','Press to animate over frames'};
+paramsInfo{end+1} = {'frameNumMovie',0,'type=pushbutton','buttonString=Animate over frames','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','frameNum','Press to animate over frames'};
 if needsWarping
   paramsInfo{end+1} = {'warp',0,'type=checkbox','Apply warping implied by scan2scan transform to each image. This allows you to preview what will happen when you apply warping in averageTSeries or concatTSeries'};
   paramsInfo{end+1} = {'warpBaseScan',1,sprintf('minmax=[1 %i]',viewGet(v,'nScans')),'incdec=[-1 1]','Choose which scan you want to warp the images to','contingent=warp'};
 end
 
 % display dialog
-[gMrEpiMovie.f params] = mrParamsDialog(paramsInfo,sprintf('EPI images for %s',viewGet(v,'groupName')),[],@mrEpiMovieCallback,[],@mrEpiMovieClose);
+[gMLRDisplayEPI.f params] = mrParamsDialog(paramsInfo,sprintf('EPI images for %s',viewGet(v,'groupName')),[],@mlrDisplayEPICallback,[],@mlrDisplayEPIClose);
 
 % and draw first frame
-mrEpiMovieDispImage(params);
+mlrDisplayEPIDispImage(params);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrEpiFrameNumMovie   %%
+%%  mlrDisplayEPIAnimate  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function retval = mrEpiMovieAnimate(type,params)
+function retval = mlrDisplayEPIAnimate(type,params)
 
 retval = [];
 
-global gMrEpiMovie;
-v = gMrEpiMovie.v;
+global gMLRDisplayEPI;
+v = gMLRDisplayEPI.v;
 
 % check to see whether we are already running an animation
-if gMrEpiMovie.animating
-  gMrEpiMovie.stopAnimating = 1;
+if gMLRDisplayEPI.animating
+  gMLRDisplayEPI.stopAnimating = 1;
   return
 else
-  gMrEpiMovie.animating = 1;
-  gMrEpiMovie.stopAnimating = 0;
+  gMLRDisplayEPI.animating = 1;
+  gMLRDisplayEPI.stopAnimating = 0;
 end
 
 switch type
@@ -107,40 +107,40 @@ switch type
 end
 
 i = 1;
-while (gMrEpiMovie.stopAnimating ~=1)
+while (gMLRDisplayEPI.stopAnimating ~=1)
   % set the variable
   params.(type) = i;
   % set the dialog appropriately
   mrParamsSet(params);
   % load image
-  mrEpiMovieDispImage(params);
+  mlrDisplayEPIDispImage(params);
   pause(.02);
   i = (mod(i,n))+1;
 end
 
-gMrEpiMovie.animating = 0;
+gMLRDisplayEPI.animating = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrEpiMovieCallback   %%
+%%   mlrDisplayEPICallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mrEpiMovieCallback(params)
+function mlrDisplayEPICallback(params)
 
-global gMrEpiMovie;
-if gMrEpiMovie.animating
-  gMrEpiMovie.stopAnimating = 1;
+global gMLRDisplayEPI;
+if gMLRDisplayEPI.animating
+  gMLRDisplayEPI.stopAnimating = 1;
   return
 end
 
 % draw the image
-mrEpiMovieDispImage(params);
+mlrDisplayEPIDispImage(params);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrEpiMovieGetImage   %%
+%%   mlrDisplayEPIGetImage   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function epiImage = mrEpiMovieDispImage(params)
+function epiImage = mlrDisplayEPIDispImage(params)
 
-global gMrEpiMovie;
-v = gMrEpiMovie.v;
+global gMLRDisplayEPI;
+v = gMLRDisplayEPI.v;
 
 if ~isfield(params,'warp'),params.warp = 0;end
   
@@ -156,7 +156,7 @@ if params.warp
 else
   cacheStr = sprintf('%i_%i_%i',params.scanNum,params.sliceNum,params.frameNum);
 end
-[epiImage gMrEpiMovie.c] = mrCache('find',gMrEpiMovie.c,cacheStr);
+[epiImage gMLRDisplayEPI.c] = mrCache('find',gMLRDisplayEPI.c,cacheStr);
 
 if isempty(epiImage)
   % apply warping if necessary
@@ -185,8 +185,8 @@ if isempty(epiImage)
       for rownum = 1:4
 	disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
       end
-      disppercent(-inf,sprintf('Warping scan %i to match scan %i with transformation using %s',params.scanNum,params.warpBaseScan,gMrEpiMovie.interpMethod));
-      epiVolume = warpAffine3(epiVolume,M,NaN,0,gMrEpiMovie.interpMethod);
+      disppercent(-inf,sprintf('Warping scan %i to match scan %i with transformation using %s',params.scanNum,params.warpBaseScan,gMLRDisplayEPI.interpMethod));
+      epiVolume = warpAffine3(epiVolume,M,NaN,0,gMLRDisplayEPI.interpMethod);
 
       disppercent(inf);
       epiImage = epiVolume(:,:,params.sliceNum);
@@ -218,7 +218,7 @@ if isempty(epiImage)
     epiImage = 255*(epiImage-clipMin)./(clipMax-clipMin);
   end
   % and save in cache
-  gMrEpiMovie.c = mrCache('add',gMrEpiMovie.c,cacheStr,epiImage);
+  gMLRDisplayEPI.c = mrCache('add',gMLRDisplayEPI.c,cacheStr,epiImage);
 end
 
 selectGraphWin;
@@ -236,21 +236,21 @@ title(sprintf('Scan: %i slice %i/%i frame %i/%i',params.scanNum,params.sliceNum,
 drawnow
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrEpiMovieClose   %%
+%%   mlrDisplayEPIClose   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function mrEpiMovieClose
+function mlrDisplayEPIClose
 
-global gMrEpiMovie;
+global gMLRDisplayEPI;
 
 % delete the view if necessary
-if gMrEpiMovie.deleteViewAtEnd
-  deleteView(gMrEpiMovie.v);
+if gMLRDisplayEPI.deleteViewAtEnd
+  deleteView(gMLRDisplayEPI.v);
 end
 
 % clear the global
-gMrEpiMovie.stopAnimating = 1;
-gMrEpiMovie.v = [];
-gMrEpiMovie.c = [];
+gMLRDisplayEPI.stopAnimating = 1;
+gMLRDisplayEPI.v = [];
+gMLRDisplayEPI.c = [];
 
 % close the graph window
 selectGraphWin;
