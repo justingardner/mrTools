@@ -204,8 +204,12 @@ if isempty(epiImage)
   histThresh = length(epiImage(:))/1000;
   [cnt, val] = hist(epiImage(:),100);
   goodVals = find(cnt>histThresh);
-  clipMin = val(min(goodVals));
-  clipMax = val(max(goodVals));
+  if isempty(goodVals)
+    clipMin = 0;clipMax = 0;
+  else
+    clipMin = val(min(goodVals));
+    clipMax = val(max(goodVals));
+  end
 
   % and convert the image
   epiImage(epiImage<clipMin) = clipMin;
