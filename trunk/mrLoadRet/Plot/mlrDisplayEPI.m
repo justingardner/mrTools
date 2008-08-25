@@ -60,6 +60,8 @@ if ~ieNotDefined('v') && ~isview(v)
     disp(sprintf('(mlrDisplayEPI) First argument must be a valid view, filename, or data'));
     return
   end
+  gMLRDisplayEPI.fignum = smartfig('mlrDisplayEPI');
+  gMLRDisplayEPI.graphWin = 0;
 else
   % if no v, then create one
   if ieNotDefined('v'),
@@ -92,6 +94,8 @@ else
       needsWarping = 1;
     end
   end
+  gMLRDisplayEPI.fignum = selectGraphWin;
+  gMLRDisplayEPI.graphWin = 1;
 end
 
 % set animating flag
@@ -274,7 +278,7 @@ if isempty(epiImage)
   gMLRDisplayEPI.c = mrCache('add',gMLRDisplayEPI.c,cacheStr,epiImage);
 end
 
-selectGraphWin;
+figure(gMLRDisplayEPI.fignum);
 
 % always make it so that the h dimension is longer than v dimension
 if size(epiImage,1) > size(epiImage,2)
@@ -306,6 +310,10 @@ gMLRDisplayEPI.v = [];
 gMLRDisplayEPI.c = [];
 
 % close the graph window
-selectGraphWin;
-closeGraphWin;
+if gMLRDisplayEPI.graphWin
+  selectGraphWin;
+  closeGraphWin;
+else
+  close(gMLRDisplayEPI.fignum);
+end
 
