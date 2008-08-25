@@ -33,7 +33,7 @@ outList{1} = topVal;
 
 % and add everybody else
 for i = 1:length(inList)
-  if ~isequal(inList{i},topVal)
+  if ~isequalwithequalnans(inList{i},topVal)
     outList{end+1} = inList{i};
   end
 end
