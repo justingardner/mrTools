@@ -98,8 +98,9 @@ for i = 1:length(args)
     end
   % if it is not evaluated then set it to the next argument,
   % unless there is no next argument in which case set it to 1
-  elseif isstr(args{i})
-    if (length(args) >= (i+1))
+  % or if next argument has an equal sign in it
+  elseif isstr(args{i}) 
+    if (length(args) >= (i+1)) && (~isstr(args{i+1}) || isempty(strfind(args{i+1},'=')))
       % set the variable to the next argument
       argNames{end+1} = args{i};
       argValues{end+1} = args{i+1};
