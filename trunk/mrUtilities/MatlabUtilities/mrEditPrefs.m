@@ -10,13 +10,14 @@ function prefParams = mrEditPrefs()
 % cycle through preference name list/defaults
 % and make variables that have their value
 for i = 1:length(prefNames)
+  % set a variable with pref to its value
+  eval(sprintf('%s = mrGetPref(prefNames{i});',prefNames{i}));
   % if there is a defaults list, then
   % make the variable have a cell array with
   % the current setting + all the choices
-  if ~isempty(prefDefaults{i}) && iscell(prefDefaults{i}) && ~iscell(prefDefaults{i}{1}) && ~isempty(find(strcmp(mrGetPref(prefNames{i}),prefDefaults{i})))
+  if ~isempty(prefDefaults{i}) && iscell(prefDefaults{i}) && ~iscell(prefDefaults{i}{1})
+    % check to see if the preference is in the list
     eval(sprintf('%s = putOnTopOfList(mrGetPref(prefNames{i}),prefDefaults{i});',prefNames{i}));
-  else
-    eval(sprintf('%s = mrGetPref(prefNames{i});',prefNames{i}));
   end
 end
 
@@ -47,24 +48,28 @@ prefParams = {{'site',site,'Where you are using this code'},...
     {'defaultInterrogators',defaultInterrogators,'This is a comma separated list that contains interrogators that you can use.'},...
     {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 100.','minmax=[0 inf]','incdec=[-1 1]'},...
     {'baseCacheSize',baseCacheSize,'Size of base image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},...
-    {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'}};
+    {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},....
+    {'badVal',badVal,'Value to put into time series when motionComp or warping does not have any valid data'}};
+
+% open up dialog
 prefParams = mrParamsDialog(prefParams,'Set mrTools preferences');
 
 % if they did not cancel then actually set the parameters
 if ~isempty(prefParams)
-    mrSetPref('site',prefParams.site);
-    mrSetPref('verbose',prefParams.verbose);
-    mrSetPref('interpMethod',prefParams.interpMethod);
-    mrSetPref('maxBlocksize',prefParams.maxBlocksize);
-    mrSetPref('volumeDirectory',prefParams.volumeDirectory);
-    mrSetPref('overwritePolicy',prefParams.overwritePolicy);
-    mrSetPref('niftiFileExtension',prefParams.niftiFileExtension);
-    mrSetPref('roiPolygonMethod',prefParams.roiPolygonMethod);
-    mrSetPref('selectedROIColor',prefParams.selectedROIColor);
-    mrSetPref('defaultInterrogators',commaDelimitedToCell(prefParams.defaultInterrogators));
-    mrSetPref('roiCacheSize',prefParams.roiCacheSize);
-    mrSetPref('baseCacheSize',prefParams.baseCacheSize);
-    mrSetPref('overlayCacheSize',prefParams.overlayCacheSize);
+  mrSetPref('site',prefParams.site);
+  mrSetPref('verbose',prefParams.verbose);
+  mrSetPref('interpMethod',prefParams.interpMethod);
+  mrSetPref('maxBlocksize',prefParams.maxBlocksize);
+  mrSetPref('volumeDirectory',prefParams.volumeDirectory);
+  mrSetPref('overwritePolicy',prefParams.overwritePolicy);
+  mrSetPref('niftiFileExtension',prefParams.niftiFileExtension);
+  mrSetPref('roiPolygonMethod',prefParams.roiPolygonMethod);
+  mrSetPref('selectedROIColor',prefParams.selectedROIColor);
+  mrSetPref('defaultInterrogators',commaDelimitedToCell(prefParams.defaultInterrogators));
+  mrSetPref('roiCacheSize',prefParams.roiCacheSize);
+  mrSetPref('baseCacheSize',prefParams.baseCacheSize);
+  mrSetPref('overlayCacheSize',prefParams.overlayCacheSize);
+  mrSetPref('badVal',prefParams.badVal); 
 end
 
 
