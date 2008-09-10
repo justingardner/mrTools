@@ -18,7 +18,7 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
 % rois = loadROITSeries(v,[],1,1);
 %
 %             to load the roi coordinates, but not the time series
-%       
+%
 % v = newView
 % rois = loadROITSeries(v,[],1,1,'loadType=none');
 %
@@ -28,8 +28,8 @@ rois = {};
 
 % check arguments
 if nargin < 1
-  help loadROITSeries
-  return
+    help loadROITSeries
+    return
 end
 
 % evaluate other arguments
@@ -37,22 +37,22 @@ eval(evalargs(varargin));
 
 % no view specified
 if ieNotDefined('view')
-  view = newView;
+    view = newView;
 end
 if ~isview(view)
-  disp(sprintf('(loadROITSeries) Passed in view is not valid'));
-  return
+    disp(sprintf('(loadROITSeries) Passed in view is not valid'));
+    return
 end
 % get the roi directory
 roidir = viewGet(view,'roidir');
 
 % get group and scan
 if ieNotDefined('groupNum')
-  groupNum = viewGet(view,'currentGroup');
+    groupNum = viewGet(view,'currentGroup');
 end
 groupName = viewGet(view,'groupName',groupNum);
 if ieNotDefined('scanList')
-  scanList = viewGet(view,'currentScan');
+    scanList = viewGet(view,'currentScan');
 end
 
 % set the current group
@@ -60,7 +60,7 @@ view = viewSet(view,'currentGroup',groupNum);
 
 % if there is no roi, ask the user to select
 if ieNotDefined('roiname')
-  roiname = getPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
+    roiname = getPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
 end
 
 %make into a cell array
@@ -76,94 +76,101 @@ roiname = cellArray(roiname);
 % series, they just differ in how they access the data
 % from disk. Set to 'none' to not load the time series.
 if ieNotDefined('loadType')
-  loadType = 'block';
+    loadType = 'block';
 end
 
 % load the rois in turn
 for roinum = 1:length(roiname)
-  % if the name is a string which is an already loaded roi
-  if isstr(roiname{roinum}) & ~isempty(viewGet(view,'roinum',getLastDir(roiname{roinum})))
-    roiname{roinum} = viewGet(view,'roinum',roiname{roinum});
-  end
-  % see if we have to paste roi directory on
-  if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
-    roiname{roinum} = fullfile(roidir,stripext(roiname{roinum}));
-  end
-  % check for file
-  if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
-    disp(sprintf('(loadROITSeries) Could not find roi %s',roiname{roinum}));
-    dir(fullfile(roidir,'*.mat'))
-  elseif isnumeric(roiname{roinum}) && ((roiname{roinum} < 1) || (roiname{roinum} > viewGet(view,'numberOfROIs')))
-    disp(sprintf('(loadROITSeries) No ROI number %i (number of ROIs = %i)',roiname{roinum},viewGet(view,'numberOfROIs')));
-  else
-    % load the roi, if the name is actually a struct
-    % then assume it is an roi struct. if it is a number choose
-    % from a loaded roi
-    if isstr(roiname{roinum})
-      roi = load(roiname{roinum});
-    elseif isnumeric(roiname{roinum})
-      thisroi = viewGet(view,'roi',roiname{roinum});
-      clear roi;
-      roi.(fixBadChars(thisroi.name)) = thisroi;
+    % if the name is a string which is an already loaded roi
+    if isstr(roiname{roinum}) & ~isempty(viewGet(view,'roinum',getLastDir(roiname{roinum})))
+        roiname{roinum} = viewGet(view,'roinum',roiname{roinum});
+    end
+    % see if we have to paste roi directory on
+    if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
+        roiname{roinum} = fullfile(roidir,stripext(roiname{roinum}));
+    end
+    % check for file
+    if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
+        disp(sprintf('(loadROITSeries) Could not find roi %s',roiname{roinum}));
+        dir(fullfile(roidir,'*.mat'))
+    elseif isnumeric(roiname{roinum}) && ((roiname{roinum} < 1) || (roiname{roinum} > viewGet(view,'numberOfROIs')))
+        disp(sprintf('(loadROITSeries) No ROI number %i (number of ROIs = %i)',roiname{roinum},viewGet(view,'numberOfROIs')));
     else
-      roi.(fixBadChars(roiname{roinum}.name)) = roiname{roinum};
-    end
-    roiFieldnames = fieldnames(roi);
-    % get all the rois
-    for roinum = 1:length(roiFieldnames)
-      for scanNum = 1:length(scanList)
-        % get current scan number
-        scanNum = scanList(scanNum);
-        rois{end+1} = roi.(roiFieldnames{roinum});
-        % set a field in the roi for which scan we are collecting from
-        rois{end}.scanNum = scanNum;
-        rois{end}.groupNum = groupNum;
-        % convert to scan coordinates
-        rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum);
-        % if there are no scanCoords then set to empty and continue
-        if isempty(rois{end}.scanCoords)
-          rois{end}.n = 0;
-          rois{end}.tSeries = [];
-          continue;
-        end
-        % get x y and s in array form
-        x = rois{end}.scanCoords(1,:);
-        y = rois{end}.scanCoords(2,:);
-        s = rois{end}.scanCoords(3,:);
-        % set the n
-        rois{end}.n = length(x);
-        % load the tseries, voxel-by-voxel
-        disppercent(-inf,sprintf('(loadROITSeries) Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
-        % for now we always load by block, but if memory is an issue, we can
-        % switch this if statement and load voxels indiviudally from file
-        if strcmp(loadType,'vox')
-          % load each voxel time series indiviudally
-          for voxnum = 1:rois{end}.n
-            rois{end}.tSeries(voxnum,:) = squeeze(loadTSeries(view,scanNum,s(voxnum),[],x(voxnum),y(voxnum)));
-            disppercent(voxnum/rois{end}.n);
-          end
-	  disppercent(inf);
-        elseif strcmp(loadType,'block');
-          % load the whole time series as a block (i.e. a block including the min and max voxels)
-          % this is usually faster then going back and loading each time series individually
-          % but is more inefficient with memory
-          tSeriesBlock = loadTSeries(view,scanNum,[min(s) max(s)],[],[min(x) max(x)],[min(y) max(y)]);
-          % now go through and pick out the voxels that we need.
-          for voxnum = 1:rois{end}.n
-            rois{end}.tSeries(voxnum,:) = squeeze(tSeriesBlock(x(voxnum)-min(x)+1,y(voxnum)-min(y)+1,s(voxnum)-min(s)+1,:));
-            disppercent(voxnum/rois{end}.n);
-          end
-          clear tSeriesBlock;
-	  disppercent(inf);
+        % load the roi, if the name is actually a struct
+        % then assume it is an roi struct. if it is a number choose
+        % from a loaded roi
+        if isstr(roiname{roinum})
+            roi = load(roiname{roinum});
+        elseif isnumeric(roiname{roinum})
+            thisroi = viewGet(view,'roi',roiname{roinum});
+            clear roi;
+            roi.(fixBadChars(thisroi.name)) = thisroi;
         else
-	  disppercent(inf);
-	  disp(sprintf('(loadROITSeries) Not loading time series (loadType=%s)',loadType));
-	end
-      end
+            roi.(fixBadChars(roiname{roinum}.name)) = roiname{roinum};
+        end
+        roiFieldnames = fieldnames(roi);
+        % get all the rois
+        for roinum = 1:length(roiFieldnames)
+            for scanNum = 1:length(scanList)
+                % get current scan number
+                scanNum = scanList(scanNum);
+                rois{end+1} = roi.(roiFieldnames{roinum});
+                % set a field in the roi for which scan we are collecting from
+                rois{end}.scanNum = scanNum;
+                rois{end}.groupNum = groupNum;
+                % convert to scan coordinates
+                rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum);
+                % if there are no scanCoords then set to empty and continue
+                if isempty(rois{end}.scanCoords)
+                    rois{end}.n = 0;
+                    rois{end}.tSeries = [];
+                    continue;
+                end
+                % get x y and s in array form
+                x = rois{end}.scanCoords(1,:);
+                y = rois{end}.scanCoords(2,:);
+                s = rois{end}.scanCoords(3,:);
+                % set the n
+                rois{end}.n = length(x);
+                % load the tseries, voxel-by-voxel
+                disppercent(-inf,sprintf('(loadROITSeries) Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
+                % for now we always load by block, but if memory is an issue, we can
+                % switch this if statement and load voxels indiviudally from file
+                if strcmp(loadType,'vox')
+                    % load each voxel time series indiviudally
+                    for voxnum = 1:rois{end}.n
+                        rois{end}.tSeries(voxnum,:) = squeeze(loadTSeries(view,scanNum,s(voxnum),[],x(voxnum),y(voxnum)));
+                        disppercent(voxnum/rois{end}.n);
+                    end
+                    disppercent(inf);
+                elseif strcmp(loadType,'block');
+                    % load the whole time series as a block (i.e. a block including the min and max voxels)
+                    % this is usually faster then going back and loading each time series individually
+                    % but is more inefficient with memory
+                    tSeriesBlock = loadTSeries(view,scanNum,[min(s) max(s)],[],[min(x) max(x)],[min(y) max(y)]);
+                    % now go through and pick out the voxels that we need.
+                    for voxnum = 1:rois{end}.n
+                        rois{end}.tSeries(voxnum,:) = squeeze(tSeriesBlock(x(voxnum)-min(x)+1,y(voxnum)-min(y)+1,s(voxnum)-min(s)+1,:));
+                        disppercent(voxnum/rois{end}.n);
+                    end
+                    clear tSeriesBlock;
+                    disppercent(inf);
+                else
+                    disppercent(inf);
+                    disp(sprintf('(loadROITSeries) Not loading time series (loadType=%s)',loadType));
+                end
+                nanVoxels=sum(isnan(rois{end}.tSeries),2)>0;  %returns 1 for a voxel if any number in its timeseries is nan
+                if sum(nanVoxels>0)
+                    rois{end}.tSeries=rois{end}.tSeries(~nanVoxels,:);
+                    rois{end}.scanCoords=rois{end}.scanCoords(:,~nanVoxels');
+                    rois{end}.n=sum(~nanVoxels);
+                    disp(sprintf('(loadROITSeries) Deleted %i voxels with NaNs in timeseries in ROI %s, scanNumber %i.',sum(nanVoxels),rois{end}.name, scanNum));
+                end
+            end
+        end
     end
-  end
 end
 if length(rois) == 1
-  rois = rois{1};
+    rois = rois{1};
 end
 
