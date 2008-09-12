@@ -48,8 +48,7 @@ prefParams = {{'site',site,'Where you are using this code'},...
     {'defaultInterrogators',defaultInterrogators,'This is a comma separated list that contains interrogators that you can use.'},...
     {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 100.','minmax=[0 inf]','incdec=[-1 1]'},...
     {'baseCacheSize',baseCacheSize,'Size of base image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},...
-    {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},....
-    {'badVal',badVal,'Value to put into time series when motionComp or warping does not have any valid data'}};
+    {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'}};
 
 % open up dialog
 prefParams = mrParamsDialog(prefParams,'Set mrTools preferences');
@@ -69,7 +68,6 @@ if ~isempty(prefParams)
   mrSetPref('roiCacheSize',prefParams.roiCacheSize);
   mrSetPref('baseCacheSize',prefParams.baseCacheSize);
   mrSetPref('overlayCacheSize',prefParams.overlayCacheSize);
-  mrSetPref('badVal',prefParams.badVal); 
 end
 
 
