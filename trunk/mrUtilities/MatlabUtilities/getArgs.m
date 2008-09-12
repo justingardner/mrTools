@@ -52,6 +52,7 @@ if ieNotDefined('doAssignment'),doAssignment=1;end
 % now deal with validVars list
 setValidVars = 0;
 if ~ieNotDefined('validVars')
+  validVars = cellArray(validVars);
   % check to see if we need to set valid values, we only don't 
   % have to do this if the validVars list is all strings, with no equal signs
   for i = 1:length(validVars)
