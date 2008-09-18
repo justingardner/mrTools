@@ -32,7 +32,7 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     [session, groups] = loadSession(MLR.homeDir);
     % check session
     if isempty(session)
-      disp(sprintf('(mrGlobals) Could not find mrSession in %s',MLR.homeDir));
+      oneTimeWarning(sprintf('mrSession_%s',fixBadChars(MLR.homeDir)),sprintf('(mrGlobals) Could not find mrSession in %s',MLR.homeDir));
     end
     MLR.session = session;
     MLR.groups = groups;
