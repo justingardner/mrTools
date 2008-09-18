@@ -1824,7 +1824,13 @@ end
 % if the user wants help on a particular command
 if ~ieNotDefined('param')
   % find the command
-  commandNum = find(strcmp(sprintf('''%s''',lower(param)),commands));
+  commandNum = [];
+  % find the command
+  for i = 1:length(commands)
+    if ~isempty(findstr(lower(param),commands{i}))
+      commandNum = i;
+    end
+  end
   % if found, print out the comments
   if ~isempty(commandNum) && (commandNum > 0) && (commandNum <= length(commandComments)) && ~isempty(commandComments{commandNum})
     disp(commandComments{commandNum});

@@ -276,10 +276,16 @@ switch lower(param)
     val = MLR.groups(groupNum).name;
   case{'groupnum'}
     % groupnum = viewGet(view,'groupnum',groupName)
-    groupName = varargin{1};
-    groupNames = {MLR.groups(:).name};
-    val = find(strcmp(groupName,groupNames));
-
+    if isstr(varargin{1})
+      groupName = varargin{1};
+      groupNames = {MLR.groups(:).name};
+      val = find(strcmp(groupName,groupNames));
+    % if passed in a valid number just return that number
+    elseif isnumeric(varargin{1}) && isequal(size(varargin{1}),[1 1])
+      if (varargin{1} >= 1) && (varargin{1} <= viewGet(view,'nGroups'))
+	val = varargin{1};
+      end
+    end
     % scan
   case{'nscans','numberofscans','numscans'}
     % n = viewGet(view,'nScans',[groupNum])
@@ -3410,12 +3416,18 @@ end
 
 % if the user wants help on a particular command
 if ~ieNotDefined('param')
+  commandNum = [];
   % find the command
-  commandNum = find(strcmp(sprintf('''%s''',lower(param)),commands));
+  for i = 1:length(commands)
+    if ~isempty(findstr(lower(param),commands{i}))
+      commandNum = i;
+    end
+  end
   % if found, print out the comments
   if ~isempty(commandNum) && (commandNum > 0) && (commandNum <= length(commandComments)) && ~isempty(commandComments{commandNum})
     disp(commandComments{commandNum});
   else
+    keyboard
     disp(sprintf('(viewGet) No viewGet for %s',param));
   end
   return
