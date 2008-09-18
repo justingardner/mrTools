@@ -16,6 +16,9 @@ end
 
 % base xform and voxel size
 baseXform = viewGet(v,'baseXform');
+baseSformCode = viewGet(v,'baseSformCode');
+baseVol2mag = viewGet(v,'baseVol2mag');
+baseVol2tal = viewGet(v,'baseVol2mag');
 baseVoxelSize = viewGet(v,'baseVoxelSize');
 
 % number of rois
@@ -68,7 +71,11 @@ if ~isempty(params)
 	  disp(sprintf('(convertROI) Adopting base xform for ROI %i:%s',roinum,roinames{roinum}));
 	end
 	% set roi xform and voxel size
+	roi.sformCode = baseSformCode;
 	roi.xform = baseXform;
+	% now set the vol2mag and vol2tal correctly
+	roi.vol2mag = baseVol2mag;
+	roi.vol2tal = baseVol2tal;
 	roi.voxelSize = baseVoxelSize;
 	% remove the roi
 	v = viewSet(v,'deleteROI',thisroinum);
