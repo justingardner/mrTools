@@ -22,7 +22,7 @@ d = [];
 
 % check arguments
 if ~any(nargin == [1 2 3 4 5])
-  help eventRelated
+  help eventRelated.m
   return
 end
 
