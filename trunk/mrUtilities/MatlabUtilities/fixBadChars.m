@@ -46,3 +46,7 @@ if ~userDefinedFixList
     str = sprintf('x%s',str);
   end
 end
+
+if length(str) > 63
+  str = str(1:63);
+end
