@@ -159,12 +159,14 @@ for roinum = 1:length(roiname)
                     disppercent(inf);
                     disp(sprintf('(loadROITSeries) Not loading time series (loadType=%s)',loadType));
                 end
-                nanVoxels=sum(isnan(rois{end}.tSeries),2)>0;  %returns 1 for a voxel if any number in its timeseries is nan
-                if sum(nanVoxels>0)
+                if ~strcmp(loadType, 'none')
+                  nanVoxels=sum(isnan(rois{end}.tSeries),2)>0;  %returns 1 for a voxel if any number in its timeseries is nan
+                  if sum(nanVoxels>0)
                     rois{end}.tSeries=rois{end}.tSeries(~nanVoxels,:);
                     rois{end}.scanCoords=rois{end}.scanCoords(:,~nanVoxels');
                     rois{end}.n=sum(~nanVoxels);
                     disp(sprintf('(loadROITSeries) Deleted %i voxels with NaNs in timeseries in ROI %s, scanNumber %i.',sum(nanVoxels),rois{end}.name, scanNum));
+                  end
                 end
             end
         end
