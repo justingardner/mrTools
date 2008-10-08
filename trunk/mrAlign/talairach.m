@@ -13,6 +13,7 @@
 %
 %             talinfo = talairach(talinfo);
 %
+
 function talinfo = talairach(event,isEvent)
 
 % check arguments
