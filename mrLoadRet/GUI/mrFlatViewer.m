@@ -408,9 +408,7 @@ function whichSurfaceCallback(params)
 global gFlatViewer;
 
 % set the roi drawing
-if isfield(params,'displayROIs')
-  gFlatViewer.displayROIs = params.displayROIs;
-else
+if ~isfield(params,'displayROIs')
   params.displayROIs = gFlatViewer.displayROIs;
 end
 
@@ -443,6 +441,7 @@ lastDisplayROIs = gFlatViewer.displayROIs;
 if force || (whichSurface ~= lastWhichSurface) || (lastDisplayROIs ~= displayROIs)
   % set which surface and display
   gFlatViewer.whichSurface = whichSurface;
+  gFlatViewer.displayROIs = displayROIs;  
   % 1,2 are surfaces
   if whichSurface <= 2
     % if we are displaying the 3D anatomy, 
