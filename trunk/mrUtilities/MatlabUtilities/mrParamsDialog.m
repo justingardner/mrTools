@@ -428,13 +428,15 @@ if isfield(gParams, 'callback')
 end
 
 % handle callbacks for non-push buttons
-if isfield(gParams.varinfo{varnum},'callback')
-  if isfield(gParams.varinfo{varnum},'callbackArg')
-    % create the string to call the function
-    feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,getParams(gParams.vars));
-  else
-    % create the string to call the function
-    feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+if ~ieNotDefined('gParams')
+  if isfield(gParams.varinfo{varnum},'callback')
+    if isfield(gParams.varinfo{varnum},'callbackArg')
+      % create the string to call the function
+      feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,getParams(gParams.vars));
+    else
+      % create the string to call the function
+      feval(gParams.varinfo{varnum}.callback,getParams(gParams.vars));
+    end
   end
 end
 
