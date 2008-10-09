@@ -1,7 +1,7 @@
 % getr2timecourse.m
 %
 %        $Id$
-%      usage: getr2timecourse(timecourses,nhdr,hdrlen,scm,<tr>)
+%      usage: d = getr2timecourse(timecourses,nhdr,hdrlen,scm,<tr>)
 %         by: justin gardner
 %       date: 05/25/07
 %    purpose: function that will use getr2 to do the event related
