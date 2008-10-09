@@ -85,7 +85,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       % rotate
       mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
       % change scan
-      mlrGuiSet(view.viewNum,'scan',mrLastView.viewSettings.curScan);
+      view = viewSet(view,'curScan',mrLastView.viewSettings.curScan);
       % change slice
       viewSet(view,'curSlice',mrLastView.viewSettings.curSlice);
     end
