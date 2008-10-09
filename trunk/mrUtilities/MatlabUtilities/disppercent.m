@@ -71,6 +71,10 @@ if (percentdone < 0)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif (percentdone == inf)
   if ~gDisppercent.verbose,return,end
+  % reprint message if necessary
+  if (nargin == 2) && isstr(mesg)
+    reprintMessage(mesg);
+  end
   % get elapsed time
   elapsedTime = etime(clock,gDisppercent.t0);
   % separate seconds and milliseconds
@@ -113,10 +117,7 @@ else
   newmesg = '';
   if nargin == 2
     if isstr(mesg)
-      if ~strcmp(mesg,gDisppercent.mesg)
-	newmesg = sprintf('%s%s ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg);
-	gDisppercent.mesg = mesg;
-      end
+      newmesg = reprintMessage(mesg);
     % otherwise if the second argument is a number,
     % it means we have a secondary value for percent done
     % i.e. the first number is the large increments and
@@ -149,12 +150,35 @@ end
 % remember current percent done
 gDisppercent.percentdone = floor(100*percentdone);
 
-% display time
-function retval = disptime(t)
 
+%%%%%%%%%%%%%%%%%%
+%%   disptime   %%
+%%%%%%%%%%%%%%%%%%
+function retval = disptime(t)
 
 hours = floor(t/(60*60));
 minutes = floor((t-hours*60*60)/60);
 seconds = floor(t-hours*60*60-minutes*60);
 
 retval = sprintf('%02i:%02i:%02i',hours,minutes,seconds);
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%   reprintMessage   %%
+%%%%%%%%%%%%%%%%%%%%%%%%
+function newmesg = reprintMessage(mesg);
+
+global gDisppercent;
+
+newmesg = '';
+
+if ~strcmp(mesg,gDisppercent.mesg)
+  % first clear old message
+  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s              ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),repmat(sprintf(' '),1,length(gDisppercent.mesg)+1)));
+  % print <or return> new message
+  if nargout == 1
+    newmesg = sprintf('%s%s ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg);
+  else
+    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s               ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg));
+  end
+  gDisppercent.mesg = mesg;
+end
