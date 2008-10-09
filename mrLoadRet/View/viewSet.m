@@ -1600,7 +1600,7 @@ switch lower(param)
     % view = viewSet(view,'ROICache','clear',roiName);
     if isstr(val)
       if strcmp(val,'clear')
-	if isfield(MLR.caches{view.viewNum},'roiCache')
+	if (length(MLR.caches) >= view.viewNum) && isfield(MLR.caches{view.viewNum},'roiCache')
 	  % clear the cache
 	  MLR.caches{view.viewNum}.roiCache = ...
 	      mrCache('clear',MLR.caches{view.viewNum}.roiCache, varargin{1});
@@ -1627,8 +1627,10 @@ switch lower(param)
     if isstr(val)
       if strcmp(val,'clear')
         % clear the cache
-        MLR.caches{view.viewNum}.baseCache = ...
-          mrCache('clear',MLR.caches{view.viewNum}.baseCache,varargin{1});
+	if (length(MLR.caches) >= view.viewNum)
+	  MLR.caches{view.viewNum}.baseCache = ...
+	      mrCache('clear',MLR.caches{view.viewNum}.baseCache,varargin{1});
+	end
       else
         % init the cache
         MLR.caches{view.viewNum}.baseCache = mrCache('init',mrGetPref('baseCacheSize'));
@@ -1645,8 +1647,10 @@ switch lower(param)
     if isstr(val)
       if strcmp(val,'clear')
         % clear the cache
-        MLR.caches{view.viewNum}.overlayCache = ...
-          mrCache('clear',MLR.caches{view.viewNum}.overlayCache,varargin{1});
+	if (length(MLR.caches) >= view.viewNum)
+	  MLR.caches{view.viewNum}.overlayCache = ...
+	      mrCache('clear',MLR.caches{view.viewNum}.overlayCache,varargin{1});
+	end
       else
         % init the cache
         MLR.caches{view.viewNum}.overlayCache = mrCache('init',mrGetPref('overlayCacheSize'));
