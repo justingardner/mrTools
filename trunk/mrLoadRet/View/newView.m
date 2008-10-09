@@ -10,7 +10,12 @@ end
 
 % Define and initialize global variable MLR.
 mrGlobals
-if isempty(MLR.session),return,end
+if isempty(MLR.session)
+  disp(sprintf('(newView) Could not open a view for directory %s',pwd));
+  view = [];
+  keyboard
+  return
+end
 
 % check to make sure that we are not opening up MLR
 % in a different home directory from where it started
