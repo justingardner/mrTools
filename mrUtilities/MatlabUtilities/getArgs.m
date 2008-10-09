@@ -81,8 +81,12 @@ for i = 1:length(args)
   end
   % evaluate anything that has an equal sign in it
   if isstr(args{i}) && ~isempty(strfind(args{i},'='))
+    % if there is nothing after the = sign, then just set to []
+    if length(args{i}) == strfind(args{i},'=')
+      argNames{end+1} = args{i}(1:strfind(args{i},'=')-1);
+      argValues{end+1} = [];
     % if the argument is a numeric, than just set it
-    if ((exist(args{i}(strfind(args{i},'=')+1:end)) ~= 2) && ...
+    elseif ((exist(args{i}(strfind(args{i},'=')+1:end)) ~= 2) && ...
 	~isempty(mrStr2num(args{i}(strfind(args{i},'=')+1:end))))
       argNames{end+1} = args{i}(1:strfind(args{i},'=')-1);
       argValues{end+1} = mrStr2num(args{i}(strfind(args{i},'=')+1:end));
@@ -95,7 +99,9 @@ for i = 1:length(args)
       argNames{end+1} = args{i}(1:strfind(args{i},'=')-1);
       argValues{end+1} = args{i}(strfind(args{i},'=')+1:end);
       % make sure it is not '[]'
-      if strcmp(argValues{end},'[]'),argValues{end} = [];end
+      if strcmp(argValues{end},'[]') || strcmp(argValues{end},'{}')
+	argValues{end} = [];
+      end
     end
   % if it is not evaluated then set it to the next argument,
   % unless there is no next argument in which case set it to 1
@@ -156,7 +162,9 @@ end
 % if we have decided to set the default arguments, then do that
 if setValidVars
   for i = 1:length(validVarNames)
-    if ~any(strcmp(validVarNames{i},argNames))
+    matchingArgNum = find(strcmp(validVarNames{i},argNames));
+    % if we haven't set the variable, or the variable has been set to []
+    if isempty(matchingArgNum) || isempty(argValues{matchingArgNum})
       % assign the default value
       assignin('caller',validVarNames{i},validVarValues{i});
       % if verbose, display what we are doing
