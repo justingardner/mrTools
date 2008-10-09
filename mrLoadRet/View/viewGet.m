@@ -267,6 +267,10 @@ switch lower(param)
     % groupName = viewGet(view,'groupName')
     if ieNotDefined('varargin')
       groupNum = viewGet(view,'currentGroup');
+    elseif isstr(varargin{1})
+      % if passed in a string, look for the string
+      % as a group name
+      groupNum = viewGet(view,'groupNum',varargin{1});
     else
       groupNum = varargin{1};
     end
