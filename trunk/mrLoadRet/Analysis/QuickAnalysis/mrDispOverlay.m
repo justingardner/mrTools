@@ -35,6 +35,15 @@
 %
 %             mrDispOverlay(map,1,erAnal,[]);
 %
+%             If you want to return an image array that has the overlay on
+%             a specified anatomy, you could do the following
+%
+%             v = newView;
+%             v = loadAnat(v,'jg_left_occipital.hdr');
+%             map = rand(viewGet(v,'scanDims'));
+%             v = mrDispOverlay(map,1,3,v);
+%             img = refreshMLRDisplay(viewGet(v,'viewNum'));
+%
 %             You can also set optional parameters
 %
 %             Some parameters you can set
@@ -80,7 +89,14 @@ if ieNotDefined('v')
     v = newView;
     viewShouldBeDeleted = 1;
   end
+else
+  % see if the view is one returned from getMLRView (i.e.
+  % it has a figure that needs to be refreshed)
+  if ~isempty(viewGet(v,'fignum'))
+    mrLoadRetViewing = 1;
+  end
 end
+
 
 % if groupNum is actually a structure it means we were passed
 % in an analysis strututre
@@ -268,9 +284,16 @@ end
 % update mr load ret if it is running
 if mrLoadRetViewing
   v = viewSet(v,'curGroup',groupNum);
-  mlrGuiSet(v,'group',groupNum);
-  mlrGuiSet(v.viewNum,'scan',scanNum(1));
+  v = viewSet(v,'curScan',scanNum);
   refreshMLRDisplay(v.viewNum);
+else
+  % set the group and scan of the view
+  if ~isempty(groupNum)
+    v = viewSet(v,'curGroup',groupNum(1));
+  end
+  if ~isempty(scanNum)
+    v = viewSet(v,'curScan',scanNum(1));
+  end
 end
 
 % prepare the output argument
@@ -281,4 +304,5 @@ end
 % delete view
 if viewShouldBeDeleted
   deleteView(v);
+else
 end
