@@ -82,11 +82,16 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
   % the last view that is deleted will
   % clear the MLR global
   views = MLR.views;
+  viewCount = 0;
   for viewNum = 1:length(views)
     view = views{viewNum};
     if isview(view)
+      viewCount = viewCount+1;
       delete(view.figure);
     end
+  end
+  if viewCount > 1
+    disp(sprintf('(mrQuit) Closing %i open views',viewCount));
   end
   drawnow
   % save mrLastView
