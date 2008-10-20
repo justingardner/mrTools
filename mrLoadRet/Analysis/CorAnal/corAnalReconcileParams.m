@@ -57,7 +57,9 @@ if ~ieNotDefined('params')
       newparams.detrend{scan} = params.detrend{match};
       newparams.spatialnorm{scan} = params.spatialnorm{match};
       newparams.tseriesfile{scan} = tseriesfile;
-      newdata{scan} = data{match};
+      if (length(data) >= match)
+          newdata{scan} = data{match};
+      end
     end
   end
 end
