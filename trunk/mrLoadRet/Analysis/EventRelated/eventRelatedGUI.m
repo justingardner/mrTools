@@ -94,6 +94,9 @@ deleteView(view);
 function retval = dispParams(params)
 
 paramsInfo = {};
+if isfield(params,'applyFiltering')
+  paramsInfo{end+1} = {'applyFiltering',params.applyFiltering,'editable=0','Whether filtering was applied to the columns of the stimulus convolution matrix'};
+end
 paramsInfo{end+1} = {'analyzedScans',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',length(params.scanNum)),'editable=0'};
 % get parameters for each scan
 for i = 1:length(params.scanNum)
