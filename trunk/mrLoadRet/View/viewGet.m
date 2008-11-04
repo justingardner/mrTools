@@ -429,6 +429,19 @@ switch lower(param)
     end
     val = scanNumMatch;
     val2 = groupNumMatch;
+  case {'scannumfromdescription'}
+    % scanNum = viewGet(view,'scanNumFromDescription',description);
+    % get scanNum(s) in current group that have a matching description
+    % returns empty if there are no matches. matches are not case-sensitive
+    if ieNotDefined('varargin')
+      disp('(viewGet) scanNumFromDescription: Must specify description.');
+      return
+    end
+    for scanNum = 1:viewGet(view,'nScans')
+      if findstr(lower(varargin{1}),lower(viewGet(view,'description',scanNum)));
+	val(end+1) = scanNum;
+      end
+    end
   case {'concatinfo'}
     % concatInfo = viewGet(view,'concatInfo',[scanNum],[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
@@ -3424,15 +3437,20 @@ if ~ieNotDefined('param')
   % find the command
   for i = 1:length(commands)
     if ~isempty(findstr(lower(param),commands{i}))
-      commandNum = i;
+      commandNum(end+1) = i;
     end
   end
-  % if found, print out the comments
-  if ~isempty(commandNum) && (commandNum > 0) && (commandNum <= length(commandComments)) && ~isempty(commandComments{commandNum})
-    disp(commandComments{commandNum});
-  else
-    keyboard
+  if isempty(commandNum)
     disp(sprintf('(viewGet) No viewGet for %s',param));
+  else
+    % display all matching commands
+    for i = 1:length(commandNum)
+      if (commandNum(i) > 0) && (commandNum(i) <= length(commandComments)) && ~isempty(commandComments{commandNum(i)})
+	commandString = sprintf('%s %s %s',repmat('=',1,12),commands{commandNum(i)},repmat('=',1,12));
+	disp(commandString);
+	disp(commandComments{commandNum(i)});
+      end
+    end
   end
   return
 end
