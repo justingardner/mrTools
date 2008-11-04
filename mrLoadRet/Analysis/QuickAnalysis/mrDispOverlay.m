@@ -165,6 +165,10 @@ end
 
 % if there is only one scan and multiple overlays,
 % it means to install many overlays for the single scan
+range = cellArray(range);
+clip = cellArray(clip);
+cmap = cellArray(cmap);
+colormapType = cellArray(colormapType);
 if length(scanNum) == 1
   % we have multiple overlays
   numOverlays = length(overlay);
@@ -178,10 +182,26 @@ if length(scanNum) == 1
   for i = (length(overlayNames)+1):numOverlays
     overlayNames{i} = sprintf('%s%i',overlayName,i);
   end
+  % fill out range
+  for i = length(range)+1:numOverlays
+    range{i} = range{1};
+  end
+  % fill out clip
+  for i = length(clip)+1:numOverlays
+    clip{i} = clip{1};
+  end
+  % fill out cmap
+  for i = length(cmap)+1:numOverlays
+    cmap{i} = cmap{1};
+  end
+  % fill out colormapType
+  for i = length(colormapType)+1:numOverlays
+    colormapType{i} = colormapType{1};
+  end
 else
   numOverlays = 1;
 end
-%disp(sprintf('(mrDispOverlay) Num overlays: %i',numOverlays));
+disp(sprintf('(mrDispOverlay) Num overlays: %i',numOverlays));
 
 for onum = 1:numOverlays
   % create the parameters for the overlay
@@ -204,11 +224,11 @@ for onum = 1:numOverlays
   end
   o(onum).params.scanNum = [];
   o(onum).date = dateString;
-  o(onum).range = range;
-  o(onum).clip = clip;
-  o(onum).colormap = cmap;
+  o(onum).range = range{onum};
+  o(onum).clip = clip{onum};
+  o(onum).colormap = cmap{onum};
   o(onum).alpha = 1;
-  o(onum).colormapType = colormapType;
+  o(onum).colormapType = colormapType{onum};
   o(onum).interrogator = interrogator;
   % now setup the date field
   % if we have multiple overlays, then it means
