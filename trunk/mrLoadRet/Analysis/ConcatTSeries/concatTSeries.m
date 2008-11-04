@@ -17,7 +17,7 @@
 function [view params] = concatTSeries(view,params,varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3 4 5])
+if ~any(nargin == [1 2 3 4 5 6 7 8])
   help concatTSeries.m
   return
 end
