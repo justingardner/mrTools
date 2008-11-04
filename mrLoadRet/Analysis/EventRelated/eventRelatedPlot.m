@@ -72,7 +72,8 @@ if isfield(d,'stimNames')
       stimNames{i} = sprintf('%s: %s=%0.2f',stimNames{i},d.peak.params.method,d.peak.amp(x,y,s,i));
     end
   end
-  legend(stimNames);
+  lhandle=legend(stimNames);
+  set(lhandle,'Interpreter','none');
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,7 +149,8 @@ for roinum = 1:length(roi)
       % and now append the peak info
       stimNames{i} = sprintf('%s: median=%0.2f',stimNames{i},median(amp(i,:)));
     end
-    legend(stimNames);
+    lhandle = legend(stimNames);
+    set(lhandle,'Interpreter','none');
   end
   % put up button whose call back will be to compute the error bars
   figpos = get(fignum,'position');
@@ -203,7 +205,8 @@ if isfield(d, 'stimvol')
     end
   end
 end
-legend(legendHandle,legendStr);
+lhandle = legend(legendHandle,legendStr);
+set(lhandle,'Interpreter','none');
 % get distribution of ISI
 %diff(sort(cell2mat(d.stimvol)));
 
@@ -223,6 +226,8 @@ if gEventRelatedPlot.computingErrorBars
   disp(sprintf('(eventRelatedPlot) Still computing error bars. Please wait.'));
   return
 end
+
+disp(sprintf('(eventRelatedPlot) Computing error bars over stimulus repetitions (i.e. averaging together all voxels that meet the r2 cutoff to form a single timecourse and then computing error bars using the inverse of the design covariance matrix)'));
 gEventRelatedPlot.computingErrorBars = 1;
 v = gEventRelatedPlot.v;
 roi = gEventRelatedPlot.roi;
