@@ -21,7 +21,7 @@ function [view d] = eventRelated(view,params,varargin)
 d = [];
 
 % check arguments
-if ~any(nargin == [1 2 3 4 5])
+if ~any(nargin == [1 2 3 4 5 6 7 8])
   help eventRelated.m
   return
 end
