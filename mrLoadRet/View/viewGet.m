@@ -354,7 +354,7 @@ switch lower(param)
     if (nscans >= s) & (s > 0)
       val = MLR.groups(g).scanParams(s).junkFrames;
     end
-  case{'nframes'}
+  case{'nframes','numframes','nvolumes','numvolumes'}
     % n = viewGet(view,'nFrames',scanNum,[groupNum])
     % n = viewGet([],'nFrames',scanNum,groupNum)
     % n = viewGet(view,'nFrames',scanNum,[])
