@@ -135,8 +135,9 @@ switch lower(param)
       mlrGuiSet(view,'group',val);
       nScans = viewGet(view,'nScans',val);
       mlrGuiSet(view,'nScans',nScans);
-      scanNum = viewGet(view,'groupScanNum',view.curGroup);
-      mlrGuiSet(view,'scan',min(nScans,scanNum));
+      scanNum = max(min(viewGet(view,'groupScanNum',view.curGroup),nScans),1);
+      mlrGuiSet(view,'scan',scanNum);
+      view.curScan = scanNum;
       mlrGuiSet(view,'analysis',1);
       mlrGuiSet(view,'analysisPopup',{'none'});
       mlrGuiSet(view,'overlay',1);
