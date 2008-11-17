@@ -65,7 +65,7 @@ if ~isfield(d,'stimfile')
 end
 
 % convert simple string stimVariable into a structure
-if isstr(stimVariable)
+if ~isstruct(stimVariable)
   var.varname = stimVariable;
 else
   var = stimVariable;
