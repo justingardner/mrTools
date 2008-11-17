@@ -69,7 +69,12 @@ if ~ieNotDefined('validVars')
 end
 
 % get function name
-st = dbstack;funname = st(end).name;
+st = dbstack;
+stackNum = 1;
+while((stackNum < length(st)) && strcmp(st(stackNum).name,'getArgs'))
+  stackNum = stackNum+1;
+end
+funname = st(stackNum).name;
 
 % loop through arguments
 skipnext = 0;argNames = {};argValues = {};
