@@ -80,7 +80,7 @@ if isdir(params.path)
   cd(params.path);
 else
   mrWarnDlg(sprintf('Directory %s does not exist, please find the anatomy folder',params.path));
-  pathStr = uigetdir(mrGetPref('volumeDirectory','Find anatomy directory'));
+  pathStr = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy directory');
   if pathStr == 0,return,end
   cd(pathStr);
 end
