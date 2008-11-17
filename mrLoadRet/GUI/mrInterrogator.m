@@ -191,6 +191,12 @@ function [x y s xBase yBase sBase xTal yTal zTal] = getMouseCoords(viewNum)
 % get the view
 mrGlobals;
 view = viewGet([],'view',viewNum);
+
+% no bases
+if viewGet(view,'numBase') == 0
+  x = nan;y= nan;s = nan;xBase = nan;yBase = nan;sBase = nan;xTal = nan;yTal = nan;zTal = nan;
+  return
+end
 baseType = viewGet(view,'baseType');
 
 % get location of pointer
