@@ -131,7 +131,7 @@ for scanNum = 1:length(scanNums)
       ischar(scanParams{scanNums(scanNum)}.varname) && ...
       (length(scanParams{scanNums(scanNum)}.varname) > 1) && ...
       (scanParams{scanNums(scanNum)}.varname(1) == '{'))
-    scanParams{canNums(scanNum)}.varname = eval(scanParams{scanNums(scanNum)}.varname);
+    scanParams{scanNums(scanNum)}.varname = eval(scanParams{scanNums(scanNum)}.varname);
   end
 
   % if sameForAll is set, copy all parameters into all scans and break out of loop
