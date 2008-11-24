@@ -5,7 +5,7 @@
 %         by: justin gardner
 %       date: 11/23/08
 %    purpose: get euler angles in radians from rotation matrix
-%
+%             see: http://en.wikipedia.org/wiki/Rotation_representation_(mathematics)#Rotation_matrix_.28or_direction_cosine_matrix.29
 function [phi theta psi] = rot2euler(rotationMatrix)
 
 % check arguments
