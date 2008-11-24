@@ -35,9 +35,10 @@ eval(evalargs(varargin));
 % some variables
 if ieNotDefined('justGetParams'),justGetParams=0;end
 if ieNotDefined('defaultParams'),defaultParams=0;end
+if ieNotDefined('makeReadme'),makeReadme=1;end
 
 % get session params
-if ieNotDefined('sesssionParams')
+if ieNotDefined('sessionParams')
   % get some defaults
   if isfile('mrSession.mat')
     load mrSession
@@ -226,13 +227,17 @@ if ~justGetParams
 	disp(sprintf('(mrInit) Saving new mrSession'));
 	save mrSession session groups;
 	% disp(sprintf('(mrInit) Creating new Readme'));
-	mrReadme(session, groups);
+	if makeReadme
+	  mrReadme(session, groups);
+	end
       end
     else
       disp(sprintf('(mrInit) Saving new mrSession'));
       save mrSession session groups;
       disp(sprintf('(mrInit) Creating Readme'));
-      mrReadme(session, groups);
+      if makeReadme
+	mrReadme(session, groups);
+      end
     end
   else
     disp(sprintf('(mrInit) No session information saved'));
