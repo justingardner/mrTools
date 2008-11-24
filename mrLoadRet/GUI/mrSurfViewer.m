@@ -37,6 +37,10 @@ elseif (nargin == 1) && isstr(outerSurface)
     innerSurface{1} = sprintf('%sWM.off',stripext(stripext(outerSurface),'GM'));
     clear outerSurface;
     outerSurface{1} = sprintf('%sGM.off',stripext(stripext(innerSurface{1}),'WM'));
+  elseif ~isempty(strfind(outerSurface,'Outer'))
+    innerSurface{1} = sprintf('%sInner.off',stripext(stripext(outerSurface),'Outer'));
+    clear outerSurface;
+    outerSurface{1} = sprintf('%sOuter.off',stripext(stripext(innerSurface{1}),'Inner'));
   else
     innerSurface{1} = outerSurface;
     clear outerSurface;
