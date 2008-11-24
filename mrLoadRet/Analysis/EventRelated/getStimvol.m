@@ -46,6 +46,7 @@ if isview(d)
   v = d;d = [];
   % set up d structure
   d.dim = viewGet(v,'scanDims');
+  d.dim(end+1) = viewGet(v,'nFrames');
   d.stimfile = viewGet(v,'stimFile');
   d.tr = viewGet(v,'framePeriod');
   d.concatInfo = viewGet(v,'concatInfo');
@@ -127,14 +128,30 @@ for i = 1:length(d.stimfile)
     end
    case 'afni',
     stimvol = getStimvolFromStimTS(d.stimfile{i});
-    d.stimNames = d.stimfile{i}.stimNames;
+    if isfield(d.stimfile{i}, 'stimNames')
+      d.stimNames = d.stimfile{i}.stimNames;
+    end
+   case 'stimvol',
+    stimvol = d.stimfile{i}.stimvol;
+    if isfield(d.stimfile{i}, 'stimNames')
+      d.stimNames = d.stimfile{i}.stimNames;
+    end
+   otherwise
+    disp(sprintf('(getStimvol) Unknown stimfile type: %s',d.stimfile{i}.filetype));
+    d.stimvol = {};
+    return
   end
   % set the stimnames if we don't have them already
   if ~isfield(d,'stimNames')
-    for stimNameNum = 1:length(stimvol)
+    d.stimNames = {};
+  end
+  % if we don't have a name for the stimulus, then give it a number
+  for stimNameNum = 1:length(stimvol)
+    if length(d.stimNames) < stimNameNum
       d.stimNames{stimNameNum} = num2str(stimNameNum);
     end
   end
+
   % get how many junk frames we have
   if isfield(d,'junkFrames'),junkFrames = d.junkFrames; else junkFrames = zeros(length(d.stimfile),1);end
   % then shift all the stimvols by that many junkvols
@@ -171,7 +188,12 @@ for i = 1:length(d.stimfile)
     % now add the number of volumes encountered from the previous runs
     % to the stimvol and concatenate on to general stimvol
     for nhdr = 1:length(stimvol)
-      d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
+      if length(d.stimvol) >= nhdr
+	
+	d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
+      else
+	d.stimvol{nhdr} = (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf);
+      end
     end
     % on first file, we just set stimvol in the d field
   else
