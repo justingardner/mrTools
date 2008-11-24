@@ -476,7 +476,11 @@ switch lower(param)
           val{j}.filetype = 'afni';
         elseif isfield(val{j},'myscreen')
           val{j}.filetype = 'mgl';
-        end
+        elseif isfield(val{j},'stimvol')
+          val{j}.filetype = 'stimvol';
+        else
+          val{j}.filetype = 'unknown';
+	end	  
       end
     end
   case {'stimfilename'}
