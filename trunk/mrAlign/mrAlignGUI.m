@@ -342,8 +342,7 @@ if ~(hdr.sform_code)
 end
 
 % Extract permutation matrix to keep track of slice orientation
-[q,r] = qr(inv(hdr.qform44(1:3,1:3)));
-permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+permutationMatrix = getPermutationMatrix(hdr);
 
 % Update ALIGN structure and GUI
 ALIGN.volume = vData;
