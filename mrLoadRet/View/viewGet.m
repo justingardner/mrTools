@@ -409,37 +409,92 @@ switch lower(param)
     % tfilename is only done w/in the group.
     % [scanNum,groupNum] = viewGet(view,'scanNum',tseriesFileName,groupNum);
     if ieNotDefined('varargin')
-      mrErrorDlg('viewGet scanNum: Must specify tseriesFileName.');
+      mrErrorDlg('(viewGet) scanNum: Must specify tseriesFileName.');
     end
     [tseriesFilePath,tseriesFileName] = fileparts(varargin{1});
     if length(varargin) > 1
-      groupNums = varargin{2};
+      groupNums = viewGet(view,'groupNum',varargin{2});
+      if isempty(groupNums)
+	disp(sprintf('(viewGet) scanNum: Unknown group'));
+	return
+      end
     else
       groupNums = 1:length(MLR.groups);
     end
     scanNumMatch = [];groupNumMatch = [];
     for groupNum = groupNums
       for scanNum = 1:length(MLR.groups(groupNum).scanParams)
-        [scanFilePath,scanFileName] = fileparts(MLR.groups(groupNum).scanParams(scanNum).fileName);
-        if strcmp(scanFileName,tseriesFileName)
-          scanNumMatch(end+1) = scanNum;
-          groupNumMatch(end+1) = groupNum;
-        end
+	[scanFilePath,scanFileName] = fileparts(MLR.groups(groupNum).scanParams(scanNum).fileName);
+	if strcmp(scanFileName,tseriesFileName)
+	  scanNumMatch(end+1) = scanNum;
+	  groupNumMatch(end+1) = groupNum;
+	end
       end
     end
     val = scanNumMatch;
     val2 = groupNumMatch;
   case {'scannumfromdescription'}
-    % scanNum = viewGet(view,'scanNumFromDescription',description);
+    % scanNum = viewGet(view,'scanNumFromDescription',description,<groupNum>,<searchType>);
     % get scanNum(s) in current group that have a matching description
-    % returns empty if there are no matches. matches are not case-sensitive
+    % returns empty if there are no matches. 
+    % searchType can be any one of:
+    %   'anywhere': case insensitive match where the description string can be found anywhere in the
+    %      scans description. e.g. a scan with description 'CCW wedges' will match 'ccw'. Be aware
+    %      that 'CCW wedges' will also match the string 'CW'. 
+    %   'anywhereCaseSensitive': like above, but case sensitive.
+    %   'exact': case sensitive match where the description string has to exactly match
+    %      the scans description. e.g. 'CCW wedges' will only match 'CCW wedges', not 'CCW'
+    %   'exactCaseInsensitive': like exact, but not case sensitive.
+    %   'regexp': Will use matlab's regular expression function (regexp) to do the match. For
+    %      instance, if you want to match 'CW wedges', but not 'CCW wedges', you could
+    %      search for '^CW '.
+    % The default serachType is 'anywhere'
     if ieNotDefined('varargin')
       disp('(viewGet) scanNumFromDescription: Must specify description.');
       return
     end
+    % get the search string
+    searchString = varargin{1};
+    % get the group num
+    if length(varargin)>1
+      groupNum = viewGet(view,'groupNum',varargin{2});
+    else
+      groupNum = viewGet(view,'curGroup');
+    end
+    % get the serach Type
+    if length(varargin)>2
+      searchType = varargin{3};
+    else
+      searchType = 'anywhere';
+    end
+    if ~any(strcmp(searchType,{'anywhere','anywhereCaseSensitive','exact','exactCaseInsensitive','regexp'}))
+      disp(sprintf('(viewGet) scanNumFromDescription: Unknwon searchType %s',searchType));
+      return
+    end
+      % now go do the search
     for scanNum = 1:viewGet(view,'nScans')
-      if findstr(lower(varargin{1}),lower(viewGet(view,'description',scanNum)));
-	val(end+1) = scanNum;
+      thisDescription = viewGet(view,'description',scanNum,groupNum);
+      switch searchType
+	case 'anywhere'
+	 if ~isempty(strfind(lower(thisDescription),lower(searchString)));
+	   val(end+1) = scanNum;
+	 end
+	case 'anywhereCaseSensitive'
+	 if ~isempty(strfind(thisDescription,searchString))
+	   val(end+1) = scanNum;
+	 end
+       case 'exact'
+	 if strcmp(thisDescription,searchString)
+	   val(end+1) = scanNum;
+	 end
+       case 'exactCaseInsensitive'
+	 if strcmp(lower(thisDescription),lower(searchString))
+	   val(end+1) = scanNum;
+	 end
+       case 'regexp'
+	 if ~isempty(regexp(thisDescription,searchString))
+	   val(end+1) = scanNum;
+	 end
       end
     end
   case {'concatinfo'}
