@@ -95,7 +95,7 @@ end
 % get params info
 nCols = 1;
 % display info
-if displayInDialog
+if displayInDialog | (nargout == 1)
   paramsInfo = {{'description',description,'editable=0','Scan description'},...
 		{'Filename',filename,'editable=0','Name of file'},...
 		{'GroupName',groupName,'editable=0','Name of group'}};
@@ -139,7 +139,11 @@ if displayInDialog
   end
 
   disppercent(inf);
-  mrParamsDialog(paramsInfo,'Scan info',nCols);
+  if (nargout == 1)
+    retval = mrParamsDefault(paramsInfo);
+  else
+    mrParamsDialog(paramsInfo,'Scan info',nCols);
+  end
 else
   disppercent(inf);
   disp(sprintf('%s',description));
