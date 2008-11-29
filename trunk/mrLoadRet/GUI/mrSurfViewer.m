@@ -154,7 +154,7 @@ end
 
 % check to see if we have any possible curvatures
 if isempty(curv)
-  mrWarnDlg(sprintf('(mrSurfViewer) Could not find a matching .vff curvature file. You will need to use the SurfRelax tool surffilt to generate one. It is usually invoked by doing: surffilt -mcurv -iter 2 %s %s_curv.vff',outerSurface{1},stripext(outerSurface{1})));
+  mrWarnDlg(sprintf('(mrSurfViewer) Could not find a matching .vff curvature file. You can use calcCurvature to generate one. Or you can use the SurfRelax tool surffilt to generate one. Surffilt is usually invoked by doing: surffilt -mcurv -iter 2 %s %s_curv.vff',outerSurface{1},stripext(outerSurface{1})));
   return
 end
 
