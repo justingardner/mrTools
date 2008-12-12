@@ -1,7 +1,7 @@
 % mrSurfViewer.m
 %
 %       $Id$	
-%      usage: mrSurfViewer(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat)
+%      usage: mrSurfViewer(outerSurface,<outerCoords>,<innerSurface>,<innerCoords>,<curv>,<anat>)
 %         by: justin gardner
 %       date: 10/09/07
 %    purpose: 
