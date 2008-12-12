@@ -121,6 +121,10 @@ switch lower(param)
       end
       val = groupNum;
     end
+    if (val < 0) || (val > viewGet(view,'nGroups'))
+      disp(sprintf('(viewSet) groupNum %i out of range: [1 %i]',val,viewGet(view,'nGroups')));
+      return
+    end
     if (view.curGroup ~= val)
       % save loaded analysis if there are any
       view = viewSet(view,'loadedAnalyses',view.analyses,view.curGroup);
