@@ -4,8 +4,8 @@
 %         by: justin gardner
 %       date: 11/08/06
 %    purpose: print out information about scans in group
-%       e.g.: groupInfo(1);
-%             groupInfo('Raw');
+%       e.g.: scanInfo(1);
+%             scanInfo(3,'Raw');
 function retval = scanInfo(scanNum,groupNum,displayInDialog)
 
 % check arguments
