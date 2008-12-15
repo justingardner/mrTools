@@ -10,6 +10,15 @@
 % the main difference is that this code returns a neat structure,
 % rather than a bunch of variables
 %
+% ***IMPORTANT NOTE*** Jonas' SurfRelax surfaces keep coordinates in "world" coordinates
+% that is, they are offset by the offset in the nifti header of the volume
+% anatomy that they were created from. To get the indexes into the volume
+% anatomy (which is what you usually want), you have to run the function:
+%
+% surf = xformSurfaceWorld2Array(surf,hdr)
+% 
+% where hdr is the nifti header of the volume anatomy the surface was generated from
+%
 % INPUT ARGUMENTS:
 % surffile - file name of surface in OFF binary format.
 %
