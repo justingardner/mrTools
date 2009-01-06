@@ -35,6 +35,13 @@
 %
 %             mrDispOverlay(map,1,erAnal,[]);
 %
+%             If you just want to save an analysis structure without viewing anything:
+%
+%             v = newView;
+%             map = rand(viewGet(v,'scanDims'));
+%             scanNum = 1; groupNum = 1;
+%             mrDispOverlay(map,scanNum,groupNum,[],'overlayName=rand','saveName=randAnalysis');
+%
 %             If you want to return an image array that has the overlay on
 %             a specified anatomy, you could do the following
 %
