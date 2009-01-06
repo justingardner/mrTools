@@ -21,6 +21,30 @@ function [byteswritten,hdr]=cbiWriteNifti(fname,data,hdr,prec,subset,short_nan);
 
 [pathstr,bname,ext,ver]=fileparts(fname);
 
+% 1D curvature file fix: 
+% check to see if this is 1D image that has a large second
+% dimension, if so, we need to reorder the data (this is 
+% necessary for surface data in which we *want* to store
+% a 1xnumVertices image with the surface coloring data,
+% but nifti's idiotic two byte width limitation prevents
+% us from doing so). Note that there is a complimentary 
+% piece of code in cbiReadNifti that handles unpacking
+% this data. Note that the realWidth is saved in the
+% header as part of the descripiton (i.e. as 'realWidth: rest of description string')
+% -j.
+maxWidth = 2^15-1;realWidth = [];
+if (size(data,1) == 1) && (size(data,2) > maxWidth)
+  realWidth = size(data,2);
+  % find out how many rows we need to store the data
+  numRows = ceil(realWidth/maxWidth);
+  % fill the data out with nans past the real data
+  data(1,end+1:numRows*maxWidth) = nan;
+  % and reshape
+  data = reshape(data,numRows,maxWidth);
+  % print out what happened
+  disp(sprintf('(cbiWriteNifti) Saving a 1x%i image, reshaping to %ix%i to fit nifti limitation of max width of %i',realWidth,numRows,maxWidth,maxWidth));
+end
+  
 if (~exist('subset'))
   subset={[],[],[],[]};
 end
@@ -61,6 +85,16 @@ end
 
 % get hdr scaling factor and convert data if necessary
 [data,hdr]=convertData(data,hdr,short_nan);  
+
+% 1D curvature file fix: squirrel away the real width of the image, if we had to
+% convert for a 1D image.
+if ~isempty(realWidth )
+  % write the real with into the description
+  hdr.descrip = sprintf('%i:%s',realWidth,hdr.descrip);
+  % clip the length of the description to the max of 80
+  hdr.descrip = hdr.descrip(1:min(end,80));
+  hdr.descrip(end+1:80) = 0;
+end
 
 % Write header
 no_overwrite=0;
