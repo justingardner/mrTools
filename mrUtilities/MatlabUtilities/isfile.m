@@ -6,8 +6,9 @@
 %       e.g.: isfile('filename')
 %    purpose: function to check whether file exists
 %
-function retval = isfile(filename)
+function [isit permission] = isfile(filename)
 
+isit = 0;permission = [];
 if (nargin ~= 1)
   help isfile;
   return
@@ -19,8 +20,9 @@ fid = fopen(filename,'r');
 % check to see if there was an error
 if (fid ~= -1)
   fclose(fid);
-  retval = 1;
+  [dummy permission] = fileattrib(filename);
+  isit = 1;
 else
-  retval = 0;
+  isit = 0;
 end
 
