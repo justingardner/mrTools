@@ -56,13 +56,19 @@ hdr=cbiReadNiftiHeader(fname);
 % contains info about each vertex. So
 % we check for that condition and fix
 % the dimension here
-if (hdr.dim(2) ==1) && (hdr.dim(3) == 2^15-1)
+needsRewrite = 0;
+maxWidth = 2^15-1;
+if (hdr.dim(2) ==1) && (hdr.dim(3) == maxWidth)
   dataDir = dir(sprintf('%s.img',stripext(fname)));
   dataBytes = dataDir(1).bytes/(hdr.bitpix/8);
   if dataBytes ~= hdr.dim(3)
     disp(sprintf('(cbiReadNifti) Image dimension 2 greater than nifti max (%i), fixing and rereading %i bytes',hdr.dim(3),dataBytes))
     hdr.dim(3) = dataBytes;
   end
+  % this part is payback for this cheap hack, I did above. Rewrite
+  % the file now as a valid nifti image with width = 2^15-1 and
+  % enough rows to fit the image, by calling cbiWriteNifti -j.
+  needsRewrite = 1;
 end
 
 headerdim=hdr.dim(2:5); % Matlab 1-offset - hdr.dim(1) is actually hdr.dim(0)
@@ -258,3 +264,43 @@ if ((strcmp(prec,'double')||strcmp(prec,'single')) && hdr.scl_slope~=0)
     data=single(data).*hdr.scl_slope+hdr.scl_inter;
   end
 end
+
+% this part is payback for a cheap hack, I did above. Rewrite
+% the file now as a valid nifti image with width = 2^15-1 and
+% enough rows to fit the image, by calling cbiWriteNifti
+if needsRewrite
+  [tf permissions] = isfile(fname);
+  if tf && permissions.UserWrite
+    if strcmp(questdlg(sprintf('(cbiReadNifti) %s is an old style surface curvature file. Answer yes to update the format of the surface (recommended).',getLastDir(fname)),'Yes','No'),'Yes')
+      disp(sprintf('(cbiReadNifti) Fixing 1D image dimensions by rewriting %s',fname));
+      cbiWriteNifti(fname,data,hdr); 
+    end
+  else
+    mrWarnDlg('(cbiReadNifti) This is probably an old style surface file, you are advised to (re)save it to update the format');
+  end
+end
+
+% 1D curvature file fix: if the width is at maximum, we should reshape it to a 1xn image
+if (hdr.dim(3) == maxWidth)
+  % check to see if the description has the real width
+  [realWidthStart realWidthEnd] = regexp(hdr.descrip,'^[0-9]*:');
+  if ~isempty(realWidthStart)
+    % get the real width
+    realWidth = str2num(hdr.descrip(realWidthStart:realWidthEnd-1));
+    % reset the description
+    hdr.descrip = hdr.descrip(realWidthEnd+1:end);
+    hdr.descrip(end+1:80) = 0;
+    % tell user what we are doing
+    disp(sprintf('(cbiReadNifti) Fixing dimensions of image that was written as %ix%i but actually is 1x%i',hdr.dim(2),hdr.dim(3),realWidth));
+    % fix the header
+    hdr.dim(2) = 1;
+    hdr.dim(3) = realWidth;
+    % fix the data
+    data = data(1:realWidth);
+  elseif (hdr.dim(2)==1)
+    mrErrorDlg(sprintf('(cbiReadNifti) %s is an old style surface curvature file. You need to re-import the surface',getLastDir(fname)));
+  end
+end
+
+
+  
