@@ -166,7 +166,7 @@ if ~justGetParams
     session.subject = sessionParams.subject;
     session.operator = sessionParams.operator;
     session.magnet = sessionParams.magnet;
-    session.coil = sessionParams.coil
+    session.coil = sessionParams.coil;
     session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pulseSequenceText);
     % create groups variables
     groups(1).name = 'Raw';
