@@ -32,7 +32,7 @@ if ~isfile(mrSessionPath)
 end
 mrSession = load(mrSessionPath);
 if ~isfield(mrSession,'session') || ~isfield(mrSession,'groups')
-  disp(sprintf('(importGroupScans) Unknown format for mrSession in %s',fileparts(pathStr)));
+  mrWarnDlg(sprintf('(importGroupScans) Unknown format for mrSession in %s',fileparts(pathStr)));
   return
 end
 
@@ -44,7 +44,8 @@ end
 % get from which and to which group we are doing
 paramsInfo = {...
     {'fromGroup',fromGroups,'The group to import from'},...
-    {'toGroup',viewGet(v,'groupNames'),'The group to import into'}};
+    {'toGroup',viewGet(v,'groupNames'),'The group to import into'},...
+    {'linkFiles',0,'type=checkbox','Link rather than copy the files'}};
     
 params = mrParamsDialog(paramsInfo);
 if isempty(params),return,end
@@ -56,12 +57,12 @@ toGroupNum = viewGet(v,'groupNum',params.toGroup);
 toGroup = params.toGroup;
 fromDir = fullfile(fullfile(pathStr,fromGroup),'TSeries');
 if ~isdir(fromDir)
-  disp(sprintf('(importGroupScans) Could not find directory %s',fromDir));
+  mrWarnDlg(sprintf('(importGroupScans) Could not find directory %s',fromDir));
   return
 end
 toDir = fullfile(fullfile(viewGet(v,'homeDir'),toGroup),'TSeries');
 if ~isdir(toDir)
-  disp(sprintf('(importGroupScans) Could not find directory %s',toDir));
+  mrWarnDlg(sprintf('(importGroupScans) Could not find directory %s',toDir));
   return
 end
 fromScanParams = mrSession.groups(fromGroupNum).scanParams;
@@ -100,7 +101,7 @@ for scanNum = 1:length(fromScanParams)
     return
   end
   % write it to our group, making sure to ask if it already exists
-  success = copyNiftiFile(fromFilename,toFilename);
+  success = copyNiftiFile(fromFilename,toFilename,params.linkFiles);
   if ~success,continue,end
   % add where this scan is from into description
   toScanParams = fromScanParams(scanNum);
