@@ -20,11 +20,11 @@ if (nargout == 2)
   % Add optional fields and return true if the group with optional
   % fields is valid.
   requiredFields = {'name','scanParams'};
-  optionalFields = {}
+  optionalFields = {'auxParams',[];};
 else
-  % Return 0 if the overlay structure is missing any fields required or
+  % Return 0 if the group structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
-  requiredFields = {'name','scanParams'};
+  requiredFields = {'name','scanParams','auxParams'};
   optionalFields = {};
 end
 
@@ -49,14 +49,11 @@ for f = 1:length(requiredFields)
 end
 
 % Optional fields and defaults
-for f = 1:length(optionalFields)
+for f = 1:size(optionalFields,1)
   fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
   if ~isfield(group,fieldName)  
-    % use eval args to set the fields properly
-    varargin{1} = sprintf('group.%s',fieldName);
-    varargin{2} = default;
-    eval(evalargs(varargin),1);
+    group.(fieldName) = default;
   end
 end
 group = orderfields(group);

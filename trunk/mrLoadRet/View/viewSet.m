@@ -193,6 +193,7 @@ switch lower(param)
     end
     newgroup.scanParams = [];
     newgroup.auxParams = [];
+    [tf newgroup] = isgroup(newgroup);
     % Add it to MLR.groups
     pos = length(MLR.groups)+1;
     if (pos == 1)
