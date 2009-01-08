@@ -194,6 +194,13 @@ switch lower(param)
     newgroup.scanParams = [];
     newgroup.auxParams = [];
     [tf newgroup] = isgroup(newgroup);
+    % make sure all MLR.groups are valid groups
+    if ~isempty(MLR.groups)
+      for i = 1:length(MLR.groups)
+	[tf oldgroups(i)] = isgroup(MLR.groups(i));
+      end
+      MLR.groups = oldgroups;
+    end
     % Add it to MLR.groups
     pos = length(MLR.groups)+1;
     if (pos == 1)
