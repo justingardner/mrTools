@@ -99,19 +99,9 @@ for scanNum = 1:length(fromScanParams)
     disp(sprintf('(importGroupScans) Could not find %s',fromFilename));
     return
   end
-  % load up the file
-  [data hdr] = cbiReadNifti(fromFilename);
   % write it to our group, making sure to ask if it already exists
-  if isfile(toFilename)
-    if ~isinf(r)
-      r = askuser(sprintf('File %s already exists, overwrite',getLastDir(toFilename)),1)
-    end
-    if r>0
-      cbiWriteNifti(toFilename,data,hdr);
-    end
-  else
-    cbiWriteNifti(toFilename,data,hdr);
-  end
+  success = copyNiftiFile(fromFilename,toFilename);
+  if ~success,continue,end
   % add where this scan is from into description
   toScanParams = fromScanParams(scanNum);
   toScanParams.description = sprintf('%s:%s',fromName,fromScanParams(scanNum).description);
@@ -142,3 +132,5 @@ disppercent(inf);
 
 
 deleteView(v);
+
+
