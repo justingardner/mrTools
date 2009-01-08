@@ -979,7 +979,10 @@ view = MLR.views{viewNum};
 scanNum = viewGet(view,'currentScan');
 scan.scanParams = viewGet(view,'scanParams',scanNum);
 scan.scanParams.fileName = [];
-scan.tseries = loadTSeries(view,scanNum,'all');
+% just save the filename instead of loading the whole tSeries
+% since some scans are very large
+%scan.tseries = loadTSeries(view,scanNum,'all');
+scan.tseries = viewGet(view,'tseriesPathStr',scanNum);
 MLR.clipboard = scan;
 
 % --------------------------------------------------------------------
@@ -1713,20 +1716,24 @@ function recomputeAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-n = viewGet(view,'currentAnalysis');
-groupName = viewGet(view,'analysisGroupName',n);
-analysisFunction = viewGet(view,'analysisFunction',n);
-guiFunction = viewGet(view,'analysisGuiFunction',n);
-params = viewGet(view,'analysisParams',n);
-% params = guiFunction('groupName',groupName,'params',params);
-evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
-eval(evalstring);
-% params is empty if GUI cancelled
-if ~isempty(params)
+if viewGet(view,'numAnalyses') > 0
+  n = viewGet(view,'currentAnalysis');
+  groupName = viewGet(view,'analysisGroupName',n);
+  analysisFunction = viewGet(view,'analysisFunction',n);
+  guiFunction = viewGet(view,'analysisGuiFunction',n);
+  params = viewGet(view,'analysisParams',n);
+  % params = guiFunction('groupName',groupName,'params',params);
+  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
+  eval(evalstring);
+  % params is empty if GUI cancelled
+  if ~isempty(params)
     % view = analysisFunction(view,params);
     evalstring = ['view = ',analysisFunction,'(view,params);'];
     eval(evalstring);
     refreshMLRDisplay(viewNum);
+  end
+else
+  mrWarnDlg(sprintf('(mrLoadRetGUI) No analyses loaded'));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
