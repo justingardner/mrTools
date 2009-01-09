@@ -88,8 +88,8 @@ for i = 1:length(selectedScans)
   fromAuxParams(i) = viewGet(fromView,'auxParams',selectedScans(i));
 end
 
-for scanNum = 1:length(fromScanParams)
-  stimFileName{scanNum} = viewGet(fromView,'stimFileName',scanNum);
+for scanNum = 1:length(selectedScans)
+  stimFileName{scanNum} = viewGet(fromView,'stimFileName',selectedScans(scanNum));
 end
 
 % now switch back to old one
