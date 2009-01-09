@@ -548,7 +548,12 @@ switch lower(param)
     if (nscans >= s) && (s > 0) && isfield(MLR.groups(g),'auxParams') && (length(MLR.groups(g).auxParams) >= s)
       if isfield(MLR.groups(g).auxParams(s),'stimFileName')
         if ~isempty(MLR.groups(g).auxParams(s).stimFileName)
-          stimFileName{1} = fullfile(viewGet(view,'etcDir'),MLR.groups(g).auxParams(s).stimFileName);
+	  % get the stored stimFileNames
+	  stimFileName = cellArray(MLR.groups(g).auxParams(s).stimFileName);
+	  % and prepend the etcDir path on to them
+	  for i = 1:length(stimFileName)
+	    stimFileName{i} = fullfile(viewGet(view,'etcDir'),stimFileName{i});
+	  end
         end
       end
     end
