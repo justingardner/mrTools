@@ -45,7 +45,7 @@ end
 paramsInfo = {...
     {'fromGroup',fromGroups,'The group to import from'},...
     {'toGroup',viewGet(v,'groupNames'),'The group to import into'},...
-    {'linkFiles',0,'type=checkbox','Link rather than copy the files'}};
+    {'linkFiles',1,'type=checkbox','Link rather than copy the files. This will make a soft link rather than copying the files which saves disk space.'}};
     
 params = mrParamsDialog(paramsInfo);
 if isempty(params),return,end
@@ -123,6 +123,7 @@ for scanNum = 1:length(fromScanParams)
   v = viewSet(v,'newScan',toScanParams);
   toScanNum = viewGet(v,'nScans');
   % copy the stimFile over
+  toStimFileNames = {};
   for stimFileNum = 1:length(stimFileName{scanNum})
     % get the from and to stim file names
     fromStimFileName = stimFileName{scanNum}{stimFileNum};
@@ -131,11 +132,13 @@ for scanNum = 1:length(fromScanParams)
     if isfile(toStimFileName)
       disp(sprintf('(importGroupScans) Stimfile %s already exists',toStimFileName));
     else
-      system(sprintf('cp %s %s',fromStimFileName,toStimFileName));
+      %      system(sprintf('cp %s %s',fromStimFileName,toStimFileName));
+      copyfile(fromStimFileName,toStimFileName);
     end
-    % and set it in the view
-    v = viewSet(v,'stimFileName',getLastDir(toStimFileName),toScanNum);
+    toStimFileNames{stimFileNum} = getLastDir(toStimFileName);
   end
+  % and set the stimfiles in the view
+  v = viewSet(v,'stimFileName',toStimFileNames,toScanNum);
   disppercent(scanNum/length(fromScanParams));
 end
 disppercent(inf);
