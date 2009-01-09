@@ -65,8 +65,6 @@ if ~isdir(toDir)
   mrWarnDlg(sprintf('(importGroupScans) Could not find directory %s',toDir));
   return
 end
-fromScanParams = mrSession.groups(fromGroupNum).scanParams;
-fromAuxParams = mrSession.groups(fromGroupNum).auxParams;
 fromName = getLastDir(pathStr);
 
 % set the group
@@ -80,9 +78,20 @@ clear global MLR;
 currentDir = pwd;
 cd(pathStr);
 fromView = newView;
+fromView = viewSet(fromView,'curGroup',fromGroupNum);
+
+% choose the scans to import
+selectedScans = selectScans(fromView,'Choose scans to import');
+if isempty(selectedScans),return,end
+for i = 1:length(selectedScans)
+  fromScanParams(i) = viewGet(fromView,'scanParams',selectedScans(i));
+  fromAuxParams(i) = viewGet(fromView,'auxParams',selectedScans(i));
+end
+
 for scanNum = 1:length(fromScanParams)
   stimFileName{scanNum} = viewGet(fromView,'stimFileName',scanNum);
 end
+
 % now switch back to old one
 cd(currentDir);
 clear global MLR;
