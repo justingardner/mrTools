@@ -53,7 +53,7 @@ if strcmp(fromFilename(1),filesep)
   % look for where the paths are different from each other
   [fromTop fromRest] = strtok(fromPath,filesep);
   [toTop toRest] = strtok(toPath,filesep);
-  while strcmp(fromTop,toTop)
+  while strcmp(fromTop,toTop) && ~isempty(fromTop) && ~isempty(toTop)
     [fromTop fromRest] = strtok(fromRest,filesep);
     [toTop toRest] = strtok(toRest,filesep);
   end
