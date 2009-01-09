@@ -80,7 +80,7 @@ session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pu
 groups.name = 'Raw';
 groups.scanParams = [];
 [tf groups] = isgroup(groups);
-keyboard
+
 % save the mrSession
 eval(sprintf('save %s session groups',fullfile(dirname,'mrSession.mat')));
 
