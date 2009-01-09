@@ -101,20 +101,20 @@ paramsInfo{end+1} = {'analyzedScans',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',l
 % get parameters for each scan
 for i = 1:length(params.scanNum)
   scanNum{i} = params.scanNum(i);
-  description{i} = params.scanParams{i}.description;
-  hdrlen{i} = params.scanParams{i}.hdrlen;
-  preprocess{i} = params.scanParams{i}.preprocess;
-  if isfield(params.scanParams{i},'taskNum')
-    taskNum{i} = params.scanParams{i}.taskNum;
+  description{i} = params.scanParams{scanNum{i}}.description;
+  hdrlen{i} = params.scanParams{scanNum{i}}.hdrlen;
+  preprocess{i} = params.scanParams{scanNum{i}}.preprocess;
+  if isfield(params.scanParams{scanNum{i}},'taskNum')
+    taskNum{i} = params.scanParams{scanNum{i}}.taskNum;
   end
-  if isfield(params.scanParams{i},'phaseNum')
-    phaseNum{i} = params.scanParams{i}.phaseNum;
+  if isfield(params.scanParams{scanNum{i}},'phaseNum')
+    phaseNum{i} = params.scanParams{scanNum{i}}.phaseNum;
   end
-  if isfield(params.scanParams{i},'segmentNum')
-    segmentNum{i} = params.scanParams{i}.segmentNum;
+  if isfield(params.scanParams{scanNum{i}},'segmentNum')
+    segmentNum{i} = params.scanParams{scanNum{i}}.segmentNum;
   end
-  if isfield(params.scanParams{i},'varname')
-    varname{i} = params.scanParams{i}.varname;
+  if isfield(params.scanParams{scanNum{i}},'varname')
+    varname{i} = params.scanParams{scanNum{i}}.varname;
   end
 end
 paramsInfo{end+1} = {'scanNum',scanNum,'group=analyzedScans','type=numeric','editable=0','scan number'};
