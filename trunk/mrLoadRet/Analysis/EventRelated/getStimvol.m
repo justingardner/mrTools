@@ -16,7 +16,7 @@
 %             d must have the field stimfile, tr, dim
 %             optionally concatInfo, junkFrames, impulse, supersampling, 
 % 
-%             alternatively, pass in view with the correct group and scan settings
+
 %             and optional arguments (impulse and supersampling for using eventtimes);
 %             v = newView;
 %             v = viewSet(v,'curGroup',3);
@@ -29,7 +29,7 @@ function [d stimNames var] = getStimvol(d,stimVariable,varargin)
 
 % check arguments
 if (nargin < 1)
-  help getstimvol
+  help getStimvol
   return
 end
 
@@ -65,6 +65,11 @@ if ~isfield(d,'stimfile')
   return
 end
 
+% check to make sure stimfile is not empty
+if isempty(d.stimfile)
+  disp(sprintf('(%s) No stimfiles found',mfilename));
+  return
+end
 % convert simple string stimVariable into a structure
 if ~isstruct(stimVariable)
   var.varname = stimVariable;
