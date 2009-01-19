@@ -73,7 +73,9 @@ switch lower(param)
     % viewType = viewGet(view,'viewType')
     val = view.viewType;
   case {'viewnums'}
-    % n = viewGet([],'viewnums')
+    % Returns an array containing the viewNum of every active view.
+    % Returns empty if there are no open views
+    % viewNums = viewGet([],'viewnums')
     for v=1:length(MLR.views)
       if isview(MLR.views{v})
         val = [val,v];
@@ -472,7 +474,7 @@ switch lower(param)
       return
     end
       % now go do the search
-    for scanNum = 1:viewGet(view,'nScans')
+    for scanNum = 1:viewGet(view,'nScans',groupNum)
       thisDescription = viewGet(view,'description',scanNum,groupNum);
       switch searchType
 	case 'anywhere'
@@ -3347,13 +3349,17 @@ switch lower(param)
     % baseCoords = viewGet(view,'curslicebasecoords');
     val = view.curslice.baseCoords;
   otherwise
-    % viewType dependent
+   if isempty(view)
+     disp(sprintf('(viewGet) No viewGet for %s',param));
+     return
+   else
     switch(lower(view.viewType))
       case 'volume'
         val = volumeGet(view,param,varargin{:});
       otherwise
         error('Unknown type of View.');
     end
+   end
 end
 
 return;
