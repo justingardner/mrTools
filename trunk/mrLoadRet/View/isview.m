@@ -70,6 +70,12 @@ if ~isfield(view,'viewNum') || ~isnumeric(view.viewNum);
   return
 end
 
+% confirm that there is view in MLR.views with the viewNum
+if isempty(view.viewNum) || (view.viewNum < 1) || (view.viewNum > length(MLR.views)) || isempty(MLR.views{view.viewNum})
+  tf = false;
+  return
+end
+
 % Confirm that MLR.views{viewNum} and view have the same fields
 names1 = fieldnames(orderfields(MLR.views{view.viewNum}));
 names2 = fieldnames(view);
