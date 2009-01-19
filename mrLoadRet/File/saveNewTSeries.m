@@ -1,6 +1,6 @@
-function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr)
+function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr,makeLink)
 %
-% view = saveNewTSeries(view,tseries,[scanParams],[hdr])
+% view = saveNewTSeries(view,tseries,[scanParams],[hdr],[makeLink])
 %
 % tseries: tseries array (x,y,z,t) or a filename of a nifti file
 %
@@ -19,6 +19,10 @@ function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr)
 % hdr: template for nifti header. The header is always passed through
 % cbiCreateNiftiHeader to ensure consistency with the data. Default: [];
 %
+% makeLink: Optional, if tseries is passed as a filename then setting
+% this to 1 will cause the tseries to be linked rather than copied
+% defaults to 0
+%
 % $Id$
 %
 
@@ -30,9 +34,10 @@ end
 if ieNotDefined('hdr')
   hdr = [];
 end
+if ieNotDefined('makeLink'),makeLink=0;end
 
 if isempty(scanParams.fileName)
-  scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),mrGetPref('niftiFileExtension')];
+  scanParams.fileName = ['tseries-',datestr(now,'yymmdd'),'-',datestr(now,'HHMMSS'),mrGetPref('niftiFileExtension')];
 end
 filename = scanParams.fileName;
 
@@ -43,7 +48,7 @@ path = fullfile(tseriesdir,scanParams.fileName);
 % see if the tseries is actually a string in which case we should
 % copy the nifti file.
 if isstr(tseries)
-  success = copyNiftiFile(tseries,path);
+  success = copyNiftiFile(tseries,path,makeLink);
   if ~success,return,end
 
   % get the number of frames
