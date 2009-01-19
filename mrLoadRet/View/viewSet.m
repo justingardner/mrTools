@@ -117,12 +117,12 @@ switch lower(param)
       % convert to a groupNum if we got passed in a groupname
       groupNum = viewGet(view,'groupNum',val);
       if isempty(groupNum)
-	disp(sprintf('(viewSet:curGroup) No group %s found',val));
+	mrWarnDlg(sprintf('(viewSet:curGroup) No group %s found',val));
       end
       val = groupNum;
     end
-    if (val < 0) || (val > viewGet(view,'nGroups'))
-      disp(sprintf('(viewSet) groupNum %i out of range: [1 %i]',val,viewGet(view,'nGroups')));
+    if isempty(val) || (val < 0) || (val > viewGet(view,'nGroups'))
+      mrErrorDlg(sprintf('(viewSet) groupNum %i out of range: [1 %i]',val,viewGet(view,'nGroups')));
       return
     end
     if (view.curGroup ~= val)
