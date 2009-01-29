@@ -272,14 +272,16 @@ if ~(exist(matFilename,'file')==2) % if base doesn't already have an associated 
   ALIGN.volBase.permutationMatrix = getPermutationMatrix(hdr);
   % check if it's a canonical volume, and if so, use qform as vol2mag
   roundErr = 100000;
-  if isequal(round(hdr.qform44*roundErr),round(hdr.sform44*roundErr))
+  if ~isequal(hdr.sform_code,0) && isequal(round(hdr.qform44*roundErr),round(hdr.sform44*roundErr))
     mrWarnDlg(['Attention mrLoadRet users: This destination volume '...
-              ' seems to be a canonical base volume. We are treating it '...
+              ' seems to be a canonical base volume (The qform is'...
+	      ' equal to the sform). We are treating it '...
               ' as the main volume to which everything will be aligned.'...
-              ' In particular, using the transformation of this volume'...
-              ' to magnet space (e.g. its q-form) as the base.vol2mag.'...
-              ' If this is not correct, then you need to fix the base'...
-              ' structure in mrLoadRet.']);
+              ' In particular, we are setting its qform to be the vol2mag.'
+              ' If this is correct, then you should save this by using Set'...
+	      ' Base Coordinate Frame in the File menu (and then you will'...
+	      ' not see this message again). If it is incorrect, you may'...
+	      ' want to reset the vol2mag.']);
     ALIGN.volBase.vol2mag = hdr.qform44;
   end % if not, will be automatically set to [] by isbase()
   % check if it's a talairach base, and if so, use sform as vol2tal
@@ -332,13 +334,13 @@ end
 % Warning if no (qform) alignment information in the header.
 % qform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.qform_code)
-    mrWarnDlg('No alignment information in the volume header.');
+    mrWarnDlg('(mrAlignGUI) No alignment information in the volume header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
 % sform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.sform_code)
-    mrWarnDlg('No base coordinate frame in the volume header.');
+    mrWarnDlg('(mrAlignGUI) No base coordinate frame in the volume header. If this is a canonical base volume, you should Set Base Coordinate Frame from the File menu.');
 end
 
 % Extract permutation matrix to keep track of slice orientation
