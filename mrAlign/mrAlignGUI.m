@@ -46,6 +46,8 @@ set(handles.transposeButton,'Value',0);
 set(handles.flipButton,'Value',0);
 set(handles.overlayButton,'Value',1);
 set(handles.transparencySlider,'Value',1);
+set(handles.setTalXform,'Enable','off');
+set(handles.exportTalXform,'Enable','off');
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 refreshAlignDisplay(handles);
@@ -273,15 +275,15 @@ if ~(exist(matFilename,'file')==2) % if base doesn't already have an associated 
   % check if it's a canonical volume, and if so, use qform as vol2mag
   roundErr = 100000;
   if ~isequal(hdr.sform_code,0) && isequal(round(hdr.qform44*roundErr),round(hdr.sform44*roundErr))
-    mrWarnDlg(['Attention mrLoadRet users: This destination volume '...
-              ' seems to be a canonical base volume (The qform is'...
-	      ' equal to the sform). We are treating it '...
-              ' as the main volume to which everything will be aligned.'...
-              ' In particular, we are setting its qform to be the vol2mag.'
-              ' If this is correct, then you should save this by using Set'...
-	      ' Base Coordinate Frame in the File menu (and then you will'...
-	      ' not see this message again). If it is incorrect, you may'...
-	      ' want to reset the vol2mag.']);
+    mrWarnDlg(['Attention mrLoadRet users: This destination volume' ...
+              ' seems to be a canonical base volume (The qform is' ...
+	      ' equal to the sform). We are treating it ' ...
+              ' as the main volume to which everything will be aligned.' ...
+              ' In particular, we are setting its qform to be the vol2mag.' ...
+              ' If this is correct, then you should save this by using Set' ...
+	      ' Base Coordinate Frame in the File menu (and then you will' ...
+	      ' not see this message again). If it is incorrect, you may' ...
+	      ' want to reset the vol2mag.']');
     ALIGN.volBase.vol2mag = hdr.qform44;
   end % if not, will be automatically set to [] by isbase()
   % check if it's a talairach base, and if so, use sform as vol2tal
@@ -295,10 +297,13 @@ if ~(exist(matFilename,'file')==2) % if base doesn't already have an associated 
               ' need to fix the base structure in mrLoadRet.']);
     ALIGN.volBase.vol2tal = hdr.sform44;
     ALIGN.volBase.vol2mag = hdr.qform44;
+    set(handles.exportTalXform,'Enable','on');% allow user to export the vol2tal without redefining
   end % if not, will autmatically set vol2tal = []  
 else % if there already is a base file
   load(matFilename); % then load it
-  ALIGN.volBase = base; clear base
+  ALIGN.volBase = base; clear base;
+  % if there is already a vol2tal, allow user to export it without redefining it
+  if ~isempty(ALIGN.volBase.vol2tal), set(handles.exportTalXform,'Enable','on'); end 
 end
 [tf ALIGN.volBase] = isbase(ALIGN.volBase); % make sure it has all the right fields;
 
@@ -371,6 +376,8 @@ setAlignGUI(handles,'nSlices',ALIGN.volSize(ALIGN.sliceOrientation));
 set(handles.sliceSlider,'value',ALIGN.coords(ALIGN.sliceOrientation));
 sagittalRadioButton_Callback(hObject, eventdata, handles);
 refreshAlignDisplay(handles);
+% Turn on Talairach option
+set(handles.setTalXform,'Enable','on');
 
 function cRange = clipRange(image)
 % Choose clipping based on histogram
@@ -389,6 +396,7 @@ if (clipMax == clipMin)
     clipMax = clipMax+1;
 end
 cRange = [clipMin,clipMax];
+
 
 % --------------------------------------------------------------------
 function loadInplaneMenuItem_Callback(hObject, eventdata, handles)
@@ -1263,7 +1271,10 @@ refreshAlignDisplay(handles);
 function talMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function setTalPnts_Callback(hObject, eventdata, handles)
+function setTalXform_Callback(hObject, eventdata, handles)
 
+  
+% once the vol2tal Xform has been defined, allow subjects to export it
+  set(handles.exportTalXform,'Enable','on');
 % --------------------------------------------------------------------
 function exportTalXform_Callback(hObject, eventdata, handles)
