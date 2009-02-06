@@ -157,7 +157,7 @@ end
 if isfield(params,'whichROIisMask') && params.whichROIisMask
   dataMask = permute(dataMask, [2 1]);
   dataMask = 1-repmat(dataMask, [1 1 3]);
-  
+
   img = (1-dataMask) .* img; 
   baseMask = base.RGB;
   baseMask = dataMask .* baseMask;
@@ -441,9 +441,10 @@ for r=1:length(roi)
     % blur it some, but only need to do this
     % if we haven't already upsampled
     if params.upSampleFactor <= 2
-      roiBits = round(blur(roiBits,2));
+      roiBits = blur(roiBits,2);
+      roiBits(roiBits<median(roiBits(:)))=0;
+      roiBits(roiBits~=0) = 1;
     end
-    
     % is it a mask roi?
     if r==params.whichROIisMask
       dataMask = roiBits;
