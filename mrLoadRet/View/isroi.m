@@ -60,10 +60,7 @@ for f = 1:size(optionalFields,1)
   fieldName = optionalFields{f,1};
   default = optionalFields{f,2};
   if ~isfield(roi,fieldName)  
-    % use eval args to set the fields properly
-    varargin{1} = sprintf('roi.%s',fieldName);
-    varargin{2} = default;
-    eval(evalargs(varargin),1);
+    roi.(fieldName) = default;
   end
 end
 
@@ -83,7 +80,7 @@ end
 
 % if roi coords doesn't have the fourth dimension then
 % set it to 1
-if ~isempty(roi.coords) && (size(roi.coords,1) == 3)
+if tf && ~isempty(roi.coords) && (size(roi.coords,1) == 3)
   roi.coords(4,:) = 1;
 end
 
