@@ -1729,6 +1729,7 @@ switch lower(param)
 	nSlices = baseDims(sliceIndex);
 	coords = viewGet(view,'curCoords');
 	slice = coords(sliceOrientation);
+	view = viewSet(view,'curSlice',slice);
 	mlrGuiSet(view,'nSlices',nSlices);
 	mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
       end
