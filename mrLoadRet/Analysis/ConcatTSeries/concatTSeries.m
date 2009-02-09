@@ -218,9 +218,9 @@ for iscan = 1:length(params.scanList)
 	
   % Dump junk frames
   junkFrames = viewGet(viewBase,'junkframes',scanNum);
-  nFrames = viewGet(viewBase,'nFrames',scanNum);
-  d.dim(4) = nFrames;
-  tSeries = tSeries(:,:,:,junkFrames+1:junkFrames+nFrames);
+  d.nFrames = viewGet(viewBase,'nFrames',scanNum);
+  d.dim(4) = d.nFrames;
+  tSeries = tSeries(:,:,:,junkFrames+1:junkFrames+d.nFrames);
 
   % get the total junked frames. This is the number of frames
   % we have junked here, plus whatever has been junked in previous ones
@@ -291,7 +291,7 @@ for iscan = 1:length(params.scanList)
     d.mean(d.mean==0) = nan;
 
     disppercent(-inf, '(concatTSeries) Converting to percent signal change');
-    for i = 1:d.dim(4)
+    for i = 1:d.dim
       d.data(:,:,:,i) = (d.data(:,:,:,i)./d.mean);
       if params.percentSignal == 2           % scale it to mean of 1,000
           params.scaleFactor = 10000;
@@ -329,6 +329,7 @@ for iscan = 1:length(params.scanList)
       hdr.sform44 = viewGet(viewBase,'scanSform',params.warpBaseScan,groupNum);
       hdr.sform_code = viewGet(viewBase,'scanSformCode',params.warpBaseScan,groupNum);
     end
+
     [viewConcat,tseriesFileName] = saveNewTSeries(viewConcat,d.data,scanParams,hdr);
     % get new scan number
     saveScanNum = viewGet(viewConcat,'nScans');
