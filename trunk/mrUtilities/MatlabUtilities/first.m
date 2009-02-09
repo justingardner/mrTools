@@ -8,6 +8,8 @@ function retval = first(x)
 
 if (isempty(x))
   retval = [];
+elseif iscell(x)
+  retval = x{1};
 else
   retval = x(1);
 end
