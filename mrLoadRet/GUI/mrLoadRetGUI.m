@@ -788,6 +788,11 @@ function importMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function importGroupMenuItem_Callback(hObject, eventdata, handles)
+
+viewNum = handles.viewNum;
+% turn off interrogator since importGroupScans has
+% to temporarily switch the MLR views to get info from the import group
+mrInterrogator('end',viewNum);
 importGroupScans;
 
 % --------------------------------------------------------------------

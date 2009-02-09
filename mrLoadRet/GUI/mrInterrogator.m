@@ -341,6 +341,13 @@ eval(MLR.interrogator{viewNum}.windowButtonDownFcn);
 function endHandler(viewNum)
 
 mrGlobals;
+v = MLR.views{viewNum};
+fignum = viewGet(v,'figNum');
+
+% check to see if it is running
+if ~isfield(MLR.interrogator{viewNum},'fignum') || ~isequal(MLR.interrogator{viewNum}.fignum,fignum)
+  return
+end
 
 % set the callbacks back to their originals
 set(MLR.interrogator{viewNum}.fignum,'WindowButtonMotionFcn',MLR.interrogator{viewNum}.windowButtonMotionFcn);
