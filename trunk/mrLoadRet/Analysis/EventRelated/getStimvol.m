@@ -16,8 +16,11 @@
 %             d must have the field stimfile, tr, dim
 %             optionally concatInfo, junkFrames, impulse, supersampling, 
 % 
-
 %             and optional arguments (impulse and supersampling for using eventtimes);
+%
+%             can also be used to get stimvol and stimNames directly w/out the
+%             use of a d structure:
+%
 %             v = newView;
 %             v = viewSet(v,'curGroup',3);
 %             v = viewSet(v,'curScan',1);
