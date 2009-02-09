@@ -1,7 +1,7 @@
 function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
 % loadROITSeries.m
 %
-%      usage: rois = loadROITSeries(view,<roiname>,<scanList>,<groupNum>)
+%      usage: rois = loadROITSeries(view,<roiname>,<scanList>,<groupNum>,<varargin>)
 %         by: justin gardner
 %       date: 03/22/07
 %    purpose: load the time series for a roi, without roiname
@@ -11,7 +11,7 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
 %             struct instead of a name then it will use that roi
 %             instead of loading the roi from disk. Also, if roiname
 %             is a number or cell array of numbers then it will use
-%             the corresponding ROI from the view.
+%             the corresponding ROI from the view. 
 %        e.g.:
 %
 % v = newView
@@ -22,8 +22,24 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
 % v = newView
 % rois = loadROITSeries(v,[],1,1,'loadType=none');
 %
+%             If a time series has nan points in it, this function
+%             will drop that voxels time series (this usually happens
+%             because the ROI contains a voxel that is on the edge of
+%             the scan and the motion correction has brought in a nan
+%             value). If you want to return all time series, regardless
+%             of whether there is a nan voxel or not, pass in the
+%             optional argument, keepNAN=true
+%
+% rois = loadROITSeries(v,[],1,1,'keepNAN',true);
+%
+%             You can also get voxels for the ROI that match the voxels
+%             from a separate scan (sometimes useful for classification. See
+%             the function getROICoordinatesMatching for more info)
+%
+% rois = loadROITSeries(v,[],1,1,'keepNAN',true,'matchScanNum=1','matchGroupNum=2');
+%   
+%
 % see also tseriesROI
-
 rois = {};
 
 % check arguments
@@ -31,9 +47,6 @@ if nargin < 1
     help loadROITSeries
     return
 end
-
-% evaluate other arguments
-eval(evalargs(varargin));
 
 % no view specified
 if ieNotDefined('view')
@@ -48,11 +61,11 @@ roidir = viewGet(view,'roidir');
 
 % get group and scan
 if ieNotDefined('groupNum')
-    groupNum = viewGet(view,'currentGroup');
+  groupNum = viewGet(view,'currentGroup');
 end
 groupName = viewGet(view,'groupName',groupNum);
 if ieNotDefined('scanList')
-    scanList = viewGet(view,'currentScan');
+  scanList = viewGet(view,'currentScan');
 end
 
 % set the current group
@@ -60,13 +73,14 @@ view = viewSet(view,'currentGroup',groupNum);
 
 % if there is no roi, ask the user to select
 if ieNotDefined('roiname')
-    roiname = getPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
+  roiname = getPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
 end
 
 %make into a cell array
 roiname = cellArray(roiname);
 
-% set the way to load the time series
+% set the default arguments. loadType
+% sets the way to load the time series
 % possible values are 'vox' which loads each
 % time series voxel by voxel (slow but less memory
 % intensive), or 'block' which loads the block
@@ -75,9 +89,16 @@ roiname = cellArray(roiname);
 % block and vox will return the same voxel time
 % series, they just differ in how they access the data
 % from disk. Set to 'none' to not load the time series.
-if ieNotDefined('loadType')
-    loadType = 'block';
+getArgs(varargin,{'loadType=block','keepNAN',false,'matchScanNum=[]','matchGroupNum=[]'});
+
+% if user has asked for a match roi (that is, the ROIs should be created with
+% coordinates that are a voxel for voxel match with the passed in scan number.
+% this is useful for classification protocols. Instead of calling getROICoordinates
+% this function will use getROICoordinatesMatching instead.
+if ~isempty(matchScanNum) && isempty(matchGroupNum)
+  matchgroupNum = groupNum;
 end
+
 
 % load the rois in turn
 for roinum = 1:length(roiname)
@@ -119,7 +140,12 @@ for roinum = 1:length(roiname)
                 rois{end}.scanNum = scanNum;
                 rois{end}.groupNum = groupNum;
                 % convert to scan coordinates
-                rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum);
+		if isempty(matchScanNum)
+		  rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum);
+		else
+		  rois{end}.scanCoords = getROICoordinatesMatching(view,rois{end},scanNum,matchScanNum,groupNum,matchGroupNum);
+		end
+		  
                 % if there are no scanCoords then set to empty and continue
                 if isempty(rois{end}.scanCoords)
                     rois{end}.n = 0;
@@ -162,10 +188,16 @@ for roinum = 1:length(roiname)
                 if ~strcmp(loadType, 'none')
                   nanVoxels=sum(isnan(rois{end}.tSeries),2)>0;  %returns 1 for a voxel if any number in its timeseries is nan
                   if sum(nanVoxels>0)
-                    rois{end}.tSeries=rois{end}.tSeries(~nanVoxels,:);
-                    rois{end}.scanCoords=rois{end}.scanCoords(:,~nanVoxels');
-                    rois{end}.n=sum(~nanVoxels);
-                    disp(sprintf('(loadROITSeries) Deleted %i voxels with NaNs in timeseries in ROI %s, scanNumber %i.',sum(nanVoxels),rois{end}.name, scanNum));
+		    if keepNAN
+		      % just display a message indicating how many nan voxels we have
+		      disp(sprintf('(loadROITSeries) %s %s:%i has %i/%i (%0.2f%%) voxels with NaNs in timeseries',rois{end}.name,viewGet(view,'groupName',groupNum),scanNum,sum(nanVoxels),rois{end}.n,100*sum(nanVoxels)/rois{end}.n));
+		    else
+		      % remove the nan voxels from the roi and report what we did
+		      rois{end}.tSeries=rois{end}.tSeries(~nanVoxels,:);
+		      rois{end}.scanCoords=rois{end}.scanCoords(:,~nanVoxels');
+		      disp(sprintf('(loadROITSeries) Deleted %i/%i (%0.2f%%) voxels with NaNs in timeseries in ROI %s %s:%i.',sum(nanVoxels),rois{end}.n,100*sum(nanVoxels)/rois{end}.n,rois{end}.name,viewGet(view,'groupName',groupNum),scanNum));
+		      rois{end}.n=sum(~nanVoxels);
+		    end
                   end
                 end
             end
