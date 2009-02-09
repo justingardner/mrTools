@@ -126,6 +126,7 @@ toView = viewSet(toView,'currentGroup',toGroup);
 disppercent(-inf,'Copying group scans');
 r = 0;
 for scanNum = 1:length(fromScanParams)
+  startTime = clock;
   % get the fromFilename
   fromFilename = fullfile(fromDir,fromScanParams(scanNum).fileName);
   % get the scan params for this scan
@@ -156,6 +157,11 @@ for scanNum = 1:length(fromScanParams)
   end
   % and set the stimfiles in the view
   toView = viewSet(toView,'stimFileName',toStimFileNames,toScanNum);
+  % pause for 1 second (so that we don't end up writing scans out with the same exact timestamp
+  if etime(clock,startTime) < 1
+    disp(sprintf('(importGroupScans) Pause for one second to avoid having same exact timestamps'));
+    pause(1);
+  end
   disppercent(scanNum/length(fromScanParams));
 end
 disppercent(inf);
