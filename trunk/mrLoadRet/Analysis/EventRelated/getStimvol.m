@@ -39,7 +39,7 @@ end
 % evaluate other arguments
 taskNum=[];phaseNum=[];segmentNum=[];stimfile=[];tr=[];nFrames=[];concatInfo=[];
 junkFrames=[];impulse=[];supersampling=[];
-getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[]});
+getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[],'verbose',true});
 
 if ~exist('stimVariable','var'),stimVariable = ''; end
 
@@ -84,6 +84,7 @@ end
 if ~ieNotDefined('taskNum'),var.taskNum = taskNum;end
 if ~ieNotDefined('phaseNum'),var.phaseNum = phaseNum;end
 if ~ieNotDefined('segmentNum'),var.segmentNum = segmentNum;end
+if ~isfield(var,'verbose') var.verbose = verbose;end
 
 % keep the varname that this was called with
 d.varname = var;
