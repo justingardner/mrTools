@@ -124,7 +124,7 @@ for i = 1:length(args)
       argValues{end+1} = 1;
     end
   else
-    disp(sprintf('(getArgs) Argument %i is not a variable name',i));
+    disp(sprintf('(getArgs:%s) Argument %i is not a variable name',funname,i));
   end
 end
 
