@@ -22,7 +22,8 @@ if ieNotDefined('method'); method = 'pairs'; end
 % voxels in the current base volume.
 baseCoords = viewGet(view,'cursliceBaseCoords');
 if isempty(baseCoords)
-  mrErrorDlg('Load base anatomy before drawing an ROI');
+  mrWarnDlg('Load base anatomy before drawing an ROI');
+  return;
 end
 
 % get the base CoordMap for the current flat patch
@@ -31,11 +32,10 @@ baseCoordMap = viewGet(view,'baseCoordMap');
 baseHdr = viewGet(view, 'basehdr');
 
 if isempty(baseCoordMap)
-  sprintf(disp('You cannot use this function unless you are viewing a flatpatch with a baseCoordMap'));
+  mrWarnDlg('(calcDist) You cannot use this function unless you are viewing a flatpatch with a baseCoordMap');
   return;
 end
-
-
+disp('(calcDist) Draw line segments for which you want to compute the distance of. Click to add a point. Double-click to end making line segments');
 if strcmp(method, 'roi')
   disp(sprintf('(calcDist) ROI method not implemented'));
 else
@@ -73,14 +73,23 @@ else
   coords = [y x z];
 end
 
+disp('(calcDist) Computing distance');
 
 % load the appropriate surface files
 disp(sprintf('Loading %s', baseCoordMap.innerCoordsFileName));
 surf.inner = loadSurfOFF(fullfile(baseCoordMap.path, baseCoordMap.innerCoordsFileName));
+if isempty(surf.inner)
+  mrWarnDlg(sprintf('(calcDist) Could not find surface file %s',fullfile(baseCoordMap.path, baseCoordMap.innerCoordsFileName)));
+  return
+end
 surf.inner = xformSurfaceWorld2Array(surf.inner, baseHdr);
 
 disp(sprintf('Loading %s', baseCoordMap.outerCoordsFileName));
 surf.outer = loadSurfOFF(fullfile(baseCoordMap.path, baseCoordMap.outerCoordsFileName));
+if isempty(surf.outer)
+  mrWarnDlg(sprintf('(calcDist) Could not find surface file %s',fullfile(baseCoordMap.path, baseCoordMap.outerCoordsFileName)));
+  return
+end
 surf.outer = xformSurfaceWorld2Array(surf.outer, baseHdr);
 
 % build up a mrMesh-style structure, taking account of the current corticalDepth
@@ -98,7 +107,7 @@ mesh.connectionMatrix = findConnectionMatrix(mesh);
 % complain if any of the selected points are far away
 for i=1:length(distances)
   if (distances>1)
-    disp(sprintf('Point %i is %f from the nearest surface vertex', i, distances(i)));
+    disp(sprintf('(calcDist) Point %i is %f from the nearest surface vertex', i, distances(i)));
   end
 end
 
