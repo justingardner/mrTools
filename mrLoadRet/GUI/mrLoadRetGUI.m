@@ -2354,7 +2354,9 @@ if ~exist('dijkstra') == 3
   mrWarnDlg('(mrLoadRetGUI) You need to install the mrGray tools to use the function calcDist');
 else
   dist = calcDist(v, 'segments'); % ,'polygon',1);
-  disp(sprintf('Distance been pts A and B: %2.4f', dist(2)));
+  if ~isempty(dist)
+    disp(sprintf('Distance been pts A and B: %2.4f', dist(2)));
+  end
   refreshMLRDisplay(viewNum);
 end
 
