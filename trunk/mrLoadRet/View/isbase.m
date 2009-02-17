@@ -50,9 +50,9 @@ if ~isstruct(base)
   return
 end
 
-% hack to change talPoints field to talInfo
+% hack to change talPoints field to talinfo
 if isfield(base,'talPoints')
-  disp(sprintf('(isbase) Changing talPoints field to talInfo'));
+  disp(sprintf('(isbase) Changing talPoints field to talinfo'));
   if ~isfield(base,'talinfo') || isempty(base.talinfo)
     base.talinfo = base.talPoints;
   end
@@ -78,6 +78,25 @@ for f = 1:size(optionalFields,1)
     base.(fieldName) = default;
   end
 end
+
+% remove any fields that are not required or optional
+if nargout == 2
+  baseFieldNames = fieldnames(base);
+  for f = 1:length(baseFieldNames)
+    % check required fields
+    if ~any(strcmp(baseFieldNames{f},requiredFields))
+      % check optional fields, (only check first column of
+      % field names, not the default values...
+      match = strcmp(baseFieldNames{f},optionalFields);
+      if ~any(match(:,1))
+	disp(sprintf('(isbase) Removing unnecessary field %s from base',baseFieldNames{f}));
+	base = rmfield(base,baseFieldNames{f});
+      end
+    end
+  end
+end
+
+% order the fields
 base = orderfields(base);
 
 % auto set the base type if it is set to empty
@@ -110,6 +129,7 @@ function [tf coordMap] = validateCoordMap(coordMap,baseType)
 
 % First, we fix old coordMaps to have correctly named fields
 if isfield(coordMap,'flatDir')
+  disp(sprintf('(isbase) Updating format of coordMap'));
   newCoordMap.path = coordMap.flatDir;
   newCoordMap.dims = coordMap.dims;
   newCoordMap.flatFileName = coordMap.flatFileName;
@@ -124,6 +144,7 @@ if isfield(coordMap,'flatDir')
   newCoordMap.outerCoords = coordMap.outerCoords;
   coordMap = newCoordMap;
 elseif isfield(coordMap,'innerFileName')
+  disp(sprintf('(isbase) Updating format of coordMap'));
   if isfield(coordMap,'path')
     newCoordMap.path = coordMap.path;
   else
@@ -136,6 +157,31 @@ elseif isfield(coordMap,'innerFileName')
   newCoordMap.outerCoordsFileName = coordMap.outerCoordsFileName;
   newCoordMap.curvFileName = coordMap.curvFileName;
   newCoordMap.anatFileName = coordMap.anatFileName;
+  if isfield(coordMap,'coords')
+    newCoordMap.coords = coordMap.coords;
+  end
+  newCoordMap.innerCoords = coordMap.innerCoords;
+  newCoordMap.outerCoords = coordMap.outerCoords;
+  newCoordMap.innerVtcs = coordMap.innerVtcs;
+  newCoordMap.outerVtcs = coordMap.outerVtcs;
+  newCoordMap.tris = coordMap.tris;
+  if isfield(coordMap,'rotate')
+    newCoordMap.rotate = coordMap.rotate;
+  end
+  coordMap = newCoordMap;
+elseif isfield(coordMap,'inner')
+  disp(sprintf('(isbase) Updating format of coordMap'));
+  if isfield(coordMap,'path')
+    newCoordMap.path = coordMap.path;
+  else
+    newCoordMap.path = '';
+  end
+  newCoordMap.innerSurfaceFileName = coordMap.inner;
+  newCoordMap.innerCoordsFileName = coordMap.inner;
+  newCoordMap.outerSurfaceFileName = coordMap.outer;
+  newCoordMap.outerCoordsFileName = coordMap.outer;
+  newCoordMap.curvFileName = coordMap.curv;
+  newCoordMap.anatFileName = coordMap.anatomy;
   if isfield(coordMap,'coords')
     newCoordMap.coords = coordMap.coords;
   end
@@ -185,5 +231,6 @@ if baseType == 2
     coordMap.outerCoordsFileName = coordMap.outerSurfaceFileName;
   end
 end
+
 
   
