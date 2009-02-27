@@ -291,7 +291,7 @@ for iscan = 1:length(params.scanList)
     d.mean(d.mean==0) = nan;
 
     disppercent(-inf, '(concatTSeries) Converting to percent signal change');
-    for i = 1:d.dim
+    for i = 1:d.dim(4)
       d.data(:,:,:,i) = (d.data(:,:,:,i)./d.mean);
       if params.percentSignal == 2           % scale it to mean of 1,000
           params.scaleFactor = 10000;
