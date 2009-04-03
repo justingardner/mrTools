@@ -59,14 +59,31 @@ else
     M=Minitial;
 end
 
+% R = squeeze(M(1:3,1:3));
+% theta = 2 * acosd(0.5 * sqrt(trace(R)+1));
+% disp(sprintf('Theta in initial matrix: %f', theta))
+
 for iter=1:numIters
   Mhalf2=real(sqrtm(M));
   Mhalf1=real(sqrtm(inv(M)));
   volWarp1=warpAffine3(vol1,Mhalf1);
-  volWarp2=warpAffine3(vol2,Mhalf2);
+  volWarp2=warpAffine3(vol2,Mhalf2, 0, 0, 'linear', size(vol1));
   deltaM=estMotion3(volWarp1,volWarp2,rotFlag,robustFlag,phaseFlag,crop,CB,SC);
   M=deltaM*M;
 end
+
+% for iter = 1:numIters
+%   volWarp2 = warpAffine3(vol2,M, 0, 0, 'linear', size(vol1));
+%   deltaM = estMotion3(vol1,volWarp2,rotFlag,robustFlag,phaseFlag,crop,CB,SC);
+%   M = M*deltaM;
+% end
+
+% R = squeeze(M(1:3,1:3));
+% theta = 2 * acosd(0.5 * sqrt(trace(R)+1));
+% disp(sprintf('Theta in final matrix: %f', theta))
+
+
+
 
 return;
 
