@@ -192,7 +192,7 @@ end
 
 % straighten image if called for
 if ~strcmp(params.straighten,'None')
-
+gTalairach.vol2view = eye(4);
   % calculate the center of the volume xform
   centerOffset = [1 0 0 -gTalairach.dim(1)/2;...
 		  0 1 0 -gTalairach.dim(2)/2;...
