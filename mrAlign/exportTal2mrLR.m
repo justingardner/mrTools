@@ -10,7 +10,7 @@
 % as of 2008Jan25, it doesn't do anything
 % it still needs to export to scan, roi, and base
 
-function retval = exportTal2mrLR(vol2tal, vol2mag, talinfo)
+function retval = exportTal2mrLR(vol2tal, vol2mag, talInfo)
 
 % check arguments
 if ~(nargin == 3)
@@ -162,7 +162,7 @@ if(talParams.EPIs_)
           % finally, make the changes!
           v = viewSet(v,'scanvol2tal',vol2tal,iScan,iGroup); % set the fields
           v = viewSet(v,'scanvol2mag',vol2mag,iScan,iGroup);
-          v = viewSet(v,'scanTalInfo',talinfo,iScan,iGroup)' %******* I think I need to write this! ********
+          v = viewSet(v,'scanTalInfo',talInfo,iScan,iGroup)' %******* I think I need to write this! ********
           
         end % checking if need to skip the scan
         clear skipScan curScanVol2Tal curScanVol2Mag sform_code
@@ -308,7 +308,7 @@ if(talParams.Bases_)
         end % checking for a vol2mag mismatch
       end % checking for problems that mean we should skip the base
       
-      if ~skipBase % if we don't need to skip the base, do some more checks and add the talInfo
+      if ~skipBase % if we don't need to skip the base, do some more checks and add the talInfo  
         
         % update user on what (if anything)  is changing:
         % first check if there already is a vol2tal
