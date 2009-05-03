@@ -1288,8 +1288,8 @@ global ALIGN
 % Initialize the 8 points used for defining the tal Transform if possible
 % then run the talairach program to allow user to define the 8 points
 
-if ~isempty(ALIGN.volBase.talinfo) %load talInfo if it exists
-  talInfo = ALIGN.volBase.talinfo;
+if ~isempty(ALIGN.volBase.talInfo) %load talInfo if it exists
+  talInfo = ALIGN.volBase.talInfo;
   talInfo = talairach(talInfo);
 elseif ~isempty(ALIGN.volBase.vol2tal) 
   % if talInfo doesn't exist, but there's a talXform defined, can use that
@@ -1322,7 +1322,7 @@ if ~isempty(talInfo)
   points(4, :) = ones(1,size(points,2));
   talTransform = talPoints*pinv(points);
   ALIGN.volBase.vol2tal = talTransform;
-  ALIGN.volBase.talinfo = talInfo;
+  ALIGN.volBase.talInfo = talInfo;
   
   % save the matFile for the base, to save vol2tal and talInfo
   base = ALIGN.volBase;
@@ -1350,7 +1350,7 @@ function exportTal2Session_Callback(hObject, eventdata, handles)
 global ALIGN
 
 
-talInfo = ALIGN.volBase.talinfo;
+talInfo = ALIGN.volBase.talInfo;
 vol2tal = ALIGN.volBase.vol2tal;
 vol2mag = ALIGN.volBase.vol2mag;
 
