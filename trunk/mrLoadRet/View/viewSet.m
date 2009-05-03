@@ -823,6 +823,14 @@ switch lower(param)
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).vol2tal = val;
     end
+  case {'basetalinfo'}
+    % view = viewSet(view,'basetalinfo',talinfo,[baseNum]);
+    % This specifies the information necessary to define the talairach transformation
+    % in terms of set points (AC, PC, AAC, etc)
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).talInfo = val;
+    end
   case {'basexform'}
     % view = viewSet(view,'baseXform',sform,[baseNum]);
     % set the base sform to the passed in value and
