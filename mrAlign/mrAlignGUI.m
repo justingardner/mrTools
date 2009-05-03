@@ -47,7 +47,7 @@ set(handles.flipButton,'Value',0);
 set(handles.overlayButton,'Value',1);
 set(handles.transparencySlider,'Value',1);
 set(handles.setTalXform,'Enable','off');
-set(handles.exportTalXform,'Enable','off');
+set(handles.exportTal2Session,'Enable','off');
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 refreshAlignDisplay(handles);
@@ -297,13 +297,13 @@ if ~(exist(matFilename,'file')==2) % if base doesn't already have an associated 
               ' need to fix the base structure in mrLoadRet.']);
     ALIGN.volBase.vol2tal = hdr.sform44;
     ALIGN.volBase.vol2mag = hdr.qform44;
-    set(handles.exportTalXform,'Enable','on');% allow user to export the vol2tal without redefining
+    set(handles.exportTal2Session,'Enable','on');% allow user to export the vol2tal without redefining
   end % if not, will autmatically set vol2tal = []  
 else % if there already is a base file
   load(matFilename); % then load it
   ALIGN.volBase = base; clear base;
   % if there is already a vol2tal, allow user to export it without redefining it
-  if ~isempty(ALIGN.volBase.vol2tal), set(handles.exportTalXform,'Enable','on'); end 
+  if ~isempty(ALIGN.volBase.vol2tal), set(handles.exportTal2Session,'Enable','on'); end 
 end
 [tf ALIGN.volBase] = isbase(ALIGN.volBase); % make sure it has all the right fields;
 
@@ -1272,9 +1272,87 @@ function talMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function setTalXform_Callback(hObject, eventdata, handles)
+global ALIGN
+% define the cannonical talairach coordinates
+  tAC = [0 0 0]';
+  tPC = [0 -24 0]';
+  tSAC = [0 0 72]';
+  tIAC = [0 0 -42]';
+  tPPC = [0 -102 0]';
+  tAAC = [0 68 0]';
+  tLAC = [-62 0 0]';
+  tRAC = [62 0 0]';
+  talPoints = [tAC tPC tSAC tIAC tPPC tAAC tLAC tRAC];
+  talPoints(4, :) = ones(1,size(talPoints,2));
+    
+% Initialize the 8 points used for defining the tal Transform if possible
+% then run the talairach program to allow user to define the 8 points
 
+if ~isempty(ALIGN.volBase.talinfo) %load talInfo if it exists
+  talInfo = ALIGN.volBase.talinfo;
+  talInfo = talairach(talInfo);
+elseif ~isempty(ALIGN.volBase.vol2tal) 
+  % if talInfo doesn't exist, but there's a talXform defined, can use that
+  % to initialize the 8 defining points (could happen if had defined a talXform
+  % in another program or before the talInfo field was instituted)
+  % convert vol2tal into 8 chosen points by reversing, using the pre-defined
+  % talairach values of the defined points:
+  points = pinv(ALIGN.volBase.vol2tal)*talPoints;  
+  talInfo.AC  = points(1:3,1);
+  talInfo.PC  = points(1:3,2);
+  talInfo.SAC = points(1:3,3);  
+  talInfo.IAC = points(1:3,4);  
+  talInfo.PPC = points(1:3,5); 
+  talInfo.AAC = points(1:3,6);
+  talInfo.LAC = points(1:3,7);  
+  talInfo.RAC = points(1:3,8);  
+  clear points;
   
-% once the vol2tal Xform has been defined, allow subjects to export it
-  set(handles.exportTalXform,'Enable','on');
+  talInfo.filename =  ALIGN.volBase.name;
+  talInfo.vol2view = eye(4);
+  talInfo = talairach(talInfo);
+else % if can't initialize, start from scratch
+  talInfo = talairach(ALIGN.volBase.name);
+end
+
+%if user hits ok, convert to a vol2tal, and save
+if ~isempty(talInfo)
+  points = [talInfo.AC talInfo.PC talInfo.SAC talInfo.IAC ...
+            talInfo.PPC talInfo.AAC talInfo.LAC talInfo.RAC];
+  points(4, :) = ones(1,size(points,2));
+  talTransform = talPoints*pinv(points);
+  ALIGN.volBase.vol2tal = talTransform;
+  ALIGN.volBase.talinfo = talInfo;
+  
+  % save the matFile for the base, to save vol2tal and talInfo
+  base = ALIGN.volBase;
+  matFilename = sprintf('%s.mat',stripext(base.name));
+  base.data = [];base.hdr = []; 
+  eval(sprintf('save %s base',matFilename));
+  clear base 
+  
+  % once the vol2tal Xform has been defined, allow subjects to export it
+  set(handles.exportTal2Session,'Enable','on');
+end
+
+% We've decided to keep everything in the base structure
+% and not to change the NIFTI headers, e.g., not re-set
+% sform_code to 3, and not change s-form to the TalXform.
+% Rather, leave sform_code as 1, leave sform as alignment,
+% and save talXform to the base structure.
+
 % --------------------------------------------------------------------
-function exportTalXform_Callback(hObject, eventdata, handles)
+function exportTal2Session_Callback(hObject, eventdata, handles)
+% hObject    handle to ExportTal2Session (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+global ALIGN
+
+
+talInfo = ALIGN.volBase.talinfo;
+vol2tal = ALIGN.volBase.vol2tal;
+vol2mag = ALIGN.volBase.vol2mag;
+
+exportTal2mrLR(vol2tal, vol2mag, talInfo);  
+  
