@@ -345,7 +345,7 @@ end
 % Warning if no (sform) base coordinate frame in the header.
 % sform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.sform_code)
-    mrWarnDlg('(mrAlignGUI) No base coordinate frame in the volume header. If this is a canonical base volume, you should Set Base Coordinate Frame from the File menu.');
+    mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the volume header. Usually this is because the volume is straight off the magnet and has never had its base coordinate frame set. If this is a canonical base volume which you wish to align inplanes to, you should Set Base Coordinate Frame from the File menu.');
 end
 
 % Extract permutation matrix to keep track of slice orientation
@@ -485,7 +485,7 @@ end
 % Warning if no (sform) base coordinate frame in the header.
 % sform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.sform_code)
-    mrWarnDlg('No base coordinate frame in the inplane header.');
+    mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the inplane header. Usually this is because this inplane has not yet been aligned. Initializing transformation to identity.');
 end
 
 % Update ALIGN structure
