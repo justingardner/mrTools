@@ -110,6 +110,9 @@ if ~isempty(base.coordMap) && any(base.type==[1 2]);
   if ~tf,disp(sprintf('(isbase) Invalid baseCoordMap'));end
 end
 
+% make sure that name does not include full path
+base.name = getLastDir(base.name);
+
 %%%%%%%%%%%%%%%%%%%%%
 %%   defaultClip   %%
 %%%%%%%%%%%%%%%%%%%%%
