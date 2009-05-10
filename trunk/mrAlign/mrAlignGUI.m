@@ -1284,7 +1284,7 @@ global ALIGN
   tRAC = [62 0 0]';
   talPoints = [tAC tPC tSAC tIAC tPPC tAAC tLAC tRAC];
   talPoints(4, :) = ones(1,size(talPoints,2));
-    
+
 % Initialize the 8 points used for defining the tal Transform if possible
 % then run the talairach program to allow user to define the 8 points
 
@@ -1308,25 +1308,24 @@ elseif ~isempty(ALIGN.volBase.vol2tal)
   talInfo.RAC = points(1:3,8);  
   clear points;
   
-  talInfo.filename =  ALIGN.volBase.name;
+  talInfo.filename =  ALIGN.volumePath;
   talInfo.vol2view = eye(4);
   talInfo = talairach(talInfo);
 else % if can't initialize, start from scratch
-  talInfo = talairach(ALIGN.volBase.name);
+  talInfo = talairach(ALIGN.volumePath);
 end
 
 %if user hits ok, convert to a vol2tal, and save
 if ~isempty(talInfo)
-  points = [talInfo.AC talInfo.PC talInfo.SAC talInfo.IAC ...
-            talInfo.PPC talInfo.AAC talInfo.LAC talInfo.RAC];
+  points = [talInfo.AC;talInfo.PC;talInfo.SAC;talInfo.IAC;talInfo.PPC;talInfo.AAC;talInfo.LAC;talInfo.RAC]';
   points(4, :) = ones(1,size(points,2));
   talTransform = talPoints*pinv(points);
   ALIGN.volBase.vol2tal = talTransform;
   ALIGN.volBase.talInfo = talInfo;
   
   % save the matFile for the base, to save vol2tal and talInfo
-  base = ALIGN.volBase;
-  matFilename = sprintf('%s.mat',stripext(base.name));
+  [tf base] = isbase(ALIGN.volBase);
+  matFilename = sprintf('%s.mat',stripext(ALIGN.volumePath));
   base.data = [];base.hdr = []; 
   eval(sprintf('save %s base',matFilename));
   clear base 
@@ -1348,7 +1347,6 @@ function exportTal2Session_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 global ALIGN
-
 
 talInfo = ALIGN.volBase.talInfo;
 vol2tal = ALIGN.volBase.vol2tal;
