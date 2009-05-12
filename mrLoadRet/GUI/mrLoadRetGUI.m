@@ -2313,20 +2313,30 @@ v = MLR.views{viewNum};
 % is stored in the baseCoordMap
 params = viewGet(v,'baseCoordMap');
 flatPath = viewGet(v,'baseCoordMapPath');
+
+% get what type of base this is (e.g. surface or flat)
+baseType = viewGet(v,'baseType');
+if baseType == 1
+  % get the filename
+  filename = params.flatFileName;
+else
+  % get the filename
+  filename = params.outerSurfaceFileName;
+end
+
 % switch directories to the flatDir, asking
 % the user to find it if it does not exist
 thispwd = pwd;
-if isdir(flatPath)
+if isdir(flatPath) && isfile(fullfile(flatPath,filename))
   cd(flatPath);
 else
-  mrWarnDlg(sprintf('Directory %s does not exist, please find the anatomy folder',flatPath));
+  mrWarnDlg(sprintf('(mrLoadRetGUI) File %s does not exist, please find the anatomy folder for this surface/flat',fullfile(flatPath,filename)));
   pathStr = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy folder from which this flat was created');
   if pathStr == 0,return,end
   cd(pathStr);
   viewSet(v,'baseCoordMapPath',pathStr);
 end
 
-baseType = viewGet(v,'baseType');
 if baseType == 1
   % now bring up the flat viewer
   mrFlatViewer(params.flatFileName,params.outerCoordsFileName,params.innerCoordsFileName,params.curvFileName,params.anatFileName,viewNum);

@@ -95,7 +95,11 @@ disppercent(-inf,'(mrSurfViewer) Loading surfaces');
 % load the surface
 gSurfViewer.outerSurface = loadSurfOFF(sprintf('%s.off',stripext(outerSurface{1})));
 if isempty(gSurfViewer.outerSurface)
-  disp(sprintf('(mrSurfViewer) %s is not a surface file',outerSurface{1}));
+  if isfile(gSurfViewer.outerSurface)
+    mrWarnDlg(sprintf('(mrSurfViewer) %s is not a surface file',outerSurface{1}));
+  else
+    mrWarnDlg(sprintf('(mrSurfViewer) Could not find %s',outerSurface{1}));
+  end
   return
 end
 
