@@ -44,7 +44,7 @@ if ~isempty(baseCoordMap)
     % look for fields that are filenames or directories.
     % these are the ones we allow editing on
     if isstr(baseCoordMap.(baseCoordMapFields{fieldNum}))
-      if ~isempty(strfind(baseCoordMapFields{fieldNum},'FileName')) || ~isempty(strfind(baseCoordMapFields{fieldNum},'Dir'))
+      if ~isempty(strfind(baseCoordMapFields{fieldNum},'FileName')) || ~isempty(strfind(baseCoordMapFields{fieldNum},'Dir')) || ~isempty(strfind(baseCoordMapFields{fieldNum},'path'))
 	editableBaseCoordMapFields{end+1} = baseCoordMapFields{fieldNum};
 	paramsInfo{end+1} = {baseCoordMapFields{fieldNum},baseCoordMap.(baseCoordMapFields{fieldNum}),sprintf('Name of %s from which this surface/flat was generated')};
       end
