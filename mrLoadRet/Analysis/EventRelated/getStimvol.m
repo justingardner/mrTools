@@ -19,7 +19,8 @@
 %             and optional arguments (impulse and supersampling for using eventtimes);
 %
 %             can also be used to get stimvol and stimNames directly w/out the
-%             use of a d structure:
+%             use of a d structure. Make sure to set the views curGroup and curScan
+%             to the groupNum/scanNum that you want to get stimvols for.
 %
 %             v = newView;
 %             v = viewSet(v,'curGroup',3);
