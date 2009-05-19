@@ -47,9 +47,13 @@ paramsInfo = {...
 % get the parameters from the user
 params = mrParamsDialog(paramsInfo,'mlrImportFreeSurfer',1.5);
 
-% return if use rr hit cancel
+% return if user hit cancel
 if isempty(params)
   return
+end
+
+if ~isdir(outDir)
+  mkdir(outDir);
 end
 
 % import the white and gray matter surface, as well as the inflated surface and curvature
