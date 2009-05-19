@@ -282,7 +282,7 @@ stimFileMatch = {};
 % for now, just match in order
 for i = 1:min(length(stimFileNames),length(totalFrames))
   if (stimFileVols > 0)
-    stimFileMatch{end+1} = putOnTopOfList(stimFileNames{i},cellcat(stimFileNames,{'None'}));
+    stimFileMatch{end+1} = putOnTopOfList(stimFileNames{i},{stimFileNames{:},'None'});
   end
 end
 
