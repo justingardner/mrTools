@@ -819,6 +819,7 @@ global ALIGN
 sform_code = ALIGN.volumeHdr.sform_code;
 
 if sform_code == 3 % just set the vol2tal and vol2mag fields
+  disp(sprintf('(mrAlignGUI) Talairach volume (sform_code=3). Setting vol2tal and vol2mag fields'));
   ALIGN.volBase.vol2tal = ALIGN.volumeHdr.sform44;
   ALIGN.volBase.vol2mag = ALIGN.volumeHdr.qform44;
 else % if sform_code is 0 or 1, set sform = qform and get vol2mag.
@@ -826,12 +827,14 @@ else % if sform_code is 0 or 1, set sform = qform and get vol2mag.
   ALIGN.volumeHdr = cbiSetNiftiSform(ALIGN.volumeHdr,sform);
   hdr = cbiWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
   ALIGN.volBase.vol2mag = sform; % set the vol2mag field
+  disp(sprintf('(mrAlignGUI) Setting sform_code=1 and sform equal to qform and saving in nifti header'));
 end
   
 %also save the matFile for the base, to save vol2mag and vol2tal
 base = ALIGN.volBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
 base.data = [];base.hdr = [];
+disp(sprintf('(mrAlignGUI) Saving %s file',matFilename));
 eval(sprintf('save %s base',matFilename));
 clear base % so don't get confused with the inplane base
 
