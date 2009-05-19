@@ -1354,3 +1354,127 @@ vol2mag = ALIGN.volBase.vol2mag;
 
 exportTal2mrLR(vol2tal, vol2mag, talInfo);  
   
+
+
+% --- Executes on button press in Rot1L.
+function Rot1L_Callback(hObject, eventdata, handles)
+% hObject    handle to Rot1L (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementRot(handles,1,-1);
+
+% --- Executes on button press in Rot1R.
+function Rot1R_Callback(hObject, eventdata, handles)
+% hObject    handle to Rot1R (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementRot(handles,1,1);
+
+% --- Executes on button press in Rot2L.
+function Rot2L_Callback(hObject, eventdata, handles)
+% hObject    handle to Rot2L (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementRot(handles,2,-1);
+
+% --- Executes on button press in pushbutton5.
+function pushbutton5_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementRot(handles,2,1);
+
+% --- Executes on button press in Rot3L.
+function Rot3L_Callback(hObject, eventdata, handles)
+% hObject    handle to Rot3L (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementRot(handles,3,-1);
+
+% --- Executes on button press in Rot3R.
+function Rot3R_Callback(hObject, eventdata, handles)
+% hObject    handle to Rot3R (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementRot(handles,3,1);
+
+% --- Executes on button press in Trans1L.
+function Trans1L_Callback(hObject, eventdata, handles)
+% hObject    handle to Trans1L (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementTrans(handles,1,-1);
+
+% --- Executes on button press in Trans1R.
+function Trans1R_Callback(hObject, eventdata, handles)
+% hObject    handle to Trans1R (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementTrans(handles,1,1);
+
+% --- Executes on button press in Trans2L.
+function Trans2L_Callback(hObject, eventdata, handles)
+% hObject    handle to Trans2L (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementTrans(handles,2,-1);
+
+% --- Executes on button press in Trans2R.
+function Trans2R_Callback(hObject, eventdata, handles)
+% hObject    handle to Trans2R (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementTrans(handles,2,1);
+
+% --- Executes on button press in Trans3L.
+function Trans3L_Callback(hObject, eventdata, handles)
+% hObject    handle to Trans3L (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementTrans(handles,3,-1);
+
+% --- Executes on button press in Trans3R.
+function Trans3R_Callback(hObject, eventdata, handles)
+% hObject    handle to Trans3R (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+incrementTrans(handles,3,1);
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%   incrementTrans   %%
+%%%%%%%%%%%%%%%%%%%%%%%%
+function incrementTrans(handles,axisnum,incdec)
+
+global ALIGN
+[trans rot] = getAlignGUI(handles);
+% shift makes for a smaller increment
+fignum = handles.figure1;
+if ~isempty(fignum) && any(strcmp(get(fignum,'CurrentModifier'),'shift'))
+  inc = 0.1;
+else
+  inc = 1;
+end
+trans(axisnum) = trans(axisnum)+incdec*inc;
+setAlignGUI(handles,'trans',trans);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%   incrementRot   %%
+%%%%%%%%%%%%%%%%%%%%%%
+function incrementRot(handles,axisnum,incdec)
+
+global ALIGN
+[trans rot] = getAlignGUI(handles);
+% shift makes for a smaller increment
+fignum = handles.figure1;
+if ~isempty(fignum) && any(strcmp(get(fignum,'CurrentModifier'),'shift'))
+  inc = 0.1;
+else
+  inc = 1;
+end
+rot(axisnum) = rot(axisnum)+incdec*inc;
+setAlignGUI(handles,'rot',rot);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
