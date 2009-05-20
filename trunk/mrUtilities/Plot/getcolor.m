@@ -7,6 +7,7 @@
 %             number, optionally concatenate plot symbol
 %       e.g.: getcolor(1)
 %             getcolor(1,'o')
+%
 function retval = getcolor(colornum,symbol)
 
 if ((nargin ~= 1) && (nargin ~= 2))
