@@ -16,12 +16,8 @@
 %             d must have the field stimfile, tr, dim
 %             optionally concatInfo, junkFrames, impulse, supersampling, 
 % 
+
 %             and optional arguments (impulse and supersampling for using eventtimes);
-%
-%             can also be used to get stimvol and stimNames directly w/out the
-%             use of a d structure. Make sure to set the views curGroup and curScan
-%             to the groupNum/scanNum that you want to get stimvols for.
-%
 %             v = newView;
 %             v = viewSet(v,'curGroup',3);
 %             v = viewSet(v,'curScan',1);
@@ -40,7 +36,7 @@ end
 % evaluate other arguments
 taskNum=[];phaseNum=[];segmentNum=[];stimfile=[];tr=[];nFrames=[];concatInfo=[];
 junkFrames=[];impulse=[];supersampling=[];
-getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[],'verbose',true});
+getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[]});
 
 if ~exist('stimVariable','var'),stimVariable = ''; end
 
@@ -85,7 +81,6 @@ end
 if ~ieNotDefined('taskNum'),var.taskNum = taskNum;end
 if ~ieNotDefined('phaseNum'),var.phaseNum = phaseNum;end
 if ~ieNotDefined('segmentNum'),var.segmentNum = segmentNum;end
-if ~isfield(var,'verbose') var.verbose = verbose;end
 
 % keep the varname that this was called with
 d.varname = var;
@@ -143,6 +138,19 @@ for i = 1:length(d.stimfile)
     end
    case 'stimvol',
     stimvol = d.stimfile{i}.stimvol;
+    % validate the stimvols (i.e. they need to be 1xn)
+    for i = 1:length(stimvol)
+      arraysize = size(stimvol{i});
+      if arraysize(1)>1
+	if arraysize(2)==1
+	  disp(sprintf('(getStimvol) Stimvol{%i} converted from %ix1 to 1x%i array',i,arraysize(1),arraysize(1)));
+	  stimvol{i} = stimvol{i}';
+	else
+	  mrErrorDlg(sprintf('(getStimvol) Stimvol{%i} is %ix%i must be 1xn',arraysize(1),arraysize(2),i));
+	end
+      end
+    end
+    % check for stimnames
     if isfield(d.stimfile{i}, 'stimNames')
       d.stimNames = d.stimfile{i}.stimNames;
     end
