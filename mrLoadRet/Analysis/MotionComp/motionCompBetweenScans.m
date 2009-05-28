@@ -1,6 +1,6 @@
-function view = motionCompBetweenScans(view,params)
+function [view params] = motionCompBetweenScans(view,params,varargin)
 %
-% view = motionCompBetweenScans(view,[params])
+% view = motionCompBetweenScans(view,[params],[justGetParams])
 %
 % Robust 3D rigid body motion compensation between different scans.
 % Computes the mean over time of each scan, and then computes the
@@ -9,30 +9,14 @@ function view = motionCompBetweenScans(view,params)
 % file, overwriting the sform of the nifti header.
 %
 % params: Optional initial parameters (default: user is prompted via
-%    motionCompGUI). Params must be a structure with all of the
-%    following fields.
-% baseScan: targetScans are registered to the baseScan
-%    Default scan 1.
-% targetScans: which scans to apply motion compensation (normally including the
-%    baseScan).
-%    Default all scans
-% robust: use robust M-estimator for motion estimates.
-%    Default 0.
-% correctIntensityContrast: intensity and contrast normalization before
-%    registration.
-%    Default 0.
-% crop specifies border size to crop/ignore around all sides of the volume.
-%    Should be of the form [ymin xmin zmin; ymax xmax zmax]
-%    Default [].
-% niters: number of iterations in the motion estimation.
-%    Default 3.
-% tseriesfiles: cell array of strings the same length as targetScans,
-%    specifying the tseries filenames. Or 'any' to allow any match with the
-%    tseries files.
+%    motionCompGUI). Params must be a structure.  See motionComp.m for
+%    details.
+% 
+% justGetParams: option to return param structure without running the
+%    motion compensation (see motionComp.m for details and examples).
 %
 % If you change this function make parallel changes in:
 %    motionComp, motionCompWithinScan
-%
 %
 % Also saves an auxillary file (tseriesfileName.mat) that can be used to
 % recompute as follows:
@@ -51,21 +35,30 @@ function view = motionCompBetweenScans(view,params)
 %
 % DJH 7/2006, updated to MLR4
 % jlg 11/2006, save originalFilename and GroupName in scanParams
+%
+% $Id$	
+%
 
-% Get analysis parameters from motionCompGUI.
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('scanList'),scanList = [];end
+
 nScans = viewGet(view,'nScans');
 if (nScans == 0)
     mrWarnDlg('(motionCompBetweenScans) No scans in group');
     return
 end
 
+% Get analysis parameters from motionCompGUI.
 if ieNotDefined('params')
-	% Initialize analysis parameters with default values
-	params = motionCompGUI('groupName',viewGet(view,'groupName'));
+  % Initialize analysis parameters with default values
+  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'),'defaultParams',defaultParams,'scanList',scanList);
 else
-    % Reconcile params with current status of group and ensure that it has
-    % the required fields. 
-    params = motionCompReconcileParams(params.groupName,params);
+  % Reconcile params with current status of group and ensure that it has
+  % the required fields.
+  params = motionCompReconcileParams(params.groupName,params);
 end
 
 % Abort if params empty
@@ -74,21 +67,25 @@ if ieNotDefined('params')
     return
 end
 
+% if just getting params then return
+if justGetParams,return,end
+
 % Retrieve parameters
 baseScan = params.baseScan;
+baseFrame = params.baseFrame;
 targetScans = params.targetScans;
+sliceTimeCorrection = params.sliceTimeCorrection;
+sliceTimeString = params.sliceTimeString;
 robust = params.robust;
-correctIntensityContrast = params.correctIntensityContrast;
-crop = params.crop;
 niters = params.niters;
+interpMethod = params.interpMethod;
 groupName = params.groupName;
 motionCompGroupName = params.motionCompGroupName;
 descriptions  = params.descriptions;
 tseriesfiles = params.tseriesfiles;
-interpMethod = params.interpMethod;
 
 % Open new view with the base group
-viewBase = newView(viewGet(view,'viewType'));
+viewBase = newView;
 groupNum = viewGet(viewBase,'groupNum',groupName);
 if (groupNum == 0)
     mrErrorDlg('motionComp: ',groupName,' does not exist.');
@@ -100,16 +97,16 @@ viewBase = viewSet(viewBase,'currentGroup',groupNum);
 % end).
 baseDataSize = viewGet(viewBase,'datasize',baseScan);
 if baseDataSize(3) < 8
-	mrErrorDlg('Motion compensation requires at least 8 slices');
+  mrErrorDlg('Motion compensation requires at least 8 slices');
 end
 
 % Ignore scans if data size is different from that for base scan.
 for scanNum = targetScans
-	datasize = viewGet(viewBase,'datasize',scanNum);
-	if (datasize ~= baseDataSize)
-		mrWarnDlg(['Ignoring scan ',num2str(scanNum),'. Motion compensation requires at least 8 slices']);
-		targetScans = targetScans(find(targetScans ~= scanNum));
-	end
+  datasize = viewGet(viewBase,'datasize',scanNum);
+  if (datasize ~= baseDataSize)
+    mrWarnDlg(['Ignoring scan ',num2str(scanNum),'. Motion compensation requires at least 8 slices']);
+    targetScans = targetScans(find(targetScans ~= scanNum));
+  end
 end
 
 % Open new view and set its group to the motion comp group name. Create the
@@ -117,8 +114,8 @@ end
 viewMotionComp = newView(viewGet(view,'viewType'));
 motionCompGroupNum = viewGet(viewMotionComp,'groupNum',motionCompGroupName);
 if isempty(motionCompGroupNum)
-	view = viewSet(view,'newgroup',motionCompGroupName);
-	motionCompGroupNum = viewGet(viewMotionComp,'groupNum',motionCompGroupName);
+  view = viewSet(view,'newgroup',motionCompGroupName);
+  motionCompGroupNum = viewGet(viewMotionComp,'groupNum',motionCompGroupName);
 end
 viewMotionComp = viewSet(viewMotionComp,'currentGroup',motionCompGroupNum);
 
@@ -136,49 +133,60 @@ junkFrames = viewGet(viewBase,'junkframes',baseScan);
 nFrames = viewGet(viewBase,'nFrames',baseScan);
 % Compute mean of base scan
 baseMean = nanmean(tseries(:,:,:,junkFrames+1:junkFrames+nFrames),4);
-% Intensity and contrast correction
-if correctIntensityContrast
-	baseMean = intensityContrastCorrection(baseMean,crop);
-end
-	
+
+% Preprocess (drift correction, intensit gradient correction, temporal smoothing)
+% also correct crop, get slice times, and extract base volume.
+[baseMean,crop] = motionCompPreprocessing(baseMean,params,0,1,1);
+
 % Loop through target scans, compute motion estimate transform, warp
 % according to the transform, and save new tseries.
 for s = 1:length(targetScans)
   scanNum = targetScans(s);
-	
+  
   % Update wait bar
   mrWaitBar(s/length(targetScans),waitHandle);
-    
+  
   % Load tseries 
   tseries = loadTSeries(viewBase,scanNum,'all');
-	
+  
+  % Load the transform that brings the scan into rough alignment with
+  % the base
+  scan2scan = viewGet(viewBase, 'scan2scan', baseScan, groupNum, scanNum, groupNum);
+  swapXY = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+  Minitial = swapXY*scan2scan*swapXY;
+  
   if (scanNum == baseScan)
     % Do not bother computing registration for baseScan (just copy it)
     transform = eye(4);
+    warpedTseries = tseries;
   else
-    % Compute mean of target scan after dumping junk frames
     junkFrames = viewGet(viewBase,'junkframes',scanNum);
     nFrames = viewGet(viewBase,'nFrames',scanNum);
-    tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
-    targetMean = nanmean(tseries,4);
-    % Intensity and contrast correction
-    if correctIntensityContrast
-      targetMean = intensityContrastCorrection(targetMean,crop);
-    end
+    totalFrames = viewGet(viewBase,'totalFrames',scanNum);
+
+    % Initialize the warped time series to zeros. Need to re-initialize this
+    % for each scan because number of frames can differ. 
+    warpedTseries = zeros(size(tseries));
+    
+    % Compute mean of target scan after dumping junk frames
+    targetMean = nanmean(tseries(:,:,:,junkFrames+1:junkFrames+nFrames),4);
+    % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
+    % also correct crop, get slice times, and extract base volume.
+    targetMean = motionCompPreprocessing(targetMean,params,0,1,1);
+
     % Estimate motion between mean volumes
-    disp(['Computing motion estimates for scan ',num2str(scanNum),'...'])
-    transform = estMotionIter3(baseMean,targetMean,niters,eye(4),1,robust,0,crop);
-    disp(['Computing motion estimates for scan ',num2str(scanNum),'... done'])
+    disp(sprintf('Computing motion estimates for scan %i ...',scanNum))
+    %transform = estMotionIter3(baseMean,targetMean,niters,eye(4),1,robust,0,crop);
+    transform = estMotionIter3(baseMean,targetMean,niters,Minitial,1,robust,0,crop);
+    disp(sprintf('Computing motion estimates for scan %i ...done',scanNum))
     
     % jg: warp/transform each frame of the time series, rather than saving
     % the transformation in the sform
-    if ~isequal(transform,eye(4))
-      disp(['Warping images for scan ',num2str(scanNum)])
-      for frame = 1:nFrames
-	tseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),transform,NaN,0,interpMethod);
-      end
-      disp(['Warping images for scan ',num2str(scanNum),'... done'])
+    disp(['Warping images for scan ',num2str(scanNum)])
+    for frame = 1:totalFrames
+      warpedTseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),transform,NaN,0,interpMethod);
     end
+    disp(['Warping images for scan ',num2str(scanNum),'... done'])
   end
     
   % Save tseries with modified nifti header
@@ -187,14 +195,19 @@ for s = 1:length(targetScans)
   scanParams.junkFrames = 0;
   scanParams.nFrames = nFrames;
   scanParams.fileName = [];
-  %jg: removed the saving in the sform bit here, since we now
-  %compute the transformation, also reset the junk frames and
-  %nFrames fields so now we have new data
-  %sform = baseSform * inv(transform);
-  %scanParams.niftiHdr = cbiSetNiftiSform(scanParams.niftiHdr,sform);
+
+  % get the base scan's qform and sform -- the warpedTSeries will inheret these
+  baseQform = viewGet(viewBase, 'scanqform', baseScan, groupName);
+  baseSform = viewGet(viewBase, 'scansform', baseScan, groupName);
+
+  % set the qform and sform to that of the baseScan
+  scanParams.niftiHdr = cbiSetNiftiQform(scanParams.niftiHdr, baseQform);
+  scanParams.niftiHdr = cbiSetNiftiSform(scanParams.niftiHdr, baseSform);
+
+  
   scanParams.originalFileName{1} = viewGet(viewBase,'tseriesfile',scanNum);
   scanParams.originalGroupName{1} = viewGet(viewBase,'groupName');
-  [viewMotionComp,tseriesFileName] = saveNewTSeries(viewMotionComp,tseries,scanParams,scanParams.niftiHdr);
+  [viewMotionComp,tseriesFileName] = saveNewTSeries(viewMotionComp,warpedTseries,scanParams,scanParams.niftiHdr);
   
   % Save evalstring for recomputing and params
   evalstr = ['view = newView(','''','Volume','''','); view = motionCompBetweenScans(view,params);'];
@@ -202,6 +215,9 @@ for s = 1:length(targetScans)
   tseriesdir = viewGet(viewMotionComp,'tseriesdir');
   save(fullfile(tseriesdir,filename),'evalstr','params','transform','tseriesFileName');
   
+  % clear temporary tseries
+  clear tseries  warpedTseries;
+
 end 
 % Close waitbar
 mrCloseDlg(waitHandle);
