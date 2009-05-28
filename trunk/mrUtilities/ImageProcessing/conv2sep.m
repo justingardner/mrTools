@@ -12,7 +12,7 @@ function result = conv2sep(im,rowfilt,colfilt,shape)
 %
 % DJH '96
 
-if ~exist('shape')
+if ~exist('shape', 'var')
   shape='full';
 end
 
