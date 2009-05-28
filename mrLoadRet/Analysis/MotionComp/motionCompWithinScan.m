@@ -1,71 +1,56 @@
-function view = motionCompWithinScan(view,params)
+function [view params] = motionCompWithinScan(view,params,varargin)
 %
-% view = motionCompWthinScan(view,[params])
+% view = motionCompWthinScan(view,[params],[justGetParams])
 %
-% Robust 3D rigid body motion compensation
+% Robust 3D rigid body motion compensation across frames within each
+%    scan.
 %
 % params: Optional initial parameters (default: user is prompted via
-%    motionCompGUI). Params must be a structure with all of the
-%    following fields.
-% targetScans: which scans to apply motion compensation.
-%    Default all scans.
-% baseFrame: string ('first', last', or 'mean') specifying frame in
-%    baseScan to which the rest of the baseScan is registered (ignoring
-%    junk frames).
-%    Default 'first'.
-% robustFlag: use robust M-estimator for motion estimates.
-%    Default 0.
-% correctIntensityContrast: intensity and contrast normalization before
-%    registration.
-%    Default 0.
-% crop specifies border size to crop/ignore around all sides of the volume.
-%    Should be of the form [ymin xmin zmin; ymax xmax zmax]
-%    Default [].
-% niters: number of iterations in the motion estimation.
-%    Default 3.
-% sliceTimeCorrection: Performs slice time correction if True.
-% sliceTimeString: Specifies slice time correction:
-%    'beginning of TR'
-%    'middle of TR'
-%    'end of TR' (default)
-% interpMethod: 'nearest', 'linear', 'cubic', or 'spline' as in interp3.
-% tseriesfiles: cell array of strings the same length as targetScans,
-%    specifying the tseries filenames. Or 'any' to allow any match with the
-%    tseries files.
+%    motionCompGUI). Params must be a structure.  See motionComp.m for
+%    details.
+% 
+% justGetParams: option to return param structure without running the
+%    motion compensation (see motionComp.m for details and examples).
 %
 % If you change this function make parallel changes in:
 %   MotionCompBetweenScans, motionComp
-%
 %
 % Also saves an auxillary file (tseriesfileName.mat) that can be used to
 % recompute as follows:
 % >> load FileName.mat
 % >> eval(evalstr)
 %
-%
 % Examples:
 %
-% params = motionCompGUI('groupName','Raw');
+% params = motionCompGUImrParams('groupName','Raw');
 % view = newView;
 % view = motionCompWithinScan(view,params);
 %
 % view = motionCompWithinScan(view);
 %
-%
 % DJH 7/2006, updated to MLR4
 % jlg 11/2006, save originalFilename and GroupName in scanParams,
 % clear time series on each iteration to avoid running out of memory
+%
+% $Id$	
+%
 
-% Get analysis parameters from motionCompGUI.
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('scanList'),scanList = [];end
+
 nScans = viewGet(view,'nScans');
 if (nScans == 0)
   mrWarnDlg('(motionCompWithinScans) No scans in group');
   return
 end
 
+% Get analysis parameters from motionCompGUImrParams.
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
-  params = motionCompGUI('groupName',viewGet(view,'groupName'));
+  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'),'defaultParams',defaultParams,'scanList',scanList);
 else
   % Reconcile params with current status of group and ensure that it has
   % the required fields.
@@ -78,14 +63,15 @@ if ieNotDefined('params')
   return
 end
 
+% if just getting params then return
+if justGetParams,return,end
+
 % Retrieve parameters
 baseFrame = params.baseFrame;
 targetScans = params.targetScans;
 sliceTimeCorrection = params.sliceTimeCorrection;
 sliceTimeString = params.sliceTimeString;
 robust = params.robust;
-correctIntensityContrast = params.correctIntensityContrast;
-crop = params.crop;
 niters = params.niters;
 interpMethod = params.interpMethod;
 groupName = params.groupName;
@@ -94,7 +80,7 @@ descriptions  = params.descriptions;
 tseriesfiles = params.tseriesfiles;
 
 % Open new view with the base group
-viewBase = newView(viewGet(view,'viewType'));
+viewBase = newView;
 groupNum = viewGet(viewBase,'groupNum',groupName);
 if (groupNum == 0)
   mrErrorDlg('motionComp: ',groupName,' does not exist.');
@@ -111,10 +97,13 @@ for scanNum = targetScans
     targetScans = targetScans(find(targetScans ~= scanNum));
   end
 end
+if length(targetScans) == 0
+  mrErrorDlg('(motionComWithinScan) No target scans with 8 or more slices');
+end
 
 % Open new view and set its group to the motion comp group name. Create the
 % group if necessary.
-viewMotionComp = newView(viewGet(view,'viewType'));
+viewMotionComp = newView;
 motionCompGroupNum = viewGet(viewMotionComp,'groupNum',motionCompGroupName);
 if isempty(motionCompGroupNum)
   view = viewSet(view,'newgroup',motionCompGroupName);
@@ -134,51 +123,13 @@ for s = 1:length(targetScans)
   totalFrames = viewGet(viewBase,'totalFrames',scanNum);
   
   % Initialize the warped time series to zeros.
+  % same size as orig tseries
   warpedTseries = zeros(size(tseries));
-  
-  % Get slice times and replicate the last frame of tseries for slice time
-  % correction
-  if sliceTimeCorrection
-    sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
-    tseries(:,:,:,end+1) = tseries(:,:,:,end);
-    switch sliceTimeString
-      case 'end of TR'
-        sliceTimes = sliceTimes;
-      case 'middle of TR'
-        sliceTimes = sliceTimes - 0.5;
-      case 'beginning of TR'
-        sliceTimes = sliceTimes - 1;
-      otherwise
-        mrErrorDlg('Invalid slice times');
-    end
-  else
-    sliceTimes = [];
-  end
-  
-  % Intensity/contrast correction
-  if correctIntensityContrast
-    tseriesIC = intensityContrastCorrection(tseries,crop);
-  else
-    tseriesIC = tseries;
-  end
-  
-  % Get volume corresponding to base frame.  Other frames will be motion
-  % compensated to this one.
-  switch baseFrame
-    case 'first'
-      baseF = junkFrames+1;
-      baseVol = tseriesIC(:,:,:,baseF);
-    case 'last'
-      baseF = size(tseriesIC,4);
-      baseVol = tseriesIC(:,:,:,baseF);
-    case 'mean'
-      baseF = 0;
-      tseriesCrop = tseriesIC(:,:,:,junkFrames+1:junkFrames+nFrames);
-      baseVol = nanmean(tseriesCrop,4);
-    otherwise
-      mrErrorDlg('Invalid base frame');
-  end
-  
+
+  % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
+  % also correct crop, get slice times, and extract base volume.
+  [tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames);
+
   % Loop: computing motion estimates and warping the volumes to
   % compensate for the motion in each temporal frame.
   waitHandle = mrWaitBar(0,['Computing motion compensation for scan ',num2str(scanNum),'.  Please wait...']);
@@ -197,13 +148,12 @@ for s = 1:length(targetScans)
       % Compute rigid-body motion estimate
       if sliceTimeCorrection
         if strcmp(baseFrame,'mean')
-          M = estMotionInterp3(baseVol,tseriesIC,1,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
+          M = estMotionInterp3(baseVol,tseriesTemp,1,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
         else
-          M = estMotionInterp3(tseriesIC,tseriesIC,baseF,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
+          M = estMotionInterp3(tseriesTemp,tseriesTemp,baseF,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
         end
       else
-        vol = tseriesIC(:,:,:,frame);
-        M = estMotionIter3(baseVol,vol,niters,Minitial,1,robust,0,crop);
+        M = estMotionIter3(baseVol,tseriesTemp(:,:,:,frame),niters,Minitial,1,robust,0,crop);
       end
     end
     % Collect the transform
@@ -232,7 +182,7 @@ for s = 1:length(targetScans)
   save(fullfile(tseriesdir,filename),'evalstr','params','transforms','tseriesFileName');
   
   % clear temporary tseries
-  clear tseries tseriesIC warpedTseries tseriesCrop;
+  clear tseries tseriesTemp warpedTseries;
 
 end
 
