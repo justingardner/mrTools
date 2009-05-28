@@ -73,30 +73,17 @@ else
   params = motionCompReconcileParams(groupName,params);
 end
 
-% the code below here is converted to work with mrParamsDialog
-% instead of initializing handles it initializes the paramsInfo.
-%
-% Initialize handles. Store the parameters in the GUI until user
-% clicks the ok or cancel buttons. Then return the params from
-% motionCompGUI_OutputFcn.
-paramsInfo = {};
-%paramsInfo{end+1} = {'groupName',params.groupName};
-%paramsInfo{end+1} = {'crop',params.crop};
-
 % Initialize include (targetScans)
 includeScans = cell(1,nScans);
 for i = 1:length(params.targetScans)
   includeScans{params.targetScans(i)} = 1;
 end
-paramsInfo{11} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'Scan selector. Use this to choose which scans to include'};
-paramsInfo{14} = {'include',includeScans,'type=checkbox','group=scanNum', 'Check this to include a particular scan, uncheck to skip'};
 
 % Initialize tseriesfiles
 tseriesfiles = cell(1,nScans);
 for scan = 1:nScans
   tseriesfiles{scan} = viewGet([],'tseriesFile',scan,groupNum);
 end
-paramsInfo{12} = {'tseriesfiles',tseriesfiles,'group=scanNum','type=String','editable=0','Filename of scan'};
 
 % Initialize descriptions
 descriptions = cell(1,nScans);
@@ -108,7 +95,6 @@ for scan = 1:nScans
     descriptions{scan} = ['Motion compensation of ',groupName,' scan ',num2str(scan)];
   end
 end
-paramsInfo{13} = {'descriptions',descriptions,'group=scanNum','type=String','editable=0','Scan description'};
 
 % Initialize group popup
 groupNames = {'New',groupNames{:}};
@@ -118,32 +104,32 @@ if isempty(motionCompGroupNum)
   groupNames{length(groupNames)+1} = motionCompGroupName;
   motionCompGroupNum = length(groupNames);
 end
-paramsInfo{1} = {'motionCompGroupName',putOnTopOfList(motionCompGroupName,groupNames),'Group name to put the motion compensated scans into'};
-
-% Initialize base scan popup
-paramsInfo{3} = {'baseScan',params.baseScan,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans), 'Specifies the scan that everything else will be aligned to'};
 
 % Initialize base frame popup
 baseFrameStrings = {'first','last','mean'};
-paramsInfo{4} = {'baseFrame',putOnTopOfList(params.baseFrame,baseFrameStrings), 'Specifies which frame (or mean) to align to.  First frame can be bad choice b/c of different T2 contrast'};
-
 % Initialize interp method popup
 interpMethodStrings = {'nearest','linear','cubic','spline'};
-paramsInfo{2} = {'interpMethod',putOnTopOfList(params.interpMethod,interpMethodStrings), 'Interpolation method used to warp the images'};
-
-% Initialize checkboxes
+% Initialize sliceTime strings
 sliceTimeStrings = {'beginning of TR','middle of TR','end of TR'};
+
+% set up params
+paramsInfo = {};
+paramsInfo{1} = {'motionCompGroupName',putOnTopOfList(motionCompGroupName,groupNames),'Group name to put the motion compensated scans into'};
+paramsInfo{2} = {'interpMethod',putOnTopOfList(params.interpMethod,interpMethodStrings), 'Interpolation method used to warp the images'};
+paramsInfo{3} = {'baseScan',params.baseScan,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans), 'Specifies the scan that everything else will be aligned to'};
+paramsInfo{4} = {'baseFrame',putOnTopOfList(params.baseFrame,baseFrameStrings), 'Specifies which frame (or mean) to align to.  First frame can be bad choice b/c of different T2 contrast'};
+paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]', 'How many iterations to estimate the optimal transform (use more for high-res images)'};
+paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton', 'Crop the images.  This affects the intensity/contrast correction.  Important for high-res images'};
 paramsInfo{7} = {'sliceTimeCorrection',params.sliceTimeCorrection,'type=checkbox', 'Apply slice time correction along with motion compensation.  Not appropriate for 3D scans.'};
 paramsInfo{8} = {'sliceTimeString',putOnTopOfList(params.sliceTimeString,sliceTimeStrings),'Which point in time the slices should be aligned to. May loose first and last frames'};
-paramsInfo{9} = {'robust',params.robust,'type=checkbox', 'Robust contrast estimator, should be used if images are noisy with lots of outliers'};
-paramsInfo{10} = {'correctIntensityContrast',params.correctIntensityContrast,'type=checkbox', 'Normalize contrast and intensity, use if images have fall-off from surface coil, 3D acquisition, or saturation bands'};
-
-% Initialize niters
-paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]', 'How many iterations to estimate the optimal transform (use more for high-res images)'};
-
-paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton', 'Crop the images.  This affects the intensity/contrast correction.  Important for high-res images'};
-
-paramsInfo{15} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]', 'How much temporal smoothing.  Only applied to estimate head motion, not to final time series'};
+paramsInfo{9} = {'driftCorrection', params.driftCorrection, 'type=checkbox', 'Correction for fluctuations in mean intensity over time'};
+paramsInfo{10} = {'gradIntensityCorrection',params.gradIntensityCorrection,'type=checkbox', 'Compensation for intensity gradient before motion estimation'};
+paramsInfo{11} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]', 'How much temporal smoothing.  Only applied to estimate head motion, not to final time series'};
+paramsInfo{12} = {'robust',params.robust,'type=checkbox', 'Robust contrast estimator, should be used if images are noisy with lots of outliers'};
+paramsInfo{13} = {'include',includeScans,'type=checkbox','group=scanNum', 'Check this to include a particular scan, uncheck to skip'};
+paramsInfo{14} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'Scan selector. Use this to choose which scans to include'};
+paramsInfo{15} = {'tseriesfiles',tseriesfiles,'group=scanNum','type=String','editable=0','Filename of scan'};
+paramsInfo{16} = {'descriptions',descriptions,'group=scanNum','type=String','editable=0','Scan description'};
 
 % put up dialog
 if defaultParams
@@ -181,7 +167,7 @@ if ~isempty(mrParams)
   mrParams = rmfield(mrParams,'paramInfo');
   mrParams = rmfield(mrParams,'scanNum');
   % order fields
-  mrParams = orderfields(mrParams,{'groupName','baseScan','baseFrame','sliceTimeCorrection','sliceTimeString','robust','correctIntensityContrast','crop','niters','motionCompGroupName','interpMethod','targetScans','tseriesfiles','descriptions', 'tSmooth'});
+  mrParams = orderfields(mrParams);
 end
 
 
