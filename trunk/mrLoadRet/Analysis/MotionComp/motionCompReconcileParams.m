@@ -30,7 +30,8 @@ if ieNotDefined('params')
   newparams.sliceTimeCorrection = 1;
   newparams.sliceTimeString = 'middle of TR';
   newparams.robust = 0;
-  newparams.correctIntensityContrast = 0;
+  newparams.gradIntensityCorrection = 0;
+  newparams.driftCorrection = 1;
   newparams.crop = [];
   newparams.niters = 3;
   newparams.motionCompGroupName = 'MotionComp';
@@ -47,7 +48,8 @@ else
   newparams.sliceTimeCorrection = params.sliceTimeCorrection;
   newparams.sliceTimeString = params.sliceTimeString;
   newparams.robust = params.robust;
-  newparams.correctIntensityContrast = params.correctIntensityContrast;
+  newparams.gradIntensityCorrection = params.gradIntensityCorrection;
+  newparams.driftCorrection = params.driftCorrection;
   newparams.crop = params.crop;
   newparams.niters = params.niters;
   newparams.motionCompGroupName = params.motionCompGroupName;
