@@ -1,10 +1,17 @@
 % setext.m
 %
 %        $Id$ 
-%      usage: filename = setext(filename,ext)
+%      usage: filename = setext(filename,ext,<override>)
 %         by: justin gardner
 %       date: 08/09/08
 %    purpose: Makes sure that file the filename has the specified extension
+%
+%             If override is set to 1 (default) then any existing extension
+%             will be changed to ext. If set to 0, then the extension
+%             will be appended to the filename.
+%
+%             In either case, if the filename already has the extension
+%             then filename will not be modified.
 %
 function filename = setext(filename,ext,override)
 
