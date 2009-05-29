@@ -1,20 +1,20 @@
-% procpar2rotmat.m
+% fid2rotmat.m
 %
 %        $Id:$ 
-%      usage: rotmat = procpar2rotmat(procpar)
+%      usage: rotmat = fid2rotmat(procpar)
 %         by: justin gardner
 %       date: 05/05/09
 %    purpose: Convert fields out of a named procpar into a rotation matrix
 %             suitable for the nifti header. (procpar is either the name of 
 %             a file, or the structure returned by readprocpar
 %
-function xform = procpar2rotmat(procpar,verbose)
+function xform = fid2rotmat(procpar,verbose)
 
 xform = [];
 
 % check arguments
 if ~any(nargin == [1 2])
-  help procpar2rotmat
+  help fid2rotmat
   return
 end
 
@@ -25,12 +25,12 @@ if isstr(procpar)
   procpar = readprocpar(procpar);
   if isempty(procpar),return,end;
 else ~isstruct(procpar)
-  help procpar2rotmat;
+  help fid2rotmat;
   return
 end
 
 % get the dimensions of the scan
-dim = [procpar.ni procpar.nv length(procpar.pss)];
+dim = [procpar.ni procpar.nv-procpar.navechoes length(procpar.pss)];
 
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
@@ -41,7 +41,7 @@ voxsize = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) procpar.thk 1];
 
 % check for 3d acquisition
 if procpar.nv2 > 1
-  disp(sprintf('(procpar2rotmat) 3D acquisition'));
+  disp(sprintf('(fid2rotmat) 3D acquisition'));
   % since the 3rd dimension is taken as a single slice with multiple
   % phase encodes, we have to get the voxel size and dimensions differently
   voxsize(3) = 10*procpar.lpe2/procpar.nv2;
@@ -84,14 +84,12 @@ xform((xform < 1e-10) & (xform > - 1e-10)) = 0;
 % verbose display only
 if verbose
   % display some info.
-  disp(sprintf('(procpar2rotmat) psi=%0.2f phi=%0.2f theta=%0.2f',procpar.psi,procpar.phi,procpar.theta));
-  disp(sprintf('(procpar2rotmat) Scan dims=[%i %i %i]',dim(1),dim(2),dim(3)));
-  disp(sprintf('(procpar2rotmat) Voxel size: [%0.2f %0.2f %0.2f]',voxsize(1),voxsize(2),voxsize(3)));
-  disp(sprintf('(procpar2rotmat) First slice offset: [%0.2f %0.2f %0.2f]',offset(1),offset(2),offset(3)));
-  disp(sprintf('(procpar2rotmat) pss = %s',num2str(procpar.pss)));
-  disp(sprintf('(procpar2rotmat) offset to origin: [%0.2f %0.2f %0.2f]',originOffset(1),originOffset(2),originOffset(3)));
-  % display xform
-  xform
+  disp(sprintf('(fid2rotmat) psi=%0.2f phi=%0.2f theta=%0.2f',procpar.psi,procpar.phi,procpar.theta));
+  disp(sprintf('(fid2rotmat) Scan dims=[%i %i %i]',dim(1),dim(2),dim(3)));
+  disp(sprintf('(fid2rotmat) Voxel size: [%0.2f %0.2f %0.2f]',voxsize(1),voxsize(2),voxsize(3)));
+  disp(sprintf('(fid2rotmat) First slice offset: [%0.2f %0.2f %0.2f]',offset(1),offset(2),offset(3)));
+  disp(sprintf('(fid2rotmat) pss = %s',num2str(procpar.pss)));
+  disp(sprintf('(fid2rotmat) offset to origin: [%0.2f %0.2f %0.2f]',originOffset(1),originOffset(2),originOffset(3)));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%

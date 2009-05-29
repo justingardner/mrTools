@@ -65,7 +65,7 @@ for i = 1:length(fidnames)
   end
 
   % get the qform
-  qform44 = procpar2rotmat(fidname);
+  qform44 = fid2xform(fidname);
 
   % create an empty header
   hdr = cbiCreateNiftiHeader(fid.data);
