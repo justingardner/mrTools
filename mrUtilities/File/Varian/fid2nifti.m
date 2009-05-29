@@ -4,8 +4,12 @@
 %      usage: fid2nifti(fidname)
 %         by: justin gardner
 %       date: 04/30/09
-%    purpose: convert a fid 2D anatomy file into a nifti file. perserves slice orientation infomation
+%    purpose: convert a fid 2D anatomy file into a nifti file. 
+%             Preserves slice orientation infomation found in procpar
+%             You can also use it with wild cards:
 %
+%       e.g.: fid2nifti 2d*.fid
+%%
 function fid2nifti(fidname,varargin)
 
 % check arguments
@@ -18,7 +22,10 @@ end
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
   % use regexp to serach for matching filenames
   dirlist = dir;
-  searchstr = fixBadChars(fidname,{'*','.*'});
+  % make sure fid ends in .fid
+  fidname = setext(fidname,'fid',0);
+
+  searchstr = sprintf('^%s$',fixBadChars(fidname,{'*','.*'}));
   fidname = {};
   for i = 1:length(dirlist)
     if regexp(dirlist(i).name,searchstr)
@@ -41,13 +48,17 @@ if isempty(fidnames)
 end
 
 for i = 1:length(fidnames)
+  % get this fidname and make sure it ends in fid
   fidname = fidnames{i};
-
-  % make sure fid ends in .fid
-  fidname = setext(fidname,'fid');
-
+  fidname = setext(fidname,'fid',0);
+  
+  if ~isdir(fidname)
+    disp(sprintf('(fid2nifti) WARNING: Could not find file %s',fidname));
+    continue
+  end
+  
   % get the fid
-  fid = getfid(fidname,2);
+  fid = getfid(fidname);
   if isempty(fid.data)
     disp(sprintf('(fid2nifti) WARNING file %s could not be read',fidname));
     continue
@@ -67,7 +78,7 @@ for i = 1:length(fidnames)
   niftiname = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
 
   % write the file
-  disp(sprintf('(fid2nifti) Saving as %s',niftiname));
+  disp(sprintf('(fid2nifti) Converting %s to %s',fidname,niftiname));
   cbiWriteNifti(niftiname,fid.data,hdr);
 end
 

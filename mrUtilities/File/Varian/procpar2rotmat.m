@@ -18,7 +18,7 @@ if ~any(nargin == [1 2])
   return
 end
 
-if nargin == 1,verbose = 1;end
+if nargin == 1,verbose = 0;end
 
 % get the procpar
 if isstr(procpar)
