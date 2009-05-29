@@ -376,6 +376,8 @@ setAlignGUI(handles,'nSlices',ALIGN.volSize(ALIGN.sliceOrientation));
 set(handles.sliceSlider,'value',ALIGN.coords(ALIGN.sliceOrientation));
 sagittalRadioButton_Callback(hObject, eventdata, handles);
 refreshAlignDisplay(handles);
+setAlignTitle(handles);
+
 % Turn on Talairach option
 set(handles.setTalXform,'Enable','on');
 
@@ -511,6 +513,7 @@ setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
+setAlignTitle(handles);
 
 % --------------------------------------------------------------------
 function loadSourceAsDestination_Callback(hObject, eventdata, handles)
@@ -1197,6 +1200,7 @@ function setSform_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global ALIGN
+ALIGN.guiXform = getGuiXform(handles);
 
 paramsInfo = {};
 if ~isempty(ALIGN.volumeHdr)
@@ -1215,7 +1219,7 @@ if ~isempty(ALIGN.inplaneHdr)
   paramsInfo{end}{3} = 'editable=0';
   paramsInfo{end}{4} = 'Qform is the transformation to magnet coordinates';
   paramsInfo{end+1}{1} = 'srcSform';
-  paramsInfo{end}{2} = ALIGN.volumeHdr.sform44 * ALIGN.xform;
+  paramsInfo{end}{2} = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
 
   paramsInfo{end}{3} = 'Sform is set by mrAlign to be to the transfomration to the coordinates of the base volume anatomy';
 end
@@ -1245,12 +1249,13 @@ function setSourceToDestination_Callback(hObject, eventdata, handles)
 
 
 global ALIGN
+ALIGN.guiXform = getGuiXform(handles);
 
 % get srcToDestXform
 paramsInfo = {};
 if ~isempty(ALIGN.volumeHdr) && ~isempty(ALIGN.inplaneHdr)
   paramsInfo{end+1}{1} = 'srcToDestXform';
-  paramsInfo{end}{2} = ALIGN.xform;
+  paramsInfo{end}{2} = ALIGN.guiXform * ALIGN.xform;
   paramsInfo{end}{3} = 'Transformation from source to destination coordinate system';
 end
 
@@ -1480,4 +1485,27 @@ rot(axisnum) = rot(axisnum)+incdec*inc;
 setAlignGUI(handles,'rot',rot);
 ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%   setAlignTitle   %%
+%%%%%%%%%%%%%%%%%%%%%%%
+function setAlignTitle(handles)
+
+global ALIGN
+
+if ~isfield(ALIGN,'volumePath')  || isempty(ALIGN.volumePath)
+  volumeName = '(none)';
+else
+  volumeName = getLastDir(ALIGN.volumePath);
+end
+
+if ~isfield(ALIGN,'inplanePath') || isempty(ALIGN.inplanePath)
+  inplaneName = '(none)';
+else
+  inplaneName = getLastDir(ALIGN.inplanePath);
+end
+
+set(handles.figure1,'name',sprintf('mrAlign: %s -> %s',inplaneName,volumeName));
+
+
 
