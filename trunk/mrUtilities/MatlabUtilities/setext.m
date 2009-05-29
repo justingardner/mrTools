@@ -6,13 +6,16 @@
 %       date: 08/09/08
 %    purpose: Makes sure that file the filename has the specified extension
 %
-function filename = setext(filename,ext)
+function filename = setext(filename,ext,override)
 
 % check arguments
-if ~any(nargin == [2])
+if ~any(nargin == [2 3])
   help setext
   return
 end
+
+% the default is to override whatever extension exists
+if ieNotDefined('override'),override = 1;end
 
 % strip any leading '.'
 if length(ext) && isequal(ext(1),'.')
@@ -20,5 +23,13 @@ if length(ext) && isequal(ext(1),'.')
 end
 
 % set the extension
-filename = sprintf('%s.%s',stripext(filename),ext);
+if override
+  filename = sprintf('%s.%s',stripext(filename),ext);
+else
+  % add the extension to the filename, if the
+  % extension isn't existing already
+  if ~strcmp(getext(filename),ext)
+    filename = sprintf('%s.%s',filename,ext);
+  end
+end
 
