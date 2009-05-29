@@ -1,11 +1,11 @@
 #ifdef documentation
 =========================================================================
 
-    program: readfid.c
+    program: getfidk.c
          by: justin gardner
     purpose: reads fid data from VNMR system
        date: 05/06/03
-    compile: mex readfid.c
+    compile: mex getfidk.c
     history: 2008/12/01, Pei, add endian detect and byte swap part.
              Default format of fid is big endian, as we acquaire data
              on VNMR Sun Solaris, also epirri5 keep the same endian.
@@ -30,10 +30,9 @@
 #define LINESIZE 4096
 #define FALSE 0
 #define TRUE 1
-#define INT16 short
-#define INT32 long
+#define INT16 int16
+#define INT32 int32
 #define FLOAT float
-
 
 ////////////////////
 // data structures
@@ -141,26 +140,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // did the user input the full directory?
   sprintf(pathname,"%s",inputname);
   sprintf(filename,"%s/fid",pathname);
-  if (verbose) printf("(readfid) Trying filename %s\n",filename);
+  if (verbose) mexPrintf("(getfidk) Trying filename %s\n",filename);
   if ((ffid = fopen(filename,"r")) == NULL) {
     // maybe the user gave the directory without .fid
     sprintf(pathname,"%s.fid",inputname);
     sprintf(filename,"%s/fid",pathname);
-    if (verbose) printf("(readfid) Trying filename %s\n",filename);
+    if (verbose) mexPrintf("(getfidk) Trying filename %s\n",filename);
     if ((ffid = fopen(filename,"r")) == NULL) {
       // nope, maybe it is simply the filename
       sprintf(pathname,".");
       sprintf(filename,"%s/%s",pathname,inputname);
-      if (verbose) printf("(readfid) Trying filename %s\n",filename);
+      if (verbose) mexPrintf("(getfidk) Trying filename %s\n",filename);
       if ((ffid = fopen(filename,"r")) == NULL) {
-  // nothing found, give up.
-  fileNotFound(inputname);
-  errorExit(plhs);
-  return;
+	// nothing found, give up.
+	fileNotFound(inputname);
+	errorExit(plhs);
+	return;
       }
     }
   }
-  if (verbose) printf("(readfid) Opened %s\n", filename);
+  if (verbose) mexPrintf("(getfidk) Opened %s\n", filename);
 
   // get the full path
   getcwd(fullpath,STRSIZE);
@@ -195,12 +194,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // get number of slices
     if (!strcmp(token,"pss")) {
       info.numslices = atoi(fgets(line,LINESIZE,fprocpar));
-      if (verbose) printf("(readfid) numslices = %i\n",info.numslices);
+      if (verbose) mexPrintf("(getfidk) numslices = %i\n",info.numslices);
     }
     // get number of volumes
     if (!strcmp(token,"cntr")) {
       info.numvolumes = atoi(fgets(line,LINESIZE,fprocpar));
-      if (verbose) printf("(readfid) numvolumes = %i\n",info.numvolumes);
+      if (verbose) mexPrintf("(getfidk) numvolumes = %i\n",info.numvolumes);
     }
     // get number of voxels per line
     if (!strcmp(token,"np")) {
@@ -209,7 +208,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       token = (char*)strtok(NULL," ");
       // that should be number of slices
       info.linelen = atoi(token)/2;
-      if (verbose) printf("(readfid) linelen = %i\n",info.linelen);
+      if (verbose) mexPrintf("(getfidk) linelen = %i\n",info.linelen);
     }
     // get number of lines per image
     if (!strcmp(token,"nv")) {
@@ -218,7 +217,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       token = (char*)strtok(NULL," ");
       // that should be number of slices
       info.numlines = atoi(token);
-      if (verbose) printf("(readfid) numlines = %i\n",info.numlines);
+      if (verbose) mexPrintf("(getfidk) numlines = %i\n",info.numlines);
     }
     // for epi images, there are navigator echos, which
     // should be subtracted from the number of lines.
@@ -230,15 +229,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       // the petable name should be something like
       // "epi132alt8k". We want the second number
       if (!strncmp(token+1,"epi",3)) {
-  j = 0;
-  // go past any intial characters
-  while((j < strlen(token)) && !isdigit(token[j])) j++;
-  // then skip the numbers
-  while((j < strlen(token)) && isdigit(token[j])) j++;
-  // and skip the next characters
-  while((j < strlen(token)) && !isdigit(token[j])) j++;
-  info.navechoes = atoi(token+j);
-  if (verbose) printf("(readfid) navechoes = %i\n",info.navechoes);
+	j = 0;
+	// go past any intial characters
+	while((j < strlen(token)) && !isdigit(token[j])) j++;
+	// then skip the numbers
+	while((j < strlen(token)) && isdigit(token[j])) j++;
+	// and skip the next characters
+	while((j < strlen(token)) && !isdigit(token[j])) j++;
+	info.navechoes = atoi(token+j);
+	if (verbose) mexPrintf("(getfidk) navechoes = %i\n",info.navechoes);
       }
     }
   }
@@ -256,8 +255,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   info.numimages = info.numslices*info.numvolumes;
   info.imagesize = info.linelen*info.numlines;
   // display parameters if verbose mode
-  if (verbose) printf("(readfid) (%ix%ix%ix%i) numimages=%i,imagesize=%i\n",info.linelen,info.numlines,info.numslices,info.numvolumes,info.numimages,info.imagesize);    
-  if (verbose) printf("(readfid) totalsize = %i\n",info.totalsize);
+  if (verbose) mexPrintf("(getfidk) (%ix%ix%ix%i) numimages=%i,imagesize=%i\n",info.linelen,info.numlines,info.numslices,info.numvolumes,info.numimages,info.imagesize);    
+  if (verbose) mexPrintf("(getfidk) totalsize = %i\n",info.totalsize);
 
   // get the fid file length and number of blocks
   if ((n = fileLength(filename,ffid)) == -1) {
@@ -267,7 +266,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // read the fid file header
   if (fread(&header, sizeof(struct datafilehead), 1, ffid) == 0) {
-    printf("(readfid) ERROR: reading header from file %s\n",filename);
+    mexPrintf("(getfidk) ERROR: reading header from file %s\n",filename);
     errorExit(plhs);
     return;
   }
@@ -282,7 +281,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // then make sure fid is in big endian
   if ( isLittleEndianPlatform & header.nbheaders > 9 ) {
     swapFlag = 1;
-    printf("(readfid) Running on little endian platform and data is big endian (default), will swap bytes\n");
+    if (verbose)
+      mexPrintf("(getfidk) Running on little endian platform and data is big endian (default), will swap bytes\n");
   }
   else
     swapFlag = 0;
@@ -302,55 +302,55 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // display fid file header
   if (verbose) {
-    printf("(readfid) FID HEADER\n");
-    printf("  nblocks   = %li\n",header.nblocks);
-    printf("  ntraces   = %li\n",header.ntraces);
-    printf("  np        = %li\n",header.np);
-    printf("  ebytes    = %li\n",header.ebytes);
-    printf("  tbytes    = %li\n",header.tbytes);
-    printf("  bbytes    = %li\n",header.bbytes);
-    printf("  vers_id   = %i\n",header.vers_id);
-    printf("  status    = %i\n",header.status);
-    printf("  nbheaders = %li\n",header.nbheaders);
+    mexPrintf("(getfidk) FID HEADER\n");
+    mexPrintf("  nblocks   = %li\n",header.nblocks);
+    mexPrintf("  ntraces   = %li\n",header.ntraces);
+    mexPrintf("  np        = %li\n",header.np);
+    mexPrintf("  ebytes    = %li\n",header.ebytes);
+    mexPrintf("  tbytes    = %li\n",header.tbytes);
+    mexPrintf("  bbytes    = %li\n",header.bbytes);
+    mexPrintf("  vers_id   = %i\n",header.vers_id);
+    mexPrintf("  status    = %i\n",header.status);
+    mexPrintf("  nbheaders = %li\n",header.nbheaders);
     if (verbose > 1) {
-      printf("(readfid)  STATUS DECODE:\n");
-      printf("    S_DATA         = %i\n",header.status&S_DATA);
-      printf("    S_SPEC         = %i\n",header.status&S_SPEC);
-      printf("    S_32           = %i\n",header.status&S_32);
-      printf("    S_FLOAT        = %i\n",header.status&S_FLOAT);
-      printf("    S_COMPLEX      = %i\n",header.status&S_COMPLEX);
-      printf("    S_HYPERCOMPLEX = %i\n",header.status&S_HYPERCOMPLEX);
-      printf("    S_ACQPAR       = %i\n",header.status&S_ACQPAR);
-      printf("    S_SECND        = %i\n",header.status&S_SECND);
-      printf("    S_TRANSF       = %i\n",header.status&S_TRANSF);
-      printf("    S_3D           = %i\n",header.status&S_3D);
-      printf("    S_NP           = %i\n",header.status&S_NP);
-      printf("    S_NF           = %i\n",header.status&S_NF);
-      printf("    S_NI           = %i\n",header.status&S_NI);
-      printf("    S_NI2          = %i\n",header.status&S_NI2);
+      mexPrintf("(getfidk)  STATUS DECODE:\n");
+      mexPrintf("    S_DATA         = %i\n",header.status&S_DATA);
+      mexPrintf("    S_SPEC         = %i\n",header.status&S_SPEC);
+      mexPrintf("    S_32           = %i\n",header.status&S_32);
+      mexPrintf("    S_FLOAT        = %i\n",header.status&S_FLOAT);
+      mexPrintf("    S_COMPLEX      = %i\n",header.status&S_COMPLEX);
+      mexPrintf("    S_HYPERCOMPLEX = %i\n",header.status&S_HYPERCOMPLEX);
+      mexPrintf("    S_ACQPAR       = %i\n",header.status&S_ACQPAR);
+      mexPrintf("    S_SECND        = %i\n",header.status&S_SECND);
+      mexPrintf("    S_TRANSF       = %i\n",header.status&S_TRANSF);
+      mexPrintf("    S_3D           = %i\n",header.status&S_3D);
+      mexPrintf("    S_NP           = %i\n",header.status&S_NP);
+      mexPrintf("    S_NF           = %i\n",header.status&S_NF);
+      mexPrintf("    S_NI           = %i\n",header.status&S_NI);
+      mexPrintf("    S_NI2          = %i\n",header.status&S_NI2);
     }
   }
 
   // figure out data class
   if (header.status & S_FLOAT) {
-    if (verbose) printf("(readfid) datatype is FLOAT\n");
+    if (verbose) mexPrintf("(getfidk) datatype is FLOAT\n");
     // set data type
     info.datatype = mxSINGLE_CLASS;
   }
   else {
     if (header.status & S_32) {
       info.datatype = mxINT32_CLASS;
-      if (verbose) printf("(readfid) datatype is int32\n");
+      if (verbose) mexPrintf("(getfidk) datatype is int32\n");
     }
     else {
       info.datatype = mxINT16_CLASS;
-      if (verbose) printf("(readfid) datatype is int16\n");
+      if (verbose) mexPrintf("(getfidk) datatype is int16\n");
     }
   }
 
   // make sure we have enough filelength
   if ((sizeof(struct datafilehead)+header.bbytes*header.nblocks) != n) {
-    printf("(readfid) ERROR: Expected %i bytes, but found %i\n",sizeof(struct datafilehead)+header.bbytes*header.nblocks,n);
+    mexPrintf("(getfidk) ERROR: Expected %i bytes, but found %i\n",sizeof(struct datafilehead)+header.bbytes*header.nblocks,n);
     errorExit(plhs);
     return;
   }
@@ -407,7 +407,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // if the number of slices and volumes doesn't divide nicely
   // into the number of blocks, then something is wrong.
   if (((double)header.nblocks/info.numimages) != floor((double)header.nblocks/info.numimages)) {
-    printf("(readfid) ERROR: numimages (%i) does not divide evenly into num blocks %i\n",info.numimages,header.nblocks);
+    mexPrintf("(getfidk) ERROR: numimages (%i) does not divide evenly into num blocks %i\n",info.numimages,header.nblocks);
     errorExit(plhs);
     free(block);
     return;
@@ -420,46 +420,46 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     for (j=0;j<info.numimages;j++) {
       // read block header
       if ((header.ntraces == 1) || ((j % header.ntraces) == 0)) {
-  if (fread(&blockheader, sizeof(struct datablockhead), 1, ffid) == 0) {
-    printf("(readfid) ERROR: reading data from file %s\n",filename);
-    errorExit(plhs);
-    free(block);
-    return;
-  }
+	if (fread(&blockheader, sizeof(struct datablockhead), 1, ffid) == 0) {
+	  mexPrintf("(getfidk) ERROR: Could not read block header from file %s\n",filename);
+	  errorExit(plhs);
+	  free(block);
+	  return;
+	}
       }
     
       //swap bytes  
       if ( swapFlag ) {
-  swap_bytes(&blockheader.scale, 2); // short
-  swap_bytes(&blockheader.status, 2);
-  swap_bytes(&blockheader.index, 2);
-  swap_bytes(&blockheader.mode, 2);
-  swap_bytes(&blockheader.ctcount, 4); // long
-  swap_bytes(&blockheader.lpval, 4);   // float
-  swap_bytes(&blockheader.rpval, 4);  // float
-  swap_bytes(&blockheader.lvl, 4);  // float
-  swap_bytes(&blockheader.tlt, 4);  // float
+	swap_bytes(&blockheader.scale, 2); // short
+	swap_bytes(&blockheader.status, 2);
+	swap_bytes(&blockheader.index, 2);
+	swap_bytes(&blockheader.mode, 2);
+	swap_bytes(&blockheader.ctcount, 4); // long
+	swap_bytes(&blockheader.lpval, 4);   // float
+	swap_bytes(&blockheader.rpval, 4);  // float
+	swap_bytes(&blockheader.lvl, 4);  // float
+	swap_bytes(&blockheader.tlt, 4);  // float
       }
       
       // print out block headers
       if (verbose > 2) {
-  printf("(readfid)  BLOCK (%i,%i)\n",i,j);
-  printf("    scale   = %i\n",blockheader.scale);
-  printf("    status  = %i\n",blockheader.status);
-  printf("    index   = %i\n",blockheader.index);
-  printf("    mode    = %i\n",blockheader.mode);
-  printf("    ctcount = %li\n",blockheader.ctcount);
-  printf("    lpval   = %f\n",blockheader.lpval);
-  printf("    rpval   = %f\n",blockheader.rpval);
-  printf("    lvl     = %f\n",blockheader.lvl);
-  printf("    tlt     = %f\n",blockheader.tlt);
+	mexPrintf("(getfidk)  BLOCK (%i,%i)\n",i,j);
+	mexPrintf("    scale   = %i\n",blockheader.scale);
+	mexPrintf("    status  = %i\n",blockheader.status);
+	mexPrintf("    index   = %i\n",blockheader.index);
+	mexPrintf("    mode    = %i\n",blockheader.mode);
+	mexPrintf("    ctcount = %li\n",blockheader.ctcount);
+	mexPrintf("    lpval   = %f\n",blockheader.lpval);
+	mexPrintf("    rpval   = %f\n",blockheader.rpval);
+	mexPrintf("    lvl     = %f\n",blockheader.lvl);
+	mexPrintf("    tlt     = %f\n",blockheader.tlt);
       }
       // read in the block of data
       if (fread(block, 1, header.tbytes, ffid) == 0) {
-  printf("(readfid) ERROR: reading data from file %s\n",filename);
-  errorExit(plhs);
-  free(block);
-  return;
+	mexPrintf("(getfidk) ERROR: reading data from file %s\n",filename);
+	errorExit(plhs);
+	free(block);
+	return;
       }
       // move block into data and datai pointer approriately
       // note that the real and imaginary parts of the data
@@ -468,107 +468,107 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       // otherwise, it is stored in its native format into two arrays
       // in originalformat is set.
       for (k=0; k<header.np; k+=2) {
-  switch(info.datatype) {
-    // data is stored as a float
-  case mxSINGLE_CLASS:
-    // store as floats
-    if (originalformat) {
-      if (swapFlag) {
-        tokenfloat = (((FLOAT*)block)[k]); 
-        swap_bytes(&tokenfloat,4); 
-        data_float[j*info.imagesize+i*info.linelen+k/2] = tokenfloat;
-        tokenfloat = (((FLOAT*)block)[k+1]); 
-        swap_bytes(&tokenfloat,4);
-        datai_float[j*info.imagesize+i*info.linelen+k/2] = tokenfloat;
-      }
-      else {
-        data_float[j*info.imagesize+i*info.linelen+k/2] = ((FLOAT*)block)[k];
-        datai_float[j*info.imagesize+i*info.linelen+k/2] = ((FLOAT*)block)[k+1];
-      }
-    }
-    // or store as doubles (default)
-    else {
-      if (swapFlag) {
-        tokenfloat = (((FLOAT*)block)[k]); 
-        swap_bytes(&tokenfloat,4); 
-        data[j*info.imagesize+i*info.linelen+k/2] = (double)tokenfloat;
-        tokenfloat = (((FLOAT*)block)[k+1]); 
-        swap_bytes(&tokenfloat,4);
-        datai[j*info.imagesize+i*info.linelen+k/2] = (double)tokenfloat;
-      }
-      else {
-        data[j*info.imagesize+i*info.linelen+k/2] = (double)((FLOAT*)block)[k];
-        datai[j*info.imagesize+i*info.linelen+k/2] = (double)((FLOAT*)block)[k+1];
-      }
-    }
-    break;
-    // data is stored as two byte integers
-  case mxINT16_CLASS:
-    // store as two byte integers
-    if (originalformat) {
-      if (swapFlag) {
-        tokenint16 = (((INT16*)block)[k]); 
-        swap_bytes(&tokenint16,2); 
-        data_int16[j*info.imagesize+i*info.linelen+k/2] = tokenint16;
-        tokenint16 = (((INT16*)block)[k+1]); 
-        swap_bytes(&tokenint16,2);
-        datai_int16[j*info.imagesize+i*info.linelen+k/2] = tokenint16;
-      }
-      else {
-        data_int16[j*info.imagesize+i*info.linelen+k/2] = ((INT16*)block)[k];
-        datai_int16[j*info.imagesize+i*info.linelen+k/2] = ((INT16*)block)[k+1];
-      }
-    }
-    // or store as doubles (default)
-    else {
-      if (swapFlag) {
-        tokenint16 = (((INT16*)block)[k]); 
-        swap_bytes(&tokenint16,2); 
-        data[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint16;
-        tokenint16 = (((INT16*)block)[k+1]); 
-        swap_bytes(&tokenint16,2);
-        datai[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint16;
-      }
-      else {
-        data[j*info.imagesize+i*info.linelen+k/2] = (double)((INT16*)block)[k];
-        datai[j*info.imagesize+i*info.linelen+k/2] = (double)((INT16*)block)[k+1];
-      }
-    }
-    break;
-    // data is stored as four byte integers
-  case mxINT32_CLASS:
-    // save as four byte integer
-    if (originalformat) {
-      if (swapFlag) {
-        tokenint32 = (((INT32*)block)[k]); 
-        swap_bytes(&tokenint32,4); 
-        data_int32[j*info.imagesize+i*info.linelen+k/2] = tokenint32;
-        tokenint32 = (((INT32*)block)[k+1]); 
-        swap_bytes(&tokenint32,4);
-        datai_int32[j*info.imagesize+i*info.linelen+k/2] = tokenint32;
-      }
-      else {
-        data_int32[j*info.imagesize+i*info.linelen+k/2] = ((INT32*)block)[k];
-        datai_int32[j*info.imagesize+i*info.linelen+k/2] = ((INT32*)block)[k+1];
-      }
-    }
-    // or store as doubles (default)
-    else {
-      if (swapFlag) {
-        tokenint32 = (((INT32*)block)[k]); 
-        swap_bytes(&tokenint32,4);
-        data[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint32;
-        tokenint32 = (((INT32*)block)[k+1]); 
-        swap_bytes(&tokenint32,4);
-        datai[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint32;
-      }
-      else {
-        data[j*info.imagesize+i*info.linelen+k/2] = (double)(((INT32*)block)[k]);
-        datai[j*info.imagesize+i*info.linelen+k/2] = (double)(((INT32*)block)[k+1]);
-      }
-    }
-    break;
-  }
+	switch(info.datatype) {
+	  // data is stored as a float
+	case mxSINGLE_CLASS:
+	  // store as floats
+	  if (originalformat) {
+	    if (swapFlag) {
+	      tokenfloat = (((FLOAT*)block)[k]); 
+	      swap_bytes(&tokenfloat,4); 
+	      data_float[j*info.imagesize+i*info.linelen+k/2] = tokenfloat;
+	      tokenfloat = (((FLOAT*)block)[k+1]); 
+	      swap_bytes(&tokenfloat,4);
+	      datai_float[j*info.imagesize+i*info.linelen+k/2] = tokenfloat;
+	    }
+	    else {
+	      data_float[j*info.imagesize+i*info.linelen+k/2] = ((FLOAT*)block)[k];
+	      datai_float[j*info.imagesize+i*info.linelen+k/2] = ((FLOAT*)block)[k+1];
+	    }
+	  }
+	  // or store as doubles (default)
+	  else {
+	    if (swapFlag) {
+	      tokenfloat = (((FLOAT*)block)[k]); 
+	      swap_bytes(&tokenfloat,4); 
+	      data[j*info.imagesize+i*info.linelen+k/2] = (double)tokenfloat;
+	      tokenfloat = (((FLOAT*)block)[k+1]); 
+	      swap_bytes(&tokenfloat,4);
+	      datai[j*info.imagesize+i*info.linelen+k/2] = (double)tokenfloat;
+	    }
+	    else {
+	      data[j*info.imagesize+i*info.linelen+k/2] = (double)((FLOAT*)block)[k];
+	      datai[j*info.imagesize+i*info.linelen+k/2] = (double)((FLOAT*)block)[k+1];
+	    }
+	  }
+	  break;
+	  // data is stored as two byte integers
+	case mxINT16_CLASS:
+	  // store as two byte integers
+	  if (originalformat) {
+	    if (swapFlag) {
+	      tokenint16 = (((INT16*)block)[k]); 
+	      swap_bytes(&tokenint16,2); 
+	      data_int16[j*info.imagesize+i*info.linelen+k/2] = tokenint16;
+	      tokenint16 = (((INT16*)block)[k+1]); 
+	      swap_bytes(&tokenint16,2);
+	      datai_int16[j*info.imagesize+i*info.linelen+k/2] = tokenint16;
+	    }
+	    else {
+	      data_int16[j*info.imagesize+i*info.linelen+k/2] = ((INT16*)block)[k];
+	      datai_int16[j*info.imagesize+i*info.linelen+k/2] = ((INT16*)block)[k+1];
+	    }
+	  }
+	  // or store as doubles (default)
+	  else {
+	    if (swapFlag) {
+	      tokenint16 = (((INT16*)block)[k]); 
+	      swap_bytes(&tokenint16,2); 
+	      data[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint16;
+	      tokenint16 = (((INT16*)block)[k+1]); 
+	      swap_bytes(&tokenint16,2);
+	      datai[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint16;
+	    }
+	    else {
+	      data[j*info.imagesize+i*info.linelen+k/2] = (double)((INT16*)block)[k];
+	      datai[j*info.imagesize+i*info.linelen+k/2] = (double)((INT16*)block)[k+1];
+	    }
+	  }
+	  break;
+	  // data is stored as four byte integers
+	case mxINT32_CLASS:
+	  // save as four byte integer
+	  if (originalformat) {
+	    if (swapFlag) {
+	      tokenint32 = (((INT32*)block)[k]); 
+	      swap_bytes(&tokenint32,4); 
+	      data_int32[j*info.imagesize+i*info.linelen+k/2] = tokenint32;
+	      tokenint32 = (((INT32*)block)[k+1]); 
+	      swap_bytes(&tokenint32,4);
+	      datai_int32[j*info.imagesize+i*info.linelen+k/2] = tokenint32;
+	    }
+	    else {
+	      data_int32[j*info.imagesize+i*info.linelen+k/2] = ((INT32*)block)[k];
+	      datai_int32[j*info.imagesize+i*info.linelen+k/2] = ((INT32*)block)[k+1];
+	    }
+	  }
+	  // or store as doubles (default)
+	  else {
+	    if (swapFlag) {
+	      tokenint32 = (((INT32*)block)[k]); 
+	      swap_bytes(&tokenint32,4);
+	      data[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint32;
+	      tokenint32 = (((INT32*)block)[k+1]); 
+	      swap_bytes(&tokenint32,4);
+	      datai[j*info.imagesize+i*info.linelen+k/2] = (double)tokenint32;
+	    }
+	    else {
+	      data[j*info.imagesize+i*info.linelen+k/2] = (double)(((INT32*)block)[k]);
+	      datai[j*info.imagesize+i*info.linelen+k/2] = (double)(((INT32*)block)[k+1]);
+	    }
+	  }
+	  break;
+	}
       }
     }
   }
@@ -584,12 +584,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 ////////////////////////
 void usageError()
 {
-  printf("USAGE: d = readfid('filedir',verbose,uint16);\n");
-  printf("           filename = name of fid directory\n");
-  printf("           verbose  = (0,1,23) for reporting verbose information\n");
-  printf("                      defaults to no reporting (0)\n");
-  printf("           uint16   = (1 or 0) to return data in native format or double\n");
-  printf("                      defaults to double (0)\n");
+
+  mexPrintf("    program: getfidk.c\n");
+  mexPrintf("         by: justin gardner\n");
+  mexPrintf("    purpose: reads fid data from VNMR system\n");
+  mexPrintf("       date: 05/06/03\n");
+  mexPrintf("    compile: mex getfidk.c\n");
+  mexPrintf("    history: 2008/12/01, Pei, add endian detect and byte swap part.\n");
+  mexPrintf("             Default format of fid is big endian, as we acquaire data\n");
+  mexPrintf("             on VNMR Sun Solaris, also epirri5 keep the same endian.\n");
+  mexPrintf("             Note: SWAP data firstly and then DO typecast.\n");
+  mexPrintf("      USAGE: d = getfidk('filedir',verbose,uint16);\n");
+  mexPrintf("                 filename = name of fid directory\n");
+  mexPrintf("                 verbose  = (0,1,23) for reporting verbose information\n");
+  mexPrintf("                            defaults to no reporting (0)\n");
+  mexPrintf("                 uint16   = (1 or 0) to return data in native format or double\n");
+  mexPrintf("                            defaults to double (0)\n");
 }
 
 ///////////////////////
@@ -599,6 +609,8 @@ void errorExit(mxArray *plhs[])
 {
   if (ffid) fclose(ffid);
   if (fprocpar) fclose(fprocpar);
+  mxSetField(plhs[0],0,"data",NULL);
+
 }
 
 //////////////////////////
@@ -606,7 +618,7 @@ void errorExit(mxArray *plhs[])
 //////////////////////////
 void fileNotFound(char *filename)
 {
-  printf("(readfid) ERROR: Could not open %s\n", filename);
+  mexPrintf("(getfidk) ERROR: Could not open %s\n", filename);
 }
 
 ////////////////////////
@@ -617,7 +629,7 @@ int fileLength(char *filename,FILE *filepointer)
   fpos_t filelen;
   // get size of file: seek to end of file, read pos, seek to begin of file
   if (fseek(filepointer,0,SEEK_END)) {
-    printf("(readfid) ERROR: Could not seek in file %s",filename);
+    mexPrintf("(getfidk) ERROR: Could not seek in file %s",filename);
     return -1;
   }
 
@@ -625,13 +637,13 @@ int fileLength(char *filename,FILE *filepointer)
   // this may not work with all compilers since fpos_t
   // is not required to be the position in bytes.
   if (fgetpos(filepointer,&filelen)) {
-    printf("(readfid) ERROR: Could not seek in file %s",filename);
+    mexPrintf("(getfidk) ERROR: Could not seek in file %s",filename);
     return -1;
   }
   
   // seek back to the beginning of the file
   if (fseek(filepointer,0,SEEK_SET)) {
-    printf("(readfid) ERROR: Could not seek in file %s",filename);
+    mexPrintf("(getfidk) ERROR: Could not seek in file %s",filename);
     return -1;
   }
   return (int)filelen;

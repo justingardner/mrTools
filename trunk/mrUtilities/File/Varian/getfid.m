@@ -21,9 +21,9 @@ if exist('zeropad') ~= 1,zeropad = 0;,end
 
 t0 = clock;
 
-% read the fid
+% read the k-space data from the fid
 if (verbose),disppercent(-inf,sprintf('Reading %s...',fidname));end
-d = readfid(fidname);
+d = getfidk(fidname);
 if (verbose),disppercent(inf,sprintf('done.\n',fidname));end
 
 % if it is empty then something has failed
