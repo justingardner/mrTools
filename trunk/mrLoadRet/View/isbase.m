@@ -52,9 +52,9 @@ end
 
 % hack to change talPoints field to talinfo
 if isfield(base,'talPoints')
-  disp(sprintf('(isbase) Changing talPoints field to talinfo'));
-  if ~isfield(base,'talinfo') || isempty(base.talinfo)
-    base.talinfo = base.talPoints;
+  disp(sprintf('(isbase) Changing talPoints field to talInfo'));
+  if ~isfield(base,'talInfo') || isempty(base.talInfo)
+    base.talInfo = base.talPoints;
   end
   % remove the legacy field name
   base = rmfield(base,'talPoints');
