@@ -2318,10 +2318,10 @@ flatPath = viewGet(v,'baseCoordMapPath');
 baseType = viewGet(v,'baseType');
 if baseType == 1
   % get the filename
-  filename = params.flatFileName;
+  filename = sprintf('%s.off', stripext(params.flatFileName));
 else
   % get the filename
-  filename = params.outerSurfaceFileName;
+  filename = sprintf('%s.off', stripext(params.outerSurfaceFileName));
 end
 
 % switch directories to the flatDir, asking
