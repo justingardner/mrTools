@@ -206,9 +206,8 @@ for i = 1:length(d.stimfile)
     % now add the number of volumes encountered from the previous runs
     % to the stimvol and concatenate on to general stimvol
     for nhdr = 1:length(stimvol)
-      if length(d.stimvol) >= nhdr
-	
-	d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
+      if length(stimvol) >= nhdr
+	d.stimvol{nhdr} = [stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
       else
 	d.stimvol{nhdr} = (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf);
       end
