@@ -477,6 +477,8 @@ switch lower(param)
       scanParams.framePeriod = hdr.pixdim(5)./1000;
     elseif niftiTimeUnit == 32 % microseconds
       scanParams.framePeriod = hdr.pixdim(5)./10e6;
+    else % for old Analyze files
+      scanParams.framePeriod = hdr.pixdim(5)./1000;
     end
     disp(sprintf('(viewSet) framePeriod set to: %f',scanParams.framePeriod))
     if strcmp(lower(mrGetPref('verbose')),'yes')
