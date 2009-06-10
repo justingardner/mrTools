@@ -29,8 +29,15 @@ else ~isstruct(procpar)
   return
 end
 
+% get the number of navechoes
+if isfield(procpar,'navechoes')
+  navechoes = procpar.navechoes;
+else
+  navechoes = 0;
+end
+
 % get the dimensions of the scan
-dim = [procpar.ni procpar.nv-procpar.navechoes length(procpar.pss)];
+dim = [procpar.ni procpar.nv-navechoes length(procpar.pss)];
 
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
