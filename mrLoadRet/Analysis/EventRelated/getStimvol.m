@@ -207,8 +207,10 @@ for i = 1:length(d.stimfile)
     % to the stimvol and concatenate on to general stimvol
     for nhdr = 1:length(stimvol)
       if length(stimvol) >= nhdr
-	d.stimvol{nhdr} = [stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
+	% if we already have some stimvols for this stimulus type then concatenate
+	d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
       else
+	% first time we have encoutered this stimvol just add it to d.stimvol
 	d.stimvol{nhdr} = (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf);
       end
     end
