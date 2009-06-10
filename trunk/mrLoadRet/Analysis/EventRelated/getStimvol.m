@@ -139,14 +139,14 @@ for i = 1:length(d.stimfile)
    case 'stimvol',
     stimvol = d.stimfile{i}.stimvol;
     % validate the stimvols (i.e. they need to be 1xn)
-    for i = 1:length(stimvol)
-      arraysize = size(stimvol{i});
+    for j = 1:length(stimvol)
+      arraysize = size(stimvol{j});
       if arraysize(1)>1
 	if arraysize(2)==1
-	  disp(sprintf('(getStimvol) Stimvol{%i} converted from %ix1 to 1x%i array',i,arraysize(1),arraysize(1)));
-	  stimvol{i} = stimvol{i}';
+	  disp(sprintf('(getStimvol) Stimvol{%i} converted from %ix1 to 1x%i array',j,arraysize(1),arraysize(1)));
+	  stimvol{j} = stimvol{j}';
 	else
-	  mrErrorDlg(sprintf('(getStimvol) Stimvol{%i} is %ix%i must be 1xn',arraysize(1),arraysize(2),i));
+	  mrErrorDlg(sprintf('(getStimvol) Stimvol{%i} is %ix%i must be 1xn',j,arraysize(1),arraysize(2)));
 	end
       end
     end
