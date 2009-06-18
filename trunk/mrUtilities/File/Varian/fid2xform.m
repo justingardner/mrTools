@@ -24,7 +24,7 @@ if nargin == 1,verbose = 0;end
 if isstr(procpar)
   procpar = readprocpar(procpar);
   if isempty(procpar),return,end;
-else ~isstruct(procpar)
+elseif ~isstruct(procpar)
   help fid2xform;
   return
 end

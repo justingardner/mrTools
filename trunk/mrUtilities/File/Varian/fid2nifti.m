@@ -18,7 +18,7 @@ if nargin < 1
   return
 end
 
-% if this has no path, then check for serch pattern
+% if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
   % use regexp to serach for matching filenames
   dirlist = dir;
