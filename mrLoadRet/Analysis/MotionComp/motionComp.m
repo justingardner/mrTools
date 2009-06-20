@@ -168,6 +168,7 @@ tseries = loadTSeries(viewBase,scanNum,'all');
 junkFrames = viewGet(viewBase,'junkframes',scanNum);
 nFrames = viewGet(viewBase,'nFrames',scanNum);
 totalFrames = viewGet(viewBase,'totalFrames',scanNum);
+sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
 
 % Initialize the warped time series to zeros.
 % same size as orig tseries
@@ -175,7 +176,7 @@ warpedTseries = zeros(size(tseries));
 
 % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
 % also correct crop, get slice times, and extract base volume.
-[tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames);
+[tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes);
 % Loop: computing motion estimates and warping the volumes to
 % compensate for the motion in each temporal frame.
 waitHandle = mrWaitBar(0,['Computing within scan motion compensation for base scan ',num2str(scanNum),'.  Please wait...']);
