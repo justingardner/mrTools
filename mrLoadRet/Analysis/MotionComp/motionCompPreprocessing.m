@@ -1,6 +1,6 @@
 % motionCompPreprocessing.m
 %
-function [correctedTseries,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames)
+function [correctedTseries,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes)
 
 % % check arguments
 % if ~any(nargin == [5])
@@ -28,9 +28,8 @@ end
 % Get slice times and replicate the last frame of tseries for slice time
 % correction
 if sliceTimeCorrection
-  sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
   correctedTseries(:,:,:,end+1) = correctedTseries(:,:,:,end);
-  switch sliceTimeString
+  switch params.sliceTimeString
     case 'end of TR'
       sliceTimes = sliceTimes;
     case 'middle of TR'
