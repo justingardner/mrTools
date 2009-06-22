@@ -244,7 +244,7 @@ for s = 1:length(targetScans)
 
   % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
   % also correct crop, get slice times, and extract base volume.
-  [tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames);
+  [tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes);
   
   % Loop through frames of target scan and estimate motion params
   waitHandle = mrWaitBar(0,['Computing motion estimates for scan ',num2str(scanNum),'.  Please wait...']);
