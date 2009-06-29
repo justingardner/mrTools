@@ -920,6 +920,46 @@ refreshAlignDisplay(handles);
 
 
 % --------------------------------------------------------------------
+function swapXYmenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to swapXYmenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global ALIGN
+xform = ALIGN.guiXform * ALIGN.xform;
+ALIGN.xform = xform * [0 1 0 0; 1 0 0 0; 0 0 1 0; 0 0 0 1];
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+
+% --------------------------------------------------------------------
+function swapYZmenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to swapYZmenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global ALIGN
+xform = ALIGN.guiXform * ALIGN.xform;
+ALIGN.xform = xform * [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 1];
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+
+% --------------------------------------------------------------------
+function swapXZmenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to swapXZmenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global ALIGN
+xform = ALIGN.guiXform * ALIGN.xform;
+ALIGN.xform = xform * [0 0 1 0; 0 1 0 0; 1 0 0 0; 0 0 0 1];
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+% --------------------------------------------------------------------
 function computeAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1504,6 +1544,5 @@ else
 end
 
 set(handles.figure1,'name',sprintf('mrAlign: %s -> %s',inplaneName,volumeName));
-
 
 
