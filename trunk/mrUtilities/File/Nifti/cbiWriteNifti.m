@@ -51,7 +51,11 @@ end
 if (~exist('short_nan'))
   short_nan=1;
 end
-  
+if isstruct(data)
+  disp(sprintf('(cbiWriteNifti) UHOH! Data appears to be a structure rather than a matrix.'));
+  return
+end
+
 switch (ext)
  case '.nii'  
   hdr.single_file=1;

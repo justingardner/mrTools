@@ -48,6 +48,16 @@ if (~exist('short_nan'))
   short_nan=1;
 end
 
+% first check for valid filename
+if isempty(getext(fname))
+  fname = setext(fname,'hdr');
+end
+if ~isfile(fname)
+  disp(sprintf('(cbiReadNifti) UHOH! Could not find file %s',fname));
+  data =[];hdr=[];
+  return
+end
+
 hdr=cbiReadNiftiHeader(fname);
 
 % this is a bit of a hack, but the pixdim
