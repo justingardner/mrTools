@@ -37,7 +37,24 @@ else
 end
 
 % get the dimensions of the scan
-dim = [procpar.ni procpar.nv-navechoes length(procpar.pss)];
+dim = [procpar.ni procpar.nv length(procpar.pss)];
+
+% check to see if this is a sense reconstruction and what the sense acceleration factor is
+if isfield(procpar,'petable') && ~isempty(procpar.petable{1}) && (length(procpar.petable{1}>1))
+  % petable name that ends in r means a sense protocol
+  if isequal(procpar.petable{1}(end),'r')
+    % check for the sense factor, (hopefully this number won't be greater than 9!!
+    accFactor = str2num(procpar.petable{1}(end-1));
+    % fix dimensions
+    dim(1) = dim(1)*accFactor;
+    dim(2) = dim(2)*accFactor;
+    % print message
+    disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]\n',accFactor,dim(1),dim(2)-navechoes));
+  end
+end
+
+% remove navigator echoes from k-space
+dim(2) = dim(2) - navechoes;
 
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
