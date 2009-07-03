@@ -115,6 +115,7 @@ headerStr = sprintf('%s co=%f amp=%f ph=%f (%i deg)\n%s',headerStr,coval,ampval,
 title(headerStr);
 xtickStep = nframes*framePeriod/ncycles;
 xtick = ceil([0:xtickStep:nframes*framePeriod]);
+xtick = sort(unique(xtick));
 set(gca,'xtick',xtick);
 set(gca,'XLim',ceil([0,nframes*framePeriod]));
 set(gca,'xgrid','on')
