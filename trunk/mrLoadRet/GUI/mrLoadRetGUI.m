@@ -797,7 +797,9 @@ importGroupScans;
 
 % --------------------------------------------------------------------
 function importTSeriesMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('importTSeries not yet implemented');
+mrGlobals;
+viewNum = handles.viewNum;
+importTSeries(MLR.views{viewNum});
 
 % --------------------------------------------------------------------
 function importOverlayMenuItem_Callback(hObject, eventdata, handles)
