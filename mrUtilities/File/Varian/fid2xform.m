@@ -71,7 +71,7 @@ if procpar.nv2 > 1
   voxsize(3) = 10*procpar.lpe2/procpar.nv2;
   dim(3) = procpar.nv2;
   dim(1) = dim(2);
-  procpar.pss = fliplr(procpar.pss);
+  procpar.pss = -procpar.pss;
   % flip to confrom to 2d images
   rotmat = rotmat*[-1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
 end
