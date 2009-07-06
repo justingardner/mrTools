@@ -8,7 +8,7 @@
 %             suitable for the nifti header. (procpar is either the name of 
 %             a file, or the structure returned by readprocpar
 %
-function xform = fid2xform(procpar,verbose)
+function [xform info] = fid2xform(procpar,verbose)
 
 xform = [];
 
@@ -91,7 +91,8 @@ originOffset = -(dim-1)/2;originOffset(3) = 0;
 originOffset = [eye(3) originOffset';0 0 0 1];
 
 % this swaps the dimensions to the coordinate framte that Nifti is expecting.
-swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
+%swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
+swapDim =[0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
 
 % now create the final shifted rotation matrix
 xform = rotmat*swapDim*offset*diag(voxsize)*originOffset;
@@ -115,6 +116,15 @@ if verbose
   disp(sprintf('(fid2xform) pss = %s',num2str(procpar.pss)));
   disp(sprintf('(fid2xform) offset to origin: [%0.2f %0.2f %0.2f]',originOffset(1),originOffset(2),originOffset(3)));
 end
+
+info.dim = dim;
+info.voxsize = voxsize;
+info.offset = offset;
+info.originOffset = originOffset;
+info.pss = procpar.pss;
+info.psi = procpar.psi;
+info.phi = procpar.phi;
+info.theta = procpar.theta;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   euler2rotmatrix   %%
