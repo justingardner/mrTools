@@ -40,16 +40,17 @@ end
 dim = [procpar.ni procpar.nv length(procpar.pss)];
 
 % check to see if this is a sense reconstruction and what the sense acceleration factor is
+senseFactor = [];
 if isfield(procpar,'petable') && ~isempty(procpar.petable{1}) && (length(procpar.petable{1}>1))
   % petable name that ends in r means a sense protocol
   if isequal(procpar.petable{1}(end),'r')
-    % check for the sense factor, (hopefully this number won't be greater than 9!!
-    accFactor = str2num(procpar.petable{1}(end-1));
+    % check for the sense factor, (hopefully this number won't be greater than 9!!)
+    senseFactor = str2num(procpar.petable{1}(end-1));
     % fix dimensions
-    dim(1) = dim(1)*accFactor;
-    dim(2) = dim(2)*accFactor;
+    dim(1) = dim(1)*senseFactor;
+    dim(2) = dim(2)*senseFactor;
     % print message
-    disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]\n',accFactor,dim(1),dim(2)-navechoes));
+    disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]',senseFactor,dim(1),dim(2)-navechoes));
   end
 end
 
@@ -64,6 +65,7 @@ rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 voxsize = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) procpar.thk 1];
 
 % check for 3d acquisition
+info.acq3d = 0;
 if procpar.nv2 > 1
   disp(sprintf('(fid2xform) 3D acquisition'));
   % since the 3rd dimension is taken as a single slice with multiple
@@ -74,6 +76,7 @@ if procpar.nv2 > 1
   procpar.pss = -procpar.pss;
   % flip to confrom to 2d images
   rotmat = rotmat*[-1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
+  info.acq3d = 1;
 end
 
 % Now get the offset in mm from the center of the bore that the center of the
@@ -125,6 +128,12 @@ info.pss = procpar.pss;
 info.psi = procpar.psi;
 info.phi = procpar.phi;
 info.theta = procpar.theta;
+info.senseFactor = senseFactor;
+if isfield(procpar,'cntr')
+  info.dim(4) = length(procpar.cntr)-1;
+else
+  info.dim(4) = 1;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   euler2rotmatrix   %%
