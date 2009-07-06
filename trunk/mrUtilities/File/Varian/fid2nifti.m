@@ -74,6 +74,21 @@ for i = 1:length(fidnames)
   hdr = cbiSetNiftiQform(hdr,qform44);
   hdr = cbiSetNiftiSform(hdr,qform44);
 
+  % get the volume TR (framePeriod) for EPI 
+  procpar = readprocpar(fidname);
+  tr = procpar.tr;
+  % if we run mutliple shots, volume TR = slice TR * shots 
+  % I do not know if shots equal navechoes or not, but as you read from
+  % petable, they should be same
+  if isfield(procpar,'navechoes')
+    tr = tr * procpar.navechoes;
+  end
+  % if we run slice at not interleaved way, 
+  %  volume TR = slice TR * shots * slice number
+  if isfield(procpar,'intlv') && strcmp(procpar.intlv, 'n')
+    tr = tr * length(procpar.pss);
+  end
+
   % make a filename 
   niftiname = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
 
