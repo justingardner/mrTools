@@ -237,11 +237,11 @@ if ~isempty(volSize)
     % only use the baseCoordMap for when the slice
     % in the third dimension (no other view of a 
     % flat map is really valid).
-    if sliceIndex == 3
+%    if sliceIndex == 3
       x = baseCoordMap.coords(:,:,sliceNum,1);
       y = baseCoordMap.coords(:,:,sliceNum,2);
       z = baseCoordMap.coords(:,:,sliceNum,3);
-    end
+%    end
   end
 
   % Rotate coordinates
