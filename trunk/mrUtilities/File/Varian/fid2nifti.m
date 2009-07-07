@@ -10,7 +10,9 @@
 %
 %       e.g.: fid2nifti 2d*.fid
 %%
-function fid2nifti(fidname,varargin)
+function outhdr = fid2nifti(fidname,varargin)
+
+outhdr = [];
 
 % check arguments
 if nargin < 1
@@ -92,11 +94,17 @@ for i = 1:length(fidnames)
   % make a filename 
   niftiname = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
 
-  % write the file
+  % write the file, but only if we aren't taking an output argument
   disp(sprintf('(fid2nifti) Converting %s to %s',fidname,niftiname));
-  cbiWriteNifti(niftiname,fid.data,hdr);
+  if nargout == 0
+    cbiWriteNifti(niftiname,fid.data,hdr);
+  else
+    outhdr{i} = hdr;
+  end
 end
 
+% return single header if that is all that is asked for
+if length(outhdr) == 1,outhdr = outhdr{1};end
 
 
 % cellcat.m
