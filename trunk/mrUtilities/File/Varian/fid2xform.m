@@ -50,7 +50,7 @@ if isfield(procpar,'petable') && ~isempty(procpar.petable{1}) && (length(procpar
     dim(1) = dim(1)*senseFactor;
     dim(2) = dim(2)*senseFactor;
     % print message
-    disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]',senseFactor,dim(1),dim(2)-navechoes));
+    if verbose>=0, disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]',senseFactor,dim(1),dim(2)-navechoes));end
   end
 end
 
@@ -67,7 +67,7 @@ voxsize = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) procpar.thk 1];
 % check for 3d acquisition
 info.acq3d = 0;
 if procpar.nv2 > 1
-  disp(sprintf('(fid2xform) 3D acquisition'));
+  if verbose>=0,disp(sprintf('(fid2xform) 3D acquisition'));end
   % since the 3rd dimension is taken as a single slice with multiple
   % phase encodes, we have to get the voxel size and dimensions differently
   voxsize(3) = 10*procpar.lpe2/procpar.nv2;
@@ -110,7 +110,7 @@ xform = rotmat*swapDim*offset*diag(voxsize)*originOffset;
 xform((xform < 1e-10) & (xform > - 1e-10)) = 0;
 
 % verbose display only
-if verbose
+if verbose > 0
   % display some info.
   disp(sprintf('(fid2xform) psi=%0.2f phi=%0.2f theta=%0.2f',procpar.psi,procpar.phi,procpar.theta));
   disp(sprintf('(fid2xform) Scan dims=[%i %i %i]',dim(1),dim(2),dim(3)));
