@@ -237,11 +237,13 @@ if ~isempty(volSize)
     % only use the baseCoordMap for when the slice
     % in the third dimension (no other view of a 
     % flat map is really valid).
-%    if sliceIndex == 3
+    if sliceIndex == 3
       x = baseCoordMap.coords(:,:,sliceNum,1);
       y = baseCoordMap.coords(:,:,sliceNum,2);
       z = baseCoordMap.coords(:,:,sliceNum,3);
-%    end
+    else
+      oneTimeWarning('badSliceIndex',sprintf('(refreshMLRDisplay:getBaseSlice) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
+    end
   end
 
   % Rotate coordinates
