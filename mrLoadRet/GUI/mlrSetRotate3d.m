@@ -55,7 +55,6 @@ global gRotateView;
 
 % get what the axis was rotated to
 newRotTilt = round(get(evd.Axes,'View'));
-disp(sprintf('The new view is [%d %d].',newRotTilt));
 
 % get the tilt
 tilt = newRotTilt(2);
