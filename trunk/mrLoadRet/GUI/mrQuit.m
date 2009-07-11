@@ -96,12 +96,17 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
   drawnow
   % save mrLastView
   if ~isempty(v)
-    disppercent(-inf,sprintf('(mrQuit) Saving %s/mrLastView',homeDir));
-    % save the view in the current directory
-    view = v;
-    eval(sprintf('save %s view viewSettings -V6;',fullfile(homeDir,'mrLastView')));
-    % save .mrDefaults in the home directory
-    disppercent(inf);
+    try
+      disppercent(-inf,sprintf('(mrQuit) Saving %s/mrLastView',homeDir));
+						% save the view in the current directory
+      view = v;
+      eval(sprintf('save %s view viewSettings -V6;',fullfile(homeDir,'mrLastView')));
+      % save .mrDefaults in the home directory
+      disppercent(inf);
+    catch
+      disppercent(inf);
+      mrErrorDlg('(mrQuit) Could not save mrLastView.mat');
+    end
   end
   disppercent(-inf,sprintf('(mrQuit) Saving %s',mrDefaultsFilename));
   saveMrDefaults;
