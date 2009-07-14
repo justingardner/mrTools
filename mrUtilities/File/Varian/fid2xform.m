@@ -1,12 +1,14 @@
 % fid2xform.m
 %
 %        $Id:$ 
-%      usage: rotmat = fid2xform(procpar)
+%      usage: [xform info] = fid2xform(procpar)
 %         by: justin gardner
 %       date: 05/05/09
 %    purpose: Convert fields out of a named procpar into a rotation matrix
 %             suitable for the nifti header. (procpar is either the name of 
-%             a file, or the structure returned by readprocpar
+%             a file, or the structure returned by readprocpar). info is 
+%             a sturcutre that contains info about the scan like pixel dims
+%             sense factors etc.
 %
 function [xform info] = fid2xform(procpar,verbose)
 
@@ -93,7 +95,7 @@ offset = [eye(3) offset';0 0 0 1];
 originOffset = -(dim-1)/2;originOffset(3) = 0;
 originOffset = [eye(3) originOffset';0 0 0 1];
 
-% this swaps the dimensions to the coordinate framte that Nifti is expecting.
+% this swaps the dimensions to the coordinate frame that Nifti is expecting.
 %swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
 swapDim =[0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
 
@@ -120,6 +122,8 @@ if verbose > 0
   disp(sprintf('(fid2xform) offset to origin: [%0.2f %0.2f %0.2f]',originOffset(1),originOffset(2),originOffset(3)));
 end
 
+% pack up some useful information that we have learned about the scan
+% into an output structure that can be used by other programs.
 info.dim = dim;
 info.voxsize = voxsize;
 info.offset = offset;
