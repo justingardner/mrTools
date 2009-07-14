@@ -818,17 +818,24 @@ mrWarnDlg('exportTSeries not yet implemented');
 
 % --------------------------------------------------------------------
 function exportOverlayMenuItem_Callback(hObject, eventdata, handles)
-pathstr = putPathStrDialog(pwd,'Specify name of exported Nifti overlay file','*.hdr');
+pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export overlay to',mrGetPref('niftiFileExtension'));
 % pathstr = [] if aborted
 if ~isempty(pathstr)
-    mrGlobals;
-    viewNum = handles.viewNum;
-    mrExport2SR(viewNum, pathstr);
+  mrGlobals;
+  viewNum = handles.viewNum;
+  mrExport2SR(viewNum, pathstr);
 end
 
 % --------------------------------------------------------------------
 function exportROIMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('exportROI not yet implemented');
+pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',mrGetPref('niftiFileExtension'));
+% pathstr = [] if aborted
+if ~isempty(pathstr)
+  mrGlobals;
+  viewNum = handles.viewNum;
+  mlrExportROI(viewGet(viewNum,'view'), pathstr);
+end
+
 
 % --------------------------------------------------------------------
 function exportImageMenuItem_Callback(hObject, eventdata, handles)
@@ -2346,7 +2353,7 @@ else
   mrSurfViewer(params.outerSurfaceFileName,params.outerCoordsFileName,params.innerSurfaceFileName,params.innerCoordsFileName,params.curvFileName,params.anatFileName);
 end
 
-  cd(thispwd);
+cd(thispwd);
 
 % --------------------------------------------------------------------
 function calcDistMenu_Callback(hObject, eventdata, handles)
