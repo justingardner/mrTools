@@ -394,13 +394,29 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
             currentValue = get(gParams.ui.varentry{i},'Value');
           end
           % and save it
-          gParams.varinfo{i}.allValues{gParams.varinfo{i}.oldControlVal}=currentValue;
+	  if strcmp(gParams.varinfo{i}.type,'array')
+	    for k = 1:length(currentValue)
+	      currentNumericValue(k) = str2num(currentValue{k});
+	    end
+	    currentNumericValue = reshape(currentNumericValue,size(currentValue));
+	    gParams.varinfo{i}.allValues{gParams.varinfo{i}.oldControlVal}=currentNumericValue;
+	  else
+	    gParams.varinfo{i}.allValues{gParams.varinfo{i}.oldControlVal}=currentValue;
+	  end
         end
         % switch to new value
         if (val >=1) && (val <= length(gParams.varinfo{i}.allValues))
           gParams.varinfo{i}.value = gParams.varinfo{i}.allValues{val};
-          set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.allValues{val});
-          if strcmp(gParams.varinfo{i}.type,'popupmenu')
+	  % if this is an array, we have to set each individual array item
+          if strcmp(gParams.varinfo{i}.type,'array')
+	    for k = 1:length(gParams.varinfo{i}.allValues{val})
+	      set(gParams.ui.varentry{i}(k),'String',gParams.varinfo{i}.allValues{val}(k));
+	    end
+	  else
+	    set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.allValues{val});
+	  end
+	  % so more things to set for these types
+	  if strcmp(gParams.varinfo{i}.type,'popupmenu')
             set(gParams.ui.varentry{i},'Value',1);
           elseif strcmp(gParams.varinfo{i}.type,'checkbox')
             set(gParams.ui.varentry{i},'Value',gParams.varinfo{i}.value);
@@ -801,9 +817,25 @@ for i = 1:length(gParams.varinfo)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % for arrays, have to get all values
   elseif strcmp(gParams.varinfo{i}.type,'array')
-    for iRows = 1:size(gParams.ui.varentry{i},1)
-      for iCols = 1:size(gParams.ui.varentry{i},2)
-        params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+    if ~isfield(gParams.varinfo{i},'group')
+      % if not grouped, just get the value from the gu
+      for iRows = 1:size(gParams.ui.varentry{i},1)
+	for iCols = 1:size(gParams.ui.varentry{i},2)
+	  params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+	end
+      end
+      % if grouped, either get value from gui or form allvalues
+    else
+      for j = 1:length(gParams.varinfo{i}.allValues)
+        if gParams.varinfo{i}.oldControlVal == j
+	  for iRows = 1:size(gParams.ui.varentry{i},1)
+	    for iCols = 1:size(gParams.ui.varentry{i},2)
+	      params.(gParams.varinfo{i}.name){j}(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+	    end
+	  end
+	else
+	  params.(gParams.varinfo{i}.name){j} = gParams.varinfo{i}.allValues{j};
+	end
       end
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -853,7 +885,9 @@ for i = 1:length(gParams.varinfo)
     if isfield(gParams.varinfo{i},'group')
       for j = 1:length(gParams.varinfo{i}.allValues)
         % if this is the current one then use field val
-        if isstr(params.(gParams.varinfo{i}.name){j})
+        if isempty(params.(gParams.varinfo{i}.name){j})
+          temp(j) = nan;
+        elseif isstr(params.(gParams.varinfo{i}.name){j})
           temp(j) = mrStr2num(params.(gParams.varinfo{i}.name){j});
         else
           temp(j) = params.(gParams.varinfo{i}.name){j};

@@ -195,7 +195,7 @@ for i = 1:length(varinfo)
         varinfo{i}.allValues{1} = varinfo{i}.value;
       end
       % for numeric values, make sure that the value is set to a number
-      if isnumeric(varinfo{i}.value) && ~strcmp(varinfo{i}.type,'checkbox')
+      if isnumeric(varinfo{i}.value) && ~strcmp(varinfo{i}.type,'checkbox') && ~strcmp(varinfo{i}.type,'array')
         varinfo{i}.value = num2str(varinfo{i}.value);
       end
       % and set a default for the control value. This will get
@@ -205,4 +205,3 @@ for i = 1:length(varinfo)
     end
   end
 end
-
