@@ -96,21 +96,21 @@ if ieNotDefined('groupParams')
     end
   else
     % get info about scans that live in Raw/TSeries
-    scanDirName = 'Raw/TSeries';
-    scanDir = dir(fullfile(scanDirName,['/*' mrGetPref('niftiFileExtension')]));
+    scanDirName = fullfile('Raw','TSeries');
+    scanFilenames = mlrGetAllImageFilenames(scanDirName);
     nScans=0;scanNames = {};descriptions = {};totalFrames = {};nFrames = {};junkFrames = {};
-    for i = 1:length(scanDir);
+    for i = 1:length(scanFilenames);
       % read the nifti header
-      hdr = cbiReadNiftiHeader(fullfile(scanDirName,scanDir(i).name));
-      if hdr.dim(1) == 4
+      imageHeader = mlrLoadImageHeader(fullfile(scanDirName,scanFilenames{i}));
+      if imageHeader.dim(1) == 4
 	nScans = nScans+1;
-	scanNames{end+1} = scanDir(i).name;
+	scanNames{end+1} = scanFilenames{i};
 	descriptions{end+1} = '';
-	totalFrames{end+1} = hdr.dim(5);
-	nFrames{end+1} = hdr.dim(5);
+	totalFrames{end+1} = imageHeader.dim(5);
+	nFrames{end+1} = imageHeader.dim(5);
 	junkFrames{end+1} = 0;
       else
-	disp(sprintf('(mrInit) File %s is not a 4D Nifti file',scanDir(i).name));
+	disp(sprintf('(mrInit) File %s is not a 4D Nifti file',scanFilenames{i}));
       end
     end
   end
