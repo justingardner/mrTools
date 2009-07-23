@@ -1,6 +1,6 @@
 % mlrLoadImageHeader.m
 %
-%        $Id$ 
+%        $Id: mlrLoadImageHeader.m 1268 2008-08-19 15:43:36Z justin $ 
 %      usage: mlrLoadImageHeader(filename)
 %         by: justin gardner
 %       date: 08/19/08
@@ -17,7 +17,11 @@ if ~any(nargin == [1])
 end
 
 % set filenames
-hdrFilename = setext(filename,'hdr');
+if isempty(getext(filename))
+  hdrFilename = setext(filename,mrGetPref('niftiFileExtension'));
+else
+  hdrFilename = filename;
+end
 matlabFilename = setext(filename,'mat');
 
 %check for file

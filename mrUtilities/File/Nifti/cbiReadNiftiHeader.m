@@ -28,9 +28,13 @@ switch (ext)
   hdr.hdr_name=fullfile(pathstr,[bname '.hdr']);
   hdr.img_name=fullfile(pathstr,[bname '.img']);
  case '.gz','.Z' % zipped
-  error('No support for zipped NIFTI-1 format under Matlab.');
+  disp(sprintf('(cbiReadNifitHeader) No support for zipped NIFTI-1 format under Matlab.'));
+  hdr = [];
+  return
  otherwise
-  error('Not a valid NIFTI-1 file name extension. Legal values are .nii, .hdr, .img');
+  disp(sprintf('(cbiReadNiftiHeader) %s is not a valid NIFTI-1 file name extension. Legal values are .nii, .hdr, .img',fname));
+  hdr = [];
+  return;
 end
 
 % Find the endian-ness of the file
@@ -38,13 +42,15 @@ hdr.endian='b'; % open file in big-endian
 fid=fopen(hdr.hdr_name,'r',hdr.endian);
 % check if this gives the correct header size - if not use little-endian
 testval = fread(fid,1,'int32');
-if (testval ~= 348)
+if ~isequal(testval,348)
   fclose(fid);
   hdr.endian='l';
   fid=fopen(hdr.hdr_name,'r',hdr.endian);
   testval = fread(fid,1,'int32');
-  if (testval ~= 348)
-    error('Illegal file format - incorrect header size (should be 348 bytes)');
+  if ~isequal(testval,348)
+    disp(sprintf('(cbiReadNiftiHeader) Incorrect header size (should be 348 bytes) for file %s',fname));
+    hdr = [];
+    return
   end
 end
 
