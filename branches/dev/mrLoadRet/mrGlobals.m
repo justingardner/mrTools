@@ -5,6 +5,7 @@
 % Runs as a script in the scope of the calling function.
 %
 % djh 6/2004
+% Just testing merge erase this line later
 
 global MLR
 global mrDEFAULTS
