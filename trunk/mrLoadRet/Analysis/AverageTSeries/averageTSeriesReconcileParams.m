@@ -64,6 +64,10 @@ else
     newparams.groupName = groupName;
     newparams.aveGroupName = params.aveGroupName;
 	newparams.interpMethod = params.interpMethod;
-    newparams.description = ['Average from ',groupName,' of scans: ',num2str(scanList)];
+    if ~isfield(params,'description') || isempty(params.description)
+      newparams.description = ['Average from ',groupName,' of scans: ',num2str(scanList)];
+    else
+      newparams.description = params.description;
+    end
     newparams.fileName = [];
 end
