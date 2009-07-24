@@ -307,6 +307,10 @@ for i = 1:length(dirList);
     stimFileNums(end+1) = str2num(name(12:13));
     % try to load and get some info
     load(sprintf(fullfile(stimfileDir,name)));
+    if ieNotDefined('myscreen')
+      disp(sprintf('(mrInit) %s does not look like an mgl stimfile (does not have a myscreen variable)',name));
+      continue;
+    end
     % make a string of some info myscreen
     stimfileStr = '';
     if isfield(myscreen,'volnum')
