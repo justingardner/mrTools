@@ -147,6 +147,12 @@ for i = 1:length(gParams.varinfo)
   else
     gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
   end
+  % check to see if we have to disable the entry field
+  if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
+    for j = 1:length(gParams.ui.varentry{i})
+      set(gParams.ui.varentry{i}(j),'enable','off');
+    end
+  end
   rownum = rownum+1;
 end
 
