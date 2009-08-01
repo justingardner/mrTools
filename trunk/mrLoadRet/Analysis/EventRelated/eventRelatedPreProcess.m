@@ -34,6 +34,11 @@ end
 
 % preprocessing for sdt experiment
 runName = getfieldstr(type,'run');
+% or look for a type that is just the name of a function
+if ~isempty(type) && isstr(type) && exist(type,'file')
+  runName = type;
+end
+% if we have a runName then run the preprocess
 if ~isempty(runName)
   % get run functiona and arguments
   [runFun runName] = strtok(runName,'()');
