@@ -184,6 +184,9 @@ gEventRelatedPlot.loadingTimecourse = 1;
 disppercent(-inf,'(eventRelatedPlot) Plotting time series');
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(gEventRelatedPlot.v,gEventRelatedPlot.scan,gEventRelatedPlot.vox(3),[],gEventRelatedPlot.vox(1),gEventRelatedPlot.vox(2)));
+junkFrames = viewGet(gEventRelatedPlot.v, 'junkFrames', gEventRelatedPlot.scan);
+nFrames = viewGet(gEventRelatedPlot.v,'nFrames',gEventRelatedPlot.scan);
+tSeries = tSeries(junkFrames+1:junkFrames+nFrames);
 legendHandle(1) = plot(tSeries,'k.-');
 legendStr{1} = 'TSeries';
 xlabel('Volume number');
