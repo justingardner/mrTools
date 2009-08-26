@@ -7,9 +7,9 @@
 %             better, have a better argument list and evaluate
 %             arguments using evalin.
 %
-%             passed in varargin, returns a string
-%             that once evaluated sets the variables
-%             called for. Thus, allows arguments like:
+%             passed in varargin, creates variables in
+%             the calling function determined by the arguments
+%             Thus, allows arguments like:
 %
 %             fun('var1','var2=3','var3',[3 4 5]);
 %             will set var1=1, var2=3 and var3=[3 4 5];
