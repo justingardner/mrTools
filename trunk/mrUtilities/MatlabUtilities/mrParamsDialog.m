@@ -1,6 +1,11 @@
 % mrParamsDialog.m
 %
 %      usage: mrParamsDialog(paramsInfo,<titleString>,<buttonWidth>,<callback>,<callbackArg>,<okCallback>,<cancelCallback>)
+%  alt usage: You can also set variables explicitly, with the following syntax:
+%             mrParamsDialog(paramsInfo,<titleString>,varargin)
+%       e.g.: mrParamsDialog(paramsInfo,'This is the title','buttonWidth=1.5');
+%             valid variable names are (buttonWidth,callback,callbackArg,okCallback,cancelCallback)
+%             and also ignoreKeys (which keeps mrParamsDialog from allowing ESC to close it)
 %         by: justin gardner
 %       date: 03/13/07
 %    purpose: creates a dialog for selection of parameters
@@ -67,7 +72,7 @@ gParams.margin = 5;
 gParams.fontsize = 12;
 gParams.fontname = 'Helvetica';
 
-% see if we were passed a title
+% parse the otherParams. The first otherParams is always the title
 if length(otherParams) > 1
   titleStr = otherParams{2};
   gParams.figlocstr = sprintf('mrParamsDialog_%s',fixBadChars(titleStr));
@@ -75,10 +80,28 @@ else
   titleStr = 'Set parameters';
   gParams.figlocstr = 'mrParamsDialog';
 end
-if length(otherParams) > 2
-  if ~isempty(otherParams{3})
-    gParams.buttonWidth = gParams.buttonWidth*otherParams{3};
+
+% now if there is a second otherParams and it is a string, then
+% it means that we have been passed in a "getArgs" type. Otherwise
+% it is the old calling convention in which the order determines what
+% variable is being set
+buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];
+if (length(otherParams) > 2)
+  if isstr(otherParams{3})
+    getArgs(otherParams(3:end));
+  else
+    % get the arguments the old way, by order
+    buttonWidth = otherParams{3};
+    if length(otherParams) > 3,callback = otherParams{4}; end
+    if length(otherParams) > 4,callbackArg = otherParams{5}; end
+    if length(otherParams) > 5,okCallback = otherParams{6}; end
+    if length(otherParams) > 6,cancelCallback = otherParams{7}; end
   end
+end
+
+% set the buttonWidth      
+if ~isempty(buttonWidth)
+  gParams.buttonWidth = gParams.buttonWidth*buttonWidth;
 end
 
 % get the figure
@@ -167,25 +190,25 @@ end
 gParams.callback = [];
 % see if this has a callback, in which case we don't
 % need to make ok/cancel buttons
-if length(otherParams) > 3
-  gParams.callback = otherParams{4};
+if ~isempty(callback)
+  gParams.callback = callback;
   % if another argument is specified that should
   % be sent as an argument to the callback function
-  if (length(otherParams) > 4) && ~isempty(otherParams{5})
-    gParams.callbackArg = otherParams{5};
+  if ~isempty(callbackArg)
+    gParams.callbackArg = callbackArg;
   end
   params = gParams.fignum;
   params2 = getParams(vars);
   % if another argument is specified than put up 
   % an ok button with the callback
-  if (length(otherParams) > 5)
-    gParams.okCallback = otherParams{6};
+  if ~isempty(okCallback)
+    gParams.okCallback = okCallback;
     makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
   end
   % if a final argument is specified than put up 
   % an ok button with the callback
-  if (length(otherParams) > 6)
-    gParams.cancelCallback = otherParams{7};
+  if ~isempty(cancelCallback)
+    gParams.cancelCallback = cancelCallback;
     makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
   end
   makeButton(gParams.fignum,'Help','help',numrows,1,1);
@@ -233,7 +256,9 @@ if ~focusSet
 end
 
 % set keyboard function
-set(gParams.fignum,'KeyPressFcn',@mrParamsKeyPressFcn);
+if ieNotDefined('ignoreKeys')
+  set(gParams.fignum,'KeyPressFcn',@mrParamsKeyPressFcn);
+end
 
 % wait for user to hit ok or cancel (which sets uiresume)
 uiwait;
