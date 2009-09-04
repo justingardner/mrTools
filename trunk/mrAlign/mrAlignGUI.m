@@ -537,7 +537,8 @@ ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
 base = ALIGN.inplaneBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
 base.data = [];base.hdr = [];
-eval(sprintf('save %s base',matFilename))
+inplanePath=fileparts(ALIGN.inplanePath);
+eval(sprintf('save %s base',fullfile(inplanePath,matFilename)));
 clear base
 % --------------------------------------------------------------------
 function saveAlignToFileMenuItem_Callback(hObject, eventdata, handles)
