@@ -837,7 +837,8 @@ base = ALIGN.volBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
 base.data = [];base.hdr = [];
 disp(sprintf('(mrAlignGUI) Saving %s file',matFilename));
-eval(sprintf('save %s base',matFilename));
+volumePath=fileparts(ALIGN.volumePath);
+eval(sprintf('save %s base',fullfile(volumePath,matFilename)));
 clear base % so don't get confused with the inplane base
 
 
