@@ -23,7 +23,7 @@ if isempty(params),return,end
 header = mlrLoadImageHeader(params.anatomy);
 
 % make sure we have AC point
-if isempty(header.talPoints) || isequal(header.talPoints,[0 0 0])
+if ~isfield(header,'talPoints') || isempty(header.talPoints) || isequal(header.talPoints,[0 0 0])
   warndlg('(mlrSurf2Caret) Please set AC point (no need to set any other tal points)');
   % get the AC point
   header.talPoints = talairach(params.anatomy);
