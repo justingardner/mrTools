@@ -1,21 +1,24 @@
 % makeEmptyMLRDir.m
 %
 %        $Id$ 
-%      usage: makeEmptyMLRDir(dirname)
+%      usage 1: makeEmptyMLRDir(dirname), 
+%      usage 2: makeEmptyMLDDir(dirname,'defaultGroup=MotionComp')
 %         by: justin gardner
 %       date: 01/08/09
 %    purpose: Makes an empty MLR directory that can be used
-%             to import groups into
+%             to import groups into, the second usage changes 
+%             the default group made
 %
-function retval = makeEmptyMLRDir(dirname)
+function retval = makeEmptyMLRDir(dirname,varargin)
 
 % check arguments
-if ~any(nargin == [1])
+if ~any(nargin == [1 2 3])
   help makeEmptyMLRDir
   return
 end
 
-directories = {'Raw' fullfile('Raw','TSeries') 'Anatomy' 'Etc' 'Anal'};
+getArgs(varargin, {'defaultGroup=Raw'});
+directories = {defaultGroup fullfile(defaultGroup,'TSeries') 'Anatomy' 'Etc' 'Anal'};
 
 % dirname is a file, abort
 if isfile(dirname)
