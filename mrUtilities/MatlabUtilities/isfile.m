@@ -13,6 +13,7 @@ if (nargin ~= 1)
   help isfile;
   return
 end
+if isempty(filename),isit = 0;,return,end
 
 % open file
 fid = fopen(filename,'r');
