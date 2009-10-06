@@ -196,7 +196,7 @@ edgeDistances = sparse([edges(:,2);edges(:,3)], [edges(:,3);edges(:,2)], [distan
 
 disp('(drawROI) Searching for boundary vertices');
 
-[dist pred] = dijkstra(edgeDistances, roiKeyVertices);
+[dist pred] = dijkstrap(edgeDistances, roiKeyVertices);
 pred(pred == -1) = 0;
 
 boundaryVertices = [];
