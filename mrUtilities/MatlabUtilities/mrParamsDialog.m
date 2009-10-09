@@ -420,7 +420,16 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
           % get the current value
           currentValue = get(gParams.ui.varentry{i},'String');
           if strcmp(gParams.varinfo{i}.type,'popupmenu')
-            currentValue = putOnTopOfList(currentValue{get(gParams.ui.varentry{i},'Value')},currentValue);
+	    valueNum = get(gParams.ui.varentry{i},'Value');
+	    % valueNum should not be 0, but sometimes it can get in that
+	    % way if you click funny on the popupmenu and it doesn't select
+	    % anything, this is a fix from getting lots of debug messages
+	    % when that happens
+	    if valueNum > 0
+	      currentValue = putOnTopOfList(currentValue{valueNum},currentValue);
+	    else
+	      currentValue = putOnTopOfList(currentValue{1},currentValue);
+	    end
           elseif strcmp(gParams.varinfo{i}.type,'checkbox')
             currentValue = get(gParams.ui.varentry{i},'Value');
           end
