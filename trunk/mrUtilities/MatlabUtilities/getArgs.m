@@ -14,12 +14,18 @@
 %             fun('var1','var2=3','var3',[3 4 5]);
 %             will set var1=1, var2=3 and var3=[3 4 5];
 %
+%             Note that any variable which may not be set in the passed in varargins
+%             will need to be declared first in your program (for example):
+%
 %             function fun(varargin)
+%             var1 = [];var2 = [];var3 = [];
 %             getArgs(varargin);
 %
 %             you can have it print
 %             out of a list of what is being set by setting the
 %             verbose argument to 1.
+%
+%             getArgs(varargin,[],'verbose=1');
 %
 %             validVars is a cell array of names that will
 %             be checked against to see if the variables that are
