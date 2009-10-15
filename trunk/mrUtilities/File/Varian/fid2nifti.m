@@ -96,7 +96,7 @@ for i = 1:length(fidnames)
     numReceivers = length(strfind(procpar.rcvrs{1},'y'));
     % see if we have to merge coils
     if numReceivers > 1
-      disp(sprintf('(fid2nifti) Taking sum of squares of %i coils\n',numReceiverts));
+      disp(sprintf('(fid2nifti) Taking sum of squares of %i coils\n',numReceivers));
       if numReceivers ~= fid.dim(end)
 	disp(sprintf('(fid2nifti) Num receivers (%i) does not match data dim (%i)',numReceievers,fid.dim(end)));
       end
