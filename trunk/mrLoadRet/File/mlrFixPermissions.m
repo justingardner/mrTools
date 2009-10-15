@@ -4,9 +4,9 @@
 %      usage: mlrFixPermissions(dirname)
 %         by: justin gardner
 %       date: 10/15/09
-%    purpose: Fix the permissions in an MLR directory
+%    purpose: Fix the permissions of an MLR directory
 %
-function retval = mlrFixPermissions(dirname)
+function mlrFixPermissions(dirname)
 
 % check arguments
 if ~any(nargin == [1])
@@ -17,7 +17,14 @@ end
 dirPermission = '775';
 filePermission = '664';
 
+if ~isfile(fullfile(dirname,'mrSession.mat'))
+  if ~askuser(sprintf('(mlrFixPermissions) Directory %s is not an MLR session, continue anyway?',dirname))
+    return
+  end
+end
+
 % call the recursive function
+disp('(mlrFixPermissions) Examining permissions...');
 needsFix = recursivelyFixDirPermissions('',dirname,dirPermission,filePermission,1);
 
 if needsFix & askuser('(mlrFixPermissions) Do you really want to change these permissions?')
