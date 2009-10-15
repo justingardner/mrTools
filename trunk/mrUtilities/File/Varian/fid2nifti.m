@@ -74,7 +74,7 @@ for i = 1:length(fidnames)
 
   % set the qform
   hdr = cbiSetNiftiQform(hdr,qform44);
-  hdr = cbiSetNiftiSform(hdr,qform44);
+%  hdr = cbiSetNiftiSform(hdr,qform44);
 
   % get the volume TR (framePeriod) for EPI 
   procpar = readprocpar(fidname);
@@ -89,6 +89,25 @@ for i = 1:length(fidnames)
   %  volume TR = slice TR * shots * slice number
   if isfield(procpar,'intlv') && strcmp(procpar.intlv, 'n')
     tr = tr * length(procpar.pss);
+  end
+
+  % check to see if we have to merge coils
+  if isfield(procpar,'rcvrs') && iscell(procpar.rcvrs)
+    numReceivers = length(strfind(procpar.rcvrs{1},'y'));
+    % see if we have to merge coils
+    if numReceivers > 1
+      disp(sprintf('(fid2nifti) Taking sum of squares of %i coils\n',numReceiverts));
+      if numReceivers ~= fid.dim(end)
+	disp(sprintf('(fid2nifti) Num receivers (%i) does not match data dim (%i)',numReceievers,fid.dim(end)));
+      end
+      % merging coils
+      sumOfSquares = zeros(fid.dim(1:3));
+      for i = 1:numReceivers
+	sumOfSquares = sumOfSquares+fid.data(:,:,:,i).^2;
+      end
+      fid.data = sumOfSquares;
+      fid.dim = fid.dim(1:3);
+    end
   end
 
   % make a filename 

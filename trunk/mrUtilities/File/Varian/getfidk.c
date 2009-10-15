@@ -41,11 +41,12 @@ typedef struct {
   int numslices;                  // number of slices
   int numvolumes;                 // number of volumes
   int numlines;                   // number of k-space lines in each image
+  int numreceivers;                   // number of receivers
   int linelen;                    // number of voxels in each line
   int navechoes;                  // number of naviagtor echoes
   int ndim;                       // number of dimensions
   int dims[4];                    // size of those dimensions
-  int numimages;                  // number of images = slices*volumes
+  int numimages;                  // number of images = slices*volumes*receivers
   int imagesize;                  // number of voxels in each image
   mxClassID datatype;             // matlab type of data
   int totalsize;                  // total size of array
@@ -187,6 +188,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   info.navechoes = 0;
   info.numvolumes = 1;
+  info.numreceivers = 1;
   // scan through procpar looking for parameters needed for parsing
   while (fgets(line,LINESIZE,fprocpar)) {
     // get the first token of the line
@@ -209,6 +211,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       // that should be number of slices
       info.linelen = atoi(token)/2;
       if (verbose) mexPrintf("(getfidk) linelen = %i\n",info.linelen);
+    }
+    // get the number of receivers
+    if (!strcmp(token,"rcvrs")) {
+      fgets(line,LINESIZE,fprocpar);
+      token = (char*)strtok(line," ");
+      token = (char*)strtok(NULL," ");
+      info.numreceivers = 0;
+      // Count the number of 'y's that is the number of receivers
+      for (i = 0;i < strlen(token);i++)
+	if (token[i] == 'y') info.numreceivers++;
+      // make sure we have atleast 1 receiver
+      if (info.numreceivers <= 0) info.numreceivers = 1;
+      if (verbose) mexPrintf("(getfidk) Number of receivers = %i\n",info.numreceivers);
     }
     // get number of lines per image
     if (!strcmp(token,"nv")) {
@@ -249,10 +264,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   info.dims[0] = info.linelen;
   info.dims[1] = info.numlines;
   info.dims[2] = info.numslices;
-  info.dims[3] = info.numvolumes;
+  info.dims[3] = info.numvolumes*info.numreceivers;
   // calculate some handy parameters
   info.totalsize = info.linelen*info.numlines*info.numslices*info.numvolumes;
-  info.numimages = info.numslices*info.numvolumes;
+  info.numimages = info.numslices*info.numvolumes*info.numreceivers;
   info.imagesize = info.linelen*info.numlines;
   // display parameters if verbose mode
   if (verbose) mexPrintf("(getfidk) (%ix%ix%ix%i) numimages=%i,imagesize=%i\n",info.linelen,info.numlines,info.numslices,info.numvolumes,info.numimages,info.imagesize);    
