@@ -66,6 +66,9 @@ rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 % so that we get the proper spacing
 voxsize = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) procpar.thk 1];
 
+% vox spacing can be *different* from voxsize, if you skip in your pss
+voxspacing = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) 10*mean(diff(procpar.pss)) 1];
+
 % check for 3d acquisition
 info.acq3d = 0;
 if procpar.nv2 > 1
@@ -73,6 +76,7 @@ if procpar.nv2 > 1
   % since the 3rd dimension is taken as a single slice with multiple
   % phase encodes, we have to get the voxel size and dimensions differently
   voxsize(3) = 10*procpar.lpe2/procpar.nv2;
+  voxspacing(3) = 10*procpar.lpe2/procpar.nv2;
   dim(3) = procpar.nv2;
   dim(1) = dim(2);
   procpar.pss = -procpar.pss;
@@ -96,11 +100,11 @@ originOffset = -(dim-1)/2;originOffset(3) = 0;
 originOffset = [eye(3) originOffset';0 0 0 1];
 
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
-%swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
-swapDim =[0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
+swapDim2 =[0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
 
 % now create the final shifted rotation matrix
-xform = rotmat*swapDim*offset*diag(voxsize)*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);
@@ -117,7 +121,8 @@ if verbose > 0
   disp(sprintf('(fid2xform) psi=%0.2f phi=%0.2f theta=%0.2f',procpar.psi,procpar.phi,procpar.theta));
   disp(sprintf('(fid2xform) Scan dims=[%i %i %i]',dim(1),dim(2),dim(3)));
   disp(sprintf('(fid2xform) Voxel size: [%0.2f %0.2f %0.2f]',voxsize(1),voxsize(2),voxsize(3)));
-  disp(sprintf('(fid2xform) First slice offset: [%0.2f %0.2f %0.2f]',offset(1),offset(2),offset(3)));
+  disp(sprintf('(fid2xform) Voxel spacing: [%0.2f %0.2f %0.2f]',voxspacing(1),voxspacing(2),voxspacing(3)));
+  disp(sprintf('(fid2xform) First slice offset: [%0.2f %0.2f %0.2f]',offset(1,4),offset(2,4),offset(3,4)));
   disp(sprintf('(fid2xform) pss = %s',num2str(procpar.pss)));
   disp(sprintf('(fid2xform) offset to origin: [%0.2f %0.2f %0.2f]',originOffset(1),originOffset(2),originOffset(3)));
 end
@@ -126,6 +131,7 @@ end
 % into an output structure that can be used by other programs.
 info.dim = dim;
 info.voxsize = voxsize;
+info.voxspacing = voxspacing;
 info.offset = offset;
 info.originOffset = originOffset;
 info.pss = procpar.pss;
