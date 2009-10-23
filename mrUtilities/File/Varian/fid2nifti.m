@@ -24,6 +24,8 @@ if nargin < 1
   return
 end
 
+verbose = 0;
+
 % if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
   % use regexp to serach for matching filenames
@@ -64,7 +66,7 @@ for i = 1:length(fidnames)
   end
   
   % get the fid
-  fid = getfid(fidname);
+  fid = getfid(fidname,verbose);
   if isempty(fid.data)
     disp(sprintf('(fid2nifti) WARNING file %s could not be read',fidname));
     continue

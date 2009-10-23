@@ -24,8 +24,8 @@ if exist('zeropad') ~= 1,zeropad = 0;,end
 t0 = clock;
 
 % read the k-space data from the fid
-if (verbose),disppercent(-inf,sprintf('Reading %s...',fidname));end
-d = getfidk(fidname);
+if (verbose),disppercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
+d = getfidk(fidname,verbose);
 if (verbose),disppercent(inf,sprintf('done.\n',fidname));end
 % if it is empty then something has failed
 if (isempty(d.data))
@@ -35,7 +35,7 @@ end
 d.dim = size(d.data);
 
 % everything is ok, then transform data
-if(verbose),disppercent(-inf,'transforming data');end
+if(verbose),disppercent(-inf,'(getfid) Transforming data');end
 for i = 1:size(d.data,3)
   for j = 1:size(d.data,4)
     for k = 1:size(d.data,5)
@@ -51,9 +51,9 @@ for i = 1:size(d.data,3)
 	% simply fft data
 	data(:,:,i,k,j) = fftshift(abs(fft2(d.data(:,:,i,j,k))))/(size(d.data,1)*size(d.data,2));
       end
-      if (verbose)
-	disppercent(min(round(100*((i-1)*size(d.data,4)+j)/(size(d.data,3)*size(d.data,4))),99));
-      end
+    end
+    if (verbose)
+      disppercent(((i-1)*size(d.data,4)+j)/(size(d.data,3)*size(d.data,4)));
     end
   end
 end
