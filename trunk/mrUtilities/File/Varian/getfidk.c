@@ -432,6 +432,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // for each image, cyclying through all slices and volumes
   // then we read the next k-space line etc.
   for (i=0;i<info.numlines;i++) {
+    if (verbose >= 2)
+      mexPrintf("(getfidk) Reading line %i/%i\n",i,info.numlines);
     for (j=0;j<info.numimages;j++) {
 
       // read block header
