@@ -9,8 +9,12 @@
 %             You can also use it with wild cards:
 %
 %       e.g.: fid2nifti 2d*.fid
+% 
+%             If you want to just load (not save a converted file)
+%
+%             [d h] = fid2nifti('fidname.fid');
 %%
-function outhdr = fid2nifti(fidname,varargin)
+function [outdata outhdr] = fid2nifti(fidname,varargin)
 
 outhdr = [];
 
@@ -66,6 +70,32 @@ for i = 1:length(fidnames)
     continue
   end
 
+  % read procpar
+  procpar = readprocpar(fidname);
+  % check to see if we have to merge coils
+  if size(fid.data,5) > 1
+    numReceivers = size(fid.data,5);
+    % see if we have to merge coils
+    if numReceivers > 1
+      if numReceivers ~= fid.dim(end)
+	disp(sprintf('(fid2nifti) Num receivers (%i) does not match data dim (%i)',numReceivers,fid.dim(end)));
+      end
+      disppercent(-inf,sprintf('(fid2nifti) Taking sum of squares of %i coils',numReceivers));
+      for volNum = 1:size(fid.data,4)
+	% merging coils
+	sumOfSquares = zeros(fid.dim(1:3));
+	for receiverNum = 1:numReceivers
+	  sumOfSquares = sumOfSquares+fid.data(:,:,:,volNum,receiverNum).^2;
+	end
+	data(:,:,:,volNum) = sqrt(sumOfSquares);
+	disppercent(volNum/size(fid.data,4));
+      end
+      disppercent(inf);
+      fid.data = data;
+      fid.dim = size(data);
+    end
+  end
+
   % get the qform
   qform44 = fid2xform(fidname);
 
@@ -74,10 +104,8 @@ for i = 1:length(fidnames)
 
   % set the qform
   hdr = cbiSetNiftiQform(hdr,qform44);
-%  hdr = cbiSetNiftiSform(hdr,qform44);
 
   % get the volume TR (framePeriod) for EPI 
-  procpar = readprocpar(fidname);
   tr = procpar.tr;
   % if we run mutliple shots, volume TR = slice TR * shots 
   % I do not know if shots equal navechoes or not, but as you read from
@@ -90,40 +118,26 @@ for i = 1:length(fidnames)
   if isfield(procpar,'intlv') && strcmp(procpar.intlv, 'n')
     tr = tr * length(procpar.pss);
   end
-
-  % check to see if we have to merge coils
-  if isfield(procpar,'rcvrs') && iscell(procpar.rcvrs)
-    numReceivers = length(strfind(procpar.rcvrs{1},'y'));
-    % see if we have to merge coils
-    if numReceivers > 1
-      disp(sprintf('(fid2nifti) Taking sum of squares of %i coils',numReceivers));
-      if numReceivers ~= fid.dim(end)
-	disp(sprintf('(fid2nifti) Num receivers (%i) does not match data dim (%i)',numReceievers,fid.dim(end)));
-      end
-      % merging coils
-      sumOfSquares = zeros(fid.dim(1:3));
-      for i = 1:numReceivers
-	sumOfSquares = sumOfSquares+fid.data(:,:,:,i).^2;
-      end
-      fid.data = sqrt(sumOfSquares);
-      fid.dim = fid.dim(1:3);
-    end
-  end
+  hdr.pixdim(hdr.dim(1)+1) = tr*1000;
 
   % make a filename 
   niftiname = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
 
   % write the file, but only if we aren't taking an output argument
-  disp(sprintf('(fid2nifti) Converting %s to %s',fidname,niftiname));
   if nargout == 0
+    disp(sprintf('(fid2nifti) Converting %s to %s',fidname,niftiname));
     cbiWriteNifti(niftiname,fid.data,hdr);
   else
     outhdr{i} = hdr;
+    outdata{i} = fid.data;
   end
 end
 
 % return single header if that is all that is asked for
-if length(outhdr) == 1,outhdr = outhdr{1};end
+if length(outhdr) == 1,
+  outdata = outdata{1};
+  outhdr = outhdr{1};
+end
 
 
 % cellcat.m
