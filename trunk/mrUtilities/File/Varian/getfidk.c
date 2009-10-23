@@ -45,7 +45,7 @@ typedef struct {
   int linelen;                    // number of voxels in each line
   int navechoes;                  // number of naviagtor echoes
   int ndim;                       // number of dimensions
-  int dims[4];                    // size of those dimensions
+  int dims[5];                    // size of those dimensions
   int numimages;                  // number of images = slices*volumes*receivers
   int imagesize;                  // number of voxels in each image
   mxClassID datatype;             // matlab type of data
@@ -260,17 +260,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // remove the navechoes from the number of lines
   info.numlines -= info.navechoes;
   // set the dimensions for our array
-  info.ndim = 4;
+  info.ndim = 5;
   info.dims[0] = info.linelen;
   info.dims[1] = info.numlines;
   info.dims[2] = info.numslices;
-  info.dims[3] = info.numvolumes*info.numreceivers;
+  info.dims[3] = info.numreceivers;
+  info.dims[4] = info.numvolumes;
   // calculate some handy parameters
-  info.totalsize = info.linelen*info.numlines*info.numslices*info.numvolumes;
+  info.totalsize = info.linelen*info.numlines*info.numslices*info.numvolumes*info.numreceivers;
   info.numimages = info.numslices*info.numvolumes*info.numreceivers;
   info.imagesize = info.linelen*info.numlines;
   // display parameters if verbose mode
-  if (verbose) mexPrintf("(getfidk) (%ix%ix%ix%i) numimages=%i,imagesize=%i\n",info.linelen,info.numlines,info.numslices,info.numvolumes,info.numimages,info.imagesize);    
+  if (verbose) mexPrintf("(getfidk) (%ix%ix%ix%ix%i) numimages=%i,imagesize=%i\n",info.linelen,info.numlines,info.numslices,info.numvolumes,info.numreceivers,info.numimages,info.imagesize);    
   if (verbose) mexPrintf("(getfidk) totalsize = %i\n",info.totalsize);
 
   // get the fid file length and number of blocks
@@ -392,7 +393,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     mxSetField(plhs[0],0,"data",mxdata);
   }
-
   // get space to hold a block of data
   block = (INT16 *)malloc(header.tbytes);
 
@@ -433,6 +433,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // then we read the next k-space line etc.
   for (i=0;i<info.numlines;i++) {
     for (j=0;j<info.numimages;j++) {
+
       // read block header
       if ((header.ntraces == 1) || ((j % header.ntraces) == 0)) {
 	if (fread(&blockheader, sizeof(struct datablockhead), 1, ffid) == 0) {
@@ -615,6 +616,7 @@ void usageError()
   mexPrintf("                            defaults to no reporting (0)\n");
   mexPrintf("                 uint16   = (1 or 0) to return data in native format or double\n");
   mexPrintf("                            defaults to double (0)\n");
+  mexPrintf("                 Retruns data as x,y,slices,receivers,volumes\n");
 }
 
 ///////////////////////

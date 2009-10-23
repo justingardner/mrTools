@@ -4,7 +4,9 @@
 %         by: justin gardner
 %       date: 05/08/03
 %    purpose: reads k-space data from fid file
-%             and transforms it into image
+%             and transforms it into image. Dimensions are
+%             set to x,y,slice,vol,coil (note that vol and coil
+%             dimensions are swapped relative to what getfidk returns)
 %
 function d = getfid(fidname,verbose,zeropad)
 
@@ -33,31 +35,33 @@ end
 d.dim = size(d.data);
 
 % everything is ok, then transform data
-% everything is ok, then transform data
 if(verbose),disppercent(-inf,'transforming data');end
-for i=1:size(d.data,3)
-  for j=1:size(d.data,4)
-    % need to zeropad or not
-    if zeropad
-      % zeropad the data
-      thisdata=zeros(zeropad,zeropad);
-      % get this image
-      thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j));
-      % fft 
-      data(:,:,i,j) = fftshift(abs(fft2(thisdata)))/(size(thisdata,1)*size(thisdata,2));
-    else
-      % simply fft data
-      d.data(:,:,i,j) = fftshift(abs(fft2(d.data(:,:,i,j))))/(size(d.data,1)*size(d.data,2));
-    end
-    if (verbose)
-      disppercent(min(round(100*((i-1)*size(d.data,4)+j)/(size(d.data,3)*size(d.data,4))),99));
+for i = 1:size(d.data,3)
+  for j = 1:size(d.data,4)
+    for k = 1:size(d.data,5)
+      % need to zeropad or not
+      if zeropad
+	% zeropad the data
+	thisdata=zeros(zeropad,zeropad);
+	% get this image
+	thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k));
+	% fft 
+	data(:,:,i,k,j) = fftshift(abs(fft2(thisdata)))/(size(thisdata,1)*size(thisdata,2));
+      else
+	% simply fft data
+	data(:,:,i,k,j) = fftshift(abs(fft2(d.data(:,:,i,j,k))))/(size(d.data,1)*size(d.data,2));
+      end
+      if (verbose)
+	disppercent(min(round(100*((i-1)*size(d.data,4)+j)/(size(d.data,3)*size(d.data,4))),99));
+      end
     end
   end
 end
 
+d.data = data;
+d.dim = size(data);
 % if zeropad fix up some stuff
 if zeropad
-  d.data = data;
   d.dim(1) = zeropad;d.dim(2) = zeropad;
 end
 d.zeropad = zeropad;
