@@ -13,7 +13,11 @@
 %             If you want to just load (not save a converted file)
 %
 %             [d h] = fid2nifti('fidname.fid');
-%%
+%
+%             You can get verbose information by doing
+%
+%             [d h] = fid2nifti('fidname.fid',1);
+%
 function [outdata outhdr] = fid2nifti(fidname,varargin)
 
 outhdr = [];
@@ -24,7 +28,16 @@ if nargin < 1
   return
 end
 
+% if the first argument is a numeric it means to set verbose setting
 verbose = 0;
+if (length(varargin) >= 1) && isscalar(varargin{1})
+  verbose = varargin{1};
+  temp = {};
+  for i = 2:length(varargin)
+    temp{i-1} = varargin{i};
+  end
+  varargin = temp;
+end
 
 % if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
@@ -82,17 +95,18 @@ for i = 1:length(fidnames)
       if numReceivers ~= fid.dim(end)
 	disp(sprintf('(fid2nifti) Num receivers (%i) does not match data dim (%i)',numReceivers,fid.dim(end)));
       end
-      disppercent(-inf,sprintf('(fid2nifti) Taking sum of squares of %i coils',numReceivers));
+      % display what we are doing
+      if verbose,disppercent(-inf,sprintf('(fid2nifti) Taking sum of squares of %i coils',numReceivers));end
+      % merge the coils
       for volNum = 1:size(fid.data,4)
-	% merging coils
 	sumOfSquares = zeros(fid.dim(1:3));
 	for receiverNum = 1:numReceivers
 	  sumOfSquares = sumOfSquares+fid.data(:,:,:,volNum,receiverNum).^2;
 	end
 	data(:,:,:,volNum) = sqrt(sumOfSquares);
-	disppercent(volNum/size(fid.data,4));
+	if verbose,disppercent(volNum/size(fid.data,4));end
       end
-      disppercent(inf);
+      if verbose,disppercent(inf);end
       fid.data = data;
       fid.dim = size(data);
     end
