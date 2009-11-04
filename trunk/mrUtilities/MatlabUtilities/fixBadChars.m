@@ -1,6 +1,6 @@
 % fixBadChars.m
 %
-%      usage: str = fixBadChars(str,<fixList>)
+%      usage: str = fixBadChars(str,<fixList>,<replaceList>)
 %         by: justin gardner
 %       date: 04/20/07
 %    purpose: takes a string and replaces bad characters not
@@ -8,10 +8,13 @@
 %             you can also provide your own fixlist, i.e. pairs of
 %             things that are the match and replacement, e.g.
 %             fixBadChars('remove *this* and replace with that',{'*this*','that'})
-function str = fixBadChars(str,fixList)
+% 
+%             if you want to mostly keep the fixList, but change one or two item:
+%             fixBadChars('change.dot but keep rest',[],{'.','_'});
+function str = fixBadChars(str,fixList,replaceList)
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3])
   help fixBadChars
   return
 end
@@ -23,6 +26,24 @@ if ieNotDefined('fixList')
 else
   fixList = cellArray(fixList,2);
   userDefinedFixList = 1;
+end
+
+% if we want to keep the default list, but just replace a few characters,
+% then the third argument will be a replaceList.
+if ~ieNotDefined('replaceList')
+  replaceList = cellArray(replaceList,2);
+  for i = 1:length(replaceList)
+    for j = 1:length(fixList)
+      % if we find the one we want to replace
+      if isequal(replaceList{i}{1},fixList{j}{1})
+	% then replace it
+	fixList{j}{2} = replaceList{i}{2};
+	break
+      end
+    end
+    % not found, add to our replace list
+    fixList{end+1} = replaceList{i};
+  end
 end
 
 % now swap any occurrences of these characters
