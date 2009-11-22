@@ -87,6 +87,11 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       if isfile(filename)
 	% load the header
 	hdr = cbiReadNiftiHeader(filename);
+	newUnits = bitand(hdr.xyzt_units,7)+16;
+	if (newUnits ~= hdr.xyzt_units)
+	  disp(sprintf('(setFramePeriod) Changing xyzt_units in nifit header from %s (%i) to %s (%i)',dec2bin(hdr.xyzt_units),hdr.xyzt_units,dec2bin(newUnits),newUnits));
+	  hdr.xyzt_units = newUnits;
+	end
 	% set the frameperiod
 	hdr.pixdim(5) = framePeriod*1000;
 	% and write it back
