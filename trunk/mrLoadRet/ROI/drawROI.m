@@ -17,7 +17,8 @@ function view = drawROI(view,descriptor,sgn)
 % Error if no current ROI
 curROInum = viewGet(view,'currentROI');
 if isempty(curROInum)
-  mrErrorDlg('No ROI currently selected.');
+  mrWarnDlg('No ROI currently selected.');
+  return
 end
 
 if ieNotDefined('descriptor')
@@ -40,8 +41,16 @@ if isempty(baseCoords)
   mrErrorDlg('Load base anatomy before drawing an ROI');
 end
 
+% unhook existing button down/up/move functions -- to keep mrInterrogator from
+% running when we define ROIs, but remember the callbacks so we can put them back on
+windowButtonDownFcn = get(fig,'WindowButtonDownFcn');
+windowButtonMotionFcn = get(fig,'WindowButtonMotionFcn');
+windowButtonUpFcn = get(fig,'WindowButtonUpFcn');
+set(fig,'WindowButtonDownFcn','');
+set(fig,'WindowButtonMotionFcn','');
+set(fig,'WindowButtonUpFcn','');
+
 switch descriptor
-  
   case 'rectangle'
     % Get region from user.
     region = round(ginput(2));
@@ -53,6 +62,10 @@ switch descriptor
     if (min(region(:,1))< 1 | max(region(:,1))>baseSliceDims(1) | ...
         min(region(:,2))< 1 | max(region(:,2))>baseSliceDims(2))
       mrWarnDlg('Must choose rect entirely within image boundaries');
+      % reset button down/up/move functions
+      set(fig,'WindowButtonDownFcn',windowButtonDownFcn);
+      set(fig,'WindowButtonMotionFcn',windowButtonMotionFcn);
+      set(fig,'WindowButtonUpFcn',windowButtonUpFcn);
       return;
     end
     % Make sure 2nd value is larger than the 1st.
@@ -133,6 +146,11 @@ switch descriptor
   otherwise
     mrErrorDlg(['Invalid descriptor: ',descriptor]);
 end
+
+% reset button down/up/move functions
+set(fig,'WindowButtonDownFcn',windowButtonDownFcn);
+set(fig,'WindowButtonMotionFcn',windowButtonMotionFcn);
+set(fig,'WindowButtonUpFcn',windowButtonUpFcn);
 
 % Modify ROI
 baseNum = viewGet(view,'currentBase');
