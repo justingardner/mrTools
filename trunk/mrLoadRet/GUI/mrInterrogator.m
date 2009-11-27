@@ -33,6 +33,8 @@ switch (event)
         initHandler(viewNum);
     case 'end'
         endHandler(viewNum);
+    case 'isactive'
+        retval = isActiveHandler(viewNum);
     case 'mouseMove'
         mouseMoveHandler(viewNum);
     case 'mouseUp'
@@ -367,6 +369,14 @@ set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogator,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','off');
 
+% turn on free rotation
+if viewGet(v,'baseType') == 2
+  mlrSetRotate3d(v,1);
+end
+
+% make inactive
+MLR.interrogator{viewNum}.isActive = 0;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % init the interrogator handler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -383,10 +393,14 @@ if isfield(MLR.interrogator{viewNum},'fignum') && isequal(MLR.interrogator{viewN
     restart = 1;
 end
 
+% turn off free rotation
+mlrSetRotate3d(v,0);
+
 % get figure handles
 MLR.interrogator{viewNum}.fignum = fignum;
 MLR.interrogator{viewNum}.guide = guidata(fignum);
 figure(fignum);MLR.interrogator{viewNum}.axesnum = MLR.interrogator{viewNum}.guide.axis;
+MLR.interrogator{viewNum}.isActive = 1;
 
 if ~restart
     % remember old callbacks
@@ -444,6 +458,18 @@ overlayNum = viewGet(view,'currentOverlay');
 analysisNum = viewGet(view,'currentAnalysis');
 MLR.interrogator{viewNum}.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
 set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% init the interrogator handler
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = isActiveHandler(viewNum)
+
+global MLR
+if isfield(MLR,'interrogator') && (length(MLR.interrogator) >= viewNum) && isfield(MLR.interrogator{viewNum},'isActive')
+  retval =  MLR.interrogator{viewNum}.isActive;
+else
+  retval = 0;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextbox makes an uneditable text box.

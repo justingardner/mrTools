@@ -754,6 +754,15 @@ switch lower(param)
       baseTilt = viewGet(view,'baseTilt',baseNum);
       if baseType == 2
 	mlrGuiSet(view,'baseTilt',baseTilt);
+	if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
+	  % turn on free rotation
+	  mlrSetRotate3d(view,1);
+	else
+	  mlrSetRotate3d(view,0);
+	end
+      else
+	% otherwise turn off free rotation
+	mlrSetRotate3d(view,0);
       end
     end
 
