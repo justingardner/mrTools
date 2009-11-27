@@ -41,6 +41,11 @@ if isempty(baseCoords)
   mrErrorDlg('Load base anatomy before drawing an ROI');
 end
 
+% turn off 3d rotate
+if viewGet(view,'baseType') == 2
+  mlrSetRotate3d(view,0);
+end
+
 % unhook existing button down/up/move functions -- to keep mrInterrogator from
 % running when we define ROIs, but remember the callbacks so we can put them back on
 windowButtonDownFcn = get(fig,'WindowButtonDownFcn');
@@ -151,6 +156,11 @@ end
 set(fig,'WindowButtonDownFcn',windowButtonDownFcn);
 set(fig,'WindowButtonMotionFcn',windowButtonMotionFcn);
 set(fig,'WindowButtonUpFcn',windowButtonUpFcn);
+
+% turn on 3d rotate
+if  (viewGet(view,'baseType') == 2) && ~mrInterrogator('isactive',viewGet(view,'viewNum'))
+  mlrSetRotate3d(view,1);
+end
 
 % Modify ROI
 baseNum = viewGet(view,'currentBase');
