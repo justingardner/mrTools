@@ -53,6 +53,9 @@ function myPostCallback(obj,evd)
 
 global gRotateView;
 
+% get the most current version of the view.
+v = viewGet([],'view',viewGet(gRotateView,'viewNum'));
+
 % get what the axis was rotated to
 newRotTilt = round(get(evd.Axes,'View'));
 
@@ -60,11 +63,11 @@ newRotTilt = round(get(evd.Axes,'View'));
 tilt = newRotTilt(2);
 if tilt < 0,tilt = -tilt;else,tilt = 360-tilt;end  
 % and set the slider
-gRotateView = viewSet(gRotateView,'tilt',tilt);
+v = viewSet(v,'tilt',tilt);
 
 % get the rotation
 rot = newRotTilt(1);
 if rot < 0,rot = -rot;else,rot = 360-rot;end  
 % and set the slider
-gRotateView = viewSet(gRotateView,'rotate',rot);
-mlrGuiSet(gRotateView,'rotate',rot);
+v = viewSet(v,'rotate',rot);
+mlrGuiSet(v,'rotate',rot);

@@ -55,8 +55,12 @@ set(fig,'WindowButtonDownFcn','');
 set(fig,'WindowButtonMotionFcn','');
 set(fig,'WindowButtonUpFcn','');
 
-switch descriptor
-  case 'rectangle'
+% check for surface base type, if so we need to use drawSurfaceROI
+if viewGet(view,'baseType') == 2
+  coords = drawSurfaceROI(view);
+else
+  switch descriptor
+   case 'rectangle'
     % Get region from user.
     region = round(ginput(2));
     
@@ -86,7 +90,7 @@ switch descriptor
     baseZ = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],3);
     coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,prod(size(baseX)))];
     
- case 'polygon'
+   case 'polygon'
     roiPolygonMethod = mrGetPref('roiPolygonMethod');
     % Get polygon region using matlab's roipoly function
     if strcmp(roiPolygonMethod,'roipoly')
@@ -122,7 +126,7 @@ switch descriptor
     z = baseZ(polyImIndices);
     coords = [x'; y'; z'; ones(1,length(x))];
 
-  case 'line'
+   case 'line'
     % grab two points from the image;
     [xi yi] = getpts;
 
@@ -148,8 +152,9 @@ switch descriptor
     
     coords = [x; y; z; ones(1,length(x))];
 
-  otherwise
+   otherwise
     mrErrorDlg(['Invalid descriptor: ',descriptor]);
+  end
 end
 
 % reset button down/up/move functions
