@@ -103,9 +103,15 @@ switch lower(field)
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
   end
   if value == 2
-    set(handles.createRoiMenu,'Enable','off');
-    set(handles.addRoiMenu,'Enable','off');
-    set(handles.removeRoiMenu,'Enable','off');
+    set(handles.createRoiMenu,'Enable','on');
+      set(handles.createLineMenuItem,'Enable','off');
+      set(handles.createRectangleMenuItem,'Enable','off');
+      set(handles.addLineMenuItem,'Enable','off');
+      set(handles.addRectangleMenuItem,'Enable','off');
+      set(handles.removeLineMenuItem,'Enable','off');
+      set(handles.removeRectangleMenuItem,'Enable','off');
+    set(handles.addRoiMenu,'Enable','on');
+    set(handles.removeRoiMenu,'Enable','on');
     set(handles.rotateSlider,'SliderStep',[15 45]./360);
     set(handles.baseTiltSlider,'SliderStep',[15 45]./360);
     set(handles.baseTiltSlider,'Visible','on');
@@ -121,6 +127,12 @@ switch lower(field)
     set(handles.baseTilt,'Visible','off');
     set(handles.createRoiMenu,'Enable','on');
     set(handles.addRoiMenu,'Enable','on');
+      set(handles.createLineMenuItem,'Enable','on');
+      set(handles.createRectangleMenuItem,'Enable','on');
+      set(handles.addLineMenuItem,'Enable','on');
+      set(handles.addRectangleMenuItem,'Enable','on');
+      set(handles.removeLineMenuItem,'Enable','on');
+      set(handles.removeRectangleMenuItem,'Enable','on');
     set(handles.removeRoiMenu,'Enable','on');
     set(handles.rotateSlider,'SliderStep',[1 45]./360);
   end		  
