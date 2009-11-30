@@ -120,7 +120,7 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Enable','on');
     set(handles.flatViewerMenuItem,'Label','Surface Viewer');
     set(handles.calcDistMenu, 'Enable', 'off');
-    set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
+    set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
   else
     set(handles.baseTiltSlider,'Visible','off');
     set(handles.baseTiltText,'Visible','off');
