@@ -54,18 +54,21 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function updateInterrogatorHandler(viewNum,interrogator)
 
-mrGlobals;
-v = MLR.views{viewNum};
+if isActiveHandler(viewNum)
+  mrGlobals;
+  v = MLR.views{viewNum};
 
-% set list of interrogators
-interrogatorList = getDefaultInterrogators(v);
-set(MLR.interrogator{viewNum}.hInterrogatorLabel,'String',interrogatorList);
+  % set list of interrogators
+  interrogatorList = getDefaultInterrogators(v);
+  set(MLR.interrogator{viewNum}.hInterrogatorLabel,'String',interrogatorList);
 
-% if not a valid function, go back to old one
-if exist(interrogator)==2
-  set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
-  MLR.interrogator{viewNum}.interrogator = interrogator;
+  % if not a valid function, go back to old one
+  if exist(interrogator)==2
+    set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
+    MLR.interrogator{viewNum}.interrogator = interrogator;
+  end
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % change in interrogator field
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
