@@ -1,6 +1,6 @@
 % loadSurfCaret.m
 %
-%        $Id$ 
+%        $Id: loadSurfCaret.m 1281 2008-08-22 00:33:11Z justin $ 
 %      usage: surf = loadSurfCaret(coordFilename,<topoFilename>,<'dispSurface=0'>)
 %         by: justin gardner
 %       date: 08/10/08
