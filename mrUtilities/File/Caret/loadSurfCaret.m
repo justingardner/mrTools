@@ -37,6 +37,10 @@ end
 % open topo file
 topo = openCaretFile(topoFilename);
 if isempty(topo),return,end
+if ~isfield(topo,'num_tiles')
+  disp(sprintf('(loadSurfCaret) %s is not a topo file',topoFilename));
+  return
+end
 
 % create surface
 surf.Nvtcs = coord.num_nodes;
@@ -51,6 +55,58 @@ if dispSurface
   smartfig('loadSurfCaret','reuse');clf
   patch('vertices', surf.vtcs, 'faces', surf.tris,'FaceVertexCData', surf.m,'facecolor','interp','edgecolor','none');
   axis equal
+end
+
+%mni2caret = loadXformFromFile('../mypreborder.sh');
+%base2mni = loadXformFromFile('../FS003/mri/transforms/talairach.xfm');
+keyboard
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   loadXformFromFile   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function xform = loadXformFromFile(filename,fieldname)
+
+% fieldname to look for
+if nargin < 2
+  fieldname = 'Linear_Transform';
+end
+
+xform = [];
+if ~isfile(filename)
+  disp(sprintf('(loadXformFromFile) Could not find xform file %s',filename));
+  return
+end
+fieldname = lower(fieldname);
+% open the file
+fid = fopen(filename);
+fline = lower(fgets(fid));
+found = 0;
+% go through file line by line
+while ~isequal(fline,-1)
+  % look for fieldname
+  if ~found
+    s = strtok(fline,' =');
+    if strcmp(s,fieldname),found = 1;end
+  else
+    % grab rows of matrix until we get three lines
+    if found < 4
+      xform(found,:) = str2num(fline);
+      found  = found+1;
+    end
+  end
+  % load next line
+  fline = lower(fgets(fid));
+end
+fclose(fid);
+
+% check xform size
+if ~isequal(size(xform),[3 4]) && ~isequal(size(xform),[4 4])
+  disp(sprintf('(loadXformFromFile) Xform is not 3x4'));
+  return
+end
+
+% add last row
+if size(xform,1) == 3
+  xform(4,:) = [0 0 0 1];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
