@@ -1,6 +1,6 @@
 % mlrSurf2Caret.m
 %
-%        $Id$ 
+%        $Id: mlrSurf2Caret.m 1529 2009-09-24 02:31:03Z justin $ 
 %      usage: mlrSurf2Caret()
 %         by: justin gardner
 %       date: 08/19/08
