@@ -8,6 +8,10 @@
 %
 function retval = writeOFF(surf, outName)
 
+if nargin ~= 2
+  help writeOFF;
+  return
+end
 % write the OFF format file
 
 % undo what loadSurfOFF did in loading surface into matlab
