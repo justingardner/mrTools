@@ -5,6 +5,8 @@
 %         by: justin gardner
 %       date: 12/03/09
 %    purpose: function to import caret surfaces should be used after running mypreborder/postborder.
+%             Should be run from within a FreeSurfer directory. mlrImportFreeSurfer should have
+%             already been run on that directory.
 %    options: verbose=0 :set to 1 to for more comments
 %             atlasDir='../PALS_B12.LR': The directory where the atlas and the deformed surfaces
 %                        for the subject should be found
