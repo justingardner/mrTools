@@ -5,20 +5,22 @@
 %       date: 10/24/07
 %    purpose: 
 %
-function base = importSurfaceOFF
+function base = importSurfaceOFF(pathStr)
 
 % check arguments
-if ~any(nargin == [0])
+if ~any(nargin == [0 1])
   help importSurfaceOFF
   return
 end
 base = [];
 
-% Open dialog box to have user choose the file
-startPathStr = mrGetPref('volumeDirectory');
-filterspec = {'*.off','Off Surface file (*.off)'};
-title = 'Choose outer surface file';
-pathStr = getPathStrDialog(startPathStr,title,filterspec,'off');
+if ieNotDefined('pathStr')
+  % Open dialog box to have user choose the file
+  startPathStr = mrGetPref('volumeDirectory');
+  filterspec = {'*.off','Off Surface file (*.off)'};
+  title = 'Choose outer surface file';
+  pathStr = getPathStrDialog(startPathStr,title,filterspec,'off');
+end
 
 % Aborted
 if ieNotDefined('pathStr'),return,end
@@ -26,7 +28,7 @@ if ieNotDefined('pathStr'),return,end
 % get surface name using mrSurfViewer
 [filepath filename] = fileparts(pathStr);
 thispwd = pwd;
-cd(filepath);
+if ~isempty(filepath),cd(filepath);end
 params = mrSurfViewer(filename);
 
 % Aborted
