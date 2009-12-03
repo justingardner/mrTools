@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 09-Aug-2008 14:10:10
+% Last Modified by GUIDE v2.5 03-Dec-2009 21:33:17
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -559,6 +559,7 @@ else
 end
 
 function rotateSlider_Callback(hObject, eventdata, handles)
+
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
 mlrGuiSet(viewNum,'rotate',value);
@@ -2378,5 +2379,3 @@ else
   end
   refreshMLRDisplay(viewNum);
 end
-
-
