@@ -22,6 +22,10 @@ end
 % evaluate the arguments
 eval(evalargs(varargin));
 
+% check directories
+if ~isdir('surf'),disp(sprintf('(mlrImportFreeSurfer) Could not find surf directory'));return,end
+if ~isdir('mri'),disp(sprintf('(mlrImportFreeSurfer) Could not find mri directory'));return,end
+
 if ieNotDefined('baseName'), baseName = getLastDir(pwd);end
 
 wmFile    = 'smoothwm';
@@ -32,6 +36,7 @@ anatFile  = 'T1.mgz';
 hemi      = {'lh', 'rh'};
 hemiNames = {'left', 'right'};
 outDir    = fullfile(pwd,'surfRelax');
+volumeCropSize = [176 256 256];
 
 paramsInfo = {...
     {'freeSurferDir',pwd,'directory where the freeSurfer files live'}, ...
@@ -42,6 +47,7 @@ paramsInfo = {...
     {'infFile', infFile, 'name of the inflated surface'}, ...
     {'anatFile', anatFile, 'name of the base anatomy file'}, ...
     {'baseName', baseName, 'subject initials'}, ...
+    {'volumeCropSize',volumeCropSize, 'Size to crop the volume anatomy to'},...
              };
 
 % get the parameters from the user
@@ -63,7 +69,7 @@ for i = 1:length(hemi)
   surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.wmFile));
   outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_WM.off'));
   if isfile(surfFile)
-    freeSurfer2off(surfFile, outFile);
+    freeSurfer2off(surfFile, outFile, params.volumeCropSize);
   else
     disp(sprintf('(mlrImportFreeSurfer) Could not find inner (white matter) surface %s',getLastDir(surfFile,2)));
   end
@@ -72,7 +78,7 @@ for i = 1:length(hemi)
   surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.gmFile));
   outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_GM.off'));
   if isfile(surfFile)
-    freeSurfer2off(surfFile,outFile);
+    freeSurfer2off(surfFile, outFile, params.volumeCropSize);
   else
     disp(sprintf('(mlrImportFreeSurfer) Could not find outer (pial/gray matter) surface %s',getLastDir(surfFile,2)));
   end
@@ -81,7 +87,7 @@ for i = 1:length(hemi)
   surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.infFile));
   outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Inf.off'));
   if isfile(surfFile)
-    freeSurfer2off(surfFile,outFile);
+    freeSurfer2off(surfFile, outFile, params.volumeCropSize);
   else
     disp(sprintf('(mlrImportFreeSurfer) Could not find inflated surface %s',getLastDir(surfFile,2)));
   end
@@ -101,7 +107,7 @@ outFile = fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr'))
 if isfile(anatFile)
   disp(sprintf('(mlrImportFreeSurfer) Converting the volume anatomy to nifti format'))
   setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
-  system(sprintf('mri_convert --out_type nifti1 --out_orientation RAS --cropsize 176 256 256 %s %s',anatFile,outFile));
+  system(sprintf('mri_convert --out_type nifti1 --out_orientation RAS --cropsize %i %i %i %s %s',params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
 
   h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr')));
   h.qform44(1,4) = -(h.dim(2)-1)/2;
