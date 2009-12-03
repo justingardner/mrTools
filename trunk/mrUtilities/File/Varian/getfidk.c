@@ -347,6 +347,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
+  if ((header.ntraces > 1) && (header.nbheaders != 9)) {
+    mexPrintf("(getfidk) Epirri5 has not been run on this fid file (ntraces = %i and nbheader=%i)\n",header.ntraces,header.nbheaders);
+    errorExit(plhs);
+    return;
+  }
+
   // figure out data class
   if (header.status & S_FLOAT) {
     if (verbose) mexPrintf("(getfidk) datatype is FLOAT\n");
