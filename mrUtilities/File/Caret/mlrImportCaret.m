@@ -4,7 +4,11 @@
 %      usage: mlrImportCaret()
 %         by: justin gardner
 %       date: 12/03/09
-%    purpose: function to import caret surfaces
+%    purpose: function to import caret surfaces should be used after running mypreborder/postborder.
+%    options: verbose=0 :set to 1 to for more comments
+%             atlasDir='../PALS_B12.LR': The directory where the atlas and the deformed surfaces
+%                        for the subject should be found
+%             doCurvature=1: Set to 0 to not compute curvature at all. Set to 2 to force recomputing%                        of curvature
 %
 function retval = mlrImportCaret(varargin)
 
@@ -14,8 +18,8 @@ if ~any(nargin == [0 1])
   return
 end
 
-verbose = [];atlasDir = [];
-getArgs(varargin,{'verbose=0','atlasDir=../PALS_B12.LR'});
+verbose = [];atlasDir = [];doCurvature = [];
+getArgs(varargin,{'verbose=0','atlasDir=../PALS_B12.LR','doCurvature=1'});
 
 % we need files from these places
 surfRelaxDir = 'surfRelax';
@@ -73,16 +77,7 @@ d.rightCoordSurf = loadSurfCaret(fullfile(atlasDir,d.rightAtlasAligned.name),ful
 d = loadDisplaySurfaces(d,atlasDir);
 
 % compute curvature
-doCurvature = 1;
-d.leftAtlasCurvature = [];d.rightAtlasCurvature = [];
-if doCurvature
-  if ~isempty(d.leftFiducialSurfIndex)
-    d.leftAtlasCurvature = -calcCurvature(d.displaySurf{d.leftFiducialSurfIndex});
-  end
-  if ~isempty(d.rightFiducialSurfIndex)
-    d.rightAtlasCurvature = -calcCurvature(d.displaySurf{d.rightFiducialSurfIndex});
-  end
-end
+d = getCurvature(d,doCurvature,atlasDir);
 
 % check for save directory
 if ~isdir('caret'),mkdir('caret');end
@@ -103,6 +98,39 @@ if ~isempty(d.rightAtlasCurvature),saveVFF(fullfile('caret','rightAtlasCurvature
 % and link anatomy file
 linkFile(d.volumeFileName,fullfile('caret',getLastDir(d.volumeFileName)));
 linkFile(setext(d.volumeFileName,'img'),fullfile('caret',setext(getLastDir(d.volumeFileName),'img')));
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%   getCurvature   %%
+%%%%%%%%%%%%%%%%%%%%%%
+function d = getCurvature(d,doCurvature,atlasDir)
+
+d.leftAtlasCurvature = [];d.rightAtlasCurvature = [];
+if doCurvature
+  if ~isempty(d.leftFiducialSurfIndex)
+    % left curvature filename
+    leftCurvatureFile = fullfile(atlasDir,'leftAtlasCurvature.vff');
+    % see if we can load it
+    if isfile(leftCurvatureFile) && (doCurvature <= 1)
+      d.leftAtlasCurvature = loadVFF(leftCurvatureFile);
+    else
+      % otherwise compute it
+      d.leftAtlasCurvature = -calcCurvature(d.displaySurf{d.leftFiducialSurfIndex});
+      saveVFF(leftCurvatureFile,d.leftAtlasCurvature);
+    end
+  end
+  if ~isempty(d.rightFiducialSurfIndex)
+    % left curvature filename
+    rightCurvatureFile = fullfile(atlasDir,'rightAtlasCurvature.vff');
+    % see if we can load it
+    if isfile(rightCurvatureFile) && (doCurvature <= 1)
+      d.rightAtlasCurvature = loadVFF(rightCurvatureFile);
+    else
+      % otherwise compute it
+      d.rightAtlasCurvature = -calcCurvature(d.displaySurf{d.rightFiducialSurfIndex});
+      saveVFF(rightCurvatureFile,d.rightAtlasCurvature);
+    end
+  end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   loadDisplaySurfaces   %%
