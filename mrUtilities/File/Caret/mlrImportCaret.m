@@ -14,10 +14,12 @@ if ~any(nargin == [0 1])
   return
 end
 
+verbose = [];atlasDir = [];
+getArgs(varargin,{'verbose=0','atlasDir=../PALS_B12.LR'});
+
 % we need files from these places
 surfRelaxDir = 'surfRelax';
 caretFileDir = 'surf';
-atlasDir = '../PALS_B12.LR';
 
 % check to make sure the directories exist
 if ~checkDirs(caretFileDir,surfRelaxDir),return,end
@@ -46,10 +48,10 @@ if isempty(d.rightAtlasAligned),disp(sprintf('(mlrImportCaret) Could not find de
 if isempty(d.leftAtlasTopo) || isempty(d.rightAtlasTopo),return,end
 
 % get all the display surfaces that match
-[topo d.leftDisplaySurface] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',d.leftAtlasTopo.numNodes),sprintf('matchStr=LEFT'),'noDisplay=1');
-if isempty(d.leftDisplaySurface),disp(sprintf('(mlrImportCaret) Could not find any display coordinages for LEFT in atlas dir: %s',atlasDir)),return,end
-[topo d.rightDisplaySurface] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',d.rightAtlasTopo.numNodes),sprintf('matchStr=RIGHT'),'noDisplay=1');
-if isempty(d.rightDisplaySurface),disp(sprintf('(mlrImportCaret) Could not find any display coordinages for RIGHT in atlas dir: %s',atlasDir)),return,end
+[topo d.leftDisplaySurfaceNames] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',d.leftAtlasTopo.numNodes),sprintf('matchStr=LEFT'),'noDisplay=1');
+if isempty(d.leftDisplaySurfaceNames),disp(sprintf('(mlrImportCaret) Could not find any display coordinages for LEFT in atlas dir: %s',atlasDir)),return,end
+[topo d.rightDisplaySurfaceNames] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',d.rightAtlasTopo.numNodes),sprintf('matchStr=RIGHT'),'noDisplay=1');
+if isempty(d.rightDisplaySurfaceNames),disp(sprintf('(mlrImportCaret) Could not find any display coordinages for RIGHT in atlas dir: %s',atlasDir)),return,end
 
 % get the volume header
 [hdr d.volumeFileName] = getNiftiVolumeHeader(surfRelaxDir);
@@ -58,49 +60,100 @@ if isempty(d.rightDisplaySurface),disp(sprintf('(mlrImportCaret) Could not find 
 d.coordShift = hdr.dim(2:4)/2;
   
 % display the transforms
-dispXform('Left hemisphere 711-2B to original xform',d.leftXform);
-dispXform('Right hemisphere 711-2B to original xform',d.rightXform);
+if verbose
+  dispXform('Left hemisphere 711-2B to original xform',d.leftXform);
+  dispXform('Right hemisphere 711-2B to original xform',d.rightXform);
+end
 
-% Now load left surfaces
+% Now load left and right coord surfaces
 d.leftCoordSurf = loadSurfCaret(fullfile(atlasDir,d.leftAtlasAligned.name),fullfile(atlasDir,d.leftAtlasTopo.name),'xform',d.leftXform,'zeroBased=1','coordShift',d.coordShift);
-d.leftFiducialSurf = loadSurfCaret(fullfile(atlasDir,d.leftDisplaySurface(1).name),fullfile(atlasDir,d.leftAtlasTopo.name));
-d.leftInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.leftDisplaySurface(2).name),fullfile(atlasDir,d.leftAtlasTopo.name));
-d.leftVeryInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.leftDisplaySurface(3).name),fullfile(atlasDir,d.leftAtlasTopo.name));
-
-% Now load right surfaces
 d.rightCoordSurf = loadSurfCaret(fullfile(atlasDir,d.rightAtlasAligned.name),fullfile(atlasDir,d.rightAtlasTopo.name),'xform',d.rightXform,'zeroBased=1','coordShift',d.coordShift);
-d.rightFiducialSurf = loadSurfCaret(fullfile(atlasDir,d.rightDisplaySurface(1).name),fullfile(atlasDir,d.rightAtlasTopo.name));
-d.rightInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.rightDisplaySurface(2).name),fullfile(atlasDir,d.rightAtlasTopo.name));
-d.rightVeryInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.rightDisplaySurface(3).name),fullfile(atlasDir,d.rightAtlasTopo.name));
+
+% now load display surfaces
+d = loadDisplaySurfaces(d,atlasDir);
 
 % compute curvature
 doCurvature = 1;
+d.leftAtlasCurvature = [];d.rightAtlasCurvature = [];
 if doCurvature
-  d.leftAtlasCurvature = calcCurvature(d.leftFiducialSurf);
-  d.rightAtlasCurvature = calcCurvature(d.rightFiducialSurf);
+  if ~isempty(d.leftFiducialSurfIndex)
+    d.leftAtlasCurvature = -calcCurvature(d.displaySurf{d.leftFiducialSurfIndex});
+  end
+  if ~isempty(d.rightFiducialSurfIndex)
+    d.rightAtlasCurvature = -calcCurvature(d.displaySurf{d.rightFiducialSurfIndex});
+  end
 end
 
 % check for save directory
 if ~isdir('caret'),mkdir('caret');end
 
-% and write out left surfaces
+% and write out left and right coord surfaces
 writeOFF(d.leftCoordSurf,fullfile('caret','leftCoords'));
-writeOFF(d.leftFiducialSurf,fullfile('caret','leftAtlasFiducial'));
-writeOFF(d.leftInflatedSurf,fullfile('caret','leftAtlasInflated'));
-writeOFF(d.leftVeryInflatedSurf,fullfile('caret','leftAtlasVeryInflated'));
-if doCurvature,saveVFF(fullfile('caret','leftAtlasCurvature'),d.leftAtlasCurvature);end
-
-% write out right surfaces
 writeOFF(d.rightCoordSurf,fullfile('caret','rightCoords'));
-writeOFF(d.rightFiducialSurf,fullfile('caret','rightAtlasFiducial'));
-writeOFF(d.rightInflatedSurf,fullfile('caret','rightAtlasInflated'));
-writeOFF(d.rightVeryInflatedSurf,fullfile('caret','rightAtlasVeryInflated'));
-if doCurvature,saveVFF(fullfile('caret','rightAtlasCurvature'),d.rightAtlasCurvature);end
+
+% write display surfaces
+for i = 1:d.displaySurfIndex
+  writeOFF(d.displaySurf{i},fullfile('caret',d.displaySurfFileName{i}));
+end
+
+% save curvature
+if ~isempty(d.leftAtlasCurvature),saveVFF(fullfile('caret','leftAtlasCurvature'),d.leftAtlasCurvature);end
+if ~isempty(d.rightAtlasCurvature),saveVFF(fullfile('caret','rightAtlasCurvature'),d.rightAtlasCurvature);end
 
 % and link anatomy file
 linkFile(d.volumeFileName,fullfile('caret',getLastDir(d.volumeFileName)));
 linkFile(setext(d.volumeFileName,'img'),fullfile('caret',setext(getLastDir(d.volumeFileName),'img')));
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   loadDisplaySurfaces   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function d = loadDisplaySurfaces(d,atlasDir)
+
+% names of display surfaces to try to load
+surfaceNames = {'fiducial','.inflated','very_Inflated'};
+d.displaySurfIndex = 0;d.leftFiducialSurfIndex = [];d.rightFiducialSurfIndex = [];
+for i = 1:length(surfaceNames)
+  % try to load left
+  surf = myLoadSurfCaret(d,atlasDir,'left',surfaceNames{i});
+  % save it if we got it.
+  if ~isempty(surf)
+    d.displaySurfIndex = d.displaySurfIndex+1;
+    d.displaySurf{d.displaySurfIndex} = surf;
+    % create name for file
+    d.displaySurfFileName{d.displaySurfIndex} = fixBadChars(surfaceNames{i},{{'.',''},{'_',''}});
+    d.displaySurfFileName{d.displaySurfIndex} = sprintf('leftAtlas%s',capitalize(d.displaySurfFileName{d.displaySurfIndex}));
+    % if this is the first, fiducial one, then remember it
+    if i == 1,d.leftFiducialSurfIndex = d.displaySurfIndex;end
+  end
+  % try to load right
+  surf = myLoadSurfCaret(d,atlasDir,'right',surfaceNames{i});
+  % save it if we got it.
+  if ~isempty(surf)
+    d.displaySurfIndex = d.displaySurfIndex+1;
+    d.displaySurf{d.displaySurfIndex} = surf;
+    % create name for file
+    d.displaySurfFileName{d.displaySurfIndex} = fixBadChars(surfaceNames{i},{{'.',''},{'_',''}});
+    d.displaySurfFileName{d.displaySurfIndex} = sprintf('rightAtlas%s',capitalize(d.displaySurfFileName{d.displaySurfIndex}));
+    % if this is the first, fiducial one, then remember it
+    if i == 1,d.rightFiducialSurfIndex = d.displaySurfIndex;end
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   myLoadSurfCaret   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function surf = myLoadSurfCaret(d,atlasDir,side,type)
+
+surf = [];
+% get the surface name
+surfaceName = dirfind(d.(sprintf('%sDisplaySurfaceNames',side)),type);
+% check if we have one
+if isempty(surfaceName)
+  disp(sprintf('(mlrImportCaret:myLoadSurfCaret) Could not find %s %s atlas coord file in %s',side,type,atlasDir));
+  return
+end
+% load it 
+surf = loadSurfCaret(fullfile(atlasDir,surfaceName),fullfile(atlasDir,d.(sprintf('%sAtlasTopo',side)).name));
 %%%%%%%%%%%%%%%%%%%%%%
 %%   getAtlasTopo   %%
 %%%%%%%%%%%%%%%%%%%%%%
@@ -275,6 +328,20 @@ niftiFileName = fullfile(surfRelaxDir,params.niftiVolume);
 surf = loadSurfCaret(coordFileName,topoFileName);
 keyboard
 
+%%%%%%%%%%%%%%%%%
+%    dirfind   %%
+%%%%%%%%%%%%%%%%%
+function filename = dirfind(d,matchstr)
+
+filename = '';
+for i = 1:length(d)
+  if ~isempty(strfind(lower(d(i).name),lower(matchstr)))
+    filename = d(i).name;
+    return
+  end
+end
+
+    
 %%%%%%%%%%%%%%%%%%
 %    dir2cell    %
 %%%%%%%%%%%%%%%%%%
@@ -327,3 +394,9 @@ for i = 1:nargin
 end
 isok = 1;
 
+%%%%%%%%%%%%%%%%%%%%
+%%   capitalize   %%
+%%%%%%%%%%%%%%%%%%%%
+function name = capitalize(name)
+
+name(1) = upper(name(1));
