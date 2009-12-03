@@ -1,12 +1,12 @@
 % importCaret.m
 %
 %        $Id:$ 
-%      usage: importCaret()
+%      usage: mlrImportCaret()
 %         by: justin gardner
 %       date: 12/03/09
 %    purpose: function to import caret surfaces
 %
-function retval = importCaret()
+function retval = mlrImportCaret(varargin)
 
 % check arguments
 if ~any(nargin == [0 1])
@@ -17,54 +17,103 @@ end
 % we need files from these places
 surfRelaxDir = 'surfRelax';
 caretFileDir = 'surf';
+atlasDir = '../PALS_B12.LR';
 
 % check to make sure the directories exist
-if ~isdir(caretFileDir)
-  disp(sprintf('(importCaret) Could not find %s directory',caretFileDir));
-  return
-end
+if ~checkDirs(caretFileDir,surfRelaxDir),return,end
 
-if ~isdir(surfRelaxDir)
-  disp(sprintf('(importCaret) Could not find %s directory. Have you run mlrImportFreeSurfer?',surfRelaxDir));
-  return
-end
-
-% look for right coord file
-[rightCoordFiles leftStemName] = getCoordFiles(caretFileDir,'R.Midthickness');
+% look for coord files in caret directory. These will be used for computing
+% the xform that goes from 711-2B back to the original coordinates
+[rightCoordFiles d.rightStemName] = getCoordFiles(caretFileDir,'R.Midthickness');
 if isempty(rightCoordFiles),return,end
-[leftCoordFiles rightStemName] = getCoordFiles(caretFileDir,'L.Midthickness');
+[leftCoordFiles d.leftStemName] = getCoordFiles(caretFileDir,'L.Midthickness');
 if isempty(leftCoordFiles),return,end
 
-% display the names
-disp(sprintf('(importCaret) Right hemisphere coords files are %s and %s',rightCoordFiles{1},rightCoordFiles{2}));
-disp(sprintf('(importCaret) Left hemisphere coords files are %s and %s',leftCoordFiles{1},leftCoordFiles{2}));
-
 % now compute the transformation from caret 711-2B back to original coordinates;
-leftXform = computeTransformBetweenSurfaces(leftCoordFiles{2},leftCoordFiles{1});
-if isempty(leftXform),return,end
-rightXform = computeTransformBetweenSurfaces(rightCoordFiles{2},rightCoordFiles{1});
-if isempty(rightXform),return,end
-
-% display the transforms
-dispXform('Left hemisphere 711-2B to original xform',leftXform);
-dispXform('Right hemisphere 711-2B to original xform',rightXform);
+d.leftXform = computeTransformBetweenSurfaces(leftCoordFiles{2},leftCoordFiles{1});
+if isempty(d.leftXform),return,end
+d.rightXform = computeTransformBetweenSurfaces(rightCoordFiles{2},rightCoordFiles{1});
+if isempty(d.rightXform),return,end
 
 % now look for the files in the atlas directory
-atlasDir = '../PALS_B12.LR';
-[topo leftAtlasAligned] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('matchStr=%s',leftStemName),'noDisplay=1');
-if isempty(leftAtlasAligned),disp(sprintf('(importCaret) Could not find deformed surface for %s in %s',leftStemName,atlasDir));return,end
-[topo rightAtlasAligned] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('matchStr=%s',rightStemName),'noDisplay=1');
-if isempty(rightAtlasAligned),disp(sprintf('(importCaret) Could not find deformed surface for %s in %s',rightStemName,atlasDir));return,end
+[topo d.leftAtlasAligned] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('matchStr=%s',d.leftStemName),'noDisplay=1');
+if isempty(d.leftAtlasAligned),disp(sprintf('(mlrImportCaret) Could not find deformed surface for %s in %s',d.leftStemName,atlasDir));return,end
+[topo d.rightAtlasAligned] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('matchStr=%s',d.rightStemName),'noDisplay=1');
+if isempty(d.rightAtlasAligned),disp(sprintf('(mlrImportCaret) Could not find deformed surface for %s in %s',d.rightStemName,atlasDir));return,end
 
 % look for topo files for LEFT and RIGHT hemispheres
+[d.leftAtlasTopo d.rightAtlasTopo] = getAtlasTopo(atlasDir);
+if isempty(d.leftAtlasTopo) || isempty(d.rightAtlasTopo),return,end
+
+% get all the display surfaces that match
+[topo d.leftDisplaySurface] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',d.leftAtlasTopo.numNodes),sprintf('matchStr=LEFT'),'noDisplay=1');
+if isempty(d.leftDisplaySurface),disp(sprintf('(mlrImportCaret) Could not find any display coordinages for LEFT in atlas dir: %s',atlasDir)),return,end
+[topo d.rightDisplaySurface] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',d.rightAtlasTopo.numNodes),sprintf('matchStr=RIGHT'),'noDisplay=1');
+if isempty(d.rightDisplaySurface),disp(sprintf('(mlrImportCaret) Could not find any display coordinages for RIGHT in atlas dir: %s',atlasDir)),return,end
+
+% get the volume header
+[hdr d.volumeFileName] = getNiftiVolumeHeader(surfRelaxDir);
+
+% get how much to shift coords to be in the center
+d.coordShift = hdr.dim(2:4)/2;
+  
+% display the transforms
+dispXform('Left hemisphere 711-2B to original xform',d.leftXform);
+dispXform('Right hemisphere 711-2B to original xform',d.rightXform);
+
+% Now load left surfaces
+d.leftCoordSurf = loadSurfCaret(fullfile(atlasDir,d.leftAtlasAligned.name),fullfile(atlasDir,d.leftAtlasTopo.name),'xform',d.leftXform,'zeroBased=1','coordShift',d.coordShift);
+d.leftFiducialSurf = loadSurfCaret(fullfile(atlasDir,d.leftDisplaySurface(1).name),fullfile(atlasDir,d.leftAtlasTopo.name));
+d.leftInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.leftDisplaySurface(2).name),fullfile(atlasDir,d.leftAtlasTopo.name));
+d.leftVeryInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.leftDisplaySurface(3).name),fullfile(atlasDir,d.leftAtlasTopo.name));
+
+% Now load right surfaces
+d.rightCoordSurf = loadSurfCaret(fullfile(atlasDir,d.rightAtlasAligned.name),fullfile(atlasDir,d.rightAtlasTopo.name),'xform',d.rightXform,'zeroBased=1','coordShift',d.coordShift);
+d.rightFiducialSurf = loadSurfCaret(fullfile(atlasDir,d.rightDisplaySurface(1).name),fullfile(atlasDir,d.rightAtlasTopo.name));
+d.rightInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.rightDisplaySurface(2).name),fullfile(atlasDir,d.rightAtlasTopo.name));
+d.rightVeryInflatedSurf = loadSurfCaret(fullfile(atlasDir,d.rightDisplaySurface(3).name),fullfile(atlasDir,d.rightAtlasTopo.name));
+
+% compute curvature
+doCurvature = 1;
+if doCurvature
+  d.leftAtlasCurvature = calcCurvature(d.leftFiducialSurf);
+  d.rightAtlasCurvature = calcCurvature(d.rightFiducialSurf);
+end
+
+% check for save directory
+if ~isdir('caret'),mkdir('caret');end
+
+% and write out left surfaces
+writeOFF(d.leftCoordSurf,fullfile('caret','leftCoords'));
+writeOFF(d.leftFiducialSurf,fullfile('caret','leftAtlasFiducial'));
+writeOFF(d.leftInflatedSurf,fullfile('caret','leftAtlasInflated'));
+writeOFF(d.leftVeryInflatedSurf,fullfile('caret','leftAtlasVeryInflated'));
+if doCurvature,saveVFF(fullfile('caret','leftAtlasCurvature'),d.leftAtlasCurvature);end
+
+% write out right surfaces
+writeOFF(d.rightCoordSurf,fullfile('caret','rightCoords'));
+writeOFF(d.rightFiducialSurf,fullfile('caret','rightAtlasFiducial'));
+writeOFF(d.rightInflatedSurf,fullfile('caret','rightAtlasInflated'));
+writeOFF(d.rightVeryInflatedSurf,fullfile('caret','rightAtlasVeryInflated'));
+if doCurvature,saveVFF(fullfile('caret','rightAtlasCurvature'),d.rightAtlasCurvature);end
+
+% and link anatomy file
+linkFile(d.volumeFileName,fullfile('caret',getLastDir(d.volumeFileName)));
+linkFile(setext(d.volumeFileName,'img'),fullfile('caret',setext(getLastDir(d.volumeFileName),'img')));
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%   getAtlasTopo   %%
+%%%%%%%%%%%%%%%%%%%%%%
+function [leftAtlasTopo rightAtlasTopo] = getAtlasTopo(atlasDir)
+
 leftAtlasTopo = listCaretDir(sprintf('dirname=%s',atlasDir),'matchStr=LEFT','noDisplay=1');
 if isempty(leftAtlasTopo)
-  disp(sprintf('(importCaret) Could not find any atlas topo files that match LEFT in %s',atlasDir));
+  disp(sprintf('(mlrImportCaret) Could not find any atlas topo files that match LEFT in %s',atlasDir));
   return
 end
 rightAtlasTopo = listCaretDir(sprintf('dirname=%s',atlasDir),'matchStr=RIGHT','noDisplay=1');
 if isempty(rightAtlasTopo)
-  disp(sprintf('(importCaret) Could not find any atlas topo files that match RIGHT in %s',atlasDir));
+  disp(sprintf('(mlrImportCaret) Could not find any atlas topo files that match RIGHT in %s',atlasDir));
   return
 end
 
@@ -88,26 +137,6 @@ for i = 1:length(rightAtlasTopo)
     break;
   end
 end
-
-% get all the display surfaces that match
-[topo leftDisplaySurface] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',leftAtlasTopo.numNodes),sprintf('matchStr=LEFT'),'noDisplay=1');
-if isempty(leftDisplaySurface),disp(sprintf('(importCaret) Could not find any display coordinages for LEFT in atlas dir: %s',atlasDir)),return,end
-[topo rightDisplaySurface] = listCaretDir(sprintf('dirname=%s',atlasDir),sprintf('numNodes=%i',rightAtlasTopo.numNodes),sprintf('matchStr=RIGHT'),'noDisplay=1');
-if isempty(rightDisplaySurface),disp(sprintf('(importCaret) Could not find any display coordinages for RIGHT in atlas dir: %s',atlasDir)),return,end
-
-% get the volume header
-hdr = getNiftiVolumeHeader(surfRelaxDir);
-
-% get how much to shift coords to be in the center
-coordShift = hdr.dim(2:4)/2;
-  
-% Now load surfaces
-% fix comments in loadSurCaret. Check for coordinate transform being correct
-surf = loadSurfCaret(fullfile(atlasDir,leftAtlasAligned.name),fullfile(atlasDir,leftAtlasTopo.name),'xform',leftXform,'zeroBased=1','coordShift',coordShift);
-
-writeOFF(surf,'test.off');
-m = rand(1,surf.Nvtcs);
-saveVFF('test.vff',m);
 
 %%%%%%%%%%%%%%%%%%%
 %    dispXform    %
@@ -150,11 +179,11 @@ function [filenames stemName] = getCoordFiles(caretFileDir,matchStr)
 filenames = [];
 [topoFile coordFile] = listCaretDir(sprintf('dirname=%s',caretFileDir),sprintf('matchStr=%s.coord',matchStr),'noDisplay=1');
 if isempty(coordFile)
-  disp(sprintf('(importCaret) Could not find %s.coord file',matchStr));
+  disp(sprintf('(mlrImportCaret) Could not find %s.coord file',matchStr));
   return
 end
 if length(coordFile) ~= 1
-  disp(sprintf('(importCaret) Found %i files that match %s.coord file, but should have found only 1',matchStr));
+  disp(sprintf('(mlrImportCaret) Found %i files that match %s.coord file, but should have found only 1',matchStr));
   return
 end  
 
@@ -167,7 +196,7 @@ stemName = sprintf('%s%s',coordFile.name(1:matchLoc-1),matchStr);
 caretName = sprintf('%s_711-2B.coord',stemName);
 caretName = fullfile(caretFileDir,caretName);
 if ~isfile(caretName)
-  disp(sprintf('(importCaret) Could not find file %s',caretName));
+  disp(sprintf('(mlrImportCaret) Could not find file %s',caretName));
   return
 end
 
@@ -180,18 +209,18 @@ filenames{2} = caretName;
 function checkAllCaretFiles(surfRelaxDir,caretFileDir)
 
 % check directory
-disppercent(-inf,sprintf('(importCaret) Checking %s directory for topo and coord files',caretFileDir));
+disppercent(-inf,sprintf('(mlrImportCaret) Checking %s directory for topo and coord files',caretFileDir));
 [topoFiles coordFiles] = listCaretDir(sprintf('dirname=%s',caretFileDir),'noDisplay=1');
 disppercent(inf);
 
 % return if files not found
 if isempty(topoFiles)
-  disp(sprintf('(importCaret) Could not find any topo files in %s. Have you run mypreborder/mypostborder?',caretFileDir));
+  disp(sprintf('(mlrImportCaret) Could not find any topo files in %s. Have you run mypreborder/mypostborder?',caretFileDir));
   return
 end
 % return if files not found
 if isempty(coordFiles)
-  disp(sprintf('(importCaret) Could not find any coord files in %s. Have you run mypreborder/mypostborder?',caretFileDir));
+  disp(sprintf('(mlrImportCaret) Could not find any coord files in %s. Have you run mypreborder/mypostborder?',caretFileDir));
   return
 end
 
@@ -213,7 +242,7 @@ niftiVolumes = cat(1,niftiVolumes,dir(fullfile(surfRelaxDir,'*.nii')));
 
 % check that we got something
 if isempty(niftiVolumes)
-  disp(sprintf('(importCaret) Could not find any nifti volume files in %s',surfRelaxDir));
+  disp(sprintf('(mlrImportCaret) Could not find any nifti volume files in %s',surfRelaxDir));
   return
 end
 
@@ -233,7 +262,7 @@ if isempty(params),return,end
 
 % check matching nodes
 if topoFiles(params.topoFileNum).numNodes ~= coordFiles(params.coordFileNum).numNodes
-  disp(sprintf('(importCaret) Num nodes between coord (%i) and topo (%i) do not match',coordFiles(params.coordFileNum).numNodes,topoFiles(params.topoFileNum).numNodes));
+  disp(sprintf('(mlrImportCaret) Num nodes between coord (%i) and topo (%i) do not match',coordFiles(params.coordFileNum).numNodes,topoFiles(params.topoFileNum).numNodes));
   return
 end
 
@@ -258,14 +287,16 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getNiftiVolumeHeader    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function hdr = getNiftiVolumeHeader(surfRelaxDir)
+function [hdr volumeFileName] = getNiftiVolumeHeader(surfRelaxDir)
+
 hdr = [];
+volumeFileName = [];
 % get nifti volume files
 niftiVolumes = dir(fullfile(surfRelaxDir,'*.hdr'));
 niftiVolumes = cat(1,niftiVolumes,dir(fullfile(surfRelaxDir,'*.nii')));
 % check that we got something
 if isempty(niftiVolumes)
-  disp(sprintf('(importCaret) Could not find any nifti volume files in %s',surfRelaxDir));
+  disp(sprintf('(mlrImportCaret:getNiftiVolumeHeader) Could not find any nifti volume files in %s',surfRelaxDir));
   return
 end
 if length(niftiVolumes) > 1
@@ -274,9 +305,25 @@ if length(niftiVolumes) > 1
   % bring up dialog box
   params = mrParamsDialog(paramsInfo,'Select topo and coord file to display');
   if isempty(params),return,end
-  hdr = cbiReadNiftiHeader(fullfile(surfRelaxDir,params.niftiVolume));
+  volumeFileName = fullfile(surfRelaxDir,params.niftiVolume);
+  hdr = cbiReadNiftiHeader(volumeFileName);
 else
-  hdr = cbiReadNiftiHeader(fullfile(surfRelaxDir,niftiVolumes.name));
+  volumeFileName = fullfile(surfRelaxDir,niftiVolumes.name);
+  hdr = cbiReadNiftiHeader(volumeFileName);
 end
 
+
+%%%%%%%%%%%%%%%%%%%
+%%   checkDirs   %%
+%%%%%%%%%%%%%%%%%%%
+function isok = checkDirs(varargin)
+
+isok = 0;
+for i = 1:nargin
+  if ~isdir(varargin{i})
+    disp(sprintf('(mlrImportCaret) Could not find %s directory',varargin{i}));
+    return
+  end
+end
+isok = 1;
 
