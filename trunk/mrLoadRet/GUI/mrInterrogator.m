@@ -167,7 +167,7 @@ end
   
 
 % eval the old handler
-eval(MLR.interrogator{viewNum}.windowButtonMotionFcn);
+%eval(MLR.interrogator{viewNum}.windowButtonMotionFcn);
 
 % this snippet of code gets the current default interrogator
 % function. It shouldn't go in mousemove because it makes mousemvoe
@@ -287,7 +287,7 @@ function mouseUpHandler(viewNum)
 mrGlobals;
 
 % eval the old handler
-eval(MLR.interrogator{viewNum}.windowButtonUpFcn);
+%eval(MLR.interrogator{viewNum}.windowButtonUpFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mousedown
@@ -338,7 +338,7 @@ if mouseInImage(x,y)
 end
 
 % eval the old handler
-eval(MLR.interrogator{viewNum}.windowButtonDownFcn);
+%eval(MLR.interrogator{viewNum}.windowButtonDownFcn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % end the mrInterrogator
