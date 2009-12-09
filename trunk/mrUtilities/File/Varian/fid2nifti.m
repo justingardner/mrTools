@@ -119,6 +119,7 @@ for i = 1:length(fidnames)
   % reorder slices if necessary
   [pss sliceIndex] = sort(procpar.pss);
   if ~isequal(sliceIndex,1:size(data,3))
+    disp(sprintf('(fid2nifti) Fixing slice order for interleaved slices'));
     data = data(:,:,sliceIndex,:);
   end
 
