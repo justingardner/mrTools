@@ -17,6 +17,9 @@ if ~any(nargin == [1])
   return
 end
 
+% set fid extension
+fidname = setext(fidname,'fid',0);
+
 % create an empty header
 hdr = cbiCreateNiftiHeader;
 
