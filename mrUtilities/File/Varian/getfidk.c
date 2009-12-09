@@ -267,6 +267,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	while((j < strlen(token)) && !isdigit(token[j])) j++;
 	// this is the number of shots
 	info.numshots = atoi(token+j);
+	if (verbose) mexPrintf("(getfidk) Number of shots (from petable name) = %i\n",info.numshots);
 	// get the accelaration factor, should be like epi132alt8k2r
 	while((j < strlen(token)) && isdigit(token[j])) j++;
 	while((j < strlen(token)) && !isdigit(token[j])) j++;

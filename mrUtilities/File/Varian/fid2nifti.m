@@ -85,8 +85,6 @@ for i = 1:length(fidnames)
     continue
   end
 
-  % read procpar
-  procpar = readprocpar(fidname);
   % check to see if we have to merge coils
   if size(fid.data,5) > 1
     numReceivers = size(fid.data,5);
@@ -112,30 +110,14 @@ for i = 1:length(fidnames)
     end
   end
 
-  % get the qform
-  qform44 = fid2xform(fidname);
-
-  % create an empty header
-  hdr = cbiCreateNiftiHeader(fid.data);
-
-  % set the qform
-  hdr = cbiSetNiftiQform(hdr,qform44);
-
-  % get the volume TR (framePeriod) for EPI 
-  tr = procpar.tr;
-  % if we run mutliple shots, volume TR = slice TR * shots 
-  % I do not know if shots equal navechoes or not, but as you read from
-  % petable, they should be same
-  if isfield(procpar,'navechoes')
-    tr = tr * procpar.navechoes;
+  % create a header
+  hdr = fid2niftihdr(fidname);
+  
+  % check the dimensions of the data versus the dimensions in the header
+  if ~isequal([size(data,1) size(data,2) size(data,3)],hdr.dim(2:4)')
+    disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(data))));
   end
-  % if we run slice at not interleaved way, 
-  %  volume TR = slice TR * shots * slice number
-  if isfield(procpar,'intlv') && strcmp(procpar.intlv, 'n')
-    tr = tr * length(procpar.pss);
-  end
-  hdr.pixdim(hdr.dim(1)+1) = tr*1000;
-
+  
   % make a filename 
   niftiname = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
 

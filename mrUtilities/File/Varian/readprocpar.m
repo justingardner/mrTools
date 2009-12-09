@@ -86,6 +86,14 @@ end
 
 fclose(fprocpar);
 
+% before we always had 1 navecho, but now there is a field procpar.navecho that should
+% be set by Ken's prep program that reads the petable and gets the t3 field.
+if ~isfield(procpar,'navecho'),procpar.navecho = 1;end
+
+% these fields will get set from the petable name if available
+if ~isfield(procpar,'accFactor'),procpar.accfactor = 1;end
+if ~isfield(procpar,'numshots'),procpar.numshots = 1;end
+
 % for epi images, there are navigator echos, which
 % should be subtracted from the number of lines.
 % this can be known from the name of the petable
@@ -104,8 +112,21 @@ if (isfield(procpar,'petable'))
     % find end of numbers
     k = j;
     while((k < length(token)) && (~isempty(strfind('0123456789',token(k))))),k=k+1;,end
-    procpar.navechoes = str2num(token(j:k-1));
+    procpar.numshots = str2num(token(j:k-1));
+    % then skip some more numbers
+    while((j < length(token)) && (~isempty(strfind('0123456789',token(j))))),j=j+1;,end
+    % go past any other charcters (should be k)
+    while((j < length(token)) && (isempty(strfind('0123456789',token(j))))),j=j+1;,end
+    % and if we have anything left then get the number, that is the acceleration factor
+    k = j;
+    while((k < length(token)) && (~isempty(strfind('0123456789',token(k))))),k=k+1;,end
+    if j < length(token)
+      procpar.accfactor = str2num(token(j:k-1));
+    end
   end
 end
+
+% compute the number of echoes
+procpar.navechoes = procpar.navecho*procpar.numshots/procpar.accfactor;
 
 if (verbose),disp('(readprocpar) Finished.');,end
