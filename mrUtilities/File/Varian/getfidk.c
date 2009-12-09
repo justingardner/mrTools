@@ -41,9 +41,11 @@ typedef struct {
   int numslices;                  // number of slices
   int numvolumes;                 // number of volumes
   int numlines;                   // number of k-space lines in each image
-  int numreceivers;                   // number of receivers
+  int numreceivers;               // number of receivers
+  int numshots;                   // number of shots
   int linelen;                    // number of voxels in each line
   int navechoes;                  // number of naviagtor echoes
+  int accFactor;                   // acceleration factor
   int ndim;                       // number of dimensions
   int dims[5];                    // size of those dimensions
   int numimages;                  // number of images = slices*volumes*receivers
@@ -187,6 +189,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   info.navechoes = 0;
+  info.numshots = 1;
+  info.accFactor = 1;
   info.numvolumes = 1;
   info.numreceivers = 1;
   // scan through procpar looking for parameters needed for parsing
@@ -234,6 +238,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       info.numlines = atoi(token);
       if (verbose) mexPrintf("(getfidk) numlines = %i\n",info.numlines);
     }
+    // get number of lines per image
+    if (!strcmp(token,"navecho")) {
+      fgets(line,LINESIZE,fprocpar);
+      token = (char*)strtok(line," ");
+      token = (char*)strtok(NULL," ");
+      // that should be number of navigator echoes
+      info.navechoes = atoi(token);
+      if (verbose) mexPrintf("(getfidk) navechoes (from procpar) = %i\n",info.numlines);
+    }
     // for epi images, there are navigator echos, which
     // should be subtracted from the number of lines.
     // this can be known from the name of the petable
@@ -241,6 +254,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       fgets(line,LINESIZE,fprocpar);
       token = (char*)strtok(line," ");
       token = (char*)strtok(NULL," ");
+      if (verbose) mexPrintf("(getfidk) petable name: %s",token);
       // the petable name should be something like
       // "epi132alt8k". We want the second number
       if (!strncmp(token+1,"epi",3)) {
@@ -251,11 +265,29 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	while((j < strlen(token)) && isdigit(token[j])) j++;
 	// and skip the next characters
 	while((j < strlen(token)) && !isdigit(token[j])) j++;
-	info.navechoes = atoi(token+j);
-	if (verbose) mexPrintf("(getfidk) navechoes = %i\n",info.navechoes);
+	// this is the number of shots
+	info.numshots = atoi(token+j);
+	if (info.navechoes == 0){
+	  info.navechoes = atoi(token+j);
+	  if (verbose) mexPrintf("(getfidk) navechoes (from petable name) = %i\n",info.navechoes);
+	}
+	// get the accelaration factor, should be like epi132alt8k2r
+	while((j < strlen(token)) && isdigit(token[j])) j++;
+	while((j < strlen(token)) && !isdigit(token[j])) j++;
+	if (j < strlen(token)) {
+	  info.accFactor = atoi(token+j);
+	  if (verbose) mexPrintf("(getfidk) Acceleration factor (from petable name) = %i\n",info.accFactor);
+	}
       }
     }
   }
+
+  // now compute the number of navigator echoes total
+  if (verbose) mexPrintf("(getfidk) Navechoes is %i x numShots (%i) / accelerationFactor (%i) = ",info.navechoes,info.numshots,info.accFactor);
+  info.navechoes = info.navechoes*info.numshots/info.accFactor;
+  if (verbose) mexPrintf("%i\n",info.navechoes);
+  
+  
   // set up other parts of info
   // remove the navechoes from the number of lines
   info.numlines -= info.navechoes;
