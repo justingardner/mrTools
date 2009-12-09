@@ -14,6 +14,7 @@ if (nargin == 0)
   procdir = './';
   verbose = 0;
 elseif (nargin == 1)
+  procdir = setext(procdir,'fid',0);
   verbose = 0;
 elseif (nargin ~= 2)
   help readprocpar;
