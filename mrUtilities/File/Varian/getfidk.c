@@ -188,7 +188,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     return;
   }
 
-  info.navechoes = 0;
+  info.navechoes = 1;
   info.numshots = 1;
   info.accFactor = 1;
   info.numvolumes = 1;
@@ -245,7 +245,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       token = (char*)strtok(NULL," ");
       // that should be number of navigator echoes
       info.navechoes = atoi(token);
-      if (verbose) mexPrintf("(getfidk) navechoes (from procpar) = %i\n",info.numlines);
+      if (verbose) mexPrintf("(getfidk) navechoes (from procpar) = %i\n",info.navechoes);
     }
     // for epi images, there are navigator echos, which
     // should be subtracted from the number of lines.
@@ -267,10 +267,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	while((j < strlen(token)) && !isdigit(token[j])) j++;
 	// this is the number of shots
 	info.numshots = atoi(token+j);
-	if (info.navechoes == 0){
-	  info.navechoes = atoi(token+j);
-	  if (verbose) mexPrintf("(getfidk) navechoes (from petable name) = %i\n",info.navechoes);
-	}
 	// get the accelaration factor, should be like epi132alt8k2r
 	while((j < strlen(token)) && isdigit(token[j])) j++;
 	while((j < strlen(token)) && !isdigit(token[j])) j++;
