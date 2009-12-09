@@ -109,10 +109,19 @@ for i = 1:length(fidnames)
       fid.dim = size(data);
     end
   end
-
+  
   % create a header
   hdr = fid2niftihdr(fidname);
   
+  % read the procpar
+  procpar = readprocpar(fidname);
+  
+  % reorder slices if necessary
+  [pss sliceIndex] = sort(procpar.pss);
+  if ~isequal(sliceIndex,1:size(data,3))
+    data = data(:,:,sliceIndex,:);
+  end
+
   % check the dimensions of the data versus the dimensions in the header
   if ~isequal([size(data,1) size(data,2) size(data,3)],hdr.dim(2:4)')
     disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(data))));

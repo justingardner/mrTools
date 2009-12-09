@@ -20,12 +20,15 @@ end
 % set fid extension
 fidname = setext(fidname,'fid',0);
 
-% create an empty header
-hdr = cbiCreateNiftiHeader;
-
 % read procpar
 procpar = readprocpar(fidname);
-if isempty(procpar),disp(sprintf('(fid2niftihdr) Could not find procpar in %s',fidname)),return,end
+if isempty(procpar)
+  disp(sprintf('(fid2niftihdr) Could not find procpar in %s',fidname))
+  return
+end
+
+% create an empty header
+hdr = cbiCreateNiftiHeader;
 
 % get the number of navechoes
 if isfield(procpar,'navechoes')

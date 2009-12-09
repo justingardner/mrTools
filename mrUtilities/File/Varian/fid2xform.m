@@ -67,7 +67,7 @@ rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 voxsize = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) procpar.thk 1];
 
 % vox spacing can be *different* from voxsize, if you skip in your pss
-voxspacing = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) 10*median(diff(procpar.pss)) 1];
+voxspacing = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) 10*median(diff(sort(procpar.pss))) 1];
 
 % check for 3d acquisition
 info.acq3d = 0;
