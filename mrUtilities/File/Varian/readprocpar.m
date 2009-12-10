@@ -87,10 +87,6 @@ end
 
 fclose(fprocpar);
 
-% before we always had 1 navecho, but now there is a field procpar.navecho that should
-% be set by Ken's prep program that reads the petable and gets the t3 field.
-if ~isfield(procpar,'navecho'),procpar.navecho = 1;end
-
 % these fields will get set from the petable name if available
 if ~isfield(procpar,'accFactor'),procpar.accfactor = 1;end
 if ~isfield(procpar,'numshots'),procpar.numshots = 1;end
@@ -124,8 +120,14 @@ if (isfield(procpar,'petable'))
     if j < length(token)
       procpar.accfactor = str2num(token(j:k-1));
     end
+    % before we always had 1 navecho for epi, but now there is a field procpar.navecho that should
+    % be set by Ken's prep program that reads the petable and gets the t3 field.
+    if ~isfield(procpar,'navecho'),procpar.navecho = 1;end
   end
 end
+
+% if navecho is not set by now, then there were no navecho's
+if ~isfield(procpar,'navecho'),procpar.navecho = 0;end
 
 % compute the number of echoes
 procpar.navechoes = procpar.navecho*procpar.numshots/procpar.accfactor;

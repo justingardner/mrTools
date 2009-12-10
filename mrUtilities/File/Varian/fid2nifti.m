@@ -18,7 +18,7 @@
 %
 %             [d h] = fid2nifti('fidname.fid',1);
 %
-function [outdata outhdr] = fid2nifti(fidname,varargin)
+function [outdata outhdr] = fid2nifti.m(fidname,varargin)
 
 outhdr = [];
 
@@ -86,6 +86,7 @@ for i = 1:length(fidnames)
   end
 
   % check to see if we have to merge coils
+  keyboard
   if size(fid.data,5) > 1
     numReceivers = size(fid.data,5);
     % see if we have to merge coils
@@ -118,14 +119,13 @@ for i = 1:length(fidnames)
   
   % reorder slices if necessary
   [pss sliceIndex] = sort(procpar.pss);
-  if ~isequal(sliceIndex,1:size(data,3))
-    disp(sprintf('(fid2nifti) Fixing slice order for interleaved slices'));
-    data = data(:,:,sliceIndex,:);
+  if ~isequal(sliceIndex,1:size(fid.data,3))
+    fid.data = fid.data(:,:,sliceIndex,:);
   end
 
   % check the dimensions of the data versus the dimensions in the header
-  if ~isequal([size(data,1) size(data,2) size(data,3)],hdr.dim(2:4)')
-    disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(data))));
+  if ~isequal([size(fid.data,1) size(fid.data,2) size(fid.data,3)],hdr.dim(2:4)')
+    disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(fid.data))));
   end
   
   % make a filename 
