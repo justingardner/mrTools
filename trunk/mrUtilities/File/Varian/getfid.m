@@ -8,6 +8,10 @@
 %             set to x,y,slice,vol,coil (note that vol and coil
 %             dimensions are swapped relative to what getfidk returns)
 %
+%             Also for 2D images with multiple receivers, note that Varian
+%             encodes the image with the slices and receivers swapped. This
+%             program (but not getfidk) fixes that swap.
+%
 function d = getfid(fidname,verbose,zeropad)
 
 % check input arguments
@@ -33,6 +37,17 @@ if (isempty(d.data))
 end
 
 d.dim = size(d.data);
+
+% get fidinfo
+[xform info] = fid2xform(fidname);
+
+if info.receiversAndSlicesSwapped
+  if size(d.data,4) > 1
+    if verbose, disp(sprintf('(getfid) Swapping receivers and slices'));end
+    d.data = reshape(d.data,size(d.data,1),size(d.data,2),size(d.data,4),size(d.data,3),size(d.data,5));
+    d.data = permute(d.data,[1 2 4 3 5]);
+  end
+end
 
 % everything is ok, then transform data
 if(verbose),disppercent(-inf,'(getfid) Transforming data');end

@@ -38,6 +38,18 @@ else
   navechoes = 0;
 end
 
+% check to see if this is an epi
+info.isepi = 0;
+if (isfield(procpar,'petable'))
+  token = procpar.petable{1};
+  % the petable name should be something like
+  % "epi132alt8k". We want the second number
+  if (strncmp(token,'epi',3)) 
+    info.isepi = 1;
+  end
+end
+
+
 % get the dimensions of the scan
 dim = [procpar.ni procpar.nv length(procpar.pss)];
 
@@ -137,6 +149,14 @@ if isfield(procpar,'intlv') && strcmp(procpar.intlv, 'n')
   tr = tr * length(procpar.pss);
 end
 
+% check for 2d anatomy, to tell getfid that this has the slices and receivers mixed up
+if ~info.acq3d && ~info.isepi
+  info.receiversAndSlicesSwapped = 1;
+  if verbose,disp(sprintf('(fid2xform) Receviers and slices are swapped'));,end
+else 
+  info.receiversAndSlicesSwapped = 0;
+end
+  
 
 % pack up some useful information that we have learned about the scan
 % into an output structure that can be used by other programs.
