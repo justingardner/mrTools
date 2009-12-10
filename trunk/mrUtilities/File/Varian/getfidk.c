@@ -98,7 +98,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   mxArray *mxdata,*mxdatar,*mxdatai;
   int originalformat;
   int i,j,k,n;
-  int isLittleEndianPlatform, swapFlag;
+  int isLittleEndianPlatform, swapFlag, gotNavechoes;
   
   // check input arguments
   if ((nrhs < 1) || (nrhs > 3)){
@@ -188,7 +188,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     return;
   }
 
-  info.navechoes = 1;
+  info.navechoes = 0;
+  gotNavechoes = 0;
   info.numshots = 1;
   info.accFactor = 1;
   info.numvolumes = 1;
@@ -246,6 +247,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       // that should be number of navigator echoes
       info.navechoes = atoi(token);
       if (verbose) mexPrintf("(getfidk) navechoes (from procpar) = %i\n",info.navechoes);
+      gotNavechoes = 1;
     }
     // for epi images, there are navigator echos, which
     // should be subtracted from the number of lines.
@@ -275,6 +277,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	  info.accFactor = atoi(token+j);
 	  if (verbose) mexPrintf("(getfidk) Acceleration factor (from petable name) = %i\n",info.accFactor);
 	}
+	// if navechoes was not set in the header, then its default for epi is 1 navecho per shot
+	if (!gotNavechoes) info.navechoes = 1;
       }
     }
   }
