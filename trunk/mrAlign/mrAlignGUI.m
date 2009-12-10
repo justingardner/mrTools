@@ -638,6 +638,73 @@ base.data = [];base.hdr = [];
 eval(sprintf('save %s base',matFilename))
 clear base
 % --------------------------------------------------------------------
+function saveResampledDestination_Callback(hObject, eventdata, handles)
+% hObject    handle to saveResampledDestination (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global ALIGN
+if isempty(ALIGN.inplanes)
+  mrErrorDlg('saveAlignedSource: Must load source (inplanes) first before it can be resampled and saved');
+  return
+end
+
+% Prompt user for filename(s)
+ext = mrGetPref('niftiFileExtension');
+if strcmp(ext,'.nii')
+  filterspec = {'*.nii';'*.img'};
+else
+  filterspec = {'*.img';'*.nii'};
+end
+pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
+if isempty(pathStr)
+  mrWarnDlg('saveAlignedSource aborted');
+  return
+end
+
+% set output voxel size to be the same as the volume anatomy from which we are sampling
+outputVoxSize = [ALIGN.volumeVoxelSize(1) ALIGN.volumeVoxelSize(2) ALIGN.inplaneVoxelSize(3)];
+
+% get transformation for inplane voxel size to volume voxel size, this creates images with
+% voxel sizes the have the same inplane dimension as the volume anatomy, but with slice
+% thickness the same as the inplanes.
+voxSizeXform = diag([outputVoxSize(:)'./ALIGN.inplaneVoxelSize(:)' 1]);
+
+% Compose xform
+xform = ALIGN.guiXform * ALIGN.xform * voxSizeXform;
+
+% get the size of the inplanes fov in the inplane dimensions
+inplaneFOV = ALIGN.inplaneSize(1:2).*ALIGN.inplaneVoxelSize(1:2)';
+
+% compute the volume size we will need to cover the same area
+volSize = round([inplaneFOV./outputVoxSize(1:2)]);
+
+% In the slice dimension we keep the same volume size as the inplanes
+volSize(3) = ALIGN.inplaneSize(3);
+
+% Call interpVolume
+interpData = interpVolume(ALIGN.volume,xform,volSize);
+
+% now create the nifti header
+hdr = cbiCreateNiftiHeader(interpData);
+hdr = cbiSetNiftiQform(hdr,ALIGN.volumeHdr.qform44*xform);
+hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.qform44*xform);
+hdr.pixdim(2:4) = outputVoxSize;
+
+% Save and clear
+[byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
+clear interpData data
+
+% also save the base structure with the appropriate vol2mag and vol2tal
+%also save the base structure with the appropriate vol2mag and vol2tal
+ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
+ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
+base = ALIGN.inplaneBase;
+matFilename = sprintf('%s.mat',stripext(base.name));
+base.data = [];base.hdr = [];
+eval(sprintf('save %s base',matFilename))
+clear base
+
+% --------------------------------------------------------------------
 function importMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
