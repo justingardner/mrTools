@@ -18,7 +18,7 @@
 %
 %             [d h] = fid2nifti('fidname.fid',1);
 %
-function [outdata outhdr] = fid2nifti.m(fidname,varargin)
+function [outdata outhdr] = fid2nifti(fidname,varargin)
 
 outhdr = [];
 
@@ -86,7 +86,6 @@ for i = 1:length(fidnames)
   end
 
   % check to see if we have to merge coils
-  keyboard
   if size(fid.data,5) > 1
     numReceivers = size(fid.data,5);
     % see if we have to merge coils

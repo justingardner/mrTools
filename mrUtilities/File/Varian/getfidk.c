@@ -657,7 +657,10 @@ void usageError()
   mexPrintf("                            defaults to no reporting (0)\n");
   mexPrintf("                 uint16   = (1 or 0) to return data in native format or double\n");
   mexPrintf("                            defaults to double (0)\n");
-  mexPrintf("                 Retruns data as x,y,slices,receivers,volumes\n");
+  mexPrintf("                 Retruns data as x,y,slices,receivers,volumes\n\n");
+  mexPrintf("                 Note that for 2D data with multiple receivers, because of Varian\n");
+  mexPrintf("                 silliness, the receivers dimension and the slices dimensions will be swapped\n");
+  mexPrintf("                 getfid fixes this\n");
 }
 
 ///////////////////////
