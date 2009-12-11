@@ -20,6 +20,8 @@ function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
 % Load the anatomy file %
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
+if nargin == 0,help loadAnat,return,end
+  
 if ieNotDefined('anatFilePath')
     anatFilePath = ''; 
 end
@@ -53,9 +55,12 @@ for pathNum = 1:length(pathStr)
   % Check whether extension of the file is img or nii
   % matlab function "fileparts" takes the last .foo as extension!
   [path,name,extension,versn] = fileparts(pathStr{pathNum});
-  % extension is not .nii or .img
-  if ~any(strcmp(extension,{'.nii', '.img', '.hdr'}))
-    mrWarnDlg(['File type ',extension,' is not a valid anatomy file format']);
+  % set default extension, if extension not specified
+  if isempty(extension)
+    pathStr{pathNum} = setext(pathStr{pathNum},mrGetPref('niftiFileExtension'),0);
+ % extension is not .nii or .img
+  elseif ~any(strcmp(extension,{'.nii', '.img', '.hdr'}))
+    mrWarnDlg(['(loadAnat) File type ',extension,' is not a valid anatomy file format']);
     return
   end
 

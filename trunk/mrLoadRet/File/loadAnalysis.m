@@ -74,6 +74,13 @@ end
 % Load the file. Loop through the variables that were loaded and add
 % each of them as a new analysis, setting analysis.fieldnames as we go.
 for p = 1:length(pathStr)
+  if ~exist(pathStr{p},'file')
+    oldPathStr = pathStr{p};
+    % if file doesn't exist, try filename/filename (e.g. erAnal is usually in erAnal/erAnal.mat)
+    pathStr{p} = fullfile(fileparts(pathStr{p}),stripext(getLastDir(pathStr{p})),getLastDir(pathStr{p}));
+    % if still doesn't exist, revert
+    if ~exist(pathStr{p},'file'),pathStr{p} = oldPathStr;end
+  end
   if exist(pathStr{p},'file')
     h = mrMsgBox(['Loading analysis: ',pathStr{p},'. Please wait']);
     s = load(pathStr{p});
