@@ -122,7 +122,7 @@ paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]', 'How m
 paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton', 'Crop the images.  This affects the intensity/contrast correction.  Important for high-res images'};
 paramsInfo{7} = {'sliceTimeCorrection',params.sliceTimeCorrection,'type=checkbox', 'Apply slice time correction along with motion compensation.  Not appropriate for 3D scans.'};
 paramsInfo{8} = {'sliceTimeString',putOnTopOfList(params.sliceTimeString,sliceTimeStrings),'Which point in time the slices should be aligned to. May loose first and last frames'};
-paramsInfo{9} = {'driftCorrection', params.driftCorrection, 'type=checkbox', 'Correction for fluctuations in mean intensity over time'};
+paramsInfo{9} = {'driftCorrection', params.driftCorrection, 'type=checkbox', 'Correction for fluctuations in mean intensity over time. This divides each frame by the average over the (cropped) volume.'};
 paramsInfo{10} = {'gradIntensityCorrection',params.gradIntensityCorrection,'type=checkbox', 'Compensation for intensity gradient before motion estimation'};
 paramsInfo{11} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]', 'How much temporal smoothing.  Only applied to estimate head motion, not to final time series'};
 paramsInfo{12} = {'robust',params.robust,'type=checkbox', 'Robust contrast estimator, should be used if images are noisy with lots of outliers'};
