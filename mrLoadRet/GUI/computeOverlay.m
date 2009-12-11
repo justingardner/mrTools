@@ -32,9 +32,9 @@ interpExtrapVal = NaN;
     getOverlaySlice(view,scan,base2overlay,baseCoordsHomogeneous,baseDims,...
 			 analysisNum,interpMethod,interpExtrapVal);
 if ~isempty(overlayImages)
-  overlayIm = overlayImages(:,:,curOverlay);
+  overlay.overlayIm = overlayImages(:,:,curOverlay);
 else
-  overlayIm = [];
+  overlay.overlayIm = [];
 end
 
 % get the number of the overlay that should be
@@ -97,28 +97,28 @@ else
 end   
 
 % Rescale current overlay.
-if ~isempty(overlayIm)
+if ~isempty(overlay.overlayIm)
   overlay.cmap = viewGet(view,'overlayCmap',curOverlay);
   overlay.range = viewGet(view,'overlayRange',curOverlay);
   if strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMax')
     clip = viewGet(view,'overlayClip',curOverlay);
-    if ~isempty(overlayIm(mask))
-      overlay.range(1) = max(clip(1),min(overlayIm(mask)));
-      overlay.range(2) = min(max(overlayIm(mask)),clip(2));
+    if ~isempty(overlay.overlayIm(mask))
+      overlay.range(1) = max(clip(1),min(overlay.overlayIm(mask)));
+      overlay.range(2) = min(max(overlay.overlayIm(mask)),clip(2));
     else
       overlay.range = clip;
     end
   elseif strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMaxAroundZero')
     clip = viewGet(view,'overlayClip',curOverlay);
-    if ~isempty(overlayIm(mask))
-      maxval = max(abs(overlayIm(mask)));
+    if ~isempty(overlay.overlayIm(mask))
+      maxval = max(abs(overlay.overlayIm(mask)));
       overlay.range(1) = -maxval;
       overlay.range(2) = maxval;
     else
       overlay.range = clip;
     end
   end
-  overlay.RGB = rescale2rgb(overlayIm,overlay.cmap,overlay.range);
+  overlay.RGB = rescale2rgb(overlay.overlayIm,overlay.cmap,overlay.range);
 else
   overlay.RGB = [];
 end
