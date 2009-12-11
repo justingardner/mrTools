@@ -17,7 +17,10 @@ function [byteswritten,hdr]=cbiWriteNifti(fname,data,hdr,prec,subset,short_nan);
 %             representable number) reserving -32767..32767 for scaled data; otherwise will save NaN as 0.
 %             Default is 1 (use -32768 as NaN).
   
-  
+if nargin == 0
+  help cbiWriteNifti;
+  return
+end
 
 [pathstr,bname,ext,ver]=fileparts(fname);
 
