@@ -2588,6 +2588,8 @@ switch lower(param)
     if isempty(overlayNum)
       overlayNum = viewGet(view,'currentOverlay',analysisNum);
     end
+    % if overlayNum is a string, then convert to a number
+    if isstr(overlayNum),overlayNum = viewGet(view,'overlayNum',overlayNum);end
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
@@ -2595,6 +2597,7 @@ switch lower(param)
         val = analysis.overlays(overlayNum);
       end
     end
+    if isempty(val),disp(sprintf('(viewGet:overlay) Could not find requested overlay.'));end
   case {'overlaynames'}
     % overlayNames = viewGet(view,'overlayNames',[analysisNum])
     % overlayNames = viewGet(view,'overlayNames',[])
@@ -2637,6 +2640,7 @@ switch lower(param)
       overlayNum = viewGet(view,'currentOverlay',analysisNum);
     end
     analysis = viewGet(view,'analysis',analysisNum);
+    if isstr(overlayNum),overlayNum = viewGet(view,'overlayNum',overlayNum);end
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if overlayNum & (overlayNum > 0) & (overlayNum <= n)
