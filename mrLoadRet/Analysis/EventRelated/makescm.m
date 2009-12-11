@@ -55,6 +55,10 @@ if ieNotDefined('hdrlen')
   end
 end
 
+if hdrlen > d.nFrames
+    mrErrorDlg(sprintf('(makescm) Your hdrlen in volumes (%i) is greater than the length of your scan (%i), perhaps framePeriod is set incorrectly?',hdrlen,d.nFrames));
+end
+
 % default to not apply filtering that concatTSeries did
 if ieNotDefined('applyFiltering'), applyFiltering = 0;end
 
