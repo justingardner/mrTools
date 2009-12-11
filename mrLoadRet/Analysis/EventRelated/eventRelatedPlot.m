@@ -17,11 +17,11 @@ end
 
 % get the analysis structure
 analysis = viewGet(view,'analysis');
-d = analysis.d{scan};
-if isempty(d)
+if ~isfield(analysis,'d') || (length(analysis.d) < scan) || isempty(analysis.d)
   disp(sprintf('(eventRelatedPlot) Event related not for scan %i',scan));
   return
 end
+d = analysis.d{scan};
 d.r2 = analysis.overlays(1).data{scan};
 
 % select the window to plot into
