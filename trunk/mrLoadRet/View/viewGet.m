@@ -2559,7 +2559,12 @@ switch lower(param)
       analysisNum = viewGet(view,'currentAnalysis');
     end
     analysis = viewGet(view,'analysis',analysisNum);
-    if ~isempty(analysis) & ~isempty(analysis.overlays)
+    % handle if passed in a number
+    if isscalar(overlayName)
+      if (overlayName > 0) && (overlayName <= viewGet(view,'numOverlays'))
+	val = overlayName;
+      end
+    elseif ~isempty(analysis) & ~isempty(analysis.overlays)
       overlayNames = {analysis.overlays(:).name};
       val = find(strcmp(overlayName,overlayNames));
     end

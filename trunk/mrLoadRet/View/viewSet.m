@@ -1270,7 +1270,7 @@ switch lower(param)
 
   case{'currentoverlay','curoverlay'}
     % view = viewSet(view,'currentOverlay',overlayNum);
-    overlayNum = val;
+    overlayNum = viewGet(view,'overlayNum',val);
     analysisNum = viewGet(view,'currentAnalysis');
     numAnalyses = viewGet(view,'numberofAnalyses');
     numOverlays = viewGet(view,'numberofOverlays',analysisNum);
