@@ -160,7 +160,7 @@ for roinum = 1:length(roiname)
                 rois{end}.n = length(x);
                 % load the tseries, voxel-by-voxel
                 disppercent(-inf,sprintf('(loadROITSeries) Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
-                % for now we always load by block, but if memory is an issue, we can
+		% for now we always load by block, but if memory is an issue, we can
                 % switch this if statement and load voxels indiviudally from file
                 if strcmp(loadType,'vox')
                     % load each voxel time series indiviudally
@@ -174,6 +174,8 @@ for roinum = 1:length(roiname)
                     % this is usually faster then going back and loading each time series individually
                     % but is more inefficient with memory
                     tSeriesBlock = loadTSeries(view,scanNum,[min(s) max(s)],[],[min(x) max(x)],[min(y) max(y)]);
+		    % preallocate memory for tSeries
+		    rois{end}.tSeries = nan(rois{end}.n,size(tSeriesBlock,4));
                     % now go through and pick out the voxels that we need.
                     for voxnum = 1:rois{end}.n
                         rois{end}.tSeries(voxnum,:) = squeeze(tSeriesBlock(x(voxnum)-min(x)+1,y(voxnum)-min(y)+1,s(voxnum)-min(s)+1,:));
