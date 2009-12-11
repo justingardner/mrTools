@@ -40,30 +40,39 @@ end
 function needsFix = recursivelyFixDirPermissions(dirpath,dirname,dirPermission,filePermission,dryrun)
 
 needsFix = 0;
+
+% get the current permissions for this directory
+thisPermission = getPermissions(fullfile(dirpath,dirname));
+% if permissions need to be changed
+if ~isequal(thisPermission,dirPermission)
+  if dryrun
+    % just display what needs to be changed
+    disp(sprintf('%s %s->%s',fullfile(dirpath,dirname),thisPermission,dirPermission));
+  else
+    % change the directory permission
+    system(sprintf('chmod %s %s',dirPermission,fullfile(dirpath,dirname)));
+  end
+  needsFix = 1;
+end
+
+% now go through everything in the directory
 dirlist = dir(fullfile(dirpath,dirname));
 for i = 1:length(dirlist)
   if dirlist(i).isdir && ~isequal(dirlist(i).name,'.') && ~isequal(dirlist(i).name,'..')
-    % get the current permissions
-    thisPermission = getPermissions(fullfile(dirpath,dirname,dirlist(i).name));
-    % if permissions need to be changed
-    if ~isequal(thisPermission,dirPermission)
-      % change the directory permission
-      commandStr = sprintf('chmod %s %s',dirPermission,fullfile(dirpath,dirname,dirlist(i).name));
-      disp(commandStr);
-      if ~dryrun,system(commandStr);end
-      needsFix = 1;
-    end
-    % and recursively change things under it
+    % recursively change everything in the directory
     needsFix = needsFix | recursivelyFixDirPermissions(fullfile(dirpath,dirname),dirlist(i).name,dirPermission,filePermission,dryrun);
   elseif ~dirlist(i).isdir
     % get the current permissions
     thisPermission = getPermissions(fullfile(dirpath,dirname,dirlist(i).name));
     % if permissions need to be changed
     if ~isequal(thisPermission,filePermission)
-      % change the file permissions
-      commandStr = sprintf('chmod %s %s',filePermission,fullfile(dirpath,dirname,dirlist(i).name));
-      disp(commandStr);
-      if ~dryrun,system(commandStr);end
+      if dryrun
+	% just display what needs to be changed
+	disp(sprintf('%s %s->%s',fullfile(dirpath,dirname,dirlist(i).name),thisPermission,filePermission));
+      else
+	% change the file permissions
+	system(sprintf('chmod %s %s',filePermission,fullfile(dirpath,dirname,dirlist(i).name)));
+      end
       needsFix = 1;
     end
   end
