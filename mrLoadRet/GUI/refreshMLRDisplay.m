@@ -2,7 +2,7 @@ function [img base roi overlay] = refreshMLRDisplay(viewNum)
 %	$Id$
 
 mrGlobals
-img = [];base = [];roi = [];
+img = [];base = [];roi = [];overlay=[];
 % for debugging/performance tests
 % set to 0 for no info
 % set to 1 for info on caching
@@ -27,12 +27,14 @@ baseGamma = viewGet(view,'baseGamma',baseNum);
 % if no base then clear axis and return
 if isempty(baseNum)
   fig = viewGet(view,'figNum');
-  gui = guidata(fig);
-  cla(gui.axis,'reset');
-  set(fig,'CurrentAxes',gui.colorbar);
-  cla(gui.colorbar,'reset');
-  axis(gui.axis,'off');
-  axis(gui.colorbar,'off');
+  if ~isempty(fig)
+    gui = guidata(fig);
+    cla(gui.axis,'reset');
+    set(fig,'CurrentAxes',gui.colorbar);
+    cla(gui.colorbar,'reset');
+    axis(gui.axis,'off');
+    axis(gui.colorbar,'off');
+  end
   return
 end
 if verbose>1,disppercent(inf);,end
