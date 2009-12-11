@@ -48,9 +48,9 @@ scanParams.nFrames = params.nFrames;
 scanParams.junkFrames = params.junkFrames;
 
 % now read the file
-tSeries = cbiReadNifti(fullFilename);
+%tSeries = cbiReadNifti(fullFilename);
 
-v = saveNewTSeries(v,tSeries,scanParams);
+v = saveNewTSeries(v,fullFilename,scanParams);
 
 
 
