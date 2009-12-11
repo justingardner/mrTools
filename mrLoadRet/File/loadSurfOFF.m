@@ -75,7 +75,7 @@ if (~strcmp(fl,'OFF BINARY'))
     [a,c] = fscanf(fid,'#%i %i\n',[2 surf.nPatch(1)]);
     if (c ~= surf.nPatch(1)*2)
       disp(c)
-      error('error reading file')
+      mrErrorDlg(sprintf('(loadSurfOFF) Error reading file %s',surffile));
     end
     
     % matlab 1-offset
@@ -89,7 +89,7 @@ if (~strcmp(fl,'OFF BINARY'))
 end
 
 [Ninfo, count] = fread(fid, 3, 'int32');
-if (count~=3), error('error reading file!'); end
+if (count~=3), mrErrorDlg(sprintf('(loadSurfOFF) Error reading file %s',surffile)); end
 surf.Nvtcs  = Ninfo(1);
 surf.Ntris  = Ninfo(2);
 surf.Nedges = Ninfo(3);
@@ -98,10 +98,10 @@ surf.Nedges = Ninfo(3);
 if loadOnlyHeader,return,end
 
 [surf.vtcs, count] = fread(fid, surf.Nvtcs*3, 'float32');
-if (count ~= 3*surf.Nvtcs), error('error reading file!'); end
+if (count ~= 3*surf.Nvtcs), mrErrorDlg(sprintf('(loadSurfOFF) Error reading file %s',surffile)); end
 
 [surf.tris, count] =  fread(fid, surf.Ntris*5, 'int32');
-if (count ~= 5*surf.Ntris), error('error reading file!'); end
+if (count ~= 5*surf.Ntris), mrErrorDlg(sprintf('(loadSurfOFF) Error reading file %s',surffile)); end
 
 surf.vtcs = reshape(surf.vtcs, 3, surf.Nvtcs);
 surf.tris = reshape(surf.tris, 5, surf.Ntris);
