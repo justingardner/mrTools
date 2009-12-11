@@ -192,7 +192,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 function dispOverlay(b,overlay,titleStr)
 
-smartfig(sprintf('mlrComputeMeanOverlay:%s',titleStr),'reuse');clf
+if exist('smartfig') == 2
+  smartfig(fixBadChars(sprintf('mlrComputeMeanOverlay:%s',titleStr)),'reuse');clf
+end
 patch('vertices', b.innerVtcs, 'faces', b.tris,'FaceVertexCData', squeeze(overlay),'facecolor','interp','edgecolor','none');
 axis equal;
 axis off;
