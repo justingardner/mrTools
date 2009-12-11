@@ -28,7 +28,7 @@ surfRelaxDir = 'surfRelax';
 caretFileDir = 'surf';
 
 % check to make sure the directories exist
-if ~checkDirs(caretFileDir,surfRelaxDir),return,end
+if ~checkDirs(caretFileDir,surfRelaxDir,atlasDir),return,end
 
 % look for coord files in caret directory. These will be used for computing
 % the xform that goes from 711-2B back to the original coordinates
