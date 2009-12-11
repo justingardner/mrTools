@@ -287,6 +287,8 @@ switch lower(param)
         MLR.groups(g).auxParams(s).stimFileName = val;
       end
     end
+    % Save mrSession
+    saveSession;
 
   case {'eyepos'}
     % view = viewSet(view,'eyepos',eyeposFilename,eyeposNum,scanNum,groupNum);
