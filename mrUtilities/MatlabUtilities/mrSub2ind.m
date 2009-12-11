@@ -1,7 +1,7 @@
 % mrSub2ind.m
 %
 %        $Id$	
-%      usage: mrSub2ind()
+%      usage: mrSub2ind(dims,x,y,z)
 %         by: justin gardner
 %       date: 10/15/07
 %    purpose: sub2ind that doesn't choke on coordinates
