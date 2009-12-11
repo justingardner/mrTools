@@ -53,19 +53,19 @@ end
 % get the dimensions of the scan
 dim = [procpar.ni procpar.nv length(procpar.pss)];
 
+% remove navigator echoes from k-space
+dim(2) = dim(2) - navechoes;
+
 % check to see if this is a sense reconstruction and what the sense acceleration factor is
 if procpar.accfactor > 1
   % fix dimensions
-  dim(1) = dim(1)*procpar.accfactor
+  dim(1) = dim(1)*procpar.accfactor;
   dim(2) = dim(2)*procpar.accfactor;
   % print message
   if verbose>=0
-    disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]',procpar.accfactor,dim(1),dim(2)-navechoes));
+    disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]',procpar.accfactor,dim(1),dim(2)));
   end
 end
-
-% remove navigator echoes from k-space
-dim(2) = dim(2) - navechoes;
 
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
@@ -141,7 +141,7 @@ end
 tr = procpar.tr;
 % if we run mutliple shots, volume TR = slice TR * shots 
 if isfield(procpar,'navechoes')
-  tr = tr * procpar.numshots;
+  tr = tr * procpar.numshots/procpar.accfactor;
 end
 % if we run slice at not interleaved way, 
 %  volume TR = slice TR * shots * slice number
