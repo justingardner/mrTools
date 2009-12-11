@@ -12,7 +12,7 @@ hdr = [];
 if ieNotDefined('verbose'),verbose=1;end
 
 % check arguments
-if ~any(nargin == [1])
+if ~any(nargin == [1 2])
   help fid2niftihdr
   return
 end
