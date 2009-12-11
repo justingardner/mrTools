@@ -1,12 +1,15 @@
 % mlrComputeMeanOverlay.m
 %
 %        $Id:$ 
-%      usage: mlrComputeMeanOverlay()
+%      usage: mlrComputeMeanOverlay(sessionPath,groupNum,scanNum,analysisName,overlayName,baseAnatomy)
 %         by: justin gardner
 %       date: 12/11/09
 %    purpose: To compute a mean overlay across subjects. The mean overlay is taken for a particular base
 %             anatomy. So, if you want to take a mean across subjects, the base anatomy should be an 
 %             atlas brain like one imported from Caret (see mlrImportCaret).
+%
+%             e.g. 
+%             mlrComputeMeanOverlay({'S00320090717','S00920090717'},'Concatenation',1,'erAnal','r2','leftAtlasVeryInflated');
 %
 function retval = mlrComputeMeanOverlay(sessionPath, groupNum, scanNum, analysisName, overlayName, baseAnatomies)
 
@@ -26,7 +29,59 @@ if isempty(overlays),return,end
 
 % compute the average overlays
 meanOverlays = computeMeanOverlays(sessions,overlays);
-keyboard
+
+% save the overlays back
+saveMeanOverlays(sessions,meanOverlays);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   saveMeanOverlays   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function saveMeanOverlays(sessions,meanOverlays)
+
+for iSession = 1:sessions.nSessions
+  % open a view on to the session
+  thisPwd = pwd;
+  cd(sessions.sessionPath{iSession});
+  v = newView;
+  cd(thisPwd);
+  % set the group
+  v = viewSet(v,'curGroup',sessions.groupNum{iSession});
+  % set the scan number
+  v = viewSet(v,'curScan',sessions.scanNum{iSession});
+  % get scan dims
+  scanDims = viewGet(v,'scanDims');
+  % now project the overlay back into the scan coordinates
+  % load the anatomies 
+  for iBase = 1:sessions.nBases
+    % load the anatomy
+    v = loadAnat(v,sessions.baseAnatomies{iBase});
+    % get the base
+    b = viewGet(v,'baseCoordMap');
+    % get the transformation from base2scan coordinates
+    base2scan = viewGet(v,'base2scan');
+    % get the coordinates of each vertex
+    baseCoords = squeeze(b.coords);
+    baseCoords(:,4) = 1;
+    % convert into scan coords
+    scanCoords = round(base2scan*baseCoords');
+    scanLinearCoords = mrSub2ind(scanDims,scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
+    % create an empty overlay
+    overlay{iBase} = nan(scanDims);
+    % get the overlay points that lay within the image
+    overlayIm = meanOverlays{iBase}.overlayIm;
+    % get points outside of scan and remove
+    goodPoints = find(~isnan(scanLinearCoords));
+    scanLinearCoords = scanLinearCoords(goodPoints);
+    overlayIm = overlayIm(goodPoints);
+    % and put the overlay into the scan coordinate iamge
+    overlay{iBase}(scanLinearCoords) = overlayIm;
+  end
+  % and install the base into a custom analysis
+  mrDispOverlay(overlay,sessions.scanNum{iSession},viewGet(v,'groupNum',sessions.groupNum{iSession}),[],'overlayName=meanOverlay','saveName=meanAnalysis');
+  % close and delete
+  deleteView(v);
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    computeMeanOverlay    %
