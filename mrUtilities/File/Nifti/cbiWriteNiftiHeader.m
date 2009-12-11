@@ -28,6 +28,11 @@ function [hdr,fid] = cbiWriteNiftiHeader(hdr,fname,no_overwrite,leave_open)
 % This flag is ignored for dual (hdr/img) file types.
 % 
 
+if nargin == 0
+  help cbiWriteNiftiHeader;
+  return
+end
+
 if (~exist('no_overwrite'))
   no_overwrite=0;
 end
