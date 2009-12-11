@@ -16,6 +16,9 @@ if ~any(nargin == [2])
   return
 end
 
+% keep track of whether this is a function name
+isRunFunctionName = 1;
+
 % move all the stimvolumes by some amount
 stimvolShift  = getfieldnum(type,'stimvolShift');
 if ~isempty(stimvolShift)
@@ -23,6 +26,7 @@ if ~isempty(stimvolShift)
   for stimnum = 1:length(d.stimvol)
     d.stimvol{stimnum} = d.stimvol{stimnum}+stimvolShift;
   end
+  isRunFunctionName = 0;
 end
 
 % length of tr
@@ -30,6 +34,7 @@ tr = getfieldnum(type,'tr');
 if ~isempty(tr)
   disp(sprintf('Setting TR to %0.2f',tr));
   d.tr = tr;
+  isRunFunctionName = 0;
 end
 
 % preprocessing for sdt experiment
@@ -38,6 +43,11 @@ runName = getfieldstr(type,'run');
 if ~isempty(type) && isstr(type) && exist(type,'file')
   runName = type;
 end
+
+if isRunFunctionName && isempty(runName)
+  mrWarnDlg(sprintf('(eventRelatedPreProcess) Could not run pre process function %s',type));
+end
+
 % if we have a runName then run the preprocess
 if ~isempty(runName)
   % get run functiona and arguments
