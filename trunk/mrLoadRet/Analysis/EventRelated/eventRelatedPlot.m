@@ -201,7 +201,7 @@ if isfield(d, 'stimvol')
     vlineHandle = vline(d.stimvol{i},getcolor(i));
     legendHandle(i+1) = vlineHandle(1);
     nStimvol(i) = length(d.stimvol{i});
-    if isfield(d,'stimNames')
+    if isfield(d,'stimNames') && (length(d.stimNames) >= i)
       legendStr{i+1} = sprintf('%s (n=%i)',d.stimNames{i},nStimvol(i));
     else
       legendStr{i+1} = sprintf('%i (n=%i)',i,nStimvol(i));
