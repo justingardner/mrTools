@@ -4,13 +4,30 @@
 %      usage: mlrComputeMeanOverlay(sessionPath,groupNum,scanNum,analysisName,overlayName,baseAnatomy)
 %         by: justin gardner
 %       date: 12/11/09
-%    purpose: To compute a mean overlay across subjects. The mean overlay is taken for a particular base
-%             anatomy. So, if you want to take a mean across subjects, the base anatomy should be an 
-%             atlas brain like one imported from Caret (see mlrImportCaret).
+%    purpose: To compute a mean overlay across subjects. The mean overlay is taken for a particular
+%             baseAnatomy. So, if you want to take a mean across subjects, the baseAnatomy should
+%             be an atlas brain like one imported from Caret (see mlrImportCaret). A new overlay
+%             will be saved in which one of the sessions as mrDispOverlayAnal/meanAnalysis with
+%             an overlay called meanOveraly. Note that the analysis and baseAnatomy that you are
+%             using has to be saved in each one of the sessions (i.e. the base anatomy has to be in
+%             the Anatomy directory -- use File/Base Anatomy/Save) and the analysis has to be
+%             in an appropriate directory under the Group (use File/Analysis/Save if it is not).
 %
 %             e.g. 
 %             mlrComputeMeanOverlay({'S00320090717','S00920090717'},'Concatenation',1,'erAnal','r2','leftAtlasVeryInflated');
 %
+%             Note that you can specify particular parameters specifically for each session, or
+%             just have all of the sessions share the same parameters, as above. For example,
+%             if you wanted to use the second scan instead of the first scan for sesson 2, above:
+%
+%             mlrComputeMeanOverlay({'S00320090717','S00920090717'},'Concatenation',[1 2],'erAnal','r2','leftAtlasVeryInflated');
+%
+%             You can also do more than one base anatomy at a time:
+% 
+%             mlrComputeMeanOverlay({'S00320090717','S00920090717'},'Concatenation',1,'erAnal','r2',{'leftAtlasVeryInflated','rightAtlasVeryInflated'});
+%
+%             
+%            
 function retval = mlrComputeMeanOverlay(sessionPath, groupNum, scanNum, analysisName, overlayName, baseAnatomies)
 
 % check arguments
@@ -50,6 +67,8 @@ for iSession = 1:sessions.nSessions
   v = viewSet(v,'curScan',sessions.scanNum{iSession});
   % get scan dims
   scanDims = viewGet(v,'scanDims');
+  % create an empty overlay
+  overlay = nan(scanDims);
   % now project the overlay back into the scan coordinates
   % load the anatomies 
   for iBase = 1:sessions.nBases
@@ -65,8 +84,6 @@ for iSession = 1:sessions.nSessions
     % convert into scan coords
     scanCoords = round(base2scan*baseCoords');
     scanLinearCoords = mrSub2ind(scanDims,scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
-    % create an empty overlay
-    overlay{iBase} = nan(scanDims);
     % get the overlay points that lay within the image
     overlayIm = meanOverlays{iBase}.overlayIm;
     % get points outside of scan and remove
@@ -74,9 +91,9 @@ for iSession = 1:sessions.nSessions
     scanLinearCoords = scanLinearCoords(goodPoints);
     overlayIm = overlayIm(goodPoints);
     % and put the overlay into the scan coordinate iamge
-    overlay{iBase}(scanLinearCoords) = overlayIm;
+    overlay(scanLinearCoords) = overlayIm;
   end
-  % and install the base into a custom analysis
+  % and install the overlay into a custom analysis
   mrDispOverlay(overlay,sessions.scanNum{iSession},viewGet(v,'groupNum',sessions.groupNum{iSession}),[],'overlayName=meanOverlay','saveName=meanAnalysis');
   % close and delete
   deleteView(v);
