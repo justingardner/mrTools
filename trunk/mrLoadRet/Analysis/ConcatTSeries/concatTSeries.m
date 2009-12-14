@@ -235,6 +235,7 @@ for iscan = 1:length(params.scanList)
   totalJunkedFrames(iscan) = junkFrames+thisTotalJunkedFrames;
   
   % Compute transform
+  d.data = [];
   if params.warp
     % get the scan2scan xform
     scan2scan = viewGet(viewBase,'scan2scan',params.warpBaseScan,groupNum,scanNum,groupNum);
