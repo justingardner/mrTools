@@ -62,7 +62,7 @@ if procpar.accfactor > 1
   dim(1) = dim(1)*procpar.accfactor;
   dim(2) = dim(2)*procpar.accfactor;
   % print message
-  if verbose>=0
+  if verbose>0
     disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]',procpar.accfactor,dim(1),dim(2)));
   end
 end
@@ -152,7 +152,7 @@ end
 % check for 2d anatomy, to tell getfid that this has the slices and receivers mixed up
 if ~info.acq3d && ~info.isepi
   info.receiversAndSlicesSwapped = 1;
-  if verbose,disp(sprintf('(fid2xform) Receviers and slices are swapped'));,end
+  if verbose>0,disp(sprintf('(fid2xform) Receviers and slices are swapped'));,end
 else 
   info.receiversAndSlicesSwapped = 0;
 end

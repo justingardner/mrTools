@@ -1,14 +1,14 @@
 % fid2niftihdr.m
 %
 %        $Id:$ 
-%      usage: fid2niftihdr(fidname,<verbose>)
+%      usage: hdr = fid2niftihdr(fidname,<verbose>)
 %         by: justin gardner
 %       date: 12/09/09
 %    purpose: strips out of fid2nifti the functionality to create nifti headers from procpar
 %
-function hdr = fid2niftihdr(fidname,verbose)
+function [hdr info] = fid2niftihdr(fidname,verbose)
 
-hdr = [];
+hdr = [];info = [];
 if ieNotDefined('verbose'),verbose=1;end
 
 % check arguments
