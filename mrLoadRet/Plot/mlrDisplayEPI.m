@@ -120,6 +120,7 @@ else
 end
 paramsInfo{end+1} = {'sliceNum',curSlice,sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view'};
 paramsInfo{end+1} = {'sliceNumMovie',0,'type=pushbutton','buttonString=Animate over slices','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','sliceNum','Press to animate over slices'};
+paramsInfo{end+1} = {'displayAllSlices',0,'type=checkbox','Click to display all slices at once'};
 paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view'};
 paramsInfo{end+1} = {'frameNumMovie',0,'type=pushbutton','buttonString=Animate over frames','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','frameNum','Press to animate over frames'};
 if needsWarping
@@ -203,18 +204,23 @@ nSlices = gMLRDisplayEPI.nSlices(params.scanNum);
 params.frameNum = min(params.frameNum,nFrames);
 params.sliceNum = min(params.sliceNum,nSlices);
 
+if params.displayAllSlices
+  sliceNum = 1:gMLRDisplayEPI.nSlices;
+else
+  sliceNum = params.sliceNum;
+end
 % check cache for image
 if params.warp
-  cacheStr = sprintf('%i_%i_%i_%i',params.scanNum,params.sliceNum,params.frameNum,params.warpBaseScan);
+  cacheStr = sprintf('%i_%s_%i_%i',params.scanNum,num2str(sliceNum),params.frameNum,params.warpBaseScan);
 else
-  cacheStr = sprintf('%i_%i_%i',params.scanNum,params.sliceNum,params.frameNum);
+  cacheStr = sprintf('%i_%s_%i',params.scanNum,num2str(sliceNum),params.frameNum);
 end
 [epiImage gMLRDisplayEPI.c] = mrCache('find',gMLRDisplayEPI.c,cacheStr);
 
 if isempty(epiImage)
   v = gMLRDisplayEPI.v;
   if isnumeric(v)
-    epiImage = v(:,:,params.sliceNum,params.frameNum);
+    epiImage = v(:,:,sliceNum,params.frameNum);
   else
     % apply warping if necessary
     if params.warp
@@ -246,14 +252,16 @@ if isempty(epiImage)
 	epiVolume = warpAffine3(epiVolume,M,NaN,0,gMLRDisplayEPI.interpMethod);
 
 	disppercent(inf);
-	epiImage = epiVolume(:,:,params.sliceNum);
+	epiImage = epiVolume(:,:,sliceNum);
       else
 	% scan2scan was identity, so no warping is necessary
-	epiImage = loadTSeries(v,params.scanNum,params.sliceNum,params.frameNum);
+	epiImage = loadTSeries(v,params.scanNum,[],params.frameNum);
+	epiImage = epiImage(:,:,sliceNum);
       end
     else
       % no warping needed, just load from disk
-      epiImage = loadTSeries(v,params.scanNum,params.sliceNum,params.frameNum);
+      epiImage = loadTSeries(v,params.scanNum,[],params.frameNum);
+      epiImage = epiImage(:,:,sliceNum);
     end
   end
     
@@ -280,6 +288,29 @@ end
 
 figure(gMLRDisplayEPI.fignum);
 
+% now check if epiImage has multiple slices
+nSlice = size(epiImage,3);
+if nSlice > 1
+  nRows = ceil(sqrt(nSlice));
+  nCols = nRows;
+  width = size(epiImage,2);
+  height = size(epiImage,1);
+  % make a giant image with all the slices
+  newImage = zeros(height*nRows,width*nCols);
+  k = 1;
+  for i = 1:nRows
+    for j = 1:nCols
+      if (k <= nSlice)
+	newImage((1+(i-1)*height):(1+i*height)-1,(1+(j-1)*width):(1+j*width)-1) = epiImage(:,:,k);
+	k = k + 1;
+      else
+	break;
+      end
+    end
+  end
+  epiImage = newImage;
+end
+
 % always make it so that the h dimension is longer than v dimension
 if size(epiImage,1) > size(epiImage,2)
   epiImage = epiImage';
@@ -289,7 +320,11 @@ end
 image(epiImage);
 colormap(gray(256));
 axis equal; axis tight; axis off
-title(sprintf('Scan: %i slice %i/%i frame %i/%i',params.scanNum,params.sliceNum,nSlices,params.frameNum,nFrames));
+if params.displayAllSlices
+  title(sprintf('Scan: %i slice 1:%i frame %i/%i',params.scanNum,nSlices,params.frameNum,nFrames));
+else
+  title(sprintf('Scan: %i slice %i/%i frame %i/%i',params.scanNum,params.sliceNum,nSlices,params.frameNum,nFrames));
+end
 drawnow
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
