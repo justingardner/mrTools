@@ -7,17 +7,24 @@
 %       date: 01/08/09
 %    purpose: Makes an empty MLR directory that can be used
 %             to import groups into, the second usage changes 
-%             the default group made
+%             the default group made. 
+%
+%             You can also run this without bringing up a dialog with:
+%             makeEmptyMLRDir(dirname,'description=empty dir','subject=me','operator=you','defaultParams=1');
 %
 function retval = makeEmptyMLRDir(dirname,varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if (nargin == 0)
   help makeEmptyMLRDir
   return
 end
 
-getArgs(varargin, {'defaultGroup=Raw'});
+description = '';
+subject = '';
+operator = '';
+defaultParams = [];
+getArgs(varargin, {'defaultGroup=Raw','description=','subject=','operator=','defaultParams=0'});
 directories = {defaultGroup fullfile(defaultGroup,'TSeries') 'Anatomy' 'Etc' 'Anal'};
 
 % dirname is a file, abort
@@ -53,9 +60,6 @@ end
 magnet = mrGetPref('magnet');
 coil = mrGetPref('coil');
 pulseSequence = mrGetPref('pulseSequence');
-description = '';
-subject = '';
-operator = '';
 
 % setup params dialog
 paramsInfo = {};
@@ -68,7 +72,13 @@ paramsInfo{end+1} = {'pulseSequence',pulseSequence,'Choose which pulse sequence 
 paramsInfo{end+1} = {'pulseSequenceText','','Optional: enter some text to describe or qualify the pulseSequence text. This will get appended to the pulseSequence name chosen above'};
 
 % get the session params from the user
-sessionParams = mrParamsDialog(paramsInfo,'Initialize session for mrTools');
+if defaultParams
+  sessionParams = mrParamsDefault(paramsInfo);
+else
+  sessionParams = mrParamsDialog(paramsInfo,'Initialize session for mrTools');
+end  
+
+if isempty(sessionParams),return,end
 
 % create session variable
 session.mrLoadRetVersion = mrLoadRetVersion;
