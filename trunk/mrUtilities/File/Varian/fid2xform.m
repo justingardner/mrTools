@@ -51,7 +51,7 @@ end
 
 
 % get the dimensions of the scan
-dim = [procpar.ni procpar.nv length(procpar.pss)];
+dim = [procpar.np/2 procpar.nv length(procpar.pss)];
 
 % remove navigator echoes from k-space
 dim(2) = dim(2) - navechoes;
