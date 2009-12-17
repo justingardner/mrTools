@@ -40,10 +40,12 @@ global gParams;
 
 % close any existing one
 if isfield(gParams,'fignum')
-  if isfield(gParams,'okCallback')
-    feval(gParams.okCallback);
+  if ishandle(gParams.fignum)
+    if isfield(gParams,'okCallback')
+      feval(gParams.okCallback);
+    end
+    closeHandler;
   end
-  closeHandler;
   global gParams;
 end
 
