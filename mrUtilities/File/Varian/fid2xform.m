@@ -176,6 +176,26 @@ else
   info.dim(4) = 1;
 end
 info.tr = tr;
+% get date and time
+[info.dateStr info.timeStr] = getDateAndTimeFromVarianField(procpar.time_run);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    getDateAndTimeFromVarianField    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [dateStr timeStr] = getDateAndTimeFromVarianField(f)
+
+year = str2num(f{1}(1:4));
+month = str2num(f{1}(5:6));
+day = str2num(f{1}(7:8));
+
+hour = str2num(f{1}(10:11));
+min = str2num(f{1}(12:13));
+sec = str2num(f{1}(14:15));
+
+dateStr = sprintf('%04i/%02i/%02i',year,month,day);
+timeStr = sprintf('%02i:%02i:%02i',hour,min,sec);
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   euler2rotmatrix   %%
