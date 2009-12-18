@@ -97,7 +97,7 @@ if ieNotDefined('groupParams')
   else
     % get info about scans that live in Raw/TSeries
     scanDirName = fullfile('Raw','TSeries');
-    scanFilenames = mlrGetAllImageFilenames(scanDirName);
+    scanFilenames = mlrGetAllImageFilenames(scanDirName,'mustNotHaveDotInFilename=1');
     nScans=0;scanNames = {};descriptions = {};totalFrames = {};nFrames = {};junkFrames = {};
     for i = 1:length(scanFilenames);
       % read the nifti header
