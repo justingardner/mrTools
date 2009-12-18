@@ -32,6 +32,10 @@ passedInVol = 0;
 % setup a cache
 gMLRDisplayEPI.c = mrCache('init',1000);
 
+
+% don't display too many frames at once
+maxFramesAtOnce = 500;
+
 % if we were passed in a strucutre
 if ~ieNotDefined('v') && ~isview(v)
   % check for a file
@@ -112,17 +116,21 @@ maxSlices = max(gMLRDisplayEPI.nSlices);
 % set up params dialog
 paramsInfo = {};
 if ~passedInVol
-  paramsInfo{end+1} = {'scanNum',currentScan,sprintf('minmax=[1 %i]',gMLRDisplayEPI.nScans),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view'};
+  paramsInfo{end+1} = {'scanNum',currentScan,sprintf('minmax=[1 %i]',gMLRDisplayEPI.nScans),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view','callback',@mlrDisplayEPIdeselectAll','callbackArg=scan'};
   paramsInfo{end+1} = {'scanDescription',descriptions,'editable=0','group=scanNum','type=string','Description for scan'};
   paramsInfo{end+1} = {'scanNumMovie',0,'type=pushbutton','buttonString=Animate over scans','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','scanNum','Press to animate over scans'};
+  paramsInfo{end+1} = {'displayAllScans',0,'type=checkbox','Click to display all scans at once','callback',@mlrDisplayEPIdeselectAll,'callbackArg=allExceptScan'};
 else
   paramsInfo{end+1} = {'scanNum',1,'editable=0'};
 end
-paramsInfo{end+1} = {'sliceNum',curSlice,sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view'};
+paramsInfo{end+1} = {'sliceNum',curSlice,sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view','callback',@mlrDisplayEPIdeselectAll','callbackArg=slice'};
 paramsInfo{end+1} = {'sliceNumMovie',0,'type=pushbutton','buttonString=Animate over slices','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','sliceNum','Press to animate over slices'};
-paramsInfo{end+1} = {'displayAllSlices',0,'type=checkbox','Click to display all slices at once'};
-paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view'};
+paramsInfo{end+1} = {'displayAllSlices',0,'type=checkbox','Click to display all slices at once','callback',@mlrDisplayEPIdeselectAll,'callbackArg=allExceptSlice'};
+paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view','callback',@mlrDisplayEPIdeselectAll','callbackArg=frame'};
 paramsInfo{end+1} = {'frameNumMovie',0,'type=pushbutton','buttonString=Animate over frames','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','frameNum','Press to animate over frames'};
+if all(gMLRDisplayEPI.nFrames < maxFramesAtOnce)
+  paramsInfo{end+1} = {'displayAllFrames',0,'type=checkbox','Click to display all frames at once','callback',@mlrDisplayEPIdeselectAll,'callbackArg=allExceptFrame'};
+end
 if needsWarping
   paramsInfo{end+1} = {'warp',0,'type=checkbox','Apply warping implied by scan2scan transform to each image. This allows you to preview what will happen when you apply warping in averageTSeries or concatTSeries'};
   paramsInfo{end+1} = {'warpBaseScan',1,sprintf('minmax=[1 %i]',gMLRDisplayEPI.nScans),'incdec=[-1 1]','Choose which scan you want to warp the images to','contingent=warp'};
@@ -133,6 +141,34 @@ end
 
 % and draw first frame
 mlrDisplayEPIDispImage(params);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrDisplayEPIdeselectAll    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrDisplayEPIdeselectAll(deselectWhat,params)
+
+if strcmp(deselectWhat,'slice')
+  params.displayAllSlices = 0;
+elseif strcmp(deselectWhat,'allExceptSlice')
+  if isfield(params,'displayAllFrames'),params.displayAllFrames = 0;end
+  if isfield(params,'displayAllScans'),params.displayAllScans = 0;end
+elseif strcmp(deselectWhat,'frame')
+  if isfield(params,'displayAllFrames'),params.displayAllFrames = 0;end
+elseif strcmp(deselectWhat,'allExceptFrame')
+  if isfield(params,'displayAllScans'),params.displayAllScans = 0;end
+  params.displayAllSlices = 0;
+elseif strcmp(deselectWhat,'scan')
+  if isfield(params,'displayAllScans'),params.displayAllScans = 0;end
+elseif strcmp(deselectWhat,'allExceptScan')
+  if isfield(params,'displayAllFrames'),params.displayAllFrames = 0;end
+  params.displayAllSlices = 0;
+end
+  
+% turn off checkbox
+mrParamsSet(params);
+% and redisplay
+mlrDisplayEPICallback(params);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%  mlrDisplayEPIAnimate  %%
@@ -155,9 +191,19 @@ end
 switch type
   case {'scanNum'}
    n = gMLRDisplayEPI.nScans;
+   if isfield(params,'displayAllScans')
+     params.displayAllScans = 0;
+     mrParamsSet(params);
+   end  
   case {'sliceNum'}
+   params.displayAllSlices = 0;
+   mrParamsSet(params);
    n = gMLRDisplayEPI.nSlices(params.scanNum);
   case {'frameNum'}
+   if isfield(params,'displayAllFrames')
+     params.displayAllFrames = 0;
+     mrParamsSet(params);
+   end
    n = gMLRDisplayEPI.nFrames(params.scanNum);
 end
 
@@ -182,7 +228,6 @@ function mlrDisplayEPICallback(params)
 global gMLRDisplayEPI;
 if gMLRDisplayEPI.animating
   gMLRDisplayEPI.stopAnimating = 1;
-  return
 end
 
 % draw the image
@@ -204,23 +249,40 @@ nSlices = gMLRDisplayEPI.nSlices(params.scanNum);
 params.frameNum = min(params.frameNum,nFrames);
 params.sliceNum = min(params.sliceNum,nSlices);
 
+% whether we have all slices or not
 if params.displayAllSlices
-  sliceNum = 1:gMLRDisplayEPI.nSlices;
+  sliceNum = [1 nSlices];
 else
-  sliceNum = params.sliceNum;
+  sliceNum = [params.sliceNum params.sliceNum];
 end
+
+% whether we have all frames or not
+if isfield(params,'displayAllFrames') && params.displayAllFrames
+  frameNum = [1 nFrames];
+else
+  params.displayAllFrames = 0;
+  frameNum = [params.frameNum params.frameNum];
+end
+
 % check cache for image
 if params.warp
-  cacheStr = sprintf('%i_%s_%i_%i',params.scanNum,num2str(sliceNum),params.frameNum,params.warpBaseScan);
+  cacheStr = sprintf('%i_%s_%s_%i',params.scanNum,num2str(sliceNum),num2str(frameNum),params.warpBaseScan);
 else
-  cacheStr = sprintf('%i_%s_%i',params.scanNum,num2str(sliceNum),params.frameNum);
+  cacheStr = sprintf('%i_%s_%s',params.scanNum,num2str(sliceNum),num2str(frameNum));
 end
+if isfield(params,'displayAllScans')
+  cacheStr = sprintf('%s_%i',cacheStr,params.displayAllScans);
+else
+  params.displayAllScans = 0;
+end
+
 [epiImage gMLRDisplayEPI.c] = mrCache('find',gMLRDisplayEPI.c,cacheStr);
+
 
 if isempty(epiImage)
   v = gMLRDisplayEPI.v;
   if isnumeric(v)
-    epiImage = v(:,:,sliceNum,params.frameNum);
+    epiImage = squeeze(v(:,:,[sliceNum(1):sliceNum(2)],[frameNum(1):frameNum(2)]));
   else
     % apply warping if necessary
     if params.warp
@@ -255,13 +317,23 @@ if isempty(epiImage)
 	epiImage = epiVolume(:,:,sliceNum);
       else
 	% scan2scan was identity, so no warping is necessary
-	epiImage = loadTSeries(v,params.scanNum,[],params.frameNum);
-	epiImage = epiImage(:,:,sliceNum);
+	epiImage = loadTSeries(v,params.scanNum,[],[frameNum(1) frameNum(2)]);
+	epiImage = squeeze(epiImage(:,:,[sliceNum(1):sliceNum(2)],:));
       end
     else
       % no warping needed, just load from disk
-      epiImage = loadTSeries(v,params.scanNum,[],params.frameNum);
-      epiImage = epiImage(:,:,sliceNum);
+      if params.displayAllScans
+	% for alls cans, load each one
+	epiImage = [];
+	for scanNum = 1:gMLRDisplayEPI.nScans
+	  if (gMLRDisplayEPI.nSlices(scanNum) >= sliceNum(1)) && (gMLRDisplayEPI.nFrames(scanNum) >= frameNum(1))
+	    epiImage(:,:,scanNum) = loadTSeries(v,scanNum,sliceNum(1),frameNum(1));
+	  end
+	end
+      else
+	epiImage = loadTSeries(v,params.scanNum,[],[frameNum(1) frameNum(2)]);
+	epiImage = squeeze(epiImage(:,:,[sliceNum(1):sliceNum(2)],:));
+      end
     end
   end
     
@@ -312,9 +384,9 @@ if nSlice > 1
 end
 
 % always make it so that the h dimension is longer than v dimension
-if size(epiImage,1) > size(epiImage,2)
-  epiImage = epiImage';
-end
+%if size(epiImage,1) > size(epiImage,2)
+%  epiImage = epiImage';
+%end
 
 % display image
 image(epiImage);
