@@ -1,7 +1,7 @@
 % mlrGetAllImageFilenames.m
 %
 %        $Id:$ 
-%      usage: imageFilenames = mlrGetAllImageFilenames(<dirname>)
+%      usage: imageFilenames = mlrGetAllImageFilenames(<dirname>,<'mustNotHaveDotInFilename=0'>)
 %         by: justin gardner
 %       date: 07/23/09
 %    purpose: Function to return all the valid image filenames in a directory. This looks for all nifti
@@ -10,15 +10,18 @@
 %
 %             dirname is the name of the directory to operate on. defaults to current directory
 %
-function imageFilenames = mlrGetAllImageFilenames(dirname)
+function imageFilenames = mlrGetAllImageFilenames(dirname,varargin)
 
 imageFilenames = {};
 
 % check arguments
-if ~any(nargin == [0 1])
+if ~any(nargin == [0 1 2 3 4])
   help mlrGetAllImageFilenames
   return
 end
+
+mustNotHaveDotInFilename = [];
+getArgs(varargin,{'mustNotHaveDotInFilename=0'});
 
 if ieNotDefined('dirname'),dirname = pwd;end
 
@@ -38,6 +41,19 @@ for i = 1:length(d)
   end
 end
 
+% remove any filenames that have dots in the middle of them, since this causes weird problems later
+% since you can't depend on the dot marking extensions
+if mustNotHaveDotInFilename
+  imageFilenamesWithoutDot = {};
+  for i = 1:length(imageFilenames)
+    if isempty(strfind(stripext(imageFilenames{i}),'.'))
+      imageFilenamesWithoutDot{end+1} = imageFilenames{i};
+    else
+      mrWarnDlg(sprintf('(mlrGetAllImageFilenames) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',imageFilenames{i},setext(fixBadChars(stripext(imageFilenames{i}),{'.','_'}),'hdr')));
+    end
+  end
+  imageFilenames = imageFilenamesWithoutDot;
+end
 
 
 
