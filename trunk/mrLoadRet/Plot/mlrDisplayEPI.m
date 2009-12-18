@@ -116,17 +116,17 @@ maxSlices = max(gMLRDisplayEPI.nSlices);
 % set up params dialog
 paramsInfo = {};
 if ~passedInVol
-  paramsInfo{end+1} = {'scanNum',currentScan,sprintf('minmax=[1 %i]',gMLRDisplayEPI.nScans),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view','callback',@mlrDisplayEPIdeselectAll','callbackArg=scan'};
+  paramsInfo{end+1} = {'scanNum',currentScan,sprintf('minmax=[1 %i]',gMLRDisplayEPI.nScans),sprintf('incdec=[-1 1]'),'round=1','Choose scan to view','callback',@mlrDisplayEPIdeselectAll,'callbackArg=scan'};
   paramsInfo{end+1} = {'scanDescription',descriptions,'editable=0','group=scanNum','type=string','Description for scan'};
   paramsInfo{end+1} = {'scanNumMovie',0,'type=pushbutton','buttonString=Animate over scans','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','scanNum','Press to animate over scans'};
   paramsInfo{end+1} = {'displayAllScans',0,'type=checkbox','Click to display all scans at once','callback',@mlrDisplayEPIdeselectAll,'callbackArg=allExceptScan'};
 else
   paramsInfo{end+1} = {'scanNum',1,'editable=0'};
 end
-paramsInfo{end+1} = {'sliceNum',curSlice,sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view','callback',@mlrDisplayEPIdeselectAll','callbackArg=slice'};
+paramsInfo{end+1} = {'sliceNum',curSlice,sprintf('minmax=[1 %i]',maxSlices),sprintf('incdec=[-1 1]'),'round=1','Choose slice number to view','callback',@mlrDisplayEPIdeselectAll,'callbackArg=slice'};
 paramsInfo{end+1} = {'sliceNumMovie',0,'type=pushbutton','buttonString=Animate over slices','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','sliceNum','Press to animate over slices'};
 paramsInfo{end+1} = {'displayAllSlices',0,'type=checkbox','Click to display all slices at once','callback',@mlrDisplayEPIdeselectAll,'callbackArg=allExceptSlice'};
-paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view','callback',@mlrDisplayEPIdeselectAll','callbackArg=frame'};
+paramsInfo{end+1} = {'frameNum',1,sprintf('minmax=[1 %i]',maxFrames),sprintf('incdec=[-1 1]'),'round=1','Choose frame to view','callback',@mlrDisplayEPIdeselectAll,'callbackArg=frame'};
 paramsInfo{end+1} = {'frameNumMovie',0,'type=pushbutton','buttonString=Animate over frames','callback',@mlrDisplayEPIAnimate,'passParams=1','callbackArg','frameNum','Press to animate over frames'};
 if all(gMLRDisplayEPI.nFrames < maxFramesAtOnce)
   paramsInfo{end+1} = {'displayAllFrames',0,'type=checkbox','Click to display all frames at once','callback',@mlrDisplayEPIdeselectAll,'callbackArg=allExceptFrame'};
