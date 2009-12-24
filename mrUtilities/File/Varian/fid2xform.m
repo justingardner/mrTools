@@ -59,7 +59,7 @@ dim(2) = dim(2) - navechoes;
 % check to see if this is a sense reconstruction and what the sense acceleration factor is
 if procpar.accfactor > 1
   % fix dimensions
-  dim(1) = dim(1)*procpar.accfactor;
+%  dim(1) = dim(1)*procpar.accfactor;
   dim(2) = dim(2)*procpar.accfactor;
   % print message
   if verbose>0
