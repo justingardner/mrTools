@@ -455,13 +455,19 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
 	      set(gParams.ui.varentry{i}(k),'String',gParams.varinfo{i}.allValues{val}(k));
 	    end
 	  else
-	    set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.allValues{val});
+	    if ~strcmp(gParams.varinfo{i}.type,'checkbox')
+	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.allValues{val});
+	    end
 	  end
 	  % so more things to set for these types
 	  if strcmp(gParams.varinfo{i}.type,'popupmenu')
             set(gParams.ui.varentry{i},'Value',1);
           elseif strcmp(gParams.varinfo{i}.type,'checkbox')
-            set(gParams.ui.varentry{i},'Value',gParams.varinfo{i}.value);
+	    if isstr(gParams.varinfo{i}.value)
+	      set(gParams.ui.varentry{i},'Value',str2num(gParams.varinfo{i}.value));
+	    else
+	      set(gParams.ui.varentry{i},'Value',gParams.varinfo{i}.value);
+	    end
           end
           gParams.varinfo{i}.oldControlVal = val;
         end
