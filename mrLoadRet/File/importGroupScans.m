@@ -64,13 +64,25 @@ end
 paramsInfo = {...
     {'fromGroup',fromGroups,'The group to import from'},...
     {'toGroup',toGroupNames,'The group to import into'},...
-    {'linkFiles',1,'type=checkbox','Link rather than copy the files. This will make a soft link rather than copying the files which saves disk space.'}};
+    {'linkFiles',1,'type=checkbox','Link rather than copy the files. This will make a soft link rather than copying the files which saves disk space.'},...
+    {'hardLink',0,'type=checkbox','contingent=linkFiles','Use hard links when linking files instead of soft links.'}};
     
 params = mrParamsDialog(paramsInfo);
 if isempty(params)
   switchSession;
   deleteView(toView);
   return
+end
+
+% get whether to link or not
+linkType = 0;
+if params.linkFiles
+  % for hard links, pass 2
+  if params.hardLink
+    linkType = 2;
+  else
+    linkType = 1;
+  end
 end
 
 % now set up some variables
@@ -138,7 +150,7 @@ for scanNum = 1:length(fromScanParams)
   % clear filename, so that it gets a new unique filename
   toScanParams.fileName = [];
   % and now add the scan to our group
-  saveNewTSeries(toView,fromFilename,toScanParams,[],params.linkFiles);
+  saveNewTSeries(toView,fromFilename,toScanParams,[],linkType);
   toScanNum = viewGet(toView,'nScans');
   % copy the stimFile over
   toStimFileNames = {};
