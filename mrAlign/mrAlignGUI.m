@@ -1217,6 +1217,33 @@ addXform(1,6) = x(6);
 xform = addXform * ALIGN.xform;
 
 % --------------------------------------------------------------------
+function computeNonRigidBodyAlignment_Callback(hObject, eventdata, handles)
+% hObject    handle to computeNonRigidBodyAlignment (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+global ALIGN
+if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
+	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
+	return
+end
+if isempty(ALIGN.xform) 
+	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
+	return
+end
+
+% Compute alignment
+xform = ALIGN.guiXform * ALIGN.xform;
+xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 0, ALIGN.crop, ALIGN.NIter, 0);
+ALIGN.xform = xform;
+
+% Reset GUI and refresh display
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+% --------------------------------------------------------------------
 function checkAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------

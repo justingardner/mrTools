@@ -1,4 +1,4 @@
-function xform = computeAlignment(inp, vol, xform, contrastReverse, crop, maxIter);
+function xform = computeAlignment(inp, vol, xform, contrastReverse, crop, maxIter, rotFlag);
 % xform = computeAlignment()
 %
 % Oscar Nestares - 5/99
@@ -17,6 +17,9 @@ function xform = computeAlignment(inp, vol, xform, contrastReverse, crop, maxIte
 % djh 5/2004 -  Added crop.
 % djh 1/2007 -  Update to mrAlign-4.5
 % djh 7/2007 -  Added contrastReverse param
+
+% default to rot/translation (i.e. rigid-body transformation)
+if ieNotDefined('rotFlag'),rotFlag = 1;end
 
 inplaneSize = size(inp);
 volumeSize = size(vol);
@@ -86,7 +89,7 @@ while strcmp(userResponse, 'Yes')
         
         % motion estimation (no multiresolution, no iterative)
         M = estMotion3(inpIC, volIC,...
-            1,...	      % rotFlag
+            rotFlag,...	      % rotFlag
             1,...	      % robustFlag
             contrastReverse,... % treat image intensities as phase valued
             crop,...      % crop
