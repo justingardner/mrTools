@@ -1640,5 +1640,3 @@ else
 end
 
 set(handles.figure1,'name',sprintf('mrAlign: %s -> %s',inplaneName,volumeName));
-
-
