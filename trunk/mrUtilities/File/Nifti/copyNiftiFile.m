@@ -6,8 +6,8 @@
 %       date: 01/07/09
 %    purpose: copy a nift file. Handles copying both .hdr and .img files
 %             checks for file existence. If makeLink is set to 1, will
-%             link the files rather than copy them. If there is an associated
-%             .mat file (i.e. same name) that will be copied as well
+%             link the files rather than copy them. makeLink set to 2 will make a hard link.
+%             If there is an associated .mat file (i.e. same name) that will be copied as well
 %
 function success = copyNiftiFile(fromFilename,toFilename,makeLink)
 
@@ -66,7 +66,7 @@ for extensionNum = 1:length(extensions)
   end
   if makeLink
     disp(sprintf('(%s) Linking file %s to %s',callingFunction,thisFromFilename,thisToFilename));
-    linkFile(thisFromFilename,thisToFilename);
+    linkFile(thisFromFilename,thisToFilename,makeLink);
   else
     disp(sprintf('(%s) Copying file %s to %s',callingFunction,thisFromFilename,thisToFilename));
     copyfile(thisFromFilename,thisToFilename);
