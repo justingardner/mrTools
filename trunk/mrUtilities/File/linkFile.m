@@ -1,22 +1,32 @@
 % linkFile.m
 %
 %        $Id$ 
-%      usage: linkFile(fromFilename,toFilename)
+%      usage: linkFile(fromFilename,toFilename,<linkType>)
 %         by: justin gardner
 %       date: 01/08/09
 %    purpose: links fromFilename to toFilename. Will make the link into a
 %             relative filename if possible.
 %
-function retval = linkFile(fromFilename,toFilename)
+%             if linkType is set to 2 (default is 1), will use a hard link rather than a soft link
+%
+function retval = linkFile(fromFilename,toFilename,linkType)
 
 % check arguments
-if ~any(nargin == [2])
+if ~any(nargin == [2 3])
   help linkFile
   return
 end
 
+if ieNotDefined('linkType'),linkType = 1;end
+
 % The command to use to link
-linkcommand = 'ln -s';
+if linkType == 1
+  linkcommand = 'ln -s';
+elseif linkType == 2
+  linkcommand = 'ln';
+else
+  disp(sprintf('(linkFile) Unknown linkType=%i. Should be 1 for soft and 2 for hard.',linkType));
+end
 
 % check to make sure fromFilename exists
 if ~isfile(fromFilename)
