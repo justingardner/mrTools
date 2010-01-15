@@ -90,7 +90,7 @@ session.coil = sessionParams.coil;
 session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pulseSequenceText);
 
 % create groups variables
-groups.name = 'Raw';
+groups.name = defaultGroup;
 groups.scanParams = [];
 [tf groups] = isgroup(groups);
 
