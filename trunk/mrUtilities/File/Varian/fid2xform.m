@@ -51,15 +51,16 @@ end
 
 
 % get the dimensions of the scan
-dim = [procpar.np/2 procpar.nv length(procpar.pss)];
+% (procpar.ni is lines of k-space, procpar.nv is number of lines collected including navigator echoes)
+% used to use procpar.nv and correct for navechoes, but seems more sensible to just use procpar.ni)
+dim = [procpar.np/2 procpar.ni length(procpar.pss)];
 
-% remove navigator echoes from k-space
-dim(2) = dim(2) - navechoes;
+% remove navigator echoes from k-space 
+%dim(2) = dim(2) - navechoes;
 
 % check to see if this is a sense reconstruction and what the sense acceleration factor is
 if procpar.accfactor > 1
   % fix dimensions
-%  dim(1) = dim(1)*procpar.accfactor;
   dim(2) = dim(2)*procpar.accfactor;
   % print message
   if verbose>0
@@ -80,22 +81,26 @@ voxspacing = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) 10*median(diff(sort(pr
 % check for 3d acquisition
 info.acq3d = 0;
 if procpar.nv2 > 1
-  if verbose>=0,disp(sprintf('(fid2xform) 3D acquisition'));end
+  if verbose>0,disp(sprintf('(fid2xform) 3D acquisition'));end
   % since the 3rd dimension is taken as a single slice with multiple
   % phase encodes, we have to get the voxel size and dimensions differently
   voxsize(3) = 10*procpar.lpe2/procpar.nv2;
   voxspacing(3) = 10*procpar.lpe2/procpar.nv2;
   dim(3) = procpar.nv2;
-  procpar.pss = -procpar.pss;
-  % flip to confrom to 2d images
-  rotmat = rotmat*[-1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
+  % keep in structure that this is a 3d acquisition
   info.acq3d = 1;
 end
 
 % Now get the offset in mm from the center of the bore that the center of the
 % volume is. We can not change the phase encode center. Note that dimensions
-% are given in cm, so we must convert to mm
-offset = 10*[-procpar.pro 0 procpar.pss(1)];
+% are given in cm, so we must convert to mm.
+% 
+% Note here about 3D images. The pss is in "reverse" order in the sense that it
+% goes from positive numbers to negative numbers. This is fixed in fid2nifit
+% since fid2nifti sorts the pss and reorders the slices accordingly. This reordering fixes
+% interleaved acquisition as well. Knowing that this will be the case,
+% means that the offset to the first slice should always be the min(procpar.pss)
+offset = 10*[-procpar.pro 0 min(procpar.pss)];
 
 % make into a translation matrix
 offset = [eye(3) offset';0 0 0 1];

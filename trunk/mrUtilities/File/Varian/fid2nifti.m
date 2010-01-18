@@ -116,7 +116,9 @@ for i = 1:length(fidnames)
   % read the procpar
   procpar = readprocpar(fidname);
   
-  % reorder slices if necessary
+  % reorder slices if necessary. note that this is here for fixing interleaved slices,
+  % but also reorders slices for 3d images (which go in descending rather than ascending
+  % order of pss)
   [pss sliceIndex] = sort(procpar.pss);
   if ~isequal(sliceIndex,1:size(fid.data,3))
     fid.data = fid.data(:,:,sliceIndex,:);
