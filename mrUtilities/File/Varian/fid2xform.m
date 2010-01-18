@@ -71,12 +71,20 @@ end
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 
-% get voxel sizes and put in diagonal to multiply against rotmat
-% so that we get the proper spacing
-voxsize = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) procpar.thk 1];
+if dim(2) == 0
+ if verbose > 0
+   disp(sprintf('(fid2xform) Unprocessed fid directory. Has dim(2)=0'));
+ end
+ voxsize = [nan nan nan 1];
+ voxspacing = [nan nan nan 1];
+else
+  % get voxel sizes and put in diagonal to multiply against rotmat
+  % so that we get the proper spacing
+  voxsize = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) procpar.thk 1];
 
-% vox spacing can be *different* from voxsize, if you skip in your pss
-voxspacing = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) 10*median(diff(sort(procpar.pss))) 1];
+  % vox spacing can be *different* from voxsize, if you skip in your pss
+  voxspacing = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) 10*median(diff(sort(procpar.pss))) 1];
+end
 
 % check for 3d acquisition
 info.acq3d = 0;
