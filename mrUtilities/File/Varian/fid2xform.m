@@ -71,7 +71,9 @@ end
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 
+info.processed = 1;
 if dim(2) == 0
+ info.processed = 0;
  if verbose > 0
    disp(sprintf('(fid2xform) Unprocessed fid directory. Has dim(2)=0'));
  end
@@ -97,6 +99,11 @@ if procpar.nv2 > 1
   dim(3) = procpar.nv2;
   % keep in structure that this is a 3d acquisition
   info.acq3d = 1;
+  % check to see if it has been processed or not (i.e. pss should be of
+  % correct length
+  if length(procpar.pss) ~= procpar.nv2
+      info.processed = 0;
+  end
 end
 
 % Now get the offset in mm from the center of the bore that the center of the
