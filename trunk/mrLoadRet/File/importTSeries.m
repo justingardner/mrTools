@@ -21,6 +21,11 @@ if (filename==0)
   return
 end
 
+if ~isempty(strfind(stripext(filename),'.'))
+  mrWarnDlg(sprintf('(mlrGetAllImageFilenames) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename,setext(fixBadChars(stripext(filename),{'.','_'}),'hdr')));
+  return
+end
+
 % get the full file name
 fullFilename = fullfile(pathname,filename);
 
