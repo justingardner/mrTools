@@ -23,6 +23,7 @@ paramsInfo{end+1} = {'x',x,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',sca
 paramsInfo{end+1} = {'y',y,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',scanDims(2)),'Choose Y coordinate to look for'};
 paramsInfo{end+1} = {'s',s,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',scanDims(3)),'Choose S coordinate to look for'};
 paramsInfo{end+1} = {'color',color2RGB,'Choose color to display voxel in'};
+paramsInfo{end+1} = {'maxSearchRadius',5,'type=numeric','If there is no exact match, then will display the closest voxel within this search radius. Set smaller to force only display of more exact matches. Set higher if you want to allow matches that are farther away.'};
 params = mrParamsDialog(paramsInfo,'Look for voxel');
 if isempty(params)
   % if user hit cancel, then refresh
@@ -69,18 +70,28 @@ v = viewGet([],'view',viewNum);
   
 % and then display the voxel
 if baseType <= 1
-  % get coords of chosen voxel
-  overlayCoords = round(viewGet(v,'cursliceOverlayCoords'));
-  match = (overlayCoords(:,:,1) == params.x) & (overlayCoords(:,:,2) == params.y) & (overlayCoords(:,:,3) == params.s);
+  % find voxel in base coordinates
+  scan2base = inv(viewGet(v,'base2scan'));
+  baseVoxel = round(scan2base*[params.x params.y params.s 1]');
 
-  % no match, give up
-  if isempty(find(match))
-    mrWarnDlg(sprintf('(searchForVoxel) No matching voxel'));
+  % find the coordinates of the view
+  baseCoords = round(viewGet(v,'cursliceBaseCoords'));
+
+  % compute distance to matching voxel
+  matchDistance = sqrt((baseCoords(:,:,1) - baseVoxel(1)).^2 + (baseCoords(:,:,2) - baseVoxel(2)).^2 + (baseCoords(:,:,3) - baseVoxel(3)).^2);
+  minMatchDistance = min(matchDistance(:));
+  
+  % if there is no match within 5 voxels, give up
+  if minMatchDistance > params.maxSearchRadius
+    mrWarnDlg(sprintf('(searchForVoxel) No voxel within %f of searched for voxel. Closest voxel is within a radius of %f',params.maxSearchRadius,minMatchDistance));
     hold off
     return
   end
 
-  [y x] = find(match);
+  % display info
+  disp(sprintf('(searchForVoxel) Scan voxel [%i %i %i] projects to [%i %i %i] in %s. Displaying %i voxels within a radius of %f.',params.x,params.y,params.s,baseVoxel(1),baseVoxel(2),baseVoxel(3),params.baseName,length(find(matchDistance==minMatchDistance)),minMatchDistance));
+
+  [y x] = find(matchDistance==minMatchDistance);
   for i = 1:length(x)
     plot(x,y,'.','Color',color2RGB(params.color));
   end
