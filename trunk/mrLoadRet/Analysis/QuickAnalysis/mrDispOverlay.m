@@ -293,7 +293,10 @@ else
   % install overlay
   if ~isempty(overlay)
     for onum = 1:length(o)
-      v = viewSet(v,'newOverlay',o(onum));
+      % validate overlay
+      [tf thisOverlay] = isoverlay(o(onum));
+      % and install
+      v = viewSet(v,'newOverlay',thisOverlay);
     end
   end
   % install d structure
