@@ -86,6 +86,11 @@ else
 
   % vox spacing can be *different* from voxsize, if you skip in your pss
   voxspacing = [10*procpar.lro/dim(1) 10*procpar.lpe/dim(2) 10*median(diff(sort(procpar.pss))) 1];
+  
+  % if we have only one slice, then get vox spacing from thk (since there isn't really any vox spacing
+  if length(procpar.pss) == 1
+    voxspacing(3) = procpar.thk;
+  end
 end
 
 % check for 3d acquisition
