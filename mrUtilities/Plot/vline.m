@@ -9,16 +9,20 @@
 function h = vline(hpos,linetype)
 
 ax = axis;
+miny = ax(3);maxy = ax(4);
+if isequal(get(gca,'YScale'),'log')
+  miny = min(get(gca,'Ytick'));
+end
 h = [];
 if (nargin == 1)
   for i = 1:length(hpos)
     hold on
-    h(i) = plot([hpos(i) hpos(i)],[ax(3) ax(4)],'k:');
+    h(i) = plot([hpos(i) hpos(i)],[miny maxy],'k:');
   end
 elseif (nargin == 2)
   for i = 1:length(hpos)
     hold on
-    h(i) = plot([hpos(i) hpos(i)],[ax(3) ax(4)],linetype);
+    h(i) = plot([hpos(i) hpos(i)],[miny maxy],linetype);
   end
 else
   help vline
