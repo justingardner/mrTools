@@ -39,6 +39,21 @@ if (length(varargin) >= 1) && isscalar(varargin{1})
   varargin = temp;
 end
 
+% if there are any equals signs then it is an argument, so split
+% the varargin into an argument list and a fidlist
+altFidnames = {};argsList = {};
+for i = 1:length(varargin)
+  if ~isempty(strfind(varargin{i},'='))
+    argsList{end+1} = varargin{i};
+  else
+    altFidnames{end+1} = varargin{i};
+  end
+end
+
+% parse arguments
+movepro=[];
+getArgs(argsList,{'movepro=0'});
+
 % if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
   % use regexp to serach for matching filenames
@@ -56,8 +71,8 @@ if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
 end
 
 % cat with other arguments and make sure we have a cell array
-if nargin > 1
-  fidnames = cellcat(fidname,varargin);
+if ~isempty(altFidnames)
+  fidnames = cellcat(fidname,altFidnames);
 else
   fidnames = cellArray(fidname);
 end
@@ -79,7 +94,7 @@ for i = 1:length(fidnames)
   end
   
   % get the fid
-  fid = getfid(fidname,verbose);
+  fid = getfid(fidname,verbose,[],movepro);
   if isempty(fid.data)
     disp(sprintf('(fid2nifti) WARNING file %s could not be read',fidname));
     continue
@@ -111,7 +126,7 @@ for i = 1:length(fidnames)
   end
   
   % create a header
-  hdr = fid2niftihdr(fidname);
+  hdr = fid2niftihdr(fidname,verbose,sprintf('movepro=%f',movepro));
   
   % read the procpar
   procpar = readprocpar(fidname);
