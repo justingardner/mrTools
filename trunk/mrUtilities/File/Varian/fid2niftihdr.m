@@ -6,13 +6,16 @@
 %       date: 12/09/09
 %    purpose: strips out of fid2nifti the functionality to create nifti headers from procpar
 %
-function [hdr info] = fid2niftihdr(fidname,verbose)
+function [hdr info] = fid2niftihdr(fidname,verbose,varargin)
 
 hdr = [];info = [];
 if ieNotDefined('verbose'),verbose=1;end
 
+movepro=[];
+getArgs(varargin,{'movepro=0'});
+
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3])
   help fid2niftihdr
   return
 end
@@ -24,7 +27,7 @@ fidname = setext(fidname,'fid',0);
 hdr = cbiCreateNiftiHeader;
 
 % get the qform
-[qform44 info] = fid2xform(fidname);
+[qform44 info] = fid2xform(fidname,verbose,sprintf('movepro=%f',movepro));
 
 % set the qform
 hdr = cbiSetNiftiQform(hdr,qform44);

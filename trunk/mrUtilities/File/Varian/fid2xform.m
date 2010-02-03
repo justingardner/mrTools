@@ -1,26 +1,30 @@
 % fid2xform.m
 %
 %        $Id:$ 
-%      usage: [xform info] = fid2xform(procpar)
+%      usage: [xform info] = fid2xform(fidname,<verbose>)
 %         by: justin gardner
 %       date: 05/05/09
 %    purpose: Convert fields out of a named procpar into a rotation matrix
-%             suitable for the nifti header. (procpar is either the name of 
-%             a file, or the structure returned by readprocpar). info is 
-%             a sturcutre that contains info about the scan like pixel dims
+%             suitable for the nifti header. (fidname is either the name of 
+%             a fid, or the structure returned by readprocpar). info is 
+%             a sturcture that contains info about the scan like pixel dims
 %             sense factors etc.
 %
-function [xform info] = fid2xform(procpar,verbose)
+function [xform info] = fid2xform(procpar,verbose,varargin)
 
 xform = [];
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3])
   help fid2xform
   return
 end
 
-if nargin == 1,verbose = 0;end
+% get extra arguments
+movepro=[];
+getArgs(varargin,{'movepro=0'});
+
+if ieNotDefined('verbose'),verbose = 0;end
 
 % get the procpar
 if isstr(procpar)
@@ -29,6 +33,11 @@ if isstr(procpar)
 elseif ~isstruct(procpar)
   help fid2xform;
   return
+end
+
+% move pro if called for
+if movepro ~= 0
+  procpar.pro = procpar.pro + movepro;
 end
 
 % get the number of navechoes
@@ -202,6 +211,7 @@ end
 info.tr = tr;
 % get date and time
 [info.dateStr info.timeStr] = getDateAndTimeFromVarianField(procpar.time_run);
+info.procpar = procpar;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getDateAndTimeFromVarianField    %
