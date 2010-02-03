@@ -1,7 +1,7 @@
 % fid2nifti.m
 %
 %        $Id:$ 
-%      usage: fid2nifti(fidname)
+%      usage: fid2nifti(fidname,<verbose>,<movepro>)
 %         by: justin gardner
 %       date: 04/30/09
 %    purpose: convert a fid 2D anatomy file into a nifti file. 
@@ -17,6 +17,10 @@
 %             You can get verbose information by doing
 %
 %             [d h] = fid2nifti('fidname.fid',1);
+%
+%             You can also move the pro
+%
+%             [d h] = fid2nifti('fidname.fid','movepro=4');
 %
 function [outdata outhdr] = fid2nifti(fidname,varargin)
 
