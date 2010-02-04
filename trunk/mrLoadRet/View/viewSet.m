@@ -1604,6 +1604,31 @@ switch lower(param)
       view.ROIs(roiNum).sformCode = val;
     end
 
+  case {'roixform'}
+    % v = viewSet(v,'roixform',xform,[roiNum]);
+    % sets the xform for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).xform = val;
+    end
+  case {'roivoxelsize'}
+    % v = viewSet(v,'roiVoxelSize',voxelSize,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).voxelSize = val;
+    end
+
   case {'roiname'}
     % view = viewSet(view,'roiName',nameString,[roiNum]);
     curRoi = viewGet(view,'currentRoi');
