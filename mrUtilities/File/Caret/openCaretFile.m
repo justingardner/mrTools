@@ -21,7 +21,7 @@ end
 
 % check if files exist
 if ~isfile(filename)
-  disp(sprintf('(loadSurfCaret) Could not open file %s',filename));
+  disp(sprintf('(openCaretFile) Could not open file %s',filename));
   return
 end
 
