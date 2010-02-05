@@ -31,6 +31,7 @@ d = caret_load(filename);
 % convert header
 for i = 2:(length(d.header)-1)
   [fieldName fieldVal] = strtok(d.header{i});
+  fieldName = lower(fieldName);
   d.(fixBadChars(fieldName)) = fieldVal(2:end);
 end
 
