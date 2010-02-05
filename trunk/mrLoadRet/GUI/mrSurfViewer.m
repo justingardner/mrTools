@@ -4,7 +4,7 @@
 %      usage: mrSurfViewer(outerSurface,<outerCoords>,<innerSurface>,<innerCoords>,<curv>,<anat>)
 %         by: justin gardner
 %       date: 10/09/07
-%    purpose: 
+%    purpose: Display and select surface files
 %
 function retval = mrSurfViewer(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat)
 
@@ -177,9 +177,13 @@ curv{end+1} = 'Find file';
 anatDir = dir('*.hdr');
 for i = 1:length(anatDir)
   if ~any(strcmp(anatDir(i).name,anat))
-    anat{end+1} = anatDir(i).name;
+    h = cbiReadNiftiHeader(anatDir(i).name);
+    if h.dim(1) ==3
+      anat{end+1} = anatDir(i).name;
+    end
   end
 end
+
 % check for 'canonical hdr'
 anatCanonicalDir = dir('../*.hdr');
 for i= 1:length(anatCanonicalDir)
