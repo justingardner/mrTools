@@ -67,7 +67,7 @@ if (groupNum ~= curGroup)
 end
 
 % Compute it
-[tsMean,tsMedian,tsStd,tsMaxFrameDiff,tsMaxMedianDiff] = computeTimeSeriesStats(view,params);
+[tsMean,tsMedian,tsStd,tsMaxFrameDiff,tsMaxMedianDiff,tsMeanDividedByStd] = computeTimeSeriesStats(view,params);
 
 % Make analysis structure
 tsStats.name = 'timeSeriesStats';  % This can be reset by editAnalysisGUI
@@ -84,6 +84,7 @@ view = viewSet(view,'newoverlay',tsMedian);
 view = viewSet(view,'newoverlay',tsStd);
 view = viewSet(view,'newoverlay',tsMaxFrameDiff);
 view = viewSet(view,'newoverlay',tsMaxMedianDiff);
+view = viewSet(view,'newoverlay',tsMeanDividedByStd);
 
 % Save it
 saveAnalysis(view,tsStats.name);
@@ -93,7 +94,7 @@ return;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [tsMean,tsMedian,tsStd,tsMaxFrameDiff,tsMaxMedianDiff] = ...
+function [tsMean,tsMedian,tsStd,tsMaxFrameDiff,tsMaxMedianDiff,tsMeanDividedByStd] = ...
   computeTimeSeriesStats(view,params)
 
 % Get nScans from view and get scanList from params
@@ -109,6 +110,7 @@ tsMean.data = cell(1,nScans);
 tsMean.params = params;
 tsMean.colormap = jet(256);
 tsMean.groupName = params.groupName;
+tsMean.interrogator = 'timeSeriesStatsPlot';
 
 % median
 tsMedian.name = 'median';
@@ -117,6 +119,7 @@ tsMedian.data = cell(1,nScans);
 tsMedian.params = params;
 tsMedian.colormap = jet(256);
 tsMedian.groupName = params.groupName;
+tsMedian.interrogator = 'timeSeriesStatsPlot';
 
 % std
 tsStd.name = 'std';
@@ -125,6 +128,7 @@ tsStd.data = cell(1,nScans);
 tsStd.params = params;
 tsStd.colormap = jet(256);
 tsStd.groupName = params.groupName;
+tsStd.interrogator = 'timeSeriesStatsPlot';
 
 % max frame-to-frame diff
 tsMaxFrameDiff.name = 'maxFrameDiff';
@@ -133,6 +137,7 @@ tsMaxFrameDiff.data = cell(1,nScans);
 tsMaxFrameDiff.params = params;
 tsMaxFrameDiff.colormap = jet(256);
 tsMaxFrameDiff.groupName = params.groupName;
+tsMaxFrameDiff.interrogator = 'timeSeriesStatsPlot';
 
 % max diff from median
 tsMaxMedianDiff.name = 'maxMedianDiff';
@@ -141,6 +146,16 @@ tsMaxMedianDiff.data = cell(1,nScans);
 tsMaxMedianDiff.params = params;
 tsMaxMedianDiff.colormap = jet(256);
 tsMaxMedianDiff.groupName = params.groupName;
+tsMaxMedianDiff.interrogator = 'timeSeriesStatsPlot';
+
+% mean/std
+tsMeanDividedByStd.name = 'meanDividedByStd';
+tsMeanDividedByStd.function = 'timeSeriesStats';
+tsMeanDividedByStd.data = cell(1,nScans);
+tsMeanDividedByStd.params = params;
+tsMeanDividedByStd.colormap = jet(256);
+tsMeanDividedByStd.groupName = params.groupName;
+tsMeanDividedByStd.interrogator = 'timeSeriesStatsPlot';
 
 disp('Computing time series statistics...');
 waitHandle = mrWaitBar(0,'Computing statistics from the tSeries.  Please wait...');
@@ -160,6 +175,7 @@ for scanIndex=1:length(scanList)
     tsStd.data{scanNum} = NaN*ones(volDims);
     tsMaxFrameDiff.data{scanNum} = NaN*ones(volDims);
     tsMaxMedianDiff.data{scanNum} = NaN*ones(volDims);
+    tsMeanDividedByStd.data{scanNum} = NaN*ones(volDims);
     
     nslices = viewGet(view,'nslices',scanNum);
     for sliceNum = 1:nslices
@@ -170,6 +186,7 @@ for scanIndex=1:length(scanList)
         tsStd.data{scanNum}(:,:,sliceNum) = reshape(tsStdSeries,sliceDims);
         tsMaxFrameDiff.data{scanNum}(:,:,sliceNum) = reshape(tsMaxFrameDiffSeries,sliceDims);
         tsMaxMedianDiff.data{scanNum}(:,:,sliceNum) = reshape(tsMaxMedianDiffSeries,sliceDims);
+        tsMeanDividedByStd.data{scanNum}(:,:,sliceNum) = reshape(tsMeanSeries,sliceDims)./reshape(tsStdSeries,sliceDims);
     end
     % Update waitbar
     mrWaitBar(scanIndex/length(scanList),waitHandle);
@@ -183,7 +200,7 @@ tsMedian.range = findRange(tsMedian.data);
 tsStd.range = findRange(tsStd.data);
 tsMaxFrameDiff.range = findRange(tsMaxFrameDiff.data);
 tsMaxMedianDiff.range = findRange(tsMaxMedianDiff.data);
-
+tsMeanDividedByStd.range = findRange(tsMeanDividedByStd.data);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
