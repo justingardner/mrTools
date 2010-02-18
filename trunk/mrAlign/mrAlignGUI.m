@@ -1432,6 +1432,7 @@ global ALIGN
 
 if ~isempty(ALIGN.volBase.talInfo) %load talInfo if it exists
   talInfo = ALIGN.volBase.talInfo;
+  talInfo.filename = ALIGN.volumePath;
   talInfo = talairach(talInfo);
 elseif ~isempty(ALIGN.volBase.vol2tal) 
   % if talInfo doesn't exist, but there's a talXform defined, can use that
