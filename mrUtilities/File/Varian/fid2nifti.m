@@ -1,14 +1,17 @@
 % fid2nifti.m
 %
 %        $Id:$ 
-%      usage: fid2nifti(fidname,<verbose>,<movepro>)
+%      usage: fid2nifti(fidname,<verbose>,<movepro>,<receiverNum>)
 %         by: justin gardner
 %       date: 04/30/09
-%    purpose: convert a fid 2D anatomy file into a nifti file. 
-%             Preserves slice orientation infomation found in procpar
-%             You can also use it with wild cards:
+%    purpose: convert a Varian fid into a valid Nifti file with slice orientation information preserved in header.
+%             When called with a fidname, it will save a nifti hdr/img pair out with the same name.
+%          
+%       e.g.: fid2nifti('2danat.fid')
 %
-%       e.g.: fid2nifti 2d*.fid
+%             Can be used with wildcards to process multiple files:
+% 
+%             fid2nfiti 2d*.fid
 % 
 %             If you want to just load (not save a converted file)
 %
@@ -21,6 +24,10 @@
 %             You can also move the pro
 %
 %             [d h] = fid2nifti('fidname.fid','movepro=4');
+% 
+%             You can also extract a single receiver in multi-receiver data
+%
+%             [d h] = fid2nifti('fidname.fid','receiverNum=3');
 %
 function [outdata outhdr] = fid2nifti(fidname,varargin)
 
@@ -55,8 +62,8 @@ for i = 1:length(varargin)
 end
 
 % parse arguments
-movepro=[];
-getArgs(argsList,{'movepro=0'});
+movepro=[];receiverNum=[];
+getArgs(argsList,{'movepro=0','receiverNum=[]'});
 
 % if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
@@ -104,6 +111,18 @@ for i = 1:length(fidnames)
     continue
   end
 
+  % check if we are being asked to return only a single receiver
+  if ~isempty(receiverNum) 
+    if (receiverNum < 1) || (receiverNum > size(fid.data,5))
+      disp(sprintf('(fid2nifti) Data has %s receivers, cannot extract receiver: %i',size(fid.data,5),receiverNum));
+      disp(sprintf('            Ignoring receiverNum setting and continuing processing'));
+    else
+      % extract that receiver
+      fid.data = fid.data(:,:,:,:,receiverNum);
+      fid.dim = size(fid.data);
+    end
+  end
+  
   % check to see if we have to merge coils
   if size(fid.data,5) > 1
     numReceivers = size(fid.data,5);
@@ -132,13 +151,10 @@ for i = 1:length(fidnames)
   % create a header
   hdr = fid2niftihdr(fidname,verbose,sprintf('movepro=%f',movepro));
   
-  % read the procpar
-  procpar = readprocpar(fidname);
-  
   % reorder slices if necessary. note that this is here for fixing interleaved slices,
   % but also reorders slices for 3d images (which go in descending rather than ascending
   % order of pss)
-  [pss sliceIndex] = sort(procpar.pss);
+  [pss sliceIndex] = sort(fid.info.procpar.pss);
   if ~isequal(sliceIndex,1:size(fid.data,3))
     fid.data = fid.data(:,:,sliceIndex,:);
   end

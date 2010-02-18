@@ -209,14 +209,19 @@ else
   info.dim(4) = 1;
 end
 info.tr = tr;
-% get date and time
-[info.dateStr info.timeStr] = getDateAndTimeFromVarianField(procpar.time_run);
+% get date and time of start and finish
+[info.startDatevec info.startDatestr] = getDateFromVarianField(procpar.time_run);
+[info.endDatevec info.endDatestr] = getDateFromVarianField(procpar.time_complete);
+% get elapsed time
+info.elapsedSecs = etime(info.endDatevec,info.startDatevec);
+elapsedMin = floor(info.elapsedSecs/60);
+info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapsedMin*60);
 info.procpar = procpar;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    getDateAndTimeFromVarianField    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [dateStr timeStr] = getDateAndTimeFromVarianField(f)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    getDateFromVarianField    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [outDateVec outDateStr] = getDateFromVarianField(f)
 
 year = str2num(f{1}(1:4));
 month = str2num(f{1}(5:6));
@@ -226,9 +231,8 @@ hour = str2num(f{1}(10:11));
 min = str2num(f{1}(12:13));
 sec = str2num(f{1}(14:15));
 
-dateStr = sprintf('%04i/%02i/%02i',year,month,day);
-timeStr = sprintf('%02i:%02i:%02i',hour,min,sec);
-
+outDateVec = datevec(sprintf('%04i/%02i/%02i %02i:%02i:%02i',year,month,day,hour,min,sec));
+outDateStr = datestr(outDateVec);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
