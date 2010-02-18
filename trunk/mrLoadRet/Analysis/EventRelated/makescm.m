@@ -55,7 +55,7 @@ if ieNotDefined('hdrlen')
   end
 end
 
-if hdrlen > d.nFrames
+if isfield(d,'nFrames') && (hdrlen > d.nFrames)
     mrErrorDlg(sprintf('(makescm) Your hdrlen in volumes (%i) is greater than the length of your scan (%i), perhaps framePeriod is set incorrectly?',hdrlen,d.nFrames));
 end
 
