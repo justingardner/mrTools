@@ -26,7 +26,7 @@ if (nargout == 2)
                     'alpha',1;
                     'clip',overlay.range;
                     'colormap',jet(256);
-                    'interrogator','mrDefaultInterrogator';
+                    'interrogator','timecoursePlot';
                     'reconcileFunction','defaultReconcileParams';
                     'mergeFunction','defaultMergeParams';
                     'colormapType', 'normal';
