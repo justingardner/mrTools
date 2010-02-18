@@ -105,5 +105,6 @@ if zeropad
 end
 d.zeropad = zeropad;
 
+d.info = info;
 
 if (verbose), disppercent(inf); end

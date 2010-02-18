@@ -88,7 +88,7 @@ end
 fclose(fprocpar);
 
 % these fields will get set from the petable name if available
-if ~isfield(procpar,'accFactor'),procpar.accfactor = 1;end
+if ~isfield(procpar,'accfactor'),procpar.accfactor = 1;end
 if ~isfield(procpar,'numshots'),procpar.numshots = 1;end
 
 % for epi images, there are navigator echos, which
