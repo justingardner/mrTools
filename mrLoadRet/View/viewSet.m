@@ -178,8 +178,38 @@ switch lower(param)
 	view.groupScanNum(groupNum) = val;
       end
     end
+ case{'renamegroup'}
+    % rename a group. This will change the current group name (and change the directory name)
+    % view = viewSet(view,'renameGroup',string);
+    % Also, you can specify a groupnumber
+    % view = viewSet(view,'renameGroup',string, groupNum);
+    if length(varargin) == 0
+      groupNum = viewGet(view,'currentGroup');
+    else
+      groupNum = varargin{1};
+    end
+    % make sure groupNum is a number not a name
+    groupNum = viewGet(view,'groupNum',groupNum);
+    % get old name
+    oldGroupName = viewGet(view,'groupName',groupNum);
+    oldGroupDirname = viewGet(view,'datadir',groupNum);
+    % change to new name
+    newGroupDirname = fullfile(viewGet(view,'homeDir'),val);
+    % and move directory
+    success = movefile(oldGroupDirname,newGroupDirname);
+    % only change the group name if successful
+    if success
+      MLR.groups(groupNum).name = val;
+      % Update the GUIs of all views
+      stringList = {MLR.groups(:).name};
+      for v = 1:length(MLR.views)
+	if isview(MLR.views{v})
+	  mlrGuiSet(MLR.views{v},'groupPopup',stringList);
+	end
+      end
+    end
   case{'groupname'}
-    % view = viewSet(view,'currentGroup',string);
+    % view = viewSet(view,'groupName',string);
     n = viewGet(view,'groupnum',val);
     view = viewSet(view,'currentGroup',n);
 
