@@ -31,7 +31,8 @@ passedInVol = 0;
 
 % setup a cache
 gMLRDisplayEPI.c = mrCache('init',1000);
-
+gMLRDisplayEPI.hdr = [];
+      
 
 % don't display too many frames at once
 maxFramesAtOnce = 500;
@@ -42,8 +43,9 @@ if ~ieNotDefined('v') && ~isview(v)
   if isstr(v)
     filename = setext(v,'hdr');
     if isfile(filename)
-      v = cbiReadNifti(filename);
+      [v hdr] = cbiReadNifti(filename);
       if isempty(v),return,end
+      gMLRDisplayEPI.hdr = hdr;
     else
       disp(sprintf('(mlrDisplayEPI) Could not open file %s',filename));
       return
@@ -135,12 +137,52 @@ if needsWarping
   paramsInfo{end+1} = {'warp',0,'type=checkbox','Apply warping implied by scan2scan transform to each image. This allows you to preview what will happen when you apply warping in averageTSeries or concatTSeries'};
   paramsInfo{end+1} = {'warpBaseScan',1,sprintf('minmax=[1 %i]',gMLRDisplayEPI.nScans),'incdec=[-1 1]','Choose which scan you want to warp the images to','contingent=warp'};
 end
+if ~isempty(gMLRDisplayEPI.hdr)
+  paramsInfo{end+1} = {'displayNifitHdr',0,'type=pushbutton','buttonString=Display nifti header','callback',@mlrDisplayEPINiftiHeader};
+end  
 
 % display dialog
 [gMLRDisplayEPI.f params] = mrParamsDialog(paramsInfo,dialogTitle,[],@mlrDisplayEPICallback,[],@mlrDisplayEPIClose);
 
 % and draw first frame
 mlrDisplayEPIDispImage(params);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrDisplayEPINiftiHeader    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = mlrDisplayEPINiftiHeader(params)
+
+global gMLRDisplayEPI;
+hdr = gMLRDisplayEPI.hdr;
+retval = 0;
+
+numDims = hdr.dim(1);
+dimstr = 'dim:';
+pixdimstr = 'pixdim:';
+for i = 1:numDims
+  dimstr = sprintf('%s%i ',dimstr,hdr.dim(i+1));
+  pixdimstr = sprintf('%s%i ',pixdimstr,hdr.pixdim(i+1));
+end
+disp(dimstr);
+disp(pixdimstr);
+
+
+% display qform and sform
+disp(sprintf('++++++++++++++++++++++++++ qform ++++++++++++++++++++++++++'));
+for rownum = 1:4
+  disp(sprintf('%f\t%f\t%f\t%f',hdr.qform44(rownum,1),hdr.qform44(rownum,2),hdr.qform44(rownum,3),hdr.qform44(rownum,4)));
+end
+disp(sprintf('qformCode: %i',hdr.qform_code));
+
+% display qform and sform
+disp(sprintf('++++++++++++++++++++++++++ sform ++++++++++++++++++++++++++'));
+for rownum = 1:4
+  disp(sprintf('%f\t%f\t%f\t%f',hdr.sform44(rownum,1),hdr.sform44(rownum,2),hdr.sform44(rownum,3),hdr.sform44(rownum,4)));
+end
+disp(sprintf('sformCode: %i',hdr.sform_code));
+  
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrDisplayEPIdeselectAll    %
