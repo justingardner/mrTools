@@ -190,6 +190,10 @@ switch lower(param)
     end
     % make sure groupNum is a number not a name
     groupNum = viewGet(view,'groupNum',groupNum);
+    if isempty(groupNum)
+      mrWarnDlg(sprintf('(viewSet:renameGroup) Could not find group %s',varargin{1}));
+      return
+    end
     % get old name
     oldGroupName = viewGet(view,'groupName',groupNum);
     oldGroupDirname = viewGet(view,'datadir',groupNum);
