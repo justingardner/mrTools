@@ -180,6 +180,9 @@ switch lower(field)
 
  case {'overlayminrange'}
   % mlrGuiSet(view,'overlayMinRange',[min,max]);
+  if ~all(isfinite(value))
+    disp(sprintf('(mlrGuiSet) Overlay range is not finite [%f %f]',value(1),value(2)));
+  end
   if (value(2) > value(1))
     set(handles.overlayMinSlider,'Min',value(1));
     set(handles.overlayMinSlider,'Max',value(2));
