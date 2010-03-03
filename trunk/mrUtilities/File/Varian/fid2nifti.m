@@ -31,6 +31,7 @@
 %
 function [outdata outhdr] = fid2nifti(fidname,varargin)
 
+outdata = [];
 outhdr = [];
 
 % check arguments
