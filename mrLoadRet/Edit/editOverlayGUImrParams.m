@@ -22,6 +22,7 @@ function retval = editOverlayGUImrParams(viewNum)
   overlayNum = viewGet(v,'currentOverlay', analysisNum);
   if isempty(overlayNum),mrWarnDlg('(editOverlayGUI) No current overlay');return,end
   overlayRange = viewGet(v,'overlayRange', overlayNum, analysisNum);
+  overlayClip = viewGet(v,'overlayClip', overlayNum, analysisNum);
   overlayName = viewGet(v, 'overlayName', overlayNum, analysisNum);
   alphaOverlay = viewGet(v,'alphaOverlay');
   alphaOverlayExponent = viewGet(v,'alphaOverlayExponent');
@@ -36,8 +37,8 @@ function retval = editOverlayGUImrParams(viewNum)
   paramsInfo{end+1} = {'flipCmap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'shiftCmap', 0, 'incdec=[-16 16]', 'shift the colormap -- this can be useful for retinotopy scans with circular colormaps','callback',@mrCmapCallback,'callbackArg',v}; 
   paramsInfo{end+1} = {'overlayCtype', {'normal', 'setRangeToMax', 'setRangeToMaxAroundZero'}, 'setRangeToMax scales the colormap to overlayMin-overlayMax, as in R2 maps','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'overlayRangeMin', overlayRange(1), 'the lower bound on the colormap','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'overlayRangeMax', overlayRange(2), 'the upper bound on the colormap','callback',@mrCmapCallback,'callbackArg',v};
+  paramsInfo{end+1} = {'overlayRange', overlayRange, 'The lower and upper bound on the colormap','callback',@mrCmapCallback,'callbackArg',v};
+  paramsInfo{end+1} = {'overlayClip', overlayClip, 'The lower and upper clip points on the colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'interrogator', interrogator, 'Set the interrogator function name','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'alphaOverlay', alphaOverlay, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.','callback',@mrCmapCallback,'callbackArg',v};
  paramsInfo{end+1} = {'alphaOverlayExponent', alphaOverlayExponent, 'minmax=[0 inf]','incdec=[-0.1 0.1]','If you are using an alphaOverlay, this sets an exponent on the alphaOverlay to pass through. For example, if you just want the value from the overlay to be the alpha value then set this to 1. If you want to have it so that lower values get accentuated (usually this is the case), set the exponent to less than 1, but greater than 0. The alpha values are passed through the function alpha = alpha.^alphaOverlayExponent','callback',@mrCmapCallback,'callbackArg',v};
@@ -95,8 +96,10 @@ function mrCmapCallback(v,params)
   % scale to max, or not
   o.colormapType = params.overlayCtype;
 
-  % set the overlay range
-  o.range = [params.overlayRangeMin params.overlayRangeMax];
+  % set the overlay range & clip
+  o.range = [params.overlayRange(1) params.overlayRange(2)];
+  o.clip = [params.overlayClip(1) params.overlayClip(2)];
+  
 
 %   % set the name of the overlay
 %   o.name = params.overlayName;
