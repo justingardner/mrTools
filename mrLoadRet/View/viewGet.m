@@ -1206,8 +1206,14 @@ switch lower(param)
   case{'basenum'}
     % baseNum = viewGet(view,'baseNum',baseName)
     baseName = varargin{1};
-    baseNames = {view.baseVolumes(:).name};
-    val = find(strcmp(baseName,baseNames));
+    % if numeric there is nothing to do, just return value
+    if isnumeric(baseName)
+      val = baseName;
+    else
+      % otherwise look up the baseNum
+      baseNames = {view.baseVolumes(:).name};
+      val = find(strcmp(baseName,baseNames));
+    end
   case{'basevolume','baseanatomy'}
     % basevolume = viewGet(view,'baseVolume',[baseNum])
     if ieNotDefined('varargin')
@@ -1496,6 +1502,31 @@ switch lower(param)
       if strcmp(lower(param),'basexform') && ~isempty(val)
         val = val * inv(shiftOriginXform);
       end
+    end
+  case{'base2base'}
+    % xform = viewGet(view,'base2base',[baseNum1],[baseNum2])
+    % This will return the xform matrix that specifies the
+    % transformation from the current base coordinates to the specified
+    % base (baseNum1)'s coordinates. If you specify baseNum2 it will
+    % calculate the xform matrix from baseNum2 to baseNum1
+    if length(varargin) < 1, disp(sprintf('(viewGet:base2base) Most specify baseNum1'));return,end
+    % get the from base
+    if length(varargin) == 1
+      baseFromNum = viewGet(view,'curBase');
+    else
+      baseFromNum = varargin{2};
+    end
+    % make sure we have base numbers (and not names)
+    baseToNum = viewGet(view,'baseNum',varargin{1});
+    baseFromNum = viewGet(view,'baseNum',baseFromNum);
+    % go through the magnet coordinates
+    base2magTo = viewGet(view,'base2mag',baseToNum);
+    base2magFrom = viewGet(view,'base2mag',baseFromNum);
+    % if neither is empty, then return it
+    if ~isempty(base2magTo) && ~isempty(base2magFrom)
+      val = inv(base2magTo)*base2magFrom;
+    else
+      disp(sprintf('(viewGet:base2base) Could not compute transform of base %s to base %s',viewGet(view,'baseName',baseToNum),viewGet(view,'baseName',baseFromNum)));
     end
   case{'base2scan'}
     % xform = viewGet(view,'base2scan',[scanNum],[groupNum],[baseNum])
