@@ -87,7 +87,7 @@ end
 % it means that we have been passed in a "getArgs" type. Otherwise
 % it is the old calling convention in which the order determines what
 % variable is being set
-buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];
+buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];modal=[];
 if (length(otherParams) > 2)
   if isstr(otherParams{3})
     getArgs(otherParams(3:end));
@@ -101,6 +101,14 @@ if (length(otherParams) > 2)
   end
 end
 
+% default to using a modal dialog if there is no callback
+if isempty(modal)
+  if ~isempty(callback)
+    modal = 0;
+  else
+    modal = 1;
+  end
+end
 % set the buttonWidth      
 if ~isempty(buttonWidth)
   gParams.buttonWidth = gParams.buttonWidth*buttonWidth;
@@ -214,7 +222,7 @@ if ~isempty(callback)
     makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
   end
   makeButton(gParams.fignum,'Help','help',numrows,1,1);
-  return
+  if ~modal,return,end
 else
   gParams.callback = [];
 end
@@ -601,7 +609,7 @@ makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1,1);
 function closeHandler
 
 global gParams;
-
+if isempty(gParams),return,end
 % close figure
 mrSetFigLoc(fixBadChars(gParams.figlocstr),get(gParams.fignum,'Position'));
 delete(gParams.fignum);
