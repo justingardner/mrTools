@@ -2924,6 +2924,38 @@ switch lower(param)
         val = analysis.overlays(overlayNum).range;
       end
     end
+  case {'overlayclip'}
+    % overlayrange = viewGet(view,'overlayClip',[overlayNum],[analysisNum])
+    % overlayrange = viewGet(view,'overlayClip',overlayNum,[])
+    % overlayrange = viewGet(view,'overlayClip',[],analysisNum)
+    % overlayrange = viewGet(view,'overlayClip',[],[])
+    % overlayrange = viewGet(view,'overlayClip',overlayNum)
+    % overlayrange = viewGet(view,'overlayClip')
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    end
+    switch (length(varargin))
+      case 1
+        overlayNum = varargin{1};
+        analysisNum = viewGet(view,'currentAnalysis');
+      case 2
+        overlayNum = varargin{1};
+        analysisNum = varargin{2};
+    end
+    if isempty(analysisNum)
+      analysisNum = viewGet(view,'currentAnalysis');
+    end
+    if isempty(overlayNum)
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    end
+    analysis = viewGet(view,'analysis',analysisNum);
+    if ~isempty(analysis) & ~isempty(analysis.overlays)
+      n = viewGet(view,'numberofOverlays',analysisNum);
+      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+        val = analysis.overlays(overlayNum).clip;
+      end
+    end
   case {'overlayalpha'}
     % overlayalpha = viewGet(view,'overlayalpha',[overlayNum],[analysisNum])
     % overlayalpha = viewGet(view,'overlayalpha',overlayNum,[])
@@ -3177,24 +3209,21 @@ switch lower(param)
     end
   case {'co'}
     % co = viewGet(view,'co')
-    m = viewGet(view,'analysisNum','corAnal');
-    n = viewGet(view,'overlayNum','co',m);
-    if m & n
-      val = viewGet(view,'overlay',n,m);
+    n = viewGet(view,'overlayNum','co');
+    if n
+      val = viewGet(view,'overlay',n);
     end
   case {'amp'}
     % amp = viewGet(view,'amp')
-    m = viewGet(view,'analysisNum','corAnal');
-    n = viewGet(view,'overlayNum','amp',m);
-    if m & n
-      val = viewGet(view,'overlay',n,m);
+    n = viewGet(view,'overlayNum','amp');
+    if n
+      val = viewGet(view,'overlay',n);
     end
   case {'ph'}
     % ph = viewGet(view,'ph')
-    m = viewGet(view,'analysisNum','corAnal');
-    n = viewGet(view,'overlayNum','ph',m);
-    if m & n
-      val = viewGet(view,'overlay',n,m);
+    n = viewGet(view,'overlayNum','ph');
+    if n
+      val = viewGet(view,'overlay',n);
     end
   case {'ncycles'}
     % ncycles = viewGet(view,'ncycles',scanNum)
