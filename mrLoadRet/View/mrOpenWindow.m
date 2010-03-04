@@ -20,6 +20,7 @@ view = newView(viewType);
 % view is empty if it failed to initialize
 if ~isempty(view)
   fig = mrLoadRetGUI('viewNum',view.viewNum);
+  set(fig,'CloseRequestFcn',@mrQuit);
   view = viewSet(view,'figure',fig);
 else
   return
