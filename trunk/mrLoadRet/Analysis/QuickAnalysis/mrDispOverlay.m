@@ -122,6 +122,14 @@ groupName = viewGet(v,'groupName',groupNum);
 % make the overlay into a cell array, if it is not already.
 overlay = cellArray(overlay);
 
+% get the min and max of the overlays
+minOverlay = inf;
+maxOverlay = -inf;
+for i = 1:length(overlay)
+  minOverlay = min(minOverlay,min(overlay{i}(:)));
+  maxOverlay = max(maxOverlay,max(overlay{i}(:)));
+end
+
 % get some default parameters
 if ieNotDefined('cmap')
   % colormap is made with a little bit less on the dark end
@@ -132,10 +140,10 @@ if ieNotDefined('colormapType')
   colormapType = 'setRangeToMax';
 end
 if ieNotDefined('range')
-  range = [0 1];
+  range = [minOverlay maxOverlay];
 end
 if ieNotDefined('clip')
-  clip = [0 1];
+  clip = [minOverlay maxOverlay];
 end
 if ieNotDefined('analName')
   analName = 'mrDispOverlayAnal';
