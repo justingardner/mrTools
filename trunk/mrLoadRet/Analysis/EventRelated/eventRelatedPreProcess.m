@@ -16,6 +16,9 @@ if ~any(nargin == [2])
   return
 end
 
+% nothing to do
+if isempty(type),return,end
+
 % keep track of whether this is a function name
 isRunFunctionName = 1;
 
