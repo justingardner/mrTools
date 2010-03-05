@@ -170,7 +170,6 @@ function continuousModeStart(v,params)
 % get some info that will be used by continuousModeMouseMove
 global gCMode;
 if ~isfield(gCMode,'continuousMode') || ~gCMode.continuousMode
-  gCMode.continuousMode = 1;
   gCMode.fignum = viewGet(v,'fignum');
   g = guidata(gCMode.fignum);
   gCMode.axesNum = g.axis;
@@ -197,6 +196,7 @@ if ~isfield(gCMode,'continuousMode') || ~gCMode.continuousMode
   gCMode.a3 = gca;
   axis(gCMode.a3,'off');
   colormap(gray);
+  gCMode.continuousMode = 1;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,6 +216,7 @@ if isfield(gCMode,'viewNum')
   gCMode.baseOrientation = find(strcmp(params.baseOrientation,{'default','axial','coronal','sagittal'}));
   gCMode.base = viewGet(v,'baseData',gCMode.baseNum);
   gCMode.baseDims = size(gCMode.base);
+  gCMode.base2overlay = viewGet(v,'base2scan',[],[],gCMode.baseNum);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -241,12 +242,18 @@ end
 % get the mouse coordinates
 [x y s xBase yBase sBase] = getMouseCoords;
 
+% get the view
+v = viewGet([],'view',gCMode.viewNum);
+
 % convert to the base units
 if ~isnan(xBase)
   baseCoord = gCMode.base2base * [xBase yBase sBase 1]';
   if (baseCoord(1) >= 1) && (baseCoord(1) <= gCMode.baseDims(1)) && (baseCoord(2) >= 1) && (baseCoord(2) <= gCMode.baseDims(2)) && (baseCoord(3) >= 1) && (baseCoord(3) <= gCMode.baseDims(3))
     if gCMode.baseOrientation == 1
       cla(gCMode.a1,'reset');
+%      keyboard
+%      [base.im,base.coords,base.coordsHomogeneous] = getBaseSlice(v,round(baseCoord(3)),3,0,gCMode.baseNum,gCMode.baseType);
+%      o = computeOverlay(v,gCMode.base2overlay,base.coordsHomogeneous,[gCMode.baseDims(1:2) 1]);
       imagesc(gCMode.base(:,:,round(baseCoord(3))),'Parent',gCMode.a1)
       hold(gCMode.a1,'on');
       plot(baseCoord(2),baseCoord(1),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a1);
