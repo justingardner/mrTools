@@ -1,17 +1,17 @@
 % computeOverlay.m
 %
 %        $Id$
-%      usage: overlay = computeOverlay(view,base2overlay,baseCoordsHomogeneous,baseDims)
+%      usage: overlay = computeOverlay(view,base2overlay,baseCoordsHomogeneous,baseDims,<alpha>)
 %         by: David Heeger
 %       date: 10/16/07
 %    purpose: this used to live within the refreshMLRDisplay
 %             function, but has been pulled out so that it
 %             can be called by other functions (e.g. mrPrint)-jg
 %
-function overlay = computeOverlay(view,base2overlay,baseCoordsHomogeneous,baseDims)
+function overlay = computeOverlay(view,base2overlay,baseCoordsHomogeneous,baseDims,alpha)
 
 % check arguments
-if ~any(nargin == [4])
+if ~any(nargin == [4 5])
   help computeOverlay
   return
 end
@@ -19,7 +19,9 @@ end
 % view get some stuff
 curOverlay = viewGet(view,'currentOverlay');
 analysisNum = viewGet(view,'currentAnalysis');
-alpha = viewGet(view,'alpha');
+if nargin == 4
+  alpha = viewGet(view,'alpha');
+end
 scan = viewGet(view,'curscan');
 interpMethod = mrGetPref('interpMethod');
 if isempty(interpMethod)
