@@ -40,6 +40,7 @@ if isempty(strfind(pwd,viewGet([],'homeDir')))
     disp(sprintf('(mrLoadRet) homeDir: %s in MLR global',viewGet([],'homeDir')));
     disp(sprintf('(mrLoadRet) If you are trying to run two mrLoadRet sessions on different'));
     disp(sprintf('(mrLoadRet) datasets, you should run two separate matlab processes instead'));
+    disp(sprintf('(mrLoadRet) Otherwise type mrQuit to quit your current session and try running mrLoadRet again'));
     return
   end
 end
