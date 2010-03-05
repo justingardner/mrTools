@@ -1,4 +1,3 @@
-% searchForVoxel.m
 %
 %      usage: searchForVoxel()
 %         by: justin gardner
@@ -24,6 +23,8 @@ else
   baseName = viewGet(v,'baseName');
 end
 
+if ~isempty(viewGet(v,'currentOverlay')), hasOverlay = 1;else hasOverlay = 0;end
+
 % get parameters
 paramsInfo = {};
 scanDims = viewGet(v,'scanDims');
@@ -37,6 +38,10 @@ paramsInfo{end+1} = {'s',s,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',sca
 paramsInfo{end+1} = {'color',color2RGB,'Choose color to display voxel in'};
 paramsInfo{end+1} = {'maxSearchRadius',5,'type=numeric','If there is no exact match, then will display the closest voxel within this search radius. Set smaller to force only display of more exact matches. Set higher if you want to allow matches that are farther away.'};
 paramsInfo{end+1} = {'continuousMode',~isempty(startBaseNum),'type=checkbox','Opens another window with your anatomy that will be continuously update with the position as you move your mouse over points in the viewer','callback',@continuousModeCallback,'passParams=1','callbackArg',v,'editable',isempty(startBaseNum)};
+if hasOverlay
+  paramsInfo{end+1} = {'dispOverlay',0,'type=checkbox','Sets whether to display the current overlay in continuousMode','contingent=continuousMode'};
+  paramsInfo{end+1} = {'overlayAlpha',1,'type=numeric','minmax=[0 1]','incdec=[-0.1 0.1]','Sets whether to display the current overlay in continuousMode','contingent=continuousMode'};
+end
 
 % start continuous mode
 if ~isempty(startBaseNum)
@@ -217,6 +222,13 @@ if isfield(gCMode,'viewNum')
   gCMode.base = viewGet(v,'baseData',gCMode.baseNum);
   gCMode.baseDims = size(gCMode.base);
   gCMode.base2overlay = viewGet(v,'base2scan',[],[],gCMode.baseNum);
+  if isfield(params,'dispOverlay')
+    gCMode.dispOverlay = params.dispOverlay;
+    gCMode.overlayAlpha = params.overlayAlpha;
+  else
+    gCMode.dispOverlay = 0;
+    gCMode.overlayAlpha = 0;
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -250,20 +262,57 @@ if ~isnan(xBase)
   baseCoord = gCMode.base2base * [xBase yBase sBase 1]';
   if (baseCoord(1) >= 1) && (baseCoord(1) <= gCMode.baseDims(1)) && (baseCoord(2) >= 1) && (baseCoord(2) <= gCMode.baseDims(2)) && (baseCoord(3) >= 1) && (baseCoord(3) <= gCMode.baseDims(3))
     if gCMode.baseOrientation == 1
+      % clear the axis
       cla(gCMode.a1,'reset');
-%      keyboard
-%      [base.im,base.coords,base.coordsHomogeneous] = getBaseSlice(v,round(baseCoord(3)),3,0,gCMode.baseNum,gCMode.baseType);
-%      o = computeOverlay(v,gCMode.base2overlay,base.coordsHomogeneous,[gCMode.baseDims(1:2) 1]);
-      imagesc(gCMode.base(:,:,round(baseCoord(3))),'Parent',gCMode.a1)
+      % display the fitrst image
+      if gCMode.dispOverlay
+	% get base image
+	[base.im,base.coords,base.coordsHomogeneous] = getBaseSlice(v,round(baseCoord(3)),3,0,gCMode.baseNum,gCMode.baseType);
+	baseMin = min(base.im(:));baseMax = max(base.im(:));
+	baseRGB = repmat((base.im-baseMin)./(baseMax-baseMin),[1 1 3]);
+	% get overlay
+	o = computeOverlay(v,gCMode.base2overlay,base.coordsHomogeneous,[gCMode.baseDims(1:2) 1],1);
+	% composite
+	img = (1-gCMode.overlayAlpha*o.alphaMap).*baseRGB + gCMode.overlayAlpha*o.alphaMap.*o.RGB;
+	% and display
+	image(img,'Parent',gCMode.a1);
+      else
+	imagesc(squeeze(gCMode.base(:,:,round(baseCoord(3)))),'Parent',gCMode.a1);
+      end
+      % display the current position
       hold(gCMode.a1,'on');
       plot(baseCoord(2),baseCoord(1),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a1);
       title(sprintf('BaseCoord: %i %i %i',round(baseCoord(1)),round(baseCoord(2)),round(baseCoord(3))),'Parent',gCMode.a1);
+      % display the second image
       cla(gCMode.a2,'reset');
-      imagesc(squeeze(gCMode.base(:,round(baseCoord(2)),:)),'Parent',gCMode.a2);
+      if gCMode.dispOverlay
+	[base.im,base.coords,base.coordsHomogeneous] = getBaseSlice(v,round(baseCoord(2)),2,0,gCMode.baseNum,gCMode.baseType);
+	baseMin = min(base.im(:));baseMax = max(base.im(:));
+	baseRGB = repmat((base.im-baseMin)./(baseMax-baseMin),[1 1 3]);
+	o = computeOverlay(v,gCMode.base2overlay,base.coordsHomogeneous,[gCMode.baseDims([1 3]) 1],1);
+	img = (1-gCMode.overlayAlpha*o.alphaMap).*baseRGB + gCMode.overlayAlpha*o.alphaMap.*o.RGB;
+	image(img,'Parent',gCMode.a2);
+      else
+	imagesc(squeeze(gCMode.base(:,round(baseCoord(2)),:)),'Parent',gCMode.a2);
+      end
+      % display the current position
       hold(gCMode.a2,'on');
       plot(baseCoord(3),baseCoord(1),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a2);
+
+
+      %display the third image
       cla(gCMode.a3,'reset');
-      imagesc(squeeze(gCMode.base(round(baseCoord(1)),:,:)),'Parent',gCMode.a3);
+      if gCMode.dispOverlay
+	[base.im,base.coords,base.coordsHomogeneous] = getBaseSlice(v,round(baseCoord(1)),1,0,gCMode.baseNum,gCMode.baseType);
+	baseMin = min(base.im(:));baseMax = max(base.im(:));
+	baseRGB = repmat((base.im-baseMin)./(baseMax-baseMin),[1 1 3]);
+	o = computeOverlay(v,gCMode.base2overlay,base.coordsHomogeneous,[gCMode.baseDims(2:3) 1],1);
+	img = (1-gCMode.overlayAlpha*o.alphaMap).*baseRGB + gCMode.overlayAlpha*o.alphaMap.*o.RGB;
+	image(img,'Parent',gCMode.a3);
+      else
+	imagesc(squeeze(gCMode.base(round(baseCoord(1)),:,:)),'Parent',gCMode.a3);
+      end
+      % display the current position
       hold(gCMode.a3,'on');
       plot(baseCoord(3),baseCoord(2),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a3);
     end
