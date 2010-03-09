@@ -45,6 +45,9 @@ if isequal(xformRound,eye(4)) && isequal(inputVoxSizeRound,outputVoxSizeRound)
 end
 
 if ieNotDefined('sampRate')
+    if size(outputVoxSize,1) ~= 1 %if not row matrix
+        outputVoxSize = outputVoxSize';
+    end
   sampRate = ceil(inputVoxSize ./ outputVoxSize) .* [4,4,4];
   sampRate = 2*floor(sampRate/2) + 1;
 end
