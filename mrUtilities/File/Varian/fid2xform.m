@@ -141,10 +141,11 @@ if info.acq3d & info.processed
 	% get the distance in between each slice
 	slicediff = voxspacing(3)/10;
 	% now reset the pss, to what it actually should have been
-	procpar.pss = sort(mid_pss-slicediff*nSlices/2+slicediff:slicediff:mid_pss+slicediff*nSlices/2,2,'descend');
+%	procpar.pss = sort(mid_pss-slicediff*nSlices/2+slicediff:slicediff:mid_pss+slicediff*nSlices/2,2,'descend');
+        procpar.pss = sort(mid_pss-slicediff*nSlices/2:slicediff:mid_pss+slicediff*nSlices/2-slicediff/2,2,'descend');
 	% The following works as well, but the original pss array is rounded to significant digits, so 
 	% might as well recompute like above and get all significant digits
-	%    procpar.pss = procpar.pss+slicediff/2; 
+%	procpar.pss = procpar.pss-slicediff/2; 
 	if verbose >= 0
 	  disp(sprintf('(fid2xform) Adjusting pss array to account for non-integer shift',length(procpar.pss)));
 	end
