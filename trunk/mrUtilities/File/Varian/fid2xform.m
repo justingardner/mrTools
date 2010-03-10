@@ -28,6 +28,7 @@ if ieNotDefined('verbose'),verbose = 0;end
 
 % get the procpar
 if isstr(procpar)
+  info.fidname = procpar;
   procpar = readprocpar(procpar);
   if isempty(procpar),return,end;
 elseif ~isstruct(procpar)
@@ -120,6 +121,38 @@ if procpar.nv2 > 1
   end
 end
 
+
+% get the processed date, this is for checking for a small bug
+% in fft3rd which shifted the data by interger amounts in the 
+% "slice" dimension, rather than the exact amount specified by
+% the pss. Correcting for that here if the data were processed
+% with the old version of the program
+if info.acq3d & info.processed
+  if ~isfield(procpar,'fftw3dexe_processed') 
+    info.processed = 0;
+  else
+    if procpar.fftw3dexe_processed == 0
+      % get number of slices
+      nSlices = length(procpar.pss);
+      if iseven(nSlices)
+	% find the midpoint of the pss array, this is where the center of the 3d
+	% slab was set to.
+	mid_pss = mean(procpar.pss);
+	% get the distance in between each slice
+	slicediff = voxspacing(3)/10;
+	% now reset the pss, to what it actually should have been
+	procpar.pss = sort(mid_pss-slicediff*nSlices/2+slicediff:slicediff:mid_pss+slicediff*nSlices/2,2,'descend');
+	% The following works as well, but the original pss array is rounded to significant digits, so 
+	% might as well recompute like above and get all significant digits
+	%    procpar.pss = procpar.pss+slicediff/2; 
+	if verbose >= 0
+	  disp(sprintf('(fid2xform) Adjusting pss array to account for non-integer shift',length(procpar.pss)));
+	end
+      end
+    end
+  end
+end
+
 % Now get the offset in mm from the center of the bore that the center of the
 % volume is. We can not change the phase encode center. Note that dimensions
 % are given in cm, so we must convert to mm.
@@ -143,6 +176,10 @@ originOffset = [eye(3) originOffset';0 0 0 1];
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
 swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
 swapDim2 =[0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+
+% the following is actually correct for L/R, but leave it commented
+% for now - will need to update all of our transforms ;-(.... -j.
+%swapDim2 =[0 0 -1 0;0 1 0 0;1 0 0 0;0 0 0 1];
 
 % now create the final shifted rotation matrix
 xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*originOffset;
@@ -222,6 +259,9 @@ info.procpar = procpar;
 %    getDateFromVarianField    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [outDateVec outDateStr] = getDateFromVarianField(f)
+
+outDateVec = [];outDateStr = '';
+if isempty(f{1}),return,end
 
 year = str2num(f{1}(1:4));
 month = str2num(f{1}(5:6));

@@ -43,7 +43,7 @@ end
 d.dim = size(d.data);
 
 % get fidinfo
-[xform info] = fid2xform(fidname);
+[xform info] = fid2xform(fidname,-1);
 
 if info.receiversAndSlicesSwapped
   if size(d.data,4) > 1
