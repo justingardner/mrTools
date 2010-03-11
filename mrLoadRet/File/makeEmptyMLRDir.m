@@ -25,7 +25,7 @@ subject = '';
 operator = '';
 defaultParams = [];
 getArgs(varargin, {'defaultGroup=Raw','description=','subject=','operator=','defaultParams=0'});
-directories = {defaultGroup fullfile(defaultGroup,'TSeries') 'Anatomy' 'Etc' 'Anal'};
+directories = {defaultGroup fullfile(defaultGroup,'TSeries') 'Anatomy' 'Etc'};
 
 % dirname is a file, abort
 if isfile(dirname)
