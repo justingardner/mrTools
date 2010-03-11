@@ -21,13 +21,22 @@
 %
 %             [d h] = fid2nifti('fidname.fid',1);
 %
-%             You can also move the pro
+%             You can move the pro
 %
 %             [d h] = fid2nifti('fidname.fid','movepro=4');
 % 
 %             You can also extract a single receiver in multi-receiver data
 %
 %             [d h] = fid2nifti('fidname.fid','receiverNum=3');
+%
+%             and extract a portion of the image (with the correct
+%             header info to match):
+%
+%             fid2nifti('fidname.fid','xMin=10','xMax=100','yMin=15','yMax=120','sMin=3','sMax=40');
+%
+%             And specify the outputName to save to
+% 
+%             fid2nifti('fidname.fid','outputName.hdr');
 %
 function [outdata outhdr] = fid2nifti(fidname,varargin)
 
@@ -64,7 +73,8 @@ end
 
 % parse arguments
 movepro=[];receiverNum=[];
-getArgs(argsList,{'movepro=0','receiverNum=[]'});
+xMin=[];xMax=[];yMin=[];yMax=[];sMin=[];sMax=[];outputName=[];
+getArgs(argsList,{'movepro=0','receiverNum=[]','xMin=1','xMax=inf','yMin=1','yMax=inf','sMin=1','sMax=inf','outputName=[]'});
 
 % if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
@@ -165,13 +175,21 @@ for i = 1:length(fidnames)
     disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(fid.data))));
   end
   
-  % make a filename 
-  niftiname = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
+
+  % adjust dimensions if asked for
+  [fid.data hdr] = adjustDims(fid.data,hdr,xMin,xMax,yMin,yMax,sMin,sMax);
 
   % write the file, but only if we aren't taking an output argument
   if nargout == 0
-    disp(sprintf('(fid2nifti) Converting %s to %s',fidname,niftiname));
-    cbiWriteNifti(niftiname,fid.data,hdr);
+    % make a filename 
+    if isempty(outputName)
+      outputName = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
+    else
+      outputName = setext(outputName,'hdr');
+    end
+    disp(sprintf('(fid2nifti) Converting %s to %s',fidname,outputName));
+    cbiWriteNifti(outputName,fid.data,hdr);
+    outputName = [];
   else
     outhdr{i} = hdr;
     outdata{i} = fid.data;
@@ -209,3 +227,34 @@ c = c1;
 for i = 1:length(c2)
   c{end+1} = c2{i};
 end
+
+%%%%%%%%%%%%%%%%%%%%
+%%   adjustDims   %%
+%%%%%%%%%%%%%%%%%%%%
+function [data hdr] = adjustDims(data,hdr,xMin,xMax,yMin,yMax,sMin,sMax)
+
+% get current dimensions
+dims = size(data);
+
+% make the dimensions valid
+xMin = round(max(1,xMin));
+xMax = round(min(xMax,dims(1)));
+yMin = round(max(1,yMin));
+yMax = round(min(yMax,dims(2)));
+sMin = round(max(1,sMin));
+sMax = round(min(sMax,dims(3)));
+
+% adjust data size
+data = data(xMin:xMax,yMin:yMax,sMin:sMax);
+
+% find out how much the new xMin, yMin, sMin have translated the image
+t = hdr.qform44 * [xMin yMin sMin 1]' - hdr.qform44 * [1 1 1 1]';
+t = [zeros(3,3) t(1:3,1); 0 0 0 0];
+
+% and compute the new qform
+hdr = cbiSetNiftiQform(hdr,t+hdr.qform44);
+
+% reset the dims
+dims = size(data);
+hdr.dim(2:length(dims)+1) = dims;
+
