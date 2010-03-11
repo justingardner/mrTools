@@ -74,6 +74,8 @@ switch (event)
   retval = initHandler(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat);
  case {'vSlider','hSlider'}
   sliderHandler;
+ case {'sliceOrientation'}
+  sliceOrientationHandler;
  case {'edit'}
   editHandler;
  otherwise
@@ -88,6 +90,14 @@ function retval = initHandler(outerSurface,outerCoords,innerSurface,innerCoords,
 retval = [];
 global gSurfViewer;
 gSurfViewer.mismatchWarning = 0;
+gSurfViewer.sliceOrientation = 1;
+gSurfViewer.undo.n = 0;
+gSurfViewer.undo.coords = [];
+gSurfViewer.undo.value = [];
+gSurfViewer.redo.n = 0;
+gSurfViewer.redo.coords = [];
+gSurfViewer.redo.value = [];
+
 filepath = '';
 
 disppercent(-inf,'(mrSurfViewer) Loading surfaces');
@@ -201,7 +211,7 @@ if isempty(anat)
   anat{1} = filename;
 end
 if isfile(anat{1})
-  [gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(anat{1});
+  initAnatomy(anat{1});
   gSurfViewer = xformSurfaces(gSurfViewer);
 else
   gSurfViewer.anat = [];
@@ -214,7 +224,7 @@ gSurfViewer.f = selectGraphWin;
 set(gSurfViewer.f,'renderer','OpenGL');
 
 % positions on figure
-figLeft = 10;figBottom = 10;
+figLeft = 10;figBottom = 10;figRight = 600;
 sliderWidth = 20;sliderLength = 200;spacer = 10;
 editWidth = 40;editHeight = 20;
 
@@ -223,6 +233,28 @@ gSurfViewer.hSliders.v = uicontrol('Style','slider','Position',[figLeft figBotto
 gSurfViewer.hSliders.vText = uicontrol('Style','Edit','Position',[figLeft figBottom+sliderWidth+sliderLength+spacer editWidth editHeight],'Callback','mrSurfViewer(''edit'')','String','0','HorizontalAlignment','Center');
 gSurfViewer.hSliders.h = uicontrol('Style','slider','Position',[figLeft+sliderWidth figBottom sliderLength sliderWidth],'Min',-180,'Max',180,'SliderStep',[15 45]./360,'Callback','mrSurfViewer(''hSlider'')','TooltipString','Rotate around z-axis');
 gSurfViewer.hSliders.hText = uicontrol('Style','Edit','Position',[figLeft+sliderLength+3*spacer figBottom editWidth editHeight],'Callback','mrSurfViewer(''edit'')','String','0');
+% which slice index for 3d volumes
+gSurfViewer.hSliceOrientation = uicontrol('Style','popupmenu','String',{'Axial','Saggital','Coronal'},'Position',[figRight-7*editWidth-spacer*3 figBottom editWidth*3 editHeight],'FontSize',12,'FontName','Helvetica','HorizontalAlignment','Center','Callback','mrSurfViewer(''sliceOrientation'')','Visible','off');
+
+% and a dispay for position when the moouse moves
+set(gSurfViewer.f,'WindowButtonMotionFcn',@mrSurfViewerMouseMove);
+gSurfViewer.a = gca;
+gSurfViewer.hPos = uicontrol('Style','text','String','','Position',[figRight-4*editWidth-spacer*2 figBottom editWidth*3 editHeight],'FontSize',12,'FontName','Helvetica','HorizontalAlignment','Center');
+
+% for now, I'm not turning on these features, but they are implemented to actually edit the 3D volume
+% so that you can try to fix surface issues. You click to change the color of a voxel, shift click
+% to change the current drawing color to what you click on. You can use z for undo and a for redo and
+% you save the volume by typing s. This all seems to be working, but for now we're going to stick
+% to seeing how freesurfer handles editing volumes
+editableVolume = 0;
+if editableVolume 
+  % set up volume with mouse callbacks
+  set(gSurfViewer.f,'WindowButtonDownFcn',@mrSurfViewerMouseDown);
+  % and the current color
+  gSurfViewer.hColor = uicontrol('Style','Frame','BackgroundColor',[0 0 0],'ForegroundColor',[0 0 0],'Position',[figRight-spacer-editWidth figBottom editWidth editHeight]);
+  % keyboard callback
+  set(gSurfViewer.f,'WindowKeyPressFcn',@mrSurfViewerKeyPress);
+end
 
 % set they we are viewing white matter
 gSurfViewer.whichSurface = 1;
@@ -351,10 +383,11 @@ set(gSurfViewer.hSliders.vText,'Visible','off');
 set(gSurfViewer.hSliders.h,'SliderStep',[1 16]./256);
 set(gSurfViewer.hSliders.h,'Value',initSlice);
 set(gSurfViewer.hSliders.h,'Min',1);
-set(gSurfViewer.hSliders.h,'Max',256);
+set(gSurfViewer.hSliders.h,'Max',gSurfViewer.anat.dims(gSurfViewer.sliceIndex));
 set(gSurfViewer.hSliders.h,'TooltipString','Change viewing slice');
 set(gSurfViewer.hSliders.hText,'String',num2str(initSlice));
-dispVolume(3,initSlice);
+cla(gSurfViewer.a);
+dispVolume(initSlice);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   sliderHandler   %%
@@ -374,7 +407,7 @@ set(gSurfViewer.hSliders.vText,'String',num2str(vPos));
 if gSurfViewer.whichSurface <= 4
   setViewAngle(hPos,vPos);
 else
-  dispVolume(3,hPos);
+  dispVolume(hPos);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -387,9 +420,18 @@ global gSurfViewer;
 hPos = str2num(get(gSurfViewer.hSliders.hText,'String'));
 vPos = str2num(get(gSurfViewer.hSliders.vText,'String'));
 
-% make it fit into -180:180
-hPos = round(mod(hPos+180,360)-180);
-vPos = round(mod(vPos+180,360)-180);
+if isempty(hPos),hPos = 0;end
+if isempty(vPos),vPos = 0;end
+  
+if gSurfViewer.whichSurface <= 4
+  % make it fit into -180:180
+  hPos = round(mod(hPos+180,360)-180);
+  vPos = round(mod(vPos+180,360)-180);
+else
+  hPos = max(hPos,1);
+  hPos = min(hPos,gSurfViewer.anat.dims(gSurfViewer.sliceIndex));
+  hPos = round(hPos);
+end
 
 % set slider position
 set(gSurfViewer.hSliders.h,'Value',hPos);
@@ -402,7 +444,7 @@ set(gSurfViewer.hSliders.vText,'String',num2str(vPos));
 if gSurfViewer.whichSurface <= 4
   setViewAngle(hPos,vPos);
 else
-  dispVolume(3,hPos);
+  dispVolume(hPos);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -446,6 +488,7 @@ function dispSurface
 global gSurfViewer;
 figure(gSurfViewer.f);
 set(gSurfViewer.f,'renderer','OpenGL');
+set(gSurfViewer.hSliceOrientation,'visible','off');
 
 % clear the axis
 cla;
@@ -500,23 +543,42 @@ end
 %%%%%%%%%%%%%%
 % dispVolume
 %%%%%%%%%%%%%%
-function dispVolume(sliceIndex,slice)
+function dispVolume(slice)
 
 global gSurfViewer;
 figure(gSurfViewer.f);
 cla reset;
 set(gSurfViewer.f,'renderer','painters');
+set(gSurfViewer.hSliceOrientation,'visible','on');
 
 % display a slice of the anatomy image
-switch sliceIndex
+switch gSurfViewer.sliceIndex
   case {1}
-   img = gSurfViewer.anat.data(slice,:);
+   if (slice > gSurfViewer.anat.dims(1)) 
+     slice = gSurfViewer.anat.dims(1);
+   end
+   img = gSurfViewer.anat.data(slice,:,:);
   case {2}
+   if (slice > gSurfViewer.anat.dims(2)) 
+     slice = gSurfViewer.anat.dims(2);
+   end
    img = gSurfViewer.anat.data(:,slice,:);
   case {3}
+   if (slice > gSurfViewer.anat.dims(3)) 
+     slice = gSurfViewer.anat.dims(3);
+   end
    img = gSurfViewer.anat.data(:,:,slice);
 end
-imagesc(img);
+if slice <= 0
+  slice = 1;
+end
+
+% used for flipping coordinates
+maxDim = gSurfViewer.anat.dims(gSurfViewer.anat.otherDims(2))+1;
+
+% display image
+img = squeeze(img);
+imagesc(flipud(img'));
 colormap(gray);
 axis image;
 axis off;
@@ -530,22 +592,15 @@ innerNodes = gSurfViewer.innerSurface.vtcs;
 outerNodes = gSurfViewer.outerSurface.vtcs;
 
 % Plot the nodes for the gray/white matter surfaces
-innerNodes = innerNodes( find( round(innerNodes(:,sliceIndex))==slice), : );
-plot(innerNodes(:,2), innerNodes(:,1), '.', 'markersize', 1, 'Color', [0.7 0.7 0.7]);
+innerNodes = innerNodes( find( round(innerNodes(:,gSurfViewer.sliceIndex))==slice), : );
+plot(innerNodes(:,gSurfViewer.anat.otherDims(1)), maxDim-innerNodes(:,gSurfViewer.anat.otherDims(2)), '.', 'markersize', 1, 'Color', [0.7 0.7 0.7]);
 
-outerNodes = outerNodes( find( round(outerNodes(:,sliceIndex))==slice), : );
-plot(outerNodes(:,2), outerNodes(:,1), 'y.', 'markersize', 1,'Color',[0.7 0.7 0]);
+outerNodes = outerNodes( find( round(outerNodes(:,gSurfViewer.sliceIndex))==slice), : );
+plot(outerNodes(:,gSurfViewer.anat.otherDims(1)), maxDim-outerNodes(:,gSurfViewer.anat.otherDims(2)), 'y.', 'markersize', 1,'Color',[0.7 0.7 0]);
 
-if ~isempty(gSurfViewer.innerCoords)
-  innerCoordNodes = gSurfViewer.innerCoords.vtcs;
-  innerCoordNodes = innerCoordNodes( find( round(innerCoordNodes(:,sliceIndex))==slice), : );
-  plot(innerCoordNodes(:,2), innerCoordNodes(:,1), 'w.', 'markersize', 1);
-end
-if ~isempty(gSurfViewer.outerCoords)
-  outerCoordNodes = gSurfViewer.outerCoords.vtcs;
-  outerCoordNodes = outerCoordNodes( find( round(outerCoordNodes(:,sliceIndex))==slice), : );
-  plot(outerCoordNodes(:,2), outerCoordNodes(:,1), 'y.', 'markersize', 1);
-end
+set(gSurfViewer.hSliders.h,'Value',slice);
+set(gSurfViewer.hSliders.hText,'String',num2str(slice));
+
 drawnow
 return;
 
@@ -577,7 +632,8 @@ end
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
-[gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(params.anatomy);
+initAnatomy(params.anatomy);
+
 gSurfViewer = xformSurfaces(gSurfViewer);
 % switch to 3D anatomy view
 global gParams
@@ -746,4 +802,234 @@ for surfNum = 1:length(surfaces)
     gSurfViewer.(surfaces{surfNum}) = xformSurfaceWorld2Array(gSurfViewer.(surfaces{surfNum}),gSurfViewer.anat.hdr);
   end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mrSurfViewerMouseMove    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mrSurfViewerMouseMove(fignum,x)
+
+global  gSurfViewer;
+
+if gSurfViewer.whichSurface == 5
+  volCoords = getMouseCoords;
+  if isempty(volCoords)
+    set(gSurfViewer.f,'pointer','arrow');
+    set(gSurfViewer.hPos,'String','');
+  else
+    set(gSurfViewer.f,'pointer','cross');
+    set(gSurfViewer.hPos,'String',sprintf('%i,%i,%i',volCoords(1),volCoords(2),volCoords(3)));
+  end
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mrSurfViewerMouseDown    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mrSurfViewerMouseDown(fignum,x)
+
+global  gSurfViewer;
+sliceNum = str2num(get(gSurfViewer.hSliders.hText,'String'));
+
+if gSurfViewer.whichSurface == 5
+  volCoords = getMouseCoords;
+  if ~isempty(volCoords)
+    get(fignum,'SelectionType');
+    % see whether shift is being held down, in which case we choose the color of the voxel
+    if strcmp(get(fignum,'SelectionType'),'extend')
+      c = gSurfViewer.anat.data(volCoords(1),volCoords(2),volCoords(3));
+      c = (c-gSurfViewer.anat.min)/(gSurfViewer.anat.max-gSurfViewer.anat.min);
+      c = [c c c];
+      set(gSurfViewer.hColor,'BackgroundColor',c,'ForegroundColor',c);
+    % set the color of the current point
+    else
+      c = get(gSurfViewer.hColor,'BackgroundColor');
+      c = (c(1)+gSurfViewer.anat.min)*(gSurfViewer.anat.max-gSurfViewer.anat.min);
+      saveUndo(volCoords);
+      gSurfViewer.anat.data(volCoords(1),volCoords(2),volCoords(3)) = c;
+      dispVolume(sliceNum);
+    end
+  end
+end
+
+%%%%%%%%%%%%%%%%%%
+%    saveUndo    %
+%%%%%%%%%%%%%%%%%%
+function saveUndo(volCoords)
+
+global gSurfViewer;
+gSurfViewer.undo.n = gSurfViewer.undo.n+1;
+gSurfViewer.undo.coords(gSurfViewer.undo.n,:) = volCoords';
+gSurfViewer.undo.value(gSurfViewer.undo.n) = gSurfViewer.anat.data(volCoords(1),volCoords(2),volCoords(3));
+
+%%%%%%%%%%%%%%
+%    undo    %
+%%%%%%%%%%%%%%
+function undo
+
+global gSurfViewer;
+
+if gSurfViewer.undo.n > 0
+  % get undo information
+  volCoords = gSurfViewer.undo.coords(gSurfViewer.undo.n,:);
+  value = gSurfViewer.undo.value(gSurfViewer.undo.n);
+  redoValue = gSurfViewer.anat.data(volCoords(1),volCoords(2),volCoords(3));
+  % set the value and redisplay
+  gSurfViewer.anat.data(volCoords(1),volCoords(2),volCoords(3)) = value;
+  sliceNum = str2num(get(gSurfViewer.hSliders.hText,'String'));
+  dispVolume(sliceNum);
+  % remove from undo list
+  gSurfViewer.undo.n = gSurfViewer.undo.n-1;
+  gSurfViewer.undo.value = gSurfViewer.undo.value(1:gSurfViewer.undo.n);
+  gSurfViewer.undo.coords = gSurfViewer.undo.coords(1:gSurfViewer.undo.n,:);
+  % add to redo list
+  gSurfViewer.redo.n = gSurfViewer.redo.n+1;
+  gSurfViewer.redo.coords(gSurfViewer.redo.n,:) = volCoords;
+  gSurfViewer.redo.value(gSurfViewer.redo.n) = redoValue;
+else
+  disp(sprintf('(mrSurfViewer) No undo information'));
+end
+%%%%%%%%%%%%%%
+%    redo    %
+%%%%%%%%%%%%%%
+function redo
+
+global gSurfViewer;
+
+if gSurfViewer.redo.n > 0
+  % get redo information
+  volCoords = gSurfViewer.redo.coords(gSurfViewer.redo.n,:);
+  value = gSurfViewer.redo.value(gSurfViewer.redo.n);
+  % set the value and redisplay
+  gSurfViewer.anat.data(volCoords(1),volCoords(2),volCoords(3)) = value;
+  sliceNum = str2num(get(gSurfViewer.hSliders.hText,'String'));
+  dispVolume(sliceNum);
+  % remove from redo list
+  gSurfViewer.redo.n = gSurfViewer.redo.n-1;
+  gSurfViewer.redo.value = gSurfViewer.redo.value(1:gSurfViewer.redo.n);
+  gSurfViewer.redo.coords = gSurfViewer.redo.coords(1:gSurfViewer.redo.n,:);
+  % add to undo list
+  gSurfViewer.undo.n = gSurfViewer.undo.n+1;
+  gSurfViewer.undo.coords(gSurfViewer.undo.n,:) = volCoords;
+  gSurfViewer.undo.value(gSurfViewer.undo.n) = value;
+else
+  disp(sprintf('(mrSurfViewer) No redo information'));
+end
+
+%%%%%%%%%%%%%%
+%    save    %
+%%%%%%%%%%%%%%
+function save
+
+global gSurfViewer
+filename = sprintf('%s_modified.hdr',stripext(gSurfViewer.anat.filename));
+disp(sprintf('(mrSurfViewer) Saving volume as %s',filename));
+cbiWriteNifti(filename,gSurfViewer.anat.data,gSurfViewer.anat.hdr);
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    getMouseCoords    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function volCoords = getMouseCoords
+
+global gSurfViewer;
+
+% get the mouse coords
+pointerLoc = get(gSurfViewer.a,'CurrentPoint');
+mouseCoords = [round(pointerLoc(1,1)) round(pointerLoc(1,2))];
+
+% check bounds of current point
+anatSize1 = gSurfViewer.anat.dims(gSurfViewer.anat.otherDims(1));
+anatSize2 = gSurfViewer.anat.dims(gSurfViewer.anat.otherDims(2));
+
+if (mouseCoords(1) < 1) || (mouseCoords(1) > anatSize1) || (mouseCoords(2) < 1) || (mouseCoords(2) > anatSize2)
+  volCoords = [];
+else
+  volCoords(gSurfViewer.sliceIndex) = round(get(gSurfViewer.hSliders.h,'Value'));
+  volCoords(gSurfViewer.anat.otherDims(1)) = mouseCoords(1);
+  % remember to flip Y coordinate
+  volCoords(gSurfViewer.anat.otherDims(2)) = gSurfViewer.anat.dims(gSurfViewer.anat.otherDims(2))-mouseCoords(2)+1;
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    sliceOrientationHandler    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function sliceOrientationHandler
+
+global gSurfViewer;
+gSurfViewer.sliceOrientation = get(gSurfViewer.hSliceOrientation,'Value');
+initSliceIndex
+
+% remember old slice position
+gSurfViewer.sliceNum(gSurfViewer.sliceIndex) = get(gSurfViewer.hSliders.h,'Value');;
+
+
+% now get one slice we were on
+sliceNum = gSurfViewer.sliceNum(gSurfViewer.sliceIndex);
+
+% redisplay the volume
+set(gSurfViewer.hSliders.h,'Max',gSurfViewer.anat.dims(gSurfViewer.sliceIndex));
+
+dispVolume(sliceNum);
+
+
+%%%%%%%%%%%%%%%%%%%%%
+%    initAnatomy    %
+%%%%%%%%%%%%%%%%%%%%%
+function initAnatomy(filename)
+
+
+
+global gSurfViewer
+
+gSurfViewer.anat.filename = filename;
+[gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(filename);
+gSurfViewer.anat.min = min(gSurfViewer.anat.data(:));
+gSurfViewer.anat.max = max(gSurfViewer.anat.data(:));
+gSurfViewer.anat.permutationMatrix = getPermutationMatrix(gSurfViewer.anat.hdr);
+gSurfViewer.anat.dims = size(gSurfViewer.anat.data);
+gSurfViewer.sliceNum = round(gSurfViewer.anat.dims/2);
+initSliceIndex
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    initSliceIndex    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function initSliceIndex
+
+global gSurfViewer
+
+% get slice index
+switch gSurfViewer.sliceOrientation
+ case 1   % Axial
+  [m,gSurfViewer.sliceIndex] = max(gSurfViewer.anat.permutationMatrix * [0 0 1]');
+ case 2   % Saggital
+  [m,gSurfViewer.sliceIndex] = max(gSurfViewer.anat.permutationMatrix * [1 0 0]');
+ case 3   % Coronal
+  [m,gSurfViewer.sliceIndex] = max(gSurfViewer.anat.permutationMatrix * [0 1 0]');
+end
+
+switch gSurfViewer.sliceIndex
+  case {1}
+   gSurfViewer.anat.otherDims = [2 3];
+  case {2}
+   gSurfViewer.anat.otherDims = [1 3];
+  case {3}
+   gSurfViewer.anat.otherDims = [1 2];
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mrSurfViwerKeyPress    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mrSurfViewerKeyPress(src,evt)
+
+global gSurfViewer;
+
+% handle undo/redo key events
+if gSurfViewer.whichSurface == 5
+ if evt.Key == 'z'
+   undo;
+ elseif evt.Key == 'a'
+   redo;
+ elseif evt.Key == 's'
+   save;
+ end
+end
+  
+
 
