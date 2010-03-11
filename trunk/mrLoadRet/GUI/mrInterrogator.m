@@ -158,13 +158,26 @@ end
 
 if mouseInImage(xTal, yTal)
   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
+    set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Tal');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.4g %0.4g %0.4g]',xTal,yTal,zTal));
 else
   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
 end
-  
+
+% display magnet coordinates as well
+if ~mouseInImage(xTal,yTal) && mouseInImage(xBase,yBase)
+  % get the *original* base2mag 
+  base2mag = viewGet(MLR.interrogator{viewNum}.viewNum,'baseQform');
+  base2mag = base2mag * shiftOriginXform;
+  magCoords = base2mag*[xBase yBase sBase 1]';
+  set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
+  set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Magnet');
+  set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
+  set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.1f %0.1f %0.1f]',magCoords(1),magCoords(2),magCoords(3)));
+end
+
 
 % eval the old handler
 %eval(MLR.interrogator{viewNum}.windowButtonMotionFcn);
