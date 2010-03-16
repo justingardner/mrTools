@@ -233,6 +233,11 @@ end
 %%%%%%%%%%%%%%%%%%%%
 function [data hdr] = adjustDims(data,hdr,xMin,xMax,yMin,yMax,sMin,sMax)
 
+% if nothing to do, just return
+if (xMin == 1) && (xMax == inf) && (yMin == 1) && (yMax == inf) && (sMin == 1) && (sMax == inf)
+  return
+end
+
 % get current dimensions
 dims = size(data);
 
@@ -245,7 +250,7 @@ sMin = round(max(1,sMin));
 sMax = round(min(sMax,dims(3)));
 
 % adjust data size
-data = data(xMin:xMax,yMin:yMax,sMin:sMax);
+data = data(xMin:xMax,yMin:yMax,sMin:sMax,:);
 
 % find out how much the new xMin, yMin, sMin have translated the image
 t = hdr.qform44 * [xMin yMin sMin 1]' - hdr.qform44 * [1 1 1 1]';
