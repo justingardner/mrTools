@@ -260,8 +260,8 @@ switch (plane)
    opposite = point1(1) - point2(1);
    adjacent = point1(2) - point2(2);
   case {'yz'}
-   opposite = point1(2) - point2(2);
-   adjacent = point1(3) - point2(3);
+   opposite = point1(3) - point2(3);
+   adjacent = point1(2) - point2(2);
   case {'xz'}
    opposite = point1(1) - point2(1);
    adjacent = point1(3) - point2(3);
@@ -283,7 +283,7 @@ switch (plane)
    s = sin(angle);
    rotMatrix = [c -s 0 0;s  c 0 0;0  0 1 0;0  0 0 1];
   case {'yz'}
-   angle = acos(opposite/hypotenuse);
+  angle=asin(opposite/hypotenuse);
    c = cos(angle);
    s = sin(angle);
    rotMatrix = [1  0  0 0;0  c -s 0;0  s  c 0;0  0  0 1];
