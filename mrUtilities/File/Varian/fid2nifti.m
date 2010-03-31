@@ -175,7 +175,14 @@ for i = 1:length(fidnames)
     disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(fid.data))));
   end
   
-
+  % remove any reference volume
+  if fid.info.nRefVolumes
+    if verbose
+      disp(sprintf('(fid2nifti) Removing %i reference volumes',fid.info.nRefVolumes));
+    end
+    fid.data = fid.data(:,:,:,fid.info.nRefVolumes+1:end);
+  end
+  
   % adjust dimensions if asked for
   [fid.data hdr] = adjustDims(fid.data,hdr,xMin,xMax,yMin,yMax,sMin,sMax);
 
