@@ -122,8 +122,8 @@ if procpar.nv2 > 1
 end
 
 
-% get the processed date, this is for checking for a small bug
-% in fft3rd which shifted the data by interger amounts in the 
+% checking for a small bug in the 3d images recosntruction introduced
+% by fft3rd which shifted the data by interger amounts in the 
 % "slice" dimension, rather than the exact amount specified by
 % the pss. Correcting for that here if the data were processed
 % with the old version of the program
@@ -159,7 +159,7 @@ end
 % are given in cm, so we must convert to mm.
 % 
 % Note here about 3D images. The pss is in "reverse" order in the sense that it
-% goes from positive numbers to negative numbers. This is fixed in fid2nifit
+% goes from positive numbers to negative numbers. This is fixed in fid2nifti
 % since fid2nifti sorts the pss and reorders the slices accordingly. This reordering fixes
 % interleaved acquisition as well. Knowing that this will be the case,
 % means that the offset to the first slice should always be the min(procpar.pss)
@@ -214,7 +214,7 @@ tr = procpar.tr;
 if isfield(procpar,'navechoes')
   tr = tr * procpar.numshots/procpar.accfactor;
 end
-% if we run slice at not interleaved way, 
+% if we ran without interleaving slices then
 %  volume TR = slice TR * shots * slice number
 if isfield(procpar,'intlv') && strcmp(procpar.intlv, 'n')
   tr = tr * length(procpar.pss);
@@ -241,8 +241,13 @@ info.psi = procpar.psi;
 info.phi = procpar.phi;
 info.theta = procpar.theta;
 info.accFactor = procpar.accfactor;
+info.nRefVolumes = 0;
 if isfield(procpar,'cntr')
-  info.dim(4) = length(procpar.cntr)-1;
+  % compute the length of the scan minus the number of steady state reference volumes
+  % are taken. This is computed by looking for the first volume of the scan that
+  % has a trigger in it. 
+  info.nRefVolumes = first(find(procpar.cntr))-1;
+  info.dim(4) = length(procpar.cntr)-info.nRefVolumes;
 else
   info.dim(4) = 1;
 end
@@ -290,33 +295,15 @@ cb = cos(b);sb = sin(b);
 cg = cos(g);sg = sin(g);
 
 % convert each rotation into a rotation matrix
-arot1 = [ca  sa 0;...
-	-sa ca 0;...
-	0   0  1];
-arot2 = [ca  sa 0;...
-	0 1  0;...
-	-sa 0 ca];
-arot3 = [1  0 0;...
-	 0 ca  sa;...
-	 0  -sa ca];
-brot1 = [cb sb 0;...
-	-sb cb  0;...
-	0 0 1];
-brot2 = [cb 0 sb;...
-	0 1  0;...
-	-sb 0 cb];
-brot3 = [1 0   0;...
-	 0 cb  sb;...
-	 0  -sb cb];
-grot1 = [cg  sg 0;...
-	-sg cg 0;...
-	0   0  1];
-grot2 = [cg  0  sg;...
-	 0   1   0;...
-         -sg  0 cg];
-grot3 = [1 0   0;...
-	 0 cg  sg;...
-	 0  -sg cg];
+%arot1 = [ca  sa 0;-sa ca 0;0   0  1];
+%arot2 = [ca  0 sa;0 1  0;-sa 0 ca];
+arot3 = [1  0 0;0 ca  sa;0  -sa ca];
+brot1 = [cb sb 0;-sb cb  0;0 0 1];
+%brot2 = [cb 0 sb;0 1  0;-sb 0 cb];
+%brot3 = [1 0   0; 0 cb  sb;0  -sb cb];
+%grot1 = [cg  sg 0;-sg cg 0;0   0  1];
+%grot2 = [cg  0  sg;0   1   0;-sg  0 cg];
+grot3 = [1 0   0;0 cg  sg;0  -sg cg];
 
 % composite the rotations together
 r = arot3*brot1*grot3;
