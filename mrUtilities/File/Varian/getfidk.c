@@ -239,15 +239,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       if (verbose) mexPrintf("(getfidk) numlines = %i\n",info.numlines);
     }
     // get number of navechoes
-    //if (!strcmp(token,"navecho")) {
-    //  fgets(line,LINESIZE,fprocpar);
-    //  token = (char*)strtok(line," ");
-    //  token = (char*)strtok(NULL," ");
-      // that should be number of navigator echoes
-    //  info.navechoes = atoi(token);
-    //  if (verbose) mexPrintf("(getfidk) navechoes (from procpar) = %i\n",info.navechoes);
-    //  gotNavechoes = 1;
-    //}
+    if (!strcmp(token,"nv")) {
+      fgets(line,LINESIZE,fprocpar);
+      token = (char*)strtok(line," ");
+      token = (char*)strtok(NULL," ");
+      // nv should be the number of lines of k-space including the nav echoes.
+      // later we subtract of the lines of k-space found from ni to get the number of nav echoes
+      info.navechoes = atoi(token);
+      if (verbose) mexPrintf("(getfidk) nv (from procpar) = %i\n",info.navechoes);
+    }
     // for epi images, there are navigator echos, which
     // should be subtracted from the number of lines.
     // this can be known from the name of the petable
@@ -276,16 +276,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	  info.accFactor = atoi(token+j);
 	  if (verbose) mexPrintf("(getfidk) Acceleration factor (from petable name) = %i\n",info.accFactor);
 	}
-	// if navechoes was not set in the header, then its default for epi is 1 navecho per shot
-	//if (!gotNavechoes) info.navechoes = 1;
       }
     }
   }
 
   // now compute the number of navigator echoes total
-  //if (verbose) mexPrintf("(getfidk) Navechoes is %i x numShots (%i) / accelerationFactor (%i) = ",info.navechoes,info.numshots,info.accFactor);
-  //info.navechoes = info.navechoes*info.numshots/info.accFactor;
-  //if (verbose) mexPrintf("%i\n",info.navechoes);
+  info.navechoes = info.navechoes-info.numlines;
+  if (verbose) mexPrintf("(getfik) Number of navigator echoes: %i\n",info.navechoes);
   
   
   // set up other parts of info
@@ -459,6 +456,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // into the number of blocks, then something is wrong.
   if (((double)header.nblocks/info.numimages) != floor((double)header.nblocks/info.numimages)) {
     mexPrintf("(getfidk) ERROR: numimages (%i) does not divide evenly into num blocks %i\n",info.numimages,header.nblocks);
+    errorExit(plhs);
+    free(block);
+    return;
+  }
+
+  // check that the number of blocks we have corresponds to how much data we think
+  // we should have. This might be wrong if not all the nav echos have been correctly removed
+  // from the data.
+  if (((double)header.nblocks/info.numimages) != info.numlines) {
+    mexPrintf("(getfidk) ERROR: File contains %0.0f k-space lines when %i are expected. Have you run the correct version of epirri to removes all %i navigator echoes?\n",(double)header.nblocks/info.numimages,info.numlines,info.navechoes);
     errorExit(plhs);
     free(block);
     return;
