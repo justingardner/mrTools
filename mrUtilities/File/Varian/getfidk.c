@@ -231,24 +231,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       if (verbose) mexPrintf("(getfidk) Number of receivers = %i\n",info.numreceivers);
     }
     // get number of lines per image
-    if (!strcmp(token,"nv")) {
+    if (!strcmp(token,"ni")) {
       fgets(line,LINESIZE,fprocpar);
       token = (char*)strtok(line," ");
       token = (char*)strtok(NULL," ");
-      // that should be number of slices
       info.numlines = atoi(token);
       if (verbose) mexPrintf("(getfidk) numlines = %i\n",info.numlines);
     }
-    // get number of lines per image
-    if (!strcmp(token,"navecho")) {
-      fgets(line,LINESIZE,fprocpar);
-      token = (char*)strtok(line," ");
-      token = (char*)strtok(NULL," ");
+    // get number of navechoes
+    //if (!strcmp(token,"navecho")) {
+    //  fgets(line,LINESIZE,fprocpar);
+    //  token = (char*)strtok(line," ");
+    //  token = (char*)strtok(NULL," ");
       // that should be number of navigator echoes
-      info.navechoes = atoi(token);
-      if (verbose) mexPrintf("(getfidk) navechoes (from procpar) = %i\n",info.navechoes);
-      gotNavechoes = 1;
-    }
+    //  info.navechoes = atoi(token);
+    //  if (verbose) mexPrintf("(getfidk) navechoes (from procpar) = %i\n",info.navechoes);
+    //  gotNavechoes = 1;
+    //}
     // for epi images, there are navigator echos, which
     // should be subtracted from the number of lines.
     // this can be known from the name of the petable
@@ -278,20 +277,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	  if (verbose) mexPrintf("(getfidk) Acceleration factor (from petable name) = %i\n",info.accFactor);
 	}
 	// if navechoes was not set in the header, then its default for epi is 1 navecho per shot
-	if (!gotNavechoes) info.navechoes = 1;
+	//if (!gotNavechoes) info.navechoes = 1;
       }
     }
   }
 
   // now compute the number of navigator echoes total
-  if (verbose) mexPrintf("(getfidk) Navechoes is %i x numShots (%i) / accelerationFactor (%i) = ",info.navechoes,info.numshots,info.accFactor);
-  info.navechoes = info.navechoes*info.numshots/info.accFactor;
-  if (verbose) mexPrintf("%i\n",info.navechoes);
+  //if (verbose) mexPrintf("(getfidk) Navechoes is %i x numShots (%i) / accelerationFactor (%i) = ",info.navechoes,info.numshots,info.accFactor);
+  //info.navechoes = info.navechoes*info.numshots/info.accFactor;
+  //if (verbose) mexPrintf("%i\n",info.navechoes);
   
   
   // set up other parts of info
-  // remove the navechoes from the number of lines
-  info.numlines -= info.navechoes;
   // set the dimensions for our array
   info.ndim = 5;
   info.dims[0] = info.linelen;
