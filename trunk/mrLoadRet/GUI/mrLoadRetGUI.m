@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 03-Dec-2009 21:33:17
+% Last Modified by GUIDE v2.5 19-Apr-2010 13:57:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2095,6 +2095,79 @@ view = viewSet(view,'showROIs','selected perimeter');
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function setROIGroupMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to setROIGroupMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+
+inGroup = [];
+roiGroup = viewGet(view,'roiGroup');
+
+% get number of ROIs
+nROIs = viewGet(view,'nrois');
+
+% get roi names
+if nROIs > 0
+  roiNames = viewGet(view,'roiNames');
+  roiGroupNum = zeros(1,nROIs);
+  if ~isempty(roiGroup)
+    roiGroupNum(roiGroup) = 1;
+  end
+
+  % display a dialog to allow user to select which ROIs to display
+  roiGroupNum = buttondlg('Select ROIs to display',roiNames,roiGroupNum);
+  if isempty(roiGroupNum),return,end
+  roiGroupNum = find(roiGroupNum);
+
+  % create a cell array with the names of the ROIs to display
+  roiGroup = {};
+  for i = 1:length(roiGroupNum)
+    roiGroup{i} = roiNames{roiGroupNum(i)};
+  end
+
+  % set the roi group
+  viewSet(view,'roiGroup',roiGroup);
+
+  % if the setting is not to show groups, change it to show goups
+  showROIs = viewGet(view,'showROIs');
+  if ~any(strcmp(showROIs,{'group','group perimeter'}))
+    % see if perimeter is selected
+    if ~isempty(strfind(showROIs,'perimeter'))
+      view = viewSet(view,'showROIs','group perimeter');
+    else
+      view = viewSet(view,'showROIs','group');
+    end
+  end
+  refreshMLRDisplay(viewNum);
+end
+
+% --------------------------------------------------------------------
+function showGroupMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to showGroupMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = viewSet(view,'showROIs','group');
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function showGroupPerimeterMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to showGroupPerimeterMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = viewSet(view,'showROIs','group perimeter');
+refreshMLRDisplay(viewNum);
+  
+% --------------------------------------------------------------------
 function hideROIsMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2379,3 +2452,5 @@ else
   end
   refreshMLRDisplay(viewNum);
 end
+
+

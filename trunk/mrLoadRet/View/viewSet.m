@@ -1455,10 +1455,15 @@ switch lower(param)
   case {'showrois'}
     % view = viewSet(view,'showrois',string);
     switch val
-      case{'all','selected','all perimeter','selected perimeter','hide'}
+      case{'all','selected','all perimeter','selected perimeter','group','group perimeter','hide'}
         view.showROIs = val;
     end
     mlrGuiSet(view,'showROIs',val);
+  case {'roigroup'}
+    % view = viewSet(view,'showrois',string);
+    % set the cell array of roi names that will be displayed
+    % when ROI view is set to group or group perimeter
+    view.roiGroup = val;
   case {'labelrois'}
     % view = viewSet(view,'labelrois',val);
     view.labelROIs = val;
@@ -1518,6 +1523,10 @@ switch lower(param)
     end
     % clear the cache of any old reference to this roi
     view = viewSet(view,'ROICache','clear',ROI.name);
+    % add the roi to the current roigroup
+    roiGroupNames = viewGet(view,'roiGroupNames');
+    roiGroupNames{end+1} = ROI.name;
+    view = viewSet(view,'roiGroup',roiGroupNames);
     % Update the gui
     stringList = {view.ROIs(:).name};
     mlrGuiSet(view,'roiPopup',stringList);
@@ -1809,7 +1818,8 @@ switch lower(param)
 	nSlices = baseDims(sliceIndex);
 	coords = viewGet(view,'curCoords');
 	slice = coords(sliceOrientation);
-	view = viewSet(view,'curSlice',slice);
+	view = viewSet(view,'curSlice',min(slice,nSlices));
+%	view = viewSet(view,'curSlice',slice);
 	mlrGuiSet(view,'nSlices',nSlices);
 	mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
       end

@@ -283,6 +283,8 @@ function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHom
 % 'selected'
 % 'all perimeter'
 % 'selected perimeter'
+% 'group'
+% 'group perimeter'
 % 'hide'
 roi = {};
 
@@ -301,6 +303,8 @@ switch option
     end
   case{'selected','selected perimeter'}
     order = selectedROI;
+  case{'group','group perimeter'}
+    order = viewGet(view,'roiGroup');
   otherwise
     return
 end
@@ -387,7 +391,7 @@ for r = order
   % If it's a 'text' color, translate it...
   roi{r}.color = color2RGB(color);
   % decide whether we are drawing perimeters or not
-  doPerimeter = ismember(option,{'all perimeter','selected perimeter'});
+  doPerimeter = ismember(option,{'all perimeter','selected perimeter','group perimeter'});
   if baseType == 2
     baseSurface = viewGet(view,'baseSurface');
     if 0 %%doPerimeter
