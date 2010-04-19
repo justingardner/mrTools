@@ -133,10 +133,11 @@ junkFrames = viewGet(viewBase,'junkframes',baseScan);
 nFrames = viewGet(viewBase,'nFrames',baseScan);
 % Compute mean of base scan
 baseMean = nanmean(tseries(:,:,:,junkFrames+1:junkFrames+nFrames),4);
+[mask view] = motionCompGetMask(view,params,baseScan,groupNum);
 
 % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
 % also correct crop, get slice times, and extract base volume.
-[baseMean,crop] = motionCompPreprocessing(baseMean,params,0,1,1);
+[baseMean,crop] = motionCompPreprocessing(baseMean,params,0,1,1,[],mask);
 
 % Loop through target scans, compute motion estimate transform, warp
 % according to the transform, and save new tseries.
@@ -168,11 +169,14 @@ for s = 1:length(targetScans)
     % for each scan because number of frames can differ. 
     warpedTseries = zeros(size(tseries));
     
+    % get mask
+    [mask view] = motionCompGetMask(view,params,scanNum,groupNum);
+
     % Compute mean of target scan after dumping junk frames
     targetMean = nanmean(tseries(:,:,:,junkFrames+1:junkFrames+nFrames),4);
     % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
     % also correct crop, get slice times, and extract base volume.
-    targetMean = motionCompPreprocessing(targetMean,params,0,1,1);
+    targetMean = motionCompPreprocessing(targetMean,params,0,1,1,[],mask);
 
     % Estimate motion between mean volumes
     disp(sprintf('Computing motion estimates for scan %i ...',scanNum))
