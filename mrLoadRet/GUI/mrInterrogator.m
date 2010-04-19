@@ -319,6 +319,10 @@ MLR.interrogator{viewNum}.mouseDownScanCoords = [x y s];
 
 if mouseInImage(x,y)
     global MLR;
+    if exist(MLR.interrogator{viewNum}.interrogator) ~= 2
+      disp(sprintf('(mrInterrogator) Cannot find interrogator function'));
+      return
+    end
     view = MLR.views{viewNum};
     % make a waiting cursor
     %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
