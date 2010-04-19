@@ -131,6 +131,9 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       if isfield(mrLastView.viewSettings,'labelROIs')
 	view = viewSet(view,'labelROIs',mrLastView.viewSettings.labelROIs);
       end
+      if isfield(mrLastView.viewSettings,'roiGroup')
+	view = viewSet(view,'roiGroup',mrLastView.viewSettings.roiGroup);
+      end
     end
 
     % add here, to load more info...

@@ -68,15 +68,17 @@ switch lower(field)
   % mlrGuiSet(view,'showrois',value);
   
   % figure out which menu item should be checked
-  onItem = find(strcmp(value,{'all','all perimeter','selected','selected perimeter','hide'}));
-  onOrOff = {'off','off','off','off','off'};
+  onItem = find(strcmp(value,{'all','all perimeter','selected','selected perimeter','group','group perimeter','hide'}));
+  onOrOff = {'off','off','off','off','off','off','off'};
   onOrOff{onItem} = 'on';
   % turn the check marks on/off
   set(handles.showAllMenuItem,'Checked',onOrOff{1});
   set(handles.showAllPerimeterMenuItem,'Checked',onOrOff{2});
   set(handles.showSelectedMenuItem,'Checked',onOrOff{3});
   set(handles.showSelectedPerimeterMenuItem,'Checked',onOrOff{4});
-  set(handles.hideROIsMenuItem,'Checked',onOrOff{5});
+  set(handles.showGroupMenuItem,'Checked',onOrOff{5});
+  set(handles.showGroupPerimeterMenuItem,'Checked',onOrOff{6});
+  set(handles.hideROIsMenuItem,'Checked',onOrOff{7});
  case {'basetype'}
   % mlrGuiSet(view,'baseType',value);
   % value = 0 for regular or 1 for flat

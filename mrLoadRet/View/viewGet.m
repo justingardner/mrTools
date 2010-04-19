@@ -1808,6 +1808,21 @@ switch lower(param)
   case{'currentroi','currentroinum'}
     % roiNum = viewGet(view,'currentROI')
     val = view.curROI;
+  case{'roigroup','currentroigroup'}
+    % roiNum = viewGet(view,'roigroup')
+    % gets the roiNums of the current roi group.
+    roiGroupNames = view.roiGroup;
+    val = [];
+    for i = 1:viewGet(view,'nrois');
+      roiName = viewGet(view,'roiName',i);
+      if any(strcmp(roiName,roiGroupNames))
+	val(end+1) = i;
+      end
+    end
+  case{'roigroupnames','currentroigroupnames'}
+    % roiNum = viewGet(view,'roigroup')
+    % gets the roiNames of the current roi group.
+    val = view.roiGroup;
   case{'roinum'}
     % roiNum = viewGet(view,'roiNum',roiName)
     % This will return the roiNum that correspondes

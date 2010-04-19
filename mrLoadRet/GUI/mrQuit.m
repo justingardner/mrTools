@@ -69,6 +69,7 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     viewSettings.alpha = viewGet(v,'alpha');
     viewSettings.showROIs = viewGet(v,'showROIs');
     viewSettings.labelROIs = viewGet(v,'labelROIs');
+    viewSettings.roiGroup = viewGet(v,'roiGroupNames');
     homeDir = viewGet(v,'homeDir');
   end
   % close graph figure, remembering figure location

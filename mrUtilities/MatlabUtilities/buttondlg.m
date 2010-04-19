@@ -1,5 +1,5 @@
-function reply = buttondlg(headerStr,optionStr)
-% function reply = buttondlg(headerStr,optionStr)
+function reply = buttondlg(headerStr,optionStr,defaultValue)
+% function reply = buttondlg(headerStr,optionStr,<defaultValue>)
 %
 % Button Dialog Box
 %
@@ -12,6 +12,9 @@ function reply = buttondlg(headerStr,optionStr)
 %  Example:
 %  reply = buttondlg('pick it',{'this','that','the other'})
 %
+%  Example:
+%  reply = buttondlg('pick it',{'this','that','the other'},[0 1 0])
+%
 %4/11/98 gmb   Wrote it
 % 15/07/02  fwc     it will now make multiple columns of options if the number is large
 % 2002.07.24  rfd & fwc: fixed minor bug where short checkbox labels were invisible.
@@ -22,6 +25,15 @@ if nargin<2
     disp('Error: "bottondlg" requires two inputs');
     return
 end
+if nargin<3
+  defaultValue = zeros(1,length(optionStr));
+else
+  if length(defaultValue) < length(optionStr)
+    defaultValue(end+1:length(optionStr)) = 1;
+  end
+end
+  
+  
 
 if isunix
     fontSize = 10;
@@ -101,6 +113,7 @@ for optionNum=1:nOptions
     y = y-1;
     h_button(optionNum) = ...
         uicontrol('Style','checkbox',...
+        'Value',defaultValue(optionNum),...
         'Units','char',...
         'String',optionStr(optionNum,:),...
         'BackgroundColor',bkColor,...
