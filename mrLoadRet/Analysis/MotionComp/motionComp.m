@@ -92,7 +92,7 @@ end
 % Get analysis parameters from motionCompGUI.
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
-  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'),'defaultParams',defaultParams,'scanList',scanList);
+  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'),'defaultParams',defaultParams,'scanList',scanList,'v',view);
 else
   % Reconcile params with current status of group and ensure that it has
   % the required fields.
@@ -169,6 +169,7 @@ junkFrames = viewGet(viewBase,'junkframes',scanNum);
 nFrames = viewGet(viewBase,'nFrames',scanNum);
 totalFrames = viewGet(viewBase,'totalFrames',scanNum);
 sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+[mask view] = motionCompGetMask(view,params,scanNum,groupNum);
 
 % Initialize the warped time series to zeros.
 % same size as orig tseries
@@ -176,7 +177,8 @@ warpedTseries = zeros(size(tseries));
 
 % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
 % also correct crop, get slice times, and extract base volume.
-[tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes);
+[tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask);
+
 % Loop: computing motion estimates and warping the volumes to
 % compensate for the motion in each temporal frame.
 waitHandle = mrWaitBar(0,['Computing within scan motion compensation for base scan ',num2str(scanNum),'.  Please wait...']);
@@ -237,6 +239,7 @@ for s = 1:length(targetScans)
   nFrames = viewGet(viewBase,'nFrames',scanNum);
   totalFrames = viewGet(viewBase,'totalFrames',scanNum); 
   scan2scan = viewGet(viewBase, 'scan2scan', baseScan, groupNum, scanNum, groupNum);
+  [mask view] = motionCompGetMask(view,params,scanNum,groupNum);
   
   % Initialize the warped time series to zeros. Need to re-initialize this
   % for each scan because number of frames can differ. 
@@ -244,7 +247,7 @@ for s = 1:length(targetScans)
 
   % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
   % also correct crop, get slice times, and extract base volume.
-  [tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes);
+  [tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask);
   
   % Loop through frames of target scan and estimate motion params
   waitHandle = mrWaitBar(0,['Computing motion estimates for scan ',num2str(scanNum),'.  Please wait...']);
@@ -315,3 +318,4 @@ deleteView(viewBase);
 deleteView(viewMotionComp);
 
 return
+

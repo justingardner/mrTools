@@ -1,6 +1,8 @@
 % motionCompPreprocessing.m
 %
-function [correctedTseries,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes)
+function [correctedTseries,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask)
+
+if ieNotDefined('mask'),mask = [];end
 
 % % check arguments
 % if ~any(nargin == [5])
@@ -102,6 +104,22 @@ switch baseFrame
     baseVol = nanmean(tseriesCrop,4);
   otherwise
     mrErrorDlg('Invalid base frame');
+end
+
+% apply mask if it exists
+if ~isempty(mask)
+  disp(sprintf('(motionCompPreprocessing) Applying mask'));
+  % make sure mask size matches tSeries size
+  if isequal(size(mask),size(correctedTseries(:,:,:,1)))
+    % mask baseVol
+    baseVol = mask.*baseVol;
+    % and correctedTSeries
+    for i = 1:size(correctedTseries,4)
+      correctedTseries(:,:,:,i) = mask.*correctedTseries(:,:,:,i);
+    end
+  else
+    disp(sprintf('(motionCompPreprocessing) Mask size %s does not match tSeries size %s',num2str(size(mask)),num2str(size(correctedTseries(:,:,:,1)))));
+  end
 end
 
 
