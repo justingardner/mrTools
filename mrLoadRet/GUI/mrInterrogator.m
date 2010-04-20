@@ -327,7 +327,7 @@ if mouseInImage(x,y)
     % make a waiting cursor
     %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
     % find all rois that the user clicked on
-    roi = {};
+    roi = {};roinums = [];
     switch lower(viewGet(view,'showROIs'))
      case {'hide'}
       roinums = [];
@@ -335,6 +335,8 @@ if mouseInImage(x,y)
       roinums = viewGet(view,'currentROI');
      case {'all','all perimeter'}
       roinums = 1:viewGet(view,'nROIs');
+     case {'group','group perimeter'}
+      roinums = viewGet(view,'roiGroup');
     end
     for roinum = roinums
       roicoords = getROICoordinates(view,roinum,0);
