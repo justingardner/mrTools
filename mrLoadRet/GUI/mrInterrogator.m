@@ -144,11 +144,20 @@ if mouseInImage(x,y)
     set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
     % set the xpos/ypos textbox
     set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
+    % set the overlay value
+    overlayVal = viewGet(MLR.interrogator{viewNum}.viewNum,'overlayDataVal',x,y,s);
+    set(MLR.interrogator{viewNum}.hOverlayLabel,'String',viewGet(MLR.interrogator{viewNum}.viewNum,'overlayName'));
+    if ~isempty(overlayVal)
+      set(MLR.interrogator{viewNum}.hOverlay,'String',sprintf('[%f]',overlayVal));
+    else
+      set(MLR.interrogator{viewNum}.hOverlay,'String','');
+    end
 else
     % set pointer to arrow
     set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
     % set strings to empty
     set(MLR.interrogator{viewNum}.hPos,'String','');
+    set(MLR.interrogator{viewNum}.hOverlay,'String','');
 end
 if mouseInImage(xBase,yBase)
   set(MLR.interrogator{viewNum}.hPosBase,'String',sprintf('[%0.4g %0.4g %0.4g]',xBase,yBase,sBase));
@@ -158,7 +167,7 @@ end
 
 if mouseInImage(xTal, yTal)
   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
-    set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Tal');
+  set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Tal');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.4g %0.4g %0.4g]',xTal,yTal,zTal));
 else
@@ -388,6 +397,8 @@ set(MLR.interrogator{viewNum}.hPosBase,'visible','off');
 set(MLR.interrogator{viewNum}.hPosBaseLabel,'visible','off');
 set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
 set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
+set(MLR.interrogator{viewNum}.hOverlay,'visible','off');
+set(MLR.interrogator{viewNum}.hOverlayLabel,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogator,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','off');
 
@@ -447,18 +458,22 @@ if ~restart
     MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
     MLR.interrogator{viewNum}.hPosBase = makeTextbox(viewNum,'',1,6,2);
     MLR.interrogator{viewNum}.hPosTal = makeTextbox(viewNum,'',1,8,2);
+    MLR.interrogator{viewNum}.hOverlay = makeTextbox(viewNum,'',1,10,2);
     MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,4,2);
     MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,6,2);
     MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Talairach',2,8,2);
+    MLR.interrogator{viewNum}.hOverlayLabel = makeTextbox(viewNum,'Overlay',2,10,2);
     MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
     MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',2,1,3);
 else
     set(MLR.interrogator{viewNum}.hPos,'visible','on');
     set(MLR.interrogator{viewNum}.hPosBase,'visible','on');
     set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
+    set(MLR.interrogator{viewNum}.hOverlay,'visible','on');
     set(MLR.interrogator{viewNum}.hPosLabel,'visible','on');
     set(MLR.interrogator{viewNum}.hPosBaseLabel,'visible','on');
     set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
+    set(MLR.interrogator{viewNum}.hOverlayLabel,'visible','on');
     set(MLR.interrogator{viewNum}.hInterrogator,'visible','on');
     set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','on');
 end
