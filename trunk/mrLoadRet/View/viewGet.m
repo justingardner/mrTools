@@ -2737,6 +2737,19 @@ switch lower(param)
     end
     scan = varargin{1};
     val = viewGet(view,'scanxform',scan);
+  case {'overlaydataval'}
+    % overlaydata = viewGet(view,'overlayDataVal',x,y,s)
+    % gets the value of the current overlay at the x,y,s point
+    val = [];
+    if ~isempty(view.curAnalysis)
+      curOverlay = view.analyses{view.curAnalysis}.curOverlay;
+      if ~isempty(curOverlay)
+	overlay = view.analyses{view.curAnalysis}.overlays(curOverlay).data;
+	if ~isempty(overlay{view.curScan})
+	  val = overlay{view.curScan}(varargin{1},varargin{2},varargin{3});
+	end
+      end
+    end
   case {'overlaydata'}
     % overlaydata = viewGet(view,'overlaydata',scanNum,[overlayNum],[analysisNum])
     % overlaydata = viewGet(view,'overlaydata',scanNum,overlayNum,[])
