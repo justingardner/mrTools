@@ -281,6 +281,7 @@ if ~isnan(xBase)
       end
       % display the current position
       hold(gCMode.a1,'on');
+      axis(gCMode.a1,'equal');
       plot(baseCoord(2),baseCoord(1),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a1);
       title(sprintf('BaseCoord: %i %i %i',round(baseCoord(1)),round(baseCoord(2)),round(baseCoord(3))),'Parent',gCMode.a1);
       % display the second image
@@ -297,6 +298,7 @@ if ~isnan(xBase)
       end
       % display the current position
       hold(gCMode.a2,'on');
+      axis(gCMode.a2,'equal');
       plot(baseCoord(3),baseCoord(1),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a2);
 
 
@@ -314,6 +316,7 @@ if ~isnan(xBase)
       end
       % display the current position
       hold(gCMode.a3,'on');
+      axis(gCMode.a3,'equal');
       plot(baseCoord(3),baseCoord(2),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a3);
     end
   end
