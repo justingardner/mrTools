@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 19-Apr-2010 13:57:24
+% Last Modified by GUIDE v2.5 20-Apr-2010 11:49:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2130,7 +2130,7 @@ if nROIs > 0
   end
 
   % set the roi group
-  viewSet(view,'roiGroup',roiGroup);
+  view = viewSet(view,'roiGroup',roiGroup);
 
   % if the setting is not to show groups, change it to show goups
   showROIs = viewGet(view,'showROIs');
@@ -2452,5 +2452,3 @@ else
   end
   refreshMLRDisplay(viewNum);
 end
-
-
