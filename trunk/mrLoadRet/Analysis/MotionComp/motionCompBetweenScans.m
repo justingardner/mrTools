@@ -54,7 +54,7 @@ end
 % Get analysis parameters from motionCompGUI.
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
-  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'),'defaultParams',defaultParams,'scanList',scanList);
+  params = motionCompGUImrParams('groupName',viewGet(view,'groupName'),'defaultParams',defaultParams,'scanList',scanList,'v',view);
 else
   % Reconcile params with current status of group and ensure that it has
   % the required fields.
