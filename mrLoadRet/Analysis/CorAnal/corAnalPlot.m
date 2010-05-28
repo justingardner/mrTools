@@ -24,6 +24,11 @@ nframes = viewGet(view,'nFrames',scan);
 framePeriod = viewGet(view,'framePeriod',scan);
 highpassPeriod = round(nframes/ncycles);
 
+if ncycles == 0
+    mrWarnDlg(sprintf('(corAnalPlot) Number of cycles per scan for the corAnal should not be: %i',ncycles));
+    return
+end
+
 
 % now if we have an roi then load its time series
 % and get the mean and plot that instead of the
