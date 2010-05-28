@@ -320,7 +320,6 @@ end
 
 [epiImage gMLRDisplayEPI.c] = mrCache('find',gMLRDisplayEPI.c,cacheStr);
 
-
 if isempty(epiImage)
   v = gMLRDisplayEPI.v;
   if isnumeric(v)
@@ -356,7 +355,7 @@ if isempty(epiImage)
 	epiVolume = warpAffine3(epiVolume,M,NaN,0,gMLRDisplayEPI.interpMethod);
 
 	disppercent(inf);
-	epiImage = epiVolume(:,:,sliceNum);
+	epiImage = epiVolume(:,:,sliceNum(1):sliceNum(2));
       else
 	% scan2scan was identity, so no warping is necessary
 	epiImage = loadTSeries(v,params.scanNum,[],[frameNum(1) frameNum(2)]);

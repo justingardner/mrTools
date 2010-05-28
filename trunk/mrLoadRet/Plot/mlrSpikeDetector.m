@@ -194,22 +194,22 @@ for slicenum = 1:spikeinfo.dim(3)
 end
 title(sprintf('%s:%i %s (%s)\nSpikes found=%i (criterion=%0.1f)',viewGet(v,'groupName',spikeinfo.groupNum),spikeinfo.scanNum,viewGet(v,'description',spikeinfo.scanNum,spikeinfo.groupNum),spikeinfo.filename,spikeinfo.n,spikeinfo.criterion),'interpreter','none');
 
-% plot arrows where artificats may be occurring
+% plot lines where artificats may be occurring
 ytop = 90;
 ybot = 95;
 if spikeinfo.n < 50
   for slicenum = 1:spikeinfo.dim(3)
-    % plot arrow where there is an artifact
+    % plot lines where there is an artifact
     thisslice = find(spikeinfo.slice == slicenum);
     if ~isempty(thisslice)
       for i = 1:length(thisslice)
-	arrow([spikeinfo.time(thisslice(i)) ytop],[spikeinfo.time(thisslice(i)) ybot],'FaceColor',getcolor(slicenum+coloroffset));
+	plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ybot],'Color',getcolor(slicenum+coloroffset));
       end
     end
     drawnow;
   end
 else
-  disp(sprintf('(mlrSpikeDetector) Too many spikes (%i) to display arrows on graphs',spikeinfo.n));
+  disp(sprintf('(mlrSpikeDetector) Too many spikes (%i) to display lines on graphs',spikeinfo.n));
 end
 
 % print out slice labels
