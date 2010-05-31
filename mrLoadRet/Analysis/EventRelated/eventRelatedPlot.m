@@ -22,6 +22,10 @@ if ~isfield(analysis,'d') || (length(analysis.d) < scan) || isempty(analysis.d)
   return
 end
 d = analysis.d{scan};
+if isempty(d)
+  mrWarnDlg(sprintf('(eventRelatedPlot) Could not find d structure for scan %i. Has eventRelated been run for this scan?',scan));
+  return
+end
 d.r2 = analysis.overlays(1).data{scan};
 
 % select the window to plot into
