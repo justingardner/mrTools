@@ -237,7 +237,10 @@ for iscan = 1:length(params.scanList)
   % Compute transform
   d.data = [];
   if params.warp
-    % get the scan2scan xform
+    % get the scan2scan xform. Note that we get the scan coordinates form the base scan to the
+    % current scan. When we do interpolation we want to know for each destination location (warp base)
+    % where the voxels live in the source (current scan). So we need a transform that takes each
+    % destination location (warp base scan coordinate) to locations in the current scan.
     scan2scan = viewGet(viewBase,'scan2scan',params.warpBaseScan,groupNum,scanNum,groupNum);
     
     if ~isequal(scan2scan,eye(4))
