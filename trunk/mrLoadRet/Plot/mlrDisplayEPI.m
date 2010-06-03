@@ -329,8 +329,16 @@ if isempty(epiImage)
     if params.warp
       % get scan2scan
       scan2scan = viewGet(v,'scan2scan',params.warpBaseScan,[],params.scanNum);
-      
+
       if ~isequal(scan2scan,eye(4))
+	% get dimensions of warp base scan - so we can transform
+	% also if displaying all slices, we want to do this with
+	% the number of slices in the warpBase
+	warpBaseScanDims = viewGet(v,'scanDims',params.warpBaseScan);
+	if params.displayAllSlices
+	  sliceNum(2) = warpBaseScanDims(3);
+	end
+	
 	% load the volume
 	epiVolume = loadTSeries(v,params.scanNum,[],params.frameNum);
 
@@ -352,10 +360,10 @@ if isempty(epiImage)
 	  disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
 	end
 	disppercent(-inf,sprintf('Warping scan %i to match scan %i with transformation using %s',params.scanNum,params.warpBaseScan,gMLRDisplayEPI.interpMethod));
-	epiVolume = warpAffine3(epiVolume,M,NaN,0,gMLRDisplayEPI.interpMethod);
+	epiVolume = warpAffine3(epiVolume,M,NaN,0,gMLRDisplayEPI.interpMethod,warpBaseScanDims);
 
 	disppercent(inf);
-	epiImage = epiVolume(:,:,sliceNum(1):sliceNum(2));
+	  epiImage = epiVolume(:,:,sliceNum(1):sliceNum(2));
       else
 	% scan2scan was identity, so no warping is necessary
 	epiImage = loadTSeries(v,params.scanNum,[],[frameNum(1) frameNum(2)]);
