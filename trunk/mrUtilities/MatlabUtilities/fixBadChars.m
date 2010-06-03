@@ -63,7 +63,7 @@ end
 
 % check for non character at beginning
 if ~userDefinedFixList
-  if ~isempty(regexp(str,'^[^a-zA-Z]'))
+  if ~isempty(str) && ~isempty(regexp(str,'^[^a-zA-Z]'))
     str = sprintf('x%s',str);
   end
 end
