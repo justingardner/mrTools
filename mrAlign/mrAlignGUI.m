@@ -379,6 +379,8 @@ setAlignTitle(handles);
 
 % Turn on Talairach option
 set(handles.setTalXform,'Enable','on');
+% and ability to set base coordinate frame
+set(handles.setBaseCoordinateFrameMenuItem,'Enable','on');
 
 function cRange = clipRange(image)
 % Choose clipping based on histogram
@@ -1590,12 +1592,15 @@ function incrementTrans(handles,axisnum,incdec)
 
 global ALIGN
 [trans rot] = getAlignGUI(handles);
-% shift makes for a smaller increment
+% command/shift makes for a smaller/larger increment
 fignum = handles.figure1;
-if ~isempty(fignum) && any(strcmp(get(fignum,'CurrentModifier'),'shift'))
-  inc = 0.1;
-else
-  inc = 1;
+inc = 1;
+if ~isempty(fignum) 
+  if any(strcmp(get(fignum,'CurrentModifier'),'shift'))
+    inc = 10;
+  elseif any(strcmp(get(fignum,'CurrentModifier'),'command'))
+    inc = 0.1;
+  end
 end
 trans(axisnum) = trans(axisnum)+incdec*inc;
 setAlignGUI(handles,'trans',trans);
@@ -1609,12 +1614,15 @@ function incrementRot(handles,axisnum,incdec)
 
 global ALIGN
 [trans rot] = getAlignGUI(handles);
-% shift makes for a smaller increment
+% command/shift makes for a smaller/larger increment
 fignum = handles.figure1;
-if ~isempty(fignum) && any(strcmp(get(fignum,'CurrentModifier'),'shift'))
-  inc = 0.1;
-else
-  inc = 1;
+inc = 1;
+if ~isempty(fignum)
+  if any(strcmp(get(fignum,'CurrentModifier'),'shift'))
+    inc = 10;
+  elseif any(strcmp(get(fignum,'CurrentModifier'),'command'))
+    inc = 0.1;
+  end
 end
 rot(axisnum) = rot(axisnum)+incdec*inc;
 setAlignGUI(handles,'rot',rot);
