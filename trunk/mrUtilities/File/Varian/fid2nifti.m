@@ -37,6 +37,10 @@
 %             And specify the outputName to save to
 % 
 %             fid2nifti('fidname.fid','outputName.hdr');
+% 
+%             or if you have more arguments, specify output name as:
+%
+%             fid2nifti('fidname.fid','outputName=outputName.hdr','xMin=10','xMax=100','yMin=15','yMax=120','sMin=3','sMax=40');
 %
 function [outdata outhdr] = fid2nifti(fidname,varargin)
 
@@ -170,11 +174,6 @@ for i = 1:length(fidnames)
     fid.data = fid.data(:,:,sliceIndex,:);
   end
 
-  % check the dimensions of the data versus the dimensions in the header
-  if ~isequal([size(fid.data,1) size(fid.data,2) size(fid.data,3)],hdr.dim(2:4)')
-    disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(fid.data))));
-  end
-  
   % remove any reference volume
   if fid.info.nRefVolumes
     if verbose
@@ -186,6 +185,11 @@ for i = 1:length(fidnames)
   % adjust dimensions if asked for
   [fid.data hdr] = adjustDims(fid.data,hdr,xMin,xMax,yMin,yMax,sMin,sMax);
 
+  % check the dimensions of the data versus the dimensions in the header
+  if ~isequal([size(fid.data,1) size(fid.data,2) size(fid.data,3)],hdr.dim(2:4)')
+    disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(fid.data))));
+  end
+  
   % write the file, but only if we aren't taking an output argument
   if nargout == 0
     % make a filename 
