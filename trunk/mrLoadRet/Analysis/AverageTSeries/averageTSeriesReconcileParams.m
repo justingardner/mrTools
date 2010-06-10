@@ -64,7 +64,7 @@ else
     newparams.groupName = groupName;
     newparams.aveGroupName = params.aveGroupName;
 	newparams.interpMethod = params.interpMethod;
-    if ~isfield(params,'description') || isempty(params.description)
+    if ~isfield(params,'description') || isempty(params.description) || isequal(params.description,['Average from ',groupName,' of scans: ',num2str(1:nScans)])
       newparams.description = ['Average from ',groupName,' of scans: ',num2str(scanList)];
     else
       newparams.description = params.description;
