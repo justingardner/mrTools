@@ -58,7 +58,7 @@ mrGlobals
 if ieNotDefined('param')
   dispViewSetHelp;
   return
-elseif ~ieNotDefined('val') && ieNotDefined('varargin') && isstr(val) && strcmp(lower(val),'help')
+elseif ~ieNotDefined('val') && ieNotDefined('varargin') && isstr(val) && (strcmp(lower(val),'help') || strcmp(lower(val),'?'))
   dispViewSetHelp(param);
   return
 end
