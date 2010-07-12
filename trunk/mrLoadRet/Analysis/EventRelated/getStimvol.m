@@ -177,7 +177,8 @@ for i = 1:length(d.stimfile)
   for nhdr = 1:length(stimvol)
     % subtract junkFrames
     stimvol{nhdr} = stimvol{nhdr}-junkFrames(i)*samplingf;
-    % and get rid of anything less than 0
+    % and get rid of anything less than 0 (do this on both trialNum and stimvol
+    if isfield(d,'trialNum') d.trialNum{i}{nhdr} = d.trialNum{i}{nhdr}(stimvol{nhdr}>0);end
     stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
     % check for stimvol overrun
     if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
@@ -191,6 +192,8 @@ for i = 1:length(d.stimfile)
       else
          disp(sprintf('(getStimvol) Removing %i event(s) from concatenated scan %i:%s since they happen after the last volume (%i) of the scan ',length(find(stimvol{nhdr}>runlen)),i,d.concatInfo.filename{i},runlen));
       end
+      % update trialNum and stimvol to remove trials that occur after the end
+      if isfield(d,'trialNum'),d.trialNum{i}{nhdr} = d.trialNum{i}{nhdr}(stimvol{nhdr}<=runlen);end
       stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}<=runlen);
     end
   end
