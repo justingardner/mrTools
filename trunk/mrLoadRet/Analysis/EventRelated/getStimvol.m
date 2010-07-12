@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getstimvol.m
 %
-%      usage: d = getStimvol(d,varname)
+%      usage: d = getStimvol(d or view,varname)
 %         by: justin gardner
 %       date: 12/21/05
 %    purpose: gets the stimulus vols. varname
@@ -15,9 +15,10 @@
 % 
 %             d must have the field stimfile, tr, dim
 %             optionally concatInfo, junkFrames, impulse, supersampling, 
+%
+%             optionally, d can be a view (v = newView) and then the program
+%             will pull the relevant information from MLR view
 % 
-
-%             and optional arguments (impulse and supersampling for using eventtimes);
 %             v = newView;
 %             v = viewSet(v,'curGroup',3);
 %             v = viewSet(v,'curScan',1);
@@ -35,8 +36,8 @@ end
 
 % evaluate other arguments
 taskNum=[];phaseNum=[];segmentNum=[];stimfile=[];tr=[];nFrames=[];concatInfo=[];
-junkFrames=[];impulse=[];supersampling=[];
-getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[]});
+junkFrames=[];impulse=[];supersampling=[];returnOnlyStimvol=[];
+getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[],'returnOnlyStimvol=[]'});
 
 if ~exist('stimVariable','var'),stimVariable = ''; end
 
@@ -54,9 +55,9 @@ if isview(d)
   % and optional arguments (only necessary for eventtimes)
   if ~isempty(supersampling),d.supersampling = supersampling;end
   if ~isempty(impulse),d.impulse=impulse;end
-  returnOnlyStimvol = 1;
+  if isempty(returnOnlyStimvol),returnOnlyStimvol = 1;end
 else
-  returnOnlyStimvol = 0;
+  if isempty(returnOnlyStimvol),returnOnlyStimvol = 0;end
 end
 
 % check to make sure we have a stimfile
@@ -124,7 +125,7 @@ for i = 1:length(d.stimfile)
       if exist('getStimvolFromVarname')~=2
 	mrErrorDlg('(getStimvol) The function getStimvol is missing from your path. Make sure that mgl is in your path');
       end
-      [stimvol d.stimNames] = getStimvolFromVarname(var,d.stimfile{i}.myscreen,d.stimfile{i}.task);
+      [stimvol d.stimNames d.trialNum{i}] = getStimvolFromVarname(var,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
     stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf, impulse);
