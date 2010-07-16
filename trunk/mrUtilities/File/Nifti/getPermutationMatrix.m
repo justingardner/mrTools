@@ -1,11 +1,13 @@
 % getPermutationMatrix.m
 %
-%      usage: permutationMatrix = getPermutationMatrix(hdr)
+%      usage: [permutationMatrix sliceIndex] = getPermutationMatrix(hdr)
 %         by: david heeger
 %       date: 10/24/07
 %    purpose: extracts permutation matrix form nifti hdr
+%             sliceIndex contains which index corresponds to
+%             Sagittal, Coronal and Axial orientations.
 %
-function permutationMatrix = getPermutationMatrix(hdr)
+function [permutationMatrix sliceIndex] = getPermutationMatrix(hdr)
 
 % check arguments
 if ~any(nargin == [1])
@@ -31,6 +33,7 @@ end
 
 % and return a permutation matrix
 permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
+%permutationMatrix = [q(1,:); abs(q(2,:)); abs(q(3,:))];
 
 % check the euler angles of the permutationMatrix
 [phi theta psi] = rot2euler(permutationMatrix);
@@ -44,8 +47,19 @@ permutationMatrix = abs([q(1,:); q(2,:); q(3,:)]);
 % This seems to be working on a few test cases, but
 % may need tweaking to work in general 11/23/08 -jg.
 theta = 180*theta/pi;
-disp(sprintf('(getPermutationMatrix) phi: %0.2f theta: %0.2f psi: %0.2f',180*phi/pi,theta,180*psi/pi));
+%disp(sprintf('(getPermutationMatrix) phi: %0.2f theta: %0.2f psi: %0.2f',180*phi/pi,theta,180*psi/pi));
 if (theta > 30) && (theta <= 45)
-  permutationMatrix = [1 0 0;0 0 1;0 1 0]*permutationMatrix;
+%  permutationMatrix = [1 0 0;0 0 1;0 1 0]*permutationMatrix;
 end
+
+% find out which index corresponds to what oreintation
+
+% Sagittal
+[m,sagIndex] = max(permutationMatrix * [1 0 0]');
+% Coronal
+[m,corIndex] = max(permutationMatrix * [0 1 0]');
+% Axial
+[m,axialIndex] = max(permutationMatrix * [0 0 1]');
+
+sliceIndex = [sagIndex corIndex axialIndex];
 
