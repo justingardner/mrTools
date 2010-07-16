@@ -132,7 +132,36 @@ for pathNum = 1:length(pathStr)
   % Extract permutation matrix to keep track of slice orientation.
   % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
   % make changes here, please update that function as well.
-  permutationMatrix = getPermutationMatrix(hdr);
+  [permutationMatrix sliceIndex] = getPermutationMatrix(hdr);
+
+  % keeping this code commented for now
+  if 0
+    
+    % check whether it is left/right reversed, first find which dimension goes from
+    % left to right. That is the sliceIndex for a sagittal image (i.e. the sagittal
+    % images slice directions goes from left to right).
+    lrIndex = sliceIndex(1);
+    coronalVector = [0 0 0 1]';
+    coronalVector(lrIndex) = 1;
+    % now multiply by the qform and see which way we go in the magnet space when we 
+    % move one coordinate in this dimension.
+    magShift = hdr.qform44*coronalVector-hdr.qform44*[0 0 0 1]';
+    if magShift(1) < 0 
+      disp(sprintf('(loadAnat) left/right ok'));
+    else
+      % swap left and right
+      disp(sprintf('(loadAnat) left/right reversed, flipping anatomy'));
+      vol = flipdim(vol,lrIndex);
+      % flip the qform and sform to track this flip
+      flipMatrix = eye(4);
+      flipMatrix(lrIndex,lrIndex) = -1;
+      flipMatrix(lrIndex,4) = size(vol,lrIndex)-1;
+      hdr = cbiSetNiftiQform(hdr,hdr.qform44*flipMatrix);
+      if hdr.sform_code
+	hdr = cbiSetNiftiSform(hdr,hdr.sform44*flipMatrix);
+      end
+    end
+  end
 
   %%%%%%%%%%%%%%%%%%%%%%
   % Add it to the view %
