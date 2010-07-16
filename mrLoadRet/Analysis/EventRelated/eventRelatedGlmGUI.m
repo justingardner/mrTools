@@ -47,7 +47,7 @@ if ieNotDefined('params')
 end
 
 if ~isfield(params, 'contrast')
-    params.contrast = [];
+  params.contrast = {'None','All','User defined'};
 end
 
 askForParams = 1;
@@ -59,7 +59,7 @@ while askForParams
         {'saveName',params.saveName,'File name to try to save as'},...
         {'hrfModel',params.hrfModel,'Name of the function that defines the hrf used in glm'},...
         {'trSupersampling', params.trSupersampling, 'minmax=[1 100]', 'TR supersampling factor (1=no supersampling) reulting design matrix will be downsampled afterwards'},...
-        {'contrast', params.contrast, 'Vector defining the contrast of interest. Leave blank for r2 overlay only; Enter "all" for amplitude overlay for all conditions'},...
+        {'contrast', params.contrast, 'Set to none to compute r2 overlay only. Enter all to compute an overlay for each condition (betaWeight map). Set to User defined if you want to compute a custom contrast - like the difference between condition 1 and condition 4 for example - this will bring up another dialog box where you will set the contrast of interest.'},...
     };
 
     % Get parameter values
@@ -72,6 +72,12 @@ while askForParams
     % if empty user hit cancel
     if isempty(params),return,end
 
+    if strcmp(params.contrast,'User defined');
+      contrastParams = mrParamsDialog({{'contrast',[],'Vector defining the contrast of interest. For instance to get a contrast between condtion 1 and 3 (when you have four conditions) you would enter [1 0 -1 0]'}},'Input contrast to compute');
+      if isempty(contrastParams),return,end
+      params.contrast = contrastParams.contrast;
+    end
+    
     % get hrf model parameters
     hrfParamsInfo = feval(params.hrfModel, 'params');
 
@@ -195,9 +201,8 @@ for scanNum = 1:length(params.scanNum)
       
       % if there is more than one segement in any of the phases, ask the user to specify
       % should add some error checking.
-      if maxSegNum > 1
-	  taskVarParams{end+1} = {'segmentNum',1,'The segment of the task you want to use','incdec=[-1 1]'};
-      end
+      taskVarParams{end+1} = {'segmentBegin',1,'The segment of the trial from which your stimulus started','incdec=[-1 1]',sprintf('minmax=[0 %i]',maxSegNum)};
+      taskVarParams{end+1} = {'segmentEnd',maxSegNum,'The segment of the trial at which your stimulus ended','incdec=[-1 1]',sprintf('minmax=[0 %i]',maxSegNum)};
       
       % set up to get the variable name from the user
       taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};

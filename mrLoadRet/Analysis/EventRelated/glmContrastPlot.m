@@ -7,7 +7,6 @@ function glmContrastPlot(view,overlayNum,scan,x,y,s,roi)
 %    purpose: 
 %
 
-
 % check arguments
 if ~any(nargin == [1:7])
   help glmContrastPlot
@@ -57,15 +56,54 @@ if isempty(d)
 end
 
 
+% reconstruct what the glm produces
+if ~isempty(analysis.params.scanParams{scan}) && isfield(analysis.params.scanParams{scan},'segmentBegin')
+  % first want to get stimvols for just the beginning of the 
+  % stimulus so that we can run an event-related analysis
+  % on the glm modeled timecourse
+  %
+  % so, construct an appropriate params variable
+  params = analysis.params.scanParams{scan};
+  params.segmentNum = params.segmentBegin;
+  params = rmfield(params,'segmentEnd');
+  % get the stimvols 
+  dglm = loadScan(view,scan,viewGet(view,'curGroup'),0); 
+  dglm = getStimvol(dglm,params);
+  % make stimulus convolution matrix
+  dglm = makescm(dglm);
+  % check to make sure dimensions match
+  if size(d.scm,2) ~= size(d.ehdr,4)
+    % no match, give up
+    [ehdr time ehdrste] = gethdr(d,x,y,s);
+    ehdrTitle = 'Scaled HRF';
+  else
+    % now we want to create a time course that is the glm design
+    % multiplied by the beta weights (this is the estimated time
+    % course)
+    estTimecourse = d.scm*squeeze(d.ehdr(x,y,s,:));
+    % now deconvolve to get the stimulus triggered averages
+    % of the estimated timecourse
+    estResponses = pinv(dglm.scm)*(estTimecourse-mean(estTimecourse));
+    % and reshape
+    ehdr = reshape(estResponses,dglm.hdrlen,dglm.nhdr)';
+    time = dglm.tr/2:dglm.tr:(dglm.hdrlen*dglm.tr);
+    ehdrste = [];
+    ehdrTitle = 'GLM modeled response';
+  end
+else
+  % get the estimated hdr from the beta weight times
+  % the hdr function
+  [ehdr time ehdrste] = gethdr(d,x,y,s);
+  ehdrTitle = 'Scaled HRF';
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the hemodynamic response for voxel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-subplot(2,2,1);
+subplot(3,2,1);
 plotEcontrast(shiftdim(d.ehdr(x,y,s,:,:), 3),shiftdim(d.ehdrste(x,y,s,:,:), 3));
 
+subplot(3,2,3);
 
-subplot(2,2,3);
-[ehdr time ehdrste] = gethdr(d,x,y,s);
 % display ehdr with out lines if we have a fit
 % since we also need to plot fit
 if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
@@ -77,21 +115,36 @@ if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
   end
 else
   % if there is deconvolution data, display that too
-  if exist('der','var')
+  if exist('der','var') && (length(der.stimvol) == length(d.stimvol))
+
     [deconvEhdr deconvTime deconvEhdrste] = gethdr(der,x,y,s);
     % note that we need to subtract the mean of the glm ehdr
     % to match the event related and the glm data. This is
     % because the glm has the mean subtracted from the columns
     % i.e. the glm gives an estimate of the response *before*
     % mean subtraction
-    deconvEhdr = deconvEhdr-repmat(mean(ehdr,2),1,size(deconvEhdr,2));
-    plotEhdr(deconvTime,deconvEhdr,deconvEhdrste,'');
-    plotEhdr(time,ehdr,ehdrste,'-',0);
+    if size(ehdr,1) == size(deconvEhdr,1)
+      deconvEhdr = deconvEhdr-repmat(mean(ehdr,2),1,size(deconvEhdr,2));
+    else
+      deconvEhdr = deconvEhdr-repmat(mean(ehdr(:)),size(deconvEhdr,1),size(deconvEhdr,2));
+    end      
+
+    % chop down to the same size as the glm responses
+    displayLen = min(size(deconvEhdr,2),size(ehdr,2));
+    ehdr = ehdr(:,1:displayLen);
+    time = time(1:displayLen);
+    % now display
+    plotEhdr(time,ehdr,ehdrste,'-',1);
+    subplot(3,2,5);
+    plotEhdr(deconvTime,deconvEhdr,deconvEhdrste,'-');
+    title('Deconvolution');
+    legend(der.stimNames);
+    subplot(3,2,3);
   else
     plotEhdr(time,ehdr,ehdrste);
   end
 end
-title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays(1).data{scan}(x,y,s)));
+title(sprintf('%s: (%i,%i,%i): r2=%0.3f',ehdrTitle,x,y,s,analysis.overlays(1).data{scan}(x,y,s)));
 xaxis(0,max(time));
 % add peaks if they exist to the legend
 if isfield(d,'stimNames')
@@ -109,7 +162,7 @@ end
 % then plot mean response
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for roinum = 1:length(roi)
-  subplot(2,2,4);
+  subplot(3,2,4);
   ehdr = [];
   econt = [];
   roin = 0;
@@ -131,9 +184,9 @@ for roinum = 1:length(roi)
   end
   % plot the average of the ehdrs that beat the r2 cutoff
   if roin
-    subplot(2,2,4);
+    subplot(3,2,4);
     plotEhdr(time,shiftdim(mean(ehdr),1),shiftdim(std(ehdr),1)/sqrt(size(roi{roinum}.scanCoords,2)));
-    subplot(2,2,2);
+    subplot(3,2,2);
     plotEcontrast(shiftdim(mean(econt),1),shiftdim(std(econt),1)/sqrt(size(roi{roinum}.scanCoords,2)));
   end
   title(sprintf('%s (n=%i/%i)',roi{roinum}.name,roin,size(roi{roinum}.scanCoords,2)),'Interpreter','none');
@@ -167,7 +220,7 @@ if ~exist('drawSymbols','var'),drawSymbols = 1;,end
 
 % and display ehdr
 for i = 1:size(ehdr,1)
-  if nargin == 2
+  if (nargin == 2) || isempty(ehdrste)
     % draw with symbols, no error bars
     if drawSymbols
       h=plot(time,ehdr(i,:),getcolor(i,getsymbol(i,lineSymbol)),'MarkerSize',8);
@@ -198,9 +251,9 @@ h = bar(econt');
 if size(econt,2)==1
     econt = econt';
     econtste = econtste';
-    xaxis = 'contrast';
+    xaxisLabel = 'contrast';
 else
-    xaxis = 'hrf component';
+    xaxisLabel = 'hrf component';
 end
 if nargin==2
     hold on;
@@ -214,7 +267,8 @@ if nargin==2
         set(temp(1), 'visible', 'off');
     end
 end
-xlabel(xaxis);
+xaxis(0.5,length(econt)+0.5);
+xlabel(xaxisLabel);
 ylabel('beta');
 
 
