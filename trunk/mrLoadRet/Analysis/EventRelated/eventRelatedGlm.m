@@ -49,21 +49,19 @@ if ieNotDefined('params'),return,end
 % set the group
 view = viewSet(view,'groupName',params.groupName);
 
+colormap = hot(256);
 if ~isempty(params.contrast)
-    if strcmpi(params.contrast, 'all')
+    if strcmpi(params.contrast, 'All')
         scanNum = params.scanNum(1);
         disp(sprintf('Getting number of conditions from scan %d', scanNum)); 
         d = loadScan(view, scanNum, [], 0);
         d = getStimvol(d,params.scanParams{scanNum});
         contrast=eye(length(d.stimvol));
         disp(sprintf('%d conditions found', length(d.stimvol)));
+    elseif strcmpi(params.contrast,'None')
+      contrast = [];
     else
-        contrast = str2num(params.contrast);
-    end
-    % check if the contrast is defined correctly
-    if isempty(contrast),
-      mrErrorDlg('invalid contrast. must be a vector');
-      return
+      contrast = str2num(params.contrast);
     end
 else
     contrast = [];
@@ -98,7 +96,7 @@ if ~isempty(contrast)
         amp.name = ['c ', num2str(contrast(i,:))];
         amp.range = [-0.25 0.25];
         amp.clip = [-0.25 0.25];
-        amp.colormap = jet(256);
+        amp.colormap = colormap;
         amps{i} = amp;
     end
 end
@@ -220,6 +218,7 @@ for scanNum = params.scanNum
           amps{j}.data{scanNum} = temp;
           mx = max(temp(:));
           mn = min(temp(:));
+%          amps{j}.range = [ min([mn,amps{j}.clip(1)]), max([amps{j}.clip(2),mx])];
           amps{j}.clip = [ min([mn,amps{j}.clip(1)]), max([amps{j}.clip(2),mx])];
           amps{j}.params{scanNum} = params.scanParams{scanNum};
           
@@ -238,7 +237,6 @@ for scanNum = params.scanNum
   else
       stimNames = d.stimNames;
   end
-
   
   % save other eventRelated parameters
   t = d.tr*(0.5:size(d.simulatedhrf,1));
@@ -292,11 +290,14 @@ if ~isempty(contrast)
         view = viewSet(view,'newoverlay',amps{i});
     end
 end
-
 % Save it
 saveAnalysis(view,erAnal.name);
 
 set(viewGet(view,'figNum'),'Pointer','arrow');drawnow
+
+if ~isempty(viewGet(view,'fignum'))
+  refreshMLRDisplay(viewGet(view,'viewNum'));
+end
 
 % for output
 if nargout > 1
@@ -311,3 +312,18 @@ if nargout > 1
   end
 end
 
+function cmap = hotColdCmap(n)
+
+
+  h = hot(floor(n/2));
+  c(:,1) = h(:,3);
+  c(:,2) = h(:,2);
+  c(:,3) = h(:,1);
+  
+  if iseven(h)
+    cmap = [flipud(c);h];
+  else
+    cmap = [flipud(c);[0 0 0];h];
+  end
+
+return
