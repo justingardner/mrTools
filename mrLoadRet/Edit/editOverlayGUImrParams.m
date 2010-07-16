@@ -30,7 +30,7 @@ function retval = editOverlayGUImrParams(viewNum)
   
   % set up params dialog
   paramsInfo = {};
-  paramsInfo{end+1} = {'overlayCmap', {'default','hot','hsv','pink','cool','bone','copper','flag','gray','grayCirc','twoCondCmap','twoCondCircCmap','hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap' 'coolCmap'},'List of possible colormaps','callback',@mrCmapCallback,'callbackArg',v};
+  paramsInfo{end+1} = {'overlayCmap', {'default','hot','hsv','pink','cool','bone','copper','flag','gray','grayCirc','twoCondCmap','twoCondCircCmap','hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap' 'coolCmap','hotColdCmap'},'List of possible colormaps','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overla colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'numColors', 256, 'first argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
@@ -351,6 +351,22 @@ function cmap = twoCondCmap(numGrays)
   blue = [y' y' zeros(length(y),1)];
   
   cmap = 1-[red;blue];
+return
+
+function cmap = hotColdCmap(n)
+
+
+  h = hot(floor(n/2));
+  c(:,1) = h(:,3);
+  c(:,2) = h(:,2);
+  c(:,3) = h(:,1);
+  
+  if iseven(h)
+    cmap = [flipud(c);h];
+  else
+    cmap = [flipud(c);[0 0 0];h];
+  end
+
 return
 
 function cmap = twoCondCircCmap(numGrays)
