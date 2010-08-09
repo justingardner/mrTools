@@ -3543,7 +3543,7 @@ switch lower(param)
           val = [2:2:nslices,1:2:nslices-1];
         end
       else
-        mrWarnDlg('Slice ordering is unknown for this site. Using default order: [1:nslices]. If this is incorrect, then edit viewGet sliceOrder to add the convention for your site.');
+        mrWarnDlg('(viewGet) Slice ordering is unknown for this site. Using default order: [1:nslices]. If this is incorrect, then edit viewGet sliceOrder to add the convention for your site.');
         val = [1:nslices];
       end
     end
