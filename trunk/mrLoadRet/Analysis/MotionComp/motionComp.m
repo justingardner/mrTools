@@ -143,7 +143,7 @@ end
 for scanNum = targetScans
   datasize = viewGet(viewBase,'datasize',scanNum);
   if (datasize ~= baseDataSize)
-    mrWarnDlg(['Ignoring scan ',num2str(scanNum),'. Motion compensation requires at the datasize to match the base scan']);
+    mrWarnDlg(['(motionComp) Ignoring scan ',num2str(scanNum),'. Motion compensation requires at the datasize to match the base scan']);
     targetScans = targetScans(find(targetScans ~= scanNum));
   end
 end
@@ -168,7 +168,11 @@ tseries = loadTSeries(viewBase,scanNum,'all');
 junkFrames = viewGet(viewBase,'junkframes',scanNum);
 nFrames = viewGet(viewBase,'nFrames',scanNum);
 totalFrames = viewGet(viewBase,'totalFrames',scanNum);
-sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+if sliceTimeCorrection
+  sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+else
+  sliceTimes = [];
+end
 [mask view] = motionCompGetMask(view,params,scanNum,groupNum);
 
 % Initialize the warped time series to zeros.
@@ -181,7 +185,7 @@ warpedTseries = zeros(size(tseries));
 
 % Loop: computing motion estimates and warping the volumes to
 % compensate for the motion in each temporal frame.
-waitHandle = mrWaitBar(0,['Computing within scan motion compensation for base scan ',num2str(scanNum),'.  Please wait...']);
+waitHandle = mrWaitBar(0,['(motionComp) Computing within scan motion compensation for base scan ',num2str(scanNum),'.  Please wait...']);
 % Note that the correct transform is just identify here, since we are
 % aligning all frames to a base frame from the same run
 M = eye(4);
@@ -250,7 +254,7 @@ for s = 1:length(targetScans)
   [tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask);
   
   % Loop through frames of target scan and estimate motion params
-  waitHandle = mrWaitBar(0,['Computing motion estimates for scan ',num2str(scanNum),'.  Please wait...']);
+  waitHandle = mrWaitBar(0,['(motionComp) Computing motion estimates for scan ',num2str(scanNum),'.  Please wait...']);
   % Note that the correct transform is not identity, since we are
   % aligning all frames to a base frame, which could come from a
   % different run
@@ -277,7 +281,7 @@ for s = 1:length(targetScans)
   mrCloseDlg(waitHandle);
   
   % warp the images according to the motion estimates
-  waitHandle = mrWaitBar(0,['Warping image volumes for scan ',num2str(scanNum),'.  Please wait...']);
+  waitHandle = mrWaitBar(0,['(motionComp) Warping image volumes for scan ',num2str(scanNum),'.  Please wait...']);
   for frame = 1:totalFrames
     mrWaitBar(frame/totalFrames,waitHandle)
     if sliceTimeCorrection
