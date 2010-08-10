@@ -40,7 +40,16 @@
 %             names with no equal signs:
 %             getArgs(varargin,{'test1','test2','test3'});
 %
-function [argNames argValues] = getArgs(args,validVars,varargin)
+%             If you are passing arguments between two functions, one of which will
+%             handle one set of variables and the other a different set of values,
+%             you can call as follows:
+%             [argNames argValues args] = getArgs(varargin,{'fun1var=0'});
+%             Then, args will contain an argument list with all the variables
+%             *except* fun1var (which will be set in the current function). So 
+%             you can then call again in a different function:
+%             getArgs(args,{'fun2var=1'});            
+%
+function [argNames argValues invalidArgs] = getArgs(args,validVars,varargin)
 
 % check input arguments
 if ~any(nargin == [1 2 3 4])
@@ -54,7 +63,7 @@ if ~ieNotDefined('varargin')
 end
 if ieNotDefined('verbose'),verbose=0;end
 if ieNotDefined('doAssignment'),doAssignment=1;end
-
+if ieNotDefined('suppressUnknownArgMessage'),suppressUnknownArgMessage=0;end
 % now deal with validVars list
 setValidVars = 0;
 if ~ieNotDefined('validVars')
@@ -83,7 +92,7 @@ end
 funname = st(stackNum).name;
 
 % loop through arguments
-skipnext = 0;argNames = {};argValues = {};
+skipnext = 0;argNames = {};argValues = {};invalidArgs={};
 for i = 1:length(args)
   % skip if called for
   if skipnext
@@ -158,7 +167,14 @@ for i = 1:length(argNames)
 	argNames{i} = validVarNames{caseInsensitiveMatch};
       % otherwise, give an unknown argument warning
       else
-	disp(sprintf('(%s) Unknown argument %s',funname,argNames{i}));
+	% if we are not accepting the invalid arguments, then print warning message
+	if nargout < 3
+	  if ~suppressUnknownArgMessage
+	    disp(sprintf('(%s) Unknown argument %s',funname,argNames{i}));
+	  end
+	end
+	invalidArgs{end+1} = argNames{i};
+	invalidArgs{end+1} = argValues{i};
       end		
     end
   end
