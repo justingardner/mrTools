@@ -375,7 +375,7 @@ else
     % point on the image and the brain object always seems to be
     % last. But if this is not always the case, then we may need
     % to do a little more work here to find the correct object
-    [pos v vi] = select3d(hobj(end));
+    [pos vertex vi] = select3d(hobj(end));
     % convert the index to the coordinates
     if ~isempty(pos)
       baseCoordMap = viewGet(v,'baseCoordMap');
