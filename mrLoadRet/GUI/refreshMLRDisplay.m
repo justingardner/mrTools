@@ -117,7 +117,17 @@ end
 
 % if no figure, then just return, this is being called just to create the overlay
 fig = viewGet(view,'figNum');
-if isempty(fig),return,end
+if isempty(fig)
+ 	nROIs = viewGet(view,'numberOfROIs');
+	if nROIs
+		%  if baseType <= 1
+		roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+		%  end
+	else
+		roi = [];
+	end
+	return;
+end 
 
 % Display the image
 if verbose>1,disppercent(-inf,'Clearing figure');,end
@@ -328,8 +338,9 @@ end
 
 % get figure
 fig = viewGet(view,'figNum');
-gui = guidata(fig);
-
+if ~isempty(fig)
+  gui = guidata(fig);
+end
 % see if this is a flat
 baseType = viewGet(view,'baseType',baseNum);
 
@@ -423,7 +434,11 @@ for r = order
     roiColors(y,1) = roi{r}.color(1);
     roiColors(y,2) = roi{r}.color(2);
     roiColors(y,3) = roi{r}.color(3);
-    patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',gui.axis);
+ 		roi{r}.vertices=y;
+		roi{r}.overlayImage = roiColors;
+    if ~isempty(fig)
+      patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',gui.axis);
+    end
     continue
   end
   % get image coords for this slice
