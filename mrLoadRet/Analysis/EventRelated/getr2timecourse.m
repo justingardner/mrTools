@@ -15,14 +15,16 @@
 %             the eventRelated code.
 % 
 %
-function outd = getr2timecourse(timecourses,nhdr,hdrlen,scm,tr)
+function outd = getr2timecourse(timecourses,nhdr,hdrlen,scm,tr,verbose)
 
 % check arguments
-if ~any(nargin == [4 5])
+if ~any(nargin == [4 5 6])
   outd = [];
   help getr2timecourse
   return
 end
+
+if ieNotDefined('verbose'),verbose = 1;end
 
 % make sure this has non-zero mean (otherwise event-related code
 % which converts to percent signal change will divide by a value
@@ -53,7 +55,7 @@ d.dim = size(d.data);
 d.volumes = 1:d.dim(4);
 
 % compute the event related analysis
-outd = getr2(d,0);
+outd = getr2(d,verbose);
 
 % and parse back fields
 if size(timecourses,1)==1
