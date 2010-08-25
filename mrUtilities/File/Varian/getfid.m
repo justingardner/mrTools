@@ -1,6 +1,6 @@
 % getfid.m
 %
-%      usage: getfid(fidname,<verbose>,<zeropad>,<movepro>)
+%      usage: getfid(fidname,<verbose>,<zeropad>,<movepro>,<kspace>)
 %         by: justin gardner
 %       date: 05/08/03
 %    purpose: reads k-space data from fid file and transforms into an image
@@ -17,20 +17,24 @@
 %             encodes the image with the slices and receivers swapped. This
 %             program (but not getfidk) fixes that swap.
 %
-function d = getfid(fidname,verbose,zeropad,movepro)
+%             If the kspace argument is set to 1, then this will return the
+%             k-space data (this can be useful if you want to zeropad, moverpro etc.
+%             which getfidk does not do.
+%
+function d = getfid(fidname,verbose,zeropad,movepro,kspace)
 
 % check input arguments
 if (nargin == 1)
   verbose = 0;
-elseif ~ any(nargin == [2 3 4]) 
+elseif ~ any(nargin == [2 3 4 5]) 
   help getfid;
   return
 end
 
 % default to no zeropad
-if ieNotDefined('zeropad'),zeropad = 0;,end
-if ieNotDefined('movepro'),movepro = 0;,end
-
+if ieNotDefined('zeropad'),zeropad = 0;end
+if ieNotDefined('movepro'),movepro = 0;end
+if ieNotDefined('kspace'),kspace = 0;end
 % read the k-space data from the fid
 if (verbose),disppercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
 d = getfidk(fidname,verbose);
@@ -81,13 +85,13 @@ for i = 1:size(d.data,3)
 	  thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k)).*exp(sqrt(-1)*phaseshift);
 	end
 	% fft 
-	data(:,:,i,k,j) = fftshift(abs(fft2(thisdata)))/(size(thisdata,1)*size(thisdata,2));
+	data(:,:,i,k,j) = myfft(thisdata,kspace);
       else
 	% simply fft data, moving pro if necessary
 	if movepro == 0
-	  data(:,:,i,k,j) = fftshift(abs(fft2(d.data(:,:,i,j,k))))/(size(d.data,1)*size(d.data,2));
+	  data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k),kspace);
 	else
-	  data(:,:,i,k,j) = fftshift(abs(fft2(d.data(:,:,i,j,k).*exp(sqrt(-1)*phaseshift))))/(size(d.data,1)*size(d.data,2));
+	  data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k).*exp(sqrt(-1)*phaseshift),kspace);
 	end
       end
     end
@@ -108,3 +112,14 @@ d.zeropad = zeropad;
 d.info = info;
 
 if (verbose), disppercent(inf); end
+
+%%%%%%%%%%%%%%%
+%    myfft    %
+%%%%%%%%%%%%%%%
+function data = myfft(data,kspace)
+
+% this just simply takes the 2D fft, shifts and gets the real part of the data.
+% if kspace is set, it does nothing
+if ~kspace
+  data = fftshift(abs(fft2(data)))/(size(data,1)*size(data,2));
+end
