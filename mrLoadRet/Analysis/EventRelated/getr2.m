@@ -32,7 +32,6 @@ else
   % such that there are an infinite number of possible solutions. The psuedo-inverse solution
   % chosses the solution with the minimum length (i.e. Euclidian norm)
   if verbose,disp(sprintf('(getr2) Design covariance matrix (%ix%i) is rank %i. Using pseudo-inverse to invert.',size(covarianceMatrix,1),size(covarianceMatrix,2),covarianceMatrixRank));end
-  keyboard
   precalcmatrix = pinv(d.scm);
   % get the diagonal of the inverse of the design covariance matrix (used for estimating standard errors)
   diagOfInverseCovariance = diag(pinv(d.scm'*d.scm));
