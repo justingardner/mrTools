@@ -1,6 +1,6 @@
 % getfid.m
 %
-%      usage: getfid(fidname,<verbose>,<zeropad>,<movepro>,<kspace>)
+%      usage: getfid(fidname,<verbose=1>,<zeropad=0>,<movepro=0>,<kspace=0>,<swapReceiversAndSlices=1>)
 %         by: justin gardner
 %       date: 05/08/03
 %    purpose: reads k-space data from fid file and transforms into an image
@@ -12,29 +12,38 @@
 %             verbose=0 to 1 for verbose info
 %             zeropad=0 set to the size you want to zeropad out to (e.g. 256)
 %             movepro=0 set to how much you want to movepro (default=0)
+%             kspace=0, set to 1 if you want k-space rather than image data
+%             swapReceiversAndSlices=1, swaps receivers and slices to keep%
+%               consistent dimension ordering. For 2D images with multiple receivers, Varian
+%               encodes the image with the slices and receivers swapped. This
+%                program (but not getfidk) fixes that swap with this argument set.
 %
-%             Also for 2D images with multiple receivers, note that Varian
-%             encodes the image with the slices and receivers swapped. This
-%             program (but not getfidk) fixes that swap.
-%
-%             If the kspace argument is set to 1, then this will return the
-%             k-space data (this can be useful if you want to zeropad, moverpro etc.
-%             which getfidk does not do.
-%
-function d = getfid(fidname,verbose,zeropad,movepro,kspace)
+function d = getfid(fidname,varargin)
 
 % check input arguments
 if (nargin == 1)
-  verbose = 0;
-elseif ~ any(nargin == [2 3 4 5]) 
+  verbose = [];
+elseif ~ any(nargin == [2 3 4 5 6 7]) 
   help getfid;
   return
 end
 
-% default to no zeropad
-if ieNotDefined('zeropad'),zeropad = 0;end
-if ieNotDefined('movepro'),movepro = 0;end
-if ieNotDefined('kspace'),kspace = 0;end
+verbose=[];zeropad=[];movepro=[];kspace=[];
+oldArgNames = {'verbose','zeropad','movepro','kspace'};
+% check for numeric arguments (old way of calling
+for i = 1:length(varargin)
+  if isnumeric(varargin{i})
+    % if it is numeric then change it into something that getArgs can parse
+    if isempty(varargin{i})
+      varargin{i} = sprintf('%s=[]',oldArgNames{i});
+    else
+      varargin{i} = sprintf('%s=%s',oldArgNames{i},mynum2str(varargin{i}));
+    end
+  end
+end
+% now run getArgs
+getArgs(varargin,{'verbose=1','zeropad=0','movepro=0','kspace=0','swapReceiversAndSlices=1'});
+
 % read the k-space data from the fid
 if (verbose),disppercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
 d = getfidk(fidname,verbose);
@@ -49,7 +58,7 @@ d.dim = size(d.data);
 % get fidinfo
 [xform info] = fid2xform(fidname,-1);
 
-if info.receiversAndSlicesSwapped
+if info.receiversAndSlicesSwapped && swapReceiversAndSlices
   if size(d.data,4) > 1
     if verbose, disp(sprintf('(getfid) Swapping receivers and slices'));end
     d.data = reshape(d.data,size(d.data,1),size(d.data,2),size(d.data,4),size(d.data,3),size(d.data,5));
