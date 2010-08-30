@@ -21,9 +21,7 @@
 function d = getfid(fidname,varargin)
 
 % check input arguments
-if (nargin == 1)
-  verbose = [];
-elseif ~ any(nargin == [2 3 4 5 6 7]) 
+if nargin<1
   help getfid;
   return
 end
