@@ -804,7 +804,9 @@ importTSeries(MLR.views{viewNum});
 
 % --------------------------------------------------------------------
 function importOverlayMenuItem_Callback(hObject, eventdata, handles)
-mrWarnDlg('importOverlay not yet implemented');
+mrGlobals;
+viewNum = handles.viewNum;
+importOverlay(MLR.views{viewNum});  %importOverlay checks the compatibilty of the imported data with the current scan
 
 % --------------------------------------------------------------------
 function exportMenu_Callback(hObject, eventdata, handles)
@@ -1786,6 +1788,15 @@ view = viewSet(view,'deleteAnalysis',analysisNum);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function deleteManyAnalysisMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+numAnalyses =  selectAnalyses(view,'Select analyses to remove');
+view = viewSet(view,'deleteAnalysis',numAnalyses);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
 function deleteAllAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1808,6 +1819,15 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 overlayNum = viewGet(view,'currentOverlay');
 view = viewSet(view,'deleteOverlay',overlayNum);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function deleteManyOverlaysMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+numOverlays = selectOverlays(view,'Select overlays to remove');
+view = viewSet(view,'deleteOverlay',numOverlays);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
