@@ -805,8 +805,12 @@ importTSeries(MLR.views{viewNum});
 % --------------------------------------------------------------------
 function importOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
-viewNum = handles.viewNum;
-importOverlay(MLR.views{viewNum});  %importOverlay checks the compatibilty of the imported data with the current scan
+mrWarnDlg('importOverlay not yet implemented');
+% check whether this is best implemented as importOverlay or mrDispOverlay
+% importOverlay checks the compatibilty of the imported data with the
+% current scan
+% viewNum = handles.viewNum;
+% importOverlay(MLR.views{viewNum});  
 
 % --------------------------------------------------------------------
 function exportMenu_Callback(hObject, eventdata, handles)
