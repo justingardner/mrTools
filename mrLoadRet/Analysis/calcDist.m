@@ -7,7 +7,7 @@
 %    purpose: 
 %
 function retval = calcDist(view, method)
-
+  
 % check arguments
 if ~any(nargin == [1 2])
   help calcDist
@@ -46,11 +46,11 @@ else
   
   % pick some points
   [xi yi] = getpts;
-  
+
   % draw the lines temporarily
   switch lower(method)
     case {'segments'}
-      line(xi,yi);
+      line(xi,yi, 'linewidth', 3);
     case {'pairs'}
       % ignore the last point if there are an odd number of inputs
       if ~iseven(length(xi))
@@ -60,8 +60,9 @@ else
       for p=1:2:length(xi)
         line(xi(p:p+1), yi(p:p+1));
       end
-      drawnow;  
   end
+  drawnow;  
+
   % Extract coordinates in base reference frame
   baseX = baseCoords(:,:,1);
   baseY = baseCoords(:,:,2);
@@ -70,7 +71,7 @@ else
   x = baseX(lineInd);
   y = baseY(lineInd);
   z = baseZ(lineInd);
-  coords = [y x z];
+  coords = [x y z];
 end
 
 disp('(calcDist) Computing distance');
@@ -140,6 +141,9 @@ end
 if nargout == 1
   retval = dist(nearestVtcs);
 end
+
+
+% $$$ patch('vertices', mesh.uniqueVertices, 'faces', mesh.uniqueFaceIndexList,'FaceVertexCData', mesh.dist,'facecolor', 'interp','edgecolor', 'none');
 
 return;
 
