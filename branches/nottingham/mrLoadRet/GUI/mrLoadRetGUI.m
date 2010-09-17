@@ -1,4 +1,3 @@
-
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
 % $Id$
@@ -45,9 +44,6 @@ function mrLoadRetGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % mrLoadRetGUI must be called as follows:
 %    mrLoadRetGUI('viewNum',viewNum)
 % The view structure must already exist in MRL.views{viewNum}
-
-disp('Julien''s version of the GUI...');   %%%%% TO REMOVE BEFORE COMMITTING
-
 for index = 1:2:length(varargin)
     field = varargin{index};
     val = varargin{index+1};
@@ -808,9 +804,7 @@ importTSeries(MLR.views{viewNum});
 
 % --------------------------------------------------------------------
 function importOverlayMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-importOverlay(MLR.views{viewNum});  %importOverlay checks the compatibilty of the imported data with the current scan
+mrWarnDlg('importOverlay not yet implemented');
 
 % --------------------------------------------------------------------
 function exportMenu_Callback(hObject, eventdata, handles)
@@ -1309,15 +1303,21 @@ function copyOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-
-MLR.clipboard = copyOverlay(view); %calls copyOverlay which asks which overlay and for which scans to copy an returns all the copied overlays
+MLR.clipboard = viewGet(view,'overlay');
 
 % --------------------------------------------------------------------
 function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-pasteOverlay(view, MLR.clipboard);
+[check overlay] = isoverlay(MLR.clipboard);
+if ~check
+    mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
+end
+if ~isanalysis(viewGet(view,'analysis'))
+    mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
+end
+view = viewSet(view,'newOverlay',overlay);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -1718,7 +1718,6 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = eventRelated(view);
-refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function glmMenuItem_Callback(hObject, eventdata, handles)
@@ -1726,7 +1725,6 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = eventRelatedGlm(view);
-refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function recomputeAnalysisMenuItem_Callback(hObject, eventdata, handles)
@@ -1739,8 +1737,8 @@ if viewGet(view,'numAnalyses') > 0
   analysisFunction = viewGet(view,'analysisFunction',n);
   guiFunction = viewGet(view,'analysisGuiFunction',n);
   params = viewGet(view,'analysisParams',n);
-  % params = guiFunction('groupName',groupName,'params',params,'thisView',view);
-  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params,','''','thisView','''',',view);'];
+  % params = guiFunction('groupName',groupName,'params',params);
+  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
   eval(evalstring);
   % params is empty if GUI cancelled
   if ~isempty(params)
