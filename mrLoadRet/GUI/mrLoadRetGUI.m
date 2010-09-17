@@ -1,3 +1,4 @@
+
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
 % $Id$
@@ -9,7 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 20-Apr-2010 11:49:16
+% Last Modified by GUIDE v2.5 14-Jul-2010 16:13:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -44,6 +45,9 @@ function mrLoadRetGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % mrLoadRetGUI must be called as follows:
 %    mrLoadRetGUI('viewNum',viewNum)
 % The view structure must already exist in MRL.views{viewNum}
+
+disp('Julien''s version of the GUI...');   %%%%% TO REMOVE BEFORE COMMITTING
+
 for index = 1:2:length(varargin)
     field = varargin{index};
     val = varargin{index+1};
@@ -805,12 +809,8 @@ importTSeries(MLR.views{viewNum});
 % --------------------------------------------------------------------
 function importOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
-mrWarnDlg('importOverlay not yet implemented');
-% check whether this is best implemented as importOverlay or mrDispOverlay
-% importOverlay checks the compatibilty of the imported data with the
-% current scan
-% viewNum = handles.viewNum;
-% importOverlay(MLR.views{viewNum});  
+viewNum = handles.viewNum;
+importOverlay(MLR.views{viewNum});  %importOverlay checks the compatibilty of the imported data with the current scan
 
 % --------------------------------------------------------------------
 function exportMenu_Callback(hObject, eventdata, handles)
@@ -1309,21 +1309,15 @@ function copyOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-MLR.clipboard = viewGet(view,'overlay');
+
+MLR.clipboard = copyOverlay(view); %calls copyOverlay which asks which overlay and for which scans to copy an returns all the copied overlays
 
 % --------------------------------------------------------------------
 function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-[check overlay] = isoverlay(MLR.clipboard);
-if ~check
-    mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
-end
-if ~isanalysis(viewGet(view,'analysis'))
-    mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
-end
-view = viewSet(view,'newOverlay',overlay);
+pasteOverlay(view, MLR.clipboard);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -1724,6 +1718,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = eventRelated(view);
+refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function glmMenuItem_Callback(hObject, eventdata, handles)
@@ -1731,6 +1726,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = eventRelatedGlm(view);
+refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function recomputeAnalysisMenuItem_Callback(hObject, eventdata, handles)
@@ -1743,8 +1739,8 @@ if viewGet(view,'numAnalyses') > 0
   analysisFunction = viewGet(view,'analysisFunction',n);
   guiFunction = viewGet(view,'analysisGuiFunction',n);
   params = viewGet(view,'analysisParams',n);
-  % params = guiFunction('groupName',groupName,'params',params);
-  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
+  % params = guiFunction('groupName',groupName,'params',params,'thisView',view);
+  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params,','''','thisView','''',',view);'];
   eval(evalstring);
   % params is empty if GUI cancelled
   if ~isempty(params)
@@ -1797,8 +1793,10 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numAnalyses =  selectAnalyses(view,'Select analyses to remove');
-view = viewSet(view,'deleteAnalysis',numAnalyses);
-refreshMLRDisplay(viewNum);
+if ~isempty(numAnalyses)
+   view = viewSet(view,'deleteAnalysis',numAnalyses);
+   refreshMLRDisplay(viewNum);
+end
 
 % --------------------------------------------------------------------
 function deleteAllAnalysisMenuItem_Callback(hObject, eventdata, handles)
@@ -1806,9 +1804,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numAnalyses = viewGet(view,'numberofAnalyses');
-for analysisNum = numAnalyses:-1:1;
-    view = viewSet(view,'deleteAnalysis',analysisNum);
-end
+view = viewSet(view,'deleteAnalysis',1:numAnalyses);
 % also, go through and delete all "laodedAnalyses", i.e.
 % analysis that are loaded in ohter groups
 for g = 1:viewGet(view,'numGroups');
@@ -1831,8 +1827,10 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numOverlays = selectOverlays(view,'Select overlays to remove');
-view = viewSet(view,'deleteOverlay',numOverlays);
-refreshMLRDisplay(viewNum);
+if ~isempty(numOverlays)
+   view = viewSet(view,'deleteOverlay',numOverlays);
+   refreshMLRDisplay(viewNum);
+end
 
 % --------------------------------------------------------------------
 function deleteAllOverlayMenuItem_Callback(hObject, eventdata, handles)
@@ -1840,9 +1838,7 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numOverlays = viewGet(view,'numberofoverlays');
-for overlayNum = numOverlays:-1:1;
-    view = viewSet(view,'deleteOverlay',overlayNum);
-end
+view = viewSet(view,'deleteOverlay',1:numOverlays);
 refreshMLRDisplay(viewNum);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

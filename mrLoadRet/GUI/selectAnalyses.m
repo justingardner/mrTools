@@ -9,7 +9,9 @@ function analysesList = selectAnalyses(thisView,title)
 %
 % 14/07/10 jb adapted from selectScans
 %
-% $Id: 
+% $Id$ 
+
+analysesList = [];
 
 if ieNotDefined('title')
   title = 'Choose analyses';
@@ -19,7 +21,7 @@ analysisNames = viewGet(thisView,'analysisNames');
 
 %Check for zero:
 if isempty(analysisNames)
-  mrErrorDlg('No analyses found!');
+  mrWarnDlg('(selectAnalysis) No analysis found!');
   return
 end
 
