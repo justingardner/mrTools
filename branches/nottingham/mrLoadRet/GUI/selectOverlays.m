@@ -11,6 +11,8 @@ function overlayList = selectOverlays(thisView,title)
 %
 % $Id$ 
 
+overlayList = [];
+
 if ieNotDefined('title')
   title = 'Choose overlays';
 end
@@ -19,7 +21,7 @@ overlayNames = viewGet(thisView,'overlayNames');
 
 %Check for zero:
 if isempty(overlayNames)
-  mrErrorDlg('No overlays found!');
+  mrWarnDlg('(selectOverlays) No overlay found!');
   return
 end
 
