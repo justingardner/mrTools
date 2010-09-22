@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 20-Apr-2010 11:49:16
+% Last Modified by GUIDE v2.5 14-Jul-2010 16:13:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1786,14 +1786,23 @@ view = viewSet(view,'deleteAnalysis',analysisNum);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function deleteManyAnalysisMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+numAnalyses =  selectAnalyses(view,'Select analyses to remove');
+if ~isempty(numAnalyses)
+   view = viewSet(view,'deleteAnalysis',numAnalyses);
+   refreshMLRDisplay(viewNum);
+end
+
+% --------------------------------------------------------------------
 function deleteAllAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numAnalyses = viewGet(view,'numberofAnalyses');
-for analysisNum = numAnalyses:-1:1;
-    view = viewSet(view,'deleteAnalysis',analysisNum);
-end
+view = viewSet(view,'deleteAnalysis',1:numAnalyses);
 % also, go through and delete all "laodedAnalyses", i.e.
 % analysis that are loaded in ohter groups
 for g = 1:viewGet(view,'numGroups');
@@ -1811,14 +1820,23 @@ view = viewSet(view,'deleteOverlay',overlayNum);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function deleteManyOverlaysMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+numOverlays = selectOverlays(view,'Select overlays to remove');
+if ~isempty(numOverlays)
+   view = viewSet(view,'deleteOverlay',numOverlays);
+   refreshMLRDisplay(viewNum);
+end
+
+% --------------------------------------------------------------------
 function deleteAllOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 numOverlays = viewGet(view,'numberofoverlays');
-for overlayNum = numOverlays:-1:1;
-    view = viewSet(view,'deleteOverlay',overlayNum);
-end
+view = viewSet(view,'deleteOverlay',1:numOverlays);
 refreshMLRDisplay(viewNum);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -641,26 +641,27 @@ switch lower(param)
     if ~check
       mrErrorDlg('Invalid base anatomy');
     end
-    % If baseVolume.name already exists then replace the existing one
-    % with this new one. Otherwise, add it to the end of the baseVolumes
-    % list.
-    newBaseName = baseAnatomy.name;
-    newBaseNum = [];
-    numBaseVolumes = viewGet(view,'numberofBaseVolumes');
-    for num = 1:numBaseVolumes
-      baseName = viewGet(view,'basename',num);
-      if strcmp(newBaseName,baseName)
-        newBaseNum = num;
-      end
-    end
-    if isempty(newBaseNum)
-      newBaseNum = numBaseVolumes + 1;
-    end
-    % Add it to the list of baseVolumes
-    if (newBaseNum == 1)
-      view.baseVolumes = baseAnatomy;
-    else
-      view.baseVolumes(newBaseNum) = baseAnatomy;
+    numBaseVolumes = viewGet(view,'numberofBaseVolumes'); %get the number of loaded bases
+    if numBaseVolumes %if there are bases loaded, check for base with identical name
+       % If baseVolume.name already exists then replace the existing one
+       % with this new one. Otherwise, add it to the end of the baseVolumes
+       % list.
+       newBaseName = baseAnatomy.name;
+       newBaseNum = [];
+          for num = 1:numBaseVolumes
+            baseName = viewGet(view,'basename',num);
+            if strcmp(newBaseName,baseName)
+              newBaseNum = num;
+            end
+          end
+          if isempty(newBaseNum)
+            newBaseNum = numBaseVolumes + 1;
+          end
+          % Add it to the list of baseVolumes
+         view.baseVolumes(newBaseNum) = baseAnatomy;
+    else    %if there is no base loaded, add the base in first position
+       newBaseNum = 1;
+       view.baseVolumes = baseAnatomy;
     end
     % clear the caches of any reference to a base with
     % the same name (if it is reloaded, the base may
@@ -1034,16 +1035,11 @@ switch lower(param)
     curAnalysis = viewGet(view,'currentAnalysis');
     if isempty(curAnalysis),return,end
     % Remove it and reset currentAnalysis
-    view.analyses = {view.analyses{analysisNum ~= [1:numAnalyses]}};
-    if (numAnalyses > 1)
-      if (curAnalysis > analysisNum)
-        view = viewSet(view,'currentAnalysis',curAnalysis-1);
-      elseif (analysisNum == curAnalysis)
-        view = viewSet(view,'currentAnalysis',1);
-      end
-    else
-      view = viewSet(view,'currentAnalysis',[]);
-    end
+   view.analyses = {view.analyses{setdiff(1:numAnalyses,analysisNum)}}; %JB: allows deleting several analyses at once
+   numAnalyses = viewGet(view,'numberofAnalyses');                      
+   if (curAnalysis > numAnalyses)                                       % JB: does not change current analysis, unless not enough analyses         
+     view = viewSet(view,'currentAnalysis',numAnalyses);                % in which case set the last analysis
+   end
     % Update the gui
     stringList = viewGet(view,'analysisNames');
     if isempty(stringList)
@@ -1284,15 +1280,10 @@ switch lower(param)
         ~isempty(view.analyses{analysisNum}.overlays)
       % Remove it and reset currentOverlay
       view.analyses{analysisNum}.overlays = ...
-        view.analyses{analysisNum}.overlays(overlayNum ~= [1:numoverlays]);
-      if (numoverlays > 1)
-        if (curoverlay > overlayNum)
-          view = viewSet(view,'currentOverlay',curoverlay-1);
-        elseif (overlayNum == curoverlay)
-          view = viewSet(view,'currentOverlay',1);
-        end
-      else
-        view = viewSet(view,'currentOverlay',[]);
+         view.analyses{analysisNum}.overlays(setdiff(1:numoverlays,overlayNum) ); %JB: allows deleting several overlays at once
+      numoverlays = viewGet(view,'numberofoverlays',analysisNum);                %
+      if (curoverlay > numoverlays)                                              % JB: does not change current overlay, unless not enough overlays         
+         view = viewSet(view,'currentOverlay',numoverlays);                      % in which case set the last overlay
       end
       % Update the gui
       stringList = viewGet(view,'overlayNames',analysisNum);
