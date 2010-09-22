@@ -75,7 +75,7 @@ if isempty(params),return,end
 % now go through and update the headers
 for iGroup = 1:viewGet(v, 'numberofGroups')
   % see if we are supposed to update the group
-  if params.(viewGet(v,'groupName',iGroup))
+  if params.(fixBadChars(viewGet(v,'groupName',iGroup))) %JB: Here we have to fix the bad characters of the group name the same way mrParamsDialog does it
     for iScan = 1:viewGet(v, 'nScans', iGroup);
       % load the nifti header from the mrSession file
       curhdr = viewGet(v, 'niftiHdr', iScan, iGroup);
