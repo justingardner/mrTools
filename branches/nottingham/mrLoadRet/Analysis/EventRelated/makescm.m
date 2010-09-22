@@ -71,10 +71,12 @@ else
 end
 
 % go through each run of the experiment
-allscm = [];
+%allscm = [];
+allscm = zeros(runTransition(end,2),length(d.stimvol)*hdrlen);
 for runnum = 1:size(runTransition,1)
   % default values
-  scm = [];
+%  scm = [];
+  scm = zeros(runTransition(runnum,2)-runTransition(runnum,1)+1,length(d.stimvol)*hdrlen);;
   % make stimulus convolution matrix
   for stimnum = 1:length(d.stimvol)
     % make an array containing the stimulus times
@@ -100,11 +102,12 @@ for runnum = 1:size(runTransition,1)
 	m = m-repmat(mean(m,1),size(m,1),1);
       end
     end
-    scm = [scm, m];
+    scm(:,((stimnum-1)*hdrlen+1):stimnum*hdrlen) = m;
+%    scm = [scm, m];
   end
   % stack this run's stimcmatrix on to the last one
-  
-  allscm = [allscm; scm];
+  allscm(runTransition(runnum,1):runTransition(runnum,2),:) = scm;
+%  allscm = [allscm; scm];
 end
 
 % set values

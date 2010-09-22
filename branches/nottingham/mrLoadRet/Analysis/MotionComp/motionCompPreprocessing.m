@@ -107,7 +107,7 @@ switch baseFrame
 end
 
 % apply mask if it exists
-if ~isempty(mask)
+if ~isempty(mask) && any(mask(:)~=1)
   disp(sprintf('(motionCompPreprocessing) Applying mask'));
   % make sure mask size matches tSeries size
   if isequal(size(mask),size(correctedTseries(:,:,:,1)))

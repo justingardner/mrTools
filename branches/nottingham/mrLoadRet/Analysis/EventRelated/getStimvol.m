@@ -111,6 +111,7 @@ for i = 1:length(d.stimfile)
   end
 end
 
+lastStimNames = [];
 % depending on what kind of stimfile we have, we get the
 % stimvolumes differently
 for i = 1:length(d.stimfile)
@@ -170,6 +171,24 @@ for i = 1:length(d.stimfile)
       d.stimNames{stimNameNum} = num2str(stimNameNum);
     end
   end
+
+  % compare to make sure we have the same stimulus names as last time
+  if ~isempty(lastStimNames)
+    if ~isequal(d.stimNames,lastStimNames)
+      % display what doesn't match
+      missingLastTime = setdiff(d.stimNames,lastStimNames);
+      for iMissing = 1:length(missingLastTime)
+	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i-1,missingLastTime{iMissing}));
+      end
+      missingThisTime = setdiff(lastStimNames,d.stimNames);
+      for iMissing = 1:length(missingThisTime)
+	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i,missingThisTime{iMissing}));
+      end
+      disp(sprintf('(getStimvol) This likely happened because you have not specified all the possible values a variable can take. For a randVar, you should add a field with the same name as the variable except with an _ after it (i.e. for randVar.calculated.myVar add randVar.calculated.myVar_ ) and set the variable to all the possible values that the variable can be set to. See the function addCalculatedVar for more info.'));
+      keyboard
+    end
+  end
+  lastStimNames = d.stimNames;
 
   % get how many junk frames we have
   if isfield(d,'junkFrames'),junkFrames = d.junkFrames; else junkFrames = zeros(length(d.stimfile),1);end
