@@ -17,12 +17,24 @@ function d = getr2(d,verbose)
 ehdr=[];r2 = [];
 
 if ieNotDefined('verbose'),verbose = 1;end
+
 % precalculate the normal equation (this dramatically speeds up things)
-precalcmatrix = ((d.scm'*d.scm)^-1)*d.scm';
-% if this don't work then do pinv
-if sum(isnan(precalcmatrix(:))) == length(precalcmatrix(:))
-  disp(sprintf('(getr2) Using pseudo inverse to invert convolution matrix'));
+covarianceMatrix = d.scm'*d.scm;
+covarianceMatrixRank = rank(covarianceMatrix);
+% use normal equations if we have a full ranked covariance matrix
+if covarianceMatrixRank == size(covarianceMatrix,1)
+  inverseCovarianceMatrix = covarianceMatrix^-1;
+  precalcmatrix = inverseCovarianceMatrix*d.scm';
+  diagOfInverseCovariance = diag(inverseCovarianceMatrix);
+% otherwise use pinv
+else
+  % note that if we need to use the pseudo inverse it means that there is ambiguity in the design
+  % such that there are an infinite number of possible solutions. The psuedo-inverse solution
+  % chosses the solution with the minimum length (i.e. Euclidian norm)
+  if verbose,disp(sprintf('(getr2) Design covariance matrix (%ix%i) is rank %i. Using pseudo-inverse to invert.',size(covarianceMatrix,1),size(covarianceMatrix,2),covarianceMatrixRank));end
   precalcmatrix = pinv(d.scm);
+  % get the diagonal of the inverse of the design covariance matrix (used for estimating standard errors)
+  diagOfInverseCovariance = diag(pinv(d.scm'*d.scm));
 end
 
 % check roi
@@ -76,7 +88,7 @@ for j = yvals
     % now distribute that error to each one of the points
     % in the hemodynamic response according to the inverse
     % of the covariance of the stimulus convolution matrix.
-    ehdrste{j,k} = sqrt(diag(pinv(d.scm'*d.scm))*S2);
+    ehdrste{j,k} = sqrt(diagOfInverseCovariance*S2);
     % calculate variance accounted for by the estimated hdr
     r2{j,k} = (1-sumOfSquaresResidual./sum(timeseries.^2));
   end
