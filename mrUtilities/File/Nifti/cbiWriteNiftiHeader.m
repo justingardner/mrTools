@@ -27,6 +27,8 @@ function [hdr,fid] = cbiWriteNiftiHeader(hdr,fname,no_overwrite,leave_open)
 % pointer to the open file (appropriate for writing image data to a .nii file)
 % This flag is ignored for dual (hdr/img) file types.
 % 
+% $Id$	
+%
 
 if nargin == 0
   help cbiWriteNiftiHeader;
@@ -50,7 +52,7 @@ end
 if (isstr(fname))
   % Create a proper file name
   % Check name and file type.
-  [pathstr,bname,ext,ver]=fileparts(fname);
+  [pathstr,bname,ext]=fileparts(fname);
   
   switch (ext)
    case '.nii'  
