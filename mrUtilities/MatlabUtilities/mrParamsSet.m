@@ -1,18 +1,19 @@
 % mrParamsSet.m
 %
 %        $Id$
-%      usage: mrParamsSet(params)
+%      usage: params = mrParamsSet(params)
 %         by: justin gardner
 %       date: 03/18/08
 %    purpose: pass in params and this will reset the fields in an
 %             open mrParamsDialog, useful for when you have a
 %             non-modal dialog. Note that you do not have to havee
 %             all the fields in the params structure, only the ones
-%             you want to set
+%             you want to set.
 % 
 %
 function retval = mrParamsSet(params)
 
+retval = [];
 % check arguments
 if ~any(nargin == [1])
   help mrParamsSet
@@ -130,3 +131,6 @@ for fnum = 1:length(paramFields)
 end
 
 
+if nargout == 1
+  retval = mrParamsGet;
+end

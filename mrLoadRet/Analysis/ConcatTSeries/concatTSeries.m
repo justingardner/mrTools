@@ -411,7 +411,7 @@ if params.projectOutMeanVector
     overlayNames{1} = 'r';
   end
   % and save an analysis with the overlays
-  mrDispOverlay(overlay,saveScanNum,[],viewConcat,'overlayNames',overlayNames,'saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat,'colormapType=setRangeToMaxAroundZero','interrogator=projectOutMeanVectorPlot');
+  mrDispOverlay(overlay,saveScanNum,viewGet(viewConcat, 'curGroup'),viewConcat,'overlayNames',overlayNames,'saveName=projectionAnal','analName=projectionAnal','range',[-1 1],'clip',[0.1 -0.1],'cmap',[flipud(fliplr(hot(128)));hot(128)],'colormapType','normal','d',projectionConcat,'colormapType=setRangeToMaxAroundZero','interrogator=projectOutMeanVectorPlot');
   % check to see if projection analysis is loaded in concatenation group.
   % if it is unload it and reload it
   curMLRGroup = viewGet(view,'curGroup');

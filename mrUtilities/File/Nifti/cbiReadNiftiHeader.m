@@ -16,7 +16,7 @@ function hdr = cbiReadNiftiHeader(fname)
 % fname can have any legal extension (.hdr, .img, .nii). No support for compressed data - will bail out.
 
 % Check name and file type.
-[pathstr,bname,ext,ver]=fileparts(fname);
+[pathstr,bname,ext]=fileparts(fname);
 
 switch (ext)
  case '.nii'  
