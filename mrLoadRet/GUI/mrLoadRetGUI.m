@@ -1640,6 +1640,7 @@ v = MLR.views{viewNum};
 % get settings from start
 interpMethod = mrGetPref('interpMethod');
 selectedROIColor = mrGetPref('selectedROIColor');
+roiContourWidth = mrGetPref('roiContourWidth');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1668,8 +1669,8 @@ if ~isempty(prefParams)
     refreshMLRDisplay(v.viewNum);
   end
 
-  % check to see if interpolation method has changed
-  if ~strcmp(selectedROIColor,prefParams.selectedROIColor)
+  % check to see if roi graphic parameters method have changed
+  if ~strcmp(selectedROIColor,prefParams.selectedROIColor) || ~strcmp(roiContourWidth,prefParams.roiContourWidth)
     refreshMLRDisplay(v.viewNum);
   end
 end
