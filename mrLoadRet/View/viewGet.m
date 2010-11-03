@@ -224,7 +224,8 @@ switch lower(param)
       groupNum = viewGet(view,'currentGroup');
     end
     if isempty(analysisNum)
-      analysisNum = viewGet(view,'currentAnalysis');
+       mrWarnDlg('(viewGet) No analysis is loaded');
+       return;
     end
     analysis = view.analyses{analysisNum};
     if ~isempty(groupNum) & ~isempty(analysis)
