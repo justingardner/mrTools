@@ -1924,6 +1924,16 @@ view = drawROI(view,'line',1);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function createContiguousMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+[view userCancel] = newROI(view);
+if userCancel,return,end
+view = drawROI(view,'contiguous',1);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
 function deleteRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1992,6 +2002,15 @@ refreshMLRDisplay(viewNum);
 
 
 % --------------------------------------------------------------------
+function addContiguousMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'contiguous',1);
+refreshMLRDisplay(viewNum);
+
+
+% --------------------------------------------------------------------
 function removeRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -2016,6 +2035,14 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = drawROI(view,'line',0);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function removeContiguousMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'contiguous',0);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
