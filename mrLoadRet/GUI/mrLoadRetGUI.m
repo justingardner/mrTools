@@ -1,3 +1,4 @@
+
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
 % $Id$
@@ -9,8 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 14-Jul-2010 16:13:39
-
+% Last Modified by GUIDE v2.5 27-Oct-2010 18:48:49
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -30,7 +30,6 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-
 % --- Executes just before mrLoadRetGUI is made visible.
 function mrLoadRetGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
@@ -44,6 +43,9 @@ function mrLoadRetGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % mrLoadRetGUI must be called as follows:
 %    mrLoadRetGUI('viewNum',viewNum)
 % The view structure must already exist in MRL.views{viewNum}
+
+disp('Julien''s version of the GUI...');   %%%%% TO REMOVE BEFORE COMMITTING
+
 for index = 1:2:length(varargin)
     field = varargin{index};
     val = varargin{index+1};
@@ -286,10 +288,14 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-mlrGuiSet(viewNum,'scan',value);
-view = viewSet(view,'curScan',value);
-viewSet(view,'curScan',get(handles.scanSlider,'Value'));
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.scanSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'scan',value);
+  view = viewSet(view,'curScan',value);
+  viewSet(view,'curScan',get(handles.scanSlider,'Value'));
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Slice
 function sliceSlider_CreateFcn(hObject, eventdata, handles)
@@ -329,9 +335,13 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-mlrGuiSet(viewNum,'slice',value);
-viewSet(view,'curSlice',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.sliceSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'slice',value);
+  viewSet(view,'curSlice',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Executes on slider movement.
 function corticalDepthSlider_Callback(hObject, eventdata, handles)
@@ -369,8 +379,12 @@ function corticalDepthText_Callback(hObject, eventdata, handles)
 
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-mlrGuiSet(viewNum,'corticalDepth',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.corticalDepthSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'corticalDepth',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Executes during object creation, after setting all properties.
 function corticalDepthText_CreateFcn(hObject, eventdata, handles)
@@ -411,8 +425,12 @@ refreshMLRDisplay(viewNum);
 function baseGammaText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'baseGamma',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.baseGammaSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'baseGamma',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- baseTilt
 function baseTiltSlider_CreateFcn(hObject, eventdata, handles)
@@ -445,17 +463,21 @@ end
 function baseTiltText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if value < 0,value = 0;end
-if value > 360,value = 360;end
-viewSet(viewNum,'tilt',value);
-v = viewGet([],'view',viewNum);
-fig = viewGet(v,'figNum');
-gui = guidata(fig);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.baseTiltSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  if value < 0,value = 0;end
+  if value > 360,value = 360;end
+  viewSet(viewNum,'tilt',value);
+  v = viewGet([],'view',viewNum);
+  fig = viewGet(v,'figNum');
+  gui = guidata(fig);
 
-if (viewGet(v,'baseType') == 2)
-  setMLRViewAngle(v);
-else
-  refreshMLRDisplay(viewNum);
+  if (viewGet(v,'baseType') == 2)
+    setMLRViewAngle(v);
+  else
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 % --- overlayMax
@@ -483,8 +505,12 @@ refreshMLRDisplay(viewNum);
 function overlayMaxText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'overlayMax',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.overlayMaxSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'overlayMax',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- overlayMin
 function overlayMinSlider_CreateFcn(hObject, eventdata, handles)
@@ -511,8 +537,12 @@ refreshMLRDisplay(viewNum);
 function overlayMinText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'overlayMin',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'overlayMin',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- alpha
 function alphaSlider_CreateFcn(hObject, eventdata, handles)
@@ -539,8 +569,12 @@ refreshMLRDisplay(viewNum);
 function alphaText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'alpha',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.alphaSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'alpha',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- rotate
 function rotateSlider_CreateFcn(hObject, eventdata, handles)
@@ -574,13 +608,17 @@ end
 function rotateText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-mlrGuiSet(viewNum,'rotate',value);
-v = viewGet([],'view',viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.rotateSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'rotate',value);
+  v = viewGet([],'view',viewNum);
 
-if (viewGet(v,'baseType') == 2)
-  setMLRViewAngle(v);
-else
-  refreshMLRDisplay(viewNum);
+  if (viewGet(v,'baseType') == 2)
+    setMLRViewAngle(v);
+  else
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1959,6 +1997,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = drawROI(view,'line',1);
 refreshMLRDisplay(viewNum);
+
 
 % --------------------------------------------------------------------
 function removeRoiMenu_Callback(hObject, eventdata, handles)
