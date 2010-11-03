@@ -3310,7 +3310,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.ncycles(scanNum);
+      if isfield(params,'ncycles')
+        val = params.ncycles(scanNum);
+      else
+        val = params.scanParams{scanNum}.ncycles;
+      end
     end
   case {'detrend'}
     % detrend = viewGet(view,'detrend',scanNum)
@@ -3320,7 +3324,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.detrend{scanNum};
+      if isfield(params,'detrend')
+        val = params.detrend{scanNum};
+      else
+        val = params.scanParams{scanNum}.detrend;
+      end
     end
   case {'spatialnorm'}
     % spatialnorm = viewGet(view,'spatialnorm',scanNum)
@@ -3330,7 +3338,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.spatialnorm{scanNum};
+      if isfield(params,'spatialnorm')
+        val = params.spatialnorm{scanNum};
+      else
+        val = params.scanParams{scanNum}.spatialnorm;
+      end
     end
     
     % GUI
