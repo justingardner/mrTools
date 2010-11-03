@@ -348,8 +348,6 @@ baseType = viewGet(view,'baseType',baseNum);
 
 % Draw it
 if verbose>1,disppercent(-inf,'Drawing ROI');,end
-lineWidth = 0.5;
-w = 0.5;
 
 % get which color to draw the selected ROI in
 selectedROIColor = mrGetPref('selectedROIColor');
@@ -530,7 +528,7 @@ for r = order
     % save to cache (since other functions like mrPrint need this
     view = viewSet(view,'ROICache',roi{r},r);
     % now render those lines
-    line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',lineWidth,'Parent',gui.axis);
+    line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',gui.axis);
   else
     roi{r}.lines.x = [];
     roi{r}.lines.y = [];
