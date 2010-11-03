@@ -2095,8 +2095,8 @@ v = convertROICorticalDepth(v);
 
 
 % --------------------------------------------------------------------
-function convertRoiToBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertRoiToBaseAnatomyMenuItem (see GCBO)
+function convertRoiMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to convertRoiMenuItem (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
