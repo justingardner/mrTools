@@ -1941,22 +1941,13 @@ function removeManyROIMenuItem_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-numrois = viewGet(v,'numberofrois');
+thisView = MLR.views{viewNum};
+
 % put up a dialog with rois to delete
-roinames = viewGet(v,'roiNames');
-paramsDialog = {};
-for roinum = 1:length(roinames)
-  paramsDialog{end+1} = {fixBadChars(roinames{roinum}),0,'type=checkbox',sprintf('Remove ROI %i: %s',roinum,roinames{roinum})};
-end
-params = mrParamsDialog(paramsDialog,'Select ROIs to remove');
-if ~isempty(params)
-  % now go through and delete anything the user selected
-  for roinum = 1:length(roinames)
-    if params.(fixBadChars(roinames{roinum}))
-      v = viewSet(v,'deleteROI',viewGet(v,'roinum',roinames{roinum}));
-    end
-  end
+roiNums = selectROIs(thisView,'Select ROIs to remove');
+if ~isempty(roiNums)
+  % now delete anything the user selected
+  thisView = viewSet(thisView,'deleteROI',roiNums);
   refreshMLRDisplay(viewNum);
 end
 
@@ -2161,46 +2152,24 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
-inGroup = [];
 roiGroup = viewGet(view,'roiGroup');
-
-% get number of ROIs
-nROIs = viewGet(view,'nrois');
-
-% get roi names
-if nROIs > 0
-  roiNames = viewGet(view,'roiNames');
-  roiGroupNum = zeros(1,nROIs);
-  if ~isempty(roiGroup)
-    roiGroupNum(roiGroup) = 1;
-  end
-
-  % display a dialog to allow user to select which ROIs to display
-  roiGroupNum = buttondlg('Select ROIs to display',roiNames,roiGroupNum);
-  if isempty(roiGroupNum),return,end
-  roiGroupNum = find(roiGroupNum);
-
-  % create a cell array with the names of the ROIs to display
-  roiGroup = {};
-  for i = 1:length(roiGroupNum)
-    roiGroup{i} = roiNames{roiGroupNum(i)};
-  end
-
-  % set the roi group
-  view = viewSet(view,'roiGroup',roiGroup);
-
-  % if the setting is not to show groups, change it to show goups
-  showROIs = viewGet(view,'showROIs');
-  if ~any(strcmp(showROIs,{'group','group perimeter'}))
-    % see if perimeter is selected
-    if ~isempty(strfind(showROIs,'perimeter'))
-      view = viewSet(view,'showROIs','group perimeter');
-    else
-      view = viewSet(view,'showROIs','group');
-    end
-  end
-  refreshMLRDisplay(viewNum);
+roiNames = viewGet(view,'roiNames');% I think we shouldn't have to get the names (but need to modify viewSet call)
+% display a dialog to allow user to select which ROIs to display
+roiGroup = selectROIs(view,'Select ROIs to display',roiGroup);
+% set the roi group
+view = viewSet(view,'roiGroup',roiNames(roiGroup));
+% if the setting is not to show groups, change it to show goups
+showROIs = viewGet(view,'showROIs');
+if ~any(strcmp(showROIs,{'group','group perimeter'}))
+ % see if perimeter is selected
+ if ~isempty(strfind(showROIs,'perimeter'))
+   view = viewSet(view,'showROIs','group perimeter');
+ else
+   view = viewSet(view,'showROIs','group');
+ end
 end
+refreshMLRDisplay(viewNum);
+
 
 % --------------------------------------------------------------------
 function showGroupMenuItem_Callback(hObject, eventdata, handles)
