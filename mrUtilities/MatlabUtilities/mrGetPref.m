@@ -28,7 +28,7 @@ function [value prefDefaults] = mrGetPref(pref)
 % %	$Id$	
 
 % with no arguments, return a list of possible preferences
-prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','importROIPath','magnet','coil','pulseSequence'};
+prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogators','selectedROIColor','roiContourWidth','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','defaultCombineFunctions','importROIPath','magnet','coil','pulseSequence'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
@@ -40,6 +40,7 @@ prefDefaults{find(strcmp('niftiFileExtension',prefNames))} = {'.img','.nii'};
 prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'roipoly','getpts','getptsNoDoubleClick'};
 prefDefaults{find(strcmp('selectedROIColor',prefNames))} = color2RGB;
 prefDefaults{find(strcmp('selectedROIColor',prefNames))}{end+1} = 'none';
+prefDefaults{find(strcmp('roiContourWidth',prefNames))} = 1;
 prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
 prefDefaults{find(strcmp('maxBlocksize',prefNames))} = 250000000;
 prefDefaults{find(strcmp('volumeDirectory',prefNames))} = '';
