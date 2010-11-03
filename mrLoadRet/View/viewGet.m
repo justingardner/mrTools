@@ -237,7 +237,6 @@ switch lower(param)
   case {'overlaydir'}
     % overlaydir = viewGet(view,'overlaydir',[groupNum],[analysisNum])
     val = viewGet(view,'analysisdir',varargin{:});
-    
     % group
   case{'numberofgroups','numgroups','ngroups'}
     % n = viewGet(view,'numberofGroups')
@@ -1794,6 +1793,25 @@ switch lower(param)
     end
     
     % ROI
+  case {'visiblerois'}
+    selectedROI = viewGet(view,'currentroi');
+    n = viewGet(view,'numberOfROIs');
+    option = viewGet(view,'showROIs');
+    switch option
+      case{'all','all perimeter'}
+        if selectedROI
+          val = [1:selectedROI-1,selectedROI+1:n,selectedROI];
+        else
+          val = 1:n;
+        end
+      case{'selected','selected perimeter'}
+        val = selectedROI;
+      case{'group','group perimeter'}
+        val = viewGet(view,'roiGroup');
+      otherwise
+        val = [];
+    end
+    
   case {'showrois'}
     % show = viewGet(view,'showROIs')
     val = view.showROIs;
