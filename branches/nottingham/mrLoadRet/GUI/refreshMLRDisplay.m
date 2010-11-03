@@ -300,24 +300,10 @@ roi = {};
 
 selectedROI = viewGet(view,'currentroi');
 labelROIs = viewGet(view,'labelROIs');
-n = viewGet(view,'numberOfROIs');
 
 % Order in which to draw the ROIs
+order = viewGet(view,'visibleROIs');
 option = viewGet(view,'showROIs');
-switch option
-  case{'all','all perimeter'}
-    if selectedROI
-      order = [1:selectedROI-1,selectedROI+1:n,selectedROI];
-    else
-      order = 1:n;
-    end
-  case{'selected','selected perimeter'}
-    order = selectedROI;
-  case{'group','group perimeter'}
-    order = viewGet(view,'roiGroup');
-  otherwise
-    return
-end
 
 % Loop through ROIs in order
 for r = order
