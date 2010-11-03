@@ -2357,12 +2357,23 @@ switch lower(param)
       end
     end
   case {'analysisnames'}
-    % analysisNames = viewGet(view,'analysisNames')
-    if ~isempty(view.analyses)
-      numAnalyses = viewGet(view,'numberofAnalyses');
+    % analysisNames = viewGet(view,'analysisNames',[groupnum])
+    if ieNotDefined('varargin')
+      analyses = view.analyses;
+      groupnum = viewGet(view,'currentGroup');
+    elseif length(varargin)==1
+      groupnum = varargin{1};
+      if groupnum == viewGet(view,'currentGroup')
+        analyses = view.analyses;
+      else
+        analyses = viewGet(view,'loadedanalyses',varargin{1});
+      end
+    end
+    if ~isempty(analyses)
+      numAnalyses = viewGet(view,'numberofAnalyses',groupnum);
       names = cell(1,numAnalyses);
       for a = 1:numAnalyses
-        names{a} = view.analyses{a}.name;
+        names{a} = analyses{a}.name;
       end
       val = names;
     end
