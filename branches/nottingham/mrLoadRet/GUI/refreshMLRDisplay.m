@@ -325,12 +325,14 @@ for r = order
   roiCache = viewGet(view,'ROICache',r);
   % if not found
   if isempty(roiCache)
-    disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    if verbose
+      disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    end
     % Get ROI coords transformed to the base dimensions
     roi{r}.roiBaseCoords = getROIBaseCoords(view,baseNum,r);
     % save to cache
     view = viewSet(view,'ROICache',roi{r},r);
-    disppercent(inf);
+    if verbose,disppercent(inf);end
   else
     roi{r} = roiCache;
   end
@@ -384,13 +386,15 @@ for r = order
   if ((~isfield(roi{r},baseName)) || ...
       (length(roi{r}.(baseName)) < sliceIndex) || ...
       (isempty(roi{r}.(baseName){sliceIndex})))
-    disppercent(-inf,sprintf('Computing ROI image coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    if verbose
+      disppercent(-inf,sprintf('Computing ROI image coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    end
     [x y s] = getROIImageCoords(view,roi{r}.roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims);
     % keep the coordinates
     roi{r}.(baseName){sliceIndex}.x = x;
     roi{r}.(baseName){sliceIndex}.y = y;
     roi{r}.(baseName){sliceIndex}.s = s;
-    disppercent(inf);
+    if verbose, disppercent(inf); end
     % save in cache
     view = viewSet(view,'ROICache',roi{r},r);
   else
@@ -406,7 +410,7 @@ for r = order
   if baseType == 2
     baseSurface = viewGet(view,'baseSurface');
     if 0 %%doPerimeter
-      disppercent(-inf,'(refreshMLRDisplay) Computing perimeter');
+      if verbose, disppercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
       newy = [];
       for i = 1:length(y)
@@ -422,9 +426,9 @@ for r = order
 	if numNeighbors(i) ~= numROINeighbors(i)
 	  newy = union(newy,baseCoordMap.tris(row(1),:));
 	end
-	disppercent(i/length(y));
+	if verbose, disppercent(i/length(y)); end;
       end
-      disppercent(inf);
+      if verbose, disppercent(-inf); end;
       disp(sprintf('%i/%i edges',length(newy),length(y)));
       y = newy;
     end
