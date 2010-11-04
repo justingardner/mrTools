@@ -1,6 +1,7 @@
 function varargout = mrAlignGUI(varargin)
 % mrAlignGUI M-file for mrAlignGUI.fig
 % See also: GUIDE, GUIDATA, GUIHANDLES
+%        $Id$
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -361,10 +362,13 @@ ALIGN.volumeClip = clipRange(ALIGN.volume);
 
 % If both inplane and volume are loaded, then use the sforms from each for
 % the alignment. Otherwise, use identity.
+ALIGN.xform = eye(4);
 if ~isempty(ALIGN.volumeHdr) & ~isempty(ALIGN.inplaneHdr)
-	ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
-else
-    ALIGN.xform = eye(4);
+   if ALIGN.inplaneHdr.sform_code && hdr.sform_code
+      ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
+   elseif ALIGN.inplaneHdr.qform_code && hdr.qform_code
+      ALIGN.xform = ALIGN.volumeHdr.qform44 \ ALIGN.inplaneHdr.qform44;
+   end
 end
 
 % Refresh GUI
@@ -499,11 +503,21 @@ ALIGN.inplaneVoxelSize = hdr.pixdim([2,3,4]);
 
 % If both inplane and volume are loaded, then use the sforms from each for
 % the alignment. Otherwise, use identity.
+ALIGN.xform = eye(4);
 if ~isempty(ALIGN.volumeHdr) & ~isempty(ALIGN.inplaneHdr)
-	ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
-else
-	ALIGN.xform = eye(4);
+   if hdr.sform_code && ALIGN.volumeHdr.sform_code
+      ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
+   elseif hdr.qform_code && ALIGN.volumeHdr.qform_code
+      ALIGN.xform = ALIGN.volumeHdr.qform44 \ ALIGN.inplaneHdr.qform44;
+   end
 end
+ALIGN.xformICCorrection = ALIGN.xform;
+ALIGN.correctedInplanes = [];    
+ALIGN.correctedVolume = [];      
+ALIGN.xformIsRigidBody = 1; %or is it ? would be better to find out with some clever calculation...
+
+%reset crop region
+ALIGN.crop = [];
 
 % allow source to be loaded as destination
 set(handles.loadSourceAsDestination,'Enable','on');
