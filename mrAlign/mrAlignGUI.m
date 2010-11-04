@@ -1114,28 +1114,33 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
-function cropInplanesMenuItem_Callback(hObject, eventdata, handles)
+function initializeFromSformMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
-ALIGN.crop = selectCropRegion(ALIGN.inplanes);
 
-% --------------------------------------------------------------------
-function fineMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
+if ~isfield(ALIGN.volumeHdr,'sform44') || ~isfield(ALIGN.inplaneHdr,'sform44')
+  mrWarnDlg('(mrAlignGUI) Need to load both src and dest images');
+  return
 end
 
-% Compute alignment
-xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 0, ALIGN.crop, ALIGN.NIter);
-ALIGN.xform = xform;
+% Error if there's no alignment information in the header.
+% This would happen if these were analyze, not nifti, files.
+if isempty(ALIGN.volumeHdr.sform44)
+    mrErrorDlg('No alignment information in the volume header.');
+end
+if ~isempty(ALIGN.volumeHdr.sform_code) && ~ALIGN.volumeHdr.sform_code
+    mrWarnDlg('Volume sform_code is not set.');
+end
+if isempty(ALIGN.inplaneHdr.sform44)
+    mrErrorDlg('No alignment information in the inplane header.');
+end
+if ~isempty(ALIGN.inplaneHdr.sform_code) && ~ALIGN.inplaneHdr.sform_code
+    mrWarnDlg('Inplanes sform_code is not set.');
+end
 
-% Reset GUI and refresh display
+% Compute alignment by composing the sforms from the two nifti headers.
+ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
+
+% Reset GUI
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
