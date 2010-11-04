@@ -93,7 +93,12 @@ else
   alphaOverlayImage = alpha*((alphaOverlayImage-range(1))./diff(range));
   alphaOverlayImage(alphaOverlayImage>alpha) = alpha;
   alphaOverlayImage(alphaOverlayImage<0) = 0;
-  alphaOverlayImage = alphaOverlayImage.^viewGet(view,'alphaOverlayExponent');
+  alphaOverlayExponent = viewGet(view,'alphaOverlayExponent');
+  if alphaOverlayExponent<0   % if the alpha overlay exponent is negative, set it positive and take the 1-alpha for the alpha map
+     alphaOverlayExponent = -alphaOverlayExponent;
+     alphaOverlayImage = 1-alphaOverlayImage;
+  end
+  alphaOverlayImage = alphaOverlayImage.^alphaOverlayExponent;
   alphaOverlayImage(isnan(alphaOverlayImage)) = 0;
   overlay.alphaMap = repmat(alphaOverlayImage.*mask,[1 1 3]); 
 end   
@@ -125,9 +130,9 @@ else
   overlay.RGB = [];
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   getOverlaySlice   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+%   getOverlaySlice   %
+%%%%%%%%%%%%%%%%%%%%%%%
 function [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
   getOverlaySlice(view,scanNum,base2overlay,baseCoordsHomogeneous,imageDims,...
 		       analysisNum,interpMethod,interpExtrapVal);
@@ -170,7 +175,7 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
-%%   corAnalInterp   %%
+%    corAnalInterp   %%
 %%%%%%%%%%%%%%%%%%%%%%%
 function overlayImages = corAnalInterp(view,scanNum,...
   imageDims,analysisNum,overlayCoords,interpMethod,interpExtrapVal);
