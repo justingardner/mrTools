@@ -1,5 +1,7 @@
 function img = refreshAlignDisplay(handles)
 
+%   $Id$
+
 global ALIGN
 
 % Just return if volume hasn't been loaded yet.
