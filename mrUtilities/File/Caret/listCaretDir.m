@@ -1,6 +1,6 @@
 % listCaretFiles.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: listCaretFiles(<dirname=dirname>,<numNodes=numNodes>)
 %         by: justin gardner
 %       date: 12/03/09

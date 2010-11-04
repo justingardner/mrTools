@@ -1,6 +1,6 @@
 % mlrGetAllImageFilenames.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: imageFilenames = mlrGetAllImageFilenames(<dirname>,<'mustNotHaveDotInFilename=0'>)
 %         by: justin gardner
 %       date: 07/23/09

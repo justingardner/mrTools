@@ -1,6 +1,6 @@
 % fiddir.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: fiddir()
 %         by: justin gardner
 %       date: 12/16/09
