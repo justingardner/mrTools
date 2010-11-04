@@ -610,7 +610,10 @@ if isempty(pathStr)
 end
 
 % Reload
-[data,hdr] = cbiReadNifti(ALIGN.inplanePath);
+%[data,hdr] = cbiReadNifti(ALIGN.inplanePath);
+% do not reload data to save memory usage %JB
+data = ALIGN.inplanes;
+hdr = cbiReadNiftiHeader(ALIGN.inplanePath);
 
 % Compose xform
 xform = ALIGN.guiXform * ALIGN.xform;
@@ -944,6 +947,8 @@ mrSetFigLoc('mrAlignGUI',get(handles.figure1,'Position'));
 delete(handles.figure1);
 % save .mrDefaults in the home directory
 saveMrDefaults;
+
+
 
 % --------------------------------------------------------------------
 function manualAlignmentMenu_Callback(hObject, eventdata, handles)
