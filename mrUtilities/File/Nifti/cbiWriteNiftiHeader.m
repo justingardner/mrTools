@@ -49,7 +49,7 @@ if (~exist('fname') | isempty(fname))
   end
 end
 
-if (isstr(fname))
+if (ischar(fname))
   % Create a proper file name
   % Check name and file type.
   [pathstr,bname,ext]=fileparts(fname);
