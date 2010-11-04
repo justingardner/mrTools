@@ -26,6 +26,9 @@ overlayData = viewGet(view,'overlayData',scanNum,overlayNum);
 %transform values in base space
 [new_overlay_data, new_base_voxel_size] = getBaseSpaceOverlay(view, overlayData, scanNum, baseNum);
 
+if isempty(new_overlay_data)
+  return
+end
 %write nifti file
 baseVolume = viewGet(viewNum,'baseVolume');
 hdr = baseVolume.hdr;
