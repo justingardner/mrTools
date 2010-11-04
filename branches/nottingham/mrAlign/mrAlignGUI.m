@@ -957,8 +957,25 @@ function manualAlignmentMenu_Callback(hObject, eventdata, handles)
 function initializeIdentityMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
+
 % Set xform to identity, but scaled by voxel sizes
 % *** Not yet test/debugged ***
+
+%first check the qform matrices of the inplane and volumes (if loaded)
+if isempty(ALIGN.volumeHdr) || isempty(ALIGN.inplaneHdr)
+	mrWarnDlg('Load source and destination');
+	return
+else
+   answer = '';
+   if ALIGN.inplaneHdr.sform_code && ALIGN.volumeHdr.sform_code && det(ALIGN.inplaneHdr.sform44)*det(ALIGN.volumeHdr.sform44)<0
+      question = 'It seems that one of the axes of this source has been previously flipped in order for the data to be in right-handed space.';
+      question = [question ' Setting the transformation matrix to identity will undo this.']; 
+      question = [question ' You should flip one axis before continuing.']; 
+      question = [question ' What do you want to do ?']; 
+      answer = questdlg(question,'Space Orientation Mismatch ?','Flip X', 'Do nothing', 'Do nothing');
+   end
+end
+
 % jg: These were set to 1/voxelSize which I believe
 % was wrong. Flipped these and now this seems to work
 % correctly
@@ -970,7 +987,18 @@ volumeXform = eye(4);
 volumeXform(1,1) = ALIGN.volumeVoxelSize(1);
 volumeXform(2,2) = ALIGN.volumeVoxelSize(2);
 volumeXform(3,3) = ALIGN.volumeVoxelSize(3);
-ALIGN.xform = inv(volumeXform) * inplaneXform;
+ALIGN.xform = volumeXform\inplaneXform;
+ALIGN.xformIsRigidBody = 1;
+
+switch answer
+   case 'Flip X'
+      flipXMenuItem_Callback([], [], handles);
+   case 'Flip Y'
+      flipYMenuItem_Callback([], [], handles);
+   case 'Flip Z'
+      flipZMenuItem_Callback([], [], handles);
+end    
+
 
 % Reset GUI
 setAlignGUI(handles,'rot',[0 0 0]);
