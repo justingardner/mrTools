@@ -43,9 +43,6 @@ function mrLoadRetGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % mrLoadRetGUI must be called as follows:
 %    mrLoadRetGUI('viewNum',viewNum)
 % The view structure must already exist in MRL.views{viewNum}
-
-disp('Julien''s version of the GUI...');   %%%%% TO REMOVE BEFORE COMMITTING
-
 for index = 1:2:length(varargin)
     field = varargin{index};
     val = varargin{index+1};
