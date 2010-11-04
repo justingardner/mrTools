@@ -7,7 +7,7 @@ function reshapedCellArray = cellReshape(inputCellArray,varargin)
 %     reshape cell array A into a new cell array B of dimension m * n * p ....
 %   
 %     Author: Julien Besle, 07/07/2010
-%        $Id
+%        $Id$
 
 
 outputDims = reshape(cell2mat(varargin),1,[]);

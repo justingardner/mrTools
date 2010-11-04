@@ -1,6 +1,6 @@
 % mlrComputeAtlasMean.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: mlrComputeAtlasMean(sessionPath,groupNum,scanNum,analysisName,overlayName,baseAnatomy)
 %         by: justin gardner
 %       date: 12/11/09

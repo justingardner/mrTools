@@ -1,6 +1,6 @@
 % openCaretFile.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: openCaretFile()
 %         by: justin gardner
 %       date: 12/03/09

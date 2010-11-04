@@ -1,6 +1,6 @@
 % importTSeries.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: importTSeries(v)
 %         by: justin gardner
 %       date: 07/03/09

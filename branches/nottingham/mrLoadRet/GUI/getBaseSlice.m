@@ -1,6 +1,6 @@
 % getBaseSlice.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: [baseIm baseCoords baseCoordsHomogeneous] = getBaseSlice(view, sliceNum, sliceIndex, rotate, baseNum, baseType)
 %         by: justin gardner
 %       date: 03/05/10
