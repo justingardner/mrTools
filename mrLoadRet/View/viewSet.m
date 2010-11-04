@@ -1004,11 +1004,14 @@ switch lower(param)
     mlrGuiSet(view,'analysisPopup',viewGet(view,'analysisNames'));
     % Set it to be the current analysis
     view = viewSet(view,'curanalysis',newAnalysisNum);
-    % Reinstall overlays
+    % Reinstall overlays (This can take a long time if there are a lot of overlays)
+    disppercent(-inf,['Installing overlays for analysis ' newAnalysisName]);
     for n = 1:length(overlays)
       view = viewSet(view,'newOverlay',overlays(n));
+      disppercent(n/length(overlays));
     end
-    % update the interrogator
+    disppercent(inf);
+    % update the interrogator 
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
     end
@@ -1318,6 +1321,7 @@ switch lower(param)
         mlrGuiSet(view,'overlayMaxRange',overlayRange);
         mlrGuiSet(view,'overlayMin',overlayClip(1));
         mlrGuiSet(view,'overlayMax',overlayClip(2));
+
         % set overlay alpha slider
         alpha = viewGet(view,'overlayAlpha',overlayNum,analysisNum);
         if isempty(alpha)
