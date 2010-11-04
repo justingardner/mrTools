@@ -1509,16 +1509,17 @@ switch lower(param)
 	if isempty(params),tf=0;return,end
       else
 	params.replace = replaceDuplicates;
+  params.roiName = ROI.name;
       end
       if params.replace
 	% if replace, then delete the existing one
-	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',ROI.name));
-	roiNames = viewGet(view,'roiNames');
+	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',params.roiName));
+	nameMatch=[];
       else
 	% change the name
 	ROI.name = params.roiName;
+  nameMatch = find(strcmp(ROI.name,roiNames));
       end
-      nameMatch = find(strcmp(ROI.name,roiNames));
     end
     % Add it to view.ROIs
     pos = length(view.ROIs)+1;
