@@ -5,7 +5,7 @@
 %         by: julien besle, loosely based on mrExport2SR by eli merriam
 %       date: 11/05/2010
 %    purpose: computes overlay values in a new space
-%        $Id:$	
+%        $Id$	
 %
 
 function newOverlayData = getNewSpaceOverlay(overlayData, xform, newXCoords, newYCoords, newZCoords, interpMethod)
