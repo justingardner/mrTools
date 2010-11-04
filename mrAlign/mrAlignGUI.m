@@ -1151,72 +1151,107 @@ function coarseMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
-end
 
-% reduce images
-wbh = mrMsgBox('Reducing volumes. Please wait...');
-lpf=[.0625 .25 .375 .25 .0625]';
-volFilt = convXYZsep(ALIGN.volume, lpf, lpf, lpf, 'repeat', 'same');
-inpFilt = convXYZsep(ALIGN.inplanes, lpf, lpf, lpf, 'repeat', 'same');
-volReduce = volFilt(1:2:size(volFilt,1),1:2:size(volFilt,2),1:2:size(volFilt,3));
-inpReduce = inpFilt(1:2:size(inpFilt,1),1:2:size(inpFilt,2),1:2:size(inpFilt,3));
-mrCloseDlg(wbh);
-
-% reduce xform & crop
-xform = ALIGN.guiXform * ALIGN.xform;
-xform(1:3,4) = xform(1:3,4)/2;
-crop = floor(ALIGN.crop/2);
-
-% compute alignment & expand new xform
-xform = computeAlignment(inpReduce, volReduce, xform, 0, crop, ALIGN.NIter);
-
-% expand xform
-xform(1:3,4) = xform(1:3,4)*2;
-ALIGN.xform = xform;
-
-% Reset GUI and refresh display
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-refreshAlignDisplay(handles);
+ALIGN.crop = [];
 
 % --------------------------------------------------------------------
-function reverseContrastAlignment_Callback(hObject, eventdata, handles)
+function robustAlignmentMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
-mrWarnDlg('Warning: This feature is not yet fully debugged. It should be used only for the first frame of a high resolution EPI.');
-
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
+if ALIGN.robustAlignment
+   ALIGN.robustAlignment = 0;
+   set(hObject,'checked','off');
+else
+   ALIGN.robustAlignment = 1;
+   set(hObject,'checked','on');
 end
 
-% Compute alignment
-xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 1, ALIGN.crop, ALIGN.NIter);
-ALIGN.xform = xform;
+% --------------------------------------------------------------------
+function rigidBodyAlignmentMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
 
-% Reset GUI and refresh display
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-refreshAlignDisplay(handles);
+if ALIGN.rigidBodyAlignment
+   ALIGN.rigidBodyAlignment = 0;
+   set(hObject,'checked','off');
+else
+   ALIGN.rigidBodyAlignment = 1;
+   set(hObject,'checked','on');
+end
+
+% --------------------------------------------------------------------
+function reverseContrastAlignmentMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+
+if ALIGN.reverseContrastAlignment
+   ALIGN.reverseContrastAlignment = 0;
+   set(hObject,'checked','off');
+else
+   ALIGN.reverseContrastAlignment = 1;
+   set(hObject,'checked','on');
+end
+% --------------------------------------------------------------------
+function ignoreZeroVoxelsMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+
+if ALIGN.ignoreZeroVoxels
+   ALIGN.ignoreZeroVoxels = 0;
+   set(hObject,'checked','off');
+else
+   ALIGN.ignoreZeroVoxels = 1;
+   set(hObject,'checked','on');
+end
+
+% --------------------------------------------------------------------
+function displayOptimizationStepsMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+
+if ALIGN.displayAlignmentSteps
+   ALIGN.displayAlignmentSteps = 0;
+   set(hObject,'checked','off');
+else
+   ALIGN.displayAlignmentSteps = 1;
+   set(hObject,'checked','on');
+end
+
+% --------------------------------------------------------------------
+function coarseAlignmentMenuItem_Callback(hObject, eventdata, handles)
+
+computeAlignment('coarse',handles);
+
+% --------------------------------------------------------------------
+function fineAlignmentMenuItem_Callback(hObject, eventdata, handles)
+
+computeAlignment('fine',handles);
+
+% --------------------------------------------------------------------
+function stopComputingMenuItem_Callback(hObject, eventdata, handles)
+
+global ALIGN
+if ALIGN.currentlyComputingAlignment
+   ALIGN.stopComputingAlignment = 1;
+   mrWarnDlg('Cancelling alignment computation. This might take some time. Please wait...');
+end
+   
+% --------------------------------------------------------------------
+function undoLastAlignmentMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to undoLastAlignmentMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+global ALIGN
+if isempty(ALIGN.oldXform)
+  mrWarnDlg('There is no stored alignment')
+else
+  ALIGN.xform = ALIGN.oldXform;
+  ALIGN.oldXform = [];
+  refreshAlignDisplay(handles);
+end
 
 % --------------------------------------------------------------------
 function mutualInformationMenuItem_Callback(hObject, eventdata, handles)
 
-mrErrorDlg('Mutual information registration not yet implemented.');
+mrWarnDlg('Mutual information registration not yet implemented.');
+return;
 
 global ALIGN
 % Options
@@ -1229,6 +1264,8 @@ x0 = zeros(1,6);
 % Search
 x = fminunc(@mutualInformationFun,x0,opts);
 ALIGN.xform = extractXform(x);
+ALIGN.xformICCorrection = ALIGN.xform;
+
 % Reset GUI and refresh display
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
@@ -1276,32 +1313,10 @@ addXform(1,5) = x(5);
 addXform(1,6) = x(6);
 xform = addXform * ALIGN.xform;
 
+
 % --------------------------------------------------------------------
-function computeNonRigidBodyAlignment_Callback(hObject, eventdata, handles)
-% hObject    handle to computeNonRigidBodyAlignment (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+function checkAlignmentMenu_Callback(hObject, eventdata, handles)
 
-global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
-end
-
-% Compute alignment
-xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 0, ALIGN.crop, ALIGN.NIter, 0);
-ALIGN.xform = xform;
-
-% Reset GUI and refresh display
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
 function checkAlignmentMenu_Callback(hObject, eventdata, handles)
