@@ -1540,21 +1540,24 @@ switch lower(param)
     mlrGuiSet(view,'roiPopup',stringList);
 
   case {'deleteroi'}
-    % view = viewSet(view,'deleteroi',roiNum);
-    roinum = val;
+    % view = viewSet(view,'deleteroi',roiNums);
+    % delete ROIs roiNums from the view;
+    roinums = val;
     numrois = viewGet(view,'numberofrois');
     curroi = viewGet(view,'currentROI');
     % Remove it and reset currentROI
-    view.ROIs = view.ROIs(roinum ~= [1:numrois]);
-    if (numrois > 1)
-      if (curroi > roinum)
-        view = viewSet(view,'currentROI',curroi-1);
-      elseif (roinum == curroi)
-        view = viewSet(view,'currentROI',1);
+    remainingRois = setdiff(1:numrois,roinums);
+    curroi = find(remainingRois==curroi);
+    view.ROIs=view.ROIs(remainingRois);
+    if ~isempty(remainingRois)
+      if isempty(curroi)
+         curroi=1;
       end
+      view = viewSet(view,'currentROI',curroi);
     else
       view.curROI = [];
     end
+       
     % Update the gui
     stringList = {view.ROIs(:).name};
     if isempty(stringList)
