@@ -1,4 +1,7 @@
 function view = modifyROI(view,coords,xform,voxelSize,sgn)
+%
+%        $Id$
+%
 % view = modifyROI(view,coords,xform,voxelSize,[sgn])
 %
 % Adds/deletes coordinates to/from the current ROI.

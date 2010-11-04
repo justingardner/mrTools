@@ -1,5 +1,7 @@
 function newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,sampRate)
 %
+%        $Id$
+%
 % newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,[sampRate])
 %
 % Transforms ROI coords using Xform, supersampling in each dimension to

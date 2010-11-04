@@ -1,5 +1,6 @@
 function mlrGuiSet(view,field,value);
 %
+%        $Id$
 % mlrGuiSet(view,field,value);
 %
 % view can be either a view structure or a viewNum. Either way, sets
