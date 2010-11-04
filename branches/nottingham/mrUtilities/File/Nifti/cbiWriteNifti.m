@@ -22,7 +22,7 @@ if nargin == 0
   return
 end
 
-[pathstr,bname,ext,ver]=fileparts(fname);
+[pathstr,bname,ext]=fileparts(fname);
 
 % 1D curvature file fix: 
 % check to see if this is 1D image that has a large second
