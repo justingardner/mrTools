@@ -3,6 +3,7 @@ function view = mrOpenWindow(viewType,mrLastView)
 %  view = openWindow(viewType)
 %
 % djh, 6/2004
+%        $Id$
 
 if ieNotDefined('viewType'),viewType = 'Volume';end
 % note we don't use ieNotDefined here, because

@@ -1,5 +1,6 @@
 % mrCleanDir.m
 %
+%        $Id$
 %      usage: mrCleanDir(<force>)
 %         by: justin gardner
 %       date: 10/20/06

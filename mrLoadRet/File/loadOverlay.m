@@ -1,5 +1,6 @@
 function view = loadOverlay(view,filename,startPathStr,name)
 %
+%        $Id$
 % view = loadOverlay(view,[filename],[startPathStr],[name])
 %
 % Loads an overlay (parameter map) array and adds it to view.overlays.

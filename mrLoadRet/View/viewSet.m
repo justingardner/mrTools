@@ -50,8 +50,8 @@ function [view tf] = viewSet(view,param,val,varargin)
 % base, overlay, or ROI. Please follow this convention if you add to this
 % function.
 %
-%
 % 6/2004 djh
+%        $Id$
 
 mrGlobals
 

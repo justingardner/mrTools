@@ -1,5 +1,6 @@
 % getROICoordinates.m
 %
+%        $Id$
 %      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<basenum>)
 %         by: david heeger and justin gardner
 %       date: 04/02/07

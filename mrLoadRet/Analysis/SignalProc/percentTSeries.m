@@ -1,5 +1,7 @@
 function ptSeries = percentTSeries(tSeries, varargin)
 %
+%        $Id$
+%
 % ptSeries = percentTSeries(tSeries, [param1], [value1], [param2], [value2])
 %
 % 1) Optional temporal normalization.

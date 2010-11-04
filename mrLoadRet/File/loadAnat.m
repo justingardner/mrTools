@@ -1,5 +1,6 @@
 function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
 %
+%        $Id$
 % view = loadAnat(view,[anatFileName],[anatFilePath])
 %
 % Loads an anatomy array and sets view.baseVolumes to include.
