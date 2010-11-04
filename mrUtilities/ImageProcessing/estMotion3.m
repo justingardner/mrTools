@@ -61,6 +61,9 @@ end
 if ~exist('SC','var')
     SC = [];
 end
+if ~exist('mask','var') 
+    mask = [];
+end
 
 % Phase
 if phaseFlag
@@ -70,6 +73,19 @@ end
 
 % Compute derivatives
 [fxVol,fyVol,fzVol,ftVol] = computeDerivatives3(vol1,vol2);
+
+% *** We assume 5tap derivative filters.
+filterTaps = 5;
+nInvalidVoxels = floor(filterTaps/2);
+if ~isempty(mask) 
+   %reduce the mask to account fo the use of the 'valid' derivation
+   mask = mask(3:end-nInvalidVoxels,3:end-nInvalidVoxels,3:end-nInvalidVoxels);
+   %apply the mask
+   fxVol(~mask)=NaN;
+   fyVol(~mask)=NaN;
+   fzVol(~mask)=NaN;
+   ftVol(~mask)=NaN;
+end
 
 % Adjust crop
 crop(1,:) = max(crop(1,:),[2 2 2]);
