@@ -1,4 +1,4 @@
-function scanList = selectScans(view,title)
+function scanList = selectScans(view,title,groupNum)
 % scanList = selectScans(view,[title]);
 %
 %   Gather a list of scans available in Inplane/TSeries
@@ -23,7 +23,10 @@ if ieNotDefined('title')
   title = 'Choose scans';
 end
 
-nScans = viewGet(view,'nScans');
+if ieNotDefined('groupNum')
+   groupNum = viewGet(view,'currentGroup');
+end
+nScans = viewGet(view,'nScans',groupNum);
 
 %Check for zero:
 if nScans == 0
@@ -32,7 +35,7 @@ if nScans == 0
 end
 
 for i = 1:nScans
-  scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
+  scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i,groupNum),viewGet(view,'tSeriesFile',i,groupNum));
 end
 
 % Which scans to analyze?
