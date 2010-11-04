@@ -65,7 +65,7 @@ gParams.leftMargin = 10;
 gParams.topMargin = 10;
 gParams.buttonWidth = min(max(100,maxChars*7),200);
 mver = ver('matlab');mver = str2num(mver.Version);
-if strcmp(computer,'MACI') || (mver > 7.4)
+if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
   gParams.buttonHeight = 26;
 else
   gParams.buttonHeight = 20;
