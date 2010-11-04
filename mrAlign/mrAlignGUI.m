@@ -1172,9 +1172,12 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
-function coarseMenuItem_Callback(hObject, eventdata, handles)
+function cropInplanesMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
+ALIGN.crop = selectCropRegion(ALIGN.inplanes);
 
+% --------------------------------------------------------------------
+function resetCropInplanesMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 ALIGN.crop = [];
