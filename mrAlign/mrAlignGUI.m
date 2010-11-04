@@ -951,6 +951,31 @@ saveMrDefaults;
 
 
 % --------------------------------------------------------------------
+function editMenu_Callback(hObject, eventdata, handles)
+
+% --------------------------------------------------------------------
+function prefMenu_Callback(hObject, eventdata, handles)
+
+mrEditPrefs;
+
+% --------------------------------------------------------------------
+function showAdvancedMenusMenuItem_Callback(hObject, eventdata, handles)
+
+if strcmp(get(hObject,'checked'),'off')
+  set(hObject,'checked','on')
+  set(handles.initializeFromSformMenuItem,'visible','on');
+  set(handles.robustAlignmentMenuItem,'visible','on');
+  set(handles.ignoreZeroVoxelsMenuItem,'visible','on');
+  set(handles.displayOptimizationStepsMenuItem,'visible','on');
+else
+  set(hObject,'checked','off')
+  set(handles.initializeFromSformMenuItem,'visible','off');
+  set(handles.robustAlignmentMenuItem,'visible','off');
+  set(handles.ignoreZeroVoxelsMenuItem,'visible','off');
+  set(handles.displayOptimizationStepsMenuItem,'visible','off');
+end
+
+% --------------------------------------------------------------------
 function manualAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1371,15 +1396,6 @@ close(FF)
 
 
 % --------------------------------------------------------------------
-function editMenu_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function prefMenu_Callback(hObject, eventdata, handles)
-
-mrEditPrefs;
-
-
-% --------------------------------------------------------------------
 function exportMrLoadRet4_Callback(hObject, eventdata, handles)
 % hObject    handle to exportMrLoadRet4 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1447,7 +1463,7 @@ end
 
 % set the transform 
 ALIGN.inplaneHdr.sform44 = params.srcSform;
-ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
+ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
@@ -1663,7 +1679,7 @@ function Trans3R_Callback(hObject, eventdata, handles)
 incrementTrans(handles,3,1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
-%%   incrementTrans   %%
+%    incrementTrans   %%
 %%%%%%%%%%%%%%%%%%%%%%%%
 function incrementTrans(handles,axisnum,incdec)
 
@@ -1685,7 +1701,7 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 %%%%%%%%%%%%%%%%%%%%%%
-%%   incrementRot   %%
+%     incrementRot  %%
 %%%%%%%%%%%%%%%%%%%%%%
 function incrementRot(handles,axisnum,incdec)
 
@@ -1707,7 +1723,7 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 %%%%%%%%%%%%%%%%%%%%%%%
-%%   setAlignTitle   %%
+%     setAlignTitle  %%
 %%%%%%%%%%%%%%%%%%%%%%%
 function setAlignTitle(handles)
 
