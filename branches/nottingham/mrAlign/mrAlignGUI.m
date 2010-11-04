@@ -1319,12 +1319,11 @@ function checkAlignmentMenu_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function checkAlignmentMenu_Callback(hObject, eventdata, handles)
+function showMosaicMenuItem_Callback(hObject, eventdata, handles)
 
-% --------------------------------------------------------------------
-function checkWithCorrectionMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
+
+if isempty(ALIGN.volume) || isempty(ALIGN.inplanes)
 	mrWarnDlg('Load Volume and Load Inplanes before checking alignment.');
 	return
 end
@@ -1332,20 +1331,25 @@ if isempty(ALIGN.xform)
 	mrWarnDlg('Load, Initialize, or Compute the alignment before checking it.');
 	return
 end
-checkAlignment(1)
 
-% --------------------------------------------------------------------
-function checkWithoutCorrectionMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before checking alignment.');
-	return
+if isequal(ALIGN.xformICCorrection,ALIGN.guiXform * ALIGN.xform) &&...        % if the alignment hasn't changed (this should be the most common scenario) 
+      ~isempty(ALIGN.correctedInplanes) && ~isempty(ALIGN.correctedVolume)    % AND the corrected volumes have been computed
+  
+   %then just make mosaic
+   inplanes = ALIGN.correctedInplanes;
+   volume = ALIGN.correctedVolume;
+   mosaic = imageMosaic(volume,inplanes);
+
+else  %otherwise, we have to recompute the interpolated/corrected inplanes/volume
+   
+   [inplanes,volume,mosaic] = checkAlignment(ALIGN.reversedContrast+1);
+
 end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Load, Initialize, or Compute the alignment before checking it.');
-	return
-end
-checkAlignment(0)
+   
+% open checkAlignmentGUI
+checkAlignmentGUI(inplanes,mosaic,volume,ALIGN.reversedContrast+1);
+
+
 
 % --------------------------------------------------------------------
 function jointHistogramMenuItem_Callback(hObject, eventdata, handles)
