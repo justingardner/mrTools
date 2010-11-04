@@ -1245,21 +1245,33 @@ switch lower(param)
     % If overlay.name already exists then replace the existing one with
     % this new one. Otherwise, add it to the end of the overlays list.
     newOverlayName = overlay.name;
-    newOverlayNum = [];
+%     newOverlayNum = [];
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
-    for num = 1:nOverlays
-      overlayName = viewGet(view,'overlayName',num,analysisNum);
-      if strcmp(newOverlayName,overlayName)
-        newOverlayNum = num;
-      end
-    end
-    if isempty(newOverlayNum)
+%     for num = 1:nOverlays
+%       overlayName = viewGet(view,'overlayName',num,analysisNum);
+%       if strcmp(newOverlayName,overlayName)
+%         newOverlayNum = num;
+%       end
+%     end
+    %this finds the number of overlays with identical name (replaces the loops above
+    [dump,newOverlayNum] = ismember(newOverlayName,viewGet(view,'overlayNames',[],analysisNum)); 
+    if newOverlayNum %if there is already an overlay with this name
+       %merge their data if their parameters are identical
+       oldOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
+       if isequal(overlay.params,oldOverlay.params)
+          for iScan = 1:length(overlay.data)
+             if isempty(overlay.data{iScan})
+                overlay.data{iScan} = oldOverlay.data{iScan};
+             end
+          end
+       end
+    else
       newOverlayNum = nOverlays + 1;
     end
     % Add it to the list of overlays
-    if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)
-      view.analyses{analysisNum}.overlays = overlay;
-    else
+    if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)  
+      view.analyses{analysisNum}.overlays = overlay;                        
+    else                                                                    
       view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
     end
     % clear overlay cache
