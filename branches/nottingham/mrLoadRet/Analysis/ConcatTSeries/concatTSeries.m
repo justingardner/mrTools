@@ -430,7 +430,7 @@ end
 % Save evalstring for recomputing and params
 evalstr = ['view = newView; view = concatTSeries(view,params);'];
 tseriesdir = viewGet(viewConcat,'tseriesdir');
-[pathstr,filename,ext,versn] = fileparts(fullfile(tseriesdir,tseriesFileName));
+[pathstr,filename] = fileparts(fullfile(tseriesdir,tseriesFileName));
 save(fullfile(pathstr,filename),'evalstr','params','concatInfo');
 
 % Delete temporary viewBase and viewConcat
