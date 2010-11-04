@@ -36,7 +36,11 @@ elseif ischar(t)
     verbose = mrGetPref('verbose');
     if strcmp(verbose,'Yes')
         % if verbose, make a window wait bar
-        h = waitbar(x,t);
+        if length(t)<=35
+           h = waitbar(x,'','name',t);
+        else
+           h = waitbar(x,t,'name','mrWaitBar');
+        end
         drawnow;
     else
         % otherwise use disppercent
