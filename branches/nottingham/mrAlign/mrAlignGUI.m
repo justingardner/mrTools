@@ -1081,7 +1081,7 @@ refreshAlignDisplay(handles);
 function computeAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function initializeMenuItem_Callback(hObject, eventdata, handles)
+function initializeFromQformMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 if ~isfield(ALIGN.volumeHdr,'qform44') || ~isfield(ALIGN.inplaneHdr,'qform44')
@@ -1089,17 +1089,23 @@ if ~isfield(ALIGN.volumeHdr,'qform44') || ~isfield(ALIGN.inplaneHdr,'qform44')
   return
 end
 
-  % Error if there's no alignment information in the header.
+% Error if there's no alignment information in the header.
 % This would happen if these were analyze, not nifti, files.
 if isempty(ALIGN.volumeHdr.qform44)
     mrErrorDlg('No alignment information in the volume header.');
 end
+if ~isempty(ALIGN.volumeHdr.qform_code) && ~ALIGN.volumeHdr.qform_code
+    mrWarnDlg('Volume qform_code is not set.');
+end
 if isempty(ALIGN.inplaneHdr.qform44)
     mrErrorDlg('No alignment information in the inplane header.');
 end
+if ~isempty(ALIGN.inplaneHdr.qform_code) && ~ALIGN.inplaneHdr.qform_code
+    mrWarnDlg('Inplanes qform_code is not set.');
+end
 
-% Compute alignment by composing the xforms from the two nifti headers.
-ALIGN.xform = inv(ALIGN.volumeHdr.qform44) * ALIGN.inplaneHdr.qform44;
+% Compute alignment by composing the qforms from the two nifti headers.
+ALIGN.xform = ALIGN.volumeHdr.qform44 \ ALIGN.inplaneHdr.qform44;
 
 % Reset GUI
 setAlignGUI(handles,'rot',[0 0 0]);
