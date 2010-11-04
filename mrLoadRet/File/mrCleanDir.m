@@ -66,6 +66,7 @@ for g = 1:length(groups)
 
   % if we have more files in directory than that are matched,...
   if (matched < length(tseriesDir))
+    disp(['%%%%%%%%%%%%%%% Group ',groups{g}]);
     recoverable = [];
     % display the names of the hdr/img/mat files that are not matched
     for i = 1:length(tseriesDir)
@@ -100,9 +101,11 @@ for g = 1:length(groups)
 	  filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
 	  if isfile(filename),delete(filename),end;
 	  
-	end
+  end
       end
     end
+  elseif (nScans > length(tseriesDir))
+    disp(['!!!! Missing scans in group ' groups{g} ' (' num2str(length(tseriesDir)) ':' num2str(nScans) ') !!!!']);
   else
     disp(sprintf('Group %s matches (%i:%i)',groups{g},length(tseriesDir),nScans));
   end
