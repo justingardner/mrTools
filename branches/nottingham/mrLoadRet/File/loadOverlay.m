@@ -42,7 +42,12 @@ mrGlobals
 % Path to overlays
 if ieNotDefined('startPathStr')
   startPathStr = viewGet(view,'overlayDir');
+  if isempty(startPathStr) %if startPathStr is empty, that means there are no loaded analysis
+     mrWarnDlg('(loadOverlay) Cannot load an overlay without an analysis');
+     return
+  end
 end
+
 
 % Complete pathStr
 if ieNotDefined('filename')
