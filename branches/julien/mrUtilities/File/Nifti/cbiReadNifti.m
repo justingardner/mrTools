@@ -261,18 +261,19 @@ end
 fclose(fPtr);
 
 % Scaling
-if ((strcmp(prec,'double')||strcmp(prec,'single')) && hdr.scl_slope~=0)  
-  % NaN handling for int16 data
-  if (hdr.datatype==4 & short_nan) 
-    data(data==-32768)=NaN;
+if (strcmp(prec,'double')||strcmp(prec,'single'))
+  if hdr.scl_slope~=0
+    % NaN handling for int16 data
+    if (hdr.datatype==4 & short_nan) 
+      data(data==-32768)=NaN;
+    end
+    data=data.*hdr.scl_slope+hdr.scl_inter;
   end
-  % convert to signle precision down here--probably better to read
+  % convert to single precision down here--probably better to read
   % in the data as a single, but that requires changing a lot of
   % code above -jg.
-  if strcmp(prec,'double')
-    data=data.*hdr.scl_slope+hdr.scl_inter;
-  else
-    data=single(data).*hdr.scl_slope+hdr.scl_inter;
+  if strcmp(prec,'single')
+    data=single(data);
   end
 end
 
