@@ -82,7 +82,7 @@ if isempty(params),return,end
 paramsInfo = {};
 paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'The resolution of the flat patch -- a value of 2 doubles the resolution'};
 paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Thresholding the surface makes the background two-tone (binary curvature)'};
-paramsInfo{end+1} = {'flattenMethod', {'mrFlatMesh','surfRelax'},'Use either surfRelax or mrFlatMesh'};
+paramsInfo{end+1} = {'flattenMethod', {'mrFlatMesh','surfRelax'},'type=popupmenu','Use either surfRelax or mrFlatMesh'};
 extraParams = mrParamsDialog(paramsInfo, 'makeFlat', []);
 if isempty(params),return;end
 

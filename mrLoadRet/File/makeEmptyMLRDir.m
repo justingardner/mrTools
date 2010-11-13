@@ -66,9 +66,9 @@ paramsInfo = {};
 paramsInfo{end+1} = {'description',description,'type=string','Description of the session. Can be anything to help you remember what the session was'};
 paramsInfo{end+1} = {'subject',subject,'type=string','Subject ID. Use an identifier that does not break the subject confidentiality'};
 paramsInfo{end+1} = {'operator',operator,'type=string','Person who operated the scanner'};
-paramsInfo{end+1} = {'magnet',magnet,'Choose which magnet you scanned on'};
-paramsInfo{end+1} = {'coil',coil,'Choose which coil you used'};
-paramsInfo{end+1} = {'pulseSequence',pulseSequence,'Choose which pulse sequence you scanned with'};
+paramsInfo{end+1} = {'magnet',magnet,'type=popupmenu','Choose which magnet you scanned on'};
+paramsInfo{end+1} = {'coil',coil,'type=popupmenu','Choose which coil you used'};
+paramsInfo{end+1} = {'pulseSequence',pulseSequence,'type=popupmenu','Choose which pulse sequence you scanned with'};
 paramsInfo{end+1} = {'pulseSequenceText','','Optional: enter some text to describe or qualify the pulseSequence text. This will get appended to the pulseSequence name chosen above'};
 
 % get the session params from the user

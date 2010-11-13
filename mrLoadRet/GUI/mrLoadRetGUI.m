@@ -1423,7 +1423,7 @@ colors = putOnTopOfList(roiColor,color2RGB);
 
 % make parameter string
 roiParams{1} = {'name',roiName,'Name of roi, avoid using punctuation and space'};
-roiParams{2} = {'color',colors,'The color that the roi will display in'};
+roiParams{2} = {'color',colors,'type=popupmenu','The color that the roi will display in'};
 roiParams{3} = {'notes',roiNotes,'Brief notes about the ROI'};
 
 params = mrParamsDialog(roiParams,'Edit ROI',1.5);
@@ -1453,7 +1453,7 @@ for roinum = 1:nROIs
   roiNotes = viewGet(v,'roiNotes',roinum);
   colors = putOnTopOfList(viewGet(v,'roiColor',roinum),color2RGB);
   paramsInfo{end+1} = {sprintf('%sName',fixBadChars(roiNames{roinum})),roiNames{roinum},'Name of roi, avoid using punctuation and space'};
-  paramsInfo{end+1} = {sprintf('%sColor',fixBadChars(roiNames{roinum})),colors,sprintf('The color that roi %s will display in',roiNames{roinum})};
+  paramsInfo{end+1} = {sprintf('%sColor',fixBadChars(roiNames{roinum})),colors,'type=popupmenu',sprintf('The color that roi %s will display in',roiNames{roinum})};
   paramsInfo{end+1} = {sprintf('%sNotes',fixBadChars(roiNames{roinum})),roiNotes,sprintf('Note for roi %s',roiNames{roinum})};
 end
 if isempty(paramsInfo),return,end
@@ -2049,9 +2049,9 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 roiNames = viewGet(view,'roiNames');
 paramInfo = {...
-  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'editable=0','The ROI that will be combined with the otherROI'},...
-  {'otherROI',roiNames,'The otherROI is combined with the combineROI and the result is put into combineROI.'},...
-  {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'Select action for combining ROIs.'},...
+  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'type=popupmenu','editable=0','The ROI that will be combined with the otherROI'},...
+  {'otherROI',roiNames,'type=popupmenu','The otherROI is combined with the combineROI and the result is put into combineROI.'},...
+  {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'type=popupmenu','Select action for combining ROIs.'},...
   {'combine',0,'type=pushbutton','callback',@doCombine,'passParams=1','callbackArg',viewNum,'buttonString=Do combination','Click this button to do the combination. This is the same as hitting OK but won''t close the dialog so you can continue to do more combinations'}};
 params = mrParamsDialog(paramInfo,'Combine ROIs');
 if ~isempty(params)

@@ -76,7 +76,7 @@ end
 
 colors = putOnTopOfList(color,color2RGB);
 roiParams{1} = {'name',name,'Name of roi, avoid using punctuation and space'};
-roiParams{2} = {'color',colors,'The color that the roi will display in'};
+roiParams{2} = {'color',colors,'type=popupmenu','The color that the roi will display in'};
 roiParams{3} = {'notes','','Brief notes about the ROI'};
 params = mrParamsDialog(roiParams,'Create a new ROI');
 if isempty(params),return,end
