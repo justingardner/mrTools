@@ -118,9 +118,9 @@ for i = 1:length(gParams.varinfo)
     end
   end
   % not enabled then set parameter to empty
-  if strcmp(get(gParams.ui.varentry{i},'Enable'),'off');
-    params.(gParams.varinfo{i}.name) = [];
-  end
+%   if strcmp(get(gParams.ui.varentry{i},'Enable'),'off'); %JB: it would make more sense to leave disabled parameters as they are
+%     params.(gParams.varinfo{i}.name) = [];                % in particular because if it is a checkbox, then mrParamsReconcile crashes
+%   end                                                     % functions that use these parameters should know what to do
 end
 params.paramInfo = vars;
 
