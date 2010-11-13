@@ -71,7 +71,7 @@ for p = 1:length(pathStr)
 end
 replaceDuplicates = 0;
 if any(nameCollision)
-  paramsInfo{1} = {'nameCollision',{'Replace all','Deal with individually'},sprintf('ROIs %s are already loaded. For these ROIs, you can either just replace with the new ones from disk, or be asked individually what to do about them.',nameCollisionStr)};
+  paramsInfo{1} = {'nameCollision',{'Replace all','Deal with individually'},'type=popupmenu',sprintf('ROIs %s are already loaded. For these ROIs, you can either just replace with the new ones from disk, or be asked individually what to do about them.',nameCollisionStr)};
   params = mrParamsDialog(paramsInfo,sprintf('Some ROIs are already loaded',nameCollisionStr));
   if isempty(params),return,end
   if strcmp(params.nameCollision,'Replace all')
