@@ -1215,9 +1215,11 @@ switch lower(param)
     overlay.data = [];
     for scanNum = 1:length(data)
       % to save memory, we keep overlays as single precision
-      % (commented out now)
-      %overlay.data{scanNum} = single(data{scanNum});
-      overlay.data{scanNum} = data{scanNum};
+      if strcmp(mrGetPref('defaultPrecision'),'single')
+         overlay.data{scanNum} = single(data{scanNum});
+      else
+         overlay.data{scanNum} = data{scanNum};
+      end
     end
     % Check that it has the correct number of scans
     if (length(overlay.data) ~= nScans)

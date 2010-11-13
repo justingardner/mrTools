@@ -45,7 +45,7 @@ end
 if ieNotDefined('y')
   y = [];
 end
-if ieNotDefined('precision'), precision = 'double';end
+if ieNotDefined('precision'), precision = mrGetPref('defaultPrecision');end
 
 % Get the pathStr to the tseries file
 pathStr = viewGet(view,'tseriesPathStr',scan);
