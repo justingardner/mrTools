@@ -10,6 +10,7 @@
 %       date: 03/13/07
 %    purpose: creates a dialog for selection of parameters
 %             see wiki for details
+%        $Id$
 %
 function [params params2] = mrParamsDialog(varargin)
 
@@ -63,12 +64,13 @@ end
 % some basic info about location of controls
 gParams.leftMargin = 10;
 gParams.topMargin = 10;
-gParams.buttonWidth = min(max(100,maxChars*7),200);
+gParams.varNameWidth = min(maxChars*8,300);
+gParams.buttonWidth = 100;
 mver = ver('matlab');mver = str2num(mver.Version);
 if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
   gParams.buttonHeight = 26;
 else
-  gParams.buttonHeight = 20;
+  gParams.buttonHeight = 22;
 end  
 gParams.margin = 5;
 gParams.fontsize = 12;
@@ -111,7 +113,7 @@ if isempty(modal)
 end
 % set the buttonWidth      
 if ~isempty(buttonWidth)
-  gParams.buttonWidth = gParams.buttonWidth*buttonWidth;
+  gParams.buttonWidth = buttonWidth;
 end
 
 % get the figure
@@ -147,7 +149,7 @@ gParams.numcols = numcols;
 gParams.numrows = numrows;
 % set the figure position
 figpos(4) = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+figcols*gParams.buttonWidth+(figcols-1)*gParams.margin;
+figpos(3) = 2*gParams.leftMargin+gParams.varNameWidth+(figcols-1)*gParams.buttonWidth+(figcols-1)*gParams.margin;
 set(gParams.fignum,'Position',figpos);
 
 % make entry buttons
@@ -833,17 +835,20 @@ end
 % get figure position
 figpos = get(fignum,'Position');
 
-% set this buttons width
-thisButtonWidth = gParams.buttonWidth*uisize+(uisize-1)*gParams.margin;
-if ieNotDefined('uisizev'),
-  thisButtonHeight = gParams.buttonHeight;
+% set the position and width for the button
+if colnum == 1
+  pos(1) = gParams.margin + gParams.leftMargin; %position
+  pos(3) = gParams.varNameWidth*uisize+(uisize-1)*gParams.margin; %size
 else
-  thisButtonHeight = gParams.buttonHeight*uisizev+gParams.margin*(uisizev-1);
+  pos(1) = gParams.margin*2 + gParams.varNameWidth+ (gParams.buttonWidth+gParams.margin)*(colnum-2) + gParams.leftMargin;
+  pos(3) = gParams.buttonWidth*uisize+(uisize-1)*gParams.margin;
 end
 
-% set the position for the button
-pos(1) = gParams.margin + (gParams.buttonWidth+gParams.margin)*(colnum-1) + gParams.leftMargin;
-pos(2) = figpos(4)-thisButtonHeight-gParams.topMargin - (gParams.buttonHeight+gParams.margin)*(rownum-1);
-pos(3) = thisButtonWidth;
-pos(4) = thisButtonHeight;
+if ieNotDefined('uisizev'),
+  pos(4) = gParams.buttonHeight;  %size
+else
+  pos(4) = gParams.buttonHeight*uisizev+gParams.margin*(uisizev-1);
+end
+%position
+pos(2) = figpos(4)-pos(4)-gParams.topMargin - (gParams.buttonHeight+gParams.margin)*(rownum-1);
 
