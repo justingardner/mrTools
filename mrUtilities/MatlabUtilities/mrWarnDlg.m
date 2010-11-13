@@ -1,4 +1,4 @@
-function mrWarnDlg(warnstr)
+function mrWarnDlg(warnstr,verbose)
 %
 % mrWarnDlg(warnstr)
 %
@@ -11,8 +11,12 @@ function mrWarnDlg(warnstr)
 % djh, 5/2005
 %
 % djh, 5/2007, modified to use mrGetPref instead of Matlab's getpref
+%
+% $Id$
 
-verbose = mrGetPref('verbose');
+if ieNotDefined('verbose')
+  verbose = mrGetPref('verbose');
+end
 
 % always display warning on command line
 disp(sprintf('Warning: %s',warnstr));
