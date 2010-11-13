@@ -34,17 +34,18 @@ function [data,hdr]=cbiReadNifti(fname,subset,prec,short_nan)
 %             treats -32786 as a real value. Default is 1. 
 % 
 % JL 20050223
+% $Id$
 
 
   
   
-if (~exist('subset'))
+if ieNotDefined('subset')
   subset={[],[],[],[]};
 end
-if (~exist('prec'))
-  prec='double';
+if ieNotDefined('prec')
+  prec=mrGetPref('defaultPrecision');
 end
-if (~exist('short_nan'))
+if ieNotDefined('short_nan')
   short_nan=1;
 end
 

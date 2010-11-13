@@ -50,6 +50,7 @@ prefDefaults{find(strcmp('selectedROIColor',prefNames))}{end+1} = 'none';
 prefDefaults{find(strcmp('roiContourWidth',prefNames))} = 1;
 prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
 prefDefaults{find(strcmp('maxBlocksize',prefNames))} = 250000000;
+prefDefaults{find(strcmp('defaultPrecision',prefNames))} = 'double';
 prefDefaults{find(strcmp('volumeDirectory',prefNames))} = '';
 prefDefaults{find(strcmp('roiCacheSize',prefNames))} = 100;
 prefDefaults{find(strcmp('baseCacheSize',prefNames))} = 50;
