@@ -1,5 +1,5 @@
-function [byteswritten,hdr]=cbiWriteNifti(fname,data,hdr,prec,subset,short_nan);
-% [byteswritten,hdr]=cbiWriteNifti(filename,data,hdr,prec,subset,short_nan) 
+function [byteswritten,hdr]=cbiWriteNifti(fname,data,hdr,prec,subset,short_nan,verbose)
+% [byteswritten,hdr]=cbiWriteNifti(filename,data,hdr,prec,subset,short_nan,verbose) 
 %  Uses user-defined header struct
 % [byteswritten,hdr]=cbiWriteNifti(filename,data,[],prec);
 %  Creates a new header
@@ -16,10 +16,20 @@ function [byteswritten,hdr]=cbiWriteNifti(fname,data,hdr,prec,subset,short_nan);
 %  short_nan: NaN handling for signed short (int16) data. If 1, will treat save NaN's as -32768 (smallest 
 %             representable number) reserving -32767..32767 for scaled data; otherwise will save NaN as 0.
 %             Default is 1 (use -32768 as NaN).
+% $Id$
   
 if nargin == 0
   help cbiWriteNifti;
   return
+end
+if (ieNotDefined('subset'))
+  subset={[],[],[],[]};
+end
+if (ieNotDefined('short_nan'))
+  short_nan=1;
+end
+if ieNotDefined('verbose')
+  verbose=1;
 end
 
 [pathstr,bname,ext]=fileparts(fname);
@@ -45,15 +55,9 @@ if (size(data,1) == 1) && (size(data,2) > maxWidth)
   % and reshape
   data = reshape(data,numRows,maxWidth);
   % print out what happened
-  disp(sprintf('(cbiWriteNifti) Saving a 1x%i image, reshaping to %ix%i to fit nifti limitation of max width of %i',realWidth,numRows,maxWidth,maxWidth));
+  if verbose, disp(sprintf('(cbiWriteNifti) Saving a 1x%i image, reshaping to %ix%i to fit nifti limitation of max width of %i',realWidth,numRows,maxWidth,maxWidth));end;
 end
   
-if (~exist('subset'))
-  subset={[],[],[],[]};
-end
-if (~exist('short_nan'))
-  short_nan=1;
-end
 if isstruct(data)
   disp(sprintf('(cbiWriteNifti) UHOH! Data appears to be a structure rather than a matrix.'));
   return
@@ -79,13 +83,13 @@ switch (ext)
 end
 
 % Ensure header matches data
-if (exist('prec') & ~isempty(prec))
+if ~ieNotDefined('prec')
   hdr=cbiCreateNiftiHeader(hdr,data,'matlab_datatype',prec);
 else
   hdr=cbiCreateNiftiHeader(hdr,data);
 end
 if (~strcmp(class(data),hdr.matlab_datatype))
-  disp(['(cbiWriteNifti) Scaling data from ' class(data) ' to ' hdr.matlab_datatype]);
+  if verbose, disp(['(cbiWriteNifti) Scaling data from ' class(data) ' to ' hdr.matlab_datatype]);end;
 %  disp('To avoid this, cast data to desired format before calling cbiWriteNifti, e.g.')
 %  disp('cbiWriteNifti(''myfilename'',int16(data),hdr,''int16'')')
 end
@@ -122,7 +126,7 @@ if (hdr.dim(6)>1)
   end
   is5D=1;
   headerdim(4)=hdr.dim(6);
-  disp('5D data set detected');
+  if verbose, disp('5D data set detected');end;
 end
 
 loadSize=zeros(4,1);
