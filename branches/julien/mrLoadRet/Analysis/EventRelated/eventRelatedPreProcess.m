@@ -1,5 +1,6 @@
 % eventRelatedPreProcess.m
 %
+%        $Id$
 %      usage: d = eventRelatedPreProcess(d)
 %         by: justin gardner
 %       date: 03/29/07
@@ -8,16 +9,20 @@
 %             little modifications that might be necessary to
 %             fix small things
 %
-function d = eventRelatedPreProcess(d,type)
+function [d, failure] = eventRelatedPreProcess(d,type,verbose)
 
 % check arguments
-if ~any(nargin == [2])
+if ~ismember(nargin,[2 3])
   help eventRelatedPreProcess
   return
 end
+failure = 0;
+if ieNotDefined('verbose')
+   verbose = 1;
+end
 
 % nothing to do
-if isempty(type),return,end
+if ieNotDefined('type'),return,end
 
 % keep track of whether this is a function name
 isRunFunctionName = 1;
@@ -49,6 +54,7 @@ end
 
 if isRunFunctionName && isempty(runName)
   mrWarnDlg(sprintf('(eventRelatedPreProcess) Could not run pre process function %s',type));
+  failure = 1;
 end
 
 % if we have a runName then run the preprocess
@@ -60,10 +66,13 @@ if ~isempty(runName)
   if isempty(runArgs),runArgs = 'd';end
   % now see if it is a function and if so, run it
   if exist(sprintf('%s.m',stripext(runFun)))==2
-    disp(sprintf('Running d=%s(%s)',runFun,runArgs));
+     if verbose
+         disp(sprintf('Running d=%s(%s)',runFun,runArgs));
+     end
     d = eval(sprintf('%s(%s)',runFun,runArgs));
   else
     disp(sprintf('(eventRelatedPreProcess) Could not find preprocess script %s',runFun));
+    failure = 1;
     keyboard
   end
 end
