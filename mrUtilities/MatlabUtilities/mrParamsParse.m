@@ -54,21 +54,23 @@ for i = 1:length(vars)
         varinfo{i}.type = 'numeric';
       else
         varinfo{i}.type = 'array';
-        nrows = nrows+size(vars{i}{2},1)-1;
+        thisNrows = thisNrows+size(vars{i}{2},1)-1;
         ncols = max(ncols,1+size(vars{i}{2},2));
       end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
-      % see if the default argument is a string
-      if isstr(vars{i}{2}{1})
+      % if it is a cell (contingent variable, check its first member
+      if iscell(vars{i}{2}{1})
+        if ischar(vars{i}{2}{1}{1})
+          varinfo{i}.popuptype = 'string';
+        else
+          varinfo{i}.popuptype = 'numeric';
+        end
+        % see if the default argument is a string
+      elseif  ischar(vars{i}{2}{1})
+        varinfo{i}.type = 'stringarray'; %call it a stringarray instead, 
+        %it will change when checking the options if it's in fact a popup menu
         varinfo{i}.popuptype = 'string';
-	% if it is a cell (contingent variable, check its first member
-      elseif iscell(vars{i}{2}{1})
-	if isstr(vars{i}{2}{1}{1})
-	  varinfo{i}.popuptype = 'string';
-	else
-	  varinfo{i}.popuptype = 'numeric';
-	end
       % otherwise numeric
       else
         varinfo{i}.popuptype = 'numeric';

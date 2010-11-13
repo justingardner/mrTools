@@ -33,7 +33,7 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% set up figure in first place
+% set up figure in first palce
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [params params2] = initFigure(vars,otherParams)
 
@@ -176,7 +176,7 @@ for i = 1:length(gParams.varinfo)
     else
       gParams.ui.varentry{i} = makeButton(gParams.fignum,'',i,rownum,2,3,0,gParams.varinfo{i}.visible);
     end
-  elseif strcmp(gParams.varinfo{i}.type,'popupmenu') || iscell(gParams.varinfo{i}.value)
+  elseif strcmp(gParams.varinfo{i}.type,'popupmenu') 
     gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'statictext')
     gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,0,gParams.varinfo{i}.visible);
