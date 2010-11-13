@@ -43,6 +43,7 @@ prefDefaults{find(strcmp('overwritePolicy',prefNames))} = {'Ask','Merge','Rename
 prefDefaults{find(strcmp('verbose',prefNames))} = {'Yes','No'};
 prefDefaults{find(strcmp('graphWindow',prefNames))} = {'Replace','Make new'};
 prefDefaults{find(strcmp('niftiFileExtension',prefNames))} = {'.img','.nii'};
+prefDefaults{find(strcmp('fslPath',prefNames))} = 'FSL not installed';
 prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'roipoly','getpts','getptsNoDoubleClick'};
 prefDefaults{find(strcmp('selectedROIColor',prefNames))} = color2RGB;
 prefDefaults{find(strcmp('selectedROIColor',prefNames))}{end+1} = 'none';
