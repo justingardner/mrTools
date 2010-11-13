@@ -33,7 +33,7 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% set up figure in first palce
+% set up figure in first place
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [params params2] = initFigure(vars,otherParams)
 
@@ -153,34 +153,40 @@ figpos(3) = 2*gParams.leftMargin+gParams.varNameWidth+(figcols-1)*gParams.button
 set(gParams.fignum,'Position',figpos);
 
 % make entry buttons
-rownum = 1;
+rownum = 0;
 for i = 1:length(gParams.varinfo)
+  %only increase rownum if row is visible
+  if gParams.varinfo{i}.visible
+    rownum = rownum+1;
+  end
   % make ui for varname
-  gParams.ui.varname(i) = makeTextbox(gParams.fignum,gParams.varinfo{i}.name,rownum,1,1);
+  gParams.ui.varname(i) = makeTextbox(gParams.fignum,gParams.varinfo{i}.name,rownum,1,1,1,0,gParams.varinfo{i}.visible);
   % make ui entry dependent on what type we have
   if isfield(gParams.varinfo{i},'incdec')
     [gParams.ui.varentry{i} gParams.ui.incdec{i}(1) gParams.ui.incdec{i}(2)] =...
-      makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
+      makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.visible);
     enableArrows(mrStr2num(gParams.varinfo{i}.value),i);
   elseif strcmp(gParams.varinfo{i}.type,'string')
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'checkbox')
-    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.5);
+    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.5,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
     if isfield(gParams.varinfo{i},'buttonString')
-      gParams.ui.varentry{i} = makeButton(gParams.fignum,gParams.varinfo{i}.buttonString,i,rownum,2,3);
+      gParams.ui.varentry{i} = makeButton(gParams.fignum,gParams.varinfo{i}.buttonString,i,rownum,2,3,0,gParams.varinfo{i}.visible);
     else
-      gParams.ui.varentry{i} = makeButton(gParams.fignum,'',i,rownum,2,3);
+      gParams.ui.varentry{i} = makeButton(gParams.fignum,'',i,rownum,2,3,0,gParams.varinfo{i}.visible);
     end
   elseif strcmp(gParams.varinfo{i}.type,'popupmenu') || iscell(gParams.varinfo{i}.value)
-    gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3);
+    gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'statictext')
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,0);
-  elseif strcmp(gParams.varinfo{i}.type,'array')
-    gParams.ui.varentry{i} = makeArrayentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,numcols,gParams.varinfo{i}.editable);
-    rownum = rownum+size(gParams.varinfo{i}.value,1)-1;
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,0,gParams.varinfo{i}.visible);
+  elseif ismember(gParams.varinfo{i}.type,{'stringarray' 'array'})
+      gParams.ui.varentry{i} = makeArrayentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,numcols,gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
+    if gParams.varinfo{i}.visible
+      rownum = rownum+size(gParams.varinfo{i}.value,1)-1;
+    end
   else
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
   end
   % check to see if we have to disable the entry field
   if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
@@ -188,7 +194,6 @@ for i = 1:length(gParams.varinfo)
       set(gParams.ui.varentry{i}(j),'enable','off');
     end
   end
-  rownum = rownum+1;
 end
 
 % for each value that controls another one, call the buttonHandler to
@@ -368,7 +373,7 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
 end
 
 % if this is supposed to be a number, then make sure it is.
-if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array'}))
+if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','array','stringarray'}))
   if strcmp(gParams.varinfo{varnum}.type,'checkbox')
     val = get(gParams.ui.varentry{varnum},'Value');
   elseif strcmp(gParams.varinfo{varnum}.type,'popupmenu')
@@ -590,15 +595,15 @@ gParams.help.figrows = figrows;
 gParams.help.figMultiCols = figMultiCols;
 
 figpos(4) = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+gParams.help.figMultiCols*numcols*gParams.buttonWidth+(gParams.help.figMultiCols*numcols-1)*gParams.margin;
+figpos(3) = 2*gParams.leftMargin+gParams.varNameWidth+(gParams.help.figMultiCols*numcols-1)*gParams.buttonWidth+(gParams.help.figMultiCols*numcols-1)*gParams.margin;
 set(gParams.helpFignum,'Position',figpos);
 
 % put up the info
 rownum = 1;
 for i = 1:length(gParams.varinfo)
   numLines = max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
-  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,2,numLines,1);
-  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,3,numcols-2,numLines,1),'HorizontalAlignment','Left');
+  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,1,numLines,1);
+  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,2,numcols-1,numLines,1),'HorizontalAlignment','Left');
   rownum = rownum+numLines;
 end
 
@@ -672,8 +677,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeButton
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeButton(fignum,displayString,callback,rownum,colnum,uisize,isHelpDialog)
+function h = makeButton(fignum,displayString,callback,rownum,colnum,uisize,isHelpDialog,visible)
 
+if ieNotDefined('visible'),visible=1;end
 if ieNotDefined('isHelpDialog'),isHelpDialog=0;end
 % make callback string
 if isnumeric(callback)
@@ -685,23 +691,31 @@ end
 global gParams;
 
 h = uicontrol(fignum,'Style','pushbutton','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,[],isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+if ~visible
+  set(h,'visible','off');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextbox makes an uneditable text box.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextbox(fignum,displayString,rownum,colnum,uisize,uisizev,isHelpDialog)
+function h = makeTextbox(fignum,displayString,rownum,colnum,uisize,uisizev,isHelpDialog,visible)
 
 if ieNotDefined('isHelpDialog'),isHelpDialog=0;end
-if ieNotDefined('uisizev'),uisizev=1;,end
+if ieNotDefined('uisizev'),uisizev=1;end
+if ieNotDefined('visible'),visible=1;end
 global gParams;
 h = uicontrol(fignum,'Style','text','String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,uisizev,isHelpDialog),'FontSize',gParams.fontsize,'FontName',gParams.fontname,'HorizontalAlignment','Right');
+if ~visible
+  set(h,'visible','off');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextentry(fignum,displayString,callback,rownum,colnum,uisize,editable)
+function h = makeTextentry(fignum,displayString,callback,rownum,colnum,uisize,editable,visible)
 
 if ieNotDefined('editable'),editable=1;end
+if ieNotDefined('visible'),visible=1;end
 
 if editable
   style = 'edit';
@@ -719,13 +733,17 @@ end
 global gParams;
 
 h = uicontrol(fignum,'Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+if ~visible
+  set(h,'visible','off');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeArrayentry makes a uicontrol to handle array entry
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeArrayentry(fignum,array,callback,rownum,numcols,editable)
+function h = makeArrayentry(fignum,array,callback,rownum,numcols,editable,visible)
 
 if ieNotDefined('editable'),editable=1;end
+if ieNotDefined('visible'),visible=1;end
 
 if editable
   style = 'edit';
@@ -747,11 +765,16 @@ for i = 1:size(array,1)
     h(i,j) = uicontrol(fignum,'Style',style,'Callback',callback,'String',array(i,j),'Position',getUIControlPos(fignum,rownum+i-1,2+j-1,1),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
   end
 end
+if ~visible
+  set(h,'visible','off');
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makePopupmenu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makePopupmenu(fignum,displayString,callback,rownum,colnum,uisize)
+function h = makePopupmenu(fignum,displayString,callback,rownum,colnum,uisize,visible)
 
+if ieNotDefined('visible'),visible=1;end
 callback = sprintf('mrParamsDialog(%f)',callback);
 
 if ~iscell(displayString)
@@ -766,25 +789,33 @@ end
 
 global gParams;
 h = uicontrol(fignum,'Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+if ~visible
+  set(h,'visible','off');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeCheckbox
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeCheckbox(fignum,displayString,callback,rownum,colnum,uisize)
+function h = makeCheckbox(fignum,displayString,callback,rownum,colnum,uisize,visible)
 
 global gParams;
+if ieNotDefined('visible'),visible=1;end
 
 % make callback string
 callback = sprintf('mrParamsDialog(%f)',callback);
 
 h = uicontrol(fignum,'Style','checkbox','Value',mrStr2num(displayString),'Callback',callback,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+if ~visible
+  set(h,'visible','off');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry w/inc dec
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [h hl hr] = makeTextentryWithIncdec(fignum,displayString,callback,rownum,colnum,uisize)
+function [h hl hr] = makeTextentryWithIncdec(fignum,displayString,callback,rownum,colnum,uisize,visible)
 
 global gParams;
+if ieNotDefined('visible'),visible=1;end
 
 % make callback string
 deccallback = sprintf('mrParamsDialog(%f,%f)',callback,gParams.varinfo{callback}.incdec(1));
@@ -798,6 +829,9 @@ hr = uicontrol(fignum,'Style','pushbutton','Callback',inccallback,'String','>','
 
 % make text control
 h = uicontrol(fignum,'Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum+1,uisize-2),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+if ~visible
+  set(h,'visible','off');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol

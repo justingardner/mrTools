@@ -21,7 +21,7 @@ nrows = 1;
 ncols = 2;
 % first parse the argument
 for i = 1:length(vars)
-  nrows = nrows+1;
+  thisNrows =1;
   % if the variable is just a string, then
   % it got passed in without a default argument
   % so make it into a cell array with the second
@@ -104,7 +104,7 @@ for i = 1:length(vars)
           ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
         varinfo{i}.description = vars{i}{j};
         % now look for settings that involve the next parameter
-        % i.e. onest that are like 'varname',varvalue. These are
+        % i.e. ones that are like 'varname',varvalue. These are
         % distinugished from comments by the fact that the varname
         % has no equal sign but is a single word
       elseif ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) == 0)) && (j < (length(vars{i})))
@@ -145,6 +145,11 @@ for i = 1:length(vars)
   % make editable by default
   if ~isfield(varinfo{i},'editable')
     varinfo{i}.editable = 1;
+  end
+  %check if it is visible and increment nrows accordingly
+  if ~isfield(varinfo{i},'visible') || ~isequal(varinfo{i}.visible,0)
+    varinfo{i}.visible = 1; %make it visible by default
+    nrows = nrows+thisNrows;
   end
 end
 
