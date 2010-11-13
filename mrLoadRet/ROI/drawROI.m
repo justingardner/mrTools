@@ -1,6 +1,6 @@
-function view = drawROI(view,descriptor,sgn)
+function thisView = drawROI(thisView,descriptor,sgn)
 
-% view = drawROI(view,[descriptor],[sgn])
+% thisView = drawROI(thisView,[descriptor],[sgn])
 %
 % Adds/deletes to/from the current ROI based on user interaction.
 %
@@ -15,7 +15,7 @@ function view = drawROI(view,descriptor,sgn)
 % djh, 8/2005 (modified from mrLoadRet-3.1)
 
 % Error if no current ROI
-curROInum = viewGet(view,'currentROI');
+curROInum = viewGet(thisView,'currentROI');
 if isempty(curROInum)
   mrWarnDlg('No ROI currently selected.');
   return
@@ -28,22 +28,22 @@ if ieNotDefined('sgn')
   sgn = 1;
 end
 
-% Select main axes of view figure for user input
-fig = viewGet(view,'figNum');
+% Select main axes of thisView figure for user input
+fig = viewGet(thisView,'figNum');
 gui = guidata(fig);
 set(fig,'CurrentAxes',gui.axis);
 
 % baseCoords contains the mapping from pixels in the displayed slice to
 % voxels in the current base volume.
-baseCoords = viewGet(view,'cursliceBaseCoords');
+baseCoords = viewGet(thisView,'cursliceBaseCoords');
 baseSliceDims = [size(baseCoords,1),size(baseCoords,2)];
 if isempty(baseCoords)
   mrErrorDlg('Load base anatomy before drawing an ROI');
 end
 
 % turn off 3d rotate
-if viewGet(view,'baseType') == 2
-  mlrSetRotate3d(view,0);
+if viewGet(thisView,'baseType') == 2
+  mlrSetRotate3d(thisView,0);
 end
 
 % unhook existing button down/up/move functions -- to keep mrInterrogator from
@@ -56,10 +56,71 @@ set(fig,'WindowButtonMotionFcn','');
 set(fig,'WindowButtonUpFcn','');
 
 % check for surface base type, if so we need to use drawSurfaceROI
-if viewGet(view,'baseType') == 2
-  coords = drawSurfaceROI(view);
+baseNum = viewGet(thisView,'currentBase');
+baseType = viewGet(thisView,'baseType');
+if baseType == 2
+  coords = drawSurfaceROI(thisView);
 else
   switch descriptor
+     
+    case 'contiguous'
+
+      [mouseY,mouseX] = ginput(1);
+      mouseX = round(mouseX);
+      mouseY = round(mouseY);
+      baseCoords = viewGet(thisView,'cursliceBaseCoords');
+      % convert mouse to baseCoords
+      if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
+        baseX = baseCoords(mouseX,mouseY,1);
+        baseY = baseCoords(mouseX,mouseY,2);
+        baseS = baseCoords(mouseX,mouseY,3);
+        overlayNum = viewGet(thisView,'currentOverlay');
+        scanNum = viewGet(thisView,'currentScan');
+
+        %First, get a mask of non-zero voxel representing the current overlay display
+        mask = maskOverlay(thisView,overlayNum,scanNum);
+
+        base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
+
+        if any(any((base2scan - eye(4))>1e-6)) %check if we're in the scan space
+           %if not, transform the mask to the base space
+           mrWarnDlg('This would be faster and more accurate if the base space was identical to the scan space');
+           interpMethod = 'nearest';
+           [mask, ~, maskBaseCoords] = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,interpMethod,10,viewGet(thisView,'rotate'));
+        end
+        if baseType==1 %if the base is a flat map
+          baseX = mouseX;
+          baseY = mouseY;
+          baseS = ceil(viewGet(thisView,'corticalDepth')*size(mask,3));
+        end
+
+        %Now find contiguous voxels, starting from the selected non-zeros voxel
+        selectedVoxelIndex = sub2ind(size(mask),baseX,baseY,baseS);
+        if mask(baseX,baseY,baseS)
+           cc = bwconncomp(mask,6);
+           for i_object = 1:cc.NumObjects
+              if ismember(selectedVoxelIndex,cc.PixelIdxList{i_object})
+                 break;
+              end
+           end
+           roiCoordsIndices = cc.PixelIdxList{i_object};
+           coords = ones(length(roiCoordsIndices),4);
+
+           if baseType==1 %if the base is a flap map
+              maskBaseCoords = reshape(maskBaseCoords,numel(mask),3);
+              coords(:,1:3) = maskBaseCoords(roiCoordsIndices,:);
+           else
+              [coords(:,1) coords(:,2) coords(:,3)] = ind2sub(size(mask),roiCoordsIndices);
+           end
+           coords = coords';
+        else
+          coords = [];
+          mrWarnDlg('(contiguousRoi) Please select a non-zero voxel');
+        end
+      else
+        coords = [];
+      end
+      
    case 'rectangle'
     % Get region from user.
     region = round(ginput(2));
@@ -163,14 +224,13 @@ set(fig,'WindowButtonMotionFcn',windowButtonMotionFcn);
 set(fig,'WindowButtonUpFcn',windowButtonUpFcn);
 
 % turn on 3d rotate
-if  (viewGet(view,'baseType') == 2) && ~mrInterrogator('isactive',viewGet(view,'viewNum'))
-  mlrSetRotate3d(view,1);
+if  (viewGet(thisView,'baseType') == 2) && ~mrInterrogator('isactive',viewGet(thisView,'viewNum'))
+  mlrSetRotate3d(thisView,1);
 end
 
 % Modify ROI
-baseNum = viewGet(view,'currentBase');
-base2roi = viewGet(view,'base2roi',[],baseNum);
-voxelSize = viewGet(view,'baseVoxelSize',baseNum);
-view = modifyROI(view,coords,base2roi,voxelSize,sgn);
+base2roi = viewGet(thisView,'base2roi',[],baseNum);
+voxelSize = viewGet(thisView,'baseVoxelSize',baseNum);
+thisView = modifyROI(thisView,coords,base2roi,voxelSize,sgn);
 
 

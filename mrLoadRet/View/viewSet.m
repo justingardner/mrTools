@@ -50,8 +50,8 @@ function [view tf] = viewSet(view,param,val,varargin)
 % base, overlay, or ROI. Please follow this convention if you add to this
 % function.
 %
-%
 % 6/2004 djh
+%        $Id$
 
 mrGlobals
 
@@ -1004,11 +1004,14 @@ switch lower(param)
     mlrGuiSet(view,'analysisPopup',viewGet(view,'analysisNames'));
     % Set it to be the current analysis
     view = viewSet(view,'curanalysis',newAnalysisNum);
-    % Reinstall overlays
+    % Reinstall overlays (This can take a long time if there are a lot of overlays)
+    disppercent(-inf,['Installing overlays for analysis ' newAnalysisName]);
     for n = 1:length(overlays)
       view = viewSet(view,'newOverlay',overlays(n));
+      disppercent(n/length(overlays));
     end
-    % update the interrogator
+    disppercent(inf);
+    % update the interrogator 
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
     end
@@ -1242,21 +1245,33 @@ switch lower(param)
     % If overlay.name already exists then replace the existing one with
     % this new one. Otherwise, add it to the end of the overlays list.
     newOverlayName = overlay.name;
-    newOverlayNum = [];
+%     newOverlayNum = [];
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
-    for num = 1:nOverlays
-      overlayName = viewGet(view,'overlayName',num,analysisNum);
-      if strcmp(newOverlayName,overlayName)
-        newOverlayNum = num;
-      end
-    end
-    if isempty(newOverlayNum)
+%     for num = 1:nOverlays
+%       overlayName = viewGet(view,'overlayName',num,analysisNum);
+%       if strcmp(newOverlayName,overlayName)
+%         newOverlayNum = num;
+%       end
+%     end
+    %this finds the number of overlays with identical name (replaces the loops above
+    [dump,newOverlayNum] = ismember(newOverlayName,viewGet(view,'overlayNames',[],analysisNum)); 
+    if newOverlayNum %if there is already an overlay with this name
+       %merge their data if their parameters are identical
+       oldOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
+       if isequal(overlay.params,oldOverlay.params)
+          for iScan = 1:length(overlay.data)
+             if isempty(overlay.data{iScan})
+                overlay.data{iScan} = oldOverlay.data{iScan};
+             end
+          end
+       end
+    else
       newOverlayNum = nOverlays + 1;
     end
     % Add it to the list of overlays
-    if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)
-      view.analyses{analysisNum}.overlays = overlay;
-    else
+    if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)  
+      view.analyses{analysisNum}.overlays = overlay;                        
+    else                                                                    
       view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
     end
     % clear overlay cache
@@ -1318,6 +1333,7 @@ switch lower(param)
         mlrGuiSet(view,'overlayMaxRange',overlayRange);
         mlrGuiSet(view,'overlayMin',overlayClip(1));
         mlrGuiSet(view,'overlayMax',overlayClip(2));
+
         % set overlay alpha slider
         alpha = viewGet(view,'overlayAlpha',overlayNum,analysisNum);
         if isempty(alpha)
@@ -1493,16 +1509,17 @@ switch lower(param)
 	if isempty(params),tf=0;return,end
       else
 	params.replace = replaceDuplicates;
+  params.roiName = ROI.name;
       end
       if params.replace
 	% if replace, then delete the existing one
-	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',ROI.name));
-	roiNames = viewGet(view,'roiNames');
+	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',params.roiName));
+	nameMatch=[];
       else
 	% change the name
 	ROI.name = params.roiName;
+  nameMatch = find(strcmp(ROI.name,roiNames));
       end
-      nameMatch = find(strcmp(ROI.name,roiNames));
     end
     % Add it to view.ROIs
     pos = length(view.ROIs)+1;
@@ -1523,21 +1540,24 @@ switch lower(param)
     mlrGuiSet(view,'roiPopup',stringList);
 
   case {'deleteroi'}
-    % view = viewSet(view,'deleteroi',roiNum);
-    roinum = val;
+    % view = viewSet(view,'deleteroi',roiNums);
+    % delete ROIs roiNums from the view;
+    roinums = val;
     numrois = viewGet(view,'numberofrois');
     curroi = viewGet(view,'currentROI');
     % Remove it and reset currentROI
-    view.ROIs = view.ROIs(roinum ~= [1:numrois]);
-    if (numrois > 1)
-      if (curroi > roinum)
-        view = viewSet(view,'currentROI',curroi-1);
-      elseif (roinum == curroi)
-        view = viewSet(view,'currentROI',1);
+    remainingRois = setdiff(1:numrois,roinums);
+    curroi = find(remainingRois==curroi);
+    view.ROIs=view.ROIs(remainingRois);
+    if ~isempty(remainingRois)
+      if isempty(curroi)
+         curroi=1;
       end
+      view = viewSet(view,'currentROI',curroi);
     else
       view.curROI = [];
     end
+       
     % Update the gui
     stringList = {view.ROIs(:).name};
     if isempty(stringList)

@@ -1,5 +1,7 @@
 function ptSeries = percentTSeries(tSeries, varargin)
 %
+%        $Id$
+%
 % ptSeries = percentTSeries(tSeries, [param1], [value1], [param2], [value2])
 %
 % 1) Optional temporal normalization.
@@ -138,6 +140,9 @@ switch spatialNormalization
         ptSeries = tSeries;
     case 'Divide by mean'
         dc = mean(tSeries);
+        if any(dc<0)
+          mrWarnDlg('(percentTSeries) Dividing some time-series by a negative value during spatial normalization. Is that really what you want ?')
+        end
         ptSeries = tSeries./(ones(nFrames,1)*dc);
     case 'Arbitrary'
         ptSeries = tSeries./(ones(nFrames,1)*spatialNorm);

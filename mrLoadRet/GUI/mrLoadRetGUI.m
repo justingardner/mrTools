@@ -1,3 +1,4 @@
+
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
 % $Id$
@@ -9,8 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 14-Jul-2010 16:13:39
-
+% Last Modified by GUIDE v2.5 27-Oct-2010 18:48:49
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -29,7 +29,6 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
-
 
 % --- Executes just before mrLoadRetGUI is made visible.
 function mrLoadRetGUI_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -286,10 +285,14 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-mlrGuiSet(viewNum,'scan',value);
-view = viewSet(view,'curScan',value);
-viewSet(view,'curScan',get(handles.scanSlider,'Value'));
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.scanSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'scan',value);
+  view = viewSet(view,'curScan',value);
+  viewSet(view,'curScan',get(handles.scanSlider,'Value'));
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Slice
 function sliceSlider_CreateFcn(hObject, eventdata, handles)
@@ -329,9 +332,13 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-mlrGuiSet(viewNum,'slice',value);
-viewSet(view,'curSlice',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.sliceSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'slice',value);
+  viewSet(view,'curSlice',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Executes on slider movement.
 function corticalDepthSlider_Callback(hObject, eventdata, handles)
@@ -369,8 +376,12 @@ function corticalDepthText_Callback(hObject, eventdata, handles)
 
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-mlrGuiSet(viewNum,'corticalDepth',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.corticalDepthSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'corticalDepth',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Executes during object creation, after setting all properties.
 function corticalDepthText_CreateFcn(hObject, eventdata, handles)
@@ -411,8 +422,12 @@ refreshMLRDisplay(viewNum);
 function baseGammaText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'baseGamma',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.baseGammaSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'baseGamma',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- baseTilt
 function baseTiltSlider_CreateFcn(hObject, eventdata, handles)
@@ -445,17 +460,21 @@ end
 function baseTiltText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if value < 0,value = 0;end
-if value > 360,value = 360;end
-viewSet(viewNum,'tilt',value);
-v = viewGet([],'view',viewNum);
-fig = viewGet(v,'figNum');
-gui = guidata(fig);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.baseTiltSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  if value < 0,value = 0;end
+  if value > 360,value = 360;end
+  viewSet(viewNum,'tilt',value);
+  v = viewGet([],'view',viewNum);
+  fig = viewGet(v,'figNum');
+  gui = guidata(fig);
 
-if (viewGet(v,'baseType') == 2)
-  setMLRViewAngle(v);
-else
-  refreshMLRDisplay(viewNum);
+  if (viewGet(v,'baseType') == 2)
+    setMLRViewAngle(v);
+  else
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 % --- overlayMax
@@ -483,8 +502,12 @@ refreshMLRDisplay(viewNum);
 function overlayMaxText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'overlayMax',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.overlayMaxSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'overlayMax',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- overlayMin
 function overlayMinSlider_CreateFcn(hObject, eventdata, handles)
@@ -511,8 +534,12 @@ refreshMLRDisplay(viewNum);
 function overlayMinText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'overlayMin',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'overlayMin',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- alpha
 function alphaSlider_CreateFcn(hObject, eventdata, handles)
@@ -539,8 +566,12 @@ refreshMLRDisplay(viewNum);
 function alphaText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-viewSet(viewNum,'alpha',value);
-refreshMLRDisplay(viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.alphaSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  viewSet(viewNum,'alpha',value);
+  refreshMLRDisplay(viewNum);
+end
 
 % --- rotate
 function rotateSlider_CreateFcn(hObject, eventdata, handles)
@@ -574,13 +605,17 @@ end
 function rotateText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-mlrGuiSet(viewNum,'rotate',value);
-v = viewGet([],'view',viewNum);
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.rotateSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'rotate',value);
+  v = viewGet([],'view',viewNum);
 
-if (viewGet(v,'baseType') == 2)
-  setMLRViewAngle(v);
-else
-  refreshMLRDisplay(viewNum);
+  if (viewGet(v,'baseType') == 2)
+    setMLRViewAngle(v);
+  else
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1602,6 +1637,7 @@ v = MLR.views{viewNum};
 % get settings from start
 interpMethod = mrGetPref('interpMethod');
 selectedROIColor = mrGetPref('selectedROIColor');
+roiContourWidth = mrGetPref('roiContourWidth');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1630,8 +1666,8 @@ if ~isempty(prefParams)
     refreshMLRDisplay(v.viewNum);
   end
 
-  % check to see if interpolation method has changed
-  if ~strcmp(selectedROIColor,prefParams.selectedROIColor)
+  % check to see if roi graphic parameters method have changed
+  if ~strcmp(selectedROIColor,prefParams.selectedROIColor) || ~strcmp(roiContourWidth,prefParams.roiContourWidth)
     refreshMLRDisplay(v.viewNum);
   end
 end
@@ -1885,6 +1921,16 @@ view = drawROI(view,'line',1);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function createContiguousMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+[view userCancel] = newROI(view);
+if userCancel,return,end
+view = drawROI(view,'contiguous',1);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
 function deleteRoiMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
@@ -1903,22 +1949,13 @@ function removeManyROIMenuItem_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-numrois = viewGet(v,'numberofrois');
+thisView = MLR.views{viewNum};
+
 % put up a dialog with rois to delete
-roinames = viewGet(v,'roiNames');
-paramsDialog = {};
-for roinum = 1:length(roinames)
-  paramsDialog{end+1} = {fixBadChars(roinames{roinum}),0,'type=checkbox',sprintf('Remove ROI %i: %s',roinum,roinames{roinum})};
-end
-params = mrParamsDialog(paramsDialog,'Select ROIs to remove');
-if ~isempty(params)
-  % now go through and delete anything the user selected
-  for roinum = 1:length(roinames)
-    if params.(fixBadChars(roinames{roinum}))
-      v = viewSet(v,'deleteROI',viewGet(v,'roinum',roinames{roinum}));
-    end
-  end
+roiNums = selectROIs(thisView,'Select ROIs to remove');
+if ~isempty(roiNums)
+  % now delete anything the user selected
+  thisView = viewSet(thisView,'deleteROI',roiNums);
   refreshMLRDisplay(viewNum);
 end
 
@@ -1960,6 +1997,16 @@ view = MLR.views{viewNum};
 view = drawROI(view,'line',1);
 refreshMLRDisplay(viewNum);
 
+
+% --------------------------------------------------------------------
+function addContiguousMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'contiguous',1);
+refreshMLRDisplay(viewNum);
+
+
 % --------------------------------------------------------------------
 function removeRoiMenu_Callback(hObject, eventdata, handles)
 
@@ -1985,6 +2032,14 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 view = drawROI(view,'line',0);
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function removeContiguousMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = drawROI(view,'contiguous',0);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -2064,8 +2119,8 @@ v = convertROICorticalDepth(v);
 
 
 % --------------------------------------------------------------------
-function convertRoiToBaseAnatomyMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertRoiToBaseAnatomyMenuItem (see GCBO)
+function convertRoiMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to convertRoiMenuItem (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -2122,46 +2177,24 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
-inGroup = [];
 roiGroup = viewGet(view,'roiGroup');
-
-% get number of ROIs
-nROIs = viewGet(view,'nrois');
-
-% get roi names
-if nROIs > 0
-  roiNames = viewGet(view,'roiNames');
-  roiGroupNum = zeros(1,nROIs);
-  if ~isempty(roiGroup)
-    roiGroupNum(roiGroup) = 1;
-  end
-
-  % display a dialog to allow user to select which ROIs to display
-  roiGroupNum = buttondlg('Select ROIs to display',roiNames,roiGroupNum);
-  if isempty(roiGroupNum),return,end
-  roiGroupNum = find(roiGroupNum);
-
-  % create a cell array with the names of the ROIs to display
-  roiGroup = {};
-  for i = 1:length(roiGroupNum)
-    roiGroup{i} = roiNames{roiGroupNum(i)};
-  end
-
-  % set the roi group
-  view = viewSet(view,'roiGroup',roiGroup);
-
-  % if the setting is not to show groups, change it to show goups
-  showROIs = viewGet(view,'showROIs');
-  if ~any(strcmp(showROIs,{'group','group perimeter'}))
-    % see if perimeter is selected
-    if ~isempty(strfind(showROIs,'perimeter'))
-      view = viewSet(view,'showROIs','group perimeter');
-    else
-      view = viewSet(view,'showROIs','group');
-    end
-  end
-  refreshMLRDisplay(viewNum);
+roiNames = viewGet(view,'roiNames');% I think we shouldn't have to get the names (but need to modify viewSet call)
+% display a dialog to allow user to select which ROIs to display
+roiGroup = selectROIs(view,'Select ROIs to display',roiGroup);
+% set the roi group
+view = viewSet(view,'roiGroup',roiNames(roiGroup));
+% if the setting is not to show groups, change it to show goups
+showROIs = viewGet(view,'showROIs');
+if ~any(strcmp(showROIs,{'group','group perimeter'}))
+ % see if perimeter is selected
+ if ~isempty(strfind(showROIs,'perimeter'))
+   view = viewSet(view,'showROIs','group perimeter');
+ else
+   view = viewSet(view,'showROIs','group');
+ end
 end
+refreshMLRDisplay(viewNum);
+
 
 % --------------------------------------------------------------------
 function showGroupMenuItem_Callback(hObject, eventdata, handles)

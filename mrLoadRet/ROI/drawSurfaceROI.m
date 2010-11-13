@@ -1,6 +1,6 @@
 % drawSurfaceROI.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: drawSurfaceROI()
 %         by: Luke Robot Hospadaruk <hospada1@msu.edu>
 %       date: 11/28/09

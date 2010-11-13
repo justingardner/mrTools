@@ -1,5 +1,6 @@
 % defaultReconcileParams.m
 %
+%        $Id$
 %      usage: defaultReconcileParams(groupName,params,data)
 %         by: justin gardner
 %       date: 03/13/07
@@ -86,6 +87,9 @@ if isfield(params,'scanList')
   scanListName = 'scanList';
 elseif isfield(params,'scanNum')
   scanListName = 'scanNum';
+elseif isfield(params,'tseriesFile')
+  scanListName = 'scanList';
+  params.scanList = 1:length(params.tseriesFile);
 else
   scanListName = '';
 end
@@ -98,7 +102,7 @@ if isfield(params,'scanParams')
   scanFields{end+1} = 'scanParams';
 end
 
-if ~isempty(scanListName)
+if ~isempty(scanListName) && ~isempty(params.(scanListName))
   % if we don't have a tseriesFile field then generate it
   % this will usually happen the first time this function
   % is called on some params
@@ -158,7 +162,7 @@ if ~isempty(scanListName)
     params.tseriesFile = newTSeriesFile;
     % if there are no valid scan numbers then warn and return empty data
     if isempty(newScanNums)
-      disp(sprintf('(defaultReconcileParams) All the previous scans that had been analyzed in this analysis no longer exists.'));
+      disp(sprintf('(defaultReconcileParams) All the previous scans that had been analyzed in this analysis no longer exist.'));
       data = {};
     % and reset the data
     else

@@ -1,4 +1,4 @@
-function [M,w3d] = estMotion3(vol1,vol2,rotFlag,robustFlag,phaseFlag,crop,CB,SC)
+function [M,w3d] = estMotion3(vol1,vol2,rotFlag,robustFlag,phaseFlag,crop,CB,SC,mask)
 %
 % function [M,w] = estMotion3(vol1,vol2,[rotFlag],[robustFlag],[phaseFlag],[crop],[CB],[SC])
 %
@@ -11,7 +11,7 @@ function [M,w3d] = estMotion3(vol1,vol2,rotFlag,robustFlag,phaseFlag,crop,CB,SC)
 %       p is vector of trans+rot (or affine) motion parameters
 %       fs is vector of spatial derivatives at each pixel
 %       ft is temporal derivative at each pixel
-% Mulitplying fs^t B gives a 1x6 (1x12 if affine) vector for each pixel.  Piling
+% Multiplying fs^t B gives a 1x6 (1x12 if affine) vector for each pixel.  Piling
 % these on top of one another gives A, an Nx6 (Nx12 if affine) matrix, where N is
 % the number of pixels. Solves M p = -ftVol where ftVol is an Nx1
 % vector of the the temporal derivatives at every pixel.
@@ -52,14 +52,17 @@ end
 if ~exist('phaseFlag','var')
     phaseFlag = 0;
 end
-if ~exist('crop','var') | isempty(crop)
-    crop = [2 2 2; (size(vol1) - [2 2 2])];
+if ~exist('crop','var') || isempty(crop)
+    crop = [1 1 1; size(vol1)];
 end
 if ~exist('CB','var')
     CB = [];
 end
 if ~exist('SC','var')
     SC = [];
+end
+if ~exist('mask','var') 
+    mask = [];
 end
 
 % Phase
@@ -69,28 +72,40 @@ if phaseFlag
 end
 
 % Compute derivatives
-[fxVol,fyVol,fzVol,ftVol] = computeDerivatives3(vol1,vol2);
+%[fxVol,fyVol,fzVol,ftVol] = computeDerivatives3(vol1,vol2,'same'); %this is a departure from what was done before ('valid' was used), just trying it out
+%And it is necessary in order to use the mask without having to figure out the dimensions to pad with NaNs
+%although we know that it's 2 on each side in all dimensions because computeDerivatives3 uses kernels of length 5, so:
+[fxVol,fyVol,fzVol,ftVol] = computeDerivatives3(vol1,vol2,'valid'); 
+
+% *** We assume 5tap derivative filters.
+filterTaps = 5;
+nInvalidVoxels = floor(filterTaps/2);
+if ~isempty(mask) 
+   %reduce the mask to account fo the use of the 'valid' derivation
+   mask = mask(3:end-nInvalidVoxels,3:end-nInvalidVoxels,3:end-nInvalidVoxels);
+   %apply the mask
+   fxVol(~mask)=NaN;
+   fyVol(~mask)=NaN;
+   fzVol(~mask)=NaN;
+   ftVol(~mask)=NaN;
+end
 
 % Adjust crop
-crop(1,:) = max(crop(1,:),[2 2 2]);
-crop(2,:) = min(crop(2,:),(size(vol1) - [2 2 2]));
-origDims = size(vol1);
-derivDims = size(fxVol);
-diffDims = origDims - derivDims;
-crop(2,:) = crop(2,:) - diffDims;
+crop(1,:) = max(crop(1,:)-nInvalidVoxels,[1 1 1]);
+crop(2,:) = min(crop(2,:)-nInvalidVoxels,size(vol1)-2*nInvalidVoxels);
 
 % Meshgrid on original volume. Then below we throw the edges of the
 % meshgrid to make it the same size as the derivative volumes.
-% *** Note: This assumes 5tap derivative filters.
 [xgrid,ygrid,zgrid] = meshgrid(1:size(vol1,2),1:size(vol1,1),1:size(vol1,3));
-xgrid = xgrid([3:origDims(1)-2],[3:origDims(2)-2],[3:origDims(3)-2]);
-ygrid = ygrid([3:origDims(1)-2],[3:origDims(2)-2],[3:origDims(3)-2]);
-zgrid = zgrid([3:origDims(1)-2],[3:origDims(2)-2],[3:origDims(3)-2]);
+xgrid = xgrid(3:end-nInvalidVoxels,3:end-nInvalidVoxels,3:end-nInvalidVoxels);
+ygrid = ygrid(3:end-nInvalidVoxels,3:end-nInvalidVoxels,3:end-nInvalidVoxels);
+zgrid = zgrid(3:end-nInvalidVoxels,3:end-nInvalidVoxels,3:end-nInvalidVoxels);
+
 
 % Subsample and crop
-indicesY = [crop(1,1):2:crop(2,1)];
-indicesX = [crop(1,2):2:crop(2,2)];
-indicesZ = [crop(1,3):2:crop(2,3)];
+indicesY = crop(1,1):2:crop(2,1);
+indicesX = crop(1,2):2:crop(2,2);
+indicesZ = crop(1,3):2:crop(2,3);
 fxVol = fxVol(indicesY,indicesX,indicesZ);
 fyVol = fyVol(indicesY,indicesX,indicesZ);
 fzVol = fzVol(indicesY,indicesX,indicesZ);

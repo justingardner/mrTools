@@ -1,6 +1,6 @@
 % mrParamsGet.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: mrParamsGet(<vars>)
 %         by: justin gardner
 %       date: 09/23/10

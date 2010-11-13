@@ -1,4 +1,7 @@
 function view = modifyROI(view,coords,xform,voxelSize,sgn)
+%
+%        $Id$
+%
 % view = modifyROI(view,coords,xform,voxelSize,[sgn])
 %
 % Adds/deletes coordinates to/from the current ROI.
@@ -83,7 +86,7 @@ function coords = removeCoords(coords1,coords2)
 % djh, 7/98
 % djh, 2/2001, dumped coords2Indices & replaced with setdiff(coords1',coords2','rows')
 
-if ~isempty(coords1)
+if ~isempty(coords1) && ~isempty(coords2)
     coords = setdiff(coords2',coords1','rows');
     coords = coords';
 else

@@ -224,7 +224,8 @@ switch lower(param)
       groupNum = viewGet(view,'currentGroup');
     end
     if isempty(analysisNum)
-      analysisNum = viewGet(view,'currentAnalysis');
+       mrWarnDlg('(viewGet) No analysis is loaded');
+       return;
     end
     analysis = view.analyses{analysisNum};
     if ~isempty(groupNum) & ~isempty(analysis)
@@ -237,7 +238,6 @@ switch lower(param)
   case {'overlaydir'}
     % overlaydir = viewGet(view,'overlaydir',[groupNum],[analysisNum])
     val = viewGet(view,'analysisdir',varargin{:});
-    
     % group
   case{'numberofgroups','numgroups','ngroups'}
     % n = viewGet(view,'numberofGroups')
@@ -1794,6 +1794,25 @@ switch lower(param)
     end
     
     % ROI
+  case {'visiblerois'}
+    selectedROI = viewGet(view,'currentroi');
+    n = viewGet(view,'numberOfROIs');
+    option = viewGet(view,'showROIs');
+    switch option
+      case{'all','all perimeter'}
+        if selectedROI
+          val = [1:selectedROI-1,selectedROI+1:n,selectedROI];
+        else
+          val = 1:n;
+        end
+      case{'selected','selected perimeter'}
+        val = selectedROI;
+      case{'group','group perimeter'}
+        val = viewGet(view,'roiGroup');
+      otherwise
+        val = [];
+    end
+    
   case {'showrois'}
     % show = viewGet(view,'showROIs')
     val = view.showROIs;
@@ -2339,12 +2358,23 @@ switch lower(param)
       end
     end
   case {'analysisnames'}
-    % analysisNames = viewGet(view,'analysisNames')
-    if ~isempty(view.analyses)
-      numAnalyses = viewGet(view,'numberofAnalyses');
+    % analysisNames = viewGet(view,'analysisNames',[groupnum])
+    if ieNotDefined('varargin')
+      analyses = view.analyses;
+      groupnum = viewGet(view,'currentGroup');
+    elseif length(varargin)==1
+      groupnum = varargin{1};
+      if groupnum == viewGet(view,'currentGroup')
+        analyses = view.analyses;
+      else
+        analyses = viewGet(view,'loadedanalyses',varargin{1});
+      end
+    end
+    if ~isempty(analyses)
+      numAnalyses = viewGet(view,'numberofAnalyses',groupnum);
       names = cell(1,numAnalyses);
       for a = 1:numAnalyses
-        names{a} = view.analyses{a}.name;
+        names{a} = analyses{a}.name;
       end
       val = names;
     end
@@ -2793,6 +2823,63 @@ switch lower(param)
         end
       end
     end
+    
+  case  {'maxoverlaydata'}
+    % maxoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum])
+    % maxoverlaydata = viewGet(view,'maxoverlaydata',overlayNum,[])
+    % maxoverlaydata = viewGet(view,'maxoverlaydata',[],analysisNum)
+    switch (length(varargin))
+      case 1
+        overlayNum = varargin{1};
+        analysisNum = viewGet(view,'currentAnalysis');
+      case 2
+        overlayNum = varargin{1};
+        analysisNum = varargin{2};
+    end
+    overlay = viewGet(view,'overlay',overlayNum,analysisNum);
+% %     if isfield(overlay,'maxOverlayData')     % This was meant to avoid having to recompute minoverlaydata that has been compute before
+% %       val = overlay.maxoverlaydata;          % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
+% %     else
+      val = -inf;
+      for iOverlay = 1:length(overlay.data)
+         if ~isempty(overlay.data{iOverlay})
+            val = max(val,max(overlay.data{iOverlay}(:)));
+         end
+      end
+      if val==-inf
+         val = [];
+      end
+% %       viewSet(view,'maxoverlaydata',val,overlayNum);
+% %     end
+    
+  case  {'minoverlaydata'}
+    % minoverlaydata = viewGet(view,'minoverlaydata',[overlayNum],[analysisNum])
+    % minoverlaydata = viewGet(view,'minoverlaydata',overlayNum,[])
+    % minoverlaydata = viewGet(view,'minoverlaydata',[],analysisNum)
+    switch (length(varargin))
+      case 1
+        overlayNum = varargin{1};
+        analysisNum = viewGet(view,'currentAnalysis');
+      case 2
+        overlayNum = varargin{1};
+        analysisNum = varargin{2};
+    end
+    overlay = viewGet(view,'overlay',overlayNum,analysisNum);
+% %     if isfield(overlay,'minoverlaydata')    % This was meant to avoid having to recompute minoverlaydata that has been compute before
+% %       val = overlay.minoverlaydata;         % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
+% %     else
+      val = inf;
+      for iOverlay = 1:length(overlay.data)
+         if ~isempty(overlay.data{iOverlay})
+            val = min(val,min(overlay.data{iOverlay}(:)));
+         end
+      end
+      if val==inf
+         val = [];
+      end
+% %       viewSet(view,'minoverlaydata',val,overlayNum);
+% %     end
+    
   case {'overlaydims'}
     % overlaydims = viewGet(view,'overlaydims',scanNum,[overlayNum],[analysisNum])
     % overlaydims = viewGet(view,'overlaydims',scanNum,overlayNum,[])
@@ -3292,7 +3379,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.ncycles(scanNum);
+      if isfield(params,'ncycles')
+        val = params.ncycles(scanNum);
+      else
+        val = params.scanParams{scanNum}.ncycles;
+      end
     end
   case {'detrend'}
     % detrend = viewGet(view,'detrend',scanNum)
@@ -3302,7 +3393,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.detrend{scanNum};
+      if isfield(params,'detrend')
+        val = params.detrend{scanNum};
+      else
+        val = params.scanParams{scanNum}.detrend;
+      end
     end
   case {'spatialnorm'}
     % spatialnorm = viewGet(view,'spatialnorm',scanNum)
@@ -3312,7 +3407,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.spatialnorm{scanNum};
+      if isfield(params,'spatialnorm')
+        val = params.spatialnorm{scanNum};
+      else
+        val = params.scanParams{scanNum}.spatialnorm;
+      end
     end
     
     % GUI

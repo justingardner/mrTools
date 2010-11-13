@@ -1,6 +1,6 @@
 % mlrIsImageFile.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: retval = mlrIsImageFile(filename)
 %         by: justin gardner
 %       date: 07/23/09

@@ -3,6 +3,7 @@ function view = mrOpenWindow(viewType,mrLastView)
 %  view = openWindow(viewType)
 %
 % djh, 6/2004
+%        $Id$
 
 if ieNotDefined('viewType'),viewType = 'Volume';end
 % note we don't use ieNotDefined here, because
@@ -51,6 +52,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   mrLastView=load(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
+%   disppercent(-inf,'(mrOpenWindow) Restoring last view');
   if isfield(mrLastView,'view')
     % open up base anatomy from last session
     if isfield(mrLastView.view,'baseVolumes')
@@ -68,7 +70,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	end
       end
     end
-
     % change group
     if isfield(mrLastView,'viewSettings')
       view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
@@ -76,7 +77,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
     end
     nScans = viewGet(view,'nScans');
     mlrGuiSet(view,'nScans',nScans);
-
     if baseLoaded && isfield(mrLastView,'viewSettings')
       % slice orientation from last run
       if isfield(mrLastView.viewSettings,'curBase')
@@ -88,13 +88,13 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       % change scan
       view = viewSet(view,'curScan',mrLastView.viewSettings.curScan);
       % change slice
-      viewSet(view,'curSlice',mrLastView.viewSettings.curSlice);
+      view = viewSet(view,'curSlice',mrLastView.viewSettings.curSlice);
     end
-
     % read analyses
     if isfield(mrLastView.view,'analyses')
       for anum = 1:length(mrLastView.view.analyses)
         view = viewSet(view,'newAnalysis',mrLastView.view.analyses{anum});
+%         disppercent(anum /length(mrLastView.view.analyses));
       end
       if anum >= 1
         % overlay settings
@@ -118,7 +118,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       end
     end
     drawnow
-
     % read ROIs into current view
     if isfield(mrLastView.view,'ROIs')
       for roinum = 1:length(mrLastView.view.ROIs)
@@ -135,11 +134,11 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	view = viewSet(view,'roiGroup',mrLastView.viewSettings.roiGroup);
       end
     end
-
     % add here, to load more info...
     % and refresh
     refreshMLRDisplay(view.viewNum);
   end
+%   disppercent(inf);
 
 end
 

@@ -1,30 +1,32 @@
 % getROICoordinates.m
 %
-%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>)
+%        $Id$
+%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<basenum>)
 %         by: david heeger and justin gardner
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
 %             if scanNum is 0, then will compute in the current base
-%             coordinates. 
+%             coordinates, unless basenum is specified, in which case. 
 %             if roinum is a structure, works on the structure
 %             rather than the roinum
 %             if roinum is a string, will load the roi from
 %             the directory
-function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum)
+function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum,baseNum)
 
 scanCoords = [];
 % check arguments
-if ~any(nargin == [2 3 4])
+if ~any(nargin == [2 3 4 5])
   help getROICoordinates
   return
 end
 
-% get group and scan
-if ieNotDefined('groupNum')
-  groupNum = viewGet(view,'currentGroup');
-end
-if ieNotDefined('scanNum')
-  scanNum = viewGet(view,'currentScan');
+% get  scan
+if ieNotDefined('scanNum') 
+  if ieNotDefined('basenum')
+    scanNum = viewGet(view,'currentScan');
+  else
+    scanNum = 0;
+  end
 end
 
 % if roiNum is a string see if it is loaded, otherwise
@@ -67,13 +69,19 @@ end
 
 % get the scan transforms
 if scanNum
+  if ieNotDefined('groupNum')
+    groupNum = viewGet(view,'currentGroup');
+  end
   scan2roi = viewGet(view,'scan2roi',roiNum,scanNum,groupNum);
   scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
 else
   % use base xform if scanNum == 0
-  view = viewSet(view,'curGroup',groupNum);
-  scan2roi = viewGet(view,'base2roi',roiNum);
-  scanVoxelSize = viewGet(view,'baseVoxelSize');
+  %view = viewSet(view,'curGroup',groupNum); %JB: I don't think that's necessary
+  if ieNotDefined('baseNum')
+    baseNum = viewGet(view,'curbase');
+  end
+  scan2roi = viewGet(view,'base2roi',roiNum,baseNum);
+  scanVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
 end  
 
 if (isempty(scan2roi)) 
