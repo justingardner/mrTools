@@ -28,7 +28,12 @@ function [value prefDefaults] = mrGetPref(pref)
 % %	$Id$	
 
 % with no arguments, return a list of possible preferences
-prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogators','selectedROIColor','roiContourWidth','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','defaultCombineFunctions','importROIPath','magnet','coil','pulseSequence'};
+prefNames = {'overwritePolicy','verbose','graphWindow',...
+   'maxBlocksize','roiCacheSize','baseCacheSize','overlayCacheSize','defaultPrecision',...
+   'defaultInterrogators','systemInterrogators','defaultCombineFunctions',...,
+   'importROIPath','volumeDirectory','niftiFileExtension','fslPath',...
+   'selectedROIColor','roiContourWidth','roiPolygonMethod','interpMethod',...
+   'site','magnet','coil','pulseSequence'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
@@ -36,6 +41,7 @@ prefDefaults{length(prefNames)} = [];
 prefDefaults{find(strcmp('interpMethod',prefNames))} = {'nearest','linear','spline','cubic'};
 prefDefaults{find(strcmp('overwritePolicy',prefNames))} = {'Ask','Merge','Rename','Overwrite'};
 prefDefaults{find(strcmp('verbose',prefNames))} = {'Yes','No'};
+prefDefaults{find(strcmp('graphWindow',prefNames))} = {'Replace','Make new'};
 prefDefaults{find(strcmp('niftiFileExtension',prefNames))} = {'.img','.nii'};
 prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'roipoly','getpts','getptsNoDoubleClick'};
 prefDefaults{find(strcmp('selectedROIColor',prefNames))} = color2RGB;
