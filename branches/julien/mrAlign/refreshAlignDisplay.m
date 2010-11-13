@@ -148,4 +148,4 @@ zi = reshape(coordsXform(3,:),dims);
 % Note: interp3 treats x and y in right-handed coordinate system, not in
 % matrix index order so we need to swap them here. See example code
 % interpVolume.m.
-inplanesXform = interp3(inplanes,yi,xi,zi,'linear',nan);
+inplanesXform = interp3(inplanes,yi,xi,zi,'nn',nan); %JB: replacing linear by nearest neighboor ('nn') solves the problem of non-displayed voxels due to decimal error in the xform matrix
