@@ -100,7 +100,7 @@ for i = 1:length(vars)
       % description, descriptions either have no equal sign
       % and are not a single word, or have an equal sign but
       % have spaces before the equal sign
-      if ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
+      if isempty(vars{i}{j}) || ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
           ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
         varinfo{i}.description = vars{i}{j};
         % now look for settings that involve the next parameter
