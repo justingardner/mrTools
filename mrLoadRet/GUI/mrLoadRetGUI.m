@@ -1787,6 +1787,27 @@ else
   mrWarnDlg(sprintf('(mrLoadRetGUI) No analyses loaded'));
 end
 
+% --------------------------------------------------------------------
+function CombineOverlaysMenuItem_Callback(hObject, eventdata, handles)
+
+mrGlobals;
+viewNum = handles.viewNum;
+thisView = MLR.views{viewNum};
+combineOverlays(thisView);
+
+
+% --------------------------------------------------------------------
+function applyWarpOverlaysMenuItem_Callback(hObject, eventdata, handles)
+if strcmp(mrGetPref('fslPath'),'FSL not installed')
+  mrWarnDlg('(mrLoadRetGUI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
+else
+  mrGlobals;
+  viewNum = handles.viewNum;
+  thisView = MLR.views{viewNum};
+  applyWarpOverlays(thisView);
+end
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function viewMenu_Callback(hObject, eventdata, handles)
 
