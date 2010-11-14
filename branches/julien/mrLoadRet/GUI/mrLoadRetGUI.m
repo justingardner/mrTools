@@ -2152,6 +2152,17 @@ v = MLR.views{viewNum};
 
 v = convertROI(v);
 
+% --------------------------------------------------------------------
+function applyWarpRoiMenuItem_Callback(hObject, eventdata, handles)
+if strcmp(mrGetPref('fslPath'),'FSL not installed')
+  mrWarnDlg('(mrLoadRetGUI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
+else
+  mrGlobals;
+  viewNum = handles.viewNum;
+  v = MLR.views{viewNum};
+
+  v = applyWarpROI(v);
+end
 
 % --------------------------------------------------------------------
 function showRoiMenu_Callback(hObject, eventdata, handles)
