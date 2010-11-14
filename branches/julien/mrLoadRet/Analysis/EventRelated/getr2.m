@@ -1,5 +1,6 @@
 % getr2.m
 %
+%        $Id$
 %      usage: getr2(d)
 %         by: justin gardner
 %       date: 07/30/03
@@ -11,10 +12,14 @@
 %             d needs to have a stimulus convolution matrix
 %             in d.scm
 %
-function d = getr2(d,verbose)
+%
+% modified by julien besle 12/01/2009 to speed things up by pre allocating 
+%             the whole ehdr and ehdrste matrices with the right dimensions
+%             and to compute the residual and total sum of squares of the model
+%
+% THIS FUNCTION IS DEPRECATED AND HAS BEEN REPLACED BY GETGLMSTATISTICS.M
 
-% init some variables
-ehdr=[];r2 = [];
+function d = getr2(d,verbose)
 
 if ieNotDefined('verbose'),verbose = 1;end
 
@@ -43,9 +48,11 @@ xvals = 1:d.dim(1);xvaln = length(xvals);
 yvals = 1:d.dim(2);yvaln = length(yvals);
   
 % preallocate memory
-d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+d.ehdr = zeros(d.nhdr*d.hdrlen,d.dim(1),d.dim(2),d.dim(3));    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+d.ehdrste = zeros(d.nhdr*d.hdrlen,d.dim(1),d.dim(2),d.dim(3)); %JB: replaces: d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
 d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
+d.rss = zeros(d.dim(1),d.dim(2),d.dim(3)); %JB: this is to store the sum of square of the residual error term 
+d.tss = zeros(d.dim(1),d.dim(2),d.dim(3)); %JB: this is to store the total sum of square
 
 % turn off warnings to avoid divide by zero warning
 warning('off','MATLAB:divideByZero');
@@ -76,45 +83,50 @@ for j = yvals
     % convert to percent signal change
     timeseries = 100*timeseries./(onesmatrix*colmeans);
     % get hdr for the each voxel
-    ehdr{j,k} = precalcmatrix*timeseries;
+    d.ehdr(:,:,j,k) = precalcmatrix*timeseries;    %JB: replaces: ehdr{j,k} = precalcmatrix*timeseries;
     % calculate error bars, first get sum-of-squares of residual
     % (in percent signal change)
-    sumOfSquaresResidual = sum((timeseries-d.scm*ehdr{j,k}).^2);
+    d.rss(:,j,k) = sum((timeseries-d.scm*d.ehdr(:,:,j,k)).^2);    %JB: replaces: sumOfSquaresResidual = sum((timeseries-d.scm*ehdr{j,k}).^2);
+    d.tss(:,j,k) = sum(timeseries.^2);    %JB
     % now calculate the sum-of-squares of that error
     % and divide by the degrees of freedom (n-k where n
     % is the number of timepoints in the scan and k is 
     % the number of timepoints in all the estimated hdr)
-    S2 = sumOfSquaresResidual/(length(d.volumes)-size(d.scm,2));
+    rms = d.rss(:,j,k)/(length(d.volumes)-size(d.scm,2));   %JB: replaces: S2 = sumOfSquaresResidual/(length(d.volumes)-size(d.scm,2));
     % now distribute that error to each one of the points
     % in the hemodynamic response according to the inverse
     % of the covariance of the stimulus convolution matrix.
-    ehdrste{j,k} = sqrt(diagOfInverseCovariance*S2);
+    d.ehdrste(:,:,j,k) = sqrt(diagOfInverseCovariance*rms');        %JB: replaces: ehdrste{j,k} = sqrt(diag(pinv(d.scm'*d.scm))*S2);
     % calculate variance accounted for by the estimated hdr
-    r2{j,k} = (1-sumOfSquaresResidual./sum(timeseries.^2));
+    d.r2(:,j,k) = (1-d.rss(:,j,k)'./sum(timeseries.^2))';     %JB: replaces: r2{j,k} = (1-sumOfSquaresResidual./sum(timeseries.^2));
   end
   if verbose,disppercent(max((j-min(yvals))/yvaln,0.1));end
 end
-if verbose,disppercent(inf);end
 
-% reshape matrix. this also seems the fastest way to do things. we
-% could have made a matrix in the above code and then reshaped here
-% but the reallocs needed to continually add space to the matrix
-% seems to be slower than the loops needed here to reconstruct
-% the matrix from the {} arrays.
-if verbose,disppercent(-inf,'(getr2) Reshaping matrices');end
-for i = xvals
-  for j = yvals
-    for k = slices
-      % get the ehdr
-      d.ehdr(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdr{j,k}(:,i)),[d.hdrlen d.nhdr])';
-      % and the stderror of that
-      d.ehdrste(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdrste{j,k}(:,i)),[d.hdrlen d.nhdr])';
-      % now reshape r2 into a matrix
-      d.r2(i,j,k) = r2{j,k}(i);
-    end
-  end
-  if verbose,disppercent((i-min(xvals))/xvaln);end
-end
+d.ehdr = permute(reshape(d.ehdr, d.hdrlen, d.nhdr, d.dim(1), d.dim(2), d.dim(3)),[3 4 5 2 1]);    %JB
+d.ehdrste = permute(reshape(d.ehdrste, d.hdrlen, d.nhdr, d.dim(1),d.dim(2),d.dim(3)),[3 4 5 2 1]);  %JB
+
+% JB: remove all the following since the matrix has been created directly in the right shape
+
+% % reshape matrix. this also seems the fastest way to do things. we
+% % could have made a matrix in the above code and then reshaped here
+% % but the reallocs needed to continually add space to the matrix
+% % seems to be slower than the loops needed here to reconstruct
+% % the matrix from the {} arrays.
+% if verbose,disppercent(-inf,'(getr2) Reshaping matrices');end
+% for i = xvals
+%   for j = yvals
+%     for k = slices
+%       % get the ehdr
+%       d.ehdr(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdr{j,k}(:,i)),[d.hdrlen d.nhdr])';
+%       % and the stderror of that
+%       d.ehdrste(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdrste{j,k}(:,i)),[d.hdrlen d.nhdr])';
+%       % now reshape r2 into a matrix
+%       d.r2(i,j,k) = r2{j,k}(i);
+%     end
+%   end
+%   if verbose,disppercent((i-min(xvals))/xvaln);end
+% end
 
 % display time took
 if verbose,disppercent(inf);end

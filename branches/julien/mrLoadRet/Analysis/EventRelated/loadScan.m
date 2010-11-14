@@ -1,5 +1,6 @@
 % loadScan.m
 %
+%        $Id$
 %      usage: loadScan(view,<scanNum>,<groupNum>,<sliceNum>,<precision>,<x>,<y>)
 %         by: justin gardner
 %       date: 03/20/07

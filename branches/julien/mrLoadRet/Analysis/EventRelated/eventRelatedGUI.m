@@ -62,10 +62,13 @@ end
 
 % get scans
 view = viewSet(view,'groupName',params.groupName);
+nScans = viewGet(view,'nScans');
 if ~ieNotDefined('scanList')
   params.scanNum = scanList;
 elseif useDefault
-  params.scanNum = 1:viewGet(view,'nScans');
+  params.scanNum = 1:nScans;
+elseif nScans == 1
+  params.scanNum = nScans;
 else
   params.scanNum = selectScans(view);
 end
