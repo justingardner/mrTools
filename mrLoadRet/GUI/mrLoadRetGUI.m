@@ -1773,11 +1773,15 @@ if viewGet(view,'numAnalyses') > 0
   analysisFunction = viewGet(view,'analysisFunction',n);
   guiFunction = viewGet(view,'analysisGuiFunction',n);
   params = viewGet(view,'analysisParams',n);
-  % params = guiFunction('groupName',groupName,'params',params);
-  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
+  % params = guiFunction('groupName',groupName,'params',params,'thisView',view);
+  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params,','''','thisView','''',',view);'];
   eval(evalstring);
   % params is empty if GUI cancelled
   if ~isempty(params)
+    %check if the group has changed, in which case we need to remove the tseriesFile field so that reconcileParams doesn't get confused
+    if isfield(params,'groupName') && ~strcmp(groupName,params.groupName) && isfield(params,'tseriesFile')
+       params = rmfield(params,'tseriesFile');
+    end
     % view = analysisFunction(view,params);
     evalstring = ['view = ',analysisFunction,'(view,params);'];
     eval(evalstring);

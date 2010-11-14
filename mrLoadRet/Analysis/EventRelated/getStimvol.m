@@ -2,22 +2,20 @@
 % getstimvol.m
 %
 %      usage: d = getStimvol(d or view,varname)
-%         by: justin gardner
+%         by: justin gardner, modified by julien besle (22/03/2010)
 %       date: 12/21/05
 %    purpose: gets the stimulus vols. varname
 %             can be a variable name or can be 
 %             a structure with fields: 
 %             taskNum,phaseNum,segmentNum, and varname
+%              $Id$
 %       e.g.: 
 %             d = getStimvol(d,'orientation');
 %             d = getStimvol(d,'orientation','taskNum=2');
-%             d = getStimvol(d,'orintation','taskNum=2','phaseNum=2','segmentNum=1');
+%             d = getStimvol(d,'orientation','taskNum=2','phaseNum=2','segmentNum=1');
 % 
 %             d must have the field stimfile, tr, dim
-%             optionally concatInfo, junkFrames, impulse, supersampling, 
-%
-%             optionally, d can be a view (v = newView) and then the program
-%             will pull the relevant information from MLR view
+%             optionally concatInfo, junkFrames 
 % 
 %             v = newView;
 %             v = viewSet(v,'curGroup',3);
@@ -36,8 +34,8 @@ end
 
 % evaluate other arguments
 taskNum=[];phaseNum=[];segmentNum=[];stimfile=[];tr=[];nFrames=[];concatInfo=[];
-junkFrames=[];impulse=[];supersampling=[];returnOnlyStimvol=[];
-getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'impulse',[],'supersampling',[],'returnOnlyStimvol=[]'});
+junkFrames=[];returnOnlyStimvol=[];
+getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[]});
 
 if ~exist('stimVariable','var'),stimVariable = ''; end
 
@@ -52,9 +50,6 @@ if isview(d)
   d.tr = viewGet(v,'framePeriod');
   d.concatInfo = viewGet(v,'concatInfo');
   d.junkFrames = viewGet(v,'totalJunkedFrames');
-  % and optional arguments (only necessary for eventtimes)
-  if ~isempty(supersampling),d.supersampling = supersampling;end
-  if ~isempty(impulse),d.impulse=impulse;end
   if isempty(returnOnlyStimvol),returnOnlyStimvol = 1;end
 else
   if isempty(returnOnlyStimvol),returnOnlyStimvol = 0;end
@@ -86,34 +81,84 @@ if ~ieNotDefined('segmentNum'),var.segmentNum = segmentNum;end
 % keep the varname that this was called with
 d.varname = var;
 
-% TR supersampling
-if isfield(d,'supersampling')
-  samplingf = d.supersampling;
-  if ( samplingf~=floor(samplingf) ) || ( samplingf<1 )
-    disp(sprintf('invalid TR supersampling factor (%g). using default (1.0)', samplingf));
-    samplingf = 1;
-  end
+% TR trSupersampling for cases where the duration/time of the stimulation is not a multiple of TR (only supported for eventtimes file types)
+time_remainders = [];
+if isfield(var,'forceStimOnTR') && ~var.forceStimOnTR
+   %compute the remainders of all stim times divided by tr
+   for i_file = 1:length(d.stimfile)
+      if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
+         for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
+            time_remainders = [time_remainders rem(d.stimfile{i_file}.mylog.stimtimes_s{i_type},d.tr)];
+         end
+      else
+         disp(sprintf('(getStimvol) stim onset off TR is not supported for mgl or afni files. Forcing stim on TR'));
+         time_remainders = [];
+         break;
+      end
+   end
+end
+duration_remainders = [];
+if isfield(var,'stimDuration') 
+   if ischar(var.stimDuration) && strcmp(var.stimDuration,'fromFile')
+      %compute the remainders of all stim durations divided by tr
+      for i_file = 1:length(d.stimfile)
+         if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
+            if isfield(d.stimfile{i_file}.mylog,'stimdurations_s') 
+               for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
+                  duration_remainders = [duration_remainders rem(d.stimfile{i_file}.mylog.stimdurations_s{i_type},d.tr)];
+               end
+            else
+               disp(sprintf('(getStimvol) Field stimdurations_s missing in file %d. Using stimDuration = 1 TR',i_file));
+               duration_remainders = [];
+               var.stimDuration = d.tr;
+               break;
+            end
+         else
+            disp(sprintf('(getStimvol) Stim duration from files not supported for mgl or afni files. Using stimDuration = 1 TR',d.stimfile{i_file}.filename));
+            duration_remainders = [];
+            var.stimDuration = d.tr;
+            break;
+         end
+      end
+   else
+      if ischar(var.stimDuration) 
+         var.stimDuration = eval(var.stimDuration);
+      end
+      duration_remainders = [duration_remainders rem(var.stimDuration,d.tr)];
+   end
 else
-  samplingf = 1;
+   var.stimDuration = d.tr;
 end
 
-if isfield(d, 'impulse')
-  impulse = d.impulse;
-else
-  impulse = 1;
+%find the least supersampling factor (= greatest common factor of all possible durations/times of the event)
+remainders = [time_remainders duration_remainders d.tr];
+remainders = round(remainders*100); %temporal resolution limited to .01 s
+remainders(remainders==0) = d.tr*100;    %replace zeros by TRs
+remainders = unique(remainders);
+greatest_common_factor = 0;
+for i = 1:length(remainders)
+   greatest_common_factor = gcd(greatest_common_factor,remainders(i));
+   if greatest_common_factor ==1
+      break
+   end
+end
+trSupersampling = round(d.tr/(greatest_common_factor/100));
+
+%check if trSupersampling is supported for all runs
+if trSupersampling~=1 || ischar(var.stimDuration) || var.stimDuration ~= d.tr
+   for i = 1:length(d.stimfile)
+      if ~strcmp(d.stimfile{i}.filetype,'eventtimes')
+         disp(sprintf('(getStimvol) TR supersampling not supported for mgl or afni files. using default (1.0)'));
+         trSupersampling = 1;
+         stimDuration = d.tr;
+      end
+   end
 end
 
-%check if supersampling is supported for all runs
-for i = 1:length(d.stimfile)
-  if ~strcmp(d.stimfile{i}.filetype,'eventtimes') && ( samplingf~=1 )
-    disp(sprintf('TR supersampling not supported for mgl or afni files. using default (1.0)'));
-    samplingf = 1;
-  end
-end
 
-lastStimNames = [];
 % depending on what kind of stimfile we have, we get the
 % stimvolumes differently
+lastStimNames = [];
 for i = 1:length(d.stimfile)
   % get the stimvol for this particular stimfile
   switch d.stimfile{i}.filetype,
@@ -129,7 +174,7 @@ for i = 1:length(d.stimfile)
       [stimvol d.stimNames d.trialNum{i}] = getStimvolFromVarname(var,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
-    stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/samplingf, impulse);
+    stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/trSupersampling, var.stimDuration);
     if isfield(d.stimfile{i}, 'stimNames')
       d.stimNames = d.stimfile{i}.stimNames;
     end
@@ -195,15 +240,14 @@ for i = 1:length(d.stimfile)
   % then shift all the stimvols by that many junkvols
   for nhdr = 1:length(stimvol)
     % subtract junkFrames
-    stimvol{nhdr} = stimvol{nhdr}-junkFrames(i)*samplingf;
-    % and get rid of anything less than 0 (do this on both trialNum and stimvol
-    if isfield(d,'trialNum') d.trialNum{i}{nhdr} = d.trialNum{i}{nhdr}(stimvol{nhdr}>0);end
+    stimvol{nhdr} = stimvol{nhdr}-junkFrames(i)*trSupersampling;
+    % and get rid of anything less than 0
     stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
     % check for stimvol overrun
     if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
-        runlen = d.dim(end)*samplingf;
+        runlen = d.dim(end)*trSupersampling;
     else
-        runlen = diff(d.concatInfo.runTransition(i,:))*samplingf+1;
+        runlen = diff(d.concatInfo.runTransition(i,:))*trSupersampling+1;
     end
     if ~isempty(find(stimvol{nhdr}>runlen,1))
       if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
@@ -231,10 +275,10 @@ for i = 1:length(d.stimfile)
     for nhdr = 1:length(stimvol)
       if length(stimvol) >= nhdr
 	% if we already have some stimvols for this stimulus type then concatenate
-	d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf)];
+	d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*trSupersampling)];
       else
 	% first time we have encoutered this stimvol just add it to d.stimvol
-	d.stimvol{nhdr} = (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*samplingf);
+	d.stimvol{nhdr} = (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*trSupersampling);
       end
     end
     % on first file, we just set stimvol in the d field
@@ -244,7 +288,7 @@ for i = 1:length(d.stimfile)
 end
 
 % return the actual TR supersampling factor
-d.supersampling = samplingf;
+d.supersampling = trSupersampling;
 
 % update the eventRelatedVarname
 if isfield(d,'eventRelatedVarname')
@@ -310,27 +354,26 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % stimvol from Farshad's file type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stimvol = getStimvolFromEventTimes(stimfile,tr,impulse)
+function stimvol = getStimvolFromEventTimes(stimfile,tr,stimDuration)
 
 % sort into stimuli
 nhdr = length(stimfile.stimtimes_s);
 stimvol = cell(1, nhdr);
 
-if ~impulse && isfield(stimfile, 'stimdurations_s')
-  for i = 1:nhdr
-    z = zeros(1, 1+ceil(max(stimfile.stimtimes_s{i})/tr));
-    for event=1:length(stimfile.stimtimes_s{i})
-      onset = max(stimfile.stimtimes_s{i}(event), 0)/tr;
-      offset = max(onset, onset+stimfile.stimdurations_s{i}(event)/tr-0.49);
-      z(1+[floor(onset):floor(offset)])=1;
-    end
-    stimvol{i} = unique(find(z));
-  end
+if ischar(stimDuration) && strcmp(stimDuration,'fromFile')
+   for i = 1:nhdr
+      for event=1:length(stimfile.stimtimes_s{i})
+         stimvol{i} =  [stimvol{i} round(stimfile.stimtimes_s{i}(event)/tr) + (1:max(1,round(stimfile.stimdurations_s{i}(event)/tr))) ];
+      end
+   end
 else
   for i = 1:nhdr
-    stimvol{i} = 1+floor(stimfile.stimtimes_s{i}(:) / tr)';
-  end
-end
+      for event=1:length(stimfile.stimtimes_s{i})
+         stimvol{i} =  [stimvol{i} round(stimfile.stimtimes_s{i}(event)/tr) + (1:max(1,round(stimDuration/tr))) ];
+      end
+   end
+end   
+         
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % stimvol from AFNI file type

@@ -1,27 +1,56 @@
 % hrfDiffGamma.m
 %
-%      usage: hrfDiffGamma('params'), hrfDiffGamma(tr, params)
-%         by: farshad moradi
-%       date: 14/06/07
+%        $Id$
+%      usage: [params,hrf] = hrfDiffGamma(params, tr, stimDuration )
+%         by: farshad moradi, modified by julien besle
+%       date: 14/06/07, 09/02/2010
 %    purpose: returns a canonical hrf
 %
-function [hrf] = hrfDiffGamma(tr, params)
+function [params, hrf] = hrfDiffGamma(params, tr, justGetParams, defaultParams )
 
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3 4])
   help hrfDiffGamma
   return
 end
 
-if tr=='params'
-    hrf = {...
-        {'description', 'hrfDiffGamma', 'comment describing the hdr model'},...
-        {'x', 6, 'hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
-        {'y', 16, 'hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
-        {'z', 6, 'hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
-        {'stimDur', 0.01, 'duration of stimulation/event (seconds, min=0.01s). a boxcar function that is convolved with hrf'},...
-        {'incDeriv',0,'type=checkbox','include derivative of the hrf in the model?'},...
-    };
-    return
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+
+if ieNotDefined('params')
+  params = struct;
+end
+if ~isfield(params,'description')
+  params.description = 'Double Gamma Function';
+end
+if ~isfield(params,'x')
+  params.x = 6;
+end
+if ~isfield(params,'y')
+  params.y = 16;
+end
+if ~isfield(params,'z')
+  params.z = 6;
+end
+if ~isfield(params,'includeDerivative')
+  params.includeDerivative = 0;
+end
+  
+paramsInfo = {...
+    {'description', params.description, 'comment describing the hdr model'},...
+    {'x', params.x, 'hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
+    {'y', params.y, 'hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
+    {'z', params.z, 'hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
+    {'includeDerivative',params.includeDerivative,'type=checkbox','include derivative of the hrf in the model?'},...
+};
+      
+if defaultParams
+  params = mrParamsDefault(paramsInfo);
+else
+  params = mrParamsDialog(paramsInfo, 'Set model HRF parameters');
+end
+
+if justGetParams
+   return
 end
 
 tmax = max(params.y*3, 20);
@@ -38,43 +67,35 @@ end
 dt = 0.01;
 
 t = 0:dt:tmax;
-HRF = gampdf(t, params.x, 1) - gampdf(t, params.y, 1)/params.z;
-HRF = convn(HRF, ones(1, max(1, ceil(params.stimDur/dt))) );
+warning('off', 'MATLAB:log:logOfZero');
+modelHrf = gampdf(t, params.x, 1) - gampdf(t, params.y, 1)/params.z;
+warning('on', 'MATLAB:log:logOfZero');
 
 if shift<0
-    HRF = [zeros(1, ceil(-shift/dt)), HRF];
+  modelHrf = [zeros(1, ceil(-shift/dt)), modelHrf];
 elseif shift>0
-    HRF = HRF( ceil(shift/dt):end );
+  modelHrf = modelHrf( ceil(shift/dt):end );
 end
-    
-% subsample hrf
-t = [0:length(HRF)-1]*dt;
-h_intp = interp1(t, HRF, tr/2:tr:max(t));
-
-% remove mean
-h_intp = h_intp - mean(h_intp);
-% normalize
-h_intp = h_intp / norm(h_intp'); 
 
 
-if params.incDeriv
-    
-    % take the derivative
-    HRFD = [diff(HRF), 0];
-    
-    % subsample hrf derivative
-    hd_intp = interp1(t, HRFD, tr/2:tr:max(t));
-    
-    % remove mean
-    hd_intp = hd_intp - mean(hd_intp);
-    % orthogonalize
-    hd_intp = hd_intp - h_intp*(hd_intp/h_intp);
-    % normalize
-    hd_intp = hd_intp / norm(hd_intp');
-
-    % return as column vectors, zero at time zero
-    hrf = [h_intp; hd_intp]';
-else
-    % return as column vector, zero at time zero
-    hrf = h_intp';
+if params.includeDerivative
+  % take the derivative
+  modelHrfDerivative = [diff(modelHrf), 0];
+  % orthogonalize
+  modelHrfDerivative = modelHrfDerivative - modelHrf*(modelHrfDerivative/modelHrf);
+  % remove mean
+  modelHrfDerivative = modelHrfDerivative - mean(modelHrfDerivative);
+  % normalize so that it's norm equals the Hrf norm
+  modelHrfDerivative = modelHrfDerivative / norm(modelHrfDerivative)*norm(modelHrf);
+  %concatenate
+  modelHrf = [modelHrf; modelHrfDerivative];
 end
+
+%normalise so that integral of sum = 1
+modelHrf = modelHrf./sum(modelHrf(:));
+    
+%downsample with constant integral
+hrf = downsample(modelHrf', round(tr/dt));
+
+params.maxModelHrf = tr/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
+
