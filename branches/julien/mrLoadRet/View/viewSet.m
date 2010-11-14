@@ -1202,7 +1202,6 @@ switch lower(param)
     else
       analysisNum = varargin{1};
     end
-    analysisName = viewGet(view,'analysisName',analysisNum);
     analysis = viewGet(view,'analysis',analysisNum);
     % Error if groupNames don't match
     if ~strcmp(overlay.groupName,analysis.groupName)
@@ -1247,14 +1246,7 @@ switch lower(param)
     % If overlay.name already exists then replace the existing one with
     % this new one. Otherwise, add it to the end of the overlays list.
     newOverlayName = overlay.name;
-%     newOverlayNum = [];
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
-%     for num = 1:nOverlays
-%       overlayName = viewGet(view,'overlayName',num,analysisNum);
-%       if strcmp(newOverlayName,overlayName)
-%         newOverlayNum = num;
-%       end
-%     end
     %this finds the number of overlays with identical name (replaces the loops above
     [dump,newOverlayNum] = ismember(newOverlayName,viewGet(view,'overlayNames',[],analysisNum)); 
     if newOverlayNum %if there is already an overlay with this name
@@ -1396,7 +1388,12 @@ switch lower(param)
         ~isempty(view.analyses{analysisNum}.overlays)
       view.analyses{analysisNum}.overlays(overlayNum).clip(1) = val;
       if (overlayNum == curOverlay)
-        mlrGuiSet(view,'overlayMin',val);
+        mlrGuiSet(view,'overlayMin',val);        
+        %identify the overlay name in the list if any voxel is clipped 
+        mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum)); 
+              %there's probably a way to make this faster
+              %by changing only the overlay name that has changed
+              %but would require accessing GUI information directly instead of using mlrGuiSet
       end
     end
 
@@ -1414,8 +1411,40 @@ switch lower(param)
       view.analyses{analysisNum}.overlays(overlayNum).clip(2) = val;
       if (overlayNum == curOverlay)
         mlrGuiSet(view,'overlayMax',val);
+        mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum)); 
+              %there's probably a way to make this faster
+              %by changing only the overlay name that has changed
+              %but would require accessing GUI information directly instead of using mlrGuiSet
       end
     end
+
+% % % This was meant to avoid having to recompute max/min overlaydata when it has been compute before
+% % % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
+%   case {'maxoverlaydata'}
+%     % view = viewSet(view,'maxoverlaydata',number,[overlayNum]);
+%     if ieNotDefined('varargin')
+%       overlayNum = viewGet(view,'currentOverlay');
+%     else
+%       overlayNum = varargin{1};
+%     end
+%     analysisNum = viewGet(view,'currentAnalysis');
+%     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+%         ~isempty(view.analyses{analysisNum}.overlays)
+%       view.analyses{analysisNum}.overlays(overlayNum).maxOverlayData = val;
+%     end
+%
+%   case {'minoverlaydata'}
+%     % view = viewSet(view,'minoverlaydata',number,[overlayNum]);
+%     if ieNotDefined('varargin')
+%       overlayNum = viewGet(view,'currentOverlay');
+%     else
+%       overlayNum = varargin{1};
+%     end
+%     analysisNum = viewGet(view,'currentAnalysis');
+%     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+%         ~isempty(view.analyses{analysisNum}.overlays)
+%       view.analyses{analysisNum}.overlays(overlayNum).minoverlaydata = val;
+%     end
 
   case {'overlayrange'}
     % view = viewSet(view,'overlayrange',[min max],[overlayNum]);
