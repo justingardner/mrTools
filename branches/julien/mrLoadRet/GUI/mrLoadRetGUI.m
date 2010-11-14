@@ -1340,21 +1340,15 @@ function copyOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-MLR.clipboard = viewGet(view,'overlay');
+
+MLR.clipboard = copyOverlay(view); %calls copyOverlay which asks which overlay and for which scans to copy an returns all the copied overlays
 
 % --------------------------------------------------------------------
 function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-[check overlay] = isoverlay(MLR.clipboard);
-if ~check
-    mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
-end
-if ~isanalysis(viewGet(view,'analysis'))
-    mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
-end
-view = viewSet(view,'newOverlay',overlay);
+pasteOverlay(view, MLR.clipboard);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
