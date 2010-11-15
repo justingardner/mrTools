@@ -204,23 +204,23 @@ for iLoad = 1:length(slicesToLoad)
   
   %compute the correlation analysis on the average scans
   averageModelTSeriesTW = mean(modelTSeriesTW,3);
-  [coherence, amplitude, phase] = computeCorAnalSeries(averageModelTSeriesTW,params);
+  [coherence, amplitude, phase] = computeCoranal(averageModelTSeriesTW,params.ncycles,params.detrend,params.spatialnorm,params.trigonometricFunction);
   
   %compute the phase for each scan
   averagePhase = nan(subsetDims(1)*subsetDims(2)*slicesToLoad(iLoad),params.nScans,'single');
   for iScan = 1:params.nScans
-    [~, ~, averagePhase(:,iScan)] = computeCorAnalSeries(modelTSeriesTW(:,:,iScan),params);
+    [~, ~, averagePhase(:,iScan)] = computeCoranal(modelTSeriesTW(:,:,iScan),params.ncycles,params.detrend,params.spatialnorm,params.trigonometricFunction);
   end
   averagePhase = angle(mean(exp(1i*averagePhase),2));
   averagePhase(averagePhase<0)=averagePhase(averagePhase<0)+2*pi;
  
   %average fwd and bcwd scans separately and compute average coherence and amplitude
   bcwdModelTSeriesTW = mean(modelTSeriesTW(:,:,reverseScans),3);
-  [bcwdCoherence, bcwdAmplitude] = computeCorAnalSeries(bcwdModelTSeriesTW,params);
+  [bcwdCoherence, bcwdAmplitude] = computeCoranal(bcwdModelTSeriesTW,params.ncycles,params.detrend,params.spatialnorm,params.trigonometricFunction);
   clear('bcwdModelTSeriesTW');
   modelTSeriesTW(:,:,reverseScans) = [];
   modelTSeriesTW = mean(modelTSeriesTW,3);
-  [fwdCoherence, fwdAmplitude] = computeCorAnalSeries(modelTSeriesTW,params);
+  [fwdCoherence, fwdAmplitude] = computeCoranal(modelTSeriesTW,params.ncycles,params.detrend,params.spatialnorm,params.trigonometricFunction);
   clear('modelTSeriesTW')
   averageCoherence = (fwdCoherence+bcwdCoherence)/2;
   averageAmplitude = (fwdAmplitude+bcwdAmplitude)/2;
@@ -408,38 +408,3 @@ refreshMLRDisplay(viewGet(thisView,'viewNum'));
 
 toc
 
-function [co, amp, ph] = computeCorAnalSeries(tSeries,params)
-
-nFrames = size(tSeries,1);
-% Set highpassPeriod
-highpassPeriod = round(nFrames/params.ncycles);
-
-% Remove dc, convert to percent, detrend, and spatial normalization
-warnState = warning('query','MATLAB:divideByZero');
-ptSeries = percentTSeries(tSeries,...
-    'detrend', params.detrend,...
-    'highpassPeriod', highpassPeriod,...
-    'spatialNormalization', params.spatialnorm,...
-    'subtractMean', 'Yes',...
-    'temporalNormalization', 'No');
-warning(warnState.state,warnState.identifier);
-
-% Compute Fourier transform
-ft = fft(ptSeries);
-ft = ft(1:1+fix(size(ft, 1)/2), :);
-ampFT = 2*abs(ft)/nFrames;
-
-% Compute co and amp (avoiding divide by zero)
-amp = ampFT(params.ncycles+1,:);
-co = zeros(size(amp),'single');
-sumAmp = sqrt(sum(ampFT.^2));
-nonzeroIndices = find(sumAmp >0);
-co(nonzeroIndices) = ampFT(params.ncycles+1,nonzeroIndices) ./ sumAmp(nonzeroIndices);
-
-% Calculate phase:
-% 1) add pi/2 so that it is in sine phase.
-% 2) minus sign because sin(x-phi) is shifted to the right by phi.
-% 3) Add 2pi to any negative values so phases increase from 0 to 2pi.
-%ph = -(pi/2) - angle(ft(params.ncycles+1,:));   %JB
-ph = - angle(ft(params.ncycles+1,:));   %JB: why don't we keep cosine phase ?
-ph(ph<0) = ph(ph<0)+pi*2;
