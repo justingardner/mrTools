@@ -11,7 +11,7 @@
 
 function dummyInterrogator(thisView,overlayNum,scanNum,x,y,z,roi)
 
-%keyboard
+keyboard
 
 %get the current overlay data
 overlay = viewGet(thisView,'overlay',overlayNum);

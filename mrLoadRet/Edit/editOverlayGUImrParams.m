@@ -30,7 +30,7 @@ function retval = editOverlayGUImrParams(viewNum)
   colorMapList = {'default'};
   %get additional colormaps in the colorMapList directory
   colorMapsFolder = which('mrLoadRetGUI');
-  colorMapsFolder = [colorMapsFolder(1:strfind(colorMapsFolder,'GUI/mrLoadRetGUI.m')-1) 'ColorMaps/'];
+  colorMapsFolder = [colorMapsFolder(1:strfind(colorMapsFolder,'GUI/mrLoadRetGUI.m')-1) 'Plugins/ColorMaps/'];
   colorMapFiles =  dir([colorMapsFolder '*.m']);
   for iFile=1:length(colorMapFiles)
      colorMapList{end+1} = stripext(colorMapFiles(iFile).name);

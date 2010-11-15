@@ -592,7 +592,7 @@ end
 
 %get names of interrogators in interrogators directory
 interrogatorsDirectory = which('mrLoadRetGUI');
-interrogatorsDirectory = [interrogatorsDirectory(1:strfind(interrogatorsDirectory,'GUI/mrLoadRetGUI.m')-1) 'interrogators/'];
+interrogatorsDirectory = [interrogatorsDirectory(1:strfind(interrogatorsDirectory,'GUI/mrLoadRetGUI.m')-1) 'Plugins/Interrogators/'];
 interrogatorFiles =  dir([interrogatorsDirectory '*.m']);
 for iFile=1:length(interrogatorFiles)
    interrogatorList{end+1} = stripext(interrogatorFiles(iFile).name);
