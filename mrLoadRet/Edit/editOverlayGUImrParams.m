@@ -27,10 +27,21 @@ function retval = editOverlayGUImrParams(viewNum)
   alphaOverlay = viewGet(v,'alphaOverlay');
   alphaOverlayExponent = viewGet(v,'alphaOverlayExponent');
   interrogator = viewGet(v,'interrogator',overlayNum,analysisNum);
+  colorMapList = {'default'};
+  %get additional colormaps in the colorMapList directory
+  colorMapsFolder = which('mrLoadRetGUI');
+  colorMapsFolder = [colorMapsFolder(1:strfind(colorMapsFolder,'GUI/mrLoadRetGUI.m')-1) 'ColorMaps/'];
+  colorMapFiles =  dir([colorMapsFolder '*.m']);
+  for iFile=1:length(colorMapFiles)
+     colorMapList{end+1} = stripext(colorMapFiles(iFile).name);
+  end
+  colorMapList(end+1:end+19) = {'hot','hsv','pink','cool','bone','copper','flag','gray',...
+    'grayCirc','twoCondCmap','twoCondCircCmap','hsvDoubleCmap','cmapExtendedHSV','overlapCmap',...
+    'redGreenCmap','rygbCmap','bicolorCmap' 'coolCmap','hotColdCmap'};
   
   % set up params dialog
   paramsInfo = {};
-  paramsInfo{end+1} = {'overlayCmap', {'default','hot','hsv','pink','cool','bone','copper','flag','gray','grayCirc','twoCondCmap','twoCondCircCmap','hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap' 'coolCmap','hotColdCmap'},'type=popupmenu','List of possible colormaps','callback',@mrCmapCallback,'callbackArg',v};
+  paramsInfo{end+1} = {'overlayCmap', colorMapList,'type=popupmenu','List of possible colormaps','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overla colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'numColors', 256, 'first argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
