@@ -1759,6 +1759,13 @@ view = MLR.views{viewNum};
 view = eventRelatedGlm(view);
 
 % --------------------------------------------------------------------
+function corAnalFromGlmMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+view = modelCoranalFromGlm(view);
+
+% --------------------------------------------------------------------
 function recomputeAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
