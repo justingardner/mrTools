@@ -609,14 +609,6 @@ if nargout > 1
   end
 end
 
-
-if (testParams.parametricTests && strcmp(testParams.parametricTestOutput,'P value')) || ...
-      (testParams.parametricTests && strcmp(testParams.randomizationTestOutput,'P value'))
-  % colormap is made with a little bit less on the dark end and only for the 10 smallest values
-  stat_colormap = flipud(hot(11));
-  stat_colormap = stat_colormap(1:10,:);
-end
-
 %--------------------------------------------- save the contrast overlay(s)
 
 if ~isempty(contrasts)
@@ -635,7 +627,7 @@ if ~isempty(contrasts)
           betaAlphaOverlayExponent = 0;
         case 'P value'                                                  %statistical maps
           thisOverlay = overlay;
-          thisOverlay.colormap = stat_colormap;
+          thisOverlay.colormap = statsColorMap(256);
           namePrefix = 'p (T ';
           betaAlphaOverlayExponent = -1;      %set the alpha overlay to the statistical value with an inverse masking
         case 'Z value'                                                  %Z maps
@@ -689,7 +681,7 @@ if ~isempty(contrasts)
       switch(testParams.randomizationTestOutput)
         case 'P value'                                                  %statistical maps
           thisOverlay = overlay;
-          thisOverlay.colormap = stat_colormap;
+          thisOverlay.colormap = statsColorMap(256);
           namePrefix = 'p rand';
           betaAlphaOverlayExponent = -1;      %set the alpha overlay to the statistical value with an inverse masking
         case 'Z value'                                                  %Z maps
@@ -719,7 +711,7 @@ if ~isempty(contrasts)
         switch(testParams.randomizationTestOutput)
           case 'P value'                                                  %statistical maps
             thisOverlay = overlay;
-            thisOverlay.colormap = stat_colormap;
+            thisOverlay.colormap = statsColorMap(256);
             namePrefix = 'p rand';
           case 'Z value'                                                  %Z maps
             thisOverlay = overlay;
@@ -785,7 +777,7 @@ if ~isempty(fTests)
         namePrefix = 'F ( ';
       case 'P value'
         thisOverlay = overlay;
-        thisOverlay.colormap = stat_colormap;
+        thisOverlay.colormap = statsColorMap(256);
         namePrefix = 'p (F ';
       case 'Z value'
         %thisOverlay.range = [0 max(max(max(max(cell2mat(fData)))))];
@@ -832,7 +824,7 @@ if ~isempty(fTests)
     switch(testParams.randomizationTestOutput)
       case 'P value'                                                  %statistical maps
         thisOverlay = overlay;
-        thisOverlay.colormap = stat_colormap;
+        thisOverlay.colormap = statsColorMap(256);
         namePrefix = 'p rand';
       case 'Z value'                                                  %Z maps
         thisOverlay = overlay;
@@ -858,7 +850,7 @@ if ~isempty(fTests)
       switch(testParams.randomizationTestOutput)
         case 'P value'                                                  %statistical maps
           thisOverlay = overlay;
-          thisOverlay.colormap = stat_colormap;
+          thisOverlay.colormap = statsColorMap(256);
           namePrefix = 'p rand';
         case 'Z value'                                                  %Z maps
           thisOverlay = overlay;
