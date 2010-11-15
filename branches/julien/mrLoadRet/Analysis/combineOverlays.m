@@ -13,7 +13,7 @@ combinationModeMenu = {'Apply function to all overlays','Apply function to each 
 %default params
 %get names of combine Functions in combineFunctions directory
 functionsDirectory = which('mrLoadRetGUI');
-functionsDirectory = [functionsDirectory(1:strfind(functionsDirectory,'GUI/mrLoadRetGUI.m')-1) 'combineOverlayFunctions/'];
+functionsDirectory = [functionsDirectory(1:strfind(functionsDirectory,'GUI/mrLoadRetGUI.m')-1) 'Plugins/CombineOverlayFunctions/'];
 combineFunctionFiles =  dir([functionsDirectory '*.m']);
 for iFile=1:length(combineFunctionFiles)
    combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
