@@ -590,6 +590,14 @@ if isstr(interrogatorList)
   interrogatorList = commaDelimitedToCell(interrogatorList);
 end
 
+%get names of interrogators in interrogators directory
+interrogatorsDirectory = which('mrLoadRetGUI');
+interrogatorsDirectory = [interrogatorsDirectory(1:strfind(interrogatorsDirectory,'GUI/mrLoadRetGUI.m')-1) 'interrogators/'];
+interrogatorFiles =  dir([interrogatorsDirectory '*.m']);
+for iFile=1:length(interrogatorFiles)
+   interrogatorList{end+1} = stripext(interrogatorFiles(iFile).name);
+end
+
 % put the interrogator associated with this overlay on the list
 overlayInterrogator = viewGet(v,'interrogator');
 if ~isempty(overlayInterrogator)
