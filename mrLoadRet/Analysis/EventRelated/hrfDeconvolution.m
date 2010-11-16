@@ -1,12 +1,12 @@
 % hrfDeconvolution.m
 %
 %        $Id$
-%      usage: [params,hrf] = hrfDeconvolution(params, tr, justGetParams, defaultParams)
+%      usage: [params,hrf] = hrfDeconvolution(params, framePeriod, justGetParams, defaultParams)
 %         by: julien besle
 %       date: 13/04/2010
-%    purpose: returns the identity matrix of size specified by user
+%    purpose: returns the identity maframePeriodix of size specified by user
 %
-function [params,hrf] = hrfDeconvolution(params, tr, justGetParams, defaultParams )
+function [params,hrf] = hrfDeconvolution(params, framePeriod, justGetParams, defaultParams )
 
 if ~any(nargin == [1 2 3 4])
   help hrfDiffGamma
@@ -17,7 +17,7 @@ if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 if ieNotDefined('params')
-  params = struct;
+  params = sframePerioduct;
 end
 if ~isfield(params,'description')
   params.description = 'Deconvolution';
@@ -41,4 +41,4 @@ if justGetParams
    return
 end
 
-hrf = eye(round(params.hdrlenS/tr));
+hrf = eye(round(params.hdrlenS/framePeriod));

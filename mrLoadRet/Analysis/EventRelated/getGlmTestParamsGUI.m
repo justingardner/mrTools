@@ -7,7 +7,7 @@
 %    purpose: return statistical test parameters for GLM analysis
 %
 
-function testParams = getGlmTestParamsGUI(params,useDefault)
+function testParams = getGlmTestParamsGUI(thisView,params,useDefault)
 
 keepAsking = 1;
 if isfield(params,'testParams')
@@ -47,7 +47,8 @@ while keepAsking
   end
 
   %create model HRF
-  [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,1,0,1);
+  %here we assume that all scans in this group have the same framePeriod
+  [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),0,1);
   nComponents = size(hrf,2);
   if ~isfield(testParams, 'componentsToTest') || isempty(testParams.componentsToTest) || ~isequal(nComponents,length(testParams.componentsToTest));
     testParams.componentsToTest = ones(1,nComponents);
@@ -139,8 +140,8 @@ while keepAsking
   if useDefault
     testParams = mrParamsDefault(paramsInfo);
   else
-    buttonWidth = min(500/params.numberEVs,30);
-    testParams = mrParamsDialog(paramsInfo,'Define Explanatory Variables, Contrasts and F-tests');%,'buttonWidth',buttonWidth);
+    buttonWidth = min(500/params.numberEVs,50);
+    testParams = mrParamsDialog(paramsInfo,'Define Explanatory Variables, Contrasts and F-tests','buttonWidth',buttonWidth);
   end
 
   % user hit cancel
