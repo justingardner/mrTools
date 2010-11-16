@@ -45,9 +45,6 @@ while keepAsking
         if ~isfield(scanParams{scanNum},'forceStimOnTR')
            scanParams{scanNum}.forceStimOnTR = 1;
         end
-  %       if ~isfield(scanParams{scanNum},'trSupersampling')
-  %          scanParams{scanNum}.trSupersampling = 1;
-  %       end
 
        % standard parameters to set
        taskVarParams = {...
@@ -115,7 +112,7 @@ while keepAsking
               end
            end
 
-           % if there is more than one segement in any of the phases, ask the user to specify
+           % if there is more than one segment in any of the phases, ask the user to specify
            % should add some error checking.
            if maxSegNum > 1
           taskVarParams{end+1} = {'segmentNum',1,'The segment of the task you want to use','incdec=[-1 1]'};
@@ -167,6 +164,18 @@ while keepAsking
             end
           end
         end
+        
+        if (ischar(scanParams{scanNum}.stimDuration) || scanParams{scanNum}.stimDuration ~=tr) ...
+            && strcmp(params.hrfModel,'hrfDeconvolution')...
+            && (params.computeTtests || params.numberFtests)
+          mrWarnDlg('(getScanParamsGUI) subTR sampling is not (yet) compatible with statistics on deconvolution weights','Yes');
+          if ~ useDefault
+            keepAsking = 1;
+          else
+            scanParams = [];
+          end
+        end
+          
 
         %get the number of events after running the pre-processing function
         d = loadScan(thisView, scanNum, [], 0);
