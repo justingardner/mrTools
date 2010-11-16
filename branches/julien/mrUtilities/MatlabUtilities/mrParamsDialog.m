@@ -64,7 +64,7 @@ end
 % some basic info about location of controls
 gParams.leftMargin = 10;
 gParams.topMargin = 10;
-gParams.varNameWidth = min(maxChars*8,180);
+gParams.varNameWidth = min(maxChars*9,180);
 gParams.buttonWidth = 100;
 mver = ver('matlab');mver = str2num(mver.Version);
 if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
@@ -250,7 +250,7 @@ end
 
 % make ok and cancel buttons
 totalColWidth = figWidth/figMultiCols;
-thisButtonWidth = 100;
+thisButtonWidth = min(100,totalColWidth/3);
 intervalBetweenButtons = (totalColWidth - thisButtonWidth*3)/4;
 leftPosition = (figMultiCols - 1)*figWidth/figMultiCols + intervalBetweenButtons;
 uicontrol(gParams.fignum,'Style','pushbutton','Callback','mrParamsDialog(''help'')','String','help',...
