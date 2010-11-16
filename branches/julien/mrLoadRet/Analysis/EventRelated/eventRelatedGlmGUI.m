@@ -134,7 +134,8 @@ while askForParams
   end
 
   while askForParams       % get hrf model parameters
-    hrfParams = feval(params.hrfModel,params.hrfParams,[],1,useDefault);
+    %here we assume that all scans in this group have the same framePeriod
+    hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,useDefault);
     % if empty user hit cancel, go back
     if isempty(hrfParams)
       break;
@@ -179,7 +180,7 @@ while askForParams
             defaultTestParams = useDefault;
           end
           while askForParams           %get testParams
-            testParams = getGlmTestParamsGUI(params,defaultTestParams);
+            testParams = getGlmTestParamsGUI(thisView,params,defaultTestParams);
             % if empty, user hit cancel, go back
             if isempty(testParams)
               askForParams = 1;
