@@ -64,7 +64,7 @@ end
 % some basic info about location of controls
 gParams.leftMargin = 10;
 gParams.topMargin = 10;
-gParams.varNameWidth = min(maxChars*8,300);
+gParams.varNameWidth = min(maxChars*8,180);
 gParams.buttonWidth = 100;
 mver = ver('matlab');mver = str2num(mver.Version);
 if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
@@ -133,23 +133,37 @@ figpos = mrGetFigLoc(fixBadChars(gParams.figlocstr));
 if isempty(figpos)
   figpos = get(gParams.fignum,'Position');
 end
-% if we have more than 25 rows then split into multiple columns
-% but at most we make 6 multi columns
-figMultiCols = min(ceil(numrows/25),6);
+
+%compute figure dimensions
+figMultiCols=1;
 figrows = ceil(numrows/figMultiCols);
 figcols = numcols*figMultiCols;
-% for really big ones, reduce the button size
-if (numcols > 2) && (figMultiCols > 3)
-  gParams.buttonWidth = round(gParams.buttonWidth/2);
+figHeight = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
+figWidth = 2*gParams.leftMargin+figMultiCols*gParams.varNameWidth+(figcols-figMultiCols)*gParams.buttonWidth+(figcols-1)*gParams.margin;
+%optimize figure dimensions 
+screenSize = get(0,'MonitorPositions');
+thresholdRatio = 1.7; 
+while figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4) || figWidth>screenSize(1,3)
+  %if height/width > thresholdRatio or if height > screenheight, we add a column
+  if figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4)
+    figMultiCols = figMultiCols+1;
+    figrows = ceil(numrows/figMultiCols);
+    figcols = numcols*figMultiCols;
+  elseif figWidth > screenSize(1,3) 
+    gParams.buttonWidth = (screenSize(1,3)-figMultiCols*(gParams.varNameWidth+gParams.margin) -2*gParams.leftMargin) / (figcols-figMultiCols) - gParams.margin;
+  end
+  figHeight = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
+  figWidth = 2*gParams.leftMargin+figMultiCols*gParams.varNameWidth+(figcols-figMultiCols)*gParams.buttonWidth+(figcols-1)*gParams.margin;
 end
+
 % set them in gParams
 gParams.figrows = figrows;
 gParams.figMultiCols = figMultiCols;
 gParams.numcols = numcols;
 gParams.numrows = numrows;
 % set the figure position
-figpos(4) = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+gParams.varNameWidth+(figcols-1)*gParams.buttonWidth+(figcols-1)*gParams.margin;
+figpos(4) = figHeight;
+figpos(3) = figWidth;
 set(gParams.fignum,'Position',figpos);
 
 % make entry buttons
@@ -233,16 +247,32 @@ if ~isempty(callback)
 else
   gParams.callback = [];
 end
+
 % make ok and cancel buttons
-if gParams.numcols > 2
-  makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
-  makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
-  makeButton(gParams.fignum,'Help','help',numrows,1,1);
-else
-  makeButton(gParams.fignum,'OK','ok',numrows,numcols+0.5,0.5);
-  makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-0.1,0.5);
-  makeButton(gParams.fignum,'Help','help',numrows,numcols-1,0.5);
-end  
+totalColWidth = figWidth/figMultiCols;
+thisButtonWidth = 100;
+intervalBetweenButtons = (totalColWidth - thisButtonWidth*3)/4;
+leftPosition = (figMultiCols - 1)*figWidth/figMultiCols + intervalBetweenButtons;
+uicontrol(gParams.fignum,'Style','pushbutton','Callback','mrParamsDialog(''help'')','String','help',...
+  'Position',[leftPosition gParams.topMargin thisButtonWidth gParams.buttonHeight],...
+  'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+uicontrol(gParams.fignum,'Style','pushbutton','Callback','mrParamsDialog(''cancel'')','String','Cancel',...
+  'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth) gParams.topMargin thisButtonWidth gParams.buttonHeight],...
+  'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+uicontrol(gParams.fignum,'Style','pushbutton','Callback','mrParamsDialog(''ok'')','String','OK',...
+  'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth)*2 gParams.topMargin thisButtonWidth gParams.buttonHeight],...
+  'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+
+% if gParams.numcols > 2
+%   makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
+%   makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
+%   makeButton(gParams.fignum,'Help','help',numrows,1,1);
+% else
+%   makeButton(gParams.fignum,'OK','ok',numrows,numcols+0.5,0.5);
+%   makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-0.1,0.5);
+%   makeButton(gParams.fignum,'Help','help',numrows,numcols-1,0.5);
+% end  
+% 
 
 % set the input control to the first field that is editable
 focusSet = 0;
@@ -870,11 +900,17 @@ end
 figpos = get(fignum,'Position');
 
 % set the position and width for the button
-if colnum == 1
-  pos(1) = gParams.margin + gParams.leftMargin; %position
+if colnum - (multiCol-1)*numcols == 1
+  pos(1) = gParams.margin + ... %position
+            (multiCol - 1) * (gParams.varNameWidth*uisize + gParams.margin) + ...
+            (multiCol - 1) * (numcols-1) * (gParams.buttonWidth+gParams.margin) + ...
+            gParams.leftMargin; 
   pos(3) = gParams.varNameWidth*uisize+(uisize-1)*gParams.margin; %size
 else
-  pos(1) = gParams.margin*2 + gParams.varNameWidth+ (gParams.buttonWidth+gParams.margin)*(colnum-2) + gParams.leftMargin;
+  pos(1) = gParams.margin + ...
+    multiCol*(gParams.margin + gParams.varNameWidth) + ...
+    (colnum-multiCol-1) * (gParams.buttonWidth+gParams.margin) + ...
+    gParams.leftMargin;
   pos(3) = gParams.buttonWidth*uisize+(uisize-1)*gParams.margin;
 end
 
