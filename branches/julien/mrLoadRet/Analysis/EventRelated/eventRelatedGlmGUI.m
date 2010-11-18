@@ -213,12 +213,14 @@ if isfield(params,'contrasts')
   end
   params = rmfield(params,'contrasts');
 end
+
 if isfield(params,'f_tests')
   if ischar(params.f_tests)
     params.testParams.fTests = eval(params.f_tests);
   else
     params.testParams.fTests = params.f_tests;
   end
+  params.numberFtests = size(params.testParams.fTests,1);
   params = rmfield(params,'f_tests');
 end
 if isfield(params,'fTests')
@@ -227,8 +229,16 @@ if isfield(params,'fTests')
   else
     params.testParams.fTests = params.fTests;
   end
+  params.numberFtests = size(params.testParams.fTests,1);
   params = rmfield(params,'fTests');
 end
+if isfield(params,'testParams')  && isfield(params.testParams,'fTests')
+  for iFtest = 1:size(params.testParams.fTests,1)
+    params.testParams.restrictions{iFtest} = diag(params.testParams.fTests(iFtest,:));
+  end
+  params.testParams = rmfield(params.testParams,'fTests');
+end
+  
 if isfield(params,'n_rand')
   params.testParams.nRand = params.n_rand;
   params = rmfield(params,'n_rand');

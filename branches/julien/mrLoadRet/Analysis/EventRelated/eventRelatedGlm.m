@@ -53,7 +53,7 @@ params = defaultReconcileParams([],params);
 %just to have shorter variable names
 scanParams = params.scanParams;
 testParams = params.testParams;
-fTests = testParams.fTests;
+restrictions = testParams.restrictions;
 contrasts = testParams.contrasts;
 
 if params.covCorrection   %number of voxels to get around the ROI/subset box in case the covariance matrix is estimated
@@ -90,7 +90,7 @@ fRandData = r2;
 fData = r2;  
 fDataTFCE = r2;
 fRandTfce = r2;
-thresholdTfceF = NaN(size(fTests,1),params.scanNum(end));
+thresholdTfceF = NaN(length(restrictions),params.scanNum(end));
 
 for scanNum = params.scanNum
   numVolumes = viewGet(thisView,'nFrames',scanNum);
@@ -290,7 +290,7 @@ for scanNum = params.scanNum
           end
         end
       end
-      if ~isempty(fTests)
+      if ~isempty(restrictions)
         if iRand==1
           actualFdataTemp = fDataTemp;
           if testParams.randomizationTests
@@ -304,7 +304,7 @@ for scanNum = params.scanNum
       %We compute the TFCE here only in the case we forced loading the whole volume at once
       if testParams.TFCE && testParams.randomizationTests
         
-        if ~isempty(fTests)
+        if ~isempty(restrictions)
           if isfield(d,'roiPositionInBox') 
             fDataTemp = reshapeToRoiBox(fDataTemp,d.roiPositionInBox); 
           end
@@ -315,7 +315,7 @@ for scanNum = params.scanNum
           if iRand == 1 %if it is the actual data
             fDataTfceCount = NaN(size(fDataTemp),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
             fDataTfceCount(~isnan(fDataTemp)) = 1; %we count the actual data in
-            maxTfceF = zeros(nRand,size(fTests,1));       %and these will store the distribution of max
+            maxTfceF = zeros(nRand,length(restrictions));       %and these will store the distribution of max
             fDataTFCE{scanNum} = tfceData;           %keep the TFCE transform
           else
             fDataTfceCount = fDataTfceCount+ double(tfceData>fDataTFCE{scanNum});
@@ -361,7 +361,7 @@ for scanNum = params.scanNum
           contrastRandDataTemp = reshapeToRoiBox(contrastRandDataTemp,d.roiPositionInBox);
         end
       end
-      if ~isempty(fTests) 
+      if ~isempty(restrictions) 
         actualFdataTemp = reshapeToRoiBox(actualFdataTemp,d.roiPositionInBox);
         if numel(d.rdf)>1
           d.rdf = reshapeToRoiBox(d.rdf,d.roiPositionInBox);
@@ -391,7 +391,7 @@ for scanNum = params.scanNum
         contrastRandData{scanNum} = cat(3,contrastRandData{scanNum},contrastRandDataTemp);
       end
     end
-    if ~isempty(fTests)
+    if ~isempty(restrictions)
       fData{scanNum} = cat(3,fData{scanNum},actualFdataTemp);
       if numel(d.rdf)>1
          rdf = cat(3,rdf,d.rdf);
@@ -407,7 +407,7 @@ for scanNum = params.scanNum
   
   %compute the TFCE if randomization test not run on it
   if testParams.TFCE && ~testParams.randomizationTests
-    if ~isempty(fTests)
+    if ~isempty(restrictions)
       fDataTFCE{scanNum} = NaN(size(fData{scanNum}),precision);     
       fDataTFCE{scanNum} = applyFslTFCE(fData{scanNum}); 
       fDataTFCE{scanNum}(isnan(fData{scanNum})) = NaN; %put NaNs back in place
@@ -452,7 +452,7 @@ for scanNum = params.scanNum
     end
   end
   
-  if ~isempty(fTests)
+  if ~isempty(restrictions)
     %make parametric probability maps
     if testParams.parametricTests 
       if ismember(testParams.parametricTestOutput,{'P value','Z value'})
@@ -463,7 +463,7 @@ for scanNum = params.scanNum
           rdf = d.rdf*ones(size(rss));
           mdf = repmat(permute(d.mdf,[1 3 4 2]),[size(rss) 1]);
         end   
-        fData{scanNum} = 1 - cdf('f', double(fData{scanNum}), mdf, repmat(rdf,[1 1 1 size(fTests,1)]));  
+        fData{scanNum} = 1 - cdf('f', double(fData{scanNum}), mdf, repmat(rdf,[1 1 1 length(restrictions)]));  
         clear('mdf','rdf')
         if strcmp(testParams.parametricTestOutput,'Z value')
           %probabilities output by cdf are 1 if (1-p)<1e-16, which will give a Z value of +/-inf
@@ -477,7 +477,7 @@ for scanNum = params.scanNum
         end
         %compute TFCE thresholds
         if testParams.TFCE 
-          for iFtest = 1:size(fTests,1)
+          for iFtest = 1:length(restrictions)
             sorted_max_tfce = sort(maxTfceF(:,iFtest));
             thresholdTfceF(iFtest,scanNum) = sorted_max_tfce(max(1,floor((1-randAlpha)*nRand)));
           end
@@ -503,8 +503,6 @@ for scanNum = params.scanNum
   glmAnal.d{scanNum}.nhdr = d.nhdr;
   glmAnal.d{scanNum}.tr = d.tr;
   glmAnal.d{scanNum}.stimNames = d.stimNames;
-  glmAnal.d{scanNum}.EVnames = testParams.EVnames;
-  glmAnal.d{scanNum}.stimToEVmatrix = testParams.stimToEVmatrix;
   glmAnal.d{scanNum}.scm = d.scm;
   glmAnal.d{scanNum}.expname = d.expname;
   glmAnal.d{scanNum}.fullpath = d.fullpath;
@@ -519,8 +517,8 @@ for scanNum = params.scanNum
     glmAnal.d{scanNum}.rdf = d.rdf; %JB
     glmAnal.d{scanNum}.contrasts = contrasts;
   end
-  if ~isempty(fTests)
-    glmAnal.d{scanNum}.fTests = fTests;
+  if ~isempty(restrictions)
+    glmAnal.d{scanNum}.restrictions = restrictions;
     glmAnal.d{scanNum}.rdf = d.rdf; %JB
     glmAnal.d{scanNum}.mdf = d.mdf; %JB
   end
@@ -540,7 +538,7 @@ dateString = datestr(now);
 glmAnal.name = params.saveName;
 if strcmp(params.hrfModel,'hrfDeconvolution')
   glmAnal.type = 'deconvAnal';
-elseif isempty(fTests) && ~params.computeTtests
+elseif isempty(restrictions) && ~params.computeTtests
   glmAnal.type = 'glmAnal';
 else
   glmAnal.type = 'glmAnalStats';
@@ -767,7 +765,7 @@ if ~isempty(contrasts)
 end
 
 %----------------------------------------------- save the F-test overlay(s)
-if ~isempty(fTests)
+if ~isempty(restrictions)
   if testParams.parametricTests
       thisOverlay = overlay;
     switch testParams.parametricTestOutput
@@ -785,9 +783,9 @@ if ~isempty(fTests)
         namePrefix = 'Z (F ';
     end
     thisOverlay.clip = thisOverlay.range;
-    for iFtest = 1:size(fTests,1)
+    for iFtest = 1:length(restrictions)
       %probability maps
-      thisOverlay.name = [namePrefix num2str(fTests(iFtest,:)) ')'];
+      thisOverlay.name = [namePrefix testParams.fTestNames{iFtest} ')'];
       for scanNum = params.scanNum
         thisOverlay.data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
            fData{scanNum}(:,:,:,iFtest);
@@ -803,8 +801,8 @@ if ~isempty(fTests)
       thisOverlay.range(1) = min(min(min(min(cell2mat(fDataTFCE)))));
       thisOverlay.range(2) = max(max(max(max(cell2mat(fDataTFCE)))));
       thisOverlay.clip = thisOverlay.range;
-      for iFtest = 1:size(fTests,1)
-         thisOverlay.name = ['F TFCE (' num2str(fTests(iFtest,:)) ')'];
+      for iFtest = 1:length(restrictions)
+         thisOverlay.name = ['F TFCE (' testParams.fTestNames{iFtest} ')'];
          if testParams.randomizationTests
             thisOverlay.name = [thisOverlay.name ' - threshold(p=' num2str(randAlpha) ') = ' num2str(thresholdTfceF(iFtest,scanNum)) ')'];
          end
@@ -834,8 +832,8 @@ if ~isempty(fTests)
     end
 
     thisOverlay.clip = thisOverlay.range;
-    for iFtest = 1:size(fTests,1)
-      thisOverlay.name = [namePrefix ' (F ' num2str(fTests(iFtest,:)) ')'];
+    for iFtest = 1:length(restrictions)
+      thisOverlay.name = [namePrefix ' (F ' testParams.fTestNames{iFtest} ')'];
       for scanNum = params.scanNum
         thisOverlay.data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
            fRandData{scanNum}(:,:,:,iFtest);
@@ -860,8 +858,8 @@ if ~isempty(fTests)
       end
 
       thisOverlay.clip = thisOverlay.range;
-      for iFtest = 1:size(fTests,1)
-        thisOverlay.name = [namePrefix ' (F TFCE ' num2str(fTests(iFtest,:)) ')'];
+      for iFtest = 1:length(restrictions)
+        thisOverlay.name = [namePrefix ' (F TFCE ' testParams.fTestNames{iFtest} ')'];
         for scanNum = params.scanNum
           thisOverlay.data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
              fRandTfce{scanNum}(:,:,:,iFtest);
