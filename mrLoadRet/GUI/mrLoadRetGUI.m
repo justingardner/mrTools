@@ -1994,9 +1994,10 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 roiNames = viewGet(view,'roiNames');
 paramInfo = {...
-  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'editable=0','The ROI that will be combined with the otherROI'},...
-  {'otherROI',roiNames,'The otherROI is combined with the combineROI and the result is put into combineROI.'},...
+  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'editable=0','The ROI that will be combined with the otherROI (A)'},...
+  {'otherROI',roiNames,'The otherROI (B)  is combined with the combineROI (A) and the result is put into newName.'},...
   {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'Select action for combining ROIs.'},...
+  {'newName',[],'Save new ROI as:'},...
   {'combine',0,'type=pushbutton','callback',@doCombine,'passParams=1','callbackArg',viewNum,'buttonString=Do combination','Click this button to do the combination. This is the same as hitting OK but won''t close the dialog so you can continue to do more combinations'}};
 params = mrParamsDialog(paramInfo,'Combine ROIs');
 if ~isempty(params)
@@ -2010,8 +2011,8 @@ function retval = doCombine(viewNum,params)
 v = viewGet([],'view',viewNum);
 
 retval = 1;
-disp(sprintf('(doCombine) %s %s %s',params.combineROI,params.action,params.otherROI));
-v = combineROIs(v,params.combineROI,params.otherROI,params.action);
+disp(sprintf('(doCombine) %s %s %s = %s',params.combineROI,params.action,params.otherROI,params.newName));
+v = combineROIs(v,params.combineROI,params.otherROI,params.action,params.newName);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
