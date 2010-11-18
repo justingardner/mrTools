@@ -41,9 +41,15 @@ while keepAsking
     testParams.tTestSide = 'Both';
   end
 
-  if ~isfield(testParams, 'fTests') || isempty(testParams.fTests) || ...
-    ~isequal(size(testParams.fTests,1),params.numberFtests) || ~isequal(size(testParams.fTests,2),params.numberEVs)
-      testParams.fTests=eye(params.numberFtests,params.numberEVs);
+  if ~isfield(testParams, 'fTestNames') || isempty(testParams.fTestNames) || ...
+    ~isequal(length(testParams.fTestNames),params.numberFtests) 
+      testParams.fTestNames=cellstr(reshape(sprintf('fTest%2d',1:params.numberFtests),7,params.numberFtests)');
+  end
+  if ~isfield(testParams, 'restrictions') || isempty(testParams.restrictions) || ...
+    ~isequal(length(testParams.restrictions),params.numberFtests) || ~isequal(size(testParams.restrictions{1},2),params.numberEVs)
+    for iFtest = 1:params.numberFtests
+        testParams.restrictions{iFtest}=zeros(params.numberEVs,params.numberEVs);
+    end
   end
 
   %create model HRF
@@ -126,7 +132,12 @@ while keepAsking
       {'EVnames', testParams.EVnames, 'self explanatory'},...
       {'contrasts', testParams.contrasts,contrastOptionsVisible, 'Matrix defining the contrasts of interest that will be output as overlays. Each row defines a contrast, which is a linear combination of EVss. Contrasts are computed after running the preprocessing function, so the number of colums should match the the number of EVs after preprocessing'},...
       {'tTestSide', tTestSideMenu,tTestOptionsVisible,'type=popupmenu', 'Sidedness of contrast T-tests (Both = two-sided, Right = one-sided positive, Left = one-sided negative)'},...
-      {'fTests', testParams.fTests,fTestOptionsVisible, 'round=1','minmax=[0 1]', 'Matrix defining the f-tests. Each row specifies which EVs are included (1) or excluded (0).'},...
+       }];
+  for iFtest = 1:params.numberFtests
+    paramsInfo{end+1} = {fixBadChars(sprintf('fTest%2d',iFtest)), testParams.fTestNames{iFtest},fTestOptionsVisible ,['Name of F-test ' num2str(iFtest)]};
+    paramsInfo{end+1} = {fixBadChars(sprintf('restriction%2d',iFtest)), testParams.restrictions{iFtest},fTestOptionsVisible, ['Restriction matrix defining F-test ' num2str(iFtest)]};
+  end
+  paramsInfo = [paramsInfo {...
       {'componentsToTest', testParams.componentsToTest,componentOptionsVisible, 'Vector defining which EV components are tested. Put zeros to exclude components or a weight to include them. '},...
       {'componentsCombination', componentsCombinationMenu,componentOptionsVisible,'type=popupmenu', 'How to combine EV components. ''Add'' adds the weighted components into a single EV for contrasts/F-test. ''Or'' ignores the weights and tests contrasts/F-tests at any component that is not 0. Note that ''Or'' is not compatible with one-sided T-tests'}...
       {'parametricTests', testParams.parametricTests,testOptionsVisible,'type=checkbox', 'Performs parametric tests on contrasts/F values'},...
@@ -158,6 +169,11 @@ while keepAsking
   for iEvent = 1:params.numberEvents
     testParams.stimToEVmatrix(iEvent,:) = testParams.(fixBadChars(params.stimNames{iEvent}));
     testParams = rmfield(testParams,fixBadChars(params.stimNames{iEvent}));
+  end
+  for iFtest = 1:params.numberFtests
+    testParams.fTestNames{iFtest} = testParams.(fixBadChars(sprintf('fTest%2d',iFtest)));
+    testParams.restrictions{iFtest} = testParams.(fixBadChars(sprintf('restriction%2d',iFtest)));
+    testParams.restrictions{iFtest} = testParams.restrictions{iFtest}(any(testParams.restrictions{iFtest},2),:); %remove lines of 0
   end
     
   if (params.computeTtests || params.numberFtests) && ...
