@@ -64,6 +64,10 @@ if ~isfield(testParams,'tTestSide')
    testParams.tTestSide = 'Both';
 end
 
+if ~isfield(testParams,'fTestNames') || isempty(testParams.fTestNames)
+   testParams.fTestNames = {};
+end
+  
 if ~isfield(testParams,'restrictions') || isempty(testParams.restrictions)
    testParams.restrictions = {};
 else
@@ -74,9 +78,15 @@ else
 end
 restrictions = testParams.restrictions;
 
+if ~isfield(testParams,'componentsToTest') || isempty(testParams.componentsToTest)
+   testParams.componentsToTest = ones(1,d.hdrlen);
+end
 
-if isempty(restrictions) && isempty(contrasts) && ~computeEstimates && ~computeTtests
-  return;
+if ~isfield(testParams,'componentsCombination') || isempty(testParams.componentsCombination)
+   testParams.componentsCombination = 'Add';
+end
+if strcmp(testParams.componentsCombination,'Or') && d.hdrlen==1
+  testParams.componentsCombination = 'Add';  %make sure this is set to add if there is only one component to test
 end
 
 if ieNotDefined('params') || ~isfield(params,'covCorrection') || ~isfield(params,'correctionType') || strcmp(params.correctionType,'none')
@@ -103,6 +113,11 @@ if params.covCorrection
    end
 else
    params.correctionType = 'none';
+end
+
+%do not do anything if nothing is asked
+if isempty(restrictions) && isempty(contrasts) && ~computeEstimates && ~computeTtests
+  return;
 end
 
 
@@ -654,7 +669,7 @@ end
 
 %Now in the case we computed contrasts on several components using option 'Or',
 %we have to convert the appropriate F values into T values
-if length(testParams.componentsToTest)>1 && strcmp(testParams.componentsCombination,'Or') && ~isempty(contrasts)
+if strcmp(testParams.componentsCombination,'Or') && ~isempty(testParams.contrasts)
   %T values are the square roots of the numberContrasts first F values 
   T = sqrt(F(:,:,:,1:params.numberContrasts,:));
   %remove T values form F values array
