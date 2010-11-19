@@ -213,7 +213,7 @@ if isfield(params,'paramInfo')
 	end
       % or a checkbox
       elseif strcmp(lower(varinfo{i}.type),'checkbox')
-	if ~any(params.(varinfo{i}.name) == [0 1])
+	if isempty(params.(varinfo{i}.name)) || ~any(params.(varinfo{i}.name) == [0 1])
 	  useDefault = 1;
 	end
       end
