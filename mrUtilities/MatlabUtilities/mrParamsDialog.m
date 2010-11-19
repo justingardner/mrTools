@@ -113,7 +113,7 @@ if isempty(modal)
 end
 % set the buttonWidth      
 if ~isempty(buttonWidth)
-  gParams.buttonWidth = buttonWidth;
+  gParams.buttonWidth = buttonWidth*gParams.buttonWidth;
 end
 
 % get the figure

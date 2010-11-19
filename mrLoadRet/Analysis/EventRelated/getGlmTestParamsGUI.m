@@ -151,7 +151,7 @@ while keepAsking
   if useDefault
     testParams = mrParamsDefault(paramsInfo);
   else
-    buttonWidth = min(500/params.numberEVs,50);
+    buttonWidth = min(5/params.numberEVs,.4);
     testParams = mrParamsDialog(paramsInfo,'Define Explanatory Variables, Contrasts and F-tests','buttonWidth',buttonWidth);
   end
 
