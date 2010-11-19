@@ -188,23 +188,13 @@ end
 
 if ~isempty(restrictions)
   
-  mss = NaN(d.dim(1),d.dim(2),d.dim(3),nBootstrap,length(restrictions),precision);
-  for iR = 1:length(restrictions)         %the degrees of freedom for the F-tests are the number of contrasts
-    d.mdf(iR) = size(restrictions{iR},1); %this is provided that contrasts are independent and that they are no more than (regressors -1)
-    %inv_R_invCovEV_Rp{iR} = (restrictions{iR}*invCovEVs*restrictions{iR}')^-1; 
-    %I replaced all the precomputed inverses (previous line) by ml/mrDivide with the non-inverted matrix (faster and more accurate):
-    R_invCovEV_Rp{iR} = restrictions{iR}*invCovEVs*restrictions{iR}';
-  end
-                         
   %this has not been tested, but this is only for generalized F-tests which do not give the expected results anyway
   if strcmp(params.correctionType,'generalizedFTest')
     complementaryRestriction = cell(1,size(restrictions,1));
     baseRestriction =  kron(logical(eye(d.nhdr)),logical(testParams.componentsToTest)); 
     for iR = 1:length(restrictions)
       % not sure at all about these lines
-      thisRestriction = zeros(size(baseRestriction));
-      thisRestriction(1:size(restrictions{iR},1),:) = restrictions{iR}; 
-      complementaryRestriction{iR} = baseRestriction - thisRestriction;
+      complementaryRestriction{iR} = baseRestriction - restrictions{iR};
       complementaryRestriction{iR} = complementaryRestriction{iR}(any(complementaryRestriction{iR},2),:);  
       % it actually doesn't make sense anymore now that F-tests can be made of any contrast
       % The logic relied on the fact that there were only elements on the diagonal of the restrictions matrix
@@ -226,6 +216,16 @@ if ~isempty(restrictions)
       eig_residualForming_f_tests{iR} = V(:,1:size(restrictions{iR},1));
     end
   end
+  
+  mss = NaN(d.dim(1),d.dim(2),d.dim(3),nBootstrap,length(restrictions),precision);
+  for iR = 1:length(restrictions)         %the degrees of freedom for the F-tests are the number of contrasts
+    testParams.restrictions{iR} = restrictions{iR}(any(testParams.restrictions{iR},2),:); %remove lines of 0
+    d.mdf(iR) = size(restrictions{iR},1); %this is provided that contrasts are independent and that they are no more than (regressors -1)
+    %inv_R_invCovEV_Rp{iR} = (restrictions{iR}*invCovEVs*restrictions{iR}')^-1; 
+    %I replaced all the precomputed inverses (previous line) by ml/mrDivide with the non-inverted matrix (faster and more accurate):
+    R_invCovEV_Rp{iR} = restrictions{iR}*invCovEVs*restrictions{iR}';
+  end
+                         
 end
 
 if ~isempty(contrasts)

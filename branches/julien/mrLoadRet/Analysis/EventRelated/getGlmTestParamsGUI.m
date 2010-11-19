@@ -173,7 +173,6 @@ while keepAsking
   for iFtest = 1:params.numberFtests
     testParams.fTestNames{iFtest} = testParams.(fixBadChars(sprintf('fTest%2d',iFtest)));
     testParams.restrictions{iFtest} = testParams.(fixBadChars(sprintf('restriction%2d',iFtest)));
-    testParams.restrictions{iFtest} = testParams.restrictions{iFtest}(any(testParams.restrictions{iFtest},2),:); %remove lines of 0
   end
   
   %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
