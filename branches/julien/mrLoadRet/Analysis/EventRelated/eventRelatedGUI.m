@@ -7,12 +7,6 @@
 %
 function params = eventRelatedGUI(varargin)
 
-% check arguments
-if ~any(nargin == [0 1 2 3 4 5])
-  help eventRelatedGUI
-  return
-end
-
 % get the arguments
 eval(evalargs(varargin));
 
