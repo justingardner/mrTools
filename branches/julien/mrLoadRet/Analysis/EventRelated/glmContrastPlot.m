@@ -214,7 +214,7 @@ if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
     xaxis(0,time(end)+framePeriod/2);
 else
   % if there is deconvolution data, display that too
-  if exist('erData','var') && (length(erData.stimvol) == length(d.stimvol))
+  if exist('erData','var') %&& (length(erData.stimvol) == length(d.stimvol)) Why would we need to have the same length 
     [deconvEhdr deconvTime deconvEhdrste] = gethdr(erData,x,y,s);
 
     % note that we need to subtract the mean of the glm ehdr            %
