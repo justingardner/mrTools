@@ -29,6 +29,8 @@ if ~isfield(params,'groupName') || isempty(params.groupName)
 end
 if ~isfield(params,'saveName') || isempty(params.saveName)
   params.saveName = 'GLM';
+else
+  params.saveName = viewGet(thisView,'analysisName');
 end
 if ~isfield(params,'hrfModel') || isempty(params.hrfModel)
   params.hrfModel ='hrfDiffGamma';
