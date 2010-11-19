@@ -175,6 +175,11 @@ while keepAsking
     testParams.restrictions{iFtest} = testParams.(fixBadChars(sprintf('restriction%2d',iFtest)));
     testParams.restrictions{iFtest} = testParams.restrictions{iFtest}(any(testParams.restrictions{iFtest},2),:); %remove lines of 0
   end
+  
+  %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
+  if isempty(testParams.TFCE)
+    testParams.TFCE = 0;
+  end
     
   if (params.computeTtests || params.numberFtests) && ...
       testParams.randomizationTests && ischar(params.scanParams{1}.stimDuration) && strcmp(params.scanParams{1}.stimDuration,'fromFile')
