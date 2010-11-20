@@ -55,26 +55,41 @@ global mrDEFAULTS;
 % parse the input parameter string
 [gParams.vars gParams.varinfo numrows numcols] = mrParamsParse(vars);
 
-% get maximum length of var name
-maxChars = 0;
-for i = 1:length(gParams.vars)
-  maxChars = max(length(gParams.vars{i}{1}),maxChars);
-end  
+% get the figure
+if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
+  % open figure, and turn off menu
+  gParams.fignum = figure;
+else
+  figure(gParams.fignum);
+end
+set(gParams.fignum,'MenuBar','none');
+set(gParams.fignum,'NumberTitle','off');
+set(gParams.fignum,'closeRequestFcn','mrParamsDialog(''close'')');
+%set(gParams.fignum,'resize','off');
 
 % some basic info about location of controls
-gParams.leftMargin = 10;
-gParams.topMargin = 10;
-gParams.varNameWidth = min(maxChars*9,180);
-gParams.buttonWidth = 100;
-mver = ver('matlab');mver = str2num(mver.Version);
-if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
-  gParams.buttonHeight = 26;
-else
-  gParams.buttonHeight = 22;
-end  
 gParams.margin = 5;
 gParams.fontsize = 12;
 gParams.fontname = 'Helvetica';
+gParams.leftMargin = 10;
+gParams.topMargin = 10;
+gParams.buttonWidth = 100;
+
+% get maximum length of var name 
+gParams.varNameWidth = 0;
+for i = 1:length(gParams.vars)
+  h = uicontrol(gParams.fignum,'Style','text','String',gParams.vars{i}{1},'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+  thisExtent = get(h,'extent');
+  gParams.varNameWidth = max(thisExtent(3)+2,gParams.varNameWidth);
+  delete(h);
+end  
+gParams.buttonHeight = thisExtent(4);
+% mver = ver('matlab');mver = str2num(mver.Version);
+% if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
+%   gParams.buttonHeight = 26;
+% else
+%   gParams.buttonHeight = 22;
+% end  
 
 % parse the otherParams. The first otherParams is always the title
 if length(otherParams) > 1
@@ -84,6 +99,7 @@ else
   titleStr = 'Set parameters';
   gParams.figlocstr = 'mrParamsDialog';
 end
+set(gParams.fignum,'Name',titleStr);
 
 % now if there is a second otherParams and it is a string, then
 % it means that we have been passed in a "getArgs" type. Otherwise
@@ -116,56 +132,26 @@ if ~isempty(buttonWidth)
   gParams.buttonWidth = buttonWidth*gParams.buttonWidth;
 end
 
-% get the figure
-if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
-  % open figure, and turn off menu
-  gParams.fignum = figure;
-else
-  figure(gParams.fignum);
-end
-set(gParams.fignum,'MenuBar','none');
-set(gParams.fignum,'NumberTitle','off');
-set(gParams.fignum,'Name',titleStr);
-set(gParams.fignum,'closeRequestFcn','mrParamsDialog(''close'')');
 
-% set height of figure according to how many rows we have
 figpos = mrGetFigLoc(fixBadChars(gParams.figlocstr));
 if isempty(figpos)
   figpos = get(gParams.fignum,'Position');
 end
 
-%compute figure dimensions
-figMultiCols=1;
-figrows = ceil(numrows/figMultiCols);
-figcols = numcols*figMultiCols;
-figHeight = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
-figWidth = 2*gParams.leftMargin+figMultiCols*gParams.varNameWidth+(figcols-figMultiCols)*gParams.buttonWidth+(figcols-1)*gParams.margin;
-%optimize figure dimensions 
-screenSize = get(0,'MonitorPositions');
-thresholdRatio = 1.7; 
-while figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4) || figWidth>screenSize(1,3)
-  %if height/width > thresholdRatio or if height > screenheight, we add a column
-  if figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4)
-    figMultiCols = figMultiCols+1;
-    figrows = ceil(numrows/figMultiCols);
-    figcols = numcols*figMultiCols;
-  elseif figWidth > screenSize(1,3) 
-    gParams.buttonWidth = (screenSize(1,3)-figMultiCols*(gParams.varNameWidth+gParams.margin) -2*gParams.leftMargin) / (figcols-figMultiCols) - gParams.margin;
-  end
-  figHeight = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
-  figWidth = 2*gParams.leftMargin+figMultiCols*gParams.varNameWidth+(figcols-figMultiCols)*gParams.buttonWidth+(figcols-1)*gParams.margin;
-end
-
+%compute figure dimensions based on number of rows and colums
+[figpos,numrows,numcols,figrows,figMultiCols] = optimizeFigure(figpos,numrows,numcols, gParams.buttonWidth);
+set(gParams.fignum,'Position',figpos);
+figWidth = figpos(3);
+figHeight = figpos(4);
 % set them in gParams
 gParams.figrows = figrows;
 gParams.figMultiCols = figMultiCols;
 gParams.numcols = numcols;
 gParams.numrows = numrows;
-% set the figure position
-figpos(4) = figHeight;
-figpos(3) = figWidth;
-set(gParams.fignum,'Position',figpos);
 
+%set control dimensions to normalized so that the figure resizes
+set(gParams.fignum,'defaultUicontrolUnits','normalized'); 
+%computing the normalized positions is taken care of by getUIControlPos
 % make entry buttons
 rownum = 0;
 for i = 1:length(gParams.varinfo)
@@ -249,18 +235,20 @@ else
 end
 
 % make ok and cancel buttons
-totalColWidth = figWidth/figMultiCols;
-thisButtonWidth = min(100,totalColWidth/3);
-intervalBetweenButtons = (totalColWidth - thisButtonWidth*3)/4;
-leftPosition = (figMultiCols - 1)*figWidth/figMultiCols + intervalBetweenButtons;
+totalColWidth = 1/figMultiCols;
+thisButtonWidth = min(100/figWidth,totalColWidth/3);
+bottomMargin = gParams.topMargin/figHeight;
+thisButtonHeight = gParams.buttonHeight/figHeight;
+intervalBetweenButtons = (totalColWidth - thisButtonWidth*3)/(4);
+leftPosition = (figMultiCols - 1)/figMultiCols + intervalBetweenButtons;
 uicontrol(gParams.fignum,'Style','pushbutton','Callback','mrParamsDialog(''help'')','String','help',...
-  'Position',[leftPosition gParams.topMargin thisButtonWidth gParams.buttonHeight],...
+  'Position',[leftPosition bottomMargin thisButtonWidth thisButtonHeight],...
   'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 uicontrol(gParams.fignum,'Style','pushbutton','Callback','mrParamsDialog(''cancel'')','String','Cancel',...
-  'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth) gParams.topMargin thisButtonWidth gParams.buttonHeight],...
+  'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth) bottomMargin thisButtonWidth thisButtonHeight],...
   'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 uicontrol(gParams.fignum,'Style','pushbutton','Callback','mrParamsDialog(''ok'')','String','OK',...
-  'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth)*2 gParams.topMargin thisButtonWidth gParams.buttonHeight],...
+  'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth)*2 bottomMargin thisButtonWidth thisButtonHeight],...
   'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 
 % if gParams.numcols > 2
@@ -574,12 +562,11 @@ if isfield(gParams.varinfo{varnum},'incdec') && isfield(gParams.varinfo{varnum},
 end
 
 %%%%%%%%%%%%%%%%%%%%
-% callback for ok
+% callback for help
 %%%%%%%%%%%%%%%%%%%%
 function helpHandler
 
 global gParams;
-global mrDEFAULTS;
 
 if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
   figure(gParams.helpFignum);
@@ -592,17 +579,32 @@ set(gParams.helpFignum,'MenuBar','none');
 set(gParams.helpFignum,'NumberTitle','off');
 set(gParams.helpFignum,'Name','Parameter help');
 
+
+set(gParams.helpFignum,'defaultUicontrolUnits','pixels'); 
+% get maximum pixel width of description
+descriptionWidth = zeros(1,length(gParams.varinfo));
+for i = 1:length(gParams.varinfo)
+  h = uicontrol(gParams.helpFignum,'Style','text','String',gParams.varinfo{i}.description,...
+    'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+  thisExtent = get(h,'extent');
+  descriptionWidth(i) = thisExtent(3)+2;
+  delete(h);
+end  
+%We don't want extra long fields
+maxDescriptionWidth = min(max(descriptionWidth),400);
+
+%set control dimensions to normalized so that the figure resizes
+set(gParams.helpFignum,'defaultUicontrolUnits','normalized'); 
 % set close handler
 set(gParams.helpFignum,'DeleteFcn',@helpcloseHandler);
 
-% figure out how many rows
-charsPerRow = 120;
-numrows = 1;
 % add number of rows each line needs
-for i = 1:length(gParams.varinfo)
-  numrows = numrows+max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
-end
-numcols = 8;
+lineHeightRatio = .67; %approximate height ot multiline text. 
+%Matlab doesn't return the extent of multiline text, so we have to guess how much smaller each line is 
+%relative to the height of the textbox, (although there's probably a way to get this information)
+numLines = ceil(ceil(descriptionWidth/maxDescriptionWidth)*lineHeightRatio);
+%numLines = ceil(descriptionWidth/maxDescriptionWidth);
+numrows = sum(numLines) +1 ; %add one for the cancel button
 
 % set the position and size
 figpos = mrGetFigLoc('mrParamsDialogHelp');
@@ -610,31 +612,21 @@ if isempty(figpos)
   figpos = get(gParams.helpFignum,'Position');
 end
 
-% if we have more than 25 rows then split into multiple columns
-% but at most we make 6 multi columns
-figMultiCols = min(ceil(numrows/25),6);
-figrows = ceil(numrows/figMultiCols);
-figcols = numcols*figMultiCols;
-% for really big ones, reduce the button size
-if (numcols > 2) && (figMultiCols > 3)
-  gParams.buttonWidth = round(gParams.buttonWidth/2);
-end
+%compute figure dimensions based on number of rows and colums
+[figpos,numrows,numcols,figrows,figMultiCols,maxDescriptionWidth] = optimizeFigure(figpos,numrows,2,maxDescriptionWidth);
+set(gParams.helpFignum,'Position',figpos);
 gParams.help.numcols = numcols;
 gParams.help.numrows = numrows;
 gParams.help.figrows = figrows;
+gParams.help.buttonWidth = maxDescriptionWidth;
 gParams.help.figMultiCols = figMultiCols;
-
-figpos(4) = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+gParams.varNameWidth+(gParams.help.figMultiCols*numcols-1)*gParams.buttonWidth+(gParams.help.figMultiCols*numcols-1)*gParams.margin;
-set(gParams.helpFignum,'Position',figpos);
 
 % put up the info
 rownum = 1;
 for i = 1:length(gParams.varinfo)
-  numLines = max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
-  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,1,numLines,1);
-  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,2,numcols-1,numLines,1),'HorizontalAlignment','Left');
-  rownum = rownum+numLines;
+  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,1,numLines(i),1);
+  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,2,1,numLines(i),1),'HorizontalAlignment','Left');
+  rownum = rownum+numLines(i);
 end
 
 % make close button
@@ -648,7 +640,9 @@ function closeHandler
 global gParams;
 if isempty(gParams),return,end
 % close figure
-mrSetFigLoc(fixBadChars(gParams.figlocstr),get(gParams.fignum,'Position'));
+if isfield(gParams,'figlocstr')
+  mrSetFigLoc(fixBadChars(gParams.figlocstr),get(gParams.fignum,'Position'));
+end
 delete(gParams.fignum);
 
 % close help
@@ -879,10 +873,12 @@ if ~isHelpDialog
   figrows = gParams.figrows;
   numrows = gParams.numrows;
   numcols = gParams.numcols;
+  buttonWidth = gParams.buttonWidth;
 else
   figrows = gParams.help.figrows;
   numrows = gParams.help.numrows;
   numcols = gParams.help.numcols;
+  buttonWidth = gParams.help.buttonWidth;
 end
 multiCol = ceil(rownum/figrows);
 if multiCol > 1
@@ -903,15 +899,15 @@ figpos = get(fignum,'Position');
 if colnum - (multiCol-1)*numcols == 1
   pos(1) = gParams.margin + ... %position
             (multiCol - 1) * (gParams.varNameWidth*uisize + gParams.margin) + ...
-            (multiCol - 1) * (numcols-1) * (gParams.buttonWidth+gParams.margin) + ...
+            (multiCol - 1) * (numcols-1) * (buttonWidth+gParams.margin) + ...
             gParams.leftMargin; 
   pos(3) = gParams.varNameWidth*uisize+(uisize-1)*gParams.margin; %size
 else
   pos(1) = gParams.margin + ...
     multiCol*(gParams.margin + gParams.varNameWidth) + ...
-    (colnum-multiCol-1) * (gParams.buttonWidth+gParams.margin) + ...
+    (colnum-multiCol-1) * (buttonWidth+gParams.margin) + ...
     gParams.leftMargin;
-  pos(3) = gParams.buttonWidth*uisize+(uisize-1)*gParams.margin;
+  pos(3) = buttonWidth*uisize+(uisize-1)*gParams.margin;
 end
 
 if ieNotDefined('uisizev'),
@@ -921,4 +917,49 @@ else
 end
 %position
 pos(2) = figpos(4)-pos(4)-gParams.topMargin - (gParams.buttonHeight+gParams.margin)*(rownum-1);
+
+%normalize position
+pos([1 3]) = pos([1 3])/figpos(3);
+pos([2 4]) = pos([2 4])/figpos(4);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% optimizeFigure optimizes the number of rows and columns as well as the dimensions of the figure %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [figpos,numrows,numcols,figrows,figMultiCols, buttonWidth] = optimizeFigure(figpos,numrows, numcols, buttonWidth)
+
+global gParams %to get infor about the dimensions of the control
+
+%start with one multicolumn and set other parameters accordingly
+figMultiCols=1;
+figrows = numrows;
+figcols = numcols;
+figHeight = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
+figWidth = 2*gParams.leftMargin+figMultiCols*gParams.varNameWidth+(figcols-figMultiCols)*buttonWidth+(figcols-1)*gParams.margin;
+
+%optimize figure dimensions 
+screenSize = get(0,'MonitorPositions');
+thresholdRatio = 1.7; 
+%while one of the dimensions is larger than the screen or the height/width is over the threshold, resize
+while figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4) || figWidth>screenSize(1,3)
+  %if height/width > thresholdRatio or if height > screenheight, we add a column
+  if figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4)
+    figMultiCols = figMultiCols+1;
+    figrows = ceil(numrows/figMultiCols);
+    figcols = numcols*figMultiCols;
+  elseif figWidth > screenSize(1,3) %else if width>screen width, we reduce the button width
+    buttonWidth = (screenSize(1,3)-figMultiCols*(gParams.varNameWidth+gParams.margin) -2*gParams.leftMargin) / (figcols-figMultiCols) - gParams.margin;
+  end
+  %compute the new dimensions
+  figHeight = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
+  figWidth = 2*gParams.leftMargin+figMultiCols*gParams.varNameWidth+(figcols-figMultiCols)*buttonWidth+(figcols-1)*gParams.margin;
+end
+
+% set the figure position
+figpos(4) = figHeight;
+figpos(3) = figWidth;
+%make sure the figure is not outside the screen
+figpos(1) = min(figpos(1),sum(screenSize([1 3]))-1-figWidth);
+figpos(2) = min(figpos(2),sum(screenSize([2 4]))-1-figHeight);
+
 
