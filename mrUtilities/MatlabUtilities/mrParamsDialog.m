@@ -84,6 +84,10 @@ for i = 1:length(gParams.vars)
   delete(h);
 end  
 gParams.buttonHeight = thisExtent(4);
+%For edit boxes and buttons on MACs, this height will be to small because of their large borders
+if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
+  gParams.buttonHeight = gParams.buttonHeight*1.3;
+end
 % mver = ver('matlab');mver = str2num(mver.Version);
 % if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
 %   gParams.buttonHeight = 26;
