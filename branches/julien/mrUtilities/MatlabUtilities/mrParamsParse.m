@@ -68,8 +68,6 @@ for i = 1:length(vars)
         end
         % see if the default argument is a string
       elseif  ischar(vars{i}{2}{1})
-        varinfo{i}.type = 'stringarray'; %call it a stringarray instead, 
-        %it will change when checking the options if it's in fact a popup menu
         varinfo{i}.popuptype = 'string';
       % otherwise numeric
       else
