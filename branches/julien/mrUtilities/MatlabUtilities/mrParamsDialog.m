@@ -55,46 +55,6 @@ global mrDEFAULTS;
 % parse the input parameter string
 [gParams.vars gParams.varinfo numrows numcols] = mrParamsParse(vars);
 
-% get the figure
-if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
-  % open figure, and turn off menu
-  gParams.fignum = figure;
-else
-  figure(gParams.fignum);
-end
-set(gParams.fignum,'MenuBar','none');
-set(gParams.fignum,'NumberTitle','off');
-set(gParams.fignum,'closeRequestFcn','mrParamsDialog(''close'')');
-%set(gParams.fignum,'resize','off');
-
-% some basic info about location of controls
-gParams.margin = 5;
-gParams.fontsize = 12;
-gParams.fontname = 'Helvetica';
-gParams.leftMargin = 10;
-gParams.topMargin = 10;
-gParams.buttonWidth = 100;
-
-% get maximum length of var name 
-gParams.varNameWidth = 0;
-for i = 1:length(gParams.vars)
-  h = uicontrol(gParams.fignum,'Style','text','String',gParams.vars{i}{1},'FontSize',gParams.fontsize,'FontName',gParams.fontname);
-  thisExtent = get(h,'extent');
-  gParams.varNameWidth = max(thisExtent(3)+2,gParams.varNameWidth);
-  delete(h);
-end  
-gParams.buttonHeight = thisExtent(4);
-%For edit boxes and buttons on MACs, this height will be to small because of their large borders
-if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
-  gParams.buttonHeight = gParams.buttonHeight*1.3;
-end
-% mver = ver('matlab');mver = str2num(mver.Version);
-% if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
-%   gParams.buttonHeight = 26;
-% else
-%   gParams.buttonHeight = 22;
-% end  
-
 % parse the otherParams. The first otherParams is always the title
 if length(otherParams) > 1
   titleStr = otherParams{2};
@@ -103,7 +63,6 @@ else
   titleStr = 'Set parameters';
   gParams.figlocstr = 'mrParamsDialog';
 end
-set(gParams.fignum,'Name',titleStr);
 
 % now if there is a second otherParams and it is a string, then
 % it means that we have been passed in a "getArgs" type. Otherwise
@@ -131,19 +90,80 @@ if isempty(modal)
     modal = 1;
   end
 end
+
+% get the figure
+if ~isfield(gParams,'fignum') || (gParams.fignum == -1);
+  % open figure, and turn off menu
+  gParams.fignum = figure;
+else
+  figure(gParams.fignum);
+end
+set(gParams.fignum,'MenuBar','none');
+set(gParams.fignum,'NumberTitle','off');
+set(gParams.fignum,'closeRequestFcn','mrParamsDialog(''close'')');
+set(gParams.fignum,'Name',titleStr);
+
+
+% some basic info about location of controls
+gParams.margin = 5;
+gParams.fontsize = 12;
+gParams.fontname = 'Helvetica';
+gParams.leftMargin = 10;
+gParams.topMargin = 10;
+gParams.buttonWidth = 100;
+%Matlab doesn't return the extent of multiline text, so we have to guess how much smaller the text height is 
+%relative to the height of a textbox, in order to avoid making text boxes that are too large when text wraps
+%(although there's probably a way to get this information)
+gParams.lineHeightRatio = .67; %approximate height ot multiline text. 
+
 % set the buttonWidth      
 if ~isempty(buttonWidth)
   gParams.buttonWidth = buttonWidth*gParams.buttonWidth;
 end
 
+% get maximum length of var name across parameters and number of lines for each parameter
+numLines = ones(1,length(gParams.vars));
+gParams.varNameWidth = 0;
+for i = 1:length(gParams.vars)
+  if ~gParams.varinfo{i}.visible %no need to compute these if parameter is not visible
+    numLines(i)=0;
+  else
+    %get variable name width
+    h = uicontrol(gParams.fignum,'Style','text','String',gParams.vars{i}{1},'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+    thisExtent = get(h,'extent');
+    gParams.varNameWidth = max(thisExtent(3)+2,gParams.varNameWidth);
+    delete(h);
+    if (strcmp(gParams.varinfo{i}.type,'string')&& ~gParams.varinfo{i}.editable) || strcmp(gParams.varinfo{i}.type,'statictext')
+      %compute number of lines using string width if it's gonna be displayed using a text box
+      h = uicontrol(gParams.fignum,'Style','text','String',gParams.vars{i}{2},'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+      thisExtent = get(h,'extent');
+      numLines(i) = ceil(ceil(thisExtent(3)/gParams.buttonWidth/numcols)*gParams.lineHeightRatio);
+      delete(h);
+    elseif ismember(gParams.varinfo{i}.type,{'stringarray' 'array'})
+      numLines(i) = size(gParams.varinfo{i}.value,1);
+    end
+  end
+end  
+gParams.buttonHeight = thisExtent(4);
+%For edit boxes and buttons on MACs, this height will be too small because of their large borders
+if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
+  gParams.buttonHeight = gParams.buttonHeight*1.3;
+end
+% mver = ver('matlab');mver = str2num(mver.Version);
+% if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
+%   gParams.buttonHeight = 26;
+% else
+%   gParams.buttonHeight = 22;
+% end  
 
+
+%compute figure dimensions based on number of rows and colums
 figpos = mrGetFigLoc(fixBadChars(gParams.figlocstr));
 if isempty(figpos)
   figpos = get(gParams.fignum,'Position');
 end
-
-%compute figure dimensions based on number of rows and colums
-[figpos,numrows,numcols,figrows,figMultiCols] = optimizeFigure(figpos,numrows,numcols, gParams.buttonWidth);
+%optimize figure dimensions
+[figpos,numrows,numcols,figrows,figMultiCols] = optimizeFigure(figpos,numLines,numcols, gParams.buttonWidth);
 set(gParams.fignum,'Position',figpos);
 figWidth = figpos(3);
 figHeight = figpos(4);
@@ -157,12 +177,8 @@ gParams.numrows = numrows;
 set(gParams.fignum,'defaultUicontrolUnits','normalized'); 
 %computing the normalized positions is taken care of by getUIControlPos
 % make entry buttons
-rownum = 0;
+rownum = 1;
 for i = 1:length(gParams.varinfo)
-  %only increase rownum if row is visible
-  if gParams.varinfo{i}.visible
-    rownum = rownum+1;
-  end
   % make ui for varname
   gParams.ui.varname(i) = makeTextbox(gParams.fignum,gParams.varinfo{i}.name,rownum,1,1,1,0,gParams.varinfo{i}.visible);
   % make ui entry dependent on what type we have
@@ -171,7 +187,7 @@ for i = 1:length(gParams.varinfo)
       makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.visible);
     enableArrows(mrStr2num(gParams.varinfo{i}.value),i);
   elseif strcmp(gParams.varinfo{i}.type,'string')
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,numLines(i),gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'checkbox')
     gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.5,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
@@ -183,14 +199,11 @@ for i = 1:length(gParams.varinfo)
   elseif strcmp(gParams.varinfo{i}.type,'popupmenu') 
     gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'statictext')
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,0,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,numLines(i),0,gParams.varinfo{i}.visible);
   elseif ismember(gParams.varinfo{i}.type,{'stringarray' 'array'})
       gParams.ui.varentry{i} = makeArrayentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,numcols,gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
-    if gParams.varinfo{i}.visible
-      rownum = rownum+size(gParams.varinfo{i}.value,1)-1;
-    end
   else
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,numLines(i),gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
   end
   % check to see if we have to disable the entry field
   if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
@@ -198,6 +211,7 @@ for i = 1:length(gParams.varinfo)
       set(gParams.ui.varentry{i}(j),'enable','off');
     end
   end
+  rownum = rownum+numLines(i);
 end
 
 % for each value that controls another one, call the buttonHandler to
@@ -588,27 +602,22 @@ set(gParams.helpFignum,'defaultUicontrolUnits','pixels');
 % get maximum pixel width of description
 descriptionWidth = zeros(1,length(gParams.varinfo));
 for i = 1:length(gParams.varinfo)
-  h = uicontrol(gParams.helpFignum,'Style','text','String',gParams.varinfo{i}.description,...
-    'FontSize',gParams.fontsize,'FontName',gParams.fontname);
-  thisExtent = get(h,'extent');
-  descriptionWidth(i) = thisExtent(3)+2;
-  delete(h);
+  if gParams.varinfo{i}.visible %no need to display the help is parameter is not visible
+    h = uicontrol(gParams.helpFignum,'Style','text','String',gParams.varinfo{i}.description,...
+      'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+    thisExtent = get(h,'extent');
+    descriptionWidth(i) = thisExtent(3)+2;
+    delete(h);
+  end
 end  
 %We don't want extra long fields
-maxDescriptionWidth = min(max(descriptionWidth),400);
+maxDescriptionWidth = min(max(descriptionWidth),600);
+numLines = ceil(ceil(descriptionWidth/maxDescriptionWidth)*gParams.lineHeightRatio);
 
 %set control dimensions to normalized so that the figure resizes
 set(gParams.helpFignum,'defaultUicontrolUnits','normalized'); 
 % set close handler
 set(gParams.helpFignum,'DeleteFcn',@helpcloseHandler);
-
-% add number of rows each line needs
-lineHeightRatio = .67; %approximate height ot multiline text. 
-%Matlab doesn't return the extent of multiline text, so we have to guess how much smaller each line is 
-%relative to the height of the textbox, (although there's probably a way to get this information)
-numLines = ceil(ceil(descriptionWidth/maxDescriptionWidth)*lineHeightRatio);
-%numLines = ceil(descriptionWidth/maxDescriptionWidth);
-numrows = sum(numLines) +1 ; %add one for the cancel button
 
 % set the position and size
 figpos = mrGetFigLoc('mrParamsDialogHelp');
@@ -617,7 +626,7 @@ if isempty(figpos)
 end
 
 %compute figure dimensions based on number of rows and colums
-[figpos,numrows,numcols,figrows,figMultiCols,maxDescriptionWidth] = optimizeFigure(figpos,numrows,2,maxDescriptionWidth);
+[figpos,numrows,numcols,figrows,figMultiCols,maxDescriptionWidth] = optimizeFigure(figpos,numLines,2,maxDescriptionWidth);
 set(gParams.helpFignum,'Position',figpos);
 gParams.help.numcols = numcols;
 gParams.help.numrows = numrows;
@@ -628,9 +637,11 @@ gParams.help.figMultiCols = figMultiCols;
 % put up the info
 rownum = 1;
 for i = 1:length(gParams.varinfo)
-  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,1,numLines(i),1);
-  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,2,1,numLines(i),1),'HorizontalAlignment','Left');
-  rownum = rownum+numLines(i);
+  if gParams.varinfo{i}.visible %no need to display the help is parameter is not visible
+    makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,1,numLines(i),1);
+    set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,2,1,numLines(i),1,gParams.varinfo{i}.visible),'HorizontalAlignment','Left');
+    rownum = rownum+numLines(i);
+  end
 end
 
 % make close button
@@ -740,13 +751,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextentry(fignum,displayString,callback,rownum,colnum,uisize,editable,visible)
+function h = makeTextentry(fignum,displayString,callback,rownum,colnum,uisize,uisizev,editable,visible)
 
 if ieNotDefined('editable'),editable=1;end
 if ieNotDefined('visible'),visible=1;end
+if ieNotDefined('uisizev'),uisizev=1;end
 
 if editable
   style = 'edit';
+  uisizev = 1;
 else
   style = 'text';
 end
@@ -760,7 +773,7 @@ end
 
 global gParams;
 
-h = uicontrol(fignum,'Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol(fignum,'Style',style,'Callback',callback,'String',displayString,'Position',getUIControlPos(fignum,rownum,colnum,uisize,uisizev),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
 if ~visible
   set(h,'visible','off');
 end
@@ -930,9 +943,12 @@ pos([2 4]) = pos([2 4])/figpos(4);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % optimizeFigure optimizes the number of rows and columns as well as the dimensions of the figure %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [figpos,numrows,numcols,figrows,figMultiCols, buttonWidth] = optimizeFigure(figpos,numrows, numcols, buttonWidth)
+function [figpos,numrows,numcols,figrows,figMultiCols, buttonWidth] = optimizeFigure(figpos,numLines, numcols, buttonWidth)
 
 global gParams %to get infor about the dimensions of the control
+
+%numLines is an array of line number per parameter
+numrows = sum(numLines)+1; %we add one for the help/ok/cancel buttons
 
 %start with one multicolumn and set other parameters accordingly
 figMultiCols=1;
@@ -949,11 +965,16 @@ while figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4) || figWidth
   %if height/width > thresholdRatio or if height > screenheight, we add a column
   if figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4)
     figMultiCols = figMultiCols+1;
+    %compute new number of rows per columns, but make sure we're not cutting a field
     figrows = ceil(numrows/figMultiCols);
+    while ~ismember(figrows,cumsum(numLines))
+      figrows = figrows+1;
+    end
     figcols = numcols*figMultiCols;
   elseif figWidth > screenSize(1,3) %else if width>screen width, we reduce the button width
     buttonWidth = (screenSize(1,3)-figMultiCols*(gParams.varNameWidth+gParams.margin) -2*gParams.leftMargin) / (figcols-figMultiCols) - gParams.margin;
   end
+  
   %compute the new dimensions
   figHeight = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
   figWidth = 2*gParams.leftMargin+figMultiCols*gParams.varNameWidth+(figcols-figMultiCols)*buttonWidth+(figcols-1)*gParams.margin;
