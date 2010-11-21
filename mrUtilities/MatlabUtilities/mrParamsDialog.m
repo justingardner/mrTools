@@ -110,7 +110,8 @@ gParams.fontsize = 12;
 gParams.fontname = 'Helvetica';
 gParams.leftMargin = 10;
 gParams.topMargin = 10;
-gParams.buttonWidth = 100;
+%if less than 5+1 columns, use fixed buttonWidth, otherwise decrease
+gParams.buttonWidth = min(100,400/numcols);
 %Matlab doesn't return the extent of multiline text, so we have to guess how much smaller the text height is 
 %relative to the height of a textbox, in order to avoid making text boxes that are too large when text wraps
 %(although there's probably a way to get this information)
@@ -120,6 +121,7 @@ gParams.lineHeightRatio = .67; %approximate height ot multiline text.
 if ~isempty(buttonWidth)
   gParams.buttonWidth = buttonWidth*gParams.buttonWidth;
 end
+
 
 % get maximum length of var name across parameters and number of lines for each parameter
 numLines = ones(1,length(gParams.vars));
@@ -137,7 +139,7 @@ for i = 1:length(gParams.vars)
       %compute number of lines using string width if it's gonna be displayed using a text box
       h = uicontrol(gParams.fignum,'Style','text','String',gParams.vars{i}{2},'FontSize',gParams.fontsize,'FontName',gParams.fontname);
       thisExtent = get(h,'extent');
-      numLines(i) = ceil(ceil(thisExtent(3)/gParams.buttonWidth/numcols)*gParams.lineHeightRatio);
+      numLines(i) = ceil(ceil(thisExtent(3)/gParams.buttonWidth/(numcols-1))*gParams.lineHeightRatio);
       delete(h);
     elseif ismember(gParams.varinfo{i}.type,{'stringarray' 'array'})
       numLines(i) = size(gParams.varinfo{i}.value,1);
@@ -184,26 +186,26 @@ for i = 1:length(gParams.varinfo)
   % make ui entry dependent on what type we have
   if isfield(gParams.varinfo{i},'incdec')
     [gParams.ui.varentry{i} gParams.ui.incdec{i}(1) gParams.ui.incdec{i}(2)] =...
-      makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.visible);
+      makeTextentryWithIncdec(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,(numcols-1),gParams.varinfo{i}.visible);
     enableArrows(mrStr2num(gParams.varinfo{i}.value),i);
   elseif strcmp(gParams.varinfo{i}.type,'string')
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,numLines(i),gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,(numcols-1),numLines(i),gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'checkbox')
-    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,.5,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makeCheckbox(gParams.fignum,num2str(gParams.varinfo{i}.value),i,rownum,2,(numcols-1),gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
     if isfield(gParams.varinfo{i},'buttonString')
-      gParams.ui.varentry{i} = makeButton(gParams.fignum,gParams.varinfo{i}.buttonString,i,rownum,2,3,0,gParams.varinfo{i}.visible);
+      gParams.ui.varentry{i} = makeButton(gParams.fignum,gParams.varinfo{i}.buttonString,i,rownum,2,(numcols-1),0,gParams.varinfo{i}.visible);
     else
-      gParams.ui.varentry{i} = makeButton(gParams.fignum,'',i,rownum,2,3,0,gParams.varinfo{i}.visible);
+      gParams.ui.varentry{i} = makeButton(gParams.fignum,'',i,rownum,2,(numcols-1),0,gParams.varinfo{i}.visible);
     end
   elseif strcmp(gParams.varinfo{i}.type,'popupmenu') 
-    gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makePopupmenu(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,(numcols-1),gParams.varinfo{i}.visible);
   elseif strcmp(gParams.varinfo{i}.type,'statictext')
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,numLines(i),0,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,(numcols-1),numLines(i),0,gParams.varinfo{i}.visible);
   elseif ismember(gParams.varinfo{i}.type,{'stringarray' 'array'})
       gParams.ui.varentry{i} = makeArrayentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,numcols,gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
   else
-    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,3,numLines(i),gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
+    gParams.ui.varentry{i} = makeTextentry(gParams.fignum,gParams.varinfo{i}.value,i,rownum,2,(numcols-1),numLines(i),gParams.varinfo{i}.editable,gParams.varinfo{i}.visible);
   end
   % check to see if we have to disable the entry field
   if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
@@ -845,7 +847,9 @@ if ieNotDefined('visible'),visible=1;end
 % make callback string
 callback = sprintf('mrParamsDialog(%f)',callback);
 
-h = uicontrol(fignum,'Style','checkbox','Value',mrStr2num(displayString),'Callback',callback,'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname);
+h = uicontrol(fignum,'Style','checkbox','Value',mrStr2num(displayString),'Callback',callback,...
+  'Position',getUIControlPos(fignum,rownum,colnum,uisize),'FontSize',gParams.fontsize,'FontName',gParams.fontname,...
+  'BackgroundColor',get(gcf,'color'));
 if ~visible
   set(h,'visible','off');
 end
