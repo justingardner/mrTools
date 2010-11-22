@@ -53,9 +53,16 @@ if ~isempty(overlayImages)
     clip = viewGet(view,'overlayClip',ov);
     % Find pixels that are within clip
     if diff(clip) > 0
+      % show data between the clip values
+      % note: AND
       pts = (im >= clip(1) & im <= clip(2));
-    else
+    elseif diff(clip) < 0
+      % show data more extreme than the clip values
+      % note: OR
       pts = (im >= clip(1) | im <= clip(2));
+    else
+      % nothing in interval; don't show anything
+      pts = false(size(im));
     end
     % do not clip out for any points that are set to nan
     % this can happen if the current overlay does not
