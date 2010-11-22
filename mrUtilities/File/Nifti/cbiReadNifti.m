@@ -43,7 +43,7 @@ if ieNotDefined('subset')
   subset={[],[],[],[]};
 end
 if ieNotDefined('prec')
-  prec=mrGetPref('defaultPrecision');
+    prec='double';
 end
 if ieNotDefined('short_nan')
   short_nan=1;
