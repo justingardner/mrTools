@@ -95,7 +95,7 @@ if (length(otherParams) > 2)
 end
 % button width is in fact a button scaling parameter    
 if ~isempty(buttonWidth)
-  genParams.buttonScale = buttonWidth;
+  uiParams.buttonScale = buttonWidth;
 end
 
 % default to using a modal dialog if there is no callback
@@ -125,25 +125,27 @@ else
 end
 
 % some basic info about location of controls
-genParams.minEntriesWidth = 200; %the minimum width of all the parameter entries
-genParams.maxEntriesWidth = 500; %the maximum width of all the parameter entries
-genParams.maxSingleFieldWidth = 100;
+uiParams.minEntriesWidth = 200; %the minimum width of all the parameter entries
+uiParams.maxEntriesWidth = 500; %the maximum width of all the parameter entries
+uiParams.maxSingleFieldWidth = 100;
 minVarNameWidth = 70;
-genParams.margin = 5;
-genParams.fontsize = 12;
-genParams.fontname = 'Helvetica';
-genParams.leftMargin = 10;
-genParams.topMargin = 10;
+uiParams.margin = 5;
+uiParams.fontsize = 12;
+uiParams.fontname = 'Helvetica';
+uiParams.leftMargin = 10;
+uiParams.topMargin = 10;
+uiParams.incdecType = 'plusMinus'; % Can be arrows or plusMinus
+uiParams.maxIncdecButtonWidth = 30;
+uiParams.incdecMargin = 2;
 %Matlab doesn't return the extent of multiline text, so we have to guess how much smaller the text height is 
 %relative to the height of a textbox, in order to avoid making text boxes that are too large when text wraps
 %(although there probably is a way to get this information)
-genParams.lineHeightRatio = .67; %approximate height ot multiline text. 
-
+uiParams.lineHeightRatio = .67; %approximate height ot multiline text. 
 
 % Collect information for uicontrol
 %initialize varname field info(first column)
-genParams.varNameWidth = 0;
-genParams.varName = repmat({''},1,length(gParams.vars));
+uiParams.varNameWidth = 0;
+uiParams.varName = repmat({''},1,length(gParams.vars));
 %initialize entry field info (second column)
 dParams.entryWidth = -inf(1,length(gParams.vars));
 dParams.entryValue = zeros(1,length(gParams.vars));
@@ -159,10 +161,10 @@ for i = 1:length(gParams.vars)
     dParams.numLines(i)=0; %no line for parameters that are not visible
   end
   %get variable name width
-  genParams.varName{i} = [gParams.vars{i}{1} '  ']; %add spaces on the right
-  h = uicontrol(gParams.fignum,'Style','text','String',genParams.varName{i},'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+  uiParams.varName{i} = [gParams.vars{i}{1} '  ']; %add spaces on the right
+  h = uicontrol(gParams.fignum,'Style','text','String',uiParams.varName{i},'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
   thisExtent = get(h,'extent');
-  genParams.varNameWidth = max(minVarNameWidth,max(thisExtent(3)+2,genParams.varNameWidth));
+  uiParams.varNameWidth = max(minVarNameWidth,max(thisExtent(3)+2,uiParams.varNameWidth));
   delete(h);
 
   %get info about the entries
@@ -246,7 +248,7 @@ for i = 1:length(gParams.vars)
 end  
 
 %optimize figure dimensions
-[figpos,dParams,genParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,genParams);
+[figpos,dParams,uiParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,uiParams);
 figWidth = figpos(3);
 figHeight = figpos(4);
 
@@ -255,7 +257,7 @@ dParams.entryWidth(dParams.entryWidth>dParams.allEntriesWidth)=dParams.allEntrie
 %if it's gonna be an array compute the field width 
 for i = 1:length(dParams.entryStyle)
   if dParams.entryNumCols(i)>1 || dParams.entryNumRows(i)>1
-      dParams.entryWidth(i) = min(dParams.allEntriesWidth/dParams.entryNumCols(i)-genParams.margin,genParams.maxSingleFieldWidth);
+      dParams.entryWidth(i) = min(dParams.allEntriesWidth/dParams.entryNumCols(i)-uiParams.margin,uiParams.maxSingleFieldWidth);
   end
 end
 
@@ -267,10 +269,10 @@ set(gParams.fignum,'defaultUicontrolUnits','normalized');
 %--------------------------------- make entry buttons-----------------------------------
 for i = 1:length(gParams.varinfo)
   % make ui for varname
-  gParams.ui.varname(i) = makeUIcontrol(i,gParams.fignum,dParams,genParams,'varname');
+  gParams.ui.varname(i) = makeUIcontrol(i,gParams.fignum,dParams,uiParams,'varname');
   % make ui for entry
   [gParams.ui.varentry{i} gParams.ui.incdec{i}{1} gParams.ui.incdec{i}{2}] =...
-     makeUIcontrol(i,gParams.fignum,dParams,genParams,'varentry');
+     makeUIcontrol(i,gParams.fignum,dParams,uiParams,'varentry');
   if isfield(gParams.varinfo{i},'incdec')
     enableArrows(mrStr2num(gParams.varinfo{i}.value),i);
   end
@@ -328,8 +330,8 @@ end
 % position of buttons
 totalColWidth = 1/dParams.multiCols;
 thisButtonWidth = min(100/figWidth,totalColWidth/3);
-bottomMargin = genParams.topMargin/figHeight;
-thisButtonHeight = genParams.buttonHeight/figHeight;
+bottomMargin = uiParams.topMargin/figHeight;
+thisButtonHeight = uiParams.buttonHeight/figHeight;
 intervalBetweenButtons = (totalColWidth - thisButtonWidth*3)/(4);
 leftPosition = (dParams.multiCols - 1)/dParams.multiCols + intervalBetweenButtons;
 
@@ -337,22 +339,22 @@ leftPosition = (dParams.multiCols - 1)/dParams.multiCols + intervalBetweenButton
 gParams.fignum(2) = figure('visible','off');
 set(gParams.fignum(2),'userdata',0); %this is just to tell helpHandler if the help figure has been drawn or not
 gParams.figlocstr{2} = sprintf('mrParamsDialogHelp_%s',fixBadChars(titleStr));
-gParams.helpButton = uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',{@helpHandler,gParams.fignum(2),genParams},'String','Show help',...
+gParams.helpButton = uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',{@helpHandler,gParams.fignum(2),uiParams},'String','Show help',...
   'Position',[leftPosition bottomMargin thisButtonWidth thisButtonHeight],...
-  'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+  'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
 
 %Cancel Button
 if makeCancelButton
   uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',@cancelHandler,'String','Cancel',...
   'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth) bottomMargin thisButtonWidth thisButtonHeight],...
-  'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+  'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
 end
 
 %Ok Button
 if makeOkButton
-  uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',@okHandler,'String','OK',...
+  uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',@okHandler,'String',okString,...
     'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth)*2 bottomMargin thisButtonWidth thisButtonHeight],...
-    'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+    'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
 end
 
 %if non-modal, quit here
@@ -619,7 +621,7 @@ end
 %%%%%%%%%%%%%%%%%%%%
 % callback for help
 %%%%%%%%%%%%%%%%%%%%
-function helpHandler(handle,event,fignum,genParams)
+function helpHandler(handle,event,fignum,uiParams)
 
 if strcmp(get(fignum,'visible'),'on')
   set(fignum,'visible','off');
@@ -662,7 +664,7 @@ else
   %gParams.fignum(2) = fignum;
   
   %compute figure dimensions based on number of rows and colums
-  [figpos,dParams, genParams] = optimizeFigure(fignum,gParams.figlocstr{2},dParams,genParams);
+  [figpos,dParams, uiParams] = optimizeFigure(fignum,gParams.figlocstr{2},dParams,uiParams);
   
   %set the all the entry widths to the max 
   dParams.entryWidth(:)=dParams.allEntriesWidth;
@@ -672,15 +674,15 @@ else
   % put up the info
   for i = 1:length(gParams.varinfo)
     if gParams.varinfo{i}.visible %no need to display the help is parameter is not visible
-      makeUIcontrol(i,gParams.fignum(2),dParams,genParams,'varname');
-      set(makeUIcontrol(i,gParams.fignum(2),dParams,genParams,'varentry'),'HorizontalAlignment','Left');
+      makeUIcontrol(i,gParams.fignum(2),dParams,uiParams,'varname');
+      set(makeUIcontrol(i,gParams.fignum(2),dParams,uiParams,'varentry'),'HorizontalAlignment','Left');
     end
   end
 
   % make close button
   uicontrol(gParams.fignum(2),'Style','pushbutton','Callback',@helpcloseHandler,'String','Close',...
-    'Position',getUIControlPos(fignum,dParams,genParams,dParams.numrows,1,2,dParams.allEntriesWidth,1),...
-    'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+    'Position',getUIControlPos(fignum,dParams,uiParams,dParams.numrows,1,2,dParams.allEntriesWidth,1),...
+    'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
   
   set(fignum,'userdata',1)
 end
@@ -750,7 +752,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeUIcontrol makes an uicontrol of any type %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [hEntry,hMinus,hPlus] = makeUIcontrol(varnum,fignum,dParams,genParams,columnType)
+function [hEntry,hMinus,hPlus] = makeUIcontrol(varnum,fignum,dParams,uiParams,columnType)
 
 hMinus = [];
 hPlus = [];
@@ -758,11 +760,11 @@ hPlus = [];
 switch(columnType)
   case 'varname'
     colnum=1;
-    entryWidth = genParams.varNameWidth;
+    entryWidth = uiParams.varNameWidth;
     fieldnums = 1;
     rownums = sum(dParams.numLines(1:varnum-1).*dParams.entryNumRows(1:varnum-1))+1;
     numLines = 	dParams.numLines(varnum)*dParams.entryNumRows(varnum);
-    entryString = genParams.varName(varnum);
+    entryString = uiParams.varName(varnum);
     style = 'text'; 
     hAlignment = 'right';
     incdec = [0 0];
@@ -790,19 +792,55 @@ for i=1:length(rownums)
     'Callback',sprintf('mrParamsDialog(%f)',varnum),...  %callback has no effect if textbox
     'String',entryString{i,j},...
     'Value',dParams.entryValue(varnum),...
-    'Position',getUIControlPos(fignum,dParams,genParams,rownums(i),numLines,colnum,entryWidth,j),...
+    'Position',getUIControlPos(fignum,dParams,uiParams,rownums(i),numLines,colnum,entryWidth,j),...
     'HorizontalAlignment',hAlignment,...
-    'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+    'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
     if any(incdec)
       % make callback string
       deccallback = sprintf('mrParamsDialog(%f,%f,%f,%f)',varnum,incdec(1),i,j);
       inccallback = sprintf('mrParamsDialog(%f,%f,%f,%f)',varnum,incdec(2),i,j);
-      hMinus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',deccallback,'String','-',...
-        'Position',getUIControlPos(fignum,dParams,genParams,rownums(i)+.2,numLines*.75,colnum,20,j+.05),... %these dimensions are totally empirical
-        'FontSize',genParams.fontsize,'FontName',genParams.fontname);
-      hPlus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',inccallback,'String','+',...
-        'Position',getUIControlPos(fignum,dParams,genParams,rownums(i)+.02,numLines*.6,colnum,20,j+.05),... %these dimensions are totally empirical
-        'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+      
+      figurePosition = get(fignum,'position');
+      incdecMargin = uiParams.incdecMargin/figurePosition(3);
+      entryPosition =get(hEntry(i,j),'position');
+      decPosition = entryPosition;
+      incPosition = entryPosition;
+      %compute new positions
+          
+      switch(uiParams.incdecType)
+        case 'plusMinus'
+          incdecWidth = min(uiParams.maxIncdecButtonWidth+incdecMargin,entryWidth/2)/figurePosition(3)-incdecMargin;
+          entryPosition(3) = entryPosition(3)-(incdecWidth+incdecMargin);
+          decPosition(1) = entryPosition(1)+entryPosition(3)-incdecMargin;
+          incPosition(2) = incPosition(2)+incPosition(4)*.5;
+          incPosition(4) = incPosition(4)*.45;
+          if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
+            decPosition(4) = decPosition(4)*.45;
+          else %on Windows, the minus sign is too low, so I'm making the button taller so that we can see it
+            decPosition(4) = decPosition(4)*.7;
+          end
+          incString = '+';
+          decString = '-';
+
+        case 'arrows'
+          incdecWidth = min(uiParams.maxIncdecButtonWidth+incdecMargin,entryWidth/3)/figurePosition(3)-incdecMargin;
+          entryPosition(1) = entryPosition(1)+incdecWidth+incdecMargin;
+          entryPosition(3) = entryPosition(3)-2*(incdecWidth+incdecMargin);
+          incString = '>';
+          decString = '<';
+
+      end
+      incPosition(1) = entryPosition(1)+entryPosition(3)-incdecMargin;
+      decPosition(3) = incdecWidth;
+      incPosition(3) = incdecWidth;
+      
+      %correct position of entry field
+      set(hEntry(i,j),'position',entryPosition);
+      %make decrement and increment buttons
+      hMinus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',deccallback,'String',decString,...
+        'Position',decPosition,'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
+      hPlus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',inccallback,'String',incString,...
+        'Position',incPosition,'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
     end
   end
 end
@@ -819,7 +857,7 @@ end
 % getUIControlPos returns a location for a uicontrol %
 %   dealing with multicolumns and margins            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function pos = getUIControlPos(fignum,dParams,genParams,rownum,numLines,colnum,entryWidth,fieldNum)
+function pos = getUIControlPos(fignum,dParams,uiParams,rownum,numLines,colnum,entryWidth,fieldNum)
 
 numcols = 2;
 figrows = dParams.figrows;
@@ -841,22 +879,22 @@ figpos = get(fignum,'Position');
 
 % set the horizontal position and width for the button
 if colnum - (multiCol-1)*numcols == 1
-  pos(1) = genParams.leftMargin + ... %position
-            (multiCol - 1) * (genParams.varNameWidth + genParams.margin) + ...
-            (multiCol - 1) * (dParams.allEntriesWidth+genParams.margin) + ...
-            genParams.margin; 
+  pos(1) = uiParams.leftMargin + ... %position
+            (multiCol - 1) * (uiParams.varNameWidth + uiParams.margin) + ...
+            (multiCol - 1) * (dParams.allEntriesWidth+uiParams.margin) + ...
+            uiParams.margin; 
 else
-  pos(1) = genParams.leftMargin + ...
-    multiCol*(genParams.margin + genParams.varNameWidth) + ...
-    (colnum-multiCol-1) * (dParams.allEntriesWidth+genParams.margin) + ...
-    (fieldNum-1)*(entryWidth+genParams.margin)+...
-    genParams.margin;
+  pos(1) = uiParams.leftMargin + ...
+    multiCol*(uiParams.margin + uiParams.varNameWidth) + ...
+    (colnum-multiCol-1) * (dParams.allEntriesWidth+uiParams.margin) + ...
+    (fieldNum-1)*(entryWidth+uiParams.margin)+...
+    uiParams.margin;
 end
 pos(3) = entryWidth; 
 
 % set the vertical position and height for the button
-pos(4) = genParams.buttonHeight*numLines+genParams.margin*(numLines-1);
-pos(2) = figpos(4)-pos(4)-genParams.topMargin - (genParams.buttonHeight+genParams.margin)*(rownum-1);
+pos(4) = uiParams.buttonHeight*numLines+uiParams.margin*(numLines-1);
+pos(2) = figpos(4)-pos(4)-uiParams.topMargin - (uiParams.buttonHeight+uiParams.margin)*(rownum-1);
 
 %normalize position
 pos([1 3]) = pos([1 3])/figpos(3);
@@ -866,7 +904,7 @@ pos([2 4]) = pos([2 4])/figpos(4);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % optimizeFigure optimizes the number of rows and columns as well as the dimensions of the figure %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [figpos,dParams,genParams] = optimizeFigure(fignum,figLocStr,dParams,genParams)
+function [figpos,dParams,uiParams] = optimizeFigure(fignum,figLocStr,dParams,uiParams)
 
 %compute figure dimensions based on number of rows and colums
 figpos = mrGetFigLoc(fixBadChars(figLocStr));
@@ -878,38 +916,38 @@ end
 for i = 1:length(dParams.testString)  
   if ~isempty(dParams.testString{i}) && dParams.numLines(i)~=0
     %compute number of lines using string width if it's gonna be displayed using a text box, a popupmenu or a pushbutton
-    h = uicontrol(fignum,'Style',dParams.entryStyle{i},'String',dParams.testString{i},'FontSize',genParams.fontsize,'FontName',genParams.fontname);
+    h = uicontrol(fignum,'Style',dParams.entryStyle{i},'String',dParams.testString{i},'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
     thisExtent = get(h,'extent');
     dParams.entryWidth(i) = thisExtent(3)+20; %we need to allow some space for the button features
     delete(h);
   end
 end
 if ieNotDefined('thisExtent')
-  h = uicontrol(fignum,'Style','Text','String','X','FontSize',genParams.fontsize,'FontName',genParams.fontname);
+  h = uicontrol(fignum,'Style','Text','String','X','FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
   thisExtent = get(h,'extent');
   delete(h);
 end
-genParams.buttonHeight = thisExtent(4);
+uiParams.buttonHeight = thisExtent(4);
 
 %For edit boxes and buttons on MACs, this height will be too small because of their large borders
 if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
-  genParams.buttonHeight = genParams.buttonHeight*1.3;
+  uiParams.buttonHeight = uiParams.buttonHeight*1.3;
 end
 % global mrDEFAULTS;
 % mver = ver('matlab');mver = str2num(mver.Version);
 % if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
-%   genParams.buttonHeight = 26;
+%   uiParams.buttonHeight = 26;
 % else
-%   genParams.buttonHeight = 22;
+%   uiParams.buttonHeight = 22;
 % end  
 
 
 maxEntryNumCols = max(dParams.entryNumCols);
 %the total field width is whatever field has the largest width, within the min and max parameters
-dParams.allEntriesWidth = max(max(dParams.entryWidth),min(maxEntryNumCols*genParams.maxSingleFieldWidth,genParams.maxEntriesWidth));
-dParams.allEntriesWidth = max(genParams.minEntriesWidth,min(genParams.maxEntriesWidth,dParams.allEntriesWidth));
+dParams.allEntriesWidth = max(max(dParams.entryWidth),min(maxEntryNumCols*uiParams.maxSingleFieldWidth,uiParams.maxEntriesWidth));
+dParams.allEntriesWidth = max(uiParams.minEntriesWidth,min(uiParams.maxEntriesWidth,dParams.allEntriesWidth));
 %add space for margins
-dParams.allEntriesWidth = dParams.allEntriesWidth + 2*genParams.margin;
+dParams.allEntriesWidth = dParams.allEntriesWidth + 2*uiParams.margin;
 %replace non-set widths by the max width
 dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
 
@@ -917,7 +955,7 @@ dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
 % get  number of lines for fields that might wrap
 for i = 1:length(dParams.entryStyle)  
   if ~isempty(dParams.testString{i}) && dParams.numLines(i)~=0
-    dParams.numLines(i) = ceil(ceil(dParams.entryWidth(i)/dParams.allEntriesWidth)*genParams.lineHeightRatio);
+    dParams.numLines(i) = ceil(ceil(dParams.entryWidth(i)/dParams.allEntriesWidth)*uiParams.lineHeightRatio);
   end
 end
 
@@ -927,8 +965,8 @@ numrows = sum(dParams.numLines.*dParams.entryNumRows)+1; %we add one for the hel
 %start with one multicolumn and set other parameters accordingly
 dParams.multiCols=1;
 dParams.figrows = numrows;
-figHeight = 2*genParams.topMargin+dParams.figrows*genParams.buttonHeight+(dParams.figrows-1)*genParams.margin;
-figWidth = 2*genParams.leftMargin+genParams.margin+dParams.multiCols*(genParams.varNameWidth+dParams.allEntriesWidth+genParams.margin);
+figHeight = 2*uiParams.topMargin+dParams.figrows*uiParams.buttonHeight+(dParams.figrows-1)*uiParams.margin;
+figWidth = 2*uiParams.leftMargin+uiParams.margin+dParams.multiCols*(uiParams.varNameWidth+dParams.allEntriesWidth+uiParams.margin);
 
 %optimize figure dimensions 
 screenSize = get(0,'MonitorPositions');
@@ -944,12 +982,12 @@ while figHeight/figWidth>thresholdRatio || figHeight>screenSize(1,4) || figWidth
       dParams.figrows = dParams.figrows+1;
     end
   elseif figWidth > screenSize(1,3) %else if width>screen width, we reduce the button width
-    dParams.allEntriesWidth = (screenSize(1,3)-dParams.multiCols*(genParams.varNameWidth+genParams.margin) -2*genParams.leftMargin) / dParams.multiCols;
+    dParams.allEntriesWidth = (screenSize(1,3)-dParams.multiCols*(uiParams.varNameWidth+uiParams.margin) -2*uiParams.leftMargin) / dParams.multiCols;
   end
   
   %compute the new dimensions
-  figHeight = 2*genParams.topMargin+dParams.figrows*genParams.buttonHeight+(dParams.figrows-1)*genParams.margin;
-  figWidth = 2*genParams.leftMargin+genParams.margin+dParams.multiCols*(genParams.varNameWidth+dParams.allEntriesWidth+genParams.margin);
+  figHeight = 2*uiParams.topMargin+dParams.figrows*uiParams.buttonHeight+(dParams.figrows-1)*uiParams.margin;
+  figWidth = 2*uiParams.leftMargin+uiParams.margin+dParams.multiCols*(uiParams.varNameWidth+dParams.allEntriesWidth+uiParams.margin);
 end
 dParams.numrows = sum(dParams.numLines.*dParams.entryNumRows)+1; %this is the total numbe of rows including one for help/ok/cancel buttons
 
