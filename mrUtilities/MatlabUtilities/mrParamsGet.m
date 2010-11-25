@@ -35,13 +35,17 @@ for i = 1:length(gParams.varinfo)
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % for arrays, have to get all values
-  elseif strcmp(gParams.varinfo{i}.type,'array')
+  elseif ismember(gParams.varinfo{i}.type,{'array' 'stringarray'})
     if ~isfield(gParams.varinfo{i},'group')
       % if not grouped, just get the value from the gu
       for iRows = 1:size(gParams.ui.varentry{i},1)
-	for iCols = 1:size(gParams.ui.varentry{i},2)
-	  params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
-	end
+        for iCols = 1:size(gParams.ui.varentry{i},2)
+          if strcmp(gParams.varinfo{i}.type,'array')
+            params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+          else
+            params.(gParams.varinfo{i}.name){iRows,iCols} = get(gParams.ui.varentry{i}(iRows,iCols),'String');
+          end
+        end
       end
       % if grouped, either get value from gui or form allvalues
     else
@@ -49,7 +53,11 @@ for i = 1:length(gParams.varinfo)
         if gParams.varinfo{i}.oldControlVal == j
 	  for iRows = 1:size(gParams.ui.varentry{i},1)
 	    for iCols = 1:size(gParams.ui.varentry{i},2)
-	      params.(gParams.varinfo{i}.name){j}(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+          if strcmp(gParams.varinfo{i}.type,'array')
+            params.(gParams.varinfo{i}.name){j}(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
+          else
+            params.(gParams.varinfo{i}.name){j}(iRows,iCols) = get(gParams.ui.varentry{i}(iRows,iCols),'String');
+          end
 	    end
 	  end
 	else
@@ -100,7 +108,7 @@ for i = 1:length(gParams.varinfo)
     params.(gParams.varinfo{i}.name) = mrStr2num(params.(gParams.varinfo{i}.name));
   end
   % if non numeric then convert back to a number
-  if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array' 'checkbox' 'pushbutton','statictext'}))
+  if ~any(strcmp(gParams.varinfo{i}.type,{'string' 'popupmenu' 'array' 'stringarray' 'checkbox' 'pushbutton','statictext'}))
     if isfield(gParams.varinfo{i},'group')
       for j = 1:length(gParams.varinfo{i}.allValues)
         % if this is the current one then use field val
@@ -118,9 +126,9 @@ for i = 1:length(gParams.varinfo)
     end
   end
   % not enabled then set parameter to empty
-  if strcmp(get(gParams.ui.varentry{i},'Enable'),'off');
-    params.(gParams.varinfo{i}.name) = [];
-  end
+  if strcmp(get(gParams.ui.varentry{i},'Enable'),'off'); %JB: it would make more sense to leave disabled parameters as they are
+    params.(gParams.varinfo{i}.name) = [];                % and not set them to empty
+  end                                                     % functions that use these parameters should know what to do
 end
 params.paramInfo = vars;
 
