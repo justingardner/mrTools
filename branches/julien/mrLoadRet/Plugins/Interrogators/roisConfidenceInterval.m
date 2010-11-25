@@ -217,7 +217,7 @@ for scanNum = analysisParams.scanNum
          runTransition = d.concatInfo.runTransition;
          switch(bootstrapParams.analysisType)
             case 'GLM'
-               d = makeglm(d,analysisParams);
+               d = makeglm(d,analysisParams,1, analysisParams.scanParams{1}.estimationSupersampling, analysisParams.scanParams{1}.acquisitionSubsample);
             case 'Deconvolution'
                d = makescm(d,nEstimates,analysisParams.applyFiltering);
          end
@@ -235,7 +235,7 @@ for scanNum = analysisParams.scanNum
          %compute the design matrix
          switch(bootstrapParams.analysisType)
             case 'GLM'
-               boot_d = makeglm(boot_d,analysisParams);
+               boot_d = makeglm(boot_d,analysisParams,1, analysisParams.scanParams{1}.estimationSupersampling, analysisParams.scanParams{1}.acquisitionSubsample);
             case 'Deconvolution'
                boot_d = makescm(boot_d,nEstimates,analysisParams.applyFiltering);
          end
