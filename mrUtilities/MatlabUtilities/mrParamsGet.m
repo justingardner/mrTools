@@ -43,7 +43,7 @@ for i = 1:length(gParams.varinfo)
           if strcmp(gParams.varinfo{i}.type,'array')
             params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
           else
-            params.(gParams.varinfo{i}.name)(iRows,iCols) = get(gParams.ui.varentry{i}(iRows,iCols),'String');
+            params.(gParams.varinfo{i}.name){iRows,iCols} = get(gParams.ui.varentry{i}(iRows,iCols),'String');
           end
         end
       end
