@@ -262,7 +262,7 @@ for scanNum = params.scanNum
         d = eventRelatedPreProcess(d,scanParams{scanNum}.preprocess,verbose);
       end
       %compute the design matrix for this randomization
-      d = makeglm(d,params,verbose);
+      d = makeglm(d,params,verbose, scanParams{scanNum}.estimationSupersampling, scanParams{scanNum}.acquisitionSubsample);
       % compute estimates and statistics
       [d, contrastDataTemp, tDataTemp, fDataTemp] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
 
@@ -492,20 +492,23 @@ for scanNum = params.scanNum
 
 
   % save eventRelated parameters
-  glmAnal.d{scanNum}.hrf = downsample(d.hrf, d.supersampling);
+  glmAnal.d{scanNum}.hrf = downsample(d.hrf, d.supersampling/scanParams{scanNum}.estimationSupersampling);
   glmAnal.d{scanNum}.hdrlen = d.hdrlen;
+  glmAnal.d{scanNum}.nHrfComponents = d.nHrfComponents;
   glmAnal.d{scanNum}.actualhrf = d.hrf;
   glmAnal.d{scanNum}.trsupersampling = d.supersampling;
+  glmAnal.d{scanNum}.estimationSupersampling = scanParams{scanNum}.estimationSupersampling;
+  glmAnal.d{scanNum}.acquisitionSubsample = scanParams{scanNum}.acquisitionSubsample;
   glmAnal.d{scanNum}.ver = d.ver;
   glmAnal.d{scanNum}.filename = d.filename;
   glmAnal.d{scanNum}.filepath = d.filepath;
-  glmAnal.d{scanNum}.dim = [scanDims numVolumes];
   glmAnal.d{scanNum}.nhdr = d.nhdr;
   glmAnal.d{scanNum}.tr = d.tr;
   glmAnal.d{scanNum}.stimNames = d.stimNames;
   glmAnal.d{scanNum}.scm = d.scm;
   glmAnal.d{scanNum}.expname = d.expname;
   glmAnal.d{scanNum}.fullpath = d.fullpath;
+  glmAnal.d{scanNum}.dim = [scanDims numVolumes];
   glmAnal.d{scanNum}.ehdr = NaN([scanDims size(ehdr,4) size(ehdr,5)],precision);
   glmAnal.d{scanNum}.ehdr(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdr;
   glmAnal.d{scanNum}.ehdrste = NaN([scanDims size(ehdrste,4) size(ehdrste,5)],precision);
@@ -610,8 +613,35 @@ end
 %--------------------------------------------- save the contrast overlay(s)
 
 if ~isempty(contrasts)
+  
+  contrastNames = cell(1,size(contrasts,1));
+  for iContrast = 1:size(contrasts,1)
+    if nnz(contrasts(iContrast,:))==1 && sum(contrasts(iContrast,:))==1 %if the contrast is one EV
+      contrastNames{iContrast} = testParams.EVnames{logical(contrasts(iContrast,:))};
+    elseif nnz(contrasts(iContrast,:))==2 && sum(contrasts(iContrast,:))==0 %if the contrast is a comparison of 2 EVs
+      EV1 = find(contrasts(iContrast,:),1,'first');
+      EV2 = find(contrasts(iContrast,:),1,'last');
+      if params.computeTtests && strcmp(testParams.tTestSide,'Both')
+        connector = ' VS ';
+      elseif contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
+        connector = ' > ';
+      else    
+        connector = ' > ';
+      end
+      contrastNames{iContrast} = [testParams.EVnames{EV1} connector testParams.EVnames{EV2}];
+    elseif all(~diff(contrasts(iContrast,logical(contrasts(iContrast,:))))) %if the contrast is a mean of several EVs
+      contrastNames{iContrast} = 'Average(';
+      for iEV = find(contrasts(iContrast,:))
+        contrastNames{iContrast} = [contrastNames{iContrast} testParams.EVnames{iEV} ', '];
+      end
+      contrastNames{iContrast}(end-1) = ')';
+      contrastNames{iContrast}(end) = [];
+    else
+      contrastNames{iContrast} = mat2str(contrasts(iContrast,:));
+    end
+  end
   %this is to mask the beta values by the probability/Z maps     
-  betaAlphaOverlay = cell(length(testParams.EVnames),1);
+  betaAlphaOverlay = cell(length(contrastNames),1);
   betaAlphaOverlayExponent = 1;
   if params.computeTtests
     if testParams.parametricTests
@@ -638,7 +668,7 @@ if ~isempty(contrasts)
 
       thisOverlay.clip = thisOverlay.range;
       for iContrast = 1:size(contrasts,1)
-        thisOverlay.name = [namePrefix testParams.EVnames{iContrast} ')'];
+        thisOverlay.name = [namePrefix contrastNames{iContrast} ')'];
         if betaAlphaOverlayExponent
           betaAlphaOverlay{iContrast} = thisOverlay.name;
         end
@@ -659,7 +689,7 @@ if ~isempty(contrasts)
         thisOverlay.range(2) = min(max(max(max(max(cell2mat(tDataTFCE))))));
         thisOverlay.clip = thisOverlay.range;
         for iContrast = 1:size(contrasts,1)
-           thisOverlay.name = ['T TFCE (' testParams.EVnames{iContrast} ')'];
+           thisOverlay.name = ['T TFCE (' contrastNames{iContrast} ')'];
            if testParams.randomizationTests
               thisOverlay.name = [thisOverlay.name ' - threshold(p=' num2str(randAlpha) ') = ' num2str(thresholdTfceT(iContrast,scanNum))];
            end
@@ -691,7 +721,7 @@ if ~isempty(contrasts)
       end
       thisOverlay.clip = thisOverlay.range;
       for iContrast = 1:size(contrasts,1)
-        thisOverlay.name = [namePrefix ' (T ' testParams.EVnames{iContrast} ')'];
+        thisOverlay.name = [namePrefix ' (T ' contrastNames{iContrast} ')'];
         if betaAlphaOverlayExponent
           betaAlphaOverlay{iContrast} = thisOverlay.name;
         end
@@ -720,7 +750,7 @@ if ~isempty(contrasts)
 
         thisOverlay.clip = thisOverlay.range;
         for iFtest = 1:size(contrasts,1)
-          thisOverlay.name = [namePrefix ' (T TFCE ' testParams.EVnames{iFtest} ')'];
+          thisOverlay.name = [namePrefix ' (T TFCE ' contrastNames{iFtest} ')'];
           for scanNum = params.scanNum
             thisOverlay.data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
                tRandTfce{scanNum}(:,:,:,iFtest);
@@ -748,9 +778,9 @@ if ~isempty(contrasts)
     max_beta = max(max(max(max(max(cell2mat(contrastData))))));
     thisOverlay.clip = [min_beta max_beta];
     thisOverlay.colormap = jet(256);
-    for iContrast = 1:length(testParams.EVnames)
+    for iContrast = 1:size(contrasts,1)
        thisOverlay.alphaOverlay=betaAlphaOverlay{iContrast};
-       thisOverlay.name = testParams.EVnames{iContrast};
+       thisOverlay.name = contrastNames{iContrast};
        for scanNum = params.scanNum
           thisOverlay.data{scanNum} = NaN(scanDims,precision); %to make values outside the box transparent
           thisOverlay.data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...

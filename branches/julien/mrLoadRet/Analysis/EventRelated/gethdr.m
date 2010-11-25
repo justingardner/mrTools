@@ -39,7 +39,14 @@ end
 
 % return the time as well if asked for
 if nargout >= 2
-  time = d.tr/2:d.tr:(hdrlen*d.tr);
+  if ~isfield(d,'estimationSupersampling')
+    d.estimationSupersampling =1;
+  end
+  if ~isfield(d,'acquisitionSubsample')
+    d.acquisitionSubsample=1;
+  end
+  tr = d.tr/d.estimationSupersampling;
+  time = (d.acquisitionSubsample-.5)*tr:tr:(hdrlen+d.acquisitionSubsample-1.5)*tr;
 end
 
 % return the standard error

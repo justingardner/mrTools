@@ -7,7 +7,7 @@
 %    purpose: return statistical test parameters for GLM analysis
 %
 
-function testParams = getGlmTestParamsGUI(thisView,params,useDefault)
+function [testParams, params] = getGlmTestParamsGUI(thisView,params,useDefault)
 
 keepAsking = 1;
 if isfield(params,'testParams')
@@ -18,7 +18,6 @@ else
 end
 
 while keepAsking
-  keepAsking = 0;
   %Default params
   if ~isfield(testParams, 'stimToEVmatrix') || isempty(testParams.contrasts) || ...
     ~isequal(size(testParams.stimToEVmatrix,1),params.numberEvents) || ~isequal(size(testParams.stimToEVmatrix,2),params.numberEVs)
@@ -43,10 +42,15 @@ while keepAsking
 
   if ~isfield(testParams, 'fTestNames') || isempty(testParams.fTestNames) || ...
     ~isequal(length(testParams.fTestNames),params.numberFtests) 
+    if params.numberFtests
       testParams.fTestNames=cellstr(reshape(sprintf('fTest%2d',1:params.numberFtests),7,params.numberFtests)');
+    else
+      testParams.fTestNames={};
+    end
   end
   if ~isfield(testParams, 'restrictions') || isempty(testParams.restrictions) || ...
     ~isequal(length(testParams.restrictions),params.numberFtests) || ~isequal(size(testParams.restrictions{1},2),params.numberEVs)
+    testParams.restrictions = {};
     for iFtest = 1:params.numberFtests
         testParams.restrictions{iFtest}=zeros(params.numberEVs,params.numberEVs);
     end
@@ -54,7 +58,8 @@ while keepAsking
 
   %create model HRF
   %here we assume that all scans in this group have the same framePeriod
-  [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),0,1);
+  [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,...
+    viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName))/params.scanParams{1}.estimationSupersampling,0,1);
   nComponents = size(hrf,2);
   if ~isfield(testParams, 'componentsToTest') || isempty(testParams.componentsToTest) || ~isequal(nComponents,length(testParams.componentsToTest));
     testParams.componentsToTest = ones(1,nComponents);
@@ -124,21 +129,27 @@ while keepAsking
   
   paramsInfo = cell(1,params.numberEvents);
   for iEvent = 1:params.numberEvents
-    paramsInfo{iEvent} = {fixBadChars(params.stimNames{iEvent}),...
-      testParams.stimToEVmatrix(iEvent,:),...
+    paramsInfo{iEvent} = {fixBadChars(params.stimNames{iEvent}), testParams.stimToEVmatrix(iEvent,:),...
+      'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
       ['How much stimulus ' fixBadChars(params.stimNames{iEvent}) ' contributes to each EV']};
   end
   paramsInfo = [paramsInfo {...
-      {'EVnames', testParams.EVnames, 'self explanatory'},...
-      {'contrasts', testParams.contrasts,contrastOptionsVisible, 'Matrix defining the contrasts of interest that will be output as overlays. Each row defines a contrast, which is a linear combination of EVss. Contrasts are computed after running the preprocessing function, so the number of colums should match the the number of EVs after preprocessing'},...
+      {'EVnames', testParams.EVnames, 'type=stringarray','self explanatory'},...
+      {'contrasts', testParams.contrasts,contrastOptionsVisible,...
+            'incdec=[-1 1]','incdecType=plusMinus',...
+            'Matrix defining the contrasts of interest that will be output as overlays. Each row defines a contrast, which is a linear combination of EVss. Contrasts are computed after running the preprocessing function, so the number of colums should match the the number of EVs after preprocessing'},...
       {'tTestSide', tTestSideMenu,tTestOptionsVisible,'type=popupmenu', 'Sidedness of contrast T-tests (Both = two-sided, Right = one-sided positive, Left = one-sided negative)'},...
        }];
   for iFtest = 1:params.numberFtests
     paramsInfo{end+1} = {fixBadChars(sprintf('fTest%2d',iFtest)), testParams.fTestNames{iFtest},fTestOptionsVisible ,['Name of F-test ' num2str(iFtest)]};
-    paramsInfo{end+1} = {fixBadChars(sprintf('restriction%2d',iFtest)), testParams.restrictions{iFtest},fTestOptionsVisible, ['Restriction matrix defining F-test ' num2str(iFtest)]};
+    paramsInfo{end+1} = {fixBadChars(sprintf('restriction%2d',iFtest)), testParams.restrictions{iFtest},fTestOptionsVisible,...
+            'incdec=[-1 1]','incdecType=plusMinus',...
+            ['Restriction matrix defining F-test ' num2str(iFtest)]};
   end
   paramsInfo = [paramsInfo {...
-      {'componentsToTest', testParams.componentsToTest,componentOptionsVisible, 'Vector defining which EV components are tested. Put zeros to exclude components or a weight to include them. '},...
+      {'componentsToTest', testParams.componentsToTest,componentOptionsVisible,...
+            'incdec=[-1 1]','incdecType=plusMinus',...
+            'Vector defining which EV components are tested. Put zeros to exclude components or a weight to include them. '},...
       {'componentsCombination', componentsCombinationMenu,componentOptionsVisible,'type=popupmenu', 'How to combine EV components. ''Add'' adds the weighted components into a single EV for contrasts/F-test. ''Or'' ignores the weights and tests contrasts/F-tests at any component that is not 0. Note that ''Or'' is not compatible with one-sided T-tests'}...
       {'parametricTests', testParams.parametricTests,testOptionsVisible,'type=checkbox', 'Performs parametric tests on contrasts/F values'},...
       {'parametricTestOutput', parametricTestOutputMenu,testOptionsVisible,'contingent=parametricTests','type=popupmenu', 'Type of statistics for output overlay. T/F: outputs the value of the statistic (T for contrasts and F for F-tests); P: outputs the probability value associated with the statistic. p-values less than 1e-16 will be replaced by 0; Z: outputs standard normal values associated with probability p. Z values with a probability less than 1e-16 will be replaced by +/-8.209536145151493'},...
@@ -151,8 +162,9 @@ while keepAsking
   if useDefault
     testParams = mrParamsDefault(paramsInfo);
   else
-    buttonWidth = min(5/params.numberEVs,.4);
-    testParams = mrParamsDialog(paramsInfo,'Define Explanatory Variables, Contrasts and F-tests','buttonWidth',buttonWidth);
+    testParams = mrParamsDialog(paramsInfo,'Define Explanatory Variables, Contrasts and F-tests');
+    %buttonWidth = min(5/params.numberEVs,.4);
+    %testParams = mrParamsDialog(paramsInfo,'Define Explanatory Variables, Contrasts and F-tests','buttonWidth',buttonWidth);
   end
 
   % user hit cancel
@@ -160,19 +172,40 @@ while keepAsking
      return;
   end
   
-  tTestSideMenu = putOnTopOfList(testParams.tTestSide,tTestSideMenu);
-  componentsCombinationMenu = putOnTopOfList(testParams.componentsCombination,componentsCombinationMenu);
-  parametricTestOutputMenu = putOnTopOfList(testParams.parametricTestOutput,parametricTestOutputMenu);
-  randomizationTestOutputMenu = putOnTopOfList(testParams.randomizationTestOutput,randomizationTestOutputMenu);
+%   tTestSideMenu = putOnTopOfList(testParams.tTestSide,tTestSideMenu);
+%   componentsCombinationMenu = putOnTopOfList(testParams.componentsCombination,componentsCombinationMenu);
+%   parametricTestOutputMenu = putOnTopOfList(testParams.parametricTestOutput,parametricTestOutputMenu);
+%   randomizationTestOutputMenu = putOnTopOfList(testParams.randomizationTestOutput,randomizationTestOutputMenu);
 
-  
+  % form stimToEV matrix from fields
   for iEvent = 1:params.numberEvents
     testParams.stimToEVmatrix(iEvent,:) = testParams.(fixBadChars(params.stimNames{iEvent}));
     testParams = rmfield(testParams,fixBadChars(params.stimNames{iEvent}));
   end
+  %check that contrasts are not empty
+  actualNumberContrasts=0;
+  for iContrast = 1:size(testParams.contrasts,1)
+    if ~any(testParams.contrasts(iContrast,:))
+      mrWarnDlg('(getGlmTestParamsGUI) Discarding empty contrast');
+    else
+      actualNumberContrasts = actualNumberContrasts+1;
+      testParams.contrasts(actualNumberContrasts,:) = testParams.contrasts(iContrast,:);
+    end
+  end
+  testParams.contrasts = testParams.contrasts(1:actualNumberContrasts,:);
+  
+  %check that F-tests are not empty
+  testParams.restrictions = {};
+  actualNumberFtests=0;
   for iFtest = 1:params.numberFtests
-    testParams.fTestNames{iFtest} = testParams.(fixBadChars(sprintf('fTest%2d',iFtest)));
-    testParams.restrictions{iFtest} = testParams.(fixBadChars(sprintf('restriction%2d',iFtest)));
+    thisRestriction=testParams.(fixBadChars(sprintf('restriction%2d',iFtest)));
+    if ~any(any(thisRestriction))
+      mrWarnDlg('(getGlmTestParamsGUI) Discarding F-test with empty restriction matrix');
+    else
+      actualNumberFtests = actualNumberFtests+1;
+      testParams.fTestNames{actualNumberFtests} = testParams.(fixBadChars(sprintf('fTest%2d',iFtest)));
+      testParams.restrictions{actualNumberFtests} = thisRestriction;
+    end
   end
   
   %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
@@ -182,22 +215,15 @@ while keepAsking
     
   if (params.computeTtests || params.numberFtests) && ...
       testParams.randomizationTests && ischar(params.scanParams{1}.stimDuration) && strcmp(params.scanParams{1}.stimDuration,'fromFile')
-     mrWarnDlg('(getTestParamsGUI) Randomization tests are not (yet) compatible with stim duration from files');
-     if ~useDefault
-       keepAsking = 1;
-     else
-       testParams = [];
-     end
-  end
-  
-  if params.numberContrasts && params.computeTtests  && ~strcmp(testParams.tTestSide,'Both') && ...
+  elseif params.numberContrasts && params.computeTtests  && ~strcmp(testParams.tTestSide,'Both') && ...
       length(testParams.componentsToTest)>1 && strcmp(testParams.componentsCombination,'Or')
      mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
-     if ~useDefault
-       keepAsking = 1;
-     else
-       testParams = [];
-     end
+  else
+     keepAsking = 0;
+  end
+  if keepAsking && useDefault
+    testParams = [];
+    return;
   end
 
 end
