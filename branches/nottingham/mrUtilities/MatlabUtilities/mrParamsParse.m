@@ -9,7 +9,7 @@
 %
 %	$Id$
 
-function [vars varinfo nrows ncols] = mrParamsParse(vars)
+function [vars varinfo] = mrParamsParse(vars)
 
 % check arguments
 if ~any(nargin == [1])
@@ -17,11 +17,8 @@ if ~any(nargin == [1])
   return
 end
 
-nrows = 1;
-ncols = 2;
-% first parse the argument
+%-------------------------------- first parse the argument
 for i = 1:length(vars)
-  nrows = nrows+1;
   % if the variable is just a string, then
   % it got passed in without a default argument
   % so make it into a cell array with the second
@@ -39,6 +36,7 @@ for i = 1:length(vars)
   elseif isempty(vars{i}{2})
     vars{i}{2} = '';
     varinfo{i}.type = 'string';
+    
     % default arguments have to be strings so they
     % can be put into the text fields properly. here
     % we change them into strings, but remember what
@@ -54,21 +52,19 @@ for i = 1:length(vars)
         varinfo{i}.type = 'numeric';
       else
         varinfo{i}.type = 'array';
-        nrows = nrows+size(vars{i}{2},1)-1;
-        ncols = max(ncols,1+size(vars{i}{2},2));
       end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
-      % see if the default argument is a string
-      if isstr(vars{i}{2}{1})
+      % if it is a cell (contingent variable, check its first member
+      if iscell(vars{i}{2}{1})
+        if ischar(vars{i}{2}{1}{1})
+          varinfo{i}.popuptype = 'string';
+        else
+          varinfo{i}.popuptype = 'numeric';
+        end
+        % see if the default argument is a string
+      elseif  ischar(vars{i}{2}{1})
         varinfo{i}.popuptype = 'string';
-	% if it is a cell (contingent variable, check its first member
-      elseif iscell(vars{i}{2}{1})
-	if isstr(vars{i}{2}{1}{1})
-	  varinfo{i}.popuptype = 'string';
-	else
-	  varinfo{i}.popuptype = 'numeric';
-	end
       % otherwise numeric
       else
         varinfo{i}.popuptype = 'numeric';
@@ -77,6 +73,7 @@ for i = 1:length(vars)
       varinfo{i}.type = 'string';
     end
   end
+  
   % check to see if name is valid
   fixedName = fixBadChars(vars{i}{1});
   if ~strcmp(fixedName,vars{i}{1})
@@ -87,7 +84,8 @@ for i = 1:length(vars)
   varinfo{i}.name = vars{i}{1};
   varinfo{i}.value = vars{i}{2};
   varinfo{i}.description = '';
-  % check for options
+  
+  %--------------------------------------- check for options
   if length(vars{i}) > 2
     skipNext = 0;
     for j = 3:length(vars{i})
@@ -100,11 +98,11 @@ for i = 1:length(vars)
       % description, descriptions either have no equal sign
       % and are not a single word, or have an equal sign but
       % have spaces before the equal sign
-      if ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
+      if isempty(vars{i}{j}) || ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
           ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
         varinfo{i}.description = vars{i}{j};
         % now look for settings that involve the next parameter
-        % i.e. onest that are like 'varname',varvalue. These are
+        % i.e. ones that are like 'varname',varvalue. These are
         % distinugished from comments by the fact that the varname
         % has no equal sign but is a single word
       elseif ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) == 0)) && (j < (length(vars{i})))
@@ -128,12 +126,9 @@ for i = 1:length(vars)
       end
     end
   end
+  
   % make sure type is in lower case
   varinfo{i}.type = lower(varinfo{i}.type);
-  % only keep two columns for checkbox
-  if ~strcmp(varinfo{i}.type,'checkbox')
-    ncols = max(ncols,4);
-  end
   % check for minmax violation
   if strcmp(varinfo{i}.type,'numeric') && isfield(varinfo{i},'minmax')
     if vars{i}{2} < varinfo{i}.minmax(1)
@@ -146,9 +141,13 @@ for i = 1:length(vars)
   if ~isfield(varinfo{i},'editable')
     varinfo{i}.editable = 1;
   end
+  %check if it is visible and increment nrows accordingly
+  if ~isfield(varinfo{i},'visible') || ~isequal(varinfo{i}.visible,0)
+    varinfo{i}.visible = 1; %make it visible by default
+  end
 end
 
-% now check any contingencies
+%----------------------------------- now check any contingencies
 for i = 1:length(varinfo)
   % groups are handled just like contingent
   if isfield(varinfo{i},'group')

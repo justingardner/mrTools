@@ -60,14 +60,14 @@ for fnum = 1:length(paramFields)
 	  incdecUI = gParams.ui.incdec{match};
 	  if ~isempty(incdecUI)
 	    if currentVal == min(minmax)
-	      set(incdecUI(1),'Enable','off');
+	      set(incdecUI{1},'Enable','off');
 	    else
-	      set(incdecUI(1),'Enable','on');
+	      set(incdecUI{1},'Enable','on');
 	    end
 	    if currentVal == max(minmax)
-	      set(incdecUI(2),'Enable','off');
+	      set(incdecUI{2},'Enable','off');
 	    else
-	      set(incdecUI(2),'Enable','on');
+	      set(incdecUI{2},'Enable','on');
 	    end
 	  end
 	end
