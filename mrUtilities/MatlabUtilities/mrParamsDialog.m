@@ -131,7 +131,7 @@ uiParams.fontsize = 12;
 uiParams.fontname = 'Helvetica';
 uiParams.leftMargin = 6;
 uiParams.topMargin = 6;
-uiParams.maxIncdecButtonWidth = 30;
+uiParams.maxIncdecButtonWidth = 50;
 uiParams.incdecMargin = 2;
 %Matlab doesn't return the extent of multiline text, so we have to guess how much smaller the text height is 
 %relative to the height of a textbox, in order to avoid making text boxes that are too large when text wraps
@@ -181,7 +181,7 @@ for i = 1:length(gParams.vars)
       dParams.entryValue(i) = 1;
       dParams.entryString{i} = {gParams.varinfo{i}.value};
       %make up a string of Xs of lengh equal to the longest string in the menu list
-      dParams.testString{i} =repmat('X',1,size(char(dParams.entryString{i}{1}),2)+2);
+      dParams.testString{i} =repmat('X',1,size(char(dParams.entryString{i}{1}),2)+3);
 
     case 'statictext'
       dParams.entryString{i} = {gParams.varinfo{i}.value};
@@ -370,7 +370,7 @@ end
 
 %Ok Button
 if makeOkButton
-  uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',@okHandler,'String','Ok',...
+  uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',@okHandler,'String','OK',...
     'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth)*2 bottomMargin thisButtonWidth thisButtonHeight],...
     'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
 end
@@ -1016,7 +1016,7 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
 
   %%%%%%%%%%%% get  number of lines for fields that might wrap
   for i = 1:length(dParams.entryStyle)  
-    if ~isempty(dParams.testString{i}) && dParams.numLines(i)~=0
+    if ~isempty(dParams.testString{i}) && dParams.numLines(i)~=0 && ~strcmp(dParams.entryStyle{i},'popupmenu')
       dParams.numLines(i) = ceil(ceil(dParams.entryWidth(i)/dParams.allEntriesWidth)*uiParams.lineHeightRatio);
     end
   end
@@ -1036,8 +1036,10 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
       endMultiCol = endMultiCol+find(cumsum(numRowsLeft)<=dParams.figrows,1,'last');
       thisNumRows = numRows(dParams.startMultiCol(i):endMultiCol);
       numRowsLeft = numRows(endMultiCol+1:end);
-      cutsEntry = cutsEntry && ~ismember(dParams.figrows,cumsum(thisNumRows));
+      cutsEntry = cutsEntry && ~(ismember(dParams.figrows,cumsum(thisNumRows)) || dParams.figrows>=sum(thisNumRows));
     end
+    %check that there are not entries left
+    cutsEntry = cutsEntry || ~isempty(numRowsLeft);
   end
 %   while ~all(ismember( (1:dParams.multiCols)*dParams.figrows , cumsum([dParams.numLines.*dParams.entryNumRows 1]) ))
 %     dParams.figrows = dParams.figrows+1;
