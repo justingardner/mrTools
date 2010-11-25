@@ -8,11 +8,11 @@
 %    purpose: makes a stimulation convolution matrix
 %             for data series. must have getstimtimes already
 %             run on it, as well as a model hrf
-%              optional parameters can be passed in the structure params (params
+%              optional parameters can be passed in the params structure 
 %
-function d = makeglm(d,params,verbose)
+function d = makeglm(d,params,verbose, estimationSupersampling, acquisitionSubsample)
 
-if ~any(nargin == [1 2 3])
+if ~any(nargin == [1 2 3 4 5])
    help makeglm;
    return
 end
@@ -23,6 +23,12 @@ end
 if ieNotDefined('verbose')
   verbose = 1;
 end
+if ieNotDefined('estimationSupersampling')
+  estimationSupersampling = 1;
+end
+if ieNotDefined('acquisitionSubsample')
+  acquisitionSubsample = 1;
+end
 
 % check if the hrf starts from zero (except if it is the identity matrix, the deconvolution case)
 if verbose && d.hrf(1,1)>1e-6 && (size(d.hrf,1)~=size(d.hrf,2) || ~isempty(find(d.hrf^-1-d.hrf>1e-6, 1)))
@@ -32,7 +38,7 @@ end
 if isfield(params,'nonLinearityCorrection') && params.nonLinearityCorrection && isfield(params.hrfParams,'maxModelHrf')
    saturationThreshold = params.saturationThreshold*params.hrfParams.maxModelHrf;
 else
-   saturationThreshold = repmat(Inf,1,size(d.hrf,2));
+   saturationThreshold = Inf(1,size(d.hrf,2));
 end
 
 if isfield(params,'testParams') && isfield(params.testParams,'stimToEVmatrix') && ~isempty(params.testParams.stimToEVmatrix)
@@ -55,8 +61,9 @@ end
 runTransition(:,1) = ((runTransition(:,1)-1)*round(d.supersampling)+1);
 runTransition(:,2) = runTransition(:,2)*round(d.supersampling);
 
-sample_value = 1/d.supersampling;   %we need to correct the amplitude of the hrf if supersampling>1
-
+%if design sampling is larger than estimation sampling, we need to correct the amplitude of the hrf 
+sample_value = estimationSupersampling/d.supersampling; 
+ 
 % go through each run of the experiment
 allscm = [];
 for runnum = 1:size(runTransition,1)
@@ -79,8 +86,10 @@ for runnum = 1:size(runTransition,1)
       m = min(m,repmat(saturationThreshold,size(stimArray,1),1));
       % remove mean 
       m = m-repmat(mean(m), size(m,1), 1); %DOES IT CHANGE ANYTHING IF I REMOVE THIS ?
-      % downsample
-      m = downsample(m, d.supersampling);
+      % downsample with constant integral to estimation sampling rate
+      m = downsample(m, d.supersampling/estimationSupersampling);
+      %only keep acquisition samples
+      m = m(acquisitionSubsample:estimationSupersampling:end,:);
       % apply the same filter as original data
       if isfield(d,'concatInfo') 
          % apply hipass filter
@@ -103,5 +112,6 @@ end
 % set values
 d.nhdr = size(stimToEVmatrix,2);
 d.scm = allscm;
-d.hdrlen = size(d.hrf,2);
+d.hdrlen = size(d.hrf,1);
+d.nHrfComponents = size(d.hrf,2);
 

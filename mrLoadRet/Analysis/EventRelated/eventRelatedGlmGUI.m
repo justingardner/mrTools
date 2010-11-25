@@ -79,10 +79,7 @@ askForParams = 1;
 % put group name on top of list to make it the default
 groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
 hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDiffGamma','hrfDeconvolution'});
-analysisVolumeMenu = {'Whole volume','Subset box'};
-%if viewGet(thisView,'numberofROIs') %This doesn't work if called from recompute because the call does not include the view (thisView)
-   analysisVolumeMenu{end+1} = 'Loaded ROI(s)'; 
-%end
+analysisVolumeMenu = {'Whole volume','Subset box','Loaded ROI(s)'};
 analysisVolumeMenu = putOnTopOfList(params.analysisVolume,analysisVolumeMenu);
 correctionTypeMenu = putOnTopOfList(params.correctionType,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
 covEstimationMenu = putOnTopOfList(params.covEstimation,{'singleTukeyTapers','dampenedOscillator'});
@@ -98,10 +95,10 @@ while askForParams
     {'saveName',params.saveName,'File name to try to save as'},...
     {'hrfModel',hrfModelMenu,'type=popupmenu','Name of the function that defines the hrf used in glm',},...
     {'analysisVolume',analysisVolumeMenu,'type=popupmenu','Which voxels perform the analysis on. If subsetbox, the dimensions of the box can be specific to each scan and have to include a margin if covEstimationAreaSize>1',},...
-    {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','bla'},...
-    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','bla'},...
+    {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
+    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
     {'computeTtests', params.computeTtests,'type=checkbox', 'Whether contrasts are tested for significance'},...
-    {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','bla'},...
+    {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
     {'covCorrection',params.covCorrection,'type=checkbox','Correction for correlated noise'},...
     {'correctionType',correctionTypeMenu,'type=popupmenu','contingent=covCorrection','Type of correction (see Wiki for the different algorithms and computing time comparison)'},...
     {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
@@ -135,61 +132,71 @@ while askForParams
     params.(fieldNames{i_field})=eval(['tempParams.' fieldNames{i_field}]);
   end
 
-  while askForParams       % get hrf model parameters
-    %here we assume that all scans in this group have the same framePeriod
-    hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,useDefault);
-    % if empty user hit cancel, go back
-    if isempty(hrfParams)
-      break;
-    else
-      params.hrfParams = hrfParams;
-      if ~isfield(params.hrfParams, 'description')
-         params.hrfParams.description = params.hrfModel;
-      end
-
-      while askForParams    % get the scan params
-        % get scans
-        %thisView = viewSet(thisView,'groupName',params.groupName);
-        groupNum = viewGet(thisView,'groupnum',params.groupName);
-        if ~ieNotDefined('scanList')
-           params.scanNum = scanList;
-        elseif useDefault
-           %params.scanNum = 1:viewGet(thisView,'nScans');
-           params.scanNum = 1:viewGet(thisView,'nScans',groupNum);
-        elseif viewGet(thisView,'nScans',groupNum) >1
-           %params.scanNum = selectScans(thisView);
-           params.scanNum = selectScans(thisView,[],groupNum);
-           if isempty(params.scanNum)
-              askForParams = 1;
-              break;
-           end
-        else
-           params.scanNum = 1;
+  %perform some checks
+  if 0
+    %perform check on parameters here if needed
+  elseif 0
+    %perform check on parameters here if needed
+  else
+    while askForParams       % get hrf model parameters
+      %here we assume that all scans in this group have the same framePeriod
+      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,useDefault);
+      % if empty user hit cancel, go back
+      if isempty(hrfParams)
+        break;
+      else
+        params.hrfParams = hrfParams;
+        if ~isfield(params.hrfParams, 'description')
+           params.hrfParams.description = params.hrfModel;
         end
 
-        % get the parameters for each scan
-        [scanParams, params] = getGlmScanParamsGUI(thisView,params,useDefault);
-        if isempty(scanParams)
-          askForParams = 1;
-          break;
-        else
-          params.scanParams = scanParams;
-          
-          if ~params.numberEVs
-            params.numberEVs = params.numberEvents;
-            defaultTestParams = 1;
+        while askForParams    % get the scan params
+          % get scans
+          %thisView = viewSet(thisView,'groupName',params.groupName);
+          groupNum = viewGet(thisView,'groupnum',params.groupName);
+          if ~ieNotDefined('scanList')
+             params.scanNum = scanList;
+          elseif useDefault
+             %params.scanNum = 1:viewGet(thisView,'nScans');
+             params.scanNum = 1:viewGet(thisView,'nScans',groupNum);
+          elseif viewGet(thisView,'nScans',groupNum) >1
+             %params.scanNum = selectScans(thisView);
+             params.scanNum = selectScans(thisView,[],groupNum);
+             if isempty(params.scanNum)
+                askForParams = 1;
+                break;
+             end
           else
-            defaultTestParams = useDefault;
+             params.scanNum = 1;
           end
-          while askForParams           %get testParams
-            testParams = getGlmTestParamsGUI(thisView,params,defaultTestParams);
-            % if empty, user hit cancel, go back
-            if isempty(testParams)
-              askForParams = 1;
-              break;
+
+          % get the parameters for each scan
+          [scanParams, params] = getGlmScanParamsGUI(thisView,params,useDefault);
+          if isempty(scanParams)
+            askForParams = 1;
+            break;
+          else
+            params.scanParams = scanParams;
+
+            if ~params.numberEVs
+              params.numberEVs = params.numberEvents;
+              defaultTestParams = 1;
             else
-              params.testParams = testParams;
-              askForParams = 0;
+              defaultTestParams = useDefault;
+            end
+            while askForParams           %get testParams
+              testParams = getGlmTestParamsGUI(thisView,params,defaultTestParams);
+              % if empty, user hit cancel, go back
+              if isempty(testParams)
+                askForParams = 1;
+                break;
+              else
+                params.testParams = testParams;
+                %update the number of tests in case they've changed
+                params.numberContrasts = size(testParams.contrasts,1);
+                params.numberFtests = length(testParams.restrictions);
+                askForParams = 0;
+              end
             end
           end
         end
