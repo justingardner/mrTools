@@ -136,6 +136,9 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       end
     end
 
+    % Add plugins
+    mlrPlugin(view);
+    
     % add here, to load more info...
     % and refresh
     refreshMLRDisplay(view.viewNum);
