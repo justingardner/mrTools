@@ -28,7 +28,7 @@ function [value prefDefaults] = mrGetPref(pref)
 % %	$Id$	
 
 % with no arguments, return a list of possible preferences
-prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','importROIPath','magnet','coil','pulseSequence'};
+prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','importROIPath','magnet','coil','pulseSequence','pluginPaths','selectedPlugins'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
@@ -49,6 +49,8 @@ prefDefaults{find(strcmp('overlayCacheSize',prefNames))} = 50;
 prefDefaults{find(strcmp('magnet',prefNames))} = {{'Allegra 3T','other'}};
 prefDefaults{find(strcmp('coil',prefNames))} = {{'Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
 prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
+prefDefaults{find(strcmp('pluginPaths',prefNames))} = '';
+prefDefaults{find(strcmp('selectedPlugins',prefNames))} = '';
 
 if nargin == 0
   if nargout > 0

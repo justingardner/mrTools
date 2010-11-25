@@ -1816,6 +1816,61 @@ switch lower(param)
       end
     end
 
+ case {'defaultinterrogators'}
+    % view = viewSet(view,'defaultInterrogators',defaultInterrogators,<replaceCurrentDefaultInterrogators>)
+    % set a cell array of function names that are
+    % defaultInterrogators that will show up in the interrogators list
+    % this is similar to using the mrSetPref for
+    % defaultInterrogators but is not presistent (i.e. will only
+    % show up for the current session - it is used by mlrAdjustGUI
+    % by default will add the interrogators to the current list,
+    % set replaceCurrentDefaultInterrogators to false if you want
+    % to replace the current list
+    val = cellArray(val);
+    % check that everything is an m-file
+    defaultInterrogators = {};
+    for i = 1:length(val)
+      if exist(val{i}) ~= 2
+	disp(sprintf('(viewSet:defaultInterrogators) %s is not an m-file on the path. Not adding to default interrogators list.',val{i}));
+      else
+	defaultInterrogators{end+1} = val{i};
+      end
+    end
+    % if replaceCurrentDefaultInterrogators is set then
+    % just save in MLR variables
+    if ((length(varargin) > 0) && varargin{1}) || ~isfield(MLR,'defaultInterrogators')
+      MLR.defaultInterrogators = defaultInterrogators;
+    else
+      %otherwise append to list
+      MLR.defaultInterrogators = {MLR.defaultInterrogators{:} defaultInterrogators{:}};
+    end
+ case {'colormaps'}
+    % view = viewSet(view,'colormaps',colormapList,<replaceCurrentColormaps>)
+    % set a cell array of function names that are
+    % colormaps that will show up in places like /edit/overlays
+    % This is not presistent (i.e. will only
+    % show up for the current session - it is used by mlrAdjustGUI)
+    % By default will add the colormaps to the current list,
+    % set replaceCurrentColormaps to false if you want
+    % to replace the current list
+    val = cellArray(val);
+    % check that everything is an m-file
+    colormaps = {};
+    for i = 1:length(val)
+      if exist(val{i}) ~= 2
+	disp(sprintf('(viewSet:colormaps) %s is not an m-file on the path. Not adding to colormaps.',val{i}));
+      else
+	colormaps{end+1} = val{i};
+      end
+    end
+    % if replaceCurrentColormaps is set then
+    % just save in MLR variables
+    if ((length(varargin) > 0) && varargin{1}) || ~isfield(MLR,'colormaps')
+      MLR.colormaps = colormaps;
+    else
+      %otherwise append to list
+      MLR.colormaps = {MLR.colormaps{:} colormaps{:}};
+    end
  otherwise
    mrWarnDlg(sprintf('(viewSet) Unknown parameter %s',param));
 end
