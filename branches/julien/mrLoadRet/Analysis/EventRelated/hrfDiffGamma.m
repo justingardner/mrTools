@@ -13,6 +13,8 @@ if ~any(nargin == [1 2 3 4])
   return
 end
 
+threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
+
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
@@ -53,7 +55,7 @@ if justGetParams
    return
 end
 
-tmax = max(params.y*3, 20);
+tmax = max(params.y*3, 20); %min length of the hrf model in seconds
 
 if isfield(params, 'tmax')
     tmax = params.tmax;
@@ -96,6 +98,9 @@ modelHrf = modelHrf./sum(modelHrf(:));
     
 %downsample with constant integral
 hrf = downsample(modelHrf', round(tr/dt));
+%remove trailing zeros
+hrf = hrf(1:end-find(flipud(max(abs(hrf),[],2))>threshold,1,'first')+1,:);
+
 
 params.maxModelHrf = tr/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
 

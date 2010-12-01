@@ -1,9 +1,9 @@
 % getGlmStatistics.m
 %
-%      usage: [d, contrast_beta, T, F] = getGlmStatistics(d, params, verbose)
+%      usage: [d, contrastBetas, T, F] = getGlmStatistics(d, params, verbose)
 %         by: Julien Besle
 %       date: 18/01/10
-%    purpose: function to get statistical  maps
+%    purpose: Fits a GLM model and computes T and F statistics. Replaces getr2.
 %              $Id$
 %
 %       e.g.: d = getGlmStatistics(d)
@@ -12,17 +12,16 @@
 %             and output in the extra dimension of n.ehdr, 
 %             the first element of the sixth dimension of n.ehdr is always the non-bootstrapped result
 
-function [d, contrast_beta, T, F] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
+function [d, contrastBetas, T, F] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
 
 approximate_value = 0;
 T = [];
 F = [];
-contrast_beta = [];
+contrastBetas = [];
 %bootstrap_max_voxels_ = [60 80 100 120 140 160 180 200];
 %bootstrap_max_voxels = round(120000/nFrames);  %empirical value that optimizes the speed of bootstrapping, probably depends on available memory
 bootstrap_max_voxels = 120; %optimizes the bootsrap computing time
 optimalXLength = 60;   %optimizes the OLS residual and MSS computing time
-restrictions = {};
 
 
 %--------------------------------------------------- DEFAULT VALUES ------------------------------------%
@@ -51,12 +50,17 @@ end
 if ~isfield(testParams,'contrasts') || isempty(testParams.contrasts)
   testParams.contrasts = {};
 else
-  if size(d.scm,2)~=size(testParams.contrasts,2)*d.hdrlen
+  if size(d.scm,2)~=size(testParams.contrasts,2)*d.nHrfComponents
     mrErrorDlg( 'contrasts incompatible with number of EVs');
     return;
   end
 end
-for iContrast = 1:size(testParams.contrasts,1) %convert contrasts to the same format as restrictions
+
+if~isfield(params,'numberContrasts')
+  params.numberContrasts = 0;
+end
+contrasts = cell(1,params.numberContrasts);
+for iContrast = 1:params.numberContrasts %convert contrasts to the same format as restrictions
   contrasts{iContrast} = testParams.contrasts(iContrast,:);
 end
 
@@ -71,21 +75,24 @@ end
 if ~isfield(testParams,'restrictions') || isempty(testParams.restrictions)
    testParams.restrictions = {};
 else
-   if size(d.scm,2)~=size(testParams.restrictions{1},2)*d.hdrlen
+   if size(d.scm,2)~=size(testParams.restrictions{1},2)*d.nHrfComponents
       mrErrorDlg( 'F tests incompatible with number of EVs');
       return;
    end
 end
 restrictions = testParams.restrictions;
 
+if ~isfield(d,'nHrfComponents')
+  d.nHrfComponents = size(d.scm,2)/d.nhdr;
+end
 if ~isfield(testParams,'componentsToTest') || isempty(testParams.componentsToTest)
-   testParams.componentsToTest = ones(1,d.hdrlen);
+   testParams.componentsToTest = ones(1,d.nHrfComponents);
 end
 
 if ~isfield(testParams,'componentsCombination') || isempty(testParams.componentsCombination)
    testParams.componentsCombination = 'Add';
 end
-if strcmp(testParams.componentsCombination,'Or') && d.hdrlen==1
+if strcmp(testParams.componentsCombination,'Or') && d.nHrfComponents==1
   testParams.componentsCombination = 'Add';  %make sure this is set to add if there is only one component to test
 end
 
@@ -123,28 +130,21 @@ end
 
 %--------------------------------------------------- INITIALIZATION ------------------------------------%
 % precalculate the normal equation for Ordinary Least Squares
-covarianceMatrixEVs = d.scm'*d.scm; %covariance matrix of the EVs (do I need to correct for covariance ?)
-covarianceMatrixRank = rank(covarianceMatrixEVs);
+covEVs = d.scm'*d.scm; %covariance matrix of the EVs (do I need to correct for covariance ?)
+covarianceMatrixRank = rank(covEVs);
 % use normal equations if we have a full ranked covariance matrix
-if covarianceMatrixRank == size(covarianceMatrixEVs,1)
-   invCovEVs = covarianceMatrixEVs^-1; % using ^-1 should be avoided, but later...
-   if computeEstimates
-     % get the diagonal of the inverse of the design covariance matrix (used for estimating standard errors)
-     diagInvCovEVs = diag(invCovEVs);
-   end
-   pinv_X = covarianceMatrixEVs\d.scm'; 
+if covarianceMatrixRank == size(covEVs,1)
+   invCovEVs = covEVs^-1; % 
+   pinv_X = covEVs\d.scm'; 
         
 % otherwise use pinv
 else
   % note that if we need to use the pseudo inverse it means that there is ambiguity in the design
   % such that there are an infinite number of possible solutions. The pseudo-inverse solution
   % choses the solution with the minimum length (i.e. Euclidian norm)
-  if verbose, mrWarnDlg(sprintf('(getGlmStatistics) Design covariance matrix (%ix%i) is rank %i. Using pseudo-inverse to invert.',size(covarianceMatrixEVs,1),size(covarianceMatrixEVs,2),covarianceMatrixRank));end
+  if verbose, mrWarnDlg(sprintf('(getGlmStatistics) Design covariance matrix (%ix%i) is rank %i. Using pseudo-inverse to invert.',size(covEVs,1),size(covEVs,2),covarianceMatrixRank));end
   pinv_X = pinv(d.scm);
   invCovEVs = pinv(d.scm'*d.scm);
-  if computeEstimates
-    diagInvCovEVs = diag(invCovEVs);
-  end
 end
 
 
@@ -157,7 +157,7 @@ d.rdf = nFrames-size(d.scm,2)-1; %degrees of freedom for the residual          %
 if params.covCorrection 
    if params.covEstimationAreaSize>1
       sliceAverager3D = ones(1,params.covEstimationAreaSize,params.covEstimationAreaSize)/params.covEstimationAreaSize^2;
-      if ~isfield(d,'dataScanPosition') %this is in case we only compute for voxels in the loaded ROIs
+      if ~isfield(d,'roiPositionInBox') %this is in case we only compute for voxels in the loaded ROIs
          longMargin = ceil(params.covEstimationAreaSize/2); %we exclude voxels that are not surrounded by voxels with valid data
          shortMargin = floor(params.covEstimationAreaSize/2);
       end
@@ -208,6 +208,8 @@ if ~isempty(restrictions)
     if ~approximate_value
       traceRV = NaN(d.dim(1:3));
     end
+    scm_h = cell(1:length(restrictions));
+    eig_residualForming_f_tests = cell(1:length(restrictions));
     for iR = 1:length(restrictions)
       scm_h{iR} = d.scm*complementaryRestriction{iR}';           
       residualForming_h(:,:,iR) = eye(nFrames) - scm_h{iR}*((scm_h{iR}'*scm_h{iR})^-1)*scm_h{iR}';       %TO REMOVE EVENTUALLY
@@ -218,8 +220,9 @@ if ~isempty(restrictions)
   end
   
   mss = NaN(d.dim(1),d.dim(2),d.dim(3),nBootstrap,length(restrictions),precision);
+  R_invCovEV_Rp = cell(1:length(restrictions));
   for iR = 1:length(restrictions)         %the degrees of freedom for the F-tests are the number of contrasts
-    testParams.restrictions{iR} = restrictions{iR}(any(testParams.restrictions{iR},2),:); %remove lines of 0
+    restrictions{iR} = restrictions{iR}(any(testParams.restrictions{iR},2),:); %remove lines of 0
     d.mdf(iR) = size(restrictions{iR},1); %this is provided that contrasts are independent and that they are no more than (regressors -1)
     %inv_R_invCovEV_Rp{iR} = (restrictions{iR}*invCovEVs*restrictions{iR}')^-1; 
     %I replaced all the precomputed inverses (previous line) by ml/mrDivide with the non-inverted matrix (faster and more accurate):
@@ -242,18 +245,21 @@ slices = 1:d.dim(3);
 
 
 %--------------------------------------------------- PRE-ALLOCATION ------------------------------------%
-ehdr = NaN(d.nhdr*d.hdrlen,d.dim(1),d.dim(2),d.dim(3),nBootstrap,precision);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-if computeEstimates
-  ehdrste = NaN(d.nhdr*d.hdrlen,d.dim(1),d.dim(2),d.dim(3),precision); %JB: replaces: d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-  if ~isempty(restrictions) || computeTtests
-    s2 = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %residual variance
-    rss = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the sum of square of the residual error term
-    tss = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the total sum of square
-  end
+ehdr = NaN(d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),nBootstrap,precision);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+
+if computeEstimates ||computeTtests
+  ehdrste = NaN(d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision); %JB: replaces: d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+  contrastBetaSte = NaN([d.dim(1) d.dim(2) d.dim(3) nBootstrap params.numberContrasts],precision);
+end
+if ~isempty(restrictions) || computeTtests
+  s2 = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %residual variance
+  rss = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the sum of square of the residual error term
+  tss = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the total sum of square
 end
 
 % turn off warnings to avoid divide by zero warning
 warning('off','MATLAB:divideByZero');
+
 
 
 %--------------------------------------------------- MAIN LOOP: PARAMETER ESTIMATION ------------------------------------%
@@ -261,69 +267,66 @@ warning('off','MATLAB:divideByZero');
 if verbose,hWaitBar = mrWaitBar(-1/(d.dim(2)*d.dim(3)),'(getGlmStatistics) Estimating model parameters');end
 % cycle through images calculating the estimated hdr and r^2s of the estimate.
 for z = slices
-   residuals = NaN(d.dim(4),d.dim(1),d.dim(2),precision);
-   %permute timeseries frames in first dimension to compute residuals
-   timeseries = permute(d.data(:,:,z,d.volumes),[4 1 2 3]); 
-   % subtract off column means
-   colmeans = repmat(mean(timeseries,1),[nFrames 1 1]);
-   timeseries = timeseries - colmeans;
-   % convert to percent signal change
-   timeseries = 100*timeseries./colmeans;
-   clear('colmeans');
+  residuals = NaN(d.dim(4),d.dim(1),d.dim(2),precision);
+  %permute timeseries frames in first dimension to compute residuals
+  timeseries = permute(d.data(:,:,z,d.volumes),[4 1 2 3]); 
+  % subtract off column means
+  colmeans = repmat(mean(timeseries,1),[nFrames 1 1]);
+  timeseries = timeseries - colmeans;
+  % convert to percent signal change
+  timeseries = 100*timeseries./colmeans;
+  clear('colmeans');
 
-%--------------------------------------------------- MAIN LOOP: ORDINARY LEAST SQUARES ------------------------------------%
-% this following sections have been optimized to run faster by
-% eliminating the x loops. in addition, the x dimension is divided in chunks of 60 points.
-% (which makes a difference only when system swaps ?)
-   for y = yvals
-      % get OLS residuals
-      for iX = 1:ceil(d.dim(1)/optimalXLength)
-         xValues = (iX-1)*optimalXLength+1 : min(iX*optimalXLength,d.dim(1));
-         residuals(:,xValues,y) = residualForming*timeseries(:,xValues,y); %JB resplaces residuals = timeseries-d.scm*d.ehdr(:,:,y,z);
-      end
-      %residuals(:,:,y) = residualForming*timeseries(:,:,y); %This is too long if X dim is large (when calling with all data on the first dimension)
-   end
-   if computeEstimates || computeTtests || ~isempty(restrictions)
-     %put x and y back in the 1st and 2nd dimensions
-     rss(:,:,z) = permute(sum(residuals.^2),[2 3 1]);    %JB: replaces: sumOfSquaresResidual = sum((timeseries-d.scm*ehdr{y,z}).^2);
-   end
-   
-   if ~params.covCorrection
-     if computeEstimates || computeTtests || ~isempty(restrictions)
-      %compute residual variance for OLS
-      s2(:,:,z,1) = rss(:,:,z)/d.rdf;   %JB: replaces: S2 = sumOfSquaresResidual/(length(d.volumes)-size(d.scm,2));
-     end
-   else
-      if params.covEstimationAreaSize>1     
-         %average the residuals for covariance matrix estimation
-         if isfield(d,'dataScanPosition') %if the data are not spatially organized, we need to temporarily put them in a volume
-            %first put them on a single line whose length is the product of the volume dimensions
-            dataScanPosition = reshape(d.dataScanPosition,numel(d.dataScanPosition),1);
-            averaged_residuals = NaN(d.dim(4),size(dataScanPosition,1),precision); 
-            averaged_residuals(:,dataScanPosition>0) = residuals;  
-            %then reshape into a volume
-            averaged_residuals = reshape(averaged_residuals,[d.dim(4) size(d.dataScanPosition)]);
-            %average
-            averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
-            %put the data back in the original array size
-            averaged_residuals = reshape(averaged_residuals,d.dim(4), numel(d.dataScanPosition));
-            averaged_residuals = averaged_residuals(:,d.dataScanPosition>0);
-            clear('dataScanPosition');
-         else
-            averaged_residuals = NaN(size(residuals),precision);
-            %averaged_residuals(isnan(residuals)) = 0;            %convert NaNs to 0... actually no, don't
-            %average residuals over space
-            averaged_residuals(:,longMargin:end-shortMargin,longMargin:end-shortMargin) = convn(residuals,sliceAverager3D,'valid');
-         end
+  %--------------------------------------------------- MAIN LOOP: ORDINARY LEAST SQUARES ------------------------------------%
+  % the following section has been optimized to run faster by
+  % eliminating the x loops. in addition, the x dimension is divided in chunks of 60 points.
+  % (which makes a difference only when system swaps ?)
+  for y = yvals
+    % get OLS residuals
+    for iX = 1:ceil(d.dim(1)/optimalXLength)
+       xValues = (iX-1)*optimalXLength+1 : min(iX*optimalXLength,d.dim(1));
+       residuals(:,xValues,y) = residualForming*timeseries(:,xValues,y); %JB resplaces residuals = timeseries-d.scm*d.ehdr(:,:,y,z);
+    end
+    %residuals(:,:,y) = residualForming*timeseries(:,:,y); %This is too long if X dim is large (when calling with all data on the first dimension)
+  end
+  if computeEstimates || computeTtests || ~isempty(restrictions)
+   %put x and y back in the 1st and 2nd dimensions
+   rss(:,:,z) = permute(sum(residuals.^2),[2 3 1]);    %JB: replaces: sumOfSquaresResidual = sum((timeseries-d.scm*ehdr{y,z}).^2);
+  end
+
+  
+
+  if params.covCorrection
+    if params.covEstimationAreaSize>1     
+      %average the residuals for covariance matrix estimation
+      if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
+        %first put them on a single line whose length is the product of the volume dimensions
+        roiPositionInBox = reshape(d.roiPositionInBox,numel(d.roiPositionInBox),1);
+        averaged_residuals = NaN(d.dim(4),size(roiPositionInBox,1),precision); 
+        averaged_residuals(:,roiPositionInBox>0) = residuals;  
+        %then reshape into a volume
+        averaged_residuals = reshape(averaged_residuals,[d.dim(4) size(d.roiPositionInBox)]);
+        %average
+        averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
+        %put the data back in the original array size
+        averaged_residuals = reshape(averaged_residuals,d.dim(4), numel(d.roiPositionInBox));
+        averaged_residuals = averaged_residuals(:,d.roiPositionInBox>0);
+        clear('roiPositionInBox');
       else
-         averaged_residuals = residuals;
+        averaged_residuals = NaN(size(residuals),precision);
+        %averaged_residuals(isnan(residuals)) = 0;            %convert NaNs to 0... actually no, don't
+        %average residuals over space
+        averaged_residuals(:,longMargin:end-shortMargin,longMargin:end-shortMargin) = convn(residuals,sliceAverager3D,'valid');
       end
-   end
-   
-   for y = yvals  %for everything else (noise covariance correction and residual bootstrapping) we need to loop over y rows
+    else
+      averaged_residuals = residuals;
+    end
+  end
+
+  for y = yvals  %for F, noise covariance correction and residual bootstrapping we need to loop over y (and x)
       
 %--------------------------------------------------- MAIN LOOP: NOISE COVARIANCE CORRECTION ------------------------------------%
-      if verbose,mrWaitBar( ((y-min(yvals)) + d.dim(2)*(z-min(slices))) / (d.dim(2)*d.dim(3)),hWaitBar);end
+      %if verbose,mrWaitBar( ((y-min(yvals)) + d.dim(2)*(z-min(slices))) / (d.dim(2)*d.dim(3)),hWaitBar);end
       
       % Covariance matrix estimation 
       if params.covCorrection
@@ -345,11 +348,11 @@ for z = slices
                %check if invertible/definite positive (might have negative values ?)
                this_s2 = var(averaged_residuals(:,:,y),1,1);  
                M = d.dim(4)-1;
-               M=30;
+               %M=30;
                for tau=1:M
                   autoCorrelation(tau+1,:) = (sum(averaged_residuals(1:end-tau,:,y).*averaged_residuals(tau+1:end,:,y),1))./this_s2/(d.dim(4)-tau);
                end
-               initialParameters = [0 0 0];
+               %initialParameters = [0 0 0];
                initialParameters = rand(1,3);
                options = optimset('Display','iter');
                for x = xvals
@@ -361,6 +364,7 @@ for z = slices
       
       switch(params.correctionType)
          case 'none'
+            if verbose,mrWaitBar( ((y-min(yvals)) + d.dim(2)*(z-min(slices)))/ prod(d.dim(2:3)), hWaitBar);end
             % get OLS estimates
             ehdr(:,:,y,z) = pinv_X*timeseries(:,:,y);    %JB: replaces: ehdr{y,z} = pinv_X*timeseries;
             % compute model sum of squares for F-tests
@@ -388,21 +392,22 @@ for z = slices
                
             end
             
+
          case 'generalizedLeastSquares' %see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
             for x = xvals
-               if verbose,mrWaitBar( ((y-min(yvals)) + d.dim(2)*(z-min(slices))) / (d.dim(2)*d.dim(3)), (x-min(xvals))/d.dim(1), hWaitBar);end
+               if verbose,mrWaitBar( (((y-min(yvals)) + d.dim(2)*(z-min(slices)))*d.dim(1)+x-min(xvals))/ prod(d.dim(1:3)), hWaitBar);end
                if ~any(isnan(timeseries(:,x,y))) && ~any(isnan(autoCorrelation(:,x)))
-                  noiseCovarianceMatrix = toeplitz(autoCorrelation(:,x));
+                  covResiduals = toeplitz(autoCorrelation(:,x));
                   
-                  correctedCovEV = d.scm' / noiseCovarianceMatrix * d.scm;
+                  correctedCovEV = d.scm' / covResiduals * d.scm;
                   corrected_pinv_X = correctedCovEV \ d.scm';
-                  ehdr(:,x,y,z) = corrected_pinv_X  / noiseCovarianceMatrix * timeseries(:,x,y);
+                  ehdr(:,x,y,z) = corrected_pinv_X  / covResiduals * timeseries(:,x,y);
                   if computeEstimates || computeTtests || ~isempty(restrictions) || nBootstrap>1
                     residuals(:,x,y) = timeseries(:,x,y) - d.scm*ehdr(:,x,y,z);
                     if computeEstimates || computeTtests || ~isempty(restrictions)
-                      s2(x,y,z) = residuals(:,x,y)' / noiseCovarianceMatrix * residuals(:,x,y)/d.rdf;    %Wicker & Fonlupt (2003) 
+                      s2(x,y,z) = residuals(:,x,y)' / covResiduals * residuals(:,x,y)/d.rdf;    %Wicker & Fonlupt (2003) 
                       %or
-                      %preFilter = chol(invNoiseCovarianceMatrix);                        %Burock & Dale (2000)
+                      %preFilter = chol(invCovResiduals);                        %Burock & Dale (2000)
                       %s2(x,y,z) = sum((preFilter*residuals(:,x,y)).^2,1)/d.rdf;     %Slightly slower and give identical results
                       for iR = 1:length(restrictions)
                          corrected_R_invCovEV_Rp = restrictions{iR} / correctedCovEV * restrictions{iR}';
@@ -411,46 +416,57 @@ for z = slices
                       end
 
     %                   %Wicker & Fonlupt (2003) about twice slower (and not generalizable to contrasts ?) - although didn't try replacing inv by mldivide/mrdivide
-    %                   A = d.scm * corrected_pinv_X  * invNoiseCovarianceMatrix;
+    %                   A = d.scm * corrected_pinv_X  * invCovResiduals;
     %                   residuals(:,x,y) = (eye(d.dim(4)) - A)*timeseries(:,x,y);
     %                   for iR = 1:length(restrictions)                                                                        
-    %                      Ar = scm_h{iR} * (scm_h{iR}'* invNoiseCovarianceMatrix * scm_h{iR})^-1 * scm_h{iR}' * invNoiseCovarianceMatrix;
-    %                      mss(x,y,z,1,iR) = timeseries(:,x,y)' * (A - Ar)' * invNoiseCovarianceMatrix * (A - Ar) * timeseries(:,x,y);  
+    %                      Ar = scm_h{iR} * (scm_h{iR}'* invCovResiduals * scm_h{iR})^-1 * scm_h{iR}' * invCovResiduals;
+    %                      mss(x,y,z,1,iR) = timeseries(:,x,y)' * (A - Ar)' * invCovResiduals * (A - Ar) * timeseries(:,x,y);  
     %                   end                                                                                                   
 
-                      %this is from Woolrich et al. (2001) and extends the method to T-tests and therefore allows one-sided tests
-                      if ~isempty(contrasts) && computeTtests
-                         for iContrast = 1:length(contrasts)
-                            k_eff(x,y,z,nBootstrap,iContrast) = contrasts{iContrast} / correctedCovEV * contrasts{iContrast}';
-                         end
+                      %compute the corrected inverse covariance matrix
+                      if computeEstimates || (isempty(contrasts) && computeTtests)
+                        invCorrectedCovEV = inv(correctedCovEV);
+                        % compute the std deviation of the beta estimates
+                        if computeEstimates
+                          ehdrste(:,x,y,z) = sqrt(s2(x,y,z) * diag(invCorrectedCovEV));        
+                          % see for example Seber & Lee, Linear Regression Analysis, 1977, p67
+                        end
+                        if computeTtests
+                        %this is from Woolrich et al. (2001) and extends the method to T-tests and therefore allows one-sided tests
+                          for iContrast = 1:length(contrasts)
+                            %k_eff(x,y,z,nBootstrap,iContrast) = contrasts{iContrast} / correctedCovEV * contrasts{iContrast}';
+                            contrastBetaSte(x,y,z,nBootstrap,iContrast) = sqrt(s2(x,y,z)*contrasts{iContrast} * invCorrectedCovEV * contrasts{iContrast}');
+                          end
+                        end
                       end
                     end
                   end
                end
             end
-         
             
          case 'varianceCorrection' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
             ehdr(:,:,y,z) = pinv_X*timeseries(:,:,y);    % get OLS hdr
             if computeTtests || ~isempty(restrictions) || computeEstimates
               for x = xvals
-                if verbose,mrWaitBar( ((y-min(yvals)) + d.dim(2)*(z-min(slices))) / (d.dim(2)*d.dim(3)), (x-min(xvals))/d.dim(1),hWaitBar);end
+                if verbose,mrWaitBar( (((y-min(yvals)) + d.dim(2)*(z-min(slices)))*d.dim(1)+x-min(xvals))/ prod(d.dim(1:3)), hWaitBar);end
                 if ~any(isnan(timeseries(:,x,y))) && ~any(isnan(autoCorrelation(:,x)))
-                  noiseCovarianceMatrix = (toeplitz(autoCorrelation(:,x)));
-                  s2(x,y,z,1) = rss(x,y,z)/trace(residualForming * noiseCovarianceMatrix);
+                  covResiduals = (toeplitz(autoCorrelation(:,x)));
+                  s2(x,y,z,1) = rss(x,y,z)/trace(residualForming * covResiduals);
+                  corrected_invCovEV = pinv_X * covResiduals * pinv_X';
+                  % compute the std error (variance of beta estimates)
+                  ehdrste(:,x,y,z) = sqrt(s2(x,y,z) * diag(corrected_invCovEV));        
+                  % see for example Seber & Lee, Linear Regression Analysis, 1977, p67
                   if computeTtests || ~isempty(restrictions)
-                    corrected_invCovEV = pinv_X * noiseCovarianceMatrix * pinv_X';
                     if ~isempty(contrasts)
                        for iContrast = 1:length(contrasts)
-                          k_eff(x,y,z,nBootstrap,iContrast) = contrasts{iContrast} * corrected_invCovEV * contrasts{iContrast}';
+                         %k_eff(x,y,z,nBootstrap,iContrast) = contrasts{iContrast} * corrected_invCovEV * contrasts{iContrast}';
+                         contrastBetaSte(x,y,z,nBootstrap,iContrast) = sqrt(s2(x,y,z)*contrasts{iContrast} * corrected_invCovEV * contrasts{iContrast}');
                        end
                     end
-                    %this is from Burock & Dale and extend method to F-tests (and F-tests extended to contrasts)
+                    %this is from Burock & Dale and extends the method to F-tests (and F-tests extended to contrasts)
                     for iR = 1:length(restrictions)
-                       %corrected_inv_R_invCovEV_Rp = (restrictions{iR}*corrected_invCovEV*restrictions{iR}')^-1;
                        corrected_R_invCovEV_Rp = restrictions{iR}*corrected_invCovEV*restrictions{iR}';
                        ss_beta = restrictions{iR}*ehdr(:,x,y,z,1);
-                       %mss(x,y,z,1,iR) = ss_beta' * corrected_inv_R_invCovEV_Rp * ss_beta;
                        mss(x,y,z,1,iR) = ss_beta' / corrected_R_invCovEV_Rp * ss_beta;
                     end
                   end
@@ -461,52 +477,65 @@ for z = slices
 
          case 'preWhitening' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
             for x = xvals
-               if verbose,mrWaitBar( ((y-min(yvals)) + d.dim(2)*(z-min(slices))) / (d.dim(2)*d.dim(3)), (x-min(xvals))/d.dim(1),hWaitBar);end
+               if verbose,mrWaitBar( (((y-min(yvals)) + d.dim(2)*(z-min(slices)))*d.dim(1)+x-min(xvals))/ prod(d.dim(1:3)), hWaitBar);end
                if ~any(isnan(timeseries(:,x,y))) && ~any(isnan(autoCorrelation(:,x)))
                   tic;
-                  noiseCovarianceMatrix = toeplitz(autoCorrelation(:,x));
+                  covResiduals = toeplitz(autoCorrelation(:,x));
                   
-                  invNoiseCovarianceMatrix = eye(size(noiseCovarianceMatrix))/noiseCovarianceMatrix;
+                  invCovResiduals = inv(covResiduals);
                   % if this doesn't work, do pinv
-                  if sum(isnan(invNoiseCovarianceMatrix(:))) == length(invNoiseCovarianceMatrix(:))
-                     invNoiseCovarianceMatrix = pinv(toeplitz(autoCorrelation(:,x)));
+                  if sum(isnan(invCovResiduals(:))) == length(invCovResiduals(:))
+                     invCovResiduals = pinv(toeplitz(autoCorrelation(:,x)));
                      oneTimeWarning('pseudoInverseWarning','Covariance matrix is nearly singular, using pinv');
                   end
                   %compute inv(Cov)^1/2
                   switch(params.covFactorization)
                      case 'Cholesky'
-                        preFilter = chol(invNoiseCovarianceMatrix);
+                       try
+                        preFilter = chol(invCovResiduals);
+                       catch exception
+                         mrDisp(sprintf('(geGlmStatistics) Cannot factorize inverse noise covariance matrix because it is not positive definite (voxel %d %d %d)\n',x,y,z));
+                         preFilter = [];
+                       end
                   end
-                  white_scm = preFilter * d.scm;                        %%%% IS IT POSSIBLE TO SKIP THE FACTORIZATION BY ONLY USING (COV)^-1 LATER ON ??
-                  timeseries(:,x,y) = preFilter * timeseries(:,x,y);    %%%% NOT ACCORDING TO Kruggel et al. 2002...
-                  white_pinv_X = (white_scm'*white_scm)\white_scm';
-                  white_residualForming = eye(nFrames) - white_scm*white_pinv_X;
-                  ehdr(:,x,y,z) = white_pinv_X * timeseries(:,x,y);
-                  if computeEstimates || computeTtests || ~isempty(restrictions) || nBootstrap>1
-                    residuals(:,x,y) = white_residualForming * timeseries(:,x,y);
-                    if computeEstimates || computeTtests || ~isempty(restrictions)
-                      rss(x,y,z) = sum(residuals(:,x,y).^2)'; 
-                      s2(x,y,z) = rss(x,y,z)/trace(white_residualForming * preFilter * noiseCovarianceMatrix * preFilter');
-                      if computeTtests || ~isemtpy(restrictions)
-                        corrected_invCovEV = eye(size(d.scm,2))/(d.scm' * invNoiseCovarianceMatrix * d.scm);
-                        if ~isempty(contrasts) && computeTtests
-                           for iContrast = 1:length(contrasts)
-                              k_eff(x,y,z,nBootstrap,iContrast) = contrasts{iContrast} * corrected_invCovEV * contrasts{iContrast}';
-                           end
+                  if ~isempty(preFilter)
+                    white_scm = preFilter * d.scm;                        %%%% IS IT POSSIBLE TO SKIP THE FACTORIZATION BY ONLY USING (COV)^-1 LATER ON ??
+                    timeseries(:,x,y) = preFilter * timeseries(:,x,y);    %%%% NOT ACCORDING TO Kruggel et al. 2002...
+                    white_pinv_X = (white_scm'*white_scm)\white_scm';
+                    white_residualForming = eye(nFrames) - white_scm*white_pinv_X;
+                    ehdr(:,x,y,z) = white_pinv_X * timeseries(:,x,y);
+                    if computeEstimates || computeTtests || ~isempty(restrictions) || nBootstrap>1
+                      residuals(:,x,y) = white_residualForming * timeseries(:,x,y);
+                      if computeEstimates || computeTtests || ~isempty(restrictions)
+                        rss(x,y,z) = sum(residuals(:,x,y).^2)'; 
+                        s2(x,y,z) = rss(x,y,z)/trace(white_residualForming * preFilter * covResiduals * preFilter');
+                        corrected_invCovEV = inv(d.scm' * invCovResiduals * d.scm);
+                        if computeEstimates
+                          % compute the std deviation of the beta estimates
+                          ehdrste(:,x,y,z) = sqrt(s2(x,y,z) * diag(corrected_invCovEV));        
+                          % see for example Seber & Lee, Linear Regression Analysis, 1977, p67
                         end
+                        if computeTtests || ~isemtpy(restrictions)
+                          if ~isempty(contrasts) && computeTtests
+                            for iContrast = 1:length(contrasts)
+                              %k_eff(x,y,z,nBootstrap,iContrast) = contrasts{iContrast} * corrected_invCovEV * contrasts{iContrast}';
+                              contrastBetaSte(x,y,z,nBootstrap,iContrast) = sqrt(s2(x,y,z)*contrasts{iContrast} * corrected_invCovEV * contrasts{iContrast}');
+                            end
+                          end
 
-                      %this is from Burock & Dale and extends method to F-tests (and F-tests extended to contrasts)
-                      %corrected_invCovEV is equivalent to (white_scm'*white_scm)^-1 
-                            %[this is because prefilter is chosen such that prefilter'*prefilter = invNoiseCovarianceMatrix
-                            % and then corrected_invCovEV = (d.scm'* invNoiseCovarianceMatrix * d.scm)^-1 = (d.scm'* preFilter' * preFilter * d.scm)^-1 = (white_scm'* white_scm)^-1 ]
-                        for iR = 1:length(restrictions)
-                           corrected_inv_R_invCovEV_Rp = (restrictions{iR}*corrected_invCovEV*restrictions{iR}')^-1;
-                           ss_beta = restrictions{iR}*ehdr(:,x,y,z,1);
-                           mss(x,y,z,1,iR) = ss_beta' * corrected_inv_R_invCovEV_Rp * ss_beta;
+                        %this is from Burock & Dale and extends method to F-tests (and F-tests extended to contrasts)
+                        %corrected_invCovEV is equivalent to (white_scm'*white_scm)^-1 
+                              %[this is because prefilter is chosen such that prefilter'*prefilter = invCovResiduals
+                              % and then corrected_invCovEV = (d.scm'* invCovResiduals * d.scm)^-1 = (d.scm'* preFilter' * preFilter * d.scm)^-1 = (white_scm'* white_scm)^-1 ]
+                          for iR = 1:length(restrictions)
+                             corrected_inv_R_invCovEV_Rp = (restrictions{iR}*corrected_invCovEV*restrictions{iR}')^-1;
+                             ss_beta = restrictions{iR}*ehdr(:,x,y,z,1);
+                             mss(x,y,z,1,iR) = ss_beta' * corrected_inv_R_invCovEV_Rp * ss_beta;
+                          end
                         end
                       end
                     end
-                  end
+                   end
                end
             end
 
@@ -516,29 +545,29 @@ for z = slices
             ehdr(:,:,y,z) = pinv_X*timeseries(:,:,y);    % get OLS hdr
             if computeTtests || ~isempty(restrictions) || computeEstimates
               for x = xvals
-                 if verbose,mrWaitBar( ((y-min(yvals)) + d.dim(2)*(z-min(slices))) / (d.dim(2)*d.dim(3)), (x-min(xvals))/d.dim(1),hWaitBar);end
-                 if ~any(isnan(timeseries(:,x,y))) && ~any(isnan(autoCorrelation(:,x)))
-                   noiseCovarianceMatrix = toeplitz(autoCorrelation(:,x));
-                    if approximate_value 
-                       effective_rdf(x,y,z) = d.dim(4)*(d.dim(4)-d.nhdr*d.hdrlen)/trace(noiseCovarianceMatrix*noiseCovarianceMatrix);
-                    else %this is the exact value (longer and not very different for large N, which is usually the case for fMRI data)
-                       RV = residualForming*noiseCovarianceMatrix;           
-                       traceRV(x,y,z) = trace(RV);       
-                       effective_rdf(x,y,z) = traceRV(x,y,z)^2/trace(RV*RV);  
-                    end
+                if verbose,mrWaitBar( (((y-min(yvals)) + d.dim(2)*(z-min(slices)))*d.dim(1)+x-min(xvals))/ prod(d.dim(1:3)), hWaitBar);end
+                if ~any(isnan(timeseries(:,x,y))) && ~any(isnan(autoCorrelation(:,x)))
+                 covResiduals = toeplitz(autoCorrelation(:,x));
+                  if approximate_value 
+                     effective_rdf(x,y,z) = d.dim(4)*(d.dim(4)-d.nhdr*d.nHrfComponents)/trace(covResiduals*covResiduals);
+                  else %this is the exact value (longer and not very different for large N, which is usually the case for fMRI data)
+                     RV = residualForming*covResiduals;           
+                     traceRV(x,y,z) = trace(RV);       
+                     effective_rdf(x,y,z) = traceRV(x,y,z)^2/trace(RV*RV);  
+                  end
 
-                    for iR = 1:length(restrictions)
-                       if approximate_value
-                          temp = eig_residualForming_f_tests{iR}'*noiseCovarianceMatrix*eig_residualForming_f_tests{iR};   %SEE IF FASTER WHEN LOOP INSTEAD OF TRACE
-                          effective_mdf(x,y,z,1,iR) = trace(temp)^2 / trace(temp.^2);                                      %SEE IF FASTER WHEN LOOP INSTEAD OF TRACE
-                          traceRsV(x,y,z,1,iR) = trace(residualForming_f_tests(:,:,iR)*noiseCovarianceMatrix);
-                       else
-                          RsV = residualForming_f_tests(:,:,iR)*noiseCovarianceMatrix;  %%this is the exact value (longer)
-                          traceRsV(x,y,z,1,iR) = trace(RsV);
-                          effective_mdf(x,y,z,1,iR) = traceRsV(x,y,z,1,iR)^2/trace(RsV*RsV);    
-                       end
-                    end
-                 end
+                  for iR = 1:length(restrictions)
+                     if approximate_value
+                        temp = eig_residualForming_f_tests{iR}'*covResiduals*eig_residualForming_f_tests{iR};   %SEE IF FASTER WHEN LOOP INSTEAD OF TRACE
+                        effective_mdf(x,y,z,1,iR) = trace(temp)^2 / trace(temp.^2);                                      %SEE IF FASTER WHEN LOOP INSTEAD OF TRACE
+                        traceRsV(x,y,z,1,iR) = trace(residualForming_f_tests(:,:,iR)*covResiduals);
+                     else
+                        RsV = residualForming_f_tests(:,:,iR)*covResiduals;  %%this is the exact value (longer)
+                        traceRsV(x,y,z,1,iR) = trace(RsV);
+                        effective_mdf(x,y,z,1,iR) = traceRsV(x,y,z,1,iR)^2/trace(RsV*RsV);    
+                     end
+                  end
+                end
               end
             end
             %from Burock and Dale 2000 
@@ -553,13 +582,7 @@ for z = slices
                 %mss(:,y,z,1,iR) = diag( ss_beta' / R_invCovEV_Rp{iR} * ss_beta ); 
             end
       end
-      
-      % now distribute that error to each one of the points    
-      % in the hemodynamic response according to the inverse
-      % of the covariance of the stimulus convolution matrix.
-      if computeEstimates
-        ehdrste(:,:,y,z) = sqrt(diagInvCovEVs*s2(:,y,z)');        %JB: replaces: ehdrste{y,z} = sqrt(diag(pinv(d.scm'*d.scm))*S2);
-      end
+
  
 %--------------------------------------------------- MAIN LOOP: BOOSTRAP CONFIDENCE INTERVAL ESTIMATION ------------------------------------%
       if nBootstrap>1 %BOOTSTRAP ONLY IMPLEMENTED FOR ORDINARY LEAST SQUARES
@@ -606,7 +629,23 @@ oneTimeWarning('pseudoInverseWarning',0);
 %--------------------------------------------------- STATISTICS ------------------------------------%
 
 
-%--------------------------------------------------- F-TESTS ------------------------------------%
+%---------------------------------- VARIANCE OF BETAS (STANDARD ERROR)------------------------------%
+if strcmp(params.correctionType,'none')
+  %compute residual variance for OLS
+  s2(:,:,:,1) = rss/d.rdf;   %JB: replaces: S2 = sumOfSquaresResidual/(length(d.volumes)-size(d.scm,2));
+  
+  if computeEstimates
+    % now distribute the error to each one of the points    
+    % in the hemodynamic response according to the inverse
+    % of the covariance of the stimulus convolution matrix.
+    % (= compute the variance of the beta estimates, i.e. the standard error)
+    ehdrste = sqrt(repmat(diag(invCovEVs),[1 d.dim(1:3) nBootstrap]).*repmat(permute(s2,[5 1 2 3 4]),[d.nhdr*d.nHrfComponents 1 1 1 1]));        %JB: replaces: ehdrste{y,z} = sqrt(diag(pinv(d.scm'*d.scm))*S2);
+    % see for example Seber & Lee, Linear Regression Analysis, 1977, p42
+  end
+end
+
+
+%---------------------------------- F-TESTS --------------------------------------------------------%
 % basically, the F value (only for the EVs of interest) is 
 %     ((MSS)/ number of betas of interest) / (RSS/(number of samples - number of betas ?-1?))
 %     where MSS is the difference between the RSS without the EVs of interest and the RSS of the whole model
@@ -630,32 +669,30 @@ if ~isempty(restrictions)
 
    F = permute(F,[1 2 3 5 4]); %put nBootstrap dim at the end
 end
-%put EV dimensions last so that contrasts are easier to perform and reshape nhdr and nhdrlen on two dimensions
-ehdr = reshape(permute(ehdr,[2 3 4 5 1]), d.dim(1), d.dim(2), d.dim(3), nBootstrap, d.hdrlen, d.nhdr); 
+%put EV dimensions last so that contrasts are easier to perform
+ehdr = permute(ehdr,[2 3 4 5 1]); 
 
 %--------------------------------------------------- T-TESTS ------------------------------------%
 if ~isempty(contrasts)
-  contrast_beta = zeros([d.dim(1) d.dim(2) d.dim(3) nBootstrap length(contrasts)],precision);
+  contrastBetas = zeros([d.dim(1) d.dim(2) d.dim(3) nBootstrap length(contrasts)],precision);
   if strcmp(params.correctionType,'none')
+    contrastBetaSte = NaN([d.dim(1) d.dim(2) d.dim(3) nBootstrap length(contrasts)],precision);
     for iContrast = 1:length(contrasts)
-      w = contrasts{iContrast}';
-      if computeTtests
-         k_eff(:,:,:,:,iContrast) = repmat(w'*invCovEVs*w,[d.dim(1) d.dim(2) d.dim(3) nBootstrap]);
-      end
+      %k_eff(:,:,:,:,iContrast) = repmat(contrasts{iContrast}*invCovEVs*contrasts{iContrast}',[d.dim(1) d.dim(2) d.dim(3) nBootstrap]);
+      contrastBetaSte(:,:,:,:,iContrast) = sqrt(s2.*(contrasts{iContrast}*invCovEVs*contrasts{iContrast}'));
     end
   end
   for iContrast = 1:length(contrasts)
-    w = contrasts{iContrast}';
-    for i_ev=1:d.nhdr
-       contrast_beta(:,:,:,:,iContrast) = contrast_beta(:,:,:,:,iContrast)+w(i_ev)*ehdr(:,:,:,:,1,i_ev);
+    for i_ev=1:d.nhdr*d.nHrfComponents
+       contrastBetas(:,:,:,:,iContrast) = contrastBetas(:,:,:,:,iContrast)+contrasts{iContrast}(i_ev)*ehdr(:,:,:,:,i_ev);
     end
-  %      contrast_beta(:,:,:,:,:,iContrast) = sum(ehdr(:,:,:,:,:,contrasts{iContrast}),6);
   end
   if computeTtests
-    T = zeros([d.dim(1) d.dim(2) d.dim(3) nBootstrap length(contrasts)],precision);
-    for iContrast = 1:length(contrasts)
-      T(:,:,:,:,iContrast) = contrast_beta(:,:,:,:,iContrast) ./ (k_eff(:,:,:,:,iContrast).*s2).^(1/2);   
-    end
+    T = contrastBetas ./ contrastBetaSte;   
+%     T = zeros([d.dim(1) d.dim(2) d.dim(3) nBootstrap length(contrasts)],precision);
+%     for iContrast = 1:length(contrasts)
+%       T(:,:,:,:,iContrast) = contrastBetas(:,:,:,:,iContrast) ./ (k_eff(:,:,:,:,iContrast).*s2).^(1/2);   
+%     end
     T = permute(T,[1 2 3 5 4]); %put nBootstrap dim at the end
     switch(testParams.tTestSide)
      case 'Both'
@@ -664,7 +701,8 @@ if ~isempty(contrasts)
         T = -1 *T;
     end
   end
-  contrast_beta = permute(contrast_beta,[1 2 3 5 4]); %put nBootstrap dim at the end
+  contrastBetas = permute(contrastBetas,[1 2 3 5 4]); %put nBootstrap dim at the end
+  contrastBetaSte = permute(contrastBetaSte,[1 2 3 5 4]); %put nBootstrap dim at the end
 end
 
 %Now in the case we computed contrasts on several components using option 'Or',
@@ -681,45 +719,18 @@ end
 if computeEstimates
   % calculate variance accounted for by the estimated hdr
   d.r2 = 1 - rss./tss;     %JB: replaces: r2{y,z} = (1-sumOfSquaresResidual./sum(timeseries.^2));
-  ehdrste = permute(reshape(ehdrste, d.hdrlen, d.nhdr, d.dim(1),d.dim(2),d.dim(3)),[3 4 5 2 1]);  %JB
+  ehdrste = permute(reshape(ehdrste, d.nHrfComponents, d.nhdr, d.dim(1),d.dim(2),d.dim(3)),[3 4 5 2 1]);  %JB
   d.ehdrste = ehdrste;
-  ehdr = permute(ehdr,[1 2 3 6 5 4]);    %put bootstrap dimension last, and swap nhdrlen and nhdr order
+  %reshape nhdr and nhdrlen on two dimensions, put bootstrap dimension last, and swap nHrfComponents and nhdr order
+  ehdr = permute(reshape(ehdr, d.dim(1), d.dim(2), d.dim(3), nBootstrap, d.nHrfComponents, d.nhdr),[1 2 3 6 5 4]);    
   d.ehdr = ehdr;
   d.rss = rss;
   d.tss = tss;
+  d.contrastSte = contrastBetaSte;
 end
 
 if verbose,mrCloseDlg(hWaitBar);end
 
-
-
-function newR = expandRestriction(R,componentsToTest,combinationType)
-
-if ~isempty(R)
-  if size(componentsToTest,1)>1 %make sure componentsToTest is a row vector
-    componentsToTest = componentsToTest';
-  end
-  
-  switch(combinationType)
-    case 'Add'
-      newR = zeros(size(R,1),size(componentsToTest,2)*size(R,2),size(R,3));
-    case 'Or'
-      newR = zeros(length(componentsToTest)*size(R,1),length(componentsToTest)*size(R,2),size(R,3));
-      componentsToTest = diag(componentsToTest);
-  end
-  newR = cell(1,length(R));
-  for iR = 1:length(R)
-    newR{iR} = kron(R{iR},componentsToTest);
-  end
-
-%   R = permute(R,[4 2 1 3]);
-%   R = repmat(R,[length(componentsToTest), 1 1 1]) .* repmat(logical(componentsToTest'), size(R));
-%   R = permute(reshape(baseRestriction,size(R,1)*size(R,2),size(R,3),size(R,4)),[2 1 3]);
-
-%   R = permute(R,[4 5 2 1 3]);
-%   R = repmat(R,[length(componentsToTest) length(componentsToTest) 1 1 1]) .* repmat(logical(componentsToTest'), size(R));
-%   R = permute(reshape(baseRestriction,size(R,1),size(R,2),size(R,3),size(R,4)),[3 1 2 4]);
-end
 
 
 %this function computes a new model from scm, ehdr and residuals 
