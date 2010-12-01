@@ -52,7 +52,7 @@ ncols=ceil(nOptions/OptionsPerColumn);
 nOptionsPerColumn=ceil(nOptions/ncols);
 
 %scale factors for x and y axis coordinates
-xs = 1.1;
+xs = 1.2;
 ys = 1.5;
 
 %default sizes
