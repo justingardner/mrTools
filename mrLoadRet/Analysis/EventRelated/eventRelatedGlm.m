@@ -1,15 +1,18 @@
 % eventRelatedGlm.m
 %
 %      usage: thisView = eventRelatedGlm(thisView,params)
-%         by: farshad moradi
+%         by: farshad moradi,  modified by julien besle 12/01/2010 to 25/10/2010 to perform an ANOVAs(F-tests) and T-tests
 %       date: 06/14/07
-%    purpose: same as eventRelated, but uses canonical hrf instead of
-%             deconvolution
+%    purpose: GLM analysis using design matrix convolved with any HRF model (including deconvolution)
 %              $Id$
 %
-%  modified by julien besle on 12/01/2010 to perform an ANOVAs and T-tests
-%     Anovas are limited to subsets of Explanatory Variables (EVs) (H0 = no EV differs from zero)
-%     T-tests are performed on any linear combinations of EVs against zero
+% 
+%     Fits a GLM to the data using ordinary or generalized Least Squares
+%     GLM is composed of EVs which can be stimulus times or combinations thereof
+%     outputs r2 overlay
+%     computes any number of contrasts
+%     T-tests are performed on any linear combinations of Explanatory Variables (EVs) against zero (H0 = contrast'*beta
+%     F-tests tests any set of contrasts, not necessarily identical to above contrasts to subsets of  (H0 = no contrast differs from zero)
 
 function [thisView d] = eventRelatedGlm(thisView,params,varargin)
 
@@ -490,13 +493,12 @@ for scanNum = params.scanNum
     end
   end
 
-
   % save eventRelated parameters
-  glmAnal.d{scanNum}.hrf = downsample(d.hrf, d.supersampling/scanParams{scanNum}.estimationSupersampling);
+  glmAnal.d{scanNum}.hrf = downsample(d.hrf, d.supersampling/scanParams{scanNum}.estimationSupersampling)/d.supersampling*scanParams{scanNum}.estimationSupersampling;
   glmAnal.d{scanNum}.hdrlen = d.hdrlen;
   glmAnal.d{scanNum}.nHrfComponents = d.nHrfComponents;
   glmAnal.d{scanNum}.actualhrf = d.hrf;
-  glmAnal.d{scanNum}.trsupersampling = d.supersampling;
+  glmAnal.d{scanNum}.designSupersampling = d.supersampling;
   glmAnal.d{scanNum}.estimationSupersampling = scanParams{scanNum}.estimationSupersampling;
   glmAnal.d{scanNum}.acquisitionSubsample = scanParams{scanNum}.acquisitionSubsample;
   glmAnal.d{scanNum}.ver = d.ver;
@@ -505,6 +507,7 @@ for scanNum = params.scanNum
   glmAnal.d{scanNum}.nhdr = d.nhdr;
   glmAnal.d{scanNum}.tr = d.tr;
   glmAnal.d{scanNum}.stimNames = d.stimNames;
+  glmAnal.d{scanNum}.EVnames = testParams.EVnames;                %this should be removed if viewGet can get params from GLM analysis
   glmAnal.d{scanNum}.scm = d.scm;
   glmAnal.d{scanNum}.expname = d.expname;
   glmAnal.d{scanNum}.fullpath = d.fullpath;
@@ -515,13 +518,15 @@ for scanNum = params.scanNum
   glmAnal.d{scanNum}.ehdrste(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdrste;
   glmAnal.d{scanNum}.rss = NaN(scanDims,precision);
   glmAnal.d{scanNum}.rss(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = rss; %JB
+  glmAnal.d{scanNum}.EVmatrix = d.EVmatrix;        
   clear('ehdr','ehdrste','rss');
   if ~isempty(contrasts)
     glmAnal.d{scanNum}.rdf = d.rdf; %JB
     glmAnal.d{scanNum}.contrasts = contrasts;
   end
   if ~isempty(restrictions)
-    glmAnal.d{scanNum}.restrictions = restrictions;
+    glmAnal.d{scanNum}.fTestNames = testParams.fTestNames;        %this should be removed if viewGet can get params from GLM analysis
+    glmAnal.d{scanNum}.restrictions = restrictions;               %this should be removed if viewGet can get params from GLM analysis
     glmAnal.d{scanNum}.rdf = d.rdf; %JB
     glmAnal.d{scanNum}.mdf = d.mdf; %JB
   end
@@ -535,7 +540,7 @@ for scanNum = params.scanNum
 end
 toc
 
-
+tic
 %-------------------------------------------------------- Output Analysis ---------------------------------------------------
 dateString = datestr(now);
 glmAnal.name = params.saveName;
@@ -566,11 +571,7 @@ overlay.params = cell(1,viewGet(thisView,'nScans'));
 overlay.colormap = hot(312);
 overlay.colormap = overlay.colormap(end-255:end,:);
 overlay.alpha = 1;
-if strcmp(params.hrfModel,'hrfDeconvolution')
-  overlay.interrogator = 'eventRelatedPlot';
-else
-  overlay.interrogator = 'glmContrastPlot';
-end
+overlay.interrogator = 'glmPlot';
 overlay.mergeFunction = 'defaultMergeParams';
 overlay.colormapType = 'normal';
 overlay.range = [0 1];
@@ -594,52 +595,13 @@ end
 clear('r2');
 thisView = viewSet(thisView,'newoverlay',thisOverlay);
 
-% for output 
-if ~isempty(viewGet(thisView,'fignum'))
-  refreshMLRDisplay(viewGet(thisView,'viewNum'));
-end
-if nargout > 1
-  for i = 1:length(d)
-    glmAnal.d{i}.r2 = thisOverlay.data{i}; %(this kind of doesn't make sense anymore since we're interested in more than just r2)
-  end
-  % make d strucutre
-  if length(glmAnal.d) == 1
-    d = glmAnal.d{1};
-  else
-    d = glmAnal.d;
-  end
-end
 
 %--------------------------------------------- save the contrast overlay(s)
 
 if ~isempty(contrasts)
   
-  contrastNames = cell(1,size(contrasts,1));
-  for iContrast = 1:size(contrasts,1)
-    if nnz(contrasts(iContrast,:))==1 && sum(contrasts(iContrast,:))==1 %if the contrast is one EV
-      contrastNames{iContrast} = testParams.EVnames{logical(contrasts(iContrast,:))};
-    elseif nnz(contrasts(iContrast,:))==2 && sum(contrasts(iContrast,:))==0 %if the contrast is a comparison of 2 EVs
-      EV1 = find(contrasts(iContrast,:),1,'first');
-      EV2 = find(contrasts(iContrast,:),1,'last');
-      if params.computeTtests && strcmp(testParams.tTestSide,'Both')
-        connector = ' VS ';
-      elseif contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
-        connector = ' > ';
-      else    
-        connector = ' > ';
-      end
-      contrastNames{iContrast} = [testParams.EVnames{EV1} connector testParams.EVnames{EV2}];
-    elseif all(~diff(contrasts(iContrast,logical(contrasts(iContrast,:))))) %if the contrast is a mean of several EVs
-      contrastNames{iContrast} = 'Average(';
-      for iEV = find(contrasts(iContrast,:))
-        contrastNames{iContrast} = [contrastNames{iContrast} testParams.EVnames{iEV} ', '];
-      end
-      contrastNames{iContrast}(end-1) = ')';
-      contrastNames{iContrast}(end) = [];
-    else
-      contrastNames{iContrast} = mat2str(contrasts(iContrast,:));
-    end
-  end
+  contrastNames = makeContrastNames(contrasts,testParams.EVnames);
+  
   %this is to mask the beta values by the probability/Z maps     
   betaAlphaOverlay = cell(length(contrastNames),1);
   betaAlphaOverlayExponent = 1;
@@ -768,14 +730,14 @@ if ~isempty(contrasts)
   if length(testParams.componentsToTest)==1 || strcmp(testParams.componentsCombination,'Add')
     %find the values for the scale of the beta overlays
     thisOverlay = overlay;
-    ordered_abs_betas = cell2mat(contrastData);
+    ordered_abs_betas = cell2mat(contrastData(params.scanNum));
     ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
+    min_beta = min(min(min(min(min(ordered_abs_betas)))));
+    max_beta = max(max(max(max(max(ordered_abs_betas)))));
     ordered_abs_betas = sort(abs(ordered_abs_betas));
     beta_perc95 = 0; 
     beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
     thisOverlay.range = [-beta_perc95 beta_perc95];
-    min_beta = min(min(min(min(min(cell2mat(contrastData))))));
-    max_beta = max(max(max(max(max(cell2mat(contrastData))))));
     thisOverlay.clip = [min_beta max_beta];
     thisOverlay.colormap = jet(256);
     for iContrast = 1:size(contrasts,1)
@@ -910,7 +872,23 @@ oneTimeWarning('nonZeroHrfStart',0);
 oneTimeWarning('tfceOutputsZeros',0);
 set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow
 refreshMLRDisplay(viewGet(thisView,'viewNum'));
+toc
 
+% for output 
+if ~isempty(viewGet(thisView,'fignum'))
+  refreshMLRDisplay(viewGet(thisView,'viewNum'));
+end
+if nargout > 1
+  for i = 1:length(d)
+    glmAnal.d{i}.r2 = thisOverlay.data{i}; %(this kind of doesn't make sense anymore since we're interested in more than just r2)
+  end
+  % make d strucutre
+  if length(glmAnal.d) == 1
+    d = glmAnal.d{1};
+  else
+    d = glmAnal.d;
+  end
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% sub routines

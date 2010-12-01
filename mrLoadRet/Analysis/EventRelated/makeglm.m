@@ -66,6 +66,7 @@ sample_value = estimationSupersampling/d.supersampling;
  
 % go through each run of the experiment
 allscm = [];
+allEVmatrix = [];
 for runnum = 1:size(runTransition,1)
   scm = [];
    % make an array containing the stimulus times
@@ -76,14 +77,14 @@ for runnum = 1:size(runTransition,1)
       stimArray( stimvol(stimvol>=runTransition(runnum,1) & stimvol<=runTransition(runnum,2) )- runTransition(runnum,1)+1,stimnum ) = sample_value;
    end
    % apply EV combination matrix
-   stimArray = stimArray*stimToEVmatrix;
+   EVmatrix = stimArray*stimToEVmatrix;
    
    % make stimulus convolution matrix
-   for iEV = 1:size(stimArray,2)
-      m = convn(stimArray(:,iEV), d.hrf);
-      m = m(1:size(stimArray,1),:);
+   for iEV = 1:size(EVmatrix,2)
+      m = convn(EVmatrix(:,iEV), d.hrf);
+      m = m(1:size(EVmatrix,1),:);
       %apply saturation
-      m = min(m,repmat(saturationThreshold,size(stimArray,1),1));
+      m = min(m,repmat(saturationThreshold,size(EVmatrix,1),1));
       % remove mean 
       m = m-repmat(mean(m), size(m,1), 1); %DOES IT CHANGE ANYTHING IF I REMOVE THIS ?
       % downsample with constant integral to estimation sampling rate
@@ -107,6 +108,7 @@ for runnum = 1:size(runTransition,1)
    end
    % stack this run's stimcmatrix on to the last one
    allscm = [allscm;scm];
+   allEVmatrix = [allEVmatrix;EVmatrix];
 end
 
 % set values
@@ -114,4 +116,4 @@ d.nhdr = size(stimToEVmatrix,2);
 d.scm = allscm;
 d.hdrlen = size(d.hrf,1);
 d.nHrfComponents = size(d.hrf,2);
-
+d.EVmatrix = allEVmatrix;

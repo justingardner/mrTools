@@ -11,7 +11,7 @@ function params = eventRelatedGlmGUI(varargin)
 % get the arguments
 eval(evalargs(varargin));
 
-if ieNotDefined('useDefault'),useDefault = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('thisView'),thisView = newView;end
 if ieNotDefined('params'),params = struct;end
 if ieNotDefined('groupName'), groupName = viewGet(thisView,'groupName');end;
@@ -19,6 +19,10 @@ if ieNotDefined('groupName'), groupName = viewGet(thisView,'groupName');end;
 %convert old params
 params = convertOldParams(params);
 
+% rm the tseriesFile field because we're creating a new analysis. It will be merged later if required
+if isfield(params,'tseriesFiles')
+  params = rmfield(params,'tseriesFile');
+end
 
 % put default parameters if not already set
 if ~isfield(params,'hrfParams')
@@ -26,6 +30,9 @@ if ~isfield(params,'hrfParams')
 end
 if ~isfield(params,'groupName') || isempty(params.groupName)
   params.groupName = groupName;
+end
+if ~isfield(params,'scanNum') || isempty(params.scanNum)
+  params.scanNum = [];
 end
 if ~isfield(params,'saveName') || isempty(params.saveName)
   params.saveName = 'GLM';
@@ -40,16 +47,30 @@ if ~isfield(params,'analysisVolume') || isempty(params.analysisVolume)
 end
 
 if ~isfield(params,'numberEVs') || isempty(params.numberEVs)
-  params.numberEVs = 0;
+    params.numberEVs = 0;
+%   d = viewGet(thisView,'d');
+%   if ~isempty(d) && isfield(d,'ehdr')
+%     params.numberEVs = size(d.ehdr,4);
+%   else
+%     params.numberEVs = 0;
+%   end
 end
 if ~isfield(params,'numberContrasts') || isempty(params.numberContrasts)
-  params.numberContrasts = 0;
+  if isfield(params,'testParams') && isfield(params.testParams,'contrasts')
+    params.numberContrasts = size(params.testParams.contrasts,1);
+  else
+    params.numberContrasts = 0;
+  end
 end
 if ~isfield(params,'computeTtests') || isempty(params.computeTtests)
   params.computeTtests = 0;
 end
 if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
-  params.numberFtests = 0;
+  if isfield(params,'testParams') && isfield(params.testParams,'restrictions')
+    params.numberFtests = length(params.testParams.restrictions);
+  else
+    params.numberFtests = 0;
+  end
 end
 
 if ~isfield(params,'covCorrection') || isempty(params.covCorrection)
@@ -109,7 +130,7 @@ while askForParams
    };
 
   % Get parameter values
-  if useDefault
+  if defaultParams
     tempParams = mrParamsDefault(paramsInfo);
   else
     tempParams = mrParamsDialog(paramsInfo, 'GLM parameters');
@@ -140,7 +161,7 @@ while askForParams
   else
     while askForParams       % get hrf model parameters
       %here we assume that all scans in this group have the same framePeriod
-      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,useDefault);
+      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,defaultParams);
       % if empty user hit cancel, go back
       if isempty(hrfParams)
         break;
@@ -156,12 +177,11 @@ while askForParams
           groupNum = viewGet(thisView,'groupnum',params.groupName);
           if ~ieNotDefined('scanList')
              params.scanNum = scanList;
-          elseif useDefault
+          elseif defaultParams
              %params.scanNum = 1:viewGet(thisView,'nScans');
              params.scanNum = 1:viewGet(thisView,'nScans',groupNum);
           elseif viewGet(thisView,'nScans',groupNum) >1
-             %params.scanNum = selectScans(thisView);
-             params.scanNum = selectScans(thisView,[],groupNum);
+             params.scanNum = selectScans(thisView,[],groupNum,params.scanNum);
              if isempty(params.scanNum)
                 askForParams = 1;
                 break;
@@ -171,7 +191,7 @@ while askForParams
           end
 
           % get the parameters for each scan
-          [scanParams, params] = getGlmScanParamsGUI(thisView,params,useDefault);
+          [scanParams, params] = getGlmScanParamsGUI(thisView,params,defaultParams);
           if isempty(scanParams)
             askForParams = 1;
             break;
@@ -182,7 +202,7 @@ while askForParams
               params.numberEVs = params.numberEvents;
               defaultTestParams = 1;
             else
-              defaultTestParams = useDefault;
+              defaultTestParams = defaultParams;
             end
             while askForParams           %get testParams
               testParams = getGlmTestParamsGUI(thisView,params,defaultTestParams);
@@ -214,6 +234,12 @@ end
 
 function params = convertOldParams(params)
 
+if isfield(params,'contrast') 
+  if ~isfield(params,'contrasts')
+    params.contrasts = params.contrast;
+  end
+  params = rmfield(params,'contrast');
+end
 if isfield(params,'contrasts')
   if ischar(params.contrasts)
     params.testParams.contrasts = eval(params.contrasts);
@@ -241,13 +267,26 @@ if isfield(params,'fTests')
   params.numberFtests = size(params.testParams.fTests,1);
   params = rmfield(params,'fTests');
 end
-if isfield(params,'testParams')  && isfield(params.testParams,'fTests')
-  for iFtest = 1:size(params.testParams.fTests,1)
-    params.testParams.restrictions{iFtest} = diag(params.testParams.fTests(iFtest,:));
+if isfield(params,'testParams')  
+  if isfield(params.testParams,'fTests')
+    for iFtest = 1:size(params.testParams.fTests,1)
+      params.testParams.restrictions{iFtest} = diag(params.testParams.fTests(iFtest,:));
+    end
+    params.testParams = rmfield(params.testParams,'fTests');
   end
-  params.testParams = rmfield(params.testParams,'fTests');
 end
-  
+
+if isfield(params,'hrfParams')  
+  if isfield(params.hrfParams,'incDeriv')
+    params.hrfParams.includeDerivative = params.hrfParams.incDeriv;
+    params.hrfParams = rmfield(params.hrfParams,'incDeriv');
+  end
+end
+
+if isfield(params,'trSupersampling')
+  params = rmfield(params,'trSupersampling');
+end
+
 if isfield(params,'n_rand')
   params.testParams.nRand = params.n_rand;
   params = rmfield(params,'n_rand');
