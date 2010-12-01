@@ -1,11 +1,11 @@
-function h = selectGraphWin(noClear)
+function h = selectGraphWin(noClear,graphWindow)
 %
 % selectGraphWin
 %
 %  $Id$
 %
 % if  preference graphWindow is set to replace, goes through the stack of figures and find first figure that is an MLR figure
-% if no figure of preference graphWindow is 'Make new', makes a new one.
+% if no figure or preference graphWindow is 'Make new', makes a new one.
 % option noclear: replaces the current figure  but does not clear it (overrides graphWin preference)
 %
 % djh, 3/3/98
@@ -23,8 +23,11 @@ end
 if ieNotDefined('noClear')
   noClear = 0;
 end
+if ieNotDefined('graphWindow')
+  graphWindow = mrGetPref('graphWindow');
+end
 
-graphWindow = mrGetPref('graphWindow');
+
 if strcmp(graphWindow,'Replace') || noClear
   figureHandles = get(0,'Children') ;
   % get current figure from MLR variable

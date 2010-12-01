@@ -1,5 +1,5 @@
-function overlayList = selectOverlays(thisView,title)
-% overlayList = selectOverlays(thisView,[title]);
+function overlayList = selectOverlays(thisView,title,preselected)
+% overlayList = selectOverlays(thisView,[title],[preselected]);
 %
 %   Gather a list of overlays available in current group/analysis
 %   and query the user for a sub-selection.
@@ -16,6 +16,10 @@ overlayList = [];
 if ieNotDefined('title')
   title = 'Choose overlays';
 end
+if ieNotDefined('preselected')
+  preselected = [];
+end
+
 
 overlayNames = viewGet(thisView,'overlayNames');
 
@@ -25,8 +29,11 @@ if isempty(overlayNames)
   return
 end
 
+preselection = zeros(1,length(overlayNames));
+preselection(preselected) = 1;
+
 % Which overlays to analyze?
-iSel = buttondlg(title, overlayNames);
+iSel = buttondlg(title, overlayNames,preselection);
 overlayList = find(iSel);
 
 return;

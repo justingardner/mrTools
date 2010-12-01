@@ -1,14 +1,9 @@
-function scanList = selectScans(view,title,groupNum)
-% scanList = selectScans(view,[title]);
+function scanList = selectScans(view,title,groupNum,preselected)
+% scanList = selectScans(view,[title],[groupNum],[preselected]);
 %
 %   Gather a list of scans available in Inplane/TSeries
 %   and query the user for a sub-selection.
 %
-%   An alternate functionchooseScans uses numScans(view)
-%   to determine the number of scans to choose from
-%   Use selectScans if you will be analyzing the tSeries. 
-%   Use chooseScans, if your code does not depend on the 
-%   presence/absence of the tSeries files.
 %
 % Output:
 %  scanList: list of selected scans.
@@ -28,6 +23,10 @@ if ieNotDefined('groupNum')
 end
 nScans = viewGet(view,'nScans',groupNum);
 
+if ieNotDefined('preselected')
+  preselected = [];
+end
+
 %Check for zero:
 if nScans == 0
   mrErrorDlg('No scans found!');
@@ -38,8 +37,11 @@ for i = 1:nScans
   scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i,groupNum),viewGet(view,'tSeriesFile',i,groupNum));
 end
 
+preselection = zeros(1,length(scanNames));
+preselection(preselected) = 1;
+
 % Which scans to analyze?
-iSel = buttondlg(title, scanNames);
+iSel = buttondlg(title, scanNames,preselection);
 scanList = find(iSel);
 
 return;
