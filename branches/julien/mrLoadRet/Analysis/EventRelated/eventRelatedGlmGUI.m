@@ -200,12 +200,9 @@ while askForParams
 
             if ~params.numberEVs
               params.numberEVs = params.numberEvents;
-              defaultTestParams = 1;
-            else
-              defaultTestParams = defaultParams;
             end
             while askForParams           %get testParams
-              testParams = getGlmTestParamsGUI(thisView,params,defaultTestParams);
+              testParams = getGlmTestParamsGUI(thisView,params,defaultParams);
               % if empty, user hit cancel, go back
               if isempty(testParams)
                 askForParams = 1;

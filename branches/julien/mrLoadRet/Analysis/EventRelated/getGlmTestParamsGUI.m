@@ -171,11 +171,6 @@ while keepAsking
      return;
   end
   
-%   tTestSideMenu = putOnTopOfList(testParams.tTestSide,tTestSideMenu);
-%   componentsCombinationMenu = putOnTopOfList(testParams.componentsCombination,componentsCombinationMenu);
-%   parametricTestOutputMenu = putOnTopOfList(testParams.parametricTestOutput,parametricTestOutputMenu);
-%   randomizationTestOutputMenu = putOnTopOfList(testParams.randomizationTestOutput,randomizationTestOutputMenu);
-
   % form stimToEV matrix from fields
   for iEvent = 1:params.numberEvents
     testParams.stimToEVmatrix(iEvent,:) = testParams.(fixBadChars(params.stimNames{iEvent}));
@@ -198,6 +193,7 @@ while keepAsking
   actualNumberFtests=0;
   for iFtest = 1:params.numberFtests
     thisRestriction=testParams.(fixBadChars(sprintf('restriction%2d',iFtest)));
+    testParams = rmfield(testParams,fixBadChars(sprintf('restriction%2d',iFtest)));
     if ~any(any(thisRestriction))
       mrWarnDlg('(getGlmTestParamsGUI) Discarding F-test with empty restriction matrix');
     else
@@ -205,6 +201,7 @@ while keepAsking
       testParams.fTestNames{actualNumberFtests} = testParams.(fixBadChars(sprintf('fTest%2d',iFtest)));
       testParams.restrictions{actualNumberFtests} = thisRestriction;
     end
+    testParams = rmfield(testParams,fixBadChars(sprintf('fTest%2d',iFtest)));
   end
   
   %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
