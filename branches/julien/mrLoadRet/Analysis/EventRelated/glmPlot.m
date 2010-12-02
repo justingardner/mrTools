@@ -98,7 +98,7 @@ end
 
 % select the window to plot into
 fignum = selectGraphWin;
-initializeFigure(fignum,numberEVs)
+initializeFigure(fignum,max(numberEVs,numberContrasts))
 set(fignum,'Name','glmPlot');
 
 %set plotting dimension
