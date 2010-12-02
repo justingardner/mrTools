@@ -1,4 +1,4 @@
-function contrastNames = makeContrastNames(contrasts,EVnames)
+function contrastNames = makeContrastNames(contrasts,EVnames,tTestSide)
 % getContrastNames.m
 %
 %        $Id$
@@ -7,6 +7,9 @@ function contrastNames = makeContrastNames(contrasts,EVnames)
 %       date: 26/11/2010
 %    purpose: makes Contrast Names from contrasts and EV names
 
+if ieNotDefined('tTestSide')
+  tTestSide = 'Both';
+end
 contrastNames = cell(1,size(contrasts,1));
 
 for iContrast = 1:size(contrasts,1)
@@ -15,13 +18,24 @@ for iContrast = 1:size(contrasts,1)
   elseif nnz(contrasts(iContrast,:))==2 && sum(contrasts(iContrast,:))==0 %if the contrast is a comparison of 2 EVs
     EV1 = find(contrasts(iContrast,:),1,'first');
     EV2 = find(contrasts(iContrast,:),1,'last');
-    if params.computeTtests && strcmp(testParams.tTestSide,'Both')
-      connector = ' VS ';
-    elseif contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
-      connector = ' > ';
-    else    
-      connector = ' > ';
+    switch(tTestSide)
+      case 'Both'
+        connector = ' VS ';
+      case 'Right'
+        if contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
+          connector = ' > ';
+        else    
+          connector = ' < ';
+        end
+        
+      case 'Left'
+        if contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
+          connector = ' < ';
+        else    
+          connector = ' > ';
+        end
     end
+
     contrastNames{iContrast} = [EVnames{EV1} connector EVnames{EV2}];
   elseif all(~diff(contrasts(iContrast,logical(contrasts(iContrast,:))))) %if the contrast is a mean of several EVs
     contrastNames{iContrast} = 'Average(';

@@ -600,7 +600,7 @@ thisView = viewSet(thisView,'newoverlay',thisOverlay);
 
 if ~isempty(contrasts)
   
-  contrastNames = makeContrastNames(contrasts,testParams.EVnames);
+  contrastNames = makeContrastNames(contrasts,testParams.EVnames,testParams.tTestSide);
   
   %this is to mask the beta values by the probability/Z maps     
   betaAlphaOverlay = cell(length(contrastNames),1);
