@@ -52,6 +52,8 @@ ALIGN.guiXform = [];             % 4x4 transform matrix read from rot and trans 
 ALIGN.xform = [];                % 4x4 transform matrix from inplane pixels -> volume pixels. this is the current transformation
 ALIGN.xformICCorrection = [];    % 4x4 transform matrix from inplane pixels -> volume pixels. this is the transformation after the last intensity/contrast correction was computed
 ALIGN.oldXform = [];             % 4x4 transform matrix from inplane pixels -> volume pixels. this is the transformation before computing the last alignment
+ALIGN.oldGuiRotation = [];       % 3-tuple to keep old manual rotation in memory after running alignment
+ALIGN.oldGuiTranlastion = [];    % 3-tuple to keep old manual translation in memory after running alignment
 ALIGN.NIter = 200;               % Number of iterations in auto alignment
 ALIGN.sliceOrientation = 1;      % 1=axial, 2=coronal, 3=sagittal
 ALIGN.coords = [1,1,1];          % selected voxel
@@ -59,7 +61,7 @@ ALIGN.currentlyComputingAlignment = 0;% an alignment is currently being computed
 ALIGN.stopComputingAlignment = 0;     % computing alignment is being cancelled
 
 ALIGN.robustAlignment = 1;       % specifies if robustMest is used to optimize the alignment 
-ALIGN.rigidBodyAlignment = 1;             % specifies if alignement is restricted to 7 or 12 degrees of freedom (?)
+ALIGN.rigidBodyAlignment = 1;    % specifies if alignement is restricted to 6 or 7 degrees of freedom
 ALIGN.reverseContrastAlignment = 0; % specifies if contrast is reversed for alignment optimization 
 ALIGN.ignoreZeroVoxels = 1;      % specifies if zero voxels should be ignored when optimizing the alignment 
 ALIGN.displayAlignmentSteps = 1; % specifies if alignment optimization steps are displayed
