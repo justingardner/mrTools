@@ -485,7 +485,7 @@ end
 % Warning if no (qform) alignment information in the header.
 % qform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.qform_code)
-    mrWarnDlg('No alignment information in the inplane header.');
+    mrWarnDlg('(mrAlignGUI) No alignment information in the inplane header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
@@ -605,7 +605,7 @@ else
 end
 pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
 if isempty(pathStr)
-  mrWarnDlg('saveAlignedSource aborted');
+  mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
 end
 
@@ -676,7 +676,7 @@ else
 end
 pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
 if isempty(pathStr)
-  mrWarnDlg('saveAlignedSource aborted');
+  mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
 end
 
@@ -739,7 +739,7 @@ end
 load(pathstr);
 % Warning if old version.
 if ~exist('mrAlignVersion','var') | ~isnumeric(mrAlignVersion) | (mrAlignVersion < ALIGN.version)
-    mrWarnDlg('This alignment file appears to correspond to an older version of mrAlign. You may need to use "Import" from the "File" menu.');
+    mrWarnDlg('(mrAlignGUI) This alignment file appears to correspond to an older version of mrAlign. You may need to use "Import" from the "File" menu.');
 end
 % Error if xform isn't loaded from the file.
 if ~exist('xform','var')
@@ -765,7 +765,7 @@ end
 load(pathstr);
 % Warning if old version.
 if ~exist('mrAlignVersion','var') | ~isnumeric(mrAlignVersion) | (mrAlignVersion < ALIGN.version)
-    mrWarnDlg('This alignment file appears to correspond to an older version of mrAlign.');
+    mrWarnDlg('(mrAlignGUI) This alignment file appears to correspond to an older version of mrAlign.');
 end
 % Error if  xform isn't loaded from the file.
 if ~exist('xform','var')
@@ -782,7 +782,7 @@ if ~exist(pathstr,'file')
 end
 % Warning if old version.
 if ~exist('mrAlignVersion','var') | ~isnumeric(mrAlignVersion) | (mrAlignVersion < ALIGN.version)
-    mrWarnDlg('This alignment file appears to correspond to an older version of mrAlign.');
+    mrWarnDlg('(mrAlignGUI) This alignment file appears to correspond to an older version of mrAlign.');
 end  
 % Error if xform isn't loaded from the file.
 if ~exist('xform','var')
@@ -959,36 +959,19 @@ function prefMenu_Callback(hObject, eventdata, handles)
 mrEditPrefs;
 
 % --------------------------------------------------------------------
-function showAdvancedMenusMenuItem_Callback(hObject, eventdata, handles)
-
-if strcmp(get(hObject,'checked'),'off')
-  set(hObject,'checked','on')
-  set(handles.initializeFromSformMenuItem,'visible','on');
-  set(handles.robustAlignmentMenuItem,'visible','on');
-  set(handles.ignoreZeroVoxelsMenuItem,'visible','on');
-  set(handles.displayOptimizationStepsMenuItem,'visible','on');
-else
-  set(hObject,'checked','off')
-  set(handles.initializeFromSformMenuItem,'visible','off');
-  set(handles.robustAlignmentMenuItem,'visible','off');
-  set(handles.ignoreZeroVoxelsMenuItem,'visible','off');
-  set(handles.displayOptimizationStepsMenuItem,'visible','off');
-end
-
-% --------------------------------------------------------------------
 function manualAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function initializeIdentityMenuItem_Callback(hObject, eventdata, handles)
+function dummy = initializeIdentityMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 global ALIGN
-
 
 % Set xform to identity, but scaled by voxel sizes
 % *** Not yet test/debugged ***
 
 %first check the qform matrices of the inplane and volumes (if loaded)
 if isempty(ALIGN.volumeHdr) || isempty(ALIGN.inplaneHdr)
-	mrWarnDlg('Load source and destination');
+	mrWarnDlg('(mrAlignGUI) Load source and destination');
 	return
 else
    answer = '';
@@ -1106,7 +1089,8 @@ refreshAlignDisplay(handles);
 function computeAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function initializeFromQformMenuItem_Callback(hObject, eventdata, handles)
+function dummy = initializeFromQformMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 global ALIGN
 
 if ~isfield(ALIGN.volumeHdr,'qform44') || ~isfield(ALIGN.inplaneHdr,'qform44')
@@ -1120,13 +1104,13 @@ if isempty(ALIGN.volumeHdr.qform44)
     mrErrorDlg('No alignment information in the volume header.');
 end
 if ~isempty(ALIGN.volumeHdr.qform_code) && ~ALIGN.volumeHdr.qform_code
-    mrWarnDlg('Volume qform_code is not set.');
+    mrWarnDlg('(mrAlignGUI) Volume qform_code is not set.');
 end
 if isempty(ALIGN.inplaneHdr.qform44)
     mrErrorDlg('No alignment information in the inplane header.');
 end
 if ~isempty(ALIGN.inplaneHdr.qform_code) && ~ALIGN.inplaneHdr.qform_code
-    mrWarnDlg('Inplanes qform_code is not set.');
+    mrWarnDlg('(mrAlignGUI) Inplanes qform_code is not set.');
 end
 
 % Compute alignment by composing the qforms from the two nifti headers.
@@ -1139,7 +1123,8 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
-function initializeFromSformMenuItem_Callback(hObject, eventdata, handles)
+function dummy = initializeFromSformMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 global ALIGN
 
 if ~isfield(ALIGN.volumeHdr,'sform44') || ~isfield(ALIGN.inplaneHdr,'sform44')
@@ -1153,13 +1138,13 @@ if isempty(ALIGN.volumeHdr.sform44)
     mrErrorDlg('No alignment information in the volume header.');
 end
 if ~isempty(ALIGN.volumeHdr.sform_code) && ~ALIGN.volumeHdr.sform_code
-    mrWarnDlg('Volume sform_code is not set.');
+    mrWarnDlg('(mrAlignGUI) Volume sform_code is not set.');
 end
 if isempty(ALIGN.inplaneHdr.sform44)
     mrErrorDlg('No alignment information in the inplane header.');
 end
 if ~isempty(ALIGN.inplaneHdr.sform_code) && ~ALIGN.inplaneHdr.sform_code
-    mrWarnDlg('Inplanes sform_code is not set.');
+    mrWarnDlg('(mrAlignGUI) Inplanes sform_code is not set.');
 end
 
 % Compute alignment by composing the sforms from the two nifti headers.
@@ -1172,74 +1157,70 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
-function cropInplanesMenuItem_Callback(hObject, eventdata, handles)
+function dummy = cropInplanesMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 global ALIGN
 ALIGN.crop = selectCropRegion(ALIGN.inplanes);
 
 % --------------------------------------------------------------------
-function resetCropInplanesMenuItem_Callback(hObject, eventdata, handles)
+function dummy = resetCropInplanesMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 global ALIGN
-
 ALIGN.crop = [];
 
 % --------------------------------------------------------------------
-function robustAlignmentMenuItem_Callback(hObject, eventdata, handles)
+function advancedAlignmentMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
-if ALIGN.robustAlignment
-   ALIGN.robustAlignment = 0;
-   set(hObject,'checked','off');
-else
-   ALIGN.robustAlignment = 1;
-   set(hObject,'checked','on');
-end
+paramsInfo = {...
+  {'identity', 0,'type=pushbutton','buttonString=Set Alignment to Identity','callback',{@initializeIdentityMenuItem_Callback,[],[],handles},...
+      'Sets the transformation to dentiy, taking into account differences in voxel sizes between the source and destination volumes.'},...
+  {'qform', 0,'type=pushbutton','buttonString=Initialize Alignment from Header Qform','callback',{@initializeFromQformMenuItem_Callback,[],[],handles},...
+      'Sets the transformation to the qform matrix of the NIFTI header. This will revert back to the original alignment of the volumes right off the scanner.'},...
+  {'sform', 0,'type=pushbutton','buttonString=Initialize Alignment from Header Sform','callback',{@initializeFromSformMenuItem_Callback,[],[],handles},...
+      'Sets the transformation to the sform matrix of the NIFTI header. This will revert back to the last saved alignment.'},...
+  {'set', 0,'type=pushbutton','buttonString=Set Crop Region','callback',{@selectCropRegion,ALIGN.inplanes},...
+      'Sets a 3D box in the source volume that constrains the alignment estimation. Voxels outside this box are ignored in the motion estimation'},...
+  {'reset', 0,'type=pushbutton','buttonString=Reset Crop Region','callback',{@resetCropInplanesMenuItem_Callback},...
+      'Resets the 3D box to the whold source volume.'},...
+  {'robust',ALIGN.robustAlignment,'type=checkbox','buttonString=Robust Alignment','callback',@setAlignmentOption,'callbackArg','robust',...
+      'Uses robust non-linear iterative motion estimation algorithm.'},...
+  {'rigid',ALIGN.rigidBodyAlignment,'type=checkbox','buttonString=Rigid-body Alignment','','callback',@setAlignmentOption,'callbackArg','rigid',...
+      'Restricts the search space to rigid transformations (=6 degrees of freedom). If unchecked, an additional parameter of scaling is estiamting (7DOF)'},...
+  {'reverse',ALIGN.reverseContrastAlignment,'type=checkbox','buttonString=Reverse Contrast (T2*)','callback',@setAlignmentOption,'callbackArg','reverse',...
+      'Reverses the source image contrast and treats the voxel values as periodic (phases of complex number on the unit circle). This is used mainly to align high-resolution T2(*)-weighted images to T1-weighted images'},...
+  {'ignore',ALIGN.ignoreZeroVoxels,'type=checkbox','buttonString=Ignore Zero Voxels','callback',@setAlignmentOption,'callbackArg','ignore',...
+      'Ignores voxels that are exactly 0 in the source and destination volumes'},...
+  {'display',ALIGN.displayAlignmentSteps,'type=checkbox','buttonString=Display Alignment Steps','callback',@setAlignmentOption,'callbackArg','display',...
+      'Displays the new alignment in the main window at each iteration of the computation'},...
+  {'coarse', 0,'type=pushbutton','buttonString=Compute Coarse Alignment','callback',{@computeAlignment,'coarse',handles},...
+      'Downsamples the images to a minimum of 3 mm resolution in all dimensions (2mm for reverse contrast) and computes the alignment'},...
+  {'fine', 0,'type=pushbutton','buttonString=Compute Fine Alignment','callback',{@computeAlignment,'fine',handles},...
+      'Computes the alignment at the native volume resolution (to a 1mm minimum voxels; .5 for reverse contrast)'},...
+  {'stop', 0,'type=pushbutton','buttonString=Stop Computing','callback',{@stopComputingMenuItem_Callback},...
+      'Stops the current computation'},...
+  {'undo', 0,'type=pushbutton','buttonString=Undo Last Alignment','callback',{@undoLastAlignmentMenuItem_Callback,[],[],handles},...
+      'Undoes the last computed alignment and restore any manual alignment pre-existing to this alignment computation.'},...
+   };
 
-% --------------------------------------------------------------------
-function rigidBodyAlignmentMenuItem_Callback(hObject, eventdata, handles)
+  % display dialog
+  mrParamsDialog(paramsInfo,'Advanced Alignment Menu','modal=0');
+  
+function setAlignmentOption(option,params)
 global ALIGN
 
-if ALIGN.rigidBodyAlignment
-   ALIGN.rigidBodyAlignment = 0;
-   set(hObject,'checked','off');
-else
-   ALIGN.rigidBodyAlignment = 1;
-   set(hObject,'checked','on');
-end
-
-% --------------------------------------------------------------------
-function reverseContrastAlignmentMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-
-if ALIGN.reverseContrastAlignment
-   ALIGN.reverseContrastAlignment = 0;
-   set(hObject,'checked','off');
-else
-   ALIGN.reverseContrastAlignment = 1;
-   set(hObject,'checked','on');
-end
-% --------------------------------------------------------------------
-function ignoreZeroVoxelsMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-
-if ALIGN.ignoreZeroVoxels
-   ALIGN.ignoreZeroVoxels = 0;
-   set(hObject,'checked','off');
-else
-   ALIGN.ignoreZeroVoxels = 1;
-   set(hObject,'checked','on');
-end
-
-% --------------------------------------------------------------------
-function displayOptimizationStepsMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-
-if ALIGN.displayAlignmentSteps
-   ALIGN.displayAlignmentSteps = 0;
-   set(hObject,'checked','off');
-else
-   ALIGN.displayAlignmentSteps = 1;
-   set(hObject,'checked','on');
-end
+switch option
+  case 'robust'
+    ALIGN.robustAlignment = params.robust;
+  case 'rigid'
+    ALIGN.rigidBodyAlignment = params.rigid;
+  case 'reverse'
+    ALIGN.reverseContrastAlignment = params.reverse;
+  case 'ignore'
+    ALIGN.ignoreZeroVoxels = params.ignore;
+  case 'display'
+    ALIGN.displayAlignmentSteps = params.display;
+end    
 
 % --------------------------------------------------------------------
 function coarseAlignmentMenuItem_Callback(hObject, eventdata, handles)
@@ -1252,33 +1233,39 @@ function fineAlignmentMenuItem_Callback(hObject, eventdata, handles)
 computeAlignment('fine',handles);
 
 % --------------------------------------------------------------------
-function stopComputingMenuItem_Callback(hObject, eventdata, handles)
+function dummy = stopComputingMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 
 global ALIGN
 if ALIGN.currentlyComputingAlignment
    ALIGN.stopComputingAlignment = 1;
-   mrWarnDlg('Cancelling alignment computation. This might take some time. Please wait...');
+   mrWarnDlg('(mrAlignGUI) Cancelling alignment computation. This might take some time. Please wait...');
+else
+   mrWarnDlg('(mrAlignGUI) No Alignment Computation is running');
 end
-   
+
 % --------------------------------------------------------------------
-function undoLastAlignmentMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to undoLastAlignmentMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+function dummy = undoLastAlignmentMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 
 global ALIGN
 if isempty(ALIGN.oldXform)
-  mrWarnDlg('There is no stored alignment')
+  mrWarnDlg('(mrAlignGUI) There is no stored alignment')
 else
   ALIGN.xform = ALIGN.oldXform;
   ALIGN.oldXform = [];
+  setAlignGUI(handles,'rot',ALIGN.oldGuiRotation);
+  setAlignGUI(handles,'trans',ALIGN.oldGuiTranslation);
+  ALIGN.guiXform = getGuiXform(handles);
+  ALIGN.oldGuiRotation = [];       
+  ALIGN.oldGuiTranlastion = [];    
   refreshAlignDisplay(handles);
 end
 
 % --------------------------------------------------------------------
 function mutualInformationMenuItem_Callback(hObject, eventdata, handles)
 
-mrWarnDlg('Mutual information registration not yet implemented.');
+mrWarnDlg('(mrAlignGUI) Mutual information registration not yet implemented.');
 return;
 
 global ALIGN
@@ -1352,11 +1339,11 @@ function showMosaicMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 if isempty(ALIGN.volume) || isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before checking alignment.');
+	mrWarnDlg('(mrAlignGUI) Load Volume and Load Inplanes before checking alignment.');
 	return
 end
 if isempty(ALIGN.xform) 
-	mrWarnDlg('Load, Initialize, or Compute the alignment before checking it.');
+	mrWarnDlg('(mrAlignGUI) Load, Initialize, or Compute the alignment before checking it.');
 	return
 end
 
@@ -1745,3 +1732,4 @@ else
 end
 
 set(handles.figure1,'name',sprintf('mrAlign: %s -> %s',inplaneName,volumeName));
+
