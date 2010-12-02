@@ -1,4 +1,4 @@
-function xform = computeAlignment(resolution, handles)
+function outputXform = computeAlignment(resolution, handles)
 % xform = computeAlignment()
 %
 % Oscar Nestares - 5/99
@@ -25,7 +25,7 @@ function xform = computeAlignment(resolution, handles)
 %            -  added parameter handles: handles to the figure to update the GUI on the fly
 %            -  added parameter resolution: 'fine' or 'coarse'
 
-
+outputXform = [];
 
 mindisp = 0.1;  % displacement used to end the iterations
 maxDispLimit = 50; %displacement used to detect abnormal behaviour of the estimation
@@ -38,14 +38,18 @@ permuteM = [0 1 0 0; 1 0 0 0; 0 0 1 0; 0 0 0 1];  % For swapping x and y
 
 global ALIGN;
 
+if ALIGN.currentlyComputingAlignment
+  mrWarnDlg('(computeAlignment) An alignment is already being computed')
+  return;
+end
 
 %Perform various checks
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
+if isempty(ALIGN.volume) || isempty(ALIGN.inplanes)
+	mrWarnDlg('(computeAlignment) Load source and destination volumes before computing alignment');
 	return
 end
 if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
+	mrWarnDlg('(computeAlignment) Initialize aligment or load a previously saved alignment before computing.');
 	return
 end
 
@@ -77,6 +81,7 @@ crop = ALIGN.crop;
 %ALIGN.inplanes = ALIGN.inplanes;
 %get the current xform
 oldXform = ALIGN.xform;
+[oldGuiTranslation oldGuiRotation] = getAlignGUI(handles);
 xform = ALIGN.guiXform * ALIGN.xform;
 if ALIGN.rigidBodyAlignment && ~ALIGN.xformIsRigidBody   %if rigid-body alignment asked but current xform is non-rigid, ask if continue
    answer = questdlg(...
@@ -229,7 +234,7 @@ while strcmp(keepIterating, 'Yes') && ~ALIGN.stopComputingAlignment
    if (niter == maxIter)
      mrCloseDlg(wbh);
      % ask if we should continue iterating
-     quest = strvcat(['Maximum number of iterations (',num2str(maxIter),') reached.'], 'Continue Iterating?');
+     quest = {['Maximum number of iterations (',num2str(maxIter),') reached.'], 'Continue Iterating?'};
      keepIterating = questdlg(quest, 'WARNING', 'Yes', 'No', 'No');
    else
      if strcmp(saveNewXform,'No') && isstruct(wbh)
@@ -250,6 +255,8 @@ end
    
 if strcmp(saveNewXform,'Yes')
    ALIGN.oldXform = oldXform;
+   ALIGN.oldGuiTranslation = oldGuiTranslation;
+   ALIGN.oldGuiRotation = oldGuiRotation;
    ALIGN.xform = volumeReductionMatrix*xform/inplanesReductionMatrix;
 
    % resample and IC correct volume according to final xform, for later use (in checkAlignment)
@@ -281,6 +288,7 @@ if strcmp(saveNewXform,'Yes')
 else
    ALIGN.xform = oldXform;
 end
+outputXform = ALIGN.xform;
 
 % Refresh display
 refreshAlignDisplay(handles);

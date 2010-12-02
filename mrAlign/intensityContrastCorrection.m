@@ -105,7 +105,7 @@ pinit = [mean(volCrop(II)) var(volCrop(II)) 1 var(volCrop(II))/10 0.5 0.5];
 clear('volCrop','II');
 % Minimize the robust measure of the error
 options = optimset('MaxFunEvals',10000,'MaxIter',10000);  %JB: these values are totally arbitrary
-p = fminsearch('errGaussRob', pinit, options, x, h);
+p = fminsearch('errGaussRob', double(pinit) , options, double(x), double(h));
 
 % Select the mean closer to 1
 if abs(p(1)-1)>abs(p(3)-1)
