@@ -59,6 +59,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [params params2] = initFigure(vars,otherParams)
 
+params=[];
+params2 = [];
 % close any existing params window
 closeHandler;
 
@@ -195,6 +197,9 @@ for i = 1:length(gParams.vars)
         dParams.entryValue(i) = str2num(gParams.varinfo{i}.value);
       end
       dParams.entryStyle{i} = 'checkbox';
+      if isfield(gParams.varinfo{i},'buttonString')
+        dParams.entryString{i} = {gParams.varinfo{i}.buttonString};%we need to allow some space for the button features
+      end
 
     case 'string'
       dParams.entryString{i} = {gParams.varinfo{i}.value};
@@ -315,7 +320,14 @@ end
 %--------------------------------- make Help/Ok/Cancel buttons-----------------------------------
 gParams.callback = [];
 makeOkButton = 1;
-makeCancelButton = 1;
+makeCancelButton = modal; %only put a cancel if dialog box is modal (or if a custom cancel callback is passed)
+
+if modal==0  %if the dialog is non-modal, ok just closes it, unless a custom ok callback is passed)
+  gParams.okCallback = 'closeHandler';
+  okString = 'Close';
+else
+  okString = 'OK';
+end
 % see if this has a callback, in which case we don't
 % need to make ok/cancel buttons
 if ~isempty(callback)
@@ -370,7 +382,7 @@ end
 
 %Ok Button
 if makeOkButton
-  uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',@okHandler,'String','OK',...
+  uicontrol(gParams.fignum(1),'Style','pushbutton','Callback',@okHandler,'String',okString,...
     'Position',[leftPosition+(intervalBetweenButtons+thisButtonWidth)*2 bottomMargin thisButtonWidth thisButtonHeight],...
     'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
 end
@@ -451,8 +463,17 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
     if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
       args{end+1} = mrParamsGet(gParams.vars);
     end
+    if iscell(gParams.varinfo{varnum}.callback)
+      passedArgs = gParams.varinfo{varnum}.callback(2:end);
+      callback = gParams.varinfo{varnum}.callback{1};
+      for iArg = 1:length(passedArgs)
+        args{end+1} = passedArgs{iArg};
+      end 
+    else
+      callback = gParams.varinfo{varnum}.callback;
+    end
     % create the string to call the function
-    funcall = 'gParams.varinfo{varnum}.value = feval(gParams.varinfo{varnum}.callback';
+    funcall = 'gParams.varinfo{varnum}.value = feval(callback';
     for i = 1:length(args)
       funcall = sprintf('%s,args{%i}',funcall,i);
     end
