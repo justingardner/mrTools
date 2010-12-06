@@ -93,13 +93,13 @@ if params.includeDerivative
   modelHrf = [modelHrf; modelHrfDerivative];
 end
 
+%remove trailing zeros
+modelHrf = modelHrf(1:end-find(flipud(max(abs(modelHrf),[],2))>threshold,1,'first')+1,:);
 %normalise so that integral of sum = 1
 modelHrf = modelHrf./sum(modelHrf(:));
     
 %downsample with constant integral
 hrf = downsample(modelHrf', round(tr/dt));
-%remove trailing zeros
-hrf = hrf(1:end-find(flipud(max(abs(hrf),[],2))>threshold,1,'first')+1,:);
 
 
 params.maxModelHrf = tr/dt * max(modelHrf'); %output the max amplitude of the actual model HRF

@@ -17,11 +17,11 @@ if ieNotDefined('params'),params = struct;end
 if ieNotDefined('groupName'), groupName = viewGet(thisView,'groupName');end;
 
 %convert old params
-params = convertOldParams(params);
+params = convertOldGlmParams(params);
 
 % rm the tseriesFile field because we're creating a new analysis. It will be merged later if required
-if isfield(params,'tseriesFiles')
-  params = rmfield(params,'tseriesFile');
+if isfield(params,'tseriesFile')
+  params = mrParamsRemoveField(params,'tseriesFile');
 end
 
 % put default parameters if not already set
@@ -47,17 +47,11 @@ if ~isfield(params,'analysisVolume') || isempty(params.analysisVolume)
 end
 
 if ~isfield(params,'numberEVs') || isempty(params.numberEVs)
-    params.numberEVs = 0;
-%   d = viewGet(thisView,'d');
-%   if ~isempty(d) && isfield(d,'ehdr')
-%     params.numberEVs = size(d.ehdr,4);
-%   else
-%     params.numberEVs = 0;
-%   end
+  params.numberEVs = 0;
 end
 if ~isfield(params,'numberContrasts') || isempty(params.numberContrasts)
-  if isfield(params,'testParams') && isfield(params.testParams,'contrasts')
-    params.numberContrasts = size(params.testParams.contrasts,1);
+  if isfield(params,'contrasts')
+    params.numberContrasts = size(params.contrasts,1);
   else
     params.numberContrasts = 0;
   end
@@ -66,8 +60,8 @@ if ~isfield(params,'computeTtests') || isempty(params.computeTtests)
   params.computeTtests = 0;
 end
 if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
-  if isfield(params,'testParams') && isfield(params.testParams,'restrictions')
-    params.numberFtests = length(params.testParams.restrictions);
+  if isfield(params,'params') && isfield(params,'restrictions')
+    params.numberFtests = length(params.restrictions);
   else
     params.numberFtests = 0;
   end
@@ -148,10 +142,12 @@ while askForParams
   correctionTypeMenu = putOnTopOfList(tempParams.correctionType,correctionTypeMenu);
   covEstimationMenu = putOnTopOfList(tempParams.covEstimation,covEstimationMenu);
   covFactorizationMenu = putOnTopOfList(tempParams.covFactorization,covFactorizationMenu);
-  fieldNames=fieldnames(tempParams);
-  for i_field = 1:length(fieldNames)
-    params.(fieldNames{i_field})=eval(['tempParams.' fieldNames{i_field}]);
-  end
+%   fieldNames=fieldnames(tempParams);
+%   for i_field = 1:length(fieldNames)
+%     params.(fieldNames{i_field})=eval(['tempParams.' fieldNames{i_field}]);
+%   end
+  params = copyFields(tempParams,params);
+
 
   %perform some checks
   if 0
@@ -165,57 +161,72 @@ while askForParams
       % if empty user hit cancel, go back
       if isempty(hrfParams)
         break;
-      else
-        params.hrfParams = hrfParams;
-        if ~isfield(params.hrfParams, 'description')
-           params.hrfParams.description = params.hrfModel;
+      end
+      params.hrfParams = hrfParams;
+      if ~isfield(params.hrfParams, 'description')
+         params.hrfParams.description = params.hrfModel;
+      end
+
+      while askForParams    % get the scan numbers
+        groupNum = viewGet(thisView,'groupnum',params.groupName);
+        nScans=viewGet(thisView,'nScans',groupNum);
+        if nScans == 1
+          params.scanNum = 1;
+        elseif ~ieNotDefined('scanList')
+          params.scanNum = scanList;
+        elseif defaultParams
+          params.scanNum = 1:nScans;
+        elseif viewGet(thisView,'nScans',groupNum) >1
+          scanNums = selectScans(thisView,[],groupNum,params.scanNum);
+          if isempty(scanNums)
+            askForParams = 1;
+            break;
+          else
+            params.scanNum = scanNums;
+          end
         end
 
-        while askForParams    % get the scan params
-          % get scans
-          %thisView = viewSet(thisView,'groupName',params.groupName);
-          groupNum = viewGet(thisView,'groupnum',params.groupName);
-          if ~ieNotDefined('scanList')
-             params.scanNum = scanList;
-          elseif defaultParams
-             %params.scanNum = 1:viewGet(thisView,'nScans');
-             params.scanNum = 1:viewGet(thisView,'nScans',groupNum);
-          elseif viewGet(thisView,'nScans',groupNum) >1
-             params.scanNum = selectScans(thisView,[],groupNum,params.scanNum);
-             if isempty(params.scanNum)
-                askForParams = 1;
-                break;
-             end
-          else
-             params.scanNum = 1;
-          end
-
-          % get the parameters for each scan
+        while askForParams    % get the parameters for each scan
           [scanParams, params] = getGlmScanParamsGUI(thisView,params,defaultParams);
           if isempty(scanParams)
             askForParams = 1;
             break;
-          else
-            params.scanParams = scanParams;
+          end
+          params.scanParams = scanParams;
 
+          while askForParams    %get the stim to EV matrices for each scan
             if ~params.numberEVs
-              params.numberEVs = params.numberEvents;
+              thisDefaultParams =1;
+            else
+              thisDefaultParams = defaultParams;
             end
-            while askForParams           %get testParams
-              testParams = getGlmTestParamsGUI(thisView,params,defaultParams);
+            [scanParams, params] = getGlmEVParamsGUI(thisView,params,thisDefaultParams);
+            if isempty(scanParams)
+              askForParams = 1;
+              break;
+            end
+            params.scanParams = scanParams;
+            if ~params.numberContrasts && ~params.numberFtests
+              defaultParams =1;
+            end
+
+            while askForParams           %get params
+              params = getGlmTestParamsGUI(thisView,params,defaultParams);
               % if empty, user hit cancel, go back
-              if isempty(testParams)
+              if isempty(params)
                 askForParams = 1;
                 break;
               else
-                params.testParams = testParams;
                 %update the number of tests in case they've changed
-                params.numberContrasts = size(testParams.contrasts,1);
-                params.numberFtests = length(testParams.restrictions);
+                params.numberContrasts = size(params.contrasts,1);
+                params.numberFtests = length(params.restrictions);
                 askForParams = 0;
               end
             end
           end
+        end
+        if nScans == 1 || ~ieNotDefined('scanList') || defaultParams
+          break;
         end
       end
     end
@@ -225,88 +236,5 @@ end
 % set the scan number
 for i = 1:length(params.scanNum)
   params.scanParams{params.scanNum(i)}.scanNum = params.scanNum(i);
-end
-
-
-
-function params = convertOldParams(params)
-
-if isfield(params,'contrast') 
-  if ~isfield(params,'contrasts')
-    params.contrasts = params.contrast;
-  end
-  params = rmfield(params,'contrast');
-end
-if isfield(params,'contrasts')
-  if ischar(params.contrasts)
-    params.testParams.contrasts = eval(params.contrasts);
-  else
-    params.testParams.contrasts = params.contrasts;
-  end
-  params = rmfield(params,'contrasts');
-end
-
-if isfield(params,'f_tests')
-  if ischar(params.f_tests)
-    params.testParams.fTests = eval(params.f_tests);
-  else
-    params.testParams.fTests = params.f_tests;
-  end
-  params.numberFtests = size(params.testParams.fTests,1);
-  params = rmfield(params,'f_tests');
-end
-if isfield(params,'fTests')
-  if ischar(params.fTests)
-    params.testParams.fTests = eval(params.fTests);
-  else
-    params.testParams.fTests = params.fTests;
-  end
-  params.numberFtests = size(params.testParams.fTests,1);
-  params = rmfield(params,'fTests');
-end
-if isfield(params,'testParams')  
-  if isfield(params.testParams,'fTests')
-    for iFtest = 1:size(params.testParams.fTests,1)
-      params.testParams.restrictions{iFtest} = diag(params.testParams.fTests(iFtest,:));
-    end
-    params.testParams = rmfield(params.testParams,'fTests');
-  end
-end
-
-if isfield(params,'hrfParams')  
-  if isfield(params.hrfParams,'incDeriv')
-    params.hrfParams.includeDerivative = params.hrfParams.incDeriv;
-    params.hrfParams = rmfield(params.hrfParams,'incDeriv');
-  end
-end
-
-if isfield(params,'trSupersampling')
-  params = rmfield(params,'trSupersampling');
-end
-
-if isfield(params,'n_rand')
-  params.testParams.nRand = params.n_rand;
-  params = rmfield(params,'n_rand');
-end
-if isfield(params,'nRand')
-  params.testParams.nRand = params.nRand;
-  params = rmfield(params,'nRand');
-end
-if isfield(params,'outputStatistic')
-  params = rmfield(params,'outputStatistic');
-end
-if isfield(params,'outputZStatistic')
-  params = rmfield(params,'outputZStatistic');
-end
-if isfield(params,'outputPValue')
-  params = rmfield(params,'outputPValue');
-end
-if isfield(params,'TFCE')
-  params.testParams.TFCE = params.TFCE;
-  params = rmfield(params,'TFCE');
-end
-if isfield(params,'tTestSide')
-  params.testParams.tTestSide = params.tTestSide;
-  params = rmfield(params,'tTestSide');
 end
 
