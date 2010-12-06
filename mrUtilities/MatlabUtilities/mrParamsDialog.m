@@ -627,13 +627,26 @@ end
 % handle callbacks for non-push buttons
 if ~ieNotDefined('gParams')
   if isfield(gParams.varinfo{varnum},'callback')
+    callbackArgs={};
     if isfield(gParams.varinfo{varnum},'callbackArg')
-      % create the string to call the function
-      feval(gParams.varinfo{varnum}.callback,gParams.varinfo{varnum}.callbackArg,mrParamsGet(gParams.vars));
-    else
-      % create the string to call the function
-      feval(gParams.varinfo{varnum}.callback,mrParamsGet(gParams.vars));
+      callbackArgs{end+1} = gParams.varinfo{varnum}.callbackArg;
     end
+    callbackArgs{end+1} = mrParamsGet(gParams.vars);
+    if ~iscell(gParams.varinfo{varnum}.callback)
+      callback = gParams.varinfo{varnum}.callback;
+    else
+      callback = gParams.varinfo{varnum}.callback{1};
+      numArgs = length(gParams.varinfo{varnum}.callback)-1;
+      callbackArgs(end+(1:numArgs)) = gParams.varinfo{varnum}.callback(2:numArgs+1);
+    end
+    % create the string to call the function
+    funcall = 'feval(callback';
+    for i = 1:length(callbackArgs)
+      funcall = sprintf('%s,callbackArgs{%i}',funcall,i);
+    end
+    funcall = sprintf('%s);',funcall);
+    % and call it
+    eval(funcall);
   end
 end
 
