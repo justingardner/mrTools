@@ -32,11 +32,6 @@ if ieNotDefined('computeEstimates'),computeEstimates = 1;end
 if ieNotDefined('params')
   params = struct;
 end
-if ~isfield(params,'testParams')
-  testParams = struct;
-else
-  testParams = params.testParams;
-end
 
 %default parameters
 if ~isfield(params,'nBootstrap')
@@ -47,10 +42,10 @@ end
 
 % check that contrasts and fTests have the same number of columns as the
 % design matrix
-if ~isfield(testParams,'contrasts') || isempty(testParams.contrasts)
-  testParams.contrasts = {};
+if ~isfield(params,'contrasts') || isempty(params.contrasts)
+  params.contrasts = {};
 else
-  if size(d.scm,2)~=size(testParams.contrasts,2)*d.nHrfComponents
+  if size(d.scm,2)~=size(params.contrasts,2)*d.nHrfComponents
     mrErrorDlg( 'contrasts incompatible with number of EVs');
     return;
   end
@@ -61,39 +56,39 @@ if~isfield(params,'numberContrasts')
 end
 contrasts = cell(1,params.numberContrasts);
 for iContrast = 1:params.numberContrasts %convert contrasts to the same format as restrictions
-  contrasts{iContrast} = testParams.contrasts(iContrast,:);
+  contrasts{iContrast} = params.contrasts(iContrast,:);
 end
 
-if ~isfield(testParams,'tTestSide')
-   testParams.tTestSide = 'Both';
+if ~isfield(params,'tTestSide')
+   params.tTestSide = 'Both';
 end
 
-if ~isfield(testParams,'fTestNames') || isempty(testParams.fTestNames)
-   testParams.fTestNames = {};
+if ~isfield(params,'fTestNames') || isempty(params.fTestNames)
+   params.fTestNames = {};
 end
   
-if ~isfield(testParams,'restrictions') || isempty(testParams.restrictions)
-   testParams.restrictions = {};
+if ~isfield(params,'restrictions') || isempty(params.restrictions)
+   params.restrictions = {};
 else
-   if size(d.scm,2)~=size(testParams.restrictions{1},2)*d.nHrfComponents
+   if size(d.scm,2)~=size(params.restrictions{1},2)*d.nHrfComponents
       mrErrorDlg( 'F tests incompatible with number of EVs');
       return;
    end
 end
-restrictions = testParams.restrictions;
+restrictions = params.restrictions;
 
 if ~isfield(d,'nHrfComponents')
   d.nHrfComponents = size(d.scm,2)/d.nhdr;
 end
-if ~isfield(testParams,'componentsToTest') || isempty(testParams.componentsToTest)
-   testParams.componentsToTest = ones(1,d.nHrfComponents);
+if ~isfield(params,'componentsToTest') || isempty(params.componentsToTest)
+   params.componentsToTest = ones(1,d.nHrfComponents);
 end
 
-if ~isfield(testParams,'componentsCombination') || isempty(testParams.componentsCombination)
-   testParams.componentsCombination = 'Add';
+if ~isfield(params,'componentsCombination') || isempty(params.componentsCombination)
+   params.componentsCombination = 'Add';
 end
-if strcmp(testParams.componentsCombination,'Or') && d.nHrfComponents==1
-  testParams.componentsCombination = 'Add';  %make sure this is set to add if there is only one component to test
+if strcmp(params.componentsCombination,'Or') && d.nHrfComponents==1
+  params.componentsCombination = 'Add';  %make sure this is set to add if there is only one component to test
 end
 
 if ieNotDefined('params') || ~isfield(params,'covCorrection') || ~isfield(params,'correctionType') || strcmp(params.correctionType,'none')
@@ -169,8 +164,8 @@ if params.covCorrection
    end
 end
 
-if strcmp(testParams.componentsCombination,'Or') %in this case, components of a given EV are tested independently from each other in an F-test
-  testParams.componentsToTest = logical(diag(testParams.componentsToTest));
+if strcmp(params.componentsCombination,'Or') %in this case, components of a given EV are tested independently from each other in an F-test
+  params.componentsToTest = logical(diag(params.componentsToTest));
   %for contrasts, this amounts to  testing several contrats at once using an f test
   %So we have to change contrasts into f-tests (with the restriction that they have to be two-sided; this should be controlled for by the parameters)
   restrictions = [contrasts restrictions];
@@ -179,10 +174,10 @@ end
 
 %expand restriction matrices using kronecker products
 for iR = 1:length(restrictions)
-  restrictions{iR} = kron(restrictions{iR},testParams.componentsToTest);
+  restrictions{iR} = kron(restrictions{iR},params.componentsToTest);
 end
 for iContrast = 1:length(contrasts)
-  contrasts{iContrast} = kron(contrasts{iContrast},testParams.componentsToTest);
+  contrasts{iContrast} = kron(contrasts{iContrast},params.componentsToTest);
 end
 
 
@@ -191,7 +186,7 @@ if ~isempty(restrictions)
   %this has not been tested, but this is only for generalized F-tests which do not give the expected results anyway
   if strcmp(params.correctionType,'generalizedFTest')
     complementaryRestriction = cell(1,size(restrictions,1));
-    baseRestriction =  kron(logical(eye(d.nhdr)),logical(testParams.componentsToTest)); 
+    baseRestriction =  kron(logical(eye(d.nhdr)),logical(params.componentsToTest)); 
     for iR = 1:length(restrictions)
       % not sure at all about these lines
       complementaryRestriction{iR} = baseRestriction - restrictions{iR};
@@ -222,19 +217,13 @@ if ~isempty(restrictions)
   mss = NaN(d.dim(1),d.dim(2),d.dim(3),nBootstrap,length(restrictions),precision);
   R_invCovEV_Rp = cell(1:length(restrictions));
   for iR = 1:length(restrictions)         %the degrees of freedom for the F-tests are the number of contrasts
-    restrictions{iR} = restrictions{iR}(any(testParams.restrictions{iR},2),:); %remove lines of 0
+    restrictions{iR} = restrictions{iR}(any(restrictions{iR},2),:); %remove lines of 0
     d.mdf(iR) = size(restrictions{iR},1); %this is provided that contrasts are independent and that they are no more than (regressors -1)
     %inv_R_invCovEV_Rp{iR} = (restrictions{iR}*invCovEVs*restrictions{iR}')^-1; 
     %I replaced all the precomputed inverses (previous line) by ml/mrDivide with the non-inverted matrix (faster and more accurate):
     R_invCovEV_Rp{iR} = restrictions{iR}*invCovEVs*restrictions{iR}';
   end
                          
-end
-
-if ~isempty(contrasts)
-   if ~strcmp(params.correctionType,'none')
-      k_eff = NaN(d.dim(1),d.dim(2),d.dim(3),nBootstrap,size(contrasts,1),precision);
-   end
 end
 
 % check roi
@@ -694,7 +683,7 @@ if ~isempty(contrasts)
 %       T(:,:,:,:,iContrast) = contrastBetas(:,:,:,:,iContrast) ./ (k_eff(:,:,:,:,iContrast).*s2).^(1/2);   
 %     end
     T = permute(T,[1 2 3 5 4]); %put nBootstrap dim at the end
-    switch(testParams.tTestSide)
+    switch(params.tTestSide)
      case 'Both'
         T = abs(T);
      case 'Left'
@@ -707,7 +696,7 @@ end
 
 %Now in the case we computed contrasts on several components using option 'Or',
 %we have to convert the appropriate F values into T values
-if strcmp(testParams.componentsCombination,'Or') && ~isempty(testParams.contrasts)
+if strcmp(params.componentsCombination,'Or') && ~isempty(params.contrasts)
   %T values are the square roots of the numberContrasts first F values 
   T = sqrt(F(:,:,:,1:params.numberContrasts,:));
   %remove T values form F values array

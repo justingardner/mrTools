@@ -17,6 +17,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Get data
 % get the analysis structure
 analysisType = viewGet(thisView,'analysisType');
+analysisParams = convertOldGlmParams(viewGet(thisView,'analysisParams'));
+
+
 if ~ismember(analysisType,{'glmAnalStats','glmAnal','glmcAnal','erAnal','deconvAnal'})
    disp(['(glmContrastPlot) Wrong type of analysis (' analysisType ')']);
    return;
@@ -26,7 +29,7 @@ if isempty(glmData)
   disp(sprintf('(glmContrastPlot) No GLM analysis for scanNum %i',scanNum));
   return
 end
-r2data = viewGet(thisView,'overlaydata',1,scanNum);
+r2data = viewGet(thisView,'overlaydata',scanNum,1);
 r2clip = viewGet(thisView,'overlayClip',1);
 numberEVs = glmData.nhdr;
 framePeriod = viewGet(thisView,'framePeriod',scanNum);      
@@ -402,7 +405,7 @@ for iPlot = 1:length(roi)+1
   uicontrol('Parent',fignum,...
     'units','normalized',...
    'Style','pushbutton',...
-   'Callback',{@eventRelatedPlotTSeries, thisView, glmData, thisRoi},...
+   'Callback',{@eventRelatedPlotTSeries, thisView, analysisParams, glmData, thisRoi},...
    'String',['Plot the time series for ' titleString{1}],...
    'Position',tSeriesButtonPosition(iPlot,:));
 
@@ -432,7 +435,7 @@ drawnow;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   function to plot the time series for the voxel and rois   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function eventRelatedPlotTSeries(handle,eventData,thisView, d, roi)
+function eventRelatedPlotTSeries(handle,eventData,thisView,analysisParams, d, roi)
 
 fignum = selectGraphWin(0,'Make new');
 initializeFigure(fignum,d.nhdr);
@@ -455,7 +458,7 @@ else
   fprintf(1,'\n');
   roi = loadROITSeries(thisView,roi);
   tSeries = mean(roi.tSeries,1);
-  titleString = ['ROI' roi.name ' Time Series'];
+  titleString = ['ROI ' roi.name ' Time Series'];
   ehdr = shiftdim(d.ehdr(1,1,1,:,:),3);
 end
 %convert to percent signal change the way it's done in getGlmStatistics
@@ -464,52 +467,76 @@ junkFrames = viewGet(thisView, 'junkFrames');
 nFrames = viewGet(thisView,'nFrames');
 tSeries = tSeries(junkFrames+1:junkFrames+nFrames);
 
+if isfield(analysisParams,'scanParams') && isfield(analysisParams.scanParams{thisView.curScan},'acquisitionSubsample')...
+    && ~isempty(analysisParams.scanParams{thisView.curScan}.acquisitionSubsample)
+  acquisitionSubsample = analysisParams.scanParams{thisView.curScan}.acquisitionSubsample;
+else
+  acquisitionSubsample = 1;
+end
+if ~isfield(d,'estimationSupersampling')
+  d.estimationSupersampling=1;
+end
+time = ((1:length(tSeries))+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
+
+
 delete(h);
+set(fignum,'name',titleString)
 tSeriesAxes = axes('parent',fignum,'outerposition',getSubplotPosition(1,1,[7 1],1,0,0));
 hold on
-  %hold(tSeriesAxes);
-set(fignum,'name',titleString)
-legendHandle(1) = plot(tSeriesAxes,tSeries,'k.-');
+%hold(tSeriesAxes);
+
+
+%Plot the stimulus times
+set(tSeriesAxes,'Ylim',[min(tSeries);max(tSeries)])
+if ~isfield(d,'designSupersampling')
+  d.designSupersampling=1;
+end
+
+colorOrder = get(tSeriesAxes,'colorOrder');
+if isfield(d,'EVmatrix') && isfield(d,'EVnames')
+  stimOnsets = d.EVmatrix;
+  stimDurations = [];
+  legendString = d.EVnames;
+elseif isfield(d,'stimDurations') && isfield(d, 'stimvol')
+  stimOnsets = d.stimvol;
+  stimDurations = d.stimDurations;
+  legendString = d.stimNames;
+elseif isfield(d, 'stimvol')
+  stimOnsets = d.stimvol;
+  stimDurations = [];
+  legendString = d.stimNames;
+end
+if isfield(d,'runTransitions')
+  runTransitions = d.runTransitions;
+else
+  runTransitions = [];
+end
+
+[h,hTransitions] = plotStims(stimOnsets, stimDurations, d.tr/d.designSupersampling, colorOrder, tSeriesAxes, runTransitions);
+legendString = legendString(h>0);
+h = h(h>0);
+
+%and the time-series
+h(end+1) = plot(tSeriesAxes,time,tSeries,'k.-');
 if size(d.scm,2)==numel(ehdr)
   %compute model time series
   modelTSeries = d.scm*reshape(ehdr',numel(ehdr),1);
-  legendHandle(2) = plot(tSeriesAxes,modelTSeries,'--','Color',[.3 .3 .3]);
+  h(end+1) = plot(tSeriesAxes,time,modelTSeries,'--r');
 end
-legendStr{1} = 'Actual TSeries';
-legendStr{2} = 'Model TSeries';
-xlabel('Volume number');
+legendString{end+1} = 'Actual TSeries';
+legendString{end+1} = 'Model TSeries';
+if ~isempty(hTransitions)
+  h = [h hTransitions];
+  legendString{end+1} = 'Run transitions';
+end
 ylabel('Percent Signal Change');
-% and the stimulus times
-
-axis tight;
-if isfield(d, 'stimvol')
-  colorOrder = get(tSeriesAxes,'colorOrder');
-  scale = axis;
-  if isfield(d,'EVmatrix') && isfield(d,'EVnames')
-    stimvol = cell(length(d.EVnames),1);
-    for iEv = 1:length(d.EVnames)
-      stimvol{iEv} = find(d.EVmatrix(:,iEv))'*d.tr/d.designSupersampling;
-    end
-    EVnames = d.EVnames;
-  else
-    stimvol = d.stimvol;
-    EVnames = d.stimNames;
-  end
-  for iStim = 1:d.nhdr
-    vlineHandle = plot(tSeriesAxes,[stimvol{iStim};stimvol{iStim}],repmat(scale(3:4)',1,length(stimvol{iStim})),'color',colorOrder(iStim,:),'lineWidth',1);
-    legendHandle(iStim+2) = vlineHandle(1);
-    if isfield(d,'stimNames') && (length(d.stimNames) >= iStim)
-      legendStr{iStim+2} = sprintf('%s (n=%i)',EVnames{iStim},length(stimvol{iStim}));
-    else
-      legendStr{iStim+2} = sprintf('%iStim (n=%i)',iStim,length(stimvol{iStim}));
-    end
-  end
-end
-lhandle = legend(legendHandle,legendStr,'position',getSubplotPosition(2,1,[7 1],1,0,.2));
+axis([0 ceil(time(end)+1) min(tSeries) max(tSeries)]);
+%legend
+lhandle = legend(h,legendString,'position',getSubplotPosition(2,1,[7 1],1,0,.2));
 set(lhandle,'Interpreter','none','box','off');
 
 disppercent(inf);
-delete(handle);
+%delete(handle); %don't delete the button to plot the time-series
 
 
 

@@ -52,11 +52,7 @@ if ieNotDefined('params')
     params.dummyStimsTR = 6;
   end
   if ~isfield(params,'contrasts')
-    if isfield(analysisParams.testParams,'contrasts') && ~isempty(analysisParams.testParams.contrasts)
-      params.contrasts = analysisParams.testParams.contrasts;
-    else
-      params.contrasts = diag(ones(d.nhdr,1));
-    end
+    params.contrasts = diag(ones(d.nhdr,1));
     %shift the order of contrasts to account for dummies
     params.contrasts = circshift(params.contrasts,round(params.dummyStimsTR/params.cycleLengthTR*size(params.contrasts,1)));
     params.contrasts = mat2str(params.contrasts);

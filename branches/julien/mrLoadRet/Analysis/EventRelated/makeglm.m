@@ -10,7 +10,7 @@
 %             run on it, as well as a model hrf
 %              optional parameters can be passed in the params structure 
 %
-function d = makeglm(d,params,verbose, estimationSupersampling, acquisitionSubsample)
+function d = makeglm(d,params,verbose, scanNum)
 
 if ~any(nargin == [1 2 3 4 5])
    help makeglm;
@@ -23,16 +23,10 @@ end
 if ieNotDefined('verbose')
   verbose = 1;
 end
-if ieNotDefined('estimationSupersampling')
-  estimationSupersampling = 1;
-end
-if ieNotDefined('acquisitionSubsample')
-  acquisitionSubsample = 1;
-end
 
 % check if the hrf starts from zero (except if it is the identity matrix, the deconvolution case)
-if verbose && d.hrf(1,1)>1e-6 && (size(d.hrf,1)~=size(d.hrf,2) || ~isempty(find(d.hrf^-1-d.hrf>1e-6, 1)))
-   mrWarnDlg(['(makeglm) HRF does not start from zero (hrf(0) = ' num2str(d.hrf(1,1)) ')']);
+if verbose && any(d.hrf(1,:)>1e-6) && (size(d.hrf,1)~=size(d.hrf,2) || ~isempty(find(d.hrf^-1-d.hrf>1e-6, 1)))
+   mrWarnDlg(['(makeglm) HRF does not start from zero (hrf(0) = ' mat2str(d.hrf(1,:)) ')']);
 end
 
 if isfield(params,'nonLinearityCorrection') && params.nonLinearityCorrection && isfield(params.hrfParams,'maxModelHrf')
@@ -41,10 +35,22 @@ else
    saturationThreshold = Inf(1,size(d.hrf,2));
 end
 
-if isfield(params,'testParams') && isfield(params.testParams,'stimToEVmatrix') && ~isempty(params.testParams.stimToEVmatrix)
-  stimToEVmatrix = params.testParams.stimToEVmatrix;
+if isfield(params.scanParams{scanNum},'estimationSupersampling') && ~isempty(params.scanParams{scanNum}.estimationSupersampling)
+  estimationSupersampling = params.scanParams{scanNum}.estimationSupersampling;
+else
+  estimationSupersampling = 1;
+end
+if isfield(params.scanParams{scanNum},'acquisitionSubsample') && ~isempty(params.scanParams{scanNum}.acquisitionSubsample)
+  acquisitionSubsample = params.scanParams{scanNum}.acquisitionSubsample;
+else
+  acquisitionSubsample = 1;
+end
+if isfield(params.scanParams{scanNum},'stimToEVmatrix') && ~isempty(params.scanParams{scanNum}.stimToEVmatrix)
+  stimToEVmatrix = params.scanParams{scanNum}.stimToEVmatrix;
   if size(stimToEVmatrix,1)~=length(d.stimvol)
-    mrErrorDlg('(makeglm) EV combination matrix is incompatible with number of event types');
+    mrWarnDlg('(makeglm) EV combination matrix is incompatible with number of event types');
+    d.scm = [];
+    return;
   end
 else
   stimToEVmatrix = eye(length(d.stimvol));
@@ -58,49 +64,42 @@ else
   runTransition = d.concatInfo.runTransition;
 end
 
-runTransition(:,1) = ((runTransition(:,1)-1)*round(d.supersampling)+1);
-runTransition(:,2) = runTransition(:,2)*round(d.supersampling);
+runTransition(:,1) = ((runTransition(:,1)-1)*round(d.designSupersampling)+1);
+runTransition(:,2) = runTransition(:,2)*round(d.designSupersampling);
 
+%apply duration and convert to matrix form
+stimMatrix = stimCell2Mat(d.stimvol,d.stimDurations,runTransition);
 %if design sampling is larger than estimation sampling, we need to correct the amplitude of the hrf 
-sample_value = estimationSupersampling/d.supersampling; 
- 
-% go through each run of the experiment
+stimMatrix = stimMatrix*estimationSupersampling/d.designSupersampling; 
+
+% apply EV combination matrix
+d.EVmatrix = stimMatrix*stimToEVmatrix;
 allscm = [];
-allEVmatrix = [];
-for runnum = 1:size(runTransition,1)
+for iRun = 1:size(runTransition,1)
   scm = [];
-   % make an array containing the stimulus times
-   stimArray = zeros(runTransition(runnum,2)-runTransition(runnum,1)+1,length(d.stimvol));
-   for stimnum = 1:length(d.stimvol)
-      % only use stimvols that are within this runs volume numbers
-      stimvol = d.stimvol{stimnum};
-      stimArray( stimvol(stimvol>=runTransition(runnum,1) & stimvol<=runTransition(runnum,2) )- runTransition(runnum,1)+1,stimnum ) = sample_value;
-   end
-   % apply EV combination matrix
-   EVmatrix = stimArray*stimToEVmatrix;
-   
-   % make stimulus convolution matrix
-   for iEV = 1:size(EVmatrix,2)
-      m = convn(EVmatrix(:,iEV), d.hrf);
-      m = m(1:size(EVmatrix,1),:);
+  thisEVmatrix = d.EVmatrix(runTransition(iRun,1):runTransition(iRun,2),:);
+  % make stimulus convolution matrix
+  for iEV = 1:size(thisEVmatrix,2)
+      m = convn(thisEVmatrix(:,iEV), d.hrf);
+      m = m(1:size(thisEVmatrix,1),:);
       %apply saturation
-      m = min(m,repmat(saturationThreshold,size(EVmatrix,1),1));
+      m = min(m,repmat(saturationThreshold,size(thisEVmatrix,1),1));
       % remove mean 
       m = m-repmat(mean(m), size(m,1), 1); %DOES IT CHANGE ANYTHING IF I REMOVE THIS ?
       % downsample with constant integral to estimation sampling rate
-      m = downsample(m, d.supersampling/estimationSupersampling);
+      m = downsample(m, d.designSupersampling/estimationSupersampling);
       %only keep acquisition samples
       m = m(acquisitionSubsample:estimationSupersampling:end,:);
       % apply the same filter as original data
       if isfield(d,'concatInfo') 
          % apply hipass filter
-         if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{runnum})
-           m = real(ifft(fft(m) .* repmat(d.concatInfo.hipassfilter{runnum}', 1, size(m,2)) ));
+         if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{iRun})
+           m = real(ifft(fft(m) .* repmat(d.concatInfo.hipassfilter{iRun}', 1, size(m,2)) ));
          end
          % project out the mean vector
-         if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{runnum})
-           projectionWeight = d.concatInfo.projection{runnum}.sourceMeanVector * m;
-           m = m - d.concatInfo.projection{runnum}.sourceMeanVector'*projectionWeight;
+         if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{iRun})
+           projectionWeight = d.concatInfo.projection{iRun}.sourceMeanVector * m;
+           m = m - d.concatInfo.projection{iRun}.sourceMeanVector'*projectionWeight;
          end
       end
       % stack stimmatrices horizontally
@@ -108,7 +107,7 @@ for runnum = 1:size(runTransition,1)
    end
    % stack this run's stimcmatrix on to the last one
    allscm = [allscm;scm];
-   allEVmatrix = [allEVmatrix;EVmatrix];
+%    d.EVmatrix = [d.EVmatrix;thisEVmatrix];
 end
 
 % set values
@@ -116,4 +115,4 @@ d.nhdr = size(stimToEVmatrix,2);
 d.scm = allscm;
 d.hdrlen = size(d.hrf,1);
 d.nHrfComponents = size(d.hrf,2);
-d.EVmatrix = allEVmatrix;
+d.runTransitions = runTransition;

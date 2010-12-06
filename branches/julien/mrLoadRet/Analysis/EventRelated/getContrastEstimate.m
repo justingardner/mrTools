@@ -42,7 +42,7 @@ end
 
 contrastBetas = contrasts*betas;
 if nargout>1
-  if isfield(d,'contrastSte')
+  if isfield(d,'contrastSte') && size(d.contrastSte,4)==size(contrastBetas,1) && size(d.contrastSte,5)==size(contrastBetas,2)
     contrastBetasSte = shiftdim(d.contrastSte(x,y,s,:,:), 3);
   else
     %this only works for Ordinary Least Squares

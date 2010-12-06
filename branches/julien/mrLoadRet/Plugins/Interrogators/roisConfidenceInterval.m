@@ -17,15 +17,21 @@ d = [];
 titleString = 'RoisConfidenceInterval';
 
 %mrGlobals;
-if ~isempty(thisView.analyses) && ismember(thisView.analyses{thisView.curAnalysis}.type,{'glmAnal','glmAnalStats','deconvAnal'})
-   analysisParams = thisView.analyses{thisView.curAnalysis}.params;
-   analysisParamsMenu = {'From current Analysis','Define'};
-   bootstrapParams.analysisType = 'GLM';
-elseif ~isempty(thisView.analyses) && strcmp(thisView.analyses{thisView.curAnalysis}.type,'erAnal')
-   analysisParams = thisView.analyses{thisView.curAnalysis}.params;
-   analysisParamsMenu = {'From current Analysis','Define'};
-   bootstrapParams.analysisType = 'Deconvolution';
-else
+analysisParams = viewGet(thisView,'analysisParams');
+if ~isempty(analysisParams)
+  analysisType = viewGet(thisView,'analysisType');
+  if ismember(analysisType,{'glmAnal','glmcAnal','glmAnalStats','deconvAnal'})
+    analysisParams = convertOldGlmParams(analysisParams);
+    analysisParamsMenu = {'From current Analysis','Define'};
+    bootstrapParams.analysisType = 'GLM';
+  elseif strcmp(analysisType,'erAnal')
+    analysisParamsMenu = {'From current Analysis','Define'};
+    bootstrapParams.analysisType = 'Deconvolution';
+  else
+    analysisParams = [];
+  end
+end
+if isempty(analysisParams)
    analysisParamsMenu = {'Define'};
    analysisParams.groupName = viewGet(thisView,'groupName',thisView.curGroup);
    bootstrapParams.analysisType = 'GLM';
@@ -178,7 +184,7 @@ for scanNum = analysisParams.scanNum
       fTests = analysisParams.testParams.fTests;
       contrasts = analysisParams.testParams.contrasts;
       %-------------- get the HRF model --------------
-      [analysisParams.hrfParams,d.hrf] = feval(analysisParams.hrfModel, analysisParams.hrfParams, d.tr/d.supersampling,0,1);
+      [analysisParams.hrfParams,d.hrf] = feval(analysisParams.hrfModel, analysisParams.hrfParams, d.tr/d.designSupersampling,0,1);
       nEstimates = size(d.hrf,2);
       
    case 'Deconvolution'
@@ -217,7 +223,7 @@ for scanNum = analysisParams.scanNum
          runTransition = d.concatInfo.runTransition;
          switch(bootstrapParams.analysisType)
             case 'GLM'
-               d = makeglm(d,analysisParams,1, analysisParams.scanParams{1}.estimationSupersampling, analysisParams.scanParams{1}.acquisitionSubsample);
+               d = makeglm(d,analysisParams,1,1);
             case 'Deconvolution'
                d = makescm(d,nEstimates,analysisParams.applyFiltering);
          end
@@ -235,7 +241,7 @@ for scanNum = analysisParams.scanNum
          %compute the design matrix
          switch(bootstrapParams.analysisType)
             case 'GLM'
-               boot_d = makeglm(boot_d,analysisParams,1, analysisParams.scanParams{1}.estimationSupersampling, analysisParams.scanParams{1}.acquisitionSubsample);
+               boot_d = makeglm(boot_d,analysisParams,1,1);
             case 'Deconvolution'
                boot_d = makescm(boot_d,nEstimates,analysisParams.applyFiltering);
          end

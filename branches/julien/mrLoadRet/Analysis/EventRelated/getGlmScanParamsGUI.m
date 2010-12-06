@@ -28,8 +28,8 @@ while keepAsking
   for iScan = params.scanNum
    % get scan info and description
     tr = viewGet(thisView,'framePeriod',iScan,groupNum);
-    if ~isfield(scanParams{iScan},'scanInfo')
-       scanParams{iScan}.scanInfo = sprintf('%i: %s',iScan,viewGet(thisView,'description',iScan,groupNum));
+    if ~isfield(scanParams{iScan},'scan')
+       scanParams{iScan}.scan = sprintf('%i: %s',iScan,viewGet(thisView,'description',iScan,groupNum));
     end
     if ~isfield(scanParams{iScan},'description')
        scanParams{iScan}.description = sprintf('Event related analysis of %s: %i',params.groupName,iScan);
@@ -50,6 +50,9 @@ while keepAsking
     if ~isfield(scanParams{iScan},'acquisitionSubsample') || isempty(scanParams{iScan}.acquisitionSubsample)
        scanParams{iScan}.acquisitionSubsample = 1;
     end
+    if ~isfield(scanParams{iScan},'sameForNextScans') || isempty(scanParams{iScan}.sameForNextScans)
+       scanParams{iScan}.sameForNextScans = iScan == params.scanNum(1);
+    end
 
  % Standard parameters to set
     
@@ -61,11 +64,12 @@ while keepAsking
       subsetBoxEditableOption = 'editable=0';
     end
 
-    taskVarParams = {...
-      {'scan',scanParams{iScan}.scanInfo,'type=statictext','Description of scan to set parameters for (not editable)'},...
-      {'description',scanParams{iScan}.description,'Event related analysis of [x...x]','Description of the analysis'}...
-      {'preprocess',scanParams{iScan}.preprocess,'String of extra commands for preprocessing. Normally you will not need to set anything here, but this allows you to do corrections to the stimvols that are calculated so that you can modify the analysis. (see wiki for details)'}...
-      {'subsetBox', scanParams{iScan}.subsetBox, subsetBoxVisibleOption, subsetBoxEditableOption, 'subset of voxels,  the form [X1 X2;Y1 Y2;Z1 Z2] (Zs are optional)'};
+    paramsInfo = {...
+    {'scan',scanParams{iScan}.scan,'type=statictext','Description of scan to set parameters for (not editable)'},...
+    {'description',scanParams{iScan}.description,'Event related analysis of [x...x]','Description of the analysis'}...
+    {'preprocess',scanParams{iScan}.preprocess,'String of extra commands for preprocessing. Normally you will not need to set anything here, but this allows you to do corrections to the stimvols that are calculated so that you can modify the analysis. (see wiki for details)',...
+                  'callback',{@tryPreProcess,loadScan(thisView, iScan, groupNum, 0)},'passParams=1'}...
+    {'subsetBox', scanParams{iScan}.subsetBox, subsetBoxVisibleOption, subsetBoxEditableOption, 'subset of voxels,  the form [X1 X2;Y1 Y2;Z1 Z2] (Zs are optional)'};
          };
 
   % Timing parameters
@@ -80,7 +84,7 @@ while keepAsking
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % see if we have a stimfile from mgl, in which case we should
-    % ask the user what the variable name is that they want ot use for the analysis
+    % ask the user what the variable name is that they want to use for the analysis
     if strfind(stimfile{1}.filetype,'mgl')
 
       % check to see what style this is, if the task variable does
@@ -89,7 +93,7 @@ while keepAsking
       task = cellArray(stimfile{1}.task,2);
       if isfield(stimfile{1}.myscreen,'traces') && ~isfield(task{1}{1},'segmentTrace')
         % this is the old style, get the stimtrace number
-        taskVarParams{end+1} = {'stimtrace',stimfile{1}.myscreen.stimtrace,'the trace number that contains the stimulus','incdec=[-1 1]','incdecType=plusMinus',sprintf('minmax=[%i %i]',stimfile{1}.myscreen.stimtrace,size(stimfile{1}.myscreen.traces,1))};
+        paramsInfo{end+1} = {'stimtrace',stimfile{1}.myscreen.stimtrace,'the trace number that contains the stimulus','incdec=[-1 1]','incdecType=plusMinus',sprintf('minmax=[%i %i]',stimfile{1}.myscreen.stimtrace,size(stimfile{1}.myscreen.traces,1))};
       else
         if exist('getTaskVarnames') ~= 2
           mrErrorDlg('(eventRelatedGUI) MGL function getTaskVarnames is not in path. You must have mgl in the path to extract stimulus timing information from an mgl stim file');
@@ -99,7 +103,7 @@ while keepAsking
         % if there is more than one task, then ask the user for that
         task = cellArray(stimfile{1}.task,2);
         if length(task)>1
-          taskVarParams{end+1} = {'taskNum',num2cell(1:length(task)),'The task you want to use'};
+          paramsInfo{end+1} = {'taskNum',num2cell(1:length(task)),'The task you want to use'};
         end
         % if there are multiple phases, then ask for that
         maxPhaseNum = 0;
@@ -115,67 +119,64 @@ while keepAsking
         end
         if maxPhaseNum > 1
           if length(task) == 1
-            taskVarParams{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
+            paramsInfo{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
           else
-            taskVarParams{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
+            paramsInfo{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
           end
         end
 
          % if there is more than one segment in any of the phases, ask the user to specify
          % should add some error checking.
         if maxSegNum > 1
-          taskVarParams{end+1} = {'segmentNum',1,'The segment of the task you want to use','incdec=[-1 1]','incdecType=plusMinus'};
+          paramsInfo{end+1} = {'segmentNum',1,'The segment of the task you want to use','incdec=[-1 1]','incdecType=plusMinus'};
         end
 
-         % set up to get the variable name from the user
-        taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
+         %set up to get the variable name from the user
+        paramsInfo{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
       end
     elseif strfind(stimfile{1}.filetype,'eventtimes')  && ~isfield(scanParams{iScan},'stimDuration') && isfield(stimfile{1}.mylog,'stimdurations_s')
           scanParams{iScan}.stimDuration = 'fromFile';
     end
 
     if ~isfield(scanParams{iScan},'stimDuration') || strcmp(params.hrfModel,'hrfDeconvolution')
-       scanParams{iScan}.stimDuration = tr;
+       scanParams{iScan}.stimDuration = num2str(tr);
+    elseif isnumeric(scanParams{iScan}.stimDuration)
+      scanParams{iScan}.stimDuration = num2str(scanParams{iScan}.stimDuration);
     end
 
-    taskVarParams{end+1} = {'stimDuration', scanParams{iScan}.stimDuration, 'duration of stimulation/event (seconds, min=0.01s), a boxcar function that is convolved with hrf. If using deconvolution, should be equal to the frame period'};
-    taskVarParams{end+1} = {'forceStimOnSampleOnset', scanParams{iScan}.forceStimOnSampleOnset, 'type=checkbox','Forces stimulus onset to coincide with (sub)sample onsets'};
-    taskVarParams{end+1} = {'estimationSupersampling',scanParams{iScan}.estimationSupersampling,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation'};
-    taskVarParams{end+1} = {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'};
+    paramsInfo = [paramsInfo {...
+      {'stimDuration', scanParams{iScan}.stimDuration, 'duration of stimulation/event (seconds, min=0.01s), a boxcar function that is convolved with hrf. If using deconvolution, should be equal to the frame period'},...
+      {'forceStimOnSampleOnset', scanParams{iScan}.forceStimOnSampleOnset, 'type=checkbox','Forces stimulus onset to coincide with (sub)sample onsets'},...
+      {'estimationSupersampling',scanParams{iScan}.estimationSupersampling,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation'},...
+      {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'},...
+       }];
 
-
-    % give the option to use the same variable for all
-    if (iScan == params.scanNum(1)) && (length(params.scanNum)>1)
-     taskVarParams{end+1} = {'sameForAll',1,'type=checkbox','Use the same parameters for all scans'};
+    % give the option to use the same variable for remaining scans
+    if (iScan ~= params.scanNum(end)) && (length(params.scanNum)>1)
+     paramsInfo{end+1} = {'sameForNextScans',scanParams{iScan}.sameForNextScans,'type=checkbox','Use the same parameters for all scans'};
     end
-
 
     %%%%%%%%%%%%%%%%%%%%%%%
     % now we have all the dialog information, ask the user to set parameters
     if useDefault
-       scanParams{iScan} = mrParamsDefault(taskVarParams);
+       tempParams = mrParamsDefault(paramsInfo);
     else
-       scanParams{iScan} = mrParamsDialog(taskVarParams,'Set Scan Parameters');
+       tempParams = mrParamsDialog(paramsInfo,'Set Scan Parameters');
     end
 
     % user hit cancel
-    if isempty(scanParams{iScan})
+    if isempty(tempParams)
        scanParams = [];
        return
     end
-
-    %get the number of events after running the pre-processing function
-    d = loadScan(thisView, iScan, groupNum, 0);
-    d = getStimvol(d,scanParams{iScan});
-    disp(sprintf('Getting number of conditions from scan %d', iScan)); 
+    
+    if ~strcmp(tempParams.stimDuration,'fromFile')
+      tempParams.stimDuration= str2num(tempParams.stimDuration);
+    end
+    scanParams{iScan} = mrParamsCopyFields(tempParams,scanParams{iScan});
+    
     subsetBox = eval(scanParams{iScan}.subsetBox);
     
-    % Try the pre-processing function
-    preProcessFailure = 0;
-    if ~isempty(scanParams{iScan}.preprocess)
-      [d, preProcessFailure] = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
-    end
-
     %various controls and variables settings
     if scanParams{iScan}.estimationSupersampling<scanParams{iScan}.acquisitionSubsample
       mrWarnDlg('(getScanParamsGUI) The acquisition subsample must be less than the subsample estimation factor','Yes');
@@ -183,19 +184,16 @@ while keepAsking
     elseif params.covCorrection && any(diff(subsetBox(1:2,:),1,2)<=params.covEstimationAreaSize)
       mrWarnDlg('(getScanParamsGUI) subset box size is too small for covariance estimation area size','Yes');
       scanParams{iScan} = [];
+    elseif isempty(scanParams{iScan}.stimDuration) 
+      mrWarnDlg('(getScanParamsGUI) unknown stimDuration parameter','Yes');
+      scanParams{iScan} = [];
     elseif (ischar(scanParams{iScan}.stimDuration) || scanParams{iScan}.stimDuration ~=tr) ...
         && strcmp(params.hrfModel,'hrfDeconvolution')...
         && (params.computeTtests || params.numberFtests)
       mrWarnDlg('(getScanParamsGUI) subTR sampling is not (yet) compatible with statistics on deconvolution weights','Yes');
       scanParams{iScan} = [];
-    elseif preProcessFailure
-      mrWarnDlg(['(getScanParamsGUI) There was a problem running pre-processing function ' scanParams{iScan}.preprocess],'Yes');
-      scanParams{iScan} = [];
     else
       keepAsking = 0;
-      params.numberEvents = length(d.stimvol);
-      params.stimNames = d.stimNames;
-      disp(sprintf('%d conditions found', params.numberEvents));
 
       % check if the varname is a cell array, then convert to a cell array
       % instead of a string this is so that the user can specify a variable
@@ -207,27 +205,57 @@ while keepAsking
          scanParams{iScan}.varname = eval(scanParams{iScan}.varname);
       end
 
-      % if sameForAll is set, copy all parameters into all scans and break out of loop
-      if isfield(scanParams{iScan},'sameForAll') && ...
-         scanParams{iScan}.sameForAll
-         for i = 2:length(params.scanNum)
+      % if sameForNextScans is set, copy all parameters into remaining scans and break out of loop
+      if isfield(scanParams{iScan},'sameForNextScans') && ...
+         scanParams{iScan}.sameForNextScans
+         for jScan = params.scanNum(find(params.scanNum>iScan,1,'first'):end)
             % set the other scans params to the same as this one
-            scanParams{params.scanNum(i)} = scanParams{params.scanNum(1)};
-            % change the description field appropriately for this scan num
-            description = scanParams{params.scanNum(1)}.description;
+            scanParams{jScan} = scanParams{iScan};
+            % change the description and scan fields appropriately for this scan num
+            scanParams{jScan}.scan = viewGet(thisView,'description',jScan,groupNum);
+            description = scanParams{iScan}.description;
             groupNameLoc = strfind(description,params.groupName);
             if ~isempty(groupNameLoc)
-               description = sprintf('%s%s: %i',description(1:groupNameLoc(1)),params.groupName,params.scanNum(i));
+               description = sprintf('%s%s: %i',description(1:groupNameLoc(1)),params.groupName,jScan);
             end
-            scanParams{params.scanNum(i)}.description = description;
+            scanParams{jScan}.description = description;
          end
-         break
+         break;
+      %else if the next scan params are empty, copy those from this scan  
+      elseif (iScan ~= params.scanNum(end)) 
+        nextScan = params.scanNum(find(params.scanNum>iScan,1,'first'));
+        if isempty(params.scanParams{nextScan})
+          scanParams{nextScan} = scanParams{iScan};
+          scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'scan');
+          scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'description');
+        end
       end
-  %          taskVarParams = {};
+      
     end
+    
     if keepAsking && useDefault %there were incompatible parameters but this is the script mode (no GUI)
       scanParams = [];
       return;
     end
   end
+%   if iScan>params.scanNum(1)
+%     scanParams{params.scanNum(1)}.sameForNextScans = 0;
+%   end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%% tryPreProcess %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function preprocess = tryPreProcess(scanParams,d)
+
+% Try the pre-processing function
+preProcessFailure = 0;
+if ~isempty(scanParams.preprocess)
+  [d, preProcessFailure] = eventRelatedPreProcess(d,scanParams.preprocess);
+end
+
+if preProcessFailure
+  mrWarnDlg(['(getScanParamsGUI) There was a problem running pre-processing function ' scanParams.preprocess],'Yes');
+  preprocess = [];
+end
+

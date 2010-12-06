@@ -149,15 +149,14 @@ for i = 1:length(remainders)
       break
    end
 end
-designSuperSampling = round(d.tr*estimationSupersampling/(greatest_common_factor*resolutionLimit));
+designSupersampling = round(d.tr*estimationSupersampling/(greatest_common_factor*resolutionLimit));
 
-%check if designSuperSampling is supported for all runs
-if designSuperSampling~=1 || ischar(var.stimDuration) || var.stimDuration ~= d.tr
+%check if designSupersampling is supported for all runs
+if designSupersampling~=1 || ischar(var.stimDuration) || var.stimDuration ~= d.tr
    for i = 1:length(d.stimfile)
       if ~strcmp(d.stimfile{i}.filetype,'eventtimes')
          disp(sprintf('(getStimvol) TR supersampling not supported for mgl or afni files. using default (1.0)'));
-         designSuperSampling = 1;
-         stimDuration = d.tr;
+         designSupersampling = 1;
       end
    end
 end
@@ -165,9 +164,9 @@ end
 
 % depending on what kind of stimfile we have, we get the
 % stimvolumes differently
-lastStimNames = [];
 for i = 1:length(d.stimfile)
   % get the stimvol for this particular stimfile
+  stimNames = {};
   switch d.stimfile{i}.filetype,
    case 'mgl',
     % if we have a stimtrace then get the variables from that
@@ -178,17 +177,17 @@ for i = 1:length(d.stimfile)
       if exist('getStimvolFromVarname')~=2
 	mrErrorDlg('(getStimvol) The function getStimvol is missing from your path. Make sure that mgl is in your path');
       end
-      [stimvol d.stimNames d.trialNum{i}] = getStimvolFromVarname(var,d.stimfile{i}.myscreen,d.stimfile{i}.task);
+      [stimvol stimNames d.trialNum{i}] = getStimvolFromVarname(var,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
-    stimvol = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/designSuperSampling, var.stimDuration);
+    [stimvol,stimDurations] = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/designSupersampling, var.stimDuration);
     if isfield(d.stimfile{i}, 'stimNames')
-      d.stimNames = d.stimfile{i}.stimNames;
+      stimNames = d.stimfile{i}.stimNames;
     end
    case 'afni',
     stimvol = getStimvolFromStimTS(d.stimfile{i});
     if isfield(d.stimfile{i}, 'stimNames')
-      d.stimNames = d.stimfile{i}.stimNames;
+      stimNames = d.stimfile{i}.stimNames;
     end
    case 'stimvol',
     stimvol = d.stimfile{i}.stimvol;
@@ -204,98 +203,135 @@ for i = 1:length(d.stimfile)
 	end
       end
     end
-    % check for stimnames
+    % check for stimNames
     if isfield(d.stimfile{i}, 'stimNames')
-      d.stimNames = d.stimfile{i}.stimNames;
+      stimNames = d.stimfile{i}.stimNames;
     end
    otherwise
     disp(sprintf('(getStimvol) Unknown stimfile type: %s',d.stimfile{i}.filetype));
     d.stimvol = {};
     return
   end
-  % set the stimnames if we don't have them already
-  if ~isfield(d,'stimNames')
-    d.stimNames = {};
-  end
   % if we don't have a name for the stimulus, then give it a number
   for stimNameNum = 1:length(stimvol)
-    if length(d.stimNames) < stimNameNum
-      d.stimNames{stimNameNum} = num2str(stimNameNum);
+    if length(stimNames) < stimNameNum
+      stimNames{stimNameNum} = num2str(stimNameNum);
+    end
+  end
+  
+  %if stimDurations does not exist, set all durations to 1
+  if ieNotDefined('stimDurations')
+    for iStim = 1:length(stimvol)
+      stimDurations{iStim} = ones(size(stimvol{iStim}));
     end
   end
 
-  % compare to make sure we have the same stimulus names as last time
-  if ~isempty(lastStimNames)
-    if ~isequal(d.stimNames,lastStimNames)
-      % display what doesn't match
-      missingLastTime = setdiff(d.stimNames,lastStimNames);
-      for iMissing = 1:length(missingLastTime)
-	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i-1,missingLastTime{iMissing}));
-      end
-      missingThisTime = setdiff(lastStimNames,d.stimNames);
-      for iMissing = 1:length(missingThisTime)
-	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i,missingThisTime{iMissing}));
-      end
-      disp(sprintf('(getStimvol) This likely happened because you have not specified all the possible values a variable can take. For a randVar, you should add a field with the same name as the variable except with an _ after it (i.e. for randVar.calculated.myVar add randVar.calculated.myVar_ ) and set the variable to all the possible values that the variable can be set to. See the function addCalculatedVar for more info.'));
-      keyboard
-    end
-  end
-  lastStimNames = d.stimNames;
+ 
+%   % compare to make sure we have the same stimulus names as last time
+%   if ~isempty(lastStimNames)
+%     if ~isequal(d.stimNames,lastStimNames)
+%       % display what doesn't match
+%       missingLastTime = setdiff(d.stimNames,lastStimNames);
+%       for iMissing = 1:length(missingLastTime)
+% 	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i-1,missingLastTime{iMissing}));
+%       end
+%       missingThisTime = setdiff(lastStimNames,d.stimNames);
+%       for iMissing = 1:length(missingThisTime)
+% 	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i,missingThisTime{iMissing}));
+%       end
+%       disp(sprintf('(getStimvol) This likely happened because you have not specified all the possible values a variable can take. For a randVar, you should add a field with the same name as the variable except with an _ after it (i.e. for randVar.calculated.myVar add randVar.calculated.myVar_ ) and set the variable to all the possible values that the variable can be set to. See the function addCalculatedVar for more info.'));
+%       keyboard
+%     end
+%   end
+%   lastStimNames = d.stimNames;
 
   % get how many junk frames we have
   if isfield(d,'junkFrames'),junkFrames = d.junkFrames; else junkFrames = zeros(length(d.stimfile),1);end
   % then shift all the stimvols by that many junkvols
-  for nhdr = 1:length(stimvol)
-    % subtract junkFrames
-    stimvol{nhdr} = stimvol{nhdr}-junkFrames(i)*designSuperSampling;
-    % and get rid of anything less than 0
-    stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}>0);
-    % check for stimvol overrun
-    if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
-        runlen = d.dim(end)*designSuperSampling;
-    else
-        runlen = diff(d.concatInfo.runTransition(i,:))*designSuperSampling+1;
-    end
-    if ~isempty(find(stimvol{nhdr}>runlen,1))
+  for iStim = 1:length(stimvol)
+    if ~isempty(stimvol{iStim})
+      % subtract junkFrames
+      stimvol{iStim} = stimvol{iStim}-junkFrames(i)*designSupersampling;
+      % and get rid of anything less than 0
+      stimDurations{iStim} = stimDurations{iStim}(stimvol{iStim}>0);
+      stimvol{iStim} = stimvol{iStim}(stimvol{iStim}>0);
+      % check for stimvol overrun
       if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
-         disp(sprintf('(getStimvol) Removing %i event(s) from scan since they happen after the last volume of the scan ',length(find(stimvol{nhdr}>runlen))));
+          runlen = d.dim(end)*designSupersampling;
       else
-         disp(sprintf('(getStimvol) Removing %i event(s) from concatenated scan %i:%s since they happen after the last volume (%i) of the scan ',length(find(stimvol{nhdr}>runlen)),i,d.concatInfo.filename{i},runlen));
+          runlen = diff(d.concatInfo.runTransition(i,:))*designSupersampling+1;
       end
-      % update trialNum and stimvol to remove trials that occur after the end
-      if isfield(d,'trialNum'),d.trialNum{i}{nhdr} = d.trialNum{i}{nhdr}(stimvol{nhdr}<=runlen);end
-      stimvol{nhdr} = stimvol{nhdr}(stimvol{nhdr}<=runlen);
+      if ~isempty(find(stimvol{iStim}>runlen,1))
+        if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
+           disp(sprintf('(getStimvol) Removing %i event(s) from scan since they happen after the last volume of the scan ',length(find(stimvol{iStim}>runlen))));
+        else
+           disp(sprintf('(getStimvol) Removing %i event(s) from concatenated scan %i:%s since they happen after the last volume (%i) of the scan ',length(find(stimvol{iStim}>runlen)),i,d.concatInfo.filename{i},runlen));
+        end
+        % update trialNum and stimvol to remove trials that occur after the end
+        if isfield(d,'trialNum'),d.trialNum{i}{iStim} = d.trialNum{i}{iStim}(stimvol{iStim}<=runlen);end
+        stimDurations{iStim} = stimDurations{iStim}(stimvol{iStim}<=runlen);
+        stimvol{iStim} = stimvol{iStim}(stimvol{iStim}<=runlen);
+      end
     end
   end
 
-  % if we have more than one stimfile, than we have to concatenate
-  % together the stimvol. For this we are going to need to have
-  % a concatInfo field
-  if (i > 1)
+  if i==1
+    d.stimNames = stimNames;
+    d.stimvol = stimvol;
+    d.stimDurations = stimDurations;
+  else
+    % if we have more than one stimfile, than we have to concatenate
+    % together the stimvol. For this we are going to need to have
+    % a concatInfo field
     % check for valid concatInfo
     if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
       disp(sprintf('(getStimvol) No concatInfo found for multiple stimfiles'));
       return
     end
-    % now add the number of volumes encountered from the previous runs
-    % to the stimvol and concatenate on to general stimvol
-    for nhdr = 1:length(stimvol)
-      if length(stimvol) >= nhdr
-	% if we already have some stimvols for this stimulus type then concatenate
-	d.stimvol{nhdr} = [d.stimvol{nhdr} (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*designSuperSampling)];
-      else
-	% first time we have encoutered this stimvol just add it to d.stimvol
-	d.stimvol{nhdr} = (stimvol{nhdr}+(d.concatInfo.runTransition(i,1)-1)*designSuperSampling);
-      end
+    
+    %I dont' think we should require all files to have exactly the same stim names
+    %we'll just put stims with identical names together
+    allStimvol = d.stimvol;
+    allStimDurations = d.stimDurations;
+    %put names together
+    allStimNames = union(d.stimNames,stimNames);
+    d.stimvol = cell(size(allStimNames));
+    d.stimDurations = cell(size(allStimNames));
+    %find the indices of the new names in the cell array of all names
+    
+    d.stimDurations(ismember(allStimNames,d.stimNames))=allStimDurations;
+    d.stimvol(ismember(allStimNames,d.stimNames))=allStimvol;
+    for iStim = 1:length(stimvol)
+      thisStimIndex = ismember(allStimNames,stimNames(iStim));
+      d.stimvol{thisStimIndex}= [d.stimvol{thisStimIndex} ...
+        stimvol{iStim}+(d.concatInfo.runTransition(i,1)-1)*designSupersampling];
+      d.stimDurations{thisStimIndex}=[d.stimDurations{thisStimIndex} stimDurations{iStim}];
     end
-    % on first file, we just set stimvol in the d field
-  else
-    d.stimvol = stimvol;
+    d.stimNames= allStimNames;
   end
+
+%   if (i > 1)
+%     % now add the number of volumes encountered from the previous runs
+%     % to the stimvol and concatenate on to general stimvol
+%     for iStim = 1:length(stimvol)
+%       if length(stimvol) >= iStim
+% 	% if we already have some stimvols for this stimulus type then concatenate
+% 	d.stimvol{iStim} = [d.stimvol{iStim} (stimvol{iStim}+(d.concatInfo.runTransition(i,1)-1)*designSupersampling)];
+%       else
+% 	% first time we have encoutered this stimvol just add it to d.stimvol
+% 	d.stimvol{iStim} = (stimvol{iStim}+(d.concatInfo.runTransition(i,1)-1)*designSupersampling);
+%       end
+%   d.stimDurations{iStim} = [d.stimDurations{iStim} stimDurations{iStim}];
+%     end
+%     % on first file, we just set stimvol in the d field
+%   else
+%     d.stimvol = stimvol;
+%     d.stimDurations = stimDurations;
+%   end
 end
 
 % return the actual TR supersampling factor
-d.supersampling = designSuperSampling;
+d.designSupersampling = designSupersampling;
 
 % update the eventRelatedVarname
 if isfield(d,'eventRelatedVarname')
@@ -361,24 +397,20 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % stimvol from Farshad's file type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function stimvol = getStimvolFromEventTimes(stimfile,tr,stimDuration)
+function [stimOnsets,stimDurations] = getStimvolFromEventTimes(stimfile,tr,duration)
 
-% sort into stimuli
 nhdr = length(stimfile.stimtimes_s);
-stimvol = cell(1, nhdr);
+stimOnsets = cell(1, nhdr);
+stimDurations = cell(1, nhdr);
 
-if ischar(stimDuration) && strcmp(stimDuration,'fromFile')
-   for i = 1:nhdr
-      for event=1:length(stimfile.stimtimes_s{i})
-         stimvol{i} =  [stimvol{i} round(stimfile.stimtimes_s{i}(event)/tr) + (1:max(1,round(stimfile.stimdurations_s{i}(event)/tr))) ];
-      end
-   end
-else
-  for i = 1:nhdr
-      for event=1:length(stimfile.stimtimes_s{i})
-         stimvol{i} =  [stimvol{i} round(stimfile.stimtimes_s{i}(event)/tr) + (1:max(1,round(stimDuration/tr))) ];
-      end
-   end
+%just round to time resolution
+for i = 1:nhdr
+  stimOnsets{i} = round(stimfile.stimtimes_s{i}/tr)+1;
+  if ischar(duration) && strcmp(duration,'fromFile')
+    stimDurations{i} = max(1,round(stimfile.stimdurations_s{i}/tr));
+  else
+    stimDurations{i} =  max(ones(size(stimOnsets{i})),round(duration/tr));
+  end
 end   
          
 
