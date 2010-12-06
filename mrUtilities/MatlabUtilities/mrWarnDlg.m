@@ -1,8 +1,8 @@
 function mrWarnDlg(warnstr,verbose)
 %
-% mrWarnDlg(warnstr)
+% mrWarnDlg(warnstr,verbose)
 %
-% Calls Matlab's warndlg or warning depending on verbose preference
+% Calls Matlab's warndlg or warning depending on verbose preference, or depending on argument verbose ('Yes' or 'No')
 %
 % To set the 'verbose' preference:
 %    mrSetPref('verbose','Yes');
