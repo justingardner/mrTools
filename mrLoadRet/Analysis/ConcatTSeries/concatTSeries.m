@@ -308,7 +308,7 @@ for iscan = 1:length(params.scanList)
   warning on
 
   % get the path and filename
-  [path,filename,ext,versn] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
+  [path,filename] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
   baseGroupName = viewGet(viewBase,'groupName');
 
   % Save TSeries (using header of 1st scan on scanList as the template for
