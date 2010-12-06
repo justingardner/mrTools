@@ -1,4 +1,4 @@
-function scanList = selectScans(view,title,groupNum,preselected)
+function [scanList,scanNames] = selectScans(view,title,groupNum,preselected)
 % scanList = selectScans(view,[title],[groupNum],[preselected]);
 %
 %   Gather a list of scans available in Inplane/TSeries
@@ -7,6 +7,7 @@ function scanList = selectScans(view,title,groupNum,preselected)
 %
 % Output:
 %  scanList: list of selected scans.
+%  scanNames: names of all the scans the user had to choose from
 %
 % 4/16/99  dbr Initial code
 % 3/30/2001, djh, added optional title string
