@@ -531,6 +531,7 @@ for scanNum = params.scanNum
   glmAnal.d{scanNum}.ehdrste(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdrste;
   glmAnal.d{scanNum}.rss = NaN(scanDims,precision);
   glmAnal.d{scanNum}.rss(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = rss; %JB
+  glmAnal.d{scanNum}.contrastSte(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = contrastSte; %JB
 %   glmAnal.d{scanNum}.EVmatrix = d.EVmatrix;        
 %   glmAnal.d{scanNum}.stimDurations = d.stimDurations;        
   clear('ehdr','ehdrste','rss');

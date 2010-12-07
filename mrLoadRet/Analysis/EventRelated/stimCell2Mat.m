@@ -11,14 +11,16 @@ function [stimMatrix,runTransitions] = stimCell2Mat(stimOnsets, stimDurations,ru
 if ~ieNotDefined('stimDurations')
   %apply stimDuration
   for iStim = 1:length(stimOnsets)
-    stimOnsets{iStim} = reshape(stimOnsets{iStim},1,numel(stimOnsets{iStim})); %make sure stimOnsets{iStim} and stimDurations{iStim} 
-    stimDurations{iStim} = reshape(stimDurations{iStim},1,numel(stimDurations{iStim})); %are row vectors
-    maxDuration = max(stimDurations{iStim});
-    stimNum = length(stimDurations{iStim});
-    stimPresent = (cumsum(ones(maxDuration,stimNum)) ./ repmat(stimDurations{iStim},maxDuration,1))<=1;
-    stimOnsets{iStim} = repmat(stimOnsets{iStim},maxDuration,1);
-    stimOnsets{iStim} = stimOnsets{iStim} + cumsum(stimPresent) -1;
-    stimOnsets{iStim} = stimOnsets{iStim}(stimPresent);
+      if ~isempty(stimOnsets{iStim})
+        stimOnsets{iStim} = reshape(stimOnsets{iStim},1,numel(stimOnsets{iStim})); %make sure stimOnsets{iStim} and stimDurations{iStim} 
+        stimDurations{iStim} = reshape(stimDurations{iStim},1,numel(stimDurations{iStim})); %are row vectors
+        maxDuration = max(stimDurations{iStim});
+        stimNum = length(stimDurations{iStim});
+        stimPresent = (cumsum(ones(maxDuration,stimNum)) ./ repmat(stimDurations{iStim},maxDuration,1))<=1;
+        stimOnsets{iStim} = repmat(stimOnsets{iStim},maxDuration,1);
+        stimOnsets{iStim} = stimOnsets{iStim} + cumsum(stimPresent) -1;
+        stimOnsets{iStim} = stimOnsets{iStim}(stimPresent);
+      end
   end
 end
 if ieNotDefined('runTransitions')
