@@ -440,6 +440,7 @@ function eventRelatedPlotTSeries(handle,eventData,thisView,analysisParams, d, ro
 fignum = selectGraphWin(0,'Make new');
 initializeFigure(fignum,d.nhdr);
 screenSize = get(0,'MonitorPositions');
+screenSize = screenSize(1,:); % multiple screens
 position = get(fignum,'position');
 position(3) = screenSize(3);
 position(4) = screenSize(3)/5;

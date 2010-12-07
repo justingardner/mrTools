@@ -146,6 +146,7 @@ fignum = selectGraphWin(0,'Make new');
 set(fignum,'name','plotExperimentalDesign');
 nScans = length(scanList);
 screenSize = get(0,'MonitorPositions');
+screenSize = screenSize(1,:); % multiple screens
 position = get(fignum,'position');
 position(3) = screenSize(3);
 position(4) = min(screenSize(3)/8*nScans,screenSize(4));

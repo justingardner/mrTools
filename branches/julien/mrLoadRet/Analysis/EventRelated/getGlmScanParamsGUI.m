@@ -224,7 +224,7 @@ while keepAsking
       %else if the next scan params are empty, copy those from this scan  
       elseif (iScan ~= params.scanNum(end)) 
         nextScan = params.scanNum(find(params.scanNum>iScan,1,'first'));
-        if isempty(params.scanParams{nextScan})
+        if isempty(scanParams{nextScan})
           scanParams{nextScan} = scanParams{iScan};
           scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'scan');
           scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'description');
