@@ -975,6 +975,7 @@ maxEntryNumCols = max(dParams.entryNumCols);
 
 %-------------------optimize figure dimensions 
 screenSize = get(0,'MonitorPositions');
+screenSize = screenSize(1,:); % multiple screens
 dParams.multiCols=0;                             %these are meaningless values to pass the first test
 figHeight = uiParams.maxFigHeightWidthRatio+1;   %
 figWidth = 1;                                    %
