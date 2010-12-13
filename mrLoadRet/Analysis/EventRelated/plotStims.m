@@ -50,7 +50,7 @@ for iFrame = 1:size(stimOnsets,1)
 end
 if ~isempty(runTransitions)
   for iRun = 1:size(runTransitions,1)-1
-    hTransitions = plot(([runTransitions(iRun,2) runTransitions(iRun,2)]-1)*framePeriod,Ylims,':','Color',[.3 .3 .3]);
+    hTransitions = plot(([runTransitions(iRun,2) runTransitions(iRun,2)]-1)*framePeriod,Ylims,':k');%,'Color',[.3 .3 .3]);
   end
 end
 xlabel(axesHandle,'Time (s)');
