@@ -16,9 +16,9 @@ if ~ieNotDefined('stimDurations')
         stimDurations{iStim} = reshape(stimDurations{iStim},1,numel(stimDurations{iStim})); %are row vectors
         maxDuration = max(stimDurations{iStim});
         stimNum = length(stimDurations{iStim});
-        stimPresent = (cumsum(ones(maxDuration,stimNum)) ./ repmat(stimDurations{iStim},maxDuration,1))<=1;
+        stimPresent = (cumsum(ones(maxDuration,stimNum),1) ./ repmat(stimDurations{iStim},maxDuration,1))<=1;
         stimOnsets{iStim} = repmat(stimOnsets{iStim},maxDuration,1);
-        stimOnsets{iStim} = stimOnsets{iStim} + cumsum(stimPresent) -1;
+        stimOnsets{iStim} = stimOnsets{iStim} + cumsum(stimPresent,1) -1;
         stimOnsets{iStim} = stimOnsets{iStim}(stimPresent);
       end
   end

@@ -211,12 +211,13 @@ while askForParams
             end
 
             while askForParams           %get params
-              params = getGlmTestParamsGUI(thisView,params,defaultParams);
+              tempParams = getGlmTestParamsGUI(thisView,params,defaultParams);
               % if empty, user hit cancel, go back
-              if isempty(params)
+              if isempty(tempParams)
                 askForParams = 1;
                 break;
               else
+                params = tempParams;
                 %update the number of tests in case they've changed
                 params.numberContrasts = size(params.contrasts,1);
                 params.numberFtests = length(params.restrictions);

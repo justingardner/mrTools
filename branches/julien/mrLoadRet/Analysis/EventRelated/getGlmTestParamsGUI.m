@@ -143,7 +143,8 @@ while keepAsking
 
   % user hit cancel
   if isempty(tempParams)
-     return;
+    params = [];
+    return;
   end
   
   params = mrParamsCopyFields(tempParams,params);
@@ -164,7 +165,7 @@ while keepAsking
   actualNumberFtests=0;
   for iFtest = 1:params.numberFtests
     thisRestriction=params.(fixBadChars(sprintf('restriction%2d',iFtest)));
-    params = mrParamsRemoveFields(params,fixBadChars(sprintf('restriction%2d',iFtest)));
+    params = mrParamsRemoveField(params,fixBadChars(sprintf('restriction%2d',iFtest)));
     if ~any(any(thisRestriction))
       mrWarnDlg('(getGlmTestParamsGUI) Discarding F-test with empty restriction matrix');
     else
@@ -172,7 +173,7 @@ while keepAsking
       params.fTestNames{actualNumberFtests} = params.(fixBadChars(sprintf('fTest%2d',iFtest)));
       params.restrictions{actualNumberFtests} = thisRestriction;
     end
-    params = mrParamsRemoveFields(params,fixBadChars(sprintf('fTest%2d',iFtest)));
+    params = mrParamsRemoveField(params,fixBadChars(sprintf('fTest%2d',iFtest)));
   end
   
   %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
