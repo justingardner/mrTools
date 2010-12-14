@@ -1,4 +1,4 @@
-function applyWarpOverlays(~,~,thisView)
+function applyWarpOverlays(thisView)
 % applyWarpOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   applies non-linear FSL registration to overlay in current view and current analysis

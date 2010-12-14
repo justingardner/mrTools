@@ -79,7 +79,7 @@ while askForParams
   switch(bootstrapParams.analysisType)
      case 'GLM'
         %get GLM  parameters
-        tempParams = eventRelatedGlmGUI('params',analysisParams,'useDefault',useDefault,'thisView',thisView);
+        tempParams = glmAnalysisGUI('params',analysisParams,'useDefault',useDefault,'thisView',thisView);
      case 'Deconvolution'
         %get Event-related  parameters
         tempParams = eventRelatedGUI('params',analysisParams,'useDefault',useDefault);
@@ -223,7 +223,7 @@ for scanNum = analysisParams.scanNum
          runTransition = d.concatInfo.runTransition;
          switch(bootstrapParams.analysisType)
             case 'GLM'
-               d = makeglm(d,analysisParams,1,1);
+               d = makeDesignMatrix(d,analysisParams,1,1);
             case 'Deconvolution'
                d = makescm(d,nEstimates,analysisParams.applyFiltering);
          end
@@ -241,7 +241,7 @@ for scanNum = analysisParams.scanNum
          %compute the design matrix
          switch(bootstrapParams.analysisType)
             case 'GLM'
-               boot_d = makeglm(boot_d,analysisParams,1,1);
+               boot_d = makeDesignMatrix(boot_d,analysisParams,1,1);
             case 'Deconvolution'
                boot_d = makescm(boot_d,nEstimates,analysisParams.applyFiltering);
          end
