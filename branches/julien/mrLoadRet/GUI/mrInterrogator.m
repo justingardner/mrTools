@@ -604,3 +604,10 @@ if ~isempty(overlayInterrogator)
   interrogatorList{end+1} = overlayInterrogator;
 end
 interrogatorList = putOnTopOfList('Interrogator',interrogatorList);
+
+% add default interrogators from viewGet. These are per-session
+% ones that are added by mlrAdjustGUI
+defaultInterrogators = viewGet(v,'defaultInterrogators');
+if ~isempty(defaultInterrogators)
+  interrogatorList = {interrogatorList{:} defaultInterrogators{:}};
+end

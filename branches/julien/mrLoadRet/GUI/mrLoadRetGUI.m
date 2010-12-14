@@ -1340,15 +1340,21 @@ function copyOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-
-MLR.clipboard = copyOverlay(view); %calls copyOverlay which asks which overlay and for which scans to copy an returns all the copied overlays
+MLR.clipboard = viewGet(view,'overlay');
 
 % --------------------------------------------------------------------
 function pasteOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-pasteOverlay(view, MLR.clipboard);
+[check overlay] = isoverlay(MLR.clipboard);
+if ~check
+    mrErrorDlg('(paste overlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
+end
+if ~isanalysis(viewGet(view,'analysis'))
+    mrErrorDlg('(paste overlay) Overlays must be pasted into an analysis. Use Edit -> Analysis -> New Analysis.')
+end
+view = viewSet(view,'newOverlay',overlay);
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -1759,13 +1765,6 @@ view = MLR.views{viewNum};
 view = eventRelatedGlm(view);
 
 % --------------------------------------------------------------------
-function corAnalFromGlmMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-view = MLR.views{viewNum};
-view = modelCoranalFromGlm(view);
-
-% --------------------------------------------------------------------
 function recomputeAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1792,26 +1791,6 @@ if viewGet(view,'numAnalyses') > 0
   end
 else
   mrWarnDlg(sprintf('(mrLoadRetGUI) No analyses loaded'));
-end
-
-% --------------------------------------------------------------------
-function CombineOverlaysMenuItem_Callback(hObject, eventdata, handles)
-
-mrGlobals;
-viewNum = handles.viewNum;
-thisView = MLR.views{viewNum};
-combineOverlays(thisView);
-
-
-% --------------------------------------------------------------------
-function applyWarpOverlaysMenuItem_Callback(hObject, eventdata, handles)
-if strcmp(mrGetPref('fslPath'),'FSL not installed')
-  mrWarnDlg('(mrLoadRetGUI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
-else
-  mrGlobals;
-  viewNum = handles.viewNum;
-  thisView = MLR.views{viewNum};
-  applyWarpOverlays(thisView);
 end
 
 
@@ -2158,18 +2137,6 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
 v = convertROI(v);
-
-% --------------------------------------------------------------------
-function applyWarpRoiMenuItem_Callback(hObject, eventdata, handles)
-if strcmp(mrGetPref('fslPath'),'FSL not installed')
-  mrWarnDlg('(mrLoadRetGUI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
-else
-  mrGlobals;
-  viewNum = handles.viewNum;
-  v = MLR.views{viewNum};
-
-  v = applyWarpROI(v);
-end
 
 % --------------------------------------------------------------------
 function showRoiMenu_Callback(hObject, eventdata, handles)

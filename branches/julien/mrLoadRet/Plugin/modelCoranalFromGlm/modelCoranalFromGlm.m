@@ -10,7 +10,7 @@
 %    purpose: computes correlation analysis on data simulated from GLM/deconvolution estimates
 %        e.g:
 %
-function thisView = modelCoranalFromGlm(thisView,params)
+function thisView = modelCoranalFromGlm(~,~,thisView,params)
 
 
 %initialize parameters

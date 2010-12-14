@@ -33,6 +33,7 @@ prefNames = {'overwritePolicy','verbose','graphWindow',...
    'defaultInterrogators','systemInterrogators',...,
    'importROIPath','volumeDirectory','niftiFileExtension','fslPath',...
    'selectedROIColor','roiContourWidth','roiPolygonMethod','interpMethod',...
+   'pluginPaths','selectedPlugins',...
    'site','magnet','coil','pulseSequence'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
@@ -58,6 +59,8 @@ prefDefaults{find(strcmp('overlayCacheSize',prefNames))} = 50;
 prefDefaults{find(strcmp('magnet',prefNames))} = {{'Allegra 3T','other'}};
 prefDefaults{find(strcmp('coil',prefNames))} = {{'Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
 prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
+prefDefaults{find(strcmp('pluginPaths',prefNames))} = '';
+prefDefaults{find(strcmp('selectedPlugins',prefNames))} = '';
 
 if nargin == 0
   if nargout > 0
