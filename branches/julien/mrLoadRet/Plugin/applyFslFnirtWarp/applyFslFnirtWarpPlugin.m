@@ -35,7 +35,7 @@ switch action
       mlrAdjustGUI(thisView,'add','menu','Overlays','/Analysis');
     end
     %install overlays menu Item
-    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to overlays','/Overlays/','callback',{@applyWarpOverlays,thisView});
+    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to overlays','/Overlays/','callback',@applyWarpOverlaysCallback);
     %install overlays menu Item
     mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to ROIs','/ROI/Convert/','callback',{@applyWarpROI,thisView});
     retval = true;
@@ -46,4 +46,14 @@ switch action
  otherwise
    disp(sprintf('(applyFslFnirtWarpPlugin) Unknown command %s',action));
 end
+
+%------------------------- applyWarpOverlaysCallback Function ------------------------------%
+function applyWarpOverlaysCallback(hObject,~)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+applyWarpOverlays(thisView);
+
+%------------------------- applyWarpROICallback Function ------------------------------%
+function applyWarpROICallback(hObject,~)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+applyWarpROI(thisView);
 

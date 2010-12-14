@@ -6,7 +6,7 @@
 %       date: 06/10/2010
 %    purpose: applies non-linear FSL registration to chosen ROI(s)
 %
-function thisView = applyWarpROI(~,~,thisView)
+function thisView = applyWarpROI(thisView)
 
 if strcmp(mrGetPref('fslPath'),'FSL not installed')
   mrWarnDlg('(applyWarpROI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')

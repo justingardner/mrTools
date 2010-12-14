@@ -1,4 +1,4 @@
-function combineOverlays(~,~,thisView)
+function combineOverlays(thisView)
 % combineOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   combines (masked) Overlays according to matlab or custom operators  in current view and current analysis

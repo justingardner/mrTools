@@ -35,7 +35,7 @@ switch action
       mlrAdjustGUI(thisView,'add','menu','Overlays','/Analysis');
     end
     %install menu Item
-    mlrAdjustGUI(thisView,'add','menu','Combine/Transform Overlays','/Overlays/','callback',{@combineOverlays,thisView});
+    mlrAdjustGUI(thisView,'add','menu','Combine/Transform Overlays','/Overlays/','callback',@combineOverlaysCallback);
     retval = true;
    end
  % return a help string
@@ -45,3 +45,7 @@ switch action
    disp(sprintf('(transformCombineOverlayPlugin) Unknown command %s',action));
 end
 
+%------------------------- combineOverlaysCallback Function ------------------------------%
+function combineOverlaysCallback(hObject,~)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+combineOverlays(thisView);

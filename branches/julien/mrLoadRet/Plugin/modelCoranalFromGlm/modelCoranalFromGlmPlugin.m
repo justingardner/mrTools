@@ -20,7 +20,7 @@ switch action
   if (nargin ~= 2) || ~isview(thisView)
      disp(sprintf('(modelCoranalFromGlmPlugin) Need a valid view to install plugin'));
   else
-    mlrAdjustGUI(thisView,'add','menu','Model Correlation Analysis from GLM','/Analysis/GLM Analysis','Callback',{@modelCoranalFromGlm,thisView});
+    mlrAdjustGUI(thisView,'add','menu','Model Correlation Analysis from GLM','/Analysis/GLM Analysis','Callback',@modelCoranalFromGlmCallback);
     retval = true;
    end
  % return a help string
@@ -30,3 +30,7 @@ switch action
    disp(sprintf('(modelCoranalFromGlmPlugin) Unknown command %s',action));
 end
 
+%------------------------- modelCoranalFromGlmCallback Function ------------------------------%
+function modelCoranalFromGlmCallback(hObject,~)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+modelCoranalFromGlm(thisView);

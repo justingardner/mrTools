@@ -21,8 +21,8 @@ switch action
      disp(sprintf('(flexibleCopyPasteOverlaysPlugin) Need a valid view to install plugin'));
   else
     % if the view is valid, then use mlrAdjustGUI to adjust the GUI for this plugin.
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Copy Overlay','Callback',{@copyOverlayCallback,thisView});
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Paste Overlay','Callback',{@pasteOverlayCallback,thisView});
+    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Copy Overlay','Callback',@copyOverlayCallback);
+    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Paste Overlay','Callback',@pasteOverlayCallback);
 
     % return true to indicate successful plugin
     retval = true;
@@ -35,15 +35,17 @@ switch action
 end
 
 % --------------------------------------------------------------------
-function copyOverlayCallback(hObject, eventdata, thisView)
+function copyOverlayCallback(hObject, ~)
 mrGlobals;
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 clipboard = copyOverlay(thisView); %calls copyOverlay which asks which overlay and for which scans to copy an returns all the copied overlays
 if ~isempty(clipboard)
   MLR.clipboard = clipboard;
 end
 
 % --------------------------------------------------------------------
-function pasteOverlayCallback(hObject, eventdata, thisView)
+function pasteOverlayCallback(hObject, ~)
 mrGlobals;
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 pasteOverlay(thisView, MLR.clipboard);
 refreshMLRDisplay(viewNum);
