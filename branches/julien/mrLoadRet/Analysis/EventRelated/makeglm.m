@@ -1,118 +1,82 @@
 % makeglm.m
 %
-%        $Id$
-%      usage: makeglm(d,params,verbose)
-%         by: farshad moradi, modified by julien besle
-%       date: 06/14/07, 11/02/2010
-%       e.g.: makeglm(d,params,verbose)
+%      usage: makeglm(d,hrf)
+%         by: farshad moradi
+%       date: 06/14/07
+%       e.g.: makeglm(d, hrf)
 %    purpose: makes a stimulation convolution matrix
 %             for data series. must have getstimtimes already
-%             run on it, as well as a model hrf
-%              optional parameters can be passed in the params structure 
+%             run on it. if d.hrf is set then you can
+%             just pass in the data structure
 %
-function d = makeglm(d,params,verbose, scanNum)
+function d = makeglm(d,hrf)
 
-if ~any(nargin == [1 2 3 4 5])
-   help makeglm;
-   return
-end
-
-if ieNotDefined('params')
-  params=struct;
-end
-if ieNotDefined('verbose')
-  verbose = 1;
-end
-
-% check if the hrf starts from zero (except if it is the identity matrix, the deconvolution case)
-if verbose && any(d.hrf(1,:)>1e-6) && (size(d.hrf,1)~=size(d.hrf,2) || ~isempty(find(d.hrf^-1-d.hrf>1e-6, 1)))
-   mrWarnDlg(['(makeglm) HRF does not start from zero (hrf(0) = ' mat2str(d.hrf(1,:)) ')']);
-end
-
-if isfield(params,'nonLinearityCorrection') && params.nonLinearityCorrection && isfield(params.hrfParams,'maxModelHrf')
-   saturationThreshold = params.saturationThreshold*params.hrfParams.maxModelHrf;
-else
-   saturationThreshold = Inf(1,size(d.hrf,2));
-end
-
-if isfield(params.scanParams{scanNum},'estimationSupersampling') && ~isempty(params.scanParams{scanNum}.estimationSupersampling)
-  estimationSupersampling = params.scanParams{scanNum}.estimationSupersampling;
-else
-  estimationSupersampling = 1;
-end
-if isfield(params.scanParams{scanNum},'acquisitionSubsample') && ~isempty(params.scanParams{scanNum}.acquisitionSubsample)
-  acquisitionSubsample = params.scanParams{scanNum}.acquisitionSubsample;
-else
-  acquisitionSubsample = 1;
-end
-if isfield(params.scanParams{scanNum},'stimToEVmatrix') && ~isempty(params.scanParams{scanNum}.stimToEVmatrix)
-  stimToEVmatrix = params.scanParams{scanNum}.stimToEVmatrix;
-  if size(stimToEVmatrix,1)~=length(d.stimvol)
-    mrWarnDlg('(makeglm) EV combination matrix is incompatible with number of event types');
-    d.scm = [];
-    return;
+if (nargin == 1)
+  if (isfield(d,'hrf'))
+      hrf = d.hrf;
+  else
+      help makeglm;
+      return
   end
-else
-  stimToEVmatrix = eye(length(d.stimvol));
+elseif (nargin ~= 2)
+  help makeglm;
+  return
 end
 
+% make sure hrf starts from zero
+hrf = hrf-repmat(hrf(1,:), size(hrf,1), 1);
 % if we have only a single run then we set
 % the runTransitions for that single run
 if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
   runTransition = [1 d.dim(4)];
+  hipassfilter = [];
 else
   runTransition = d.concatInfo.runTransition;
+  hipassfilter = d.concatInfo.hipassfilter;
 end
 
-runTransition(:,1) = ((runTransition(:,1)-1)*round(d.designSupersampling)+1);
-runTransition(:,2) = runTransition(:,2)*round(d.designSupersampling);
-
-%apply duration and convert to matrix form
-stimMatrix = stimCell2Mat(d.stimvol,d.stimDurations,runTransition);
-%if design sampling is larger than estimation sampling, we need to correct the amplitude of the hrf 
-stimMatrix = stimMatrix*estimationSupersampling/d.designSupersampling; 
-
-% apply EV combination matrix
-d.EVmatrix = stimMatrix*stimToEVmatrix;
+% go through each run of the experiment
 allscm = [];
-for iRun = 1:size(runTransition,1)
+for runnum = 1:size(runTransition,1)
+  % default values
   scm = [];
-  thisEVmatrix = d.EVmatrix(runTransition(iRun,1):runTransition(iRun,2),:);
   % make stimulus convolution matrix
-  for iEV = 1:size(thisEVmatrix,2)
-      m = convn(thisEVmatrix(:,iEV), d.hrf);
-      m = m(1:size(thisEVmatrix,1),:);
-      %apply saturation
-      m = min(m,repmat(saturationThreshold,size(thisEVmatrix,1),1));
-      % remove mean 
-      m = m-repmat(mean(m), size(m,1), 1); %DOES IT CHANGE ANYTHING IF I REMOVE THIS ?
-      % downsample with constant integral to estimation sampling rate
-      m = downsample(m, d.designSupersampling/estimationSupersampling);
-      %only keep acquisition samples
-      m = m(acquisitionSubsample:estimationSupersampling:end,:);
-      % apply the same filter as original data
-      if isfield(d,'concatInfo') 
-         % apply hipass filter
-         if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{iRun})
-           m = real(ifft(fft(m) .* repmat(d.concatInfo.hipassfilter{iRun}', 1, size(m,2)) ));
-         end
-         % project out the mean vector
-         if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{iRun})
-           projectionWeight = d.concatInfo.projection{iRun}.sourceMeanVector * m;
-           m = m - d.concatInfo.projection{iRun}.sourceMeanVector'*projectionWeight;
-         end
-      end
-      % stack stimmatrices horizontally
-      scm =  [scm m];
-   end
-   % stack this run's stimcmatrix on to the last one
-   allscm = [allscm;scm];
-%    d.EVmatrix = [d.EVmatrix;thisEVmatrix];
+  for stimnum = 1:length(d.stimvol)
+    % make an array containing the stimulus times
+    stimarray = zeros(1,(runTransition(runnum,2)-runTransition(runnum,1)+1)*d.supersampling);
+    % only use stimvols that are within this runs volume numbers
+    stimarray(d.stimvol{stimnum}(find((d.stimvol{stimnum}>=runTransition(runnum,1)*d.supersampling) & ...
+        (d.stimvol{stimnum}<=runTransition(runnum,2)*d.supersampling)))-runTransition(runnum,1)*d.supersampling+1) = 1/d.supersampling;
+    m = convn(stimarray', hrf);
+    m = m(1:length(stimarray),:);
+    % remove mean 
+    m = m-repmat(mean(m), size(m,1), 1);
+    % downsample
+    m = downsample(m, d.supersampling);
+    % apply the same filter as original data
+    if ~isempty(hipassfilter)
+        m = real(ifft(fft(m) .* repmat(hipassfilter{runnum}', 1, size(m,2)) ));
+    end
+    % stack stimcmatrices horizontally
+    scm = [scm, m];
+  end
+  % stack this run's stimcmatrix on to the last one
+  allscm = [allscm;scm];
 end
 
 % set values
-d.nhdr = size(stimToEVmatrix,2);
+d.nhdr = length(d.stimvol);
 d.scm = allscm;
-d.hdrlen = size(d.hrf,1);
-d.nHrfComponents = size(d.hrf,2);
-d.runTransitions = runTransition;
+d.hdrlen = size(hrf,2);
+d.volumes = 1:d.dim(4);
+d.simulatedhrf = downsample(hrf, d.supersampling);
+
+function ds = downsample(s, factor)
+  % downsample a signal by factor. the original and downsampled signals
+  % have equal integrals.
+  %
+  % to downsamlple conserving the amplitude use: 
+  %     ds = downsample(s, factor) / factor;
+  
+  a = cumsum(s, 1);
+  ds = diff([zeros(1, size(s,2));a(factor:factor:end,:)]);

@@ -1,6 +1,5 @@
 % eventRelated.m
 %
-%        $Id$
 %      usage: view = eventRelated(view,params)
 %         by: justin gardner
 %       date: 10/20/06
@@ -128,7 +127,7 @@ for scanNum = params.scanNum
       % make a stimulation convolution matrix
       d = makescm(d,ceil(params.scanParams{scanNum}.hdrlen/d.tr),params.applyFiltering);
       % compute the estimated hemodynamic responses
-      d = getGlmStatistics(d);
+      d = getr2(d);
       % update the current row we are working on
       currentRow = currentRow+numRowsAtATime;
       % if we are calculating full slice, then just pass that on

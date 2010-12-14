@@ -4,7 +4,7 @@
 %      usage: eventRelatedTSeries.m(timecourses,nhdr,hdrlen,scm)
 %         by: justin gardner
 %       date: 05/25/07
-%    purpose: function that will use getglmStatistics (used in mrLoadRet) to do the event related
+%    purpose: function that will use getr2 (used in mrLoadRet) to do the event related
 %             analysis on a time series or an array of time series
 %             e.g. to get the event related analysis for a mena ROI
 %             time series
@@ -45,7 +45,7 @@ d.dim = size(d.data);
 d.volumes = 1:d.dim(4);
 
 % compute the event related analysis
-outd = getGlmStatistics(d);
+outd = getr2(d);
 
 % and parse back fields
 if size(timecourses,1)

@@ -1,6 +1,5 @@
 % getGlmContrast.m
 %
-%        $Id$
 %      usage: getGlmContrast(d, contrasts)
 %         by: farshad moradi
 %       date: 09/10/07
@@ -14,57 +13,50 @@
 %             in d.scm, and contrast must have the same number
 %             of columns as d.scm
 %
-% modified by julien besle xx/12/2009 to speed things up by pre allocating 
-%             the whole ehdr and ehdrste matrices with the right dimensions
-%             and to compute the residual and total sum of squares of the model
-%
-% THIS FUNCTION IS DEPRECATED AND HAS BEEN REPLACED BY GETGLMSTATISICS.M
 
 function d = getGlmContrast(d, contrasts)
 
+% init some variables
+ehdr=[];r2 = [];
+
 % number of explanatory variables in the model
 nEv = size(d.scm, 2);
-
-
+% find an orthogonal transformation that gives the
+% contrast of interest
 cmat = zeros(nEv, nEv);
 cmat(1:size(contrasts,1),:) = contrasts;
 
-% design matrix excluding the contrast of (non?) interest
-d.scm_ev = d.scm*contrasts';
+% design matrix exclding the contrast of interest
+scm2 = d.scm*contrasts';
 
-%---------------------------- find an orthogonal transformation that gives the contrast of interest
 nullmat = null(cmat);
 if isempty(nullmat)
-    scm_no_interest = [];
+    scm1 = [];
 else
-    scm_no_interest = d.scm*nullmat;
-    %orthogonalize d.scm_ev w.r.t. scm_no_interest (JB: shouldn't we be doing the reverse ?
-    %indeed, if d.scm_ev represents the contrasts of interest, then we don't want to modify it
-    %on the other hand, we don't want scm_no_interest to take interesting effects away from us)...
-    %d.scm_ev = d.scm_ev - scm_no_interest*(pinv(scm_no_interest)*d.scm_ev);
-    scm_no_interest = scm_no_interest - d.scm_ev*(pinv(d.scm_ev)*scm_no_interest);  %my version (JB)
+    scm1 = d.scm*nullmat;
+    %orthogonalize scm2 w.r.t. scm1
+    scm2 = scm2 - scm1*(pinv(scm1)*scm2);
 end
 
 % hemodynamic responses are estimated only for the specified contrasts
-d.nhdr = size(d.scm_ev,2)/d.hdrlen;
+d.nhdr = size(scm2,2)/d.hdrlen;
 
-
-%----------------------------- precalculate the normal equation (this dramatically speeds up things)
-
-if ~isempty(scm_no_interest)
-    precalcmatrix1 = ((scm_no_interest'*scm_no_interest)^-1)*scm_no_interest';
+% precalculate the normal equation (this dramatically speeds up things)
+if ~isempty(scm1)
+    precalcmatrix1 = ((scm1'*scm1)^-1)*scm1';
     % if this don't work then do pinv
     if sum(isnan(precalcmatrix1(:))) == length(precalcmatrix1(:))
         disp(sprintf('(getGlmContrast) Using pseudo inverse to invert convolution matrix'));
-        precalcmatrix1 = pinv(scm_no_interest);
+        precalcmatrix1 = pinv(scm1);
     end
 end
 
-precalcmatrix2 = ((d.scm_ev'*d.scm_ev)^-1)*d.scm_ev';
+precalcmatrix2 = ((scm2'*scm2)^-1)*scm2';
+
 % if this don't work then do pinv
 if sum(isnan(precalcmatrix2(:))) == length(precalcmatrix2(:))
   disp(sprintf('(getGlmContrast) Using pseudo inverse to invert convolution matrix'));
-  precalcmatrix2 = pinv(d.scm_ev);
+  precalcmatrix2 = pinv(scm2);
 end
 
 % check roi
@@ -73,11 +65,9 @@ xvals = 1:d.dim(1);xvaln = length(xvals);
 yvals = 1:d.dim(2);yvaln = length(yvals);
 
 % preallocate memory
-d.ehdr = zeros(d.nhdr*d.hdrlen,d.dim(1),d.dim(2),d.dim(3));    %JB replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-d.ehdrste = zeros(d.nhdr*d.hdrlen,d.dim(1),d.dim(2),d.dim(3)); %JB replaces: d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
 d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
-d.rss = zeros(d.dim(1),d.dim(2),d.dim(3)); %JB: this is to store the sum of square of the residual error term 
-d.tss = zeros(d.dim(1),d.dim(2),d.dim(3)); %JB: this is to store the total sum of square
 
 % turn off warnings to avoid divide by zero warning
 warning('off','MATLAB:divideByZero');
@@ -109,55 +99,49 @@ for j = yvals
     % convert to percent signal change
     timeseries = 100*timeseries./(onesmatrix*colmeans);
     % get hdr for the each voxel
-    if isempty(scm_no_interest)
+    if isempty(scm1)
         resid1 = timeseries;
     else
-        resid1 = timeseries - scm_no_interest*precalcmatrix1*timeseries;
+        resid1 = timeseries - scm1*precalcmatrix1*timeseries;
     end
-    d.ehdr(:,:,j,k) = precalcmatrix2*resid1;    %JB replaces: ehdr{j,k} = precalcmatrix2*resid1;
+    ehdr{j,k} = precalcmatrix2*resid1;
     % calculate error bars, first get sum-of-squares of residual
     % (in percent signal change)
-    d.rss(:,j,k) = sum((resid1-d.scm_ev*d.ehdr(:,:,j,k)).^2);    %JB: replaces: sumOfSquaresResidual = sum((resid1-d.scm_ev*ehdr{j,k}).^2););
-    d.tss(:,j,k) = sum(resid1.^2);    %JB replaces: 
+    sumOfSquaresResidual = sum((resid1-scm2*ehdr{j,k}).^2);
     % now calculate the sum-of-squares of that error
     % and divide by the degrees of freedom (n-k where n
     % is the number of timepoints in the scan and k is 
     % the number of timepoints in all the estimated hdr)
-    rms = d.rss(:,j,k)/(length(d.volumes)-size(d.scm_ev,2));   %JB: replaces: S2 = sumOfSquaresResidual/(length(d.volumes)-size(d.scm_ev,2));
+    S2 = sumOfSquaresResidual/(length(d.volumes)-size(scm2,2));
     % now distribute that error to each one of the points
     % in the hemodynamic response according to the inverse
     % of the covariance of the stimulus convolution matrix.
-    d.ehdrste(:,:,j,k) = sqrt(diag(pinv(d.scm_ev'*d.scm_ev))*rms');            %JB replaces: ehdrste{j,k} = sqrt(diag(pinv(d.scm_ev'*d.scm_ev))*S2);
+    ehdrste{j,k} = sqrt(diag(pinv(scm2'*scm2))*S2);
     % calculate variance accounted for by the estimated hdr
-    d.r2(:,j,k) = (1-d.rss(:,j,k)'./sum(timeseries.^2))';     %JB: replaces: r2{j,k} = (1-sumOfSquaresResidual./sum(timeseries.^2));
+    r2{j,k} = (1-sumOfSquaresResidual./sum(timeseries.^2));
   end
 end
 disppercent(inf);
-
-d.ehdr = reshape(shiftdim(d.ehdr,1),d.dim(1),d.dim(2),d.dim(3), d.nhdr, d.hdrlen);        %JB
-d.ehdrste = reshape(shiftdim(d.ehdrste,1),d.dim(1),d.dim(2),d.dim(3), d.nhdr, d.hdrlen);  %JB
-
-% JB: remove all the following since the matrix has been created directly in the right shape
 
 % reshape matrix. this also seems the fastest way to do things. we
 % could have made a matrix in the above code and then reshaped here
 % but the reallocs needed to continually add space to the matrix
 % seems to be slower than the loops needed here to reconstruct
 % the matrix from the {} arrays.
-% disppercent(-inf,'(getGlmContrast) Reshaping matrices');
-% for i = xvals
-%   disppercent((i-min(xvals))/xvaln);
-%   for j = yvals
-%     for k = slices
-%       % get the ehdr
-%       d.ehdr(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdr{j,k}(:,i)),[d.hdrlen d.nhdr])';
-%       % and the stderror of that
-%       d.ehdrste(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdrste{j,k}(:,i)),[d.hdrlen d.nhdr])';
-%       % now reshape r2 into a matrix
-%       d.r2(i,j,k) = r2{j,k}(i);
-%     end
-%   end
-% end
+disppercent(-inf,'(getGlmContrast) Reshaping matrices');
+for i = xvals
+  disppercent((i-min(xvals))/xvaln);
+  for j = yvals
+    for k = slices
+      % get the ehdr
+      d.ehdr(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdr{j,k}(:,i)),[d.hdrlen d.nhdr])';
+      % and the stderror of that
+      d.ehdrste(i,j,k,1:d.nhdr,:) = reshape(squeeze(ehdrste{j,k}(:,i)),[d.hdrlen d.nhdr])';
+      % now reshape r2 into a matrix
+      d.r2(i,j,k) = r2{j,k}(i);
+    end
+  end
+end
 
 % display time took
 disppercent(inf);

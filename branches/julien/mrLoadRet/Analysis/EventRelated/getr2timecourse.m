@@ -4,7 +4,7 @@
 %      usage: d = getr2timecourse(timecourses,nhdr,hdrlen,scm,<tr>)
 %         by: justin gardner
 %       date: 05/25/07
-%    purpose: function that will use getGlmStatistics to do the event related
+%    purpose: function that will use getr2 to do the event related
 %             analysis. TR argument is only necessary to return
 %             also the time vector. The timecourses argument is
 %             a kxn matrix with the length n timecourses for k
@@ -55,7 +55,7 @@ d.dim = size(d.data);
 d.volumes = 1:d.dim(4);
 
 % compute the event related analysis
-outd = getGlmStatistics(d,[],verbose);
+outd = getr2(d,verbose);
 
 % and parse back fields
 if size(timecourses,1)==1
