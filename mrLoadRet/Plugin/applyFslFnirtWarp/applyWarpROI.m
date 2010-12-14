@@ -6,7 +6,12 @@
 %       date: 06/10/2010
 %    purpose: applies non-linear FSL registration to chosen ROI(s)
 %
-function thisView = applyWarpROI(thisView)
+function thisView = applyWarpROI(~,~,thisView)
+
+if strcmp(mrGetPref('fslPath'),'FSL not installed')
+  mrWarnDlg('(applyWarpROI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
+  return
+end
 
 useApplyWarp = 1; %The solution I chose is to create a volume of zeros and put ones where the ROI is, 
 %then run this through applywarp using the spline coefficient  and nearest neighbour interpolation

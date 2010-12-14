@@ -3561,7 +3561,23 @@ switch lower(param)
   case {'curslicebasecoords'}
     % baseCoords = viewGet(view,'curslicebasecoords');
     val = view.curslice.baseCoords;
-  otherwise
+  case {'defaultinterrogators'}
+    % defaultInterrogators = viewGet(view,'defaultInterrogators');
+    % see the viewSet for more info
+    if isfield(MLR,'defaultInterrogators')
+      val = MLR.defaultInterrogators;
+    else
+      val = [];
+    end
+  case {'colormaps'}
+    % colormaps = viewGet(view,'colormaps');
+    % see the viewSet for more info
+    if isfield(MLR,'colormaps')
+      val = MLR.colormaps;
+    else
+      val = [];
+    end
+ otherwise
     if isempty(view)
       disp(sprintf('(viewGet) No viewGet for %s',param));
       return

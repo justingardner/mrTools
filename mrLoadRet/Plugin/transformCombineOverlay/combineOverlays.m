@@ -1,4 +1,4 @@
-function combineOverlays(thisView)
+function combineOverlays(~,~,thisView)
 % combineOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   combines (masked) Overlays according to matlab or custom operators  in current view and current analysis
@@ -12,8 +12,7 @@ combinationModeMenu = {'Apply function to all overlays','Apply function to each 
 
 %default params
 %get names of combine Functions in combineFunctions directory
-functionsDirectory = which('mrLoadRetGUI');
-functionsDirectory = [functionsDirectory(1:strfind(functionsDirectory,'GUI/mrLoadRetGUI.m')-1) 'Plugins/CombineOverlayFunctions/'];
+functionsDirectory = [fileparts(which('combineOverlays')) '/CombineOverlayFunctions/'];
 combineFunctionFiles =  dir([functionsDirectory '*.m']);
 for iFile=1:length(combineFunctionFiles)
    combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);

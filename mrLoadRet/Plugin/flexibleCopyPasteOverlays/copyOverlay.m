@@ -9,6 +9,7 @@
 function overlay = copyOverlay(thisView)
 
 keepAsking = 1;
+overlay = [];
 
 while keepAsking
    scanList = 1:viewGet(thisView,'nScans');

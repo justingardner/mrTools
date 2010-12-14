@@ -1,4 +1,4 @@
-function applyWarpOverlays(thisView)
+function applyWarpOverlays(~,~,thisView)
 % applyWarpOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   applies non-linear FSL registration to overlay in current view and current analysis
@@ -6,6 +6,11 @@ function applyWarpOverlays(thisView)
 % jb 23/07/2010
 %
 % $Id$ 
+
+if strcmp(mrGetPref('fslPath'),'FSL not installed')
+  mrWarnDlg('(applyWarpROI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
+  return
+end
 
 keepAsking = 1;
 while keepAsking
