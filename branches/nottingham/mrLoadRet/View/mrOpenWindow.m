@@ -134,6 +134,9 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	view = viewSet(view,'roiGroup',mrLastView.viewSettings.roiGroup);
       end
     end
+    % Add plugins
+    if ~isempty(which('mlrPlugin')) mlrPlugin(view);end
+    
     % add here, to load more info...
     % and refresh
     refreshMLRDisplay(view.viewNum);
