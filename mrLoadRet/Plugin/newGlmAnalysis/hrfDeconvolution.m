@@ -9,7 +9,7 @@
 function [params,hrf] = hrfDeconvolution(params, framePeriod, justGetParams, defaultParams )
 
 if ~any(nargin == [1 2 3 4])
-  help hrfDiffGamma
+  help hrfDeconvolution
   return
 end
 

@@ -43,6 +43,9 @@ if isfield(params,'hrfParams')
     params.hrfParams.includeDerivative = params.hrfParams.incDeriv;
     params.hrfParams = rmfield(params.hrfParams,'incDeriv');
   end
+  if isfield(params.hrfParams,'hrfModel') && strcmp(params.hrfParams.hrfModel,'hrfDiffGamma')
+    params.hrfParams.hrfModel='hrfDoubleGamma';
+  end
 end
 
 if isfield(params,'trSupersampling')

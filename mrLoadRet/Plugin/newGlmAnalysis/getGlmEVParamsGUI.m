@@ -41,6 +41,9 @@ while keepAsking
     nStims = length(d.stimvol);
     disp(sprintf('%d conditions found', nStims));
     
+    if ~params.numberEVs
+      params.numberEVs = nStims;
+    end
     if ~isfield(scanParams{iScan}, 'stimToEVmatrix') || isempty(scanParams{iScan}.stimToEVmatrix) || ...
       ~isequal(size(scanParams{iScan}.stimToEVmatrix,1),nStims) || ~isequal(size(scanParams{iScan}.stimToEVmatrix,2),params.numberEVs)
         scanParams{iScan}.stimToEVmatrix = eye(nStims,params.numberEVs);
@@ -161,7 +164,7 @@ for iScan = scanList
   d = getStimvol(d,params.scanParams{iScan});
   [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);
   d = eventRelatedPreProcess(d,params.scanParams{iScan}.preprocess);
-  d = makeglm(d,params,1,iScan);
+  d = makeDesignMatrix(d,params,1,iScan);
   cScan=cScan+1;
   
   if ~isempty(d.scm) && size(d.scm,2)==length(thisScanParams.EVnames)*d.nHrfComponents

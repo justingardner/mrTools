@@ -1,241 +1,259 @@
 % eventRelatedGlmGUI.m
 %
-%      usage: params = eventRelatedGlmGUI(varargin)
-%         by: farshad moradi, modified by julien besle
-%       date: 06/14/07, 08/01/2010
-%    purpose: return parameters for GLM analysis
-%           $Id$
+%      usage: eventRelatedGlmGUI()
+%         by: farshad moradi
+%       date: 06/14/07
+%    purpose: 
+%
+function params = eventRelatedGlmGUI(varargin)
 
-function params = eventRelatedGlmGUI(varargin)   
+% check arguments
+if ~any(nargin == [0 1 2 3 4 5])
+  help eventRelatedGUI
+  return
+end
 
 % get the arguments
 eval(evalargs(varargin));
 
-if ieNotDefined('defaultParams'),defaultParams = 0;end
-if ieNotDefined('thisView'),thisView = newView;end
-if ieNotDefined('params'),params = struct;end
-if ieNotDefined('groupName'), groupName = viewGet(thisView,'groupName');end;
-
-%convert old params
-params = convertOldGlmParams(params);
-
-% rm the tseriesFile field because we're creating a new analysis. It will be merged later if required
-if isfield(params,'tseriesFile')
-  params = mrParamsRemoveField(params,'tseriesFile');
+% if called with params, then just display
+if ~ieNotDefined('params')
+  dispParams(params);
+  return
 end
 
-% put default parameters if not already set
-if ~isfield(params,'hrfParams')
-  params.hrfParams = struct;
-end
-if ~isfield(params,'groupName') || isempty(params.groupName)
-  params.groupName = groupName;
-end
-if ~isfield(params,'scanNum') || isempty(params.scanNum)
-  params.scanNum = [];
-end
-if ~isfield(params,'saveName') || isempty(params.saveName)
-  params.saveName = 'GLM';
+% get a view
+view = newView;
+
+% get the group names
+if ieNotDefined('groupName')
+  groupNames = viewGet(view,'groupNames');
 else
-  params.saveName = viewGet(thisView,'analysisName');
+  % if passed in name, put that on top of list to make it the default
+  groupNames = putOnTopOfList(groupName,viewGet(view,'groupNames'));
 end
-if ~isfield(params,'hrfModel') || isempty(params.hrfModel)
+
+% check for variable to just useDefaults rather than bring up gui
+if ieNotDefined('useDefault')
+  useDefault = 0;
+end
+
+
+% check if some parameters are alreay set
+if ieNotDefined('params')
+  params.saveName = 'glmAnal';
   params.hrfModel ='hrfDiffGamma';
-end
-if ~isfield(params,'analysisVolume') || isempty(params.analysisVolume)
-  params.analysisVolume ='Whole volume';
+  params.trSupersampling = 1;
 end
 
-if ~isfield(params,'numberEVs') || isempty(params.numberEVs)
-  params.numberEVs = 0;
-end
-if ~isfield(params,'numberContrasts') || isempty(params.numberContrasts)
-  if isfield(params,'contrasts')
-    params.numberContrasts = size(params.contrasts,1);
-  else
-    params.numberContrasts = 0;
-  end
-end
-if ~isfield(params,'computeTtests') || isempty(params.computeTtests)
-  params.computeTtests = 0;
-end
-if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
-  if isfield(params,'params') && isfield(params,'restrictions')
-    params.numberFtests = length(params.restrictions);
-  else
-    params.numberFtests = 0;
-  end
-end
-
-if ~isfield(params,'covCorrection') || isempty(params.covCorrection)
-   params.covCorrection = 0;
-end
-if ~isfield(params,'correctionType') || isempty(params.correctionType)
-   params.correctionType = 'generalizedLeastSquares';
-end
-if ~isfield(params,'covEstimation') || isempty(params.covEstimation)
-   params.covEstimation = 'singleTukeyTapers';
-end
-if ~isfield(params,'covEstimationAreaSize') || isempty(params.covEstimationAreaSize) %this is necessary so that it doesn't become a string is it is empty
-   params.covEstimationAreaSize = 20;
-end
-if ~isfield(params,'covFactorization') || isempty(params.covFactorization)
-   params.covFactorization = 'Cholesky';
-end
-
-if ~isfield(params,'nonLinearityCorrection') || isempty(params.nonLinearityCorrection)
-   params.nonLinearityCorrection = 0;
-end
-if ~isfield(params,'saturationThreshold') || isempty(params.saturationThreshold)
-   params.saturationThreshold = 2;
+if ~isfield(params, 'contrast')
+  params.contrast = {'None','All','User defined'};
 end
 
 askForParams = 1;
-% put group name on top of list to make it the default
-groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
-hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDiffGamma','hrfDeconvolution'});
-analysisVolumeMenu = {'Whole volume','Subset box','Loaded ROI(s)'};
-analysisVolumeMenu = putOnTopOfList(params.analysisVolume,analysisVolumeMenu);
-correctionTypeMenu = putOnTopOfList(params.correctionType,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
-covEstimationMenu = putOnTopOfList(params.covEstimation,{'singleTukeyTapers','dampenedOscillator'});
-covFactorizationMenu = putOnTopOfList(params.covFactorization,{'Cholesky'});
-
-
-
 
 while askForParams
-  % set the parameter string
-  paramsInfo = {...
-    {'groupName',groupNames,'type=popupmenu','Name of the group from which to do the analysis'},...
-    {'saveName',params.saveName,'File name to try to save as'},...
-    {'hrfModel',hrfModelMenu,'type=popupmenu','Name of the function that defines the hrf used in glm',},...
-    {'analysisVolume',analysisVolumeMenu,'type=popupmenu','Which voxels perform the analysis on. If subsetbox, the dimensions of the box can be specific to each scan and have to include a margin if covEstimationAreaSize>1',},...
-    {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
-    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
-    {'computeTtests', params.computeTtests,'type=checkbox', 'Whether contrasts are tested for significance'},...
-    {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
-    {'covCorrection',params.covCorrection,'type=checkbox','Correction for correlated noise'},...
-    {'correctionType',correctionTypeMenu,'type=popupmenu','contingent=covCorrection','Type of correction (see Wiki for the different algorithms and computing time comparison)'},...
-    {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
-    {'covEstimationAreaSize',params.covEstimationAreaSize, 'minmax=[1 inf]','contingent=covCorrection','round=1','dimensions in voxels of the spatial window on which the covariance matrix is estimated (in the X and Y dimensions)'},...
-    {'covFactorization',covFactorizationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of factorization of the covariance matrix for the computation of the pre-whitening filter'},...
-    {'nonLinearityCorrection',params.nonLinearityCorrection,'visible=0','type=checkbox','Correction for non linearity. if Yes, the response saturates when it reaches some value defined below'},...
-    {'saturationThreshold',params.saturationThreshold,'visible=0', 'minmax=[1 inf]','contingent=nonLinearityCorrection','Saturation threshold, expressed in terms of the maximum amplitude of the model HRF (e.g. 2 means that the response saturates when it reaches twice the maximum of the model HRF '},...
-   };
+    % set the parameter string
+    paramsInfo = {...
+        {'groupName',groupNames,'Name of group from which to do eventRelated analysis'},...
+        {'saveName',params.saveName,'File name to try to save as'},...
+        {'hrfModel',params.hrfModel,'Name of the function that defines the hrf used in glm'},...
+        {'trSupersampling', params.trSupersampling, 'minmax=[1 100]', 'TR supersampling factor (1=no supersampling) reulting design matrix will be downsampled afterwards'},...
+        {'contrast', params.contrast, 'Set to none to compute r2 overlay only. Enter all to compute an overlay for each condition (betaWeight map). Set to User defined if you want to compute a custom contrast - like the difference between condition 1 and condition 4 for example - this will bring up another dialog box where you will set the contrast of interest.'},...
+    };
 
-  % Get parameter values
-  if defaultParams
-    tempParams = mrParamsDefault(paramsInfo);
-  else
-    tempParams = mrParamsDialog(paramsInfo, 'GLM parameters');
-  end
-
-
-  % if empty user hit cancel
-  if isempty(tempParams)
-    params = [];
-    return;
-  end
-  %replace params in the structure that has been passed in
-  hrfModelMenu = putOnTopOfList(tempParams.hrfModel,hrfModelMenu);
-  analysisVolumeMenu = putOnTopOfList(tempParams.analysisVolume,analysisVolumeMenu);
-  correctionTypeMenu = putOnTopOfList(tempParams.correctionType,correctionTypeMenu);
-  covEstimationMenu = putOnTopOfList(tempParams.covEstimation,covEstimationMenu);
-  covFactorizationMenu = putOnTopOfList(tempParams.covFactorization,covFactorizationMenu);
-%   fieldNames=fieldnames(tempParams);
-%   for i_field = 1:length(fieldNames)
-%     params.(fieldNames{i_field})=eval(['tempParams.' fieldNames{i_field}]);
-%   end
-  params = copyFields(tempParams,params);
-
-
-  %perform some checks
-  if 0
-    %perform check on parameters here if needed
-  elseif 0
-    %perform check on parameters here if needed
-  else
-    while askForParams       % get hrf model parameters
-      %here we assume that all scans in this group have the same framePeriod
-      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,defaultParams);
-      % if empty user hit cancel, go back
-      if isempty(hrfParams)
-        break;
-      end
-      params.hrfParams = hrfParams;
-      if ~isfield(params.hrfParams, 'description')
-         params.hrfParams.description = params.hrfModel;
-      end
-
-      while askForParams    % get the scan numbers
-        groupNum = viewGet(thisView,'groupnum',params.groupName);
-        nScans=viewGet(thisView,'nScans',groupNum);
-        if nScans == 1
-          params.scanNum = 1;
-        elseif ~ieNotDefined('scanList')
-          params.scanNum = scanList;
-        elseif defaultParams
-          params.scanNum = 1:nScans;
-        elseif viewGet(thisView,'nScans',groupNum) >1
-          scanNums = selectScans(thisView,[],groupNum,params.scanNum);
-          if isempty(scanNums)
-            askForParams = 1;
-            break;
-          else
-            params.scanNum = scanNums;
-          end
-        end
-
-        while askForParams    % get the parameters for each scan
-          [scanParams, params] = getGlmScanParamsGUI(thisView,params,defaultParams);
-          if isempty(scanParams)
-            askForParams = 1;
-            break;
-          end
-          params.scanParams = scanParams;
-
-          while askForParams    %get the stim to EV matrices for each scan
-            if ~params.numberEVs
-              thisDefaultParams =1;
-            else
-              thisDefaultParams = defaultParams;
-            end
-            [scanParams, params] = getGlmEVParamsGUI(thisView,params,thisDefaultParams);
-            if isempty(scanParams)
-              askForParams = 1;
-              break;
-            end
-            params.scanParams = scanParams;
-            if ~params.numberContrasts && ~params.numberFtests
-              defaultParams =1;
-            end
-
-            while askForParams           %get params
-              tempParams = getGlmTestParamsGUI(thisView,params,defaultParams);
-              % if empty, user hit cancel, go back
-              if isempty(tempParams)
-                askForParams = 1;
-                break;
-              else
-                params = tempParams;
-                %update the number of tests in case they've changed
-                params.numberContrasts = size(params.contrasts,1);
-                params.numberFtests = length(params.restrictions);
-                askForParams = 0;
-              end
-            end
-          end
-        end
-        if nScans == 1 || ~ieNotDefined('scanList') || defaultParams
-          break;
-        end
-      end
+    % Get parameter values
+    if useDefault
+      params = mrParamsDefault(paramsInfo);
+    else
+      params = mrParamsDialog(paramsInfo, 'GLM parameters');
     end
-  end
+
+    % if empty user hit cancel
+    if isempty(params),return,end
+
+    if strcmp(params.contrast,'User defined');
+      contrastParams = mrParamsDialog({{'contrast',[],'Vector defining the contrast of interest. For instance to get a contrast between condtion 1 and 3 (when you have four conditions) you would enter [1 0 -1 0]'}},'Input contrast to compute');
+      if isempty(contrastParams),return,end
+      params.contrast = contrastParams.contrast;
+    end
+    
+    % get hrf model parameters
+    hrfParamsInfo = feval(params.hrfModel, 'params');
+
+    if useDefault
+      params.hrfParams = mrParamsDefault(hrfParamsInfo);
+    else
+      params.hrfParams = mrParamsDialog(hrfParamsInfo, sprintf('hrfModel:%s', params.hrfModel));
+    end
+    % if empty user hit cancel, go back
+    if isempty(params.hrfParams) && ~useDefault
+        askForParams = 1;
+    else
+        askForParams = 0;
+    end
 end
 
+
+if ~isfield(params.hrfParams, 'description')
+    params.hrfParams.description = params.hrfModel;
+end
+
+% get scans
+view = viewSet(view,'groupName',params.groupName);
+if ~ieNotDefined('scanList')
+  params.scanNum = scanList;
+elseif useDefault
+  params.scanNum = 1:viewGet(view,'nScans');
+else
+  params.scanNum = selectScans(view);
+end
+if isempty(params.scanNum)
+  params = [];
+  return
+end
+
+% get the parameters for each scan
+params.scanParams = getEventRelatedParams(view,params,useDefault);
+if isempty(params.scanParams)
+  params = [];
+  return
+end
 % set the scan number
 for i = 1:length(params.scanNum)
   params.scanParams{params.scanNum(i)}.scanNum = params.scanNum(i);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function to get the variable name that the user wants
+% to do the event related analysis on, puts up a gui
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function scanParams = getEventRelatedParams(view,params,useDefault)
+
+% make the output as long as the number of scans
+scanParams = cell(1,viewGet(view,'nScans',viewGet(view,'groupNum',params.groupName)));
+
+% check for stimfile, and if it is mgl/type then ask the
+% user which variable they want to do the anlysis on
+for scanNum = 1:length(params.scanNum)
+  % get scan and default description
+  scanInfo = sprintf('%i: %s',params.scanNum(scanNum),viewGet(view,'description',params.scanNum(scanNum)));
+  description = sprintf('Event related analysis of %s: %i',params.groupName,params.scanNum(scanNum));
+  % standard parameters to set
+  taskVarParams = {...
+      {'scan',scanInfo,'type=statictext','Description of scan to set parameters for (not editable)'},...
+      {'description',description,'Event related analysis of [x...x]','Description of the analysis'}...
+      {'hdrlen',25,'Length of response in seconds to calculate'}...
+      {'preprocess','','String of extra commands for preprocessing. Normally you will not need to set anything here, but this allows you to do corrections to the stimvols that are calculated so that you can modify the analysis. (see wiki for details)'}...
+		  };
+
+  % make sure we are running on a set with a stimfile
+  stimfile = viewGet(view,'stimfile',params.scanNum(scanNum));
+  
+  if isempty(stimfile)
+    mrMsgBox(sprintf('No associated stimfile with scan %i in group %s',params.scanNum(scanNum),params.groupName));
+    scanParams = [];
+    return
+  end
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % see if we have a stimfile from mgl, in which case we should
+  % ask the user what the variable name is that they want ot use for the analysis
+  if strfind(stimfile{1}.filetype,'mgl')
+
+    % check to see what style this is, if the task variable does
+    % not have a segmentTrace then it mus be an old style, in which
+    % we used channels
+    task = cellArray(stimfile{1}.task,2);
+    if isfield(stimfile{1}.myscreen,'traces') && ~isfield(task{1}{1},'segmentTrace')
+      % this is the old style, get the stimtrace number
+      taskVarParams{end+1} = {'stimtrace',stimfile{1}.myscreen.stimtrace,'the trace number that contains the stimulus','incdec=[-1 1]',sprintf('minmax=[%i %i]',stimfile{1}.myscreen.stimtrace,size(stimfile{1}.myscreen.traces,1))};
+    else
+      if exist('getTaskVarnames') ~= 2
+	mrErrorDlg('(eventRelatedGUI) MGL function getTaskVarnames is not in path. You must have mgl in the path to extract stimulus timing information from an mgl stim file');
+      end
+      % this is the new tyle, ask for a variable name
+      [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
+      % if there is more than one task, then ask the user for that
+      task = cellArray(stimfile{1}.task,2);
+      if length(task)>1
+	taskVarParams{end+1} = {'taskNum',num2cell(1:length(task)),'The task you want to use'};
+      end
+      % if there are multiple phases, then ask for that
+      maxPhaseNum = 0;
+      maxSegNum = 0;
+      for tnum = 1:length(task)
+	phaseNum{tnum} = num2cell(1:length(task{tnum}));
+	maxPhaseNum = max(maxPhaseNum,length(task{tnum}));
+	% if there are multiple _segments_, then ask for that
+	for pnum = 1:length(task{tnum})
+	  segNum{tnum}{pnum} = num2cell(1:length(task{tnum}{pnum}.segmin));
+	  maxSegNum = max(maxSegNum,length(segNum{tnum}{pnum}));
+	end
+      end
+      if maxPhaseNum > 1
+	if length(task) == 1
+	  taskVarParams{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
+	else
+	  taskVarParams{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
+	end
+      end
+      
+      % if there is more than one segement in any of the phases, ask the user to specify
+      % should add some error checking.
+      taskVarParams{end+1} = {'segmentBegin',1,'The segment of the trial from which your stimulus started','incdec=[-1 1]',sprintf('minmax=[0 %i]',maxSegNum)};
+      taskVarParams{end+1} = {'segmentEnd',maxSegNum,'The segment of the trial at which your stimulus ended','incdec=[-1 1]',sprintf('minmax=[0 %i]',maxSegNum)};
+      
+      % set up to get the variable name from the user
+      taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
+    end
+  end
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+  % give the option to use the same variable for all
+  if (scanNum == 1) && (length(params.scanNum)>1)
+    taskVarParams{end+1} = {'sameForAll',1,'type=checkbox','Use the same variable name for all analyses'};
+  end
+  %%%%%%%%%%%%%%%%%%%%%%%
+  % now we have all the dialog information, ask the user to set parameters
+  if useDefault
+    scanParams{params.scanNum(scanNum)} = mrParamsDefault(taskVarParams);
+  else
+    scanParams{params.scanNum(scanNum)} = mrParamsDialog(taskVarParams);
+  end
+  % user hit cancel
+  if isempty(scanParams{params.scanNum(scanNum)})
+    scanParams = [];
+    return
+  end
+  %%%%%%%%%%%%%%%%%%%%%%%
+    
+  % check if the varname is a cell array, then convert to a cell array
+  % instead of a string this is so that the user can specify a variable
+  % name like {{'varname'}}
+  if (isfield(scanParams{params.scanNum(scanNum)},'varname') &&...
+      isstr(scanParams{params.scanNum(scanNum)}.varname) && ...
+      (length(scanParams{params.scanNum(scanNum)}.varname) > 1) && ...
+      (scanParams{params.scanNum(scanNum)}.varname(1) == '{'))
+    scanParams{params.scanNum(scanNum)}.varname = eval(scanParams{params.scanNum(scanNum)}.varname);
+  end
+
+  % if sameForAll is set, copy all parameters into all scans and break out of loop
+  if isfield(scanParams{params.scanNum(scanNum)},'sameForAll') && ...
+	scanParams{params.scanNum(scanNum)}.sameForAll
+    for i = 2:length(params.scanNum)
+      % set the other scans params to the same as this one
+      scanParams{params.scanNum(i)} = scanParams{params.scanNum(1)};
+      % change the description field appropriately for this scan num
+      description = scanParams{params.scanNum(1)}.description;
+      groupNameLoc = strfind(description,params.groupName);
+      if ~isempty(groupNameLoc)
+	description = sprintf('%s%s: %i',description(1:groupNameLoc(1)),params.groupName,params.scanNum(i));
+      end
+      scanParams{params.scanNum(i)}.description = description;
+    end
+    break
+  end
+  taskVarParams = {};
 end
 

@@ -7,6 +7,12 @@
 %
 function params = eventRelatedGUI(varargin)
 
+% check arguments
+if ~any(nargin == [0 1 2 3 4 5])
+  help eventRelatedGUI
+  return
+end
+
 % get the arguments
 eval(evalargs(varargin));
 
@@ -35,7 +41,7 @@ end
 
 % set the parameter string
 paramsInfo = {...
-    {'groupName',groupNames,'type=popupmenu','Name of group from which to do eventRelated analysis'},...
+    {'groupName',groupNames,'Name of group from which to do eventRelated analysis'},...
     {'saveName','erAnal','File name to try to save as'},...
     {'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
     {'applyFiltering',1,'type=checkbox','Apply the same filtering that was used before concatenation to the design matrix. This will apply the hipass filter as well as the projection analsis if they have been done by concatTSeries'},...
@@ -56,13 +62,10 @@ end
 
 % get scans
 view = viewSet(view,'groupName',params.groupName);
-nScans = viewGet(view,'nScans');
 if ~ieNotDefined('scanList')
   params.scanNum = scanList;
 elseif useDefault
-  params.scanNum = 1:nScans;
-elseif nScans == 1
-  params.scanNum = nScans;
+  params.scanNum = 1:viewGet(view,'nScans');
 else
   params.scanNum = selectScans(view);
 end
