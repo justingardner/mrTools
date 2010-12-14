@@ -183,7 +183,12 @@ for i = 1:length(gParams.vars)
       dParams.entryValue(i) = 1;
       dParams.entryString{i} = {gParams.varinfo{i}.value};
       %make up a string of Xs of lengh equal to the longest string in the menu list
-      dParams.testString{i} =repmat('X',1,size(char(dParams.entryString{i}{1}),2)+3);
+      if strcmp(gParams.varinfo{i}.popuptype,'numeric')
+        charNum = length(num2str(max(dParams.entryString{i}{1}{:})));
+      else
+        charNum = size(char(dParams.entryString{i}{1}),2);
+      end 
+      dParams.testString{i} =repmat('X',1,charNum+3);
 
     case 'statictext'
       dParams.entryString{i} = {gParams.varinfo{i}.value};
