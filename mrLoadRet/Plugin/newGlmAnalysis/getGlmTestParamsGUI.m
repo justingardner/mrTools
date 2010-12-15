@@ -13,6 +13,9 @@ keepAsking = 1;
 
 while keepAsking
   %Default params
+  if isfield(params, 'contrasts') && strcmp(params.contrasts,'all')
+    params.numberContrasts = params.numberEVs;
+  end
   if ~isfield(params, 'contrasts') || isempty(params.contrasts) || ...
     ~isequal(size(params.contrasts,1),params.numberContrasts) || ~isequal(size(params.contrasts,2),params.numberEVs)
       params.contrasts=eye(params.numberContrasts,params.numberEVs);
