@@ -38,13 +38,17 @@ if isfield(params,'params')
   end
 end
 
+if isfield(params,'hrfModel') && strcmp(params.hrfModel,'hrfDiffGamma')
+  params.hrfModel='hrfDoubleGamma';
+end
+if isfield(params,'inplaceConcat') || isfield(params,'applyFiltering')
+  params.hrfModel='hrfDeconvolution';
+end
+  
 if isfield(params,'hrfParams')  
   if isfield(params.hrfParams,'incDeriv')
     params.hrfParams.includeDerivative = params.hrfParams.incDeriv;
     params.hrfParams = rmfield(params.hrfParams,'incDeriv');
-  end
-  if isfield(params.hrfParams,'hrfModel') && strcmp(params.hrfParams.hrfModel,'hrfDiffGamma')
-    params.hrfParams.hrfModel='hrfDoubleGamma';
   end
 end
 

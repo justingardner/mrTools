@@ -41,7 +41,8 @@ glmAnalysis(thisView);
 % this is to replace the GUI function of old event-related analyses
 function recomputeAnalysisCallback(hObject,~)
 
-thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+viewNum = getfield(guidata(hObject),'viewNum');
+thisView = viewGet(viewNum,'view');
 
 if viewGet(thisView,'numAnalyses') > 0
   n = viewGet(thisView,'currentAnalysis');

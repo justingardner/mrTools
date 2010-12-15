@@ -42,8 +42,16 @@ end
 if ~isfield(params,'hrfModel') || isempty(params.hrfModel)
   params.hrfModel ='hrfDoubleGamma';
 end
+nRois = viewGet(thisView,'numberOfRois');
 if ~isfield(params,'analysisVolume') || isempty(params.analysisVolume)
   params.analysisVolume ='Whole volume';
+else
+  if strcmp(params.analysisVolume,'Loaded ROI(s)')
+    if ~nRois
+      mrWarnDlg('(glmAnalysisGUI) No ROI loaded, switching to Whole Volume');
+      params.analysisVolume ='Whole volume';
+    end
+  end
 end
 
 if ~isfield(params,'numberEVs') || isempty(params.numberEVs)
@@ -94,7 +102,10 @@ askForParams = 1;
 % put group name on top of list to make it the default
 groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
 hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDoubleGamma','hrfDeconvolution'});
-analysisVolumeMenu = {'Whole volume','Subset box','Loaded ROI(s)'};
+analysisVolumeMenu = {'Whole volume','Subset box'};
+if nRois
+  analysisVolumeMenu{end+1} = 'Loaded ROI(s)';
+end
 analysisVolumeMenu = putOnTopOfList(params.analysisVolume,analysisVolumeMenu);
 correctionTypeMenu = putOnTopOfList(params.correctionType,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
 covEstimationMenu = putOnTopOfList(params.covEstimation,{'singleTukeyTapers','dampenedOscillator'});
@@ -110,10 +121,10 @@ while askForParams
     {'saveName',params.saveName,'File name to try to save as'},...
     {'hrfModel',hrfModelMenu,'type=popupmenu','Name of the function that defines the hrf used in glm',},...
     {'analysisVolume',analysisVolumeMenu,'type=popupmenu','Which voxels perform the analysis on. If subsetbox, the dimensions of the box can be specific to each scan and have to include a margin if covEstimationAreaSize>1',},...
-    {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
-    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
+    {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Explanatory Variables in the model = number of columns in the design matrix. if 0, the number of EV will be set to the number of stimulus type in the stimulsu file'},...
+    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Contrast that will be ouput as an overlay'},...
     {'computeTtests', params.computeTtests,'type=checkbox', 'Whether contrasts are tested for significance'},...
-    {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','bla'},...
+    {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays'},...
     {'covCorrection',params.covCorrection,'type=checkbox','Correction for correlated noise'},...
     {'correctionType',correctionTypeMenu,'type=popupmenu','contingent=covCorrection','Type of correction (see Wiki for the different algorithms and computing time comparison)'},...
     {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
@@ -195,12 +206,7 @@ while askForParams
           params.scanParams = scanParams;
 
           while askForParams    %get the stim to EV matrices for each scan
-            if ~params.numberEVs
-              thisDefaultParams =1;
-            else
-              thisDefaultParams = defaultParams;
-            end
-            [scanParams, params] = getGlmEVParamsGUI(thisView,params,thisDefaultParams);
+            [scanParams, params] = getGlmEVParamsGUI(thisView,params,defaultParams);
             if isempty(scanParams)
               askForParams = 1;
               break;

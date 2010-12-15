@@ -371,7 +371,7 @@ for iPlot = 1:length(roi)+1
     end
   end
   set(ehdrAxes,'xLim',[0,max(deconvTime(end),time(end))+framePeriod/2]);
-  maxSte = max(ehdrSte,[],3);
+  maxSte = abs(max(ehdrSte,[],3));
   makeScaleEditButton(fignum,ehdrAxes,...
     [min(min((ehdr-maxSte))),max(max((ehdr+maxSte)))]);
   if iPlot==1
@@ -554,12 +554,12 @@ set(fignum,'DefaultLineLineWidth',lineWidth);
 set(fignum,'DefaultAxesFontSize',fontSize);
 %set the colors
 colors = color2RGB;
-colors = colors([7 5 6 8 4 3 2 1 10]); %remove white and re-orerData
+colors = colors([7 5 6 8 4 3 2 1]); %remove white and black and re-orerData
 for i_color = 1:length(colors)
    colorOrder(i_color,:) = color2RGB(colors{i_color});
 end
 if numberColors>size(colorOrder,1)
-   colorOrder = repmat(colorOrder,ceil(numberColors/size(colorOrder,1)),1);
+   colorOrder(end+1:numberColors,:) = randomColors(numberColors-size(colorOrder,1));
 end
 colorOrder = colorOrder(1:numberColors,:);
 
