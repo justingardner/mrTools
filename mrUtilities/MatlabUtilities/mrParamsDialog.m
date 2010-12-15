@@ -478,7 +478,7 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
       callback = gParams.varinfo{varnum}.callback;
     end
     % create the string to call the function
-    funcall = 'gParams.varinfo{varnum}.value = feval(callback';
+    funcall = 'gParams.varinfo{varnum}(entryRow,entryCol).value = feval(callback';
     for i = 1:length(args)
       funcall = sprintf('%s,args{%i}',funcall,i);
     end
@@ -533,7 +533,7 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   % if we got an invalid number entry
   if isempty(val)
     if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
-      set(gParams.ui.varentry{varnum},'string',gParams.varinfo{varnum}.value);
+      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',gParams.varinfo{varnum}.value(entryRow,entryCol));
     end
     % otherwise remember this string as the default
   else
