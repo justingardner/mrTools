@@ -25,7 +25,7 @@ sliceDims(2) = size(newXCoords,2);
 numPixels = sliceDims(1)*sliceDims(2);
 newOverlayData = zeros(size(newXCoords));
 
-hWaitbar = mrWaitbar(0,'Resampling overlay to new space');
+hWaitbar = mrWaitBar(0,'Resampling overlay to new space');
 % Compute new overlay data by base slice
 nSlices = size(newXCoords,3);
 for i_slice = 1:nSlices
