@@ -97,7 +97,7 @@ if verbose>1,disppercent(-inf,'combine base and overlay');,end
 if ~isempty(base.RGB) & ~isempty(overlay.RGB)
   img = (1-overlay.alphaMap).*base.RGB + overlay.alphaMap.*overlay.RGB;
   cmap = overlay.cmap;
-  cbarRange = overlay.range;
+  cbarRange = overlay.colorRange;
 elseif ~isempty(base.RGB)
   img = base.RGB;
   cmap = base.cmap;

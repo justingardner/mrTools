@@ -3070,13 +3070,13 @@ switch lower(param)
         val = analysis.overlays(overlayNum).range;
       end
     end
-  case {'overlayclip'}
-    % overlayrange = viewGet(view,'overlayClip',[overlayNum],[analysisNum])
-    % overlayrange = viewGet(view,'overlayClip',overlayNum,[])
-    % overlayrange = viewGet(view,'overlayClip',[],analysisNum)
-    % overlayrange = viewGet(view,'overlayClip',[],[])
-    % overlayrange = viewGet(view,'overlayClip',overlayNum)
-    % overlayrange = viewGet(view,'overlayClip')
+  case {'overlaycolorrange'}
+    % overlaycolorrange = viewGet(view,'overlaycolorrange',[overlayNum],[analysisNum])
+    % overlaycolorrange = viewGet(view,'overlaycolorrange',overlayNum,[])
+    % overlaycolorrange = viewGet(view,'overlaycolorrange',[],analysisNum)
+    % overlaycolorrange = viewGet(view,'overlaycolorrange',[],[])
+    % overlaycolorrange = viewGet(view,'overlaycolorrange',overlayNum)
+    % overlaycolorrange = viewGet(view,'overlaycolorrange')
     if ieNotDefined('varargin')
       analysisNum = viewGet(view,'currentAnalysis');
       overlayNum = viewGet(view,'currentOverlay',analysisNum);
@@ -3099,7 +3099,11 @@ switch lower(param)
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = analysis.overlays(overlayNum).clip;
+        if isfield(analysis.overlays(overlayNum),'colorRange') && ~isempty(analysis.overlays(overlayNum).colorRange)
+          val = analysis.overlays(overlayNum).colorRange;
+        else
+          val = analysis.overlays(overlayNum).range;
+        end
       end
     end
   case {'overlayalpha'}

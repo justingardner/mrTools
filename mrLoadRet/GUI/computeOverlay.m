@@ -114,26 +114,26 @@ end
 % Rescale current overlay.
 if ~isempty(overlay.overlayIm)
   overlay.cmap = viewGet(view,'overlayCmap',curOverlay);
-  overlay.range = viewGet(view,'overlayRange',curOverlay);
+  overlay.colorRange = viewGet(view,'overlayColorRange',curOverlay);
   if strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMax')
     clip = viewGet(view,'overlayClip',curOverlay);
     if ~isempty(overlay.overlayIm(mask))
-      overlay.range(1) = max(clip(1),min(overlay.overlayIm(mask)));
-      overlay.range(2) = min(max(overlay.overlayIm(mask)),clip(2));
+      overlay.colorRange(1) = max(clip(1),min(overlay.overlayIm(mask)));
+      overlay.colorRange(2) = min(max(overlay.overlayIm(mask)),clip(2));
     else
-      overlay.range = clip;
+      overlay.colorRange = clip;
     end
   elseif strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMaxAroundZero')
     clip = viewGet(view,'overlayClip',curOverlay);
     if ~isempty(overlay.overlayIm(mask))
       maxval = max(abs(overlay.overlayIm(mask)));
-      overlay.range(1) = -maxval;
-      overlay.range(2) = maxval;
+      overlay.colorRange(1) = -maxval;
+      overlay.colorRange(2) = maxval;
     else
-      overlay.range = clip;
+      overlay.colorRange = clip;
     end
   end
-  overlay.RGB = rescale2rgb(overlay.overlayIm,overlay.cmap,overlay.range);
+  overlay.RGB = rescale2rgb(overlay.overlayIm,overlay.cmap,overlay.colorRange);
 else
   overlay.RGB = [];
 end

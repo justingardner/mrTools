@@ -1266,7 +1266,8 @@ switch lower(param)
     if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)  
       view.analyses{analysisNum}.overlays = overlay;                        
     else                                                                    
-      view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
+      %view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
+      view.analyses{analysisNum}.overlays = copyFields(overlay,view.analyses{analysisNum}.overlays,newOverlayNum);
     end
     % clear overlay cache
     view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
@@ -1316,30 +1317,25 @@ switch lower(param)
         mlrGuiSet(view,'overlay',overlayNum);
         % set overlay min and max sliders
         overlayClip = viewGet(view,'overlayClip',overlayNum,analysisNum);
-%        overlayRange = viewGet(view,'overlayRange',overlayNum,analysisNum);  %JB
+        overlayRange = viewGet(view,'overlayRange',overlayNum,analysisNum);  %JB
+        if isempty(overlayRange)
+          overlayRange = viewGet(view,'overlayColorRange',overlayNum,analysisNum);  %JB
+          if isempty(overlayRange)
+            overlayMin = viewGet(view,'minOverlaydata',overlayNum);                 %JB
+            overlayMax = viewGet(view,'maxOverlaydata',overlayNum);                 %JB
+            if isempty(overlayMin)
+              overlayMin = 0;
+            end
+            if isempty(overlayMax)
+              overlayMax = max(overlayMin,1);
+            end
+          end
+        end
         if isempty(overlayClip)
-          overlayClip = [0 1];
+          overlayClip = overlayRange;
         end
-%  %JB the min and max of the sliders should be the min and max of the data 
-%  %  (and not that of the color range)
-        minOverlay = viewGet(view,'minOverlaydata',overlayNum);                 %JB
-        maxOverlay = viewGet(view,'maxOverlaydata',overlayNum);                 %JB
-        if isempty(minOverlay) 
-           minOverlay = overlayClip(1);
-        end
-        if abs(minOverlay)==inf
-           mrWarnDlg('(viewSet) minOverlayData is not finite, setting min slider to clip value');
-           minOverlay = overlayClip(1);
-        end
-        if isempty(maxOverlay) 
-           maxOverlay = overlayClip(2);
-        end
-        if abs(maxOverlay)==inf
-           mrWarnDlg('(viewSet) maxOverlayData is not finite, setting max slider to clip value');
-           maxOverlay = overlayClip(2);
-        end
-        mlrGuiSet(view,'overlayMinRange',[minOverlay maxOverlay]);                %JB
-        mlrGuiSet(view,'overlayMaxRange',[minOverlay maxOverlay]);                %JB
+        mlrGuiSet(view,'overlayMinRange',overlayRange);
+        mlrGuiSet(view,'overlayMaxRange',overlayRange);
         mlrGuiSet(view,'overlayMin',overlayClip(1));
         mlrGuiSet(view,'overlayMax',overlayClip(2));
 
