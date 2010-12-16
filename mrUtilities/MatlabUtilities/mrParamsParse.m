@@ -55,20 +55,6 @@ for i = 1:length(vars)
       end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
-      % if it is a cell (contingent variable, check its first member
-      if iscell(vars{i}{2}{1})
-        if ischar(vars{i}{2}{1}{1})
-          varinfo{i}.popuptype = 'string';
-        else
-          varinfo{i}.popuptype = 'numeric';
-        end
-        % see if the default argument is a string
-      elseif  ischar(vars{i}{2}{1})
-        varinfo{i}.popuptype = 'string';
-      % otherwise numeric
-      else
-        varinfo{i}.popuptype = 'numeric';
-      end
     else
       varinfo{i}.type = 'string';
     end
@@ -135,7 +121,24 @@ for i = 1:length(vars)
       end
     end
   end
-  
+  %for popup menus, check the type
+  if strcmp(varinfo{i}.type,'popupmenu')       
+    varinfo{i}.popuptype = 'string';
+    if ~isempty(vars{i}{2})
+      if iscell(vars{i}{2}{1}) % if it is a cell (contingent variable, check its first member
+        if ischar(vars{i}{2}{1}{1})
+          varinfo{i}.popuptype = 'string';
+        else
+          varinfo{i}.popuptype = 'numeric';
+        end
+        % see if the default argument is a string
+      elseif  ~ischar(vars{i}{2}{1})
+        varinfo{i}.popuptype = 'numeric';
+      % otherwise numeric
+      end
+    end
+  end
+
   % make sure type is in lower case
   varinfo{i}.type = lower(varinfo{i}.type);
   % check for minmax violation
