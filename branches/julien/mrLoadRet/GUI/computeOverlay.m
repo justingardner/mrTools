@@ -114,24 +114,42 @@ end
 % Rescale current overlay.
 if ~isempty(overlay.overlayIm)
   overlay.cmap = viewGet(view,'overlayCmap',curOverlay);
-  overlay.colorRange = viewGet(view,'overlayColorRange',curOverlay);
-  if strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMax')
-    clip = viewGet(view,'overlayClip',curOverlay);
-    if ~isempty(overlay.overlayIm(mask))
-      overlay.colorRange(1) = max(clip(1),min(overlay.overlayIm(mask)));
-      overlay.colorRange(2) = min(max(overlay.overlayIm(mask)),clip(2));
-    else
-      overlay.colorRange = clip;
-    end
-  elseif strcmp(viewGet(view,'overlayCtype',curOverlay),'setRangeToMaxAroundZero')
-    clip = viewGet(view,'overlayClip',curOverlay);
-    if ~isempty(overlay.overlayIm(mask))
-      maxval = max(abs(overlay.overlayIm(mask)));
-      overlay.colorRange(1) = -maxval;
-      overlay.colorRange(2) = maxval;
-    else
-      overlay.colorRange = clip;
-    end
+  switch(viewGet(view,'overlayCtype',curOverlay))
+    case 'normal'
+      overlay.colorRange = viewGet(view,'overlayColorRange',curOverlay);
+    case 'setRangeToMax'
+      overlay.colorRange = viewGet(view,'overlayClip',curOverlay);
+      if ~isempty(overlay.overlayIm(mask))
+        overlay.colorRange(1) = max(overlay.colorRange(1),min(overlay.overlayIm(mask)));
+        overlay.colorRange(2) = min(max(overlay.overlayIm(mask)),overlay.colorRange(2));
+      end
+    case 'setRangeToMaxAroundZero'
+      overlay.colorRange = viewGet(view,'overlayClip',curOverlay);
+      if ~isempty(overlay.overlayIm(mask))
+        maxval = max(abs(overlay.overlayIm(mask)));
+        overlay.colorRange(1) = -maxval;
+        overlay.colorRange(2) = maxval;
+      end
+    case 'setRangeToMaxAcrossSlices'
+      overlay.colorRange = viewGet(view,'overlayClip',curOverlay);
+      minOverlay = viewGet(view,'minOverlaydata',curOverlay,analysisNum,scan); 
+      maxOverlay = viewGet(view,'maxOverlaydata',curOverlay,analysisNum,scan);
+      if ~isempty(minOverlay)
+        overlay.colorRange(1) = max(minOverlay,overlay.colorRange(1));
+      end
+      if ~isempty(maxOverlay)
+        overlay.colorRange(2) = min(maxOverlay,overlay.colorRange(2));
+      end
+    case 'setRangeToMaxAcrossSlicesAndScans'
+      overlay.colorRange = viewGet(view,'overlayClip',curOverlay);
+      minOverlay = viewGet(view,'minOverlaydata',curOverlay,analysisNum); 
+      maxOverlay = viewGet(view,'maxOverlaydata',curOverlay,analysisNum);
+      if ~isempty(minOverlay)
+        overlay.colorRange(1) = max(minOverlay,overlay.colorRange(1));
+      end
+      if ~isempty(maxOverlay)
+        overlay.colorRange(2) = min(maxOverlay,overlay.colorRange(2));
+      end
   end
   overlay.RGB = rescale2rgb(overlay.overlayIm,overlay.cmap,overlay.colorRange);
 else

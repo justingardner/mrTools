@@ -2825,14 +2825,12 @@ switch lower(param)
     end
     
   case  {'maxoverlaydata'}
-    % maxoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum])
-    % maxoverlaydata = viewGet(view,'maxoverlaydata',overlayNum,[])
-    % maxoverlaydata = viewGet(view,'maxoverlaydata',[],analysisNum)
+    % maxoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum],[scanlist])
     switch (length(varargin))
       case 1
         overlayNum = varargin{1};
         analysisNum = viewGet(view,'currentAnalysis');
-      case 2
+      case {2,3}
         overlayNum = varargin{1};
         analysisNum = varargin{2};
     end
@@ -2840,27 +2838,32 @@ switch lower(param)
 % %     if isfield(overlay,'maxOverlayData')     % This was meant to avoid having to recompute minoverlaydata that has been compute before
 % %       val = overlay.maxoverlaydata;          % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
 % %     else
-      val = -inf;
-      for iOverlay = 1:length(overlay.data)
-         if ~isempty(overlay.data{iOverlay})
-            val = max(val,max(overlay.data{iOverlay}(:)));
-         end
-      end
-      if val==-inf
-         val = [];
-      end
+    switch (length(varargin))
+      case {1 2}
+        scanlist = 1:length(overlay.data);
+      case 3
+        scanlist = varargin{3};
+        scanlist = scanlist(scanlist<=length(overlay.data));
+    end
+    val = -inf;
+    for iOverlay = scanlist
+       if ~isempty(overlay.data{iOverlay})
+          val = max(val,max(overlay.data{iOverlay}(:)));
+       end
+    end
+    if val==-inf
+       val = [];
+    end
 % %       viewSet(view,'maxoverlaydata',val,overlayNum);
 % %     end
     
   case  {'minoverlaydata'}
-    % minoverlaydata = viewGet(view,'minoverlaydata',[overlayNum],[analysisNum])
-    % minoverlaydata = viewGet(view,'minoverlaydata',overlayNum,[])
-    % minoverlaydata = viewGet(view,'minoverlaydata',[],analysisNum)
+    % minoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum],[scanlist])
     switch (length(varargin))
       case 1
         overlayNum = varargin{1};
         analysisNum = viewGet(view,'currentAnalysis');
-      case 2
+      case {2,3}
         overlayNum = varargin{1};
         analysisNum = varargin{2};
     end
@@ -2868,8 +2871,15 @@ switch lower(param)
 % %     if isfield(overlay,'minoverlaydata')    % This was meant to avoid having to recompute minoverlaydata that has been compute before
 % %       val = overlay.minoverlaydata;         % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
 % %     else
+    switch (length(varargin))
+      case {1 2}
+        scanlist = 1:length(overlay.data);
+      case 3
+        scanlist = varargin{3};
+        scanlist = scanlist(scanlist<=length(overlay.data));
+    end
       val = inf;
-      for iOverlay = 1:length(overlay.data)
+      for iOverlay = scanlist
          if ~isempty(overlay.data{iOverlay})
             val = min(val,min(overlay.data{iOverlay}(:)));
          end
