@@ -1809,7 +1809,6 @@ else
   mrWarnDlg(sprintf('(mrLoadRetGUI) No analyses loaded'));
 end
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function viewMenu_Callback(hObject, eventdata, handles)
 
@@ -2072,7 +2071,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 roiNames = viewGet(view,'roiNames');
 paramInfo = {...
-  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'type=popupmenu','editable=0','The ROI that will be combined with the otherROI'},...
+  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'type=popupmenu','The ROI that will be combined with the otherROI'},...
   {'otherROI',roiNames,'type=popupmenu','The otherROI is combined with the combineROI and the result is put into combineROI.'},...
   {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'type=popupmenu','Select action for combining ROIs.'},...
   {'combine',0,'type=pushbutton','callback',@doCombine,'passParams=1','callbackArg',viewNum,'buttonString=Do combination','Click this button to do the combination. This is the same as hitting OK but won''t close the dialog so you can continue to do more combinations'}};
@@ -2153,6 +2152,7 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
 v = convertROI(v);
+
 
 % --------------------------------------------------------------------
 function showRoiMenu_Callback(hObject, eventdata, handles)
