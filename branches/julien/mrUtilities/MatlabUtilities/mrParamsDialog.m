@@ -348,11 +348,12 @@ if ~isempty(callback)
   % an ok button with the callback
   if ~isempty(okCallback)
     gParams.okCallback = okCallback;
-  else
-    makeOkButton = 0;
+    okString = 'OK';
+%   else
+%     makeOkButton = 0;
   end
   % if a final argument is specified then put up 
-  % an ok button with the callback
+  % a cancel button with the callback
   if ~isempty(cancelCallback)
     gParams.cancelCallback = cancelCallback;
   else
@@ -456,9 +457,30 @@ function buttonHandler(varnum,entryRow,entryCol,incdec)
 
 global gParams;
 
-% if this is a push button then call its callback
-if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
-  if isfield(gParams.varinfo{varnum},'callback')
+
+%get the value
+if strcmp(gParams.varinfo{varnum}.type,'checkbox')
+  val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'Value');
+elseif strcmp(gParams.varinfo{varnum}.type,'popupmenu')
+  val = [];
+  if isfield(gParams.varinfo{varnum},'controls')
+    % get the value from the list of values
+    val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'Value');
+    val = gParams.varinfo{varnum}.value{val};
+    if ischar(val),val=mrStr2num(val);end
+  end
+else
+  % get the value of the text field
+  val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'string');
+  if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
+    % convert to number
+    val = mrStr2num(val);
+  end
+end
+
+% if this is a push button or the value is returned by a callback
+if isfield(gParams.varinfo{varnum},'callback') && ...
+  strcmp(gParams.varinfo{varnum}.type,'pushbutton') || gParams.varinfo{varnum}.passCallbackOutput
     args = {};getVars = 0;
     % if it wants optional arguments, pass that
     if isfield(gParams.varinfo{varnum},'callbackArg')
@@ -467,6 +489,9 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
     % if the function wants the current parameter settings, pass that
     if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
       args{end+1} = mrParamsGet(gParams.vars);
+    end
+    if isfield(gParams.varinfo{varnum},'passValue') && (gParams.varinfo{varnum}.passValue == 1)
+      args{end+1} = val;
     end
     if iscell(gParams.varinfo{varnum}.callback)
       passedArgs = gParams.varinfo{varnum}.callback(2:end);
@@ -478,37 +503,30 @@ if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
       callback = gParams.varinfo{varnum}.callback;
     end
     % create the string to call the function
-    funcall = 'gParams.varinfo{varnum}(entryRow,entryCol).value = feval(callback';
+    if gParams.varinfo{varnum}.passCallbackOutput
+      funcall = 'val = feval(callback';
+    else
+      funcall = 'feval(callback';
+    end
     for i = 1:length(args)
       funcall = sprintf('%s,args{%i}',funcall,i);
     end
     funcall = sprintf('%s);',funcall);
     % and call it
     eval(funcall);
-  else
+end
+
+if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
+  if ~isfield(gParams.varinfo{varnum},'callback')
     disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
+  elseif gParams.varinfo{varnum}.passCallbackOutput
+      gParams.varinfo{varnum}.value(entryRow,entryCol) = val;
   end
   return
 end
 
 % if this is supposed to be a number, then make sure it is.
 if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
-  if strcmp(gParams.varinfo{varnum}.type,'checkbox')
-    val = get(gParams.ui.varentry{varnum},'Value');
-  elseif strcmp(gParams.varinfo{varnum}.type,'popupmenu')
-    val = [];
-    if isfield(gParams.varinfo{varnum},'controls')
-      % get the value from the list of values
-      val = get(gParams.ui.varentry{varnum},'Value');
-      val = gParams.varinfo{varnum}.value{val};
-      if ischar(val),val=mrStr2num(val);end
-    end
-  else
-    % get the value of the text field
-    val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'string');
-    % convert to number
-    val = mrStr2num(val);
-  end
   % check for incdec (this is for buttons that increment or decrement
   % the values, if one of these was passed, we will have by how much
   % we need to increment or decrement the value
@@ -534,6 +552,7 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   if isempty(val)
     if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
       set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',gParams.varinfo{varnum}.value(entryRow,entryCol));
+      return  %no need to go to callback if the value hasn't changed, so return
     end
     % otherwise remember this string as the default
   else
@@ -541,7 +560,7 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
       if strcmp(gParams.varinfo{varnum}.type,'array')
         gParams.varinfo{varnum}.value(entryRow,entryCol)=val;
       else
-        gParams.varinfo{varnum}.value = num2str(val);
+        gParams.varinfo{varnum}.value(entryRow,entryCol) = num2str(val);
       end
       set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',num2str(val));
     end
@@ -630,29 +649,28 @@ if isfield(gParams, 'callback')
 end
 
 % handle callbacks for non-push buttons
-if ~ieNotDefined('gParams')
-  if isfield(gParams.varinfo{varnum},'callback')
-    callbackArgs={};
-    if isfield(gParams.varinfo{varnum},'callbackArg')
-      callbackArgs{end+1} = gParams.varinfo{varnum}.callbackArg;
-    end
-    callbackArgs{end+1} = mrParamsGet(gParams.vars);
-    if ~iscell(gParams.varinfo{varnum}.callback)
-      callback = gParams.varinfo{varnum}.callback;
-    else
-      callback = gParams.varinfo{varnum}.callback{1};
-      numArgs = length(gParams.varinfo{varnum}.callback)-1;
-      callbackArgs(end+(1:numArgs)) = gParams.varinfo{varnum}.callback(2:numArgs+1);
-    end
-    % create the string to call the function
-    funcall = 'feval(callback';
-    for i = 1:length(callbackArgs)
-      funcall = sprintf('%s,callbackArgs{%i}',funcall,i);
-    end
-    funcall = sprintf('%s);',funcall);
-    % and call it
-    eval(funcall);
+if ~ieNotDefined('gParams') && isfield(gParams.varinfo{varnum},'callback')...
+    && ~gParams.varinfo{varnum}.passCallbackOutput && ~strcmp(gParams.varinfo{varnum}.type,'pushbutton')
+  callbackArgs={};
+  if isfield(gParams.varinfo{varnum},'callbackArg')
+    callbackArgs{end+1} = gParams.varinfo{varnum}.callbackArg;
   end
+  callbackArgs{end+1} = mrParamsGet(gParams.vars);
+  if ~iscell(gParams.varinfo{varnum}.callback)
+    callback = gParams.varinfo{varnum}.callback;
+  else
+    callback = gParams.varinfo{varnum}.callback{1};
+    numArgs = length(gParams.varinfo{varnum}.callback)-1;
+    callbackArgs(end+(1:numArgs)) = gParams.varinfo{varnum}.callback(2:numArgs+1);
+  end
+  % create the string to call the function
+  funcall = 'feval(callback';
+  for i = 1:length(callbackArgs)
+    funcall = sprintf('%s,callbackArgs{%i}',funcall,i);
+  end
+  funcall = sprintf('%s);',funcall);
+  % and call it
+  eval(funcall);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

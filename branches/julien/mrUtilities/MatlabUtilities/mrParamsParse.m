@@ -86,6 +86,15 @@ for i = 1:length(vars)
   varinfo{i}.description = '';
   
   %--------------------------------------- check for options
+  % set defaults
+  varinfo{i}.editable = 1;
+  varinfo{i}.visible = 1; 
+  if strcmp(varinfo{i}.type,'pushbutton') %for historical reasons, defaults are different for pushbuttons
+    varinfo{i}.passCallbackOutput=1; 
+  else
+    varinfo{i}.passCallbackOutput=0; 
+  end
+  varinfo{i}.passValue=0; 
   if length(vars{i}) > 2
     skipNext = 0;
     for j = 3:length(vars{i})
@@ -136,14 +145,6 @@ for i = 1:length(vars)
     elseif vars{i}{2} > varinfo{i}.minmax(2)
       vars{i}{2} = varinfo{i}.minmax(2);
     end
-  end
-  % make editable by default
-  if ~isfield(varinfo{i},'editable')
-    varinfo{i}.editable = 1;
-  end
-  %check if it is visible and increment nrows accordingly
-  if ~isfield(varinfo{i},'visible') || ~isequal(varinfo{i}.visible,0)
-    varinfo{i}.visible = 1; %make it visible by default
   end
 end
 
