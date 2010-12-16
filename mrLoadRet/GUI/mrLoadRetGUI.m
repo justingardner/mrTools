@@ -502,9 +502,20 @@ refreshMLRDisplay(viewNum);
 function overlayMaxText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
-  set(hObject,'String',num2str(get(handles.overlayMaxSlider,'value')));
-else %otherwise, set the new value in the view and the GUI
+if isempty(value) %if the user just erased the value
+  % then  get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
+else
+  sliderMaxValue=get(handles.overlayMaxSlider,'max');
+  sliderMinValue=get(handles.overlayMinSlider,'min');
+  if value>sliderMaxValue %if the value is beyond the slider max
+    set(hObject,'String',num2str(sliderMaxValue));
+    value = sliderMaxValue;
+  elseif value<sliderMinValue %if the value is below the slider min
+    set(hObject,'String',num2str(sliderMinValue));
+    value = sliderMinValue;
+  end
+  %set the new value in the view and the GUI
   viewSet(viewNum,'overlayMax',value);
   refreshMLRDisplay(viewNum);
 end
@@ -537,6 +548,15 @@ value = str2num(get(hObject,'String'));
 if isempty(value) %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
+  sliderMaxValue=get(handles.overlayMaxSlider,'max');
+  sliderMinValue=get(handles.overlayMinSlider,'min');
+  if value>sliderMaxValue %if the value is beyond the slider max
+    set(hObject,'String',num2str(sliderMaxValue));
+    value = sliderMaxValue;
+  elseif value<sliderMinValue %if the value is below the slider min
+    set(hObject,'String',num2str(sliderMinValue));
+    value = sliderMinValue;
+  end
   viewSet(viewNum,'overlayMin',value);
   refreshMLRDisplay(viewNum);
 end

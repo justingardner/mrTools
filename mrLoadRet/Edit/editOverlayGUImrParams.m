@@ -24,26 +24,18 @@ function retval = editOverlayGUImrParams(viewNum)
   overlayUsefulRange = viewGet(v,'overlayRange', overlayNum, analysisNum);
   overlayColorRange = viewGet(v,'overlayColorRange', overlayNum, analysisNum);
   overlayClip = viewGet(v,'overlayClip', overlayNum, analysisNum);
-%  overlayName = viewGet(v, 'overlayName', overlayNum, analysisNum);
+  overlayName = viewGet(v, 'overlayName', overlayNum, analysisNum);
   alphaOverlay = viewGet(v,'alphaOverlay');
+  if isempty(alphaOverlay)
+    alphaOverlay = 'none';
+  end
+  alphaOverlayMenu = putOnTopOfList(alphaOverlay,setdiff(viewGet(v,'overlayNames'),overlayName));
   alphaOverlayExponent = viewGet(v,'alphaOverlayExponent');
   interrogator = viewGet(v,'interrogator',overlayNum,analysisNum);
   
-  %get the min and max
-  minOverlay = viewGet(v,'minOverlaydata',overlayNum);                 %JB
-  maxOverlay = viewGet(v,'maxOverlaydata',overlayNum);                 %JB
-  if isempty(minOverlay)
-     mrWarnDlg('(viewSet) minOverlayData is empty, setting min slider to range value');
-     minOverlay = overlayUsefulRange(1);
-  end
-  if isempty(maxOverlay) 
-    mrWarnDlg('(viewSet) maxOverlayData is empty, setting max slider to range value');
-     maxOverlay = overlayUsefulRange(2);
-  end
-  overlayLimitString = sprintf('minmax=[%f %f]',minOverlay,maxOverlay);
-
   numColors = size(viewGet(v,'overlaycmap',overlayNum),1);
-  overlayCtypeMenu = putOnTopOfList(viewGet(v,'overlayctype',overlayNum),{'normal', 'setRangeToMax', 'setRangeToMaxAroundZero'});
+  overlayCtypeMenu = putOnTopOfList(viewGet(v,'overlayctype',overlayNum),...
+    {'normal', 'setRangeToMax', 'setRangeToMaxAroundZero', 'setRangeToMaxAcrossSlices', 'setRangeToMaxAcrossSlicesAndScans'});
   
   % colormaps
   colormaps = {'default','hot','hsv','pink','cool','bone','copper','flag','gray','grayCirc','twoCondCmap','twoCondCircCmap','hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap' 'coolCmap','hotColdCmap'};
@@ -54,44 +46,94 @@ function retval = editOverlayGUImrParams(viewNum)
   
   % set up params dialog
   paramsInfo = {};
-  paramsInfo{end+1} = {'overlayCmap', colormaps,'type=popupmenu','List of possible colormaps','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overla colormap','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'numColors', numColors, 'first argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'flipCmap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'shiftCmap', 0, 'incdec=[-16 16]', 'shift the colormap -- this can be useful for retinotopy scans with circular colormaps','callback',@mrCmapCallback,'callbackArg',v}; 
-  paramsInfo{end+1} = {'overlayCtype',overlayCtypeMenu , 'type=popupmenu','setRangeToMax scales the colormap to overlayMin-overlayMax, as in R2 maps','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'overlayColorRange', overlayColorRange, 'The lower and upper bound on the colormap','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, overlayLimitString, 'The lower and upper bound on the clip slider','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'overlayClip', overlayClip, overlayLimitString, 'The lower and upper clip points on the colormap','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'interrogator', interrogator, 'Set the interrogator function name','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'alphaOverlay', alphaOverlay, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.','callback',@mrCmapCallback,'callbackArg',v};
- paramsInfo{end+1} = {'alphaOverlayExponent', alphaOverlayExponent,'incdec=[-0.1 0.1]','If you are using an alphaOverlay, this sets an exponent on the alphaOverlay to pass through. For example, if you just want the value from the overlay to be the alpha value then set this to 1. If you want to have it so that lower values get accentuated (usually this is the case), set the exponent to less than 1, but greater than 0. The alpha values are passed through the function alpha = alpha.^alphaOverlayExponent','callback',@mrCmapCallback,'callbackArg',v};
-  paramsInfo{end+1} = {'setAll', 0, 'type=pushbutton','Set all overlays to have them same settings','callback',@mrCmapSetAllCallback,'callbackArg',v,'buttonString=Set all overlays','passParams=1'};
+  paramsInfo{end+1} = {'overlayCmap', colormaps,'type=popupmenu','List of possible colormaps'};
+  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overla colormap'};
+  paramsInfo{end+1} = {'numColors', numColors, 'first argument to the colormap function'};
+  paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function'};
+  paramsInfo{end+1} = {'flipCmap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap'};
+  paramsInfo{end+1} = {'shiftCmap', 0, 'incdec=[-16 16]', 'shift the colormap -- this can be useful for retinotopy scans with circular colormaps'}; 
+  paramsInfo{end+1} = {'overlayCtype',overlayCtypeMenu , 'type=popupmenu',...
+      'setRangeToMax scales the colormap to overlayMin-overlayMax and ignores the color range (like R2 maps)'};
+  paramsInfo{end+1} = {'overlayColorRange', overlayColorRange, 'The lower and upper bound on the colormap when overlayCtype=''normal'''};
+  paramsInfo{end+1} = {'overlayClip', overlayClip, 'callback',{@checkCmapParams,'cliprange'},'passCallbackOutput=1','passValue=1','passParams=1',...
+      'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range'};
+  paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, 'callback',{@checkCmapParams,'usefulrange'},'passCallbackOutput=1','passValue=1','passParams=1',...
+      'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
+  paramsInfo{end+1} = {'interrogator', interrogator, 'Set the interrogator function name'};
+  paramsInfo{end+1} = {'alphaOverlay', alphaOverlayMenu, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.'};
+  paramsInfo{end+1} = {'alphaOverlayExponent', alphaOverlayExponent,'incdec=[-0.1 0.1]','If you are using an alphaOverlay, this sets an exponent on the alphaOverlay to pass through. For example, if you just want the value from the overlay to be the alpha value then set this to 1. If you want to have it so that lower values get accentuated (usually this is the case), set the exponent to less than 1, but greater than 0. The alpha values are passed through the function alpha = alpha.^alphaOverlayExponent'};
+  paramsInfo{end+1} = {'setAll', 0, 'type=pushbutton','Set all overlays to have them same settings','callback',@mrCmapSetAllCallback,'callbackArg',viewNum,'buttonString=Set all overlays','passParams=1'};
 %   paramsInfo{end+1} = {'overlayName', overlayName, 'The name for the overlay (e.g., co, am, or ph)'};
 
   % display dialog
-  mrParamsDialog(paramsInfo,'Change overlay colormap','modal=0');
+  mrParamsDialog(paramsInfo,'Change overlay colormap','modal=0','callback',@mrCmapCallback,'callbackArg',viewNum);
 
   return;
 
+function value = checkCmapParams(params,value,whichParam)
 
-function mrCmapCallback(v,params)
+switch(whichParam)
+  case 'usefulrange'
+    if params.overlayUsefulRange(1)>params.overlayClip(1) || params.overlayUsefulRange(2)<params.overlayClip(2)
+      mrWarnDlg('(editOverlayGUImrParams) useful range must contain clip values');
+      value = []; 
+    end
+    %check that min<max
+    if ~diff(params.overlayUsefulRange)
+      value=[];
+    end
+  case 'cliprange'
+    if params.overlayUsefulRange(1)>params.overlayClip(1) || params.overlayUsefulRange(2)<params.overlayClip(2)
+      mrWarnDlg('(editOverlayGUImrParams) clip values must be within useful range');
+      value = [];
+    end
+    %check that min<max
+    if ~diff(params.overlayClip)
+      value=[];
+    end
+end
 
-  disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
-  v = viewSet(v,'overlayCache','init');
+
+function mrCmapCallback(params,viewNum)
+
+   v = viewGet(viewNum,'view');
+   v = viewSet(v,'overlayCache','init');
   
   % get the current overlay
   analysisNum = viewGet(v,'currentAnalysis');
   overlayNum = viewGet(v,'currentOverlay',analysisNum);
-  o = viewGet(v, 'overlay', overlayNum, analysisNum);
-
+  currentOverlay = viewGet(v, 'overlay', overlayNum, analysisNum);
+  newOverlay = currentOverlay;
+  
+  %for some parameters, there is an existing viewSet
+  newOverlay.interrogator = params.interrogator;
+  if ~isequal(newOverlay.interrogator,currentOverlay.interrogator)
+    v=viewSet(v,'interrogator',newOverlay.interrogator);
+    refreshMLRDisplay(viewNum);
+    return;
+  end
+  newOverlay.range = [params.overlayUsefulRange(1) params.overlayUsefulRange(2)];
+  %if the range has changed, we only need to update the slider
+  if ~isequal(newOverlay.range,currentOverlay.range)
+    v=viewSet(v,'overlayRange',newOverlay.range, overlayNum);
+    refreshMLRDisplay(viewNum);
+    return;
+  end
+  % set the overlay range 
+  newOverlay.colorRange = [params.overlayColorRange(1) params.overlayColorRange(2)];
+  if ~isequal(newOverlay.colorRange,currentOverlay.colorRange)% && ~strcmp(newOverlay.colormapType,'normal')
+    v=viewSet(v,'overlayColorRange',newOverlay.colorRange, overlayNum);
+    refreshMLRDisplay(viewNum);
+    return;
+  end
+  
+  %parameters for which the overlay has to be recomputed as a whole (this should be changed by adding cases to viewSet)
   % set which color cmap to use
   if ~strcmp(params.overlayCmap, 'default')
     if sum(strcmp(params.overlayCmap, {'hsvDoubleCmap','cmapExtendedHSV','cmapHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap','coolCmap'}))
-      o.colormap = eval(sprintf('%s(%i,%i)', params.overlayCmap, params.numGrays, params.numColors));
+      newOverlay.colormap = eval(sprintf('%s(%i,%i)', params.overlayCmap, params.numGrays, params.numColors));
     else
-      o.colormap = eval(sprintf('%s(%i)', params.overlayCmap, params.numColors));
+      newOverlay.colormap = eval(sprintf('%s(%i)', params.overlayCmap, params.numColors));
     end
   end
 
@@ -101,7 +143,7 @@ function mrCmapCallback(v,params)
     if exist(sprintf('%s.m',params.userDefinedCmap))
       colormap = eval(sprintf('%s(%i)',params.userDefinedCmap,params.numColors));
       if isequal(size(colormap),[params.numColors 3])
-	o.colormap = colormap;
+	newOverlay.colormap = colormap;
       else
 	disp(sprintf('(editOverlay) Function %s must return a %ix%i array',params.userDefinedCmap,params.numColors,3));
       end
@@ -110,47 +152,51 @@ function mrCmapCallback(v,params)
     
   % flip the cmap
   if params.flipCmap
-    o.colormap = flipud(o.colormap);
+    newOverlay.colormap = flipud(newOverlay.colormap);
   end
 
   % shift the cmap
   if params.shiftCmap
-    o.colormap = circshift(o.colormap, params.shiftCmap);
+    newOverlay.colormap = circshift(newOverlay.colormap, params.shiftCmap);
   end
 
   % scale to max, or not
-  o.colormapType = params.overlayCtype;
+  newOverlay.colormapType = params.overlayCtype;
 
-  % set the overlay range & clip
-  o.colorRange = [params.overlayColorRange(1) params.overlayColorRange(2)];
-  o.range = [params.overlayUsefulRange(1) params.overlayUsefulRange(2)];
-  o.clip = [params.overlayClip(1) params.overlayClip(2)];
+  % set the overlay clip
+  newOverlay.clip = [params.overlayClip(1) params.overlayClip(2)];
   
 
 %   % set the name of the overlay
-%   o.name = params.overlayName;
+%   newOverlay.name = params.overlayName;
+  if strcmp(params.alphaOverlay,'none')
+    newOverlay.alphaOverlay = '';
+  else
+    newOverlay.alphaOverlay = params.alphaOverlay;
+  end
+  newOverlay.alphaOverlayExponent = params.alphaOverlayExponent;
+
   
-  o.alphaOverlay = params.alphaOverlay;
-  o.alphaOverlayExponent = params.alphaOverlayExponent;
-
-  o.interrogator = params.interrogator;
-  
-  % set the new overlay
-  v = viewSet(v,'newOverlay', o);
-
-  % and refresh
-  refreshMLRDisplay(v.viewNum);
-
-  disppercent(inf);
+  %iff the overlay has changed, 
+  if ~isequalwithequalnans(newOverlay,currentOverlay)
+    disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
+    % set the new overlay
+    v = viewSet(v,'newOverlay', newOverlay);
+    % and refresh
+    refreshMLRDisplay(v.viewNum);
+    disppercent(inf);
+  end
   return;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrCmapSetAllCallback   %%
+%%%  mrCmapSetAllCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function retval = mrCmapSetAllCallback(v,params)
+function retval = mrCmapSetAllCallback(viewNum,params)
 retval = [];
 hWaitBar = mrWaitBar(0,'(editOverlayGUImrParams) Setting overlays to have same parameters');
+
+v = viewGet(viewNum,'view');
 
 % get the current overlay
 currentOverlayNum = viewGet(v,'curOverlay');
@@ -178,20 +224,12 @@ v = viewSet(v,'curOverlay',viewGet(v,'overlayNum',currentOverlayName));
 
 mrCloseDlg(hWaitBar);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrEpiMovieClose   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%
-function mrCmapClose
-
-  return;
-  
-
   
   
   
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% list of useful cmaps taken from MLR3 %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% list of useful cmaps taken from MLR3 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function cmap = grayCirc(numGrays)
   if ~iseven(numGrays);
