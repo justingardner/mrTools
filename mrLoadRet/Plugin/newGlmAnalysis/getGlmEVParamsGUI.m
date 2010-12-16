@@ -123,9 +123,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%% plotStimDesign %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function dummy = plotExperimentalDesign(thisScanParams,scanParams,params,scanNum,thisView)
+function plotExperimentalDesign(thisScanParams,scanParams,params,scanNum,thisView)
 
-dummy = [];
 %we need to convert the stimToEVmatrix
 for iEvent = 1:length(params.stimNames)
   thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(params.stimNames{iEvent}));
