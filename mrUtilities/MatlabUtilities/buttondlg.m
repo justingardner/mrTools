@@ -164,15 +164,18 @@ response = get(gco,'UserData');
 %gather the status of the radio buttons if 'OK' was
 %selected.  Otherwise return empty matrix.
 if strcmp(response,'OK')
-    for optionNum=1:nOptions
-        reply(optionNum)=get(h_button(optionNum),'Value');
-    end
-else
+  for optionNum=1:nOptions
+      reply(optionNum)=get(h_button(optionNum),'Value');
+  end
+elseif strcmp(response,'Cancel') %here we differentiate between a Cancel press
     reply = [];
+else                             %and the user closing the window with the left (right) top button
+    reply = zeros(0,1);
 end
 
-figpos = get(h,'Position');
-mrSetFigLoc('buttondlg',figpos);
-close(h)
-
-drawnow;
+if ishandle(h)
+  figpos = get(h,'Position');
+  mrSetFigLoc('buttondlg',figpos);
+  close(h)
+  drawnow;
+end

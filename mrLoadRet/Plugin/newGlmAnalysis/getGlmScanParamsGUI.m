@@ -166,7 +166,7 @@ while keepAsking
 
     % user hit cancel
     if isempty(tempParams)
-       scanParams = [];
+       scanParams = tempParams;
        return
     end
     
