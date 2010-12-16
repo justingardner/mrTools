@@ -14,12 +14,6 @@
 %
 function [params params2] = mrParamsDialog(varargin)
 
-% check arguments
-if ~any(nargin == [1 2 3 4 5 6 7])
-  help mrParamsDialog
-  return
-end
-
 % if this is a cell array, it means to open up the figure
 % using the variable name, default value pairs given
 if iscell(varargin{1})
@@ -327,7 +321,7 @@ gParams.callback = [];
 makeOkButton = 1;
 makeCancelButton = modal; %only put a cancel if dialog box is modal (or if a custom cancel callback is passed)
 
-if modal==0  %if the dialog is non-modal, ok just closes it, unless a custom ok callback is passed)
+if modal==0  %if the dialog is non-modal, ok just closes it, unless custom ok/cancel callbackz are passed)
   gParams.okCallback = 'closeHandler';
   okString = 'Close';
 else
@@ -356,6 +350,7 @@ if ~isempty(callback)
   % a cancel button with the callback
   if ~isempty(cancelCallback)
     gParams.cancelCallback = cancelCallback;
+    makeCancelButton = 1;
   else
     makeCancelButton = 0;
   end
@@ -481,7 +476,7 @@ end
 % if this is a push button or the value is returned by a callback
 if isfield(gParams.varinfo{varnum},'callback') && ...
   strcmp(gParams.varinfo{varnum}.type,'pushbutton') || gParams.varinfo{varnum}.passCallbackOutput
-    args = {};getVars = 0;
+    args = {};%getVars = 0;
     % if it wants optional arguments, pass that
     if isfield(gParams.varinfo{varnum},'callbackArg')
       args{end+1} = gParams.varinfo{varnum}.callbackArg;
@@ -493,27 +488,35 @@ if isfield(gParams.varinfo{varnum},'callback') && ...
     if isfield(gParams.varinfo{varnum},'passValue') && (gParams.varinfo{varnum}.passValue == 1)
       args{end+1} = val;
     end
-    if iscell(gParams.varinfo{varnum}.callback)
-      passedArgs = gParams.varinfo{varnum}.callback(2:end);
-      callback = gParams.varinfo{varnum}.callback{1};
-      for iArg = 1:length(passedArgs)
-        args{end+1} = passedArgs{iArg};
-      end 
-    else
-      callback = gParams.varinfo{varnum}.callback;
-    end
-    % create the string to call the function
+    
+    %call the function
     if gParams.varinfo{varnum}.passCallbackOutput
-      funcall = 'val = feval(callback';
+      val = callbackEval(gParams.varinfo{varnum}.callback,args);
     else
-      funcall = 'feval(callback';
+      callbackEval(gParams.varinfo{varnum}.callback,args);
     end
-    for i = 1:length(args)
-      funcall = sprintf('%s,args{%i}',funcall,i);
-    end
-    funcall = sprintf('%s);',funcall);
-    % and call it
-    eval(funcall);
+
+%     if iscell(gParams.varinfo{varnum}.callback)
+%       passedArgs = gParams.varinfo{varnum}.callback(2:end);
+%       callback = gParams.varinfo{varnum}.callback{1};
+%       for iArg = 1:length(passedArgs)
+%         args{end+1} = passedArgs{iArg};
+%       end 
+%     else
+%       callback = gParams.varinfo{varnum}.callback;
+%     end
+%     % create the string to call the function
+%     if gParams.varinfo{varnum}.passCallbackOutput
+%       funcall = 'val = feval(callback';
+%     else
+%       funcall = 'feval(callback';
+%     end
+%     for i = 1:length(args)
+%       funcall = sprintf('%s,args{%i}',funcall,i);
+%     end
+%     funcall = sprintf('%s);',funcall);
+%     % and call it
+%     eval(funcall);
 end
 
 if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
@@ -557,7 +560,7 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
     % otherwise remember this string as the default
   else
     if ~any(strcmp(gParams.varinfo{varnum}.type,{'popupmenu','checkbox'}))
-      if strcmp(gParams.varinfo{varnum}.type,'array')
+      if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
         gParams.varinfo{varnum}.value(entryRow,entryCol)=val;
       else
         gParams.varinfo{varnum}.value(entryRow,entryCol) = num2str(val);
@@ -656,21 +659,24 @@ if ~ieNotDefined('gParams') && isfield(gParams.varinfo{varnum},'callback')...
     callbackArgs{end+1} = gParams.varinfo{varnum}.callbackArg;
   end
   callbackArgs{end+1} = mrParamsGet(gParams.vars);
-  if ~iscell(gParams.varinfo{varnum}.callback)
-    callback = gParams.varinfo{varnum}.callback;
-  else
-    callback = gParams.varinfo{varnum}.callback{1};
-    numArgs = length(gParams.varinfo{varnum}.callback)-1;
-    callbackArgs(end+(1:numArgs)) = gParams.varinfo{varnum}.callback(2:numArgs+1);
-  end
-  % create the string to call the function
-  funcall = 'feval(callback';
-  for i = 1:length(callbackArgs)
-    funcall = sprintf('%s,callbackArgs{%i}',funcall,i);
-  end
-  funcall = sprintf('%s);',funcall);
-  % and call it
-  eval(funcall);
+  callbackEval(gParams.varinfo{varnum}.callback,callbackArgs);
+  
+  
+%   if ~iscell(gParams.varinfo{varnum}.callback)
+%     callback = gParams.varinfo{varnum}.callback;
+%   else
+%     callback = gParams.varinfo{varnum}.callback{1};
+%     numArgs = length(gParams.varinfo{varnum}.callback)-1;
+%     callbackArgs(end+(1:numArgs)) = gParams.varinfo{varnum}.callback(2:numArgs+1);
+%   end
+%   % create the string to call the function
+%   funcall = 'feval(callback';
+%   for i = 1:length(callbackArgs)
+%     funcall = sprintf('%s,callbackArgs{%i}',funcall,i);
+%   end
+%   funcall = sprintf('%s);',funcall);
+%   % and call it
+%   eval(funcall);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -822,7 +828,7 @@ function cancelHandler(varargin)
 global gParams;
 gParams.ok = 0;
 if isfield(gParams,'cancelCallback')
-  feval(gParams.cancelCallback);
+  callbackEval(gParams.cancelCallback);
   closeHandler;
 else
   uiresume;
