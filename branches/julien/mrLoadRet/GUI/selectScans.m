@@ -43,6 +43,11 @@ preselection(preselected) = 1;
 
 % Which scans to analyze?
 iSel = buttondlg(title, scanNames,preselection);
-scanList = find(iSel);
+if isempty(iSel)
+  scanList = iSel; %if cancel has been pressed, this will be a 0*0 matrix, 
+  %but if the top close button has been pressed, it will be a 0*1 matrix
+else
+  scanList = find(iSel); %if OK is pressed but nothing has been selected, this will output a 1*0 array
+end
 
 return;

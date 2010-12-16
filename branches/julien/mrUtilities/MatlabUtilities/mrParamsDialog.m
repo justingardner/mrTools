@@ -109,7 +109,7 @@ end
 gParams.figlocstr{1} = sprintf('mrParamsDialog_%s',fixBadChars(titleStr));
 set(gParams.fignum,'MenuBar','none');
 set(gParams.fignum,'NumberTitle','off');
-set(gParams.fignum,'closeRequestFcn',@closeHandler);
+set(gParams.fignum,'closeRequestFcn',@altCloseHandler);
 if isempty(titleStr)
   set(gParams.fignum,'Name','Set parameters');
 else
@@ -434,11 +434,13 @@ uiwait;
 if ieNotDefined('gParams'),params=[];params2=[];return,end
 
 % check return value
-if gParams.ok
-  params = mrParamsGet(vars);
-else
-  % otherwise return empty
-  params = [];
+switch(gParams.ok)
+  case 1
+    params = mrParamsGet(vars);
+  case 0     % if cancel has been pressed return empty
+    params = [];
+  case -1 %if cancel button on top of window has been pressed, return 0*1 empty
+    params = zeros(0,1);
 end
 params2 = [];
 
@@ -833,6 +835,16 @@ if isfield(gParams,'cancelCallback')
 else
   uiresume;
 end
+
+%%%%%%%%%%%%%%%%%%%%
+% callback for close button on top of window
+%%%%%%%%%%%%%%%%%%%%
+function altCloseHandler(varargin)
+
+global gParams;
+gParams.ok = -1;
+uiresume;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeUIcontrol makes an uicontrol of any type %

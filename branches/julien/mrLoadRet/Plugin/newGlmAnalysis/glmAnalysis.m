@@ -44,7 +44,10 @@ if justGetParams
 end
 
 % Abort if params empty
-if ieNotDefined('params'),return,end
+if ieNotDefined('params')
+  disp('(glmAnalysis) GLM analysis cancelled');
+  return
+end
 
 
 % set the group

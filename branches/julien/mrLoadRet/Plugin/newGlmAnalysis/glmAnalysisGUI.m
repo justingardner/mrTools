@@ -171,7 +171,12 @@ while askForParams
       hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,defaultParams);
       % if empty user hit cancel, go back
       if isempty(hrfParams)
-        break;
+        if size(hrfParams,2) %if the top close button has been pressed
+          params=[];
+          return
+        else
+          break;
+        end
       end
       params.hrfParams = hrfParams;
       if ~isfield(params.hrfParams, 'description')
@@ -190,8 +195,13 @@ while askForParams
         elseif viewGet(thisView,'nScans',groupNum) >1
           scanNums = selectScans(thisView,[],groupNum,params.scanNum);
           if isempty(scanNums)
-            askForParams = 1;
-            break;
+            if size(scanNums,2) %if the top close button has been pressed
+              params=[];
+              return
+            else
+              askForParams = 1;
+              break;
+            end
           else
             params.scanNum = scanNums;
           end
@@ -200,16 +210,26 @@ while askForParams
         while askForParams    % get the parameters for each scan
           [scanParams, params] = getGlmScanParamsGUI(thisView,params,defaultParams);
           if isempty(scanParams)
-            askForParams = 1;
-            break;
+            if size(scanParams,2) %if the top close button has been pressed
+              params=[];
+              return
+            else
+              askForParams = 1;
+              break;
+            end
           end
           params.scanParams = scanParams;
 
           while askForParams    %get the stim to EV matrices for each scan
             [scanParams, params] = getGlmEVParamsGUI(thisView,params,defaultParams);
             if isempty(scanParams)
-              askForParams = 1;
-              break;
+              if size(scanParams,2) %if the top close button has been pressed
+                params=[];
+                return
+              else
+                askForParams = 1;
+                break;
+              end
             end
             params.scanParams = scanParams;
             if ~params.numberContrasts && ~params.numberFtests
@@ -220,8 +240,13 @@ while askForParams
               tempParams = getGlmTestParamsGUI(thisView,params,defaultParams);
               % if empty, user hit cancel, go back
               if isempty(tempParams)
-                askForParams = 1;
-                break;
+                if size(tempParams,2) %if the top close button has been pressed
+                  params=[];
+                  return
+                else
+                  askForParams = 1;
+                  break;
+                end
               else
                 params = tempParams;
                 %update the number of tests in case they've changed
