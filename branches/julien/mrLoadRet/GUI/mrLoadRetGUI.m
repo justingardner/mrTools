@@ -1314,7 +1314,11 @@ for onum = 1:length(a.overlays)
   paramsInfo{end+1} = {sprintf('overlay%iScans',onum),num2str(find(overlayExists)),'editable=0',sprintf('Scans that overlay %s exists for',a.overlays(onum).name)};
 end
 
-paramsInfo{end+1} = {'params',[],'View analysis parameters','type=pushbutton','buttonString=View analysis parameters','callback',@viewAnalysisParams,'callbackArg',v};
+if isfield(a.params,'paramInfo') %if the parameteres have been asked by mrParams
+  paramsInfo{end+1} = {'params',[],'View analysis parameters','type=pushbutton','buttonString=View analysis parameters','callback',{@mrParamsDisp,a.params,'Analysis Parameters'}};
+else
+  paramsInfo{end+1} = {'params',[],'View analysis parameters','type=pushbutton','buttonString=View analysis parameters','callback',@viewAnalysisParams,'callbackArg',v};
+end
 
 disppercent(inf);
 
