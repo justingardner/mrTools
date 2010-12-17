@@ -78,15 +78,18 @@ end
 % variable is being set
 buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];modal=[];
 if (length(otherParams) > 2)
-  if ischar(otherParams{3})
-    getArgs(otherParams(3:end));
-  else
+  if ~ischar(otherParams{3})
     % get the arguments the old way, by order
     buttonWidth = otherParams{3};
     if length(otherParams) > 3,callback = otherParams{4}; end
     if length(otherParams) > 4,callbackArg = otherParams{5}; end
     if length(otherParams) > 5,okCallback = otherParams{6}; end
     if length(otherParams) > 6,cancelCallback = otherParams{7}; end
+    if length(otherParams) > 7 &&ischar(otherParams{7})
+      getArgs(otherParams(7:end));
+    end
+  else
+    getArgs(otherParams(3:end));
   end
 end
 
@@ -476,58 +479,33 @@ else
 end
 
 % if this is a push button or the value is returned by a callback
-if isfield(gParams.varinfo{varnum},'callback') && ...
-  strcmp(gParams.varinfo{varnum}.type,'pushbutton') || gParams.varinfo{varnum}.passCallbackOutput
-    args = {};%getVars = 0;
-    % if it wants optional arguments, pass that
-    if isfield(gParams.varinfo{varnum},'callbackArg')
-      args{end+1} = gParams.varinfo{varnum}.callbackArg;
-    end
-    % if the function wants the current parameter settings, pass that
-    if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
-      args{end+1} = mrParamsGet(gParams.vars);
-    end
-    if isfield(gParams.varinfo{varnum},'passValue') && (gParams.varinfo{varnum}.passValue == 1)
-      args{end+1} = val;
-    end
-    
-    %call the function
-    if gParams.varinfo{varnum}.passCallbackOutput
-      val = callbackEval(gParams.varinfo{varnum}.callback,args);
-    else
-      callbackEval(gParams.varinfo{varnum}.callback,args);
-    end
-
-%     if iscell(gParams.varinfo{varnum}.callback)
-%       passedArgs = gParams.varinfo{varnum}.callback(2:end);
-%       callback = gParams.varinfo{varnum}.callback{1};
-%       for iArg = 1:length(passedArgs)
-%         args{end+1} = passedArgs{iArg};
-%       end 
-%     else
-%       callback = gParams.varinfo{varnum}.callback;
-%     end
-%     % create the string to call the function
-%     if gParams.varinfo{varnum}.passCallbackOutput
-%       funcall = 'val = feval(callback';
-%     else
-%       funcall = 'feval(callback';
-%     end
-%     for i = 1:length(args)
-%       funcall = sprintf('%s,args{%i}',funcall,i);
-%     end
-%     funcall = sprintf('%s);',funcall);
-%     % and call it
-%     eval(funcall);
-end
-
-if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
-  if ~isfield(gParams.varinfo{varnum},'callback')
+if strcmp(gParams.varinfo{varnum}.type,'pushbutton') && ~isfield(gParams.varinfo{varnum},'callback')
     disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
-  elseif gParams.varinfo{varnum}.passCallbackOutput
-      gParams.varinfo{varnum}.value(entryRow,entryCol) = val;
+    return
+elseif isfield(gParams.varinfo{varnum},'callback') && ...
+        strcmp(gParams.varinfo{varnum}.type,'pushbutton') || gParams.varinfo{varnum}.passCallbackOutput
+  args = {};%getVars = 0;
+  % if it wants optional arguments, pass that
+  if isfield(gParams.varinfo{varnum},'callbackArg')
+    args{end+1} = gParams.varinfo{varnum}.callbackArg;
   end
-  return
+  % if the function wants the current parameter settings, pass that
+  if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
+    args{end+1} = mrParamsGet(gParams.vars);
+  end
+  % if the function wants the entry value
+  if isfield(gParams.varinfo{varnum},'passValue') && (gParams.varinfo{varnum}.passValue == 1)
+    args{end+1} = val;
+  end
+
+  %call the function
+  if gParams.varinfo{varnum}.passCallbackOutput
+    val = callbackEval(gParams.varinfo{varnum}.callback,args);
+    gParams.varinfo{varnum}.value(entryRow,entryCol) = val;
+  else
+    callbackEval(gParams.varinfo{varnum}.callback,args);
+    return; %if no value is returned, we're done
+  end
 end
 
 % if this is supposed to be a number, then make sure it is.
@@ -663,22 +641,6 @@ if ~ieNotDefined('gParams') && isfield(gParams.varinfo{varnum},'callback')...
   callbackArgs{end+1} = mrParamsGet(gParams.vars);
   callbackEval(gParams.varinfo{varnum}.callback,callbackArgs);
   
-  
-%   if ~iscell(gParams.varinfo{varnum}.callback)
-%     callback = gParams.varinfo{varnum}.callback;
-%   else
-%     callback = gParams.varinfo{varnum}.callback{1};
-%     numArgs = length(gParams.varinfo{varnum}.callback)-1;
-%     callbackArgs(end+(1:numArgs)) = gParams.varinfo{varnum}.callback(2:numArgs+1);
-%   end
-%   % create the string to call the function
-%   funcall = 'feval(callback';
-%   for i = 1:length(callbackArgs)
-%     funcall = sprintf('%s,callbackArgs{%i}',funcall,i);
-%   end
-%   funcall = sprintf('%s);',funcall);
-%   % and call it
-%   eval(funcall);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
