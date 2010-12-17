@@ -24,7 +24,7 @@ function retval = editOverlayGUImrParams(viewNum)
   overlay = viewGet(v, 'overlay', overlayNum, analysisNum);
   overlayUsefulRange = viewGet(v,'overlayRange', overlayNum, analysisNum);
   overlayColorRange = viewGet(v,'overlayColorRange', overlayNum, analysisNum);
-  overlayClip = viewGet(v,'overlayClip', overlayNum, analysisNum);
+  overlayClipRange = viewGet(v,'overlayClip', overlayNum, analysisNum);
   overlayName = viewGet(v, 'overlayName', overlayNum, analysisNum);
   alphaOverlay = viewGet(v,'alphaOverlay');
   if isempty(alphaOverlay)
@@ -56,8 +56,8 @@ function retval = editOverlayGUImrParams(viewNum)
   paramsInfo{end+1} = {'overlayColormapType',overlayColormapTypeMenu , 'type=popupmenu',...
       '''normal'' scales the colormap to the value specified by colormap range; ''setRangeToMax'' scales the colormap to the min amnd max of the displayed overlay slice and ignores the color range (like R2 maps)'};
   paramsInfo{end+1} = {'overlayColorRange', overlayColorRange, 'The lower and upper bound on the colormap when overlayColormapType=''normal'''};
-  paramsInfo{end+1} = {'overlayClip', overlayClip, 'callback',{@checkCmapParams,'cliprange'},'passCallbackOutput=1','passValue=1','passParams=1',...
-      'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range'};
+  paramsInfo{end+1} = {'overlayClipRange', overlayClipRange, 'callback',{@checkCmapParams,'cliprange'},'passCallbackOutput=1','passValue=1','passParams=1',...
+      'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range. If clip(1)>clip(2), then values inside the clip range are masked.'};
   paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, 'callback',{@checkCmapParams,'usefulrange'},'passCallbackOutput=1','passValue=1','passParams=1',...
       'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
   paramsInfo{end+1} = {'interrogator', interrogator, 'Sets the overlay default interrogator function'};
@@ -100,14 +100,14 @@ function value = checkCmapParams(params,value,whichParam)
 switch(whichParam)
   case 'cliprange'
     %we don't know what value we got so we need to find out first
-    indexInArray = find(params.overlayClip==value);
+    indexInArray = find(params.overlayClipRange==value);
     switch(indexInArray)
       case 1
-        if params.overlayClip(indexInArray)<params.overlayUsefulRange(1)
+        if params.overlayClipRange(indexInArray)<params.overlayUsefulRange(1)
           value = [];
         end
       case 2
-        if params.overlayClip(indexInArray)>params.overlayUsefulRange(2)
+        if params.overlayClipRange(indexInArray)>params.overlayUsefulRange(2)
           value = [];
         end
     end
@@ -124,11 +124,11 @@ switch(whichParam)
     indexInArray = find(params.overlayUsefulRange==value);
     switch(indexInArray)
       case 1
-        if params.overlayUsefulRange(indexInArray)>params.overlayClip(1)
+        if params.overlayUsefulRange(indexInArray)>params.overlayClipRange(1)
           value = [];
         end
       case 2
-        if params.overlayUsefulRange(indexInArray)<params.overlayClip(2)
+        if params.overlayUsefulRange(indexInArray)<params.overlayClipRange(2)
           value = [];
         end
     end
@@ -136,7 +136,7 @@ switch(whichParam)
       mrWarnDlg('(editOverlayGUImrParams) useful range must be within useful range');
     end  
     %check that min<max
-    if ~diff(params.overlayClip)
+    if ~diff(params.overlayClipRange)
       mrWarnDlg('(editOverlayGUImrParams) useful range must be increasing');
       value=[];
     end
@@ -217,7 +217,7 @@ function mrCmapCallback(params,viewNum)
   newOverlay.colormapType = params.overlayColormapType;
 
   % set the overlay clip
-  newOverlay.clip = [params.overlayClip(1) params.overlayClip(2)];
+  newOverlay.clip = [params.overlayClipRange(1) params.overlayClipRange(2)];
   
 
 %   % set the name of the overlay
