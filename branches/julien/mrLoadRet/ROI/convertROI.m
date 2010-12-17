@@ -1,3 +1,4 @@
+
 % convertROI.m
 %
 %        $Id$
@@ -37,27 +38,30 @@ paramsDialog{end+1} = {'conversionType',{'Convert coordinates','Only adopt xform
 paramsDialog{end+1} = {'destinationSpace',[baseName,{'current scan'}],'type=popupmenu',...
    'which coordinate space you want to convert the ROI to/adopt the xform from'};
 for roinum = 1:numRois
+  
+  % roi name
+  helpinfo = sprintf('Convert ROI %i: %s',roinum,roiNames{roinum});
+  paramsDialog{end+1} = {fixBadChars(roiNames{roinum}),0,'type=checkbox',helpinfo};
+  
   % roi xform and voxel size
   roiXform = viewGet(thisView,'roiXform',roinum);
-  %roiVoxelSize = viewGet(thisView,'roiVoxelSize',roinum);
   if isequal(roiXform,curScanXform)
      roiSpace{roinum} = 'Current Scan';
   elseif isequal(roiXform,baseXform{curBaseNum})
      roiSpace{roinum} = ['Current Base (' baseName{curBaseNum} ')'];
   else         %here only find first base with identical xform, could be modified to find all bases
-     for iBase = 1:numBases
-        if isequal(baseXform{iBase},roiXform)
-           roiSpace{roinum} = baseName{iBase};
-           break;
-        end
-     end
+    for iBase = 1:numBases
+      if isequal(baseXform{iBase},roiXform)
+         roiSpace{roinum} = baseName{iBase};
+         break;
+      end
+    end
+    %if we're still here, that means we haven't found the space
+    %display the voxel size to give a clue to user
+    roiVoxelSize = viewGet(thisView,'roiVoxelSize',roinum);
+    paramsDialog{end+1} = {sprintf('%s_voxelSize',fixBadChars(roiNames{roinum})),roiVoxelSize,'editable=0',sprintf('Current voxel size for roi %s',roiNames{roinum})};
   end
-           
-  % set help info
-  helpinfo = sprintf('Convert ROI %i: %s',roinum,roiNames{roinum});
- paramsDialog{end+1} = {fixBadChars(roiNames{roinum}),0,'type=checkbox',helpinfo};
-% paramsDialog{end+1} = {sprintf('%s_voxelSize',fixBadChars(roiNames{roinum})),roiVoxelSize,'editable=0',sprintf('Current voxel size for roi %s',roiNames{roinum})};
- paramsDialog{end+1} = {[fixBadChars(roiNames{roinum}) ' space'],roiSpace{roinum},'editable=0',['Current coordinate space for roi ' roiNames{roinum}]};
+  paramsDialog{end+1} = {[fixBadChars(roiNames{roinum}) ' space'],roiSpace{roinum},'editable=0',['Current coordinate space for roi ' roiNames{roinum}]};
 end
 
 % put up dialog

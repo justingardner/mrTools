@@ -32,7 +32,7 @@ while keepAsking
        scanParams{iScan}.scan = sprintf('%i: %s',iScan,viewGet(thisView,'description',iScan,groupNum));
     end
     if ~isfield(scanParams{iScan},'description')
-       scanParams{iScan}.description = sprintf('Event related analysis of %s: %i',params.groupName,iScan);
+       scanParams{iScan}.description = sprintf('GLM analysis of %s: %i',params.groupName,iScan);
     end
     if ~isfield(scanParams{iScan},'preprocess')
        scanParams{iScan}.preprocess = '';
