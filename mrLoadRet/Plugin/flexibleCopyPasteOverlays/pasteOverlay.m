@@ -27,7 +27,7 @@ curGroupNum =  viewGet(thisView,'groupNum',curGroupName);
 for iOverlay = 1:length(overlay)
    [check thisOverlay] = isoverlay(overlay(iOverlay));
    if ~check
-       mrWarnDlg('(pasteOverlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
+       mrErrorDlg('(pasteOverlay) Cannot paste. Clipboard does not contain a valid overlay. Use Edit -> Overlay -> Copy Overlay.')
    end
    fromGroupNum = viewGet(thisView,'groupNum',thisOverlay.groupName);
    scan2scan = viewGet(thisView,'scan2scan',1,curGroupNum,1,fromGroupNum);
