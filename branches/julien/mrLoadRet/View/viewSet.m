@@ -1318,22 +1318,6 @@ switch lower(param)
         % set overlay min and max sliders
         overlayClip = viewGet(view,'overlayClip',overlayNum,analysisNum);
         overlayRange = viewGet(view,'overlayRange',overlayNum,analysisNum);  %JB
-        if isempty(overlayRange)
-          overlayRange = viewGet(view,'overlayColorRange',overlayNum,analysisNum);  %JB
-          if isempty(overlayRange)
-            overlayMin = viewGet(view,'minOverlaydata',overlayNum);                 %JB
-            overlayMax = viewGet(view,'maxOverlaydata',overlayNum);                 %JB
-            if isempty(overlayMin)
-              overlayMin = 0;
-            end
-            if isempty(overlayMax)
-              overlayMax = max(overlayMin,1);
-            end
-          end
-        end
-        if isempty(overlayClip)
-          overlayClip = overlayRange;
-        end
         mlrGuiSet(view,'overlayMinRange',overlayRange);
         mlrGuiSet(view,'overlayMaxRange',overlayRange);
         mlrGuiSet(view,'overlayMin',overlayClip(1));
