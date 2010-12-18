@@ -16,7 +16,10 @@ function thisView = modelCoranalFromGlm(thisView,params)
 %initialize parameters
 if ieNotDefined('params')
   params = modelCoranalFromGlmGUI('thisView',thisView);
-  if ieNotDefined('params'),return,end;
+  if ieNotDefined('params')
+    mrWarnDlg('(modelCoranalFromGlm) Analysis cancelled');
+    return;
+  end
 end
 
 curGroupName = params.originalGroup;
@@ -38,7 +41,7 @@ scanDims = viewGet(thisView,'dims');
 curScan = viewGet(thisView,'curScan');
 
 reverseScans = eval(params.reverseScans);
-contrasts = eval(params.contrasts);
+contrasts = params.contrasts;
 if strcmp(params.noiseMode,'No noise')
   params.nScans = 2; %no need to model more than one sequence and its reverse
   reverseScans = 2;
