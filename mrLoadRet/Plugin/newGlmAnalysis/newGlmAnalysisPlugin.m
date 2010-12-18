@@ -1,6 +1,6 @@
 % newGlmAnalysisPlugin.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: newGlmAnalysisPlugin(action,<thisView>)
 %         by: julien besle
 %       date: 12/14/10

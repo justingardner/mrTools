@@ -1,6 +1,6 @@
 % gethdr.m
 %
-%        $Id: getContrastEstimate.m 1891 2010-11-25 08:06:27Z julien $	
+%        $Id$	
 %      usage: getContrastEstimate(d,x,y,s)
 %         by: julien besle, modified from gethdr by Justin Gardner
 %       date: 29/11/2010
