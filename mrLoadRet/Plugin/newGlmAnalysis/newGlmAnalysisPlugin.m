@@ -59,7 +59,10 @@ if viewGet(thisView,'numAnalyses') > 0
   evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params,','''','thisView','''',',thisView);'];
   eval(evalstring);
   % params is empty if GUI cancelled
-  if ~isempty(params)
+  if isempty(params)
+    disp('(glmAnalysis) GLM analysis cancelled');
+    return
+  else
     %check if the group has changed, in which case we need to remove the tseriesFile field so that reconcileParams doesn't get confused
     if isfield(params,'groupName') && ~strcmp(groupName,params.groupName) && isfield(params,'tseriesFile')
        params = rmfield(params,'tseriesFile');

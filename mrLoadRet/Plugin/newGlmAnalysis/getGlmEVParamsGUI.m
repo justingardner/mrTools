@@ -7,7 +7,7 @@
 %    purpose: return EV specific parameters for GLM analysis
 %
 
-function [scanParams, params] = getGlmScanParamsGUI(thisView,params,useDefault)
+function [scanParams, params] = getGlmEVParamsGUI(thisView,params,useDefault)
 
 keepAsking = 1;
 groupNum = viewGet(thisView,'groupNum',params.groupName);
@@ -37,7 +37,6 @@ while keepAsking
     d = loadScan(thisView, iScan, groupNum, 0);
     d = getStimvol(d,scanParams{iScan});
     d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
-    params.stimNames = d.stimNames;
     nStims = length(d.stimvol);
     disp(sprintf('%d conditions found', nStims));
     
@@ -51,18 +50,18 @@ while keepAsking
     if isempty(EVnames) 
       EVnames = repmat({' '},1,params.numberEVs);
       if params.numberEVs < nStims
-        EVnames = params.stimNames(1:params.numberEVs);
+        EVnames = d.stimNames(1:params.numberEVs);
       else
-        EVnames(1:params.numberEVs) = params.stimNames;
+        EVnames(1:params.numberEVs) = d.stimNames;
       end
     end
 
     paramsInfo = cell(1,nStims+4);
     paramsInfo{1}= {'scan', scanParams{iScan}.scan, 'editable=0','description of the scan'};
     for iEvent = 1:nStims
-      paramsInfo{iEvent+1} = {fixBadChars(params.stimNames{iEvent}), scanParams{iScan}.stimToEVmatrix(iEvent,:),...
+      paramsInfo{iEvent+1} = {fixBadChars(d.stimNames{iEvent}), scanParams{iScan}.stimToEVmatrix(iEvent,:),...
         'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
-        ['How much stimulus ' fixBadChars(params.stimNames{iEvent}) ' contributes to each EV']};
+        ['How much stimulus ' fixBadChars(d.stimNames{iEvent}) ' contributes to each EV']};
     end
     paramsInfo{nStims+2}= {'EVnames', EVnames, 'type=stringarray','self explanatory'};
     paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Plots the experimental design before convolution',...
@@ -92,10 +91,13 @@ while keepAsking
     tempParams = mrParamsRemoveField(tempParams,'showDesign');
     
     % form stimToEV matrix from fields
+    stimToEVmatrix = zeros(nStims,params.numberEVs);
     for iEvent = 1:nStims
-      scanParams{iScan}.stimToEVmatrix(iEvent,:) = tempParams.(fixBadChars(params.stimNames{iEvent}));
-      tempParams = mrParamsRemoveField(tempParams,fixBadChars(params.stimNames{iEvent}));
+      stimToEVmatrix(iEvent,:) = tempParams.(fixBadChars(d.stimNames{iEvent}));
+      tempParams = mrParamsRemoveField(tempParams,fixBadChars(d.stimNames{iEvent}));
     end
+    scanParams{iScan} = mrParamsCopyFields(...
+      mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix,'Matrix forming EVs from combinations of stimulus types'}}),scanParams{iScan});
     EVnames = tempParams.EVnames;
     tempParams = mrParamsRemoveField(tempParams,'EVnames');
     
@@ -126,8 +128,8 @@ end
 function plotExperimentalDesign(thisScanParams,scanParams,params,scanNum,thisView)
 
 %we need to convert the stimToEVmatrix
-for iEvent = 1:length(params.stimNames)
-  thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(params.stimNames{iEvent}));
+for iEvent = 1:length(d.stimNames)
+  thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(d.stimNames{iEvent}));
 end
 
 if ~isfield(thisScanParams,'sameForNextScans') || thisScanParams.sameForNextScans
