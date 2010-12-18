@@ -1,6 +1,6 @@
 % hrfDoubleGamma.m
 %
-%        $Id: hrfDoubleGamma.m 1921 2010-12-13 10:22:30Z julien $
+%        $Id$
 %      usage: [params,hrf] = hrfDoubleGamma(params, tr, stimDuration )
 %         by: farshad moradi, modified by julien besle
 %       date: 14/06/07, 09/02/2010

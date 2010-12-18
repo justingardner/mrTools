@@ -4,7 +4,7 @@
 %         by: farshad moradi,  modified by julien besle 12/01/2010 to 25/10/2010 to perform an ANOVAs(F-tests) and T-tests
 %       date: 06/14/07
 %    purpose: GLM analysis using design matrix convolved with any HRF model (including deconvolution)
-%              $Id: glmAnalysis.m 1918 2010-12-07 14:39:20Z ds $
+%              $Id$
 %
 % 
 %     Fits a GLM to the data using ordinary or generalized Least Squares

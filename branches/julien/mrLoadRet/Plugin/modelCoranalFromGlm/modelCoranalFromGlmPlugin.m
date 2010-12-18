@@ -1,6 +1,6 @@
 % modelCoranalFromGlmPlugin.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: DefaultPlugin(action,<thisView>)
 %         by: julien besle
 %       date: 12/13/10
