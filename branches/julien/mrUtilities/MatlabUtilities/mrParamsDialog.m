@@ -478,12 +478,14 @@ else
   end
 end
 
-% if this is a push button or the value is returned by a callback
-if strcmp(gParams.varinfo{varnum}.type,'pushbutton') && ~isfield(gParams.varinfo{varnum},'callback')
+isPushButton = strcmp(gParams.varinfo{varnum}.type,'pushbutton');
+% if this is a push button and there is no callback
+if isPushButton && ~isfield(gParams.varinfo{varnum},'callback')
     disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
     return
+%if this is a pushbutton or the value is returned by a callback
 elseif isfield(gParams.varinfo{varnum},'callback') && ...
-        strcmp(gParams.varinfo{varnum}.type,'pushbutton') || gParams.varinfo{varnum}.passCallbackOutput
+        isPushButton || gParams.varinfo{varnum}.passCallbackOutput
   args = {};%getVars = 0;
   % if it wants optional arguments, pass that
   if isfield(gParams.varinfo{varnum},'callbackArg')
@@ -501,7 +503,10 @@ elseif isfield(gParams.varinfo{varnum},'callback') && ...
   %call the function
   if gParams.varinfo{varnum}.passCallbackOutput
     val = callbackEval(gParams.varinfo{varnum}.callback,args);
-    gParams.varinfo{varnum}.value(entryRow,entryCol) = val;
+    if isPushButton
+      gParams.varinfo{varnum}.value = val;
+      return
+    end
   else
     callbackEval(gParams.varinfo{varnum}.callback,args);
     return; %if no value is returned, we're done
