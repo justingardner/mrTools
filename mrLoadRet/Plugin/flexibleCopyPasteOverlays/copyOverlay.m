@@ -36,8 +36,9 @@ while keepAsking
    end
 end
 
+overlay = [];
 for iOverlay = 1:length(overlayList)
-   overlay(iOverlay) = viewGet(thisView,'overlay',overlayList(iOverlay));
+   overlay = copyFields(viewGet(thisView,'overlay',overlayList(iOverlay)),overlay,iOverlay);
    overlay(iOverlay).data = overlay(iOverlay).data(scanList);
 end
 
