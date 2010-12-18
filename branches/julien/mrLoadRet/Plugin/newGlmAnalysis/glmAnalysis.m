@@ -38,11 +38,6 @@ if ieNotDefined('params')
    params = glmAnalysisGUI('thisView',thisView,'defaultParams',defaultParams,'scanList',scanList);
 end
 
-if justGetParams
-  d = params;
-  return
-end
-
 % Abort if params empty
 if ieNotDefined('params')
   disp('(glmAnalysis) GLM analysis cancelled');

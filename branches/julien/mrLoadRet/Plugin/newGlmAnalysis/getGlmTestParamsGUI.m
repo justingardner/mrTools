@@ -164,7 +164,8 @@ while keepAsking
   params.contrasts = params.contrasts(1:actualNumberContrasts,:);
   
   %check that F-tests are not empty
-  params.restrictions = {};
+  restrictions = {};
+  fTestNames={};
   actualNumberFtests=0;
   for iFtest = 1:params.numberFtests
     thisRestriction=params.(fixBadChars(sprintf('restriction%2d',iFtest)));
@@ -173,12 +174,16 @@ while keepAsking
       mrWarnDlg('(getGlmTestParamsGUI) Discarding F-test with empty restriction matrix');
     else
       actualNumberFtests = actualNumberFtests+1;
-      params.fTestNames{actualNumberFtests} = params.(fixBadChars(sprintf('fTest%2d',iFtest)));
-      params.restrictions{actualNumberFtests} = thisRestriction;
+      fTestNames{actualNumberFtests} = params.(fixBadChars(sprintf('fTest%2d',iFtest)));
+      restrictions{actualNumberFtests} = thisRestriction;
     end
     params = mrParamsRemoveField(params,fixBadChars(sprintf('fTest%2d',iFtest)));
   end
-  
+  params = mrParamsCopyFields(mrParamsDefault({...
+  {'fTestNames',fTestNames,'Self-explanatory'},...
+  {'restrictions',restrictions,'Restrictions matrix defining F-tests. Each line of each matrix defines a contrast of EVs'},...
+  }),params);
+
   %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
   if isempty(params.TFCE)
     params.TFCE = 0;
