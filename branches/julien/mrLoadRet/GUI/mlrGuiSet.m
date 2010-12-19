@@ -169,14 +169,15 @@ switch lower(field)
   
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
-  if ~strcmp(value,'none') %identify overlays that have been masked by putting a bullet before its name
+  if ~strcmp(value,'none') %identify overlays that have been masked by putting a bullet before their name
+    epsilon = 1e-5; %value differing by less than epsilon are considered equal
      for iOverlay = 1:length(value)
         clip = viewGet(view,'overlayclip',iOverlay);
         minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
         maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
-        if (~isempty(minOverlayData) && minOverlayData<clip(1)) ||...
-              (~isempty(maxOverlayData) && maxOverlayData>clip(2))
-           value{iOverlay} = [char(183) ' ' value{iOverlay}];
+        if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
+              (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon)
+           value{iOverlay} = [char(164) ' ' value{iOverlay}];
         end
      end
   end
