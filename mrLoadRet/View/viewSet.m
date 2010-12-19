@@ -1004,8 +1004,7 @@ switch lower(param)
     mlrGuiSet(view,'analysisPopup',viewGet(view,'analysisNames'));
     % Set it to be the current analysis
     view = viewSet(view,'curanalysis',newAnalysisNum);
-    % Reinstall overlays (This can take a long time if there are a lot of overlays)
-    disp(['Installing overlays for analysis ' newAnalysisName '. Please Wait ...']);
+    % Reinstall overlays (This can take a long time if there are a lot of overlays and the reconcile function is defaultReconcileParams)
     view = viewSet(view,'newOverlay',overlays);
     % update the interrogator 
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
@@ -1185,7 +1184,6 @@ switch lower(param)
     %   - alpha: transparency value for alphaSlider
     %   - colorRange: [min max] of the colormap
 
-    disppercent(-inf,'Installing overlays ');
     % analysisNum and analysisName
     if ieNotDefined('varargin')
       analysisNum = viewGet(view,'currentAnalysis');
@@ -1193,12 +1191,12 @@ switch lower(param)
       analysisNum = varargin{1};
     end
     analysis = viewGet(view,'analysis',analysisNum);
+    disppercent(-inf,['Installing overlays for ' analysis.name]);
 
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
     newOverlayNum = nOverlays;
 
     for iOverlay = 1:length(val)
-      tic
       % Check that it has the required fields
       [check overlay] = isoverlay(val(iOverlay));
       if ~check
