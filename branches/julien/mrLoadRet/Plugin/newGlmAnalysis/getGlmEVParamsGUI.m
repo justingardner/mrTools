@@ -65,7 +65,7 @@ while keepAsking
     end
     paramsInfo{nStims+2}= {'EVnames', EVnames, 'type=stringarray','self explanatory'};
     paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Plots the experimental design before convolution',...
-            'callback',{@plotExperimentalDesign,scanParams,params,iScan,thisView},'passParams=1'};
+            'callback',{@plotExperimentalDesign,scanParams,params,iScan,thisView,d.stimNames},'passParams=1'};
 
     % give the option to use the same variable for remaining scans
     if (iScan ~= params.scanNum(end)) && (length(params.scanNum)>1)
@@ -125,11 +125,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%% plotStimDesign %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plotExperimentalDesign(thisScanParams,scanParams,params,scanNum,thisView)
+function plotExperimentalDesign(thisScanParams,scanParams,params,scanNum,thisView,stimNames)
 
 %we need to convert the stimToEVmatrix
-for iEvent = 1:length(d.stimNames)
-  thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(d.stimNames{iEvent}));
+for iEvent = 1:length(stimNames)
+  thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(stimNames{iEvent}));
 end
 
 if ~isfield(thisScanParams,'sameForNextScans') || thisScanParams.sameForNextScans
