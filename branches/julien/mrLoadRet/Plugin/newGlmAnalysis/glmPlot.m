@@ -439,12 +439,13 @@ function eventRelatedPlotTSeries(handle,eventData,thisView,analysisParams, d, ro
 
 fignum = selectGraphWin(0,'Make new');
 initializeFigure(fignum,d.nhdr);
-screenSize = get(0,'MonitorPositions');
-screenSize = screenSize(1,:); % multiple screens
-position = get(fignum,'position');
-position(3) = screenSize(3);
-position(4) = screenSize(3)/5;
-set(fignum,'position',position);
+monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+figurePosition = get(fignum,'position');
+[whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
+screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
+figurePosition(3) = screenSize(3);
+figurePosition(4) = screenSize(3)/5;
+set(fignum,'position',figurePosition);
 h=uicontrol('parent',fignum,'unit','normalized','style','text',...
   'string','Loading timecourse. Please wait...',...
   'position',[0.1 0.45 .8 .1],'backgroundcolor',get(fignum,'color'));
