@@ -1005,12 +1005,8 @@ switch lower(param)
     % Set it to be the current analysis
     view = viewSet(view,'curanalysis',newAnalysisNum);
     % Reinstall overlays (This can take a long time if there are a lot of overlays)
-    disppercent(-inf,['Installing overlays for analysis ' newAnalysisName]);
-    for n = 1:length(overlays)
-      view = viewSet(view,'newOverlay',overlays(n));
-      disppercent(n/length(overlays));
-    end
-    disppercent(inf);
+    disp(['Installing overlays for analysis ' newAnalysisName '. Please Wait ...']);
+    view = viewSet(view,'newOverlay',overlays);
     % update the interrogator 
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
@@ -1168,34 +1164,28 @@ switch lower(param)
   case{'newoverlay'}
     % view = viewSet(view,'newoverlay',overlayStructure,[analysisNum]);
     %
-    % val must be a structure with fields
-    % - name: string
-    % - groupName: string group name
-    % - function: string function name by which it was computed
-    % - reconcileFunction: string function name that reconciles params
-    %   and data with tseries file names.
+    % val must be a structure or an array of structures with fields
+    %   - name: string
+    %   - groupName: string group name
+    %   - range: [min max] values, possibly excluding meaningless values
+    %   - params: structure specifying arguments to function
+    %       To recompute: view = function(view,params)
+    % and optionnally
+    %   - function: string function name by which it was computed
+    %   - reconcileFunction: string function name that reconciles params
+    %      and data with tseries file names.
     %      [newparams,newdata] = reconcileFunction(groupName,params,data)
-    % - params: structure specifying arguments to function
-    %      To recompute: view = function(view,params)
-    % - interrogator: function that gets called when you click on the
-    %   overlay (e.g., to produce a time series plot).
-    % - data: cell array of [x y z] arrays
-    % - date: specifies when it was computed, typically generated using
-    %   datestr(now)
-    % - range: [min max] values
-    % - clip: [min max] to be displayed/thresholded
-    % - colormap: 256x3 array of RGB values
-    % - alpha: transparency value for alphaSlider
+    %   - interrogator: function that gets called when you click on the
+    %       overlay (e.g., to produce a time series plot).
+    %   - data: cell array of [x y z] arrays
+    %   - date: specifies when it was computed, typically generated using
+    %       datestr(now)
+    %   - clip: [min max] to be displayed/thresholded
+    %   - colormap: 256x3 array of RGB values
+    %   - alpha: transparency value for alphaSlider
+    %   - colorRange: [min max] of the colormap
 
-    % Check that it has the required fields
-    [check overlay] = isoverlay(val);
-    if ~check
-      mrErrorDlg('Invalid overlay');
-    end
-    % groupName, groupNum, nScans
-    groupName = overlay.groupName;
-    groupNum = viewGet(view,'groupnum',groupName);
-    nScans = viewGet(view,'nScans',groupNum);
+    disppercent(-inf,'Installing overlays ');
     % analysisNum and analysisName
     if ieNotDefined('varargin')
       analysisNum = viewGet(view,'currentAnalysis');
@@ -1203,78 +1193,112 @@ switch lower(param)
       analysisNum = varargin{1};
     end
     analysis = viewGet(view,'analysis',analysisNum);
-    % Error if groupNames don't match
-    if ~strcmp(overlay.groupName,analysis.groupName)
-      mrErrorDlg(['(viewSet:newOverlay) overlay is incompatible with group: ',groupName]);
-    end
-    % Reconcile overlay data and params with tseries files, reordering
-    % them as necessary.
-    [params,data] = feval(overlay.reconcileFunction,groupName,overlay.params,overlay.data);
-    overlay.params = params;
-    overlay.data = [];
-    for scanNum = 1:length(data)
-      % to save memory, we keep overlays as single precision
-      if strcmp(mrGetPref('defaultPrecision'),'single')
-         overlay.data{scanNum} = single(data{scanNum});
-      else
-         overlay.data{scanNum} = data{scanNum};
-      end
-    end
-    % Check that it has the correct number of scans
-    if (length(overlay.data) ~= nScans)
-      %mrErrorDlg('Invalid overlay, incorrect number of scans.');
-      if isempty(data)
-	disp('(viewSet:newOverlay) No data in overlay');
-      else
-	disp('(viewSet:newOverlay) Invalid overlay, incorrect number of scans.');
-      end
-      return;
-    end
-    % Check that the data arrays for each scan are the correct size
-    for s = 1:nScans
-      overlayDims = viewGet(view,'dims',s,groupNum);
-      overlaySize = size(overlay.data{s});
-      % if the overlay only has one slice, then we need
-      % to add the 1 to the last dimension
-      if length(overlaySize) == 2
-	overlaySize(3) = 1;
-      end
-      if (~isempty(overlay.data{s})) & ~isequal(overlaySize,overlayDims)
-        mrErrorDlg('(viewSet:newOverlay) Invalid overlay, incorrect data array size.');
-      end
-    end
-    % If overlay.name already exists then replace the existing one with
-    % this new one. Otherwise, add it to the end of the overlays list.
-    newOverlayName = overlay.name;
+
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
-    %this finds the number of overlays with identical name (replaces the loops above
-    [dump,newOverlayNum] = ismember(newOverlayName,viewGet(view,'overlayNames',[],analysisNum)); 
-    if newOverlayNum %if there is already an overlay with this name
-       %merge their data if their parameters are identical
-       oldOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
-       if isequal(overlay.params,oldOverlay.params)
-          for iScan = 1:length(overlay.data)
-             if isempty(overlay.data{iScan})
-                overlay.data{iScan} = oldOverlay.data{iScan};
-             end
+    newOverlayNum = nOverlays;
+
+    for iOverlay = 1:length(val)
+      tic
+      % Check that it has the required fields
+      [check overlay] = isoverlay(val(iOverlay));
+      if ~check
+        if ~isfield(overlay,'name')
+          name = '[unknown]';
+        else
+          name = overlay.name;
+        end
+        mrWarnDlg(['(viewSet:newOverlay) Cannot install overlay ' name ' because it is invalid (One or more mandatory fields are undefined)']);
+      else
+        % groupName, groupNum, nScans
+        groupName = overlay.groupName;
+        groupNum = viewGet(view,'groupnum',groupName);
+        nScans = viewGet(view,'nScans',groupNum);
+        % Error if groupNames don't match
+        if ~strcmp(overlay.groupName,analysis.groupName)
+          mrWarnDlg(['(viewSet:newOverlay) Cannot install overlay ' overlay.name ' because it is incompatible with group: ',groupName]);
+        else
+          % Reconcile overlay data and params with tseries files, reordering
+          % them as necessary.
+          [params,data] = feval(overlay.reconcileFunction,groupName,overlay.params,overlay.data);
+          overlay.params = params;
+          overlay.data = [];
+          for scanNum = 1:length(data)
+            % to save memory, we keep overlays as single precision
+            if strcmp(mrGetPref('defaultPrecision'),'single')
+               overlay.data{scanNum} = single(data{scanNum});
+            else
+               overlay.data{scanNum} = data{scanNum};
+            end
           end
-       end
-    else
-      newOverlayNum = nOverlays + 1;
+          % Check that it has the correct number of scans
+          if (length(overlay.data) ~= nScans)
+            %mrErrorDlg('Invalid overlay, incorrect number of scans.');
+            if isempty(data)
+              mrWarnDlg(['(viewSet:newOverlay) No data in overlay' overlay.name]);
+            else
+              mrWarnDlg(['(viewSet:newOverlay) Incorrect number of scans in overlay' overlay.name]);
+            end
+            return;
+          else
+            % Check that the data arrays for each scan are the correct size
+            allScanDimsMatch=true;
+            for s = 1:nScans
+              overlayDims = viewGet(view,'dims',s,groupNum);
+              overlaySize = size(overlay.data{s});
+              % if the overlay only has one slice, then we need
+              % to add the 1 to the last dimension
+              if length(overlaySize) == 2
+                overlaySize(3) = 1;
+              end
+              if (~isempty(overlay.data{s})) & ~isequal(overlaySize,overlayDims)
+                mrWarnDlg(['(viewSet:newOverlay) Incorrect data array sizeoverlay in overlay' overlay.name]);
+                allScanDimsMatch=false;
+                break
+              end
+            end
+            if allScanDimsMatch
+              % If overlay.name already exists then replace the existing one with
+              % this new one. Otherwise, add it to the end of the overlays list.
+              newOverlayName = overlay.name;
+              %this finds the number of overlays with identical name (replaces the loops above
+              [dump,newOverlayNum] = ismember(newOverlayName,viewGet(view,'overlayNames',[],analysisNum)); 
+              if newOverlayNum %if there is already an overlay with this name
+                 %merge their data if their parameters are identical
+                 oldOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
+                 if isequal(overlay.params,oldOverlay.params)
+                    for iScan = 1:length(overlay.data)
+                       if isempty(overlay.data{iScan})
+                          overlay.data{iScan} = oldOverlay.data{iScan};
+                       end
+                    end
+                 end
+              else
+                nOverlays = nOverlays + 1;
+                newOverlayNum = nOverlays;
+              end
+              % Add it to the list of overlays
+              if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)  
+                view.analyses{analysisNum}.overlays = overlay;                        
+              else                                                                    
+                %view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
+                view.analyses{analysisNum}.overlays = copyFields(overlay,view.analyses{analysisNum}.overlays,newOverlayNum);
+              end
+            end
+          end
+        end
+      end
+      disppercent(iOverlay/length(val));
     end
-    % Add it to the list of overlays
-    if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)  
-      view.analyses{analysisNum}.overlays = overlay;                        
-    else                                                                    
-      %view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
-      view.analyses{analysisNum}.overlays = copyFields(overlay,view.analyses{analysisNum}.overlays,newOverlayNum);
+    disppercent(inf);
+
+    if newOverlayNum    
+      % clear overlay cache
+      view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
+      % Set it to be the current overlay
+      view = viewSet(view,'curOverlay',newOverlayNum);
     end
-    % clear overlay cache
-    view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
     % Update the gui
     mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum));
-    % Set it to be the current overlay
-    view = viewSet(view,'curOverlay',newOverlayNum);
 
   case {'deleteoverlay'}
     % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
