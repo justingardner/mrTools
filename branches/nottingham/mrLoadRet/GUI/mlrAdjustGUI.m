@@ -88,6 +88,11 @@ switch command
     case {'colormap','colormaps'}
      addColormap(v,varargin{2});
   end
+ case {'remove'}
+  switch varargin{1}
+    case {'menu'}
+     removeMenu(varargin(2),menuControls);
+  end
  case {'get'}
   % return handle, check menu items and ui controls
   retval = getHandle(varargin{1},menuControls,uiControls);
@@ -96,7 +101,7 @@ switch command
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   listControlNames   %%
+%%%  listControlNames   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 function listControlNames(uiControls,menuControls)
 
@@ -114,7 +119,7 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%
-%%   getHandle   %%
+%%%   getHandle  %%
 %%%%%%%%%%%%%%%%%%%
 function h = getHandle(itemName,controls,controls2)
 
@@ -153,7 +158,7 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%   addInterrogator   %%
+%%%  addInterrogator   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 function addInterrogator(v,interrogatorList)
 
@@ -165,7 +170,7 @@ viewSet(v,'defaultInterrogators',interrogatorList);
 disp(sprintf('(mlrAdjustGUI) Adding default interrogators: %s',cellToCommaDelimited(interrogatorList)));
 
 %%%%%%%%%%%%%%%%%%%%%
-%%   addColormap   %%
+%%%  addColormap   %%
 %%%%%%%%%%%%%%%%%%%%%
 function addColormap(v,colormapList)
 
@@ -178,7 +183,7 @@ disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimited(colormap
 
 
 %%%%%%%%%%%%%%%%%%
-%%   addMenu   %%%
+%%%   addMenu  %%%
 %%%%%%%%%%%%%%%%%%
 function addMenu(args,menuControls)
 
@@ -260,8 +265,35 @@ end
 % display what we have done
 disp(sprintf('(mlrAdjustGUI:addMenu) Added menu: %s',menuName));
 
+%%%%%%%%%%%%%%%%%%%%%
+%%%   removeMenu  %%%
+%%%%%%%%%%%%%%%%%%%%%
+function removeMenu(args,menuControls)
+
+% check length of arguments
+if length(args) < 1
+  disp(sprintf('(mlrAdjustGUI:removeMenu) Requires 1 argument: menuLocation'));
+  return
+else
+  % name the arguments
+  menuLocation = args{1};
+end
+
+% go look for the item location
+h = getHandle(menuLocation,menuControls);
+% if not found, then print warning, return
+if isempty(h)
+  disp(sprintf('(mlrAdjustGUI:removeMenu) Could not find menu location: %s',menuLocation));
+  return
+end
+
+delete(h)
+
+% display what we have done
+disp(sprintf('(mlrAdjustGUI:removeMenu) Removed menu: %s',menuLocation));
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%   setItemProperty   %%
+%%%  setItemProperty   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 function setItemProperty(args,uiControls,menuControls)
 
@@ -317,7 +349,7 @@ disp(sprintf('(mlrAdjustGUI) Setting property %s of uicontrol %s',propertyName,c
 set(h,propertyName,propertyValue);
 
 %%%%%%%%%%%%%%%%%%%%%%%
-%%   getUiControls   %%
+%%%  getUiControls  %%%
 %%%%%%%%%%%%%%%%%%%%%%%
 function uiControls = getUiControls(f,verbose)
 
@@ -357,7 +389,7 @@ if verbose
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%   getMenuControls   %%
+%%%  getMenuControls  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 function menuControls = getMenuControls(f,menuControls)
 
