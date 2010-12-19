@@ -37,13 +37,13 @@ function retval = editOverlayGUImrParams(viewNum)
   
   % set up params dialog
   paramsInfo = {};
-  paramsInfo{end+1} = {'overlayCmap', colormaps,'List of possible colormaps','callback',@mrCmapCallback,'callbackArg',v};
+  paramsInfo{end+1} = {'overlayCmap', colormaps,'type=popupmenu','List of possible colormaps','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overla colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'numColors', 256, 'first argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'flipCmap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'shiftCmap', 0, 'incdec=[-16 16]', 'shift the colormap -- this can be useful for retinotopy scans with circular colormaps','callback',@mrCmapCallback,'callbackArg',v}; 
-  paramsInfo{end+1} = {'overlayCtype', {'normal', 'setRangeToMax', 'setRangeToMaxAroundZero'}, 'setRangeToMax scales the colormap to overlayMin-overlayMax, as in R2 maps','callback',@mrCmapCallback,'callbackArg',v};
+  paramsInfo{end+1} = {'overlayCtype', {'normal', 'setRangeToMax', 'setRangeToMaxAroundZero'}, 'type=popupmenu','setRangeToMax scales the colormap to overlayMin-overlayMax, as in R2 maps','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'overlayRange', overlayRange, 'The lower and upper bound on the colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'overlayClip', overlayClip, 'The lower and upper clip points on the colormap','callback',@mrCmapCallback,'callbackArg',v};
   paramsInfo{end+1} = {'interrogator', interrogator, 'Set the interrogator function name','callback',@mrCmapCallback,'callbackArg',v};

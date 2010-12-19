@@ -14,12 +14,6 @@
 %
 function [params params2] = mrParamsDialog(varargin)
 
-% check arguments
-if ~any(nargin == [1 2 3 4 5 6 7])
-  help mrParamsDialog
-  return
-end
-
 % if this is a cell array, it means to open up the figure
 % using the variable name, default value pairs given
 if iscell(varargin{1})
@@ -84,15 +78,18 @@ end
 % variable is being set
 buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];modal=[];
 if (length(otherParams) > 2)
-  if ischar(otherParams{3})
-    getArgs(otherParams(3:end));
-  else
+  if ~ischar(otherParams{3})
     % get the arguments the old way, by order
     buttonWidth = otherParams{3};
     if length(otherParams) > 3,callback = otherParams{4}; end
     if length(otherParams) > 4,callbackArg = otherParams{5}; end
     if length(otherParams) > 5,okCallback = otherParams{6}; end
     if length(otherParams) > 6,cancelCallback = otherParams{7}; end
+    if length(otherParams) > 7 &&ischar(otherParams{7})
+      getArgs(otherParams(7:end));
+    end
+  else
+    getArgs(otherParams(3:end));
   end
 end
 
@@ -115,7 +112,7 @@ end
 gParams.figlocstr{1} = sprintf('mrParamsDialog_%s',fixBadChars(titleStr));
 set(gParams.fignum,'MenuBar','none');
 set(gParams.fignum,'NumberTitle','off');
-set(gParams.fignum,'closeRequestFcn',@closeHandler);
+set(gParams.fignum,'closeRequestFcn',@altCloseHandler);
 if isempty(titleStr)
   set(gParams.fignum,'Name','Set parameters');
 else
@@ -183,7 +180,12 @@ for i = 1:length(gParams.vars)
       dParams.entryValue(i) = 1;
       dParams.entryString{i} = {gParams.varinfo{i}.value};
       %make up a string of Xs of lengh equal to the longest string in the menu list
-      dParams.testString{i} =repmat('X',1,size(char(dParams.entryString{i}{1}),2)+3);
+      if strcmp(gParams.varinfo{i}.popuptype,'numeric')
+        charNum = length(num2str(max(dParams.entryString{i}{1}{:})));
+      else
+        charNum = size(char(dParams.entryString{i}{1}),2);
+      end 
+      dParams.testString{i} =repmat('X',1,charNum+3);
 
     case 'statictext'
       dParams.entryString{i} = {gParams.varinfo{i}.value};
@@ -256,9 +258,9 @@ for i = 1:length(gParams.vars)
 end  
 
 %optimize figure dimensions
-[figpos,dParams,uiParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,uiParams);
-figWidth = figpos(3);
-figHeight = figpos(4);
+[figurePosition,dParams,uiParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,uiParams);
+figWidth = figurePosition(3);
+figHeight = figurePosition(4);
 
 %cap widths that are more than the max
 dParams.entryWidth(dParams.entryWidth>dParams.allEntriesWidth)=dParams.allEntriesWidth;
@@ -322,7 +324,7 @@ gParams.callback = [];
 makeOkButton = 1;
 makeCancelButton = modal; %only put a cancel if dialog box is modal (or if a custom cancel callback is passed)
 
-if modal==0  %if the dialog is non-modal, ok just closes it, unless a custom ok callback is passed)
+if modal==0  %if the dialog is non-modal, ok just closes it, unless custom ok/cancel callbackz are passed)
   gParams.okCallback = 'closeHandler';
   okString = 'Close';
 else
@@ -343,13 +345,15 @@ if ~isempty(callback)
   % an ok button with the callback
   if ~isempty(okCallback)
     gParams.okCallback = okCallback;
-  else
-    makeOkButton = 0;
+    okString = 'OK';
+%   else
+%     makeOkButton = 0;
   end
   % if a final argument is specified then put up 
-  % an ok button with the callback
+  % a cancel button with the callback
   if ~isempty(cancelCallback)
     gParams.cancelCallback = cancelCallback;
+    makeCancelButton = 1;
   else
     makeCancelButton = 0;
   end
@@ -433,11 +437,13 @@ uiwait;
 if ieNotDefined('gParams'),params=[];params2=[];return,end
 
 % check return value
-if gParams.ok
-  params = mrParamsGet(vars);
-else
-  % otherwise return empty
-  params = [];
+switch(gParams.ok)
+  case 1
+    params = mrParamsGet(vars);
+  case 0     % if cancel has been pressed return empty
+    params = [];
+  case -1 %if cancel button on top of window has been pressed, return 0*1 empty
+    params = zeros(0,1);
 end
 params2 = [];
 
@@ -451,59 +457,64 @@ function buttonHandler(varnum,entryRow,entryCol,incdec)
 
 global gParams;
 
-% if this is a push button then call its callback
-if strcmp(gParams.varinfo{varnum}.type,'pushbutton')
-  if isfield(gParams.varinfo{varnum},'callback')
-    args = {};getVars = 0;
-    % if it wants optional arguments, pass that
-    if isfield(gParams.varinfo{varnum},'callbackArg')
-      args{end+1} = gParams.varinfo{varnum}.callbackArg;
-    end
-    % if the function wants the current parameter settings, pass that
-    if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
-      args{end+1} = mrParamsGet(gParams.vars);
-    end
-    if iscell(gParams.varinfo{varnum}.callback)
-      passedArgs = gParams.varinfo{varnum}.callback(2:end);
-      callback = gParams.varinfo{varnum}.callback{1};
-      for iArg = 1:length(passedArgs)
-        args{end+1} = passedArgs{iArg};
-      end 
-    else
-      callback = gParams.varinfo{varnum}.callback;
-    end
-    % create the string to call the function
-    funcall = 'gParams.varinfo{varnum}.value = feval(callback';
-    for i = 1:length(args)
-      funcall = sprintf('%s,args{%i}',funcall,i);
-    end
-    funcall = sprintf('%s);',funcall);
-    % and call it
-    eval(funcall);
-  else
-    disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
+
+%get the value
+if strcmp(gParams.varinfo{varnum}.type,'checkbox')
+  val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'Value');
+elseif strcmp(gParams.varinfo{varnum}.type,'popupmenu')
+  val = [];
+  if isfield(gParams.varinfo{varnum},'controls')
+    % get the value from the list of values
+    val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'Value');
+    val = gParams.varinfo{varnum}.value{val};
+    if ischar(val),val=mrStr2num(val);end
   end
-  return
+else
+  % get the value of the text field
+  val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'string');
+  if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
+    % convert to number
+    val = mrStr2num(val);
+  end
+end
+
+isPushButton = strcmp(gParams.varinfo{varnum}.type,'pushbutton');
+% if this is a push button and there is no callback
+if isPushButton && ~isfield(gParams.varinfo{varnum},'callback')
+    disp(sprintf('(mrParamsDialog) Pushbutton %s does not have a callback',gParams.varinfo{varnum}.name));
+    return
+%if this is a pushbutton or the value is returned by a callback
+elseif isfield(gParams.varinfo{varnum},'callback') && ...
+        isPushButton || gParams.varinfo{varnum}.passCallbackOutput
+  args = {};%getVars = 0;
+  % if it wants optional arguments, pass that
+  if isfield(gParams.varinfo{varnum},'callbackArg')
+    args{end+1} = gParams.varinfo{varnum}.callbackArg;
+  end
+  % if the function wants the current parameter settings, pass that
+  if isfield(gParams.varinfo{varnum},'passParams') && (gParams.varinfo{varnum}.passParams == 1)
+    args{end+1} = mrParamsGet(gParams.vars);
+  end
+  % if the function wants the entry value
+  if isfield(gParams.varinfo{varnum},'passValue') && (gParams.varinfo{varnum}.passValue == 1)
+    args{end+1} = val;
+  end
+
+  %call the function
+  if gParams.varinfo{varnum}.passCallbackOutput
+    val = callbackEval(gParams.varinfo{varnum}.callback,args);
+    if isPushButton
+      gParams.varinfo{varnum}.value = val;
+      return
+    end
+  else
+    callbackEval(gParams.varinfo{varnum}.callback,args);
+    return; %if no value is returned, we're done
+  end
 end
 
 % if this is supposed to be a number, then make sure it is.
 if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
-  if strcmp(gParams.varinfo{varnum}.type,'checkbox')
-    val = get(gParams.ui.varentry{varnum},'Value');
-  elseif strcmp(gParams.varinfo{varnum}.type,'popupmenu')
-    val = [];
-    if isfield(gParams.varinfo{varnum},'controls')
-      % get the value from the list of values
-      val = get(gParams.ui.varentry{varnum},'Value');
-      val = gParams.varinfo{varnum}.value{val};
-      if ischar(val),val=mrStr2num(val);end
-    end
-  else
-    % get the value of the text field
-    val = get(gParams.ui.varentry{varnum}(entryRow,entryCol),'string');
-    % convert to number
-    val = mrStr2num(val);
-  end
   % check for incdec (this is for buttons that increment or decrement
   % the values, if one of these was passed, we will have by how much
   % we need to increment or decrement the value
@@ -528,15 +539,16 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   % if we got an invalid number entry
   if isempty(val)
     if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
-      set(gParams.ui.varentry{varnum},'string',gParams.varinfo{varnum}.value);
+      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',gParams.varinfo{varnum}.value(entryRow,entryCol));
+      return  %no need to go to callback if the value hasn't changed, so return
     end
     % otherwise remember this string as the default
   else
     if ~any(strcmp(gParams.varinfo{varnum}.type,{'popupmenu','checkbox'}))
-      if strcmp(gParams.varinfo{varnum}.type,'array')
+      if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
         gParams.varinfo{varnum}.value(entryRow,entryCol)=val;
       else
-        gParams.varinfo{varnum}.value = num2str(val);
+        gParams.varinfo{varnum}.value(entryRow,entryCol) = num2str(val);
       end
       set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',num2str(val));
     end
@@ -625,29 +637,15 @@ if isfield(gParams, 'callback')
 end
 
 % handle callbacks for non-push buttons
-if ~ieNotDefined('gParams')
-  if isfield(gParams.varinfo{varnum},'callback')
-    callbackArgs={};
-    if isfield(gParams.varinfo{varnum},'callbackArg')
-      callbackArgs{end+1} = gParams.varinfo{varnum}.callbackArg;
-    end
-    callbackArgs{end+1} = mrParamsGet(gParams.vars);
-    if ~iscell(gParams.varinfo{varnum}.callback)
-      callback = gParams.varinfo{varnum}.callback;
-    else
-      callback = gParams.varinfo{varnum}.callback{1};
-      numArgs = length(gParams.varinfo{varnum}.callback)-1;
-      callbackArgs(end+(1:numArgs)) = gParams.varinfo{varnum}.callback(2:numArgs+1);
-    end
-    % create the string to call the function
-    funcall = 'feval(callback';
-    for i = 1:length(callbackArgs)
-      funcall = sprintf('%s,callbackArgs{%i}',funcall,i);
-    end
-    funcall = sprintf('%s);',funcall);
-    % and call it
-    eval(funcall);
+if ~ieNotDefined('gParams') && isfield(gParams.varinfo{varnum},'callback')...
+    && ~gParams.varinfo{varnum}.passCallbackOutput && ~strcmp(gParams.varinfo{varnum}.type,'pushbutton')
+  callbackArgs={};
+  if isfield(gParams.varinfo{varnum},'callbackArg')
+    callbackArgs{end+1} = gParams.varinfo{varnum}.callbackArg;
   end
+  callbackArgs{end+1} = mrParamsGet(gParams.vars);
+  callbackEval(gParams.varinfo{varnum}.callback,callbackArgs);
+  
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -720,7 +718,7 @@ else
   %gParams.fignum(2) = fignum;
   
   %compute figure dimensions based on number of rows and colums
-  [figpos,dParams, uiParams] = optimizeFigure(fignum,gParams.figlocstr{2},dParams,uiParams);
+  [figurePosition,dParams, uiParams] = optimizeFigure(fignum,gParams.figlocstr{2},dParams,uiParams);
   
   %set the all the entry widths to the max 
   dParams.entryWidth(:)=dParams.allEntriesWidth;
@@ -799,11 +797,21 @@ function cancelHandler(varargin)
 global gParams;
 gParams.ok = 0;
 if isfield(gParams,'cancelCallback')
-  feval(gParams.cancelCallback);
+  callbackEval(gParams.cancelCallback);
   closeHandler;
 else
   uiresume;
 end
+
+%%%%%%%%%%%%%%%%%%%%
+% callback for close button on top of window
+%%%%%%%%%%%%%%%%%%%%
+function altCloseHandler(varargin)
+
+global gParams;
+gParams.ok = -1;
+uiresume;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeUIcontrol makes an uicontrol of any type %
@@ -934,7 +942,7 @@ end
 colnum = numcols*(multiCol-1)+colnum;
 
 % get figure position
-figpos = get(fignum,'Position');
+figurePosition = get(fignum,'Position');
 
 % set the horizontal position and width for the button
 if colnum - (multiCol-1)*numcols == 1
@@ -953,29 +961,31 @@ pos(3) = entryWidth;
 
 % set the vertical position and height for the button
 pos(4) = uiParams.buttonHeight*numLines+uiParams.margin*(numLines-1);
-pos(2) = figpos(4)-pos(4)-uiParams.topMargin - (uiParams.buttonHeight+uiParams.margin)*(rownum-1);
+pos(2) = figurePosition(4)-pos(4)-uiParams.topMargin - (uiParams.buttonHeight+uiParams.margin)*(rownum-1);
 
 %normalize position
-pos([1 3]) = pos([1 3])/figpos(3);
-pos([2 4]) = pos([2 4])/figpos(4);
+pos([1 3]) = pos([1 3])/figurePosition(3);
+pos([2 4]) = pos([2 4])/figurePosition(4);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % optimizeFigure optimizes the number of rows and columns as well as the dimensions of the figure %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [figpos,dParams,uiParams] = optimizeFigure(fignum,figLocStr,dParams,uiParams)
+function [figurePosition,dParams,uiParams] = optimizeFigure(fignum,figLocStr,dParams,uiParams)
 
 %compute figure dimensions based on number of rows and colums
-figpos = mrGetFigLoc(fixBadChars(figLocStr));
-if isempty(figpos)
-  figpos = get(fignum,'Position');
+figurePosition = mrGetFigLoc(fixBadChars(figLocStr));
+if isempty(figurePosition)
+  figurePosition = get(fignum,'Position');
 end
 
 maxEntryNumCols = max(dParams.entryNumCols);
 
 %-------------------optimize figure dimensions 
-screenSize = get(0,'MonitorPositions');
-screenSize = screenSize(1,:); % multiple screens
+monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+[whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
+screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
+
 dParams.multiCols=0;                             %these are meaningless values to pass the first test
 figHeight = uiParams.maxFigHeightWidthRatio+1;   %
 figWidth = 1;                                    %
@@ -1089,13 +1099,13 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
 end
 
 % set the figure position
-figpos(4) = figHeight;
-figpos(3) = figWidth;
+figurePosition(4) = figHeight;
+figurePosition(3) = figWidth;
 %make sure the figure is not outside the screen
-figpos(1) = min(figpos(1),sum(screenSize([1 3]))-1-figWidth);
-figpos(2) = min(figpos(2),sum(screenSize([2 4]))-1-figHeight);
+figurePosition(1) = min(figurePosition(1),sum(screenSize([1 3]))-1-figWidth);
+figurePosition(2) = min(figurePosition(2),sum(screenSize([2 4]))-1-figHeight);
 
-set(fignum,'Position',figpos);
+set(fignum,'Position',figurePosition);
 
 %replace non-set widths by the max width
 dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;

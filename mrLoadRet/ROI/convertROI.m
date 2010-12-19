@@ -1,3 +1,4 @@
+
 % convertROI.m
 %
 %        $Id$
@@ -32,32 +33,35 @@ roiNames = viewGet(thisView,'roiNames');
 defaultSpaceName = 'Unknown/Not loaded';
 roiSpace = mat2cell(repmat(defaultSpaceName,numRois,1),ones(numRois,1),length(defaultSpaceName));
 paramsDialog = {};
-paramsDialog{end+1} = {'conversionType',{'Convert coordinates','Only adopt xform'},...
+paramsDialog{end+1} = {'conversionType',{'Convert coordinates','Only adopt xform'},'type=popupmenu',...
    'Convert will convert the ROI coordinates to the destination space. This is not normally necessary (as ROIs are always converted on the fly to the base anatomy), but you may want to do this if you originally defined the ROI on a low resolution scan and want to have the ROI represented in a higher resolution or vice-vers. ''Adopt xform'' is only necessary in even more rare cases. This does not convert the roi voxels, but simply adopts the xform and voxel size of the base anatomy/scan. If for example you changed the qform/sform of your base anatomy/scan you might need to use this.'};
-paramsDialog{end+1} = {'destinationSpace',[baseName,{'current scan'}],...
+paramsDialog{end+1} = {'destinationSpace',[baseName,{'current scan'}],'type=popupmenu',...
    'which coordinate space you want to convert the ROI to/adopt the xform from'};
 for roinum = 1:numRois
+  
+  % roi name
+  helpinfo = sprintf('Convert ROI %i: %s',roinum,roiNames{roinum});
+  paramsDialog{end+1} = {fixBadChars(roiNames{roinum}),0,'type=checkbox',helpinfo};
+  
   % roi xform and voxel size
   roiXform = viewGet(thisView,'roiXform',roinum);
-  %roiVoxelSize = viewGet(thisView,'roiVoxelSize',roinum);
   if isequal(roiXform,curScanXform)
      roiSpace{roinum} = 'Current Scan';
   elseif isequal(roiXform,baseXform{curBaseNum})
      roiSpace{roinum} = ['Current Base (' baseName{curBaseNum} ')'];
   else         %here only find first base with identical xform, could be modified to find all bases
-     for iBase = 1:numBases
-        if isequal(baseXform{iBase},roiXform)
-           roiSpace{roinum} = baseName{iBase};
-           break;
-        end
-     end
+    for iBase = 1:numBases
+      if isequal(baseXform{iBase},roiXform)
+         roiSpace{roinum} = baseName{iBase};
+         break;
+      end
+    end
+    %if we're still here, that means we haven't found the space
+    %display the voxel size to give a clue to user
+    roiVoxelSize = viewGet(thisView,'roiVoxelSize',roinum);
+    paramsDialog{end+1} = {sprintf('%s_voxelSize',fixBadChars(roiNames{roinum})),roiVoxelSize,'editable=0',sprintf('Current voxel size for roi %s',roiNames{roinum})};
   end
-           
-  % set help info
-  helpinfo = sprintf('Convert ROI %i: %s',roinum,roiNames{roinum});
- paramsDialog{end+1} = {fixBadChars(roiNames{roinum}),0,'type=checkbox',helpinfo};
-% paramsDialog{end+1} = {sprintf('%s_voxelSize',fixBadChars(roiNames{roinum})),roiVoxelSize,'editable=0',sprintf('Current voxel size for roi %s',roiNames{roinum})};
- paramsDialog{end+1} = {[fixBadChars(roiNames{roinum}) ' space'],roiSpace{roinum},'editable=0',['Current coordinate space for roi ' roiNames{roinum}]};
+  paramsDialog{end+1} = {[fixBadChars(roiNames{roinum}) ' space'],roiSpace{roinum},'editable=0',['Current coordinate space for roi ' roiNames{roinum}]};
 end
 
 % put up dialog
