@@ -24,7 +24,7 @@ d.dim = size(d.data);
 
 %for each roi, find the indices of the voxels in the data
 for iRoi = 1:length(roiList)
-   [~, roiVoxelIndices{iRoi}] = intersect(isInARoi,find(whichRoi(:,:,:,iRoi)));
+   [dump, roiVoxelIndices{iRoi}] = intersect(isInARoi,find(whichRoi(:,:,:,iRoi)));
 end
 
 %checking for NaNs in the tseries

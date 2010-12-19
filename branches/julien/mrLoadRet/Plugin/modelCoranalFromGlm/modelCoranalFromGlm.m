@@ -212,7 +212,7 @@ for iLoad = 1:length(slicesToLoad)
   %compute the phase for each scan
   averagePhase = nan(subsetDims(1)*subsetDims(2)*slicesToLoad(iLoad),params.nScans,'single');
   for iScan = 1:params.nScans
-    [~, ~, averagePhase(:,iScan)] = computeCoranal(modelTSeriesTW(:,:,iScan),params.ncycles,params.detrend,params.spatialnorm,params.trigonometricFunction);
+    [dump1, dump2, averagePhase(:,iScan)] = computeCoranal(modelTSeriesTW(:,:,iScan),params.ncycles,params.detrend,params.spatialnorm,params.trigonometricFunction);
   end
   averagePhase = angle(mean(exp(1i*averagePhase),2));
   averagePhase(averagePhase<0)=averagePhase(averagePhase<0)+2*pi;

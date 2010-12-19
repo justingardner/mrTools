@@ -46,6 +46,6 @@ switch action
 end
 
 %------------------------- combineOverlaysCallback Function ------------------------------%
-function combineOverlaysCallback(hObject,~)
+function combineOverlaysCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 combineOverlays(thisView);
