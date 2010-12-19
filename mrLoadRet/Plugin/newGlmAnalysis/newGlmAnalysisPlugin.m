@@ -33,13 +33,13 @@ retval = true;
 end
 
 %------------------------- glmAnalysisCallback Function ------------------------------%
-function glmAnalysisCallback(hObject,~)
+function glmAnalysisCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 glmAnalysis(thisView);
 
 %------------------------- RecomputeAnalysisCallback Function ------------------------------%
 % this is to replace the GUI function of old event-related analyses
-function recomputeAnalysisCallback(hObject,~)
+function recomputeAnalysisCallback(hObject,dump)
 
 viewNum = getfield(guidata(hObject),'viewNum');
 thisView = viewGet(viewNum,'view');

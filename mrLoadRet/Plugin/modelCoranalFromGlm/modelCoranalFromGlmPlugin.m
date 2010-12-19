@@ -31,6 +31,6 @@ switch action
 end
 
 %------------------------- modelCoranalFromGlmCallback Function ------------------------------%
-function modelCoranalFromGlmCallback(hObject,~)
+function modelCoranalFromGlmCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 modelCoranalFromGlm(thisView);

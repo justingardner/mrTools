@@ -35,7 +35,7 @@ switch action
 end
 
 % --------------------------------------------------------------------
-function copyOverlayCallback(hObject, ~)
+function copyOverlayCallback(hObject, dump)
 mrGlobals;
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 clipboard = copyOverlay(thisView); %calls copyOverlay which asks which overlay and for which scans to copy an returns all the copied overlays
@@ -44,7 +44,7 @@ if ~isempty(clipboard)
 end
 
 % --------------------------------------------------------------------
-function pasteOverlayCallback(hObject, ~)
+function pasteOverlayCallback(hObject, dump)
 mrGlobals;
 viewNum = getfield(guidata(hObject),'viewNum');
 thisView = viewGet(viewNum,'view');
