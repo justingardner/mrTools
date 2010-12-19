@@ -101,7 +101,12 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
       disppercent(-inf,sprintf('(mrQuit) Saving %s/mrLastView',homeDir));
 						% save the view in the current directory
       view = v;
-      eval(sprintf('save %s view viewSettings -V6;',fullfile(homeDir,'mrLastView')));
+      if getfield(whos('view'),'bytes')<2e9
+        eval(sprintf('save %s view viewSettings -V6;',fullfile(homeDir,'mrLastView')));
+      else
+        mrWarnDlg('(mrQuit) Variable view is more than 2Gb, using option -v7.3 to save');
+        eval(sprintf('save %s view viewSettings -v7.3;',fullfile(homeDir,'mrLastView')));
+      end
       % save .mrDefaults in the home directory
       disppercent(inf);
     catch

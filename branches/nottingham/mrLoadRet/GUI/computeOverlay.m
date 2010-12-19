@@ -44,6 +44,9 @@ end
 % to be set according to another overlay
 alphaOverlay = viewGet(view,'overlayNum',viewGet(view,'alphaOverlay'));
 
+
+%JB: should replace the following by a call to maskOverlay.m, but make sure it does the exact same thing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CUT HERE
 numOverlays = viewGet(view,'numberofOverlays');
 mask = ones(baseDims);
 % Loop through overlays, filling in NaNs according to clip values.
@@ -78,6 +81,9 @@ if ~isempty(overlayImages)
     end
   end
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CUT HERE
+
+
 % Finally, make the alphaMap. Normally this is just set
 % to 0 or 1 so that voxels are hard thresholded. If the
 % overlay has an alphaOverlay field set to the name

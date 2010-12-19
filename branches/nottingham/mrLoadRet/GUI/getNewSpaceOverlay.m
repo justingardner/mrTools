@@ -25,7 +25,7 @@ sliceDims(2) = size(newXCoords,2);
 numPixels = sliceDims(1)*sliceDims(2);
 newOverlayData = zeros(size(newXCoords));
 
-hWaitbar = mrWaitbar(0,'Resampling overlay to new space');
+hWaitbar = mrWaitBar(0,'Resampling overlay to new space');
 % Compute new overlay data by base slice
 nSlices = size(newXCoords,3);
 for i_slice = 1:nSlices
@@ -41,6 +41,6 @@ for i_slice = 1:nSlices
    if ~isempty(overlayCoords) 
      newOverlayData(:,:,i_slice) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
    end
-   mrWaitbar(i_slice/nSlices,hWaitbar);
+   mrWaitBar(i_slice/nSlices,hWaitbar);
 end
 mrCloseDlg(hWaitbar);

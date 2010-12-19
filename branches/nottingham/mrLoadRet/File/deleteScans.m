@@ -25,7 +25,7 @@ if ieNotDefined('v')
   end
   % choose a group
   groupNames = viewGet(v,'groupNames');
-  params = mrParamsDialog({{'groupName',groupNames,'Choose a group from which to delete scans'}},'Choose a group from which to delete scans');
+  params = mrParamsDialog({{'groupName',groupNames,'type=popupmenu','Choose a group from which to delete scans'}},'Choose a group from which to delete scans');
   if isempty(params)
     if deleteViewWhenDone
       deleteView(v);

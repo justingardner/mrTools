@@ -321,14 +321,14 @@ gFlatViewer.guiloc.whichSurface = 1;
 gFlatViewer.guiloc.filenames = 3;
 % Now give choice of viewing gray or white
 gFlatViewer.whichSurfaceTypes = {'Outer (Gray matter) surface','Inner (White matter) surface','3D Anatomy','Patch'};
-paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
+paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'type=popupmenu','callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
 gFlatViewer.patchColoringTypes = {'Uniform','Right in red','Rostral in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High outer areal distortion in red','High inner areal distortion in red'};
 if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
   gFlatViewer.patchColoringTypes{end+1} = 'Current overlay with patch';
 end
 gFlatViewer.patchColoringTypes{end+1} = 'None';
-paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
+paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'type=popupmenu','Choose how to color the patch','callback',@patchColoringCallback};
 if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.guiloc.filenames = gFlatViewer.guiloc.filenames+1;
   paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};

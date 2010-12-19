@@ -37,7 +37,7 @@ for i = 1:length(gParams.varinfo)
     % for arrays, have to get all values
   elseif ismember(gParams.varinfo{i}.type,{'array' 'stringarray'})
     if ~isfield(gParams.varinfo{i},'group')
-      % if not grouped, just get the value from the gu
+      % if not grouped, just get the value from the gui
       for iRows = 1:size(gParams.ui.varentry{i},1)
         for iCols = 1:size(gParams.ui.varentry{i},2)
           if strcmp(gParams.varinfo{i}.type,'array')
@@ -60,9 +60,9 @@ for i = 1:length(gParams.varinfo)
           end
 	    end
 	  end
-	else
-	  params.(gParams.varinfo{i}.name){j} = gParams.varinfo{i}.allValues{j};
-	end
+        else
+          params.(gParams.varinfo{i}.name){j} = gParams.varinfo{i}.allValues{j};
+        end
       end
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

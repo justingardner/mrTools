@@ -1,8 +1,8 @@
-function mrWarnDlg(warnstr)
+function mrWarnDlg(warnstr,verbose)
 %
-% mrWarnDlg(warnstr)
+% mrWarnDlg(warnstr,verbose)
 %
-% Calls Matlab's warndlg or warning depending on verbose preference
+% Calls Matlab's warndlg or warning depending on verbose preference, or depending on argument verbose ('Yes' or 'No')
 %
 % To set the 'verbose' preference:
 %    mrSetPref('verbose','Yes');
@@ -11,8 +11,12 @@ function mrWarnDlg(warnstr)
 % djh, 5/2005
 %
 % djh, 5/2007, modified to use mrGetPref instead of Matlab's getpref
+%
+% $Id$
 
-verbose = mrGetPref('verbose');
+if ieNotDefined('verbose')
+  verbose = mrGetPref('verbose');
+end
 
 % always display warning on command line
 disp(sprintf('Warning: %s',warnstr));

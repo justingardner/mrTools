@@ -42,7 +42,7 @@ end
 
 % description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
-    {'groupName',putOnTopOfList(viewGet(view,'groupName'),viewGet(view,'groupNames')),'Name of group from which to make concatenation'},...
+    {'groupName',putOnTopOfList(viewGet(view,'groupName'),viewGet(view,'groupNames')),'type=popupmenu','Name of group from which to make concatenation'},...
     {'newGroupName','Concatenation','Name of group to which concatenation will be saved. If group does not already exist, it will be created.'},...
     {'description','Concatenation of [x...x]','Description that will be set to have the scannumbers that are selected'},...
     {'filterType',1,'minmax=[0 2]','incdec=[-1 1]','Which filter to use. Set to 0 for no filtering. Set to 1 for detrending followed by highpass filtering using the cutoff below. Set to 2 for detrending only.'},...
@@ -90,7 +90,7 @@ if ieNotDefined('params')
       for i = 1:viewGet(view,'nScans')
 	scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
       end
-      warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'The scan that will be used as the base scan to warp all the other scans to'}});
+      warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'type=popumenu','The scan that will be used as the base scan to warp all the other scans to'}});
       if isempty(warpParams),return,end
       params.warpBaseScan = find(strcmp(warpParams.warpBaseScan,scanNames));
     end
@@ -308,7 +308,7 @@ for iscan = 1:length(params.scanList)
   warning on
 
   % get the path and filename
-  [path,filename,ext,versn] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
+  [path,filename] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
   baseGroupName = viewGet(viewBase,'groupName');
 
   % Save TSeries (using header of 1st scan on scanList as the template for

@@ -37,6 +37,9 @@ if ieNotDefined('justGetParams'),justGetParams=0;end
 if ieNotDefined('defaultParams'),defaultParams=0;end
 if ieNotDefined('makeReadme'),makeReadme=1;end
 
+minFramePeriod = .01;  %frame period in sec outside which the user is prompted
+maxFramePeriod = 100;  % that something weird's goin on
+
 % get session params
 if ieNotDefined('sessionParams')
   % get some defaults
@@ -61,8 +64,8 @@ if ieNotDefined('sessionParams')
   paramsInfo{end+1} = {'description',description,'type=string','Description of the session. Can be anything to help you remember what the session was'};
   paramsInfo{end+1} = {'subject',subject,'type=string','Subject ID. Use an identifier that does not break the subject confidentiality'};
   paramsInfo{end+1} = {'operator',operator,'type=string','Person who operated the scanner'};
-  paramsInfo{end+1} = {'magnet',magnet,'Choose which magnet you scanned on'};
-  paramsInfo{end+1} = {'coil',coil,'Choose which coil you used'};
+  paramsInfo{end+1} = {'magnet',magnet,'type=popupmenu','Choose which magnet you scanned on'};
+  paramsInfo{end+1} = {'coil',coil,'type=popupmenu','Choose which coil you used'};
   paramsInfo{end+1} = {'pulseSequence',pulseSequence,'Choose which pulse sequence you scanned with'};
   paramsInfo{end+1} = {'pulseSequenceText','','Optional: enter some text to describe or qualify the pulseSequence text. This will get appended to the pulseSequence name chosen above'};
 
@@ -160,6 +163,7 @@ end
 if ~justGetParams
   if ~ieNotDefined('sessionParams') && ~ieNotDefined('groupParams')
     disp(sprintf('(mrInit) Saving session information'));
+    weirdFramePeriods = zeros(1,length(groupParams.totalFrames));
     % create session variable
     session.mrLoadRetVersion = mrLoadRetVersion;
     session.description = sessionParams.description;
@@ -190,6 +194,12 @@ if ~justGetParams
       elseif niftiTimeUnit == 32 % microseconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./10e6;
       end
+      %detect weird frame periods
+      if scanParams(iScan).framePeriod>maxFramePeriod 
+        weirdFramePeriods(iScan) = scanParams(iScan).framePeriod;
+      elseif scanParams(iScan).framePeriod<minFramePeriod
+        weirdFramePeriods(iScan) = scanParams(iScan).framePeriod;
+      end
       if strcmp(lower(mrGetPref('verbose')),'yes')
 	% 8 -> 10^0, 16 -> 10^3, 32-> 10^6
 	disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
@@ -214,6 +224,11 @@ if ~justGetParams
 	end	  
       end
     end  
+    
+    %if weird frame periods have been detected, ask user
+    if any(weirdFramePeriods)
+      scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,tseriesDir)
+    end
     % tag on auxParams to groups if it wasn't set above
     if ~isfield(groups(1),'auxParams')
       groups(1).auxParams = [];
@@ -265,7 +280,7 @@ end
 mrParamsSet(params);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrInitJunkFrames   %%
+%    mrInitJunkFrames    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 function params = mrInitJunkFrames(params)
 
@@ -329,3 +344,50 @@ for i = 1:length(dirList);
   end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   fixFramePeriods   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,tseriesDir)
+
+question{1} = 'Abnormal frame periods have been detected';
+question{2} = 'Do you want to change the following values ?';
+newFramePeriod = weirdFramePeriods;
+
+for iScan = 1:length(weirdFramePeriods)
+  if weirdFramePeriods(iScan)
+    if weirdFramePeriods(iScan)<minFramePeriod
+      newFramePeriod(iScan) = weirdFramePeriods(iScan)*1000;
+    elseif weirdFramePeriods(iScan)>maxFramePeriod
+      newFramePeriod(iScan) = weirdFramePeriods(iScan)/1000;
+    end
+    question{end+1} = sprintf('Change %f s into %f s in file %s',weirdFramePeriods(iScan),newFramePeriod(iScan),scanParams(iScan).fileName);
+  end
+end
+yes = askuser(question);
+if yes
+  for iScan = 1:length(weirdFramePeriods)
+    if newFramePeriod(iScan)
+      filename = fullfile(tseriesDir, scanParams(iScan).fileName);
+      hdr = cbiReadNiftiHeader(filename);
+      %set time units to seconds (4th bit = 8)
+      niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
+      niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
+      switch(niftiTimeUnit)
+        case 8
+          timeUnit = 'sec';
+        case 16
+          timeUnit = 'msec';
+        case 32
+          timeUnit = 'microsec';
+      end
+      hdr.xyzt_units = floor(hdr.xyzt_units/64)+8+niftiSpaceUnit;
+      fprintf('Changing frame period from %f %s to %f sec in file %s\n',weirdFramePeriods(iScan),timeUnit,newFramePeriod(iScan),scanParams(iScan).fileName);
+      % set the frameperiod
+      scanParams(iScan).framePeriod = newFramePeriod(iScan);
+      hdr.pixdim(5) = newFramePeriod(iScan);
+      % and write it back
+      cbiWriteNiftiHeader(hdr,filename);
+    end
+  end
+end

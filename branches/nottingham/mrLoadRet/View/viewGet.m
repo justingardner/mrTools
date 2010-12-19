@@ -3413,6 +3413,23 @@ switch lower(param)
         val = params.scanParams{scanNum}.spatialnorm;
       end
     end
+  case {'trigonometricfunction'}
+    % spatialnorm = viewGet(view,'spatialnorm',scanNum)
+    if ieNotDefined('varargin')
+      mrErrorDlg('viewGet trigonometricFunction: must specify scan.');
+    end
+    scanNum = varargin{1};
+    params = viewGet(view,'corAnalParams');
+    if ~isempty(params)
+      if isfield(params,'trigonometricFunction')
+        val = params.trigonometricFunction{scanNum};
+      elseif isfield(params,'scanParams') && isfield(params.scanParams{scanNum},'trigonometricFunction')
+        val = params.scanParams{scanNum}.trigonometricFunction;
+      else
+        val = 'Sine'; %value by default because it used to not be a parameter
+      end
+    end
+
     
     % GUI
   case {'fignum','figurenumber'}

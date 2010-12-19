@@ -28,7 +28,14 @@ function [value prefDefaults] = mrGetPref(pref)
 % %	$Id$	
 
 % with no arguments, return a list of possible preferences
-prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogatros','selectedROIColor','roiContourWidth','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','importROIPath','magnet','coil','pulseSequence','pluginPaths','selectedPlugins'};
+prefNames = {'interpMethod','overwritePolicy','verbose','niftiFileExtension','roiPolygonMethod','systemInterrogators','selectedROIColor','roiContourWidth','site','maxBlocksize','volumeDirectory','roiCacheSize','baseCacheSize','overlayCacheSize','defaultInterrogators','defaultCombineFunctions','importROIPath','magnet','coil','pulseSequence'};
+prefNames = {'overwritePolicy','verbose','graphWindow',...
+   'maxBlocksize','roiCacheSize','baseCacheSize','overlayCacheSize','defaultPrecision',...
+   'defaultInterrogators','systemInterrogators',...,
+   'importROIPath','volumeDirectory','niftiFileExtension','fslPath',...
+   'selectedROIColor','roiContourWidth','roiPolygonMethod','interpMethod',...
+   'pluginPaths','selectedPlugins',...
+   'site','magnet','coil','pulseSequence'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
@@ -36,13 +43,16 @@ prefDefaults{length(prefNames)} = [];
 prefDefaults{find(strcmp('interpMethod',prefNames))} = {'nearest','linear','spline','cubic'};
 prefDefaults{find(strcmp('overwritePolicy',prefNames))} = {'Ask','Merge','Rename','Overwrite'};
 prefDefaults{find(strcmp('verbose',prefNames))} = {'Yes','No'};
+prefDefaults{find(strcmp('graphWindow',prefNames))} = {'Replace','Make new'};
 prefDefaults{find(strcmp('niftiFileExtension',prefNames))} = {'.img','.nii'};
+prefDefaults{find(strcmp('fslPath',prefNames))} = 'FSL not installed';
 prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'roipoly','getpts','getptsNoDoubleClick'};
 prefDefaults{find(strcmp('selectedROIColor',prefNames))} = color2RGB;
 prefDefaults{find(strcmp('selectedROIColor',prefNames))}{end+1} = 'none';
 prefDefaults{find(strcmp('roiContourWidth',prefNames))} = 1;
 prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
 prefDefaults{find(strcmp('maxBlocksize',prefNames))} = 250000000;
+prefDefaults{find(strcmp('defaultPrecision',prefNames))} = 'double';
 prefDefaults{find(strcmp('volumeDirectory',prefNames))} = '';
 prefDefaults{find(strcmp('roiCacheSize',prefNames))} = 100;
 prefDefaults{find(strcmp('baseCacheSize',prefNames))} = 50;
