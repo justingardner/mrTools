@@ -258,9 +258,9 @@ for i = 1:length(gParams.vars)
 end  
 
 %optimize figure dimensions
-[figpos,dParams,uiParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,uiParams);
-figWidth = figpos(3);
-figHeight = figpos(4);
+[figurePosition,dParams,uiParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,uiParams);
+figWidth = figurePosition(3);
+figHeight = figurePosition(4);
 
 %cap widths that are more than the max
 dParams.entryWidth(dParams.entryWidth>dParams.allEntriesWidth)=dParams.allEntriesWidth;
@@ -718,7 +718,7 @@ else
   %gParams.fignum(2) = fignum;
   
   %compute figure dimensions based on number of rows and colums
-  [figpos,dParams, uiParams] = optimizeFigure(fignum,gParams.figlocstr{2},dParams,uiParams);
+  [figurePosition,dParams, uiParams] = optimizeFigure(fignum,gParams.figlocstr{2},dParams,uiParams);
   
   %set the all the entry widths to the max 
   dParams.entryWidth(:)=dParams.allEntriesWidth;
@@ -942,7 +942,7 @@ end
 colnum = numcols*(multiCol-1)+colnum;
 
 % get figure position
-figpos = get(fignum,'Position');
+figurePosition = get(fignum,'Position');
 
 % set the horizontal position and width for the button
 if colnum - (multiCol-1)*numcols == 1
@@ -961,29 +961,31 @@ pos(3) = entryWidth;
 
 % set the vertical position and height for the button
 pos(4) = uiParams.buttonHeight*numLines+uiParams.margin*(numLines-1);
-pos(2) = figpos(4)-pos(4)-uiParams.topMargin - (uiParams.buttonHeight+uiParams.margin)*(rownum-1);
+pos(2) = figurePosition(4)-pos(4)-uiParams.topMargin - (uiParams.buttonHeight+uiParams.margin)*(rownum-1);
 
 %normalize position
-pos([1 3]) = pos([1 3])/figpos(3);
-pos([2 4]) = pos([2 4])/figpos(4);
+pos([1 3]) = pos([1 3])/figurePosition(3);
+pos([2 4]) = pos([2 4])/figurePosition(4);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % optimizeFigure optimizes the number of rows and columns as well as the dimensions of the figure %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [figpos,dParams,uiParams] = optimizeFigure(fignum,figLocStr,dParams,uiParams)
+function [figurePosition,dParams,uiParams] = optimizeFigure(fignum,figLocStr,dParams,uiParams)
 
 %compute figure dimensions based on number of rows and colums
-figpos = mrGetFigLoc(fixBadChars(figLocStr));
-if isempty(figpos)
-  figpos = get(fignum,'Position');
+figurePosition = mrGetFigLoc(fixBadChars(figLocStr));
+if isempty(figurePosition)
+  figurePosition = get(fignum,'Position');
 end
 
 maxEntryNumCols = max(dParams.entryNumCols);
 
 %-------------------optimize figure dimensions 
-screenSize = get(0,'MonitorPositions');
-screenSize = screenSize(1,:); % multiple screens
+monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+[whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
+screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
+
 dParams.multiCols=0;                             %these are meaningless values to pass the first test
 figHeight = uiParams.maxFigHeightWidthRatio+1;   %
 figWidth = 1;                                    %
@@ -1097,13 +1099,13 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
 end
 
 % set the figure position
-figpos(4) = figHeight;
-figpos(3) = figWidth;
+figurePosition(4) = figHeight;
+figurePosition(3) = figWidth;
 %make sure the figure is not outside the screen
-figpos(1) = min(figpos(1),sum(screenSize([1 3]))-1-figWidth);
-figpos(2) = min(figpos(2),sum(screenSize([2 4]))-1-figHeight);
+figurePosition(1) = min(figurePosition(1),sum(screenSize([1 3]))-1-figWidth);
+figurePosition(2) = min(figurePosition(2),sum(screenSize([2 4]))-1-figHeight);
 
-set(fignum,'Position',figpos);
+set(fignum,'Position',figurePosition);
 
 %replace non-set widths by the max width
 dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
