@@ -112,12 +112,7 @@ switch(whichParam)
         end
     end
     if isempty(value)
-      mrWarnDlg('(editOverlayGUImrParams) clip range must contain clip values');
-    end
-    %check that min<max
-    if ~diff(params.overlayUsefulRange)
-      mrWarnDlg('(editOverlayGUImrParams) clip range must be increasing');
-      value=[];
+      mrWarnDlg('(editOverlayGUImrParams) clip range must be within useful range');
     end
   case 'usefulrange'
     %we don't know what value we got so we need to find out first
@@ -133,10 +128,10 @@ switch(whichParam)
         end
     end
     if isempty(value)
-      mrWarnDlg('(editOverlayGUImrParams) useful range must be within useful range');
+      mrWarnDlg('(editOverlayGUImrParams) useful range must contain clip range');
     end  
     %check that min<max
-    if ~diff(params.overlayClipRange)
+    if diff(params.overlayUsefulRange)<0
       mrWarnDlg('(editOverlayGUImrParams) useful range must be increasing');
       value=[];
     end
