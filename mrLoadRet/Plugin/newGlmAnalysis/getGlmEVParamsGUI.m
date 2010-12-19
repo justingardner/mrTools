@@ -149,18 +149,19 @@ end
 fignum = selectGraphWin(0,'Make new');
 set(fignum,'name','plotExperimentalDesign');
 nScans = length(scanList);
-screenSize = get(0,'MonitorPositions');
-screenSize = screenSize(1,:); % multiple screens
-position = get(fignum,'position');
-position(3) = screenSize(3);
-position(4) = min(screenSize(3)/8*nScans,screenSize(4));
-set(fignum,'position',position);
+monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+figurePosition = get(fignum,'position');
+[whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
+screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
+figurePosition(3) = screenSize(3);
+figurePosition(4) = min(screenSize(3)/8*nScans,screenSize(4));
+set(fignum,'position',figurePosition);
 
 cScan=0;
 axisLength = zeros(1,length(params.scanNum));
 tSeriesAxes = zeros(1,length(params.scanNum));
 for iScan = scanList
-  params.scanParams{iScan} = mrParamsCopyFields(scanParams{iScan},params.scanParams{iScan});
+  params.scanParams{iScan} = copyFields(scanParams{iScan},params.scanParams{iScan}); %we use copyFields here instead of mrParamsCopyFields because the latter only copies fields with a corresponding paramInfo entry
   %replace all unused stimuli by one EV
   params.scanParams{iScan}.stimToEVmatrix(:,end+1) = ~any(params.scanParams{iScan}.stimToEVmatrix,2);
   params.scanParams{iScan}.EVnames{end+1} = 'Not used';
@@ -204,8 +205,8 @@ end
 maxAxisLength = max(axisLength);
 for iScan = 1:cScan
   if axisLength(iScan)
-    position = get(tSeriesAxes(iScan),'position');
-    position(3) = position(3)*axisLength(iScan)/maxAxisLength;
-    set(tSeriesAxes(iScan),'position',position);
+    figurePosition = get(tSeriesAxes(iScan),'position');
+    figurePosition(3) = figurePosition(3)*axisLength(iScan)/maxAxisLength;
+    set(tSeriesAxes(iScan),'position',figurePosition);
   end
 end
