@@ -41,6 +41,6 @@ for i_slice = 1:nSlices
    if ~isempty(overlayCoords) 
      newOverlayData(:,:,i_slice) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
    end
-   mrWaitbar(i_slice/nSlices,hWaitbar);
+   mrWaitBar(i_slice/nSlices,hWaitbar);
 end
 mrCloseDlg(hWaitbar);

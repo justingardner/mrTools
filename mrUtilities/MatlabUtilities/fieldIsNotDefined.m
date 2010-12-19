@@ -2,10 +2,10 @@ function notDefined = fieldIsNotDefined(structure,fieldName)
 %
 % notDefined = fieldIsNotDefined(struct,fieldName)
 %
-%       Author: Julien Besle
-%         Date: 18/12/2010
-%          $Id$
-%      Purpose: Determine if a field is defined in structure structure
+%      Author: Julien Besle
+%        Date: 18/12/2010
+%         $Id$
+%     Purpose: Determine if a field is defined in structure structure
 %               A field is defined if (a) it exists and (b) it is not empty.
 %
 %
