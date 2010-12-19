@@ -20,6 +20,7 @@ end
 
 if ~isfield(params2,'paramInfo')
   params2.paramInfo = [];
+  foundParam = 0;
 end
 
 for iParam = 1:length(params1.paramInfo)
