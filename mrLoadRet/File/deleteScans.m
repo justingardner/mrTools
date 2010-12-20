@@ -44,7 +44,7 @@ end
 
 % get a scan list if it has not been passed in
 if ieNotDefined('scanList')
-  scanList = selectScans(v);
+  scanList = selectInList(v,'scans');
 end
 
 % check the scan list

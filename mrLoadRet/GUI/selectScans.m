@@ -1,5 +1,7 @@
-function [scanList,scanNames] = selectScans(view,title,groupNum,preselected)
-% scanList = selectScans(view,[title],[groupNum],[preselected]);
+function scanList = selectScans(thisView,varargin)
+% scanList = selectScans(thisView,[title],[preselected]);
+%
+%   this function is deprecated, use scanList = selectInList(thisView,'scans',title,preselected)
 %
 %   Gather a list of scans available in Inplane/TSeries
 %   and query the user for a sub-selection.
@@ -15,14 +17,18 @@ function [scanList,scanNames] = selectScans(view,title,groupNum,preselected)
 %
 % $Id$	
 
+scanList = selectInList(thisView,'scans',varargin);
+mrWarnDlg('(selectScans) selectScans is deprecated. Please use ''selectInList(view,''scans'',...)'' instead.');
+return
+
 if ieNotDefined('title')
   title = 'Choose scans';
 end
 
 if ieNotDefined('groupNum')
-   groupNum = viewGet(view,'currentGroup');
+   groupNum = viewGet(thisView,'currentGroup');
 end
-nScans = viewGet(view,'nScans',groupNum);
+nScans = viewGet(thisView,'nScans',groupNum);
 
 if ieNotDefined('preselected')
   preselected = [];
@@ -35,7 +41,7 @@ if nScans == 0
 end
 
 for i = 1:nScans
-  scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i,groupNum),viewGet(view,'tSeriesFile',i,groupNum));
+  scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(thisView,'description',i,groupNum),viewGet(thisView,'tSeriesFile',i,groupNum));
 end
 
 preselection = zeros(1,length(scanNames));

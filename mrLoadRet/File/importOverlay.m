@@ -43,7 +43,7 @@ end
 
 scan_number = viewGet(thisView,'nScans');
 if scan_number>1
-   scanlist = selectScans(thisView);
+   scanlist = selectInList(thisView,'scans');
 else
    scanlist = 1;
 end
