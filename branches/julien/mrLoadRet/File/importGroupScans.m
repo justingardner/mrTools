@@ -110,7 +110,7 @@ fromName = getLastDir(pathStr);
 fromView = viewSet(fromView,'curGroup',fromGroupNum);
 
 % choose the scans to import
-selectedScans = selectScans(fromView,'Choose scans to import');
+selectedScans = selectInList(fromView,'scans','Choose scans to import');
 if isempty(selectedScans)
   switchSession;
   deleteView(toView);

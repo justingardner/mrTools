@@ -270,7 +270,7 @@ nOverlays = viewGet(thisView,'numOverlays');
 allOverlays = viewGet(thisView,'overlays');
 
 %get a list of overlays to change
-overlayList = selectOverlays(thisView,'Select overlays to modify');
+overlayList = selectInList(thisView,'overlays','Select overlays to modify');
 allOverlays = allOverlays(overlayList);
 nOverlays = length(overlayList);
 

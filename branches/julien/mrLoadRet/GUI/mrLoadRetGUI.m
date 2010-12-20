@@ -1852,7 +1852,7 @@ function deleteManyAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-numAnalyses =  selectAnalyses(view,'Select analyses to remove');
+numAnalyses =  selectInList(view,'analyses','Select analyses to remove');
 if ~isempty(numAnalyses)
    view = viewSet(view,'deleteAnalysis',numAnalyses);
    refreshMLRDisplay(viewNum);
@@ -1886,7 +1886,7 @@ function deleteManyOverlaysMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-numOverlays = selectOverlays(view,'Select overlays to remove');
+numOverlays = selectInList(view,'overlays','Select overlays to remove');
 if ~isempty(numOverlays)
    view = viewSet(view,'deleteOverlay',numOverlays);
    refreshMLRDisplay(viewNum);
@@ -1978,7 +1978,7 @@ viewNum = handles.viewNum;
 thisView = MLR.views{viewNum};
 
 % put up a dialog with rois to delete
-roiNums = selectROIs(thisView,'Select ROIs to remove');
+roiNums = selectInList(thisView,'rois','Select ROIs to remove');
 if ~isempty(roiNums)
   % now delete anything the user selected
   thisView = viewSet(thisView,'deleteROI',roiNums);
@@ -2206,7 +2206,7 @@ view = MLR.views{viewNum};
 roiGroup = viewGet(view,'roiGroup');
 roiNames = viewGet(view,'roiNames');% I think we shouldn't have to get the names (but need to modify viewSet call)
 % display a dialog to allow user to select which ROIs to display
-roiGroup = selectROIs(view,'Select ROIs to display',roiGroup);
+roiGroup = selectInList(view,'rois','Select ROIs to display',roiGroup);
 % set the roi group
 view = viewSet(view,'roiGroup',roiNames(roiGroup));
 % if the setting is not to show groups, change it to show goups
@@ -2320,7 +2320,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
-scanList = selectScans(view);
+scanList = selectInList(view,'scans');
 plotMeanTSeries(view, groupNum, roiList, scanList);
 
 % --------------------------------------------------------------------
@@ -2383,7 +2383,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
-scanList = selectScans(view);
+scanList = selectInList(view,'scans');
 plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
@@ -2413,7 +2413,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
-scanList = selectScans(view);
+scanList = selectInList(view,'scans');
 plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------

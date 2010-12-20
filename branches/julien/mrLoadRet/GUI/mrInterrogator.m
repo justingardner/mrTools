@@ -3,11 +3,13 @@
 %      usage: mrInterrogator()
 %         by: justin gardner
 %       date: 03/14/07
+%        $Id$
 %    purpose: this functions sets up the figure to have an interrogator
 %             start by calling
 %             mrInterrogator('init',viewNum);
 %             turn off
 %             mrInterrogator('end',viewNum);
+
 function retval = mrInterrogator(event,viewNum,val)
 
 % check arguments

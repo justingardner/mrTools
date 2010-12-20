@@ -17,11 +17,9 @@ end
 % generate params
 if ieNotDefined('params')
   params.groupName = groupName;
-  groupNum = viewGet([],'groupNum',groupName);
-  if ~isfield(params,'scanList')
     view = newView;
-    view = viewSet(view, 'groupName', groupName)
-    params.scanList = selectScans(view);
+    view = viewSet(view, 'groupName', groupName);
+    params.scanList = selectInList(view,'scans');
   end
   params.newGroupName = 'Concatenation';
   params.baseScan = params.scanList(1);
