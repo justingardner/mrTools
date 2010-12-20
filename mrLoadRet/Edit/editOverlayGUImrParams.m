@@ -14,33 +14,33 @@ function retval = editOverlayGUImrParams(viewNum)
     return
   end
 
-  v = viewGet(viewNum,'view');
+  thisView = viewGet(viewNum,'view');
 
   % Get the original overlay
-  analysisNum = viewGet(v,'currentAnalysis');
+  analysisNum = viewGet(thisView,'currentAnalysis');
   if isempty(analysisNum),mrWarnDlg('(editOverlayGUI) No current analysis');return,end
-  overlayNum = viewGet(v,'currentOverlay', analysisNum);
+  overlayNum = viewGet(thisView,'currentOverlay', analysisNum);
   if isempty(overlayNum),mrWarnDlg('(editOverlayGUI) No current overlay');return,end
-  overlay = viewGet(v, 'overlay', overlayNum, analysisNum);
-  overlayUsefulRange = viewGet(v,'overlayRange', overlayNum, analysisNum);
-  overlayColorRange = viewGet(v,'overlayColorRange', overlayNum, analysisNum);
-  overlayClipRange = viewGet(v,'overlayClip', overlayNum, analysisNum);
-  overlayName = viewGet(v, 'overlayName', overlayNum, analysisNum);
-  alphaOverlay = viewGet(v,'alphaOverlay');
+  overlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
+  overlayUsefulRange = viewGet(thisView,'overlayRange', overlayNum, analysisNum);
+  overlayColorRange = viewGet(thisView,'overlayColorRange', overlayNum, analysisNum);
+  overlayClipRange = viewGet(thisView,'overlayClip', overlayNum, analysisNum);
+  overlayName = viewGet(thisView, 'overlayName', overlayNum, analysisNum);
+  alphaOverlay = viewGet(thisView,'alphaOverlay');
   if isempty(alphaOverlay)
     alphaOverlay = 'none';
   end
-  alphaOverlayMenu = putOnTopOfList(alphaOverlay,setdiff(['none',viewGet(v,'overlayNames')],overlayName));
-  alphaOverlayExponent = viewGet(v,'alphaOverlayExponent');
-  interrogator = viewGet(v,'interrogator',overlayNum,analysisNum);
+  alphaOverlayMenu = putOnTopOfList(alphaOverlay,setdiff(['none',viewGet(thisView,'overlayNames')],overlayName));
+  alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
+  interrogator = viewGet(thisView,'interrogator',overlayNum,analysisNum);
   
-  numColors = size(viewGet(v,'overlaycmap',overlayNum),1);
-  overlayColormapTypeMenu = putOnTopOfList(viewGet(v,'overlayctype',overlayNum),...
+  numColors = size(viewGet(thisView,'overlaycmap',overlayNum),1);
+  overlayColormapTypeMenu = putOnTopOfList(viewGet(thisView,'overlayctype',overlayNum),...
     {'normal', 'setRangeToMax', 'setRangeToMaxAroundZero', 'setRangeToMaxAcrossSlices', 'setRangeToMaxAcrossSlicesAndScans'});
   
   % colormaps
   colormaps = {'default','hot','hsv','pink','cool','bone','copper','flag','gray','grayCirc','twoCondCmap','twoCondCircCmap','hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap' 'coolCmap','hotColdCmap'};
-  altColormaps = viewGet(v,'colormaps');
+  altColormaps = viewGet(thisView,'colormaps');
   if ~isempty(altColormaps)
     colormaps = {colormaps{:} altColormaps{:}};
   end
@@ -60,10 +60,12 @@ function retval = editOverlayGUImrParams(viewNum)
       'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range. If clip(1)>clip(2), then values inside the clip range are masked.'};
   paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, 'callback',{@checkCmapParams,'usefulrange'},'passCallbackOutput=1','passValue=1','passParams=1',...
       'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
+  paramsInfo{end+1} = {'setUsefulRange', 0, 'type=pushbutton','callback',@mrCmapSetUsefulRange,'callbackArg',viewNum,'buttonString=Set useful range to overlay min/max','passCallbackOutput=0',...
+      'Sets the useful range to the min/max values of this overlay accross scans'};
   paramsInfo{end+1} = {'interrogator', interrogator, 'Sets the overlay default interrogator function'};
   paramsInfo{end+1} = {'alphaOverlay', alphaOverlayMenu, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.'};
   paramsInfo{end+1} = {'alphaOverlayExponent', alphaOverlayExponent,'incdec=[-0.1 0.1]','If you are using an alphaOverlay, this sets an exponent on the alphaOverlay to pass through. For example, if you just want the value from the overlay to be the alpha value then set this to 1. If you want to have it so that lower values get accentuated (usually this is the case), set the exponent to less than 1, but greater than 0. The alpha values are passed through the function alpha = alpha.^alphaOverlayExponent'};
-  paramsInfo{end+1} = {'setAll', 0, 'type=pushbutton','Set all overlays to have them same settings','callback',@mrCmapSetAllCallback,'callbackArg',viewNum,'buttonString=Set all overlays','passParams=1'};
+  paramsInfo{end+1} = {'setManyOverlays', 0, 'type=pushbutton','Set many overlays to have them same settings as the current overlay. This cannot be cancelled.','callback',@mrCmapSetManyOverlaysCallback,'callbackArg',viewNum,'buttonString=Set many overlays'};
 %   paramsInfo{end+1} = {'overlayName', overlayName, 'The name for the overlay (e.g., co, am, or ph)'};
 
   % display dialog
@@ -72,22 +74,38 @@ function retval = editOverlayGUImrParams(viewNum)
   return;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%  mrCmapSetAllCallback   %%
+%%%  mrCmapSetUsefulRange   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mrCmapSetUsefulRange(viewNum)
+
+thisView = viewGet(viewNum,'view');
+
+minOverlayData = viewGet(thisView,'minOverlayData');
+maxOverlayData = viewGet(thisView,'maxOverlayData');
+
+if ~isempty(maxOverlayData) && ~isempty(minOverlayData)
+  params.overlayUsefulRange = [minOverlayData maxOverlayData];
+  mrParamsSet(params,1);
+else
+  mrWarnDlg('(editOverlayGUImrParams) overlay seems to be empty');
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  mrCmapParamsCancel   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mrCmapParamsCancel(viewNum,oldOverlay)
 
-v = viewGet(viewNum,'view');
-analysisNum = viewGet(v,'currentAnalysis');
-overlayNum = viewGet(v,'currentOverlay',analysisNum);
-currentOverlay = viewGet(v, 'overlay', overlayNum, analysisNum);
+thisView = viewGet(viewNum,'view');
+analysisNum = viewGet(thisView,'currentAnalysis');
+overlayNum = viewGet(thisView,'currentOverlay',analysisNum);
+currentOverlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
 
 %iff the overlay has changed, put the old overlay params back
 if ~isequalwithequalnans(oldOverlay,currentOverlay)
   disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
   % set the new overlay
-  v = viewSet(v,'newOverlay', oldOverlay);
+  thisView = viewSet(thisView,'newOverlay', oldOverlay);
   % and refresh
-  refreshMLRDisplay(v.viewNum);
+  refreshMLRDisplay(thisView.viewNum);
   disppercent(inf);
 end
 
@@ -144,33 +162,33 @@ end
 
 function mrCmapCallback(params,viewNum)
 
-   v = viewGet(viewNum,'view');
-   v = viewSet(v,'overlayCache','init');
+   thisView = viewGet(viewNum,'view');
+   thisView = viewSet(thisView,'overlayCache','init');
   
   % get the current overlay
-  analysisNum = viewGet(v,'currentAnalysis');
-  overlayNum = viewGet(v,'currentOverlay',analysisNum);
-  currentOverlay = viewGet(v, 'overlay', overlayNum, analysisNum);
+  analysisNum = viewGet(thisView,'currentAnalysis');
+  overlayNum = viewGet(thisView,'currentOverlay',analysisNum);
+  currentOverlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
   newOverlay = currentOverlay;
   
   %for some parameters, there is an existing viewSet
   newOverlay.interrogator = params.interrogator;
   if ~isequal(newOverlay.interrogator,currentOverlay.interrogator)
-    v=viewSet(v,'interrogator',newOverlay.interrogator);
+    thisView=viewSet(thisView,'interrogator',newOverlay.interrogator);
     refreshMLRDisplay(viewNum);
     return;
   end
   newOverlay.range = [params.overlayUsefulRange(1) params.overlayUsefulRange(2)];
   %if the range has changed, we only need to update the slider
   if ~isequal(newOverlay.range,currentOverlay.range)
-    v=viewSet(v,'overlayRange',newOverlay.range, overlayNum);
+    thisView=viewSet(thisView,'overlayRange',newOverlay.range, overlayNum);
     refreshMLRDisplay(viewNum);
     return;
   end
   % set the overlay range 
   newOverlay.colorRange = [params.overlayColorRange(1) params.overlayColorRange(2)];
   if ~isequal(newOverlay.colorRange,currentOverlay.colorRange)% && ~strcmp(newOverlay.colormapType,'normal')
-    v=viewSet(v,'overlayColorRange',newOverlay.colorRange, overlayNum);
+    thisView=viewSet(thisView,'overlayColorRange',newOverlay.colorRange, overlayNum);
     refreshMLRDisplay(viewNum);
     return;
   end
@@ -229,47 +247,49 @@ function mrCmapCallback(params,viewNum)
   if ~isequalwithequalnans(newOverlay,currentOverlay)
     disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
     % set the new overlay
-    v = viewSet(v,'newOverlay', newOverlay);
+    thisView = viewSet(thisView,'newOverlay', newOverlay);
     % and refresh
-    refreshMLRDisplay(v.viewNum);
+    refreshMLRDisplay(thisView.viewNum);
     disppercent(inf);
   end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%  mrCmapSetAllCallback   %%
+%%%  mrCmapSetManyOverlaysCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function retval = mrCmapSetAllCallback(viewNum,params)
+function retval = mrCmapSetManyOverlaysCallback(viewNum)
 retval = [];
-hWaitBar = mrWaitBar(0,'(editOverlayGUImrParams) Setting overlays to have same parameters');
 
-v = viewGet(viewNum,'view');
+thisView = viewGet(viewNum,'view');
 
 % get the current overlay
-currentOverlayNum = viewGet(v,'curOverlay');
-currentOverlayName = viewGet(v,'overlayname',currentOverlayNum);
-currentOverlay = viewGet(v,'overlay',currentOverlayNum);
-nOverlays = viewGet(v,'numOverlays');
+currentOverlayNum = viewGet(thisView,'curOverlay');
+currentOverlayName = viewGet(thisView,'overlayname',currentOverlayNum);
+currentOverlay = viewGet(thisView,'overlay',currentOverlayNum);
+nOverlays = viewGet(thisView,'numOverlays');
+allOverlays = viewGet(thisView,'overlays');
+
+%get a list of overlays to change
+overlayList = selectOverlays(thisView,'Select overlays to modify');
+allOverlays = allOverlays(overlayList);
+nOverlays = length(overlayList);
 
 % a list of fields which should be copied
-copyFields = {'alpha','alphaOverlayExponent','interrogator','clip','colormap','colormapType','range'};
-% now go through each overlay and set the fields the same one
+fieldsToCopy = {'alpha','alphaOverlayExponent','interrogator','clip','colormap','colormapType','range','colorRange'};
+%remove all other fields from the currentoverlay
+fieldsToRemove = setdiff(fieldnames(currentOverlay),fieldsToCopy);
+currentOverlay = rmfield(currentOverlay,fieldsToRemove);
 
-for onum = 1:nOverlays
-  o = viewGet(v,'overlay',onum);
-  % copy fields from the current overlay
-  for fnum = 1:length(copyFields)
-    o.(copyFields{fnum}) = currentOverlay.(copyFields{fnum});
-  end
-  % now set it back
-  v = viewSet(v,'newOverlay',o);
-  mrWaitBar(onum/nOverlays,hWaitBar);
-end
+% now copy the remaining fields to all overlays
+allOverlays = copyFields(currentOverlay,allOverlays,1:nOverlays);
+
+%and set them in the view
+thisView = viewSet(thisView,'newOverlay',allOverlays);
 
 % set back the current overlay to the original one
-v = viewSet(v,'curOverlay',viewGet(v,'overlayNum',currentOverlayName));
+viewSet(thisView,'curOverlay',viewGet(thisView,'overlayNum',currentOverlayName));
+refreshMLRDisplay(thisView.viewNum);
 
-mrCloseDlg(hWaitBar);
 
   
   
