@@ -19,7 +19,7 @@ if isempty(scanList)
    return;
 end
 while length(scanList)~= length(overlay(1).data)
-   scanList=selectScans(thisView);
+   scanList=selectInList(thisView,'scans');
 end
 curGroupName = viewGet(thisView,'groupName');
 curGroupNum =  viewGet(thisView,'groupNum',curGroupName);

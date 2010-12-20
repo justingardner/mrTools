@@ -193,7 +193,7 @@ while askForParams
         elseif defaultParams
           params.scanNum = 1:nScans;
         elseif viewGet(thisView,'nScans',groupNum) >1
-          scanNums = selectScans(thisView,[],groupNum,params.scanNum);
+          scanNums = selectInList(thisView,'scans','Select scans to analyse',params.scanNum,groupNum);
           if isempty(scanNums)
             if size(scanNums,2) %if the top close button has been pressed
               params=[];
