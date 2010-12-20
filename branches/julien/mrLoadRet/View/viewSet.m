@@ -1914,7 +1914,7 @@ switch lower(param)
     % check that everything is an m-file
     defaultInterrogators = {};
     for i = 1:length(val)
-      if exist(val{i}) ~= 2
+      if isempty(which(val{i}))
 	disp(sprintf('(viewSet:defaultInterrogators) %s is not an m-file on the path. Not adding to default interrogators list.',val{i}));
       else
 	defaultInterrogators{end+1} = val{i};
