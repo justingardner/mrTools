@@ -63,7 +63,7 @@ if isActiveHandler(viewNum)
   set(MLR.interrogator{viewNum}.hInterrogatorLabel,'String',interrogatorList);
 
   % if not a valid function, go back to old one
-  if exist(interrogator)==2
+  if isempty(which(interrogator))
     set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
     MLR.interrogator{viewNum}.interrogator = interrogator;
   end
@@ -81,7 +81,7 @@ interrogator = get(MLR.interrogator{viewNum}.hInterrogator,'String');
 
 % if not a valid function, go back to old one
 if isfield(MLR.interrogator{viewNum},'hInterrogator')
-  if exist(interrogator)~=2
+  if isemtpy(which(interrogator))
     set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
   else
     MLR.interrogator{viewNum}.interrogator = interrogator;
@@ -108,7 +108,7 @@ if value > 1
   % set the popupmenu back to the top value
   set(MLR.interrogator{viewNum}.hInterrogatorLabel,'Value',1);
   % see if the interrogator exists
-  if exist(newInterrogator)==2
+  if ~isempty(which(newInterrogator))
     % set the string
     set(MLR.interrogator{viewNum}.hInterrogator,'String',newInterrogator);
     MLR.interrogator{viewNum}.interrogator = newInterrogator;
@@ -328,7 +328,7 @@ MLR.interrogator{viewNum}.mouseDownScanCoords = [x y s];
 
 if mouseInImage(x,y)
     global MLR;
-    if exist(MLR.interrogator{viewNum}.interrogator) ~= 2
+    if isempty(which(MLR.interrogator{viewNum}.interrogator))
       disp(sprintf('(mrInterrogator) Cannot find interrogator function'));
       return
     end
