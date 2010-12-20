@@ -32,6 +32,6 @@ end
  
 for iStruct = indices
   for iField = 1:length(fieldNames)
-    struct2(indices).(fieldNames{iField})=struct1.(fieldNames{iField});
+    struct2(iStruct).(fieldNames{iField})=struct1.(fieldNames{iField});
   end
 end
