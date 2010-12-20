@@ -56,7 +56,7 @@ while askForParams
     %other control here
   else
     askForParams = 0;
-    overlayList = selectOverlays(thisView);
+    overlayList = selectInList(view,'overlays');
     if isempty(overlayList)
        askForParams = 1;
     end

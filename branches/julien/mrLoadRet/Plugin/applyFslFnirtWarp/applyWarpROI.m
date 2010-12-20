@@ -29,7 +29,7 @@ if useApplyWarp
   while keepAsking
     baseNum = [1 2];
     while length(baseNum)>1
-      baseNum = selectBases(thisView,'Select the base space of the FNIRT warp coeffs');
+      baseNum = selectInList(thisView,'bases','Select the base space of the FNIRT warp coeffs');
       if length(baseNum)>1
         mrWarnDlg('Please select only one base');
       end
@@ -38,7 +38,7 @@ if useApplyWarp
       return;
     else
       while keepAsking
-        roiList = selectROIs(thisView,'Select ROI(s) to warp');
+        roiList = selectInList(thisView,'rois','Select ROI(s) to warp');
         if isempty(roiList)
            break;
         else
@@ -101,7 +101,7 @@ else
    keepAsking = 1;
    while keepAsking
 
-      roiList = selectROIs(thisView,'Select ROI(s) to warp');
+      roiList = selectInList(thisView,'rois','Select ROI(s) to warp');
       if isempty(roiList)
          return;
       else
