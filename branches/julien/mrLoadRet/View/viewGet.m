@@ -2827,6 +2827,9 @@ switch lower(param)
   case  {'maxoverlaydata'}
     % maxoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum],[scanlist])
     switch (length(varargin))
+      case 0
+        analysisNum = viewGet(view,'currentAnalysis');
+        overlayNum = viewGet(view,'currentOverlay');
       case 1
         overlayNum = varargin{1};
         analysisNum = viewGet(view,'currentAnalysis');
@@ -2839,7 +2842,7 @@ switch lower(param)
 % %       val = overlay.maxoverlaydata;          % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
 % %     else
     switch (length(varargin))
-      case {1 2}
+      case {0 1 2}
         scanlist = 1:length(overlay.data);
       case 3
         scanlist = varargin{3};
@@ -2860,6 +2863,9 @@ switch lower(param)
   case  {'minoverlaydata'}
     % minoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum],[scanlist])
     switch (length(varargin))
+      case 0
+        analysisNum = viewGet(view,'currentAnalysis');
+        overlayNum = viewGet(view,'currentOverlay');
       case 1
         overlayNum = varargin{1};
         analysisNum = viewGet(view,'currentAnalysis');
@@ -2872,7 +2878,7 @@ switch lower(param)
 % %       val = overlay.minoverlaydata;         % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
 % %     else
     switch (length(varargin))
-      case {1 2}
+      case {0 1 2}
         scanlist = 1:length(overlay.data);
       case 3
         scanlist = varargin{3};
