@@ -9,19 +9,22 @@
 %             non-modal dialog. Note that you do not have to havee
 %             all the fields in the params structure, only the ones
 %             you want to set.
-% 
+%             if executeCallback=1, any callback associated with the entry or the dialog box will be executed
 %
-function retval = mrParamsSet(params)
+function retval = mrParamsSet(params,executeCallback)
 
 retval = [];
 % check arguments
-if ~any(nargin == [1])
+if ~any(nargin == [1 2])
   help mrParamsSet
   return
 end
 
 global gParams;
 
+if ieNotDefined('executeCallback')
+  executeCallback = 0;
+end
 
 % go through each one of the passed in parameters
 paramFields = fieldnames(params);
@@ -123,6 +126,31 @@ for fnum = 1:length(paramFields)
     else
       disp(sprintf('(mrParamsSet) Setting of type %s not implemented yet',gParams.varinfo{match}.type));
     end
+    
+    if executeCallback 
+      % update params
+      if isfield(gParams, 'callback')
+        if ~isempty(gParams.callback)
+          gParams.params = mrParamsGet(gParams.vars);
+          if isfield(gParams,'callbackArg')
+            feval(gParams.callback,gParams.params,gParams.callbackArg);
+          else
+            feval(gParams.callback,gParams.params);
+          end
+        end
+      end
+      % handle callbacks for non-push buttons
+      if ~fieldIsNotDefined(gParams.varinfo{match},'callback')...
+          && ~gParams.varinfo{match}.passCallbackOutput && ~strcmp(gParams.varinfo{match}.type,'pushbutton')
+        callbackArgs={};
+        if isfield(gParams.varinfo{match},'callbackArg')
+          callbackArgs{end+1} = gParams.varinfo{match}.callbackArg;
+        end
+        callbackArgs{end+1} = mrParamsGet(gParams.vars);
+        callbackEval(gParams.varinfo{match}.callback,callbackArgs);
+      end
+    end
+
   else
     if ~strcmp(paramFields{fnum},'paramInfo')
       disp(sprintf('(mrParamsSet) Could not find var %s',paramFields{fnum}));
