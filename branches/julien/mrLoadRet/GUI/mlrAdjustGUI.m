@@ -317,13 +317,18 @@ if isempty(h),
   return
 end
 
+controlType = get(h,'type');
+if ~isempty(propertyName)
+    propertyName(1) = upper(propertyName(1));
+end    
+
 % check if the property exists
 if ~isfield(get(h),propertyName)
   % if not, warn and continue
   if isstr(propertyName)
-    disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of uicontrol %s ***',propertyName,controlName));
+      disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of %s %s ***',propertyName,controlType,controlName));
   else
-    disp(sprintf('(mlrAdjustGUI) *** Could not find correct property of uicontrol %s. Did you pass in a string indicating a property to set ***',controlName));
+    disp(sprintf('(mlrAdjustGUI) *** Could not find correct property of %s %s. Did you pass in a string indicating a property to set ***',controlType,controlName));
   end
   return
 end
@@ -338,14 +343,14 @@ if ~any(strcmp(propertyName,{'Callback','TooltipString'}))
   if ~tf
     disp(sprintf('(mlrAdjustGUI) Property value:'))
     disp(propertyValue);
-    disp(sprintf('is invalid for uicontrol %s property %s. Valid values are: ',controlName,propertyName));
+    disp(sprintf('is invalid for %s %s property %s. Valid values are: ',controlType,controlName,propertyName));
     disp(validValues);
     return
   end
 end
 
 % if we got here, then the value is ok so set it
-disp(sprintf('(mlrAdjustGUI) Setting property %s of uicontrol %s',propertyName,controlName));
+disp(sprintf('(mlrAdjustGUI) Setting property %s of %s %s',propertyName,controlType,controlName));
 set(h,propertyName,propertyValue);
 
 %%%%%%%%%%%%%%%%%%%%%%%
