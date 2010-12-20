@@ -287,7 +287,7 @@ if isempty(h)
   return
 end
 
-delete(h)
+set(h,'visible','off')
 
 % display what we have done
 disp(sprintf('(mlrAdjustGUI:removeMenu) Removed menu: %s',menuLocation));
