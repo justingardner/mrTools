@@ -183,6 +183,8 @@ while keepAsking
   {'fTestNames',fTestNames,'Self-explanatory'},...
   {'restrictions',restrictions,'Restrictions matrix defining F-tests. Each line of each matrix defines a contrast of EVs'},...
   }),params);
+  params.restrictions = restrictions; %copy this again, as mrParamsDefault changes the value of thses two parameters
+  params.fTestNames = fTestNames; %but we use it to create a paramInfo entry for them, which gives acces to the hlep info later on
 
   %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
   if isempty(params.TFCE)
