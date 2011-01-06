@@ -72,11 +72,30 @@ while keepAsking
       params.nRand = 10000;
   end
 
+  if ~isfield(params,'bootstrapStatistics') || isempty(params.bootstrapStatistics)
+    params.bootstrapStatistics = 0;
+  end
+  if ~isfield(params,'bootstrapTestOutput') || isempty(params.bootstrapTestOutput)
+    params.bootstrapTestOutput = 'Z value';
+  end
+  if ~isfield(params, 'nBootstrap') || isempty(params.nBootstrap)
+      params.nBootstrap = 10000;
+  end
+  if ~isfield(params, 'nBootstrap') || isempty(params.nBootstrap)
+      params.nBootstrap = 10000;
+  end
+  if ~isfield(params, 'bootstrapIntervals') || isempty(params.bootstrapIntervals)
+      params.bootstrapIntervals = 0;
+  end
+  if ~isfield(params, 'alphaConfidenceIntervals') || isempty(params.alphaConfidenceIntervals)
+      params.alphaConfidenceIntervals = 0.05;
+  end
 
   tTestSideMenu = putOnTopOfList(params.tTestSide,{'Both','Right','Left'});
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
   parametricTestOutputMenu = putOnTopOfList(params.parametricTestOutput,{'T/F value','P value','Z value'});
   randomizationTestOutputMenu = putOnTopOfList(params.randomizationTestOutput,{'P value','Z value'});
+  bootstrapTestOutputMenu = putOnTopOfList(params.bootstrapTestOutput,{'P value','Z value'});
   
   contrastOptionsVisible = 'visible=0';
   tTestOptionsVisible = 'visible=0';
@@ -132,8 +151,13 @@ while keepAsking
       {'parametricTestOutput', parametricTestOutputMenu,testOptionsVisible,'contingent=parametricTests','type=popupmenu', 'Type of statistics for output overlay. T/F: outputs the value of the statistic (T for contrasts and F for F-tests); P: outputs the probability value associated with the statistic. p-values less than 1e-16 will be replaced by 0; Z: outputs standard normal values associated with probability p. Z values with a probability less than 1e-16 will be replaced by +/-8.209536145151493'},...
       {'TFCE', params.TFCE,tfceContigency,tfceOptionVisible,'type=checkbox', 'Performs Threshold Free Cluster Enhancement on T/F maps using fslmaths. This option is only enabled if a path is specified for FSL by running mrSetPref(''fslPath'',''yourpath'')'},...
       {'randomizationTests', params.randomizationTests,testOptionsVisible,'type=checkbox', 'Performs non-parametric randomization tests on contrasts/F values'},...
-      {'nRand', params.nRand,testOptionsVisible,'contingent=randomizationTests', 'minmax=[1 inf]', 'Number of randomizations for randomization tests. Randomizations are implemented by shuffling event labels before running the pre-processing function'},...
+      {'nRand', params.nRand,testOptionsVisible,'contingent=randomizationTests', 'minmax=[10 inf]', 'Number of randomizations for randomization tests. Randomizations are implemented by shuffling event labels before running the pre-processing function'},...
       {'randomizationTestOutput', randomizationTestOutputMenu,testOptionsVisible,'contingent=randomizationTests','type=popupmenu', 'p: Outputs the frequency of randomizations giving Contrast/F values greater than the actual value; Z: outputs values for the standard normal distribution associated with the probability p.'},...
+      {'bootstrapStatistics', params.bootstrapStatistics,testOptionsVisible,'type=checkbox', 'Performs non-parametric residual bootstrap tests on T/F values or confidence intervals on contrasts and parameter estimates. Bootstrapping consists in resampling the residuals with replacement after OLS/GLS fit and estimating the null-hypothesis distributions using the bootstrapped residuals as the new time-series.'},...
+      {'nBootstrap', params.nBootstrap,testOptionsVisible,'contingent=bootstrapStatistics', 'minmax=[10 inf]', 'Number of resamplings for bootstrap tests.'},...
+      {'bootstrapTestOutput', bootstrapTestOutputMenu,testOptionsVisible,'contingent=bootstrapStatistics','type=popupmenu', 'p: Outputs the frequency of bootstrap resamples giving Contrast/F values greater than the actual value; Z: outputs values for the standard normal distribution associated with the probability p.'},...
+      {'bootstrapIntervals', params.bootstrapIntervals,testOptionsVisible,'contingent=bootstrapStatistics','type=checkbox', 'Whether to compute Bootstrap confidence intervals for contrasts and parameter estimates'},...
+      {'alphaConfidenceIntervals', params.alphaConfidenceIntervals,testOptionsVisible,'contingent=bootstrapIntervals', 'minmax=[0 1]', 'Confidence Intervals will be computed as fractiles (alpha/2) and (1-alpha/2) of the bootstrap estimated null distribution'},...
        }];
 
   if useDefault

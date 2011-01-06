@@ -4,7 +4,7 @@
 %      usage: [d, roiVoxelIndices  ] = getRoisBox(thisView,scanNum,margin)
 %         by: julien besle
 %       date: 2010-04-26
-%     inputs: 
+%     inputs: margin is either a scalar or a 3 element vector specifying a margin around the ROIs (in voxels) in the 3 axes x,y,s
 %    outputs: scanBoxCoords: scan coordinates of the box
 %                  whichRoi: 4D array in which each 3D array indicates the location of each roi in the box
 %              marginVoxels: location of margin voxels in the box
@@ -13,8 +13,11 @@
 function [scanBoxCoords, whichRoi, marginVoxels, roiScanCoords] = getRoisBox(thisView,scanNum,margin,roiNums)
 
 if ieNotDefined('margin')
-   margin = 0;
+   margin = [0 0 0];
+elseif numel(margin)==1
+  margin = repmat(margin,1,3);
 end
+
 if ieNotDefined('roiNums')
    roiNums=1:length(thisView.ROIs);
 end
@@ -37,12 +40,12 @@ for iRoi = 1:nRois
      %make sure we don't have the same voxel twice for this roi
      roiScanCoords{iRoi} = unique(roiScanCoords{iRoi}','rows')';
      %find the coordinates of the subset box including all the voxels from all the ROIs
-     minX = max(min(minX,min(roiScanCoords{iRoi}(1,:))-margin),1);
-     maxX = min(max(maxX,max(roiScanCoords{iRoi}(1,:))+margin),scanDims(1));
-     minY = max(min(minY,min(roiScanCoords{iRoi}(2,:))-margin),1);
-     maxY = min(max(maxY,max(roiScanCoords{iRoi}(2,:))+margin),scanDims(2));
-     minZ = max(min(minZ,min(roiScanCoords{iRoi}(3,:))-margin),1);
-     maxZ = min(max(maxZ,max(roiScanCoords{iRoi}(3,:))+margin),scanDims(3));
+     minX = max(min(minX,min(roiScanCoords{iRoi}(1,:))-margin(1)),1);
+     maxX = min(max(maxX,max(roiScanCoords{iRoi}(1,:))+margin(1)),scanDims(1));
+     minY = max(min(minY,min(roiScanCoords{iRoi}(2,:))-margin(2)),1);
+     maxY = min(max(maxY,max(roiScanCoords{iRoi}(2,:))+margin(2)),scanDims(2));
+     minZ = max(min(minZ,min(roiScanCoords{iRoi}(3,:))-margin(3)),1);
+     maxZ = min(max(maxZ,max(roiScanCoords{iRoi}(3,:))+margin(3)),scanDims(3));
    end
 end
 scanBoxCoords = [minX maxX;minY maxY;minZ maxZ];

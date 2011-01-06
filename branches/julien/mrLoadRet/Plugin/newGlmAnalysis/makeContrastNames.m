@@ -13,8 +13,13 @@ end
 contrastNames = cell(1,size(contrasts,1));
 
 for iContrast = 1:size(contrasts,1)
-  if nnz(contrasts(iContrast,:))==1 && sum(contrasts(iContrast,:))==1 %if the contrast is one EV
-    contrastNames{iContrast} = EVnames{logical(contrasts(iContrast,:))};
+  if nnz(contrasts(iContrast,:))==1 %if the contrast is one EV
+    whichEV=logical(contrasts(iContrast,:));
+    if sum(contrasts(iContrast,:))==1 
+      contrastNames{iContrast} = EVnames{whichEV};
+    else
+      contrastNames{iContrast} = [num2str(contrasts(iContrast,whichEV)) '*' EVnames{whichEV}];
+    end
   elseif nnz(contrasts(iContrast,:))==2 && sum(contrasts(iContrast,:))==0 %if the contrast is a comparison of 2 EVs
     EV1 = find(contrasts(iContrast,:),1,'first');
     EV2 = find(contrasts(iContrast,:),1,'last');

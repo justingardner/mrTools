@@ -69,3 +69,7 @@ end
 if isfield(params,'outputPValue')
   params = rmfield(params,'outputPValue');
 end
+if isfield(params,'bootstrapTests')
+  params.bootstrapStatistics = params.bootstrapTests;
+  params = rmfield(params,'bootstrapTests');
+end
