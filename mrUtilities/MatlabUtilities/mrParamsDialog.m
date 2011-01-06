@@ -1046,7 +1046,7 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
   end
   uiParams.buttonHeight = thisExtent(4);
   %For edit boxes and buttons on MACs, this height will be too small because of their large borders
-  if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
+  if ismac 
     uiParams.buttonHeight = uiParams.buttonHeight*1.25;
   end
   % global mrDEFAULTS;                                       % The height of the button used to be dependent on the version of matlab             
