@@ -431,7 +431,7 @@ for z = slices
 
       if ~strcmp(params.correctionType, 'none')
         %find non-NaN voxels in this y line
-        xvals = find(~any(isnan(timeseries(:,:,y))) & ~any(isnan(autoCorrelationParameters)));
+        xvals = find(~any(isnan(timeseries(:,:,y))) & ~any(isnan(autoCorrelationParameters(:,:,y,z))));
         thisPassesCounter=passesCounter;
         for x = xvals
           if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
@@ -529,7 +529,7 @@ for z = slices
               %estimate the OLS beta weights 
               betas = pinv_X*timeseries(:,:,y); 
               %and we replace the residuals for this y by the bootstrap residuals
-              residuals(:,:,y) = timeseries(:,:,y)-d.scm*betas(:,:,y);
+              residuals(:,:,y) = timeseries(:,:,y)-d.scm*betas;
 
             case 'generalizedLeastSquares' %see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
               for x = xvals
