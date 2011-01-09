@@ -61,6 +61,7 @@ if isfield(params,'n_rand')
   params = rmfield(params,'n_rand');
 end
 if isfield(params,'outputStatistic')
+  params.outputParametricStatistic = params.outputStatistic;
   params = rmfield(params,'outputStatistic');
 end
 if isfield(params,'outputZStatistic')
@@ -69,6 +70,21 @@ end
 if isfield(params,'outputPValue')
   params = rmfield(params,'outputPValue');
 end
+if isfield(params,'parametricTestOutput')
+  if strcmp(params.parametricTestOutput,'T/F value')
+    params.outputParametricStatistic =1;
+  else
+    params.testOutput = params.parametricTestOutput;
+  end
+  params = rmfield(params,'parametricTestOutput');
+end
+if isfield(params,'randomizationTestOutput')
+  params = rmfield(params,'randomizationTestOutput');
+end
+if isfield(params,'bootstrapTestOutput')
+  params = rmfield(params,'bootstrapTestOutput');
+end
+
 if isfield(params,'bootstrapTests')
   params.bootstrapStatistics = params.bootstrapTests;
   params = rmfield(params,'bootstrapTests');
