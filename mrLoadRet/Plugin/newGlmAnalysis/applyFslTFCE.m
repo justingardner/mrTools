@@ -9,8 +9,9 @@ if ieNotDefined('tempFilename')
   tempFilename = 'temp.img';
 end
 
-if any(size(data)<3);
-   mrErrorDlg('Volumes must have at least 3 voxels in each dimension to perform TFCE');
+dataSize = size(data);
+if any(dataSize(1:3)<3);
+   mrErrorDlg('Volumes must have at least 3 voxels in each spatial dimension to perform TFCE');
 end
 
 fslPath = mrGetPref('fslPath');
