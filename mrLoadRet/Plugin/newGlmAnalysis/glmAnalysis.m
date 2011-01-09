@@ -74,36 +74,73 @@ end
 
 
 %--------------------------------------------------------- Main loop over scans ---------------------------------------------------
-tic
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 %initialize the data we're keeping for output overlays
 precision = mrGetPref('defaultPrecision');
 r2 = cell(1,params.scanNum(end));
 if ~isempty(contrasts)
-  contrastData = r2;
+  C = r2;
   if params.computeTtests
-    tData = r2;
-    contrastRandData = r2;  
-    if params.bootstrapStatistics
-      tBootstrap = r2;
+    if params.parametricTests
+      T = r2;
+      Tp = r2;  
+      if params.fdrAdjustment
+        fdrTp=r2;
+      end
+      if params.TFCE
+        tfceT = r2;
+        thresholdTfceT = NaN(size(contrasts,1),params.scanNum(end));
+      end
     end
-    if params.TFCE
-      tDataTFCE = r2;
-      tRandTfce = r2;
-      thresholdTfceT = NaN(size(contrasts,1),params.scanNum(end));
+    if params.randomizationTests
+      randC = r2;
+      if params.fdrAdjustment
+        fdrRandC=r2;
+      end
+      if params.TFCE
+        tfceRandT = r2;
+        if params.fdrAdjustment
+          fdrTfceRandT=r2;
+        end
+      end
+    end
+    if params.bootstrapStatistics
+      bootstrapT = r2;
+      if params.fdrAdjustment
+        fdrBootstrapT=r2;
+      end
     end
   end
 end
 if ~isempty(restrictions)
-  fRandData = r2;
-  fData = r2;  
-  if params.bootstrapStatistics
-    fBootstrap = r2;
+  F = r2;  
+  if params.parametricTests
+    Fp = r2;
+    if params.fdrAdjustment
+      fdrFp=r2;
+    end
+    if params.TFCE
+      tfceF = r2;
+      thresholdTfceF = NaN(length(restrictions),params.scanNum(end));
+    end
   end
-  if params.TFCE
-    fDataTFCE = r2;
-    fRandTfce = r2;
-    thresholdTfceF = NaN(length(restrictions),params.scanNum(end));
+  if params.randomizationTests
+    randF = r2;
+    if params.fdrAdjustment
+      fdrRandF=r2;
+    end
+    if params.TFCE
+      tfceRandF = r2;
+      if params.fdrAdjustment
+        fdrTfceRandF=r2;
+      end
+    end
+  end
+  if params.bootstrapStatistics
+    bootstrapF = r2;
+    if params.fdrAdjustment
+      fdrBootstrapF=r2;
+    end
   end
 end
 
@@ -118,8 +155,8 @@ for scanNum = params.scanNum
    case 'Loaded ROI(s)'
       %get the smallest box containing all the voxels from all the boxes 
       [subsetBox, whichRoi, marginVoxels] = getRoisBox(thisView,scanNum,[voxelsMargin voxelsMargin 0]);
-      roiPositionInBox = marginVoxels | any(whichRoi,4);
-      clear('whichRoi','marginVoxels');
+      usedVoxelsInBox = marginVoxels | any(whichRoi,4);
+      %clear('whichRoi','marginVoxels');
   end
   subsetDims = diff(subsetBox,1,2)+1;
   %Compute the number of slices to load at once in order to minimize memory usage
@@ -128,7 +165,7 @@ for scanNum = params.scanNum
    slicesToLoad = subsetDims(3);
    loadCallsPerBatch = {1};
    rawNumSlices = subsetDims(3);
-   %compare the size of the array to load to the memory preference and ask for confirmation if 
+   %compare the size of the array to load to the memory preference and ask for confirmation if larger than maxBlockSize
    switch (precision)
      case {'double'}
       bytesPerNum = 8;
@@ -168,7 +205,7 @@ for scanNum = params.scanNum
         currentFirstSlice = 0;
         nBatches = 1;
         for iLoad = 1:length(slicesToLoad)
-          nVoxels =  nVoxels+nnz(roiPositionInBox(:,:,currentFirstSlice+(1:slicesToLoad(iLoad))) > 0);
+          nVoxels =  nVoxels+nnz(usedVoxelsInBox(:,:,currentFirstSlice+(1:slicesToLoad(iLoad))) > 0);
           [roiSlicesAtATime rawRoiSlices] = getNumSlicesAtATime(numVolumes,[nVoxels 1 1]);
           if rawRoiSlices<1
             nBatches = nBatches+1;
@@ -186,7 +223,6 @@ for scanNum = params.scanNum
   end
 
   ehdr = []; rdf = []; mdf = [];s2 = []; autoCorrelationParameters = [];
-% % %   rss = []; ehdrste = []; contrastSte = [];
   ehdrBootstrapCIs = [];  contrastBootstrapCIs = [];
 
   %----------------------------------------Design matrix: same for all voxels
@@ -240,18 +276,19 @@ for scanNum = params.scanNum
           for iLoad= loadCallsPerBatch{iBatch}
              dummy = loadScan(thisView,scanNum,[],subsetBox(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox(1,:),subsetBox(2,:));
              dummy.data = reshape(dummy.data,[prod(dummy.dim(1:3)) dummy.dim(4)]);
-             d.data = cat(1,d.data, dummy.data(roiPositionInBox(:,:,firstSlices(iLoad):lastSlices(iLoad))>0,:) );
+             d.data = cat(1,d.data, dummy.data(usedVoxelsInBox(:,:,firstSlices(iLoad):lastSlices(iLoad))>0,:) );
           end
           d.data = permute(d.data,[1 3 4 2]);
-          d.roiPositionInBox = roiPositionInBox(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)));
+          d.roiPositionInBox = any(whichRoi(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:),4);
+          d.marginVoxels = marginVoxels(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
           d.dim = size(d.data);
     end
-    clear dummy;
+    clear('dummy','usedVoxelsInBox');
 
     %-------------------------------Permutations------------------------------------------
     for iRand = 1:nRand
       if iRand==2
-        hWaitBar = mrWaitbar(0,['Computing Permutations for scan ' num2str(scanNum)]);
+        hWaitBar = mrWaitBar(0,['Computing Permutations for scan ' num2str(scanNum)]);
       end
       if iRand == 1 %if it is the actual data
         d.stimvol = actualStimvol;
@@ -280,40 +317,40 @@ for scanNum = params.scanNum
       %compute the design matrix for this randomization
       d = makeDesignMatrix(d,params,verbose, scanNum);
       % compute estimates and statistics
-      [d, r2Temp, contrastDataTemp, tDataTemp, fDataTemp, tBootstrapTemp, fBootstrapTemp] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
+      [d, r2Temp, tempC, tempT, tempF, tempBootstrapT, tempBootstrapF] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
 
       if ~isempty(contrasts)
         %in the particular case where contrasts are tested on several components using 'Or' combination, we don't compute the contrasts
         %so we'll use the T-test (in fact F-test) values instead of the contrast values
         if length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
-          contrastDataTemp = tDataTemp;
+          tempC = tempT;
         end
           
         if iRand==1
-          actualTdataTemp = tDataTemp;
-          actualCdataTemp = contrastDataTemp;
+          tempActualT = tempT;
+          tempActualC = tempC;
           if params.randomizationTests
-            contrastRandDataTemp = zeros(size(actualCdataTemp),precision); %will count how many randomization values are above the actual contrast value 
+            tempRandC = zeros(size(tempActualC),precision); %will count how many randomization values are above the actual contrast value 
           end
         else
           switch params.tTestSide
             case 'Right'
-              contrastRandDataTemp = contrastRandDataTemp+double(contrastDataTemp>actualCdataTemp);
+              tempRandC = tempRandC+double(tempC>tempActualC);
             case 'Left'
-              contrastRandDataTemp = contrastRandDataTemp+double(contrastDataTemp<actualCdataTemp);
+              tempRandC = tempRandC+double(tempC<tempActualC);
             case 'Both'
-              contrastRandDataTemp = contrastRandDataTemp+double(abs(contrastDataTemp)>abs(actualCdataTemp));
+              tempRandC = tempRandC+double(abs(tempC)>abs(tempActualC));
           end
         end
       end
       if ~isempty(restrictions)
         if iRand==1
-          actualFdataTemp = fDataTemp;
+          tempActualF = tempF;
           if params.randomizationTests
-            fRandDataTemp = zeros(size(actualFdataTemp),precision); %will count how many randomization values are above the actual F value 
+            tempRandF = zeros(size(tempActualF),precision); %will count how many randomization values are above the actual F value 
           end
         else
-          fRandDataTemp = fRandDataTemp+double(fDataTemp>actualFdataTemp);
+          tempRandF = tempRandF+double(tempF>tempActualF);
         end
       end
 
@@ -322,41 +359,41 @@ for scanNum = params.scanNum
         
         if ~isempty(restrictions)
           if isfield(d,'roiPositionInBox') 
-            fDataTemp = reshapeToRoiBox(fDataTemp,d.roiPositionInBox); 
+            tempF = reshapeToRoiBox(tempF,d.roiPositionInBox); 
           end
           %NaNs in the data will be transformed to 0 by FSL, so for ROIs, 
           %TFCE is applied to the smallest box including all the ROIs, but replacing non-computed data by 0
-          tfceData = applyFslTFCE(fDataTemp,'',0);   
-          tfceData(isnan(fDataTemp)) = NaN; %put NaNs back in place
+          tempTfce = applyFslTFCE(tempF,'',0);   
+          tempTfce(isnan(tempF)) = NaN; %put NaNs back in place
           if iRand == 1 %if it is the actual data
-            fDataTfceCount = NaN(size(fDataTemp),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
-            fDataTfceCount(~isnan(fDataTemp)) = 1; %we count the actual data in
+            tfceCountF = NaN(size(tempF),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
+            tfceCountF(~isnan(tempF)) = 1; %we count the actual data in
             maxTfceF = zeros(nRand,length(restrictions));       %and these will store the distribution of max
-            fDataTFCE{scanNum} = tfceData;           %keep the TFCE transform
+            tfceF{scanNum} = tempTfce;           %keep the TFCE transform
           else
-            fDataTfceCount = fDataTfceCount+ double(tfceData>fDataTFCE{scanNum});
+            tfceCountF = tfceCountF+ double(tempTfce>tfceF{scanNum});
           end
-          maxTfceF(iRand,:) = permute(max(max(max(fDataTFCE{scanNum}))),[1 4 2 3]);
+          maxTfceF(iRand,:) = permute(max(max(max(tfceF{scanNum}))),[1 4 2 3]);
         end
         
         %same for T-tests
         if computeTtests && ~isempty(contrasts)
           if isfield(d,'roiPositionInBox') 
-            tDataTemp = reshapeToRoiBox(tDataTemp,d.roiPositionInBox);
+            tempT = reshapeToRoiBox(tempT,d.roiPositionInBox);
           end
-          tfceData = applyFslTFCE(tDataTemp,'',0);
-          tfceData(isnan(tDataTemp)) = NaN; %put NaNs back in place
+          tempTfce = applyFslTFCE(tempT,'',0);
+          tempTfce(isnan(tempT)) = NaN; %put NaNs back in place
           if iRand == 1 %if it is the actual data
-            tDataTfceCount = NaN(size(tDataTemp),precision);     %
-            tDataTfceCount(~isnan(tDataTemp)) = 1;
+            tfceCountT = NaN(size(tempT),precision);     %
+            tfceCountT(~isnan(tempT)) = 1;
             maxTfceT = zeros(nRand,size(contrasts,1));
-            tDataTFCE{scanNum} = tfceData; 
+            tfceT{scanNum} = tempTfce; 
           else
-            tDataTfceCount = tDataTfceCount+ double(tfceData>tDataTFCE{scanNum});
+            tfceCountT = tfceCountT+ double(tempTfce>tfceT{scanNum});
           end
-          maxTfceT(iRand,:) = permute(max(max(max(tDataTFCE{scanNum}))),[1 4 2 3]);
+          maxTfceT(iRand,:) = permute(max(max(max(tfceT{scanNum}))),[1 4 2 3]);
         end
-        
+        clear('tempTfce');
       end
     end
     if params.randomizationTests 
@@ -365,11 +402,8 @@ for scanNum = params.scanNum
 
     if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
       d.ehdr = reshapeToRoiBox(d.ehdr,d.roiPositionInBox);
-% % %       d.ehdrste = reshapeToRoiBox(d.ehdrste,d.roiPositionInBox);
-% % %       d.r2 = reshapeToRoiBox(d.r2,d.roiPositionInBox);
       r2Temp = reshapeToRoiBox(r2Temp,d.roiPositionInBox);
       d.s2 = reshapeToRoiBox(d.s2,d.roiPositionInBox);
-% % %       d.rss = reshapeToRoiBox(d.rss,d.roiPositionInBox);
       if params.covCorrection
         d.autoCorrelationParameters = reshapeToRoiBox(d.autoCorrelationParameters,d.roiPositionInBox);
       end
@@ -377,44 +411,39 @@ for scanNum = params.scanNum
         d.ehdrBootstrapCIs = reshapeToRoiBox(d.ehdrBootstrapCIs,d.roiPositionInBox);
       end
       if ~isempty(contrasts)
-        actualCdataTemp = reshapeToRoiBox(actualCdataTemp,d.roiPositionInBox);
-% % %         d.contrastSte = reshapeToRoiBox(d.contrastSte,d.roiPositionInBox);
+        tempActualC = reshapeToRoiBox(tempActualC,d.roiPositionInBox);
         if params.computeTtests
-          actualTdataTemp = reshapeToRoiBox(actualTdataTemp,d.roiPositionInBox);
+          tempActualT = reshapeToRoiBox(tempActualT,d.roiPositionInBox);
           if params.bootstrapStatistics
-            tBootstrapTemp = reshapeToRoiBox(tBootstrapTemp,d.roiPositionInBox);
+            tempBootstrapT = reshapeToRoiBox(tempBootstrapT,d.roiPositionInBox);
           end
         end
         if params.randomizationTests
-          contrastRandDataTemp = reshapeToRoiBox(contrastRandDataTemp,d.roiPositionInBox);
+          tempRandC = reshapeToRoiBox(tempRandC,d.roiPositionInBox);
         end
         if params.bootstrapStatistics && params.bootstrapIntervals && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
           d.contrastBootstrapCIs = reshapeToRoiBox(d.contrastBootstrapCIs,d.roiPositionInBox);
         end
       end
       if ~isempty(restrictions) 
-        actualFdataTemp = reshapeToRoiBox(actualFdataTemp,d.roiPositionInBox);
+        tempActualF = reshapeToRoiBox(tempActualF,d.roiPositionInBox);
         if numel(d.rdf)>1
           d.rdf = reshapeToRoiBox(d.rdf,d.roiPositionInBox);
           d.mdf = reshapeToRoiBox(d.mdf,d.roiPositionInBox);
         end
         if params.randomizationTests
-          fRandDataTemp = reshapeToRoiBox(fRandDataTemp,d.roiPositionInBox);
+          tempRandF = reshapeToRoiBox(tempRandF,d.roiPositionInBox);
         end
         if params.bootstrapStatistics
-          fBootstrapTemp = reshapeToRoiBox(fBootstrapTemp,d.roiPositionInBox);
+          tempBootstrapF = reshapeToRoiBox(tempBootstrapF,d.roiPositionInBox);
         end
       end
       d = rmfield(d,'roiPositionInBox');
     end
 
-    % cat with what has already been computed for other slices
     ehdr = cat(3,ehdr,d.ehdr);
-% % %     ehdrste = cat(3,ehdrste,d.ehdrste);
-% % %     r2{scanNum} = cat(3,r2{scanNum},d.r2);
     r2{scanNum} = cat(3,r2{scanNum},r2Temp);
     s2 = cat(3,s2,d.s2);
-% % %     rss = cat(3,rss,d.rss);
     if params.covCorrection
       autoCorrelationParameters = cat(3,autoCorrelationParameters,d.autoCorrelationParameters);
     end
@@ -422,101 +451,92 @@ for scanNum = params.scanNum
       ehdrBootstrapCIs = cat(3,ehdrBootstrapCIs,d.ehdrBootstrapCIs);
     end
     if ~isempty(contrasts)
-% % %       contrastSte = cat(3,contrastSte,d.contrastSte);
       if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
-        contrastData{scanNum} = cat(3,contrastData{scanNum},actualCdataTemp);
+        C{scanNum} = cat(3,C{scanNum},tempActualC);
       end
       if params.computeTtests
-        tData{scanNum} = cat(3,tData{scanNum},actualTdataTemp);
+        T{scanNum} = cat(3,T{scanNum},tempActualT);
         if params.bootstrapStatistics
-          tBootstrap{scanNum} = cat(3,tBootstrap{scanNum},tBootstrapTemp);
+          bootstrapT{scanNum} = cat(3,bootstrapT{scanNum},tempBootstrapT);
         end
       end
       if params.randomizationTests
-        contrastRandData{scanNum} = cat(3,contrastRandData{scanNum},contrastRandDataTemp);
+        randC{scanNum} = cat(3,randC{scanNum},tempRandC);
       end
       if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
         contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
       end
     end
     if ~isempty(restrictions)
-      fData{scanNum} = cat(3,fData{scanNum},actualFdataTemp);
+      F{scanNum} = cat(3,F{scanNum},tempActualF);
       if numel(d.rdf)>1
          rdf = cat(3,rdf,d.rdf);
          mdf = cat(3,mdf,d.mdf);
       end
       if params.randomizationTests
-        fRandData{scanNum} = cat(3,fRandData{scanNum},fRandDataTemp);
+        randF{scanNum} = cat(3,randF{scanNum},tempRandF);
       end
       if params.bootstrapStatistics
-        fBootstrap{scanNum} = cat(3,fBootstrap{scanNum},fBootstrapTemp);
+        bootstrapF{scanNum} = cat(3,bootstrapF{scanNum},tempBootstrapF);
       end
     end
 
   end
   d = rmfield(d,'data');
-  clear('r2Temp','contrastDataTemp', 'tDataTemp', 'fDataTemp')
-  clear('contrastRandDataTemp','fRandDataTemp','actualCdataTemp','actualTdataTemp','actualFdataTemp')
-  clear('tBootstrapTemp','fBootstrapTemp')
+  clear('r2Temp','tempC', 'tempT', 'tempF')
+  clear('tempRandC','tempRandF','tempActualC','tempActualT','tempActualF')
+  clear('tempBootstrapT','tempBootstrapF')
   
   %compute the TFCE if randomization test not run on it
   if params.TFCE && ~params.randomizationTests
     if ~isempty(restrictions)
-      fDataTFCE{scanNum} = NaN(size(fData{scanNum}),precision);     
-      fDataTFCE{scanNum} = applyFslTFCE(fData{scanNum}); 
-      fDataTFCE{scanNum}(isnan(fData{scanNum})) = NaN; %put NaNs back in place
+      tfceF{scanNum} = NaN(size(F{scanNum}),precision);     
+      tfceF{scanNum} = applyFslTFCE(F{scanNum}); 
+      tfceF{scanNum}(isnan(F{scanNum})) = NaN; %put NaNs back in place
     end
     if computeTtests && ~isempty(contrasts)
-      tDataTFCE{scanNum} = NaN(size(tData{scanNum}),precision);    
-      tDataTFCE{scanNum} = applyFslTFCE(tData{scanNum}); 
-      tDataTFCE{scanNum}(isnan(tData{scanNum})) = NaN; %put NaNs back in place
+      tfceT{scanNum} = NaN(size(T{scanNum}),precision);    
+      tfceT{scanNum} = applyFslTFCE(T{scanNum}); 
+      tfceT{scanNum}(isnan(T{scanNum})) = NaN; %put NaNs back in place
     end
   end
 
   if params.computeTtests && ~isempty(contrasts)
     if params.parametricTests
-      if ismember(params.parametricTestOutput,{'P value','Z value'})
-         %convert to P value
-         tData{scanNum} = 1 - cdf('t', double(tData{scanNum}), d.rdf); %here use doubles to deal with small Ps
-         if strcmp(params.tTestSide,'Both')
-            tData{scanNum} = 2*tData{scanNum};
-         end
-        if strcmp(params.parametricTestOutput,'Z value')
-           %probabilities output by cdf will be 1 if (1-p)<1e-16, which will give a Z value of +/-inf 
-           tData{scanNum} = pToZ(tData{scanNum},1e-16,precision); %this will be handled by pToZ
-         end
-      end
-      if params.randomizationTests
-        contrastRandData{scanNum} = contrastRandData{scanNum}/nRand;
-        if strcmp(params.randomizationTestOutput,'Z value')
-          contrastRandData{scanNum} = pToZ(contrastRandData{scanNum},1/nRand,precision); 
+        %convert to P value
+        Tp{scanNum} = 1 - cdf('t', double(T{scanNum}), d.rdf); %here use doubles to deal with small Ps
+        if ~params.outputParametricStatistic
+          T{scanNum} = [];
         end
-        %compute TFCE thresholds
-        if params.TFCE 
-           for iContrast = 1:size(contrasts,1)
-              sorted_max_tfce = sort(maxTfceT(:,iContrast));
-              thresholdTfceT(iContrast,scanNum) = sorted_max_tfce(max(1,floor((1-randAlpha)*nRand)));
-           end
-          tRandTfce{scanNum} = tDataTfceCount/nRand;
-          if strcmp(params.randomizationTestOutput,'Z value')
-            tRandTfce{scanNum} = pToZ(tRandTfce{scanNum},1/nRand,precision); 
-          end
+        if strcmp(params.tTestSide,'Both')
+          Tp{scanNum} = 2*Tp{scanNum};
         end
-      end
-      if params.bootstrapStatistics
-        if strcmp(params.bootstrapTestOutput,'Z value')
-          tBootstrap{scanNum} = pToZ(tBootstrap{scanNum},1/params.nBootstrap,precision); 
-        else
-          tBootstrap{scanNum} = eval([precision '(tBootstrap{scanNum})']);
+        [Tp{scanNum},fdrTp{scanNum}] = transformStatistic(Tp{scanNum},precision,1e-16,params); 
+    end
+    if params.randomizationTests
+      randC{scanNum} = randC{scanNum}/nRand;
+      [randC{scanNum},fdrRandC{scanNum}] = transformStatistic(randC{scanNum},precision,1/nRand,params); 
+      %compute TFCE thresholds
+      if params.TFCE 
+        for iContrast = 1:size(contrasts,1)
+          sorted_max_tfce = sort(maxTfceT(:,iContrast));
+          thresholdTfceT(iContrast,scanNum) = sorted_max_tfce(max(1,floor((1-randAlpha)*nRand)));
         end
+        tfceRandT{scanNum} = tfceCountT/nRand;
+        clear('tfceCountT');
+        [tfceRandT{scanNum},fdrTfceRandT{scanNum}] = transformStatistic(tfceRandT{scanNum},precision,1/nRand,params); 
       end
+    end
+    if params.bootstrapStatistics
+      [bootstrapT{scanNum},fdrBootstrapT{scanNum}] = transformStatistic(bootstrapT{scanNum},precision,1/params.nBootstrap,params); 
     end
   end
   
   if ~isempty(restrictions)
     %make parametric probability maps
     if params.parametricTests 
-      if ismember(params.parametricTestOutput,{'P value','Z value'})
+      if ~strcmp(params.testOutput,'T/F value') || params.fdrAdjustment
+        %convert to P value
         if numel(d.rdf)>1
           d.rdf = rdf;
           d.mdf = mdf;
@@ -524,36 +544,29 @@ for scanNum = params.scanNum
           rdf = d.rdf*ones(size(s2));
           mdf = repmat(permute(d.mdf,[1 3 4 2]),[size(s2) 1]);
         end   
-        fData{scanNum} = 1 - cdf('f', double(fData{scanNum}), mdf, repmat(rdf,[1 1 1 length(restrictions)]));  
+        Fp{scanNum} = 1 - cdf('f', double(F{scanNum}), mdf, repmat(rdf,[1 1 1 length(restrictions)]));  
         clear('mdf','rdf')
-        if strcmp(params.parametricTestOutput,'Z value')
-          %probabilities output by cdf are 1 if (1-p)<1e-16, which will give a Z value of +/-inf
-          fData{scanNum} = pToZ(fData{scanNum},1e-16,precision); %this will be handled by pToZ
+        if ~params.outputParametricStatistic
+          F{scanNum} = [];
         end
+        [Fp{scanNum},fdrFp{scanNum}] = transformStatistic(Fp{scanNum},precision,1e-16,params); 
       end
       if params.randomizationTests 
-        fRandData{scanNum} = fRandData{scanNum}/nRand;
-        if strcmp(params.randomizationTestOutput,'Z value')
-          fRandData{scanNum} = pToZ(fRandData{scanNum},1/nRand,precision); 
-        end
+        randF{scanNum} = randF{scanNum}/nRand;
+        [randF{scanNum},fdrRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/nRand,params); 
         %compute TFCE thresholds
         if params.TFCE 
           for iFtest = 1:length(restrictions)
             sorted_max_tfce = sort(maxTfceF(:,iFtest));
             thresholdTfceF(iFtest,scanNum) = sorted_max_tfce(max(1,floor((1-randAlpha)*nRand)));
           end
-          fRandTfce{scanNum} = fDataTfceCount/nRand;
-          if strcmp(params.randomizationTestOutput,'Z value')
-            fRandTfce{scanNum} = pToZ(fRandTfce{scanNum},1/nRand,precision); 
-          end
+          tfceRandF{scanNum} = tfceCountF/nRand;
+          clear('tfceCountF');
+          [tfceRandF{scanNum},fdrTfceRandF{scanNum}] = transformStatistic(tfceRandF{scanNum},params.testOutput,precision,1/nRand); 
         end
       end
       if params.bootstrapStatistics
-        if strcmp(params.bootstrapTestOutput,'Z value')
-          fBootstrap{scanNum} = pToZ(fBootstrap{scanNum},1/params.nBootstrap,precision); 
-        else
-          fBootstrap{scanNum} = eval([precision '(fBootstrap{scanNum})']);
-        end
+        [bootstrapF{scanNum},fdrBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/params.nBootstrap,params); 
       end
     end
   end
@@ -574,13 +587,8 @@ for scanNum = params.scanNum
   glmAnal.d{scanNum}.dim = [scanDims numVolumes];
   glmAnal.d{scanNum}.ehdr = NaN([scanDims size(ehdr,4) size(ehdr,5)],precision);
   glmAnal.d{scanNum}.ehdr(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdr;
-% % %   glmAnal.d{scanNum}.ehdrste = NaN([scanDims size(ehdrste,4) size(ehdrste,5)],precision);
-% % %   glmAnal.d{scanNum}.ehdrste(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdrste;
-% % %   glmAnal.d{scanNum}.rss = NaN(scanDims,precision);
-% % %   glmAnal.d{scanNum}.rss(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = rss; %JB
   glmAnal.d{scanNum}.s2 = NaN(scanDims,precision);
   glmAnal.d{scanNum}.s2(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = s2; %JB
-% % %   clear('ehdr','ehdrste','rss','s2');
   clear('ehdr','s2');
   if params.covCorrection
     glmAnal.d{scanNum}.autoCorrelationParameters = NaN([scanDims size(autoCorrelationParameters,4)],precision);
@@ -593,8 +601,6 @@ for scanNum = params.scanNum
     clear('ehdrBootstrapCIs')
   end
   if ~isempty(contrasts)
-% % %     glmAnal.d{scanNum}.contrastSte = NaN([scanDims size(contrastSte,4) size(contrastSte,5)],precision);
-% % %     glmAnal.d{scanNum}.contrastSte(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = contrastSte; %JB
     glmAnal.d{scanNum}.contrasts = contrasts;
     if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
       glmAnal.d{scanNum}.contrastBootstrapCIs = NaN([scanDims size(contrastBootstrapCIs,4) size(contrastBootstrapCIs,5)],precision);
@@ -609,7 +615,6 @@ for scanNum = params.scanNum
 
 
 end
-toc
 
 tic
 %-------------------------------------------------------- Output Analysis ---------------------------------------------------
@@ -631,12 +636,13 @@ glmAnal.params = params;
 glmAnal.date = dateString;
 
 %--------------------------------------------------------- Output overlay structures
+nScans = viewGet(thisView,'nScans');
 % create generic parameters 
 defaultOverlay.groupName = params.groupName;
 defaultOverlay.function = 'glmAnalysis';
 defaultOverlay.reconcileFunction = 'defaultReconcileParams';
 defaultOverlay.date = dateString;
-defaultOverlay.params = cell(1,viewGet(thisView,'nScans'));
+defaultOverlay.params = cell(1,nScans);
 % colormap is made with a little bit less on the dark end
 defaultOverlay.colormap = hot(312);
 defaultOverlay.colormap = defaultOverlay.colormap(end-255:end,:);
@@ -648,7 +654,7 @@ defaultOverlay.range = [0 1];
 defaultOverlay.clip = [0 1];
 defaultOverlay.alphaOverlay='';
 defaultOverlay.alphaOverlayExponent=1;
-defaultOverlay.data = cell(1,viewGet(thisView,'nScans'));
+defaultOverlay.data = cell(1,nScans);
 defaultOverlay.name = '';
 for scanNum = params.scanNum
    defaultOverlay.data{scanNum} = NaN(scanDims,precision); %to make values outside the box transparent
@@ -656,13 +662,12 @@ end
 
 
 %------------------------------------------------------ save the r2 overlay
-cOverlay = 1;
-overlays(cOverlay) = defaultOverlay;
-overlays(cOverlay).name = 'r2';
-overlays(cOverlay).colormapType = 'setRangeToMax';
+overlays = defaultOverlay;
+overlays.name = 'r2';
+overlays.colormapType = 'setRangeToMax';
 for scanNum = params.scanNum
-   overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) = r2{scanNum};
-   overlays(cOverlay).params{scanNum} = scanParams{scanNum};
+   overlays.data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) = r2{scanNum};
+   overlays.params{scanNum} = scanParams{scanNum};
 end
 clear('r2');
 
@@ -677,165 +682,116 @@ if ~isempty(contrasts)
   betaAlphaOverlayExponent = 1;
   if params.computeTtests
     if params.parametricTests
-      thisOverlay = defaultOverlay;
-      switch(params.parametricTestOutput)
-        case 'T/F value'                                                %T maps
-          thisOverlay.colormap = jet(256);
-          max_abs_T = max(max(max(max(max(abs(cell2mat(tData)))))));
-          thisOverlay.range = [-max_abs_T max_abs_T];
-          namePrefix = 'T ( ';
-          betaAlphaOverlayExponent = 0;
-        case 'P value'                                                  %statistical maps
-          thisOverlay = defaultOverlay;
-          thisOverlay.colormap = statsColorMap(256);
-          namePrefix = 'p (T ';
-          betaAlphaOverlayExponent = -1;      %set the alpha overlay to the statistical value with an inverse masking
-        case 'Z value'                                                  %Z maps
-          thisOverlay = defaultOverlay;
-          %thisOverlay.range = [0 max(max(max(max(max(cell2mat(tData))))))];
-          thisOverlay.range = [0 8.2096];
-          namePrefix = 'Z (T ';
-          betaAlphaOverlayExponent = .5;      %set the alpha overlay to the Z value with masking
-      end
+      
+      if params.outputParametricStatistic
+        thisOverlay = defaultOverlay;
+        thisOverlay.colormap = jet(256);
+        max_abs_T = max(max(max(max(max(abs(cell2mat(T)))))));
+        thisOverlay.range = [-max_abs_T max_abs_T];
+        namePrefix = 'T ( ';
+        betaAlphaOverlayExponent = 0;
 
-      thisOverlay.clip = thisOverlay.range;
-      for iContrast = 1:size(contrasts,1)
-        cOverlay = cOverlay+1;
-        overlays(cOverlay)=thisOverlay;
-        overlays(cOverlay).name = [namePrefix contrastNames{iContrast} ')'];
-        if betaAlphaOverlayExponent
-          betaAlphaOverlay{iContrast} = overlays(cOverlay).name;
-        end
-        for scanNum = params.scanNum
-          overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-             tData{scanNum}(:,:,:,iContrast);
-          overlays(cOverlay).params{scanNum} = scanParams{scanNum};
+        thisOverlay.clip = thisOverlay.range;
+        for iContrast = 1:size(contrasts,1)
+          overlays(end+1)=thisOverlay;
+          overlays(end).name = [namePrefix contrastNames{iContrast} ')'];
+          for scanNum = params.scanNum
+            overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+               T{scanNum}(:,:,:,iContrast);
+            overlays(end).params{scanNum} = scanParams{scanNum};
+          end
         end
       end
+      clear('T');
+      
+      overlays = [overlays makeOverlay(defaultOverlay, Tp, subsetBox, params.scanNum, scanParams, ...
+                                         '', params.testOutput, 'T', contrastNames)];
+      clear('Tp');
 
-      clear('tData');
-
+      if params.fdrAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fdrTp, subsetBox, params.scanNum, scanParams, ...
+                                        'FDR-adjusted ',params.testOutput, 'T', contrastNames)];
+        clear('fdrTp');
+      end
+      
       if params.TFCE
          % T TFCE overlay
         thisOverlay = defaultOverlay;
-        thisOverlay.range(1) = min(min(min(min(min(cell2mat(tDataTFCE))))));
-        thisOverlay.range(2) = min(max(max(max(max(cell2mat(tDataTFCE))))));
+        thisOverlay.range(1) = min(min(min(min(min(cell2mat(tfceT))))));
+        thisOverlay.range(2) = min(max(max(max(max(cell2mat(tfceT))))));
         thisOverlay.clip = thisOverlay.range;
         for iContrast = 1:size(contrasts,1)
-          cOverlay = cOverlay+1;
-          overlays(cOverlay)=thisOverlay;
-          overlays(cOverlay).name = ['T TFCE (' contrastNames{iContrast} ')'];
+          overlays(end+1)=thisOverlay;
+          overlays(end).name = ['T TFCE (' contrastNames{iContrast} ')'];
           if params.randomizationTests
-            overlays(cOverlay).name = [overlays(cOverlay).name ' - threshold(p=' num2str(randAlpha) ') = ' num2str(thresholdTfceT(iContrast,scanNum))];
+            overlays(end).name = [overlays(end).name ' - threshold(p=' num2str(randAlpha) ') = ' num2str(thresholdTfceT(iContrast,scanNum))];
           end
           for scanNum = params.scanNum
-            overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-               tDataTFCE{scanNum}(:,:,:,iContrast);
-            overlays(cOverlay).params{scanNum} = scanParams{scanNum};
+            overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+               tfceT{scanNum}(:,:,:,iContrast);
+            overlays(end).params{scanNum} = scanParams{scanNum};
           end
         end
-        clear('tDataTFCE');
+        clear('tfceT');
       end
     end
     
     if params.bootstrapStatistics
-      thisOverlay = defaultOverlay;
-      switch(params.bootstrapTestOutput)
-        case 'P value'                                                  %bootstrap statistical maps
-          thisOverlay = defaultOverlay;
-          thisOverlay.colormap = statsColorMap(256);
-          namePrefix = 'p bootstrap';
-          betaAlphaOverlayExponent = -1;      %set the alpha overlay to the statistical value with an inverse masking
-        case 'Z value'                                                  %Z maps
-          thisOverlay = defaultOverlay;
-          thisOverlay.range = [0 8.2096];
-          namePrefix = 'Z bootstrap';
-          betaAlphaOverlayExponent = .5;      %set the alpha overlay to the Z value
+      overlays = [overlays makeOverlay(defaultOverlay, bootstrapT, subsetBox, params.scanNum, scanParams, ...
+                                         'bootstrap ', params.testOutput, 'T', contrastNames)];
+      clear('bootstrapT');
+
+      if params.fdrAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapT, subsetBox, params.scanNum, scanParams, ...
+                                        'FDR-adjusted bootstrap ',params.testOutput, 'T', contrastNames)];
+        clear('fdrBootstrapTp');
       end
-      thisOverlay.clip = thisOverlay.range;
-      for iContrast = 1:size(contrasts,1)
-        cOverlay = cOverlay+1;
-        overlays(cOverlay)=thisOverlay;
-        overlays(cOverlay).name = [namePrefix ' (T ' contrastNames{iContrast} ')'];
-        if betaAlphaOverlayExponent
-          betaAlphaOverlay{iContrast} = overlays(cOverlay).name;
-        end
-        for scanNum = params.scanNum
-          overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-             tBootstrap{scanNum}(:,:,:,iContrast);
-          overlays(cOverlay).params{scanNum} = scanParams{scanNum};
-        end
-      end
-      clear('tBootstrap');
+      
     end
     
     if params.randomizationTests
-      thisOverlay = defaultOverlay;
-      switch(params.randomizationTestOutput)
-        case 'P value'                                                  %randomization statistical maps
-          thisOverlay = defaultOverlay;
-          thisOverlay.colormap = statsColorMap(256);
-          namePrefix = 'p rand';
-          betaAlphaOverlayExponent = -1;      %set the alpha overlay to the statistical value with an inverse masking
-        case 'Z value'                                                  %Z maps
-          thisOverlay = defaultOverlay;
-          %thisOverlay.range = [0 max(max(max(max(max(cell2mat(contrastRandData))))))];
-          thisOverlay.range = [0 8.2096];
-          namePrefix = 'Z rand';
-          betaAlphaOverlayExponent = .5;      %set the alpha overlay to the Z value
+      overlays = [overlays makeOverlay(defaultOverlay, randC, subsetBox, params.scanNum, scanParams, ...
+                                         'randomization ', params.testOutput, 'T', contrastNames)];
+      clear('randC');
+
+      if params.fdrAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fdrRandC, subsetBox, params.scanNum, scanParams, ...
+                                        'FDR-adjusted randomization ',params.testOutput, 'T', contrastNames)];
+        clear('fdrRandC');
       end
-      thisOverlay.clip = thisOverlay.range;
-      for iContrast = 1:size(contrasts,1)
-        cOverlay = cOverlay+1;
-        overlays(cOverlay)=thisOverlay;
-        overlays(cOverlay).name = [namePrefix ' (T ' contrastNames{iContrast} ')'];
-        if betaAlphaOverlayExponent
-          betaAlphaOverlay{iContrast} = overlays(cOverlay).name;
-        end
-        for scanNum = params.scanNum
-          overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-             contrastRandData{scanNum}(:,:,:,iContrast);
-          overlays(cOverlay).params{scanNum} = scanParams{scanNum};
-        end
-      end
-      clear('contrastRandData');
+      
 
       if params.TFCE
-        thisOverlay = defaultOverlay;
-        switch(params.randomizationTestOutput)
-          case 'P value'                                                  %statistical maps
-            thisOverlay = defaultOverlay;
-            thisOverlay.colormap = statsColorMap(256);
-            namePrefix = 'p rand';
-          case 'Z value'                                                  %Z maps
-            thisOverlay = defaultOverlay;
-            %thisOverlay.range = [0 max(max(max(max(max(cell2mat(tRandTfce))))))];
-            thisOverlay.range = [0 8.2096];
-            namePrefix = 'Z rand';
+        overlays = [overlays makeOverlay(defaultOverlay, tfceRandT, subsetBox, params.scanNum, scanParams, ...
+                                        'randomization ',params.testOutput, 'TFCE T', contrastNames)];
+        clear('tfceRandT');
+        if params.fdrAdjustment
+          overlays = [overlays makeOverlay(defaultOverlay, fdrTfceRandT, subsetBox, params.scanNum, scanParams, ...
+                                          'FDR-adjusted randomization ',params.testOutput, 'TFCE T', contrastNames)];
+          clear('fdrTfceRandT');
         end
-
-        thisOverlay.clip = thisOverlay.range;
-        for iFtest = 1:size(contrasts,1)
-          cOverlay = cOverlay+1;
-          overlays(cOverlay)=thisOverlay;
-          overlays(cOverlay).name = [namePrefix ' (T TFCE ' contrastNames{iFtest} ')'];
-          for scanNum = params.scanNum
-            overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-               tRandTfce{scanNum}(:,:,:,iFtest);
-            overlays(cOverlay).params{scanNum} = scanParams{scanNum};
-          end
-        end
-        clear('tRandTfce');
       end
 
     end
+    
+    %set the contrast alpha overlay to the statistical value
+    switch(params.testOutput)
+      case 'P value'                                                  %statistical maps
+        betaAlphaOverlayExponent = -1;      % with inverse masking for p values
+      case {'Z value','-log10(P) value}'}
+        betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
+    end
+    for iContrast = 1:size(contrasts,1)
+      betaAlphaOverlay{iContrast} = overlays(end-size(contrasts,1)+iContrast).name;
+    end
+
   end
 %--------------------------------------------- save the contrast beta weights overlay(s) (ehdr if no contrast)
 
   if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
     %find the values for the scale of the beta overlays
     thisOverlay = defaultOverlay;
-    ordered_abs_betas = cell2mat(contrastData(params.scanNum));
+    ordered_abs_betas = cell2mat(C(params.scanNum));
     ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
     min_beta = min(min(min(min(min(ordered_abs_betas)))));
     max_beta = max(max(max(max(max(ordered_abs_betas)))));
@@ -846,157 +802,105 @@ if ~isempty(contrasts)
     thisOverlay.clip = [min_beta max_beta];
     thisOverlay.colormap = jet(256);
     for iContrast = 1:size(contrasts,1)
-      cOverlay = cOverlay+1;
-      overlays(cOverlay)=thisOverlay;
-      overlays(cOverlay).alphaOverlay=betaAlphaOverlay{iContrast};
-      overlays(cOverlay).name = contrastNames{iContrast};
+      overlays(end+1)=thisOverlay;
+      overlays(end).alphaOverlay=betaAlphaOverlay{iContrast};
+      overlays(end).name = contrastNames{iContrast};
       for scanNum = params.scanNum
-        overlays(cOverlay).data{scanNum} = NaN(scanDims,precision); %to make values outside the box transparent
-        overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-           contrastData{scanNum}(:,:,:,iContrast);
-        overlays(cOverlay).params{scanNum} = scanParams{scanNum};
+        overlays(end).data{scanNum} = NaN(scanDims,precision); %to make values outside the box transparent
+        overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+           C{scanNum}(:,:,:,iContrast);
+        overlays(end).params{scanNum} = scanParams{scanNum};
       end
-      overlays(cOverlay).alphaOverlayExponent=betaAlphaOverlayExponent;
+      overlays(end).alphaOverlayExponent=betaAlphaOverlayExponent;
     end
-    clear('contrastData');
+    clear('C');
   end
 end
 
 %----------------------------------------------- save the F-test overlay(s)
 if ~isempty(restrictions)
   if params.parametricTests
+    if params.outputParametricStatistic
       thisOverlay = defaultOverlay;
-    switch params.parametricTestOutput
-      case 'T/F value'
-        thisOverlay.range(1) = min(min(min(min(min(cell2mat(fData))))));
-        thisOverlay.range(2) = min(max(max(max(max(cell2mat(fData))))));
-        namePrefix = 'F ( ';
-      case 'P value'
-        thisOverlay = defaultOverlay;
-        thisOverlay.colormap = statsColorMap(256);
-        namePrefix = 'p (F ';
-      case 'Z value'
-        %thisOverlay.range = [0 max(max(max(max(cell2mat(fData)))))];
-        thisOverlay.range = [0 8.2096];
-        namePrefix = 'Z (F ';
-    end
-    thisOverlay.clip = thisOverlay.range;
-    for iFtest = 1:length(restrictions)
-      %probability maps
-      cOverlay = cOverlay+1;
-      overlays(cOverlay)=thisOverlay;
-      overlays(cOverlay).name = [namePrefix params.fTestNames{iFtest} ')'];
-      for scanNum = params.scanNum
-        overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-           fData{scanNum}(:,:,:,iFtest);
-        overlays(cOverlay).params{scanNum} = scanParams{scanNum};
+      thisOverlay.range(1) = min(min(min(min(min(cell2mat(F))))));
+      thisOverlay.range(2) = min(max(max(max(max(cell2mat(F))))));
+      namePrefix = 'F ( ';
+      thisOverlay.clip = thisOverlay.range;
+      for iFtest = 1:length(restrictions)
+        %probability maps
+        overlays(end+1)=thisOverlay;
+        overlays(end).name = [namePrefix params.fTestNames{iFtest} ')'];
+        for scanNum = params.scanNum
+          overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+             F{scanNum}(:,:,:,iFtest);
+          overlays(end).params{scanNum} = scanParams{scanNum};
+        end
       end
+      clear('F');
     end
-    clear('fData');
+
+    overlays = [overlays makeOverlay(defaultOverlay, Fp, subsetBox, params.scanNum, scanParams, ...
+                                       '', params.testOutput, 'F', params.fTestNames)];
+    clear('Fp');
+
+    if params.fdrAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, fdrFp, subsetBox, params.scanNum, scanParams, ...
+                                      'FDR-adjusted ',params.testOutput, 'F', params.fTestNames)];
+      clear('fdrFp');
+    end
 
     if params.TFCE
        % F TFCE overlay
       thisOverlay = defaultOverlay;
-      thisOverlay.range(1) = min(min(min(min(cell2mat(fDataTFCE)))));
-      thisOverlay.range(2) = max(max(max(max(cell2mat(fDataTFCE)))));
+      thisOverlay.range(1) = min(min(min(min(cell2mat(tfceF)))));
+      thisOverlay.range(2) = max(max(max(max(cell2mat(tfceF)))));
       thisOverlay.clip = thisOverlay.range;
       for iFtest = 1:length(restrictions)
-        cOverlay = cOverlay+1;
-        overlays(cOverlay)=thisOverlay;
-        overlays(cOverlay).name = ['F TFCE (' params.fTestNames{iFtest} ')'];
+        overlays(end+1)=thisOverlay;
+        overlays(end).name = ['F TFCE (' params.fTestNames{iFtest} ')'];
         if params.randomizationTests
-          overlays(cOverlay).name = [overlays(cOverlay).name ' - threshold(p=' num2str(randAlpha) ') = ' num2str(thresholdTfceF(iFtest,scanNum)) ')'];
+          overlays(end).name = [overlays(end).name ' - threshold(p=' num2str(randAlpha) ') = ' num2str(thresholdTfceF(iFtest,scanNum)) ')'];
         end
         for scanNum = params.scanNum
-          overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) = ...
-             fDataTFCE{scanNum}(:,:,:,iFtest);
-          overlays(cOverlay).params{scanNum} = scanParams{scanNum};
+          overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) = ...
+             tfceF{scanNum}(:,:,:,iFtest);
+          overlays(end).params{scanNum} = scanParams{scanNum};
         end
       end
-      clear('fDataTFCE');
+      clear('tfceF');
     end
   end
   
   if params.bootstrapStatistics
-    thisOverlay = defaultOverlay;
-    switch(params.bootstrapTestOutput)
-      case 'P value'                                                  %p bootstrap statistical maps (F)
-        thisOverlay = defaultOverlay;
-        thisOverlay.colormap = statsColorMap(256);
-        namePrefix = 'p bootstrap';
-      case 'Z value'                                                  %Z maps
-        thisOverlay = defaultOverlay;
-        thisOverlay.range = [0 8.2096];
-        namePrefix = 'Z bootstrap';
+    overlays = [overlays makeOverlay(defaultOverlay, bootstrapF, subsetBox, params.scanNum, scanParams, ...
+                                     'bootstrap ',params.testOutput, 'F', params.fTestNames)];
+    clear('bootstrapF');
+    if params.fdrAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapF, subsetBox, params.scanNum, scanParams, ...
+                                      'FDR-adjusted bootstrap ',params.testOutput, 'F', params.fTestNames)];
+      clear('fdrBootstrapF');
     end
-
-    thisOverlay.clip = thisOverlay.range;
-    for iFtest = 1:length(restrictions)
-      cOverlay = cOverlay+1;
-      overlays(cOverlay)=thisOverlay;
-      overlays(cOverlay).name = [namePrefix ' (F ' params.fTestNames{iFtest} ')'];
-      for scanNum = params.scanNum
-        overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-           fBootstrap{scanNum}(:,:,:,iFtest);
-        overlays(cOverlay).params{scanNum} = scanParams{scanNum};
-      end
-    end
-    clear('fBootstrap');
   end
   
   if params.randomizationTests
-    thisOverlay = defaultOverlay;
-    switch(params.randomizationTestOutput)
-      case 'P value'                                                  %p randomization statistical maps (F)
-        thisOverlay = defaultOverlay;
-        thisOverlay.colormap = statsColorMap(256);
-        namePrefix = 'p rand';
-      case 'Z value'                                                  %Z maps
-        thisOverlay = defaultOverlay;
-        thisOverlay.range = [0 max(max(max(max(max(cell2mat(fRandData))))))];
-        thisOverlay.range = [0 8.2096];
-        namePrefix = 'Z rand';
+    overlays = [overlays makeOverlay(defaultOverlay, randF, subsetBox, params.scanNum, scanParams, ...
+                                     'randomization ',params.testOutput, 'F', params.fTestNames)];
+    clear('randF');
+    if params.fdrAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, fdrRandF, subsetBox, params.scanNum, scanParams, ...
+                                      'FDR-adjusted randomization ',params.testOutput, 'F', params.fTestNames)];
+      clear('fdrRandF');
     end
-
-    thisOverlay.clip = thisOverlay.range;
-    for iFtest = 1:length(restrictions)
-      cOverlay = cOverlay+1;
-      overlays(cOverlay)=thisOverlay;
-      overlays(cOverlay).name = [namePrefix ' (F ' params.fTestNames{iFtest} ')'];
-      for scanNum = params.scanNum
-        overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-           fRandData{scanNum}(:,:,:,iFtest);
-        overlays(cOverlay).params{scanNum} = scanParams{scanNum};
-      end
-    end
-    clear('fRandData');
     
     if params.TFCE
-      thisOverlay = defaultOverlay;
-      switch(params.randomizationTestOutput)
-        case 'P value'                                                  %statistical maps
-          thisOverlay = defaultOverlay;
-          thisOverlay.colormap = statsColorMap(256);
-          namePrefix = 'p rand';
-        case 'Z value'                                                  %Z maps
-          thisOverlay = defaultOverlay;
-          %thisOverlay.range = [0 max(max(max(max(max(cell2mat(fRandTfce))))))];
-          thisOverlay.range = [0 8.2096];
-          namePrefix = 'Z rand';
+      overlays = [overlays makeOverlay(defaultOverlay, tfceRandF, subsetBox, params.scanNum, scanParams, ...
+                                       'randomization ',params.testOutput, 'TFCE F', params.fTestNames)];
+      clear('tfceRandF');
+      if params.fdrAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fdrTfceRandF, subsetBox, params.scanNum, scanParams, ...
+                                        'FDR-adjusted randomization ',params.testOutput, 'TFCE F', params.fTestNames)];
+        clear('fdrTfceRandF');
       end
-
-      thisOverlay.clip = thisOverlay.range;
-      for iFtest = 1:length(restrictions)
-        cOverlay = cOverlay+1;
-        overlays(cOverlay)=thisOverlay;
-        overlays(cOverlay).name = [namePrefix ' (F TFCE ' params.fTestNames{iFtest} ')'];
-        for scanNum = params.scanNum
-          overlays(cOverlay).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-             fRandTfce{scanNum}(:,:,:,iFtest);
-          overlays(cOverlay).params{scanNum} = scanParams{scanNum};
-        end
-      end
-      clear('fRandTfce');
     end
     
   end
@@ -1015,7 +919,7 @@ saveAnalysis(thisView,glmAnal.name);
 
 oneTimeWarning('nonZeroHrfStart',0);
 oneTimeWarning('tfceOutputsZeros',0);
-set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow
+set(viewGet(thisView,'figNum'),'Pointer','arrow');
 refreshMLRDisplay(viewGet(thisView,'viewNum'));
 
 
@@ -1030,15 +934,113 @@ outputData(dataPosition>0,:,:) = inputData;
 outputData = reshape(outputData,[size(dataPosition,1) size(dataPosition,2) size(dataPosition,3) size(outputData,2) size(outputData,3)]);
 
 
-function Z = pToZ(p, minP, outputPrecision)
-%convert P value to Z value, not allowing probabilities of 0 (replaced by minP)
-Z = norminv(1-max(p,minP));  %we don't want Z values of +/-Inf
-Z(Z<0) = 0; % we'renot interested in negative Z value
-%if there was no round-off error from cdf, we could do the following:
-%Z = max(-norminv(p),0);  %because the left side of norminv seems to be less sensitive to round-off errors,
-%we get -norminv(x) instead of norminv(1-x). also we'renot interested in negative Z value
-Z(isnan(p)) = NaN; %NaNs must remain NaNs (they became 0 when using max)
-Z = eval([outputPrecision '(Z)']);
+
+function [convertedStatistic, fdrAdjustedStatistic] = transformStatistic(p, outputPrecision, minP, params)
+
+convertedStatistic = convertStatistic(p, params.testOutput, outputPrecision, minP);
+
+if params.fdrAdjustment
+  fdrAdjustedP = p;
+  for iTest = 1:size(p,4)
+    fdrAdjustedP(:,:,:,iTest) = fdrAdjust(p(:,:,:,iTest),params.fdrAssumption);
+  end
+  fdrAdjustedStatistic = convertStatistic(fdrAdjustedP, params.testOutput, outputPrecision, minP);
+else
+  fdrAdjustedStatistic = [];
+end
+
+
+function convertedP = convertStatistic(p, outputStatistic, outputPrecision, minP)
+%we do not allow probabilities of 0 and replace them by minP
+%(this can occur because cdf cannot return values less than 1e-16, 
+%or because no bootstrap resampling return a value as high as the actual value)
+convertedP = max(p,minP);
+convertedP(isnan(p)) = NaN; %NaNs must remain NaNs (they became minP when using max)
+
+switch(outputStatistic)
+  case 'Z value'
+    %convert P value to Z value, 
+    convertedP = norminv(1-convertedP);  
+    convertedP(convertedP<0) = 0; % we're not interested in negative Z value
+    %if there was no round-off error from cdf, we could do the following:
+    %Z = max(-norminv(p),0);  %because the left side of norminv seems to be less sensitive to round-off errors,
+    %we get -norminv(x) instead of norminv(1-x). also we'renot interested in negative Z value
+  case '-log10(P) value'
+    %convert P to -log10(P) 
+    convertedP = -log10(convertedP);
+    
+end
+convertedP = eval([outputPrecision '(convertedP)']);
+
+
+
+function adjustedPdata = fdrAdjust(data,assumption)
+
+if ieNotDefined('assumption')
+  assumption='None';
+end
+
+isNotNan = ~isnan(data);
+pData = data(isNotNan);
+[pData,sortingIndex] = sort(pData);
+nTests = length(pData);
+
+switch(assumption)
+  case 'Independence/Positive dependence'
+    constant =1;
+  case 'None'
+    constant = sum(1./(1:nTests));
+    %approximate value: 
+    %constant = log(nTests)+0.57721566490153 %Euler constant
+end
+
+
+%adjustment (does not depend on a chosen threshold)
+% it consists in finding, for each p-value, 
+% the largest FDR threshold such that the p-value would be considered significant
+% it is the inverse operation to p-correction (see commented code below)
+% ref: Yekutieli and Benjamini, Journal of Statistical Planning and Inference, 82(1-2) p171
+qData = min(pData.*nTests./(1:nTests)'.*constant,1);
+%make it monotonic from the end (for each i, q(i) must be smaller than all q between i and n)
+minQ = qData(end);
+for i=nTests-1:-1:1
+ qData(i) = min(minQ,qData(i));
+ minQ = qData(i);
+end
+qData(sortingIndex) = qData;
+adjustedPdata = NaN(size(data));
+adjustedPdata(isNotNan) = qData;
+
+% % % %correction (p-correction depends on a fixed threshold, here .05)
+% % % qAlpha = .05*(1:nTests)'/nTests/constant;
+% % % correctedP = pData;
+% % % correctedP(find(pData<=qAlpha,1,'last'):end) = 1;
+% % % correctedP(sortingIndex) = correctedP;
+% % % correctedPdata = NaN(size(data));
+% % % correctedPdata(isNotNan) = correctedP;
+
+function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,testString1, testOutput, testString2, testNames)
+  switch testOutput
+    case 'P value'
+      overlays.colormap = statsColorMap(256);
+      namePrefix = [testString1 'P (' testString2 ' '];
+    case 'Z value'
+      overlays.range = [0 8.2096];
+      namePrefix = [testString1 'Z (' testString2 ' '];
+    case '-log10(P) value'
+      overlays.range = [0 16];
+      namePrefix = ['-log10(' testString1 'P) (' testString2 ' '];
+  end
+  overlays.clip = overlays.range;
+  overlays = repmat(overlays,1,length(testNames));
+  for iTest = 1:length(testNames)
+    overlays(iTest).name = [namePrefix testNames{iTest} ')'];
+    for scanNum = scanList
+      overlays(iTest).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+         data{scanNum}(:,:,:,iTest);
+      overlays(iTest).params{scanNum} = scanParams{scanNum};
+    end
+  end
 
 
 

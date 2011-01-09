@@ -158,6 +158,10 @@ nFrames = size(d.volumes,2);
 residualForming = eye(nFrames) - d.scm*pinv_X; %this matrix computes the residuals directly
 d.rdf = nFrames-size(d.scm,2)-1; %degrees of freedom for the residual          %SHOULD BE nFrames-size(d.scm,2)
 
+if params.covCorrection && params.covEstimationAreaSize>1 && isfield(d,'roiPositionInBox') 
+  d.dim(1) = nnz(d.roiPositionInBox);
+end
+
 %initialize variables for covariance matrix estimation
 if params.covCorrection 
   if params.covEstimationAreaSize>1
@@ -242,7 +246,6 @@ yvals = 1:d.dim(2);
 slices = 1:d.dim(3);
   
 
-
 %--------------------------------------------------- PRE-ALLOCATION ------------------------------------%
 
 if computeEstimates 
@@ -307,6 +310,7 @@ if params.covCorrection
 end
 betas = NaN(d.nhdr*d.nHrfComponents,d.dim(1),precision);
 thisS2 = NaN(d.dim(1),1,precision);
+thisResiduals = NaN(d.dim(4),d.dim(1),precision);
 
 
 % turn off divide by zero warning
@@ -338,7 +342,6 @@ end
 
 % cycle through slices
 for z = slices
-  residuals = NaN(d.dim(4),d.dim(1),d.dim(2),precision);
   %permute timeseries frames in first dimension to compute residuals
   timeseries = permute(d.data(:,:,z,d.volumes),[4 1 2 3]); 
   % subtract off column means
@@ -352,6 +355,8 @@ for z = slices
   % the following section has been optimized to run faster by
   % eliminating the x loops. in addition, the x dimension is divided in chunks of 60 points.
   % (which makes a difference only when system swaps ?)
+  residuals = NaN(size(timeseries),precision);
+%  residuals = NaN(d.dim(4),d.dim(1),d.dim(2),precision);
   for y = yvals
     % get OLS residuals
 %     for iX = 1:ceil(d.dim(1)/optimalXLength)
@@ -366,17 +371,24 @@ for z = slices
       %average the residuals for covariance matrix estimation
       if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
         %first put them on a single line whose length is the product of the volume dimensions
-        roiPositionInBox = reshape(d.roiPositionInBox,numel(d.roiPositionInBox),1);
-        averaged_residuals = NaN(d.dim(4),size(roiPositionInBox,1),precision); 
-        averaged_residuals(:,roiPositionInBox>0) = residuals;  
+        nVoxelsInBox = numel(d.roiPositionInBox);
+        usedVoxelsInBox = reshape(d.roiPositionInBox|d.marginVoxels,nVoxelsInBox,1);
+        averaged_residuals = NaN(d.dim(4),nVoxelsInBox,precision); 
+        averaged_residuals(:,usedVoxelsInBox) = residuals;  
         %then reshape into a volume
         averaged_residuals = reshape(averaged_residuals,[d.dim(4) size(d.roiPositionInBox)]);
         %average
         averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
-        %put the data back in the original array size
-        averaged_residuals = reshape(averaged_residuals,d.dim(4), numel(d.roiPositionInBox));
-        averaged_residuals = averaged_residuals(:,d.roiPositionInBox>0);
-        clear('roiPositionInBox');
+        %put the data back in a new matrix with only the voxels of interest
+        averaged_residuals = reshape(averaged_residuals,d.dim(4), nVoxelsInBox);
+        averaged_residuals = averaged_residuals(:,d.roiPositionInBox);
+        
+        %reshape timeseries and residuals accordingly
+        voxelsOfInterest = d.roiPositionInBox(usedVoxelsInBox);
+        residuals = residuals(:,voxelsOfInterest);
+        timeseries = timeseries(:,voxelsOfInterest);
+        
+        clear('usedVoxelsInBox');
       else
         averaged_residuals = NaN(size(residuals),precision);
         %averaged_residuals(isnan(residuals)) = 0;            %convert NaNs to 0... actually no, don't
@@ -507,7 +519,9 @@ for z = slices
           bootstrapCountF = zeros(d.dim(1), length(restrictions));
         end
 
-        if iBoot>1
+        if iBoot==1
+          thisResiduals = residuals(:,:,y);
+        else
           % the bootstrap time series is resampled from the residuals with replacement. 
           % it SHOULD NOT be recomputed as beta*scm+residuals, as this violates pivotality 
           %(see Westfall, P.H., and S.S. Young. Resampling-based multiple testing. Wiley-Interscience, 1993. p35-39, p79-80, p108)
@@ -529,13 +543,13 @@ for z = slices
               %estimate the OLS beta weights 
               betas = pinv_X*timeseries(:,:,y); 
               %and we replace the residuals for this y by the bootstrap residuals
-              residuals(:,:,y) = timeseries(:,:,y)-d.scm*betas;
+              thisResiduals = timeseries(:,:,y)-d.scm*betas;
 
             case 'generalizedLeastSquares' %see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
               for x = xvals
                 if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
                 betas(:,x) = corrected_pinv_X(:,:,x) * timeseries(:,x,y);
-                residuals(:,x,y) = timeseries(:,x,y) - d.scm*betas(:,x);
+                thisResiduals(:,x) = timeseries(:,x,y) - d.scm*betas(:,x);
                 passesCounter = thisPassesCounter+x/2;
               end
               passesCounter = thisPassesCounter+passesInBootstrap/2;
@@ -544,7 +558,7 @@ for z = slices
               for x = xvals
                 if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
                 betas(:,x) = white_pinv_X(:,:,x) * timeseries(:,x,y);
-                residuals(:,x,y) = timeseries(:,x,y) -white_scm(:,:,x)*betas(:,x);
+                thisResiduals(:,x) = timeseries(:,x,y) -white_scm(:,:,x)*betas(:,x);
                 passesCounter = thisPassesCounter+x/2;
               end
               passesCounter = thisPassesCounter+passesInBootstrap/2;
@@ -554,7 +568,7 @@ for z = slices
         if computeEstimates || ~isempty(restrictions)||~isempty(contrasts)
           switch(params.correctionType)
             case 'none'
-              thisRss = sum(residuals(:,:,y).^2,1)';
+              thisRss = sum(thisResiduals.^2,1)';
               thisS2 = thisRss/d.rdf;
             case 'generalizedLeastSquares' %see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
               thisPassesCounter=passesCounter;
@@ -562,12 +576,12 @@ for z = slices
                 if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
                 residualsAcm = makeAcm(autoCorrelationParameters(:,x,y,z),d.dim(4),params.covEstimation);
                 %this is the part that makes GLS much slower than PW when bootstrapping
-                thisS2(x) = residuals(:,x,y)' / residualsAcm * residuals(:,x,y)/d.rdf;    %Wicker & Fonlupt (2003) 
+                thisS2(x) = thisResiduals(:,x)' / residualsAcm * thisResiduals(:,x)/d.rdf;    %Wicker & Fonlupt (2003) 
                 passesCounter = thisPassesCounter+x/2;
               end
               passesCounter = thisPassesCounter+passesInBootstrap/2;
             case {'varianceCorrection','preWhitening'} %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
-              thisRss = sum(residuals(:,:,y).^2,1)';
+              thisRss = sum(thisResiduals.^2,1)';
               thisS2 = thisRss./correctedRdf;
           end
         end
@@ -671,7 +685,7 @@ for z = slices
 % % %                 for x = xvals
 % % %                   ehdrste(:,x,y,z) = sqrt(thisS2(x) * diag(invCorrectedCovEV(:,:,x)));  
 % % %                 end
-                rss(:,y,z) = sum(residuals(:,:,y).^2,1)'; %SHOULD RSS BE CORRECTED ?
+                rss(:,y,z) = sum(thisResiduals.^2,1)'; %SHOULD RSS BE CORRECTED ?
             end
             tss(:,y,z) = sum(timeseries(:,:,y).^2,1)';     
           end
