@@ -622,14 +622,15 @@ for z = slices
               if iBoot==1
                 actualT = thisT;
               else
-                switch params.tTestSide
-                  case 'Right'
-                    bootstrapCountT = bootstrapCountT+double(thisT>actualT);
-                  case 'Left'
-                    bootstrapCountT = bootstrapCountT+double(thisT<actualT);
-                  case 'Both'
-                    bootstrapCountT = bootstrapCountT+double(abs(thisT)>abs(actualT));
-                end
+                bootstrapCountT = bootstrapCountT+double(thisT>actualT); %T is has already been transformed to be positive
+%                 switch params.tTestSide
+%                   case 'Right'
+%                     bootstrapCountT = bootstrapCountT+double(thisT>actualT);
+%                   case 'Left'
+%                     bootstrapCountT = bootstrapCountT+double(thisT<actualT);
+%                   case 'Both'
+%                     bootstrapCountT = bootstrapCountT+double(abs(thisT)>abs(actualT));
+%                 end
               end
             end
           end
