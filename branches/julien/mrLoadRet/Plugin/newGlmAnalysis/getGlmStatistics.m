@@ -27,6 +27,7 @@
 function [d, r2, contrastBetas, T, F, pBootstrapT, pBootstrapF] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
 
 approximate_value = 0;
+r2=[];
 T = [];
 F = [];
 pBootstrapT=[];
@@ -184,6 +185,7 @@ if strcmp(params.componentsCombination,'Or') %in this case, components of a give
   %for contrasts, this amounts to  testing several contrats at once using an f test
   %So we have to change contrasts into f-tests (with the restriction that they have to be two-sided; this should be controlled for by the parameters)
   restrictions = [contrasts restrictions];
+  params.parametricTests=1; %force computing parametric tests (because there are cases where we need to compute T-tests for bootstrap/randomizations
   contrasts = {};
 end
 
@@ -248,70 +250,76 @@ slices = 1:d.dim(3);
 
 %--------------------------------------------------- PRE-ALLOCATION ------------------------------------%
 
+totalBytes = [];
 if computeEstimates 
   if params.nBootstrap && params.bootstrapIntervals
-    sortedBetas = NaN(d.nhdr*d.nHrfComponents,d.dim(1),params.nBootstrap,precision);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-    ehdrBootstrapCIs = NaN(d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision);
+    [sortedBetas,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),params.nBootstrap,precision);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+    [ehdrBootstrapCIs,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision);
   end
-  ehdr = NaN(d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-% % %   ehdrste = NaN(d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision); %JB: replaces: d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-% % %   contrastBetaSte = NaN([params.numberContrasts d.dim(1) d.dim(2) d.dim(3)],precision);
-  rss = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the sum of square of the residual error term
-  tss = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the total sum of square
-  s2 = NaN(d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the estimated variance
+  [ehdr,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+  [rss,totalBytes(end+1)] = alloc('NaN',d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the sum of square of the residual error term
+  [tss,totalBytes(end+1)] = alloc('NaN',d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the total sum of square
+  [s2,totalBytes(end+1)] = alloc('NaN',d.dim(1),d.dim(2),d.dim(3),precision); %JB: this is to store the estimated variance
 end
 if ~isempty(contrasts)
+  [contrastBetas,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+  [thisContrastBetas,totalBytes(end+1)] = alloc('NaN',[d.dim(1) length(contrasts)],precision);
   if computeEstimates 
     if params.bootstrapIntervals
-      sortedContrasts = NaN([length(contrasts) d.dim(1) params.nBootstrap],precision);
-      contrastBootstrapCIs = NaN([length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+      [sortedContrasts,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) params.nBootstrap],precision);
+      [contrastBootstrapCIs,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
     end
-    contrastBetas = NaN([length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
-    thisContrastBetas = NaN([d.dim(1) length(contrasts)],precision);
-    thisContrastBetaSte = NaN([d.dim(1) length(contrasts)],precision); 
   end
-  if computeTtests && params.parametricTests
-    T = NaN([length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
-  end
-  if computeTtests && params.nBootstrap
-    pBootstrapT = NaN([length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+  if computeTtests
+    [thisContrastBetaSte,totalBytes(end+1)] = alloc('NaN',[d.dim(1) length(contrasts)],precision); 
+    [T,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+    if params.nBootstrap
+      [pBootstrapT,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+    end
   end
 end
 if ~isempty(restrictions) 
-  mss = NaN(d.dim(1),1,precision);
-  thisF = NaN(d.dim(1),length(restrictions),precision);
-  if params.parametricTests
-    F = NaN([length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
+  [mss,totalBytes(end+1)] = alloc('NaN',d.dim(1),1,precision);
+  [thisF,totalBytes(end+1)] = alloc('NaN',d.dim(1),length(restrictions),precision);
+  if params.parametricTests || params.randomizationTests
+    [F,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
   end
   if params.nBootstrap
-    pBootstrapF = NaN([length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
+    [pBootstrapF,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
   end
 end
 if params.covCorrection
   corrected_R_invCovEV_Rp = cell(1,length(restrictions));
   for iR = 1:length(restrictions)
-    corrected_R_invCovEV_Rp{iR} = NaN(d.mdf(iR),d.mdf(iR),d.dim(1),'double');
+    [corrected_R_invCovEV_Rp{iR},totalBytes(end+1)] = alloc('NaN',d.mdf(iR),d.mdf(iR),d.dim(1),'double');
   end
   switch(params.correctionType)
     case 'generalizedLeastSquares'
       %pre allocate temporary variables
-      corrected_pinv_X = NaN(d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double'); %this array might become a bit large if a lot of values on the first dimension
+      [corrected_pinv_X,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double'); %this array might become a bit large if a lot of values on the first dimension
       if computeEstimates || (~isempty(contrasts) && computeTtests)
-        invCorrectedCovEV = NaN(d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double');
+        [invCorrectedCovEV,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double');
       end
     case 'varianceCorrection' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
-      invCorrectedCovEV = NaN(d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double');
-      correctedRdf = NaN(d.dim(1),1,'double');
+      [invCorrectedCovEV,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double');
+      [correctedRdf,totalBytes(end+1)] = alloc('NaN',d.dim(1),1,'double');
     case 'preWhitening' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
-      white_pinv_X = NaN(d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double'); %this array might become a bit large if a lot of voxels on the first dimension
-      white_scm = NaN(d.dim(4),d.nhdr*d.nHrfComponents,d.dim(1),'double'); %this array might become a bit large if a lot of voxels on the first dimension
-      correctedRdf = NaN(d.dim(1),1,'double');
+      [white_pinv_X,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double'); %this array might become a bit large if a lot of voxels on the first dimension
+      [white_scm,totalBytes(end+1)] = alloc('NaN',d.dim(4),d.nhdr*d.nHrfComponents,d.dim(1),'double'); %this array might become a bit large if a lot of voxels on the first dimension
+      [correctedRdf,totalBytes(end+1)] = alloc('NaN',d.dim(1),1,'double');
   end
 end
-betas = NaN(d.nhdr*d.nHrfComponents,d.dim(1),precision);
-thisS2 = NaN(d.dim(1),1,precision);
-thisResiduals = NaN(d.dim(4),d.dim(1),precision);
+[betas,totalBytes(end+1)] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),precision);
+[thisS2,totalBytes(end+1)] = alloc('NaN',d.dim(1),1,precision);
+[thisResiduals,totalBytes(end+1)] = alloc('NaN',d.dim(4),d.dim(1),precision);
 
+dInfo = whos('d');
+totalBytes = sum(totalBytes)+dInfo.bytes;
+if totalBytes> mrGetPref('maxBlocksize')
+  if ~askuser(sprintf('(getGlmStatistics) This analysis requires %.2f Gb of data to be loaded in memory at once. Are you sure you want to proceed ?', sizeArray/1024^3));
+    return;
+  end
+end
 
 % turn off divide by zero warning
 warning('off','MATLAB:divideByZero');
@@ -589,13 +597,15 @@ for z = slices
         % T-tests
         if ~isempty(contrasts)
           for iContrast = 1:length(contrasts)
-            switch(params.correctionType)
-              case 'none'
-                thisContrastBetaSte(:,iContrast) = sqrt(thisS2.*(contrasts{iContrast}*invCovEVs*contrasts{iContrast}'));
-              case {'generalizedLeastSquares','varianceCorrection','preWhitening'} 
-                for x = xvals
-                  thisContrastBetaSte(x,iContrast) = sqrt(thisS2(x)*contrasts{iContrast} * invCorrectedCovEV(:,:,x) * contrasts{iContrast}');
-                end
+            if computeTtests
+              switch(params.correctionType)
+                case 'none'
+                  thisContrastBetaSte(:,iContrast) = sqrt(thisS2.*(contrasts{iContrast}*invCovEVs*contrasts{iContrast}'));
+                case {'generalizedLeastSquares','varianceCorrection','preWhitening'} 
+                  for x = xvals
+                    thisContrastBetaSte(x,iContrast) = sqrt(thisS2(x)*contrasts{iContrast} * invCorrectedCovEV(:,:,x) * contrasts{iContrast}');
+                  end
+              end
             end
             thisContrastBetas(:,iContrast) = (contrasts{iContrast}*betas)';
           end
@@ -688,18 +698,15 @@ for z = slices
                 rss(:,y,z) = sum(thisResiduals.^2,1)'; %SHOULD RSS BE CORRECTED ?
             end
             tss(:,y,z) = sum(timeseries(:,:,y).^2,1)';     
+            s2(:,y,z) = thisS2;
           end
-          s2(:,y,z) = thisS2;
           if ~isempty(contrasts)
-            if computeEstimates
-% % %               contrastBetaSte(:,:,y,z) = thisContrastBetaSte';
-              contrastBetas(:,:,y,z) = thisContrastBetas';
-            end
-            if params.parametricTests && computeTtests
+            contrastBetas(:,:,y,z) = thisContrastBetas';
+            if computeTtests
               T(:,:,y,z) = thisT';
             end
           end
-          if params.parametricTests && ~isempty(restrictions)
+          if ~isempty(restrictions) && (params.parametricTests || params.randomizationTests) 
             F(:,:,y,z) = thisF';
           end
         else
@@ -803,8 +810,8 @@ oneTimeWarning('pseudoInverseWarning',0);
 %we have to convert the appropriate F values into T values
 if strcmp(params.componentsCombination,'Or') && ~isempty(params.contrasts)
   %T values are the square roots of the numberContrasts first F values 
-  if params.parametricTests
-    T = sqrt(F(1:params.numberContrasts,:,:,:));
+  T = sqrt(F(1:params.numberContrasts,:,:,:));
+  if params.parametricTests || params.randomizationTests
     %remove T values form F values array
     F = F(params.numberContrasts+1:end,:,:,:);
   end
@@ -817,23 +824,18 @@ if strcmp(params.componentsCombination,'Or') && ~isempty(params.contrasts)
 end
 
 %reshape to the right dimensions
+if ~isempty(params.contrasts)
+  contrastBetas = permute(contrastBetas,[2 3 4 1]);
+end
 if computeEstimates
   % calculate variance accounted for by the estimated hdr
   r2 = 1 - rss./tss;     %JB: replaces: r2{y,z} = (1-sumOfSquaresResidual./sum(timeseries.^2));
   d.s2 = s2;
   %reshape nhdr and nhdrlen on two dimensions, put bootstrap dimension last, and swap nHrfComponents and nhdr order
-% % %   ehdrste = permute(reshape(ehdrste, d.nHrfComponents, d.nhdr, d.dim(1),d.dim(2),d.dim(3)),[3 4 5 2 1]);
-% % %   d.ehdrste = ehdrste;
   ehdr = permute(reshape(ehdr, d.nHrfComponents, d.nhdr, d.dim(1), d.dim(2), d.dim(3)),[3 4 5 2 1]);    
   d.ehdr = ehdr;
   if params.covCorrection
     d.autoCorrelationParameters = permute(autoCorrelationParameters,[2 3 4 1]);
-  end
-% % %   d.rss = rss;
-  if ~isempty(params.contrasts)
-% % %     contrastBetaSte = permute(contrastBetaSte,[2 3 4 1]);
-% % %     d.contrastSte = contrastBetaSte;
-    contrastBetas = permute(contrastBetas,[2 3 4 1]);
   end
   if params.bootstrapIntervals && params.nBootstrap
     ehdrBootstrapCIs = permute(reshape(ehdrBootstrapCIs, d.nHrfComponents, d.nhdr, d.dim(1), d.dim(2), d.dim(3)),[3 4 5 2 1]);
@@ -846,15 +848,13 @@ if computeEstimates
 
 end
 if ~isempty(params.contrasts) && computeTtests
-  if params.parametricTests
-    T = permute(T,[2 3 4 1]);
-  end
+  T = permute(T,[2 3 4 1]);
   if params.nBootstrap
     pBootstrapT = permute(pBootstrapT,[2 3 4 1]);
   end
 end
 if ~isempty(restrictions) 
-  if params.parametricTests
+  if params.parametricTests || params.randomizationTests
     F = permute(F,[2 3 4 1]);
   end
   if params.nBootstrap
@@ -864,9 +864,32 @@ end
 
 if verbose,mrCloseDlg(hWaitBar);end
 
+
+function [array, arraySize] = alloc(defaultValues,varargin)
+
+precision = varargin{end};
+dimensions = cell2mat(varargin(1:end-1));
+switch(lower(defaultValues))
+  case 'nan'
+    array = NaN(dimensions,precision);
+  case 'ones'
+    array = ones(dimensions,precision);
+  case 'zeros'
+    array = zeros(dimensions,precision);
+end
+arraySize = prod(dimensions);
+switch(precision)
+  case 'single'
+    arraySize = arraySize*4;
+  case 'double'
+    arraySize = arraySize*8;
+end
+
 %this function computes the sum of squared errors between the dampened oscillator
 %model (for xdata) and the sample autocorrelation function (ydata)
 function sse = minimizeDampenedOscillator(params, xdata,ydata)
   FittedCurve = params(1)^2 - exp(params(2) * xdata) .* cos(params(3)*xdata);
   ErrorVector = FittedCurve - ydata;
   sse = sum(ErrorVector.^2);
+  
+  
