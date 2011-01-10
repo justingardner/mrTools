@@ -224,6 +224,10 @@ while keepAsking
   elseif params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
       length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
      mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
+  elseif params.TFCE && params.bootstrapStatistics  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
+     mrWarnDlg('(getTestParamsGUI) Bootstrap tests on TFCE transformed values are currently only allowed for ROI(s) analyses','Yes');
+  elseif params.randomizationTests && params.bootstrapStatistics
+     mrWarnDlg('(getTestParamsGUI) Simultaneous bootstrap and randomization tests are currently not allowed','Yes');
   else
      keepAsking = 0;
   end

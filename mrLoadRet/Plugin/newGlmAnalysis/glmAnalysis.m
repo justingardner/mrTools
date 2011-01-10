@@ -93,7 +93,8 @@ if ~isempty(contrasts)
       end
     end
     if params.randomizationTests
-      randC = r2;
+      randT = r2;
+      randMaxT = r2;
       if params.fdrAdjustment
         fdrRandC=r2;
       end
@@ -126,6 +127,7 @@ if ~isempty(restrictions)
   end
   if params.randomizationTests
     randF = r2;
+    randMaxF = r2;
     if params.fdrAdjustment
       fdrRandF=r2;
     end
@@ -160,7 +162,7 @@ for scanNum = params.scanNum
   end
   subsetDims = diff(subsetBox,1,2)+1;
   %Compute the number of slices to load at once in order to minimize memory usage
-  if params.TFCE && params.randomizationTests
+  if params.TFCE && (params.randomizationTests || params.bootstrapStatistics)
    %in this particular case, we force loading the whole dataset at once
    slicesToLoad = subsetDims(3);
    loadCallsPerBatch = {1};
@@ -218,7 +220,7 @@ for scanNum = params.scanNum
   end
 
   if rawNumSlices<1
-      mrWarnDlg(['Too many data points to perform the analysis on whole slices. Implement row analysis support, increase memory block size (by a factor ' num2str(subsetDims(3)/rawNumSlices) ') or reduce subset box']);
+      mrWarnDlg(['Too many data points to perform the analysis on whole slices. Implement row analysis support, increase memory block size or reduce subset box/ROI(s) size (by a factor ' num2str(subsetDims(3)/rawNumSlices) ')']);
       return;
   end
 
@@ -286,22 +288,22 @@ for scanNum = params.scanNum
     clear('dummy','usedVoxelsInBox');
 
     %-------------------------------Permutations------------------------------------------
+    %we only need to compute Ttests
+    computeTtests = params.computeTtests & (params.parametricTests | ... %if parametric tests are asked for
+       (length(params.componentsToTest)>1 & strcmp(params.componentsCombination,'Or')) );  % or if contrasts are tested on several components using 'Or' combination
     for iRand = 1:nRand
       if iRand==2
         hWaitBar = mrWaitBar(0,['Computing Permutations for scan ' num2str(scanNum)]);
       end
       if iRand == 1 %if it is the actual data
         d.stimvol = actualStimvol;
-        computeTtests = params.parametricTests & params.computeTtests;
         computeEstimates = 1;
         verbose = 1;
       else
-        %we only need to compute Ttests
-        computeTtests = params.computeTtests & (params.TFCE  |... %in the case we compute TFCE
-          (length(params.componentsToTest)>1 & strcmp(params.componentsCombination,'Or') & params.parametricTests));  % or if contrasts are tested on several components using 'Or' combination
-
+%         %we only need to compute Ttests if contrasts are tested on several components using 'Or' combination
+%         computeTtests = params.computeTtests & length(params.componentsToTest)>1 & strcmp(params.componentsCombination,'Or');  
         computeEstimates = 0;
-        mrWaitbar(iRand/nRand,hWaitBar);
+        mrWaitBar(iRand/nRand,hWaitBar);
         randStimvol = all_stimvol(randomizations(iRand-1,:));
         for stimnum = 1:length(actualStimvol)%randomize stim events
            d.stimvol{stimnum} = randStimvol(1:nStimPerEventType(stimnum));
@@ -317,40 +319,138 @@ for scanNum = params.scanNum
       %compute the design matrix for this randomization
       d = makeDesignMatrix(d,params,verbose, scanNum);
       % compute estimates and statistics
-      [d, r2Temp, tempC, tempT, tempF, tempBootstrapT, tempBootstrapF] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
-
-      if ~isempty(contrasts)
-        %in the particular case where contrasts are tested on several components using 'Or' combination, we don't compute the contrasts
-        %so we'll use the T-test (in fact F-test) values instead of the contrast values
-        if length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
-          tempC = tempT;
-        end
-          
-        if iRand==1
-          tempActualT = tempT;
-          tempActualC = tempC;
-          if params.randomizationTests
-            tempRandC = zeros(size(tempActualC),precision); %will count how many randomization values are above the actual contrast value 
-          end
-        else
-          switch params.tTestSide
-            case 'Right'
-              tempRandC = tempRandC+double(tempC>tempActualC);
-            case 'Left'
-              tempRandC = tempRandC+double(tempC<tempActualC);
-            case 'Both'
-              tempRandC = tempRandC+double(abs(tempC)>abs(tempActualC));
-          end
+      [d, tempR2, tempC, tempT, tempF, tempBootstrapT, tempBootstrapF] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
+       
+      
+      if params.randomizationTests
+        thisF = tempF;
+        %we'll use the T values for randomizations:
+        if ~isempty(contrasts) && params.computeTtests && ...
+          (params.parametricTests ... %if parametric tests are asked for (in order to compute resampled FWE adjustments)
+        || (length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or'))) 
+        %or if contrasts are tested on several components using 'Or' combination, since we can't compute contrasts in this case
+          thisT = tempT; 
+        else %otherwise, we can use the contrast values instead
+          thisT = tempC;
         end
       end
-      if ~isempty(restrictions)
-        if iRand==1
-          tempActualF = tempF;
-          if params.randomizationTests
-            tempRandF = zeros(size(tempActualF),precision); %will count how many randomization values are above the actual F value 
+      
+      if iRand==1
+        %keep values for randomization tests
+        if params.randomizationTests
+          if ~isempty(contrasts) && params.computeTtests
+            tempActualT = thisT;
+            tempRandT = zeros(size(tempActualT),precision); %will count how many randomization values are above (below) the actual contrast value 
+            tempRandMaxT = zeros(size(tempActualT),precision); %same for the max (min) randomization value across space, for FWE adjustment
           end
-        else
-          tempRandF = tempRandF+double(tempF>tempActualF);
+          if ~isempty(restrictions)
+            tempActualF = thisF;
+            tempRandF = zeros(size(tempActualF),precision); %will count how many randomization values are above the actual F value 
+            tempRandMaxF = zeros(size(tempActualF),precision); %same for the max randomization value across space, for FWE adjustment
+          end
+        end
+        
+        %reshape data into the subsetbox
+        if strcmp(params.analysisVolume,'Loaded ROI(s)') 
+          d.ehdr = reshapeToRoiBox(d.ehdr,d.roiPositionInBox);
+          tempR2 = reshapeToRoiBox(tempR2,d.roiPositionInBox);
+          d.s2 = reshapeToRoiBox(d.s2,d.roiPositionInBox);
+          if params.covCorrection
+            d.autoCorrelationParameters = reshapeToRoiBox(d.autoCorrelationParameters,d.roiPositionInBox);
+          end
+          if params.bootstrapStatistics && params.bootstrapIntervals
+            d.ehdrBootstrapCIs = reshapeToRoiBox(d.ehdrBootstrapCIs,d.roiPositionInBox);
+          end
+          if ~isempty(contrasts)
+            if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
+              tempC = reshapeToRoiBox(tempC,d.roiPositionInBox);
+            end
+            if params.computeTtests
+              if params.parametricTests
+                tempT = reshapeToRoiBox(tempT,d.roiPositionInBox);
+              end
+              if params.bootstrapStatistics
+                tempBootstrapT = reshapeToRoiBox(tempBootstrapT,d.roiPositionInBox);
+              end
+            end
+            if params.bootstrapStatistics && params.bootstrapIntervals && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+              d.contrastBootstrapCIs = reshapeToRoiBox(d.contrastBootstrapCIs,d.roiPositionInBox);
+            end
+          end
+          if ~isempty(restrictions) 
+            if params.parametricTests
+              tempF = reshapeToRoiBox(tempF,d.roiPositionInBox);
+              if numel(d.rdf)>1
+                d.rdf = reshapeToRoiBox(d.rdf,d.roiPositionInBox);
+                d.mdf = reshapeToRoiBox(d.mdf,d.roiPositionInBox);
+              end
+            end
+            if params.bootstrapStatistics
+              tempBootstrapF = reshapeToRoiBox(tempBootstrapF,d.roiPositionInBox);
+            end
+          end
+        end
+        
+        %concatenate data
+        ehdr = cat(3,ehdr,d.ehdr);
+        r2{scanNum} = cat(3,r2{scanNum},tempR2);
+        s2 = cat(3,s2,d.s2);
+        if params.covCorrection
+          autoCorrelationParameters = cat(3,autoCorrelationParameters,d.autoCorrelationParameters);
+        end
+        if params.bootstrapStatistics && params.bootstrapIntervals
+          ehdrBootstrapCIs = cat(3,ehdrBootstrapCIs,d.ehdrBootstrapCIs);
+        end
+        if ~isempty(contrasts)
+          if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
+            C{scanNum} = cat(3,C{scanNum},tempC);
+          end
+          if params.computeTtests
+            if params.parametricTests
+              T{scanNum} = cat(3,T{scanNum},tempT);
+            end
+            if params.bootstrapStatistics
+              bootstrapT{scanNum} = cat(3,bootstrapT{scanNum},tempBootstrapT);
+            end
+          end
+          if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+            contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
+          end
+        end
+        if ~isempty(restrictions)
+          if params.parametricTests
+            F{scanNum} = cat(3,F{scanNum},tempF);
+            if numel(d.rdf)>1
+               rdf = cat(3,rdf,d.rdf);
+               mdf = cat(3,mdf,d.mdf);
+            end
+          end
+          if params.bootstrapStatistics
+            bootstrapF{scanNum} = cat(3,bootstrapF{scanNum},tempBootstrapF);
+          end
+        end
+        
+        clear('tempR2','tempC', 'tempT', 'tempF')
+        clear('tempBootstrapT','tempBootstrapF')
+      
+      % iRand>1  
+      else
+        if ~isempty(contrasts)
+          switch params.tTestSide
+            case 'Right'
+              tempRandT = tempRandT+double(thisT>tempActualT);
+              tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
+            case 'Left'
+              tempRandT = tempRandT+double(thisT<tempActualT);
+              tempRandMaxT = tempRandMaxT+double(repmat(min(min(min(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])<tempActualT);
+            case 'Both'
+              tempRandT = tempRandT+double(abs(thisT)>abs(tempActualT));
+              tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(abs(thisT),[],3),[],2),[],1),[d.dim(1:3) 1])>abs(tempActualT));
+          end
+        end
+        if ~isempty(restrictions)
+          tempRandF = tempRandF+double(thisF>tempActualF);
+          tempRandMaxF = tempRandMaxF+double(repmat(max(max(max(thisF,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualF);
         end
       end
 
@@ -359,15 +459,15 @@ for scanNum = params.scanNum
         
         if ~isempty(restrictions)
           if isfield(d,'roiPositionInBox') 
-            tempF = reshapeToRoiBox(tempF,d.roiPositionInBox); 
+            thisF = reshapeToRoiBox(thisF,d.roiPositionInBox); 
           end
           %NaNs in the data will be transformed to 0 by FSL, so for ROIs, 
           %TFCE is applied to the smallest box including all the ROIs, but replacing non-computed data by 0
-          tempTfce = applyFslTFCE(tempF,'',0);   
-          tempTfce(isnan(tempF)) = NaN; %put NaNs back in place
+          tempTfce = applyFslTFCE(thisF,'',0);   
+          tempTfce(isnan(thisF)) = NaN; %put NaNs back in place
           if iRand == 1 %if it is the actual data
-            tfceCountF = NaN(size(tempF),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
-            tfceCountF(~isnan(tempF)) = 1; %we count the actual data in
+            tfceCountF = NaN(size(thisF),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
+            tfceCountF(~isnan(thisF)) = 1; %we count the actual data in
             maxTfceF = zeros(nRand,length(restrictions));       %and these will store the distribution of max
             tfceF{scanNum} = tempTfce;           %keep the TFCE transform
           else
@@ -379,13 +479,13 @@ for scanNum = params.scanNum
         %same for T-tests
         if computeTtests && ~isempty(contrasts)
           if isfield(d,'roiPositionInBox') 
-            tempT = reshapeToRoiBox(tempT,d.roiPositionInBox);
+            thisT = reshapeToRoiBox(thisT,d.roiPositionInBox);
           end
-          tempTfce = applyFslTFCE(tempT,'',0);
-          tempTfce(isnan(tempT)) = NaN; %put NaNs back in place
+          tempTfce = applyFslTFCE(thisT,'',0);
+          tempTfce(isnan(thisT)) = NaN; %put NaNs back in place
           if iRand == 1 %if it is the actual data
-            tfceCountT = NaN(size(tempT),precision);     %
-            tfceCountT(~isnan(tempT)) = 1;
+            tfceCountT = NaN(size(thisT),precision);     %
+            tfceCountT(~isnan(thisT)) = 1;
             maxTfceT = zeros(nRand,size(contrasts,1));
             tfceT{scanNum} = tempTfce; 
           else
@@ -399,93 +499,32 @@ for scanNum = params.scanNum
     if params.randomizationTests 
        mrCloseDlg(hWaitBar);
     end
+    d = rmfield(d,'data');
 
-    if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-      d.ehdr = reshapeToRoiBox(d.ehdr,d.roiPositionInBox);
-      r2Temp = reshapeToRoiBox(r2Temp,d.roiPositionInBox);
-      d.s2 = reshapeToRoiBox(d.s2,d.roiPositionInBox);
-      if params.covCorrection
-        d.autoCorrelationParameters = reshapeToRoiBox(d.autoCorrelationParameters,d.roiPositionInBox);
-      end
-      if params.bootstrapStatistics && params.bootstrapIntervals
-        d.ehdrBootstrapCIs = reshapeToRoiBox(d.ehdrBootstrapCIs,d.roiPositionInBox);
-      end
-      if ~isempty(contrasts)
-        tempActualC = reshapeToRoiBox(tempActualC,d.roiPositionInBox);
-        if params.computeTtests
-          tempActualT = reshapeToRoiBox(tempActualT,d.roiPositionInBox);
-          if params.bootstrapStatistics
-            tempBootstrapT = reshapeToRoiBox(tempBootstrapT,d.roiPositionInBox);
-          end
+    if params.randomizationTests
+      if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+        if ~isempty(contrasts)
+          tempRandT = reshapeToRoiBox(tempRandT,d.roiPositionInBox);
+          tempRandMaxT = reshapeToRoiBox(tempRandMaxT,d.roiPositionInBox);
         end
-        if params.randomizationTests
-          tempRandC = reshapeToRoiBox(tempRandC,d.roiPositionInBox);
-        end
-        if params.bootstrapStatistics && params.bootstrapIntervals && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
-          d.contrastBootstrapCIs = reshapeToRoiBox(d.contrastBootstrapCIs,d.roiPositionInBox);
-        end
-      end
-      if ~isempty(restrictions) 
-        tempActualF = reshapeToRoiBox(tempActualF,d.roiPositionInBox);
-        if numel(d.rdf)>1
-          d.rdf = reshapeToRoiBox(d.rdf,d.roiPositionInBox);
-          d.mdf = reshapeToRoiBox(d.mdf,d.roiPositionInBox);
-        end
-        if params.randomizationTests
+        if ~isempty(restrictions) 
           tempRandF = reshapeToRoiBox(tempRandF,d.roiPositionInBox);
+          tempRandMaxF = reshapeToRoiBox(tempRandMaxF,d.roiPositionInBox);
         end
-        if params.bootstrapStatistics
-          tempBootstrapF = reshapeToRoiBox(tempBootstrapF,d.roiPositionInBox);
-        end
+        d = rmfield(d,'roiPositionInBox');
       end
-      d = rmfield(d,'roiPositionInBox');
-    end
-
-    ehdr = cat(3,ehdr,d.ehdr);
-    r2{scanNum} = cat(3,r2{scanNum},r2Temp);
-    s2 = cat(3,s2,d.s2);
-    if params.covCorrection
-      autoCorrelationParameters = cat(3,autoCorrelationParameters,d.autoCorrelationParameters);
-    end
-    if params.bootstrapStatistics && params.bootstrapIntervals
-      ehdrBootstrapCIs = cat(3,ehdrBootstrapCIs,d.ehdrBootstrapCIs);
-    end
-    if ~isempty(contrasts)
-      if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
-        C{scanNum} = cat(3,C{scanNum},tempActualC);
+      if ~isempty(contrasts)    %concatenate data
+        randT{scanNum} = cat(3,randT{scanNum},tempRandT);
+        randMaxT{scanNum} = cat(3,randMaxT{scanNum},tempRandMaxT);
       end
-      if params.computeTtests
-        T{scanNum} = cat(3,T{scanNum},tempActualT);
-        if params.bootstrapStatistics
-          bootstrapT{scanNum} = cat(3,bootstrapT{scanNum},tempBootstrapT);
-        end
-      end
-      if params.randomizationTests
-        randC{scanNum} = cat(3,randC{scanNum},tempRandC);
-      end
-      if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
-        contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
-      end
-    end
-    if ~isempty(restrictions)
-      F{scanNum} = cat(3,F{scanNum},tempActualF);
-      if numel(d.rdf)>1
-         rdf = cat(3,rdf,d.rdf);
-         mdf = cat(3,mdf,d.mdf);
-      end
-      if params.randomizationTests
+      if ~isempty(restrictions)
         randF{scanNum} = cat(3,randF{scanNum},tempRandF);
-      end
-      if params.bootstrapStatistics
-        bootstrapF{scanNum} = cat(3,bootstrapF{scanNum},tempBootstrapF);
+        randMaxF{scanNum} = cat(3,randMaxF{scanNum},tempRandMaxF);
       end
     end
 
   end
-  d = rmfield(d,'data');
-  clear('r2Temp','tempC', 'tempT', 'tempF')
-  clear('tempRandC','tempRandF','tempActualC','tempActualT','tempActualF')
-  clear('tempBootstrapT','tempBootstrapF')
+  clear('tempRandT','tempRandF','tempActualT','tempActualF')
   
   %compute the TFCE if randomization test not run on it
   if params.TFCE && ~params.randomizationTests
@@ -514,9 +553,13 @@ for scanNum = params.scanNum
         [Tp{scanNum},fdrTp{scanNum}] = transformStatistic(Tp{scanNum},precision,1e-16,params); 
     end
     if params.randomizationTests
-      randC{scanNum} = randC{scanNum}/nRand;
-      [randC{scanNum},fdrRandC{scanNum}] = transformStatistic(randC{scanNum},precision,1/nRand,params); 
-      %compute TFCE thresholds
+      randT{scanNum} = randT{scanNum}/nRand;
+      [randT{scanNum},fdrRandC{scanNum}] = transformStatistic(randT{scanNum},precision,1/nRand,params); 
+      if params.parametricTests
+        randMaxT{scanNum} = randMaxT{scanNum}/nRand;
+        randMaxT{scanNum} = transformStatistic(randMaxT{scanNum},precision,1/nRand,params); 
+      end
+    %compute TFCE thresholds
       if params.TFCE 
         for iContrast = 1:size(contrasts,1)
           sorted_max_tfce = sort(maxTfceT(:,iContrast));
@@ -551,23 +594,27 @@ for scanNum = params.scanNum
         end
         [Fp{scanNum},fdrFp{scanNum}] = transformStatistic(Fp{scanNum},precision,1e-16,params); 
       end
-      if params.randomizationTests 
-        randF{scanNum} = randF{scanNum}/nRand;
-        [randF{scanNum},fdrRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/nRand,params); 
-        %compute TFCE thresholds
-        if params.TFCE 
-          for iFtest = 1:length(restrictions)
-            sorted_max_tfce = sort(maxTfceF(:,iFtest));
-            thresholdTfceF(iFtest,scanNum) = sorted_max_tfce(max(1,floor((1-randAlpha)*nRand)));
-          end
-          tfceRandF{scanNum} = tfceCountF/nRand;
-          clear('tfceCountF');
-          [tfceRandF{scanNum},fdrTfceRandF{scanNum}] = transformStatistic(tfceRandF{scanNum},params.testOutput,precision,1/nRand); 
+    end
+    if params.randomizationTests 
+      randF{scanNum} = randF{scanNum}/nRand;
+      [randF{scanNum},fdrRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/nRand,params); 
+      if params.parametricTests
+        randMaxF{scanNum} = randMaxF{scanNum}/nRand;
+        randMaxF{scanNum} = transformStatistic(randMaxF{scanNum},precision,1/nRand,params); 
+      end
+      %compute TFCE thresholds
+      if params.TFCE 
+        for iFtest = 1:length(restrictions)
+          sorted_max_tfce = sort(maxTfceF(:,iFtest));
+          thresholdTfceF(iFtest,scanNum) = sorted_max_tfce(max(1,floor((1-randAlpha)*nRand)));
         end
+        tfceRandF{scanNum} = tfceCountF/nRand;
+        clear('tfceCountF');
+        [tfceRandF{scanNum},fdrTfceRandF{scanNum}] = transformStatistic(tfceRandF{scanNum},params.testOutput,precision,1/nRand); 
       end
-      if params.bootstrapStatistics
-        [bootstrapF{scanNum},fdrBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/params.nBootstrap,params); 
-      end
+    end
+    if params.bootstrapStatistics
+      [bootstrapF{scanNum},fdrBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/params.nBootstrap,params); 
     end
   end
 
@@ -708,6 +755,11 @@ if ~isempty(contrasts)
                                          '', params.testOutput, 'T', contrastNames)];
       clear('Tp');
 
+      if params.randomizationTests
+        overlays = [overlays makeOverlay(defaultOverlay, randMaxT, subsetBox, params.scanNum, scanParams, ...
+                                           'randomization-adjusted ', params.testOutput, 'T', contrastNames)];
+        clear('randMaxT');
+      end
       if params.fdrAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, fdrTp, subsetBox, params.scanNum, scanParams, ...
                                         'FDR-adjusted ',params.testOutput, 'T', contrastNames)];
@@ -750,10 +802,9 @@ if ~isempty(contrasts)
     end
     
     if params.randomizationTests
-      overlays = [overlays makeOverlay(defaultOverlay, randC, subsetBox, params.scanNum, scanParams, ...
+      overlays = [overlays makeOverlay(defaultOverlay, randT, subsetBox, params.scanNum, scanParams, ...
                                          'randomization ', params.testOutput, 'T', contrastNames)];
-      clear('randC');
-
+      clear('randT');
       if params.fdrAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, fdrRandC, subsetBox, params.scanNum, scanParams, ...
                                         'FDR-adjusted randomization ',params.testOutput, 'T', contrastNames)];
@@ -843,6 +894,11 @@ if ~isempty(restrictions)
                                        '', params.testOutput, 'F', params.fTestNames)];
     clear('Fp');
 
+    if params.randomizationTests
+      overlays = [overlays makeOverlay(defaultOverlay, randMaxF, subsetBox, params.scanNum, scanParams, ...
+                                         'randomization-adjusted ', params.testOutput, 'F', params.fTestNames)];
+      clear('randMaxF');
+    end
     if params.fdrAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, fdrFp, subsetBox, params.scanNum, scanParams, ...
                                       'FDR-adjusted ',params.testOutput, 'F', params.fTestNames)];
