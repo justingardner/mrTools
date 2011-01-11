@@ -11,7 +11,9 @@ end
 
 
 dataSize = size(data);
-if length(dataSize)<3 || length(dataSize)>4
+if length(dataSize)<3 
+  dataSize(3) = 1;
+elseif length(dataSize)>4
   mrErrorDlg('(applyFslTFCE) Volume must be 3D or 4D');
 end
 
