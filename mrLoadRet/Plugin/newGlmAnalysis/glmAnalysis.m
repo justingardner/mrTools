@@ -63,7 +63,7 @@ end
 
 if any( sum(contrasts,2)==1 & sum(contrasts~=0,2)==1 )
    scanNum = params.scanNum(1);
-   disp(sprintf('Getting condition names from scan %d', scanNum)); 
+   fprintf('Getting condition names from scan %d', scanNum); 
    d = loadScan(thisView, scanNum, [], 0);
    d = getStimvol(d,scanParams{scanNum});
    % do any call for preprocessing
@@ -111,6 +111,16 @@ if ~isempty(contrasts)
       if params.fdrAdjustment
         fdrBootstrapT=r2;
       end
+      if strcmp(params.analysisVolume,'Loaded ROI(s)')
+        bootstrapMaxT = r2;
+        if params.TFCE  
+          bootstrapTfceT = r2;
+          if params.fdrAdjustment
+            fdrBootstrapTfceT=r2;
+          end
+          bootstrapMaxTfceT = r2;
+        end
+      end
     end
   end
 end
@@ -144,6 +154,16 @@ if ~isempty(restrictions)
     bootstrapF = r2;
     if params.fdrAdjustment
       fdrBootstrapF=r2;
+    end
+    if strcmp(params.analysisVolume,'Loaded ROI(s)')
+      bootstrapMaxF = r2;
+      if params.TFCE  
+        bootstrapTfceF = r2;
+        if params.fdrAdjustment
+          fdrBootstrapTfceF=r2;
+        end
+        bootstrapMaxTfceF = r2;
+      end
     end
   end
 end
@@ -251,7 +271,7 @@ for scanNum = params.scanNum
        randomizations(iRand,:) = randperm(nStims);
     end
   else
-    nRand = 1;
+    nRand = 0;
   end
 
   %create model HRF
@@ -320,7 +340,7 @@ for scanNum = params.scanNum
       %compute the design matrix for this randomization
       d = makeDesignMatrix(d,params,verbose, scanNum);
       % compute estimates and statistics
-      [d, tempR2, tempC, tempT, tempF, tempBootstrapT, tempBootstrapF] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
+      [d, tempR2, tempC, tempT, tempF, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
        
       
       if params.randomizationTests
@@ -371,7 +391,12 @@ for scanNum = params.scanNum
                 tempT = reshapeToRoiBox(tempT,d.roiPositionInBox);
               end
               if params.bootstrapStatistics
-                tempBootstrapT = reshapeToRoiBox(tempBootstrapT,d.roiPositionInBox);
+                bootstrap.Tp = reshapeToRoiBox(bootstrap.Tp,d.roiPositionInBox);
+                bootstrap.maxTp = reshapeToRoiBox(bootstrap.maxTp,d.roiPositionInBox);
+                if params.TFCE 
+                  bootstrap.tfceTp = reshapeToRoiBox(bootstrap.tfceTp,d.roiPositionInBox);
+                  bootstrap.maxTfceTp = reshapeToRoiBox(bootstrap.maxTfceTp,d.roiPositionInBox);
+                end
               end
             end
             if params.bootstrapStatistics && params.bootstrapIntervals && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
@@ -387,7 +412,12 @@ for scanNum = params.scanNum
               end
             end
             if params.bootstrapStatistics
-              tempBootstrapF = reshapeToRoiBox(tempBootstrapF,d.roiPositionInBox);
+              bootstrap.Fp = reshapeToRoiBox(bootstrap.Fp,d.roiPositionInBox);
+              bootstrap.maxFp = reshapeToRoiBox(bootstrap.maxFp,d.roiPositionInBox);
+              if params.TFCE 
+                bootstrap.tfceFp = reshapeToRoiBox(bootstrap.tfceFp,d.roiPositionInBox);
+                bootstrap.maxTfceFp = reshapeToRoiBox(bootstrap.maxTfceFp,d.roiPositionInBox);
+              end
             end
           end
         end
@@ -411,7 +441,14 @@ for scanNum = params.scanNum
               T{scanNum} = cat(3,T{scanNum},tempT);
             end
             if params.bootstrapStatistics
-              bootstrapT{scanNum} = cat(3,bootstrapT{scanNum},tempBootstrapT);
+              bootstrapT{scanNum} = cat(3,bootstrapT{scanNum},bootstrap.Tp);
+              if strcmp(params.analysisVolume,'Loaded ROI(s)')
+                bootstrapMaxT{scanNum} = cat(3,bootstrapMaxT{scanNum},bootstrap.maxTp);
+                if params.TFCE 
+                  bootstrapTfceT{scanNum} = cat(3,bootstrapTfceT{scanNum},bootstrap.tfceTp);
+                  bootstrapMaxTfceT{scanNum} = cat(3,bootstrapMaxTfceT{scanNum},bootstrap.maxTfceTp);
+                end
+              end
             end
           end
           if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
@@ -427,29 +464,24 @@ for scanNum = params.scanNum
             end
           end
           if params.bootstrapStatistics
-            bootstrapF{scanNum} = cat(3,bootstrapF{scanNum},tempBootstrapF);
+            bootstrapF{scanNum} = cat(3,bootstrapF{scanNum},bootstrap.Fp);
+            if strcmp(params.analysisVolume,'Loaded ROI(s)')
+              bootstrapMaxF{scanNum} = cat(3,bootstrapMaxF{scanNum},bootstrap.maxFp);
+              if params.TFCE 
+                bootstrapTfceF{scanNum} = cat(3,bootstrapTfceF{scanNum},bootstrap.tfceFp);
+                bootstrapMaxTfceF{scanNum} = cat(3,bootstrapMaxTfceF{scanNum},bootstrap.maxTfceFp);
+              end
+            end
           end
         end
         
-        clear('tempR2','tempC', 'tempT', 'tempF')
-        clear('tempBootstrapT','tempBootstrapF')
+        clear('tempR2','tempC', 'tempT', 'tempF','bootstrap')
       
       % iRand>1  
       else
         if ~isempty(contrasts)
           tempRandT = tempRandT+double(thisT>tempActualT);
           tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
-%           switch params.tTestSide
-%             case 'Right'
-%               tempRandT = tempRandT+double(thisT>tempActualT);
-%               tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
-%             case 'Left'
-%               tempRandT = tempRandT+double(thisT<tempActualT);
-%               tempRandMaxT = tempRandMaxT+double(repmat(min(min(min(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])<tempActualT);
-%             case 'Both'
-%               tempRandT = tempRandT+double(abs(thisT)>abs(tempActualT));
-%               tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(abs(thisT),[],3),[],2),[],1),[d.dim(1:3) 1])>abs(tempActualT));
-%           end
         end
         if ~isempty(restrictions)
           tempRandF = tempRandF+double(thisF>tempActualF);
@@ -560,6 +592,13 @@ for scanNum = params.scanNum
     end
     if params.bootstrapStatistics
       [bootstrapT{scanNum},fdrBootstrapT{scanNum}] = transformStatistic(bootstrapT{scanNum},precision,1/(params.nBootstrap+1),params); 
+      if strcmp(params.analysisVolume,'Loaded ROI(s)')
+        bootstrapMaxT{scanNum} = transformStatistic(bootstrapMaxT{scanNum},precision,1/(params.nBootstrap+1),params);
+        if params.TFCE 
+          [bootstrapTfceT{scanNum},fdrBootstrapTfceT{scanNum}] = transformStatistic(bootstrapTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
+          bootstrapMaxTfceT{scanNum} = transformStatistic(bootstrapMaxTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
+        end
+      end
     end
   end
   
@@ -605,6 +644,13 @@ for scanNum = params.scanNum
     end
     if params.bootstrapStatistics
       [bootstrapF{scanNum},fdrBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/(params.nBootstrap+1),params); 
+      if strcmp(params.analysisVolume,'Loaded ROI(s)')
+        bootstrapMaxF{scanNum} = transformStatistic(bootstrapMaxF{scanNum},precision,1/(params.nBootstrap+1),params);
+        if params.TFCE 
+          [bootstrapTfceF{scanNum},fdrBootstrapTfceF{scanNum}] = transformStatistic(bootstrapTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+          bootstrapMaxTfceF{scanNum} = transformStatistic(bootstrapMaxTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+        end
+      end
     end
   end
 
@@ -774,6 +820,24 @@ if ~isempty(contrasts)
         clear('fdrBootstrapTp');
       end
       
+      if strcmp(params.analysisVolume,'Loaded ROI(s)')
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxT, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap-adjusted ', params.testOutput, 'T', contrastNames)];
+        clear('bootstrapMaxT');
+        if params.TFCE  
+          overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
+                                             'bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
+          clear('bootstrapTfceT');
+          if params.fdrAdjustment
+            overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
+                                               'FDR-adjusted bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
+            clear('fdrBootstrapTfceT');
+          end
+          overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceT, subsetBox, params.scanNum, scanParams, ...
+                                             'bootstrap-adjusted ', params.testOutput, 'TFCE T', contrastNames)];
+          clear('bootstrapMaxTfceT');
+        end
+      end
     end
     
     if params.randomizationTests
@@ -895,6 +959,24 @@ if ~isempty(restrictions)
       overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapF, subsetBox, params.scanNum, scanParams, ...
                                       'FDR-adjusted bootstrap ',params.testOutput, 'F', params.fTestNames)];
       clear('fdrBootstrapF');
+    end
+    if strcmp(params.analysisVolume,'Loaded ROI(s)')
+      overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxF, subsetBox, params.scanNum, scanParams, ...
+                                         'bootstrap-adjusted ', params.testOutput, 'F', params.fTestNames)];
+      clear('bootstrapMaxF');
+      if params.TFCE  
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
+        clear('bootstrapTfceF');
+        if params.fdrAdjustment
+          overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
+                                             'FDR-adjusted bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
+          clear('fdrBootstrapTfceF');
+        end
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceF, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap-adjusted ', params.testOutput, 'TFCE F', params.fTestNames)];
+        clear('bootstrapMaxTfceF');
+      end
     end
   end
   

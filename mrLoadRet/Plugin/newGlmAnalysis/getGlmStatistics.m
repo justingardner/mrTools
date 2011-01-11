@@ -1,6 +1,6 @@
 % getGlmStatistics.m
 %
-%      usage: [d, contrastBetas, T, F, pBootstrapT, pBootstrapF] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
+%      usage: [d, contrastBetas, T, F, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
 %         by: Julien Besle
 %       date: 18/01/10
 %        $Id$
@@ -24,14 +24,13 @@
 %             reference for bootstrap testing
 %                - Westfall, P.H., and S.S. Young. Resampling-based multiple testing. Wiley-Interscience, 1993
 
-function [d, r2, contrastBetas, T, F, pBootstrapT, pBootstrapF] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
+function [d, r2, contrastBetas, T, F, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
 
 approximate_value = 0;
 r2=[];
 T = [];
 F = [];
-pBootstrapT=[];
-pBootstrapF=[];
+bootstrap=struct;
 contrastBetas = [];
 %optimalXLength = [60 80 100 120 140 160 180 200];
 %optimalXLength = round(120000/nFrames);  %empirical value that optimizes the speed of bootstrapping, probably depends on available memory
@@ -274,7 +273,14 @@ if ~isempty(contrasts)
     [thisContrastBetaSte,totalBytes(end+1)] = alloc('NaN',[d.dim(1) length(contrasts)],precision); 
     [T,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
     if params.nBootstrap
-      [pBootstrapT,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+      [bootstrap.Tp,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+      if isfield(d,'roiPositionInBox')
+        [bootstrap.maxTp,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+        if params.TFCE
+          [bootstrap.tfceTp,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+          [bootstrap.maxTfceTp,totalBytes(end+1)] = alloc('NaN',[length(contrasts) d.dim(1) d.dim(2) d.dim(3)],precision);
+        end
+      end
     end
   end
 end
@@ -285,7 +291,14 @@ if ~isempty(restrictions)
     [F,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
   end
   if params.nBootstrap
-    [pBootstrapF,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
+    [bootstrap.Fp,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
+    if isfield(d,'roiPositionInBox')
+      [bootstrap.maxFp,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
+      if params.TFCE
+        [bootstrap.tfceFp,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
+        [bootstrap.maxTfceFp,totalBytes(end+1)] = alloc('NaN',[length(restrictions) d.dim(1) d.dim(2) d.dim(3)],precision);
+      end
+    end
   end
 end
 if params.covCorrection
@@ -523,8 +536,12 @@ for z = slices
         thisPassesCounter=passesCounter;
         if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
         if iBoot==1 && params.nBootstrap
-          bootstrapCountT = zeros(d.dim(1), length(contrasts));
-          bootstrapCountF = zeros(d.dim(1), length(restrictions));
+          countBootstrapT = zeros(d.dim(1), length(contrasts));
+          countBootstrapF = zeros(d.dim(1), length(restrictions));
+          if isfield(d,'roiPositionInBox')
+            countBootstrapMaxT =countBootstrapT;
+            countBootstrapMaxF =countBootstrapF;
+          end
         end
 
         if iBoot==1
@@ -622,15 +639,24 @@ for z = slices
               if iBoot==1
                 actualT = thisT;
               else
-                bootstrapCountT = bootstrapCountT+double(thisT>actualT); %T is has already been transformed to be positive
-%                 switch params.tTestSide
-%                   case 'Right'
-%                     bootstrapCountT = bootstrapCountT+double(thisT>actualT);
-%                   case 'Left'
-%                     bootstrapCountT = bootstrapCountT+double(thisT<actualT);
-%                   case 'Both'
-%                     bootstrapCountT = bootstrapCountT+double(abs(thisT)>abs(actualT));
-%                 end
+                countBootstrapT = countBootstrapT+double(thisT>actualT); %T has already been transformed to be positive
+                if isfield(d,'roiPositionInBox')
+                  countBootstrapMaxT = countBootstrapMaxT + double(repmat(max(thisT,[],1),[d.dim(1) 1 1 1])>actualT);
+                end
+              end
+              if params.TFCE && isfield(d,'roiPositionInBox') 
+                %reshape to volume to apply TFCE and then reshape back to one dimension
+                tempTfce = applyFslTFCE(reshapeToRoiBox(thisT,d.roiPositionInBox),'',0);
+                tempTfce = permute(tempTfce,[4 1 2 3]);
+                tempTfce = tempTfce(:,d.roiPositionInBox)';
+                if iBoot == 1 %if it is the actual data
+                  countBootstrapTfceT = zeros(size(thisT),precision);     %
+                  countBootstrapMaxTfceT = zeros(size(thisT),precision);     %
+                  actualBootstrapTfceT = tempTfce; 
+                else
+                  countBootstrapTfceT = countBootstrapTfceT + double(tempTfce>actualBootstrapTfceT);
+                  countBootstrapMaxTfceT = countBootstrapMaxTfceT + double(repmat(max(tempTfce,[],1),[d.dim(1) 1 1 1])>actualBootstrapTfceT);
+                end
               end
             end
           end
@@ -675,27 +701,34 @@ for z = slices
           if iBoot==1
             actualF = thisF;
           else
-            bootstrapCountF = bootstrapCountF+double(thisF>actualF);
+            countBootstrapF = countBootstrapF+double(thisF>actualF);
+            if isfield(d,'roiPositionInBox')
+              countBootstrapMaxF = countBootstrapMaxF + double(repmat(max(thisF,[],1),[d.dim(1) 1 1 1])>actualF);
+            end
+          end
+          if params.TFCE && isfield(d,'roiPositionInBox') 
+            %reshape to volume to apply TFCE and then reshape back to one dimension
+            tempTfce = applyFslTFCE(reshapeToRoiBox(thisF,d.roiPositionInBox),'',0);
+            tempTfce = permute(tempTfce,[4 1 2 3]);
+            tempTfce = tempTfce(:,d.roiPositionInBox)';
+            if iBoot == 1 %if it is the actual data
+              countBootstrapTfceF = zeros(size(thisF),precision);     %
+              countBootstrapMaxTfceF = zeros(size(thisF),precision);     %
+              actualBootstrapTfceF = tempTfce; 
+            else
+              countBootstrapTfceF = countBootstrapTfceF + double(tempTfce>actualBootstrapTfceF);
+              countBootstrapMaxTfceF = countBootstrapMaxTfceF + double(repmat(max(tempTfce,[],1),[d.dim(1) 1 1 1])>actualBootstrapTfceF);
+            end
           end
         end
         
         if iBoot==1  %Actual values to save
           if computeEstimates
             ehdr(:,:,y,z) = betas;
-            % now distribute the error to each one of the points    
-            % in the hemodynamic response according to the inverse
-            % of the covariance of the stimulus convolution matrix.
-            % (= compute the variance of the beta estimates, i.e. the standard error)
             switch(params.correctionType)
               case 'none'
-% % %                 % see for example Seber & Lee, Linear Regression Analysis, 1977, p42
-% % %                 ehdrste(:,:,y,z) = sqrt(repmat(diag(invCovEVs),[1 d.dim(1)]).*repmat(thisS2',[d.nhdr*d.nHrfComponents 1]));        %JB: replaces: ehdrste{y,z} = sqrt(diag(pinv(d.scm'*d.scm))*S2);
                 rss(:,y,z) = thisRss;     
               case {'generalizedLeastSquares','varianceCorrection','preWhitening'} 
-                % see for example Seber & Lee, Linear Regression Analysis, 1977, p67
-% % %                 for x = xvals
-% % %                   ehdrste(:,x,y,z) = sqrt(thisS2(x) * diag(invCorrectedCovEV(:,:,x)));  
-% % %                 end
                 rss(:,y,z) = sum(thisResiduals.^2,1)'; %SHOULD RSS BE CORRECTED ?
             end
             tss(:,y,z) = sum(timeseries(:,:,y).^2,1)';     
@@ -728,12 +761,32 @@ for z = slices
       %COMPUTE BOOTSTRAP STATISTICS
       if params.nBootstrap && iBoot == params.nBootstrap+1 
         if ~isempty(contrasts) && computeTtests
-          bootstrapCountT(isnan(actualT))=NaN;
-          pBootstrapT(:,:,y,z) = bootstrapCountT'/params.nBootstrap;
+          countBootstrapT(isnan(actualT))=NaN;
+          bootstrap.Tp(:,:,y,z) = countBootstrapT'/params.nBootstrap;
+          if isfield(d,'roiPositionInBox')
+            countBootstrapMaxT(isnan(actualT))=NaN;
+            bootstrap.maxTp(:,:,y,z) = countBootstrapMaxT'/params.nBootstrap;
+            if params.TFCE 
+              countBootstrapTfceT(isnan(actualT))=NaN;
+              bootstrap.tfceTp(:,:,y,z) = countBootstrapTfceT'/params.nBootstrap;
+              countBootstrapMaxTfceT(isnan(actualT))=NaN;
+              bootstrap.maxTfceTp(:,:,y,z) = countBootstrapMaxTfceT'/params.nBootstrap;
+            end
+          end
         end
         if ~isempty(restrictions)
-          bootstrapCountF(isnan(actualF))=NaN;
-          pBootstrapF(:,:,y,z) = bootstrapCountF'/params.nBootstrap;
+          countBootstrapF(isnan(actualF))=NaN;
+          bootstrap.Fp(:,:,y,z) = countBootstrapF'/params.nBootstrap;
+          if isfield(d,'roiPositionInBox')
+            countBootstrapMaxF(isnan(actualF))=NaN;
+            bootstrap.maxFp(:,:,y,z) = countBootstrapMaxF'/params.nBootstrap;
+            if params.TFCE 
+              countBootstrapTfceF(isnan(actualF))=NaN;
+              bootstrap.tfceFp(:,:,y,z) = countBootstrapTfceF'/params.nBootstrap;
+              countBootstrapMaxTfceF(isnan(actualF))=NaN;
+              bootstrap.maxTfceFp(:,:,y,z) = countBootstrapMaxTfceF'/params.nBootstrap;
+            end
+          end
         end
         if params.bootstrapIntervals && computeEstimates
           lowerBoundIndex = max(1,floor(params.alphaConfidenceIntervals/2*params.nBootstrap));
@@ -818,8 +871,8 @@ if strcmp(params.componentsCombination,'Or') && ~isempty(params.contrasts)
   end
   if params.nBootstrap
     %bootstrap probabilities don't change
-    pBootstrapT = pBootstrapF(1:params.numberContrasts,:,:,:);
-    pBootstrapF = pBootstrapF(params.numberContrasts+1:end,:,:,:);
+    bootstrap.Tp = bootstrap.Tp(1:params.numberContrasts,:,:,:);
+    bootstrap.Fp = bootstrap.Fp(params.numberContrasts+1:end,:,:,:);
   end
   d.mdf=d.mdf(params.numberContrasts+1:end);
 end
@@ -851,7 +904,14 @@ end
 if ~isempty(params.contrasts) && computeTtests
   T = permute(T,[2 3 4 1]);
   if params.nBootstrap
-    pBootstrapT = permute(pBootstrapT,[2 3 4 1]);
+    bootstrap.Tp = permute(bootstrap.Tp,[2 3 4 1]);
+    if isfield(d,'roiPositionInBox')
+      bootstrap.maxTp = permute(bootstrap.maxTp,[2 3 4 1]);
+      if params.TFCE 
+        bootstrap.tfceTp = permute(bootstrap.tfceTp,[2 3 4 1]);
+        bootstrap.maxTfceTp = permute(bootstrap.maxTfceTp,[2 3 4 1]);
+      end
+    end
   end
 end
 if ~isempty(restrictions) 
@@ -859,7 +919,14 @@ if ~isempty(restrictions)
     F = permute(F,[2 3 4 1]);
   end
   if params.nBootstrap
-    pBootstrapF = permute(pBootstrapF,[2 3 4 1]);
+    bootstrap.Fp = permute(bootstrap.Fp,[2 3 4 1]);
+    if isfield(d,'roiPositionInBox')
+      bootstrap.maxFp = permute(bootstrap.maxFp,[2 3 4 1]);
+      if params.TFCE 
+        bootstrap.tfceFp = permute(bootstrap.tfceFp,[2 3 4 1]);
+        bootstrap.maxTfceFp = permute(bootstrap.maxTfceFp,[2 3 4 1]);
+      end
+    end
   end
 end
 
@@ -885,6 +952,15 @@ switch(precision)
   case 'double'
     arraySize = arraySize*8;
 end
+
+function outputData = reshapeToRoiBox(inputData,dataPosition)
+
+%inputData must be size ([A B], where A equals the number of non-zero values in dataPosition
+%outputData will be size ([size(dataPosition) B])
+outputData = NaN([numel(dataPosition) size(inputData,2) size(inputData,3)]);
+outputData(dataPosition>0,:,:) = inputData;
+outputData = reshape(outputData,[size(dataPosition,1) size(dataPosition,2) size(dataPosition,3) size(outputData,2) size(outputData,3)]);
+
 
 %this function computes the sum of squared errors between the dampened oscillator
 %model (for xdata) and the sample autocorrelation function (ydata)
