@@ -190,6 +190,7 @@ while keepAsking
     end
   end
   params.contrasts = params.contrasts(1:actualNumberContrasts,:);
+  allContrasts = params.contrasts;
   
   %check that F-tests are not empty
   restrictions = {};
@@ -203,7 +204,8 @@ while keepAsking
     else
       actualNumberFtests = actualNumberFtests+1;
       fTestNames{actualNumberFtests} = params.(fixBadChars(sprintf('fTest%2d',iFtest)));
-      restrictions{actualNumberFtests} = thisRestriction;
+      restrictions{actualNumberFtests,1} = thisRestriction;
+      allContrasts = [allContrasts;thisRestriction];
     end
     params = mrParamsRemoveField(params,fixBadChars(sprintf('fTest%2d',iFtest)));
   end
@@ -226,8 +228,8 @@ while keepAsking
      mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
   elseif params.TFCE && params.bootstrapStatistics  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
      mrWarnDlg('(getTestParamsGUI) Bootstrap tests on TFCE transformed values are currently only allowed for ROI(s) analyses','Yes');
-  elseif params.randomizationTests && params.bootstrapStatistics
-     mrWarnDlg('(getTestParamsGUI) Simultaneous bootstrap and randomization tests are currently not allowed','Yes');
+  elseif params.randomizationTests && ~all( (sum(logical(allContrasts),2)==2 & sum(allContrasts,2)==0) | ~any(allContrasts,2))
+     mrWarnDlg('(getTestParamsGUI) Randomization tests can only be run if all contrasts of all T/F tests are 1 to 1 comparisons','Yes');
   elseif params.TFCE && ~(params.bootstrapStatistics || params.randomizationTests)
      mrWarnDlg('(getTestParamsGUI) TFCE requires bootstrap or randomization tests','Yes');
   else

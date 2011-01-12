@@ -249,65 +249,90 @@ for scanNum = params.scanNum
   ehdr = []; rdf = []; mdf = [];s2 = []; autoCorrelationParameters = [];
   ehdrBootstrapCIs = [];  contrastBootstrapCIs = [];
 
-  %----------------------------------------Design matrix: same for all voxels
-  % get the stim volumes, if empty then abort
-  d = loadScan(thisView, scanNum, [], 0); %load scan info
-  d = getStimvol(d,scanParams{scanNum});
-  if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
-
-  actualStimvol = d.stimvol;
-  %precompute randomizations
-  if params.randomizationTests
-    nRand = params.nRand;
-    nEventTypes = length(actualStimvol);
-    nStimPerEventType = NaN(nEventTypes,1);
-    for iEventType = 1:nEventTypes
-       nStimPerEventType(iEventType) = length(actualStimvol{iEventType});
-    end
-    all_stimvol = cell2mat(actualStimvol);
-    nStims = length(all_stimvol);
-    randomizations = NaN(nRand,nStims);
-    for iRand = 1:nRand
-       randomizations(iRand,:) = randperm(nStims);
-    end
-  else
-    nRand = 0;
-  end
-
-  %create model HRF
-  [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);
-
-  d.volumes = 1:d.dim(4);
-
-  %make a copy of d
-  actual_d = d;
 
   % calculate which slices we will be working on
   lastSlices = cumsum(slicesToLoad); 
   firstSlices = lastSlices - slicesToLoad + 1; 
   %loop
   for iBatch = 1:length(loadCallsPerBatch)
-    d = actual_d;
     switch(params.analysisVolume)
-       case {'Whole volume','Subset box'}
-          %Load data
-          dummy = loadScan(thisView,scanNum,[],subsetBox(3,1) + [firstSlices(iBatch) lastSlices(iBatch)] -1, precision,subsetBox(1,:),subsetBox(2,:));
-          d.data = dummy.data;
-          d.dim = dummy.dim;
-       case 'Loaded ROI(s)'
-          d.data = [];
-          for iLoad= loadCallsPerBatch{iBatch}
-             dummy = loadScan(thisView,scanNum,[],subsetBox(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox(1,:),subsetBox(2,:));
-             dummy.data = reshape(dummy.data,[prod(dummy.dim(1:3)) dummy.dim(4)]);
-             d.data = cat(1,d.data, dummy.data(usedVoxelsInBox(:,:,firstSlices(iLoad):lastSlices(iLoad))>0,:) );
+      case {'Whole volume','Subset box'}
+        %Load data
+        d = loadScan(thisView,scanNum,[],subsetBox(3,1) + [firstSlices(iBatch) lastSlices(iBatch)] -1, precision,subsetBox(1,:),subsetBox(2,:));
+      case 'Loaded ROI(s)'
+        for iLoad= loadCallsPerBatch{iBatch}
+          dummy = loadScan(thisView,scanNum,[],subsetBox(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox(1,:),subsetBox(2,:));
+          dummy.data = reshape(dummy.data,[prod(dummy.dim(1:3)) dummy.dim(4)]);
+          dummy.data = dummy.data(usedVoxelsInBox(:,:,firstSlices(iLoad):lastSlices(iLoad))>0,:);
+          if iLoad==1
+            d=dummy;
+          else
+            d.data = cat(1,d.data, dummy.data);
           end
-          d.data = permute(d.data,[1 3 4 2]);
-          d.roiPositionInBox = any(whichRoi(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:),4);
-          d.marginVoxels = marginVoxels(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
-          d.dim = size(d.data);
+        end
+        clear('dummy','usedVoxelsInBox');
+        d.data = permute(d.data,[1 3 4 2]);
+        d.roiPositionInBox = any(whichRoi(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:),4);
+        d.marginVoxels = marginVoxels(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
     end
-    clear('dummy','usedVoxelsInBox');
+    clear('dummy');
+    
+    if iBatch==1
+      %----------------------------------------Design matrix: same for all voxels/runs
+      % get the stim volumes, if empty then abort
+      d = getStimvol(d,scanParams{scanNum});
+      if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
+      % do any call for preprocessing
+      if ~isempty(scanParams{scanNum}.preprocess)
+        d = eventRelatedPreProcess(d,scanParams{scanNum}.preprocess,verbose);
+      end
 
+      actualStimvol = d.stimvol;
+      %precompute permutation vectors
+      if params.randomizationTests
+        nRand = params.nRand;
+        %find which event types will be randomized
+        %first which EVs are involved in all contrasts/restrictions
+        contrastEVs = any([contrasts;cell2mat(restrictions)],1);
+        %then which event types constitute these EVs
+        randEvents = any(params.scanParams{scanNum}.stimToEVmatrix(:,contrastEVs),2);
+        %now compute permutation indices for those events, while keeping other events indices unchanged
+        nEventTypes = length(actualStimvol);
+        numberEvents = NaN(nEventTypes,1);
+        totalNumberEvents = 0;
+        stimvolToPermuteIndices = [];
+        for iEventType = 1:nEventTypes
+           numberEvents(iEventType) = length(actualStimvol{iEventType});
+           if randEvents(iEventType)
+             stimvolToPermuteIndices = [stimvolToPermuteIndices totalNumberEvents+(1:numberEvents(iEventType))];
+           end
+           totalNumberEvents = totalNumberEvents+numberEvents(iEventType);
+        end
+        stimvolToPermute = cell2mat(actualStimvol(randEvents));
+        nStimsToPermute = length(stimvolToPermute);
+        randomizations = repmat(cell2mat(actualStimvol),nRand,1);
+        for iRand = 1:nRand
+           randomizations(iRand,stimvolToPermuteIndices) = stimvolToPermute(randperm(nStimsToPermute));
+        end
+      else
+        nRand = 0;
+      end
+
+      %create model HRF
+      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);
+
+      d.volumes = 1:d.dim(4);
+      %make a copy of d
+      actualD = d;
+
+    else
+      thisD=d;
+      d = actualD;
+      d.data = thisD.data;
+      clear('thisD');
+    end
+    d.dim = size(d.data);
+      
     %-------------------------------Permutations------------------------------------------
     %we only need to compute Ttests
     computeTtests = params.computeTtests & (params.parametricTests | ... %if parametric tests are asked for
@@ -319,28 +344,26 @@ for scanNum = params.scanNum
       if iRand == 1 %if it is the actual data
         d.stimvol = actualStimvol;
         computeEstimates = 1;
+        computeBootstrap = params.bootstrapStatistics;
         verbose = 1;
       else
 %         %we only need to compute Ttests if contrasts are tested on several components using 'Or' combination
 %         computeTtests = params.computeTtests & length(params.componentsToTest)>1 & strcmp(params.componentsCombination,'Or');  
         computeEstimates = 0;
+        computeBootstrap = 0;
         mrWaitBar(iRand/nRand,hWaitBar);
-        randStimvol = all_stimvol(randomizations(iRand-1,:));
+        randStimvol = randomizations(iRand-1,:);
         for stimnum = 1:length(actualStimvol)%randomize stim events
-           d.stimvol{stimnum} = randStimvol(1:nStimPerEventType(stimnum));
-           randStimvol = randStimvol(nStimPerEventType(stimnum)+1:end);
+           d.stimvol{stimnum} = randStimvol(1:numberEvents(stimnum));
+           randStimvol = randStimvol(numberEvents(stimnum)+1:end);
         end
         verbose = 0;
       end
 
-      % do any call for preprocessing
-      if ~isempty(scanParams{scanNum}.preprocess)
-        d = eventRelatedPreProcess(d,scanParams{scanNum}.preprocess,verbose);
-      end
       %compute the design matrix for this randomization
       d = makeDesignMatrix(d,params,verbose, scanNum);
       % compute estimates and statistics
-      [d, tempR2, tempC, tempT, tempF, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests);
+      [d, tempR2, tempC, tempT, tempF, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests, computeBootstrap);
        
       
       if params.randomizationTests

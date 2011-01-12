@@ -24,7 +24,7 @@
 %             reference for bootstrap testing
 %                - Westfall, P.H., and S.S. Young. Resampling-based multiple testing. Wiley-Interscience, 1993
 
-function [d, r2, contrastBetas, T, F, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests)
+function [d, r2, contrastBetas, T, F, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests, computeBootstrap)
 
 approximate_value = 0;
 r2=[];
@@ -101,6 +101,9 @@ if strcmp(params.componentsCombination,'Or') && d.nHrfComponents==1
   params.componentsCombination = 'Add';  %make sure this is set to add if there is only one component to test
 end
 
+if ~ieNotDefined('computeBootstrap') %this forces bootstrapping on or off
+  params.bootstrapStatistics= computeBootstrap;
+end
 if ~isfield(params,'bootstrapStatistics')
   params.bootstrapStatistics=0;
 end
