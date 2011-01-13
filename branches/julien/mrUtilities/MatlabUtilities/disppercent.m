@@ -167,7 +167,7 @@ retval = sprintf('%02i hrs %02i min %02i sec',hours,minutes,seconds);
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   reprintMessage   %%
 %%%%%%%%%%%%%%%%%%%%%%%%
-function newmesg = reprintMessage(mesg);
+function newmesg = reprintMessage(mesg)
 
 global gDisppercent;
 
@@ -175,12 +175,12 @@ newmesg = '';
 
 if ~strcmp(mesg,gDisppercent.mesg)
   % first clear old message
-  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s                             ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),repmat(sprintf(' '),1,length(gDisppercent.mesg)+1)));
+  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s                             ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),repmat(sprintf(' '),1,length(gDisppercent.mesg)+1)));
   % print <or return> new message
   if nargout == 1
     newmesg = sprintf('%s%s ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg);
   else
-    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s                              ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg));
+    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s                              ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg));
   end
   gDisppercent.mesg = mesg;
 end
