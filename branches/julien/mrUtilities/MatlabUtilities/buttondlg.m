@@ -84,8 +84,7 @@ figureHeight = margin*2+(nOptionsPerColumn+1)*optionHeight;
 
 figurePosition(3:4) = [figureWidth figureHeight];
 %deal with multiple monitors
-monitorPositions = get(0,'monitorPositions');
-[monitorNumber,figurePosition] = getMonitorNumber(figurePosition,correctMonitorPosition(monitorPositions));
+[monitorNumber,figurePosition] = getMonitorNumber(figurePosition,getMonitorPositions);
 % monitorPositions = monitorPositions(monitorNumber,:);
 % %make the figure large enough to get length of text boxes
 % figurePosition(3) = monitorPositions(3);

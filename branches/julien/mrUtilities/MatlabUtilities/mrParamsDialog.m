@@ -982,7 +982,7 @@ end
 maxEntryNumCols = max(dParams.entryNumCols);
 
 %-------------------optimize figure dimensions 
-monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+monitorPositions = getMonitorPositions;
 [whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
 screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
 
