@@ -111,14 +111,16 @@ if ~isempty(contrasts)
       if params.fdrAdjustment
         fdrBootstrapT=r2;
       end
-      if strcmp(params.analysisVolume,'Loaded ROI(s)')
+      if ~strcmp(params.resampleFWEadjustment,'None')
         bootstrapMaxT = r2;
         if params.TFCE  
           bootstrapTfceT = r2;
           if params.fdrAdjustment
             fdrBootstrapTfceT=r2;
           end
-          bootstrapMaxTfceT = r2;
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            bootstrapMaxTfceT = r2;
+          end
         end
       end
     end
@@ -155,14 +157,16 @@ if ~isempty(restrictions)
     if params.fdrAdjustment
       fdrBootstrapF=r2;
     end
-    if strcmp(params.analysisVolume,'Loaded ROI(s)')
+    if ~strcmp(params.resampleFWEadjustment,'None')
       bootstrapMaxF = r2;
       if params.TFCE  
         bootstrapTfceF = r2;
         if params.fdrAdjustment
           fdrBootstrapTfceF=r2;
         end
-        bootstrapMaxTfceF = r2;
+        if ~strcmp(params.resampleFWEadjustment,'None')
+          bootstrapMaxTfceF = r2;
+        end
       end
     end
   end
@@ -345,10 +349,9 @@ for scanNum = params.scanNum
         d.stimvol = actualStimvol;
         computeEstimates = 1;
         computeBootstrap = params.bootstrapStatistics;
+        computeTtests = computeTtests || computeBootstrap;
         verbose = 1;
       else
-%         %we only need to compute Ttests if contrasts are tested on several components using 'Or' combination
-%         computeTtests = params.computeTtests & length(params.componentsToTest)>1 & strcmp(params.componentsCombination,'Or');  
         computeEstimates = 0;
         computeBootstrap = 0;
         mrWaitBar(iRand/nRand,hWaitBar);
@@ -385,12 +388,18 @@ for scanNum = params.scanNum
           if ~isempty(contrasts) && params.computeTtests
             tempActualT = thisT;
             tempRandT = zeros(size(tempActualT),precision); %will count how many randomization values are above (below) the actual contrast value 
+            tempRandT(isnan(thisT)) = NaN; 
             tempRandMaxT = zeros(size(tempActualT),precision); %same for the max (min) randomization value across space, for FWE adjustment
+            %this is for resampled-based FWE control
+            [indexSortActualT,indexReorderActualT,actualTisNotNaN] = initResampleFWE(reshape(tempActualT,prod(d.dim(1:3)),size(contrasts,1)),params);
           end
           if ~isempty(restrictions)
             tempActualF = thisF;
             tempRandF = zeros(size(tempActualF),precision); %will count how many randomization values are above the actual F value 
+            tempRandF(isnan(thisF)) = NaN; 
             tempRandMaxF = zeros(size(tempActualF),precision); %same for the max randomization value across space, for FWE adjustment
+            %this is for resampled-based FWE control
+            [indexSortActualF,indexReorderActualF,actualFisNotNaN] = initResampleFWE(reshape(tempActualF,prod(d.dim(1:3)),length(restrictions)),params);
           end
         end
         
@@ -465,7 +474,7 @@ for scanNum = params.scanNum
             end
             if params.bootstrapStatistics
               bootstrapT{scanNum} = cat(3,bootstrapT{scanNum},bootstrap.Tp);
-              if strcmp(params.analysisVolume,'Loaded ROI(s)')
+              if ~strcmp(params.resampleFWEadjustment,'None')
                 bootstrapMaxT{scanNum} = cat(3,bootstrapMaxT{scanNum},bootstrap.maxTp);
                 if params.TFCE 
                   bootstrapTfceT{scanNum} = cat(3,bootstrapTfceT{scanNum},bootstrap.tfceTp);
@@ -488,7 +497,7 @@ for scanNum = params.scanNum
           end
           if params.bootstrapStatistics
             bootstrapF{scanNum} = cat(3,bootstrapF{scanNum},bootstrap.Fp);
-            if strcmp(params.analysisVolume,'Loaded ROI(s)')
+            if ~strcmp(params.resampleFWEadjustment,'None')
               bootstrapMaxF{scanNum} = cat(3,bootstrapMaxF{scanNum},bootstrap.maxFp);
               if params.TFCE 
                 bootstrapTfceF{scanNum} = cat(3,bootstrapTfceF{scanNum},bootstrap.tfceFp);
@@ -504,11 +513,23 @@ for scanNum = params.scanNum
       else
         if ~isempty(contrasts)
           tempRandT = tempRandT+double(thisT>tempActualT);
-          tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            %tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
+            tempRandMaxT = tempRandMaxT + reshape(resampleFWE(reshape(thisT,prod(d.dim(1:3)),size(contrasts,1)),...
+                                                              reshape(tempActualT,prod(d.dim(1:3)),size(contrasts,1)),...
+                                                              indexSortActualT,indexReorderActualT,actualTisNotNaN,params,d),...
+                                                  [d.dim(1:3) size(contrasts,1)]);
+          end
         end
         if ~isempty(restrictions)
           tempRandF = tempRandF+double(thisF>tempActualF);
-          tempRandMaxF = tempRandMaxF+double(repmat(max(max(max(thisF,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualF);
+          %tempRandMaxF = tempRandMaxF+double(repmat(max(max(max(thisF,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualF);
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            tempRandMaxF = tempRandMaxF + reshape(resampleFWE(reshape(thisF,prod(d.dim(1:3)),length(restrictions)),...
+                                                              reshape(tempActualF,prod(d.dim(1:3)),length(restrictions)),...
+                                                              indexSortActualF,indexReorderActualF,actualFisNotNaN,params,d),...
+                                                  [d.dim(1:3) length(restrictions)]);
+          end
         end
       end
 
@@ -518,6 +539,9 @@ for scanNum = params.scanNum
         if ~isempty(restrictions)
           if isfield(d,'roiPositionInBox') 
             thisF = reshapeToRoiBox(thisF,d.roiPositionInBox); 
+            if ~isempty(actualTfceF)
+              tfceActualFisNotNaN = reshapeToRoiBox(actualFisNotNaN,d.roiPositionInBox); 
+            end
           end
           %NaNs in the data will be transformed to 0 by FSL, so for ROIs, 
           %TFCE is applied to the smallest box including all the ROIs, but replacing non-computed data by 0
@@ -526,9 +550,17 @@ for scanNum = params.scanNum
             countTfceF = zeros(size(thisF),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
             countMaxTfceF = countTfceF; %same for randomization adjusted FWE
             actualTfceF = tempTfce;           %keep the TFCE transform
+            [indexSortActualTfceF,indexReorderActualTfceF,actualFisNotNaN] = ...
+                initResampleFWE(reshape(actualTfceF,numel(tempTfce(:,:,:,1)),length(restristions)),params,tfceActualFisNotNaN);
           else
             countTfceF = countTfceF+ double(tempTfce>actualTfceF);
-            countMaxTfceF = countMaxTfceF+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceF);
+            if ~strcmp(params.resampleFWEadjustment,'None')
+              %countMaxTfceF = countMaxTfceF+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceF);
+              countMaxTfceF = countMaxTfceF + reshape(resampleFWE(reshape(tempTfce,prod(d.dim(1:3)),length(restrictions)),...
+                                                                  reshape(actualTfceF,prod(d.dim(1:3)),length(restrictions)),...
+                                                                  indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN,params,d),...
+                                                      [d.dim(1:3) length(restrictions)]);
+            end
           end
         end
         
@@ -540,11 +572,13 @@ for scanNum = params.scanNum
           tempTfce = applyFslTFCE(thisT,'',0);
           if iRand == 1 %if it is the actual data
             countTfceT = zeros(size(thisT),precision);     %
+            actualTfceT = tempTfce;
             countMaxTfceT = zeros(size(thisT),precision);     %
-            actualTfceT = tempTfce; 
           else
             countTfceT = countTfceT + double(tempTfce>actualTfceT);
-            countMaxTfceT = countMaxTfceT+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceT);
+            if ~strcmp(params.resampleFWEadjustment,'None')
+              countMaxTfceT = countMaxTfceT+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceT);
+            end
           end
         end
         clear('tempTfce');
@@ -560,21 +594,29 @@ for scanNum = params.scanNum
       if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
         if ~isempty(contrasts)
           tempRandT = reshapeToRoiBox(tempRandT,d.roiPositionInBox);
-          tempRandMaxT = reshapeToRoiBox(tempRandMaxT,d.roiPositionInBox);
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            tempRandMaxT = reshapeToRoiBox(tempRandMaxT,d.roiPositionInBox);
+          end
         end
         if ~isempty(restrictions) 
           tempRandF = reshapeToRoiBox(tempRandF,d.roiPositionInBox);
-          tempRandMaxF = reshapeToRoiBox(tempRandMaxF,d.roiPositionInBox);
+           if ~strcmp(params.resampleFWEadjustment,'None')
+            tempRandMaxF = reshapeToRoiBox(tempRandMaxF,d.roiPositionInBox);
+           end
         end
         d = rmfield(d,'roiPositionInBox');
       end
       if ~isempty(contrasts)    %concatenate data
         randT{scanNum} = cat(3,randT{scanNum},tempRandT);
-        randMaxT{scanNum} = cat(3,randMaxT{scanNum},tempRandMaxT);
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            randMaxT{scanNum} = cat(3,randMaxT{scanNum},tempRandMaxT);
+          end
       end
       if ~isempty(restrictions)
-        randF{scanNum} = cat(3,randF{scanNum},tempRandF);
-        randMaxF{scanNum} = cat(3,randMaxF{scanNum},tempRandMaxF);
+        randF{scanNum} = cat(3,randF{scanNum},tempRandF);          
+        if ~strcmp(params.resampleFWEadjustment,'None')
+          randMaxF{scanNum} = cat(3,randMaxF{scanNum},tempRandMaxF);
+        end
       end
     end
 
@@ -596,8 +638,9 @@ for scanNum = params.scanNum
     if params.randomizationTests
       randT{scanNum} = randT{scanNum}/nRand;
       [randT{scanNum},fdrRandC{scanNum}] = transformStatistic(randT{scanNum},precision,1/(nRand+1),params); 
-      if params.parametricTests
+      if ~strcmp(params.resampleFWEadjustment,'None')
         randMaxT{scanNum} = randMaxT{scanNum}/nRand;
+        randMaxT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
         randMaxT{scanNum} = transformStatistic(randMaxT{scanNum},precision,1/(nRand+1),params); 
       end
       if params.TFCE 
@@ -605,7 +648,7 @@ for scanNum = params.scanNum
         clear('countTfceT');
         randTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
         [randTfceT{scanNum},fdrTfceRandT{scanNum}] = transformStatistic(randTfceT{scanNum},precision,1/(nRand+1),params); 
-        if params.parametricTests
+        if ~strcmp(params.resampleFWEadjustment,'None')
           randMaxTfceT{scanNum} = countMaxTfceT/nRand;
           clear('countMaxTfceT');
           randMaxTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
@@ -615,11 +658,13 @@ for scanNum = params.scanNum
     end
     if params.bootstrapStatistics
       [bootstrapT{scanNum},fdrBootstrapT{scanNum}] = transformStatistic(bootstrapT{scanNum},precision,1/(params.nBootstrap+1),params); 
-      if strcmp(params.analysisVolume,'Loaded ROI(s)')
+      if ~strcmp(params.resampleFWEadjustment,'None')
         bootstrapMaxT{scanNum} = transformStatistic(bootstrapMaxT{scanNum},precision,1/(params.nBootstrap+1),params);
         if params.TFCE 
           [bootstrapTfceT{scanNum},fdrBootstrapTfceT{scanNum}] = transformStatistic(bootstrapTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
-          bootstrapMaxTfceT{scanNum} = transformStatistic(bootstrapMaxTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            bootstrapMaxTfceT{scanNum} = transformStatistic(bootstrapMaxTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
+          end
         end
       end
     end
@@ -648,8 +693,9 @@ for scanNum = params.scanNum
     if params.randomizationTests 
       randF{scanNum} = randF{scanNum}/nRand;
       [randF{scanNum},fdrRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/(nRand+1),params); 
-      if params.parametricTests
+      if ~strcmp(params.resampleFWEadjustment,'None')
         randMaxF{scanNum} = randMaxF{scanNum}/nRand;
+        randMaxF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
         randMaxF{scanNum} = transformStatistic(randMaxF{scanNum},precision,1/(nRand+1),params); 
       end
       if params.TFCE 
@@ -657,7 +703,7 @@ for scanNum = params.scanNum
         clear('countTfceF');
         randTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
         [randTfceF{scanNum},fdrTfceRandF{scanNum}] = transformStatistic(randTfceF{scanNum},precision,1/(nRand+1),params); 
-        if params.parametricTests
+        if ~strcmp(params.resampleFWEadjustment,'None')
           randMaxTfceF{scanNum} = countMaxTfceF/nRand;
           clear('countMaxTfceF');
           randMaxTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
@@ -667,11 +713,13 @@ for scanNum = params.scanNum
     end
     if params.bootstrapStatistics
       [bootstrapF{scanNum},fdrBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/(params.nBootstrap+1),params); 
-      if strcmp(params.analysisVolume,'Loaded ROI(s)')
+      if ~strcmp(params.resampleFWEadjustment,'None')
         bootstrapMaxF{scanNum} = transformStatistic(bootstrapMaxF{scanNum},precision,1/(params.nBootstrap+1),params);
         if params.TFCE 
           [bootstrapTfceF{scanNum},fdrBootstrapTfceF{scanNum}] = transformStatistic(bootstrapTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
-          bootstrapMaxTfceF{scanNum} = transformStatistic(bootstrapMaxTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            bootstrapMaxTfceF{scanNum} = transformStatistic(bootstrapMaxTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+          end
         end
       end
     end
@@ -814,14 +862,28 @@ if ~isempty(contrasts)
                                          '', params.testOutput, 'T', contrastNames)];
       clear('Tp');
 
-      if params.randomizationTests
-        overlays = [overlays makeOverlay(defaultOverlay, randMaxT, subsetBox, params.scanNum, scanParams, ...
-                                           'randomization-adjusted ', params.testOutput, 'T', contrastNames)];
-        clear('randMaxT');
-        if params.TFCE
-          overlays = [overlays makeOverlay(defaultOverlay, randMaxTfceT, subsetBox, params.scanNum, scanParams, ...
-                                           'randomization-adjusted ',params.testOutput, 'TFCE T', contrastNames)];
-          clear('randMaxTfceT');
+      if ~strcmp(params.resampleFWEadjustment,'None')
+        if params.bootstrapStatistics
+          overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxT, subsetBox, params.scanNum, scanParams, ...
+                                             'bootstrap-adjusted ', params.testOutput, 'T', contrastNames)];
+          clear('bootstrapMaxT');
+          if params.TFCE  
+            if ~strcmp(params.resampleFWEadjustment,'None')
+              overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceT, subsetBox, params.scanNum, scanParams, ...
+                                                 'bootstrap-adjusted ', params.testOutput, 'TFCE T', contrastNames)];
+              clear('bootstrapMaxTfceT');
+            end
+          end
+        end 
+        if params.randomizationTests
+          overlays = [overlays makeOverlay(defaultOverlay, randMaxT, subsetBox, params.scanNum, scanParams, ...
+                                             'randomization-adjusted ', params.testOutput, 'T', contrastNames)];
+          clear('randMaxT');
+          if params.TFCE
+            overlays = [overlays makeOverlay(defaultOverlay, randMaxTfceT, subsetBox, params.scanNum, scanParams, ...
+                                             'randomization-adjusted ',params.testOutput, 'TFCE T', contrastNames)];
+            clear('randMaxTfceT');
+          end
         end
       end
       if params.fdrAdjustment
@@ -836,29 +898,19 @@ if ~isempty(contrasts)
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapT, subsetBox, params.scanNum, scanParams, ...
                                          'bootstrap ', params.testOutput, 'T', contrastNames)];
       clear('bootstrapT');
-
       if params.fdrAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapT, subsetBox, params.scanNum, scanParams, ...
                                         'FDR-adjusted bootstrap ',params.testOutput, 'T', contrastNames)];
         clear('fdrBootstrapTp');
       end
-      
-      if strcmp(params.analysisVolume,'Loaded ROI(s)')
-        overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxT, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-adjusted ', params.testOutput, 'T', contrastNames)];
-        clear('bootstrapMaxT');
-        if params.TFCE  
-          overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
-                                             'bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
-          clear('bootstrapTfceT');
-          if params.fdrAdjustment
-            overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
-                                               'FDR-adjusted bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
-            clear('fdrBootstrapTfceT');
-          end
-          overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceT, subsetBox, params.scanNum, scanParams, ...
-                                             'bootstrap-adjusted ', params.testOutput, 'TFCE T', contrastNames)];
-          clear('bootstrapMaxTfceT');
+      if params.TFCE  
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
+        clear('bootstrapTfceT');
+        if params.fdrAdjustment
+          overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
+                                             'FDR-adjusted bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
+          clear('fdrBootstrapTfceT');
         end
       end
     end
@@ -872,8 +924,6 @@ if ~isempty(contrasts)
                                         'FDR-adjusted randomization ',params.testOutput, 'T', contrastNames)];
         clear('fdrRandC');
       end
-      
-
       if params.TFCE
         overlays = [overlays makeOverlay(defaultOverlay, randTfceT, subsetBox, params.scanNum, scanParams, ...
                                         'randomization ',params.testOutput, 'TFCE T', contrastNames)];
@@ -884,7 +934,6 @@ if ~isempty(contrasts)
           clear('fdrTfceRandT');
         end
       end
-
     end
     
     %set the contrast alpha overlay to the statistical value
@@ -956,14 +1005,28 @@ if ~isempty(restrictions)
                                        '', params.testOutput, 'F', params.fTestNames)];
     clear('Fp');
 
-    if params.randomizationTests
-      overlays = [overlays makeOverlay(defaultOverlay, randMaxF, subsetBox, params.scanNum, scanParams, ...
-                                         'randomization-adjusted ', params.testOutput, 'F', params.fTestNames)];
-      clear('randMaxF');
-      if params.TFCE
-        overlays = [overlays makeOverlay(defaultOverlay, randMaxTfceF, subsetBox, params.scanNum, scanParams, ...
-                                         'randomization-adjusted ',params.testOutput, 'TFCE F', params.fTestNames)];
-        clear('randMaxTfceF');
+    if ~strcmp(params.resampleFWEadjustment,'None')
+      if params.bootstrapStatistics
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxF, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap-adjusted ', params.testOutput, 'F', params.fTestNames)];
+        clear('bootstrapMaxF');
+         if params.TFCE  
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceF, subsetBox, params.scanNum, scanParams, ...
+                                               'bootstrap-adjusted ', params.testOutput, 'TFCE F', params.fTestNames)];
+            clear('bootstrapMaxTfceF');
+          end
+         end
+      end
+      if params.randomizationTests
+        overlays = [overlays makeOverlay(defaultOverlay, randMaxF, subsetBox, params.scanNum, scanParams, ...
+                                           'randomization-adjusted ', params.testOutput, 'F', params.fTestNames)];
+        clear('randMaxF');
+        if params.TFCE
+          overlays = [overlays makeOverlay(defaultOverlay, randMaxTfceF, subsetBox, params.scanNum, scanParams, ...
+                                           'randomization-adjusted ',params.testOutput, 'TFCE F', params.fTestNames)];
+          clear('randMaxTfceF');
+        end
       end
     end
     if params.fdrAdjustment
@@ -983,22 +1046,14 @@ if ~isempty(restrictions)
                                       'FDR-adjusted bootstrap ',params.testOutput, 'F', params.fTestNames)];
       clear('fdrBootstrapF');
     end
-    if strcmp(params.analysisVolume,'Loaded ROI(s)')
-      overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxF, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap-adjusted ', params.testOutput, 'F', params.fTestNames)];
-      clear('bootstrapMaxF');
-      if params.TFCE  
-        overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
-        clear('bootstrapTfceF');
-        if params.fdrAdjustment
-          overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
-                                             'FDR-adjusted bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
-          clear('fdrBootstrapTfceF');
-        end
-        overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceF, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-adjusted ', params.testOutput, 'TFCE F', params.fTestNames)];
-        clear('bootstrapMaxTfceF');
+    if params.TFCE  
+      overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
+                                         'bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
+      clear('bootstrapTfceF');
+      if params.fdrAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
+                                           'FDR-adjusted bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
+        clear('fdrBootstrapTfceF');
       end
     end
   end

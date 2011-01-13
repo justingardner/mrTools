@@ -85,6 +85,14 @@ while keepAsking
       params.alphaConfidenceIntervals = 0.05;
   end
   
+  if fieldIsNotDefined(params, 'resampleFWEadjustment')
+    if params.bootstrapStatistics || params.randomizationTests
+      params.resampleFWEadjustment = 'Step-down';
+    else
+      params.resampleFWEadjustment = 'None';
+    end
+  end
+  
   if fieldIsNotDefined(params, 'fdrAdjustment')
       params.fdrAdjustment = 0;
   end
@@ -98,6 +106,7 @@ while keepAsking
 
   tTestSideMenu = putOnTopOfList(params.tTestSide,{'Both','Right','Left'});
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
+  resampleFWEadjustmentMenu = putOnTopOfList(params.resampleFWEadjustment,{'None','Single Step','Step-down'});
   fdrAssumptionMenu = putOnTopOfList(params.fdrAssumption,{'Independence/Positive dependence','None'});
   testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   
@@ -153,6 +162,7 @@ while keepAsking
       {'componentsCombination', componentsCombinationMenu,componentOptionsVisible,'type=popupmenu', 'How to combine EV components. ''Add'' adds the weighted components into a single EV for contrasts/F-test. ''Or'' ignores the weights and tests contrasts/F-tests at any component that is not 0. Note that ''Or'' is not compatible with one-sided T-tests'}...
       {'parametricTests', params.parametricTests,testOptionsVisible,'type=checkbox', 'Performs parametric tests on contrasts/F values'},...
       {'TFCE', params.TFCE,tfceContigency,tfceOptionVisible,'type=checkbox', 'Performs Threshold Free Cluster Enhancement on T/F maps using fslmaths. This option is only enabled if a path is specified for FSL by running mrSetPref(''fslPath'',''yourpath'')'},...
+      {'resampleFWEadjustment', resampleFWEadjustmentMenu,testOptionsVisible,'contingent=parametricTests','type=popupmenu', ''},...
       {'bootstrapStatistics', params.bootstrapStatistics,testOptionsVisible,'type=checkbox', 'Performs non-parametric residual bootstrap tests on T/F values or confidence intervals on contrasts and parameter estimates. Bootstrapping consists in resampling the residuals with replacement after OLS/GLS fit and estimating the null-hypothesis distributions using the bootstrapped residuals as the new time-series.'},...
       {'nBootstrap', params.nBootstrap,testOptionsVisible,'contingent=bootstrapStatistics', 'minmax=[10 inf]', 'Number of resamplings for bootstrap tests.'},...
       {'bootstrapIntervals', params.bootstrapIntervals,testOptionsVisible,'contingent=bootstrapStatistics','type=checkbox', 'Whether to compute Bootstrap confidence intervals for contrasts and parameter estimates'},...
@@ -220,6 +230,10 @@ while keepAsking
   if isempty(params.TFCE)
     params.TFCE = 0;
   end
+  
+  if ~params.parametricTests
+    params.resampleFWEadjustment = 'None';
+  end
     
   if (params.computeTtests || params.numberFtests) && ...
       params.randomizationTests && ischar(params.scanParams{params.scanNum(1)}.stimDuration) && strcmp(params.scanParams{params.scanNum(1)}.stimDuration,'fromFile')
@@ -232,6 +246,8 @@ while keepAsking
      mrWarnDlg('(getTestParamsGUI) Randomization tests can only be run if all contrasts of all T/F tests are 1 to 1 comparisons','Yes');
   elseif params.TFCE && ~(params.bootstrapStatistics || params.randomizationTests)
      mrWarnDlg('(getTestParamsGUI) TFCE requires bootstrap or randomization tests','Yes');
+  elseif ~(params.bootstrapStatistics || params.randomizationTests) && ~strcmp(params.resampleFWEadjustment,'None')
+     mrWarnDlg('(getTestParamsGUI) resample-based FWE adjustment requires bootstrap or randomization tests','Yes');
   else
      keepAsking = 0;
   end
