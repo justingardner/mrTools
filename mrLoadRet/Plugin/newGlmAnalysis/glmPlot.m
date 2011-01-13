@@ -426,7 +426,7 @@ function eventRelatedPlotTSeries(handle,eventData,thisView,analysisParams, d, ro
 
 fignum = selectGraphWin(0,'Make new');
 initializeFigure(fignum,d.nhdr);
-monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+monitorPositions = getMonitorPositions;
 figurePosition = get(fignum,'position');
 [whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
 screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in

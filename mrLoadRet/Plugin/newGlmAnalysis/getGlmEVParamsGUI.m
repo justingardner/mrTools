@@ -149,7 +149,7 @@ end
 fignum = selectGraphWin(0,'Make new');
 set(fignum,'name','plotExperimentalDesign');
 nScans = length(scanList);
-monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+monitorPositions = getMonitorPositions;
 figurePosition = get(fignum,'position');
 [whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
 screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
