@@ -99,6 +99,13 @@ while keepAsking
   if fieldIsNotDefined(params, 'fdrAssumption')
       params.fdrAssumption = 'Independence/Positive dependence';
   end
+  if fieldIsNotDefined(params, 'fdrMethod')
+      params.fdrMethod = 'Linear Step-up';
+  end
+  if fieldIsNotDefined(params, 'fdrMultipleStepQ')
+      params.fdrMultipleStepQ = .05;
+  end
+  
   if fieldIsNotDefined(params, 'testOutput')
       params.testOutput = 'Z value';
   end
@@ -108,6 +115,7 @@ while keepAsking
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
   resampleFWEadjustmentMenu = putOnTopOfList(params.resampleFWEadjustment,{'None','Single Step','Step-down'});
   fdrAssumptionMenu = putOnTopOfList(params.fdrAssumption,{'Independence/Positive dependence','None'});
+  fdrMethodMenu = putOnTopOfList(params.fdrMethod,{'Linear Step-up','Two-stage Linear Step-up','Multiple-stage Linear Step-up','Adaptive Linear Step-up'});
   testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   
   contrastOptionsVisible = 'visible=0';
@@ -171,6 +179,8 @@ while keepAsking
       {'nRand', params.nRand,testOptionsVisible,'contingent=randomizationTests', 'minmax=[10 inf]', 'Number of randomizations for randomization tests. Randomizations are implemented by shuffling event labels before running the pre-processing function'},...
       {'fdrAdjustment', params.fdrAdjustment,testOptionsVisible,'type=checkbox', ''},...
       {'fdrAssumption', fdrAssumptionMenu,testOptionsVisible,'contingent=fdrAdjustment','type=popupmenu', ''},...
+      {'fdrMethod', fdrMethodMenu,testOptionsVisible,'contingent=fdrAdjustment','type=popupmenu', ''},...
+      {'fdrMultipleStepQ', params.fdrMultipleStepQ,testOptionsVisible,'contingent=fdrAdjustment', ''},...
       {'testOutput', testOutputMenu,testOptionsVisible,'type=popupmenu', 'Type of statistics for output overlay.  P: outputs the probability value associated with the statistic. p-values less than 1e-16 will be replaced by 0; Z: outputs standard normal values associated with probability p. Z values with a probability less than 1e-16 will be replaced by +/-8.209536145151493'},...
        }];
 
