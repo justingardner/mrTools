@@ -53,7 +53,9 @@ params = defaultReconcileParams([],params);  %this seems quite useless to me
 %just to have shorter variable names
 scanParams = params.scanParams;
 restrictions = params.restrictions;
+numberFtests = length(restrictions);
 contrasts = params.contrasts;
+numberContrasts = size(contrasts,1);
 
 if params.covCorrection   %number of voxels to get around the ROI/subset box in case the covariance matrix is estimated
    voxelsMargin = floor(params.covEstimationAreaSize/2);
@@ -391,7 +393,7 @@ for scanNum = params.scanNum
             tempRandT(isnan(thisT)) = NaN; 
             tempRandMaxT = zeros(size(tempActualT),precision); %same for the max (min) randomization value across space, for FWE adjustment
             %this is for resampled-based FWE control
-            [indexSortActualT,indexReorderActualT,actualTisNotNaN] = initResampleFWE(reshape(tempActualT,prod(d.dim(1:3)),size(contrasts,1)),params);
+            [indexSortActualT,indexReorderActualT,actualTisNotNaN] = initResampleFWE(reshape(tempActualT,prod(d.dim(1:3)),numberContrasts),params);
           end
           if ~isempty(restrictions)
             tempActualF = thisF;
@@ -399,7 +401,7 @@ for scanNum = params.scanNum
             tempRandF(isnan(thisF)) = NaN; 
             tempRandMaxF = zeros(size(tempActualF),precision); %same for the max randomization value across space, for FWE adjustment
             %this is for resampled-based FWE control
-            [indexSortActualF,indexReorderActualF,actualFisNotNaN] = initResampleFWE(reshape(tempActualF,prod(d.dim(1:3)),length(restrictions)),params);
+            [indexSortActualF,indexReorderActualF,actualFisNotNaN] = initResampleFWE(reshape(tempActualF,prod(d.dim(1:3)),numberFtests),params);
           end
         end
         
@@ -515,20 +517,20 @@ for scanNum = params.scanNum
           tempRandT = tempRandT+double(thisT>tempActualT);
           if ~strcmp(params.resampleFWEadjustment,'None')
             %tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
-            tempRandMaxT = tempRandMaxT + reshape(resampleFWE(reshape(thisT,prod(d.dim(1:3)),size(contrasts,1)),...
-                                                              reshape(tempActualT,prod(d.dim(1:3)),size(contrasts,1)),...
-                                                              indexSortActualT,indexReorderActualT,actualTisNotNaN,params,d),...
-                                                  [d.dim(1:3) size(contrasts,1)]);
+            tempRandMaxT = tempRandMaxT + reshape(resampleFWE(reshape(thisT,prod(d.dim(1:3)),numberContrasts),...
+                                                              reshape(tempActualT,prod(d.dim(1:3)),numberContrasts),...
+                                                              indexSortActualT,indexReorderActualT,actualTisNotNaN,params),...
+                                                  [d.dim(1:3) numberContrasts]);
           end
         end
         if ~isempty(restrictions)
           tempRandF = tempRandF+double(thisF>tempActualF);
           %tempRandMaxF = tempRandMaxF+double(repmat(max(max(max(thisF,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualF);
           if ~strcmp(params.resampleFWEadjustment,'None')
-            tempRandMaxF = tempRandMaxF + reshape(resampleFWE(reshape(thisF,prod(d.dim(1:3)),length(restrictions)),...
-                                                              reshape(tempActualF,prod(d.dim(1:3)),length(restrictions)),...
-                                                              indexSortActualF,indexReorderActualF,actualFisNotNaN,params,d),...
-                                                  [d.dim(1:3) length(restrictions)]);
+            tempRandMaxF = tempRandMaxF + reshape(resampleFWE(reshape(thisF,prod(d.dim(1:3)),numberFtests),...
+                                                              reshape(tempActualF,prod(d.dim(1:3)),numberFtests),...
+                                                              indexSortActualF,indexReorderActualF,actualFisNotNaN,params),...
+                                                  [d.dim(1:3) numberFtests]);
           end
         end
       end
@@ -536,51 +538,67 @@ for scanNum = params.scanNum
       %We compute the TFCE here only in the case we forced loading the whole volume at once
       if params.TFCE && params.randomizationTests
         
-        if ~isempty(restrictions)
-          if isfield(d,'roiPositionInBox') 
-            thisF = reshapeToRoiBox(thisF,d.roiPositionInBox); 
-            if ~isempty(actualTfceF)
-              tfceActualFisNotNaN = reshapeToRoiBox(actualFisNotNaN,d.roiPositionInBox); 
-            end
-          end
-          %NaNs in the data will be transformed to 0 by FSL, so for ROIs, 
-          %TFCE is applied to the smallest box including all the ROIs, but replacing non-computed data by 0
-          tempTfce = applyFslTFCE(thisF,'',0);   
-          if iRand == 1 %if it is the actual data
-            countTfceF = zeros(size(thisF),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
-            countMaxTfceF = countTfceF; %same for randomization adjusted FWE
-            actualTfceF = tempTfce;           %keep the TFCE transform
-            [indexSortActualTfceF,indexReorderActualTfceF,actualFisNotNaN] = ...
-                initResampleFWE(reshape(actualTfceF,numel(tempTfce(:,:,:,1)),length(restristions)),params,tfceActualFisNotNaN);
-          else
-            countTfceF = countTfceF+ double(tempTfce>actualTfceF);
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              %countMaxTfceF = countMaxTfceF+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceF);
-              countMaxTfceF = countMaxTfceF + reshape(resampleFWE(reshape(tempTfce,prod(d.dim(1:3)),length(restrictions)),...
-                                                                  reshape(actualTfceF,prod(d.dim(1:3)),length(restrictions)),...
-                                                                  indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN,params,d),...
-                                                      [d.dim(1:3) length(restrictions)]);
-            end
-          end
-        end
-        
-        %same for T-tests
         if computeTtests && ~isempty(contrasts)
           if isfield(d,'roiPositionInBox') 
             thisT = reshapeToRoiBox(thisT,d.roiPositionInBox);
           end
           tempTfce = applyFslTFCE(thisT,'',0);
+          %put NaNs back
+          tempTfce(isnan(thisT)) = NaN;
           if iRand == 1 %if it is the actual data
             countTfceT = zeros(size(thisT),precision);     %
+            %put NaNs back
+            countTfceT(isnan(thisT)) = NaN;
             actualTfceT = tempTfce;
-            countMaxTfceT = zeros(size(thisT),precision);     %
+            if ~strcmp(params.resampleFWEadjustment,'None')
+              countMaxTfceT = countTfceT;     %
+              [indexSortActualTfceT,indexReorderActualTfceT,tfceActualTisNotNaN] = ...
+                  initResampleFWE(reshape(actualTfceT,numel(tempTfce(:,:,:,1)),numberContrasts),params);
+            end
           else
             countTfceT = countTfceT + double(tempTfce>actualTfceT);
             if ~strcmp(params.resampleFWEadjustment,'None')
-              countMaxTfceT = countMaxTfceT+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceT);
+              %countMaxTfceT = countMaxTfceT+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceT);
+              countMaxTfceT = countMaxTfceT + reshape(resampleFWE(reshape(tempTfce,numel(tempTfce(:,:,:,1)),numberContrasts),...
+                                                                  reshape(actualTfceT,numel(tempTfce(:,:,:,1)),numberContrasts),...
+                                                                  indexSortActualTfceT,indexReorderActualTfceT,tfceActualTisNotNaN,params),...
+                                                      size(countMaxTfceT));
             end
           end
         end
+        
+        %same for F-tests
+        if ~isempty(restrictions)
+          if isfield(d,'roiPositionInBox') 
+            thisF = reshapeToRoiBox(thisF,d.roiPositionInBox); 
+          end
+          %NaNs in the data will be transformed to 0 by FSL, so for ROIs, 
+          %TFCE is applied to the smallest box including all the ROIs, but replacing non-computed data by 0
+          tempTfce = applyFslTFCE(thisF,'',0);  
+          %put NaNs back
+          tempTfce(isnan(thisF)) = NaN;
+          if iRand == 1 %if it is the actual data
+            countTfceF = zeros(size(thisF),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
+            %put NaNs back
+            countTfceF(isnan(thisF)) = NaN;
+            actualTfceF = tempTfce;           %keep the TFCE transform
+            if ~strcmp(params.resampleFWEadjustment,'None')
+              countMaxTfceF = countTfceF; %same for randomization adjusted FWE
+              [indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN] = ...
+                  initResampleFWE(reshape(actualTfceF,numel(tempTfce(:,:,:,1)),numberFtests),params);
+            end
+          else
+            countTfceF = countTfceF+ double(tempTfce>actualTfceF);
+            if ~strcmp(params.resampleFWEadjustment,'None')
+              %countMaxTfceF = countMaxTfceF+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceF);
+              countMaxTfceF = countMaxTfceF + reshape(resampleFWE(reshape(tempTfce,numel(tempTfce(:,:,:,1)),numberFtests),...
+                                                                  reshape(actualTfceF,numel(tempTfce(:,:,:,1)),numberFtests),...
+                                                                  indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN,params),...
+                                                      size(countMaxTfceF));
+            end
+          end
+        end
+        
         clear('tempTfce');
       end
     end
@@ -590,35 +608,72 @@ for scanNum = params.scanNum
     d = rmfield(d,'data');
     clear('actualTfceT','actualTfceF')
 
-    if params.randomizationTests
-      if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-        if ~isempty(contrasts)
-          tempRandT = reshapeToRoiBox(tempRandT,d.roiPositionInBox);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            tempRandMaxT = reshapeToRoiBox(tempRandMaxT,d.roiPositionInBox);
-          end
+    if params.randomizationTests %compute P-values, reshape and concatenate if needed
+      if ~isempty(contrasts)
+        tempRandT = tempRandT/nRand;
+        if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+            tempRandT = reshapeToRoiBox(tempRandT,d.roiPositionInBox);
         end
-        if ~isempty(restrictions) 
-          tempRandF = reshapeToRoiBox(tempRandF,d.roiPositionInBox);
-           if ~strcmp(params.resampleFWEadjustment,'None')
-            tempRandMaxF = reshapeToRoiBox(tempRandMaxF,d.roiPositionInBox);
-           end
-        end
-        d = rmfield(d,'roiPositionInBox');
-      end
-      if ~isempty(contrasts)    %concatenate data
         randT{scanNum} = cat(3,randT{scanNum},tempRandT);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            randMaxT{scanNum} = cat(3,randMaxT{scanNum},tempRandMaxT);
+        if ~strcmp(params.resampleFWEadjustment,'None')
+          tempRandMaxT = tempRandMaxT/nRand;
+          tempRandMaxT(isnan(tempRandMaxT)) = NaN; %put NaNs back in place
+          tempRandMaxT = reshape(enforceMonotonicityResampleFWE(...
+                                    reshape(tempRandMaxT,prod(d.dim(1:3)),numberContrasts),...
+                                    indexSortActualT,indexReorderActualT,actualTisNotNaN,params),...
+                                    size(tempRandMaxT));
+          if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+             tempRandMaxT = reshapeToRoiBox(tempRandMaxT,d.roiPositionInBox);
           end
+          randMaxT{scanNum} = cat(3,randMaxT{scanNum},tempRandMaxT);
+        end
+        if params.TFCE 
+          randTfceT{scanNum} = countTfceT/nRand;
+          clear('countTfceT');
+          randTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            randMaxTfceT{scanNum} = countMaxTfceT/nRand;
+            clear('countMaxTfceT');
+            randMaxTfceT{scanNum} = reshape(enforceMonotonicityResampleFWE(...
+                                        reshape(randMaxTfceT{scanNum},numel(randMaxTfceT{scanNum}(:,:,:,1)),numberContrasts),...
+                                        indexSortActualTfceT,indexReorderActualTfceT,tfceActualTisNotNaN,params),...
+                                        size(randMaxTfceT{scanNum}));
+            randMaxTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
+          end
+        end
       end
-      if ~isempty(restrictions)
+      if ~isempty(restrictions) 
+        tempRandF = tempRandF/nRand;
+        if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+            tempRandF = reshapeToRoiBox(tempRandF,d.roiPositionInBox);
+        end
         randF{scanNum} = cat(3,randF{scanNum},tempRandF);          
         if ~strcmp(params.resampleFWEadjustment,'None')
+          tempRandMaxF = tempRandMaxF/nRand;
+          tempRandMaxF(isnan(tempRandMaxF)) = NaN; %put NaNs back in place
+          if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+            tempRandMaxF = reshapeToRoiBox(tempRandMaxF,d.roiPositionInBox);
+          end
           randMaxF{scanNum} = cat(3,randMaxF{scanNum},tempRandMaxF);
         end
+        if params.TFCE 
+          randTfceF{scanNum} = countTfceF/nRand;
+          clear('countTfceF');
+          randTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
+          if ~strcmp(params.resampleFWEadjustment,'None')
+            randMaxTfceF{scanNum} = countMaxTfceF/nRand;
+            clear('countMaxTfceF');
+            randMaxTfceF{scanNum} = reshape(enforceMonotonicityResampleFWE(...
+                                        reshape(randMaxTfceF{scanNum},numel(randMaxTfceF{scanNum}(:,:,:,1)),numberFtests),...
+                                        indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN,params),...
+                                        size(randMaxTfceF{scanNum}));
+            randMaxTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
+          end
+        end
       end
+      d = rmfield(d,'roiPositionInBox');
     end
+    
 
   end
   clear('tempRandT','tempRandF','tempActualT','tempActualF')
@@ -636,22 +691,13 @@ for scanNum = params.scanNum
         [Tp{scanNum},fdrTp{scanNum}] = transformStatistic(Tp{scanNum},precision,1e-16,params); 
     end
     if params.randomizationTests
-      randT{scanNum} = randT{scanNum}/nRand;
       [randT{scanNum},fdrRandC{scanNum}] = transformStatistic(randT{scanNum},precision,1/(nRand+1),params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
-        randMaxT{scanNum} = randMaxT{scanNum}/nRand;
-        randMaxT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
         randMaxT{scanNum} = transformStatistic(randMaxT{scanNum},precision,1/(nRand+1),params); 
       end
       if params.TFCE 
-        randTfceT{scanNum} = countTfceT/nRand;
-        clear('countTfceT');
-        randTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
         [randTfceT{scanNum},fdrTfceRandT{scanNum}] = transformStatistic(randTfceT{scanNum},precision,1/(nRand+1),params); 
         if ~strcmp(params.resampleFWEadjustment,'None')
-          randMaxTfceT{scanNum} = countMaxTfceT/nRand;
-          clear('countMaxTfceT');
-          randMaxTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
           randMaxTfceT{scanNum} = transformStatistic(randMaxTfceT{scanNum},precision,1/(nRand+1),params); 
         end
       end
@@ -682,7 +728,7 @@ for scanNum = params.scanNum
           rdf = d.rdf*ones(size(s2));
           mdf = repmat(permute(d.mdf,[1 3 4 2]),[size(s2) 1]);
         end   
-        Fp{scanNum} = 1 - cdf('f', double(F{scanNum}), mdf, repmat(rdf,[1 1 1 length(restrictions)]));  
+        Fp{scanNum} = 1 - cdf('f', double(F{scanNum}), mdf, repmat(rdf,[1 1 1 numberFtests]));  
         clear('mdf','rdf')
         if ~params.outputParametricStatistic
           F{scanNum} = [];
@@ -691,22 +737,13 @@ for scanNum = params.scanNum
       end
     end
     if params.randomizationTests 
-      randF{scanNum} = randF{scanNum}/nRand;
       [randF{scanNum},fdrRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/(nRand+1),params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
-        randMaxF{scanNum} = randMaxF{scanNum}/nRand;
-        randMaxF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
         randMaxF{scanNum} = transformStatistic(randMaxF{scanNum},precision,1/(nRand+1),params); 
       end
       if params.TFCE 
-        randTfceF{scanNum} = countTfceF/nRand;
-        clear('countTfceF');
-        randTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
         [randTfceF{scanNum},fdrTfceRandF{scanNum}] = transformStatistic(randTfceF{scanNum},precision,1/(nRand+1),params); 
         if ~strcmp(params.resampleFWEadjustment,'None')
-          randMaxTfceF{scanNum} = countMaxTfceF/nRand;
-          clear('countMaxTfceF');
-          randMaxTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
           randMaxTfceF{scanNum} = transformStatistic(randMaxTfceF{scanNum},precision,1/(nRand+1),params); 
         end
       end
@@ -715,11 +752,11 @@ for scanNum = params.scanNum
       [bootstrapF{scanNum},fdrBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/(params.nBootstrap+1),params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
         bootstrapMaxF{scanNum} = transformStatistic(bootstrapMaxF{scanNum},precision,1/(params.nBootstrap+1),params);
-        if params.TFCE 
-          [bootstrapTfceF{scanNum},fdrBootstrapTfceF{scanNum}] = transformStatistic(bootstrapTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            bootstrapMaxTfceF{scanNum} = transformStatistic(bootstrapMaxTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
-          end
+      end
+      if params.TFCE 
+        [bootstrapTfceF{scanNum},fdrBootstrapTfceF{scanNum}] = transformStatistic(bootstrapTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+        if ~strcmp(params.resampleFWEadjustment,'None')
+          bootstrapMaxTfceF{scanNum} = transformStatistic(bootstrapMaxTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
         end
       end
     end
@@ -846,7 +883,7 @@ if ~isempty(contrasts)
         betaAlphaOverlayExponent = 0;
 
         thisOverlay.clip = thisOverlay.range;
-        for iContrast = 1:size(contrasts,1)
+        for iContrast = 1:numberContrasts
           overlays(end+1)=thisOverlay;
           overlays(end).name = [namePrefix contrastNames{iContrast} ')'];
           for scanNum = params.scanNum
@@ -943,8 +980,8 @@ if ~isempty(contrasts)
       case {'Z value','-log10(P) value}'}
         betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
     end
-    for iContrast = 1:size(contrasts,1)
-      betaAlphaOverlay{iContrast} = overlays(end-size(contrasts,1)+iContrast).name;
+    for iContrast = 1:numberContrasts
+      betaAlphaOverlay{iContrast} = overlays(end-numberContrasts+iContrast).name;
     end
 
   end
@@ -963,7 +1000,7 @@ if ~isempty(contrasts)
     thisOverlay.range = [-beta_perc95 beta_perc95];
     thisOverlay.clip = [min_beta max_beta];
     thisOverlay.colormap = jet(256);
-    for iContrast = 1:size(contrasts,1)
+    for iContrast = 1:numberContrasts
       overlays(end+1)=thisOverlay;
       overlays(end).alphaOverlay=betaAlphaOverlay{iContrast};
       overlays(end).name = contrastNames{iContrast};
@@ -988,7 +1025,7 @@ if ~isempty(restrictions)
       thisOverlay.range(2) = min(max(max(max(max(cell2mat(F))))));
       namePrefix = 'F ( ';
       thisOverlay.clip = thisOverlay.range;
-      for iFtest = 1:length(restrictions)
+      for iFtest = 1:numberFtests
         %probability maps
         overlays(end+1)=thisOverlay;
         overlays(end).name = [namePrefix params.fTestNames{iFtest} ')'];

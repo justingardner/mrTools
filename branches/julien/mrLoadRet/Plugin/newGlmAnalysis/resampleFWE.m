@@ -4,14 +4,15 @@
 %      usage: count = resampleFWE(resampled,actual,indexSortActual,params,d)
 %         by: julien besle, 
 %       date: 12/01/2011
-%    purpose: 
+%    purpose: compute Single-Step and Step-Down bootstrap step for bootstrap-based FWE control
+%             see algorithm 4.1, step 3, Westfall and Young (1993) p117
 %
 
-function count = resampleFWE(resampled,actual,indexSortActual,indexReorderActual,actualIsNotNaN,params,d)
+function count = resampleFWE(resampled,actual,indexSortActual,indexReorderActual,actualIsNotNaN,params)
 
 switch(params.resampleFWEadjustment)
   case 'Single Step'
-    count = double(repmat(max(resampled,[],1),[prod(d.dim(1:3)) 1])>actual);
+    count = double(repmat(max(resampled,[],1),size(resampled,1), 1)>actual);
     
   case 'Step-down'
     %sort test statistic using provided sort index (sorting of the non-nan actual data)
