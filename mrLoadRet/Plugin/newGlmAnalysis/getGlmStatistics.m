@@ -628,7 +628,7 @@ for z = slices
           end
           if computeTtests
             thisT = thisContrastBetas ./ thisContrastBetaSte;   
-            thisT = permute(thisT,[1 2 3 5 4]); %put bootstrap dim at the end
+            thisT = permute(thisT,[1 2 3 5 4]); 
             switch(params.tTestSide)
              case 'Both'
                 thisT = abs(thisT);
@@ -643,7 +643,7 @@ for z = slices
                 countBootstrapT = countBootstrapT+double(thisT>actualT); %T has already been transformed to be positive
                 if ~strcmp(params.resampleFWEadjustment,'None')
                   %countBootstrapMaxT = countBootstrapMaxT + double(repmat(max(thisT,[],1),[d.dim(1) 1 1 1])>actualT);
-                  countBootstrapMaxT = countBootstrapMaxT + resampleFWE(thisT,actualT,indexSortActualT,indexReorderActualT,actualTisNotNaN,params,d);
+                  countBootstrapMaxT = countBootstrapMaxT + resampleFWE(thisT,actualT,indexSortActualT,indexReorderActualT,actualTisNotNaN,params);
                 end
               end
               if params.TFCE && ~strcmp(params.resampleFWEadjustment,'None') 
@@ -653,14 +653,16 @@ for z = slices
                 tempTfce = tempTfce(:,d.roiPositionInBox)';
                 if iBoot == 1 %if it is the actual data
                   countBootstrapTfceT = zeros(size(thisT),precision);     %
-                  countBootstrapMaxTfceT = zeros(size(thisT),precision);     %
                   actualBootstrapTfceT = tempTfce; 
-                  [indexSortActualTfceT,indexReorderActualTfceT] = initResampleFWE(actualT,params,actualTisNotNaN);
+                  if ~strcmp(params.resampleFWEadjustment,'None')
+                    countBootstrapMaxTfceT = countBootstrapTfceT;     %
+                    [indexSortActualTfceT,indexReorderActualTfceT] = initResampleFWE(actualT,params,actualTisNotNaN);
+                  end
                 else
                   countBootstrapTfceT = countBootstrapTfceT + double(tempTfce>actualBootstrapTfceT);
                   %countBootstrapMaxTfceT = countBootstrapMaxTfceT + double(repmat(max(tempTfce,[],1),[d.dim(1) 1 1 1])>actualBootstrapTfceT);
                   if ~strcmp(params.resampleFWEadjustment,'None')
-                    countBootstrapMaxTfceT = countBootstrapMaxTfceT + resampleFWE(tempTfce,actualBootstrapTfceT,indexSortActualTfceT,indexReorderActualTfceT,actualTisNotNaN,params,d);
+                    countBootstrapMaxTfceT = countBootstrapMaxTfceT + resampleFWE(tempTfce,actualBootstrapTfceT,indexSortActualTfceT,indexReorderActualTfceT,actualTisNotNaN,params);
                   end
                 end
               end
@@ -711,7 +713,7 @@ for z = slices
             countBootstrapF = countBootstrapF+double(thisF>actualF);
             if ~strcmp(params.resampleFWEadjustment,'None')
               %countBootstrapMaxF = countBootstrapMaxF + double(repmat(max(thisF,[],1),[d.dim(1) 1 1 1])>actualF);
-              countBootstrapMaxF = countBootstrapMaxF + resampleFWE(thisF,actualF,indexSortActualF,indexReorderActualF,actualFisNotNaN,params,d);
+              countBootstrapMaxF = countBootstrapMaxF + resampleFWE(thisF,actualF,indexSortActualF,indexReorderActualF,actualFisNotNaN,params);
             end
           end
           if params.TFCE && ~strcmp(params.resampleFWEadjustment,'None') 
@@ -723,12 +725,12 @@ for z = slices
               countBootstrapTfceF = zeros(size(thisF),precision);     %
               countBootstrapMaxTfceF = zeros(size(thisF),precision);     %
               actualBootstrapTfceF = tempTfce; 
-              [indexSortActualF,indexReorderActualF] = initResampleFWE(actualBootstrapTfceF,params,actualFisNotNaN);
+              [indexSortActualTfceF,indexReorderActualTfceF] = initResampleFWE(actualBootstrapTfceF,params,actualFisNotNaN);
             else
               countBootstrapTfceF = countBootstrapTfceF + double(tempTfce>actualBootstrapTfceF);
               if ~strcmp(params.resampleFWEadjustment,'None')
                 %countBootstrapMaxTfceF = countBootstrapMaxTfceF + double(repmat(max(tempTfce,[],1),[d.dim(1) 1 1 1])>actualBootstrapTfceF);
-                countBootstrapMaxTfceF = countBootstrapMaxTfceF + resampleFWE(tempTfce,actualBootstrapTfceF,indexSortActualTfceF,indexReorderActualTfceF,actualFisNotNaN,params,d);
+                countBootstrapMaxTfceF = countBootstrapMaxTfceF + resampleFWE(tempTfce,actualBootstrapTfceF,indexSortActualTfceF,indexReorderActualTfceF,actualFisNotNaN,params);
               end
             end
           end
@@ -777,12 +779,16 @@ for z = slices
           bootstrap.Tp(:,:,y,z) = countBootstrapT'/params.nBootstrap;
           if ~strcmp(params.resampleFWEadjustment,'None')
             countBootstrapMaxT(isnan(actualT))=NaN;
-            bootstrap.maxTp(:,:,y,z) = countBootstrapMaxT'/params.nBootstrap;
-            if params.TFCE 
-              countBootstrapTfceT(isnan(actualT))=NaN;
-              bootstrap.tfceTp(:,:,y,z) = countBootstrapTfceT'/params.nBootstrap;
+            countBootstrapMaxT = countBootstrapMaxT/params.nBootstrap;
+            bootstrap.maxTp(:,:,y,z) = enforceMonotonicityResampleFWE(countBootstrapMaxT,indexSortActualT,indexReorderActualT,actualTisNotNaN,params)';
+          end
+          if params.TFCE 
+            countBootstrapTfceT(isnan(actualT))=NaN;
+            bootstrap.tfceTp(:,:,y,z) = countBootstrapTfceT'/params.nBootstrap;
+            if ~strcmp(params.resampleFWEadjustment,'None')
               countBootstrapMaxTfceT(isnan(actualT))=NaN;
-              bootstrap.maxTfceTp(:,:,y,z) = countBootstrapMaxTfceT'/params.nBootstrap;
+              countBootstrapMaxTfceT = countBootstrapMaxTfceT/params.nBootstrap;
+              bootstrap.maxTfceTp(:,:,y,z) = enforceMonotonicityResampleFWE(countBootstrapMaxTfceT,indexSortActualTfceT,indexReorderActualTfceT,actualTisNotNaN,params)';
             end
           end
         end
@@ -791,12 +797,16 @@ for z = slices
           bootstrap.Fp(:,:,y,z) = countBootstrapF'/params.nBootstrap;
           if ~strcmp(params.resampleFWEadjustment,'None')
             countBootstrapMaxF(isnan(actualF))=NaN;
-            bootstrap.maxFp(:,:,y,z) = countBootstrapMaxF'/params.nBootstrap;
-            if params.TFCE 
-              countBootstrapTfceF(isnan(actualF))=NaN;
-              bootstrap.tfceFp(:,:,y,z) = countBootstrapTfceF'/params.nBootstrap;
+            countBootstrapMaxF = countBootstrapMaxF/params.nBootstrap;
+            bootstrap.maxFp(:,:,y,z) = enforceMonotonicityResampleFWE(countBootstrapMaxF,indexSortActualF,indexReorderActualF,actualFisNotNaN,params)';
+          end
+          if params.TFCE 
+            countBootstrapTfceF(isnan(actualF))=NaN;
+            bootstrap.tfceFp(:,:,y,z) = countBootstrapTfceF'/params.nBootstrap;
+            if ~strcmp(params.resampleFWEadjustment,'None')
               countBootstrapMaxTfceF(isnan(actualF))=NaN;
-              bootstrap.maxTfceFp(:,:,y,z) = countBootstrapMaxTfceF'/params.nBootstrap;
+              countBootstrapMaxTfceF = countBootstrapMaxTfceF/params.nBootstrap;
+              bootstrap.maxTfceFp(:,:,y,z) = enforceMonotonicityResampleFWE(countBootstrapMaxTfceF,indexSortActualTfceF,indexReorderActualTfceF,actualTisNotNaN,params)';
             end
           end
         end
