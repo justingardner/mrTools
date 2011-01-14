@@ -868,9 +868,6 @@ if ~isempty(contrasts)
   
   contrastNames = makeContrastNames(contrasts,params.EVnames,params.tTestSide);
   
-  %this is to mask the beta values by the probability/Z maps     
-  betaAlphaOverlay = cell(length(contrastNames),1);
-  betaAlphaOverlayExponent = 1;
   if params.computeTtests
     if params.parametricTests
       
@@ -973,18 +970,24 @@ if ~isempty(contrasts)
       end
     end
     
-    %set the contrast alpha overlay to the statistical value
-    switch(params.testOutput)
-      case 'P value'                                                  %statistical maps
-        betaAlphaOverlayExponent = -1;      % with inverse masking for p values
-      case {'Z value','-log10(P) value}'}
-        betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
+    %this is to mask the beta values by the probability/Z maps     
+    betaAlphaOverlay = cell(length(contrastNames),1);
+    if params.parametricTests || params.bootstrapStatistics || params.randomizationsTests
+      %set the contrast alpha overlay to the statistical value
+      switch(params.testOutput)
+        case 'P value'                                                  %statistical maps
+          betaAlphaOverlayExponent = -1;      % with inverse masking for p values
+        case {'Z value','-log10(P) value}'}
+          betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
+      end
+      for iContrast = 1:numberContrasts
+        betaAlphaOverlay{iContrast} = overlays(end-numberContrasts+iContrast).name;
+      end
+    else
+      betaAlphaOverlayExponent = 1;
     end
-    for iContrast = 1:numberContrasts
-      betaAlphaOverlay{iContrast} = overlays(end-numberContrasts+iContrast).name;
-    end
-
   end
+  
 %--------------------------------------------- save the contrast beta weights overlay(s) (ehdr if no contrast)
 
   if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
@@ -1155,7 +1158,7 @@ convertedStatistic = convertStatistic(p, params.testOutput, outputPrecision, min
 if params.fdrAdjustment
   fdrAdjustedP = p;
   for iTest = 1:size(p,4)
-    fdrAdjustedP(:,:,:,iTest) = fdrAdjust(p(:,:,:,iTest),params.fdrAssumption);
+    fdrAdjustedP(:,:,:,iTest) = fdrAdjust(p(:,:,:,iTest),params);
   end
   fdrAdjustedStatistic = convertStatistic(fdrAdjustedP, params.testOutput, outputPrecision, minP);
 else
@@ -1187,18 +1190,14 @@ convertedP = eval([outputPrecision '(convertedP)']);
 
 
 
-function adjustedPdata = fdrAdjust(data,assumption)
+function adjustedPdata = fdrAdjust(pData,params)
 
-if ieNotDefined('assumption')
-  assumption='None';
-end
-
-isNotNan = ~isnan(data);
-pData = data(isNotNan);
+isNotNan = ~isnan(pData);
+sizePdata = size(pData);
+pData = pData(isNotNan);
 [pData,sortingIndex] = sort(pData);
-nTests = length(pData);
 
-switch(assumption)
+switch(params.fdrAssumption)
   case 'Independence/Positive dependence'
     constant =1;
   case 'None'
@@ -1207,29 +1206,63 @@ switch(assumption)
     %constant = log(nTests)+0.57721566490153 %Euler constant
 end
 
+%estimate number of True Null hypotheses
+% ref: Benjamini et al. 2006, Biometrika, 93(3) p491
+switch(params.fdrMethod)
+  case 'Linear Step-up'
+    trueHoRatio = 1; %no estimation of the number of true Null hypotheses over the total number of rejected test
+  case 'Two-stage Linear Step-up'
+  case 'Multiple-stage Linear Step-up'
+  case 'Adaptive Linear Step-up'
+    %we will estimate the number of true H0 using definition 3 in Benjamini et al. 2006
+    % first adjust the p values 
+    adjustedP = linearStepUpFdr(pData,constant,1);
+    if ~any(adjustedP>params.fdrMultipleStepQ) %if no voxel is significant at a chosen level (usually .05) (very unlikely)
+      trueHoRatio = 0; % No H0 will be rejected
+    else
+      %compute the estimated number of true H0 when considering the number of rejectionsa t all possible levels
+      numberH0 = length(adjustedP);
+      numberTrueHo = (numberH0+1-(1:numberH0)')./(1-pData);
+      %find the first estimated number that is greater than the previous one
+      numberTrueHo = ceil(min(numberTrueHo(find(diff(numberTrueHo)>0,1,'first')+1),numberH0));
+      trueHoRatio = numberH0/numberTrueHo; 
+    end
+      
+end
 
+if trueHoRatio ==0
+  adjustedPdata = ones(sizePdata); 
+else
+  adjustedP = linearStepUpFdr(pData,constant,trueHoRatio);
+  adjustedP(sortingIndex) = adjustedP;
+  adjustedPdata = NaN(sizePdata);
+  adjustedPdata(isNotNan) = adjustedP;
+end
+
+
+
+function qData = linearStepUpFdr(pData,constant,trueHoRatio)
+
+nTests = length(pData);
 %adjustment (does not depend on a chosen threshold)
 % it consists in finding, for each p-value, 
 % the largest FDR threshold such that the p-value would be considered significant
 % it is the inverse operation to p-correction (see commented code below)
-% ref: Yekutieli and Benjamini, Journal of Statistical Planning and Inference, 82(1-2) p171
-qData = min(pData.*nTests./(1:nTests)'.*constant,1);
+% ref: Yekutieli and Benjamini 1999, Journal of Statistical Planning and Inference, 82(1-2) p171
+qData = min(pData.*nTests./(1:nTests)'.*constant/trueHoRatio,1);
 %make it monotonic from the end (for each i, q(i) must be smaller than all q between i and n)
 minQ = qData(end);
 for i=nTests-1:-1:1
  qData(i) = min(minQ,qData(i));
  minQ = qData(i);
 end
-qData(sortingIndex) = qData;
-adjustedPdata = NaN(size(data));
-adjustedPdata(isNotNan) = qData;
 
 % % % %correction (p-correction depends on a fixed threshold, here .05)
 % % % qAlpha = .05*(1:nTests)'/nTests/constant;
 % % % correctedP = pData;
 % % % correctedP(find(pData<=qAlpha,1,'last'):end) = 1;
 % % % correctedP(sortingIndex) = correctedP;
-% % % correctedPdata = NaN(size(data));
+% % % correctedPdata = NaN(size(pData));
 % % % correctedPdata(isNotNan) = correctedP;
 
 function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,testString1, testOutput, testString2, testNames)
