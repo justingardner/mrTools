@@ -1196,74 +1196,142 @@ isNotNan = ~isnan(pData);
 sizePdata = size(pData);
 pData = pData(isNotNan);
 [pData,sortingIndex] = sort(pData);
+numberH0 = length(pData); 
 
 switch(params.fdrAssumption)
   case 'Independence/Positive dependence'
-    constant =1;
+    dependenceCorrectionConstant =1;
   case 'None'
-    constant = sum(1./(1:nTests));
+    dependenceCorrectionConstant = sum(1./(1:numberH0));
     %approximate value: 
-    %constant = log(nTests)+0.57721566490153 %Euler constant
+    %dependenceCorrectionConstant = log(numberH0)+0.57721566490153 %Euler constant
 end
 
 %estimate number of True Null hypotheses
 % ref: Benjamini et al. 2006, Biometrika, 93(3) p491
 switch(params.fdrMethod)
-  case 'Linear Step-up'
-    trueHoRatio = 1; %no estimation of the number of true Null hypotheses over the total number of rejected test
-  case 'Two-stage Linear Step-up'
-  case 'Multiple-stage Linear Step-up'
-  case 'Adaptive Linear Step-up'
+  case 'Step-up'
+      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1); 
+  case 'Adaptive Step-up'
     %we will estimate the number of true H0 using definition 3 in Benjamini et al. 2006
     % first adjust the p values 
-    adjustedP = linearStepUpFdr(pData,constant,1);
-    if ~any(adjustedP>params.fdrMultipleStepQ) %if no voxel is significant at a chosen level (usually .05) (very unlikely)
-      trueHoRatio = 0; % No H0 will be rejected
-    else
+    adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
+    if any(adjustedP<params.fdrMultipleStepQ) %if any voxel is significant at the chosen level (usually .05) (most likely)
       %compute the estimated number of true H0 when considering the number of rejectionsa t all possible levels
       numberH0 = length(adjustedP);
-      numberTrueHo = (numberH0+1-(1:numberH0)')./(1-pData);
+      numberTrueH0 = (numberH0+1-(1:numberH0)')./(1-pData);
       %find the first estimated number that is greater than the previous one
-      numberTrueHo = ceil(min(numberTrueHo(find(diff(numberTrueHo)>0,1,'first')+1),numberH0));
-      trueHoRatio = numberH0/numberTrueHo; 
+      numberTrueH0 = ceil(min(numberTrueH0(find(diff(numberTrueH0)>0,1,'first')+1),numberH0));
+      %recompute the adjusted p-value using the estimated number of true H0
+      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,numberH0/numberTrueH0);
     end
-      
+  case 'Two-stage Adaptive Step-up'
+    %we will estimate the number of true H0 using definition 6 in Benjamini et al. 2006
+    % first adjust the p values with q'=(q+1)
+    adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
+    numberFalseH0 = length(find(adjustedP<(params.fdrMultipleStepQ/(params.fdrMultipleStepQ+1))));
+    if numberFalseH0 %if any voxel is significant at the chosen level usually .05/(.05+1)
+      numberH0 = length(adjustedP); 
+      %recompute the adjusted p-value using the estimated number of true H0
+      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,numberH0/(numberH0 - numberFalseH0));
+    end
+    
+  case 'Multiple-stage Adaptive Step-up'
+    %we will estimate the number of true H0 using definition 7 in Benjamini et al. 2006
+    %but they only give the definition for p-value correction with a fixed q
+    q = params.fdrMultipleStepQ;
+    %step-up version with L>=J (I think it's a step-up procedure within a step-down procedure)
+    %k=max{i : for all j<=i there exists l>=j so that p(l)<=ql/{m+1?j(1?q)}}.
+    i=0;          %
+    l = numberH0; %these are just arbitrary values to pass the first while test
+    while i<numberH0 && ~isempty(l)
+      i = i+1;
+      l = find(pData(i:numberH0)<=q*(i:numberH0)'./(numberH0+1-i*(1-q)),1,'last');
+    end
+    k=i;
+    correctedP = pData;
+    correctedP(k:end) = 1;
+    % adjustement procedure seems a bit complicated... so I'll leave it for now
+    % I don't think the results would be much different from the next, simpler, step-down procedure
+    adjustedP = correctedP;
+    
+  case 'Adaptive Step-down'
+    %this is the step-down version of definition 7 in Benjamini et al. 2006 with L=J
+%     q = params.fdrMultipleStepQ;
+    %k=max{i : for all j<=i there exists l=j so that p(l)<=ql/{m+1?j(1?q)}}.
+    %k=max{i : for all j<=i p(j)<=qj/{m+1?j(1?q)}}.
+    %this is just the loop version that corresponds to the definition
+% % % %     i=1;
+% % % %     while  i<numberH0 && all(pData(1:i)<=q*(1:i)'./(numberH0+1-(1:i)'*(1-q)))
+% % % %       i = i+1;
+% % % %     end
+% % % %     k=i;
+    %and this a one line version: 
+% % % %     k = find(pData>q*(1:numberH0)'./(numberH0+1-(1:numberH0)'*(1-q)),1,'first');
+% % % % 
+% % % %     correctedP = pData;
+% % % %     correctedP(k:end) = 1;
+    
+    %but I'd rather have an adjustment version:
+    %we need to find for each test i, the largest q such that there exists k=max{i : for all j<=i p(j)<=qj/{m+1?j(1?q)}}
+    %this is the derivation for q, starting from the previous one-line p-correction:
+%     pData>q*(1:numberH0)'./(numberH0+1-(1:numberH0)'*(1-q))
+%     pData.*(numberH0+1-(1:numberH0)'*(1-q))>q*(1:numberH0)'
+%     pData*(numberH0+1) - pData.*(1:numberH0)'*(1-q) > q*(1:numberH0)'
+%     pData*(numberH0+1) - pData.*(1:numberH0)'+ pData.*(1:numberH0)'*q > q*(1:numberH0)'
+%     pData*(numberH0+1) - pData.*(1:numberH0)'  > q*(1:numberH0)' - pData.*(1:numberH0)'*q
+%     pData*(numberH0+1) - pData.*(1:numberH0)'  > q*((1:numberH0)' - pData.*(1:numberH0)')
+%     (pData*(numberH0+1) - pData.*(1:numberH0)')./((1:numberH0)' - pData.*(1:numberH0)')  > q
+    adjustedP = (pData*(numberH0+1) - pData.*(1:numberH0)')./((1:numberH0)' - pData.*(1:numberH0)');
+    
+    %i think we need to enforce monotonicity, but in contrast with the step-up method (see below),
+    %it should be done from the smallest to the largest p-value
+    for i=2:numberH0
+     adjustedP(i) = max(adjustedP(i-1),adjustedP(i));
+    end
+    adjustedP = min(adjustedP,1); %bound with 1
+
+          
 end
 
-if trueHoRatio ==0
-  adjustedPdata = ones(sizePdata); 
-else
-  adjustedP = linearStepUpFdr(pData,constant,trueHoRatio);
-  adjustedP(sortingIndex) = adjustedP;
-  adjustedPdata = NaN(sizePdata);
-  adjustedPdata(isNotNan) = adjustedP;
-end
+adjustedP(sortingIndex) = adjustedP;
+adjustedPdata = NaN(sizePdata);
+adjustedPdata(isNotNan) = adjustedP;
 
 
 
-function qData = linearStepUpFdr(pData,constant,trueHoRatio)
+function qData = linearStepUpFdr(pData,dependenceCorrectionConstant,trueH0Ratio)
 
-nTests = length(pData);
-%adjustment (does not depend on a chosen threshold)
+numberH0 = length(pData);
+%adjustment (does not depend on a pre-chosen threshold)
 % it consists in finding, for each p-value, 
 % the largest FDR threshold such that the p-value would be considered significant
 % it is the inverse operation to p-correction (see commented code below)
 % ref: Yekutieli and Benjamini 1999, Journal of Statistical Planning and Inference, 82(1-2) p171
-qData = min(pData.*nTests./(1:nTests)'.*constant/trueHoRatio,1);
-%make it monotonic from the end (for each i, q(i) must be smaller than all q between i and n)
-minQ = qData(end);
-for i=nTests-1:-1:1
- qData(i) = min(minQ,qData(i));
- minQ = qData(i);
+qData = min(pData.*numberH0./(1:numberH0)'.*dependenceCorrectionConstant/trueH0Ratio,1);
+
+%Now, there may be situations where the largest q for a given uncorrected p-value
+% is smaller than the largest q for a higher uncorrected p-value 
+%(e.g. consecutive identical uncorrected p-values)
+% which means that when looking at the map of corrected p-value (=q-values),
+% for a given q-value you would reject less hypothesis than in the p-correction method...
+
+%So maybe we should make corrected p-values monotonic in order to have the same number of rejections for the same threshold
+%(although i can't find a paper that says that)
+%make it monotonic from the end (for each i, q(i) must be smaller than all q between i and n) 
+for i=numberH0-1:-1:1
+ qData(i) = min(qData(i),qData(i+1));
 end
 
+% p-correction method
 % % % %correction (p-correction depends on a fixed threshold, here .05)
-% % % qAlpha = .05*(1:nTests)'/nTests/constant;
+% % % qAlpha = .05*(1:numberH0)'/numberH0/dependenceCorrectionConstant;
 % % % correctedP = pData;
 % % % correctedP(find(pData<=qAlpha,1,'last'):end) = 1;
 % % % correctedP(sortingIndex) = correctedP;
 % % % correctedPdata = NaN(size(pData));
 % % % correctedPdata(isNotNan) = correctedP;
+
 
 function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,testString1, testOutput, testString2, testNames)
   switch testOutput

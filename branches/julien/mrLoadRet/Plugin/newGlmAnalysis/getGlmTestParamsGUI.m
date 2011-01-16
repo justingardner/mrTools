@@ -115,7 +115,7 @@ while keepAsking
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
   resampleFWEadjustmentMenu = putOnTopOfList(params.resampleFWEadjustment,{'None','Single Step','Step-down'});
   fdrAssumptionMenu = putOnTopOfList(params.fdrAssumption,{'Independence/Positive dependence','None'});
-  fdrMethodMenu = putOnTopOfList(params.fdrMethod,{'Linear Step-up','Two-stage Linear Step-up','Multiple-stage Linear Step-up','Adaptive Linear Step-up'});
+  fdrMethodMenu = putOnTopOfList(params.fdrMethod,{'Step-up','Adaptive Step-up','Two-stage Adaptive Step-up','Adaptive Step-down','Multiple-stage Adaptive Step-up'});
   testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   
   contrastOptionsVisible = 'visible=0';
