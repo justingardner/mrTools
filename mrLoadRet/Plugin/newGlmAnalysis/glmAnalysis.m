@@ -426,10 +426,14 @@ for scanNum = params.scanNum
               end
               if params.bootstrapStatistics
                 bootstrap.Tp = reshapeToRoiBox(bootstrap.Tp,d.roiPositionInBox);
-                bootstrap.maxTp = reshapeToRoiBox(bootstrap.maxTp,d.roiPositionInBox);
+                if ~strcmp(params.resampleFWEadjustment,'None')
+                  bootstrap.maxTp = reshapeToRoiBox(bootstrap.maxTp,d.roiPositionInBox);
+                end
                 if params.TFCE 
                   bootstrap.tfceTp = reshapeToRoiBox(bootstrap.tfceTp,d.roiPositionInBox);
-                  bootstrap.maxTfceTp = reshapeToRoiBox(bootstrap.maxTfceTp,d.roiPositionInBox);
+                  if ~strcmp(params.resampleFWEadjustment,'None')
+                    bootstrap.maxTfceTp = reshapeToRoiBox(bootstrap.maxTfceTp,d.roiPositionInBox);
+                  end
                 end
               end
             end
@@ -447,10 +451,14 @@ for scanNum = params.scanNum
             end
             if params.bootstrapStatistics
               bootstrap.Fp = reshapeToRoiBox(bootstrap.Fp,d.roiPositionInBox);
-              bootstrap.maxFp = reshapeToRoiBox(bootstrap.maxFp,d.roiPositionInBox);
+              if ~strcmp(params.resampleFWEadjustment,'None')
+                bootstrap.maxFp = reshapeToRoiBox(bootstrap.maxFp,d.roiPositionInBox);
+              end
               if params.TFCE 
                 bootstrap.tfceFp = reshapeToRoiBox(bootstrap.tfceFp,d.roiPositionInBox);
-                bootstrap.maxTfceFp = reshapeToRoiBox(bootstrap.maxTfceFp,d.roiPositionInBox);
+                if ~strcmp(params.resampleFWEadjustment,'None')
+                  bootstrap.maxTfceFp = reshapeToRoiBox(bootstrap.maxTfceFp,d.roiPositionInBox);
+                end
               end
             end
           end
@@ -480,7 +488,9 @@ for scanNum = params.scanNum
                 bootstrapMaxT{scanNum} = cat(3,bootstrapMaxT{scanNum},bootstrap.maxTp);
                 if params.TFCE 
                   bootstrapTfceT{scanNum} = cat(3,bootstrapTfceT{scanNum},bootstrap.tfceTp);
-                  bootstrapMaxTfceT{scanNum} = cat(3,bootstrapMaxTfceT{scanNum},bootstrap.maxTfceTp);
+                  if ~strcmp(params.resampleFWEadjustment,'None')
+                    bootstrapMaxTfceT{scanNum} = cat(3,bootstrapMaxTfceT{scanNum},bootstrap.maxTfceTp);
+                  end
                 end
               end
             end
@@ -503,7 +513,9 @@ for scanNum = params.scanNum
               bootstrapMaxF{scanNum} = cat(3,bootstrapMaxF{scanNum},bootstrap.maxFp);
               if params.TFCE 
                 bootstrapTfceF{scanNum} = cat(3,bootstrapTfceF{scanNum},bootstrap.tfceFp);
-                bootstrapMaxTfceF{scanNum} = cat(3,bootstrapMaxTfceF{scanNum},bootstrap.maxTfceFp);
+                if ~strcmp(params.resampleFWEadjustment,'None')
+                  bootstrapMaxTfceF{scanNum} = cat(3,bootstrapMaxTfceF{scanNum},bootstrap.maxTfceFp);
+                end
               end
             end
           end
@@ -1217,7 +1229,7 @@ switch(params.fdrMethod)
     % first adjust the p values 
     adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
     if any(adjustedP<params.fdrMultipleStepQ) %if any voxel is significant at the chosen level (usually .05) (most likely)
-      %compute the estimated number of true H0 when considering the number of rejectionsa t all possible levels
+      %compute the estimated number of true H0 when considering the number of rejections at all possible levels
       numberH0 = length(adjustedP);
       numberTrueH0 = (numberH0+1-(1:numberH0)')./(1-pData);
       %find the first estimated number that is greater than the previous one
