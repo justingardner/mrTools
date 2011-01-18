@@ -86,40 +86,33 @@ if ~isempty(contrasts)
     if params.parametricTests
       T = r2;
       Tp = r2;  
-      if params.fdrAdjustment
-        fdrTp=r2;
-      end
-      if params.TFCE
-        %if params.randomizationTests
-          randMaxTfceT = r2;
-        %end
+      fdrTp=r2;
+      fweTp=r2;
+      if params.TFCE && params.randomizationTests
+        randMaxTfceT = r2;
       end
     end
     if params.randomizationTests
       randT = r2;
       randMaxT = r2;
-      if params.fdrAdjustment
-        fdrRandC=r2;
-      end
+      fdrRandC=r2;
+      fweRandC=r2;
       if params.TFCE
         randTfceT = r2;
-        if params.fdrAdjustment
-          fdrTfceRandT=r2;
-        end
+        fdrTfceRandT=r2;
+        fweTfceRandT=r2;
       end
     end
     if params.bootstrapStatistics
       bootstrapT = r2;
-      if params.fdrAdjustment
-        fdrBootstrapT=r2;
-      end
+      fdrBootstrapT=r2;
+      fweBootstrapT=r2;
       if ~strcmp(params.resampleFWEadjustment,'None')
         bootstrapMaxT = r2;
         if params.TFCE  
           bootstrapTfceT = r2;
-          if params.fdrAdjustment
-            fdrBootstrapTfceT=r2;
-          end
+          fdrBootstrapTfceT=r2;
+          fweBootstrapTfceT=r2;
           if ~strcmp(params.resampleFWEadjustment,'None')
             bootstrapMaxTfceT = r2;
           end
@@ -132,40 +125,33 @@ if ~isempty(restrictions)
   F = r2;  
   if params.parametricTests
     Fp = r2;
-    if params.fdrAdjustment
-      fdrFp=r2;
-    end
-    if params.TFCE
-      %if params.randomizationTests
-        randMaxTfceF = r2;
-      %end
+    fdrFp=r2;
+    fweFp=r2;
+    if params.TFCE && params.randomizationTests
+      randMaxTfceF = r2;
     end
   end
   if params.randomizationTests
     randF = r2;
     randMaxF = r2;
-    if params.fdrAdjustment
-      fdrRandF=r2;
-    end
+    fdrRandF=r2;
+    fweRandF=r2;
     if params.TFCE
       randTfceF = r2;
-      if params.fdrAdjustment
-        fdrTfceRandF=r2;
-      end
+      fdrTfceRandF=r2;
+      fweTfceRandF=r2;
     end
   end
   if params.bootstrapStatistics
     bootstrapF = r2;
-    if params.fdrAdjustment
-      fdrBootstrapF=r2;
-    end
+    fdrBootstrapF=r2;
+    fweBootstrapF=r2;
     if ~strcmp(params.resampleFWEadjustment,'None')
       bootstrapMaxF = r2;
       if params.TFCE  
         bootstrapTfceF = r2;
-        if params.fdrAdjustment
-          fdrBootstrapTfceF=r2;
-        end
+        fdrBootstrapTfceF=r2;
+        fweBootstrapTfceF=r2;
         if ~strcmp(params.resampleFWEadjustment,'None')
           bootstrapMaxTfceF = r2;
         end
@@ -393,7 +379,7 @@ for scanNum = params.scanNum
             tempRandT(isnan(thisT)) = NaN; 
             tempRandMaxT = zeros(size(tempActualT),precision); %same for the max (min) randomization value across space, for FWE adjustment
             %this is for resampled-based FWE control
-            [indexSortActualT,indexReorderActualT,actualTisNotNaN] = initResampleFWE(reshape(tempActualT,prod(d.dim(1:3)),numberContrasts),params);
+            resampleFweTdata = initResampleFWE(reshape(tempActualT,prod(d.dim(1:3)),numberContrasts),params);
           end
           if ~isempty(restrictions)
             tempActualF = thisF;
@@ -401,7 +387,7 @@ for scanNum = params.scanNum
             tempRandF(isnan(thisF)) = NaN; 
             tempRandMaxF = zeros(size(tempActualF),precision); %same for the max randomization value across space, for FWE adjustment
             %this is for resampled-based FWE control
-            [indexSortActualF,indexReorderActualF,actualFisNotNaN] = initResampleFWE(reshape(tempActualF,prod(d.dim(1:3)),numberFtests),params);
+            resampleFweFdata = initResampleFWE(reshape(tempActualF,prod(d.dim(1:3)),numberFtests),params);
           end
         end
         
@@ -531,7 +517,7 @@ for scanNum = params.scanNum
             %tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
             tempRandMaxT = tempRandMaxT + reshape(resampleFWE(reshape(thisT,prod(d.dim(1:3)),numberContrasts),...
                                                               reshape(tempActualT,prod(d.dim(1:3)),numberContrasts),...
-                                                              indexSortActualT,indexReorderActualT,actualTisNotNaN,params),...
+                                                              resampleFweTdata,params),...
                                                   [d.dim(1:3) numberContrasts]);
           end
         end
@@ -541,7 +527,7 @@ for scanNum = params.scanNum
           if ~strcmp(params.resampleFWEadjustment,'None')
             tempRandMaxF = tempRandMaxF + reshape(resampleFWE(reshape(thisF,prod(d.dim(1:3)),numberFtests),...
                                                               reshape(tempActualF,prod(d.dim(1:3)),numberFtests),...
-                                                              indexSortActualF,indexReorderActualF,actualFisNotNaN,params),...
+                                                              resampleFweFdata,params),...
                                                   [d.dim(1:3) numberFtests]);
           end
         end
@@ -564,8 +550,7 @@ for scanNum = params.scanNum
             actualTfceT = tempTfce;
             if ~strcmp(params.resampleFWEadjustment,'None')
               countMaxTfceT = countTfceT;     %
-              [indexSortActualTfceT,indexReorderActualTfceT,tfceActualTisNotNaN] = ...
-                  initResampleFWE(reshape(actualTfceT,numel(tempTfce(:,:,:,1)),numberContrasts),params);
+              resampleFweTfceTdata = initResampleFWE(reshape(actualTfceT,numel(tempTfce(:,:,:,1)),numberContrasts),params);
             end
           else
             countTfceT = countTfceT + double(tempTfce>actualTfceT);
@@ -573,7 +558,7 @@ for scanNum = params.scanNum
               %countMaxTfceT = countMaxTfceT+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceT);
               countMaxTfceT = countMaxTfceT + reshape(resampleFWE(reshape(tempTfce,numel(tempTfce(:,:,:,1)),numberContrasts),...
                                                                   reshape(actualTfceT,numel(tempTfce(:,:,:,1)),numberContrasts),...
-                                                                  indexSortActualTfceT,indexReorderActualTfceT,tfceActualTisNotNaN,params),...
+                                                                  resampleFweTfceTdata,params),...
                                                       size(countMaxTfceT));
             end
           end
@@ -596,8 +581,7 @@ for scanNum = params.scanNum
             actualTfceF = tempTfce;           %keep the TFCE transform
             if ~strcmp(params.resampleFWEadjustment,'None')
               countMaxTfceF = countTfceF; %same for randomization adjusted FWE
-              [indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN] = ...
-                  initResampleFWE(reshape(actualTfceF,numel(tempTfce(:,:,:,1)),numberFtests),params);
+              resampleFweTfceFdata = initResampleFWE(reshape(actualTfceF,numel(tempTfce(:,:,:,1)),numberFtests),params);
             end
           else
             countTfceF = countTfceF+ double(tempTfce>actualTfceF);
@@ -605,7 +589,7 @@ for scanNum = params.scanNum
               %countMaxTfceF = countMaxTfceF+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceF);
               countMaxTfceF = countMaxTfceF + reshape(resampleFWE(reshape(tempTfce,numel(tempTfce(:,:,:,1)),numberFtests),...
                                                                   reshape(actualTfceF,numel(tempTfce(:,:,:,1)),numberFtests),...
-                                                                  indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN,params),...
+                                                                  resampleFweTfceFdata,params),...
                                                       size(countMaxTfceF));
             end
           end
@@ -700,26 +684,26 @@ for scanNum = params.scanNum
         if strcmp(params.tTestSide,'Both')
           Tp{scanNum} = 2*Tp{scanNum};
         end
-        [Tp{scanNum},fdrTp{scanNum}] = transformStatistic(Tp{scanNum},precision,1e-16,params); 
+        [Tp{scanNum},fdrTp{scanNum},fweTp{scanNum}] = transformStatistic(Tp{scanNum},precision,1e-16,params); 
     end
     if params.randomizationTests
-      [randT{scanNum},fdrRandC{scanNum}] = transformStatistic(randT{scanNum},precision,1/(nRand+1),params); 
+      [randT{scanNum},fdrRandC{scanNum},fweRandC{scanNum}] = transformStatistic(randT{scanNum},precision,1/(nRand+1),params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
         randMaxT{scanNum} = transformStatistic(randMaxT{scanNum},precision,1/(nRand+1),params); 
       end
       if params.TFCE 
-        [randTfceT{scanNum},fdrTfceRandT{scanNum}] = transformStatistic(randTfceT{scanNum},precision,1/(nRand+1),params); 
+        [randTfceT{scanNum},fdrTfceRandT{scanNum},fweTfceRandT{scanNum}] = transformStatistic(randTfceT{scanNum},precision,1/(nRand+1),params); 
         if ~strcmp(params.resampleFWEadjustment,'None')
           randMaxTfceT{scanNum} = transformStatistic(randMaxTfceT{scanNum},precision,1/(nRand+1),params); 
         end
       end
     end
     if params.bootstrapStatistics
-      [bootstrapT{scanNum},fdrBootstrapT{scanNum}] = transformStatistic(bootstrapT{scanNum},precision,1/(params.nBootstrap+1),params); 
+      [bootstrapT{scanNum},fdrBootstrapT{scanNum},fweBootstrapT{scanNum}] = transformStatistic(bootstrapT{scanNum},precision,1/(params.nBootstrap+1),params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
         bootstrapMaxT{scanNum} = transformStatistic(bootstrapMaxT{scanNum},precision,1/(params.nBootstrap+1),params);
         if params.TFCE 
-          [bootstrapTfceT{scanNum},fdrBootstrapTfceT{scanNum}] = transformStatistic(bootstrapTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
+          [bootstrapTfceT{scanNum},fdrBootstrapTfceT{scanNum},fweBootstrapTfceT{scanNum}] = transformStatistic(bootstrapTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
           if ~strcmp(params.resampleFWEadjustment,'None')
             bootstrapMaxTfceT{scanNum} = transformStatistic(bootstrapMaxTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
           end
@@ -731,7 +715,7 @@ for scanNum = params.scanNum
   if ~isempty(restrictions)
     %make parametric probability maps
     if params.parametricTests 
-      if ~strcmp(params.testOutput,'T/F value') || params.fdrAdjustment
+      if ~strcmp(params.testOutput,'T/F value') || params.fdrAdjustment || params.fweAdjustment
         %convert to P value
         if numel(d.rdf)>1
           d.rdf = rdf;
@@ -745,28 +729,28 @@ for scanNum = params.scanNum
         if ~params.outputParametricStatistic
           F{scanNum} = [];
         end
-        [Fp{scanNum},fdrFp{scanNum}] = transformStatistic(Fp{scanNum},precision,1e-16,params); 
+        [Fp{scanNum},fdrFp{scanNum},fweFp{scanNum}] = transformStatistic(Fp{scanNum},precision,1e-16,params); 
       end
     end
     if params.randomizationTests 
-      [randF{scanNum},fdrRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/(nRand+1),params); 
+      [randF{scanNum},fdrRandF{scanNum},fweRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/(nRand+1),params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
         randMaxF{scanNum} = transformStatistic(randMaxF{scanNum},precision,1/(nRand+1),params); 
       end
       if params.TFCE 
-        [randTfceF{scanNum},fdrTfceRandF{scanNum}] = transformStatistic(randTfceF{scanNum},precision,1/(nRand+1),params); 
+        [randTfceF{scanNum},fdrTfceRandF{scanNum},fweTfceRandF{scanNum}] = transformStatistic(randTfceF{scanNum},precision,1/(nRand+1),params); 
         if ~strcmp(params.resampleFWEadjustment,'None')
           randMaxTfceF{scanNum} = transformStatistic(randMaxTfceF{scanNum},precision,1/(nRand+1),params); 
         end
       end
     end
     if params.bootstrapStatistics
-      [bootstrapF{scanNum},fdrBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/(params.nBootstrap+1),params); 
+      [bootstrapF{scanNum},fdrBootstrapF{scanNum},fweBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/(params.nBootstrap+1),params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
         bootstrapMaxF{scanNum} = transformStatistic(bootstrapMaxF{scanNum},precision,1/(params.nBootstrap+1),params);
       end
       if params.TFCE 
-        [bootstrapTfceF{scanNum},fdrBootstrapTfceF{scanNum}] = transformStatistic(bootstrapTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+        [bootstrapTfceF{scanNum},fdrBootstrapTfceF{scanNum},fweBootstrapTfceF{scanNum}] = transformStatistic(bootstrapTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
         if ~strcmp(params.resampleFWEadjustment,'None')
           bootstrapMaxTfceF{scanNum} = transformStatistic(bootstrapMaxTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
         end
@@ -937,6 +921,11 @@ if ~isempty(contrasts)
                                         'FDR-adjusted ',params.testOutput, 'T', contrastNames)];
         clear('fdrTp');
       end
+      if params.fweAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fweTp, subsetBox, params.scanNum, scanParams, ...
+                                        'FWE-adjusted ',params.testOutput, 'T', contrastNames)];
+        clear('fweTp');
+      end
       
     end
     
@@ -949,6 +938,11 @@ if ~isempty(contrasts)
                                         'FDR-adjusted bootstrap ',params.testOutput, 'T', contrastNames)];
         clear('fdrBootstrapTp');
       end
+      if params.fweAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapT, subsetBox, params.scanNum, scanParams, ...
+                                        'FWE-adjusted bootstrap ',params.testOutput, 'T', contrastNames)];
+        clear('fweBootstrapTp');
+      end
       if params.TFCE  
         overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
                                            'bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
@@ -957,6 +951,11 @@ if ~isempty(contrasts)
           overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
                                              'FDR-adjusted bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
           clear('fdrBootstrapTfceT');
+        end
+        if params.fweAdjustment
+          overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
+                                             'FWE-adjusted bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
+          clear('fweBootstrapTfceT');
         end
       end
     end
@@ -970,6 +969,11 @@ if ~isempty(contrasts)
                                         'FDR-adjusted randomization ',params.testOutput, 'T', contrastNames)];
         clear('fdrRandC');
       end
+      if params.fweAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fweRandC, subsetBox, params.scanNum, scanParams, ...
+                                        'FWE-adjusted randomization ',params.testOutput, 'T', contrastNames)];
+        clear('fweRandC');
+      end
       if params.TFCE
         overlays = [overlays makeOverlay(defaultOverlay, randTfceT, subsetBox, params.scanNum, scanParams, ...
                                         'randomization ',params.testOutput, 'TFCE T', contrastNames)];
@@ -978,6 +982,11 @@ if ~isempty(contrasts)
           overlays = [overlays makeOverlay(defaultOverlay, fdrTfceRandT, subsetBox, params.scanNum, scanParams, ...
                                           'FDR-adjusted randomization ',params.testOutput, 'TFCE T', contrastNames)];
           clear('fdrTfceRandT');
+        end
+        if params.fweAdjustment
+          overlays = [overlays makeOverlay(defaultOverlay, fweTfceRandT, subsetBox, params.scanNum, scanParams, ...
+                                          'FWE-adjusted randomization ',params.testOutput, 'TFCE T', contrastNames)];
+          clear('fweTfceRandT');
         end
       end
     end
@@ -1086,6 +1095,11 @@ if ~isempty(restrictions)
                                       'FDR-adjusted ',params.testOutput, 'F', params.fTestNames)];
       clear('fdrFp');
     end
+    if params.fweAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, fweFp, subsetBox, params.scanNum, scanParams, ...
+                                      'FWE-adjusted ',params.testOutput, 'F', params.fTestNames)];
+      clear('fweFp');
+    end
 
   end
   
@@ -1098,6 +1112,11 @@ if ~isempty(restrictions)
                                       'FDR-adjusted bootstrap ',params.testOutput, 'F', params.fTestNames)];
       clear('fdrBootstrapF');
     end
+    if params.fweAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapF, subsetBox, params.scanNum, scanParams, ...
+                                      'FWE-adjusted bootstrap ',params.testOutput, 'F', params.fTestNames)];
+      clear('fweBootstrapF');
+    end
     if params.TFCE  
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
                                          'bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
@@ -1106,6 +1125,11 @@ if ~isempty(restrictions)
         overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
                                            'FDR-adjusted bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
         clear('fdrBootstrapTfceF');
+      end
+      if params.fweAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
+                                           'FWE-adjusted bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
+        clear('fweBootstrapTfceF');
       end
     end
   end
@@ -1119,6 +1143,11 @@ if ~isempty(restrictions)
                                       'FDR-adjusted randomization ',params.testOutput, 'F', params.fTestNames)];
       clear('fdrRandF');
     end
+    if params.fweAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, fweRandF, subsetBox, params.scanNum, scanParams, ...
+                                      'FWE-adjusted randomization ',params.testOutput, 'F', params.fTestNames)];
+      clear('fweRandF');
+    end
     
     if params.TFCE
       overlays = [overlays makeOverlay(defaultOverlay, randTfceF, subsetBox, params.scanNum, scanParams, ...
@@ -1128,6 +1157,11 @@ if ~isempty(restrictions)
         overlays = [overlays makeOverlay(defaultOverlay, fdrTfceRandF, subsetBox, params.scanNum, scanParams, ...
                                         'FDR-adjusted randomization ',params.testOutput, 'TFCE F', params.fTestNames)];
         clear('fdrTfceRandF');
+      end
+      if params.fweAdjustment
+        overlays = [overlays makeOverlay(defaultOverlay, fweTfceRandF, subsetBox, params.scanNum, scanParams, ...
+                                        'FWE-adjusted randomization ',params.testOutput, 'TFCE F', params.fTestNames)];
+        clear('fweTfceRandF');
       end
     end
     
@@ -1163,7 +1197,7 @@ outputData = reshape(outputData,[size(dataPosition,1) size(dataPosition,2) size(
 
 
 
-function [convertedStatistic, fdrAdjustedStatistic] = transformStatistic(p, outputPrecision, minP, params)
+function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, minP, params)
 
 convertedStatistic = convertStatistic(p, params.testOutput, outputPrecision, minP);
 
@@ -1175,6 +1209,22 @@ if params.fdrAdjustment
   fdrAdjustedStatistic = convertStatistic(fdrAdjustedP, params.testOutput, outputPrecision, minP);
 else
   fdrAdjustedStatistic = [];
+end
+
+if params.fweAdjustment
+  fweAdjustedP = p;
+  for iTest = 1:size(p,4)
+    if ~strcmp(params.adaptiveFweMethod,'None')
+      [trueH0ratio,lambda] = estimateTrueH0Ratio(p(:,:,:,iTest),params);
+    else
+      trueH0ratio = 1;
+      lambda = 0;
+    end
+    fweAdjustedP(:,:,:,iTest) = fweAdjust(p(:,:,:,iTest),params,trueH0ratio,lambda);
+  end
+  fweAdjustedStatistic = convertStatistic(fweAdjustedP, params.testOutput, outputPrecision, minP);
+else
+  fweAdjustedStatistic = [];
 end
 
 
@@ -1228,30 +1278,30 @@ switch(params.fdrMethod)
     %we will estimate the number of true H0 using definition 3 in Benjamini et al. 2006
     % first adjust the p values 
     adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
-    if any(adjustedP<params.fdrMultipleStepQ) %if any voxel is significant at the chosen level (usually .05) (most likely)
+    if any(adjustedP<params.adaptiveFdrThreshold) %if any voxel is significant at the chosen level (usually .05) (most likely)
       %compute the estimated number of true H0 when considering the number of rejections at all possible levels
-      numberH0 = length(adjustedP);
+      numberH0 = length(pData);
       numberTrueH0 = (numberH0+1-(1:numberH0)')./(1-pData);
       %find the first estimated number that is greater than the previous one
       numberTrueH0 = ceil(min(numberTrueH0(find(diff(numberTrueH0)>0,1,'first')+1),numberH0));
-      %recompute the adjusted p-value using the estimated number of true H0
-      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,numberH0/numberTrueH0);
+      %recompute the adjusted p-value using the estimated ratio of true H0
+      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,numberTrueH0/numberH0);
     end
   case 'Two-stage Adaptive Step-up'
     %we will estimate the number of true H0 using definition 6 in Benjamini et al. 2006
     % first adjust the p values with q'=(q+1)
     adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
-    numberFalseH0 = length(find(adjustedP<(params.fdrMultipleStepQ/(params.fdrMultipleStepQ+1))));
+    numberFalseH0 = length(find(adjustedP<(params.adaptiveFdrThreshold/(params.adaptiveFdrThreshold+1))));
     if numberFalseH0 %if any voxel is significant at the chosen level usually .05/(.05+1)
       numberH0 = length(adjustedP); 
       %recompute the adjusted p-value using the estimated number of true H0
-      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,numberH0/(numberH0 - numberFalseH0));
+      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,(numberH0 - numberFalseH0)/numberH0);
     end
     
   case 'Multiple-stage Adaptive Step-up'
     %we will estimate the number of true H0 using definition 7 in Benjamini et al. 2006
     %but they only give the definition for p-value correction with a fixed q
-    q = params.fdrMultipleStepQ;
+    q = params.adaptiveFdrThreshold;
     %step-up version with L>=J (I think it's a step-up procedure within a step-down procedure)
     %k=max{i : for all j<=i there exists l>=j so that p(l)<=ql/{m+1?j(1?q)}}.
     i=0;          %
@@ -1269,7 +1319,7 @@ switch(params.fdrMethod)
     
   case 'Adaptive Step-down'
     %this is the step-down version of definition 7 in Benjamini et al. 2006 with L=J
-%     q = params.fdrMultipleStepQ;
+%     q = params.adaptiveFdrThreshold;
     %k=max{i : for all j<=i there exists l=j so that p(l)<=ql/{m+1?j(1?q)}}.
     %k=max{i : for all j<=i p(j)<=qj/{m+1?j(1?q)}}.
     %this is just the loop version that corresponds to the definition
@@ -1320,7 +1370,7 @@ numberH0 = length(pData);
 % the largest FDR threshold such that the p-value would be considered significant
 % it is the inverse operation to p-correction (see commented code below)
 % ref: Yekutieli and Benjamini 1999, Journal of Statistical Planning and Inference, 82(1-2) p171
-qData = min(pData.*numberH0./(1:numberH0)'.*dependenceCorrectionConstant/trueH0Ratio,1);
+qData = min(pData.*numberH0./(1:numberH0)'.*dependenceCorrectionConstant*trueH0Ratio,1);
 
 %Now, there may be situations where the largest q for a given uncorrected p-value
 % is smaller than the largest q for a higher uncorrected p-value 
