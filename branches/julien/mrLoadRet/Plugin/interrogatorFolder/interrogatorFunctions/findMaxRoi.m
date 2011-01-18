@@ -37,14 +37,7 @@ disp(['Overlay: ' overlayName])
 
 for iRoi = 1:length(roi)
    
-  
-%the following does not work, I suspect because of this shiftOriginXform thing
-%    roi2mag = roi{iRoi}.xform;
-%    roi2scan = scan2mag\roi2mag;
-%do that instead:
-   roi2scan = inv(viewGet(thisView,'scan2roi',viewGet(thisView,'roinum',roi{iRoi}.name)));
-   scanRoiCoords = xformROIcoords(roi{iRoi}.coords,roi2scan,roi{iRoi}.voxelSize,scanvoxelsize);
-
+   scanRoiCoords = getROICoordinates(thisView,viewGet(thisView,'roinum',roi{iRoi}.name));
    if ~isempty(scanRoiCoords)   
       scanRoiCoordsIndex = sub2ind(size(overlayData), scanRoiCoords(1,:)',  scanRoiCoords(2,:)',  scanRoiCoords(3,:)' );
       roiOverlayData = overlayData(scanRoiCoordsIndex);
@@ -55,8 +48,8 @@ for iRoi = 1:length(roi)
       max_coordinates = scanRoiCoords(:,max_index);
       min_coordinates = scanRoiCoords(:,min_index);
 
-      max_base_coordinates = (base2scan\max_coordinates);
-      min_base_coordinates = (base2scan\min_coordinates);
+      max_base_coordinates = (base2scan\[max_coordinates;1]);
+      min_base_coordinates = (base2scan\[min_coordinates;1]);
 
       fprintf(1,['\tROI ' roi{iRoi}.name '(' num2str(numel(find(~isnan(roiOverlayData)))) '/' num2str(numel(roiOverlayData)) ' scan voxels)\n']);
       fprintf(1,['\t\tmax value :' num2str(max_value) '\n']);
