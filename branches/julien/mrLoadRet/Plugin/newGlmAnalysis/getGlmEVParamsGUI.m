@@ -108,7 +108,7 @@ while keepAsking
        scanParams{iScan}.sameForNextScans
        for jScan = params.scanNum(find(params.scanNum>iScan,1,'first'):end)
           % set the other scans params to the same as this one
-          scanParams{iScan} = mrParamsCopyFields(tempParams,scanParams{jScan});
+          scanParams{jScan} = mrParamsCopyFields(scanParams{jScan},scanParams{iScan});
        end
        break
     end
@@ -136,7 +136,7 @@ if ~isfield(thisScanParams,'sameForNextScans') || thisScanParams.sameForNextScan
   %if it's the last scan or sameForNextScans is selected, we show all scans
   %copy params to remaining scans
   for jScan = params.scanNum(find(params.scanNum==scanNum,1,'first'):end)
-    scanParams{jScan} = thisScanParams;
+    scanParams{jScan} = copyFields(scanParams{jScan},thisScanParams);
   end
   scanList = params.scanNum;
 else
@@ -160,11 +160,11 @@ set(fignum,'position',figurePosition);
 cScan=0;
 axisLength = zeros(1,length(params.scanNum));
 tSeriesAxes = zeros(1,length(params.scanNum));
+thisScanParams.EVnames{end+1} = 'Not used';
 for iScan = scanList
   params.scanParams{iScan} = copyFields(scanParams{iScan},params.scanParams{iScan}); %we use copyFields here instead of mrParamsCopyFields because the latter only copies fields with a corresponding paramInfo entry
   %replace all unused stimuli by one EV
   params.scanParams{iScan}.stimToEVmatrix(:,end+1) = ~any(params.scanParams{iScan}.stimToEVmatrix,2);
-  params.scanParams{iScan}.EVnames{end+1} = 'Not used';
   
   d = loadScan(thisView, iScan, viewGet(thisView,'groupNum',params.groupName), 0);
   d = getStimvol(d,params.scanParams{iScan});
@@ -173,10 +173,10 @@ for iScan = scanList
   d = makeDesignMatrix(d,params,1,iScan);
   cScan=cScan+1;
   
-  if ~isempty(d.scm) && size(d.scm,2)==length(params.scanParams{iScan}.EVnames)*d.nHrfComponents
+  if ~isempty(d.scm) && size(d.scm,2)==length(thisScanParams.EVnames)*d.nHrfComponents
     %the length for the axis depends on the number of volumes times the frame period
     axisLength(cScan) = size(d.EVmatrix,1)*d.tr;
-    colors = randomColors(length(params.scanParams{iScan}.EVnames));
+    colors = randomColors(length(thisScanParams.EVnames));
     colors(end,:) = [.85 .85 .85]; %last color for unused stims
 
     tSeriesAxes(cScan) = axes('parent',fignum,'outerposition',getSubplotPosition(1,cScan,[7 1],ones(nScans,1),0,.05));
@@ -185,7 +185,7 @@ for iScan = scanList
 
     title(viewGet(thisView,'description',iScan),'interpreter','none');
     %legend
-    legendStrings = params.scanParams{iScan}.EVnames(h>0);
+    legendStrings = thisScanParams.EVnames(h>0);
     h = h(h>0);
     if ~isempty(hTransition)
       h = [h hTransition];

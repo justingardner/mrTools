@@ -102,20 +102,32 @@ while keepAsking
   if fieldIsNotDefined(params, 'fdrMethod')
       params.fdrMethod = 'Linear Step-up';
   end
-  if fieldIsNotDefined(params, 'fdrMultipleStepQ')
-      params.fdrMultipleStepQ = .05;
+  if fieldIsNotDefined(params, 'adaptiveFdrThreshold')
+      params.adaptiveFdrThreshold = .05;
   end
   
-  if fieldIsNotDefined(params, 'testOutput')
-      params.testOutput = 'Z value';
+  if fieldIsNotDefined(params, 'fweAdjustment')
+      params.fweAdjustment = 0;
+  end
+  if fieldIsNotDefined(params, 'fweMethod')
+      params.fweMethod = 'Single-step (Bonferroni)';
+  end
+  
+  if fieldIsNotDefined(params, 'adaptiveFweMethod')
+      params.adaptiveFweMethod = 'Adaptive';
+  end
+  if fieldIsNotDefined(params, 'adaptiveFweThreshold')
+      params.adaptiveFweThreshold = .05;
   end
 
 
   tTestSideMenu = putOnTopOfList(params.tTestSide,{'Both','Right','Left'});
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
-  resampleFWEadjustmentMenu = putOnTopOfList(params.resampleFWEadjustment,{'None','Single Step','Step-down'});
+  resampleFWEadjustmentMenu = putOnTopOfList(params.resampleFWEadjustment,{'None','Single-step','Step-down'});
   fdrAssumptionMenu = putOnTopOfList(params.fdrAssumption,{'Independence/Positive dependence','None'});
   fdrMethodMenu = putOnTopOfList(params.fdrMethod,{'Step-up','Adaptive Step-up','Two-stage Adaptive Step-up','Adaptive Step-down','Multiple-stage Adaptive Step-up'});
+  fweMethodMenu = putOnTopOfList(params.fweMethod,{'None','Single-step (Bonferroni)','Step-down (Holm)','Step-up (Hochberg)','Hommel'});
+  adaptiveFweMethodMenu = putOnTopOfList(params.adaptiveFweMethod,{'None','Adaptive','Fixed Threshold'});
   testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   
   contrastOptionsVisible = 'visible=0';
@@ -180,7 +192,11 @@ while keepAsking
       {'fdrAdjustment', params.fdrAdjustment,testOptionsVisible,'type=checkbox', ''},...
       {'fdrAssumption', fdrAssumptionMenu,testOptionsVisible,'contingent=fdrAdjustment','type=popupmenu', ''},...
       {'fdrMethod', fdrMethodMenu,testOptionsVisible,'contingent=fdrAdjustment','type=popupmenu', ''},...
-      {'fdrMultipleStepQ', params.fdrMultipleStepQ,testOptionsVisible,'contingent=fdrAdjustment', ''},...
+      {'adaptiveFdrThreshold', params.adaptiveFdrThreshold,testOptionsVisible,'contingent=fdrAdjustment', ''},...
+      {'fweAdjustment', params.fweAdjustment,testOptionsVisible,'type=checkbox', ''},...
+      {'fweMethod', fweMethodMenu,testOptionsVisible,'contingent=fweAdjustment','type=popupmenu', ''},...
+      {'adaptiveFweMethod', adaptiveFweMethodMenu,testOptionsVisible,'type=popupmenu', ''},...
+      {'adaptiveFweThreshold', params.adaptiveFweThreshold,testOptionsVisible, ''},...
       {'testOutput', testOutputMenu,testOptionsVisible,'type=popupmenu', 'Type of statistics for output overlay.  P: outputs the probability value associated with the statistic. p-values less than 1e-16 will be replaced by 0; Z: outputs standard normal values associated with probability p. Z values with a probability less than 1e-16 will be replaced by +/-8.209536145151493'},...
        }];
 
@@ -257,7 +273,11 @@ while keepAsking
   elseif params.TFCE && ~(params.bootstrapStatistics || params.randomizationTests)
      mrWarnDlg('(getTestParamsGUI) TFCE requires bootstrap or randomization tests','Yes');
   elseif ~(params.bootstrapStatistics || params.randomizationTests) && ~strcmp(params.resampleFWEadjustment,'None')
-     mrWarnDlg('(getTestParamsGUI) resample-based FWE adjustment requires bootstrap or randomization tests','Yes');
+     mrWarnDlg('(getTestParamsGUI) Resample-based FWE adjustment requires bootstrap or randomization tests','Yes');
+  elseif params.fweAdjustment && strcmp(params.fweMethod,'Hommel') && ~strcmp(params.adaptiveFweMethod,'None')
+     mrWarnDlg('(getTestParamsGUI) Adaptive Hommel''s FWE control procdure is not implemented.','Yes');
+  elseif params.TFCE && (params.bootstrapStatistics || params.randomizationTests) && ~strcmp(params.resampleFWEadjustment,'None') && ~strcmp(params.adaptiveFweMethod,'None')
+     mrWarnDlg('(getTestParamsGUI) Adaptive resampled FWE adjustment is not implemented for TFCE data','Yes');
   else
      keepAsking = 0;
   end
