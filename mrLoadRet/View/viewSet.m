@@ -261,7 +261,7 @@ switch lower(param)
 
   case {'deletegroup'}
     % view = viewSet(view,'deleteGroup',groupNum);
-    groupnum = val;
+    groupnum = viewGet(view,'groupNum',val);
     groupName = viewGet(view,'groupName',groupnum);
     nScans = viewGet(view,'nScans');
     % confirm with user
