@@ -7,14 +7,14 @@
 %    purpose: 
 %
 
-function d = initResampleFWE(actual,params,rdf,mdf)
+function d = initResampleFWE(actual,params,p)
 
 
 d.actualIsNotNaN = ~isnan(actual); 
 d.numberFalseH0 = zeros(1,size(actual,2));
 d.numberTrueH0 = sum(d.actualIsNotNaN,1);
 
-if strcmp(params.resampleFWEadjustment,'Step-down') || ~strcmp(params.adaptiveFweMethod,'None')
+if strcmp(params.resampleFWEadjustment,'Step-down') || (~strcmp(params.adaptiveFweMethod,'None') && ~strcmp(params.resampleFWEadjustment,'None'))
   %find the sorting index for actual non-nan T values (independently for each contrast)
   
   actual(~d.actualIsNotNaN) = NaN;
@@ -23,7 +23,7 @@ if strcmp(params.resampleFWEadjustment,'Step-down') || ~strcmp(params.adaptiveFw
   d.indexReorderActual = cell(size(d.indexSortActual));
   for iTest = 1:length(d.indexSortActual)
     d.indexSortActual{iTest} = d.indexSortActual{iTest}(~isnan(sortedActual(:,iTest))); 
-   [temp,d.indexReorderActual{iTest}] = sort(d.indexSortActual{iTest},1);
+    [temp,d.indexReorderActual{iTest}] = sort(d.indexSortActual{iTest},1);
   end
 else
   d.indexSortActual = {};
@@ -32,16 +32,7 @@ else
 end
 
 
-if ~strcmp(params.adaptiveFweMethod,'None')
-  if nargin==3 %this is a T-test
-    %convert to P value
-    p = 1 - cdf('t', double(actual), rdf); %here use doubles to deal with small Ps
-    if strcmp(params.tTestSide,'Both')
-      p = 2*p;
-    end
-  elseif nargin==4 %this is an F-test
-    p = 1 - cdf('f', double(actual), repmat(mdf,size(actual,1),1), repmat(rdf,size(actual)));  
-  end
+if (~strcmp(params.adaptiveFweMethod,'None') && ~strcmp(params.resampleFWEadjustment,'None'))
   for iTest = 1:size(p,2)
     trueH0ratio = estimateTrueH0Ratio(p(:,iTest),params);
     d.numberFalseH0(iTest) = round((1-trueH0ratio)*length(d.indexSortActual{iTest}));

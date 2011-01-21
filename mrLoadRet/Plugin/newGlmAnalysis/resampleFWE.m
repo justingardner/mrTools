@@ -17,11 +17,12 @@ switch(params.resampleFWEadjustment)
       count = zeros(size(actual));
       for i=1:size(resampled,2)
         sortedResampled = resampled(d.indexSortActual{i},i);
+        maxSortedResampled = sortedResampled;
         for j=1:d.numberFalseH0(i)
-          sortedResampled(j) = max(sortedResampled(j:j+d.numberTrueH0(i)-1));
+          maxSortedResampled(j) = max(sortedResampled(j:j+d.numberTrueH0(i)-1));
         end
-        sortedResampled(d.numberFalseH0(i)+1:end) = max(sortedResampled(d.numberFalseH0(i)+1:end));
-        count(d.actualIsNotNaN(:,i),i) = sortedResampled(d.indexReorderActual{i});
+        maxSortedResampled(j+1:end) = max(sortedResampled(j+1:end));
+        count(d.actualIsNotNaN(:,i),i) = maxSortedResampled(d.indexReorderActual{i});
       end
       count = double(count>actual); %perform the comparison
       count(~d.actualIsNotNaN)=NaN;    
