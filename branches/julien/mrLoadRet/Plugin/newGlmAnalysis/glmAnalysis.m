@@ -1,7 +1,7 @@
 % glmAnalysis.m
 %
 %      usage: thisView = glmAnalysis(thisView,params)
-%         by: farshad moradi,  modified by julien besle 12/01/2010 to 25/10/2010 to perform an ANOVAs(F-tests) and T-tests
+%         by: farshad moradi,  modified by julien besle 12/01/2010 to 25/10/2010 to perform an ANOVAs(statistic-tests) and statistic-tests
 %       date: 06/14/07
 %    purpose: GLM analysis using design matrix convolved with any HRF model (including deconvolution)
 %              $Id$
@@ -11,8 +11,8 @@
 %     GLM is composed of EVs which can be stimulus times or combinations thereof
 %     outputs r2 overlay
 %     computes any number of contrasts
-%     T-tests are performed on any linear combinations of Explanatory Variables (EVs) against zero (H0 = contrast'*beta
-%     F-tests tests any set of contrasts, not necessarily identical to above contrasts to subsets of  (H0 = no contrast differs from zero)
+%     statistic-tests are performed on any linear combinations of Explanatory Variables (EVs) against zero (H0 = contrast'*beta
+%     statistic-tests tests any set of contrasts, not necessarily identical to above contrasts to subsets of  (H0 = no contrast differs from zero)
 
 function thisView = glmAnalysis(thisView,params,varargin)
 
@@ -52,10 +52,9 @@ params = defaultReconcileParams([],params);  %this seems quite useless to me
 
 %just to have shorter variable names
 scanParams = params.scanParams;
-restrictions = params.restrictions;
-numberFtests = length(restrictions);
-contrasts = params.contrasts;
-numberContrasts = size(contrasts,1);
+numberFtests = length(params.restrictions);
+numberContrasts = size(params.contrasts,1);
+numberTests = numberFtests+numberContrasts;
 
 if params.covCorrection   %number of voxels to get around the ROI/subset box in case the covariance matrix is estimated
    voxelsMargin = floor(params.covEstimationAreaSize/2);
@@ -63,16 +62,16 @@ else
    voxelsMargin = 0;
 end
 
-if any( sum(contrasts,2)==1 & sum(contrasts~=0,2)==1 )
-   scanNum = params.scanNum(1);
-   fprintf('Getting condition names from scan %d', scanNum); 
-   d = loadScan(thisView, scanNum, [], 0);
-   d = getStimvol(d,scanParams{scanNum});
-   % do any call for preprocessing
-   if ~isempty(scanParams{scanNum}.preprocess)
-      d = eventRelatedPreProcess(d,scanParams{scanNum}.preprocess);
-   end
-end
+% % % % if any( sum(contrasts,2)==1 & sum(contrasts~=0,2)==1 )
+% % % %    scanNum = params.scanNum(1);
+% % % %    fprintf('Getting condition names from scan %d', scanNum); 
+% % % %    d = loadScan(thisView, scanNum, [], 0);
+% % % %    d = getStimvol(d,scanParams{iScan});
+% % % %    % do any call for preprocessing
+% % % %    if ~isempty(scanParams{iScan}.preprocess)
+% % % %       d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
+% % % %    end
+% % % % end
 
 
 %--------------------------------------------------------- Main loop over scans ---------------------------------------------------
@@ -80,103 +79,70 @@ set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 %initialize the data we're keeping for output overlays
 precision = mrGetPref('defaultPrecision');
 r2 = cell(1,params.scanNum(end));
-if ~isempty(contrasts)
-  C = r2;
-  if params.computeTtests
-    if params.parametricTests
-      T = r2;
-      Tp = r2;  
-      fdrTp=r2;
-      fweTp=r2;
-      if params.TFCE && params.randomizationTests
-        randMaxTfceT = r2;
-      end
-    end
-    if params.randomizationTests
-      randT = r2;
-      randMaxT = r2;
-      fdrRandC=r2;
-      fweRandC=r2;
-      if params.TFCE
-        randTfceT = r2;
-        fdrTfceRandT=r2;
-        fweTfceRandT=r2;
-      end
-    end
-    if params.bootstrapStatistics
-      bootstrapT = r2;
-      fdrBootstrapT=r2;
-      fweBootstrapT=r2;
-      if ~strcmp(params.resampleFWEadjustment,'None')
-        bootstrapMaxT = r2;
-        if params.TFCE  
-          bootstrapTfceT = r2;
-          fdrBootstrapTfceT=r2;
-          fweBootstrapTfceT=r2;
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            bootstrapMaxTfceT = r2;
-          end
-        end
-      end
-    end
-  end
+if numberContrasts
+  contrast = r2;
 end
-if ~isempty(restrictions)
-  F = r2;  
+if numberTests
   if params.parametricTests
-    Fp = r2;
-    fdrFp=r2;
-    fweFp=r2;
-    if params.TFCE && params.randomizationTests
-      randMaxTfceF = r2;
+    parametricP = r2;  
+    if params.outputStatistic
+      statistic = r2;
+    end
+    fdrParametricP=r2;
+    fweParametricP=r2;
+    if params.TFCE && params.permutationTests
+      permuteFweTfceP = r2;
     end
   end
-  if params.randomizationTests
-    randF = r2;
-    randMaxF = r2;
-    fdrRandF=r2;
-    fweRandF=r2;
+  if params.permutationTests
+    permuteP = r2;
+    permuteFweParametricP = r2;
+    fdrPermuteP=r2;
+    fwePermuteP=r2;
     if params.TFCE
-      randTfceF = r2;
-      fdrTfceRandF=r2;
-      fweTfceRandF=r2;
+      tfcePermuteP = r2;
+      fdrTfcePermuteP=r2;
+      fweTfceRandT=r2;
     end
   end
   if params.bootstrapStatistics
-    bootstrapF = r2;
-    fdrBootstrapF=r2;
-    fweBootstrapF=r2;
+    bootstrapP = r2;
+    fdrBootstrapP=r2;
+    fweBootstrapP=r2;
     if ~strcmp(params.resampleFWEadjustment,'None')
-      bootstrapMaxF = r2;
-      if params.TFCE  
-        bootstrapTfceF = r2;
-        fdrBootstrapTfceF=r2;
-        fweBootstrapTfceF=r2;
-        if ~strcmp(params.resampleFWEadjustment,'None')
-          bootstrapMaxTfceF = r2;
-        end
+      bootstrapFweParametricP = r2;
+      bootstrapFweBootstrapP = r2;
+    end
+    if params.TFCE  
+      tfceBootstrapP = r2;
+      fdrTfceBootstrapP=r2;
+      fweTfceBootstrapP=r2;
+      if ~strcmp(params.resampleFWEadjustment,'None')
+        bootstrapFweTfceP = r2;
+        bootstrapFweTfceBootstrapP = r2;
       end
     end
   end
 end
 
-for scanNum = params.scanNum
-  numVolumes = viewGet(thisView,'nFrames',scanNum);
-  scanDims = viewGet(thisView,'dims',scanNum);
+
+for iScan = params.scanNum
+  numVolumes = viewGet(thisView,'nFrames',iScan);
+  scanDims = viewGet(thisView,'dims',iScan);
 
   %compute the dimensions of the subset of voxels to load
   switch(params.analysisVolume)
    case {'Whole volume','Subset box'}
-       subsetBox = eval(scanParams{scanNum}.subsetBox);
+       subsetBox = eval(scanParams{iScan}.subsetBox);
    case 'Loaded ROI(s)'
       %get the smallest box containing all the voxels from all the boxes 
-      [subsetBox, whichRoi, marginVoxels] = getRoisBox(thisView,scanNum,[voxelsMargin voxelsMargin 0]);
+      [subsetBox, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,[voxelsMargin voxelsMargin 0]);
       usedVoxelsInBox = marginVoxels | any(whichRoi,4);
       %clear('whichRoi','marginVoxels');
   end
   subsetDims = diff(subsetBox,1,2)'+1;
   %Compute the number of slices to load at once in order to minimize memory usage
-  if params.TFCE && (params.randomizationTests || params.bootstrapStatistics)
+  if params.TFCE && (params.permutationTests || params.bootstrapStatistics)
    %in this particular case, we force loading the whole dataset at once
    slicesToLoad = subsetDims(3);
    loadCallsPerBatch = {1};
@@ -238,7 +204,7 @@ for scanNum = params.scanNum
       return;
   end
 
-  ehdr = []; rdf = []; mdf = [];s2 = []; autoCorrelationParameters = [];
+  ehdr = []; s2 = []; autoCorrelationParameters = [];
   ehdrBootstrapCIs = [];  contrastBootstrapCIs = [];
 
 
@@ -250,10 +216,10 @@ for scanNum = params.scanNum
     switch(params.analysisVolume)
       case {'Whole volume','Subset box'}
         %Load data
-        d = loadScan(thisView,scanNum,[],subsetBox(3,1) + [firstSlices(iBatch) lastSlices(iBatch)] -1, precision,subsetBox(1,:),subsetBox(2,:));
+        d = loadScan(thisView,iScan,[],subsetBox(3,1) + [firstSlices(iBatch) lastSlices(iBatch)] -1, precision,subsetBox(1,:),subsetBox(2,:));
       case 'Loaded ROI(s)'
         for iLoad= loadCallsPerBatch{iBatch}
-          dummy = loadScan(thisView,scanNum,[],subsetBox(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox(1,:),subsetBox(2,:));
+          dummy = loadScan(thisView,iScan,[],subsetBox(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox(1,:),subsetBox(2,:));
           dummy.data = reshape(dummy.data,[prod(dummy.dim(1:3)) dummy.dim(4)]);
           dummy.data = dummy.data(usedVoxelsInBox(:,:,firstSlices(iLoad):lastSlices(iLoad))>0,:);
           if iLoad==1
@@ -272,22 +238,22 @@ for scanNum = params.scanNum
     if iBatch==1
       %----------------------------------------Design matrix: same for all voxels/runs
       % get the stim volumes, if empty then abort
-      d = getStimvol(d,scanParams{scanNum});
+      d = getStimvol(d,scanParams{iScan});
       if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
       % do any call for preprocessing
-      if ~isempty(scanParams{scanNum}.preprocess)
-        d = eventRelatedPreProcess(d,scanParams{scanNum}.preprocess,verbose);
+      if ~isempty(scanParams{iScan}.preprocess)
+        d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess,verbose);
       end
 
       actualStimvol = d.stimvol;
       %precompute permutation vectors
-      if params.randomizationTests
-        nRand = params.nRand;
+      if params.permutationTests
+        nResamples = params.nResamples;
         %find which event types will be randomized
         %first which EVs are involved in all contrasts/restrictions
-        contrastEVs = any([contrasts;cell2mat(restrictions)],1);
+        contrastEVs = any([params.contrasts;cell2mat(params.restrictions)],1);
         %then which event types constitute these EVs
-        randEvents = any(params.scanParams{scanNum}.stimToEVmatrix(:,contrastEVs),2);
+        randEvents = any(params.scanParams{iScan}.stimToEVmatrix(:,contrastEVs),2);
         %now compute permutation indices for those events, while keeping other events indices unchanged
         nEventTypes = length(actualStimvol);
         numberEvents = NaN(nEventTypes,1);
@@ -302,12 +268,12 @@ for scanNum = params.scanNum
         end
         stimvolToPermute = cell2mat(actualStimvol(randEvents));
         nStimsToPermute = length(stimvolToPermute);
-        randomizations = repmat(cell2mat(actualStimvol),nRand,1);
-        for iRand = 1:nRand
-           randomizations(iRand,stimvolToPermuteIndices) = stimvolToPermute(randperm(nStimsToPermute));
+        permutations = repmat(cell2mat(actualStimvol),nResamples,1);
+        for iPerm = 1:nResamples
+           permutations(iPerm,stimvolToPermuteIndices) = stimvolToPermute(randperm(nStimsToPermute));
         end
       else
-        nRand = 0;
+        nResamples = 0;
       end
 
       %create model HRF
@@ -326,75 +292,52 @@ for scanNum = params.scanNum
     d.dim = size(d.data);
       
     %-------------------------------Permutations------------------------------------------
-    %we only need to compute Ttests
-    computeTtests = params.computeTtests & (params.parametricTests | ... %if parametric tests are asked for
-       (length(params.componentsToTest)>1 & strcmp(params.componentsCombination,'Or')) );  % or if contrasts are tested on several components using 'Or' combination
-    for iRand = 1:nRand+1
-      if iRand==2
-        hWaitBar = mrWaitBar(0,['(glmAnalysis) Computing Permutations for scan ' num2str(scanNum)]);
+    for iPerm = 1:nResamples+1
+      if iPerm==2
+        hWaitBar = mrWaitBar(0,['(glmAnalysis) Computing Permutations for scan ' num2str(iScan)]);
       end
-      if iRand == 1 %if it is the actual data
+      if iPerm == 1 %if it is the actual data
         d.stimvol = actualStimvol;
-        computeEstimates = 1;
-        computeBootstrap = params.bootstrapStatistics;
-        computeTtests = computeTtests || computeBootstrap;
+        actualData = 1;
         verbose = 1;
       else
-        computeEstimates = 0;
-        computeBootstrap = 0;
-        mrWaitBar(iRand/nRand,hWaitBar);
-        randStimvol = randomizations(iRand-1,:);
+        actualData = 0;
+        mrWaitBar(iPerm/nResamples,hWaitBar);
+        permutedStimvol = permutations(iPerm-1,:);
         for stimnum = 1:length(actualStimvol)%randomize stim events
-           d.stimvol{stimnum} = randStimvol(1:numberEvents(stimnum));
-           randStimvol = randStimvol(numberEvents(stimnum)+1:end);
+           d.stimvol{stimnum} = permutedStimvol(1:numberEvents(stimnum));
+           permutedStimvol = permutedStimvol(numberEvents(stimnum)+1:end);
         end
         verbose = 0;
       end
 
-      %compute the design matrix for this randomization
-      d = makeDesignMatrix(d,params,verbose, scanNum);
+      %compute the design matrix for this permutation
+      d = makeDesignMatrix(d,params,verbose, iScan);
       % compute estimates and statistics
-      [d, tempR2, tempC, tempT, tempF, bootstrap] = getGlmStatistics(d, params, verbose, precision, computeEstimates, computeTtests, computeBootstrap);
+      [d, out] = getGlmStatistics(d, params, verbose, precision, actualData);%, computeTtests,computeBootstrap);
        
       
-      if params.randomizationTests
-        thisF = tempF;
-        %we'll use the T values for randomizations:
-        if ~isempty(contrasts) && params.computeTtests && ...
-          (params.parametricTests ... %if parametric tests are asked for (in order to compute resampled FWE adjustments)
-        || (length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or'))) 
-        %or if contrasts are tested on several components using 'Or' combination, since we can't compute contrasts in this case
-          thisT = tempT; 
-        else %otherwise, we can use the contrast values instead
-          thisT = tempC;
+      if params.permutationTests
+        if isfield(out,'statistic');
+          thisStatistic = out.statistic;
         end
       end
       
-      if iRand==1
-        %keep values for randomization tests
-        if params.randomizationTests
-          if ~isempty(contrasts) && params.computeTtests
-            tempActualT = thisT;
-            tempRandT = zeros(size(tempActualT),precision); %will count how many randomization values are above (below) the actual contrast value 
-            tempRandT(isnan(thisT)) = NaN; 
-            tempRandMaxT = zeros(size(tempActualT),precision); %same for the max (min) randomization value across space, for FWE adjustment
-            %this is for resampled-based FWE control
-            resampleFweTdata = initResampleFWE(reshape(tempActualT,prod(d.dim(1:3)),numberContrasts),params);
-          end
-          if ~isempty(restrictions)
-            tempActualF = thisF;
-            tempRandF = zeros(size(tempActualF),precision); %will count how many randomization values are above the actual F value 
-            tempRandF(isnan(thisF)) = NaN; 
-            tempRandMaxF = zeros(size(tempActualF),precision); %same for the max randomization value across space, for FWE adjustment
-            %this is for resampled-based FWE control
-            resampleFweFdata = initResampleFWE(reshape(tempActualF,prod(d.dim(1:3)),numberFtests),params);
-          end
+      if iPerm==1
+        %keep values for permutation tests
+        if params.permutationTests
+          actualStatistic = thisStatistic;
+          permuteStatisticCount = zeros(size(actualStatistic),precision); %will count how many permutation values are above the actual statistic value 
+          permuteStatisticCount(isnan(thisStatistic)) = NaN; 
+          permuteFweStatisticCount = zeros(size(actualStatistic),precision); %same for the max permutation value across space, for FWE adjustment
+          %this is for resampled-based FWE control
+          permuteFweData = initResampleFWE(reshape(actualStatistic,prod(d.dim(1:3)),numberTests),params);
         end
         
         %reshape data into the subsetbox
         if strcmp(params.analysisVolume,'Loaded ROI(s)') 
           d.ehdr = reshapeToRoiBox(d.ehdr,d.roiPositionInBox);
-          tempR2 = reshapeToRoiBox(tempR2,d.roiPositionInBox);
+          out.r2 = reshapeToRoiBox(out.r2,d.roiPositionInBox);
           d.s2 = reshapeToRoiBox(d.s2,d.roiPositionInBox);
           if params.covCorrection
             d.autoCorrelationParameters = reshapeToRoiBox(d.autoCorrelationParameters,d.roiPositionInBox);
@@ -402,48 +345,30 @@ for scanNum = params.scanNum
           if params.bootstrapStatistics && params.bootstrapIntervals
             d.ehdrBootstrapCIs = reshapeToRoiBox(d.ehdrBootstrapCIs,d.roiPositionInBox);
           end
-          if ~isempty(contrasts)
-            if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
-              tempC = reshapeToRoiBox(tempC,d.roiPositionInBox);
-            end
-            if params.computeTtests
-              if params.parametricTests
-                tempT = reshapeToRoiBox(tempT,d.roiPositionInBox);
-              end
-              if params.bootstrapStatistics
-                bootstrap.Tp = reshapeToRoiBox(bootstrap.Tp,d.roiPositionInBox);
-                if ~strcmp(params.resampleFWEadjustment,'None')
-                  bootstrap.maxTp = reshapeToRoiBox(bootstrap.maxTp,d.roiPositionInBox);
-                end
-                if params.TFCE 
-                  bootstrap.tfceTp = reshapeToRoiBox(bootstrap.tfceTp,d.roiPositionInBox);
-                  if ~strcmp(params.resampleFWEadjustment,'None')
-                    bootstrap.maxTfceTp = reshapeToRoiBox(bootstrap.maxTfceTp,d.roiPositionInBox);
-                  end
-                end
+          if numberTests
+            if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+              out.contrast = reshapeToRoiBox(out.contrast,d.roiPositionInBox);
+              if params.bootstrapStatistics && params.bootstrapIntervals
+                d.contrastBootstrapCIs = reshapeToRoiBox(d.contrastBootstrapCIs,d.roiPositionInBox);
               end
             end
-            if params.bootstrapStatistics && params.bootstrapIntervals && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
-              d.contrastBootstrapCIs = reshapeToRoiBox(d.contrastBootstrapCIs,d.roiPositionInBox);
-            end
-          end
-          if ~isempty(restrictions) 
             if params.parametricTests
-              tempF = reshapeToRoiBox(tempF,d.roiPositionInBox);
-              if numel(d.rdf)>1
-                d.rdf = reshapeToRoiBox(d.rdf,d.roiPositionInBox);
-                d.mdf = reshapeToRoiBox(d.mdf,d.roiPositionInBox);
+              out.parametricP = reshapeToRoiBox(out.parametricP,d.roiPositionInBox);
+              if params.outputStatistic
+                out.statistic = reshapeToRoiBox(out.statistic,d.roiPositionInBox);
               end
             end
             if params.bootstrapStatistics
-              bootstrap.Fp = reshapeToRoiBox(bootstrap.Fp,d.roiPositionInBox);
+              out.bootstrapP = reshapeToRoiBox(out.bootstrapP,d.roiPositionInBox);
               if ~strcmp(params.resampleFWEadjustment,'None')
-                bootstrap.maxFp = reshapeToRoiBox(bootstrap.maxFp,d.roiPositionInBox);
+                out.bootstrapFweParametricP = reshapeToRoiBox(out.bootstrapFweParametricP,d.roiPositionInBox);
+                out.bootstrapFweBootstrapP = reshapeToRoiBox(out.bootstrapFweBootstrapP,d.roiPositionInBox);
               end
               if params.TFCE 
-                bootstrap.tfceFp = reshapeToRoiBox(bootstrap.tfceFp,d.roiPositionInBox);
+                out.tfceBootstrapP = reshapeToRoiBox(out.tfceBootstrapP,d.roiPositionInBox);
                 if ~strcmp(params.resampleFWEadjustment,'None')
-                  bootstrap.maxTfceFp = reshapeToRoiBox(bootstrap.maxTfceFp,d.roiPositionInBox);
+                  out.bootstrapFweTfceP = reshapeToRoiBox(out.bootstrapFweTfceP,d.roiPositionInBox);
+                  out.bootstrapFweTfceBootstrapP = reshapeToRoiBox(out.bootstrapFweTfceBootstrapP,d.roiPositionInBox);
                 end
               end
             end
@@ -452,7 +377,7 @@ for scanNum = params.scanNum
         
         %concatenate data
         ehdr = cat(3,ehdr,d.ehdr);
-        r2{scanNum} = cat(3,r2{scanNum},tempR2);
+        r2{iScan} = cat(3,r2{iScan},out.r2);
         s2 = cat(3,s2,d.s2);
         if params.covCorrection
           autoCorrelationParameters = cat(3,autoCorrelationParameters,d.autoCorrelationParameters);
@@ -460,210 +385,121 @@ for scanNum = params.scanNum
         if params.bootstrapStatistics && params.bootstrapIntervals
           ehdrBootstrapCIs = cat(3,ehdrBootstrapCIs,d.ehdrBootstrapCIs);
         end
-        if ~isempty(contrasts)
-          if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
-            C{scanNum} = cat(3,C{scanNum},tempC);
-          end
-          if params.computeTtests
-            if params.parametricTests
-              T{scanNum} = cat(3,T{scanNum},tempT);
+        if numberTests
+          if numberContrasts
+            if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
+              contrast{iScan} = cat(3,contrast{iScan},out.contrast);
             end
-            if params.bootstrapStatistics
-              bootstrapT{scanNum} = cat(3,bootstrapT{scanNum},bootstrap.Tp);
-              if ~strcmp(params.resampleFWEadjustment,'None')
-                bootstrapMaxT{scanNum} = cat(3,bootstrapMaxT{scanNum},bootstrap.maxTp);
-                if params.TFCE 
-                  bootstrapTfceT{scanNum} = cat(3,bootstrapTfceT{scanNum},bootstrap.tfceTp);
-                  if ~strcmp(params.resampleFWEadjustment,'None')
-                    bootstrapMaxTfceT{scanNum} = cat(3,bootstrapMaxTfceT{scanNum},bootstrap.maxTfceTp);
-                  end
-                end
-              end
+            if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+              contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
             end
           end
-          if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
-            contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
-          end
-        end
-        if ~isempty(restrictions)
           if params.parametricTests
-            F{scanNum} = cat(3,F{scanNum},tempF);
-            if numel(d.rdf)>1
-               rdf = cat(3,rdf,d.rdf);
-               mdf = cat(3,mdf,d.mdf);
+            parametricP{iScan} = cat(3,parametricP{iScan},out.parametricP);
+            if params.outputStatistic
+              statistic{iScan} = cat(3,statistic{iScan},out.statistic);
             end
           end
           if params.bootstrapStatistics
-            bootstrapF{scanNum} = cat(3,bootstrapF{scanNum},bootstrap.Fp);
+            bootstrapP{iScan} = cat(3,bootstrapP{iScan},out.bootstrapP);
             if ~strcmp(params.resampleFWEadjustment,'None')
-              bootstrapMaxF{scanNum} = cat(3,bootstrapMaxF{scanNum},bootstrap.maxFp);
-              if params.TFCE 
-                bootstrapTfceF{scanNum} = cat(3,bootstrapTfceF{scanNum},bootstrap.tfceFp);
-                if ~strcmp(params.resampleFWEadjustment,'None')
-                  bootstrapMaxTfceF{scanNum} = cat(3,bootstrapMaxTfceF{scanNum},bootstrap.maxTfceFp);
-                end
+              bootstrapFweParametricP{iScan} = cat(3,bootstrapFweParametricP{iScan},out.bootstrapFweParametricP);
+              bootstrapFweBootstrapP{iScan} = cat(3,bootstrapFweBootstrapP{iScan},out.bootstrapFweBootstrapP);
+            end
+            if params.TFCE 
+              tfceBootstrapP{iScan} = cat(3,tfceBootstrapP{iScan},out.tfceBootstrapP);
+              if ~strcmp(params.resampleFWEadjustment,'None')
+                bootstrapFweTfceP{iScan} = cat(3,bootstrapFweTfceP{iScan},out.bootstrapFweTfceP);
+                bootstrapFweTfceBootstrapP{iScan} = cat(3,bootstrapFweTfceBootstrapP{iScan},out.bootstrapFweTfceBootstrapP);
               end
             end
           end
         end
         
-        clear('tempR2','tempC', 'tempT', 'tempF','bootstrap')
+        clear('out')
       
-      % iRand>1  
+      % iPerm>1  
       else
-        if ~isempty(contrasts)
-          tempRandT = tempRandT+double(thisT>tempActualT);
+        if numberTests
+          permuteStatisticCount = permuteStatisticCount+double(thisStatistic>actualStatistic);
+          %permuteFweStatisticCount = permuteFweStatisticCount+double(repmat(max(max(max(thisStatistic,[],3),[],2),[],1),[d.dim(1:3) 1])>actualStatistic);
           if ~strcmp(params.resampleFWEadjustment,'None')
-            %tempRandMaxT = tempRandMaxT+double(repmat(max(max(max(thisT,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualT);
-            tempRandMaxT = tempRandMaxT + reshape(resampleFWE(reshape(thisT,prod(d.dim(1:3)),numberContrasts),...
-                                                              reshape(tempActualT,prod(d.dim(1:3)),numberContrasts),...
-                                                              resampleFweTdata,params),...
-                                                  [d.dim(1:3) numberContrasts]);
-          end
-        end
-        if ~isempty(restrictions)
-          tempRandF = tempRandF+double(thisF>tempActualF);
-          %tempRandMaxF = tempRandMaxF+double(repmat(max(max(max(thisF,[],3),[],2),[],1),[d.dim(1:3) 1])>tempActualF);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            tempRandMaxF = tempRandMaxF + reshape(resampleFWE(reshape(thisF,prod(d.dim(1:3)),numberFtests),...
-                                                              reshape(tempActualF,prod(d.dim(1:3)),numberFtests),...
-                                                              resampleFweFdata,params),...
-                                                  [d.dim(1:3) numberFtests]);
+            permuteFweStatisticCount = permuteFweStatisticCount + reshape(resampleFWE(reshape(thisStatistic,prod(d.dim(1:3)),numberTests),...
+                                                              reshape(actualStatistic,prod(d.dim(1:3)),numberTests),...
+                                                              permuteFweData,params),...
+                                                  [d.dim(1:3) numberTests]);
           end
         end
       end
 
       %We compute the TFCE here only in the case we forced loading the whole volume at once
-      if params.TFCE && params.randomizationTests
-        
-        if computeTtests && ~isempty(contrasts)
+      if params.TFCE && params.permutationTests
+        if numberTests
           if isfield(d,'roiPositionInBox') 
-            thisT = reshapeToRoiBox(thisT,d.roiPositionInBox);
-          end
-          tempTfce = applyFslTFCE(thisT,'',0);
-          %put NaNs back
-          tempTfce(isnan(thisT)) = NaN;
-          if iRand == 1 %if it is the actual data
-            countTfceT = zeros(size(thisT),precision);     %
-            %put NaNs back
-            countTfceT(isnan(thisT)) = NaN;
-            actualTfceT = tempTfce;
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              countMaxTfceT = countTfceT;     %
-              resampleFweTfceTdata = initResampleFWE(reshape(actualTfceT,numel(tempTfce(:,:,:,1)),numberContrasts),params);
-            end
-          else
-            countTfceT = countTfceT + double(tempTfce>actualTfceT);
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              %countMaxTfceT = countMaxTfceT+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceT);
-              countMaxTfceT = countMaxTfceT + reshape(resampleFWE(reshape(tempTfce,numel(tempTfce(:,:,:,1)),numberContrasts),...
-                                                                  reshape(actualTfceT,numel(tempTfce(:,:,:,1)),numberContrasts),...
-                                                                  resampleFweTfceTdata,params),...
-                                                      size(countMaxTfceT));
-            end
-          end
-        end
-        
-        %same for F-tests
-        if ~isempty(restrictions)
-          if isfield(d,'roiPositionInBox') 
-            thisF = reshapeToRoiBox(thisF,d.roiPositionInBox); 
+            thisStatistic = reshapeToRoiBox(thisStatistic,d.roiPositionInBox); 
           end
           %NaNs in the data will be transformed to 0 by FSL, so for ROIs, 
           %TFCE is applied to the smallest box including all the ROIs, but replacing non-computed data by 0
-          tempTfce = applyFslTFCE(thisF,'',0);  
+          thisTfce = applyFslTFCE(thisStatistic,'',0);  
           %put NaNs back
-          tempTfce(isnan(thisF)) = NaN;
-          if iRand == 1 %if it is the actual data
-            countTfceF = zeros(size(thisF),precision);     %these will count how many randomization values are above the actual TFCE values voxelwise
+          thisTfce(isnan(thisStatistic)) = NaN;
+          if iPerm == 1 %if it is the actual data
+            permuteTfceCount = zeros(size(thisStatistic),precision);     %these will count how many permutation values are above the actual TFCE values voxelwise
             %put NaNs back
-            countTfceF(isnan(thisF)) = NaN;
-            actualTfceF = tempTfce;           %keep the TFCE transform
+            permuteTfceCount(isnan(thisStatistic)) = NaN;
+            actualTfce = thisTfce;           %keep the TFCE transform
             if ~strcmp(params.resampleFWEadjustment,'None')
-              countMaxTfceF = countTfceF; %same for randomization adjusted FWE
-              resampleFweTfceFdata = initResampleFWE(reshape(actualTfceF,numel(tempTfce(:,:,:,1)),numberFtests),params);
+              permuteFweTfceCount = permuteTfceCount; %same for permutation adjusted FWE
+              permuteFweTfceData = initResampleFWE(reshape(actualTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),params);
             end
           else
-            countTfceF = countTfceF+ double(tempTfce>actualTfceF);
+            permuteTfceCount = permuteTfceCount+ double(thisTfce>actualTfce);
             if ~strcmp(params.resampleFWEadjustment,'None')
-              %countMaxTfceF = countMaxTfceF+ double(repmat(max(max(max(tempTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfceF);
-              countMaxTfceF = countMaxTfceF + reshape(resampleFWE(reshape(tempTfce,numel(tempTfce(:,:,:,1)),numberFtests),...
-                                                                  reshape(actualTfceF,numel(tempTfce(:,:,:,1)),numberFtests),...
-                                                                  resampleFweTfceFdata,params),...
-                                                      size(countMaxTfceF));
+              %permuteFweTfceCount = permuteFweTfceCount+ double(repmat(max(max(max(thisTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfce);
+              permuteFweTfceCount = permuteFweTfceCount + reshape(resampleFWE(reshape(thisTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),...
+                                                                  reshape(actualTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),...
+                                                                  permuteFweTfceData,params),...
+                                                      size(permuteFweTfceCount));
             end
           end
         end
         
-        clear('tempTfce');
+        clear('thisTfce');
       end
     end
-    if params.randomizationTests 
+    if params.permutationTests 
        mrCloseDlg(hWaitBar);
     end
     d = rmfield(d,'data');
-    clear('actualTfceT','actualTfceF')
+    clear('actualTfce')
 
-    if params.randomizationTests %compute P-values, reshape and concatenate if needed
-      if ~isempty(contrasts)
-        tempRandT = tempRandT/nRand;
+    if params.permutationTests %compute P-values, reshape and concatenate if needed
+      if numberTests 
+        permuteStatisticCount = computeRandP(permuteStatisticCount,nResamples);
         if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-            tempRandT = reshapeToRoiBox(tempRandT,d.roiPositionInBox);
+            permuteStatisticCount = reshapeToRoiBox(permuteStatisticCount,d.roiPositionInBox);
         end
-        randT{scanNum} = cat(3,randT{scanNum},tempRandT);
+        permuteP{iScan} = cat(3,permuteP{iScan},permuteStatisticCount);          
         if ~strcmp(params.resampleFWEadjustment,'None')
-          tempRandMaxT = tempRandMaxT/nRand;
-          tempRandMaxT(isnan(tempRandMaxT)) = NaN; %put NaNs back in place
-          tempRandMaxT = reshape(enforceMonotonicityResampleFWE(...
-                                    reshape(tempRandMaxT,prod(d.dim(1:3)),numberContrasts),...
-                                    indexSortActualT,indexReorderActualT,actualTisNotNaN,params),...
-                                    size(tempRandMaxT));
+          permuteFweStatisticCount = computeRandP(permuteFweStatisticCount,nResamples);
+          permuteFweStatisticCount(isnan(permuteFweStatisticCount)) = NaN; %put NaNs back in place
           if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-             tempRandMaxT = reshapeToRoiBox(tempRandMaxT,d.roiPositionInBox);
+            permuteFweStatisticCount = reshapeToRoiBox(permuteFweStatisticCount,d.roiPositionInBox);
           end
-          randMaxT{scanNum} = cat(3,randMaxT{scanNum},tempRandMaxT);
+          permuteFweParametricP{iScan} = cat(3,permuteFweParametricP{iScan},permuteFweStatisticCount);
         end
         if params.TFCE 
-          randTfceT{scanNum} = countTfceT/nRand;
-          clear('countTfceT');
-          randTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
+          tfcePermuteP{iScan} = computeRandP(permuteTfceCount,nResamples);
+          clear('permuteTfceCount');
+          tfcePermuteP{iScan}(isnan(permuteP{iScan})) = NaN; %put NaNs back in place
           if ~strcmp(params.resampleFWEadjustment,'None')
-            randMaxTfceT{scanNum} = countMaxTfceT/nRand;
-            clear('countMaxTfceT');
-            randMaxTfceT{scanNum} = reshape(enforceMonotonicityResampleFWE(...
-                                        reshape(randMaxTfceT{scanNum},numel(randMaxTfceT{scanNum}(:,:,:,1)),numberContrasts),...
-                                        indexSortActualTfceT,indexReorderActualTfceT,tfceActualTisNotNaN,params),...
-                                        size(randMaxTfceT{scanNum}));
-            randMaxTfceT{scanNum}(isnan(randT{scanNum})) = NaN; %put NaNs back in place
-          end
-        end
-      end
-      if ~isempty(restrictions) 
-        tempRandF = tempRandF/nRand;
-        if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-            tempRandF = reshapeToRoiBox(tempRandF,d.roiPositionInBox);
-        end
-        randF{scanNum} = cat(3,randF{scanNum},tempRandF);          
-        if ~strcmp(params.resampleFWEadjustment,'None')
-          tempRandMaxF = tempRandMaxF/nRand;
-          tempRandMaxF(isnan(tempRandMaxF)) = NaN; %put NaNs back in place
-          if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-            tempRandMaxF = reshapeToRoiBox(tempRandMaxF,d.roiPositionInBox);
-          end
-          randMaxF{scanNum} = cat(3,randMaxF{scanNum},tempRandMaxF);
-        end
-        if params.TFCE 
-          randTfceF{scanNum} = countTfceF/nRand;
-          clear('countTfceF');
-          randTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            randMaxTfceF{scanNum} = countMaxTfceF/nRand;
-            clear('countMaxTfceF');
-            randMaxTfceF{scanNum} = reshape(enforceMonotonicityResampleFWE(...
-                                        reshape(randMaxTfceF{scanNum},numel(randMaxTfceF{scanNum}(:,:,:,1)),numberFtests),...
-                                        indexSortActualTfceF,indexReorderActualTfceF,tfceActualFisNotNaN,params),...
-                                        size(randMaxTfceF{scanNum}));
-            randMaxTfceF{scanNum}(isnan(randF{scanNum})) = NaN; %put NaNs back in place
+            permuteFweTfceP{iScan} = computeRandP(permuteFweTfceCount,nResamples);
+            clear('permuteFweTfceCount');
+            permuteFweTfceP{iScan} = reshape(enforceMonotonicityResampleFWE(...
+                                        reshape(permuteFweTfceP{iScan},numel(permuteFweTfceP{iScan}(:,:,:,1)),numberContrasts+numberFtests),...
+                                        permuteFweTfceData,params),...
+                                        size(permuteFweTfceP{iScan}));
+            permuteFweTfceP{iScan}(isnan(permuteP{iScan})) = NaN; %put NaNs back in place
           end
         end
       end
@@ -672,132 +508,82 @@ for scanNum = params.scanNum
     
 
   end
-  clear('tempRandT','tempRandF','tempActualT','tempActualF')
+  clear('permuteStatisticCount','actualStatistic')
   
-  if params.computeTtests && ~isempty(contrasts)
-    if params.parametricTests
-        %convert to P value
-        Tp{scanNum} = 1 - cdf('t', double(T{scanNum}), d.rdf); %here use doubles to deal with small Ps
-        if ~params.outputParametricStatistic
-          T{scanNum} = [];
-        end
-        if strcmp(params.tTestSide,'Both')
-          Tp{scanNum} = 2*Tp{scanNum};
-        end
-        [Tp{scanNum},fdrTp{scanNum},fweTp{scanNum}] = transformStatistic(Tp{scanNum},precision,1e-16,params); 
-    end
-    if params.randomizationTests
-      [randT{scanNum},fdrRandC{scanNum},fweRandC{scanNum}] = transformStatistic(randT{scanNum},precision,1/(nRand+1),params); 
-      if ~strcmp(params.resampleFWEadjustment,'None')
-        randMaxT{scanNum} = transformStatistic(randMaxT{scanNum},precision,1/(nRand+1),params); 
-      end
-      if params.TFCE 
-        [randTfceT{scanNum},fdrTfceRandT{scanNum},fweTfceRandT{scanNum}] = transformStatistic(randTfceT{scanNum},precision,1/(nRand+1),params); 
-        if ~strcmp(params.resampleFWEadjustment,'None')
-          randMaxTfceT{scanNum} = transformStatistic(randMaxTfceT{scanNum},precision,1/(nRand+1),params); 
-        end
-      end
-    end
-    if params.bootstrapStatistics
-      [bootstrapT{scanNum},fdrBootstrapT{scanNum},fweBootstrapT{scanNum}] = transformStatistic(bootstrapT{scanNum},precision,1/(params.nBootstrap+1),params); 
-      if ~strcmp(params.resampleFWEadjustment,'None')
-        bootstrapMaxT{scanNum} = transformStatistic(bootstrapMaxT{scanNum},precision,1/(params.nBootstrap+1),params);
-        if params.TFCE 
-          [bootstrapTfceT{scanNum},fdrBootstrapTfceT{scanNum},fweBootstrapTfceT{scanNum}] = transformStatistic(bootstrapTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            bootstrapMaxTfceT{scanNum} = transformStatistic(bootstrapMaxTfceT{scanNum},precision,1/(params.nBootstrap+1),params);
-          end
-        end
-      end
-    end
-  end
-  
-  if ~isempty(restrictions)
+  if numberTests
     %make parametric probability maps
-    if params.parametricTests 
-      if ~strcmp(params.testOutput,'T/F value') || params.fdrAdjustment || params.fweAdjustment
-        %convert to P value
-        if numel(d.rdf)>1
-          d.rdf = rdf;
-          d.mdf = mdf;
-        else
-          rdf = d.rdf*ones(size(s2));
-          mdf = repmat(permute(d.mdf,[1 3 4 2]),[size(s2) 1]);
-        end   
-        Fp{scanNum} = 1 - cdf('f', double(F{scanNum}), mdf, repmat(rdf,[1 1 1 numberFtests]));  
-        clear('mdf','rdf')
-        if ~params.outputParametricStatistic
-          F{scanNum} = [];
-        end
-        [Fp{scanNum},fdrFp{scanNum},fweFp{scanNum}] = transformStatistic(Fp{scanNum},precision,1e-16,params); 
-      end
+    if params.parametricTests
+      [parametricP{iScan},fdrParametricP{iScan},fweParametricP{iScan}] = transformStatistic(parametricP{iScan},precision,params); 
     end
-    if params.randomizationTests 
-      [randF{scanNum},fdrRandF{scanNum},fweRandF{scanNum}] = transformStatistic(randF{scanNum},precision,1/(nRand+1),params); 
+    if params.permutationTests
+      [permuteP{iScan},fdrPermuteP{iScan},fwePermuteP{iScan}] = transformStatistic(permuteP{iScan},precision,params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
-        randMaxF{scanNum} = transformStatistic(randMaxF{scanNum},precision,1/(nRand+1),params); 
+        permuteFweParametricP{iScan} = transformStatistic(permuteFweParametricP{iScan},precision,params); 
       end
       if params.TFCE 
-        [randTfceF{scanNum},fdrTfceRandF{scanNum},fweTfceRandF{scanNum}] = transformStatistic(randTfceF{scanNum},precision,1/(nRand+1),params); 
+        [tfcePermuteP{iScan},fdrTfcePermuteP{iScan},fweTfceRandT{iScan}] = transformStatistic(tfcePermuteP{iScan},precision,params); 
         if ~strcmp(params.resampleFWEadjustment,'None')
-          randMaxTfceF{scanNum} = transformStatistic(randMaxTfceF{scanNum},precision,1/(nRand+1),params); 
+          permuteFweTfceP{iScan} = transformStatistic(permuteFweTfceP{iScan},precision,params); 
         end
       end
     end
     if params.bootstrapStatistics
-      [bootstrapF{scanNum},fdrBootstrapF{scanNum},fweBootstrapF{scanNum}] = transformStatistic(bootstrapF{scanNum},precision,1/(params.nBootstrap+1),params); 
+      [bootstrapP{iScan},fdrBootstrapP{iScan},fweBootstrapP{iScan}] = transformStatistic(bootstrapP{iScan},precision,params); 
       if ~strcmp(params.resampleFWEadjustment,'None')
-        bootstrapMaxF{scanNum} = transformStatistic(bootstrapMaxF{scanNum},precision,1/(params.nBootstrap+1),params);
+        bootstrapFweParametricP{iScan} = transformStatistic(bootstrapFweParametricP{iScan},precision,params);
+        bootstrapFweBootstrapP{iScan} = transformStatistic(bootstrapFweBootstrapP{iScan},precision,params);
       end
       if params.TFCE 
-        [bootstrapTfceF{scanNum},fdrBootstrapTfceF{scanNum},fweBootstrapTfceF{scanNum}] = transformStatistic(bootstrapTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+        [tfceBootstrapP{iScan},fdrTfceBootstrapP{iScan},fweTfceBootstrapP{iScan}] = transformStatistic(tfceBootstrapP{iScan},precision,params);
         if ~strcmp(params.resampleFWEadjustment,'None')
-          bootstrapMaxTfceF{scanNum} = transformStatistic(bootstrapMaxTfceF{scanNum},precision,1/(params.nBootstrap+1),params);
+          bootstrapFweTfceP{iScan} = transformStatistic(bootstrapFweTfceP{iScan},precision,params);
+          bootstrapFweTfceBootstrapP{iScan} = transformStatistic(bootstrapFweTfceBootstrapP{iScan},precision,params);
         end
       end
     end
   end
+  
 
   % save eventRelated parameters
-  glmAnal.d{scanNum} = copyFields(d);
+  glmAnal.d{iScan} = copyFields(d);
   stimvol = d.stimvol;
   for i=1:length(stimvol)
     stimvol{i} = unique(ceil(stimvol{i}/d.designSupersampling));
   end
-  glmAnal.d{scanNum}.stimvol = stimvol;
-  glmAnal.d{scanNum}.hrf = downsample(d.hrf, d.designSupersampling/scanParams{scanNum}.estimationSupersampling)/d.designSupersampling*scanParams{scanNum}.estimationSupersampling;
-  glmAnal.d{scanNum}.actualhrf = d.hrf;
+  glmAnal.d{iScan}.stimvol = stimvol;
+  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/scanParams{iScan}.estimationSupersampling)/d.designSupersampling*scanParams{iScan}.estimationSupersampling;
+  glmAnal.d{iScan}.actualhrf = d.hrf;
   clear('d');
-  glmAnal.d{scanNum}.estimationSupersampling = scanParams{scanNum}.estimationSupersampling;
-  glmAnal.d{scanNum}.acquisitionSubsample = scanParams{scanNum}.acquisitionSubsample;
-  glmAnal.d{scanNum}.EVnames = params.EVnames;                %this should be removed if viewGet can get params from GLM analysis
-  glmAnal.d{scanNum}.dim = [scanDims numVolumes];
-  glmAnal.d{scanNum}.ehdr = NaN([scanDims size(ehdr,4) size(ehdr,5)],precision);
-  glmAnal.d{scanNum}.ehdr(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdr;
-  glmAnal.d{scanNum}.s2 = NaN(scanDims,precision);
-  glmAnal.d{scanNum}.s2(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = s2; %JB
+  glmAnal.d{iScan}.estimationSupersampling = scanParams{iScan}.estimationSupersampling;
+  glmAnal.d{iScan}.acquisitionSubsample = scanParams{iScan}.acquisitionSubsample;
+  glmAnal.d{iScan}.EVnames = params.EVnames;                %this should be removed if viewGet can get params from GLM analysis
+  glmAnal.d{iScan}.dim = [scanDims numVolumes];
+  glmAnal.d{iScan}.ehdr = NaN([scanDims size(ehdr,4) size(ehdr,5)],precision);
+  glmAnal.d{iScan}.ehdr(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdr;
+  glmAnal.d{iScan}.s2 = NaN(scanDims,precision);
+  glmAnal.d{iScan}.s2(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = s2; %JB
   clear('ehdr','s2');
   if params.covCorrection
-    glmAnal.d{scanNum}.autoCorrelationParameters = NaN([scanDims size(autoCorrelationParameters,4)],precision);
-    glmAnal.d{scanNum}.autoCorrelationParameters(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = autoCorrelationParameters; %JB
+    glmAnal.d{iScan}.autoCorrelationParameters = NaN([scanDims size(autoCorrelationParameters,4)],precision);
+    glmAnal.d{iScan}.autoCorrelationParameters(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = autoCorrelationParameters; %JB
     clear('autoCorrelationParameters')
   end
   if params.bootstrapStatistics && params.bootstrapIntervals
-    glmAnal.d{scanNum}.ehdrBootstrapCIs = NaN([scanDims size(ehdrBootstrapCIs,4) size(ehdrBootstrapCIs,5)],precision);
-    glmAnal.d{scanNum}.ehdrBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdrBootstrapCIs; %JB
+    glmAnal.d{iScan}.ehdrBootstrapCIs = NaN([scanDims size(ehdrBootstrapCIs,4) size(ehdrBootstrapCIs,5)],precision);
+    glmAnal.d{iScan}.ehdrBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdrBootstrapCIs; %JB
     clear('ehdrBootstrapCIs')
   end
-  if ~isempty(contrasts)
-    glmAnal.d{scanNum}.contrasts = contrasts;
+  if numberContrasts
+    glmAnal.d{iScan}.contrasts = params.contrasts;
     if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
-      glmAnal.d{scanNum}.contrastBootstrapCIs = NaN([scanDims size(contrastBootstrapCIs,4) size(contrastBootstrapCIs,5)],precision);
-      glmAnal.d{scanNum}.contrastBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = contrastBootstrapCIs; %JB
+      glmAnal.d{iScan}.contrastBootstrapCIs = NaN([scanDims size(contrastBootstrapCIs,4) size(contrastBootstrapCIs,5)],precision);
+      glmAnal.d{iScan}.contrastBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = contrastBootstrapCIs; %JB
       clear('contrastBootstrapCIs')
     end
   end
-  if ~isempty(restrictions)
-    glmAnal.d{scanNum}.fTestNames = params.fTestNames;        %this should be removed if viewGet can get params from GLM analysis
-    glmAnal.d{scanNum}.restrictions = restrictions;               %this should be removed if viewGet can get params from GLM analysis
+  if numberFtests
+    glmAnal.d{iScan}.fTestNames = params.fTestNames;        %this should be removed if viewGet can get params from GLM analysis
+    glmAnal.d{iScan}.restrictions = params.restrictions;               %this should be removed if viewGet can get params from GLM analysis
   end
 
 
@@ -809,7 +595,7 @@ dateString = datestr(now);
 glmAnal.name = params.saveName;
 if strcmp(params.hrfModel,'hrfDeconvolution')
   glmAnal.type = 'deconvAnal';
-elseif isempty(restrictions) && ~params.computeTtests
+elseif isempty(params.restrictions) && ~params.computeTtests
   glmAnal.type = 'glmAnal';
 else
   glmAnal.type = 'glmAnalStats';
@@ -843,8 +629,8 @@ defaultOverlay.alphaOverlay='';
 defaultOverlay.alphaOverlayExponent=1;
 defaultOverlay.data = cell(1,nScans);
 defaultOverlay.name = '';
-for scanNum = params.scanNum
-   defaultOverlay.data{scanNum} = NaN(scanDims,precision); %to make values outside the box transparent
+for iScan = params.scanNum
+   defaultOverlay.data{iScan} = NaN(scanDims,precision); %to make values outside the box transparent
 end
 
 
@@ -852,321 +638,225 @@ end
 overlays = defaultOverlay;
 overlays.name = 'r2';
 overlays.colormapType = 'setRangeToMax';
-for scanNum = params.scanNum
-   overlays.data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) = r2{scanNum};
-   overlays.params{scanNum} = scanParams{scanNum};
+for iScan = params.scanNum
+   overlays.data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) = r2{iScan};
+   overlays.params{iScan} = scanParams{iScan};
 end
 clear('r2');
 
-%--------------------------------------------- save the contrast overlay(s)
+%--------------------------------------------- save the Test overlay(s)
 
-if ~isempty(contrasts)
+if numberTests
   
-  contrastNames = makeContrastNames(contrasts,params.EVnames,params.tTestSide);
-  
-  if params.computeTtests
-    if params.parametricTests
-      
-      if params.outputParametricStatistic
-        thisOverlay = defaultOverlay;
-        thisOverlay.colormap = jet(256);
-        max_abs_T = max(max(max(max(max(abs(cell2mat(T)))))));
-        thisOverlay.range = [-max_abs_T max_abs_T];
-        namePrefix = 'T ( ';
-        betaAlphaOverlayExponent = 0;
-
-        thisOverlay.clip = thisOverlay.range;
-        for iContrast = 1:numberContrasts
-          overlays(end+1)=thisOverlay;
-          overlays(end).name = [namePrefix contrastNames{iContrast} ')'];
-          for scanNum = params.scanNum
-            overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-               T{scanNum}(:,:,:,iContrast);
-            overlays(end).params{scanNum} = scanParams{scanNum};
-          end
-        end
-      end
-      clear('T');
-      
-      overlays = [overlays makeOverlay(defaultOverlay, Tp, subsetBox, params.scanNum, scanParams, ...
-                                         '', params.testOutput, 'T', contrastNames)];
-      clear('Tp');
-
-      if ~strcmp(params.resampleFWEadjustment,'None')
-        if params.bootstrapStatistics
-          overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxT, subsetBox, params.scanNum, scanParams, ...
-                                             'bootstrap-adjusted ', params.testOutput, 'T', contrastNames)];
-          clear('bootstrapMaxT');
-          if params.TFCE  
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceT, subsetBox, params.scanNum, scanParams, ...
-                                                 'bootstrap-adjusted ', params.testOutput, 'TFCE T', contrastNames)];
-              clear('bootstrapMaxTfceT');
-            end
-          end
-        end 
-        if params.randomizationTests
-          overlays = [overlays makeOverlay(defaultOverlay, randMaxT, subsetBox, params.scanNum, scanParams, ...
-                                             'randomization-adjusted ', params.testOutput, 'T', contrastNames)];
-          clear('randMaxT');
-          if params.TFCE
-            overlays = [overlays makeOverlay(defaultOverlay, randMaxTfceT, subsetBox, params.scanNum, scanParams, ...
-                                             'randomization-adjusted ',params.testOutput, 'TFCE T', contrastNames)];
-            clear('randMaxTfceT');
-          end
-        end
-      end
-      if params.fdrAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fdrTp, subsetBox, params.scanNum, scanParams, ...
-                                        'FDR-adjusted ',params.testOutput, 'T', contrastNames)];
-        clear('fdrTp');
-      end
-      if params.fweAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fweTp, subsetBox, params.scanNum, scanParams, ...
-                                        'FWE-adjusted ',params.testOutput, 'T', contrastNames)];
-        clear('fweTp');
-      end
-      
-    end
-    
-    if params.bootstrapStatistics
-      overlays = [overlays makeOverlay(defaultOverlay, bootstrapT, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap ', params.testOutput, 'T', contrastNames)];
-      clear('bootstrapT');
-      if params.fdrAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapT, subsetBox, params.scanNum, scanParams, ...
-                                        'FDR-adjusted bootstrap ',params.testOutput, 'T', contrastNames)];
-        clear('fdrBootstrapTp');
-      end
-      if params.fweAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapT, subsetBox, params.scanNum, scanParams, ...
-                                        'FWE-adjusted bootstrap ',params.testOutput, 'T', contrastNames)];
-        clear('fweBootstrapTp');
-      end
-      if params.TFCE  
-        overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
-        clear('bootstrapTfceT');
-        if params.fdrAdjustment
-          overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
-                                             'FDR-adjusted bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
-          clear('fdrBootstrapTfceT');
-        end
-        if params.fweAdjustment
-          overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapTfceT, subsetBox, params.scanNum, scanParams, ...
-                                             'FWE-adjusted bootstrap ', params.testOutput, 'TFCE T', contrastNames)];
-          clear('fweBootstrapTfceT');
-        end
-      end
-    end
-    
-    if params.randomizationTests
-      overlays = [overlays makeOverlay(defaultOverlay, randT, subsetBox, params.scanNum, scanParams, ...
-                                         'randomization ', params.testOutput, 'T', contrastNames)];
-      clear('randT');
-      if params.fdrAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fdrRandC, subsetBox, params.scanNum, scanParams, ...
-                                        'FDR-adjusted randomization ',params.testOutput, 'T', contrastNames)];
-        clear('fdrRandC');
-      end
-      if params.fweAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fweRandC, subsetBox, params.scanNum, scanParams, ...
-                                        'FWE-adjusted randomization ',params.testOutput, 'T', contrastNames)];
-        clear('fweRandC');
-      end
-      if params.TFCE
-        overlays = [overlays makeOverlay(defaultOverlay, randTfceT, subsetBox, params.scanNum, scanParams, ...
-                                        'randomization ',params.testOutput, 'TFCE T', contrastNames)];
-        clear('randTfceT');
-        if params.fdrAdjustment
-          overlays = [overlays makeOverlay(defaultOverlay, fdrTfceRandT, subsetBox, params.scanNum, scanParams, ...
-                                          'FDR-adjusted randomization ',params.testOutput, 'TFCE T', contrastNames)];
-          clear('fdrTfceRandT');
-        end
-        if params.fweAdjustment
-          overlays = [overlays makeOverlay(defaultOverlay, fweTfceRandT, subsetBox, params.scanNum, scanParams, ...
-                                          'FWE-adjusted randomization ',params.testOutput, 'TFCE T', contrastNames)];
-          clear('fweTfceRandT');
-        end
-      end
-    end
-    
-    %this is to mask the beta values by the probability/Z maps     
-    betaAlphaOverlay = cell(length(contrastNames),1);
-    if params.parametricTests || params.bootstrapStatistics || params.randomizationsTests
-      %set the contrast alpha overlay to the statistical value
-      switch(params.testOutput)
-        case 'P value'                                                  %statistical maps
-          betaAlphaOverlayExponent = -1;      % with inverse masking for p values
-        case {'Z value','-log10(P) value}'}
-          betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
-      end
-      for iContrast = 1:numberContrasts
-        betaAlphaOverlay{iContrast} = overlays(end-numberContrasts+iContrast).name;
-      end
+  contrastNames = makeContrastNames(params.contrasts,params.EVnames,params.tTestSide);
+  testNames = [contrastNames params.fTestNames];
+  for iTest = 1:numberContrasts+numberFtests
+    if iTest<=numberContrasts
+      testNames{iTest} = ['T (' testNames{iTest} ')'];
     else
-      betaAlphaOverlayExponent = 1;
+      testNames{iTest} = ['F (' testNames{iTest} ')'];
     end
   end
   
-%--------------------------------------------- save the contrast beta weights overlay(s) (ehdr if no contrast)
-
-  if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
-    %find the values for the scale of the beta overlays
-    thisOverlay = defaultOverlay;
-    ordered_abs_betas = cell2mat(C(params.scanNum));
-    ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
-    min_beta = min(min(min(min(min(ordered_abs_betas)))));
-    max_beta = max(max(max(max(max(ordered_abs_betas)))));
-    ordered_abs_betas = sort(abs(ordered_abs_betas));
-    beta_perc95 = 0; 
-    beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
-    thisOverlay.range = [-beta_perc95 beta_perc95];
-    thisOverlay.clip = [min_beta max_beta];
-    thisOverlay.colormap = jet(256);
-    for iContrast = 1:numberContrasts
-      overlays(end+1)=thisOverlay;
-      overlays(end).alphaOverlay=betaAlphaOverlay{iContrast};
-      overlays(end).name = contrastNames{iContrast};
-      for scanNum = params.scanNum
-        overlays(end).data{scanNum} = NaN(scanDims,precision); %to make values outside the box transparent
-        overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-           C{scanNum}(:,:,:,iContrast);
-        overlays(end).params{scanNum} = scanParams{scanNum};
-      end
-      overlays(end).alphaOverlayExponent=betaAlphaOverlayExponent;
-    end
-    clear('C');
-  end
-end
-
-%----------------------------------------------- save the F-test overlay(s)
-if ~isempty(restrictions)
-  if params.parametricTests
-    if params.outputParametricStatistic
+  if params.outputStatistic
+    tempStatistic = cell2mat(statistic);
+    if numberContrasts && params.computeTtests
       thisOverlay = defaultOverlay;
-      thisOverlay.range(1) = min(min(min(min(min(cell2mat(F))))));
-      thisOverlay.range(2) = min(max(max(max(max(cell2mat(F))))));
-      namePrefix = 'F ( ';
+      thisOverlay.colormap = jet(256);
+      max_abs_T = max(max(max(max(max(abs(tempStatistic(:,:,:,1:numberContrasts)))))));
+      thisOverlay.range = [-max_abs_T max_abs_T];
       thisOverlay.clip = thisOverlay.range;
-      for iFtest = 1:numberFtests
-        %probability maps
+      for iTest = 1:numberContrasts
         overlays(end+1)=thisOverlay;
-        overlays(end).name = [namePrefix params.fTestNames{iFtest} ')'];
-        for scanNum = params.scanNum
-          overlays(end).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-             F{scanNum}(:,:,:,iFtest);
-          overlays(end).params{scanNum} = scanParams{scanNum};
+        overlays(end).name = testNames{iTest};
+        for iScan = params.scanNum
+          overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+             statistic{iScan}(:,:,:,iTest);
+          overlays(end).params{iScan} = scanParams{iScan};
         end
       end
-      clear('F');
     end
+    if numberFtests
+      thisOverlay = defaultOverlay;
+      thisOverlay.range(1) = min(min(min(min(min(tempStatistic(:,:,:,numberContrasts+(1:numberFtests)))))));
+      thisOverlay.range(2) = min(max(max(max(max(tempStatistic(:,:,:,numberContrasts+(1:numberFtests)))))));
+      thisOverlay.clip = thisOverlay.range;
+      for iTest = numberContrasts+(1:numberFtests)
+        overlays(end+1)=thisOverlay;
+        overlays(end).name = testNames{iTest};
+        for iScan = params.scanNum
+          overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+             statistic{iScan}(:,:,:,iTest);
+          overlays(end).params{iScan} = scanParams{iScan};
+        end
+      end
+    end
+    clear('statistic','tempStatistic');
+  end
 
-    overlays = [overlays makeOverlay(defaultOverlay, Fp, subsetBox, params.scanNum, scanParams, ...
-                                       '', params.testOutput, 'F', params.fTestNames)];
-    clear('Fp');
+  if params.parametricTests
+
+
+    overlays = [overlays makeOverlay(defaultOverlay, parametricP, subsetBox, params.scanNum, scanParams, ...
+                                       '', params.testOutput, testNames)];
+    clear('parametricP');
 
     if ~strcmp(params.resampleFWEadjustment,'None')
       if params.bootstrapStatistics
-        overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxF, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-adjusted ', params.testOutput, 'F', params.fTestNames)];
-        clear('bootstrapMaxF');
-         if params.TFCE  
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweParametricP, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap-adjusted ', params.testOutput, testNames)];
+        clear('bootstrapFweParametricP');
+        if params.TFCE  
           if ~strcmp(params.resampleFWEadjustment,'None')
-            overlays = [overlays makeOverlay(defaultOverlay, bootstrapMaxTfceF, subsetBox, params.scanNum, scanParams, ...
-                                               'bootstrap-adjusted ', params.testOutput, 'TFCE F', params.fTestNames)];
-            clear('bootstrapMaxTfceF');
+            overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceP, subsetBox, params.scanNum, scanParams, ...
+                                               'bootstrap-adjusted TFCE ', params.testOutput, testNames)];
+            clear('bootstrapFweTfceP');
           end
-         end
-      end
-      if params.randomizationTests
-        overlays = [overlays makeOverlay(defaultOverlay, randMaxF, subsetBox, params.scanNum, scanParams, ...
-                                           'randomization-adjusted ', params.testOutput, 'F', params.fTestNames)];
-        clear('randMaxF');
+        end
+      end 
+      if params.permutationTests
+        overlays = [overlays makeOverlay(defaultOverlay, permuteFweParametricP, subsetBox, params.scanNum, scanParams, ...
+                                           'permutation-adjusted ', params.testOutput, testNames)];
+        clear('permuteFweParametricP');
         if params.TFCE
-          overlays = [overlays makeOverlay(defaultOverlay, randMaxTfceF, subsetBox, params.scanNum, scanParams, ...
-                                           'randomization-adjusted ',params.testOutput, 'TFCE F', params.fTestNames)];
-          clear('randMaxTfceF');
+          overlays = [overlays makeOverlay(defaultOverlay, permuteFweTfceP, subsetBox, params.scanNum, scanParams, ...
+                                           'permutation-adjusted TFCE ',params.testOutput, testNames)];
+          clear('permuteFweTfceP');
         end
       end
     end
     if params.fdrAdjustment
-      overlays = [overlays makeOverlay(defaultOverlay, fdrFp, subsetBox, params.scanNum, scanParams, ...
-                                      'FDR-adjusted ',params.testOutput, 'F', params.fTestNames)];
-      clear('fdrFp');
+      overlays = [overlays makeOverlay(defaultOverlay, fdrParametricP, subsetBox, params.scanNum, scanParams, ...
+                                      'FDR-adjusted ',params.testOutput, testNames)];
+      clear('fdrParametricP');
     end
     if params.fweAdjustment
-      overlays = [overlays makeOverlay(defaultOverlay, fweFp, subsetBox, params.scanNum, scanParams, ...
-                                      'FWE-adjusted ',params.testOutput, 'F', params.fTestNames)];
-      clear('fweFp');
+      overlays = [overlays makeOverlay(defaultOverlay, fweParametricP, subsetBox, params.scanNum, scanParams, ...
+                                      'FWE-adjusted ',params.testOutput, testNames)];
+      clear('fweParametricP');
     end
 
   end
-  
+
   if params.bootstrapStatistics
-    overlays = [overlays makeOverlay(defaultOverlay, bootstrapF, subsetBox, params.scanNum, scanParams, ...
-                                     'bootstrap ',params.testOutput, 'F', params.fTestNames)];
-    clear('bootstrapF');
+    overlays = [overlays makeOverlay(defaultOverlay, bootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                       'bootstrap ', params.testOutput, testNames)];
+    clear('bootstrapP');
+    if ~strcmp(params.resampleFWEadjustment,'None')
+      overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweBootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                         'bootstrap-adjusted bootstrap ', params.testOutput, testNames)];
+      clear('bootstrapFweBootstrapP');
+    end
     if params.fdrAdjustment
-      overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapF, subsetBox, params.scanNum, scanParams, ...
-                                      'FDR-adjusted bootstrap ',params.testOutput, 'F', params.fTestNames)];
-      clear('fdrBootstrapF');
+      overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                      'FDR-adjusted bootstrap ',params.testOutput, testNames)];
+      clear('fdrBootstrapTp');
     end
     if params.fweAdjustment
-      overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapF, subsetBox, params.scanNum, scanParams, ...
-                                      'FWE-adjusted bootstrap ',params.testOutput, 'F', params.fTestNames)];
-      clear('fweBootstrapF');
+      overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                      'FWE-adjusted bootstrap ',params.testOutput, testNames)];
+      clear('fweBootstrapTp');
     end
     if params.TFCE  
-      overlays = [overlays makeOverlay(defaultOverlay, bootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
-      clear('bootstrapTfceF');
+      overlays = [overlays makeOverlay(defaultOverlay, tfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                         'bootstrap TFCE ', params.testOutput, testNames)];
+      clear('tfceBootstrapP');
+      if ~strcmp(params.resampleFWEadjustment,'None')
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap-adjusted bootstrap TFCE ', params.testOutput, testNames)];
+        clear('bootstrapFweTfceBootstrapP');
+      end
       if params.fdrAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
-                                           'FDR-adjusted bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
-        clear('fdrBootstrapTfceF');
+        overlays = [overlays makeOverlay(defaultOverlay, fdrTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                           'FDR-adjusted bootstrap TFCE ', params.testOutput, testNames)];
+        clear('fdrTfceBootstrapP');
       end
       if params.fweAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapTfceF, subsetBox, params.scanNum, scanParams, ...
-                                           'FWE-adjusted bootstrap ', params.testOutput, 'TFCE F', params.fTestNames)];
-        clear('fweBootstrapTfceF');
+        overlays = [overlays makeOverlay(defaultOverlay, fweTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
+                                           'FWE-adjusted bootstrap TFCE ', params.testOutput, testNames)];
+        clear('fweTfceBootstrapP');
       end
     end
   end
-  
-  if params.randomizationTests
-    overlays = [overlays makeOverlay(defaultOverlay, randF, subsetBox, params.scanNum, scanParams, ...
-                                     'randomization ',params.testOutput, 'F', params.fTestNames)];
-    clear('randF');
+
+  if params.permutationTests
+    overlays = [overlays makeOverlay(defaultOverlay, permuteP, subsetBox, params.scanNum, scanParams, ...
+                                       'permutation ', params.testOutput, testNames)];
+    clear('permuteP');
     if params.fdrAdjustment
-      overlays = [overlays makeOverlay(defaultOverlay, fdrRandF, subsetBox, params.scanNum, scanParams, ...
-                                      'FDR-adjusted randomization ',params.testOutput, 'F', params.fTestNames)];
-      clear('fdrRandF');
+      overlays = [overlays makeOverlay(defaultOverlay, fdrPermuteP, subsetBox, params.scanNum, scanParams, ...
+                                      'FDR-adjusted permutation ',params.testOutput, testNames)];
+      clear('fdrPermuteP');
     end
     if params.fweAdjustment
-      overlays = [overlays makeOverlay(defaultOverlay, fweRandF, subsetBox, params.scanNum, scanParams, ...
-                                      'FWE-adjusted randomization ',params.testOutput, 'F', params.fTestNames)];
-      clear('fweRandF');
+      overlays = [overlays makeOverlay(defaultOverlay, fwePermuteP, subsetBox, params.scanNum, scanParams, ...
+                                      'FWE-adjusted permutation ',params.testOutput, testNames)];
+      clear('fwePermuteP');
     end
-    
     if params.TFCE
-      overlays = [overlays makeOverlay(defaultOverlay, randTfceF, subsetBox, params.scanNum, scanParams, ...
-                                       'randomization ',params.testOutput, 'TFCE F', params.fTestNames)];
-      clear('randTfceF');
+      overlays = [overlays makeOverlay(defaultOverlay, tfcePermuteP, subsetBox, params.scanNum, scanParams, ...
+                                      'permutation TFCE ',params.testOutput, testNames)];
+      clear('tfcePermuteP');
       if params.fdrAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fdrTfceRandF, subsetBox, params.scanNum, scanParams, ...
-                                        'FDR-adjusted randomization ',params.testOutput, 'TFCE F', params.fTestNames)];
-        clear('fdrTfceRandF');
+        overlays = [overlays makeOverlay(defaultOverlay, fdrTfcePermuteP, subsetBox, params.scanNum, scanParams, ...
+                                        'FDR-adjusted permutation TFCE ',params.testOutput, testNames)];
+        clear('fdrTfcePermuteP');
       end
       if params.fweAdjustment
-        overlays = [overlays makeOverlay(defaultOverlay, fweTfceRandF, subsetBox, params.scanNum, scanParams, ...
-                                        'FWE-adjusted randomization ',params.testOutput, 'TFCE F', params.fTestNames)];
-        clear('fweTfceRandF');
+        overlays = [overlays makeOverlay(defaultOverlay, fweTfceRandT, subsetBox, params.scanNum, scanParams, ...
+                                        'FWE-adjusted permutation TFCE ',params.testOutput, testNames)];
+        clear('fweTfceRandT');
       end
     end
-    
   end
 end
+    
+%--------------------------------------------- save the contrast beta weights overlay(s) (ehdr if no contrast)
+if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+  %this is to mask the beta values by the probability/Z maps     
+  betaAlphaOverlay = cell(numberContrasts,1);
+  if params.computeTtests 
+    %set the contrast alpha overlay to the statistical value
+    switch(params.testOutput)
+      case 'P value'                                                  %statistical maps
+        betaAlphaOverlayExponent = -1;      % with inverse masking for p values
+      case {'Z value','-log10(P) value}'}
+        betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
+    end
+    for iContrast = 1:numberContrasts
+      betaAlphaOverlay{iContrast} = overlays(end-numberFtests-numberContrasts+iContrast).name;
+    end
+  else
+    betaAlphaOverlayExponent = 1;
+  end
+
+  %find the values for the scale of the beta overlays
+  thisOverlay = defaultOverlay;
+  ordered_abs_betas = cell2mat(contrast(params.scanNum));
+  ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
+  min_beta = min(min(min(min(min(ordered_abs_betas)))));
+  max_beta = max(max(max(max(max(ordered_abs_betas)))));
+  ordered_abs_betas = sort(abs(ordered_abs_betas));
+  beta_perc95 = 0; 
+  beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
+  thisOverlay.range = [-beta_perc95 beta_perc95];
+  thisOverlay.clip = [min_beta max_beta];
+  thisOverlay.colormap = jet(256);
+  for iContrast = 1:numberContrasts
+    overlays(end+1)=thisOverlay;
+    overlays(end).alphaOverlay=betaAlphaOverlay{iContrast};
+    overlays(end).name = contrastNames{iContrast};
+    for iScan = params.scanNum
+      overlays(end).data{iScan} = NaN(scanDims,precision); %to make values outside the box transparent
+      overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+         contrast{iScan}(:,:,:,iContrast);
+      overlays(end).params{iScan} = scanParams{iScan};
+    end
+    overlays(end).alphaOverlayExponent=betaAlphaOverlayExponent;
+  end
+  clear('contrast');
+end
+
 
 %-------------------------------------------------------- Set the analysis in view
 glmAnal.overlays = overlays;
@@ -1197,16 +887,16 @@ outputData = reshape(outputData,[size(dataPosition,1) size(dataPosition,2) size(
 
 
 
-function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, minP, params)
+function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 
-convertedStatistic = convertStatistic(p, params.testOutput, outputPrecision, minP);
+[convertedStatistic,p] = convertStatistic(p, params.testOutput, outputPrecision);
 
 if params.fdrAdjustment
   fdrAdjustedP = p;
   for iTest = 1:size(p,4)
     fdrAdjustedP(:,:,:,iTest) = fdrAdjust(p(:,:,:,iTest),params);
   end
-  fdrAdjustedStatistic = convertStatistic(fdrAdjustedP, params.testOutput, outputPrecision, minP);
+  fdrAdjustedStatistic = convertStatistic(fdrAdjustedP, params.testOutput, outputPrecision);
 else
   fdrAdjustedStatistic = [];
 end
@@ -1222,30 +912,32 @@ if params.fweAdjustment
     end
     fweAdjustedP(:,:,:,iTest) = fweAdjust(p(:,:,:,iTest),params,trueH0ratio,lambda);
   end
-  fweAdjustedStatistic = convertStatistic(fweAdjustedP, params.testOutput, outputPrecision, minP);
+  fweAdjustedStatistic = convertStatistic(fweAdjustedP, params.testOutput, outputPrecision);
 else
   fweAdjustedStatistic = [];
 end
 
 
-function convertedP = convertStatistic(p, outputStatistic, outputPrecision, minP)
+function p = computeRandP(count,nResamples)
 %we do not allow probabilities of 0 and replace them by minP
-%(this can occur because cdf cannot return values less than 1e-16, 
-%or because no bootstrap resampling return a value as high as the actual value)
-convertedP = max(p,minP);
-convertedP(isnan(p)) = NaN; %NaNs must remain NaNs (they became minP when using max)
+%(this can occur if no resampling return a value as high as the actual value)
+p = max(count/nResamples,1/(nResamples+1));
+p(isnan(count)) = NaN; %NaNs must remain NaNs (they became minP when using max)
+
+
+function [convertedP,p] = convertStatistic(p, outputStatistic, outputPrecision)
 
 switch(outputStatistic)
   case 'Z value'
     %convert P value to Z value, 
-    convertedP = norminv(1-convertedP);  
+    convertedP = norminv(1-p);  
     convertedP(convertedP<0) = 0; % we're not interested in negative Z value
     %if there was no round-off error from cdf, we could do the following:
     %Z = max(-norminv(p),0);  %because the left side of norminv seems to be less sensitive to round-off errors,
     %we get -norminv(x) instead of norminv(1-x). also we'renot interested in negative Z value
   case '-log10(P) value'
     %convert P to -log10(P) 
-    convertedP = -log10(convertedP);
+    convertedP = -log10(p);
     
 end
 convertedP = eval([outputPrecision '(convertedP)']);
@@ -1395,26 +1087,26 @@ end
 % % % correctedPdata(isNotNan) = correctedP;
 
 
-function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,testString1, testOutput, testString2, testNames)
+function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,testTypeString, testOutput, testNames)
   switch testOutput
     case 'P value'
       overlays.colormap = statsColorMap(256);
-      namePrefix = [testString1 'P (' testString2 ' '];
+      namePrefix = [testTypeString 'P ['];
     case 'Z value'
       overlays.range = [0 8.2096];
-      namePrefix = [testString1 'Z (' testString2 ' '];
+      namePrefix = [testTypeString 'Z ['];
     case '-log10(P) value'
       overlays.range = [0 16];
-      namePrefix = ['-log10(' testString1 'P) (' testString2 ' '];
+      namePrefix = ['-log10(' testTypeString 'P) ['];
   end
   overlays.clip = overlays.range;
   overlays = repmat(overlays,1,length(testNames));
   for iTest = 1:length(testNames)
-    overlays(iTest).name = [namePrefix testNames{iTest} ')'];
-    for scanNum = scanList
-      overlays(iTest).data{scanNum}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-         data{scanNum}(:,:,:,iTest);
-      overlays(iTest).params{scanNum} = scanParams{scanNum};
+    overlays(iTest).name = [namePrefix testNames{iTest} ']'];
+    for iScan = scanList
+      overlays(iTest).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+         data{iScan}(:,:,:,iTest);
+      overlays(iTest).params{iScan} = scanParams{iScan};
     end
   end
 
