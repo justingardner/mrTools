@@ -99,23 +99,34 @@ if fieldIsNotDefined(params,'outputStatistic')
 end
 params.outputStatistic = params.outputStatistic && actualData;
 
-if fieldIsNotDefined(params,'bootstrapStatistics')
-  params.bootstrapStatistics=0;
+if fieldIsNotDefined(params,'parametricTests')
+  params.parametricTests=0;
 end
-computeBootstrap = params.bootstrapStatistics && actualData;
+params.parametricTests = actualData; %always output the parametric P if it's the actual data
+%because it's fast and we might need it in some cases, but I don't want to do all the tests
+if fieldIsNotDefined(params,'bootstrapFweAdjustment')
+  params.bootstrapFweAdjustment=0;
+end
+bootstrapFweAdjustment = params.bootstrapFweAdjustment && actualData;
+if fieldIsNotDefined(params,'bootstrapTests')
+  params.bootstrapTests=0;
+end
+bootstrapTests=params.bootstrapTests&& actualData;
+if ~isfield(params, 'bootstrapIntervals') || isempty(params.bootstrapIntervals)
+  params.bootstrapIntervals = 0;
+end
+bootstrapIntervals = params.bootstrapIntervals && actualData;
+if ~isfield(params,'alphaConfidenceIntervals') || isempty(params.alphaConfidenceIntervals)
+  params.alphaConfidenceIntervals = .05;
+end
 
+computeBootstrap = bootstrapTests || bootstrapFweAdjustment||bootstrapIntervals;
 if ~computeBootstrap
   nResamples = 0;
 elseif fieldIsNotDefined(params,'nResamples') 
   nResamples =10000;
 else
   nResamples = params.nResamples;
-end
-if ~isfield(params, 'bootstrapIntervals') || isempty(params.bootstrapIntervals)
-  params.bootstrapIntervals = 0;
-end
-if ~isfield(params,'alphaConfidenceIntervals') || isempty(params.alphaConfidenceIntervals)
-  params.alphaConfidenceIntervals = .05;
 end
 if ieNotDefined('params') || ~isfield(params,'covCorrection') || ~isfield(params,'correctionType') || strcmp(params.correctionType,'none')
    params.covCorrection = 0;
@@ -179,7 +190,7 @@ if strcmp(params.componentsCombination,'Or') %in this case, components of a give
   %for contrasts, this amounts to  testing several contrats at once using an f test
   %So we have to change contrasts into f-tests (with the restriction that they have to be two-sided; this should be controlled for by the parameters)
   restrictions = [contrasts; restrictions];
-  params.parametricTests=1; %force computing parametric tests (because there are cases where we need to compute T-tests for bootstrap/permutations
+%   params.parametricTests=1; %force computing parametric tests (because there are cases where we need to compute T-tests for bootstrap/permutations
   contrasts = {};
 end
 numberFtests = length(restrictions);
@@ -250,7 +261,7 @@ numberTests = numberTtests+numberFtests;
 dInfo = whos('d');
 totalBytes = dInfo.bytes; %keep track of big variables, including the raw data
 if actualData 
-  if computeBootstrap && params.bootstrapIntervals
+  if bootstrapIntervals
     [sortedBetas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),nResamples,precision,totalBytes);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
     [d.ehdrBootstrapCIs,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision,totalBytes);
   end
@@ -262,7 +273,7 @@ end
 if numberTtests
   [thisContrastBetas,totalBytes] = alloc('NaN',[d.dim(1) numberTtests],precision,totalBytes);
   [out.contrast,totalBytes] = alloc('NaN',[numberTtests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
-  if computeBootstrap && params.bootstrapIntervals
+  if bootstrapIntervals
     [sortedContrasts,totalBytes] = alloc('NaN',[numberTtests d.dim(1) nResamples],precision,totalBytes);
     [d.contrastBootstrapCIs,totalBytes] = alloc('NaN',[numberTtests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
   end
@@ -276,48 +287,49 @@ if numberFtests || params.computeTtests
   end
   if params.parametricTests
     [out.parametricP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
-  end
-  if computeBootstrap
-    [out.bootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
-    if ~strcmp(params.resampleFWEadjustment,'None')
+    if params.bootstrapFweAdjustment
       [out.bootstrapFweParametricP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
+    end
+    if params.TFCE
+      [out.bootstrapFweTfceP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
+    end
+  end
+  if bootstrapTests
+    [out.bootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
+    if bootstrapFweAdjustment
       [out.bootstrapFweBootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
       [bootstrapStatistic,totalBytes] = alloc('NaN',[d.dim(1) numberTests nResamples],precision,totalBytes);
     end
     if params.TFCE
       [out.tfceBootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
-      if ~strcmp(params.resampleFWEadjustment,'None')
-        [out.bootstrapFweTfceP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
+      if bootstrapFweAdjustment
         [out.bootstrapFweTfceBootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
         [bootstrapTfce,totalBytes] = alloc('NaN',[d.dim(1) numberTests nResamples],precision,totalBytes);
       end
     end
   end
-
-  if numberTests
-    if numberFtests
-      [mss,totalBytes] = alloc('NaN',d.dim(1),numberFtests,precision,totalBytes);
+  if numberFtests
+    [mss,totalBytes] = alloc('NaN',d.dim(1),numberFtests,precision,totalBytes);
+  end
+  if params.covCorrection
+    corrected_R_invCovEV_Rp = cell(1,numberFtests);
+    for iR = 1:numberFtests
+      [corrected_R_invCovEV_Rp{iR},totalBytes] = alloc('NaN',d.mdf(iR),d.mdf(iR),d.dim(1),'double',totalBytes);
     end
-    if params.covCorrection
-      corrected_R_invCovEV_Rp = cell(1,numberFtests);
-      for iR = 1:numberFtests
-        [corrected_R_invCovEV_Rp{iR},totalBytes] = alloc('NaN',d.mdf(iR),d.mdf(iR),d.dim(1),'double',totalBytes);
-      end
-      switch(params.correctionType)
-        case 'generalizedLeastSquares'
-          %pre allocate temporary variables
-          [corrected_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of values on the first dimension
-          if actualData || numberTests
-            [invCorrectedCovEV,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes);
-          end
-        case 'varianceCorrection' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
+    switch(params.correctionType)
+      case 'generalizedLeastSquares'
+        %pre allocate temporary variables
+        [corrected_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of values on the first dimension
+        if actualData || numberTests
           [invCorrectedCovEV,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes);
-          [correctedRdf,totalBytes] = alloc('NaN',d.dim(1),1,'double',totalBytes);
-        case 'preWhitening' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
-          [white_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
-          [white_scm,totalBytes] = alloc('NaN',d.dim(4),d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
-          [correctedRdf,totalBytes] = alloc('NaN',d.dim(1),1,'double',totalBytes);
-      end
+        end
+      case 'varianceCorrection' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
+        [invCorrectedCovEV,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes);
+        [correctedRdf,totalBytes] = alloc('NaN',d.dim(1),1,'double',totalBytes);
+      case 'preWhitening' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
+        [white_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
+        [white_scm,totalBytes] = alloc('NaN',d.dim(4),d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
+        [correctedRdf,totalBytes] = alloc('NaN',d.dim(1),1,'double',totalBytes);
     end
   end
 end
@@ -342,9 +354,9 @@ switch(params.correctionType)
   case 'generalizedLeastSquares'
     preBootstrapTime = 1.4;
   case 'varianceCorrection'
-    preBootstrapTime = 550;
+    preBootstrapTime = d.dim(4)/2;
   case 'preWhitening'
-    preBootstrapTime = 700;
+    preBootstrapTime = d.dim(4);
 end
 totalPasses = prod(d.dim(1:3))*(nResamples+1+preBootstrapTime);
 
@@ -533,22 +545,22 @@ for z = slices
             mrWaitBar( passesCounter/totalPasses, hWaitBar,'(getGlmStatistics) Estimating model parameters (bootstrap)');
           end
         end
-        %initialize bootstrap counters
-        if iBoot==1 && computeBootstrap
-          bootstrapStatisticCount = zeros(d.dim(1), numberTests,precision);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            bootstrapFweStatisticCount =bootstrapStatisticCount;
+        if iBoot==1 
+          thisResiduals = residuals(:,:,y);
+          
+          %initialize bootstrap counters
+          if bootstrapTests
+            bootstrapStatisticCount = zeros(d.dim(1), numberTests,precision);
+            if params.TFCE
+              bootstrapTfceCount = bootstrapStatisticCount;
+            end
           end
-          if params.TFCE
-            bootstrapTfceCount = bootstrapStatisticCount;
-            if ~strcmp(params.resampleFWEadjustment,'None')
+          if params.parametricTests && bootstrapFweAdjustment
+            bootstrapFweStatisticCount = zeros(d.dim(1), numberTests,precision);
+            if params.TFCE
               bootstrapFweTfceCount = bootstrapTfceCount;
             end
           end
-        end
-
-        if iBoot==1
-          thisResiduals = residuals(:,:,y);
         else
           % the bootstrap time series is resampled from the residuals with replacement. 
           % it SHOULD NOT be recomputed as beta*scm+residuals, as this violates pivotality 
@@ -679,30 +691,37 @@ for z = slices
           thisParametricP(:,numberTtests+1:end) = F2p(thisStatistic(:,numberTtests+1:end),d.rdf,d.mdf);
         end
         
-        if computeBootstrap
-          if iBoot==1
-            actualStatistic = thisStatistic;
+        if params.TFCE 
+          thisTfce = applyTfce(thisStatistic,d.roiPositionInBox); 
+        end
+        if iBoot==1
+          actualStatistic = thisStatistic;
+          if params.parametricTests && bootstrapFweAdjustment 
             resampleFweData = initResampleFWE(actualStatistic,params,thisParametricP);
-          else
-            bootstrapStatisticCount = bootstrapStatisticCount+double(thisStatistic>actualStatistic); %T has already been transformed to be positive
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              bootstrapFweStatisticCount = bootstrapFweStatisticCount + resampleFWE(thisStatistic,actualStatistic,resampleFweData,params);
-              bootstrapStatistic(:,:,iBoot-1) = thisStatistic;
+          end
+          if params.TFCE
+            actualTfce = thisTfce; 
+            if  params.parametricTests && bootstrapFweAdjustment
+              resampleFweTfceTdata = initResampleFWE(actualTfce,params);
             end
           end
-          if params.TFCE && ~strcmp(params.resampleFWEadjustment,'None') 
-            thisTfce = applyTfce(thisStatistic,d.roiPositionInBox); 
-            if iBoot == 1 %if it is the actual data
-              actualTfce = thisTfce; 
-              if ~strcmp(params.resampleFWEadjustment,'None')
-                resampleFweTfceTdata = initResampleFWE(actualTfce,params);
-              end
-            else
+        else
+          if bootstrapTests
+            bootstrapStatisticCount = bootstrapStatisticCount+double(thisStatistic>actualStatistic); %T has already been transformed to be positive
+            if bootstrapFweAdjustment
+              bootstrapStatistic(:,:,iBoot-1) = thisStatistic;
+            end
+            if params.TFCE
               bootstrapTfceCount = bootstrapTfceCount + double(thisTfce>actualTfce);
-              if ~strcmp(params.resampleFWEadjustment,'None')
-                bootstrapFweTfceCount = bootstrapFweTfceCount + resampleFWE(thisTfce,actualTfce,resampleFweTfceTdata,params);
-                bootstrapTfce(:,:,iBoot-1) = thisTfce;
+              if bootstrapFweAdjustment
+                bootstrapFweTfceCount = bootstrapFweTfceCount + resampleFWE(thisTfce,actualTfce,resampleFweTfceTdata);
               end
+            end
+          end
+          if params.parametricTests && bootstrapFweAdjustment
+            bootstrapFweStatisticCount = bootstrapFweStatisticCount + resampleFWE(thisStatistic,actualStatistic,resampleFweData);
+            if params.TFCE
+              bootstrapTfce(:,:,iBoot-1) = thisTfce;
             end
           end
         end
@@ -722,7 +741,7 @@ for z = slices
           if numberTtests
             out.contrast(:,:,y,z) = thisContrastBetas';
           end
-          if params.parametricTests && actualData
+          if params.parametricTests
             out.parametricP(:,:,y,z) = thisParametricP';
           end
           if numberFtests || (numberTtests&&params.computeTtests) || params.outputStatistic
@@ -744,25 +763,27 @@ for z = slices
       end
      
       %COMPUTE BOOTSTRAP STATISTICS
-      if computeBootstrap && iBoot == nResamples+1 
+      if iBoot == nResamples+1 
         if numberTests
-          bootstrapStatisticCount(isnan(actualStatistic))=NaN;
-          out.bootstrapP(:,:,y,z) = computeBootstrapP(bootstrapStatisticCount',nResamples);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            bootstrapFweStatisticCount(isnan(actualStatistic))=NaN;
-            bootstrapFweStatisticCount = computeBootstrapP(bootstrapFweStatisticCount,nResamples);
-            out.bootstrapFweParametricP(:,:,y,z) = enforceMonotonicityResampleFWE(bootstrapFweStatisticCount,resampleFweData,params)';
-          end
-          if params.TFCE 
-            bootstrapTfceCount(isnan(actualStatistic))=NaN;
-            out.tfceBootstrapP(:,:,y,z) = computeBootstrapP(bootstrapTfceCount',nResamples);
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              bootstrapFweTfceCount(isnan(actualStatistic))=NaN;
-              bootstrapFweTfceCount = computeBootstrapP(bootstrapFweTfceCount,nResamples);
-              out.bootstrapFweTfceP(:,:,y,z) = enforceMonotonicityResampleFWE(bootstrapFweTfceCount,resampleFweTfceTdata,params)';
+          if bootstrapTests
+            bootstrapStatisticCount(isnan(actualStatistic))=NaN;
+            out.bootstrapP(:,:,y,z) = computeBootstrapP(bootstrapStatisticCount',nResamples);
+            if params.TFCE 
+              bootstrapTfceCount(isnan(actualStatistic))=NaN;
+              out.tfceBootstrapP(:,:,y,z) = computeBootstrapP(bootstrapTfceCount',nResamples);
             end
           end
-          if ~strcmp(params.resampleFWEadjustment,'None')
+          if params.parametricTests && bootstrapFweAdjustment
+            bootstrapFweStatisticCount(isnan(actualStatistic))=NaN;
+            bootstrapFweStatisticCount = computeBootstrapP(bootstrapFweStatisticCount,nResamples);
+            out.bootstrapFweParametricP(:,:,y,z) = enforceMonotonicityResampleFWE(bootstrapFweStatisticCount,resampleFweData)';
+            if params.TFCE 
+              bootstrapFweTfceCount(isnan(actualStatistic))=NaN;
+              bootstrapFweTfceCount = computeBootstrapP(bootstrapFweTfceCount,nResamples);
+              out.bootstrapFweTfceP(:,:,y,z) = enforceMonotonicityResampleFWE(bootstrapFweTfceCount,resampleFweTfceTdata)';
+            end
+          end
+          if bootstrapTests && bootstrapFweAdjustment
            %SECOND BOOTSTRAP LOOP %one test at a time
             %convert to p-values
       % % %       [bootstrapStatistic, bootstrapTp] = sort(bootstrapStatistic,3);
@@ -770,14 +791,14 @@ for z = slices
             [~, bootstrapStatistic] = sort(bootstrapStatistic,3); %this is not gonna work with older version of Matlab but is probably more efficient if bootstrapStatistic is really large
             %find order of actual values and estimate number of true null hypotheses
             resampleFweBootstrapData = initResampleFWE(out.bootstrapP(:,:,y,z)',params,out.bootstrapP(:,:,y,z)');
-            out.bootstrapFweBootstrapP(:,:,y,z) = doubleResampleFWE(bootstrapStatistic,out.bootstrapP(:,:,y,z)',resampleFweBootstrapData,params)';
+            out.bootstrapFweBootstrapP(:,:,y,z) = doubleResampleFWE(bootstrapStatistic,out.bootstrapP(:,:,y,z)',resampleFweBootstrapData,nResamples)';
             clear('bootstrapStatistic');
             out.bootstrapFweBootstrapP(:,:,y,z) = computeBootstrapP(out.bootstrapFweBootstrapP(:,:,y,z),nResamples);
             if params.TFCE
               %convert to p-values
               [~, bootstrapTfce] = sort(bootstrapTfce,3); %this is not gonna work with older version of Matlab but is probably more efficient if bootstrapStatistic is really large
               resampleFweBootstrapData = initResampleFWE(out.tfceBootstrapP(:,:,y,z)',params,out.tfceBootstrapP(:,:,y,z)');
-              out.bootstrapFweTfceBootstrapP(:,:,y,z) = doubleResampleFWE(bootstrapTfce,out.tfceBootstrapP(:,:,y,z)',resampleFweBootstrapData,params)';
+              out.bootstrapFweTfceBootstrapP(:,:,y,z) = doubleResampleFWE(bootstrapTfce,out.tfceBootstrapP(:,:,y,z)',resampleFweBootstrapData,nResamples)';
               clear('bootstrapTfce');
               out.bootstrapFweTfceBootstrapP(:,:,y,z) = computeBootstrapP(out.bootstrapFweTfceBootstrapP(:,:,y,z),nResamples);
             end
@@ -875,7 +896,7 @@ if actualData
   if params.covCorrection
     d.autoCorrelationParameters = permute(autoCorrelationParameters,[2 3 4 1]);
   end
-  if params.bootstrapIntervals && computeBootstrap
+  if bootstrapIntervals
     d.ehdrBootstrapCIs = permute(reshape(d.ehdrBootstrapCIs, d.nHrfComponents, d.nhdr, d.dim(1), d.dim(2), d.dim(3)),[3 4 5 2 1]);
     if ~isempty(contrasts)
       d.contrastBootstrapCIs = permute(d.contrastBootstrapCIs,[2 3 4 1]);
@@ -884,22 +905,26 @@ if actualData
 
 end
 if numberTests
-  if params.parametricTests && actualData
+  if params.parametricTests
     out.parametricP = permute(out.parametricP,[2 3 4 1]);
+    if bootstrapFweAdjustment
+      out.bootstrapFweParametricP = permute(out.bootstrapFweParametricP,[2 3 4 1]);
+      if params.TFCE 
+        out.bootstrapFweTfceP = permute(out.bootstrapFweTfceP,[2 3 4 1]);
+      end
+    end
   end
   if numberFtests || (numberTtests&&params.computeTtests) || params.outputStatistic
     out.statistic = permute(out.statistic,[2 3 4 1]);
   end
-  if computeBootstrap
+  if bootstrapTests
     out.bootstrapP = permute(out.bootstrapP,[2 3 4 1]);
-    if ~strcmp(params.resampleFWEadjustment,'None')
-      out.bootstrapFweParametricP = permute(out.bootstrapFweParametricP,[2 3 4 1]);
+    if bootstrapFweAdjustment
       out.bootstrapFweBootstrapP = permute(out.bootstrapFweBootstrapP,[2 3 4 1]);
     end
     if params.TFCE 
       out.tfceBootstrapP = permute(out.tfceBootstrapP,[2 3 4 1]);
-      if ~strcmp(params.resampleFWEadjustment,'None')
-        out.bootstrapFweTfceP = permute(out.bootstrapFweTfceP,[2 3 4 1]);
+      if bootstrapFweAdjustment
         out.bootstrapFweTfceBootstrapP = permute(out.bootstrapFweTfceBootstrapP,[2 3 4 1]);
       end
     end

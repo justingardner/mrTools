@@ -10,13 +10,13 @@
 %             as well as the actual bootstrap P-values and their ordering
 %             the procedure is applied test by test
 
-function countMinP = doubleResampleFWE(bootstrapP,actualP,d,params)
+function countMinP = doubleResampleFWE(bootstrapP,actualP,d,nResamples)
 
-bootstrapP = permute(bootstrapP,[1 3 2])/params.nResamples;
+bootstrapP = permute(bootstrapP,[1 3 2])/nResamples;
 countMinP = NaN(size(bootstrapP,1),size(bootstrapP,3));
         
 for iTest = 1:size(bootstrapP,3)
-  switch(params.resampleFWEadjustment)
+  switch(d.method)
     case 'Single-step' %this is a single-step version where there is not need 
                        %to sort the bootstrap p according to the actual p-value
                        %unless the estimated number of true null H0 is estimated
@@ -29,12 +29,12 @@ for iTest = 1:size(bootstrapP,3)
           thisCountMinP(j) = sum(min(sortedBootstrapP(j-d.numberTrueH0(iTest)+1:j,:),[],1)<=sortedActualP(j));
         end
         sortedBootstrapP = repmat(min(sortedBootstrapP,[],1),[d.numberTrueH0(iTest) 1]);
-        thisCountMinP(1:j-1) = sum(sortedBootstrapP<=repmat(sortedActualP(1:j-1),[1 params.nResamples]),2);
+        thisCountMinP(1:j-1) = sum(sortedBootstrapP<=repmat(sortedActualP(1:j-1),[1 nResamples]),2);
         countMinP(d.actualIsNotNaN(:,iTest),iTest) = thisCountMinP(d.indexReorderActual{iTest});
 
       else
         bootstrapP(:,:,iTest) = repmat(min(bootstrapP(:,:,iTest),[],1),[size(bootstrapP,1) 1]);
-        countMinP(:,iTest) = sum(bootstrapP(:,:,iTest)<=repmat(actualP(:,iTest),[1 params.nResamples]),2);
+        countMinP(:,iTest) = sum(bootstrapP(:,:,iTest)<=repmat(actualP(:,iTest),[1 nResamples]),2);
       end
 
     case 'Step-down' 
@@ -42,7 +42,7 @@ for iTest = 1:size(bootstrapP,3)
       sortedBootstrapP = bootstrapP(d.indexSortActual{iTest},:,iTest);
       sortedActualP = actualP(d.indexSortActual{iTest},iTest);                           
       thisCountMinP = NaN(size(sortedActualP));
-      thisQ = ones(1,params.nResamples);
+      thisQ = ones(1,nResamples);
       %compute consecutive minima such that for decreasing p values (increasing significance)
       %the min is taken over more and more voxels (with a maximum of d.numberTrueH0 if this has been estimated)
       for j = numberH0:-1:numberH0-d.numberTrueH0(iTest)+1
