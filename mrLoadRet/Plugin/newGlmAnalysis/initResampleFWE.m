@@ -9,12 +9,12 @@
 
 function d = initResampleFWE(actual,params,p)
 
-
+d.method=params.resampleFweMethod;
 d.actualIsNotNaN = ~isnan(actual); 
 d.numberFalseH0 = zeros(1,size(actual,2));
 d.numberTrueH0 = sum(d.actualIsNotNaN,1);
 
-if strcmp(params.resampleFWEadjustment,'Step-down') || (~strcmp(params.adaptiveFweMethod,'None') && ~strcmp(params.resampleFWEadjustment,'None'))
+if ismember(d.method,{'Step-down','Adaptive Single-step','Adaptive Step-down'})
   %find the sorting index for actual non-nan T values (independently for each contrast)
   
   actual(~d.actualIsNotNaN) = NaN;
@@ -31,8 +31,7 @@ else
   d.actualIsNotNaN = [];
 end
 
-
-if (~strcmp(params.adaptiveFweMethod,'None') && ~strcmp(params.resampleFWEadjustment,'None'))
+if ismember(d.method,{'Adaptive Single-step','Adaptive Step-down'})
   for iTest = 1:size(p,2)
     trueH0ratio = estimateTrueH0Ratio(p(:,iTest),params);
     d.numberFalseH0(iTest) = round((1-trueH0ratio)*length(d.indexSortActual{iTest}));
@@ -41,19 +40,4 @@ if (~strcmp(params.adaptiveFweMethod,'None') && ~strcmp(params.resampleFWEadjust
 end
 
 
-% %old version
-% if strcmp(params.resampleFWEadjustment,'Step-down')
-%   %find the sorting index for actual non-nan T values (independently for each contrast)
-%   
-%   if ieNotDefined('d.actualIsNotNaN')
-%     d.actualIsNotNaN = ~any(isnan(actual),2); %if some voxels are nan only for some tests, they are excluded from this analysis. But that should not happen often, if ever
-%   end
-%   actual(~d.actualIsNotNaN,:) = NaN;
-%   [sortedActual,indexSortActual] = sort(actual,1);
-%   indexSortActual = indexSortActual(~any(isnan(sortedActual),2),:); 
-%   [temp,indexReorderActual] = sort(indexSortActual,1);
-% else
-%   indexSortActual = [];
-%   indexReorderActual = [];
-%   d.actualIsNotNaN = [];
-% end
+

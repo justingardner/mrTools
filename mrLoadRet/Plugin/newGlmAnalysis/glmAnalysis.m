@@ -55,6 +55,7 @@ scanParams = params.scanParams;
 numberFtests = length(params.restrictions);
 numberContrasts = size(params.contrasts,1);
 numberTests = numberFtests+numberContrasts;
+computePermutations = numberTests && (params.permutationTests || (params.parametricTests && params.permutationFweAdjustment));
 
 if params.covCorrection   %number of voxels to get around the ROI/subset box in case the covariance matrix is estimated
    voxelsMargin = floor(params.covEstimationAreaSize/2);
@@ -90,13 +91,23 @@ if numberTests
     end
     fdrParametricP=r2;
     fweParametricP=r2;
-    if params.TFCE && params.permutationTests
-      permuteFweTfceP = r2;
+    if params.bootstrapFweAdjustment
+      bootstrapFweParametricP = r2;
+    end
+    if params.permutationFweAdjustment
+      permuteFweParametricP = r2;
+    end
+    if params.TFCE 
+      if params.bootstrapFweAdjustment
+        bootstrapFweTfceP = r2;
+      end
+      if params.permutationFweAdjustment
+        permuteFweTfceP = r2;
+      end
     end
   end
   if params.permutationTests
     permuteP = r2;
-    permuteFweParametricP = r2;
     fdrPermuteP=r2;
     fwePermuteP=r2;
     if params.TFCE
@@ -105,20 +116,18 @@ if numberTests
       fweTfceRandT=r2;
     end
   end
-  if params.bootstrapStatistics
+  if params.bootstrapTests
     bootstrapP = r2;
     fdrBootstrapP=r2;
     fweBootstrapP=r2;
-    if ~strcmp(params.resampleFWEadjustment,'None')
-      bootstrapFweParametricP = r2;
+    if params.bootstrapFweAdjustment
       bootstrapFweBootstrapP = r2;
     end
     if params.TFCE  
       tfceBootstrapP = r2;
       fdrTfceBootstrapP=r2;
       fweTfceBootstrapP=r2;
-      if ~strcmp(params.resampleFWEadjustment,'None')
-        bootstrapFweTfceP = r2;
+      if params.bootstrapFweAdjustment
         bootstrapFweTfceBootstrapP = r2;
       end
     end
@@ -142,7 +151,7 @@ for iScan = params.scanNum
   end
   subsetDims = diff(subsetBox,1,2)'+1;
   %Compute the number of slices to load at once in order to minimize memory usage
-  if params.TFCE && (params.permutationTests || params.bootstrapStatistics)
+  if params.TFCE && computePermutations
    %in this particular case, we force loading the whole dataset at once
    slicesToLoad = subsetDims(3);
    loadCallsPerBatch = {1};
@@ -247,7 +256,7 @@ for iScan = params.scanNum
 
       actualStimvol = d.stimvol;
       %precompute permutation vectors
-      if params.permutationTests
+      if computePermutations
         nResamples = params.nResamples;
         %find which event types will be randomized
         %first which EVs are involved in all contrasts/restrictions
@@ -317,21 +326,20 @@ for iScan = params.scanNum
       [d, out] = getGlmStatistics(d, params, verbose, precision, actualData);%, computeTtests,computeBootstrap);
        
       
-      if params.permutationTests
-        if isfield(out,'statistic');
-          thisStatistic = out.statistic;
-        end
-      end
-      
+    
       if iPerm==1
         %keep values for permutation tests
-        if params.permutationTests
-          actualStatistic = thisStatistic;
-          permuteStatisticCount = zeros(size(actualStatistic),precision); %will count how many permutation values are above the actual statistic value 
-          permuteStatisticCount(isnan(thisStatistic)) = NaN; 
-          permuteFweStatisticCount = zeros(size(actualStatistic),precision); %same for the max permutation value across space, for FWE adjustment
-          %this is for resampled-based FWE control
-          permuteFweData = initResampleFWE(reshape(actualStatistic,prod(d.dim(1:3)),numberTests),params);
+        if computePermutations
+          actualStatistic = out.statistic;
+          if params.permutationTests
+            permuteStatisticCount = zeros(size(actualStatistic),precision); %will count how many permutation values are above the actual statistic value 
+            permuteStatisticCount(isnan(actualStatistic)) = NaN; 
+          end
+          if params.parametricTests && params.permutationFweAdjustment
+            permuteFweStatisticCount = zeros(size(actualStatistic),precision); %same for the max permutation value across space, for FWE adjustment
+            permuteFweStatisticCount(isnan(actualStatistic)) = NaN; 
+            permuteFweData = initResampleFWE(reshape(actualStatistic,prod(d.dim(1:3)),numberTests),params,out.parametricP);
+          end
         end
         
         %reshape data into the subsetbox
@@ -342,13 +350,13 @@ for iScan = params.scanNum
           if params.covCorrection
             d.autoCorrelationParameters = reshapeToRoiBox(d.autoCorrelationParameters,d.roiPositionInBox);
           end
-          if params.bootstrapStatistics && params.bootstrapIntervals
+          if params.bootstrapTests && params.bootstrapIntervals
             d.ehdrBootstrapCIs = reshapeToRoiBox(d.ehdrBootstrapCIs,d.roiPositionInBox);
           end
           if numberTests
             if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
               out.contrast = reshapeToRoiBox(out.contrast,d.roiPositionInBox);
-              if params.bootstrapStatistics && params.bootstrapIntervals
+              if params.bootstrapTests && params.bootstrapIntervals
                 d.contrastBootstrapCIs = reshapeToRoiBox(d.contrastBootstrapCIs,d.roiPositionInBox);
               end
             end
@@ -357,18 +365,22 @@ for iScan = params.scanNum
               if params.outputStatistic
                 out.statistic = reshapeToRoiBox(out.statistic,d.roiPositionInBox);
               end
-            end
-            if params.bootstrapStatistics
-              out.bootstrapP = reshapeToRoiBox(out.bootstrapP,d.roiPositionInBox);
-              if ~strcmp(params.resampleFWEadjustment,'None')
+              if params.bootstrapFweAdjustment
                 out.bootstrapFweParametricP = reshapeToRoiBox(out.bootstrapFweParametricP,d.roiPositionInBox);
+                if params.TFCE 
+                  out.bootstrapFweTfceP = reshapeToRoiBox(out.bootstrapFweTfceP,d.roiPositionInBox);
+                end
+              end
+            end
+            if params.bootstrapTests
+              out.bootstrapP = reshapeToRoiBox(out.bootstrapP,d.roiPositionInBox);
+              if params.bootstrapFweAdjustment
                 out.bootstrapFweBootstrapP = reshapeToRoiBox(out.bootstrapFweBootstrapP,d.roiPositionInBox);
               end
               if params.TFCE 
                 out.tfceBootstrapP = reshapeToRoiBox(out.tfceBootstrapP,d.roiPositionInBox);
-                if ~strcmp(params.resampleFWEadjustment,'None')
-                  out.bootstrapFweTfceP = reshapeToRoiBox(out.bootstrapFweTfceP,d.roiPositionInBox);
-                  out.bootstrapFweTfceBootstrapP = reshapeToRoiBox(out.bootstrapFweTfceBootstrapP,d.roiPositionInBox);
+                if params.bootstrapFweAdjustment
+                   out.bootstrapFweTfceBootstrapP = reshapeToRoiBox(out.bootstrapFweTfceBootstrapP,d.roiPositionInBox);
                 end
               end
             end
@@ -382,7 +394,7 @@ for iScan = params.scanNum
         if params.covCorrection
           autoCorrelationParameters = cat(3,autoCorrelationParameters,d.autoCorrelationParameters);
         end
-        if params.bootstrapStatistics && params.bootstrapIntervals
+        if params.bootstrapTests && params.bootstrapIntervals
           ehdrBootstrapCIs = cat(3,ehdrBootstrapCIs,d.ehdrBootstrapCIs);
         end
         if numberTests
@@ -390,7 +402,7 @@ for iScan = params.scanNum
             if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
               contrast{iScan} = cat(3,contrast{iScan},out.contrast);
             end
-            if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+            if params.bootstrapTests && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
               contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
             end
           end
@@ -399,144 +411,149 @@ for iScan = params.scanNum
             if params.outputStatistic
               statistic{iScan} = cat(3,statistic{iScan},out.statistic);
             end
-          end
-          if params.bootstrapStatistics
-            bootstrapP{iScan} = cat(3,bootstrapP{iScan},out.bootstrapP);
-            if ~strcmp(params.resampleFWEadjustment,'None')
+            if params.bootstrapFweAdjustment
               bootstrapFweParametricP{iScan} = cat(3,bootstrapFweParametricP{iScan},out.bootstrapFweParametricP);
+              if params.TFCE 
+                bootstrapFweTfceP{iScan} = cat(3,bootstrapFweTfceP{iScan},out.bootstrapFweTfceP);
+              end
+            end
+          end
+          if params.bootstrapTests
+            bootstrapP{iScan} = cat(3,bootstrapP{iScan},out.bootstrapP);
+            if params.bootstrapFweAdjustment
               bootstrapFweBootstrapP{iScan} = cat(3,bootstrapFweBootstrapP{iScan},out.bootstrapFweBootstrapP);
             end
             if params.TFCE 
               tfceBootstrapP{iScan} = cat(3,tfceBootstrapP{iScan},out.tfceBootstrapP);
-              if ~strcmp(params.resampleFWEadjustment,'None')
-                bootstrapFweTfceP{iScan} = cat(3,bootstrapFweTfceP{iScan},out.bootstrapFweTfceP);
+              if params.bootstrapFweAdjustment
                 bootstrapFweTfceBootstrapP{iScan} = cat(3,bootstrapFweTfceBootstrapP{iScan},out.bootstrapFweTfceBootstrapP);
               end
             end
           end
         end
-        
-        clear('out')
-      
-      % iPerm>1  
-      else
-        if numberTests
-          permuteStatisticCount = permuteStatisticCount+double(thisStatistic>actualStatistic);
-          %permuteFweStatisticCount = permuteFweStatisticCount+double(repmat(max(max(max(thisStatistic,[],3),[],2),[],1),[d.dim(1:3) 1])>actualStatistic);
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            permuteFweStatisticCount = permuteFweStatisticCount + reshape(resampleFWE(reshape(thisStatistic,prod(d.dim(1:3)),numberTests),...
-                                                              reshape(actualStatistic,prod(d.dim(1:3)),numberTests),...
-                                                              permuteFweData,params),...
-                                                  [d.dim(1:3) numberTests]);
+        %We compute the TFCE here only in the case we forced loading the whole volume at once
+        if params.TFCE && computePermutations
+          thisTfce = applyFslTFCE(out.statistic,'',0);  
+          %put NaNs back
+          thisTfce(isnan(out.statistic)) = NaN;
+          actualTfce = thisTfce;           %keep the TFCE transform
+          if params.permutationTests
+            permuteTfceCount = zeros(size(out.statistic),precision);     %these will count how many permutation values are above the actual TFCE values voxelwise
+            permuteTfceCount(isnan(out.statistic)) = NaN;%put NaNs back
           end
+          if params.parametricTests && params.permutationFweAdjustment
+            permuteFweTfceCount = zeros(size(out.statistic),precision); %same for permutation adjusted FWE
+            permuteFweTfceCount(isnan(out.statistic)) = NaN;%put NaNs back
+            permuteFweTfceData = initResampleFWE(reshape(actualTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),params);
+          end
+          clear('out');
         end
-      end
-
-      %We compute the TFCE here only in the case we forced loading the whole volume at once
-      if params.TFCE && params.permutationTests
-        if numberTests
+      
+      else % iPerm>1
+        if params.permutationTests
+          permuteStatisticCount = permuteStatisticCount+double(out.statistic>actualStatistic);
+        end
+        if params.parametricTests && params.permutationFweAdjustment
+          permuteFweStatisticCount = permuteFweStatisticCount + reshape(resampleFWE(reshape(out.statistic,prod(d.dim(1:3)),numberTests),...
+                                                            reshape(actualStatistic,prod(d.dim(1:3)),numberTests),...
+                                                            permuteFweData), [d.dim(1:3) numberTests]);
+        end
+        if params.TFCE
           if isfield(d,'roiPositionInBox') 
-            thisStatistic = reshapeToRoiBox(thisStatistic,d.roiPositionInBox); 
+            out.statistic = reshapeToRoiBox(out.statistic,d.roiPositionInBox); 
           end
+          %We compute the TFCE here only in the case we forced loading the whole volume at once
           %NaNs in the data will be transformed to 0 by FSL, so for ROIs, 
           %TFCE is applied to the smallest box including all the ROIs, but replacing non-computed data by 0
-          thisTfce = applyFslTFCE(thisStatistic,'',0);  
+          thisTfce = applyFslTFCE(out.statistic,'',0);  
           %put NaNs back
-          thisTfce(isnan(thisStatistic)) = NaN;
-          if iPerm == 1 %if it is the actual data
-            permuteTfceCount = zeros(size(thisStatistic),precision);     %these will count how many permutation values are above the actual TFCE values voxelwise
-            %put NaNs back
-            permuteTfceCount(isnan(thisStatistic)) = NaN;
-            actualTfce = thisTfce;           %keep the TFCE transform
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              permuteFweTfceCount = permuteTfceCount; %same for permutation adjusted FWE
-              permuteFweTfceData = initResampleFWE(reshape(actualTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),params);
-            end
-          else
+          thisTfce(isnan(out.statistic)) = NaN;
+          clear('out');
+          if params.permutationTests
             permuteTfceCount = permuteTfceCount+ double(thisTfce>actualTfce);
-            if ~strcmp(params.resampleFWEadjustment,'None')
-              %permuteFweTfceCount = permuteFweTfceCount+ double(repmat(max(max(max(thisTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfce);
-              permuteFweTfceCount = permuteFweTfceCount + reshape(resampleFWE(reshape(thisTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),...
-                                                                  reshape(actualTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),...
-                                                                  permuteFweTfceData,params),...
-                                                      size(permuteFweTfceCount));
-            end
           end
+          if params.parametricTests && params.permutationFweAdjustment
+            %permuteFweTfceCount = permuteFweTfceCount+ double(repmat(max(max(max(thisTfce,[],3),[],2),[],1),[subsetDims 1])>actualTfce);
+            permuteFweTfceCount = permuteFweTfceCount + reshape(resampleFWE(reshape(thisTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),...
+                                                                reshape(actualTfce,numel(thisTfce(:,:,:,1)),numberContrasts+numberFtests),...
+                                                                permuteFweTfceData),size(permuteFweTfceCount));
+          end
+          clear('thisTfce');
         end
-        
-        clear('thisTfce');
       end
     end
-    if params.permutationTests 
-       mrCloseDlg(hWaitBar);
+    if computePermutations
+      clear('actualStatistic','actualTfce')
+      mrCloseDlg(hWaitBar);
     end
     d = rmfield(d,'data');
-    clear('actualTfce')
 
-    if params.permutationTests %compute P-values, reshape and concatenate if needed
-      if numberTests 
+    if computePermutations %compute P-values, reshape and concatenate if needed
+      if params.permutationTests
         permuteStatisticCount = computeRandP(permuteStatisticCount,nResamples);
         if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-            permuteStatisticCount = reshapeToRoiBox(permuteStatisticCount,d.roiPositionInBox);
+          permuteStatisticCount = reshapeToRoiBox(permuteStatisticCount,d.roiPositionInBox);
         end
-        permuteP{iScan} = cat(3,permuteP{iScan},permuteStatisticCount);          
-        if ~strcmp(params.resampleFWEadjustment,'None')
-          permuteFweStatisticCount = computeRandP(permuteFweStatisticCount,nResamples);
-          permuteFweStatisticCount(isnan(permuteFweStatisticCount)) = NaN; %put NaNs back in place
-          if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
-            permuteFweStatisticCount = reshapeToRoiBox(permuteFweStatisticCount,d.roiPositionInBox);
-          end
-          permuteFweParametricP{iScan} = cat(3,permuteFweParametricP{iScan},permuteFweStatisticCount);
-        end
+        permuteP{iScan} = cat(3,permuteP{iScan},permuteStatisticCount);  
+        clear('permuteStatisticCount');
         if params.TFCE 
           tfcePermuteP{iScan} = computeRandP(permuteTfceCount,nResamples);
           clear('permuteTfceCount');
           tfcePermuteP{iScan}(isnan(permuteP{iScan})) = NaN; %put NaNs back in place
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            permuteFweTfceP{iScan} = computeRandP(permuteFweTfceCount,nResamples);
-            clear('permuteFweTfceCount');
-            permuteFweTfceP{iScan} = reshape(enforceMonotonicityResampleFWE(...
-                                        reshape(permuteFweTfceP{iScan},numel(permuteFweTfceP{iScan}(:,:,:,1)),numberContrasts+numberFtests),...
-                                        permuteFweTfceData,params),...
-                                        size(permuteFweTfceP{iScan}));
-            permuteFweTfceP{iScan}(isnan(permuteP{iScan})) = NaN; %put NaNs back in place
-          end
+        end
+      end
+      if params.parametricTests && params.permutationFweAdjustment
+        permuteFweStatisticCount = computeRandP(permuteFweStatisticCount,nResamples);
+        permuteFweStatisticCount(isnan(permuteFweStatisticCount)) = NaN; %put NaNs back in place
+        if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+          permuteFweStatisticCount = reshapeToRoiBox(permuteFweStatisticCount,d.roiPositionInBox);
+        end
+        permuteFweParametricP{iScan} = cat(3,permuteFweParametricP{iScan},permuteFweStatisticCount);
+        clear('permuteFweStatisticCount');
+        if params.TFCE 
+          permuteFweTfceP{iScan} = computeRandP(permuteFweTfceCount,nResamples);
+          clear('permuteFweTfceCount');
+          permuteFweTfceP{iScan} = reshape(enforceMonotonicityResampleFWE(...
+                                      reshape(permuteFweTfceP{iScan},numel(permuteFweTfceP{iScan}(:,:,:,1)),numberContrasts+numberFtests),...
+                                      permuteFweTfceData), size(permuteFweTfceP{iScan}));
+          permuteFweTfceP{iScan}(isnan(permuteP{iScan})) = NaN; %put NaNs back in place
         end
       end
       d = rmfield(d,'roiPositionInBox');
     end
-    
-
   end
-  clear('permuteStatisticCount','actualStatistic')
   
   if numberTests
     %make parametric probability maps
     if params.parametricTests
       [parametricP{iScan},fdrParametricP{iScan},fweParametricP{iScan}] = transformStatistic(parametricP{iScan},precision,params); 
-    end
-    if params.permutationTests
-      [permuteP{iScan},fdrPermuteP{iScan},fwePermuteP{iScan}] = transformStatistic(permuteP{iScan},precision,params); 
-      if ~strcmp(params.resampleFWEadjustment,'None')
+      if params.permutationFweAdjustment
         permuteFweParametricP{iScan} = transformStatistic(permuteFweParametricP{iScan},precision,params); 
-      end
-      if params.TFCE 
-        [tfcePermuteP{iScan},fdrTfcePermuteP{iScan},fweTfceRandT{iScan}] = transformStatistic(tfcePermuteP{iScan},precision,params); 
-        if ~strcmp(params.resampleFWEadjustment,'None')
+        if params.TFCE 
           permuteFweTfceP{iScan} = transformStatistic(permuteFweTfceP{iScan},precision,params); 
         end
       end
-    end
-    if params.bootstrapStatistics
-      [bootstrapP{iScan},fdrBootstrapP{iScan},fweBootstrapP{iScan}] = transformStatistic(bootstrapP{iScan},precision,params); 
-      if ~strcmp(params.resampleFWEadjustment,'None')
+      if params.bootstrapFweAdjustment
         bootstrapFweParametricP{iScan} = transformStatistic(bootstrapFweParametricP{iScan},precision,params);
+        if params.TFCE 
+          bootstrapFweTfceP{iScan} = transformStatistic(bootstrapFweTfceP{iScan},precision,params);
+        end
+      end
+    end
+    if params.permutationTests
+      [permuteP{iScan},fdrPermuteP{iScan},fwePermuteP{iScan}] = transformStatistic(permuteP{iScan},precision,params); 
+      if params.TFCE 
+        [tfcePermuteP{iScan},fdrTfcePermuteP{iScan},fweTfceRandT{iScan}] = transformStatistic(tfcePermuteP{iScan},precision,params); 
+      end
+    end
+    if params.bootstrapTests
+      [bootstrapP{iScan},fdrBootstrapP{iScan},fweBootstrapP{iScan}] = transformStatistic(bootstrapP{iScan},precision,params); 
+      if params.bootstrapFweAdjustment
         bootstrapFweBootstrapP{iScan} = transformStatistic(bootstrapFweBootstrapP{iScan},precision,params);
       end
       if params.TFCE 
         [tfceBootstrapP{iScan},fdrTfceBootstrapP{iScan},fweTfceBootstrapP{iScan}] = transformStatistic(tfceBootstrapP{iScan},precision,params);
-        if ~strcmp(params.resampleFWEadjustment,'None')
-          bootstrapFweTfceP{iScan} = transformStatistic(bootstrapFweTfceP{iScan},precision,params);
+        if params.bootstrapFweAdjustment
           bootstrapFweTfceBootstrapP{iScan} = transformStatistic(bootstrapFweTfceBootstrapP{iScan},precision,params);
         end
       end
@@ -568,14 +585,14 @@ for iScan = params.scanNum
     glmAnal.d{iScan}.autoCorrelationParameters(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = autoCorrelationParameters; %JB
     clear('autoCorrelationParameters')
   end
-  if params.bootstrapStatistics && params.bootstrapIntervals
+  if params.bootstrapTests && params.bootstrapIntervals
     glmAnal.d{iScan}.ehdrBootstrapCIs = NaN([scanDims size(ehdrBootstrapCIs,4) size(ehdrBootstrapCIs,5)],precision);
     glmAnal.d{iScan}.ehdrBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdrBootstrapCIs; %JB
     clear('ehdrBootstrapCIs')
   end
   if numberContrasts
     glmAnal.d{iScan}.contrasts = params.contrasts;
-    if params.bootstrapStatistics && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+    if params.bootstrapTests && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
       glmAnal.d{iScan}.contrastBootstrapCIs = NaN([scanDims size(contrastBootstrapCIs,4) size(contrastBootstrapCIs,5)],precision);
       glmAnal.d{iScan}.contrastBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = contrastBootstrapCIs; %JB
       clear('contrastBootstrapCIs')
@@ -695,34 +712,27 @@ if numberTests
   end
 
   if params.parametricTests
-
-
     overlays = [overlays makeOverlay(defaultOverlay, parametricP, subsetBox, params.scanNum, scanParams, ...
                                        '', params.testOutput, testNames)];
     clear('parametricP');
-
-    if ~strcmp(params.resampleFWEadjustment,'None')
-      if params.bootstrapStatistics
-        overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweParametricP, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-adjusted ', params.testOutput, testNames)];
-        clear('bootstrapFweParametricP');
-        if params.TFCE  
-          if ~strcmp(params.resampleFWEadjustment,'None')
-            overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceP, subsetBox, params.scanNum, scanParams, ...
-                                               'bootstrap-adjusted TFCE ', params.testOutput, testNames)];
-            clear('bootstrapFweTfceP');
-          end
-        end
-      end 
-      if params.permutationTests
-        overlays = [overlays makeOverlay(defaultOverlay, permuteFweParametricP, subsetBox, params.scanNum, scanParams, ...
-                                           'permutation-adjusted ', params.testOutput, testNames)];
-        clear('permuteFweParametricP');
-        if params.TFCE
-          overlays = [overlays makeOverlay(defaultOverlay, permuteFweTfceP, subsetBox, params.scanNum, scanParams, ...
-                                           'permutation-adjusted TFCE ',params.testOutput, testNames)];
-          clear('permuteFweTfceP');
-        end
+    if params.bootstrapFweAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweParametricP, subsetBox, params.scanNum, scanParams, ...
+                                         'bootstrap-adjusted ', params.testOutput, testNames)];
+      clear('bootstrapFweParametricP');
+      if params.TFCE  
+        overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceP, subsetBox, params.scanNum, scanParams, ...
+                                           'bootstrap-adjusted TFCE ', params.testOutput, testNames)];
+        clear('bootstrapFweTfceP');
+      end
+    end
+    if params.permutationFweAdjustment
+      overlays = [overlays makeOverlay(defaultOverlay, permuteFweParametricP, subsetBox, params.scanNum, scanParams, ...
+                                         'permutation-adjusted ', params.testOutput, testNames)];
+      clear('permuteFweParametricP');
+      if params.TFCE
+        overlays = [overlays makeOverlay(defaultOverlay, permuteFweTfceP, subsetBox, params.scanNum, scanParams, ...
+                                         'permutation-adjusted TFCE ',params.testOutput, testNames)];
+        clear('permuteFweTfceP');
       end
     end
     if params.fdrAdjustment
@@ -735,14 +745,13 @@ if numberTests
                                       'FWE-adjusted ',params.testOutput, testNames)];
       clear('fweParametricP');
     end
-
   end
 
-  if params.bootstrapStatistics
+  if params.bootstrapTests
     overlays = [overlays makeOverlay(defaultOverlay, bootstrapP, subsetBox, params.scanNum, scanParams, ...
                                        'bootstrap ', params.testOutput, testNames)];
     clear('bootstrapP');
-    if ~strcmp(params.resampleFWEadjustment,'None')
+    if params.bootstrapFweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweBootstrapP, subsetBox, params.scanNum, scanParams, ...
                                          'bootstrap-adjusted bootstrap ', params.testOutput, testNames)];
       clear('bootstrapFweBootstrapP');
@@ -761,7 +770,7 @@ if numberTests
       overlays = [overlays makeOverlay(defaultOverlay, tfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
                                          'bootstrap TFCE ', params.testOutput, testNames)];
       clear('tfceBootstrapP');
-      if ~strcmp(params.resampleFWEadjustment,'None')
+      if params.bootstrapFweAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
                                            'bootstrap-adjusted bootstrap TFCE ', params.testOutput, testNames)];
         clear('bootstrapFweTfceBootstrapP');
@@ -904,7 +913,7 @@ end
 if params.fweAdjustment
   fweAdjustedP = p;
   for iTest = 1:size(p,4)
-    if ~strcmp(params.adaptiveFweMethod,'None')
+    if ~strcmp(params.trueNullsEstimationMethod,'None')
       [trueH0ratio,lambda] = estimateTrueH0Ratio(p(:,:,:,iTest),params);
     else
       trueH0ratio = 1;
@@ -970,7 +979,7 @@ switch(params.fdrMethod)
     %we will estimate the number of true H0 using definition 3 in Benjamini et al. 2006
     % first adjust the p values 
     adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
-    if any(adjustedP<params.adaptiveFdrThreshold) %if any voxel is significant at the chosen level (usually .05) (most likely)
+    if any(adjustedP<params.trueNullsEstimationThreshold) %if any voxel is significant at the chosen level (usually .05) (most likely)
       %compute the estimated number of true H0 when considering the number of rejections at all possible levels
       numberH0 = length(pData);
       numberTrueH0 = (numberH0+1-(1:numberH0)')./(1-pData);
@@ -983,7 +992,7 @@ switch(params.fdrMethod)
     %we will estimate the number of true H0 using definition 6 in Benjamini et al. 2006
     % first adjust the p values with q'=(q+1)
     adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
-    numberFalseH0 = length(find(adjustedP<(params.adaptiveFdrThreshold/(params.adaptiveFdrThreshold+1))));
+    numberFalseH0 = length(find(adjustedP<(params.trueNullsEstimationThreshold/(params.trueNullsEstimationThreshold+1))));
     if numberFalseH0 %if any voxel is significant at the chosen level usually .05/(.05+1)
       numberH0 = length(adjustedP); 
       %recompute the adjusted p-value using the estimated number of true H0
@@ -993,7 +1002,7 @@ switch(params.fdrMethod)
   case 'Multiple-stage Adaptive Step-up'
     %we will estimate the number of true H0 using definition 7 in Benjamini et al. 2006
     %but they only give the definition for p-value correction with a fixed q
-    q = params.adaptiveFdrThreshold;
+    q = params.trueNullsEstimationThreshold;
     %step-up version with L>=J (I think it's a step-up procedure within a step-down procedure)
     %k=max{i : for all j<=i there exists l>=j so that p(l)<=ql/{m+1?j(1?q)}}.
     i=0;          %
@@ -1011,7 +1020,7 @@ switch(params.fdrMethod)
     
   case 'Adaptive Step-down'
     %this is the step-down version of definition 7 in Benjamini et al. 2006 with L=J
-%     q = params.adaptiveFdrThreshold;
+%     q = params.trueNullsEstimationThreshold;
     %k=max{i : for all j<=i there exists l=j so that p(l)<=ql/{m+1?j(1?q)}}.
     %k=max{i : for all j<=i p(j)<=qj/{m+1?j(1?q)}}.
     %this is just the loop version that corresponds to the definition
@@ -1044,7 +1053,6 @@ switch(params.fdrMethod)
      adjustedP(i) = max(adjustedP(i-1),adjustedP(i));
     end
     adjustedP = min(adjustedP,1); %bound with 1
-
           
 end
 

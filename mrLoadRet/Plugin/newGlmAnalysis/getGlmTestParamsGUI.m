@@ -16,23 +16,22 @@ while keepAsking
   if isfield(params, 'contrasts') && strcmp(params.contrasts,'all')
     params.numberContrasts = params.numberEVs;
   end
-  if ~isfield(params, 'contrasts') || isempty(params.contrasts) || ~isnumeric(params.contrasts) || ...
+  if fieldIsNotDefined(params, 'contrasts') || ~isnumeric(params.contrasts) || ...
     ~isequal(size(params.contrasts,1),params.numberContrasts) || ~isequal(size(params.contrasts,2),params.numberEVs)
       params.contrasts=eye(params.numberContrasts,params.numberEVs);
   end
-  if ~isfield(params,'tTestSide') || isempty(params.tTestSide)
+  if fieldIsNotDefined(params,'tTestSide')
     params.tTestSide = 'Both';
   end
 
-  if ~isfield(params, 'fTestNames') || isempty(params.fTestNames) || ...
-    ~isequal(length(params.fTestNames),params.numberFtests) 
+  if fieldIsNotDefined(params, 'fTestNames') || ~isequal(length(params.fTestNames),params.numberFtests) 
     if params.numberFtests
       params.fTestNames=cellstr(reshape(sprintf('fTest%2d',1:params.numberFtests),7,params.numberFtests)');
     else
       params.fTestNames={};
     end
   end
-  if ~isfield(params, 'restrictions') || isempty(params.restrictions) || ...
+  if fieldIsNotDefined(params, 'restrictions') || ...
     ~isequal(length(params.restrictions),params.numberFtests) || ~isequal(size(params.restrictions{1},2),params.numberEVs)
     params.restrictions = {};
     for iFtest = 1:params.numberFtests
@@ -45,89 +44,49 @@ while keepAsking
   [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,...
     viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName))/params.scanParams{params.scanNum(1)}.estimationSupersampling,0,1);
   nComponents = size(hrf,2);
-  if ~isfield(params, 'componentsToTest') || isempty(params.componentsToTest) || ~isequal(nComponents,length(params.componentsToTest));
+  if fieldIsNotDefined(params, 'componentsToTest') || ~isequal(nComponents,length(params.componentsToTest));
     params.componentsToTest = ones(1,nComponents);
   end
-  if ~isfield(params, 'componentsCombination') || isempty(params.componentsCombination)
+  if fieldIsNotDefined(params, 'componentsCombination')
     params.componentsCombination = 'Or';
   end
 
-  if ~isfield(params,'parametricTests') || isempty(params.parametricTests)
+  if fieldIsNotDefined(params,'parametricTests')
     params.parametricTests = 1;
   end
-  if ~isfield(params,'permutationTests') || isempty(params.permutationTests)
+  if fieldIsNotDefined(params,'bootstrapTests')
+    params.bootstrapTests = 0;
+  end
+  if fieldIsNotDefined(params,'permutationTests')
     params.permutationTests = 0;
   end
 
-  if ~isfield(params,'bootstrapStatistics') || isempty(params.bootstrapStatistics)
-    params.bootstrapStatistics = 0;
+  if fieldIsNotDefined(params, 'bootstrapFweAdjustment')
+      params.bootstrapFweAdjustment = 0;
   end
-  if ~isfield(params, 'bootstrapIntervals') || isempty(params.bootstrapIntervals)
-      params.bootstrapIntervals = 0;
+  if fieldIsNotDefined(params, 'permutationFweAdjustment')
+      params.permutationFweAdjustment = 0;
   end
-  if ~isfield(params, 'alphaConfidenceIntervals') || isempty(params.alphaConfidenceIntervals)
-      params.alphaConfidenceIntervals = 0.05;
-  end
-  
-  if fieldIsNotDefined(params, 'resampleFWEadjustment')
-    if params.bootstrapStatistics || params.permutationTests
-      params.resampleFWEadjustment = 'Step-down';
-    else
-      params.resampleFWEadjustment = 'None';
-    end
-  end
-  
-  if fieldIsNotDefined(params, 'fdrAdjustment')
-      params.fdrAdjustment = 0;
-  end
-  if fieldIsNotDefined(params, 'fdrAssumption')
-      params.fdrAssumption = 'Independence/Positive dependence';
-  end
-  if fieldIsNotDefined(params, 'fdrMethod')
-      params.fdrMethod = 'Step-up';
-  end
-  if fieldIsNotDefined(params, 'adaptiveFdrThreshold')
-      params.adaptiveFdrThreshold = .05;
-  end
-  
   if fieldIsNotDefined(params, 'fweAdjustment')
       params.fweAdjustment = 0;
   end
-  if fieldIsNotDefined(params, 'fweMethod')
-      params.fweMethod = 'Single-step (Bonferroni)';
+  if fieldIsNotDefined(params, 'fdrAdjustment')
+      params.fdrAdjustment = 0;
   end
-  
-  if fieldIsNotDefined(params, 'adaptiveFweMethod')
-      params.adaptiveFweMethod = 'Adaptive';
-  end
-  if fieldIsNotDefined(params, 'adaptiveFweThreshold')
-      params.adaptiveFweThreshold = .05;
-  end
-  
-  if fieldIsNotDefined(params, 'testOutput') || isempty(params.TFCE)
-      params.testOutput = 'Z value';
-  end
-  if ~isfield(params,'outputStatistic')
-    params.outputStatistic = 0;
-  end
-  if ~isfield(params, 'TFCE') || isempty(params.TFCE)
+
+  if fieldIsNotDefined(params, 'TFCE')
       params.TFCE = 0;
   end
-  if ~isfield(params, 'nResamples') || isempty(params.nResamples)
+  if fieldIsNotDefined(params, 'nResamples')
       params.nResamples = 10000;
   end
 
-
-
-
+  if fieldIsNotDefined(params, 'showAdvancedStatisticMenu') || ~(params.computeTtests || params.numberFtests)
+      params.showAdvancedStatisticMenu = 0;
+  end
+  
   tTestSideMenu = putOnTopOfList(params.tTestSide,{'Both','Right','Left'});
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
-  resampleFWEadjustmentMenu = putOnTopOfList(params.resampleFWEadjustment,{'None','Single-step','Step-down'});
-  fdrAssumptionMenu = putOnTopOfList(params.fdrAssumption,{'Independence/Positive dependence','None'});
-  fdrMethodMenu = putOnTopOfList(params.fdrMethod,{'Step-up','Adaptive Step-up','Two-stage Adaptive Step-up','Adaptive Step-down','Multiple-stage Adaptive Step-up'});
-  fweMethodMenu = putOnTopOfList(params.fweMethod,{'None','Single-step (Bonferroni)','Step-down (Holm)','Step-up (Hochberg)','Hommel'});
-  adaptiveFweMethodMenu = putOnTopOfList(params.adaptiveFweMethod,{'None','Adaptive','Fixed Threshold'});
-  testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   
   contrastOptionsVisible = 'visible=0';
   tTestOptionsVisible = 'visible=0';
@@ -135,7 +94,6 @@ while keepAsking
   componentOptionsVisible = 'visible=0';
   testOptionsVisible = 'visible=0';
   tfceOptionVisible = 'visible=0';
-  tfceContigency = 'contingent=parametricTests';
   
   if params.numberContrasts
     contrastOptionsVisible = 'visible=1';
@@ -156,7 +114,6 @@ while keepAsking
     params.TFCE = 0;
     if params.computeTtests || params.numberFtests
       tfceOptionVisible = 'enable=0';
-      tfceContigency = '';
     end
   else
       tfceOptionVisible = testOptionsVisible;
@@ -179,24 +136,16 @@ while keepAsking
       {'componentsToTest', params.componentsToTest,componentOptionsVisible,...
             'Vector defining which EV components are tested. Put zeros to exclude components or a weight to include them. '},...
       {'componentsCombination', componentsCombinationMenu,componentOptionsVisible,'type=popupmenu', 'How to combine EV components. ''Add'' adds the weighted components into a single EV for contrasts/F-test. ''Or'' ignores the weights and tests contrasts/F-tests at any component that is not 0. Note that ''Or'' is not compatible with one-sided T-tests'}...
+      {'TFCE', params.TFCE,tfceOptionVisible,'type=checkbox', 'Performs Threshold Free Cluster Enhancement on T/F maps using fslmaths. This option is only enabled if a path is specified for FSL by running mrSetPref(''fslPath'',''yourpath''). In addition it can only be used in conjonction with bootstrap/permutation tests'},...
       {'parametricTests', params.parametricTests,testOptionsVisible,'type=checkbox', 'Performs parametric tests on contrasts/F values'},...
-      {'TFCE', params.TFCE,tfceContigency,tfceOptionVisible,'type=checkbox', 'Performs Threshold Free Cluster Enhancement on T/F maps using fslmaths. This option is only enabled if a path is specified for FSL by running mrSetPref(''fslPath'',''yourpath'')'},...
-      {'resampleFWEadjustment', resampleFWEadjustmentMenu,testOptionsVisible,'contingent=parametricTests','type=popupmenu', ''},...
-      {'bootstrapStatistics', params.bootstrapStatistics,testOptionsVisible,'type=checkbox', 'Performs non-parametric residual bootstrap tests on T/F values or confidence intervals on contrasts and parameter estimates. Bootstrapping consists in resampling the residuals with replacement after OLS/GLS fit and estimating the null-hypothesis distributions using the bootstrapped residuals as the new time-series.'},...
-      {'bootstrapIntervals', params.bootstrapIntervals,testOptionsVisible,'contingent=bootstrapStatistics','type=checkbox', 'Whether to compute Bootstrap confidence intervals for contrasts and parameter estimates'},...
-      {'alphaConfidenceIntervals', params.alphaConfidenceIntervals,testOptionsVisible,'contingent=bootstrapIntervals', 'minmax=[0 1]', 'Confidence Intervals will be computed as fractiles (alpha/2) and (1-alpha/2) of the bootstrap estimated null distribution'},...
+      {'bootstrapTests', params.bootstrapTests,testOptionsVisible,'type=checkbox', 'Performs non-parametric residual bootstrap tests on T/F values or confidence intervals on contrasts and parameter estimates. Bootstrapping consists in resampling the residuals with replacement after OLS/GLS fit and estimating the null-hypothesis distributions using the bootstrapped residuals as the new time-series.'},...
       {'permutationTests', params.permutationTests,testOptionsVisible,'type=checkbox', 'Performs non-parametric permutation tests on contrasts/F values'},...
-      {'fdrAdjustment', params.fdrAdjustment,testOptionsVisible,'type=checkbox', ''},...
-      {'fdrAssumption', fdrAssumptionMenu,testOptionsVisible,'contingent=fdrAdjustment','type=popupmenu', ''},...
-      {'fdrMethod', fdrMethodMenu,testOptionsVisible,'contingent=fdrAdjustment','type=popupmenu', ''},...
-      {'adaptiveFdrThreshold', params.adaptiveFdrThreshold,testOptionsVisible,'contingent=fdrAdjustment', ''},...
-      {'fweAdjustment', params.fweAdjustment,testOptionsVisible,'type=checkbox', ''},...
-      {'fweMethod', fweMethodMenu,testOptionsVisible,'contingent=fweAdjustment','type=popupmenu', ''},...
-      {'adaptiveFweMethod', adaptiveFweMethodMenu,testOptionsVisible,'type=popupmenu', ''},...
-      {'adaptiveFweThreshold', params.adaptiveFweThreshold,testOptionsVisible, ''},...
-      {'testOutput', testOutputMenu,testOptionsVisible,'type=popupmenu', 'Type of statistics for output overlay.  P: outputs the probability value associated with the statistic. p-values less than 1e-16 will be replaced by 0; Z: outputs standard normal values associated with probability p. Z values with a probability less than 1e-16 will be replaced by +/-8.209536145151493'},...
-      {'outputStatistic', params.outputStatistic,testOptionsVisible,'type=checkbox', ''},...
       {'nResamples', params.nResamples,testOptionsVisible, 'minmax=[10 inf]', 'Number of iterations for bootstrap/permutation tests.'},...
+      {'bootstrapFweAdjustment', params.bootstrapFweAdjustment,testOptionsVisible,'type=checkbox', ''},...
+      {'permutationFweAdjustment', params.permutationFweAdjustment,testOptionsVisible,'type=checkbox', ''},...
+      {'fweAdjustment', params.fweAdjustment,testOptionsVisible,'type=checkbox', ''},...
+      {'fdrAdjustment', params.fdrAdjustment,testOptionsVisible,'type=checkbox', ''},...
+      {'showAdvancedStatisticMenu', params.showAdvancedStatisticMenu,testOptionsVisible,'type=checkbox', ''},...
        }];
 
   if useDefault
@@ -260,33 +209,39 @@ while keepAsking
     params.TFCE = 0;
   end
   
-  if ~params.parametricTests
-    params.resampleFWEadjustment = 'None';
-  end
-    
-  if (params.computeTtests || params.numberFtests) && ...
-      params.permutationTests && ischar(params.scanParams{params.scanNum(1)}.stimDuration) && strcmp(params.scanParams{params.scanNum(1)}.stimDuration,'fromFile')
-  elseif params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
+  if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
       length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
-     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
-  elseif params.TFCE && params.bootstrapStatistics  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
-     mrWarnDlg('(getTestParamsGUI) Bootstrap tests on TFCE-transformed data are currently only allowed for ROI(s) analyses','Yes');
-  elseif ~strcmp(params.resampleFWEadjustment,'None')  && params.bootstrapStatistics  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
-     mrWarnDlg('(getTestParamsGUI) Resampled-based FWE adjustments are currently only allowed for ROI(s) analyses','Yes');
+    mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
+  elseif (params.bootstrapFweAdjustment  || params.bootstrapTests)  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
+    mrWarnDlg('(getTestParamsGUI) Bootstrap tests are currently only allowed for ROI(s) analyses','Yes');
+  elseif params.bootstrapFweAdjustment  && params.bootstrapTests  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
+    mrWarnDlg('(getTestParamsGUI) Resampled-based FWE adjustments are currently only allowed for ROI(s) analyses','Yes');
   elseif params.permutationTests && ~all( (sum(logical(allContrasts),2)==2 & sum(allContrasts,2)==0) | ~any(allContrasts,2))
-     mrWarnDlg('(getTestParamsGUI) Randomization tests can only be run if all contrasts of all T/F tests are 1 to 1 comparisons','Yes');
-  elseif params.TFCE && ~(params.bootstrapStatistics || params.permutationTests)
-     mrWarnDlg('(getTestParamsGUI) TFCE requires bootstrap or permutation tests','Yes');
-  elseif ~(params.bootstrapStatistics || params.permutationTests) && ~strcmp(params.resampleFWEadjustment,'None')
-     mrWarnDlg('(getTestParamsGUI) Resample-based FWE adjustment requires bootstrap or permutation tests','Yes');
-  elseif params.fweAdjustment && strcmp(params.fweMethod,'Hommel') && ~strcmp(params.adaptiveFweMethod,'None')
-     mrWarnDlg('(getTestParamsGUI) Adaptive Hommel''s FWE control procedure is not implemented.','Yes');
-  elseif params.TFCE && (params.bootstrapStatistics || params.permutationTests) && strcmp(params.resampleFWEadjustment,'Step-down')
-     mrWarnDlg('(getTestParamsGUI) Step-down FWE adjustment is not implemented for TFCE-transformed data','Yes');
-  elseif params.TFCE && (params.bootstrapStatistics || params.permutationTests) && ~strcmp(params.resampleFWEadjustment,'None') && ~strcmp(params.adaptiveFweMethod,'None')
-     mrWarnDlg('(getTestParamsGUI) Adaptive resampled FWE adjustment is not implemented for TFCE-transformed data','Yes');
+    mrWarnDlg('(getTestParamsGUI) Randomization tests can only be run if all contrasts of all T/F tests are 1 to 1 comparisons','Yes');
+  elseif params.TFCE && ~(params.bootstrapTests || params.bootstrapFweAdjustment || params.permutationTests || params.permutationFweAdjustment)
+    mrWarnDlg('(getTestParamsGUI) TFCE requires resampling tests (bootstrap, permutation or resample-based FWE control','Yes');
+  elseif params.permutationTests && params.permutationFweAdjustment && ~params.parametricTests
+    mrWarnDlg('(getTestParamsGUI) permutation-based TFCE adjustment for permutation tests is no implemented','Yes');
+  elseif params.bootstrapFweAdjustment && ~(params.bootstrapTests ||params.parametricTests)
+    mrWarnDlg('(getTestParamsGUI) bootstrap-based FWE adjustments must be performed on bootsrap or parametric tests','Yes');
+  elseif params.permutationFweAdjustment && ~(params.permutationTests ||params.parametricTests)
+    mrWarnDlg('(getTestParamsGUI) permutation-based FWE adjustments must be performed on permutation or parametric tests','Yes');
+  elseif (params.fweAdjustment || params.fdrAdjustment) && ~(params.permutationTests ||params.parametricTests||params.bootstrapTests)
+    mrWarnDlg('(getTestParamsGUI) FWE/FDR adjustments must be performed on bootsrap/permutation/parametric tests','Yes');
   else
-     keepAsking = 0;
+    tempParams = getGlmAdvancedStatisticParamsGUI(thisView,params,useDefault);
+    % if empty, user hit cancel, go back
+    if isempty(tempParams)
+      if size(tempParams,2) %if the top close button has been pressed
+        params=tempParams;
+        return
+      else
+        keepAsking = 1;
+      end
+    else
+      params = tempParams;
+      keepAsking = 0;
+    end
   end
   if keepAsking && useDefault
     params = [];

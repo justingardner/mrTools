@@ -80,8 +80,3 @@ end
 if isfield(params,'bootstrapTestOutput')
   params = rmfield(params,'bootstrapTestOutput');
 end
-
-if isfield(params,'bootstrapTests')
-  params.bootstrapStatistics = params.bootstrapTests;
-  params = rmfield(params,'bootstrapTests');
-end

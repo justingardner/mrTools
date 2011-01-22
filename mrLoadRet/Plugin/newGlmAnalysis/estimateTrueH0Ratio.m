@@ -16,13 +16,13 @@ p = p(isNotNan);
 numberH0 = length(p);
 
 
-switch(params.adaptiveFweMethod)
+switch(params.trueNullsEstimationMethod)
   case 'Threshold'
     %Storey et al. (2004) Sarkar, 2009, submitted
-    trueH0Ratio = (numberH0 - nnz(p<params.adaptiveFweThreshold)+1)/numberH0/(1-params.adaptiveFweThreshold);
+    trueH0Ratio = (numberH0 - nnz(p<params.trueNullsEstimationThreshold)+1)/numberH0/(1-params.trueNullsEstimationThreshold);
     trueH0Ratio = min(trueH0Ratio,1); %this ratio could be >1 if no test is rejected at the threshold
                                   %in this case, we set the ratio to 1 and use the non-adaptive procedure
-    lambda = params.adaptiveFweThreshold;
+    lambda = params.trueNullsEstimationThreshold;
     
   case 'Adaptive'
     %Schweder and Spjotvoll (1982), Hochberg and Benjamini (1990), Benjamini and Hochberg, (2000)

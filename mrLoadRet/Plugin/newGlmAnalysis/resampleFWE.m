@@ -8,9 +8,9 @@
 %             see algorithm 4.1, step 3, Westfall and Young (1993) p117
 %
 
-function count = resampleFWE(resampled,actual,d,params)
+function count = resampleFWE(resampled,actual,d)
 
-switch(params.resampleFWEadjustment)
+switch(d.method)
   case 'Single-step'
     
     if d.numberFalseH0>0 
