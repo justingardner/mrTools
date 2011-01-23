@@ -29,6 +29,8 @@ end
 % set the location of the figure
 figloc = mrGetFigLoc('mrLoadRetGUI');
 if ~isempty(figloc)
+  %deal with multiple monitors
+  [whichMonitor,figloc]=getMonitorNumber(figloc,getMonitorPositions);
   set(fig,'Position',figloc);
 end
 
