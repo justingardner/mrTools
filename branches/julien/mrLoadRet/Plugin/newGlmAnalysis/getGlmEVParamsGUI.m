@@ -58,13 +58,13 @@ while keepAsking
 
     paramsInfo = cell(1,nStims+4);
     paramsInfo{1}= {'scan', scanParams{iScan}.scan, 'editable=0','description of the scan'};
+    paramsInfo{2}= {'EVnames', EVnames, 'type=stringarray','Name of the Explanatory Variables to be estimated'};
     for iEvent = 1:nStims
-      paramsInfo{iEvent+1} = {fixBadChars(d.stimNames{iEvent}), scanParams{iScan}.stimToEVmatrix(iEvent,:),...
+      paramsInfo{iEvent+2} = {fixBadChars(d.stimNames{iEvent}), scanParams{iScan}.stimToEVmatrix(iEvent,:),...
         'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
         ['How much stimulus ' fixBadChars(d.stimNames{iEvent}) ' contributes to each EV']};
     end
-    paramsInfo{nStims+2}= {'EVnames', EVnames, 'type=stringarray','self explanatory'};
-    paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Plots the experimental design before convolution',...
+    paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Shows the experimental design (before convolution iwht the HRF model)',...
             'callback',{@plotExperimentalDesign,scanParams,params,iScan,thisView,d.stimNames},'passParams=1'};
 
     % give the option to use the same variable for remaining scans

@@ -33,10 +33,10 @@ end
 
 if ismember(d.method,{'Adaptive Single-step','Adaptive Step-down'})
   for iTest = 1:size(p,2)
-    trueH0ratio = estimateTrueH0Ratio(p(:,iTest),params);
-    d.numberFalseH0(iTest) = round((1-trueH0ratio)*length(d.indexSortActual{iTest}));
+    numberH0 = length(d.indexSortActual{iTest});
+    d.numberTrueH0(iTest) = min(ceil(estimateNumberTrueH0(p(:,iTest),params)),numberH0);
+    d.numberFalseH0(iTest) = numberH0 - d.numberTrueH0(iTest);
   end
-  d.numberTrueH0 = d.numberTrueH0 - d.numberFalseH0;
 end
 
 
