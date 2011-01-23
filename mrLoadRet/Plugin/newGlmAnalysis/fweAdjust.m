@@ -9,15 +9,11 @@
 %            for adjustment versions of each test, see Wright (1992) BIOMETRICS 48, 1005-1013 
 %            In addition, the adjustment can be made more powerful by providing an estimate
 %            of the proportion of true null hypotheses and its corresponding unadjusted threshold 
-%            (see estimateTrueH0Ratio.m  and see Sarkar, 2009, submitted)
+%            (see estimateNumberTrueH0.m  and see Sarkar, 2009, submitted)
 %
 
-function adjustedPdata = fweAdjust(p, params, trueH0Ratio, lambda)
+function adjustedPdata = fweAdjust(p, params, numberTrueH0, lambda)
 
-if ieNotDefined('trueH0Ratio') || ieNotDefined('lambda')
-  trueH0Ratio = 1;
-  lambda = 0;
-end
 
 isNotNan = ~isnan(p);
 sizePdata = size(p);
@@ -25,14 +21,19 @@ p = p(isNotNan);
 [p,sortingIndex] = sort(p);
 numberH0 = length(p);
 
+if ieNotDefined('numberTrueH0') || ieNotDefined('lambda')
+  numberTrueH0 = numberH0;
+  lambda = 0;
+end
+
 
 switch(params.fweMethod)
-  case 'Single-step (Bonferroni)' %Bonferroni (adjustment version)
-    adjustedP = p*numberH0*trueH0Ratio; %no need to use sorted data, but makes the code simpler
+  case {'Single-step (Bonferroni)','Adaptive Single-step'} %Bonferroni (adjustment version)
+    adjustedP = p*numberTrueH0; %no need to use sorted data, but makes the code simpler
     
-  case 'Step-down (Holm)' %Holm's procedure (adjustment version)
+  case {'Step-down (Holm)','Adaptive Step-down'} %Holm's procedure (adjustment version)
     %Holm (1979) Scandinavian Journal of Statistics, Vol. 6, No. 2 , pp. 65-70
-    adjustedP = p.*(1+lambda).*min((numberH0:-1:1),numberH0*trueH0Ratio)';
+    adjustedP = p.*(1+lambda).*min((numberH0:-1:1),numberTrueH0)';
     %enforce monotonicity by taking the max value between a p-value and the previous (smaller) one
     for i=2:numberH0
      adjustedP(i) = max(adjustedP(i),adjustedP(i-1));
@@ -40,7 +41,7 @@ switch(params.fweMethod)
     
   case 'Step-up (Hochberg)' %Hochberg's procedure (adjustment version)
     %Hochberg (1988) Biometrika, 75, 4, pp. 800-2
-    adjustedP = p.*(1+lambda).*min((numberH0:-1:1),numberH0*trueH0Ratio)';
+    adjustedP = p.*(1+lambda).*min((numberH0:-1:1),numberTrueH0)';
     %enforce monotonicity by taking the min between a p-value and the next (larger) one
     for i=numberH0-1:-1:1
      adjustedP(i) = min(adjustedP(i),adjustedP(i+1));

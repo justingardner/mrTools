@@ -661,11 +661,41 @@ for iScan = params.scanNum
 end
 clear('r2');
 
-%--------------------------------------------- save the Test overlay(s)
+%--------------------------------------------- save the contrast beta weights overlay(s) (ehdr if no contrast)
+contrastNames = makeContrastNames(params.contrasts,params.EVnames,params.tTestSide);
+if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+  %this is to mask the beta values by the probability/Z maps     
+  betaAlphaOverlay = cell(numberContrasts,1);
 
+  %find the values for the scale of the beta overlays
+  thisOverlay = defaultOverlay;
+  ordered_abs_betas = cell2mat(contrast(params.scanNum));
+  ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
+  min_beta = min(min(min(min(min(ordered_abs_betas)))));
+  max_beta = max(max(max(max(max(ordered_abs_betas)))));
+  ordered_abs_betas = sort(abs(ordered_abs_betas));
+  beta_perc95 = 0; 
+  beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
+  thisOverlay.range = [-beta_perc95 beta_perc95];
+  thisOverlay.clip = [min_beta max_beta];
+  thisOverlay.colormap = jet(256);
+  for iContrast = 1:numberContrasts
+    overlays(end+1)=thisOverlay;
+    overlays(end).alphaOverlay=betaAlphaOverlay{iContrast};
+    overlays(end).name = contrastNames{iContrast};
+    for iScan = params.scanNum
+      overlays(end).data{iScan} = NaN(scanDims,precision); %to make values outside the box transparent
+      overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+         contrast{iScan}(:,:,:,iContrast);
+      overlays(end).params{iScan} = scanParams{iScan};
+    end
+  end
+  clear('contrast');
+end
+
+%--------------------------------------------- save the Test overlay(s)
 if numberTests
   
-  contrastNames = makeContrastNames(params.contrasts,params.EVnames,params.tTestSide);
   testNames = [contrastNames params.fTestNames];
   for iTest = 1:numberContrasts+numberFtests
     if iTest<=numberContrasts
@@ -717,21 +747,21 @@ if numberTests
     clear('parametricP');
     if params.bootstrapFweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweParametricP, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap-adjusted ', params.testOutput, testNames)];
+                                         'bootstrap-FWE-adjusted ', params.testOutput, testNames)];
       clear('bootstrapFweParametricP');
       if params.TFCE  
         overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceP, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-adjusted TFCE ', params.testOutput, testNames)];
+                                           'bootstrap-FWE-adjusted TFCE ', params.testOutput, testNames)];
         clear('bootstrapFweTfceP');
       end
     end
     if params.permutationFweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, permuteFweParametricP, subsetBox, params.scanNum, scanParams, ...
-                                         'permutation-adjusted ', params.testOutput, testNames)];
+                                         'permutation-FWE-adjusted ', params.testOutput, testNames)];
       clear('permuteFweParametricP');
       if params.TFCE
         overlays = [overlays makeOverlay(defaultOverlay, permuteFweTfceP, subsetBox, params.scanNum, scanParams, ...
-                                         'permutation-adjusted TFCE ',params.testOutput, testNames)];
+                                         'permutation-FWE-adjusted TFCE ',params.testOutput, testNames)];
         clear('permuteFweTfceP');
       end
     end
@@ -753,7 +783,7 @@ if numberTests
     clear('bootstrapP');
     if params.bootstrapFweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap-adjusted bootstrap ', params.testOutput, testNames)];
+                                         'bootstrap-FWE-adjusted bootstrap ', params.testOutput, testNames)];
       clear('bootstrapFweBootstrapP');
     end
     if params.fdrAdjustment
@@ -772,7 +802,7 @@ if numberTests
       clear('tfceBootstrapP');
       if params.bootstrapFweAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-adjusted bootstrap TFCE ', params.testOutput, testNames)];
+                                           'bootstrap-FWE-adjusted bootstrap TFCE ', params.testOutput, testNames)];
         clear('bootstrapFweTfceBootstrapP');
       end
       if params.fdrAdjustment
@@ -818,13 +848,8 @@ if numberTests
       end
     end
   end
-end
-    
-%--------------------------------------------- save the contrast beta weights overlay(s) (ehdr if no contrast)
-if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
-  %this is to mask the beta values by the probability/Z maps     
-  betaAlphaOverlay = cell(numberContrasts,1);
-  if params.computeTtests 
+  
+  if params.computeTtests && params.maskContrastOverlay
     %set the contrast alpha overlay to the statistical value
     switch(params.testOutput)
       case 'P value'                                                  %statistical maps
@@ -832,41 +857,14 @@ if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.compo
       case {'Z value','-log10(P) value}'}
         betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
     end
-    for iContrast = 1:numberContrasts
-      betaAlphaOverlay{iContrast} = overlays(end-numberFtests-numberContrasts+iContrast).name;
+    for iContrast = 2:numberContrasts+1
+      overlays(iContrast).alphaOverlayExponent=betaAlphaOverlayExponent;
+      overlays(iContrast).alphaOverlay = overlays(end-numberFtests-numberContrasts+iContrast).name;
     end
-  else
-    betaAlphaOverlayExponent = 1;
   end
-
-  %find the values for the scale of the beta overlays
-  thisOverlay = defaultOverlay;
-  ordered_abs_betas = cell2mat(contrast(params.scanNum));
-  ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
-  min_beta = min(min(min(min(min(ordered_abs_betas)))));
-  max_beta = max(max(max(max(max(ordered_abs_betas)))));
-  ordered_abs_betas = sort(abs(ordered_abs_betas));
-  beta_perc95 = 0; 
-  beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
-  thisOverlay.range = [-beta_perc95 beta_perc95];
-  thisOverlay.clip = [min_beta max_beta];
-  thisOverlay.colormap = jet(256);
-  for iContrast = 1:numberContrasts
-    overlays(end+1)=thisOverlay;
-    overlays(end).alphaOverlay=betaAlphaOverlay{iContrast};
-    overlays(end).name = contrastNames{iContrast};
-    for iScan = params.scanNum
-      overlays(end).data{iScan} = NaN(scanDims,precision); %to make values outside the box transparent
-      overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
-         contrast{iScan}(:,:,:,iContrast);
-      overlays(end).params{iScan} = scanParams{iScan};
-    end
-    overlays(end).alphaOverlayExponent=betaAlphaOverlayExponent;
-  end
-  clear('contrast');
+  
 end
-
-
+    
 %-------------------------------------------------------- Set the analysis in view
 glmAnal.overlays = overlays;
 thisView = viewSet(thisView,'newAnalysis',glmAnal);
@@ -913,13 +911,13 @@ end
 if params.fweAdjustment
   fweAdjustedP = p;
   for iTest = 1:size(p,4)
-    if ~strcmp(params.trueNullsEstimationMethod,'None')
-      [trueH0ratio,lambda] = estimateTrueH0Ratio(p(:,:,:,iTest),params);
+    if ismember(params.fweMethod,{'Adaptive Step-down','Adaptive Single-step'})
+      [numberTrueH0,lambda] = estimateNumberTrueH0(p(:,:,:,iTest),params);
     else
-      trueH0ratio = 1;
+      numberTrueH0 = nnz(~isnan(p(:,:,:,iTest)));
       lambda = 0;
     end
-    fweAdjustedP(:,:,:,iTest) = fweAdjust(p(:,:,:,iTest),params,trueH0ratio,lambda);
+    fweAdjustedP(:,:,:,iTest) = fweAdjust(p(:,:,:,iTest),params,numberTrueH0,lambda);
   end
   fweAdjustedStatistic = convertStatistic(fweAdjustedP, params.testOutput, outputPrecision);
 else
@@ -975,20 +973,14 @@ end
 switch(params.fdrMethod)
   case 'Step-up'
       adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1); 
-  case 'Adaptive Step-up'
-    %we will estimate the number of true H0 using definition 3 in Benjamini et al. 2006
-    % first adjust the p values 
-    adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
-    if any(adjustedP<params.trueNullsEstimationThreshold) %if any voxel is significant at the chosen level (usually .05) (most likely)
-      %compute the estimated number of true H0 when considering the number of rejections at all possible levels
-      numberH0 = length(pData);
-      numberTrueH0 = (numberH0+1-(1:numberH0)')./(1-pData);
-      %find the first estimated number that is greater than the previous one
-      numberTrueH0 = ceil(min(numberTrueH0(find(diff(numberTrueH0)>0,1,'first')+1),numberH0));
-      %recompute the adjusted p-value using the estimated ratio of true H0
-      adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,numberTrueH0/numberH0);
-    end
-  case 'Two-stage Adaptive Step-up'
+      
+  case 'Adaptive Step-up' %definition 3 in Benjamini et al. 2006
+    %estimate the number of true H0 using one of the methods specified by params.trueNullsEstimationMethod
+    numberTrueH0 = min(ceil(estimateNumberTrueH0(pData,params)),numberH0);
+    %recompute the adjusted p-value using the estimated ratio of true H0
+    adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,numberTrueH0/numberH0);
+    
+  case 'Two-stage Step-up'
     %we will estimate the number of true H0 using definition 6 in Benjamini et al. 2006
     % first adjust the p values with q'=(q+1)
     adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,1);
@@ -999,7 +991,7 @@ switch(params.fdrMethod)
       adjustedP = linearStepUpFdr(pData,dependenceCorrectionConstant,(numberH0 - numberFalseH0)/numberH0);
     end
     
-  case 'Multiple-stage Adaptive Step-up'
+  case 'Multiple-stage Step-up'
     %we will estimate the number of true H0 using definition 7 in Benjamini et al. 2006
     %but they only give the definition for p-value correction with a fixed q
     q = params.trueNullsEstimationThreshold;
@@ -1018,7 +1010,7 @@ switch(params.fdrMethod)
     % I don't think the results would be much different from the next, simpler, step-down procedure
     adjustedP = correctedP;
     
-  case 'Adaptive Step-down'
+  case 'Multiple-stage Step-down'
     %this is the step-down version of definition 7 in Benjamini et al. 2006 with L=J
 %     q = params.trueNullsEstimationThreshold;
     %k=max{i : for all j<=i there exists l=j so that p(l)<=ql/{m+1?j(1?q)}}.
