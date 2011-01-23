@@ -70,6 +70,9 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	  % install the base
 	  view = viewSet(view,'newBase',mrLastView.view.baseVolumes(i));
 	end
+      else
+        %try to load 
+  [view,baseLoaded] = loadAnatomy(view);
       end
     end
     % change group
@@ -119,7 +122,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	view = viewSet(view,'groupScanNum', mrLastView.view.groupScanNum(g),g);
       end
     end
-    drawnow
+    %drawnow        %this doesn't seem useful because it will be done by refreshMLRDisplay
     % read ROIs into current view
     if isfield(mrLastView.view,'ROIs')
       for roinum = 1:length(mrLastView.view.ROIs)
@@ -145,24 +148,31 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   end
 %   disppercent(inf);
 
-end
-
-if ~baseLoaded
-  % for when there is no mrLastView
-  % open an anatomy, if there is one
-  anatdir = dir('Anatomy/*.img');
-  if ~isempty(anatdir)
-    % load the first anatomy in the list
-    view = loadAnat(view,anatdir(1).name);
-    view = viewSet(view,'sliceOrientation','coronal');
-    % rotate 270
-    mlrGuiSet(view.viewNum,'rotate',270);
-    % change group to last in list
-    view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
-    % and refresh
+else
+  [view,baseLoaded] = loadAnatomy(view);
+  if baseLoaded
     refreshMLRDisplay(view.viewNum);
   end
 end
 
 % reset some preferences
 mrSetPref('importROIPath','');
+
+function [view,baseLoaded] = loadAnatomy(view)
+  % for when there is no mrLastView
+  % open an anatomy, if there is one
+  anatdir = dir('Anatomy/*.img');
+  if ~isempty(anatdir)
+    baseLoaded = 1;
+    % load the first anatomy in the list
+    view = loadAnat(view,anatdir(1).name);
+    view = viewSet(view,'sliceOrientation','coronal');
+    % rotate 270
+    mlrGuiSet(view.viewNum,'rotate',270);
+    % change group to last in list
+    view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));baseLoaded
+    % and refresh
+  else
+    baseLoaded = 0;
+  end
+
