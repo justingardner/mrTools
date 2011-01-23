@@ -186,9 +186,9 @@ set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3))
 if verbose>1,disppercent(inf);,end
 
 % Display the ROIs
-if baseType <= 1
-  drawnow;
-end
+% if baseType <= 1
+%   drawnow;        %JB: this doesn't seem useful
+% end
 nROIs = viewGet(view,'numberOfROIs');
 if nROIs
 %  if baseType <= 1
