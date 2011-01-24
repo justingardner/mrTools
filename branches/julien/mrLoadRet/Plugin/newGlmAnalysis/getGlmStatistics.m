@@ -978,6 +978,7 @@ end
 %we do not allow probabilities of 0 and replace them by minP
 %(this can occur because cdf cannot return values less than 1e-16)
 p = max(p,1e-16);
+p(isnan(T)) = NaN; %NaNs must remain NaNs (they became 1e-16 when using max)
 
 
 function p = F2p(F,rdf,mdf)
@@ -985,12 +986,14 @@ p = 1 - cdf('f', double(F), repmat(mdf,size(F,1),1), repmat(rdf,size(F)));
 %we do not allow probabilities of 0 and replace them by minP
 %(this can occur because cdf cannot return values less than 1e-16)
 p = max(p,1e-16);
+p(isnan(F)) = NaN; %NaNs must remain NaNs (they became 1e-16 when using max)
+
 
 function p = computeBootstrapP(count,nResamples)
 %we do not allow probabilities of 0 and replace them by minP
 %(this can occur if no bootstrap resampling return a value as high as the actual value)
 p = max(count/nResamples,1/(nResamples+1));
-p(isnan(count)) = NaN; %NaNs must remain NaNs (they became minP when using max)
+p(isnan(count)) = NaN; %NaNs must remain NaNs (they became 1e-16 when using max)
 
 function tfceS = applyTfce(S,roiPositionInBox)
   %reshape to volume to apply TFCE and then reshape back to one dimension

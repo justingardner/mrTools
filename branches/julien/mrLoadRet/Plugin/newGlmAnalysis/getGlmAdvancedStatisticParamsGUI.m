@@ -49,7 +49,7 @@ while keepAsking
   end
   
   if fieldIsNotDefined(params, 'trueNullsEstimationMethod')
-      params.trueNullsEstimationMethod = 'Lowest Slope';
+      params.trueNullsEstimationMethod = 'Least Squares';
   end
   if fieldIsNotDefined(params, 'trueNullsEstimationThreshold')
       params.trueNullsEstimationThreshold = .05;

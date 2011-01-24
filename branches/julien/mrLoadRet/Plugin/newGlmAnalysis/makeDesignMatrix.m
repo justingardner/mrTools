@@ -25,7 +25,7 @@ if ieNotDefined('verbose')
 end
 
 % check if the hrf starts from zero (except if it is the identity matrix, the deconvolution case)
-if verbose && any(d.hrf(1,:)>1e-6) && (size(d.hrf,1)~=size(d.hrf,2) || ~isempty(find(d.hrf^-1-d.hrf>1e-6, 1)))
+if verbose && any(d.hrf(1,:)>.05) && (size(d.hrf,1)~=size(d.hrf,2) || ~isempty(find(d.hrf^-1-d.hrf>1e-6, 1)))
    mrWarnDlg(['(makeDesignMatrix) HRF does not start from zero (hrf(0) = ' mat2str(d.hrf(1,:)) ')']);
 end
 
