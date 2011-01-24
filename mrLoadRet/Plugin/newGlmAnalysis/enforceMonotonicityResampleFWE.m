@@ -9,7 +9,7 @@
 
 function p = enforceMonotonicityResampleFWE(p,d)
 
-if ismember(d.method,{'Step-down','Adaptive Step-down'})
+if ismember(d.method,{'Step-down','Adaptive Step-down','Adaptive Single-Step'})
   %sort p using provided sort index (sorting of the non-nan actual statistics)
   %note that these values are sorted from the smallest to the largest
 
