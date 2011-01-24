@@ -83,7 +83,7 @@ interrogator = get(MLR.interrogator{viewNum}.hInterrogator,'String');
 
 % if not a valid function, go back to old one
 if isfield(MLR.interrogator{viewNum},'hInterrogator')
-  if isemtpy(which(interrogator))
+  if isempty(which(interrogator))
     set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
   else
     MLR.interrogator{viewNum}.interrogator = interrogator;
