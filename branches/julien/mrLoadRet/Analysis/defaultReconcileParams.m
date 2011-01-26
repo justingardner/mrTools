@@ -208,10 +208,10 @@ if isfield(params,'paramInfo')
 	% also check if there is a minmax
 	if isfield(varinfo{i},'minmax')
 	  if params.(varinfo{i}.name) < varinfo{i}.minmax(1)
-	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo.minmax(1)));
+	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo{i}.minmax(1)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(1);
 	  elseif params.(varinfo{i}.name) > varinfo{i}.minmax(2)
-	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo.minmax(2)));
+	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo{i}.minmax(2)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(2);
 	  end
 	end
