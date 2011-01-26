@@ -170,15 +170,15 @@ switch lower(field)
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
   if ~strcmp(value,'none') %identify overlays that have been masked by putting a bullet before their name
-%     epsilon = 5e-7; %value differing by less than epsilon are considered equal
+    epsilon = 1e-7; %value differing by less than epsilon are considered equal
      for iOverlay = 1:length(value)
         clip = viewGet(view,'overlayclip',iOverlay);
         minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
         maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
-%         if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
-%               (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon)
-        if (~isempty(minOverlayData) && minOverlayData<clip(1)) ||...
-              (~isempty(maxOverlayData) && maxOverlayData>clip(2))
+        if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
+              (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon)
+%         if (~isempty(minOverlayData) && minOverlayData<clip(1)) ||...
+%               (~isempty(maxOverlayData) && maxOverlayData>clip(2))
            value{iOverlay} = [char(164) ' ' value{iOverlay}];
         end
      end
@@ -192,7 +192,7 @@ switch lower(field)
  case {'overlaymin'}
   % mlrGuiSet(view,'overlayMin',value);
   if rem(value,1)~=0 %if the value is not an integer
-    value = floor(value*1e6)/1e6; %round it down
+    value = floor(double(value)*1e6)/1e6; %round it down
   end
   value = clipToSlider(handles.overlayMinSlider,value);
   set(handles.overlayMinSlider,'Value',value);
@@ -213,7 +213,7 @@ switch lower(field)
  case {'overlaymax'}
   % mlrGuiSet(view,'overlayMax',value);
   if rem(value,1)~=0 %if the value is not an integer
-    value = ceil(value*1e6)/1e6; %round it up
+    value = ceil(double(value)*1e6)/1e6; %round it up
   end
   value = clipToSlider(handles.overlayMaxSlider,value);
   set(handles.overlayMaxSlider,'Value',value);
