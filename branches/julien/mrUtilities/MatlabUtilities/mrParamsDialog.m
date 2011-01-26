@@ -514,7 +514,7 @@ elseif isfield(gParams.varinfo{varnum},'callback') && ...
 end
 
 % if this is supposed to be a number, then make sure it is.
-if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
+if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray','popupmenu'}))
   % check for incdec (this is for buttons that increment or decrement
   % the values, if one of these was passed, we will have by how much
   % we need to increment or decrement the value
@@ -548,9 +548,9 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
       if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
         gParams.varinfo{varnum}.value(entryRow,entryCol)=val;
       else
-        gParams.varinfo{varnum}.value(entryRow,entryCol) = num2str(val);
+        gParams.varinfo{varnum}.value(entryRow,entryCol) = thisNum2str(val);
       end
-      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',num2str(val));
+      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',thisNum2str(val));
     end
     % now check to see if this variable controls another one
     if isfield(gParams.varinfo{varnum},'controls')
@@ -857,6 +857,10 @@ for i=1:length(rownums)
     
     uiPosition = getUIControlPos(fignum,dParams,uiParams,rownums(i),numLines,multiCol,colnum,entryWidth,j);
     
+    if isnumeric(entryString{i,j})
+      %convert numerical values into string using different precision if they're integer or decimal
+      entryString{i,j} = thisNum2str(entryString{i,j}); 
+    end
     hEntry(i,j) = uicontrol(fignum,...
     'Style',style,...
     'Callback',sprintf('mrParamsDialog(%f,%f,%f)',varnum,i,j),...  %callback has no effect if textbox
@@ -883,7 +887,7 @@ for i=1:length(rownums)
           incdecWidth = min(uiParams.maxIncdecButtonWidth+incdecMargin,entryWidth/2)/figurePosition(3)-incdecMargin;
           entryPosition(3) = entryPosition(3)-(incdecWidth+incdecMargin);
           decPosition(1) = entryPosition(1)+entryPosition(3)+incdecMargin;
-          if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
+          if ismac 
             incPosition(2) = incPosition(2)+incPosition(4)*.5;
             decPosition(4) = decPosition(4)*.45;
             incPosition(4) = incPosition(4)*.45;
@@ -1109,6 +1113,16 @@ set(fignum,'Position',figurePosition);
 
 %replace non-set widths by the max width
 dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
+
+
+%modified num2str to increase the number of decimals for reals
+function value = thisNum2str(value)
+
+  if rem(value,1)
+    value = num2str(value,'%.6f');
+  else
+    value = num2str(value);
+  end
 
 
 
