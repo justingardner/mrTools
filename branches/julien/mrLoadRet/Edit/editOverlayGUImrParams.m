@@ -81,8 +81,8 @@ function mrCmapSetUsefulRange(viewNum,params)
 
 thisView = viewGet(viewNum,'view');
 
-minOverlayData = floor(viewGet(thisView,'minOverlayData')*1e6)/1e6;
-maxOverlayData = ceil(viewGet(thisView,'maxOverlayData')*1e6)/1e6;
+minOverlayData = floor(double(viewGet(thisView,'minOverlayData'))*1e6)/1e6;
+maxOverlayData = ceil(double(viewGet(thisView,'maxOverlayData'))*1e6)/1e6;
 
 if isempty(maxOverlayData) || isempty(minOverlayData)
   mrWarnDlg('(editOverlayGUImrParams) overlay seems to be empty');
