@@ -503,22 +503,21 @@ function overlayMaxText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
 if isempty(value) %if the user just erased the value
-  % then  get it from the slider and do nothing
-  set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
+  % then  get it from the slider
+  value = get(handles.overlayMaxSlider,'value');
 else
   sliderMaxValue=get(handles.overlayMaxSlider,'max');
   sliderMinValue=get(handles.overlayMinSlider,'min');
   if value>sliderMaxValue %if the value is beyond the slider max
-    set(hObject,'String',num2str(sliderMaxValue));
-    value = sliderMaxValue;
+    %set the new value as the new max range
+    viewSet(viewNum,'overlayRange',[sliderMinValue value]);
   elseif value<sliderMinValue %if the value is below the slider min
-    set(hObject,'String',num2str(sliderMinValue));
     value = sliderMinValue;
   end
-  %set the new value in the view and the GUI
-  viewSet(viewNum,'overlayMax',value);
-  refreshMLRDisplay(viewNum);
 end
+%set the new value in the view and the GUI
+viewSet(viewNum,'overlayMax',value);
+refreshMLRDisplay(viewNum);
 
 % --- overlayMin
 function overlayMinSlider_CreateFcn(hObject, eventdata, handles)
@@ -546,20 +545,22 @@ function overlayMinText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
 if isempty(value) %if the user just erased the value, get it from the slider and do nothing
-  set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
+  % then  get it from the slider
+  value = get(handles.overlayMinSlider,'value');
+%  set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
   sliderMaxValue=get(handles.overlayMaxSlider,'max');
   sliderMinValue=get(handles.overlayMinSlider,'min');
   if value>sliderMaxValue %if the value is beyond the slider max
-    set(hObject,'String',num2str(sliderMaxValue));
     value = sliderMaxValue;
   elseif value<sliderMinValue %if the value is below the slider min
-    set(hObject,'String',num2str(sliderMinValue));
-    value = sliderMinValue;
+    %set the new value as the new min range
+    viewSet(viewNum,'overlayRange',[value sliderMaxValue]);
+%     value = sliderMinValue;
   end
-  viewSet(viewNum,'overlayMin',value);
-  refreshMLRDisplay(viewNum);
 end
+viewSet(viewNum,'overlayMin',value);
+refreshMLRDisplay(viewNum);
 
 % --- alpha
 function alphaSlider_CreateFcn(hObject, eventdata, handles)
