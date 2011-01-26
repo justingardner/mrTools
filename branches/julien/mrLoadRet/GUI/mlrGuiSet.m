@@ -152,12 +152,12 @@ switch lower(field)
  case {'basegamma'}
   % mlrGuiSet(view,'baseGamma',value);
   set(handles.baseGammaSlider,'Value',value);
-  set(handles.baseGammaText,'String',num2str(value));
+  set(handles.baseGammaText,'String',thisNum2str(value));
   
  case {'basetilt'}
   % mlrGuiSet(view,'baseMax',value);
   set(handles.baseTiltSlider,'Value',value);
-  set(handles.baseTiltText,'String',num2str(value));
+  set(handles.baseTiltText,'String',thisNum2str(value));
 
  case {'analysispopup'}
   % mlrGuiSet(view,'analysisPopup',strings);
@@ -170,13 +170,15 @@ switch lower(field)
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
   if ~strcmp(value,'none') %identify overlays that have been masked by putting a bullet before their name
-    epsilon = 1e-5; %value differing by less than epsilon are considered equal
+%     epsilon = 5e-7; %value differing by less than epsilon are considered equal
      for iOverlay = 1:length(value)
         clip = viewGet(view,'overlayclip',iOverlay);
         minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
         maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
-        if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
-              (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon)
+%         if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
+%               (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon)
+        if (~isempty(minOverlayData) && minOverlayData<clip(1)) ||...
+              (~isempty(maxOverlayData) && maxOverlayData>clip(2))
            value{iOverlay} = [char(164) ' ' value{iOverlay}];
         end
      end
@@ -189,9 +191,12 @@ switch lower(field)
   
  case {'overlaymin'}
   % mlrGuiSet(view,'overlayMin',value);
+  if rem(value,1)~=0 %if the value is not an integer
+    value = floor(value*1e6)/1e6; %round it down
+  end
   value = clipToSlider(handles.overlayMinSlider,value);
   set(handles.overlayMinSlider,'Value',value);
-  set(handles.overlayMinText,'String',num2str(value));
+  set(handles.overlayMinText,'String',thisNum2str(value)); 
 
  case {'overlayminrange'}
   % mlrGuiSet(view,'overlayMinRange',[min,max]);
@@ -207,9 +212,12 @@ switch lower(field)
 
  case {'overlaymax'}
   % mlrGuiSet(view,'overlayMax',value);
+  if rem(value,1)~=0 %if the value is not an integer
+    value = ceil(value*1e6)/1e6; %round it up
+  end
   value = clipToSlider(handles.overlayMaxSlider,value);
   set(handles.overlayMaxSlider,'Value',value);
-  set(handles.overlayMaxText,'String',num2str(value));
+  set(handles.overlayMaxText,'String',thisNum2str(value)); 
 
  case {'overlaymaxrange'}
   % mlrGuiSet(view,'overlayMinRange',[min,max]);
@@ -227,7 +235,7 @@ switch lower(field)
   % mlrGuiSet(view,'alpha',value);
   value = clipToSlider(handles.alphaSlider,value);
   set(handles.alphaSlider,'Value',value);
-  set(handles.alphaText,'String',num2str(value));
+  set(handles.alphaText,'String',thisNum2str(value));
   set(handles.alphaSlider,'sliderStep',[0.1 0.5]);
 
  case {'nscans'}
@@ -364,3 +372,13 @@ else
     value = get(slider,'Max');
   end
 end
+
+%modified num2str to increase the number of decimals for reals
+function value = thisNum2str(value)
+
+  if rem(value,1)
+    value = num2str(value,'%.6f');
+  else
+    value = num2str(value);
+  end
+
