@@ -60,7 +60,7 @@ function retval = editOverlayGUImrParams(viewNum)
       'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range. If clip(1)>clip(2), then values inside the clip range are masked.'};
   paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, 'callback',{@checkCmapParams,'usefulrange'},'passCallbackOutput=1','passValue=1','passParams=1',...
       'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
-  paramsInfo{end+1} = {'setUsefulRange', 0, 'type=pushbutton','callback',@mrCmapSetUsefulRange,'callbackArg',viewNum,'buttonString=Set useful range to overlay min/max','passCallbackOutput=0',...
+  paramsInfo{end+1} = {'setUsefulRange', 0, 'type=pushbutton','callback',@mrCmapSetUsefulRange,'callbackArg',viewNum,'buttonString=Set useful range to overlay min/max','passParams=1','passCallbackOutput=0',...
       'Sets the useful range to the min/max values of this overlay accross scans'};
   paramsInfo{end+1} = {'interrogator', interrogator, 'Sets the overlay default interrogator function'};
   paramsInfo{end+1} = {'alphaOverlay', alphaOverlayMenu, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.'};
@@ -72,23 +72,31 @@ function retval = editOverlayGUImrParams(viewNum)
   mrParamsDialog(paramsInfo,'Change overlay colormap','modal=0','callback',@mrCmapCallback,'callbackArg',viewNum,'cancelCallback',{@mrCmapParamsCancel,viewNum,overlay});
 
   return;
+  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  mrCmapSetUsefulRange   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mrCmapSetUsefulRange(viewNum)
+function mrCmapSetUsefulRange(viewNum,params)
 
 thisView = viewGet(viewNum,'view');
 
-minOverlayData = viewGet(thisView,'minOverlayData');
-maxOverlayData = viewGet(thisView,'maxOverlayData');
+minOverlayData = floor(viewGet(thisView,'minOverlayData')*1e6)/1e6;
+maxOverlayData = ceil(viewGet(thisView,'maxOverlayData')*1e6)/1e6;
 
-if ~isempty(maxOverlayData) && ~isempty(minOverlayData)
-  params.overlayUsefulRange = [minOverlayData maxOverlayData];
-  mrParamsSet(params,1);
-else
+if isempty(maxOverlayData) || isempty(minOverlayData)
   mrWarnDlg('(editOverlayGUImrParams) overlay seems to be empty');
+elseif all(abs(params.overlayUsefulRange-[minOverlayData maxOverlayData])<5e-7)
+  mrWarnDlg('(editOverlayGUImrParams) Useful range is already set to min/max');
+else
+  params.overlayUsefulRange = [minOverlayData maxOverlayData];
+  %make sure clip values are within this range
+  params.overlayClipRange(1) = max(params.overlayClipRange(1),minOverlayData);
+  params.overlayClipRange(2) = min(params.overlayClipRange(2),maxOverlayData);
+  mrParamsSet(params,1);
 end
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  mrCmapParamsCancel   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,14 +188,14 @@ function mrCmapCallback(params,viewNum)
   end
   newOverlay.range = [params.overlayUsefulRange(1) params.overlayUsefulRange(2)];
   %if the range has changed, we only need to update the slider
-  if ~isequal(newOverlay.range,currentOverlay.range)
+  if any(abs(newOverlay.range-currentOverlay.range)>5e-7)
     thisView=viewSet(thisView,'overlayRange',newOverlay.range, overlayNum);
     refreshMLRDisplay(viewNum);
     return;
   end
   % set the overlay range 
   newOverlay.colorRange = [params.overlayColorRange(1) params.overlayColorRange(2)];
-  if ~isequal(newOverlay.colorRange,currentOverlay.colorRange)% && ~strcmp(newOverlay.colormapType,'normal')
+  if any(abs(newOverlay.colorRange-currentOverlay.colorRange)>5e-7)% && ~strcmp(newOverlay.colormapType,'normal')
     thisView=viewSet(thisView,'overlayColorRange',newOverlay.colorRange, overlayNum);
     refreshMLRDisplay(viewNum);
     return;
