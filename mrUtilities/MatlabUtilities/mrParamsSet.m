@@ -49,12 +49,12 @@ for fnum = 1:length(paramFields)
 	end
 	% and set the current value in the gui
 	currentVal = params.(paramFields{fnum})(params.(groupVar));
-	set(gParams.ui.varentry{match},'String',num2str(currentVal));
+	set(gParams.ui.varentry{match},'String',thisNum2str(currentVal));
       
       else
 	% simple numeric
 	currentVal = params.(paramFields{fnum});
-	set(gParams.ui.varentry{match},'String',num2str(currentVal));
+	set(gParams.ui.varentry{match},'String',thisNum2str(currentVal));
       end
       % check for minmax, so that we can turn arrows off and on appropriately
       if isfield(gParams.varinfo{match},'minmax')
@@ -83,7 +83,7 @@ for fnum = 1:length(paramFields)
       if isequal(size(gParams.varinfo{match}.value),size(params.(paramFields{fnum})))
 	for matrixX = 1:size(params.(paramFields{fnum}),1)
 	  for matrixY = 1:size(params.(paramFields{fnum}),2)
-	    set(gParams.ui.varentry{match}(matrixX,matrixY),'String',num2str(params.(paramFields{fnum})(matrixX,matrixY)));
+      set(gParams.ui.varentry{match}(matrixX,matrixY),'String',thisNum2str(params.(paramFields{fnum})(matrixX,matrixY)));
 	  end
 	end
       else
@@ -162,3 +162,13 @@ end
 if nargout == 1
   retval = mrParamsGet;
 end
+
+
+%modified num2str to increase the number of decimals for reals
+function value = thisNum2str(value)
+
+  if rem(value,1)
+    value = num2str(value,'%.6f');
+  else
+    value = num2str(value);
+  end
