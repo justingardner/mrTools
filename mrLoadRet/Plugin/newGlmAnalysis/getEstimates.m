@@ -126,6 +126,7 @@ if ~fieldIsNotDefined(params,'contrasts')
   betas = permute(reshape(betas,[nHrfComponents d.nhdr nVoxels]),[2 1 3]);
 
   contrastBetaSte = NaN(size(contrastBetas));
+  contrastHdrSte = NaN(size(contrastHdr));
   if exist('s2','var')
     if params.covCorrection
       contrastHdrSte = NaN(size(contrastHdr));
