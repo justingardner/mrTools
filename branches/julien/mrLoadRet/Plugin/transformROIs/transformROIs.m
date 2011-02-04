@@ -20,12 +20,14 @@ params.customTransformFunction = '';
 
 currentBaseString = ['Current Base (' viewGet(thisView,'basename') ')'];
 roiSpaceMenu = {'Native','Current scan',currentBaseString};
+passRoiModeMenu = {'One ROI at a time','All ROIs at once',currentBaseString};
 
 askForParams = 1;
 while askForParams
   params = {...
    {'transformFunction',params.transformFunction,'type=popupmenu','name of the function to apply. This is a list of existing functions in the transformROIsFunctions directory. To get help for a specific function, type ''help functionName''. To use another function, select ''User Defined'' and type the function name below'},...
    {'customTransformFunction',params.customTransformFunction,'name of the function to apply. You can use any custom matlab function on the path that accepts an ROI structure as argument and output a new ROI structure.'},...
+   {'passRoiMode',passRoiModeMenu,'name of the function to apply. You can use any custom matlab function on the path that accepts an ROI structure as argument and output a new ROI structure.'},...
    {'roiSpace',roiSpaceMenu,'In which space should the coordinates be converted before being passed'},...
    {'additionalArgs','','Additional arguments to the transform function. These arguments will be input at the end of each function call. They must be separated by commas. '},...
           };
@@ -71,14 +73,16 @@ switch(params.roiSpace)
 end
 
 needToRefresh = 0;
-for roiNum=roiList
-  roi = viewGet(thisView,'roi',roiNum);
+cRoi = 0;
+for iRoi=roiList
+  cRoi = cRoi+1;
+  roi = viewGet(thisView,'roi',iRoi);
   if ~strcmp(params.roiSpace,'Native')
-    disp(sprintf('(convertROI) Converting ROI %i:%s to %s coordinate space',roiNum,roi.name,params.roiSpace));
+    disp(sprintf('(convertROI) Converting ROI %i:%s to %s coordinate space',iRoi,roi.name,params.roiSpace));
     if ~isempty(roi.coords)
-      roi.coords = getROICoordinates(thisView,roiNum,whichVolume,[],baseNum);
+      roi.coords = getROICoordinates(thisView,iRoi,whichVolume,[],baseNum);
     else
-      mrWarnDlg(sprintf('(convertROI) ROI %i:%s has empty coordinates in transformation, skipping conversion...',roiNum,roi.name));
+      mrWarnDlg(sprintf('(convertROI) ROI %i:%s has empty coordinates in transformation, skipping conversion...',iRoi,roi.name));
     end
     roi.sformCode = newSformCode;
     roi.xform = newXform;
@@ -86,17 +90,31 @@ for roiNum=roiList
     roi.vol2tal = newVol2tal;
     roi.voxelSize = newVoxelSize;
   end
-  
-  %parse other additional inputs
-  additionalArgs = parseArguments(params.additionalArgs,',');
-  functionString = [' ' params.transformFunction '(roi'];
-  for iArg = length(additionalArgs)
-    functionString = [functionString ',' additionalArgs{iArg}];
+  switch(params.passRoiMode)
+    case 'One ROI at a time'
+      rois{cRoi} = roi;
+      
+    case 'All ROIs at once'
+      rois{1}(cRoi) = roi;
   end
-  functionString(end+(1:2)) = ');';
-  roi = eval(functionString);
-  if ~isempty(roi)
-    thisView = viewSet(thisView,'newROI',roi);
+end
+
+%parse other additional inputs
+additionalArgs = parseArguments(params.additionalArgs,',');
+%construct function call
+functionString='';
+for iArg = 1:length(additionalArgs)
+  functionString = [functionString ',' additionalArgs{iArg}];
+end
+functionString(end+(1:2)) = ');';
+  
+for iCall = 1:length(rois)
+  if strcmp(params.passRoiMode,'One ROI at a time')
+    disp(sprintf('(transformROI) Calling %s for ROI %s', params.transformFunction, rois{iCall}.name));
+  end
+  roi = eval([params.transformFunction '(rois{iCall}' functionString]);
+  for iRoi = 1:length(roi)
+    thisView = viewSet(thisView,'newROI',roi(iRoi));
     needToRefresh = 1;
   end
 end
@@ -117,9 +135,9 @@ remain = argumentString;
 while ~isempty(remain)
    nArgs = nArgs+1;
    [token,remain] = strtok(remain, separator);
-   if isnumeric(str2num(token))
+   if ~isempty(str2num(token))
       arguments{nArgs} = token;
-   elseif isempty(arguments{nArgs})
+   else
       arguments{nArgs} = ['''' token ''''];
    end
 end        

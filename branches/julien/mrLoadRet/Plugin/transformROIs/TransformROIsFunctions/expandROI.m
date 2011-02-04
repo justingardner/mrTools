@@ -6,13 +6,17 @@
 %       date: 11/01/2011
 %
 %    purpose: expands roi coordinates in 3D by margin voxels
-%      input:   - margin: number of voxels that will be added around the ROI
-% kernelType:   - (optional) type of kernel to convole the ROI with: 
+%      input:   - margin: number of voxels that will be added (removed if negative) around the ROI.
+% kernelType:   - (optional) type of kernel to convolve the ROI with: 
 %                     sphere (default), cube, disc, square or radius/half-side margin
 %                     discs and squares are in the X-Y plane  
 
 function roi = expandROI(roi,margin,kernelType)
 
+if ~ismember(nargin,[2 3])
+  help expandROI;
+  return
+end
 
 if ieNotDefined('kernelType')
   kernelType = 'sphere';
@@ -21,6 +25,9 @@ if ~ismember(kernelType,{'sphere','cube','disc','square'})
   mrWarnDlg(['(expandROI) unknown kernel type ' kernelType]);
   roi=[];
 end
+
+trim = margin<0;
+margin = abs(margin);
 
 boxCoords = [min(roi.coords,[],2)-margin  max(roi.coords,[],2)+margin];
 
@@ -32,6 +39,10 @@ roiCoords = roi.coords+repmat(voxelShift,1,size(roi.coords,2));
 
 volume = zeros(boxCoords(:,2)');
 volume(sub2ind(boxCoords(:,2)',roiCoords(1,:),roiCoords(2,:),roiCoords(3,:)))=1;
+
+if trim
+  volume = 1-volume;
+end
 
 switch(kernelType)
   case 'sphere'
@@ -49,6 +60,9 @@ switch(kernelType)
 end
 
 volume = logical(convn(volume,kernel,'same'));
+if trim
+  volume = ~volume;
+end
 [newCoordsX,newCoordsY,newCoordsZ] = ind2sub(boxCoords(:,2)',find(volume));
 roi.coords = [newCoordsX-voxelShift(1) newCoordsY-voxelShift(2) newCoordsZ-voxelShift(3)]';
 
