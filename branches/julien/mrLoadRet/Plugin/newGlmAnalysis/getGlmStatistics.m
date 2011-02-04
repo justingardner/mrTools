@@ -111,6 +111,9 @@ bootstrapFweAdjustment = params.bootstrapFweAdjustment && actualData;
 if fieldIsNotDefined(params,'bootstrapTests')
   params.bootstrapTests=0;
 end
+if fieldIsNotDefined(params,'noDoubleBootstrap')
+  params.noDoubleBootstrap=0;
+end
 bootstrapTests=params.bootstrapTests&& actualData;
 if ~isfield(params, 'bootstrapIntervals') || isempty(params.bootstrapIntervals)
   params.bootstrapIntervals = 0;
@@ -296,13 +299,13 @@ if numberFtests || params.computeTtests
   end
   if bootstrapTests
     [out.bootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
-    if bootstrapFweAdjustment
+    if bootstrapFweAdjustment && ~params.noDoubleBootstrap
       [out.bootstrapFweBootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
       [bootstrapStatistic,totalBytes] = alloc('NaN',[d.dim(1) numberTests nResamples],precision,totalBytes);
     end
     if params.TFCE
       [out.tfceBootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
-      if bootstrapFweAdjustment
+      if bootstrapFweAdjustment && ~params.noDoubleBootstrap
         [out.bootstrapFweTfceBootstrapP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
         [bootstrapTfce,totalBytes] = alloc('NaN',[d.dim(1) numberTests nResamples],precision,totalBytes);
       end
@@ -708,20 +711,20 @@ for z = slices
         else
           if bootstrapTests
             bootstrapStatisticCount = bootstrapStatisticCount+double(thisStatistic>actualStatistic); %T has already been transformed to be positive
-            if bootstrapFweAdjustment
+            if bootstrapFweAdjustment && ~params.noDoubleBootstrap
               bootstrapStatistic(:,:,iBoot-1) = thisStatistic;
             end
             if params.TFCE
               bootstrapTfceCount = bootstrapTfceCount + double(thisTfce>actualTfce);
-              if bootstrapFweAdjustment
-                bootstrapFweTfceCount = bootstrapFweTfceCount + resampleFWE(thisTfce,actualTfce,resampleFweTfceTdata);
+              if bootstrapFweAdjustment && ~params.noDoubleBootstrap
+                bootstrapTfce(:,:,iBoot-1) = thisTfce;
               end
             end
           end
           if params.parametricTests && bootstrapFweAdjustment
             bootstrapFweStatisticCount = bootstrapFweStatisticCount + resampleFWE(thisStatistic,actualStatistic,resampleFweData);
             if params.TFCE
-              bootstrapTfce(:,:,iBoot-1) = thisTfce;
+              bootstrapFweTfceCount = bootstrapFweTfceCount + resampleFWE(thisTfce,actualTfce,resampleFweTfceTdata);
             end
           end
         end
@@ -783,7 +786,7 @@ for z = slices
               out.bootstrapFweTfceP(:,:,y,z) = enforceMonotonicityResampleFWE(bootstrapFweTfceCount,resampleFweTfceTdata)';
             end
           end
-          if bootstrapTests && bootstrapFweAdjustment
+          if bootstrapTests && bootstrapFweAdjustment && ~params.noDoubleBootstrap
            %SECOND BOOTSTRAP LOOP %one test at a time
             %convert to p-values
       % % %       [bootstrapStatistic, bootstrapTp] = sort(bootstrapStatistic,3);
@@ -919,12 +922,12 @@ if numberTests
   end
   if bootstrapTests
     out.bootstrapP = permute(out.bootstrapP,[2 3 4 1]);
-    if bootstrapFweAdjustment
+    if bootstrapFweAdjustment && ~params.noDoubleBootstrap
       out.bootstrapFweBootstrapP = permute(out.bootstrapFweBootstrapP,[2 3 4 1]);
     end
     if params.TFCE 
       out.tfceBootstrapP = permute(out.tfceBootstrapP,[2 3 4 1]);
-      if bootstrapFweAdjustment
+      if bootstrapFweAdjustment && ~params.noDoubleBootstrap
         out.bootstrapFweTfceBootstrapP = permute(out.bootstrapFweTfceBootstrapP,[2 3 4 1]);
       end
     end

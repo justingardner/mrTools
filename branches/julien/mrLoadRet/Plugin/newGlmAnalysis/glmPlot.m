@@ -143,8 +143,8 @@ for iPlot = 1:length(roi)+1
   if iPlot==1 %this is the voxel data
     titleString{1}=sprintf('Voxel (%i,%i,%i)',x,y,s);
     titleString{2}=sprintf('r2=%0.3f',r2data(x,y,s));
-    
-    e = getEstimates(glmData,analysisParams,[x y s]);
+    volumeIndices = [x y s];
+    e = getEstimates(glmData,analysisParams,volumeIndices);
     buttonString{1} = 'estimate std error';
     
   else  %this is an ROI
@@ -315,8 +315,10 @@ for iPlot = 1:length(roi)+1
 
   % if there is deconvolution data, display that too
   if plotDeconvolution 
+    keyboard %I need to finish this
     if numberContrasts
-      [deconvEhdr deconvTime deconvEhdrste deconvContrastHdr] = getEhdr(deconvData,x,y,s,glmData.contrasts);
+      eDeconv = getEstimates(deconvData,analysisParams,volumeIndices);
+      [deconvEhdr deconvTime deconvEhdrste deconvContrastHdr] = getEstimates(deconvData,x,y,s,glmData.contrasts);
     else
       [deconvEhdr deconvTime] = getEhdr(deconvData,x,y,s);
     end
@@ -348,6 +350,9 @@ for iPlot = 1:length(roi)+1
       %plot baseline
       plot(contrastAxes,get(contrastAxes,'Xlim'),[0 0],'--k','lineWidth',1);
       maxSte = max(e.contrastBetaSte,[],3);
+      if isnan(maxSte)
+        maxSte = 0;
+      end
       makeScaleEditButton(fignum,contrastAxes,...
         [min(min(e.contrastBetas-maxSte)),max(max(e.contrastBetas+maxSte))]);
       if iPlot==1
@@ -369,6 +374,9 @@ for iPlot = 1:length(roi)+1
   if numberContrasts
     set(hdrContrastAxes,'xLim',[0,max(deconvTime(end),e.time(end))+framePeriod/2]);
     maxSte = max(e.contrastHdrSte,[],3);
+    if isnan(maxSte)
+      maxSte = 0;
+    end
     makeScaleEditButton(fignum,hdrContrastAxes,...
       [min(min(e.contrastHdr-maxSte)),max(max(e.contrastHdr+maxSte))]);
     if iPlot==1

@@ -219,7 +219,7 @@ while keepAsking
   elseif params.permutationTests && ~all( (sum(logical(allContrasts),2)==2 & sum(allContrasts,2)==0) | ~any(allContrasts,2))
     mrWarnDlg('(getTestParamsGUI) Randomization tests can only be run if all contrasts of all T/F tests are 1 to 1 comparisons','Yes');
   elseif params.TFCE && ~(params.bootstrapTests || params.bootstrapFweAdjustment || params.permutationTests || params.permutationFweAdjustment)
-    mrWarnDlg('(getTestParamsGUI) TFCE requires resampling tests (bootstrap, permutation or resample-based FWE control','Yes');
+    mrWarnDlg('(getTestParamsGUI) TFCE requires resampling tests (bootstrap, permutation or resample-based FWE control)','Yes');
   elseif params.permutationTests && params.permutationFweAdjustment && ~params.parametricTests
     mrWarnDlg('(getTestParamsGUI) permutation-based adjustment for permutation tests is not implemented','Yes');
   elseif params.bootstrapFweAdjustment && ~(params.bootstrapTests ||params.parametricTests)

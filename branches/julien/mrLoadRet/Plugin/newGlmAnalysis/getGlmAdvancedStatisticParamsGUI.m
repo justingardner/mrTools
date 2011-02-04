@@ -57,6 +57,10 @@ while keepAsking
   if fieldIsNotDefined(params, 'maskContrastOverlay')
       params.maskContrastOverlay = 1;
   end
+  if fieldIsNotDefined(params, 'noDoubleBootstrap')
+      params.noDoubleBootstrap = 0;
+  end
+  
   
   testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   resampleFweMethodMenu = putOnTopOfList(params.resampleFweMethod,{'Single-step','Adaptive Single-step','Step-down','Adaptive Step-down'});
@@ -79,6 +83,7 @@ while keepAsking
       {'trueNullsEstimationMethod', trueNullsEstimationMethodMenu,'type=popupmenu', 'Method to estimate the number of true null outcomes for adaptive adjustment methods'},...
       {'trueNullsEstimationThreshold', params.trueNullsEstimationThreshold, 'Raw p-values cutoff for true nulls estimation'},...
       {'maskContrastOverlay', params.maskContrastOverlay,'type=checkbox', 'Whether to mask the contrast overlay(s) with the results of the test outcome'},...
+      {'noDoubleBootstrap', params.noDoubleBootstrap,'type=checkbox', 'Prevents boostrap-based FWER control adjustment on bootstrap P-value to spare memory'},...
        };
 
   if ~params.showAdvancedStatisticMenu || useDefault

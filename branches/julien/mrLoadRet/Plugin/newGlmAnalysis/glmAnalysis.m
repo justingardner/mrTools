@@ -14,7 +14,7 @@
 %     statistic-tests are performed on any linear combinations of Explanatory Variables (EVs) against zero (H0 = contrast'*beta
 %     statistic-tests tests any set of contrasts, not necessarily identical to above contrasts to subsets of  (H0 = no contrast differs from zero)
 
-function thisView = glmAnalysis(thisView,params,varargin)
+function [thisView,params] = glmAnalysis(thisView,params,varargin)
 
 % check arguments
 if ~any(nargin == [1 2 3 4 5])
@@ -28,17 +28,20 @@ mrGlobals;
 eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
-if ieNotDefined('scanList')
-   scanList = [];
-end
-if ieNotDefined('params')
-   % First get parameters
-   params = glmAnalysisGUI('thisView',thisView,'defaultParams',defaultParams,'scanList',scanList);
+if ieNotDefined('scanList'),scanList = [];end
+if ieNotDefined('params'),params = struct;end
+
+% First get parameters
+if isempty(params) || justGetParams
+  params = glmAnalysisGUI('thisView',thisView,'params',params,'defaultParams',defaultParams,'scanList',scanList);
 end
 
 % Abort if params empty
 if ieNotDefined('params')
   disp('(glmAnalysis) GLM analysis cancelled');
+  return
+% just return parameters
+elseif justGetParams
   return
 end
 
@@ -120,14 +123,14 @@ if numberTests
     bootstrapP = r2;
     fdrBootstrapP=r2;
     fweBootstrapP=r2;
-    if params.bootstrapFweAdjustment
+    if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
       bootstrapFweBootstrapP = r2;
     end
     if params.TFCE  
       tfceBootstrapP = r2;
       fdrTfceBootstrapP=r2;
       fweTfceBootstrapP=r2;
-      if params.bootstrapFweAdjustment
+      if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
         bootstrapFweTfceBootstrapP = r2;
       end
     end
@@ -251,7 +254,7 @@ for iScan = params.scanNum
       if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
       % do any call for preprocessing
       if ~isempty(scanParams{iScan}.preprocess)
-        d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess,verbose);
+        d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
       end
 
       actualStimvol = d.stimvol;
@@ -374,12 +377,12 @@ for iScan = params.scanNum
             end
             if params.bootstrapTests
               out.bootstrapP = reshapeToRoiBox(out.bootstrapP,d.roiPositionInBox);
-              if params.bootstrapFweAdjustment
+              if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
                 out.bootstrapFweBootstrapP = reshapeToRoiBox(out.bootstrapFweBootstrapP,d.roiPositionInBox);
               end
               if params.TFCE 
                 out.tfceBootstrapP = reshapeToRoiBox(out.tfceBootstrapP,d.roiPositionInBox);
-                if params.bootstrapFweAdjustment
+                if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
                    out.bootstrapFweTfceBootstrapP = reshapeToRoiBox(out.bootstrapFweTfceBootstrapP,d.roiPositionInBox);
                 end
               end
@@ -420,12 +423,12 @@ for iScan = params.scanNum
           end
           if params.bootstrapTests
             bootstrapP{iScan} = cat(3,bootstrapP{iScan},out.bootstrapP);
-            if params.bootstrapFweAdjustment
+            if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
               bootstrapFweBootstrapP{iScan} = cat(3,bootstrapFweBootstrapP{iScan},out.bootstrapFweBootstrapP);
             end
             if params.TFCE 
               tfceBootstrapP{iScan} = cat(3,tfceBootstrapP{iScan},out.tfceBootstrapP);
-              if params.bootstrapFweAdjustment
+              if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
                 bootstrapFweTfceBootstrapP{iScan} = cat(3,bootstrapFweTfceBootstrapP{iScan},out.bootstrapFweTfceBootstrapP);
               end
             end
@@ -548,12 +551,12 @@ for iScan = params.scanNum
     end
     if params.bootstrapTests
       [bootstrapP{iScan},fdrBootstrapP{iScan},fweBootstrapP{iScan}] = transformStatistic(bootstrapP{iScan},precision,params); 
-      if params.bootstrapFweAdjustment
+      if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
         bootstrapFweBootstrapP{iScan} = transformStatistic(bootstrapFweBootstrapP{iScan},precision,params);
       end
       if params.TFCE 
         [tfceBootstrapP{iScan},fdrTfceBootstrapP{iScan},fweTfceBootstrapP{iScan}] = transformStatistic(tfceBootstrapP{iScan},precision,params);
-        if params.bootstrapFweAdjustment
+        if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
           bootstrapFweTfceBootstrapP{iScan} = transformStatistic(bootstrapFweTfceBootstrapP{iScan},precision,params);
         end
       end
@@ -781,7 +784,7 @@ if numberTests
     overlays = [overlays makeOverlay(defaultOverlay, bootstrapP, subsetBox, params.scanNum, scanParams, ...
                                        'bootstrap ', params.testOutput, testNames)];
     clear('bootstrapP');
-    if params.bootstrapFweAdjustment
+    if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweBootstrapP, subsetBox, params.scanNum, scanParams, ...
                                          'bootstrap-FWE-adjusted bootstrap ', params.testOutput, testNames)];
       clear('bootstrapFweBootstrapP');
@@ -800,7 +803,7 @@ if numberTests
       overlays = [overlays makeOverlay(defaultOverlay, tfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
                                          'bootstrap TFCE ', params.testOutput, testNames)];
       clear('tfceBootstrapP');
-      if params.bootstrapFweAdjustment
+      if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
         overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
                                            'bootstrap-FWE-adjusted bootstrap TFCE ', params.testOutput, testNames)];
         clear('bootstrapFweTfceBootstrapP');
@@ -896,7 +899,7 @@ outputData = reshape(outputData,[size(dataPosition,1) size(dataPosition,2) size(
 
 function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 
-[convertedStatistic,p] = convertStatistic(p, params.testOutput, outputPrecision);
+convertedStatistic = convertStatistic(p, params.testOutput, outputPrecision);
 
 if params.fdrAdjustment
   fdrAdjustedP = p;
@@ -932,22 +935,22 @@ p = max(count/nResamples,1/(nResamples+1));
 p(isnan(count)) = NaN; %NaNs must remain NaNs (they became minP when using max)
 
 
-function [convertedP,p] = convertStatistic(p, outputStatistic, outputPrecision)
+function p = convertStatistic(p, outputStatistic, outputPrecision)
 
 switch(outputStatistic)
   case 'Z value'
     %convert P value to Z value, 
-    convertedP = norminv(1-p);  
-    convertedP(convertedP<0) = 0; % we're not interested in negative Z value
+    p = norminv(1-p);  
+    p(p<0) = 0; % we're not interested in negative Z value
     %if there was no round-off error from cdf, we could do the following:
     %Z = max(-norminv(p),0);  %because the left side of norminv seems to be less sensitive to round-off errors,
     %we get -norminv(x) instead of norminv(1-x). also we'renot interested in negative Z value
   case '-log10(P) value'
     %convert P to -log10(P) 
-    convertedP = -log10(p);
+    p = -log10(p);
     
 end
-convertedP = eval([outputPrecision '(convertedP)']);
+p = eval([outputPrecision '(p)']);
 
 
 
