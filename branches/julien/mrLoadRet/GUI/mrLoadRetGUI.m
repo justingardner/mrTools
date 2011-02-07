@@ -2322,7 +2322,9 @@ view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
 scanList = selectInList(view,'scans');
-plotMeanTSeries(view, groupNum, roiList, scanList);
+if ~isempty(scanList)
+   plotMeanTSeries(view, groupNum, roiList, scanList);
+end
 
 % --------------------------------------------------------------------
 function plotMeanTseriesCurrentAll_Callback(hObject, eventdata, handles)
@@ -2351,8 +2353,11 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
-scanList = viewGet(view,'currentScan');
-plotMeanTSeries(view, groupNum, roiList, scanList);
+scanList = selectInList(view,'scans');
+if ~isempty(scanList)
+   plotMeanTSeries(view, groupNum, roiList, scanList);
+%    plotMeanTSeries(view, groupNum, roiList, scanList,'subtractMean','No');
+end
 
 % --------------------------------------------------------------------
 function plotMeanTseriesAllAll_Callback(hObject, eventdata, handles)
