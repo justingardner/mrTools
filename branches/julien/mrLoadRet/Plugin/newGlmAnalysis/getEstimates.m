@@ -43,6 +43,11 @@ for iVoxel = 1:nVoxels
   hdr(:,:,iVoxel) = hrf*betas(:,:,iVoxel)';
 end
 
+if fieldIsNotDefined(d,'nHrfComponents')
+  d.nHrfComponents = size(d.hrf,2);
+end
+
+
 % Compute estimate std error (see for example Seber & Lee, Linear Regression Analysis, 1977, p42,67)
 betaSte = NaN(size(betas));
 if isfield(params,'componentsCombination')
@@ -149,6 +154,7 @@ if ~fieldIsNotDefined(params,'contrasts')
   
   %reshape in case there are several contrast components
   contrastBetas = permute(reshape(contrastBetas,[],nContrasts,nVoxels),[2 1 3]);
+  contrastBetaSte = permute(reshape(contrastBetaSte,[],nContrasts,nVoxels),[2 1 3]);
 
 end
 
