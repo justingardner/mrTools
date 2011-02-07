@@ -209,7 +209,15 @@ if ~justGetParams
       scanParams(iScan).niftiHdr = hdr;
       scanParams(iScan).totalFrames = hdr.dim(5);
       scanParams(iScan).voxelSize = hdr.pixdim([2,3,4])';
-      % put into group variable
+    end  
+    
+    %if weird frame periods have been detected, ask user
+    if any(weirdFramePeriods)
+      scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,tseriesDir);
+    end
+    
+    % put into group variable
+    for iScan=1:length(groupParams.totalFrames)
       [tf groups(1).scanParams(iScan)] = isscan(scanParams(iScan));
       if ~tf
 	disp(sprintf('(mrInit) Scan params for %i did not validate',iScan));
@@ -223,12 +231,8 @@ if ~justGetParams
 	  groups(1).auxParams(iScan).stimFileName = '';
 	end	  
       end
-    end  
-    
-    %if weird frame periods have been detected, ask user
-    if any(weirdFramePeriods)
-      scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,tseriesDir)
     end
+    
     % tag on auxParams to groups if it wasn't set above
     if ~isfield(groups(1),'auxParams')
       groups(1).auxParams = [];
