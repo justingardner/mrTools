@@ -176,8 +176,7 @@ switch lower(field)
         minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
         maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
         if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
-              (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
-              clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
+              (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon)
 %         if (~isempty(minOverlayData) && minOverlayData<clip(1)) ||...
 %               (~isempty(maxOverlayData) && maxOverlayData>clip(2))
            value{iOverlay} = [char(164) ' ' value{iOverlay}];
@@ -377,7 +376,7 @@ end
 %modified num2str to increase the number of decimals for reals
 function value = thisNum2str(value)
 
-  if rem(value,1)>0
+  if rem(value,1)
     value = num2str(value,'%.6f');
   else
     value = num2str(value);
