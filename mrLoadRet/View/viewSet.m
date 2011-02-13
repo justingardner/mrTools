@@ -279,12 +279,16 @@ switch lower(param)
     end
     % Remove it
     numgroups = viewGet(view,'numberofgroups');
-    MLR.groups = MLR.groups(groupnum ~= [1:numgroups]);
+    groupsToKeep = groupnum ~= [1:numgroups];
+    MLR.groups = MLR.groups(groupsToKeep);
     % Update the view
     groupNames = viewGet(view,'groupNames');
     if isempty(groupNames)
       groupNames = {'none'};
     end
+    %I think we also need to remove any loaded analysis and other group-specific info from the view
+    view.groupScanNum = view.groupScanNum(groupsToKeep);
+    view.loadedAnalyses = view.loadedAnalyses(groupsToKeep);
     curgroup = viewGet(view,'currentGroup');
     if (curgroup > groupnum)
       view = viewSet(view,'currentGroup',curgroup-1);
@@ -295,6 +299,10 @@ switch lower(param)
     % Update all the other views
     for v = find(view.viewNum ~= [1:length(MLR.views)])
       if isview(MLR.views{v})
+        %I think we also need to remove any loaded analysis and other group-specific info from the view
+        v = viewGet(v,'view');
+        %v.groupScanNum = v.groupScanNum(groupsToKeep);
+        %v.loadedAnalyses = v.loadedAnalyses(groupsToKeep);
         curgroup = viewGet(v,'currentGroup');
         if (curgroup > groupnum)
           viewSet(v,'currentGroup',curgroup-1);
@@ -1296,7 +1304,11 @@ switch lower(param)
       view = viewSet(view,'curOverlay',newOverlayNum);
     end
     % Update the gui
-    mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum));
+    overlayNames = viewGet(view,'overlayNames',analysisNum);
+    if isempty(overlayNames)
+      overlayNames = 'none';
+    end
+    mlrGuiSet(view,'overlayPopup',overlayNames);
 
   case {'deleteoverlay'}
     % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
@@ -1606,28 +1618,31 @@ switch lower(param)
   case {'deleteroi'}
     % view = viewSet(view,'deleteroi',roiNums);
     % delete ROIs roiNums from the view;
-    roinums = val;
-    numrois = viewGet(view,'numberofrois');
-    curroi = viewGet(view,'currentROI');
-    % Remove it and reset currentROI
-    remainingRois = setdiff(1:numrois,roinums);
-    curroi = find(remainingRois==curroi);
-    view.ROIs=view.ROIs(remainingRois);
-    if ~isempty(remainingRois)
-      if isempty(curroi)
-         curroi=1;
+    if ~isempty(val)
+      roinums = val;
+      numrois = viewGet(view,'numberofrois');
+      curroi = viewGet(view,'currentROI');
+      % Remove it and reset currentROI
+      remainingRois = setdiff(1:numrois,roinums);
+      curroi = find(remainingRois==curroi);
+      view.ROIs=view.ROIs(remainingRois);
+      if ~isempty(remainingRois)
+        if isempty(curroi)
+           curroi=1;
+        end
+        view = viewSet(view,'currentROI',curroi);
+      else
+        view.curROI = [];
       end
-      view = viewSet(view,'currentROI',curroi);
-    else
-      view.curROI = [];
+
+      % Update the gui
+      stringList = {view.ROIs(:).name};
+      if isempty(stringList)
+        stringList = {'none'};
+        mlrGuiSet(view,'roi',1);
+      end
+      mlrGuiSet(view,'roiPopup',stringList);
     end
-       
-    % Update the gui
-    stringList = {view.ROIs(:).name};
-    if isempty(stringList)
-      stringList = {'none'};
-    end
-    mlrGuiSet(view,'roiPopup',stringList);
 
   case {'currentroi','curroi','selectedroi'}
     % view = viewSet(view,'currentROI',roiNum);
