@@ -43,7 +43,7 @@ fontName = 'Helvetica';
 margin = 5;
 minColumnWidth = 150;
 minFigureWidth = 250;
-checkBoxWidth = 15;
+checkBoxWidth = 20;
 
 %open the figure
 hFigure = figure('name',char(headerStr),'MenuBar','none','NumberTitle','off');
@@ -68,10 +68,10 @@ maxOptionWidth = minColumnWidth*ones(1,nMultiCols);
 for iColumn=1:nMultiCols
    %convert to char to find max length more easily
    tempOptionStrings = optionStr((iColumn-1)*nOptionsPerColumn+1:min(iColumn*nOptionsPerColumn,nOptions));
-  for iOption = 1:length(optionStr)
+  for iOption = 1:length(tempOptionStrings)
       h = uicontrol(hFigure,'Style','text','String',tempOptionStrings{iOption},'FontSize',fontSize,'FontName',fontName);
       thisExtent = get(h,'extent');
-      maxOptionWidth(iColumn) = max(maxOptionWidth,thisExtent(3)+checkBoxWidth);
+      maxOptionWidth(iColumn) = max(maxOptionWidth(iColumn),thisExtent(3)+checkBoxWidth);
       delete(h);
   end
 end
@@ -94,11 +94,14 @@ set(hFigure,'Position',figurePosition);
 
 %Display the checkboxes
 backGroundColor = get(hFigure,'Color');
-y = figurePosition(4) - margin - optionHeight;
-y0=y;
-cMultiCol=1;
+y0 = figurePosition(4) - margin - optionHeight;
+cMultiCol=0;
 hButton = zeros(1,nOptions);
 for optionNum=1:nOptions
+  if optionNum>(cMultiCol)*nOptionsPerColumn
+      cMultiCol=cMultiCol+1;
+      y=y0;
+  end
   hButton(optionNum) = ...
       uicontrol('Style','checkbox',...
       'Value',defaultValue(optionNum),...
@@ -110,13 +113,10 @@ for optionNum=1:nOptions
       'HorizontalAlignment','left',...
       'FontSize',fontSize);
   y = y-optionHeight;
-  if optionNum>=(cMultiCol+1)*nOptionsPerColumn
-      cMultiCol=cMultiCol+1;
-      y=y0;
-  end
 end
-y = y-margin;
-
+if rem(nOptions,nOptionsPerColumn)
+  y = y-optionHeight;
+end
 %Display the OK/Cancel buttons
 buttonWidth = min(130,(figurePosition(3)-2*margin)/3);
 intervalBetweenButtons = (figurePosition(3) - buttonWidth*2)/3;
