@@ -291,23 +291,27 @@ for i = 1:length(d.stimfile)
     
     %I dont' think we should require all files to have exactly the same stim names
     %we'll just put stims with identical names together
-    allStimvol = d.stimvol;
-    allStimDurations = d.stimDurations;
-    %put names together
-    allStimNames = union(d.stimNames,stimNames);
-    d.stimvol = cell(size(allStimNames));
-    d.stimDurations = cell(size(allStimNames));
-    %find the indices of the new names in the cell array of all names
-    
-    d.stimDurations(ismember(allStimNames,d.stimNames))=allStimDurations;
-    d.stimvol(ismember(allStimNames,d.stimNames))=allStimvol;
-    for iStim = 1:length(stimvol)
-      thisStimIndex = ismember(allStimNames,stimNames(iStim));
+    oldStimvol = d.stimvol;
+    oldStimDurations = d.stimDurations;
+    oldStimNames = d.stimNames;
+    %put names together (this also sorts names in alphabetical order)
+    d.stimNames = union(d.stimNames,stimNames);
+    %create new cell arrays
+    d.stimvol = cell(size(d.stimNames));
+    d.stimDurations = cell(size(d.stimNames));
+    %find the indices of the old names in the cell array of all names
+    [dump,whichStims] = ismember(oldStimNames,d.stimNames);
+    %and put the previous scan stim info in th right place
+    d.stimDurations(whichStims)=oldStimDurations;
+    d.stimvol(whichStims)=oldStimvol;
+    %now find the indices of the new names in the cell array of all names
+    [dump,whichStims] = ismember(stimNames,d.stimNames);
+    for iStim = 1:length(whichStims)
+      thisStimIndex = whichStims(iStim);
       d.stimvol{thisStimIndex}= [d.stimvol{thisStimIndex} ...
         stimvol{iStim}+(d.concatInfo.runTransition(i,1)-1)*designSupersampling];
       d.stimDurations{thisStimIndex}=[d.stimDurations{thisStimIndex} stimDurations{iStim}];
     end
-    d.stimNames= allStimNames;
   end
 
 %   if (i > 1)
