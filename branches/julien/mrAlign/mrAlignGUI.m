@@ -485,13 +485,13 @@ end
 % Warning if no (qform) alignment information in the header.
 % qform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.qform_code)
-    mrWarnDlg('(mrAlignGUI) No alignment information in the inplane header.');
+    mrWarnDlg('(mrAlignGUI) No scanner alignment information in the inplane header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
 % sform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.sform_code)
-    mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the inplane header. Usually this is because this inplane has not yet been aligned. Initializing transformation to identity.');
+    mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the inplane header. Usually this is because this inplane has not yet been aligned.');
 end
 
 % Update ALIGN structure
@@ -504,12 +504,17 @@ ALIGN.inplaneVoxelSize = hdr.pixdim([2,3,4]);
 % If both inplane and volume are loaded, then use the sforms from each for
 % the alignment. Otherwise, use identity.
 ALIGN.xform = eye(4);
-if ~isempty(ALIGN.volumeHdr) & ~isempty(ALIGN.inplaneHdr)
+if ~isempty(ALIGN.volumeHdr) && ~isempty(ALIGN.inplaneHdr)
    if hdr.sform_code && ALIGN.volumeHdr.sform_code
       ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
    elseif hdr.qform_code && ALIGN.volumeHdr.qform_code
       ALIGN.xform = ALIGN.volumeHdr.qform44 \ ALIGN.inplaneHdr.qform44;
+      mrWarnDlg('(mrAlignGUI) Initializing transformation from qforms.');
+  else
+    mrWarnDlg('(mrAlignGUI) Initializing transformation to identity.');
    end
+else
+  mrWarnDlg('(mrAlignGUI) Initializing transformation to identity.');
 end
 ALIGN.xformICCorrection = ALIGN.xform;
 ALIGN.correctedInplanes = [];    
