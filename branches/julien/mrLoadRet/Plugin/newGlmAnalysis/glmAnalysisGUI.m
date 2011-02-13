@@ -43,12 +43,19 @@ if ~isfield(params,'hrfModel') || isempty(params.hrfModel)
   params.hrfModel ='hrfDoubleGamma';
 end
 nRois = viewGet(thisView,'numberOfRois');
+nVisibleRois = length(viewGet(thisView,'visibleRois'));
 if ~isfield(params,'analysisVolume') || isempty(params.analysisVolume)
   params.analysisVolume ='Whole volume';
 else
   if strcmp(params.analysisVolume,'Loaded ROI(s)')
     if ~nRois
       mrWarnDlg('(glmAnalysisGUI) No ROI loaded, switching to Whole Volume');
+      params.analysisVolume ='Whole volume';
+    end
+  end
+  if strcmp(params.analysisVolume,'Visible ROI(s)')
+    if ~nVisibleRois
+      mrWarnDlg('(glmAnalysisGUI) No ROI is visible, switching to Whole Volume');
       params.analysisVolume ='Whole volume';
     end
   end
@@ -90,6 +97,9 @@ end
 if ~isfield(params,'covFactorization') || isempty(params.covFactorization)
    params.covFactorization = 'Cholesky';
 end
+if fieldIsNotDefined(params,'covEstimationBrainMask') 
+   params.covEstimationBrainMask = 'None';
+end
 
 if ~isfield(params,'nonLinearityCorrection') || isempty(params.nonLinearityCorrection)
    params.nonLinearityCorrection = 0;
@@ -106,12 +116,14 @@ analysisVolumeMenu = {'Whole volume','Subset box'};
 if nRois
   analysisVolumeMenu{end+1} = 'Loaded ROI(s)';
 end
+if nVisibleRois
+  analysisVolumeMenu{end+1} = 'Visible ROI(s)';
+end
 analysisVolumeMenu = putOnTopOfList(params.analysisVolume,analysisVolumeMenu);
 correctionTypeMenu = putOnTopOfList(params.correctionType,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
 covEstimationMenu = putOnTopOfList(params.covEstimation,{'singleTukeyTapers','dampenedOscillator'});
 covFactorizationMenu = putOnTopOfList(params.covFactorization,{'Cholesky'});
-
-
+covEstimationBrainMaskMenu = putOnTopOfList(params.covEstimationBrainMask,[{'None'} viewGet(thisView,'roinames')]);
 
 
 while askForParams
@@ -130,6 +142,7 @@ while askForParams
     {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
     {'covEstimationAreaSize',params.covEstimationAreaSize, 'minmax=[1 inf]','contingent=covCorrection','round=1','dimensions in voxels of the spatial window on which the covariance matrix is estimated (in the X and Y dimensions)'},...
     {'covFactorization',covFactorizationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of factorization of the covariance matrix for the computation of the pre-whitening filter'},...
+    {'covEstimationBrainMask',covEstimationBrainMaskMenu,'contingent=covCorrection','ROI mask for the estimation of the noise covariance matrix.'},...
     {'nonLinearityCorrection',params.nonLinearityCorrection,'visible=0','type=checkbox','Correction for non linearity. if Yes, the response saturates when it reaches some value defined below'},...
     {'saturationThreshold',params.saturationThreshold,'visible=0', 'minmax=[1 inf]','contingent=nonLinearityCorrection','Saturation threshold, expressed in terms of the maximum amplitude of the model HRF (e.g. 2 means that the response saturates when it reaches twice the maximum of the model HRF '},...
    };
@@ -161,8 +174,8 @@ while askForParams
 
 
   %perform some checks
-  if 0
-    %perform check on parameters here if needed
+  if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
+    mrWarnDlg('(glmAnalysisGUI) Noise covariance estimation mask can only be used with ROI(s) analysis');
   elseif 0
     %perform check on parameters here if needed
   else

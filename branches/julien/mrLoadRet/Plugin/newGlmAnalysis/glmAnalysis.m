@@ -29,7 +29,7 @@ eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('scanList'),scanList = [];end
-if ieNotDefined('params'),params = struct;end
+if ieNotDefined('params'),params = [];end
 
 % First get parameters
 if isempty(params) || justGetParams
@@ -146,11 +146,31 @@ for iScan = params.scanNum
   switch(params.analysisVolume)
    case {'Whole volume','Subset box'}
        subsetBox = eval(scanParams{iScan}.subsetBox);
-   case 'Loaded ROI(s)'
-      %get the smallest box containing all the voxels from all the boxes 
-      [subsetBox, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,[voxelsMargin voxelsMargin 0]);
+   case {'Loaded ROI(s)','Visible ROI(s)'}
+      %get the smallest box containing all the voxels from all the (visible) ROIs 
+      if strcmp(params.analysisVolume,'Visible ROI(s)')
+        roiList = viewGet(thisView,'visibleRois');
+      else
+        roiList = 1:viewGet(thisView,'numberOfRois');
+      end
+      [subsetBox, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,[voxelsMargin voxelsMargin 0],roiList);
       usedVoxelsInBox = marginVoxels | any(whichRoi,4);
       %clear('whichRoi','marginVoxels');
+      if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')
+        [dump,brainMaskRoiNum] = ismember(params.covEstimationBrainMask,viewGet(thisView,'roiNames'));
+        brainMaskScanCoords = getROICoordinates(thisView,brainMaskRoiNum,iScan);
+        %keep only those voxels that are in the subset box
+        brainMaskScanCoords(:,any(brainMaskScanCoords-repmat(subsetBox(:,2),1,size(brainMaskScanCoords,2))>0))=[];
+        brainMaskScanCoords=brainMaskScanCoords-repmat(subsetBox(:,1),1,size(brainMaskScanCoords,2))+1;
+        brainMaskScanCoords(:,any(brainMaskScanCoords<1))=[];
+        if ~isempty(brainMaskScanCoords)
+          %create a mask the same size as the subsetbox
+          covEstimationBrainMask = false(size(usedVoxelsInBox));
+          covEstimationBrainMask(sub2ind(size(usedVoxelsInBox),brainMaskScanCoords(1,:)',brainMaskScanCoords(2,:)',brainMaskScanCoords(3,:)'))=true;
+        else
+          covEstimationBrainMask = [];
+        end
+      end
   end
   subsetDims = diff(subsetBox,1,2)'+1;
   %Compute the number of slices to load at once in order to minimize memory usage
@@ -184,7 +204,7 @@ for iScan = params.scanNum
         end
         loadCallsPerBatch = num2cell(1:length(slicesToLoad));
 
-      case 'Loaded ROI(s)'
+      case {'Loaded ROI(s)','Visible ROI(s)'}
         [maxNSlices rawNumSlices numRowsAtATime precision] = getNumSlicesAtATime(numVolumes,subsetDims,precision);
         maxNSlices = min(subsetDims(3),maxNSlices);
         slicesToLoad = maxNSlices*ones(1,floor(subsetDims(3)/maxNSlices));
@@ -229,7 +249,7 @@ for iScan = params.scanNum
       case {'Whole volume','Subset box'}
         %Load data
         d = loadScan(thisView,iScan,[],subsetBox(3,1) + [firstSlices(iBatch) lastSlices(iBatch)] -1, precision,subsetBox(1,:),subsetBox(2,:));
-      case 'Loaded ROI(s)'
+      case {'Loaded ROI(s)','Visible ROI(s)'}
         for iLoad= loadCallsPerBatch{iBatch}
           dummy = loadScan(thisView,iScan,[],subsetBox(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox(1,:),subsetBox(2,:));
           dummy.data = reshape(dummy.data,[prod(dummy.dim(1:3)) dummy.dim(4)]);
@@ -244,6 +264,11 @@ for iScan = params.scanNum
         d.data = permute(d.data,[1 3 4 2]);
         d.roiPositionInBox = any(whichRoi(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:),4);
         d.marginVoxels = marginVoxels(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
+        if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')&& ~isempty(covEstimationBrainMask)
+          d.covEstimationBrainMask = covEstimationBrainMask(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
+        else
+          d.covEstimationBrainMask = [];
+        end
     end
     clear('dummy');
     
@@ -346,7 +371,7 @@ for iScan = params.scanNum
         end
         
         %reshape data into the subsetbox
-        if strcmp(params.analysisVolume,'Loaded ROI(s)') 
+        if ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'}) 
           d.ehdr = reshapeToRoiBox(d.ehdr,d.roiPositionInBox);
           out.r2 = reshapeToRoiBox(out.r2,d.roiPositionInBox);
           d.s2 = reshapeToRoiBox(d.s2,d.roiPositionInBox);
@@ -494,7 +519,7 @@ for iScan = params.scanNum
     if computePermutations %compute P-values, reshape and concatenate if needed
       if params.permutationTests
         permuteStatisticCount = computeRandP(permuteStatisticCount,nResamples);
-        if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+        if ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'}) %reshape data into the subsetbox
           permuteStatisticCount = reshapeToRoiBox(permuteStatisticCount,d.roiPositionInBox);
         end
         permuteP{iScan} = cat(3,permuteP{iScan},permuteStatisticCount);  
@@ -508,7 +533,7 @@ for iScan = params.scanNum
       if params.parametricTests && params.permutationFweAdjustment
         permuteFweStatisticCount = computeRandP(permuteFweStatisticCount,nResamples);
         permuteFweStatisticCount(isnan(permuteFweStatisticCount)) = NaN; %put NaNs back in place
-        if strcmp(params.analysisVolume,'Loaded ROI(s)') %reshape data into the subsetbox
+        if ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'}) %reshape data into the subsetbox
           permuteFweStatisticCount = reshapeToRoiBox(permuteFweStatisticCount,d.roiPositionInBox);
         end
         permuteFweParametricP{iScan} = cat(3,permuteFweParametricP{iScan},permuteFweStatisticCount);
@@ -571,7 +596,7 @@ for iScan = params.scanNum
     stimvol{i} = unique(ceil(stimvol{i}/d.designSupersampling));
   end
   glmAnal.d{iScan}.stimvol = stimvol;
-  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/scanParams{iScan}.estimationSupersampling)/d.designSupersampling*scanParams{iScan}.estimationSupersampling;
+  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/scanParams{iScan}.estimationSupersampling);%/d.designSupersampling*scanParams{iScan}.estimationSupersampling;
   glmAnal.d{iScan}.actualhrf = d.hrf;
   clear('d');
   glmAnal.d{iScan}.estimationSupersampling = scanParams{iScan}.estimationSupersampling;
@@ -862,7 +887,7 @@ if numberTests
     end
     for iContrast = 2:numberContrasts+1
       overlays(iContrast).alphaOverlayExponent=betaAlphaOverlayExponent;
-      overlays(iContrast).alphaOverlay = overlays(end-numberFtests-numberContrasts+iContrast).name;
+      overlays(iContrast).alphaOverlay = overlays(end-numberFtests-numberContrasts+iContrast-1).name;
     end
   end
   

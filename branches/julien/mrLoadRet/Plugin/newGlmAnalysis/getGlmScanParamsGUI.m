@@ -58,7 +58,7 @@ while keepAsking
     
     subsetBoxVisibleOption = 'visible=1';
     subsetBoxEditableOption = 'editable=1';
-    if strcmp(params.analysisVolume,'Loaded ROI(s)')
+    if ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
       subsetBoxVisibleOption = 'visible=0';
     elseif strcmp(params.analysisVolume,'Whole volume')
       subsetBoxEditableOption = 'editable=0';
@@ -181,7 +181,7 @@ while keepAsking
     if scanParams{iScan}.estimationSupersampling<scanParams{iScan}.acquisitionSubsample
       mrWarnDlg('(getScanParamsGUI) The acquisition subsample must be less than the subsample estimation factor','Yes');
       scanParams{iScan} = [];
-    elseif params.covCorrection && any(diff(subsetBox(1:2,:),1,2)<=params.covEstimationAreaSize)
+    elseif params.covCorrection && strcmp(params.analysisVolume,'Subset box') any(diff(subsetBox(1:2,:),1,2)<=params.covEstimationAreaSize)
       mrWarnDlg('(getScanParamsGUI) subset box size is too small for covariance estimation area size','Yes');
       scanParams{iScan} = [];
     elseif isempty(scanParams{iScan}.stimDuration) 
