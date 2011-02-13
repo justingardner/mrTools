@@ -395,6 +395,7 @@ for z = slices
   end
   
   if params.covCorrection
+    mrWaitBar( passesCounter/totalPasses, hWaitBar,'(getGlmStatistics) Estimating noise covariance (this can take a long time)');
     if params.covEstimationAreaSize>1     
       %average the residuals for covariance matrix estimation
       if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
@@ -406,7 +407,12 @@ for z = slices
         %then reshape into a volume
         averaged_residuals = reshape(averaged_residuals,[d.dim(4) size(d.roiPositionInBox)]);
         %average
-        averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
+        if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~isempty(d.covEstimationBrainMask)
+          averaged_residuals(:,~d.covEstimationBrainMask)=NaN;
+          averaged_residuals = nanconv4(averaged_residuals,sliceAverager3D,'same'); %only do this if required because nanconv4 takes much longer than nconv
+        else
+          averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
+        end
         %put the data back in a new matrix with only the voxels of interest
         averaged_residuals = reshape(averaged_residuals,d.dim(4), nVoxelsInBox);
         averaged_residuals = averaged_residuals(:,d.roiPositionInBox);
@@ -474,7 +480,7 @@ for z = slices
         xvals = find(~any(isnan(timeseries(:,:,y))) & ~any(isnan(autoCorrelationParameters(:,:,y,z))));
         thisPassesCounter=passesCounter;
         for x = xvals
-          if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
+          if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar,'(getGlmStatistics) Estimating model parameters');end
           residualsAcm = makeAcm(autoCorrelationParameters(:,x,y,z),d.dim(4),params.covEstimation);
           
           switch(params.correctionType)
@@ -950,7 +956,7 @@ switch(precision)
 end
 
 if totalBytes> mrGetPref('maxBlocksize')
-  if ~askuser(sprintf('(getGlmStatistics) This analysis requires %.2f Gb of data to be loaded in memory at once, wchih is more than your . Are you sure you want to proceed ?', totalBytes/1024^3));
+  if ~askuser(sprintf('(getGlmStatistics) This analysis requires %.2f Gb of data to be loaded in memory at once, which is more than your MemoryBlock preference. Are you sure you want to proceed ?', totalBytes/1024^3));
     error('(getGlmStatistics) Analysis aborted');
   end
 end

@@ -456,7 +456,9 @@ else
   roi = loadROITSeries(thisView,roi);
   tSeries = mean(roi.tSeries,1);
   titleString = ['ROI ' roi.name ' Time Series'];
-  ehdr = shiftdim(d.ehdr(1,1,1,:,:),3);
+  ehdr = permute(d.ehdr,[4 5 1 2 3]);
+  ehdr = ehdr(:,:,sub2ind(d.dim(1:3),roi.scanCoords(1,:)',roi.scanCoords(2,:)',roi.scanCoords(3,:)'));
+  ehdr = mean(ehdr,3);
 end
 %convert to percent signal change the way it's done in getGlmStatistics
 tSeries = (tSeries - mean(tSeries))'/mean(tSeries)*100;
@@ -527,7 +529,7 @@ if ~isempty(hTransitions)
   legendString{end+1} = 'Run transitions';
 end
 ylabel('Percent Signal Change');
-axis([0 ceil(time(end)+1) min(tSeries) max(tSeries)]);
+xlim([0 ceil(time(end)+1)]);
 %legend
 lhandle = legend(h,legendString,'position',getSubplotPosition(2,1,[7 1],1,0,.2));
 set(lhandle,'Interpreter','none','box','off');

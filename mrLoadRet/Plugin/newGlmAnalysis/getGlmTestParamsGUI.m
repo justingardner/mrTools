@@ -42,7 +42,7 @@ while keepAsking
   %create model HRF
   %here we assume that all scans in this group have the same framePeriod
   [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,...
-    viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName))/params.scanParams{params.scanNum(1)}.estimationSupersampling,0,1);
+    viewGet(thisView,'framePeriod',params.scanNum(1),viewGet(thisView,'groupNum',params.groupName))/params.scanParams{params.scanNum(1)}.estimationSupersampling,0,1);
   nComponents = size(hrf,2);
   if fieldIsNotDefined(params, 'componentsToTest') || ~isequal(nComponents,length(params.componentsToTest));
     params.componentsToTest = ones(1,nComponents);
@@ -212,9 +212,9 @@ while keepAsking
   if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
       length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
-  elseif params.bootstrapTests  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
+  elseif params.bootstrapTests  && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
     mrWarnDlg('(getTestParamsGUI) Bootstrap tests are currently only allowed for ROI(s) analyses','Yes');
-  elseif params.bootstrapFweAdjustment && params.bootstrapTests  && ~strcmp(params.analysisVolume,'Loaded ROI(s)')
+  elseif params.bootstrapFweAdjustment && params.bootstrapTests  && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
     mrWarnDlg('(getTestParamsGUI) Resampled-based FWE adjustments are currently only allowed for ROI(s) analyses','Yes');
   elseif params.permutationTests && ~all( (sum(logical(allContrasts),2)==2 & sum(allContrasts,2)==0) | ~any(allContrasts,2))
     mrWarnDlg('(getTestParamsGUI) Randomization tests can only be run if all contrasts of all T/F tests are 1 to 1 comparisons','Yes');

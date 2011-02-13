@@ -58,10 +58,13 @@ else
   nHrfComponents = 1;
 end
 
+hdrSte = NaN(size(hdr));
 if ~fieldIsNotDefined(d,'s2')
   [invCovEVs,pinv_X]=computeNormalEquations(d.scm);
   s2 = permute(d.s2(indices),[2 3 1]);
-  if ~fieldIsNotDefined(d,'autoCorrelationParameters')
+  %for hdrSte:
+  thisHrf = kron(eye(d.nhdr),hrf);
+  if params.covCorrection && ~fieldIsNotDefined(d,'autoCorrelationParameters')
     acfParams = permute(d.autoCorrelationParameters,[4 1 2 3]);
     acfParams = acfParams(:,indices);
     invCorrectedCovEV = NaN(size(d.scm,2),size(d.scm,2),nVoxels);
@@ -78,27 +81,29 @@ if ~fieldIsNotDefined(d,'s2')
             invCorrectedCovEV(:,:,iVoxel) = pinv_X * residualsAcm * pinv_X'; 
         end
         betaSte(:,:,iVoxel) = reshape(diag(invCorrectedCovEV(:,:,iVoxel)),nHrfComponents,d.nhdr)';  
+        % according to Friston et al. 1998 Neuroimage 7 p30-40:
+        hdrSte(:,:,iVoxel) = reshape(diag(thisHrf*invCorrectedCovEV(:,:,iVoxel)*thisHrf'),hrfLength,d.nhdr);  
       end
     end
   else %OLS 
     betaSte = repmat(reshape(diag(invCovEVs),nHrfComponents,d.nhdr)',[1 1 nVoxels]);  
+    hdrSte = repmat(reshape(diag(thisHrf*invCovEVs*thisHrf'),hrfLength,d.nhdr),[1 1 nVoxels]);  
   end
   betaSte = sqrt(betaSte.*repmat(s2,[d.nhdr,nHrfComponents 1]));  
+  hdrSte = sqrt(hdrSte.*repmat(s2,[hrfLength d.nhdr 1]));  
   s2 = permute(s2,[3 1 2]);
   noValue = isnan(s2);
 elseif ~fieldIsNotDefined(d,'ehdrste') && size(betas,1)==size(d.ehdrste,4) && size(betas,2)==size(d.ehdrste,5)
   betaSte = permute(d.ehdrste,[4 5 1 2 3]);
   betaSte = betaSte(:,:,indices);
-end
-
-hdrSte = NaN(size(hdr));
-if ~all(isnan(betaSte(:)))
   for iVoxel = 1:nVoxels
+    %assuming that components of the HRF are independent (which always is true for deconvolution, but might not for other models)
     %the variance (squared stddev) of a random variable multiplied by a constant 
     %is equal to the variance multiplied by the square of the constant. 
     hdrSte(:,:,iVoxel) = sqrt((hrf.^2)*(betaSte(:,:,iVoxel).^2)'); 
   end
 end
+
 
 if ~fieldIsNotDefined(params,'contrasts')
   nContrasts = size(params.contrasts,1);
@@ -106,8 +111,9 @@ if ~fieldIsNotDefined(params,'contrasts')
      mrErrorDlg(sprintf('(getContrastEstimate) The number of columns in the contrast vector should equal the number of EVs (%d)',size(betas,1)));
   end
   if isfield(params,'componentsCombination')
-    %for the estimated hdr, we always estimate the std error separately for each component
+    %estimated std error for hdr contrast  will be estimated separately
     hdrContrasts = kron(params.contrasts,diag(params.componentsToTest));
+    hdrContrasts = kron(eye(d.nhdr),hrf*diag(params.componentsToTest));
     %for the beta estimates, we use either the 'Add' or the 'Or' mode
     switch(params.componentsCombination)
       case 'Add'
@@ -125,24 +131,23 @@ if ~fieldIsNotDefined(params,'contrasts')
   betas = reshape(permute(betas,[2 1 3]),nComponents,nVoxels);
   contrastBetas = extendedContrasts*betas;
   
-  contrastHdr = hrf*reshape(hdrContrasts*betas,nHrfComponents,nContrasts*nVoxels);
-  contrastHdr = reshape(contrastHdr,hrfLength,nContrasts,nVoxels);
+  contrastHdr = reshape(hdrContrasts*betas,hrfLength,nContrasts,nVoxels);
   
   betas = permute(reshape(betas,[nHrfComponents d.nhdr nVoxels]),[2 1 3]);
 
   contrastBetaSte = NaN(size(contrastBetas));
   contrastHdrSte = NaN(size(contrastHdr));
   if exist('s2','var')
-    if params.covCorrection
+    if params.covCorrection  && ~fieldIsNotDefined(d,'autoCorrelationParameters')
       contrastHdrSte = NaN(size(contrastHdr));
       for iVoxel = 1:nVoxels
         contrastBetaSte(:,iVoxel) = sqrt(diag(extendedContrasts * invCorrectedCovEV(:,:,iVoxel) * extendedContrasts')*s2(iVoxel));
-        contrastHdrSte(:,:,iVoxel) = sqrt((d.hrf.^2)*reshape(diag(hdrContrasts * invCorrectedCovEV(:,:,iVoxel) * hdrContrasts'),nHrfComponents,nContrasts)*s2(iVoxel));
+        contrastHdrSte(:,:,iVoxel) = sqrt(reshape(diag(hdrContrasts * invCorrectedCovEV(:,:,iVoxel) * hdrContrasts'),hrfLength,nContrasts)*s2(iVoxel));
       end
     else
       contrastBetaSte = sqrt(diag(extendedContrasts*invCovEVs*extendedContrasts')*s2');
-      contrastHdrSte = sqrt(d.hrf.^2*reshape(diag(hdrContrasts*invCovEVs*hdrContrasts')*s2',nHrfComponents,nContrasts*nVoxels));
-      contrastHdrSte = reshape(contrastHdrSte,hrfLength,nContrasts,nVoxels);
+      contrastHdrSte = sqrt(reshape(diag(hdrContrasts*invCovEVs*hdrContrasts')*s2',hrfLength,nContrasts,nVoxels));
+%      contrastHdrSte = reshape(contrastHdrSte,hrfLength,nContrasts,nVoxels);
     end
     
     contrastBetaSte = permute(reshape(contrastBetaSte,[],nContrasts,nVoxels),[2 1 3]);

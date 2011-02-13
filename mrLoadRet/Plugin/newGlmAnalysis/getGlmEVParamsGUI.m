@@ -136,7 +136,7 @@ if ~isfield(thisScanParams,'sameForNextScans') || thisScanParams.sameForNextScan
   %if it's the last scan or sameForNextScans is selected, we show all scans
   %copy params to remaining scans
   for jScan = params.scanNum(find(params.scanNum==scanNum,1,'first'):end)
-    scanParams{jScan} = copyFields(scanParams{jScan},thisScanParams);
+    scanParams{jScan} = copyFields(thisScanParams,scanParams{jScan});
   end
   scanList = params.scanNum;
 else
