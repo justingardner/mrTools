@@ -1795,6 +1795,8 @@ switch lower(param)
     
     % ROI
   case {'visiblerois'}
+    % roiList = viewGet(view,'visiblerois')
+    % returns the number of all visible ROIs
     selectedROI = viewGet(view,'currentroi');
     n = viewGet(view,'numberOfROIs');
     option = viewGet(view,'showROIs');
