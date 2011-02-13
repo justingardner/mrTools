@@ -25,7 +25,7 @@ while keepAsking
 
       overlayList = 1:viewGet(thisView,'nOverlays');
       if length(overlayList)>1
-         overlayList = selectInList(view,'overlays');
+         overlayList = selectInList(thisView,'overlays');
          if isempty(overlayList)
             if viewGet(thisView,'nScans')==1
                return

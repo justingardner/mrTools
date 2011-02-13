@@ -21,6 +21,8 @@ basevoxelsize = viewGet(thisView,'basevoxelsize');
 
 %First, get a logical mask of the current overlay display, as well as the overlay data
 [mask,overlayData] = maskOverlay(thisView,overlayNum,scanNum);
+mask = mask{1};
+overlayData = overlayData{1};
 overlay_name = viewGet(thisView,'overlayName');
 
 %mask the overlay
