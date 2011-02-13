@@ -18,6 +18,7 @@ analysis = viewGet(thisView,'analysis');
 
 %First, get a mask of non-zero voxel representing the current overlay display
 mask = maskOverlay(thisView,overlayNum,scanNum);
+mask = mask{1};
 
 base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
 

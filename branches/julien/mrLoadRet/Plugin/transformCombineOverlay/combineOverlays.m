@@ -7,7 +7,7 @@ function combineOverlays(thisView)
 %
 % $Id$
 
-inputOutputTypeMenu = {'3D Array','Scalar'};%,'Anonymous (Scalar)', 'Anonymous (Array)'};
+inputOutputTypeMenu = {'3D Array','Scalar','Structure'};%,'Anonymous (Scalar)', 'Anonymous (Array)'};
 combinationModeMenu = {'Apply function to all overlays','Apply function to each overlay','Recursively apply to overlay pairs'};
 
 %default params
@@ -15,7 +15,7 @@ combinationModeMenu = {'Apply function to all overlays','Apply function to each 
 functionsDirectory = [fileparts(which('combineOverlays')) '/CombineOverlayFunctions/'];
 combineFunctionFiles =  dir([functionsDirectory '*.m']);
 for iFile=1:length(combineFunctionFiles)
-   combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
+  combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
 end
 
 params.combineFunction = [{'User Defined'} combineFunctions];
@@ -24,6 +24,7 @@ params.nOutputOverlays = 1;
 params.additionalArrayArgs = '';
 params.additionalArgs = '';
 params.useMask = 0;
+params.passView = 0;
 params.outputName = '';
 
 askForParams = 1;
@@ -31,13 +32,15 @@ while askForParams
   params = {...
    {'combineFunction',params.combineFunction,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
    {'customCombineFunction',params.customCombineFunction,'name of the function to apply. You can use any type of matlab function (including custom) that accepts either scalars or multidimensional arrays. Any string beginning with an @ will be considered an anonymous function and shoulde be of the form @(x)func(x), @(x,y)func(x,y) ..., where the number of variables equals the number of overlay inputs and additional arguments. '},...
-   {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' is faster but not all functions accept multidimensional arrays as inputs.'},...
+   {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' is faster but not all functions accept multidimensional arrays as inputs. Choose ''Structure'' to pass the whole overlay structure'},...
    {'combinationMode',combinationModeMenu,'type=popupmenu', 'In the default mode,the number of inputs expected by the function must match the number of selected overlays.'},...
-   {'nOutputOverlays',params.nOutputOverlays,'incdec==[-1 1]','round=1','minmax=[1 Inf]','Number of outputs of the combineFunctions'},...
+   {'nOutputOverlays',params.nOutputOverlays,'incdec=[-1 1]','round=1','minmax=[1 Inf]','Number of outputs of the combineFunctions'},...
    {'additionalArrayArgs',params.additionalArrayArgs,'constant arguments for functions that accept them. Arguments must be separated by commas. for Array input/output type, each argument will be repeated in a matrix of same dimensions of the overlay '},...
    {'additionalArgs',params.additionalArgs,'constant scalar arguments for functions that take both arrays and scalars. These arguments will be input at the end of each function call. They must be separated by commas. '},...
-   {'useMask',params.useMask,'type=checkbox','use overlay masked by other overlays of the analysis according to clip values'}...
-   {'outputName',params.outputName,'radical of the output overlay names'}...
+   {'passView',params.passView,'type=checkbox','Check this if the function requires the current mrLoadRet view'},...
+   {'useMask',params.useMask,'type=checkbox','use overlay masked by other overlays of the analysis according to clip values'},...
+   {'outputName',params.outputName,'radical of the output overlay names'},...
+   {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
           };
   params = mrParamsDialog(params, 'Overlay Combination parameters');
   % Abort if params empty
@@ -51,12 +54,12 @@ while askForParams
   combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
 
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
-    mrWarnDlg('Anonymous functions cannot be applied recursively');
+    mrWarnDlg('(combineOverlays) Anonymous functions cannot be applied recursively');
   %elseif
     %other control here
   else
     askForParams = 0;
-    overlayList = selectInList(view,'overlays');
+    overlayList = selectInList(thisView,'overlays');
     if isempty(overlayList)
        askForParams = 1;
     end
@@ -64,32 +67,33 @@ while askForParams
 end
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 
-
-
 %get and mask the overlay data
+nScans = viewGet(thisView,'nScans');   
+overlayData = viewGet(thisView,'overlays');
+overlayData = overlayData(overlayList);
 if params.useMask
-   [mask,overlayData] = maskOverlay(thisView,overlayList);
-   if ~iscell(mask)
-      mask = num2cell(mask,1,1);
-      overlayData = num2cell(overlayData,1,1);
-   end
+   mask = maskOverlay(thisView);
    for iScan = 1:length(mask)
-      for iOverlay = 1:size(overlayData,2)
-         overlayData{iScan,iOverlay}(~mask{iScan})=0;
-      end
-   end
-else
-   scanList = 1:viewGet(thisView,'nScans');   
-   overlayData = cell(length(scanList),length(overlayList));
-   for iScan = 1:length(scanList)
-      for iOverlay = 1:length(overlayList)
-         overlayData{iScan,iOverlay} = viewGet(thisView,'overlayData',scanList(iScan),overlayList(iOverlay));
+      for iOverlay = 1:length(overlayData)
+         overlayData(iOverlay).data{iScan}(~mask{iScan})=NaN;
       end
    end
 end
 %overlay names
-for iInput = 1:size(overlayData,2)
-    overlayNames{iInput} = viewGet(thisView,'overlayName',overlayList(iInput));
+for iOverlay = 1:length(overlayList)
+  overlayNames{iOverlay} = overlayData(iOverlay).name;
+end
+switch(params.inputOutputType)
+  case 'Structure'
+    overlayData = num2cell(overlayData);
+  case {'3D Array','Scalar'}
+    newOverlayData = cell(nScans,length(overlayList));
+    for iOverlay = 1:length(overlayList)
+      for iScan = 1:nScans
+        newOverlayData{iScan,iOverlay} = overlayData(iOverlay).data{iScan};
+      end
+    end
+    overlayData = newOverlayData;
 end
 
 %parse additional array inputs
@@ -110,7 +114,7 @@ additionalArgs = parseArguments(params.additionalArgs,',');
 
 %convert overlays to cell arrays if scalar function
 if strcmp(params.inputOutputType,'Scalar')
-   for iScan = 1:length(scanList)
+   for iScan = 1:nScans
       for iOverlay = 1:length(overlayList)
          overlayData{iScan,iOverlay} = num2cell(overlayData{iScan,iOverlay}); %convert overlays to cell arrays
       end
@@ -173,6 +177,10 @@ for iInput = 1:length(additionalArgs)
    functionString = [functionString 'additionalArgs{' num2str(iInput) '},'];
 end
 
+if params.passView
+  functionString = [functionString 'thisView,'];
+end
+
 functionString(end:end+1) = ');'; %replace the last comma by a closing bracket to end the function
 
 
@@ -194,11 +202,18 @@ for iOperations = 1:size(overlayData,3)
 %             outputData{iScan,iOverlay,iOperations} = cell2mat(outputData{iScan,iOverlay,iOperations}); 
 %          end
          %add 0 to all the results to convert logical to doubles, because mrLoadRet doesn't like logical overlays
-         outputData{iScan,iOuput,iOperations} = outputData{iScan,iOuput,iOperations}+0;
-         %check that the size is compatible
-         if any(size(outputData{iScan,iOuput,iOperations})~=size(overlayData{1}))
-            mrWarnDlg(['(combineOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOuput,iOperations})) '] vs [' num2str(size(overlayData{1})) '])']);
-         end
+        switch(params.inputOutputType)
+          case 'Structure'
+            for jScan = 1:nScans
+              outputData{iScan,iOuput,iOperations}.data{jScan} = outputData{iScan,iOuput,iOperations}.data{jScan}+0;
+            end
+          case {'3D Array','Scalar'}
+           outputData{iScan,iOuput,iOperations} = outputData{iScan,iOuput,iOperations}+0;
+        end
+        %check that the size is compatible
+        if ~isequal(size(outputData{iScan,iOuput,iOperations}),size(overlayData{iScan}))
+          mrWarnDlg(['(combineOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOuput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
+        end
       end
    end
 end
@@ -249,24 +264,30 @@ if size(overlayData,3)>1 %reshape the overlay cell array
    outputOverlayNames = cellReshape(outputOverlayNames,numel(outputOverlayNames),1);
 end
             
-%saves the output
-outputOverlay.groupName = viewGet(thisView,'groupName');
-outputOverlay.function = 'combineOverlays';
-outputOverlay.interrogator = 'combineOverlays';
-outputOverlay.type = 'combination';
-outputOverlay.params = params;
+%save the output
+defaultOverlay.groupName = viewGet(thisView,'groupName');
+defaultOverlay.function = 'combineOverlays';
+defaultOverlay.interrogator = 'combineOverlays';
+defaultOverlay.type = 'combination';
+defaultOverlay.params = params;
 for iOverlay = 1:size(outputData,2)
-%   outputOverlay = overlay;
-   outputOverlay.data = outputData(:,iOverlay);
-   allScansData = cell2mat(outputData);
-   maxValue = max(allScansData(allScansData<inf));
-   minValue = min(allScansData(allScansData>-inf));
-   outputOverlay.clip = [minValue maxValue];
-   outputOverlay.range = [minValue maxValue];
-   outputOverlay.name = outputOverlayNames{iOverlay};
-   thisView = viewSet(thisView,'newoverlay',outputOverlay);
+  switch(params.inputOutputType)
+    case {'3D Array','Scalar'}
+      outputOverlay = defaultOverlay;
+      outputOverlay.data = outputData(:,iOverlay);
+      allScansData = cell2mat(outputData);
+    case 'Structure'
+      outputOverlay = copyFields(defaultOverlay,outputData{iOverlay});
+      allScansData = cell2mat(outputOverlay.data);
+  end
+  maxValue = max(allScansData(allScansData<inf));
+  minValue = min(allScansData(allScansData>-inf));
+  outputOverlay.clip = [minValue maxValue];
+  outputOverlay.range = [minValue maxValue];
+  outputOverlay.name = outputOverlayNames{iOverlay};
+  thisView = viewSet(thisView,'newoverlay',outputOverlay);
 end
-   
+
 refreshMLRDisplay(thisView.viewNum);
 set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
 
@@ -293,3 +314,17 @@ while ~isempty(remain)
    end
       
 end
+
+function printHelp(params)
+
+if strcmp(params.combineFunction,'User Defined')
+  mrWarnDlg('(combineOverlays) Please select a combination function');
+else
+  helpString = help(params.combineFunction);
+  if isempty(helpString)
+    mrWarnDlg('(combineOverlays) No help available');
+  else
+    disp(helpString)
+  end
+end
+

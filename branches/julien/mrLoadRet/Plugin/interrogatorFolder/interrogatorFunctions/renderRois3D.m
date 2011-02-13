@@ -16,12 +16,15 @@ function renderRois3D(thisView,overlayNum,scanNum,x,y,z,roi)
 
 computeContours = 0;
 
-if isempty(thisView.ROIs)
-   mrWarnDlg('(renderRois3D) Please load at least one ROI');
+roiList = viewGet(thisView,'visibleRois');
+nRois = length(roiList);
+
+if ~nRois
+   mrWarnDlg('(renderRois3D) Please make at least one ROI visible');
    return;
 end
 
-fprintf(1,'Loading data...')
+fprintf(1,'Loading data...');
 tic
 baseNum = viewGet(thisView,'currentBase');
 basevoxelsize = viewGet(thisView,'basevoxelsize');
@@ -31,7 +34,7 @@ base_size = viewGet(thisView,'basedims',baseNum);
 
 % get the analysis structure
 analysis = viewGet(thisView,'analysis');
-fprintf(1,'Done\n')
+fprintf(1,'Done\n');
 toc
 
 
@@ -42,13 +45,13 @@ if ~isempty(analysis)
    
    %First, get a mask of non-zero voxel representing the current overlay display
    %This is taken from computeOverlay.m
-   fprintf(1,'Computing overlay mask...')
+   fprintf(1,'Computing overlay mask...');
    tic
    [mask, overlayData]= maskOverlay(thisView,[overlayNum alphaOverlayNum],scanNum);
-   if iscell(mask)
-      mask = mask{1};
-   end
-   fprintf(1,'Done\n')
+%    if iscell(mask)
+   mask = mask{1};
+%    end
+   fprintf(1,'Done\n');
    toc
 
    baseMaskData = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,'nearest');
@@ -59,10 +62,9 @@ if ~isempty(analysis)
    if isempty(alphaOverlayNum)
       baseAlphaData = d.alpha*ones(size(baseMaskData));
    else
-      fprintf(1,'Computing alpha overlay...')
+      fprintf(1,'Computing alpha overlay...');
       tic
       alphaOverlayData = overlayData{2};
-      overlayData = overlayData{1};
       
       baseAlphaData = getBaseSpaceOverlay(thisView, alphaOverlayData, scanNum, baseNum);
       % get the range of the alpha overlay
@@ -87,7 +89,8 @@ if ~isempty(analysis)
       baseAlphaData = baseAlphaData.^alphaOverlayExponent;
       baseAlphaData(isnan(baseAlphaData)) = 0;
    end   
-   fprintf(1,'Done\n')
+   overlayData = overlayData{1};
+   fprintf(1,'Done\n');
    toc
 
 else
@@ -97,75 +100,73 @@ end
 
 
 
-%------------------------------------ Construct ROI objcts ------------------------------------------------%
-fprintf(1,'Constructing 3D ROIs...')
+%------------------------------------ Construct ROI objects ------------------------------------------------%
+fprintf(1,'Constructing 3D ROIs...');
 tic
 edgeX = [-.5 -.5; -.5 -.5; -.5 -.5; -.5 -.5; -.5 .5; -.5 .5; -.5 .5; -.5 .5; .5 .5; .5 .5; .5 .5; .5 .5];
 edgeY = [-.5 .5; -.5 .5; -.5 -.5; .5 .5; -.5 -.5; -.5 -.5; .5 .5; .5 .5; -.5 .5; -.5 .5; -.5 -.5; .5 .5];
 edgeZ = [-.5 -.5; .5 .5; -.5 .5; -.5 .5; -.5 -.5; .5 .5; .5 .5; -.5 -.5; -.5 -.5; .5 .5; -.5 .5; -.5 .5];
-
+cubeEdgesCoords = [edgeX edgeY edgeZ];
 
 allRoisBaseCoords = [];
-for i_roi = 1:length(thisView.ROIs)
+for iRoi = 1:nRois
 
-   xform = viewGet(thisView, 'base2roi',i_roi);
-   roivoxelsize = viewGet(thisView,'roivoxelsize',i_roi);
-   roiBaseCoords = xformROIcoords(thisView.ROIs(i_roi).coords,inv(xform),roivoxelsize,basevoxelsize);
-   
-   if ~isempty(roiBaseCoords)
-      % we need to remove any coordinate that might fall outside the base anatomy
-      outside_voxels = find(roiBaseCoords(1,:)<1 | roiBaseCoords(1,:)>base_size(1) |...
-                           roiBaseCoords(2,:)<1 | roiBaseCoords(2,:)>base_size(2) |...
-                           roiBaseCoords(3,:)<1 | roiBaseCoords(3,:)>base_size(3) );
-      roiBaseCoords(:,outside_voxels) = [];
-      d.roiSize(i_roi) = size(roiBaseCoords,2);
-      %remember which voxels are in which rois
-      d.roiDataIndex{i_roi} = size(allRoisBaseCoords,2)+(1:d.roiSize(i_roi));
-      %put Roi coords together to simplify overlay computation
-      allRoisBaseCoords = [allRoisBaseCoords roiBaseCoords];
-      
-      
-      %Edges (grid and perimeter)
-      edgeXcoords = [];
-      edgeYcoords = [];
-      edgeZcoords = [];
+  roi = viewGet(thisView, 'roi',roiList(iRoi));
+  base2roi = viewGet(thisView, 'base2roi',roiList(iRoi));
+  roiBaseCoords = xformROIcoords(roi.coords,inv(base2roi),roi.voxelSize,basevoxelsize);
+  roiColor(iRoi,:) = color2RGB(roi.color);
+  roiName{iRoi} = roi.name;
+  
+  if ~isempty(roiBaseCoords)
+    % we need to remove any coordinate that might fall outside the base anatomy
+    outside_voxels = roiBaseCoords(1,:)<1 | roiBaseCoords(1,:)>base_size(1) |...
+                         roiBaseCoords(2,:)<1 | roiBaseCoords(2,:)>base_size(2) |...
+                         roiBaseCoords(3,:)<1 | roiBaseCoords(3,:)>base_size(3) ;
+    roiBaseCoords(:,outside_voxels) = [];
+  end
+  if ~isempty(roiBaseCoords)
+    d.roiSize(iRoi) = size(roiBaseCoords,2);
+    %remember which voxels are in which rois
+    d.roiDataIndex{iRoi} = size(allRoisBaseCoords,2)+(1:d.roiSize(iRoi));
+    %put Roi coords together to simplify overlay computation
+    allRoisBaseCoords = [allRoisBaseCoords roiBaseCoords];
 
-      for i_voxel = 1:size(roiBaseCoords,2)
-         edgeXcoords = [edgeXcoords; roiBaseCoords(1,i_voxel)+edgeX];
-         edgeYcoords = [edgeYcoords; roiBaseCoords(2,i_voxel)+edgeY];
-         edgeZcoords = [edgeZcoords; roiBaseCoords(3,i_voxel)+edgeZ];
-      end
-      edgesCoords = [edgeXcoords edgeYcoords edgeZcoords];
-      %find unique edges around  this roi
-      [gridCoords, unique_indices] = unique(edgesCoords,'rows');
-      double_indices = setdiff(1:size(edgesCoords,1),unique_indices);
+    %compute coordinates of all cube edges around each voxel
+    edgesCoords = roiBaseCoords([1 1 2 2 3 3],:);
+    edgesCoords = reshape(repmat(edgesCoords,12,1),6,12*size(roiBaseCoords,2))';
+    edgesCoords = edgesCoords+repmat(cubeEdgesCoords,size(roiBaseCoords,2),1);
+    %find unique edges around  this roi
+    [gridCoords, unique_indices] = unique(edgesCoords,'rows');
+    double_indices = setdiff(1:size(edgesCoords,1),unique_indices);
 
-      unique_edgesCoords = setdiff(edgesCoords,edgesCoords(double_indices,:),'rows');
-      
-      roiD.GridXcoords{i_roi} = gridCoords(:,1:2)';
-      roiD.GridYcoords{i_roi} = gridCoords(:,3:4)';
-      roiD.GridZcoords{i_roi} = gridCoords(:,5:6)';
-      roiD.EdgeXcoords{i_roi} = unique_edgesCoords(:,1:2)';
-      roiD.EdgeYcoords{i_roi} = unique_edgesCoords(:,3:4)';
-      roiD.EdgeZcoords{i_roi} = unique_edgesCoords(:,5:6)';
-      
-      %Faces (opaque ROi)
-      %coordinates of a cube around each voxel
-      [roiD.FacesXcoords{i_roi}, roiD.FacesYcoords{i_roi}, roiD.FacesZcoords{i_roi}] = makeCubeFaces(roiBaseCoords,[],[],1);
+    unique_edgesCoords = setdiff(edgesCoords,edgesCoords(double_indices,:),'rows');
+
+    roiD.GridXcoords{iRoi} = gridCoords(:,1:2)';
+    roiD.GridYcoords{iRoi} = gridCoords(:,3:4)';
+    roiD.GridZcoords{iRoi} = gridCoords(:,5:6)';
+    roiD.EdgeXcoords{iRoi} = unique_edgesCoords(:,1:2)';
+    roiD.EdgeYcoords{iRoi} = unique_edgesCoords(:,3:4)';
+    roiD.EdgeZcoords{iRoi} = unique_edgesCoords(:,5:6)';
+
+    %Faces (opaque ROi)
+    %coordinates of a cube around each voxel
+    [roiD.FacesXcoords{iRoi}, roiD.FacesYcoords{iRoi}, roiD.FacesZcoords{iRoi}] = makeCubeFaces(roiBaseCoords,[],[],1);
 
    else
-      roiD.GridXcoords{i_roi} = [];
-      roiD.GridYcoords{i_roi} = [];
-      roiD.GridZcoords{i_roi} = [];
-      roiD.EdgeXcoords{i_roi} = [];
-      roiD.EdgeYcoords{i_roi} = [];
-      roiD.EdgeZcoords{i_roi} = [];
-      roiD.FacesXcoords{i_roi} = [];
-      roiD.FacesYcoords{i_roi} = [];
-      roiD.FacesZcoords{i_roi} = [];
+      roiD.GridXcoords{iRoi} = [];
+      roiD.GridYcoords{iRoi} = [];
+      roiD.GridZcoords{iRoi} = [];
+      roiD.EdgeXcoords{iRoi} = [];
+      roiD.EdgeYcoords{iRoi} = [];
+      roiD.EdgeZcoords{iRoi} = [];
+      roiD.FacesXcoords{iRoi} = [];
+      roiD.FacesYcoords{iRoi} = [];
+      roiD.FacesZcoords{iRoi} = [];
+      d.roiSize(iRoi) = 0;
+      d.roiDataIndex{iRoi}=[];
    end
 end
-fprintf(1,'Done\n')
+fprintf(1,'Done\n');
 toc
 
 
@@ -176,12 +177,12 @@ if ~isempty(analysis)
    %find indices of unique voxels in all rois
    [allRoisBaseCoords, dump, duplicateVoxels] = unique(allRoisBaseCoords','rows');
    allRoisBaseCoords = allRoisBaseCoords';
-   for i_roi = 1:length(thisView.ROIs)
-      d.roiDataIndex{i_roi} = duplicateVoxels(d.roiDataIndex{i_roi});
+   for iRoi = 1:nRois
+      d.roiDataIndex{iRoi} = duplicateVoxels(d.roiDataIndex{iRoi});
    end
    
 %%%%%%%%%%%%%%%%%%% Compute cube faces
-   fprintf(1,'Constructing overlay data cubes...')
+   fprintf(1,'Constructing overlay data cubes...');
    tic
    d.cubesCData = baseOverlayData;
    %mask the data
@@ -202,18 +203,18 @@ if ~isempty(analysis)
    voxelsToKeepIndices = voxelsToKeepIndices(sortIndex);
    d.cubesAlphaData = d.cubesAlphaData(voxelsToKeepIndices);
    d.cubesBaseCoords = allRoisBaseCoords(:,voxelsToKeepIndices);
-   for i_roi = 1:length(thisView.ROIs)
-      [dump, d.roiDataIndex{i_roi}] = intersect(voxelsToKeepIndices,d.roiDataIndex{i_roi});
+   for iRoi = 1:nRois
+      [dump, d.roiDataIndex{iRoi}] = intersect(voxelsToKeepIndices,d.roiDataIndex{iRoi});
    end
 
-   fprintf(1,'Done\n')
+   fprintf(1,'Done\n');
    toc
       
       
       
 %%%%%%%%%%%%%%%%%%% Compute upsampled smooth volumes for blobs
    if computeContours
-      fprintf(1,'Smoothing and upsampling overlay data...')
+      fprintf(1,'Smoothing and upsampling overlay data...');
       %reduce volume
       minX = min(allRoisBaseCoords(1,:));
       maxX = max(allRoisBaseCoords(1,:));
@@ -261,7 +262,7 @@ if ~isempty(analysis)
       [d.blobsYcoords,d.blobsXcoords,d.blobsZcoords,d.subVolOverlayDataRois] = subvolume(yi, xi, zi, d.subVolOverlayDataRois,[minY maxY minX maxX minZ maxZ]); %subvolume swaps X and Y axes...
       [d.blobsYcoords,d.blobsXcoords,d.blobsZcoords,d.subVolOverlayData] = subvolume(yi, xi, zi, d.subVolOverlayData,[minY maxY minX maxX minZ maxZ]); %subvolume swaps X and Y axes...
 
-      fprintf(1,'Done\n')
+      fprintf(1,'Done\n');
    end
 end
       
@@ -278,13 +279,13 @@ set(fignum,'Name','RenderRois3D');
 set(fignum,'Toolbar','Figure');
 roisButtonsBottom = .3;
 overlayButtonsBottom = .1;
-roisCheckHeight = min(.05,(.9 - roisButtonsBottom)/length(thisView.ROIs));
+roisCheckHeight = min(.05,(.9 - roisButtonsBottom)/nRois);
 overlaySlidersLeft=.02;
 rotateViewLeft = .6;
 
-for i_roi = 1:length(thisView.ROIs)
-   d.hRoiVoxelNum(i_roi) = uicontrol('Parent',fignum, 'Unit','normalized', 'Style','text', 'Position',...
-     [.04 roisButtonsBottom-.01+roisCheckHeight*(length(thisView.ROIs)-i_roi+1) .08 roisCheckHeight/2]);
+for iRoi = 1:nRois
+   d.hRoiVoxelNum(iRoi) = uicontrol('Parent',fignum, 'Unit','normalized', 'Style','text', 'Position',...
+     [.04 roisButtonsBottom-.01+roisCheckHeight*(nRois-iRoi+1) .08 roisCheckHeight/2]);
 end
 
 %Overlay control buttons
@@ -338,14 +339,13 @@ end
 
 %Rois plot and control buttons
 hold on
-for i_roi = 1:length(thisView.ROIs)
-   roiColor = color2RGB(thisView.ROIs(i_roi).color);
-   temp = patch(roiD.EdgeXcoords{i_roi},roiD.EdgeYcoords{i_roi},roiD.EdgeZcoords{i_roi},roiColor,'edgecolor',roiColor,'LineWidth',2);
+for iRoi = 1:nRois
+   temp = patch(roiD.EdgeXcoords{iRoi},roiD.EdgeYcoords{iRoi},roiD.EdgeZcoords{iRoi},roiColor(iRoi,:),'edgecolor',roiColor(iRoi,:),'LineWidth',2);
    if ~isempty(temp)
-      roiD.hRoi(i_roi) = temp;
+      roiD.hRoi(iRoi) = temp;
       uicontrol('Parent',fignum, 'Unit','normalized', 'Style','Checkbox',...
-        'Position',[.02 roisButtonsBottom+roisCheckHeight*(length(thisView.ROIs) - i_roi+1) .15 roisCheckHeight],...
-         'value',1, 'String', thisView.ROIs(i_roi).name, 'Callback', {@makeVisible,roiD.hRoi(i_roi)});
+        'Position',[.02 roisButtonsBottom+roisCheckHeight*(nRois - iRoi+1) .15 roisCheckHeight],...
+         'value',1, 'String', roiName{iRoi}, 'Callback', {@makeVisible,roiD.hRoi(iRoi)});
    end
 end
 uicontrol('Parent',fignum, 'Unit','normalized', 'Style','popupmenu', 'Position',[.02 roisButtonsBottom .1 .03],...
@@ -471,9 +471,9 @@ switch(list{get(handle,'Value')})
       Zcoords = roiD.FacesZcoords;
 end
 
-for i_roi = 1:length(Xcoords)
-   if ~isempty(Xcoords{i_roi})
-      set(roiD.hRoi(i_roi),'Xdata',Xcoords{i_roi},'Ydata',Ycoords{i_roi},'Zdata',Zcoords{i_roi});
+for iRoi = 1:length(Xcoords)
+   if ~isempty(Xcoords{iRoi})
+      set(roiD.hRoi(iRoi),'Xdata',Xcoords{iRoi},'Ydata',Ycoords{iRoi},'Zdata',Zcoords{iRoi});
    end
 end
 
@@ -545,8 +545,8 @@ switch(list{get(d.hOverlayList,'Value')})
       end
       
       %count number of visible voxels in each ROI
-      for i_roi = 1:length(d.roiSize)
-         set(d.hRoiVoxelNum(i_roi),'String',[num2str(sum(d.roiDataIndex{i_roi}>=firstIndex & d.roiDataIndex{i_roi}<=lastIndex)) '/' num2str(d.roiSize(i_roi))]);
+      for iRoi = 1:length(d.roiSize)
+         set(d.hRoiVoxelNum(iRoi),'String',[num2str(sum(d.roiDataIndex{iRoi}>=firstIndex & d.roiDataIndex{iRoi}<=lastIndex)) '/' num2str(d.roiSize(iRoi))]);
       end
       
 end

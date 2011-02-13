@@ -19,6 +19,13 @@ baseNum = viewGet(thisView,'currentBase');
 %First, get a logical mask of the current overlay display, as well as the overlay data
 [mask,overlayData] = maskOverlay(thisView,overlayNum,scanNum);
 
+if isempty(overlayData)
+   mrWarnDlg('(findMaxRoi) Please load an overlay')
+   return
+end
+
+mask = mask{1};
+overlayData = overlayData{1};
 overlayName = viewGet(thisView,'overlayName');
 
 %mask the overlay
@@ -67,6 +74,10 @@ for iRoi = 1:length(roi)
          min_tal_coords = round(scan2tal*min_base_coordinates);
          fprintf(1,['\t\tmin Talairach coordinates: ' num2str(min_tal_coords(1:3)') '\n']);
       end
+      fprintf(1,'\n');
+      
+      fprintf(1,['\t\taverage across ROI :' num2str(nanmean(roiOverlayData)) '\n']);
+      fprintf(1,['\t\tstandard deviation :' num2str(nanstd(roiOverlayData)) '\n']);
       fprintf(1,'\n');
 
    else
