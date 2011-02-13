@@ -1118,7 +1118,7 @@ dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
 %modified num2str to increase the number of decimals for reals
 function value = thisNum2str(value)
 
-  if rem(value,1)
+  if rem(value,1)~=0
     value = num2str(value,'%.6f');
   else
     value = num2str(value);
