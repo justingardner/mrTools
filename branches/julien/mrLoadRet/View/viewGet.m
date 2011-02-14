@@ -2638,9 +2638,9 @@ switch lower(param)
     end
     analysis = viewGet(view,'analysis',analysisNum);
     % handle if passed in a number
-    if isscalar(overlayName)
-      if (overlayName > 0) && (overlayName <= viewGet(view,'numOverlays'))
-	val = overlayName;
+    if isnumeric(overlayName)
+      if any((overlayName > 0) & (overlayName <= viewGet(view,'numOverlays')))
+	val = overlayName(logical(overlayName));
       end
     elseif ~isempty(analysis) & ~isempty(analysis.overlays)
       overlayNames = {analysis.overlays(:).name};
@@ -2966,9 +2966,13 @@ switch lower(param)
       end
     end
   case {'alphaoverlay'}
-    % overlayclip = viewGet(view,'alphaOverlay')
+    % alphaoverlay = viewGet(view,'alphaOverlay',[overlaynumn])
     analysisNum = viewGet(view,'currentAnalysis');
-    overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    if isempty(varargin) || isempty(varargin{1})
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    else
+      overlayNum = varargin{1};
+    end
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
@@ -3479,14 +3483,19 @@ switch lower(param)
       val = [];
     end
   case {'alpha'}
-    % alpha = viewGet(view,'alpha');
-    fig = viewGet(view,'fignum');
+    % alpha = viewGet(view,'alpha',[overlaynum]);
+    if isempty(varargin) || isempty(varargin{1})
+      fig = viewGet(view,'fignum');
+      overlayNum = viewGet(view,'currentOverlay');
+    else
+      fig =[];
+      overlayNum = varargin{1};
+    end
     if ~isempty(fig)
       handles = guidata(fig);
       val = get(handles.alphaSlider,'Value');
     else
       % get alpha from analysis structure
-      overlayNum = viewGet(view,'currentOverlay');
       analysisNum = viewGet(view,'currentAnalysis');
       if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
         val = view.analyses{analysisNum}.overlays(overlayNum).alpha;

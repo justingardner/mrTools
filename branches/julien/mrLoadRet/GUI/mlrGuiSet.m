@@ -93,6 +93,10 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Enable','off');
     set(handles.calcDistMenu, 'Enable', 'off');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
+    if isfield(handles,'corticalMaxDepthSlider')
+      set(handles.corticalMaxDepthSlider,'Visible','off');
+      set(handles.corticalMaxDepthText,'Visible','off');
+    end
   elseif value >= 1
     set(handles.sagittalRadioButton,'Visible','off');
     set(handles.coronalRadioButton,'Visible','off');
@@ -104,6 +108,10 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Label','Flat Viewer');
     set(handles.calcDistMenu, 'Enable', 'on');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
+    if isfield(handles,'corticalMaxDepthSlider')
+      set(handles.corticalMaxDepthSlider,'Visible','on');
+      set(handles.corticalMaxDepthText,'Visible','on');
+    end
   end
   if value == 2
     set(handles.createRoiMenu,'Enable','on');
@@ -189,6 +197,21 @@ switch lower(field)
  case {'overlay'}
   % mlrGuiSet(view,'overlay',overlayNum);
   set(handles.overlayPopup,'Value',value);
+  if length(value)==1
+    set(handles.overlayMinSlider,'enable','on')
+    set(handles.overlayMinText,'enable','on')
+    set(handles.overlayMaxSlider,'enable','on')
+    set(handles.overlayMaxText,'enable','on')
+%     set(handles.alphaText,'enable','on');
+%     set(handles.alphaSlider,'enable','on');
+  else %if more than one overlay selected, disable overlay controls
+    set(handles.overlayMinSlider,'enable','off')
+    set(handles.overlayMinText,'enable','off')
+    set(handles.overlayMaxSlider,'enable','off')
+    set(handles.overlayMaxText,'enable','off')
+%     set(handles.alphaText,'enable','off');
+%     set(handles.alphaSlider,'enable','off');
+  end
   
  case {'overlaymin'}
   % mlrGuiSet(view,'overlayMin',value);
