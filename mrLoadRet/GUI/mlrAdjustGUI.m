@@ -82,11 +82,15 @@ switch command
  case {'add'}
   switch varargin{1}
     case {'menu'}
-     addMenu({varargin{2:end}},menuControls)
+     addMenu({varargin{2:end}},menuControls);
     case {'interrogator','interrogators'}
      addInterrogator(v,varargin{2});
     case {'colormap','colormaps'}
      addColormap(v,varargin{2});
+    case {'control'}
+     addControl(f,{varargin{2:end}},uiControls);
+    otherwise
+      mrWarnDlg(['(mlrAdjustGUI) Unknow object type ' varargin{1}]);
   end
  case {'remove'}
   switch varargin{1}
@@ -181,6 +185,42 @@ viewSet(v,'colormaps',colormapList);
 % display what we are doing
 disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimited(colormapList)));
 
+%%%%%%%%%%%%%%%%%%%%%
+%%%   addControl  %%%
+%%%%%%%%%%%%%%%%%%%%%
+function addControl(f,args,uiControls)
+
+% check length of arguments
+if length(args) < 1
+  disp(sprintf('(mlrAdjustGUI:addControl) Requires at least arguments: controlName'));
+  return
+else
+  % name the arguments
+  controlName = args{1};
+  controlProperties = {args{2:end}};
+  if isodd(length(controlProperties) )
+    disp(sprintf('(mlrAdjustGUI:addControl) Properties must all have a matching property value'));
+    return
+  end
+end
+
+% check to see if it has already been added
+if ~isempty(getHandle(controlName,uiControls))
+  disp(sprintf('(mlrAdjustGUI:addControl) Already added menu item: %s',controlName));
+  return
+end
+
+% get the gui data
+h = guidata(f);
+
+h.(controlName)=uicontrol(f);
+set(h.(controlName),'unit','normalized');
+% add all the properties
+for i = 1:2:length(controlProperties)
+  set(h.(controlName),controlProperties{i},controlProperties{i+1});
+end
+
+guidata(f,h);
 
 %%%%%%%%%%%%%%%%%%
 %%%   addMenu  %%%
@@ -319,11 +359,13 @@ end
 
 controlType = get(h,'type');
 if ~isempty(propertyName)
-    propertyName(1) = upper(propertyName(1));
+    propertyName = lower(propertyName);
 end    
 
 % check if the property exists
-if ~isfield(get(h),propertyName)
+fieldNames = lower(fieldnames(get(h)));
+
+if ~ismember(propertyName,fieldNames)
   % if not, warn and continue
   if isstr(propertyName)
       disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of %s %s ***',propertyName,controlType,controlName));
@@ -334,8 +376,9 @@ if ~isfield(get(h),propertyName)
 end
 
 % if it does, make sure we have a valid property to set it to
-if ~any(strcmp(propertyName,{'Callback','TooltipString'}))
-  validValues = set(h,propertyName);
+%if ~any(strcmp(propertyName,{'Callback','TooltipString'}))
+validValues = set(h,propertyName);
+if ~isempty(validValues)
   tf = false;
   for j = 1:length(validValues) 
     if isequal(propertyValue,validValues{j}),tf = true;end

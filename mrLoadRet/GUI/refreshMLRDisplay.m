@@ -1,8 +1,8 @@
-function [img base roi overlay] = refreshMLRDisplay(viewNum)
+function [img base roi overlays] = refreshMLRDisplay(viewNum)
 %	$Id$
 
 mrGlobals
-img = [];base = [];roi = [];overlay=[];
+img = [];base = [];roi = [];overlays=[];
 % for debugging/performance tests
 % set to 0 for no info
 % set to 1 for info on caching
@@ -71,33 +71,40 @@ else
 end
 view = viewSet(view,'cursliceBaseCoords',base.coords);
 
-% Extract overlay images and overlay coords, and alphaMap
-if verbose,disppercent(-inf,'extract overlay images');end
-overlay = viewGet(view,'overlayCache');
-if isempty(overlay)
+% Extract overlays images and overlays coords, and alphaMap
+if verbose,disppercent(-inf,'extract overlays images');end
+overlays = viewGet(view,'overlayCache');
+if isempty(overlays)
   % get the transform from the base to the scan
   base2scan = viewGet(view,'base2scan',[],[],baseNum);
-  % compute the overlay
-  overlay = computeOverlay(view,base2scan,base.coordsHomogeneous,base.dims);
+  % compute the overlays
+  overlays = computeOverlay(view,base2scan,base.coordsHomogeneous,base.dims);
   % save in cache
-  view = viewSet(view,'overlayCache',overlay);
-  if verbose,disppercent(inf);disp('Recomputed overlay');end
+  view = viewSet(view,'overlayCache',overlays);
+  if verbose,disppercent(inf);disp('Recomputed overlays');end
 else
   if verbose,disppercent(inf);end
 end
-view = viewSet(view,'cursliceOverlayCoords',overlay.coords);
+view = viewSet(view,'cursliceOverlayCoords',overlays.coords);
 
 % figure
 % image(overlayRGB)
 % colormap(overlayCmap)
 % return
 
-% Combine base and overlay
-if verbose>1,disppercent(-inf,'combine base and overlay');,end
-if ~isempty(base.RGB) & ~isempty(overlay.RGB)
-  img = (1-overlay.alphaMap).*base.RGB + overlay.alphaMap.*overlay.RGB;
-  cmap = overlay.cmap;
-  cbarRange = overlay.colorRange;
+% Combine base and overlays
+if verbose>1,disppercent(-inf,'combine base and overlays');,end
+if ~isempty(base.RGB) & ~isempty(overlays.RGB)
+  img = base.RGB;
+  %for each overlay, use its specific alpha map, and compute the mean image of all overlays 
+  for iOverlay = 1:size(overlays.RGB,4)
+    img = overlays.alphaMaps(:,:,:,iOverlay).*overlays.RGB(:,:,:,iOverlay)+(1-overlays.alphaMaps(:,:,:,iOverlay)).*img;
+  end
+  %img = mean(overlays.alphaMaps.*overlays.RGB+(1-overlays.alphaMaps).*repmat(base.RGB,[1 1 1 size(overlays.RGB,4)]),4);
+  %use the alpha map based on the GUI alpha slider to combine the overlays and the base
+  img = overlays.alphaMap.*img+(1-overlays.alphaMap).*base.RGB;
+  cmap = overlays.cmap;
+  cbarRange = overlays.colorRange;
 elseif ~isempty(base.RGB)
   img = base.RGB;
   cmap = base.cmap;
@@ -115,7 +122,7 @@ if ieNotDefined('img')
   return
 end
 
-% if no figure, then just return, this is being called just to create the overlay
+% if no figure, then just return, this is being called just to create the overlays
 fig = viewGet(view,'figNum');
 if isempty(fig)
  	nROIs = viewGet(view,'numberOfROIs');
@@ -178,7 +185,10 @@ if verbose>1,disppercent(inf);,end
 
 % Display colorbar
 if verbose>1,disppercent(-inf,'colorbar');,end
-cbar = rescale2rgb([1:256],cmap,[1,256],baseGamma);
+cbar = permute(NaN(size(cmap)),[3 1 2]);
+for iOverlay = 1:size(cmap,3)
+  cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],baseGamma);
+end
 image(cbar,'Parent',gui.colorbar);
 set(gui.colorbar,'YTick',[]);
 set(gui.colorbar,'XTick',[1 64 128 192 256]);

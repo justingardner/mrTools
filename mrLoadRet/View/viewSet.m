@@ -1343,22 +1343,22 @@ switch lower(param)
     analysisNum = viewGet(view,'currentAnalysis');
     numAnalyses = viewGet(view,'numberofAnalyses');
     numOverlays = viewGet(view,'numberofOverlays',analysisNum);
-    if (analysisNum > 0) & (analysisNum <= numAnalyses)
-      if (overlayNum > 0) & (overlayNum <= numOverlays)
+    if (analysisNum > 0) && (analysisNum <= numAnalyses)
+      if ~isempty(overlayNum) && any((overlayNum > 0) & (overlayNum <= numOverlays))
         % Set the curOverlay field
         view.analyses{analysisNum}.curOverlay = overlayNum;
         % Update the gui
         mlrGuiSet(view,'overlay',overlayNum);
         % set overlay min and max sliders
-        overlayClip = viewGet(view,'overlayClip',overlayNum,analysisNum);
-        overlayRange = viewGet(view,'overlayRange',overlayNum,analysisNum);  %JB
+        overlayClip = viewGet(view,'overlayClip',overlayNum(1),analysisNum);
+        overlayRange = viewGet(view,'overlayRange',overlayNum(1),analysisNum);  %JB
         mlrGuiSet(view,'overlayMinRange',overlayRange);
         mlrGuiSet(view,'overlayMaxRange',overlayRange);
         mlrGuiSet(view,'overlayMin',overlayClip(1));
         mlrGuiSet(view,'overlayMax',overlayClip(2));
 
         % set overlay alpha slider
-        alpha = viewGet(view,'overlayAlpha',overlayNum,analysisNum);
+        alpha = viewGet(view,'overlayAlpha',overlayNum(1),analysisNum);
         if isempty(alpha)
           alpha = 1;
         end
