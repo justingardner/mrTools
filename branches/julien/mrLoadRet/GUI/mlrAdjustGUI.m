@@ -70,15 +70,16 @@ f = viewGet(v,'fignum');
 if isempty(f),disp(sprintf('(mlrAdjustGUI) Passed in view does not have a figure associated with it'));return;end
 
 % get controls and menus
+plotAxes = getAxes(f);
 uiControls = getUiControls(f);
 menuControls = getMenuControls(f);
 
 % do the commandedaction
 switch command
  case {'set'}
-  setItemProperty(varargin,uiControls,menuControls)
+  setItemProperty(varargin,uiControls,menuControls,plotAxes)
  case {'list'}
-  listControlNames(uiControls,menuControls);
+  listControlNames(uiControls,menuControls,plotAxes);
  case {'add'}
   switch varargin{1}
     case {'menu'}
@@ -89,6 +90,8 @@ switch command
      addColormap(v,varargin{2});
     case {'control'}
      addControl(f,{varargin{2:end}},uiControls);
+    case {'axes'}
+     addAxes(f,{varargin{2:end}},plotAxes);
     otherwise
       mrWarnDlg(['(mlrAdjustGUI) Unknow object type ' varargin{1}]);
   end
@@ -99,7 +102,7 @@ switch command
   end
  case {'get'}
   % return handle, check menu items and ui controls
-  retval = getHandle(varargin{1},menuControls,uiControls);
+  retval = getHandle(varargin{1},menuControls,uiControls,plotAxes);
  otherwise
   disp(sprintf('(mlrAdjustGUI) Unknown command: %s',command));
 end
@@ -107,7 +110,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  listControlNames   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function listControlNames(uiControls,menuControls)
+function listControlNames(uiControls,menuControls,plotAxes)
+
+% list Axes tags
+disp('==============    Axes     ============== ');
+for i = 1:length(plotAxes)
+  disp(sprintf('(%i) tag: %s',i,plotAxes(i).tag));
+end
 
 % list uiControl tags
 disp('============== UI Controls ============== ');
@@ -125,7 +134,7 @@ end
 %%%%%%%%%%%%%%%%%%%
 %%%   getHandle  %%
 %%%%%%%%%%%%%%%%%%%
-function h = getHandle(itemName,controls,controls2)
+function h = getHandle(itemName,controls,controls2,controls3)
 
 h = [];
 
@@ -146,8 +155,12 @@ end
   
 % if we didn't find anything and we were passed two
 % sets of controls, then check second set
-if isempty(h) && (nargin ==3)
+if isempty(h) && (nargin >=3)
   h = getHandle(itemName,controls2);
+end
+%seam for the 
+if isempty(h) && (nargin ==4)
+  h = getHandle(itemName,controls3);
 end
 
 % if we didn't find anything and the thing ends with '/' then
@@ -192,11 +205,11 @@ function addControl(f,args,uiControls)
 
 % check length of arguments
 if length(args) < 1
-  disp(sprintf('(mlrAdjustGUI:addControl) Requires at least arguments: controlName'));
+  disp(sprintf('(mlrAdjustGUI:addControl) Requires at least arguments: controlTag'));
   return
 else
   % name the arguments
-  controlName = args{1};
+  controlTag = args{1};
   controlProperties = {args{2:end}};
   if isodd(length(controlProperties) )
     disp(sprintf('(mlrAdjustGUI:addControl) Properties must all have a matching property value'));
@@ -205,22 +218,59 @@ else
 end
 
 % check to see if it has already been added
-if ~isempty(getHandle(controlName,uiControls))
-  disp(sprintf('(mlrAdjustGUI:addControl) Already added menu item: %s',controlName));
+if ~isempty(getHandle(controlTag,uiControls))
+  disp(sprintf('(mlrAdjustGUI:addControl) Already added menu item: %s',controlTag));
   return
 end
 
 % get the gui data
 h = guidata(f);
 
-h.(controlName)=uicontrol(f);
-set(h.(controlName),'unit','normalized');
+h.(controlTag)=uicontrol(f);
+set(h.(controlTag),'unit','normalized');
 % add all the properties
 for i = 1:2:length(controlProperties)
-  set(h.(controlName),controlProperties{i},controlProperties{i+1});
+  set(h.(controlTag),controlProperties{i},controlProperties{i+1});
 end
 
 guidata(f,h);
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%   addAxes  %%%
+%%%%%%%%%%%%%%%%%%%%%
+function addAxes(f,args,plotAxes)
+
+% check length of arguments
+if length(args) < 1
+  disp(sprintf('(mlrAdjustGUI:addAxes) Requires at least arguments: axesTag'));
+  return
+else
+  % name the arguments
+  axesTag = args{1};
+  axesProperties = {args{2:end}};
+  if isodd(length(axesProperties) )
+    disp(sprintf('(mlrAdjustGUI:addAxes) Properties must all have a matching property value'));
+    return
+  end
+end
+
+% check to see if it has already been added
+if ~isempty(getHandle(axesTag,plotAxes))
+  disp(sprintf('(mlrAdjustGUI:addAxes) Already added menu item: %s',axesTag));
+  return
+end
+
+% get the gui data
+h = guidata(f);
+
+h.(axesTag)=axes('parent',f);
+% add all the properties
+for i = 1:2:length(axesProperties)
+  set(h.(axesTag),axesProperties{i},axesProperties{i+1});
+end
+
+guidata(f,h);
+
 
 %%%%%%%%%%%%%%%%%%
 %%%   addMenu  %%%
@@ -335,7 +385,7 @@ disp(sprintf('(mlrAdjustGUI:removeMenu) Removed menu: %s',menuLocation));
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  setItemProperty   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function setItemProperty(args,uiControls,menuControls)
+function setItemProperty(args,uiControls,menuControls,plotAxes)
 
 % check arguments
 if length(args) ~= 3
@@ -349,7 +399,7 @@ else
 end
 
 % go look for the control
-h = getHandle(controlName,uiControls,menuControls);
+h = getHandle(controlName,uiControls,menuControls,plotAxes);
 
 % if not found, then print warning, return
 if isempty(h),
@@ -435,6 +485,47 @@ if verbose
     end
   end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%  getAxes  %%%
+%%%%%%%%%%%%%%%%%%%%%%%
+function plotAxes = getAxes(f,verbose)
+
+if nargin == 1,verbose = 0;end
+plotAxes = [];
+
+% get the gui data
+h = guidata(f);
+itemNames = fieldnames(h);
+
+% for each guidata, check if it is a handle and
+% not a menu item
+for i = 1:length(itemNames)
+  for j = 1:length(h.(itemNames{i}))
+    if ishandle(h.(itemNames{i})(j))
+      % check if it is not a menu item
+      if isequal(get(h.(itemNames{i})(j),'Type'),'axes')
+	% keep track of this one.
+	plotAxes(end+1).tag = itemNames{i};
+	plotAxes(end).fieldNum = j;
+	plotAxes(end).h = h.(itemNames{i})(j);
+      end
+    end
+  end
+end
+
+% print out info
+if verbose
+  for i = 1:length(plotAxes)
+    if plotAxes(i).fieldNum == 1
+      disp(sprintf('(mlrAdjustGUI) Found axes: %i:%s',i,plotAxes(i).tag));
+      disp(get(uiControls(i).h,'Callback'));
+    else
+      disp(sprintf('(mlrAdjustGUI) Found axes: %i:%s %i',i,plotAxes(i).tag,plotAxes(i).fieldNum));
+    end
+  end
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  getMenuControls  %%%
