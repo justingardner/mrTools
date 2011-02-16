@@ -21,7 +21,8 @@ switch action
   if (nargin ~= 2) || ~isview(thisView)
      disp(sprintf('(improvedGUIPlugin) Need a valid view to install plugin'));
   else
-    % if the view is valid, then use mlrAdjustGUI to adjust the GUI for this plugin.
+    
+    
     mlrAdjustGUI(thisView,'set','group','position',               [0.01    0.955   0.06   0.025]);
     mlrAdjustGUI(thisView,'set','groupPopup','position',          [0.08    0.95    0.2    0.035]);
     mlrAdjustGUI(thisView,'set','ROI','position',                 [0.01    0.91    0.04   0.025]);
@@ -35,12 +36,14 @@ switch action
     mlrAdjustGUI(thisView,'set','corticalDepth','position',       [0.01    0.78    0.07   0.06 ]);
     mlrAdjustGUI(thisView,'set','corticalDepthSlider','position', [0.09    0.815   0.14   0.02 ]);
     mlrAdjustGUI(thisView,'set','corticalDepthText','position',   [0.24    0.815   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','corticalMaxDepthText','position',   [0.24    0.79   0.04   0.025]);
     mlrAdjustGUI(thisView,'set','corticalMaxDepthText','units', 'normalized');
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthSlider',...
+        'SliderStep',min(1/mrGetPref('corticalDepthBins')*[1 3],1),...
+        'Callback',@corticalMaxDepthSlider_Callback,...
                                      'style','slider','position', [0.09    0.79    0.14   0.02 ]);
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthText',...
-                                     'style','edit','position',   [0.24    0.79    0.04   0.025]);
+        'Callback',@corticalMaxDepthText_Callback,...
+              'BackgroundColor','white','style','edit','position',[0.24    0.785   0.04   0.025]);
     mlrAdjustGUI(thisView,'set','sagittalRadioButton','position', [0.01    0.78    0.1    0.025]);
     mlrAdjustGUI(thisView,'set','axialRadioButton','position',    [0.11    0.78    0.07   0.025]);
     mlrAdjustGUI(thisView,'set','coronalRadioButton','position',  [0.19    0.78    0.1    0.025]);
@@ -69,11 +72,14 @@ switch action
     mlrAdjustGUI(thisView,'set','mapMax','string','Max');
     mlrAdjustGUI(thisView,'set','overlayMaxText','position',      [0.19    0.24    0.09   0.025]);
     mlrAdjustGUI(thisView,'set','overlayMinSlider','position',    [0.02    0.21    0.26   0.02 ]);
-    mlrAdjustGUI(thisView,'set','overlayMaxSlider','position',    [0.02    0.19   0.26   0.02 ]);
+    mlrAdjustGUI(thisView,'set','overlayMaxSlider','position',    [0.02    0.19    0.26   0.02 ]);
     mlrAdjustGUI(thisView,'set','alpha','position',               [0.02    0.15    0.05   0.03 ]);
     mlrAdjustGUI(thisView,'set','alphaSlider','position',         [0.08    0.155   0.14   0.02 ]);
     mlrAdjustGUI(thisView,'set','alphaText','position',           [0.23    0.155   0.05   0.025]);
-    
+    mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.12    0.58   0.07]);
+    mlrAdjustGUI(thisView,'add','axes','colorbarRightBorder',...
+      'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.12    0.001  0.07]);
+
     % return true to indicate successful plugin
     retval = true;
    end
@@ -83,4 +89,30 @@ switch action
  otherwise
    disp(sprintf('(improvedGUIPlugin) Unknown command %s',action));
 end
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- Executes on slider movement.
+function corticalMaxDepthSlider_Callback(hObject, dump)
+
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+value = get(hObject,'Value');
+mlrGuiSet(viewNum,'corticalMaxDepth',value);
+refreshMLRDisplay(viewNum);
+
+
+function corticalMaxDepthText_Callback(hObject,dump)
+
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+value = str2num(get(hObject,'String'));
+if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.corticalMaxDepthSlider,'value')));
+else %otherwise, set the new value in the view and the GUI
+  mlrGuiSet(viewNum,'corticalMaxDepth',value);
+  refreshMLRDisplay(viewNum);
+end
+
 
