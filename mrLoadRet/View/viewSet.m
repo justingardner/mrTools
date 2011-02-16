@@ -1522,14 +1522,14 @@ switch lower(param)
       overlayNum = curOverlay;
     end
     analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
-        ~isempty(view.analyses{analysisNum}.overlays)
-      view.analyses{analysisNum}.overlays(overlayNum).alpha = val;
-      if (overlayNum == curOverlay)
-        mlrGuiSet(view,'alpha',val);
+    for iOverlay = overlayNum
+      if ~isempty(analysisNum)  & ~isempty(view.analyses{analysisNum}.overlays)
+        view.analyses{analysisNum}.overlays(iOverlay).alpha = val;
       end
     end
-
+    if isequal(overlayNum,curOverlay)
+      mlrGuiSet(view,'alpha',val);
+    end
 
 
     % -------------------------------------------

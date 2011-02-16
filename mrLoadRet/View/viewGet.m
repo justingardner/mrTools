@@ -1307,7 +1307,20 @@ switch lower(param)
         if isfield(val,'innerCoords') && isfield(val,'outerCoords')
           % if not, then we have to do it
           %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
-          val.coords = val.innerCoords + corticalDepth*(val.outerCoords-val.innerCoords);
+          if length(corticalDepth)==1  
+            val.coords = val.innerCoords + corticalDepth*(val.outerCoords-val.innerCoords);
+          elseif length(corticalDepth)==2 
+            corticalDepthBins = mrGetPref('corticalDepthBins');
+            corticalDepths = corticalDepth(1):1/corticalDepthBins:corticalDepth(2);
+            val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
+            cDepth=0;
+            for iDepth = corticalDepths;
+              cDepth=cDepth+1;
+              val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
+            end
+          else
+            mrErrorDlg('(viewGet:basecoordmap) Too many cortical depth values')
+          end
           val.corticalDepth = corticalDepth;
         end
       end
@@ -2815,13 +2828,29 @@ switch lower(param)
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
-      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
+      if all(overlayNum & (overlayNum > 0) & (overlayNum <= n))
         if isempty(scan)
-          val = analysis.overlays(overlayNum).data;
+          scanList = 1:viewGet(view,'nScans',analysisNum);
         else
-          if length(analysis.overlays(overlayNum).data) >= scan
-            val = analysis.overlays(overlayNum).data{scan};
+          scanList = scan;
+        end
+        cScan = 0;
+        for iScan = scanList
+          cScan = cScan+1;
+          scanDims = viewGet(view,'scanDims',iScan);
+          cOverlay=0;
+          for iOverlay = overlayNum
+            cOverlay = cOverlay+1;
+            data = analysis.overlays(iOverlay).data;
+            if length(data) >= scan && ~isempty(data{iScan})
+              val{cScan}(:,:,:,cOverlay) = data{iScan};
+            else
+              val{cScan}(:,:,:,cOverlay) = NaN(scanDims);
+            end
           end
+        end
+        if ~isempty(scan)
+          val = val{1};
         end
       end
     end
@@ -3575,7 +3604,11 @@ switch lower(param)
       val = 0;
     end
   case {'corticaldepth'}
-    % rotate = viewGet(view,'rotate');
+    % corticaldepth = viewGet(view,'corticaldepth');
+    val = sort([viewGet(view,'corticalMinDepth') viewGet(view,'corticalMaxDepth')]);
+    
+  case {'corticalmindepth'}
+    % corticalmindepth = viewGet(view,'corticalmindepth');
     fig = viewGet(view,'fignum');
     if ~isempty(fig)
       handles = guidata(fig);
@@ -3583,6 +3616,21 @@ switch lower(param)
     else
       val = 0.5;
     end
+    
+  case {'corticalmaxdepth'}
+    % corticalmaxdepth = viewGet(view,'corticalmaxdepth');
+    fig = viewGet(view,'fignum');
+    if ~isempty(fig)
+      handles = guidata(fig);
+      if isfield(handles,'corticalMaxDepthSlider')
+        val = get(handles.corticalMaxDepthSlider,'Value');
+      else
+        val = [];
+      end
+    else
+      val = [];
+    end
+    
   case {'sliceorientation'}
     % sliceorientation = viewGet(view,'sliceorientation');
     val = view.sliceOrientation;

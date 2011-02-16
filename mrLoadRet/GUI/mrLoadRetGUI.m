@@ -77,6 +77,11 @@ set(handles.corticalDepth,'Visible','off');
 set(handles.corticalDepthSlider,'Visible','off');
 set(handles.corticalDepthSlider,'Value',0.5);
 set(handles.corticalDepthText,'Visible','off');
+if isfield(handles,'corticalMaxDepthSlider')
+  set(handles.corticalMaxDepthSlider,'Visible','off');
+  set(handles.corticalMaxDepthSlider,'Value',0.5);
+  set(handles.corticalMaxDepthText,'Visible','off');
+end
 
 % Choose default command line output for mrLoadRetGUI
 handles.output = hObject;
@@ -362,8 +367,9 @@ function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
 
 % Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
+  set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
+set(hObject,'SliderStep',min(1/mrGetPref('corticalDepthBins')*[1 3],1));
 
 
 function corticalDepthText_Callback(hObject, eventdata, handles)
@@ -1665,6 +1671,7 @@ v = MLR.views{viewNum};
 interpMethod = mrGetPref('interpMethod');
 selectedROIColor = mrGetPref('selectedROIColor');
 roiContourWidth = mrGetPref('roiContourWidth');
+corticalDepthBins = mrGetPref('corticalDepthBins');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1692,9 +1699,18 @@ if ~isempty(prefParams)
     v = viewSet(v,'overlayCache','init');
     refreshMLRDisplay(v.viewNum);
   end
-
-  % check to see if roi graphic parameters method have changed
-  if ~strcmp(selectedROIColor,prefParams.selectedROIColor) || ~strcmp(roiContourWidth,prefParams.roiContourWidth)
+  
+  if ~strcmp(corticalDepthBins,prefParams.corticalDepthBins)
+    set(handles.corticalDepthSlider,'SliderStep',min(1/prefParams.corticalDepthBins*[1 3],1));
+    if isfield(handles,'corticalMaxDepthSlider')
+      set(handles.corticalMaxDepthSlider,'SliderStep',min(1/prefParams.corticalDepthBins*[1 3],1));
+    end
+    refreshMLRDisplay(v.viewNum);
+  end
+  
+  % check to see if any other parameters that affects the display have changed
+  if ~strcmp(selectedROIColor,prefParams.selectedROIColor) ||...
+      ~strcmp(roiContourWidth,prefParams.roiContourWidth) || ...
     refreshMLRDisplay(v.viewNum);
   end
 end

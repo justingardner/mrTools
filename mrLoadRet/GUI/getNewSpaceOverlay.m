@@ -20,27 +20,30 @@ if isempty(interpMethod)
 end
 interpExtrapVal = NaN;
 
+nOverlays = size(overlayData,4);
 sliceDims(1) = size(newXCoords,1);
 sliceDims(2) = size(newXCoords,2);
 numPixels = sliceDims(1)*sliceDims(2);
-newOverlayData = zeros(size(newXCoords));
+newOverlayData = zeros([size(newXCoords) nOverlays]);
 
 hWaitbar = mrWaitBar(0,'Resampling overlay to new space');
 % Compute new overlay data by base slice
 nSlices = size(newXCoords,3);
-for i_slice = 1:nSlices
+for iSlice = 1:nSlices
     
-   baseCoordsHomogeneous = [reshape(newXCoords(:,:,i_slice),1,numPixels); reshape(newYCoords(:,:,i_slice),1,numPixels); reshape(newZCoords(:,:,i_slice),1,numPixels); ones(1,numPixels)];
-   %baseCoords = reshape(baseCoordsHomogeneous(1:3,:)',[sliceDims 3]);
+  baseCoordsHomogeneous = [reshape(newXCoords(:,:,iSlice),1,numPixels); reshape(newYCoords(:,:,iSlice),1,numPixels); reshape(newZCoords(:,:,iSlice),1,numPixels); ones(1,numPixels)];
+  %baseCoords = reshape(baseCoordsHomogeneous(1:3,:)',[sliceDims 3]);
 
-   % Transform coordinates
-   overlayCoordsHomogeneous = xform * baseCoordsHomogeneous;
-   overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[sliceDims 3]);
+  % Transform coordinates
+  overlayCoordsHomogeneous = xform * baseCoordsHomogeneous;
+  overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[sliceDims 3]);
 
-   % Extract slice from current overlay.
-   if ~isempty(overlayCoords) 
-     newOverlayData(:,:,i_slice) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
-   end
-   mrWaitBar(i_slice/nSlices,hWaitbar);
+  % Extract slice from current overlay.
+  if ~isempty(overlayCoords) 
+    for iOverlay=1:nOverlays
+      newOverlayData(:,:,iSlice,iOverlay) = interp3(overlayData(:,:,:,iOverlay),overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
+      mrWaitBar((iSlice*nOverlays+iOverlay)/nSlices*nOverlays,hWaitbar);
+    end
+  end
 end
 mrCloseDlg(hWaitbar);
