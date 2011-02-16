@@ -190,9 +190,20 @@ for iOverlay = 1:size(cmap,3)
   cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],baseGamma);
 end
 image(cbar,'Parent',gui.colorbar);
-set(gui.colorbar,'YTick',[]);
-set(gui.colorbar,'XTick',[1 64 128 192 256]);
-set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
+if size(cbar,1)==1
+  set(gui.colorbar,'YTick',[]);
+  set(gui.colorbar,'XTick',[1 64 128 192 256]);
+  set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
+  if isfield(gui,'colorbarRightBorder')
+    set(gui.colorbarRightBorder,'YTick',[]);
+  end
+else 
+  set(gui.colorbar,'XTick',[]);
+  set(gui.colorbar,'YTick',(1:size(cbar,1)));
+  set(gui.colorbar,'YTickLabel',cbarRange(:,1));
+  set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
+  set(gui.colorbarRightBorder,'YTickLabel',cbarRange(:,2));
+end
 if verbose>1,disppercent(inf);,end
 
 % Display the ROIs

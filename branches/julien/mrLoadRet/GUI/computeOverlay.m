@@ -28,7 +28,7 @@ end
 interpExtrapVal = NaN;
 
 % pull out overlays for this slice
-[overlayImages,overlays.coords,overlayCoordsHomogeneous] = ...
+[overlayImages,overlays.coords] = ...
     getOverlaySlice(thisView,scan,base2overlay,baseCoordsHomogeneous,baseDims,...
 			 analysisNum,interpMethod,interpExtrapVal);
 %put slices on 4th dimensions
@@ -156,8 +156,11 @@ interpFnctn = viewGet(thisView,'overlayInterpFunction',analysisNum);
 % coordinate frame.
 if ~isempty(base2overlay) & ~isempty(baseCoordsHomogeneous)
   % Transform coordinates
-  overlayCoordsHomogeneous = base2overlay * baseCoordsHomogeneous;
-  overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[imageDims 3]);
+  nDepths = size(baseCoordsHomogeneous,3);
+  overlayCoordsHomogeneous = base2overlay * reshape(baseCoordsHomogeneous,4,prod(imageDims)*nDepths);
+  overlayCoordsHomogeneous = reshape(overlayCoordsHomogeneous,[4 prod(imageDims) nDepths]);
+  %temporarily put depth dimensions with y dimension
+  overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[imageDims(1) imageDims(2)*nDepths 3 ]);
 end
 
 % Extract overlayImages
@@ -165,7 +168,7 @@ if ~isempty(interpFnctn)
   overlayImages = feval(interpFnctn,thisView,scanNum,imageDims,...
     analysisNum,overlayCoords,interpMethod,interpExtrapVal);
 else
-  overlayImages = zeros([imageDims,numOverlays]);
+  overlayImages = zeros([imageDims(1) imageDims(2)*nDepths numOverlays]);
   for ov = 1:numOverlays
     overlayData = viewGet(thisView,'overlayData',scanNum,ov,analysisNum);
     if ~isempty(overlayData) & ~isempty(overlayCoords)
@@ -178,6 +181,9 @@ else
     end
   end
 end
+overlayCoords = mean(permute(reshape(overlayCoords,[imageDims nDepths 3 ]),[1 2 4 3]),4);
+overlayImages = mean(permute(reshape(overlayImages,[imageDims nDepths numOverlays]),[1 2 4 3]),4);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %    corAnalInterp   %%

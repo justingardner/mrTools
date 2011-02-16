@@ -45,9 +45,9 @@ if ~isempty(volSize)
     % in the third dimension (no other view of a 
     % flat map is really valid).
     if sliceIndex == 3
-      x = baseCoordMap.coords(:,:,sliceNum,1);
-      y = baseCoordMap.coords(:,:,sliceNum,2);
-      z = baseCoordMap.coords(:,:,sliceNum,3);
+      x = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
+      y = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
+      z = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
     else
       oneTimeWarning('badSliceIndex',sprintf('(refreshMLRDisplay:getBaseSlice) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
     end
@@ -55,19 +55,23 @@ if ~isempty(volSize)
 
   % Rotate coordinates
   if (rotate ~= 0)
-    x = imrotate(x,rotate,'bilinear',cropType);
-    y = imrotate(y,rotate,'bilinear',cropType);
-    z = imrotate(z,rotate,'bilinear',cropType);
+    for iDepth = 1:size(x,3) %this is if we're taking several depth bins in a flat map (there will only be one "depth" for volumes)
+      x(:,:,iDepth) = imrotate(x(:,:,iDepth),rotate,'bilinear',cropType);
+      y(:,:,iDepth) = imrotate(y(:,:,iDepth),rotate,'bilinear',cropType);
+      z(:,:,iDepth) = imrotate(z(:,:,iDepth),rotate,'bilinear',cropType);
+    end
   end
 
   % Reformat base coordinates
-  imageDims = size(x);
+  imageDims = [size(x,1) size(x,2)];
+  numDepths = size(x,3);
   numPixels = prod(imageDims);
-  xvec = reshape(x,1,numPixels);
-  yvec = reshape(y,1,numPixels);
-  zvec = reshape(z,1,numPixels);
-  baseCoordsHomogeneous = [xvec; yvec; zvec; ones(1,numPixels)];
-  baseCoords = reshape(baseCoordsHomogeneous(1:3,:)',[imageDims 3]);
+  xvec = reshape(x,1,numPixels*numDepths);
+  yvec = reshape(y,1,numPixels*numDepths);
+  zvec = reshape(z,1,numPixels*numDepths);
+  baseCoordsHomogeneous = [xvec; yvec; zvec; ones(1,numPixels*numDepths)];
+  baseCoordsHomogeneous = reshape(baseCoordsHomogeneous,[4 numPixels numDepths]);
+  baseCoords = permute(reshape(baseCoordsHomogeneous(1:3,:)',[numPixels numDepths 3 ]),[1 2 4 3]);
 end
 
 % Extract base image
