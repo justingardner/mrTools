@@ -9,7 +9,8 @@
 
 function colorMap = red(numberColors)
 
+minValue = .2;
 hsvRed = rgb2hsv(color2RGB('red'));
 colorMap = repmat(hsvRed,numberColors,1);
-colorMap(:,3) = (1:numberColors)/numberColors/2+.5;
+colorMap(:,3) = (1:numberColors)/numberColors*(1-minValue)+minValue;
 colorMap = hsv2rgb(colorMap);
