@@ -21,7 +21,7 @@ else
   % note that if we need to use the pseudo inverse it means that there is ambiguity in the design
   % such that there are an infinite number of possible solutions. The pseudo-inverse solution
   % choses the solution with the minimum length (i.e. Euclidian norm)
-  if verbose, mrWarnDlg(sprintf('(computeNormalEquations) Design covariance matrix (%ix%i) is rank %i. Using pseudo-inverse to invert.',size(covEVs,1),size(covEVs,2),covarianceMatrixRank));end
+  mrWarnDlg(sprintf('(computeNormalEquations) Design covariance matrix (%ix%i) is rank %i. Using pseudo-inverse to invert.',size(covEVs,1),size(covEVs,2),covarianceMatrixRank))
   pinv_X = pinv(designMatrix);
   invCovEVs = pinv(designMatrix'*designMatrix);
 end
