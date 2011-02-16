@@ -9,7 +9,8 @@
 
 function colorMap = purple(numberColors)
 
-hsvRed = rgb2hsv(color2RGB('purple'));
-colorMap = repmat(hsvRed,numberColors,1);
-colorMap(:,3) = (1:numberColors)/numberColors/2+.5;
+minValue = .2;
+hsvPurple = rgb2hsv(color2RGB('purple'));
+colorMap = repmat(hsvPurple,numberColors,1);
+colorMap(:,3) = (1:numberColors)/numberColors*(1-minValue)+minValue;
 colorMap = hsv2rgb(colorMap);
