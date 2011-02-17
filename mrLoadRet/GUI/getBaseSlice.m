@@ -56,10 +56,13 @@ if ~isempty(volSize)
   % Rotate coordinates
   if (rotate ~= 0)
     for iDepth = 1:size(x,3) %this is if we're taking several depth bins in a flat map (there will only be one "depth" for volumes)
-      x(:,:,iDepth) = imrotate(x(:,:,iDepth),rotate,'bilinear',cropType);
-      y(:,:,iDepth) = imrotate(y(:,:,iDepth),rotate,'bilinear',cropType);
-      z(:,:,iDepth) = imrotate(z(:,:,iDepth),rotate,'bilinear',cropType);
+      newX(:,:,iDepth) = imrotate(x(:,:,iDepth),rotate,'bilinear',cropType);
+      newY(:,:,iDepth) = imrotate(y(:,:,iDepth),rotate,'bilinear',cropType);
+      newZ(:,:,iDepth) = imrotate(z(:,:,iDepth),rotate,'bilinear',cropType);
     end
+    x=newX;
+    y=newY;
+    z=newZ;
   end
 
   % Reformat base coordinates
@@ -71,7 +74,7 @@ if ~isempty(volSize)
   zvec = reshape(z,1,numPixels*numDepths);
   baseCoordsHomogeneous = [xvec; yvec; zvec; ones(1,numPixels*numDepths)];
   baseCoordsHomogeneous = reshape(baseCoordsHomogeneous,[4 numPixels numDepths]);
-  baseCoords = permute(reshape(baseCoordsHomogeneous(1:3,:)',[numPixels numDepths 3 ]),[1 2 4 3]);
+  baseCoords = permute(reshape(baseCoordsHomogeneous(1:3,:),[3 imageDims numDepths]),[2 3 1 4]);
 end
 
 % Extract base image

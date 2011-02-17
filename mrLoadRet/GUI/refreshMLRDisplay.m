@@ -39,8 +39,8 @@ if isempty(baseNum)
 end
 if verbose>1,disppercent(inf);,end
 
-% for debugging, clears caches when user holds down shift key
-if ~isempty(fig) && any(strcmp(get(fig,'CurrentModifier'),'shift'))
+% for debugging, clears caches when user holds down alt key
+if ~isempty(fig) && any(strcmp(get(fig,'CurrentModifier'),'alt'))
   disp(sprintf('(refreshMLRDisplay) Dumping caches'));
   view = viewSet(view,'roiCache','init');
   view = viewSet(view,'overlayCache','init');
@@ -69,7 +69,17 @@ if isempty(base)
 else
   if verbose,disppercent(inf);end
 end
-view = viewSet(view,'cursliceBaseCoords',base.coords);
+
+if size(base.coords,4)>1
+  corticalDepth = viewGet(view,'corticalDepth');
+  corticalDepthBins = viewGet(view,'corticalDepthBins');
+  corticalDepths = 0:1/corticalDepthBins:1;
+  slices = corticalDepths>=corticalDepth(1) & corticalDepths<=corticalDepth(end);
+  view = viewSet(view,'cursliceBaseCoords',mean(base.coords(:,:,:,slices),4));
+else
+  view = viewSet(view,'cursliceBaseCoords',base.coords);
+end
+
 
 % Extract overlays images and overlays coords, and alphaMap
 if verbose,disppercent(-inf,'extract overlays images');end
@@ -219,9 +229,9 @@ else
   roi = [];
 end
 
-if verbose>1,disppercent(-inf,'rendering');,end
+if verbose>1,disppercent(-inf,'rendering');end
 drawnow
-if verbose>1,disppercent(inf);,end
+if verbose>1,disppercent(inf);end
 if verbose,toc,end
 
 return
@@ -229,7 +239,7 @@ return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function roiBaseCoords= getROIBaseCoords(view,baseNum,roiNum);
+function roiBaseCoords= getROIBaseCoords(view,baseNum,roiNum)
 
 roiBaseCoords = [];
 
@@ -239,32 +249,30 @@ roiCoords = viewGet(view,'roiCoords',roiNum);
 roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
 base2roi = viewGet(view,'base2roi',roiNum,baseNum);
 
-if ~isempty(roiCoords) & ~isempty(base2roi)
+if ~isempty(roiCoords) && ~isempty(base2roi)
   % Use xformROI to supersample the coordinates
   roiBaseCoords = round(xformROIcoords(roiCoords,inv(base2roi),roiVoxelSize,baseVoxelSize));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIImageCoords: get the roiBaseCoords as x,y and s positions for this
-% particular view of the volume (i.e these are coorinates that can
+% particular view of the volume (i.e these are coordinates that can
 % be plotted on the image.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x y s]= getROIImageCoords(view,roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims);
+function [x y s]= getROIImageCoords(view,roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims)
 
 x=[];y=[];s=[];
 
 if ~isempty(roiBaseCoords)
-  % make sure that baseCoords are rounded (they may not be
-  % if we are working with a baseCoordMap'd flat map
-  baseCoordsHomogeneous = round(baseCoordsHomogeneous);
 
   % base dims
-  baseDims = viewGet(view,'baseDims');
   % get the mapping between the image plane and the
   % actual voxel numbers. This will be non-empty for flat surfaces
   baseCoordMap = viewGet(view,'baseCoordMap',baseNum);
   if isfield(baseCoordMap,'dims')
     baseDims = baseCoordMap.dims;
+  else
+    baseDims = viewGet(view,'baseDims');
   end
 
   % get base and roi coordinates linearly (this is so that
@@ -282,9 +290,27 @@ if ~isempty(roiBaseCoords)
     [roiIndices baseIndices] = ismember(roiBaseCoordsLinear,baseCoordsLinear);
     roiIndices = find(roiIndices);
     baseIndices = baseIndices(roiIndices);
+    s = roiBaseCoords(sliceIndex,roiIndices); %s will only be used for volume, not flat maps/surfaces
   else
     % for flat maps, we have only one slice and all coordinates
     % are important to match
+    
+    if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
+      corticalDepth = viewGet(view,'corticalDepth');
+      corticalDepthBins = viewGet(view,'corticalDepthBins');
+      corticalDepths = 0:1/corticalDepthBins:1;
+      slices = corticalDepths>=corticalDepth(1) & corticalDepths<=corticalDepth(end);
+      nDepths = nnz(slices);
+      baseCoordsHomogeneous = reshape(baseCoordsHomogeneous(:,:,slices),[4 prod(imageDims)*nDepths]);
+      
+    else
+      nDepths=1;
+    end
+    
+    % make sure that baseCoords are rounded (they may not be
+    % if we are working with a baseCoordMap's flat map
+    baseCoordsHomogeneous = round(baseCoordsHomogeneous);
+
     baseCoordsLinear = mrSub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
     roiBaseCoordsLinear = mrSub2ind(baseDims,roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
     % we use ismember here since it will keep duplicates.
@@ -292,13 +318,24 @@ if ~isempty(roiBaseCoords)
     % the roi will have unique coordinates, so we switch
     % the order of arguments from above
     [baseIndices roiIndices] = ismember(baseCoordsLinear,roiBaseCoordsLinear);
+    
+    if nDepths>1%if it is a flat map with more than one depth
+      %only keep base voxels that are in at least half of the depth levels
+      baseIndices=(sum(reshape(baseIndices,[prod(imageDims) nDepths]),2)>=nDepths/2)';
+      %Since there are several depths, there can be several base roi voxels at each image voxel
+      % roiIndices=reshape(roiIndices,[prod(imageDims) nDepths]);
+      %but which voxel is displayed is actually not used later because we can only display one depth at a time
+      %(roiIndices used to go into s, which was not used for flat maps)
+      %so let's just forget about roiIndices 
+      %(this also avoid having to think about at what deptht o take the base coords)
+    end
     baseIndices = find(baseIndices);
-    roiIndices = roiIndices(baseIndices);
+%     roiIndices = roiIndices(baseIndices);
+    s=[];%s will only be used for volume, not flat maps/surfaces
   end
   % now transform the coordinates that exist in this
-  % base into image coordinates.
+  % base into volume coordinates.
   [x,y] = ind2sub(imageDims,baseIndices);
-  s = roiBaseCoords(sliceIndex,roiIndices);
 end
 
 
@@ -461,6 +498,12 @@ for r = order
     % we will have to fix this up here to take that
     % into account.
     sliceNum = 1;
+    % JB edit: I've now implemented flat maps/surfaces that average overlay values across
+    % different depths. But for ROIs, it is not clear how that would translate
+    % in terms of showing the 3D ROI across depths onto the 2D display...
+    % so I chose to only display ROI voxels that appear in at least half of the averaged depths
+    % (see subfunction getROIImageCoords)
+    % Therefore, here we still ignore in which slice (at which depth) ROI voxels actually are
   end
   if ~isempty(x) & ~isempty(y)
     % removing the loop from this algorithm speeds things

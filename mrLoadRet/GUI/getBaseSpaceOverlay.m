@@ -40,52 +40,36 @@ switch(baseType)
       sliceNum = viewGet(thisView,'curslice');
       sliceIndex = viewGet(thisView,'baseSliceIndex',baseNum);
       if ieNotDefined('depthBins')
-         params.depthBins = 10;
-      else
-         params.depthBins = depthBins;
+         depthBins = viewGet(thisView,'corticalDepthBins');
       end
       if ieNotDefined('rotateAngle')
-         params.rotateAngle = viewGet(thisView,'rotate');
-      else
-         params.rotateAngle = rotateAngle;
+         rotateAngle = viewGet(thisView,'rotate');
       end
-      if ieNotDefined('depthBins') && ieNotDefined('rotateAngle')
-         paramsInfo = {{'depthBins',params.depthBins,'round=1','number of different cortical detphs the overlay will exported to'},...
-                       {'rotateAngle',params.rotateAngle,'round=1','angle of the flat map'}};
-         params = mrParamsDialog(paramsInfo,'Choose parameters for flat map conversion');
-         if isempty(params),      
-            newOverlayData = [];
-            return;
-         end;
-      end
-      basedims(3) = params.depthBins;
+      basedims(3) = depthBins;
       Xcoords = zeros(basedims(1),basedims(2),basedims(3));
       Ycoords = Xcoords; Zcoords=Xcoords;
-      cortical_depths = cumsum(1/basedims(3)*ones(1,basedims(3)))-1/(2*basedims(3));
-      for i_depth = 1:basedims(3)
-        baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum, cortical_depths(i_depth));
-        if ~isempty(baseCoordMap)
-          % only use the baseCoordMap for when the slice
-          % in the third dimension (no other thisView of a 
-          % flat map is really valid).
-          if sliceIndex == 3
-            Xcoords(:,:,i_depth) = baseCoordMap.coords(:,:,sliceNum,1);
-            Ycoords(:,:,i_depth) = baseCoordMap.coords(:,:,sliceNum,2);
-            Zcoords(:,:,i_depth) = baseCoordMap.coords(:,:,sliceNum,3);
-            %rotate coordinates
-            if  params.rotateAngle
-               Xcoords(:,:,i_depth) = imrotate(Xcoords(:,:,i_depth),params.rotateAngle,'bilinear','crop');
-               Ycoords(:,:,i_depth) = imrotate(Ycoords(:,:,i_depth),params.rotateAngle,'bilinear','crop');
-               Zcoords(:,:,i_depth) = imrotate(Zcoords(:,:,i_depth),params.rotateAngle,'bilinear','crop');
+      baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum,0:1/depthBins:1);
+      if ~isempty(baseCoordMap)
+        % only use the baseCoordMap for when the slice
+        % in the third dimension (no other thisView of a 
+        % flat map is really valid).
+        if sliceIndex == 3
+          Xcoords = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
+          Ycoords = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
+          Zcoords = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
+          %rotate coordinates
+          if  rotateAngle
+            for iDepth = 1:depthBins
+               Xcoords(:,:,iDepth) = imrotate(Xcoords(:,:,iDepth),rotateAngle,'bilinear','crop');
+               Ycoords(:,:,iDepth) = imrotate(Ycoords(:,:,iDepth),rotateAngle,'bilinear','crop');
+               Zcoords(:,:,iDepth) = imrotate(Zcoords(:,:,iDepth),rotateAngle,'bilinear','crop');
             end
-
-          else
-            oneTimeWarning('badSliceIndex',sprintf('(refreshMLRDisplay:getBaseSlice) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
           end
+
+        else
+          oneTimeWarning('badSliceIndex',sprintf('(refreshMLRDisplay:getBaseSlice) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
         end
       end
-      
-         
       
       %just as an indication, the voxel size is the mean distance between voxels consecutive in the 3 directions
       baseVoxelSize(1) = baseVoxelSize(1)*mean(mean(mean(sqrt(diff(Xcoords,1,1).^2 + diff(Ycoords,1,1).^2 + diff(Zcoords,1,1).^2))));

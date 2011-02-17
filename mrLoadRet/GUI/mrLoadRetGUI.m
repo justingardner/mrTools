@@ -351,12 +351,25 @@ function corticalDepthSlider_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-mrGlobals;
 viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-value = get(hObject,'Value');
-mlrGuiSet(viewNum,'corticalDepth',value);
-refreshMLRDisplay(viewNum);
+newMinValue = get(hObject,'Value');
+if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'value')
+  maxDepth = viewGet(viewNum,'corticalMaxDepth');
+  minDepth = str2num(get(handles.corticalDepthText,'string'));
+  newMaxValue = maxDepth+newMinValue-minDepth;
+  if newMaxValue>=0 && newMaxValue<=1 %if both values are in [0 1]
+    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+    mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+    drawnow;
+    refreshMLRDisplay(viewNum);
+  else
+    set(hObject,'Value',minDepth);
+  end
+else
+  mlrGuiSet(viewNum,'corticalDepth',newMinValue);
+  refreshMLRDisplay(viewNum);
+end
+
 
 
 % --- Executes during object creation, after setting all properties.
@@ -369,7 +382,6 @@ function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
   set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
-set(hObject,'SliderStep',min(1/mrGetPref('corticalDepthBins')*[1 3],1));
 
 
 function corticalDepthText_Callback(hObject, eventdata, handles)
@@ -381,12 +393,25 @@ function corticalDepthText_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of corticalDepthText as a double
 
 viewNum = handles.viewNum;
-value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+newMinValue = str2num(get(hObject,'String'));
+if isempty(newMinValue) %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.corticalDepthSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'corticalDepth',value);
-  refreshMLRDisplay(viewNum);
+  if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'value')
+    maxDepth = viewGet(viewNum,'corticalMaxDepth');
+    minDepth = get(handles.corticalDepthSlider,'value');
+    newMaxValue = maxDepth+newMinValue-minDepth;
+    if newMaxValue>=0 && newMaxValue<=1 %if both values are in [0 1]
+      mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+      mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+      refreshMLRDisplay(viewNum);
+    else
+      set(hObject,'string',num2str(minDepth));
+    end
+  else
+    mlrGuiSet(viewNum,'corticalDepth',newMinValue);
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 % --- Executes during object creation, after setting all properties.
