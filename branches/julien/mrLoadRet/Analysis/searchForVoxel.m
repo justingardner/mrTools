@@ -379,7 +379,9 @@ else
     % convert the index to the coordinates
     if ~isempty(pos)
       baseCoordMap = viewGet(v,'baseCoordMap');
-      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
+      %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+      corticalSlice = ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5));
+      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:,corticalSlice)));
       xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
   end      

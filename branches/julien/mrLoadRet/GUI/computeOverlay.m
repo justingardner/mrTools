@@ -140,7 +140,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%
 function [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
   getOverlaySlice(thisView,scanNum,base2overlay,baseCoordsHomogeneous,imageDims,...
-		       analysisNum,interpMethod,interpExtrapVal);
+		       analysisNum,interpMethod,interpExtrapVal)
 %
 % getOverlaySlice: extracts overlays image and corresponding coordinates
 
@@ -151,24 +151,47 @@ overlayImages = [];
 % viewGet
 numOverlays = viewGet(thisView,'numberofoverlays',analysisNum);
 interpFnctn = viewGet(thisView,'overlayInterpFunction',analysisNum);
-
+tic
 % Transform base coords corresponding to this slice/image to overlays
 % coordinate frame.
-if ~isempty(base2overlay) & ~isempty(baseCoordsHomogeneous)
+if ~isempty(base2overlay) & ~isempty(baseCoordsHomogeneous) 
   % Transform coordinates
-  nDepths = size(baseCoordsHomogeneous,3);
+  if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
+    corticalDepth = viewGet(thisView,'corticalDepth');
+    corticalDepthBins = viewGet(thisView,'corticalDepthBins');
+    corticalDepths = 0:1/corticalDepthBins:1;
+    slices = corticalDepths>=corticalDepth(1) & corticalDepths<=corticalDepth(end);
+    baseCoordsHomogeneous = baseCoordsHomogeneous(:,:,slices);
+    nDepths = nnz(slices);
+  else
+    nDepths=1;
+  end
   overlayCoordsHomogeneous = base2overlay * reshape(baseCoordsHomogeneous,4,prod(imageDims)*nDepths);
-  overlayCoordsHomogeneous = reshape(overlayCoordsHomogeneous,[4 prod(imageDims) nDepths]);
   %temporarily put depth dimensions with y dimension
   overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[imageDims(1) imageDims(2)*nDepths 3 ]);
+  overlayCoordsHomogeneous = reshape(overlayCoordsHomogeneous,[4 prod(imageDims) nDepths]);
 end
 
+
 % Extract overlayImages
+
+%if interpolation method is 'nearest', rounding the base coordinates 
+%before interpolation should not change the result
+%then, using unique to exclude duplicate coordinates,
+%interpolation can be performed on far less voxels (at least for surfaces, 
+%or if the base has a higher resolution than the scan)
+%and this can substantially reduce the time needed for interpolation
+if strcmp(interpMethod,'nearest') 
+  overlayCoords = round(overlayCoords);   
+  [overlayCoords,dump,coordsIndex] = unique(reshape(overlayCoords,[prod(imageDims)*nDepths 3]),'rows'); 
+  overlayCoords = permute(overlayCoords,[1 3 2]); 
+end
+  
 if ~isempty(interpFnctn)
   overlayImages = feval(interpFnctn,thisView,scanNum,imageDims,...
     analysisNum,overlayCoords,interpMethod,interpExtrapVal);
 else
-  overlayImages = zeros([imageDims(1) imageDims(2)*nDepths numOverlays]);
+  overlayImages = zeros([size(overlayCoords,1) size(overlayCoords,2) numOverlays]);
   for ov = 1:numOverlays
     overlayData = viewGet(thisView,'overlayData',scanNum,ov,analysisNum);
     if ~isempty(overlayData) & ~isempty(overlayCoords)
@@ -181,8 +204,14 @@ else
     end
   end
 end
-overlayCoords = mean(permute(reshape(overlayCoords,[imageDims nDepths 3 ]),[1 2 4 3]),4);
-overlayImages = mean(permute(reshape(overlayImages,[imageDims nDepths numOverlays]),[1 2 4 3]),4);
+
+if strcmp(interpMethod,'nearest')
+  overlayImages = mean(permute(reshape(overlayImages(coordsIndex,:,:),[imageDims nDepths numOverlays]),[1 2 4 3]),4);
+  overlayCoords = mean(permute(reshape(overlayCoords(coordsIndex,:,:),[imageDims nDepths 3]),[1 2 4 3]),4);
+else
+  overlayCoords = mean(permute(reshape(overlayCoords,[imageDims nDepths 3 ]),[1 2 4 3]),4);
+  overlayImages = mean(permute(reshape(overlayImages,[imageDims nDepths numOverlays]),[1 2 4 3]),4);
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -196,7 +225,7 @@ function overlayImages = corAnalInterp(thisView,scanNum,...
 
 % Initialize
 numOverlays = viewGet(thisView,'numberofoverlays',analysisNum);
-overlayImages = zeros([imageDims,numOverlays]);
+overlayImages = zeros([size(overlayCoords,1),size(overlayCoords,2),numOverlays]);
 
 % Interpolate complex values for amp and ph
 ampNum = viewGet(thisView,'overlayNum','amp',analysisNum);

@@ -33,12 +33,22 @@ roinames = viewGet(v,'roiNames');
 if ieNotDefined('params')
   % get cortical depth
   corticalDepth = viewGet(v,'corticalDepth');
+  referenceDepth= mean(corticalDepth);
+  if length(corticalDepth)==2
+    minDepth = corticalDepth(1);
+    maxDepth = corticalDepth(2);
+  else
+    minDepth = 0;
+    maxDepth = 1;
+  end
+  depthStep = 1/viewGet(v,'corticalDepthBins');
+  incdecString = sprintf('incdec=[-%f %f]',depthStep,depthStep);
   paramsInfo = {};
   paramsInfo{end+1} = {'conversionType',{'Project through depth','Restrict to reference depth'},'type=popupmenu','If you set project through depth, then this will add all the voxels from each cortical depth that are in the same position as the ones at the reference depth. If you set to restrict to reference depth, this will remove any voxels that are not on the reference depth (note that you will still see some voxels on other depths, but those are voxels that exist at the reference depth--also, voxels that do not exist on this flat map will not be affected)'};
-  paramsInfo{end+1} = {'referenceDepth',corticalDepth,'min=0','max=1','incdec=[-0.1 0.1]','The cortical depth to start from'};
-  paramsInfo{end+1} = {'minDepth',0,'min=0','max=1','incdec=[-0.1 0.1]','The start depth'};
-  paramsInfo{end+1} = {'depthStep',0.1,'min=0','max=1','incdec=[-0.1 0.1]','The depth step (i.e. we will go from minDepth:depthStep:maxDepth (skipping the reference depth), including or excluding voxels'};
-  paramsInfo{end+1} = {'maxDepth',max(1,corticalDepth),'min=0','max=1','incdec=[-0.1 0.1]','The end depth'};
+  paramsInfo{end+1} = {'referenceDepth',referenceDepth,'min=0','max=1',incdecString,'The cortical depth to start from'};
+  paramsInfo{end+1} = {'minDepth',minDepth,'min=0','max=1',incdecString,'The start depth'};
+  paramsInfo{end+1} = {'depthStep',depthStep,'min=0','max=1',incdecString,'The depth step (i.e. we will go from minDepth:depthStep:maxDepth (skipping the reference depth), including or excluding voxels'};
+  paramsInfo{end+1} = {'maxDepth',maxDepth,'min=0','max=1',incdecString,'The end depth'};
   if defaultParams
     params = mrParamsDefault(paramsInfo);
   else
@@ -67,7 +77,6 @@ if justGetParams, return, end
 baseVoxelSize = viewGet(v,'baseVoxelSize');
 baseCoordMap = viewGet(v,'baseCoordMap',[],params.referenceDepth);
 baseDims = baseCoordMap.dims;
-flatDims = viewGet(v,'baseDims');
 baseCoordMap = round(baseCoordMap.coords);
 referenceBaseCoordMap = mrSub2ind(baseDims,baseCoordMap(:,:,:,1),baseCoordMap(:,:,:,2),baseCoordMap(:,:,:,3));
 referenceBaseCoordMap = referenceBaseCoordMap(:);
@@ -97,10 +106,11 @@ if ~isempty(whichROI)
       % make sure to keep the voxels at the reference depth
       roiBaseCoordsReferenceLinear = roiBaseCoordsLinear(ismember(roiBaseCoordsLinear,referenceBaseCoordMap));
       % now get each cortical depth, and add/remove voxels
-      for corticalDepth = params.minDepth:params.depthStep:params.maxDepth
+      corticalDepths = params.minDepth:params.depthStep:params.maxDepth;
+      baseCoordMap = viewGet(v,'baseCoordMap',[],corticalDepths);
+      for iDepth = 1:size(baseCoordMap.coords,5)
         % get the coordinates at this depth
-        baseCoordMap = viewGet(v,'baseCoordMap',[],corticalDepth);
-        baseCoordMap = round(baseCoordMap.coords);
+        baseCoordMap = round(baseCoordMap.coords(:,:,:,:,iDepth));
         baseCoordMap = mrSub2ind(baseDims,baseCoordMap(:,:,:,1),baseCoordMap(:,:,:,2),baseCoordMap(:,:,:,3));
         baseCoordMap = baseCoordMap(:);
         % add the coordinates to our list

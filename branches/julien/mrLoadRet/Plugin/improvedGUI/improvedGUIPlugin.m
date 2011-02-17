@@ -35,32 +35,34 @@ switch action
     mlrAdjustGUI(thisView,'set','sliceText','position',           [0.24    0.815   0.04   0.025]);
     mlrAdjustGUI(thisView,'set','corticalDepth','position',       [0.01    0.78    0.07   0.06 ]);
     mlrAdjustGUI(thisView,'set','corticalDepthSlider','position', [0.09    0.815   0.14   0.02 ]);
+    mlrAdjustGUI(thisView,'set','corticalDepthSlider','SliderStep',min(1/viewGet(thisView,'corticalDepthBins')*[1 3],1));
     mlrAdjustGUI(thisView,'set','corticalDepthText','position',   [0.24    0.815   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','corticalMaxDepthText','units', 'normalized');
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthSlider',...
-        'SliderStep',min(1/mrGetPref('corticalDepthBins')*[1 3],1),...
+        'SliderStep',min(1/viewGet(thisView,'corticalDepthBins')*[1 3],1),...
         'Callback',@corticalMaxDepthSlider_Callback,...
-                                     'style','slider','position', [0.09    0.79    0.14   0.02 ]);
+                          'value',.5,'style','slider','position', [0.09    0.79    0.14   0.02 ]);
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthText',...
-        'Callback',@corticalMaxDepthText_Callback,...
-              'BackgroundColor','white','style','edit','position',[0.24    0.785   0.04   0.025]);
+        'Callback',@corticalMaxDepthText_Callback,'String','0.5',...
+              'BackgroundColor','white','style','edit','position',[0.24    0.78    0.04   0.03 ]);
+    mlrAdjustGUI(thisView,'add','control','linkMinMaxDepthCheck','style','checkbox','value',0,...
+        'String','Constant Cortical Depth Range','position',      [0.04    0.755   0.23   0.025]);
     mlrAdjustGUI(thisView,'set','sagittalRadioButton','position', [0.01    0.78    0.1    0.025]);
     mlrAdjustGUI(thisView,'set','axialRadioButton','position',    [0.11    0.78    0.07   0.025]);
     mlrAdjustGUI(thisView,'set','coronalRadioButton','position',  [0.19    0.78    0.1    0.025]);
-    mlrAdjustGUI(thisView,'set','baseImage','position',           [0.01    0.725   0.06   0.025]);
-    mlrAdjustGUI(thisView,'set','basePopup','position',           [0.07    0.72    0.21   0.035]);
+    mlrAdjustGUI(thisView,'set','baseImage','position',           [0.01    0.71    0.06   0.025]);
+    mlrAdjustGUI(thisView,'set','basePopup','position',           [0.07    0.705   0.21   0.035]);
     mlrAdjustGUI(thisView,'set','baseGamma','string','Gamma');
-    mlrAdjustGUI(thisView,'set','baseGamma','position',           [0.02    0.68    0.07   0.03 ]);
-    mlrAdjustGUI(thisView,'set','baseGammaSlider','position',     [0.10    0.685   0.13   0.02 ]);
-    mlrAdjustGUI(thisView,'set','baseGammaText','position',       [0.24    0.685   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','rotate','position',              [0.02    0.64    0.06   0.03 ]);
-    mlrAdjustGUI(thisView,'set','rotateSlider','position',        [0.09    0.645   0.14   0.02 ]);
-    mlrAdjustGUI(thisView,'set','rotateText','position',          [0.24    0.645   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','baseTilt','position',            [0.02    0.60    0.03   0.03 ]);
-    mlrAdjustGUI(thisView,'set','baseTiltSlider','position',      [0.055   0.605   0.175  0.02 ]);
-    mlrAdjustGUI(thisView,'set','baseTiltText','position',        [0.24    0.605   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','analysis','position',            [0.01    0.55    0.08   0.025]);
-    mlrAdjustGUI(thisView,'set','analysisPopup','position',       [0.09    0.545   0.19   0.035]);
+    mlrAdjustGUI(thisView,'set','baseGamma','position',           [0.02    0.665   0.07   0.03 ]);
+    mlrAdjustGUI(thisView,'set','baseGammaSlider','position',     [0.10    0.67    0.13   0.02 ]);
+    mlrAdjustGUI(thisView,'set','baseGammaText','position',       [0.24    0.67    0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','rotate','position',              [0.02    0.63    0.06   0.03 ]);
+    mlrAdjustGUI(thisView,'set','rotateSlider','position',        [0.09    0.635   0.14   0.02 ]);
+    mlrAdjustGUI(thisView,'set','rotateText','position',          [0.24    0.635   0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','baseTilt','position',            [0.02    0.595   0.03   0.03 ]);
+    mlrAdjustGUI(thisView,'set','baseTiltSlider','position',      [0.055   0.60    0.175  0.02 ]);
+    mlrAdjustGUI(thisView,'set','baseTiltText','position',        [0.24    0.60    0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','analysis','position',            [0.01    0.545   0.08   0.025]);
+    mlrAdjustGUI(thisView,'set','analysisPopup','position',       [0.09    0.54    0.19   0.035]);
     mlrAdjustGUI(thisView,'set','overlay','position',             [0.01    0.51    0.07   0.025]);
     mlrAdjustGUI(thisView,'set','overlayPopup','position',        [0.02    0.28    0.26   0.23 ]);
     mlrAdjustGUI(thisView,'set','overlayPopup','style','listbox');
@@ -98,21 +100,47 @@ function corticalMaxDepthSlider_Callback(hObject, dump)
 
 handles = guidata(hObject);
 viewNum = handles.viewNum;
-value = get(hObject,'Value');
-mlrGuiSet(viewNum,'corticalMaxDepth',value);
-refreshMLRDisplay(viewNum);
+newMaxValue = get(hObject,'Value');
+if get(handles.linkMinMaxDepthCheck,'value')
+  minDepth = viewGet(viewNum,'corticalMinDepth');
+  maxDepth = str2num(get(handles.corticalMaxDepthText,'string'));
+  newMinValue = minDepth+newMaxValue-maxDepth;
+  if newMinValue>=0 && newMinValue<=1 %if both values are in [0 1]
+    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+    mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+    drawnow;
+    refreshMLRDisplay(viewNum);
+  else
+    set(hObject,'Value',maxDepth);
+  end
+else
+  mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+  refreshMLRDisplay(viewNum);
+end
 
 
 function corticalMaxDepthText_Callback(hObject,dump)
 
 handles = guidata(hObject);
 viewNum = handles.viewNum;
-value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+newMaxValue = str2num(get(hObject,'String'));
+if isempty(newMaxValue) %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.corticalMaxDepthSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'corticalMaxDepth',value);
-  refreshMLRDisplay(viewNum);
+  if get(handles.linkMinMaxDepthCheck,'value')
+    minDepth = viewGet(viewNum,'corticalMinDepth');
+    maxDepth = get(handles.corticalMaxDepthSlider,'value');
+    newMinValue = minDepth+newMaxValue-maxDepth;
+    if newMinValue>=0 && newMinValue<=1 %if both values are in [0 1]
+      mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+      mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+      refreshMLRDisplay(viewNum);
+    else
+      set(hObject,'string',num2str(maxDepth));
+    end
+  else
+    mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+    refreshMLRDisplay(viewNum);
+  end
 end
-
 

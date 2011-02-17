@@ -1291,37 +1291,29 @@ switch lower(param)
       end
     end
   case {'basecoordmap'}
-    % basedata = viewGet(view,'baseCoordMap',[baseNum],[corticalDepth])
+    % basedata = viewGet(view,'baseCoordMap',[baseNum],[corticalDepths])
     b = getBaseNum(view,varargin);
-    % get cortical depth
-    if ieNotDefined('varargin') || (length(varargin)<2)
-      corticalDepth = viewGet(view,'corticalDepth');
-    else
-      corticalDepth = varargin{2};
-    end
     n = viewGet(view,'numberofbasevolumes');
+    % get number of cortical depth bins
+    if ieNotDefined('varargin') || (length(varargin)<2)
+      corticalDepths = 0:1/viewGet(view,'corticalDepthBins'):1;
+    else
+      corticalDepths = varargin{2};
+    end
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).coordMap;
-      % see if the coordMap is calculated for the correct cortical depth
-      if ~isempty(val) && (~isfield(val,'corticalDepth') || (val.corticalDepth ~= corticalDepth))
+      % see if the coordMap is calculated for the correct number of cortical depth bins
+      if ~isempty(val) && (~isfield(val,'corticalDepths') || val.corticalDepths~=corticalDepths)
         if isfield(val,'innerCoords') && isfield(val,'outerCoords')
           % if not, then we have to do it
           %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
-          if length(corticalDepth)==1  
-            val.coords = val.innerCoords + corticalDepth*(val.outerCoords-val.innerCoords);
-          elseif length(corticalDepth)==2 
-            corticalDepthBins = mrGetPref('corticalDepthBins');
-            corticalDepths = corticalDepth(1):1/corticalDepthBins:corticalDepth(2);
-            val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
-            cDepth=0;
-            for iDepth = corticalDepths;
-              cDepth=cDepth+1;
-              val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
-            end
-          else
-            mrErrorDlg('(viewGet:basecoordmap) Too many cortical depth values')
+          val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
+          cDepth=0;
+          for iDepth = corticalDepths;
+            cDepth=cDepth+1;
+            val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
           end
-          val.corticalDepth = corticalDepth;
+          val.corticalDepths = corticalDepths;
         end
       end
     end
@@ -1340,7 +1332,7 @@ switch lower(param)
       coordMap = view.baseVolumes(b).coordMap;
       if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
         % find intermideate values
-        vtcs = coordMap.innerVtcs + corticalDepth*(coordMap.outerVtcs-coordMap.innerVtcs);
+        vtcs = coordMap.innerVtcs + mean(corticalDepth)*(coordMap.outerVtcs-coordMap.innerVtcs);
         val.tris = coordMap.tris;
       elseif isfield(coordMap,'innerVtcs')
         % if only inner is present then just return that
@@ -2226,11 +2218,11 @@ switch lower(param)
     sliceIndex = viewGet(view,'baseSliceIndex');
     % only use the corticalDepth if this is a flat
     if viewGet(view,'baseType')
-      corticalDepth = viewGet(view,'corticalDepth');
+      corticalDepthBins = viewGet(view,'corticalDepthBins');
     else
-      corticalDepth = 0;
+      corticalDepthBins = 0;
     end
-    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepth);
+    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepthBins);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
@@ -3603,6 +3595,11 @@ switch lower(param)
     else
       val = 0;
     end
+    
+  case {'corticaldepthbins'}
+    % corticaldepthBins = viewGet(view,'corticaldepthBins');
+    val = mrGetPref('corticalDepthBins');
+    
   case {'corticaldepth'}
     % corticaldepth = viewGet(view,'corticaldepth');
     val = sort([viewGet(view,'corticalMinDepth') viewGet(view,'corticalMaxDepth')]);

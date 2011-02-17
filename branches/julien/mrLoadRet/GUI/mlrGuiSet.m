@@ -96,6 +96,7 @@ switch lower(field)
     if isfield(handles,'corticalMaxDepthSlider')
       set(handles.corticalMaxDepthSlider,'Visible','off');
       set(handles.corticalMaxDepthText,'Visible','off');
+      set(handles.linkMinMaxDepthCheck,'Visible','off');
     end
   elseif value >= 1
     set(handles.sagittalRadioButton,'Visible','off');
@@ -111,6 +112,7 @@ switch lower(field)
     if isfield(handles,'corticalMaxDepthSlider')
       set(handles.corticalMaxDepthSlider,'Visible','on');
       set(handles.corticalMaxDepthText,'Visible','on');
+      set(handles.linkMinMaxDepthCheck,'Visible','on');
     end
   end
   if value == 2
@@ -328,7 +330,7 @@ switch lower(field)
  case {'corticaldepth','corticalmindepth'}
   % mlrGuiSet(view,'corticalDepth',value);
   value = min(value,1);value = max(value,0);
-  corticalDepthBins = mrGetPref('corticalDepthBins');
+  corticalDepthBins = viewGet(view,'corticalDepthBins');
   value = round(value*corticalDepthBins)/corticalDepthBins;
   set(handles.corticalDepthSlider,'Value',value);
   set(handles.corticalDepthText,'String',num2str(value));
@@ -336,7 +338,7 @@ switch lower(field)
  case {'corticalmaxdepth'}
   % mlrGuiSet(view,'corticalDepth',value);
   value = min(value,1);value = max(value,0);
-  corticalDepthBins = mrGetPref('corticalDepthBins');
+  corticalDepthBins = viewGet(view,'corticalDepthBins');
   value = round(value*corticalDepthBins)/corticalDepthBins;
   set(handles.corticalMaxDepthSlider,'Value',value);
   set(handles.corticalMaxDepthText,'String',num2str(value));
