@@ -261,7 +261,7 @@ switch lower(param)
 
   case {'deletegroup'}
     % view = viewSet(view,'deleteGroup',groupNum);
-    groupnum = val;
+    groupnum = viewGet(view,'groupNum',val);
     groupName = viewGet(view,'groupName',groupnum);
     nScans = viewGet(view,'nScans');
     % confirm with user
@@ -277,43 +277,64 @@ switch lower(param)
       mrWarnDlg('Cannot delete Raw group');
       return
     end
-    % Remove it
+    
     numgroups = viewGet(view,'numberofgroups');
     groupsToKeep = groupnum ~= [1:numgroups];
-    MLR.groups = MLR.groups(groupsToKeep);
-    % Update the view
     groupNames = viewGet(view,'groupNames');
-    if isempty(groupNames)
-      groupNames = {'none'};
-    end
-    %I think we also need to remove any loaded analysis and other group-specific info from the view
-    view.groupScanNum = view.groupScanNum(groupsToKeep);
-    view.loadedAnalyses = view.loadedAnalyses(groupsToKeep);
-    curgroup = viewGet(view,'currentGroup');
-    if (curgroup > groupnum)
-      view = viewSet(view,'currentGroup',curgroup-1);
-    elseif (groupnum == curgroup)
-      view = viewSet(view,'currentGroup',1);
-    end
-    mlrGuiSet(view,'groupPopup',groupNames);
-    % Update all the other views
-    for v = find(view.viewNum ~= [1:length(MLR.views)])
-      if isview(MLR.views{v})
-        %I think we also need to remove any loaded analysis and other group-specific info from the view
-        v = viewGet(v,'view');
-        %v.groupScanNum = v.groupScanNum(groupsToKeep);
-        %v.loadedAnalyses = v.loadedAnalyses(groupsToKeep);
-        curgroup = viewGet(v,'currentGroup');
-        if (curgroup > groupnum)
-          viewSet(v,'currentGroup',curgroup-1);
-        elseif (groupnum == curgroup)
-          viewSet(v,'currentGroup',1);
+    
+    %loop through all the views and 
+    % 1) make sure that the group to delete is not the current one
+    % 2) delete all associated loaded analyses 
+    for iView = 1:length(MLR.views)
+      if iView==view.viewNum
+        thisView = view;
+      else
+        thisView = viewGet([],'view',iView);
+      end
+      if isview(thisView)
+        curgroup = viewGet(thisView,'currentGroup');
+        %here we have a problem because some views might not have been updated since groups were added
+        %so the length of loadedAnalyses is incorrect, which will lead to an error
+        %One way to do things cleanly is to set the group to the highest groupnum
+        %but we'll do it if there is a mismatch between the length of loadedAnalyses and numgroups
+        %to avoid wasting time
+        if length(thisView.loadedAnalyses) < numgroups
+           thisView = viewSet(thisView,'currentGroup',numgroups);
+           %and then set back to the old current group
+           thisView = viewSet(thisView,'currentGroup',curgroup);
         end
-        mlrGuiSet(MLR.views{v},'groupPopup',groupNames);
+        %if the group to delete is the current one, install another one
+        if (curgroup == groupnum)
+          if curgroup==numgroups
+            curgroup = curgroup-1;
+          else
+            curgroup = curgroup+1;
+          end
+          thisView = viewSet(thisView,'currentGroup',curgroup);
+        end
+        %if the current group was higher than the deleted group, correct in the view
+        if thisView.curGroup>=groupnum
+          thisView.curGroup = thisView.curGroup-1;
+        end
+        mlrGuiSet(thisView,'group',thisView.curGroup);
+        mlrGuiSet(thisView,'groupPopup',groupNames(groupsToKeep));
+        %we also need to remove any loaded analysis and other group-specific info from the view
+        %the problem is that some views might not have all the groups....
+        thisView.loadedAnalyses = thisView.loadedAnalyses(groupsToKeep);
+%         % groupscannum looks like it is group specific, but not clear what it is for 
+%         % and does not always have the correct number of group...
+%         % so leave it for now
+%         thisView.groupScanNum = thisView.groupScanNum(groupsToKeep);
+      end
+      if iView==view.viewNum
+        view = thisView;
       end
     end
+    % then remove the group to delete
+    MLR.groups = MLR.groups(groupsToKeep);
     % Save mrSession
     saveSession;
+
 
     % -------------------------------------------
     % Scan
@@ -1343,7 +1364,7 @@ switch lower(param)
     analysisNum = viewGet(view,'currentAnalysis');
     numAnalyses = viewGet(view,'numberofAnalyses');
     numOverlays = viewGet(view,'numberofOverlays',analysisNum);
-    if (analysisNum > 0) && (analysisNum <= numAnalyses)
+    if numAnalyses && (analysisNum > 0) && (analysisNum <= numAnalyses)
       if ~isempty(overlayNum) && any((overlayNum > 0) & (overlayNum <= numOverlays))
         % Set the curOverlay field
         view.analyses{analysisNum}.curOverlay = overlayNum;
@@ -1375,7 +1396,7 @@ switch lower(param)
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
 
     end
-
+    
   case {'overlayname'}
     % view = viewSet(view,'overlayname',nameString,[overlayNum]);
     if ieNotDefined('varargin')
