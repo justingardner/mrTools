@@ -74,7 +74,7 @@ if size(base.coords,4)>1
   corticalDepth = viewGet(view,'corticalDepth');
   corticalDepthBins = viewGet(view,'corticalDepthBins');
   corticalDepths = 0:1/corticalDepthBins:1;
-  slices = corticalDepths>=corticalDepth(1) & corticalDepths<=corticalDepth(end);
+  slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
   view = viewSet(view,'cursliceBaseCoords',mean(base.coords(:,:,:,slices),4));
 else
   view = viewSet(view,'cursliceBaseCoords',base.coords);
@@ -82,6 +82,9 @@ end
 
 
 % Extract overlays images and overlays coords, and alphaMap
+% right now combinations of overlays are cached as is
+% but it would make more sense to cache them separately
+% because actual blending occurs after they're separately computed
 if verbose,disppercent(-inf,'extract overlays images');end
 overlays = viewGet(view,'overlayCache');
 if isempty(overlays)
@@ -97,22 +100,34 @@ else
 end
 view = viewSet(view,'cursliceOverlayCoords',overlays.coords);
 
-% figure
-% image(overlayRGB)
-% colormap(overlayCmap)
-% return
-
 % Combine base and overlays
 if verbose>1,disppercent(-inf,'combine base and overlays');,end
 if ~isempty(base.RGB) & ~isempty(overlays.RGB)
-  img = base.RGB;
-  %for each overlay, use its specific alpha map, and compute the mean image of all overlays 
-  for iOverlay = 1:size(overlays.RGB,4)
-    img = overlays.alphaMaps(:,:,:,iOverlay).*overlays.RGB(:,:,:,iOverlay)+(1-overlays.alphaMaps(:,:,:,iOverlay)).*img;
+
+  switch(viewGet(view,'colorBlending'))
+    case 'Alpha blend'
+      % alpha blending (non-commutative 'over' operator, each added overlay is another layer on top)
+      % since commutative, depends on order
+      img = base.RGB;
+      for iOverlay = 1:size(overlays.RGB,4)
+        img = overlays.alphaMaps(:,:,:,iOverlay).*overlays.RGB(:,:,:,iOverlay)+(1-overlays.alphaMaps(:,:,:,iOverlay)).*img;
+      end
+  
+    case 'Additive'
+      %additive method (commutative: colors are blended in additive manner and then added as a layer on top of the base)
+      % 1) additively multiply colors weighted by their alpha
+      RGB = overlays.alphaMaps.*overlays.RGB;
+      % 2) add pre-multipliedcolormaps (and alpha channels)
+      img = RGB(:,:,:,1);
+      alpha = overlays.alphaMaps(:,:,:,1);
+      for iOverlay = 2:size(overlays.RGB,4)
+        img = img.*(1-RGB(:,:,:,iOverlay))+ RGB(:,:,:,iOverlay);
+        alpha = alpha .* (1-overlays.alphaMaps(:,:,:,iOverlay))+overlays.alphaMaps(:,:,:,iOverlay);
+      end
+      % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
+       img = img+(1-alpha).*base.RGB;
+       
   end
-  %img = mean(overlays.alphaMaps.*overlays.RGB+(1-overlays.alphaMaps).*repmat(base.RGB,[1 1 1 size(overlays.RGB,4)]),4);
-  %use the alpha map based on the GUI alpha slider to combine the overlays and the base
-  img = overlays.alphaMap.*img+(1-overlays.alphaMap).*base.RGB;
   cmap = overlays.cmap;
   cbarRange = overlays.colorRange;
 elseif ~isempty(base.RGB)
@@ -163,6 +178,22 @@ if baseType <= 1
   % to the 3D surfaces.
   set(fig,'Renderer','painters')
   image(img,'Parent',gui.axis);
+  
+%   %an alterative way of plotting using independent patches:
+%   set(fig,'Renderer','OpenGL')
+%   [x,y]=meshgrid(1:base.dims(1),1:base.dims(2));
+%   x=reshape(x,1,numel(x));
+%   y=reshape(y,1,numel(y));
+%   xdata=[x-.5; x+.5;x+.5; x-.5];
+%   ydata=[y-.5; y-.5;y+.5; y+.5];
+%   zdata=ones(size(xdata));
+%   cdata = reshape(base.RGB,[prod(base.dims) 1 3]);
+%   p =patch(xdata,ydata,zdata,'FaceColor','flat','EdgeColor','none','Parent',gui.axis);
+%   set(p,'cdata',cdata);
+% 
+%   o = patch(xdata,ydata,zdata,'FaceColor','flat','EdgeColor','none','faceAlpha','flat','AlphaDataMapping','none','Parent',gui.axis);
+%   set(o,'cData', reshape(overlays.RGB,[prod(base.dims) 1 3]));
+%   set(o,'facevertexAlphadata',reshape(overlays.alphaMaps(:,:,1),361*361,1))
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms
@@ -211,8 +242,10 @@ else
   set(gui.colorbar,'XTick',[]);
   set(gui.colorbar,'YTick',(1:size(cbar,1)));
   set(gui.colorbar,'YTickLabel',cbarRange(:,1));
-  set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
-  set(gui.colorbarRightBorder,'YTickLabel',cbarRange(:,2));
+  if isfield(gui,'colorbarRightBorder')
+    set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
+    set(gui.colorbarRightBorder,'YTickLabel',flipud(cbarRange(:,2)));
+  end
 end
 if verbose>1,disppercent(inf);,end
 
@@ -299,7 +332,7 @@ if ~isempty(roiBaseCoords)
       corticalDepth = viewGet(view,'corticalDepth');
       corticalDepthBins = viewGet(view,'corticalDepthBins');
       corticalDepths = 0:1/corticalDepthBins:1;
-      slices = corticalDepths>=corticalDepth(1) & corticalDepths<=corticalDepth(end);
+      slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
       nDepths = nnz(slices);
       baseCoordsHomogeneous = reshape(baseCoordsHomogeneous(:,:,slices),[4 prod(imageDims)*nDepths]);
       

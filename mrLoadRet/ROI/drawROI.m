@@ -79,7 +79,7 @@ else
 
         %First, get a mask of non-zero voxel representing the current overlay display
         mask = maskOverlay(thisView,overlayNum,scanNum);
-        mask = mask{1};
+        mask = any(mask{1},4);
         base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
 
         if any(any((base2scan - eye(4))>1e-6)) %check if we're in the scan space
@@ -91,7 +91,7 @@ else
         if baseType==1 %if the base is a flat map
           baseX = mouseX;
           baseY = mouseY;
-          baseS = ceil(viewGet(thisView,'corticalDepth')*size(mask,3));
+          baseS = round(mean(ceil(viewGet(thisView,'corticalDepth')*size(mask,3))));
         end
 
         %Now find contiguous voxels, starting from the selected non-zeros voxel

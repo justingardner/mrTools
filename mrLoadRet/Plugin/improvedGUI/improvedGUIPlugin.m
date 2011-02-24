@@ -22,7 +22,11 @@ switch action
      disp(sprintf('(improvedGUIPlugin) Need a valid view to install plugin'));
   else
     
-    
+    if viewGet(thisView,'baseType')>0
+      corticalDepthVisibility = 'on';
+    else
+      corticalDepthVisibility = 'off';
+    end    
     mlrAdjustGUI(thisView,'set','group','position',               [0.01    0.955   0.06   0.025]);
     mlrAdjustGUI(thisView,'set','groupPopup','position',          [0.08    0.95    0.2    0.035]);
     mlrAdjustGUI(thisView,'set','ROI','position',                 [0.01    0.91    0.04   0.025]);
@@ -39,13 +43,14 @@ switch action
     mlrAdjustGUI(thisView,'set','corticalDepthText','position',   [0.24    0.815   0.04   0.025]);
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthSlider',...
         'SliderStep',min(1/viewGet(thisView,'corticalDepthBins')*[1 3],1),...
-        'Callback',@corticalMaxDepthSlider_Callback,...
+        'Callback',@corticalMaxDepthSlider_Callback,'visible',corticalDepthVisibility,...
                           'value',.5,'style','slider','position', [0.09    0.79    0.14   0.02 ]);
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthText',...
-        'Callback',@corticalMaxDepthText_Callback,'String','0.5',...
+        'Callback',@corticalMaxDepthText_Callback,'visible',corticalDepthVisibility,'String','0.5',...
               'BackgroundColor','white','style','edit','position',[0.24    0.78    0.04   0.03 ]);
-    mlrAdjustGUI(thisView,'add','control','linkMinMaxDepthCheck','style','checkbox','value',0,...
-        'String','Constant Cortical Depth Range','position',      [0.04    0.755   0.23   0.025]);
+    mlrAdjustGUI(thisView,'add','control','linkMinMaxDepthCheck','style','checkbox','value',1,...
+        'fontSize', 12,'visible',corticalDepthVisibility,...
+        'String','Fix Depth Range','position',                    [0.04    0.755   0.23   0.025]);
     mlrAdjustGUI(thisView,'set','sagittalRadioButton','position', [0.01    0.78    0.1    0.025]);
     mlrAdjustGUI(thisView,'set','axialRadioButton','position',    [0.11    0.78    0.07   0.025]);
     mlrAdjustGUI(thisView,'set','coronalRadioButton','position',  [0.19    0.78    0.1    0.025]);
@@ -64,23 +69,32 @@ switch action
     mlrAdjustGUI(thisView,'set','analysis','position',            [0.01    0.545   0.08   0.025]);
     mlrAdjustGUI(thisView,'set','analysisPopup','position',       [0.09    0.54    0.19   0.035]);
     mlrAdjustGUI(thisView,'set','overlay','position',             [0.01    0.51    0.07   0.025]);
-    mlrAdjustGUI(thisView,'set','overlayPopup','position',        [0.02    0.28    0.26   0.23 ]);
+    mlrAdjustGUI(thisView,'add','control','clipAcrossOverlays','style','checkbox','value',0,...
+        'callback',@clipAcrossOverlays_Callback,...
+        'fontSize', 11,'String','Clip across overlays','position',[0.09    0.505   0.18   0.025]);
+    mlrAdjustGUI(thisView,'add','control','colorBlending','style','text',...
+        'fontSize', 12,'String','Blending mode','position',       [0.02    0.475   0.12   0.025]);
+    mlrAdjustGUI(thisView,'add','control','colorBlendingPopup','style','popupmenu','value',1,...
+        'callback',@colorBlendingPopup_Callback,'String',{'Alpha blend' 'Additive'},...
+        'fontSize', 12,'position',                                [0.14    0.47    0.14   0.035]);
+    mlrAdjustGUI(thisView,'set','overlayPopup','position',        [0.02    0.24    0.26   0.23 ]);
     mlrAdjustGUI(thisView,'set','overlayPopup','style','listbox');
     mlrAdjustGUI(thisView,'set','overlayPopup','Max',2);  %allows multiselect
-    mlrAdjustGUI(thisView,'set','overlayMin','position',          [0.02    0.235   0.04   0.03 ]);
+    mlrAdjustGUI(thisView,'set','overlayMin','position',          [0.02    0.205   0.04   0.03 ]);
     mlrAdjustGUI(thisView,'set','overlayMin','string','Min');
-    mlrAdjustGUI(thisView,'set','overlayMinText','position',      [0.055   0.24    0.09   0.025]);
-    mlrAdjustGUI(thisView,'set','mapMax','position',              [0.15    0.235   0.04   0.03 ]);
+    mlrAdjustGUI(thisView,'set','overlayMinText','position',      [0.055   0.21    0.09   0.025]);
+    mlrAdjustGUI(thisView,'set','mapMax','position',              [0.15    0.205   0.04   0.03 ]);
     mlrAdjustGUI(thisView,'set','mapMax','string','Max');
-    mlrAdjustGUI(thisView,'set','overlayMaxText','position',      [0.19    0.24    0.09   0.025]);
-    mlrAdjustGUI(thisView,'set','overlayMinSlider','position',    [0.02    0.21    0.26   0.02 ]);
-    mlrAdjustGUI(thisView,'set','overlayMaxSlider','position',    [0.02    0.19    0.26   0.02 ]);
-    mlrAdjustGUI(thisView,'set','alpha','position',               [0.02    0.15    0.05   0.03 ]);
-    mlrAdjustGUI(thisView,'set','alphaSlider','position',         [0.08    0.155   0.14   0.02 ]);
-    mlrAdjustGUI(thisView,'set','alphaText','position',           [0.23    0.155   0.05   0.025]);
-    mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.12    0.58   0.07]);
+    mlrAdjustGUI(thisView,'set','overlayMaxText','position',      [0.19    0.21    0.09   0.025]);
+    mlrAdjustGUI(thisView,'set','overlayMinSlider','position',    [0.02    0.185   0.26   0.02 ]);
+    mlrAdjustGUI(thisView,'set','overlayMaxSlider','position',    [0.02    0.165   0.26   0.02 ]);
+    mlrAdjustGUI(thisView,'set','alpha','position',               [0.02    0.125   0.05   0.03 ]);
+    mlrAdjustGUI(thisView,'set','alphaSlider','position',         [0.08    0.13    0.14   0.02 ]);
+    mlrAdjustGUI(thisView,'set','alphaText','position',           [0.23    0.125   0.05   0.025]);
+    mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.12    0.58   0.07 ]);
+    mlrAdjustGUI(thisView,'set','colorbar','fontSize',10);
     mlrAdjustGUI(thisView,'add','axes','colorbarRightBorder',...
-      'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.12    0.001  0.07]);
+      'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.12    0.001  0.07 ]);
 
     % return true to indicate successful plugin
     retval = true;
@@ -143,4 +157,16 @@ else %otherwise, set the new value in the view and the GUI
     refreshMLRDisplay(viewNum);
   end
 end
+
+function clipAcrossOverlays_Callback(hObject,dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+refreshMLRDisplay(viewNum);
+
+function colorBlendingPopup_Callback(hObject,dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+refreshMLRDisplay(viewNum);
+
+
 
