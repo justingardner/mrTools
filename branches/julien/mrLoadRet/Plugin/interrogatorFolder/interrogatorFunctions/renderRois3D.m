@@ -1,7 +1,7 @@
 % renderRois3D - displays 3D rendering of currently loaded ROIs
 %
 %        $Id$
-%      usage: [  ] = renderRois3D(thisView,overlayNum,scanNum,x,y,z,roi)
+%      usage: [  ] = renderRois3D(thisView,overlayList,scanNum,x,y,z,roi)
 %         by: julien besle
 %       date: 2010-02-15
 %     inputs: 
@@ -12,7 +12,7 @@
 % planned improvements: take a subvolume (slightly larger than ROIs) from the start to reduce computing time, especially
 %                       when resampling to base anatomy.
 
-function renderRois3D(thisView,overlayNum,scanNum,x,y,z,roi)
+function renderRois3D(thisView,overlayList,scanNum,x,y,z,roi)
 
 computeContours = 0;
 
@@ -24,11 +24,15 @@ if ~nRois
    return;
 end
 
+if length(overlayList)>1
+   mrWarnDlg('(renderRois3D) This is not implemented when several overlays are displayed');
+   return;
+end
+
 fprintf(1,'Loading data...');
 tic
 baseNum = viewGet(thisView,'currentBase');
 basevoxelsize = viewGet(thisView,'basevoxelsize');
-alphaOverlay = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay'));
 d.alpha = viewGet(thisView,'alpha');
 base_size = viewGet(thisView,'basedims',baseNum);
 
@@ -46,13 +50,9 @@ if ~isempty(analysis)
    %First, get a mask of non-zero voxel representing the current overlay display
    %This is taken from computeOverlay.m
    fprintf(1,'Computing overlay mask...');
-   tic
-   [mask, overlayData]= maskOverlay(thisView,[overlayNum alphaOverlayNum],scanNum);
-%    if iscell(mask)
+   [mask, overlayData]= maskOverlay(thisView,[overlayList alphaOverlayNum],scanNum);
    mask = mask{1};
-%    end
    fprintf(1,'Done\n');
-   toc
 
    baseMaskData = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,'nearest');
    baseMaskData(isnan(baseMaskData))=0;
@@ -64,13 +64,13 @@ if ~isempty(analysis)
    else
       fprintf(1,'Computing alpha overlay...');
       tic
-      alphaOverlayData = overlayData{2};
+      alphaOverlayData = overlayData{1}(:,:,:,2);
       
       baseAlphaData = getBaseSpaceOverlay(thisView, alphaOverlayData, scanNum, baseNum);
       % get the range of the alpha overlay
-      range = viewGet(thisView,'overlayRange',alphaOverlay);
+      range = viewGet(thisView,'overlayRange',alphaOverlayNum);
       % handle setRangeToMax
-      if strcmp(viewGet(thisView,'overlayCtype',alphaOverlay),'setRangeToMax')
+      if strcmp(viewGet(thisView,'overlayCtype',alphaOverlayNum),'setRangeToMax')
        maxRange = max(clip(1),min(baseAlphaData(mask)));
        if ~isempty(maxRange),range(1) = maxRange;end
        minRange = min(max(baseAlphaData(mask)),clip(2));
@@ -290,9 +290,9 @@ end
 
 %Overlay control buttons
 if ~isempty(analysis)
-   set(fignum,'Name',['RenderRois3D - ' viewGet(thisView,'homeDir') ' - ' analysis.name ' - ' analysis.overlays(overlayNum).name ]);
-   d.colorScale = analysis.overlays(overlayNum).range;
-   d.colorMap = analysis.overlays(overlayNum).colormap;
+   set(fignum,'Name',['RenderRois3D - ' viewGet(thisView,'homeDir') ' - ' analysis.name ' - ' analysis.overlays(overlayList).name ]);
+   d.colorScale = analysis.overlays(overlayList).range;
+   d.colorMap = analysis.overlays(overlayList).colormap;
    
 
    if computeContours

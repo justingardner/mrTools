@@ -199,6 +199,9 @@ switch lower(field)
  case {'overlay'}
   % mlrGuiSet(view,'overlay',overlayNum);
   set(handles.overlayPopup,'Value',value);
+  if strcmp(get(handles.overlayPopup,'style'),'popupmenu')
+    value = value(1); %if this is not a listbox, we set only one overlay;
+  end
   if length(value)==1
     set(handles.overlayMinSlider,'enable','on')
     set(handles.overlayMinText,'enable','on')

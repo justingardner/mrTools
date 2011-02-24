@@ -2256,6 +2256,7 @@ switch lower(param)
         rotate = viewGet(view,'rotate');
         alpha = viewGet(view,'alpha');
         sliceIndex = viewGet(view,'baseSliceIndex');
+        clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         % need to recalculate overlay if this is aflat
         % and the cortical depth has changed
         if viewGet(view,'baseType')
@@ -2264,7 +2265,7 @@ switch lower(param)
           corticalDepth = 0;
         end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i_%0.2f',scanNum,baseName,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha,corticalDepth);
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays);
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
@@ -2626,9 +2627,10 @@ switch lower(param)
       val = analysis.curOverlay;
     end
   case{'overlaynum'}
-    % n = viewGet(view,'overlayNum',overlayName,[analysisNum])
-    % n = viewGet(view,'overlayNum',overlayName,[])
-    % n = viewGet(view,'overlayNum',overlayName)
+    % n = viewGet(view,'overlayNum',overlayName(s),[analysisNum])
+    % n = viewGet(view,'overlayNum',overlayName(s),[])
+    % n = viewGet(view,'overlayNum',overlayName(s))
+    %     overlayName(s) may be a string or cell array of strings
     if ieNotDefined('varargin')
       mrErrorDlg('viewGet overlayNum: must specify overlayName.');
     end
@@ -2649,7 +2651,7 @@ switch lower(param)
       end
     elseif ~isempty(analysis) & ~isempty(analysis.overlays)
       overlayNames = {analysis.overlays(:).name};
-      val = find(strcmp(overlayName,overlayNames));
+      val = find(ismember(overlayNames,overlayName));
     end
   case {'overlay'}
     % overlay = viewGet(view,'overlay',[overlayNum],[analysisNum])
@@ -2998,7 +3000,10 @@ switch lower(param)
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = analysis.overlays(overlayNum).alphaOverlay;
+        val = {analysis.overlays(overlayNum).alphaOverlay};
+      end
+      if length(val)==1
+        val = val{1};
       end
     end
   case {'alphaoverlayexponent'}
@@ -3653,6 +3658,27 @@ switch lower(param)
     else
       val = [];
     end
+    
+  case{'clipacrossoverlays'}
+    val=true;
+    if isfield(view,'figure')
+      handles = guidata(view.figure);
+      if isfield(handles,'clipAcrossOverlays') && ~get(handles.clipAcrossOverlays,'value')
+        val=false;
+      end
+    end
+
+  case{'colorblending'}
+    val='Alpha blend';
+    if isfield(view,'figure')
+      handles = guidata(view.figure);
+      if isfield(handles,'colorBlendingPopup') 
+        colorBlendingOptions = get(handles.colorBlendingPopup,'string');
+        val = colorBlendingOptions{get(handles.colorBlendingPopup,'value')};
+      end
+    end
+
+    
  otherwise
     if isempty(view)
       disp(sprintf('(viewGet) No viewGet for %s',param));

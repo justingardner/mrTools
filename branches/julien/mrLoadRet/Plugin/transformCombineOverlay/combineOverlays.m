@@ -72,10 +72,10 @@ nScans = viewGet(thisView,'nScans');
 overlayData = viewGet(thisView,'overlays');
 overlayData = overlayData(overlayList);
 if params.useMask
-   mask = maskOverlay(thisView);
+   mask = maskOverlay(thisView,overlayList);
    for iScan = 1:length(mask)
       for iOverlay = 1:length(overlayData)
-         overlayData(iOverlay).data{iScan}(~mask{iScan})=NaN;
+         overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
       end
    end
 end
