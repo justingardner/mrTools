@@ -263,7 +263,20 @@ else
 end
 
 if verbose>1,disppercent(-inf,'rendering');end
+%this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
+%In cases where it is more than the number of overlay names in the box
+%it has to be changed, but t is necessary to wait until drawnow before changing it  
+%otherwise the cahnge is not taken into account
+%Even in this case, It still outputs a warning, that has to be disabled
+if strcmp(get(gui.overlayPopup,'style'),'listbox')
+  warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+  set(gui.overlayPopup,'ListboxTop',min(get(gui.overlayPopup,'ListboxTop'),length(get(gui.overlayPopup,'string'))));
+end
+%draw the figure
 drawnow
+if strcmp(get(gui.overlayPopup,'style'),'listbox')
+  warning('on','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+end
 if verbose>1,disppercent(inf);end
 if verbose,toc,end
 
