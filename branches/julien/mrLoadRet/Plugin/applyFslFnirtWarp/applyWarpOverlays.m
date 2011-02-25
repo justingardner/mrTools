@@ -73,8 +73,9 @@ for iOverlay = 1:overlaysNumber
       warpedData = applyFSLWarp(data, [warpCoefPathname warpCoefFilename], 'tempInput.img', scanHdr, interpMethod);
       newOverlay.data(scanList(overlayIndices)) = mat2cell(warpedData,scanDims(1),scanDims(2),scanDims(3),ones(1,sum(overlayIndices)));
       newOverlay.name = ['warp(' overlays{iOverlay}.name ') - ' warpCoefFilename];
-      %reset the clip values. This is due to the fact that warped data can go beyond the min and max of the original data (even when using nearest-neighboor, probably due to a bug of FSL
-      newOverlay.clip = [min(warpedData(:)) max(warpedData(:))];
+      %this used to be helpful when it wasn't possible to readily identify which overlays are clipped
+% % % %       %reset the clip values. This is due to the fact that warped data can go beyond the min and max of the original data (even when using nearest-neighboor, probably due to a bug of FSL
+% % % %       newOverlay.clip = [min(warpedData(:)) max(warpedData(:))];
       thisView = viewSet(thisView,'newoverlay',newOverlay);
 
    end
