@@ -22,6 +22,7 @@ switch action
      disp(sprintf('(improvedGUIPlugin) Need a valid view to install plugin'));
   else
     
+    % new uicontrols and reposition old ones
     if viewGet(thisView,'baseType')>0
       corticalDepthVisibility = 'on';
     else
@@ -96,6 +97,11 @@ switch action
     mlrAdjustGUI(thisView,'add','axes','colorbarRightBorder',...
       'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.12    0.001  0.07 ]);
 
+    % Add some useful menus
+    mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback);
+    mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
+    
+    
     % return true to indicate successful plugin
     retval = true;
    end
@@ -169,4 +175,9 @@ viewNum = handles.viewNum;
 refreshMLRDisplay(viewNum);
 
 
-
+% --------------------------------------------------------------------
+function unlinkStimfileMenuItem_Callback(hObject, eventdata, handles)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+viewSet(viewNum, 'stimfilename', '');
+    
