@@ -137,7 +137,7 @@ else
   estimationSupersampling=1;
 end
 
-resolutionLimit = .01; %temporal resolution limit in s
+resolutionLimit = .05; %temporal resolution limit in s
 remainders = [([time_remainders duration_remainders])*estimationSupersampling d.tr];
 remainders = round(remainders/resolutionLimit); %temporal resolution limited to .01 s
 remainders(remainders==0) = d.tr/resolutionLimit;    %replace zeros by TRs
