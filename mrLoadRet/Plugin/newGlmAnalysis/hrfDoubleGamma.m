@@ -66,7 +66,7 @@ if isfield(params, 'shift')
     shift = params.shift;
 end
 
-dt = 0.01;
+dt = 0.05;
 
 t = 0:dt:tmax;
 warning('off', 'MATLAB:log:logOfZero');

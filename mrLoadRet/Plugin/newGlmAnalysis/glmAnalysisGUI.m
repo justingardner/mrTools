@@ -111,7 +111,7 @@ end
 askForParams = 1;
 % put group name on top of list to make it the default
 groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
-hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDoubleGamma','hrfDeconvolution'});
+hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDoubleGamma','hrfFslFlobs','hrfDeconvolution'});
 analysisVolumeMenu = {'Whole volume','Subset box'};
 if nRois
   analysisVolumeMenu{end+1} = 'Loaded ROI(s)';
