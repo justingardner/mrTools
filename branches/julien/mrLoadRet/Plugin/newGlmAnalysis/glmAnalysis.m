@@ -877,7 +877,7 @@ if numberTests
     end
   end
   
-  if params.computeTtests && params.maskContrastOverlay
+  if params.computeTtests && params.maskContrastOverlay && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
     %set the contrast alpha overlay to the statistical value
     switch(params.testOutput)
       case 'P value'                                                  %statistical maps
