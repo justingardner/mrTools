@@ -84,13 +84,13 @@ for iScan = 1:length(scanList)
     
     if ~isempty(thisOverlayData) && ~all(isnan(thisOverlayData(:)))  %if there is some data in the overlay
       clip = viewGet(thisView,'overlayClip',iOverlay);
-      % Find pixels that are within clip
-      if diff(clip) > 0
-        maskOverlayData(:,:,:,cOverlay) = (thisOverlayData >= clip(1) & thisOverlayData <= clip(2));
-      elseif diff(clip) < 0
-        maskOverlayData(:,:,:,cOverlay) = (thisOverlayData >= clip(1) | thisOverlayData <= clip(2));
+      
+      if diff(clip) > 0 % Find defined pixels that are within clip
+        maskOverlayData(:,:,:,cOverlay) = ((thisOverlayData >= clip(1) & thisOverlayData <= clip(2))) | isnan(thisOverlayData);
+      elseif diff(clip) < 0 % Find defined pixels that are outside clip
+        maskOverlayData(:,:,:,cOverlay) = (thisOverlayData >= clip(1) | thisOverlayData <= clip(2)) | isnan(thisOverlayData) ;
       else
-        maskOverlayData(:,:,:,cOverlay) = false(size(thisOverlayData));
+        maskOverlayData(:,:,:,cOverlay) = false(size(thisOverlayData)) | isnan(thisOverlayData);
       end
     end
   end
@@ -102,7 +102,7 @@ for iScan = 1:length(scanList)
   overlays{iScan} = NaN([size(thisOverlayData,1) size(thisOverlayData,2) size(thisOverlayData,3) length(overlayList)],mrGetPref('defaultPrecision'));
   overlays{iScan}(:,:,:,logical(overlayList)) = overlayData{iScan}(:,:,:,overlayList(logical(overlayList)));
   
-  %anything that is a NaN in the overlay must now become false in the mask
+  %all non-defined voxels in the overlay must now become false in the mask
   maskOverlays{iScan}(isnan(overlays{iScan}))=false;
 end
 
