@@ -1,4 +1,4 @@
-% maskBwithA(B,A,test,newValue)
+% maskAwithB(A,B,test,newValue)
 %
 %   masks an overlay A according to a test on the values of overlay B
 %     test is an anonymous function that will be applied to B, for example @(x)x<=.05, tests whether B<=.05
