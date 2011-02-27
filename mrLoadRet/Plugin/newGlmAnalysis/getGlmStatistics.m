@@ -409,7 +409,7 @@ for z = slices
         %average
         if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~isempty(d.covEstimationBrainMask)
           averaged_residuals(:,~d.covEstimationBrainMask)=NaN;
-          averaged_residuals = nanconv4(averaged_residuals,sliceAverager3D,'same'); %only do this if required because nanconv4 takes much longer than nconv
+          averaged_residuals = nanconvn(averaged_residuals,sliceAverager3D,'same'); %only do this if required because nanconvn takes a bit longer than nconv
         else
           averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
         end
