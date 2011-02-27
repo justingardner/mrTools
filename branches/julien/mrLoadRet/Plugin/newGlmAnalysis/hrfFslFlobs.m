@@ -38,7 +38,7 @@ paramsInfo = {...
     {'description', params.description, 'Comment describing the HRF model'},...
     {'flobsBasisSetFile', params.flobsBasisSetFile, 'callback',@testFileExists},...
     {'chooseFile', 0, 'type=pushbutton','callback',{@getBasisSetFile,fslPath},'buttonString=Choose File...'},...
-    {'makeFlobs', 0, 'type=pushbutton','callback',{@launchMakeFlobs,fslPath},'buttonString=Launch Make_flobs'},...
+    {'makeFlobs', 0, 'type=pushbutton','callback',{@launchMakeFlobs,fslPath},'buttonString=Launch FLOBS'},...
 };
       
 if defaultParams
@@ -73,8 +73,14 @@ params.maxModelHrf = tr/dt * max(modelHrf); %output the max amplitude of the act
 
 function launchMakeFlobs(fslPath)
 
+if ismac
+  flobsCommand = 'Make_flobs_gui';
+else %on linux (at least Ubuntu), the command is Make_flobs
+  flobsCommand = 'Make_flobs';
+end
+
 try
-  [s,w] = unix(sprintf('%s/Make_flobs',fslPath));
+  [s,w] = unix(sprintf('%s/%s',fslPath,flobsCommand));
   if s ~=- 0 % unix error
     disp('UNIX error message:')
     disp(w)
