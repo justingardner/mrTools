@@ -1318,18 +1318,19 @@ switch lower(param)
     end
     disppercent(inf);
 
-    if newOverlayNum    
-      % clear overlay cache
-      view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
-      % Set it to be the current overlay
-      view = viewSet(view,'curOverlay',newOverlayNum);
-    end
     % Update the gui
     overlayNames = viewGet(view,'overlayNames',analysisNum);
     if isempty(overlayNames)
       overlayNames = 'none';
     end
     mlrGuiSet(view,'overlayPopup',overlayNames);
+    %set the current overlay
+    if newOverlayNum    
+      % clear overlay cache
+      view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
+      % Set it to be the current overlay
+      view = viewSet(view,'curOverlay',newOverlayNum);
+    end
 
   case {'deleteoverlay'}
     % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
