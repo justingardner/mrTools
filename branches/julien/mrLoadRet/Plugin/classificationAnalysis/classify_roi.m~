@@ -44,8 +44,6 @@ if select_vox
 end
 
 
-% [sort_ xxx.co_sort_idx] = sort(xxx.co,'descend');
-
 cc = viewGet(view,'concatinfo',params.scanNum);
 lab = [];
 for i=1:length(d.stimvol)

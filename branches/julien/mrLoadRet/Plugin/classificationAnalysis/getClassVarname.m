@@ -104,7 +104,7 @@ for scanNum = 1:length(scanNums)
       end
       
       % set up to get the variable name from the user
-      taskVarParams{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
+      taskVarParams{end+1} ={'varname',varnames,sprintf('Analysis variables: %s',varnamesStr),'type=popupmenu'};
     end
   end
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
