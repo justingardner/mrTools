@@ -30,6 +30,7 @@ while askForParams
    {'passRoiMode',passRoiModeMenu,'name of the function to apply. You can use any custom matlab function on the path that accepts an ROI structure as argument and output a new ROI structure.'},...
    {'roiSpace',roiSpaceMenu,'In which space should the coordinates be converted before being passed'},...
    {'additionalArgs','','Additional arguments to the transform function. These arguments will be input at the end of each function call. They must be separated by commas. '},...
+   {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print transformFunction Help','Prints transformation function help in command window'},...
           };
   params = mrParamsDialog(params, 'Choose an ROI transfromation function');
   % Abort if params empty
@@ -140,4 +141,19 @@ while ~isempty(remain)
    else
       arguments{nArgs} = ['''' token ''''];
    end
-end        
+end   
+
+function printHelp(params)
+
+if strcmp(params.transformFunction,'User Defined')
+  mrWarnDlg('(transformROIs) Please select a combination function');
+else
+  helpString = help(params.transformFunction);
+  if isempty(helpString)
+    mrWarnDlg('(transformROIs) No help available');
+  else
+    disp(helpString)
+  end
+end
+
+
