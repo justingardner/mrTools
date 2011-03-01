@@ -37,7 +37,7 @@ try
     return
   end
 catch 
-  disp('(uhoh) looks like we have encountered a problem while running the applywarp FSL command')
+  disp('(applyFSLWarp) There was a problem running FSL applywarp command')
   disp(sprintf('unix error code: %d; %s', s, w))
   return
 end
