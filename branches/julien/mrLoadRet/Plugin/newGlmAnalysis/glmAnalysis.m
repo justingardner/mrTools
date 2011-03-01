@@ -65,18 +65,9 @@ if params.covCorrection   %number of voxels to get around the ROI/subset box in 
 else
    voxelsMargin = 0;
 end
-
-% % % % if any( sum(contrasts,2)==1 & sum(contrasts~=0,2)==1 )
-% % % %    scanNum = params.scanNum(1);
-% % % %    fprintf('Getting condition names from scan %d', scanNum); 
-% % % %    d = loadScan(thisView, scanNum, [], 0);
-% % % %    d = getStimvol(d,scanParams{iScan});
-% % % %    % do any call for preprocessing
-% % % %    if ~isempty(scanParams{iScan}.preprocess)
-% % % %       d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
-% % % %    end
-% % % % end
-
+if params.spatialSmoothing  %we'll also need a margin if we're spatially smoothing
+  voxelsMargin = max(voxelsMargin,params.spatialSmoothing);
+end
 
 %--------------------------------------------------------- Main loop over scans ---------------------------------------------------
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;

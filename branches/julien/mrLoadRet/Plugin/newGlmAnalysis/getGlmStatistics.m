@@ -27,7 +27,6 @@ approximate_value = 0;
 out = struct;
 %optimalXLength = [60 80 100 120 140 160 180 200];
 %optimalXLength = round(120000/nFrames);  %empirical value that optimizes the speed of bootstrapping, probably depends on available memory
-optimalXLength = 120; %optimizes the bootsrap computing time
 optimalXLength = 60;   %optimizes the OLS residual and MSS computing time
 
 
@@ -166,7 +165,7 @@ nFrames = size(d.volumes,2);
 residualForming = eye(nFrames) - d.scm*pinv_X; %this matrix computes the residuals directly
 d.rdf = nFrames-size(d.scm,2)-1; %degrees of freedom for the residual          %SHOULD BE nFrames-size(d.scm,2)
 
-if params.covCorrection && params.covEstimationAreaSize>1 && isfield(d,'roiPositionInBox') 
+if ((params.covCorrection && params.covEstimationAreaSize>1) || params.spatialSmoothing)  && isfield(d,'roiPositionInBox') 
   d.dim(1) = nnz(d.roiPositionInBox);
 end
 
@@ -235,7 +234,7 @@ if ~isempty(restrictions)
       scm_h{iR} = d.scm*complementaryRestriction{iR}';           
       residualForming_h(:,:,iR) = eye(nFrames) - scm_h{iR}*((scm_h{iR}'*scm_h{iR})^-1)*scm_h{iR}';       %TO REMOVE EVENTUALLY
       residualForming_f_tests(:,:,iR) = residualForming_h(:,:,iR) - residualForming; 
-      [V,dump] = eig(residualForming_f_tests(:,:,iR));
+      V = eig(residualForming_f_tests(:,:,iR));
       eig_residualForming_f_tests{iR} = V(:,1:size(restrictions{iR},1));
     end
   end
@@ -378,6 +377,24 @@ for z = slices
   % convert to percent signal change
   timeseries = 100*timeseries./colmeans;
   clear('colmeans');
+  
+  %spatial smoothing
+  if params.spatialSmoothing
+    if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
+      timeseries2 = reshapeToRoiBox(timeseries,d.roiPositionInBox|d.marginVoxels,precision);
+    end
+    timeseries2 = convn(timeseries2,permute(gaussianKernel2D(params.spatialSmoothing),[3 1 2]),'same');
+    if isfield(d,'roiPositionInBox') %if the data are not spatially organized
+      %put the data back in a new matrix with only the voxels of interest
+      timeseries2 = reshape(timeseries2,d.dim(4), numel(d.roiPositionInBox));
+      if params.covCorrection
+        timeseries = timeseries2(:,d.roiPositionInBox|d.marginVoxels); %if we estimate the residuals covariance matrix, we keep the margin voxels
+      else
+        timeseries = timeseries2(:,d.roiPositionInBox);
+      end
+      clear('usedVoxelsInBox','timeseries2');
+    end
+  end    
 
   %--------------------------------------------------- MAIN LOOP: ORDINARY LEAST SQUARES ------------------------------------%
   % the following section has been optimized to run faster by
@@ -399,13 +416,16 @@ for z = slices
     if params.covEstimationAreaSize>1     
       %average the residuals for covariance matrix estimation
       if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
-        %first put them on a single line whose length is the product of the volume dimensions
-        nVoxelsInBox = numel(d.roiPositionInBox);
-        usedVoxelsInBox = reshape(d.roiPositionInBox|d.marginVoxels,nVoxelsInBox,1);
-        averaged_residuals = NaN(d.dim(4),nVoxelsInBox,precision); 
-        averaged_residuals(:,usedVoxelsInBox) = residuals;  
-        %then reshape into a volume
-        averaged_residuals = reshape(averaged_residuals,[d.dim(4) size(d.roiPositionInBox)]);
+%         %first put them on a single line whose length is the product of the volume dimensions
+%         nVoxelsInBox = numel(d.roiPositionInBox);
+%         usedVoxelsInBox = reshape(d.roiPositionInBox|d.marginVoxels,nVoxelsInBox,1);
+%         averaged_residuals = NaN(d.dim(4),nVoxelsInBox,precision); 
+%         averaged_residuals(:,usedVoxelsInBox) = residuals;  
+%         %then reshape into a volume
+%         averaged_residuals = reshape(averaged_residuals,[d.dim(4) size(d.roiPositionInBox)]);
+        
+        
+        [averaged_residuals,usedVoxelsInBox] = reshapeToRoiBox(residuals,d.roiPositionInBox|d.marginVoxels,precision);
         %average
         if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~isempty(d.covEstimationBrainMask)
           averaged_residuals(:,~d.covEstimationBrainMask)=NaN;
@@ -414,7 +434,7 @@ for z = slices
           averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
         end
         %put the data back in a new matrix with only the voxels of interest
-        averaged_residuals = reshape(averaged_residuals,d.dim(4), nVoxelsInBox);
+        averaged_residuals = reshape(averaged_residuals,d.dim(4), numel(d.roiPositionInBox));
         averaged_residuals = averaged_residuals(:,d.roiPositionInBox);
         
         %reshape timeseries and residuals accordingly
@@ -701,7 +721,7 @@ for z = slices
         end
         
         if params.TFCE 
-          thisTfce = applyTfce(thisStatistic,d.roiPositionInBox); 
+          thisTfce = applyTfce(thisStatistic,d.roiPositionInBox,precision); 
         end
         if iBoot==1
           actualStatistic = thisStatistic;
@@ -970,13 +990,16 @@ switch(lower(defaultValues))
     array = zeros(dimensions,precision);
 end
 
-function outputData = reshapeToRoiBox(inputData,dataPosition)
+function [outputData,usedVoxelsInBox] = reshapeToRoiBox(inputData,dataPosition,precision)
 
-%inputData must be size ([A B], where A equals the number of non-zero values in dataPosition
-%outputData will be size ([size(dataPosition) B])
-outputData = NaN([numel(dataPosition) size(inputData,2) size(inputData,3)]);
-outputData(dataPosition>0,:,:) = inputData;
-outputData = reshape(outputData,[size(dataPosition,1) size(dataPosition,2) size(dataPosition,3) size(outputData,2) size(outputData,3)]);
+%inputData must be size ([A B], where B equals the number of non-zero values in dataPosition
+%outputData will be size ([A size(dataPosition)])
+nVoxelsInBox = numel(dataPosition);
+usedVoxelsInBox = reshape(dataPosition,nVoxelsInBox,1);
+outputData = NaN(size(inputData,1),nVoxelsInBox,precision); 
+outputData(:,usedVoxelsInBox) = inputData;  
+%then reshape into a volume
+outputData = reshape(outputData,[size(inputData,1) size(dataPosition)]);
 
 
 function p = T2p(T,rdf,params)
@@ -1004,9 +1027,9 @@ function p = computeBootstrapP(count,nResamples)
 p = max(count/nResamples,1/(nResamples+1));
 p(isnan(count)) = NaN; %NaNs must remain NaNs (they became 1e-16 when using max)
 
-function tfceS = applyTfce(S,roiPositionInBox)
+function tfceS = applyTfce(S,roiPositionInBox,precision)
   %reshape to volume to apply TFCE and then reshape back to one dimension
-  tfceS = applyFslTFCE(reshapeToRoiBox(S,roiPositionInBox),'',0);
+  tfceS = applyFslTFCE(permute(reshapeToRoiBox(S',roiPositionInBox,precision),[2 3 4 1]),'',0);
   tfceS = permute(tfceS,[4 1 2 3]);
   tfceS = tfceS(:,roiPositionInBox)';
   %put NaNs back
@@ -1019,5 +1042,28 @@ function sse = minimizeDampenedOscillator(params, xdata,ydata)
   ErrorVector = FittedCurve - ydata;
   sse = sum(ErrorVector.^2);
   
+ 
   
-  
+function kernel = gaussianKernel(FWHM)
+
+sigma_d = FWHM/2.35482;
+w = ceil(FWHM); %deals with resolutions that are not integer
+%make the gaussian kernel large enough for FWHM
+kernelDims = 2*[w w w]+1;
+kernelCenter = ceil(kernelDims/2);
+[X,Y,Z] = meshgrid(1:kernelDims(1),1:kernelDims(2),1:kernelDims(3));
+kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2+(Z-kernelCenter(3)).^2)/(2*sigma_d^2)); %Gaussian function
+
+
+function kernel = gaussianKernel2D(FWHM)
+
+sigma_d = FWHM/2.35482;
+w = ceil(FWHM); %deals with resolutions that are not integer
+%make the gaussian kernel large enough for FWHM
+kernelDims = 2*[w w]+1;
+kernelCenter = ceil(kernelDims/2);
+[X,Y] = meshgrid(1:kernelDims(1),1:kernelDims(2));
+kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2)/(2*sigma_d^2)); %Gaussian function
+kernel = kernel./sum(kernel(:));
+ 
+
