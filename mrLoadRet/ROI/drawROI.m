@@ -66,11 +66,20 @@ else
     case 'contiguous'
 
       [mouseY,mouseX] = ginput(1);
+     
+      if any(strcmp(get(fig,'CurrentModifier'),'command')) 
+        selectAcrossVolume=true;
+      else
+        selectAcrossVolume=false;
+      end
+      
       mouseX = round(mouseX);
       mouseY = round(mouseY);
       baseCoords = viewGet(thisView,'cursliceBaseCoords');
       % convert mouse to baseCoords
       if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
+        
+        
         baseX = baseCoords(mouseX,mouseY,1);
         baseY = baseCoords(mouseX,mouseY,2);
         baseS = baseCoords(mouseX,mouseY,3);
@@ -88,35 +97,44 @@ else
            interpMethod = 'nearest';
            [mask, dump, maskBaseCoords] = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,interpMethod,10,viewGet(thisView,'rotate'));
         end
-        if baseType==1 %if the base is a flat map
-          baseX = mouseX;
-          baseY = mouseY;
-          baseS = round(mean(ceil(viewGet(thisView,'corticalDepth')*size(mask,3))));
-        end
-
-        %Now find contiguous voxels, starting from the selected non-zeros voxel
-        selectedVoxelIndex = sub2ind(size(mask),baseX,baseY,baseS);
-        if mask(baseX,baseY,baseS)
-           cc = bwconncomp(mask,6);
-           for i_object = 1:cc.NumObjects
-              if ismember(selectedVoxelIndex,cc.PixelIdxList{i_object})
-                 break;
-              end
-           end
-           roiCoordsIndices = cc.PixelIdxList{i_object};
-           coords = ones(length(roiCoordsIndices),4);
-
-           if baseType==1 %if the base is a flap map
-              maskBaseCoords = reshape(maskBaseCoords,numel(mask),3);
-              coords(:,1:3) = maskBaseCoords(roiCoordsIndices,:);
-           else
-              [coords(:,1) coords(:,2) coords(:,3)] = ind2sub(size(mask),roiCoordsIndices);
-           end
-           coords = coords';
+        
+        %find contiguous voxels
+        cc = bwconncomp(mask,6);
+        
+        if selectAcrossVolume
+          %put all the connected objects found together
+          roiCoordsIndices=find(labelmatrix(cc));
         else
-          coords = [];
-          mrWarnDlg('(contiguousRoi) Please select a non-zero voxel');
+          %select only the object that has been clicked
+          if baseType==1 %if the base is a flat map
+            baseX = mouseX;
+            baseY = mouseY;
+            baseS = round(mean(ceil(viewGet(thisView,'corticalDepth')*size(mask,3))));
+          end
+          if mask(baseX,baseY,baseS)
+            selectedVoxelIndex = sub2ind(size(mask),baseX,baseY,baseS);
+             for i_object = 1:cc.NumObjects
+                if ismember(selectedVoxelIndex,cc.PixelIdxList{i_object})
+                   break;
+                end
+             end
+             roiCoordsIndices = cc.PixelIdxList{i_object};
+          else
+            coords = [];
+            mrWarnDlg('(contiguousRoi) Please select a non-zero voxel');
+            return;
+          end
         end
+        
+        coords = ones(length(roiCoordsIndices),4);
+        if baseType==1 %if the base is a flap map
+          maskBaseCoords = reshape(maskBaseCoords,numel(mask),3);
+          coords(:,1:3) = maskBaseCoords(roiCoordsIndices,:);
+        else
+          [coords(:,1) coords(:,2) coords(:,3)] = ind2sub(size(mask),roiCoordsIndices);
+        end
+        coords = coords';
+
       else
         coords = [];
       end
