@@ -82,29 +82,33 @@ if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
   end
 end
 
-if ~isfield(params,'covCorrection') || isempty(params.covCorrection)
+if fieldIsNotDefined(params,'spatialSmoothing')
+   params.spatialSmoothing = 0;
+end
+
+if fieldIsNotDefined(params,'covCorrection')
    params.covCorrection = 0;
 end
-if ~isfield(params,'correctionType') || isempty(params.correctionType)
+if fieldIsNotDefined(params,'correctionType')
    params.correctionType = 'generalizedLeastSquares';
 end
-if ~isfield(params,'covEstimation') || isempty(params.covEstimation)
+if fieldIsNotDefined(params,'covEstimation')
    params.covEstimation = 'singleTukeyTapers';
 end
-if ~isfield(params,'covEstimationAreaSize') || isempty(params.covEstimationAreaSize) %this is necessary so that it doesn't become a string is it is empty
+if fieldIsNotDefined(params,'covEstimationAreaSize') %this is necessary so that it doesn't become a string is it is empty
    params.covEstimationAreaSize = 20;
 end
-if ~isfield(params,'covFactorization') || isempty(params.covFactorization)
+if fieldIsNotDefined(params,'covFactorization')
    params.covFactorization = 'Cholesky';
 end
 if fieldIsNotDefined(params,'covEstimationBrainMask') 
    params.covEstimationBrainMask = 'None';
 end
 
-if ~isfield(params,'nonLinearityCorrection') || isempty(params.nonLinearityCorrection)
+if fieldIsNotDefined(params,'nonLinearityCorrection')
    params.nonLinearityCorrection = 0;
 end
-if ~isfield(params,'saturationThreshold') || isempty(params.saturationThreshold)
+if fieldIsNotDefined(params,'saturationThreshold')
    params.saturationThreshold = 2;
 end
 
@@ -137,6 +141,7 @@ while askForParams
     {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of contrasts that will be ouput as an overlay'},...
     {'computeTtests', params.computeTtests,'type=checkbox', 'Whether contrasts are tested for significance using T-tests'},...
     {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays'},...
+    {'spatialSmoothing',params.spatialSmoothing, 'minmax=[0 inf]','Width at half-maximum in voxels of a 2D gaussian kernel that will be convolved with each slice at each time-point. If 0, no spatial smoothing is applied'},...
     {'covCorrection',params.covCorrection,'type=checkbox','Correction for correlated noise'},...
     {'correctionType',correctionTypeMenu,'type=popupmenu','contingent=covCorrection','Type of correction (see Wiki for the different algorithms and computing time comparison)'},...
     {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
