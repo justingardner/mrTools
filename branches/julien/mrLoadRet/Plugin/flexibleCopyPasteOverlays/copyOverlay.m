@@ -23,7 +23,7 @@ while keepAsking
 
       overlayList = 1:viewGet(thisView,'nOverlays');
       if length(overlayList)>1
-         overlayList = selectInList(view,'overlays');
+         overlayList = selectInList(thisView,'overlays');
          if isempty(overlayList)
             if viewGet(thisView,'nScans')==1
                return
@@ -42,6 +42,11 @@ for iOverlay = 1:length(overlayList)
    overlay(iOverlay).data = overlay(iOverlay).data(scanList);
 end
 
+if ~isempty(overlay)
+  fprintf('(copyOverlay) %i overlays from %i scans have been copied\n',length(overlayList),length(scanList));
+else
+  disp('(copyOverlay) No overlay has been copied');
+end
 return
 
 
