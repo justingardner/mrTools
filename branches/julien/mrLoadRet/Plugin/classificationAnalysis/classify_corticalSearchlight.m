@@ -144,6 +144,7 @@ if ~isempty(scan_light)
 %     mean_s_acc(i)=mean(s_acc);
 else
     mean_acc(i)=NaN;
+    patt=[];
 %     mean_s_acc(i)=NaN;
 end
 size_light(i)=size(patt,1);
@@ -161,7 +162,7 @@ combinedOverlay(:,2) = cmap(c);
 combinedOverlay(:,3) = cmap(c);
 combinedOverlay(~isnan(mean_acc),:)=squeeze(cdata2rgb(mean_acc(~isnan(mean_acc)),'hot',[0 0.5]));
 
-figure,patch('vertices', inf.vtcs, 'faces', inf.tris,'FaceVertexCData',combinedOverlay,'facecolor','interp','edgecolor','none');
+figure,patch('vertices', m.vertices, 'faces', m.faces,'FaceVertexCData',combinedOverlay,'facecolor','interp','edgecolor','none');
 colormap('hot')
 colorbar
 axis equal
