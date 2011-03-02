@@ -44,8 +44,6 @@ if select_vox
 end
 
 
-% [sort_ xxx.co_sort_idx] = sort(xxx.co,'descend');
-
 cc = viewGet(view,'concatinfo',params.scanNum);
 lab = [];
 for i=1:length(d.stimvol)
@@ -112,6 +110,11 @@ for r = 1:size(r_idx,2)
        [~, patt_sort] =sort(sort_data{r},'descend');   
     end
     
+    class_lab=[];
+    acc=[];
+    svm_lab=[];
+    svm_weight=[];
+    svm_acc=[];
     for i=1:size(cc.runTransition,1)
     
     class_lab{r}(run==i)=classify(patt(patt_sort,run==i)',patt(patt_sort,run~=i)',lab(run~=i),'diagLinear');
@@ -186,8 +189,7 @@ for r=1:size(r_idx,2)
 end
 
 
-
-
+keyboard
 
 return
 % This part decides the number of voxels and bins to use. To skip the phase
