@@ -95,7 +95,8 @@ else
            %if not, transform the mask to the base space
            mrWarnDlg('This would be faster and more accurate if the base space was identical to the scan space');
            interpMethod = 'nearest';
-           [mask, dump, maskBaseCoords] = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,interpMethod,10,viewGet(thisView,'rotate'));
+           [mask, dump, maskBaseCoords] = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,interpMethod,[],viewGet(thisView,'rotate'));
+           mask(isnan(mask))=0;
         end
         
         %find contiguous voxels

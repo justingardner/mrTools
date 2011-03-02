@@ -1,19 +1,20 @@
 %
 % maskOverlay.m
 %     $Id$
-%   usage: [maskOverlay, overlayData] = maskOverlay(thisView,<overlayList>,<scanList>,<sliceInfo>)
+%   usage: [maskOverlay, overlayData] = maskOverlay(thisView,<overlayList>,<scanList>,<boxInfo>)
 %      by: jb, taken out of computeOverlay.m
 %    date: 11/05/2010
 % purpose: constructing a logical mask excluding clipped values based on clip values of each/all overlays in an analysis/scan
 %   input:  - overlayList specifies which masks and overlays (and their associated alpha masks and overlays) must be output
 %           - scanList: overlays are retrieved from the view for these scans
-%           - sliceInfo: this is a structure that specifies the transformation from a scan space to a slice in another space
+%           - boxInfo: this is a structure that specifies the transformation from a scan space to a slice/3D subset in another space
+%               the outputs are then in this space
 %
 %           If clipAcrossOverlays is on, the mask is identical for all overlays (in a scan) and
 %             is the intersection of all masks of all overlays (repeated so that maskOverlay is the same size as overlayData)
 %             otherwise, one mask is output per overlay (on the fourth dimension) of overlayList
 
-function [maskOverlays, overlays, overlayCoords] = maskOverlay(thisView,overlayList,scanList,sliceInfo)
+function [maskOverlays, overlays, overlayCoords] = maskOverlay(thisView,overlayList,scanList,boxInfo)
 
 clipAcrossOverlays=viewGet(thisView,'clipAcrossOverlays');
 nOverlaysInAnalysis = viewGet(thisView,'numberofOverlays');
@@ -37,12 +38,12 @@ else
   overlayList = 1:length(overlaysToGet);
 end
 
-if ~ieNotDefined('sliceInfo')
-  sliceInfo.interpMethod = mrGetPref('interpMethod');
-  if isempty(sliceInfo.interpMethod)
-    sliceInfo.interpMethod = 'linear';
+if ~ieNotDefined('boxInfo')
+  boxInfo.interpMethod = mrGetPref('interpMethod');
+  if isempty(boxInfo.interpMethod)
+    boxInfo.interpMethod = 'linear';
   end
-  sliceInfo.interpExtrapVal = NaN;
+  boxInfo.interpExtrapVal = NaN;
   overlayCoords = cell(1,length(scanList));
 end
 
@@ -50,12 +51,12 @@ cScan = 0;
 overlayData = cell(1,length(scanList));
 for iScan = scanList
   cScan = cScan+1;
-  if ~ieNotDefined('sliceInfo')
+  if ~ieNotDefined('boxInfo')
     % pull out overlays for this slice
     [overlayData{cScan},overlayCoords{cScan}] = ...
-        getOverlaySlice(thisView,iScan,sliceInfo,analysisNum,overlaysToGet);
-    %put slices on 4th dimensions
-    overlayData{cScan} = permute(overlayData{cScan},[1 2 4 3]);
+        getOverlayBox(thisView,iScan,boxInfo,analysisNum,overlaysToGet);
+%     %put slices on 4th dimensions
+%     overlayData{cScan} = permute(overlayData{cScan},[1 2 4 3]);
   else
     scanDims = viewGet(thisView,'scandims');
     overlayData{cScan}=NaN([scanDims nOverlaysInAnalysis]);
@@ -109,22 +110,22 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%
-%   getOverlaySlice   %
+%   getOverlayBox   %
 %%%%%%%%%%%%%%%%%%%%%%%
-function [overlayImages,overlayCoords,overlayCoordsHomogeneous] = ...
-  getOverlaySlice(thisView,scanNum,sliceInfo,analysisNum,overlayList)
+function [overlayImages,overlayCoords] = ...
+  getOverlayBox(thisView,scanNum,boxInfo,analysisNum,overlayList)
 %
-% getOverlaySlice: extracts overlays image and corresponding coordinates
+% getOverlayBox: extracts overlays 3D subset and corresponding coordinates
 
 overlayCoords = [];
 overlayCoordsHomogeneous = [];
 overlayImages = [];
 
-base2overlay = sliceInfo.base2overlay;
-baseCoordsHomogeneous = sliceInfo.baseCoordsHomogeneous;
-baseDims = sliceInfo.baseDims;
-interpMethod = sliceInfo.interpMethod;
-interpExtrapVal = sliceInfo.interpExtrapVal;
+base2overlay = boxInfo.base2overlay;
+baseCoordsHomogeneous = boxInfo.baseCoordsHomogeneous;
+baseDims = boxInfo.baseDims;
+interpMethod = boxInfo.interpMethod;
+interpExtrapVal = boxInfo.interpExtrapVal;
 
 %find unique overlays in the list
 [uniqueOverlays,dump,uniqueOverlaysIndices] = unique(overlayList);
@@ -146,10 +147,8 @@ if ~isempty(base2overlay) & ~isempty(baseCoordsHomogeneous)
   else
     nDepths=1;
   end
-  overlayCoordsHomogeneous = base2overlay * reshape(baseCoordsHomogeneous,4,prod(baseDims)*nDepths);
-  %temporarily put depth dimensions with y dimension
-  overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[baseDims(1) baseDims(2)*nDepths 3 ]);
-  overlayCoordsHomogeneous = reshape(overlayCoordsHomogeneous,[4 prod(baseDims) nDepths]);
+  overlayCoords = (base2overlay * reshape(baseCoordsHomogeneous,4,prod(baseDims)*nDepths))';
+  overlayCoords = overlayCoords(:,1:3);
 end
 
 
@@ -163,15 +162,14 @@ end
 %and this can substantially reduce the time needed for interpolation
 if ~isempty(overlayCoords) && strcmp(interpMethod,'nearest') 
   overlayCoords = round(overlayCoords);   
-  [overlayCoords,dump,coordsIndex] = unique(reshape(overlayCoords,[prod(baseDims)*nDepths 3]),'rows'); 
-  overlayCoords = permute(overlayCoords,[1 3 2]); 
+  [overlayCoords,dump,coordsIndex] = unique(overlayCoords,'rows'); 
 end
   
 if ~isempty(interpFnctn)
   overlayImages = feval(interpFnctn,thisView,scanNum,baseDims,...
     analysisNum,overlayCoords,interpMethod,interpExtrapVal,uniqueOverlays);
 else
-  overlayImages = zeros([size(overlayCoords,1) size(overlayCoords,2) nOverlays]);
+  overlayImages = zeros([size(overlayCoords,1) nOverlays]);
   cOverlay=0;
   for iOverlay = uniqueOverlays
     cOverlay = cOverlay+1;
@@ -179,27 +177,31 @@ else
       overlayData = viewGet(thisView,'overlayData',scanNum,iOverlay,analysisNum);
       if ~isempty(overlayData) & ~isempty(overlayCoords)
         % Extract the slice
-        overlayImages(:,:,cOverlay) = interp3(overlayData,...
-          overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
+        overlayImages(:,cOverlay) = interp3(overlayData,...
+          overlayCoords(:,2),overlayCoords(:,1),overlayCoords(:,3),...
           interpMethod,interpExtrapVal);
       else
-        overlayImages(:,:,cOverlay) = NaN;
+        overlayImages(:,cOverlay) = NaN;
       end
     else
-      overlayImages(:,:,cOverlay) = NaN;
+      overlayImages(:,cOverlay) = NaN;
     end
   end
 end
 
 if ~isempty(overlayImages)
   if strcmp(interpMethod,'nearest')
-    overlayImages = mean(permute(reshape(overlayImages(coordsIndex,:,:),[baseDims nDepths nOverlays]),[1 2 4 3]),4);
-    overlayCoords = mean(permute(reshape(overlayCoords(coordsIndex,:,:),[baseDims nDepths 3]),[1 2 4 3]),4);
+    overlayImages = reshape(overlayImages(coordsIndex,:,:),[baseDims(1) baseDims(2) baseDims(3)*nDepths nOverlays]);
+    overlayCoords = reshape(overlayCoords(coordsIndex,:,:),[baseDims(1) baseDims(2) baseDims(3)*nDepths 3]);
   else
-    overlayCoords = mean(permute(reshape(overlayCoords,[baseDims nDepths 3 ]),[1 2 4 3]),4);
-    overlayImages = mean(permute(reshape(overlayImages,[baseDims nDepths nOverlays]),[1 2 4 3]),4);
+    overlayImages = reshape(overlayImages,[baseDims(1) baseDims(2) baseDims(3)*nDepths nOverlays]);
+    overlayCoords = reshape(overlayCoords,[baseDims(1) baseDims(2) baseDims(3)*nDepths 3 ]);
   end
-  overlayImages = overlayImages(:,:,uniqueOverlaysIndices);
+  if nDepths>1
+    overlayImages = mean(overlayImages,3);
+    overlayCoords = mean(overlayCoords,3);
+  end
+  overlayImages = overlayImages(:,:,:,uniqueOverlaysIndices);
 end
 
 
@@ -217,7 +219,7 @@ if ieNotDefined('overlayList')
 end
 
 % Initialize
-overlayImages = zeros([size(overlayCoords,1),size(overlayCoords,2),length(overlayList)]);
+overlayImages = zeros(size(overlayCoords,1), length(overlayList));
 
 cOverlay=0;
 for iOverlay = overlayList
@@ -253,24 +255,24 @@ for iOverlay = overlayList
 
     if ~isempty(overlayData) && ~isempty(overlayCoords)
       % Extract the slice
-      overlayImages(:,:,cOverlay) = interp3(overlayData,...
-        overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3),...
+      overlayImages(:,cOverlay) = interp3(overlayData,...
+        overlayCoords(:,2),overlayCoords(:,1),overlayCoords(:,3),...
         interpMethod,interpExtrapVal);
       switch(overlayType)
         case 'amp'
-          overlayImages(:,:,cOverlay) = abs(overlayImages(:,:,cOverlay));
+          overlayImages(:,cOverlay) = abs(overlayImages(:,cOverlay));
 
         case 'ph'
-          ang = angle(overlayImages(:,:,cOverlay));
+          ang = angle(overlayImages(:,cOverlay));
           ang(ang < 0) = ang(ang < 0)+2*pi;
-          overlayImages(:,:,cOverlay) = ang;
+          overlayImages(:,cOverlay) = ang;
       end
     else
-      overlayImages(:,:,cOverlay) = NaN;
+      overlayImages(:,cOverlay) = NaN;
     end
     
   else
-    overlayImages(:,:,cOverlay) = NaN;
+    overlayImages(:,cOverlay) = NaN;
   end
 end
 

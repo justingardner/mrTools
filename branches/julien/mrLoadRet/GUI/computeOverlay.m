@@ -24,7 +24,7 @@ scan = viewGet(thisView,'curscan');
 
 sliceInfo.base2overlay = base2overlay;
 sliceInfo.baseCoordsHomogeneous = baseCoordsHomogeneous;
-sliceInfo.baseDims = baseDims;
+sliceInfo.baseDims = [baseDims 1];
 
 if ~isempty(curOverlays)
   curAlphaOverlays = zeros(1,nCurOverlays);
