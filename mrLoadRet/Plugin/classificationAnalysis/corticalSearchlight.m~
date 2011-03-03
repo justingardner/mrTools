@@ -39,7 +39,7 @@ if ieNotDefined('scanList'),scanList = [];end
 if ieNotDefined('params')
   % put up the gui
   if defaultParams
-    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList);
+    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList,'roilist',viewGet(view,'roiNames'));
   else
     params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'scanList',scanList);
   end

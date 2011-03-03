@@ -39,9 +39,9 @@ if ieNotDefined('scanList'),scanList = [];end
 if ieNotDefined('params')
   % put up the gui
   if defaultParams
-    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList);
+    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList,'roilist',viewGet(view,'roiNames'));
   else
-    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'scanList',scanList);
+    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'scanList',scanList,'roilist',viewGet(view,'roiNames'));
   end
 end
 
@@ -107,7 +107,7 @@ for scanNum = params.scanNum
      % do any called for preprocessing
       d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
       
-    acc.data{scanNum}=classify_searchlight(view,d,params.radius,params.scanParams{scanNum});
+    acc.data{scanNum}=classify_searchlight(view,d,params.radius,params.roiMask,params.scanParams{scanNum});
     acc.params{scanNum} = params.scanParams{scanNum};
     
     
