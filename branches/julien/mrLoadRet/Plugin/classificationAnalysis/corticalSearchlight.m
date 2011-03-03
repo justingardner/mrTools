@@ -39,9 +39,9 @@ if ieNotDefined('scanList'),scanList = [];end
 if ieNotDefined('params')
   % put up the gui
   if defaultParams
-    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList);
+    params = surfaceClassGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList);
   else
-    params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'scanList',scanList);
+    params = surfaceClassGUI('groupName',viewGet(view,'groupName'),'scanList',scanList);
   end
 end
 

@@ -160,12 +160,13 @@ c = round((size(cmap,1)-1)*(c-min(c))./(max(c)-min(c))+1);
 combinedOverlay(:,1) = cmap(c);
 combinedOverlay(:,2) = cmap(c);
 combinedOverlay(:,3) = cmap(c);
-combinedOverlay(~isnan(mean_acc),:)=squeeze(cdata2rgb(mean_acc(~isnan(mean_acc)),'hot',[0 0.5]));
+combinedOverlay(~isnan(mean_acc),:)=squeeze(cdata2rgb(mean_acc(~isnan(mean_acc)),'hot',[0 1]));
 
-figure,patch('vertices', m.vertices, 'faces', m.faces,'FaceVertexCData',combinedOverlay,'facecolor','interp','edgecolor','none');
+figure,patch('vertices', m.vertices, 'faces', m.faceIndexList,'FaceVertexCData',combinedOverlay,'facecolor','interp','edgecolor','none');
 colormap('hot')
 colorbar
 axis equal
+axis vis3d
 axis off
 
 keyboard

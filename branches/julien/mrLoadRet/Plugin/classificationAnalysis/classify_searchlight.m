@@ -1,74 +1,26 @@
-function m_d=classify_searchlight(view,d,radius,params)
+function m_d=classify_searchlight(view,d,radius,roiMask,params)
 %This fucntion does a searchlight classification with a defined radius in
 %an area defined by an ROI, which is normally a mask of the skullstripped
 %brain. Has to be the run from the root directory of an MLR session.
 
-if 0
-    %Define which scan from the concatenation group is to be analyzed
-    scan=1;
 
-
-    view=newView;
-    view=viewSet(view,'curGroup','Concatenation');
-    load('Concatenation/erAnal/erAnal.mat');
-    d = erAnal.d{scan};
-    if isempty(d)
-      disp('No analysis');
-      return
-    end
-
-    %radius defined if not already
-    if ~exist('radius')
-        radius=input('Define radius');
-    end
-end
 % a function to calculate the offsets of the spotlight voxels relative to
 % the centre of the sphere
 offsets=make_sphere(radius);
-roi_name='mask';
 
-% %function that does the classification. 
-% classify_hem(view,scan,d,offsets,radius,roi)
-% 
-% function classify_hem(view,scan,d,offsets,radius,hem)
+if roiMask
 
-%laods
-load(['ROIs/',roi_name],roi_name);
-roi{1}=eval(roi_name);
+d.roi{1}.scanCoords = getROICoordinates(view,roiMask,params.scanNum);
+d.roi{1} = loadROITSeries(view,roiMask,params.scanNum);
 
-roi{1}.scanCoords = getROICoordinates(view,roi{1},params.scanNum);
-
-d.roi{1} = loadROITSeries(view,roi{1},params.scanNum);
-
-
+end
 
 
 
 warning('off');
-% idx=cell(1,length(d.roi{1}.scanCoords));
-% 
-% % finds out which voxels are in which spotlight, and removes any that are
-% % outside the head
-% disppercent(-inf,'Indexing spotlight....');
-% for i_vox=1:length(d.roi{1}.scanCoords)
-%  
-%     idx{i_vox}=repmat(d.roi{1}.scanCoords(:,i_vox),1,size(offsets,2))+offsets;
-%     [~,j]=find(idx{i_vox}(1,:)<min(d.roi{1}.scanCoords(1,:)) | idx{i_vox}(2,:)<min(d.roi{1}.scanCoords(2,:)) | idx{i_vox}(3,:)<min(d.roi{1}.scanCoords(3,:)) );
-%     idx{i_vox}=idx{i_vox}(:,setdiff(1:size(idx{i_vox},2),j));
-%     [~,j]=find(idx{i_vox}(1,:)>max(d.roi{1}.scanCoords(1,:)) | idx{i_vox}(2,:)>max(d.roi{1}.scanCoords(2,:)) | idx{i_vox}(3,:)>max(d.roi{1}.scanCoords(3,:)) );
-%     idx{i_vox}=idx{i_vox}(:,setdiff(1:size(idx{i_vox},2),j));
-% 
-% 
-%     disppercent(i_vox/length(d.roi{1}.scanCoords));
-% end
-% 
-% 
-% disppercent(inf);
-
 
 
 % preprocess the functional data
-
 
 cc = viewGet(view,'concatinfo',params.scanNum);
 lab = [];
@@ -80,40 +32,6 @@ run=[];
 for i=1:size(cc.runTransition,1)
 run(cc.runTransition(i,1):cc.runTransition(i,2))=i;
 end
-
-% in=[];
-% dir=[];
-% disppercent(-inf,'Creating instances...');
-% indx=cell(1,length(d.stimvol));
-% indx_start=cell(1,length(d.stimvol));
-% indx_end=cell(1,length(d.stimvol));
-% instances=cell(1,length(d.stimvol));
-% 
-% for i_stim=1:length(d.stimvol)
-% indx_start{i_stim} = d.stimvol{i_stim}+2;
-% indx_end{i_stim} = d.stimvol{i_stim}+9;
-% 
-% 
-% 
-%     for i_trial=1:length(indx_start{i_stim})
-%         instances{i_stim}(:,i_trial) = mean(d.roi{1}.tSeries(:,indx_start{i_stim}(i_trial):indx_end{i_stim}(i_trial)),2);
-%         indx{i_stim}=[indx{i_stim},indx_start{i_stim}(i_trial):indx_end{i_stim}(i_trial)];
-% 
-%     end
-%     in = [in,instances{i_stim}];
-%     dir =[dir,i_stim*ones(1,size(instances{i_stim},2))];
-%     disppercent(i_stim/length(d.stimvol));
-% end
-%  
-% 
-% test_idx=reshape(1:length(dir(:)),length(dir(:))/length(d.stimvol),length(d.stimvol));
-% disppercent(inf);
-   
-
-   
-% for i=1:size(test_idx,1)
-%     train_idx(i,:)=setdiff(1:length(dir),test_idx(i,:));
-% end
 
 %pick out the eventstrings and average if requested
 idx = find(lab>0);
