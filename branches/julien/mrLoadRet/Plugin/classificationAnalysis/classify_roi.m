@@ -119,7 +119,7 @@ for r = 1:size(r_idx,2)
     
     class_lab{r}(run==i)=classify(patt(patt_sort,run==i)',patt(patt_sort,run~=i)',lab(run~=i),'diagLinear');
     acc{r}(i)=mean(lab(run==i)==class_lab{r}(run==i));
-    [svm_lab{r}(run==i) svm_weight{r}(:,:,:,i)]=classifyWithSvm_2(patt(patt_sort,run==i),patt(patt_sort,run~=i),lab(run~=i));
+    [svm_lab{r}(run==i) svm_weight{r}(:,:,:,i)]=classifyWithSvm(patt(patt_sort,run==i),patt(patt_sort,run~=i),lab(run~=i));
     svm_acc{r}(i)=mean(lab(run==i)==svm_lab{r}(run==i));
     end
 

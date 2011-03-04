@@ -1,4 +1,4 @@
-function outclass=classifyWithSvm(test_patt,train_patt,train_lab)
+function [outclass weights]=classifyWithSvm(test_patt,train_patt,train_lab)
 
 
 % mm = mean([train_patt,test_patt],2);
@@ -11,7 +11,7 @@ warning('off','optim:quadprog:SwitchToMedScale');
 ngroups = length(groups);
 ncat=ngroups;
 svm = cell(ncat-1,ncat);
-weights=nan(ncat-1,ncat,size(train_patt,1));
+weights=nan(ncat,ncat,size(train_patt,1));
 for j = 1:(ncat-1)
     for k = (j+1):ncat
       % get all instances
@@ -25,8 +25,10 @@ for j = 1:(ncat-1)
       svm{j,k} = getsvm(x1',x2');%,kernelfun,kernelargs,C);
       % store the weights
       weights(j,k,:) = svm{j,k}.w;
+      weights(k,j,:) = -svm{j,k}.w;
     end
 end
+weights(:,end+1,:)=nansum(weights(:,1:end,:),2);
 
 classifierout = nan(ncat,ncat,size(test_patt,2));
 % classifierout=cell(1,size(test_patt,2));
