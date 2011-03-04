@@ -8,15 +8,11 @@
 %
 function [params, hrf] = hrfDoubleGamma(params, tr, justGetParams, defaultParams )
 
-if ~any(nargin == [1 2 3 4])
-  help hrfDoubleGamma
-  return
-end
-
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('tr'),tr = 1;end
 
 if ieNotDefined('params')
   params = struct;
