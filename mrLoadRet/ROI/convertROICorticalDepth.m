@@ -49,6 +49,7 @@ if ieNotDefined('params')
   paramsInfo{end+1} = {'minDepth',minDepth,'min=0','max=1',incdecString,'The start depth'};
   paramsInfo{end+1} = {'depthStep',depthStep,'min=0','max=1',incdecString,'The depth step (i.e. we will go from minDepth:depthStep:maxDepth (skipping the reference depth), including or excluding voxels'};
   paramsInfo{end+1} = {'maxDepth',maxDepth,'min=0','max=1',incdecString,'The end depth'};
+  paramsInfo{end+1} = {'excludeOtherVoxels',1,'type=checkbox','If ROI voxels exist oustide the projected surface, they will be remove. Uncheck to keep them. this option is ignored if restriction is selected'};
   if defaultParams
     params = mrParamsDefault(paramsInfo);
   else
@@ -92,7 +93,8 @@ if ~isempty(whichROI)
       disppercent(-inf,sprintf('(convertROICorticalDepth) Processing ROI %i:%s',roinum,roinames{roinum}));
       % get the roi
       v = viewSet(v,'curROI',roinum);
-      roi = viewGet(v,'ROI');
+      % get the roi transformation in order to set the coordinates later
+      base2roi = viewGet(v,'base2roi');
       % get the roiBaseCoords
       roiBaseCoords = getROICoordinates(v,roinum,0);
       if isempty(roiBaseCoords)
@@ -105,25 +107,30 @@ if ~isempty(whichROI)
       isInROI = ismember(referenceBaseCoordMap,roiBaseCoordsLinear);
       % make sure to keep the voxels at the reference depth
       roiBaseCoordsReferenceLinear = roiBaseCoordsLinear(ismember(roiBaseCoordsLinear,referenceBaseCoordMap));
-      % now get each cortical depth, and add/remove voxels
-      corticalDepths = params.minDepth:params.depthStep:params.maxDepth;
-      baseCoordMap = viewGet(v,'baseCoordMap',[],corticalDepths);
-      for iDepth = 1:size(baseCoordMap.coords,5)
-        % get the coordinates at this depth
-        baseCoordMap = round(baseCoordMap.coords(:,:,:,:,iDepth));
-        baseCoordMap = mrSub2ind(baseDims,baseCoordMap(:,:,:,1),baseCoordMap(:,:,:,2),baseCoordMap(:,:,:,3));
-        baseCoordMap = baseCoordMap(:);
-        % add the coordinates to our list
-        roiBaseCoordsLinear = union(roiBaseCoordsLinear,baseCoordMap(isInROI));
-      end
-      roiBaseCoordsLinear = roiBaseCoordsLinear(~isnan(roiBaseCoordsLinear));
-      % now convert back to regular coords
-      roiBaseCoords = [];
-      [roiBaseCoords(1,:) roiBaseCoords(2,:) roiBaseCoords(3,:)] = ind2sub(baseDims,roiBaseCoordsLinear);
-      roiBaseCoords(4,:) = 1;
-      % set the coordinates
-      base2roi = viewGet(v,'base2roi');
+      
       if strcmp(params.conversionType,'Project through depth')
+        %clear all voxels if we're not keeping voxels outside the projection
+        if params.excludeOtherVoxels
+          % remove everything from the ROI
+          v = modifyROI(v,roiBaseCoords,base2roi,baseVoxelSize,0);
+        end
+        roiBaseCoordsLinear=[];
+        % now get each cortical depth, and add/remove voxels
+        corticalDepths = params.minDepth:params.depthStep:params.maxDepth;
+        baseCoordMap = viewGet(v,'baseCoordMap',[],corticalDepths);
+        for iDepth = 1:size(baseCoordMap.coords,5)
+          % get the coordinates at this depth
+          baseCoords = round(baseCoordMap.coords(:,:,:,:,iDepth));
+          baseCoords = mrSub2ind(baseDims,baseCoords(:,:,:,1),baseCoords(:,:,:,2),baseCoords(:,:,:,3));
+          baseCoords = baseCoords(:);
+          % add the coordinates to our list
+          roiBaseCoordsLinear = union(roiBaseCoordsLinear,baseCoords(isInROI));
+        end
+        roiBaseCoordsLinear = roiBaseCoordsLinear(~isnan(roiBaseCoordsLinear));
+        % now convert back to regular coords
+        roiBaseCoords = [];
+        [roiBaseCoords(1,:) roiBaseCoords(2,:) roiBaseCoords(3,:)] = ind2sub(baseDims,roiBaseCoordsLinear);
+        roiBaseCoords(4,:) = 1;
         % add them to the ROI
         v = modifyROI(v,roiBaseCoords,base2roi,baseVoxelSize,1);
       else
