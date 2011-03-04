@@ -112,8 +112,7 @@ if ~fieldIsNotDefined(params,'contrasts')
   end
   if isfield(params,'componentsCombination')
     %estimated std error for hdr contrast  will be estimated separately
-    hdrContrasts = kron(params.contrasts,diag(params.componentsToTest));
-    hdrContrasts = kron(eye(d.nhdr),hrf*diag(params.componentsToTest));
+    hdrContrasts = kron(params.contrasts,hrf*diag(params.componentsToTest));
     %for the beta estimates, we use either the 'Add' or the 'Or' mode
     switch(params.componentsCombination)
       case 'Add'
