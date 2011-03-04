@@ -1,4 +1,4 @@
-function m_d=classify_searchlight(view,d,radius,roiMask,params)
+function [m_d m_c]=classify_searchlight(view,d,radius,roiMask,params)
 %This fucntion does a searchlight classification with a defined radius in
 %an area defined by an ROI, which is normally a mask of the skullstripped
 %brain. Has to be the run from the root directory of an MLR session.
@@ -23,7 +23,14 @@ warning('off');
 % preprocess the functional data
 
 cc = viewGet(view,'concatinfo',params.scanNum);
+
+for ii=1:size(params.stimToEVmatrix,2)
+    tmp.stimvol{ii}=[d.stimvol{[find(params.stimToEVmatrix(:,ii))]}];
+end
+    d.stimvol=tmp.stimvol;
+    d.stimNames=params.EVnames;
 lab = [];
+
 for i=1:length(d.stimvol)
     lab(d.stimvol{i})=i;
 end
@@ -78,6 +85,7 @@ disppercent(-inf,'Classifying based on spotlight....');
 % s=cell(1,length(idx));
 % class_corr_diag=cell(1,length(idx));
 % class_corr_linear=cell(1,length(idx));
+class_acc=nan(length(d.stimvol),size(d.roi{1}.scanCoords,2));
 class_acc_diag=nan(1,size(d.roi{1}.scanCoords,2));
 % class_acc_linear=nan(1,length(idx));
 
@@ -98,10 +106,15 @@ for i_sphere=1:size(d.roi{1}.scanCoords,2)
 [I,~]=find(xxx>0);
 xxx=xxx(unique(I),:);
 
+class_lab=nan(1,length(run));
+corr=nan(1,length(run));
 for i=1:size(cc.runTransition,1)
-    acc(i)=mean(lab(run==i)'==classify(xxx(:,run==i)',xxx(:,run~=i)',lab(run~=i),'diagLinear'));
+    class_lab(run==i)=classify(xxx(:,run==i)',xxx(:,run~=i)',lab(run~=i),'diagLinear')';
+    corr(run==i)=class_lab(run==i)==lab(run==i);    
 end
-
+for i=1:length(d.stimvol)
+    class_acc(i,i_sphere)=mean(corr(lab==i));
+end
 %     whichstim=[1 3];
 % 
 %     ncat=length(d.stimvol);
@@ -120,7 +133,7 @@ end
 %         class_corr_linear{i_sphere}(:,t_idx)= class_lab'==test_lab;
 % 
 %     end
-class_acc_diag(i_sphere)=mean(acc);
+class_acc_diag(i_sphere)=mean(class_acc(:,i_sphere));
 %  class_acc_diag(i_sphere)=mean(class_corr_diag{i_sphere}(:));
 %  class_acc_linear(i_sphere)=mean(class_corr_linear{i_sphere}(:));
 
@@ -134,9 +147,11 @@ disppercent(inf);
 
 %reshapes the data  and saves into into an img/hdr file
 m_d=nan(viewGet(view,'scandims'));
+m_c=nan([viewGet(view,'scandims'),length(d.stimvol)]);
 % m_l=nan(viewGet(view,'scandims'));
     for i=1:length(d.roi{1}.scanCoords)
         m_d(d.roi{1}.scanCoords(1,i),d.roi{1}.scanCoords(2,i),d.roi{1}.scanCoords(3,i))=class_acc_diag(i);
+        m_c(d.roi{1}.scanCoords(1,i),d.roi{1}.scanCoords(2,i),d.roi{1}.scanCoords(3,i),:)=class_acc(:,i);
 %         m_l(d.roi{1}.scanCoords(1,i),d.roi{1}.scanCoords(2,i),d.roi{1}.scanCoords(3,i))=class_acc_linear(i);
     end
    
