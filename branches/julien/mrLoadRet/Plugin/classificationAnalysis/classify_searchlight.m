@@ -1,4 +1,4 @@
-function [m_d m_c]=classify_searchlight(view,d,radius,roiMask,params)
+function [m_d m_c m_p]=classify_searchlight(view,d,radius,roiMask,params)
 %This fucntion does a searchlight classification with a defined radius in
 %an area defined by an ROI, which is normally a mask of the skullstripped
 %brain. Has to be the run from the root directory of an MLR session.
@@ -10,9 +10,12 @@ offsets=make_sphere(radius);
 
 if roiMask
 
-d.roi{1}.scanCoords = getROICoordinates(view,roiMask,params.scanNum);
-d.roi{1} = loadROITSeries(view,roiMask,params.scanNum);
-
+% d.roi{1}.scanCoords = getROICoordinates(view,roiMask,params.scanNum);
+% d.roi{1} = loadROITSeries(view,roiMask,params.scanNum);
+[xxx, roiVoxelIndices, roiCoords] = loadScanRois(view,params.scanNum,viewGet(view,'roinum',roiMask));
+d.roi{1}.tSeries=squeeze(xxx.data);
+d.roi{1}.scanCoords = roiCoords;
+clear xxx
 end
 
 
@@ -68,9 +71,9 @@ end
 
 % works out which roi coords are indexed by the spotlights
 disppercent(-inf, 'Creating 4D TSeries');
-for i=1:length(d.roi{1}.scanCoords)
-mm(d.roi{1}.scanCoords(1,i),d.roi{1}.scanCoords(2,i),d.roi{1}.scanCoords(3,i),:) = d.roi{1}.tSeries(i,:);
-disppercent(i/length(d.roi{1}.scanCoords));
+for i=1:length(d.roi{1}.scanCoords{1})
+mm(d.roi{1}.scanCoords{1}(1,i),d.roi{1}.scanCoords{1}(2,i),d.roi{1}.scanCoords{1}(3,i),:) = d.roi{1}.tSeries(i,:);
+disppercent(i/length(d.roi{1}.scanCoords{1}));
 end
 disppercent(inf);
 
@@ -85,18 +88,18 @@ disppercent(-inf,'Classifying based on spotlight....');
 % s=cell(1,length(idx));
 % class_corr_diag=cell(1,length(idx));
 % class_corr_linear=cell(1,length(idx));
-class_acc=nan(length(d.stimvol),size(d.roi{1}.scanCoords,2));
-class_acc_diag=nan(1,size(d.roi{1}.scanCoords,2));
+class_acc=nan(length(d.stimvol),size(d.roi{1}.scanCoords{1},2));
+class_acc_diag=nan(1,size(d.roi{1}.scanCoords{1},2));
 % class_acc_linear=nan(1,length(idx));
 
 % mm= mm(:,:,:,lab>0);
 % run = run(lab>0);
 % lab=lab(lab>0);
 
-for i_sphere=1:size(d.roi{1}.scanCoords,2)
+for i_sphere=1:size(d.roi{1}.scanCoords{1},2)
     
-    idx=repmat(d.roi{1}.scanCoords(:,i_sphere),1,size(offsets,2))+offsets;
-    [~,j] = find((idx(1,:)<min(d.roi{1}.scanCoords(1,:)) | idx(1,:)>max(d.roi{1}.scanCoords(1,:))) | (idx(2,:)<min(d.roi{1}.scanCoords(2,:)) | idx(2,:)>max(d.roi{1}.scanCoords(2,:))) | (idx(3,:)<min(d.roi{1}.scanCoords(3,:)) | idx(3,:)>max(d.roi{1}.scanCoords(3,:))));
+    idx=repmat(d.roi{1}.scanCoords{1}(:,i_sphere),1,size(offsets,2))+offsets;
+    [~,j] = find((idx(1,:)<min(d.roi{1}.scanCoords{1}(1,:)) | idx(1,:)>max(d.roi{1}.scanCoords{1}(1,:))) | (idx(2,:)<min(d.roi{1}.scanCoords{1}(2,:)) | idx(2,:)>max(d.roi{1}.scanCoords{1}(2,:))) | (idx(3,:)<min(d.roi{1}.scanCoords{1}(3,:)) | idx(3,:)>max(d.roi{1}.scanCoords{1}(3,:))));
     idx=idx(:,setdiff(1:size(idx,2),j));
 
 
@@ -112,6 +115,7 @@ for i=1:size(cc.runTransition,1)
     class_lab(run==i)=classify(xxx(:,run==i)',xxx(:,run~=i)',lab(run~=i),'diagLinear')';
     corr(run==i)=class_lab(run==i)==lab(run==i);    
 end
+acc_p(i_sphere) = binomTest(sum(corr),length(corr),1/length(d.stimvol),'Greater');
 for i=1:length(d.stimvol)
     class_acc(i,i_sphere)=mean(corr(lab==i));
 end
@@ -139,7 +143,7 @@ class_acc_diag(i_sphere)=mean(class_acc(:,i_sphere));
 
  xxx=[];
 
-disppercent(i_sphere/length(d.roi{1}.scanCoords));
+disppercent(i_sphere/length(d.roi{1}.scanCoords{1}));
 end
 
 disppercent(inf);
@@ -147,11 +151,13 @@ disppercent(inf);
 
 %reshapes the data  and saves into into an img/hdr file
 m_d=nan(viewGet(view,'scandims'));
+m_p=nan(viewGet(view,'scandims'));
 m_c=nan([viewGet(view,'scandims'),length(d.stimvol)]);
 % m_l=nan(viewGet(view,'scandims'));
-    for i=1:length(d.roi{1}.scanCoords)
-        m_d(d.roi{1}.scanCoords(1,i),d.roi{1}.scanCoords(2,i),d.roi{1}.scanCoords(3,i))=class_acc_diag(i);
-        m_c(d.roi{1}.scanCoords(1,i),d.roi{1}.scanCoords(2,i),d.roi{1}.scanCoords(3,i),:)=class_acc(:,i);
+    for i=1:length(d.roi{1}.scanCoords{1})
+        m_d(d.roi{1}.scanCoords{1}(1,i),d.roi{1}.scanCoords{1}(2,i),d.roi{1}.scanCoords{1}(3,i))=class_acc_diag(i);
+        m_c(d.roi{1}.scanCoords{1}(1,i),d.roi{1}.scanCoords{1}(2,i),d.roi{1}.scanCoords{1}(3,i),:)=class_acc(:,i);
+        m_p(d.roi{1}.scanCoords{1}(1,i),d.roi{1}.scanCoords{1}(2,i),d.roi{1}.scanCoords{1}(3,i),:)=acc_p(i);
 %         m_l(d.roi{1}.scanCoords(1,i),d.roi{1}.scanCoords(2,i),d.roi{1}.scanCoords(3,i))=class_acc_linear(i);
     end
    

@@ -4,7 +4,7 @@
 %      usage: view = eventRelated(view,params)
 %         by: alex beckett
 %       date: 10/20/06
-%    purpose: event related data analysis
+%    purpose: event related volumetric searchlight
 %
 %             if you just want a default parameter structure you
 %             can do:
@@ -51,7 +51,7 @@ elseif justGetParams
   return
 end
 
-
+precision = mrGetPref('defaultPrecision');
 % set the group
 thisView = viewSet(thisView,'groupName',params.groupName);
 % Reconcile params with current status of group and ensure that it has
@@ -96,7 +96,14 @@ params = defaultReconcileParams([],params);
 % acc.colormapType = 'setRangeToMax';
 % acc.interrogator = 'timeSeriesPlot';
 % acc.mergeFunction = 'defaultMergeParams';
-
+params.fweMethod='Adaptive Step-down';
+params.fdrAssumption= 'Independence/Positive dependence';
+params.fdrMethod= 'Adaptive Step-up';
+params.fweAdjustment= 1;
+params.fdrAdjustment =  1;
+params.testOutput= 'P value';
+params.trueNullsEstimationMethod= 'Least Squares';
+params.trueNullsEstimationThreshold= 0.0500;
 tic
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 for scanNum = params.scanNum
@@ -107,8 +114,9 @@ for scanNum = params.scanNum
 %   do any called for preprocessing
     d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
       
-    [acc{scanNum} class_acc{scanNum}]=classify_searchlight(thisView,d,params.radius,params.roiMask,params.scanParams{scanNum});
-    
+    [acc{scanNum} class_acc{scanNum} acc_p{scanNum}]=classify_searchlight(thisView,d,params.radius,params.roiMask,params.scanParams{scanNum});
+    [p{scanNum} fdr{scanNum} fwe{scanNum}] = transformStatistic(acc_p{scanNum},precision,params);
+
 
 end
 
@@ -160,6 +168,32 @@ for iScan = params.scanNum
    overlays.data{iScan}=acc{iScan};
    overlays.params{iScan} = params.scanParams{iScan};
 end
+thisOverlay=defaultOverlay;
+overlays(end+1)=thisOverlay;
+overlays(end).colormap = statsColorMap(256);
+overlays(end).name=['probability (radius = ',num2str(params.radius),')'];
+for iScan = params.scanNum
+    overlays(end).data{iScan}=acc_p{iScan};
+    overlays(end).params=params.scanParams{iScan};
+end
+
+overlays(end+1)=thisOverlay;
+overlays(end).colormap = statsColorMap(256);
+overlays(end).name=['fdr probability (radius = ',num2str(params.radius),')'];
+for iScan = params.scanNum
+    overlays(end).data{iScan}=fdr{iScan};
+    overlays(end).params=params.scanParams{iScan};
+end
+
+overlays(end+1)=thisOverlay;
+overlays(end).colormap = statsColorMap(256);
+overlays(end).name=['fwe probability (radius = ',num2str(params.radius),')'];
+for iScan = params.scanNum
+    overlays(end).data{iScan}=fwe{iScan};
+    overlays(end).params=params.scanParams{iScan};
+end
+
+
 thisOverlay = defaultOverlay;
 for i=1:params.numberEvents
         overlays(end+1)=thisOverlay;

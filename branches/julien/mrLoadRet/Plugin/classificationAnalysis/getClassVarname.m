@@ -114,7 +114,8 @@ while keepAsking
         end
 
          %set up to get the variable name from the user
-        paramsInfo{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr),'type=popupmenu'};
+%         paramsInfo{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr),'type=popupmenu'};
+        paramsInfo{end+1} ={'varname',varnames,sprintf('Analysis variables: %s',varnamesStr),'type=popupmenu'};
       end
 %     elseif strfind(stimfile{1}.filetype,'eventtimes')  && ~isfield(scanParams{iScan},'stimDuration') && isfield(stimfile{1}.mylog,'stimdurations_s')
 %           scanParams{iScan}.stimDuration = 'fromFile';
@@ -172,8 +173,8 @@ while keepAsking
         nextScan = params.scanNum(find(params.scanNum>iScan,1,'first'));
         if isempty(scanParams{nextScan})
           scanParams{nextScan} = scanParams{iScan};
-          scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'scan');
-          scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'description');
+          scanParams{nextScan} = mrParamsRemoveField(scanParams{nextScan},'scan');
+          scanParams{nextScan} = mrParamsRemoveField(scanParams{nextScan},'description');
         end
       end
     if keepAsking && useDefault %there were incompatible parameters but this is the script mode (no GUI)
