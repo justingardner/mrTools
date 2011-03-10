@@ -36,6 +36,18 @@ end
 if ~isfield(params,'radius') || isempty(params.radius)
   params.radius = 1;
 end
+if ~isfield(params,'sigTest') || isempty(params.sigTest)
+  params.sigTest = 1;
+end
+if ~isfield(params,'fweAdjustment') || isempty(params.fweAdjustment)
+  params.fweAdjustment = 0;
+end
+if ~isfield(params,'fdrAdjustment') || isempty(params.fdrAdjustment)
+  params.fdrAdjustment = 0;
+end
+if ~isfield(params,'advancedMenu') || isempty(params.advancedMenu)
+  params.advancedMenu = 0;
+end
 
 
 askForParams = 1;
@@ -48,6 +60,10 @@ while askForParams
         {'roiMask',params.roiMask,'ROI to use to mask the analysis, for example an ROI defining the skull-stripped brain, or a GM mask etc'},...
         {'numberEvents',params.numberEvents,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Event Types to be classified. If 0, the number of Event Types will be set to the number of stimulus type in the stimulus file'},...
         {'radius',params.radius,'Radius of searchlight in voxels to use'},...
+        {'sigTest',params.sigTest,'type=checkbox','Significance testing of results with Binomial Test'},...
+        {'fweAdjustment',params.fweAdjustment,'type=checkbox','contingent=sigTest','Family Wise Error adjustment'},...
+        {'fdrAdjustment',params.fdrAdjustment,'type=checkbox','contingent=sigTest','False discovery rate adjustment'},...
+        {'advancedMenu',params.advancedMenu,'type=checkbox','contingent=sigTest','Open menu for advanced statistic options'},...
     %     {'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
     %     {'applyFiltering',1,'type=checkbox','Apply the same filtering that was used before concatenation to the design matrix. This will apply the hipass filter as well as the projection analsis if they have been done by concatTSeries'},...
         };
