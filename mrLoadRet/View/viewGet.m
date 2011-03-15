@@ -2824,7 +2824,7 @@ switch lower(param)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if all(overlayNum & (overlayNum > 0) & (overlayNum <= n))
         if isempty(scan)
-          scanList = 1:viewGet(view,'nScans',analysisNum);
+          scanList = 1:viewGet(view,'nScans');
         else
           scanList = scan;
         end
@@ -2836,7 +2836,7 @@ switch lower(param)
           for iOverlay = overlayNum
             cOverlay = cOverlay+1;
             data = analysis.overlays(iOverlay).data;
-            if length(data) >= scan && ~isempty(data{iScan})
+            if length(data) >= scanList(end) && ~isempty(data{iScan})
               val{cScan}(:,:,:,cOverlay) = data{iScan};
             else
               val{cScan}(:,:,:,cOverlay) = NaN(scanDims);
