@@ -27,10 +27,10 @@ overlay = viewGet(thisView,'overlay',o_num,a_num);
 
 scan = viewGet(thisView,'nScans');
 if scan>1
-    paramInfo={...
+    paramsInfo={...
         {'scan',scan,'xxx'}};
     x = mrParamsDialog(paramsInfo);
-    scan = x.scan
+    scan = x.scan;
 end
 
 overlay.data = overlay.data(scan);
