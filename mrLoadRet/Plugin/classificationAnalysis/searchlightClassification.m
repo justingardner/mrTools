@@ -48,7 +48,7 @@ if ieNotDefined('params')
   return
 % just return parameters
 elseif justGetParams
-  return
+%   return
 end
 
 
@@ -82,6 +82,14 @@ accDiag = cell(1,params.scanNum(end));
 if params.sigTest
     pDiag= cell(1,params.scanNum(end));
     pDiag_Class = cell(1,params.scanNum(end));
+    if params.fdrAdjustment
+        fdrDiag=cell(1,params.scanNum(end));
+        fdrDiag_Class=cell(1,params.scanNum(end));
+    end
+    if params.fweAdjustment
+        fweDiag=cell(1,params.scanNum(end));
+        fweDiag_Class=cell(1,params.scanNum(end));
+    end
 end
 
 %scanloop
@@ -94,21 +102,23 @@ for scanNum = params.scanNum
     
     % do any call for preprocessing
     if ~isempty(scanParams{scanNum}.preprocess)
-        d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
+        d = eventRelatedPreProcess(d,scanParams{scanNum}.preprocess);
     end
 
+    tmp_stimvol=cell(1,size(scanParams{scanNum}.stimToEVmatrix,2));
     for i=1:size(scanParams{scanNum}.stimToEVmatrix,2)
-        tmp.stimvol{i}=[d.stimvol{[find(scanParams{scanNum}.stimToEVmatrix(:,i))]}];
+%         tmp.stimvol{i}=[d.stimvol{[find(scanParams{scanNum}.stimToEVmatrix(:,i))]}];
+          tmp_stimvol{i}=[d.stimvol{logical(scanParams{scanNum}.stimToEVmatrix(:,i))}];
     end
-    d.stimvol=tmp.stimvol;
+    d.stimvol=tmp_stimvol;clear tmp_stimvol
     d.stimNames=scanParams{scanNum}.EVnames;
     
-    lab = [];
+    lab = zeros(1,size([d.stimvol{:}],2));
     for i=1:length(d.stimvol)
         lab(d.stimvol{i})=i;
     end
 
-    run=[];
+    run=nan(1,size([d.stimvol{:}],2));
     for i=1:size(d.concatInfo.runTransition,1)
     run(d.concatInfo.runTransition(i,1):d.concatInfo.runTransition(i,2))=i;
     end
@@ -138,13 +148,15 @@ for scanNum = params.scanNum
         run=r_;
         clear l_ r_
     end
-    
+%     
     % works out which roi coords are indexed by the spotlights
+    mm=nan([viewGet(thisView,'scanDims',scanNum),length(lab)]);
     disppercent(-inf, '(searchlightClassification) Creating 4D TSeries....');
     for i=1:length(d.roiCoords{1})
         mm(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i),:) = m_(i,:);
         disppercent(i/length(d.roiCoords{1}));
     end
+    clear m_
     disppercent(inf);
     
     %initialise overlays per scan
@@ -154,17 +166,31 @@ for scanNum = params.scanNum
     if params.sigTest
         pDiag{scanNum}=nan(viewGet(thisView,'scanDims',scanNum));
         pDiag_Class{scanNum}=nan([viewGet(thisView,'scanDims',scanNum),length(d.stimvol)]);
+        if params.fdrAdjustment
+            fdrDiag{scanNum}=nan(viewGet(thisView,'scanDims',scanNum));
+            fdrDiag_Class{scanNum}=nan([viewGet(thisView,'scanDims',scanNum),length(d.stimvol)]);
+        end
+        if params.fweAdjustment
+            fweDiag{scanNum}=nan(viewGet(thisView,'scanDims',scanNum));
+            fweDiag_Class{scanNum}=nan([viewGet(thisView,'scanDims',scanNum),length(d.stimvol)]);
+        end
     end
+    
+    corr=nan(size(d.roiCoords{1},2),length(run));
     
     disppercent(-inf,'(searchlightClassification) Classifying based on spotlight....');
     
+    
     for i_sphere=1:size(d.roiCoords{1},2)
     
+
+            
         %find voxels in spotlight
         idx=repmat(d.roiCoords{1}(:,i_sphere),1,size(params.offsets,2))+params.offsets;
         [~,j] = find((idx(1,:)<min(d.roiCoords{1}(1,:)) | idx(1,:)>max(d.roiCoords{1}(1,:))) | (idx(2,:)<min(d.roiCoords{1}(2,:)) | idx(2,:)>max(d.roiCoords{1}(2,:))) | (idx(3,:)<min(d.roiCoords{1}(3,:)) | idx(3,:)>max(d.roiCoords{1}(3,:))));
         idx=idx(:,setdiff(1:size(idx,2),j));
 
+        xxx=nan(size(idx,2),size(mm,4));
         %create patterns based on spotlight
         for i_vol=1:size(idx,2)
             xxx(i_vol,:)=mm(idx(1,i_vol),idx(2,i_vol),idx(3,i_vol),:);
@@ -173,41 +199,68 @@ for scanNum = params.scanNum
         xxx=xxx(unique(I),:);
 
         
+
         %run classification on searchlight patterns
         class_lab=nan(1,length(run));
-        corr=nan(1,length(run));
+        
         
         for i=1:size(d.concatInfo.runTransition,1)
             class_lab(run==i)=classify(xxx(:,run==i)',xxx(:,run~=i)',lab(run~=i),'diagLinear')';
-            corr(run==i)=class_lab(run==i)==lab(run==i);    
+            corr(i_sphere,run==i)=class_lab(run==i)==lab(run==i);    
         end
-        
-        if params.sigTest
-            pDiag{scanNum}(d.roiCoords{1}(1,i_sphere),d.roiCoords{1}(2,i_sphere),d.roiCoords{1}(3,i_sphere)) = binomTest(sum(corr),length(corr),1/length(d.stimvol),'Greater');
-            for i=1:length(d.stimvol)
-                pDiag_Class{scanNum}(d.roiCoords{1}(1,i_sphere),d.roiCoords{1}(2,i_sphere),d.roiCoords{1}(3,i_sphere),i) =  binomTest(sum(corr(lab==i)),length(corr(lab==i)),1/length(d.stimvol),'Greater');
-            end
-        end
-        
-        %calculate global and class specific accuracies
-        accDiag{scanNum}(d.roiCoords{1}(1,i_sphere),d.roiCoords{1}(2,i_sphere),d.roiCoords{1}(3,i_sphere))=mean(corr);
-        for i=1:length(d.stimvol)
-            accDiag_Class{scanNum}(d.roiCoords{1}(1,i_sphere),d.roiCoords{1}(2,i_sphere),d.roiCoords{1}(3,i_sphere),i)=mean(corr(lab==i));
-        end
-        
-
-        xxx=[];
-
+    
         disppercent(i_sphere/length(d.roiCoords{1}));
     end
-      
-%     [acc{scanNum} class_acc{scanNum} acc_p{scanNum}]=classify_searchlight(thisView,d,params.radius,params.roiMask,params.scanParams{scanNum});
     
-    if params.sigTest
-        [pDiag{scanNum} fdr{scanNum} fwe{scanNum}] = transformStatistic(pDiag{scanNum},precision,params);
-        [pDiag_Class{scanNum} fdr_Class{scanNum} fwe_Class{scanNum}] = transformStatistic(pDiag_Class{scanNum},precision,params);
+    disppercent(inf);  
+    
+    clear mm_
+    
+    %calculate global and class specific accuracies
+    acc=mean(corr,2);
+    acc_Class=nan(size(d.roiCoords{1},2),length(d.stimvol));
+    for i=1:length(d.stimvol)
+        acc_Class(:,i)=mean(corr(:,lab==i),2);
     end
+    
+    
+        
+    if params.sigTest
+            p = binomTest(sum(corr,2),length(lab),1/length(d.stimvol),'Greater');
+            p_Class=nan(size(acc_Class));
+            for i=1:length(d.stimvol)
+                 p_Class(:,i) =  binomTest(sum(corr(:,lab==i),2),sum(lab==i),1/length(d.stimvol),'Greater');
+            end
 
+        [p fdr fwe] = transformStatistic(p,precision,params);
+        [p_Class fdr_Class fwe_Class] = transformStatistic(p_Class,precision,params);
+    end
+    
+    for i=1:size(d.roiCoords{1},2)
+        accDiag{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i))=acc(i);
+        if params.sigTest
+            pDiag{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i))=p(i);
+            if params.fdrAdjustment
+                fdrDiag{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i))=fdr(i);
+            end
+            if params.fweAdjustment
+                fweDiag{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i))=fwe(i);
+            end
+        end
+        for j=1:length(d.stimvol)
+            accDiag_Class{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i),j)=acc_Class(i,j);
+            if params.sigTest
+                pDiag_Class{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i),j)=p_Class(i,j);
+                if params.fdrAdjustment
+                    fdrDiag_Class{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i),j)=fdr_Class(i,j);
+                end
+                if params.fweAdjustment
+                    fweDiag_Class{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i),j)=fwe_Class(i);
+                end
+            end 
+        end
+    end
+    clear p p_Class fdr fwe fdr_Class fwe_Class
 end
 
 
@@ -292,7 +345,7 @@ if params.sigTest
         overlays(end).colormap = statsColorMap(256);
         overlays(end).name=['fdr probability (radius = ',num2str(params.radius),')'];
         for iScan = params.scanNum
-            overlays(end).data{iScan}=fdr{iScan};
+            overlays(end).data{iScan}=fdrDiag{iScan};
             overlays(end).params=params.scanParams{iScan};
         end
         for i=1:params.numberEvents
@@ -300,7 +353,7 @@ if params.sigTest
             overlays(end).colormap = statsColorMap(256);
             overlays(end).name=[params.EVnames{i},'_fdr_prob (radius = ',num2str(params.radius),')'];
             for iScan = params.scanNum
-                overlays(end).data{iScan}=fdr_Class{iScan}(:,:,:,i);
+                overlays(end).data{iScan}=fdrDiag_Class{iScan}(:,:,:,i);
                 overlays(end).params=params.scanParams{iScan};
             end
         end
@@ -310,7 +363,7 @@ if params.sigTest
         overlays(end).colormap = statsColorMap(256);
         overlays(end).name=['fwe probability (radius = ',num2str(params.radius),')'];
         for iScan = params.scanNum
-            overlays(end).data{iScan}=fwe{iScan};
+            overlays(end).data{iScan}=fweDiag{iScan};
             overlays(end).params=params.scanParams{iScan};
         end
         for i=1:params.numberEvents
@@ -318,7 +371,7 @@ if params.sigTest
             overlays(end).colormap = statsColorMap(256);
             overlays(end).name=[params.EVnames{i},'_fwe_prob (radius = ',num2str(params.radius),')'];
             for iScan = params.scanNum
-                overlays(end).data{iScan}=fwe_Class{iScan}(:,:,:,i);
+                overlays(end).data{iScan}=fweDiag_Class{iScan}(:,:,:,i);
                 overlays(end).params=params.scanParams{iScan};
             end
         end

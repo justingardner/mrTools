@@ -110,11 +110,11 @@ for r = 1:size(r_idx,2)
        [~, patt_sort] =sort(sort_data{r},'descend');   
     end
     
-    class_lab=[];
-    acc=[];
-    svm_lab=[];
-    svm_weight=[];
-    svm_acc=[];
+    class_lab{r}=[];
+    acc{r}=[];
+    svm_lab{r}=[];
+    svm_weight{r}=[];
+    svm_acc{r}=[];
     for i=1:size(cc.runTransition,1)
     
     class_lab{r}(run==i)=classify(patt(patt_sort,run==i)',patt(patt_sort,run~=i)',lab(run~=i),'diagLinear');
@@ -130,40 +130,40 @@ svm_mean_weight{r}=squeeze(sum(svm_weight{r}(:,end,:,:),4));
 end
 
 for r=1:size(r_idx,2)
-for i=1:size(svm_mean_weight{r},1)
-    for j=1:size(svm_mean_weight{r},1)
-    svm_count{r}(i,j)=sum(svm_lab{r}(lab==i)==j)/sum(lab==i);
+    for i=1:size(svm_mean_weight{r},1)
+        for j=1:size(svm_mean_weight{r},1)
+        svm_count{r}(i,j)=sum(svm_lab{r}(lab==i)==j)/sum(lab==i);
+        end
     end
-end
 end
 
   
 if numShuff
     disp('(classify_roi) Runninng shuffled classification')
-for r = 1:size(r_idx,2)
-    patt=xxx.data(r_idx{r},:);
-    
-    if (select_vox==0) 
-        patt_sort=1:size(patt,1);
-    elseif (select_vox <  size(patt,1))
-       [~, patt_sort] =sort(sort_data{r},'descend');
-       patt_sort=patt_sort(1:select_vox);
-    elseif (select_vox >= size(patt,1))
-       [~, patt_sort] =sort(sort_data{r},'descend');   
-    end
-    for s=1:numShuff
-    s_lab=lab(randperm(length(lab)));
-    
-        for i=1:size(cc.runTransition,1)
-        s_acc(i)=mean(s_lab(run==i)'==classify(patt(patt_sort,run==i)',patt(patt_sort,run~=i)',lab(run~=i),'diagLinear'));
-%         s_acc(i)=mean(s_lab(run==i)'==classify(xxx.data(r_idx{r},run==i)',xxx.data(r_idx{r},run~=i)',s_lab(run~=i),'diagLinear'));
-        end
+    for r = 1:size(r_idx,2)
+        patt=xxx.data(r_idx{r},:);
 
-    sm_acc{r}(s)=mean(s_acc);
-    th_95{r} = prctile(sm_acc{r},95);
-    
-end
-end
+        if (select_vox==0) 
+            patt_sort=1:size(patt,1);
+        elseif (select_vox <  size(patt,1))
+           [~, patt_sort] =sort(sort_data{r},'descend');
+           patt_sort=patt_sort(1:select_vox);
+        elseif (select_vox >= size(patt,1))
+           [~, patt_sort] =sort(sort_data{r},'descend');   
+        end
+        for s=1:numShuff
+        s_lab=lab(randperm(length(lab)));
+
+            for i=1:size(cc.runTransition,1)
+            s_acc(i)=mean(s_lab(run==i)'==classify(patt(patt_sort,run==i)',patt(patt_sort,run~=i)',s_lab(run~=i),'diagLinear'));
+    %         s_acc(i)=mean(s_lab(run==i)'==classify(xxx.data(r_idx{r},run==i)',xxx.data(r_idx{r},run~=i)',s_lab(run~=i),'diagLinear'));
+            end
+
+        sm_acc{r}(s)=mean(s_acc);
+        th_95{r} = prctile(sm_acc{r},95);
+
+        end
+    end
 end
 
 
@@ -175,16 +175,19 @@ for r=1:size(r_idx,2)
         plot(svm_count{r}(i,:),'color',colors(i,:))
         hold on
     end
-       axis([1 size(svm_count{r},1) 0 1])
-       set(gca,'XTick',1:size(svm_count{r},1))
-        set(gca,'XTickLabel',d.stimNames)
-        legend(d.stimNames)
-        line([1 size(svm_count{r},1)],[1/size(svm_count{r},1) 1/size(svm_count{r},1)],'Color','k')
-        hold on
-        if numShuff
+    for i=1:size(svm_count{r},1)
+        plot(i,svm_count{r}(i,i),'o','color',colors(i,:))
+    end
+    axis([1 size(svm_count{r},1) 0 1])
+    set(gca,'XTick',1:size(svm_count{r},1))
+    set(gca,'XTickLabel',d.stimNames)
+    legend(d.stimNames)
+    line([1 size(svm_count{r},1)],[1/size(svm_count{r},1) 1/size(svm_count{r},1)],'Color','k')
+    hold on
+    if numShuff
         line([1 size(svm_count{r},1)],[th_95{r} th_95{r}],'Color','k','linestyle','--');
         hold on
-        end
+    end
       title(sprintf('%s, Mean accuracy %f/%f, n-vox %i',viewGet(view,'roiname',r),m_acc{r},m_sacc{r},min([select_vox length(r_coord{r})])))  
 end
 

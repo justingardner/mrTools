@@ -10,149 +10,193 @@ function params = roiClassGUI(varargin)
 % get the arguments
 eval(evalargs(varargin));
 
-% if called with params, then just display
-if ~ieNotDefined('params')
-  retval = dispParams(params);
-  if isempty(retval),params = [];end
-  return
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('thisView'),thisView = newView;end
+if ieNotDefined('params'),params = struct;end
+if ieNotDefined('groupName'), groupName = viewGet(thisView,'groupName');end;
+
+if ~isfield(params,'groupName') || isempty(params.groupName)
+  params.groupName = groupName;
 end
-
-% get a view
-view = newView;
-
-% get the group names
-if ieNotDefined('groupName')
-  groupNames = viewGet(view,'groupNames');
+if ~isfield(params,'saveName') || isempty(params.saveName)
+  params.saveName = 'roiClass';
 else
-  % if passed in name, put that on top of list to make it the default
-  groupNames = putOnTopOfList(groupName,viewGet(view,'groupNames'));
+  params.saveName = viewGet(thisView,'analysisName');
 end
-
-% check for variable to just useDefaults rather than bring up gui
-if ieNotDefined('useDefault')
-  useDefault = 0;
+if ~isfield(params,'scanNum') || isempty(params.scanNum)
+  params.scanNum = [];
 end
-
-% set the parameter string
-paramsInfo = {...
-    {'groupName',groupNames,'type=popupmenu','Name of group from which to do eventRelated analysis'},...
-    {'saveName','roiClass','File name to try to save as'},...
-    {'diagLinear',1,'type=checkbox','Use diagLinear classification'}...
-    {'Linear',0,'type=checkbox','Use Linear classification'}...
-    {'SVM',0,'type=checkbox','Use svm classification'}...
-    {'sigTest',0,'type=checkbox','Use svm classification'}...
-    {'numShuff',0,'contingent=sigTest','Use svm classification'}...
-    {'select_vox',0,'How many voxels to use, will require selection of an statistical overlay to sort by. Leave 0 to use all voxels in ROI'},...
-%     {'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
-%     {'applyFiltering',1,'type=checkbox','Apply the same filtering that was used before concatenation to the design matrix. This will apply the hipass filter as well as the projection analsis if they have been done by concatTSeries'},...
-};
-
-% Get parameter values
-if useDefault
-  params = mrParamsDefault(paramsInfo);
-else
-  params = mrParamsDialog(paramsInfo,'Spotlight Classification Parameters');
+if ~isfield(params,'numberEvents') || isempty(params.numberEvents)
+  params.numberEvents = 0;
 end
-
-% if empty user hit cancel
-if isempty(params)
-  deleteView(view);
-  return
+if ~isfield(params,'diagLinear') || isempty(params.diagLinear)
+  params.diagLinear = 1;
 end
-
-% get scans
-view = viewSet(view,'groupName',params.groupName);
-nScans = viewGet(view,'nScans');
-if ~ieNotDefined('scanList')
-  params.scanNum = scanList;
-elseif useDefault
-  params.scanNum = 1:nScans;
-elseif nScans == 1
-  params.scanNum = nScans;
-else
-  params.scanNum = selectScans(view);
+if ~isfield(params,'Linear') || isempty(params.Linear)
+  params.Linear = 0;
 end
-if isempty(params.scanNum)
-  params = [];
-  deleteView(view);
-  return
+if ~isfield(params,'SVM') || isempty(params.SVM)
+  params.SVM = 0;
 end
-
-% % get scans
-% view = viewSet(view,'groupName',params.groupName);
-% nScans = viewGet(view,'nScans');
-% if ~ieNotDefined('scanList')
-%   params.scanNum = scanList;
-% elseif useDefault
-%   params.scanNum = 1:nScans;
-% elseif nScans == 1
-%   params.scanNum = nScans;
-% else
-%   params.scanNum = selectScans(view);
-% end
-% if isempty(params.scanNum)
-%   params = [];
-%   deleteView(view);
-%   return
+if ~isfield(params,'sigTest') || isempty(params.sigTest)
+  params.sigTest = 0;
+end
+if ~isfield(params,'nonParaTest') || isempty(params.nonParaTest)
+  params.nonParaTest = 0;
+end
+if ~isfield(params,'numShuff') || isempty(params.numShuff)
+  params.numShuff = 0;
+end
+if ~isfield(params,'selectVox') || isempty(params.selectVox)
+  params.selectVox = 0;
+end
+% if ~isfield(params,'advancedMenu') || isempty(params.advancedMenu)
+%   params.advancedMenu = 0;
 % end
 
-% get the parameters for each scan
-params.scanParams = getClassVarname(view,viewGet(view,'groupNum',params.groupName),params.scanNum,useDefault);
-if isempty(params.scanParams)
-  params = [];
-  deleteView(view);
-  return
+
+askForParams = 1;
+groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
+while askForParams
+    % set the parameter string
+    paramsInfo = {...
+        {'groupName',groupNames,'type=popupmenu','Name of group from which to do eventRelated analysis'},...
+        {'saveName',params.saveName,'File name to try to save as'},...
+        {'diagLinear',params.diagLinear,'type=checkbox','Use diagLinear classification'}...
+        {'Linear',params.Linear,'type=checkbox','Use Linear classification'}...
+        {'SVM',params.SVM,'type=checkbox','Use svm classification'}...
+        {'sigTest',params.sigTest,'type=checkbox','Significance Testing with a Binomial'}...
+        {'nonParaTest',params.nonParaTest,'type=checkbox','Significance Testing using non-paramatric shuffling'}...
+        {'numShuff',params.numShuff,'contingent=nonParaTest','Number of label reshuffles to do'}...
+        {'selectVox',params.selectVox,'How many voxels to use in each ROI, will require selection of an statistical overlay to sort by. Leave 0 to use all voxels in each ROI'},...
+    %     {'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
+    %     {'applyFiltering',1,'type=checkbox','Apply the same filtering that was used before concatenation to the design matrix. This will apply the hipass filter as well as the projection analsis if they have been done by concatTSeries'},...
+    };
+
+    % Get parameter values
+    if defaultParams
+      tempParams = mrParamsDefault(paramsInfo);
+    else
+      tempParams = mrParamsDialog(paramsInfo,'ROI Classification Parameters');
+    end
+
+    % if empty user hit cancel
+    if isempty(tempParams)
+      params = [];
+      return;
+    end
+    if ~any([tempParams.diagLinear tempParams.Linear tempParams.SVM])
+        mrWarnDlg('No classification method selected, using diagLinear by default');
+       tempParams.diagLinear = 1;
+    end
+    params = copyFields(tempParams,params);
+
+    while askForParams
+        groupNum = viewGet(thisView,'groupnum',params.groupName);
+        nScans=viewGet(thisView,'nScans',groupNum);
+        if nScans == 1
+          params.scanNum = 1;
+        elseif ~ieNotDefined('scanList')
+          params.scanNum = scanList;
+        elseif defaultParams
+          params.scanNum = 1:nScans;
+        elseif viewGet(thisView,'nScans',groupNum) >1
+          scanNums = selectInList(thisView,'scans','Select scans to analyse',params.scanNum,groupNum);
+          if isempty(scanNums)
+            if size(scanNums,2) %if the top close button has been pressed
+              params=[];
+              return
+            else
+              askForParams = 1;
+              break;
+            end
+          else
+            params.scanNum = scanNums;
+          end
+        end
+        
+        while askForParams
+            [scanParams, params] = getClassVarname(thisView,params,defaultParams);
+            if isempty(scanParams)
+                if size(scanParams,2) %if the top close button has been pressed
+                  params=[];
+                  return
+                else
+                  askForParams = 1;
+                  break;
+                end
+            end
+            params.scanParams = scanParams;
+            while askForParams
+                [scanParams, params] = getClassEventParamsGUI(thisView,params,defaultParams);
+                if isempty(scanParams)
+                  if size(scanParams,2) %if the top close button has been pressed
+                    params=[];
+                    return
+                  else
+                    askForParams = 1;
+                    break;
+                  end
+                end
+                params.scanParams = scanParams;
+                askForParams=0;
+            end
+        end
+        if nScans == 1 || ~ieNotDefined('scanList') || defaultParams
+          break;
+        end
+    end
 end
 % set the scan number
 for i = 1:length(params.scanNum)
   params.scanParams{params.scanNum(i)}.scanNum = params.scanNum(i);
 end
 
-deleteView(view);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% just display parameters
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function retval = dispParams(params)
 
-paramsInfo = {};
-if isfield(params,'applyFiltering')
-  paramsInfo{end+1} = {'applyFiltering',params.applyFiltering,'editable=0','Whether filtering was applied to the columns of the stimulus convolution matrix'};
-end
-paramsInfo{end+1} = {'analyzedScans',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',length(params.scanNum)),'editable=0'};
-% get parameters for each scan
-for i = 1:length(params.scanNum)
-  scanNum{i} = params.scanNum(i);
-  description{i} = params.scanParams{scanNum{i}}.description;
-  hdrlen{i} = params.scanParams{scanNum{i}}.hdrlen;
-  preprocess{i} = params.scanParams{scanNum{i}}.preprocess;
-  if isfield(params.scanParams{scanNum{i}},'taskNum')
-    taskNum{i} = params.scanParams{scanNum{i}}.taskNum;
-  end
-  if isfield(params.scanParams{scanNum{i}},'phaseNum')
-    phaseNum{i} = params.scanParams{scanNum{i}}.phaseNum;
-  end
-  if isfield(params.scanParams{scanNum{i}},'segmentNum')
-    segmentNum{i} = params.scanParams{scanNum{i}}.segmentNum;
-  end
-  if isfield(params.scanParams{scanNum{i}},'varname')
-    varname{i} = params.scanParams{scanNum{i}}.varname;
-  end
-end
-paramsInfo{end+1} = {'scanNum',scanNum,'group=analyzedScans','type=numeric','editable=0','scan number'};
-paramsInfo{end+1} = {'tseriesFile',params.tseriesFile,'group=analyzedScans','type=string','editable=0','Name of timeseries that was analyzed'};
-paramsInfo{end+1} = {'description',description,'group=analyzedScans','type=string','editable=0','Description of the analysis'};
-paramsInfo{end+1} = {'eventLength',eventLength,'group=analyzedScans','type=numeric','editable=0','Length of response in seconds to calculate'};
-paramsInfo{end+1} = {'preprocess',preprocess,'group=analyzedScans','type=string','editable=0','String of extra commands for preprocessing. Normally you will not need to set anything here, but this allows you to do corrections to the stimvols that are calculated so that you can modify the analysis. (see wiki for details)'};
-if ~ieNotDefined('taskNum')
-  paramsInfo{end+1} = {'taskNum',taskNum,'group=analyzedScans','type=numeric','editable=0','The task you want to use'};
-end
-if ~ieNotDefined('phaseNum')
-  paramsInfo{end+1} = {'phaseNum',phaseNum,'group=analyzedScans','type=numeric','editable=0','The phase of the task you want to use'};
-end
-if ~ieNotDefined('segmentNum')
-  paramsInfo{end+1} = {'segmentNum',segmentNum,'group=analyzedScans','type=numeric','editable=0','The segment of the task you want to use'};
-end
-if ~ieNotDefined('varname')
-  paramsInfo{end+1} = {'varname',varname,'group=analyzedScans','type=string','editable=0','The variable that was analyzed'};
-end
-retval = mrParamsDialog(paramsInfo,'Event Related parameters');
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % just display parameters
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function retval = dispParams(params)
+% 
+% paramsInfo = {};
+% if isfield(params,'applyFiltering')
+%   paramsInfo{end+1} = {'applyFiltering',params.applyFiltering,'editable=0','Whether filtering was applied to the columns of the stimulus convolution matrix'};
+% end
+% paramsInfo{end+1} = {'analyzedScans',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',length(params.scanNum)),'editable=0'};
+% % get parameters for each scan
+% for i = 1:length(params.scanNum)
+%   scanNum{i} = params.scanNum(i);
+%   description{i} = params.scanParams{scanNum{i}}.description;
+%   hdrlen{i} = params.scanParams{scanNum{i}}.hdrlen;
+%   preprocess{i} = params.scanParams{scanNum{i}}.preprocess;
+%   if isfield(params.scanParams{scanNum{i}},'taskNum')
+%     taskNum{i} = params.scanParams{scanNum{i}}.taskNum;
+%   end
+%   if isfield(params.scanParams{scanNum{i}},'phaseNum')
+%     phaseNum{i} = params.scanParams{scanNum{i}}.phaseNum;
+%   end
+%   if isfield(params.scanParams{scanNum{i}},'segmentNum')
+%     segmentNum{i} = params.scanParams{scanNum{i}}.segmentNum;
+%   end
+%   if isfield(params.scanParams{scanNum{i}},'varname')
+%     varname{i} = params.scanParams{scanNum{i}}.varname;
+%   end
+% end
+% paramsInfo{end+1} = {'scanNum',scanNum,'group=analyzedScans','type=numeric','editable=0','scan number'};
+% paramsInfo{end+1} = {'tseriesFile',params.tseriesFile,'group=analyzedScans','type=string','editable=0','Name of timeseries that was analyzed'};
+% paramsInfo{end+1} = {'description',description,'group=analyzedScans','type=string','editable=0','Description of the analysis'};
+% paramsInfo{end+1} = {'eventLength',eventLength,'group=analyzedScans','type=numeric','editable=0','Length of response in seconds to calculate'};
+% paramsInfo{end+1} = {'preprocess',preprocess,'group=analyzedScans','type=string','editable=0','String of extra commands for preprocessing. Normally you will not need to set anything here, but this allows you to do corrections to the stimvols that are calculated so that you can modify the analysis. (see wiki for details)'};
+% if ~ieNotDefined('taskNum')
+%   paramsInfo{end+1} = {'taskNum',taskNum,'group=analyzedScans','type=numeric','editable=0','The task you want to use'};
+% end
+% if ~ieNotDefined('phaseNum')
+%   paramsInfo{end+1} = {'phaseNum',phaseNum,'group=analyzedScans','type=numeric','editable=0','The phase of the task you want to use'};
+% end
+% if ~ieNotDefined('segmentNum')
+%   paramsInfo{end+1} = {'segmentNum',segmentNum,'group=analyzedScans','type=numeric','editable=0','The segment of the task you want to use'};
+% end
+% if ~ieNotDefined('varname')
+%   paramsInfo{end+1} = {'varname',varname,'group=analyzedScans','type=string','editable=0','The variable that was analyzed'};
+% end
+% retval = mrParamsDialog(paramsInfo,'Event Related parameters');
