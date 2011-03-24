@@ -314,23 +314,20 @@ for iPlot = 1:length(roi)+1
                                                                   % % % end
 
   % if there is deconvolution data, display that too
+  %but do not plot the std deviation (it gets too cluttered)
   if plotDeconvolution 
-    keyboard %I need to finish this
-    if numberContrasts
-      eDeconv = getEstimates(deconvData,analysisParams,volumeIndices);
-      [deconvEhdr deconvTime deconvEhdrste deconvContrastHdr] = getEstimates(deconvData,x,y,s,glmData.contrasts);
-    else
-      [deconvEhdr deconvTime] = getEhdr(deconvData,x,y,s);
-    end
-    if any(any(deconvEhdr))
-      set(hEhdr,'MarkerEdgeColor','none','MarkerFaceColor','none');
-      hDeconv = [hDeconv; plotEhdr(ehdrAxes,deconvTime,deconvEhdr)];
+    [eDeconv,volumeIndices] = getEstimates(deconvData,analysisParams,volumeIndices);
+    if any(any(eDeconv.hdr))
+      eDeconv.hdr = mean(eDeconv.hdr,3);
+      hDeconv(:,iPlot)=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
+      set(hDeconv,'MarkerEdgeColor','none','MarkerFaceColor','none');
       if numberContrasts
-        hDeconv = [hDeconv; plotEhdr(hdrContrastAxes,deconvTime,deconvContrastHdr)];
+        eDeconv.contrastHdr = mean(eDeconv.contrastHdr,3);
+        hDeconv(:,iPlot,2) = plotEhdr(hdrContrastAxes,eDeconv.time,eDeconv.contrastHdr);
       end
     end
   else
-    deconvTime=0;
+    eDeconv.time=0;
   end
   
 
@@ -362,7 +359,7 @@ for iPlot = 1:length(roi)+1
       end
     end
   end
-  set(ehdrAxes,'xLim',[0,max(deconvTime(end),e.time(end))+framePeriod/2]);
+  set(ehdrAxes,'xLim',[0,max(eDeconv.time(end),e.time(end))+framePeriod/2]);
   maxSte = abs(max(e.hdrSte,[],3));
   makeScaleEditButton(fignum,ehdrAxes,...
     [min(min((e.hdr-maxSte))),max(max((e.hdr+maxSte)))]);
@@ -372,7 +369,7 @@ for iPlot = 1:length(roi)+1
     set(lhandle,'Interpreter','none','box','off');
   end
   if numberContrasts
-    set(hdrContrastAxes,'xLim',[0,max(deconvTime(end),e.time(end))+framePeriod/2]);
+    set(hdrContrastAxes,'xLim',[0,max(eDeconv.time(end),e.time(end))+framePeriod/2]);
     maxSte = max(e.contrastHdrSte,[],3);
     if isnan(maxSte)
       maxSte = 0;

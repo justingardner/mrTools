@@ -33,6 +33,7 @@ noValue = isnan(squeeze(betas(1,1,:)));
 
 if fieldIsNotDefined(d,'hrf')
   hrf = eye(size(betas,2));
+  params.componentsToTest = ones(1,size(betas,2));
 else
   hrf = d.hrf;
 end
@@ -44,7 +45,7 @@ for iVoxel = 1:nVoxels
 end
 
 if fieldIsNotDefined(d,'nHrfComponents')
-  d.nHrfComponents = size(d.hrf,2);
+  d.nHrfComponents = size(hrf,2);
 end
 
 
@@ -165,12 +166,21 @@ end
 outputIndices = indices(~noValue);
 estimates.betas = betas(:,:,~noValue);
 estimates.betaSte = betaSte(:,:,~noValue);
-estimates.contrastBetas = contrastBetas(:,:,~noValue);
-estimates.contrastBetaSte = contrastBetaSte(:,:,~noValue);
 estimates.hdr = hdr(:,:,~noValue);
 estimates.hdrSte = hdrSte(:,:,~noValue);
-estimates.contrastHdr = contrastHdr(:,:,~noValue);
-estimates.contrastHdrSte = contrastHdrSte(:,:,~noValue);
+if ~fieldIsNotDefined(params,'contrasts')
+  estimates.contrastBetas = contrastBetas(:,:,~noValue);
+  estimates.contrastBetaSte = contrastBetaSte(:,:,~noValue);
+  estimates.contrastHdr = contrastHdr(:,:,~noValue);
+  estimates.contrastHdrSte = contrastHdrSte(:,:,~noValue);
+else
+  estimates.contrastBetas = [];
+  estimates.contrastBetaSte = [];
+  estimates.contrastHdr = [];
+  estimates.contrastHdrSte = [];
+  
+end
+
 
 %mean confidence intervals across voxels 
 if isfield(d,'ehdrBootstrapCIs')
