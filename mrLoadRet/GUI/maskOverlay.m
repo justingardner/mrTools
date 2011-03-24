@@ -198,7 +198,7 @@ if ~isempty(overlayImages)
     overlayCoords = reshape(overlayCoords,[baseDims(1) baseDims(2) baseDims(3)*nDepths 3 ]);
   end
   if nDepths>1
-    overlayImages = mean(overlayImages,3);
+    %we take the average depth of all displayed cortical depths as the actual cortical depth location
     overlayCoords = mean(overlayCoords,3);
   end
   overlayImages = overlayImages(:,:,:,uniqueOverlaysIndices);
