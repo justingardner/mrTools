@@ -18,61 +18,44 @@
 %             [v params] = searchlightClassification(v,[],'justGetParams=1');
 %
 function [view d] = corticalSearchlight(view,params,varargin)
-
-d = [];
-
 % check arguments
-if ~any(nargin == [1 2 3 4 5 6 7 8])
-  help searchlightClassification.m
+if ~any(nargin == [1 2 3 4 5])
+  help searchlightClassification
   return
 end
 
 mrGlobals;
 
 % other arguments
-eval(evalargs(varargin,[],[],{'justGetParams','defaultParams','scanList'}));
+eval(evalargs(varargin));%,[],[],{'justGetParams','defaultParams','scanList'}));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('scanList'),scanList = [];end
+if ieNotDefined('params'),params = [];end
 
 % First get parameters
-if ieNotDefined('params')
-  % put up the gui
-  if defaultParams
-    params = surfaceClassGUI('groupName',viewGet(view,'groupName'),'useDefault=1','scanList',scanList);
-  else
-    params = surfaceClassGUI('groupName',viewGet(view,'groupName'),'scanList',scanList);
-  end
+if isempty(params) || justGetParams
+    params = surfaceClassGUI('thisView',view,'params',params,'defaultParams',defaultParams,'scanList',scanList);
+%   else
+%     params = searchlightClassGUI('groupName',viewGet(view,'groupName'),'scanList',scanList,'roilist',viewGet(view,'roiNames'));
+%   end
 end
-
-% just return parameters
-if justGetParams
-  d = params;
-  return
-end
-
-% Reconcile params with current status of group and ensure that it has
-% the required fields. 
-params = mrParamsReconcile([],params);
 
 % Abort if params empty
-if ieNotDefined('params'),return,end
+if ieNotDefined('params')
+  disp('(searchlightAnalysis) Searchlight Analysis cancelled');
+  return
+% just return parameters
+elseif justGetParams
+%   return
+end
+
 
 % set the group
 view = viewSet(view,'groupName',params.groupName);
-
-if ~isfield(params, 'applyFiltering')
-  params.applyFiltering = 0;
-end
-
-% inplace concatenation is handeled by a different function
-if isfield(params, 'inplaceConcat')
-    if params.inplaceConcat
-        [view d] = eventRelatedMultiple(view,params);
-        return
-    end
-end
-
+% Reconcile params with current status of group and ensure that it has
+% the required fields. 
+params = defaultReconcileParams([],params);
 
 % for scanNum = params.scanNum
 %     d = loadScan(view,scanNum,[],0)
