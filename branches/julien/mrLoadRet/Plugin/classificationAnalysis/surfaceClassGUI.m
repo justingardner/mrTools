@@ -10,40 +10,40 @@ function params = surfaceClassGUI(varargin)
 % get the arguments
 eval(evalargs(varargin));
 
-% if called with params, then just display
-if ~ieNotDefined('params')
-  retval = dispParams(params);
-  if isempty(retval),params = [];end
-  return
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('thisView'),thisView = newView;end
+if ieNotDefined('params'),params = struct;end
+if ieNotDefined('groupName'), groupName = viewGet(thisView,'groupName');end;
+
+if ~isfield(params,'groupName') || isempty(params.groupName)
+  params.groupName = groupName;
 end
-
-% get a view
-view = newView;
-
-% get the group names
-if ieNotDefined('groupName')
-  groupNames = viewGet(view,'groupNames');
+if ~isfield(params,'saveName') || isempty(params.saveName)
+  params.saveName = 'corticalSearchlight';
 else
-  % if passed in name, put that on top of list to make it the default
-  groupNames = putOnTopOfList(groupName,viewGet(view,'groupNames'));
+  params.saveName = viewGet(thisView,'analysisName');
+end
+if ~isfield(params,'scanNum') || isempty(params.scanNum)
+  params.scanNum = [];
+end
+if ~isfield(params,'radius') || isempty(params.radius)
+  params.radius = 1;
 end
 
-% check for variable to just useDefaults rather than bring up gui
-if ieNotDefined('useDefault')
-  useDefault = 0;
-end
+askForParams = 1;
+groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
 
 % set the parameter string
 paramsInfo = {...
     {'groupName',groupNames,'type=popupmenu','Name of group from which to do searchlight analysis'},...
-    {'saveName','erClass','File name to try to save as'},...
+    {'saveName',params.saveName,'File name to try to save as'},...
     {'radius',1,'Radius of searchlight in mm to use'},...
 %     {'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
 %     {'applyFiltering',1,'type=checkbox','Apply the same filtering that was used before concatenation to the design matrix. This will apply the hipass filter as well as the projection analsis if they have been done by concatTSeries'},...
 };
 
 % Get parameter values
-if useDefault
+if defaultParams
   params = mrParamsDefault(paramsInfo);
 else
   params = mrParamsDialog(paramsInfo,'Searchlight Classification Parameters');
@@ -51,33 +51,33 @@ end
 
 % if empty user hit cancel
 if isempty(params)
-  deleteView(view);
+  deleteView(thisView);
   return
 end
 
 % get scans
-view = viewSet(view,'groupName',params.groupName);
-nScans = viewGet(view,'nScans');
+thisView = viewSet(thisView,'groupName',params.groupName);
+nScans = viewGet(thisView,'nScans');
 if ~ieNotDefined('scanList')
   params.scanNum = scanList;
-elseif useDefault
+elseif defaultParams
   params.scanNum = 1:nScans;
 elseif nScans == 1
   params.scanNum = nScans;
 else
-  params.scanNum = selectScans(view);
+  params.scanNum = selectInList(thisView,'scans');
 end
 if isempty(params.scanNum)
   params = [];
-  deleteView(view);
+  deleteView(thisView);
   return
 end
 
 % get the parameters for each scan
-params.scanParams = getClassVarname(view,viewGet(view,'groupNum',params.groupName),params.scanNum,useDefault);
+params.scanParams = getClassVarname(thisView,params,defaultParams);
 if isempty(params.scanParams)
   params = [];
-  deleteView(view);
+  deleteView(thisView);
   return
 end
 % set the scan number
@@ -85,7 +85,7 @@ for i = 1:length(params.scanNum)
   params.scanParams{params.scanNum(i)}.scanNum = params.scanNum(i);
 end
 
-deleteView(view);
+deleteView(thisView);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % just display parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -34,7 +34,7 @@ if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('scanList'),scanList = [];end
 if ieNotDefined('params'),params = [];end
 
-roi_n = selectROIs(view);
+roi_n =  selectInList(view,'rois')
 if isempty(roi_n)
     mrWarnDlg('(roiClassification) No ROI selected!');
   return
