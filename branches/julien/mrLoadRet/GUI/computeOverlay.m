@@ -47,6 +47,31 @@ if ~isempty(overlayImages)
   alphaOverlayMasks = overlayMasks{1}(:,:,:,nCurOverlays+1:end);
   overlayImages = overlayImages{1}(:,:,:,1:nCurOverlays);
   overlayMasks = overlayMasks{1}(:,:,:,1:nCurOverlays);
+  
+  if size(overlayImages,3)>1
+    overlayMasks = any(overlayMasks,3);
+    alphaOverlayMasks = any(alphaOverlayMasks,3);
+    switch(mrGetPref('multiSliceProjectionMethod'))
+      case 'Average'
+        overlayImages = nanmean(overlayImages,3);
+        alphaOverlayImages = nanmean(alphaOverlayImages,3);
+      case 'Maximum Intensity Projection'
+        alphaOverlayImages= permute(alphaOverlayImages,[4 3 1 2]);
+        newAlphaOverlayImages = NaN([size(overlayImages,4) size(overlayImages,1) size(overlayImages,2)]);
+        newOverlayImages = NaN([size(overlayImages,1) size(overlayImages,2) 1 size(overlayImages,4)]);
+        for iOverlay = 1:nCurOverlays
+          [newOverlayImages(:,:,1,iOverlay),maxIndex] = max(overlayImages(:,:,:,iOverlay),[],3);
+          %get the corresponding alpha values (?)
+          for iSlice = 1:size(overlayImages,3)
+            thisIndex = find(maxIndex==iSlice);
+            newAlphaOverlayImages(iOverlay,thisIndex) = alphaOverlayImages(iOverlay,iSlice,thisIndex);
+          end
+        end
+        alphaOverlayImages = permute(newAlphaOverlayImages,[2 3 4 1]);
+        overlayImages = newOverlayImages;
+    end
+  end
+  
   overlays.overlayIm = permute(overlayImages,[1 2 4 3]); 
   imageDims = [size(overlayImages,1) size(overlayImages,2)];
   

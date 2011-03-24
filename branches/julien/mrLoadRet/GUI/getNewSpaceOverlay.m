@@ -10,7 +10,7 @@
 
 function newOverlayData = getNewSpaceOverlay(overlayData, xform, newXCoords, newYCoords, newZCoords, interpMethod)
 
-% interpMethod and interpExtrapVal are used by calls to interp3 when
+% interpMethod is used by calls to interp3 when
 % extracting slices from the base and overlay arrays.
 if ieNotDefined('interpMethod')
    interpMethod = mrGetPref('interpMethod');
@@ -18,17 +18,17 @@ end
 if isempty(interpMethod)
     interpMethod = 'linear';
 end
-interpExtrapVal = NaN;
 
 nOverlays = size(overlayData,4);
 sliceDims(1) = size(newXCoords,1);
 sliceDims(2) = size(newXCoords,2);
 numPixels = sliceDims(1)*sliceDims(2);
-newOverlayData = zeros([size(newXCoords) nOverlays]);
+newOverlayData = NaN([size(newXCoords) nOverlays]);
 
 hWaitbar = mrWaitBar(0,'Resampling overlay to new space');
 % Compute new overlay data by base slice
 nSlices = size(newXCoords,3);
+scanDims = size(overlayData(:,:,:,1));
 for iSlice = 1:nSlices
     
   baseCoordsHomogeneous = [reshape(newXCoords(:,:,iSlice),1,numPixels); reshape(newYCoords(:,:,iSlice),1,numPixels); reshape(newZCoords(:,:,iSlice),1,numPixels); ones(1,numPixels)];
@@ -36,13 +36,18 @@ for iSlice = 1:nSlices
 
   % Transform coordinates
   overlayCoordsHomogeneous = xform * baseCoordsHomogeneous;
-  overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[sliceDims 3]);
+  %check if this slice has any data
+  isInScan = overlayCoordsHomogeneous(1:3,:)>=0 & overlayCoordsHomogeneous(1:3,:)<=repmat(scanDims',1,size(overlayCoordsHomogeneous,2));
+  
+  if any(all(isInScan,1)) %if it does, interpolate the data form the overlay
+    overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[sliceDims 3]);
 
-  % Extract slice from current overlay.
-  if ~isempty(overlayCoords) 
-    for iOverlay=1:nOverlays
-      newOverlayData(:,:,iSlice,iOverlay) = interp3(overlayData(:,:,:,iOverlay),overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
-      mrWaitBar((iSlice*nOverlays+iOverlay)/nSlices*nOverlays,hWaitbar);
+    % Extract slice from current overlay.
+    if ~isempty(overlayCoords) 
+      for iOverlay=1:nOverlays
+        newOverlayData(:,:,iSlice,iOverlay) = interp3(overlayData(:,:,:,iOverlay),overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,NaN);
+        mrWaitBar((iSlice*nOverlays+iOverlay)/(nSlices*nOverlays),hWaitbar);
+      end
     end
   end
 end

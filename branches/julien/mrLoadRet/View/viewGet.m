@@ -2257,6 +2257,7 @@ switch lower(param)
         alpha = viewGet(view,'alpha');
         sliceIndex = viewGet(view,'baseSliceIndex');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
+        multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
         % need to recalculate overlay if this is aflat
         % and the cortical depth has changed
         if viewGet(view,'baseType')
@@ -2265,7 +2266,7 @@ switch lower(param)
           corticalDepth = 0;
         end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays);
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection);
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
