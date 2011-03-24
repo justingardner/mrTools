@@ -723,34 +723,36 @@ for z = slices
         if params.TFCE 
           thisTfce = applyTfce(thisStatistic,d.roiPositionInBox,precision); 
         end
-        if iBoot==1
-          actualStatistic = thisStatistic;
-          if params.parametricTests && bootstrapFweAdjustment 
-            resampleFweData = initResampleFWE(actualStatistic,params,thisParametricP);
-          end
-          if params.TFCE
-            actualTfce = thisTfce; 
-            if  params.parametricTests && bootstrapFweAdjustment
-              resampleFweTfceTdata = initResampleFWE(actualTfce,params);
-            end
-          end
-        else
-          if bootstrapTests
-            bootstrapStatisticCount = bootstrapStatisticCount+double(thisStatistic>actualStatistic); %T has already been transformed to be positive
-            if bootstrapFweAdjustment && ~params.noDoubleBootstrap
-              bootstrapStatistic(:,:,iBoot-1) = thisStatistic;
+        if numberFtests || params.computeTtests
+          if iBoot==1
+            actualStatistic = thisStatistic;
+            if params.parametricTests && bootstrapFweAdjustment 
+              resampleFweData = initResampleFWE(actualStatistic,params,thisParametricP);
             end
             if params.TFCE
-              bootstrapTfceCount = bootstrapTfceCount + double(thisTfce>actualTfce);
-              if bootstrapFweAdjustment && ~params.noDoubleBootstrap
-                bootstrapTfce(:,:,iBoot-1) = thisTfce;
+              actualTfce = thisTfce; 
+              if  params.parametricTests && bootstrapFweAdjustment
+                resampleFweTfceTdata = initResampleFWE(actualTfce,params);
               end
             end
-          end
-          if params.parametricTests && bootstrapFweAdjustment
-            bootstrapFweStatisticCount = bootstrapFweStatisticCount + resampleFWE(thisStatistic,actualStatistic,resampleFweData);
-            if params.TFCE
-              bootstrapFweTfceCount = bootstrapFweTfceCount + resampleFWE(thisTfce,actualTfce,resampleFweTfceTdata);
+          else
+            if bootstrapTests
+              bootstrapStatisticCount = bootstrapStatisticCount+double(thisStatistic>actualStatistic); %T has already been transformed to be positive
+              if bootstrapFweAdjustment && ~params.noDoubleBootstrap
+                bootstrapStatistic(:,:,iBoot-1) = thisStatistic;
+              end
+              if params.TFCE
+                bootstrapTfceCount = bootstrapTfceCount + double(thisTfce>actualTfce);
+                if bootstrapFweAdjustment && ~params.noDoubleBootstrap
+                  bootstrapTfce(:,:,iBoot-1) = thisTfce;
+                end
+              end
+            end
+            if params.parametricTests && bootstrapFweAdjustment
+              bootstrapFweStatisticCount = bootstrapFweStatisticCount + resampleFWE(thisStatistic,actualStatistic,resampleFweData);
+              if params.TFCE
+                bootstrapFweTfceCount = bootstrapFweTfceCount + resampleFWE(thisTfce,actualTfce,resampleFweTfceTdata);
+              end
             end
           end
         end
@@ -770,10 +772,10 @@ for z = slices
           if numberTtests
             out.contrast(:,:,y,z) = thisContrastBetas';
           end
-          if params.parametricTests
+          if (numberFtests ||params.computeTtests) && params.parametricTests
             out.parametricP(:,:,y,z) = thisParametricP';
           end
-          if numberFtests || (numberTtests&&params.computeTtests) || params.outputStatistic
+          if (numberFtests || (numberTtests&&params.computeTtests)) && params.outputStatistic
             out.statistic(:,:,y,z) = thisStatistic';
           end
         else
@@ -943,7 +945,7 @@ if numberTests
       end
     end
   end
-  if numberFtests || (numberTtests&&params.computeTtests) || params.outputStatistic
+  if (numberFtests || (numberTtests&&params.computeTtests)) && params.outputStatistic
     out.statistic = permute(out.statistic,[2 3 4 1]);
   end
   if bootstrapTests
