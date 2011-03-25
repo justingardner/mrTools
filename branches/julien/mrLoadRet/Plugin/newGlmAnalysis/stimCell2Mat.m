@@ -11,12 +11,12 @@ function [stimMatrix,runTransitions] = stimCell2Mat(stimOnsets, stimDurations,ru
 if ~ieNotDefined('stimDurations')
   %check that stimDurations and stimOnsets are compatible
   if length(stimDurations)~=length(stimOnsets)
-    mrErrorDlg(sprintf('(stimCell2Mat) stimulus onsets and durations are not compatible (%d vs %d runs)',length(stimOnsets),length(stimDurations)));
+    mrErrorDlg(sprintf('(stimCell2Mat) stimulus onsets and durations are not compatible (%d vs %d event types)',length(stimOnsets),length(stimDurations)));
   end
   %apply stimDuration
   for iStim = 1:length(stimOnsets)
     if length(stimDurations{iStim})~=length(stimOnsets{iStim})
-      mrErrorDlg(sprintf('(stimCell2Mat) stimulus onsets and durations are not compatible (%d vs %d stims)',length(stimOnsets{iStim}),length(stimDurations{iStim})));
+      mrErrorDlg(sprintf('(stimCell2Mat) stimulus onsets and durations are not compatible (%d vs %d event types)',length(stimOnsets{iStim}),length(stimDurations{iStim})));
     end
     if ~isempty(stimOnsets{iStim})
       stimOnsets{iStim} = reshape(stimOnsets{iStim},1,numel(stimOnsets{iStim})); %make sure stimOnsets{iStim} and stimDurations{iStim} 
