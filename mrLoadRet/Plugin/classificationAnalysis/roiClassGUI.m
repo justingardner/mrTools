@@ -21,7 +21,7 @@ end
 if ~isfield(params,'saveName') || isempty(params.saveName)
   params.saveName = 'roiClass';
 else
-  params.saveName = viewGet(thisView,'analysisName');
+  params.saveName = 'roiClass';
 end
 if ~isfield(params,'scanNum') || isempty(params.scanNum)
   params.scanNum = [];

@@ -102,11 +102,12 @@ for scanNum = params.scanNum
     scanDims = viewGet(view,'dims',scanNum);
     
     [d, d.roiVoxelIndices, d.roiCoords] = loadScanRois(view,scanNum,roi_n);
-    
-    for r = 1:size(d.roiCoords,2)
-       for v = 1:size(d.roiCoords{r},2)
-           sortData{r}(v)=sortValues(d.roiCoords{r}(1,v),d.roiCoords{r}(2,v),d.roiCoords{r}(3,v));
-       end
+    if params.selectVox
+        for r = 1:size(d.roiCoords,2)
+           for v = 1:size(d.roiCoords{r},2)
+               sortData{r}(v)=sortValues(d.roiCoords{r}(1,v),d.roiCoords{r}(2,v),d.roiCoords{r}(3,v));
+           end
+        end
     end
     
     d = getStimvol(d,scanParams{scanNum});
