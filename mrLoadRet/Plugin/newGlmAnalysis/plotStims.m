@@ -26,7 +26,7 @@ if ieNotDefined('stimDurations') || any(size(stimDurations)~=size(stimOnsets))
   stimDurations=[];
 end
 
-if iscell(stimOnsets) %If the times and durations are in matrix form, transform to array of cell form
+if iscell(stimOnsets) %If the times and durations are in array of cell form, transform to matrix form
   stimOnsets = stimCell2Mat(stimOnsets, stimDurations,runTransitions);
 end
 
@@ -58,10 +58,10 @@ stimOnsets = logical(stimOnsets);
 for iPattern = 1:size(patterns,1)
   if ~all(patterns(iPattern,:)==0)
     %find onsets and offsets for each block of this pattern
-    blocks = reshape(find(diff([0;whichPatterns;0]==iPattern)),2,[]);
+    blocks = reshape(find(diff([0;whichPatterns;0]==iPattern)),2,[])-1;
     %and draw each block
     for iBlock = 1:size(blocks,2)
-      hStims(patterns(iPattern,:)') = plotFrame(axesHandle,framePeriod*blocks(1,iBlock)-1, framePeriod*blocks(2,iBlock)-1, bottom, top, colors(patterns(iPattern,:)',:));
+      hStims(patterns(iPattern,:)') = plotFrame(axesHandle,framePeriod*blocks(1,iBlock), framePeriod*blocks(2,iBlock), bottom, top, colors(patterns(iPattern,:)',:));
     end
   end
 end
