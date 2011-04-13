@@ -32,6 +32,8 @@ if ~isfield(params,'numberEvents') || isempty(params.numberEvents)
 end
 if ~isfield(params,'roiMask') || isempty(params.roiMask)
   params.roiMask = viewGet(thisView,'roiNames');
+else
+  params.roiMask = putOnTopOfList(params.roiMask,viewGet(thisView,'roiNames'));
 end
 if ~isfield(params,'radius') || isempty(params.radius)
   params.radius = 1;

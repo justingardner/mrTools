@@ -163,13 +163,15 @@ for scanNum = params.scanNum
             l_(idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=repmat(lab(idx(i)),1,scanParams{scanNum}.eventLength);
             r_(idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=repmat(run(idx(i)),1,scanParams{scanNum}.eventLength);
         end
-        lab=l_;
-        run=r_;
+        nonZeros = l_~=0;
+        lab=l_(nonZeros);
+        run=r_(nonZeros);
+        m_ = m_(:,nonZeros);
         clear l_ r_
     end
     %loop over rois in the scan
     for r = 1:size(d.roiVoxelIndices,2)
-        fprintf('(roiClassification) Classiying %s from scan %i\n',viewGet(view,'roiname',r),scanNum);
+        fprintf('(roiClassification) Classiying %s from scan %i\n',viewGet(view,'roiname',roi_n(r)),scanNum);
         %prepare and sort roi data if required
         patt=m_(d.roiVoxelIndices{r},:);
         if params.selectVox==0
@@ -194,7 +196,7 @@ for scanNum = params.scanNum
                 diagAcc{scanNum}{r}(i)=mean(lab(run==i)==diagLab{scanNum}{r}(run==i));
             end
             if params.Linear
-                linearLab{scanNum}{r}(run==i)=classify(patt(patt_sort,run==i)',patt(patt_sort,run~=i)',lab(run~=i),'otherLinear');
+                linearLab{scanNum}{r}(run==i)=classify(patt(patt_sort,run==i)',patt(patt_sort,run~=i)',lab(run~=i),'linear');
                 linearAcc{scanNum}{r}(i)=mean(lab(run==i)==linearLab{scanNum}{r}(run==i));
             end
             if params.SVM
@@ -243,7 +245,7 @@ for scanNum = params.scanNum
             end
         end
         if params.nonParaTest
-            disppercent(-inf,sprintf('(roiClassification) Shufflling %s from scan %i',viewGet(view,'roiname',r),scanNum));
+            disppercent(-inf,sprintf('(roiClassification) Shufflling %s from scan %i',viewGet(view,'roiname',roi_n(r)),scanNum));
             for s=1:params.numShuff
                 s_lab=lab(randperm(length(lab)));
                 for i=1:size(d.concatInfo.runTransition,1)
@@ -264,7 +266,8 @@ if params.SVM
     for s = 1:length(params.scanNum)
         for r=1:size(svmCount{params.scanNum(s)},2)
             colors = rainbow_colors(size(svmCount{params.scanNum(s)}{r},1));
-            subplot(length(params.scanNum),size(svmCount{params.scanNum(s)},2),(s-1)*size(svmCount{params.scanNum(s)},2)+r)
+            %subplot(length(params.scanNum),size(svmCount{params.scanNum(s)},2),(s-1)*size(svmCount{params.scanNum(s)},2)+r)
+            axes('outerposition',getSubplotPosition(r,s,ones(size(svmCount{params.scanNum(s)},2),1),ones(length(params.scanNum),1),0,.2))
             for i=1:size(svmCount{params.scanNum(s)}{r},1)
                 plot(svmCount{params.scanNum(s)}{r}(i,:),'color',colors(i,:))
                 hold on
@@ -278,17 +281,53 @@ if params.SVM
             legend(d.stimNames)
             line([1 size(svmCount{params.scanNum(s)}{r},1)],[1/size(svmCount{params.scanNum(s)}{r},1) 1/size(svmCount{params.scanNum(s)}{r},1)],'Color','k')
             hold on
-            titleString{params.scanNum(s)}{r}=sprintf('%s, Mean accuracy %f',viewGet(view,'roiname',r),svmMeanAcc{params.scanNum(s)}{r}); 
+            titleString{params.scanNum(s)}{r}{1}=viewGet(view,'roiname',roi_n(r)); 
+            titleString{params.scanNum(s)}{r}{2}=sprintf('Mean accuracy %f',svmMeanAcc{params.scanNum(s)}{r}); 
             if params.sigTest
-                titleString{params.scanNum(s)}{r}=[titleString{params.scanNum(s)}{r},sprintf('\nBinomial p = %.2f',svmP{params.scanNum(s)}{r})];
+                titleString{params.scanNum(s)}{r}{end+1}=sprintf('\nBinomial p = %.6f',svmP{params.scanNum(s)}{r});
             end
             if params.nonParaTest
-                titleString{params.scanNum(s)}{r}=[titleString{params.scanNum(s)}{r}, sprintf('\n(Non Para 95%% = %.2f)',th_95{params.scanNum(s)}{r})];
+                titleString{params.scanNum(s)}{r}{end+1}=[titleString{params.scanNum(s)}{r}, sprintf('\n(Non Para 95%% = %.6f)',th_95{params.scanNum(s)}{r})];
                 line([1 size(svmCount{params.scanNum(s)}{r},1)],[th_95{params.scanNum(s)}{r} th_95{params.scanNum(s)}{r}],'Color','k','linestyle','--');
                 hold on
             end
-              title(titleString{params.scanNum(s)}{r})  
+              title(titleString{params.scanNum(s)}{r},'interpreter','none')  
         end
     end
 end
-keyboard
+
+if params.diagLinear
+    figure('name','''tuning curves'' for Diag Linear')
+    for s = 1:length(params.scanNum)
+        for r=1:size(diagCount{params.scanNum(s)},2)
+            colors = rainbow_colors(size(diagCount{params.scanNum(s)}{r},1));
+            %subplot(length(params.scanNum),size(diagCount{params.scanNum(s)},2),(s-1)*size(diagCount{params.scanNum(s)},2)+r)
+            axes('outerposition',getSubplotPosition(r,s,ones(size(diagCount{params.scanNum(s)},2),1),ones(length(params.scanNum),1),0,.2))
+            for i=1:size(diagCount{params.scanNum(s)}{r},1)
+                plot(diagCount{params.scanNum(s)}{r}(i,:),'color',colors(i,:))
+                hold on
+            end
+            for i=1:size(diagCount{params.scanNum(s)}{r},1)
+                plot(i,diagCount{params.scanNum(s)}{r}(i,i),'o','color',colors(i,:))
+            end
+            axis([1 size(diagCount{params.scanNum(s)}{r},1) 0 1])
+            set(gca,'XTick',1:size(diagCount{params.scanNum(s)}{r},1))
+            set(gca,'XTickLabel',d.stimNames)
+            legend(d.stimNames)
+            line([1 size(diagCount{params.scanNum(s)}{r},1)],[1/size(diagCount{params.scanNum(s)}{r},1) 1/size(diagCount{params.scanNum(s)}{r},1)],'Color','k')
+            hold on
+            titleString{params.scanNum(s)}{r}{1}=viewGet(view,'roiname',roi_n(r)); 
+            titleString{params.scanNum(s)}{r}{2}=sprintf('Mean accuracy %f',diagMeanAcc{params.scanNum(s)}{r}); 
+            if params.sigTest
+                titleString{params.scanNum(s)}{r}{end+1}=sprintf('\nBinomial p = %.6f',diagP{params.scanNum(s)}{r});
+            end
+            if params.nonParaTest
+                titleString{params.scanNum(s)}{r}{end+1}=[titleString{params.scanNum(s)}{r}, sprintf('\n(Non Para 95%% = %.6f)',th_95{params.scanNum(s)}{r})];
+                line([1 size(diagCount{params.scanNum(s)}{r},1)],[th_95{params.scanNum(s)}{r} th_95{params.scanNum(s)}{r}],'Color','k','linestyle','--');
+                hold on
+            end
+              title(titleString{params.scanNum(s)}{r},'interpreter','none')  
+        end
+    end
+end
+
