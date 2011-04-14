@@ -144,8 +144,9 @@ for scanNum = params.scanNum
             l_(idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=repmat(lab(idx(i)),1,scanParams{scanNum}.eventLength);
             r_(idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=repmat(run(idx(i)),1,scanParams{scanNum}.eventLength);
         end
-        lab=l_;
-        run=r_;
+        m_=m_(:,l_>0);
+        lab = l_(l_>0);
+        run=r_(l_>0);
         clear l_ r_
     end
 %     
@@ -180,15 +181,20 @@ for scanNum = params.scanNum
     
     disppercent(-inf,'(searchlightClassification) Classifying based on spotlight....');
     
+    minX = min(d.roiCoords{1}(1,:));
+    maxX = max(d.roiCoords{1}(1,:));
+    minY = min(d.roiCoords{1}(2,:));
+    maxY = max(d.roiCoords{1}(2,:));
+    minZ = min(d.roiCoords{1}(3,:));
+    maxZ = max(d.roiCoords{1}(3,:));
     
     for i_sphere=1:size(d.roiCoords{1},2)
     
-
-            
         %find voxels in spotlight
         idx=repmat(d.roiCoords{1}(:,i_sphere),1,size(params.offsets,2))+params.offsets;
-        [~,j] = find((idx(1,:)<min(d.roiCoords{1}(1,:)) | idx(1,:)>max(d.roiCoords{1}(1,:))) | (idx(2,:)<min(d.roiCoords{1}(2,:)) | idx(2,:)>max(d.roiCoords{1}(2,:))) | (idx(3,:)<min(d.roiCoords{1}(3,:)) | idx(3,:)>max(d.roiCoords{1}(3,:))));
-        idx=idx(:,setdiff(1:size(idx,2),j));
+%         [~,j] = find((idx(1,:)<min(d.roiCoords{1}(1,:)) | idx(1,:)>max(d.roiCoords{1}(1,:))) | (idx(2,:)<min(d.roiCoords{1}(2,:)) | idx(2,:)>max(d.roiCoords{1}(2,:))) | (idx(3,:)<min(d.roiCoords{1}(3,:)) | idx(3,:)>max(d.roiCoords{1}(3,:))));
+%         idx=idx(:,setdiff(1:size(idx,2),j));
+        idx=idx(:,idx(1,:)>=minX & idx(1,:)<=maxX & idx(2,:)>=minY & idx(2,:)<=maxY & idx(3,:)>=minZ & idx(3,:)<=maxZ);
 
         xxx=nan(size(idx,2),size(mm,4));
         %create patterns based on spotlight
@@ -282,7 +288,7 @@ classAnal.date = dateString;
 nScans = viewGet(thisView,'nScans');
 % create generic parameters 
 defaultOverlay.groupName = params.groupName;
-defaultOverlay.function = 'searchlightClasfficiation';
+defaultOverlay.function = 'searchlightClassification';
 defaultOverlay.reconcileFunction = 'defaultReconcileParams';
 defaultOverlay.date = dateString;
 defaultOverlay.params = cell(1,nScans);

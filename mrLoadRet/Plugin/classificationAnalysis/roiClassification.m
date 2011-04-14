@@ -281,13 +281,13 @@ if params.SVM
             legend(d.stimNames)
             line([1 size(svmCount{params.scanNum(s)}{r},1)],[1/size(svmCount{params.scanNum(s)}{r},1) 1/size(svmCount{params.scanNum(s)}{r},1)],'Color','k')
             hold on
-            titleString{params.scanNum(s)}{r}{1}=viewGet(view,'roiname',roi_n(r)); 
+            titleString{params.scanNum(s)}{r}={viewGet(view,'roiname',roi_n(r))}; 
             titleString{params.scanNum(s)}{r}{2}=sprintf('Mean accuracy %f',svmMeanAcc{params.scanNum(s)}{r}); 
             if params.sigTest
-                titleString{params.scanNum(s)}{r}{end+1}=sprintf('\nBinomial p = %.6f',svmP{params.scanNum(s)}{r});
+                titleString{params.scanNum(s)}{r}{end+1}=sprintf('Binomial p = %.6f',svmP{params.scanNum(s)}{r});
             end
             if params.nonParaTest
-                titleString{params.scanNum(s)}{r}{end+1}=[titleString{params.scanNum(s)}{r}, sprintf('\n(Non Para 95%% = %.6f)',th_95{params.scanNum(s)}{r})];
+                titleString{params.scanNum(s)}{r}{end+1}=[titleString{params.scanNum(s)}{r}, sprintf('(Non Para 95%% = %.6f)',th_95{params.scanNum(s)}{r})];
                 line([1 size(svmCount{params.scanNum(s)}{r},1)],[th_95{params.scanNum(s)}{r} th_95{params.scanNum(s)}{r}],'Color','k','linestyle','--');
                 hold on
             end
@@ -316,13 +316,13 @@ if params.diagLinear
             legend(d.stimNames)
             line([1 size(diagCount{params.scanNum(s)}{r},1)],[1/size(diagCount{params.scanNum(s)}{r},1) 1/size(diagCount{params.scanNum(s)}{r},1)],'Color','k')
             hold on
-            titleString{params.scanNum(s)}{r}{1}=viewGet(view,'roiname',roi_n(r)); 
+            titleString{params.scanNum(s)}{r}={viewGet(view,'roiname',roi_n(r))}; 
             titleString{params.scanNum(s)}{r}{2}=sprintf('Mean accuracy %f',diagMeanAcc{params.scanNum(s)}{r}); 
             if params.sigTest
-                titleString{params.scanNum(s)}{r}{end+1}=sprintf('\nBinomial p = %.6f',diagP{params.scanNum(s)}{r});
+                titleString{params.scanNum(s)}{r}{end+1}=sprintf('Binomial p = %.6f',diagP{params.scanNum(s)}{r});
             end
             if params.nonParaTest
-                titleString{params.scanNum(s)}{r}{end+1}=[titleString{params.scanNum(s)}{r}, sprintf('\n(Non Para 95%% = %.6f)',th_95{params.scanNum(s)}{r})];
+                titleString{params.scanNum(s)}{r}{end+1}=[titleString{params.scanNum(s)}{r}, sprintf('(Non Para 95%% = %.6f)',th_95{params.scanNum(s)}{r})];
                 line([1 size(diagCount{params.scanNum(s)}{r},1)],[th_95{params.scanNum(s)}{r} th_95{params.scanNum(s)}{r}],'Color','k','linestyle','--');
                 hold on
             end
