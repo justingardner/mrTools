@@ -3,6 +3,8 @@ function m_d=classify_corticalSearchlight(view,d,radius,params)
 %an area defined by an ROI, which is normally a mask of the skullstripped
 %brain. Has to be the run from the root directory of an MLR session.
 
+m_d=[];
+
 if 0
     %Define which scan from the concatenation group is to be analyzed
     scan=1;
@@ -25,19 +27,29 @@ end
 % a function to calculate the offsets of the spotlight voxels relative to
 % the centre of the sphere
 
+if exist('Segmentation')==7
+  pathname = 'Segmentation';
+else
+  pathname = mrGetPref('volumeDirectory');
+end
 
-
-baseHdr = cbiReadNiftiHeader(['Segmentation/',uigetfile('Segmentation/*.hdr')]);
+[filename,pathname] = uigetfile([pathname '/*.hdr'], 'Choose Base Anatomy');
+if isnumeric(filename),  return; end
+baseHdr = cbiReadNiftiHeader([pathname filename]);
 % load the appropriate surface files
 % disp(sprintf('Loading %s', baseCoordMap.innerCoordsFileName));
-surface.inner = loadSurfOFF(fullfile('Segmentation/', uigetfile('Segmentation/*WM.off')));
+[filename,pathname] = uigetfile([pathname '/*WM.off'], 'Choose Inner Surface');
+if isnumeric(filename),  return; end
+surface.inner = loadSurfOFF([pathname filename]);
 if isempty(surface.inner)
 mrWarnDlg(sprintf('(calcDist) Could not find surface file %s',fullfile(baseCoordMap.path, baseCoordMap.innerCoordsFileName)));
 return
 end
 surface.inner = xformSurfaceWorld2Array(surface.inner, baseHdr);
 % disp(sprintf('Loading %s', baseCoordMap.outerCoordsFileName));
-surface.outer = loadSurfOFF(fullfile('Segmentation/', uigetfile('Segmentation/*GM.off')));
+[filename,pathname] = uigetfile([pathname '/*GM.off'], 'Choose Outer Surface');
+if isnumeric(filename),  return; end
+surface.outer = loadSurfOFF([pathname filename]);
 if isempty(surface.outer)
 mrWarnDlg(sprintf('(calcDist) Could not find surface file %s',fullfile(baseCoordMap.path, baseCoordMap.outerCoordsFileName)));
 return
@@ -45,10 +57,10 @@ end
 surface.outer = xformSurfaceWorld2Array(surface.outer, baseHdr);
 
 corticalDepth = 0.5;
-%% build up a mrMesh-style structure, taking account of the current corticalDepth
+% build up a mrMesh-style structure, taking account of the current corticalDepth
 m.vertices = surface.inner.vtcs+corticalDepth*(surface.outer.vtcs-surface.inner.vtcs);
 m.faceIndexList  = surface.inner.tris;
-%% calculate the connection matrix
+% calculate the connection matrix
 [m.uniqueVertices,m.vertsToUnique,m.UniqueToVerts] = unique(m.vertices,'rows');
 m.uniqueFaceIndexList = findUniqueFaceIndexList(m);
 m.connectionMatrix = findConnectionMatrix(m);
@@ -63,15 +75,14 @@ scan_surf = base2scan*[m.vertices,ones(length(m.vertices),1)]';
 min_surf = round(max(min(scan_surf(1:3,:)'),[1 1 1]));
 max_surf = round(min(max(scan_surf(1:3,:)'),d.dim(1:3)));
 disp('Loading data')
-tic
 tmp = loadScan(view,params.scanNum,[],[min_surf(3) max_surf(3)],[],[min_surf(1) max_surf(1)],[min_surf(2) max_surf(2)]);
 
 col_mean = repmat(mean(tmp.data,4),[1 1 1, d.dim(4)]);
-
-d.data=tmp.data-col_mean;
-d.data=100*d.data./col_mean;
+tmp.data=tmp.data-col_mean;
+tmp.data=100*tmp.data./col_mean;
+clear col_mean;
+d.data = tmp.data;
 clear tmp;
-
 
 disp('preparing data for classification')
 cc = viewGet(view,'concatinfo',params.scanNum);
@@ -93,26 +104,27 @@ end
 
 idx = find(lab>0);
 if params.averageEvent %average across the TRs for each event
-for i=1:size(idx,2)
-m_(:,:,:,i)=mean(d.data(:,:,:,idx(i)+params.hdLag:idx(i)+params.eventLength+params.hdLag-1),4);
-end
-d.data=m_;clear m_
-run=run(idx);
-lab = lab(idx);
+  m_ = NaN([size(d.data,1) size(d.data,2) size(d.data,3) size(idx,2)]);
+  for i=1:size(idx,2)
+    m_(:,:,:,i)=mean(d.data(:,:,:,idx(i)+params.hdLag:idx(i)+params.eventLength+params.hdLag-1),4);
+  end
+  d.data=m_;clear m_
+  run=run(idx);
+  lab = lab(idx);
 elseif params.eventLength>1 %create instance from each TR in the stim duration
-for i=1:size(idx,2)
-m_(:,:,:,idx(i):idx(i)+params.eventLength-1)=d.data(:,:,:,idx(i)+params.hdLag:idx(i)+params.eventLength+params.hdLag-1);
-l_(idx(i):idx(i)+params.eventLength-1)=repmat(lab(idx(i)),1,params.eventLength);
-r_(idx(i):idx(i)+params.eventLength-1)=repmat(run(idx(i)),1,params.eventLength);
-end
-d.data=m_(l_>0);
-lab = l_(l_>0);
-run=r_(l_>0);
-clear m_ l_ r_
+  for i=1:size(idx,2)
+  m_(:,:,:,idx(i):idx(i)+params.eventLength-1)=d.data(:,:,:,idx(i)+params.hdLag:idx(i)+params.eventLength+params.hdLag-1);
+  l_(idx(i):idx(i)+params.eventLength-1)=repmat(lab(idx(i)),1,params.eventLength);
+  r_(idx(i):idx(i)+params.eventLength-1)=repmat(run(idx(i)),1,params.eventLength);
+  end
+  d.data=m_(l_>0);
+  lab = l_(l_>0);
+  run=r_(l_>0);
+  clear m_ l_ r_
 else %create instance from individual TRs related to each TR
-d.data = d.data(:,:,:,idx+params.hdLag);
-run=run(idx);
-lab = lab(idx);
+  d.data = d.data(:,:,:,idx+params.hdLag);
+  run=run(idx);
+  lab = lab(idx);
 end
 
 n.data=nan([d.dim(1:3) size(d.data,4)]);
@@ -121,14 +133,14 @@ d.data=n.data;
 clear n
 
 
-disp('Classifying')
+disppercent(-inf,'(classify_corticalSearchlight) Classifying based on spotlight....');
 for i=1:length(m.vertices)
   dist = dijkstrap( D, m.UniqueToVerts(i));dist=dist(m.UniqueToVerts);  
-base_light=[m.vertices(dist<radius,:)';ones(1,size(m.vertices(dist<radius,:),1))];
-scan_light=unique(round(base2scan * base_light)','rows')';
-[~,j] = find((scan_light(1,:)<=0 | scan_light(1,:)>d.dim(1)) | (scan_light(2,:)<=0 | scan_light(2,:)>d.dim(2)) | (scan_light(3,:)<=0 | scan_light(3,:)>d.dim(3)));
-scan_light=scan_light(:,setdiff(1:size(scan_light,2),j));
-if ~isempty(scan_light)
+  base_light=[m.vertices(dist<radius,:)';ones(1,size(m.vertices(dist<radius,:),1))];
+  scan_light=unique(round(base2scan * base_light)','rows')';
+  [~,j] = find((scan_light(1,:)<=0 | scan_light(1,:)>d.dim(1)) | (scan_light(2,:)<=0 | scan_light(2,:)>d.dim(2)) | (scan_light(3,:)<=0 | scan_light(3,:)>d.dim(3)));
+  scan_light=scan_light(:,setdiff(1:size(scan_light,2),j));
+  if ~isempty(scan_light)
     for j=1:size(scan_light,2)
         patt(j,:)=d.data(scan_light(1,j),scan_light(2,j),scan_light(3,j),:);
     end
@@ -142,16 +154,22 @@ if ~isempty(scan_light)
     end
     mean_acc(i)=mean(acc);
 %     mean_s_acc(i)=mean(s_acc);
-else
-    mean_acc(i)=NaN;
-    patt=[];
-%     mean_s_acc(i)=NaN;
-end
-size_light(i)=size(patt,1);
-patt=[];
-end,toc
+  else
+      mean_acc(i)=NaN;
+      patt=[];
+  %     mean_s_acc(i)=NaN;
+  end
+  size_light(i)=size(patt,1);
+  patt=[];
+  disppercent(i/length(m.vertices));
 
-c = loadVFF(fullfile('Segmentation/', uigetfile('Segmentation/*vff')));%('Segmentation/ab_left_curv.vff')
+end
+disppercent(inf);  
+
+
+[filename,pathname] = uigetfile([pathname '/*vff'], 'Choose VFF File');
+if isnumeric(filename),  return; end
+c = loadVFF(fullfile('Segmentation/', [pathname filename]));%('Segmentation/ab_left_curv.vff')
 cmap = gray;
 limval = 1.2;
 c(c>limval) = limval;

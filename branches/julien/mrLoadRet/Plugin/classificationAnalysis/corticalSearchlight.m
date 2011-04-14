@@ -91,6 +91,11 @@ for scanNum = params.scanNum
       d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
       
     acc.data{scanNum}=classify_corticalSearchlight(view,d,params.radius,params.scanParams{scanNum});
+    if isempty(acc.data{scanNum})
+      disp('Cortical Searchlight Analysis cancelled');
+      set(viewGet(view,'figNum'),'Pointer','arrow');
+      return
+    end
     acc.params{scanNum} = params.scanParams{scanNum};
     
     
@@ -186,7 +191,7 @@ toc
 erClass.name = params.saveName;
 erClass.type = 'erClass';
 erClass.groupName = params.groupName;
-erClass.function = 'eventRelatedClassification';
+erClass.function = 'corticalSearchlight';
 erClass.reconcileFunction = 'defaultReconcileParams';
 erClass.mergeFunction = 'defaultMergeParams';
 erClass.guiFunction = 'eventRelatedClassGUI';
