@@ -29,6 +29,14 @@ end
 if ~isfield(params,'radius') || isempty(params.radius)
   params.radius = 1;
 end
+if ~isfield(params,'roiMask') || isempty(params.roiMask)
+  params.roiMask = viewGet(thisView,'roiNames');
+else
+  params.roiMask = putOnTopOfList(params.roiMask,viewGet(thisView,'roiNames'));
+end
+if ~isfield(params,'sigTest') || isempty(params.sigTest)
+  params.sigTest = 1;
+end
 
 askForParams = 1;
 groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
@@ -37,9 +45,9 @@ groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
 paramsInfo = {...
     {'groupName',groupNames,'type=popupmenu','Name of group from which to do searchlight analysis'},...
     {'saveName',params.saveName,'File name to try to save as'},...
+    {'roiMask',params.roiMask,'ROI to use to mask the analysis, for example an ROI defining the skull-stripped brain, or a GM mask etc'},...
     {'radius',1,'Radius of searchlight in mm to use'},...
-%     {'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
-%     {'applyFiltering',1,'type=checkbox','Apply the same filtering that was used before concatenation to the design matrix. This will apply the hipass filter as well as the projection analsis if they have been done by concatTSeries'},...
+    {'sigTest',params.sigTest,'type=checkbox','Significance testing of results with Binomial Test'},...
 };
 
 % Get parameter values
@@ -51,7 +59,7 @@ end
 
 % if empty user hit cancel
 if isempty(params)
-  deleteView(thisView);
+  %deleteView(thisView);
   return
 end
 
@@ -69,7 +77,7 @@ else
 end
 if isempty(params.scanNum)
   params = [];
-  deleteView(thisView);
+  %deleteView(thisView);
   return
 end
 
@@ -77,7 +85,7 @@ end
 params.scanParams = getClassVarname(thisView,params,defaultParams);
 if isempty(params.scanParams)
   params = [];
-  deleteView(thisView);
+  %deleteView(thisView);
   return
 end
 % set the scan number
@@ -85,7 +93,7 @@ for i = 1:length(params.scanNum)
   params.scanParams{params.scanNum(i)}.scanNum = params.scanNum(i);
 end
 
-deleteView(thisView);
+%deleteView(thisView);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % just display parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
