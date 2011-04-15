@@ -129,15 +129,24 @@ for scanNum = params.scanNum
 %     acc.data{scanNum}=classify_roi(view,d,params.scanParams{scanNum},roi_n,params.select_vox,params.numShuff);
 %     acc.params{scanNum} = params.scanParams{scanNum};
    
+    run=nan(1,size([d.stimvol{:}],2));
+    for i=1:size(d.concatInfo.runTransition,1)
+      run(d.concatInfo.runTransition(i,1):d.concatInfo.runTransition(i,2))=i;
+      %remove any event that's too close to the end of the run
+      for j=1:length(d.stimvol)
+        eventsToRemove = find(d.stimvol{j}>d.dim(4)-scanParams{scanNum}.eventLength-scanParams{scanNum}.hdLag+1);
+        if ~isempty(eventsToRemove)
+          fprintf('(roiClassification) Removing %d event(s) because they''re too close to the end of the run\n',length(eventsToRemove));
+          d.stimvol{j}(eventsToRemove) = [];
+        end
+      end
+    end
+    
     lab = zeros(1,size([d.stimvol{:}],2));
     for i=1:length(d.stimvol)
         lab(d.stimvol{i})=i;
     end
 
-    run=nan(1,size([d.stimvol{:}],2));
-    for i=1:size(d.concatInfo.runTransition,1)
-    run(d.concatInfo.runTransition(i,1):d.concatInfo.runTransition(i,2))=i;
-    end
     
     d.data=squeeze(d.data);
     d.t_mean = mean(d.data,2);
