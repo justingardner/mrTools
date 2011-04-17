@@ -71,11 +71,6 @@ for iOverlay = 1:overlaysNumber
       %transform the non empty overlay in a 4D matrix
       data = permute(reshape(cell2mat(overlays{iOverlay}.data(scanList(overlayIndices))),[scanDims([1 2]) sum(overlayIndices) scanDims(3)]), [1 2 4 3]);
       warpedData = applyFSLWarp(data, [warpCoefPathname warpCoefFilename], 'tempInput.img', scanHdr, interpMethod);
-      if any(isnan(data(:))) %is there are NaNs, warp a mask of non-NaNs
-        mask = ~isnan(data);
-        warpedMask = logical(applyFSLWarp(mask, [warpCoefPathname warpCoefFilename], 'tempInput.img', scanHdr, 'nearest'));
-        warpedData(~warpedMask) = NaN;
-      end
       newOverlay.data(scanList(overlayIndices)) = mat2cell(warpedData,scanDims(1),scanDims(2),scanDims(3),ones(1,sum(overlayIndices)));
       newOverlay.name = ['warp(' overlays{iOverlay}.name ') - ' warpCoefFilename];
       %this used to be helpful when it wasn't possible to readily identify which overlays are clipped
