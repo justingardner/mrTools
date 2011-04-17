@@ -69,6 +69,8 @@ if useApplyWarp
       thisRoi.vol2tal = viewGet(thisView,'baseVol2tal',baseNum);
       thisRoi.voxelSize = viewGet(thisView,'baseVoxelSize',baseNum);
     end
+    %for some reason, there might be NaNs in the roi coords, remove those
+    thisRoi.coords = thisRoi.coords(:,~any(isnan(thisRoi.coords(1:3,:)),1));
     if isempty(thisRoi.coords)
       mrwarnDlg(['Roi ' thisRoi.name ' is empty, skipping ...']);
       fprintf('\n');

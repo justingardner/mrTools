@@ -18,6 +18,10 @@ elseif numel(margin)==1
   margin = repmat(margin,1,3);
 end
 
+if ieNotDefined('scanNum')
+  scanNum = viewGet(thisView,'curscan');
+end
+
 if ieNotDefined('roiNums')
    roiNums=1:length(thisView.ROIs);
 end

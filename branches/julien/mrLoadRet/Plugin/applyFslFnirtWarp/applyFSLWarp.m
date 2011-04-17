@@ -6,14 +6,17 @@
 %
 % $Id$
 
-function warpedData = applyFSLWarp(data, warpCoefFilename, tempFilename, hdr, interpMethod)
+function warpedData = applyFSLWarp(data, warpCoefFilename, tempFilename, hdr, interpMethod, verbose)
 
 
-cbiWriteNifti(tempFilename, data, hdr);
 if ieNotDefined('interpMethod')
    interpMethod = mrGetPref('interpMethod');
 end
+if ieNotDefined('verbose')
+   verbose = true;
+end
 
+cbiWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
 %convert matlab flags to FNIRT flags
 switch(interpMethod)
    case 'nearest' %Nearest neighbor interpolation
@@ -27,7 +30,7 @@ end
 
 try
   command =  sprintf('applywarp --ref=%s --in=%s --warp=%s --interp=%s --out=%s', tempFilename, tempFilename, warpCoefFilename, interpMethod, tempFilename);
-  disp(command);
+  if verbose,disp(command);end;
   [s,w] = unix(command);
 
   if s ~=- 0 % unix error
@@ -41,5 +44,12 @@ catch
   disp(sprintf('unix error code: %d; %s', s, w))
   return
 end
-%read the TFCE values
+%read the warped values
 warpedData=cbiReadNifti(tempFilename);
+
+if any(isnan(data(:))) %is there are NaNs, warp a mask of non-NaNs
+  mask = ~isnan(data);
+  warpedMask = logical(applyFSLWarp(mask, warpCoefFilename, tempFilename, hdr, 'nearest'));
+  warpedData(~warpedMask) = NaN;
+end
+
