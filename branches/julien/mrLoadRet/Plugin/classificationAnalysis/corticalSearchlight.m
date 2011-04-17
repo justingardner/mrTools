@@ -66,39 +66,19 @@ params.testOutput= 'Z value';
 params.trueNullsEstimationMethod= 'Least Squares';
 params.trueNullsEstimationThreshold= 0.0500;
 
-
-% create the parameters for the overlay
-dateString = datestr(now);
-acc.name = ['acc_',num2str(params.radius)];
-acc.groupName = params.groupName;
-acc.function = 'eventRelated';
-acc.reconcileFunction = 'defaultReconcileParams';
-acc.data = cell(1,viewGet(thisView,'nScans'));
-acc.date = dateString;
-acc.params = cell(1,viewGet(thisView,'nScans'));
-acc.range = [0 1];
-acc.clip = [0 1];
-% colormap is made with a little bit less on the dark end
-acc.colormap = hot(312);
-acc.colormap = acc.colormap(end-255:end,:);
-acc.alpha = 1;
-acc.colormapType = 'setRangeToMax';
-acc.interrogator = 'timeSeriesPlot';
-acc.mergeFunction = 'defaultMergeParams';
-
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 for scanNum = params.scanNum
-    d = loadScan(thisView,scanNum,[],0);
-    d = getStimvol(d,params.scanParams{scanNum});
-     % do any called for preprocessing
-      d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
-      
-    [out{scanNum},params]=classify_corticalSearchlight(thisView,d,params,params.scanParams{scanNum});
-    if isempty(out{scanNum})
-      disp('Cortical Searchlight Analysis cancelled');
-      set(viewGet(thisView,'figNum'),'Pointer','arrow');
-      return
-    end
+  d = loadScan(thisView,scanNum,[],0);
+  d = getStimvol(d,params.scanParams{scanNum});
+  % do any called for preprocessing
+  d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
+
+  [out{scanNum},params]=classify_corticalSearchlightJB(thisView,d,params,params.scanParams{scanNum});
+  if isempty(out{scanNum})
+    disp('Cortical Searchlight Analysis cancelled');
+    set(viewGet(thisView,'figNum'),'Pointer','arrow');
+    return
+  end
 end
 
 %-------------------------------------------------------- Output Analysis ---------------------------------------------------
@@ -232,7 +212,6 @@ thisView = viewSet(thisView,'newAnalysis',classAnal);
 if ~isempty(viewGet(thisView,'fignum'))
   refreshMLRDisplay(viewGet(thisView,'viewNum'));
 end
-toc
 
 %-------------------------------------------------------- Save the analysis
 saveAnalysis(thisView,classAnal.name);

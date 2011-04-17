@@ -5,7 +5,8 @@ function [out,params]=classify_corticalSearchlight(thisView,d,params,scanParams)
 
 out=[];
 
-scanNum = scanParams.scanNum;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Get the mesh and corresponding an anatomy file
 if exist('Segmentation')==7
@@ -58,12 +59,42 @@ if isempty(surface.outer)
 end
 surface.outer = xformSurfaceWorld2Array(surface.outer, baseHdr);
 
-corticalDepth = 0.5;
-
-
 % build up a mrMesh-style structure, taking account of the current corticalDepth
+corticalDepth = 0.5;
 m.vertices = surface.inner.vtcs+corticalDepth*(surface.outer.vtcs-surface.inner.vtcs);
 m.faceIndexList  = surface.inner.tris;
+
+
+% get the FNIRT warp coeff files
+if exist('FNIRT')==7
+  pathname = 'FNIRT';
+else
+  pathname = pwd;
+end
+if fieldIsNotDefined(params,'func2anatFnirtCoeffs')
+  params.func2anatFnirtCoeffs = [];
+end
+[filename,pathname2] = uigetfile([pathname '/*.hdr'], 'Choose Functional to Structural FNIRT coefficient file (Press Cancel if none is required)',params.func2anatFnirtCoeffs);
+if ~isnumeric(filename)
+  params.func2anatFnirtCoeffs = [pathname2 filename];
+  pathname = pathname2;
+end
+if fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+  params.anat2funcFnirtCoeffs = [];
+end
+[filename,pathname] = uigetfile([pathname '/*.hdr'], 'Choose Structural to Functional FNIRT coefficient file (Press Cancel if none is required)',params.anat2funcFnirtCoeffs);
+if ~isnumeric(filename)
+  params.anat2funcFnirtCoeffs = [pathname filename];
+end
+
+
+%%%%% All that's before this point should outside this function because not specific to a scanNum
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+scanNum = scanParams.scanNum;
+if ~fieldIsNotDefined(params,'func2anatFnirtCoeffs') || ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+  scanHdr = viewGet(thisView,'niftiHdr',scanNum);
+end
 
 %This assume that the base is loaded. if not, then the current base is chosen, which will be wrong if it's neither a flat map, a surface or the canonical base
 base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
@@ -71,12 +102,30 @@ scan_surf = round(base2scan*[m.vertices,ones(length(m.vertices),1)]');
 
 
 %%%% remove vertices/faces outside ROI
-%[d, d.roiVoxelIndices, d.roiCoords] = loadScanRois(thisView,scanNum,viewGet(thisView,'roinum',params.roiMask));
-[subsetBox, whichRoi, marginVoxels] = getRoisBox(thisView,scanNum,ceil([params.radius params.radius params.radius]./viewGet(thisView,'scanVoxelSize')),viewGet(thisView,'roinum',params.roiMask));
+margin = ceil([params.radius params.radius params.radius]./viewGet(thisView,'scanVoxelSize'));
+subsetBoxScan = getRoisBox(thisView,scanNum,margin,viewGet(thisView,'roinum',params.roiMask));
+
+scanCoords = getROICoordinates(thisView,viewGet(thisView,'roinum',params.roiMask),scanNum);
+scanCoords = [scanCoords; ones(1,size(scanCoords,2))];
+scanDims = viewGet(thisView,'scanDims',scanNum);
+% first apply non-linear transformation if needed
+if ~fieldIsNotDefined(params,'func2anatFnirtCoeffs')
+  scanCoords = applyFNIRT(scanCoords,params.func2anatFnirtCoeffs,scanDims,scanHdr,1);
+end
+
+%find the coordinates of the subset box including all the voxels from the ROI 
+subsetBoxBase(1,1) = min(scanCoords(1,:))-margin(1);
+subsetBoxBase(1,2) = max(scanCoords(1,:))+margin(1);
+subsetBoxBase(2,1) = min(scanCoords(2,:))-margin(2);
+subsetBoxBase(2,2) = max(scanCoords(2,:))+margin(2);
+subsetBoxBase(3,1) = min(scanCoords(3,:))-margin(3);
+subsetBoxBase(3,2) = max(scanCoords(3,:))+margin(3);
+
+
 %find vertices that are in the box
-verticesInBox = scan_surf(1,:)>=subsetBox(1,1) & scan_surf(1,:)<=subsetBox(1,2) &...
-                scan_surf(2,:)>=subsetBox(2,1) & scan_surf(2,:)<=subsetBox(2,2) &...
-                scan_surf(3,:)>=subsetBox(3,1) & scan_surf(3,:)<=subsetBox(3,2);
+verticesInBox = scan_surf(1,:)>=subsetBoxBase(1,1) & scan_surf(1,:)<=subsetBoxBase(1,2) &...
+                scan_surf(2,:)>=subsetBoxBase(2,1) & scan_surf(2,:)<=subsetBoxBase(2,2) &...
+                scan_surf(3,:)>=subsetBoxBase(3,1) & scan_surf(3,:)<=subsetBoxBase(3,2);
 %remove vertices outside ROI
 m.vertices = m.vertices(verticesInBox,:);
 m.innerVertices = surface.inner.vtcs(verticesInBox,:);
@@ -105,7 +154,7 @@ maxCorticalThickness = max(corticalThickness);
 % max_surf = round(min(max(scan_surf(1:3,:)'),d.dim(1:3)));
 disp('Loading data')
 %tmp = loadScan(thisView,scanNum,[],[min_surf(3) max_surf(3)],[],[min_surf(1) max_surf(1)],[min_surf(2) max_surf(2)]);
-tmp = loadScan(thisView,scanNum,[],[subsetBox(3,1) subsetBox(3,2)],[],[subsetBox(1,1) subsetBox(1,2)],[subsetBox(2,1) subsetBox(2,2)]);
+tmp = loadScan(thisView,scanNum,[],[subsetBoxScan(3,1) subsetBoxScan(3,2)],[],[subsetBoxScan(1,1) subsetBoxScan(1,2)],[subsetBoxScan(2,1) subsetBoxScan(2,2)]);
 d.data = tmp.data;
 clear('tmp');
 d.dim = size(d.data);
@@ -162,13 +211,7 @@ else %create instance from individual TRs related to each TR
   lab = lab(idx);
 end
 
-% n.data=nan([d.dim(1:3) size(d.data,4)]);
-% n.data(min_surf(1):max_surf(1),min_surf(2):max_surf(2),min_surf(3):max_surf(3),:)=d.data;
-% d.data=n.data;
-% clear n
-
-scanCoords = getROICoordinates(thisView,viewGet(thisView,'roinum',params.roiMask));
-baseROIcoords = base2scan \  [scanCoords; ones(1,size(scanCoords,2))];
+baseROIcoords = base2scan \  scanCoords;
 [roiNearestVtcs, distances] = assignToNearest(m.uniqueVertices, baseROIcoords(1:3,:)'); 
 %remove any voxel that's not within a sensible distance of the middle of the cortical sheet
 roiNearestVtcs = roiNearestVtcs(distances<=maxCorticalThickness/2);
@@ -247,7 +290,11 @@ for i=1:length(roiNearestVtcs)
   
   if ~isempty(spotlightBaseCoords)
     spotlightBoxCoords=unique(round(base2scan * [spotlightBaseCoords;ones(1,size(spotlightBaseCoords,2))])','rows');
-    spotlightBoxCoords=spotlightBoxCoords(:,1:3) - repmat(subsetBox(:,1)',size(spotlightBoxCoords,1),1) +1;
+    % apply non-linear transformation if needed
+    if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+      spotlightBoxCoords = applyFNIRT(spotlightBoxCoords',params.anat2funcFnirtCoeffs,scanDims,scanHdr,0)';
+    end
+    spotlightBoxCoords=spotlightBoxCoords(:,1:3) - repmat(subsetBoxScan(:,1)',size(spotlightBoxCoords,1),1) +1;
     spotlightboxIndex = mrSub2ind(d.dim(1:3),spotlightBoxCoords(:,1),spotlightBoxCoords(:,2),spotlightBoxCoords(:,3));
     %remove any voxel outside the box (that might happen if the roi is at the edge of the scan)
     spotlightboxIndex(isnan(spotlightboxIndex))=[];
@@ -295,7 +342,6 @@ end
 
 
 %Now let's put the data back in the scan volume
-scanDims = viewGet(thisView,'scanDims',scanNum);
 scanCoordsIndex = sub2ind(scanDims,scanCoords(1,:)',scanCoords(2,:)',scanCoords(3,:)');
 
 out.accDiag = NaN(scanDims,precision);
@@ -320,5 +366,37 @@ out.accDiag_Class = permute(out.accDiag_Class,[2 3 4 1]);
 out.pDiag_Class = permute(out.pDiag_Class,[2 3 4 1]);
 out.fdrDiag_Class = permute(out.fdrDiag_Class,[2 3 4 1]);
 out.fweDiag_Class = permute(out.fweDiag_Class,[2 3 4 1]);
+
+
+if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+  out.accDiag = applyFSLWarp(out.accDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+  out.pDiag = applyFSLWarp(out.pDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+  out.fdrDiag = applyFSLWarp(out.fdrDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+  out.fweDiag = applyFSLWarp(out.fweDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+  out.accDiag_Class = applyFSLWarp(out.accDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+  out.pDiag_Class = applyFSLWarp(out.pDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+  out.fdrDiag_Class = applyFSLWarp(out.fdrDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+  out.fweDiag_Class = applyFSLWarp(out.fweDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% sub functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function scanCoords = applyFNIRT(scanCoords,fnirtCoeffsFile,scanDims,scanHdr,verbose)
+outsideVoxels = any(scanCoords(1:3,:)< ones(3,size(scanCoords,2)) |...
+scanCoords(1:3,:)> repmat(scanDims',1,size(scanCoords,2)));
+if any(outsideVoxels) 
+  if verbose
+    mrWarnDlg('(applyFNIRT) Some voxels in are outside the scan volume, removing...');
+  end
+  scanCoords(:,outsideVoxels)=[];
+end
+warpIndices = sub2ind(scanDims(1:3),scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
+roiVolume = zeros(scanDims(1:3));
+roiVolume(warpIndices) = 1;
+warpedRoiVolume = applyFSLWarp(roiVolume, fnirtCoeffsFile, 'tempInput.img', scanHdr, 'nearest',verbose);
+warpedCoordsIndices = find(warpedRoiVolume==1);
+[x,y,z] = ind2sub(scanDims(1:3),warpedCoordsIndices);
+scanCoords = [x y z ones(length(warpedCoordsIndices),1)]';
 
 
