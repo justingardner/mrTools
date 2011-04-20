@@ -47,12 +47,20 @@ if numberInView == 0
   return
 end
 
+
 if ieNotDefined('title')
   title = ['Choose ' type];
 end
 if ieNotDefined('preselected')
   preselected = [];
 end
+
+%add a line for all
+if numberInView>1
+  names = [names {'All'}];
+  numberInView = numberInView+1;
+end
+
 preselection = zeros(1,numberInView);
 preselection(preselected) = 1;
 
@@ -61,7 +69,11 @@ if isempty(iSel)
   numberList = iSel; %if cancel has been pressed, this will be a 0*0 matrix, 
   %but if the top close button has been pressed, it will be a 0*1 matrix
 else
-  numberList = find(iSel); %if OK is pressed but nothing has been selected, this will output a 1*0 array
+  if numberInView>1 && iSel(end) %if 'All' has been selected
+    numberList = 1:numberInView-1;
+  else
+    numberList = find(iSel); %if OK is pressed but nothing has been selected, this will output a 1*0 array
+  end
 end
 
 return;
