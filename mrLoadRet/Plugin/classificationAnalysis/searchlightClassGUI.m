@@ -30,10 +30,10 @@ end
 if ~isfield(params,'numberEvents') || isempty(params.numberEvents)
   params.numberEvents = 0;
 end
-if ~isfield(params,'roiMask') || isempty(params.roiMask)
-  params.roiMask = viewGet(thisView,'roiNames');
+roiMaskMenu = viewGet(thisView,'roiNames');
+if isfield(params,'roiMask') && ismember(params.roiMask,roiMaskMenu)
+  roiMaskMenu = putOnTopOfList(params.roiMask,roiMaskMenu);
 else
-  params.roiMask = putOnTopOfList(params.roiMask,viewGet(thisView,'roiNames'));
 end
 if ~isfield(params,'radius') || isempty(params.radius)
   params.radius = 1;
@@ -59,7 +59,7 @@ while askForParams
     paramsInfo = {...
         {'groupName',groupNames,'type=popupmenu','Name of group from which to do searchlight analysis'},...
         {'saveName',params.saveName,'File name to try to save as'},...
-        {'roiMask',params.roiMask,'ROI to use to mask the analysis, for example an ROI defining the skull-stripped brain, or a GM mask etc'},...
+        {'roiMask',roiMaskMenu,'ROI to use to mask the analysis, for example an ROI defining the skull-stripped brain, or a GM mask etc'},...
         {'numberEvents',params.numberEvents,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Event Types to be classified. If 0, the number of Event Types will be set to the number of stimulus type in the stimulus file'},...
         {'radius',params.radius,'Radius of searchlight in voxels to use'},...
         {'sigTest',params.sigTest,'type=checkbox','Significance testing of results with Binomial Test'},...
@@ -81,7 +81,7 @@ while askForParams
       return;
     end
     params = copyFields(tempParams,params);
-
+    roiMaskMenu = putOnTopOfList(params.roiMask,roiMaskMenu);
     
     while askForParams
         groupNum = viewGet(thisView,'groupnum',params.groupName);
