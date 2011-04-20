@@ -33,6 +33,9 @@ function p = convertStatistic(p, outputStatistic, outputPrecision)
 
 switch(outputStatistic)
   case 'Z value'
+    p = double(p);
+    % replace zeros by epsilon to avoid infinite values
+    p(p==0) = eps;
     %convert P value to Z value, 
     p = norminv(1-p);  
     p(p<0) = 0; % we're not interested in negative Z value
@@ -170,3 +173,12 @@ qData = min(pData.*numberH0./(1:numberH0)'.*dependenceCorrectionConstant*trueH0R
 for i=numberH0-1:-1:1
  qData(i) = min(qData(i),qData(i+1));
 end
+
+% p-correction method
+% % % %correction (p-correction depends on a fixed threshold, here .05)
+% % % qAlpha = .05*(1:numberH0)'/numberH0/dependenceCorrectionConstant;
+% % % correctedP = pData;
+% % % correctedP(find(pData<=qAlpha,1,'last'):end) = 1;
+% % % correctedP(sortingIndex) = correctedP;
+% % % correctedPdata = NaN(size(pData));
+% % % correctedPdata(isNotNan) = correctedP;
