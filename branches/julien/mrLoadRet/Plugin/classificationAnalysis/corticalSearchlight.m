@@ -73,7 +73,7 @@ for scanNum = params.scanNum
   % do any called for preprocessing
   d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
 
-  [out{scanNum},params]=classify_corticalSearchlightJB(thisView,d,params,params.scanParams{scanNum});
+  [out{scanNum},params]=classify_corticalSearchlight(thisView,d,params,params.scanParams{scanNum});
   if isempty(out{scanNum})
     disp('Cortical Searchlight Analysis cancelled');
     set(viewGet(thisView,'figNum'),'Pointer','arrow');
@@ -119,10 +119,9 @@ defaultOverlay.name = '';
 %    defaultOverlay.data{iScan} = NaN(scanDims); %to make values outside the box transparent
 % end
 
-%------------------------------------save overlay
+%------------------------------------save overlays
 overlays = defaultOverlay;
 overlays.name = ['mean accuracy (radius = ',num2str(params.radius),')'];
-
 for iScan = params.scanNum
    overlays.data{iScan}=out{iScan}.accDiag;
    overlays.params{iScan} = params.scanParams{iScan};
@@ -140,10 +139,10 @@ end
 
 if params.sigTest
     thisOverlay=defaultOverlay;
+%     thisOverlay.colormap = statsColorMap(256);
+    thisOverlay.range = [0 9];
+    thisOverlay.clip = [0 9];
     overlays(end+1)=thisOverlay;
-%     overlays(end).colormap = statsColorMap(256);
-    overlays(end).range = [0 9];
-    overlays(end).clip = [0 9];
     overlays(end).name=['Z (radius = ',num2str(params.radius),')'];
     for iScan = params.scanNum
         overlays(end).data{iScan}=out{iScan}.pDiag;
@@ -151,9 +150,6 @@ if params.sigTest
     end
     for i=1:params.numberEvents
         overlays(end+1)=thisOverlay;
-%         overlays(end).colormap = statsColorMap(256);
-        overlays(end).range = [0 9];
-        overlays(end).clip = [0 9];
         overlays(end).name=[params.EVnames{i},'_Z (radius = ',num2str(params.radius),')'];
         for iScan = params.scanNum
             overlays(end).data{iScan}=out{iScan}.pDiag_Class(:,:,:,i);
@@ -162,11 +158,6 @@ if params.sigTest
     end
     if params.fdrAdjustment
         overlays(end+1)=thisOverlay;
-        overlays(end).range = [0 9];
-        overlays(end).clip = [0 9];
-%         overlays(end).colormap = statsColorMap(256);
-            overlays(end).range = [0 9];
-            overlays(end).clip = [0 9];
         overlays(end).name=['fdr Z (radius = ',num2str(params.radius),')'];
         for iScan = params.scanNum
             overlays(end).data{iScan}=out{iScan}.fdrDiag;
@@ -174,7 +165,6 @@ if params.sigTest
         end
         for i=1:params.numberEvents
             overlays(end+1)=thisOverlay;
-%             overlays(end).colormap = statsColorMap(256);
             overlays(end).name=[params.EVnames{i},'_fdr_Z (radius = ',num2str(params.radius),')'];
             for iScan = params.scanNum
                 overlays(end).data{iScan}=out{iScan}.fdrDiag_Class(:,:,:,i);
@@ -184,9 +174,6 @@ if params.sigTest
     end
     if params.fweAdjustment
         overlays(end+1)=thisOverlay;
-%         overlays(end).colormap = statsColorMap(256);
-        overlays(end).range = [0 9];
-        overlays(end).clip = [0 9];
         overlays(end).name=['fwe Z (radius = ',num2str(params.radius),')'];
         for iScan = params.scanNum
             overlays(end).data{iScan}=out{iScan}.fweDiag;
@@ -194,9 +181,6 @@ if params.sigTest
         end
         for i=1:params.numberEvents
             overlays(end+1)=thisOverlay;
-%             overlays(end).colormap = statsColorMap(256);
-            overlays(end).range = [0 9];
-            overlays(end).clip = [0 9];
             overlays(end).name=[params.EVnames{i},'_fwe_Z (radius = ',num2str(params.radius),')'];
             for iScan = params.scanNum
                 overlays(end).data{iScan}=out{iScan}.fweDiag_Class(:,:,:,i);
@@ -206,6 +190,18 @@ if params.sigTest
     end
 end
 
+overlays(end+1)=defaultOverlay;
+overlays(end).name = ['searchlight size (radius = ',num2str(params.radius),')'];
+maxValue = 0;
+minValue = inf;
+for iScan = params.scanNum
+  maxValue = max(maxValue,nanmax(out{iScan}.size_light(:)));
+  minValue = min(minValue,nanmin(out{iScan}.size_light(:)));
+  overlays(end).data{iScan}=out{iScan}.size_light;
+  overlays(end).params{iScan} = params.scanParams{iScan};
+end
+overlays(end).clip = [minValue maxValue];
+overlays(end).range =overlays(end).clip;
 
 classAnal.overlays = overlays;
 thisView = viewSet(thisView,'newAnalysis',classAnal);

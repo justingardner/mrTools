@@ -78,6 +78,8 @@ end
 if ~isnumeric(filename)
   params.func2anatFnirtCoeffs = [pathname2 filename];
   pathname = pathname2;
+else
+  params.func2anatFnirtCoeffs = [];
 end
 if fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
   params.anat2funcFnirtCoeffs = [];
@@ -85,6 +87,8 @@ end
 [filename,pathname] = uigetfile([pathname '/*.hdr'], 'Choose Structural to Functional FNIRT coefficient file (Press Cancel if none is required)',params.anat2funcFnirtCoeffs);
 if ~isnumeric(filename)
   params.anat2funcFnirtCoeffs = [pathname filename];
+else
+  params.anat2funcFnirtCoeffs = [];
 end
 
 
@@ -219,6 +223,7 @@ scanCoords = scanCoords(:,distances<=maxCorticalThickness/2);
 baseROIcoords = baseROIcoords(:,distances<=maxCorticalThickness/2);
 
 offsets=make_sphere(params.radius);
+undefinedVoxels = find(any(isnan(d.data),4));
 d.data = permute(d.data,[4 1 2 3]);
 
 % disp('(classify_corticalSearchlight) Computing Dijkstra distances ...') %%JB: this is too long is ROI is large
@@ -298,6 +303,8 @@ for i=1:length(roiNearestVtcs)
     spotlightboxIndex = mrSub2ind(d.dim(1:3),spotlightBoxCoords(:,1),spotlightBoxCoords(:,2),spotlightBoxCoords(:,3));
     %remove any voxel outside the box (that might happen if the roi is at the edge of the scan)
     spotlightboxIndex(isnan(spotlightboxIndex))=[];
+    %remove any undefined time-series
+    spotlightboxIndex(ismember(spotlightboxIndex,undefinedVoxels))=[];
     if ~isempty(spotlightboxIndex)
       patt = d.data(:,spotlightboxIndex);
       for r=1:size(cc.runTransition,1)
@@ -307,13 +314,9 @@ for i=1:length(roiNearestVtcs)
           corr(i,run==r)=nan;
         end
       end
-    else
-      patt=[];
+      size_light(i)=size(patt,2);
     end
-  else
-    patt=[];
   end
-  size_light(i)=size(patt,2);
   disppercent(i/length(roiNearestVtcs));
 
 end
@@ -352,6 +355,7 @@ out.accDiag_Class = NaN([length(d.stimvol) scanDims],precision);
 out.pDiag_Class = NaN([length(d.stimvol) scanDims],precision);
 out.fdrDiag_Class = NaN([length(d.stimvol) scanDims],precision);
 out.fweDiag_Class = NaN([length(d.stimvol) scanDims],precision);
+out.size_light = NaN(scanDims,precision);
 
 out.accDiag(scanCoordsIndex) = acc;
 out.pDiag(scanCoordsIndex) = p;
@@ -361,24 +365,25 @@ out.accDiag_Class(:,scanCoordsIndex) = acc_Class';
 out.pDiag_Class(:,scanCoordsIndex) = p_Class';
 out.fdrDiag_Class(:,scanCoordsIndex) = fdr_Class';
 out.fweDiag_Class(:,scanCoordsIndex) = fwe_Class';
+out.size_light(scanCoordsIndex) = size_light;
 
 out.accDiag_Class = permute(out.accDiag_Class,[2 3 4 1]);
 out.pDiag_Class = permute(out.pDiag_Class,[2 3 4 1]);
 out.fdrDiag_Class = permute(out.fdrDiag_Class,[2 3 4 1]);
 out.fweDiag_Class = permute(out.fweDiag_Class,[2 3 4 1]);
 
-
-if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
-  out.accDiag = applyFSLWarp(out.accDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-  out.pDiag = applyFSLWarp(out.pDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-  out.fdrDiag = applyFSLWarp(out.fdrDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-  out.fweDiag = applyFSLWarp(out.fweDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-  out.accDiag_Class = applyFSLWarp(out.accDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-  out.pDiag_Class = applyFSLWarp(out.pDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-  out.fdrDiag_Class = applyFSLWarp(out.fdrDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-  out.fweDiag_Class = applyFSLWarp(out.fweDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-end
-
+% 
+% if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+%   out.accDiag = applyFSLWarp(out.accDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+%   out.pDiag = applyFSLWarp(out.pDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+%   out.fdrDiag = applyFSLWarp(out.fdrDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+%   out.fweDiag = applyFSLWarp(out.fweDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+%   out.accDiag_Class = applyFSLWarp(out.accDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+%   out.pDiag_Class = applyFSLWarp(out.pDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+%   out.fdrDiag_Class = applyFSLWarp(out.fdrDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+%   out.fweDiag_Class = applyFSLWarp(out.fweDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% end
+% 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% sub functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
