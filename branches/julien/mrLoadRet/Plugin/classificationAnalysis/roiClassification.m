@@ -270,8 +270,10 @@ for scanNum = params.scanNum
     end
 end
 toc
+
+[pathname homedir] = fileparts(viewGet(view,'homedir'))
 if params.SVM
-    figure('name','''tuning curves'' for Support Vector Machine')
+    figure('name',[homedir ': ''tuning curves'' for Support Vector Machine'])
     for s = 1:length(params.scanNum)
         for r=1:size(svmCount{params.scanNum(s)},2)
             colors = rainbow_colors(size(svmCount{params.scanNum(s)}{r},1));
@@ -285,6 +287,9 @@ if params.SVM
                 plot(i,svmCount{params.scanNum(s)}{r}(i,i),'o','color',colors(i,:))
             end
             axis([1 size(svmCount{params.scanNum(s)}{r},1) 0 1])
+            if r==1
+              ylabel(sprintf('Scan %d: %s',params.scanNum(s),params.scanParams{s}.scan));
+            end
             set(gca,'XTick',1:size(svmCount{params.scanNum(s)}{r},1))
             set(gca,'XTickLabel',d.stimNames)
             legend(d.stimNames)
@@ -306,7 +311,7 @@ if params.SVM
 end
 
 if params.diagLinear
-    figure('name','''tuning curves'' for Diag Linear')
+    figure('name',[homedir ': ''tuning curves'' for Diag Linear'])
     for s = 1:length(params.scanNum)
         for r=1:size(diagCount{params.scanNum(s)},2)
             colors = rainbow_colors(size(diagCount{params.scanNum(s)}{r},1));
@@ -320,6 +325,9 @@ if params.diagLinear
                 plot(i,diagCount{params.scanNum(s)}{r}(i,i),'o','color',colors(i,:))
             end
             axis([1 size(diagCount{params.scanNum(s)}{r},1) 0 1])
+            if r==1
+              ylabel(sprintf('Scan %d: %s',params.scanNum(s),params.scanParams{s}.scan));
+            end
             set(gca,'XTick',1:size(diagCount{params.scanNum(s)}{r},1))
             set(gca,'XTickLabel',d.stimNames)
             legend(d.stimNames)

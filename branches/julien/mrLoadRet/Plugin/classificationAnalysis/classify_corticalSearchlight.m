@@ -4,7 +4,7 @@ function [out,params]=classify_corticalSearchlight(thisView,d,params,scanParams)
 %brain. Has to be the run from the root directory of an MLR session.
 
 out=[];
-
+debug = false;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -63,6 +63,9 @@ surface.outer = xformSurfaceWorld2Array(surface.outer, baseHdr);
 corticalDepth = 0.5;
 m.vertices = surface.inner.vtcs+corticalDepth*(surface.outer.vtcs-surface.inner.vtcs);
 m.faceIndexList  = surface.inner.tris;
+m.innerVertices = surface.inner.vtcs;
+m.outerVertices = surface.outer.vtcs;
+clear surface
 
 
 % get the FNIRT warp coeff files
@@ -71,16 +74,17 @@ if exist('FNIRT')==7
 else
   pathname = pwd;
 end
-if fieldIsNotDefined(params,'func2anatFnirtCoeffs')
-  params.func2anatFnirtCoeffs = [];
-end
-[filename,pathname2] = uigetfile([pathname '/*.hdr'], 'Choose Functional to Structural FNIRT coefficient file (Press Cancel if none is required)',params.func2anatFnirtCoeffs);
-if ~isnumeric(filename)
-  params.func2anatFnirtCoeffs = [pathname2 filename];
-  pathname = pathname2;
-else
-  params.func2anatFnirtCoeffs = [];
-end
+% This was needed when non-linear warps were applied to each spotlight, which is not the case anymore
+% % % if fieldIsNotDefined(params,'func2anatFnirtCoeffs')
+% % %   params.func2anatFnirtCoeffs = [];
+% % % end
+% % % [filename,pathname2] = uigetfile([pathname '/*.hdr'], 'Choose Functional to Structural FNIRT coefficient file (Press Cancel if none is required)',params.func2anatFnirtCoeffs);
+% % % if ~isnumeric(filename)
+% % %   params.func2anatFnirtCoeffs = [pathname2 filename];
+% % %   pathname = pathname2;
+% % % else
+% % %   params.func2anatFnirtCoeffs = [];
+% % % end
 if fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
   params.anat2funcFnirtCoeffs = [];
 end
@@ -92,30 +96,55 @@ else
 end
 
 
-%%%%% All that's before this point should outside this function because not specific to a scanNum
+%%%%% All that's before this point should be outside this function because not specific to a scanNum
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 scanNum = scanParams.scanNum;
-if ~fieldIsNotDefined(params,'func2anatFnirtCoeffs') || ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs') %|| ~fieldIsNotDefined(params,'func2anatFnirtCoeffs')
   scanHdr = viewGet(thisView,'niftiHdr',scanNum);
 end
 
-%This assume that the base is loaded. if not, then the current base is chosen, which will be wrong if it's neither a flat map, a surface or the canonical base
 base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
-scan_surf = round(base2scan*[m.vertices,ones(length(m.vertices),1)]');
 
+%%%% remove vertices/faces outside scan
+m = removeVerticesOutsideBox(m,[[1;1;1] d.dim(1:3)'],base2scan);
 
-%%%% remove vertices/faces outside ROI
+%apply non-linear transformation to the vertices coordinates, if requested
+if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+  numberVertices = length(m.vertices);
+  verticesScanCoords = base2scan*[[m.innerVertices;m.vertices;m.outerVertices],ones(3*numberVertices,1)]';
+  verticesScanCoords = applyFSLWarpCoords(verticesScanCoords, [.2 .2 .2], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
+  warpedVertices = base2scan\verticesScanCoords;
+  warpedVertices = warpedVertices(1:3,:)';
+  warpedInnerVertices = warpedVertices(1:numberVertices,:);
+  warpedOuterVertices = warpedVertices(2*numberVertices+1:end,:);
+  warpedVertices = warpedVertices(numberVertices+1:2*numberVertices,:);
+  %Some inner and outer vertices could be outside the warp field areas and hve been returned undefined
+  %for these, we apply the difference between the mid-vertices before and after warping, as an approximation
+  if any(isnan(warpedInnerVertices(:)))
+    isOutside = any(isnan(warpedInnerVertices),2);
+    warpedInnerVertices(isOutside,:) = m.innerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
+  end  
+  if any(isnan(warpedOuterVertices(:)))
+    isOutside = any(isnan(warpedOuterVertices),2);
+    warpedOuterVertices(isOutside,:) = m.outerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
+  end  
+  m.vertices = warpedVertices;
+  m.innerVertices = warpedInnerVertices;
+  m.outerVertices = warpedOuterVertices;
+end
+
 margin = ceil([params.radius params.radius params.radius]./viewGet(thisView,'scanVoxelSize'));
 subsetBoxScan = getRoisBox(thisView,scanNum,margin,viewGet(thisView,'roinum',params.roiMask));
 
 scanCoords = getROICoordinates(thisView,viewGet(thisView,'roinum',params.roiMask),scanNum);
 scanCoords = [scanCoords; ones(1,size(scanCoords,2))];
 scanDims = viewGet(thisView,'scanDims',scanNum);
-% first apply non-linear transformation if needed
-if ~fieldIsNotDefined(params,'func2anatFnirtCoeffs')
-  scanCoords = applyFNIRT(scanCoords,params.func2anatFnirtCoeffs,scanDims,scanHdr,1);
-end
+% This was needed when non-linear warps were applied to each spotlight, which is not the case anymore
+% % % % first apply non-linear transformation if needed
+% % % if ~fieldIsNotDefined(params,'func2anatFnirtCoeffs')
+% % %   scanCoords = applyFNIRT(scanCoords,params.func2anatFnirtCoeffs,scanDims,scanHdr,1);
+% % % end
 
 %find the coordinates of the subset box including all the voxels from the ROI 
 subsetBoxBase(1,1) = min(scanCoords(1,:))-margin(1);
@@ -125,21 +154,8 @@ subsetBoxBase(2,2) = max(scanCoords(2,:))+margin(2);
 subsetBoxBase(3,1) = min(scanCoords(3,:))-margin(3);
 subsetBoxBase(3,2) = max(scanCoords(3,:))+margin(3);
 
-
-%find vertices that are in the box
-verticesInBox = scan_surf(1,:)>=subsetBoxBase(1,1) & scan_surf(1,:)<=subsetBoxBase(1,2) &...
-                scan_surf(2,:)>=subsetBoxBase(2,1) & scan_surf(2,:)<=subsetBoxBase(2,2) &...
-                scan_surf(3,:)>=subsetBoxBase(3,1) & scan_surf(3,:)<=subsetBoxBase(3,2);
-%remove vertices outside ROI
-m.vertices = m.vertices(verticesInBox,:);
-m.innerVertices = surface.inner.vtcs(verticesInBox,:);
-m.outerVertices = surface.outer.vtcs(verticesInBox,:);
-%replace ones by its 'vertex in the box' number
-verticesInBox = double(verticesInBox);     %need to convert to double first     
-verticesInBox(verticesInBox>0)=double(1:nnz(verticesInBox));
-%remove any face that involves vertices outside the box
-m.faceIndexList = verticesInBox(m.faceIndexList);
-m.faceIndexList = m.faceIndexList(all(m.faceIndexList>0,2),:);
+%%%% remove vertices/faces outside ROI
+m = removeVerticesOutsideBox(m,subsetBoxBase,base2scan);
 
 % calculate the connection matrix
 [m.uniqueVertices,m.vertsToUnique,m.UniqueToVerts] = unique(m.vertices,'rows');
@@ -154,8 +170,6 @@ m.uniqueOuterVertices = m.outerVertices(m.vertsToUnique,:);
 corticalThickness = sqrt(sum((m.uniqueInnerVertices - m.uniqueOuterVertices).^2,2));
 maxCorticalThickness = max(corticalThickness);
 
-% min_surf = round(max(min(scan_surf(1:3,:)'),[1 1 1]));
-% max_surf = round(min(max(scan_surf(1:3,:)'),d.dim(1:3)));
 disp('Loading data')
 %tmp = loadScan(thisView,scanNum,[],[min_surf(3) max_surf(3)],[],[min_surf(1) max_surf(1)],[min_surf(2) max_surf(2)]);
 tmp = loadScan(thisView,scanNum,[],[subsetBoxScan(3,1) subsetBoxScan(3,2)],[],[subsetBoxScan(1,1) subsetBoxScan(1,2)],[subsetBoxScan(2,1) subsetBoxScan(2,2)]);
@@ -226,10 +240,9 @@ offsets=make_sphere(params.radius);
 undefinedVoxels = find(any(isnan(d.data),4));
 d.data = permute(d.data,[4 1 2 3]);
 
-% disp('(classify_corticalSearchlight) Computing Dijkstra distances ...') %%JB: this is too long is ROI is large
+% disp('(classify_corticalSearchlight) Computing Dijkstra distances ...') %%JB: this is too long if ROI is large
 % dijkstraDistances = dijkstrap( D, roiNearestVtcs);  
 
-debug = false;
 if debug
   debugFigure = figure;
   patch('vertices', m.vertices, 'faces', m.faceIndexList,'FaceVertexCData', [1 1 1]*0.5,'facecolor','flat','edgecolor','none');
@@ -295,10 +308,11 @@ for i=1:length(roiNearestVtcs)
   
   if ~isempty(spotlightBaseCoords)
     spotlightBoxCoords=unique(round(base2scan * [spotlightBaseCoords;ones(1,size(spotlightBaseCoords,2))])','rows');
-    % apply non-linear transformation if needed
-    if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
-      spotlightBoxCoords = applyFNIRT(spotlightBoxCoords',params.anat2funcFnirtCoeffs,scanDims,scanHdr,0)';
-    end
+% This was needed when non-linear warps were applied to each spotlight, which is not the case anymore
+% % %     % apply non-linear transformation if needed
+% % %     if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+% % %       spotlightBoxCoords = applyFNIRT(spotlightBoxCoords',params.anat2funcFnirtCoeffs,scanDims,scanHdr,0)';
+% % %     end
     spotlightBoxCoords=spotlightBoxCoords(:,1:3) - repmat(subsetBoxScan(:,1)',size(spotlightBoxCoords,1),1) +1;
     spotlightboxIndex = mrSub2ind(d.dim(1:3),spotlightBoxCoords(:,1),spotlightBoxCoords(:,2),spotlightBoxCoords(:,3));
     %remove any voxel outside the box (that might happen if the roi is at the edge of the scan)
@@ -372,36 +386,56 @@ out.pDiag_Class = permute(out.pDiag_Class,[2 3 4 1]);
 out.fdrDiag_Class = permute(out.fdrDiag_Class,[2 3 4 1]);
 out.fweDiag_Class = permute(out.fweDiag_Class,[2 3 4 1]);
 
-% 
-% if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
-%   out.accDiag = applyFSLWarp(out.accDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-%   out.pDiag = applyFSLWarp(out.pDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-%   out.fdrDiag = applyFSLWarp(out.fdrDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-%   out.fweDiag = applyFSLWarp(out.fweDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-%   out.accDiag_Class = applyFSLWarp(out.accDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-%   out.pDiag_Class = applyFSLWarp(out.pDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-%   out.fdrDiag_Class = applyFSLWarp(out.fdrDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-%   out.fweDiag_Class = applyFSLWarp(out.fweDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
-% end
-% 
+% This was needed (maybe) when non-linear warps were applied to each spotlight, which is not the case anymore
+% % % 
+% % % if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+% % %   out.accDiag = applyFSLWarp(out.accDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % %   out.pDiag = applyFSLWarp(out.pDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % %   out.fdrDiag = applyFSLWarp(out.fdrDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % %   out.fweDiag = applyFSLWarp(out.fweDiag, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % %   out.accDiag_Class = applyFSLWarp(out.accDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % %   out.pDiag_Class = applyFSLWarp(out.pDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % %   out.fdrDiag_Class = applyFSLWarp(out.fdrDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % %   out.fweDiag_Class = applyFSLWarp(out.fweDiag_Class, params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr, 'nearest', 1);
+% % % end
+% % % 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% sub functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function m = removeVerticesOutsideBox(m,box,base2scan)
+%find vertices that are in the box
+verticesScanCoords = round(base2scan*[m.vertices,ones(length(m.vertices),1)]');
+verticesInBox = verticesScanCoords(1,:)>=box(1,1) & verticesScanCoords(1,:)<=box(1,2) &...
+                verticesScanCoords(2,:)>=box(2,1) & verticesScanCoords(2,:)<=box(2,2) &...
+                verticesScanCoords(3,:)>=box(3,1) & verticesScanCoords(3,:)<=box(3,2);
+%remove vertices outside ROI
+m.vertices = m.vertices(verticesInBox,:);
+m.innerVertices = m.innerVertices(verticesInBox,:);
+m.outerVertices = m.outerVertices(verticesInBox,:);
+%replace ones by its 'vertex in the box' number
+verticesInBox = double(verticesInBox);     %need to convert to double first     
+verticesInBox(verticesInBox>0)=double(1:nnz(verticesInBox));
+%remove any face that involves vertices outside the box
+m.faceIndexList = verticesInBox(m.faceIndexList);
+m.faceIndexList = m.faceIndexList(all(m.faceIndexList>0,2),:);
 
-function scanCoords = applyFNIRT(scanCoords,fnirtCoeffsFile,scanDims,scanHdr,verbose)
-outsideVoxels = any(scanCoords(1:3,:)< ones(3,size(scanCoords,2)) |...
-scanCoords(1:3,:)> repmat(scanDims',1,size(scanCoords,2)));
-if any(outsideVoxels) 
-  if verbose
-    mrWarnDlg('(applyFNIRT) Some voxels in are outside the scan volume, removing...');
-  end
-  scanCoords(:,outsideVoxels)=[];
-end
-warpIndices = sub2ind(scanDims(1:3),scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
-roiVolume = zeros(scanDims(1:3));
-roiVolume(warpIndices) = 1;
-warpedRoiVolume = applyFSLWarp(roiVolume, fnirtCoeffsFile, 'tempInput.img', scanHdr, 'nearest',verbose);
-warpedCoordsIndices = find(warpedRoiVolume==1);
-[x,y,z] = ind2sub(scanDims(1:3),warpedCoordsIndices);
-scanCoords = [x y z ones(length(warpedCoordsIndices),1)]';
+
+
+% % % % This was needed (maybe) when non-linear warps were applied to each spotlight, which is not the case anymore
+% % % function scanCoords = applyFNIRT(scanCoords,fnirtCoeffsFile,scanDims,scanHdr,verbose)
+% % % outsideVoxels = any(scanCoords(1:3,:)< ones(3,size(scanCoords,2)) |...
+% % % scanCoords(1:3,:)> repmat(scanDims',1,size(scanCoords,2)));
+% % % if any(outsideVoxels) 
+% % %   if verbose
+% % %     mrWarnDlg('(applyFNIRT) Some voxels in are outside the scan volume, removing...');
+% % %   end
+% % %   scanCoords(:,outsideVoxels)=[];
+% % % end
+% % % warpIndices = sub2ind(scanDims(1:3),scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
+% % % roiVolume = zeros(scanDims(1:3));
+% % % roiVolume(warpIndices) = 1;
+% % % warpedRoiVolume = applyFSLWarp(roiVolume, fnirtCoeffsFile, 'tempInput.img', scanHdr, 'nearest',verbose);
+% % % warpedCoordsIndices = find(warpedRoiVolume==1);
+% % % [x,y,z] = ind2sub(scanDims(1:3),warpedCoordsIndices);
+% % % scanCoords = [x y z ones(length(warpedCoordsIndices),1)]';
 
 
