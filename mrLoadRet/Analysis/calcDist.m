@@ -6,7 +6,7 @@
 %       date: 11/28/07
 %    purpose: 
 %
-function retval = calcDist(view, method)
+function [dijkstraDistance, euclidianDistance] = calcDist(view, method)
   
 % check arguments
 if ~any(nargin == [1 2])
@@ -14,7 +14,7 @@ if ~any(nargin == [1 2])
   return
 
 end
-retval = [];
+dijkstraDistance = [];
 if ieNotDefined('method'); method = 'pairs'; end
 
 
@@ -27,7 +27,7 @@ if isempty(baseCoords)
 end
 
 % get the base CoordMap for the current flat patch
-corticalDepth = viewGet(view, 'corticalDepth');
+corticalDepth = mean(viewGet(view, 'corticalDepth'));
 baseCoordMap = viewGet(view,'baseCoordMap');
 baseHdr = viewGet(view, 'basehdr');
 
@@ -116,31 +116,33 @@ end
 scaleFactor = [1 1 1];
 D = find3DNeighbourDists(mesh,scaleFactor); 
 
-retval = [];
+dijkstraDistance = [];
 switch lower(method)
   case {'segments'}
     % calculate length of each segment (1-2, 2-3, 3-4)
     for p=1:length(nearestVtcs)-1
       dist = dijkstra(D, nearestVtcs(p))';
-      retval(p) = dist(nearestVtcs(p+1));
+      dijkstraDistance(p) = dist(nearestVtcs(p+1));
+      euclidianDistance(p) = norm(diff(coords(p:p+1,:)));
     end 
  case {'pairs'}
     % calculate lengths of a bunch of pairs (1-2, 3-4, 5-6)
     for p=1:2:length(nearestVtcs)
       dist = dijkstra(D, nearestVtcs(p))';
-      retval(end+1) = dist(nearestVtcs(p+1));
+      dijkstraDistance(end+1) = dist(nearestVtcs(p+1));
+      euclidianDistance(end+1) = norm(diff(coords(p:p+1,:)));
     end
   case {'roi'}
     % calculate lengths of each point from the first coordinate
     dist = dijkstra(D, nearestVtcs(1))';
-    retval = dist(nearestVtcs);
+    dijkstraDistance = dist(nearestVtcs);
   otherwise
     mesh.dist = dijkstra(D, nearestVtcs(1))';
 end
 
-if nargout == 1
-  retval = dist(nearestVtcs);
-end
+% if nargout == 1
+%   dijkstraDistance = dist(nearestVtcs);
+% end
 
 
 % $$$ patch('vertices', mesh.uniqueVertices, 'faces', mesh.uniqueFaceIndexList,'FaceVertexCData', mesh.dist,'facecolor', 'interp','edgecolor', 'none');
