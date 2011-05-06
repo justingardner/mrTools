@@ -2570,9 +2570,15 @@ v = MLR.views{viewNum};
 if ~exist('dijkstra') == 3
   mrWarnDlg('(mrLoadRetGUI) You need to install the mrGray tools to use the function calcDist');
 else
-  dist = calcDist(v, 'segments'); % ,'polygon',1);
-  if ~isempty(dist)
-    disp(sprintf('Distance been pts A and B: %2.4f', dist(2)));
+  [dijkstraDistance,euclidianDistance] = calcDist(v, 'segments'); % ,'polygon',1);
+  if length(dijkstraDistance)==1
+      disp(sprintf('Dijkstra Distance betwen pts A and B on surface: %2.4f', dijkstraDistance));
+      disp(sprintf('Euclidian 3D distance betwen pts A and B: %2.4f', euclidianDistance));
+  elseif length(dijkstraDistance)>1
+    disp('Dijkstra Distance between successive pairs of points on surface:');
+    disp(dijkstraDistance');
+    disp('Euclidian 3D distance betwen successive pairs of points');
+    disp(euclidianDistance');
   end
   refreshMLRDisplay(viewNum);
 end
