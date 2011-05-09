@@ -107,18 +107,48 @@ end
 base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
 
 %%%% remove vertices/faces outside scan
-m = removeVerticesOutsideBox(m,[[1;1;1] d.dim(1:3)'],base2scan);
+m = removeVerticesOutsideBox(m,[[1;1;1] d.dim(1:3)'],base2scan); %(including coordinates that are half a voxel within, so that interpolation of FNRIT warp fields is faster)
+
+% % % %apply non-linear transformation to the vertices coordinates, if requested
+% % % if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
+% % %   numberVertices = length(m.vertices);
+% % %   verticesScanCoords = base2scan*[[m.innerVertices;m.vertices;m.outerVertices],ones(3*numberVertices,1)]';
+% % %   verticesScanCoords = applyFSLWarpCoords(verticesScanCoords, [.5 .5 .5], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
+% % %   warpedVertices = base2scan\verticesScanCoords;
+% % %   warpedVertices = warpedVertices(1:3,:)';
+% % %   warpedInnerVertices = warpedVertices(1:numberVertices,:);
+% % %   warpedOuterVertices = warpedVertices(2*numberVertices+1:end,:);
+% % %   warpedVertices = warpedVertices(numberVertices+1:2*numberVertices,:);
+% % %   
+% % %   %this was need when applyFSLWarpCoords2 didn't extrapolate field values outside the scan volume
+% % % % % %   %Some inner and outer vertices could be outside the warp field areas and hve been returned undefined
+% % % % % %   %for these, we apply the difference between the mid-vertices before and after warping, as an approximation
+% % % % % %   if any(isnan(warpedInnerVertices(:)))
+% % % % % %     isOutside = any(isnan(warpedInnerVertices),2);
+% % % % % %     warpedInnerVertices(isOutside,:) = m.innerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
+% % % % % %   end  
+% % % % % %   if any(isnan(warpedOuterVertices(:)))
+% % % % % %     isOutside = any(isnan(warpedOuterVertices),2);
+% % % % % %     warpedOuterVertices(isOutside,:) = m.outerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
+% % % % % %   end  
+% % % 
+% % %   m.vertices = warpedVertices;
+% % %   m.innerVertices = warpedInnerVertices;
+% % %   m.outerVertices = warpedOuterVertices;
+% % % end
 
 %apply non-linear transformation to the vertices coordinates, if requested
 if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
   numberVertices = length(m.vertices);
   verticesScanCoords = base2scan*[[m.innerVertices;m.vertices;m.outerVertices],ones(3*numberVertices,1)]';
-  verticesScanCoords = applyFSLWarpCoords(verticesScanCoords, [.2 .2 .2], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
+  verticesScanCoords = applyFSLWarpCoords_old(verticesScanCoords, [.5 .5 .5], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
   warpedVertices = base2scan\verticesScanCoords;
   warpedVertices = warpedVertices(1:3,:)';
   warpedInnerVertices = warpedVertices(1:numberVertices,:);
   warpedOuterVertices = warpedVertices(2*numberVertices+1:end,:);
   warpedVertices = warpedVertices(numberVertices+1:2*numberVertices,:);
+  
+  %this was need when applyFSLWarpCoords2 didn't extrapolate field values outside the scan volume
   %Some inner and outer vertices could be outside the warp field areas and hve been returned undefined
   %for these, we apply the difference between the mid-vertices before and after warping, as an approximation
   if any(isnan(warpedInnerVertices(:)))
@@ -129,10 +159,12 @@ if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
     isOutside = any(isnan(warpedOuterVertices),2);
     warpedOuterVertices(isOutside,:) = m.outerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
   end  
+
   m.vertices = warpedVertices;
   m.innerVertices = warpedInnerVertices;
   m.outerVertices = warpedOuterVertices;
 end
+
 
 margin = ceil([params.radius params.radius params.radius]./viewGet(thisView,'scanVoxelSize'));
 subsetBoxScan = getRoisBox(thisView,scanNum,margin,viewGet(thisView,'roinum',params.roiMask));
@@ -170,8 +202,7 @@ m.uniqueOuterVertices = m.outerVertices(m.vertsToUnique,:);
 corticalThickness = sqrt(sum((m.uniqueInnerVertices - m.uniqueOuterVertices).^2,2));
 maxCorticalThickness = max(corticalThickness);
 
-disp('Loading data')
-%tmp = loadScan(thisView,scanNum,[],[min_surf(3) max_surf(3)],[],[min_surf(1) max_surf(1)],[min_surf(2) max_surf(2)]);
+%disp('(classify_corticalSearchlight) Loading data')
 tmp = loadScan(thisView,scanNum,[],[subsetBoxScan(3,1) subsetBoxScan(3,2)],[],[subsetBoxScan(1,1) subsetBoxScan(1,2)],[subsetBoxScan(2,1) subsetBoxScan(2,2)]);
 d.data = tmp.data;
 clear('tmp');
@@ -182,7 +213,7 @@ d.data=d.data-col_mean;
 d.data=100*d.data./col_mean;
 clear col_mean;
 
-disp('preparing data for classification')
+%disp('preparing data for classification')
 cc = viewGet(thisView,'concatinfo',scanNum);
 
 run=[];
@@ -245,9 +276,13 @@ d.data = permute(d.data,[4 1 2 3]);
 
 if debug
   debugFigure = figure;
-  patch('vertices', m.vertices, 'faces', m.faceIndexList,'FaceVertexCData', [1 1 1]*0.5,'facecolor','flat','edgecolor','none');
+  surf1 = patch('vertices', m.outerVertices, 'faces', m.faceIndexList,'FaceVertexCData', [1 1 1]*0.5,'facecolor','flat','edgecolor','none');
   hold on
-  patch('vertices', m.outerVertices, 'faces', m.faceIndexList,'FaceVertexCData', [1 1 1]*0.5,'facecolor','flat','edgecolor','none','faceAlpha',.4);
+  %surf2 = patch('vertices', m2.vertices, 'faces', m.faceIndexList,'FaceVertexCData', [1 1 1]*0.5,'facecolor','flat','edgecolor','none','faceAlpha',.4);
+  %patch('vertices', m.outerVertices, 'faces', m.faceIndexList,'FaceVertexCData', [1 1 1]*0.5,'facecolor','flat','edgecolor','none','faceAlpha',.4);
+%   diffCoords = m.vertices - m3.vertices;
+%   distance = sqrt(sum(diffCoords.^2,2));
+%   patch('vertices', m.vertices, 'faces', m.faceIndexList,'FaceVertexCData', distance,'facecolor','flat','edgecolor','none');
   shading flat
   lighting phong
   axis equal vis3d
@@ -255,6 +290,7 @@ if debug
   m.light_handle(1) = lightangle(-90,45);
   m.light_handle(2) = lightangle(+90,45);
   hDebug = [];
+  colorbar
 end
 
 
@@ -362,29 +398,34 @@ end
 scanCoordsIndex = sub2ind(scanDims,scanCoords(1,:)',scanCoords(2,:)',scanCoords(3,:)');
 
 out.accDiag = NaN(scanDims,precision);
-out.pDiag = NaN(scanDims,precision);
-out.fdrDiag = NaN(scanDims,precision);
-out.fweDiag = NaN(scanDims,precision);
 out.accDiag_Class = NaN([length(d.stimvol) scanDims],precision);
-out.pDiag_Class = NaN([length(d.stimvol) scanDims],precision);
-out.fdrDiag_Class = NaN([length(d.stimvol) scanDims],precision);
-out.fweDiag_Class = NaN([length(d.stimvol) scanDims],precision);
-out.size_light = NaN(scanDims,precision);
-
 out.accDiag(scanCoordsIndex) = acc;
-out.pDiag(scanCoordsIndex) = p;
-out.fdrDiag(scanCoordsIndex) = fdr;
-out.fweDiag(scanCoordsIndex) = fwe;
 out.accDiag_Class(:,scanCoordsIndex) = acc_Class';
-out.pDiag_Class(:,scanCoordsIndex) = p_Class';
-out.fdrDiag_Class(:,scanCoordsIndex) = fdr_Class';
-out.fweDiag_Class(:,scanCoordsIndex) = fwe_Class';
-out.size_light(scanCoordsIndex) = size_light;
-
 out.accDiag_Class = permute(out.accDiag_Class,[2 3 4 1]);
-out.pDiag_Class = permute(out.pDiag_Class,[2 3 4 1]);
-out.fdrDiag_Class = permute(out.fdrDiag_Class,[2 3 4 1]);
-out.fweDiag_Class = permute(out.fweDiag_Class,[2 3 4 1]);
+out.size_light = NaN(scanDims,precision);
+out.size_light(scanCoordsIndex) = size_light;
+if params.sigTest
+  out.pDiag = NaN(scanDims,precision);
+  out.pDiag(scanCoordsIndex) = p;
+  out.pDiag_Class = NaN([length(d.stimvol) scanDims],precision);
+  out.pDiag_Class(:,scanCoordsIndex) = p_Class';
+  out.pDiag_Class = permute(out.pDiag_Class,[2 3 4 1]);
+  if params.fdrAdjustment
+    out.fdrDiag = NaN(scanDims,precision);
+    out.fdrDiag(scanCoordsIndex) = fdr;
+    out.fdrDiag_Class = NaN([length(d.stimvol) scanDims],precision);
+    out.fdrDiag_Class(:,scanCoordsIndex) = fdr_Class';
+    out.fdrDiag_Class = permute(out.fdrDiag_Class,[2 3 4 1]);
+  end
+  if params.fweAdjustment
+    out.fweDiag = NaN(scanDims,precision);
+    out.fweDiag(scanCoordsIndex) = fwe;
+    out.fweDiag_Class = NaN([length(d.stimvol) scanDims],precision);
+    out.fweDiag_Class(:,scanCoordsIndex) = fwe_Class';
+    out.fweDiag_Class = permute(out.fweDiag_Class,[2 3 4 1]);
+  end
+end
+
 
 % This was needed (maybe) when non-linear warps were applied to each spotlight, which is not the case anymore
 % % % 
@@ -403,7 +444,7 @@ out.fweDiag_Class = permute(out.fweDiag_Class,[2 3 4 1]);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% sub functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function m = removeVerticesOutsideBox(m,box,base2scan)
 %find vertices that are in the box
-verticesScanCoords = round(base2scan*[m.vertices,ones(length(m.vertices),1)]');
+verticesScanCoords = base2scan*[m.vertices,ones(length(m.vertices),1)]';
 verticesInBox = verticesScanCoords(1,:)>=box(1,1) & verticesScanCoords(1,:)<=box(1,2) &...
                 verticesScanCoords(2,:)>=box(2,1) & verticesScanCoords(2,:)<=box(2,2) &...
                 verticesScanCoords(3,:)>=box(3,1) & verticesScanCoords(3,:)<=box(3,2);
