@@ -191,12 +191,14 @@ outputOverlayNames = cell(params.nOutputOverlays, size(overlayData,3));
 for iOperations = 1:size(overlayData,3)
    for iScan = 1:size(overlayData,1)
       try
+        tic
          eval(functionString);
+         toc
       catch exception
          mrWarnDlg(sprintf('There was an error evaluating the combining function:\n%s',getReport(exception,'basic')));
          return
       end
-      for iOuput = 1:params.nOutputOverlays
+      for iOutput = 1:params.nOutputOverlays
 %          if  strcmp(params.inputOutputType,'Scalar')
 %             %convert back to numerical value
 %             outputData{iScan,iOverlay,iOperations} = cell2mat(outputData{iScan,iOverlay,iOperations}); 
@@ -205,14 +207,14 @@ for iOperations = 1:size(overlayData,3)
         switch(params.inputOutputType)
           case 'Structure'
             for jScan = 1:nScans
-              outputData{iScan,iOuput,iOperations}.data{jScan} = outputData{iScan,iOuput,iOperations}.data{jScan}+0;
+              outputData{iScan,iOutput,iOperations}.data{jScan} = outputData{iScan,iOutput,iOperations}.data{jScan}+0;
             end
           case {'3D Array','Scalar'}
-           outputData{iScan,iOuput,iOperations} = outputData{iScan,iOuput,iOperations}+0;
+           outputData{iScan,iOutput,iOperations} = outputData{iScan,iOutput,iOperations}+0;
         end
         %check that the size is compatible
-        if ~isequal(size(outputData{iScan,iOuput,iOperations}),size(overlayData{iScan}))
-          mrWarnDlg(['(combineOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOuput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
+        if ~isequal(size(outputData{iScan,iOutput,iOperations}),size(overlayData{iScan}))
+          mrWarnDlg(['(combineOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOutput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
         end
       end
    end
@@ -221,14 +223,14 @@ end
 %name of output overlays
 for iOutput=1:params.nOutputOverlays
    if params.nOutputOverlays>1
-      name = ['Ouput ' num2str(iOuput) ' - '];
+      name = ['Ouput ' num2str(iOutput) ' - '];
    else
       name = '';
    end
    if ~isempty(params.outputName)
       name = [name params.outputName '('];
    else
-      name = [params.combineFunction '('];
+      name = [name params.combineFunction '('];
    end
    for iOperations = 1:size(overlayData,3)
       if size(overlayData,3)>1
@@ -270,23 +272,27 @@ defaultOverlay.function = 'combineOverlays';
 defaultOverlay.interrogator = 'combineOverlays';
 defaultOverlay.type = 'combination';
 defaultOverlay.params = params;
+defaultOverlay.clip = [];
+defaultOverlay.range = [];
+defaultOverlay.name = [];
+defaultOverlay.data = [];
 for iOverlay = 1:size(outputData,2)
   switch(params.inputOutputType)
     case {'3D Array','Scalar'}
-      outputOverlay = defaultOverlay;
-      outputOverlay.data = outputData(:,iOverlay);
-      allScansData = cell2mat(outputData);
+      outputOverlay(iOverlay) = defaultOverlay;
+      outputOverlay(iOverlay).data = outputData(:,iOverlay);
+      allScansData = cell2mat(outputData(:,iOverlay));
     case 'Structure'
-      outputOverlay = copyFields(defaultOverlay,outputData{iOverlay});
-      allScansData = cell2mat(outputOverlay.data);
+      outputOverlay(iOverlay) = copyFields(defaultOverlay,outputData{iOverlay});
+      allScansData = cell2mat(outputOverlay(iOverlay).data);
   end
   maxValue = max(allScansData(allScansData<inf));
   minValue = min(allScansData(allScansData>-inf));
-  outputOverlay.clip = [minValue maxValue];
-  outputOverlay.range = [minValue maxValue];
-  outputOverlay.name = outputOverlayNames{iOverlay};
-  thisView = viewSet(thisView,'newoverlay',outputOverlay);
+  outputOverlay(iOverlay).clip = [minValue maxValue];
+  outputOverlay(iOverlay).range = [minValue maxValue];
+  outputOverlay(iOverlay).name = outputOverlayNames{iOverlay};
 end
+thisView = viewSet(thisView,'newoverlay',outputOverlay);
 
 refreshMLRDisplay(thisView.viewNum);
 set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
