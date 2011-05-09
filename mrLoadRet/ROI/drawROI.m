@@ -97,6 +97,10 @@ else
            interpMethod = 'nearest';
            [mask, dump, maskBaseCoords] = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,interpMethod,[],viewGet(thisView,'rotate'));
            mask(isnan(mask))=0;
+           
+           %Rk: may be would be better to apply the transformation when computeing the mask
+           % maskOverlay now allows that through the boxInfo parameter structure
+           % That might solve the mismatch between displayed clusters and the ROI ...
         end
         
         %find contiguous voxels

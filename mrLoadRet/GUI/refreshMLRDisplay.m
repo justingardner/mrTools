@@ -73,7 +73,7 @@ end
 if size(base.coords,4)>1
   corticalDepth = viewGet(view,'corticalDepth');
   corticalDepthBins = viewGet(view,'corticalDepthBins');
-  corticalDepths = 0:1/corticalDepthBins:1;
+  corticalDepths = 0:1/(corticalDepthBins-1):1;
   slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
   view = viewSet(view,'cursliceBaseCoords',mean(base.coords(:,:,:,slices),4));
 else
@@ -344,7 +344,7 @@ if ~isempty(roiBaseCoords)
     if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
       corticalDepth = viewGet(view,'corticalDepth');
       corticalDepthBins = viewGet(view,'corticalDepthBins');
-      corticalDepths = 0:1/corticalDepthBins:1;
+      corticalDepths = 0:1/(corticalDepthBins-1):1;
       slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
       nDepths = nnz(slices);
       baseCoordsHomogeneous = reshape(baseCoordsHomogeneous(:,:,slices),[4 prod(imageDims)*nDepths]);

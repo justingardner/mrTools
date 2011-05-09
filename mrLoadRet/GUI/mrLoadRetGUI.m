@@ -1726,9 +1726,9 @@ if ~isempty(prefParams)
   end
   
   if ~strcmp(corticalDepthBins,prefParams.corticalDepthBins)
-    set(handles.corticalDepthSlider,'SliderStep',min(1/prefParams.corticalDepthBins*[1 3],1));
+    set(handles.corticalDepthSlider,'SliderStep',min(1/(prefParams.corticalDepthBins-1)*[1 3],1));
     if isfield(handles,'corticalMaxDepthSlider')
-      set(handles.corticalMaxDepthSlider,'SliderStep',min(1/prefParams.corticalDepthBins*[1 3],1));
+      set(handles.corticalMaxDepthSlider,'SliderStep',min(1/(prefParams.corticalDepthBins-1)*[1 3],1));
     end
     refreshMLRDisplay(v.viewNum);
   end

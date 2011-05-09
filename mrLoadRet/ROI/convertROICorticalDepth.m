@@ -34,14 +34,14 @@ if ieNotDefined('params')
   % get cortical depth
   corticalDepth = viewGet(v,'corticalDepth');
   referenceDepth= mean(corticalDepth);
-  if length(corticalDepth)==2
+  if length(corticalDepth)==2 && corticalDepth(1)~=corticalDepth(2)
     minDepth = corticalDepth(1);
     maxDepth = corticalDepth(2);
   else
     minDepth = 0;
     maxDepth = 1;
   end
-  depthStep = 1/viewGet(v,'corticalDepthBins');
+  depthStep = 1/(viewGet(v,'corticalDepthBins')-1);
   incdecString = sprintf('incdec=[-%f %f]',depthStep,depthStep);
   paramsInfo = {};
   paramsInfo{end+1} = {'conversionType',{'Project through depth','Restrict to reference depth'},'type=popupmenu','If you set project through depth, then this will add all the voxels from each cortical depth that are in the same position as the ones at the reference depth. If you set to restrict to reference depth, this will remove any voxels that are not on the reference depth (note that you will still see some voxels on other depths, but those are voxels that exist at the reference depth--also, voxels that do not exist on this flat map will not be affected)'};
