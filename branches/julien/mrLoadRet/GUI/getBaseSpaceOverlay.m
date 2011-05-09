@@ -48,7 +48,7 @@ switch(baseType)
       basedims(3) = depthBins;
       Xcoords = zeros(basedims(1),basedims(2),basedims(3));
       Ycoords = Xcoords; Zcoords=Xcoords;
-      baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum,0:1/depthBins:1);
+      baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum,0:1/(depthBins-1):1);
       if ~isempty(baseCoordMap)
         % only use the baseCoordMap for when the slice
         % in the third dimension (no other thisView of a 

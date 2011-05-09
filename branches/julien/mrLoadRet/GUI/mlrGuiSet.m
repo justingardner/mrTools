@@ -332,7 +332,7 @@ switch lower(field)
   % mlrGuiSet(view,'corticalDepth',value);
   value = min(value,1);value = max(value,0);
   corticalDepthBins = viewGet(view,'corticalDepthBins');
-  value = round(value*corticalDepthBins)/corticalDepthBins;
+  value = round(value*(corticalDepthBins-1))/(corticalDepthBins-1);
   set(handles.corticalDepthSlider,'Value',value);
   set(handles.corticalDepthText,'String',num2str(value));
   
@@ -340,7 +340,7 @@ switch lower(field)
   % mlrGuiSet(view,'corticalDepth',value);
   value = min(value,1);value = max(value,0);
   corticalDepthBins = viewGet(view,'corticalDepthBins');
-  value = round(value*corticalDepthBins)/corticalDepthBins;
+  value = round(value*(corticalDepthBins-1))/(corticalDepthBins-1);
   set(handles.corticalMaxDepthSlider,'Value',value);
   set(handles.corticalMaxDepthText,'String',num2str(value));
   

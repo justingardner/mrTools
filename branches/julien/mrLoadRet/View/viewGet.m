@@ -1296,7 +1296,7 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     % get number of cortical depth bins
     if ieNotDefined('varargin') || (length(varargin)<2)
-      corticalDepths = 0:1/viewGet(view,'corticalDepthBins'):1;
+      corticalDepths = 0:1/(viewGet(view,'corticalDepthBins')-1):1;
     else
       corticalDepths = varargin{2};
     end
