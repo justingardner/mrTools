@@ -113,7 +113,7 @@ m = removeVerticesOutsideBox(m,[[1;1;1] d.dim(1:3)'],base2scan); %(including coo
 if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
   numberVertices = length(m.vertices);
   verticesScanCoords = base2scan*[[m.innerVertices;m.vertices;m.outerVertices],ones(3*numberVertices,1)]';
-  verticesScanCoords = applyFSLWarpCoords(verticesScanCoords, [.5 .5 .5], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
+  verticesScanCoords = applyFSLWarpCoords(verticesScanCoords, viewGet(thisView,'scanVoxelSize',scanNum),[.5 .5 .5], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
   warpedVertices = base2scan\verticesScanCoords;
   warpedVertices = warpedVertices(1:3,:)';
   warpedInnerVertices = warpedVertices(1:numberVertices,:);

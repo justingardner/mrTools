@@ -16,8 +16,8 @@ end
 useApplyWarp = 1; %The solution I chose is to create a volume of zeros and put ones where the ROI is, 
 %then run this through applywarp using the spline coefficient  and nearest neighbour interpolation
 % and finally fidn the coordinates of the transformed ROI (where the ones are)
-% if useApplyWarp=0, the program asks for a warp field file (option -fout in fnirt) and apply the transformation
-% but the sign of the fields in X and Y are not those expected and it does not work as well.
+% if useApplyWarp=0, coordinates are converted directly using warp fields created using fnirtfileutils
+% but this does not preserve the volume of the ROI as well and takes more time.
 
 currentROIName = viewGet(thisView,'roiname');
 needToRefresh=0;
@@ -26,7 +26,7 @@ keepAsking = 1;
 while keepAsking
   baseNum = [1 2];
   while length(baseNum)>1
-    baseNum = selectInList(thisView,'bases','Select the base space of the FNIRT warp coeffs');
+    baseNum = selectInList(thisView,'bases','Select the input volume of the FNIRT warp coeffs (or equivalent)');
     if length(baseNum)>1
       mrWarnDlg('Please select only one base');
     end
@@ -92,7 +92,7 @@ for iRoi = 1:length(roiList)
     else
       %%%%%%%%%%%%%%%%%%%%%%%% using warp field, but that doesn't take the ROI volume into account
 
-      thisWarpedRoi.coords = applyFSLWarpCoords(thisRoi.coords, thisRoi.voxelSize, [warpCoefPathname warpCoefFilename], 'tempInput.img', baseHdr);
+      thisWarpedRoi.coords = applyFSLWarpCoords([thisRoi.coords;ones(1,size(thisRoi.coords,2))], thisRoi.voxelSize, [.5 .5 .5], [warpCoefPathname warpCoefFilename], 'tempInput.img', baseHdr);
       
 %       warpedCoords = round(thisWarpedRoi.coords);
 %       warpIndices = mrSub2ind(baseDims(1:3),warpedCoords(1,:),warpedCoords(2,:),warpedCoords(3,:));
