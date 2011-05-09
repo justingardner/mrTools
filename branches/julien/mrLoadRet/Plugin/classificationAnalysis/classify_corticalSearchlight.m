@@ -109,39 +109,11 @@ base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
 %%%% remove vertices/faces outside scan
 m = removeVerticesOutsideBox(m,[[1;1;1] d.dim(1:3)'],base2scan); %(including coordinates that are half a voxel within, so that interpolation of FNRIT warp fields is faster)
 
-% % % %apply non-linear transformation to the vertices coordinates, if requested
-% % % if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
-% % %   numberVertices = length(m.vertices);
-% % %   verticesScanCoords = base2scan*[[m.innerVertices;m.vertices;m.outerVertices],ones(3*numberVertices,1)]';
-% % %   verticesScanCoords = applyFSLWarpCoords(verticesScanCoords, [.5 .5 .5], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
-% % %   warpedVertices = base2scan\verticesScanCoords;
-% % %   warpedVertices = warpedVertices(1:3,:)';
-% % %   warpedInnerVertices = warpedVertices(1:numberVertices,:);
-% % %   warpedOuterVertices = warpedVertices(2*numberVertices+1:end,:);
-% % %   warpedVertices = warpedVertices(numberVertices+1:2*numberVertices,:);
-% % %   
-% % %   %this was need when applyFSLWarpCoords2 didn't extrapolate field values outside the scan volume
-% % % % % %   %Some inner and outer vertices could be outside the warp field areas and hve been returned undefined
-% % % % % %   %for these, we apply the difference between the mid-vertices before and after warping, as an approximation
-% % % % % %   if any(isnan(warpedInnerVertices(:)))
-% % % % % %     isOutside = any(isnan(warpedInnerVertices),2);
-% % % % % %     warpedInnerVertices(isOutside,:) = m.innerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
-% % % % % %   end  
-% % % % % %   if any(isnan(warpedOuterVertices(:)))
-% % % % % %     isOutside = any(isnan(warpedOuterVertices),2);
-% % % % % %     warpedOuterVertices(isOutside,:) = m.outerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
-% % % % % %   end  
-% % % 
-% % %   m.vertices = warpedVertices;
-% % %   m.innerVertices = warpedInnerVertices;
-% % %   m.outerVertices = warpedOuterVertices;
-% % % end
-
 %apply non-linear transformation to the vertices coordinates, if requested
 if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
   numberVertices = length(m.vertices);
   verticesScanCoords = base2scan*[[m.innerVertices;m.vertices;m.outerVertices],ones(3*numberVertices,1)]';
-  verticesScanCoords = applyFSLWarpCoords_old(verticesScanCoords, [.5 .5 .5], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
+  verticesScanCoords = applyFSLWarpCoords(verticesScanCoords, [.5 .5 .5], params.anat2funcFnirtCoeffs, 'tempInput.img', scanHdr);
   warpedVertices = base2scan\verticesScanCoords;
   warpedVertices = warpedVertices(1:3,:)';
   warpedInnerVertices = warpedVertices(1:numberVertices,:);
@@ -149,22 +121,21 @@ if ~fieldIsNotDefined(params,'anat2funcFnirtCoeffs')
   warpedVertices = warpedVertices(numberVertices+1:2*numberVertices,:);
   
   %this was need when applyFSLWarpCoords2 didn't extrapolate field values outside the scan volume
-  %Some inner and outer vertices could be outside the warp field areas and hve been returned undefined
-  %for these, we apply the difference between the mid-vertices before and after warping, as an approximation
-  if any(isnan(warpedInnerVertices(:)))
-    isOutside = any(isnan(warpedInnerVertices),2);
-    warpedInnerVertices(isOutside,:) = m.innerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
-  end  
-  if any(isnan(warpedOuterVertices(:)))
-    isOutside = any(isnan(warpedOuterVertices),2);
-    warpedOuterVertices(isOutside,:) = m.outerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
-  end  
+% % %   %Some inner and outer vertices could be outside the warp field areas and hve been returned undefined
+% % %   %for these, we apply the difference between the mid-vertices before and after warping, as an approximation
+% % %   if any(isnan(warpedInnerVertices(:)))
+% % %     isOutside = any(isnan(warpedInnerVertices),2);
+% % %     warpedInnerVertices(isOutside,:) = m.innerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
+% % %   end  
+% % %   if any(isnan(warpedOuterVertices(:)))
+% % %     isOutside = any(isnan(warpedOuterVertices),2);
+% % %     warpedOuterVertices(isOutside,:) = m.outerVertices(isOutside,:) + warpedVertices(isOutside,:) - m.vertices(isOutside,:);
+% % %   end  
 
   m.vertices = warpedVertices;
   m.innerVertices = warpedInnerVertices;
   m.outerVertices = warpedOuterVertices;
 end
-
 
 margin = ceil([params.radius params.radius params.radius]./viewGet(thisView,'scanVoxelSize'));
 subsetBoxScan = getRoisBox(thisView,scanNum,margin,viewGet(thisView,'roinum',params.roiMask));
