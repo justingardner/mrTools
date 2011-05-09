@@ -322,7 +322,7 @@ end
 % update mr load ret if it is running
 if mrLoadRetViewing
   v = viewSet(v,'curGroup',groupNum);
-  v = viewSet(v,'curScan',scanNum);
+  v = viewSet(v,'curScan',scanNum(1));
   refreshMLRDisplay(v.viewNum);
 else
   % set the group and scan of the view
