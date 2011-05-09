@@ -1,32 +1,32 @@
-% warpedCoords = applyFSLWarpCoords(coords,voxelSize, warpCoefFilename, tempFilename, hdr, verbose)
+% warpedCoords = applyFSLWarpCoords(coords,warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
 %
 %   applies non-linear FSL registration to coordinates
 %
 %  input: 
-%        coords: coordinates in the space of the input FNIRT volume, in homogeneous format (4*n matrix, with 1s on the last row)
-%     voxelSize: resolution in mm of the warp field computed using fnirtfileutils. don't make too small because uses too much memory
+%          coords: coordinates in the space of the input FNIRT volume, in homogeneous format (4*n matrix, with 1s on the last row)
+% coordsVoxelSize: voxel size of the space of the coordinates
+%  warpResolution: resolution in mm of the warp field computed using fnirtfileutils. don't make too small because uses too much memory
 %                   better to make it .5 or 1 mm, because more efficient to interpolate using interp3 than computing high-resolution warp field volume
-%  tempFilename: name of the temporary file to write the data to the disc
-%           hdr: header of a volume in the space of the input FNIRT volume for dimensions and voxel size (transformation matrix is not taken into account)
+%    tempFilename: name of the temporary file to write the data to the disc
+%             hdr: header of a volume in the space of the input FNIRT volume for dimensions and voxel size (transformation matrix is not taken into account)
 %
 % jb 16/04/2011
 %
 % $Id: applyFSLWarp.m 2107 2011-04-17 19:49:52Z julien $
 
-function warpedCoords = applyFSLWarpCoords(coords,voxelSize, warpCoefFilename, tempFilename, hdr, verbose)
+function warpedCoords = applyFSLWarpCoords(coords,coordsVoxelSize,warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
 
 
 if ieNotDefined('verbose')
    verbose = true;
 end
 
-scalingFactor = round(hdr.pixdim(2:4)'./voxelSize); 
+scalingFactor = round(hdr.pixdim(2:4)'./warpResolution); 
 dataSize = hdr.dim(2:4)'.*scalingFactor;
 data = ones(dataSize,'single');
 hdr.pixdim(2:4) = hdr.pixdim(2:4)./scalingFactor';
 hdr.sform44 = hdr.sform44*diag([1./scalingFactor 1]);
 hdr.qform44 = hdr.qform44*diag([1./scalingFactor 1]);
-
 
 cbiWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
 clear data
@@ -145,6 +145,8 @@ if any(~innerCoordsIndices)   %extrapolate fields outside FNIRT volume (ad-hoc m
 
 end
 
+%the field values are presumably in millimeters, so needs to be divided by the voxel size t
+fieldVectors = diag([coordsVoxelSize 1])\fieldVectors;
 warpedCoords = coords-fieldVectors;
 
 % %remove NaNs
