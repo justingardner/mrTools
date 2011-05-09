@@ -319,8 +319,7 @@ for iPlot = 1:length(roi)+1
     [eDeconv,volumeIndices] = getEstimates(deconvData,analysisParams,volumeIndices);
     if any(any(eDeconv.hdr))
       eDeconv.hdr = mean(eDeconv.hdr,3);
-      hDeconv(:,iPlot)=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
-      set(hDeconv,'MarkerEdgeColor','none','MarkerFaceColor','none');
+      hDeconv(:,iPlot,1)=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
       if numberContrasts
         eDeconv.contrastHdr = mean(eDeconv.contrastHdr,3);
         hDeconv(:,iPlot,2) = plotEhdr(hdrContrastAxes,eDeconv.time,eDeconv.contrastHdr);
@@ -406,7 +405,7 @@ end
 
 
 if plotDeconvolution && ~isempty(hDeconv)
-  set(hDeconv,'visible','off');
+  set(hDeconv,'visible','off','MarkerEdgeColor','none','MarkerFaceColor','none');
   uicontrol('Parent',fignum,...
      'units','normalized',...
      'Style','pushbutton',...

@@ -38,13 +38,21 @@ for iRoi=0:length(roi)
   end
   indices = sub2ind(scanDims,indices(:,1),indices(:,2),indices(:,3));
   
-  [maxRoiHrf,maxSample] = max(hrf*mean(betas(:,:,indices),3)');
+  meanHrf = hrf*nanmean(betas(:,:,indices),3)';
+  [maxRoiHrf,maxSample] = max(meanHrf);
+  [minRoiHrf,minSample] = min(meanHrf);
   fprintf('\t\t\tMax Hrf:');
   fprintf('%.4f ',maxRoiHrf);
   fprintf('\n\tLatency Max Hrf:');
   fprintf('%.2f   ',dt*maxSample);
   fprintf('\n');
+  fprintf('\t\t\tMin Hrf:');
+  fprintf('%.4f ',minRoiHrf);
+  fprintf('\n\tLatency Min Hrf:');
+  fprintf('%.2f   ',dt*minSample);
+  fprintf('\n');
   
 end
+figure;plot(dt*[1:size(meanHrf,1)],meanHrf);
 
 
