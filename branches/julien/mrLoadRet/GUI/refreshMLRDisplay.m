@@ -228,7 +228,8 @@ if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'colorbar');,end
 cbar = permute(NaN(size(cmap)),[3 1 2]);
 for iOverlay = 1:size(cmap,3)
-  cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],baseGamma);
+  %cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],baseGamma);%JB: this baseGamma argument does seem to make any sense
+  cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],1); %JB: or at least the result is  not what's expected if baseGamma<1...
 end
 image(cbar,'Parent',gui.colorbar);
 if size(cbar,1)==1
