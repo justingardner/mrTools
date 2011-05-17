@@ -1,4 +1,4 @@
-% warpedCoords = applyFSLWarpCoords(coords,warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
+% warpedCoords = applyFSLWarpCoords(coords, coordsVoxelSize, warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
 %
 %   applies non-linear FSL registration to coordinates
 %
