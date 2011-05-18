@@ -101,7 +101,11 @@ end
 if fieldIsNotDefined(params,'covFactorization')
    params.covFactorization = 'Cholesky';
 end
-if fieldIsNotDefined(params,'covEstimationBrainMask') 
+roiNames = viewGet(thisView,'roinames');
+if fieldIsNotDefined(params,'covEstimationBrainMask')
+   params.covEstimationBrainMask = 'None';
+elseif ~ismember(params.covEstimationBrainMask,roiNames)
+   mrWarnDlg(['(glmAnalysisGUI) covariance estimation ROI mask ' params.covEstimationBrainMask ' is not loaded, switching to no brain mask']);
    params.covEstimationBrainMask = 'None';
 end
 
@@ -127,7 +131,7 @@ analysisVolumeMenu = putOnTopOfList(params.analysisVolume,analysisVolumeMenu);
 correctionTypeMenu = putOnTopOfList(params.correctionType,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
 covEstimationMenu = putOnTopOfList(params.covEstimation,{'singleTukeyTapers','dampenedOscillator'});
 covFactorizationMenu = putOnTopOfList(params.covFactorization,{'Cholesky'});
-covEstimationBrainMaskMenu = putOnTopOfList(params.covEstimationBrainMask,[{'None'} viewGet(thisView,'roinames')]);
+covEstimationBrainMaskMenu = putOnTopOfList(params.covEstimationBrainMask,[{'None'} roiNames]);
 
 
 while askForParams
