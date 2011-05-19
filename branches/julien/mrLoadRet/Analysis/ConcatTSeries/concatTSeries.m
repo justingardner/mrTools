@@ -90,7 +90,7 @@ if ieNotDefined('params')
       for i = 1:viewGet(view,'nScans')
 	scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
       end
-      warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'type=popumenu','The scan that will be used as the base scan to warp all the other scans to'}});
+      warpParams = mrParamsDialog({{'warpBaseScan',scanNames,'type=popupmenu','The scan that will be used as the base scan to warp all the other scans to'}});
       if isempty(warpParams),return,end
       params.warpBaseScan = find(strcmp(warpParams.warpBaseScan,scanNames));
     end
