@@ -112,6 +112,7 @@ if ~isempty(whichROI)
         %clear all voxels if we're not keeping voxels outside the projection
         if params.excludeOtherVoxels
           % remove everything from the ROI
+          roiBaseCoords(4,:) = 1;
           v = modifyROI(v,roiBaseCoords,base2roi,baseVoxelSize,0);
         end
         roiBaseCoordsLinear=[];
