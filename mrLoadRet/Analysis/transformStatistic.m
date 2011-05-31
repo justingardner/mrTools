@@ -1,6 +1,34 @@
 function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 %[convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 
+if ieNotDefined('outputPrecision')
+  outputPrecision='double';
+end
+if ieNotDefined('params')
+  params=struct;
+end
+if fieldIsNotDefined(params,'fweMethod')
+  params.fweMethod = 'Hommel';
+end
+if fieldIsNotDefined(params,'testOutput')
+  params.testOutput= 'P value';
+end
+if fieldIsNotDefined(params,'fdrMethod')
+  params.fdrMethod= 'Step-up';
+end
+if fieldIsNotDefined(params,'fdrAssumption')
+  params.fdrAssumption= 'Independence/Positive dependence';
+end
+if fieldIsNotDefined(params,'trueNullsEstimationMethod')
+  params.trueNullsEstimationMethod= 'Least Squares';
+end
+if fieldIsNotDefined(params,'fweAdjustment')
+  params.fweAdjustment= 1;
+end
+if fieldIsNotDefined(params,'fdrAdjustment')
+  params.fdrAdjustment= 1;
+end
+
 convertedStatistic = convertStatistic(p, params.testOutput, outputPrecision);
 
 if params.fdrAdjustment
