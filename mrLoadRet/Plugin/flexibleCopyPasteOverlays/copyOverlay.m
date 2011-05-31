@@ -1,15 +1,15 @@
 % copyOverlay.m
 %
-%      usage: overlay = copyOverlayBaseCoords(thisView)
+%      usage: overlays = copyOverlayBaseCoords(thisView)
 %         by: julien besle, based on mrExprt2SR by eli merriam
 %       date: 03/20/07
 %    purpose: copies many MLR overlays to the clipboard
 %        $Id$
 
-function overlay = copyOverlay(thisView)
+function overlays = copyOverlay(thisView)
 
 keepAsking = 1;
-overlay = [];
+overlays = [];
 
 while keepAsking
    scanList = 1:viewGet(thisView,'nScans');
@@ -36,16 +36,28 @@ while keepAsking
    end
 end
 
-overlay = [];
+overlayNames = viewGet(thisView,'overlayNames');
+overlayNames = overlayNames(overlayList);
+cOverlay = 0;
 for iOverlay = 1:length(overlayList)
-   overlay = copyFields(viewGet(thisView,'overlay',overlayList(iOverlay)),overlay,iOverlay);
-   overlay(iOverlay).data = overlay(iOverlay).data(scanList);
+  cOverlay = cOverlay+1;
+  overlays = copyFields(viewGet(thisView,'overlay',overlayList(iOverlay)),overlays,cOverlay);
+  overlays(cOverlay).data = overlays(cOverlay).data(scanList);
+  if isfield(overlays(cOverlay),'alphaOverlay') && ~isempty(overlays(cOverlay).alphaOverlay) && ~ismember(overlays(cOverlay).alphaOverlay,overlayNames)
+    alphaOverlayName = overlays(cOverlay).alphaOverlay;
+    cOverlay = cOverlay+1;
+    overlayNames = [overlayNames {alphaOverlayName}];
+    overlays = copyFields(viewGet(thisView,'overlay',viewGet(thisView,'overlaynum',alphaOverlayName)),overlays,cOverlay);
+    overlays(cOverlay).data = overlays(cOverlay).data(scanList);
+    disp(['(copyOverlay) Alpha overlay ''' alphaOverlayName ''' will also be copied']);
+  end
 end
 
-if ~isempty(overlay)
-  fprintf('(copyOverlay) %i overlays from %i scans have been copied\n',length(overlayList),length(scanList));
+
+if ~isempty(overlays)
+  fprintf('(copyOverlay) %i overlays from %i scans have been copied\n',cOverlay,length(scanList));
 else
-  disp('(copyOverlay) No overlay has been copied');
+  disp('(copyOverlay) No overlay have been copied');
 end
 return
 
