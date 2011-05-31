@@ -36,10 +36,23 @@ if isempty(hdr),return,end
 if hdr.dim(1)==3
    hdr.dim(5)=1;
 end
-if hdr.dim(5) ~= 1
+if hdr.dim(5) < 1
   mrWarnDlg(sprintf('(importOverlay) Could not import image because it has %d frames',hdr.dim(5)));
   return
+elseif hdr.dim(5) > 1
+  frameList = buttondlg('Choose the frames to import', [cellstr(int2str((1:hdr.dim(5))'));{'All'}]);
+  if isempty(frameList)
+    return
+  end
+  if frameList(end)
+    frameList = 1:hdr.dim(5);
+  else
+    frameList = find(frameList);
+  end
+else
+  frameList=1;
 end
+nFrames = length(frameList);
 
 scan_number = viewGet(thisView,'nScans');
 if scan_number>1
@@ -56,33 +69,52 @@ scan_dims = viewGet(thisView,'datasize',i_scan);
    end
 end
    
+maxFrames=20;
 paramsInfo = {{'filename',filename,'The name of the nifti file that you are importing','editable=0'}};
-paramsInfo{end+1} = {'description','','A description for the overlay you are importing'};
-
+if nFrames<=maxFrames
+  for iFrame = 1:nFrames
+    numFrame = num2str(frameList(iFrame));
+    paramsInfo{end+1} = {['nameFrame' numFrame],['Frame ' numFrame],['A description for the overlay corresponding to frame' numFrame]};
+  end
+else
+  paramsInfo{end+1} = {'nameFrame','','A description for the overlay you are importing. the frame number will be added at the end for each overlay'};
+end
 params = mrParamsDialog(paramsInfo);
 if isempty(params),return,end
-
+if nFrames>maxFrames
+  for iFrame = 1:nFrames
+    numFrame = num2str(frameList(iFrame));
+    params.(['nameFrame' numFrame]) = [params.nameFrame '(Frame ' numFrame ')'];
+  end
+end
+  
 max_overlay = max(data(:));
 min_overlay = min(data(:));
-overlay.name = [params.description ' (' params.filename ')']; 
-overlay.groupName = viewGet(thisView,'groupName');
-overlay.function = 'importOverlay';
-overlay.reconcileFunction = 'defaultReconcileParams';
-overlay.data = cell(scan_number,1);
-overlay.data(scanlist) = squeeze(num2cell(repmat(data,[1 1 1 length(scanlist)]),[1 2 3]))';
-overlay.date = datestr(now);
-overlay.params = params;
+defaultOverlay.name = '';
+defaultOverlay.groupName = viewGet(thisView,'groupName');
+defaultOverlay.function = 'importOverlay';
+defaultOverlay.reconcileFunction = 'defaultReconcileParams';
+defaultOverlay.data = cell(scan_number,1);
+defaultOverlay.date = datestr(now);
+defaultOverlay.params = params;
 % colormap is made with a little bit less on the dark end
-overlay.colormap = hot(312);
-overlay.colormap = overlay.colormap(end-255:end,:);
-overlay.alpha = 1;
-overlay.interrogator = '';
-overlay.mergeFunction = 'defaultMergeParams';
-overlay.colormapType = 'normal';
-overlay.range = [min_overlay max_overlay];
-overlay.clip = [min_overlay max_overlay];
+defaultOverlay.colormap = hot(312);
+defaultOverlay.colormap = defaultOverlay.colormap(end-255:end,:);
+defaultOverlay.alpha = 1;
+defaultOverlay.interrogator = '';
+defaultOverlay.mergeFunction = 'defaultMergeParams';
+defaultOverlay.colormapType = 'normal';
+defaultOverlay.range = [min_overlay max_overlay];
+defaultOverlay.clip = [min_overlay max_overlay];
 
-thisView = viewSet(thisView,'newoverlay',overlay);
+for iFrame=1:nFrames
+  numFrame = frameList(iFrame);
+  overlays(iFrame) = defaultOverlay;
+  overlays(iFrame).name = [params.(['nameFrame' num2str(numFrame)]) ' (' params.filename ')']; 
+  overlays(iFrame).data(scanlist) = squeeze(num2cell(repmat(data(:,:,:,numFrame),[1 1 1 length(scanlist)]),[1 2 3]))';
+end
+
+thisView = viewSet(thisView,'newoverlay',overlays);
 refreshMLRDisplay(thisView.viewNum);
 
 
