@@ -74,7 +74,8 @@ if ~any(isfield(params, {'threshold', 'flatRes'}));
   paramsInfo = {};
   paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
   paramsInfo{end+1} = {'flipFlag', 0, 'type=checkbox', 'Some patches come out flipped.  Use this option to correct this problem'};
-  paramsInfo{end+1} = {'flatRes', 3, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
+  paramsInfo{end+1} = {'flatRes', 3, 'incdec=[-1 1]', 'Factor by which the resolution of the flat patch is increased'};
+  paramsInfo{end+1} = {'flatBaseName', stripext(getLastDir(params.flatFileName)), 'Name of the flat base anatomy'};
   flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
   % check for cancel
   if isempty(flatParams);
@@ -172,7 +173,7 @@ deleteView(v);
 % now generate a base structure
 clear base;
 base.hdr = flat.hdr;
-base.name = stripext(getLastDir(params.flatFileName));
+base.name = flatParams.flatBaseName;
 base.vol2mag = b.vol2mag;
 base.vol2tal = b.vol2tal;
 
