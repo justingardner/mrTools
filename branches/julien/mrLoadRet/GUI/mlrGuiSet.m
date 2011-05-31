@@ -328,7 +328,17 @@ switch lower(field)
   set(handles.sliceText,'String',num2str(value));
   view = viewSet(view,'curSlice',value);
 
- case {'corticaldepth','corticalmindepth'}
+ case {'corticaldepth'} %this sets a single cortical depth, whether there are one or two sliders
+  % mlrGuiSet(view,'corticalDepth',value);
+   mlrGuiSet(view,'corticalMinDepth',value);
+   if isfield(handles,'linkMinMaxDepthCheck') 
+     set(handles.linkMinMaxDepthCheck,'value',true)
+   end
+   if isfield(handles,'corticalMaxDepthSlider')
+     mlrGuiSet(view,'corticalMaxDepth',value);
+   end
+  
+ case {'corticalmindepth'}
   % mlrGuiSet(view,'corticalDepth',value);
   value = min(value,1);value = max(value,0);
   corticalDepthBins = viewGet(view,'corticalDepthBins');

@@ -366,7 +366,7 @@ if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'
     set(hObject,'Value',minDepth);
   end
 else
-  mlrGuiSet(viewNum,'corticalDepth',newMinValue);
+  mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
   refreshMLRDisplay(viewNum);
 end
 
@@ -396,7 +396,7 @@ viewNum = handles.viewNum;
 newMinValue = str2num(get(hObject,'String'));
 if isempty(newMinValue) %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.corticalDepthSlider,'value')));
-else %otherwise, set the new value in the view and the GUI
+else %otherwise, set the new value in the GUI (there is no field for cortical depth in the view, although there probably should)
   if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'value')
     maxDepth = viewGet(viewNum,'corticalMaxDepth');
     minDepth = get(handles.corticalDepthSlider,'value');
@@ -409,7 +409,7 @@ else %otherwise, set the new value in the view and the GUI
       set(hObject,'string',num2str(minDepth));
     end
   else
-    mlrGuiSet(viewNum,'corticalDepth',newMinValue);
+    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
     refreshMLRDisplay(viewNum);
   end
 end
@@ -1049,7 +1049,7 @@ if ~exist(pathStr,'file')
 end
 
 % Copy the nifti file to the tseries directory
-[dir,file,ext,versn] = fileparts(pathStr);
+[dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,tseriesDir)
     % If tseries file is already in the tseries directory, then use it
     hdr = cbiReadNiftiHeader(pathStr);
