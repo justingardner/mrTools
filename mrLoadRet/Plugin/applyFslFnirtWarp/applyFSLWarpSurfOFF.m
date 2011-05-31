@@ -13,7 +13,7 @@ function applyFSLWarpSurfOFF
 
 startPathStr = pwd;
 filterspec = {'*.img','FNIRT warp coeff .img file'; '*.*','All files'};
-title = 'Choose structural to function FNIRT coefficient file';
+title = 'Choose structural to functional FNIRT coefficient file';
 warpCoefFileName = getPathStrDialog(startPathStr,title,filterspec,'off');
 if isempty(warpCoefFileName),return,end;
 

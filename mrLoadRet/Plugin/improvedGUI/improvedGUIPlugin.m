@@ -75,7 +75,7 @@ switch action
         'fontSize', 11,'String','Clip across overlays','position',[0.09    0.505   0.18   0.025]);
     mlrAdjustGUI(thisView,'add','control','colorBlending','style','text',...
         'fontSize', 12,'String','Blending mode','position',       [0.02    0.475   0.12   0.025]);
-    mlrAdjustGUI(thisView,'add','control','colorBlendingPopup','style','popupmenu','value',1,...
+    mlrAdjustGUI(thisView,'add','control','colorBlendingPopup','style','popupmenu','value',2,...
         'callback',@colorBlendingPopup_Callback,'String',{'Alpha blend' 'Additive'},...
         'fontSize', 12,'position',                                [0.14    0.47    0.14   0.035]);
     mlrAdjustGUI(thisView,'set','overlayPopup','position',        [0.02    0.24    0.26   0.23 ]);
@@ -107,7 +107,7 @@ switch action
    end
  % return a help string
  case {'help','h','?'}
-   retval = 'Improvements include: superimposition of several overlays, ...';
+   retval = 'Improvements include: superimposition of several overlays, average over a range of cortical depths, ...';
  otherwise
    disp(sprintf('(improvedGUIPlugin) Unknown command %s',action));
 end

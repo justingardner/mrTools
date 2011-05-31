@@ -98,6 +98,7 @@ for iOverlay = overlayNum;
 
         fprintf(1,['\t\taverage across ROI :' num2str(nanmean(roiOverlayData)) '\n']);
         fprintf(1,['\t\tstandard deviation :' num2str(nanstd(roiOverlayData)) '\n']);
+        fprintf(1,['\t\trms across ROI :' num2str(sqrt(nanmean(roiOverlayData.^2))) '\n']);
         fprintf(1,'\n');
 
      else
