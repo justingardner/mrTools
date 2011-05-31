@@ -36,7 +36,7 @@ end
 
 % load the appropriate surface files
 if fieldIsNotDefined(params,'innerSurfaceName')
-  [filename,pathname] = uigetfile([pathname '/*WM.off'], 'Choose Inner Surface');
+  [filename,pathname] = uigetfile([pathname '/*WM*.off'], 'Choose Inner Surface');
   if isnumeric(filename),  return; end
   params.innerSurfaceName = [pathname filename];
 end
@@ -48,7 +48,7 @@ end
 
 surface.inner = xformSurfaceWorld2Array(surface.inner, baseHdr);
 if fieldIsNotDefined(params,'outerSurfaceName')
-  [filename,pathname] = uigetfile([pathname '/*GM.off'], 'Choose Outer Surface');
+  [filename,pathname] = uigetfile([pathname '/*GM*.off'], 'Choose Outer Surface');
   if isnumeric(filename),  return; end
   params.outerSurfaceName = [pathname filename];
 end

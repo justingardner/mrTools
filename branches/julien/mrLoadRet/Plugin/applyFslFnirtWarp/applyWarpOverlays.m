@@ -48,12 +48,15 @@ interpMethod = mrGetPref('interpMethod');
 scanDims = viewGet(thisView,'scandims'); %we assume scans are all in the same space
 scanHdr = viewGet(thisView,'niftiHdr');
 
+overlayNames = viewGet(thisView,'overlayNames');
+overlayNames = overlayNames(overlayList);
 overlaysNumber = length(overlayList);
 for iOverlay = 1:overlaysNumber
    overlays{iOverlay} = viewGet(thisView,'overlay',overlayList(iOverlay));
-   if isfield(overlays{iOverlay},'alphaOverlay') && ~isempty(overlays{iOverlay}.alphaOverlay)
+   if isfield(overlays{iOverlay},'alphaOverlay') && ~isempty(overlays{iOverlay}.alphaOverlay) && ~ismember(overlays{iOverlay}.alphaOverlay,overlayNames)
       overlaysNumber = overlaysNumber+1;
       alphaOverlayName = overlays{iOverlay}.alphaOverlay;
+      overlayNames = [overlayNames {alphaOverlayName}];
       overlays{overlaysNumber} = viewGet(thisView,'overlay',viewGet(thisView,'overlaynum',alphaOverlayName));
       overlays{iOverlay}.alphaOverlay = ['warp(' alphaOverlayName ') - ' warpCoefFilename];
       disp(['(applyWarpOverlays) Alpha overlay ''' alphaOverlayName ''' will also be warped']);
