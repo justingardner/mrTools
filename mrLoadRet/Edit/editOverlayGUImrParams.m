@@ -21,6 +21,7 @@ function retval = editOverlayGUImrParams(viewNum)
   if isempty(analysisNum),mrWarnDlg('(editOverlayGUI) No current analysis');return,end
   overlayNum = viewGet(thisView,'currentOverlay', analysisNum);
   if isempty(overlayNum),mrWarnDlg('(editOverlayGUI) No current overlay');return,end
+  if length(overlayNum)>1,mrWarnDlg('(editOverlayGUI) Not implemented for several overlays');return,end
   overlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
   overlayUsefulRange = viewGet(thisView,'overlayRange', overlayNum, analysisNum);
   overlayColorRange = viewGet(thisView,'overlayColorRange', overlayNum, analysisNum);
