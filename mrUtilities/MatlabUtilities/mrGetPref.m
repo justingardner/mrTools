@@ -41,7 +41,7 @@ prefNames = {'overwritePolicy','verbose','graphWindow',...
 % here is to make sure that the prefDefaults list matches the prefNames order
 prefDefaults{length(prefNames)} = [];
 prefDefaults{find(strcmp('interpMethod',prefNames))} = {'nearest','linear','spline','cubic'};
-prefDefaults{find(strcmp('corticalDepthBins',prefNames))} = 10;
+prefDefaults{find(strcmp('corticalDepthBins',prefNames))} = 11;
 prefDefaults{find(strcmp('multiSliceProjectionMethod',prefNames))} = {'Average','Maximum Intensity Projection'};
 prefDefaults{find(strcmp('overwritePolicy',prefNames))} = {'Ask','Merge','Rename','Overwrite'};
 prefDefaults{find(strcmp('verbose',prefNames))} = {'Yes','No'};
