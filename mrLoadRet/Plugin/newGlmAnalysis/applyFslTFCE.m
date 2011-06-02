@@ -6,7 +6,7 @@ if ieNotDefined('verbose')
   verbose = 1;
 end
 if ieNotDefined('tempFilename')
-  tempFilename = 'temp.img';
+  tempFilename = 'tempInput.img';
 end
 
 

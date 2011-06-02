@@ -50,10 +50,10 @@ end
 %------------------------- applyWarpOverlaysCallback Function ------------------------------%
 function applyWarpOverlaysCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-applyWarpOverlays(thisView);
+applyFSLWarpOverlays(thisView);
 
 %------------------------- applyWarpROICallback Function ------------------------------%
 function applyWarpROICallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-applyWarpROI(thisView);
+applyFSLWarpROI(thisView);
 

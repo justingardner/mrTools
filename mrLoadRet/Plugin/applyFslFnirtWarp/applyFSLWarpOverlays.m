@@ -1,14 +1,14 @@
-function applyWarpOverlays(thisView)
+function applyFSLWarpOverlays(thisView)
 % applyWarpOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   applies non-linear FSL registration to overlay in current view and current analysis
 %
 % jb 23/07/2010
 %
-% $Id$ 
+% $Id: applyWarpOverlays.m 2136 2011-05-31 10:23:12Z julien $ 
 
 if strcmp(mrGetPref('fslPath'),'FSL not installed')
-  mrWarnDlg('(applyWarpROI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
+  mrWarnDlg('(applyFSLWarpOverlays) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
   return
 end
 
@@ -59,7 +59,7 @@ for iOverlay = 1:overlaysNumber
       overlayNames = [overlayNames {alphaOverlayName}];
       overlays(overlaysNumber) = viewGet(thisView,'overlay',viewGet(thisView,'overlaynum',alphaOverlayName));
       overlays(iOverlay).alphaOverlay = ['warp(' alphaOverlayName ') - ' warpCoefFilename];
-      disp(['(applyWarpOverlays) Alpha overlay ''' alphaOverlayName ''' will also be warped']);
+      disp(['(applyFSLWarpOverlays) Alpha overlay ''' alphaOverlayName ''' will also be warped']);
    end
 end
 
