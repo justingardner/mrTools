@@ -5,6 +5,15 @@
 % jb 23/07/2010
 %
 % $Id$
+%
+% input:
+%      - data: 3/4D dataset, should be the same size as indicated in the header hdr
+%      - warpCoefFilename
+%      - tempFilename: name of the temporary NIFTI files what will get written on disk in order to call applywarp 
+%      - hdr:  header giving the space of the data
+%      - interpMethod
+%      - verbose
+
 
 function warpedData = applyFSLWarp(data, warpCoefFilename, tempFilename, hdr, interpMethod, verbose)
 
@@ -17,6 +26,8 @@ if ieNotDefined('verbose')
 end
 
 cbiWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
+
+
 %convert matlab flags to FNIRT flags
 switch(interpMethod)
    case 'nearest' %Nearest neighbor interpolation

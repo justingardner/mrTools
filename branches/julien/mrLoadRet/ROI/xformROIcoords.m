@@ -129,10 +129,14 @@ end
 
 % Build newROIcoords
 %
+%voxels in new space are sorted according to how many old-space supersampled voxels they received
 [sortedAccum,indices] = sort(accum);
-nonZeroSize = length(find(accum > 0));
+nonZeroSize = nnz(accum);
+%Compute number of voxels necessary to maintain the ROI volume with the new voxel size
 newROIsize = round(prod(inputVoxSize)*size(coords,2) / prod(outputVoxSize));
+%we don't want to keep voxels that have zero partial voluming
 newROIsize = min(nonZeroSize,newROIsize);
+%the volume is conserved by keeping the appropriate number of voxels with highest partial voluming
 indices = indices(length(indices)-newROIsize+1:length(indices));
 if ~isempty(indices)
   [newcoords1,newcoords2,newcoords3] = ind2sub(dims,indices);
