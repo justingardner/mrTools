@@ -1,18 +1,22 @@
 % loadScanRois - load timeseries corresponding to the voxels of one or several loaded Rois
 %
 %        $Id$
-%      usage: [d, roiVoxelIndices  ] = loadScanRois(thisView,scanNum,roiList)
+%      usage: [d, roiVoxelIndices  ] = loadScanRois(thisView,<scanNum>,<roiList>)
 %         by: julien besle
 %       date: 2010-04-26
 %     inputs: 
 %    outputs: d is a data structure with all the voxels on the first dimensions and time-series on the 4th dimension
 %             roiVoxelIndices is a cell array indexing which voxel in the data are part of each roi
 %             roiCoords is a cell array with the voxel coordinates in the scan
+%             If no scan/roi are specified, currently loaded scan/roi(s) are used
 %
 %    purpose: load timeseries corresponding to the voxels of one or several Rois (wrapper around loadScan.m)
 %
 
 function [d, roiVoxelIndices, roiCoords] = loadScanRois(thisView,scanNum,roiList)
+
+if ieNotDefined('scanNum'),scanNum = viewGet(view,'curScan');end
+if ieNotDefined('roiList'),roiList = viewGet(view,'currentROI');end
 
 %get the smallest box in the scan including all the rois in the list
 [subsetBox, whichRoi]  = getRoisBox(thisView,scanNum,0,roiList);  
