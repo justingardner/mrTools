@@ -8,7 +8,7 @@
 %  warpResolution: resolution in mm of the warp field computed using fnirtfileutils. don't make too small because uses too much memory
 %                   better to make it .5 or 1 mm, because more efficient to interpolate using interp3 than computing high-resolution warp field volume
 %    tempFilename: name of the temporary file to write the data to the disc
-%             hdr: header of a volume in the space of the input FNIRT volume for dimensions and voxel size (transformation matrix is not taken into account)
+%             hdr: header of a volume in the space of the input FNIRT volume for dimensions and voxel size (transformation matrix is not taken into account, (but qform might determine the voxel size... ?)
 %
 % jb 16/04/2011
 %
@@ -62,6 +62,7 @@ innerCoordsIndices = scaledCoords(1,:)>=1 & scaledCoords(1,:)<=dataSize(1) &...
 %interpolate fields
 fieldVectors = zeros(4,size(coords,2));
 innerCoords = scaledCoords(:,innerCoordsIndices);
+%this might only work for isotropic voxels
 fieldVectors(1,innerCoordsIndices) = interp3(warpFields(:,:,:,1),innerCoords(2,:),innerCoords(1,:),innerCoords(3,:),'*cubic'); %need to switch 1st and 2nd dimensions of the volume to call interp3
 fieldVectors(2,innerCoordsIndices) = interp3(warpFields(:,:,:,2),innerCoords(2,:),innerCoords(1,:),innerCoords(3,:),'*cubic');
 fieldVectors(3,innerCoordsIndices) = interp3(warpFields(:,:,:,3),innerCoords(2,:),innerCoords(1,:),innerCoords(3,:),'*cubic');

@@ -8,7 +8,8 @@
 %    purpose: expands roi coordinates in 3D by margin voxels
 %      input:   - margin: number of voxels that will be added (removed if negative) around the ROI.
 % kernelType:   - (optional) type of kernel to convolve the ROI with: 
-%                     sphere (default), cube, disc, square or radius/half-side margin
+%                     sphere (default), cube, disc or square.
+%                     the margin is the radius of the sphere/disc or the half-side of the square/cube 
 %                     discs and squares are in the X-Y plane  
 
 function roi = expandROI(roi,margin,kernelType)
