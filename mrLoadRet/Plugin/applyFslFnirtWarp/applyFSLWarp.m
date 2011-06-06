@@ -30,13 +30,19 @@ cbiWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
 
 %convert matlab flags to FNIRT flags
 switch(interpMethod)
-   case 'nearest' %Nearest neighbor interpolation
-      interpMethod = 'nn';
-   case 'linear'%Linear interpolation (default)
-      interpMethod = 'trilinear';
-   case {'spline', 'cubic'}
-      mrWarnDlg(['(applyFSLWarp) ' interpMethod ' not implemented in FNIRT, using ''sinc'''])
-      interpMethod = 'sinc';
+  case 'nearest' %Nearest neighbor interpolation
+    interpMethod = 'nn';
+  case 'linear'%Linear interpolation (default)
+    interpMethod = 'trilinear';
+  case {'spline', 'cubic'}
+    mrWarnDlg(['(applyFSLWarp) ' interpMethod ' not implemented in FNIRT, using ''sinc'''])
+    interpMethod = 'sinc';
+  case {'trilinear','nn','sinc'}
+    %do nothing
+  otherwise
+    disp('(applyFSLWarp) Unknown interpolation method. Entering debug mode');
+    keyboard;
+    return;
 end
 
 try
