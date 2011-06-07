@@ -2145,9 +2145,11 @@ function restrictRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-roinum = viewGet(view,'currentROI');
+currentROIs = viewGet(view,'currentROI');
 scan = viewGet(view,'curscan');
-view = restrictROI(view,roinum,scan);
+for roinum = currentROIs
+    view = restrictROI(view,roinum,scan);
+end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -2167,11 +2169,20 @@ function undoRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-curCoords = viewGet(view,'roiCoords');
 prevCoords = viewGet(view,'prevROIcoords');
+curCoords = viewGet(view,'roiCoords');
+if ischar(prevCoords) || isequal(prevCoords,curCoords)
+  disp('(mrLoadRetGUI: undoROI) Nothing to undo');
+  return
+end
+if length(viewGet(view,'currentRoi'))>1
+  disp('(mrLoadRetGUI: undoROI) Undo not implemented for several selected ROIs');
+  return;
+end
 view = viewSet(view,'prevROIcoords',curCoords);
 view = viewSet(view,'ROIcoords',prevCoords);
 refreshMLRDisplay(viewNum);
+
 
 % --------------------------------------------------------------------
 function convertCorticalDepthRoiMenuItem_Callback(hObject, eventdata, handles)
