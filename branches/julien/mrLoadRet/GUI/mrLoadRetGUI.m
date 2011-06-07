@@ -859,8 +859,9 @@ view = importROI(view);
 function saveROIMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-n = viewGet(viewNum,'currentroi');
-saveROI(MLR.views{viewNum},n,1);
+for n = viewGet(viewNum,'currentroi');
+  saveROI(MLR.views{viewNum},n,1);
+end
 
 % --------------------------------------------------------------------
 function saveAllROIMenuItem_Callback(hObject, eventdata, handles)
@@ -1449,63 +1450,47 @@ function pasteRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-% Check to see that it is a valid ROI structure and then add it.
-[check roi] = isroi(MLR.clipboard);
-if check
-    view = viewSet(view,'newROI',roi);
-else
-    mrErrorDlg('(paste ROI) Cannot paste. Clipboard does not contain a valid ROI. Use Edit -> ROI -> Copy ROI.')
+refresh=false;
+for iRoi = 1:length(MLR.clipboard)
+  % Check to see that it is a valid ROI structure and then add it.
+  [check roi] = isroi(MLR.clipboard(iRoi));
+  if check
+      view = viewSet(view,'newROI',roi);
+      refresh=true;
+  else
+      mrWarnDlg('(paste ROI) Cannot paste. Clipboard does not contain a valid ROI. Use Edit -> ROI -> Copy ROI.')
+  end
 end
-% Select it and reset view.prevCoords
-ROInum = viewGet(view,'numberofROIs');
-if (ROInum > 0)
-    view = viewSet(view,'currentROI',ROInum);
-end
-refreshMLRDisplay(viewNum);
-
-% --------------------------------------------------------------------
-function editRoiMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-
-% get the roi
-roiNum = viewGet(v,'currentROI');
-if isempty(roiNum),return,end
-roiName = viewGet(v,'roiName',roiNum);
-roiColor = viewGet(v,'roiColor',roiNum);
-roiNotes = viewGet(v,'roiNotes',roiNum);
-
-% get the list of colors, putting our color on top
-colors = putOnTopOfList(roiColor,color2RGB);
-
-% make parameter string
-roiParams{1} = {'name',roiName,'Name of roi, avoid using punctuation and space'};
-roiParams{2} = {'color',colors,'type=popupmenu','The color that the roi will display in'};
-roiParams{3} = {'notes',roiNotes,'Brief notes about the ROI'};
-
-params = mrParamsDialog(roiParams,'Edit ROI',1.5);
-
-% if not empty, then change the parameters
-if ~isempty(params)
-  v = viewSet(v,'roiColor',params.color,roiNum);
-  v = viewSet(v,'roiName',params.name,roiNum);
-  v = viewSet(v,'roiNotes',params.notes,roiNum);
+if refresh
+  % Select the last ROI
+  ROInum = viewGet(view,'numberofROIs');
+  if (ROInum > 0)
+      view = viewSet(view,'currentROI',ROInum);
+  end
   refreshMLRDisplay(viewNum);
 end
 
 % --------------------------------------------------------------------
-function editManyROIsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to editManyROIsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-nROIs = viewGet(v,'numROIs');
+function editRoiMenuItem_Callback(hObject, eventdata, handles)
 
+viewNum = handles.viewNum;
+editManyROIs(viewNum,viewGet(viewNum,'currentROI'));
+
+% --------------------------------------------------------------------
+function editManyROIsMenuItem_Callback(hObject, eventdata, handles)
+viewNum = handles.viewNum;
+editManyROIs(viewNum,1:viewGet(viewNum,'numROIs'));
+
+function editManyROIs(viewNum,roiList)
+
+if isempty(roiList)
+  disp('(editManyROIs) No ROI is loaded')
+  return;
+end
+mrGlobals;
+v = MLR.views{viewNum};
 paramsInfo = {};
-for roinum = 1:nROIs
+for roinum = roiList
   % get name and colors for each roi
   roiNames{roinum} = viewGet(v,'roiName',roinum);
   roiNotes = viewGet(v,'roiNotes',roinum);
@@ -1519,7 +1504,7 @@ params = mrParamsDialog(paramsInfo,'Edit Many ROIs');
 
 % if not empty, then change the parameters
 if ~isempty(params)
-  for roinum = 1:nROIs
+  for roinum = roiList
     roiName = fixBadChars(roiNames{roinum});
     v = viewSet(v,'roiColor',params.(sprintf('%sColor',roiName)),roinum);
     v = viewSet(v,'roiName',params.(sprintf('%sName',roiName)),roinum);
@@ -1527,6 +1512,7 @@ if ~isempty(params)
   end
   refreshMLRDisplay(viewNum);
 end
+
 
 
 % --------------------------------------------------------------------
