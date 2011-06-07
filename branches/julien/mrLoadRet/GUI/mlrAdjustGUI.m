@@ -24,7 +24,7 @@
 %             mlrAdjustGUI(getMLRView,'list');
 %
 %             To set a property of a control: 
-%             mlrAdjustGUI(v,'set',controlName,propertyName,propertyValue);
+%             mlrAdjustGUI(v,'set',controlName or tag,propertyName,propertyValue);
 %      e.g.:  mlrAdjustGUI(getMLRView,'set','baseGammaSlider','Visible','off');
 % 
 %             Similarly, to set the callback for a control
@@ -40,7 +40,13 @@
 %             The above will add the menu item Plugin after the menu identified
 %             as Plots. If you wanted instead to put it at the top
 %             of the Plots menu, then set the menuLocation to /Plots/
-%             
+% 
+%             To move a menu item around
+%             mlrAdjustGUI(v,'set',menuName or tag,'location',menuLocation);
+%
+%             to remove a menu item
+%             mlrAdjustGUI(v,'remove','menu',menuName or tag)
+%
 %             To add an interrogator function as a default one
 %             (that shows up in the GUI)
 %             mlrAdjustGUI(v,'add','interrogator',interrogatorName)
@@ -83,7 +89,7 @@ switch command
  case {'add'}
   switch varargin{1}
     case {'menu'}
-     addMenu({varargin{2:end}},menuControls);
+     placeMenu({varargin{2:end}},menuControls,'add');
     case {'interrogator','interrogators'}
      addInterrogator(v,varargin{2});
     case {'colormap','colormaps'}
@@ -273,13 +279,13 @@ guidata(f,h);
 
 
 %%%%%%%%%%%%%%%%%%
-%%%   addMenu  %%%
+%%%   placeMenu  %%%
 %%%%%%%%%%%%%%%%%%
-function addMenu(args,menuControls)
+function placeMenu(args,menuControls,mode)
 
 % check length of arguments
 if length(args) < 2
-  disp(sprintf('(mlrAdjustGUI:addMenu) Requires 2 arguments: menuName, menuLocation'));
+  disp(sprintf('(mlrAdjustGUI:placeMenu) Requires 2 arguments: menuName, menuLocation'));
   return
 else
   % name the arguments
@@ -287,7 +293,7 @@ else
   menuLocation = args{2};
   menuProperties = {args{3:end}};
   if isodd(length(menuProperties) )
-    disp(sprintf('(mlrAdjustGUI:addMenu) Properties must all have a matching property value'));
+    disp(sprintf('(mlrAdjustGUI:placeMenu) Properties must all have a matching property value'));
     return
   end
 end
@@ -296,21 +302,29 @@ end
 h = getHandle(menuLocation,menuControls);
 % if not found, then print warning, return
 if isempty(h)
-  disp(sprintf('(mlrAdjustGUI:addMenu) Could not find menu location: %s',menuLocation));
+  disp(sprintf('(mlrAdjustGUI:placeMenu) Could not find menu location: %s',menuLocation));
   return
 end
 
 % check to see if it has already been added
-if ~isempty(getHandle(menuName,menuControls))
-  disp(sprintf('(mlrAdjustGUI:addMenu) Already added menu item: %s',menuName));
+if strcmp(mode,'add') && ~isempty(getHandle(menuName,menuControls))
+  disp(sprintf('(mlrAdjustGUI:placeMenu) Already added menu item: %s',menuName));
   return
 end
 
 % check to see if the location has a / on the end of it, which
 % means to add it *underneath* the location specified
 if menuLocation(end) == '/'
-  % add the menu to the parent
-  hAdded = uimenu(h,'Label',menuName);
+  switch(mode)
+    case 'add'
+      % add the menu to the parent
+      hAdded = uimenu(h,'Label',menuName);
+    case 'move'
+      %change the menu's parent
+      hAdded = menuName;
+      set(hAdded,'Parent',h);
+  end
+      
   % and reorder to top
   hChildren = get(h,'Children');
   hChildren = [hChildren(2:end)' hAdded]';
@@ -320,8 +334,15 @@ else
   % get the parent
   hParent = get(h,'Parent');
 
-  % add the menu to the parent
-  hAdded = uimenu(hParent,'Label',menuName);
+  switch(mode)
+    case 'add'
+      % add the menu to the parent
+      hAdded = uimenu(hParent,'Label',menuName);
+    case 'move'
+      %change the menu's parent
+      hAdded = menuName;
+      set(hAdded,'Parent',hParent);
+  end
 
   % reorder the children so that the item created is below the menuLocation
   hChildren = get(hParent,'Children');
@@ -353,7 +374,12 @@ for i = 1:2:length(menuProperties)
 end
 
 % display what we have done
-disp(sprintf('(mlrAdjustGUI:addMenu) Added menu: %s',menuName));
+switch(mode)
+  case 'add'
+    disp(sprintf('(mlrAdjustGUI:placeMenu) Added menu: %s',menuName));
+  case 'move'
+    disp(sprintf('(mlrAdjustGUI:placeMenu) Moved menu: %s',get(menuName,'label')));
+end
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%   removeMenu  %%%
@@ -412,40 +438,49 @@ if ~isempty(propertyName)
     propertyName = lower(propertyName);
 end    
 
-% check if the property exists
-fieldNames = lower(fieldnames(get(h)));
-
-if ~ismember(propertyName,fieldNames)
-  % if not, warn and continue
-  if isstr(propertyName)
-      disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of %s %s ***',propertyName,controlType,controlName));
-  else
-    disp(sprintf('(mlrAdjustGUI) *** Could not find correct property of %s %s. Did you pass in a string indicating a property to set ***',controlType,controlName));
+if strcmp(propertyName,'location')
+  if ~strcmp(get(h,'type'),'uimenu')
+    disp(['(mlrAdjustGUI) Cannot change location property for ' controlName]);
+    return;
   end
-  return
-end
+  placeMenu({h,propertyValue},menuControls,'move');
+  
+else %if the property is not 'location', then we just set the property using set
 
-% if it does, make sure we have a valid property to set it to
-%if ~any(strcmp(propertyName,{'Callback','TooltipString'}))
-validValues = set(h,propertyName);
-if ~isempty(validValues)
-  tf = false;
-  for j = 1:length(validValues) 
-    if isequal(propertyValue,validValues{j}),tf = true;end
-  end
-  if ~tf
-    disp(sprintf('(mlrAdjustGUI) Property value:'))
-    disp(propertyValue);
-    disp(sprintf('is invalid for %s %s property %s. Valid values are: ',controlType,controlName,propertyName));
-    disp(validValues);
+  % check if the property exists
+  fieldNames = lower(fieldnames(get(h)));
+
+  if ~ismember(propertyName,fieldNames)
+    % if not, warn and continue
+    if isstr(propertyName)
+        disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of %s %s ***',propertyName,controlType,controlName));
+    else
+      disp(sprintf('(mlrAdjustGUI) *** Could not find correct property of %s %s. Did you pass in a string indicating a property to set ***',controlType,controlName));
+    end
     return
   end
+
+  % if it does, make sure we have a valid property to set it to
+  %if ~any(strcmp(propertyName,{'Callback','TooltipString'}))
+  validValues = set(h,propertyName);
+  if ~isempty(validValues)
+    tf = false;
+    for j = 1:length(validValues) 
+      if isequal(propertyValue,validValues{j}),tf = true;end
+    end
+    if ~tf
+      disp(sprintf('(mlrAdjustGUI) Property value:'))
+      disp(propertyValue);
+      disp(sprintf('is invalid for %s %s property %s. Valid values are: ',controlType,controlName,propertyName));
+      disp(validValues);
+      return
+    end
+  end
+
+  % if we got here, then the value is ok so set it
+  disp(sprintf('(mlrAdjustGUI) Setting property %s of %s %s',propertyName,controlType,controlName));
+  set(h,propertyName,propertyValue);
 end
-
-% if we got here, then the value is ok so set it
-disp(sprintf('(mlrAdjustGUI) Setting property %s of %s %s',propertyName,controlType,controlName));
-set(h,propertyName,propertyValue);
-
 %%%%%%%%%%%%%%%%%%%%%%%
 %%%  getUiControls  %%%
 %%%%%%%%%%%%%%%%%%%%%%%
