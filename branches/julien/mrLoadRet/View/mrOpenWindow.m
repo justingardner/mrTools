@@ -128,7 +128,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       for roinum = 1:length(mrLastView.view.ROIs)
         view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
       end
-      view = viewSet(view,'currentROI',1);
+      view = viewSet(view,'currentROI',mrLastView.view.curROI);
       if isfield(mrLastView.viewSettings,'showROIs')
 	view = viewSet(view,'showROIs',mrLastView.viewSettings.showROIs);
       end
