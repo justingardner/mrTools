@@ -68,7 +68,7 @@ tf = 1;
 
 if ieNotDefined('view'), mrErrorDlg('No view specified.'); end
 if ieNotDefined('param'), mrErrorDlg('No parameter specified'); end
-if ieNotDefined('val'), val = []; end
+if ~exist('val','var'), val = []; end %JB: here I use exist and not ieNotDefined because I want to keep the difference between '' and []
 
 % view can be either a view structure or a view number. Either way, make
 % sure that the view passed is consistent with the global variable
@@ -1646,7 +1646,7 @@ switch lower(param)
       curroi = viewGet(view,'currentROI');
       % Remove it and reset currentROI
       remainingRois = setdiff(1:numrois,roinums);
-      curroi = find(remainingRois==curroi);
+      curroi = find(ismember(remainingRois,curroi));
       view.ROIs=view.ROIs(remainingRois);
       if ~isempty(remainingRois)
         if isempty(curroi)
@@ -1656,7 +1656,7 @@ switch lower(param)
       else
         view.curROI = [];
       end
-
+      
       % Update the gui
       stringList = {view.ROIs(:).name};
       if isempty(stringList)
@@ -1669,12 +1669,18 @@ switch lower(param)
   case {'currentroi','curroi','selectedroi'}
     % view = viewSet(view,'currentROI',roiNum);
     roiNum = val;
-    numROIs = viewGet(view,'numberofROIs');
-    if (roiNum > 0) & (roiNum <= numROIs)
-      view.curROI = roiNum;
-      % update popup menu
-      mlrGuiSet(view,'roi',roiNum);
+    currentRoi = viewGet(view,'currentRoi');
+    if ~isequal(roiNum,currentRoi);
+      numROIs = viewGet(view,'numberofROIs');
+      if (roiNum > 0) & (roiNum <= numROIs)
+        view.curROI = roiNum;
+        % update popup menu
+        mlrGuiSet(view,'roi',roiNum);
+      end
+      %remove previous coords for previous ROI
+      view=viewSet(view,'prevRoiCoords','');
     end
+      
 
   case {'roicoords'}
     % view = viewSet(view,'roiCoords',array,[roiNum]);
