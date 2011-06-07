@@ -16,7 +16,7 @@
 %
 %             With a view argument initializes all plugins that the user has selected for that view
 %
-function retval = mlrPlugin(v)
+function v = mlrPlugin(v)
 
 % check arguments
 if ~any(nargin == [0 1])
@@ -97,7 +97,10 @@ else
   % and run their install command
   for i = 1:length(selectedPlugins)
     disp(sprintf('(mlrPlugin) Installing plugin %s',plugins(selectedPlugins(i)).name));
-    eval(plugins(selectedPlugins(i)).installCommand);
+    retval = eval(plugins(selectedPlugins(i)).installCommand);
+    if isview(retval)
+      v=retval; %for those plugins that need to modify the view
+    end
   end
 end
   
