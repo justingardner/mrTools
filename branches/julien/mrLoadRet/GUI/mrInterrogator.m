@@ -20,13 +20,13 @@ end
 
 % some basic info about location of controls
 mrGlobals;
-MLR.interrogator{viewNum}.leftMargin = 5;
-MLR.interrogator{viewNum}.rightMargin = 5;
-MLR.interrogator{viewNum}.topMargin = 5;
-MLR.interrogator{viewNum}.bottomMargin = 5;
-MLR.interrogator{viewNum}.buttonWidth = 50;
-MLR.interrogator{viewNum}.buttonHeight = 26;
-MLR.interrogator{viewNum}.margin = 5;
+MLR.interrogator{viewNum}.leftMargin = .02;
+MLR.interrogator{viewNum}.rightMargin = .02;
+MLR.interrogator{viewNum}.topMargin = .005;
+MLR.interrogator{viewNum}.bottomMargin = .01;
+MLR.interrogator{viewNum}.buttonWidth = .06;
+MLR.interrogator{viewNum}.buttonHeight = .03;
+MLR.interrogator{viewNum}.margin = 0;
 MLR.interrogator{viewNum}.fontsize = 10;
 MLR.interrogator{viewNum}.fontname = 'Helvetica';
 
@@ -519,7 +519,8 @@ end
 function h = makeTextbox(viewNum,displayString,rownum,colnum,uisize)
 
 mrGlobals;
-h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname,'HorizontalAlignment','Center');
+h = uicontrol('Style','text','Units','normalized','String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),...
+  'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname,'HorizontalAlignment','Center');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
@@ -535,7 +536,7 @@ end
 
 mrGlobals;
 
-h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
+h = uicontrol('Style','edit','Units','normalized','Callback',callback,'String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makePopupmenu
@@ -560,7 +561,7 @@ else
 end
 
 mrGlobals;
-h = uicontrol('Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
+h = uicontrol('Style','Popupmenu','Units','normalized','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -571,9 +572,6 @@ function pos = getUIControlPos(viewNum,rownum,colnum,uisize)
 % get global parameters
 mrGlobals;
 
-% get figure position
-figpos = get(MLR.interrogator{viewNum}.fignum,'Position');
-
 % set this buttons width
 thisButtonWidth = MLR.interrogator{viewNum}.buttonWidth*uisize+(uisize-1)*MLR.interrogator{viewNum}.margin;
 
@@ -581,7 +579,7 @@ thisButtonWidth = MLR.interrogator{viewNum}.buttonWidth*uisize+(uisize-1)*MLR.in
 %pos(1) = figpos(3)-MLR.interrogator{viewNum}.margin - (MLR.interrogator{viewNum}.buttonWidth+MLR.interrogator{viewNum}.margin)*(colnum-1)-MLR.interrogator{viewNum}.rightMargin-MLR.interrogator{viewNum}.buttonWidth;
 %pos(2) = figpos(4)-MLR.interrogator{viewNum}.buttonHeight-MLR.interrogator{viewNum}.topMargin - (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1);
 pos(1) = (MLR.interrogator{viewNum}.buttonWidth+MLR.interrogator{viewNum}.margin)*(colnum-1)+MLR.interrogator{viewNum}.leftMargin;
-pos(2) = MLR.interrogator{viewNum}.bottomMargin + (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1)+MLR.interrogator{viewNum}.buttonHeight;
+pos(2) = MLR.interrogator{viewNum}.bottomMargin + (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1);%+MLR.interrogator{viewNum}.buttonHeight;
 pos(3) = thisButtonWidth;
 pos(4) = MLR.interrogator{viewNum}.buttonHeight;
 
