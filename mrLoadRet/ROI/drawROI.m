@@ -17,12 +17,15 @@ function thisView = drawROI(thisView,descriptor,sgn)
 % Error if no current ROI
 curROInum = viewGet(thisView,'currentROI');
 if isempty(curROInum)
-  mrWarnDlg('No ROI currently selected.');
+  mrWarnDlg('(drawROI) No ROI currently selected.');
+  return
+elseif length(curROInum)>1
+  mrWarnDlg('(drawROI) This function cannot be used when several ROIs are selected');
   return
 end
 
 if ieNotDefined('descriptor')
-  descriptor = 'rectangle'
+  descriptor = 'rectangle';
 end
 if ieNotDefined('sgn')
   sgn = 1;
