@@ -21,7 +21,7 @@
 %             what is called the "controlName" below and you
 %             can get a full list of all possible controlNames 
 %             by doing:
-%             mlrAdjustGUI(getMLRView,'list');
+%             controlList = mlrAdjustGUI(getMLRView,'list');
 %
 %             To set a property of a control: 
 %             mlrAdjustGUI(v,'set',controlName or tag,propertyName,propertyValue);
@@ -40,6 +40,10 @@
 %             The above will add the menu item Plugin after the menu identified
 %             as Plots. If you wanted instead to put it at the top
 %             of the Plots menu, then set the menuLocation to /Plots/
+%             An alternative way is to use a tag to add a menu, and specify the name and tag property 
+%             mlrAdjustGUI(v,'add','menu',menuTag,menuLocation,'label',menuName,'tag',menuTag...);
+%      e.g.:  mlrAdjustGUI(getMLRView,'add','menu','pluginMenuItem','Plots','label','Plugin','tag','pluginMenuItem');
+%             It is easier to make tags unique
 % 
 %             To move a menu item around
 %             mlrAdjustGUI(v,'set',menuName or tag,'location',menuLocation);
@@ -85,7 +89,7 @@ switch command
  case {'set'}
   setItemProperty(varargin,uiControls,menuControls,plotAxes)
  case {'list'}
-  listControlNames(uiControls,menuControls,plotAxes);
+  retval = listControlNames(uiControls,menuControls,plotAxes);
  case {'add'}
   switch varargin{1}
     case {'menu'}
@@ -116,7 +120,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  listControlNames   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function listControlNames(uiControls,menuControls,plotAxes)
+function retval = listControlNames(uiControls,menuControls,plotAxes)
 
 % list Axes tags
 disp('==============    Axes     ============== ');
@@ -132,10 +136,13 @@ end
 
 % list menu labels and tags
 disp('============== Menu Items ============== ');
-for i = 1:length(menuControls)
-  disp(sprintf('(%i) Menu label: ''%s'' tag: %s',i,menuControls(i).fullLabel,menuControls(i).tag));
+for i = length(menuControls):-1:1
+  disp(sprintf('(%i) Menu label: ''%s'' tag: %s',length(menuControls)-i+1,menuControls(i).fullLabel,menuControls(i).tag));
 end
 
+retval.uiControls=uiControls;
+retval.menuControls=menuControls;
+retval.plotAxes=plotAxes;
 
 %%%%%%%%%%%%%%%%%%%
 %%%   getHandle  %%
@@ -164,7 +171,7 @@ end
 if isempty(h) && (nargin >=3)
   h = getHandle(itemName,controls2);
 end
-%seam for the 
+%same for the 
 if isempty(h) && (nargin ==4)
   h = getHandle(itemName,controls3);
 end
@@ -327,7 +334,7 @@ if menuLocation(end) == '/'
       
   % and reorder to top
   hChildren = get(h,'Children');
-  hChildren = [hChildren(2:end)' hAdded]';
+  hChildren = [hChildren(hChildren~=hAdded); hAdded];
   set(h,'Children',hChildren);
 else
   
@@ -346,26 +353,12 @@ else
 
   % reorder the children so that the item created is below the menuLocation
   hChildren = get(hParent,'Children');
-
-  % get where these menu items live
-  hAddedNum = find(hAdded==hChildren);
-  hLocationNum = find(h==hChildren);
-
-  % now create a reordered children list
-  hNewChildren = [];
-  for i = 1:length(hChildren)
-    % if this one is the location menu item, then add the new child after it
-    if i == hLocationNum
-      hNewChildren(end+1) = hChildren(hAddedNum);
-    end
-    % add all the menu items except for the added one to the new children list
-    if i ~= hAddedNum
-      hNewChildren(end+1) = hChildren(i);
-    end
-  end
-  
+  % remove hAdded 
+  hChildren = hChildren(hChildren~=hAdded);
+  hChildren = [hChildren(1:find(hChildren==h)-1);hAdded;hChildren(find(hChildren==h):end)];
   % now set the children so that everything will be in the right order
-  set(hParent,'Children',hNewChildren');
+  set(hParent,'Children',hChildren');
+ 
 end
 
 % add all the properties
@@ -376,9 +369,9 @@ end
 % display what we have done
 switch(mode)
   case 'add'
-    disp(sprintf('(mlrAdjustGUI:placeMenu) Added menu: %s',menuName));
+    disp(sprintf('(mlrAdjustGUI:placeMenu) Added menu: %s',get(hAdded,'label')));
   case 'move'
-    disp(sprintf('(mlrAdjustGUI:placeMenu) Moved menu: %s',get(menuName,'label')));
+    disp(sprintf('(mlrAdjustGUI:placeMenu) Moved menu: %s',get(hAdded,'label')));
 end
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -404,6 +397,7 @@ if isempty(h)
 end
 
 set(h,'visible','off')
+%delete(h);
 
 % display what we have done
 disp(sprintf('(mlrAdjustGUI:removeMenu) Removed menu: %s',menuLocation));
