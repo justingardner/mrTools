@@ -10,7 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 08-Jun-2011 18:31:40
+% Last Modified by GUIDE v2.5 08-Jun-2011 19:15:18
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -1830,6 +1830,19 @@ end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function deleteManyBasesMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+numBases =  selectInList(view,'bases','Select bases to remove');
+if ~isempty(numBases)
+  for baseNum = fliplr(numBases);
+      view = viewSet(view,'deleteBase',baseNum);
+  end
+  refreshMLRDisplay(viewNum);
+end
+
+% --------------------------------------------------------------------
 function deleteAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2515,3 +2528,4 @@ else
   end
   refreshMLRDisplay(viewNum);
 end
+
