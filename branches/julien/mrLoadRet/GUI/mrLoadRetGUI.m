@@ -10,7 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 27-Oct-2010 18:48:49
+% Last Modified by GUIDE v2.5 08-Jun-2011 18:31:40
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -347,9 +347,6 @@ end
 
 % --- Executes on slider movement.
 function corticalDepthSlider_Callback(hObject, eventdata, handles)
-% hObject    handle to corticalDepthSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 viewNum = handles.viewNum;
 newMinValue = get(hObject,'Value');
@@ -374,9 +371,6 @@ end
 
 % --- Executes during object creation, after setting all properties.
 function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to corticalDepthSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 % Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -385,9 +379,6 @@ end
 
 
 function corticalDepthText_Callback(hObject, eventdata, handles)
-% hObject    handle to corticalDepthText (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'String') returns contents of corticalDepthText as text
 %        str2double(get(hObject,'String')) returns contents of corticalDepthText as a double
@@ -416,9 +407,6 @@ end
 
 % --- Executes during object creation, after setting all properties.
 function corticalDepthText_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to corticalDepthText (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 % Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
@@ -720,9 +708,6 @@ end
 
 % --------------------------------------------------------------------
 function importFlatMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to importFlatMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -736,9 +721,6 @@ end
 
 % --------------------------------------------------------------------
 function importSurfaceMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to importSurfaceMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -758,9 +740,7 @@ saveAnat(MLR.views{viewNum},n,1);
 
 % --------------------------------------------------------------------
 function SaveAsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to SaveAsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 n = viewGet(viewNum,'currentBase');
@@ -834,9 +814,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function loadFromVolumeDirectoryROIMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to loadFromVolumeDirectoryROIMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -949,9 +927,7 @@ saveSession(1);
 
 % --------------------------------------------------------------------
 function printMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to printMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -1120,9 +1096,6 @@ function transformsMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function sformScanMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to sformScanMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 % get the view
@@ -1302,9 +1275,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function EditAnalysisInfoMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to EditAnalysisInfoMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -1426,9 +1397,7 @@ editOverlayGUImrParams(viewNum);
 
 % --------------------------------------------------------------------
 function overlayInfoMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to overlayInfoMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -1517,9 +1486,7 @@ end
 
 % --------------------------------------------------------------------
 function editAllROIsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to editAllROIsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -1598,9 +1565,7 @@ function baseTransformsMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function baseSformMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to baseSformMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 % get the view
 viewNum = handles.viewNum;
@@ -1633,9 +1598,7 @@ end
 
 % --------------------------------------------------------------------
 function base2scanMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to base2scanMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 % get the view
 viewNum = handles.viewNum;
@@ -1998,9 +1961,6 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function removeManyROIMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to removeManyROIMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
 thisView = MLR.views{viewNum};
@@ -2172,9 +2132,6 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function convertCorticalDepthRoiMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertCorticalDepthRoiMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2184,11 +2141,7 @@ v = convertROICorticalDepth(v);
 
 
 % --------------------------------------------------------------------
-function convertRoiMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertRoiMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+function convertRoiCoordsMenuItem_Callback(hObject, eventdata, handles)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2234,9 +2187,6 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function setROIGroupMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to setROIGroupMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2263,9 +2213,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function showGroupMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to showGroupMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2274,9 +2222,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function showGroupPerimeterMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to showGroupPerimeterMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2293,9 +2239,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function labelsROIsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to labelsROIsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -2309,9 +2253,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function findCurrentROIMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to findCurrentROIMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -2484,9 +2426,7 @@ dispmotioncorrect(d);
 
 % --------------------------------------------------------------------
 function plotsDisplayEPIImages_Callback(hObject, eventdata, handles)
-% hObject    handle to plotsDisplayEPIImages (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2495,9 +2435,7 @@ mlrDisplayEPI(view);
 
 % --------------------------------------------------------------------
 function plotSpikeDetection_Callback(hObject, eventdata, handles)
-% hObject    handle to plotSpikeDetection (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2506,9 +2444,7 @@ mlrSpikeDetector(view,viewGet(view,'curScan'),viewGet(view,'curGroup'));
 
 % --------------------------------------------------------------------
 function flatViewerMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to flatViewerMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -2552,13 +2488,13 @@ cd(thispwd);
 
 % --------------------------------------------------------------------
 function calcDistMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to flatViewerMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
 
 % --------------------------------------------------------------------
 function calcDistMenuItemSeg_Callback(hObject, eventdata, handles)
-% hObject    handle to flatViewerMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
