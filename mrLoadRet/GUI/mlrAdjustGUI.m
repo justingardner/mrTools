@@ -63,7 +63,7 @@
 %
 function retval = mlrAdjustGUI(v,command,varargin)
 
-% test code
+verbose=false;
 
 % default return empty
 retval = [];
@@ -84,31 +84,31 @@ plotAxes = getAxes(f);
 uiControls = getUiControls(f);
 menuControls = getMenuControls(f);
 
-% do the commandedaction
+% do the commanded action
 switch command
  case {'set'}
-  setItemProperty(varargin,uiControls,menuControls,plotAxes)
+  setItemProperty(varargin,uiControls,menuControls,plotAxes,verbose)
  case {'list'}
   retval = listControlNames(uiControls,menuControls,plotAxes);
  case {'add'}
   switch varargin{1}
     case {'menu'}
-     placeMenu({varargin{2:end}},menuControls,'add');
+     placeMenu({varargin{2:end}},menuControls,'add',verbose);
     case {'interrogator','interrogators'}
-     addInterrogator(v,varargin{2});
+     addInterrogator(v,varargin{2},verbose);
     case {'colormap','colormaps'}
-     addColormap(v,varargin{2});
+     addColormap(v,varargin{2},verbose);
     case {'control'}
-     addControl(f,{varargin{2:end}},uiControls);
+     addControl(f,{varargin{2:end}},uiControls,verbose);
     case {'axes'}
-     addAxes(f,{varargin{2:end}},plotAxes);
+     addAxes(f,{varargin{2:end}},plotAxes,verbose);
     otherwise
       mrWarnDlg(['(mlrAdjustGUI) Unknow object type ' varargin{1}]);
   end
  case {'remove'}
   switch varargin{1}
     case {'menu'}
-     removeMenu(varargin(2),menuControls);
+     removeMenu(varargin(2),menuControls,verbose);
   end
  case {'get'}
   % return handle, check menu items and ui controls
@@ -190,31 +190,31 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  addInterrogator   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function addInterrogator(v,interrogatorList)
+function addInterrogator(v,interrogatorList,verbose)
 
 % make into a cell array and set in view
 interrogatorList = cellArray(interrogatorList);
 viewSet(v,'defaultInterrogators',interrogatorList);
 
 % display what we are doing
-disp(sprintf('(mlrAdjustGUI) Adding default interrogators: %s',cellToCommaDelimited(interrogatorList)));
+if verbose, disp(sprintf('(mlrAdjustGUI) Adding default interrogators: %s',cellToCommaDelimited(interrogatorList))); end
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%  addColormap   %%
 %%%%%%%%%%%%%%%%%%%%%
-function addColormap(v,colormapList)
+function addColormap(v,colormapList,verbose)
 
 % make into a cell array and set in view
 colormapList = cellArray(colormapList);
 viewSet(v,'colormaps',colormapList);
 
 % display what we are doing
-disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimited(colormapList)));
+if verbose, disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimited(colormapList))); end
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%   addControl  %%%
 %%%%%%%%%%%%%%%%%%%%%
-function addControl(f,args,uiControls)
+function addControl(f,args,uiControls,verbose)
 
 % check length of arguments
 if length(args) < 1
@@ -251,7 +251,7 @@ guidata(f,h);
 %%%%%%%%%%%%%%%%%%%%%
 %%%   addAxes  %%%
 %%%%%%%%%%%%%%%%%%%%%
-function addAxes(f,args,plotAxes)
+function addAxes(f,args,plotAxes,verbose)
 
 % check length of arguments
 if length(args) < 1
@@ -288,7 +288,7 @@ guidata(f,h);
 %%%%%%%%%%%%%%%%%%
 %%%   placeMenu  %%%
 %%%%%%%%%%%%%%%%%%
-function placeMenu(args,menuControls,mode)
+function placeMenu(args,menuControls,mode,verbose)
 
 % check length of arguments
 if length(args) < 2
@@ -367,17 +367,19 @@ for i = 1:2:length(menuProperties)
 end
 
 % display what we have done
-switch(mode)
-  case 'add'
-    disp(sprintf('(mlrAdjustGUI:placeMenu) Added menu: %s',get(hAdded,'label')));
-  case 'move'
-    disp(sprintf('(mlrAdjustGUI:placeMenu) Moved menu: %s',get(hAdded,'label')));
+if verbose
+  switch(mode)
+    case 'add'
+      disp(sprintf('(mlrAdjustGUI:placeMenu) Added menu: %s',get(hAdded,'label')));
+    case 'move'
+      disp(sprintf('(mlrAdjustGUI:placeMenu) Moved menu: %s',get(hAdded,'label')));
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%   removeMenu  %%%
 %%%%%%%%%%%%%%%%%%%%%
-function removeMenu(args,menuControls)
+function removeMenu(args,menuControls,verbose)
 
 % check length of arguments
 if length(args) < 1
@@ -400,12 +402,12 @@ set(h,'visible','off')
 %delete(h);
 
 % display what we have done
-disp(sprintf('(mlrAdjustGUI:removeMenu) Removed menu: %s',menuLocation));
+if verbose, disp(sprintf('(mlrAdjustGUI:removeMenu) Removed menu: %s',menuLocation)); end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  setItemProperty   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function setItemProperty(args,uiControls,menuControls,plotAxes)
+function setItemProperty(args,uiControls,menuControls,plotAxes,verbose)
 
 % check arguments
 if length(args) ~= 3
@@ -437,7 +439,7 @@ if strcmp(propertyName,'location')
     disp(['(mlrAdjustGUI) Cannot change location property for ' controlName]);
     return;
   end
-  placeMenu({h,propertyValue},menuControls,'move');
+  placeMenu({h,propertyValue},menuControls,'move',verbose);
   
 else %if the property is not 'location', then we just set the property using set
 
@@ -472,7 +474,9 @@ else %if the property is not 'location', then we just set the property using set
   end
 
   % if we got here, then the value is ok so set it
-  disp(sprintf('(mlrAdjustGUI) Setting property %s of %s %s',propertyName,controlType,controlName));
+  if verbose
+    disp(sprintf('(mlrAdjustGUI) Setting property %s of %s %s',propertyName,controlType,controlName));
+  end;
   set(h,propertyName,propertyValue);
 end
 %%%%%%%%%%%%%%%%%%%%%%%
