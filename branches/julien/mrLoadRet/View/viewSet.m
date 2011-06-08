@@ -670,28 +670,37 @@ switch lower(param)
     if ~check
       mrErrorDlg('Invalid base anatomy');
     end
-    numBaseVolumes = viewGet(view,'numberofBaseVolumes'); %get the number of loaded bases
-    if numBaseVolumes %if there are bases loaded, check for base with identical name
-       % If baseVolume.name already exists then replace the existing one
-       % with this new one. Otherwise, add it to the end of the baseVolumes
-       % list.
-       newBaseName = baseAnatomy.name;
-       newBaseNum = [];
-          for num = 1:numBaseVolumes
-            baseName = viewGet(view,'basename',num);
-            if strcmp(newBaseName,baseName)
-              newBaseNum = num;
-            end
-          end
-          if isempty(newBaseNum)
-            newBaseNum = numBaseVolumes + 1;
-          end
-          % Add it to the list of baseVolumes
-         view.baseVolumes(newBaseNum) = baseAnatomy;
-    else    %if there is no base loaded, add the base in first position
-       newBaseNum = 1;
-       view.baseVolumes = baseAnatomy;
+    baseNames = viewGet(view,'baseNames');
+    nameMatch = find(strcmp(baseAnatomy.name,baseNames));
+    replaceDuplicates = 0;
+    while ~isempty(nameMatch)
+      if ~replaceDuplicates
+        paramsInfo{1} = {'baseName',baseAnatomy.name,'Change the name to a unique base name'};
+        paramsInfo{2} = {'replace',0,'type=checkbox','Check to replace the loaded base with the same name'};
+        params = mrParamsDialog(paramsInfo,'Non unique Base name, please change');
+        if isempty(params),tf=0;return,end
+      else
+        params.replace = replaceDuplicates;
+        params.baseName = baseAnatomy.name;
+      end
+      if params.replace
+        % if replace, then delete the existing one
+        view = viewSet(view,'deleteBase',viewGet(view,'baseNum',params.baseName));
+        nameMatch=[];
+      else
+        % change the name
+        baseAnatomy.name = params.baseName;
+        nameMatch = find(strcmp(baseAnatomy.name,baseNames));
+      end
     end
+      
+    newBaseNum = viewGet(view,'numberofBaseVolumes')+1; %get the number of loaded bases
+    if newBaseNum==1
+      view.baseVolumes = baseAnatomy;   
+    else
+      view.baseVolumes(newBaseNum) = baseAnatomy;   
+    end
+    
     % clear the caches of any reference to a base with
     % the same name (if it is reloaded, the base may
     % have changed its xform for instance and so the
@@ -1220,7 +1229,7 @@ switch lower(param)
       analysisNum = varargin{1};
     end
     analysis = viewGet(view,'analysis',analysisNum);
-    disppercent(-inf,['Installing overlays for ' analysis.name]);
+    disppercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
 
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
     newOverlayNum = nOverlays;
