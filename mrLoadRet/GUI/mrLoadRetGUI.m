@@ -10,7 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 08-Jun-2011 19:15:18
+% Last Modified by GUIDE v2.5 08-Jun-2011 19:51:19
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -839,6 +839,15 @@ mrGlobals;
 viewNum = handles.viewNum;
 for n = viewGet(viewNum,'currentroi');
   saveROI(MLR.views{viewNum},n,1);
+end
+
+% --------------------------------------------------------------------
+function saveManyROIsMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+roiList = selectInlist(MLR.views{viewNum},'rois','Select ROI(s) to save');
+for iRoi = roiList
+    saveROI(MLR.views{viewNum},iRoi,1);
 end
 
 % --------------------------------------------------------------------
@@ -2528,4 +2537,3 @@ else
   end
   refreshMLRDisplay(viewNum);
 end
-
