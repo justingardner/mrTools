@@ -58,6 +58,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   if isfield(mrLastView,'view')
     % open up base anatomy from last session
     if isfield(mrLastView.view,'baseVolumes')
+      disppercent(-inf,sprintf('(mrOpenWindow) installing Base Anatomies'));
       if length(mrLastView.view.baseVolumes) >= 1
         baseLoaded = 1;
         % Add it to the list of base volumes and select it
@@ -74,6 +75,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
         %try to load 
   [view,baseLoaded] = loadAnatomy(view);
       end
+      disppercent(inf);
     end
     % change group
     if isfield(mrLastView,'viewSettings')
@@ -125,6 +127,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
     %drawnow        %this doesn't seem useful because it will be done by refreshMLRDisplay
     % read ROIs into current view
     if isfield(mrLastView.view,'ROIs')
+      disppercent(-inf,sprintf('(mrOpenWindow) installing ROIs'));
       for roinum = 1:length(mrLastView.view.ROIs)
         view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
       end
@@ -138,13 +141,16 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       if isfield(mrLastView.viewSettings,'roiGroup')
 	view = viewSet(view,'roiGroup',mrLastView.viewSettings.roiGroup);
       end
+      disppercent(inf);
     end
     % Add plugins
     if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
     
     % add here, to load more info...
     % and refresh
+    disppercent(-inf,sprintf('(mrOpenWindow) Refreshing MLR display'));
     refreshMLRDisplay(view.viewNum);
+    disppercent(inf);
   end
 %   disppercent(inf);
 
