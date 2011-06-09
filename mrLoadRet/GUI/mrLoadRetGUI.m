@@ -845,7 +845,7 @@ end
 function saveManyROIsMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-roiList = selectInlist(MLR.views{viewNum},'rois','Select ROI(s) to save');
+roiList = selectInList(MLR.views{viewNum},'rois','Select ROI(s) to save');
 for iRoi = roiList
     saveROI(MLR.views{viewNum},iRoi,1);
 end

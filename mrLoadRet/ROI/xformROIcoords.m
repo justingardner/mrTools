@@ -113,7 +113,7 @@ for ioff=1:length(xoffsets)
 %       tmpNewCoords((tmpNewCoords(:)==0)) = 1;                            %
 %          end                                                             %
        % Convert to indices
-      indices = sub2ind(dims,tmpNewCoords(1,:),tmpNewCoords(2,:),tmpNewCoords(3,:));
+      indices = sub2ind(dims,tmpNewCoords(1,:),tmpNewCoords(2,:),tmpNewCoords(3,:));%JB: not sure why that would be necessary... I thought sub2ind returned an error if coordinates outside dims
       indices = indices(~isnan(indices));
       % Accumulate partial volume. Need to do it in a loop
       % instead of:
