@@ -1,6 +1,7 @@
 function [img base roi overlays] = refreshMLRDisplay(viewNum)
 %	$Id$
 
+set(viewGet(viewNum,'figNum'),'Pointer','watch');drawnow;
 mrGlobals
 img = [];base = [];roi = [];overlays=[];
 % for debugging/performance tests
@@ -266,8 +267,8 @@ end
 if verbose>1,disppercent(-inf,'rendering');end
 %this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
 %In cases where it is more than the number of overlay names in the box
-%it has to be changed, but t is necessary to wait until drawnow before changing it  
-%otherwise the cahnge is not taken into account
+%it has to be changed, but it is necessary to wait until drawnow before changing it  
+%otherwise the change is not taken into account
 %Even in this case, It still outputs a warning, that has to be disabled
 if strcmp(get(gui.overlayPopup,'style'),'listbox')
   warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
@@ -280,6 +281,7 @@ if strcmp(get(gui.overlayPopup,'style'),'listbox')
 end
 if verbose>1,disppercent(inf);end
 if verbose,toc,end
+set(viewGet(view,'figNum'),'Pointer','arrow');
 
 return
 
