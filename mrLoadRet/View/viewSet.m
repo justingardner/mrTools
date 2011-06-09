@@ -1222,6 +1222,7 @@ switch lower(param)
     %   - alpha: transparency value for alphaSlider
     %   - colorRange: [min max] of the colormap
 
+    set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
     % analysisNum and analysisName
     if ieNotDefined('varargin')
       analysisNum = viewGet(view,'currentAnalysis');
@@ -1340,6 +1341,7 @@ switch lower(param)
       % Set it to be the current overlay
       view = viewSet(view,'curOverlay',newOverlayNum);
     end
+    set(viewGet(view,'figNum'),'Pointer','arrow');%drawnow;
 
   case {'deleteoverlay'}
     % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
