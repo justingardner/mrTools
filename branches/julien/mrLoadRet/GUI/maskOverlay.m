@@ -5,8 +5,8 @@
 %      by: jb, taken out of computeOverlay.m
 %    date: 11/05/2010
 % purpose: constructing a logical mask excluding clipped values based on clip values of each/all overlays in an analysis/scan
-%   input:  - overlayList specifies which masks and overlays (and their associated alpha masks and overlays) must be output
-%           - scanList: overlays are retrieved from the view for these scans
+%   input:  - overlayList (default: all overlays in analysis) specifies which masks and overlays (and their associated alpha masks and overlays) must be output
+%           - scanList (default: all scans in group): overlays are retrieved from the view for these scans
 %           - boxInfo: this is a structure that specifies the transformation from a scan space to a slice/3D subset in another space
 %               the outputs are then in this space
 %
