@@ -1061,7 +1061,9 @@ switch lower(param)
     if ~isempty(curAnalysis) & (curAnalysis >= 1) & (curAnalysis <= numAnalyses)
       curOverlay = viewGet(view,'currentOverlay');
       if ~isempty(curOverlay) & (curOverlay >= 1) & (curOverlay <= viewGet(view,'numOverlays'))
-	view.analyses{curAnalysis}.overlays(curOverlay).interrogator = val;
+        for iOverlay = curOverlay
+          view.analyses{curAnalysis}.overlays(iOverlay).interrogator = val;
+        end
       end
     end
   case {'deleteanalysis'}
