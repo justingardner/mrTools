@@ -63,7 +63,9 @@ end
 %get the current mask
 mask = maskOverlay(thisView,overlayNum,scanNum);
 mask = mask{1};
-
+if all(~mask(:)) %if everything is masked, then nothing is masked
+  mask(:) = 1;
+end
 
 whiteRoiNumberVoxels = nnz(whichRoi{1});
 % get the indices of the voxels of this ROI that are not masked
@@ -124,5 +126,5 @@ end
 
 function string = displayValues(average1,stddev1,average2,stddev2,tSNR,tSNRstd)
 
-string = sprintf('%.0f (+/- %.0f)\t%.0f (+/- %.0f)\t %.1f (+/- %.1f)',average1,stddev1,average2,stddev2,tSNR,tSNRstd);
+string = sprintf('%.0f (+/- %.0f)\t%.0f (+/- %.0f)\t %.1f (+/- %.2f)',average1,stddev1,average2,stddev2,tSNR,tSNRstd);
 
