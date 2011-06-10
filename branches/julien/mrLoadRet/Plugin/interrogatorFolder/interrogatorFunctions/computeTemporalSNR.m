@@ -60,6 +60,9 @@ end
 %get the current mask
 mask = maskOverlay(thisView,overlayNum,scanNum);
 mask = mask{1};
+if all(~mask(:)) %if everything is masked, then nothing is masked
+  mask(:) = 1;
+end
 
 for iRoi=1:length(roiList)
   roiNumberVoxels = nnz(whichRoi{iRoi});
