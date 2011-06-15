@@ -1,7 +1,7 @@
 % getRoisBox - returns the coordinates of a cube in scan space exactly enclosing all the voxels in loaded ROIs
 %
 %        $Id$
-%      usage: [d, roiVoxelIndices  ] = getRoisBox(thisView,scanNum,margin)
+%      usage: [d, roiVoxelIndices  ] = getRoisBox(thisView,scanList,margin)
 %         by: julien besle
 %       date: 2010-04-26
 %     inputs: margin is either a scalar or a 3 element vector specifying a margin around the ROIs (in voxels) in the 3 axes x,y,s
@@ -10,7 +10,7 @@
 %              marginVoxels: location of margin voxels in the box
 %             roiScanCoords: each cell contains the coordinates of each roi in scan space
 
-function [scanBoxCoords, whichRoi, marginVoxels, roiScanCoords] = getRoisBox(thisView,scanNum,margin,roiNums)
+function [scanBoxCoords, whichRoi, marginVoxels, roiScanCoords] = getRoisBox(thisView,scanList,margin,roiNums)
 
 if ieNotDefined('margin')
    margin = [0 0 0];
@@ -18,8 +18,8 @@ elseif numel(margin)==1
   margin = repmat(margin,1,3);
 end
 
-if ieNotDefined('scanNum')
-  scanNum = viewGet(thisView,'curscan');
+if ieNotDefined('scanList')
+  scanList = viewGet(thisView,'curscan');
 end
 
 if ieNotDefined('roiNums')
@@ -27,7 +27,13 @@ if ieNotDefined('roiNums')
 end
 nRois = length(roiNums);
 
-scanDims = viewGet(thisView,'scandims',scanNum);
+%check that all scan have the same dimensions
+scanDims = viewGet(thisView,'scandims',scanList(1));
+for iScan=scanList(2:end)
+  if ~isequal(viewGet(thisView,'scandims',iScan),scanDims)
+    mrErrorDlg('(getRoisBox) All scans must have the same dimensions');
+  end
+end
 
 %find the scan coordinates of all rois
 minX = inf;
@@ -37,7 +43,7 @@ maxY = 0;
 minZ = inf;
 maxZ = 0;
 for iRoi = 1:nRois
-   roiScanCoords{iRoi} = getROICoordinates(thisView,roiNums(iRoi),scanNum);
+   roiScanCoords{iRoi} = getROICoordinates(thisView,roiNums(iRoi),scanList(1));
    %remove voxels that are outside the scan
    if ~isempty(roiScanCoords{iRoi})
      roiScanCoords{iRoi} = roiScanCoords{iRoi}(:,all(roiScanCoords{iRoi}(1:3,:)>0));
