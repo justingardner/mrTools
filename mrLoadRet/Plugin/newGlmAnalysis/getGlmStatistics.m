@@ -909,7 +909,7 @@ oneTimeWarning('pseudoInverseWarning',0);
 
 %Now in the case we computed contrasts on several components using option 'Or',
 %we have to convert the appropriate F values into T values
-if numberContrasts>numberTtests
+if numberContrasts>numberTtests  && params.outputStatistic
   %T values are the square roots of the numberContrasts first F values 
   out.statistic(1:numberContrasts,:,:,:) = sqrt(out.statistic(1:params.numberContrasts,:,:,:));
   d.mdf=d.mdf(params.numberContrasts+1:end);
