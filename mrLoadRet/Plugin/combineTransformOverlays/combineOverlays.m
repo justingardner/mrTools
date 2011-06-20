@@ -79,10 +79,13 @@ if params.useMask
       end
    end
 end
+
 %overlay names
 for iOverlay = 1:length(overlayList)
   overlayNames{iOverlay} = overlayData(iOverlay).name;
 end
+
+%reformat input data
 switch(params.inputOutputType)
   case 'Structure'
     overlayData = num2cell(overlayData);
@@ -189,20 +192,34 @@ functionString(end:end+1) = ');'; %replace the last comma by a closing bracket t
 outputData = cell(size(overlayData,1),params.nOutputOverlays, size(overlayData,3));
 outputOverlayNames = cell(params.nOutputOverlays, size(overlayData,3));
 for iOperations = 1:size(overlayData,3)
-   for iScan = 1:size(overlayData,1)
+  for iScan = 1:size(overlayData,1)
+    %check for empty overlays (only if 3D array or scalar)
+    emptyInput=false;
+    if ismember(params.inputOutputType,{'3D Array','Scalar'})
+      for iInput = 1:size(overlayData,2)
+        if isempty(overlayData{iScan,iInput,iOperations})
+          emptyInput=true;
+        end
+      end
+    end
+    if emptyInput
+      for iOutput = 1:params.nOutputOverlays
+        outputData{iScan,iOutput,iOperations} = [];
+      end
+    else
       try
-        tic
+%         tic
          eval(functionString);
-         toc
+%          toc
       catch exception
          mrWarnDlg(sprintf('There was an error evaluating the combining function:\n%s',getReport(exception,'basic')));
          return
       end
       for iOutput = 1:params.nOutputOverlays
-%          if  strcmp(params.inputOutputType,'Scalar')
-%             %convert back to numerical value
-%             outputData{iScan,iOverlay,iOperations} = cell2mat(outputData{iScan,iOverlay,iOperations}); 
-%          end
+    %          if  strcmp(params.inputOutputType,'Scalar')
+    %             %convert back to numerical value
+    %             outputData{iScan,iOverlay,iOperations} = cell2mat(outputData{iScan,iOverlay,iOperations}); 
+    %          end
          %add 0 to all the results to convert logical to doubles, because mrLoadRet doesn't like logical overlays
         switch(params.inputOutputType)
           case 'Structure'
@@ -217,7 +234,8 @@ for iOperations = 1:size(overlayData,3)
           mrWarnDlg(['(combineOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOutput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
         end
       end
-   end
+    end
+  end
 end
 
 %name of output overlays
@@ -281,7 +299,10 @@ for iOverlay = 1:size(outputData,2)
     case {'3D Array','Scalar'}
       outputOverlay(iOverlay) = defaultOverlay;
       outputOverlay(iOverlay).data = outputData(:,iOverlay);
-      allScansData = cell2mat(outputData(:,iOverlay));
+      for iOutput = 1:size(outputData,1)
+        isNotEmpty(iOutput) = ~isempty(outputData{iOutput,iOverlay});
+      end
+      allScansData = cell2mat(outputData(isNotEmpty,iOverlay));
     case 'Structure'
       outputOverlay(iOverlay) = copyFields(defaultOverlay,outputData{iOverlay});
       allScansData = cell2mat(outputOverlay(iOverlay).data);
