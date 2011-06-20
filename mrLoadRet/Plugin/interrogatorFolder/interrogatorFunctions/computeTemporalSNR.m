@@ -9,7 +9,7 @@ function computeTemporalSNR(thisView,overlayNum,scanNum,x,y,z,roi)
 %     tSNR is then averaged across all voxels of each ROI
 %
 
-scanList = 1:viewGet(thisView,'numscans');
+scanList = 1:viewGet(thisView,'numScans');
 
 % version where user has to click in the ROI
 % % if isempty(roi)
@@ -31,7 +31,7 @@ scanList = 1:viewGet(thisView,'numscans');
 keepAsking=true;
 roiList = [];
 while keepAsking
-  roiList = selectInList(thisView,'rois','Select ROI',roiList);
+  roiList = selectInList(thisView,'rois','Select ROI(s)',roiList);
   if isempty(roiList)
     return;
   end
