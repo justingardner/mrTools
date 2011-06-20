@@ -91,6 +91,7 @@ if nargin == 0
   end
 % with a view argument, then run plugins
 else
+  tic
   % get which plugins are selected
   selectedPlugins = find([plugins.selected]);
 
@@ -102,6 +103,9 @@ else
       v=retval; %for those plugins that need to modify the view
     end
   end
+  pluginTime=toc;
+  disp(['(mlrPlugin) Installing Plugins took ' num2str(pluginTime) ' sec']);
+
 end
   
 

@@ -169,7 +169,7 @@ for iRoi = 1:length(roiList)
         %we simply use applyWarp with nearest neighbor interpolation, which seems to give better results in most cases
         %we require that ROI and scans be in the same space
         if any(any( (roi2fnirtInput - eye(4))>1e-6))
-          mrwarnDlg(['(applyWarpROI) Roi ' thisWarpedRoi.name ' is not in the FNIRT input base space, converting ...']);
+          mrWarnDlg(['(applyWarpROI) Roi ' thisWarpedRoi.name ' is not in the FNIRT input base space, converting ...']);
           thisWarpedRoi.xform = fnirtInputXform;
           thisWarpedRoi.voxelSize = fnirtInputVoxelSize;
           if baseNum>0

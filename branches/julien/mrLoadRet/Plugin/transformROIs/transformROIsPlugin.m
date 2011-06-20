@@ -20,7 +20,8 @@ switch action
      disp(sprintf('(transformROIsPlugin) Need a valid view to install plugin'));
   else
     %install menu Item
-    mlrAdjustGUI(thisView,'add','menu','Transform','/ROI/Combine','callback',@transformROIsCallback);
+    mlrAdjustGUI(thisView,'add','menu','Transform','/ROIs/Combine','callback',@transformROIsCallback,'label','Transform','tag','transformRoiMenuItem');
+    mlrAdjustGUI(thisView,'add','menu','Transform','/ROI/Combine','callback',@transformROIsCallback,'label','Transform','tag','transformRoiMenuItem');
     retval = true;
    end
  % return a help string
