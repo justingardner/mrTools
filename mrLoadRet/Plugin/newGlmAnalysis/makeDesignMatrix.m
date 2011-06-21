@@ -20,6 +20,10 @@ end
 if ieNotDefined('params')
   params=struct;
 end
+if fieldIsNotDefined(params,'scanParams')
+  params.scanParams{1}=struct;
+  scanNum=1;
+end
 if ieNotDefined('verbose')
   verbose = 1;
 end

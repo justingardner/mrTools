@@ -4,7 +4,7 @@
 %      usage: [params,hrf] = hrfDeconvolution(params, framePeriod, justGetParams, defaultParams)
 %         by: julien besle
 %       date: 13/04/2010
-%    purpose: returns the identity maframePeriodix of size specified by user
+%    purpose: returns the identity matrix of size specified by user
 %
 function [params,hrf] = hrfDeconvolution(params, framePeriod, justGetParams, defaultParams )
 
@@ -17,7 +17,7 @@ if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 if ieNotDefined('params')
-  params = sframePerioduct;
+  params = struct;
 end
 if ~isfield(params,'description')
   params.description = 'Deconvolution';
