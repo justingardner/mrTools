@@ -28,86 +28,171 @@ switch action
     else
       corticalDepthVisibility = 'off';
     end    
-    mlrAdjustGUI(thisView,'set','group','position',               [0.01    0.955   0.06   0.025]);
+    controlFontSize=10;
+    checkFontSize=11;
+    popupFontSize = 11;
+    %---------------------------- Group and Scan controls-----------------------------------------
+    mlrAdjustGUI(thisView,'set','group','position',               [0.01    0.96    0.06   0.025]);
+    mlrAdjustGUI(thisView,'set','group','fontWeight','bold');
     mlrAdjustGUI(thisView,'set','groupPopup','position',          [0.08    0.95    0.2    0.035]);
-    mlrAdjustGUI(thisView,'set','ROI','position',                 [0.01    0.91    0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','roiPopup','position',            [0.06    0.905   0.22   0.035]);
-    mlrAdjustGUI(thisView,'set','scan','position',                [0.01    0.85    0.05   0.03 ]);
-    mlrAdjustGUI(thisView,'set','scanSlider','position',          [0.07    0.855   0.16   0.02 ]);
-    mlrAdjustGUI(thisView,'set','scanText','position',            [0.24    0.855   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','slice','position',               [0.01    0.81    0.05   0.03 ]);
-    mlrAdjustGUI(thisView,'set','sliceSlider','position',         [0.07    0.815   0.16   0.02 ]);
-    mlrAdjustGUI(thisView,'set','sliceText','position',           [0.24    0.815   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','corticalDepth','position',       [0.01    0.78    0.07   0.06 ]);
-    mlrAdjustGUI(thisView,'set','corticalDepthSlider','position', [0.09    0.815   0.14   0.02 ]);
+    mlrAdjustGUI(thisView,'set','groupPopup','fontSize',popupFontSize);
+    mlrAdjustGUI(thisView,'set','scan','position',                [0.01    0.915   0.05   0.03 ]);
+    mlrAdjustGUI(thisView,'set','scan','fontWeight','bold');
+    mlrAdjustGUI(thisView,'set','scanSlider','position',          [0.07    0.92    0.16   0.02 ]);
+    mlrAdjustGUI(thisView,'set','scanText','position',            [0.24    0.92    0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','scanText','fontSize',controlFontSize);
+    %---------------------------- Base controls  -------------------------------------------------
+    mlrAdjustGUI(thisView,'set','baseImage','position',           [0.01    0.88    0.06   0.025]);
+    mlrAdjustGUI(thisView,'set','baseImage','fontWeight','bold');
+    mlrAdjustGUI(thisView,'set','basePopup','position',           [0.07    0.87    0.21   0.035]);
+    mlrAdjustGUI(thisView,'set','basePopup','fontSize',popupFontSize);
+    mlrAdjustGUI(thisView,'set','slice','position',               [0.02    0.84    0.05   0.03 ]);
+    mlrAdjustGUI(thisView,'set','slice','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','sliceSlider','position',         [0.08    0.845   0.15   0.02 ]);
+    mlrAdjustGUI(thisView,'set','sliceText','position',           [0.24    0.845   0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','sliceText','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','corticalDepth','position',       [0.02    0.81    0.07   0.06 ]);
+    mlrAdjustGUI(thisView,'set','corticalDepth','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','corticalDepthSlider','position', [0.095   0.845   0.135  0.02 ]);
     mlrAdjustGUI(thisView,'set','corticalDepthSlider','SliderStep',min(1/viewGet(thisView,'corticalDepthBins')*[1 3],1));
-    mlrAdjustGUI(thisView,'set','corticalDepthText','position',   [0.24    0.815   0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','corticalDepthText','position',   [0.24    0.845   0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','corticalDepthText','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','corticalDepthText','BackgroundColor', get(0,'defaultUicontrolBackgroundColor'));
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthSlider',...
         'SliderStep',min(1/(viewGet(thisView,'corticalDepthBins')-1)*[1 3],1),...
         'Callback',@corticalMaxDepthSlider_Callback,'visible',corticalDepthVisibility,...
-                          'value',.5,'style','slider','position', [0.09    0.79    0.14   0.02 ]);
+                          'value',.5,'style','slider','position', [0.095   0.825    0.135  0.02 ]);
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthText',...
         'Callback',@corticalMaxDepthText_Callback,'visible',corticalDepthVisibility,'String','0.5',...
-              'BackgroundColor','white','style','edit','position',[0.24    0.78    0.04   0.03 ]);
+        'fontSize',controlFontSize,'BackgroundColor', get(0,'defaultUicontrolBackgroundColor'),...
+                                        'style','edit','position',[0.24    0.825    0.04   0.025 ]);
     mlrAdjustGUI(thisView,'add','control','linkMinMaxDepthCheck','style','checkbox','value',1,...
-        'fontSize', 12,'visible',corticalDepthVisibility,...
-        'String','Fix Depth Range','position',                    [0.04    0.755   0.23   0.025]);
-    mlrAdjustGUI(thisView,'set','sagittalRadioButton','position', [0.01    0.78    0.1    0.025]);
-    mlrAdjustGUI(thisView,'set','axialRadioButton','position',    [0.11    0.78    0.07   0.025]);
-    mlrAdjustGUI(thisView,'set','coronalRadioButton','position',  [0.19    0.78    0.1    0.025]);
-    mlrAdjustGUI(thisView,'set','baseImage','position',           [0.01    0.71    0.06   0.025]);
-    mlrAdjustGUI(thisView,'set','basePopup','position',           [0.07    0.705   0.21   0.035]);
+        'fontSize', checkFontSize,'visible',corticalDepthVisibility,...
+        'String','Fix Depth Range','position',                    [0.095   0.79   0.23   0.025]);
+    mlrAdjustGUI(thisView,'set','sagittalRadioButton','position', [0.01    0.81    0.1    0.025]);
+    mlrAdjustGUI(thisView,'set','sagittalRadioButton','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','axialRadioButton','position',    [0.11    0.81    0.07   0.025]);
+    mlrAdjustGUI(thisView,'set','axialRadioButton','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','coronalRadioButton','position',  [0.19    0.81    0.1    0.025]);
+    mlrAdjustGUI(thisView,'set','coronalRadioButton','fontSize',checkFontSize);
     mlrAdjustGUI(thisView,'set','baseGamma','string','Gamma');
-    mlrAdjustGUI(thisView,'set','baseGamma','position',           [0.02    0.665   0.07   0.03 ]);
-    mlrAdjustGUI(thisView,'set','baseGammaSlider','position',     [0.10    0.67    0.13   0.02 ]);
-    mlrAdjustGUI(thisView,'set','baseGammaText','position',       [0.24    0.67    0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','rotate','position',              [0.02    0.63    0.06   0.03 ]);
-    mlrAdjustGUI(thisView,'set','rotateSlider','position',        [0.09    0.635   0.14   0.02 ]);
-    mlrAdjustGUI(thisView,'set','rotateText','position',          [0.24    0.635   0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','baseTilt','position',            [0.02    0.595   0.03   0.03 ]);
-    mlrAdjustGUI(thisView,'set','baseTiltSlider','position',      [0.055   0.60    0.175  0.02 ]);
-    mlrAdjustGUI(thisView,'set','baseTiltText','position',        [0.24    0.60    0.04   0.025]);
-    mlrAdjustGUI(thisView,'set','analysis','position',            [0.01    0.545   0.08   0.025]);
-    mlrAdjustGUI(thisView,'set','analysisPopup','position',       [0.09    0.54    0.19   0.035]);
-    mlrAdjustGUI(thisView,'set','overlay','position',             [0.01    0.51    0.07   0.025]);
+    mlrAdjustGUI(thisView,'set','baseGamma','position',           [0.02    0.755   0.07   0.03 ]);
+    mlrAdjustGUI(thisView,'set','baseGamma','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','baseGammaSlider','position',     [0.10    0.76    0.13   0.02 ]);
+    mlrAdjustGUI(thisView,'set','baseGammaText','position',       [0.24    0.76    0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','baseGammaText','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','rotate','position',              [0.02    0.725   0.06   0.03 ]);
+    mlrAdjustGUI(thisView,'set','rotate','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','rotateSlider','position',        [0.09    0.73    0.14   0.02 ]);
+    mlrAdjustGUI(thisView,'set','rotateText','position',          [0.24    0.73    0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','rotateText','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','baseTilt','position',            [0.02    0.695   0.03   0.03 ]);
+    mlrAdjustGUI(thisView,'set','baseTilt','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','baseTiltSlider','position',      [0.055   0.7     0.175  0.02 ]);
+    mlrAdjustGUI(thisView,'set','baseTiltText','position',        [0.24    0.7     0.04   0.025]);
+    mlrAdjustGUI(thisView,'set','baseTiltText','fontSize',controlFontSize);
+    
+    %---------------------------- ROI controls  --------------------------------------------------
+    mlrAdjustGUI(thisView,'set','ROI','position',                 [0.01    0.66    0.08    0.025]);
+    mlrAdjustGUI(thisView,'set','ROI','string','ROIs');
+    mlrAdjustGUI(thisView,'set','ROI','fontWeight','bold');
+    mlrAdjustGUI(thisView,'add','control','displayROILabels','style','checkbox','value',viewGet(thisView,'labelROIs'),...
+        'callback',@displayROILabels_Callback,'fontSize', checkFontSize,'String',...
+        'Display Labels','position',                              [0.09    0.66    0.18   0.025]);
+    switch(viewGet(thisView,'showROIs'))
+      case {'group','selected'}
+        thisView=viewSet(thisView,'showROIs','selected');
+        roiDisplayMode = 1;
+      case {'group perimeter','selected perimeter'}
+        roiDisplayMode = 2;
+        thisView=viewSet(thisView,'showROIs','selected perimeter');
+      case {'all'}
+        thisView=viewSet(thisView,'showROIs','selected');
+        roiDisplayMode = 3;
+      case {'all perimeter'}
+        roiDisplayMode = 4;
+        thisView=viewSet(thisView,'showROIs','selected perimeter');
+      case 'hide'
+        roiDisplayMode = 5;
+    end
+    mlrAdjustGUI(thisView,'add','control','roiDislayMode','style','text','fontSize', checkFontSize,...
+        'String','Display mode','position',                       [0.02    0.63    0.12   0.025]);
+    mlrAdjustGUI(thisView,'add','control','roiDisplayModePopup','style','popupmenu','value',roiDisplayMode,...
+        'callback',@roiDislayModePopup_Callback,'String',{'Selected ROIs (Voxels)' 'Selected ROIs (Perimeter)' 'All ROIs (Voxels)' 'All ROIs (Perimeter)','Hide'},...
+        'fontSize', popupFontSize,'position',                     [0.14    0.625   0.14   0.035]);
+    mlrAdjustGUI(thisView,'set','roiPopup','position',            [0.02    0.485   0.26   0.145]);
+    mlrAdjustGUI(thisView,'set','roiPopup','style','listbox');
+    mlrAdjustGUI(thisView,'set','roiPopup','Max',2);  %allows multiselect
+    mlrAdjustGUI(thisView,'set','roiPopup','callback',@roiList_Callback);
+    mlrAdjustGUI(thisView,'set','roiPopup','value',viewGet(thisView,'currentRoi'));
+    mlrAdjustGUI(thisView,'set','roiPopup','fontSize',controlFontSize);
+    
+    %---------------------------- Analysis and overlays controls  --------------------------------
+    mlrAdjustGUI(thisView,'set','analysis','position',            [0.01    0.45    0.08   0.025]);
+    mlrAdjustGUI(thisView,'set','analysis','fontWeight','bold');
+    mlrAdjustGUI(thisView,'set','analysisPopup','position',       [0.09    0.44    0.19   0.035]);
+    mlrAdjustGUI(thisView,'set','analysisPopup','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','overlay','position',             [0.01    0.42    0.09   0.025]);
+    mlrAdjustGUI(thisView,'set','overlay','string','Overlays');
+    mlrAdjustGUI(thisView,'set','overlay','fontWeight','bold');
     mlrAdjustGUI(thisView,'add','control','clipAcrossOverlays','style','checkbox','value',0,...
-        'callback',@clipAcrossOverlays_Callback,...
-        'fontSize', 11,'String','Clip across overlays','position',[0.09    0.505   0.18   0.025]);
-    mlrAdjustGUI(thisView,'add','control','colorBlending','style','text',...
-        'fontSize', 12,'String','Blending mode','position',       [0.02    0.475   0.12   0.025]);
+        'callback',@clipAcrossOverlays_Callback,'fontSize', checkFontSize,...
+        'String','Clip across overlays','position',               [0.11    0.415   0.18   0.025]);
+    mlrAdjustGUI(thisView,'add','control','colorBlending','style','text','fontSize', checkFontSize,...
+        'String','Blending mode','position',                      [0.02    0.385   0.12   0.025]);
     mlrAdjustGUI(thisView,'add','control','colorBlendingPopup','style','popupmenu','value',2,...
         'callback',@colorBlendingPopup_Callback,'String',{'Alpha blend' 'Additive'},...
-        'fontSize', 12,'position',                                [0.14    0.47    0.14   0.035]);
-    mlrAdjustGUI(thisView,'set','overlayPopup','position',        [0.02    0.24    0.26   0.23 ]);
+        'fontSize', popupFontSize,'position',                     [0.14    0.38    0.14   0.035]);
+    mlrAdjustGUI(thisView,'set','overlayPopup','position',        [0.02    0.21    0.26   0.17 ]);
     mlrAdjustGUI(thisView,'set','overlayPopup','style','listbox');
     mlrAdjustGUI(thisView,'set','overlayPopup','Max',2);  %allows multiselect
-    mlrAdjustGUI(thisView,'set','overlayMin','position',          [0.02    0.205   0.04   0.03 ]);
+    mlrAdjustGUI(thisView,'set','overlayPopup','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','overlayMin','position',          [0.02    0.175   0.04   0.03 ]);
     mlrAdjustGUI(thisView,'set','overlayMin','string','Min');
-    mlrAdjustGUI(thisView,'set','overlayMinText','position',      [0.055   0.21    0.09   0.025]);
-    mlrAdjustGUI(thisView,'set','mapMax','position',              [0.15    0.205   0.04   0.03 ]);
+    mlrAdjustGUI(thisView,'set','overlayMin','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','overlayMinText','position',      [0.055   0.18    0.09   0.025]);
+    mlrAdjustGUI(thisView,'set','overlayMinText','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','mapMax','position',              [0.15    0.175   0.04   0.03 ]);
     mlrAdjustGUI(thisView,'set','mapMax','string','Max');
-    mlrAdjustGUI(thisView,'set','overlayMaxText','position',      [0.19    0.21    0.09   0.025]);
-    mlrAdjustGUI(thisView,'set','overlayMinSlider','position',    [0.02    0.185   0.26   0.02 ]);
-    mlrAdjustGUI(thisView,'set','overlayMaxSlider','position',    [0.02    0.165   0.26   0.02 ]);
-    mlrAdjustGUI(thisView,'set','alpha','position',               [0.02    0.125   0.05   0.03 ]);
-    mlrAdjustGUI(thisView,'set','alphaSlider','position',         [0.08    0.13    0.14   0.02 ]);
-    mlrAdjustGUI(thisView,'set','alphaText','position',           [0.23    0.125   0.05   0.025]);
-    mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.12    0.58   0.07 ]);
+    mlrAdjustGUI(thisView,'set','mapMax','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','overlayMaxText','position',      [0.19    0.18    0.09   0.025]);
+    mlrAdjustGUI(thisView,'set','overlayMaxText','fontSize',controlFontSize);
+    mlrAdjustGUI(thisView,'set','overlayMinSlider','position',    [0.02    0.15   0.26   0.02 ]);
+    mlrAdjustGUI(thisView,'set','overlayMaxSlider','position',    [0.02    0.13    0.26   0.02 ]);
+    mlrAdjustGUI(thisView,'set','alpha','position',               [0.02    0.095   0.05   0.03 ]);
+    mlrAdjustGUI(thisView,'set','alpha','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'set','alphaSlider','position',         [0.08    0.1     0.14   0.02 ]);
+    mlrAdjustGUI(thisView,'set','alphaText','position',           [0.23    0.1     0.05   0.025]);
+    mlrAdjustGUI(thisView,'set','alphaText','fontSize',controlFontSize);
+   
+    mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.1     0.58   0.07 ]);
     mlrAdjustGUI(thisView,'set','colorbar','fontSize',10);
     mlrAdjustGUI(thisView,'add','axes','colorbarRightBorder',...
-      'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.12    0.001  0.07 ]);
+      'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.1     0.001  0.07 ]);
 
     % Add some useful menus
-    mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback);
+    mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');
     mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
     
-    
-    % return true to indicate successful plugin
-    retval = true;
+    %remove show ROI menus and re-arrange ROI menus
+    mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','location','/ROI/Convert');
+    mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','separator','off');
+    mlrAdjustGUI(thisView,'remove','menu','showRoiMenu');
+    mlrAdjustGUI(thisView,'set','undoRoiMenuItem','location','/ROI/Restrict');
+    mlrAdjustGUI(thisView,'set','convertRoiMenuItem','separator','off');
+    mlrAdjustGUI(thisView,'set','deleteRoiMenu','separator','on');
+    mlrAdjustGUI(thisView,'set','restrictRoiMenuItem','label','Selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','deleteRoiMenuItem','label','Selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','saveROIMenuItem','label','Save selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','copyRoiMenuItem','label','Copy selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','pasteRoiMenuItem','label','Paste ROI(s)');
+    mlrAdjustGUI(thisView,'set','editRoiMenuItem','label','Edit selected ROI(s)');
+    % return view
+    retval = thisView;
    end
  % return a help string
  case {'help','h','?'}
-   retval = 'Improvements include: superimposition of several overlays, average over a range of cortical depths, ...';
+   retval = 'Improvements include: superimposition of several overlays, average over a range of cortical depths, multiple ROI selection ...';
  otherwise
    disp(sprintf('(improvedGUIPlugin) Unknown command %s',action));
 end
@@ -175,9 +260,48 @@ viewNum = handles.viewNum;
 refreshMLRDisplay(viewNum);
 
 
-% --------------------------------------------------------------------
-function unlinkStimfileMenuItem_Callback(hObject, eventdata, handles)
+% -------------------------------------------------------------------- Unlink stim menu
+function unlinkStimfileMenuItem_Callback(hObject, dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 viewSet(viewNum, 'stimfilename', '');
+
+
+% -------------------------------------------------------------------- ROI controls
+function roiList_Callback(hObject, dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+
+roiNames = viewGet(viewNum,'roiNames');% I think we shouldn't have to get the names (but need to modify viewSet call)
+% set the roi group
+% viewSet(viewNum,'roiGroup',roiNames(get(hObject,'Value')));
+viewSet(viewNum,'curROI',get(hObject,'Value'));
+refreshMLRDisplay(viewNum);
+
+function roiDislayModePopup_Callback(hObject, dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+switch(get(hObject,'value'))
+  case 1
+    viewSet(viewNum,'showROIs','selected');
+  case 2
+    viewSet(viewNum,'showROIs','selected perimeter');
+  case 3
+    viewSet(viewNum,'showROIs','group');
+  case 4
+    viewSet(viewNum,'showROIs','group perimeter');
+  case 5
+    viewSet(viewNum,'showROIs','hide');
+end
+refreshMLRDisplay(viewNum);
+
+
+function displayROILabels_Callback(hObject, dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+viewSet(viewNum,'labelROIs',get(hObject,'Value'));
+refreshMLRDisplay(viewNum);
+
+
+
     
