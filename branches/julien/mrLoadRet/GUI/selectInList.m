@@ -52,7 +52,22 @@ if ieNotDefined('title')
   title = ['Choose ' type];
 end
 if ieNotDefined('preselected')
-  preselected = [];
+  switch(lower(type))
+    case {'scans','scan'}
+      preselected = viewGet(thisView,'currentScan');
+
+    case {'overlays','overlay'}
+      preselected = viewGet(thisView,'currentOverlay');
+
+    case {'analyses','analysis'}
+      preselected = viewGet(thisView,'currentAnalysis');
+
+    case {'bases','base'}
+      preselected = viewGet(thisView,'currentBase');
+
+    case {'rois','roi'}
+      preselected = viewGet(thisView,'currentROI');
+  end
 end
 
 %add a line for all
