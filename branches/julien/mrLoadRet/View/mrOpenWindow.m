@@ -156,6 +156,9 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 
 else
   [view,baseLoaded] = loadAnatomy(view);
+  % Add plugins
+  if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
+
   if baseLoaded
     refreshMLRDisplay(view.viewNum);
   end
