@@ -1,7 +1,7 @@
-% applyWarpROI.m
+% applyFSLWarpROI.m
 %
-%        $Id: applyWarpROI.m 2119 2011-05-09 22:46:58Z julien $ 
-%      usage: applyWarpROI(thisView)
+%        $Id: applyFSLWarpROI.m 2119 2011-05-09 22:46:58Z julien $ 
+%      usage: applyFSLWarpROI(thisView)
 %         by: julien besle
 %       date: 06/10/2010
 %    purpose: applies non-linear FSL registration to chosen ROI(s)
@@ -34,6 +34,8 @@ while keepAsking
   params = {...
    {'fnirtInputSpace',baseNames,'type=popupmenu','A volume in a space equivalent to the volume that served as the FNIRT input volume, generally the scan space.'},...
    {'destinationSpace',{'FNIRT input space','Keep original ROI space'},'type=popupmenu','Which coordinate space the transformed ROI will be in. If the destination space is different from the fnirt input space, the total ROI volume will be conserved, but results might not be as accurate.'},...
+   {'roiNamePrefix','FNIRT_','String to append at the start of each saved roi name'},...
+   {'roiNameSuffix','','String to append at the end of each saved roi name'},...
           };
   params = mrParamsDialog(params, 'applyFSLWarpROI parameters');
   % Abort if params empty
@@ -97,6 +99,7 @@ for iRoi = 1:length(roiList)
     fprintf('\n');
   else
     thisWarpedRoi = thisRoi;
+    thisWarpedRoi.name = [params.roiNamePrefix thisWarpedRoi.name params.roiNameSuffix];
     baseCoords = round(roi2fnirtInput*thisRoi.coords);
     outsideVoxels = any(baseCoords(1:3,:)< ones(3,size(baseCoords,2)) |...
     baseCoords(1:3,:)> repmat(fnirtInputDims',1,size(baseCoords,2)));
@@ -169,7 +172,7 @@ for iRoi = 1:length(roiList)
         %we simply use applyWarp with nearest neighbor interpolation, which seems to give better results in most cases
         %we require that ROI and scans be in the same space
         if any(any( (roi2fnirtInput - eye(4))>1e-6))
-          mrWarnDlg(['(applyWarpROI) Roi ' thisWarpedRoi.name ' is not in the FNIRT input base space, converting ...']);
+          mrWarnDlg(['(applyFSLWarpROI) Roi ' thisWarpedRoi.name ' is not in the FNIRT input base space, converting ...']);
           thisWarpedRoi.xform = fnirtInputXform;
           thisWarpedRoi.voxelSize = fnirtInputVoxelSize;
           if baseNum>0
