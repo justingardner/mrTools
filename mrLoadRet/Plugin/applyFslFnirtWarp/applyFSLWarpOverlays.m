@@ -52,15 +52,17 @@ overlayNames = viewGet(thisView,'overlayNames');
 overlayNames = overlayNames(overlayList);
 overlaysNumber = length(overlayList);
 for iOverlay = 1:overlaysNumber
-   overlays(iOverlay) = viewGet(thisView,'overlay',overlayList(iOverlay));
-   if isfield(overlays(iOverlay),'alphaOverlay') && ~isempty(overlays(iOverlay).alphaOverlay) && ~ismember(overlays(iOverlay).alphaOverlay,overlayNames)
+  overlays(iOverlay) = viewGet(thisView,'overlay',overlayList(iOverlay));
+  if isfield(overlays(iOverlay),'alphaOverlay') && ~isempty(overlays(iOverlay).alphaOverlay) 
+    alphaOverlayName = overlays(iOverlay).alphaOverlay;
+    if ~ismember(overlays(iOverlay).alphaOverlay,overlayNames)
       overlaysNumber = overlaysNumber+1;
-      alphaOverlayName = overlays(iOverlay).alphaOverlay;
       overlayNames = [overlayNames {alphaOverlayName}];
       overlays(overlaysNumber) = viewGet(thisView,'overlay',viewGet(thisView,'overlaynum',alphaOverlayName));
-      overlays(iOverlay).alphaOverlay = ['warp(' alphaOverlayName ') - ' warpCoefFilename];
       disp(['(applyFSLWarpOverlays) Alpha overlay ''' alphaOverlayName ''' will also be warped']);
-   end
+    end
+    overlays(iOverlay).alphaOverlay = ['warp(' alphaOverlayName ') - ' warpCoefFilename];
+  end
 end
 
 for iOverlay = 1:overlaysNumber
