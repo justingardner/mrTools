@@ -99,7 +99,7 @@ end
 % select the window to plot into
 fignum = selectGraphWin;
 initializeFigure(fignum,max(numberEVs,numberContrasts))
-set(fignum,'Name','glmPlot');
+set(fignum,'Name',['glmPlot: ' analysisParams.saveName]);
 
 %set plotting dimension
 maxNumberSte = 3;
