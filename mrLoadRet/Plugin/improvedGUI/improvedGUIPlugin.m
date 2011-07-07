@@ -173,6 +173,8 @@ switch action
     % Add some useful menus
     mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');
     mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
+    mlrAdjustGUI(thisView,'set','exportImageMenuItem','callback',@exportImage_Callback);
+    mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export Images');
     
     %remove show ROI menus and re-arrange ROI menus
     mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','location','/ROI/Convert');
@@ -303,5 +305,41 @@ viewSet(viewNum,'labelROIs',get(hObject,'Value'));
 refreshMLRDisplay(viewNum);
 
 
+% --------------------------------------------------------------------
+function exportImage_Callback(hObject, dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
 
-    
+if viewGet(thisView,'basetype')
+  % if flat or surface, use the old version (although could go through cortical depths instead of slices)
+  pathstr = putPathStrDialog(pwd,'Specify name of exported image file','*.tif');
+  % pathstr = [] if aborted
+  if ~isempty(pathstr)
+      img = refreshMLRDisplay(handles.viewNum);
+      imwrite(img, pathstr, 'tif');
+  end
+else
+  nScans = viewGet(thisView,'nScans');
+  basedims = viewGet(thisView,'basedims');
+  nSlices = basedims(viewGet(thisView,'basesliceindex'));
+
+  paramsInfo = {};
+  paramsInfo{end+1} = {'tifFileName', fullfile(pwd,'Images/image.tif'),'Where to save the montage'};
+  paramsInfo{end+1} = {'horizontalRange',[0 1],'minmax=[0 1]','Horizontal coordinates of the image cropped from the slice [left right] (normalized between 0 and 1)'};
+  paramsInfo{end+1} = {'verticalRange',[0 1],'minmax=[0 1]','Vertical coordinates of the image cropped from the slice [top bottom] (normalized between 0 and 1)'};
+  paramsInfo{end+1} = {'scanList', sprintf('[1:1:%d]',nScans), 'List of scans to export. Must be expressed in a string taht can be evaluated into a row vector'};
+  paramsInfo{end+1} = {'sliceList', sprintf('[1:1:%d]',nSlices), 'List of slices to export. Must be expressed in a string taht can be evaluated into a row vector'};
+  paramsInfo{end+1} = {'nRows', 1, 'minmax=[1 inf]','incdec=[-1 1]','Number of rows in the montage if multiple scans/slices are exported'}; 
+  paramsInfo{end+1} = {'exportImage', 0, 'type=pushbutton','','callback',@exportCallback,'callbackArg',thisView,'buttonString=Export Image','passParams=1','Previews and saves the montage without closing the menu'};
+
+  % display dialog
+  mrParamsDialog(paramsInfo,'Export Slices Parameters','modal=0');
+end
+
+function exportCallback(thisView,params)
+
+scanList = eval(params.scanList);
+sliceList = eval(params.sliceList);
+mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
+
