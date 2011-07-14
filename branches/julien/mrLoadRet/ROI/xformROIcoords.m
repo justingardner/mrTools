@@ -68,8 +68,8 @@ tmpNewCoords = xform * coords;
 %
 minPos = [min(tmpNewCoords(1,:));min(tmpNewCoords(2,:));min(tmpNewCoords(3,:));1];
 maxPos = [max(tmpNewCoords(1,:));max(tmpNewCoords(2,:));max(tmpNewCoords(3,:));1];
-minPos = floor(minPos)-[ceil(inputVoxSize ./ outputVoxSize) 0]'; %JB: this is to make sure that all potentially transformed coordinates fall in the bounding box
-maxPos = ceil(maxPos)+[ceil(inputVoxSize ./ outputVoxSize) 0]';  % it used to be +/-[2 2 2 0], but this doesn't work if new voxel size < old_voxel_size/2
+minPos = floor(minPos)-[round((inputVoxSize ./ outputVoxSize)+1) 0]'; %JB: this is to make sure that all potentially transformed coordinates fall in the bounding box
+maxPos = ceil(maxPos)+[round((inputVoxSize ./ outputVoxSize)+1) 0]';  % it used to be +/-[2 2 2 0], but this doesn't work if new voxel size < old_voxel_size/2
 dims = (maxPos(1:3)-minPos(1:3)+ones(3,1))';
 
 % Initialize accumulator for partial volume calculation, a vector
