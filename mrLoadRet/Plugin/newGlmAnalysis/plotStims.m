@@ -68,7 +68,7 @@ end
 
 if ~isempty(runTransitions)
   for iRun = 1:size(runTransitions,1)-1
-    hTransitions = plot(([runTransitions(iRun,2) runTransitions(iRun,2)]-1)*framePeriod,[bottom top],':k');%,'Color',[.3 .3 .3]);
+    hTransitions = plot([runTransitions(iRun,2) runTransitions(iRun,2)]*framePeriod,[bottom top],':k');%,'Color',[.3 .3 .3]);
   end
 end
 xlabel(axesHandle,'Time (s)');
