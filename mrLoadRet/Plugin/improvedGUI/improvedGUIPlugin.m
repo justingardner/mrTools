@@ -343,6 +343,9 @@ end
 
 function exportCallback(thisView,params)
 
+%update the view
+thisView = viewGet(thisView.viewNum,'view');
+
 if viewGet(thisView,'basetype')
   switch(params.depthMode)
     case 'as displayed'
