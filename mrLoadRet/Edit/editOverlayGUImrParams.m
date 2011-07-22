@@ -13,15 +13,28 @@ function retval = editOverlayGUImrParams(viewNum)
     help editOverlayGuimrParams
     return
   end
-
-  thisView = viewGet(viewNum,'view');
+  
+  if isview(viewNum)
+    thisView = viewNum;
+    viewNum = thisView.viewNum;
+  else
+    thisView = viewGet(viewNum,'view');
+  end
 
   % Get the original overlay
   analysisNum = viewGet(thisView,'currentAnalysis');
   if isempty(analysisNum),mrWarnDlg('(editOverlayGUI) No current analysis');return,end
   overlayNum = viewGet(thisView,'currentOverlay', analysisNum);
   if isempty(overlayNum),mrWarnDlg('(editOverlayGUI) No current overlay');return,end
-  if length(overlayNum)>1,mrWarnDlg('(editOverlayGUI) Not implemented for several overlays');return,end
+  if length(overlayNum)>1
+    mrWarnDlg('(editOverlayGUI) Not implemented for several overlays');
+    %close aEdit Overlay Dialog if it's on (that could be the case if overlay is changed while the edit overlay params dialog is already on)
+    global gParams
+    if ~isempty(gParams) && strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
+      closeHandler;
+    end
+    return;
+  end
   overlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
   overlayUsefulRange = viewGet(thisView,'overlayRange', overlayNum, analysisNum);
   overlayColorRange = viewGet(thisView,'overlayColorRange', overlayNum, analysisNum);
@@ -300,7 +313,30 @@ viewSet(thisView,'curOverlay',viewGet(thisView,'overlayNum',currentOverlayName))
 refreshMLRDisplay(thisView.viewNum);
 
 
-  
+%%%%%%%%%%%%%%%%%%%%
+% function to close a previoulsy existing Dialog, taken form mrParamsDialog
+%%%%%%%%%%%%%%%%%%%%
+function closeHandler(varargin)
+
+global gParams;
+if isempty(gParams),return,end
+
+if isfield(gParams,'fignum') 
+  if isfield(gParams,'figlocstr')
+  % save figure locations .mrDefaults
+    for iFig = 1:length(gParams.fignum)
+      mrSetFigLoc(fixBadChars(gParams.figlocstr{iFig}),get(gParams.fignum(iFig),'Position'));
+    end
+  end
+  % close figure
+  delete(gParams.fignum);
+end
+saveMrDefaults;
+
+clear global gParams;
+drawnow
+
+
   
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1344,6 +1344,7 @@ switch lower(param)
       view = viewSet(view,'curOverlay',newOverlayNum);
     end
     set(viewGet(view,'figNum'),'Pointer','arrow');%drawnow;
+      
 
   case {'deleteoverlay'}
     % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
@@ -1374,6 +1375,7 @@ switch lower(param)
 
   case{'currentoverlay','curoverlay'}
     % view = viewSet(view,'currentOverlay',overlayNum);
+    curOverlay = viewGet(view,'curOverlay');
     overlayNum = viewGet(view,'overlayNum',val);
     analysisNum = viewGet(view,'currentAnalysis');
     numAnalyses = viewGet(view,'numberofAnalyses');
@@ -1398,7 +1400,15 @@ switch lower(param)
           alpha = 1;
         end
         mlrGuiSet(view,'overlayAlpha',alpha);
-      else
+        
+        %check if an Edit Overlay Menu is open and relaunch if current overlay has changed
+        if ~isequal(curOverlay,overlayNum)
+          global gParams
+          if ~isempty(gParams) && strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
+            editOverlayGUImrParams(view);
+          end
+        end
+     else
         view.analyses{analysisNum}.curOverlay = [];
         mlrGuiSet(view,'overlay',1);
       end
@@ -1408,8 +1418,9 @@ switch lower(param)
     % update the interrogator
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
-
     end
+        
+
     
   case {'overlayname'}
     % view = viewSet(view,'overlayname',nameString,[overlayNum]);
@@ -1611,7 +1622,8 @@ switch lower(param)
     end
     % check to make sure the name is unique
     roiNames = viewGet(view,'roiNames');
-    nameMatch = find(strcmp(ROI.name,roiNames));
+    [dump,nameMatch] = find(strcmp(ROI.name,roiNames));
+    pos = length(view.ROIs)+1;
     while ~isempty(nameMatch)
       if ~replaceDuplicates
 	paramsInfo{1} = {'roiName',ROI.name,'Change the name to a unique ROI name'};
@@ -1623,18 +1635,18 @@ switch lower(param)
   params.roiName = ROI.name;
       end
       if params.replace
-	% if replace, then delete the existing one
-	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',params.roiName));
+	% if replace, then set the pos to the ROi to delete 
+  %(JB:This replaces a previous call to viewSet('deleteROI'), because we don't want the ROi to change position in the list)
+  pos = nameMatch;
 	nameMatch=[];
       else
 	% change the name
 	ROI.name = params.roiName;
-  nameMatch = find(strcmp(ROI.name,roiNames));
+  [dump,nameMatch] = find(strcmp(ROI.name,roiNames));
       end
     end
     % Add it to view.ROIs
-    pos = length(view.ROIs)+1;
-    if (pos == 1)
+    if (pos==1) && ismember(length(view.ROIs),[0 1])
       % First ROI
       view.ROIs = ROI;
     else
