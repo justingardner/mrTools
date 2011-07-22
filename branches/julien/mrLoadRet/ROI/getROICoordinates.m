@@ -55,7 +55,7 @@ elseif isstruct(roiNum)
   currentROIname = viewGet(view,'roiName');
   view = viewSet(view,'newROI',roiNum,1);
   roiNum = viewGet(view,'ROINum',roiNum.name);
-  view = viewSet(view,'currentROI',viewGet(view,'ROINum',currentROIname));
+  %view = viewSet(view,'currentROI',viewGet(view,'ROINum',currentROIname)); %JB: do not change current roi in the view
 end
 
 % get the roi transforms
