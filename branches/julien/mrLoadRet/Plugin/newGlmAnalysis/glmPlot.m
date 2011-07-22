@@ -475,7 +475,7 @@ end
 if ~isfield(d,'estimationSupersampling')
   d.estimationSupersampling=1;
 end
-time = ((1:length(tSeries))+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
+time = ((0:length(tSeries)-1)+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
 
 
 delete(h);
