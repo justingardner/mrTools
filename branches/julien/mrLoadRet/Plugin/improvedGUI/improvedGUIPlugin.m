@@ -311,35 +311,53 @@ handles = guidata(hObject);
 viewNum = handles.viewNum;
 thisView = viewGet(viewNum,'view');
 
-if viewGet(thisView,'basetype')
-  % if flat or surface, use the old version (although could go through cortical depths instead of slices)
-  pathstr = putPathStrDialog(pwd,'Specify name of exported image file','*.tif');
-  % pathstr = [] if aborted
-  if ~isempty(pathstr)
-      img = refreshMLRDisplay(handles.viewNum);
-      imwrite(img, pathstr, 'tif');
-  end
-else
-  nScans = viewGet(thisView,'nScans');
-  basedims = viewGet(thisView,'basedims');
-  nSlices = basedims(viewGet(thisView,'basesliceindex'));
+viewType = viewGet(thisView,'basetype');
 
+if viewType<2
+  nScans = viewGet(thisView,'nScans');
   paramsInfo = {};
-  paramsInfo{end+1} = {'tifFileName', fullfile(pwd,'Images/image.tif'),'Where to save the montage'};
+  paramsInfo{end+1} = {'tifFileName', fullfile(viewGet(thisView,'homedir'),'Images/image.tif'),'Where to save the image montage file (TIF format)'};
   paramsInfo{end+1} = {'horizontalRange',[0 1],'minmax=[0 1]','Horizontal coordinates of the image cropped from the slice [left right] (normalized between 0 and 1)'};
   paramsInfo{end+1} = {'verticalRange',[0 1],'minmax=[0 1]','Vertical coordinates of the image cropped from the slice [top bottom] (normalized between 0 and 1)'};
   paramsInfo{end+1} = {'scanList', sprintf('[1:1:%d]',nScans), 'List of scans to export. Must be expressed in a string taht can be evaluated into a row vector'};
-  paramsInfo{end+1} = {'sliceList', sprintf('[1:1:%d]',nSlices), 'List of slices to export. Must be expressed in a string taht can be evaluated into a row vector'};
-  paramsInfo{end+1} = {'nRows', 1, 'minmax=[1 inf]','incdec=[-1 1]','Number of rows in the montage if multiple scans/slices are exported'}; 
+
+  if viewType
+    paramsInfo{end+1} = {'depthMode', {'as displayed','one image per depth'}, '''As displayed'' = only one image is exported per scan, with the current depth settings, ''One image per depth''= exports one image per depth/scan within the displayed depth range'};
+  else
+    basedims = viewGet(thisView,'basedims');
+    nSlices = basedims(viewGet(thisView,'basesliceindex'));
+
+    paramsInfo{end+1} = {'sliceList', sprintf('[1:1:%d]',nSlices), 'List of slices to export. Must be expressed in a string that can be evaluated into a row vector'};
+  end
+  paramsInfo{end+1} = {'nRows', 1, 'minmax=[1 inf]','incdec=[-1 1]','Number of rows in the montage if multiple scans/slices/depths are exported'}; 
   paramsInfo{end+1} = {'exportImage', 0, 'type=pushbutton','','callback',@exportCallback,'callbackArg',thisView,'buttonString=Export Image','passParams=1','Previews and saves the montage without closing the menu'};
 
   % display dialog
   mrParamsDialog(paramsInfo,'Export Slices Parameters','modal=0');
+else
+    % if surface, would need to change the ouput of refreshMLRDisplay to get a 2D image rather than the coordinates of the surface...
+    % but not sure whether some other parts of mrLoadRet use this output..
+    mrWarnDlg('(improvedGUIPlugin) This function is not implemented for surfaces.');
 end
+
 
 function exportCallback(thisView,params)
 
-scanList = eval(params.scanList);
-sliceList = eval(params.sliceList);
-mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
+if viewGet(thisView,'basetype')
+  switch(params.depthMode)
+    case 'as displayed'
+      sliceList = [];
+    case 'one image per depth'
+      depthBin = 1/(viewGet(thisView,'corticaldepthBins')-1);
+      depth(1) = viewGet(thisView,'corticalmindepth');
+      depth(2) = viewGet(thisView,'corticalmaxdepth');
+      depth = sort(depth);
+      sliceList = depth(1):depthBin:depth(2);
+%       [~,sliceList] = ismember(round(1e5*(depth(1):depthBin:depth(2)))/1e5,round(1e5*(0:depthBin:1))/1e5);
+  end
+else
+  sliceList = eval(params.sliceList);
+end
 
+scanList = eval(params.scanList);
+mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
