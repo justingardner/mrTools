@@ -447,7 +447,7 @@ h=uicontrol('parent',fignum,'unit','normalized','style','text',...
 drawnow;
 disppercent(-inf,'(eventRelatedPlot) Plotting time series');
 
-if isnumeric(roi)
+if isnumeric(roi) %if roi is numeric, it's the coordinates of a single voxel
   tSeries = squeeze(loadTSeries(thisView,[],roi(3),[],roi(1),roi(2)));
   titleString = sprintf('Voxel %i,%i,%i Time Series',roi(1),roi(2),roi(3));
   ehdr = shiftdim(d.ehdr(roi(1),roi(2),roi(3),:,:),3);
@@ -458,7 +458,7 @@ else
   titleString = ['ROI ' roi.name ' Time Series'];
   ehdr = permute(d.ehdr,[4 5 1 2 3]);
   ehdr = ehdr(:,:,sub2ind(d.dim(1:3),roi.scanCoords(1,:)',roi.scanCoords(2,:)',roi.scanCoords(3,:)'));
-  ehdr = mean(ehdr,3);
+  ehdr = nanmean(ehdr,3);
 end
 %convert to percent signal change the way it's done in getGlmStatistics
 tSeries = (tSeries - mean(tSeries))'/mean(tSeries)*100;
