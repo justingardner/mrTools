@@ -348,6 +348,8 @@ warning('off','MATLAB:divideByZero');
 %--------------------------------------------------- MAIN LOOP: PARAMETER ESTIMATION ------------------------------------%
 % display string
 if verbose,hWaitBar = mrWaitBar(-inf,'(getGlmStatistics) Estimating model parameters');end
+negativeSteWarning=false;
+negativeS2Warning=false;
 passesCounter = 0;
 passesInBootstrap = d.dim(1);
 switch(params.correctionType)
@@ -645,7 +647,12 @@ for z = slices
                 if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
                 residualsAcm = makeAcm(autoCorrelationParameters(:,x,y,z),d.dim(4),params.covEstimation);
                 %this is the part that makes GLS much slower than PW when bootstrapping
-                thisS2(x) = thisResiduals(:,x)' / residualsAcm * thisResiduals(:,x)/d.rdf;    %Wicker & Fonlupt (2003) 
+                thisS2(x) = thisResiduals(:,x)' / residualsAcm * thisResiduals(:,x)/d.rdf; 
+                %Wicker & Fonlupt (2003)
+                if thisS2(x)<0
+                  thisS2(x)=NaN;
+                  negativeS2Warning=true;
+                end
                 passesCounter = thisPassesCounter+x/2;
               end
               passesCounter = thisPassesCounter+passesInBootstrap/2;
@@ -664,13 +671,18 @@ for z = slices
             for iContrast = 1:numberTtests
               switch(params.correctionType)
                 case 'none'
-                  thisContrastBetaSte(:,iContrast) = sqrt(thisS2.*(contrasts{iContrast}*invCovEVs*contrasts{iContrast}'));
+                  thisContrastBetaSte(:,iContrast) = thisS2.*(contrasts{iContrast}*invCovEVs*contrasts{iContrast}');
                 case {'generalizedLeastSquares','varianceCorrection','preWhitening'} 
                   for x = xvals
-                    thisContrastBetaSte(x,iContrast) = sqrt(thisS2(x)*contrasts{iContrast} * invCorrectedCovEV(:,:,x) * contrasts{iContrast}');
+                    thisContrastBetaSte(x,iContrast) = thisS2(x)*contrasts{iContrast} * invCorrectedCovEV(:,:,x) * contrasts{iContrast}';
+                    if thisContrastBetaSte(x,iContrast)<0
+                      thisContrastBetaSte(x,iContrast)=NaN;
+                      negativeSteWarning=true;
+                    end
                   end
               end
             end
+            thisContrastBetaSte = sqrt(thisContrastBetaSte);
             thisStatistic(:,1:numberTtests) = thisContrastBetas ./ thisContrastBetaSte;   
             switch(params.tTestSide)
              case 'Both'
@@ -962,6 +974,12 @@ if numberTests
   end
 end
 if verbose,mrCloseDlg(hWaitBar);end
+if negativeS2Warning
+  mrWarnDlg('(getGlmStatistics) There were some negative noise variance estimates');
+end
+if negativeSteWarning
+  mrWarnDlg('(getGlmStatistics) There were some negative constrast variance estimates');
+end
 
 
 function [array, totalBytes] = alloc(defaultValues,varargin)
