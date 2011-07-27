@@ -50,7 +50,10 @@ else
   acquisitionSubsample = 1;
 end
 if isfield(params.scanParams{scanNum},'stimToEVmatrix') && ~isempty(params.scanParams{scanNum}.stimToEVmatrix)
-  stimToEVmatrix = params.scanParams{scanNum}.stimToEVmatrix;
+  %match stimNames in params to stimNames in structure d
+  [isInMatrix,whichStims] = ismember(d.stimNames,params.scanParams{scanNum}.stimNames);
+  stimToEVmatrix = zeros(length(d.stimvol),size(params.scanParams{scanNum}.stimToEVmatrix,2));
+  stimToEVmatrix(isInMatrix,:) = params.scanParams{scanNum}.stimToEVmatrix(whichStims(isInMatrix),:);
   if size(stimToEVmatrix,1)~=length(d.stimvol)
     mrWarnDlg('(makeDesignMatrix) EV combination matrix is incompatible with number of event types');
     d.scm = [];
