@@ -67,7 +67,7 @@ while keepAsking
     paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Shows the experimental design (before convolution iwht the HRF model)',...
             'callback',{@plotExperimentalDesign,scanParams,params,iScan,thisView,d.stimNames},'passParams=1'};
 
-    % give the option to use the same variable for remaining scans
+    % give the option to use the same parameters for remaining scans (assumes the event names are identical in all files)
     if (iScan ~= params.scanNum(end)) && (length(params.scanNum)>1)
       paramsInfo{nStims+4} = {'sameForNextScans',iScan == params.scanNum(1),'type=checkbox','Use the same parameters for all scans'};
     else
@@ -97,7 +97,9 @@ while keepAsking
       tempParams = mrParamsRemoveField(tempParams,fixBadChars(d.stimNames{iEvent}));
     end
     scanParams{iScan} = mrParamsCopyFields(...
-      mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix,'Matrix forming EVs from combinations of stimulus types'}}),scanParams{iScan});
+      mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix,'Matrix forming EVs from combinations of stimulus types'},...
+                       {'stimNames',d.stimNames,'type=strinArray','Names of stimulus types'},...
+      }),scanParams{iScan});
     EVnames = tempParams.EVnames;
     tempParams = mrParamsRemoveField(tempParams,'EVnames');
     
@@ -131,6 +133,7 @@ function plotExperimentalDesign(thisScanParams,scanParams,params,scanNum,thisVie
 for iEvent = 1:length(stimNames)
   thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(stimNames{iEvent}));
 end
+thisScanParams.stimNames = stimNames;
 
 if ~isfield(thisScanParams,'sameForNextScans') || thisScanParams.sameForNextScans
   %if it's the last scan or sameForNextScans is selected, we show all scans
