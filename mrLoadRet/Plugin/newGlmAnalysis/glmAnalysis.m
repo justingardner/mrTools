@@ -373,7 +373,7 @@ for iScan = params.scanNum
             d.ehdrBootstrapCIs = reshapeToRoiBox(d.ehdrBootstrapCIs,d.roiPositionInBox);
           end
           if numberTests
-            if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+            if numberContrasts && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
               out.contrast = reshapeToRoiBox(out.contrast,d.roiPositionInBox);
               if params.bootstrapTests && params.bootstrapIntervals
                 d.contrastBootstrapCIs = reshapeToRoiBox(d.contrastBootstrapCIs,d.roiPositionInBox);
@@ -418,10 +418,10 @@ for iScan = params.scanNum
         end
         if numberTests
           if numberContrasts
-            if length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
+            if nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add')
               contrast{iScan} = cat(3,contrast{iScan},out.contrast);
             end
-            if params.bootstrapTests && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+            if params.bootstrapTests && params.bootstrapIntervals  && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
               contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
             end
           end
@@ -611,7 +611,7 @@ for iScan = params.scanNum
   end
   if numberContrasts
     glmAnal.d{iScan}.contrasts = params.contrasts;
-    if params.bootstrapTests && params.bootstrapIntervals  && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+    if params.bootstrapTests && params.bootstrapIntervals  && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
       glmAnal.d{iScan}.contrastBootstrapCIs = NaN([scanDims size(contrastBootstrapCIs,4) size(contrastBootstrapCIs,5)],precision);
       glmAnal.d{iScan}.contrastBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = contrastBootstrapCIs; %JB
       clear('contrastBootstrapCIs')
@@ -682,7 +682,7 @@ clear('r2');
 
 %--------------------------------------------- save the contrast beta weights overlay(s) (ehdr if no contrast)
 contrastNames = makeContrastNames(params.contrasts,params.EVnames,params.tTestSide);
-if numberContrasts && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+if numberContrasts && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
   %this is to mask the beta values by the probability/Z maps     
   betaAlphaOverlay = cell(numberContrasts,1);
 
@@ -868,7 +868,7 @@ if numberTests
     end
   end
   
-  if params.computeTtests && params.maskContrastOverlay && (length(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+  if params.computeTtests && params.maskContrastOverlay && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
     %set the contrast alpha overlay to the statistical value
     switch(params.testOutput)
       case 'P value'                                                  %statistical maps

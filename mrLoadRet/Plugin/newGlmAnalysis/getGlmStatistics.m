@@ -89,7 +89,7 @@ end
 if ~isfield(params,'componentsCombination') || isempty(params.componentsCombination)
    params.componentsCombination = 'Add';
 end
-if strcmp(params.componentsCombination,'Or') && d.nHrfComponents==1
+if strcmp(params.componentsCombination,'Or') && nnz(params.componentsToTest)==1
   params.componentsCombination = 'Add';  %make sure this is set to add if there is only one component to test
 end
 
@@ -187,7 +187,7 @@ if params.covCorrection
 end
 
 numberContrasts = length(contrasts);
-if strcmp(params.componentsCombination,'Or') %in this case, components of a given EV are tested independently from each other in an F-test
+if strcmp(params.componentsCombination,'Or') && nnz(params.componentsToTest)>1 %in this case, components of a given EV are tested independently from each other in an F-test
   params.componentsToTest = logical(diag(params.componentsToTest));
   %for contrasts, this amounts to  testing several contrats at once using an f test
   %So we have to change contrasts into f-tests (with the restriction that they have to be two-sided; this should be controlled for by the parameters)
