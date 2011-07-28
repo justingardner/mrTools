@@ -210,7 +210,7 @@ while keepAsking
   end
   
   if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
-      length(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
+      nnz(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
   elseif params.bootstrapTests  && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
     mrWarnDlg('(getTestParamsGUI) Bootstrap tests are currently only allowed for ROI(s) analyses','Yes');
