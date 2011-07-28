@@ -68,15 +68,28 @@ end
 % load file
 v = viewSet(v,'curGroup',groupNum);
 disppercent(-inf,sprintf('(mlrSpikeDetector) Loading time series for scan %i, group %i',scanNum,groupNum));
-spikeinfo.data = loadTSeries(v,scanNum);
+data = loadTSeries(v,scanNum);
 % Dump junk frames
 junkFrames = viewGet(v, 'junkframes', scanNum);
 nFrames = viewGet(v, 'nFrames', scanNum);
-spikeinfo.data = spikeinfo.data(:,:,:,junkFrames+1:junkFrames+nFrames);
+data = data(:,:,:,junkFrames+1:junkFrames+nFrames);
 
-spikeinfo.dim = size(spikeinfo.data);
+spikeinfo.dim = size(data);
 disppercent(inf);
 
+% compute timecourse means for later 
+for slicenum = 1:spikeinfo.dim(3)
+  % calculate mean timecourse for slice
+  sliceMeans(slicenum,:) = nanmean(nanmean(data(:,:,slicenum,:),1),2);
+  % normalize to % signal change
+  sliceMeans(slicenum,:) = 100*sliceMeans(slicenum,:)/mean(sliceMeans(slicenum,:));
+  % compute standard deviation
+  sliceStds(slicenum) = std(sliceMeans(slicenum,:));
+end
+
+% compute fourier transform of data
+% calculating fourier transform of data
+disppercent(-inf,'(mlrSpikeDetector) Calculating FFT');
 % skip some frames in the beginning to account
 % for saturation
 if junkFrames < 5
@@ -84,15 +97,16 @@ if junkFrames < 5
 else
     startframe = 1;
 end
-
-% compute fourier transform of data
-% calculating fourier transform of data
-disppercent(-inf,'(mlrSpikeDetector) Calculating FFT');
-data = zeros(spikeinfo.dim);
-for i = startframe:spikeinfo.dim(4)
-  disppercent(i/spikeinfo.dim(4));
-  for j = 1:spikeinfo.dim(3)
-    data(:,:,j,i) = abs(fftshift(fft2(squeeze(spikeinfo.data(:,:,j,i)))));
+data = data(:,:,:,startframe:spikeinfo.dim(4));
+for i = 1:size(data,4)
+  disppercent(i/size(data,4));
+  for j = 1:size(data,3)
+    %first need to remove NaNs from data
+    %let's replace them by the mean of each image
+    thisData =  data(:,:,j,i);
+    thisData(isnan(thisData)) = nanmean(thisData(:));
+    %compute the spatial fourier transform
+    data(:,:,j,i) = abs(fftshift(fft2(thisData)));
   end
 end
 disppercent(inf);
@@ -119,7 +133,7 @@ disppercent(inf);
 % if there are any points above std criterion
 slice = [];time = [];numspikes = [];spikelocs = {};
 disppercent(-inf,'(mlrSpikeDetector) Looking for spikes');
-for i = startframe:spikeinfo.dim(4)
+for i = 1:size(data,4)
   disppercent(i/spikeinfo.dim(4));
   data(:,:,:,i) = squeeze(data(:,:,:,i))-meandata;
   % see if any voxels are larger then expected
@@ -144,16 +158,6 @@ else
   disp(sprintf('(mlrSpikeDetector) No spikes in scan %i, group %i',scanNum,groupNum));
 end
 
-% compute timecourse means for each 
-for slicenum = 1:spikeinfo.dim(3)
-  % calculate mean timecourse for slice
-  sliceMeans(slicenum,:) = mean(mean(spikeinfo.data(:,:,slicenum,:),1),2);
-  % normalize to % signal change
-  sliceMeans(slicenum,:) = 100*sliceMeans(slicenum,:)/mean(sliceMeans(slicenum,:));
-  % compute standard deviation
-  sliceStds(slicenum) = std(sliceMeans(slicenum,:));
-end
-
 % now look for any time point that exceeds criteria
 % (in std units) -- this way looks averaged over slice
 %[slice time] = find(abs(sliceMeans(:,:)-100) > (sliceStds')*ones(1,spikeinfo.dim(4))*criterion);
@@ -166,7 +170,6 @@ spikeinfo.numspikes = numspikes;
 spikeinfo.spikelocs = spikelocs;
 spikeinfo.criterion = params.criterion;
 spikeinfo.sliceMeans = single(sliceMeans);
-spikeinfo = rmfield(spikeinfo,'data');
 
 %%%%%%%%%%%%%%%%%%%
 %%   spikePlot   %%
@@ -197,7 +200,7 @@ title(sprintf('%s:%i %s (%s)\nSpikes found=%i (criterion=%0.1f)',viewGet(v,'grou
 % plot lines where artificats may be occurring
 ytop = 90;
 ybot = 95;
-if spikeinfo.n < 50
+if spikeinfo.n < 100
   for slicenum = 1:spikeinfo.dim(3)
     % plot lines where there is an artifact
     thisslice = find(spikeinfo.slice == slicenum);
