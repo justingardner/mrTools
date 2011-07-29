@@ -46,8 +46,9 @@ if isempty(spikeinfo)
   spikeinfo = viewGet(v,'spikeinfo',scanNum,groupNum);
 end
 if dispfigs
+  selectGraphWin;
+  spikeinfo = spikePlot(v,spikeinfo);
   spikePlotController(v,spikeinfo);
-  spikePlot(v,spikeinfo);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -174,14 +175,14 @@ spikeinfo.sliceMeans = single(sliceMeans);
 %%%%%%%%%%%%%%%%%%%
 %%   spikePlot   %%
 %%%%%%%%%%%%%%%%%%%
-function spikePlot(v,spikeinfo);
+function spikeinfo = spikePlot(v,spikeinfo)
 
 if isempty(spikeinfo)
   return
 end
 
 % plot the slice means
-selectGraphWin;
+selectGraphWin(0,'replace');
 coloroffset = round(rand*10);
 if spikeinfo.n == 0
   nrows = 1;ncols = 1;
@@ -199,6 +200,7 @@ title(sprintf('%s:%i %s (%s)\nSpikes found=%i (criterion=%0.1f)',viewGet(v,'grou
 
 % plot lines where artificats may be occurring
 ytop = 90;
+ymid = 92.5;
 ybot = 95;
 if spikeinfo.n < 100
   for slicenum = 1:spikeinfo.dim(3)
@@ -206,7 +208,8 @@ if spikeinfo.n < 100
     thisslice = find(spikeinfo.slice == slicenum);
     if ~isempty(thisslice)
       for i = 1:length(thisslice)
-	plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ybot],'Color',getcolor(slicenum+coloroffset));
+        spikeinfo.hSpike(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ybot],'Color',getcolor(slicenum+coloroffset));
+        spikeinfo.hCursor(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ymid],'k','linewidth',3,'visible','off');
       end
     end
     drawnow;
@@ -232,8 +235,6 @@ end
 xlabel(sprintf('Volume number\nNote that spike detection is done on each FFT component not on the mean of the slice.'));
 ylabel('Mean over each slice (% signal change)');
 zoom on
-
-fignum = 0;
 
 % display images with possible artifacts
 spikePlotImage(v,spikeinfo,1);
@@ -278,8 +279,8 @@ if scanNum ~= spikeinfo.scanNum
   % load up that spike info
   v = spikeinfo.v;
   spikeinfo = viewGet(v,'spikeinfo',scanNum,spikeinfo.groupNum);
+  spikeinfo=spikePlot(v,spikeinfo);
   spikePlotController(v,spikeinfo);
-  spikePlot(v,spikeinfo);
 elseif isfield(params,'spikeNum')
   selectGraphWin(1);hold on
   subplot(2,2,3);cla;subplot(2,2,4);cla;
@@ -291,8 +292,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function spikePlotOKCallback
 
-selectGraphWin;
-closeGraphWin;
+h = selectGraphWin(0,'replace');
+closeGraphWin(h);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotCallback   %%
@@ -301,8 +302,9 @@ function val = spikePlotRecomputeCallback(spikeinfo)
 
 val = [];
 close;
-selectGraphWin;
-closeGraphWin;
+h = selectGraphWin(0,'replace');
+closeGraphWin(h);
+
 spikeinfo.v = viewSet(spikeinfo.v,'spikeinfo',[],spikeinfo.scanNum,spikeinfo.groupNum);
 mlrSpikeDetector(spikeinfo.v,spikeinfo.scanNum,spikeinfo.groupNum);
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,9 +315,15 @@ function spikePlotImage(v,spikeinfo,imageNum)
 if imageNum > spikeinfo.n
   return
 end
+
+%set the cursor
+set(spikeinfo.hCursor,'visible','off')
+set(spikeinfo.hCursor(imageNum),'visible','on')
+
 % get the rows and cols
 thisslice = spikeinfo.slice(imageNum);
 thistime = spikeinfo.time(imageNum);
+
 % make the figure
 nrows = 2;ncols = 2;
 % display image
