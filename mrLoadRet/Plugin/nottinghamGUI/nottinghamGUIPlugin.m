@@ -37,7 +37,7 @@ switch action
     mlrAdjustGUI(thisView,'set','graphMenuItem','location','/General/');
     mlrAdjustGUI(thisView,'set','newWindowMenuItem','location','/General/');
     %rename menu items
-    mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export image');
+    mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export image(s)');
     %add/remove separators
     mlrAdjustGUI(thisView,'set','editSessionMenuItem','separator','on');
     mlrAdjustGUI(thisView,'set','readmeMenuItem','separator','off');
