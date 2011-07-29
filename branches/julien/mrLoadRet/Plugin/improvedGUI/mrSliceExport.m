@@ -170,7 +170,8 @@ for iFile = 1:length(filenames)
   filenames{iFile} = [pathname '/' filenames{iFile}];
 end
 
-smartfig('Exported Image');
+hFigure = selectGraphWin(0,'replace');
+set(hFigure,'name','Exported Montage');
 h_ = montage(filenames, 'size', [nRows nColumns]);
 imwrite(get(h_,'cdata'), [pathname '/' fname], 'tiff');
 disp(sprintf('wrote: %s', [pathname '/' fname]));
