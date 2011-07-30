@@ -308,7 +308,7 @@ for iscan = 1:length(params.scanList)
   warning on
 
   % get the path and filename
-  [path,filename,ext,versn] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
+  [path,filename,ext] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
   baseGroupName = viewGet(viewBase,'groupName');
 
   % Save TSeries (using header of 1st scan on scanList as the template for
@@ -427,10 +427,11 @@ if params.projectOutMeanVector
   view = viewSet(view,'curGroup',curMLRGroup);
 end
 
+
 % Save evalstring for recomputing and params
 evalstr = ['view = newView; view = concatTSeries(view,params);'];
 tseriesdir = viewGet(viewConcat,'tseriesdir');
-[pathstr,filename,ext,versn] = fileparts(fullfile(tseriesdir,tseriesFileName));
+[pathstr,filename,ext] = fileparts(fullfile(tseriesdir,tseriesFileName));
 save(fullfile(pathstr,filename),'evalstr','params','concatInfo');
 
 % Delete temporary viewBase and viewConcat
