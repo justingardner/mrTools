@@ -142,7 +142,7 @@ for i = 1:size(data,4)
     [spikex spikey] = find(squeeze(data(:,:,slicenum,i)) > params.criterion*squeeze(stddata(:,:,slicenum)));
     if ~isempty(spikex)
       slice(end+1) = slicenum;
-      time(end+1) = i;
+      time(end+1) = startframe + i -1;
       numspikes(end+1) = length(spikex);
       spikelocs{end+1}.x = spikex;
       spikelocs{end}.y = spikey;
@@ -202,20 +202,16 @@ title(sprintf('%s:%i %s (%s)\nSpikes found=%i (criterion=%0.1f)',viewGet(v,'grou
 ytop = 90;
 ymid = 92.5;
 ybot = 95;
-if spikeinfo.n < 100
-  for slicenum = 1:spikeinfo.dim(3)
-    % plot lines where there is an artifact
-    thisslice = find(spikeinfo.slice == slicenum);
-    if ~isempty(thisslice)
-      for i = 1:length(thisslice)
-        spikeinfo.hSpike(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ybot],'Color',getcolor(slicenum+coloroffset));
-        spikeinfo.hCursor(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ymid],'k','linewidth',3,'visible','off');
-      end
+for slicenum = 1:spikeinfo.dim(3)
+  % plot lines where there is an artifact
+  thisslice = find(spikeinfo.slice == slicenum);
+  if ~isempty(thisslice)
+    for i = 1:length(thisslice)
+      spikeinfo.hSpike(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ybot],'Color',getcolor(slicenum+coloroffset));
+      spikeinfo.hCursor(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ymid],'k','linewidth',3,'visible','off');
     end
-    drawnow;
   end
-else
-  disp(sprintf('(mlrSpikeDetector) Too many spikes (%i) to display lines on graphs',spikeinfo.n));
+  drawnow;
 end
 
 % print out slice labels
