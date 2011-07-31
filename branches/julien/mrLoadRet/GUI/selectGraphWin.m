@@ -26,7 +26,7 @@ if ieNotDefined('noClear')
   noClear = 0;
 end
 if ieNotDefined('graphWindowPreference')
-  graphWindowPreference = mrGetPref('graphWindowPreference');
+  graphWindowPreference = mrGetPref('graphWindow');
 end
 
 
