@@ -191,6 +191,8 @@ switch lower(field)
            value{iOverlay} = [char(164) ' ' value{iOverlay}];
         end
      end
+  else
+    set(handles.overlayPopup,'value',1);
   end
   set(handles.overlayPopup,'String',value);
 
