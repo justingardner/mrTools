@@ -1465,10 +1465,7 @@ switch lower(param)
       if (overlayNum == curOverlay)
         mlrGuiSet(view,'overlayMin',val);        
         %identify the overlay name in the list if any voxel is clipped 
-        mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum)); 
-              %there's probably a way to make this faster
-              %by changing only the overlay name that has changed
-              %but would require accessing GUI information directly instead of using mlrGuiSet
+        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       end
     end
 
@@ -1484,13 +1481,10 @@ switch lower(param)
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
       view.analyses{analysisNum}.overlays(overlayNum).clip(2) = val;
-      if (overlayNum == curOverlay)
+      %if (overlayNum == curOverlay)
         mlrGuiSet(view,'overlayMax',val);
-        mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum)); 
-              %there's probably a way to make this faster
-              %by changing only the overlay name that has changed
-              %but would require accessing GUI information directly instead of using mlrGuiSet
-      end
+        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayNames',overlayNum,analysisNum)},overlayNum); 
+      %end
     end
 
 % % % This was meant to avoid having to recompute max/min overlaydata when it has been compute before
