@@ -70,7 +70,9 @@ end
 % mrDefaultParamsGUI and we can check the parameters 
 % for consistency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-params = checkParams(params);
+if strcmpi(mrGetPref('checkParamsConsistency'),'Yes') %JB: this is annoyingly slow, too complicated to fix and probably unnecessary, so I added an option to slip
+  params = checkParams(params);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % look for a description, and see if it has something like [x...x], that should be replaced by the scan numbers selected in scanList and groupName 
