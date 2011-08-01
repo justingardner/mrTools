@@ -1,4 +1,4 @@
-function mlrGuiSet(view,field,value);
+function mlrGuiSet(view,field,value,varargin)
 %
 %        $Id$
 % mlrGuiSet(view,field,value);
@@ -179,18 +179,28 @@ switch lower(field)
   
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
-  if ~strcmp(value,'none') %identify overlays that have been masked by putting a bullet before their name
+  % mlrGuiSet(view,'overlayPopup',strings,overlayList); %optional argument overlayList indicates that this is a subset of strings to change
+  if ~strcmp(value,'none') 
+    %identify overlays that have been masked by putting a bullet before their name
     epsilon = 1e-7; %value differing by less than epsilon are considered equal
-     for iOverlay = 1:length(value)
-        clip = viewGet(view,'overlayclip',iOverlay);
-        minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
-        maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
-        if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
-              (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
-              clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
-           value{iOverlay} = [char(164) ' ' value{iOverlay}];
-        end
-     end
+    if ieNotDefined('varargin')
+      overlayList = 1:length(value);
+    else
+      overlayList = varargin{1};
+      newStrings=  value;
+      value = get(handles.overlayPopup,'String');
+      value(overlayList) = newStrings;
+    end
+    for iOverlay = overlayList
+      clip = viewGet(view,'overlayclip',iOverlay);
+      minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
+      maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
+      if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
+            (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
+            clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
+         value{iOverlay} = [char(164) ' ' value{iOverlay}];
+      end
+    end
   else
     set(handles.overlayPopup,'value',1);
   end
@@ -198,10 +208,10 @@ switch lower(field)
 
  case {'overlay'}
   % mlrGuiSet(view,'overlay',overlayNum);
-  set(handles.overlayPopup,'Value',value);
   if strcmp(get(handles.overlayPopup,'style'),'popupmenu')
     value = value(1); %if this is not a listbox, we set only one overlay;
   end
+  set(handles.overlayPopup,'Value',value);
   if length(value)==1
     set(handles.overlayMinSlider,'enable','on')
     set(handles.overlayMinText,'enable','on')
