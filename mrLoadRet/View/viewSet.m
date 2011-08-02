@@ -1483,7 +1483,7 @@ switch lower(param)
       view.analyses{analysisNum}.overlays(overlayNum).clip(2) = val;
       %if (overlayNum == curOverlay)
         mlrGuiSet(view,'overlayMax',val);
-        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayNames',overlayNum,analysisNum)},overlayNum); 
+        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       %end
     end
 

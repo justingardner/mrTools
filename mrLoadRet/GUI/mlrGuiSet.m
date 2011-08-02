@@ -182,7 +182,7 @@ switch lower(field)
   % mlrGuiSet(view,'overlayPopup',strings,overlayList); %optional argument overlayList indicates that this is a subset of strings to change
   if ~strcmp(value,'none') 
     %identify overlays that have been masked by putting a bullet before their name
-    epsilon = 1e-7; %value differing by less than epsilon are considered equal
+    epsilon = 1e-6; %value differing by less than epsilon are considered equal
     if ieNotDefined('varargin')
       overlayList = 1:length(value);
     else
