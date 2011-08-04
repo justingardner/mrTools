@@ -108,9 +108,13 @@ while keepAsking
     % if sameForNextScans is set, copy all parameters into all remaining scans and break out of loop
     if isfield(scanParams{iScan},'sameForNextScans') && ...
        scanParams{iScan}.sameForNextScans
+       %remove scan, descprition and scanNum fields from current scanparams
+       currentScanParams = mrParamsRemoveField(scanParams{iScan},'scan');
+       currentScanParams = mrParamsRemoveField(currentScanParams,'description');
+       currentScanParams = mrParamsRemoveField(currentScanParams,'scanNum');
        for jScan = params.scanNum(find(params.scanNum>iScan,1,'first'):end)
           % set the other scans params to the same as this one
-          scanParams{jScan} = mrParamsCopyFields(scanParams{jScan},scanParams{iScan});
+          scanParams{jScan} = mrParamsCopyFields(currentScanParams,scanParams{jScan});
        end
        break
     end
