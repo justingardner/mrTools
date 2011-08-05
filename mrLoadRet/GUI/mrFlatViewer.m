@@ -215,8 +215,11 @@ outer{end+1} = 'Find file';
 checkForMore = 1;
 if isempty(curv)
   curvGuess = sprintf('%s_Curv.vff', fullfile(flatPath, stripext(inner{1})));
+  secondCurvGuess = sprintf('%sCurv.vff', fullfile(flatPath, stripext(stripext(inner{1}),'WM')));
   if isfile(curvGuess)
     curv{1} = getLastDir(curvGuess);
+  elseif isfile(secondCurvGuess)
+    curv{1} = getLastDir(secondCurvGuess);
   else
     % go look for it
     [filename pathname] = uigetfile({'*.vff','Curvature file (*.vff)'},sprintf('Find curvature file'),flatPath);
