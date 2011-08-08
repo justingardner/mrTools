@@ -35,8 +35,13 @@ FDFdir = dir(fullfile(FDFdirname,'*image*.fdf'));
 
 % check that we got FDF files
 if isempty(FDFdir)
-  disp(sprintf('(readfdf) Could not find any FDF files in %s',FDFdirname));
-  return
+  % try to see if the user meant an img directory
+  FDFdirname = setext(FDFdirname,'img');
+  FDFdir = dir(fullfile(FDFdirname,'*image*.fdf'));
+  if isempty(FDFdir)
+    disp(sprintf('(readfdf) Could not find any FDF files in %s',FDFdirname));
+    return
+  end
 end
 
 % read the image
@@ -71,6 +76,7 @@ end
 magicbytes = fread(f,2,'char');
 if ((char(magicbytes(1))~='#') || (char(magicbytes(2))~='!'))
   disp(sprintf('(readfdf:readfdffile) ERROR: Magic bytes are not #! for file %s',filename));
+  fclose(f);
   return
 end
 
@@ -120,6 +126,7 @@ end
 % check for compressed data
 if isfield(h,'compression') && ~isempty(h.compression)
   disp(sprintf('(readfdf) Compressed data reading is not implemented yet!!!'));
+  fclose(f);
   return
 end
 
@@ -128,6 +135,7 @@ fieldcheck = {'storage','type','bits'};
 for i = 1:length(fieldcheck)
   if ~isfield(h,fieldcheck{i})
     disp(sprintf('(readfdf) Could not find field %s in header',fieldcheck{i}));
+    fclose(f);
     return
   end
 end
@@ -136,6 +144,7 @@ end
 storageType = find(strcmp(h.storage,{'integer','float'}));
 if isempty(storageType)
   disp(sprintf('(readfdf) Unrecogonized data type storage=%s',h.storage));
+  fclose(f);
   return
 end
 
@@ -146,12 +155,14 @@ if storageType == 1
     storageType = sprintf('int%i',h.bits);
    otherwise
     disp(sprintf('(readfdf) Unrecogonized number of bits %i',h.bits));
+    fclose(f);
     return
   end
 elseif storageType == 2
   switch h.bits
    case {8,16}
     disp(sprintf('(readfdf) Number of bits for float: %i not supported',h.bits));
+    fclose(f);
     return
    case {32}
     storageType = 'float';
@@ -159,6 +170,7 @@ elseif storageType == 2
     storageType = 'double';
    otherwise
     disp(sprintf('(readfdf) Unrecogonized number of bits %i',h.bits));
+    fclose(f);
     return
   end
 end
@@ -173,6 +185,7 @@ bytesInFile = ftell(f)-currentPos;
 
 if bytesInFile < dataSize
   disp(sprintf('(readfdf) Found %i bytes in file, but need %i\n',bytesInFile,dataSize));
+  fclose(f);
   return
 end
 
@@ -185,3 +198,5 @@ d = fread(f,prod(h.matrix),sprintf('%s=>double',storageType));
 % reshape
 d = reshape(d,h.matrix);
 
+% close file
+fclose(f);
