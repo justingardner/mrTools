@@ -60,6 +60,17 @@ if (isfield(procpar,'petable'))
 end
 
 
+% get date and time of start and finish
+[info.startDatevec info.startDatestr] = getDateFromVarianField(procpar.time_run);
+[info.endDatevec info.endDatestr] = getDateFromVarianField(procpar.time_complete);
+% get elapsed time
+info.elapsedSecs = etime(info.endDatevec,info.startDatevec);
+elapsedMin = floor(info.elapsedSecs/60);
+info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapsedMin*60);
+
+% if there is no ni field then just return
+if ~isfield(procpar,'ni'),info.dim = nan(1,4);return,end
+
 % get the dimensions of the scan
 % (procpar.ni is lines of k-space, procpar.nv is number of lines collected including navigator echoes)
 % used to use procpar.nv and correct for navechoes, but seems more sensible to just use procpar.ni)
@@ -252,13 +263,8 @@ else
   info.dim(4) = 1;
 end
 info.tr = tr;
-% get date and time of start and finish
-[info.startDatevec info.startDatestr] = getDateFromVarianField(procpar.time_run);
-[info.endDatevec info.endDatestr] = getDateFromVarianField(procpar.time_complete);
-% get elapsed time
-info.elapsedSecs = etime(info.endDatevec,info.startDatevec);
-elapsedMin = floor(info.elapsedSecs/60);
-info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapsedMin*60);
+
+% keep procpar
 info.procpar = procpar;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
