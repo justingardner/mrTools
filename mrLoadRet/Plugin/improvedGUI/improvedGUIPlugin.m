@@ -189,12 +189,16 @@ switch action
     mlrAdjustGUI(thisView,'set','copyRoiMenuItem','label','Copy selected ROI(s)');
     mlrAdjustGUI(thisView,'set','pasteRoiMenuItem','label','Paste ROI(s)');
     mlrAdjustGUI(thisView,'set','editRoiMenuItem','label','Edit selected ROI(s)');
+    
+    %add 3D render viewer
+    mlrAdjustGUI(thisView,'add','menu','3D Viewer','flatViewerMenuItem','callback',@renderIn3D,'tag','viewIn3DMenuItem');
+    
     % return view
     retval = thisView;
    end
  % return a help string
  case {'help','h','?'}
-   retval = 'Improvements include: superimposition of several overlays, average over a range of cortical depths, multiple ROI selection ...';
+   retval = 'Improvements include: superimposition of several overlays, average over a range of cortical depths, multiple ROI selection, 3D viewer ...';
  otherwise
    disp(sprintf('(improvedGUIPlugin) Unknown command %s',action));
 end
