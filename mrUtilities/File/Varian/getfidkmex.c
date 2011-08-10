@@ -1,7 +1,7 @@
 #ifdef documentation
 =========================================================================
 
-    program: getfidk.c
+    program: getfidkmex.c
          by: justin gardner
     purpose: reads fid data from VNMR system
        date: 05/06/03
@@ -10,6 +10,9 @@
              Default format of fid is big endian, as we acquaire data
              on VNMR Sun Solaris, also epirri5 keep the same endian.
              Note: SWAP data firstly and then DO typecast.
+
+             This is an obsolete function that has been replaced by
+             getfidkraw.c and getfidk.m
 =========================================================================
 #endif
 
@@ -143,17 +146,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // did the user input the full directory?
   sprintf(pathname,"%s",inputname);
   sprintf(filename,"%s/fid",pathname);
-  if (verbose) mexPrintf("(getfidk) Trying filename %s\n",filename);
+  if (verbose) mexPrintf("(getfidkmex) Trying filename %s\n",filename);
   if ((ffid = fopen(filename,"r")) == NULL) {
     // maybe the user gave the directory without .fid
     sprintf(pathname,"%s.fid",inputname);
     sprintf(filename,"%s/fid",pathname);
-    if (verbose) mexPrintf("(getfidk) Trying filename %s\n",filename);
+    if (verbose) mexPrintf("(getfidkmex) Trying filename %s\n",filename);
     if ((ffid = fopen(filename,"r")) == NULL) {
       // nope, maybe it is simply the filename
       sprintf(pathname,".");
       sprintf(filename,"%s/%s",pathname,inputname);
-      if (verbose) mexPrintf("(getfidk) Trying filename %s\n",filename);
+      if (verbose) mexPrintf("(getfidkmex) Trying filename %s\n",filename);
       if ((ffid = fopen(filename,"r")) == NULL) {
 	// nothing found, give up.
 	fileNotFound(inputname);
@@ -162,7 +165,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       }
     }
   }
-  if (verbose) mexPrintf("(getfidk) Opened %s\n", filename);
+  if (verbose) mexPrintf("(getfidkmex) Opened %s\n", filename);
 
   // get the full path
   getcwd(fullpath,STRSIZE);
@@ -201,12 +204,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // get number of slices
     if (!strcmp(token,"pss")) {
       info.numslices = atoi(fgets(line,LINESIZE,fprocpar));
-      if (verbose) mexPrintf("(getfidk) numslices = %i\n",info.numslices);
+      if (verbose) mexPrintf("(getfidkmex) numslices = %i\n",info.numslices);
     }
     // get number of volumes
     if (!strcmp(token,"cntr")) {
       info.numvolumes = atoi(fgets(line,LINESIZE,fprocpar));
-      if (verbose) mexPrintf("(getfidk) numvolumes = %i\n",info.numvolumes);
+      if (verbose) mexPrintf("(getfidkmex) numvolumes = %i\n",info.numvolumes);
     }
     // get number of voxels per line
     if (!strcmp(token,"np")) {
@@ -215,7 +218,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       token = (char*)strtok(NULL," ");
       // that should be number of slices
       info.linelen = atoi(token)/2;
-      if (verbose) mexPrintf("(getfidk) linelen = %i\n",info.linelen);
+      if (verbose) mexPrintf("(getfidkmex) linelen = %i\n",info.linelen);
     }
     // get the number of receivers
     if (!strcmp(token,"rcvrs")) {
@@ -228,7 +231,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (token[i] == 'y') info.numreceivers++;
       // make sure we have atleast 1 receiver
       if (info.numreceivers <= 0) info.numreceivers = 1;
-      if (verbose) mexPrintf("(getfidk) Number of receivers = %i\n",info.numreceivers);
+      if (verbose) mexPrintf("(getfidkmex) Number of receivers = %i\n",info.numreceivers);
     }
     // get number of lines per image
     if (!strcmp(token,"ni")) {
@@ -236,7 +239,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       token = (char*)strtok(line," ");
       token = (char*)strtok(NULL," ");
       info.numlines = atoi(token);
-      if (verbose) mexPrintf("(getfidk) numlines = %i\n",info.numlines);
+      if (verbose) mexPrintf("(getfidkmex) numlines = %i\n",info.numlines);
     }
     // get number of navechoes
     if (!strcmp(token,"nv")) {
@@ -246,7 +249,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       // nv should be the number of lines of k-space including the nav echoes.
       // later we subtract of the lines of k-space found from ni to get the number of nav echoes
       info.navechoes = atoi(token);
-      if (verbose) mexPrintf("(getfidk) nv (from procpar) = %i\n",info.navechoes);
+      if (verbose) mexPrintf("(getfidkmex) nv (from procpar) = %i\n",info.navechoes);
     }
     // for epi images, there are navigator echos, which
     // should be subtracted from the number of lines.
@@ -255,7 +258,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       fgets(line,LINESIZE,fprocpar);
       token = (char*)strtok(line," ");
       token = (char*)strtok(NULL," ");
-      if (verbose) mexPrintf("(getfidk) petable name: %s",token);
+      if (verbose) mexPrintf("(getfidkmex) petable name: %s",token);
       // the petable name should be something like
       // "epi132alt8k". We want the second number
       if (!strncmp(token+1,"epi",3)) {
@@ -268,13 +271,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	while((j < strlen(token)) && !isdigit(token[j])) j++;
 	// this is the number of shots
 	info.numshots = atoi(token+j);
-	if (verbose) mexPrintf("(getfidk) Number of shots (from petable name) = %i\n",info.numshots);
+	if (verbose) mexPrintf("(getfidkmex) Number of shots (from petable name) = %i\n",info.numshots);
 	// get the accelaration factor, should be like epi132alt8k2r
 	while((j < strlen(token)) && isdigit(token[j])) j++;
 	while((j < strlen(token)) && !isdigit(token[j])) j++;
 	if (j < strlen(token)) {
 	  info.accFactor = atoi(token+j);
-	  if (verbose) mexPrintf("(getfidk) Acceleration factor (from petable name) = %i\n",info.accFactor);
+	  if (verbose) mexPrintf("(getfidkmex) Acceleration factor (from petable name) = %i\n",info.accFactor);
 	}
       }
     }
@@ -298,8 +301,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   info.numimages = info.numslices*info.numvolumes*info.numreceivers;
   info.imagesize = info.linelen*info.numlines;
   // display parameters if verbose mode
-  if (verbose) mexPrintf("(getfidk) (%ix%ix%ix%ix%i) numimages=%i,imagesize=%i\n",info.linelen,info.numlines,info.numslices,info.numvolumes,info.numreceivers,info.numimages,info.imagesize);    
-  if (verbose) mexPrintf("(getfidk) totalsize = %i\n",info.totalsize);
+  if (verbose) mexPrintf("(getfidkmex) (%ix%ix%ix%ix%i) numimages=%i,imagesize=%i\n",info.linelen,info.numlines,info.numslices,info.numvolumes,info.numreceivers,info.numimages,info.imagesize);    
+  if (verbose) mexPrintf("(getfidkmex) totalsize = %i\n",info.totalsize);
 
   // get the fid file length and number of blocks
   if ((n = fileLength(filename,ffid)) == -1) {
@@ -309,7 +312,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // read the fid file header
   if (fread(&header, sizeof(struct datafilehead), 1, ffid) == 0) {
-    mexPrintf("(getfidk) ERROR: reading header from file %s\n",filename);
+    mexPrintf("(getfidkmex) ERROR: reading header from file %s\n",filename);
     errorExit(plhs);
     return;
   }
@@ -325,7 +328,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if ( isLittleEndianPlatform & header.nbheaders > 9 ) {
     swapFlag = 1;
     if (verbose)
-      mexPrintf("(getfidk) Running on little endian platform and data is big endian (default), will swap bytes\n");
+      mexPrintf("(getfidkmex) Running on little endian platform and data is big endian (default), will swap bytes\n");
   }
   else
     swapFlag = 0;
@@ -345,7 +348,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // display fid file header
   if (verbose) {
-    mexPrintf("(getfidk) FID HEADER\n");
+    mexPrintf("(getfidkmex) FID HEADER\n");
     mexPrintf("  nblocks   = %li\n",header.nblocks);
     mexPrintf("  ntraces   = %li\n",header.ntraces);
     mexPrintf("  np        = %li\n",header.np);
@@ -356,7 +359,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexPrintf("  status    = %i\n",header.status);
     mexPrintf("  nbheaders = %li\n",header.nbheaders);
     if (verbose > 1) {
-      mexPrintf("(getfidk)  STATUS DECODE:\n");
+      mexPrintf("(getfidkmex)  STATUS DECODE:\n");
       mexPrintf("    S_DATA         = %i\n",header.status&S_DATA);
       mexPrintf("    S_SPEC         = %i\n",header.status&S_SPEC);
       mexPrintf("    S_32           = %i\n",header.status&S_32);
@@ -375,31 +378,31 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   if ((header.ntraces > 1) && (header.nbheaders != 9)) {
-    mexPrintf("(getfidk) Epirri5 has not been run on this fid file (ntraces = %i and nbheader=%i)\n",header.ntraces,header.nbheaders);
+    mexPrintf("(getfidkmex) Epirri5 has not been run on this fid file (ntraces = %i and nbheader=%i)\n",header.ntraces,header.nbheaders);
     errorExit(plhs);
     return;
   }
 
   // figure out data class
   if (header.status & S_FLOAT) {
-    if (verbose) mexPrintf("(getfidk) datatype is FLOAT\n");
+    if (verbose) mexPrintf("(getfidkmex) datatype is FLOAT\n");
     // set data type
     info.datatype = mxSINGLE_CLASS;
   }
   else {
     if (header.status & S_32) {
       info.datatype = mxINT32_CLASS;
-      if (verbose) mexPrintf("(getfidk) datatype is int32\n");
+      if (verbose) mexPrintf("(getfidkmex) datatype is int32\n");
     }
     else {
       info.datatype = mxINT16_CLASS;
-      if (verbose) mexPrintf("(getfidk) datatype is int16\n");
+      if (verbose) mexPrintf("(getfidkmex) datatype is int16\n");
     }
   }
 
   // make sure we have enough filelength
   if ((sizeof(struct datafilehead)+header.bbytes*header.nblocks) != n) {
-    mexPrintf("(getfidk) ERROR: Expected %i bytes, but found %i\n",sizeof(struct datafilehead)+header.bbytes*header.nblocks,n);
+    mexPrintf("(getfidkmex) ERROR: Expected %i bytes, but found %i\n",sizeof(struct datafilehead)+header.bbytes*header.nblocks,n);
     errorExit(plhs);
     return;
   }
@@ -455,7 +458,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // if the number of slices and volumes doesn't divide nicely
   // into the number of blocks, then something is wrong.
   if (((double)header.nblocks/info.numimages) != floor((double)header.nblocks/info.numimages)) {
-    mexPrintf("(getfidk) ERROR: numimages (%i) does not divide evenly into num blocks %i\n",info.numimages,header.nblocks);
+    mexPrintf("(getfidkmex) ERROR: numimages (%i) does not divide evenly into num blocks %i\n",info.numimages,header.nblocks);
     errorExit(plhs);
     free(block);
     return;
@@ -465,7 +468,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // we should have. This might be wrong if not all the nav echos have been correctly removed
   // from the data.
   if (((double)header.nblocks/info.numimages) != info.numlines) {
-    mexPrintf("(getfidk) ERROR: File contains %0.0f k-space lines when %i are expected. Have you run the correct version of epirri to removes all %i navigator echoes?\n",(double)header.nblocks/info.numimages,info.numlines,info.navechoes);
+    mexPrintf("(getfidkmex) ERROR: File contains %0.0f k-space lines when %i are expected. Have you run the correct version of epirri to removes all %i navigator echoes?\n",(double)header.nblocks/info.numimages,info.numlines,info.navechoes);
     errorExit(plhs);
     free(block);
     return;
@@ -476,13 +479,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // then we read the next k-space line etc.
   for (i=0;i<info.numlines;i++) {
     if (verbose >= 2)
-      mexPrintf("(getfidk) Reading line %i/%i\n",i,info.numlines);
+      mexPrintf("(getfidkmex) Reading line %i/%i\n",i,info.numlines);
     for (j=0;j<info.numimages;j++) {
 
       // read block header
       if ((header.ntraces == 1) || ((j % header.ntraces) == 0)) {
 	if (fread(&blockheader, sizeof(struct datablockhead), 1, ffid) == 0) {
-	  mexPrintf("(getfidk) ERROR: Could not read block header from file %s\n",filename);
+	  mexPrintf("(getfidkmex) ERROR: Could not read block header from file %s\n",filename);
 	  errorExit(plhs);
 	  free(block);
 	  return;
@@ -504,7 +507,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       
       // print out block headers
       if (verbose > 2) {
-	mexPrintf("(getfidk)  BLOCK (%i,%i)\n",i,j);
+	mexPrintf("(getfidkmex)  BLOCK (%i,%i)\n",i,j);
 	mexPrintf("    scale   = %i\n",blockheader.scale);
 	mexPrintf("    status  = %i\n",blockheader.status);
 	mexPrintf("    index   = %i\n",blockheader.index);
@@ -517,7 +520,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       }
       // read in the block of data
       if (fread(block, 1, header.tbytes, ffid) == 0) {
-	mexPrintf("(getfidk) ERROR: reading data from file %s\n",filename);
+	mexPrintf("(getfidkmex) ERROR: reading data from file %s\n",filename);
 	errorExit(plhs);
 	free(block);
 	return;
@@ -683,7 +686,7 @@ void errorExit(mxArray *plhs[])
 //////////////////////////
 void fileNotFound(char *filename)
 {
-  mexPrintf("(getfidk) ERROR: Could not open %s\n", filename);
+  mexPrintf("(getfidkmex) ERROR: Could not open %s\n", filename);
 }
 
 ////////////////////////
@@ -694,7 +697,7 @@ int fileLength(char *filename,FILE *filepointer)
   fpos_t filelen;
   // get size of file: seek to end of file, read pos, seek to begin of file
   if (fseek(filepointer,0,SEEK_END)) {
-    mexPrintf("(getfidk) ERROR: Could not seek in file %s",filename);
+    mexPrintf("(getfidkmex) ERROR: Could not seek in file %s",filename);
     return -1;
   }
 
@@ -702,13 +705,13 @@ int fileLength(char *filename,FILE *filepointer)
   // this may not work with all compilers since fpos_t
   // is not required to be the position in bytes.
   if (fgetpos(filepointer,&filelen)) {
-    mexPrintf("(getfidk) ERROR: Could not seek in file %s",filename);
+    mexPrintf("(getfidkmex) ERROR: Could not seek in file %s",filename);
     return -1;
   }
   
   // seek back to the beginning of the file
   if (fseek(filepointer,0,SEEK_SET)) {
-    mexPrintf("(getfidk) ERROR: Could not seek in file %s",filename);
+    mexPrintf("(getfidkmex) ERROR: Could not seek in file %s",filename);
     return -1;
   }
   return (int)filelen;
