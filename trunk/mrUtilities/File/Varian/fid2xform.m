@@ -264,6 +264,22 @@ else
 end
 info.tr = tr;
 
+% count number of receivers
+if isfield(procpar,'rcvrs')
+  % count the number of receivers that have been turned on
+  info.numReceivers = length(strfind(procpar.rcvrs{1},'y'));
+else
+  info.numReceivers = 1;
+end
+
+if (procpar.ni == 1) && (procpar.nf > 1)
+  disp(sprintf('(fid2xform) Fid file looks like it is compressed. Using nf for the 2nd dim'));
+  info.compressedFid = true;
+  info.dim(2) = procpar.nf;
+else
+  info.compressedFid = false;
+end
+
 % keep procpar
 info.procpar = procpar;
 

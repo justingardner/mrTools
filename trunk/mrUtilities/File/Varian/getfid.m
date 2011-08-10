@@ -44,7 +44,7 @@ getArgs(varargin,{'verbose=1','zeropad=0','movepro=0','kspace=0','swapReceiversA
 
 % read the k-space data from the fid
 if (verbose),disppercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
-d = getfidk(fidname,verbose);
+d = getfidk(fidname,'verbose',verbose);
 if (verbose),disppercent(inf,sprintf('done.\n',fidname));end
 % if it is empty then something has failed
 if (isempty(d.data))
