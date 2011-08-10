@@ -56,6 +56,16 @@ if length(FDFdir)>1
   end
 end
 
+% try swapping x,y
+for sliceNum = 1:size(d,3)
+  for volNum = 1:size(d,4)
+    for receiverNum = 1:size(d,5)
+      d(:,:,sliceNum,volNum,receiverNum) = d(:,:,sliceNum,volNum,receiverNum)';
+    end
+  end
+end
+
+
 %%%%%%%%%%%%%%%%%%%%%
 %    readfdffile    %
 %%%%%%%%%%%%%%%%%%%%%

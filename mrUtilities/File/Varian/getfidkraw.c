@@ -234,7 +234,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   // set space for real data in its original format
-  int dataDims[2] = {header.nblocks,header.np/2};
+  if (verbose)
+    mexPrintf("(getfidkraw) Allocating space for %ix%i data\n",(int)(header.nblocks),(int)(header.np/2));
+
+  int dataDims[2] = {header.nblocks,header.ntraces*header.np/2};
   if ((mxdatar = mxCreateNumericArray(2,dataDims,dataType,mxREAL)) == NULL) {
     errorExit(plhs);
     return;
@@ -249,7 +252,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
   // get space to hold a block of data
-  block = (INT16 *)malloc(header.tbytes);
+  block = (INT16 *)malloc(header.tbytes*header.ntraces);
 
   // get pointers to places to store data
   switch (dataType) {
@@ -270,43 +273,50 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // read each line of k-space until the end of file
   for (i=0;i<header.nblocks;i++) {
     // read block header
-    if ((header.ntraces == 1) || ((i % header.ntraces) == 0)) {
+    if (header.nbheaders == 1) {
       if (fread(&blockheader, sizeof(struct datablockhead), 1, ffid) == 0) {
 	mexPrintf("(getfidkraw) ERROR: Could not read block header from file %s\n",filename);
 	errorExit(plhs);
 	free(block);
 	return;
       }
-    }
     
-    //swap bytes  
-    if ( swapFlag ) {
-      swapBytes(&blockheader.scale, 2); // short
-      swapBytes(&blockheader.status, 2);
-      swapBytes(&blockheader.index, 2);
-      swapBytes(&blockheader.mode, 2);
-      swapBytes(&blockheader.ctcount, 4); // long
-      swapBytes(&blockheader.lpval, 4);   // float
-      swapBytes(&blockheader.rpval, 4);  // float
-      swapBytes(&blockheader.lvl, 4);  // float
-      swapBytes(&blockheader.tlt, 4);  // float
-    }
+      //swap bytes  
+      if ( swapFlag ) {
+	swapBytes(&blockheader.scale, 2); // short
+	swapBytes(&blockheader.status, 2);
+	swapBytes(&blockheader.index, 2);
+	swapBytes(&blockheader.mode, 2);
+	swapBytes(&blockheader.ctcount, 4); // long
+	swapBytes(&blockheader.lpval, 4);   // float
+	swapBytes(&blockheader.rpval, 4);  // float
+	swapBytes(&blockheader.lvl, 4);  // float
+	swapBytes(&blockheader.tlt, 4);  // float
+      }
       
-    // print out block headers
-    if (verbose > 1) {
-      mexPrintf("(getfidkraw)  BLOCK %i\n",i);
-      mexPrintf("    scale   = %i\n",blockheader.scale);
-      mexPrintf("    status  = %i\n",blockheader.status);
-      mexPrintf("    index   = %i\n",blockheader.index);
-      mexPrintf("    mode    = %i\n",blockheader.mode);
-      mexPrintf("    ctcount = %li\n",blockheader.ctcount);
-      mexPrintf("    lpval   = %f\n",blockheader.lpval);
-      mexPrintf("    rpval   = %f\n",blockheader.rpval);
-      mexPrintf("    lvl     = %f\n",blockheader.lvl);
-      mexPrintf("    tlt     = %f\n",blockheader.tlt);
+      // print out block headers
+      if (verbose > 1) {
+	mexPrintf("(getfidkraw)  BLOCK %i\n",i);
+	mexPrintf("    scale   = %i\n",blockheader.scale);
+	mexPrintf("    status  = %i\n",blockheader.status);
+	mexPrintf("    index   = %i\n",blockheader.index);
+	mexPrintf("    mode    = %i\n",blockheader.mode);
+	mexPrintf("    ctcount = %li\n",blockheader.ctcount);
+	mexPrintf("    lpval   = %f\n",blockheader.lpval);
+	mexPrintf("    rpval   = %f\n",blockheader.rpval);
+	mexPrintf("    lvl     = %f\n",blockheader.lvl);
+	mexPrintf("    tlt     = %f\n",blockheader.tlt);
+      }
     }
+    else if (header.nbheaders != 0){
+      mexPrintf("(getfidkraw) Don't know how to handle number of block headers setting to: %i (should be 0 or 1)\n",header.nbheaders);
+    errorExit(plhs);
+    free(block);
+    return;
+    }
+
     // read in the block of data
-    if (fread(block, 1, header.tbytes, ffid) == 0) {
+    if (fread(block, 1, header.tbytes*header.ntraces, ffid) == 0) {
       mexPrintf("(getfidkraw) ERROR: reading data from file %s\n",filename);
       errorExit(plhs);
       free(block);
@@ -316,7 +326,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // note that the real and imaginary parts of the data
     // are stored sequentially in the fid file. 
     // They are stored in its native format into two arrays
-    for (k=0; k<header.np; k+=2) {
+    for (k=0; k<header.np*header.ntraces; k+=2) {
       switch(dataType) {
 	// data is stored as a float
         case mxSINGLE_CLASS:
