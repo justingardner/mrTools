@@ -57,7 +57,9 @@ if info.compressedFid
   if length(info.procpar.pelist) > 1
     lineorder = info.procpar.pelist-min(info.procpar.pelist)+1;
   else
-    lineorder = fliplr(info.procpar.pelist2-min(info.procpar.pelist2)+1);
+    lineorder = info.procpar.pelist2;
+%    lineorder = [-32  -30  -28  -26  -24  -22  -20  -18  -16  -14  -12  -10  -8  -6  -4  -2  0  2  4  6  8  10  12  14  16  18  20  22  24  26  28  30  -31  -29  -27  -25  -23  -21  -19  -17  -15  -13  -11  -9  -7  -5  -3  -1  1  3  5  7  9  11  13  15  17  19  21  23  25  27  29  31];
+    lineorder = lineorder-min(lineorder)+1;
   end
   % take transpose to make these easier to deal with
   d.real = d.real';
@@ -73,23 +75,27 @@ if d.nblocks ~= numLines
   return
 end
 
+if verbose
+  disp(sprintf('(getfidk) Numlines: %i (%ix%ix%ix%i %i receivers accFactor %i)',numLines,info.dim(1),info.dim(2),info.dim(3),info.dim(4),info.numReceivers,info.accFactor));
+end
+
 % read the data from fid block structure
 kNum = 1;clear i;
 d.data = nan(numPhaseEncodeLines,info.dim(2),numSlices,numReceivers,numVolumes);
 disppercent(-inf,'(getfidk) Reordering data');
 for sliceNum = 1:numSlices
-  for volNum = 1:numVolumes
-    for receiverNum = 1:numReceivers
+  for receiverNum = 1:numReceivers
+    for volNum = 1:numVolumes
       % compressed fids have all lines of k-space in one single block of data
       if info.compressedFid
 	% note conversion here to double
-	d.data(lineorder,:,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2))';
+	d.data(:,lineorder,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
 	kNum = kNum+1;
       else
 	% uncompress fid contains one line of k-space per block
 	for kLine = 1:numPhaseEncodeLines
 	  % note conversion here to double
-	  d.data(kLine,:,sliceNum,receiverNum,volNum) = double(d.real(kNum,:)) + i*double(d.imag(kNum,:));
+	  d.data(:,kLine,sliceNum,receiverNum,volNum) = double(d.real(kNum,:)) + i*double(d.imag(kNum,:));
 	  kNum = kNum+1;
 	end
       end
