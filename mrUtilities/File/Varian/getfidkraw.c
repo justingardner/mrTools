@@ -237,7 +237,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (verbose)
     mexPrintf("(getfidkraw) Allocating space for %ix%i data\n",(int)(header.nblocks),(int)(header.np/2));
 
-  int dataDims[2] = {header.nblocks,header.ntraces*header.np/2};
+  int dataDims[2] = {header.ntraces*header.np/2,header.nblocks};
   if ((mxdatar = mxCreateNumericArray(2,dataDims,dataType,mxREAL)) == NULL) {
     errorExit(plhs);
     return;
