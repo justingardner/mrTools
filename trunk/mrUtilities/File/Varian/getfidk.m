@@ -53,6 +53,15 @@ numReceivers = info.numReceivers;
 if info.compressedFid
   % for compressedFid each line of data has all phase encode lines
   numLines = numSlices*numVolumes*numReceivers;
+  % we will also need to know the line order as returned form petable
+  if length(info.procpar.pelist) > 1
+    lineorder = info.procpar.pelist-min(info.procpar.pelist)+1;
+  else
+    lineorder = fliplr(info.procpar.pelist2-min(info.procpar.pelist2)+1);
+  end
+  % take transpose to make these easier to deal with
+  d.real = d.real';
+  d.imag = d.imag';
 else
   numLines = numPhaseEncodeLines*numSlices*numVolumes*numReceivers;
 end
@@ -74,10 +83,7 @@ for sliceNum = 1:numSlices
       % compressed fids have all lines of k-space in one single block of data
       if info.compressedFid
 	% note conversion here to double
-	uhm = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
-	imagesc(abs(ifft2(uhm)));
-	keyboard
-	d.data(:,:,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
+	d.data(lineorder,:,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2))';
 	kNum = kNum+1;
       else
 	% uncompress fid contains one line of k-space per block
