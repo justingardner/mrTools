@@ -25,13 +25,8 @@ if ~nRois
    return;
 end
 
-% if length(overlayList)>1
-%    mrWarnDlg('(renderRois3D) This is not implemented when several overlays are displayed');
-%    return;
-% end
-
 fprintf(1,'Loading data...');
-d.overlayAlpha = viewGet(thisView,'alpha');
+overlayAlpha = viewGet(thisView,'alpha');
 
 % get the analysis structure
 analysis = viewGet(thisView,'analysis');
@@ -42,62 +37,75 @@ fprintf(1,'Done\n');
 %--------------------------------Mask and Alpha overlay data -------------------------------
 if ~isempty(currentAnalysis)
    
-  alphaOverlayNum = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay'));
+  scanDims = viewGet(thisView,'scanDims');
+  d.nOverlays = length(overlayList);
+  alphaOverlayList = zeros(1,d.nOverlays);
+  for iOverlay = 1:d.nOverlays
+    d.overlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',overlayList(iOverlay)))); 
+    thisNum = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',overlayList(iOverlay)));
+    if ~isempty(thisNum)
+      alphaOverlayList(iOverlay) = thisNum;
+      d.alphaOverlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',alphaOverlayList(iOverlay))));
+    else
+      d.alphaOverlayClip(iOverlay,:) = [0 0];
+    end
+  end
 
   %First, get a mask of non-zero voxel representing the current overlay display
   %This is taken from computeOverlay.d
   fprintf(1,'Computing overlay mask...');
-  [d.overlayMaskData, d.overlayData]= maskOverlay(thisView,[overlayList alphaOverlayNum],scanNum);
+  [d.overlayMaskData, d.overlayData]= maskOverlay(thisView,[overlayList alphaOverlayList],scanNum);
   d.overlayMaskData = d.overlayMaskData{1};
   d.overlayData = d.overlayData{1};
   fprintf(1,'Done\n');
-  d.nOverlays = length(overlayList);
 
-%    d.overlayData = getBaseSpaceOverlay(thisView, d.overlayData, scanNum, baseNum);
-% 
-%    d.overlayMaskData = getBaseSpaceOverlay(thisView, double(d.overlayMaskData), scanNum, baseNum,'nearest');
   d.base2scan = viewGet(thisView,'base2scan');
   d.overlayMaskData(isnan(d.overlayMaskData))=0;
   d.overlayMaskData = logical(d.overlayMaskData);
 
    %make alpha map
-   if isempty(alphaOverlayNum)
-      d.overlayAlphaData = d.overlayAlpha*ones(size(d.overlayMaskData));
+   if isempty(alphaOverlayList)
+      d.overlayAlphaData = ones(size(d.overlayMaskData));
+      d.overlayAlphaMaskData = ones(size(d.overlayMaskData));
    else
       fprintf(1,'Computing alpha overlay...');
       
       d.overlayAlphaData = d.overlayData(:,:,:,d.nOverlays+1:end);
       d.overlayData = d.overlayData(:,:,:,1:d.nOverlays);
       
-      alphaMaskData = d.overlayMaskData(:,:,:,d.nOverlays+1:end);
+      d.overlayAlphaMaskData = d.overlayMaskData(:,:,:,d.nOverlays+1:end);
       d.overlayMaskData = d.overlayMaskData(:,:,:,1:d.nOverlays);
-      
-      d.overlayAlphaData(~alphaMaskData)=NaN;
-      
+ 
+      %d.overlayAlphaData(~d.overlayAlphaMaskData)=NaN;
+
       % get the range of the alpha overlay 
       cOverlay=0;
-      for iOverlay = alphaOverlayNum;
+      for iOverlay = alphaOverlayList;
         cOverlay=cOverlay+1;
-        range = viewGet(thisView,'overlayColorRange',iOverlay);
-        % handle setRangeToMax (to debug)
-        if strcmp(viewGet(thisView,'overlayCtype',alphaOverlayNum),'setRangeToMax')
-          clip = viewGet(thisView,'overlayClip',iOverlay);
-         maxRange = max(clip(1),min(d.overlayAlphaData(alphaMaskData)));
-         if ~isempty(maxRange),range(1) = maxRange;end
-         minRange = min(max(d.overlayAlphaData(alphaMaskData)),clip(2));
-         if ~isempty(minRange),range(2) = minRange;end
+        if ~alphaOverlayList(cOverlay)
+          d.overlayAlphaData(:,:,:,cOverlay) = ones(scanDims);
+        else
+          range = viewGet(thisView,'overlayColorRange',iOverlay);
+          % handle setRangeToMax (to debug)
+          if strcmp(viewGet(thisView,'overlayCtype',alphaOverlayList),'setRangeToMax')
+            clip = viewGet(thisView,'overlayClip',iOverlay);
+           maxRange = max(clip(1),min(d.overlayAlphaData(d.overlayAlphaMaskData)));
+           if ~isempty(maxRange),range(1) = maxRange;end
+           minRange = min(max(d.overlayAlphaData(d.overlayAlphaMaskData)),clip(2));
+           if ~isempty(minRange),range(2) = minRange;end
+          end
+          % now compute the alphaOverlay as a number from
+          % 0 to 1 of the range
+          thisAlphaOverlayData = (d.overlayAlphaData(:,:,:,cOverlay)-range(1))./diff(range);
+%           thisAlphaOverlayData(thisAlphaOverlayData>1) = 1;
+%           thisAlphaOverlayData(thisAlphaOverlayData<0) = 0;
+          alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
+          if alphaOverlayExponent<0   %JB if the alpha overlay exponent is negative, set it positive and take the complementary values to 1 for the alpha map
+            alphaOverlayExponent = -alphaOverlayExponent;
+            thisAlphaOverlayData = 1-thisAlphaOverlayData;
+          end
+          d.overlayAlphaData(:,:,:,cOverlay) = thisAlphaOverlayData.^alphaOverlayExponent;
         end
-        % now compute the alphaOverlay as a number from
-        % 0 to 1 of the range
-        thisAlphaOverlayData = d.overlayAlpha*((d.overlayAlphaData(:,:,:,cOverlay)-range(1))./diff(range));
-        thisAlphaOverlayData(thisAlphaOverlayData>d.overlayAlpha) = d.overlayAlpha;
-        thisAlphaOverlayData(thisAlphaOverlayData<0) = 0;
-        alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
-        if alphaOverlayExponent<0   %JB if the alpha overlay exponent is negative, set it positive and take the complementary values to 1 for the alpha map
-          alphaOverlayExponent = -alphaOverlayExponent;
-          thisAlphaOverlayData = 1-thisAlphaOverlayData;
-        end
-        d.overlayAlphaData(:,:,:,cOverlay) = thisAlphaOverlayData.^alphaOverlayExponent;
       end
       d.overlayAlphaData(isnan(d.overlayAlphaData)) = 0;
    end   
@@ -127,10 +135,6 @@ allRoisCoords = [];
 for iRoi = 1:nRois
 
   roi = viewGet(thisView, 'roi',roiList(iRoi));
-%   base2roi = viewGet(thisView, 'base2roi',roiList(iRoi));
-%   roiCoords{iRoi} = xformROIcoords(roi.coords,inv(base2roi),roi.voxelSize,baseVoxelSize);
-%   %past 2 lines equivalent to:
-%   roiCoords{iRoi} = getROICoordinates(thisView,roiList(iRoi),0,[],baseNum);
   roiCoords{iRoi} = getROICoordinates(thisView,roiList(iRoi));
   roiColor(iRoi,:) = color2RGB(roi.color);
   roiName{iRoi} = roi.name;
@@ -209,7 +213,6 @@ end
 
 if ~isempty(currentAnalysis)
   %find indices of all scan voxels within the base space box
-  scanDims = viewGet(thisView,'scanDims');
   [scanXCoords,scanYCoords,scanZCoords] = ndgrid(1:scanDims(1),1:scanDims(2),1:scanDims(3));
   baseScanCoords = d.base2scan\[reshape(cat(4,scanXCoords,scanYCoords,scanZCoords),prod(scanDims),3)';ones(1,prod(scanDims))];
   scanVoxelsInBox = baseScanCoords(1,:)>=minBaseCoords(1) & baseScanCoords(1,:)<=maxBaseCoords(1) & ...
@@ -223,19 +226,25 @@ if ~isempty(currentAnalysis)
   d.overlayData = d.overlayData(:,scanVoxelsInBox)';
   d.overlayMaskData = permute(d.overlayMaskData,[4 1 2 3]);
   d.overlayMaskData = d.overlayMaskData(:,scanVoxelsInBox)';
-
+  d.overlayAlphaMaskData = permute(d.overlayAlphaMaskData,[4 1 2 3]);
+  d.overlayAlphaMaskData = d.overlayAlphaMaskData(:,scanVoxelsInBox)';
   %keep scan coordinates  of these voxels
   d.overlayScanCoords = [scanXCoords(scanVoxelsInBox);  scanYCoords(scanVoxelsInBox); scanZCoords(scanVoxelsInBox)];  
 
   %Now remove voxels that will never be displayed, 
   %either because they're masked in all overlays
   voxelsToKeep = any(d.overlayMaskData,2);
+  %because they're masked in all alpha overlays
+  voxelsToKeep = voxelsToKeep & any(d.overlayAlphaMaskData,2);
+  %because they're zero in all alpha overlays
+  voxelsToKeep = voxelsToKeep & any(d.overlayAlphaData,2);
   %or because at least they're NaN in at least one overlay
   %(this condition could be made less restrictive and be changed to: they're NaN in all overlays)
   voxelsToKeep = voxelsToKeep & ~all(isnan(d.overlayData),2);
   d.overlayAlphaData = d.overlayAlphaData(voxelsToKeep,:);
   d.overlayData = d.overlayData(voxelsToKeep,:);
   d.overlayMaskData = d.overlayMaskData(voxelsToKeep,:);
+  d.overlayAlphaMaskData = d.overlayAlphaMaskData(voxelsToKeep,:);
   d.overlayScanCoords = d.overlayScanCoords(:,voxelsToKeep);
 
   %remember which data points are in which ROI
@@ -293,6 +302,7 @@ switch(baseType)
     clear('baseCoordMap');
     d.corticalDepth = str2num(num2str(viewGet(thisView,'corticalDepth')));
     baseData = viewGet(thisView,'baseData',baseNum);
+% % %     %if we get the surface coordinates using viewGet(thisView,'surfaceData'), we need to
 % % %     %swap X and Y (Not sure why I have to do that and how general it is, but it works on the present data)
 % % %     tempVtcs = d.innerVertices(:,1);
 % % %     d.innerVertices(:,1) = d.innerVertices(:,2);
@@ -322,18 +332,17 @@ end
 toc
 
 %---------------------- construct figure -----------------%
-% selectGraphWin;
-% global MLR;
-% hFigure = MLR.graphFigure;
 hFigure = selectGraphWin;
 % turn off menu/title etc.
 set(hFigure,'NumberTitle','off','Name','RenderRois3D','Toolbar','Figure','color',[.7 .7 .7],'Renderer','OpenGL');
 roisButtonsBottom = .5;
-overlayButtonsBottom = .1;
+overlayButtonsBottom = .04;
 baseButtonsBottom = .8;
 overlaySlidersLeft=.02;
 rotateViewLeft = .6;
 margin=.02;
+sliderWidth = .1;
+stringWidth = .03;
 
 d.hMainAxis = gca;
 set(d.hMainAxis,'Alim',[0 1],'color','none')
@@ -350,12 +359,12 @@ for iRoi = 1:nRois
      d.roiIsEmpty(iRoi)=true;
    end
 end
-uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','popupmenu', 'Position',[margin roisButtonsBottom .1 .03],...
+uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','popupmenu',       'Position',[margin roisButtonsBottom+.2 .1 .03],...
       'Value',1, 'String', {'Perimeter','Grid','Opaque'},'Callback',{@drawRois,d});
-d.hRoiList = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','listBox', 'Position',[margin roisButtonsBottom+.08 .15 .2],...
-  'min',1,'max',length(roiName),'Value',1:length(roiName), 'String', roiName,'Callback',@showRois);
-uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','Checkbox', 'Position',[margin roisButtonsBottom+.04 .15 .03],...
-         'Callback',{@makeVisible,d.hRoi}, 'String','Show ROIs','value',1);
+d.hRoiList = uicontrol('Parent',hFigure, 'Unit','normalized',               'Position',[margin roisButtonsBottom .15 .2],...
+  'Style','listBox', 'min',0,'max',length(roiName),'Value',1:length(roiName), 'String', roiName,'Callback',@showRois);
+d.hShowROIs = uicontrol('Parent',hFigure, 'Unit','normalized',         'Position',[margin roisButtonsBottom+.23 .15 .03],...
+         'Style','Checkbox','Callback',@showRois, 'String','Show ROIs','value',1);
 
 %Overlay control buttons
 if ~isempty(currentAnalysis)
@@ -364,36 +373,52 @@ if ~isempty(currentAnalysis)
    set(hFigure,'Name',['RenderRois3D - ' viewGet(thisView,'homeDir') ' - ' viewGet(thisView,'analysisName')]);
 
    overlayModes = {'Show all voxels','Restrict to all ROIs','Restrict to displayed ROIs'};
-   d.hOverlayRoiMode = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','popupmenu', 'Position',[margin overlayButtonsBottom .15 .03],...
-      'Value',1, 'String', overlayModes);
-   d.hOverlayList = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','listBox', 'Position',[margin overlayButtonsBottom+.12 .15 .2],...
-       'min',1,'max',length(overlayNames),'Value',1:length(overlayNames), 'String', overlayNames);
-   d.hOverlayAlphaCheck = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','checkbox', 'Position',[margin overlayButtonsBottom+.07 .1 .03],...
-      'Min', 0,'Max',1, 'Value',1, 'String','Use Alpha');
+   d.hOverlayRoiMode = uicontrol('Parent',hFigure, 'Unit','normalized',     'Position',[margin overlayButtonsBottom+.36 .15 .03],...
+      'Style','popupmenu', 'Value',1, 'String', overlayModes,'Callback',@recomputeOverlay);
+    
+   d.hOverlayList = uicontrol('Parent',hFigure, 'Unit','normalized',        'Position',[margin overlayButtonsBottom+.16 .15 .2],...
+      'Style','listBox', 'min',0,'max',length(overlayNames),'Value',1:length(overlayNames), 'String', overlayNames,'Callback',@recomputeOverlay);
    
    %Overlay sliders
    if d.nOverlays==1
-     clipRange = str2num(num2str(viewGet(thisView,'overlayClip'))); 
-     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[overlaySlidersLeft .04 .13 .03],'String','Min Threshold');
-     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[overlaySlidersLeft .01 .13 .03],'String','Max Threshold');
-     d.hOverlayEditMax = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[overlaySlidersLeft+.4 .01 .1 .03],...
-        'String',num2str(clipRange(2)));
-     d.hOverlayEditMin = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[overlaySlidersLeft+.4 .04 .1 .03],...
-        'String',num2str(clipRange(1)));
-     d.hOverlaySliderMin = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[overlaySlidersLeft+.1 .04 .3 .03],...
-        'Min', clipRange(1),'Max',clipRange(2), 'value',clipRange(1));
-     d.hOverlaySliderMax = [];
-     d.hOverlaySliderMax = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[overlaySlidersLeft+.1 .01 .3 .03],...
-        'Min', clipRange(1),'Max',clipRange(2), 'value',clipRange(2));
-     set(d.hOverlaySliderMin,'Callback',@recomputeOverlay);
-     set(d.hOverlayEditMin,'Callback',@recomputeOverlay);
-     set(d.hOverlaySliderMax,'Callback',@recomputeOverlay);
-     set(d.hOverlayEditMax,'Callback',@recomputeOverlay);
+      
+     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.12 stringWidth .03],'String','Min.');
+     d.hOverlayEditMin = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.13 .03 .03],...
+        'Style','edit', 'String',num2str(d.overlayClip(1)),'Callback',@recomputeOverlay);
+     d.hOverlaySliderMin = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.12 sliderWidth .03],...
+        'Style','slider', 'Min', d.overlayClip(1),'Max',d.overlayClip(2), 'value',d.overlayClip(1),'Callback',@recomputeOverlay);
+     
+     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.1 stringWidth .03],'String','Max.');
+     d.hOverlayEditMax = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.11 .03 .03],...
+        'Style','edit', 'String',num2str(d.overlayClip(2)),'Callback',@recomputeOverlay);
+     d.hOverlaySliderMax = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.10 sliderWidth .03],...
+        'Style','slider', 'Min', d.overlayClip(1),'Max',d.overlayClip(2), 'value',d.overlayClip(2),'Callback',@recomputeOverlay);
    end
-   set(d.hOverlayRoiMode,'Callback',@recomputeOverlay);
-   set(d.hOverlayList,'Callback',@recomputeOverlay);
-   set(d.hOverlayAlphaCheck,'Callback',@recomputeOverlay);
-   set(d.hOverlayList,'Callback',@recomputeOverlay);
+     
+   d.hOverlayAlphaCheck = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[margin overlayButtonsBottom+.05 .1 .03],...
+      'Style','checkbox', 'Min', 0,'Max',1, 'Value',1, 'String','Use Alpha Overlay','Callback',@recomputeOverlay);
+     
+   uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.08 stringWidth .03],'String','Alpha');
+   d.hOverlayAlphaEdit = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.09 .03 .03],...
+      'Style','edit', 'String',overlayAlpha,'Callback',@recomputeOverlay);
+   d.hOverlayAlphaSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.08 sliderWidth .03],...
+      'Style','slider', 'Min', 0,'Max',1, 'value',overlayAlpha,'Callback',@recomputeOverlay);
+    
+   if d.nOverlays==1 && any(alphaOverlayList)
+      
+     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',           'Position',[margin overlayButtonsBottom+.02 stringWidth .03],'String','Min.');
+     d.hAlphaOverlayEditMin = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.03 .03 .03],...
+        'Style','edit', 'String',num2str(d.alphaOverlayClip(1)),'Callback',@recomputeOverlay);
+     d.hAlphaOverlaySliderMin = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.02 sliderWidth .03],...
+        'Style','slider', 'Min', d.alphaOverlayClip(1),'Max',d.alphaOverlayClip(2), 'value',d.alphaOverlayClip(1),'Callback',@recomputeOverlay);
+     
+     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',           'Position',[margin overlayButtonsBottom+.00 stringWidth .03],'String','Max.');
+     d.hAlphaOverlayEditMax = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.01 .03 .03],...
+        'Style','edit', 'String',num2str(d.alphaOverlayClip(2)),'Callback',@recomputeOverlay);
+     d.hAlphaOverlaySliderMax = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.00 sliderWidth .03],...
+        'Style','slider', 'Min', d.alphaOverlayClip(1),'Max',d.alphaOverlayClip(2), 'value',d.alphaOverlayClip(2),'Callback',@recomputeOverlay);
+   end
+   
    set(hFigure,'userdata',d);
    recomputeOverlay(d.hOverlayAlphaCheck);
    
@@ -401,7 +426,7 @@ if ~isempty(currentAnalysis)
    d = get(hFigure,'userdata');
    set(d.hOverlay,'ambientStrength',.5);  %not too bright, not too dark
    set(d.hOverlay,'specularStrength',.3); %little reflectance
-   uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','Checkbox', 'Position',[margin overlayButtonsBottom+.04 .15 .03],...
+   uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','Checkbox', 'Position',[margin overlayButtonsBottom+.39 .15 .03],...
          'Callback',{@makeVisible,d.hOverlay}, 'String','Show Overlay','value',1);
 
 end
@@ -412,44 +437,34 @@ switch(baseType)
     for iDim = 1:3
       d.hSurface(iDim) = surface(baseCoords{iDim}(:,:,1),baseCoords{iDim}(:,:,2),baseCoords{iDim}(:,:,3),d.baseRGB{iDim}, 'EdgeColor','none','parent',d.hMainAxis);
     end
-    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','checkbox','Position',[margin baseButtonsBottom .15 .03],...
+    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','checkbox',   'Position',[margin baseButtonsBottom+.1 .15 .03],...
          'Min', 0,'Max',1, 'Value',1, 'String', 'Show Base', 'callback',{@makeVisible,d.hSurface});
   case 2
-    sliderWidth = .1;
-    stringWidth = .03;
     sliderStep(1) = corticalDepths(2) - corticalDepths(1);
     sliderStep(2) = 3*sliderStep(1);
     %depth control
-    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[margin baseButtonsBottom+.09 stringWidth .03],'String','Depth');
-    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[margin baseButtonsBottom+.02 stringWidth .03],'String','Depth');
-    d.hInnerSurfEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.1 .02 .03],...
-      'String',num2str(d.corticalDepth(1)));
-    d.hOuterSurfEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.03 .02 .03],...
-      'String',num2str(d.corticalDepth(2)));
-    d.hInnerSurfSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[margin+stringWidth baseButtonsBottom+.09 sliderWidth .03],...
-      'Min', corticalDepths(1),'Max',corticalDepths(end), 'value',d.corticalDepth(1),'sliderStep',sliderStep);
-    d.hOuterSurfSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[margin+stringWidth baseButtonsBottom+.02 sliderWidth .03],...
-      'Min', corticalDepths(1),'Max',corticalDepths(end), 'value',d.corticalDepth(2),'sliderStep',sliderStep);
-    set(d.hInnerSurfEdit,'Callback',@recomputeSurface);
-    set(d.hOuterSurfEdit,'Callback',@recomputeSurface);
-    set(d.hInnerSurfSlider,'Callback',@recomputeSurface);
-    set(d.hOuterSurfSlider,'Callback',@recomputeSurface);
+    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin baseButtonsBottom+.09 stringWidth .03],'String','Depth');
+    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin baseButtonsBottom+.02 stringWidth .03],'String','Depth');
+    d.hInnerSurfEdit = uicontrol('Parent',hFigure, 'Unit','normalized',    'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.1 .02 .03],...
+      'Style','edit', 'String',num2str(d.corticalDepth(1)),'Callback',@recomputeSurface);
+    d.hOuterSurfEdit = uicontrol('Parent',hFigure, 'Unit','normalized',    'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.03 .02 .03],...
+      'Style','edit', 'String',num2str(d.corticalDepth(2)),'Callback',@recomputeSurface);
+    d.hInnerSurfSlider = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[margin+stringWidth baseButtonsBottom+.09 sliderWidth .03],...
+      'Style','slider', 'Min', corticalDepths(1),'Max',corticalDepths(end), 'value',d.corticalDepth(1),'sliderStep',sliderStep,'Callback',@recomputeSurface);
+    d.hOuterSurfSlider = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[margin+stringWidth baseButtonsBottom+.02 sliderWidth .03],...
+      'Style','slider', 'Min', corticalDepths(1),'Max',corticalDepths(end), 'value',d.corticalDepth(2),'sliderStep',sliderStep,'Callback',@recomputeSurface);
     
     %transparency control
-    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[margin baseButtonsBottom+.07 stringWidth .03],'String','Alpha');
-    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[margin baseButtonsBottom stringWidth .03],'String','Alpha');
-    d.hInnerAlphaEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.08 .02 .03],...
-      'String',num2str(1));
-    d.hOuterAlphaEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.01 .02 .03],...
-      'String',num2str(1));
-    d.hInnerAlphaSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[margin+stringWidth baseButtonsBottom+.07 sliderWidth .03],...
-      'Min', 0,'Max',1, 'value',1,'sliderStep',[.1 .3]);
-    d.hOuterAlphaSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[margin+stringWidth baseButtonsBottom sliderWidth .03],...
-      'Min', 0,'Max',1, 'value',1,'sliderStep',[.1 .3]);
-    set(d.hInnerAlphaEdit,'Callback',@recomputeSurface);
-    set(d.hOuterAlphaEdit,'Callback',@recomputeSurface);
-    set(d.hInnerAlphaSlider,'Callback',@recomputeSurface);
-    set(d.hOuterAlphaSlider,'Callback',@recomputeSurface);
+    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin baseButtonsBottom+.07 stringWidth .03],'String','Alpha');
+    uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin baseButtonsBottom stringWidth .03],'String','Alpha');
+    d.hInnerAlphaEdit = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.08 .02 .03],...
+      'Style','edit', 'String',num2str(1),'Callback',@recomputeSurface);
+    d.hOuterAlphaEdit = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[margin+stringWidth+sliderWidth baseButtonsBottom+.01 .02 .03],...
+      'Style','edit', 'String',num2str(1),'Callback',@recomputeSurface);
+    d.hInnerAlphaSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[margin+stringWidth baseButtonsBottom+.07 sliderWidth .03],...
+      'Style','slider', 'Min', 0,'Max',1, 'value',1,'sliderStep',[.1 .3],'Callback',@recomputeSurface);
+    d.hOuterAlphaSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[margin+stringWidth baseButtonsBottom sliderWidth .03],...
+      'Style','slider', 'Min', 0,'Max',1, 'value',1,'sliderStep',[.1 .3],'Callback',@recomputeSurface);
    
     set(hFigure,'userdata',d);
     recomputeSurface(d.hOuterSurfSlider)
@@ -597,7 +612,32 @@ for iRoi = 1:length(Xcoords)
    end
 end
 
-%---------------------------------------------------- draws Rois
+%---------------------------------------------------- show Rois
+function showRois(handle,eventdata)
+
+hFigure= get(handle,'parent');
+d = get(hFigure,'userdata');
+
+roisToShow = false(1,length(d.roiIsEmpty));
+roisToShow(get(d.hRoiList,'value'))=true;
+
+if get(d.hShowROIs,'value')
+  set(d.hRoi(~d.roiIsEmpty & roisToShow),'visible','on')
+  set(d.hRoi(~d.roiIsEmpty & ~roisToShow),'visible','off')
+else
+  set(d.hRoi(~d.roiIsEmpty),'visible','off')
+end
+
+switch(handle)
+  case d.hRoiList
+
+    overlayRoiModes = get(d.hOverlayRoiMode,'String');
+    overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
+    if strcmp(overlayRoiMode,'Restrict to displayed ROIs')
+      recomputeOverlay(handle);
+    end
+end
+%---------------------------------------------------- compute Surface coordiantes
 function recomputeSurface(handle,eventdata)
 
 hFigure= get(handle,'parent');
@@ -658,23 +698,6 @@ end
        
 set(hFigure,'userdata',d);
 
-%---------------------------------------------------- draws Rois
-function showRois(handle,eventdata)
-
-hFigure= get(handle,'parent');
-d = get(hFigure,'userdata');
-
-roisToShow = false(1,length(d.roiIsEmpty));
-roisToShow(get(handle,'value'))=true;
-set(d.hRoi(~d.roiIsEmpty & roisToShow),'visible','on')
-set(d.hRoi(~d.roiIsEmpty & ~roisToShow),'visible','off')
-
-overlayRoiModes = get(d.hOverlayRoiMode,'String');
-overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
-if strcmp(overlayRoiMode,'Restrict to displayed ROIs')
-  recomputeOverlay(handle);
-end
-
 %---------------------------------------------------- recomputes overlay object
 function recomputeOverlay(handle,eventdata)
 
@@ -707,6 +730,23 @@ overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
 
 d = blendOverlays(d,whichRois,overlayRoiMode);
 
+overlayAlpha = str2num(get(d.hOverlayAlphaEdit,'string'));
+switch(handle)
+  case d.hOverlayAlphaEdit
+    overlayAlpha = str2num(get(handle,'string'));
+     set(d.hOverlayAlphaSlider,'value',overlayAlpha);
+  case d.hOverlayAlphaSlider
+    overlayAlpha = get(handle,'value');
+    set(d.hOverlayAlphaEdit,'string',num2str(overlayAlpha));
+end
+
+if useAlpha
+  cubesAlphaData = overlayAlpha*d.cubesAlphaData;
+else
+  cubesAlphaData = overlayAlpha*ones(size(d.cubesAlphaData));
+end
+    
+
 if d.nOverlays==1
   firstIndex = find(d.cubesColorIndex>=minThreshold,1,'first');
   lastIndex = find(d.cubesColorIndex<=maxThreshold,1,'last');
@@ -717,10 +757,10 @@ end
 if ~isempty(firstIndex) && ~isempty(lastIndex) && lastIndex>=firstIndex
    %faceCData = d.cubesColorIndex(firstIndex:lastIndex);
    faceCData = d.cubesRGB(firstIndex:lastIndex,:);
-   faceAlphaData = d.cubesAlphaData(firstIndex:lastIndex);
+   faceAlphaData = cubesAlphaData(firstIndex:lastIndex);
    cubesScanCoords = d.cubesScanCoords(:,firstIndex:lastIndex);
    [faceXcoords, faceYcoords, faceZcoords,faceCData,faceAlphaData] = ...
-         makeCubeFaces(cubesScanCoords,faceCData',faceAlphaData',useAlpha == 0 || (d.overlayAlpha == 1 && all(faceAlphaData(:)==1)),d.base2scan);
+         makeCubeFaces(cubesScanCoords,faceCData',faceAlphaData',all(faceAlphaData(:)==1),d.base2scan);
    %to use transparency, I need to convert X,Y,Z data to face/vertex data
    %patchStruct = surf2patch(faceXcoords,faceYcoords,faceZcoords,faceCData); %surf2patch does not handle color data correctly
    patchStruct.vertices = [reshape(faceXcoords,numel(faceXcoords),1) reshape(faceYcoords,numel(faceYcoords),1) reshape(faceZcoords,numel(faceZcoords),1)];
@@ -730,8 +770,6 @@ else
    patchStruct.faces = [];
    faceCData = 1;
    faceAlphaData = 1;
-   firstIndex = Inf;
-   lastIndex = -Inf;
 end
 
 if isfield(d,'hOverlay')
@@ -763,6 +801,7 @@ function d = blendOverlays(d,whichOverlays,overlayRoiMode)
 
 switch(overlayRoiMode)
   case 'Show all voxels'
+    overlayAlphaMaskData = d.overlayAlphaMaskData;
     overlayAlphaData = d.overlayAlphaData;
     overlayMaskData = d.overlayMaskData;
     overlayData = d.overlayData;
@@ -770,6 +809,7 @@ switch(overlayRoiMode)
     overlayScanCoords = d.overlayScanCoords;
     
   case 'Restrict to all ROIs'
+    overlayAlphaMaskData = d.overlayAlphaMaskData(d.overlayAllRoisIndex,:);
     overlayAlphaData = d.overlayAlphaData(d.overlayAllRoisIndex,:);
     overlayMaskData = d.overlayMaskData(d.overlayAllRoisIndex,:);
     overlayData = d.overlayData(d.overlayAllRoisIndex,:);
@@ -782,6 +822,7 @@ switch(overlayRoiMode)
     for iRoi=whichRois
       overlayRoisIndex = union(d.overlayRoiIndex{iRoi},overlayRoisIndex);
     end
+    overlayAlphaMaskData = d.overlayAlphaMaskData(overlayRoisIndex,:);
     overlayAlphaData = d.overlayAlphaData(overlayRoisIndex,:);
     overlayMaskData = d.overlayMaskData(overlayRoisIndex,:);
     overlayData = d.overlayData(overlayRoisIndex,:);
@@ -791,13 +832,17 @@ switch(overlayRoiMode)
 end
 
   %%%%%%%%%%%%%%%%%%% Compute cube faces
+  
+  %apply alpha mask to alpha overlay
+  overlayAlphaData(~overlayAlphaMaskData)=0;
+
   cOverlay = 0;
   for iOverlay=whichOverlays
     cOverlay = cOverlay+1;
     if length(whichOverlays)>1
       thisAlphaData = overlayAlphaData(:,iOverlay);
       % apply the mask to alpha data
-      thisAlphaData(~overlayMaskData(:,iOverlay))=NaN;
+      thisAlphaData(~overlayMaskData(:,iOverlay))=0;
     % 1) pre-multiply colors by alpha
       RGB = repmat(thisAlphaData,[1 3]).*overlayRGB(:,:,iOverlay);
       if cOverlay==1
@@ -878,7 +923,7 @@ end
 if ~ieNotDefined('colorData')
   colorData = colorData(:,uniqueIndices);
 end
-if ~opaque && ~ieNotDefined('alphaData')
+if ~ieNotDefined('alphaData')
   alphaData = alphaData(uniqueIndices);
   %round any alpha value >.985 to 1, because of a bug in the display
   alphaData(alphaData>.985)=1;
