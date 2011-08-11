@@ -54,11 +54,18 @@ if info.compressedFid
   % for compressedFid each line of data has all phase encode lines
   numLines = numSlices*numVolumes*numReceivers;
   % we will also need to know the line order as returned form petable
-  if length(info.procpar.pelist) > 1
+  if ~isfield(info.procpar,'pelist') || length(info.procpar.pelist) > 1
     lineorder = info.procpar.pelist-min(info.procpar.pelist)+1;
   else
-    lineorder = info.procpar.pelist2;
-%    lineorder = [-32  -30  -28  -26  -24  -22  -20  -18  -16  -14  -12  -10  -8  -6  -4  -2  0  2  4  6  8  10  12  14  16  18  20  22  24  26  28  30  -31  -29  -27  -25  -23  -21  -19  -17  -15  -13  -11  -9  -7  -5  -3  -1  1  3  5  7  9  11  13  15  17  19  21  23  25  27  29  31];
+    % pelist variable not set, read petable
+    petable = readpetable(info.procpar.petable{1});
+    % petable not found, give up
+    if isempty(petable)
+      disp(sprintf('(getfidk) !!!! Unknown petable !!!!'));
+      keyboard
+    end
+    % get the line ordering from petable
+    lineorder = petable.t1';
     lineorder = lineorder-min(lineorder)+1;
   end
   % take transpose to make these easier to deal with
