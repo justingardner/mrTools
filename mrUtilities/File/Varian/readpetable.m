@@ -15,8 +15,8 @@ if nargin < 1
 end
 
 % petable
-petablePath = [];
-getArgs(varargin,{'petablePath=~/vnmrsys/tablib'});
+petablePath = [];verbose = [];
+getArgs(varargin,{'petablePath=~/vnmrsys/tablib','verbose=0'});
 
 % look for petable path
 if ~isdir(petablePath)
@@ -48,3 +48,7 @@ end
 
 % close petable
 fclose(fPetable);
+
+if verbose
+  disp(sprintf('(readpetable) Read petable: %s',fullfile(petablePath,filename)));
+end

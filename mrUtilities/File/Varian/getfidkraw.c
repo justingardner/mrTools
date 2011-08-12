@@ -250,7 +250,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   mxSetField(plhs[0],0,"imag",mxdatai);
 
-
   // get space to hold a block of data
   block = (INT16 *)malloc(header.tbytes*header.ntraces);
 
@@ -272,8 +271,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // read each line of k-space until the end of file
   for (i=0;i<header.nblocks;i++) {
-    // read block header
-    if (header.nbheaders == 1) {
+    // read block header if nbheaders is 1 or 9 (9 is a code set by epibsi meaning
+    // the same as 1, except specifiying the epibsi processing has been run)
+    if ((header.nbheaders == 1) || (header.nbheaders == 9)) {
       if (fread(&blockheader, sizeof(struct datablockhead), 1, ffid) == 0) {
 	mexPrintf("(getfidkraw) ERROR: Could not read block header from file %s\n",filename);
 	errorExit(plhs);
@@ -310,9 +310,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     else if (header.nbheaders != 0){
       mexPrintf("(getfidkraw) Don't know how to handle number of block headers setting to: %i (should be 0 or 1)\n",header.nbheaders);
-    errorExit(plhs);
-    free(block);
-    return;
+      errorExit(plhs);
+      free(block);
+      return;
     }
 
     // read in the block of data
@@ -349,6 +349,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	  // save data in ouput array
 	  *data_int16++ = ((INT16*)block)[k];
 	  *datai_int16++ = ((INT16*)block)[k+1];
+	  break;
 	  // data is stored as four byte integers
 	case mxINT32_CLASS:
 	  // convert endian
@@ -357,8 +358,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	    swapBytes(((INT32*)block)+k+1,4); 
           }  
 	  // save data in ouput array
-	  *data_int16++ = ((INT32*)block)[k];
-	  *datai_int16++ = ((INT32*)block)[k+1];
+	  *data_int32++ = ((INT32*)block)[k];
+	  *datai_int32++ = ((INT32*)block)[k+1];
+	  break;
       }
     }
   }

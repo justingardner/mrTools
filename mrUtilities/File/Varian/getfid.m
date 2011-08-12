@@ -40,7 +40,7 @@ for i = 1:length(varargin)
   end
 end
 % now run getArgs
-getArgs(varargin,{'verbose=1','zeropad=0','movepro=0','kspace=0','swapReceiversAndSlices=1'});
+getArgs(varargin,{'verbose=0','zeropad=0','movepro=0','kspace=0','swapReceiversAndSlices=1'});
 
 % read the k-space data from the fid
 if (verbose),disppercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
@@ -54,7 +54,7 @@ end
 d.dim = size(d.data);
 
 % get fidinfo
-[xform info] = fid2xform(fidname,-1);
+[xform info] = fid2xform(fidname,verbose);
 
 if info.receiversAndSlicesSwapped && swapReceiversAndSlices
   if size(d.data,4) > 1
@@ -77,33 +77,43 @@ end
 
 % everything is ok, then transform data
 if(verbose),disppercent(-inf,'(getfid) Transforming data');end
-for i = 1:size(d.data,3)
+
+% decide whether we need to do a 3D transform or 2D
+if info.acq3d
   for j = 1:size(d.data,4)
     for k = 1:size(d.data,5)
-      % need to zeropad or not
-      if zeropad
-	% zeropad the data
-	thisdata=zeros(zeropad,zeropad);
-	if movepro == 0
-	  % get this image
-	  thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k));
+      data(:,:,:,k,j) = myfft3(d.data(:,:,:,j,k),kspace);
+    end
+  end
+else
+  for i = 1:size(d.data,3)
+    for j = 1:size(d.data,4)
+      for k = 1:size(d.data,5)
+	% need to zeropad or not
+	if zeropad
+	  % zeropad the data
+	  thisdata=zeros(zeropad,zeropad);
+	  if movepro == 0
+	    % get this image
+	    thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k));
+	  else
+	    % get this image with pro shift
+	    thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k)).*exp(sqrt(-1)*phaseshift);
+	  end
+	  % fft 
+	  data(:,:,i,k,j) = myfft(thisdata,kspace);
 	else
-	  % get this image with pro shift
-	  thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k)).*exp(sqrt(-1)*phaseshift);
-	end
-	% fft 
-	data(:,:,i,k,j) = myfft(thisdata,kspace);
-      else
-	% simply fft data, moving pro if necessary
-	if movepro == 0
-	  data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k),kspace);
-	else
-	  data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k).*exp(sqrt(-1)*phaseshift),kspace);
+	  % simply fft data, moving pro if necessary
+	  if movepro == 0
+	    data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k),kspace);
+	  else
+	    data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k).*exp(sqrt(-1)*phaseshift),kspace);
+	  end
 	end
       end
-    end
-    if (verbose)
-      disppercent(((i-1)*size(d.data,4)+j)/(size(d.data,3)*size(d.data,4)));
+      if (verbose)
+	disppercent(((i-1)*size(d.data,4)+j)/(size(d.data,3)*size(d.data,4)));
+      end
     end
   end
 end
@@ -129,4 +139,15 @@ function data = myfft(data,kspace)
 % if kspace is set, it does nothing
 if ~kspace
   data = fftshift(abs(fft2(data)))/(size(data,1)*size(data,2));
+end
+
+%%%%%%%%%%%%%%%%
+%    myfft3    %
+%%%%%%%%%%%%%%%%
+function data = myfft3(data,kspace)
+
+% this just simply takes the 3D fft, shifts and gets the real part of the data.
+% if kspace is set, it does nothing
+if ~kspace
+  data = fftshift(abs(fftn(data)))/(size(data,1)*size(data,2)*size(data,3));
 end
