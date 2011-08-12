@@ -43,6 +43,10 @@ end
 % load the fid file using getfidkraw
 d = getfidkraw(fidFilename,verbose);
 
+% take transpose to make these easier to deal with
+d.real = d.real';
+d.imag = d.imag';
+
 % compute ow any volumes, slices, phase encode lines and receivers we have
 numVolumes = info.dim(4)+info.nRefVolumes;
 numSlices = info.dim(3);
@@ -58,7 +62,7 @@ if info.compressedFid
     lineorder = info.procpar.pelist-min(info.procpar.pelist)+1;
   else
     % pelist variable not set, read petable
-    petable = readpetable(info.procpar.petable{1});
+    petable = readpetable(info.procpar.petable{1},'verbose',verbose);
     % petable not found, give up
     if isempty(petable)
       disp(sprintf('(getfidk) !!!! Unknown petable !!!!'));
@@ -68,9 +72,6 @@ if info.compressedFid
     lineorder = petable.t1';
     lineorder = lineorder-min(lineorder)+1;
   end
-  % take transpose to make these easier to deal with
-  d.real = d.real';
-  d.imag = d.imag';
 else
   numLines = numPhaseEncodeLines*numSlices*numVolumes*numReceivers;
 end
@@ -88,12 +89,12 @@ end
 
 % read the data from fid block structure
 kNum = 1;clear i;
-d.data = nan(numPhaseEncodeLines,info.dim(2),numSlices,numReceivers,numVolumes);
-disppercent(-inf,'(getfidk) Reordering data');
+d.data = nan(info.dim(2),numPhaseEncodeLines,numSlices,numReceivers,numVolumes);
+if verbose,disppercent(-inf,'(getfidk) Reordering data');end
 for sliceNum = 1:numSlices
   for receiverNum = 1:numReceivers
     for volNum = 1:numVolumes
-      % compressed fids have all lines of k-space in one single block of data
+	% compressed fids have all lines of k-space in one single block of data
       if info.compressedFid
 	% note conversion here to double
 	d.data(:,lineorder,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
@@ -107,8 +108,8 @@ for sliceNum = 1:numSlices
 	end
       end
     end
-    disppercent(calcPercentDone(volNum,numVolumes,receiverNum,numReceivers));
+    if verbose,disppercent(calcPercentDone(volNum,numVolumes,receiverNum,numReceivers));end
   end
 end
-disppercent(inf);
+if verbose,disppercent(inf);end
 
