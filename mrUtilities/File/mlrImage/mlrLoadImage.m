@@ -17,9 +17,7 @@ end
 
 % set filenames
 if isempty(getext(filename))
-  hdrFilename = setext(filename,mrGetPref('niftiFileExtension'));
-else
-  hdrFilename = filename;
+  filename = setext(filename,mrGetPref('niftiFileExtension'));
 end
 
 % load the header first

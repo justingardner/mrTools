@@ -227,6 +227,25 @@ end
 
 gVols(gSystem.n).curCoord = [nan nan nan];
 
+dispHeaderInfo(gVols(gSystem.n));
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%   dispHeaderInfo   %%
+%%%%%%%%%%%%%%%%%%%%%%%%
+function dispHeaderInfo(vol)
+
+dispHeader(vol.h.filename);
+disp(sprintf('type: %s (%s)',vol.h.type,vol.h.ext));
+disp(sprintf('dim: [%s]',mynum2str(vol.h.dim(:)','sigfigs=0')));
+disp(sprintf('pixdim: [%s]',mynum2str(vol.h.pixdim(:)')));
+disp(sprintf('qform_code: %i',vol.h.qform_code));
+disp(sprintf('qform:'));
+disp(sprintf('%s',mynum2str(vol.h.qform44,'compact=0','sigfigs=-1')));
+disp(sprintf('sform_code: %i',vol.h.sform_code));
+disp(sprintf('sform:'));
+disp(sprintf('%s',mynum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
+dispHeader;
+
 %%%%%%%%%%%%%%%%%%%%%
 %    setVolCoord    %
 %%%%%%%%%%%%%%%%%%%%%

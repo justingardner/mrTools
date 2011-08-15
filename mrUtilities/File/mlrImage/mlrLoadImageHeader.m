@@ -88,7 +88,7 @@ end
 function header = mlrLoadImageHeaderNifti(filename,header)
 
 % read the nifti header
-nifti = cbiReadNiftiHeader(hdrFilename);
+nifti = cbiReadNiftiHeader(filename);
 
 % set some info
 header.type = 'nifti';
@@ -99,8 +99,9 @@ header.qform_code = header.hdr.qform_code;
 header.qform44 = header.hdr.qform44;
 header.sform_code = header.hdr.sform_code;
 header.sform44 = header.hdr.sform44;
-header.pixdim = header.hdr.pixdim;
-header.dim = header.hdr.dim;
+header.nDim = header.hdr.dim(1);
+header.dim = header.hdr.dim(2:header.nDim+1);
+header.pixdim = header.hdr.pixdim(2:header.nDim+2);
 header.permutationMatrix = getPermutationMatrix(nifti);
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
