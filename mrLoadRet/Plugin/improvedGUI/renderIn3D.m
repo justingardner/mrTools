@@ -39,22 +39,24 @@ if ~isempty(currentAnalysis)
    
   scanDims = viewGet(thisView,'scanDims');
   d.nOverlays = length(overlayList);
-  alphaOverlayList = zeros(1,d.nOverlays);
+  d.alphaOverlayList = zeros(1,d.nOverlays);
   for iOverlay = 1:d.nOverlays
     d.overlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',overlayList(iOverlay)))); 
     thisNum = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',overlayList(iOverlay)));
     if ~isempty(thisNum)
-      alphaOverlayList(iOverlay) = thisNum;
-      d.alphaOverlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',alphaOverlayList(iOverlay))));
+      d.alphaOverlayList(iOverlay) = thisNum;
+      d.alphaOverlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',d.alphaOverlayList(iOverlay))));
     else
-      d.alphaOverlayClip(iOverlay,:) = [0 0];
+      d.alphaOverlayClip(iOverlay,:) = [-1 1];
     end
   end
+  d.overlayCurrentClip = d.overlayClip;
+  d.alphaOverlayCurrentClip = d.alphaOverlayClip;
 
   %First, get a mask of non-zero voxel representing the current overlay display
-  %This is taken from computeOverlay.d
+  %This is taken from computeOverlay.m
   fprintf(1,'Computing overlay mask...');
-  [d.overlayMaskData, d.overlayData]= maskOverlay(thisView,[overlayList alphaOverlayList],scanNum);
+  [d.overlayMaskData, d.overlayData]= maskOverlay(thisView,[overlayList d.alphaOverlayList],scanNum);
   d.overlayMaskData = d.overlayMaskData{1};
   d.overlayData = d.overlayData{1};
   fprintf(1,'Done\n');
@@ -64,9 +66,10 @@ if ~isempty(currentAnalysis)
   d.overlayMaskData = logical(d.overlayMaskData);
 
    %make alpha map
-   if isempty(alphaOverlayList)
-      d.overlayAlphaData = ones(size(d.overlayMaskData));
+   if ~any(d.alphaOverlayList)
+      d.overlayAlpha = ones(size(d.overlayMaskData));
       d.overlayAlphaMaskData = ones(size(d.overlayMaskData));
+      d.overlayAlphaData = zeros(size(d.overlayMaskData));
    else
       fprintf(1,'Computing alpha overlay...');
       
@@ -76,18 +79,18 @@ if ~isempty(currentAnalysis)
       d.overlayAlphaMaskData = d.overlayMaskData(:,:,:,d.nOverlays+1:end);
       d.overlayMaskData = d.overlayMaskData(:,:,:,1:d.nOverlays);
  
-      %d.overlayAlphaData(~d.overlayAlphaMaskData)=NaN;
-
       % get the range of the alpha overlay 
       cOverlay=0;
-      for iOverlay = alphaOverlayList;
+      for iOverlay = d.alphaOverlayList;
         cOverlay=cOverlay+1;
-        if ~alphaOverlayList(cOverlay)
-          d.overlayAlphaData(:,:,:,cOverlay) = ones(scanDims);
+        if ~d.alphaOverlayList(cOverlay)
+          d.overlayAlpha(:,:,:,cOverlay) = ones(scanDims);
+          d.overlayAlphaData(:,:,:,cOverlay) = zeros(scanDims);
+          d.overlayAlphaMaskData(:,:,:,cOverlay) = ones(scanDims);
         else
           range = viewGet(thisView,'overlayColorRange',iOverlay);
           % handle setRangeToMax (to debug)
-          if strcmp(viewGet(thisView,'overlayCtype',alphaOverlayList),'setRangeToMax')
+          if strcmp(viewGet(thisView,'overlayCtype',d.alphaOverlayList),'setRangeToMax')
             clip = viewGet(thisView,'overlayClip',iOverlay);
            maxRange = max(clip(1),min(d.overlayAlphaData(d.overlayAlphaMaskData)));
            if ~isempty(maxRange),range(1) = maxRange;end
@@ -96,18 +99,18 @@ if ~isempty(currentAnalysis)
           end
           % now compute the alphaOverlay as a number from
           % 0 to 1 of the range
-          thisAlphaOverlayData = (d.overlayAlphaData(:,:,:,cOverlay)-range(1))./diff(range);
-%           thisAlphaOverlayData(thisAlphaOverlayData>1) = 1;
-%           thisAlphaOverlayData(thisAlphaOverlayData<0) = 0;
+          thisAlphaOverlay = (d.overlayAlphaData(:,:,:,cOverlay)-range(1))./diff(range);
+%           thisAlphaOverlay(thisAlphaOverlay>1) = 1;
+%           thisAlphaOverlay(thisAlphaOverlay<0) = 0;
           alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
           if alphaOverlayExponent<0   %JB if the alpha overlay exponent is negative, set it positive and take the complementary values to 1 for the alpha map
             alphaOverlayExponent = -alphaOverlayExponent;
-            thisAlphaOverlayData = 1-thisAlphaOverlayData;
+            thisAlphaOverlay = 1-thisAlphaOverlay;
           end
-          d.overlayAlphaData(:,:,:,cOverlay) = thisAlphaOverlayData.^alphaOverlayExponent;
+          d.overlayAlpha(:,:,:,cOverlay) = thisAlphaOverlay.^alphaOverlayExponent;
         end
       end
-      d.overlayAlphaData(isnan(d.overlayAlphaData)) = 0;
+      d.overlayAlpha(isnan(d.overlayAlpha)) = 0;
    end   
    fprintf(1,'Done\n');
 
@@ -222,6 +225,8 @@ if ~isempty(currentAnalysis)
   %restrict data to these voxels
   d.overlayAlphaData = permute(d.overlayAlphaData,[4 1 2 3]);
   d.overlayAlphaData = d.overlayAlphaData(:,scanVoxelsInBox)';
+  d.overlayAlpha = permute(d.overlayAlpha,[4 1 2 3]);
+  d.overlayAlpha = d.overlayAlpha(:,scanVoxelsInBox)';
   d.overlayData = permute(d.overlayData,[4 1 2 3]);
   d.overlayData = d.overlayData(:,scanVoxelsInBox)';
   d.overlayMaskData = permute(d.overlayMaskData,[4 1 2 3]);
@@ -237,15 +242,20 @@ if ~isempty(currentAnalysis)
   %because they're masked in all alpha overlays
   voxelsToKeep = voxelsToKeep & any(d.overlayAlphaMaskData,2);
   %because they're zero in all alpha overlays
-  voxelsToKeep = voxelsToKeep & any(d.overlayAlphaData,2);
+  voxelsToKeep = voxelsToKeep & any(d.overlayAlpha,2);
   %or because at least they're NaN in at least one overlay
   %(this condition could be made less restrictive and be changed to: they're NaN in all overlays)
   voxelsToKeep = voxelsToKeep & ~all(isnan(d.overlayData),2);
   d.overlayAlphaData = d.overlayAlphaData(voxelsToKeep,:);
+  d.overlayAlpha = d.overlayAlpha(voxelsToKeep,:);
   d.overlayData = d.overlayData(voxelsToKeep,:);
   d.overlayMaskData = d.overlayMaskData(voxelsToKeep,:);
   d.overlayAlphaMaskData = d.overlayAlphaMaskData(voxelsToKeep,:);
   d.overlayScanCoords = d.overlayScanCoords(:,voxelsToKeep);
+  
+  %make a copy of the masks
+  d.overlayClippedMask = d.overlayMaskData;
+  d.overlayAlphaClippedMask = d.overlayAlphaMaskData;
 
   %remember which data points are in which ROI
   for iRoi = 1:nRois
@@ -372,55 +382,59 @@ if ~isempty(currentAnalysis)
   overlayNames = overlayNames(overlayList);
    set(hFigure,'Name',['RenderRois3D - ' viewGet(thisView,'homeDir') ' - ' viewGet(thisView,'analysisName')]);
 
-   overlayModes = {'Show all voxels','Restrict to all ROIs','Restrict to displayed ROIs'};
+   overlayModes = {'Show all voxels','Restrict to all ROIs','Restrict to selected ROIs'};
    d.hOverlayRoiMode = uicontrol('Parent',hFigure, 'Unit','normalized',     'Position',[margin overlayButtonsBottom+.36 .15 .03],...
       'Style','popupmenu', 'Value',1, 'String', overlayModes,'Callback',@recomputeOverlay);
     
    d.hOverlayList = uicontrol('Parent',hFigure, 'Unit','normalized',        'Position',[margin overlayButtonsBottom+.16 .15 .2],...
       'Style','listBox', 'min',0,'max',length(overlayNames),'Value',1:length(overlayNames), 'String', overlayNames,'Callback',@recomputeOverlay);
    
-   %Overlay sliders
-   if d.nOverlays==1
-      
-     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.12 stringWidth .03],'String','Min.');
-     d.hOverlayEditMin = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.13 .03 .03],...
-        'Style','edit', 'String',num2str(d.overlayClip(1)),'Callback',@recomputeOverlay);
-     d.hOverlaySliderMin = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.12 sliderWidth .03],...
-        'Style','slider', 'Min', d.overlayClip(1),'Max',d.overlayClip(2), 'value',d.overlayClip(1),'Callback',@recomputeOverlay);
-     
-     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.1 stringWidth .03],'String','Max.');
-     d.hOverlayEditMax = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.11 .03 .03],...
-        'Style','edit', 'String',num2str(d.overlayClip(2)),'Callback',@recomputeOverlay);
-     d.hOverlaySliderMax = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.10 sliderWidth .03],...
-        'Style','slider', 'Min', d.overlayClip(1),'Max',d.overlayClip(2), 'value',d.overlayClip(2),'Callback',@recomputeOverlay);
+   %Overlay clip buttons
+   uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.12 stringWidth .03],'String','Min.');
+   d.hOverlayEditMin = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.13 .03 .03],...
+      'Style','edit', 'String',num2str(d.overlayClip(1)),'Callback',@recomputeOverlay);
+   d.hOverlaySliderMin = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.12 sliderWidth .03],...
+      'Style','slider', 'Min', d.overlayClip(1,1),'Max',d.overlayClip(1,2), 'value',d.overlayClip(1,1),'Callback',@recomputeOverlay);
+
+   uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.1 stringWidth .03],'String','Max.');
+   d.hOverlayEditMax = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.11 .03 .03],...
+      'Style','edit', 'String',num2str(d.overlayClip(1,2)),'Callback',@recomputeOverlay);
+   d.hOverlaySliderMax = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.10 sliderWidth .03],...
+      'Style','slider', 'Min', d.overlayClip(1,1),'Max',d.overlayClip(1,2), 'value',d.overlayClip(1,2),'Callback',@recomputeOverlay);
+   if d.nOverlays>1
+    set([d.hOverlayEditMin d.hOverlaySliderMin d.hOverlayEditMax d.hOverlaySliderMax],'enable','off')
    end
-     
-   d.hOverlayAlphaCheck = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[margin overlayButtonsBottom+.05 .1 .03],...
-      'Style','checkbox', 'Min', 0,'Max',1, 'Value',1, 'String','Use Alpha Overlay','Callback',@recomputeOverlay);
-     
-   uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',       'Position',[margin overlayButtonsBottom+.08 stringWidth .03],'String','Alpha');
+   
+   %Overlay alpha buttons
+   uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',         'Position',[margin overlayButtonsBottom+.08 stringWidth .03],'String','Alpha');
    d.hOverlayAlphaEdit = uicontrol('Parent',hFigure, 'Unit','normalized',   'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.09 .03 .03],...
       'Style','edit', 'String',overlayAlpha,'Callback',@recomputeOverlay);
    d.hOverlayAlphaSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.08 sliderWidth .03],...
       'Style','slider', 'Min', 0,'Max',1, 'value',overlayAlpha,'Callback',@recomputeOverlay);
     
-   if d.nOverlays==1 && any(alphaOverlayList)
-      
+   %Alpha overlay buttons
+   if any(d.alphaOverlayList)
+     d.hOverlayAlphaCheck = uicontrol('Parent',hFigure, 'Unit','normalized',    'Position',[margin overlayButtonsBottom+.05 .15 .03],...
+      'Style','checkbox', 'Min', 0,'Max',1, 'Value',1, 'String','Use Alpha Overlay','Callback',@recomputeOverlay);
+     
      uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',           'Position',[margin overlayButtonsBottom+.02 stringWidth .03],'String','Min.');
      d.hAlphaOverlayEditMin = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.03 .03 .03],...
-        'Style','edit', 'String',num2str(d.alphaOverlayClip(1)),'Callback',@recomputeOverlay);
+        'Style','edit', 'String',num2str(d.alphaOverlayClip(1,1)),'Callback',@recomputeOverlay);
      d.hAlphaOverlaySliderMin = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.02 sliderWidth .03],...
-        'Style','slider', 'Min', d.alphaOverlayClip(1),'Max',d.alphaOverlayClip(2), 'value',d.alphaOverlayClip(1),'Callback',@recomputeOverlay);
+        'Style','slider', 'Min', d.alphaOverlayClip(1,1),'Max',d.alphaOverlayClip(1,2), 'value',d.alphaOverlayClip(1,1),'Callback',@recomputeOverlay);
      
      uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text',           'Position',[margin overlayButtonsBottom+.00 stringWidth .03],'String','Max.');
      d.hAlphaOverlayEditMax = uicontrol('Parent',hFigure, 'Unit','normalized',  'Position',[overlaySlidersLeft+stringWidth+sliderWidth overlayButtonsBottom+.01 .03 .03],...
-        'Style','edit', 'String',num2str(d.alphaOverlayClip(2)),'Callback',@recomputeOverlay);
+        'Style','edit', 'String',num2str(d.alphaOverlayClip(1,2)),'Callback',@recomputeOverlay);
      d.hAlphaOverlaySliderMax = uicontrol('Parent',hFigure, 'Unit','normalized', 'Position',[overlaySlidersLeft+stringWidth overlayButtonsBottom+.00 sliderWidth .03],...
-        'Style','slider', 'Min', d.alphaOverlayClip(1),'Max',d.alphaOverlayClip(2), 'value',d.alphaOverlayClip(2),'Callback',@recomputeOverlay);
+        'Style','slider', 'Min', d.alphaOverlayClip(1,1),'Max',d.alphaOverlayClip(1,2), 'value',d.alphaOverlayClip(1,2),'Callback',@recomputeOverlay);
+     if d.nOverlays>1
+      set([d.hAlphaOverlayEditMin d.hAlphaOverlaySliderMin d.hAlphaOverlayEditMax d.hAlphaOverlaySliderMax],'enable','off')
+     end
    end
    
    set(hFigure,'userdata',d);
-   recomputeOverlay(d.hOverlayAlphaCheck);
+   recomputeOverlay(d.hOverlayAlphaEdit);
    
    %this has to be after calling recomputeOverlay, because we want to use the hande of the overlay cubes
    d = get(hFigure,'userdata');
@@ -633,11 +647,11 @@ switch(handle)
 
     overlayRoiModes = get(d.hOverlayRoiMode,'String');
     overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
-    if strcmp(overlayRoiMode,'Restrict to displayed ROIs')
+    if strcmp(overlayRoiMode,'Restrict to selected ROIs')
       recomputeOverlay(handle);
     end
 end
-%---------------------------------------------------- compute Surface coordiantes
+%---------------------------------------------------- compute Surface coordinates
 function recomputeSurface(handle,eventdata)
 
 hFigure= get(handle,'parent');
@@ -704,31 +718,100 @@ function recomputeOverlay(handle,eventdata)
 hFigure= get(handle,'parent');
 d = get(hFigure,'userdata');
 
-if d.nOverlays==1
-  minThreshold = str2num(get(d.hOverlayEditMin,'string'));
-  maxThreshold = str2num(get(d.hOverlayEditMax,'string'));
-  if handle == d.hOverlaySliderMin
-     minThreshold = get(handle,'value');
-  elseif ~isempty(d.hOverlaySliderMax) && handle == d.hOverlaySliderMax
-     maxThreshold = get(handle,'value');
-  elseif handle == d.hOverlayEditMin || handle == d.hOverlayEditMax
-    sliderMin = get(d.hOverlaySliderMin,'min');
-    sliderMax = get(d.hOverlaySliderMax,'max');
-    if  minThreshold<sliderMin
-      minThreshold = sliderMin;
+if any(d.alphaOverlayList)
+  useAlpha = get(d.hOverlayAlphaCheck,'Value');
+else
+  useAlpha=false;
+end
+whichOverlays = get(d.hOverlayList,'Value');
+overlayRoiModes = get(d.hOverlayRoiMode,'String');
+overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
+
+if length(whichOverlays)>1 || (any(d.alphaOverlayList) && ~d.alphaOverlayList(whichOverlays))
+  set([d.hAlphaOverlayEditMin d.hAlphaOverlaySliderMin d.hAlphaOverlayEditMax d.hAlphaOverlaySliderMax],'enable','off');
+end
+if length(whichOverlays)>1
+  set([d.hOverlayEditMin d.hOverlaySliderMin d.hOverlayEditMax d.hOverlaySliderMax],'enable','off')
+else
+% if only one overlay selected 
+  %if not called from the one of the clipping controls,  allow clipping
+  if ~ismember(handle,[d.hOverlayEditMin d.hOverlaySliderMin d.hOverlayEditMax d.hOverlaySliderMax])
+    set([d.hOverlayEditMin d.hOverlaySliderMin d.hOverlayEditMax d.hOverlaySliderMax],'enable','on');
+    set(d.hOverlayEditMin,'string',num2str(d.overlayCurrentClip(whichOverlays,1)),'enable','on');
+    set(d.hOverlaySliderMin,'value',d.overlayCurrentClip(whichOverlays,1),'min',d.overlayClip(whichOverlays,1),'max',d.overlayClip(whichOverlays,2),'enable','on');
+    set(d.hOverlayEditMax,'string',num2str(d.overlayCurrentClip(whichOverlays,2)),'enable','on');
+    set(d.hOverlaySliderMax,'value',d.overlayCurrentClip(whichOverlays,2),'min',d.overlayClip(whichOverlays,1),'max',d.overlayClip(whichOverlays,2),'enable','on');
+  else %otherwise, read value from the controls
+    switch(handle)
+      case d.hOverlaySliderMin
+        d.overlayCurrentClip(whichOverlays,1) = get(handle,'value');
+        set(d.hOverlayEditMin,'String',num2str(d.overlayCurrentClip(whichOverlays,1)));
+      case d.hOverlaySliderMax
+        d.overlayCurrentClip(whichOverlays,2) = get(handle,'value');
+        set(d.hOverlayEditMax,'String',num2str(d.overlayCurrentClip(whichOverlays,2)));
+      case d.hOverlayEditMin
+        value = str2num(get(d.hOverlayEditMin,'string'));
+        if  value<d.overlayClip(whichOverlays,1)
+          set(d.hOverlayEditMin,'String',num2str(d.overlayClip(whichOverlays,1)));
+          return;
+        end
+        d.overlayCurrentClip(whichOverlays,1) = value;
+        set(d.hOverlaySliderMin,'Value',value);
+      case d.hOverlayEditMax
+        value = str2num(get(d.hOverlayEditMax,'string'));
+        if  value>d.overlayClip(whichOverlays,2)
+          set(d.hOverlayEditMin,'String',num2str(d.overlayClip(whichOverlays,2)));
+          return;
+        end
+        d.overlayCurrentClip(whichOverlays,2) = value;
+        set(d.hOverlaySliderMax,'value',value);
     end
-    if  maxThreshold>sliderMax
-      maxThreshold = sliderMax;
+    %and clip the data
+    d.overlayClippedMask(:,whichOverlays) = d.overlayMaskData(:,whichOverlays);
+    d.overlayClippedMask(d.overlayData(:,whichOverlays)<=d.overlayCurrentClip(whichOverlays,1)...
+                       | d.overlayData(:,whichOverlays)>=d.overlayCurrentClip(whichOverlays,2),whichOverlays)=0;
+  end
+  if d.alphaOverlayList(whichOverlays) %same for alpha overlay clipping
+    if ~ismember(handle,[d.hAlphaOverlayEditMin d.hAlphaOverlaySliderMin d.hAlphaOverlayEditMax d.hAlphaOverlaySliderMax])
+    set([d.hAlphaOverlayEditMin d.hAlphaOverlaySliderMin d.hAlphaOverlayEditMax d.hAlphaOverlaySliderMax],'enable','on');
+    set(d.hAlphaOverlayEditMin,'string',num2str(d.alphaOverlayCurrentClip(whichOverlays,1)),'enable','on');
+    set(d.hAlphaOverlaySliderMin,'value',d.alphaOverlayCurrentClip(whichOverlays,1),'min',d.alphaOverlayClip(whichOverlays,1),'max',d.alphaOverlayClip(whichOverlays,2),'enable','on');
+    set(d.hAlphaOverlayEditMax,'string',num2str(d.alphaOverlayCurrentClip(whichOverlays,2)),'enable','on');
+    set(d.hAlphaOverlaySliderMax,'value',d.alphaOverlayCurrentClip(whichOverlays,2),'min',d.alphaOverlayClip(whichOverlays,1),'max',d.alphaOverlayClip(whichOverlays,2),'enable','on');
+    else 
+      set([d.hAlphaOverlayEditMin d.hAlphaOverlaySliderMin d.hAlphaOverlayEditMax d.hAlphaOverlaySliderMax],'enable','on');
+      switch(handle)
+        case d.hAlphaOverlaySliderMin
+          d.alphaOverlayCurrentClip(whichOverlays,1) = get(handle,'value');
+          set(d.hAlphaOverlayEditMin,'String',num2str(d.alphaOverlayCurrentClip(whichOverlays,1)));
+        case d.hAlphaOverlaySliderMax
+          d.alphaOverlayCurrentClip(whichOverlays,2) = get(handle,'value');
+          set(d.hAlphaOverlayEditMax,'String',num2str(d.alphaOverlayCurrentClip(whichOverlays,2)));
+        case d.hAlphaOverlayEditMin 
+          value = str2num(get(d.hAlphaOverlayEditMin,'string'));
+          if value<d.alphaOverlayClip(whichOverlays,1)
+            set(d.hAlphaOverlayEditMin,'String',num2str(d.overlayClip(whichOverlays,1)));
+            return;
+          end
+          d.alphaOverlayCurrentClip(whichOverlays,1) = value;
+          set(d.hAlphaOverlaySliderMin,'Value',value);
+        case d.hAlphaOverlayEditMax
+          value = str2num(get(d.hAlphaOverlayEditMax,'string'));
+          if value>d.alphaOverlayClip(whichOverlays,2)
+            set(d.hAlphaOverlayEditMin,'String',num2str(d.overlayClip(whichOverlays,2)));
+            return;
+          end
+          d.alphaOverlayCurrentClip(whichOverlays,2) = value;
+          set(d.hAlphaOverlaySliderMax,'value',value);
+      end
+      d.overlayAlphaClippedMask(:,whichOverlays) = d.overlayAlphaMaskData(:,whichOverlays);
+      d.overlayAlphaClippedMask(d.overlayAlphaData(:,whichOverlays)<=d.alphaOverlayCurrentClip(whichOverlays,1)...
+                              | d.overlayAlphaData(:,whichOverlays)>=d.alphaOverlayCurrentClip(whichOverlays,2),whichOverlays)=0;
     end
   end
 end
 
-useAlpha = get(d.hOverlayAlphaCheck,'Value');
-whichRois = get(d.hOverlayList,'Value');
-overlayRoiModes = get(d.hOverlayRoiMode,'String');
-overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
-
-d = blendOverlays(d,whichRois,overlayRoiMode);
+d = blendOverlays(d,whichOverlays,overlayRoiMode);
 
 overlayAlpha = str2num(get(d.hOverlayAlphaEdit,'string'));
 switch(handle)
@@ -746,21 +829,9 @@ else
   cubesAlphaData = overlayAlpha*ones(size(d.cubesAlphaData));
 end
     
-
-if d.nOverlays==1
-  firstIndex = find(d.cubesColorIndex>=minThreshold,1,'first');
-  lastIndex = find(d.cubesColorIndex<=maxThreshold,1,'last');
-else
-  firstIndex=1;
-  lastIndex=size(d.cubesAlphaData,1);
-end
-if ~isempty(firstIndex) && ~isempty(lastIndex) && lastIndex>=firstIndex
-   %faceCData = d.cubesColorIndex(firstIndex:lastIndex);
-   faceCData = d.cubesRGB(firstIndex:lastIndex,:);
-   faceAlphaData = cubesAlphaData(firstIndex:lastIndex);
-   cubesScanCoords = d.cubesScanCoords(:,firstIndex:lastIndex);
+if ~isempty(cubesAlphaData)
    [faceXcoords, faceYcoords, faceZcoords,faceCData,faceAlphaData] = ...
-         makeCubeFaces(cubesScanCoords,faceCData',faceAlphaData',all(faceAlphaData(:)==1),d.base2scan);
+         makeCubeFaces(d.cubesScanCoords,d.cubesRGB',cubesAlphaData',all(cubesAlphaData(:)==1),d.base2scan);
    %to use transparency, I need to convert X,Y,Z data to face/vertex data
    %patchStruct = surf2patch(faceXcoords,faceYcoords,faceZcoords,faceCData); %surf2patch does not handle color data correctly
    patchStruct.vertices = [reshape(faceXcoords,numel(faceXcoords),1) reshape(faceYcoords,numel(faceYcoords),1) reshape(faceZcoords,numel(faceZcoords),1)];
@@ -785,13 +856,6 @@ end
 % %          set(d.hRoiVoxelNum(iRoi),'String',[num2str(sum(d.overlayRoiIndex{iRoi}>=firstIndex & d.overlayRoiIndex{iRoi}<=lastIndex)) '/' num2str(d.roiSize(iRoi))]);
 % %       end
 
-if d.nOverlays==1
-  set(d.hOverlaySliderMax,'value',maxThreshold);
-  set(d.hOverlayEditMax,'String',num2str(maxThreshold));
-  set(d.hOverlaySliderMin,'Value',minThreshold);
-  set(d.hOverlayEditMin,'String',num2str(minThreshold));
-end
-
 set(hFigure,'userdata',d);
 
 return;
@@ -801,92 +865,70 @@ function d = blendOverlays(d,whichOverlays,overlayRoiMode)
 
 switch(overlayRoiMode)
   case 'Show all voxels'
-    overlayAlphaMaskData = d.overlayAlphaMaskData;
-    overlayAlphaData = d.overlayAlphaData;
-    overlayMaskData = d.overlayMaskData;
-    overlayData = d.overlayData;
+    overlayAlphaMaskData = d.overlayAlphaClippedMask;
+    overlayAlpha = d.overlayAlpha;
+    overlayMaskData = d.overlayClippedMask;
+%     overlayData = d.overlayData;
     overlayRGB = d.overlayRGB;
     overlayScanCoords = d.overlayScanCoords;
     
   case 'Restrict to all ROIs'
-    overlayAlphaMaskData = d.overlayAlphaMaskData(d.overlayAllRoisIndex,:);
-    overlayAlphaData = d.overlayAlphaData(d.overlayAllRoisIndex,:);
-    overlayMaskData = d.overlayMaskData(d.overlayAllRoisIndex,:);
-    overlayData = d.overlayData(d.overlayAllRoisIndex,:);
+    overlayAlphaMaskData = d.overlayAlphaClippedMask(d.overlayAllRoisIndex,:);
+    overlayAlpha = d.overlayAlpha(d.overlayAllRoisIndex,:);
+    overlayMaskData = d.overlayClippedMask(d.overlayAllRoisIndex,:);
+%     overlayData = d.overlayData(d.overlayAllRoisIndex,:);
     overlayRGB = d.overlayRGB(d.overlayAllRoisIndex,:,:);
     overlayScanCoords = d.overlayScanCoords(:,d.overlayAllRoisIndex);
     
-  case 'Restrict to displayed ROIs'
-    whichRois = get(d.hRoiList,'value');
+  case 'Restrict to selected ROIs'
     overlayRoisIndex = [];
-    for iRoi=whichRois
+    for iRoi=get(d.hRoiList,'value')
       overlayRoisIndex = union(d.overlayRoiIndex{iRoi},overlayRoisIndex);
     end
-    overlayAlphaMaskData = d.overlayAlphaMaskData(overlayRoisIndex,:);
-    overlayAlphaData = d.overlayAlphaData(overlayRoisIndex,:);
-    overlayMaskData = d.overlayMaskData(overlayRoisIndex,:);
-    overlayData = d.overlayData(overlayRoisIndex,:);
+    overlayAlphaMaskData = d.overlayAlphaClippedMask(overlayRoisIndex,:);
+    overlayAlpha = d.overlayAlpha(overlayRoisIndex,:);
+    overlayMaskData = d.overlayClippedMask(overlayRoisIndex,:);
+%     overlayData = d.overlayData(overlayRoisIndex,:);
     overlayRGB = d.overlayRGB(overlayRoisIndex,:,:);
     overlayScanCoords = d.overlayScanCoords(:,overlayRoisIndex);
     
 end
 
-  %%%%%%%%%%%%%%%%%%% Compute cube faces
-  
-  %apply alpha mask to alpha overlay
-  overlayAlphaData(~overlayAlphaMaskData)=0;
+%%%%%%%%%%%%%%%%%%% Compute cube faces
 
-  cOverlay = 0;
-  for iOverlay=whichOverlays
-    cOverlay = cOverlay+1;
-    if length(whichOverlays)>1
-      thisAlphaData = overlayAlphaData(:,iOverlay);
-      % apply the mask to alpha data
-      thisAlphaData(~overlayMaskData(:,iOverlay))=0;
-    % 1) pre-multiply colors by alpha
-      RGB = repmat(thisAlphaData,[1 3]).*overlayRGB(:,:,iOverlay);
-      if cOverlay==1
-        d.cubesRGB=RGB;
-        d.cubesAlphaData = thisAlphaData;
-      else
-      % 2) add pre-multiplied colormaps (and alpha channels)
-        d.cubesRGB = d.cubesRGB.*(1-RGB)+ RGB;
-        d.cubesAlphaData = d.cubesAlphaData .* (1-thisAlphaData)+thisAlphaData;
-      end
+%apply alpha mask to alpha overlay
+overlayAlpha(~overlayAlphaMaskData)=0;
+
+cOverlay = 0;
+for iOverlay=whichOverlays
+  cOverlay = cOverlay+1;
+    thisAlpha = overlayAlpha(:,iOverlay);
+    % apply the mask to alpha data
+    thisAlpha(~overlayMaskData(:,iOverlay))=0;
+  % 1) pre-multiply colors by alpha
+    RGB = repmat(thisAlpha,[1 3]).*overlayRGB(:,:,iOverlay);
+    if cOverlay==1
+      d.cubesRGB=RGB;
+      d.cubesAlphaData = thisAlpha;
     else
-      d.cubesRGB = overlayRGB(:,:,iOverlay) ;
-      d.cubesAlphaData = overlayAlphaData(:,iOverlay);
+    % 2) add pre-multiplied colormaps (and alpha channels)
+      d.cubesRGB = d.cubesRGB.*(1-RGB)+ RGB;
+      d.cubesAlphaData = d.cubesAlphaData .* (1-thisAlpha)+thisAlpha;
     end
-  end
-  
+end
 
-  if length(whichOverlays)==1
-    d.cubesColorIndex = overlayData(:,whichOverlays);
-    %mask the data
-    d.cubesAlphaData(~overlayMaskData(:,whichOverlays))=NaN;
-    %exclude Nan overlay values
-    voxelsToKeepIndices = find(~isnan(d.cubesAlphaData));
-    d.cubesColorIndex = d.cubesColorIndex(voxelsToKeepIndices);
-    %sort faces by overlay data value, that will make things faster later
-    [d.cubesColorIndex, sortIndex] = sort(d.cubesColorIndex);
-    voxelsToKeepIndices = voxelsToKeepIndices(sortIndex);
-    d.cubesAlphaData = d.cubesAlphaData(voxelsToKeepIndices);
-  else
-    %here we divide by the computed alpha, because there is no base to multiply it with
-    d.cubesRGB = d.cubesRGB./repmat(d.cubesAlphaData,[1 3]);
-    %exclude Nan overlay values
-    voxelsToKeepIndices = find(any(~isnan(d.cubesRGB),2));
-    %sort according to alpha values, this will be important when removing duplicate cube faces
-    d.cubesAlphaData = d.cubesAlphaData(voxelsToKeepIndices);
-    [d.cubesAlphaData, sortIndex] = sort(d.cubesAlphaData);
-    voxelsToKeepIndices = voxelsToKeepIndices(sortIndex);
-  end
+%here we divide by the computed alpha, because there is no base to multiply it with
+d.cubesRGB = d.cubesRGB./repmat(d.cubesAlphaData,[1 3]);
+%exclude Nan overlay values
+voxelsToKeepIndices = find(any(~isnan(d.cubesRGB),2));
+%sort according to alpha values, this will be important when removing duplicate cube faces
+d.cubesAlphaData = d.cubesAlphaData(voxelsToKeepIndices);
+[d.cubesAlphaData, sortIndex] = sort(d.cubesAlphaData);
+voxelsToKeepIndices = voxelsToKeepIndices(sortIndex);
 
-  %apply excluding and/or sorting to other RGB and alpha data arrays
-  d.cubesRGB = d.cubesRGB(voxelsToKeepIndices,:);
-  d.cubesScanCoords = overlayScanCoords(:,voxelsToKeepIndices);
-
-
+%apply excluding and/or sorting to other RGB and alpha data arrays
+d.cubesRGB = d.cubesRGB(voxelsToKeepIndices,:);
+d.cubesScanCoords = overlayScanCoords(:,voxelsToKeepIndices);
 
 %--------------------------------------returns the coordinates of the faces of cubes centered on voxel coordinates
 function [facesXcoords, facesYcoords, facesZcoords, colorData, alphaData] = makeCubeFaces(voxelCoords,colorData,alphaData,opaque,base2scan)
