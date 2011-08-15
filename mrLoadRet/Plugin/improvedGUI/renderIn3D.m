@@ -119,8 +119,8 @@ end
 %------------------------------------ Get some info on the base
 baseNum = viewGet(thisView,'currentBase');
 baseVoxelSize = viewGet(thisView,'baseVoxelSize');
-baseType = viewGet(thisView,'baseType',baseNum);
-switch(baseType)
+d.baseType = viewGet(thisView,'baseType',baseNum);
+switch(d.baseType)
   case 0 %if the base is a volume
     baseDims = viewGet(thisView,'basedims',baseNum);
 end
@@ -142,7 +142,7 @@ for iRoi = 1:nRois
   roiColor(iRoi,:) = color2RGB(roi.color);
   roiName{iRoi} = roi.name;
   
-  if ~isempty(roiCoords{iRoi}) && baseType==0
+  if ~isempty(roiCoords{iRoi}) && d.baseType==0
         % we need to remove any coordinate that might fall outside the base anatomy (or do we ?)
         outside_voxels = roiCoords{iRoi}(1,:)<1 | roiCoords{iRoi}(1,:)>baseDims(1) |...
                              roiCoords{iRoi}(2,:)<1 | roiCoords{iRoi}(2,:)>baseDims(2) |...
@@ -207,7 +207,7 @@ allRoisCoords = unique(allRoisCoords','rows')';
 allRoisBaseCoords = d.base2scan\[allRoisCoords;ones(1,size(allRoisCoords,2))];
 minBaseCoords = floor(min(allRoisBaseCoords,[],2)');
 maxBaseCoords = ceil(max(allRoisBaseCoords,[],2)');
-if baseType==0
+if d.baseType==0
   minBaseCoords = max(minBaseCoords(1:3),[1 1 1]);    
   maxBaseCoords = min(maxBaseCoords(1:3),baseDims);   
 end
@@ -282,24 +282,32 @@ end
 baseColormap = gray(256);
 baseClip = viewGet(thisView,'baseClip',baseNum);
 baseGamma = viewGet(thisView,'baseGamma',baseNum);
-switch(baseType)
+switch(d.baseType)
   case 0
     for iDim=1:3
       otherDims = setdiff(1:3,iDim);
-      [baseImage,baseCoords{iDim},baseCoordsHomogeneous{iDim}] = ...
-        getBaseSlice(thisView,minBaseCoords(iDim),iDim,0,baseNum,baseType);
-      d.baseRGB{iDim} = rescale2rgb(baseImage,baseColormap,baseClip,baseGamma);
-      thisMinCoords = minBaseCoords(otherDims);
-      thisMaxCoords = maxBaseCoords(otherDims);
-      d.baseRGB{iDim} = d.baseRGB{iDim}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
-      d.baseRGB{iDim}(:,end+1,:) = d.baseRGB{iDim}(:,end,:); %Add one column
-      d.baseRGB{iDim}(end+1,:,:) = d.baseRGB{iDim}(end,:,:); %Add one row
-      baseCoords{iDim} = baseCoords{iDim}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
-      baseCoords{iDim}(:,end+1,:) = baseCoords{iDim}(:,end,:); %Add one column
-      baseCoords{iDim}(:,end,otherDims(2)) = baseCoords{iDim}(:,end,otherDims(2))+1; %Add one column
-      baseCoords{iDim}(end+1,:,:) = baseCoords{iDim}(end,:,:); %Add one row
-      baseCoords{iDim}(end,:,otherDims(1)) = baseCoords{iDim}(end,:,otherDims(1))+1; %Add one column
-      baseCoords{iDim} = baseCoords{iDim} - .5; %shift the coords by .5 so that each square will be centered on the integer coordinate
+      for iSide=1:2
+        switch iSide
+          case 1
+            sliceNum = minBaseCoords(iDim);
+          case 2
+            sliceNum = maxBaseCoords(iDim)+1;
+        end
+        [baseImage,baseCoords{iDim,iSide},baseCoordsHomogeneous{iDim,iSide}] = ...
+          getBaseSlice(thisView,sliceNum,iDim,0,baseNum,d.baseType);
+        d.baseRGB{iDim,iSide} = rescale2rgb(baseImage,baseColormap,baseClip,baseGamma);
+        thisMinCoords = minBaseCoords(otherDims);
+        thisMaxCoords = maxBaseCoords(otherDims);
+        d.baseRGB{iDim,iSide} = d.baseRGB{iDim,iSide}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
+        d.baseRGB{iDim,iSide}(:,end+1,:) = d.baseRGB{iDim,iSide}(:,end,:); %Add one column
+        d.baseRGB{iDim,iSide}(end+1,:,:) = d.baseRGB{iDim,iSide}(end,:,:); %Add one row
+        baseCoords{iDim,iSide} = baseCoords{iDim,iSide}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
+        baseCoords{iDim,iSide}(:,end+1,:) = baseCoords{iDim,iSide}(:,end,:); %Add one column
+        baseCoords{iDim,iSide}(:,end,otherDims(2)) = baseCoords{iDim,iSide}(:,end,otherDims(2))+1; %Add one column
+        baseCoords{iDim,iSide}(end+1,:,:) = baseCoords{iDim,iSide}(end,:,:); %Add one row
+        baseCoords{iDim,iSide}(end,:,otherDims(1)) = baseCoords{iDim,iSide}(end,:,otherDims(1))+1; %Add one column
+        baseCoords{iDim,iSide} = baseCoords{iDim,iSide} - .5; %shift the coords by .5 so that each square will be centered on the integer coordinate
+      end
     end
       
   case 2
@@ -446,11 +454,14 @@ if ~isempty(currentAnalysis)
 end
 
 % plot Base slices
-switch(baseType)
+switch(d.baseType)
   case 0
     for iDim = 1:3
-      d.hSurface(iDim) = surface(baseCoords{iDim}(:,:,1),baseCoords{iDim}(:,:,2),baseCoords{iDim}(:,:,3),d.baseRGB{iDim}, 'EdgeColor','none','parent',d.hMainAxis);
+      for iSide = 1:2
+        d.hSurface(iDim,iSide) = surface(baseCoords{iDim,iSide}(:,:,1),baseCoords{iDim,iSide}(:,:,2),baseCoords{iDim,iSide}(:,:,3),d.baseRGB{iDim,iSide}, 'EdgeColor','none','parent',d.hMainAxis);
+      end
     end
+    set(d.hSurface(:,2),'visible','off');
     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','checkbox',   'Position',[margin baseButtonsBottom+.1 .15 .03],...
          'Min', 0,'Max',1, 'Value',1, 'String', 'Show Base', 'callback',{@makeVisible,d.hSurface});
   case 2
@@ -491,7 +502,7 @@ switch(baseType)
          'Min', 0,'Max',1, 'Value',1, 'String', 'Show Inner Surface', 'callback',{@makeVisible,d.hInnerSurface});
     
 end
-if ismember(baseType,[0 2])
+if ismember(d.baseType,[0 2])
 end
 
 daspect(1./baseVoxelSize)
@@ -509,8 +520,9 @@ xlabel('X');
 ylabel('Y');
 zlabel('Z');
 set(gca,'Xdir','reverse'); %the X axis goes from right to left(?)
+d.reversedX = true;
 uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','checkbox', 'Position',[rotateViewLeft+.1 .04 .15 .03],...
-         'Min', 0,'Max',1, 'Value',1, 'String', 'Reverse X Axis','Callback',{@reverseX});
+         'Min', 0,'Max',1, 'Value',d.reversedX, 'String', 'Reverse X Axis','Callback',{@reverseX});
 
 %rotation control
 hRotate = rotate3d;
@@ -518,20 +530,20 @@ set(hRotate,'Enable','on');
 [azimuth,elevation] = view;
 rotateViewSliderLength = .90-rotateViewLeft;
 uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[rotateViewLeft .03 .05 .03],'String', 'Azimuth');
-hAzimuthEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[rotateViewLeft .01 .05 .03],...
+d.hAzimuthEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[rotateViewLeft .01 .05 .03],...
       'String',num2str(azimuth));
-hAzimuthSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[rotateViewLeft+.05 .01 rotateViewSliderLength .03],...
+d.hAzimuthSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[rotateViewLeft+.05 .01 rotateViewSliderLength .03],...
       'Min', -360,'Max',360, 'value',azimuth);
 uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','text', 'Position',[.94 .07+rotateViewSliderLength .05 .03],'String', 'Elevation');
-hElevationEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[.94 .05+rotateViewSliderLength .05 .03 ],...
+d.hElevationEdit = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','edit', 'Position',[.94 .05+rotateViewSliderLength .05 .03 ],...
       'String',num2str(elevation));
-hElevationSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[.95 .05 .03 rotateViewSliderLength],...
+d.hElevationSlider = uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','slider', 'Position',[.95 .05 .03 rotateViewSliderLength],...
       'Min', -90,'Max',90, 'value',elevation);
-set(hAzimuthSlider,'Callback',{@changeView,hAzimuthSlider,hElevationSlider,hAzimuthEdit,hElevationEdit});
-set(hElevationSlider,'Callback',{@changeView,hAzimuthSlider,hElevationSlider,hAzimuthEdit,hElevationEdit});
-set(hAzimuthEdit,'Callback',{@changeView,hAzimuthSlider,hElevationSlider,hAzimuthEdit,hElevationEdit});
-set(hElevationEdit,'Callback',{@changeView,hAzimuthSlider,hElevationSlider,hAzimuthEdit,hElevationEdit});
-set(hRotate,'ActionPostCallback',{@changeView,hAzimuthSlider,hElevationSlider,hAzimuthEdit,hElevationEdit});
+set(d.hAzimuthSlider,'Callback',@changeView);
+set(d.hElevationSlider,'Callback',@changeView);
+set(d.hAzimuthEdit,'Callback',@changeView);
+set(d.hElevationEdit,'Callback',@changeView);
+set(hRotate,'ActionPostCallback',@changeView);
 
 %set 2 lights at opposite sides of the object
 h_light1 = camlight(90,45);
@@ -546,44 +558,93 @@ return;
 
 
 %---------------------------------------------------- change and/or diplays the elevation and azimuth after mouse rotate (rotate3d)
-function changeView(handle,eventdata,hAzimuthSlider,hElevationSlider,hAzimuthEdit,hElevationEdit)
+function changeView(handle,eventdata)
 
-if isnumeric(handle)
-   azimuth = round(get(hAzimuthSlider,'Value'));
-   elevation = round(get(hElevationSlider,'Value'));
-   switch(handle)
-      case hAzimuthSlider
-         azimuth = round(get(handle,'Value'));
-      case hElevationSlider
-         elevation = round(get(handle,'Value'));
-      case hAzimuthEdit
-          azimuth = round(str2num(get(handle,'String')));
-      case hElevationEdit
-         elevation= round(str2num(get(handle,'String')));
-   end
-   view(azimuth,elevation);
-else
-   [azimuth,elevation] = view;
-   azimuth = round(azimuth);
-   elevation = round(elevation);
+if isnumeric(handle) %if the function has been called from one of the figure uicontrols
+  hFigure= get(handle,'parent');
+  d = get(hFigure,'userdata');
+  azimuth = round(get(d.hAzimuthSlider,'Value'));
+  elevation = round(get(d.hElevationSlider,'Value'));
+  switch(handle)
+    case d.hAzimuthSlider
+       azimuth = round(get(handle,'Value'));
+    case d.hElevationSlider
+       elevation = round(get(handle,'Value'));
+    case d.hAzimuthEdit
+        azimuth = round(str2num(get(handle,'String')));
+    case d.hElevationEdit
+       elevation= round(str2num(get(handle,'String')));
+  end
+  view(azimuth,elevation);
+else %if the function has been called after rotating the axes with the mouse
+  hFigure= get(eventdata.Axes,'parent');
+  d = get(hFigure,'userdata');
+  [azimuth,elevation] = view;
+  azimuth = round(azimuth);
+  elevation = round(elevation);
 end
 
-set(hAzimuthSlider,'Value',azimuth);
-set(hElevationSlider,'Value',elevation);
-set(hAzimuthEdit,'String',num2str(azimuth));
-set(hElevationEdit,'String',num2str(elevation));
+set(d.hAzimuthSlider,'Value',azimuth);
+set(d.hElevationSlider,'Value',elevation);
+set(d.hAzimuthEdit,'String',num2str(azimuth));
+set(d.hElevationEdit,'String',num2str(elevation));
+
+%show or hide base slices depending on the orientation of the view
+if ~d.baseType
+  if d.reversedX
+    xNegative = -sin(azimuth*pi/180); %this is negative if the viewpoint is X-positive
+  else
+    xNegative = sin(azimuth*pi/180); %this is positive if the viewpoint is X-positive
+  end
+  if xNegative>0 
+    set(d.hSurface(1,1),'visible','on');
+    set(d.hSurface(1,2),'visible','off');
+  else
+    set(d.hSurface(1,1),'visible','off');
+    set(d.hSurface(1,2),'visible','on');
+  end    
+  if -cos(azimuth*pi/180)>0 %this is positive if the viewpoint is Y-positive
+    set(d.hSurface(2,1),'visible','on');
+    set(d.hSurface(2,2),'visible','off');
+  else
+    set(d.hSurface(2,1),'visible','off');
+    set(d.hSurface(2,2),'visible','on');
+  end    
+  if sin(elevation*pi/180)>0 %this is positive if the viewpoint is Z-positive
+    set(d.hSurface(3,1),'visible','on');
+    set(d.hSurface(3,2),'visible','off');
+  else
+    set(d.hSurface(3,1),'visible','off');
+    set(d.hSurface(3,2),'visible','on');
+  end    
+end
 
 return;
 
 
 %---------------------------------------------------- makes objects visible or invisible
 function reverseX(handle,eventdata)
+hFigure= get(handle,'parent');
+d = get(hFigure,'userdata');
 
-if get(handle,'value')
+d.reversedX = get(handle,'value');
+if d.reversedX
    set(gca,'xdir','reverse');
 else
    set(gca,'xdir','normal');
 end
+if ~d.baseType
+%switch which coronal base slice is displayed 
+  if strcmp(get(d.hSurface(1,1),'visible'),'on')
+    set(d.hSurface(1,1),'visible','off');
+    set(d.hSurface(1,2),'visible','on');
+  else
+    set(d.hSurface(1,1),'visible','on');
+    set(d.hSurface(1,2),'visible','off');
+  end
+end
+
+set(hFigure,'userdata',d);
 return;
 
 
@@ -595,6 +656,7 @@ if get(handle,'value')
 else
    set(hObject,'visible','off');
 end
+
 return;
 
 
