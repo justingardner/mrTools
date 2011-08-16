@@ -76,6 +76,29 @@ function buttonHandler(textNum,sysNum)
 global gSystem;
 vol = gSystem{sysNum}.vols(1);
 
+% alpha toggle
+if textNum == -1
+  % go through volumes
+  for iVol = 1:gSystem{sysNum}.n
+    % for each tethered
+    if gSystem{sysNum}.vols(iVol).tethered
+      % go through each view and toggle alpha
+      for iView = 1:3
+	alphaData = get(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData');
+	mask = gSystem{sysNum}.vols(iVol).overlayMask{iView};
+	if alphaData(first(find(mask)))==0
+	  alphaData(mask) = 1;
+	  set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
+	else
+	  alphaData(mask) = 0;
+	  set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
+	end	  
+      end
+    end
+  end
+  return
+end
+
 % if we are already running the animation, then turn it off
 if gSystem{sysNum}.animating == textNum
   gSystem{sysNum}.animating = 0;
@@ -268,7 +291,7 @@ for iVol = 1:gSystem{sysNum}.n
      setTetheredCoord(sysNum,iVol,gSystem{sysNum}.vols(iVol).tethered);
   end
   % display the coordinate
-  dispVolume(gSystem{sysNum}.vols(iVol),sysNum)
+  dispVolume(iVol,sysNum)
 
   % set that we have displayed this coordinate
   gSystem{sysNum}.vols(iVol).curCoord = gSystem{sysNum}.vols(iVol).coord;
@@ -279,9 +302,10 @@ figure(f);%axes(a);
 %%%%%%%%%%%%%%%%%%%%
 %    dispVolume    %
 %%%%%%%%%%%%%%%%%%%%
-function dispVolume(vol,sysNum)
+function dispVolume(iVol,sysNum)
 
 global gSystem;
+vol = gSystem{sysNum}.vols(iVol);
 
 for iView = 1:3
   % see if we need to redisplay
@@ -292,6 +316,9 @@ for iView = 1:3
       % tethered volumes have their display slices precomputed (by interpolation) in 
       % setTetheredCoord
       dispSlice = vol.dispSlice{iView};
+
+      % get the axis that we are tethered to (so that we can draw
+      % the overlay)
       aTether = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),gSystem{sysNum}.vols(vol.tethered).subplotNum(iView));
     else
       % otherwise, grab the data for this image
@@ -299,17 +326,19 @@ for iView = 1:3
     end
     % clip
     %  dispSlice = clipImage(dispSlice);
+
     % get the correct axis to draw into
     figure(vol.fig(iView));
     a = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),vol.subplotNum(iView));
 
     % make into image with index values
     minDispSlice = min(dispSlice(:));
-    maxDispSlice = min(dispSlice(:));
-    
+    maxDispSlice = max(dispSlice(:));
+    dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
+
     % and display the image
-    cla(a);%imagesc(dispSlice,'Parent',a);
-    x = subimage(dispSlice,gray(128));
+    cla(a);
+    subimage(dispSlice,gray(256));
     hold on;
     axis equal
     axis off
@@ -321,9 +350,11 @@ for iView = 1:3
     % and display the overlay
     if vol.tethered
       axes(aTether)
-      dispSlice = ceil(128*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
-      x = subimage(dispSlice,hot(128));
-      set(x,'AlphaData',0.5);
+      gSystem{sysNum}.vols(iVol).overlay(iView) = subimage(dispSlice,hot(256));
+      gSystem{sysNum}.vols(iVol).overlayMask{iView} = ~isnan(dispSlice(:));
+      alphaData = zeros(size(dispSlice));
+      alphaData(gSystem{sysNum}.vols(iVol).overlayMask{iView}) = 0.8;
+      set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
     end
     
   end
@@ -433,6 +464,7 @@ end
 
 % add another row for displaying the image
 if n > 1
+  makeButton(sysNum,1,'alpha',-1,3,1);
   % mark that the volume display is "tethered" to the first volume
   gSystem{sysNum}.vols(n).tethered = 1;
   % make a cache for storing images
@@ -463,16 +495,18 @@ tf = true;
 function vol2vol = getVol2vol(sysNum,vol1,vol2)
 
 
-xform = [1 0 0 0;0 0 1 0;0 1 0 0; 0 0 0 1];
-xform = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
 global gSystem;
 if vol1.h.sform_code && vol2.h.sform_code
-  vol2vol = xform * inv(shiftOriginXform) * vol1.h.sform44 * inv(vol2.h.sform44) * shiftOriginXform * inv(xform);
   vol2vol = inv(shiftOriginXform) * inv(vol1.h.sform44) * vol2.h.sform44 * shiftOriginXform;
   dispHeader('Aliging using sform');
   disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
   dispHeader;
 %  vol2vol = inv(shiftOriginXform) * xform * shiftOriginXform;
+elseif vol1.h.qform_code && vol2.h.qform_code
+  vol2vol = inv(shiftOriginXform) * inv(vol1.h.qform44) * vol2.h.qform44 * shiftOriginXform;
+  dispHeader('Aliging using qform');
+  disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
+  dispHeader;
 else
   vol2vol = eye(4);
 end
@@ -630,7 +664,7 @@ if ~isempty(figloc)
 end
 gSystem{sysNum}.fig(2) = gSystem{sysNum}.fig(1);
 gSystem{sysNum}.fig(3) = gSystem{sysNum}.fig(1);
-clf;colormap(gray);
+clf;
 
 % set the mouse functions
 set(gSystem{sysNum}.fig(1),'WindowButtonDownFcn',sprintf('mlrVol(1,%i)',sysNum));
