@@ -16,10 +16,15 @@ end
 
 if isstr(filename)
   % init the system
-  sysNum = initSystem(varargin);
+  [sysNum otherFilenames] = initSystem(varargin);
 
   % load the volume
-  loadVolume(filename,sysNum);
+  if ~loadVolume(filename,sysNum),closeHandler(sysNum);return,end
+
+  % load the other volumes
+  for i = 1:length(otherFilenames)
+    loadVolume(otherFilenames{i},sysNum);
+  end
 
   % display the volume
   refreshDisplay(sysNum);
@@ -48,11 +53,16 @@ function closeHandler(sysNum)
 
 global gSystem;
 
+uniqueFigs = unique(gSystem{sysNum}.fig);
 % close the figures
-for i = 1:length(gSystem{sysNum}.fig)
-  figure(gSystem{sysNum}.fig(i));closereq;
-%  smartfig('close',gSystem{sysNum}.fig(i));
-%  smartfig('close',gSystem{sysNum}.fig(i));
+for i = 1:length(uniqueFigs)
+  % get the location of the figure - note that if
+  % we ever have multiple figures than we will need to change
+  % this code here and in initSystem to have more figlocs saved
+  mrSetFigLoc('mlrVol',get(uniqueFigs(i),'Position'));
+
+  % close the figure
+  delete(uniqueFigs(i));
 end
 
 % remove the variable
@@ -87,7 +97,7 @@ while(gSystem{sysNum}.animating)
     coord(textNum) = 1;
   end
   % set the volume coord
-  setVolCoord(sysNum,gSystem{sysNum}.n,coord);
+  setVolCoord(sysNum,1,coord);
   % set the text boxes
   for iCoord = 1:nDim
     set(gSystem{sysNum}.hCoordTextbox(iCoord),'String',coord(iCoord));
@@ -95,8 +105,6 @@ while(gSystem{sysNum}.animating)
   set(gSystem{sysNum}.hValTextbox(1),'String',vol.data(coord(1),coord(2),coord(3),coord(4),coord(5)));
   % and refresh
   refreshDisplay(sysNum);
-  % make it ability to be seen
-  pause(0.02);
 end
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   incdecHandler   %%
@@ -109,7 +117,7 @@ vol = gSystem{sysNum}.vols(1);
 gSystem{sysNum}.animating = false;
 
 % inc or dec the text box
-val = mystr2num(get(gSystem{sysNum}.hCoordTextbox(textNum),'String'));
+val = str2num(get(gSystem{sysNum}.hCoordTextbox(textNum),'String'));
 val = val+incdec;
 
 % if we have made a valid change then set it
@@ -135,7 +143,7 @@ nDim = gSystem{sysNum}.vols(1).h.nDim;
 
 % get coordinate
 for iCoord = 1:nDim
-  coord(iCoord) = mystr2num(get(gSystem{sysNum}.hCoordTextbox(iCoord),'String'));
+  coord(iCoord) = str2num(get(gSystem{sysNum}.hCoordTextbox(iCoord),'String'));
 end
 coord = round(coord);
 
@@ -150,7 +158,7 @@ end
 coord(end+1:5) = 1;
 
 % set the volume coord
-setVolCoord(sysNum,gSystem{sysNum}.n,coord);
+setVolCoord(sysNum,1,coord);
 
 % nDims hard coded to 5 here
 vol = gSystem{sysNum}.vols(1);
@@ -200,7 +208,7 @@ coord = getMouseCoord(sysNum);
 if isempty(coord),return,end
 
 % and set the volume coordinate
-setVolCoord(sysNum,gSystem{sysNum}.n,coord);
+setVolCoord(sysNum,1,coord);
 
 % refresh the display
 refreshDisplay(sysNum);
@@ -221,11 +229,12 @@ pos = get(gcf,'Position');
 pos = pointerLoc./pos(3:4);
 subplotNum = ceil(pos(1)*3);
 if (subplotNum>0) && (subplotNum<=3)
-  a = subplot(1,3,subplotNum);
+  a = subplot(gSystem{sysNum}.subplotRows(1),gSystem{sysNum}.subplotCols(1),subplotNum);
 else
   return
 end
-viewNum = find(gSystem{sysNum}.a == a);
+viewNum = find(gSystem{sysNum}.a(1,1:3) == a);
+if isempty(viewNum),return,end
 
 % get pointer loc
 pointerLoc = get(a,'CurrentPoint');
@@ -250,9 +259,17 @@ function refreshDisplay(sysNum)
 global gSystem;
 
 f = gcf;a = gca;
+  
+% all other volumes are tethered to the first volume
 for iVol = 1:gSystem{sysNum}.n
+  % if the volume is tethered then set its coordinates according
+  % to whatever volume it is tethered to.
+  if gSystem{sysNum}.vols(iVol).tethered
+     setTetheredCoord(sysNum,iVol,gSystem{sysNum}.vols(iVol).tethered);
+  end
   % display the coordinate
-  dispVolume(gSystem{sysNum}.vols(iVol))
+  dispVolume(gSystem{sysNum}.vols(iVol),sysNum)
+
   % set that we have displayed this coordinate
   gSystem{sysNum}.vols(iVol).curCoord = gSystem{sysNum}.vols(iVol).coord;
 end
@@ -262,7 +279,7 @@ figure(f);%axes(a);
 %%%%%%%%%%%%%%%%%%%%
 %    dispVolume    %
 %%%%%%%%%%%%%%%%%%%%
-function dispVolume(vol)
+function dispVolume(vol,sysNum)
 
 global gSystem;
 
@@ -271,23 +288,44 @@ for iView = 1:3
   if ~isequal(vol.curCoord(4:end),vol.coord(4:end)) || ~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))
     % get the slice
     % nDims hard coded to 5 here
-    dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
-
+    if vol.tethered
+      % tethered volumes have their display slices precomputed (by interpolation) in 
+      % setTetheredCoord
+      dispSlice = vol.dispSlice{iView};
+      aTether = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),gSystem{sysNum}.vols(vol.tethered).subplotNum(iView));
+    else
+      % otherwise, grab the data for this image
+      dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
+    end
     % clip
     %  dispSlice = clipImage(dispSlice);
-  
     % get the correct axis to draw into
     figure(vol.fig(iView));
-    a = subplot(1,3,vol.subplotNum(iView));
+    a = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),vol.subplotNum(iView));
 
+    % make into image with index values
+    minDispSlice = min(dispSlice(:));
+    maxDispSlice = min(dispSlice(:));
+    
     % and display the image
-    cla(a);imagesc(dispSlice,'Parent',a);
+    cla(a);%imagesc(dispSlice,'Parent',a);
+    x = subimage(dispSlice,gray(128));
+    hold on;
     axis equal
     axis off
   
     % set title
     titleStr = sprintf('%s (%i %i %i)',vol.h.filename,vol.coord(1),vol.coord(2),vol.coord(3));
     h = title(titleStr,'Interpreter','none');
+    
+    % and display the overlay
+    if vol.tethered
+      axes(aTether)
+      dispSlice = ceil(128*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
+      x = subimage(dispSlice,hot(128));
+      set(x,'AlphaData',0.5);
+    end
+    
   end
 end
 
@@ -317,8 +355,9 @@ end
 %%%%%%%%%%%%%%%%%%%%
 %    loadVolume    %
 %%%%%%%%%%%%%%%%%%%%
-function loadVolume(filename,sysNum)
+function tf = loadVolume(filename,sysNum)
 
+tf = false;
 global gSystem;
 
 [d h] = mlrLoadImage(filename);
@@ -326,6 +365,7 @@ if isempty(d),return,end
 
 % updated number of volumes
 gSystem{sysNum}.n = gSystem{sysNum}.n+1;
+n = gSystem{sysNum}.n;
 
 % update the fields in vols
 gSystem{sysNum}.vols(gSystem{sysNum}.n).data = d;
@@ -333,8 +373,9 @@ gSystem{sysNum}.vols(gSystem{sysNum}.n).h = h;
 
 % set which figure numbers this volume will display into
 gSystem{sysNum}.vols(gSystem{sysNum}.n).fig(1:3) = gSystem{sysNum}.fig(1:3);
-%gSystem{sysNum}.vols(gSystem{sysNum}.n).subplotNum(1:3) = gSystem{sysNum}.n;
-gSystem{sysNum}.vols(gSystem{sysNum}.n).subplotNum(1:3) = 1:3;
+
+% set which subplot
+gSystem{sysNum}.vols(gSystem{sysNum}.n).subplotNum(1:3) = (1:3)+(n-1)*3;
 
 % FIX: these should be set with reference to permutation matrix
 gSystem{sysNum}.vols(gSystem{sysNum}.n).viewDim(1:3) = 1:3;
@@ -390,6 +431,52 @@ if gSystem{sysNum}.n == 1
   gSystem{sysNum}.hValTextbox(1) = makeTextbox(sysNum,1,'',1,6);
 end
 
+% add another row for displaying the image
+if n > 1
+  % mark that the volume display is "tethered" to the first volume
+  gSystem{sysNum}.vols(n).tethered = 1;
+  % make a cache for storing images
+  gSystem{sysNum}.vols(n).c = mrCache('init',prod(gSystem{sysNum}.vols(n).h.dim(1:3)));
+  % set the initial transform
+  gSystem{sysNum}.vols(n).xform = getVol2vol(sysNum,gSystem{sysNum}.vols(n),gSystem{sysNum}.vols(1));
+  % setup subplotRows and subplotCols
+  gSystem{sysNum}.subplotRows = [n n n];
+  gSystem{sysNum}.subplotCols = [3 3 3];
+  % redo the subplots
+  for i = 1:n
+    for j = 1:3
+      gSystem{sysNum}.a(i,j) = subplot(n,3,j+(i-1)*3);
+      cla;
+      axis off;
+    end
+  end
+else
+  % first volume is displayed independently
+  gSystem{sysNum}.vols(n).tethered = 0;
+end
+
+tf = true;
+
+%%%%%%%%%%%%%%%%%%%%
+%    getVol2vol    %
+%%%%%%%%%%%%%%%%%%%%
+function vol2vol = getVol2vol(sysNum,vol1,vol2)
+
+
+xform = [1 0 0 0;0 0 1 0;0 1 0 0; 0 0 0 1];
+xform = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+global gSystem;
+if vol1.h.sform_code && vol2.h.sform_code
+  vol2vol = xform * inv(shiftOriginXform) * vol1.h.sform44 * inv(vol2.h.sform44) * shiftOriginXform * inv(xform);
+  vol2vol = inv(shiftOriginXform) * inv(vol1.h.sform44) * vol2.h.sform44 * shiftOriginXform;
+  dispHeader('Aliging using sform');
+  disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
+  dispHeader;
+%  vol2vol = inv(shiftOriginXform) * xform * shiftOriginXform;
+else
+  vol2vol = eye(4);
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   dispHeaderInfo   %%
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -397,16 +484,79 @@ function dispHeaderInfo(vol)
 
 dispHeader(vol.h.filename);
 disp(sprintf('type: %s (%s)',vol.h.type,vol.h.ext));
-disp(sprintf('dim: [%s]',mynum2str(vol.h.dim(:)','sigfigs=0')));
-disp(sprintf('pixdim: [%s]',mynum2str(vol.h.pixdim(:)')));
+disp(sprintf('dim: [%s]',mrnum2str(vol.h.dim(:)','sigfigs=0')));
+disp(sprintf('pixdim: [%s]',mrnum2str(vol.h.pixdim(:)')));
 disp(sprintf('qform_code: %i',vol.h.qform_code));
 disp(sprintf('qform:'));
-disp(sprintf('%s',mynum2str(vol.h.qform44,'compact=0','sigfigs=-1')));
+disp(sprintf('%s',mrnum2str(vol.h.qform44,'compact=0','sigfigs=-1')));
 disp(sprintf('sform_code: %i',vol.h.sform_code));
 disp(sprintf('sform:'));
-disp(sprintf('%s',mynum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
+disp(sprintf('%s',mrnum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
 dispHeader;
 
+%%%%%%%%%%%%%%%%%%%
+%    mrnum2str    %
+%%%%%%%%%%%%%%%%%%%
+function str = mrnum2str(num,arg1,arg2)
+
+% just a wrapper function so that we can use mynum2str (which is in my matlab directory not in mrTools)
+if exist('mynum2str')==2
+  switch (nargin)
+   case 1
+    str = mynum2str(num);
+   case 2
+    str = mynum2str(num,arg1);
+   case 3
+    str = mynum2str(num,arg1,arg2);
+  end
+else
+  % otherwise use matlabs normal function
+  str = num2str(num(:));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    setTetheredCoord    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function setTetheredCoord(sysNum,iVol,iRefvol)
+
+global gSystem;
+
+% get coord we are tethering to
+coord = gSystem{sysNum}.vols(iRefvol).coord;
+
+% this just copies the coordinates, for testing
+%coord = gSystem{sysNum}.vols(iRefvol).coord;
+%setVolCoord(sysNum,iVol,coord);
+refvol = gSystem{sysNum}.vols(iRefvol);
+vol = gSystem{sysNum}.vols(iVol);
+
+% look in cache for precalculate
+dispSlice = mrCache('find',gSystem{sysNum}.vols(iVol).c,mrnum2str(coord));
+if ~isempty(dispSlice)
+  gSystem{sysNum}.vols(iVol).dispSlice = dispSlice;
+else
+  % create an image
+  for iView = 1:3
+    % get the coordinates of the reference volume
+    [x y z] = ndgrid(gSystem{sysNum}.vols(iRefvol).viewIndexes{iView,1},gSystem{sysNum}.vols(iRefvol).viewIndexes{iView,2},gSystem{sysNum}.vols(iRefvol).viewIndexes{iView,3});
+    s = size(x);
+    % make into coords for multiplying
+    coords = [x(:) y(:) z(:)]';
+    coords(4,:) = 1;
+    % convert from the reference volume coordinates to our coordinates
+    coords = gSystem{sysNum}.vols(iVol).xform * coords;
+    x = reshape(coords(1,:),s);
+    y = reshape(coords(2,:),s);
+    z = reshape(coords(3,:),s);
+    % get the interpolated image (note that interp3 needs to have y and x swaped to work correctly here)
+    gSystem{sysNum}.vols(iVol).dispSlice{iView} = squeeze(interp3(gSystem{sysNum}.vols(iVol).data,y,x,z,gSystem{sysNum}.interpMethod,nan));
+  end
+  % save in cache
+  gSystem{sysNum}.vols(iVol).c = mrCache('add',gSystem{sysNum}.vols(iVol).c,mrnum2str(coord),gSystem{sysNum}.vols(iVol).dispSlice);
+end
+
+% set the coordinate so that we update correctly
+gSystem{sysNum}.vols(iVol).coord = coord;
 %%%%%%%%%%%%%%%%%%%%%
 %    setVolCoord    %
 %%%%%%%%%%%%%%%%%%%%%
@@ -432,7 +582,7 @@ end
 %%%%%%%%%%%%%%%%%%%%
 %    initSystem    %
 %%%%%%%%%%%%%%%%%%%%
-function sysNum = initSystem(args)
+function [sysNum otherFilenames] = initSystem(args)
 
 global gSystem;
 if isempty(gSystem)
@@ -440,6 +590,21 @@ if isempty(gSystem)
 else
   sysNum = length(gSystem)+1;
 end
+
+% get any aditional filenames
+otherFilenames = {};
+for i = 1:length(args)
+  if isstr(args{i}) && isempty(strfind(args{i},'='))
+    otherFilenames{end+1} = args{i};
+    otherArgs = {args{i+1:end}};
+  else
+    otherArgs = {args{i:end}};
+    break;
+  end
+end
+
+% parse args here when we have settings
+%getArgs(otherArgs,{});
 
 % number of loaded volumes
 gSystem{sysNum}.n = 0;
@@ -455,8 +620,14 @@ gSystem{sysNum}.buttonHeight = 25;
 gSystem{sysNum}.buttonLeftMargin = 10;
 gSystem{sysNum}.buttonBottomMargin = 5;
 
+% get location of figure
+figloc = mrGetFigLoc('mlrVol');
+
 % open the fig
-gSystem{sysNum}.fig(1) = smartfig('mlrVol');
+gSystem{sysNum}.fig(1) = figure;
+if ~isempty(figloc)
+  set(gSystem{sysNum}.fig(1),'Position',figloc);
+end
 gSystem{sysNum}.fig(2) = gSystem{sysNum}.fig(1);
 gSystem{sysNum}.fig(3) = gSystem{sysNum}.fig(1);
 clf;colormap(gray);
@@ -470,9 +641,14 @@ set(gSystem{sysNum}.fig(1),'CloseRequestFcn',sprintf('mlrVol(6,%i)',sysNum));
 gSystem{sysNum}.a(1) = subplot(1,3,1);cla;axis off;
 gSystem{sysNum}.a(2) = subplot(1,3,2);cla;axis off;
 gSystem{sysNum}.a(3) = subplot(1,3,3);cla;axis off;
+gSystem{sysNum}.subplotRows = [1 1 1];
+gSystem{sysNum}.subplotCols = [3 3 3];
 
 % no animation is running
 gSystem{sysNum}.animating = false;
+
+% get interp method
+gSystem{sysNum}.interpMethod = mrGetPref('interpMethod');
 
 % update display
 drawnow
@@ -521,3 +697,43 @@ pos(1) = (gSystem{sysNum}.buttonWidth+gSystem{sysNum}.buttonWidthMargin)*(floor(
 pos(2) = gSystem{sysNum}.buttonBottomMargin + (gSystem{sysNum}.buttonHeight+gSystem{sysNum}.buttonHeightMargin)*(rownum-1)+gSystem{sysNum}.buttonHeight;
 pos(3) = thisButtonWidth;
 pos(4) = gSystem{sysNum}.buttonHeight;
+
+%%%%%%%%%%%%%%%%%%%%
+%    dispHeader    %
+%%%%%%%%%%%%%%%%%%%%
+function retval = dispHeader(header,len,c)
+
+% check arguments
+if ~any(nargin == [0 1 2 3])
+  help dispHeader
+  return
+end
+
+% default header is just a full line
+if nargin < 1, header = '';end
+
+% default length
+if (nargin < 2) || isempty(len),len = 60;end
+
+% default separator character
+if (nargin < 3) || isempty(c),c = '=';end
+
+% get length of texgt
+headerLen = length(header);
+
+% if it is longer than the desired header length, then
+% display two lines of separators one above and below the header
+if (headerLen+2) >= len
+  disp(repmat(c,1,len));
+  disp(header)
+  disp(repmat(c,1,len));
+elseif headerLen == 0
+  % if the header is empty, just display a full line
+  disp(repmat(c,1,len));
+else
+  % otherwise put header inside separator characters
+  fillerLen = ((len-(headerLen+2))/2);
+  
+  % display the first part
+  disp(sprintf('%s %s %s',repmat(c,1,floor(fillerLen)),header,repmat(c,1,ceil(fillerLen))));
+end

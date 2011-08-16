@@ -9,6 +9,9 @@
 %
 function [data header] = mlrLoadImage(filename)
 
+% default return values
+data = [];header = [];
+
 % check arguments
 if ~any(nargin == [1])
   help mlrLoadImage
@@ -22,6 +25,7 @@ end
 
 % load the header first
 header = mlrLoadImageHeader(filename);
+if isempty(header),return,end
 
 % load the data
 switch lower(getext(filename))
@@ -30,5 +34,7 @@ switch lower(getext(filename))
  case {'sdt','spr','edt','epr'}
   data = readsdt(filename);
   data = data.data;
+ case {'fid'}
+  data = fid2nifti(filename);
 end
 
