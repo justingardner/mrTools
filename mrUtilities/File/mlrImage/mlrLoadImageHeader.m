@@ -24,7 +24,7 @@ else
 end
 
 %check for file
-if ~isfile(hdrFilename) 
+if ~isfile(hdrFilename) && ~isdir(hdrFilename)
   disp(sprintf('(mlrLoadImageHeader) Could not find file %s',hdrFilename));
   return
 end
@@ -48,6 +48,8 @@ switch lower(getext(filename))
     header = mlrLoadImageHeaderNifti(filename,header);
   case {'sdt','spr','edt','epr'}
     header = mlrLoadImageHeaderSDT(filename,header);
+  case {'fid'}
+    header = mlrLoadImageHeaderFid(filename,header);
  otherwise
     disp(sprintf('(mlrLoadImageHeader) Unknown image header type: %s',getext(filename)));
     return
@@ -55,6 +57,28 @@ end
 
 % load the associated matlab header
 header.matHeader = loadAssociatedMatlabHeader(filename);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrLoadImageHeaderFid    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function header = mlrLoadImageHeaderFid(filename,header)
+
+% read the nifti header
+nifti = fid2niftihdr(filename);
+
+% set some info
+header.type = 'nifti';
+header.hdr = nifti;
+
+% set other fields
+header.qform_code = header.hdr.qform_code;
+header.qform44 = header.hdr.qform44;
+header.sform_code = header.hdr.sform_code;
+header.sform44 = header.hdr.sform44;
+header.nDim = header.hdr.dim(1);
+header.dim = header.hdr.dim(2:header.nDim+1);
+header.pixdim = header.hdr.pixdim(2:header.nDim+2);
+header.permutationMatrix = getPermutationMatrix(nifti);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrLoadImageHeaderSDT    %
