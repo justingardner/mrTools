@@ -220,6 +220,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 function mouseDownHandler(sysNum)
 
+set(gcf,'Pointer','arrow');
 global gSystem;
 vol = gSystem{sysNum}.vols(1);
 
@@ -288,8 +289,9 @@ for iVol = 1:gSystem{sysNum}.n
   % if the volume is tethered then set its coordinates according
   % to whatever volume it is tethered to.
   if gSystem{sysNum}.vols(iVol).tethered
-     setTetheredCoord(sysNum,iVol,gSystem{sysNum}.vols(iVol).tethered);
+    setTetheredCoord(sysNum,iVol,gSystem{sysNum}.vols(iVol).tethered);
   end
+
   % display the coordinate
   dispVolume(iVol,sysNum)
 
@@ -298,7 +300,7 @@ for iVol = 1:gSystem{sysNum}.n
 end
 
 drawnow;
-figure(f);%axes(a);
+
 %%%%%%%%%%%%%%%%%%%%
 %    dispVolume    %
 %%%%%%%%%%%%%%%%%%%%
@@ -324,11 +326,12 @@ for iView = 1:3
       % otherwise, grab the data for this image
       dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
     end
+
     % clip
     %  dispSlice = clipImage(dispSlice);
 
     % get the correct axis to draw into
-    figure(vol.fig(iView));
+%    figure(vol.fig(iView));
     a = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),vol.subplotNum(iView));
 
     % make into image with index values
@@ -337,9 +340,7 @@ for iView = 1:3
     dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
 
     % and display the image
-    cla(a);
     subimage(dispSlice,gray(256));
-    axis equal
     axis off
   
     % set title
@@ -469,7 +470,7 @@ if n > 1
   % mark that the volume display is "tethered" to the first volume
   gSystem{sysNum}.vols(n).tethered = 1;
   % make a cache for storing images
-  gSystem{sysNum}.vols(n).c = mrCache('init',prod(gSystem{sysNum}.vols(n).h.dim(1:3)));
+  gSystem{sysNum}.vols(n).c = mrCache('init',2*max(gSystem{sysNum}.vols(n).h.dim(1:3)));
   % set the initial transform
   gSystem{sysNum}.vols(n).xform = getVol2vol(sysNum,gSystem{sysNum}.vols(n),gSystem{sysNum}.vols(1));
   % setup subplotRows and subplotCols
@@ -559,11 +560,10 @@ global gSystem;
 % get coord we are tethering to
 coord = gSystem{sysNum}.vols(iRefvol).coord;
 
-% this just copies the coordinates, for testing
-%coord = gSystem{sysNum}.vols(iRefvol).coord;
-%setVolCoord(sysNum,iVol,coord);
-refvol = gSystem{sysNum}.vols(iRefvol);
-vol = gSystem{sysNum}.vols(iVol);
+% see if we have already updated
+if isequal(gSystem{sysNum}.vols(iVol).coord,coord)
+  return
+end
 
 % look in cache for precalculate
 dispSlice = mrCache('find',gSystem{sysNum}.vols(iVol).c,mrnum2str(coord));
