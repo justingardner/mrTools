@@ -339,7 +339,6 @@ for iView = 1:3
     % and display the image
     cla(a);
     subimage(dispSlice,gray(256));
-    hold on;
     axis equal
     axis off
   
@@ -350,11 +349,13 @@ for iView = 1:3
     % and display the overlay
     if vol.tethered
       axes(aTether)
+      hold on;
       gSystem{sysNum}.vols(iVol).overlay(iView) = subimage(dispSlice,hot(256));
       gSystem{sysNum}.vols(iVol).overlayMask{iView} = ~isnan(dispSlice(:));
       alphaData = zeros(size(dispSlice));
-      alphaData(gSystem{sysNum}.vols(iVol).overlayMask{iView}) = 0.8;
+      alphaData(gSystem{sysNum}.vols(iVol).overlayMask{iView}) = 1;
       set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
+      hold off;
     end
     
   end
