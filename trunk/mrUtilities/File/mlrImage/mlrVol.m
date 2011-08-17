@@ -14,6 +14,8 @@ if nargin < 1
   return
 end
 
+global gSystem;
+
 if isstr(filename)
   % init the system
   [sysNum otherFilenames] = initSystem(varargin);
@@ -28,6 +30,9 @@ if isstr(filename)
 
   % display the volume
   refreshDisplay(sysNum);
+  
+  % display controls
+  if gSystem{sysNum}.displayControls,displayControls(sysNum);end
 else
   % command argument
   switch (filename)
@@ -68,6 +73,7 @@ end
 % remove the variable
 gSystem = {gSystem{1:sysNum-1} gSystem{sysNum+1:end}};
 
+
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   buttonHandler   %%
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -76,25 +82,13 @@ function buttonHandler(textNum,sysNum)
 global gSystem;
 vol = gSystem{sysNum}.vols(1);
 
-% alpha toggle
-if textNum == -1
-  % go through volumes
-  for iVol = 1:gSystem{sysNum}.n
-    % for each tethered
-    if gSystem{sysNum}.vols(iVol).tethered
-      % go through each view and toggle alpha
-      for iView = 1:3
-	alphaData = get(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData');
-	mask = gSystem{sysNum}.vols(iVol).overlayMask{iView};
-	if alphaData(first(find(mask)))==0
-	  alphaData(mask) = 1;
-	  set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
-	else
-	  alphaData(mask) = 0;
-	  set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
-	end	  
-      end
-    end
+% display controls
+if textNum < 0
+  switch textNum
+   case -1
+    closeHandler(sysNum);
+   case -2
+    displayControls(sysNum);
   end
   return
 end
@@ -282,8 +276,10 @@ function refreshDisplay(sysNum)
 
 global gSystem;
 
-f = gcf;a = gca;
-  
+f = gcf;
+% set the figure
+figure(gSystem{sysNum}.vols(1).fig(1));
+
 % all other volumes are tethered to the first volume
 for iVol = 1:gSystem{sysNum}.n
   % if the volume is tethered then set its coordinates according
@@ -300,7 +296,7 @@ for iVol = 1:gSystem{sysNum}.n
 end
 
 drawnow;
-
+figure(f);
 %%%%%%%%%%%%%%%%%%%%
 %    dispVolume    %
 %%%%%%%%%%%%%%%%%%%%
@@ -308,6 +304,7 @@ function dispVolume(iVol,sysNum)
 
 global gSystem;
 vol = gSystem{sysNum}.vols(iVol);
+labels = 'xyz';
 
 for iView = 1:3
   % see if we need to redisplay
@@ -319,8 +316,7 @@ for iView = 1:3
       % setTetheredCoord
       dispSlice = vol.dispSlice{iView};
 
-      % get the axis that we are tethered to (so that we can draw
-      % the overlay)
+      % get the axis that we are tethered to (so that we can draw the overlay)
       aTether = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),gSystem{sysNum}.vols(vol.tethered).subplotNum(iView));
     else
       % otherwise, grab the data for this image
@@ -331,18 +327,22 @@ for iView = 1:3
     %  dispSlice = clipImage(dispSlice);
 
     % get the correct axis to draw into
-%    figure(vol.fig(iView));
+%    
     a = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),vol.subplotNum(iView));
-
     % make into image with index values
     minDispSlice = min(dispSlice(:));
     maxDispSlice = max(dispSlice(:));
     dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
 
     % and display the image
+    cla(a);
     subimage(dispSlice,gray(256));
-    axis off
-  
+    % turn off labels
+    set(a,'XTickLabel','');
+    set(a,'YTickLabel','');
+    % and put on what axis we have
+    xlabel(a,labels(vol.yDim(iView)));
+    ylabel(a,labels(vol.xDim(iView)));
     % set title
     titleStr = sprintf('%s (%i %i %i)',vol.h.filename,vol.coord(1),vol.coord(2),vol.coord(3));
     h = title(titleStr,'Interpreter','none');
@@ -354,7 +354,9 @@ for iView = 1:3
       gSystem{sysNum}.vols(iVol).overlay(iView) = subimage(dispSlice,hot(256));
       gSystem{sysNum}.vols(iVol).overlayMask{iView} = ~isnan(dispSlice(:));
       alphaData = zeros(size(dispSlice));
-      alphaData(gSystem{sysNum}.vols(iVol).overlayMask{iView}) = 1;
+      if gSystem{sysNum}.overlayToggleState
+	alphaData(gSystem{sysNum}.vols(iVol).overlayMask{iView}) = gSystem{sysNum}.overlayAlpha;
+      end
       set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
       hold off;
     end
@@ -466,7 +468,7 @@ end
 
 % add another row for displaying the image
 if n > 1
-  makeButton(sysNum,1,'alpha',-1,3,1);
+  makeButton(sysNum,1,'controls',-2,4,1);
   % mark that the volume display is "tethered" to the first volume
   gSystem{sysNum}.vols(n).tethered = 1;
   % make a cache for storing images
@@ -484,28 +486,40 @@ if n > 1
       axis off;
     end
   end
+  % set to display controls
+  gSystem{sysNum}.displayControls = true;
 else
   % first volume is displayed independently
   gSystem{sysNum}.vols(n).tethered = 0;
+  % make close button
+  makeButton(sysNum,1,'close',-1,3,1);
 end
 
 tf = true;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    applySystemXform    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function xform = applySystemXform(sysNum,xform)
+
+global gSystem;
+
+xform = inv(shiftOriginXform) * xform * gSystem{sysNum}.xform * shiftOriginXform;
 
 %%%%%%%%%%%%%%%%%%%%
 %    getVol2vol    %
 %%%%%%%%%%%%%%%%%%%%
 function vol2vol = getVol2vol(sysNum,vol1,vol2)
 
-
 global gSystem;
 if vol1.h.sform_code && vol2.h.sform_code
-  vol2vol = inv(shiftOriginXform) * inv(vol1.h.sform44) * vol2.h.sform44 * shiftOriginXform;
+  vol2vol = inv(vol1.h.sform44) * vol2.h.sform44;
   dispHeader('Aliging using sform');
   disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
   dispHeader;
 %  vol2vol = inv(shiftOriginXform) * xform * shiftOriginXform;
 elseif vol1.h.qform_code && vol2.h.qform_code
-  vol2vol = inv(shiftOriginXform) * inv(vol1.h.qform44) * vol2.h.qform44 * shiftOriginXform;
+  vol2vol = inv(vol1.h.qform44) * vol2.h.qform44;
   dispHeader('Aliging using qform');
   disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
   dispHeader;
@@ -561,7 +575,7 @@ global gSystem;
 coord = gSystem{sysNum}.vols(iRefvol).coord;
 
 % see if we have already updated
-if isequal(gSystem{sysNum}.vols(iVol).coord,coord)
+if isequal(gSystem{sysNum}.vols(iVol).curCoord,coord)
   return
 end
 
@@ -579,7 +593,7 @@ else
     coords = [x(:) y(:) z(:)]';
     coords(4,:) = 1;
     % convert from the reference volume coordinates to our coordinates
-    coords = gSystem{sysNum}.vols(iVol).xform * coords;
+    coords = applySystemXform(sysNum,gSystem{sysNum}.vols(iVol).xform) * coords;
     x = reshape(coords(1,:),s);
     y = reshape(coords(2,:),s);
     z = reshape(coords(3,:),s);
@@ -685,6 +699,26 @@ gSystem{sysNum}.animating = false;
 % get interp method
 gSystem{sysNum}.interpMethod = mrGetPref('interpMethod');
 
+% alpha for overlay
+gSystem{sysNum}.overlayAlpha = 1;
+
+% default not to display controls
+gSystem{sysNum}.displayControls = false;
+
+% default system transform
+gSystem{sysNum}.xform = eye(4);
+
+% overlay toggle state starts as on
+gSystem{sysNum}.overlayToggleState = 1;
+
+% set up system params
+gSystem{sysNum}.xformParams.shiftX = 0;
+gSystem{sysNum}.xformParams.shiftY = 0;
+gSystem{sysNum}.xformParams.shiftZ = 0;
+gSystem{sysNum}.xformParams.rotateXY = 0;
+gSystem{sysNum}.xformParams.rotateXZ = 0;
+gSystem{sysNum}.xformParams.rotateYZ = 0;
+
 % update display
 drawnow
 
@@ -772,3 +806,183 @@ else
   % display the first part
   disp(sprintf('%s %s %s',repmat(c,1,floor(fillerLen)),header,repmat(c,1,ceil(fillerLen))));
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    displayControls    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function displayControls(sysNum)
+
+global gSystem;
+
+paramsInfo = {...
+    {'toggleOverlay',0,'type=pushbutton','callback',@toggleOverlay,'buttonString','Toggle overlay','callbackArg',sysNum}...
+    {'overlayAlpha',gSystem{sysNum}.overlayAlpha,'incdec=[-0.2 0.2]','minmax=[0 1]','callback',@overlayAlpha,'callbackArg',sysNum,'passParams=1'}...
+    {'initFromHeader',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Init from header','callbackArg',{sysNum 'initFromHeader'},'passParams=1'}...
+    {'setToIdentity',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Set to identity','callbackArg',{sysNum 'setToIdentity'},'passParams=1'}...
+    {'swapXY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XY','callbackArg',{sysNum 'swapXY'},'passParams=1'}...
+    {'swapXZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XZ','callbackArg',{sysNum 'swapXZ'},'passParams=1'}...
+    {'swapYZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap YZ','callbackArg',{sysNum 'swapYZ'},'passParams=1'}...
+    {'flipX',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip X','callbackArg',{sysNum 'flipX'},'passParams=1'}...
+    {'flipY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1'}...
+    {'flipZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1'}...
+    {'shiftX',gSystem{sysNum}.xformParams.shiftX,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1'}...
+    {'shiftY',gSystem{sysNum}.xformParams.shiftY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1'}...
+    {'shiftZ',gSystem{sysNum}.xformParams.shiftZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1'}...
+    {'rotateXY',gSystem{sysNum}.xformParams.rotateXY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1'}...
+    {'rotateXZ',gSystem{sysNum}.xformParams.rotateXZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1'}...
+    {'rotateYZ',gSystem{sysNum}.xformParams.rotateYZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1'}...
+    {'vol2vol',gSystem{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1'}
+	     };
+
+
+%mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
+mrParamsDialog(paramsInfo,'mlrVol Controls');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    controlsCallback    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function controlsCallback(params)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    adjustAlignment    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = adjustAlignment(args,params)
+
+% some variables
+global gSystem;
+retval = [];
+sysNum = args{1};
+command = args{2};
+replaceXform = false;
+changeXform = true;
+
+% get system xform
+gSystem{sysNum}.xformParams = params;
+%gSystem{sysNum}.xform = [1 0 0 params.shiftX;0 1 0 params.shiftY;0 0 1 params.shiftZ; 0 0 0 1];
+% make rotation matrix, but need to rotate around center coordinates
+dim = gSystem{sysNum}.vols(2).h.dim;
+shiftToCenterOfVol = makeRotMatrix3D(0,0,0,-[dim(1)/2 dim(2)/2 dim(3)/2]);
+gSystem{sysNum}.xform = inv(shiftToCenterOfVol) * makeRotMatrix3D(params.rotateXZ,params.rotateYZ,params.rotateXY,[params.shiftX params.shiftY params.shiftZ],1)*shiftToCenterOfVol;
+
+
+% get the necessary xform
+switch args{2}
+ case {'swapXY'}
+  xform = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+ case {'swapXZ'}
+  xform = [0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+ case {'swapYZ'}
+  xform = [1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1];
+ case {'flipX'}
+  % set the xform - the nan will get set to the image size below
+  xform = [-1 0 0 nan;0 1 0 0;0 0 1 0; 0 0 0 1];
+ case {'flipY'}
+  xform = [1 0 0 0;0 -1 0 nan;0 0 1 0; 0 0 0 1];
+ case {'flipZ'}
+  xform = [1 0 0 0;0 1 0 0;0 0 -1 nan; 0 0 0 1];
+ case {'shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ'}
+  changeXform = false;
+ case {'initFromHeader'}
+  xform = getVol2vol(sysNum,gSystem{sysNum}.vols(2),gSystem{sysNum}.vols(1));
+  replaceXform = true;
+ case {'vol2vol'}
+  xform = params.vol2vol;
+  replaceXform = true;
+ case {'setToIdentity'}
+  xform = eye(4);
+  replaceXform = true;
+end
+
+% set the transform
+for iVol = 1:gSystem{sysNum}.n
+  dispHeader;
+  if gSystem{sysNum}.vols(iVol).tethered
+    if changeXform
+      % see if there is a nan that needs to be replaced
+      [row col] = find(isnan(xform));
+      if ~isempty(row)
+	% replace from the appropriate coordinate
+	val = gSystem{sysNum}.vols(iVol).h.dim(row);
+	thisXform = xform;
+	thisXform(row,col) = val;
+      else
+	thisXform = xform;
+      end
+      if ~replaceXform
+	% display what we are doing
+	disp(sprintf('(mlrVol) Compositing xform\n%s',mrnum2str(thisXform,'compact=0','sigfigs=-1')));
+        % now set the xform
+	gSystem{sysNum}.vols(iVol).xform = gSystem{sysNum}.vols(iVol).xform*thisXform;
+      else
+	gSystem{sysNum}.vols(iVol).xform = xform;
+      end
+    end
+    % display what we are doing
+    disp(sprintf('(mlrVol) xform\n%s',mrnum2str(gSystem{sysNum}.vols(iVol).xform,'compact=0','sigfigs=-1')));
+    % display system xform
+    disp(sprintf('(mlrVol) System xform\n%s',mrnum2str(gSystem{sysNum}.xform,'compact=0','sigfigs=-1')));
+    % display complete xform
+    disp(sprintf('(mlrVol) xform after compositing system\n%s',mrnum2str(shiftOriginXform*applySystemXform(sysNum,gSystem{sysNum}.vols(iVol).xform)*inv(shiftOriginXform),'compact=0','sigfigs=-1')));
+    % clear cache
+    gSystem{sysNum}.vols(iVol).c = mrCache('init',2*max(gSystem{sysNum}.vols(iVol).h.dim(1:3)));
+  end
+  % set all images to redisplay
+  gSystem{sysNum}.vols(iVol).curCoord = nan;
+end
+
+% redisplay
+refreshDisplay(sysNum);
+
+%%%%%%%%%%%%%%%%%%%%%%
+%    overlayAlpha    %
+%%%%%%%%%%%%%%%%%%%%%%
+function retval = overlayAlpha(sysNum,params)
+
+global gSystem;
+gSystem{sysNum}.overlayAlpha = params.overlayAlpha;
+
+% go through volumes
+for iVol = 1:gSystem{sysNum}.n
+  % for each tethered
+  if gSystem{sysNum}.vols(iVol).tethered
+    % go through each view and toggle alpha
+    for iView = 1:3
+      alphaData = get(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData');
+      mask = gSystem{sysNum}.vols(iVol).overlayMask{iView};
+      alphaData(mask) = gSystem{sysNum}.overlayAlpha;
+      set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
+    end
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    toggleOverlay    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = toggleOverlay(sysNum)
+
+retval = [];
+global gSystem;
+
+% go through volumes
+for iVol = 1:gSystem{sysNum}.n
+  % for each tethered
+  if gSystem{sysNum}.vols(iVol).tethered
+    % go through each view and toggle alpha
+    for iView = 1:3
+      alphaData = get(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData');
+      mask = gSystem{sysNum}.vols(iVol).overlayMask{iView};
+      if alphaData(first(find(mask)))==0
+	gSystem{sysNum}.overlayToggleState = 1;
+	alphaData(mask) = gSystem{sysNum}.overlayAlpha;
+	set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
+      else
+	alphaData(mask) = 0;
+	gSystem{sysNum}.overlayToggleState = 0;
+	set(gSystem{sysNum}.vols(iVol).overlay(iView),'AlphaData',alphaData);
+      end	  
+    end
+  end
+end
+
