@@ -25,106 +25,46 @@ if ~nRois
    return;
 end
 
-fprintf(1,'Loading data...');
-overlayAlpha = viewGet(thisView,'alpha');
-
 % get the analysis structure
 analysis = viewGet(thisView,'analysis');
 currentAnalysis = viewGet(thisView,'currentAnalysis');
-fprintf(1,'Done\n');
-
-
-%--------------------------------Mask and Alpha overlay data -------------------------------
-if ~isempty(currentAnalysis)
-   
-  scanDims = viewGet(thisView,'scanDims');
-  d.nOverlays = length(overlayList);
-  d.alphaOverlayList = zeros(1,d.nOverlays);
-  for iOverlay = 1:d.nOverlays
-    d.overlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',overlayList(iOverlay)))); 
-    thisNum = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',overlayList(iOverlay)));
-    if ~isempty(thisNum)
-      d.alphaOverlayList(iOverlay) = thisNum;
-      d.alphaOverlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',d.alphaOverlayList(iOverlay))));
-    else
-      d.alphaOverlayClip(iOverlay,:) = [-1 1];
-    end
-  end
-  d.overlayCurrentClip = d.overlayClip;
-  d.alphaOverlayCurrentClip = d.alphaOverlayClip;
-
-  %First, get a mask of non-zero voxel representing the current overlay display
-  %This is taken from computeOverlay.m
-  fprintf(1,'Computing overlay mask...');
-  [d.overlayMaskData, d.overlayData]= maskOverlay(thisView,[overlayList d.alphaOverlayList],scanNum);
-  d.overlayMaskData = d.overlayMaskData{1};
-  d.overlayData = d.overlayData{1};
-  fprintf(1,'Done\n');
-
-  d.base2scan = viewGet(thisView,'base2scan');
-  d.overlayMaskData(isnan(d.overlayMaskData))=0;
-  d.overlayMaskData = logical(d.overlayMaskData);
-
-   %make alpha map
-   if ~any(d.alphaOverlayList)
-      d.overlayAlpha = ones(size(d.overlayMaskData));
-      d.overlayAlphaMaskData = ones(size(d.overlayMaskData));
-      d.overlayAlphaData = zeros(size(d.overlayMaskData));
-   else
-      fprintf(1,'Computing alpha overlay...');
-      
-      d.overlayAlphaData = d.overlayData(:,:,:,d.nOverlays+1:end);
-      d.overlayData = d.overlayData(:,:,:,1:d.nOverlays);
-      
-      d.overlayAlphaMaskData = d.overlayMaskData(:,:,:,d.nOverlays+1:end);
-      d.overlayMaskData = d.overlayMaskData(:,:,:,1:d.nOverlays);
- 
-      % get the range of the alpha overlay 
-      cOverlay=0;
-      for iOverlay = d.alphaOverlayList;
-        cOverlay=cOverlay+1;
-        if ~d.alphaOverlayList(cOverlay)
-          d.overlayAlpha(:,:,:,cOverlay) = ones(scanDims);
-          d.overlayAlphaData(:,:,:,cOverlay) = zeros(scanDims);
-          d.overlayAlphaMaskData(:,:,:,cOverlay) = ones(scanDims);
-        else
-          range = viewGet(thisView,'overlayColorRange',iOverlay);
-          % handle setRangeToMax (to debug)
-          if strcmp(viewGet(thisView,'overlayCtype',d.alphaOverlayList),'setRangeToMax')
-            clip = viewGet(thisView,'overlayClip',iOverlay);
-           maxRange = max(clip(1),min(d.overlayAlphaData(d.overlayAlphaMaskData)));
-           if ~isempty(maxRange),range(1) = maxRange;end
-           minRange = min(max(d.overlayAlphaData(d.overlayAlphaMaskData)),clip(2));
-           if ~isempty(minRange),range(2) = minRange;end
-          end
-          % now compute the alphaOverlay as a number from
-          % 0 to 1 of the range
-          thisAlphaOverlay = (d.overlayAlphaData(:,:,:,cOverlay)-range(1))./diff(range);
-%           thisAlphaOverlay(thisAlphaOverlay>1) = 1;
-%           thisAlphaOverlay(thisAlphaOverlay<0) = 0;
-          alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
-          if alphaOverlayExponent<0   %JB if the alpha overlay exponent is negative, set it positive and take the complementary values to 1 for the alpha map
-            alphaOverlayExponent = -alphaOverlayExponent;
-            thisAlphaOverlay = 1-thisAlphaOverlay;
-          end
-          d.overlayAlpha(:,:,:,cOverlay) = thisAlphaOverlay.^alphaOverlayExponent;
-        end
-      end
-      d.overlayAlpha(isnan(d.overlayAlpha)) = 0;
-   end   
-   fprintf(1,'Done\n');
-
-end
+overlayAlpha = viewGet(thisView,'alpha');
 
 %------------------------------------ Get some info on the base
 baseNum = viewGet(thisView,'currentBase');
-baseVoxelSize = viewGet(thisView,'baseVoxelSize');
 d.baseType = viewGet(thisView,'baseType',baseNum);
 switch(d.baseType)
   case 0 %if the base is a volume
     baseDims = viewGet(thisView,'basedims',baseNum);
+    overlayDims = viewGet(thisView,'scanDims');
+    d.base2scan = viewGet(thisView,'base2scan');
+    baseVoxelSize = viewGet(thisView,'baseVoxelSize');
+  case 1 %if the base is a flat map
+    baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum);
+    baseDims = viewGet(thisView,'basedims',baseNum);
+    corticalDepthBins = viewGet(thisView,'corticalDepthBins');
+    corticalDepths = viewGet(thisView,'corticaldepth');
+    corticalDepthIndices = find((0:1/(corticalDepthBins-1):1)>=corticalDepths(1)-eps & (0:1/(corticalDepthBins-1):1)<=corticalDepths(end)+eps);
+    baseDims(3) = length(corticalDepthIndices);
+    rotateAngle = viewGet(thisView,'rotate');
+    [baseImage,~,baseCoordsHomogeneous] = ...
+          getBaseSlice(thisView,viewGet(thisView,'curslice'),viewGet(thisView,'baseSliceIndex',baseNum),rotateAngle,baseNum,d.baseType);
+    baseCoordsHomogeneous = baseCoordsHomogeneous(:,:,corticalDepthIndices);
+    baseCoordsHomogeneous = reshape(baseCoordsHomogeneous,4,[]);
+    baseCoordsHomogeneous = round(baseCoordsHomogeneous);
+    baseCoordsLinear = mrSub2ind(baseCoordMap.dims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));  %linearize the index
+    d.base2scan = eye(4);
+    overlayDims = baseDims;
+    %compute the mean distance between inner and outer surface coordinates in mm
+    meanThickness = mean(mean(sum((baseCoordMap.innerCoords - baseCoordMap.outerCoords).^2,4)));
+    %in order to get an approximation of the scaling between axes
+    flatResolution = 3; %we assume that flat maps have a resolution of 3 times the base voxel dimensions
+    baseVoxelSize = [1/flatResolution 1/flatResolution meanThickness/corticalDepthBins];
+  case 2
+    d.base2scan = viewGet(thisView,'base2scan');
+    overlayDims = viewGet(thisView,'scanDims');
+    baseVoxelSize = viewGet(thisView,'baseVoxelSize');
 end
-
 
 
 %------------------------------------ Construct ROI objects ------------------------------------------------%
@@ -138,7 +78,15 @@ allRoisCoords = [];
 for iRoi = 1:nRois
 
   roi = viewGet(thisView, 'roi',roiList(iRoi));
-  roiCoords{iRoi} = getROICoordinates(thisView,roiList(iRoi));
+  if d.baseType==1
+    thisRoiCoords = getROICoordinates(thisView,roiList(iRoi),0,[],baseNum); %get the coordinates of the ROi in the canonical base space
+    roiBaseCoordsLinear = mrSub2ind(baseCoordMap.dims,thisRoiCoords(1,:),thisRoiCoords(2,:),thisRoiCoords(3,:)); %linearize the index
+    baseIndices = find(ismember(baseCoordsLinear,roiBaseCoordsLinear));
+    [roiCoords{iRoi}(:,1),roiCoords{iRoi}(:,2),roiCoords{iRoi}(:,3)] = ind2sub(baseDims,baseIndices);
+    roiCoords{iRoi} = roiCoords{iRoi}';
+  else
+    roiCoords{iRoi} = getROICoordinates(thisView,roiList(iRoi));
+  end
   roiColor(iRoi,:) = color2RGB(roi.color);
   roiName{iRoi} = roi.name;
   
@@ -212,12 +160,183 @@ if d.baseType==0
   maxBaseCoords = min(maxBaseCoords(1:3),baseDims);   
 end
 
+
+%------------------------------------ Get Base data
+baseColormap = gray(256);
+baseClip = viewGet(thisView,'baseClip',baseNum);
+baseGamma = viewGet(thisView,'baseGamma',baseNum);
+switch(d.baseType)
+  case 0
+    for iDim=1:3
+      otherDims = setdiff(1:3,iDim);
+      for iSide=1:2
+        switch iSide
+          case 1
+            sliceNum = minBaseCoords(iDim);
+          case 2
+            sliceNum = maxBaseCoords(iDim);
+        end
+        [baseImage,baseCoords{iDim,iSide},baseCoordsHomogeneous{iDim,iSide}] = ...
+          getBaseSlice(thisView,sliceNum,iDim,0,baseNum,d.baseType);
+        d.baseRGB{iDim,iSide} = rescale2rgb(baseImage,baseColormap,baseClip,baseGamma);
+        thisMinCoords = minBaseCoords(otherDims);
+        thisMaxCoords = maxBaseCoords(otherDims);
+        d.baseRGB{iDim,iSide} = d.baseRGB{iDim,iSide}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
+        d.baseRGB{iDim,iSide}(:,end+1,:) = d.baseRGB{iDim,iSide}(:,end,:); %Add one column
+        d.baseRGB{iDim,iSide}(end+1,:,:) = d.baseRGB{iDim,iSide}(end,:,:); %Add one row
+        baseCoords{iDim,iSide} = baseCoords{iDim,iSide}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
+        baseCoords{iDim,iSide}(:,end+1,:) = baseCoords{iDim,iSide}(:,end,:); %Add one column
+        baseCoords{iDim,iSide}(:,end,otherDims(2)) = baseCoords{iDim,iSide}(:,end,otherDims(2))+1; %Add one column
+        baseCoords{iDim,iSide}(end+1,:,:) = baseCoords{iDim,iSide}(end,:,:); %Add one row
+        baseCoords{iDim,iSide}(end,:,otherDims(1)) = baseCoords{iDim,iSide}(end,:,otherDims(1))+1; %Add one row
+        baseCoords{iDim,iSide}(:,:,otherDims) = baseCoords{iDim,iSide}(:,:,otherDims) - .5; %shift the coords by .5 so that each square will be centered on the integer coordinate
+        switch iSide
+          case 1
+            baseCoords{iDim,iSide}(:,:,iDim) = baseCoords{iDim,iSide}(:,:,iDim) - .5; %on the front side, shift the slice backwards
+          case 2
+            baseCoords{iDim,iSide}(:,:,iDim) = baseCoords{iDim,iSide}(:,:,iDim) + .5; %and on the back side, shift it forwards
+        end
+      end
+    end
+    
+  case 1
+    baseImage = baseImage(minBaseCoords(1):maxBaseCoords(1),minBaseCoords(2):maxBaseCoords(2));
+    d.baseRGB{3,1} = rescale2rgb(baseImage,baseColormap,baseClip,baseGamma);
+    d.baseRGB{3,2} = d.baseRGB{3,1};
+    [baseCoords{3,1}(:,:,1),baseCoords{3,1}(:,:,2),baseCoords{3,1}(:,:,3)] = ndgrid(minBaseCoords(1):maxBaseCoords(1),minBaseCoords(2):maxBaseCoords(2),minBaseCoords(3)-.5);
+    [baseCoords{3,2}(:,:,1),baseCoords{3,2}(:,:,2),baseCoords{3,2}(:,:,3)] = ndgrid(minBaseCoords(1):maxBaseCoords(1),minBaseCoords(2):maxBaseCoords(2),maxBaseCoords(3)+.5);
+    
+  case 2
+    %get the surface coordinates
+    baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum);
+    d.surfFaces = baseCoordMap.tris;
+    d.innerVertices = permute(baseCoordMap.innerCoords,[2 4 1 3]);
+    d.outerVertices = permute(baseCoordMap.outerCoords,[2 4 1 3]);
+    corticalDepths = str2num(num2str(baseCoordMap.corticalDepths));
+    clear('baseCoordMap');
+    d.corticalDepth = str2num(num2str(viewGet(thisView,'corticalDepth')));
+    baseData = viewGet(thisView,'baseData',baseNum);
+% % %     %if we get the surface coordinates using viewGet(thisView,'surfaceData'), we need to
+% % %     %swap X and Y (Not sure why I have to do that and how general it is, but it works on the present data)
+% % %     tempVtcs = d.innerVertices(:,1);
+% % %     d.innerVertices(:,1) = d.innerVertices(:,2);
+% % %     d.innerVertices(:,2) = tempVtcs;
+% % %     tempVtcs = d.outerVertices(:,1);
+% % %     d.outerVertices(:,1) = d.outerVertices(:,2);
+% % %     d.outerVertices(:,2) = tempVtcs;
+    %find vtcs that are in the box (at mid cortical depth)
+    midVertices = (d.outerVertices+d.innerVertices)/2;
+    verticesInBox = midVertices(:,1)>=minBaseCoords(1) & midVertices(:,1)<=maxBaseCoords(1) &...
+                    midVertices(:,2)>=minBaseCoords(2) & midVertices(:,2)<=maxBaseCoords(2) &...
+                    midVertices(:,3)>=minBaseCoords(3) & midVertices(:,3)<=maxBaseCoords(3);
+    %remove vtcs outside ROI
+    d.innerVertices = d.innerVertices(verticesInBox,:);
+    d.outerVertices = d.outerVertices(verticesInBox,:);
+    baseData = baseData(verticesInBox);
+    %replace ones by its 'vertex in the box' number
+    verticesInBox = double(verticesInBox);     %need to convert to double first     
+    verticesInBox(verticesInBox>0)=double(1:nnz(verticesInBox));
+    %remove any face that involves vtcs outside the box
+    d.surfFaces = verticesInBox(d.surfFaces);
+    d.surfFaces = d.surfFaces(all(d.surfFaces>0,2),:);
+    d.baseRGB = rescale2rgb(baseData,baseColormap,baseClip,baseGamma);
+    d.baseRGB = permute(d.baseRGB,[2 3 1]);
+end
+
+%--------------------------------Mask and Alpha overlay data -------------------------------
+if ~isempty(currentAnalysis)
+   
+  d.nOverlays = length(overlayList);
+  d.alphaOverlayList = zeros(1,d.nOverlays);
+  for iOverlay = 1:d.nOverlays
+    d.overlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',overlayList(iOverlay)))); 
+    thisNum = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',overlayList(iOverlay)));
+    if ~isempty(thisNum)
+      d.alphaOverlayList(iOverlay) = thisNum;
+      d.alphaOverlayClip(iOverlay,:) = str2num(num2str(viewGet(thisView,'overlayClip',d.alphaOverlayList(iOverlay))));
+    else
+      d.alphaOverlayClip(iOverlay,:) = [-1 1];
+    end
+  end
+  d.overlayCurrentClip = d.overlayClip;
+  d.alphaOverlayCurrentClip = d.alphaOverlayClip;
+
+  %First, get a mask of non-zero voxel representing the current overlay display
+  %This is taken from computeOverlay.m
+  fprintf(1,'Computing overlays...');
+  [d.overlayMaskData, d.overlayData]= maskOverlay(thisView,[overlayList d.alphaOverlayList],scanNum);
+  d.overlayMaskData = d.overlayMaskData{1};
+  d.overlayData = d.overlayData{1};
+  d.overlayMaskData(isnan(d.overlayMaskData))=0;
+  if d.baseType == 1 
+    d.overlayData = getBaseSpaceOverlay(thisView,d.overlayData,scanNum,baseNum,[], corticalDepthBins, rotateAngle);
+    d.overlayMaskData = getBaseSpaceOverlay(thisView,double(d.overlayMaskData),scanNum,baseNum,'nearest', corticalDepthBins, rotateAngle);
+    d.overlayData = d.overlayData(:,:,corticalDepthIndices,:);
+    d.overlayMaskData = d.overlayMaskData(:,:,corticalDepthIndices,:);
+    d.overlayMaskData(isnan(d.overlayMaskData))=0;
+  end
+
+  d.overlayMaskData = logical(d.overlayMaskData);
+
+  fprintf(1,'Done\n');
+   %make alpha map
+   if ~any(d.alphaOverlayList)
+      d.overlayAlpha = ones(size(d.overlayMaskData));
+      d.overlayAlphaMaskData = ones(size(d.overlayMaskData));
+      d.overlayAlphaData = zeros(size(d.overlayMaskData));
+   else
+      fprintf(1,'Computing alpha overlay...');
+      
+      d.overlayAlphaData = d.overlayData(:,:,:,d.nOverlays+1:end);
+      d.overlayData = d.overlayData(:,:,:,1:d.nOverlays);
+      
+      d.overlayAlphaMaskData = d.overlayMaskData(:,:,:,d.nOverlays+1:end);
+      d.overlayMaskData = d.overlayMaskData(:,:,:,1:d.nOverlays);
+ 
+      % get the range of the alpha overlay 
+      cOverlay=0;
+      for iOverlay = d.alphaOverlayList;
+        cOverlay=cOverlay+1;
+        if ~d.alphaOverlayList(cOverlay)
+          d.overlayAlpha(:,:,:,cOverlay) = ones(overlayDims);
+          d.overlayAlphaData(:,:,:,cOverlay) = zeros(overlayDims);
+          d.overlayAlphaMaskData(:,:,:,cOverlay) = ones(overlayDims);
+        else
+          range = viewGet(thisView,'overlayColorRange',iOverlay);
+          % handle setRangeToMax (to debug)
+          if strcmp(viewGet(thisView,'overlayCtype',d.alphaOverlayList),'setRangeToMax')
+            clip = viewGet(thisView,'overlayClip',iOverlay);
+           maxRange = max(clip(1),min(d.overlayAlphaData(d.overlayAlphaMaskData)));
+           if ~isempty(maxRange),range(1) = maxRange;end
+           minRange = min(max(d.overlayAlphaData(d.overlayAlphaMaskData)),clip(2));
+           if ~isempty(minRange),range(2) = minRange;end
+          end
+          % now compute the alphaOverlay as a number from
+          % 0 to 1 of the range
+          thisAlphaOverlay = (d.overlayAlphaData(:,:,:,cOverlay)-range(1))./diff(range);
+%           thisAlphaOverlay(thisAlphaOverlay>1) = 1;
+%           thisAlphaOverlay(thisAlphaOverlay<0) = 0;
+          alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
+          if alphaOverlayExponent<0   %JB if the alpha overlay exponent is negative, set it positive and take the complementary values to 1 for the alpha map
+            alphaOverlayExponent = -alphaOverlayExponent;
+            thisAlphaOverlay = 1-thisAlphaOverlay;
+          end
+          d.overlayAlpha(:,:,:,cOverlay) = thisAlphaOverlay.^alphaOverlayExponent;
+        end
+      end
+      d.overlayAlpha(isnan(d.overlayAlpha)) = 0;
+   end   
+   fprintf(1,'Done\n');
+
+end
+
+
 %------------------------------------ Reduce Overlay Data  ------------------------------------------------%
 
 if ~isempty(currentAnalysis)
   %find indices of all scan voxels within the base space box
-  [scanXCoords,scanYCoords,scanZCoords] = ndgrid(1:scanDims(1),1:scanDims(2),1:scanDims(3));
-  baseScanCoords = d.base2scan\[reshape(cat(4,scanXCoords,scanYCoords,scanZCoords),prod(scanDims),3)';ones(1,prod(scanDims))];
+  [scanXCoords,scanYCoords,scanZCoords] = ndgrid(1:overlayDims(1),1:overlayDims(2),1:overlayDims(3));
+  baseScanCoords = d.base2scan\[reshape(cat(4,scanXCoords,scanYCoords,scanZCoords),prod(overlayDims),3)';ones(1,prod(overlayDims))];
   scanVoxelsInBox = baseScanCoords(1,:)>=minBaseCoords(1) & baseScanCoords(1,:)<=maxBaseCoords(1) & ...
                     baseScanCoords(2,:)>=minBaseCoords(2) & baseScanCoords(2,:)<=maxBaseCoords(2) & ...
                     baseScanCoords(3,:)>=minBaseCoords(3) & baseScanCoords(3,:)<=maxBaseCoords(3);
@@ -278,75 +397,6 @@ if ~isempty(currentAnalysis)
       
 end
       
-%------------------------------------ Get Base data
-baseColormap = gray(256);
-baseClip = viewGet(thisView,'baseClip',baseNum);
-baseGamma = viewGet(thisView,'baseGamma',baseNum);
-switch(d.baseType)
-  case 0
-    for iDim=1:3
-      otherDims = setdiff(1:3,iDim);
-      for iSide=1:2
-        switch iSide
-          case 1
-            sliceNum = minBaseCoords(iDim);
-          case 2
-            sliceNum = maxBaseCoords(iDim)+1;
-        end
-        [baseImage,baseCoords{iDim,iSide},baseCoordsHomogeneous{iDim,iSide}] = ...
-          getBaseSlice(thisView,sliceNum,iDim,0,baseNum,d.baseType);
-        d.baseRGB{iDim,iSide} = rescale2rgb(baseImage,baseColormap,baseClip,baseGamma);
-        thisMinCoords = minBaseCoords(otherDims);
-        thisMaxCoords = maxBaseCoords(otherDims);
-        d.baseRGB{iDim,iSide} = d.baseRGB{iDim,iSide}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
-        d.baseRGB{iDim,iSide}(:,end+1,:) = d.baseRGB{iDim,iSide}(:,end,:); %Add one column
-        d.baseRGB{iDim,iSide}(end+1,:,:) = d.baseRGB{iDim,iSide}(end,:,:); %Add one row
-        baseCoords{iDim,iSide} = baseCoords{iDim,iSide}(thisMinCoords(1):thisMaxCoords(1),thisMinCoords(2):thisMaxCoords(2),:);
-        baseCoords{iDim,iSide}(:,end+1,:) = baseCoords{iDim,iSide}(:,end,:); %Add one column
-        baseCoords{iDim,iSide}(:,end,otherDims(2)) = baseCoords{iDim,iSide}(:,end,otherDims(2))+1; %Add one column
-        baseCoords{iDim,iSide}(end+1,:,:) = baseCoords{iDim,iSide}(end,:,:); %Add one row
-        baseCoords{iDim,iSide}(end,:,otherDims(1)) = baseCoords{iDim,iSide}(end,:,otherDims(1))+1; %Add one column
-        baseCoords{iDim,iSide} = baseCoords{iDim,iSide} - .5; %shift the coords by .5 so that each square will be centered on the integer coordinate
-      end
-    end
-      
-  case 2
-    %get the surface coordinates
-    baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum);
-    d.surfFaces = baseCoordMap.tris;
-    d.innerVertices = permute(baseCoordMap.innerCoords,[2 4 1 3]);
-    d.outerVertices = permute(baseCoordMap.outerCoords,[2 4 1 3]);
-    corticalDepths = str2num(num2str(baseCoordMap.corticalDepths));
-    clear('baseCoordMap');
-    d.corticalDepth = str2num(num2str(viewGet(thisView,'corticalDepth')));
-    baseData = viewGet(thisView,'baseData',baseNum);
-% % %     %if we get the surface coordinates using viewGet(thisView,'surfaceData'), we need to
-% % %     %swap X and Y (Not sure why I have to do that and how general it is, but it works on the present data)
-% % %     tempVtcs = d.innerVertices(:,1);
-% % %     d.innerVertices(:,1) = d.innerVertices(:,2);
-% % %     d.innerVertices(:,2) = tempVtcs;
-% % %     tempVtcs = d.outerVertices(:,1);
-% % %     d.outerVertices(:,1) = d.outerVertices(:,2);
-% % %     d.outerVertices(:,2) = tempVtcs;
-    %find vtcs that are in the box (at mid cortical depth)
-    midVertices = (d.outerVertices+d.innerVertices)/2;
-    verticesInBox = midVertices(:,1)>=minBaseCoords(1) & midVertices(:,1)<=maxBaseCoords(1) &...
-                    midVertices(:,2)>=minBaseCoords(2) & midVertices(:,2)<=maxBaseCoords(2) &...
-                    midVertices(:,3)>=minBaseCoords(3) & midVertices(:,3)<=maxBaseCoords(3);
-    %remove vtcs outside ROI
-    d.innerVertices = d.innerVertices(verticesInBox,:);
-    d.outerVertices = d.outerVertices(verticesInBox,:);
-    baseData = baseData(verticesInBox);
-    %replace ones by its 'vertex in the box' number
-    verticesInBox = double(verticesInBox);     %need to convert to double first     
-    verticesInBox(verticesInBox>0)=double(1:nnz(verticesInBox));
-    %remove any face that involves vtcs outside the box
-    d.surfFaces = verticesInBox(d.surfFaces);
-    d.surfFaces = d.surfFaces(all(d.surfFaces>0,2),:);
-    d.baseRGB = rescale2rgb(baseData,baseColormap,baseClip,baseGamma);
-    d.baseRGB = permute(d.baseRGB,[2 3 1]);
-end
-  
 toc
 
 %---------------------- construct figure -----------------%
@@ -455,15 +505,18 @@ end
 
 % plot Base slices
 switch(d.baseType)
-  case 0
+  case {0,1}
     for iDim = 1:3
       for iSide = 1:2
-        d.hSurface(iDim,iSide) = surface(baseCoords{iDim,iSide}(:,:,1),baseCoords{iDim,iSide}(:,:,2),baseCoords{iDim,iSide}(:,:,3),d.baseRGB{iDim,iSide}, 'EdgeColor','none','parent',d.hMainAxis);
+        if ~isempty(baseCoords{iDim,iSide})
+          d.hSurface(iDim,iSide) = surface(baseCoords{iDim,iSide}(:,:,1),baseCoords{iDim,iSide}(:,:,2),baseCoords{iDim,iSide}(:,:,3),d.baseRGB{iDim,iSide}, 'EdgeColor','none','parent',d.hMainAxis);
+%         else
+%           d.hSurface(iDim,iSide) = [];
+        end
       end
     end
-    set(d.hSurface(:,2),'visible','off');
     uicontrol('Parent',hFigure, 'Unit','normalized', 'Style','checkbox',   'Position',[margin baseButtonsBottom+.1 .15 .03],...
-         'Min', 0,'Max',1, 'Value',1, 'String', 'Show Base', 'callback',{@makeVisible,d.hSurface});
+         'Min', 0,'Max',1, 'Value',1, 'String', 'Show Base', 'callback',{@makeBaseVisible,d.hSurface});
   case 2
     sliderStep(1) = corticalDepths(2) - corticalDepths(1);
     sliderStep(2) = 3*sliderStep(1);
@@ -550,6 +603,9 @@ h_light1 = camlight(90,45);
 h_light2 = camlight(-90,-45);
 
 set(hFigure,'userdata',d);
+[azimuth,elevation] = view(d.hMainAxis);
+setBaseVisibility(d,azimuth,elevation);
+
 
 return;
 
@@ -579,7 +635,7 @@ if isnumeric(handle) %if the function has been called from one of the figure uic
 else %if the function has been called after rotating the axes with the mouse
   hFigure= get(eventdata.Axes,'parent');
   d = get(hFigure,'userdata');
-  [azimuth,elevation] = view;
+  [azimuth,elevation] = view(d.hMainAxis);
   azimuth = round(azimuth);
   elevation = round(elevation);
 end
@@ -590,7 +646,14 @@ set(d.hAzimuthEdit,'String',num2str(azimuth));
 set(d.hElevationEdit,'String',num2str(elevation));
 
 %show or hide base slices depending on the orientation of the view
-if ~d.baseType
+setBaseVisibility(d,azimuth,elevation);
+
+return
+
+%----------------------------------------------------  sets Base visibility depending on view
+function setBaseVisibility(d,azimuth,elevation)
+
+if ismember(d.baseType,[0 1])
   if d.reversedX
     xNegative = -sin(azimuth*pi/180); %this is negative if the viewpoint is X-positive
   else
@@ -622,7 +685,7 @@ end
 return;
 
 
-%---------------------------------------------------- makes objects visible or invisible
+%---------------------------------------------------- reverse X axis
 function reverseX(handle,eventdata)
 hFigure= get(handle,'parent');
 d = get(hFigure,'userdata');
@@ -659,6 +722,19 @@ end
 
 return;
 
+%---------------------------------------------------- makes objects visible or invisible
+function makeBaseVisible(handle,eventdata,hObject)
+
+if get(handle,'value')
+  hFigure= get(handle,'parent');
+  d = get(hFigure,'userdata');
+  [azimuth,elevation] = view(d.hMainAxis);
+  setBaseVisibility(d,azimuth,elevation);
+else
+  set(hObject,'visible','off');
+end
+
+return;
 
 %---------------------------------------------------- draws Rois
 function drawRois(handle,eventdata,d)
@@ -893,7 +969,7 @@ end
     
 if ~isempty(cubesAlphaData)
    [faceXcoords, faceYcoords, faceZcoords,faceCData,faceAlphaData] = ...
-         makeCubeFaces(d.cubesScanCoords,d.cubesRGB',cubesAlphaData',all(cubesAlphaData(:)==1),d.base2scan);
+         makeCubeFaces(d.cubesScanCoords,d.cubesRGB',cubesAlphaData',all(cubesAlphaData(:)==1)||d.baseType==1,d.base2scan);
    %to use transparency, I need to convert X,Y,Z data to face/vertex data
    %patchStruct = surf2patch(faceXcoords,faceYcoords,faceZcoords,faceCData); %surf2patch does not handle color data correctly
    patchStruct.vertices = [reshape(faceXcoords,numel(faceXcoords),1) reshape(faceYcoords,numel(faceYcoords),1) reshape(faceZcoords,numel(faceZcoords),1)];
