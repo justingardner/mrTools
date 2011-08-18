@@ -35,9 +35,9 @@ header.ext = getext(filename);
 
 % set defaults
 header.qform_code = 0;
-header.qform44 = eye(4);
+header.qform44 = [];
 header.sform_code = 0;
-header.sform44 = eye(4);
+header.sform44 = [];
 header.permuationMatrix = eye(4);
 header.nDim = 0;
 header.dim = [];
@@ -56,7 +56,27 @@ switch lower(getext(filename))
 end
 
 % load the associated matlab header
-header.matHeader = loadAssociatedMatlabHeader(filename);
+header.base = loadAssociatedMatlabHeader(filename);
+
+% set the vol2mag field - get it from the base 
+% struture if it has not already been set
+if ~isfield(header,'vol2mag')
+  if isfield(header.base,'vol2mag')
+    header.vol2mag = header.base.vol2mag;
+  else
+    header.vol2mag = [];
+  end
+end
+% set the vol2tal field - get it from the base 
+% struture if it has not already been set
+if ~isfield(header,'vol2tal')
+  if isfield(header.base,'vol2tal')
+    header.vol2tal = header.base.vol2tal;
+  else
+    header.vol2tal = [];
+  end
+end
+  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrLoadImageHeaderFid    %
@@ -131,9 +151,9 @@ header.permutationMatrix = getPermutationMatrix(nifti);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    loadAssociatedMatlabHeader    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function matHeader = loadAssociatedMatlabHeader(filename)
+function base = loadAssociatedMatlabHeader(filename)
 
-matHeader = [];
+base = [];
 matlabFilename = setext(filename,'mat');
 if isfile(matlabFilename)
   % load the header
@@ -146,6 +166,8 @@ if isfile(matlabFilename)
     [tf header] = isbase(matHeader.base);
     if ~tf
       disp(sprintf('(mlrLoadImageHeader) Ignoring associated mat file %s because is not a MLR header',matHeader));
+    else
+      base = matHeader.base;
     end
   end
 end
