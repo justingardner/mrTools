@@ -71,7 +71,7 @@ for i = 1:length(uniqueFigs)
 end
 
 % remove the variable
-gSystem = {gSystem{1:sysNum-1} gSystem{sysNum+1:end}};
+gSystem{sysNum} = [];
 
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -100,7 +100,7 @@ if gSystem{sysNum}.animating == textNum
 end
 
 % get number of dimensions
-nDim = gSystem{sysNum}.vols(1).h.nDim;
+nDim = vol.h.nDim;
 
 % start the animation
 gSystem{sysNum}.animating = textNum;
@@ -108,10 +108,19 @@ coord = vol.coord;
 
 % loop that runs the animation
 while(gSystem{sysNum}.animating)
-  % increment coord
-  coord(textNum) = coord(textNum)+1;
-  if coord(textNum) > vol.h.dim(textNum)
-    coord(textNum) = 1;
+  % increment coord, go forward for an axis that moves in
+  % the positive direction 
+  if vol.axisDir(textNum) == 1
+    coord(textNum) = coord(textNum)+1;
+    if coord(textNum) > vol.h.dim(textNum)
+      coord(textNum) = 1;
+    end
+    % and negatively otherwise
+  else
+    coord(textNum) = coord(textNum)-1;
+    if coord(textNum) < 1
+      coord(textNum) = vol.h.dim(textNum);
+    end
   end
   % set the volume coord
   setVolCoord(sysNum,1,coord);
@@ -257,13 +266,36 @@ if isempty(viewNum),return,end
 % get pointer loc
 pointerLoc = get(a,'CurrentPoint');
 pointerLoc = round(pointerLoc(1,2:-1:1));
-% check image boundaries
-if (pointerLoc(1) < 1) | (pointerLoc(1) > vol.h.dim(vol.xDim(viewNum))),return,end
-if (pointerLoc(2) < 1) | (pointerLoc(2) > vol.h.dim(vol.yDim(viewNum))),return,end
 
-% now get the point on the image
-coord(vol.xDim(viewNum)) = pointerLoc(1);
-coord(vol.yDim(viewNum)) = pointerLoc(2);
+% check transpose to see which coordinate is which
+% note that matlab displays matrices in a transposed fashion
+if ~vol.transpose(viewNum)
+  pointerX = pointerLoc(1);
+  pointerY = pointerLoc(2);
+else
+  pointerX = pointerLoc(2);
+  pointerY = pointerLoc(1);
+end
+
+% check image boundaries 
+if (pointerX < 1) | (pointerX > vol.h.dim(vol.xDim(viewNum))),return,end
+if (pointerY < 1) | (pointerY > vol.h.dim(vol.yDim(viewNum))),return,end
+
+
+% get the coordinate. Note that we have to be careful both of whether the axis
+% is flipped AND whether there was a transpose (since the y-axis goes in
+% the opposite direction as x for matlab displayed images
+if ((vol.axisDir(vol.xDim(viewNum)) == 1) && (vol.transpose(viewNum))) || ((vol.axisDir(vol.xDim(viewNum)) == -1) && (~vol.transpose(viewNum)))
+  coord(vol.xDim(viewNum)) = pointerX;
+else
+  coord(vol.xDim(viewNum)) = vol.h.dim(vol.xDim(viewNum)) - pointerX + 1;
+end
+% note that for the y-dimension, matlab's axis are flipped
+if ((vol.axisDir(vol.yDim(viewNum)) == -1) && (vol.transpose(viewNum))) || ((vol.axisDir(vol.yDim(viewNum)) == 1) && (~vol.transpose(viewNum)))
+  coord(vol.yDim(viewNum)) = pointerY;
+else
+  coord(vol.yDim(viewNum)) = vol.h.dim(vol.yDim(viewNum)) - pointerY + 1;
+end
 coord(vol.viewDim(viewNum)) = vol.coord(vol.viewDim(viewNum));
 
 % nDims hard coded to 5 here
@@ -304,7 +336,9 @@ function dispVolume(iVol,sysNum)
 
 global gSystem;
 vol = gSystem{sysNum}.vols(iVol);
-labels = 'xyz';
+
+% view labels
+viewLabel = {'Sagittal','Coronal','Axial'};
 
 for iView = 1:3
   % see if we need to redisplay
@@ -334,6 +368,21 @@ for iView = 1:3
     maxDispSlice = max(dispSlice(:));
     dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
 
+    % do transpose if necessary
+    if vol.transpose(iView)
+      dispSlice = dispSlice';
+      xLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
+      yLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
+    else
+      xLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
+      yLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
+    end
+
+    % flip axis if necessary (note that Matlab shows the x axis as - to +
+    % and the y -axis in the opposite orientation, so we treat the x and y differently)
+    if vol.axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
+    if vol.axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
+
     % and display the image
     cla(a);
     subimage(dispSlice,gray(256));
@@ -341,10 +390,10 @@ for iView = 1:3
     set(a,'XTickLabel','');
     set(a,'YTickLabel','');
     % and put on what axis we have
-    xlabel(a,labels(vol.yDim(iView)));
-    ylabel(a,labels(vol.xDim(iView)));
+    xlabel(a,xLabelStr);
+    ylabel(a,yLabelStr);
     % set title
-    titleStr = sprintf('%s (%i %i %i)',vol.h.filename,vol.coord(1),vol.coord(2),vol.coord(3));
+    titleStr = sprintf('%s (%s)',viewLabel{iView},vol.h.filename);
     h = title(titleStr,'Interpreter','none');
     
     % and display the overlay
@@ -403,52 +452,94 @@ gSystem{sysNum}.n = gSystem{sysNum}.n+1;
 n = gSystem{sysNum}.n;
 
 % update the fields in vols
-gSystem{sysNum}.vols(gSystem{sysNum}.n).data = d;
-gSystem{sysNum}.vols(gSystem{sysNum}.n).h = h;
+gSystem{sysNum}.vols(n).data = d;
+gSystem{sysNum}.vols(n).h = h;
 
 % set which figure numbers this volume will display into
-gSystem{sysNum}.vols(gSystem{sysNum}.n).fig(1:3) = gSystem{sysNum}.fig(1:3);
+gSystem{sysNum}.vols(n).fig(1:3) = gSystem{sysNum}.fig(1:3);
 
 % set which subplot
-gSystem{sysNum}.vols(gSystem{sysNum}.n).subplotNum(1:3) = (1:3)+(n-1)*3;
+gSystem{sysNum}.vols(n).subplotNum(1:3) = (1:3)+(n-1)*3;
 
-% FIX: these should be set with reference to permutation matrix
-gSystem{sysNum}.vols(gSystem{sysNum}.n).viewDim(1:3) = 1:3;
+% compute magnet directions of each axis based on qform and then
+% choose which axis will be displayed in what figure based on this
+% information
+if h.qform_code && ~gSystem{sysNum}.imageOrientation
+  [gSystem{sysNum}.vols(n).axisLabels gSystem{sysNum}.vols(n).axisMapping gSystem{sysNum}.vols(n).axisDir] = getAxisLabels(h.qform44);
+  gSystem{sysNum}.vols(n).viewDim(1:3) = gSystem{sysNum}.vols(n).axisMapping;
+else
+  gSystem{sysNum}.vols(n).axisLabels = [];
+  % default to assuming LPI orientation
+  gSystem{sysNum}.vols(n).axisMapping = [1 2 3];
+  gSystem{sysNum}.vols(n).axisDir = [1 1 1];
+  % no information about what axis is what, so just show each axis in order
+  gSystem{sysNum}.vols(n).viewDim(1:3) = 1:3;
+end
 
 % for convenience set which dimension is x and y for each of the views
-% given the viewDim info set above
-for i = 1:3
-  otherDims = setdiff(1:3,gSystem{sysNum}.vols(gSystem{sysNum}.n).viewDim(i));
-  gSystem{sysNum}.vols(gSystem{sysNum}.n).xDim(i) = otherDims(1);
-  gSystem{sysNum}.vols(gSystem{sysNum}.n).yDim(i) = otherDims(2);
+% given the viewDim info set above and also info about transposing and flipping
+desiredAxis = {[2 3],[1 3],[1 2]};
+for iView = 1:3
+  % get what the other axis are
+  otherDims = setdiff(1:3,gSystem{sysNum}.vols(n).viewDim(iView));
+  gSystem{sysNum}.vols(n).xDim(iView) = otherDims(1);
+  gSystem{sysNum}.vols(n).yDim(iView) = otherDims(2);
+  % next figure out the apporpriate transpose and flips needed to
+  % show the images in standard LPI (i.e. the first view will
+  % be sagittal with nose to right, second view willbe coronal and
+  % third view will be axial) all with left is left, right is right
+  if gSystem{sysNum}.vols(n).axisMapping(otherDims(1)) == desiredAxis{iView}(1)
+    % transpose when the desired axis is the same (since
+    % images are displayed as y/x by matlab)
+    gSystem{sysNum}.vols(n).transpose(iView) = 1;
+  else
+    gSystem{sysNum}.vols(n).transpose(iView) = 0;
+  end
+  % now make axis labels that can be used for displaying. Note that
+  % if the axis are flipped, dispSlice will unflip them so we
+  % have to reverse the order of the labels provided by getAxisLabels
+  axisLabel = {'X','Y','Z'};
+  if isempty(gSystem{sysNum}.vols(n).axisLabels)
+    % no transform, so just use simple X,Y,Z labels
+    gSystem{sysNum}.vols(n).dispAxisLabels{iView} = axisLabel{iView};
+  else
+    % check axis direction
+    if gSystem{sysNum}.vols(n).axisDir == -1
+      % and make reversed labels
+      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisLabels{iView}{2},axisLabel{iView},gSystem{sysNum}.vols(n).axisLabels{iView}{1});
+    else
+      % and make normal labels
+      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisLabels{iView}{1},axisLabel{iView},gSystem{sysNum}.vols(n).axisLabels{iView}{2});
+    end
+  end
 end
 
 % update the coordinate (start displaying in middle of volume)
 coord = round(h.dim/2);
 % nDims hard coded to 5 here
 coord(end+1:5) = 1;
-setVolCoord(sysNum,gSystem{sysNum}.n,coord);
+setVolCoord(sysNum,n,coord);
 
 % now this sets the indexes from the volume for which the
 % image will be displayed
 for iView = 1:3
   for jAxis = 1:3
-    if jAxis ~= gSystem{sysNum}.vols(gSystem{sysNum}.n).viewDim(iView)
-      gSystem{sysNum}.vols(gSystem{sysNum}.n).viewIndexes{iView,jAxis} = 1:gSystem{sysNum}.vols(gSystem{sysNum}.n).h.dim(jAxis);
+    if jAxis ~= gSystem{sysNum}.vols(n).viewDim(iView)
+      gSystem{sysNum}.vols(n).viewIndexes{iView,jAxis} = 1:gSystem{sysNum}.vols(n).h.dim(jAxis);
     else
-      gSystem{sysNum}.vols(gSystem{sysNum}.n).viewIndexes{iView,jAxis} = gSystem{sysNum}.vols(gSystem{sysNum}.n).coord(jAxis);
+      gSystem{sysNum}.vols(n).viewIndexes{iView,jAxis} = gSystem{sysNum}.vols(n).coord(jAxis);
     end
   end
 end
 
 % set the current coordinates for the first time
-gSystem{sysNum}.vols(gSystem{sysNum}.n).curCoord = [nan nan nan];
+gSystem{sysNum}.vols(n).curCoord = [nan nan nan];
 
 % print out the header of the image
-dispHeaderInfo(gSystem{sysNum}.vols(gSystem{sysNum}.n));
+dispHeaderInfo(gSystem{sysNum}.vols(n));
 
 % set the text boxes
-if gSystem{sysNum}.n == 1
+if n == 1
   names = {'x','y','z','slice','receiver'};
   for i = 1:h.nDim
     % make the inc/dec textboxes
@@ -496,6 +587,62 @@ else
 end
 
 tf = true;
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    getAxisLabels    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function [axisLabels axisMapping axisDirection] = getAxisLabels(qform44)
+
+% This function uses the qform to determine in which direction
+% each axis of the image goes. axisLabels are readable labels 
+% and axisDirs are a vector for the closest pointing direction
+% for each axis
+
+for axisNum = 1:3
+  % get the vector of the axis in the image that we want to label
+  axisVector = zeros(3,1);
+  axisVector(axisNum) = 1;
+
+  % find out which direction in magnet space the axis vector goes
+  axisDirVector = qform44(1:3,1:3)*axisVector;
+
+  % normalize to unit length
+  axisDirVector = axisDirVector ./ sqrt(sum(axisDirVector.^2));
+
+  % these are the magnet cardinal axis and their names
+  cardinalAxisDirs = {[1 0 0],[0 1 0],[0 0 1],[-1 0 0],[0 -1 0],[0 0 -1]};
+  cardinalAxisLabels = {'right','anterior','superior','left','posterior','inferior'};
+
+  % now get the angle of this axisDirVector with
+  % each of the magnet cardinal axis. Note that
+  % we are computing for both directions of the axis
+  % for conveinence (i.e. left and right)
+  for i = 1:length(cardinalAxisDirs)
+    angles(i) = r2d(acos(dot(axisDirVector,cardinalAxisDirs{i})));
+  end
+
+  % sort the angles (remembering which axis they originally came from). Thus
+  % sortedAxisNum contains an ordered list of which axis the vector is closest
+  % too. The closest axis is sortedAxisNum(1) and the farthest axis is sortedAxisNum(6)
+  [angles sortedAxisNum] = sort(angles);
+
+  % get the closest axis direction (i.e. the one with the smallest angle which
+  % is the first in the list of sortedAxisNum)
+  axisDirs(axisNum,:) = cardinalAxisDirs{sortedAxisNum(1)}';
+  
+  % if the closest angle is less than an arbitrary value than we will consider
+  % the axis to be a pure direction - if not, we will label
+  % with a combination of the two closest axis.
+  if angles(1) < 5
+    axisLabels{axisNum} = {cardinalAxisLabels{sortedAxisNum(6)} cardinalAxisLabels{sortedAxisNum(1)}};
+  else
+    axisLabels{axisNum} = {sprintf('%s/%s',cardinalAxisLabels{sortedAxisNum(6)},cardinalAxisLabels{sortedAxisNum(5)}) sprintf('%s/%s',cardinalAxisLabels{sortedAxisNum(1)},cardinalAxisLabels{sortedAxisNum(2)})};
+  end
+end
+
+% convert the axisDirs to axisMapping (i.e. what axis in the magnet each axis in the image
+% corresponds to and in which direction it points
+[axisMapping row axisDirection] = find(axisDirs);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %    applySystemXform    %
@@ -642,6 +789,7 @@ end
 
 % get any aditional filenames
 otherFilenames = {};
+otherArgs = {};
 for i = 1:length(args)
   if isstr(args{i}) && isempty(strfind(args{i},'='))
     otherFilenames{end+1} = args{i};
@@ -652,14 +800,13 @@ for i = 1:length(args)
   end
 end
 
-% parse args here when we have settings
-%getArgs(otherArgs,{});
-
 % number of loaded volumes
 gSystem{sysNum}.n = 0;
 
-% empty vols
-vols = [];
+% parse args here when we have settings
+imageOrientation = [];
+getArgs(otherArgs,{'imageOrientation=0'});
+gSystem{sysNum}.imageOrientation = imageOrientation;
 
 % defaults for button sizes
 gSystem{sysNum}.buttonWidth = 100;
