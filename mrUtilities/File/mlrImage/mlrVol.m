@@ -17,6 +17,9 @@
 %             will display with an identity alignment. A dialog box allows you to fiddle manually
 %             with the alignment
 %
+%             Other options:
+%
+%             'verbose=1' Set verbose level, 0 for quiet. 1 for normal. 2 for detailed info.
 function retval = mlrVol(filename,varargin)
 
 % check arguments
@@ -367,7 +370,7 @@ for iView = 1:3
       dispSlice = vol.dispSlice{iView};
 
       % get the axis that we are tethered to (so that we can draw the overlay)
-      aTether = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),gSystem{sysNum}.vols(vol.tethered).subplotNum(iView));
+      aTether = subplot(gSystem{sysNum}.subplotRows(iView),gSystem{sysNum}.subplotCols(iView),gSystem{sysNum}.vols(vol.tethered).subplotNum(iView));
 
       % the transpose and axis directions need to be taken from the volume this is tethered to
       transpose = gSystem{sysNum}.vols(vol.tethered).transpose;
@@ -385,7 +388,7 @@ for iView = 1:3
     %  dispSlice = clipImage(dispSlice);
 
     % get the correct axis to draw into
-    a = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),vol.subplotNum(iView));
+    a = subplot(gSystem{sysNum}.subplotRows(iView),gSystem{sysNum}.subplotCols(iView),vol.subplotNum(iView));
 
     % make into image with index values
     minDispSlice = min(dispSlice(:));
@@ -560,7 +563,7 @@ end
 gSystem{sysNum}.vols(n).curCoord = [nan nan nan];
 
 % print out the header of the image
-dispHeaderInfo(gSystem{sysNum}.vols(n));
+dispHeaderInfo(sysNum,gSystem{sysNum}.vols(n));
 
 % set the text boxes
 if n == 1
@@ -602,7 +605,7 @@ if n > 1
     end
   end
   % set to display controls
-  gSystem{sysNum}.displayControls = true;
+%  gSystem{sysNum}.displayControls = true;
 else
   % first volume is displayed independently
   gSystem{sysNum}.vols(n).tethered = 0;
@@ -684,17 +687,23 @@ xform = inv(shiftOriginXform) * xform * gSystem{sysNum}.xform * shiftOriginXform
 function vol2vol = getVol2vol(sysNum,vol1,vol2)
 
 global gSystem;
+verbose = gSystem{sysNum}.verbose;
+
 if vol1.h.sform_code && vol2.h.sform_code
   vol2vol = inv(vol1.h.sform44) * vol2.h.sform44;
-  dispHeader('Aliging using sform');
-  disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
-  dispHeader;
+  if verbose
+    dispHeader('Aliging using sform');
+    disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
+    dispHeader;
+  end
 %  vol2vol = inv(shiftOriginXform) * xform * shiftOriginXform;
 elseif vol1.h.qform_code && vol2.h.qform_code
   vol2vol = inv(vol1.h.qform44) * vol2.h.qform44;
-  dispHeader('Aliging using qform');
-  disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
-  dispHeader;
+  if verbose
+    dispHeader('Aliging using qform');
+    disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
+    dispHeader;
+  end
 else
   vol2vol = eye(4);
 end
@@ -702,27 +711,60 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   dispHeaderInfo   %%
 %%%%%%%%%%%%%%%%%%%%%%%%
-function dispHeaderInfo(vol)
+function dispHeaderInfo(sysNum,vol)
 
-dispHeader(vol.h.filename);
-disp(sprintf('type: %s (%s)',vol.h.type,vol.h.ext));
-disp(sprintf('dim: [%s]',mrnum2str(vol.h.dim(:)','sigfigs=0')));
-disp(sprintf('pixdim: [%s]',mrnum2str(vol.h.pixdim(:)')));
-disp(sprintf('qform_code: %i',vol.h.qform_code));
-disp(sprintf('qform:'));
-disp(sprintf('%s',mrnum2str(vol.h.qform44,'compact=0','sigfigs=-1')));
-disp(sprintf('sform_code: %i',vol.h.sform_code));
-disp(sprintf('sform:'));
-disp(sprintf('%s',mrnum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
+global gSystem;
 
-% display axis information
-if ~isempty(vol.axisLabels)
-  cardinalAxisLabels = {'X','Y','Z'};
-  for axisNum = 1:3
-    disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},vol.axisLabels{axisNum}{1},vol.axisLabels{axisNum}{2}));
+if gSystem{sysNum}.verbose
+  dispHeader(vol.h.filename);
+  disp(sprintf('type: %s (%s)',vol.h.type,vol.h.ext));
+  disp(sprintf('dim: [%s]',mrnum2str(vol.h.dim(:)','sigfigs=0')));
+  disp(sprintf('pixdim: [%s]',mrnum2str(vol.h.pixdim(:)')));
+  disp(sprintf('qform_code: %i',vol.h.qform_code));
+  disp(sprintf('qform:'));
+  disp(sprintf('%s',mrnum2str(vol.h.qform44,'compact=0','sigfigs=-1')));
+  disp(sprintf('sform_code: %i',vol.h.sform_code));
+  disp(sprintf('sform:'));
+  disp(sprintf('%s',mrnum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
+
+  % display axis information
+  if ~isempty(vol.axisLabels)
+    cardinalAxisLabels = {'X','Y','Z'};
+    for axisNum = 1:3
+      disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},vol.axisLabels{axisNum}{1},vol.axisLabels{axisNum}{2}));
+    end
   end
 end
-dispHeader;
+
+% display detailed header information
+if gSystem{sysNum}.verbose>1
+  hdrFields = fieldnames(vol.h.hdr);
+  for iField = 1:length(hdrFields)
+    val = vol.h.hdr.(hdrFields{iField});
+    if isnumeric(val)
+      if (size(val,1) == 1) && (size(val,2) == 1)
+	disp(sprintf('%s: %s',hdrFields{iField},mrnum2str(val)));
+      elseif size(val,1) == 1
+	disp(sprintf('%s: [%s]',hdrFields{iField},mrnum2str(val)));
+      elseif size(val,2) == 1
+	disp(sprintf('%s: [%s]',hdrFields{iField},mrnum2str(val')));
+      else
+	disp(sprintf('%s:\n%s',hdrFields{iField},mrnum2str(val,'compact=0')));
+      end
+    elseif isstr(val)
+      disp(sprintf('%s: %s',hdrFields{iField},val));
+    elseif isempty(val)
+      disp(sprintf('%s: []',hdrFields{iField}));
+    elseif isstruct(val)
+      disp(sprintf('%s: struct',hdrFields{iField}));
+    else
+      disp(sprintf('%s: Unknown type',hdrFields{iField}));
+    end      
+  end
+end
+
+if gSystem{sysNum}.verbose==1,dispHeader;end
+
 
 %%%%%%%%%%%%%%%%%%%
 %    mrnum2str    %
@@ -837,9 +879,11 @@ end
 gSystem{sysNum}.n = 0;
 
 % parse args here when we have settings
-imageOrientation = [];
-getArgs(otherArgs,{'imageOrientation=0'});
+imageOrientation = [];verbose = [];
+getArgs(otherArgs,{'imageOrientation=0','verbose=1'});
 gSystem{sysNum}.imageOrientation = imageOrientation;
+gSystem{sysNum}.verbose = verbose;
+
 
 % defaults for button sizes
 gSystem{sysNum}.buttonWidth = 100;
@@ -1037,6 +1081,7 @@ sysNum = args{1};
 command = args{2};
 replaceXform = false;
 changeXform = true;
+verbose = gSystem{sysNum}.verbose;
 
 % get system xform
 gSystem{sysNum}.xformParams = params;
@@ -1077,7 +1122,7 @@ end
 
 % set the transform
 for iVol = 1:gSystem{sysNum}.n
-  dispHeader;
+  if verbose,dispHeader;end
   if gSystem{sysNum}.vols(iVol).tethered
     if changeXform
       % see if there is a nan that needs to be replaced
@@ -1092,19 +1137,21 @@ for iVol = 1:gSystem{sysNum}.n
       end
       if ~replaceXform
 	% display what we are doing
-	disp(sprintf('(mlrVol) Compositing xform\n%s',mrnum2str(thisXform,'compact=0','sigfigs=-1')));
+	if verbose,disp(sprintf('(mlrVol) Compositing xform\n%s',mrnum2str(thisXform,'compact=0','sigfigs=-1')));end
         % now set the xform
 	gSystem{sysNum}.vols(iVol).xform = gSystem{sysNum}.vols(iVol).xform*thisXform;
       else
 	gSystem{sysNum}.vols(iVol).xform = xform;
       end
     end
-    % display what we are doing
-    disp(sprintf('(mlrVol) xform\n%s',mrnum2str(gSystem{sysNum}.vols(iVol).xform,'compact=0','sigfigs=-1')));
-    % display system xform
-    disp(sprintf('(mlrVol) System xform\n%s',mrnum2str(gSystem{sysNum}.xform,'compact=0','sigfigs=-1')));
-    % display complete xform
-    disp(sprintf('(mlrVol) xform after compositing system\n%s',mrnum2str(shiftOriginXform*applySystemXform(sysNum,gSystem{sysNum}.vols(iVol).xform)*inv(shiftOriginXform),'compact=0','sigfigs=-1')));
+    if verbose
+      % display what we are doing
+      disp(sprintf('(mlrVol) xform\n%s',mrnum2str(gSystem{sysNum}.vols(iVol).xform,'compact=0','sigfigs=-1')));
+      % display system xform
+      disp(sprintf('(mlrVol) System xform\n%s',mrnum2str(gSystem{sysNum}.xform,'compact=0','sigfigs=-1')));
+      % display complete xform
+      disp(sprintf('(mlrVol) xform after compositing system\n%s',mrnum2str(shiftOriginXform*applySystemXform(sysNum,gSystem{sysNum}.vols(iVol).xform)*inv(shiftOriginXform),'compact=0','sigfigs=-1')));
+    end
     % clear cache
     gSystem{sysNum}.vols(iVol).c = mrCache('init',2*max(gSystem{sysNum}.vols(iVol).h.dim(1:3)));
   end
