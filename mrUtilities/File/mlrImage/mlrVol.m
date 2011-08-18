@@ -55,7 +55,7 @@ else
    case 2
     mouseMoveHandler(varargin{1});
    case 3
-    textHandler(varargin{1});
+    textHandler(varargin{1},varargin{2});
    case 4
     incdecHandler(varargin{1},varargin{2},varargin{3});
    case 5
@@ -154,29 +154,48 @@ function incdecHandler(textNum,incdec,sysNum)
 global gSystem;
 vol = gSystem{sysNum}.vols(1);
 
+% turn off animation
 gSystem{sysNum}.animating = false;
 
+% get the textbox we are updating. If textNum is less
+% than zero we are updating the extra coord textboxes
+if textNum > 0
+  hTextbox = gSystem{sysNum}.hCoordTextbox(textNum);
+else
+  hTextbox = gSystem{sysNum}.hExtraCoordTextbox(-textNum);
+end
+  
 % inc or dec the text box
-val = str2num(get(gSystem{sysNum}.hCoordTextbox(textNum),'String'));
+val = str2num(get(hTextbox,'String'));
 val = val+incdec;
 
-% if we have made a valid change then set it
-if (val>=1) && (val<=vol.h.dim(textNum))
-  set(gSystem{sysNum}.hCoordTextbox(textNum),'String',val);
+% if we are doing an extra coordinate than transform
+if (textNum < 0)
+  set(hTextbox,'String',val);
+  textHandler(sysNum,-1);
+elseif (val>=1) && (val<=vol.h.dim(textNum))
+  % if we have made a valid change then set it
+  set(hTextbox,'String',val);
   % now refresh
-  textHandler(sysNum);
+  textHandler(sysNum,1);
 end
 
 %%%%%%%%%%%%%%%%%%%%%
 %%   textHandler   %%
 %%%%%%%%%%%%%%%%%%%%%
-function textHandler(sysNum)
+function textHandler(sysNum,textboxNum)
 
 global gSystem;
 vol = gSystem{sysNum}.vols(1);
 
 % turn off animation
 gSystem{sysNum}.animating = 0;
+
+% textboxNums that are negative are the extra coordinates
+if textboxNum < 0
+  % set coordinate according to extra
+  setCoordToExtra(sysNum);
+end
 
 % get number of dimensions
 nDim = gSystem{sysNum}.vols(1).h.nDim;
@@ -221,6 +240,7 @@ if isempty(coord)
   set(gSystem{sysNum}.hCoordTextbox(1),'String',vol.coord(1));
   set(gSystem{sysNum}.hCoordTextbox(2),'String',vol.coord(2));
   set(gSystem{sysNum}.hCoordTextbox(3),'String',vol.coord(3));
+  updateExtraCoords(sysNum);
   % nDims hard coded to 5 here
   set(gSystem{sysNum}.hValTextbox(1),'String',vol.data(vol.coord(1),vol.coord(2),vol.coord(3),vol.coord(4),vol.coord(5)));
 else
@@ -228,10 +248,66 @@ else
   set(gSystem{sysNum}.hCoordTextbox(1),'String',coord(1));
   set(gSystem{sysNum}.hCoordTextbox(2),'String',coord(2));
   set(gSystem{sysNum}.hCoordTextbox(3),'String',coord(3));
+  updateExtraCoords(sysNum);
   % nDims hard coded to 5 here
   set(gSystem{sysNum}.hValTextbox(1),'String',vol.data(coord(1),coord(2),coord(3),coord(4),coord(5)));
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   updateExtraCoords   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function updateExtraCoords(sysNum)
+
+global gSystem
+if gSystem{sysNum}.vols(1).altXforms.n > 0
+  % get the current coord
+  coord(1) = str2num(get(gSystem{sysNum}.hCoordTextbox(1),'String'));
+  coord(2) = str2num(get(gSystem{sysNum}.hCoordTextbox(2),'String'));
+  coord(3) = str2num(get(gSystem{sysNum}.hCoordTextbox(3),'String'));
+  coord(4) = 1;
+  coord = coord(:);
   
+  % get the extra coordinate xform
+  xform = gSystem{sysNum}.vols(1).altXforms.xforms{gSystem{sysNum}.vols(1).altXforms.currentXform};
+  
+  % convert
+  coord = xform * coord;
+  
+  % and display
+  set(gSystem{sysNum}.hExtraCoordTextbox(1),'String',sprintf('%0.1f',coord(1)));
+  set(gSystem{sysNum}.hExtraCoordTextbox(2),'String',sprintf('%0.1f',coord(2)));
+  set(gSystem{sysNum}.hExtraCoordTextbox(3),'String',sprintf('%0.1f',coord(3)));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   setCoordToExtra   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function setCoordToExtra(sysNum)
+
+global gSystem;
+vol = gSystem{sysNum}.vols(1);
+
+% get coordinates form extra textbox
+coord(1) = str2num(get(gSystem{sysNum}.hExtraCoordTextbox(1),'String'));
+coord(2) = str2num(get(gSystem{sysNum}.hExtraCoordTextbox(2),'String'));
+coord(3) = str2num(get(gSystem{sysNum}.hExtraCoordTextbox(3),'String'));
+coord(4) = 1;
+coord = coord(:);
+
+% get the extra coordinate xform
+xform = gSystem{sysNum}.vols(1).altXforms.xforms{gSystem{sysNum}.vols(1).altXforms.currentXform};
+  
+% convert
+coord = round(inv(xform) * coord);
+
+% check to see if we have valid coordinates
+if all(coord(1:3) > 0) && all(coord(1:3) <= vol.h.dim(1:3))
+  % if so, then display
+  set(gSystem{sysNum}.hCoordTextbox(1),'String',sprintf('%0.0f',coord(1)));
+  set(gSystem{sysNum}.hCoordTextbox(2),'String',sprintf('%0.0f',coord(2)));
+  set(gSystem{sysNum}.hCoordTextbox(3),'String',sprintf('%0.0f',coord(3)));
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mouseDownHandler    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -341,8 +417,12 @@ for iVol = 1:gSystem{sysNum}.n
   gSystem{sysNum}.vols(iVol).curCoord = gSystem{sysNum}.vols(iVol).coord;
 end
 
+updateExtraCoords(sysNum);
+
 drawnow;
 figure(f);
+
+
 %%%%%%%%%%%%%%%%%%%%
 %    dispVolume    %
 %%%%%%%%%%%%%%%%%%%%
@@ -373,63 +453,55 @@ for iView = 1:3
       aTether = subplot(gSystem{sysNum}.subplotRows(iView),gSystem{sysNum}.subplotCols(iView),gSystem{sysNum}.vols(vol.tethered).subplotNum(iView));
 
       % the transpose and axis directions need to be taken from the volume this is tethered to
-      transpose = gSystem{sysNum}.vols(vol.tethered).transpose;
-      axisDir = gSystem{sysNum}.vols(vol.tethered).axisDir;
+      % prepare image for display
+      [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,gSystem{sysNum}.vols(vol.tethered).transpose,gSystem{sysNum}.vols(vol.tethered).axisDir);
+      
+      % if we are not displaying the interpolated image in the
+      % second row, then we have to prepare the image that
+      % corresponds to the same location
+      if gSystem{sysNum}.displayInterpolated
+	dispSlice = dispOverlaySlice;
+      else
+	% need to get the coordinate of the tethered to volume
+	% in these coordinates
+	dispSlice = getMatchingSlice(sysNum,vol,iView);
+	[dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,vol.transpose,vol.axisDir);
+      end
     else
       % otherwise, grab the data for this image
       dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
 
-      % information about the transpose and axisDir
-      transpose = vol.transpose;
-      axisDir = vol.axisDir;
+      % prepare image for display
+      [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,vol.transpose,vol.axisDir);
     end
-
-    % clip
-    %  dispSlice = clipImage(dispSlice);
 
     % get the correct axis to draw into
     a = subplot(gSystem{sysNum}.subplotRows(iView),gSystem{sysNum}.subplotCols(iView),vol.subplotNum(iView));
 
-    % make into image with index values
-    minDispSlice = min(dispSlice(:));
-    maxDispSlice = max(dispSlice(:));
-    dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
-
-    % do transpose if necessary
-    if transpose(iView)
-      dispSlice = dispSlice';
-      xLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
-      yLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
-    else
-      xLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
-      yLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
-    end
-
-    % flip axis if necessary (note that Matlab shows the x axis as - to +
-    % and the y -axis in the opposite orientation, so we treat the x and y differently)
-    if axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
-    if axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
-
     % and display the image
     cla(a);
-    subimage(dispSlice,gray(256));
-    % turn off labels
-    set(a,'XTickLabel','');
-    set(a,'YTickLabel','');
-    % and put on what axis we have
-    xlabel(a,xLabelStr);
-    ylabel(a,yLabelStr);
+    if isempty(dispSlice)
+      axis off;
+    else
+      subimage(dispSlice,gray(256));
+      % turn off labels
+      set(a,'XTickLabel','');
+      set(a,'YTickLabel','');
+      % and put on what axis we have
+      xlabel(a,xLabelStr);
+      ylabel(a,yLabelStr);
+    end
     % set title
     titleStr = sprintf('%s (%s)',viewLabel{iView},vol.h.filename);
     h = title(titleStr,'Interpreter','none');
     
     % and display the overlay
     if vol.tethered
-      axes(aTether)
+      axes(aTether);
       hold on;
-      gSystem{sysNum}.vols(iVol).overlay(iView) = subimage(dispSlice,hot(256));
-      gSystem{sysNum}.vols(iVol).overlayMask{iView} = ~isnan(dispSlice(:));
-      alphaData = zeros(size(dispSlice));
+      gSystem{sysNum}.vols(iVol).overlay(iView) = subimage(dispOverlaySlice,hot(256));
+      gSystem{sysNum}.vols(iVol).overlayMask{iView} = ~isnan(dispOverlaySlice(:));
+      alphaData = zeros(size(dispOverlaySlice));
       if gSystem{sysNum}.overlayToggleState
 	alphaData(gSystem{sysNum}.vols(iVol).overlayMask{iView}) = gSystem{sysNum}.overlayAlpha;
       end
@@ -439,6 +511,70 @@ for iView = 1:3
     
   end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getMatchingSlice   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispSlice = getMatchingSlice(sysNum,vol,iView)
+
+global gSystem;
+
+% get coordinated of volume we are tethered to
+coord = gSystem{sysNum}.vols(vol.tethered).coord;
+coord(4) = 1;coord = coord(1:4);coord = coord(:);
+
+% convert to this volume coordinates
+coord = round(applySystemXform(sysNum,vol.xform)*coord);
+coord = coord(1:3);
+
+% FIX: this hardcodes the volume number to 1
+coord(end+1:5) = 1;
+
+% check to see if coordinates are in volume
+if any(coord(1:3)<1) || any(coord(1:3)>vol.h.dim(1:3))
+  dispSlice = [];
+  return
+end
+
+% if not set the volume coordinates
+setVolCoord(sysNum,vol.volnum,coord);
+vol = gSystem{sysNum}.vols(vol.volnum);
+
+% and get display slice
+dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   prepareImageForDisplay   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,transpose,axisDir)
+
+if isempty(dispSlice)
+  xLabelStr = '';yLabelStr = '';
+  return
+end
+% clip
+%  dispSlice = clipImage(dispSlice);
+
+% make into image with index values
+minDispSlice = min(dispSlice(:));
+maxDispSlice = max(dispSlice(:));
+dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
+
+% do transpose if necessary
+if transpose(iView)
+  dispSlice = dispSlice';
+  xLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
+  yLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
+else
+  xLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
+  yLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
+end
+
+% flip axis if necessary (note that Matlab shows the x axis as - to +
+% and the y -axis in the opposite orientation, so we treat the x and y differently)
+if axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
+if axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
+
 
 %%%%%%%%%%%%%%%%%%%
 %    clipImage    %
@@ -477,6 +613,9 @@ if isempty(d),return,end
 % updated number of volumes
 gSystem{sysNum}.n = gSystem{sysNum}.n+1;
 n = gSystem{sysNum}.n;
+
+% set volume number
+gSystem{sysNum}.vols(n).volnum = n;
 
 % update the fields in vols
 gSystem{sysNum}.vols(n).data = d;
@@ -565,12 +704,37 @@ gSystem{sysNum}.vols(n).curCoord = [nan nan nan];
 % print out the header of the image
 dispHeaderInfo(sysNum,gSystem{sysNum}.vols(n));
 
+% see what other transforms we have
+gSystem{sysNum}.vols(n).altXforms.shortNames = {};
+gSystem{sysNum}.vols(n).altXforms.names = {};
+gSystem{sysNum}.vols(n).altXforms.xforms = {};
+gSystem{sysNum}.vols(n).altXforms.n = 0;
+gSystem{sysNum}.vols(n).altXforms.currentXform = [];
+if ~isempty(h.vol2tal)
+  gSystem{sysNum}.vols(n).altXforms.names{end+1} = 'Talairach';
+  gSystem{sysNum}.vols(n).altXforms.shortNames{end+1} = 'Tal';
+  gSystem{sysNum}.vols(n).altXforms.xforms{end+1} = h.vol2tal;
+  gSystem{sysNum}.vols(n).altXforms.n = gSystem{sysNum}.vols(n).altXforms.n+1;
+end
+if ~isempty(h.vol2mag)
+  gSystem{sysNum}.vols(n).altXforms.names{end+1} = 'Canonical';
+  gSystem{sysNum}.vols(n).altXforms.shortNames{end+1} = 'Base';
+  gSystem{sysNum}.vols(n).altXforms.xforms{end+1} = h.vol2mag;
+  gSystem{sysNum}.vols(n).altXforms.n = gSystem{sysNum}.vols(n).altXforms.n+1;
+end
+if h.qform_code
+  gSystem{sysNum}.vols(n).altXforms.names{end+1} = 'Qform';
+  gSystem{sysNum}.vols(n).altXforms.shortNames{end+1} = 'Base';
+  gSystem{sysNum}.vols(n).altXforms.xforms{end+1} = h.qform44;
+  gSystem{sysNum}.vols(n).altXforms.n = gSystem{sysNum}.vols(n).altXforms.n+1;
+end
+
 % set the text boxes
 if n == 1
-  names = {'x','y','z','slice','receiver'};
+  names = {'X','Y','Z','Slice','Receiver'};
   for i = 1:h.nDim
     % make the inc/dec textboxes
-    gSystem{sysNum}.hCoordTextbox(i) = makeTextboxIncDec(sysNum,1,coord(i),i,1,i);
+    gSystem{sysNum}.hCoordTextbox(i) = makeTextboxIncDec(sysNum,coord(i),i,1,i);
     % get name for button
     if i < length(names)
       name = names{i};
@@ -578,15 +742,28 @@ if n == 1
       name = sprintf('dim %i',i);
     end
     % make the button
-    gSystem{sysNum}.hButton(i) = makeButton(sysNum,1,name,i,2,i);
+    gSystem{sysNum}.hButton(i) = makeButton(sysNum,name,i,2,i);
   end
   % make a text box for the value of the voxel
-  gSystem{sysNum}.hValTextbox(1) = makeTextbox(sysNum,1,'',1,6);
+  makeTextbox(sysNum,'Value',2,h.nDim+1);
+  gSystem{sysNum}.hValTextbox(1) = makeTextbox(sysNum,'',1,h.nDim+1);
+
+  % make the extra coordinates text boxes
+  if gSystem{sysNum}.vols(n).altXforms.n > 0
+    gSystem{sysNum}.vols(n).altXforms.currentXform = 1;
+    shortName = gSystem{sysNum}.vols(n).altXforms.shortNames{gSystem{sysNum}.vols(n).altXforms.currentXform};
+    gSystem{sysNum}.hExtraCoordTitle(1) = makeTextbox(sysNum,sprintf('%s X',shortName),2,h.nDim+2);
+    gSystem{sysNum}.hExtraCoordTextbox(1) = makeTextboxIncDec(sysNum,'',-1,1,h.nDim+2);
+    gSystem{sysNum}.hExtraCoordTitle(2) = makeTextbox(sysNum,sprintf('%s Y',shortName),2,h.nDim+3);
+    gSystem{sysNum}.hExtraCoordTextbox(2) = makeTextboxIncDec(sysNum,'',-2,1,h.nDim+3);
+    gSystem{sysNum}.hExtraCoordTitle(3) = makeTextbox(sysNum,sprintf('%s Z',shortName),2,h.nDim+4);
+    gSystem{sysNum}.hExtraCoordTextbox(3) = makeTextboxIncDec(sysNum,'',-3,1,h.nDim+4);
+  end
 end
 
 % add another row for displaying the image
 if n > 1
-  makeButton(sysNum,1,'controls',-2,4,1);
+  makeButton(sysNum,'Controls',-2,4,1);
   % mark that the volume display is "tethered" to the first volume
   gSystem{sysNum}.vols(n).tethered = 1;
   % make a cache for storing images
@@ -610,7 +787,7 @@ else
   % first volume is displayed independently
   gSystem{sysNum}.vols(n).tethered = 0;
   % make close button
-  makeButton(sysNum,1,'close',-1,3,1);
+  makeButton(sysNum,'Close',-1,3,1);
 end
 
 tf = true;
@@ -730,9 +907,22 @@ if gSystem{sysNum}.verbose
   % display axis information
   if ~isempty(vol.axisLabels)
     cardinalAxisLabels = {'X','Y','Z'};
+    disp(sprintf('Volume orientation is: %s%s%s',upper(vol.axisLabels{1}{1}(1)),upper(vol.axisLabels{2}{1}(1)),upper(vol.axisLabels{3}{1}(1))));
     for axisNum = 1:3
       disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},vol.axisLabels{axisNum}{1},vol.axisLabels{axisNum}{2}));
     end
+  end
+  
+  % if there is a talInfo field, display that
+  if isfield(vol.h,'base') && isfield(vol.h.base,'talInfo')
+    disp(sprintf('AC: [%s]',mrnum2str(vol.h.base.talInfo.AC,'compact=1','sigfigs=0')));
+    disp(sprintf('PC: [%s]',mrnum2str(vol.h.base.talInfo.PC,'compact=1','sigfigs=0')));
+    disp(sprintf('SAC: [%s]',mrnum2str(vol.h.base.talInfo.SAC,'compact=1','sigfigs=0')));
+    disp(sprintf('IAC: [%s]',mrnum2str(vol.h.base.talInfo.IAC,'compact=1','sigfigs=0')));
+    disp(sprintf('PPC: [%s]',mrnum2str(vol.h.base.talInfo.PPC,'compact=1','sigfigs=0')));
+    disp(sprintf('AAC: [%s]',mrnum2str(vol.h.base.talInfo.AAC,'compact=1','sigfigs=0')));
+    disp(sprintf('LAC: [%s]',mrnum2str(vol.h.base.talInfo.LAC,'compact=1','sigfigs=0')));
+    disp(sprintf('RAC: [%s]',mrnum2str(vol.h.base.talInfo.RAC,'compact=1','sigfigs=0')));
   end
 end
 
@@ -835,7 +1025,7 @@ function setVolCoord(sysNum,iVol,coord)
 
 global gSystem;
 
-% set the current x,y,z coordinate (start in middle)
+% set the current x,y,z coordinate
 gSystem{sysNum}.vols(iVol).coord = coord;
 
 % now this sets the indexes from the volume for which the
@@ -891,7 +1081,7 @@ gSystem{sysNum}.buttonWidthMargin = 20;
 gSystem{sysNum}.buttonHeightMargin = 2;
 gSystem{sysNum}.buttonHeight = 25;
 gSystem{sysNum}.buttonLeftMargin = 10;
-gSystem{sysNum}.buttonBottomMargin = 5;
+gSystem{sysNum}.buttonBottomMargin = 10;
 
 % get location of figure
 figloc = mrGetFigLoc('mlrVol');
@@ -943,51 +1133,52 @@ gSystem{sysNum}.xformParams.rotateXY = 0;
 gSystem{sysNum}.xformParams.rotateXZ = 0;
 gSystem{sysNum}.xformParams.rotateYZ = 0;
 
+% display the tethered volume interpolated to
+% match the primary volume display
+gSystem{sysNum}.displayInterpolated = true;
+
 % update display
 drawnow
 
 %%%%%%%%%%%%%%%%%%%%%
 %%   makeTextbox   %%
 %%%%%%%%%%%%%%%%%%%%%
-function h = makeTextbox(sysNum,viewNum,displayString,rownum,colnum);
+function h = makeTextbox(sysNum,displayString,rownum,colnum);
 
-h = uicontrol('Style','edit','String',displayString,'Position',getUIControlPos(sysNum,viewNum,rownum,colnum,1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(3,%i)',sysNum));
+h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(sysNum,rownum,colnum,1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(3,%i)',sysNum));
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   makePushbuton   %%
 %%%%%%%%%%%%%%%%%%%%%%%
-function h = makeButton(sysNum,viewNum,displayString,textboxNum,rownum,colnum)
+function h = makeButton(sysNum,displayString,textboxNum,rownum,colnum)
 
-h = uicontrol('Style','pushbutton','String',displayString,'Position',getUIControlPos(sysNum,viewNum,rownum,colnum,1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(5,%i,%i)',textboxNum,sysNum));
+h = uicontrol('Style','pushbutton','String',displayString,'Position',getUIControlPos(sysNum,rownum,colnum,1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(5,%i,%i)',textboxNum,sysNum));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   makeTextboxIncDec   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-function h = makeTextboxIncDec(sysNum,viewNum,displayString,textboxNum,rownum,colnum)
+function [h hIncDec] = makeTextboxIncDec(sysNum,displayString,textboxNum,rownum,colnum)
 
 % make textbox
-h = uicontrol('Style','edit','String',displayString,'Position',getUIControlPos(sysNum,viewNum,rownum,colnum+.125,0.75),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(3,%i)',sysNum));
+h = uicontrol('Style','edit','String',displayString,'Position',getUIControlPos(sysNum,rownum,colnum+.125,0.75),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(3,%i,%i)',sysNum,textboxNum));
 
 % put up incdec buttons
-uicontrol('Style','pushbutton','String','<','Position',getUIControlPos(sysNum,viewNum,rownum,colnum,.1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(4,%i,-1,%i)',textboxNum,sysNum));
-uicontrol('Style','pushbutton','String','>','Position',getUIControlPos(sysNum,viewNum,rownum,colnum+.9,.1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(4,%i,1,%i)',textboxNum,sysNum));
+hIncDec(1) = uicontrol('Style','pushbutton','String','<','Position',getUIControlPos(sysNum,rownum,colnum,.1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(4,%i,-1,%i)',textboxNum,sysNum));
+hIncDec(2) = uicontrol('Style','pushbutton','String','>','Position',getUIControlPos(sysNum,rownum,colnum+.9,.1),'FontSize',10,'FontName','Helvetica','HorizontalAlignment','Center','Callback',sprintf('mlrVol(4,%i,1,%i)',textboxNum,sysNum));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getUIControlPos returns a location for a uicontrol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function pos = getUIControlPos(sysNum,viewNum,rownum,colnum,uisize)
+function pos = getUIControlPos(sysNum,rownum,colnum,uisize)
 
 global gSystem;
-
-% get figure position
-figpos = get(gSystem{sysNum}.fig(viewNum),'Position');
 
 % set this buttons width
 thisButtonWidth = gSystem{sysNum}.buttonWidth*uisize;
 
 % set the position for the button
 pos(1) = (gSystem{sysNum}.buttonWidth+gSystem{sysNum}.buttonWidthMargin)*(floor(colnum)-1)+gSystem{sysNum}.buttonLeftMargin+(colnum-floor(colnum))*gSystem{sysNum}.buttonWidth;
-pos(2) = gSystem{sysNum}.buttonBottomMargin + (gSystem{sysNum}.buttonHeight+gSystem{sysNum}.buttonHeightMargin)*(rownum-1)+gSystem{sysNum}.buttonHeight;
+pos(2) = gSystem{sysNum}.buttonBottomMargin + (gSystem{sysNum}.buttonHeight+gSystem{sysNum}.buttonHeightMargin)*(rownum-1);
 pos(3) = thisButtonWidth;
 pos(4) = gSystem{sysNum}.buttonHeight;
 
@@ -1032,6 +1223,17 @@ else
 end
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   displayInterpolated   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function displayInterpolated(sysNum,params)
+
+global gSystem;
+gSystem{sysNum}.displayInterpolated = params.displayInterpolated;
+gSystem{sysNum}.vols(2).curCoord = nan;
+gSystem{sysNum}.vols(2).coord = nan;
+refreshDisplay(sysNum);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %    displayControls    %
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1042,6 +1244,7 @@ global gSystem;
 paramsInfo = {...
     {'toggleOverlay',0,'type=pushbutton','callback',@toggleOverlay,'buttonString','Toggle overlay','callbackArg',sysNum,'Toggle display the overlay'}...
     {'overlayAlpha',gSystem{sysNum}.overlayAlpha,'incdec=[-0.2 0.2]','minmax=[0 1]','callback',@overlayAlpha,'callbackArg',sysNum,'passParams=1','Change the alpha of the overlay to make it more or less transparent'}...
+    {'displayInterpolated',1,'type=checkbox','callback',@displayInterpolated,'callbackArg',sysNum,'Display image interpolated to match the primary volume'}...
     {'initFromHeader',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Init from header','callbackArg',{sysNum 'initFromHeader'},'passParams=1','Reinit the alignment using the qform/sform info from the headers'}...
     {'setToIdentity',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Set to identity','callbackArg',{sysNum 'setToIdentity'},'passParams=1','Set the alignment to identity'}...
     {'swapXY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XY','callbackArg',{sysNum 'swapXY'},'passParams=1','Swap XY in the alignment'}...
@@ -1213,3 +1416,16 @@ for iVol = 1:gSystem{sysNum}.n
   end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   showSecondRowControls   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function showSecondRowControls(sysNum,show)
+
+if show
+  % move all hCoordTextboxs up one row
+  if any(coord<1) || any(coord(:)>vol.h.dim(1:nDim))
+    for iCoord = 1:nDim
+      set(gSystem{sysNum}.hCoordTextbox(1),'String',vol.coord(iCoord));
+    end
+  end
+end
