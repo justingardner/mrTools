@@ -1,10 +1,21 @@
 % mlrVol.m
 %
 %        $Id:$ 
-%      usage: mlrVol(filename)
+%      usage: mlrVol(filename,<filename2>,'imageOrientation=0')
 %         by: justin gardner
 %       date: 08/15/11
 %    purpose: Volume viewer to display volume multi-dimensional data (usually 3D volumes or 4D epi sequences)
+%             If qform information exists (from a nifti header) it will orient the axis in LPI and label axis
+%             correctly (left/right, posterior/anterior, inferior/superior). If you want to view the
+%             image in its native orientation (i.e. order it is written into the matrix, then set the
+%             input argument:
+%
+%             'imageOrienation=1'
+%
+%             With two filename arguments, will show the alignment between the two images, using
+%             the sforms if they are both set / or the qforms otherwise. If neither one is set
+%             will display with an identity alignment. A dialog box allows you to fiddle manually
+%             with the alignment
 %
 function retval = mlrVol(filename,varargin)
 
@@ -341,8 +352,13 @@ vol = gSystem{sysNum}.vols(iVol);
 viewLabel = {'Sagittal','Coronal','Axial'};
 
 for iView = 1:3
-  % see if we need to redisplay
-  if ~isequal(vol.curCoord(4:end),vol.coord(4:end)) || ~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))
+  % see if we need to redisplay, first condition is whether we have changed the volume or other dimenson
+  % the second condition is for primary volumes wether we have updated the coordinates being displayed
+  % in the view, and the third condition is for tethered volumes - whether we have change the coordinates
+  % for the volume we are tethered to
+  if (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || ...
+      (~vol.tethered && ~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))) || ...
+      (vol.tethered && ~isequal(vol.curCoord(gSystem{sysNum}.vols(vol.tethered).viewDim(iView)),vol.coord(gSystem{sysNum}.vols(vol.tethered).viewDim(iView)))))
     % get the slice
     % nDims hard coded to 5 here
     if vol.tethered
@@ -352,24 +368,32 @@ for iView = 1:3
 
       % get the axis that we are tethered to (so that we can draw the overlay)
       aTether = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),gSystem{sysNum}.vols(vol.tethered).subplotNum(iView));
+
+      % the transpose and axis directions need to be taken from the volume this is tethered to
+      transpose = gSystem{sysNum}.vols(vol.tethered).transpose;
+      axisDir = gSystem{sysNum}.vols(vol.tethered).axisDir;
     else
       % otherwise, grab the data for this image
       dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
+
+      % information about the transpose and axisDir
+      transpose = vol.transpose;
+      axisDir = vol.axisDir;
     end
 
     % clip
     %  dispSlice = clipImage(dispSlice);
 
     % get the correct axis to draw into
-%    
     a = subplot(gSystem{sysNum}.subplotRows(vol.fig(iView)),gSystem{sysNum}.subplotCols(vol.fig(iView)),vol.subplotNum(iView));
+
     % make into image with index values
     minDispSlice = min(dispSlice(:));
     maxDispSlice = max(dispSlice(:));
     dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
 
     % do transpose if necessary
-    if vol.transpose(iView)
+    if transpose(iView)
       dispSlice = dispSlice';
       xLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
       yLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
@@ -380,8 +404,8 @@ for iView = 1:3
 
     % flip axis if necessary (note that Matlab shows the x axis as - to +
     % and the y -axis in the opposite orientation, so we treat the x and y differently)
-    if vol.axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
-    if vol.axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
+    if axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
+    if axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
 
     % and display the image
     cla(a);
@@ -638,6 +662,7 @@ for axisNum = 1:3
   else
     axisLabels{axisNum} = {sprintf('%s/%s',cardinalAxisLabels{sortedAxisNum(6)},cardinalAxisLabels{sortedAxisNum(5)}) sprintf('%s/%s',cardinalAxisLabels{sortedAxisNum(1)},cardinalAxisLabels{sortedAxisNum(2)})};
   end
+
 end
 
 % convert the axisDirs to axisMapping (i.e. what axis in the magnet each axis in the image
@@ -689,6 +714,14 @@ disp(sprintf('%s',mrnum2str(vol.h.qform44,'compact=0','sigfigs=-1')));
 disp(sprintf('sform_code: %i',vol.h.sform_code));
 disp(sprintf('sform:'));
 disp(sprintf('%s',mrnum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
+
+% display axis information
+if ~isempty(vol.axisLabels)
+  cardinalAxisLabels = {'X','Y','Z'};
+  for axisNum = 1:3
+    disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},vol.axisLabels{axisNum}{1},vol.axisLabels{axisNum}{2}));
+  end
+end
 dispHeader;
 
 %%%%%%%%%%%%%%%%%%%
@@ -963,23 +996,23 @@ function displayControls(sysNum)
 global gSystem;
 
 paramsInfo = {...
-    {'toggleOverlay',0,'type=pushbutton','callback',@toggleOverlay,'buttonString','Toggle overlay','callbackArg',sysNum}...
-    {'overlayAlpha',gSystem{sysNum}.overlayAlpha,'incdec=[-0.2 0.2]','minmax=[0 1]','callback',@overlayAlpha,'callbackArg',sysNum,'passParams=1'}...
-    {'initFromHeader',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Init from header','callbackArg',{sysNum 'initFromHeader'},'passParams=1'}...
-    {'setToIdentity',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Set to identity','callbackArg',{sysNum 'setToIdentity'},'passParams=1'}...
-    {'swapXY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XY','callbackArg',{sysNum 'swapXY'},'passParams=1'}...
-    {'swapXZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XZ','callbackArg',{sysNum 'swapXZ'},'passParams=1'}...
-    {'swapYZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap YZ','callbackArg',{sysNum 'swapYZ'},'passParams=1'}...
-    {'flipX',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip X','callbackArg',{sysNum 'flipX'},'passParams=1'}...
-    {'flipY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1'}...
-    {'flipZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1'}...
-    {'shiftX',gSystem{sysNum}.xformParams.shiftX,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1'}...
-    {'shiftY',gSystem{sysNum}.xformParams.shiftY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1'}...
-    {'shiftZ',gSystem{sysNum}.xformParams.shiftZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1'}...
-    {'rotateXY',gSystem{sysNum}.xformParams.rotateXY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1'}...
-    {'rotateXZ',gSystem{sysNum}.xformParams.rotateXZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1'}...
-    {'rotateYZ',gSystem{sysNum}.xformParams.rotateYZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1'}...
-    {'vol2vol',gSystem{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1'}
+    {'toggleOverlay',0,'type=pushbutton','callback',@toggleOverlay,'buttonString','Toggle overlay','callbackArg',sysNum,'Toggle display the overlay'}...
+    {'overlayAlpha',gSystem{sysNum}.overlayAlpha,'incdec=[-0.2 0.2]','minmax=[0 1]','callback',@overlayAlpha,'callbackArg',sysNum,'passParams=1','Change the alpha of the overlay to make it more or less transparent'}...
+    {'initFromHeader',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Init from header','callbackArg',{sysNum 'initFromHeader'},'passParams=1','Reinit the alignment using the qform/sform info from the headers'}...
+    {'setToIdentity',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Set to identity','callbackArg',{sysNum 'setToIdentity'},'passParams=1','Set the alignment to identity'}...
+    {'swapXY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XY','callbackArg',{sysNum 'swapXY'},'passParams=1','Swap XY in the alignment'}...
+    {'swapXZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XZ','callbackArg',{sysNum 'swapXZ'},'passParams=1','Swap XZ in the alignment'}...
+    {'swapYZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap YZ','callbackArg',{sysNum 'swapYZ'},'passParams=1','Swap YZ in the alignment'}...
+    {'flipX',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip X','callbackArg',{sysNum 'flipX'},'passParams=1','Flip X axis in alignment'}...
+    {'flipY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1','Flip Y axis in alignment'}...
+    {'flipZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1','Flip Z axis in alignment'}...
+    {'shiftX',gSystem{sysNum}.xformParams.shiftX,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of voxels'}...
+    {'shiftY',gSystem{sysNum}.xformParams.shiftY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
+    {'shiftZ',gSystem{sysNum}.xformParams.shiftZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
+    {'rotateXY',gSystem{sysNum}.xformParams.rotateXY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
+    {'rotateXZ',gSystem{sysNum}.xformParams.rotateXZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
+    {'rotateYZ',gSystem{sysNum}.xformParams.rotateYZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
+    {'vol2vol',gSystem{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}
 	     };
 
 
