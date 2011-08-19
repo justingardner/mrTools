@@ -79,6 +79,16 @@ if ~isfield(procpar,'ni'),info.dim = nan(1,4);return,end
 % used to use procpar.nv and correct for navechoes, but seems more sensible to just use procpar.ni)
 dim = [procpar.np/2 procpar.ni length(procpar.pss)];
 
+if (procpar.ni == 1) && (procpar.nf > 1)
+  if verbose>0
+    disp(sprintf('(fid2xform) Fid file looks like it is compressed. Using nf for the 2nd dim'));
+  end
+  info.compressedFid = true;
+  dim(2) = procpar.nf;
+else
+  info.compressedFid = false;
+end
+
 % remove navigator echoes from k-space 
 %dim(2) = dim(2) - navechoes;
 
@@ -279,16 +289,6 @@ if isfield(procpar,'rcvrs')
   info.numReceivers = length(strfind(procpar.rcvrs{1},'y'));
 else
   info.numReceivers = 1;
-end
-
-if (procpar.ni == 1) && (procpar.nf > 1)
-  if verbose>0
-    disp(sprintf('(fid2xform) Fid file looks like it is compressed. Using nf for the 2nd dim'));
-  end
-  info.compressedFid = true;
-  info.dim(2) = procpar.nf;
-else
-  info.compressedFid = false;
 end
 
 % keep procpar
