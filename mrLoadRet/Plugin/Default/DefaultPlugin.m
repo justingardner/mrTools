@@ -14,7 +14,7 @@
 %             the plugin offers).
 %
 %             Finally, this function should always be named with its parents direcory + the word Plugin.
-%             e.g. if it is in the directory mrLoadRet/Plugin/Test, then it should be called DefaultPlugin.
+%             e.g. if it is in the directory mrLoadRet/Plugin/Default, then it should be called DefaultPlugin.
 %
 %             That way the function mlrPlugin can find it appropriately.
 %
