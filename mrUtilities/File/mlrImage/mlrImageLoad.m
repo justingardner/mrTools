@@ -24,6 +24,12 @@ if nargin < 1
   return
 end
 
+% empty filename, means to bring up box
+if isempty(filename)
+  filename = getPathStrDialog('.','Choose a volume',{'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)';'*.sdt;*.edt;','SDT/SPR or EDT/EPR Files (*.sdt, *.spr)'},'off');
+  if isempty(filename),return,end
+end
+
 % set extension to default if not specified
 % for the special name 'canonical' bring up
 % a dialog box to get name from voldir
@@ -50,8 +56,8 @@ if isnumeric(filename)
 end
 
 % check input arguments
-groupNum = [];scanNum = 1;
-getArgs(varargin,{'groupNum=1','scanNum=1'});
+groupNum = [];scanNum = [];verbose=[];
+getArgs(varargin,{'groupNum=1','scanNum=1','verbose=0'});
 
 % if the passed in filename is a view, then load the appropriate group and scan
 if isview(filename)
@@ -67,6 +73,6 @@ switch lower(getext(filename))
   data = readsdt(filename);
   data = data.data;
  case {'fid'}
-  data = fid2nifti(filename);
+  data = fid2nifti(filename,verbose);
 end
 

@@ -92,7 +92,6 @@ end
 % remove the variable
 gSystem{sysNum} = [];
 
-
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   buttonHandler   %%
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -274,7 +273,7 @@ if gSystem{sysNum}.vols(1).altXforms.n > 0
   
   % get the extra coordinate xform
   xform = gSystem{sysNum}.vols(1).altXforms.xforms{gSystem{sysNum}.vols(1).altXforms.currentXform};
-  
+
   % convert
   coord = xform * coord;
   
@@ -301,7 +300,7 @@ coord = coord(:);
 
 % get the extra coordinate xform
 xform = gSystem{sysNum}.vols(1).altXforms.xforms{gSystem{sysNum}.vols(1).altXforms.currentXform};
-  
+
 % convert
 coord = round(inv(xform) * coord);
 
@@ -616,7 +615,7 @@ function tf = loadVolume(filename,sysNum)
 tf = false;
 global gSystem;
 
-[d h] = mlrImageLoad(filename);
+[d h] = mlrImageLoad(filename,'verbose',gSystem{sysNum}.verbose);
 if isempty(d),return,end
 
 % make 2D images into nominal 3D
@@ -723,15 +722,15 @@ if ~isempty(h.vol2tal) && ~isempty(h.vol2mag) && (h.sform_code == 1)
   vol.altXforms.n = vol.altXforms.n+1;
 end
 if ~isempty(h.vol2mag)
-  vol.altXforms.names{end+1} = 'Canonical';
-  vol.altXforms.shortNames{end+1} = 'Base';
-  vol.altXforms.xforms{end+1} = h.vol2mag;
+  vol.altXforms.names{end+1} = 'Canonical magnet';
+  vol.altXforms.shortNames{end+1} = 'Mag';
+  vol.altXforms.xforms{end+1} = h.vol2mag  * shiftOriginXform;
   vol.altXforms.n = vol.altXforms.n+1;
 end
 if h.qform_code
   vol.altXforms.names{end+1} = 'Qform';
-  vol.altXforms.shortNames{end+1} = 'Base';
-  vol.altXforms.xforms{end+1} = h.qform44;
+  vol.altXforms.shortNames{end+1} = 'Mag';
+  vol.altXforms.xforms{end+1} = h.qform44 * shiftOriginXform;
   vol.altXforms.n = vol.altXforms.n+1;
 end
 
@@ -769,13 +768,21 @@ end
 
 % add another row for displaying the image
 if n > 1
-  makeButton(sysNum,'Controls',-2,4,1);
   % mark that the volume display is "tethered" to the first volume
   vol.tethered = 1;
   % make a cache for storing images
   vol.c = mrCache('init',2*max(vol.h.dim(1:3)));
   % set the initial transform
   vol.xform = getVol2vol(sysNum,vol,gSystem{sysNum}.vols(1));
+  % add this to the altXforms
+  gSystem{sysNum}.vols(1).altXforms.names{end+1} = 'Aligned volume';
+  gSystem{sysNum}.vols(1).altXforms.shortNames{end+1} = 'Vol';
+  gSystem{sysNum}.vols(1).altXforms.xforms{end+1} = applySystemXform(sysNum,vol.xform);
+  gSystem{sysNum}.vols(1).altXforms.n = vol.altXforms.n+1;
+  % set alt coord to this one
+  params.altCoord = 'Aligned volume';
+  changeAltCoord(sysNum,params);
+  
   % setup subplotRows and subplotCols
   gSystem{sysNum}.subplotRows = [n n n];
   gSystem{sysNum}.subplotCols = [3 3 3];
@@ -793,8 +800,16 @@ else
   % first volume is displayed independently
   vol.tethered = 0;
   % make close button
-  makeButton(sysNum,'Close',-1,3,1);
+  makeButton(sysNum,'Close',-1,4,1);
+  makeButton(sysNum,'Controls',-2,3,1);
+  % set some fields to empty
+  vol.c = [];
+  vol.xform = [];
 end
+
+% place some empty fields that will get filled by setVolCoord
+vol.coord = [];
+vol.viewIndexes = {};
 
 % set the vol
 gSystem{sysNum}.vols(n) = vol;
@@ -1200,7 +1215,8 @@ function displayControls(sysNum)
 
 global gSystem;
 
-paramsInfo = {...
+if gSystem{sysNum}.n > 1
+  paramsInfo = {...
     {'toggleOverlay',0,'type=pushbutton','callback',@toggleOverlay,'buttonString','Toggle overlay','callbackArg',sysNum,'Toggle display the overlay'}...
     {'overlayAlpha',gSystem{sysNum}.overlayAlpha,'incdec=[-0.2 0.2]','minmax=[0 1]','callback',@overlayAlpha,'callbackArg',sysNum,'passParams=1','Change the alpha of the overlay to make it more or less transparent'}...
     {'displayInterpolated',1,'type=checkbox','callback',@displayInterpolated,'callbackArg',sysNum,'Display image interpolated to match the primary volume'}...
@@ -1220,10 +1236,38 @@ paramsInfo = {...
     {'rotateYZ',gSystem{sysNum}.xformParams.rotateYZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
     {'vol2vol',gSystem{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}
 	     };
+else
+  paramsInfo = {};
+end
 
+% add ability to change display of alternate coordinates
+altXforms = gSystem{sysNum}.vols(1).altXforms;
+if altXforms.n 
+  paramsInfo{end+1} = {'altCoord',putOnTopOfList(altXforms.names{altXforms.currentXform},altXforms.names),'callback',@changeAltCoord,'callbackArg',sysNum,'passParams=1'};
+end
 
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
 mrParamsDialog(paramsInfo,'mlrVol Controls');
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    changeAltCoord    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = changeAltCoord(sysNum,params)
+
+global gSystem;
+altXforms = gSystem{sysNum}.vols(1).altXforms;
+
+% find the current matching number and set it
+gSystem{sysNum}.vols(1).altXforms.currentXform = find(strcmp(params.altCoord,altXforms.names));
+shortName = altXforms.shortNames{gSystem{sysNum}.vols(1).altXforms.currentXform};
+
+% set the short names
+set(gSystem{sysNum}.hExtraCoordTitle(1),'String',sprintf('%s X',shortName));
+set(gSystem{sysNum}.hExtraCoordTitle(2),'String',sprintf('%s Y',shortName));
+set(gSystem{sysNum}.hExtraCoordTitle(3),'String',sprintf('%s Z',shortName));
+updateExtraCoords(sysNum);
+
+retval = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %    controlsCallback    %
@@ -1319,6 +1363,14 @@ for iVol = 1:gSystem{sysNum}.n
   end
   % set all images to redisplay
   gSystem{sysNum}.vols(iVol).curCoord = nan;
+end
+
+% set the altXform for displaying coordinates of the transformed volume
+altXforms = gSystem{sysNum}.vols(1).altXforms;
+% get the aligned volume alternate xform
+altXformNum = find(strcmp('Aligned volume',altXforms.names));
+if ~isempty(altXformNum)
+  gSystem{sysNum}.vols(1).altXforms.xforms{altXformNum} = applySystemXform(sysNum,gSystem{sysNum}.vols(iVol).xform);
 end
 
 % redisplay
