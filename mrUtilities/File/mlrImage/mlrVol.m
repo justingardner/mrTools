@@ -607,7 +607,7 @@ function tf = loadVolume(filename,sysNum)
 tf = false;
 global gSystem;
 
-[d h] = mlrLoadImage(filename);
+[d h] = mlrImageLoad(filename);
 if isempty(d),return,end
 
 % updated number of volumes
@@ -631,10 +631,10 @@ gSystem{sysNum}.vols(n).subplotNum(1:3) = (1:3)+(n-1)*3;
 % choose which axis will be displayed in what figure based on this
 % information
 if h.qform_code && ~gSystem{sysNum}.imageOrientation
-  [gSystem{sysNum}.vols(n).axisLabels gSystem{sysNum}.vols(n).axisMapping gSystem{sysNum}.vols(n).axisDir] = getAxisLabels(h.qform44);
+  [axisLabels gSystem{sysNum}.vols(n).axisDirLabels gSystem{sysNum}.vols(n).axisMapping gSystem{sysNum}.vols(n).axisDir] = mlrImageGetAxisLabels(h.qform44);
   gSystem{sysNum}.vols(n).viewDim(1:3) = gSystem{sysNum}.vols(n).axisMapping;
 else
-  gSystem{sysNum}.vols(n).axisLabels = [];
+  gSystem{sysNum}.vols(n).axisDirLabels = [];
   % default to assuming LPI orientation
   gSystem{sysNum}.vols(n).axisMapping = [1 2 3];
   gSystem{sysNum}.vols(n).axisDir = [1 1 1];
@@ -663,19 +663,19 @@ for iView = 1:3
   end
   % now make axis labels that can be used for displaying. Note that
   % if the axis are flipped, dispSlice will unflip them so we
-  % have to reverse the order of the labels provided by getAxisLabels
+  % have to reverse the order of the labels provided by mlrImageGetAxisLabels
   axisLabel = {'X','Y','Z'};
-  if isempty(gSystem{sysNum}.vols(n).axisLabels)
+  if isempty(gSystem{sysNum}.vols(n).axisDirLabels)
     % no transform, so just use simple X,Y,Z labels
     gSystem{sysNum}.vols(n).dispAxisLabels{iView} = axisLabel{iView};
   else
     % check axis direction
     if gSystem{sysNum}.vols(n).axisDir == -1
       % and make reversed labels
-      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisLabels{iView}{2},axisLabel{iView},gSystem{sysNum}.vols(n).axisLabels{iView}{1});
+      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisDirLabels{iView}{2},axisLabel{iView},gSystem{sysNum}.vols(n).axisDirLabels{iView}{1});
     else
       % and make normal labels
-      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisLabels{iView}{1},axisLabel{iView},gSystem{sysNum}.vols(n).axisLabels{iView}{2});
+      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisDirLabels{iView}{1},axisLabel{iView},gSystem{sysNum}.vols(n).axisDirLabels{iView}{2});
     end
   end
 end
@@ -792,63 +792,6 @@ end
 
 tf = true;
 
-%%%%%%%%%%%%%%%%%%%%%%%
-%    getAxisLabels    %
-%%%%%%%%%%%%%%%%%%%%%%%
-function [axisLabels axisMapping axisDirection] = getAxisLabels(qform44)
-
-% This function uses the qform to determine in which direction
-% each axis of the image goes. axisLabels are readable labels 
-% and axisDirs are a vector for the closest pointing direction
-% for each axis
-
-for axisNum = 1:3
-  % get the vector of the axis in the image that we want to label
-  axisVector = zeros(3,1);
-  axisVector(axisNum) = 1;
-
-  % find out which direction in magnet space the axis vector goes
-  axisDirVector = qform44(1:3,1:3)*axisVector;
-
-  % normalize to unit length
-  axisDirVector = axisDirVector ./ sqrt(sum(axisDirVector.^2));
-
-  % these are the magnet cardinal axis and their names
-  cardinalAxisDirs = {[1 0 0],[0 1 0],[0 0 1],[-1 0 0],[0 -1 0],[0 0 -1]};
-  cardinalAxisLabels = {'right','anterior','superior','left','posterior','inferior'};
-
-  % now get the angle of this axisDirVector with
-  % each of the magnet cardinal axis. Note that
-  % we are computing for both directions of the axis
-  % for conveinence (i.e. left and right)
-  for i = 1:length(cardinalAxisDirs)
-    angles(i) = r2d(acos(dot(axisDirVector,cardinalAxisDirs{i})));
-  end
-
-  % sort the angles (remembering which axis they originally came from). Thus
-  % sortedAxisNum contains an ordered list of which axis the vector is closest
-  % too. The closest axis is sortedAxisNum(1) and the farthest axis is sortedAxisNum(6)
-  [angles sortedAxisNum] = sort(angles);
-
-  % get the closest axis direction (i.e. the one with the smallest angle which
-  % is the first in the list of sortedAxisNum)
-  axisDirs(axisNum,:) = cardinalAxisDirs{sortedAxisNum(1)}';
-  
-  % if the closest angle is less than an arbitrary value than we will consider
-  % the axis to be a pure direction - if not, we will label
-  % with a combination of the two closest axis.
-  if angles(1) < 5
-    axisLabels{axisNum} = {cardinalAxisLabels{sortedAxisNum(6)} cardinalAxisLabels{sortedAxisNum(1)}};
-  else
-    axisLabels{axisNum} = {sprintf('%s/%s',cardinalAxisLabels{sortedAxisNum(6)},cardinalAxisLabels{sortedAxisNum(5)}) sprintf('%s/%s',cardinalAxisLabels{sortedAxisNum(1)},cardinalAxisLabels{sortedAxisNum(2)})};
-  end
-
-end
-
-% convert the axisDirs to axisMapping (i.e. what axis in the magnet each axis in the image
-% corresponds to and in which direction it points
-[axisMapping row axisDirection] = find(axisDirs);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %    applySystemXform    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -905,11 +848,11 @@ if gSystem{sysNum}.verbose
   disp(sprintf('%s',mrnum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
 
   % display axis information
-  if ~isempty(vol.axisLabels)
+  if ~isempty(vol.axisDirLabels)
     cardinalAxisLabels = {'X','Y','Z'};
-    disp(sprintf('Volume orientation is: %s%s%s',upper(vol.axisLabels{1}{1}(1)),upper(vol.axisLabels{2}{1}(1)),upper(vol.axisLabels{3}{1}(1))));
+    disp(sprintf('Volume orientation is: %s%s%s',upper(vol.axisDirLabels{1}{1}(1)),upper(vol.axisDirLabels{2}{1}(1)),upper(vol.axisDirLabels{3}{1}(1))));
     for axisNum = 1:3
-      disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},vol.axisLabels{axisNum}{1},vol.axisLabels{axisNum}{2}));
+      disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},vol.axisDirLabels{axisNum}{1},vol.axisDirLabels{axisNum}{2}));
     end
   end
   
