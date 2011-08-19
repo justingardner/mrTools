@@ -9,7 +9,8 @@
 %             a cell array with two strings for each direction (-/+) for each axis.
 %             axisMapping is the map of each axis to the closest axis in the magnet space. That is
 %             each element is the axis in the image space and what axis it corresponds to in the
-%             magnet space. axisReverseMapping is the opposite. axisDir is the direction in which that axis goes.
+%             magnet space. axisReverseMapping is the opposite. axisDir is the direction in which that axis goes
+%             in the magnet space.
 %
 function [axisLabels axisDirLabels axisMapping axisReverseMapping axisDir] = mlrImageGetAxisLabels(xform)
 
@@ -68,4 +69,4 @@ end
 % corresponds to and in which direction it points
 [axisReverseMapping row axisDir] = find(axisDirs);
 [dummy axisMapping] = sort(axisReverseMapping);
-
+axisDir = axisDir(axisMapping);

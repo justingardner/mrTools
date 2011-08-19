@@ -11,6 +11,8 @@
 %             v = newView;
 %             mlrImageHeaderLoad(v,'groupNum=2','scanNum=3');
 %
+%             To select a canonical (through dialog box) from the volumeDirecotry
+%             mlrImageHeaderLoad canonical
 function header = mlrImageHeaderLoad(filename,varargin)
 
 header = [];
@@ -50,6 +52,11 @@ end
 % set filenames
 if isempty(getext(filename))
   hdrFilename = setext(filename,mrGetPref('niftiFileExtension'));
+  % get from canonical directory
+  if any(strcmp({'canonical','volume','volumedirectory','volumedir','voldir'},lower(stripext(filename)))) && ~isfile(filename)
+    filename = getPathStrDialog(mrGetPref('volumeDirectory'),'Choose a volume',{'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)'},'off');
+    if isempty(filename),return,end
+  end
 else
   hdrFilename = filename;
 end
@@ -181,12 +188,12 @@ if isfile(matlabFilename)
   matHeader = load(matlabFilename);
   % check for field
   if ~isfield(matHeader,'base')
-    disp(sprintf('(mlrImageHeaderLoad) Ignoring associated mat file %s because is not a MLR header',matHeader));
+    disp(sprintf('(mlrImageHeaderLoad) Ignoring associated mat file %s because is not a MLR header',filename));
   else
     matHeader.base.data = [];
     [tf header] = isbase(matHeader.base);
     if ~tf
-      disp(sprintf('(mlrImageHeaderLoad) Ignoring associated mat file %s because is not a MLR header',matHeader));
+      disp(sprintf('(mlrImageHeaderLoad) Ignoring associated mat file %s because is not a MLR header',filename));
     else
       base = matHeader.base;
     end

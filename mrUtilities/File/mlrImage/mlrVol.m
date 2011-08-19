@@ -72,6 +72,11 @@ function closeHandler(sysNum)
 
 global gSystem;
 
+% stop any ongoing animation
+if gSystem{sysNum}.animating
+  gSystem{sysNum}.animating = 0;
+end
+
 uniqueFigs = unique(gSystem{sysNum}.fig);
 % close the figures
 for i = 1:length(uniqueFigs)
@@ -121,7 +126,7 @@ gSystem{sysNum}.animating = textNum;
 coord = vol.coord;
 
 % loop that runs the animation
-while(gSystem{sysNum}.animating)
+while ~isempty(gSystem{sysNum}) && gSystem{sysNum}.animating
   % increment coord, go forward for an axis that moves in
   % the positive direction 
   if (textNum > 3) || (vol.axisDir(textNum) == 1)
@@ -565,15 +570,19 @@ if transpose(iView)
   dispSlice = dispSlice';
   xLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
   yLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
+  % flip axis if necessary (note that Matlab shows the x axis as - to +
+  % and the y -axis in the opposite orientation, so we treat the x and y differently)
+  if axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
+  if axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
 else
   xLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
   yLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
+  % flip axis if necessary (note that Matlab shows the x axis as - to +
+  % and the y -axis in the opposite orientation, so we treat the x and y differently)
+  if axisDir(vol.xDim(iView)) == 1,dispSlice = flipud(dispSlice);end
+  if axisDir(vol.yDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
 end
 
-% flip axis if necessary (note that Matlab shows the x axis as - to +
-% and the y -axis in the opposite orientation, so we treat the x and y differently)
-if axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
-if axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
 
 
 %%%%%%%%%%%%%%%%%%%
@@ -661,21 +670,24 @@ for iView = 1:3
   else
     vol.transpose(iView) = 0;
   end
-  % now make axis labels that can be used for displaying. Note that
-  % if the axis are flipped, dispSlice will unflip them so we
-  % have to reverse the order of the labels provided by mlrImageGetAxisLabels
+end
+
+% now make axis labels that can be used for displaying. Note that
+% if the axis are flipped, dispSlice will unflip them so we
+% have to reverse the order of the labels provided by mlrImageGetAxisLabels
+for axisNum = 1:3
   axisLabel = {'X','Y','Z'};
   if isempty(vol.axisDirLabels)
     % no transform, so just use simple X,Y,Z labels
-    vol.dispAxisLabels{iView} = axisLabel{iView};
+    vol.dispAxisLabels{axisNum} = axisLabel{axisNum};
   else
     % check axis direction
-    if vol.axisDir == -1
+    if vol.axisDir(axisNum) == -1
       % and make reversed labels
-      vol.dispAxisLabels{iView} = sprintf('%s <- %s -> %s',vol.axisDirLabels{iView}{2},axisLabel{iView},vol.axisDirLabels{iView}{1});
+      vol.dispAxisLabels{axisNum} = sprintf('%s <- %s -> %s',vol.axisDirLabels{axisNum}{2},axisLabel{axisNum},vol.axisDirLabels{axisNum}{1});
     else
       % and make normal labels
-      vol.dispAxisLabels{iView} = sprintf('%s <- %s -> %s',vol.axisDirLabels{iView}{1},axisLabel{iView},vol.axisDirLabels{iView}{2});
+      vol.dispAxisLabels{axisNum} = sprintf('%s <- %s -> %s',vol.axisDirLabels{axisNum}{1},axisLabel{axisNum},vol.axisDirLabels{axisNum}{2});
     end
   end
 end
@@ -850,7 +862,7 @@ if gSystem{sysNum}.verbose
   end
   
   % if there is a talInfo field, display that
-  if isfield(vol.h,'base') && isfield(vol.h.base,'talInfo')
+  if isfield(vol.h,'base') && isfield(vol.h.base,'talInfo') && ~isempty(vol.h.base.talInfo)
     disp(sprintf('AC: [%s]',mrnum2str(vol.h.base.talInfo.AC,'compact=1','sigfigs=0')));
     disp(sprintf('PC: [%s]',mrnum2str(vol.h.base.talInfo.PC,'compact=1','sigfigs=0')));
     disp(sprintf('SAC: [%s]',mrnum2str(vol.h.base.talInfo.SAC,'compact=1','sigfigs=0')));
