@@ -30,9 +30,9 @@ end
 
 global gSystem;
 
-if isstr(filename)
+if ~(isscalar(filename) && isnumeric(filename))
   % init the system
-  [sysNum otherFilenames] = initSystem(varargin);
+  [sysNum filename otherFilenames] = initSystem(filename,varargin);
 
   % load the volume
   if ~loadVolume(filename,sysNum),closeHandler(sysNum);return,end
@@ -124,7 +124,7 @@ coord = vol.coord;
 while(gSystem{sysNum}.animating)
   % increment coord, go forward for an axis that moves in
   % the positive direction 
-  if vol.axisDir(textNum) == 1
+  if (textNum > 3) || (vol.axisDir(textNum) == 1)
     coord(textNum) = coord(textNum)+1;
     if coord(textNum) > vol.h.dim(textNum)
       coord(textNum) = 1;
@@ -615,31 +615,31 @@ gSystem{sysNum}.n = gSystem{sysNum}.n+1;
 n = gSystem{sysNum}.n;
 
 % set volume number
-gSystem{sysNum}.vols(n).volnum = n;
+vol.volnum = n;
 
 % update the fields in vols
-gSystem{sysNum}.vols(n).data = d;
-gSystem{sysNum}.vols(n).h = h;
+vol.data = d;
+vol.h = h;
 
 % set which figure numbers this volume will display into
-gSystem{sysNum}.vols(n).fig(1:3) = gSystem{sysNum}.fig(1:3);
+vol.fig(1:3) = gSystem{sysNum}.fig(1:3);
 
 % set which subplot
-gSystem{sysNum}.vols(n).subplotNum(1:3) = (1:3)+(n-1)*3;
+vol.subplotNum(1:3) = (1:3)+(n-1)*3;
 
 % compute magnet directions of each axis based on qform and then
 % choose which axis will be displayed in what figure based on this
 % information
 if h.qform_code && ~gSystem{sysNum}.imageOrientation
-  [axisLabels gSystem{sysNum}.vols(n).axisDirLabels gSystem{sysNum}.vols(n).axisMapping gSystem{sysNum}.vols(n).axisDir] = mlrImageGetAxisLabels(h.qform44);
-  gSystem{sysNum}.vols(n).viewDim(1:3) = gSystem{sysNum}.vols(n).axisMapping;
+  [axisLabels vol.axisDirLabels vol.axisMapping vol.axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform44);
+  vol.viewDim(1:3) = vol.axisReverseMapping;
 else
-  gSystem{sysNum}.vols(n).axisDirLabels = [];
+  vol.axisDirLabels = [];
   % default to assuming LPI orientation
-  gSystem{sysNum}.vols(n).axisMapping = [1 2 3];
-  gSystem{sysNum}.vols(n).axisDir = [1 1 1];
+  vol.axisMapping = [1 2 3];
+  vol.axisDir = [1 1 1];
   % no information about what axis is what, so just show each axis in order
-  gSystem{sysNum}.vols(n).viewDim(1:3) = 1:3;
+  vol.viewDim(1:3) = 1:3;
 end
 
 % for convenience set which dimension is x and y for each of the views
@@ -647,91 +647,78 @@ end
 desiredAxis = {[2 3],[1 3],[1 2]};
 for iView = 1:3
   % get what the other axis are
-  otherDims = setdiff(1:3,gSystem{sysNum}.vols(n).viewDim(iView));
-  gSystem{sysNum}.vols(n).xDim(iView) = otherDims(1);
-  gSystem{sysNum}.vols(n).yDim(iView) = otherDims(2);
+  otherDims = setdiff(1:3,vol.viewDim(iView));
+  vol.xDim(iView) = otherDims(1);
+  vol.yDim(iView) = otherDims(2);
   % next figure out the apporpriate transpose and flips needed to
   % show the images in standard LPI (i.e. the first view will
-  % be sagittal with nose to right, second view willbe coronal and
+  % be sagittal with nose to right, second view will be coronal and
   % third view will be axial) all with left is left, right is right
-  if gSystem{sysNum}.vols(n).axisMapping(otherDims(1)) == desiredAxis{iView}(1)
+  if vol.axisMapping(otherDims(1)) == desiredAxis{iView}(1)
     % transpose when the desired axis is the same (since
     % images are displayed as y/x by matlab)
-    gSystem{sysNum}.vols(n).transpose(iView) = 1;
+    vol.transpose(iView) = 1;
   else
-    gSystem{sysNum}.vols(n).transpose(iView) = 0;
+    vol.transpose(iView) = 0;
   end
   % now make axis labels that can be used for displaying. Note that
   % if the axis are flipped, dispSlice will unflip them so we
   % have to reverse the order of the labels provided by mlrImageGetAxisLabels
   axisLabel = {'X','Y','Z'};
-  if isempty(gSystem{sysNum}.vols(n).axisDirLabels)
+  if isempty(vol.axisDirLabels)
     % no transform, so just use simple X,Y,Z labels
-    gSystem{sysNum}.vols(n).dispAxisLabels{iView} = axisLabel{iView};
+    vol.dispAxisLabels{iView} = axisLabel{iView};
   else
     % check axis direction
-    if gSystem{sysNum}.vols(n).axisDir == -1
+    if vol.axisDir == -1
       % and make reversed labels
-      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisDirLabels{iView}{2},axisLabel{iView},gSystem{sysNum}.vols(n).axisDirLabels{iView}{1});
+      vol.dispAxisLabels{iView} = sprintf('%s <- %s -> %s',vol.axisDirLabels{iView}{2},axisLabel{iView},vol.axisDirLabels{iView}{1});
     else
       % and make normal labels
-      gSystem{sysNum}.vols(n).dispAxisLabels{iView} = sprintf('%s <- %s -> %s',gSystem{sysNum}.vols(n).axisDirLabels{iView}{1},axisLabel{iView},gSystem{sysNum}.vols(n).axisDirLabels{iView}{2});
+      vol.dispAxisLabels{iView} = sprintf('%s <- %s -> %s',vol.axisDirLabels{iView}{1},axisLabel{iView},vol.axisDirLabels{iView}{2});
     end
   end
 end
 
-% update the coordinate (start displaying in middle of volume)
+% set the coordinate (start displaying in middle of volume)
 coord = round(h.dim/2);
 % nDims hard coded to 5 here
 coord(end+1:5) = 1;
-setVolCoord(sysNum,n,coord);
-
-% now this sets the indexes from the volume for which the
-% image will be displayed
-for iView = 1:3
-  for jAxis = 1:3
-    if jAxis ~= gSystem{sysNum}.vols(n).viewDim(iView)
-      gSystem{sysNum}.vols(n).viewIndexes{iView,jAxis} = 1:gSystem{sysNum}.vols(n).h.dim(jAxis);
-    else
-      gSystem{sysNum}.vols(n).viewIndexes{iView,jAxis} = gSystem{sysNum}.vols(n).coord(jAxis);
-    end
-  end
-end
 
 % set the current coordinates for the first time
-gSystem{sysNum}.vols(n).curCoord = [nan nan nan];
+vol.curCoord = [nan nan nan];
 
 % print out the header of the image
-dispHeaderInfo(sysNum,gSystem{sysNum}.vols(n));
+dispHeaderInfo(sysNum,vol);
 
 % see what other transforms we have
-gSystem{sysNum}.vols(n).altXforms.shortNames = {};
-gSystem{sysNum}.vols(n).altXforms.names = {};
-gSystem{sysNum}.vols(n).altXforms.xforms = {};
-gSystem{sysNum}.vols(n).altXforms.n = 0;
-gSystem{sysNum}.vols(n).altXforms.currentXform = [];
+vol.altXforms.shortNames = {};
+vol.altXforms.names = {};
+vol.altXforms.xforms = {};
+vol.altXforms.n = 0;
+vol.altXforms.currentXform = [];
 if ~isempty(h.vol2tal)
-  gSystem{sysNum}.vols(n).altXforms.names{end+1} = 'Talairach';
-  gSystem{sysNum}.vols(n).altXforms.shortNames{end+1} = 'Tal';
-  gSystem{sysNum}.vols(n).altXforms.xforms{end+1} = h.vol2tal;
-  gSystem{sysNum}.vols(n).altXforms.n = gSystem{sysNum}.vols(n).altXforms.n+1;
+  vol.altXforms.names{end+1} = 'Talairach';
+  vol.altXforms.shortNames{end+1} = 'Tal';
+  vol.altXforms.xforms{end+1} = h.vol2tal;
+  vol.altXforms.n = vol.altXforms.n+1;
 end
 if ~isempty(h.vol2mag)
-  gSystem{sysNum}.vols(n).altXforms.names{end+1} = 'Canonical';
-  gSystem{sysNum}.vols(n).altXforms.shortNames{end+1} = 'Base';
-  gSystem{sysNum}.vols(n).altXforms.xforms{end+1} = h.vol2mag;
-  gSystem{sysNum}.vols(n).altXforms.n = gSystem{sysNum}.vols(n).altXforms.n+1;
+  vol.altXforms.names{end+1} = 'Canonical';
+  vol.altXforms.shortNames{end+1} = 'Base';
+  vol.altXforms.xforms{end+1} = h.vol2mag;
+  vol.altXforms.n = vol.altXforms.n+1;
 end
 if h.qform_code
-  gSystem{sysNum}.vols(n).altXforms.names{end+1} = 'Qform';
-  gSystem{sysNum}.vols(n).altXforms.shortNames{end+1} = 'Base';
-  gSystem{sysNum}.vols(n).altXforms.xforms{end+1} = h.qform44;
-  gSystem{sysNum}.vols(n).altXforms.n = gSystem{sysNum}.vols(n).altXforms.n+1;
+  vol.altXforms.names{end+1} = 'Qform';
+  vol.altXforms.shortNames{end+1} = 'Base';
+  vol.altXforms.xforms{end+1} = h.qform44;
+  vol.altXforms.n = vol.altXforms.n+1;
 end
 
 % set the text boxes
 if n == 1
-  names = {'X','Y','Z','Slice','Receiver'};
+  names = {'X','Y','Z','Volume','Receiver'};
   for i = 1:h.nDim
     % make the inc/dec textboxes
     gSystem{sysNum}.hCoordTextbox(i) = makeTextboxIncDec(sysNum,coord(i),i,1,i);
@@ -749,9 +736,9 @@ if n == 1
   gSystem{sysNum}.hValTextbox(1) = makeTextbox(sysNum,'',1,h.nDim+1);
 
   % make the extra coordinates text boxes
-  if gSystem{sysNum}.vols(n).altXforms.n > 0
-    gSystem{sysNum}.vols(n).altXforms.currentXform = 1;
-    shortName = gSystem{sysNum}.vols(n).altXforms.shortNames{gSystem{sysNum}.vols(n).altXforms.currentXform};
+  if vol.altXforms.n > 0
+    vol.altXforms.currentXform = 1;
+    shortName = vol.altXforms.shortNames{vol.altXforms.currentXform};
     gSystem{sysNum}.hExtraCoordTitle(1) = makeTextbox(sysNum,sprintf('%s X',shortName),2,h.nDim+2);
     gSystem{sysNum}.hExtraCoordTextbox(1) = makeTextboxIncDec(sysNum,'',-1,1,h.nDim+2);
     gSystem{sysNum}.hExtraCoordTitle(2) = makeTextbox(sysNum,sprintf('%s Y',shortName),2,h.nDim+3);
@@ -765,11 +752,11 @@ end
 if n > 1
   makeButton(sysNum,'Controls',-2,4,1);
   % mark that the volume display is "tethered" to the first volume
-  gSystem{sysNum}.vols(n).tethered = 1;
+  vol.tethered = 1;
   % make a cache for storing images
-  gSystem{sysNum}.vols(n).c = mrCache('init',2*max(gSystem{sysNum}.vols(n).h.dim(1:3)));
+  vol.c = mrCache('init',2*max(vol.h.dim(1:3)));
   % set the initial transform
-  gSystem{sysNum}.vols(n).xform = getVol2vol(sysNum,gSystem{sysNum}.vols(n),gSystem{sysNum}.vols(1));
+  vol.xform = getVol2vol(sysNum,vol,gSystem{sysNum}.vols(1));
   % setup subplotRows and subplotCols
   gSystem{sysNum}.subplotRows = [n n n];
   gSystem{sysNum}.subplotCols = [3 3 3];
@@ -785,10 +772,16 @@ if n > 1
 %  gSystem{sysNum}.displayControls = true;
 else
   % first volume is displayed independently
-  gSystem{sysNum}.vols(n).tethered = 0;
+  vol.tethered = 0;
   % make close button
   makeButton(sysNum,'Close',-1,3,1);
 end
+
+% set the vol
+gSystem{sysNum}.vols(n) = vol;
+
+% now set the coordinate in this created volume
+setVolCoord(sysNum,n,coord);
 
 tf = true;
 
@@ -986,7 +979,7 @@ end
 %%%%%%%%%%%%%%%%%%%%
 %    initSystem    %
 %%%%%%%%%%%%%%%%%%%%
-function [sysNum otherFilenames] = initSystem(args)
+function [sysNum filename otherFilenames] = initSystem(filename,args)
 
 global gSystem;
 if isempty(gSystem)
@@ -1012,12 +1005,16 @@ end
 gSystem{sysNum}.n = 0;
 
 % parse args here when we have settings
-imageOrientation = [];verbose = [];
-getArgs(otherArgs,{'imageOrientation=0','verbose=1'});
+imageOrientation = [];verbose = [];groupNum = [];scanNum = [];
+getArgs(otherArgs,{'imageOrientation=0','verbose=1','groupNum=1','scanNum=1'});
 gSystem{sysNum}.imageOrientation = imageOrientation;
 gSystem{sysNum}.verbose = verbose;
 
-
+% if filename passed in is a view, then get the associated filename
+if isview(filename)
+  filename = viewGet(filename,'tseriesPathStr',scanNum,groupNum);
+end
+  
 % defaults for button sizes
 gSystem{sysNum}.buttonWidth = 100;
 gSystem{sysNum}.buttonWidthMargin = 20;
