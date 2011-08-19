@@ -619,6 +619,13 @@ global gSystem;
 [d h] = mlrImageLoad(filename);
 if isempty(d),return,end
 
+% make 2D images into nominal 3D
+if h.nDim==2
+  h.nDim = 3;
+  h.dim(3) = 1;
+  h.pixdim(3)  = 1;
+end
+
 % updated number of volumes
 gSystem{sysNum}.n = gSystem{sysNum}.n+1;
 n = gSystem{sysNum}.n;
@@ -709,10 +716,10 @@ vol.altXforms.names = {};
 vol.altXforms.xforms = {};
 vol.altXforms.n = 0;
 vol.altXforms.currentXform = [];
-if ~isempty(h.vol2tal)
+if ~isempty(h.vol2tal) && ~isempty(h.vol2mag) && (h.sform_code == 1)
   vol.altXforms.names{end+1} = 'Talairach';
   vol.altXforms.shortNames{end+1} = 'Tal';
-  vol.altXforms.xforms{end+1} = h.vol2tal;
+  vol.altXforms.xforms{end+1} = h.vol2tal * inv(h.vol2mag) * h.sform44 * shiftOriginXform;
   vol.altXforms.n = vol.altXforms.n+1;
 end
 if ~isempty(h.vol2mag)
