@@ -39,8 +39,8 @@ if isnumeric(filename)
 end
 
 % check input arguments
-groupNum = [];scanNum = 1;
-getArgs(varargin,{'groupNum=1','scanNum=1'});
+groupNum = [];scanNum = [];verbose = [];
+getArgs(varargin,{'groupNum=1','scanNum=1','verbose=0'});
 
 % if the passed in filename is a view, then load the appropriate group and scan
 if isview(filename)
@@ -77,7 +77,7 @@ switch lower(getext(filename))
   case {'sdt','spr','edt','epr'}
     header = mlrImageHeaderLoadSDT(filename,header);
   case {'fid'}
-    header = mlrImageHeaderLoadFid(filename,header);
+    header = mlrImageHeaderLoadFid(filename,header,verbose);
  otherwise
     disp(sprintf('(mlrImageHeaderLoad) Unknown image header type: %s',getext(filename)));
     return
@@ -111,10 +111,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadFid    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function header = mlrImageHeaderLoadFid(filename,header)
+function header = mlrImageHeaderLoadFid(filename,header,verbose)
 
 % read the nifti header
-nifti = fid2niftihdr(filename);
+nifti = fid2niftihdr(filename,verbose);
 
 % set some info
 header.type = 'nifti';
