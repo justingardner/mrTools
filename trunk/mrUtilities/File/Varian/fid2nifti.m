@@ -168,12 +168,14 @@ for i = 1:length(fidnames)
   
   % reorder slices if necessary. note that this is here for fixing interleaved slices,
   % but also reorders slices for 3d images (which go in descending rather than ascending
-  % order of pss)
-  [pss sliceIndex] = sort(fid.info.procpar.pss);
-  if ~isequal(sliceIndex,1:size(fid.data,3))
-    fid.data = fid.data(:,:,sliceIndex,:);
+  % order of pss). This appears not necessary for vnmrs console, so skip
+  if ~(strcmp(fid.info.console,'vnmrs') && fid.info.acq3d)
+    [pss sliceIndex] = sort(fid.info.procpar.pss);
+    if ~isequal(sliceIndex,1:size(fid.data,3))
+      fid.data = fid.data(:,:,sliceIndex,:);
+    end
   end
-
+  
   % remove any reference volume
   if fid.info.nRefVolumes
     if verbose
@@ -187,7 +189,7 @@ for i = 1:length(fidnames)
 
   % check the dimensions of the data versus the dimensions in the header
   if ~isequal([size(fid.data,1) size(fid.data,2) size(fid.data,3)],hdr.dim(2:4)')
-    disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)),mynum2str(size(fid.data))));
+    disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)'),mynum2str(size(fid.data))));
   end
   
   % write the file, but only if we aren't taking an output argument
