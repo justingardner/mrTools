@@ -11,6 +11,8 @@
 %             v = newView;
 %             mlrImageLoad(v,'groupNum=2','scanNum=3');
 %
+%             To select a canonical (through dialog box) from the volumeDirecotry
+%             mlrImageHeaderLoad canonical
 function [data header] = mlrImageLoad(filename,varargin)
 
 % default return values
@@ -22,9 +24,16 @@ if nargin < 1
   return
 end
 
-% set filenames
+% set extension to default if not specified
+% for the special name 'canonical' bring up
+% a dialog box to get name from voldir
 if isstr(filename) && isempty(getext(filename))
   filename = setext(filename,mrGetPref('niftiFileExtension'));
+  % get from canonical directory
+  if any(strcmp({'canonical','volume','volumedirectory','volumedir','voldir'},lower(stripext(filename)))) && ~isfile(filename)
+    filename = getPathStrDialog(mrGetPref('volumeDirectory'),'Choose a volume',{'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)'},'off');
+    if isempty(filename),return,end
+  end
 end
 
 % load the header first
