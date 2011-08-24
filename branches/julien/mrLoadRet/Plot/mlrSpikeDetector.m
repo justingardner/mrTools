@@ -22,19 +22,20 @@ end
 % get optional arguments
 eval(evalargs(varargin));
 
-if exist('criterion')~=1,criterion = 10;,end
+if exist('criterion')~=1,criterion = 4;,end
 if exist('dispfigs')~=1,dispfigs = 1;,end
+if exist('recompute')~=1,recompute = 0;,end
 
 % try to load spikeinfo from view
 spikeinfo = viewGet(v,'spikeinfo',scanNum,groupNum);
 
-if isempty(spikeinfo)
+if isempty(spikeinfo) || recompute
   % ask user how to recalculate
-  paramsInfo{1} = {'criterion',criterion,'incdec=[-1 1]','minmax=[0 inf]','Criterion for spike detection. Spike detection works by computing the mean and standard deviation of each fourier component of the images across time. If a fourier component on any single volume exceeds criterion standard deviations of the mean, it is considered to be a spike. Default value is 10. i.e. A fourier component has to be 10 standard deviations greater from the mean to be considered to be a spike.'};
+  paramsInfo{1} = {'criterion',criterion,'incdec=[-1 1]','minmax=[0 inf]','Criterion for spike detection. Spike detection works by computing the mean and standard deviation of each fourier component of the images across time. If a fourier component on any single volume exceeds criterion standard deviations of the mean, it is considered to be a spike. Default value is 4. i.e. A fourier component has to be 4 standard deviations greater from the mean to be considered to be a spike. This is a low threshold, but can be changed later on'};
   paramsInfo{2} = {'useMedian', 0, 'type=checkbox', 'Use the median and interquartile range to calculate the center and spread of the data.  This is useful if the data are very noisy.'};
   paramsInfo = mrParamsDialogSelectScans(v,groupNum,paramsInfo,scanNum);
   params = mrParamsDialog(paramsInfo,'mlrSpikeDetector params');
-  if isempty(params),return,end
+  if isempty(params)||~any(params.include),return,end
   % go through and recalculate
   scanNums = find(params.include);
   for s = scanNums
@@ -43,12 +44,16 @@ if isempty(spikeinfo)
   end
   saveSession;
   % now get back the one we want
+  if ~ismember(scanNum,scanNums)
+    scanNum = scanNums(1);
+  end
   spikeinfo = viewGet(v,'spikeinfo',scanNum,groupNum);
 end
 if dispfigs
   selectGraphWin;
-  spikeinfo = spikePlot(v,spikeinfo);
-  spikePlotController(v,spikeinfo);
+  spikeinfo.v = v;
+  spikeinfo = spikePlot(spikeinfo);
+  spikePlotController(spikeinfo);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -132,7 +137,7 @@ disppercent(inf);
 
 % now subtract off mean and see
 % if there are any points above std criterion
-slice = [];time = [];numspikes = [];spikelocs = {};
+slice = [];time = [];numspikes = [];spikelocs = {};meanZvalue=[];
 disppercent(-inf,'(mlrSpikeDetector) Looking for spikes');
 for i = 1:size(data,4)
   disppercent(i/spikeinfo.dim(4));
@@ -147,13 +152,17 @@ for i = 1:size(data,4)
       spikelocs{end+1}.x = spikex;
       spikelocs{end}.y = spikey;
       spikelocs{end}.linear = find(squeeze(data(:,:,slicenum,i)) > params.criterion*squeeze(stddata(:,:,slicenum)));
+      for iSpike = 1:length(spikex)
+        spikelocs{end}.zValue(iSpike) =  data(spikex(iSpike),spikey(iSpike),slicenum,i)/squeeze(stddata(spikex(iSpike),spikey(iSpike),slicenum));
+      end
+      meanZvalue(end+1) = mean(spikelocs{end}.zValue);
     end
   end
 end
 disppercent(inf);
 if length(slice)
   disp(sprintf('======================================================'));
-  disp(sprintf('(mlrSpikeDetector) Found %i spikes in scan %i, group %i',length(slice),scanNum,groupNum));
+  disp(sprintf('(mlrSpikeDetector) Found %i spikes at z>%.2f in scan %i, group %i',length(slice),params.criterion,scanNum,groupNum));
   disp(sprintf('======================================================'));
 else
   disp(sprintf('(mlrSpikeDetector) No spikes in scan %i, group %i',scanNum,groupNum));
@@ -171,55 +180,68 @@ spikeinfo.numspikes = numspikes;
 spikeinfo.spikelocs = spikelocs;
 spikeinfo.criterion = params.criterion;
 spikeinfo.sliceMeans = single(sliceMeans);
+spikeinfo.meanZvalue = meanZvalue;
+spikeinfo.maxZvalue = [zeros(spikeinfo.dim(3),startframe-1) permute(max(max(data./repmat(stddata,[1 1 1 size(data,4)]),[],1),[],2),[3 4 1 2])];
 
 %%%%%%%%%%%%%%%%%%%
 %%   spikePlot   %%
 %%%%%%%%%%%%%%%%%%%
-function spikeinfo = spikePlot(v,spikeinfo)
+function hFigure = spikePlot(spikeinfo)
 
 if isempty(spikeinfo)
   return
 end
 
-% plot the slice means
-selectGraphWin(0,'replace');
-coloroffset = round(rand*10);
-if spikeinfo.n == 0
-  nrows = 1;ncols = 1;
-  plot1 = 1;
+if fieldIsNotDefined(spikeinfo,'currentCriterion')
+  spikeinfo.currentCriterion=spikeinfo.criterion;
 else
-  nrows = 2;ncols = 2;
-  plot1 = 1:2;
+  spikeinfo.currentCriterion=max(spikeinfo.criterion,spikeinfo.currentCriterion);
 end
-for slicenum = 1:spikeinfo.dim(3)
-  subplot(nrows,ncols,plot1)
-  plot(spikeinfo.sliceMeans(slicenum,:),getcolor(slicenum+coloroffset,'.-'));
-  hold on
-end
-title(sprintf('%s:%i %s (%s)\nSpikes found=%i (criterion=%0.1f)',viewGet(v,'groupName',spikeinfo.groupNum),spikeinfo.scanNum,viewGet(v,'description',spikeinfo.scanNum,spikeinfo.groupNum),spikeinfo.filename,spikeinfo.n,spikeinfo.criterion),'interpreter','none');
+  
+% plot the slice means
+hFigure = selectGraphWin(0,'replace');
+colorOrder = jet(spikeinfo.dim(3));
+set(hFigure,'DefaultAxesColorOrder',colorOrder,'name',...
+  sprintf('Spike Detector - %s:%i %s (%s)',...
+           viewGet(spikeinfo.v,'groupName',spikeinfo.groupNum),spikeinfo.scanNum,...
+           viewGet(spikeinfo.v,'description',spikeinfo.scanNum,spikeinfo.groupNum),...
+           spikeinfo.filename));
 
-% plot lines where artificats may be occurring
-ytop = 90;
-ymid = 92.5;
-ybot = 95;
+% if spikeinfo.n == 0
+%   spikeinfo.nrows = 4;
+%   spikeinfo.ncols = 3;
+%   plot1 = 1:3;
+%   plot2 = [4:12];
+%   
+% else
+  spikeinfo.nrows = 4;
+  spikeinfo.ncols = 5;
+  plot1 = 1:3;
+  plot2 = [6:8,11:13,16:18];
+  spikeinfo.imagePlot = subplot(spikeinfo.nrows,spikeinfo.ncols,[4 5 9 10]);
+  spikeinfo.fftPlot = subplot(spikeinfo.nrows,spikeinfo.ncols,[14 15 19 20]);
+% end
+
+spikeinfo.hTseries = subplot(spikeinfo.nrows,spikeinfo.ncols,plot1);
+hold on
 for slicenum = 1:spikeinfo.dim(3)
-  % plot lines where there is an artifact
-  thisslice = find(spikeinfo.slice == slicenum);
-  if ~isempty(thisslice)
-    for i = 1:length(thisslice)
-      spikeinfo.hSpike(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ybot],'Color',getcolor(slicenum+coloroffset));
-      spikeinfo.hCursor(thisslice(i)) = plot([spikeinfo.time(thisslice(i)) spikeinfo.time(thisslice(i))],[ytop ymid],'k','linewidth',3,'visible','off');
-    end
-  end
-  drawnow;
+  plot(spikeinfo.sliceMeans(slicenum,:),'.-','color',colorOrder(slicenum,:));
 end
+set(spikeinfo.hTseries,'xLim',[0 spikeinfo.dim(4)]);
+spikeinfo.tSeriesYlim = get(spikeinfo.hTseries,'Ylim');
+spikeinfo.hCursorTseries = plot(spikeinfo.hTseries,[1 1],spikeinfo.tSeriesYlim,'k','visible','off');
+%title(sprintf('%s:%i %s (%s)\nSpikes found=%i (criterion=%0.1f)',viewGet(spikeinfo.v,'groupName',spikeinfo.groupNum),spikeinfo.scanNum,viewGet(spikeinfo.v,'description',spikeinfo.scanNum,spikeinfo.groupNum),spikeinfo.filename,spikeinfo.n,spikeinfo.criterion),'interpreter','none');
 
 % print out slice labels
 xmax = min(get(gca,'XTick'));
 ymax = max(get(gca,'yTick'));
-for slicenum = 1:spikeinfo.dim(3)
-  htext = text(xmax,ymax,sprintf('%i',slicenum));
-  set(htext,'Color',getcolor(slicenum+coloroffset));
+for slicenum = 0:spikeinfo.dim(3)
+  if slicenum==0
+    htext = text(xmax,ymax,'Slices:');
+  else
+    htext = text(xmax,ymax,sprintf('%i',slicenum));
+    set(htext,'Color',colorOrder(slicenum,:));
+  end
   position = get(htext,'Position');
   textextent = get(htext,'Extent');
   position(2) = position(2)-textextent(4);
@@ -227,124 +249,328 @@ for slicenum = 1:spikeinfo.dim(3)
   set(htext,'Position',position);
   xmax = xmax+textextent(3);
 end
+ylabel(spikeinfo.hTseries,{'Mean over each slice','(% signal change)'});
 
-xlabel(sprintf('Volume number\nNote that spike detection is done on each FFT component not on the mean of the slice.'));
-ylabel('Mean over each slice (% signal change)');
-zoom on
+% plot Z value Matrix and Spikes
+spikeinfo.hSpikeMatrix = subplot(spikeinfo.nrows,spikeinfo.ncols,plot2);
+title(spikeinfo.hSpikeMatrix,'Spike matrix: Use mouse or arrow keys to move the cursor and display corresponding image, FFT and spikes');
+hold on
+if isfield(spikeinfo,'maxZvalue')
+  imagesc(spikeinfo.maxZvalue);
+else
+  imagesc(zeros(spikeinfo.dim(3),spikeinfo.dim(4)));
+end
+colormap('gray');
+caxis([0 8]);
+set(spikeinfo.hSpikeMatrix,'xLim',[0.5 spikeinfo.dim(4)+.5],'yLim',[0.5 spikeinfo.dim(3)+.5]);
+xlabel(sprintf('Frame number'));
+ylabel('Slice number');
+h = colorbar('location','southoutside');
+set(get(h,'XLabel'),'string','Max FFT Z value in Slice/Frame')
 
-% display images with possible artifacts
-spikePlotImage(v,spikeinfo,1);
-drawnow
+if ~spikeinfo.n
+    spikeinfo.currentSpike =0;
+elseif fieldIsNotDefined(spikeinfo,'currentSpike')
+    spikeinfo.currentSpike =1;
+end
+if fieldIsNotDefined(spikeinfo,'currentFrame') || fieldIsNotDefined(spikeinfo,'currentSlice')
+  if spikeinfo.currentSpike
+    spikeinfo.currentFrame =spikeinfo.time(spikeinfo.currentSpike);
+    spikeinfo.currentSlice =spikeinfo.slice(spikeinfo.currentSpike);
+  else
+    spikeinfo.currentFrame =round(spikeinfo.dim(4)/2);
+    spikeinfo.currentSlice =round(spikeinfo.dim(3)/2);
+  end    
+end
+
+set(hFigure,'userdata',spikeinfo)
+
+% display all spikes
+setCriterion(hFigure,spikeinfo.currentCriterion);
+
+set(hFigure,'WindowButtonDownFcn',{@MouseDownCallback});
+set(hFigure,'WindowButtonMotionFcn',{@MouseMotionCallback});
+set(hFigure,'KeyPressFcn',{@KeypressCallback});
+set(hFigure,'interruptible','off')
+set(hFigure,'BusyAction','cancel');
+
+% set(hFigure,'WindowButtonUpFcn',);
+%drawnow
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   MouseDownCallback     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function MouseDownCallback(hFigure,eventData)
+
+spikeinfo = get(hFigure,'userdata');
+
+spikeMatrixCoords = round(get(spikeinfo.hSpikeMatrix,'CurrentPoint'));
+if all(spikeMatrixCoords(1,[1 2])>0 & spikeMatrixCoords(1,[1 2])<=spikeinfo.dim([4 3]))
+  spikeinfo.currentSlice = spikeMatrixCoords(1,2);
+  spikeinfo.currentFrame = spikeMatrixCoords(1,1);
+  set(hFigure,'userdata',spikeinfo)
+  spikePlotImage(hFigure,0);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   MouseMotionCallback     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function MouseMotionCallback(hFigure,eventData)
+
+spikeinfo = get(hFigure,'userdata');
+
+spikeMatrixCoords = round(get(spikeinfo.hSpikeMatrix,'CurrentPoint'));
+tSeriesCoords = round(get(spikeinfo.hTseries,'CurrentPoint'));
+if ishandle(spikeinfo.hCursorTseries)
+  delete(spikeinfo.hCursorTseries);
+end
+if all(spikeMatrixCoords(1,[1 2])>0 & spikeMatrixCoords(1,[1 2])<=spikeinfo.dim([4 3])) ||...
+  all(tSeriesCoords(1,[1 2])>[0 spikeinfo.tSeriesYlim(1)] & tSeriesCoords(1,[1 2])<=[spikeinfo.dim(4) spikeinfo.tSeriesYlim(2)])
+  spikeinfo.hCursorTseries = plot(spikeinfo.hTseries,repmat(tSeriesCoords(1,1),1,2),spikeinfo.tSeriesYlim,'k');
+end
+
+set(hFigure,'userdata',spikeinfo)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   KeypressCallback     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function KeypressCallback(hFigure,eventData)
+
+spikeinfo = get(hFigure,'userdata');
+switch(double(get(hFigure,'CurrentCharacter')))
+  case 28 %left arrow
+    spikeinfo.currentFrame = max(spikeinfo.currentFrame-1,1);
+  case 29 %right arrow
+    spikeinfo.currentFrame = min(spikeinfo.currentFrame+1,spikeinfo.dim(4));
+  case 30 %up arrow
+    spikeinfo.currentSlice = min(spikeinfo.currentSlice+1,spikeinfo.dim(3));
+  case 31 %down arrow
+    spikeinfo.currentSlice = max(spikeinfo.currentSlice-1,1);
+  otherwise
+    return;
+end
+set(hFigure,'userdata',spikeinfo)
+   
+spikePlotImage(hFigure,0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotController   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function spikePlotController(v,spikeinfo)
+function spikePlotController(hFigure)
+
+spikeinfo = get(hFigure,'userdata');
 
 % check all scans that have spikeinfo
 spikeInfoScans = {};
-for i = 1:viewGet(v,'nScans',spikeinfo.groupNum);
-  thisSpikeinfo = viewGet(v,'spikeinfo',i,spikeinfo.groupNum);
+for i = 1:viewGet(spikeinfo.v,'nScans',spikeinfo.groupNum);
+  if i==spikeinfo.scanNum %for the current scan, get the current spikeinfo, not the one from the view
+    thisSpikeinfo=spikeinfo;
+  else
+    thisSpikeinfo = viewGet(spikeinfo.v,'spikeinfo',i,spikeinfo.groupNum);
+  end
   if ~isempty(thisSpikeinfo);
-    spikeInfoScans{end+1} = sprintf('%i: %s (%i spikes)',i,viewGet(v,'description',i,spikeinfo.groupNum),thisSpikeinfo.n);
+    if fieldIsNotDefined(thisSpikeinfo,'currentCriterion')
+      criterion=thisSpikeinfo.criterion;
+      spikeNumber = thisSpikeinfo.n;
+    else
+      criterion=thisSpikeinfo.currentCriterion;
+      spikeNumber = thisSpikeinfo.currentSpikeNumber;
+    end
+    spikeInfoScans{end+1} = sprintf('%i: %s (%i spikes at z>%.2f)',...
+      i,viewGet(spikeinfo.v,'description',i,thisSpikeinfo.groupNum),...
+      spikeNumber,criterion);
+    if i==spikeinfo.scanNum
+      thisSpikeInfoScans = spikeInfoScans{end};
+    end
   end
 end
-spikeInfoScans = putOnTopOfList(sprintf('%i: %s (%i spikes)',spikeinfo.scanNum,viewGet(v,'description',spikeinfo.scanNum,spikeinfo.groupNum),spikeinfo.n),spikeInfoScans);
+spikeInfoScans = putOnTopOfList(thisSpikeInfoScans,spikeInfoScans);
 
 % now put up a control dialog
-spikeinfo.v = v;
 paramsInfo{1}  = {'scanNum',spikeInfoScans,'Scan number to view'};
-paramsInfo{end+1} = {'recompute',[],'type=pushbutton','buttonString=Recompute spike detection','callback',@spikePlotRecomputeCallback,'callbackArg',spikeinfo,'Recomputer spike detection'};
+paramsInfo{end+1} = {'recompute',[],'type=pushbutton','buttonString=Recompute spike detection','callback',@spikePlotRecomputeCallback,'callbackArg',hFigure,'Recomputer spike detection'};
 if spikeinfo.n > 0
   paramsInfo{end+1} = {'spikeNum',1,sprintf('minmax=[1 %i]',spikeinfo.n),'incdec=[-1 1]','round=1','Which spike to display'};
+  paramsInfo{end+1} = {'criterion',max(spikeinfo.criterion,spikeinfo.currentCriterion),sprintf('minmax=[%i inf]',spikeinfo.criterion),'incdec=[-.5 .5]','To change the value of the criterion used (must be > criterion used for computing the detection)'};
 else
   paramsInfo{end+1} = {'noSpikes','No spikes found','editable=0','type=string','No spikes found in scan'};
 end  
-mrParamsDialog(paramsInfo,'mlrSpikeDetector',[],@spikePlotCallback,spikeinfo,@spikePlotOKCallback);
+mrParamsDialog(paramsInfo,'mlrSpikeDetector',[],@spikePlotCallback,hFigure,{@spikePlotOKCallback,hFigure});
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-function spikePlotCallback(params,spikeinfo)
+function spikePlotCallback(params,hFigure)
+
+spikeinfo = get(hFigure,'userdata');
 
 % get the scanNum
 scanNum = str2num(strtok(params.scanNum,':'));
 
 if scanNum ~= spikeinfo.scanNum
-  % load up that spike info
+  %keep view but remove it from the current spikeinfo
   v = spikeinfo.v;
+  spikeinfo = rmfield(spikeinfo,'v');
+  %save the current spikeinfo
+  v = viewSet(v,'spikeinfo',spikeinfo,spikeinfo.scanNum,spikeinfo.groupNum);
+  % load up thhe new spike info
   spikeinfo = viewGet(v,'spikeinfo',scanNum,spikeinfo.groupNum);
-  spikeinfo=spikePlot(v,spikeinfo);
-  spikePlotController(v,spikeinfo);
-elseif isfield(params,'spikeNum')
-  selectGraphWin(1);hold on
-  subplot(2,2,3);cla;subplot(2,2,4);cla;
-  spikePlotImage(spikeinfo.v,spikeinfo,params.spikeNum);
+  spikeinfo.v=v;
+  hFigure=spikePlot(spikeinfo);
+  spikePlotController(hFigure);
+else
+  if isfield(params,'criterion') && params.criterion~=spikeinfo.currentCriterion
+    setCriterion(hFigure,params.criterion);
+    %change scan description
+    %relaunch spikePlotcontroller (cannot use mrParamsSet to change the string of a popupmenu...)
+    spikePlotController(hFigure);
+  elseif isfield(params,'spikeNum') && params.spikeNum~=spikeinfo.currentSpike
+    spikePlotImage(hFigure,params.spikeNum);
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotOKCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function spikePlotOKCallback
+function spikePlotOKCallback(hFigure)
 
+spikeinfo = get(hFigure,'userdata');
+
+%keep view but remove it from the current spikeinfo
+v = spikeinfo.v;
+spikeinfo = rmfield(spikeinfo,'v');
+%save the current spikeinfo
+v = viewSet(v,'spikeinfo',spikeinfo,spikeinfo.scanNum,spikeinfo.groupNum);
 h = selectGraphWin(0,'replace');
 closeGraphWin(h);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-function val = spikePlotRecomputeCallback(spikeinfo)
+function val = spikePlotRecomputeCallback(hFigure)
 
 val = [];
+spikeinfo = get(hFigure,'userdata');
+%keep view but remove it from the current spikeinfo
+v = spikeinfo.v;
+spikeinfo = rmfield(spikeinfo,'v');
+%save the current spikeinfo
+v = viewSet(v,'spikeinfo',spikeinfo,spikeinfo.scanNum,spikeinfo.groupNum);
 close;
 h = selectGraphWin(0,'replace');
 closeGraphWin(h);
 
-spikeinfo.v = viewSet(spikeinfo.v,'spikeinfo',[],spikeinfo.scanNum,spikeinfo.groupNum);
-mlrSpikeDetector(spikeinfo.v,spikeinfo.scanNum,spikeinfo.groupNum);
+mlrSpikeDetector(v,spikeinfo.scanNum,spikeinfo.groupNum,'recompute=1');
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%   setCriterion   %%
+%%%%%%%%%%%%%%%%%%%%%%%%
+function setCriterion(hFigure,thisCriterion)
+
+spikeinfo = get(hFigure,'userdata');
+
+spikeinfo.currentCriterion = thisCriterion;
+
+if isfield(spikeinfo,'hBox') && all(ishandle(spikeinfo.hBox(:)))
+  delete(spikeinfo.hBox);
+  spikeinfo = rmfield(spikeinfo,'hBox');
+end
+
+%draw a contour around each slice/frame that contains spike over the current criterion
+boxXcoords = [-.5 .5;-.5 .5;-.5 -.5;.5 .5];%;-.5 .5];
+boxYcoords = [-.5 -.5;.5 .5;-.5 .5;-.5 .5];%;.5 -.5];
+cSpike=0;
+if spikeinfo.n && isfield(spikeinfo.spikelocs{1},'zValue')
+  for iSpike = 1:spikeinfo.n
+    if any(spikeinfo.spikelocs{iSpike}.zValue>thisCriterion)
+      cSpike = cSpike+1;
+      spikeinfo.hBox(cSpike,:) = plot(spikeinfo.hSpikeMatrix,spikeinfo.time(iSpike)+boxXcoords,spikeinfo.slice(iSpike)+boxYcoords,'g');
+    end
+  end
+else  %for an old spikeinfo structure, we don't have the zValue info
+  mrWarnDlg('(mlrSpikeDetector:setCriterion) There is no zValue information in spikeinfo, please recompute spike detection for this scan.');
+  for cSpike = 1:spikeinfo.n
+      spikeinfo.hBox(cSpike,:) = plot(spikeinfo.hSpikeMatrix,spikeinfo.time(cSpike)+boxXcoords,spikeinfo.slice(cSpike)+boxYcoords,'g');
+  end
+end
+
+spikeinfo.currentSpikeNumber = cSpike;
+title(spikeinfo.hTseries,...
+      {sprintf('%i spikes found at z>%0.1f)',cSpike,thisCriterion),...
+      '(Note that spike detection is done on each FFT component not on the mean of the slice)'},...
+      'interpreter','none');
+
+set(hFigure,'userdata',spikeinfo) 
+
+% display images with possible artifacts for the current slice/frame
+spikePlotImage(hFigure,spikeinfo.currentSpike);
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotImage   %%
 %%%%%%%%%%%%%%%%%%%%%%%%
-function spikePlotImage(v,spikeinfo,imageNum)
+function spikePlotImage(hFigure,spikeNum)
 
-if imageNum > spikeinfo.n
-  return
+spikeinfo = get(hFigure,'userdata');
+
+%if there is no spikenum passed (0), see if there are spikes for this slice and frame
+if ~spikeNum
+  spikeNum = find(spikeinfo.slice==spikeinfo.currentSlice & spikeinfo.time==spikeinfo.currentFrame);
+  if isempty(spikeNum)
+    spikeNum=0;
+  end
+else
+%otherwise, set the the current slice and frame on this spike
+  spikeinfo.currentFrame =spikeinfo.time(spikeNum);
+  spikeinfo.currentSlice =spikeinfo.slice(spikeNum);
 end
+spikeinfo.currentSpike = spikeNum;
+thisFrame = spikeinfo.currentFrame;
+thisSlice = spikeinfo.currentSlice;
 
-%set the cursor
-set(spikeinfo.hCursor,'visible','off')
-set(spikeinfo.hCursor(imageNum),'visible','on')
+%draw the cursor
+if isfield(spikeinfo,'hCursor') && all(ishandle(spikeinfo.hCursor))
+  delete(spikeinfo.hCursor);
+end
+boxXcoords = [-.5 .5;-.5 .5;-.5 -.5;.5 .5];%;-.5 .5];
+boxYcoords = [-.5 -.5;.5 .5;-.5 .5;-.5 .5];%;.5 -.5];
+spikeinfo.hCursor = plot(spikeinfo.hSpikeMatrix,thisFrame+boxXcoords,thisSlice+boxYcoords,'m','linewidth',3);
+drawnow
 
-% get the rows and cols
-thisslice = spikeinfo.slice(imageNum);
-thistime = spikeinfo.time(imageNum);
-
-% make the figure
-nrows = 2;ncols = 2;
 % display image
-subplot(nrows,ncols,3);
 % read data
-v = viewSet(v,'curGroup',spikeinfo.groupNum);
-data = loadTSeries(v,spikeinfo.scanNum,thisslice,thistime);
-imageg(squeeze(data),0.5);
+spikeinfo.v = viewSet(spikeinfo.v,'curGroup',spikeinfo.groupNum);
+data = loadTSeries(spikeinfo.v,spikeinfo.scanNum,thisSlice,thisFrame);
+imageg(squeeze(data),0.5,spikeinfo.imagePlot);
 % and title
-title(sprintf('slice=%i TR=%i',thisslice,thistime));
-subplot(nrows,ncols,4);
+title(spikeinfo.imagePlot,{sprintf('Slice %i, Frame %i',thisSlice,thisFrame),'(Normalized intensity values)'});
 fftimage = abs(fftshift(fft2(squeeze(data))));
 % set gamma
-fftimage = imageg(fftimage,0.5);
-% set noise values to higher values
-fftimage(spikeinfo.spikelocs{imageNum}.linear) = 0.5*fftimage(spikeinfo.spikelocs{imageNum}.linear)+1.5*256;
-image(fftimage);
-% and title
-title(sprintf('FFT\nslice=%i TR=%i',thisslice,thistime));
-% and fix up axis
-axis off
-axis equal
-zoom on
-colormap([gray(256) ;gray(256)*[[0 0 0];[0 1 0];[0 0 1]]]);
+imageg(fftimage,0.5,spikeinfo.fftPlot);
+title(spikeinfo.fftPlot,{'FFT',sprintf('Components highlighted in green: z>%.2f',spikeinfo.currentCriterion)});
 
+if spikeNum
+  hold(spikeinfo.fftPlot,'on')
+  % draw boxes around noise values
+  if isfield(spikeinfo.spikelocs{1},'zValue')
+    for iLoc = 1:length(spikeinfo.spikelocs{spikeNum}.x)
+      if spikeinfo.spikelocs{spikeNum}.zValue(iLoc)>spikeinfo.currentCriterion
+        plot(spikeinfo.fftPlot,spikeinfo.spikelocs{spikeNum}.y(iLoc)+boxXcoords,spikeinfo.spikelocs{spikeNum}.x(iLoc)+boxYcoords,'g','linewidth',1); %why should x and y be inverted (and does that matter ?)
+      end
+    end
+  else  %for an old spikeinfo structure, we don't have the zValue info
+    mrWarnDlg('(mlrSpikeDetector:setCriterion) There is no zValue information in spikeinfo, please recompute spike detection for this scan.');
+    for iLoc = 1:length(spikeinfo.spikelocs{spikeNum}.x)
+      plot(spikeinfo.fftPlot,spikeinfo.spikelocs{spikeNum}.y(iLoc)+boxXcoords,spikeinfo.spikelocs{spikeNum}.x(iLoc)+boxYcoords,'g','linewidth',1); %why should x and y be inverted (and does that matter ?)
+    end
+  end
+  hold(spikeinfo.fftPlot,'off')
+end
+
+% % and fix up axis
+% axis off
+% axis equal
+
+set(hFigure,'userdata',spikeinfo)
 
 % imageg.m
 %
@@ -354,43 +580,7 @@ colormap([gray(256) ;gray(256)*[[0 0 0];[0 1 0];[0 0 1]]]);
 %       date: 05/09/03
 %    purpose: gamma correct image display for epi images
 %
-function d = imageg(d,arg1,arg2,arg3)
-
-% make sure we have data passed in
-if (nargin <1)
-  help imageg;
-  return
-end
-
-% default gamma value
-gamma = 0.8;
-    
-% if a structure is passed in then arg1 and arg2 are
-% the slicenum and volumenum
-if (isstruct(d))
-  if (nargin == 2) 
-    d = d.data(:,:,arg1,1);
-  elseif (nargin >= 3)
-    d = d.data(:,:,arg1,arg2);
-  end
-  % get gamma setting
-  if (nargin == 4)
-    gamma = arg3;
-  end
-  % too many arguments
-  if (nargin > 4)
-    help imageg;
-    return
-  end
-% not a structure then the only other argument is gamma
-else
-  if (nargin == 2)
-    gamma = arg1;
-  elseif (nargin > 2)
-    help imageg;
-    return
-  end
-end
+function d = imageg(d,gamma,handle)
 
 if size(d,2) < size(d,1)
   d = d';
@@ -407,10 +597,7 @@ d = d.^gamma;
 % rescale to 0-255 uint8
 d = floor(255*d);
 
-% only display with no output arguments
-if (nargout == 0)
-  image(d);
-  colormap(gray(256));
-  axis off
-  axis equal
-end
+image(d,'parent',handle);
+colormap(gray(256));
+axis(handle,'off');
+axis(handle,'equal');
