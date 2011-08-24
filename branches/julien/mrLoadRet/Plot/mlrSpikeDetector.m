@@ -283,7 +283,7 @@ if fieldIsNotDefined(spikeinfo,'currentFrame') || fieldIsNotDefined(spikeinfo,'c
   end    
 end
 
-set(hFigure,'userdata',spikeinfo)
+guidata(hFigure,spikeinfo);
 
 % display all spikes
 setCriterion(hFigure,spikeinfo.currentCriterion);
@@ -302,13 +302,13 @@ set(hFigure,'BusyAction','cancel');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function MouseDownCallback(hFigure,eventData)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 
 spikeMatrixCoords = round(get(spikeinfo.hSpikeMatrix,'CurrentPoint'));
 if all(spikeMatrixCoords(1,[1 2])>0 & spikeMatrixCoords(1,[1 2])<=spikeinfo.dim([4 3]))
   spikeinfo.currentSlice = spikeMatrixCoords(1,2);
   spikeinfo.currentFrame = spikeMatrixCoords(1,1);
-  set(hFigure,'userdata',spikeinfo)
+  guidata(hFigure,spikeinfo);
   spikePlotImage(hFigure,0);
 end
 
@@ -317,7 +317,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function MouseMotionCallback(hFigure,eventData)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 
 spikeMatrixCoords = round(get(spikeinfo.hSpikeMatrix,'CurrentPoint'));
 tSeriesCoords = round(get(spikeinfo.hTseries,'CurrentPoint'));
@@ -329,14 +329,14 @@ if all(spikeMatrixCoords(1,[1 2])>0 & spikeMatrixCoords(1,[1 2])<=spikeinfo.dim(
   spikeinfo.hCursorTseries = plot(spikeinfo.hTseries,repmat(tSeriesCoords(1,1),1,2),spikeinfo.tSeriesYlim,'k');
 end
 
-set(hFigure,'userdata',spikeinfo)
+guidata(hFigure,spikeinfo);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   KeypressCallback     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function KeypressCallback(hFigure,eventData)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 switch(double(get(hFigure,'CurrentCharacter')))
   case 28 %left arrow
     spikeinfo.currentFrame = max(spikeinfo.currentFrame-1,1);
@@ -349,7 +349,7 @@ switch(double(get(hFigure,'CurrentCharacter')))
   otherwise
     return;
 end
-set(hFigure,'userdata',spikeinfo)
+guidata(hFigure,spikeinfo);
    
 spikePlotImage(hFigure,0);
 
@@ -358,7 +358,7 @@ spikePlotImage(hFigure,0);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function spikePlotController(hFigure)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 
 % check all scans that have spikeinfo
 spikeInfoScans = {};
@@ -403,7 +403,7 @@ mrParamsDialog(paramsInfo,'mlrSpikeDetector',[],@spikePlotCallback,hFigure,{@spi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 function spikePlotCallback(params,hFigure)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 
 % get the scanNum
 scanNum = str2num(strtok(params.scanNum,':'));
@@ -435,7 +435,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function spikePlotOKCallback(hFigure)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 
 %keep view but remove it from the current spikeinfo
 v = spikeinfo.v;
@@ -451,7 +451,7 @@ closeGraphWin(h);
 function val = spikePlotRecomputeCallback(hFigure)
 
 val = [];
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 %keep view but remove it from the current spikeinfo
 v = spikeinfo.v;
 spikeinfo = rmfield(spikeinfo,'v');
@@ -467,7 +467,7 @@ mlrSpikeDetector(v,spikeinfo.scanNum,spikeinfo.groupNum,'recompute=1');
 %%%%%%%%%%%%%%%%%%%%%%%%
 function setCriterion(hFigure,thisCriterion)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 
 spikeinfo.currentCriterion = thisCriterion;
 
@@ -500,7 +500,7 @@ title(spikeinfo.hTseries,...
       '(Note that spike detection is done on each FFT component not on the mean of the slice)'},...
       'interpreter','none');
 
-set(hFigure,'userdata',spikeinfo) 
+guidata(hFigure,spikeinfo); 
 
 % display images with possible artifacts for the current slice/frame
 spikePlotImage(hFigure,spikeinfo.currentSpike);
@@ -510,7 +510,7 @@ spikePlotImage(hFigure,spikeinfo.currentSpike);
 %%%%%%%%%%%%%%%%%%%%%%%%
 function spikePlotImage(hFigure,spikeNum)
 
-spikeinfo = get(hFigure,'userdata');
+spikeinfo = guidata(hFigure);
 
 %if there is no spikenum passed (0), see if there are spikes for this slice and frame
 if ~spikeNum
@@ -570,7 +570,7 @@ end
 % axis off
 % axis equal
 
-set(hFigure,'userdata',spikeinfo)
+guidata(hFigure,spikeinfo);
 
 % imageg.m
 %
