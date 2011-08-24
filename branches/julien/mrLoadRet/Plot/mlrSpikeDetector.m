@@ -389,12 +389,12 @@ spikeInfoScans = putOnTopOfList(thisSpikeInfoScans,spikeInfoScans);
 % now put up a control dialog
 paramsInfo{1}  = {'scanNum',spikeInfoScans,'Scan number to view'};
 paramsInfo{end+1} = {'recompute',[],'type=pushbutton','buttonString=Recompute spike detection','callback',@spikePlotRecomputeCallback,'callbackArg',hFigure,'Recomputer spike detection'};
-if spikeinfo.n > 0
-  paramsInfo{end+1} = {'spikeNum',1,sprintf('minmax=[1 %i]',spikeinfo.n),'incdec=[-1 1]','round=1','Which spike to display'};
-  paramsInfo{end+1} = {'criterion',max(spikeinfo.criterion,spikeinfo.currentCriterion),sprintf('minmax=[%i inf]',spikeinfo.criterion),'incdec=[-.5 .5]','To change the value of the criterion used (must be > criterion used for computing the detection)'};
-else
-  paramsInfo{end+1} = {'noSpikes','No spikes found','editable=0','type=string','No spikes found in scan'};
-end  
+% if spikeinfo.n > 0
+%   paramsInfo{end+1} = {'spikeNum',1,sprintf('minmax=[1 %i]',spikeinfo.n),'incdec=[-1 1]','round=1','Which spike to display'};
+paramsInfo{end+1} = {'criterion',max(spikeinfo.criterion,spikeinfo.currentCriterion),sprintf('minmax=[%i inf]',spikeinfo.criterion),'incdec=[-.5 .5]','To change the value of the criterion used (must be > criterion used for computing the detection)'};
+% else
+%   paramsInfo{end+1} = {'noSpikes','No spikes found','editable=0','type=string','No spikes found in scan'};
+% end  
 mrParamsDialog(paramsInfo,'mlrSpikeDetector',[],@spikePlotCallback,hFigure,{@spikePlotOKCallback,hFigure});
 
 
@@ -425,8 +425,8 @@ else
     %change scan description
     %relaunch spikePlotcontroller (cannot use mrParamsSet to change the string of a popupmenu...)
     spikePlotController(hFigure);
-  elseif isfield(params,'spikeNum') && params.spikeNum~=spikeinfo.currentSpike
-    spikePlotImage(hFigure,params.spikeNum);
+%   elseif isfield(params,'spikeNum') && params.spikeNum~=spikeinfo.currentSpike
+%     spikePlotImage(hFigure,params.spikeNum);
   end
 end
 
@@ -534,6 +534,7 @@ end
 boxXcoords = [-.5 .5;-.5 .5;-.5 -.5;.5 .5];%;-.5 .5];
 boxYcoords = [-.5 -.5;.5 .5;-.5 .5;-.5 .5];%;.5 -.5];
 spikeinfo.hCursor = plot(spikeinfo.hSpikeMatrix,thisFrame+boxXcoords,thisSlice+boxYcoords,'m','linewidth',3);
+guidata(hFigure,spikeinfo); %save the new handle immediately
 drawnow
 
 % display image
