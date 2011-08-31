@@ -130,13 +130,29 @@ end
 
 % save the session
 saveSession
+
 % also remove any base anatomies from mrLastView if it is
 % there since those might have a different sform
 if isfile('mrLastView.mat')
-  disp(sprintf('(saveSform) Removing base anatomies from mrLastView'));
   load mrLastView
-  view.baseVolumes = [];
-  save mrLastView view viewSettings
+  %here do something something stupid with variable view, otherwise the code analyser is not happy
+  %because view is also a function name
+  view.baseVolumes;
+%JB: Any base anatomy that is in canonical anatomical base 
+% shouldn't have to be changed, so no need to remove all of them.
+% better to let the user choose wich bases to remove
+  %view.baseVolumes = [];
+  baselist = selectInList(view,'base','Choose bases to remove',[]);
+  if ~isempty(baselist)
+    disp(sprintf('(saveSform) Removing base anatomies from mrLastView. Note that if  you have a session open, you still have to remove the bases manually.'));
+    view.baseVolumes(baselist) = [];
+    if getfield(whos('view'),'bytes')<2e9
+      eval(sprintf('save %s view viewSettings -V6;','mrLastView'));
+    else
+      mrWarnDlg('(mrQuit) Variable view is more than 2Gb, using option -v7.3 to save');
+      eval(sprintf('save %s view viewSettings -v7.3;','mrLastView'));
+    end
+  end
 end
 deleteView(v);
 
