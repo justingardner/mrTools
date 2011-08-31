@@ -27,6 +27,7 @@ switch action
     mlrAdjustGUI(thisView,'set','quitMenuItem','location','/General/');
     mlrAdjustGUI(thisView,'add','menu','quitWithoutSavingMenuItem','/General/','label','Quit without saving','tag','quitWithoutSaving','callback',@quitWithoutSavingMenuItem_Callback);
     mlrAdjustGUI(thisView,'add','menu','restartMenuItem','/General/','label','Restart','tag','restartMenuItem','callback',@restartMenuItem_Callback);
+    mlrAdjustGUI(thisView,'add','menu','saveViewMenuItem','/General/','label','Save current view','tag','saveViewMenuItem','callback',@saveViewMenuItem_Callback);
     mlrAdjustGUI(thisView,'set','printMenuItem','location','/General/');
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','location','/General/');
     mlrAdjustGUI(thisView,'set','selectPluginMenuItem','location','/General/');
@@ -44,7 +45,7 @@ switch action
     mlrAdjustGUI(thisView,'set','printMenuItem','separator','off');
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','separator','on');
     mlrAdjustGUI(thisView,'set','selectPluginMenuItem','separator','off');
-    mlrAdjustGUI(thisView,'set','Restart','separator','on');
+    mlrAdjustGUI(thisView,'set','saveViewMenuItem','separator','on');
     mlrAdjustGUI(thisView,'set','quitMenuItem','separator','off');
 
     %Create Group Menu and move appropriate menu items
@@ -108,9 +109,9 @@ switch action
     %rename menu items
     mlrAdjustGUI(thisView,'set','exportAnatomyMenuItem','label','Export');
     mlrAdjustGUI(thisView,'set','baseTransformsMenu','label','Edit transforms');
-    mlrAdjustGUI(thisView,'set','deleteAllBasesMenuItem','label','Selected');
+    mlrAdjustGUI(thisView,'set','deleteAllBasesMenuItem','label','All');
     mlrAdjustGUI(thisView,'set','deleteManyBasesMenuItem','label','Choose...');
-    mlrAdjustGUI(thisView,'set','deleteBaseMenuItem','label','All');
+    mlrAdjustGUI(thisView,'set','deleteBaseMenuItem','label','Selected');
     %add/remove separators
     mlrAdjustGUI(thisView,'set','importFlatMenuItem','separator','on');
     mlrAdjustGUI(thisView,'set','saveAnatomyMenuItem','separator','off');
@@ -171,7 +172,7 @@ switch action
     mlrAdjustGUI(thisView,'set','deleteOverlayMenuItem','label','Selected');
     mlrAdjustGUI(thisView,'set','fileOverlayMenu','label','Save');
     mlrAdjustGUI(thisView,'set','saveAllOverlayMenuItem','label','All');
-    mlrAdjustGUI(thisView,'set','saveOverlayMenuItem','label','Selected (?)');
+    mlrAdjustGUI(thisView,'set','saveOverlayMenuItem','label','Selected');
     %add/remove separators
     mlrAdjustGUI(thisView,'set','deleteOverlayMenuItem','separator','off');
     mlrAdjustGUI(thisView,'set','saveOverlayMenuItem','separator','off');
@@ -238,7 +239,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --------------------------------------------------------------------
-function duplicateRoiMenuItem_Callback(hObject, eventdata, handles)
+function duplicateRoiMenuItem_Callback(hObject, eventdata)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 rois = viewGet(viewNum,'roi');
@@ -253,14 +254,14 @@ end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
-function duplicateBaseMenuItem_Callback(hObject, eventdata, handles)
+function duplicateBaseMenuItem_Callback(hObject, eventdata)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 viewSet(viewNum,'newBase',viewGet(viewNum,'baseAnatomy'));
 refreshMLRDisplay(viewNum);
     
 % --------------------------------------------------------------------
-function restartMenuItem_Callback(hObject, eventdata, handles)
+function restartMenuItem_Callback(hObject, eventdata)
 mrGlobals;
 handles = guidata(hObject);
 viewNum = handles.viewNum;
@@ -270,11 +271,22 @@ mrQuit(1,v);
 mrLoadRet;
 
 % --------------------------------------------------------------------
-function quitWithoutSavingMenuItem_Callback(hObject, eventdata, handles)
+function quitWithoutSavingMenuItem_Callback(hObject, eventdata)
 mrGlobals;
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
 mrQuit(0,v);
+
+% --------------------------------------------------------------------
+function saveViewMenuItem_Callback(hObject, eventdata)
+mrGlobals;
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+mrSaveView(v);
+
+
 
