@@ -48,6 +48,9 @@ mlrGuiSet(view,'nSlices',0);
 view = viewSet(view,'showROIs','all perimeter');
 view = viewSet(view,'labelROIs',1);
 
+% Add plugins
+if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
+
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
@@ -143,8 +146,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       end
       disppercent(inf);
     end
-    % Add plugins
-    if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
     
     % add here, to load more info...
     % and refresh
@@ -156,8 +157,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 
 else
   [view,baseLoaded] = loadAnatomy(view);
-  % Add plugins
-  if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
 
   if baseLoaded
     refreshMLRDisplay(view.viewNum);
