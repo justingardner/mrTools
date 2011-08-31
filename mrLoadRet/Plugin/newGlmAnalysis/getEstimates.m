@@ -119,7 +119,7 @@ if ~fieldIsNotDefined(params,'contrasts')
       case 'Add'
         extendedContrasts = kron(params.contrasts,params.componentsToTest);
       case 'Or'
-        extendedContrasts = hdrContrasts;
+        extendedContrasts = kron(params.contrasts,diag(params.componentsToTest)); 
         %remove empty contrasts
         extendedContrasts = extendedContrasts(any(extendedContrasts,2),:);
     end

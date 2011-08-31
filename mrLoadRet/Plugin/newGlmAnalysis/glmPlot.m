@@ -19,6 +19,10 @@ end
 analysisType = viewGet(thisView,'analysisType');
 analysisParams = convertOldGlmParams(viewGet(thisView,'analysisParams'));
 
+if isempty(analysisType)
+  mrWarnDlg('(glmPlot) No analysis is loaded');
+  return
+end
 
 if ~ismember(analysisType,{'glmAnalStats','glmAnal','glmcAnal','erAnal','deconvAnal'})
    disp(['(glmPlot) Wrong type of analysis (' analysisType ')']);
@@ -82,9 +86,16 @@ if ismember(analysisType,{'glmAnalStats','glmAnal','glmcAnal'})
       erAnalNum = erAnalyses(erAnalNum);
     end
     if ~isempty(erAnalNum)
-      plotDeconvolution=1;
       % get the event related data
       deconvData = viewGet(thisView,'d',scanNum,erAnalNum);
+      deconvAnalysisParams = convertOldGlmParams(viewGet(thisView,'analysisParams',erAnalNum));
+      %check that the EVs are compatible between the deconvolution and the GLM analysis
+      if isequal(deconvData.EVnames,glmData.EVnames)
+        plotDeconvolution=1;
+      else
+        mrWarnDlg('(glmPlot) Number of EVs in deconvolution and GLM analyses are incompatible.');
+        clear('deconvData');
+      end
     end
     %
   end
@@ -320,7 +331,10 @@ for iPlot = 1:length(roi)+1
   % if there is deconvolution data, display that too
   %but do not plot the std deviation (it gets too cluttered)
   if plotDeconvolution 
-    [eDeconv,volumeIndices] = getEstimates(deconvData,analysisParams,volumeIndices);
+    if numberContrasts
+      deconvAnalysisParams.contrasts = analysisParams.contrasts;
+    end
+    [eDeconv,volumeIndices] = getEstimates(deconvData,deconvAnalysisParams,volumeIndices);
     if any(any(eDeconv.hdr))
       eDeconv.hdr = mean(eDeconv.hdr,3);
       hDeconv(:,iPlot,1)=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
@@ -444,27 +458,30 @@ set(fignum,'position',figurePosition);
 h=uicontrol('parent',fignum,'unit','normalized','style','text',...
   'string','Loading timecourse. Please wait...',...
   'position',[0.1 0.45 .8 .1],'backgroundcolor',get(fignum,'color'));
+%this removes the figure toolbar (because the figure toolbar property is set to 'auto' by default)
+%in this case, we want it because it is useful to zoom on the time-series
+set(fignum,'toolbar','figure');
 drawnow;
 disppercent(-inf,'(eventRelatedPlot) Plotting time series');
 
 if isnumeric(roi) %if roi is numeric, it's the coordinates of a single voxel
-  tSeries = squeeze(loadTSeries(thisView,[],roi(3),[],roi(1),roi(2)));
+  actualTSeries = squeeze(loadTSeries(thisView,[],roi(3),[],roi(1),roi(2)));
   titleString = sprintf('Voxel %i,%i,%i Time Series',roi(1),roi(2),roi(3));
   ehdr = shiftdim(d.ehdr(roi(1),roi(2),roi(3),:,:),3);
 else
   fprintf(1,'\n');
   roi = loadROITSeries(thisView,roi);
-  tSeries = mean(roi.tSeries,1);
+  actualTSeries = mean(roi.tSeries,1)';
   titleString = ['ROI ' roi.name ' Time Series'];
   ehdr = permute(d.ehdr,[4 5 1 2 3]);
   ehdr = ehdr(:,:,sub2ind(d.dim(1:3),roi.scanCoords(1,:)',roi.scanCoords(2,:)',roi.scanCoords(3,:)'));
   ehdr = nanmean(ehdr,3);
 end
 %convert to percent signal change the way it's done in getGlmStatistics
-tSeries = (tSeries - mean(tSeries))'/mean(tSeries)*100;
+actualTSeries = (actualTSeries - mean(actualTSeries))/mean(actualTSeries)*100;
 junkFrames = viewGet(thisView, 'junkFrames');
 nFrames = viewGet(thisView,'nFrames');
-tSeries = tSeries(junkFrames+1:junkFrames+nFrames);
+actualTSeries = actualTSeries(junkFrames+1:junkFrames+nFrames);
 
 if isfield(analysisParams,'scanParams') && isfield(analysisParams.scanParams{thisView.curScan},'acquisitionSubsample')...
     && ~isempty(analysisParams.scanParams{thisView.curScan}.acquisitionSubsample)
@@ -475,7 +492,7 @@ end
 if ~isfield(d,'estimationSupersampling')
   d.estimationSupersampling=1;
 end
-time = ((0:length(tSeries)-1)+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
+time = ((0:length(actualTSeries)-1)+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
 
 
 delete(h);
@@ -486,7 +503,7 @@ hold on
 
 
 %Plot the stimulus times
-set(tSeriesAxes,'Ylim',[min(tSeries);max(tSeries)])
+set(tSeriesAxes,'Ylim',[min(actualTSeries);max(actualTSeries)])
 if ~isfield(d,'designSupersampling')
   d.designSupersampling=1;
 end
@@ -514,29 +531,68 @@ end
 [h,hTransitions] = plotStims(stimOnsets, stimDurations, d.tr/d.designSupersampling, colorOrder, tSeriesAxes, runTransitions);
 legendString = legendString(h>0);
 h = h(h>0);
+nEVs = length(h);
 
 %and the time-series
-h(end+1) = plot(tSeriesAxes,time,tSeries,'k.-');
+%plot a baseline
+plot(tSeriesAxes,time,zeros(size(time)),'--','linewidth',1,'color',[.5 .5 .5]);
+h(end+1) = plot(tSeriesAxes,time,actualTSeries,'k.-');
+hActualTSeries = h(end);
 if size(d.scm,2)==numel(ehdr)
   %compute model time series
   modelTSeries = d.scm*reshape(ehdr',numel(ehdr),1);
   h(end+1) = plot(tSeriesAxes,time,modelTSeries,'--r');
+  hModelTSeries = h(end);
 end
-legendString{end+1} = 'Actual TSeries';
-legendString{end+1} = 'Model TSeries';
+legendString{end+1} = 'Actual Time Series';
+legendString{end+1} = 'Model Time Series';
 if ~isempty(hTransitions)
   h = [h hTransitions];
   legendString{end+1} = 'Run transitions';
 end
 ylabel('Percent Signal Change');
 xlim([0 ceil(time(end)+1)]);
+
 %legend
-lhandle = legend(h,legendString,'position',getSubplotPosition(2,1,[7 1],1,0,.2));
+legendPosition = getSubplotPosition(2,1,[6 1],[length(h) 1],0,.2);
+%panel with position identical to the legend axes so that we can reposition the EV checkboxes
+hPanel = uipanel(fignum,'position',legendPosition,'backgroundcolor',get(fignum,'color'),'bordertype','none');
+hSubtractFromTseries = uicontrol(fignum,'unit','normalized','style','check','position',getSubplotPosition(2,2,[5 1],[length(h) 1],0,.2),...
+  'string','Subtract unchecked EVs from actual timeseries','value',1);
+set(hSubtractFromTseries,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries});
+
+lhandle = legend(h,legendString,'position',legendPosition);
 set(lhandle,'Interpreter','none','box','off');
+set(hPanel,'resizeFcn',{@resizePanel,lhandle});
+
+for iEV = 1:nEVs
+  thisPosition = get(findobj(lhandle,'string',legendString{iEV}),'position')';
+  uicontrol(hPanel,'style','check','unit','normalized','position',[thisPosition(1) thisPosition(2) .1 .1],...
+    'value',1,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries});
+end
 
 disppercent(inf);
 %delete(handle); %don't delete the button to plot the time-series
 
+
+function resizePanel(handle,eventData,hLegend)
+
+set(handle,'position',get(hLegend,'position'));
+
+function plotModelTSeries(handle,eventData,hActualTSeries,actualTSeries,hModelTSeries,scm,ehdr,hPanel,hSubtractFromTseries)
+%get which EV are checked (note that children of the uipanel are ordered from bottom to top, so we flipud
+whichEVs = logical(flipud(cell2mat(get(get(hPanel,'children'),'value'))));
+evHdr = ehdr;
+evHdr(~whichEVs,:) = 0;
+if size(scm,2)==numel(ehdr)
+  set(hModelTSeries,'Ydata',scm*reshape(evHdr',[],1));
+  if get(hSubtractFromTseries,'value')
+    ehdr(whichEVs,:) = 0;
+    set(hActualTSeries,'Ydata',actualTSeries - scm*reshape(ehdr',[],1));
+  else
+    set(hActualTSeries,'Ydata',actualTSeries);
+  end
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -660,6 +716,7 @@ else
   minMaxData(1) = minMaxData(1)-.02*diff(minMaxData);
   minMaxData(2) = minMaxData(2)+.02*diff(minMaxData);
 end
+minMaxData(1) = min(minMaxData(1),0);
 set(axisHandle,'YLim',minMaxData);
 uicontrol(fignum,'style','edit','units','normalized',...
   'position',[pos(1)+pos(3) pos(2)+.6*pos(4) .03 .03],...
