@@ -51,7 +51,7 @@ end
 if ieNotDefined('title')
   title = ['Choose ' type];
 end
-if ieNotDefined('preselected')
+if ~exist('preselected','var') %if preselected exists but is empty, leave as it is
   switch(lower(type))
     case {'scans','scan'}
       preselected = viewGet(thisView,'currentScan');
