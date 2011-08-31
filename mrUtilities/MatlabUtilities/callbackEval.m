@@ -5,7 +5,9 @@
 %         by: julien besle 
 %       date: 16/12/2010
 %    purpose: like feval but also handles callbacks in the cell array form
-%             firstArgs and lastArgs are added as arguments before and after the arguments in the cell array 
+%             firstArgs and lastArgs must be embedded in a cell array 
+%             and are added as arguments before and after the arguments 
+%             from the callback cell array 
 %
 
 function varargout = callbackEval(callback,firstArgs,lastArgs)
