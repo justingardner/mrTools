@@ -780,14 +780,15 @@ else
   set(d.hRoi(~d.roiIsEmpty),'visible','off')
 end
 
-switch(handle)
-  case d.hRoiList
-
-    overlayRoiModes = get(d.hOverlayRoiMode,'String');
-    overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
-    if strcmp(overlayRoiMode,'Restrict to selected ROIs')
-      recomputeOverlay(handle);
-    end
+if isfield(d,'hOverlayRoiMode')
+  switch(handle)
+    case d.hRoiList
+      overlayRoiModes = get(d.hOverlayRoiMode,'String');
+      overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
+      if strcmp(overlayRoiMode,'Restrict to selected ROIs')
+        recomputeOverlay(handle);
+      end
+  end
 end
 %---------------------------------------------------- compute Surface coordinates
 function recomputeSurface(handle,eventdata)
