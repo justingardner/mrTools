@@ -325,7 +325,7 @@ makeOkButton = 1;
 makeCancelButton = modal; %only put a cancel if dialog box is modal (or if a custom cancel callback is passed)
 
 if modal==0  %if the dialog is non-modal, ok just closes it, unless custom ok/cancel callbackz are passed)
-  gParams.okCallback = 'closeHandler';
+  gParams.okCallback = @closeHandler;
   okString = 'Close';
 else
   okString = 'OK';
@@ -629,9 +629,9 @@ if isfield(gParams, 'callback')
   if ~isempty(gParams.callback)
     gParams.params = mrParamsGet(gParams.vars);
     if isfield(gParams,'callbackArg')
-      feval(gParams.callback,gParams.params,gParams.callbackArg);
+      callbackEval(gParams.callback,{gParams.params},{gParams.callbackArg}); 
     else
-      feval(gParams.callback,gParams.params);
+      callbackEval(gParams.callback,{gParams.params});
     end
   end
 end
@@ -783,7 +783,7 @@ function okHandler(varargin)
 global gParams;
 gParams.ok = 1;
 if isfield(gParams,'okCallback')
-  feval(gParams.okCallback);
+  callbackEval(gParams.okCallback);
   closeHandler;
 else
   uiresume;
