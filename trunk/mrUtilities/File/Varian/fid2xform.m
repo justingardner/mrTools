@@ -141,7 +141,7 @@ if procpar.nv2 > 1
   % check to see if it has been processed or not (i.e. pss should be of
   % correct length
   if length(procpar.pss) ~= procpar.nv2
-      info.processed = 0;
+    info.processed = 0;
   end
 end
 
@@ -176,6 +176,18 @@ if info.acq3d & info.processed
       end
     end
   end
+end
+
+% check to see if this is an uncompressedFid and 3D in which
+% case the pss just contains the slice center, so we need to 
+% adjust it here
+if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
+  if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, computing pss form center of slab'));end
+  % compute location of first slice
+  firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
+  lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
+  % now make array
+  procpar.pss = (firstSlice:voxspacing(3):lastSlice)/10;
 end
 
 % Now get the offset in mm from the center of the bore that the center of the
