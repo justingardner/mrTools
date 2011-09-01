@@ -1088,7 +1088,7 @@ gSystem{sysNum}.animating = false;
 gSystem{sysNum}.interpMethod = mrGetPref('interpMethod');
 
 % alpha for overlay
-gSystem{sysNum}.overlayAlpha = 1;
+gSystem{sysNum}.overlayAlpha = 0.2;
 
 % default not to display controls
 gSystem{sysNum}.displayControls = false;
