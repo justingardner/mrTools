@@ -20,7 +20,7 @@ end
 % in a different home directory from where it started
 if ~strcmp(pwd,MLR.homeDir) && isfile('mrSession.mat')
   if mlrIsRunning(0)
-    mrWarnDlg(sprintf('(newView) MLR is open to a session in directory %s, but your current directory is %s. If you meant to open a new session for the current directory and not for the one in the MLR global, you will need to close your mrLoadRet and deleteView all open views (alternatively, clear global MLR)',MLR.homeDir,pwd));
+    mrWarnDlg(sprintf('(newView) MLR is open to a session in directory %s, but your current directory is %s. If you meant to open a new session for the current directory and not for the one in the MLR global, you will need to run mrQuit -this will close your mrLoadRet and deleteView all open views',MLR.homeDir,pwd));
   else
     % restart
     mrQuit;

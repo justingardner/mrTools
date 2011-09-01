@@ -1,7 +1,7 @@
-% mlrIsImageFile.m
+% mlrImageIsFile.m
 %
-%        $Id$ 
-%      usage: retval = mlrIsImageFile(filename)
+%        $Id:$ 
+%      usage: retval = mlrImageIsFile(filename)
 %         by: justin gardner
 %       date: 07/23/09
 %    purpose: Test to see if the file is a valid image, if the extension is provided, will
@@ -10,13 +10,13 @@
 % 
 %             returns 0 if not a valid image file, 1 otherwise
 %
-function retval = mlrIsImageFile(filename)
+function retval = mlrImageIsFile(filename)
 
 retval = 0;
 
 % check arguments
 if ~any(nargin == [1])
-  help mlrIsImageFile
+  help mlrImageIsFile
   return
 end
 
@@ -27,7 +27,7 @@ end
 
 % check if the file exists
 if ~isfile(filename)
-  disp(sprintf('(mlrIsImageFile) File %s does not exist',filename));
+  disp(sprintf('(mlrImageIsFile) File %s does not exist',filename));
   return
 end
 
