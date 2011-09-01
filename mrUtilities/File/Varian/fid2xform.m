@@ -204,7 +204,7 @@ swapDim2 =[0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
 
 % the following is actually correct for L/R, but leave it commented
 % for now - will need to update all of our transforms ;-(.... -j.
-%swapDim2 =[0 0 -1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
 
 % now create the final shifted rotation matrix
 xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*originOffset;
