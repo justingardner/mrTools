@@ -20,7 +20,7 @@ params = mrSurfViewer(filename);
 if isempty(params),return,end
 
 % load the anatomy header to look for talinfo
-header = mlrLoadImageHeader(params.anatomy);
+header = mlrImageHeaderLoad(params.anatomy);
 
 % make sure we have AC point
 if ~isfield(header,'talPoints') || isempty(header.talPoints) || isequal(header.talPoints,[0 0 0])

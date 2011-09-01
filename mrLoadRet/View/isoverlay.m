@@ -21,10 +21,23 @@ if (nargout == 2)
   % Add optional fields and return true if the overlay with optional
   % fields is valid.
   requiredFields = {'function','groupName','name','params','range'};
+  % get some defaults, if the required fields exist to make the defaults
+  % then take from there, otherwise put in empty and the code will
+  % later catch that the defaults are missing.
+  if isfield(overlay,'name') 
+    defaultType = overlay.name;
+  else
+    defaultType = '';
+  end
+  if isfield(overlay,'range')
+    defaultClip = overlay.range;
+  else
+    defaultClip = [];
+  end
   optionalFields = {'date',datestr(now);
-                    'type',overlay.name;
+                    'type',defaultType,
                     'alpha',1;
-                    'clip',overlay.range;
+                    'clip',defaultClip;
                     'colormap',jet(256);
                     'interrogator','timecoursePlot';
                     'reconcileFunction','defaultReconcileParams';

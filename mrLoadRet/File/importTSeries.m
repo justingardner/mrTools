@@ -22,7 +22,7 @@ if (filename==0)
 end
 
 if ~isempty(strfind(stripext(filename),'.'))
-  mrWarnDlg(sprintf('(mlrGetAllImageFilenames) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename,setext(fixBadChars(stripext(filename),{'.','_'}),'hdr')));
+  mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename,setext(fixBadChars(stripext(filename),{'.','_'}),'hdr')));
   return
 end
 

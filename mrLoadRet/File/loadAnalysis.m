@@ -37,6 +37,12 @@ function view = loadAnalysis(view,pathStr,startPathStr,name)
 % djh, 1/9/98
 % 6/2005, djh, update to mrLoadRet-4.0
 
+% check arguments
+if ~any(nargin == [1:4])
+  help loadAnalysis
+  return
+end
+
 mrGlobals
 
 % Path to analyses

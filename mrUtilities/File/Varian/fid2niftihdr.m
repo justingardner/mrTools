@@ -1,10 +1,12 @@
 % fid2niftihdr.m
 %
 %        $Id$ 
-%      usage: hdr = fid2niftihdr(fidname,<verbose>)
+%      usage: hdr = fid2niftihdr(fidname,<verbose>,<movepro=0>)
 %         by: justin gardner
 %       date: 12/09/09
-%    purpose: strips out of fid2nifti the functionality to create nifti headers from procpar
+%    purpose: strips out of fid2nifti the functionality to create nifti headers from procpar. Fidname
+%             is either the name of a fid directory *or* can be a procpar structure returned by readprocpar.
+%             
 %
 function [hdr info] = fid2niftihdr(fidname,verbose,varargin)
 
@@ -21,7 +23,9 @@ if ~any(nargin == [1 2 3])
 end
 
 % set fid extension
-fidname = setext(fidname,'fid',0);
+if ~isstruct(fidname)
+  fidname = setext(fidname,'fid',0);
+end
 
 % create an empty header
 hdr = cbiCreateNiftiHeader;
