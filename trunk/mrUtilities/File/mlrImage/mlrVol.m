@@ -440,7 +440,7 @@ viewLabel = {'Sagittal','Coronal','Axial'};
 
 for iView = 1:3
   % see if we need to redisplay, first condition is whether we have changed the volume or other dimenson
-  % the second condition is for primary volumes wether we have updated the coordinates being displayed
+  % the second condition is for primary volumes whether we have updated the coordinates being displayed
   % in the view, and the third condition is for tethered volumes - whether we have change the coordinates
   % for the volume we are tethered to
   if (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || ...
@@ -458,7 +458,7 @@ for iView = 1:3
 
       % the transpose and axis directions need to be taken from the volume this is tethered to
       % prepare image for display
-      [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,gSystem{sysNum}.vols(vol.tethered).transpose,gSystem{sysNum}.vols(vol.tethered).axisDir);
+      [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,gSystem{sysNum}.vols(vol.tethered),iView);
       
       % if we are not displaying the interpolated image in the
       % second row, then we have to prepare the image that
@@ -469,14 +469,14 @@ for iView = 1:3
 	% need to get the coordinate of the tethered to volume
 	% in these coordinates
 	dispSlice = getMatchingSlice(sysNum,vol,iView);
-	[dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,vol.transpose,vol.axisDir);
+	[dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView);
       end
     else
       % otherwise, grab the data for this image
       dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
 
       % prepare image for display
-      [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,vol.transpose,vol.axisDir);
+      [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView);
     end
 
     % get the correct axis to draw into
@@ -550,7 +550,7 @@ dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},v
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   prepareImageForDisplay   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView,transpose,axisDir)
+function [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView)
 
 if isempty(dispSlice)
   xLabelStr = '';yLabelStr = '';
@@ -565,21 +565,21 @@ maxDispSlice = max(dispSlice(:));
 dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
 
 % do transpose if necessary
-if transpose(iView)
+if vol.transpose(iView)
   dispSlice = dispSlice';
   xLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
   yLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
   % flip axis if necessary (note that Matlab shows the x axis as - to +
   % and the y -axis in the opposite orientation, so we treat the x and y differently)
-  if axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
-  if axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
+  if vol.axisDir(vol.xDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
+  if vol.axisDir(vol.yDim(iView)) == 1,dispSlice = flipud(dispSlice);end
 else
   xLabelStr = vol.dispAxisLabels{vol.yDim(iView)};
   yLabelStr = vol.dispAxisLabels{vol.xDim(iView)};
   % flip axis if necessary (note that Matlab shows the x axis as - to +
   % and the y -axis in the opposite orientation, so we treat the x and y differently)
-  if axisDir(vol.xDim(iView)) == 1,dispSlice = flipud(dispSlice);end
-  if axisDir(vol.yDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
+  if vol.axisDir(vol.xDim(iView)) == 1,dispSlice = flipud(dispSlice);end
+  if vol.axisDir(vol.yDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
 end
 
 
