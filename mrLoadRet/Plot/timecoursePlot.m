@@ -56,7 +56,7 @@ fftTSeries = fft(tSeries);
 % set mean to zero
 fftTSeries(1) = 0;
 % plot it 
-plot(abs(fftTSeries(1:length(fftTSeries)/2)),'k.-');
+plot(1:(length(fftTSeries)/2)-1,abs(fftTSeries(2:length(fftTSeries)/2)),'k.-');
 title(sprintf('Voxel: [%i %i %i]',x,y,s));
 xlabel('FFT components');
 ylabel('FFT of fMRI Signal');

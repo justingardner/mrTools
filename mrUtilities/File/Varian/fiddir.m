@@ -20,7 +20,7 @@ d = dir(fullfile(dirname,'*.fid'));
 
 for i= 1:length(d)
   [xform fidinfo] = fid2xform(fullfile(dirname,d(i).name));
-  disp(sprintf('%s %s: %s [%i %i %i %i]',fidinfo.dateStr,fidinfo.timeStr,d(i).name,fidinfo.dim(1),fidinfo.dim(2),fidinfo.dim(3),fidinfo.dim(4)));
+  disp(sprintf('%s (%s): %s [%i %i %i %i]',fidinfo.startDatestr,fidinfo.elapsedTimeStr,d(i).name,fidinfo.dim(1),fidinfo.dim(2),fidinfo.dim(3),fidinfo.dim(4)));
 end
 
   

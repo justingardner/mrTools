@@ -60,10 +60,34 @@ if (isfield(procpar,'petable'))
 end
 
 
+% get date and time of start and finish
+[info.startDatevec info.startDatestr] = getDateFromVarianField(procpar.time_run);
+[info.endDatevec info.endDatestr] = getDateFromVarianField(procpar.time_complete);
+% get elapsed time
+info.elapsedSecs = etime(info.endDatevec,info.startDatevec);
+elapsedMin = floor(info.elapsedSecs/60);
+info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapsedMin*60);
+
+% set the console in the info for easy reference
+info.console = procpar.console{1};
+
+% if there is no ni field then just return
+if ~isfield(procpar,'ni'),info.dim = nan(1,4);return,end
+
 % get the dimensions of the scan
 % (procpar.ni is lines of k-space, procpar.nv is number of lines collected including navigator echoes)
 % used to use procpar.nv and correct for navechoes, but seems more sensible to just use procpar.ni)
 dim = [procpar.np/2 procpar.ni length(procpar.pss)];
+
+if (procpar.ni == 1) && (procpar.nf > 1)
+  if verbose>0
+    disp(sprintf('(fid2xform) Fid file looks like it is compressed. Using nf for the 2nd dim'));
+  end
+  info.compressedFid = true;
+  dim(2) = procpar.nf;
+else
+  info.compressedFid = false;
+end
 
 % remove navigator echoes from k-space 
 %dim(2) = dim(2) - navechoes;
@@ -242,24 +266,34 @@ info.phi = procpar.phi;
 info.theta = procpar.theta;
 info.accFactor = procpar.accfactor;
 info.nRefVolumes = 0;
-if isfield(procpar,'cntr')
+if strcmp(lower(info.console),'inova') && isfield(procpar,'cntr')
   % compute the length of the scan minus the number of steady state reference volumes
   % are taken. This is computed by looking for the first volume of the scan that
   % has a trigger in it. 
   info.nRefVolumes = first(find(procpar.cntr))-1;
   info.dim(4) = length(procpar.cntr)-info.nRefVolumes;
+elseif strcmp(lower(info.console),'vnmrs') && isfield(procpar,'image')
+  % compute the length of the scan minus the number of steady state reference volumes
+  % are taken. This is computed by looking for the first volume of the scan that
+  % has a trigger in it. 
+  info.nRefVolumes = first(find(procpar.image))-1;
+  info.dim(4) = length(procpar.image)-info.nRefVolumes;
 else
   info.dim(4) = 1;
 end
 info.tr = tr;
-% get date and time of start and finish
-[info.startDatevec info.startDatestr] = getDateFromVarianField(procpar.time_run);
-[info.endDatevec info.endDatestr] = getDateFromVarianField(procpar.time_complete);
-% get elapsed time
-info.elapsedSecs = etime(info.endDatevec,info.startDatevec);
-elapsedMin = floor(info.elapsedSecs/60);
-info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapsedMin*60);
+
+% count number of receivers
+if isfield(procpar,'rcvrs')
+  % count the number of receivers that have been turned on
+  info.numReceivers = length(strfind(procpar.rcvrs{1},'y'));
+else
+  info.numReceivers = 1;
+end
+
+% keep procpar
 info.procpar = procpar;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getDateFromVarianField    %
