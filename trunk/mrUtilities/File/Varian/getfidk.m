@@ -108,7 +108,7 @@ for sliceNum = 1:numSlices
 	end
       end
     end
-    if verbose,disppercent(calcPercentDone(volNum,numVolumes,receiverNum,numReceivers));end
+    if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
   end
 end
 if verbose,disppercent(inf);end

@@ -32,7 +32,8 @@ hdr = cbiCreateNiftiHeader;
 
 % get the qform
 [qform44 info] = fid2xform(fidname,verbose,sprintf('movepro=%f',movepro));
-
+if isempty(qform44),hdr = [];return;end
+  
 % set the qform
 hdr = cbiSetNiftiQform(hdr,qform44);
 

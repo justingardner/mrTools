@@ -72,7 +72,11 @@ info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapse
 info.console = procpar.console{1};
 
 % if there is no ni field then just return
-if ~isfield(procpar,'ni'),info.dim = nan(1,4);return,end
+if ~isfield(procpar,'ni')
+  disp(sprintf('(fid2xform) ni is not set. This may be a non-image file'))
+  info.dim = nan(1,4);
+  return
+end
 
 % get the dimensions of the scan
 % (procpar.ni is lines of k-space, procpar.nv is number of lines collected including navigator echoes)
