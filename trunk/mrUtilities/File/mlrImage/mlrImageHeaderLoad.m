@@ -83,6 +83,8 @@ switch lower(getext(filename))
     return
 end
 
+if isempty(header),return,end
+
 % load the associated matlab header
 header.base = loadAssociatedMatlabHeader(filename);
 
@@ -115,7 +117,8 @@ function header = mlrImageHeaderLoadFid(filename,header,verbose)
 
 % read the nifti header
 nifti = fid2niftihdr(filename,verbose);
-
+if isempty(nifti),header = [];return;end
+  
 % set some info
 header.type = 'nifti';
 header.hdr = nifti;
