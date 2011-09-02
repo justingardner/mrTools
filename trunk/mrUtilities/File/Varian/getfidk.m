@@ -91,24 +91,31 @@ end
 kNum = 1;clear i;
 d.data = nan(info.dim(2),numPhaseEncodeLines,numSlices,numReceivers,numVolumes);
 if verbose,disppercent(-inf,'(getfidk) Reordering data');end
-for sliceNum = 1:numSlices
-  for receiverNum = 1:numReceivers
-    for volNum = 1:numVolumes
+if info.compressedFid
+  for volNum = 1:numVolumes
+    for sliceNum = 1:numSlices
+      for receiverNum = 1:numReceivers
 	% compressed fids have all lines of k-space in one single block of data
-      if info.compressedFid
 	% note conversion here to double
 	d.data(:,lineorder,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
 	kNum = kNum+1;
-      else
+      end
+    end
+    if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
+  end
+else
+  for kLine = 1:numPhaseEncodeLines
+    for volNum = 1:numVolumes
+      for receiverNum = 1:numReceivers
+	for sliceNum = 1:numSlices
 	% uncompress fid contains one line of k-space per block
-	for kLine = 1:numPhaseEncodeLines
 	  % note conversion here to double
 	  d.data(:,kLine,sliceNum,receiverNum,volNum) = double(d.real(kNum,:)) + i*double(d.imag(kNum,:));
 	  kNum = kNum+1;
 	end
       end
     end
-    if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
+    if verbose,disppercent(calcPercentDone(kLine,numPhaseEncodeLines,volNum,numVolumes,receiverNum,numReceivers,sliceNum,numSlices));end
   end
 end
 if verbose,disppercent(inf);end

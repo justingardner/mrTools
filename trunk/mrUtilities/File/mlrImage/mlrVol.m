@@ -155,7 +155,7 @@ for iCoord = 1:nDim
 end
 coord = round(coord);
 
-if any(coord<1) || any(coord(:)>vol.h.dim(1:nDim))
+if any(coord<1) || any(coord(:)>vol.h.dim(1:nDim)')
   for iCoord = 1:nDim
     set(gVol{sysNum}.hCoordTextbox(1),'String',vol.coord(iCoord));
   end
@@ -972,7 +972,9 @@ altXforms = gVol{sysNum}.vols(1).altXforms;
 if altXforms.n 
   paramsInfo{end+1} = {'altCoord',putOnTopOfList(altXforms.names{altXforms.currentXform},altXforms.names),'callback',@changeAltCoord,'callbackArg',sysNum,'passParams=1'};
 end
-
+if isfield(gVol{sysNum}.vols(1),'complexData')
+  paramsInfo{end+1} = {'dispComplex',putOnTopOfList(gVol{sysNum}.dispComplex,{'magnitude','phase','fft2 magnitude','fft2 phase','fft3 magnitude','fft3 phase'}),'callback',@dispComplex,'callbackArg',sysNum,'passParams=1','Change how complex data is displayed'};
+end
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
 mrParamsDialog(paramsInfo,'mlrVol Controls');
 
@@ -1001,6 +1003,80 @@ retval = [];
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 function controlsCallback(params)
 
+
+%%%%%%%%%%%%%%%%%%%%%
+%    dispComplex    %
+%%%%%%%%%%%%%%%%%%%%%
+function retval = dispComplex(sysNum,params)
+
+global gVol;
+
+% go through all volumes
+for iVol = gVol{sysNum}.n
+  % if it is complex data then reset its data value
+  % to display chosen field
+  if isfield(gVol{sysNum}.vols(iVol),'complexData');
+    switch (params.dispComplex)
+     case {'magnitude'}
+      gVol{sysNum}.vols(iVol).data = abs(gVol{sysNum}.vols(iVol).complexData);
+     case {'phase'}
+      gVol{sysNum}.vols(iVol).data = angle(gVol{sysNum}.vols(iVol).complexData);
+     case {'fft2 magnitude','fft2 phase'}
+      % nDims hard coded to 5 here
+      disppercent(-inf,'(mlrVol) Transforming data');
+      nSlice = size(gVol{sysNum}.vols(iVol).data,3);
+      nVolume = size(gVol{sysNum}.vols(iVol).data,4);
+      nReceiver = size(gVol{sysNum}.vols(iVol).data,5);
+      for iSlice = 1:nSlice
+	for iVolume = 1:nVolume
+	  for iReceiver = 1:nReceiver
+	    % take fft
+	    fftSlice = fftshift(fft2(gVol{sysNum}.vols(iVol).complexData(:,:,iSlice,iVolume,iReceiver)));
+	    % get phase or magnitude
+	    if strcmp(params.dispComplex,'fft2 phase')
+	      gVol{sysNum}.vols(iVol).data(:,:,iSlice,iVolume,iReceiver) = angle(fftSlice);
+	    else
+	      gVol{sysNum}.vols(iVol).data(:,:,iSlice,iVolume,iReceiver) = abs(fftSlice);
+	    end
+	    % percent correct
+	    disppercent(calcPercentDone(iSlice,nSlice,iVolume,nVolume,iReceiver,nReceiver));
+	  end
+	end
+      end
+      disppercent(inf);
+     case {'fft3 magnitude','fft3 phase'}
+      % nDims hard coded to 5 here
+      disppercent(-inf,'(mlrVol) Transforming data');
+      nVolume = size(gVol{sysNum}.vols(iVol).data,4);
+      nReceiver = size(gVol{sysNum}.vols(iVol).data,5);
+      for iVolume = 1:nVolume
+	for iReceiver = 1:nReceiver
+	  % take fft
+	  fftVolume = fftshift(fftn(squeeze(gVol{sysNum}.vols(iVol).complexData(:,:,:,iVolume,iReceiver))));
+	  % and get phase or magnitude
+	  if strcmp(params.dispComplex,'fft3 phase')
+	    gVol{sysNum}.vols(iVol).data(:,:,:,iVolume,iReceiver) = angle(fftVolume);
+	  else
+	    gVol{sysNum}.vols(iVol).data(:,:,:,iVolume,iReceiver) = abs(fftVolume);
+	  end
+	  % percent done
+	  disppercent(calcPercentDone(iVolume,nVolume,iReceiver,nReceiver));
+	end
+      end
+      disppercent(inf);
+    end      
+    % clear cache
+    gVol{sysNum}.vols(iVol).c = mrCache('init',2*max(gVol{sysNum}.vols(iVol).h.dim(1:3)));
+    % and set to redisplay
+    gVol{sysNum}.vols(iVol).curCoord = nan;
+  end
+end
+
+% set what value we are looking at
+gVol{sysNum}.dispComplex = params.dispComplex;
+
+% redisplay
+refreshDisplay(sysNum);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %    adjustAlignment    %
@@ -1359,8 +1435,14 @@ n = gVol{sysNum}.n;
 % set volume number
 vol.volnum = n;
 
-% update the fields in vols
-vol.data = d;
+% set the fields of the volume, if this is compex then split into abs and angle
+if isreal(d)
+  vol.data = d;
+else
+  gVol{sysNum}.dispComplex = 'magnitude';
+  vol.complexData = d;
+  vol.data = abs(d);
+end
 vol.h = h;
 
 % set which figure numbers this volume will display into
