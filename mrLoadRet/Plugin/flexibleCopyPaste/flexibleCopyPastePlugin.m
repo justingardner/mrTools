@@ -1,12 +1,12 @@
-% flexibleCopyPasteOverlaysPlugin.m
+% flexibleCopyPastePlugin.m
 %
 %        $Id$ 
-%      usage: flexibleCopyPasteOverlaysPlugin(action,<thisView>)
+%      usage: flexibleCopyPastePlugin(action,<thisView>)
 %         by: julien besle
 %       date: 12/13/10
 %    purpose: replaces behaviour of copy/paste overlay in Edit menu
 %
-function retval = flexibleCopyPasteOverlaysPlugin(action,thisView)
+function retval = flexibleCopyPastePlugin(action,thisView)
 
 % check arguments
 if ~any(nargin == [1 2])
