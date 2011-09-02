@@ -1301,9 +1301,17 @@ end
 function displayInterpolated(sysNum,params)
 
 global gVol;
+
+% set the displayInterpolated state
 gVol{sysNum}.displayInterpolated = params.displayInterpolated;
-gVol{sysNum}.vols(2).curCoord(1:3) = nan;
+
+% set volumes to redisplay
+for iVol = 1:gVol{sysNum}.n
+  gVol{sysNum}.vols(iVol).curCoord(1:3) = nan;
+end
 gVol{sysNum}.vols(2).coord(1:3) = nan;
+
+% and redisplay
 refreshDisplay(sysNum);
 
 
