@@ -72,7 +72,13 @@ header.filename = filename;
 header.ext = getext(filename);
 
 switch lower(getext(filename))
-  case {'hdr','nii','img'}
+  case {'img'}
+    if ~isdir(filename)
+      header = mlrImageHeaderLoadNifti(filename,header);
+    else
+      header = mlrImageHeaderLoadFDF(filename,header,verbose);
+    end
+  case {'hdr','nii'}
     header = mlrImageHeaderLoadNifti(filename,header);
   case {'sdt','spr','edt','epr'}
     header = mlrImageHeaderLoadSDT(filename,header);
@@ -109,6 +115,28 @@ end
 
 % now fill in any missing fields from header
 [tf header] = mlrImageIsHeader(header);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrImageHeaderLoadFDF    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function header = mlrImageHeaderLoadFDF(filename,header,verbose)
+
+% read the nifti header
+[d nifti] = fdf2nifti(filename,verbose,true);
+if isempty(nifti),header = [];return;end
+  
+% set some info
+header.type = 'nifti';
+header.hdr = nifti;
+
+% set other fields
+header.qform_code = header.hdr.qform_code;
+header.qform44 = header.hdr.qform44;
+header.sform_code = header.hdr.sform_code;
+header.sform44 = header.hdr.sform44;
+header.nDim = header.hdr.dim(1);
+header.dim = header.hdr.dim(2:header.nDim+1);
+header.pixdim = header.hdr.pixdim(2:header.nDim+2);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadFid    %

@@ -187,7 +187,7 @@ end
 % adjust it here
 if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
   if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, computing pss form center of slab'));end
-  % compute location of first slice
+  % compute location of first and last slice
   firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
   lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
   % now make array
@@ -242,7 +242,8 @@ if verbose > 0
   disp(sprintf('(fid2xform) Voxel size: [%0.2f %0.2f %0.2f]',voxsize(1),voxsize(2),voxsize(3)));
   disp(sprintf('(fid2xform) Voxel spacing: [%0.2f %0.2f %0.2f]',voxspacing(1),voxspacing(2),voxspacing(3)));
   disp(sprintf('(fid2xform) First slice offset: [%0.2f %0.2f %0.2f]',offset(1,4),offset(2,4),offset(3,4)));
-  disp(sprintf('(fid2xform) pss = %s',num2str(procpar.pss)));
+  disp(sprintf('(fid2xform) pss = %s',mlrnum2str(procpar.pss)));
+  disp(sprintf('(fid2xform) length of pss = %i',length(procpar.pss)));
   disp(sprintf('(fid2xform) offset to origin: [%0.2f %0.2f %0.2f]',originOffset(1),originOffset(2),originOffset(3)));
 end
 
