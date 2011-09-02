@@ -33,7 +33,14 @@ hdr = cbiCreateNiftiHeader;
 % get the qform
 [qform44 info] = fid2xform(fidname,verbose,sprintf('movepro=%f',movepro));
 if isempty(qform44),hdr = [];return;end
-  
+
+% give warning for epi's that have not been processed
+if info.isepi && info.compressedFid
+  disp(sprintf('(fidniftihdr) Compressed EPI - needs epibsi processing'));
+  hdr = [];
+  return
+end
+
 % set the qform
 hdr = cbiSetNiftiQform(hdr,qform44);
 
