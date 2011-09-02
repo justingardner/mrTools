@@ -73,4 +73,7 @@ for f = 1:size(optionalFields,1)
   end
 end
 
+% make sure we have row arrays
+h.dim = h.dim(:)';
+h.pixdim = h.pixdim(:)';
 
