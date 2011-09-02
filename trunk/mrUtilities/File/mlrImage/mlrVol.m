@@ -476,8 +476,9 @@ for iView = 1:3
   % in the view, and the third condition is for tethered volumes - whether we have change the coordinates
   % for the volume we are tethered to
   if (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || ...
-      (~vol.tethered && ~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))) || ...
-      (vol.tethered && ~isequal(vol.curCoord(gVol{sysNum}.vols(vol.tethered).viewDim(iView)),vol.coord(gVol{sysNum}.vols(vol.tethered).viewDim(iView)))))
+      (~vol.tethered && ~isequal(vol.curCoord(vol.viewDim(iView)), ...
+				 vol.coord(vol.viewDim(iView)))) || ...
+      vol.tethered)
     % get the slice
     % nDims hard coded to 5 here
     if vol.tethered
@@ -703,8 +704,11 @@ else
     x = reshape(coords(1,:),s);
     y = reshape(coords(2,:),s);
     z = reshape(coords(3,:),s);
-    % get the interpolated image (note that interp3 needs to have y and x swaped to work correctly here)
-    gVol{sysNum}.vols(iVol).dispSlice{iView} = squeeze(interp3(gVol{sysNum}.vols(iVol).data,y,x,z,gVol{sysNum}.interpMethod,nan));
+    % get the interpolated image (note that interp3 needs to have y
+    % and x swaped to work correctly here)
+    coord = gVol{sysNum}.vols(iVol).coord;
+    % nDims hard coded to 5 here
+    gVol{sysNum}.vols(iVol).dispSlice{iView} = squeeze(interp3(gVol{sysNum}.vols(iVol).data(:,:,:,coord(4),coord(5)),y,x,z,gVol{sysNum}.interpMethod,nan));
   end
   % save in cache
   gVol{sysNum}.vols(iVol).c = mrCache('add',gVol{sysNum}.vols(iVol).c,mrnum2str(coord),gVol{sysNum}.vols(iVol).dispSlice);
@@ -1068,7 +1072,7 @@ for iVol = gVol{sysNum}.n
     % clear cache
     gVol{sysNum}.vols(iVol).c = mrCache('init',2*max(gVol{sysNum}.vols(iVol).h.dim(1:3)));
     % and set to redisplay
-    gVol{sysNum}.vols(iVol).curCoord = nan;
+    gVol{sysNum}.vols(iVol).curCoord(1:3) = nan;
   end
 end
 
@@ -1168,7 +1172,7 @@ for iVol = 1:gVol{sysNum}.n
     mrParamsSet(updateParams);
   end
   % set all images to redisplay
-  gVol{sysNum}.vols(iVol).curCoord = nan;
+  gVol{sysNum}.vols(iVol).curCoord(1:3) = nan;
 end
 
 % set the altXform for displaying coordinates of the transformed volume
@@ -1298,8 +1302,8 @@ function displayInterpolated(sysNum,params)
 
 global gVol;
 gVol{sysNum}.displayInterpolated = params.displayInterpolated;
-gVol{sysNum}.vols(2).curCoord = nan;
-gVol{sysNum}.vols(2).coord = nan;
+gVol{sysNum}.vols(2).curCoord(1:3) = nan;
+gVol{sysNum}.vols(2).coord(1:3) = nan;
 refreshDisplay(sysNum);
 
 
