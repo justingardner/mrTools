@@ -222,8 +222,14 @@ swapDim2 =[0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
 % for now - will need to update all of our transforms ;-(.... -j.
 swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
 
+if info.isepi
+  epiSwap = [-1 0 0 0;0 -1 0 0;0 0 1 0;0 0 0 1];
+else
+  epiSwap = eye(4);
+end
+
 % now create the final shifted rotation matrix
-xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiSwap*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);
