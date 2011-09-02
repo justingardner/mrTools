@@ -350,11 +350,27 @@ xform = gVol{sysNum}.vols(1).altXforms.xforms{gVol{sysNum}.vols(1).altXforms.cur
 coord = round(inv(xform) * coord);
 
 % check to see if we have valid coordinates
-if all(coord(1:3) > 0) && all(coord(1:3) <= vol.h.dim(1:3))
+if all(coord(1:3) > 0) && all(coord(1:3)' <= vol.h.dim(1:3))
   % if so, then display
   set(gVol{sysNum}.hCoordTextbox(1),'String',sprintf('%0.0f',coord(1)));
   set(gVol{sysNum}.hCoordTextbox(2),'String',sprintf('%0.0f',coord(2)));
   set(gVol{sysNum}.hCoordTextbox(3),'String',sprintf('%0.0f',coord(3)));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   makeExtraCoordControls   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function makeExtraCoordControls(sysNum,shortName,col)
+
+global gVol;
+
+if ~isfield(gVol{sysNum},'hExtraCoordTitle')
+  gVol{sysNum}.hExtraCoordTitle(1) = makeTextbox(sysNum,sprintf('%s X',shortName),2,col);
+  gVol{sysNum}.hExtraCoordTextbox(1) = makeTextboxIncDec(sysNum,'',-1,1,col);
+  gVol{sysNum}.hExtraCoordTitle(2) = makeTextbox(sysNum,sprintf('%s Y',shortName),2,col+1);
+  gVol{sysNum}.hExtraCoordTextbox(2) = makeTextboxIncDec(sysNum,'',-2,1,col+1);
+  gVol{sysNum}.hExtraCoordTitle(3) = makeTextbox(sysNum,sprintf('%s Z',shortName),2,col+2);
+  gVol{sysNum}.hExtraCoordTextbox(3) = makeTextboxIncDec(sysNum,'',-3,1,col+2);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -1467,8 +1483,8 @@ vol.subplotNum(1:3) = (1:3)+(n-1)*3;
 % choose which axis will be displayed in what figure based on this
 % information
 if h.qform_code && ~gVol{sysNum}.imageOrientation
-  [axisLabels vol.axisDirLabels vol.axisMapping vol.axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform44);
-  vol.viewDim(1:3) = vol.axisReverseMapping;
+  [axisLabels vol.axisDirLabels vol.axisMapping axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform44);
+  vol.viewDim(1:3) = axisReverseMapping;
 else
   vol.axisDirLabels = [];
   % default to assuming LPI orientation
@@ -1577,13 +1593,7 @@ if n == 1
   % make the extra coordinates text boxes
   if vol.altXforms.n > 0
     vol.altXforms.currentXform = 1;
-    shortName = vol.altXforms.shortNames{vol.altXforms.currentXform};
-    gVol{sysNum}.hExtraCoordTitle(1) = makeTextbox(sysNum,sprintf('%s X',shortName),2,h.nDim+2);
-    gVol{sysNum}.hExtraCoordTextbox(1) = makeTextboxIncDec(sysNum,'',-1,1,h.nDim+2);
-    gVol{sysNum}.hExtraCoordTitle(2) = makeTextbox(sysNum,sprintf('%s Y',shortName),2,h.nDim+3);
-    gVol{sysNum}.hExtraCoordTextbox(2) = makeTextboxIncDec(sysNum,'',-2,1,h.nDim+3);
-    gVol{sysNum}.hExtraCoordTitle(3) = makeTextbox(sysNum,sprintf('%s Z',shortName),2,h.nDim+4);
-    gVol{sysNum}.hExtraCoordTextbox(3) = makeTextboxIncDec(sysNum,'',-3,1,h.nDim+4);
+    makeExtraCoordControls(sysNum,vol.altXforms.shortNames{vol.altXforms.currentXform},h.nDim+2);
   end
 end
 
@@ -1602,6 +1612,8 @@ if n > 1
   gVol{sysNum}.vols(1).altXforms.n = vol.altXforms.n+1;
   % set alt coord to this one
   params.altCoord = 'Aligned volume';
+  % this will make the extra coord controls only if they haven't already been made
+  makeExtraCoordControls(sysNum,'',gVol{sysNum}.vols(1).h.nDim+2);
   changeAltCoord(sysNum,params);
   
   % setup subplotRows and subplotCols
