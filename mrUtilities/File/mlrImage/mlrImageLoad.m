@@ -67,11 +67,21 @@ end
 
 % load the data
 switch lower(getext(filename))
- case {'hdr','img','nii'}
+ case {'img'}
+  if isdir(filename)
+    data = fdf2nifti(filename,verbose);
+  else
+    data = cbiReadNifti(filename);
+  end
+ case {'hdr','nii'}
   data = cbiReadNifti(filename);
  case {'sdt','spr','edt','epr'}
   data = readsdt(filename);
-  data = data.data;
+  if isfield(data,'data')
+    data = data.data;
+  else
+    data = [];
+  end
  case {'fid'}
   data = fid2nifti(filename,verbose);
 end

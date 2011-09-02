@@ -279,6 +279,11 @@ if gVol{sysNum}.animating
   gVol{sysNum}.animating = 0;
 end
 
+% close correlation figure if it exists
+if isfield(gVol{sysNum},'dispCorrelationFig') && ishandle(gVol{sysNum}.dispCorrelationFig)
+  close(gVol{sysNum}.dispCorrelationFig);
+end
+
 uniqueFigs = unique(gVol{sysNum}.fig);
 % close the figures
 for i = 1:length(uniqueFigs)
@@ -941,6 +946,7 @@ if gVol{sysNum}.n > 1
     {'toggleOverlay',0,'type=pushbutton','callback',@toggleOverlay,'buttonString','Toggle overlay','callbackArg',sysNum,'Toggle display the overlay'}...
     {'overlayAlpha',gVol{sysNum}.overlayAlpha,'incdec=[-0.2 0.2]','minmax=[0 1]','callback',@overlayAlpha,'callbackArg',sysNum,'passParams=1','Change the alpha of the overlay to make it more or less transparent'}...
     {'displayInterpolated',1,'type=checkbox','callback',@displayInterpolated,'callbackArg',sysNum,'Display image interpolated to match the primary volume'}...
+    {'dispCorrelation',0,'type=pushbutton','callback',@dispCorrelation,'buttonString','Display correlation','callbackArg',sysNum,'Display correlation between aligned volume images'}...
     {'initFromHeader',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Init from header','callbackArg',{sysNum 'initFromHeader'},'passParams=1','Reinit the alignment using the qform/sform info from the headers'}...
     {'setToIdentity',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Set to identity','callbackArg',{sysNum 'setToIdentity'},'passParams=1','Set the alignment to identity'}...
     {'swapXY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Swap XY','callbackArg',{sysNum 'swapXY'},'passParams=1','Swap XY in the alignment'}...
@@ -1121,6 +1127,64 @@ for iVol = 1:gVol{sysNum}.n
     end
   end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    dispCorrelation    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = dispCorrelation(sysNum)
+
+f = gcf;
+
+retval = [];
+global gVol;
+
+% get the two volumes
+vol1 = gVol{sysNum}.vols(1);
+vol2 = gVol{sysNum}.vols(2);
+
+% open figure
+if ~isfield(gVol{sysNum},'dispCorrelationFig') || isempty(gVol{sysNum}.dispCorrelationFig)
+  gVol{sysNum}.dispCorrelationFig = figure;
+else
+  figure(gVol{sysNum}.dispCorrelationFig);
+end
+clf;
+
+titleStr = '';
+for iView = 1:3
+  % grab the data grom the first volume
+  % nDims hard coded to 5 here
+  dispSlice1 = squeeze(vol1.data(vol1.viewIndexes{iView,1},vol1.viewIndexes{iView,2},vol1.viewIndexes{iView,3},vol1.coord(4),vol1.coord(5)));
+
+  % and get the dispSlice from the tethered volume
+  dispSlice2 = vol2.dispSlice{iView};
+
+  % compute stats
+  slope = pinv(dispSlice1(:))*dispSlice2(:);
+  r2 = regstats(dispSlice1(:),dispSlice2(:),'linear','rsquare');
+  r2 = r2.rsquare;
+  titleStr = sprintf('%s m=%0.2f r^2:%0.3f',titleStr,slope,r2);
+  
+  % display
+  plot(dispSlice1(:),dispSlice2(:),'.','Color',getSmoothColor(iView,3));
+  hold on;
+end
+
+% display the labels
+title(titleStr);
+xlabel(sprintf('%s voxel values',vol1.h.filename));
+ylabel(sprintf('%s voxel values',vol2.h.filename));
+
+% set the axis equal
+[xmin xmax] = xaxis;
+[ymin ymax] = yaxis;
+axis([min(xmin,ymin) max(xmax,ymax) min(xmin,ymin) max(xmax,ymax)]);
+
+% put up diagonal
+dline('k',1);
+
+% switch back current fig
+figure(f);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %    toggleOverlay    %
