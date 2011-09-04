@@ -227,7 +227,7 @@ function hdr=cbiCreateNiftiHeader(varargin)
 
   % file name: set magic number
   if (isfield(hdr,'hdr_name'))
-    [pathstr,bname,ext,ver]=fileparts(hdr.hdr_name);
+    [pathstr,bname,ext]=fileparts(hdr.hdr_name);
     switch (ext)
      case '.nii'  
        hdr.single_file=1;
