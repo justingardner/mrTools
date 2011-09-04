@@ -75,8 +75,9 @@ while iArg <= nArgs
 	imageArgs{end+1} = filenameWithDefaultExt;
 	iArg = iArg+1;
       % or the filename w/out any extension
-      elseif isfile(args{iArg})
-	imageArgs{end+1} = args{iArg};
+      elseif isfile(args{iArg}) || isdir(args{iArg})
+	disp(sprintf('(mlrImageParseArgs) Unknown filetype for %s (missing extension)',args{iArg}));
+	iArg = iArg+1;
       % get from canonical directory, if the name is any one of the following
       elseif any(strcmp({'canonical','volume','volumedirectory','volumedir','voldir'},lower(stripext(args{iArg}))))
 	% put up the path/str dialog box
