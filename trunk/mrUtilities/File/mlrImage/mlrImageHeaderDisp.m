@@ -3,19 +3,37 @@
 %      usage: mlrImageDispHeader(h,<verbose=1>)
 %         by: justin gardner
 %       date: 09/04/11
-%    purpose: displays the image header
+%    purpose: displays the image header (h can be a header)
+%             or can be called with a filename/view/etc. just
+%             like mlrImageLoad
 %
-function mlrImageHeaderDisp(h,verbose)
+function mlrImageHeaderDisp(varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if nargin == 0
   help mlrImageDispHeader
   return
 end
 
-% default arguments
-if nargin < 2,verbose = 1;end
+% load arguments
+[imageArgs otherArgs]  = mlrImageParseArgs(varargin);
+verbose = [];
+getArgs(otherArgs,{'verbose=1'});
 
+if length(imageArgs) < 1
+  disp(sprintf('(mlrImageHeaderDisp) No files to display'));
+  return
+end
+  
+% if it is not a header already, then load it
+if mlrImageIsHeader(imageArgs{1})
+  h = imageArgs{1};
+else
+  h = mlrImageHeaderLoad(imageArgs{1});
+  if isempty(h),return,end
+end
+
+% display the main part of the header
 dispHeader(h.filename);
 if ~isempty(h.ext)
   disp(sprintf('type: %s (%s)',h.type,h.ext));
@@ -53,6 +71,7 @@ end
   
 % if there is a talInfo field, display that
 if isfield(h,'base') && isfield(h.base,'talInfo') && ~isempty(h.base.talInfo)
+  dispHeader(sprintf('%s (Talairach info)',getLastDir(h.filename)));
   disp(sprintf('AC: [%s]',mlrnum2str(h.base.talInfo.AC,'compact=1','sigfigs=0')));
   disp(sprintf('PC: [%s]',mlrnum2str(h.base.talInfo.PC,'compact=1','sigfigs=0')));
   disp(sprintf('SAC: [%s]',mlrnum2str(h.base.talInfo.SAC,'compact=1','sigfigs=0')));
