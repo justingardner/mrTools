@@ -4,19 +4,18 @@
 %      usage: mlrImageLoad(filename)
 %         by: justin gardner
 %       date: 08/15/11
-%    purpose: Loads an mlr image (this is usually a nifti file, but we can expand this
-%             to load any kind of image).
+%    purpose: Loads an mlr image (handles nifti, Agilant fid, and
+%             other formats)
+%  
+%             You can load using a filename, view/scanNum/groupNum,
+%             select from a dialog box in the current or canonical
+%             directory, or from a struct -> see mlrImageParseArgs
+%             for details
 %
-%             To load an image based on a scan/group
-%             v = newView;
-%             mlrImageLoad(v,'groupNum=2','scanNum=3');
-%
-%             To select a canonical (through dialog box) from the volumeDirecotry
-%             mlrImageHeaderLoad canonical
-function [data header] = mlrImageLoad(filename,varargin)
+function [dataRetval headerRetval] = mlrImageLoad(varargin)
 
 % default return values
-data = [];header = [];
+dataRetval = [];headerRetval = [];
 
 % check arguments
 if nargin < 1
@@ -24,65 +23,73 @@ if nargin < 1
   return
 end
 
-% empty filename, means to bring up box
-if isempty(filename)
-  filename = getPathStrDialog('.','Choose a volume',{'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)';'*.sdt;*.edt;','SDT/SPR or EDT/EPR Files (*.sdt, *.spr)'},'off');
-  if isempty(filename),return,end
-end
-
-% set extension to default if not specified
-% for the special name 'canonical' bring up
-% a dialog box to get name from voldir
-if isstr(filename) && isempty(getext(filename))
-  filename = setext(filename,mrGetPref('niftiFileExtension'));
-  % get from canonical directory
-  if any(strcmp({'canonical','volume','volumedirectory','volumedir','voldir'},lower(stripext(filename)))) && ~isfile(filename)
-    filename = getPathStrDialog(mrGetPref('volumeDirectory'),'Choose a volume',{'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)'},'off');
-    if isempty(filename),return,end
-  end
-end
-
-% load the header first
-header = mlrImageHeaderLoad(filename);
-if isempty(header),return,end
-
-% if this is a data structure then extract data
-if isstruct(filename) && isfield(filename,'data')
-  filename = filename.data;
-end
-if isnumeric(filename)
-  data = filename;
-  return
-end
+% parse arguments
+[imageArgs otherArgs] = mlrImageParseArgs(varargin);
 
 % check input arguments
-groupNum = [];scanNum = [];verbose=[];
-getArgs(varargin,{'groupNum=1','scanNum=1','verbose=0'});
+verbose=[];
+getArgs(otherArgs,{'verbose=0'});
 
-% if the passed in filename is a view, then load the appropriate group and scan
-if isview(filename)
-  v = filename;
-  filename = viewGet(v,'tseriespathstr',scanNum,groupNum);
-end
+% number of images to load. Note that for
+% a single image, then we just return the data and header.
+% for multiple images, we will return a cell array
+% of headers
+nImages = length(imageArgs);
 
-% load the data
-switch lower(getext(filename))
- case {'img'}
-  if isdir(filename)
-    data = fdf2nifti(filename,verbose);
-  else
-    data = cbiReadNifti(filename);
+for iImage = 1:nImages
+  % get the current filename
+  filename = imageArgs{iImage};
+  data = [];header = [];
+
+  % load the header first
+  header = mlrImageHeaderLoad(filename);
+  if isempty(header)
+    if nImages > 1
+      headerRetval{iImage} = [];
+      dataRetval{iImage} = [];
+    else
+      headerRetval = [];
+      dataRetval = [];
+    end
+    continue;
   end
- case {'hdr','nii'}
-  data = cbiReadNifti(filename);
- case {'sdt','spr','edt','epr'}
-  data = readsdt(filename);
-  if isfield(data,'data')
-    data = data.data;
-  else
-    data = [];
+
+  if isstruct(filename) && isfield(filename,'data')
+    data = filename.data;
+  elseif isstr(filename)
+    % load the data
+    switch lower(getext(filename))
+     case {'img'}
+      if isdir(filename)
+	data = fdf2nifti(filename,verbose);
+      else
+	data = cbiReadNifti(filename);
+      end
+     case {'hdr','nii'}
+      data = cbiReadNifti(filename);
+     case {'sdt','spr','edt','epr'}
+      data = readsdt(filename);
+      if isfield(data,'data')
+	data = data.data;
+      else
+	data = [];
+      end
+     case {'fid'}
+      data = fid2nifti(filename,verbose);
+    end
   end
- case {'fid'}
-  data = fid2nifti(filename,verbose);
+
+  % now make sure dimensions match in header
+  header.dim = size(data)';
+  header.nDim = length(header.dim);
+  
+  % package up for returning
+  if nImages > 1
+    headerRetval{iImage} = header;
+    dataRetval{iImage} = data;
+  else
+    headerRetval = header;
+    dataRetval = data;
+  end
 end
 

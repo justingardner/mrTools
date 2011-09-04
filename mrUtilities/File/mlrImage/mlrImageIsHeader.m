@@ -77,3 +77,5 @@ end
 h.dim = h.dim(:)';
 h.pixdim = h.pixdim(:)';
 
+% always have the same sort order of fields
+h = orderfields(h);

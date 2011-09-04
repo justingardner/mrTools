@@ -62,6 +62,8 @@ if verbose,disp(sprintf('(fdf2nifti) Voxel size: %s',mlrnum2str(diag(voxelSize)'
 locationOffset = [1 0 0 h(1).location(1)*10;0 1 0 h(1).location(2)*10; 0 0 1 h(1).location(3)*10 ; 0 0 0 1];
 if verbose,disp(sprintf('(fdf2nifti) Location offset: %s',mlrnum2str(locationOffset(1:3,4)')));end
 
+% fix matrix for 2D images to have a 3rd dim
+if length(h(1).matrix) < 3, h(1).matrix(3) = 1;end
 
 sliceCenterOffset = eye(4);
 sliceCenterOffset(1,4) = -h(1).matrix(1)/2;
@@ -77,7 +79,7 @@ qform44 = orientation*voxelSize*sliceCenterOffset*locationOffset*flipYZ*swapXY;
 if verbose,disp(sprintf('(fdf2nifti) Qform44\n%s',mlrnum2str(qform44,'compact=0')));end
 
 % we still need to debug all of this
-disp(sprintf('(fdf2nifti) !!! Not sure the qform44 computed from the fdf header is not correct (we need to debug this) !!!!'));
+disp(sprintf('(fdf2nifti) !!! Not sure the qform44 computed from the fdf header is correct (we need to debug this) !!!!'));
 
 % create header
 hdr = cbiCreateNiftiHeader; 
