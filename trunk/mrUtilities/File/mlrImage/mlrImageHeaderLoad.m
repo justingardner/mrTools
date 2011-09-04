@@ -7,13 +7,12 @@
 %    purpose: loads a mrLoadRet image. This can handle various image types
 %             including nifti. 
 %
-%             To load an image header based on a scan/group
-%             v = newView;
-%             mlrImageHeaderLoad(v,'groupNum=2','scanNum=3');
+%             You can load using a filename, view/scanNum/groupNum,
+%             select from a dialog box in the current or canonical
+%             directory, or from a struct -> see mlrImageParseArgs
+%             for details
 %
-%             To select a canonical (through dialog box) from the volumeDirecotry
-%             mlrImageHeaderLoad canonical
-function header = mlrImageHeaderLoad(filename,varargin)
+function retval = mlrImageHeaderLoad(varargin)
 
 header = [];
 
@@ -23,98 +22,123 @@ if nargin < 1
   return
 end
 
-% if passed in a sturcutre with the field data
-% then grab the data and convert the rest of the
-% fields to a private header
-if (isstruct(filename) && isfield(filename,'data'))
-  header.hdr = rmfield(filename,'data');
-  filename = filename.data;
-end
+% parse arguments
+[imageArgs otherArgs] = mlrImageParseArgs(varargin);
+verbose = [];
+getArgs(otherArgs,{'verbose=0'});
 
-% numeric argument means passed in data structure with no header
-if isnumeric(filename)
-  header.dim = size(filename);
-  [tf header] = mlrImageIsHeader(header);
-  return
-end
+% number of images headers to load. Note that for
+% a single image, then we just return the header
+% for multiple images, we will return a cell array
+% of headers
+nImages = length(imageArgs);allHeaders = {};
 
-% check input arguments
-groupNum = [];scanNum = [];verbose = [];
-getArgs(varargin,{'groupNum=1','scanNum=1','verbose=0'});
-
-% if the passed in filename is a view, then load the appropriate group and scan
-if isview(filename)
-  v = filename;
-  filename = viewGet(v,'tseriespathstr',scanNum,groupNum);
-end
-
-
-% set filenames
-if isempty(getext(filename))
-  hdrFilename = setext(filename,mrGetPref('niftiFileExtension'));
-  % get from canonical directory
-  if any(strcmp({'canonical','volume','volumedirectory','volumedir','voldir'},lower(stripext(filename)))) && ~isfile(filename)
-    filename = getPathStrDialog(mrGetPref('volumeDirectory'),'Choose a volume',{'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)'},'off');
-    if isempty(filename),return,end
-  end
-else
-  hdrFilename = filename;
-end
-
-%check for file
-if ~isfile(hdrFilename) && ~isdir(hdrFilename)
-  disp(sprintf('(mlrImageHeaderLoad) Could not find file %s',hdrFilename));
-  return
-end
-
-% set inital fields of header
-header.filename = filename;
-header.ext = getext(filename);
-
-switch lower(getext(filename))
-  case {'img'}
-    if ~isdir(filename)
-      header = mlrImageHeaderLoadNifti(filename,header);
-    else
-      header = mlrImageHeaderLoadFDF(filename,header,verbose);
+% cycle though each image argument
+for iImage = 1:nImages
+  header = [];
+  % if passed in a sturcutre with the field data
+  % then grab the data and convert the rest of the
+  % fields to a private header
+  if isstruct(imageArgs{iImage})
+    if isfield(imageArgs{iImage},'h')
+      % see if it has an mlrImage header
+      if mlrImageIsHeader(imageArgs{iImage}.h)
+	header = imageArgs{iImage}.h;
+      else
+	% see if this is a nifti header
+	header = mlrImageHeaderLoadPassedInNiftiHeader(imageArgs{iImage}.h);
+      end
     end
-  case {'hdr','nii'}
-    header = mlrImageHeaderLoadNifti(filename,header);
-  case {'sdt','spr','edt','epr'}
-    header = mlrImageHeaderLoadSDT(filename,header);
-  case {'fid'}
-    header = mlrImageHeaderLoadFid(filename,header,verbose);
- otherwise
-    disp(sprintf('(mlrImageHeaderLoad) Unknown image header type: %s',getext(filename)));
-    return
-end
+    % if we didn't get it from above, then build a header
+    % based on the data field
+    if isempty(header) && isfield(imageArgs{iImage},'data')
+      header.type = 'data';
+      header.ext = '';
+      header.hdr = rmfield(imageArgs{iImage},'data');
+      header.dim = size(imageArgs{iImage}.data);
+      [tf header] = mlrImageIsHeader(header);
+    end
+    % set in all headers if necessary
+    if nImages > 1
+      [tf allHeaders{end+1}] = mlrImageIsHeader(header);
+    end
+    continue;
+  elseif isstr(imageArgs{iImage})
+    filename = imageArgs{iImage};
+    %check for file
+    if ~isfile(filename) && ~isdir(filename)
+      disp(sprintf('(mlrImageHeaderLoad) Could not find file %s',filename));
+      if nImages > 1,allHeaders{end+1} = [];end
+      continue
+    end
 
-if isempty(header),return,end
+    % set inital fields of header
+    header.filename = filename;
+    header.ext = getext(filename);
+    
+    switch lower(getext(filename))
+     case {'img'}
+      if ~isdir(filename)
+	header = mlrImageHeaderLoadNifti(filename,header);
+      else
+	header = mlrImageHeaderLoadFDF(filename,header,verbose);
+      end
+     case {'hdr','nii'}
+      header = mlrImageHeaderLoadNifti(filename,header);
+     case {'sdt','spr','edt','epr'}
+      header = mlrImageHeaderLoadSDT(filename,header);
+     case {'fid'}
+      header = mlrImageHeaderLoadFid(filename,header,verbose);
+     otherwise
+      disp(sprintf('(mlrImageHeaderLoad) Unknown image header type: %s',getext(filename)));
+      return
+    end
 
-% load the associated matlab header
-header.base = loadAssociatedMatlabHeader(filename);
+    if isempty(header)
+      if nImages > 1,allHeaders{end+1} = [];end
+      continue
+    end
 
-% set the vol2mag field - get it from the base 
-% struture if it has not already been set
-if ~isfield(header,'vol2mag')
-  if isfield(header.base,'vol2mag')
-    header.vol2mag = header.base.vol2mag;
+    % load the associated matlab header
+    header.base = loadAssociatedMatlabHeader(filename);
+
+    % set the vol2mag field - get it from the base 
+    % struture if it has not already been set
+    if ~isfield(header,'vol2mag')
+      if isfield(header.base,'vol2mag')
+	header.vol2mag = header.base.vol2mag;
+      else
+	header.vol2mag = [];
+      end
+    end
+    % set the vol2tal field - get it from the base 
+    % struture if it has not already been set
+    if ~isfield(header,'vol2tal')
+      if isfield(header.base,'vol2tal')
+	header.vol2tal = header.base.vol2tal;
+      else
+	header.vol2tal = [];
+      end
+    end
+
+    % now fill in any missing fields from header
+    [tf header] = mlrImageIsHeader(header);
   else
-    header.vol2mag = [];
+    disp(sprintf('(mlrImageHeaderLoad) Unknown argument'));
   end
-end
-% set the vol2tal field - get it from the base 
-% struture if it has not already been set
-if ~isfield(header,'vol2tal')
-  if isfield(header.base,'vol2tal')
-    header.vol2tal = header.base.vol2tal;
-  else
-    header.vol2tal = [];
-  end
+  header = orderfields(header);
+  if nImages > 1,[tf allHeaders{end+1}] = mlrImageIsHeader(header);end
 end
 
-% now fill in any missing fields from header
-[tf header] = mlrImageIsHeader(header);
+% return a cell array if multiple images headers are to be loaded
+% or just the one header otherwise
+if nImages > 1
+  retval = allHeaders;
+else
+  [tf retval] = mlrImageIsHeader(header);
+end
+  
+   
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadFDF    %
@@ -126,7 +150,7 @@ function header = mlrImageHeaderLoadFDF(filename,header,verbose)
 if isempty(nifti),header = [];return;end
   
 % set some info
-header.type = 'nifti';
+header.type = 'fdf';
 header.hdr = nifti;
 
 % set other fields
@@ -148,7 +172,7 @@ nifti = fid2niftihdr(filename,verbose);
 if isempty(nifti),header = [];return;end
   
 % set some info
-header.type = 'nifti';
+header.type = 'fid';
 header.hdr = nifti;
 
 % set other fields
@@ -207,6 +231,27 @@ header.nDim = header.hdr.dim(1);
 header.dim = header.hdr.dim(2:header.nDim+1);
 header.pixdim = header.hdr.pixdim(2:header.nDim+2);
  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mlrImageHeaderLoadPassedInNiftiHeader   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function header = mlrImageHeaderLoadPassedInNiftiHeader(h)
+
+header = [];
+% first check some fields
+checkFields = {'qform_code','qform44','sform_code','sform44','dim','pixdim'};
+foundField = false;
+for iField = 1:length(checkFields)
+  if isfield(h,checkFields{iField})
+    header.(checkFields{iField}) = h.(checkFields{iField});
+    foundField = true;
+  end
+end
+% if we found any of the fileds, then just call it a nifti header
+if foundField
+  header.type = 'nifti';
+  header.hdr = h;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    loadAssociatedMatlabHeader    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

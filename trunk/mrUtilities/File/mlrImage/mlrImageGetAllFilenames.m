@@ -35,7 +35,7 @@ for i = 1:length(d)
   % check for valid extension
   if any(strcmp(getext(d(i).name),validExtensions))
     % check for valid filename
-    if mlrImageIsFile(fullfile(dirname,d(i).name))
+    if mlrImageIsImage(fullfile(dirname,d(i).name))
       imageFilenames{end+1} = d(i).name;
     end
   end
