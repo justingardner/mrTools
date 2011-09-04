@@ -1,7 +1,7 @@
 % mlrImageIsHeader.m
 %
 %        $Id:$ 
-%      usage: [tf h] mlrImageIsHeader(h)
+%      usage: [tf hdr] mlrImageIsHeader(h)
 %         by: justin gardner
 %       date: 08/19/11
 %    purpose: Test whether the passed in strucutre is an mlrImageHeader or not
