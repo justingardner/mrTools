@@ -72,7 +72,8 @@ while iArg <= nArgs
       filenameWithDefaultExt = setext(args{iArg},mrGetPref('niftiFileExtension'));
       % and see if that exists
       if isfile(filenameWithDefaultExt) 
-	imageArgs{end+1} = filenameWIthDefaultExt;
+	imageArgs{end+1} = filenameWithDefaultExt;
+	iArg = iArg+1;
       % or the filename w/out any extension
       elseif isfile(args{iArg})
 	imageArgs{end+1} = args{iArg};

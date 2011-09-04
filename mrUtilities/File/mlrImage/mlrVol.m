@@ -540,7 +540,7 @@ for iView = 1:3
     end
 
     % set title
-    titleStr = sprintf('%s: %s (%ix%i)',vol.h.filename,viewLabel{iView},size(dispSlice,2),size(dispSlice,1));
+    titleStr = sprintf('%s: %s (%ix%i)',vol.name,viewLabel{iView},size(dispSlice,2),size(dispSlice,1));
     h = title(titleStr,'Interpreter','none');
     
     % and display the overlay
@@ -1634,11 +1634,15 @@ end
 vol.coord = [];
 vol.viewIndexes = {};
 
+% short filename for displaying
+vol.name = getLastDir(vol.h.filename);
+
 % set the vol
 gVol{sysNum}.vols(n) = vol;
 
 % now set the coordinate in this created volume
 setVolCoord(sysNum,n,coord);
+
 
 tf = true;
 

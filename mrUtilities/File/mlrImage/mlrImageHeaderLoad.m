@@ -4,7 +4,7 @@
 %      usage: mlrImageHeaderLoad(filename)
 %         by: justin gardner
 %       date: 08/19/08
-%    purpose: loads a mrLoadRet image. This can handle various image types
+%    purpose: loads a mlr image. This can handle various image types
 %             including nifti. 
 %
 %             You can load using a filename, view/scanNum/groupNum,
