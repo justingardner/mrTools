@@ -1,0 +1,91 @@
+% mlrImageHeaderDisp.m
+%
+%      usage: mlrImageDispHeader(h,<verbose=1>)
+%         by: justin gardner
+%       date: 09/04/11
+%    purpose: displays the image header
+%
+function mlrImageHeaderDisp(h,verbose)
+
+% check arguments
+if ~any(nargin == [1 2 3])
+  help mlrImageDispHeader
+  return
+end
+
+% default arguments
+if nargin < 2,verbose = 1;end
+
+dispHeader(h.filename);
+if ~isempty(h.ext)
+  disp(sprintf('type: %s (%s)',h.type,h.ext));
+else
+  disp(sprintf('type: %s',h.type));
+end
+disp(sprintf('dim: [%s]',mlrnum2str(h.dim(:)','sigfigs=0')));
+disp(sprintf('pixdim: [%s]',mlrnum2str(h.pixdim(:)')));
+disp(sprintf('qform_code: %i',h.qform_code));
+disp(sprintf('qform:'));
+disp(sprintf('%s',mlrnum2str(h.qform44,'compact=0','sigfigs=-1')));
+disp(sprintf('sform_code: %i',h.sform_code));
+disp(sprintf('sform:'));
+disp(sprintf('%s',mlrnum2str(h.sform44,'compact=0','sigfigs=-1')));
+
+% get axis information if not passed in
+if h.qform_code
+  [axisLabels axisDirLabels] = mlrImageGetAxisLabels(h.qform44);
+else
+  axisDirLabels = [];
+end
+
+% display axis information
+if ~isempty(axisDirLabels)
+  cardinalAxisLabels = {'X','Y','Z'};
+  disp(sprintf('Volume orientation is: %s%s%s',upper(axisDirLabels{1}{1}(1)),upper(axisDirLabels{2}{1}(1)),upper(axisDirLabels{3}{1}(1))));
+  for axisNum = 1:3
+    disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},axisDirLabels{axisNum}{1},axisDirLabels{axisNum}{2}));
+  end
+end
+  
+% if there is a talInfo field, display that
+if isfield(h,'base') && isfield(h.base,'talInfo') && ~isempty(h.base.talInfo)
+  disp(sprintf('AC: [%s]',mlrnum2str(h.base.talInfo.AC,'compact=1','sigfigs=0')));
+  disp(sprintf('PC: [%s]',mlrnum2str(h.base.talInfo.PC,'compact=1','sigfigs=0')));
+  disp(sprintf('SAC: [%s]',mlrnum2str(h.base.talInfo.SAC,'compact=1','sigfigs=0')));
+  disp(sprintf('IAC: [%s]',mlrnum2str(h.base.talInfo.IAC,'compact=1','sigfigs=0')));
+  disp(sprintf('PPC: [%s]',mlrnum2str(h.base.talInfo.PPC,'compact=1','sigfigs=0')));
+  disp(sprintf('AAC: [%s]',mlrnum2str(h.base.talInfo.AAC,'compact=1','sigfigs=0')));
+  disp(sprintf('LAC: [%s]',mlrnum2str(h.base.talInfo.LAC,'compact=1','sigfigs=0')));
+  disp(sprintf('RAC: [%s]',mlrnum2str(h.base.talInfo.RAC,'compact=1','sigfigs=0')));
+end
+
+
+% display detailed header information
+if verbose>1
+  dispHeader(sprintf('%s (detailed header)',getLastDir(h.filename)));
+  hdrFields = fieldnames(h.hdr);
+  for iField = 1:length(hdrFields)
+    val = h.hdr.(hdrFields{iField});
+    if isnumeric(val)
+      if (size(val,1) == 1) && (size(val,2) == 1)
+	disp(sprintf('%s: %s',hdrFields{iField},mlrnum2str(val)));
+      elseif size(val,1) == 1
+	disp(sprintf('%s: [%s]',hdrFields{iField},mlrnum2str(val)));
+      elseif size(val,2) == 1
+	disp(sprintf('%s: [%s]',hdrFields{iField},mlrnum2str(val')));
+      else
+	disp(sprintf('%s:\n%s',hdrFields{iField},mlrnum2str(val,'compact=0')));
+      end
+    elseif isstr(val)
+      disp(sprintf('%s: %s',hdrFields{iField},val));
+    elseif isempty(val)
+      disp(sprintf('%s: []',hdrFields{iField}));
+    elseif isstruct(val)
+      disp(sprintf('%s: struct',hdrFields{iField}));
+    else
+      disp(sprintf('%s: Unknown type',hdrFields{iField}));
+    end      
+  end
+end
+
+dispHeader;
