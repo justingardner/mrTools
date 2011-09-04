@@ -25,11 +25,15 @@ end
 disp(sprintf('dim: [%s]',mlrnum2str(h.dim(:)','sigfigs=0')));
 disp(sprintf('pixdim: [%s]',mlrnum2str(h.pixdim(:)')));
 disp(sprintf('qform_code: %i',h.qform_code));
-disp(sprintf('qform:'));
-disp(sprintf('%s',mlrnum2str(h.qform44,'compact=0','sigfigs=-1')));
+if h.qform_code
+  disp(sprintf('qform:'));
+  disp(sprintf('%s',mlrnum2str(h.qform44,'compact=0','sigfigs=-1')));
+end
 disp(sprintf('sform_code: %i',h.sform_code));
-disp(sprintf('sform:'));
-disp(sprintf('%s',mlrnum2str(h.sform44,'compact=0','sigfigs=-1')));
+if h.sform_code
+  disp(sprintf('sform:'));
+  disp(sprintf('%s',mlrnum2str(h.sform44,'compact=0','sigfigs=-1')));
+end
 
 % get axis information if not passed in
 if h.qform_code
