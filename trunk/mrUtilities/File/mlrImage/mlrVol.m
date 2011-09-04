@@ -733,67 +733,8 @@ function dispHeaderInfo(sysNum,vol)
 global gVol;
 
 if gVol{sysNum}.verbose
-  dispHeader(vol.h.filename);
-  disp(sprintf('type: %s (%s)',vol.h.type,vol.h.ext));
-  disp(sprintf('dim: [%s]',mrnum2str(vol.h.dim(:)','sigfigs=0')));
-  disp(sprintf('pixdim: [%s]',mrnum2str(vol.h.pixdim(:)')));
-  disp(sprintf('qform_code: %i',vol.h.qform_code));
-  disp(sprintf('qform:'));
-  disp(sprintf('%s',mrnum2str(vol.h.qform44,'compact=0','sigfigs=-1')));
-  disp(sprintf('sform_code: %i',vol.h.sform_code));
-  disp(sprintf('sform:'));
-  disp(sprintf('%s',mrnum2str(vol.h.sform44,'compact=0','sigfigs=-1')));
-
-  % display axis information
-  if ~isempty(vol.axisDirLabels)
-    cardinalAxisLabels = {'X','Y','Z'};
-    disp(sprintf('Volume orientation is: %s%s%s',upper(vol.axisDirLabels{1}{1}(1)),upper(vol.axisDirLabels{2}{1}(1)),upper(vol.axisDirLabels{3}{1}(1))));
-    for axisNum = 1:3
-      disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},vol.axisDirLabels{axisNum}{1},vol.axisDirLabels{axisNum}{2}));
-    end
-  end
-  
-  % if there is a talInfo field, display that
-  if isfield(vol.h,'base') && isfield(vol.h.base,'talInfo') && ~isempty(vol.h.base.talInfo)
-    disp(sprintf('AC: [%s]',mrnum2str(vol.h.base.talInfo.AC,'compact=1','sigfigs=0')));
-    disp(sprintf('PC: [%s]',mrnum2str(vol.h.base.talInfo.PC,'compact=1','sigfigs=0')));
-    disp(sprintf('SAC: [%s]',mrnum2str(vol.h.base.talInfo.SAC,'compact=1','sigfigs=0')));
-    disp(sprintf('IAC: [%s]',mrnum2str(vol.h.base.talInfo.IAC,'compact=1','sigfigs=0')));
-    disp(sprintf('PPC: [%s]',mrnum2str(vol.h.base.talInfo.PPC,'compact=1','sigfigs=0')));
-    disp(sprintf('AAC: [%s]',mrnum2str(vol.h.base.talInfo.AAC,'compact=1','sigfigs=0')));
-    disp(sprintf('LAC: [%s]',mrnum2str(vol.h.base.talInfo.LAC,'compact=1','sigfigs=0')));
-    disp(sprintf('RAC: [%s]',mrnum2str(vol.h.base.talInfo.RAC,'compact=1','sigfigs=0')));
-  end
+  mlrImageHeaderDisp(vol.h,gVol{sysNum}.verbose);
 end
-
-% display detailed header information
-if gVol{sysNum}.verbose>1
-  hdrFields = fieldnames(vol.h.hdr);
-  for iField = 1:length(hdrFields)
-    val = vol.h.hdr.(hdrFields{iField});
-    if isnumeric(val)
-      if (size(val,1) == 1) && (size(val,2) == 1)
-	disp(sprintf('%s: %s',hdrFields{iField},mrnum2str(val)));
-      elseif size(val,1) == 1
-	disp(sprintf('%s: [%s]',hdrFields{iField},mrnum2str(val)));
-      elseif size(val,2) == 1
-	disp(sprintf('%s: [%s]',hdrFields{iField},mrnum2str(val')));
-      else
-	disp(sprintf('%s:\n%s',hdrFields{iField},mrnum2str(val,'compact=0')));
-      end
-    elseif isstr(val)
-      disp(sprintf('%s: %s',hdrFields{iField},val));
-    elseif isempty(val)
-      disp(sprintf('%s: []',hdrFields{iField}));
-    elseif isstruct(val)
-      disp(sprintf('%s: struct',hdrFields{iField}));
-    else
-      disp(sprintf('%s: Unknown type',hdrFields{iField}));
-    end      
-  end
-end
-
-if gVol{sysNum}.verbose==1,dispHeader;end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    UI control functions
