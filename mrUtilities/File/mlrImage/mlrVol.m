@@ -288,6 +288,8 @@ for i = 1:length(uniqueFigs)
   delete(uniqueFigs(i));
 end
 
+mrParamsClose;
+
 % remove the variable
 gVol{sysNum} = [];
 
