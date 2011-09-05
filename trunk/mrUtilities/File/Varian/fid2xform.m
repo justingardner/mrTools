@@ -210,8 +210,14 @@ offset = [eye(3) offset';0 0 0 1];
 
 % get the distance to the image origin (ie voxel 0,0,0) in number of voxels
 % (i.e. the image dimensions divided by 2 as we assume that the offset specifies
-% where the center of the volume is)
-originOffset = -(dim-1)/2;originOffset(3) = 0;
+% where the center of the volume is - (the third dimension is set by the
+% pss, so we ignore it)
+% note that I would have thought that we need to subtract 1 so that
+% we get to the center of the voxel, but not subtracting 1 empirical
+% seems to be correct
+%originOffset = -(dim-1)/2;
+originOffset = -(dim)/2;
+originOffset(3) = 0;
 originOffset = [eye(3) originOffset';0 0 0 1];
 
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
