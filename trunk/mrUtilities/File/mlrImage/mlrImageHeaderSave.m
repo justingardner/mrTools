@@ -84,15 +84,15 @@ hdr.pixdim = hdr.pixdim(:);
 hdr.pixdim = hdr.pixdim(1:8);
 
 % set the qform
-if h.qform_code
-  hdr = cbiSetNiftiQform(hdr,h.qform44);
-  hdr.qform_code = h.qform_code;
+if ~isempty(h.qform)
+  hdr = cbiSetNiftiQform(hdr,h.qform);
+  hdr.qform_code = 1;
 end
 
 % set the sform
-if h.sform_code
-  hdr = cbiSetNiftiSform(hdr,h.sform44);
-  hdr.sform_code = h.sform_code;
+if ~isempty(h.sform)
+  hdr = cbiSetNiftiSform(hdr,h.sform);
+  hdr.sform_code = 1;
 end
 
 % save it
@@ -131,10 +131,10 @@ for i = 1:size(sdtFields,1)
 end
 
 % add the orientation fields
-hdr.qform_code = h.qform_code;
-hdr.qform44 = h.qform44(:);
-hdr.sform_code = h.sform_code;
-hdr.sform44 = h.sform44(:);
+if ~isempty(h.qform),hdr.qform = h.qform(:);end
+if ~isempty(h.sform),hdr.sform = h.sform(:);end
+if ~isempty(h.vol2mag),hdr.vol2mag = h.vol2mag(:);end
+if ~isempty(h.vol2tal),hdr.vol2tal = h.vol2tal(:);end
 
 % can't save the header by itself
 if saveHeader

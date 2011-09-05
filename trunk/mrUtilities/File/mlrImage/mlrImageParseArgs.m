@@ -75,7 +75,7 @@ while iArg <= nArgs
 	imageArgs{end+1} = filenameWithDefaultExt;
 	iArg = iArg+1;
       % or the filename w/out any extension
-      elseif isfile(args{iArg}) || isdir(args{iArg})
+      elseif isfile(args{iArg}) || (~strcmp(args{iArg},'.') && isdir(args{iArg}))
 	disp(sprintf('(mlrImageParseArgs) Unknown filetype for %s (missing extension)',args{iArg}));
 	iArg = iArg+1;
       % get from canonical directory, if the name is any one of the following
@@ -154,6 +154,8 @@ while iArg <= nArgs
       % d is also acceptable, but switch it to a data filed
       imageArgs{end+1} = rmfield(args{iArg},'d');
       imageArgs{end}.data = d;
+    elseif mlrImageIsHeader(args{iArg})
+      imageArgs{end+1} = args{iArg};
     end
     iArg = iArg+1;
   elseif isnumeric(args{iArg})

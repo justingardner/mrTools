@@ -735,7 +735,7 @@ function dispHeaderInfo(sysNum,vol)
 global gVol;
 
 if gVol{sysNum}.verbose
-  mlrImageHeaderDisp(vol.h,gVol{sysNum}.verbose);
+  mlrImageHeaderDisp(vol.h,'verbose',gVol{sysNum}.verbose);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -803,16 +803,15 @@ function vol2vol = getVol2vol(sysNum,vol1,vol2)
 global gVol;
 verbose = gVol{sysNum}.verbose;
 
-if vol1.h.sform_code && vol2.h.sform_code
-  vol2vol = inv(vol1.h.sform44) * vol2.h.sform44;
+if ~isempty(vol1.h.sform) && ~isempty(vol2.h.sform)
+  vol2vol = inv(vol1.h.sform) * vol2.h.sform;
   if verbose
     dispHeader('Aliging using sform');
     disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
     dispHeader;
   end
-%  vol2vol = inv(shiftOriginXform) * xform * shiftOriginXform;
-elseif vol1.h.qform_code && vol2.h.qform_code
-  vol2vol = inv(vol1.h.qform44) * vol2.h.qform44;
+elseif ~isempty(vol1.h.qform) && ~isempty(vol2.h.qform)
+  vol2vol = inv(vol1.h.qform) * vol2.h.qform;
   if verbose
     dispHeader('Aliging using qform');
     disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
@@ -1420,8 +1419,8 @@ vol.subplotNum(1:3) = (1:3)+(n-1)*3;
 % compute magnet directions of each axis based on qform and then
 % choose which axis will be displayed in what figure based on this
 % information
-if h.qform_code && ~gVol{sysNum}.imageOrientation
-  [axisLabels vol.axisDirLabels vol.axisMapping axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform44);
+if ~isempty(h.qform) && ~gVol{sysNum}.imageOrientation
+  [axisLabels vol.axisDirLabels vol.axisMapping axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform);
   vol.viewDim(1:3) = axisReverseMapping;
 else
   vol.axisDirLabels = [];
@@ -1490,10 +1489,10 @@ vol.altXforms.names = {};
 vol.altXforms.xforms = {};
 vol.altXforms.n = 0;
 vol.altXforms.currentXform = [];
-if ~isempty(h.vol2tal) && ~isempty(h.vol2mag) && (h.sform_code == 1)
+if ~isempty(h.vol2tal) && ~isempty(h.vol2mag) && ~isempty(h.sform)
   vol.altXforms.names{end+1} = 'Talairach';
   vol.altXforms.shortNames{end+1} = 'Tal';
-  vol.altXforms.xforms{end+1} = h.vol2tal * inv(h.vol2mag) * h.sform44 * shiftOriginXform;
+  vol.altXforms.xforms{end+1} = h.vol2tal * inv(h.vol2mag) * h.sform * shiftOriginXform;
   vol.altXforms.n = vol.altXforms.n+1;
 end
 if ~isempty(h.vol2mag)
@@ -1502,10 +1501,10 @@ if ~isempty(h.vol2mag)
   vol.altXforms.xforms{end+1} = h.vol2mag  * shiftOriginXform;
   vol.altXforms.n = vol.altXforms.n+1;
 end
-if h.qform_code
+if ~isempty(h.qform)
   vol.altXforms.names{end+1} = 'Qform';
   vol.altXforms.shortNames{end+1} = 'Mag';
-  vol.altXforms.xforms{end+1} = h.qform44 * shiftOriginXform;
+  vol.altXforms.xforms{end+1} = h.qform * shiftOriginXform;
   vol.altXforms.n = vol.altXforms.n+1;
 end
 
