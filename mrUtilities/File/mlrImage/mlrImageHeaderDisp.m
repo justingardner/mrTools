@@ -16,7 +16,7 @@ if nargin == 0
 end
 
 % load arguments
-[imageArgs otherArgs]  = mlrImageParseArgs(varargin);
+[imageArgs otherArgs] = mlrImageParseArgs(varargin);
 verbose = [];
 getArgs(otherArgs,{'verbose=1'});
 
@@ -42,20 +42,26 @@ else
 end
 disp(sprintf('dim: [%s]',mlrnum2str(h.dim(:)','sigfigs=0')));
 disp(sprintf('pixdim: [%s]',mlrnum2str(h.pixdim(:)')));
-disp(sprintf('qform_code: %i',h.qform_code));
-if h.qform_code
+if ~isempty(h.qform)
   disp(sprintf('qform:'));
-  disp(sprintf('%s',mlrnum2str(h.qform44,'compact=0','sigfigs=-1')));
+  disp(sprintf('%s',mlrnum2str(h.qform,'compact=0','sigfigs=-1')));
 end
-disp(sprintf('sform_code: %i',h.sform_code));
-if h.sform_code
+if ~isempty(h.sform)
   disp(sprintf('sform:'));
-  disp(sprintf('%s',mlrnum2str(h.sform44,'compact=0','sigfigs=-1')));
+  disp(sprintf('%s',mlrnum2str(h.sform,'compact=0','sigfigs=-1')));
+end
+if ~isempty(h.vol2mag)
+  disp(sprintf('sform:'));
+  disp(sprintf('%s',mlrnum2str(h.vol2mag,'compact=0','sigfigs=-1')));
+end
+if ~isempty(h.vol2tal)
+  disp(sprintf('sform:'));
+  disp(sprintf('%s',mlrnum2str(h.vol2tal,'compact=0','sigfigs=-1')));
 end
 
 % get axis information if not passed in
-if h.qform_code
-  [axisLabels axisDirLabels] = mlrImageGetAxisLabels(h.qform44);
+if ~isempty(h.qform)
+  [axisLabels axisDirLabels] = mlrImageGetAxisLabels(h.qform);
 else
   axisDirLabels = [];
 end
@@ -70,16 +76,16 @@ if ~isempty(axisDirLabels)
 end
   
 % if there is a talInfo field, display that
-if isfield(h,'base') && isfield(h.base,'talInfo') && ~isempty(h.base.talInfo)
+if ~isempty(h.talInfo)
   dispHeader(sprintf('%s (Talairach info)',getLastDir(h.filename)));
-  disp(sprintf('AC: [%s]',mlrnum2str(h.base.talInfo.AC,'compact=1','sigfigs=0')));
-  disp(sprintf('PC: [%s]',mlrnum2str(h.base.talInfo.PC,'compact=1','sigfigs=0')));
-  disp(sprintf('SAC: [%s]',mlrnum2str(h.base.talInfo.SAC,'compact=1','sigfigs=0')));
-  disp(sprintf('IAC: [%s]',mlrnum2str(h.base.talInfo.IAC,'compact=1','sigfigs=0')));
-  disp(sprintf('PPC: [%s]',mlrnum2str(h.base.talInfo.PPC,'compact=1','sigfigs=0')));
-  disp(sprintf('AAC: [%s]',mlrnum2str(h.base.talInfo.AAC,'compact=1','sigfigs=0')));
-  disp(sprintf('LAC: [%s]',mlrnum2str(h.base.talInfo.LAC,'compact=1','sigfigs=0')));
-  disp(sprintf('RAC: [%s]',mlrnum2str(h.base.talInfo.RAC,'compact=1','sigfigs=0')));
+  disp(sprintf('AC: [%s]',mlrnum2str(h.talInfo.AC,'compact=1','sigfigs=0')));
+  disp(sprintf('PC: [%s]',mlrnum2str(h.talInfo.PC,'compact=1','sigfigs=0')));
+  disp(sprintf('SAC: [%s]',mlrnum2str(h.talInfo.SAC,'compact=1','sigfigs=0')));
+  disp(sprintf('IAC: [%s]',mlrnum2str(h.talInfo.IAC,'compact=1','sigfigs=0')));
+  disp(sprintf('PPC: [%s]',mlrnum2str(h.talInfo.PPC,'compact=1','sigfigs=0')));
+  disp(sprintf('AAC: [%s]',mlrnum2str(h.talInfo.AAC,'compact=1','sigfigs=0')));
+  disp(sprintf('LAC: [%s]',mlrnum2str(h.talInfo.LAC,'compact=1','sigfigs=0')));
+  disp(sprintf('RAC: [%s]',mlrnum2str(h.talInfo.RAC,'compact=1','sigfigs=0')));
 end
 
 

@@ -12,6 +12,7 @@
 %             directory, or from a struct -> see mlrImageParseArgs
 %             for details
 %
+%             For details on the header see:  mlrImageIsHeader
 function retval = mlrImageHeaderLoad(varargin)
 
 header = [];
@@ -121,6 +122,16 @@ for iImage = 1:nImages
       end
     end
 
+    % set the talInfo field - get it from the base 
+    % struture if it has not already been set
+    if ~isfield(header,'talInfo')
+      if isfield(header.base,'talInfo')
+	header.talInfo = header.base.talInfo;
+      else
+	header.talInfo = [];
+      end
+    end
+
     % now fill in any missing fields from header
     [tf header] = mlrImageIsHeader(header);
   else
@@ -154,14 +165,8 @@ if isempty(nifti),header = [];return;end
 header.type = 'fdf';
 header.hdr = nifti;
 
-% set other fields
-header.qform_code = header.hdr.qform_code;
-header.qform44 = header.hdr.qform44;
-header.sform_code = header.hdr.sform_code;
-header.sform44 = header.hdr.sform44;
-header.nDim = header.hdr.dim(1);
-header.dim = header.hdr.dim(2:header.nDim+1);
-header.pixdim = header.hdr.pixdim(2:header.nDim+2);
+% set rest of fields based on the nifti header
+header = setHeaderBasedOnNifti(header,nifti);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadFid    %
@@ -176,14 +181,8 @@ if isempty(nifti),header = [];return;end
 header.type = 'fid';
 header.hdr = nifti;
 
-% set other fields
-header.qform_code = header.hdr.qform_code;
-header.qform44 = header.hdr.qform44;
-header.sform_code = header.hdr.sform_code;
-header.sform44 = header.hdr.sform44;
-header.nDim = header.hdr.dim(1);
-header.dim = header.hdr.dim(2:header.nDim+1);
-header.pixdim = header.hdr.pixdim(2:header.nDim+2);
+% set rest of fields based on the nifti header
+header = setHeaderBasedOnNifti(header,nifti);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadSDT    %
@@ -211,18 +210,22 @@ elseif isfield(d,'fov')
   header.pixdim = d.fov(1:3)./d.dim(1:3)*10
 end
 
-% check for orientation info
-if isfield(d,'qform_code')
-  header.qform_code = d.qform_code;
+% set qform
+if isfield(d,'qform')
+  header.qform = reshape(d.qform,4,4);
 end
-if isfield(d,'qform44')
-  header.qform44 = reshape(d.qform44,4,4);
+
+% set sform
+if isfield(d,'sform')
+  header.sform = reshape(d.sform,4,4);
 end
-if isfield(d,'sform_code')
-  header.sform_code = d.sform_code;
+
+% set vol2mag and vol2tal
+if isfield(d,'vol2mag')
+  header.vol2mag = reshape(d.vol2mag,4,4);
 end
-if isfield(d,'sform44')
-  header.sform44 = reshape(d.sform44,4,4);
+if isfield(d,'vol2tal')
+  header.vol2tal = reshape(d.vol2tal,4,4);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,15 +240,9 @@ nifti = cbiReadNiftiHeader(filename);
 header.type = 'nifti';
 header.hdr = nifti;
 
-% set other fields
-header.qform_code = header.hdr.qform_code;
-header.qform44 = header.hdr.qform44;
-header.sform_code = header.hdr.sform_code;
-header.sform44 = header.hdr.sform44;
-header.nDim = header.hdr.dim(1);
-header.dim = header.hdr.dim(2:header.nDim+1);
-header.pixdim = header.hdr.pixdim(2:header.nDim+2);
- 
+% set rest of fields based on the nifti header
+header = setHeaderBasedOnNifti(header,nifti);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   mlrImageHeaderLoadPassedInNiftiHeader   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -254,18 +251,45 @@ function header = mlrImageHeaderLoadPassedInNiftiHeader(h)
 header = [];
 % first check some fields
 checkFields = {'qform_code','qform44','sform_code','sform44','dim','pixdim'};
-foundField = false;
+isNifti = true;
 for iField = 1:length(checkFields)
   if isfield(h,checkFields{iField})
     header.(checkFields{iField}) = h.(checkFields{iField});
-    foundField = true;
+  else
+    isNifti = false;
   end
 end
-% if we found any of the fileds, then just call it a nifti header
-if foundField
+
+% if we found all of the fileds then it is a nfti header
+if isNifti
   header.type = 'nifti';
   header.hdr = h;
+  header = setHeaderBasedOnNifti(header,h);
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   setHeaderBasedOnNifti   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function header = setHeaderBasedOnNifti(header,hdr);
+
+% set qform
+if hdr.qform_code == 1
+  header.qform = hdr.qform44;
+elseif hdr.qform_code ~= 0
+  disp(sprintf('(mlrImageHeaderLoad) Unrecogonized qform_code: %i',hdr.qform_code));
+end
+
+% set vol2mag and vol2tal based on sform
+if hdr.sform_code == 1
+  header.sform = hdr.sform44;
+elseif hdr.sform_code ~= 0
+  disp(sprintf('(mlrImageHeaderLoad) Unrecogonized sform_code: %i',hdr.sform_code));
+end  
+
+% set dimensions
+header.nDim = hdr.dim(1);
+header.dim = hdr.dim(2:header.nDim+1);
+header.pixdim = hdr.pixdim(2:header.nDim+2);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    loadAssociatedMatlabHeader    %

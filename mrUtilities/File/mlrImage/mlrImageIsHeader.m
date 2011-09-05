@@ -4,7 +4,48 @@
 %      usage: [tf hdr] mlrImageIsHeader(h)
 %         by: justin gardner
 %       date: 08/19/11
-%    purpose: Test whether the passed in strucutre is an mlrImageHeader or not
+%    purpose: Test whether the passed in strucutre is an
+%              mlrImageHeader or not.
+%
+%              Basic fields for a mlrImage header are:
+%
+%              nDim: number of dimensions in image
+%              dim: a row array with the dimensions of the image
+%              pixdim: a row array with the dimensions in mm
+%              qform: a 4x4 homogenous transform matrix that
+%                     specifies the xform from the image
+%                     coordinates to the magnet coordinates. Same
+%                     as a nifti header qform when qform_code = 1.
+%              sform: a 4x4 homogenous transform matrix that
+%                     specifies the xform from the image
+%                     coordinates to the magnet coordinates for
+%                     the canonical volume. This is the same
+%                     as a nifti header qform when qform_code = 1.
+%            vol2mag: This is the xform from the *canonical* volume
+%                     coordinates to the magnet coordinates for the
+%                     canonical. This is useful for checking which
+%                     volume the image was aligned to (i.e. where
+%                     it got the sform from). It is also useful for
+%                     when trying to compute the talairach coordinates.
+%            vol2tal: This is the xform from the *canonical* volume
+%                     coordinates to the magnet coordinates for the
+%                     canonical. Note that we keep this matrix
+%                     since it allows us to go back and change the
+%                     talairach points on the canonical volume and
+%                     then easily redo the tal xforma for the image
+%                     by simply replacing this matrix. To compute
+%                     the xform from the image coordinates to
+%                     talairach coordiates, you can do:
+%                     img2tal = vol2tal * inv(vol2mag) * sform * shiftOriginXform;
+%               ext: The file extension for which the image was saved
+%          filename: The original filename from which the image was loaded
+%              type: The type of the image that was loaded 
+%              base: An mlr base structure if one is associated
+%                    with the file
+%           talInfo: If non-empty contains the fields
+%                    (AC,PC,SAC,IAC,PPC,AAC,LAC,RAC) which contain
+%                    the coordinates of these talairach landmark points
+%         
 %
 function [tf h] = mlrImageIsHeader(h)
 
@@ -18,10 +59,8 @@ end
 if (nargout == 2)
   % Add optional fields and return true if the image header with optional fields is valid
   requiredFields = {'dim'};
-  optionalFields = {'qform_code',0;
-		    'qform44',[]'
-		    'sform_code',0;
-		    'sform44',[];
+  optionalFields = {'qform',[];
+		    'sform',[];
 		    'vol2mag',[];
 		    'vol2tal',[];
 		    'base',[];
@@ -29,12 +68,13 @@ if (nargout == 2)
 		    'ext','';
 		    'type','unknown';
 		    'filename','';
+		    'talInfo',[];
 		   };
   % The fields nDim and pixdim will be gereated below if necessary
 else
   % Return 0 if the image header structure is missing any fields required or
   % optional (since w/out changing the header structure it is invalid).
-  requiredFields = {'dim','nDim','pixdim','qform_code','qform44','sform_code','sform44','vol2mag','vol2tal','base','hdr','ext','type','filename'};
+  requiredFields = {'dim','nDim','pixdim','qform','sform','vol2mag','vol2tal','base','hdr','ext','type','filename','talInfo'};
   optionalFields = {};
 end
 

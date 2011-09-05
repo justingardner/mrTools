@@ -12,6 +12,7 @@
 %             directory, or from a struct -> see mlrImageParseArgs
 %             for details
 %
+%             For details on the header see:  mlrImageIsHeader
 function [dataRetval headerRetval] = mlrImageLoad(varargin)
 
 % default return values
