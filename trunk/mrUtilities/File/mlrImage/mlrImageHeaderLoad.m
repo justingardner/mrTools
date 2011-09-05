@@ -211,6 +211,20 @@ elseif isfield(d,'fov')
   header.pixdim = d.fov(1:3)./d.dim(1:3)*10
 end
 
+% check for orientation info
+if isfield(d,'qform_code')
+  header.qform_code = d.qform_code;
+end
+if isfield(d,'qform44')
+  header.qform44 = reshape(d.qform44,4,4);
+end
+if isfield(d,'sform_code')
+  header.sform_code = d.sform_code;
+end
+if isfield(d,'sform44')
+  header.sform44 = reshape(d.sform44,4,4);
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadNifti    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

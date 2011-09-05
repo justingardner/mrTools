@@ -130,6 +130,13 @@ for i = 1:size(sdtFields,1)
   end
 end
 
+% add the orientation fields
+hdr.qform_code = h.qform_code;
+hdr.qform44 = h.qform44(:);
+hdr.sform_code = h.sform_code;
+hdr.sform44 = h.sform44(:);
+
+% can't save the header by itself
 if saveHeader
   disp(sprintf('(mlrImageHeaderSave) Cannot save header alone - must cal mlrImageSave'));
 end
