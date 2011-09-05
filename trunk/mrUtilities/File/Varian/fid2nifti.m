@@ -77,8 +77,8 @@ end
 
 % parse arguments
 movepro=[];receiverNum=[];
-xMin=[];xMax=[];yMin=[];yMax=[];sMin=[];sMax=[];outputName=[];
-getArgs(argsList,{'movepro=0','receiverNum=[]','xMin=1','xMax=inf','yMin=1','yMax=inf','sMin=1','sMax=inf','outputName=[]'});
+xMin=[];xMax=[];yMin=[];yMax=[];sMin=[];sMax=[];outputName=[];kspace=[];
+getArgs(argsList,{'movepro=0','receiverNum=[]','xMin=1','xMax=inf','yMin=1','yMax=inf','sMin=1','sMax=inf','outputName=[]','kspace=0'});
 
 % if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)
@@ -120,7 +120,7 @@ for i = 1:length(fidnames)
   end
   
   % get the fid
-  fid = getfid(fidname,verbose,[],movepro);
+  fid = getfid(fidname,verbose,[],movepro,kspace);
   if isempty(fid.data)
     disp(sprintf('(fid2nifti) WARNING file %s could not be read',fidname));
     continue

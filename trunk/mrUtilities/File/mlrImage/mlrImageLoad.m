@@ -82,6 +82,9 @@ for iImage = 1:nImages
   % now make sure dimensions match in header
   header.dim = size(data)';
   header.nDim = length(header.dim);
+
+  % make sure the header is correct
+  [tf header] = mlrImageIsHeader(header);
   
   % package up for returning
   if nImages > 1

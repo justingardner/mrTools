@@ -63,6 +63,8 @@ end
 if ~isfield(h,'pixdim')
   h.pixdim = ones(size(h.dim));
 end
+h.pixdim(end+1:h.nDim) = nan;
+h.pixdim = h.pixdim(1:h.nDim);
 
 % Optional fields and defaults
 for f = 1:size(optionalFields,1)
