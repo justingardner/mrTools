@@ -59,7 +59,7 @@ data = permute(data,permutationOrder);
 % make the xform matrix
 for i = 1:3
   xform(i,1:4) = 0;
-  xform(i,axisReverseMapping(i)) = axisDir(i);
+  xform(i,axisMapping(i)) = axisDir(i);
   if axisDir(i) == -1
     xform(i,4) = h.dim(i)-1;
   end
