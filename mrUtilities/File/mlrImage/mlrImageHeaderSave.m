@@ -31,11 +31,6 @@ if isempty(ext)
   ext = getext(filename);
 end
 
-if ~any(strcmp({'hdr','img','nii'},ext))
-  disp(sprintf('(mlrImageHeaderSave) Cannot save file of ext %s. Try saving with a nifti extension (hdr,img or nii)',ext));
-  return
-end
-
 % make sure the header is valid
 [tf h] = mlrImageIsHeader(h);
 if ~tf
@@ -43,31 +38,19 @@ if ~tf
   return
 end
 
-% create the nifti h
-hdr = cbiCreateNiftiHeader;
-hdr.dim = [h.nDim h.dim];
-hdr.dim(end+1:8) = 0;
-hdr.dim = hdr.dim(:);
-hdr.pixdim = [h.nDim h.pixdim];
-hdr.pixdim(end+1:8) = 0;
-hdr.pixdim = hdr.pixdim(:);
-
-% set the qform
-if h.qform_code
-  hdr = cbiSetNiftiQform(hdr,h.qform44);
-  hdr.qform_code = h.qform_code;
-end
-
-% set the sform
-if h.sform_code
-  hdr = cbiSetNiftiSform(hdr,h.sform44);
-  hdr.sform_code = h.sform_code;
-end
-
 % if we are not asked to pass back the header
 % then save it
-if nargout < 2
-  hdr = cbiWriteNiftiHeader(hdr,filename);
+if nargout < 2,saveHeader = true;else,saveHeader = false;end
+
+% no decide what type of header to make
+switch(ext)
+ case {'hdr','img','nii'}
+  hdr = createHeaderNifti(h,filename,saveHeader);
+ case {'sdt','spr','edt','epr'}
+  hdr = createHeaderSDT(h,filename,saveHeader);
+ otherwise
+  disp(sprintf('(mlrImageHeaderSave) Unknown extension type: %s',ext));
+  return
 end
 
 % see if we need to save out a matlab extension
@@ -83,3 +66,72 @@ end
 
 % success
 tf = true;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    createHeaderNifti    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function hdr = createHeaderNifti(h,filename,saveHeader)
+
+% create the nifti h
+hdr = cbiCreateNiftiHeader;
+hdr.dim = [h.nDim h.dim];
+hdr.dim(end+1:8) = 0;
+hdr.dim = hdr.dim(:);
+hdr.dim = hdr.dim(1:8);
+hdr.pixdim = [h.nDim h.pixdim];
+hdr.pixdim(end+1:8) = 0;
+hdr.pixdim = hdr.pixdim(:);
+hdr.pixdim = hdr.pixdim(1:8);
+
+% set the qform
+if h.qform_code
+  hdr = cbiSetNiftiQform(hdr,h.qform44);
+  hdr.qform_code = h.qform_code;
+end
+
+% set the sform
+if h.sform_code
+  hdr = cbiSetNiftiSform(hdr,h.sform44);
+  hdr.sform_code = h.sform_code;
+end
+
+% save it
+if saveHeader
+  hdr = cbiWriteNiftiHeader(hdr,filename);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    createHeaderSDt    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function hdr = createHeaderSDT(h,filename,saveHeader)
+
+sdtFields = {'numDim',h.nDim,1;...
+	     'dim',h.dim,1;...
+	     'origin',zeros(size(h.dim)),0;...
+	     'extent',h.pixdim(1:h.nDim).*(h.dim(h.nDim)/2-1)/10,0;...
+	     'fov',h.pixdim(1:h.nDim).*h.dim(1:h.nDim)/10,0;...
+	     'interval',h.pixdim,0;...
+	     'dataType','REAL',0;...
+	     'sdtOrient','NULL',0;...
+	     'fidName','',0;...
+	     'endian','ieee-le',1;...
+	     'wordsize',4,0;...
+	     'filelen',prod(h.dim)*4,0;...
+	     'filename','',0;...
+	    };
+
+% copy fields form header if they exist
+for i = 1:size(sdtFields,1)
+  if isfield(h.hdr,sdtFields{i,1}) && ~sdtFields{i,3}
+    % copy from header if it exists
+    hdr.(sdtFields{i,1}) = h.hdr.(sdtFields{i,1});
+  else
+    hdr.(sdtFields{i,1}) = sdtFields{i,2};
+  end
+end
+
+if saveHeader
+  disp(sprintf('(mlrImageHeaderSave) Cannot save header alone - must cal mlrImageSave'));
+end
+
+  

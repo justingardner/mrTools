@@ -126,7 +126,8 @@ for iImage = 1:nImages
   else
     disp(sprintf('(mlrImageHeaderLoad) Unknown argument'));
   end
-  header = orderfields(header);
+
+  % keep all headers for returning
   if nImages > 1,[tf allHeaders{end+1}] = mlrImageIsHeader(header);end
 end
 

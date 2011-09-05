@@ -587,7 +587,7 @@ coord = coord(1:3);
 coord(end+1:5) = 1;
 
 % check to see if coordinates are in volume
-if any(coord(1:3)<1) || any(coord(1:3)>vol.h.dim(1:3))
+if any(coord(1:3)<1) || any(coord(1:3)'>vol.h.dim(1:3))
   dispSlice = [];
   return
 end
@@ -1190,6 +1190,11 @@ for iView = 1:3
   % and get the dispSlice from the tethered volume
   dispSlice2 = vol2.dispSlice{iView};
 
+  % select only non-nan values
+  nonnan = find(~isnan(dispSlice1(:)) & ~isnan(dispSlice2(:)));
+  dispSlice1 = dispSlice1(nonnan);
+  dispSlice2 = dispSlice2(nonnan);
+  
   % compute stats
   slope = pinv(dispSlice1(:))*dispSlice2(:);
   r2 = regstats(dispSlice1(:),dispSlice2(:),'linear','rsquare');
@@ -1207,9 +1212,9 @@ xlabel(sprintf('%s voxel values',vol1.h.filename));
 ylabel(sprintf('%s voxel values',vol2.h.filename));
 
 % set the axis equal
-[xmin xmax] = xaxis;
-[ymin ymax] = yaxis;
-axis([min(xmin,ymin) max(xmax,ymax) min(xmin,ymin) max(xmax,ymax)]);
+%[xmin xmax] = xaxis;
+%[ymin ymax] = yaxis;
+%axis([min(xmin,ymin) max(xmax,ymax) min(xmin,ymin) max(xmax,ymax)]);
 
 % put up diagonal
 dline('k',1);
@@ -1511,7 +1516,7 @@ if n == 1
     % make the inc/dec textboxes
     gVol{sysNum}.hCoordTextbox(i) = makeTextboxIncDec(sysNum,coord(i),i,1,i);
     % get name for button
-    if i < length(names)
+    if i <= length(names)
       name = names{i};
     else 
       name = sprintf('dim %i',i);
