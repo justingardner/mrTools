@@ -13,6 +13,11 @@
 %             for details
 %
 %             For details on the header see:  mlrImageIsHeader
+%
+%             To reorder the image matrix (and qform/sform) to
+%             be in standard LPI orientation, pass arg:
+%             'orient=LPI'
+%
 function [dataRetval headerRetval] = mlrImageLoad(varargin)
 
 % default return values
@@ -28,8 +33,8 @@ end
 [imageArgs otherArgs] = mlrImageParseArgs(varargin);
 
 % check input arguments
-verbose=[];
-getArgs(otherArgs,{'verbose=0'});
+verbose=[];orient=[];
+getArgs(otherArgs,{'verbose=0','orient=[]'});
 
 % number of images to load. Note that for
 % a single image, then we just return the data and header.
@@ -86,6 +91,11 @@ for iImage = 1:nImages
 
   % make sure the header is correct
   [tf header] = mlrImageIsHeader(header);
+
+  % fix orientation if called for
+  if ~isempty(orient)
+    [data header] = mlrImageOrient(orient,data,header);
+  end
   
   % package up for returning
   if nImages > 1
