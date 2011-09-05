@@ -118,8 +118,10 @@ else
 end
 
 % calculate data size
-d.filelen = prod(d.dim)*d.wordsize;
-if strcmp(d.dataType,'COMPLEX'),d.filelen = d.filelen*2;end
+if ~isfield(d,'filelen') || isempty(d.filelen)
+  d.filelen = prod(d.dim)*d.wordsize;
+  if strcmp(d.dataType,'COMPLEX'),d.filelen = d.filelen*2;end
+end
 
 if numvolumes <= 0,return,end
 
