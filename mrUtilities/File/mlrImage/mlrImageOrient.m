@@ -43,13 +43,14 @@ if isempty(h.qform)
 end
 
 % get the axis directions
-[axisLabels axisDirLabels axisMapping axisReverseMapping axisDir] = mlrImageGetAxisLabels(h.qform);
+axisLabels = mlrImageGetAxisLabels(h.qform);
 
 % now make axisMapping and axisReverseMapping appropriate
 % for the desired orientation
-axisMapping = desiredAxisReverse(axisMapping);
-axisReverseMapping = axisReverseMapping(desiredAxis);
+axisMapping = desiredAxisReverse(axisLabels.mapping);
+axisReverseMapping = axisLabels.reverseMapping(desiredAxis);
 desiredDir = desiredDir(axisMapping);
+axisDir = axisLabels.dir;
 
 % flip each axis that goes in the opposite direction
 for i = 1:3
