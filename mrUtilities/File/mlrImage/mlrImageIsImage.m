@@ -29,5 +29,8 @@ end
 h = mlrImageHeaderLoad(filename);
 if isempty(h),return,end
 
+% check for empty image
+if all(h.dim==0),return,end
+
 % if we got here, it must be an image file
 tf = true;
