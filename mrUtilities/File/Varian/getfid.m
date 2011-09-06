@@ -26,7 +26,7 @@ if nargin<1
   return
 end
 
-verbose=[];zeropad=[];movepro=[];kspace=[];
+verbose=[];zeropad=[];movepro=[];kspace=[];movepss=[];
 oldArgNames = {'verbose','zeropad','movepro','kspace'};
 % check for numeric arguments (old way of calling
 for i = 1:length(varargin)
@@ -40,7 +40,7 @@ for i = 1:length(varargin)
   end
 end
 % now run getArgs
-getArgs(varargin,{'verbose=0','zeropad=0','movepro=0','kspace=0','swapReceiversAndSlices=1'});
+getArgs(varargin,{'verbose=0','zeropad=0','movepro=0','kspace=0','swapReceiversAndSlices=1','movepss=0'});
 
 % read the k-space data from the fid
 if (verbose),disppercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
@@ -68,27 +68,59 @@ end
 if movepro ~= 0
   % figure out how much we have to shift
   proshift = movepro/(info.procpar.lro/d.dim(1));
-  % and create the shift
-  phaseshift = proshift*(0:2*pi./d.dim(1):2*pi)';
-  phaseshift = phaseshift(2:end);
-  phaseshift = phaseshift*ones(1,d.dim(2));
+  % and create the shift in 2D
+  phaseshift2 = proshift*(0:2*pi./d.dim(1):2*pi)';
+  phaseshift2 = phaseshift2(2:end);
+  phaseshift2 = phaseshift2*ones(1,d.dim(2));
+  phaseshift2 =  exp(sqrt(-1)*phaseshift2);
+  % and create the shift in 3D
+  phaseshift3 = proshift*(0:2*pi./d.dim(1):2*pi)';
+  phaseshift3 = phaseshift3(2:end);
+  phaseshift3 = repmat(phaseshift3,[1 d.dim(2) d.dim(3)]);
+  phaseshift3 = exp(sqrt(-1)*phaseshift3);
   if (verbose),disp(sprintf('(getfid) Shifting pro by: %f',movepro));end
+else
+  phaseshift2 = 1;
+  phaseshift3 = 1;
+end
+
+% see if we have to move the pss (only available for 3D volumes)
+if movepss ~= 0
+  if ~info.acq3d || info.fftw3dexe_processed
+    disp(sprintf('(getfid) Unable to move pss for 2D data. Ignoring desired pss shift of: %s',movepss));
+  else
+    % and create the shift in 3D
+    pssshift = movepss;
+    pssPhaseshift3 = pssshift*(0:2*pi./d.dim(3):2*pi)';
+    pssPhaseshift3 = pssPhaseshift3(2:end);
+    pssPhaseshift3 = repmat(pssPhaseshift3,[1 d.dim(1) d.dim(2)]);
+    pssPhaseshift3 = permute(pssPhaseshift3,[2 3 1]);
+    pssPhaseshift3 = exp(sqrt(-1)*pssPhaseshift3);
+    % composite with phaseshift from movepro
+    phaseshift3 = phaseshift3.*pssPhaseshift3;
+  end
 end
 
 % everything is ok, then transform data
 if(verbose),disppercent(-inf,'(getfid) Transforming data');end
 
 % preallocate space for data
-data = nan(size(d.data,1),size(d.data,2),size(d.data,3),size(d.data,5),size(d.data,4));
+if zeropad
+  data = nan(zeropad,zeropad,size(d.data,3),size(d.data,5),size(d.data,4));
+else
+  data = nan(size(d.data,1),size(d.data,2),size(d.data,3),size(d.data,5),size(d.data,4));
+end
 
 % decide whether we need to do a 3D transform or 2D
 if info.acq3d && ~info.fftw3dexe_processed
+  % 3D FFT
   for j = 1:size(d.data,4)
     for k = 1:size(d.data,5)
-      data(:,:,:,k,j) = myfft3(d.data(:,:,:,j,k),kspace);
+      data(:,:,:,k,j) = myfft3(d.data(:,:,:,j,k).*phaseshift3,kspace);
     end
   end
 else
+  % 2D FFT
   for i = 1:size(d.data,3)
     for j = 1:size(d.data,4)
       for k = 1:size(d.data,5)
@@ -96,27 +128,19 @@ else
 	if zeropad
 	  % zeropad the data
 	  thisdata=zeros(zeropad,zeropad);
-	  if movepro == 0
-	    % get this image
-	    thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k));
-	  else
-	    % get this image with pro shift
-	    thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k)).*exp(sqrt(-1)*phaseshift);
-	  end
+	  % get this image (apply phaseshift for shifting pro - if set to 0 then
+	  % phaseshift is just 1 and doesn't do anything)
+	  thisdata(1:d.dim(1),1:d.dim(2)) = squeeze(d.data(:,:,i,j,k)).*phaseshift2;
 	  % fft 
 	  data(:,:,i,k,j) = myfft(thisdata,kspace);
 	else
-	  % simply fft data, moving pro if necessary
-	  if movepro == 0
-	    data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k),kspace);
-	  else
-	    data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k).*exp(sqrt(-1)*phaseshift),kspace);
-	  end
+	  % get this image (apply phaseshift for shifting pro - if set to 0 then
+	  % phaseshift is just 1 and doesn't do anything)
+	  data(:,:,i,k,j) = myfft(d.data(:,:,i,j,k).*phaseshift2,kspace);
 	end
       end
-      if (verbose)
-	disppercent(((i-1)*size(d.data,4)+j)/(size(d.data,3)*size(d.data,4)));
-      end
+      % percent done
+      if (verbose) disppercent(calcPercentDone(i,size(d.data,3),j,size(d.data,4)));end
     end
   end
 end
