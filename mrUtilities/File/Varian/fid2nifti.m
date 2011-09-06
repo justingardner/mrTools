@@ -68,7 +68,7 @@ end
 % the varargin into an argument list and a fidlist
 altFidnames = {};argsList = {};
 for i = 1:length(varargin)
-  if ~isempty(strfind(varargin{i},'='))
+  if ~isstr(varargin{i}) || isempty(strfind(varargin{i},'.fid'))
     argsList{end+1} = varargin{i};
   else
     altFidnames{end+1} = varargin{i};
@@ -76,9 +76,12 @@ for i = 1:length(varargin)
 end
 
 % parse arguments
-movepro=[];receiverNum=[];
-xMin=[];xMax=[];yMin=[];yMax=[];sMin=[];sMax=[];outputName=[];kspace=[];
-getArgs(argsList,{'movepro=0','receiverNum=[]','xMin=1','xMax=inf','yMin=1','yMax=inf','sMin=1','sMax=inf','outputName=[]','kspace=0'});
+movepro=0;receiverNum=[];loadArgs = [];
+xMin=1;xMax=inf;yMin=1;yMax=inf;sMin=1;sMax=inf;outputName=[];kspace=0;
+validArgs = {'movepro','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace'};
+getArgs(argsList,{validArgs{:} 'loadArgs'});
+% now evaluate the load args (these are passed from mlrImageLoad
+getArgs(loadArgs,validArgs);
 
 % if this has no path, then check for search pattern
 if ~iscell(fidname) && strcmp(getLastDir(fidname),fidname)

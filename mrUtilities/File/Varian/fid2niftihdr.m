@@ -13,11 +13,15 @@ function [hdr info] = fid2niftihdr(fidname,verbose,varargin)
 hdr = [];info = [];
 if ieNotDefined('verbose'),verbose=1;end
 
-movepro=[];
-getArgs(varargin,{'movepro=0'});
+% parse arguments
+movepro=0;loadArgs = [];
+validArgs = {'movepro'};
+getArgs(varargin,{validArgs{:},'loadArgs'});
+% now evaluate the load args (these are passed from mlrImageLoad)
+getArgs(loadArgs,validArgs,'verbose=0');
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if nargin == 0
   help fid2niftihdr
   return
 end
