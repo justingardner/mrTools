@@ -23,6 +23,16 @@ if isempty(ext)
   ext = getext(filename);
 end
 
+%if data is a structure than grab its data field
+if isstruct(data) 
+  if isfield(data,'data')
+    data = data.data;
+  else
+    disp(sprintf('(mlrImageSave) Unknown structure type passed as data'));
+    return
+  end
+end
+
 % create a header
 if nargin < 3
   h = mlrImageHeaderLoad(data);
