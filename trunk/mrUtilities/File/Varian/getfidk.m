@@ -118,5 +118,10 @@ else
     if verbose,disppercent(calcPercentDone(kLine,numPhaseEncodeLines,volNum,numVolumes,receiverNum,numReceivers,sliceNum,numSlices));end
   end
 end
+
+% remove original data read from getfidkraw
+d = rmfield(d,'real');
+d = rmfield(d,'imag');
+
 if verbose,disppercent(inf);end
 

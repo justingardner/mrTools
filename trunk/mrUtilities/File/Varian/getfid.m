@@ -78,6 +78,9 @@ end
 % everything is ok, then transform data
 if(verbose),disppercent(-inf,'(getfid) Transforming data');end
 
+% preallocate space for data
+data = nan(size(d.data,1),size(d.data,2),size(d.data,3),size(d.data,5),size(d.data,4));
+
 % decide whether we need to do a 3D transform or 2D
 if info.acq3d && ~info.fftw3dexe_processed
   for j = 1:size(d.data,4)
@@ -120,6 +123,7 @@ end
 
 d.data = data;
 d.dim = size(data);
+
 % if zeropad fix up some stuff
 if zeropad
   d.dim(1) = zeropad;d.dim(2) = zeropad;

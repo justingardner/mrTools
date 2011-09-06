@@ -193,7 +193,7 @@ end
 % case the pss just contains the slice center, so we need to 
 % adjust it here
 if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
-  if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, computing pss form center of slab'));end
+  if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, computing pss form center of slab: %f',procpar.pss));end
   % compute location of first and last slice
   firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
   lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
@@ -221,15 +221,14 @@ offset = [eye(3) offset';0 0 0 1];
 % pss, so we ignore it)
 % note that I would have thought that we need to subtract 1 so that
 % we get to the center of the voxel, but not subtracting 1 empirical
-% seems to be correct
+% seems to be correct - actually this may be because of the way the fft works though
 %originOffset = -(dim-1)/2;
-originOffset = -(dim)/2;
+originOffset = -dim/2;
 originOffset(3) = 0;
 originOffset = [eye(3) originOffset';0 0 0 1];
 
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
 swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
-swapDim2 =[0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
 
 % the following is actually correct for L/R, but leave it commented
 % for now - will need to update all of our transforms ;-(.... -j.

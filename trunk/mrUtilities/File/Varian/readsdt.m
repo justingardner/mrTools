@@ -127,15 +127,9 @@ if numvolumes <= 0,return,end
 
 % if we have the endian field, we read data in as it indicates
 % if we do not have this field, read data as default (big endian)
-if isfield(d, 'endian')
-  if strcmp(d.endian,'ieee-le')
-    fsdt = fopen(dataFilename,'r','ieee-le');
-  elseif strcmp(d.endian,'ieee-be')
-    fsdt = fopen(dataFilename,'r','ieee-be');
-  end
-else
-  fsdt = fopen(dataFilename,'r', 'ieee-be');
-end
+if ~isfield(d,'endian'),d.endian = 'ieee-be';end
+fsdt = fopen(dataFilename,'r',d.endian);
+
 
 % check file status
 if (fsdt == -1)
@@ -176,59 +170,50 @@ end
 d.data = zeros(prod(d.dim),1);
 
 % just read as one big chunk
-if isfield(d, 'endian')
-  if strcmp(d.endian,'ieee-le')
-    [d.data, total] = fread(fsdt,prod(d.dim),matlabtypes{whichtype}, 'ieee-le');
-  elseif strcmp(d.endian,'ieee-be')
-    [d.data, total] = fread(fsdt,prod(d.dim),matlabtypes{whichtype}, 'ieee-be');
-  end
-else
-  [d.data, total] = fread(fsdt,prod(d.dim),matlabtypes{whichtype}, 'ieee-be');
-end
-% make sure we have read enough bytes
-if (total ~= prod(d.dim))
-  disp(sprintf('(readsdt) Only read %i of %i data points',count,prod(d.dim)));
-  return
-end
-% reshape, first generate command to reshape
-command = 'd.data = reshape(d.data';
-for i = 1:d.numDim
-  command = strcat(command,sprintf(',%i',d.dim(i)));
-end
-command = strcat(command,');');
-% then evaluate that command
-eval(command);
+if ~strcmp(d.dataType,'COMPLEX')
+  [d.data, total] = fread(fsdt,prod(d.dim),matlabtypes{whichtype},d.endian);
 
-
-% for complex data read the other part of data
-if strcmp(d.dataType,'COMPLEX')
-  if isfield(d, 'endian')
-    if strcmp(d.endian,'ieee-le')
-      [d.datai, total] = fread(fsdt,prod(d.dim),matlabtypes{whichtype}, 'ieee-le');
-    elseif strcmp(d.endian,'ieee-be')
-      [d.datai, total] = fread(fsdt,prod(d.dim),matlabtypes{whichtype}, 'ieee-be');
-    end
-  else
-    [d.datai, total] = fread(fsdt,prod(d.dim),matlabtypes{whichtype}, 'ieee-be');
-  end
   % make sure we have read enough bytes
   if (total ~= prod(d.dim))
     disp(sprintf('(readsdt) Only read %i of %i data points',count,prod(d.dim)));
     return
   end
   % reshape, first generate command to reshape
-  command = 'd.datai = reshape(d.datai';
+  command = 'd.data = reshape(d.data';
   for i = 1:d.numDim
     command = strcat(command,sprintf(',%i',d.dim(i)));
   end
   command = strcat(command,');');
   % then evaluate that command
   eval(command);
+
+else
+  % for complex data read the other part of data
+  if strcmp(d.dataType,'COMPLEX')
+    [d.data, total] = fread(fsdt,prod(d.dim)*2,matlabtypes{whichtype},d.endian);
+    % make sure we have read enough bytes
+    if (total ~= prod(d.dim)*2)
+      disp(sprintf('(readsdt) Only read %i of %i data points',count,prod(d.dim)*2));
+      return
+    end
+    % make into compex
+    d.data = reshape(d.data,2,prod(d.dim));
+    d.data = d.data(1,:) + sqrt(-1)*d.data(2,:);
+    % reshape, first generate command to reshape
+    command = 'd.data = reshape(d.data';
+    for i = 1:d.numDim
+      command = strcat(command,sprintf(',%i',d.dim(i)));
+    end
+    command = strcat(command,');');
+    % then evaluate that command
+    eval(command);
+  end
 end
 
 % close the file. we are done.
 fclose(fsdt);
 
+% set filename
 d.filename = filename;
 
 % get full path of fid
@@ -236,17 +221,6 @@ if (isfield(d,'fidName'))
   d.fidName = [getpath(filename) getlastdir(d.fidName)];
 else
   d.fidName = '';
-end
-
-% also write out the endian information
-if ~isfield(d, 'endian')
-  d.endian = 'ieee-be';
-end
-
-% convert to complex data
-if strcmp(d.dataType,'COMPLEX')
-  d.data = d.data + d.datai*sqrt(-1);
-  d = rmfield(d,'datai');
 end
 
 disp(sprintf('(readsdt) Took %0.2f seconds',etime(clock,t0)));

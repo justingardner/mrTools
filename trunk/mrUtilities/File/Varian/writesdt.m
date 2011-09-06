@@ -133,7 +133,7 @@ if strcmp(d.dataType,'COMPLEX')
   realData = real(data);
   imagData = imag(data);
   % now put them back to gether interleaved
-  data = [realData;imagData];
+  data = [realData';imagData'];
   data = data(:);
   % we are writing out twice as much data
 end
