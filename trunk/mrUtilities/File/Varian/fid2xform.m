@@ -182,6 +182,13 @@ if info.acq3d & info.processed
   end
 end
 
+% set field that says whether fft2rdexe_processing happend or not
+if isfield(procpar,'fftw3dexe_processed')
+  info.fftw3dexe_processed = 1;
+else
+  info.fftw3dexe_processed = 0;
+end
+
 % check to see if this is an uncompressedFid and 3D in which
 % case the pss just contains the slice center, so we need to 
 % adjust it here
@@ -230,13 +237,20 @@ swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
 
 % epi images appear to nead a flip in X and Y
 if info.isepi
-  epiFlip = [-1 0 0 0;0 -1 0 0;0 0 1 0;0 0 0 1];
+  epiFlip = [-1 0 0 dim(1)-1;0 -1 0 dim(2)-1;0 0 1 0;0 0 0 1];
 else
   epiFlip = eye(4);
 end
 
+% processed 3d files need a flip
+if info.fftw3dexe_processed
+  fftw = [-1 0 0 dim(1)-1;0 1 0 0;0 0 1 0;0 0 0 1];
+else
+  fftw = eye(4);
+end
+
 % now create the final shifted rotation matrix
-xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*fftw*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);
@@ -323,7 +337,6 @@ end
 
 % keep procpar
 info.procpar = procpar;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getDateFromVarianField    %

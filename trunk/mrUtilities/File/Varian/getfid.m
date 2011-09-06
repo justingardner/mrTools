@@ -79,7 +79,7 @@ end
 if(verbose),disppercent(-inf,'(getfid) Transforming data');end
 
 % decide whether we need to do a 3D transform or 2D
-if info.acq3d
+if info.acq3d && ~info.fftw3dexe_processed
   for j = 1:size(d.data,4)
     for k = 1:size(d.data,5)
       data(:,:,:,k,j) = myfft3(d.data(:,:,:,j,k),kspace);
