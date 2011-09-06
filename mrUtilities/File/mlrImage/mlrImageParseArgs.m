@@ -117,7 +117,8 @@ while iArg <= nArgs
       % nonempty extension, assume that this is a filename
       imageArgs{end+1}.filename = args{iArg};
       iArg = iArg+1;
-      % check for arguments associated with this type,
+      % check for arguments associated with this load filename
+      % like movepro or xMin, etc. see above loadArgs and altArgs list
       % keep doing check until we don't pick up any new
       % arguments. This allows user to put the laod and alt
       % arguments in any order they want to
