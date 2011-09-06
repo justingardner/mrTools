@@ -1384,7 +1384,7 @@ tf = false;
 global gVol;
 
 [d h] = mlrImageLoad(filename,'verbose',gVol{sysNum}.verbose);
-if isempty(d),return,end
+if isempty(d) || ~mlrImageIsHeader(h),return,end
 
 % make 2D images into nominal 3D
 if h.nDim==2

@@ -62,6 +62,10 @@ for iImage = 1:nImages
 
   if isstruct(filename) && isfield(filename,'data')
     data = filename.data;
+    if isempty(data)
+      disp(sprintf('(mlrImageLoad) Empty image'));
+      return
+    end
   elseif isstr(filename)
     % load the data
     switch lower(getext(filename))

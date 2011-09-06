@@ -18,12 +18,15 @@ if ~any(nargin == [3])
   return
 end
 
-% for now just support LPI - should be fairly trivial
-% to handle other orientations by swapping axisReverseMapping
-% and axisDir below appropriately - but be careful of the getting
-% the rows in the xform correct
-if ~strcmp(orient,'LPI')
-  disp(sprintf('(mlrImageOrient) Only LPI supported'));
+% convert the orientation string into something easier to handle
+[tf axisIndex] = ismember(orient,'LRPAIS');
+desiredAxis = ceil(axisIndex/2);
+desiredDir = 2*isodd(axisIndex)-1;
+[dummy desiredAxisReverse] = sort(desiredAxis);
+
+% check to see if we have all axis represented
+if length(unique(desiredAxis)) ~= 3
+  disp(sprintf('(mlrImageOrient) Invalid orientation, must have one each of the 3 axis: L/R P/A I/S'));
   return
 end
 
@@ -42,9 +45,15 @@ end
 % get the axis directions
 [axisLabels axisDirLabels axisMapping axisReverseMapping axisDir] = mlrImageGetAxisLabels(h.qform);
 
+% now make axisMapping and axisReverseMapping appropriate
+% for the desired orientation
+axisMapping = desiredAxisReverse(axisMapping);
+axisReverseMapping = axisReverseMapping(desiredAxis);
+desiredDir = desiredDir(axisMapping);
+
 % flip each axis that goes in the opposite direction
 for i = 1:3
-  if axisDir(i) == -1
+  if axisDir(i)*desiredDir(i) == -1
     data = flipdim(data,i);
   end
 end
@@ -59,13 +68,14 @@ data = permute(data,permutationOrder);
 % make the xform matrix
 for i = 1:3
   xform(i,1:4) = 0;
-  xform(i,axisMapping(i)) = axisDir(i);
-  if axisDir(i) == -1
+  xform(i,axisMapping(i)) = axisDir(i)*desiredDir(i);
+  if axisDir(i)*desiredDir(i) == -1
     xform(i,4) = h.dim(i)-1;
   end
 end
 xform(4,:) = [0 0 0 1];
 
+% fix qform and sform
 h.qform = h.qform*xform;
 if ~isempty(h.sform)
   h.sform = h.sform*xform;
