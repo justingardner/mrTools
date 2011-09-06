@@ -61,17 +61,17 @@ end
 
 % get axis information if not passed in
 if ~isempty(h.qform)
-  [axisLabels axisDirLabels] = mlrImageGetAxisLabels(h.qform);
+  axisLabels = mlrImageGetAxisLabels(h.qform);
 else
-  axisDirLabels = [];
+  axisLabels = [];
 end
 
 % display axis information
-if ~isempty(axisDirLabels)
+if ~isempty(axisLabels)
   cardinalAxisLabels = {'X','Y','Z'};
-  disp(sprintf('Volume orientation is: %s%s%s',upper(axisDirLabels{1}{1}(1)),upper(axisDirLabels{2}{1}(1)),upper(axisDirLabels{3}{1}(1))));
+  disp(sprintf('Volume orientation is: %s',axisLabels.orient));
   for axisNum = 1:3
-    disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},axisDirLabels{axisNum}{1},axisDirLabels{axisNum}{2}));
+    disp(sprintf('Axis %s goes from %s to %s',cardinalAxisLabels{axisNum},axisLabels.dirLabels{axisNum}{1},axisLabels.dirLabels{axisNum}{2}));
   end
 end
   

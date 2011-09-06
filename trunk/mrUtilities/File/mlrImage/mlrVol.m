@@ -1420,8 +1420,12 @@ vol.subplotNum(1:3) = (1:3)+(n-1)*3;
 % choose which axis will be displayed in what figure based on this
 % information
 if ~isempty(h.qform) && ~gVol{sysNum}.imageOrientation
-  [axisLabels vol.axisDirLabels vol.axisMapping axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform);
-  vol.viewDim(1:3) = axisReverseMapping;
+%  [axisLabels vol.axisDirLabels vol.axisMapping axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform);
+  axisLabels = mlrImageGetAxisLabels(h.qform);
+  vol.axisDirLabels = axisLabels.dirLabels;
+  vol.axisMapping = axisLabels.mapping;
+  vol.axisDir = axisLabels.dir;
+  vol.viewDim(1:3) = axisLabels.reverseMapping;
 else
   vol.axisDirLabels = [];
   % default to assuming LPI orientation
