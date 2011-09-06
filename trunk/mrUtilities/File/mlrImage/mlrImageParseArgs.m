@@ -51,8 +51,15 @@ if ~any(nargin == [1])
   return
 end
 
-%filterspec = {'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)';'*.fid', 'Agilant FID Files (*.fid)'};
+% filterspecs - this isn't used right now, since to put up
+% a dialog where you can select both files and directories
+% required going to java and there it was a bit complicated
+% how to use the filterspec
 filterspec = {'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)';'*.sdt;*.edt;','SDT/SPR or EDT/EPR Files (*.sdt, *.spr)'};
+
+% arguments for different filetypes
+altArgs = {'xMin','xMax','yMin','yMax','zMin','zMax'};
+loadArgs = {'kspace','movepro','movepss'};
 
 % go through the list looking for image arguments
 iArg = 1;nArgs = length(args);
@@ -107,9 +114,21 @@ while iArg <= nArgs
 	break;
       end
     else
-      % nonempty extension, just assume that this is a filename
-      imageArgs{end+1} = args{iArg};
+      % nonempty extension, assume that this is a filename
+      imageArgs{end+1}.filename = args{iArg};
       iArg = iArg+1;
+      % check for arguments associated with this type,
+      % keep doing check until we don't pick up any new
+      % arguments. This allows user to put the laod and alt
+      % arguments in any order they want to
+      iArgStart = nan;
+      imageArgs{end}.altArgs = {};
+      imageArgs{end}.loadArgs = {};
+      while (iArgStart ~= iArg)
+	iArgStart = iArg;
+	[iArg imageArgs{end}.loadArgs] = getOtherArgs(args,iArg,loadArgs,imageArgs{end}.loadArgs);
+	[iArg imageArgs{end}.altArgs] = getOtherArgs(args,iArg,altArgs,imageArgs{end}.altArgs);
+      end
     end
   elseif isview(args{iArg})
     % if we have a view then collect any additional qualifying
@@ -148,7 +167,9 @@ while iArg <= nArgs
   % if it is a structure, see if it has a data field
   elseif isstruct(args{iArg})
     % check structures
-    if isfield(args{iArg},'data')
+    if isfield(args{iArg},'filename')
+      imageArgs{end+1} = args{iArg};
+    elseif isfield(args{iArg},'data')
       imageArgs{end+1} = args{iArg};
     elseif isfield(args{iArg},'d')
       % d is also acceptable, but switch it to a data filed
@@ -213,3 +234,35 @@ if status == JFileChooser.APPROVE_OPTION
 else
   pathName = [];
 end
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%   getOtherArgs   %%
+%%%%%%%%%%%%%%%%%%%%%%
+function  [iArg loadArgs] = getOtherArgs(args,iArg,argNames,loadArgs)
+
+if nargin < 4,loadArgs = {};end
+
+% go search in args for getArgs style arguments
+% that match the argNames list and put those into
+% loadArgs
+while (iArg<=length(args))
+  % check for a string with one of the argument names in it
+  if isstr(args{iArg}) && any(strcmp(argNames,strtok(args{iArg},'=')))
+    % ok, this is an argument keep it in the list
+    loadArgs{end+1} = args{iArg};
+    % if there is no equal sign then the next argument has
+    % to be passed as well
+    if isempty(strfind(args{iArg},'='))    
+      iArg = iArg+1;
+      % and keep the argument in our list
+      if iArg <= length(args)
+	loadArgs{end+1} = args{iArg};
+      end
+    end
+    iArg = iArg+1;
+  else
+    % no argument name, stop
+    break;
+  end
+end
+

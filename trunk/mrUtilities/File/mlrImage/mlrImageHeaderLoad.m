@@ -37,6 +37,21 @@ nImages = length(imageArgs);allHeaders = {};
 % cycle though each image argument
 for iImage = 1:nImages
   header = [];
+  % see if we have a structure with the filename and other
+  % arguments fields
+  loadArgs = {};altArgs = {};
+  if isfield(imageArgs{iImage},'filename')
+    % grab loadArgs which are passed to load routines
+    if isfield(imageArgs{iImage},'loadArgs')
+      loadArgs = imageArgs{iImage}.loadArgs;
+    end
+    % grab altArgs which are used in this routine
+    if isfield(imageArgs{iImage},'altArgs')
+      altArgs = imageArgs{iImage}.altArgs;
+    end
+    % get filename
+    imageArgs{iImage} = imageArgs{iImage}.filename;
+  end
   % if passed in a sturcutre with the field data
   % then grab the data and convert the rest of the
   % fields to a private header
@@ -89,7 +104,7 @@ for iImage = 1:nImages
      case {'sdt','spr','edt','epr'}
       header = mlrImageHeaderLoadSDT(filename,header);
      case {'fid'}
-      header = mlrImageHeaderLoadFid(filename,header,verbose);
+      header = mlrImageHeaderLoadFid(filename,header,verbose,loadArgs);
      otherwise
       disp(sprintf('(mlrImageHeaderLoad) Unknown image header type: %s',getext(filename)));
       return
@@ -171,10 +186,10 @@ header = setHeaderBasedOnNifti(header,nifti);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadFid    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function header = mlrImageHeaderLoadFid(filename,header,verbose)
+function header = mlrImageHeaderLoadFid(filename,header,verbose,loadArgs)
 
 % read the nifti header
-nifti = fid2niftihdr(filename,verbose);
+nifti = fid2niftihdr(filename,verbose,'loadArgs',loadArgs);
 if isempty(nifti),header = [];return;end
   
 % set some info
