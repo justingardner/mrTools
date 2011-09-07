@@ -1383,6 +1383,7 @@ function tf = loadVolume(filename,sysNum)
 tf = false;
 global gVol;
 
+dispHeader(sprintf('Loading image'));
 [d h] = mlrImageLoad(filename,'verbose',gVol{sysNum}.verbose);
 if isempty(d) || ~mlrImageIsHeader(h),return,end
 

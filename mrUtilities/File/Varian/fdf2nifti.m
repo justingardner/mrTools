@@ -33,9 +33,31 @@ end
 if isempty(h),return,end
 
 % Y and Z coordinates seems to be flipped and swapped for fdf
-swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-flipYZ = [1 0 0 0;0 -1 0 0;0 0 -1 0;0 0 0 1];
+swapXform = [1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
+%swapXform = [1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1];
 
+%swapXform = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+%swapXform = [0 1 0 0;0 0 1 0;1 0 0 0;0 0 0 1];
+
+%swapXform = [0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+%swapXform = [0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
+
+flipXform = [1 0 0 0;0 -1 0 size(d,2);0 0 -1 size(d,3);0 0 0 1];
+flipXform = [1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
+flipXform = [-1 0 0 size(d,1);0 -1 0 size(d,2);0 0 -1 size(d,3);0 0 0 1];
+flipXform = [-1 0 0 size(d,1);0 1 0 0;0 0 1 0;0 0 0 1];
+%flipXform = [0 0 0 1;0 -1 0 size(d,2);0 0 1 0;0 0 0 1];
+%flipXform = [1 0 0 0;0 1 0 0;0 0 -1 size(d,3);0 0 0 1];
+%flipXform = [-1 0 0 size(d,1)-1;0 -1 0 size(d,2)-1;0 0 -1 size(d,3)-1;0 0 0 1];
+flipXform = [-1 0 0 size(d,1)-1;0 -1 0 size(d,2)-1;0 0 1 0;0 0 0 1];
+flipXform = [1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
+flipXform = [1 0 0 0;0 -1 0 0;0 0 -1 0;0 0 0 1];
+
+swapXform = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+flipXform = [1 0 0 0;0 1 0 0;0 0 1 0; 0 0 0 1];
+%rotXform = makeRotMatrix3D(0,0,90,[0 0 0]);
+rotXform = eye(4);
+shiftXform = [1 0 0 0;0 1 0 0;0 0 1 1.5;0 0 0 1];
 if 0
   % get the nifti header from the procpar
   [hdr info] = fid2niftihdr(setext(fdffilename,'fid'),verbose);
@@ -45,21 +67,24 @@ if 0
   hdr = cbiSetNiftiQform(hdr,qform44);
 end
 
-
+huh = [1 1 1 1;-1 -1 1 1;1 1 -1 1;1 1 1 1];
 % get orientation of center of slice around magnet coordinates
 orientation = eye(4);
-orientation(1,1:3) = h(1).orientation(1:3);
-orientation(2,1:3) = h(1).orientation(4:6);
+if verbose,disp(sprintf('(fdf2nifti) Orientation\n%s',mlrnum2str(h(1).orientation,'compact=0')));end
+orientation(1,1:3) = h(1).orientation(4:6);
+orientation(2,1:3) = h(1).orientation(1:3);
 orientation(3,1:3) = h(1).orientation(7:9);
+%orientation(1:3,1:3) = reshape(h(1).orientation,3,3)';
 if verbose,disp(sprintf('(fdf2nifti) Orientation\n%s',mlrnum2str(orientation,'compact=0')));end
-
+orientation = huh.*orientation;
 % get voxel size
 voxelSize = diag([10*h(1).span./h(1).matrix h(1).roi(3)*10]);
 voxelSize(4,1:4) = [0 0 0 1];
 if verbose,disp(sprintf('(fdf2nifti) Voxel size: %s',mlrnum2str(diag(voxelSize)')));end
 
 % get offset to center of slice
-locationOffset = [1 0 0 h(1).location(1)*10;0 1 0 h(1).location(2)*10; 0 0 1 h(1).location(3)*10 ; 0 0 0 1];
+locationOffset = [1 0 0 2*h(1).location(1);0 1 0 2*h(1).location(2); 0 0 1 -2*h(1).location(3) ; 0 0 0 1];
+locationOffset = [1 0 0 voxelSize(1)*h(1).location(1);0 1 0 voxelSize(2)*h(1).location(2); 0 0 1 voxelSize(3)*h(1).location(3) ; 0 0 0 1];
 if verbose,disp(sprintf('(fdf2nifti) Location offset: %s',mlrnum2str(locationOffset(1:3,4)')));end
 
 % fix matrix for 2D images to have a 3rd dim
@@ -67,15 +92,19 @@ if length(h(1).matrix) < 3, h(1).matrix(3) = 1;end
 
 sliceCenterOffset = eye(4);
 sliceCenterOffset(1,4) = -h(1).matrix(1)/2;
-sliceCenterOffset(2,4) = h(1).matrix(2)/2;
-sliceCenterOffset(3,4) = h(1).matrix(3)/2;
+sliceCenterOffset(2,4) = -h(1).matrix(2)/2;
+sliceCenterOffset(3,4) = -h(1).matrix(3)/2;
 if verbose,disp(sprintf('(fdf2nifti) Slice center offset: %s',mlrnum2str(sliceCenterOffset(1:3,4)')));end
 
 % then get offset to first voxel
 %originOffsetFromSliceCenter = [h(1).matrix(1)/2 h(1).matrix(2)/2 0 1]';
 %originOffsetFromSliceCenter = orientation*originOffsetFromSliceCenter
 
-qform44 = orientation*voxelSize*sliceCenterOffset*locationOffset*flipYZ*swapXY;
+qform44 = flipXform*rotXform*orientation*voxelSize*sliceCenterOffset*locationOffset*swapXform*shiftXform;
+qform44 = flipXform*orientation*voxelSize;
+qform44 = orientation*swapXform*flipXform;
+qform44 = swapXform*flipXform*orientation;
+qform44 = orientation*voxelSize*sliceCenterOffset*locationOffset;
 if verbose,disp(sprintf('(fdf2nifti) Qform44\n%s',mlrnum2str(qform44,'compact=0')));end
 
 % we still need to debug all of this

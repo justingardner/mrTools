@@ -14,8 +14,8 @@ hdr = [];info = [];
 if ieNotDefined('verbose'),verbose=1;end
 
 % parse arguments
-movepro=0;loadArgs = [];
-validArgs = {'movepro'};
+movepro=0;loadArgs = [];movepss=0;
+validArgs = {'movepro','movepss'};
 getArgs(varargin,{validArgs{:},'loadArgs'});
 % now evaluate the load args (these are passed from mlrImageLoad)
 getArgs(loadArgs,validArgs,'verbose=0');
@@ -35,7 +35,7 @@ end
 hdr = cbiCreateNiftiHeader;
 
 % get the qform
-[qform44 info] = fid2xform(fidname,verbose,sprintf('movepro=%f',movepro));
+[qform44 info] = fid2xform(fidname,verbose,'movepro',movepro,'movepss',movepss);
 if isempty(qform44),hdr = [];return;end
 
 % give warning for epi's that have not been processed
