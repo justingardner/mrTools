@@ -190,7 +190,7 @@ end
 
 return
 
-smartfig('projectOutMeanVector');
+mlrSmartfig('projectOutMeanVector');
 % make an overlay
 overlay = zeros(viewGet(v,'scanDims'));
 overlay(params.targetROI{1}.linearCoords) = params.targetROI{1}.r;

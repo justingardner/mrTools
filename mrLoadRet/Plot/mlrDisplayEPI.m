@@ -66,7 +66,7 @@ if ~ieNotDefined('v') && ~isview(v)
     disp(sprintf('(mlrDisplayEPI) First argument must be a valid view, filename, or data'));
     return
   end
-  gMLRDisplayEPI.fignum = smartfig('mlrDisplayEPI');
+  gMLRDisplayEPI.fignum = mlrSmartfig('mlrDisplayEPI');
   gMLRDisplayEPI.graphWin = 0;
 else
   % if no v, then create one
