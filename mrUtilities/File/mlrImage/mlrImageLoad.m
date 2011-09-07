@@ -33,9 +33,17 @@ end
 [imageArgs otherArgs] = mlrImageParseArgs(varargin);
 
 % check input arguments
-verbose=0;orient=[];xMin=1;xMax=inf;yMin=1;yMax=inf;zMin=1;zMax=inf;
-validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax'};
+verbose=0;orient=[];xMin=1;xMax=inf;yMin=1;yMax=inf;zMin=1;zMax=inf;volNum = [];
+validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum'};
 getArgs(otherArgs,validArgs);
+
+% check volNum argument
+if ~isempty(volNum) && (length(volNum)>2)
+  disp(sprintf('(mlrImageLoad) volNum must be either a single volume or a [min max] array. Ignoring.'));
+  volNum = [];
+else
+  volNum = sort(volNum);
+end
 
 % number of images to load. Note that for
 % a single image, then we just return the data and header.
@@ -61,6 +69,14 @@ for iImage = 1:nImages
     continue;
   end
 
+  % setup for volNum processing
+  if ~isempty(volNum) && (header.nDim >= 4)
+    volNum(volNum < 1) = 1;
+    volNum(volNum > header.dim(4)) = header.dim(4);
+  else
+    volNum = [];
+  end
+    
   % if this is a struct with filename and loadArgs field
   % then we split those out
   loadArgs = {};altArgs = {};
@@ -92,10 +108,20 @@ for iImage = 1:nImages
       if isdir(filename)
 	data = fdf2nifti(filename,verbose);
       else
-	data = cbiReadNifti(filename);
+	if isempty(volNum)
+	  data = cbiReadNifti(filename);
+	else
+	  data = cbiReadNifti(filename,{[],[],[],volNum});
+	end
       end
+      volNum = [];
      case {'hdr','nii'}
-      data = cbiReadNifti(filename);
+      if isempty(volNum)
+	data = cbiReadNifti(filename);
+      else
+	data = cbiReadNifti(filename,{[],[],[],volNum});
+      end
+      volNum = [];
      case {'sdt','spr','edt','epr'}
       data = readsdt(filename);
       if isfield(data,'data')
@@ -122,6 +148,19 @@ for iImage = 1:nImages
   if ~isempty(orient)
     [data header] = mlrImageOrient(orient,data,header);
   end
+
+  % do volNum processing if not already done
+  if ~isempty(volNum) && (header.nDim >= 4)
+    volNum(volNum < 1) = 1;
+    volNum(volNum > header.dim(4)) = header.dim(4);
+    if length(volNum) == 1
+      data = data(:,:,:,volNum,:);
+    else
+      data = data(:,:,:,volNum(1):volNum(2),:);
+    end
+    header.dim(4) = size(data,4);
+  end
+    
 
   % package up for returning
   if nImages > 1

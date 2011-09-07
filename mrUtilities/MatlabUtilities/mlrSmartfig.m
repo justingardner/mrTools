@@ -24,6 +24,7 @@ if ~any(nargin == [1 2])
   return
 end
 
+
 % global that stores all figure handles
 global gMLRSmartfig;
 
