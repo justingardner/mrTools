@@ -383,9 +383,9 @@ end
 
 % get figure handles
 gTalairach = [];
-gTalairach.fig(1) = smartfig('talairach1');
-gTalairach.fig(2) = smartfig('talairach2');
-gTalairach.fig(3) = smartfig('talairach3');
+gTalairach.fig(1) = mlrSmartfig('talairach1');
+gTalairach.fig(2) = mlrSmartfig('talairach2');
+gTalairach.fig(3) = mlrSmartfig('talairach3');
 gTalairach.roiCoords = [];
 gTalairach.shutdown = 0;
 gTalairach.filename = talinfo.filename;
