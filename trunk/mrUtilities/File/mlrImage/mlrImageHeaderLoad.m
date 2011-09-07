@@ -15,7 +15,7 @@
 %             For details on the header see:  mlrImageIsHeader
 function retval = mlrImageHeaderLoad(varargin)
 
-header = [];
+retval = [];
 
 % check arguments
 if nargin < 1
