@@ -13,6 +13,14 @@
 %             the epis. The images can be filenames or any of the
 %             other formats that are understood by mlrImageParseArgs
 %   
+%             If you want to specify a different resolution factor
+%             you can call e.g.:
+% 
+%             [d h] = mlrImageReslice('from.img','to.img','resFactor=[3 2 2]')
+%
+%             This will create a resliced image with twice the
+%             resolution in the 2nd and 3rd dimension and three
+%             times the resolution in the 1st dimension
 %
 function [resliceData resliceHeader] = mlrImageReslice(varargin)
 
@@ -27,8 +35,16 @@ end
 
 % parse args
 [imageArgs otherArgs] = mlrImageParseArgs(varargin);
-verbose = [];
-getArgs(otherArgs,{'verbose=0'});
+verbose = [];resFactor = [];
+getArgs(otherArgs,{'verbose=0','resFactor=[2 2 2]'});
+
+if length(resFactor)==1
+  resFactor(1:3) = resFactor;
+else
+  % make the resFactor 1x3
+  resFactor(end+1:3) = 1;
+  resFactor = resFactor(1:3);
+end
 
 % check the images
 if length(imageArgs) ~= 2
@@ -67,12 +83,13 @@ else
   return
 end
 
-resFactor = [2 2 2];
+% flip x/y of resFactor
+resFactor = resFactor([2 1 3]);
 
 % make x, y and z of image
-x = 1:1/resFactor(1):toHeader.dim(1)+1/resFactor(1);
-y = 1:1/resFactor(2):toHeader.dim(2)+1/resFactor(2);
-z = 1:1/resFactor(3):toHeader.dim(3)+1/resFactor(3);
+x = (resFactor(1)+1)/(resFactor(1)*2):1/resFactor(1):toHeader.dim(1)+(resFactor(1)-1)/(resFactor(1)*2);
+y = (resFactor(2)+1)/(resFactor(2)*2):1/resFactor(2):toHeader.dim(2)+(resFactor(2)-1)/(resFactor(2)*2);
+z = (resFactor(3)+1)/(resFactor(3)*2):1/resFactor(3):toHeader.dim(3)+(resFactor(3)-1)/(resFactor(3)*2);
 
 % make the grid
 [x y z] = meshgrid(x,y,z);
@@ -104,10 +121,10 @@ resliceHeader.pixdim(1:3) = toHeader.pixdim(1:3);
 
 % create the xform
 scaleXform = eye(4);
-scaleXform(1:3,1:3) = diag(1./resFactor);
+scaleXform(1:3,1:3) = diag(1./[resFactor(2) resFactor(1) resFactor(3)]);
 offsetXform = eye(4);
-offsetXform(1,4) = y(1)-1;
-offsetXform(2,4) = x(1)-1;
+offsetXform(1,4) = x(1)-1;
+offsetXform(2,4) = y(1)-1;
 offsetXform(3,4) = z(1)-1;
 
 if ~isempty(resliceHeader.qform)
