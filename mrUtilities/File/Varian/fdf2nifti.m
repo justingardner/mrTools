@@ -32,32 +32,6 @@ end
 [d h] = readfdf(fdffilename,verbose,headerOnly);
 if isempty(h),return,end
 
-% Y and Z coordinates seems to be flipped and swapped for fdf
-swapXform = [1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
-%swapXform = [1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1];
-
-%swapXform = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-%swapXform = [0 1 0 0;0 0 1 0;1 0 0 0;0 0 0 1];
-
-%swapXform = [0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
-%swapXform = [0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
-
-flipXform = [1 0 0 0;0 -1 0 size(d,2);0 0 -1 size(d,3);0 0 0 1];
-flipXform = [1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
-flipXform = [-1 0 0 size(d,1);0 -1 0 size(d,2);0 0 -1 size(d,3);0 0 0 1];
-flipXform = [-1 0 0 size(d,1);0 1 0 0;0 0 1 0;0 0 0 1];
-%flipXform = [0 0 0 1;0 -1 0 size(d,2);0 0 1 0;0 0 0 1];
-%flipXform = [1 0 0 0;0 1 0 0;0 0 -1 size(d,3);0 0 0 1];
-%flipXform = [-1 0 0 size(d,1)-1;0 -1 0 size(d,2)-1;0 0 -1 size(d,3)-1;0 0 0 1];
-flipXform = [-1 0 0 size(d,1)-1;0 -1 0 size(d,2)-1;0 0 1 0;0 0 0 1];
-flipXform = [1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
-flipXform = [1 0 0 0;0 -1 0 0;0 0 -1 0;0 0 0 1];
-
-swapXform = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-flipXform = [1 0 0 0;0 1 0 0;0 0 1 0; 0 0 0 1];
-%rotXform = makeRotMatrix3D(0,0,90,[0 0 0]);
-rotXform = eye(4);
-shiftXform = [1 0 0 0;0 1 0 0;0 0 1 1.5;0 0 0 1];
 if 0
   % get the nifti header from the procpar
   [hdr info] = fid2niftihdr(setext(fdffilename,'fid'),verbose);
@@ -67,23 +41,51 @@ if 0
   hdr = cbiSetNiftiQform(hdr,qform44);
 end
 
-huh = [1 1 1 1;-1 -1 1 1;1 1 -1 1;1 1 1 1];
+
 % get orientation of center of slice around magnet coordinates
 orientation = eye(4);
 if verbose,disp(sprintf('(fdf2nifti) Orientation\n%s',mlrnum2str(h(1).orientation,'compact=0')));end
 orientation(1,1:3) = h(1).orientation(4:6);
 orientation(2,1:3) = h(1).orientation(1:3);
 orientation(3,1:3) = h(1).orientation(7:9);
-%orientation(1:3,1:3) = reshape(h(1).orientation,3,3)';
 if verbose,disp(sprintf('(fdf2nifti) Orientation\n%s',mlrnum2str(orientation,'compact=0')));end
+
+% we still need to debug all of this. I was working on the files taken for the phantom:
+% which are s99920110809. The xforms below basically work more or less like the xforms
+% we compute except for double oblique angles: see mlrVol mprage05.img mprage05.fid
+% They don't seem to do the right thing for the 2D files yet though. Note that the offsets
+% seem to be almost, but not completely identical. See mlrVol mprage11.img mprage11.fid
+disp(sprintf('(fdf2nifti) !!! Not sure the qform44 computed from the fdf header is correct (we need to debug this) !!!!'));
+
+% I have no idea why this would be necessary, but it seemed the only
+% hack that I could come up with trying every swap and flip that I
+% could come up with to make the first 4 mprages work out correctly. For 
+% these files, the orientation reported in the fdf is
+%
+% 1) [-1 0 0    0 -1 0    0 0 1]
+% 2) [0 -1 0    1  0 0    0 0 1]
+% 3) [0 1 0    -1 0 0     0 0 1]
+% 4) [0 0 1     0 -1 0    1 0 0]
+% 
+% and the actually xforms we get with fid2xform are:
+%
+% 1) [0 -1  0  2) [1  0  0  3) [-1 0  0  4) [0 -1  0  
+%     1  0  0      0  1  0      0 -1  0      0  0  1
+%     0  0 -1]     0  0 -1]     0  0 -1]     1  0  0]
+%
+% Thus, the only way I came up with getting the right
+% xforms form the orient field was to swap rows 2 and 1
+% and then apply this strange xform to flip the sign
+% of various components. This really can't be right.
+huh = [1 1 1 1;-1 -1 1 1;1 1 -1 1;1 1 1 1];
 orientation = huh.*orientation;
+
 % get voxel size
 voxelSize = diag([10*h(1).span./h(1).matrix h(1).roi(3)*10]);
 voxelSize(4,1:4) = [0 0 0 1];
 if verbose,disp(sprintf('(fdf2nifti) Voxel size: %s',mlrnum2str(diag(voxelSize)')));end
 
 % get offset to center of slice
-locationOffset = [1 0 0 2*h(1).location(1);0 1 0 2*h(1).location(2); 0 0 1 -2*h(1).location(3) ; 0 0 0 1];
 locationOffset = [1 0 0 voxelSize(1)*h(1).location(1);0 1 0 voxelSize(2)*h(1).location(2); 0 0 1 voxelSize(3)*h(1).location(3) ; 0 0 0 1];
 if verbose,disp(sprintf('(fdf2nifti) Location offset: %s',mlrnum2str(locationOffset(1:3,4)')));end
 
@@ -96,19 +98,9 @@ sliceCenterOffset(2,4) = -h(1).matrix(2)/2;
 sliceCenterOffset(3,4) = -h(1).matrix(3)/2;
 if verbose,disp(sprintf('(fdf2nifti) Slice center offset: %s',mlrnum2str(sliceCenterOffset(1:3,4)')));end
 
-% then get offset to first voxel
-%originOffsetFromSliceCenter = [h(1).matrix(1)/2 h(1).matrix(2)/2 0 1]';
-%originOffsetFromSliceCenter = orientation*originOffsetFromSliceCenter
-
-qform44 = flipXform*rotXform*orientation*voxelSize*sliceCenterOffset*locationOffset*swapXform*shiftXform;
-qform44 = flipXform*orientation*voxelSize;
-qform44 = orientation*swapXform*flipXform;
-qform44 = swapXform*flipXform*orientation;
+% compute xfrom
 qform44 = orientation*voxelSize*sliceCenterOffset*locationOffset;
 if verbose,disp(sprintf('(fdf2nifti) Qform44\n%s',mlrnum2str(qform44,'compact=0')));end
-
-% we still need to debug all of this
-disp(sprintf('(fdf2nifti) !!! Not sure the qform44 computed from the fdf header is correct (we need to debug this) !!!!'));
 
 % create header
 hdr = cbiCreateNiftiHeader; 

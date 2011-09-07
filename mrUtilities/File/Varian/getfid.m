@@ -90,7 +90,7 @@ end
 % see if we have to move the pss (only available for 3D volumes)
 if movepss ~= 0
   if ~info.acq3d || info.fftw3dexe_processed
-    disp(sprintf('(getfid) Unable to move pss for 2D data. Ignoring desired pss shift of: %s',movepss));
+    disp(sprintf('(getfid) !!! Unable to move pss for 2D data. Ignoring desired pss shift of: %f !!!',movepss));
   else
     % and create the shift in 3D
     pssshift = movepss/(info.procpar.lpe2/d.dim(3));

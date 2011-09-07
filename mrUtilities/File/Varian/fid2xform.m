@@ -109,13 +109,6 @@ end
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 
-% move pss if called for
-if movepss ~= 0
-%  pssshift = movepss/(procpar.lpe2/dim(3));
-%  procpar.pss = procpar.pss + pssshift;
-  procpar.pss = procpar.pss - movepss*10;
-end
-
 info.processed = 1;
 if dim(2) == 0
  info.processed = 0;
@@ -195,6 +188,15 @@ if isfield(procpar,'fftw3dexe_processed')
 else
   info.fftw3dexe_processed = 0;
 end
+% move pss if called for
+if movepss ~= 0
+  % apply the compensation only if this is a 3D file
+  if ~info.acq3d || info.fftw3dexe_processed
+    disp(sprintf('(fid2xform) !!! Unable to move pss for 2D data. Ignoring desired pss shift of: %f !!!',movepss));
+  else
+    procpar.pss = procpar.pss - movepss*10;
+  end
+end
 
 % check to see if this is an uncompressedFid and 3D in which
 % case the pss just contains the slice center, so we need to 
@@ -254,7 +256,7 @@ end
 
 % processed 3d files need a flip
 if info.fftw3dexe_processed
-  fftw = [-1 0 0 dim(1)-1;0 1 0 0;0 0 1 0;0 0 0 1];
+  fftw = [-1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
 else
   fftw = eye(4);
 end
