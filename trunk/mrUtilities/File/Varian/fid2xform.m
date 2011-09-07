@@ -12,17 +12,17 @@
 %
 function [xform info] = fid2xform(procpar,verbose,varargin)
 
-xform = [];
+xform = [];info = [];
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if nargin < 1
   help fid2xform
   return
 end
 
 % get extra arguments
-movepro=[];
-getArgs(varargin,{'movepro=0'});
+movepro=[];movepss=[];
+getArgs(varargin,{'movepro=0','movepss=0'});
 
 if ieNotDefined('verbose'),verbose = 0;end
 
@@ -109,6 +109,13 @@ end
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 
+% move pss if called for
+if movepss ~= 0
+%  pssshift = movepss/(procpar.lpe2/dim(3));
+%  procpar.pss = procpar.pss + pssshift;
+  procpar.pss = procpar.pss - movepss*10;
+end
+
 info.processed = 1;
 if dim(2) == 0
  info.processed = 0;
@@ -193,12 +200,16 @@ end
 % case the pss just contains the slice center, so we need to 
 % adjust it here
 if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
-  if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, computing pss form center of slab: %f',procpar.pss));end
+  % set to automatically movepss since origin is center of magnet not center of slices
+  info.movepss = -procpar.pss;
+  if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, pss of center of slab: %f',procpar.pss));end
   % compute location of first and last slice
   firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
   lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
   % now make array
   procpar.pss = (firstSlice:voxspacing(3):lastSlice)/10;
+else
+  info.movepss = 0;
 end
 
 % Now get the offset in mm from the center of the bore that the center of the

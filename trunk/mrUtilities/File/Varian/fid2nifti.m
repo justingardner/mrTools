@@ -76,9 +76,9 @@ for i = 1:length(varargin)
 end
 
 % parse arguments
-movepro=0;receiverNum=[];loadArgs = [];
+movepro=0;receiverNum=[];loadArgs = [];movepss=0;
 xMin=1;xMax=inf;yMin=1;yMax=inf;sMin=1;sMax=inf;outputName=[];kspace=0;
-validArgs = {'movepro','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace'};
+validArgs = {'movepro','movepss','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace'};
 getArgs(argsList,{validArgs{:} 'loadArgs'});
 % now evaluate the load args (these are passed from mlrImageLoad
 getArgs(loadArgs,validArgs);
@@ -121,9 +121,11 @@ for i = 1:length(fidnames)
     disp(sprintf('(fid2nifti) WARNING: Could not find file %s',fidname));
     continue
   end
-  
+
+  % see if we have to shift pss
+  [xform info] = fid2xform(fidname,0);
   % get the fid
-  fid = getfid(fidname,verbose,[],movepro,kspace);
+  fid = getfid(fidname,'verbose',verbose,'movepro',movepro,'kspace',kspace,'movepss',movepss+info.movepss);
   if isempty(fid.data)
     disp(sprintf('(fid2nifti) WARNING file %s could not be read',fidname));
     continue
@@ -167,7 +169,7 @@ for i = 1:length(fidnames)
   end
   
   % create a header
-  hdr = fid2niftihdr(fidname,verbose,sprintf('movepro=%f',movepro));
+  hdr = fid2niftihdr(fidname,verbose,'movepro',movepro,'movepss',movepss);
   
   % reorder slices if necessary. note that this is here for fixing interleaved slices,
   % but also reorders slices for 3d images (which go in descending rather than ascending

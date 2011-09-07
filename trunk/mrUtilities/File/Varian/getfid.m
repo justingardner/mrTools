@@ -37,6 +37,9 @@ for i = 1:length(varargin)
     else
       varargin{i} = sprintf('%s=%s',oldArgNames{i},mynum2str(varargin{i}));
     end
+  else 
+    % if non-numeric then stop doing this, since we are using new style getArgs
+    break
   end
 end
 % now run getArgs
@@ -54,7 +57,7 @@ end
 d.dim = size(d.data);
 
 % get fidinfo
-[xform info] = fid2xform(fidname,verbose);
+[xform info] = fid2xform(fidname);
 
 if info.receiversAndSlicesSwapped && swapReceiversAndSlices
   if size(d.data,4) > 1
@@ -90,7 +93,7 @@ if movepss ~= 0
     disp(sprintf('(getfid) Unable to move pss for 2D data. Ignoring desired pss shift of: %s',movepss));
   else
     % and create the shift in 3D
-    pssshift = movepss;
+    pssshift = movepss/(info.procpar.lpe2/d.dim(3));
     pssPhaseshift3 = pssshift*(0:2*pi./d.dim(3):2*pi)';
     pssPhaseshift3 = pssPhaseshift3(2:end);
     pssPhaseshift3 = repmat(pssPhaseshift3,[1 d.dim(1) d.dim(2)]);
