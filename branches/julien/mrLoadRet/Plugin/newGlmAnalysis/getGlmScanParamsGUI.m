@@ -226,8 +226,8 @@ while keepAsking
         nextScan = params.scanNum(find(params.scanNum>iScan,1,'first'));
         if isempty(scanParams{nextScan})
           scanParams{nextScan} = scanParams{iScan};
-          scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'scan');
-          scanParams{nextScan} = mrParamsRemoveFields(scanParams{nextScan},'description');
+          scanParams{nextScan} = mrParamsRemoveField(scanParams{nextScan},'scan');
+          scanParams{nextScan} = mrParamsRemoveField(scanParams{nextScan},'description');
         end
       end
       
