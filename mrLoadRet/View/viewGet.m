@@ -388,10 +388,12 @@ switch lower(param)
     % tseriesPath = viewGet(view,'tseriesPath',scanNum,[])
     % tseriesPath = viewGet(view,'tseriesPath',scanNum)
     [s g] = getScanAndGroup(view,varargin,param);
-    nscans = viewGet(view,'nscans',g);
-    if (nscans >= s) & (s > 0)
-      val = fullfile(viewGet(view,'tseriesDir',g),...
-        MLR.groups(g).scanParams(s).fileName);
+    ngroups = viewGet(view,'ngroups');
+    if (g > 0) & (g <= ngroups)
+      nscans = viewGet(view,'nscans',g);
+      if (nscans >= s) & (s > 0)
+	val = fullfile(viewGet(view,'tseriesDir',g), MLR.groups(g).scanParams(s).fileName);
+      end
     end
   case{'tseriesfile'}
     % filename = viewGet(view,'tseriesFile',scanNum,groupNum)

@@ -23,15 +23,15 @@ if isempty(params),return,end
 header = mlrImageHeaderLoad(params.anatomy);
 
 % make sure we have AC point
-if ~isfield(header,'talPoints') || isempty(header.talPoints) || isequal(header.talPoints,[0 0 0])
+if isempty(header.talInfo)
   warndlg('(mlrSurf2Caret) Please set AC point (no need to set any other tal points)');
   % get the AC point
-  header.talPoints = talairach(params.anatomy);
-  if isempty(header.talPoints),return,end
+  header.talInfo = talairach(params.anatomy);
+  if isempty(header.talInfo),return,end
 end
 
 % AC point print out
-disp(sprintf('(mlrSurf2Caret) Using [%i %i %i] as AC point',header.talPoints.AC(1),header.talPoints.AC(2),header.talPoints.AC(3)));
+disp(sprintf('(mlrSurf2Caret) Using [%i %i %i] as AC point',header.talInfo.AC(1),header.talInfo.AC(2),header.talInfo.AC(3)));
 
 % load the outer surface
 outerSurf = loadSurfOFF(params.outerSurface);
@@ -47,9 +47,9 @@ surf = outerSurf;
 surf.vtcs = (outerSurf.vtcs+innerSurf.vtcs)/2;
 
 % and shift the points so AC is center
-surf.vtcs(:,1) = surf.vtcs(:,1)-header.talPoints.AC(1);
-surf.vtcs(:,2) = surf.vtcs(:,2)-header.talPoints.AC(2);
-surf.vtcs(:,3) = surf.vtcs(:,3)-header.talPoints.AC(3);
+surf.vtcs(:,1) = surf.vtcs(:,1)-header.talInfo.AC(1);
+surf.vtcs(:,2) = surf.vtcs(:,2)-header.talInfo.AC(2);
+surf.vtcs(:,3) = surf.vtcs(:,3)-header.talInfo.AC(3);
 
 % save as caret file
 saveCaretFile(filename,surf,params);

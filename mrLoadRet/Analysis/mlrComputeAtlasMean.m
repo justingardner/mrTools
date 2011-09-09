@@ -366,11 +366,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 function dispOverlay(b,overlay,titleStr)
 
-if exist('smartfig') == 2
-  f = smartfig(fixBadChars(sprintf('mlrComputeAtlasMean:%s',titleStr)),'reuse');clf
-else
-  f = figure;
-end
+f = mlrSmartfig(fixBadChars(sprintf('mlrComputeAtlasMean:%s',titleStr)),'reuse');clf
 patch('vertices', b.vtcs, 'faces', b.tris,'FaceVertexCData', squeeze(overlay),'facecolor','interp','edgecolor','none');
 axis equal;
 axis off;
@@ -387,11 +383,7 @@ drawnow
 %%%%%%%%%%%%%%%%%
 function dispROI(b,r,titleStr)
 
-if exist('smartfig') == 2
-  f = smartfig(fixBadChars(sprintf('mlrComputeAtlasMean:%s',titleStr)),'reuse');clf
-else
-  f = figure;
-end
+f = mlrSmartfig(fixBadChars(sprintf('mlrComputeAtlasMean:%s',titleStr)),'reuse');clf
 
 % draw surface
 patch('vertices', b.vtcs, 'faces', b.tris,'FaceVertexCData', squeeze(b.overlayImage),'facecolor','interp','edgecolor','none');

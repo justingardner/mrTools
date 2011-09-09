@@ -12,17 +12,17 @@
 %
 function [xform info] = fid2xform(procpar,verbose,varargin)
 
-xform = [];
+xform = [];info = [];
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if nargin < 1
   help fid2xform
   return
 end
 
 % get extra arguments
-movepro=[];
-getArgs(varargin,{'movepro=0'});
+movepro=[];movepss=[];
+getArgs(varargin,{'movepro=0','movepss=0'});
 
 if ieNotDefined('verbose'),verbose = 0;end
 
@@ -72,7 +72,11 @@ info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapse
 info.console = procpar.console{1};
 
 % if there is no ni field then just return
-if ~isfield(procpar,'ni'),info.dim = nan(1,4);return,end
+if ~isfield(procpar,'ni')
+  disp(sprintf('(fid2xform) ni is not set. This may be a non-image file'))
+  info.dim = nan(1,4);
+  return
+end
 
 % get the dimensions of the scan
 % (procpar.ni is lines of k-space, procpar.nv is number of lines collected including navigator echoes)
@@ -141,7 +145,7 @@ if procpar.nv2 > 1
   % check to see if it has been processed or not (i.e. pss should be of
   % correct length
   if length(procpar.pss) ~= procpar.nv2
-      info.processed = 0;
+    info.processed = 0;
   end
 end
 
@@ -178,6 +182,38 @@ if info.acq3d & info.processed
   end
 end
 
+% set field that says whether fft2rdexe_processing happend or not
+if isfield(procpar,'fftw3dexe_processed')
+  info.fftw3dexe_processed = 1;
+else
+  info.fftw3dexe_processed = 0;
+end
+% move pss if called for
+if movepss ~= 0
+  % apply the compensation only if this is a 3D file
+  if ~info.acq3d || info.fftw3dexe_processed
+    disp(sprintf('(fid2xform) !!! Unable to move pss for 2D data. Ignoring desired pss shift of: %f !!!',movepss));
+  else
+    procpar.pss = procpar.pss - movepss*10;
+  end
+end
+
+% check to see if this is an uncompressedFid and 3D in which
+% case the pss just contains the slice center, so we need to 
+% adjust it here
+if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
+  % set to automatically movepss since origin is center of magnet not center of slices
+  info.movepss = -procpar.pss;
+  if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, pss of center of slab: %f',procpar.pss));end
+  % compute location of first and last slice
+  firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
+  lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
+  % now make array
+  procpar.pss = (firstSlice:voxspacing(3):lastSlice)/10;
+else
+  info.movepss = 0;
+end
+
 % Now get the offset in mm from the center of the bore that the center of the
 % volume is. We can not change the phase encode center. Note that dimensions
 % are given in cm, so we must convert to mm.
@@ -194,20 +230,39 @@ offset = [eye(3) offset';0 0 0 1];
 
 % get the distance to the image origin (ie voxel 0,0,0) in number of voxels
 % (i.e. the image dimensions divided by 2 as we assume that the offset specifies
-% where the center of the volume is)
-originOffset = -(dim-1)/2;originOffset(3) = 0;
+% where the center of the volume is - (the third dimension is set by the
+% pss, so we ignore it)
+% note that I would have thought that we need to subtract 1 so that
+% we get to the center of the voxel, but not subtracting 1 empirical
+% seems to be correct - actually this may be because of the way the fft works though
+%originOffset = -(dim-1)/2;
+originOffset = -dim/2;
+originOffset(3) = 0;
 originOffset = [eye(3) originOffset';0 0 0 1];
 
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
 swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
-swapDim2 =[0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
 
 % the following is actually correct for L/R, but leave it commented
 % for now - will need to update all of our transforms ;-(.... -j.
-%swapDim2 =[0 0 -1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
+
+% epi images appear to nead a flip in X and Y
+if info.isepi
+  epiFlip = [-1 0 0 dim(1)-1;0 -1 0 dim(2)-1;0 0 1 0;0 0 0 1];
+else
+  epiFlip = eye(4);
+end
+
+% processed 3d files need a flip
+if info.fftw3dexe_processed
+  fftw = [-1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
+else
+  fftw = eye(4);
+end
 
 % now create the final shifted rotation matrix
-xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*fftw*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);
@@ -226,7 +281,8 @@ if verbose > 0
   disp(sprintf('(fid2xform) Voxel size: [%0.2f %0.2f %0.2f]',voxsize(1),voxsize(2),voxsize(3)));
   disp(sprintf('(fid2xform) Voxel spacing: [%0.2f %0.2f %0.2f]',voxspacing(1),voxspacing(2),voxspacing(3)));
   disp(sprintf('(fid2xform) First slice offset: [%0.2f %0.2f %0.2f]',offset(1,4),offset(2,4),offset(3,4)));
-  disp(sprintf('(fid2xform) pss = %s',num2str(procpar.pss)));
+  disp(sprintf('(fid2xform) pss = %s',mlrnum2str(procpar.pss)));
+  disp(sprintf('(fid2xform) length of pss = %i',length(procpar.pss)));
   disp(sprintf('(fid2xform) offset to origin: [%0.2f %0.2f %0.2f]',originOffset(1),originOffset(2),originOffset(3)));
 end
 
@@ -293,7 +349,6 @@ end
 
 % keep procpar
 info.procpar = procpar;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getDateFromVarianField    %

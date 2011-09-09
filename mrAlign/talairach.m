@@ -343,6 +343,17 @@ talinfo.filename = sprintf('%s.img',stripext(talinfo.filename));
 if isfile(talinfo.filename)
   % read header
   hdr = cbiReadNiftiHeader(talinfo.filename);
+  % check to see if this is an LPI volume
+  if hdr.qform_code==1
+    axisLabels = mlrImageGetAxisLabels(hdr.qform44);
+    if ~strcmp(axisLabels.orient,'LPI')
+      dispHeader
+      mrWarnDlg(sprintf('(talairach) !!!! Volume %s is in %s orientation and should be LPI -> see mlrImageLoad to reorient volume !!!!',talinfo.filename,axisLabels.orient));
+      dispHeader
+    else
+      disp(sprintf('(talairach) Volume %s is in LPI orientation',talinfo.filename));
+    end
+  end
   % if this is a 4D volume then we have to take a particular volume or
   % or the mean. Ask the user what to do.
   doMean = 0;subset = [];
@@ -372,9 +383,9 @@ end
 
 % get figure handles
 gTalairach = [];
-gTalairach.fig(1) = smartfig('talairach1');
-gTalairach.fig(2) = smartfig('talairach2');
-gTalairach.fig(3) = smartfig('talairach3');
+gTalairach.fig(1) = mlrSmartfig('talairach1');
+gTalairach.fig(2) = mlrSmartfig('talairach2');
+gTalairach.fig(3) = mlrSmartfig('talairach3');
 gTalairach.roiCoords = [];
 gTalairach.shutdown = 0;
 gTalairach.filename = talinfo.filename;
