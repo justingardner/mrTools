@@ -13,11 +13,15 @@ function [hdr info] = fid2niftihdr(fidname,verbose,varargin)
 hdr = [];info = [];
 if ieNotDefined('verbose'),verbose=1;end
 
-movepro=[];
-getArgs(varargin,{'movepro=0'});
+% parse arguments
+movepro=0;loadArgs = [];movepss=0;
+validArgs = {'movepro','movepss'};
+getArgs(varargin,{validArgs{:},'loadArgs'});
+% now evaluate the load args (these are passed from mlrImageLoad)
+getArgs(loadArgs,validArgs,'verbose=0');
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if nargin == 0
   help fid2niftihdr
   return
 end
@@ -31,7 +35,15 @@ end
 hdr = cbiCreateNiftiHeader;
 
 % get the qform
-[qform44 info] = fid2xform(fidname,verbose,sprintf('movepro=%f',movepro));
+[qform44 info] = fid2xform(fidname,verbose,'movepro',movepro,'movepss',movepss);
+if isempty(qform44),hdr = [];return;end
+
+% give warning for epi's that have not been processed
+if info.isepi && info.compressedFid
+  disp(sprintf('(fidniftihdr) Compressed EPI - needs epibsi processing'));
+  hdr = [];
+  return
+end
 
 % set the qform
 hdr = cbiSetNiftiQform(hdr,qform44);
