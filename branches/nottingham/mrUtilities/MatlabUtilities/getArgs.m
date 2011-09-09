@@ -180,7 +180,7 @@ for i = 1:length(argNames)
   end
   % assign the variable in caller
   if doAssignment
-    assignin('caller',argNames{i},argValues{i});
+    assignin('caller',fixBadChars(argNames{i}),argValues{i});
   end
   % if verbose, display what we are doing
   if verbose,dispVarSetting(funname,argNames{i},argValues{i}),end

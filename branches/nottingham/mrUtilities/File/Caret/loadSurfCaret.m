@@ -85,7 +85,7 @@ end
 % display the surface
 if dispSurface
   surf.m = calcCurvature(surf);
-  smartfig('loadSurfCaret','reuse');clf
+  mlrSmartfig('loadSurfCaret','reuse');clf
   patch('vertices', surf.vtcs, 'faces', surf.tris,'FaceVertexCData', surf.m,'facecolor','interp','edgecolor','none');
   axis equal
 end

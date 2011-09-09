@@ -1,25 +1,26 @@
 % readfdf.m
 %
 %        $Id:$ 
-%      usage: [h d] = readfdf(FDFdirname,<verbose>);
+%      usage: [h d] = readfdf(FDFdirname,<verbose>,<headerOnly>);
 %         by: justin gardner
 %       date: 08/08/11
 %    purpose: Reads Varian FDF (Flexible Data Format) Files, based on VNMRJ manual
 %             User Programming, Parameters and Data, Page 365
 %
-function [d h] = readfdf(FDFdirname,verbose)
+function [d h] = readfdf(FDFdirname,verbose,headerOnly)
 
 h = [];
 d = [];
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3])
   help readfdf
   return
 end
 
 % set verbose default
-if nargin < 2,verbose = 0;end
+if nargin < 2,verbose = 0;headerOnly = false;end
+if nargin < 3,headerOnly = false;end
 
 % check FDF dir
 if ~isdir(FDFdirname)
@@ -45,33 +46,24 @@ if isempty(FDFdir)
 end
 
 % read the image
-[d h] = readfdffile(fullfile(FDFdirname,FDFdir(1).name),verbose);
+[d h] = readfdffile(fullfile(FDFdirname,FDFdir(1).name),verbose,headerOnly);
+if headerOnly,return,end
 
 % if data is stored as slices than continue to read each slice in turn
 if length(FDFdir)>1
   %  convert h to a cell array
   htemp = h;clear h;h(1) = htemp;
   for i = 2:length(FDFdir)
-    [d(:,:,i) h(i)] = readfdffile(fullfile(FDFdirname,FDFdir(i).name),verbose);
+    [d(:,:,i) h(i)] = readfdffile(fullfile(FDFdirname,FDFdir(i).name),verbose,headerOnly);
   end
 end
-
-% try swapping x,y
-for sliceNum = 1:size(d,3)
-  for volNum = 1:size(d,4)
-    for receiverNum = 1:size(d,5)
-      d(:,:,sliceNum,volNum,receiverNum) = d(:,:,sliceNum,volNum,receiverNum)';
-    end
-  end
-end
-
 
 %%%%%%%%%%%%%%%%%%%%%
 %    readfdffile    %
 %%%%%%%%%%%%%%%%%%%%%
-function [d h] = readfdffile(filename,verbose);
+function [d h] = readfdffile(filename,verbose,headerOnly);
 
-img = [];
+d = [];
 
 % open file
 f = fopen(filename,'r');
@@ -192,6 +184,12 @@ dataSize = prod(h.matrix)*h.bits/8;
 currentPos = ftell(f);
 fseek(f,0,1);
 bytesInFile = ftell(f)-currentPos;
+
+% read header only
+if headerOnly
+  fclose(f);
+  return
+end
 
 if bytesInFile < dataSize
   disp(sprintf('(readfdf) Found %i bytes in file, but need %i\n',bytesInFile,dataSize));

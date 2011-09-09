@@ -21,8 +21,7 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     version = ver('Matlab');
     matlabVersion = str2num(version.Version(1:3));
     if ~ismember(matlabVersion, expectedMatlabVersion);
-        mrWarnDlg(['mrLoadRet is intended for Matlab ',num2str(expectedMatlabVersion),...
-            '. You are running Matlab ',version.Version]);
+      oneTimeWarning('mrToolsMatlabVersionError',['(mrGlobals) mrLoadRet is intended for Matlab ',num2str(expectedMatlabVersion),'. You are running Matlab ',version.Version]);
     end
 
     % Initialize MLR
