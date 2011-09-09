@@ -184,7 +184,7 @@ for iScan = scanList
   
   if ~isempty(d.scm) && size(d.scm,2)==length(thisScanParams.EVnames)*d.nHrfComponents
     %the length for the axis depends on the number of volumes times the frame period
-    axisLength(cScan) = size(d.EVmatrix,1)*d.tr;
+    axisLength(cScan) = size(d.EVmatrix,1)/d.designSupersampling*d.tr;
     colors = randomColors(length(thisScanParams.EVnames));
     colors(end,:) = [.85 .85 .85]; %last color for unused stims
 
