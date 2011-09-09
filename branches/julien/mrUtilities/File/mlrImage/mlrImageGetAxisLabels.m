@@ -1,18 +1,25 @@
 % mlrImageGetAxisLabels.m
 %
 %        $Id:$ 
-%      usage: [axisLabels axisDirLabels axisMapping axisReverseMapping axisDir] = mlrImageGetAxisLabels(xform)
+%      usage: axisLabels = mlrImageGetAxisLabels(xform)
 %         by: justin gardner
 %       date: 08/19/11
 %    purpose: This function uses the passed in xform (e.g. a qform) to determine in which direction
-%             each axis of the image goes. axisLabels are readable labels, axisDirLabels is
-%             a cell array with two strings for each direction (-/+) for each axis.
-%             axisMapping is the map of each axis to the closest axis in the magnet space. That is
-%             each element is the axis in the image space and what axis it corresponds to in the
-%             magnet space. axisReverseMapping is the opposite. axisDir is the direction in which that axis goes
-%             in the magnet space.
+%             each axis of the image goes. axisLabels contains the follwing fields:
 %
-function [axisLabels axisDirLabels axisMapping axisReverseMapping axisDir] = mlrImageGetAxisLabels(xform)
+%             labels: are readable labels
+%             dirLabels: is a cell array with two strings for each direction (-/+) for each axis.
+%             mapping: is the map of each axis to the closest axis in the magnet space. That is
+%               each element is the axis in the image space and what axis it corresponds to in the
+%               magnet space.
+%             reverseMapping: is the opposite of mapping
+%             dir: is the direction in which that axis goes in the magnet space.
+%             orient: is a 3 letter string representing the axis orientation (like LPI)
+%
+function retval = mlrImageGetAxisLabels(xform)
+
+% default return argument
+retval = [];
 
 % check input arguments
 if nargin ~= 1
@@ -70,3 +77,14 @@ end
 [axisReverseMapping row axisDir] = find(axisDirs);
 [dummy axisMapping] = sort(axisReverseMapping);
 axisDir = axisDir(axisMapping);
+
+% get the orientation string (like LPI)
+orient = sprintf('%s%s%s',upper(axisDirLabels{1}{1}(1)),upper(axisDirLabels{2}{1}(1)),upper(axisDirLabels{3}{1}(1)));
+
+% return structure with all ifno
+retval.labels = axisLabels;
+retval.dirLabels = axisDirLabels;
+retval.mapping = axisMapping;
+retval.reverseMapping = axisReverseMapping;
+retval.dir = axisDir;
+retval.orient = orient;

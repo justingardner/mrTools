@@ -1,7 +1,7 @@
-% mlrImageIsFile.m
+% mlrImageIsImage.m
 %
 %        $Id:$ 
-%      usage: retval = mlrImageIsFile(filename)
+%      usage: tf = mlrImageIsImage(filename)
 %         by: justin gardner
 %       date: 07/23/09
 %    purpose: Test to see if the file is a valid image, if the extension is provided, will
@@ -10,30 +10,27 @@
 % 
 %             returns 0 if not a valid image file, 1 otherwise
 %
-function retval = mlrImageIsFile(filename)
+function tf = mlrImageIsImage(filename)
 
-retval = 0;
+tf = false;
 
 % check arguments
 if ~any(nargin == [1])
-  help mlrImageIsFile
+  help mlrImageIsImage
   return
 end
 
 % put on nifti file extension, if there is no extension given
-if isempty(getext(filename))
+if isstr(filename) && isempty(getext(filename))
   filename = setext(filename,mrGetPref('niftiFileExtension'));
 end
 
-% check if the file exists
-if ~isfile(filename)
-  disp(sprintf('(mlrImageIsFile) File %s does not exist',filename));
-  return
-end
-
 % no see if we can open the header
-hdr = cbiReadNiftiHeader(filename);
-if isempty(hdr),return,end
+h = mlrImageHeaderLoad(filename);
+if isempty(h),return,end
+
+% check for empty image
+if all(h.dim==0),return,end
 
 % if we got here, it must be an image file
-retval = true;
+tf = true;

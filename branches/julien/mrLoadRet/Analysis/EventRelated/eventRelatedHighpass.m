@@ -69,7 +69,7 @@ if strcmp(runtype,'both') || strcmp(runtype,'init')
 
   % display the filter if called for
   if (dispfig)
-    smartfig('myhighpass');
+    mlrSmartfig('myhighpass');
     subplot(1,2,1);
     plot(freqs,hipassfilter);
     hold on
