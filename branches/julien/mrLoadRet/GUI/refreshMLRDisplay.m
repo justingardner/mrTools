@@ -1,7 +1,6 @@
 function [img base roi overlays] = refreshMLRDisplay(viewNum)
 %	$Id$
 
-set(viewGet(viewNum,'figNum'),'Pointer','watch');drawnow;
 mrGlobals
 img = [];base = [];roi = [];overlays=[];
 % for debugging/performance tests
@@ -38,6 +37,7 @@ if isempty(baseNum)
   end
   return
 end
+set(viewGet(viewNum,'figNum'),'Pointer','watch');drawnow;
 if verbose>1,disppercent(inf);,end
 
 % for debugging, clears caches when user holds down alt key
