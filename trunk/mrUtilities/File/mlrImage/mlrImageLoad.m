@@ -34,7 +34,10 @@ end
 
 % check input arguments
 verbose=0;orient=[];xMin=1;xMax=inf;yMin=1;yMax=inf;zMin=1;zMax=inf;volNum = [];
-validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum'};
+returnRaw=0;
+swapXY=0;swapXZ=0;swapYZ=0;flipX=0;flipY=0;flipZ=0;shiftX=0;shiftY=0;shiftZ=0;
+rotateXY=0;rotateXZ=0;rotateYZ=0;interpMethod='linear';applyToHeader=1;applyToData=1;
+validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','returnRaw'};
 getArgs(otherArgs,validArgs);
 
 % check volNum argument
@@ -141,12 +144,19 @@ for iImage = 1:nImages
   % make sure the header is correct
   [tf header] = mlrImageIsHeader(header);
 
-  % shift position if called for
-  [data header] = adjustDims(data,header,xMin,xMax,yMin,yMax,zMin,zMax);
+  % if we are allowing xformations
+  if ~returnRaw
+    % fix orientation if called for
+    if ~isempty(orient)
+      [data header] = mlrImageOrient(orient,data,header);
+    end
 
-  % fix orientation if called for
-  if ~isempty(orient)
-    [data header] = mlrImageOrient(orient,data,header);
+    % do any shift or xforms on header
+    [data header] = mlrImageXform(data,header,'swapXY',swapXY,'swapXZ',swapXZ,'swapYZ',swapYZ,'flipX',flipX,'flipY',flipY,'flipZ',flipZ,'shiftX',shiftX,'shiftY',shiftY,'shiftZ',shiftZ,'rotateXY',rotateXY,'rotateXZ',rotateXZ,'rotateYZ',rotateYZ,'applyToData',applyToData,'applyToHeader',applyToHeader,'interpMethod',interpMethod,'verbose',verbose);
+    
+    % shift position if called for
+    [data header] = adjustDims(data,header,xMin,xMax,yMin,yMax,zMin,zMax);
+  
   end
 
   % do volNum processing if not already done
