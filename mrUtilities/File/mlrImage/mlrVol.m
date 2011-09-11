@@ -1383,7 +1383,13 @@ function tf = loadVolume(filename,sysNum)
 tf = false;
 global gVol;
 
-dispHeader(sprintf('Loading image'));
+% display header
+if gVol{sysNum}.verbose
+  tic
+  dispHeader(sprintf('Loading image: %s',mlrImageArgFilename(filename)));
+end
+
+% load image
 [d h] = mlrImageLoad(filename,'verbose',gVol{sysNum}.verbose);
 if isempty(d) || ~mlrImageIsHeader(h),return,end
 
@@ -1595,6 +1601,10 @@ gVol{sysNum}.vols(n) = vol;
 % now set the coordinate in this created volume
 setVolCoord(sysNum,n,coord);
 
+% display header
+if gVol{sysNum}.verbose
+  dispHeader(sprintf('%s loaded (%s)',mlrImageArgFilename(filename),mlrDispElapsedTime(toc)));
+end
 
 tf = true;
 

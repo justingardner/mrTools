@@ -47,7 +47,7 @@ end
 % now cycle through images xforming them and putting in output
 for iImage = 1:length(imageArgs)
   % load the image
-  [d h] = mlrImageLoad(imageArgs{iImage});
+  [d h] = mlrImageLoad(imageArgs{iImage},'returnRaw=1');
   if isempty(d)
     disp(sprintf('(mlrImageXform) Could not open image: %s',mlrImageArgFilename(imageArgs{iImage})));
   else
@@ -133,7 +133,7 @@ for iImage = 1:length(imageArgs)
     end
     % apply rotation
     if any([rotateXY rotateXZ rotateYZ])
-      if verbose,disp(sprintf('(mlrImageXform) Using %s to rotate in XY plane by: %s',interpMethod,mlrNum2str([rotateXY rotateXZ rotateYZ])));end
+      if verbose,disp(sprintf('(mlrImageXform) Using %s to rotate: %s',interpMethod,mlrNum2str([rotateXY rotateXZ rotateYZ])));end
       % flip data
       if applyToData
 	% shift coordinates to center
