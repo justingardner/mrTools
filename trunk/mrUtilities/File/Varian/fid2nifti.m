@@ -77,8 +77,8 @@ end
 
 % parse arguments
 movepro=0;receiverNum=[];loadArgs = [];movepss=0;
-xMin=1;xMax=inf;yMin=1;yMax=inf;sMin=1;sMax=inf;outputName=[];kspace=0;
-validArgs = {'movepro','movepss','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace'};
+xMin=1;xMax=inf;yMin=1;yMax=inf;sMin=1;sMax=inf;outputName=[];kspace=0;rescale=255;
+validArgs = {'movepro','movepss','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace','rescale'};
 getArgs(argsList,{validArgs{:} 'loadArgs'});
 % now evaluate the load args (these are passed from mlrImageLoad
 getArgs(loadArgs,validArgs);
@@ -144,7 +144,7 @@ for i = 1:length(fidnames)
   end
   
   % check to see if we have to merge coils
-  if size(fid.data,5) > 1
+  if (size(fid.data,5) > 1) && ~kspace
     numReceivers = size(fid.data,5);
     % see if we have to merge coils
     if numReceivers > 1
@@ -195,6 +195,15 @@ for i = 1:length(fidnames)
   % check the dimensions of the data versus the dimensions in the header
   if ~isequal([size(fid.data,1) size(fid.data,2) size(fid.data,3)],hdr.dim(2:4)')
     disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)'),mynum2str(size(fid.data))));
+  end
+
+  % rescale data
+  if ~isempty(rescale) && ~isequal(rescale,0)
+    if ~kspace
+      minData = min(fid.data(:));
+      maxData = max(fid.data(:));
+      fid.data = rescale*(fid.data-minData)/(maxData-minData);
+    end
   end
   
   % write the file, but only if we aren't taking an output argument

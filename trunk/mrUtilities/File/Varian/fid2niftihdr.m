@@ -18,7 +18,7 @@ movepro=0;loadArgs = [];movepss=0;
 validArgs = {'movepro','movepss'};
 getArgs(varargin,{validArgs{:},'loadArgs'});
 % now evaluate the load args (these are passed from mlrImageLoad)
-getArgs(loadArgs,validArgs,'verbose=0');
+getArgs(loadArgs,validArgs,'suppressUnknownArgMessage=1');
 
 % check arguments
 if nargin == 0
