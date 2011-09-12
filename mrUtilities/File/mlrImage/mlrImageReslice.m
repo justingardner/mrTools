@@ -9,7 +9,7 @@
 %             inplane anatomy and you need it for some reason. Then
 %             for the fromFilename use your hi-res canonical
 %             anatomy and your toFilename put your epi. This will
-%             make a new anatomy image with twice the resolution as
+%             make a new anatomy image with twice the inplane resolution as
 %             the epis. The images can be filenames or any of the
 %             other formats that are understood by mlrImageParseArgs
 %   
@@ -36,7 +36,7 @@ end
 % parse args
 [imageArgs otherArgs] = mlrImageParseArgs(varargin);
 verbose = [];resFactor = [];
-getArgs(otherArgs,{'verbose=0','resFactor=[2 2 2]'});
+getArgs(otherArgs,{'verbose=0','resFactor=[2 2 1]'});
 
 if length(resFactor)==1
   resFactor(1:3) = resFactor;
