@@ -188,6 +188,7 @@ if isfield(procpar,'fftw3dexe_processed')
 else
   info.fftw3dexe_processed = 0;
 end
+
 % move pss if called for
 if movepss ~= 0
   % apply the compensation only if this is a 3D file
@@ -206,8 +207,10 @@ if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
   info.movepss = -procpar.pss;
   if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, pss of center of slab: %f',procpar.pss));end
   % compute location of first and last slice
-  firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
-  lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
+%  firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
+%  lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
+  firstSlice = procpar.pss - voxspacing(3)*procpar.nv2/2;
+  lastSlice = procpar.pss + voxspacing(3)*procpar.nv2/2;
   % now make array
   procpar.pss = (firstSlice:voxspacing(3):lastSlice)/10;
 else
@@ -249,7 +252,8 @@ swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
 
 % epi images appear to nead a flip in X and Y
 if info.isepi
-  epiFlip = [-1 0 0 dim(1)-1;0 -1 0 dim(2)-1;0 0 1 0;0 0 0 1];
+%  epiFlip = [-1 0 0 dim(1)-1;0 -1 0 dim(2)-1;0 0 1 0;0 0 0 1];
+  epiFlip = [-1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
 else
   epiFlip = eye(4);
 end
