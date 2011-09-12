@@ -59,7 +59,7 @@ filterspec = {'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)';'*.sdt;*.edt;','SDT/SP
 
 % arguments for different filetypes
 altArgs = {'xMin','xMax','yMin','yMax','zMin','zMax','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData'};
-loadArgs = {'kspace','movepro','movepss'};
+loadArgs = {'kspace','movepro','movepss','rescale'};
 
 % go through the list looking for image arguments
 iArg = 1;nArgs = length(args);
