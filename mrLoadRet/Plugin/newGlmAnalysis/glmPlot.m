@@ -338,7 +338,7 @@ for iPlot = 1:length(roi)+1
     if any(any(eDeconv.hdr))
       eDeconv.hdr = mean(eDeconv.hdr,3);
       hDeconv(:,iPlot,1)=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
-      if numberContrasts
+      if numberContrasts && ~isempty(eDeconv.contrastHdr)
         eDeconv.contrastHdr = mean(eDeconv.contrastHdr,3);
         hDeconv(:,iPlot,2) = plotEhdr(hdrContrastAxes,eDeconv.time,eDeconv.contrastHdr);
       end
@@ -663,12 +663,12 @@ function [h hSte]= plotBetas(hAxes,econt,econtste, steOnly)
 colorOrder = get(hAxes,'colorOrder');
 if ieNotDefined('steOnly'),steOnly = 0;,end
 
-% display econt
-if size(econt,1)==1
-  econt = econt';
-  econtste = econtste';
-end
-
+% % display econt
+% if size(econt,1)==1
+%   econt = econt';
+%   econtste = econtste';
+% end
+% 
 if size(econt,2)==1
   set(hAxes,'nextPlot','add');
   h=zeros(size(econt,1),1);
