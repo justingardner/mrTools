@@ -60,25 +60,29 @@ for iScan=scanList
   endFrame = endFrame+nFrames(cScan);
 end
 
-%get the current mask
-mask = maskOverlay(thisView,overlayNum,scanNum);
-mask = mask{1};
-if all(~mask(:)) %if everything is masked, then nothing is masked
-  mask(:) = 1;
+if ~isempty(overlayNum)
+  %get the current mask
+  mask = maskOverlay(thisView,overlayNum,scanNum);
+  mask = mask{1};
+  if all(~mask(:)) %if everything is masked, then nothing is masked
+    mask(:) = 1;
+  end
+
+  % get the indices of the voxels of this ROI that are not masked
+  unmaskedWhiteVoxels = mask(sub2ind(size(mask),roiCoords{1}(1,:)',roiCoords{1}(2,:)',roiCoords{1}(3,:)'));
+  whiteData = permute(d.data(whichRoi{1}(unmaskedWhiteVoxels),:,:,:),[1 4 2 3]);
+  unmaskedGreyVoxels = mask(sub2ind(size(mask),roiCoords{2}(1,:)',roiCoords{2}(2,:)',roiCoords{2}(3,:)'));
+  greyData = permute(d.data(whichRoi{2}(unmaskedGreyVoxels),:,:,:),[1 4 2 3]);
+else
+  whiteData = permute(d.data(whichRoi{1},:,:,:),[1 4 2 3]);
+  greyData = permute(d.data(whichRoi{2},:,:,:),[1 4 2 3]);
 end
-
-whiteRoiNumberVoxels = nnz(whichRoi{1});
-% get the indices of the voxels of this ROI that are not masked
-unmaskedWhiteVoxels = mask(sub2ind(size(mask),roiCoords{1}(1,:)',roiCoords{1}(2,:)',roiCoords{1}(3,:)'));
-whiteData = permute(d.data(whichRoi{1}(unmaskedWhiteVoxels),:,:,:),[1 4 2 3]);
-% whiteData = permute(d.data(whichRoi{1},:,:,:),[1 4 2 3]);
+  
 whiteRoiNumberValues = nnz(all(~isnan(whiteData),2));
+ whiteRoiNumberVoxels = nnz(whichRoi{1});
 
-greyRoiNumberVoxels = nnz(whichRoi{2});
-unmaskedGreyVoxels = mask(sub2ind(size(mask),roiCoords{2}(1,:)',roiCoords{2}(2,:)',roiCoords{2}(3,:)'));
-greyData = permute(d.data(whichRoi{2}(unmaskedGreyVoxels),:,:,:),[1 4 2 3]);
-% greyData = permute(d.data(whichRoi{2},:,:,:),[1 4 2 3]);
 greyRoiNumberValues = nnz(all(~isnan(greyData),2));
+greyRoiNumberVoxels = nnz(whichRoi{2});
 
 % meanWhite = nanmean(whiteData(:));
 % stdWhite = mean(nanstd(whiteData,0));
