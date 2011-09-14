@@ -106,60 +106,73 @@ elseif ~fieldIsNotDefined(d,'ehdrste') && size(betas,1)==size(d.ehdrste,4) && si
 end
 
 
+estimates.contrastBetas = [];
+estimates.contrastBetaSte = [];
+estimates.contrastHdr = [];
+estimates.contrastHdrSte = [];
 if ~fieldIsNotDefined(params,'contrasts')
-  nContrasts = size(params.contrasts,1);
   if size(params.contrasts,2)~= size(betas,1)
-     mrErrorDlg(sprintf('(getContrastEstimate) The number of columns in the contrast vector should equal the number of EVs (%d)',size(betas,1)));
-  end
-  if isfield(params,'componentsCombination')
-    %estimated std error for hdr contrast  will be estimated separately
-    hdrContrasts = kron(params.contrasts,hrf*diag(params.componentsToTest));
-    %for the beta estimates, we use either the 'Add' or the 'Or' mode
-    switch(params.componentsCombination)
-      case 'Add'
-        extendedContrasts = kron(params.contrasts,params.componentsToTest);
-      case 'Or'
-        extendedContrasts = kron(params.contrasts,diag(params.componentsToTest)); 
-        %remove empty contrasts
-        extendedContrasts = extendedContrasts(any(extendedContrasts,2),:);
-    end
+     mrWarnDlg(sprintf('(getEstimate) The number of columns in the contrast vector should equal the number of EVs (%d)',size(betas,1)));
+  elseif isfield(params,'componentsCombination') && length(params.componentsToTest)~=d.nHrfComponents
+     mrWarnDlg(sprintf('(getEstimate) The number of EV components to test is misspecified'));
   else
-    hdrContrasts = params.contrasts;
-    extendedContrasts = params.contrasts;
-  end
-  
-  betas = reshape(permute(betas,[2 1 3]),nComponents,nVoxels);
-  contrastBetas = extendedContrasts*betas;
-  
-  contrastHdr = reshape(hdrContrasts*betas,hrfLength,nContrasts,nVoxels);
-  
-  betas = permute(reshape(betas,[nHrfComponents d.nhdr nVoxels]),[2 1 3]);
-
-  contrastBetaSte = NaN(size(contrastBetas));
-  contrastHdrSte = NaN(size(contrastHdr));
-  if exist('s2','var')
-    if params.covCorrection  && ~fieldIsNotDefined(d,'autoCorrelationParameters')
-      contrastHdrSte = NaN(size(contrastHdr));
-      for iVoxel = 1:nVoxels
-        contrastBetaSte(:,iVoxel) = sqrt(diag(extendedContrasts * invCorrectedCovEV(:,:,iVoxel) * extendedContrasts')*s2(iVoxel));
-        contrastHdrSte(:,:,iVoxel) = sqrt(reshape(diag(hdrContrasts * invCorrectedCovEV(:,:,iVoxel) * hdrContrasts'),hrfLength,nContrasts)*s2(iVoxel));
+    nContrasts = size(params.contrasts,1);
+    if isfield(params,'componentsCombination')
+      %estimated std error for hdr contrast  will be estimated separately
+      hdrContrasts = kron(params.contrasts,hrf*diag(params.componentsToTest));
+      %for the beta estimates, we use either the 'Add' or the 'Or' mode
+      switch(params.componentsCombination)
+        case 'Add'
+          extendedContrasts = kron(params.contrasts,params.componentsToTest);
+        case 'Or'
+          extendedContrasts = kron(params.contrasts,diag(params.componentsToTest)); 
+          %remove empty contrasts
+          extendedContrasts = extendedContrasts(any(extendedContrasts,2),:);
       end
     else
-      contrastBetaSte = sqrt(diag(extendedContrasts*invCovEVs*extendedContrasts')*s2');
-      contrastHdrSte = sqrt(reshape(diag(hdrContrasts*invCovEVs*hdrContrasts')*s2',hrfLength,nContrasts,nVoxels));
-%      contrastHdrSte = reshape(contrastHdrSte,hrfLength,nContrasts,nVoxels);
+      hdrContrasts = params.contrasts;
+      extendedContrasts = params.contrasts;
     end
-    
+
+    betas = reshape(permute(betas,[2 1 3]),nComponents,nVoxels);
+    contrastBetas = extendedContrasts*betas;
+
+    contrastHdr = reshape(hdrContrasts*betas,hrfLength,nContrasts,nVoxels);
+
+    betas = permute(reshape(betas,[nHrfComponents d.nhdr nVoxels]),[2 1 3]);
+
+    contrastBetaSte = NaN(size(contrastBetas));
+    contrastHdrSte = NaN(size(contrastHdr));
+    if exist('s2','var')
+      if params.covCorrection  && ~fieldIsNotDefined(d,'autoCorrelationParameters')
+        contrastHdrSte = NaN(size(contrastHdr));
+        for iVoxel = 1:nVoxels
+          contrastBetaSte(:,iVoxel) = sqrt(diag(extendedContrasts * invCorrectedCovEV(:,:,iVoxel) * extendedContrasts')*s2(iVoxel));
+          contrastHdrSte(:,:,iVoxel) = sqrt(reshape(diag(hdrContrasts * invCorrectedCovEV(:,:,iVoxel) * hdrContrasts'),hrfLength,nContrasts)*s2(iVoxel));
+        end
+      else
+        contrastBetaSte = sqrt(diag(extendedContrasts*invCovEVs*extendedContrasts')*s2');
+        contrastHdrSte = sqrt(reshape(diag(hdrContrasts*invCovEVs*hdrContrasts')*s2',hrfLength,nContrasts,nVoxels));
+  %      contrastHdrSte = reshape(contrastHdrSte,hrfLength,nContrasts,nVoxels);
+      end
+
+      contrastBetaSte = permute(reshape(contrastBetaSte,[],nContrasts,nVoxels),[2 1 3]);
+
+    elseif ~fieldIsNotDefined(d,'contrastSte') && size(extendedContrasts,1)==size(d.contrastSte,4)*size(d.contrastSte,5)
+      contrastBetaSte = permute(d.contrastSte,[4 5 1 2 3]);
+      contrastBetaSte = contrastBetaSte(:,:,indices);
+    end
+
+    %reshape in case there are several contrast components
+    contrastBetas = permute(reshape(contrastBetas,[],nContrasts,nVoxels),[2 1 3]);
     contrastBetaSte = permute(reshape(contrastBetaSte,[],nContrasts,nVoxels),[2 1 3]);
-   
-  elseif ~fieldIsNotDefined(d,'contrastSte') && size(extendedContrasts,1)==size(d.contrastSte,4)*size(d.contrastSte,5)
-    contrastBetaSte = permute(d.contrastSte,[4 5 1 2 3]);
-    contrastBetaSte = contrastBetaSte(:,:,indices);
+    
+    %copy in output structure
+    estimates.contrastBetas = contrastBetas(:,:,~noValue);
+    estimates.contrastBetaSte = contrastBetaSte(:,:,~noValue);
+    estimates.contrastHdr = contrastHdr(:,:,~noValue);
+    estimates.contrastHdrSte = contrastHdrSte(:,:,~noValue);
   end
-  
-  %reshape in case there are several contrast components
-  contrastBetas = permute(reshape(contrastBetas,[],nContrasts,nVoxels),[2 1 3]);
-  contrastBetaSte = permute(reshape(contrastBetaSte,[],nContrasts,nVoxels),[2 1 3]);
 
 end
 
@@ -168,18 +181,6 @@ estimates.betas = betas(:,:,~noValue);
 estimates.betaSte = betaSte(:,:,~noValue);
 estimates.hdr = hdr(:,:,~noValue);
 estimates.hdrSte = hdrSte(:,:,~noValue);
-if ~fieldIsNotDefined(params,'contrasts')
-  estimates.contrastBetas = contrastBetas(:,:,~noValue);
-  estimates.contrastBetaSte = contrastBetaSte(:,:,~noValue);
-  estimates.contrastHdr = contrastHdr(:,:,~noValue);
-  estimates.contrastHdrSte = contrastHdrSte(:,:,~noValue);
-else
-  estimates.contrastBetas = [];
-  estimates.contrastBetaSte = [];
-  estimates.contrastHdr = [];
-  estimates.contrastHdrSte = [];
-  
-end
 
 
 %mean confidence intervals across voxels 
