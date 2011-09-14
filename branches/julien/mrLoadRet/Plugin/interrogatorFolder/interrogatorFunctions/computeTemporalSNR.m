@@ -57,18 +57,24 @@ for iScan=scanList
 end
 
 
-%get the current mask
-mask = maskOverlay(thisView,overlayNum,scanNum);
-mask = mask{1};
-if all(~mask(:)) %if everything is masked, then nothing is masked
-  mask(:) = 1;
+if ~isempty(overlayNum)
+  %get the current mask
+  mask = maskOverlay(thisView,overlayNum,scanNum);
+  mask = mask{1};
+  if all(~mask(:)) %if everything is masked, then nothing is masked
+    mask(:) = 1;
+  end
 end
 
 for iRoi=1:length(roiList)
   roiNumberVoxels = nnz(whichRoi{iRoi});
-  % get the indices of the voxels of this ROI that are not masked
-  unmaskedVoxels = mask(sub2ind(size(mask),roiCoords{iRoi}(1,:)',roiCoords{iRoi}(2,:)',roiCoords{iRoi}(3,:)'));
-  data = permute(d.data(whichRoi{iRoi}(unmaskedVoxels),:,:,:),[1 4 2 3]);
+  if ~isempty(overlayNum)
+    % get the indices of the voxels of this ROI that are not masked
+    unmaskedVoxels = mask(sub2ind(size(mask),roiCoords{iRoi}(1,:)',roiCoords{iRoi}(2,:)',roiCoords{iRoi}(3,:)'));
+    data = permute(d.data(whichRoi{iRoi}(unmaskedVoxels),:,:,:),[1 4 2 3]);
+  else
+    data = permute(d.data(whichRoi{iRoi},:,:,:),[1 4 2 3]);
+  end
   %data = permute(d.data(whichRoi{iRoi},:,:,:),[1 4 2 3]);
   roiNumberValues = nnz(all(~isnan(data),2));
   
