@@ -61,7 +61,7 @@ for iImage = 1:length(imageArgs)
 	d = permute(d,permuteDims);
       end
       % swap the header
-      h = applyXform([0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1],h,applyToHeader);
+      h = applyXform([0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1],h,d,applyToHeader);
     end
     % apply swapXZ
     if swapXZ
@@ -73,7 +73,7 @@ for iImage = 1:length(imageArgs)
 	d = permute(d,permuteDims);
       end
       % swap the header
-      h = applyXform([0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1],h,applyToHeader);
+      h = applyXform([0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1],h,d,applyToHeader);
     end
     % apply swapYZ
     if swapYZ
@@ -85,7 +85,7 @@ for iImage = 1:length(imageArgs)
 	d = permute(d,permuteDims);
       end
       % apply to header
-      h = applyXform([1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1],h,applyToHeader);
+      h = applyXform([1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1],h,d,applyToHeader);
     end
     % apply flipX
     if flipX
@@ -95,7 +95,7 @@ for iImage = 1:length(imageArgs)
 	d = flipdim(d,1);
       end
       % apply to header
-      h = applyXform([-1 0 0 h.dim(1)-1;0 1 0 0;0 0 1 0;0 0 0 1],h,applyToHeader);
+      h = applyXform([-1 0 0 h.dim(1)-1;0 1 0 0;0 0 1 0;0 0 0 1],h,d,applyToHeader);
     end
     % apply flipY
     if flipY
@@ -105,7 +105,7 @@ for iImage = 1:length(imageArgs)
 	d = flipdim(d,2);
       end
       % apply to header
-      h = applyXform([1 0 0 0;0 -1 0 h.dim(2)-1;0 0 1 0;0 0 0 1],h,applyToHeader);
+      h = applyXform([1 0 0 0;0 -1 0 h.dim(2)-1;0 0 1 0;0 0 0 1],h,d,applyToHeader);
     end
     % apply flipZ
     if flipZ
@@ -115,11 +115,11 @@ for iImage = 1:length(imageArgs)
 	d = flipdim(d,3);
       end
       % apply to header
-      h = applyXform([1 0 0 0;0 1 0 0;0 0 -1 h.dim(3)-1;0 0 0 1],h,applyToHeader);
+      h = applyXform([1 0 0 0;0 1 0 0;0 0 -1 h.dim(3)-1;0 0 0 1],h,d,applyToHeader);
     end
     % apply shifts
     if any([shiftX shiftY shiftZ])
-      if verbose,disp(sprintf('(mlrImageXform) Using %s to shift by: [%s]',interpMethod,mlrNum2str([shiftX shiftY shiftZ])));end
+      if verbose,disp(sprintf('(mlrImageXform) Using %s to shift by: [%s]',interpMethod,mlrnum2str([shiftX shiftY shiftZ])));end
       % flip data
       if applyToData
 	x = 1+shiftX:h.dim(1)+shiftX;
@@ -129,11 +129,11 @@ for iImage = 1:length(imageArgs)
 	d = interpn(d,x,y,z,interpMethod);
       end
       % apply to header
-      h = applyXform([1 0 0 shiftX;0 1 0 shiftY;0 0 1 shiftZ;0 0 0 1],h,applyToHeader);
+      h = applyXform([1 0 0 shiftX;0 1 0 shiftY;0 0 1 shiftZ;0 0 0 1],h,d,applyToHeader);
     end
     % apply rotation
     if any([rotateXY rotateXZ rotateYZ])
-      if verbose,disp(sprintf('(mlrImageXform) Using %s to rotate: %s',interpMethod,mlrNum2str([rotateXY rotateXZ rotateYZ])));end
+      if verbose,disp(sprintf('(mlrImageXform) Using %s to rotate: %s',interpMethod,mlrnum2str([rotateXY rotateXZ rotateYZ])));end
       % flip data
       if applyToData
 	% shift coordinates to center
@@ -160,7 +160,7 @@ for iImage = 1:length(imageArgs)
       end
       % apply to header
       shiftToCenter = [1 0 0 h.dim(1)/2;0 1 0 h.dim(2)/2;0 0 1 h.dim(3)/2;0 0 0 1];
-      h = applyXform(shiftToCenter*rotMatrix*inv(shiftToCenter),h,applyToHeader);
+      h = applyXform(shiftToCenter*rotMatrix*inv(shiftToCenter),h,d,applyToHeader);
     end
   end
 end
@@ -168,7 +168,7 @@ end
 %%%%%%%%%%%%%%%%%%%%
 %%   applyXform   %%
 %%%%%%%%%%%%%%%%%%%%
-function h = applyXform(xform,h,applyToHeader)
+function h = applyXform(xform,h,d,applyToHeader)
 
 % nothing to do if we are not applying to header
 if ~applyToHeader,return,end
@@ -183,4 +183,6 @@ if ~isempty(h.sform)
   h.sform = h.sform*xform;
 end
 
-
+% get the dimensions of the data
+sized = size(d);
+h.dim(1:length(sized)) = sized;
