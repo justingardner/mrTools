@@ -337,10 +337,16 @@ for iPlot = 1:length(roi)+1
     [eDeconv,volumeIndices] = getEstimates(deconvData,deconvAnalysisParams,volumeIndices);
     if any(any(eDeconv.hdr))
       eDeconv.hdr = mean(eDeconv.hdr,3);
-      hDeconv(:,iPlot,1)=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
-      if numberContrasts && ~isempty(eDeconv.contrastHdr)
-        eDeconv.contrastHdr = mean(eDeconv.contrastHdr,3);
-        hDeconv(:,iPlot,2) = plotEhdr(hdrContrastAxes,eDeconv.time,eDeconv.contrastHdr);
+      h=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
+      hDeconv = cat(1,hDeconv,h);
+      if numberContrasts 
+        if ~isempty(eDeconv.contrastHdr)
+          eDeconv.contrastHdr = mean(eDeconv.contrastHdr,3);
+          h = plotEhdr(hdrContrastAxes,eDeconv.time,eDeconv.contrastHdr);
+          hDeconv = cat(1,hDeconv,h);
+        else
+          mrWarnDlg('(glmPlot) Cannot plot contrast for deconvolution analysis');
+        end
       end
     end
   else
@@ -349,60 +355,61 @@ for iPlot = 1:length(roi)+1
   
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Finalize axes
-  %plot baselines of histograms
-  if plotBetaWeights
-    plot(betaAxes,get(betaAxes,'Xlim'),[0 0],'--k','lineWidth',1);
-      maxSte = max(e.betaSte,[],3);
-      makeScaleEditButton(fignum,betaAxes,...
-      [min(min((e.betas-maxSte))),max(max((e.betas+maxSte)))]);
+  if ~isempty(e.betas)
+    %plot baselines of histograms
+    if plotBetaWeights
+      plot(betaAxes,get(betaAxes,'Xlim'),[0 0],'--k','lineWidth',1);
+        maxSte = max(e.betaSte,[],3);
+        makeScaleEditButton(fignum,betaAxes,...
+        [min(min((e.betas-maxSte))),max(max((e.betas+maxSte)))]);
+      if iPlot==1
+        ylabel(betaAxes,{'Beta' 'Estimates'});
+        lhandle = legend(hBeta,EVnames,'position',legendBetaPosition);
+        set(lhandle,'Interpreter','none','box','off');
+      end
+      if numberContrasts
+        %plot baseline
+        plot(contrastAxes,get(contrastAxes,'Xlim'),[0 0],'--k','lineWidth',1);
+        maxSte = max(e.contrastBetaSte,[],3);
+        if isnan(maxSte)
+          maxSte = 0;
+        end
+        makeScaleEditButton(fignum,contrastAxes,...
+          [min(min(e.contrastBetas-maxSte)),max(max(e.contrastBetas+maxSte))]);
+        if iPlot==1
+          ylabel(contrastAxes,{'Contrast' 'Estimates'});
+          lhandle = legend(hContrastBeta,contrastNames,'position',legendContrastsPosition);
+          set(lhandle,'Interpreter','none','box','off');
+        end
+      end
+    end
+    set(ehdrAxes,'xLim',[0,max(eDeconv.time(end),e.time(end))+framePeriod/2]);
+    maxSte = abs(max(e.hdrSte,[],3));
+    makeScaleEditButton(fignum,ehdrAxes,...
+      [min(min((e.hdr-maxSte))),max(max((e.hdr+maxSte)))]);
     if iPlot==1
-      ylabel(betaAxes,{'Beta' 'Estimates'});
-      lhandle = legend(hBeta,EVnames,'position',legendBetaPosition);
+      ylabel(ehdrAxes,{'Scaled HRF','% Signal change'});
+      lhandle = legend(hHdr,EVnames,'position',legendEhdrPosition);
       set(lhandle,'Interpreter','none','box','off');
     end
     if numberContrasts
-      %plot baseline
-      plot(contrastAxes,get(contrastAxes,'Xlim'),[0 0],'--k','lineWidth',1);
-      maxSte = max(e.contrastBetaSte,[],3);
+      set(hdrContrastAxes,'xLim',[0,max(eDeconv.time(end),e.time(end))+framePeriod/2]);
+      maxSte = max(e.contrastHdrSte,[],3);
       if isnan(maxSte)
         maxSte = 0;
       end
-      makeScaleEditButton(fignum,contrastAxes,...
-        [min(min(e.contrastBetas-maxSte)),max(max(e.contrastBetas+maxSte))]);
+      makeScaleEditButton(fignum,hdrContrastAxes,...
+        [min(min(e.contrastHdr-maxSte)),max(max(e.contrastHdr+maxSte))]);
       if iPlot==1
-        ylabel(contrastAxes,{'Contrast' 'Estimates'});
-        lhandle = legend(hContrastBeta,contrastNames,'position',legendContrastsPosition);
+        ylabel(hdrContrastAxes,{'Scaled Contrast HRF','% Signal change'});
+        lhandle = legend(hContrastHdr,contrastNames,'position',legendHdrContrastPosition);
         set(lhandle,'Interpreter','none','box','off');
       end
+      xlabel(hdrContrastAxes,'Time (sec)');
+    else
+      xlabel(ehdrAxes,'Time (sec)');
     end
   end
-  set(ehdrAxes,'xLim',[0,max(eDeconv.time(end),e.time(end))+framePeriod/2]);
-  maxSte = abs(max(e.hdrSte,[],3));
-  makeScaleEditButton(fignum,ehdrAxes,...
-    [min(min((e.hdr-maxSte))),max(max((e.hdr+maxSte)))]);
-  if iPlot==1
-    ylabel(ehdrAxes,{'Scaled HRF','% Signal change'});
-    lhandle = legend(hHdr,EVnames,'position',legendEhdrPosition);
-    set(lhandle,'Interpreter','none','box','off');
-  end
-  if numberContrasts
-    set(hdrContrastAxes,'xLim',[0,max(eDeconv.time(end),e.time(end))+framePeriod/2]);
-    maxSte = max(e.contrastHdrSte,[],3);
-    if isnan(maxSte)
-      maxSte = 0;
-    end
-    makeScaleEditButton(fignum,hdrContrastAxes,...
-      [min(min(e.contrastHdr-maxSte)),max(max(e.contrastHdr+maxSte))]);
-    if iPlot==1
-      ylabel(hdrContrastAxes,{'Scaled Contrast HRF','% Signal change'});
-      lhandle = legend(hContrastHdr,contrastNames,'position',legendHdrContrastPosition);
-      set(lhandle,'Interpreter','none','box','off');
-    end
-    xlabel(hdrContrastAxes,'Time (sec)');
-  else
-    xlabel(ehdrAxes,'Time (sec)');
-  end
-
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% plot the time series
     %put a button to plot the time series of this roi
@@ -608,7 +615,7 @@ set(fignum,'DefaultLineLineWidth',lineWidth);
 set(fignum,'DefaultAxesFontSize',fontSize);
 %set the colors
 colors = color2RGB;
-colors = colors([7 5 6 8 4 3 2 1]); %remove white and black and re-orerData
+colors = colors([7 5 6 8 4 3 2 1]); %remove white and black and re-order
 for i_color = 1:length(colors)
    colorOrder(i_color,:) = color2RGB(colors{i_color});
 end
@@ -681,6 +688,9 @@ if size(econt,2)==1
   set(hAxes,'xTick',[])
 else
   h = bar(hAxes,econt','grouped','edgecolor','none');
+  for iBar = 1:size(econt,1)
+    set(h(iBar),'faceColor',colorOrder(iBar,:));
+  end
   set(hAxes,'xtick',1:size(econt,2))
   xlabel('EV components');
 end
