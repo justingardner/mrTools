@@ -39,12 +39,12 @@ else
    saturationThreshold = Inf(1,size(d.hrf,2));
 end
 
-if isfield(params.scanParams{scanNum},'estimationSupersampling') && ~isempty(params.scanParams{scanNum}.estimationSupersampling)
+if ~fieldIsNotDefined(params.scanParams{scanNum},'estimationSupersampling')
   estimationSupersampling = params.scanParams{scanNum}.estimationSupersampling;
 else
   estimationSupersampling = 1;
 end
-if isfield(params.scanParams{scanNum},'acquisitionSubsample') && ~isempty(params.scanParams{scanNum}.acquisitionSubsample)
+if ~fieldIsNotDefined(params.scanParams{scanNum},'acquisitionSubsample')
   acquisitionSubsample = params.scanParams{scanNum}.acquisitionSubsample;
 else
   acquisitionSubsample = 1;
@@ -91,12 +91,12 @@ for iRun = 1:size(runTransition,1)
       m = m(1:size(thisEVmatrix,1),:);
       %apply saturation
       m = min(m,repmat(saturationThreshold,size(thisEVmatrix,1),1));
-      % remove mean 
-      m = m-repmat(mean(m), size(m,1), 1); %DOES IT CHANGE ANYTHING IF I REMOVE THIS ?
-      % downsample with constant integral to estimation sampling rate
+      % downsample to estimation sampling rate, with constant integral 
       m = downsample(m, d.designSupersampling/estimationSupersampling);
       %only keep acquisition samples
       m = m(acquisitionSubsample:estimationSupersampling:end,:);
+      % remove mean 
+      m = m-repmat(mean(m), size(m,1), 1); %DOES IT CHANGE ANYTHING IF I REMOVE THIS ?
       % apply the same filter as original data
       if isfield(d,'concatInfo') 
          % apply hipass filter
@@ -123,3 +123,15 @@ d.scm = allscm;
 d.hdrlen = size(d.hrf,1);
 d.nHrfComponents = size(d.hrf,2);
 d.runTransitions = runTransition;
+
+if any(all(~allscm,1))
+  nullComponents = find((all(~allscm,1)));
+  disp('(makeDesignMatrix) The following EV components cannot be estimated because the corresponding column in the design is null');
+  for iEV = 1:d.nhdr;
+    whichComponents = find(ismember(nullComponents,(iEV-1)*d.nHrfComponents+1:d.nHrfComponents));
+    if ~isempty(whichComponents)
+      fprintf('EV ''%s'': Components %s\n',params.EVnames{iEV},mat2str(nullComponents(whichComponents)));
+    end
+  end
+  mrErrorDlg('(makeDesignMatrix) Not enough data to estimate all EV components');
+end
