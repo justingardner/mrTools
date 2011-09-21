@@ -1,14 +1,14 @@
-% hrfDoubleGamma.m
+% hrfFslFlobs.m
 %
-%        $Id: hrfDoubleGamma.m 1950 2010-12-18 10:12:48Z julien $
-%      usage: [params,hrf] = hrfDoubleGamma(params, tr, stimDuration )
-%         by: farshad moradi, modified by julien besle
+%        $Id: hrfFslFlobs.m 1950 2010-12-18 10:12:48Z julien $
+%      usage: [params,hrf] = hrfFslFlobs(params, designSampling, justGetParams, defaultParams)
+%         by: by julien besle
 %       date: 14/06/07, 09/02/2010
 %    purpose: reads a basis set from a flobs file
 %
-function [params, hrf] = hrfFslFlobs(params, tr, justGetParams, defaultParams )
+function [params, hrf] = hrfFslFlobs(params, designSampling, justGetParams, defaultParams)%, varargin)
 
-if ~any(nargin == [1 2 3 4])
+if ~any(nargin == [1 2 3 4])% 5])
   help hrfDoubleGamma
   return
 end
@@ -55,8 +55,6 @@ modelHrf = dlmread(params.flobsBasisSetFile);
 %the sampling rate of Flobs basis sets is 20Hz
 dt = 0.05;
 
-t = (0:size(modelHrf,1)-1)*dt;
-
 %figure;plot(t,modelHrf);
 
 %remove trailing zeros
@@ -65,10 +63,10 @@ modelHrf = modelHrf(1:end-find(flipud(max(abs(modelHrf),[],2))>threshold,1,'firs
 modelHrf = modelHrf./sum(modelHrf(:));
     
 %downsample with constant integral
-hrf = downsample(modelHrf, round(tr/dt));
+hrf = downsample(modelHrf, round(designSampling/dt));
 
 
-params.maxModelHrf = tr/dt * max(modelHrf); %output the max amplitude of the actual model HRF
+params.maxModelHrf = designSampling/dt * max(modelHrf); %output the max amplitude of the actual model HRF
 
 
 function launchMakeFlobs(fslPath)
@@ -88,7 +86,7 @@ try
     return
   end
 catch 
-  disp('(applyFslTFCE) There was a problem running the TFCE unix command')
+  disp(sprintf('(hrfFslFlobs) There was a problem running the %s unix command',flobsCommand))
   disp(sprintf('unix error code: %d; %s', s, w))
   return
 end

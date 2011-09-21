@@ -41,8 +41,14 @@ while keepAsking
 
   %create model HRF
   %here we assume that all scans in this group have the same framePeriod
+  framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),viewGet(thisView,'groupNum',params.groupName));
+  if ~fieldIsNotDefined(params.scanParams{1},'estimationSupersampling')
+    estimationSupersampling = params.scanParams{1}.estimationSupersampling;
+  else
+    estimationSupersampling = 1;
+  end
   [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,...
-    viewGet(thisView,'framePeriod',params.scanNum(1),viewGet(thisView,'groupNum',params.groupName))/params.scanParams{params.scanNum(1)}.estimationSupersampling,0,1);
+    framePeriod/estimationSupersampling,0,1);%,framePeriod/estimationSupersampling);
   nComponents = size(hrf,2);
   if fieldIsNotDefined(params, 'componentsToTest') || ~isequal(nComponents,length(params.componentsToTest));
     params.componentsToTest = ones(1,nComponents);
