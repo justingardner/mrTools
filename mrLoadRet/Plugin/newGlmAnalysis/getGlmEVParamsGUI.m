@@ -88,35 +88,33 @@ while keepAsking
        return
     end
     
-    tempParams = mrParamsRemoveField(tempParams,'showDesign');
+%     tempParams = mrParamsRemoveField(tempParams,'showDesign');
     
     % form stimToEV matrix from fields
     stimToEVmatrix = zeros(nStims,params.numberEVs);
     for iEvent = 1:nStims
       stimToEVmatrix(iEvent,:) = tempParams.(fixBadChars(d.stimNames{iEvent}));
-      tempParams = mrParamsRemoveField(tempParams,fixBadChars(d.stimNames{iEvent}));
+%       tempParams = mrParamsRemoveField(tempParams,fixBadChars(d.stimNames{iEvent}));
     end
-    scanParams{iScan} = mrParamsCopyFields(...
-      mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix,'Matrix forming EVs from combinations of stimulus types'},...
-                       {'stimNames',d.stimNames,'type=strinArray','Names of stimulus types'},...
-      }),scanParams{iScan});
     EVnames = tempParams.EVnames;
-    tempParams = mrParamsRemoveField(tempParams,'EVnames');
-    
-    scanParams{iScan} = mrParamsCopyFields(tempParams,scanParams{iScan});
+%     tempParams = mrParamsRemoveField(tempParams,'EVnames');
+    EVsToRemove = find(~any(stimToEVmatrix,1));
+    for iEV = EVsToRemove
+      disp(sprintf('(getGlmEVParamsGUI) Removing EV ''%s'' because it is empty',EVnames{iEV}));
+    end
+    stimToEVmatrix(:,EVsToRemove) = [];
+    EVnames(EVsToRemove)=[];
+    %Add only these 2 parameters to the scanParams
+    newParams =  mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix,'Matrix forming EVs from combinations of stimulus types'},...
+                       {'stimNames',d.stimNames,'type=strinArray','Names of stimulus types'}});
+    scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
+%     scanParams{iScan} = mrParamsCopyFields(tempParams,scanParams{iScan});
 
-    % if sameForNextScans is set, copy all parameters into all remaining scans and break out of loop
-    if isfield(scanParams{iScan},'sameForNextScans') && ...
-      scanParams{iScan}.sameForNextScans
-      %remove scan, descprition and scanNum fields from current scanparams
-      currentScanParams = mrParamsRemoveField(scanParams{iScan},'scan');
-      currentScanParams = mrParamsRemoveField(currentScanParams,'description');
-      if isfield(currentScanParams,'scanNum')
-        currentScanParams = mrParamsRemoveField(currentScanParams,'scanNum');
-      end
+    % if sameForNextScans is set, copy the temporary parameters into all remaining scans and break out of loop
+    if isfield(tempParams,'sameForNextScans') && tempParams.sameForNextScans
       for jScan = params.scanNum(find(params.scanNum>iScan,1,'first'):end)
         % set the other scans params to the same as this one
-        scanParams{jScan} = mrParamsCopyFields(currentScanParams,scanParams{jScan});
+        scanParams{jScan} = mrParamsCopyFields(newParams,scanParams{jScan});
       end
       break
     end
@@ -140,6 +138,12 @@ for iEvent = 1:length(stimNames)
   thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(stimNames{iEvent}));
 end
 thisScanParams.stimNames = stimNames;
+EVsToRemove = find(~any(thisScanParams.stimToEVmatrix,1));
+for iEV = EVsToRemove
+  disp(sprintf('(getGlmEVParamsGUI) Removing EV %s because it is empty',thisScanParams.EVnames{iEV}));
+end
+thisScanParams.stimToEVmatrix(:,EVsToRemove) = [];
+thisScanParams.EVnames(EVsToRemove)=[];
 
 if ~isfield(thisScanParams,'sameForNextScans') || thisScanParams.sameForNextScans
   %if it's the last scan or sameForNextScans is selected, we show all scans
@@ -169,24 +173,32 @@ set(fignum,'position',figurePosition);
 cScan=0;
 axisLength = zeros(1,length(params.scanNum));
 tSeriesAxes = zeros(1,length(params.scanNum));
-thisScanParams.EVnames{end+1} = 'Not used';
 for iScan = scanList
   params.scanParams{iScan} = copyFields(scanParams{iScan},params.scanParams{iScan}); %we use copyFields here instead of mrParamsCopyFields because the latter only copies fields with a corresponding paramInfo entry
-  %replace all unused stimuli by one EV
-  params.scanParams{iScan}.stimToEVmatrix(:,end+1) = ~any(params.scanParams{iScan}.stimToEVmatrix,2);
+  EVnames = thisScanParams.EVnames;
+  colors = randomColors(length(EVnames));
+  %replace all unused stimuli by one EV (if any)
+  if any(~any(params.scanParams{iScan}.stimToEVmatrix,2))
+    params.scanParams{iScan}.stimToEVmatrix(:,end+1) = ~any(params.scanParams{iScan}.stimToEVmatrix,2);
+    EVnames{end+1} = 'Not used';
+    colors(end+1,:) = [.85 .85 .85]; %last color for unused stims
+  end
   
   d = loadScan(thisView, iScan, viewGet(thisView,'groupNum',params.groupName), 0);
   d = getStimvol(d,params.scanParams{iScan});
-  [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);
+%   if ~fieldIsNotDefined(params.scanParams{iScan},'estimationSupersampling')
+%     estimationSupersampling = params.scanParams{iScan}.estimationSupersampling;
+%   else
+%     estimationSupersampling = 1;
+%   end
+  [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);%,d.tr/estimationSupersampling);
   d = eventRelatedPreProcess(d,params.scanParams{iScan}.preprocess);
   d = makeDesignMatrix(d,params,1,iScan);
   cScan=cScan+1;
   
-  if ~isempty(d.scm) && size(d.scm,2)==length(thisScanParams.EVnames)*d.nHrfComponents
+  if ~isempty(d.scm) && size(d.scm,2)==length(EVnames)*d.nHrfComponents
     %the length for the axis depends on the number of volumes times the frame period
     axisLength(cScan) = size(d.EVmatrix,1)/d.designSupersampling*d.tr;
-    colors = randomColors(length(thisScanParams.EVnames));
-    colors(end,:) = [.85 .85 .85]; %last color for unused stims
 
     tSeriesAxes(cScan) = axes('parent',fignum,'outerposition',getSubplotPosition(1,cScan,[7 1],ones(nScans,1),0,.05));
     hold on
@@ -194,7 +206,7 @@ for iScan = scanList
 
     title(viewGet(thisView,'description',iScan),'interpreter','none');
     %legend
-    legendStrings = thisScanParams.EVnames(h>0);
+    legendStrings = EVnames(h>0);
     h = h(h>0);
     if ~isempty(hTransition)
       h = [h hTransition];
