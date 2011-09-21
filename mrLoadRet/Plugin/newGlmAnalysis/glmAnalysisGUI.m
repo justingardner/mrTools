@@ -190,7 +190,8 @@ while askForParams
   else
     while askForParams       % get hrf model parameters
       %here we assume that all scans in this group have the same framePeriod
-      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,defaultParams);
+      framePeriod = viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName));
+      hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod,1,defaultParams);%,framePeriod);
       % if empty user hit cancel, go back
       if isempty(hrfParams)
         if size(hrfParams,2) %if the top close button has been pressed
@@ -225,6 +226,16 @@ while askForParams
               break;
             end
           else
+            %check that scan frame Period are all identical
+            framePeriod = viewGet(thisView,'framePeriod',scanNums(1));
+            for iScan = scanNums(2:end);
+              if viewGet(thisView,'framePeriod',scanNums(iScan))~=framePeriod
+                mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different frame periods. Copy scans in different groups.');
+                params=[];
+                return
+              end
+            end
+              
             params.scanNum = scanNums;
           end
         end
