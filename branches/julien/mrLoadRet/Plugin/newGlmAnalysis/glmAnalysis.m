@@ -281,7 +281,7 @@ for iScan = params.scanNum
         %first which EVs are involved in all contrasts/restrictions
         contrastEVs = any([params.contrasts;cell2mat(params.restrictions)],1);
         %then which event types constitute these EVs
-        randEvents = any(params.scanParams{iScan}.stimToEVmatrix(:,contrastEVs),2);
+        randEvents = any(scanParams{iScan}.stimToEVmatrix(:,contrastEVs),2);
         %now compute permutation indices for those events, while keeping other events indices unchanged
         nEventTypes = length(actualStimvol);
         numberEvents = NaN(nEventTypes,1);
@@ -305,7 +305,12 @@ for iScan = params.scanNum
       end
 
       %create model HRF
-      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);
+      if ~fieldIsNotDefined(scanParams{iScan},'estimationSupersampling')
+        estimationSupersampling = scanParams{iScan}.estimationSupersampling;
+      else
+        estimationSupersampling = 1;
+      end
+      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);%,d.tr/estimationSupersampling);
 
       d.volumes = 1:d.dim(4);
       %make a copy of d
@@ -587,7 +592,7 @@ for iScan = params.scanNum
     stimvol{i} = unique(ceil(stimvol{i}/d.designSupersampling));
   end
   glmAnal.d{iScan}.stimvol = stimvol;
-  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/scanParams{iScan}.estimationSupersampling);%/d.designSupersampling*scanParams{iScan}.estimationSupersampling;
+  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/estimationSupersampling);%/d.designSupersampling*scanParams{iScan}.estimationSupersampling;
   glmAnal.d{iScan}.actualhrf = d.hrf;
   clear('d');
   glmAnal.d{iScan}.estimationSupersampling = scanParams{iScan}.estimationSupersampling;
