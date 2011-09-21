@@ -27,7 +27,7 @@ while keepAsking
   % user which variable they want to do the anlysis on
   for iScan = params.scanNum
    % get scan info and description
-    tr = viewGet(thisView,'framePeriod',iScan,groupNum);
+    framePeriod = viewGet(thisView,'framePeriod',iScan,groupNum);
     if ~isfield(scanParams{iScan},'scan')
        scanParams{iScan}.scan = sprintf('%i: %s',iScan,viewGet(thisView,'description',iScan,groupNum));
     end
@@ -138,20 +138,31 @@ while keepAsking
           scanParams{iScan}.stimDuration = 'fromFile';
     end
 
-    if ~isfield(scanParams{iScan},'stimDuration') || strcmp(params.hrfModel,'hrfDeconvolution')
-       scanParams{iScan}.stimDuration = num2str(tr);
+    if fieldIsNotDefined(scanParams{iScan},'stimDuration') 
+       scanParams{iScan}.stimDuration = num2str(framePeriod);
     elseif isnumeric(scanParams{iScan}.stimDuration)
       scanParams{iScan}.stimDuration = num2str(scanParams{iScan}.stimDuration);
     end
 
+    if strcmp(params.hrfModel,'hrfDeconvolution')
+       canonicalVisibleOption = 'visible=0';
+       deconvolutionVisibleOption = 'visible=1';
+    else
+      scanParams{iScan}.estimationSupersampling=1;
+      scanParams{iScan}.acquisitionSubsample=1;
+      canonicalVisibleOption = 'visible=1';
+      deconvolutionVisibleOption = 'visible=0';
+    end
+    
     paramsInfo = [paramsInfo {...
-      {'stimDuration', scanParams{iScan}.stimDuration, 'duration of stimulation/event (seconds, min=0.01s), a boxcar function that is convolved with hrf. If using deconvolution, should be equal to the frame period'},...
-      {'forceStimOnSampleOnset', scanParams{iScan}.forceStimOnSampleOnset, 'type=checkbox','Forces stimulus onset to coincide with (sub)sample onsets'},...
-      {'estimationSupersampling',scanParams{iScan}.estimationSupersampling,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation'},...
-      {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'},...
+      {'estimationSupersampling',scanParams{iScan}.estimationSupersampling, deconvolutionVisibleOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation'},...
+      {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, deconvolutionVisibleOption, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'},...
+      {'stimDuration', scanParams{iScan}.stimDuration, canonicalVisibleOption, 'duration of stimulation/event (seconds, min=0.01s), a boxcar function that is convolved with the HRF model. If using deconvolution, should be equal to the (sub)frame period'},...
+      {'forceStimOnSampleOnset', scanParams{iScan}.forceStimOnSampleOnset,'type=checkbox','Forces stimulus onset to coincide with (sub)sample onsets'},...
        }];
 
-    % give the option to use the same variable for remaining scans
+     
+     % give the option to use the same variable for remaining scans
     if (iScan ~= params.scanNum(end)) && (length(params.scanNum)>1)
      paramsInfo{end+1} = {'sameForNextScans',scanParams{iScan}.sameForNextScans,'type=checkbox','Use the same parameters for all scans'};
     end
@@ -170,7 +181,9 @@ while keepAsking
        return
     end
     
-    if ~strcmp(tempParams.stimDuration,'fromFile')
+    if strcmp(params.hrfModel,'hrfDeconvolution')
+      tempParams.stimDuration = framePeriod/tempParams.estimationSupersampling;
+    elseif ~strcmp(tempParams.stimDuration,'fromFile')
       tempParams.stimDuration= str2num(tempParams.stimDuration);
     end
     scanParams{iScan} = mrParamsCopyFields(tempParams,scanParams{iScan});
@@ -187,11 +200,11 @@ while keepAsking
     elseif isempty(scanParams{iScan}.stimDuration) 
       mrWarnDlg('(getScanParamsGUI) unknown stimDuration parameter','Yes');
       scanParams{iScan} = [];
-    elseif (ischar(scanParams{iScan}.stimDuration) || scanParams{iScan}.stimDuration ~=tr) ...
-        && strcmp(params.hrfModel,'hrfDeconvolution')...
-        && (params.computeTtests || params.numberFtests)
-      mrWarnDlg('(getScanParamsGUI) subTR sampling is not (yet) compatible with statistics on deconvolution weights','Yes');
-      scanParams{iScan} = [];
+%     elseif (ischar(scanParams{iScan}.stimDuration) || scanParams{iScan}.stimDuration ~=framePeriod) ...
+%         && strcmp(params.hrfModel,'hrfDeconvolution')...
+%         && (params.computeTtests || params.numberFtests)
+%       mrWarnDlg('(getScanParamsGUI) subTR design sampling is not (yet) compatible with statistics on deconvolution weights','Yes');
+%       scanParams{iScan} = [];
     else
       keepAsking = 0;
 
@@ -206,8 +219,7 @@ while keepAsking
       end
 
       % if sameForNextScans is set, copy all parameters into remaining scans and break out of loop
-      if isfield(scanParams{iScan},'sameForNextScans') && ...
-         scanParams{iScan}.sameForNextScans
+      if isfield(scanParams{iScan},'sameForNextScans') && scanParams{iScan}.sameForNextScans
          for jScan = params.scanNum(find(params.scanNum>iScan,1,'first'):end)
             % set the other scans params to the same as this one
             scanParams{jScan} = scanParams{iScan};
@@ -236,6 +248,18 @@ while keepAsking
     if keepAsking && useDefault %there were incompatible parameters but this is the script mode (no GUI)
       scanParams = [];
       return;
+    end
+  end
+  
+  %here check if different estimation super-sampling for different scans because incompatible with statistics
+  if strcmp(params.hrfModel,'hrfDeconvolution') && (params.computeTtests || params.numberFtests)
+    estimationSupersampling = scanParams{1}.estimationSupersampling;
+    for iScan = params.scanNum(2:end)
+      if estimationSupersampling~=scanParams{iScan}.estimationSupersampling
+        keepAsking=1;
+        mrWarnDlg('(getScanParamsGUI) Cannot perform statistics on deconvolution weights if estimation supersampling varies between scans','Yes');
+        break;
+      end
     end
   end
 %   if iScan>params.scanNum(1)
