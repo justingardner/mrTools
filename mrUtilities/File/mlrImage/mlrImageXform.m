@@ -7,11 +7,13 @@
 %             xformation matrices accordingly. command is any of
 %             the following:
 %
-%             swapXY,swapXz,swapYZ
+%             swapXY,swapXZ,swapYZ
 %             flipX,flipY,flipZ
+%
 %             shiftX=n,shiftY=n,shiftZ=n
 %             rotateXY=deg,rotateYZ=deg,rotateXZ=deg
 %
+%       e.g.: [d h] = mlrImageXform('image.hdr','swapXY=1','flipZ=1','shiftX=13.2',rotateXY=30');
 %
 %
 function [d h] = mlrImageXform(varargin)
