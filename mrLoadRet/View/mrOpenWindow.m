@@ -178,7 +178,7 @@ function [view,baseLoaded] = loadAnatomy(view)
     % rotate 270
     mlrGuiSet(view.viewNum,'rotate',270);
     % change group to last in list
-    view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));baseLoaded
+    view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
     % and refresh
   else
     baseLoaded = 0;
