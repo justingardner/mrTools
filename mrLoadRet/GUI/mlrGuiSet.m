@@ -80,6 +80,23 @@ switch lower(field)
   set(handles.showGroupMenuItem,'Checked',onOrOff{5});
   set(handles.showGroupPerimeterMenuItem,'Checked',onOrOff{6});
   set(handles.hideROIsMenuItem,'Checked',onOrOff{7});
+  
+  if isfield(handles,'roiDisplayModePopup')
+    switch(value)
+      case {'group','selected'}
+        roiDisplayMode = 1;
+      case {'group perimeter','selected perimeter'}
+        roiDisplayMode = 2;
+      case {'all'}
+        roiDisplayMode = 3;
+      case {'all perimeter'}
+        roiDisplayMode = 4;
+      case 'hide'
+        roiDisplayMode = 5;
+    end
+    set(handles.roiDisplayModePopup,'value',roiDisplayMode);
+  end
+  
  case {'basetype'}
   % mlrGuiSet(view,'baseType',value);
   % value = 0 for regular or 1 for flat
