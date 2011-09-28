@@ -152,11 +152,7 @@ for iImage = 1:nImages
     end
 
     % do any shift or xforms on header
-    [data header] = mlrImageXform(data,header,'swapXY',swapXY,'swapXZ',swapXZ,'swapYZ',swapYZ,'flipX',flipX,'flipY',flipY,'flipZ',flipZ,'shiftX',shiftX,'shiftY',shiftY,'shiftZ',shiftZ,'rotateXY',rotateXY,'rotateXZ',rotateXZ,'rotateYZ',rotateYZ,'applyToData',applyToData,'applyToHeader',applyToHeader,'interpMethod',interpMethod,'verbose',verbose);
-    
-    % shift position if called for
-    [data header] = adjustDims(data,header,xMin,xMax,yMin,yMax,zMin,zMax);
-  
+    [data header] = mlrImageXform(data,header,'swapXY',swapXY,'swapXZ',swapXZ,'swapYZ',swapYZ,'flipX',flipX,'flipY',flipY,'flipZ',flipZ,'shiftX',shiftX,'shiftY',shiftY,'shiftZ',shiftZ,'rotateXY',rotateXY,'rotateXZ',rotateXZ,'rotateYZ',rotateYZ,'xMin',xMin,'xMax',xMax,'yMin',yMin,'yMax',yMax,'zMin',zMin,'zMax',zMax,'applyToData',applyToData,'applyToHeader',applyToHeader,'interpMethod',interpMethod,'verbose',verbose);
   end
 
   % do volNum processing if not already done
@@ -181,38 +177,4 @@ for iImage = 1:nImages
     dataRetval = data;
   end
 end
-
-%%%%%%%%%%%%%%%%%%%%
-%%   adjustDims   %%
-%%%%%%%%%%%%%%%%%%%%
-function [data h] = adjustDims(data,h,xMin,xMax,yMin,yMax,zMin,zMax)
-
-% if nothing to do, just return
-if (xMin == 1) && (xMax == inf) && (yMin == 1) && (yMax == inf) && (zMin == 1) && (zMax == inf)
-  return
-end
-
-% get current dimensions
-dims = size(data);
-
-% make the dimensions valid
-xMin = round(max(1,xMin));
-xMax = round(min(xMax,dims(1)));
-yMin = round(max(1,yMin));
-yMax = round(min(yMax,dims(2)));
-zMin = round(max(1,zMin));
-zMax = round(min(zMax,dims(3)));
-
-% adjust data size
-data = data(xMin:xMax,yMin:yMax,zMin:zMax,:);
-
-% find out how much the new xMin, yMin, zMin have translated the image
-t = h.qform * [xMin yMin zMin 1]' - h.qform * [1 1 1 1]';
-t = [zeros(3,3) t(1:3,1); 0 0 0 0];
-h.qform = t + h.qform;
-
-% reset the dims
-h.dim = size(data);
-
-
 

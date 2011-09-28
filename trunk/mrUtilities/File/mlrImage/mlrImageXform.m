@@ -31,9 +31,10 @@ swapXY=[];swapXZ=[];swapYZ=[];
 flipX=[];flipY=[];flipZ=[];
 shiftX=[];shiftY=[];shiftZ=[];
 rotateXY=[];rotateXZ=[];rotateYZ=[];
+xMin=[];xMax=[];yMin=[];yMax=[];zMin=[];zMax=[];
 interpMethod=[];
 applyToHeader=[];applyToData=[];
-getArgs(otherArgs,{'verbose=1','swapXY=0','swapXZ=0','swapYZ=0','flipX=0','flipY=0','flipZ=0','shiftX=0','shiftY=0','shiftZ=0','rotateXY=0','rotateXZ=0','rotateYZ=0','interpMethod=[]','applyToHeader=1','applyToData=1'});
+getArgs(otherArgs,{'verbose=1','swapXY=0','swapXZ=0','swapYZ=0','flipX=0','flipY=0','flipZ=0','shiftX=0','shiftY=0','shiftZ=0','rotateXY=0','rotateXZ=0','rotateYZ=0','interpMethod=[]','applyToHeader=1','applyToData=1','xMin=1','xMax=inf','yMin=1','yMax=inf','zMin=1','zMax=inf'});
 
 % check that we have an image to xform
 if length(imageArgs) < 1
@@ -50,6 +51,7 @@ end
 for iImage = 1:length(imageArgs)
   % load the image
   [d h] = mlrImageLoad(imageArgs{iImage},'returnRaw=1');
+  qformOriginal = h.qform;
   if isempty(d)
     disp(sprintf('(mlrImageXform) Could not open image: %s',mlrImageArgFilename(imageArgs{iImage})));
   else
@@ -165,6 +167,21 @@ for iImage = 1:length(imageArgs)
       h = applyXform(shiftToCenter*rotMatrix*inv(shiftToCenter),h,d,applyToHeader);
     end
   end
+  % do any needed adjustment of dimensions
+  [d h] = adjustDims(d,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData);
+  % make sure dim is correct
+  h.dim(1:3) = size(d);
+  % apply to sform if it exists
+  if applyToHeader && ~isempty(h.sform) && ~isempty(h.qform)
+    h.sform = inv(qformOriginal*inv(h.qform))*h.sform;
+  end
+  % fix pixdim - thus if we have anisotropic voxels and we swap
+  % dims or rotate this will fix the dimensions to be appropriate
+  if applyToHeader
+    xform = inv(qformOriginal*inv(h.qform));
+    xform = xform(1:3,1:3);
+    h.pixdim(1:3) = (xform*h.pixdim(1:3)')';
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%
@@ -188,3 +205,48 @@ end
 % get the dimensions of the data
 sized = size(d);
 h.dim(1:length(sized)) = sized;
+
+%%%%%%%%%%%%%%%%%%%%
+%%   adjustDims   %%
+%%%%%%%%%%%%%%%%%%%%
+function [data h] = adjustDims(data,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData)
+
+% if nothing to do, just return
+if (xMin == 1) && (xMax == inf) && (yMin == 1) && (yMax == inf) && (zMin == 1) && (zMax == inf)
+  return
+end
+
+% get current dimensions
+dims = size(data);
+
+% make the dimensions valid
+xMin = round(max(1,xMin));
+xMax = round(min(xMax,dims(1)));
+yMin = round(max(1,yMin));
+yMax = round(min(yMax,dims(2)));
+zMin = round(max(1,zMin));
+zMax = round(min(zMax,dims(3)));
+
+% make some checks
+if (zMax <= zMin) || (yMax <= yMin) || (xMax <= xMin)
+  disp(sprintf('(mlrImageXform:adjustDims) Could not adjust dims to [%i:%i,%i:%i,%i:%i]',xMin,xMax,yMin,yMax,zMin,zMax));
+  return
+end
+
+% adjust data size
+if applyToData
+  data = data(xMin:xMax,yMin:yMax,zMin:zMax,:);
+end
+
+% find out how much the new xMin, yMin, zMin have translated the image
+t = h.qform * [xMin yMin zMin 1]' - h.qform * [1 1 1 1]';
+t = [zeros(3,3) t(1:3,1); 0 0 0 0];
+if applyToHeader
+  h.qform = t+h.qform;
+end
+
+% reset the dims
+h.dim = size(data);
+
+
+
