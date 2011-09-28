@@ -3498,9 +3498,9 @@ switch lower(param)
     % slice = viewGet(view,'currentSlice');
     if isfield(view.curslice,'sliceNum')
       val = view.curslice.sliceNum;
-    else
-      % never set in structure. Default to 1
-      val = 1;
+%     else    %JB: Setting a default leads to incoherent behaviour when first base is loaded
+%       % never set in structure. Default to 1
+%       val = 1;
     end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');

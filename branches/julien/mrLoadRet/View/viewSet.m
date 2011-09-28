@@ -776,6 +776,10 @@ switch lower(param)
     curBase = viewGet(view,'curBase');
     rotate = viewGet(view,'rotate');
     curSlice = viewGet(view,'curSlice');
+    %if there was not base loaded, curSlice could be empty, set default to 1
+    if isempty(curSlice)
+      curSlice =1;
+    end
     sliceOrientation = viewGet(view,'sliceOrientation');
     % set the current state of the gui in the base
     if (curBase > 0) & (curBase <= numBases)
@@ -815,7 +819,6 @@ switch lower(param)
       % update nSlices and reset slice to be within range
       sliceIndex = viewGet(view,'basesliceindex',baseNum);
       nSlices = baseDims(sliceIndex);
-      curSlice = viewGet(view,'curSlice');
       % if the base has a current slice set, then use that
       if isempty(baseCurSlice) || (baseCurSlice > nSlices)
 	view = viewSet(view,'curSlice',max(1,min(curSlice,nSlices)));
@@ -1914,7 +1917,8 @@ switch lower(param)
       nSlices = 0;
     end
     if (val > 0) && (val <= nSlices)
-      if viewGet(view,'curSlice') ~= val
+      curSlice = viewGet(view,'curSlice');
+      if isempty(curSlice) || curSlice ~= val
 	view.curslice.sliceNum = val;
 	mlrGuiSet(view,'slice',val);
       end
@@ -1929,7 +1933,7 @@ switch lower(param)
     % view = viewSet(view,'cursliceoverlaycoords',array);
     view.curslice.overlayCoords = val;
 
-  case {'sliceorientation','baseSliceIndex'}
+  case {'sliceorientation','basesliceindex'}
    % view = viewSet(view,'sliceOrientation',n);
     if ~isscalar(val)
       switch val
