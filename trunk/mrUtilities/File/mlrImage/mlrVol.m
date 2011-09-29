@@ -921,7 +921,9 @@ if gVol{sysNum}.n > 1
     {'rotateXY',gVol{sysNum}.xformParams.rotateXY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
     {'rotateXZ',gVol{sysNum}.xformParams.rotateXZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
     {'rotateYZ',gVol{sysNum}.xformParams.rotateYZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
-    {'vol2vol',gVol{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}
+    {'vol2vol',gVol{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}...
+    {'dispHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum 2},sprintf('Display the header for %s',gVol{sysNum}.vols(2).h.filename)}...
+    {'saveAlignement',0,'type=pushbutton','callback',@saveAlignment,'buttonString','Save alignment','callbackArg',sysNum,sprintf('Save the alignment to %s',gVol{sysNum}.vols(2).h.filename)}
 	     };
 else
   paramsInfo = {...
@@ -945,6 +947,7 @@ else
       {'yMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(2)],'callback',@adjustVol,'callbackArg',{sysNum 'yMax'},'passParams=1','round=1','Crop the image in the y dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'zMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMin'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'zMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMax'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'dispVolHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum 1},'Display the header for the volume'}...
 	       };
 end
 
@@ -958,6 +961,26 @@ if isfield(gVol{sysNum}.vols(1),'complexData')
 end
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
 mrParamsDialog(paramsInfo,'mlrVol Controls');
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    dispVolHeader    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = dispVolHeader(args)
+
+% return argument for mrParams
+retval = 1;
+
+global gVol;
+sysNum = args{1};
+volNum = args{2};
+vol = gVol{sysNum}.vols(volNum);
+
+% for aligned volumes, than get the alignment sform so we can display that
+if volNum > 1
+  vol.h.sform = gVol{sysNum}.vols(1).h.qform * inv(vol.xform * gVol{sysNum}.xform);
+end
+
+mlrImageHeaderDisp(vol.h);
 
 %%%%%%%%%%%%%%%%%%%
 %    adjustVol    %
@@ -1052,6 +1075,45 @@ vol = gVol{sysNum}.vols(1);
 [filename pathname ] = uiputfile({'*.hdr;*.img;*.nii','Nifti format';'*.sdt;*.spr;*.edt*.epr','BSI stimulate format'},'Save volume',vol.h.filename);
 if isequal(filename,0),return,end
 
+mlrImageSave(fullfile(pathname,filename),vol.data,vol.h);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    saveAlignment    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = saveAlignment(sysNum)
+
+% return argument for mrParams
+retval = [];
+
+global gVol;
+vol = gVol{sysNum}.vols(2);
+
+% get directory to start save box in
+[filename pathname ] = uiputfile({'*.hdr;*.img;*.nii','Nifti format';'*.sdt;*.spr;*.edt*.epr','BSI stimulate format'},'Save volume',vol.h.filename);
+if isequal(filename,0),return,end
+
+% compute the sform, remember to composite the system xform (shifts and rotates)
+% then the base volumes qform which takes us from the base volumes coordinates back to 
+% the magnet coordiantes
+sform = gVol{sysNum}.vols(1).h.qform * inv(vol.xform * gVol{sysNum}.xform);
+
+% set the qform as well, if the sform
+paramsInfo = {...
+    {'filename',filename,'editable=0'}...
+    {'saveAsQform',isempty(vol.h.qform),'type=checkbox','Save alignment as qform - usually you do not want to do this since the qform should hold the information about the alignment set by the magnet. But in cases where you don''t have this information set, you may want to set the qform'}...
+    {'saveAsSform',1,'type=checkbox','Save alignment as qform - usually you do not want to do this since the qform should hold the information about the alignment set by the magnet. But in cases where you don''t have this information set, you may want to set the qform'}...
+    {'sform',sform,'The sform that will be save'}...
+	     };
+params = mrParamsDialog(paramsInfo,'Save alignment');
+if isempty(params),return,end
+
+if params.saveAsQform
+  vol.h.qform = params.sform;
+end
+if params.saveAsSform
+  vol.h.sform = params.sform;
+end
+  
 mlrImageSave(fullfile(pathname,filename),vol.data,vol.h);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -1206,7 +1268,7 @@ switch args{2}
 end
 
 % set the transform
-for iVol = 1:gVol{sysNum}.n
+for iVol = 2:gVol{sysNum}.n
   if verbose,dispHeader;end
   if gVol{sysNum}.vols(iVol).tethered
     if changeXform
@@ -1224,7 +1286,7 @@ for iVol = 1:gVol{sysNum}.n
 	% display what we are doing
 	if verbose,disp(sprintf('(mlrVol) Compositing xform\n%s',mrnum2str(thisXform,'compact=0','sigfigs=-1')));end
         % now set the xform
-	gVol{sysNum}.vols(iVol).xform = gVol{sysNum}.vols(iVol).xform*thisXform;
+	gVol{sysNum}.vols(iVol).xform = thisXform*gVol{sysNum}.vols(iVol).xform;
       else
 	gVol{sysNum}.vols(iVol).xform = xform;
       end
@@ -1256,6 +1318,7 @@ if ~isempty(altXformNum)
 end
 
 % redisplay
+gVol{sysNum}.vols(1).curCoord(:) = nan;
 refreshDisplay(sysNum);
 
 %%%%%%%%%%%%%%%%%%%%%%
