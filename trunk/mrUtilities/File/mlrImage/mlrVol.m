@@ -823,6 +823,8 @@ elseif ~isempty(vol1.h.qform) && ~isempty(vol2.h.qform)
     disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
     dispHeader;
   end
+elseif (sum(~isnan(vol1.h.pixdim)) >= 3) && (sum(~isnan(vol2.h.pixdim)) >= 3)
+  vol2vol = inv(diag([vol1.h.pixdim 1])) * diag([vol2.h.pixdim 1]);
 else
   vol2vol = eye(4);
 end
@@ -1263,7 +1265,11 @@ switch args{2}
   xform = params.vol2vol;
   replaceXform = true;
  case {'setToIdentity'}
-  xform = eye(4);
+  if (sum(~isnan(gVol{sysNum}.vols(1).h.pixdim)) >= 3) && (sum(~isnan(gVol{sysNum}.vols(2).h.pixdim)) >= 3)
+    xform = inv(diag([gVol{sysNum}.vols(2).h.pixdim 1])) * diag([gVol{sysNum}.vols(1).h.pixdim 1]);
+  else
+    xform = eye(4);
+  end
   replaceXform = true;
 end
 
