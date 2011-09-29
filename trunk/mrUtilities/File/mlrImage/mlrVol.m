@@ -666,6 +666,12 @@ function setVolCoord(sysNum,iVol,coord)
 
 global gVol;
 
+% check bounds
+coord(coord<1) = 1;
+dim = gVol{sysNum}.vols(iVol).h.dim;
+outOfBounds = coord(1:length(dim)) > dim;
+coord(outOfBounds) = dim(outOfBounds);
+
 % set the current x,y,z coordinate
 gVol{sysNum}.vols(iVol).coord = coord;
 
@@ -933,6 +939,12 @@ else
       {'rotateXY',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'rotateXZ',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'rotateYZ',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'xMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(1)],'callback',@adjustVol,'callbackArg',{sysNum 'xMin'},'passParams=1','round=1','Crop the image in the x dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'xMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(1)],'callback',@adjustVol,'callbackArg',{sysNum 'xMax'},'passParams=1','round=1','Crop the image in the x dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'yMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(2)],'callback',@adjustVol,'callbackArg',{sysNum 'yMin'},'passParams=1','round=1','Crop the image in the y dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'yMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(2)],'callback',@adjustVol,'callbackArg',{sysNum 'yMax'},'passParams=1','round=1','Crop the image in the y dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'zMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMin'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'zMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMax'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
 	       };
 end
 
@@ -967,6 +979,9 @@ if any(strcmp(get(gcf,'CurrentModifier'),'shift'))
   disp(sprintf('(mlrVol:adjustVol) Only applying %s to image data not header',commandName));
   applyToHeader = 0;
 else
+  if ~gVol{sysNum}.imageOrientation
+    oneTimeWarning('mlrVolAdjustDims','(mlrVol:adjustDims) Note that when you apply a transformation, the same transformation gets applied to the header xform and mlrVol will adjust the display to compensate (so for example if you swap XY it will swap the labels of the axis, but not necessarily what is being displayed). If instead you want to swap the data but NOT the header xform, then hold down the shift key as you make the adjustments');
+  end
   applyToHeader = 1;
 end
 
@@ -982,7 +997,12 @@ gVol{sysNum}.vols.curCoord(:) = nan;
 refreshDisplay(sysNum);
 
 % clear the parameter
-params.(commandName) = 0;
+if any(strcmp(commandName,{'xMax','yMax','zMax'}))
+  params.(commandName) = inf;
+else
+  params.(commandName) = 0;
+end
+  
 mrParamsSet(params);
 
 %%%%%%%%%%%%%%%%%%%

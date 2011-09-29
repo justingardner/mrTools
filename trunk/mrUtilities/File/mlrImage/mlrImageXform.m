@@ -170,7 +170,7 @@ for iImage = 1:length(imageArgs)
   % do any needed adjustment of dimensions
   [d h] = adjustDims(d,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData);
   % make sure dim is correct
-  h.dim(1:3) = size(d);
+  h.dim = size(d);
   % apply to sform if it exists
   if applyToHeader && ~isempty(h.sform) && ~isempty(h.qform)
     h.sform = inv(qformOriginal*inv(h.qform))*h.sform;
@@ -180,7 +180,7 @@ for iImage = 1:length(imageArgs)
   if applyToHeader
     xform = inv(qformOriginal*inv(h.qform));
     xform = xform(1:3,1:3);
-    h.pixdim(1:3) = (xform*h.pixdim(1:3)')';
+    h.pixdim(1:3) = abs((xform*h.pixdim(1:3)')');
   end
 end
 
