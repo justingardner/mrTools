@@ -305,8 +305,13 @@ end
 
 % check for 2d anatomy, to tell getfid that this has the slices and receivers mixed up
 if ~info.acq3d && ~info.isepi
-  info.receiversAndSlicesSwapped = 1;
-  if verbose>0,disp(sprintf('(fid2xform) Receviers and slices are swapped'));,end
+  if strcmp(lower(info.console),'inova')  
+    info.receiversAndSlicesSwapped = 1;
+    if verbose>0,disp(sprintf('(fid2xform) Receviers and slices are swapped'));,end
+  else
+    % looks like on the new console we don't have to do this anymore?
+    info.receiversAndSlicesSwapped = 0;
+  end
 else 
   info.receiversAndSlicesSwapped = 0;
 end
