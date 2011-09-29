@@ -51,7 +51,7 @@ end
 for iImage = 1:length(imageArgs)
   % load the image
   [d h] = mlrImageLoad(imageArgs{iImage},'returnRaw=1');
-  qformOriginal = h.qform;
+  xform = eye(4);
   if isempty(d)
     disp(sprintf('(mlrImageXform) Could not open image: %s',mlrImageArgFilename(imageArgs{iImage})));
   else
@@ -65,7 +65,7 @@ for iImage = 1:length(imageArgs)
 	d = permute(d,permuteDims);
       end
       % swap the header
-      h = applyXform([0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1],h,d,applyToHeader);
+      [h xform] = applyXform([0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1],h,d,applyToHeader,xform);
     end
     % apply swapXZ
     if swapXZ
@@ -77,7 +77,7 @@ for iImage = 1:length(imageArgs)
 	d = permute(d,permuteDims);
       end
       % swap the header
-      h = applyXform([0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1],h,d,applyToHeader);
+      [h xform] = applyXform([0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1],h,d,applyToHeader,xform);
     end
     % apply swapYZ
     if swapYZ
@@ -89,7 +89,7 @@ for iImage = 1:length(imageArgs)
 	d = permute(d,permuteDims);
       end
       % apply to header
-      h = applyXform([1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1],h,d,applyToHeader);
+      [h xform] = applyXform([1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1],h,d,applyToHeader,xform);
     end
     % apply flipX
     if flipX
@@ -99,7 +99,7 @@ for iImage = 1:length(imageArgs)
 	d = flipdim(d,1);
       end
       % apply to header
-      h = applyXform([-1 0 0 h.dim(1)-1;0 1 0 0;0 0 1 0;0 0 0 1],h,d,applyToHeader);
+      [h xform] = applyXform([-1 0 0 h.dim(1)-1;0 1 0 0;0 0 1 0;0 0 0 1],h,d,applyToHeader,xform);
     end
     % apply flipY
     if flipY
@@ -109,7 +109,7 @@ for iImage = 1:length(imageArgs)
 	d = flipdim(d,2);
       end
       % apply to header
-      h = applyXform([1 0 0 0;0 -1 0 h.dim(2)-1;0 0 1 0;0 0 0 1],h,d,applyToHeader);
+      [h xform] = applyXform([1 0 0 0;0 -1 0 h.dim(2)-1;0 0 1 0;0 0 0 1],h,d,applyToHeader,xform);
     end
     % apply flipZ
     if flipZ
@@ -119,7 +119,7 @@ for iImage = 1:length(imageArgs)
 	d = flipdim(d,3);
       end
       % apply to header
-      h = applyXform([1 0 0 0;0 1 0 0;0 0 -1 h.dim(3)-1;0 0 0 1],h,d,applyToHeader);
+      [h xform] = applyXform([1 0 0 0;0 1 0 0;0 0 -1 h.dim(3)-1;0 0 0 1],h,d,applyToHeader,xform);
     end
     % apply shifts
     if any([shiftX shiftY shiftZ])
@@ -133,7 +133,7 @@ for iImage = 1:length(imageArgs)
 	d = interpn(d,x,y,z,interpMethod);
       end
       % apply to header
-      h = applyXform([1 0 0 shiftX;0 1 0 shiftY;0 0 1 shiftZ;0 0 0 1],h,d,applyToHeader);
+      [h xform] = applyXform([1 0 0 shiftX;0 1 0 shiftY;0 0 1 shiftZ;0 0 0 1],h,d,applyToHeader,xform);
     end
     % apply rotation
     if any([rotateXY rotateXZ rotateYZ])
@@ -164,33 +164,34 @@ for iImage = 1:length(imageArgs)
       end
       % apply to header
       shiftToCenter = [1 0 0 h.dim(1)/2;0 1 0 h.dim(2)/2;0 0 1 h.dim(3)/2;0 0 0 1];
-      h = applyXform(shiftToCenter*rotMatrix*inv(shiftToCenter),h,d,applyToHeader);
+      [h xform] = applyXform(shiftToCenter*rotMatrix*inv(shiftToCenter),h,d,applyToHeader,xform);
     end
   end
   % do any needed adjustment of dimensions
-  [d h] = adjustDims(d,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData);
+  [d h xform] = adjustDims(d,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData,xform);
   % make sure dim is correct
   h.dim = size(d);
   % apply to sform if it exists
   if applyToHeader && ~isempty(h.sform) && ~isempty(h.qform)
-    h.sform = inv(qformOriginal*inv(h.qform))*h.sform;
+    h.sform = h.sform*xform;
   end
   % fix pixdim - thus if we have anisotropic voxels and we swap
   % dims or rotate this will fix the dimensions to be appropriate
   if applyToHeader
-    xform = inv(qformOriginal*inv(h.qform));
-    xform = xform(1:3,1:3);
-    h.pixdim(1:3) = abs((xform*h.pixdim(1:3)')');
+    h.pixdim(1:3) = abs((xform(1:3,1:3)*h.pixdim(1:3)')');
   end
 end
 
 %%%%%%%%%%%%%%%%%%%%
 %%   applyXform   %%
 %%%%%%%%%%%%%%%%%%%%
-function h = applyXform(xform,h,d,applyToHeader)
+function [h totalXform] = applyXform(xform,h,d,applyToHeader,totalXform)
 
 % nothing to do if we are not applying to header
 if ~applyToHeader,return,end
+
+% keep track of what the total tranform is
+totalXform = totalXform*xform;
 
 % apply to qform if it is present
 if ~isempty(h.qform)
@@ -209,7 +210,7 @@ h.dim(1:length(sized)) = sized;
 %%%%%%%%%%%%%%%%%%%%
 %%   adjustDims   %%
 %%%%%%%%%%%%%%%%%%%%
-function [data h] = adjustDims(data,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData)
+function [data h totalXform] = adjustDims(data,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData,totalXform)
 
 % if nothing to do, just return
 if (xMin == 1) && (xMax == inf) && (yMin == 1) && (yMax == inf) && (zMin == 1) && (zMax == inf)
@@ -244,6 +245,7 @@ t = [zeros(3,3) t(1:3,1); 0 0 0 0];
 if applyToHeader
   h.qform = t+h.qform;
 end
+totalXform = totalXform + t;
 
 % reset the dims
 h.dim = size(data);
