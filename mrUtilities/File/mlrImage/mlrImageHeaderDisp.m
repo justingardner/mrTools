@@ -51,11 +51,11 @@ if ~isempty(h.sform)
   disp(sprintf('%s',mlrnum2str(h.sform,'compact=0','sigfigs=-1')));
 end
 if ~isempty(h.vol2mag)
-  disp(sprintf('sform:'));
+  disp(sprintf('vol2mag:'));
   disp(sprintf('%s',mlrnum2str(h.vol2mag,'compact=0','sigfigs=-1')));
 end
 if ~isempty(h.vol2tal)
-  disp(sprintf('sform:'));
+  disp(sprintf('vol2tal:'));
   disp(sprintf('%s',mlrnum2str(h.vol2tal,'compact=0','sigfigs=-1')));
 end
 
