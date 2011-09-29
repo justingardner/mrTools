@@ -205,12 +205,11 @@ end
 if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
   % set to automatically movepss since origin is center of magnet not center of slices
   info.movepss = -procpar.pss;
+  info.movepss = 0;
   if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, pss of center of slab: %f',procpar.pss));end
   % compute location of first and last slice
-%  firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
-%  lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
-  firstSlice = procpar.pss - voxspacing(3)*procpar.nv2/2;
-  lastSlice = procpar.pss + voxspacing(3)*procpar.nv2/2;
+  firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
+  lastSlice = procpar.pss + voxspacing(3)*(procpar.nv2-1)/2;
   % now make array
   procpar.pss = (firstSlice:voxspacing(3):lastSlice)/10;
 else
