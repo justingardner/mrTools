@@ -1547,7 +1547,7 @@ vol.subplotNum(1:3) = (1:3)+(n-1)*3;
 
 % update the axis information for this vol
 % this sets how the image will be displayed
-vol = updateVolAxisInfo(sysNum,vol,h)
+vol = updateVolAxisInfo(sysNum,vol,h);
 
 % set the coordinate (start displaying in middle of volume)
 coord = round(h.dim/2);
