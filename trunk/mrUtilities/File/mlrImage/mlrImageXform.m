@@ -16,7 +16,7 @@
 %       e.g.: [d h] = mlrImageXform('image.hdr','swapXY=1','flipZ=1','shiftX=13.2',rotateXY=30');
 %
 %
-function [d h] = mlrImageXform(varargin)
+function [d h xform] = mlrImageXform(varargin)
 
 % check arguments
 if nargin < 1
@@ -47,11 +47,13 @@ if isempty(interpMethod)
   interpMethod = mrGetPref('interpMethod');
 end
 
+% init xform
+xform = eye(4);
+
 % now cycle through images xforming them and putting in output
 for iImage = 1:length(imageArgs)
   % load the image
   [d h] = mlrImageLoad(imageArgs{iImage},'returnRaw=1');
-  xform = eye(4);
   if isempty(d)
     disp(sprintf('(mlrImageXform) Could not open image: %s',mlrImageArgFilename(imageArgs{iImage})));
   else

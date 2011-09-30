@@ -487,10 +487,9 @@ for iView = 1:3
   % the second condition is for primary volumes whether we have updated the coordinates being displayed
   % in the view, and the third condition is for tethered volumes - whether we have change the coordinates
   % for the volume we are tethered to
-  if (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || ...
-      (~vol.tethered && ~isequal(vol.curCoord(vol.viewDim(iView)), ...
-				 vol.coord(vol.viewDim(iView)))) || ...
-      vol.tethered)
+  if ((iVol==1) && (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || (~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))))) || ((iVol~=1) && gVol{sysNum}.refreshView(iView))
+    % set to refresh view so that the tethered volumes will be refreshed
+    gVol{sysNum}.refreshView(iView) = 1;
     % get the slice
     % nDims hard coded to 5 here
     if vol.tethered
@@ -564,6 +563,9 @@ for iView = 1:3
       hold off;
     end
     
+  else
+    % set not to refresh this view
+    gVol{sysNum}.refreshView(iView) = 0;
   end
 end
 
@@ -1041,10 +1043,14 @@ else
 end
 
 % do the command
-[gVol{sysNum}.vols(1).data gVol{sysNum}.vols(1).h] = mlrImageXform(gVol{sysNum}.vols(1).data,gVol{sysNum}.vols(1).h,commandName,commandValue,'applyToHeader',applyToHeader);
+[gVol{sysNum}.vols(1).data gVol{sysNum}.vols(1).h xform] = mlrImageXform(gVol{sysNum}.vols(1).data,gVol{sysNum}.vols(1).h,commandName,commandValue,'applyToHeader',applyToHeader);
 
 % update the axis info
 gVol{sysNum}.vols(1) = updateVolAxisInfo(sysNum,gVol{sysNum}.vols(1),gVol{sysNum}.vols(1).h);
+
+% get the new coord after xformation
+coord = xform*[gVol{sysNum}.vols(1).coord(1:3)' ; 1];
+gVol{sysNum}.vols(1).coord(1:3) = coord(1:3);
 setVolCoord(sysNum,1,gVol{sysNum}.vols(1).coord);
 
 % redisplay
