@@ -106,6 +106,20 @@ if procpar.accfactor > 1
   end
 end
 
+% check for weird psi theta or phi
+if length(procpar.psi) > 1
+  disp(sprintf('(fid2xform) psi is set to array %s. resetting to %f',mlrnum2str(procpar.psi),procpar.psi(1)));
+  procpar.psi = procpar.psi(1);
+end
+if length(procpar.theta) > 1
+  disp(sprintf('(fid2xform) theta is set to array %s. resetting to %f',mlrnum2str(procpar.theta),procpar.theta(end)));
+  procpar.theta = procpar.theta(end);
+end
+if length(procpar.phi) > 1
+  disp(sprintf('(fid2xform) phi is set to array %s. resetting to %f',mlrnum2str(procpar.phi),procpar.phi(2)));
+  procpar.phi = procpar.phi(2);
+end
+
 % make the rotation matrix from the procpar angles
 rotmat = euler2rotmatrix(procpar.psi,-procpar.theta,-procpar.phi);
 
