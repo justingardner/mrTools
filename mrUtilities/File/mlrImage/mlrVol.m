@@ -487,7 +487,7 @@ for iView = 1:3
   % the second condition is for primary volumes whether we have updated the coordinates being displayed
   % in the view, and the third condition is for tethered volumes - whether we have change the coordinates
   % for the volume we are tethered to
-  if ((iVol==1) && (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || (~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))))) || ((iVol~=1) && gVol{sysNum}.refreshView(iView))
+  if ((iVol==1) && (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || (~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))))) || ((iVol~=1) && gVol{sysNum}.refreshView(iView)) || ~gVol{sysNum}.displayInterpolated
     % set to refresh view so that the tethered volumes will be refreshed
     gVol{sysNum}.refreshView(iView) = 1;
     % get the slice
@@ -595,6 +595,9 @@ if any(coord(1:3)<1) || any(coord(1:3)'>vol.h.dim(1:3))
   dispSlice = [];
   return
 end
+
+% make into a row vector
+coord = coord(:)';
 
 % if not set the volume coordinates
 setVolCoord(sysNum,vol.volnum,coord);
