@@ -45,7 +45,9 @@ if ~(isscalar(varargin{1}) && isnumeric(varargin{1}))
   for i = 1:length(imageArgs)
     loadVolume(imageArgs{i},sysNum);
   end
-
+  % quit if no volumes were loaded
+  if ~isfield(gVol{sysNum},'vols'),close(gVol{sysNum}.fig);return,end
+  
   % display the volume
   refreshDisplay(sysNum);
   
@@ -1615,6 +1617,12 @@ if isempty(d) || ~mlrImageIsHeader(h),return,end
 
 % make 2D images into nominal 3D
 if h.nDim==2
+  % but we can't align 2D volumes (because interp3 will fail), so bail out if this is
+  % an alignment volume
+  if gVol{sysNum}.n >= 1
+    disp(sprintf('(mlrVol:loadVolume) !!! Can not align 2D image: %s !!!',mlrImageArgFilename(filename)));
+    return
+  end
   h.nDim = 3;
   h.dim(3) = 1;
   h.pixdim(3)  = 1;

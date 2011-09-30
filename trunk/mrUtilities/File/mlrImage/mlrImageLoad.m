@@ -145,7 +145,7 @@ for iImage = 1:nImages
   [tf header] = mlrImageIsHeader(header);
 
   % if we are allowing xformations
-  if ~returnRaw
+  if ~returnRaw && ~isempty(data)
     % fix orientation if called for
     if ~isempty(orient)
       [data header] = mlrImageOrient(orient,data,header);
