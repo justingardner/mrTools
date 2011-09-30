@@ -178,7 +178,9 @@ for iImage = 1:length(imageArgs)
   % fix pixdim - thus if we have anisotropic voxels and we swap
   % dims or rotate this will fix the dimensions to be appropriate
   if applyToHeader
-    h.pixdim(1:3) = abs((xform(1:3,1:3)*h.pixdim(1:3)')');
+    if length(h.pixdim) >= 3
+      h.pixdim(1:3) = abs((xform(1:3,1:3)*h.pixdim(1:3)')');
+    end
   end
 end
 
