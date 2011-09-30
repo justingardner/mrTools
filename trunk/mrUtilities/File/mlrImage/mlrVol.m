@@ -950,6 +950,7 @@ else
       {'zMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMin'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'zMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMax'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'dispVolHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum 1},'Display the header for the volume'}...
+      {'editVolHeader',0,'type=pushbutton','callback',@editVolHeader,'buttonString','Edit header','callbackArg',{sysNum 1},'Edit the header for the volume'}...
 	       };
 end
 
@@ -963,6 +964,33 @@ if isfield(gVol{sysNum}.vols(1),'complexData')
 end
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
 mrParamsDialog(paramsInfo,'mlrVol Controls');
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    editVolHeader    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = editVolHeader(args)
+
+% return argument for mrParams
+retval = 1;
+
+global gVol;
+sysNum = args{1};
+volNum = args{2};
+
+% get the header
+vol = gVol{sysNum}.vols(volNum);
+h = vol.h;
+
+% edit the header
+gVol{sysNum}.vols(volNum).h = mlrImageHeaderEdit(h);
+
+% update the axis info
+gVol{sysNum}.vols(1) = updateVolAxisInfo(sysNum,gVol{sysNum}.vols(1),gVol{sysNum}.vols(1).h);
+setVolCoord(sysNum,1,gVol{sysNum}.vols(1).coord);
+
+% redisplay
+gVol{sysNum}.vols.curCoord(:) = nan;
+refreshDisplay(sysNum);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %    dispVolHeader    %
@@ -1042,6 +1070,7 @@ global gVol;
 
 % get what orientation the image is
 axisLabels = mlrImageGetAxisLabels(gVol{sysNum}.vols(1).h.qform);
+if isempty(axisLabels),return,end
 
 % put up a dialog box so user can select the orientation to save to
 paramsInfo = {...
