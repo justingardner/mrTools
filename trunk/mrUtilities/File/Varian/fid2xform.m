@@ -216,6 +216,15 @@ else
   info.movepss = 0;
 end
 
+% count number of receivers
+if isfield(procpar,'rcvrs')
+  % count the number of receivers that have been turned on
+  info.numReceivers = length(strfind(procpar.rcvrs{1},'y'));
+else
+  info.numReceivers = 1;
+end
+
+
 % Now get the offset in mm from the center of the bore that the center of the
 % volume is. We can not change the phase encode center. Note that dimensions
 % are given in cm, so we must convert to mm.
@@ -251,8 +260,11 @@ swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
 
 % epi images appear to nead a flip in X and Y
 if info.isepi
-%  epiFlip = [-1 0 0 dim(1)-1;0 -1 0 dim(2)-1;0 0 1 0;0 0 0 1];
-  epiFlip = [-1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+  if info.numReceivers>4
+    epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+  else
+    epiFlip = [-1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+  end
 else
   epiFlip = eye(4);
 end
@@ -346,14 +358,6 @@ else
   info.dim(4) = 1;
 end
 info.tr = tr;
-
-% count number of receivers
-if isfield(procpar,'rcvrs')
-  % count the number of receivers that have been turned on
-  info.numReceivers = length(strfind(procpar.rcvrs{1},'y'));
-else
-  info.numReceivers = 1;
-end
 
 % keep procpar
 info.procpar = procpar;

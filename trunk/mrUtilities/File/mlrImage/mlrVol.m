@@ -1295,7 +1295,7 @@ switch args{2}
   replaceXform = true;
  case {'setToIdentity'}
   if (sum(~isnan(gVol{sysNum}.vols(1).h.pixdim)) >= 3) && (sum(~isnan(gVol{sysNum}.vols(2).h.pixdim)) >= 3)
-    xform = inv(diag([gVol{sysNum}.vols(2).h.pixdim 1])) * diag([gVol{sysNum}.vols(1).h.pixdim 1]);
+    xform = inv(diag([gVol{sysNum}.vols(2).h.pixdim(1:3) 1])) * diag([gVol{sysNum}.vols(1).h.pixdim(1:3) 1]);
   else
     xform = eye(4);
   end
