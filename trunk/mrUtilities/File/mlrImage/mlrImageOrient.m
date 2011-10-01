@@ -89,3 +89,11 @@ h.qform = h.qform*xform;
 if ~isempty(h.sform)
   h.sform = h.sform*xform;
 end
+
+% fix the pixdim
+if length(h.pixdim) >= 3
+  h.pixdim(1:3) = abs((xform(1:3,1:3)*h.pixdim(1:3)')');
+end
+
+% fix dimensions
+h.dim = size(data);
