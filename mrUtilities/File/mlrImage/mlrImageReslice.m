@@ -117,7 +117,7 @@ resliceData = reshape(resliceData,resliceDim(1),resliceDim(2),resliceDim(3));
 % and make the header
 resliceHeader = toHeader;
 resliceHeader.dim = size(resliceData);
-resliceHeader.pixdim(1:3) = toHeader.pixdim(1:3);
+resliceHeader.pixdim(1:3) = toHeader.pixdim(1:3)./resFactor;
 
 % create the xform
 scaleXform = eye(4);

@@ -410,7 +410,6 @@ end
 if (pointerX < 1) | (pointerX > vol.h.dim(vol.xDim(viewNum))),return,end
 if (pointerY < 1) | (pointerY > vol.h.dim(vol.yDim(viewNum))),return,end
 
-
 % get the coordinate. Note that we have to be careful both of whether the axis
 % is flipped AND whether there was a transpose (since the y-axis goes in
 % the opposite direction as x for matlab displayed images
@@ -831,7 +830,17 @@ elseif ~isempty(vol1.h.qform) && ~isempty(vol2.h.qform)
     dispHeader;
   end
 elseif (sum(~isnan(vol1.h.pixdim)) >= 3) && (sum(~isnan(vol2.h.pixdim)) >= 3)
-  vol2vol = inv(diag([vol1.h.pixdim 1])) * diag([vol2.h.pixdim 1]);
+  % find the shift to the center of each volume (so that the identity alignment
+  % assumes that the centers of the volumes are in register)
+  shiftToCenter2 = eye(4);
+  shiftToCenter2(1:3,4) = -((vol2.h.dim(1:3)'/2) - 1/2);
+  shiftToCenter1 = eye(4);
+  shiftToCenter1(1:3,4) = -((vol1.h.dim(1:3)'/2) - 1/2);
+  % get voxel size scale matrix
+  voxelSize1 = diag([vol1.h.pixdim(1:3) 1]);
+  voxelSize2 = diag([vol2.h.pixdim(1:3) 1]); 
+  % get xform
+  vol2vol = inv(voxelSize1*shiftToCenter1) * voxelSize2*shiftToCenter2;
 else
   vol2vol = eye(4);
 end
@@ -1137,7 +1146,19 @@ if isequal(filename,0),return,end
 % compute the sform, remember to composite the system xform (shifts and rotates)
 % then the base volumes qform which takes us from the base volumes coordinates back to 
 % the magnet coordiantes
-sform = gVol{sysNum}.vols(1).h.qform * inv(vol.xform * gVol{sysNum}.xform);
+qform = gVol{sysNum}.vols(1).h.qform;
+if isempty(qform)
+  disp(sprintf('(mlrVol:saveAlignment) !!! %s does not have qform set !!!',gVol{sysNum}.vols(1).h.filename));
+  if ~any(isnan(gVol{sysNum}.vols(1).h.pixdim(1:3)))
+    disp(sprintf('(mlrVol:saveAlignment) Using pixdim to create qform',gVol{sysNum}.vols(1).h.filename));
+    qform = diag([gVol{sysNum}.vols(1).h.pixdim(1:3) 1]);
+  else
+    disp(sprintf('(mlrVol:saveAlignment) Using identity for qform',gVol{sysNum}.vols(1).h.filename));
+    qform = eye(4);
+  end
+end
+
+sform = qform * inv(vol.xform * gVol{sysNum}.xform);
 
 % set the qform as well, if the sform
 paramsInfo = {...
@@ -1306,7 +1327,17 @@ switch args{2}
   replaceXform = true;
  case {'setToIdentity'}
   if (sum(~isnan(gVol{sysNum}.vols(1).h.pixdim)) >= 3) && (sum(~isnan(gVol{sysNum}.vols(2).h.pixdim)) >= 3)
-    xform = inv(diag([gVol{sysNum}.vols(2).h.pixdim(1:3) 1])) * diag([gVol{sysNum}.vols(1).h.pixdim(1:3) 1]);
+    % find the shift to the center of each volume (so that the identity alignment
+    % assumes that the centers of the volumes are in register)
+    shiftToCenter2 = eye(4);
+    shiftToCenter2(1:3,4) = -((gVol{sysNum}.vols(2).h.dim(1:3)'/2) - 1/2);
+    shiftToCenter1 = eye(4);
+    shiftToCenter1(1:3,4) = -((gVol{sysNum}.vols(1).h.dim(1:3)'/2) - 1/2);
+    % get voxel size scale matrix
+    voxelSize1 = diag([gVol{sysNum}.vols(1).h.pixdim(1:3) 1]);
+    voxelSize2 = diag([gVol{sysNum}.vols(2).h.pixdim(1:3) 1]); 
+    % get scale factor
+    xform = inv(voxelSize2*shiftToCenter2) * voxelSize1*shiftToCenter1;
   else
     xform = eye(4);
   end
