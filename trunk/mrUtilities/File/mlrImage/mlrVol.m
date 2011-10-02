@@ -103,6 +103,10 @@ function mouseMoveHandler(sysNum)
 
 global gVol;
 vol = gVol{sysNum}.vols(1);
+f = gVol{sysNum}.fig(1);
+
+% abort if we are not focused on figure
+if f ~= gcf,return,end
 
 coord = getMouseCoord(sysNum);
 if isempty(coord)
@@ -378,10 +382,11 @@ coord = [];viewNum = [];
 
 global gVol;
 vol = gVol{sysNum}.vols(1);
+f = gVol{sysNum}.fig(1);
 
 % figure out which axis we are on
-pointerLoc = get(gcf,'CurrentPoint');
-pos = get(gcf,'Position');
+pointerLoc = get(f,'CurrentPoint');
+pos = get(f,'Position');
 pos = pointerLoc./pos(3:4);
 subplotNum = ceil(pos(1)*3);
 if (subplotNum>0) && (subplotNum<=3)
@@ -583,7 +588,7 @@ coord = gVol{sysNum}.vols(vol.tethered).coord;
 coord(4) = 1;coord = coord(1:4);coord = coord(:);
 
 % convert to this volume coordinates
-coord = round(applySystemXform(sysNum,vol.xform)*coord);
+coord = round(applyOriginXform(inv(vol.xform))*coord);
 coord = coord(1:3);
 
 % FIX: this hardcodes the volume number to 1
@@ -639,8 +644,6 @@ else
   if vol.axisDir(vol.xDim(iView)) == 1,dispSlice = flipud(dispSlice);end
   if vol.axisDir(vol.yDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
 end
-
-
 
 %%%%%%%%%%%%%%%%%%%
 %    clipImage    %
@@ -722,7 +725,7 @@ else
     coords = [x(:) y(:) z(:)]';
     coords(4,:) = 1;
     % convert from the reference volume coordinates to our coordinates
-    coords = applySystemXform(sysNum,gVol{sysNum}.vols(iVol).xform) * coords;
+    coords = applyOriginXform(inv(gVol{sysNum}.vols(iVol).xform)) * coords;
     x = reshape(coords(1,:),s);
     y = reshape(coords(2,:),s);
     z = reshape(coords(3,:),s);
@@ -798,14 +801,14 @@ pos(4) = gVol{sysNum}.buttonHeight;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    transformation (displaying alignment) functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    applySystemXform    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-function xform = applySystemXform(sysNum,xform)
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    applyoriginform    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function xform = applyOriginXform(xform)
 
 global gVol;
 
-xform = inv(shiftOriginXform) * xform * gVol{sysNum}.xform * shiftOriginXform;
+xform = inv(shiftOriginXform) * xform * shiftOriginXform;
 
 %%%%%%%%%%%%%%%%%%%%
 %    getVol2vol    %
@@ -816,14 +819,14 @@ global gVol;
 verbose = gVol{sysNum}.verbose;
 
 if ~isempty(vol1.h.sform) && ~isempty(vol2.h.sform)
-  vol2vol = inv(vol1.h.sform) * vol2.h.sform;
+  vol2vol = inv(vol2.h.sform) * vol1.h.sform;
   if verbose
     dispHeader('Aliging using sform');
     disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
     dispHeader;
   end
 elseif ~isempty(vol1.h.qform) && ~isempty(vol2.h.qform)
-  vol2vol = inv(vol1.h.qform) * vol2.h.qform;
+  vol2vol = inv(vol2.h.qform) * vol1.h.qform;
   if verbose
     dispHeader('Aliging using qform');
     disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
@@ -840,7 +843,7 @@ elseif (sum(~isnan(vol1.h.pixdim)) >= 3) && (sum(~isnan(vol2.h.pixdim)) >= 3)
   voxelSize1 = diag([vol1.h.pixdim(1:3) 1]);
   voxelSize2 = diag([vol2.h.pixdim(1:3) 1]); 
   % get xform
-  vol2vol = inv(voxelSize1*shiftToCenter1) * voxelSize2*shiftToCenter2;
+  vol2vol = inv(voxelSize2*shiftToCenter2) * voxelSize1*shiftToCenter1;
 else
   vol2vol = eye(4);
 end
@@ -933,14 +936,14 @@ if gVol{sysNum}.n > 1
     {'flipX',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip X','callbackArg',{sysNum 'flipX'},'passParams=1','Flip X axis in alignment'}...
     {'flipY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1','Flip Y axis in alignment'}...
     {'flipZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1','Flip Z axis in alignment'}...
-    {'shiftX',gVol{sysNum}.xformParams.shiftX,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of voxels'}...
-    {'shiftY',gVol{sysNum}.xformParams.shiftY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
-    {'shiftZ',gVol{sysNum}.xformParams.shiftZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
-    {'rotateXY',gVol{sysNum}.xformParams.rotateXY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
-    {'rotateXZ',gVol{sysNum}.xformParams.rotateXZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
-    {'rotateYZ',gVol{sysNum}.xformParams.rotateYZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
+    {'shiftX',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of voxels'}...
+    {'shiftY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
+    {'shiftZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
+    {'rotateXY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
+    {'rotateXZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
+    {'rotateYZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
     {'vol2vol',gVol{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}...
-    {'dispHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum 2},sprintf('Display the header for %s',gVol{sysNum}.vols(2).h.filename)}...
+    {'dispHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum [1 2]},sprintf('Display the header for %s',gVol{sysNum}.vols(2).h.filename)}...
     {'saveAlignement',0,'type=pushbutton','callback',@saveAlignment,'buttonString','Save alignment','callbackArg',sysNum,sprintf('Save the alignment to %s',gVol{sysNum}.vols(2).h.filename)}
 	     };
 else
@@ -1018,15 +1021,17 @@ retval = 1;
 
 global gVol;
 sysNum = args{1};
-volNum = args{2};
-vol = gVol{sysNum}.vols(volNum);
+volNums = args{2};
 
-% for aligned volumes, than get the alignment sform so we can display that
-if volNum > 1
-  vol.h.sform = gVol{sysNum}.vols(1).h.qform * inv(vol.xform * gVol{sysNum}.xform);
+for iVol = 1:length(volNums)
+  vol = gVol{sysNum}.vols(volNums(iVol));
+  % for aligned volumes, than get the alignment sform so we can display that
+  if volNums(iVol) > 1
+    vol.h.sform = gVol{sysNum}.vols(1).h.qform * vol.xform; 
+  end
+
+  mlrImageHeaderDisp(vol.h);
 end
-
-mlrImageHeaderDisp(vol.h);
 
 %%%%%%%%%%%%%%%%%%%
 %    adjustVol    %
@@ -1158,7 +1163,7 @@ if isempty(qform)
   end
 end
 
-sform = qform * inv(vol.xform * gVol{sysNum}.xform);
+sform = qform * vol.xform;
 
 % set the qform as well, if the sform
 paramsInfo = {...
@@ -1290,35 +1295,45 @@ retval = [];
 sysNum = args{1};
 command = args{2};
 replaceXform = false;
-changeXform = true;
+changeXform = false;
 verbose = gVol{sysNum}.verbose;
-
-% get system xform
-gVol{sysNum}.xformParams = params;
-%gVol{sysNum}.xform = [1 0 0 params.shiftX;0 1 0 params.shiftY;0 0 1 params.shiftZ; 0 0 0 1];
-% make rotation matrix, but need to rotate around center coordinates
-dim = gVol{sysNum}.vols(2).h.dim;
-shiftToCenterOfVol = makeRotMatrix3D(0,0,0,-[dim(1)/2 dim(2)/2 dim(3)/2]);
-gVol{sysNum}.xform = inv(shiftToCenterOfVol) * makeRotMatrix3D(params.rotateXZ,params.rotateYZ,params.rotateXY,[params.shiftX params.shiftY params.shiftZ],1)*shiftToCenterOfVol;
-
+xformLeft = eye(4);
+xformRight = eye(4);
 
 % get the necessary xform
 switch args{2}
  case {'swapXY'}
-  xform = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+  xformLeft = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+  changeXform = true;
  case {'swapXZ'}
-  xform = [0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+  xformLeft = [0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+  changeXform = true;
  case {'swapYZ'}
-  xform = [1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1];
+  xformLeft = [1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1];
+  changeXform = true;
  case {'flipX'}
   % set the xform - the nan will get set to the image size below
-  xform = [-1 0 0 nan;0 1 0 0;0 0 1 0; 0 0 0 1];
+  xformLeft = [-1 0 0 nan;0 1 0 0;0 0 1 0; 0 0 0 1];
+  changeXform = true;
  case {'flipY'}
-  xform = [1 0 0 0;0 -1 0 nan;0 0 1 0; 0 0 0 1];
+  xformLeft = [1 0 0 0;0 -1 0 nan;0 0 1 0; 0 0 0 1];
+  changeXform = true;
  case {'flipZ'}
-  xform = [1 0 0 0;0 1 0 0;0 0 -1 nan; 0 0 0 1];
+  xformLeft = [1 0 0 0;0 1 0 0;0 0 -1 nan; 0 0 0 1];
+  changeXform = true;
  case {'shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ'}
-  changeXform = false;
+  % make rotation matrix, but need to rotate around center coordinates
+  % little tricky here - the rotation has to be done respecting the voxel size
+  voxelSize = diag([gVol{sysNum}.vols(2).h.pixdim(1:3) 1]);
+  dim = gVol{sysNum}.vols(2).h.dim;
+  shiftToCenterOfVol = makeRotMatrix3D(0,0,0,-[(dim(1)-1)/2 (dim(2)-1)/2 (dim(3)-1)/2]);
+  xformRight = inv(shiftToCenterOfVol)*inv(voxelSize)*makeRotMatrix3D(-params.rotateXZ,-params.rotateYZ,-params.rotateXY,[params.shiftX params.shiftY params.shiftZ],1)*voxelSize*shiftToCenterOfVol;
+  % reset coordinates back to zero in dialog box
+  params.shiftX = 0;params.shiftY = 0;params.shiftZ = 0;
+  params.rotateXY = 0;params.rotateXZ = 0;params.rotateYZ = 0;
+  mrParamsSet(params);
+  % set to change xform
+  changeXform = true;
  case {'initFromHeader'}
   xform = getVol2vol(sysNum,gVol{sysNum}.vols(2),gVol{sysNum}.vols(1));
   replaceXform = true;
@@ -1337,7 +1352,7 @@ switch args{2}
     voxelSize1 = diag([gVol{sysNum}.vols(1).h.pixdim(1:3) 1]);
     voxelSize2 = diag([gVol{sysNum}.vols(2).h.pixdim(1:3) 1]); 
     % get scale factor
-    xform = inv(voxelSize2*shiftToCenter2) * voxelSize1*shiftToCenter1;
+    xform = inv(voxelSize1*shiftToCenter1) * voxelSize2*shiftToCenter2;
   else
     xform = eye(4);
   end
@@ -1350,31 +1365,20 @@ for iVol = 2:gVol{sysNum}.n
   if gVol{sysNum}.vols(iVol).tethered
     if changeXform
       % see if there is a nan that needs to be replaced
-      [row col] = find(isnan(xform));
+      [row col] = find(isnan(xformLeft));
       if ~isempty(row)
 	% replace from the appropriate coordinate
-	val = gVol{sysNum}.vols(iVol).h.dim(row);
-	thisXform = xform;
-	thisXform(row,col) = val;
-      else
-	thisXform = xform;
+	val = gVol{sysNum}.vols(1).h.dim(row);
+	xformLeft(row,col) = val;
       end
-      if ~replaceXform
-	% display what we are doing
-	if verbose,disp(sprintf('(mlrVol) Compositing xform\n%s',mrnum2str(thisXform,'compact=0','sigfigs=-1')));end
-        % now set the xform
-	gVol{sysNum}.vols(iVol).xform = thisXform*gVol{sysNum}.vols(iVol).xform;
-      else
-	gVol{sysNum}.vols(iVol).xform = xform;
-      end
+      % now set the xform
+      gVol{sysNum}.vols(iVol).xform = xformLeft*gVol{sysNum}.vols(iVol).xform*xformRight;
+    elseif replaceXform
+      gVol{sysNum}.vols(iVol).xform = xform;
     end
+    % display what we are doing
     if verbose
-      % display what we are doing
       disp(sprintf('(mlrVol) xform\n%s',mrnum2str(gVol{sysNum}.vols(iVol).xform,'compact=0','sigfigs=-1')));
-      % display system xform
-      disp(sprintf('(mlrVol) System xform\n%s',mrnum2str(gVol{sysNum}.xform,'compact=0','sigfigs=-1')));
-      % display complete xform
-      disp(sprintf('(mlrVol) xform after compositing system\n%s',mrnum2str(shiftOriginXform*applySystemXform(sysNum,gVol{sysNum}.vols(iVol).xform)*inv(shiftOriginXform),'compact=0','sigfigs=-1')));
     end
     % clear cache
     gVol{sysNum}.vols(iVol).c = mrCache('init',2*max(gVol{sysNum}.vols(iVol).h.dim(1:3)));
@@ -1391,7 +1395,7 @@ altXforms = gVol{sysNum}.vols(1).altXforms;
 % get the aligned volume alternate xform
 altXformNum = find(strcmp('Aligned volume',altXforms.names));
 if ~isempty(altXformNum)
-  gVol{sysNum}.vols(1).altXforms.xforms{altXformNum} = applySystemXform(sysNum,gVol{sysNum}.vols(iVol).xform);
+  gVol{sysNum}.vols(1).altXforms.xforms{altXformNum} = applyOriginXform(inv(gVol{sysNum}.vols(iVol).xform));
 end
 
 % redisplay
@@ -1616,19 +1620,8 @@ gVol{sysNum}.overlayAlpha = 0.2;
 % default not to display controls
 gVol{sysNum}.displayControls = false;
 
-% default system transform
-gVol{sysNum}.xform = eye(4);
-
 % overlay toggle state starts as on
 gVol{sysNum}.overlayToggleState = 1;
-
-% set up system params
-gVol{sysNum}.xformParams.shiftX = 0;
-gVol{sysNum}.xformParams.shiftY = 0;
-gVol{sysNum}.xformParams.shiftZ = 0;
-gVol{sysNum}.xformParams.rotateXY = 0;
-gVol{sysNum}.xformParams.rotateXZ = 0;
-gVol{sysNum}.xformParams.rotateYZ = 0;
 
 % display the tethered volume interpolated to
 % match the primary volume display
@@ -1768,7 +1761,7 @@ if n > 1
   % add this to the altXforms
   gVol{sysNum}.vols(1).altXforms.names{end+1} = 'Aligned volume';
   gVol{sysNum}.vols(1).altXforms.shortNames{end+1} = 'Vol';
-  gVol{sysNum}.vols(1).altXforms.xforms{end+1} = applySystemXform(sysNum,vol.xform);
+  gVol{sysNum}.vols(1).altXforms.xforms{end+1} = applyOriginXform(inv(vol.xform));
   gVol{sysNum}.vols(1).altXforms.n = vol.altXforms.n+1;
   % set alt coord to this one
   params.altCoord = 'Aligned volume';
