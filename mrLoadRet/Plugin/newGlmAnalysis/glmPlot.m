@@ -501,10 +501,14 @@ if ~isfield(d,'estimationSupersampling')
 end
 time = ((0:length(actualTSeries)-1)+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
 
+frequencies = 1/length(actualTSeries)/2:1/length(actualTSeries)/2:1/d.tr/2;
+
 
 delete(h);
 set(fignum,'name',titleString)
-tSeriesAxes = axes('parent',fignum,'outerposition',getSubplotPosition(1,1,[7 1],1,0,0));
+tSeriesAxes = axes('parent',fignum,'outerposition',getSubplotPosition(1:3,1,[1 1 4],[1 1],0,0));
+hold on
+fftAxes = axes('parent',fignum,'outerposition',getSubplotPosition(3,2,[1 1 4],[1 1],0,0));
 hold on
 %hold(tSeriesAxes);
 
@@ -545,6 +549,8 @@ nEVs = length(h);
 plot(tSeriesAxes,time,zeros(size(time)),'--','linewidth',1,'color',[.5 .5 .5]);
 h(end+1) = plot(tSeriesAxes,time,actualTSeries,'k.-');
 hActualTSeries = h(end);
+
+
 if size(d.scm,2)==numel(ehdr)
   %compute model time series
   modelTSeries = d.scm*reshape(ehdr',numel(ehdr),1);
@@ -557,16 +563,29 @@ if ~isempty(hTransitions)
   h = [h hTransitions];
   legendString{end+1} = 'Run transitions';
 end
-ylabel('Percent Signal Change');
-xlim([0 ceil(time(end)+1)]);
+ylabel(tSeriesAxes,'Percent Signal Change');
+xlim(tSeriesAxes,[0 ceil(time(end)+1)]);
+
+%FFT
+actualFFT = abs(fft(actualTSeries));
+actualFFT = actualFFT(1:floor(end/2));
+hActualFFT = plot(fftAxes,frequencies,actualFFT,'k.-');
+if size(d.scm,2)==numel(ehdr)
+  modelFFT = abs(fft(modelTSeries));
+  modelFFT = modelFFT(1:floor(end/2));
+  hModelFFT = plot(fftAxes,frequencies,modelFFT,'--r');
+end
+xlim(fftAxes,[0 1/d.tr/2]);
+xlabel(fftAxes,'Frequencies (Hz)');
+ylabel(fftAxes,'FFT');
 
 %legend
-legendPosition = getSubplotPosition(2,1,[6 1],[length(h) 1],0,.2);
+legendPosition = getSubplotPosition(2,2,[1 1 4],[1 1],0,.2);
 %panel with position identical to the legend axes so that we can reposition the EV checkboxes
 hPanel = uipanel(fignum,'position',legendPosition,'backgroundcolor',get(fignum,'color'),'bordertype','none');
-hSubtractFromTseries = uicontrol(fignum,'unit','normalized','style','check','position',getSubplotPosition(2,2,[5 1],[length(h) 1],0,.2),...
+hSubtractFromTseries = uicontrol(fignum,'unit','normalized','style','check','position',[.1 .47 .9 .03],...
   'string','Subtract unchecked EVs from actual timeseries','value',1);
-set(hSubtractFromTseries,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries});
+set(hSubtractFromTseries,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT});
 
 lhandle = legend(h,legendString,'position',legendPosition);
 set(lhandle,'Interpreter','none','box','off');
@@ -575,7 +594,7 @@ set(hPanel,'resizeFcn',{@resizePanel,lhandle});
 for iEV = 1:nEVs
   thisPosition = get(findobj(lhandle,'string',legendString{iEV}),'position')';
   uicontrol(hPanel,'style','check','unit','normalized','position',[thisPosition(1) thisPosition(2) .1 .1],...
-    'value',1,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries});
+    'value',1,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT});
 end
 
 disppercent(inf);
@@ -586,19 +605,25 @@ function resizePanel(handle,eventData,hLegend)
 
 set(handle,'position',get(hLegend,'position'));
 
-function plotModelTSeries(handle,eventData,hActualTSeries,actualTSeries,hModelTSeries,scm,ehdr,hPanel,hSubtractFromTseries)
+function plotModelTSeries(handle,eventData,hActualTSeries,actualTSeries,hModelTSeries,scm,ehdr,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT)
 %get which EV are checked (note that children of the uipanel are ordered from bottom to top, so we flipud
 whichEVs = logical(flipud(cell2mat(get(get(hPanel,'children'),'value'))));
 evHdr = ehdr;
 evHdr(~whichEVs,:) = 0;
 if size(scm,2)==numel(ehdr)
-  set(hModelTSeries,'Ydata',scm*reshape(evHdr',[],1));
+  modelTSeries = scm*reshape(evHdr',[],1);
+  modelFFT = abs(fft(modelTSeries));
+  modelFFT = modelFFT(1:floor(end/2));
+  set(hModelTSeries,'Ydata',modelTSeries);
+  set(hModelFFT,'Ydata',modelFFT)
   if get(hSubtractFromTseries,'value')
     ehdr(whichEVs,:) = 0;
-    set(hActualTSeries,'Ydata',actualTSeries - scm*reshape(ehdr',[],1));
-  else
-    set(hActualTSeries,'Ydata',actualTSeries);
+    actualTSeries = actualTSeries - scm*reshape(ehdr',[],1);
   end
+  set(hActualTSeries,'Ydata',actualTSeries);
+  actualFFT = abs(fft(actualTSeries));
+  actualFFT = actualFFT(1:floor(end/2));
+  set(hActualFFT,'Ydata',actualFFT);
 end
 
 
