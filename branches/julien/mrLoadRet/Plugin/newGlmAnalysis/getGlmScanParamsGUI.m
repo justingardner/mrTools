@@ -253,7 +253,7 @@ while keepAsking
   
   %here check if different estimation super-sampling for different scans because incompatible with statistics
   if strcmp(params.hrfModel,'hrfDeconvolution') && (params.computeTtests || params.numberFtests)
-    estimationSupersampling = scanParams{1}.estimationSupersampling;
+    estimationSupersampling = scanParams{params.scanNum(1)}.estimationSupersampling;
     for iScan = params.scanNum(2:end)
       if estimationSupersampling~=scanParams{iScan}.estimationSupersampling
         keepAsking=1;

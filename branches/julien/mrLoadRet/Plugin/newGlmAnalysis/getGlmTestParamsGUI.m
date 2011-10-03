@@ -42,8 +42,8 @@ while keepAsking
   %create model HRF
   %here we assume that all scans in this group have the same framePeriod
   framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),viewGet(thisView,'groupNum',params.groupName));
-  if ~fieldIsNotDefined(params.scanParams{1},'estimationSupersampling')
-    estimationSupersampling = params.scanParams{1}.estimationSupersampling;
+  if ~fieldIsNotDefined(params.scanParams{params.scanNum(1)},'estimationSupersampling')
+    estimationSupersampling = params.scanParams{params.scanNum(1)}.estimationSupersampling;
   else
     estimationSupersampling = 1;
   end
