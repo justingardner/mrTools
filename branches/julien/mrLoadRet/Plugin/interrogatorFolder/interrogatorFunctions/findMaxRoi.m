@@ -16,13 +16,14 @@ end
 
 baseNum = viewGet(thisView,'currentBase');
 
-%First, get a logical mask of the current overlay display, as well as the overlay data
-[mask,overlayData] = maskOverlay(thisView,overlayNum,scanNum);
-
-if isempty(overlayData)
+if isempty(overlayNum)
    mrWarnDlg('(findMaxRoi) Please load an overlay')
    return
 end
+
+%First, get a logical mask of the current overlay display, as well as the overlay data
+[mask,overlayData] = maskOverlay(thisView,overlayNum,scanNum);
+
 
 mask = mask{1};
 overlayData = overlayData{1};
