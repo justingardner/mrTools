@@ -49,10 +49,10 @@ while keepAsking
     end
     if isempty(EVnames) 
       EVnames = repmat({' '},1,params.numberEVs);
-      if params.numberEVs < nStims
+      if params.numberEVs <= nStims
         EVnames = d.stimNames(1:params.numberEVs);
       else
-        EVnames(1:params.numberEVs) = d.stimNames;
+        EVnames(1:nStims) = d.stimNames;
       end
     end
 
