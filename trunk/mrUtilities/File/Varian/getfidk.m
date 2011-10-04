@@ -79,6 +79,7 @@ end
 % make sure the dimensions match
 if d.nblocks ~= numLines
   disp(sprintf('(getfidk) !!! Number of lines of k-space found in fid (%i) does not match expected number %i (%ix%ix%ix%i %i receivers accFactor %i)',d.nblocks,numLines,info.dim(1),info.dim(2),info.dim(3),info.dim(4),info.numReceivers,info.accFactor));
+  disp(sprintf('(getfidk) !!! This is usually because epi processing (epibsi) has not been done !!!'));
   d.data = [];
   return
 end
