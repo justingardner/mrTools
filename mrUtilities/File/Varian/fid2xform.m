@@ -268,7 +268,7 @@ originOffset = [eye(3) originOffset';0 0 0 1];
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
 swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
 
-% Another final fix
+% Another final fix. This gets left/right correct
 if strcmp(lower(info.console),'inova')  
   swapDim2 =[0 0 -1 0;0 1 0 0;1 0 0 0;0 0 0 1];
 else
@@ -289,15 +289,8 @@ else
   epiFlip = eye(4);
 end
 
-% processed 3d files need a flip
-if info.fftw3dexe_processed
-  fftw = [-1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
-else
-  fftw = eye(4);
-end
-
 % now create the final shifted rotation matrix
-xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*fftw*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);
