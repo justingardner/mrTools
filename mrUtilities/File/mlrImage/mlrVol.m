@@ -506,7 +506,7 @@ for iView = 1:3
 
       % the transpose and axis directions need to be taken from the volume this is tethered to
       % prepare image for display
-      [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,gVol{sysNum}.vols(vol.tethered),iView);
+      [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,gVol{sysNum}.vols(vol.tethered),iView);
       
       % if we are not displaying the interpolated image in the
       % second row, then we have to prepare the image that
@@ -517,14 +517,14 @@ for iView = 1:3
 	% need to get the coordinate of the tethered to volume
 	% in these coordinates
 	dispSlice = getMatchingSlice(sysNum,vol,iView);
-	[dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView);
+	[dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,vol,iView);
       end
     else
       % otherwise, grab the data for this image
       dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
 
       % prepare image for display
-      [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView);
+      [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,vol,iView);
     end
 
     % get the correct axis to draw into
@@ -613,14 +613,18 @@ dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},v
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   prepareImageForDisplay   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView)
+function [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,vol,iView)
 
 if isempty(dispSlice)
   xLabelStr = '';yLabelStr = '';
   return
 end
 % clip
-%  dispSlice = clipImage(dispSlice);
+global gVol;
+clipPercent = gVol{sysNum}.clipPercent;
+if clipPercent
+  dispSlice = clipImage(dispSlice,clipPercent);
+end
 
 % make into image with index values
 minDispSlice = min(dispSlice(:));
@@ -648,24 +652,26 @@ end
 %%%%%%%%%%%%%%%%%%%
 %    clipImage    %
 %%%%%%%%%%%%%%%%%%%
-function img = clipImage(img)
+function img = clipImage(img,clipPercent)
 
-% Choose a sensible clipping value
-histThresh = length(img(:))/1000;
-[cnt, val] = hist(img(:),100);
-goodVals = find(cnt>histThresh);
-if isempty(goodVals)
-  clipMin = 0;clipMax = 0;
-else
-  clipMin = val(min(goodVals));
-  clipMax = val(max(goodVals));
-end
+% Choose a sensible clipping value - that is we want to remove bins
+% at the low and top end for which there are less than clipPercent voxels
+histThresh = length(img(:))*(clipPercent/100);
+[cnt, val] = hist(img(:),1000);
+% find  bin that exceeds the number of voxels expected for cutoff
+numVoxels = cumsum(cnt);
+clipMin = val(last(find(numVoxels<histThresh)));
+if isempty(clipMin),clipMin = min(img(:));end
+% find first last bin that exceeds the number of voxels expected for cutoff
+numVoxels = cumsum(fliplr(cnt));
+val = fliplr(val);
+clipMax = val(last(find(numVoxels<histThresh)));
+if isempty(clipMax),clipMax = max(img(:));end
 
-% and convert the image
-img(img<clipMin) = clipMin;
-img(img>clipMax) = clipMax;
-if (clipMax-clipMin) > 0
-  img = 255*(img-clipMin)./(img-clipMin);
+% clip the image to these boundaries
+if clipMax > clipMin
+  img(img<clipMin) = clipMin;
+  img(img>clipMax) = clipMax;
 end
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -950,6 +956,7 @@ else
   paramsInfo = {...
       {'save',0,'type=pushbutton','callback',@saveVol,'buttonString','Save volume','callbackArg',sysNum,'Save the volume'}...
       {'orient',0,'type=pushbutton','callback',@orientVol,'buttonString','Convert to LPI','callbackArg',sysNum,'Change the volume data to a canonical orientation. Note that this may not change the view in the viewer if the xform information is correct - but the axis labels may change'}...
+      {'clipPercent',gVol{sysNum}.clipPercent,'minmax=[0 100]','incdec=[-0.1 0.1]','callback',@setClipPercent,'callbackArg',sysNum,'passParams=1','Change the percent of voxels with low and high values that will be clipped in the display. This helps to set the image contrast so that everything is visible even if there are a few stray voxels with large or small values. Note that the mouse over will still correctly display the unclipped value'}...
       {'swapXY',0,'type=pushbutton','callback',@adjustVol,'buttonString','Swap XY','callbackArg',{sysNum 'swapXY'},'passParams=1','Swap XY of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'swapXZ',0,'type=pushbutton','callback',@adjustVol,'buttonString','Swap XZ','callbackArg',{sysNum 'swapXZ'},'passParams=1','Swap XZ of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
       {'swapYZ',0,'type=pushbutton','callback',@adjustVol,'buttonString','Swap YZ','callbackArg',{sysNum 'swapYZ'},'passParams=1','Swap YZ of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
@@ -983,6 +990,23 @@ if isfield(gVol{sysNum}.vols(1),'complexData')
 end
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
 mrParamsDialog(paramsInfo,'mlrVol Controls');
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    setClipPercent    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = setClipPercent(sysNum,params)
+
+global gVol;
+
+% set the return value
+retval = params.clipPercent;
+
+% set the clipPercent
+gVol{sysNum}.clipPercent = params.clipPercent;
+
+% redisplay
+gVol{sysNum}.vols.curCoord(:) = nan;
+refreshDisplay(sysNum);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %    editVolHeader    %
@@ -1626,6 +1650,9 @@ gVol{sysNum}.overlayToggleState = 1;
 % display the tethered volume interpolated to
 % match the primary volume display
 gVol{sysNum}.displayInterpolated = true;
+
+% set the clipping value (i.e. the lower and higher clipPercent of values will be clipped to the min and max of the image).
+gVol{sysNum}.clipPercent = 0.2;
 
 % update display
 drawnow

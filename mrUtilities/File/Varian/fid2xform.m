@@ -268,16 +268,22 @@ originOffset = [eye(3) originOffset';0 0 0 1];
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
 swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
 
-% the following is actually correct for L/R, but leave it commented
-% for now - will need to update all of our transforms ;-(.... -j.
-swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
+% Another final fix
+if strcmp(lower(info.console),'inova')  
+  swapDim2 =[0 0 -1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+else
+  swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
+end
 
 % epi images appear to nead a flip in X and Y
 if info.isepi
-  if info.numReceivers>4
-    epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+  % before about 2011/09/01 the readout was flipped too
+  %epiFlip = [-1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+  if strcmp(lower(info.console),'inova')  
+    epiFlip = eye(4);
   else
-    epiFlip = [-1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+    % new console needs a phase encode flip
+    epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
   end
 else
   epiFlip = eye(4);
