@@ -943,14 +943,15 @@ if gVol{sysNum}.n > 1
     {'flipY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1','Flip Y axis in alignment'}...
     {'flipZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1','Flip Z axis in alignment'}...
     {'shiftX',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of voxels'}...
-    {'shiftY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
-    {'shiftZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
+    {'shiftY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftY'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
+    {'shiftZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftZ'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
     {'rotateXY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
     {'rotateXZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
     {'rotateYZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
     {'vol2vol',gVol{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}...
     {'dispHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum [1 2]},sprintf('Display the header for %s',gVol{sysNum}.vols(2).h.filename)}...
-    {'saveAlignement',0,'type=pushbutton','callback',@saveAlignment,'buttonString','Save alignment','callbackArg',sysNum,sprintf('Save the alignment to %s',gVol{sysNum}.vols(2).h.filename)}
+    {'saveAlignment',0,'type=pushbutton','callback',@saveAlignment,'buttonString','Save alignment','callbackArg',sysNum,sprintf('Save the alignment to %s',gVol{sysNum}.vols(2).h.filename)}...
+    {'dispAlignSteps',0,'type=pushbutton','callback',@dispAlignment,'buttonString','Display alignment steps','callbackArg',sysNum,'Displays the alignment steps used from the menu above to arrive at the current alignment. Hold down shift to see a list of all commands, rather than a summary.'}
 	     };
 else
   paramsInfo = {...
@@ -1158,6 +1159,130 @@ if isequal(filename,0),return,end
 mlrImageSave(fullfile(pathname,filename),vol.data,vol.h);
 
 %%%%%%%%%%%%%%%%%%%%%%%
+%    dispAlignment    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = dispAlignment(sysNum)
+
+% return argument for mrParams
+retval = [];
+
+global gVol;
+
+% check to see if anything has been done
+if isempty(gVol{sysNum}.alignmentSteps)
+  disp(sprintf('(mlrVol:dispAlignment) No manual alignment steps have been applied'));
+  return
+end
+
+if any(strcmp(get(gcf,'CurrentModifier'),'shift'))
+  dispAllSteps = true;
+else
+  dispAllSteps = false;
+end
+
+startCommand = 'initFromHeader';
+startCommandNum = 0;
+if dispAllSteps,dispHeader('Displaying all alignment steps');end
+for iStep = 1:length(gVol{sysNum}.alignmentSteps)
+  commandName = gVol{sysNum}.alignmentSteps(iStep).name;
+  commandVal = gVol{sysNum}.alignmentSteps(iStep).val;
+  % get how to display the command
+  dispCommand = dispAlignmentCommand(commandName,commandVal);
+  if any(strcmp(commandName,{'initFromHeader','setToIdentity'}))
+    % set this as a starting point of alignment for showing the compact version below
+    startCommand = commandName;
+    startCommandNum = iStep;
+    % display what was done
+    if dispAllSteps,dispHeader(startCommand);end
+  elseif strcmp(commandName,'vol2vol')
+    % set this as a starting point of alignment for showing the compact version below
+    startCommand = commandName;
+    startCommandNum = iStep;
+    if dispAllSteps
+      dispHeader('Set vol2vol');
+      disp(sprintf('%i: %s',iStep,dispCommand));
+    end
+  else
+    if dispAllSteps,disp(sprintf('%i: %s',iStep,dispCommand));end
+  end
+end
+if dispAllSteps,return,end
+
+% display summary of alignment steps 
+dispHeader('Displaying summary of alignment steps');
+disp(sprintf('%s',startCommand));
+lastCommand = '';lastCommandVal = '';
+for iStep = (startCommandNum+1):length(gVol{sysNum}.alignmentSteps)
+  commandName = gVol{sysNum}.alignmentSteps(iStep).name;
+  commandVal = gVol{sysNum}.alignmentSteps(iStep).val;
+  % see if we need to display the command val or not
+  if any(strcmp(commandName,{'swapXY','swapXZ','swapYZ','flipX','flipY','flipZ'}))
+    % if the last command was the same as this command, then nothing
+    % in effect was done, so forget that anything happenedn
+    if strcmp(lastCommand,commandName)
+      lastCommand = ''; 
+    else
+      % display the last one
+      disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+      lastCommand = commandName;
+    end
+  elseif any(strcmp(commandName,{'shiftX','shiftY','shiftZ'}))
+    % if the last command was not a shift then beginning storage of the shift
+    if ~strcmp(lastCommand,'shift')
+      % display the last command
+      disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+      lastCommandVal = [0 0 0];
+    end
+    % set the shift
+    if strcmp(commandName,'shiftX')
+      lastCommandVal(1) = lastCommandVal(1) + commandVal;
+    elseif strcmp(commandName,'shiftY')
+      lastCommandVal(2) = lastCommandVal(2) + commandVal;
+    elseif strcmp(commandName,'shiftZ')
+      lastCommandVal(3) = lastCommandVal(3) + commandVal;
+    end
+    lastCommand = 'shift';
+  elseif any(strcmp(commandName,{'rotateXY','rotateXZ','rotateYZ'}))
+    % if the last command was the same rotation or not
+    if strcmp(lastCommand,commandName)
+      % then add to the rotation angle
+      lastCommandVal = lastCommandVal + commandVal;
+    else
+      % otherwise display last command
+      disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+      lastCommandVal = commandVal;
+    end
+    lastCommand = commandName;
+  end
+end
+
+% display the last one
+disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    dispAlignmentCommand    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispCommand = dispAlignmentCommand(commandName,commandVal)
+
+dispCommand = '';
+if isempty(commandName),return,end
+
+% see if we need to display the command val or not
+if any(strcmp(commandName,{'swapXY','swapXZ','swapYZ','flipX','flipY','flipZ'}))
+  % display what was done
+  dispCommand = sprintf('%s',commandName);
+elseif any(strcmp(commandName,{'initFromHeader','setToIdentity'}))
+  % display what was done
+  dispCommand = commandName;
+elseif strcmp(commandName,'vol2vol')
+  dispCommand = sprintf('%s\n%s',commandName,mlrNum2str(commandVal,'compact=0'));
+else
+  % display what was done
+  dispCommand = sprintf('%s %s',commandName,mlrNum2str(commandVal,'compact=1'));
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
 %    saveAlignment    %
 %%%%%%%%%%%%%%%%%%%%%%%
 function retval = saveAlignment(sysNum)
@@ -1323,6 +1448,10 @@ changeXform = false;
 verbose = gVol{sysNum}.verbose;
 xformLeft = eye(4);
 xformRight = eye(4);
+
+
+gVol{sysNum}.alignmentSteps(end+1).name = args{2};
+gVol{sysNum}.alignmentSteps(end).val = params.(args{2});
 
 % get the necessary xform
 switch args{2}
@@ -1657,6 +1786,7 @@ gVol{sysNum}.clipPercent = 0.2;
 % update display
 drawnow
 
+
 %%%%%%%%%%%%%%%%%%%%
 %    loadVolume    %
 %%%%%%%%%%%%%%%%%%%%
@@ -1785,6 +1915,9 @@ if n > 1
   vol.c = mrCache('init',2*max(vol.h.dim(1:3)));
   % set the initial transform
   vol.xform = getVol2vol(sysNum,vol,gVol{sysNum}.vols(1));
+  % set up some info for manual alignment, like what all the alignment steps have been
+  gVol{sysNum}.alignmentSteps = {};
+  gVol{sysNum}.originalAlignment = vol.xform;
   % add this to the altXforms
   gVol{sysNum}.vols(1).altXforms.names{end+1} = 'Aligned volume';
   gVol{sysNum}.vols(1).altXforms.shortNames{end+1} = 'Vol';
