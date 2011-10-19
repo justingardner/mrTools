@@ -1275,10 +1275,10 @@ elseif any(strcmp(commandName,{'initFromHeader','setToIdentity'}))
   % display what was done
   dispCommand = commandName;
 elseif strcmp(commandName,'vol2vol')
-  dispCommand = sprintf('%s\n%s',commandName,mlrNum2str(commandVal,'compact=0'));
+  dispCommand = sprintf('%s\n%s',commandName,mlrnum2str(commandVal,'compact=0'));
 else
   % display what was done
-  dispCommand = sprintf('%s %s',commandName,mlrNum2str(commandVal,'compact=1'));
+  dispCommand = sprintf('%s %s',commandName,mlrnum2str(commandVal,'compact=1'));
 end
 
 
