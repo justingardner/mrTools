@@ -29,6 +29,10 @@
 %
 %             [d h] = fid2nifti('fidname.fid','receiverNum=3');
 %
+%             or return data with all receivers (default is sum-of-squares)
+%     
+%             [d h] = fid2nifti('fidname.fid','receiverNum=inf');
+%
 %             and extract a portion of the image (with the correct
 %             header info to match):
 %
@@ -132,8 +136,11 @@ for i = 1:length(fidnames)
   end
 
   % check if we are being asked to return only a single receiver
-  if ~isempty(receiverNum) 
-    if (receiverNum < 1) || (receiverNum > size(fid.data,5))
+  doMergeCoils = true;
+  if ~isempty(receiverNum)
+    if isinf(receiverNum)
+      doMergeCoils = false;
+    elseif (receiverNum < 1) || (receiverNum > size(fid.data,5))
       disp(sprintf('(fid2nifti) Data has %s receivers, cannot extract receiver: %i',size(fid.data,5),receiverNum));
       disp(sprintf('            Ignoring receiverNum setting and continuing processing'));
     else
@@ -144,7 +151,7 @@ for i = 1:length(fidnames)
   end
   
   % check to see if we have to merge coils
-  if (size(fid.data,5) > 1) && ~kspace
+  if (size(fid.data,5) > 1) && ~kspace && doMergeCoils
     numReceivers = size(fid.data,5);
     % see if we have to merge coils
     if numReceivers > 1
@@ -186,7 +193,7 @@ for i = 1:length(fidnames)
     if verbose
       disp(sprintf('(fid2nifti) Removing %i reference volumes',fid.info.nRefVolumes));
     end
-    fid.data = fid.data(:,:,:,fid.info.nRefVolumes+1:end);
+    fid.data = fid.data(:,:,:,fid.info.nRefVolumes+1:end,:);
   end
   
   % adjust dimensions if asked for
