@@ -54,7 +54,7 @@ pathStr = cellArray(pathStr);
 for pathNum = 1:length(pathStr)
   % Check whether extension of the file is img or nii
   % matlab function "fileparts" takes the last .foo as extension!
-  [path,name,extension,versn] = fileparts(pathStr{pathNum});
+  [path,name,extension] = fileparts(pathStr{pathNum});
   % set default extension, if extension not specified
   if isempty(extension)
     pathStr{pathNum} = setext(pathStr{pathNum},mrGetPref('niftiFileExtension'),0);
