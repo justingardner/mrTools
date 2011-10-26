@@ -80,9 +80,9 @@ for i = 1:length(varargin)
 end
 
 % parse arguments
-movepro=0;receiverNum=[];loadArgs = [];movepss=0;
+movepro=0;receiverNum=[];loadArgs = [];movepss=0;keepref = 0;
 xMin=1;xMax=inf;yMin=1;yMax=inf;sMin=1;sMax=inf;outputName=[];kspace=0;rescale=255;
-validArgs = {'movepro','movepss','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace','rescale'};
+validArgs = {'movepro','movepss','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace','rescale','keepref'};
 getArgs(argsList,{validArgs{:} 'loadArgs'});
 % now evaluate the load args (these are passed from mlrImageLoad
 getArgs(loadArgs,validArgs);
@@ -189,7 +189,7 @@ for i = 1:length(fidnames)
   end
   
   % remove any reference volume
-  if fid.info.nRefVolumes
+  if fid.info.nRefVolumes && ~keepref
     if verbose
       disp(sprintf('(fid2nifti) Removing %i reference volumes',fid.info.nRefVolumes));
     end
