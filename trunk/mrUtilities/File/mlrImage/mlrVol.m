@@ -432,7 +432,7 @@ end
 coord(vol.viewDim(viewNum)) = vol.coord(vol.viewDim(viewNum));
 
 % nDims hard coded to 5 here
-coord(end+1:5) = 1;
+coord(end+1:5) = vol.coord(length(coord)+1:5);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    main display functions (refreshDisplay and dispVolume)
