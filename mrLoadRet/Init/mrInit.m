@@ -53,8 +53,8 @@ if ieNotDefined('sessionParams')
     coil = mrGetPref('coil');
     pulseSequence = mrGetPref('pulseSequence');
     description = '';
-    subject = '';
-    operator = '';
+    if ieNotDefined('subject') subject = '';end
+    if ieNotDefined('operator') operator = '';end
   end
   % setup params dialog
   paramsInfo = {};
