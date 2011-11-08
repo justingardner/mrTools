@@ -183,7 +183,7 @@ while iArg <= nArgs
   elseif isnumeric(args{iArg})
     % if it is a data structure, then collect its header
     % if there is one in the next argument
-    imageArgs{end+1}.data = args{iArg};
+    imageArgs{end+1}.data = double(args{iArg});
     iArg = iArg+1;
     if iArg <= nArgs
       if isstruct(args{iArg})
