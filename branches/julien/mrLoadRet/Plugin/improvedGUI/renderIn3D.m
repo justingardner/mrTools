@@ -866,7 +866,7 @@ whichOverlays = get(d.hOverlayList,'Value');
 overlayRoiModes = get(d.hOverlayRoiMode,'String');
 overlayRoiMode = overlayRoiModes{get(d.hOverlayRoiMode,'Value')};
 
-if length(whichOverlays)>1 || (any(d.alphaOverlayList) && ~d.alphaOverlayList(whichOverlays))
+if any(d.alphaOverlayList) && (length(whichOverlays)>1 || ~d.alphaOverlayList(whichOverlays))
   set([d.hAlphaOverlayEditMin d.hAlphaOverlaySliderMin d.hAlphaOverlayEditMax d.hAlphaOverlaySliderMax],'enable','off');
 end
 if length(whichOverlays)>1
