@@ -43,7 +43,9 @@ numberInView = length(names);
 
 %Check for zero:
 if numberInView == 0
-  mrErrorDlg(['No ' type ' found!']);
+  mrWarnDlg(['(selectInList) No ' type ' found!']);
+  numberList=[];
+  names=[];
   return
 end
 
