@@ -37,7 +37,8 @@ verbose=0;orient=[];xMin=1;xMax=inf;yMin=1;yMax=inf;zMin=1;zMax=inf;volNum = [];
 returnRaw=0;
 swapXY=0;swapXZ=0;swapYZ=0;flipX=0;flipY=0;flipZ=0;shiftX=0;shiftY=0;shiftZ=0;
 rotateXY=0;rotateXZ=0;rotateYZ=0;interpMethod='linear';applyToHeader=1;applyToData=1;
-validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','returnRaw'};
+nifti=0;
+validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','returnRaw','nifti'};
 getArgs(otherArgs,validArgs);
 
 % check volNum argument
@@ -170,10 +171,20 @@ for iImage = 1:nImages
 
   % package up for returning
   if nImages > 1
-    headerRetval{iImage} = header;
+    if nifti
+      headerRetval{iImage} = mlrImageGetNiftiHeader(header);
+    else
+      headerRetval{iImage} = header;
+    end
+      
     dataRetval{iImage} = data;
   else
-    headerRetval = header;
+    if nifti
+      headerRetval = mlrImageGetNiftiHeader(header);
+    else
+      headerRetval = header;
+    end
+      
     dataRetval = data;
   end
 end
