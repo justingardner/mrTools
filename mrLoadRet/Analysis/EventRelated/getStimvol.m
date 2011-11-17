@@ -219,10 +219,11 @@ for i = 1:length(d.stimfile)
     end
   end
   
-  %if stimDurations does not exist, set all durations to 1
+  %if stimDurations does not exist, set all durations to value user
+  %entered in the GUI in TRs
   if ieNotDefined('stimDurations')
     for iStim = 1:length(stimvol)
-      stimDurations{iStim} = ones(size(stimvol{iStim}));
+      stimDurations{iStim} = round(stimVariable.stimDuration/d.tr)*ones(size(stimvol{iStim}));;
     end
   end
 
