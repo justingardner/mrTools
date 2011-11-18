@@ -24,6 +24,8 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','Volume-Searchlight Classification','/Analysis/Classification/','callback',@searchlightClassification_Callback);
     mlrAdjustGUI(thisView,'add','menu','Surface-Searchlight Classification','/Analysis/Classification/','callback',@corticalSearchlightClassification_Callback);
     mlrAdjustGUI(thisView,'add','menu','ROI Classification','/Analysis/Classification/','callback',@roiClassification_Callback);
+    mlrAdjustGUI(thisView,'add','menu','ROI GLM Classification','/Analysis/Classification/','callback',@glmClassification_Callback);
+
     retval = true;
    end
  % return a help string
@@ -52,3 +54,8 @@ function roiClassification_Callback(hObject, eventdata)
 
 view = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 view = roiClassification(view);
+
+function glmClassification_Callback(hObject, eventdata)
+
+view = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+view = eventRelatedROIClassification(view);
