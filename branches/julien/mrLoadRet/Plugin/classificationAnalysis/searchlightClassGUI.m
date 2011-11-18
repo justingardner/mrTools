@@ -27,8 +27,8 @@ end
 if ~isfield(params,'scanNum') || isempty(params.scanNum)
   params.scanNum = [];
 end
-if ~isfield(params,'numberEvents') || isempty(params.numberEvents)
-  params.numberEvents = 0;
+if ~isfield(params,'numberEVs') || isempty(params.numberEvents)
+  params.numberEVs = 0;
 end
 roiMaskMenu = viewGet(thisView,'roiNames');
 if isfield(params,'roiMask') && ismember(params.roiMask,roiMaskMenu)
@@ -60,7 +60,7 @@ while askForParams
         {'groupName',groupNames,'type=popupmenu','Name of group from which to do searchlight analysis'},...
         {'saveName',params.saveName,'File name to try to save as'},...
         {'roiMask',roiMaskMenu,'ROI to use to mask the analysis, for example an ROI defining the skull-stripped brain, or a GM mask etc'},...
-        {'numberEvents',params.numberEvents,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Event Types to be classified. If 0, the number of Event Types will be set to the number of stimulus type in the stimulus file'},...
+        {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Event Types to be classified. If 0, the number of Event Types will be set to the number of stimulus type in the stimulus file'},...
         {'radius',params.radius,'Radius of searchlight in voxels to use'},...
         {'sigTest',params.sigTest,'type=checkbox','Significance testing of results with Binomial Test'},...
         {'fweAdjustment',params.fweAdjustment,'type=checkbox','contingent=sigTest','Family Wise Error adjustment'},...
@@ -108,6 +108,7 @@ while askForParams
         end
         
         while askForParams
+            params.hrfModel='boxCar';params.hrfParams=[];
             [scanParams, params] = getClassVarname(thisView,params,defaultParams);
             if isempty(scanParams)
                 if size(scanParams,2) %if the top close button has been pressed
@@ -120,7 +121,7 @@ while askForParams
             end
             params.scanParams = scanParams;
             while askForParams
-                [scanParams, params] = getClassEventParamsGUI(thisView,params,defaultParams);
+                [scanParams, params] = getGlmEVParamsGUI(thisView,params,defaultParams);%getClassEventParamsGUI(thisView,params,defaultParams);
                 if isempty(scanParams)
                   if size(scanParams,2) %if the top close button has been pressed
                     params=[];
