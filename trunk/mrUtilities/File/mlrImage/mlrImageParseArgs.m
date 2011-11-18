@@ -58,8 +58,8 @@ end
 filterspec = {'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)';'*.sdt;*.edt;','SDT/SPR or EDT/EPR Files (*.sdt, *.spr)'};
 
 % arguments for different filetypes
-altArgs = {'orient','xMin','xMax','yMin','yMax','zMin','zMax','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData'};
-loadArgs = {'kspace','movepro','movepss','rescale','receiverNum'};
+altArgs = {'orient','xMin','xMax','yMin','yMax','zMin','zMax','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','rescale'};
+loadArgs = {'kspace','movepro','movepss','receiverNum'};
 
 % go through the list looking for image arguments
 iArg = 1;nArgs = length(args);
