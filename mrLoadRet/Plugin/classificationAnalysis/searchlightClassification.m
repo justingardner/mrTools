@@ -48,7 +48,7 @@ if ieNotDefined('params')
   return
 % just return parameters
 elseif justGetParams
-%   return
+  return
 end
 
 
@@ -94,6 +94,9 @@ end
 
 %scanloop
 for scanNum = params.scanNum
+    scanParams{scanNum}.hdLag=2;
+    scanParams{scanNum}.averageEvent=1;
+    scanParams{scanNum}.stimDuration=scanParams{scanNum}.stimDuration/2;
     scanDims = viewGet(thisView,'dims',scanNum);
     [d, d.roiVoxelIndices, d.roiCoords] = loadScanRois(thisView,scanNum,viewGet(thisView,'roinum',params.roiMask));
     
@@ -111,7 +114,7 @@ for scanNum = params.scanNum
           tmp_stimvol{i}=[d.stimvol{logical(scanParams{scanNum}.stimToEVmatrix(:,i))}];
     end
     d.stimvol=tmp_stimvol;clear tmp_stimvol
-    d.stimNames=scanParams{scanNum}.EVnames;
+    d.stimNames=params.EVnames;%scanParams{scanNum}.EVnames;
     
 
     run=nan(1,size([d.stimvol{:}],2));
@@ -119,11 +122,11 @@ for scanNum = params.scanNum
       run(d.concatInfo.runTransition(i,1):d.concatInfo.runTransition(i,2))=i;
       %remove any event that's too close to the end of the run
       for j=1:length(d.stimvol)
-        eventsToRemove = find(d.stimvol{j}>d.dim(4)-scanParams{scanNum}.eventLength-scanParams{scanNum}.hdLag+1);
-        if ~isempty(eventsToRemove)
-          fprintf('(roiClassification) Removing %d event(s) because they''re too close to the end of the run\n',length(eventsToRemove));
-          d.stimvol{j}(eventsToRemove) = [];
-        end
+%         eventsToRemove = find(d.stimvol{j}>d.dim(4)-scanParams{scanNum}.stimDuration-scanParams{scanNum}.hdLag+1);
+%         if ~isempty(eventsToRemove)
+%           fprintf('(roiClassification) Removing %d event(s) because they''re too close to the end of the run\n',length(eventsToRemove));
+%           d.stimvol{j}(eventsToRemove) = [];
+%         end
       end
     end
     
@@ -133,25 +136,27 @@ for scanNum = params.scanNum
     end
     
     d.data=squeeze(d.data);
+    d.t_mean = mean(d.data,2);
+    d.data = 100*(d.data-repmat(d.t_mean,1,size(d.data,2)))./repmat(d.t_mean,1,size(d.data,2));
     
     %pick out the eventstrings and average if requested
     idx = find(lab>0);
-    if scanParams{scanNum}.eventLength==1
+    if scanParams{scanNum}.stimDuration==1
         m_ = d.data(:,idx+scanParams{scanNum}.hdLag);
         run=run(idx);
         lab=lab(idx);
     elseif scanParams{scanNum}.averageEvent %average across the TRs for each event
         for i=1:size(idx,2)
-            m_(:,i)=mean(d.data(:,idx(i)+scanParams{scanNum}.hdLag:idx(i)+scanParams{scanNum}.eventLength+scanParams{scanNum}.hdLag-1),2);
+            m_(:,i)=mean(d.data(:,idx(i)+scanParams{scanNum}.hdLag:idx(i)+scanParams{scanNum}.stimDuration+scanParams{scanNum}.hdLag-1),2);
         end
 %         d.roi{1}.tSeries=m_;clear m_
         run=run(idx);
         lab=lab(idx);
-    elseif scanParams{scanNum}.eventLength>1 %create instance from each TR in the stim duration
+    elseif scanParams{scanNum}.stimDuration>1 %create instance from each TR in the stim duration
         for i=1:size(idx,2)
-            m_(:,idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=d.data(:,idx(i)+scanParams{scanNum}.hdLag:idx(i)+scanParams{scanNum}.eventLength+scanParams{scanNum}.hdLag-1);
-            l_(idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=repmat(lab(idx(i)),1,scanParams{scanNum}.eventLength);
-            r_(idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=repmat(run(idx(i)),1,scanParams{scanNum}.eventLength);
+            m_(:,idx(i):idx(i)+scanParams{scanNum}.stimDuration-1)=d.data(:,idx(i)+scanParams{scanNum}.hdLag:idx(i)+scanParams{scanNum}.stimDuration+scanParams{scanNum}.hdLag-1);
+            l_(idx(i):idx(i)+scanParams{scanNum}.stimDuration-1)=repmat(lab(idx(i)),1,scanParams{scanNum}.stimDuration);
+            r_(idx(i):idx(i)+scanParams{scanNum}.stimDuration-1)=repmat(run(idx(i)),1,scanParams{scanNum}.stimDuration);
         end
         m_=m_(:,l_>0);
         lab = l_(l_>0);
@@ -168,6 +173,7 @@ for scanNum = params.scanNum
     end
     clear m_
     disppercent(inf);
+    d.data=[];
     
     %initialise overlays per scan
     accDiag{scanNum}=nan(viewGet(thisView,'scanDims',scanNum));
@@ -187,8 +193,9 @@ for scanNum = params.scanNum
     end
     
     corr=nan(size(d.roiCoords{1},2),length(run));
+    svmCorr=nan(size(d.roiCoords{1},2),length(run));
     
-    disppercent(-inf,'(searchlightClassification) Classifying based on spotlight....');
+    
     
     minX = min(d.roiCoords{1}(1,:));
     maxX = max(d.roiCoords{1}(1,:));
@@ -196,6 +203,15 @@ for scanNum = params.scanNum
     maxY = max(d.roiCoords{1}(2,:));
     minZ = min(d.roiCoords{1}(3,:));
     maxZ = max(d.roiCoords{1}(3,:));
+    
+    try
+        display('Opening matlabpool')
+        matlabpool
+    catch
+        display('Matabpool already open/No paralell computing')
+    end
+    
+    disppercent(-inf,'(searchlightClassification) Classifying based on spotlight....');
     
     for i_sphere=1:size(d.roiCoords{1},2)
     
@@ -213,16 +229,26 @@ for scanNum = params.scanNum
         [I,~]=find(xxx>0);
         xxx=xxx(unique(I),:);
 
-        
+       
 
         %run classification on searchlight patterns
-        class_lab=nan(1,length(run));
+        class_lab=nan(length(d.stimvol),size(d.concatInfo.runTransition,1));
+        svmLab=nan(length(d.stimvol),size(d.concatInfo.runTransition,1));
         
+        %
         
-        for i=1:size(d.concatInfo.runTransition,1)
-            class_lab(run==i)=classify(xxx(:,run==i)',xxx(:,run~=i)',lab(run~=i),'diagLinear')';
-            corr(i_sphere,run==i)=class_lab(run==i)==lab(run==i);    
+        parfor i=1:size(d.concatInfo.runTransition,1)
+%             class_lab(:,i)=classify(xxx(:,run==i)',xxx(:,run~=i)',lab(run~=i),'diagLinear')';
+%             corr(i_sphere,run==i)=class_lab(run==i)==lab(run==i);
+            model = svmtrain(lab(run~=i)',xxx(:,run~=i)','-t 0 -q');
+            svmLab(:,i) = svmpredict(lab(run==i)',xxx(:,run==i)',model);
+%             svmCorr(i_sphere,run==i)=lab(run==i)==svmLab(run==i);
         end
+        
+        
+%         corr(i_sphere,:)=class_lab(:)'==lab;
+        svmCorr(i_sphere,:)=svmLab(:)'==lab;
+        
     
         disppercent(i_sphere/length(d.roiCoords{1}));
     end
@@ -232,27 +258,36 @@ for scanNum = params.scanNum
     clear mm_
     
     %calculate global and class specific accuracies
-    acc=mean(corr,2);
+%     acc=mean(corr,2);
+%     acc_Class=nan(size(d.roiCoords{1},2),length(d.stimvol));
+    accSvm=mean(svmCorr,2);
     acc_Class=nan(size(d.roiCoords{1},2),length(d.stimvol));
     for i=1:length(d.stimvol)
-        acc_Class(:,i)=mean(corr(:,lab==i),2);
+%         acc_Class(:,i)=mean(corr(:,lab==i),2);
+        acc_Class(:,i)=mean(svmCorr(:,lab==i),2);
     end
     
     
         
     if params.sigTest
-            p = binomTest(sum(corr,2),length(lab),1/length(d.stimvol),'Greater');
+%             p = binomTest(sum(corr,2),length(lab),1/length(d.stimvol),'Greater');
+%             p_Class=nan(size(acc_Class));
+%             for i=1:length(d.stimvol)
+%                  p_Class(:,i) =  binomTest(sum(corr(:,lab==i),2),sum(lab==i),1/length(d.stimvol),'Greater');
+%             end
+
+            p = binomTest(sum(svmCorr,2),length(lab),1/length(d.stimvol),'Greater');
             p_Class=nan(size(acc_Class));
             for i=1:length(d.stimvol)
-                 p_Class(:,i) =  binomTest(sum(corr(:,lab==i),2),sum(lab==i),1/length(d.stimvol),'Greater');
+                 p_Class(:,i) =  binomTest(sum(svmCorr(:,lab==i),2),sum(lab==i),1/length(d.stimvol),'Greater');
             end
-
+            
         [p fdr fwe] = transformStatistic(p,precision,params);
         [p_Class fdr_Class fwe_Class] = transformStatistic(p_Class,precision,params);
     end
     
     for i=1:size(d.roiCoords{1},2)
-        accDiag{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i))=acc(i);
+        accDiag{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i))=accSvm(i);%test classifier by replacing with SVM result for the time being
         if params.sigTest
             pDiag{scanNum}(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i))=p(i);
             if params.fdrAdjustment
@@ -278,7 +313,10 @@ for scanNum = params.scanNum
     clear p p_Class fdr fwe fdr_Class fwe_Class
 end
 
-
+try 
+    matlabpool close
+catch
+end
 
 %-------------------------------------------------------- Output Analysis ---------------------------------------------------
 dateString = datestr(now);
@@ -328,7 +366,7 @@ for iScan = params.scanNum
 end
 
 thisOverlay = defaultOverlay;
-for i=1:params.numberEvents
+for i=1:params.numberEVs
         overlays(end+1)=thisOverlay;
         overlays(end).name=[params.EVnames{i},'_acc (radius = ',num2str(params.radius),')'];
         for iScan = params.scanNum
@@ -346,7 +384,7 @@ if params.sigTest
         overlays(end).data{iScan}=pDiag{iScan};
         overlays(end).params=params.scanParams{iScan};
     end
-    for i=1:params.numberEvents
+    for i=1:params.numberEVs
         overlays(end+1)=thisOverlay;
         overlays(end).colormap = statsColorMap(256);
         overlays(end).name=[params.EVnames{i},'_prob (radius = ',num2str(params.radius),')'];
@@ -363,7 +401,7 @@ if params.sigTest
             overlays(end).data{iScan}=fdrDiag{iScan};
             overlays(end).params=params.scanParams{iScan};
         end
-        for i=1:params.numberEvents
+        for i=1:params.numberEVs
             overlays(end+1)=thisOverlay;
             overlays(end).colormap = statsColorMap(256);
             overlays(end).name=[params.EVnames{i},'_fdr_prob (radius = ',num2str(params.radius),')'];
@@ -381,7 +419,7 @@ if params.sigTest
             overlays(end).data{iScan}=fweDiag{iScan};
             overlays(end).params=params.scanParams{iScan};
         end
-        for i=1:params.numberEvents
+        for i=1:params.numberEVs
             overlays(end+1)=thisOverlay;
             overlays(end).colormap = statsColorMap(256);
             overlays(end).name=[params.EVnames{i},'_fwe_prob (radius = ',num2str(params.radius),')'];
@@ -400,6 +438,7 @@ if ~isempty(viewGet(thisView,'fignum'))
   refreshMLRDisplay(viewGet(thisView,'viewNum'));
 end
 toc
+
 
 %-------------------------------------------------------- Save the analysis
 saveAnalysis(thisView,classAnal.name);
