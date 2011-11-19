@@ -14,7 +14,7 @@
 function [params params2] = mrParamsDialog(varargin)
 
 % check arguments
-if ~any(nargin == [1 2 3 4 5 6 7])
+if nargin < 1
   help mrParamsDialog
   return
 end
@@ -189,6 +189,14 @@ for i = 1:length(gParams.varinfo)
   rownum = rownum+1;
 end
 
+% set ok and cancel callback
+if ~isempty(okCallback)
+  gParams.okCallback = okCallback;
+end
+if ~isempty(cancelCallback)
+  gParams.cancelCallback = cancelCallback;
+end
+
 % for each value that controls another one, call the buttonHandler to
 % set up the correct dependency
 for i = 1:length(gParams.varinfo)
@@ -212,13 +220,11 @@ if ~isempty(callback)
   % if another argument is specified than put up 
   % an ok button with the callback
   if ~isempty(okCallback)
-    gParams.okCallback = okCallback;
     makeButton(gParams.fignum,'OK','ok',numrows,numcols,1);
   end
   % if a final argument is specified than put up 
   % an ok button with the callback
   if ~isempty(cancelCallback)
-    gParams.cancelCallback = cancelCallback;
     makeButton(gParams.fignum,'Cancel','cancel',numrows,numcols-1,1);
   end
   makeButton(gParams.fignum,'Help','help',numrows,1,1);
@@ -647,7 +653,11 @@ function okHandler
 global gParams;
 gParams.ok = 1;
 if isfield(gParams,'okCallback')
-  feval(gParams.okCallback);
+  if isfield(gParams,'callbackArg')
+    feval(gParams.okCallback,gParams.callbackArg);
+  else
+    feval(gParams.okCallback);
+  end
   closeHandler;
 else
   uiresume;
@@ -661,7 +671,11 @@ function cancelHandler
 global gParams;
 gParams.ok = 0;
 if isfield(gParams,'cancelCallback')
-  feval(gParams.cancelCallback);
+  if isfield(gParams,'callbackArg')
+    feval(gParams.cancelCallback,gParams.callbackArg);
+  else
+    feval(gParams.cancelCallback);
+  end
   closeHandler;
 else
   uiresume;
