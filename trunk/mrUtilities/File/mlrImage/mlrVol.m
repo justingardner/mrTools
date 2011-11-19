@@ -294,7 +294,9 @@ for i = 1:length(uniqueFigs)
   delete(uniqueFigs(i));
 end
 
-mrParamsClose;
+if gVol{sysNum}.controlsUp
+  mrParamsClose;
+end
 
 % remove the variable
 gVol{sysNum} = [];
@@ -990,7 +992,8 @@ if isfield(gVol{sysNum}.vols(1),'complexData')
   paramsInfo{end+1} = {'dispComplex',putOnTopOfList(gVol{sysNum}.dispComplex,{'magnitude','phase','fft2 magnitude','fft2 phase','fft3 magnitude','fft3 phase'}),'callback',@dispComplex,'callbackArg',sysNum,'passParams=1','Change how complex data is displayed'};
 end
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
-mrParamsDialog(paramsInfo,'mlrVol Controls');
+gVol{sysNum}.controlsUp = true;
+mrParamsDialog(paramsInfo,'mlrVol Controls','callback',@controlsCallback,'callbackArg',sysNum,'okCallback',@controlsCallback);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %    setClipPercent    %
@@ -1356,8 +1359,10 @@ retval = [];
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %    controlsCallback    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function controlsCallback(params)
+function controlsCallback(sysNum)
 
+global gVol;
+gVol{sysNum}.controlsUp = false;
 
 %%%%%%%%%%%%%%%%%%%%%
 %    dispComplex    %
@@ -1724,8 +1729,8 @@ end
 gVol{sysNum}.n = 0;
 
 % parse args here when we have settings
-imageOrientation = [];verbose = [];
-getArgs(otherArgs,{'imageOrientation=0','verbose=1'});
+imageOrientation = [];verbose = [];toggleOverlay = [];
+getArgs(otherArgs,{'imageOrientation=0','verbose=1','toggleOverlay=1'});
 gVol{sysNum}.imageOrientation = imageOrientation;
 gVol{sysNum}.verbose = verbose;
 
@@ -1736,6 +1741,9 @@ gVol{sysNum}.buttonHeightMargin = 2;
 gVol{sysNum}.buttonHeight = 25;
 gVol{sysNum}.buttonLeftMargin = 10;
 gVol{sysNum}.buttonBottomMargin = 10;
+
+% controls are not up
+gVol{sysNum}.controlsUp = false;
 
 % get location of figure
 figloc = mrGetFigLoc('mlrVol');
@@ -1774,7 +1782,7 @@ gVol{sysNum}.overlayAlpha = 0.2;
 gVol{sysNum}.displayControls = false;
 
 % overlay toggle state starts as on
-gVol{sysNum}.overlayToggleState = 1;
+gVol{sysNum}.overlayToggleState = toggleOverlay;
 
 % display the tethered volume interpolated to
 % match the primary volume display
