@@ -993,7 +993,7 @@ if isfield(gVol{sysNum}.vols(1),'complexData')
 end
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
 gVol{sysNum}.controlsUp = true;
-mrParamsDialog(paramsInfo,'mlrVol Controls','callback',@controlsCallback,'callbackArg',sysNum,'okCallback',@controlsCallback);
+mrParamsDialog(paramsInfo,'mlrVol Controls','callbackArg',sysNum,'okCallback',@controlsCallback);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %    setClipPercent    %

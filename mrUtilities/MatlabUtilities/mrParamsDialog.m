@@ -192,9 +192,15 @@ end
 % set ok and cancel callback
 if ~isempty(okCallback)
   gParams.okCallback = okCallback;
+  if ~isempty(callbackArg)
+    gParams.callbackArg = callbackArg;
+  end
 end
 if ~isempty(cancelCallback)
   gParams.cancelCallback = cancelCallback;
+  if ~isempty(callbackArg)
+    gParams.callbackArg = callbackArg;
+  end
 end
 
 % for each value that controls another one, call the buttonHandler to
