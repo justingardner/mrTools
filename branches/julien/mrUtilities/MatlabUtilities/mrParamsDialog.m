@@ -514,7 +514,7 @@ elseif isfield(gParams.varinfo{varnum},'callback') && ...
 end
 
 % if this is supposed to be a number, then make sure it is.
-if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray','popupmenu'}))
+if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   % check for incdec (this is for buttons that increment or decrement
   % the values, if one of these was passed, we will have by how much
   % we need to increment or decrement the value
