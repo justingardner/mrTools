@@ -1130,7 +1130,7 @@ if ~exist(pathStr,'file')
 end
 
 % Copy the nifti file to the tseries directory
-[dir,file,ext,versn] = fileparts(pathStr);
+[dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,etcDir)
     % If stimfile is already in the Etc directory
     fileName = [file,ext];
