@@ -155,8 +155,8 @@ for scanNum = params.scanNum
 
     
     d.data=squeeze(d.data);
-    d.t_mean = mean(d.data,2);
-    d.data = 100*(d.data-repmat(d.t_mean,1,size(d.data,2)))./repmat(d.t_mean,1,size(d.data,2));
+%     d.t_mean = mean(d.data,2);
+%     d.data = 100*(d.data-repmat(d.t_mean,1,size(d.data,2)))./repmat(d.t_mean,1,size(d.data,2));
 
     
     %pick out the eventstrings and average if requested
@@ -172,6 +172,10 @@ for scanNum = params.scanNum
 %         d.roi{1}.tSeries=m_;clear m_
         run=run(idx);
         lab=lab(idx);
+        for i=1:size(unique(run),2)
+%                 m_(:,run==i)=m_(:,run==i)-repmat(mean(m_(:,run==i),2),1,size(m_(:,run==i),2));
+              m_(:,run==i)=100*(m_(:,run==i)-repmat(mean(m_(:,run==i),2),1,size(m_(:,run==i),2)))./repmat(mean(m_(:,run==i),2),1,size(m_(:,run==i),2));
+        end
     elseif scanParams{scanNum}.eventLength>1 %create instance from each TR in the stim duration
         for i=1:size(idx,2)
             m_(:,idx(i):idx(i)+scanParams{scanNum}.eventLength-1)=d.data(:,idx(i)+scanParams{scanNum}.hdLag:idx(i)+scanParams{scanNum}.eventLength+scanParams{scanNum}.hdLag-1);
