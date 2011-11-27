@@ -312,10 +312,95 @@ switch lower(param)
     end
   case{'auxparams'}
     % n = viewGet(view,'auxParams',scanNum,[groupNum])
+    % get the whole auxParams structure. Compare
+    % with auxparam which gets one field of auxParams
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
     if (nscans >= s) & (s > 0)
       val = MLR.groups(g).auxParams(s);
+    end
+  case{'stimfile'}
+    % stimfile = viewGet(view,'stimfile',[scanNum],[groupNum],[removeEmpties]);
+    % returns a cell array with all the stimfiles associated with the
+    % scan (including if it is a concatenation or an average, will show
+    % all ths stimfiles from the original scans used to make the scan).
+    % If you set removeEmpties (defaults to true) to false, then it
+    % will return empties for any original scan that has a missing
+    % stimfile
+    [s g] = getScanAndGroup(view,varargin,param);
+    % get removeEp=mpties
+    if length(varargin) >= 3,removeEmpties = varargin{3};else removeEmpties = true;end
+    % get the stimfilenames from auxParam, calling viewGetLoadStimFileile
+    % to prepend etc directory and load
+    val = viewGet(view,'auxParam','stimFileName',s,g,@viewGetLoadStimFile,removeEmpties);
+    if ~isempty(val),val = cellArray(val);end
+  case{'stimfilename'}
+    % stimFileName = viewGet(view,'stimFileName',[scanNum],[groupNum],[removeEmpties]);
+    % returns the names of all the stimfiles associated with the scan
+    % this will prepend the ETc directory where they should live so
+    % gives a fully qualified path. If it is a concatenation or an average,
+    % will dispaly all stimfile names from the original scans used to make the scan.
+    % If you set removeEmpties (defaults to true) to false, then it
+    % will return empties for any original scan that has a missing
+    % stimfile
+    [s g] = getScanAndGroup(view,varargin,param);
+    % get the stimfilenames from auxParam, calling viewGetLoadStimFileile
+    % to prepend etc directory and load
+    val = viewGet(view,'auxParam','stimFileName',s,g,@viewGetPrependEtc,1);
+    if ~isempty(val),val = cellArray(val);else val = {};end
+  case{'auxparam'}
+    % n = viewGet(view,'auxParam','paramName',[scanNum],[groupNum],[functionptr],<removeEmpties>)
+    % get the named parameter from auxParams. Compare
+    % with auxParams which gets the whole structure. Note that
+    % this will return a single value if paramName exists for that
+    % scan. If it doesn't and exist in the original scan (i.e.
+    % for a concat or average), then it will return a cell array
+    % of the parameter - one for each of the original scans. <functionptr> is
+    % an argument used by other viewGet commands - it calls the function
+    % on the auxParam field before returning it.
+    if length(varargin) < 1
+      disp(sprintf('(viewGet) Need to specify paramName for auxParam'));
+      return
+    end
+    [s g] = getScanAndGroup(view,{varargin{2:end}});
+    nscans = viewGet(view,'nscans',g);
+    val = [];
+    paramName = fixBadChars(varargin{1});
+    % handle auxillary arguments
+    if length(varargin) >= 4,fhandle = varargin{4};else fhandle = [];end
+    if length(varargin) >= 5,removeEmpties = varargin{5};else removeEmpties = false;end
+    if (nscans >= s) && (s > 0) && isfield(MLR.groups(g),'auxParams') && (length(MLR.groups(g).auxParams) >= s)
+      if isfield(MLR.groups(g).auxParams(s),paramName)
+        if ~isempty(MLR.groups(g).auxParams(s).(paramName))
+          % get the stored stimFileNames
+          val = MLR.groups(g).auxParams(s).(paramName);
+	  % call function on value (if function handle is specified)
+	  if ~isempty(fhandle) val = feval(fhandle,view,val); end
+	end
+      end
+    end
+    % if the field does not exist, then check original
+    if isempty(val)
+      [os og] = viewGet(view,'originalScanNum',s,g);
+      if ~isempty(os)
+        for osnum = 1:length(os)
+          val{osnum} = viewGet(view,'auxParam',paramName,os(osnum),og(osnum),fhandle,removeEmpties);
+	  % don't let the cell arrays get too nested
+	  if iscell(val{osnum}) && (length(val{osnum}) == 1)
+	    val{osnum} = val{osnum}{1};
+	  end
+        end
+	% remove empties
+	if removeEmpties
+	  newval = {};
+	  for j = 1:length(val)
+	    if ~isempty(val{j})
+	      newval{end+1} = val{j};
+	    end
+	  end
+	  val = newval;
+	end
+      end
     end
   case{'totalframes'}
     % n = viewGet(view,'totalFrames',scanNum,[groupNum])
@@ -513,8 +598,12 @@ switch lower(param)
         val = concatInfo;
       end
     end
-  case {'stimfile'}
+  case {'stimfileold'}
     % stimfile = viewGet(view,'stimfile',scanNum,[groupNum]);
+    % this is the old way of getting stimfiles. The new version
+    % should be completely compatible with this old version,
+    % but leaving this code in here, just in case, for now.
+    % came be deleted later. jg 11/2011
     [s g] = getScanAndGroup(view,varargin,param);
     stimFileName = viewGet(view,'stimFileName',s,g);
     val = {};
@@ -542,10 +631,14 @@ switch lower(param)
         end
       end
     end
-  case {'stimfilename'}
+  case {'stimfilenameold'}
     % stimFileName = viewGet(view,'stimFileName',scanNum,[groupNum]);
     % stimFileName is returned as a cell array of all stimfiles
     % associated with the scan
+    % this is the old way of getting stimfiles. The new version
+    % should be completely compatible with this old version,
+    % but leaving this code in here, just in case, for now.
+    % came be deleted later. jg 11/2011
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
     stimFileName{1} = '';
@@ -3777,4 +3870,37 @@ if isempty(r)
   r = viewGet(view,'currentROI');
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    viewGetPrependEtc    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function fileName = viewGetPrependEtc(view,fileName);
 
+% prepend etc
+fileName = fullfile(viewGet(view,'etcDir'),fileName);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    viewGetLoadStimFile    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function stimFile = viewGetLoadStimFile(view,stimFileName)
+
+% prepend etc
+stimFileName = fullfile(viewGet(view,'etcDir'),stimFileName);
+
+% load this stimfile
+if ~isfile(stimFileName)
+  mrErrorDlg(sprintf('(viewGet:viewGetLoadStimfile): Could not find stimfile %s',stimFileName));
+else
+  stimFile = load(stimFileName);
+end
+% check to see what type it is, and set the field appropriately
+if isfield(stimFile,'mylog')
+  stimFile.filetype = 'eventtimes';
+elseif isfield(stimFile,'stimts')
+  stimFile.filetype = 'afni';
+elseif isfield(stimFile,'myscreen')
+  stimFile.filetype = 'mgl';
+elseif isfield(stimFile,'stimvol')
+  stimFile.filetype = 'stimvol';
+else
+  stimFile.filetype = 'unknown';
+end
