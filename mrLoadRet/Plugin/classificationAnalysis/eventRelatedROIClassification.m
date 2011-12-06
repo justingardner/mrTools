@@ -201,8 +201,14 @@ for scanNum = params.scanNum
     run{scanNum} =[];
     [d out] = getGlmStatistics(d, params, 0, precision, actualData);
     m_{scanNum} = squeeze(d.ehdr);
+    m_{scanNum} = m_{scanNum} - repmat(mean(m_{scanNum},2),1,size(m_{scanNum},2));
     lab{scanNum} = stimLab;
     run{scanNum} = stimRun;
+    keyboard
+    for i=1:size(unique(run{scanNum}),2)
+%                 m_(:,run==i)=m_(:,run==i)-repmat(mean(m_(:,run==i),2),1,size(m_(:,run==i),2));
+      m_{scanNum}(:,run{scanNum}==i)=(m_{scanNum}(:,run{scanNum}==i)-repmat(mean(m_{scanNum}(:,run{scanNum}==i),2),1,size(m_{scanNum}(:,run{scanNum}==i),2)));%./repmat(mean(m_{scanNum}(:,run{scanNum}==i),2),1,size(m_{scanNum}(:,run{scanNum}==i),2));
+    end
 %     for i=1:size(d.concatInfo.runTransition,1)
 %     d.scm = zeros(size(d.scm));
 %     d.scm(d.concatInfo.runTransition(i,1):d.concatInfo.runTransition(i,2),:)=scmCopy(d.concatInfo.runTransition(i,1):d.concatInfo.runTransition(i,2),:);
