@@ -363,6 +363,7 @@ switch lower(param)
       return
     end
     [s g] = getScanAndGroup(view,{varargin{2:end}});
+    if isempty(g),g = viewGet(view,'curGroup');end
     nscans = viewGet(view,'nscans',g);
     val = [];
     paramName = fixBadChars(varargin{1});
@@ -3831,7 +3832,9 @@ if isempty(s)
 end
 % if group is a string, then convert it to a number
 if isstr(g)
-  g = viewGet(view,'groupNum',g);
+  gnum = viewGet(view,'groupNum',g);
+  if isempty(gnum),disp(sprintf('(viewGet:getScanAndGroup) Unknown group: %s', g));end
+  g = gnum;
 end
 
 %%%%%%%%%%%%%%%%%%%%
