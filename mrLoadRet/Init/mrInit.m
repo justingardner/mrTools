@@ -280,9 +280,17 @@ function stimFileMatch = matchStimFiles(stimFileNames,stimFileVols,totalFrames)
 
 stimFileMatch = {};
 % for now, just match in order
-for i = 1:min(length(stimFileNames),length(totalFrames))
-  if (stimFileVols > 0)
+for i = 1:length(stimFileNames)
+  % make sure there are enough vols (just check to see if there
+  % are greater than 1/10 the total frames) since with tSense
+  % etc there may be more totalFrames than vols, so this is
+  % just to reject stimfiles with only a few volumes
+  if (length(stimFileVols) < i) || (length(totalFrames)<i) || (stimFileVols(i) > totalFrames{i}/10)
     stimFileMatch{end+1} = putOnTopOfList(stimFileNames{i},{stimFileNames{:},'None'});
+    % only make enough matches for each scan
+    if length(stimFileMatch)==length(totalFrames)
+      break;
+    end
   end
 end
 
