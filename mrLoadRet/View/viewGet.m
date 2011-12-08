@@ -330,7 +330,7 @@ switch lower(param)
     [s g] = getScanAndGroup(view,varargin,param);
     % get removeEp=mpties
     if length(varargin) >= 3,removeEmpties = varargin{3};else removeEmpties = true;end
-    % get the stimfilenames from auxParam, calling viewGetLoadStimFileile
+    % get the stimFileNames from auxParam, calling viewGetLoadStimFileile
     % to prepend etc directory and load
     val = viewGet(view,'auxParam','stimFileName',s,g,@viewGetLoadStimFile,removeEmpties);
     if ~isempty(val),val = cellArray(val);end
@@ -344,9 +344,40 @@ switch lower(param)
     % will return empties for any original scan that has a missing
     % stimfile
     [s g] = getScanAndGroup(view,varargin,param);
-    % get the stimfilenames from auxParam, calling viewGetLoadStimFileile
-    % to prepend etc directory and load
+    % get the stimfilenames from auxParam, calling viewGetPrependEtc
+    % to prepend etc directory
     val = viewGet(view,'auxParam','stimFileName',s,g,@viewGetPrependEtc,1);
+    if ~isempty(val),val = cellArray(val);else val = {};end
+  case{'fidinfo'}
+    % fidinfo = viewGet(view,'fidInfo',[scanNum],[groupNum],[removeEmpties]);
+    % returns a cell array with the fidInfo associated with each scan
+    % this is only for varian systems in which there is a fid file
+    % linked with the auxParam 'fidFilename'
+    % (if it is a concatenation or an average, will show
+    % all ths fidInfo from the original scans used to make the scan).
+    % If you set removeEmpties (defaults to false) to true, then it
+    % will not return empties for any original scan that has a missing
+    % fidFilename or missing fid
+    [s g] = getScanAndGroup(view,varargin,param);
+    % get removeEp=mpties
+    if length(varargin) >= 3,removeEmpties = varargin{3};else removeEmpties = false;end
+    % get the fidFilename from auxParam, calling viewGetFidInfo
+    % to prepend Pre directory and get fidInfo
+    val = viewGet(view,'auxParam','fidFilename',s,g,@viewGetFidInfo,removeEmpties);
+    if ~isempty(val),val = cellArray(val);end
+  case{'fidfilename'}
+    % fidFileName = viewGet(view,'fidFileName',[scanNum],[groupNum],[removeEmpties]);
+    % returns the names of all the fidfiles associated with the scan
+    % this will prepend the Pre directory where they should live so
+    % gives a fully qualified path. If it is a concatenation or an average,
+    % will dispaly all fidfile names from the original scans used to make the scan.
+    % If you set removeEmpties (defaults to false) to true, then it
+    % will not return empties for any original scan that has a missing
+    % fidFileName
+    [s g] = getScanAndGroup(view,varargin,param);
+    % get the fidFilenames from auxParam, calling viewGetPrependPre
+    % to prepend Pre directory
+    val = viewGet(view,'auxParam','fidFilename',s,g,@viewGetPrependPre,1);
     if ~isempty(val),val = cellArray(val);else val = {};end
   case{'auxparam'}
     % n = viewGet(view,'auxParam','paramName',[scanNum],[groupNum],[functionptr],<removeEmpties>)
@@ -1901,7 +1932,7 @@ switch lower(param)
   case{'numberofrois','numrois','nrois'}
     % n = viewGet(view,'numberofROIs')
     val = length(view.ROIs);
-  case{'currentroi','currentroinum'}
+  case{'currentroi','currentroinum','curroi'}
     % roiNum = viewGet(view,'currentROI')
     val = view.curROI;
   case{'roigroup','currentroigroup'}
@@ -3907,3 +3938,22 @@ elseif isfield(stimFile,'stimvol')
 else
   stimFile.filetype = 'unknown';
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    viewGetPrependPre    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function fileName = viewGetPrependPre(view,fileName);
+
+% prepend Pre
+fileName = fullfile(viewGet(view,'homeDir'),'Pre',fileName);
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    viewGetFidInfo    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function fidInfo = viewGetFidInfo(view,fileName)
+
+% prepend Pre
+fileName = fullfile(viewGet(view,'homeDir'),'Pre',fileName);
+
+% get fidInfo
+[xform fidInfo] = fid2xform(fileName);
