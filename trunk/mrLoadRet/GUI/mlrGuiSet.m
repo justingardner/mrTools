@@ -217,7 +217,7 @@ switch lower(field)
   if (nScans > 1)
     set(handles.scanSlider,'Min',1);
     set(handles.scanSlider,'Max',nScans);
-    set(handles.scanSlider,'sliderStep',[1/(nScans-1) 2/(nScans-1)]);          
+    set(handles.scanSlider,'sliderStep',[1/(nScans-1) 1/(nScans-1)]);          
     set(handles.scanSlider,'Visible','on');
     curScan = min(curScan,nScans);
   else
@@ -252,7 +252,7 @@ switch lower(field)
     set(handles.sliceSlider,'Min',1);
     set(handles.sliceSlider,'Max',value);
     % reset step
-    set(handles.sliceSlider,'sliderStep',[1/(value-1),2/(value-1)]);
+    set(handles.sliceSlider,'sliderStep',[1/(value-1),1/(value-1)]);
     set(handles.sliceSlider,'Visible','on');
   else
     set(handles.sliceSlider,'Visible','off');
