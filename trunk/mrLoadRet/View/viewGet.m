@@ -3686,8 +3686,20 @@ switch lower(param)
           val = [2:2:nslices,1:2:nslices-1];
         end
       else
-        mrWarnDlg('(viewGet) Slice ordering is unknown for this site. Using default order: [1:nslices]. If this is incorrect, then edit viewGet sliceOrder to add the convention for your site.');
-        val = [1:nslices];
+	% check for fidinfo
+	fidInfo = viewGet(v,'fidInfo',s,g);
+	if isempty(fidInfo) 
+	  % DEFAULT, warn user and return slices in slice order
+	  mrWarnDlg('(viewGet) Slice ordering is unknown for this site. Using default order: [1:nslices]. If this is incorrect, then edit viewGet sliceOrder to add the convention for your site.');
+	  val = [1:nslices];
+	else
+	  % extract from fidInfo
+	  if length(fidInfo) > 1
+	    disp(sprintf('(viewGet:sliceOrder) There seems to be more than one associated FIDs with this scan, returning the sliceOrder for the first fid: %s',fidInfo{1}.fidname));
+	  end
+	  % get slice order
+	  val = fidInfo{1}.sliceOrder;
+	end
       end
     end
     

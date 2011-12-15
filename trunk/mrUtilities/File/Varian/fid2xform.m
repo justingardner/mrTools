@@ -36,6 +36,13 @@ elseif ~isstruct(procpar)
   return
 end
 
+% get the slice order
+if isfield(procpar,'pss')
+  [sortedpss sliceOrder] = sort(procpar.pss);
+else
+  sliceOrder = [];
+end
+
 % move pro if called for
 if movepro ~= 0
   procpar.pro = procpar.pro + movepro;
@@ -371,6 +378,7 @@ else
   info.dim(4) = 1;
 end
 info.tr = tr;
+info.sliceOrder = sliceOrder;
 
 % keep procpar
 info.procpar = procpar;
