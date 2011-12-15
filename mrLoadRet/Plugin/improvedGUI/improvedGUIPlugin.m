@@ -175,6 +175,7 @@ switch action
     mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','callback',@exportImage_Callback);
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export Images');
+    mlrAdjustGUI(thisView,'add','menu','Apply MotionComp Transforms','/Analysis/Motion Compensation/Slice Time Correction (only)','callback',@applyMotionCompTransformsCallBack,'tag','applyMotionCompTransformMenuItem');
     
     %remove show ROI menus and re-arrange ROI menus
     mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','location','/ROI/Convert');
@@ -368,3 +369,10 @@ end
 
 scanList = eval(params.scanList);
 mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
+
+function applyMotionCompTransformsCallBack(hObject, dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
+
+applyMotionCompTransform(thisView);
