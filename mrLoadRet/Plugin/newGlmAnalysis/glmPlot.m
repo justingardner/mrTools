@@ -501,7 +501,9 @@ if ~isfield(d,'estimationSupersampling')
 end
 time = ((0:length(actualTSeries)-1)+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
 
-frequencies = 1/length(actualTSeries)/2:1/length(actualTSeries)/2:1/d.tr/2;
+% frequencies = 1/length(actualTSeries)/d.tr:1/length(actualTSeries)/d.tr:1/d.tr/2;
+% frequencies = (1/length(actualTSeries):1/length(actualTSeries):1/2)./d.tr;
+frequencies = (1:1:length(actualTSeries)/2)./length(actualTSeries)./d.tr;
 
 
 delete(h);
