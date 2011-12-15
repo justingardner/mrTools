@@ -52,7 +52,7 @@ function pasteOverlayCallback(hObject, dump)
 mrGlobals;
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 pasteOverlay(thisView, MLR.clipboard);
-refreshMLRDisplay(viewNum);
+refreshMLRDisplay(thisView.viewNum);
 
 
 % --------------------------------------------------------------------

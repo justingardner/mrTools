@@ -121,8 +121,8 @@ for iOverlay = overlayNum
            scatter(baseData,roiOverlayData,2);
            title(sprintf('%s (%d voxels)', rois{iRoi}.name, size(roiOverlayData,1)),'interpreter','none');
 
-           Xlabel(baseName,'interpreter','none');
-           Ylabel(overlayName,'interpreter','none');
+           xlabel(baseName,'interpreter','none');
+           ylabel(overlayName,'interpreter','none');
 
            base_max = max(overlayMax,max(baseData));
            base_min = min(overlayMin,min(baseData));
