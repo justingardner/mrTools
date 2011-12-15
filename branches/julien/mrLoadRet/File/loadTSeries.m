@@ -1,6 +1,6 @@
 function tseries = loadTSeries(view,scan,slice,frame,x,y,precision, groupNum)
 %
-% tSeries = loadTSeries(view,[scan],[slice],[frame],[x],[y],[precision])
+% tSeries = loadTSeries(view,[scan],[slice],[frame],[x],[y],[precision], [groupNum])
 %
 % Loads the tSeries corresponding to the specified scan and slice. The
 % tseries files must be in <homedir>/<view>/<group>/TSeries, and must be
@@ -47,10 +47,10 @@ if ieNotDefined('y')
   y = [];
 end
 if ieNotDefined('precision'), precision = mrGetPref('defaultPrecision');end
-if ieNotDefined('groupNum'), groupNum = viewGet(view,'curGroup');;end
+if ieNotDefined('groupNum'), groupNum = viewGet(view,'curGroup');end
 
 % Get the pathStr to the tseries file
-pathStr = viewGet(view,'tseriesPathStr',scan);
+pathStr = viewGet(view,'tseriesPathStr',scan,groupNum);
 % Error if file not found
 if ~exist(pathStr,'file')
   mrErrorDlg(['File ',pathStr,' not found']);
