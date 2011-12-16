@@ -554,6 +554,29 @@ switch lower(param)
     end
     val = scanNumMatch;
     val2 = groupNumMatch;
+    % check for more than one scan in the same group that
+    % has the same filename. This should never happen since
+    % filenames are meant to be unique identifiers of the scan
+    uniqueGroupNumMatch = unique(groupNumMatch);
+    if length(uniqueGroupNumMatch) ~= length(groupNumMatch)
+      % init new arrays
+      val = [];
+      val2 = [];
+      % go through all unique group nums
+      for i = 1:length(uniqueGroupNumMatch)
+	% find which ones are duplicated so we can display
+	whichMatch = find(uniqueGroupNumMatch(i) == groupNumMatch);
+	if length(whichMatch) > 1
+	  % display warning
+	  mrWarnDlg(sprintf('(viewGet:scanNum) !!! Scans %s in group %s have the same filename: %s. Returning only scan %i. !!!\nNote this should not happen because tseries names for scans are meant to be unique identifiers. You should probably delete one of the scans.',num2str(scanNumMatch(whichMatch),'%i '),viewGet(view,'groupName',groupNumMatch(whichMatch(1))),viewGet(view,'tSeriesFile',scanNumMatch(whichMatch(1)),groupNumMatch(whichMatch(1))),scanNumMatch(whichMatch(1))));
+	end
+	% now keep only the first match
+	val(end+1) = scanNumMatch(whichMatch(1));
+	val2(end+1) = groupNumMatch(whichMatch(1));
+      end
+    end
+    
+
   case {'scannumfromdescription'}
     % scanNum = viewGet(view,'scanNumFromDescription',description,<groupNum>,<searchType>);
     % get scanNum(s) in current group that have a matching description
