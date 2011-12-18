@@ -1943,7 +1943,13 @@ curGroupName = viewGet(view,'groupName',curgroup);
 for a = 1:viewGet(view,'numberofAnalyses')
   analysisReconcileFunction = viewGet(view,'reconcilefunction',a);
   analysisParams = viewGet(view,'analysisParams',a);
-  view.analyses{a}.params = feval(analysisReconcileFunction,curGroupName,analysisParams);
+  % check for d structure
+  if isfield(view.analyses{a},'d')
+    % with d, field make sure that gets updated too
+    [view.analyses{a}.params view.analyses{a}.d] = feval(analysisReconcileFunction,curGroupName,analysisParams,view.analyses{a}.d);
+  else
+    view.analyses{a}.params = feval(analysisReconcileFunction,curGroupName,analysisParams);
+  end
   for ov = 1:viewGet(view,'numberofOverlays',a);
     overlay = viewGet(view,'overlay',ov,a);
     if ~isempty(overlay)
