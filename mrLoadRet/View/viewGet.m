@@ -446,6 +446,8 @@ switch lower(param)
     end
   case{'junkframestotal','totaljunkedframes'}
     % gets all junk frames from this scan and the scans this was made from
+    % that is the total of all frames that have been junked. This
+    % does not included the number of frames in the junkFrames parameter
     % n = viewGet(view,'totalJunkedFrames',scanNum,[groupNum])
     % n = viewGet([],'totalJunkedFrames',scanNum,groupNum)
     % n = viewGet(view,'totalJunkedFrames',scanNum,[])
