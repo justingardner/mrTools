@@ -11,9 +11,14 @@ ph = viewGet(view,'ph');
 if isempty(co) | isempty(amp) | isempty(ph)
     mrErrorDlg('corAnal must be loaded.');
 end
-coval = co.data{scan}(x,y,z);
-ampval = amp.data{scan}(x,y,z);
-phval = ph.data{scan}(x,y,z);
+if (length(co.data) >= scan) && ~isempty(co.data{scan})
+  coval = co.data{scan}(x,y,z);
+  ampval = amp.data{scan}(x,y,z);
+  phval = ph.data{scan}(x,y,z);
+else
+  disp(sprintf('(corAnalPlot) overlays do not exist for this scan. Consider rerunning corAnal'));
+  return
+end
 
 % Analysis parameters
 ncycles = viewGet(view,'ncycles',scan);
