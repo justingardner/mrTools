@@ -3510,35 +3510,39 @@ switch lower(param)
     end
   case {'overlaymin'}
     % overlayMin = viewGet(view,'overlayMin');
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = get(handles.overlayMinSlider,'Value');
+    % overlayMin = viewGet(view,'overlayMin',<overlayName>);
+    if (length(varargin) > 0)
+      overlayNum = viewGet(view,'overlayNum',varargin{1});
     else
-      % get overlayMin from analysis structure
       overlayNum = viewGet(view,'currentOverlay');
-      analysisNum = viewGet(view,'currentAnalysis');
-      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
-        val = view.analyses{analysisNum}.overlays(overlayNum).clip(1);
-      else
-        val = 0;
-      end
+    end
+    if isempty(overlayNum)
+      disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
+    end
+    % get overlayMin from analysis structure
+    analysisNum = viewGet(view,'currentAnalysis');
+    if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+      val = view.analyses{analysisNum}.overlays(overlayNum).clip(1);
+    else
+      val = 0;
     end
   case {'overlaymax'}
     % overlayMax = viewGet(view,'overlayMax');
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = get(handles.overlayMaxSlider,'Value');
+    % overlayMax = viewGet(view,'overlayMax',<overlayName>);
+    if (length(varargin) > 0)
+      overlayNum = viewGet(view,'overlayNum',varargin{1});
     else
-      % get overlayMax from analysis structure
       overlayNum = viewGet(view,'currentOverlay');
-      analysisNum = viewGet(view,'currentAnalysis');
-      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
-        val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
-      else
-        val = 1;
-      end
+    end
+    if isempty(overlayNum)
+      disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
+    end
+    % get overlayMax from analysis structure
+    analysisNum = viewGet(view,'currentAnalysis');
+    if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+      val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
+    else
+      val = 1;
     end
   case {'rotate'}
     % rotate = viewGet(view,'rotate');
