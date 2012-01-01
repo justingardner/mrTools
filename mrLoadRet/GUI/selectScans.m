@@ -1,5 +1,5 @@
-function scanList = selectScans(view,title)
-% scanList = selectScans(view,[title]);
+function scanList = selectScans(view,title,scanNums)
+% scanList = selectScans(view,[title],[scanNums]);
 %
 %   Gather a list of scans available in Inplane/TSeries
 %   and query the user for a sub-selection.
@@ -9,6 +9,9 @@ function scanList = selectScans(view,title)
 %   Use selectScans if you will be analyzing the tSeries. 
 %   Use chooseScans, if your code does not depend on the 
 %   presence/absence of the tSeries files.
+%
+%   If scanNums is present, then will only allow the user
+%   to select a scan from the scanNums list
 %
 % Output:
 %  scanList: list of selected scans.
@@ -23,7 +26,13 @@ if ieNotDefined('title')
   title = 'Choose scans';
 end
 
+% get number of scans
 nScans = viewGet(view,'nScans');
+
+% get scanNums
+if ieNotDefined('scanNums')
+  scanNums = 1:nScans;
+end
 
 %Check for zero:
 if nScans == 0
@@ -31,12 +40,12 @@ if nScans == 0
   return
 end
 
-for i = 1:nScans
-  scanNames{i} = sprintf('%i:%s (%s)',i,viewGet(view,'description',i),viewGet(view,'tSeriesFile',i));
+for i = 1:length(scanNums)
+  scanNames{i} = sprintf('%i:%s (%s)',scanNums(i),viewGet(view,'description',scanNums(i)),viewGet(view,'tSeriesFile',scanNums(i)));
 end
 
 % Which scans to analyze?
 iSel = buttondlg(title, scanNames);
-scanList = find(iSel);
+scanList = scanNums(find(iSel));
 
 return;
