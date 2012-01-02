@@ -549,71 +549,90 @@ if isfield(gParams.varinfo{varnum},'incdec') && isfield(gParams.varinfo{varnum},
 end
 
 %%%%%%%%%%%%%%%%%%%%
-% callback for ok
+% callback for help
 %%%%%%%%%%%%%%%%%%%%
 function helpHandler
 
 global gParams;
 global mrDEFAULTS;
 
-if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
-  figure(gParams.helpFignum);
-else
-  gParams.helpFignum = figure;
-end
-
-% turn off menu/title etc.
-set(gParams.helpFignum,'MenuBar','none');
-set(gParams.helpFignum,'NumberTitle','off');
-set(gParams.helpFignum,'Name','Parameter help');
-
-% set close handler
-set(gParams.helpFignum,'DeleteFcn',@helpcloseHandler);
+% some settings that control how many rows/cols will be displayed
+charsPerRow = 90;
+numRowsPerCol = 30;
 
 % figure out how many rows
-charsPerRow = 120;
 numrows = 1;
 % add number of rows each line needs
 for i = 1:length(gParams.varinfo)
   numrows = numrows+max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
 end
-numcols = 8;
+numcols = 5;
 
-% set the position and size
-figpos = mrGetFigLoc('mrParamsDialogHelp');
-if isempty(figpos)
-  figpos = get(gParams.helpFignum,'Position');
-end
-
-% if we have more than 25 rows then split into multiple columns
-% but at most we make 6 multi columns
-figMultiCols = min(ceil(numrows/25),6);
-figrows = ceil(numrows/figMultiCols);
+% see if we have to split into more columns
+figMultiCols = ceil(numrows/numRowsPerCol);
 figcols = numcols*figMultiCols;
-% for really big ones, reduce the button size
-if (numcols > 2) && (figMultiCols > 3)
-  gParams.buttonWidth = round(gParams.buttonWidth/2);
-end
+
+% keep the settings
 gParams.help.numcols = numcols;
 gParams.help.numrows = numrows;
-gParams.help.figrows = figrows;
-gParams.help.figMultiCols = figMultiCols;
+gParams.help.figrows = min(numrows,numRowsPerCol);
+gParams.help.figMultiCols = min(figMultiCols,2);
 
-figpos(4) = 2*gParams.topMargin+figrows*gParams.buttonHeight+(figrows-1)*gParams.margin;
-figpos(3) = 2*gParams.leftMargin+gParams.help.figMultiCols*numcols*gParams.buttonWidth+(gParams.help.figMultiCols*numcols-1)*gParams.margin;
-set(gParams.helpFignum,'Position',figpos);
+% loop variable - controls which parameter we are displaying
+startParam = 1;
 
-% put up the info
-rownum = 1;
-for i = 1:length(gParams.varinfo)
-  numLines = max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
-  makeTextbox(gParams.helpFignum,gParams.varinfo{i}.name,rownum,1,2,numLines,1);
-  set(makeTextbox(gParams.helpFignum,gParams.varinfo{i}.description,rownum,3,numcols-2,numLines,1),'HorizontalAlignment','Left');
-  rownum = rownum+numLines;
+iFig = 0;
+for iCol = 1:2:figMultiCols
+
+  % this figure num
+  iFig = iFig + 1;
+
+  % open the figure
+  if isfield(gParams,'helpFignum') && (length(gParams.helpFignum)>=iFig) && (gParams.helpFignum(iFig) ~= -1)
+    figure(gParams.helpFignum(iFig));
+  else
+    gParams.helpFignum(iFig) = figure;
+  end
+
+  % turn off menu/title etc.
+  set(gParams.helpFignum(iFig),'MenuBar','none');
+  set(gParams.helpFignum(iFig),'NumberTitle','off');
+  set(gParams.helpFignum(iFig),'Name','Parameter help');
+
+  % set close handler
+  set(gParams.helpFignum(iFig),'DeleteFcn',@helpcloseHandler);
+
+  % get number of columns for this figure
+  thisMultiCols = min(figMultiCols-iCol+1,2);
+
+  % set the position and size
+  figpos = mrGetFigLoc('mrParamsDialogHelp');
+  if isempty(figpos)
+    figpos = get(gParams.helpFignum(iFig),'Position');
+  end
+  figpos(4) = 2*gParams.topMargin+gParams.help.figrows*gParams.buttonHeight+(gParams.help.figrows-1)*gParams.margin;
+  figpos(3) = 2*gParams.leftMargin+thisMultiCols*numcols*gParams.buttonWidth+(thisMultiCols*numcols-1)*gParams.margin;
+  figpos(2) = figpos(2) - 40*(iFig-1)/2;
+  figpos(1) = figpos(1) + 40*(iFig-1)/2;
+  set(gParams.helpFignum(iFig),'Position',figpos);
+  
+  % put up the info
+  rownum = 1;
+  for i = startParam:length(gParams.varinfo)
+    % how many lines are needed for this line of text
+    numLines = max(1,ceil(length(gParams.varinfo{i}.description)/charsPerRow));
+    if (rownum+numLines) >= numRowsPerCol*2,break,end
+    % make the textbox for the parameter name
+    makeTextbox(gParams.helpFignum(iFig),gParams.varinfo{i}.name,rownum,1,1,numLines,1);
+    % make the textbox for the help info
+    set(makeTextbox(gParams.helpFignum(iFig),gParams.varinfo{i}.description,rownum,2,numcols-1,numLines,1),'HorizontalAlignment','Left');
+    rownum = rownum+numLines;
+  end
+  startParam = i;
+  
+  % make close button
+  makeButton(gParams.helpFignum(iFig),'Close','helpclose',min(figMultiCols-iCol+1,2)*gParams.help.figrows,numcols,1,1);
 end
-
-% make close button
-makeButton(gParams.helpFignum,'Close','helpclose',numrows,numcols,1,1);
 
 %%%%%%%%%%%%%%%%%%%%
 % callback for close
@@ -641,13 +660,18 @@ function helpcloseHandler(varargin)
 
 global gParams;
 
-if isfield(gParams,'helpFignum') && (gParams.helpFignum ~= -1)
-  mrSetFigLoc('mrParamsDialogHelp',get(gParams.helpFignum,'Position'));
-  delete(gParams.helpFignum);
-  gParams.helpFignum = -1;
-else
-  if ~isfield(gParams,'helpFigpos')
-    gParams.helpFigpos = [];
+if ~isfield(gParams,'helpFigpos')
+  gParams.helpFigpos = [];
+end
+
+% close all help figures
+if isfield(gParams,'helpFignum') 
+  for iFig = length(gParams.helpFignum):-1:1
+    if gParams.helpFignum(iFig) ~= -1
+      mrSetFigLoc('mrParamsDialogHelp',get(gParams.helpFignum(iFig),'Position'));
+      delete(gParams.helpFignum(iFig));
+      gParams.helpFignum(iFig) = -1;
+    end
   end
 end
 
