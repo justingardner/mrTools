@@ -12,7 +12,7 @@ function position = getSubplotPosition(X,Y,horizontalGrid,verticalGrid,xMargin,y
 %                 They are independent from the dimensions of the grid and are removed from it
 %     output: - position vector [left bottom width height]. if no margin is specified, it is better to use this position as 'outerposition'
 %
-%   example: h = axes('outerposition',getSubplotPosition([2,2:3,[1 1 .5],[.5 1 1 .5],.1)) 
+%   example: h = axes('outerposition',getSubplotPosition(2,2:3,[1 1 .5],[.5 1 1 .5],.1)) 
 %                     creates a virtual 3*4 grid in the figure
 %                     and draws axes on the second columns, spanning the second and third rows of the grid
 
