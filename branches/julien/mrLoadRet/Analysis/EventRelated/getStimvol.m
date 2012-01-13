@@ -91,7 +91,7 @@ if isfield(var,'forceStimOnSampleOnset') && ~var.forceStimOnSampleOnset
             time_remainders = [time_remainders rem(d.stimfile{i_file}.mylog.stimtimes_s{i_type},d.tr)];
          end
       else
-         disp(sprintf('(getStimvol) off TR stim onset is not supported for mgl or afni files (%s). Forcing stim on (sub)sample onset',d.stimfile{i_file}.filename));
+         disp(sprintf('(getStimvol) off TR stim onset is not supported for mgl or afni files. Forcing stim on (sub)sample onset'));
          time_remainders = [];
          break;
       end
@@ -108,13 +108,13 @@ if isfield(var,'stimDuration')
                   duration_remainders = [duration_remainders rem(d.stimfile{i_file}.mylog.stimdurations_s{i_type},d.tr)];
                end
             else
-               disp(sprintf('(getStimvol) Field stimdurations_s missing in file %s. Using stimDuration = 1 (sub)frame',d.stimfile{i_file}.filename));
+               disp(sprintf('(getStimvol) Field stimdurations_s missing, using stimDuration = 1 (sub)frame'));
                duration_remainders = [];
                var.stimDuration = d.tr;
                break;
             end
          else
-            disp(sprintf('(getStimvol) Stim duration from files not supported for mgl or afni files (%s). Using stimDuration = 1 (sub)frame',d.stimfile{i_file}.filename));
+            disp(sprintf('(getStimvol) Stim duration from files not supported for mgl or afni files, using stimDuration = 1 (sub)frame'));
             duration_remainders = [];
             var.stimDuration = d.tr;
             break;
