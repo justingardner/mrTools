@@ -1,7 +1,7 @@
 % selectInList.m
 %       
 %      usage: [numberList,names] = selectInList(thisView,type,title,preselected,groupNum)
-%         by: julien ebsle
+%         by: julien besle
 %       date: 20/12/2010
 %        $Id$
 %    purpose: asks users to select a list of a given type of mrLoadRet variables from the thisView
@@ -37,6 +37,12 @@ switch(lower(type))
   case {'rois','roi'}
     type='ROIs';
     names = viewGet(thisView,'roiNames');
+    
+  otherwise
+    mrWarnDlg(['(selectInList) Unknown type ''' type '''']);
+    numberList=[];
+    names=[];
+    return;
 
 end
 numberInView = length(names);
