@@ -1631,15 +1631,17 @@ switch lower(param)
 	params.replace = replaceDuplicates;
   params.roiName = ROI.name;
       end
+      % update the name
+      ROI.name = params.roiName;
+      [dump,nameMatch] = find(strcmp(ROI.name,roiNames));
       if params.replace
-	% if replace, then set the pos to the ROi to delete 
-  %(JB:This replaces a previous call to viewSet('deleteROI'), because we don't want the ROi to change position in the list)
-  pos = nameMatch;
+        if ~isempty(nameMatch)
+          % if replace and name matches, then set the pos to the ROi to delete 
+          %(JB:This replaces a previous call to viewSet('deleteROI'), because we don't want the ROi to change position in the list)
+          pos = nameMatch;
+        end
 	nameMatch=[];
       else
-	% change the name
-	ROI.name = params.roiName;
-  [dump,nameMatch] = find(strcmp(ROI.name,roiNames));
       end
     end
     % Add it to view.ROIs
