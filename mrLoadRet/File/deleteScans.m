@@ -72,6 +72,7 @@ for iScan = 1:length(scanList)
     end
     if ~isempty(v.figure)
       refreshMLRDisplay(v.viewNum);
+      v = viewSet(v,'overlayCache','init');
     end
 end
 if ~isempty(scanList)

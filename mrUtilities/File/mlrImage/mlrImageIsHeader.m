@@ -16,19 +16,22 @@
 %                     specifies the xform from the image
 %                     coordinates to the magnet coordinates. Same
 %                     as a nifti header qform when qform_code = 1.
+%                     Will be empty if no such info exists.
 %              sform: a 4x4 homogenous transform matrix that
 %                     specifies the xform from the image
 %                     coordinates to the magnet coordinates for
 %                     the canonical volume. This is the same
-%                     as a nifti header qform when qform_code = 1.
+%                     as a nifti header qform when sform_code = 1.
+%                     Will be empty if no such info exists.
 %            vol2mag: This is the xform from the *canonical* volume
 %                     coordinates to the magnet coordinates for the
 %                     canonical. This is useful for checking which
 %                     volume the image was aligned to (i.e. where
 %                     it got the sform from). It is also useful for
 %                     when trying to compute the talairach coordinates.
+%                     Will be empty if no such info exists.
 %            vol2tal: This is the xform from the *canonical* volume
-%                     coordinates to the magnet coordinates for the
+%                     coordinates to the talairach coordinates for the
 %                     canonical. Note that we keep this matrix
 %                     since it allows us to go back and change the
 %                     talairach points on the canonical volume and
@@ -37,6 +40,7 @@
 %                     the xform from the image coordinates to
 %                     talairach coordiates, you can do:
 %                     img2tal = vol2tal * inv(vol2mag) * sform * shiftOriginXform;
+%                     Will be empty if no such info exists.
 %               ext: The file extension for which the image was saved
 %          filename: The original filename from which the image was loaded
 %              type: The type of the image that was loaded 
@@ -101,7 +105,7 @@ end
 
 % set pixdim to same length as dim with all ones
 if ~isfield(h,'pixdim')
-  h.pixdim = ones(size(h.dim));
+  h.pixdim = nan(size(h.dim));
 end
 h.pixdim(end+1:h.nDim) = nan;
 h.pixdim = h.pixdim(1:h.nDim);

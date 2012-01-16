@@ -10,12 +10,20 @@
 %       e.g.: [d h] = mlrImageOrient('LPI',data,h);
 %  
 %
-function [data h] = mlrImageOrient(orient,data,h)
+function [data h] = mlrImageOrient(orient,varargin)
 
 % check arguments
-if ~any(nargin == [3])
+if nargin < 2
   help mlrImageOrient
   return
+end
+
+[imageArgs] = mlrImageParseArgs(varargin);
+if isempty(imageArgs) || ~mlrImageIsImage(imageArgs{1})
+  disp(sprintf('(mlrImageOrient) No image to reorient'));
+  return
+else
+  [data h] = mlrImageLoad(imageArgs{1});
 end
 
 % convert the orientation string into something easier to handle
@@ -81,3 +89,11 @@ h.qform = h.qform*xform;
 if ~isempty(h.sform)
   h.sform = h.sform*xform;
 end
+
+% fix the pixdim
+if length(h.pixdim) >= 3
+  h.pixdim(1:3) = abs((xform(1:3,1:3)*h.pixdim(1:3)')');
+end
+
+% fix dimensions
+h.dim = size(data);

@@ -14,6 +14,12 @@
 %
 function [params params2] = mrParamsDialog(varargin)
 
+% check arguments
+if nargin < 1
+  help mrParamsDialog
+  return
+end
+
 % if this is a cell array, it means to open up the figure
 % using the variable name, default value pairs given
 if iscell(varargin{1})
@@ -311,6 +317,20 @@ for i = 1:length(gParams.varinfo)
   end
 end
 
+% set ok and cancel callback
+if ~isempty(okCallback)
+  gParams.okCallback = okCallback;
+  if ~isempty(callbackArg)
+    gParams.callbackArg = callbackArg;
+  end
+end
+if ~isempty(cancelCallback)
+  gParams.cancelCallback = cancelCallback;
+  if ~isempty(callbackArg)
+    gParams.callbackArg = callbackArg;
+  end
+end
+
 % for each value that controls another one, call the buttonHandler to
 % set up the correct dependency
 for i = 1:length(gParams.varinfo)
@@ -344,7 +364,6 @@ if ~isempty(callback)
   % if another argument is specified then put up 
   % an ok button with the callback
   if ~isempty(okCallback)
-    gParams.okCallback = okCallback;
     okString = 'OK';
 %   else
 %     makeOkButton = 0;
@@ -352,7 +371,6 @@ if ~isempty(callback)
   % if a final argument is specified then put up 
   % a cancel button with the callback
   if ~isempty(cancelCallback)
-    gParams.cancelCallback = cancelCallback;
     makeCancelButton = 1;
   else
     makeCancelButton = 0;
@@ -783,7 +801,11 @@ function okHandler(varargin)
 global gParams;
 gParams.ok = 1;
 if isfield(gParams,'okCallback')
-  callbackEval(gParams.okCallback);
+  if isfield(gParams,'callbackArg')
+    callbackEval(gParams.okCallback,gParams.callbackArg);
+  else
+    callbackEval(gParams.okCallback);
+  end
   closeHandler;
 else
   uiresume;
@@ -797,7 +819,11 @@ function cancelHandler(varargin)
 global gParams;
 gParams.ok = 0;
 if isfield(gParams,'cancelCallback')
-  callbackEval(gParams.cancelCallback);
+  if isfield(gParams,'callbackArg')
+    callbackEval(gParams.cancelCallback,gParams.callbackArg);
+  else
+    callbackEval(gParams.cancelCallback);
+  end
   closeHandler;
 else
   uiresume;
