@@ -1,24 +1,32 @@
 % askuser.m
 %
-%      usage: askuser(question,<toall>)
+%      usage: askuser(question,<toall>,<useDialog>)
 %         by: justin gardner
 %       date: 02/08/06
 %    purpose: ask the user a yes/no question. Question is a string or a cell arry of strings with the question. This
 %             function will return 1 for yes and 0 for no. If toall is set to 1, then
 %             'Yes to all' will be an option, which if selected will return inf
 %
-function r = askuser(question,toall)
+function r = askuser(question,toall,useDialog)
 
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3])
   help askuser
   return
 end
 
-verbose = mrGetPref('verbose');
-if strcmp(verbose,'Yes'),verbose = 1;else,verbose = 0;end
-
 if ieNotDefined('toall'),toall = 0;,end
+if ieNotDefined('useDialog'),useDialog=0;end
+
+% if explicitly set to useDialog then use dialog, otherwise
+% check verbose setting
+if useDialog
+  verbose = 1;
+else
+  verbose = mrGetPref('verbose');
+  if strcmp(verbose,'Yes'),verbose = 1;else,verbose = 0;end
+end
+
 r = [];
 
 question=cellstr(question); %convert question into a cell array

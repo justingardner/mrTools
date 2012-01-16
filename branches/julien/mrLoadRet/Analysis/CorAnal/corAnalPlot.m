@@ -10,8 +10,8 @@ function corAnalPlot(view,overlayNum,scan,x,y,z,roi)
 co = viewGet(view,'co');
 amp = viewGet(view,'amp');
 ph = viewGet(view,'ph');
-if isempty(co) | isempty(amp) | isempty(ph)
-    mrErrorDlg('corAnal must be loaded.');
+if isempty(co) || isempty(amp) || isempty(ph)
+    mrErrorDlg('(corAnalPlot) corAnal must be loaded.');
 end
 
 % Analysis parameters

@@ -124,7 +124,13 @@ for s = 1:viewGet(view,'numberOfScans',groupNum)
     disp(sprintf('   Original Filename: %s Group: %s',retval(s).originalFilename{i},retval(s).originalGroupname{i}));
   end
   for i = 1:length(retval(s).stimFilename)
-    disp(sprintf('   StimFilename: %s',retval(s).stimFilename{i}));
+    if iscell(retval(s).stimFilename{i})
+      for j = 1:length(retval(s).stimFilename{i})
+	disp(sprintf('   StimFilename: %s',retval(s).stimFilename{i}{j}));
+      end
+    else
+      disp(sprintf('   StimFilename: %s',retval(s).stimFilename{i}));
+    end
   end
 
   disp(sprintf('   junkFrames=[%s] totalJunkedFrames=[%s]',num2str(retval(s).junkFrames),num2str(retval(s).totalJunkedFrames)));

@@ -367,7 +367,24 @@ switch lower(param)
       end
     end
 
-  case {'spikeinfo'}
+ case {'auxparam'}
+    % v = viewSet(v,'auxParam','paramName',paramValue,scanNum,groupNum)
+    % this allows you to set an auxilary parameter for the scan, for
+    % example the TR or number of shots or sense acceleration factor
+    % or some other piece of information that you wish to keep
+    % but is not included. You decide the name of the param (paramName).
+    % Note that if you want the parameter to be saved you need to
+    % call saveSession after setting the auxParam
+    if length(varargin) < 1
+      disp(sprintf('(viewSet) Must pass in a paramName and value for setting an auxParam'));
+      return
+    end
+    [s g] = getScanAndGroup(view,{varargin{2:end}});
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).auxParams(s).(fixBadChars(val)) = varargin{1};
+    end
+ case {'spikeinfo'}
     % view = viewSet(view,'spikeinfo',spikeinfo,scanNum,groupNum);
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
@@ -1423,7 +1440,35 @@ switch lower(param)
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
     end
         
-
+  case {'overlaydatareplace'}
+    % v = viewSet(v,'overlayDataReplace',overlayData,overlayName);
+    % used to replace the overlay data with the passed in matrix
+    % for the named overlay. overlayData should be a matrix with
+    % dimensions equal to scanDims that contains the new overlay data
+    if ieNotDefined('varargin')
+      overlayNum = viewGet(view,'currentOverlay');
+    else
+      overlayNum = viewGet(view,'overlayNum',varargin{1});
+    end
+    if ~isempty(overlayNum)
+      % check size of overlayData
+      scanDims = viewGet(view,'scanDims');
+      if ~isequal(scanDims,size(val))
+	disp(sprintf('(viewSet:overlayDataReplace) The passed in overlay has dims: %s, but should have dimensions equal to the scan dims: %s',num2str(size(val)),num2str(scanDims)));
+      else
+	% get current analysis
+	analysisNum = viewGet(view,'currentAnalysis');
+	scanNum = viewGet(view,'curScan');
+	% and if everything is vaild
+	if ~isempty(analysisNum) & ~isempty(overlayNum) & ~isempty(view.analyses{analysisNum}.overlays)
+	  view.analyses{analysisNum}.overlays(overlayNum).data{scanNum} = val;
+	  % reset the overlay cache
+	  view = viewSet(view,'overlayCache','init');
+	end
+      end
+    else
+      disp(sprintf('(viewSet:overlayDataReplace) Unknown overlay'));
+    end
     
   case {'overlayname'}
     % view = viewSet(view,'overlayname',nameString,[overlayNum]);
@@ -2049,7 +2094,13 @@ curGroupName = viewGet(view,'groupName',curgroup);
 for a = 1:viewGet(view,'numberofAnalyses')
   analysisReconcileFunction = viewGet(view,'reconcilefunction',a);
   analysisParams = viewGet(view,'analysisParams',a);
-  view.analyses{a}.params = feval(analysisReconcileFunction,curGroupName,analysisParams);
+  % check for d structure
+  if isfield(view.analyses{a},'d')
+    % with d, field make sure that gets updated too
+    [view.analyses{a}.params view.analyses{a}.d] = feval(analysisReconcileFunction,curGroupName,analysisParams,view.analyses{a}.d);
+  else
+    view.analyses{a}.params = feval(analysisReconcileFunction,curGroupName,analysisParams);
+  end
   for ov = 1:viewGet(view,'numberofOverlays',a);
     overlay = viewGet(view,'overlay',ov,a);
     if ~isempty(overlay)

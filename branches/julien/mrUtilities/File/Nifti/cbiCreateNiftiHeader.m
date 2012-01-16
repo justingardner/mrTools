@@ -161,7 +161,7 @@ function hdr=cbiCreateNiftiHeader(varargin)
   end
   if (use_qform)
     % Make sure qform44 is valid
-    if (~isempty(hdr.qform44) & ~isequal(hdr.qform44,eye(4)) & ~isequal(hdr.qform44,zeros(4,4)) & size(hdr.qform44)==[4,4])
+    if (~isempty(hdr.qform44) & ~((hdr.qform_code==0) & isequal(hdr.qform44,eye(4))) & ~isequal(hdr.qform44,zeros(4,4)) & size(hdr.qform44)==[4,4])
       hdr=cbiSetNiftiQform( hdr, hdr.qform44 );
     else
       % Else set all to null values
@@ -192,7 +192,7 @@ function hdr=cbiCreateNiftiHeader(varargin)
   end
   if (use_sform)
     % Make sure sform44 are valid
-    if (~isempty(hdr.sform44) & ~isequal(hdr.sform44,eye(4)) & ~isequal(hdr.sform44,zeros(4)) & size(hdr.sform44)==[4,4])
+    if (~isempty(hdr.sform44) & ~((hdr.sform_code==0) & isequal(hdr.sform44,eye(4))) & ~isequal(hdr.sform44,zeros(4)) & size(hdr.sform44)==[4,4])
       % Calculate srows
       hdr.srow_x=hdr.sform44(1,:);
       hdr.srow_y=hdr.sform44(2,:);
