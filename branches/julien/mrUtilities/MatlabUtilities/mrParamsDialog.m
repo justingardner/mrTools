@@ -802,7 +802,7 @@ global gParams;
 gParams.ok = 1;
 if isfield(gParams,'okCallback')
   if isfield(gParams,'callbackArg')
-    callbackEval(gParams.okCallback,gParams.callbackArg);
+    callbackEval(gParams.okCallback,[],gParams.callbackArg);
   else
     callbackEval(gParams.okCallback);
   end
@@ -820,7 +820,7 @@ global gParams;
 gParams.ok = 0;
 if isfield(gParams,'cancelCallback')
   if isfield(gParams,'callbackArg')
-    callbackEval(gParams.cancelCallback,gParams.callbackArg);
+    callbackEval(gParams.cancelCallback,[],gParams.callbackArg);
   else
     callbackEval(gParams.cancelCallback);
   end

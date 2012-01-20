@@ -13,6 +13,9 @@
 function varargout = callbackEval(callback,firstArgs,lastArgs)
 
 if ~ieNotDefined('firstArgs')
+  if ~iscell(firstArgs)
+    firstArgs = {firstArgs};
+  end
   arguments = firstArgs;
 else
   arguments = [];
@@ -27,6 +30,9 @@ if iscell(callback)
 end
 
 if ~ieNotDefined('lastArgs')
+  if ~iscell(firstArgs)
+    lastArgs = {lastArgs};
+  end
   arguments = [arguments lastArgs];
 end
 
