@@ -83,7 +83,7 @@ function retval = editOverlayGUImrParams(viewNum)
 %   paramsInfo{end+1} = {'overlayName', overlayName, 'The name for the overlay (e.g., co, am, or ph)'};
 
   % display dialog
-  mrParamsDialog(paramsInfo,'Change overlay colormap','modal=0','callback',@mrCmapCallback,'callbackArg',viewNum,'cancelCallback',{@mrCmapParamsCancel,viewNum,overlay});
+  mrParamsDialog(paramsInfo,'Change overlay colormap','modal=0','callback',@mrCmapCallback,'callbackArg',viewNum,'cancelCallback',{@mrCmapParamsCancel,overlay});
 
   return;
   
@@ -114,7 +114,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  mrCmapParamsCancel   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mrCmapParamsCancel(viewNum,oldOverlay)
+function mrCmapParamsCancel(oldOverlay,viewNum)
 
 thisView = viewGet(viewNum,'view');
 analysisNum = viewGet(thisView,'currentAnalysis');
