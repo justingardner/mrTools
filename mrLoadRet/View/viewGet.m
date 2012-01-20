@@ -3685,38 +3685,50 @@ switch lower(param)
   case {'overlaymin'}
     % overlayMin = viewGet(view,'overlayMin');
     % overlayMin = viewGet(view,'overlayMin',<overlayName>);
-    if (length(varargin) > 0)
-      overlayNum = viewGet(view,'overlayNum',varargin{1});
+    fig = viewGet(view,'fignum'); %JB: this is a quick fix for the case in which several overlays are loaded
+    if ~isempty(fig)              %    but it doesn't solve the problem if used form a script (no figure)
+      handles = guidata(fig);          
+      val = get(handles.overlayMinSlider,'Value');
     else
-      overlayNum = viewGet(view,'currentOverlay');
-    end
-    if isempty(overlayNum)
-      disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
-    end
-    % get overlayMin from analysis structure
-    analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
-      val = view.analyses{analysisNum}.overlays(overlayNum).clip(1);
-    else
-      val = 0;
+      if (length(varargin) > 0)
+        overlayNum = viewGet(view,'overlayNum',varargin{1});
+      else
+        overlayNum = viewGet(view,'currentOverlay');
+      end
+      if isempty(overlayNum)
+        disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
+      end
+      % get overlayMin from analysis structure
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+        val = view.analyses{analysisNum}.overlays(overlayNum).clip(1);
+      else
+        val = 0;
+      end
     end
   case {'overlaymax'}
     % overlayMax = viewGet(view,'overlayMax');
     % overlayMax = viewGet(view,'overlayMax',<overlayName>);
-    if (length(varargin) > 0)
-      overlayNum = viewGet(view,'overlayNum',varargin{1});
+    fig = viewGet(view,'fignum'); %JB: this is a quick fix for the case in which several overlays are loaded
+    if ~isempty(fig)              %    but it doesn't solve the problem if used form a script (no figure)
+      handles = guidata(fig);
+      val = get(handles.overlayMinSlider,'Value');
     else
-      overlayNum = viewGet(view,'currentOverlay');
-    end
-    if isempty(overlayNum)
-      disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
-    end
-    % get overlayMax from analysis structure
-    analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
-      val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
-    else
-      val = 1;
+      if (length(varargin) > 0)
+        overlayNum = viewGet(view,'overlayNum',varargin{1});
+      else
+        overlayNum = viewGet(view,'currentOverlay');
+      end
+      if isempty(overlayNum)
+        disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
+      end
+      % get overlayMax from analysis structure
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+        val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
+      else
+        val = 1;
+      end
     end
   case {'rotate'}
     % rotate = viewGet(view,'rotate');
