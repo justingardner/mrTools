@@ -52,6 +52,9 @@ switch lower(field)
 
  case {'roi'}
   % Choose the roi
+  if strcmp(get(handles.roiPopup,'style'),'popupmenu')
+    value = value(1); %if this is not a listbox, we set only one ROI;
+  end
   set(handles.roiPopup,'Value',value);
 
  case {'basepopup'}
