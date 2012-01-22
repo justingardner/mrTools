@@ -75,11 +75,9 @@ set(handles.coronalRadioButton,'Value',0);
 set(handles.axialRadioButton,'Value',0);
 set(handles.corticalDepth,'Visible','off');
 set(handles.corticalDepthSlider,'Visible','off');
-set(handles.corticalDepthSlider,'Value',0.5);
 set(handles.corticalDepthText,'Visible','off');
 if isfield(handles,'corticalMaxDepthSlider')
   set(handles.corticalMaxDepthSlider,'Visible','off');
-  set(handles.corticalMaxDepthSlider,'Value',0.5);
   set(handles.corticalMaxDepthText,'Visible','off');
 end
 
@@ -376,6 +374,10 @@ function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
   set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
+corticalDepthBins=mrGetPref('corticaldepthbins');
+corticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+set(hObject,'value',corticalDepth);
+set(hObject,'SliderStep',min(1/(corticalDepthBins-1)*[1 3],1));
 
 
 function corticalDepthText_Callback(hObject, eventdata, handles)
@@ -413,6 +415,9 @@ function corticalDepthText_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+corticalDepthBins=mrGetPref('corticaldepthbins');
+corticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+set(hObject,'string',num2str(corticalDepth));
 
 
 
