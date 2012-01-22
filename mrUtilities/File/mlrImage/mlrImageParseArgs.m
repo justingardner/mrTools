@@ -58,8 +58,8 @@ end
 filterspec = {'*.hdr;*.nii', 'Nifti Files (*.hdr, *.nii)';'*.sdt;*.edt;','SDT/SPR or EDT/EPR Files (*.sdt, *.spr)'};
 
 % arguments for different filetypes
-altArgs = {'xMin','xMax','yMin','yMax','zMin','zMax'};
-loadArgs = {'kspace','movepro','movepss'};
+altArgs = {'orient','xMin','xMax','yMin','yMax','zMin','zMax','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','rescale'};
+loadArgs = {'kspace','movepro','movepss','receiverNum'};
 
 % go through the list looking for image arguments
 iArg = 1;nArgs = length(args);
@@ -183,7 +183,7 @@ while iArg <= nArgs
   elseif isnumeric(args{iArg})
     % if it is a data structure, then collect its header
     % if there is one in the next argument
-    imageArgs{end+1}.data = args{iArg};
+    imageArgs{end+1}.data = double(args{iArg});
     iArg = iArg+1;
     if iArg <= nArgs
       if isstruct(args{iArg})

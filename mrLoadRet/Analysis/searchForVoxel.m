@@ -213,7 +213,7 @@ global gCMode;
 
 if isfield(gCMode,'viewNum')
   v = viewGet([],'view',gCMode.viewNum);
-
+  gCMode.baseName = params.baseName;
   gCMode.baseNum = viewGet(v,'baseNum',params.baseName);
   gCMode.base2base = viewGet(v,'base2base',gCMode.baseNum);
   gCMode.baseType = viewGet(v,'baseType',gCMode.baseNum);
@@ -235,7 +235,6 @@ end
 %    continousModeMouseMove    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function continuousModeMouseMove(fignum,x);
-
 
 global gCMode;
 if ~isfield(gCMode,'continuousMode') || (gCMode.continuousMode==0)
@@ -319,6 +318,9 @@ if ~isnan(xBase)
       axis(gCMode.a3,'equal');
       plot(baseCoord(3),baseCoord(2),'.','MarkerEdgeColor',gCMode.color,'Parent',gCMode.a3);
     end
+  else
+    axis(gCMode.a1,'off');
+    title(sprintf('Voxel: [%s] not found in base %s with dims [%s]',num2str([xBase yBase sBase],'% 0.0f'),gCMode.baseName,num2str(gCMode.baseDims,' %i')),'Parent',gCMode.a1);
   end
 end
 
@@ -379,7 +381,9 @@ else
     % convert the index to the coordinates
     if ~isempty(pos)
       baseCoordMap = viewGet(v,'baseCoordMap');
-      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
+      %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+      corticalSlice = ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5));
+      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:,corticalSlice)));
       xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
   end      

@@ -72,28 +72,8 @@ tf = true;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 function hdr = createHeaderNifti(h,filename,saveHeader)
 
-% create the nifti h
-hdr = cbiCreateNiftiHeader;
-hdr.dim = [h.nDim h.dim];
-hdr.dim(end+1:8) = 0;
-hdr.dim = hdr.dim(:);
-hdr.dim = hdr.dim(1:8);
-hdr.pixdim = [h.nDim h.pixdim];
-hdr.pixdim(end+1:8) = 0;
-hdr.pixdim = hdr.pixdim(:);
-hdr.pixdim = hdr.pixdim(1:8);
-
-% set the qform
-if ~isempty(h.qform)
-  hdr = cbiSetNiftiQform(hdr,h.qform);
-  hdr.qform_code = 1;
-end
-
-% set the sform
-if ~isempty(h.sform)
-  hdr = cbiSetNiftiSform(hdr,h.sform);
-  hdr.sform_code = 1;
-end
+% create the nifti header
+hdr = mlrImageGetNiftiHeader(h);
 
 % save it
 if saveHeader

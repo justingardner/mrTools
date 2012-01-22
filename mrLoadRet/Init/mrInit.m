@@ -56,8 +56,8 @@ if ieNotDefined('sessionParams')
     coil = mrGetPref('coil');
     pulseSequence = mrGetPref('pulseSequence');
     description = '';
-    subject = '';
-    operator = '';
+    if ieNotDefined('subject') subject = '';end
+    if ieNotDefined('operator') operator = '';end
   end
   % setup params dialog
   paramsInfo = {};
@@ -209,7 +209,15 @@ if ~justGetParams
       scanParams(iScan).niftiHdr = hdr;
       scanParams(iScan).totalFrames = hdr.dim(5);
       scanParams(iScan).voxelSize = hdr.pixdim([2,3,4])';
-      % put into group variable
+    end  
+    
+    %if weird frame periods have been detected, ask user
+    if any(weirdFramePeriods)
+      scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,tseriesDir);
+    end
+    
+    % put into group variable
+    for iScan=1:length(groupParams.totalFrames)
       [tf groups(1).scanParams(iScan)] = isscan(scanParams(iScan));
       if ~tf
 	disp(sprintf('(mrInit) Scan params for %i did not validate',iScan));
@@ -223,12 +231,8 @@ if ~justGetParams
 	  groups(1).auxParams(iScan).stimFileName = '';
 	end	  
       end
-    end  
-    
-    %if weird frame periods have been detected, ask user
-    if any(weirdFramePeriods)
-      scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,tseriesDir)
     end
+    
     % tag on auxParams to groups if it wasn't set above
     if ~isfield(groups(1),'auxParams')
       groups(1).auxParams = [];
@@ -295,9 +299,17 @@ function stimFileMatch = matchStimFiles(stimFileNames,stimFileVols,totalFrames)
 
 stimFileMatch = {};
 % for now, just match in order
-for i = 1:min(length(stimFileNames),length(totalFrames))
-  if (stimFileVols > 0)
+for i = 1:length(stimFileNames)
+  % make sure there are enough vols (just check to see if there
+  % are greater than 1/10 the total frames) since with tSense
+  % etc there may be more totalFrames than vols, so this is
+  % just to reject stimfiles with only a few volumes
+  if (length(stimFileVols) < i) || (length(totalFrames)<i) || (stimFileVols(i) > totalFrames{i}/10)
     stimFileMatch{end+1} = putOnTopOfList(stimFileNames{i},{stimFileNames{:},'None'});
+    % only make enough matches for each scan
+    if length(stimFileMatch)==length(totalFrames)
+      break;
+    end
   end
 end
 
@@ -385,6 +397,8 @@ if yes
       fprintf('Changing frame period from %f %s to %f sec in file %s\n',weirdFramePeriods(iScan),timeUnit,newFramePeriod(iScan),scanParams(iScan).fileName);
       % set the frameperiod
       scanParams(iScan).framePeriod = newFramePeriod(iScan);
+      scanParams(iScan).niftiHdr.pixdim(5) = newFramePeriod(iScan); %don't forget to modify the hdr kept in scanParams, otherwise, problems with motionComp (and maybe others)
+      %which makes me think that it's not the cleverest thing to keep this niftiHdr field... because someone will always be tempted to change headers outside mrLoadRet anyway
       hdr.pixdim(5) = newFramePeriod(iScan);
       % and write it back
       cbiWriteNiftiHeader(hdr,filename);

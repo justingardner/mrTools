@@ -68,7 +68,7 @@ tf = 1;
 
 if ieNotDefined('view'), mrErrorDlg('No view specified.'); end
 if ieNotDefined('param'), mrErrorDlg('No parameter specified'); end
-if ieNotDefined('val'), val = []; end
+if ~exist('val','var'), val = []; end %JB: here I use exist and not ieNotDefined because I want to keep the difference between '' and []
 
 % view can be either a view structure or a view number. Either way, make
 % sure that the view passed is consistent with the global variable
@@ -277,35 +277,64 @@ switch lower(param)
       mrWarnDlg('Cannot delete Raw group');
       return
     end
-    % Remove it
+    
     numgroups = viewGet(view,'numberofgroups');
-    MLR.groups = MLR.groups(groupnum ~= [1:numgroups]);
-    % Update the view
+    groupsToKeep = groupnum ~= [1:numgroups];
     groupNames = viewGet(view,'groupNames');
-    if isempty(groupNames)
-      groupNames = {'none'};
-    end
-    curgroup = viewGet(view,'currentGroup');
-    if (curgroup > groupnum)
-      view = viewSet(view,'currentGroup',curgroup-1);
-    elseif (groupnum == curgroup)
-      view = viewSet(view,'currentGroup',1);
-    end
-    mlrGuiSet(view,'groupPopup',groupNames);
-    % Update all the other views
-    for v = find(view.viewNum ~= [1:length(MLR.views)])
-      if isview(MLR.views{v})
-        curgroup = viewGet(v,'currentGroup');
-        if (curgroup > groupnum)
-          viewSet(v,'currentGroup',curgroup-1);
-        elseif (groupnum == curgroup)
-          viewSet(v,'currentGroup',1);
+    
+    %loop through all the views and 
+    % 1) make sure that the group to delete is not the current one
+    % 2) delete all associated loaded analyses 
+    for iView = 1:length(MLR.views)
+      if iView==view.viewNum
+        thisView = view;
+      else
+        thisView = viewGet([],'view',iView);
+      end
+      if isview(thisView)
+        curgroup = viewGet(thisView,'currentGroup');
+        %here we have a problem because some views might not have been updated since groups were added
+        %so the length of loadedAnalyses is incorrect, which will lead to an error
+        %One way to do things cleanly is to set the group to the highest groupnum
+        %but we'll do it if there is a mismatch between the length of loadedAnalyses and numgroups
+        %to avoid wasting time
+        if length(thisView.loadedAnalyses) < numgroups
+           thisView = viewSet(thisView,'currentGroup',numgroups);
+           %and then set back to the old current group
+           thisView = viewSet(thisView,'currentGroup',curgroup);
         end
-        mlrGuiSet(MLR.views{v},'groupPopup',groupNames);
+        %if the group to delete is the current one, install another one
+        if (curgroup == groupnum)
+          if curgroup==numgroups
+            curgroup = curgroup-1;
+          else
+            curgroup = curgroup+1;
+          end
+          thisView = viewSet(thisView,'currentGroup',curgroup);
+        end
+        %if the current group was higher than the deleted group, correct in the view
+        if thisView.curGroup>=groupnum
+          thisView.curGroup = thisView.curGroup-1;
+        end
+        mlrGuiSet(thisView,'group',thisView.curGroup);
+        mlrGuiSet(thisView,'groupPopup',groupNames(groupsToKeep));
+        %we also need to remove any loaded analysis and other group-specific info from the view
+        %the problem is that some views might not have all the groups....
+        thisView.loadedAnalyses = thisView.loadedAnalyses(groupsToKeep);
+%         % groupscannum looks like it is group specific, but not clear what it is for 
+%         % and does not always have the correct number of group...
+%         % so leave it for now
+%         thisView.groupScanNum = thisView.groupScanNum(groupsToKeep);
+      end
+      if iView==view.viewNum
+        view = thisView;
       end
     end
+    % then remove the group to delete
+    MLR.groups = MLR.groups(groupsToKeep);
     % Save mrSession
     saveSession;
+
 
     % -------------------------------------------
     % Scan
@@ -338,7 +367,24 @@ switch lower(param)
       end
     end
 
-  case {'spikeinfo'}
+ case {'auxparam'}
+    % v = viewSet(v,'auxParam','paramName',paramValue,scanNum,groupNum)
+    % this allows you to set an auxilary parameter for the scan, for
+    % example the TR or number of shots or sense acceleration factor
+    % or some other piece of information that you wish to keep
+    % but is not included. You decide the name of the param (paramName).
+    % Note that if you want the parameter to be saved you need to
+    % call saveSession after setting the auxParam
+    if length(varargin) < 1
+      disp(sprintf('(viewSet) Must pass in a paramName and value for setting an auxParam'));
+      return
+    end
+    [s g] = getScanAndGroup(view,{varargin{2:end}});
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).auxParams(s).(fixBadChars(val)) = varargin{1};
+    end
+ case {'spikeinfo'}
     % view = viewSet(view,'spikeinfo',spikeinfo,scanNum,groupNum);
     [s g] = getScanAndGroup(view,varargin,param);
     nscans = viewGet(view,'nscans',g);
@@ -641,28 +687,37 @@ switch lower(param)
     if ~check
       mrErrorDlg('Invalid base anatomy');
     end
-    numBaseVolumes = viewGet(view,'numberofBaseVolumes'); %get the number of loaded bases
-    if numBaseVolumes %if there are bases loaded, check for base with identical name
-       % If baseVolume.name already exists then replace the existing one
-       % with this new one. Otherwise, add it to the end of the baseVolumes
-       % list.
-       newBaseName = baseAnatomy.name;
-       newBaseNum = [];
-          for num = 1:numBaseVolumes
-            baseName = viewGet(view,'basename',num);
-            if strcmp(newBaseName,baseName)
-              newBaseNum = num;
-            end
-          end
-          if isempty(newBaseNum)
-            newBaseNum = numBaseVolumes + 1;
-          end
-          % Add it to the list of baseVolumes
-         view.baseVolumes(newBaseNum) = baseAnatomy;
-    else    %if there is no base loaded, add the base in first position
-       newBaseNum = 1;
-       view.baseVolumes = baseAnatomy;
+    baseNames = viewGet(view,'baseNames');
+    nameMatch = find(strcmp(baseAnatomy.name,baseNames));
+    replaceDuplicates = 0;
+    while ~isempty(nameMatch)
+      if ~replaceDuplicates
+        paramsInfo{1} = {'baseName',baseAnatomy.name,'Change the name to a unique base name'};
+        paramsInfo{2} = {'replace',0,'type=checkbox','Check to replace the loaded base with the same name'};
+        params = mrParamsDialog(paramsInfo,'Non unique Base name, please change');
+        if isempty(params),tf=0;return,end
+      else
+        params.replace = replaceDuplicates;
+        params.baseName = baseAnatomy.name;
+      end
+      if params.replace
+        % if replace, then delete the existing one
+        view = viewSet(view,'deleteBase',viewGet(view,'baseNum',params.baseName));
+        nameMatch=[];
+      else
+        % change the name
+        baseAnatomy.name = params.baseName;
+        nameMatch = find(strcmp(baseAnatomy.name,baseNames));
+      end
     end
+      
+    newBaseNum = viewGet(view,'numberofBaseVolumes')+1; %get the number of loaded bases
+    if newBaseNum==1
+      view.baseVolumes = baseAnatomy;   
+    else
+      view.baseVolumes(newBaseNum) = baseAnatomy;   
+    end
+    
     % clear the caches of any reference to a base with
     % the same name (if it is reloaded, the base may
     % have changed its xform for instance and so the
@@ -738,6 +793,10 @@ switch lower(param)
     curBase = viewGet(view,'curBase');
     rotate = viewGet(view,'rotate');
     curSlice = viewGet(view,'curSlice');
+    %if there was not base loaded, curSlice could be empty, set default to 1
+    if isempty(curSlice)
+      curSlice =1;
+    end
     sliceOrientation = viewGet(view,'sliceOrientation');
     % set the current state of the gui in the base
     if (curBase > 0) & (curBase <= numBases)
@@ -777,7 +836,6 @@ switch lower(param)
       % update nSlices and reset slice to be within range
       sliceIndex = viewGet(view,'basesliceindex',baseNum);
       nSlices = baseDims(sliceIndex);
-      curSlice = viewGet(view,'curSlice');
       % if the base has a current slice set, then use that
       if isempty(baseCurSlice) || (baseCurSlice > nSlices)
 	view = viewSet(view,'curSlice',max(1,min(curSlice,nSlices)));
@@ -1004,13 +1062,8 @@ switch lower(param)
     mlrGuiSet(view,'analysisPopup',viewGet(view,'analysisNames'));
     % Set it to be the current analysis
     view = viewSet(view,'curanalysis',newAnalysisNum);
-    % Reinstall overlays (This can take a long time if there are a lot of overlays)
-    disppercent(-inf,['Installing overlays for analysis ' newAnalysisName]);
-    for n = 1:length(overlays)
-      view = viewSet(view,'newOverlay',overlays(n));
-      disppercent(n/length(overlays));
-    end
-    disppercent(inf);
+    % Reinstall overlays (This can take a long time if there are a lot of overlays and the reconcile function is defaultReconcileParams)
+    view = viewSet(view,'newOverlay',overlays);
     % update the interrogator 
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
@@ -1028,7 +1081,9 @@ switch lower(param)
     if ~isempty(curAnalysis) & (curAnalysis >= 1) & (curAnalysis <= numAnalyses)
       curOverlay = viewGet(view,'currentOverlay');
       if ~isempty(curOverlay) & (curOverlay >= 1) & (curOverlay <= viewGet(view,'numOverlays'))
-	view.analyses{curAnalysis}.overlays(curOverlay).interrogator = val;
+        for iOverlay = curOverlay
+          view.analyses{curAnalysis}.overlays(iOverlay).interrogator = val;
+        end
       end
     end
   case {'deleteanalysis'}
@@ -1168,120 +1223,147 @@ switch lower(param)
   case{'newoverlay'}
     % view = viewSet(view,'newoverlay',overlayStructure,[analysisNum]);
     %
-    % val must be a structure with fields
-    % - name: string
-    % - groupName: string group name
-    % - function: string function name by which it was computed
-    % - reconcileFunction: string function name that reconciles params
-    %   and data with tseries file names.
+    % val must be a structure or an array of structures with fields
+    %   - name: string
+    %   - groupName: string group name
+    %   - range: [min max] values, possibly excluding meaningless values
+    %   - params: structure specifying arguments to function
+    %       To recompute: view = function(view,params)
+    % and optionnally
+    %   - function: string function name by which it was computed
+    %   - reconcileFunction: string function name that reconciles params
+    %      and data with tseries file names.
     %      [newparams,newdata] = reconcileFunction(groupName,params,data)
-    % - params: structure specifying arguments to function
-    %      To recompute: view = function(view,params)
-    % - interrogator: function that gets called when you click on the
-    %   overlay (e.g., to produce a time series plot).
-    % - data: cell array of [x y z] arrays
-    % - date: specifies when it was computed, typically generated using
-    %   datestr(now)
-    % - range: [min max] values
-    % - clip: [min max] to be displayed/thresholded
-    % - colormap: 256x3 array of RGB values
-    % - alpha: transparency value for alphaSlider
+    %   - interrogator: function that gets called when you click on the
+    %       overlay (e.g., to produce a time series plot).
+    %   - data: cell array of [x y z] arrays
+    %   - date: specifies when it was computed, typically generated using
+    %       datestr(now)
+    %   - clip: [min max] to be displayed/thresholded
+    %   - colormap: 256x3 array of RGB values
+    %   - alpha: transparency value for alphaSlider
+    %   - colorRange: [min max] of the colormap
 
-    % Check that it has the required fields
-    [check overlay] = isoverlay(val);
-    if ~check
-      mrErrorDlg('Invalid overlay');
-    end
-    % groupName, groupNum, nScans
-    groupName = overlay.groupName;
-    groupNum = viewGet(view,'groupnum',groupName);
-    nScans = viewGet(view,'nScans',groupNum);
+    set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
     % analysisNum and analysisName
     if ieNotDefined('varargin')
       analysisNum = viewGet(view,'currentAnalysis');
     else
       analysisNum = varargin{1};
     end
-    analysisName = viewGet(view,'analysisName',analysisNum);
     analysis = viewGet(view,'analysis',analysisNum);
-    % Error if groupNames don't match
-    if ~strcmp(overlay.groupName,analysis.groupName)
-      mrErrorDlg(['(viewSet:newOverlay) overlay is incompatible with group: ',groupName]);
-    end
-    % Reconcile overlay data and params with tseries files, reordering
-    % them as necessary.
-    [params,data] = feval(overlay.reconcileFunction,groupName,overlay.params,overlay.data);
-    overlay.params = params;
-    overlay.data = [];
-    for scanNum = 1:length(data)
-      % to save memory, we keep overlays as single precision
-      if strcmp(mrGetPref('defaultPrecision'),'single')
-         overlay.data{scanNum} = single(data{scanNum});
-      else
-         overlay.data{scanNum} = data{scanNum};
-      end
-    end
-    % Check that it has the correct number of scans
-    if (length(overlay.data) ~= nScans)
-      %mrErrorDlg('Invalid overlay, incorrect number of scans.');
-      if isempty(data)
-	disp('(viewSet:newOverlay) No data in overlay');
-      else
-	disp('(viewSet:newOverlay) Invalid overlay, incorrect number of scans.');
-      end
-      return;
-    end
-    % Check that the data arrays for each scan are the correct size
-    for s = 1:nScans
-      overlayDims = viewGet(view,'dims',s,groupNum);
-      overlaySize = size(overlay.data{s});
-      % if the overlay only has one slice, then we need
-      % to add the 1 to the last dimension
-      if length(overlaySize) == 2
-	overlaySize(3) = 1;
-      end
-      if (~isempty(overlay.data{s})) & ~isequal(overlaySize,overlayDims)
-        mrErrorDlg('(viewSet:newOverlay) Invalid overlay, incorrect data array size.');
-      end
-    end
-    % If overlay.name already exists then replace the existing one with
-    % this new one. Otherwise, add it to the end of the overlays list.
-    newOverlayName = overlay.name;
-%     newOverlayNum = [];
+    disppercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
+
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
-%     for num = 1:nOverlays
-%       overlayName = viewGet(view,'overlayName',num,analysisNum);
-%       if strcmp(newOverlayName,overlayName)
-%         newOverlayNum = num;
-%       end
-%     end
-    %this finds the number of overlays with identical name (replaces the loops above
-    [dump,newOverlayNum] = ismember(newOverlayName,viewGet(view,'overlayNames',[],analysisNum)); 
-    if newOverlayNum %if there is already an overlay with this name
-       %merge their data if their parameters are identical
-       oldOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
-       if isequal(overlay.params,oldOverlay.params)
-          for iScan = 1:length(overlay.data)
-             if isempty(overlay.data{iScan})
-                overlay.data{iScan} = oldOverlay.data{iScan};
-             end
+    newOverlayNum = nOverlays;
+
+    for iOverlay = 1:length(val)
+      % Check that it has the required fields
+      [check overlay] = isoverlay(val(iOverlay));
+      if ~check
+        if ~isfield(overlay,'name')
+          name = '[unknown]';
+        else
+          name = overlay.name;
+        end
+        mrWarnDlg(['(viewSet:newOverlay) Cannot install overlay ' name ' because it is invalid (One or more mandatory fields are undefined)']);
+      else
+        % groupName, groupNum, nScans
+        groupName = overlay.groupName;
+        groupNum = viewGet(view,'groupnum',groupName);
+        nScans = viewGet(view,'nScans',groupNum);
+        % Error if groupNames don't match
+        if ~strcmp(overlay.groupName,analysis.groupName)
+          mrWarnDlg(['(viewSet:newOverlay) Cannot install overlay ' overlay.name ' because it is incompatible with group: ',groupName]);
+        else
+          % Reconcile overlay data and params with tseries files, reordering
+          % them as necessary.
+          [params,data] = feval(overlay.reconcileFunction,groupName,overlay.params,overlay.data);
+          overlay.params = params;
+          overlay.data = [];
+          for scanNum = 1:length(data)
+            % to save memory, we keep overlays as single precision
+            if strcmp(mrGetPref('defaultPrecision'),'single')
+               overlay.data{scanNum} = single(data{scanNum});
+            else
+               overlay.data{scanNum} = data{scanNum};
+            end
           end
-       end
-    else
-      newOverlayNum = nOverlays + 1;
+          % Check that it has the correct number of scans
+          if (length(overlay.data) ~= nScans)
+            %mrErrorDlg('Invalid overlay, incorrect number of scans.');
+            if isempty(data)
+              mrWarnDlg(['(viewSet:newOverlay) No data in overlay' overlay.name]);
+            else
+              mrWarnDlg(['(viewSet:newOverlay) Incorrect number of scans in overlay' overlay.name]);
+            end
+            return;
+          else
+            % Check that the data arrays for each scan are the correct size
+            allScanDimsMatch=true;
+            for s = 1:nScans
+              overlayDims = viewGet(view,'dims',s,groupNum);
+              overlaySize = size(overlay.data{s});
+              % if the overlay only has one slice, then we need
+              % to add the 1 to the last dimension
+              if length(overlaySize) == 2
+                overlaySize(3) = 1;
+              end
+              if (~isempty(overlay.data{s})) & ~isequal(overlaySize,overlayDims)
+                mrWarnDlg(['(viewSet:newOverlay) Incorrect data array sizeoverlay in overlay' overlay.name]);
+                allScanDimsMatch=false;
+                break
+              end
+            end
+            if allScanDimsMatch
+              % If overlay.name already exists then replace the existing one with
+              % this new one. Otherwise, add it to the end of the overlays list.
+              newOverlayName = overlay.name;
+              %this finds the number of overlays with identical name (replaces the loops above
+              [dump,newOverlayNum] = ismember(newOverlayName,viewGet(view,'overlayNames',[],analysisNum)); 
+              if newOverlayNum %if there is already an overlay with this name
+                 %merge their data if their parameters are identical
+                 oldOverlay = viewGet(view,'overlay',newOverlayNum,analysisNum);
+                 if isequal(overlay.params,oldOverlay.params)
+                    for iScan = 1:length(overlay.data)
+                       if isempty(overlay.data{iScan})
+                          overlay.data{iScan} = oldOverlay.data{iScan};
+                       end
+                    end
+                 end
+              else
+                nOverlays = nOverlays + 1;
+                newOverlayNum = nOverlays;
+              end
+              % Add it to the list of overlays
+              if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)  
+                view.analyses{analysisNum}.overlays = overlay;                        
+              else                                                                    
+                %view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
+                view.analyses{analysisNum}.overlays = copyFields(overlay,view.analyses{analysisNum}.overlays,newOverlayNum);
+              end
+            end
+          end
+        end
+      end
+      disppercent(iOverlay/length(val));
     end
-    % Add it to the list of overlays
-    if (newOverlayNum == 1) & isempty(view.analyses{analysisNum}.overlays)  
-      view.analyses{analysisNum}.overlays = overlay;                        
-    else                                                                    
-      view.analyses{analysisNum}.overlays(newOverlayNum) = overlay;
-    end
-    % clear overlay cache
-    view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
+    disppercent(inf);
+
     % Update the gui
-    mlrGuiSet(view,'overlayPopup',viewGet(view,'overlayNames',analysisNum));
-    % Set it to be the current overlay
-    view = viewSet(view,'curOverlay',newOverlayNum);
+    overlayNames = viewGet(view,'overlayNames',analysisNum);
+    if isempty(overlayNames)
+      overlayNames = 'none';
+    end
+    mlrGuiSet(view,'overlayPopup',overlayNames);
+    %set the current overlay
+    if newOverlayNum    
+      % clear overlay cache
+      view = viewSet(view,'overlayCache','clear',sprintf('_%i_%i_',analysisNum,newOverlayNum));
+      % Set it to be the current overlay
+      view = viewSet(view,'curOverlay',newOverlayNum);
+    end
+    set(viewGet(view,'figNum'),'Pointer','arrow');%drawnow;
 
   case {'deleteoverlay'}
     % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
@@ -1316,15 +1398,15 @@ switch lower(param)
     analysisNum = viewGet(view,'currentAnalysis');
     numAnalyses = viewGet(view,'numberofAnalyses');
     numOverlays = viewGet(view,'numberofOverlays',analysisNum);
-    if (analysisNum > 0) & (analysisNum <= numAnalyses)
-      if (overlayNum > 0) & (overlayNum <= numOverlays)
+    if numAnalyses && (analysisNum > 0) && (analysisNum <= numAnalyses)
+      if ~isempty(overlayNum) && any((overlayNum > 0) & (overlayNum <= numOverlays))
         % Set the curOverlay field
         view.analyses{analysisNum}.curOverlay = overlayNum;
         % Update the gui
         mlrGuiSet(view,'overlay',overlayNum);
         % set overlay min and max sliders
-        overlayClip = viewGet(view,'overlayClip',overlayNum,analysisNum);
-        overlayRange = viewGet(view,'overlayRange',overlayNum,analysisNum);
+        overlayClip = viewGet(view,'overlayClip',overlayNum(1),analysisNum);
+        overlayRange = viewGet(view,'overlayRange',overlayNum(1),analysisNum);  %JB
         if isempty(overlayClip)
           overlayClip = [0 1];
         end
@@ -1337,7 +1419,7 @@ switch lower(param)
         mlrGuiSet(view,'overlayMax',overlayClip(2));
 
         % set overlay alpha slider
-        alpha = viewGet(view,'overlayAlpha',overlayNum,analysisNum);
+        alpha = viewGet(view,'overlayAlpha',overlayNum(1),analysisNum);
         if isempty(alpha)
           alpha = 1;
         end
@@ -1352,9 +1434,38 @@ switch lower(param)
     % update the interrogator
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
-
     end
-
+    
+  case {'overlaydatareplace'}
+    % v = viewSet(v,'overlayDataReplace',overlayData,overlayName);
+    % used to replace the overlay data with the passed in matrix
+    % for the named overlay. overlayData should be a matrix with
+    % dimensions equal to scanDims that contains the new overlay data
+    if ieNotDefined('varargin')
+      overlayNum = viewGet(view,'currentOverlay');
+    else
+      overlayNum = viewGet(view,'overlayNum',varargin{1});
+    end
+    if ~isempty(overlayNum)
+      % check size of overlayData
+      scanDims = viewGet(view,'scanDims');
+      if ~isequal(scanDims,size(val))
+	disp(sprintf('(viewSet:overlayDataReplace) The passed in overlay has dims: %s, but should have dimensions equal to the scan dims: %s',num2str(size(val)),num2str(scanDims)));
+      else
+	% get current analysis
+	analysisNum = viewGet(view,'currentAnalysis');
+	scanNum = viewGet(view,'curScan');
+	% and if everything is vaild
+	if ~isempty(analysisNum) & ~isempty(overlayNum) & ~isempty(view.analyses{analysisNum}.overlays)
+	  view.analyses{analysisNum}.overlays(overlayNum).data{scanNum} = val;
+	  % reset the overlay cache
+	  view = viewSet(view,'overlayCache','init');
+	end
+      end
+    else
+      disp(sprintf('(viewSet:overlayDataReplace) Unknown overlay'));
+    end
+    
   case {'overlayname'}
     % view = viewSet(view,'overlayname',nameString,[overlayNum]);
     if ieNotDefined('varargin')
@@ -1448,14 +1559,14 @@ switch lower(param)
       overlayNum = curOverlay;
     end
     analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
-        ~isempty(view.analyses{analysisNum}.overlays)
-      view.analyses{analysisNum}.overlays(overlayNum).alpha = val;
-      if (overlayNum == curOverlay)
-        mlrGuiSet(view,'alpha',val);
+    for iOverlay = overlayNum
+      if ~isempty(analysisNum)  & ~isempty(view.analyses{analysisNum}.overlays)
+        view.analyses{analysisNum}.overlays(iOverlay).alpha = val;
       end
     end
-
+    if isequal(overlayNum,curOverlay)
+      mlrGuiSet(view,'alpha',val);
+    end
 
 
     % -------------------------------------------
@@ -1502,7 +1613,8 @@ switch lower(param)
     end
     % check to make sure the name is unique
     roiNames = viewGet(view,'roiNames');
-    nameMatch = find(strcmp(ROI.name,roiNames));
+    [dump,nameMatch] = find(strcmp(ROI.name,roiNames));
+    pos = length(view.ROIs)+1;
     while ~isempty(nameMatch)
       if ~replaceDuplicates
 	paramsInfo{1} = {'roiName',ROI.name,'Change the name to a unique ROI name'};
@@ -1513,19 +1625,21 @@ switch lower(param)
 	params.replace = replaceDuplicates;
   params.roiName = ROI.name;
       end
+      % update the name
+      ROI.name = params.roiName;
+      [dump,nameMatch] = find(strcmp(ROI.name,roiNames));
       if params.replace
-	% if replace, then delete the existing one
-	view = viewSet(view,'deleteROI',viewGet(view,'roiNum',params.roiName));
+        if ~isempty(nameMatch)
+          % if replace and name matches, then set the pos to the ROi to delete 
+          %(JB:This replaces a previous call to viewSet('deleteROI'), because we don't want the ROi to change position in the list)
+          pos = nameMatch;
+        end
 	nameMatch=[];
       else
-	% change the name
-	ROI.name = params.roiName;
-  nameMatch = find(strcmp(ROI.name,roiNames));
       end
     end
     % Add it to view.ROIs
-    pos = length(view.ROIs)+1;
-    if (pos == 1)
+    if (pos==1) && ismember(length(view.ROIs),[0 1])
       % First ROI
       view.ROIs = ROI;
     else
@@ -1544,38 +1658,47 @@ switch lower(param)
   case {'deleteroi'}
     % view = viewSet(view,'deleteroi',roiNums);
     % delete ROIs roiNums from the view;
-    roinums = val;
-    numrois = viewGet(view,'numberofrois');
-    curroi = viewGet(view,'currentROI');
-    % Remove it and reset currentROI
-    remainingRois = setdiff(1:numrois,roinums);
-    curroi = find(remainingRois==curroi);
-    view.ROIs=view.ROIs(remainingRois);
-    if ~isempty(remainingRois)
-      if isempty(curroi)
-         curroi=1;
+    if ~isempty(val)
+      roinums = val;
+      numrois = viewGet(view,'numberofrois');
+      curroi = viewGet(view,'currentROI');
+      % Remove it and reset currentROI
+      remainingRois = setdiff(1:numrois,roinums);
+      curroi = find(ismember(remainingRois,curroi));
+      view.ROIs=view.ROIs(remainingRois);
+      if ~isempty(remainingRois)
+        if isempty(curroi)
+           curroi=1;
+        end
+        view = viewSet(view,'currentROI',curroi);
+      else
+        view.curROI = [];
       end
-      view = viewSet(view,'currentROI',curroi);
-    else
-      view.curROI = [];
+      
+      % Update the gui
+      stringList = {view.ROIs(:).name};
+      if isempty(stringList)
+        stringList = {'none'};
+        mlrGuiSet(view,'roi',1);
+      end
+      mlrGuiSet(view,'roiPopup',stringList);
     end
-       
-    % Update the gui
-    stringList = {view.ROIs(:).name};
-    if isempty(stringList)
-      stringList = {'none'};
-    end
-    mlrGuiSet(view,'roiPopup',stringList);
 
   case {'currentroi','curroi','selectedroi'}
     % view = viewSet(view,'currentROI',roiNum);
     roiNum = val;
-    numROIs = viewGet(view,'numberofROIs');
-    if (roiNum > 0) & (roiNum <= numROIs)
-      view.curROI = roiNum;
-      % update popup menu
-      mlrGuiSet(view,'roi',roiNum);
+    currentRoi = viewGet(view,'currentRoi');
+    if ~isequal(roiNum,currentRoi);
+      numROIs = viewGet(view,'numberofROIs');
+      if (roiNum > 0) & (roiNum <= numROIs)
+        view.curROI = roiNum;
+        % update popup menu
+        mlrGuiSet(view,'roi',roiNum);
+      end
+      %remove previous coords for previous ROI
+      view=viewSet(view,'prevRoiCoords','');
     end
+      
 
   case {'roicoords'}
     % view = viewSet(view,'roiCoords',array,[roiNum]);
@@ -1790,7 +1913,8 @@ switch lower(param)
       nSlices = 0;
     end
     if (val > 0) && (val <= nSlices)
-      if viewGet(view,'curSlice') ~= val
+      curSlice = viewGet(view,'curSlice');
+      if isempty(curSlice) || curSlice ~= val
 	view.curslice.sliceNum = val;
 	mlrGuiSet(view,'slice',val);
       end
@@ -1805,7 +1929,7 @@ switch lower(param)
     % view = viewSet(view,'cursliceoverlaycoords',array);
     view.curslice.overlayCoords = val;
 
-  case {'sliceorientation','baseSliceIndex'}
+  case {'sliceorientation','basesliceindex'}
    % view = viewSet(view,'sliceOrientation',n);
     if ~isscalar(val)
       switch val
@@ -1852,7 +1976,7 @@ switch lower(param)
     % check that everything is an m-file
     defaultInterrogators = {};
     for i = 1:length(val)
-      if exist(val{i}) ~= 2
+      if isempty(which(val{i}))
 	disp(sprintf('(viewSet:defaultInterrogators) %s is not an m-file on the path. Not adding to default interrogators list.',val{i}));
       else
 	defaultInterrogators{end+1} = val{i};
@@ -1919,7 +2043,13 @@ curGroupName = viewGet(view,'groupName',curgroup);
 for a = 1:viewGet(view,'numberofAnalyses')
   analysisReconcileFunction = viewGet(view,'reconcilefunction',a);
   analysisParams = viewGet(view,'analysisParams',a);
-  view.analyses{a}.params = feval(analysisReconcileFunction,curGroupName,analysisParams);
+  % check for d structure
+  if isfield(view.analyses{a},'d')
+    % with d, field make sure that gets updated too
+    [view.analyses{a}.params view.analyses{a}.d] = feval(analysisReconcileFunction,curGroupName,analysisParams,view.analyses{a}.d);
+  else
+    view.analyses{a}.params = feval(analysisReconcileFunction,curGroupName,analysisParams);
+  end
   for ov = 1:viewGet(view,'numberofOverlays',a);
     overlay = viewGet(view,'overlay',ov,a);
     if ~isempty(overlay)

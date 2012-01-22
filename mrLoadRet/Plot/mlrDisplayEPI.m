@@ -100,7 +100,7 @@ else
       needsWarping = 1;
     end
   end
-  gMLRDisplayEPI.fignum = selectGraphWin;
+  gMLRDisplayEPI.fignum = selectGraphWin([],'make new');
   gMLRDisplayEPI.graphWin = 1;
 end
 
@@ -467,7 +467,7 @@ gMLRDisplayEPI.c = [];
 
 % close the graph window
 if gMLRDisplayEPI.graphWin
-  selectGraphWin;
+  selectGraphWin([],'replace');
   closeGraphWin;
 else
   close(gMLRDisplayEPI.fignum);

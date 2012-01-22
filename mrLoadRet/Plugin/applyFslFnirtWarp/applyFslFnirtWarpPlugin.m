@@ -19,25 +19,25 @@ switch action
   if (nargin ~= 2) || ~isview(thisView)
      disp(sprintf('(applyFslFnirtWarpPlugin) Need a valid view to install plugin'));
   else
-    %first check if there is already an Overlay Menu
-    hFig = viewGet(thisView,'fignum');
-    hFigChildren = get(hFig,'Children');
-    overlaysMenuInstalled = 0;
-    for i = 1:length(hFigChildren)
-      % if it is a menu item
-      if isequal(get(hFigChildren(i),'Type'),'uimenu')&& strcmp(get(hFigChildren(i),'Label'),'Overlays')
-        overlaysMenuInstalled=1;
-        break;
-      end
-    end
-    if ~overlaysMenuInstalled
-      %if not, install it
-      mlrAdjustGUI(thisView,'add','menu','Overlays','/Analysis');
-    end
+% % %     %first check if there is already an Overlay Menu
+% % %     hFig = viewGet(thisView,'fignum');
+% % %     hFigChildren = get(hFig,'Children');
+% % %     overlaysMenuInstalled = 0;
+% % %     for i = 1:length(hFigChildren)
+% % %       % if it is a menu item
+% % %       if isequal(get(hFigChildren(i),'Type'),'uimenu')&& strcmp(get(hFigChildren(i),'Label'),'Overlays')
+% % %         overlaysMenuInstalled=1;
+% % %         break;
+% % %       end
+% % %     end
+% % %     if ~overlaysMenuInstalled
+% % %       %if not, install it
+      mlrAdjustGUI(thisView,'add','menu','overlaysMenu','/Analysis','label','Overlays','tag','overlaysMenu');
+% %     end
     %install overlays menu Item
-    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to overlays','/Overlays/','callback',@applyWarpOverlaysCallback);
+    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to overlays','/Overlays/','callback',@applyWarpOverlaysCallback,'tag','applyFnirtOverlayMenuItem');
     %install overlays menu Item
-    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to ROIs','/ROI/Convert/','callback',@applyWarpROICallback);
+    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to ROIs','/ROI/Combine','callback',@applyWarpROICallback,'tag','applyFnirtRoiMenuItem');
     retval = true;
    end
  % return a help string
@@ -50,10 +50,10 @@ end
 %------------------------- applyWarpOverlaysCallback Function ------------------------------%
 function applyWarpOverlaysCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-applyWarpOverlays(thisView);
+applyFSLWarpOverlays(thisView);
 
 %------------------------- applyWarpROICallback Function ------------------------------%
 function applyWarpROICallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-applyWarpROI(thisView);
+applyFSLWarpROI(thisView);
 

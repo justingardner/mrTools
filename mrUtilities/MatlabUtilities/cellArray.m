@@ -24,6 +24,23 @@ end
 
 if ieNotDefined('numLevels'),numLevels = 1;,end
 
+% deal with case in which we are trying to make a multi
+% level cell array into a single cell array
+if numLevels == -1
+  if iscell(var)
+    tmp = {};
+    for i = 1:length(var)
+      tmpi = cellArray(var{i},-1);
+      tmp = {tmp{:} tmpi{:}};
+    end
+    var = tmp;
+  else
+    tmp{1} = var;
+    var = tmp;
+  end
+  return
+end
+  
 % make the variable name
 varName = 'var';
 

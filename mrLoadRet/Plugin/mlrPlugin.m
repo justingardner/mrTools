@@ -16,7 +16,7 @@
 %
 %             With a view argument initializes all plugins that the user has selected for that view
 %
-function retval = mlrPlugin(v)
+function v = mlrPlugin(v)
 
 % check arguments
 if ~any(nargin == [0 1])
@@ -91,14 +91,21 @@ if nargin == 0
   end
 % with a view argument, then run plugins
 else
+  tic
   % get which plugins are selected
   selectedPlugins = find([plugins.selected]);
 
   % and run their install command
   for i = 1:length(selectedPlugins)
     disp(sprintf('(mlrPlugin) Installing plugin %s',plugins(selectedPlugins(i)).name));
-    eval(plugins(selectedPlugins(i)).installCommand);
+    retval = eval(plugins(selectedPlugins(i)).installCommand);
+    if isview(retval)
+      v=retval; %for those plugins that need to modify the view
+    end
   end
+  pluginTime=toc;
+  disp(['(mlrPlugin) Installing Plugins took ' num2str(pluginTime) ' sec']);
+
 end
   
 
@@ -119,6 +126,7 @@ for i = 1:length(pluginDir)
     % info and install the plugin
     pluginName = sprintf('%sPlugin',pluginDir(i).name);
     pluginFullName = fullfile(pluginPath,pluginDir(i).name,sprintf('%s.m',pluginName));
+    pluginFullName = mlrReplaceTilde(pluginFullName);
     if isfile(pluginFullName)
       % Make sure plugin function exists
       if isempty(which(pluginName))
@@ -127,6 +135,7 @@ for i = 1:length(pluginDir)
       end
       % make sure that calling the function returns the correct one on the path
       if ~isequal(pluginFullName,which(pluginName))
+	keyboard
 	% just give a warning
 	disp(sprintf('(mlrPlugin) Plugin function %s found in %s but should be in %s',pluginName,which(pluginName),pluginFullName));
       end

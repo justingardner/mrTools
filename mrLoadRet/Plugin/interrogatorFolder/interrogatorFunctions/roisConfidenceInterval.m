@@ -100,7 +100,7 @@ while askForParams
           mrWarnDlg('''Single-trial Estimates'' not compatible with contrasts or fTests, please redefine parameters');
           askForParams=1;
        end
-       if ischar(analysisParams.scanParams{1}.stimDuration) && strcmp(analysisParams.scanParams{1}.stimDuration,'fromFile')
+       if ischar(analysisParams.scanParams{params.scanNum(1)}.stimDuration) && strcmp(analysisParams.scanParams{params.scanNum(1)}.stimDuration,'fromFile')
           mrWarnDlg('Function not implemented for stimDuration = fromFile, Please redefine parameters');
           askForParams=1;
        end

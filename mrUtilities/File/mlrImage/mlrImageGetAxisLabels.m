@@ -27,6 +27,12 @@ if nargin ~= 1
   return
 end
 
+% check for empty xform
+if isempty(xform)
+  disp(sprintf('(mlrImageGetAxisLabels) Empty xform'));
+  return
+end
+
 axisNames  = {'X','Y','Z'};
 for axisNum = 1:3
   % get the vector of the axis in the image that we want to label

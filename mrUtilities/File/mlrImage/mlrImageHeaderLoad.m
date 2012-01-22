@@ -92,6 +92,8 @@ for iImage = 1:nImages
     header.filename = filename;
     header.ext = getext(filename);
     
+    % actually load from file, here is where we handle different
+    % file types.
     switch lower(getext(filename))
      case {'img'}
       if ~isdir(filename)
@@ -110,6 +112,7 @@ for iImage = 1:nImages
       return
     end
 
+    % if we have an empty header it means we couldn't load the file
     if isempty(header)
       if nImages > 1,allHeaders{end+1} = [];end
       continue
@@ -149,6 +152,7 @@ for iImage = 1:nImages
 
     % now fill in any missing fields from header
     [tf header] = mlrImageIsHeader(header);
+    
   else
     disp(sprintf('(mlrImageHeaderLoad) Unknown argument'));
   end

@@ -57,15 +57,26 @@ if isfield(params,'trSupersampling')
 end
 
 if isfield(params,'n_rand')
-  params.nRand = params.n_rand;
+  params.nResamples = params.n_rand;
   params = rmfield(params,'n_rand');
-end
-if isfield(params,'outputStatistic')
-  params = rmfield(params,'outputStatistic');
 end
 if isfield(params,'outputZStatistic')
   params = rmfield(params,'outputZStatistic');
 end
 if isfield(params,'outputPValue')
   params = rmfield(params,'outputPValue');
+end
+if isfield(params,'parametricTestOutput')
+  if strcmp(params.parametricTestOutput,'T/F value')
+    params.outputParametricStatistic =1;
+  else
+    params.testOutput = params.parametricTestOutput;
+  end
+  params = rmfield(params,'parametricTestOutput');
+end
+if isfield(params,'randomizationTestOutput')
+  params = rmfield(params,'randomizationTestOutput');
+end
+if isfield(params,'bootstrapTestOutput')
+  params = rmfield(params,'bootstrapTestOutput');
 end

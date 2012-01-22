@@ -14,6 +14,12 @@
 %
 function [params params2] = mrParamsDialog(varargin)
 
+% check arguments
+if nargin < 1
+  help mrParamsDialog
+  return
+end
+
 % if this is a cell array, it means to open up the figure
 % using the variable name, default value pairs given
 if iscell(varargin{1})
@@ -311,6 +317,20 @@ for i = 1:length(gParams.varinfo)
   end
 end
 
+% set ok and cancel callback
+if ~isempty(okCallback)
+  gParams.okCallback = okCallback;
+  if ~isempty(callbackArg)
+    gParams.callbackArg = callbackArg;
+  end
+end
+if ~isempty(cancelCallback)
+  gParams.cancelCallback = cancelCallback;
+  if ~isempty(callbackArg)
+    gParams.callbackArg = callbackArg;
+  end
+end
+
 % for each value that controls another one, call the buttonHandler to
 % set up the correct dependency
 for i = 1:length(gParams.varinfo)
@@ -325,7 +345,7 @@ makeOkButton = 1;
 makeCancelButton = modal; %only put a cancel if dialog box is modal (or if a custom cancel callback is passed)
 
 if modal==0  %if the dialog is non-modal, ok just closes it, unless custom ok/cancel callbackz are passed)
-  gParams.okCallback = 'closeHandler';
+  gParams.okCallback = @closeHandler;
   okString = 'Close';
 else
   okString = 'OK';
@@ -344,7 +364,6 @@ if ~isempty(callback)
   % if another argument is specified then put up 
   % an ok button with the callback
   if ~isempty(okCallback)
-    gParams.okCallback = okCallback;
     okString = 'OK';
 %   else
 %     makeOkButton = 0;
@@ -352,7 +371,6 @@ if ~isempty(callback)
   % if a final argument is specified then put up 
   % a cancel button with the callback
   if ~isempty(cancelCallback)
-    gParams.cancelCallback = cancelCallback;
     makeCancelButton = 1;
   else
     makeCancelButton = 0;
@@ -548,9 +566,9 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
       if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
         gParams.varinfo{varnum}.value(entryRow,entryCol)=val;
       else
-        gParams.varinfo{varnum}.value(entryRow,entryCol) = num2str(val);
+        gParams.varinfo{varnum}.value(entryRow,entryCol) = thisNum2str(val);
       end
-      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',num2str(val));
+      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',thisNum2str(val));
     end
     % now check to see if this variable controls another one
     if isfield(gParams.varinfo{varnum},'controls')
@@ -629,9 +647,9 @@ if isfield(gParams, 'callback')
   if ~isempty(gParams.callback)
     gParams.params = mrParamsGet(gParams.vars);
     if isfield(gParams,'callbackArg')
-      feval(gParams.callback,gParams.params,gParams.callbackArg);
+      callbackEval(gParams.callback,{gParams.params},{gParams.callbackArg}); 
     else
-      feval(gParams.callback,gParams.params);
+      callbackEval(gParams.callback,{gParams.params});
     end
   end
 end
@@ -783,7 +801,11 @@ function okHandler(varargin)
 global gParams;
 gParams.ok = 1;
 if isfield(gParams,'okCallback')
-  feval(gParams.okCallback);
+  if isfield(gParams,'callbackArg')
+    callbackEval(gParams.okCallback,[],gParams.callbackArg);
+  else
+    callbackEval(gParams.okCallback);
+  end
   closeHandler;
 else
   uiresume;
@@ -797,7 +819,11 @@ function cancelHandler(varargin)
 global gParams;
 gParams.ok = 0;
 if isfield(gParams,'cancelCallback')
-  callbackEval(gParams.cancelCallback);
+  if isfield(gParams,'callbackArg')
+    callbackEval(gParams.cancelCallback,[],gParams.callbackArg);
+  else
+    callbackEval(gParams.cancelCallback);
+  end
   closeHandler;
 else
   uiresume;
@@ -857,6 +883,10 @@ for i=1:length(rownums)
     
     uiPosition = getUIControlPos(fignum,dParams,uiParams,rownums(i),numLines,multiCol,colnum,entryWidth,j);
     
+    if isnumeric(entryString{i,j})
+      %convert numerical values into string using different precision if they're integer or decimal
+      entryString{i,j} = thisNum2str(entryString{i,j}); 
+    end
     hEntry(i,j) = uicontrol(fignum,...
     'Style',style,...
     'Callback',sprintf('mrParamsDialog(%f,%f,%f)',varnum,i,j),...  %callback has no effect if textbox
@@ -883,7 +913,7 @@ for i=1:length(rownums)
           incdecWidth = min(uiParams.maxIncdecButtonWidth+incdecMargin,entryWidth/2)/figurePosition(3)-incdecMargin;
           entryPosition(3) = entryPosition(3)-(incdecWidth+incdecMargin);
           decPosition(1) = entryPosition(1)+entryPosition(3)+incdecMargin;
-          if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
+          if ismac 
             incPosition(2) = incPosition(2)+incPosition(4)*.5;
             decPosition(4) = decPosition(4)*.45;
             incPosition(4) = incPosition(4)*.45;
@@ -982,7 +1012,7 @@ end
 maxEntryNumCols = max(dParams.entryNumCols);
 
 %-------------------optimize figure dimensions 
-monitorPositions = correctMonitorPosition(get(0,'MonitorPositions'));
+monitorPositions = getMonitorPositions;
 [whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
 screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
 
@@ -1046,7 +1076,7 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
   end
   uiParams.buttonHeight = thisExtent(4);
   %For edit boxes and buttons on MACs, this height will be too small because of their large borders
-  if strcmp(computer,'MACI') || strcmp(computer,'MACI64') 
+  if ismac 
     uiParams.buttonHeight = uiParams.buttonHeight*1.25;
   end
   % global mrDEFAULTS;                                       % The height of the button used to be dependent on the version of matlab             
@@ -1109,6 +1139,16 @@ set(fignum,'Position',figurePosition);
 
 %replace non-set widths by the max width
 dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
+
+
+%modified num2str to increase the number of decimals for reals
+function value = thisNum2str(value)
+
+  if rem(value,1)~=0
+    value = num2str(value,'%.6f');
+  else
+    value = num2str(value);
+  end
 
 
 

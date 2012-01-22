@@ -44,7 +44,7 @@ end
 
 % get a scan list if it has not been passed in
 if ieNotDefined('scanList')
-  scanList = selectScans(v);
+  scanList = selectInList(v,'scans');
 end
 
 % check the scan list
@@ -72,6 +72,7 @@ for iScan = 1:length(scanList)
     end
     if ~isempty(v.figure)
       refreshMLRDisplay(v.viewNum);
+      v = viewSet(v,'overlayCache','init');
     end
 end
 if ~isempty(scanList)

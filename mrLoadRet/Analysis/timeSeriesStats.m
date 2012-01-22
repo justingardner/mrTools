@@ -40,10 +40,8 @@ end
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
   groupName = viewGet(view,'groupName');
-  groupNum = viewGet(view,'groupNum',groupName);
-  n = viewGet(view,'nScans',groupNum);
   params.groupName = groupName;
-  params.scanList = selectScans(view);%[1:n];
+  params.scanList = selectInList(view,'scans');%[1:n];
   if isempty(params.scanList),return,end
 end
 

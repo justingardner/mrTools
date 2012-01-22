@@ -45,7 +45,9 @@ if ~(isscalar(varargin{1}) && isnumeric(varargin{1}))
   for i = 1:length(imageArgs)
     loadVolume(imageArgs{i},sysNum);
   end
-
+  % quit if no volumes were loaded
+  if ~isfield(gVol{sysNum},'vols'),close(gVol{sysNum}.fig);return,end
+  
   % display the volume
   refreshDisplay(sysNum);
   
@@ -101,6 +103,10 @@ function mouseMoveHandler(sysNum)
 
 global gVol;
 vol = gVol{sysNum}.vols(1);
+f = gVol{sysNum}.fig(1);
+
+% abort if we are not focused on figure
+if f ~= gcf,return,end
 
 coord = getMouseCoord(sysNum);
 if isempty(coord)
@@ -288,7 +294,9 @@ for i = 1:length(uniqueFigs)
   delete(uniqueFigs(i));
 end
 
-mrParamsClose;
+if gVol{sysNum}.controlsUp
+  mrParamsClose;
+end
 
 % remove the variable
 gVol{sysNum} = [];
@@ -376,10 +384,11 @@ coord = [];viewNum = [];
 
 global gVol;
 vol = gVol{sysNum}.vols(1);
+f = gVol{sysNum}.fig(1);
 
 % figure out which axis we are on
-pointerLoc = get(gcf,'CurrentPoint');
-pos = get(gcf,'Position');
+pointerLoc = get(f,'CurrentPoint');
+pos = get(f,'Position');
 pos = pointerLoc./pos(3:4);
 subplotNum = ceil(pos(1)*3);
 if (subplotNum>0) && (subplotNum<=3)
@@ -408,7 +417,6 @@ end
 if (pointerX < 1) | (pointerX > vol.h.dim(vol.xDim(viewNum))),return,end
 if (pointerY < 1) | (pointerY > vol.h.dim(vol.yDim(viewNum))),return,end
 
-
 % get the coordinate. Note that we have to be careful both of whether the axis
 % is flipped AND whether there was a transpose (since the y-axis goes in
 % the opposite direction as x for matlab displayed images
@@ -426,7 +434,7 @@ end
 coord(vol.viewDim(viewNum)) = vol.coord(vol.viewDim(viewNum));
 
 % nDims hard coded to 5 here
-coord(end+1:5) = 1;
+coord(end+1:5) = vol.coord(length(coord)+1:5);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    main display functions (refreshDisplay and dispVolume)
@@ -485,10 +493,9 @@ for iView = 1:3
   % the second condition is for primary volumes whether we have updated the coordinates being displayed
   % in the view, and the third condition is for tethered volumes - whether we have change the coordinates
   % for the volume we are tethered to
-  if (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || ...
-      (~vol.tethered && ~isequal(vol.curCoord(vol.viewDim(iView)), ...
-				 vol.coord(vol.viewDim(iView)))) || ...
-      vol.tethered)
+  if ((iVol==1) && (~isequal(vol.curCoord(4:end),vol.coord(4:end)) || (~isequal(vol.curCoord(vol.viewDim(iView)),vol.coord(vol.viewDim(iView)))))) || ((iVol~=1) && gVol{sysNum}.refreshView(iView)) || ~gVol{sysNum}.displayInterpolated
+    % set to refresh view so that the tethered volumes will be refreshed
+    gVol{sysNum}.refreshView(iView) = 1;
     % get the slice
     % nDims hard coded to 5 here
     if vol.tethered
@@ -501,7 +508,7 @@ for iView = 1:3
 
       % the transpose and axis directions need to be taken from the volume this is tethered to
       % prepare image for display
-      [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,gVol{sysNum}.vols(vol.tethered),iView);
+      [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,gVol{sysNum}.vols(vol.tethered),iView);
       
       % if we are not displaying the interpolated image in the
       % second row, then we have to prepare the image that
@@ -512,14 +519,14 @@ for iView = 1:3
 	% need to get the coordinate of the tethered to volume
 	% in these coordinates
 	dispSlice = getMatchingSlice(sysNum,vol,iView);
-	[dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView);
+	[dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,vol,iView);
       end
     else
       % otherwise, grab the data for this image
       dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},vol.viewIndexes{iView,3},vol.coord(4),vol.coord(5)));
 
       % prepare image for display
-      [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView);
+      [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,vol,iView);
     end
 
     % get the correct axis to draw into
@@ -562,6 +569,9 @@ for iView = 1:3
       hold off;
     end
     
+  else
+    % set not to refresh this view
+    gVol{sysNum}.refreshView(iView) = 0;
   end
 end
 
@@ -580,7 +590,7 @@ coord = gVol{sysNum}.vols(vol.tethered).coord;
 coord(4) = 1;coord = coord(1:4);coord = coord(:);
 
 % convert to this volume coordinates
-coord = round(applySystemXform(sysNum,vol.xform)*coord);
+coord = round(applyOriginXform(inv(vol.xform))*coord);
 coord = coord(1:3);
 
 % FIX: this hardcodes the volume number to 1
@@ -592,6 +602,9 @@ if any(coord(1:3)<1) || any(coord(1:3)'>vol.h.dim(1:3))
   return
 end
 
+% make into a row vector
+coord = coord(:)';
+
 % if not set the volume coordinates
 setVolCoord(sysNum,vol.volnum,coord);
 vol = gVol{sysNum}.vols(vol.volnum);
@@ -602,14 +615,18 @@ dispSlice = squeeze(vol.data(vol.viewIndexes{iView,1},vol.viewIndexes{iView,2},v
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   prepareImageForDisplay   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(dispSlice,vol,iView)
+function [dispSlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,vol,iView)
 
 if isempty(dispSlice)
   xLabelStr = '';yLabelStr = '';
   return
 end
 % clip
-%  dispSlice = clipImage(dispSlice);
+global gVol;
+clipPercent = gVol{sysNum}.clipPercent;
+if clipPercent
+  dispSlice = clipImage(dispSlice,clipPercent);
+end
 
 % make into image with index values
 minDispSlice = min(dispSlice(:));
@@ -634,29 +651,29 @@ else
   if vol.axisDir(vol.yDim(iView)) == -1,dispSlice = fliplr(dispSlice);end
 end
 
-
-
 %%%%%%%%%%%%%%%%%%%
 %    clipImage    %
 %%%%%%%%%%%%%%%%%%%
-function img = clipImage(img)
+function img = clipImage(img,clipPercent)
 
-% Choose a sensible clipping value
-histThresh = length(img(:))/1000;
-[cnt, val] = hist(img(:),100);
-goodVals = find(cnt>histThresh);
-if isempty(goodVals)
-  clipMin = 0;clipMax = 0;
-else
-  clipMin = val(min(goodVals));
-  clipMax = val(max(goodVals));
-end
+% Choose a sensible clipping value - that is we want to remove bins
+% at the low and top end for which there are less than clipPercent voxels
+histThresh = length(img(:))*(clipPercent/100);
+[cnt, val] = hist(img(:),1000);
+% find  bin that exceeds the number of voxels expected for cutoff
+numVoxels = cumsum(cnt);
+clipMin = val(last(find(numVoxels<histThresh)));
+if isempty(clipMin),clipMin = min(img(:));end
+% find first last bin that exceeds the number of voxels expected for cutoff
+numVoxels = cumsum(fliplr(cnt));
+val = fliplr(val);
+clipMax = val(last(find(numVoxels<histThresh)));
+if isempty(clipMax),clipMax = max(img(:));end
 
-% and convert the image
-img(img<clipMin) = clipMin;
-img(img>clipMax) = clipMax;
-if (clipMax-clipMin) > 0
-  img = 255*(img-clipMin)./(img-clipMin);
+% clip the image to these boundaries
+if clipMax > clipMin
+  img(img<clipMin) = clipMin;
+  img(img>clipMax) = clipMax;
 end
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -665,6 +682,12 @@ end
 function setVolCoord(sysNum,iVol,coord)
 
 global gVol;
+
+% check bounds
+coord(coord<1) = 1;
+dim = gVol{sysNum}.vols(iVol).h.dim;
+outOfBounds = coord(1:length(dim)) > dim;
+coord(outOfBounds) = dim(outOfBounds);
 
 % set the current x,y,z coordinate
 gVol{sysNum}.vols(iVol).coord = coord;
@@ -710,7 +733,7 @@ else
     coords = [x(:) y(:) z(:)]';
     coords(4,:) = 1;
     % convert from the reference volume coordinates to our coordinates
-    coords = applySystemXform(sysNum,gVol{sysNum}.vols(iVol).xform) * coords;
+    coords = applyOriginXform(inv(gVol{sysNum}.vols(iVol).xform)) * coords;
     x = reshape(coords(1,:),s);
     y = reshape(coords(2,:),s);
     z = reshape(coords(3,:),s);
@@ -786,14 +809,14 @@ pos(4) = gVol{sysNum}.buttonHeight;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    transformation (displaying alignment) functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    applySystemXform    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-function xform = applySystemXform(sysNum,xform)
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    applyoriginform    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function xform = applyOriginXform(xform)
 
 global gVol;
 
-xform = inv(shiftOriginXform) * xform * gVol{sysNum}.xform * shiftOriginXform;
+xform = inv(shiftOriginXform) * xform * shiftOriginXform;
 
 %%%%%%%%%%%%%%%%%%%%
 %    getVol2vol    %
@@ -804,19 +827,31 @@ global gVol;
 verbose = gVol{sysNum}.verbose;
 
 if ~isempty(vol1.h.sform) && ~isempty(vol2.h.sform)
-  vol2vol = inv(vol1.h.sform) * vol2.h.sform;
+  vol2vol = inv(vol2.h.sform) * vol1.h.sform;
   if verbose
     dispHeader('Aliging using sform');
     disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
     dispHeader;
   end
 elseif ~isempty(vol1.h.qform) && ~isempty(vol2.h.qform)
-  vol2vol = inv(vol1.h.qform) * vol2.h.qform;
+  vol2vol = inv(vol2.h.qform) * vol1.h.qform;
   if verbose
     dispHeader('Aliging using qform');
     disp(sprintf('%s',mrnum2str(vol2vol,'compact=0')))
     dispHeader;
   end
+elseif (sum(~isnan(vol1.h.pixdim)) >= 3) && (sum(~isnan(vol2.h.pixdim)) >= 3)
+  % find the shift to the center of each volume (so that the identity alignment
+  % assumes that the centers of the volumes are in register)
+  shiftToCenter2 = eye(4);
+  shiftToCenter2(1:3,4) = -((vol2.h.dim(1:3)'/2) - 1/2);
+  shiftToCenter1 = eye(4);
+  shiftToCenter1(1:3,4) = -((vol1.h.dim(1:3)'/2) - 1/2);
+  % get voxel size scale matrix
+  voxelSize1 = diag([vol1.h.pixdim(1:3) 1]);
+  voxelSize2 = diag([vol2.h.pixdim(1:3) 1]); 
+  % get xform
+  vol2vol = inv(voxelSize2*shiftToCenter2) * voxelSize1*shiftToCenter1;
 else
   vol2vol = eye(4);
 end
@@ -909,16 +944,43 @@ if gVol{sysNum}.n > 1
     {'flipX',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip X','callbackArg',{sysNum 'flipX'},'passParams=1','Flip X axis in alignment'}...
     {'flipY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1','Flip Y axis in alignment'}...
     {'flipZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1','Flip Z axis in alignment'}...
-    {'shiftX',gVol{sysNum}.xformParams.shiftX,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of voxels'}...
-    {'shiftY',gVol{sysNum}.xformParams.shiftY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
-    {'shiftZ',gVol{sysNum}.xformParams.shiftZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
-    {'rotateXY',gVol{sysNum}.xformParams.rotateXY,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
-    {'rotateXZ',gVol{sysNum}.xformParams.rotateXZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
-    {'rotateYZ',gVol{sysNum}.xformParams.rotateYZ,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
-    {'vol2vol',gVol{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}
+    {'shiftX',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of voxels'}...
+    {'shiftY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftY'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
+    {'shiftZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftZ'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
+    {'rotateXY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
+    {'rotateXZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
+    {'rotateYZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
+    {'vol2vol',gVol{sysNum}.vols(2).xform,'callback',@adjustAlignment,'callbackArg',{sysNum 'vol2vol'},'passParams=1','Directly set the alignment transform - this gets composited with the shift and rotate paramters above'}...
+    {'dispHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum [1 2]},sprintf('Display the header for %s',gVol{sysNum}.vols(2).h.filename)}...
+    {'saveAlignment',0,'type=pushbutton','callback',@saveAlignment,'buttonString','Save alignment','callbackArg',sysNum,sprintf('Save the alignment to %s',gVol{sysNum}.vols(2).h.filename)}...
+    {'dispAlignSteps',0,'type=pushbutton','callback',@dispAlignment,'buttonString','Display alignment steps','callbackArg',sysNum,'Displays the alignment steps used from the menu above to arrive at the current alignment. Hold down shift to see a list of all commands, rather than a summary.'}
 	     };
 else
-  paramsInfo = {};
+  paramsInfo = {...
+      {'save',0,'type=pushbutton','callback',@saveVol,'buttonString','Save volume','callbackArg',sysNum,'Save the volume'}...
+      {'orient',0,'type=pushbutton','callback',@orientVol,'buttonString','Convert to LPI','callbackArg',sysNum,'Change the volume data to a canonical orientation. Note that this may not change the view in the viewer if the xform information is correct - but the axis labels may change'}...
+      {'clipPercent',gVol{sysNum}.clipPercent,'minmax=[0 100]','incdec=[-0.1 0.1]','callback',@setClipPercent,'callbackArg',sysNum,'passParams=1','Change the percent of voxels with low and high values that will be clipped in the display. This helps to set the image contrast so that everything is visible even if there are a few stray voxels with large or small values. Note that the mouse over will still correctly display the unclipped value'}...
+      {'swapXY',0,'type=pushbutton','callback',@adjustVol,'buttonString','Swap XY','callbackArg',{sysNum 'swapXY'},'passParams=1','Swap XY of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'swapXZ',0,'type=pushbutton','callback',@adjustVol,'buttonString','Swap XZ','callbackArg',{sysNum 'swapXZ'},'passParams=1','Swap XZ of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'swapYZ',0,'type=pushbutton','callback',@adjustVol,'buttonString','Swap YZ','callbackArg',{sysNum 'swapYZ'},'passParams=1','Swap YZ of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'flipX',0,'type=pushbutton','callback',@adjustVol,'buttonString','Flip X','callbackArg',{sysNum 'flipX'},'passParams=1','Flip X axis of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'flipY',0,'type=pushbutton','callback',@adjustVol,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1','Flip Y axis of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'flipZ',0,'type=pushbutton','callback',@adjustVol,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1','Flip Z axis of volume. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'shiftX',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis of volume in units of voxels. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'shiftY',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Y axis of volume in units of voxels. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'shiftZ',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift Z axis of volume in units of voxels. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'rotateXY',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'rotateXZ',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'rotateYZ',0,'incdec=[-1 1]','callback',@adjustVol,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'xMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(1)],'callback',@adjustVol,'callbackArg',{sysNum 'xMin'},'passParams=1','round=1','Crop the image in the x dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'xMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(1)],'callback',@adjustVol,'callbackArg',{sysNum 'xMax'},'passParams=1','round=1','Crop the image in the x dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'yMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(2)],'callback',@adjustVol,'callbackArg',{sysNum 'yMin'},'passParams=1','round=1','Crop the image in the y dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'yMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(2)],'callback',@adjustVol,'callbackArg',{sysNum 'yMax'},'passParams=1','round=1','Crop the image in the y dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'zMin',1,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMin'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'zMax',inf,'incdec=[-1 1]','minmax',[1 gVol{sysNum}.vols(1).h.dim(3)],'callback',@adjustVol,'callbackArg',{sysNum 'zMax'},'passParams=1','round=1','Crop the image in the z dimension. Hold down shift while clicking this to only apply xform to image and not to header.'}...
+      {'dispVolHeader',0,'type=pushbutton','callback',@dispVolHeader,'buttonString','Display header','callbackArg',{sysNum 1},'Display the header for the volume'}...
+      {'editVolHeader',0,'type=pushbutton','callback',@editVolHeader,'buttonString','Edit header','callbackArg',{sysNum 1},'Edit the header for the volume'}...
+	       };
 end
 
 % add ability to change display of alternate coordinates
@@ -930,7 +992,349 @@ if isfield(gVol{sysNum}.vols(1),'complexData')
   paramsInfo{end+1} = {'dispComplex',putOnTopOfList(gVol{sysNum}.dispComplex,{'magnitude','phase','fft2 magnitude','fft2 phase','fft3 magnitude','fft3 phase'}),'callback',@dispComplex,'callbackArg',sysNum,'passParams=1','Change how complex data is displayed'};
 end
 %mrParamsDialog(paramsInfo,'mlrVol Controls',[],@controlsCallback);
-mrParamsDialog(paramsInfo,'mlrVol Controls');
+gVol{sysNum}.controlsUp = true;
+mrParamsDialog(paramsInfo,'mlrVol Controls','callbackArg',sysNum,'okCallback',@controlsCallback);
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    setClipPercent    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = setClipPercent(sysNum,params)
+
+global gVol;
+
+% set the return value
+retval = params.clipPercent;
+
+% set the clipPercent
+gVol{sysNum}.clipPercent = params.clipPercent;
+
+% redisplay
+gVol{sysNum}.vols.curCoord(:) = nan;
+refreshDisplay(sysNum);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    editVolHeader    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = editVolHeader(args)
+
+% return argument for mrParams
+retval = 1;
+
+global gVol;
+sysNum = args{1};
+volNum = args{2};
+
+% get the header
+vol = gVol{sysNum}.vols(volNum);
+h = vol.h;
+
+% edit the header
+gVol{sysNum}.vols(volNum).h = mlrImageHeaderEdit(h);
+
+% update the axis info
+gVol{sysNum}.vols(1) = updateVolAxisInfo(sysNum,gVol{sysNum}.vols(1),gVol{sysNum}.vols(1).h);
+setVolCoord(sysNum,1,gVol{sysNum}.vols(1).coord);
+
+% redisplay
+gVol{sysNum}.vols.curCoord(:) = nan;
+refreshDisplay(sysNum);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    dispVolHeader    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = dispVolHeader(args)
+
+% return argument for mrParams
+retval = 1;
+
+global gVol;
+sysNum = args{1};
+volNums = args{2};
+
+for iVol = 1:length(volNums)
+  vol = gVol{sysNum}.vols(volNums(iVol));
+  % for aligned volumes, than get the alignment sform so we can display that
+  if volNums(iVol) > 1
+    vol.h.sform = gVol{sysNum}.vols(1).h.qform * vol.xform; 
+  end
+
+  mlrImageHeaderDisp(vol.h);
+end
+
+%%%%%%%%%%%%%%%%%%%
+%    adjustVol    %
+%%%%%%%%%%%%%%%%%%%
+function retval = adjustVol(args,params)
+
+% return argument for mrParams
+retval = 1;
+
+global gVol;
+sysNum = args{1};
+
+% get command name and value
+commandName = args{2};
+commandValue = params.(commandName);
+
+% see if shift key is down, in whcih case we don't apply to header
+if any(strcmp(get(gcf,'CurrentModifier'),'shift'))
+  disp(sprintf('(mlrVol:adjustVol) Only applying %s to image data not header',commandName));
+  applyToHeader = 0;
+else
+  if ~gVol{sysNum}.imageOrientation
+    oneTimeWarning('mlrVolAdjustDims','(mlrVol:adjustDims) Note that when you apply a transformation, the same transformation gets applied to the header xform and mlrVol will adjust the display to compensate (so for example if you swap XY it will swap the labels of the axis, but not necessarily what is being displayed). If instead you want to swap the data but NOT the header xform, then hold down the shift key as you make the adjustments');
+  end
+  applyToHeader = 1;
+end
+
+% do the command
+[gVol{sysNum}.vols(1).data gVol{sysNum}.vols(1).h xform] = mlrImageXform(gVol{sysNum}.vols(1).data,gVol{sysNum}.vols(1).h,commandName,commandValue,'applyToHeader',applyToHeader);
+
+% update the axis info
+gVol{sysNum}.vols(1) = updateVolAxisInfo(sysNum,gVol{sysNum}.vols(1),gVol{sysNum}.vols(1).h);
+
+% get the new coord after xformation
+coord = xform*[gVol{sysNum}.vols(1).coord(1:3)' ; 1];
+gVol{sysNum}.vols(1).coord(1:3) = coord(1:3);
+setVolCoord(sysNum,1,gVol{sysNum}.vols(1).coord);
+
+% redisplay
+gVol{sysNum}.vols.curCoord(:) = nan;
+refreshDisplay(sysNum);
+
+% clear the parameter
+if any(strcmp(commandName,{'xMax','yMax','zMax'}))
+  params.(commandName) = inf;
+else
+  params.(commandName) = 0;
+end
+  
+mrParamsSet(params);
+
+%%%%%%%%%%%%%%%%%%%
+%    orientVol    %
+%%%%%%%%%%%%%%%%%%%
+function retval = orientVol(sysNum)
+
+% return argument for mrParams
+retval = [];
+
+global gVol;
+
+% get what orientation the image is
+axisLabels = mlrImageGetAxisLabels(gVol{sysNum}.vols(1).h.qform);
+if isempty(axisLabels),return,end
+
+% put up a dialog box so user can select the orientation to save to
+paramsInfo = {...
+    {'currentOrientation',axisLabels.orient,'editable=0','This is the orientation that the volume is in'},...
+    {'desiredOrientation','LPI','Set this to whatever orientation you want as specified by the three letter string which can be composed of L for left or R for right and A for anterior or P for Posterior and S for superior and I for inferior.'}...
+	     };
+params = mrParamsDialog(paramsInfo,'Choose desired orientation');
+if isempty(params),return,end
+
+% orient the voliume in LPI
+[gVol{sysNum}.vols(1).data gVol{sysNum}.vols(1).h] = mlrImageOrient(params.desiredOrientation,gVol{sysNum}.vols(1).data,gVol{sysNum}.vols(1).h);
+
+% update the axis info
+gVol{sysNum}.vols(1) = updateVolAxisInfo(sysNum,gVol{sysNum}.vols(1),gVol{sysNum}.vols(1).h);
+setVolCoord(sysNum,1,gVol{sysNum}.vols(1).coord);
+
+% redisplay
+gVol{sysNum}.vols.curCoord(:) = nan;
+refreshDisplay(sysNum);
+
+%%%%%%%%%%%%%%%%%
+%    saveVol    %
+%%%%%%%%%%%%%%%%%
+function retval = saveVol(sysNum)
+
+% return argument for mrParams
+retval = [];
+
+global gVol;
+vol = gVol{sysNum}.vols(1);
+
+% get directory to start save box in
+[filename pathname ] = uiputfile({'*.hdr;*.img;*.nii','Nifti format';'*.sdt;*.spr;*.edt*.epr','BSI stimulate format'},'Save volume',vol.h.filename);
+if isequal(filename,0),return,end
+
+mlrImageSave(fullfile(pathname,filename),vol.data,vol.h);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    dispAlignment    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = dispAlignment(sysNum)
+
+% return argument for mrParams
+retval = [];
+
+global gVol;
+
+% check to see if anything has been done
+if isempty(gVol{sysNum}.alignmentSteps)
+  disp(sprintf('(mlrVol:dispAlignment) No manual alignment steps have been applied'));
+  return
+end
+
+if any(strcmp(get(gcf,'CurrentModifier'),'shift'))
+  dispAllSteps = true;
+else
+  dispAllSteps = false;
+end
+
+startCommand = 'initFromHeader';
+startCommandNum = 0;
+if dispAllSteps,dispHeader('Displaying all alignment steps');end
+for iStep = 1:length(gVol{sysNum}.alignmentSteps)
+  commandName = gVol{sysNum}.alignmentSteps(iStep).name;
+  commandVal = gVol{sysNum}.alignmentSteps(iStep).val;
+  % get how to display the command
+  dispCommand = dispAlignmentCommand(commandName,commandVal);
+  if any(strcmp(commandName,{'initFromHeader','setToIdentity'}))
+    % set this as a starting point of alignment for showing the compact version below
+    startCommand = commandName;
+    startCommandNum = iStep;
+    % display what was done
+    if dispAllSteps,dispHeader(startCommand);end
+  elseif strcmp(commandName,'vol2vol')
+    % set this as a starting point of alignment for showing the compact version below
+    startCommand = commandName;
+    startCommandNum = iStep;
+    if dispAllSteps
+      dispHeader('Set vol2vol');
+      disp(sprintf('%i: %s',iStep,dispCommand));
+    end
+  else
+    if dispAllSteps,disp(sprintf('%i: %s',iStep,dispCommand));end
+  end
+end
+if dispAllSteps,return,end
+
+% display summary of alignment steps 
+dispHeader('Displaying summary of alignment steps');
+disp(sprintf('%s',startCommand));
+lastCommand = '';lastCommandVal = '';
+for iStep = (startCommandNum+1):length(gVol{sysNum}.alignmentSteps)
+  commandName = gVol{sysNum}.alignmentSteps(iStep).name;
+  commandVal = gVol{sysNum}.alignmentSteps(iStep).val;
+  % see if we need to display the command val or not
+  if any(strcmp(commandName,{'swapXY','swapXZ','swapYZ','flipX','flipY','flipZ'}))
+    % if the last command was the same as this command, then nothing
+    % in effect was done, so forget that anything happenedn
+    if strcmp(lastCommand,commandName)
+      lastCommand = ''; 
+    else
+      % display the last one
+      disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+      lastCommand = commandName;
+    end
+  elseif any(strcmp(commandName,{'shiftX','shiftY','shiftZ'}))
+    % if the last command was not a shift then beginning storage of the shift
+    if ~strcmp(lastCommand,'shift')
+      % display the last command
+      disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+      lastCommandVal = [0 0 0];
+    end
+    % set the shift
+    if strcmp(commandName,'shiftX')
+      lastCommandVal(1) = lastCommandVal(1) + commandVal;
+    elseif strcmp(commandName,'shiftY')
+      lastCommandVal(2) = lastCommandVal(2) + commandVal;
+    elseif strcmp(commandName,'shiftZ')
+      lastCommandVal(3) = lastCommandVal(3) + commandVal;
+    end
+    lastCommand = 'shift';
+  elseif any(strcmp(commandName,{'rotateXY','rotateXZ','rotateYZ'}))
+    % if the last command was the same rotation or not
+    if strcmp(lastCommand,commandName)
+      % then add to the rotation angle
+      lastCommandVal = lastCommandVal + commandVal;
+    else
+      % otherwise display last command
+      disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+      lastCommandVal = commandVal;
+    end
+    lastCommand = commandName;
+  end
+end
+
+% display the last one
+disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    dispAlignmentCommand    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dispCommand = dispAlignmentCommand(commandName,commandVal)
+
+dispCommand = '';
+if isempty(commandName),return,end
+
+% see if we need to display the command val or not
+if any(strcmp(commandName,{'swapXY','swapXZ','swapYZ','flipX','flipY','flipZ'}))
+  % display what was done
+  dispCommand = sprintf('%s',commandName);
+elseif any(strcmp(commandName,{'initFromHeader','setToIdentity'}))
+  % display what was done
+  dispCommand = commandName;
+elseif strcmp(commandName,'vol2vol')
+  dispCommand = sprintf('%s\n%s',commandName,mlrnum2str(commandVal,'compact=0'));
+else
+  % display what was done
+  dispCommand = sprintf('%s %s',commandName,mlrnum2str(commandVal,'compact=1'));
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    saveAlignment    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function retval = saveAlignment(sysNum)
+
+% return argument for mrParams
+retval = [];
+
+global gVol;
+vol = gVol{sysNum}.vols(2);
+
+% get directory to start save box in
+[filename pathname ] = uiputfile({'*.hdr;*.img;*.nii','Nifti format';'*.sdt;*.spr;*.edt*.epr','BSI stimulate format'},'Save volume',vol.h.filename);
+if isequal(filename,0),return,end
+
+% compute the sform, remember to composite the system xform (shifts and rotates)
+% then the base volumes qform which takes us from the base volumes coordinates back to 
+% the magnet coordiantes
+qform = gVol{sysNum}.vols(1).h.qform;
+if isempty(qform)
+  disp(sprintf('(mlrVol:saveAlignment) !!! %s does not have qform set !!!',gVol{sysNum}.vols(1).h.filename));
+  if ~any(isnan(gVol{sysNum}.vols(1).h.pixdim(1:3)))
+    disp(sprintf('(mlrVol:saveAlignment) Using pixdim to create qform',gVol{sysNum}.vols(1).h.filename));
+    qform = diag([gVol{sysNum}.vols(1).h.pixdim(1:3) 1]);
+  else
+    disp(sprintf('(mlrVol:saveAlignment) Using identity for qform',gVol{sysNum}.vols(1).h.filename));
+    qform = eye(4);
+  end
+end
+
+sform = qform * vol.xform;
+
+% set the qform as well, if the sform
+paramsInfo = {...
+    {'filename',filename,'editable=0'}...
+    {'saveAsQform',isempty(vol.h.qform),'type=checkbox','Save alignment as qform - usually you do not want to do this since the qform should hold the information about the alignment set by the magnet. But in cases where you don''t have this information set, you may want to set the qform'}...
+    {'saveAsSform',1,'type=checkbox','Save alignment as qform - usually you do not want to do this since the qform should hold the information about the alignment set by the magnet. But in cases where you don''t have this information set, you may want to set the qform'}...
+    {'sform',sform,'The sform that will be save'}...
+	     };
+params = mrParamsDialog(paramsInfo,'Save alignment');
+if isempty(params),return,end
+
+if params.saveAsQform
+  vol.h.qform = params.sform;
+end
+if params.saveAsSform
+  vol.h.sform = params.sform;
+end
+  
+mlrImageSave(fullfile(pathname,filename),vol.data,vol.h);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %    changeAltCoord    %
@@ -955,8 +1359,10 @@ retval = [];
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %    controlsCallback    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function controlsCallback(params)
+function controlsCallback(sysNum)
 
+global gVol;
+gVol{sysNum}.controlsUp = false;
 
 %%%%%%%%%%%%%%%%%%%%%
 %    dispComplex    %
@@ -1043,35 +1449,49 @@ retval = [];
 sysNum = args{1};
 command = args{2};
 replaceXform = false;
-changeXform = true;
+changeXform = false;
 verbose = gVol{sysNum}.verbose;
+xformLeft = eye(4);
+xformRight = eye(4);
 
-% get system xform
-gVol{sysNum}.xformParams = params;
-%gVol{sysNum}.xform = [1 0 0 params.shiftX;0 1 0 params.shiftY;0 0 1 params.shiftZ; 0 0 0 1];
-% make rotation matrix, but need to rotate around center coordinates
-dim = gVol{sysNum}.vols(2).h.dim;
-shiftToCenterOfVol = makeRotMatrix3D(0,0,0,-[dim(1)/2 dim(2)/2 dim(3)/2]);
-gVol{sysNum}.xform = inv(shiftToCenterOfVol) * makeRotMatrix3D(params.rotateXZ,params.rotateYZ,params.rotateXY,[params.shiftX params.shiftY params.shiftZ],1)*shiftToCenterOfVol;
 
+gVol{sysNum}.alignmentSteps(end+1).name = args{2};
+gVol{sysNum}.alignmentSteps(end).val = params.(args{2});
 
 % get the necessary xform
 switch args{2}
  case {'swapXY'}
-  xform = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+  xformLeft = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+  changeXform = true;
  case {'swapXZ'}
-  xform = [0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+  xformLeft = [0 0 1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+  changeXform = true;
  case {'swapYZ'}
-  xform = [1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1];
+  xformLeft = [1 0 0 0;0 0 1 0;0 1 0 0;0 0 0 1];
+  changeXform = true;
  case {'flipX'}
   % set the xform - the nan will get set to the image size below
-  xform = [-1 0 0 nan;0 1 0 0;0 0 1 0; 0 0 0 1];
+  xformLeft = [-1 0 0 nan;0 1 0 0;0 0 1 0; 0 0 0 1];
+  changeXform = true;
  case {'flipY'}
-  xform = [1 0 0 0;0 -1 0 nan;0 0 1 0; 0 0 0 1];
+  xformLeft = [1 0 0 0;0 -1 0 nan;0 0 1 0; 0 0 0 1];
+  changeXform = true;
  case {'flipZ'}
-  xform = [1 0 0 0;0 1 0 0;0 0 -1 nan; 0 0 0 1];
+  xformLeft = [1 0 0 0;0 1 0 0;0 0 -1 nan; 0 0 0 1];
+  changeXform = true;
  case {'shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ'}
-  changeXform = false;
+  % make rotation matrix, but need to rotate around center coordinates
+  % little tricky here - the rotation has to be done respecting the voxel size
+  voxelSize = diag([gVol{sysNum}.vols(2).h.pixdim(1:3) 1]);
+  dim = gVol{sysNum}.vols(2).h.dim;
+  shiftToCenterOfVol = makeRotMatrix3D(0,0,0,-[(dim(1)-1)/2 (dim(2)-1)/2 (dim(3)-1)/2]);
+  xformRight = inv(shiftToCenterOfVol)*inv(voxelSize)*makeRotMatrix3D(-params.rotateXZ,-params.rotateYZ,-params.rotateXY,[params.shiftX params.shiftY params.shiftZ],1)*voxelSize*shiftToCenterOfVol;
+  % reset coordinates back to zero in dialog box
+  params.shiftX = 0;params.shiftY = 0;params.shiftZ = 0;
+  params.rotateXY = 0;params.rotateXZ = 0;params.rotateYZ = 0;
+  mrParamsSet(params);
+  % set to change xform
+  changeXform = true;
  case {'initFromHeader'}
   xform = getVol2vol(sysNum,gVol{sysNum}.vols(2),gVol{sysNum}.vols(1));
   replaceXform = true;
@@ -1079,41 +1499,44 @@ switch args{2}
   xform = params.vol2vol;
   replaceXform = true;
  case {'setToIdentity'}
-  xform = eye(4);
+  if (sum(~isnan(gVol{sysNum}.vols(1).h.pixdim)) >= 3) && (sum(~isnan(gVol{sysNum}.vols(2).h.pixdim)) >= 3)
+    % find the shift to the center of each volume (so that the identity alignment
+    % assumes that the centers of the volumes are in register)
+    shiftToCenter2 = eye(4);
+    shiftToCenter2(1:3,4) = -((gVol{sysNum}.vols(2).h.dim(1:3)'/2) - 1/2);
+    shiftToCenter1 = eye(4);
+    shiftToCenter1(1:3,4) = -((gVol{sysNum}.vols(1).h.dim(1:3)'/2) - 1/2);
+    % get voxel size scale matrix
+    voxelSize1 = diag([gVol{sysNum}.vols(1).h.pixdim(1:3) 1]);
+    voxelSize2 = diag([gVol{sysNum}.vols(2).h.pixdim(1:3) 1]); 
+    % get scale factor
+    xform = inv(voxelSize1*shiftToCenter1) * voxelSize2*shiftToCenter2;
+  else
+    xform = eye(4);
+  end
   replaceXform = true;
 end
 
 % set the transform
-for iVol = 1:gVol{sysNum}.n
+for iVol = 2:gVol{sysNum}.n
   if verbose,dispHeader;end
   if gVol{sysNum}.vols(iVol).tethered
     if changeXform
       % see if there is a nan that needs to be replaced
-      [row col] = find(isnan(xform));
+      [row col] = find(isnan(xformLeft));
       if ~isempty(row)
 	% replace from the appropriate coordinate
-	val = gVol{sysNum}.vols(iVol).h.dim(row);
-	thisXform = xform;
-	thisXform(row,col) = val;
-      else
-	thisXform = xform;
+	val = gVol{sysNum}.vols(1).h.dim(row);
+	xformLeft(row,col) = val;
       end
-      if ~replaceXform
-	% display what we are doing
-	if verbose,disp(sprintf('(mlrVol) Compositing xform\n%s',mrnum2str(thisXform,'compact=0','sigfigs=-1')));end
-        % now set the xform
-	gVol{sysNum}.vols(iVol).xform = gVol{sysNum}.vols(iVol).xform*thisXform;
-      else
-	gVol{sysNum}.vols(iVol).xform = xform;
-      end
+      % now set the xform
+      gVol{sysNum}.vols(iVol).xform = xformLeft*gVol{sysNum}.vols(iVol).xform*xformRight;
+    elseif replaceXform
+      gVol{sysNum}.vols(iVol).xform = xform;
     end
+    % display what we are doing
     if verbose
-      % display what we are doing
       disp(sprintf('(mlrVol) xform\n%s',mrnum2str(gVol{sysNum}.vols(iVol).xform,'compact=0','sigfigs=-1')));
-      % display system xform
-      disp(sprintf('(mlrVol) System xform\n%s',mrnum2str(gVol{sysNum}.xform,'compact=0','sigfigs=-1')));
-      % display complete xform
-      disp(sprintf('(mlrVol) xform after compositing system\n%s',mrnum2str(shiftOriginXform*applySystemXform(sysNum,gVol{sysNum}.vols(iVol).xform)*inv(shiftOriginXform),'compact=0','sigfigs=-1')));
     end
     % clear cache
     gVol{sysNum}.vols(iVol).c = mrCache('init',2*max(gVol{sysNum}.vols(iVol).h.dim(1:3)));
@@ -1130,10 +1553,11 @@ altXforms = gVol{sysNum}.vols(1).altXforms;
 % get the aligned volume alternate xform
 altXformNum = find(strcmp('Aligned volume',altXforms.names));
 if ~isempty(altXformNum)
-  gVol{sysNum}.vols(1).altXforms.xforms{altXformNum} = applySystemXform(sysNum,gVol{sysNum}.vols(iVol).xform);
+  gVol{sysNum}.vols(1).altXforms.xforms{altXformNum} = applyOriginXform(inv(gVol{sysNum}.vols(iVol).xform));
 end
 
 % redisplay
+gVol{sysNum}.vols(1).curCoord(:) = nan;
 refreshDisplay(sysNum);
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -1305,8 +1729,8 @@ end
 gVol{sysNum}.n = 0;
 
 % parse args here when we have settings
-imageOrientation = [];verbose = [];
-getArgs(otherArgs,{'imageOrientation=0','verbose=1'});
+imageOrientation = [];verbose = [];toggleOverlay = [];
+getArgs(otherArgs,{'imageOrientation=0','verbose=1','toggleOverlay=1'});
 gVol{sysNum}.imageOrientation = imageOrientation;
 gVol{sysNum}.verbose = verbose;
 
@@ -1317,6 +1741,9 @@ gVol{sysNum}.buttonHeightMargin = 2;
 gVol{sysNum}.buttonHeight = 25;
 gVol{sysNum}.buttonLeftMargin = 10;
 gVol{sysNum}.buttonBottomMargin = 10;
+
+% controls are not up
+gVol{sysNum}.controlsUp = false;
 
 % get location of figure
 figloc = mrGetFigLoc('mlrVol');
@@ -1354,26 +1781,19 @@ gVol{sysNum}.overlayAlpha = 0.2;
 % default not to display controls
 gVol{sysNum}.displayControls = false;
 
-% default system transform
-gVol{sysNum}.xform = eye(4);
-
 % overlay toggle state starts as on
-gVol{sysNum}.overlayToggleState = 1;
-
-% set up system params
-gVol{sysNum}.xformParams.shiftX = 0;
-gVol{sysNum}.xformParams.shiftY = 0;
-gVol{sysNum}.xformParams.shiftZ = 0;
-gVol{sysNum}.xformParams.rotateXY = 0;
-gVol{sysNum}.xformParams.rotateXZ = 0;
-gVol{sysNum}.xformParams.rotateYZ = 0;
+gVol{sysNum}.overlayToggleState = toggleOverlay;
 
 % display the tethered volume interpolated to
 % match the primary volume display
 gVol{sysNum}.displayInterpolated = true;
 
+% set the clipping value (i.e. the lower and higher clipPercent of values will be clipped to the min and max of the image).
+gVol{sysNum}.clipPercent = 0.2;
+
 % update display
 drawnow
+
 
 %%%%%%%%%%%%%%%%%%%%
 %    loadVolume    %
@@ -1383,12 +1803,24 @@ function tf = loadVolume(filename,sysNum)
 tf = false;
 global gVol;
 
-dispHeader(sprintf('Loading image'));
+% display header
+if gVol{sysNum}.verbose
+  tic
+  dispHeader(sprintf('Loading image: %s',mlrImageArgFilename(filename)));
+end
+
+% load image
 [d h] = mlrImageLoad(filename,'verbose',gVol{sysNum}.verbose);
 if isempty(d) || ~mlrImageIsHeader(h),return,end
 
 % make 2D images into nominal 3D
 if h.nDim==2
+  % but we can't align 2D volumes (because interp3 will fail), so bail out if this is
+  % an alignment volume
+  if gVol{sysNum}.n >= 1
+    disp(sprintf('(mlrVol:loadVolume) !!! Can not align 2D image: %s !!!',mlrImageArgFilename(filename)));
+    return
+  end
   h.nDim = 3;
   h.dim(3) = 1;
   h.pixdim(3)  = 1;
@@ -1417,65 +1849,9 @@ vol.fig(1:3) = gVol{sysNum}.fig(1:3);
 % set which subplot
 vol.subplotNum(1:3) = (1:3)+(n-1)*3;
 
-% compute magnet directions of each axis based on qform and then
-% choose which axis will be displayed in what figure based on this
-% information
-if ~isempty(h.qform) && ~gVol{sysNum}.imageOrientation
-%  [axisLabels vol.axisDirLabels vol.axisMapping axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform);
-  axisLabels = mlrImageGetAxisLabels(h.qform);
-  vol.axisDirLabels = axisLabels.dirLabels;
-  vol.axisMapping = axisLabels.mapping;
-  vol.axisDir = axisLabels.dir;
-  vol.viewDim(1:3) = axisLabels.reverseMapping;
-else
-  vol.axisDirLabels = [];
-  % default to assuming LPI orientation
-  vol.axisMapping = [1 2 3];
-  vol.axisDir = [1 1 1];
-  % no information about what axis is what, so just show each axis in order
-  vol.viewDim(1:3) = 1:3;
-end
-
-% for convenience set which dimension is x and y for each of the views
-% given the viewDim info set above and also info about transposing and flipping
-desiredAxis = {[2 3],[1 3],[1 2]};
-for iView = 1:3
-  % get what the other axis are
-  otherDims = setdiff(1:3,vol.viewDim(iView));
-  vol.xDim(iView) = otherDims(1);
-  vol.yDim(iView) = otherDims(2);
-  % next figure out the apporpriate transpose and flips needed to
-  % show the images in standard LPI (i.e. the first view will
-  % be sagittal with nose to right, second view will be coronal and
-  % third view will be axial) all with left is left, right is right
-  if vol.axisMapping(otherDims(1)) == desiredAxis{iView}(1)
-    % transpose when the desired axis is the same (since
-    % images are displayed as y/x by matlab)
-    vol.transpose(iView) = 1;
-  else
-    vol.transpose(iView) = 0;
-  end
-end
-
-% now make axis labels that can be used for displaying. Note that
-% if the axis are flipped, dispSlice will unflip them so we
-% have to reverse the order of the labels provided by mlrImageGetAxisLabels
-for axisNum = 1:3
-  axisLabel = {'X','Y','Z'};
-  if isempty(vol.axisDirLabels)
-    % no transform, so just use simple X,Y,Z labels
-    vol.dispAxisLabels{axisNum} = axisLabel{axisNum};
-  else
-    % check axis direction
-    if vol.axisDir(axisNum) == -1
-      % and make reversed labels
-      vol.dispAxisLabels{axisNum} = sprintf('%s <- %s -> %s',vol.axisDirLabels{axisNum}{2},axisLabel{axisNum},vol.axisDirLabels{axisNum}{1});
-    else
-      % and make normal labels
-      vol.dispAxisLabels{axisNum} = sprintf('%s <- %s -> %s',vol.axisDirLabels{axisNum}{1},axisLabel{axisNum},vol.axisDirLabels{axisNum}{2});
-    end
-  end
-end
+% update the axis information for this vol
+% this sets how the image will be displayed
+vol = updateVolAxisInfo(sysNum,vol,h);
 
 % set the coordinate (start displaying in middle of volume)
 coord = round(h.dim/2);
@@ -1547,10 +1923,13 @@ if n > 1
   vol.c = mrCache('init',2*max(vol.h.dim(1:3)));
   % set the initial transform
   vol.xform = getVol2vol(sysNum,vol,gVol{sysNum}.vols(1));
+  % set up some info for manual alignment, like what all the alignment steps have been
+  gVol{sysNum}.alignmentSteps = {};
+  gVol{sysNum}.originalAlignment = vol.xform;
   % add this to the altXforms
   gVol{sysNum}.vols(1).altXforms.names{end+1} = 'Aligned volume';
   gVol{sysNum}.vols(1).altXforms.shortNames{end+1} = 'Vol';
-  gVol{sysNum}.vols(1).altXforms.xforms{end+1} = applySystemXform(sysNum,vol.xform);
+  gVol{sysNum}.vols(1).altXforms.xforms{end+1} = applyOriginXform(inv(vol.xform));
   gVol{sysNum}.vols(1).altXforms.n = vol.altXforms.n+1;
   % set alt coord to this one
   params.altCoord = 'Aligned volume';
@@ -1595,6 +1974,77 @@ gVol{sysNum}.vols(n) = vol;
 % now set the coordinate in this created volume
 setVolCoord(sysNum,n,coord);
 
+% display header
+if gVol{sysNum}.verbose
+  dispHeader(sprintf('%s loaded (%s)',mlrImageArgFilename(filename),mlrDispElapsedTime(toc)));
+end
 
 tf = true;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    updateVolAxisInfo    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function vol = updateVolAxisInfo(sysNum,vol,h)
+
+global gVol;
+
+% compute magnet directions of each axis based on qform and then
+% choose which axis will be displayed in what figure based on this
+% information
+if ~isempty(h.qform) && ~gVol{sysNum}.imageOrientation
+%  [axisLabels vol.axisDirLabels vol.axisMapping axisReverseMapping vol.axisDir] = mlrImageGetAxisLabels(h.qform);
+  axisLabels = mlrImageGetAxisLabels(h.qform);
+  vol.axisDirLabels = axisLabels.dirLabels;
+  vol.axisMapping = axisLabels.mapping;
+  vol.axisDir = axisLabels.dir;
+  vol.viewDim(1:3) = axisLabels.reverseMapping;
+else
+  vol.axisDirLabels = [];
+  % default to assuming LPI orientation
+  vol.axisMapping = [1 2 3];
+  vol.axisDir = [1 1 1];
+  % no information about what axis is what, so just show each axis in order
+  vol.viewDim(1:3) = 1:3;
+end
+
+% for convenience set which dimension is x and y for each of the views
+% given the viewDim info set above and also info about transposing and flipping
+desiredAxis = {[2 3],[1 3],[1 2]};
+for iView = 1:3
+  % get what the other axis are
+  otherDims = setdiff(1:3,vol.viewDim(iView));
+  vol.xDim(iView) = otherDims(1);
+  vol.yDim(iView) = otherDims(2);
+  % next figure out the apporpriate transpose and flips needed to
+  % show the images in standard LPI (i.e. the first view will
+  % be sagittal with nose to right, second view will be coronal and
+  % third view will be axial) all with left is left, right is right
+  if vol.axisMapping(otherDims(1)) == desiredAxis{iView}(1)
+    % transpose when the desired axis is the same (since
+    % images are displayed as y/x by matlab)
+    vol.transpose(iView) = 1;
+  else
+    vol.transpose(iView) = 0;
+  end
+end
+
+% now make axis labels that can be used for displaying. Note that
+% if the axis are flipped, dispSlice will unflip them so we
+% have to reverse the order of the labels provided by mlrImageGetAxisLabels
+for axisNum = 1:3
+  axisLabel = {'X','Y','Z'};
+  if isempty(vol.axisDirLabels)
+    % no transform, so just use simple X,Y,Z labels
+    vol.dispAxisLabels{axisNum} = axisLabel{axisNum};
+  else
+    % check axis direction
+    if vol.axisDir(axisNum) == -1
+      % and make reversed labels
+      vol.dispAxisLabels{axisNum} = sprintf('%s <- %s -> %s',vol.axisDirLabels{axisNum}{2},axisLabel{axisNum},vol.axisDirLabels{axisNum}{1});
+    else
+      % and make normal labels
+      vol.dispAxisLabels{axisNum} = sprintf('%s <- %s -> %s',vol.axisDirLabels{axisNum}{1},axisLabel{axisNum},vol.axisDirLabels{axisNum}{2});
+    end
+  end
+end
 

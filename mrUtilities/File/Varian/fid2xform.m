@@ -36,6 +36,13 @@ elseif ~isstruct(procpar)
   return
 end
 
+% get the slice order
+if isfield(procpar,'pss')
+  [sortedpss sliceOrder] = sort(procpar.pss);
+else
+  sliceOrder = [];
+end
+
 % move pro if called for
 if movepro ~= 0
   procpar.pro = procpar.pro + movepro;
@@ -104,6 +111,20 @@ if procpar.accfactor > 1
   if verbose>0
     disp(sprintf('(fid2xform) Found a sense factor of %i. Dims are now [%i %i]',procpar.accfactor,dim(1),dim(2)));
   end
+end
+
+% check for weird psi theta or phi
+if length(procpar.psi) > 1
+  disp(sprintf('(fid2xform) psi is set to array %s. resetting to %f',mlrnum2str(procpar.psi),procpar.psi(1)));
+  procpar.psi = procpar.psi(1);
+end
+if length(procpar.theta) > 1
+  disp(sprintf('(fid2xform) theta is set to array %s. resetting to %f',mlrnum2str(procpar.theta),procpar.theta(end)));
+  procpar.theta = procpar.theta(end);
+end
+if length(procpar.phi) > 1
+  disp(sprintf('(fid2xform) phi is set to array %s. resetting to %f',mlrnum2str(procpar.phi),procpar.phi(2)));
+  procpar.phi = procpar.phi(2);
 end
 
 % make the rotation matrix from the procpar angles
@@ -188,6 +209,7 @@ if isfield(procpar,'fftw3dexe_processed')
 else
   info.fftw3dexe_processed = 0;
 end
+
 % move pss if called for
 if movepss ~= 0
   % apply the compensation only if this is a 3D file
@@ -204,6 +226,7 @@ end
 if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
   % set to automatically movepss since origin is center of magnet not center of slices
   info.movepss = -procpar.pss;
+  info.movepss = 0;
   if verbose > 0,disp(sprintf('(fid2xform) Compressed 3D fid, pss of center of slab: %f',procpar.pss));end
   % compute location of first and last slice
   firstSlice = procpar.pss - voxspacing(3)*(procpar.nv2-1)/2;
@@ -213,6 +236,15 @@ if info.compressedFid && info.acq3d && (length(procpar.pss) == 1)
 else
   info.movepss = 0;
 end
+
+% count number of receivers
+if isfield(procpar,'rcvrs')
+  % count the number of receivers that have been turned on
+  info.numReceivers = length(strfind(procpar.rcvrs{1},'y'));
+else
+  info.numReceivers = 1;
+end
+
 
 % Now get the offset in mm from the center of the bore that the center of the
 % volume is. We can not change the phase encode center. Note that dimensions
@@ -243,26 +275,29 @@ originOffset = [eye(3) originOffset';0 0 0 1];
 % this swaps the dimensions to the coordinate frame that Nifti is expecting.
 swapDim =[0 0 1 0;1 0 0 0;0 1 0 0;0 0 0 1];
 
-% the following is actually correct for L/R, but leave it commented
-% for now - will need to update all of our transforms ;-(.... -j.
-swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
+% Another final fix. This gets left/right correct
+if strcmp(lower(info.console),'inova')  
+  swapDim2 =[0 0 -1 0;0 1 0 0;1 0 0 0;0 0 0 1];
+else
+  swapDim2 =[0 0 -1 0;0 1 0 0;-1 0 0 0;0 0 0 1];
+end
 
 % epi images appear to nead a flip in X and Y
 if info.isepi
-  epiFlip = [-1 0 0 dim(1)-1;0 -1 0 dim(2)-1;0 0 1 0;0 0 0 1];
+  % before about 2011/09/01 the readout was flipped too
+  %epiFlip = [-1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+  if strcmp(lower(info.console),'inova')  
+    epiFlip = eye(4);
+  else
+    % new console needs a phase encode flip
+    epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+  end
 else
   epiFlip = eye(4);
 end
 
-% processed 3d files need a flip
-if info.fftw3dexe_processed
-  fftw = [-1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1];
-else
-  fftw = eye(4);
-end
-
 % now create the final shifted rotation matrix
-xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*fftw*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);
@@ -302,8 +337,13 @@ end
 
 % check for 2d anatomy, to tell getfid that this has the slices and receivers mixed up
 if ~info.acq3d && ~info.isepi
-  info.receiversAndSlicesSwapped = 1;
-  if verbose>0,disp(sprintf('(fid2xform) Receviers and slices are swapped'));,end
+  if strcmp(lower(info.console),'inova')  
+    info.receiversAndSlicesSwapped = 1;
+    if verbose>0,disp(sprintf('(fid2xform) Receviers and slices are swapped'));,end
+  else
+    % looks like on the new console we don't have to do this anymore?
+    info.receiversAndSlicesSwapped = 0;
+  end
 else 
   info.receiversAndSlicesSwapped = 0;
 end
@@ -338,14 +378,7 @@ else
   info.dim(4) = 1;
 end
 info.tr = tr;
-
-% count number of receivers
-if isfield(procpar,'rcvrs')
-  % count the number of receivers that have been turned on
-  info.numReceivers = length(strfind(procpar.rcvrs{1},'y'));
-else
-  info.numReceivers = 1;
-end
+info.sliceOrder = sliceOrder;
 
 % keep procpar
 info.procpar = procpar;

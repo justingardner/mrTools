@@ -43,11 +43,14 @@ if isnumeric(figname)
   return
 end
 
+% remove any problem characters
+figname = fixBadChars(figname);
+
 % get the figloc
 figloc = mrGetFigLoc(figname);
 
 % if we can reuse, then look for the a match
-if ~ieNotDefined('reuse') && ~isempty(gMLRSmartfig) && any(strcmp({gMLRSmartfig.figname},figname))
+if ~ieNotDefined('reuse') && ~isequal(reuse,0) && ~isempty(gMLRSmartfig) && any(strcmp({gMLRSmartfig.figname},figname))
   f = gMLRSmartfig(first(find(strcmp({gMLRSmartfig.figname},figname)))).fignum;
   figure(f);
 else

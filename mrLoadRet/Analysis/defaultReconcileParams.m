@@ -70,7 +70,9 @@ end
 % mrDefaultParamsGUI and we can check the parameters 
 % for consistency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-params = checkParams(params);
+if strcmpi(mrGetPref('checkParamsConsistency'),'Yes') %JB: this is annoyingly slow, too complicated to fix and probably unnecessary, so I added an option to slip
+  params = checkParams(params);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % look for a description, and see if it has something like [x...x], that should be replaced by the scan numbers selected in scanList and groupName 
@@ -208,10 +210,10 @@ if isfield(params,'paramInfo')
 	% also check if there is a minmax
 	if isfield(varinfo{i},'minmax')
 	  if params.(varinfo{i}.name) < varinfo{i}.minmax(1)
-	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo.minmax(1)));
+	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo{i}.minmax(1)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(1);
 	  elseif params.(varinfo{i}.name) > varinfo{i}.minmax(2)
-	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo.minmax(2)));
+	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo{i}.minmax(2)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(2);
 	  end
 	end

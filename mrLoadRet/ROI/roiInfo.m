@@ -17,6 +17,15 @@ end
 if ieNotDefined('roiNum')
   roiNum = viewGet(v,'currentROI');
 end
+
+if isempty(roiNum)
+  mrWarnDlg('(roiInfo) No ROI currently selected.');
+  return
+elseif length(roiNum)>1
+  mrWarnDlg('(roiInfo) This function cannot be used when several ROIs are selected');
+  return
+end
+
 roiName = viewGet(v,'roiName',roiNum);
 roiDate = viewGet(v,'roidate',roiNum);
 roiColor = viewGet(v,'roicolor',roiNum);

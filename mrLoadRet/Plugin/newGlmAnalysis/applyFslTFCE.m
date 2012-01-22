@@ -1,24 +1,31 @@
 % performs Threshold-Free Cluster Enhamcement on a 3-D array using flsmaths
 
-function thresholded_data = applyFslTFCE(data, tempFilename,verbose)
+function tfceData = applyFslTFCE(data, tempFilename,verbose)
 
 if ieNotDefined('verbose')
   verbose = 1;
 end
 if ieNotDefined('tempFilename')
-  tempFilename = 'temp.img';
+  tempFilename = 'tempInput.img';
 end
 
-if any(size(data)<3);
-   mrErrorDlg('Volumes must have at least 3 voxels in each dimension to perform TFCE');
+
+dataSize = size(data);
+if length(dataSize)<3 
+  dataSize(3) = 1;
+elseif length(dataSize)>4
+  mrErrorDlg('(applyFslTFCE) Volume must be 3D or 4D');
 end
+
+newData = zeros([dataSize(1:3)+2 size(data,4)]);
+newData(2:end-1,2:end-1,2:end-1,:) = data;
 
 fslPath = mrGetPref('fslPath');
 if strcmp(mrGetPref('fslPath'),'FSL not installed')
   mrErrorDlg('(applyFslTFCE) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
 end
 
-cbiWriteNifti(tempFilename, data,[],[],[],[],verbose);
+cbiWriteNifti(tempFilename, newData,[],[],[],[],verbose);
 tfce_H = 2.0;
 tfce_E = 0.5;
 tfce_connectivity = 6;
@@ -36,8 +43,10 @@ catch
   return
 end
 %read the TFCE values
-thresholded_data=cbiReadNifti(tempFilename,[],[],[],verbose);
+tfceData=cbiReadNifti(tempFilename,[],[],[],verbose);
 
-if all(thresholded_data(:)==0)
+if all(tfceData(:)==0)
   oneTimeWarning('tfceOutputsZeros','(applyFslTFCE) There is a problem with fslmaths -tfce (it outputs only zeros). try using another version of FSL');
 end
+
+tfceData = tfceData(2:end-1,2:end-1,2:end-1,:);
