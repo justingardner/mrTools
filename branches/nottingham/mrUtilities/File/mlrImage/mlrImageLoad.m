@@ -34,7 +34,10 @@ end
 
 % check input arguments
 verbose=0;orient=[];xMin=1;xMax=inf;yMin=1;yMax=inf;zMin=1;zMax=inf;volNum = [];
-validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum'};
+returnRaw=0;
+swapXY=0;swapXZ=0;swapYZ=0;flipX=0;flipY=0;flipZ=0;shiftX=0;shiftY=0;shiftZ=0;rescale=0;
+rotateXY=0;rotateXZ=0;rotateYZ=0;interpMethod='linear';applyToHeader=1;applyToData=1;nifti=0;
+validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','returnRaw','rescale','nifti'};
 getArgs(otherArgs,validArgs);
 
 % check volNum argument
@@ -141,12 +144,21 @@ for iImage = 1:nImages
   % make sure the header is correct
   [tf header] = mlrImageIsHeader(header);
 
-  % shift position if called for
-  [data header] = adjustDims(data,header,xMin,xMax,yMin,yMax,zMin,zMax);
+  % if we are allowing xformations
+  if ~returnRaw && ~isempty(data)
+    % fix orientation if called for
+    if ~isempty(orient)
+      [data header] = mlrImageOrient(orient,data,header);
+    end
 
-  % fix orientation if called for
-  if ~isempty(orient)
-    [data header] = mlrImageOrient(orient,data,header);
+    % do any shift or xforms on header
+    [data header] = mlrImageXform(data,header,'swapXY',swapXY,'swapXZ',swapXZ,'swapYZ',swapYZ,'flipX',flipX,'flipY',flipY,'flipZ',flipZ,'shiftX',shiftX,'shiftY',shiftY,'shiftZ',shiftZ,'rotateXY',rotateXY,'rotateXZ',rotateXZ,'rotateYZ',rotateYZ,'xMin',xMin,'xMax',xMax,'yMin',yMin,'yMax',yMax,'zMin',zMin,'zMax',zMax,'applyToData',applyToData,'applyToHeader',applyToHeader,'interpMethod',interpMethod,'verbose',verbose);
+    
+    if ~isempty(rescale) && (rescale ~= 0)
+      minData = min(data(:));
+      maxData = max(data(:));
+      data = rescale*(data-minData)/(maxData-minData);
+    end
   end
 
   % do volNum processing if not already done
@@ -164,45 +176,21 @@ for iImage = 1:nImages
 
   % package up for returning
   if nImages > 1
-    headerRetval{iImage} = header;
+    if nifti
+      headerRetval{iImage} = mlrImageGetNiftiHeader(header);
+    else
+      headerRetval{iImage} = header;
+    end
+      
     dataRetval{iImage} = data;
   else
-    headerRetval = header;
+    if nifti
+      headerRetval = mlrImageGetNiftiHeader(header);
+    else
+      headerRetval = header;
+    end
+      
     dataRetval = data;
   end
 end
-
-%%%%%%%%%%%%%%%%%%%%
-%%   adjustDims   %%
-%%%%%%%%%%%%%%%%%%%%
-function [data h] = adjustDims(data,h,xMin,xMax,yMin,yMax,zMin,zMax)
-
-% if nothing to do, just return
-if (xMin == 1) && (xMax == inf) && (yMin == 1) && (yMax == inf) && (zMin == 1) && (zMax == inf)
-  return
-end
-
-% get current dimensions
-dims = size(data);
-
-% make the dimensions valid
-xMin = round(max(1,xMin));
-xMax = round(min(xMax,dims(1)));
-yMin = round(max(1,yMin));
-yMax = round(min(yMax,dims(2)));
-zMin = round(max(1,zMin));
-zMax = round(min(zMax,dims(3)));
-
-% adjust data size
-data = data(xMin:xMax,yMin:yMax,zMin:zMax,:);
-
-% find out how much the new xMin, yMin, zMin have translated the image
-t = h.qform * [xMin yMin zMin 1]' - h.qform * [1 1 1 1]';
-t = [zeros(3,3) t(1:3,1); 0 0 0 0];
-h.qform = t + h.qform;
-
-% reset the dims
-h.dim = size(data);
-
-
 

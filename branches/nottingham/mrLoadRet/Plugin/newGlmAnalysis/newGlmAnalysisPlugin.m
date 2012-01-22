@@ -60,7 +60,7 @@ if viewGet(thisView,'numAnalyses') > 0
   eval(evalstring);
   % params is empty if GUI cancelled
   if isempty(params)
-    disp('(glmAnalysis) GLM analysis cancelled');
+    disp('(glmAnalysis) Analysis cancelled');
     return
   else
     %check if the group has changed, in which case we need to remove the tseriesFile field so that reconcileParams doesn't get confused

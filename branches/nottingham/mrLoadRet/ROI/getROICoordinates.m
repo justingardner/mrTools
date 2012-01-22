@@ -1,7 +1,7 @@
 % getROICoordinates.m
 %
 %        $Id$
-%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<basenum>)
+%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<basenum>,<straightXform=0>)
 %         by: david heeger and justin gardner
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
@@ -11,14 +11,20 @@
 %             rather than the roinum
 %             if roinum is a string, will load the roi from
 %             the directory
-function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum,baseNum)
+% 
+%             If straightXform is set to 1 then the roi is just xform'd
+%             without using xfromROIcoords - i.e. it does a straight
+%             xform of the coordinates.
+function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum,baseNum,varargin)
 
 scanCoords = [];
 % check arguments
-if ~any(nargin == [2 3 4 5])
+if nargin < 2
   help getROICoordinates
   return
 end
+straightXform=[];
+getArgs(varargin,{'straightXform=0'});
 
 % get  scan
 if ieNotDefined('scanNum') 
@@ -55,7 +61,7 @@ elseif isstruct(roiNum)
   currentROIname = viewGet(view,'roiName');
   view = viewSet(view,'newROI',roiNum,1);
   roiNum = viewGet(view,'ROINum',roiNum.name);
-  view = viewSet(view,'currentROI',viewGet(view,'ROINum',currentROIname));
+  %view = viewSet(view,'currentROI',viewGet(view,'ROINum',currentROIname)); %JB: do not change current roi in the view
 end
 
 % get the roi transforms
@@ -90,7 +96,11 @@ if (isempty(scan2roi))
 end
 
 % Use xformROI to supersample the coordinates
-scanCoords = round(xformROIcoords(roiCoords,inv(scan2roi),roiVoxelSize,scanVoxelSize));
+if ~straightXform
+  scanCoords = round(xformROIcoords(roiCoords,inv(scan2roi),roiVoxelSize,scanVoxelSize));
+else
+  scanCoords = round(inv(scan2roi)*roiCoords);
+end
 
 % return the unique ones
 if ~isempty(scanCoords)

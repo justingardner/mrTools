@@ -52,6 +52,9 @@ switch lower(field)
 
  case {'roi'}
   % Choose the roi
+  if strcmp(get(handles.roiPopup,'style'),'popupmenu')
+    value = value(1); %if this is not a listbox, we set only one ROI;
+  end
   set(handles.roiPopup,'Value',value);
 
  case {'basepopup'}
@@ -80,6 +83,23 @@ switch lower(field)
   set(handles.showGroupMenuItem,'Checked',onOrOff{5});
   set(handles.showGroupPerimeterMenuItem,'Checked',onOrOff{6});
   set(handles.hideROIsMenuItem,'Checked',onOrOff{7});
+  
+  if isfield(handles,'roiDisplayModePopup')
+    switch(value)
+      case {'group','selected'}
+        roiDisplayMode = 1;
+      case {'group perimeter','selected perimeter'}
+        roiDisplayMode = 2;
+      case {'all'}
+        roiDisplayMode = 3;
+      case {'all perimeter'}
+        roiDisplayMode = 4;
+      case 'hide'
+        roiDisplayMode = 5;
+    end
+    set(handles.roiDisplayModePopup,'value',roiDisplayMode);
+  end
+  
  case {'basetype'}
   % mlrGuiSet(view,'baseType',value);
   % value = 0 for regular or 1 for flat
@@ -93,6 +113,11 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Enable','off');
     set(handles.calcDistMenu, 'Enable', 'off');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
+    if isfield(handles,'corticalMaxDepthSlider')
+      set(handles.corticalMaxDepthSlider,'Visible','off');
+      set(handles.corticalMaxDepthText,'Visible','off');
+      set(handles.linkMinMaxDepthCheck,'Visible','off');
+    end
   elseif value >= 1
     set(handles.sagittalRadioButton,'Visible','off');
     set(handles.coronalRadioButton,'Visible','off');
@@ -104,6 +129,11 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Label','Flat Viewer');
     set(handles.calcDistMenu, 'Enable', 'on');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
+    if isfield(handles,'corticalMaxDepthSlider')
+      set(handles.corticalMaxDepthSlider,'Visible','on');
+      set(handles.corticalMaxDepthText,'Visible','on');
+      set(handles.linkMinMaxDepthCheck,'Visible','on');
+    end
   end
   if value == 2
     set(handles.createRoiMenu,'Enable','on');
@@ -169,11 +199,32 @@ switch lower(field)
   
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
+  if strcmp(value,'none') 
+    set(handles.overlayPopup,'value',1);
+  end
   set(handles.overlayPopup,'String',value);
 
  case {'overlay'}
   % mlrGuiSet(view,'overlay',overlayNum);
+  if strcmp(get(handles.overlayPopup,'style'),'popupmenu')
+    value = value(1); %if this is not a listbox, we set only one overlay;
+  end
   set(handles.overlayPopup,'Value',value);
+  if length(value)==1
+    set(handles.overlayMinSlider,'enable','on')
+    set(handles.overlayMinText,'enable','on')
+    set(handles.overlayMaxSlider,'enable','on')
+    set(handles.overlayMaxText,'enable','on')
+%     set(handles.alphaText,'enable','on');
+%     set(handles.alphaSlider,'enable','on');
+  else %if more than one overlay selected, disable overlay controls
+    set(handles.overlayMinSlider,'enable','off')
+    set(handles.overlayMinText,'enable','off')
+    set(handles.overlayMaxSlider,'enable','off')
+    set(handles.overlayMaxText,'enable','off')
+%     set(handles.alphaText,'enable','off');
+%     set(handles.alphaSlider,'enable','off');
+  end
   
  case {'overlaymin'}
   % mlrGuiSet(view,'overlayMin',value);
@@ -225,7 +276,7 @@ switch lower(field)
   if (nScans > 1)
     set(handles.scanSlider,'Min',1);
     set(handles.scanSlider,'Max',nScans);
-    set(handles.scanSlider,'sliderStep',[1/(nScans-1) 2/(nScans-1)]);          
+    set(handles.scanSlider,'sliderStep',[1/(nScans-1) 1/(nScans-1)]);          
     set(handles.scanSlider,'Visible','on');
     curScan = min(curScan,nScans);
   else
@@ -260,7 +311,7 @@ switch lower(field)
     set(handles.sliceSlider,'Min',1);
     set(handles.sliceSlider,'Max',value);
     % reset step
-    set(handles.sliceSlider,'sliderStep',[1/(value-1),2/(value-1)]);
+    set(handles.sliceSlider,'sliderStep',[1/(value-1),1/(value-1)]);
     set(handles.sliceSlider,'Visible','on');
   else
     set(handles.sliceSlider,'Visible','off');
@@ -281,12 +332,32 @@ switch lower(field)
   set(handles.sliceText,'String',num2str(value));
   view = viewSet(view,'curSlice',value);
 
- case {'corticaldepth'}
+ case {'corticaldepth'} %this sets a single cortical depth, whether there are one or two sliders
+  % mlrGuiSet(view,'corticalDepth',value);
+   mlrGuiSet(view,'corticalMinDepth',value);
+   if isfield(handles,'linkMinMaxDepthCheck') 
+     set(handles.linkMinMaxDepthCheck,'value',true)
+   end
+   if isfield(handles,'corticalMaxDepthSlider')
+     mlrGuiSet(view,'corticalMaxDepth',value);
+   end
+  
+ case {'corticalmindepth'}
   % mlrGuiSet(view,'corticalDepth',value);
   value = min(value,1);value = max(value,0);
-  value = round(value*100)/100;
+  corticalDepthBins = viewGet(view,'corticalDepthBins');
+  value = round(value*(corticalDepthBins-1))/(corticalDepthBins-1);
   set(handles.corticalDepthSlider,'Value',value);
   set(handles.corticalDepthText,'String',num2str(value));
+  
+ case {'corticalmaxdepth'}
+  % mlrGuiSet(view,'corticalDepth',value);
+  value = min(value,1);value = max(value,0);
+  corticalDepthBins = viewGet(view,'corticalDepthBins');
+  value = round(value*(corticalDepthBins-1))/(corticalDepthBins-1);
+  set(handles.corticalMaxDepthSlider,'Value',value);
+  set(handles.corticalMaxDepthText,'String',num2str(value));
+  
  case {'sliceorientation'}
   % mlrGuiSet(view,'sliceorientation',value);
   sliceOrientation = value;

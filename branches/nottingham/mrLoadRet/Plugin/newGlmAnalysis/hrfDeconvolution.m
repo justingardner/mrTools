@@ -1,23 +1,25 @@
 % hrfDeconvolution.m
 %
 %        $Id$
-%      usage: [params,hrf] = hrfDeconvolution(params, framePeriod, justGetParams, defaultParams)
+%      usage: [params,hrf] = hrfDeconvolution(params, designSampling, justGetParams, defaultParams)
 %         by: julien besle
 %       date: 13/04/2010
-%    purpose: returns the identity maframePeriodix of size specified by user
+%    purpose: returns a deconvolution matrix given the design smapling period and the estimation sampling period
 %
-function [params,hrf] = hrfDeconvolution(params, framePeriod, justGetParams, defaultParams )
+function [params,hrf] = hrfDeconvolution(params, designSampling, justGetParams, defaultParams)%, varargin)
 
-if ~any(nargin == [1 2 3 4])
+if ~any(nargin == [1 2 3 4])% 5])
   help hrfDeconvolution
   return
 end
+
+%estimationSampling = varargin{1};
 
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 if ieNotDefined('params')
-  params = sframePerioduct;
+  params = struct;
 end
 if ~isfield(params,'description')
   params.description = 'Deconvolution';
@@ -41,4 +43,6 @@ if justGetParams
    return
 end
 
-hrf = eye(round(params.hdrlenS/framePeriod));
+hrf = eye(round(params.hdrlenS/designSampling));
+
+%hrf = hrf(:,1:round(estimationSampling/designSampling):end);

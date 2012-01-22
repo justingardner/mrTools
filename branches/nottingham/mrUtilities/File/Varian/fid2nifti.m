@@ -29,6 +29,10 @@
 %
 %             [d h] = fid2nifti('fidname.fid','receiverNum=3');
 %
+%             or return data with all receivers (default is sum-of-squares)
+%     
+%             [d h] = fid2nifti('fidname.fid','receiverNum=inf');
+%
 %             and extract a portion of the image (with the correct
 %             header info to match):
 %
@@ -76,9 +80,9 @@ for i = 1:length(varargin)
 end
 
 % parse arguments
-movepro=0;receiverNum=[];loadArgs = [];movepss=0;
-xMin=1;xMax=inf;yMin=1;yMax=inf;sMin=1;sMax=inf;outputName=[];kspace=0;
-validArgs = {'movepro','movepss','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace'};
+movepro=0;receiverNum=[];loadArgs = [];movepss=0;keepref = 0;
+xMin=1;xMax=inf;yMin=1;yMax=inf;sMin=1;sMax=inf;outputName=[];kspace=0;rescale=255;
+validArgs = {'movepro','movepss','receiverNum','xMin','xMax','yMin','yMax','sMin','sMax','outputName','kspace','rescale','keepref'};
 getArgs(argsList,{validArgs{:} 'loadArgs'});
 % now evaluate the load args (these are passed from mlrImageLoad
 getArgs(loadArgs,validArgs);
@@ -132,8 +136,11 @@ for i = 1:length(fidnames)
   end
 
   % check if we are being asked to return only a single receiver
-  if ~isempty(receiverNum) 
-    if (receiverNum < 1) || (receiverNum > size(fid.data,5))
+  doMergeCoils = true;
+  if ~isempty(receiverNum)
+    if isinf(receiverNum)
+      doMergeCoils = false;
+    elseif (receiverNum < 1) || (receiverNum > size(fid.data,5))
       disp(sprintf('(fid2nifti) Data has %s receivers, cannot extract receiver: %i',size(fid.data,5),receiverNum));
       disp(sprintf('            Ignoring receiverNum setting and continuing processing'));
     else
@@ -144,7 +151,7 @@ for i = 1:length(fidnames)
   end
   
   % check to see if we have to merge coils
-  if size(fid.data,5) > 1
+  if (size(fid.data,5) > 1) && ~kspace && doMergeCoils
     numReceivers = size(fid.data,5);
     % see if we have to merge coils
     if numReceivers > 1
@@ -182,11 +189,11 @@ for i = 1:length(fidnames)
   end
   
   % remove any reference volume
-  if fid.info.nRefVolumes
+  if fid.info.nRefVolumes && ~keepref
     if verbose
       disp(sprintf('(fid2nifti) Removing %i reference volumes',fid.info.nRefVolumes));
     end
-    fid.data = fid.data(:,:,:,fid.info.nRefVolumes+1:end);
+    fid.data = fid.data(:,:,:,fid.info.nRefVolumes+1:end,:);
   end
   
   % adjust dimensions if asked for
@@ -195,6 +202,15 @@ for i = 1:length(fidnames)
   % check the dimensions of the data versus the dimensions in the header
   if ~isequal([size(fid.data,1) size(fid.data,2) size(fid.data,3)],hdr.dim(2:4)')
     disp(sprintf('(fid2nifti) Header info from procpar does not match size %s with data read %s',mynum2str(hdr.dim(2:4)'),mynum2str(size(fid.data))));
+  end
+
+  % rescale data
+  if ~isempty(rescale) && ~isequal(rescale,0)
+    if ~kspace
+      minData = min(fid.data(:));
+      maxData = max(fid.data(:));
+      fid.data = rescale*(fid.data-minData)/(maxData-minData);
+    end
   end
   
   % write the file, but only if we aren't taking an output argument

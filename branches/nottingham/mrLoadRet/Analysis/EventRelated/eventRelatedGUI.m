@@ -67,7 +67,7 @@ if ~ieNotDefined('scanList')
 elseif useDefault
   params.scanNum = 1:viewGet(view,'nScans');
 else
-  params.scanNum = selectScans(view);
+  params.scanNum = selectInList(view,'scans');
 end
 if isempty(params.scanNum)
   params = [];

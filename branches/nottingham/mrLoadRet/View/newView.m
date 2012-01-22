@@ -47,7 +47,7 @@ view.curAnalysis = [];
 % Initialize ROIs
 view.ROIs = struct([]);
 view.curROI = [];
-view.prevROIcoords = [];
+view.prevROIcoords = '';%this is a trick to detect that no coordinates have been put in this field, not even empty coordinates
 view.showROIs = 'all';
 
 % Initialize curGroup

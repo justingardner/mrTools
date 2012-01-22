@@ -127,7 +127,7 @@ for pathNum = 1:length(pathStr)
 
   % Warning if no alignment information in the header.
   if ~hdr.sform_code
-    mrWarnDlg('(loadAnat) No base coordinate frame in the volume header.');
+    mrWarnDlg('(loadAnat) No base coordinate frame in the volume header. (i.e. sform is not set)');
   end
 
   % Extract permutation matrix to keep track of slice orientation.

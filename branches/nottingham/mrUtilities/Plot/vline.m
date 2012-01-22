@@ -1,30 +1,24 @@
 % vline.m
 %
-%   usage: vline(hpos,linetype)
+%   usage: vline(hpos,<linetype>,<axis>)
 %      by: justin gardner
 %    date: 01/21/99
 % purpose: draws a vertical line on the current axis
 %          returns handles 
 %          hpos can be an array of positions
-function h = vline(hpos,linetype)
+function h = vline(hpos,linetype,a)
 
-ax = axis;
+if nargin < 2,linetype = 'k:';end
+if nargin < 3,a = gca;end
+
+ax = axis(a);
 miny = ax(3);maxy = ax(4);
-if isequal(get(gca,'YScale'),'log')
-  miny = min(get(gca,'Ytick'));
-end
-h = [];
-if (nargin == 1)
-  for i = 1:length(hpos)
-    hold on
-    h(i) = plot([hpos(i) hpos(i)],[miny maxy],'k:');
-  end
-elseif (nargin == 2)
-  for i = 1:length(hpos)
-    hold on
-    h(i) = plot([hpos(i) hpos(i)],[miny maxy],linetype);
-  end
-else
-  help vline
+if isequal(get(a,'YScale'),'log')
+  miny = min(get(a,'Ytick'));
 end
 
+h = [];
+for i = 1:length(hpos)
+  hold(a,'on');
+  h(i) = plot(a,[hpos(i) hpos(i)],[miny maxy],linetype);
+end

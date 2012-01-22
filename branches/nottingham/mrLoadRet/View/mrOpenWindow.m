@@ -29,6 +29,8 @@ end
 % set the location of the figure
 figloc = mrGetFigLoc('mrLoadRetGUI');
 if ~isempty(figloc)
+  %deal with multiple monitors
+  [whichMonitor,figloc]=getMonitorNumber(figloc,getMonitorPositions);
   set(fig,'Position',figloc);
 end
 
@@ -46,6 +48,9 @@ mlrGuiSet(view,'nSlices',0);
 view = viewSet(view,'showROIs','all perimeter');
 view = viewSet(view,'labelROIs',1);
 
+% Add plugins
+if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
+
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
@@ -56,6 +61,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   if isfield(mrLastView,'view')
     % open up base anatomy from last session
     if isfield(mrLastView.view,'baseVolumes')
+      disppercent(-inf,sprintf('(mrOpenWindow) installing Base Anatomies'));
       if length(mrLastView.view.baseVolumes) >= 1
         baseLoaded = 1;
         % Add it to the list of base volumes and select it
@@ -68,7 +74,11 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	  % install the base
 	  view = viewSet(view,'newBase',mrLastView.view.baseVolumes(i));
 	end
+      else
+        %try to load 
+  [view,baseLoaded] = loadAnatomy(view);
       end
+      disppercent(inf);
     end
     % change group
     if isfield(mrLastView,'viewSettings')
@@ -117,13 +127,14 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	view = viewSet(view,'groupScanNum', mrLastView.view.groupScanNum(g),g);
       end
     end
-    drawnow
+    %drawnow        %this doesn't seem useful because it will be done by refreshMLRDisplay
     % read ROIs into current view
     if isfield(mrLastView.view,'ROIs')
+      disppercent(-inf,sprintf('(mrOpenWindow) installing ROIs'));
       for roinum = 1:length(mrLastView.view.ROIs)
         view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
       end
-      view = viewSet(view,'currentROI',1);
+      view = viewSet(view,'currentROI',mrLastView.view.curROI);
       if isfield(mrLastView.viewSettings,'showROIs')
 	view = viewSet(view,'showROIs',mrLastView.viewSettings.showROIs);
       end
@@ -133,23 +144,34 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       if isfield(mrLastView.viewSettings,'roiGroup')
 	view = viewSet(view,'roiGroup',mrLastView.viewSettings.roiGroup);
       end
+      disppercent(inf);
     end
-    % Add plugins
-    if ~isempty(which('mlrPlugin')) mlrPlugin(view);end
     
     % add here, to load more info...
     % and refresh
+    disppercent(-inf,sprintf('(mrOpenWindow) Refreshing MLR display'));
     refreshMLRDisplay(view.viewNum);
+    disppercent(inf);
   end
 %   disppercent(inf);
 
+else
+  [view,baseLoaded] = loadAnatomy(view);
+
+  if baseLoaded
+    refreshMLRDisplay(view.viewNum);
+  end
 end
 
-if ~baseLoaded
+% reset some preferences
+mrSetPref('importROIPath','');
+
+function [view,baseLoaded] = loadAnatomy(view)
   % for when there is no mrLastView
   % open an anatomy, if there is one
   anatdir = dir('Anatomy/*.img');
   if ~isempty(anatdir)
+    baseLoaded = 1;
     % load the first anatomy in the list
     view = loadAnat(view,anatdir(1).name);
     view = viewSet(view,'sliceOrientation','coronal');
@@ -158,9 +180,7 @@ if ~baseLoaded
     % change group to last in list
     view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
     % and refresh
-    refreshMLRDisplay(view.viewNum);
+  else
+    baseLoaded = 0;
   end
-end
 
-% reset some preferences
-mrSetPref('importROIPath','');

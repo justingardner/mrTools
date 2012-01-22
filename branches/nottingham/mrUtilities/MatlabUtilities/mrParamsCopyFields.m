@@ -1,9 +1,9 @@
 % mrParamsCopyFields.m
 %
-%      usage: params1 = mrParamsCopyFields(params1,params2)
+%      usage: params2 = mrParamsCopyFields(params1,params2)
 %         by: julien besle 
 %       date: 04/12/2010
-%    purpose: copies (and replaces) fields from one params structure to another
+%    purpose: copies (and replaces) fields from structure params1 to structure params2
 %              only fields with a corresponding paramInfo cell are copied
 %              $Id$
 

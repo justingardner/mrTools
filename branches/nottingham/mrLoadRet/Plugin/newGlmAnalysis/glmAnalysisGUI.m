@@ -43,12 +43,19 @@ if ~isfield(params,'hrfModel') || isempty(params.hrfModel)
   params.hrfModel ='hrfDoubleGamma';
 end
 nRois = viewGet(thisView,'numberOfRois');
+nVisibleRois = length(viewGet(thisView,'visibleRois'));
 if ~isfield(params,'analysisVolume') || isempty(params.analysisVolume)
   params.analysisVolume ='Whole volume';
 else
   if strcmp(params.analysisVolume,'Loaded ROI(s)')
     if ~nRois
       mrWarnDlg('(glmAnalysisGUI) No ROI loaded, switching to Whole Volume');
+      params.analysisVolume ='Whole volume';
+    end
+  end
+  if strcmp(params.analysisVolume,'Visible ROI(s)')
+    if ~nVisibleRois
+      mrWarnDlg('(glmAnalysisGUI) No ROI is visible, switching to Whole Volume');
       params.analysisVolume ='Whole volume';
     end
   end
@@ -75,43 +82,56 @@ if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
   end
 end
 
-if ~isfield(params,'covCorrection') || isempty(params.covCorrection)
-   params.covCorrection = 0;
-end
-if ~isfield(params,'correctionType') || isempty(params.correctionType)
-   params.correctionType = 'generalizedLeastSquares';
-end
-if ~isfield(params,'covEstimation') || isempty(params.covEstimation)
-   params.covEstimation = 'singleTukeyTapers';
-end
-if ~isfield(params,'covEstimationAreaSize') || isempty(params.covEstimationAreaSize) %this is necessary so that it doesn't become a string is it is empty
-   params.covEstimationAreaSize = 20;
-end
-if ~isfield(params,'covFactorization') || isempty(params.covFactorization)
-   params.covFactorization = 'Cholesky';
+if fieldIsNotDefined(params,'spatialSmoothing')
+   params.spatialSmoothing = 0;
 end
 
-if ~isfield(params,'nonLinearityCorrection') || isempty(params.nonLinearityCorrection)
+if fieldIsNotDefined(params,'covCorrection')
+   params.covCorrection = 0;
+end
+if fieldIsNotDefined(params,'correctionType')
+   params.correctionType = 'generalizedLeastSquares';
+end
+if fieldIsNotDefined(params,'covEstimation')
+   params.covEstimation = 'singleTukeyTapers';
+end
+if fieldIsNotDefined(params,'covEstimationAreaSize') %this is necessary so that it doesn't become a string is it is empty
+   params.covEstimationAreaSize = 20;
+end
+if fieldIsNotDefined(params,'covFactorization')
+   params.covFactorization = 'Cholesky';
+end
+roiNames = viewGet(thisView,'roinames');
+if fieldIsNotDefined(params,'covEstimationBrainMask')
+   params.covEstimationBrainMask = 'None';
+elseif ~ismember(params.covEstimationBrainMask,roiNames)
+   mrWarnDlg(['(glmAnalysisGUI) covariance estimation ROI mask ' params.covEstimationBrainMask ' is not loaded, switching to no brain mask']);
+   params.covEstimationBrainMask = 'None';
+end
+
+if fieldIsNotDefined(params,'nonLinearityCorrection')
    params.nonLinearityCorrection = 0;
 end
-if ~isfield(params,'saturationThreshold') || isempty(params.saturationThreshold)
+if fieldIsNotDefined(params,'saturationThreshold')
    params.saturationThreshold = 2;
 end
 
 askForParams = 1;
 % put group name on top of list to make it the default
 groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
-hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDoubleGamma','hrfDeconvolution'});
+hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDoubleGamma','hrfFslFlobs','hrfDeconvolution'});
 analysisVolumeMenu = {'Whole volume','Subset box'};
 if nRois
   analysisVolumeMenu{end+1} = 'Loaded ROI(s)';
+end
+if nVisibleRois
+  analysisVolumeMenu{end+1} = 'Visible ROI(s)';
 end
 analysisVolumeMenu = putOnTopOfList(params.analysisVolume,analysisVolumeMenu);
 correctionTypeMenu = putOnTopOfList(params.correctionType,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
 covEstimationMenu = putOnTopOfList(params.covEstimation,{'singleTukeyTapers','dampenedOscillator'});
 covFactorizationMenu = putOnTopOfList(params.covFactorization,{'Cholesky'});
-
-
+covEstimationBrainMaskMenu = putOnTopOfList(params.covEstimationBrainMask,[{'None'} roiNames]);
 
 
 while askForParams
@@ -119,17 +139,19 @@ while askForParams
   paramsInfo = {...
     {'groupName',groupNames,'type=popupmenu','Name of the group from which to do the analysis'},...
     {'saveName',params.saveName,'File name to try to save as'},...
-    {'hrfModel',hrfModelMenu,'type=popupmenu','Name of the function that defines the hrf used in glm',},...
-    {'analysisVolume',analysisVolumeMenu,'type=popupmenu','Which voxels perform the analysis on. If subsetbox, the dimensions of the box can be specific to each scan and have to include a margin if covEstimationAreaSize>1',},...
+    {'hrfModel',hrfModelMenu,'type=popupmenu','Name of the function that defines the Hemodynamic Response Function model that will be convolved with the design matrix',},...
+    {'analysisVolume',analysisVolumeMenu,'type=popupmenu','Which voxels to perform the analysis on. If subsetbox, the dimensions of the box can be specific to each scan and have to include a margin if covEstimationAreaSize>1',},...
     {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Explanatory Variables in the model = number of columns in the design matrix. if 0, the number of EV will be set to the number of stimulus type in the stimulsu file'},...
-    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Contrast that will be ouput as an overlay'},...
-    {'computeTtests', params.computeTtests,'type=checkbox', 'Whether contrasts are tested for significance'},...
+    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of contrasts that will be ouput as an overlay'},...
+    {'computeTtests', params.computeTtests,'type=checkbox', 'Whether contrasts are tested for significance using T-tests'},...
     {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays'},...
+    {'spatialSmoothing',params.spatialSmoothing, 'minmax=[0 inf]','Width at half-maximum in voxels of a 2D gaussian kernel that will be convolved with each slice at each time-point. If 0, no spatial smoothing is applied'},...
     {'covCorrection',params.covCorrection,'type=checkbox','Correction for correlated noise'},...
     {'correctionType',correctionTypeMenu,'type=popupmenu','contingent=covCorrection','Type of correction (see Wiki for the different algorithms and computing time comparison)'},...
     {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
     {'covEstimationAreaSize',params.covEstimationAreaSize, 'minmax=[1 inf]','contingent=covCorrection','round=1','dimensions in voxels of the spatial window on which the covariance matrix is estimated (in the X and Y dimensions)'},...
     {'covFactorization',covFactorizationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of factorization of the covariance matrix for the computation of the pre-whitening filter'},...
+    {'covEstimationBrainMask',covEstimationBrainMaskMenu,'contingent=covCorrection','ROI mask for the estimation of the noise covariance matrix.'},...
     {'nonLinearityCorrection',params.nonLinearityCorrection,'visible=0','type=checkbox','Correction for non linearity. if Yes, the response saturates when it reaches some value defined below'},...
     {'saturationThreshold',params.saturationThreshold,'visible=0', 'minmax=[1 inf]','contingent=nonLinearityCorrection','Saturation threshold, expressed in terms of the maximum amplitude of the model HRF (e.g. 2 means that the response saturates when it reaches twice the maximum of the model HRF '},...
    };
@@ -161,14 +183,15 @@ while askForParams
 
 
   %perform some checks
-  if 0
-    %perform check on parameters here if needed
+  if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
+    mrWarnDlg('(glmAnalysisGUI) Noise covariance estimation mask can only be used with ROI(s) analysis');
   elseif 0
     %perform check on parameters here if needed
   else
     while askForParams       % get hrf model parameters
       %here we assume that all scans in this group have the same framePeriod
-      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,defaultParams);
+      framePeriod = viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName));
+      hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod,1,defaultParams);%,framePeriod);
       % if empty user hit cancel, go back
       if isempty(hrfParams)
         if size(hrfParams,2) %if the top close button has been pressed
@@ -193,7 +216,7 @@ while askForParams
         elseif defaultParams
           params.scanNum = 1:nScans;
         elseif viewGet(thisView,'nScans',groupNum) >1
-          scanNums = selectScans(thisView,[],groupNum,params.scanNum);
+          scanNums = selectInList(thisView,'scans','Select scans to analyse',params.scanNum,groupNum);
           if isempty(scanNums)
             if size(scanNums,2) %if the top close button has been pressed
               params=[];
@@ -203,6 +226,16 @@ while askForParams
               break;
             end
           else
+            %check that scan frame Period are all identical
+            framePeriod = viewGet(thisView,'framePeriod',scanNums(1));
+            for iScan = scanNums(2:end);
+              if viewGet(thisView,'framePeriod',scanNums(iScan))~=framePeriod
+                mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different frame periods. Copy scans in different groups.');
+                params=[];
+                return
+              end
+            end
+              
             params.scanNum = scanNums;
           end
         end

@@ -10,7 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 27-Oct-2010 18:48:49
+% Last Modified by GUIDE v2.5 08-Jun-2011 19:51:19
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -75,8 +75,11 @@ set(handles.coronalRadioButton,'Value',0);
 set(handles.axialRadioButton,'Value',0);
 set(handles.corticalDepth,'Visible','off');
 set(handles.corticalDepthSlider,'Visible','off');
-set(handles.corticalDepthSlider,'Value',0.5);
 set(handles.corticalDepthText,'Visible','off');
+if isfield(handles,'corticalMaxDepthSlider')
+  set(handles.corticalMaxDepthSlider,'Visible','off');
+  set(handles.corticalMaxDepthText,'Visible','off');
+end
 
 % Choose default command line output for mrLoadRetGUI
 handles.output = hObject;
@@ -342,58 +345,79 @@ end
 
 % --- Executes on slider movement.
 function corticalDepthSlider_Callback(hObject, eventdata, handles)
-% hObject    handle to corticalDepthSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-mrGlobals;
 viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-value = get(hObject,'Value');
-mlrGuiSet(viewNum,'corticalDepth',value);
-refreshMLRDisplay(viewNum);
+newMinValue = get(hObject,'Value');
+if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'value')
+  maxDepth = viewGet(viewNum,'corticalMaxDepth');
+  minDepth = str2num(get(handles.corticalDepthText,'string'));
+  newMaxValue = maxDepth+newMinValue-minDepth;
+  if newMaxValue>=0 && newMaxValue<=1 %if both values are in [0 1]
+    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+    mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+    drawnow;
+    refreshMLRDisplay(viewNum);
+  else
+    set(hObject,'Value',minDepth);
+  end
+else
+  mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+  refreshMLRDisplay(viewNum);
+end
+
 
 
 % --- Executes during object creation, after setting all properties.
 function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to corticalDepthSlider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 % Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
+  set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
+corticalDepthBins=mrGetPref('corticaldepthbins');
+corticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+set(hObject,'value',corticalDepth);
+set(hObject,'SliderStep',min(1/(corticalDepthBins-1)*[1 3],1));
 
 
 function corticalDepthText_Callback(hObject, eventdata, handles)
-% hObject    handle to corticalDepthText (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'String') returns contents of corticalDepthText as text
 %        str2double(get(hObject,'String')) returns contents of corticalDepthText as a double
 
 viewNum = handles.viewNum;
-value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+newMinValue = str2num(get(hObject,'String'));
+if isempty(newMinValue) %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.corticalDepthSlider,'value')));
-else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'corticalDepth',value);
-  refreshMLRDisplay(viewNum);
+else %otherwise, set the new value in the GUI (there is no field for cortical depth in the view, although there probably should)
+  if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'value')
+    maxDepth = viewGet(viewNum,'corticalMaxDepth');
+    minDepth = get(handles.corticalDepthSlider,'value');
+    newMaxValue = maxDepth+newMinValue-minDepth;
+    if newMaxValue>=0 && newMaxValue<=1 %if both values are in [0 1]
+      mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+      mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+      refreshMLRDisplay(viewNum);
+    else
+      set(hObject,'string',num2str(minDepth));
+    end
+  else
+    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 % --- Executes during object creation, after setting all properties.
 function corticalDepthText_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to corticalDepthText (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 % Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+corticalDepthBins=mrGetPref('corticaldepthbins');
+corticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+set(hObject,'string',num2str(corticalDepth));
 
 
 
@@ -668,9 +692,6 @@ end
 
 % --------------------------------------------------------------------
 function importFlatMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to importFlatMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -684,9 +705,6 @@ end
 
 % --------------------------------------------------------------------
 function importSurfaceMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to importSurfaceMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -706,9 +724,7 @@ saveAnat(MLR.views{viewNum},n,1);
 
 % --------------------------------------------------------------------
 function SaveAsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to SaveAsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 n = viewGet(viewNum,'currentBase');
@@ -782,9 +798,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function loadFromVolumeDirectoryROIMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to loadFromVolumeDirectoryROIMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -807,8 +821,18 @@ view = importROI(view);
 function saveROIMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
-n = viewGet(viewNum,'currentroi');
-saveROI(MLR.views{viewNum},n,1);
+for n = viewGet(viewNum,'currentroi');
+  saveROI(MLR.views{viewNum},n,1);
+end
+
+% --------------------------------------------------------------------
+function saveManyROIsMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+roiList = selectInList(MLR.views{viewNum},'rois','Select ROI(s) to save');
+for iRoi = roiList
+    saveROI(MLR.views{viewNum},iRoi,1);
+end
 
 % --------------------------------------------------------------------
 function saveAllROIMenuItem_Callback(hObject, eventdata, handles)
@@ -896,9 +920,7 @@ saveSession(1);
 
 % --------------------------------------------------------------------
 function printMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to printMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -997,7 +1019,7 @@ if ~exist(pathStr,'file')
 end
 
 % Copy the nifti file to the tseries directory
-[dir,file,ext,versn] = fileparts(pathStr);
+[dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,tseriesDir)
     % If tseries file is already in the tseries directory, then use it
     hdr = cbiReadNiftiHeader(pathStr);
@@ -1067,9 +1089,6 @@ function transformsMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function sformScanMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to sformScanMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 % get the view
@@ -1167,7 +1186,7 @@ if ~exist(pathStr,'file')
 end
 
 % Copy the nifti file to the tseries directory
-[dir,file,ext,versn] = fileparts(pathStr);
+[dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,etcDir)
     % If stimfile is already in the Etc directory
     fileName = [file,ext];
@@ -1249,9 +1268,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function EditAnalysisInfoMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to EditAnalysisInfoMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -1373,9 +1390,7 @@ editOverlayGUImrParams(viewNum);
 
 % --------------------------------------------------------------------
 function overlayInfoMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to overlayInfoMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -1397,63 +1412,47 @@ function pasteRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-% Check to see that it is a valid ROI structure and then add it.
-[check roi] = isroi(MLR.clipboard);
-if check
-    view = viewSet(view,'newROI',roi);
-else
-    mrErrorDlg('(paste ROI) Cannot paste. Clipboard does not contain a valid ROI. Use Edit -> ROI -> Copy ROI.')
+refresh=false;
+for iRoi = 1:length(MLR.clipboard)
+  % Check to see that it is a valid ROI structure and then add it.
+  [check roi] = isroi(MLR.clipboard(iRoi));
+  if check
+      view = viewSet(view,'newROI',roi);
+      refresh=true;
+  else
+      mrWarnDlg('(paste ROI) Cannot paste. Clipboard does not contain a valid ROI. Use Edit -> ROI -> Copy ROI.')
+  end
 end
-% Select it and reset view.prevCoords
-ROInum = viewGet(view,'numberofROIs');
-if (ROInum > 0)
-    view = viewSet(view,'currentROI',ROInum);
-end
-refreshMLRDisplay(viewNum);
-
-% --------------------------------------------------------------------
-function editRoiMenuItem_Callback(hObject, eventdata, handles)
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-
-% get the roi
-roiNum = viewGet(v,'currentROI');
-if isempty(roiNum),return,end
-roiName = viewGet(v,'roiName',roiNum);
-roiColor = viewGet(v,'roiColor',roiNum);
-roiNotes = viewGet(v,'roiNotes',roiNum);
-
-% get the list of colors, putting our color on top
-colors = putOnTopOfList(roiColor,color2RGB);
-
-% make parameter string
-roiParams{1} = {'name',roiName,'Name of roi, avoid using punctuation and space'};
-roiParams{2} = {'color',colors,'type=popupmenu','The color that the roi will display in'};
-roiParams{3} = {'notes',roiNotes,'Brief notes about the ROI'};
-
-params = mrParamsDialog(roiParams,'Edit ROI',1.5);
-
-% if not empty, then change the parameters
-if ~isempty(params)
-  v = viewSet(v,'roiColor',params.color,roiNum);
-  v = viewSet(v,'roiName',params.name,roiNum);
-  v = viewSet(v,'roiNotes',params.notes,roiNum);
+if refresh
+  % Select the last ROI
+  ROInum = viewGet(view,'numberofROIs');
+  if (ROInum > 0)
+      view = viewSet(view,'currentROI',ROInum);
+  end
   refreshMLRDisplay(viewNum);
 end
 
 % --------------------------------------------------------------------
-function editManyROIsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to editManyROIsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-mrGlobals;
-viewNum = handles.viewNum;
-v = MLR.views{viewNum};
-nROIs = viewGet(v,'numROIs');
+function editRoiMenuItem_Callback(hObject, eventdata, handles)
 
+viewNum = handles.viewNum;
+editManyROIs(viewNum,viewGet(viewNum,'currentROI'));
+
+% --------------------------------------------------------------------
+function editManyROIsMenuItem_Callback(hObject, eventdata, handles)
+viewNum = handles.viewNum;
+editManyROIs(viewNum,1:viewGet(viewNum,'numROIs'));
+
+function editManyROIs(viewNum,roiList)
+
+if isempty(roiList)
+  disp('(editManyROIs) No ROI is loaded')
+  return;
+end
+mrGlobals;
+v = MLR.views{viewNum};
 paramsInfo = {};
-for roinum = 1:nROIs
+for roinum = roiList
   % get name and colors for each roi
   roiNames{roinum} = viewGet(v,'roiName',roinum);
   roiNotes = viewGet(v,'roiNotes',roinum);
@@ -1467,7 +1466,7 @@ params = mrParamsDialog(paramsInfo,'Edit Many ROIs');
 
 % if not empty, then change the parameters
 if ~isempty(params)
-  for roinum = 1:nROIs
+  for roinum = roiList
     roiName = fixBadChars(roiNames{roinum});
     v = viewSet(v,'roiColor',params.(sprintf('%sColor',roiName)),roinum);
     v = viewSet(v,'roiName',params.(sprintf('%sName',roiName)),roinum);
@@ -1477,11 +1476,10 @@ if ~isempty(params)
 end
 
 
+
 % --------------------------------------------------------------------
 function editAllROIsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to editAllROIsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -1560,9 +1558,7 @@ function baseTransformsMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function baseSformMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to baseSformMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 % get the view
 viewNum = handles.viewNum;
@@ -1595,9 +1591,7 @@ end
 
 % --------------------------------------------------------------------
 function base2scanMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to base2scanMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 % get the view
 viewNum = handles.viewNum;
@@ -1644,6 +1638,7 @@ v = MLR.views{viewNum};
 interpMethod = mrGetPref('interpMethod');
 selectedROIColor = mrGetPref('selectedROIColor');
 roiContourWidth = mrGetPref('roiContourWidth');
+corticalDepthBins = mrGetPref('corticalDepthBins');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1671,9 +1666,18 @@ if ~isempty(prefParams)
     v = viewSet(v,'overlayCache','init');
     refreshMLRDisplay(v.viewNum);
   end
-
-  % check to see if roi graphic parameters method have changed
-  if ~strcmp(selectedROIColor,prefParams.selectedROIColor) || ~strcmp(roiContourWidth,prefParams.roiContourWidth)
+  
+  if ~strcmp(corticalDepthBins,prefParams.corticalDepthBins)
+    set(handles.corticalDepthSlider,'SliderStep',min(1/(prefParams.corticalDepthBins-1)*[1 3],1));
+    if isfield(handles,'corticalMaxDepthSlider')
+      set(handles.corticalMaxDepthSlider,'SliderStep',min(1/(prefParams.corticalDepthBins-1)*[1 3],1));
+    end
+    refreshMLRDisplay(v.viewNum);
+  end
+  
+  % check to see if any other parameters that affects the display have changed
+  if ~strcmp(selectedROIColor,prefParams.selectedROIColor) ||...
+      ~strcmp(roiContourWidth,prefParams.roiContourWidth) || ...
     refreshMLRDisplay(v.viewNum);
   end
 end
@@ -1819,6 +1823,19 @@ end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
+function deleteManyBasesMenuItem_Callback(hObject, eventdata, handles)
+mrGlobals;
+viewNum = handles.viewNum;
+view = MLR.views{viewNum};
+numBases =  selectInList(view,'bases','Select bases to remove');
+if ~isempty(numBases)
+  for baseNum = fliplr(numBases);
+      view = viewSet(view,'deleteBase',baseNum);
+  end
+  refreshMLRDisplay(viewNum);
+end
+
+% --------------------------------------------------------------------
 function deleteAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
@@ -1832,7 +1849,7 @@ function deleteManyAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-numAnalyses =  selectAnalyses(view,'Select analyses to remove');
+numAnalyses =  selectInList(view,'analyses','Select analyses to remove');
 if ~isempty(numAnalyses)
    view = viewSet(view,'deleteAnalysis',numAnalyses);
    refreshMLRDisplay(viewNum);
@@ -1866,7 +1883,7 @@ function deleteManyOverlaysMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-numOverlays = selectOverlays(view,'Select overlays to remove');
+numOverlays = selectInList(view,'overlays','Select overlays to remove');
 if ~isempty(numOverlays)
    view = viewSet(view,'deleteOverlay',numOverlays);
    refreshMLRDisplay(viewNum);
@@ -1950,15 +1967,12 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function removeManyROIMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to removeManyROIMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
 thisView = MLR.views{viewNum};
 
 % put up a dialog with rois to delete
-roiNums = selectROIs(thisView,'Select ROIs to remove');
+roiNums = selectInList(thisView,'rois','Select ROIs to remove');
 if ~isempty(roiNums)
   % now delete anything the user selected
   thisView = viewSet(thisView,'deleteROI',roiNums);
@@ -2083,9 +2097,11 @@ function restrictRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-roinum = viewGet(view,'currentROI');
+currentROIs = viewGet(view,'currentROI');
 scan = viewGet(view,'curscan');
-view = restrictROI(view,roinum,scan);
+for roinum = currentROIs
+    view = restrictROI(view,roinum,scan);
+end
 refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
@@ -2105,17 +2121,23 @@ function undoRoiMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-curCoords = viewGet(view,'roiCoords');
 prevCoords = viewGet(view,'prevROIcoords');
+curCoords = viewGet(view,'roiCoords');
+if ischar(prevCoords) || isequal(prevCoords,curCoords)
+  disp('(mrLoadRetGUI: undoROI) Nothing to undo');
+  return
+end
+if length(viewGet(view,'currentRoi'))>1
+  disp('(mrLoadRetGUI: undoROI) Undo not implemented for several selected ROIs');
+  return;
+end
 view = viewSet(view,'prevROIcoords',curCoords);
 view = viewSet(view,'ROIcoords',prevCoords);
 refreshMLRDisplay(viewNum);
 
+
 % --------------------------------------------------------------------
 function convertCorticalDepthRoiMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertCorticalDepthRoiMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2125,11 +2147,7 @@ v = convertROICorticalDepth(v);
 
 
 % --------------------------------------------------------------------
-function convertRoiMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to convertRoiMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+function convertRoiCoordsMenuItem_Callback(hObject, eventdata, handles)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2175,9 +2193,6 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function setROIGroupMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to setROIGroupMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 mrGlobals;
 viewNum = handles.viewNum;
@@ -2186,7 +2201,7 @@ view = MLR.views{viewNum};
 roiGroup = viewGet(view,'roiGroup');
 roiNames = viewGet(view,'roiNames');% I think we shouldn't have to get the names (but need to modify viewSet call)
 % display a dialog to allow user to select which ROIs to display
-roiGroup = selectROIs(view,'Select ROIs to display',roiGroup);
+roiGroup = selectInList(view,'rois','Select ROIs to display',roiGroup);
 % set the roi group
 view = viewSet(view,'roiGroup',roiNames(roiGroup));
 % if the setting is not to show groups, change it to show goups
@@ -2204,9 +2219,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function showGroupMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to showGroupMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2215,9 +2228,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function showGroupPerimeterMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to showGroupPerimeterMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2234,9 +2245,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function labelsROIsMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to labelsROIsMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -2250,9 +2259,7 @@ refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function findCurrentROIMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to findCurrentROIMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -2300,8 +2307,10 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
-scanList = selectScans(view);
-plotMeanTSeries(view, groupNum, roiList, scanList);
+scanList = selectInList(view,'scans');
+if ~isempty(scanList)
+   plotMeanTSeries(view, groupNum, roiList, scanList);
+end
 
 % --------------------------------------------------------------------
 function plotMeanTseriesCurrentAll_Callback(hObject, eventdata, handles)
@@ -2330,8 +2339,11 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
-scanList = viewGet(view,'currentScan');
-plotMeanTSeries(view, groupNum, roiList, scanList);
+scanList = selectInList(view,'scans');
+if ~isempty(scanList)
+   plotMeanTSeries(view, groupNum, roiList, scanList);
+%    plotMeanTSeries(view, groupNum, roiList, scanList,'subtractMean','No');
+end
 
 % --------------------------------------------------------------------
 function plotMeanTseriesAllAll_Callback(hObject, eventdata, handles)
@@ -2363,7 +2375,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = viewGet(view,'currentROI');
-scanList = selectScans(view);
+scanList = selectInList(view,'scans');
 plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
@@ -2393,7 +2405,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 groupNum = viewGet(view,'currentGroup');
 roiList = [1:viewGet(view,'numberofROIs')];
-scanList = selectScans(view);
+scanList = selectInList(view,'scans');
 plotMeanFourierAmp(view, groupNum, roiList, scanList, 'detrend', 'Linear');
 
 % --------------------------------------------------------------------
@@ -2420,9 +2432,7 @@ dispmotioncorrect(d);
 
 % --------------------------------------------------------------------
 function plotsDisplayEPIImages_Callback(hObject, eventdata, handles)
-% hObject    handle to plotsDisplayEPIImages (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2431,9 +2441,7 @@ mlrDisplayEPI(view);
 
 % --------------------------------------------------------------------
 function plotSpikeDetection_Callback(hObject, eventdata, handles)
-% hObject    handle to plotSpikeDetection (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
@@ -2442,9 +2450,7 @@ mlrSpikeDetector(view,viewGet(view,'curScan'),viewGet(view,'curGroup'));
 
 % --------------------------------------------------------------------
 function flatViewerMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to flatViewerMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -2488,13 +2494,13 @@ cd(thispwd);
 
 % --------------------------------------------------------------------
 function calcDistMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to flatViewerMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
 
 % --------------------------------------------------------------------
 function calcDistMenuItemSeg_Callback(hObject, eventdata, handles)
-% hObject    handle to flatViewerMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 mrGlobals;
 viewNum = handles.viewNum;
 v = MLR.views{viewNum};
@@ -2503,9 +2509,15 @@ v = MLR.views{viewNum};
 if ~exist('dijkstra') == 3
   mrWarnDlg('(mrLoadRetGUI) You need to install the mrGray tools to use the function calcDist');
 else
-  dist = calcDist(v, 'segments'); % ,'polygon',1);
-  if ~isempty(dist)
-    disp(sprintf('Distance been pts A and B: %2.4f', dist(2)));
+  [dijkstraDistance,euclidianDistance] = calcDist(v, 'segments'); % ,'polygon',1);
+  if length(dijkstraDistance)==1
+      disp(sprintf('Dijkstra Distance betwen pts A and B on surface: %2.4f', dijkstraDistance));
+      disp(sprintf('Euclidian 3D distance betwen pts A and B: %2.4f', euclidianDistance));
+  elseif length(dijkstraDistance)>1
+    disp('Dijkstra Distance between successive pairs of points on surface:');
+    disp(dijkstraDistance');
+    disp('Euclidian 3D distance betwen successive pairs of points');
+    disp(euclidianDistance');
   end
   refreshMLRDisplay(viewNum);
 end

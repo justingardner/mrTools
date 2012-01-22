@@ -1,22 +1,18 @@
 % hrfDoubleGamma.m
 %
 %        $Id: hrfDoubleGamma.m 1928 2010-12-14 23:22:11Z julien $
-%      usage: [params,hrf] = hrfDoubleGamma(params, tr, stimDuration )
+%      usage: [params,hrf] = hrfDoubleGamma(params, designSampling, justGetParams, defaultParams)
 %         by: farshad moradi, modified by julien besle
 %       date: 14/06/07, 09/02/2010
 %    purpose: returns a canonical hrf that's a difference of two gamma distribution function
 %
-function [params, hrf] = hrfDoubleGamma(params, tr, justGetParams, defaultParams )
-
-if ~any(nargin == [1 2 3 4])
-  help hrfDoubleGamma
-  return
-end
+function [params, hrf] = hrfDoubleGamma(params, designSampling, justGetParams, defaultParams)%, varargin )
 
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('designSampling'),designSampling = 1;end
 
 if ieNotDefined('params')
   params = struct;
@@ -66,7 +62,7 @@ if isfield(params, 'shift')
     shift = params.shift;
 end
 
-dt = 0.01;
+dt = 0.05;
 
 t = 0:dt:tmax;
 warning('off', 'MATLAB:log:logOfZero');
@@ -99,8 +95,8 @@ modelHrf = modelHrf(1:end-find(flipud(max(abs(modelHrf),[],2))>threshold,1,'firs
 modelHrf = modelHrf./sum(modelHrf(:));
     
 %downsample with constant integral
-hrf = downsample(modelHrf', round(tr/dt));
+hrf = downsample(modelHrf', round(designSampling/dt));
 
 
-params.maxModelHrf = tr/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
+params.maxModelHrf = designSampling/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
 

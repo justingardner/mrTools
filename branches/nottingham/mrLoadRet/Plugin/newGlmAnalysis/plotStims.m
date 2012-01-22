@@ -26,7 +26,7 @@ if ieNotDefined('stimDurations') || any(size(stimDurations)~=size(stimOnsets))
   stimDurations=[];
 end
 
-if iscell(stimOnsets) %If the times and durations are in matrix form, transform to array of cell form
+if iscell(stimOnsets) %If the times and durations are in array of cell form, transform to matrix form
   stimOnsets = stimCell2Mat(stimOnsets, stimDurations,runTransitions);
 end
 
@@ -37,20 +37,38 @@ end
 set(axesHandle,'drawMode','fast');
 hold on;
 Ylims = get(axesHandle,'Ylim');
-bottom = Ylims(1) - .2*diff(Ylims);
-top = Ylims(2) + .2*diff(Ylims);
+bottom = Ylims(1) - diff(Ylims);
+top = Ylims(2) + diff(Ylims);
+Ylims(1) = Ylims(1) - .2*diff(Ylims);
+Ylims(2) = Ylims(2) + .2*diff(Ylims);
 % bottom = Ylims(1);
 % top = Ylims(2);
-hStims = zeros(1,size(stimOnsets,2));
-for iFrame = 1:size(stimOnsets,1)
-  whichColors = logical(stimOnsets(iFrame,:)');
-  if any(whichColors)
-    hStims(whichColors) = plotFrame(axesHandle,framePeriod*(iFrame-1), framePeriod*iFrame, bottom, top, colors(whichColors,:));
+
+stimOnsets = logical(stimOnsets);
+[patterns, dump, whichPatterns] = unique(stimOnsets,'rows'); 
+% % % %remove empty pattern
+% % % emptyPattern = find(all(patterns==0,2));
+% % % if ~isempty(emptyPattern)
+% % %   patterns(emptyPattern,:)=[];
+% % %   whichPatterns(whichPatterns==emptyPattern)=0;
+% % %   whichPatterns(whichPatterns>emptyPattern)=whichPatterns(whichPatterns>emptyPattern)-1;
+% % % end  
+
+%for each pattern
+for iPattern = 1:size(patterns,1)
+  if ~all(patterns(iPattern,:)==0)
+    %find onsets and offsets for each block of this pattern
+    blocks = reshape(find(diff([0;whichPatterns;0]==iPattern)),2,[])-1;
+    %and draw each block
+    for iBlock = 1:size(blocks,2)
+      hStims(patterns(iPattern,:)') = plotFrame(axesHandle,framePeriod*blocks(1,iBlock), framePeriod*blocks(2,iBlock), bottom, top, colors(patterns(iPattern,:)',:));
+    end
   end
 end
+
 if ~isempty(runTransitions)
   for iRun = 1:size(runTransitions,1)-1
-    hTransitions = plot(([runTransitions(iRun,2) runTransitions(iRun,2)]-1)*framePeriod,Ylims,':k');%,'Color',[.3 .3 .3]);
+    hTransitions = plot(axesHandle,[runTransitions(iRun,2) runTransitions(iRun,2)]*framePeriod,[bottom top],':k');%,'Color',[.3 .3 .3]);
   end
 end
 xlabel(axesHandle,'Time (s)');
