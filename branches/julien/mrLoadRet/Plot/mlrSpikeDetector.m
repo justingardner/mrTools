@@ -241,6 +241,9 @@ guidata(hFigure,gData);
 setNewScan(hFigure)
 
 % display all spikes
+if fieldIsNotDefined(gData.spikeInfo,'currentCriterion')
+  gData.spikeInfo.currentCriterion=gData.spikeInfo.criterion;
+end
 setCriterion(hFigure,gData.spikeInfo.currentCriterion);
 
 set(hFigure,'WindowButtonDownFcn',{@MouseDownCallback});
