@@ -3785,7 +3785,8 @@ switch lower(param)
       handles = guidata(fig);
       val = get(handles.corticalDepthSlider,'Value');
     else
-      val = 0.5;
+      corticalDepthBins=viewGet(thisView,'corticaldepthbins');
+      val=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
     end
     
   case {'corticalmaxdepth'}
