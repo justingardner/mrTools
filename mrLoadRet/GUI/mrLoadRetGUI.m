@@ -2121,48 +2121,105 @@ function setROIGroupMenuItem_Callback(hObject, eventdata, handles)
 
 mrGlobals;
 viewNum = handles.viewNum;
-view = MLR.views{viewNum};
+v = MLR.views{viewNum};
 
 inGroup = [];
-roiGroup = viewGet(view,'roiGroup');
+roiGroup = viewGet(v,'roiGroup');
 
 % get number of ROIs
-nROIs = viewGet(view,'nrois');
+nROIs = viewGet(v,'nrois');
 
 % get roi names
 if nROIs > 0
-  roiNames = viewGet(view,'roiNames');
+  roiNames = viewGet(v,'roiNames');
   roiGroupNum = zeros(1,nROIs);
   if ~isempty(roiGroup)
     roiGroupNum(roiGroup) = 1;
   end
-
-  % display a dialog to allow user to select which ROIs to display
-  roiGroupNum = buttondlg('Select ROIs to display',roiNames,roiGroupNum);
-  if isempty(roiGroupNum),return,end
-  roiGroupNum = find(roiGroupNum);
-
+  for iROI = 1:nROIs
+    paramsInfo{iROI} = {roiNames{iROI},roiGroupNum(iROI),'type=checkbox'};
+  end
+  paramsInfo{end+1} = {'all',0,'type=pushbutton','callback',@setSpecialGroupAll,'buttonString','all','passParams=1','callbackArg',{roiNames 1},'Set all of the ROIS to be shown in the group'};
+  paramsInfo{end+1} = {'none',0,'type=pushbutton','callback',@setSpecialGroupAll,'buttonString','none','passParams=1','callbackArg',{roiNames 0},'Set none of the ROIs to be shown in the group'};
+  paramsInfo{end+1} = {'begins','','type=string','callback',@setSpecialGroupBeginsWith,'passParams=1','callbackArg',roiNames,'Set all the ROIs that begin with the letters input'};
+  paramsInfo{end+1} = {'contains','','type=string','callback',@setSpecialGroupContains,'passParams=1','callbackArg',roiNames,'Set all the ROIs that contain the letters input'};
+  
+  params = mrParamsDialog(paramsInfo,'Choose ROIs in group',0.5);
+  if isempty(params),return,end
+  
   % create a cell array with the names of the ROIs to display
   roiGroup = {};
-  for i = 1:length(roiGroupNum)
-    roiGroup{i} = roiNames{roiGroupNum(i)};
+  for i = 1:length(roiNames)
+    if params.(roiNames{i})
+      roiGroup{end+1} = roiNames{i};
+    end
   end
 
   % set the roi group
-  view = viewSet(view,'roiGroup',roiGroup);
+  v = viewSet(v,'roiGroup',roiGroup);
 
   % if the setting is not to show groups, change it to show goups
-  showROIs = viewGet(view,'showROIs');
+  showROIs = viewGet(v,'showROIs');
   if ~any(strcmp(showROIs,{'group','group perimeter'}))
     % see if perimeter is selected
     if ~isempty(strfind(showROIs,'perimeter'))
-      view = viewSet(view,'showROIs','group perimeter');
+      v = viewSet(v,'showROIs','group perimeter');
     else
-      view = viewSet(view,'showROIs','group');
+      v = viewSet(v,'showROIs','group');
     end
   end
-  refreshMLRDisplay(viewNum);
+  refreshMLRDisplay(viewGet(v,'viewNum'));
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    setSpecialGroupAll    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = setSpecialGroupAll(arg,params)
+
+retval = 0;
+
+% set all of them
+for iROI = 1:length(arg{1})
+  params.(arg{1}{iROI}) = arg{2};
+end
+
+params = mrParamsSet(params);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    setSpecialGroupBeginsWith    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = setSpecialGroupBeginsWith(roiNames,params)
+
+retval = 0;
+
+% set all of them
+for iROI = 1:length(roiNames)
+  if strncmp(roiNames{iROI},params.begins,length(params.begins))
+    params.(roiNames{iROI}) = 1;
+  else
+    params.(roiNames{iROI}) = 0;
+  end
+end
+
+params = mrParamsSet(params);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    setSpecialGroupContains    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function retval = setSpecialGroupContains(roiNames,params)
+
+retval = 0;
+
+% set all of them
+for iROI = 1:length(roiNames)
+  if ~isempty(strfind(roiNames{iROI},params.contains))
+    params.(roiNames{iROI}) = 1;
+  else
+    params.(roiNames{iROI}) = 0;
+  end
+end
+
+params = mrParamsSet(params);
 
 % --------------------------------------------------------------------
 function showGroupMenuItem_Callback(hObject, eventdata, handles)
