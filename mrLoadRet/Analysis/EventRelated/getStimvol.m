@@ -223,7 +223,7 @@ for i = 1:length(d.stimfile)
   %entered in the GUI in TRs
   if ieNotDefined('stimDurations')
     for iStim = 1:length(stimvol)
-      stimDurations{iStim} = round(stimVariable.stimDuration/d.tr)*ones(size(stimvol{iStim}));;
+      stimDurations{iStim} = round(var.stimDuration/d.tr)*ones(size(stimvol{iStim}));;
     end
   end
 
