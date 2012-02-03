@@ -166,7 +166,7 @@ end
 % stimvolumes differently
 for i = 1:length(d.stimfile)
   % get the stimvol for this particular stimfile
-  stimNames = {};
+  stimNames = {};stimDurations = {};
   switch d.stimfile{i}.filetype,
    case 'mgl',
     % if we have a stimtrace then get the variables from that
