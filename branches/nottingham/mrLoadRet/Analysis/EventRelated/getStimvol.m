@@ -140,11 +140,11 @@ end
 resolutionLimit = .05; %temporal resolution limit in s
 remainders = [([time_remainders duration_remainders])*estimationSupersampling d.tr];
 remainders = round(remainders/resolutionLimit); %temporal resolution limited to .01 s
-remainders(remainders==0) = d.tr/resolutionLimit;    %replace zeros by TRs
+remainders(remainders==0) = round( d.tr/resolutionLimit );    %replace zeros by TRs; not always guaranteed to have integer result here, so round!
 remainders = unique(remainders);
-greatest_common_factor = 0;
+greatest_common_factor = 0; 
 for i = 1:length(remainders)
-   greatest_common_factor = gcd(greatest_common_factor,remainders(i));
+   greatest_common_factor = gcd(greatest_common_factor,remainders(i)); 
    if greatest_common_factor ==1
       break
    end
