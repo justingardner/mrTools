@@ -1,6 +1,6 @@
 % getROICoordinates.m
 %
-%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<starightXform=0>)
+%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<straightXform=0>)
 %         by: david heeger and justin gardner
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
