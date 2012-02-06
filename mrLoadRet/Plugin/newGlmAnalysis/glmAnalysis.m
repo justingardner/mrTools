@@ -131,12 +131,12 @@ end
 
 for iScan = params.scanNum
   numVolumes = viewGet(thisView,'nFrames',iScan);
-  scanDims = viewGet(thisView,'dims',iScan);
+  scanDims{iScan} = viewGet(thisView,'dims',iScan);
 
   %compute the dimensions of the subset of voxels to load
   switch(params.analysisVolume)
    case {'Whole volume','Subset box'}
-       subsetBox = eval(scanParams{iScan}.subsetBox);
+       subsetBox{iScan} = eval(scanParams{iScan}.subsetBox);
    case {'Loaded ROI(s)','Visible ROI(s)'}
       %get the smallest box containing all the voxels from all the (visible) ROIs 
       if strcmp(params.analysisVolume,'Visible ROI(s)')
@@ -144,15 +144,15 @@ for iScan = params.scanNum
       else
         roiList = 1:viewGet(thisView,'numberOfRois');
       end
-      [subsetBox, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,[voxelsMargin voxelsMargin 0],roiList);
+      [subsetBox{iScan}, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,[voxelsMargin voxelsMargin 0],roiList);
       usedVoxelsInBox = marginVoxels | any(whichRoi,4);
       %clear('whichRoi','marginVoxels');
       if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')
         [dump,brainMaskRoiNum] = ismember(params.covEstimationBrainMask,viewGet(thisView,'roiNames'));
         brainMaskScanCoords = getROICoordinates(thisView,brainMaskRoiNum,iScan);
         %keep only those voxels that are in the subset box
-        brainMaskScanCoords(:,any(brainMaskScanCoords-repmat(subsetBox(:,2),1,size(brainMaskScanCoords,2))>0))=[];
-        brainMaskScanCoords=brainMaskScanCoords-repmat(subsetBox(:,1),1,size(brainMaskScanCoords,2))+1;
+        brainMaskScanCoords(:,any(brainMaskScanCoords-repmat(subsetBox{iScan}(:,2),1,size(brainMaskScanCoords,2))>0))=[];
+        brainMaskScanCoords=brainMaskScanCoords-repmat(subsetBox{iScan}(:,1),1,size(brainMaskScanCoords,2))+1;
         brainMaskScanCoords(:,any(brainMaskScanCoords<1))=[];
         if ~isempty(brainMaskScanCoords)
           %create a mask the same size as the subsetbox
@@ -163,7 +163,7 @@ for iScan = params.scanNum
         end
       end
   end
-  subsetDims = diff(subsetBox,1,2)'+1;
+  subsetDims = diff(subsetBox{iScan},1,2)'+1;
   %Compute the number of slices to load at once in order to minimize memory usage
   if params.TFCE && computePermutations
    %in this particular case, we force loading the whole dataset at once
@@ -239,10 +239,10 @@ for iScan = params.scanNum
     switch(params.analysisVolume)
       case {'Whole volume','Subset box'}
         %Load data
-        d = loadScan(thisView,iScan,[],subsetBox(3,1) + [firstSlices(iBatch) lastSlices(iBatch)] -1, precision,subsetBox(1,:),subsetBox(2,:));
+        d = loadScan(thisView,iScan,[],subsetBox{iScan}(3,1) + [firstSlices(iBatch) lastSlices(iBatch)] -1, precision,subsetBox{iScan}(1,:),subsetBox{iScan}(2,:));
       case {'Loaded ROI(s)','Visible ROI(s)'}
         for iLoad= loadCallsPerBatch{iBatch}
-          dummy = loadScan(thisView,iScan,[],subsetBox(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox(1,:),subsetBox(2,:));
+          dummy = loadScan(thisView,iScan,[],subsetBox{iScan}(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox{iScan}(1,:),subsetBox{iScan}(2,:));
           dummy.data = reshape(dummy.data,[prod(dummy.dim(1:3)) dummy.dim(4)]);
           dummy.data = dummy.data(usedVoxelsInBox(:,:,firstSlices(iLoad):lastSlices(iLoad))>0,:);
           if iLoad==1
@@ -598,27 +598,27 @@ for iScan = params.scanNum
   glmAnal.d{iScan}.estimationSupersampling = scanParams{iScan}.estimationSupersampling;
   glmAnal.d{iScan}.acquisitionSubsample = scanParams{iScan}.acquisitionSubsample;
   glmAnal.d{iScan}.EVnames = params.EVnames;                %this should be removed if viewGet can get params from GLM analysis
-  glmAnal.d{iScan}.dim = [scanDims numVolumes];
-  glmAnal.d{iScan}.ehdr = NaN([scanDims size(ehdr,4) size(ehdr,5)],precision);
-  glmAnal.d{iScan}.ehdr(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdr;
-  glmAnal.d{iScan}.s2 = NaN(scanDims,precision);
-  glmAnal.d{iScan}.s2(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = s2; %JB
+  glmAnal.d{iScan}.dim = [scanDims{iScan} numVolumes];
+  glmAnal.d{iScan}.ehdr = NaN([scanDims{iScan} size(ehdr,4) size(ehdr,5)],precision);
+  glmAnal.d{iScan}.ehdr(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2),:,:) = ehdr;
+  glmAnal.d{iScan}.s2 = NaN(scanDims{iScan},precision);
+  glmAnal.d{iScan}.s2(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2),:,:) = s2; %JB
   clear('ehdr','s2');
   if params.covCorrection
-    glmAnal.d{iScan}.autoCorrelationParameters = NaN([scanDims size(autoCorrelationParameters,4)],precision);
-    glmAnal.d{iScan}.autoCorrelationParameters(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = autoCorrelationParameters; %JB
+    glmAnal.d{iScan}.autoCorrelationParameters = NaN([scanDims{iScan} size(autoCorrelationParameters,4)],precision);
+    glmAnal.d{iScan}.autoCorrelationParameters(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2),:,:) = autoCorrelationParameters; %JB
     clear('autoCorrelationParameters')
   end
   if params.bootstrapTests && params.bootstrapIntervals
-    glmAnal.d{iScan}.ehdrBootstrapCIs = NaN([scanDims size(ehdrBootstrapCIs,4) size(ehdrBootstrapCIs,5)],precision);
-    glmAnal.d{iScan}.ehdrBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = ehdrBootstrapCIs; %JB
+    glmAnal.d{iScan}.ehdrBootstrapCIs = NaN([scanDims{iScan} size(ehdrBootstrapCIs,4) size(ehdrBootstrapCIs,5)],precision);
+    glmAnal.d{iScan}.ehdrBootstrapCIs(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2),:,:) = ehdrBootstrapCIs; %JB
     clear('ehdrBootstrapCIs')
   end
   if numberContrasts
     glmAnal.d{iScan}.contrasts = params.contrasts;
     if params.bootstrapTests && params.bootstrapIntervals  && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
-      glmAnal.d{iScan}.contrastBootstrapCIs = NaN([scanDims size(contrastBootstrapCIs,4) size(contrastBootstrapCIs,5)],precision);
-      glmAnal.d{iScan}.contrastBootstrapCIs(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2),:,:) = contrastBootstrapCIs; %JB
+      glmAnal.d{iScan}.contrastBootstrapCIs = NaN([scanDims{iScan} size(contrastBootstrapCIs,4) size(contrastBootstrapCIs,5)],precision);
+      glmAnal.d{iScan}.contrastBootstrapCIs(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2),:,:) = contrastBootstrapCIs; %JB
       clear('contrastBootstrapCIs')
     end
   end
@@ -671,7 +671,7 @@ defaultOverlay.alphaOverlayExponent=1;
 defaultOverlay.data = cell(1,nScans);
 defaultOverlay.name = '';
 for iScan = params.scanNum
-   defaultOverlay.data{iScan} = NaN(scanDims,precision); %to make values outside the box transparent
+   defaultOverlay.data{iScan} = NaN(scanDims{iScan},precision); %to make values outside the box transparent
 end
 
 
@@ -680,7 +680,7 @@ overlays = defaultOverlay;
 overlays.name = 'r2';
 overlays.colormapType = 'setRangeToMax';
 for iScan = params.scanNum
-   overlays.data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) = r2{iScan};
+   overlays.data{iScan}(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2)) = r2{iScan};
    overlays.params{iScan} = scanParams{iScan};
 end
 clear('r2');
@@ -693,7 +693,10 @@ if numberContrasts && (nnz(params.componentsToTest)==1 || strcmp(params.componen
 
   %find the values for the scale of the beta overlays
   thisOverlay = defaultOverlay;
-  ordered_abs_betas = cell2mat(contrast(params.scanNum));
+  ordered_abs_betas=[];
+  for iScan = params.scanNum
+    ordered_abs_betas = [ordered_abs_betas; contrast{iScan}(:)];
+  end
   ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
   min_beta = min(min(min(min(min(ordered_abs_betas)))));
   max_beta = max(max(max(max(max(ordered_abs_betas)))));
@@ -708,8 +711,8 @@ if numberContrasts && (nnz(params.componentsToTest)==1 || strcmp(params.componen
     overlays(end).alphaOverlay=betaAlphaOverlay{iContrast};
     overlays(end).name = contrastNames{iContrast};
     for iScan = params.scanNum
-      overlays(end).data{iScan} = NaN(scanDims,precision); %to make values outside the box transparent
-      overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+      overlays(end).data{iScan} = NaN(scanDims{iScan},precision); %to make values outside the box transparent
+      overlays(end).data{iScan}(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2)) =...
          contrast{iScan}(:,:,:,iContrast);
       overlays(end).params{iScan} = scanParams{iScan};
     end
@@ -741,7 +744,7 @@ if numberTests
         overlays(end+1)=thisOverlay;
         overlays(end).name = testNames{iTest};
         for iScan = params.scanNum
-          overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+          overlays(end).data{iScan}(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2)) =...
              statistic{iScan}(:,:,:,iTest);
           overlays(end).params{iScan} = scanParams{iScan};
         end
@@ -756,7 +759,7 @@ if numberTests
         overlays(end+1)=thisOverlay;
         overlays(end).name = testNames{iTest};
         for iScan = params.scanNum
-          overlays(end).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+          overlays(end).data{iScan}(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2)) =...
              statistic{iScan}(:,:,:,iTest);
           overlays(end).params{iScan} = scanParams{iScan};
         end
@@ -936,7 +939,7 @@ function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,test
   for iTest = 1:length(testNames)
     overlays(iTest).name = [namePrefix testNames{iTest} ']'];
     for iScan = scanList
-      overlays(iTest).data{iScan}(subsetBox(1,1):subsetBox(1,2),subsetBox(2,1):subsetBox(2,2),subsetBox(3,1):subsetBox(3,2)) =...
+      overlays(iTest).data{iScan}(subsetBox{iScan}(1,1):subsetBox{iScan}(1,2),subsetBox{iScan}(2,1):subsetBox{iScan}(2,2),subsetBox{iScan}(3,1):subsetBox{iScan}(3,2)) =...
          data{iScan}(:,:,:,iTest);
       overlays(iTest).params{iScan} = scanParams{iScan};
     end

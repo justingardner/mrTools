@@ -262,6 +262,13 @@ while keepAsking
       end
     end
   end
+  %if analysis on whole volume, need to set subset box to scan dimensions 
+  if ~strcmp(params.analysisVolume,'Subset box')
+    for iScan = params.scanNum(1:end)
+      scanDims = viewGet(thisView,'dims',iScan,groupNum);
+      scanParams{iScan}.subsetBox = ['[1 ' num2str(scanDims(1)) ';1 ' num2str(scanDims(2)) ';1 ' num2str(scanDims(3)) ']'];
+    end
+  end
 %   if iScan>params.scanNum(1)
 %     scanParams{params.scanNum(1)}.sameForNextScans = 0;
 %   end
