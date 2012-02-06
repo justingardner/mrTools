@@ -89,7 +89,7 @@ roiname = cellArray(roiname);
 % block and vox will return the same voxel time
 % series, they just differ in how they access the data
 % from disk. Set to 'none' to not load the time series.
-getArgs(varargin,{'loadType=block','keepNAN',false,'matchScanNum=[]','matchGroupNum=[]'});
+getArgs(varargin,{'loadType=block','keepNAN',false,'matchScanNum=[]','matchGroupNum=[]','straightXform=0'});
 
 % if user has asked for a match roi (that is, the ROIs should be created with
 % coordinates that are a voxel for voxel match with the passed in scan number.
@@ -141,7 +141,7 @@ for roinum = 1:length(roiname)
                 rois{end}.groupNum = groupNum;
                 % convert to scan coordinates
 		if isempty(matchScanNum)
-		  rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum);
+		  rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum,[],'straightXform',straightXform);
 		else
 		  rois{end}.scanCoords = getROICoordinatesMatching(view,rois{end},scanNum,matchScanNum,groupNum,matchGroupNum);
 		end
