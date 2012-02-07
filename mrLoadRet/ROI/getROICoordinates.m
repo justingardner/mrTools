@@ -1,7 +1,7 @@
 % getROICoordinates.m
 %
 %        $Id$
-%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<basenum>,<straightXform=0>)
+%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<baseNum=3>,<straightXform=0>)
 %         by: david heeger and justin gardner
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
@@ -15,7 +15,7 @@
 %             If straightXform is set to 1 then the roi is just xform'd
 %             without using xfromROIcoords - i.e. it does a straight
 %             xform of the coordinates.
-function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum,baseNum,varargin)
+function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum,varargin)
 
 scanCoords = [];
 % check arguments
@@ -28,7 +28,7 @@ getArgs(varargin,{'straightXform=0'});
 
 % get  scan
 if ieNotDefined('scanNum') 
-  if ieNotDefined('basenum')
+  if ieNotDefined('baseNum')
     scanNum = viewGet(view,'currentScan');
   else
     scanNum = 0;

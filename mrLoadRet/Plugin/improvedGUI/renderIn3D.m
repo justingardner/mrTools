@@ -79,7 +79,7 @@ for iRoi = 1:nRois
 
   roi = viewGet(thisView, 'roi',roiList(iRoi));
   if d.baseType==1
-    thisRoiCoords = getROICoordinates(thisView,roiList(iRoi),0,[],baseNum); %get the coordinates of the ROi in the canonical base space
+    thisRoiCoords = getROICoordinates(thisView,roiList(iRoi),0,[],'baseNum',baseNum); %get the coordinates of the ROi in the canonical base space
     roiBaseCoordsLinear = mrSub2ind(baseCoordMap.dims,thisRoiCoords(1,:),thisRoiCoords(2,:),thisRoiCoords(3,:)); %linearize the index
     baseIndices = find(ismember(baseCoordsLinear,roiBaseCoordsLinear));
     [roiCoords{iRoi}(:,1),roiCoords{iRoi}(:,2),roiCoords{iRoi}(:,3)] = ind2sub(baseDims,baseIndices);

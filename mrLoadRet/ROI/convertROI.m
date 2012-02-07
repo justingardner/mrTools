@@ -105,7 +105,7 @@ for roinum = 1:length(roiNames)
    if strcmp(params.conversionType,'Convert coordinates')
      disp(sprintf('(convertROI) Converting ROI %i:%s to %s coordinate space',roinum,roiNames{roinum},params.destinationSpace));
      if ~isempty(roi.coords)
-         roiBaseCoords = getROICoordinates(thisView,thisroinum,whichVolume,[],baseNum);
+         roiBaseCoords = getROICoordinates(thisView,thisroinum,whichVolume,[],'baseNum',baseNum);
          roi.coords = roiBaseCoords;
       else
          mrWarnDlg(sprintf('(convertROI) ROI %i:%s has empty coordinates in transformation, skipping conversion...',roinum,roiNames{roinum}));

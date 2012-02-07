@@ -1,4 +1,4 @@
-function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
+function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin)
 % loadROITSeries.m
 %
 %      usage: rois = loadROITSeries(view,<roiname>,<scanList>,<groupNum>,<varargin>)
@@ -141,7 +141,7 @@ for roinum = 1:length(roiname)
                 rois{end}.groupNum = groupNum;
                 % convert to scan coordinates
 		if isempty(matchScanNum)
-		  rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum,[],'straightXform',straightXform);
+		  rois{end}.scanCoords = getROICoordinates(view,rois{end},scanNum,groupNum,'straightXform',straightXform);
 		else
 		  rois{end}.scanCoords = getROICoordinatesMatching(view,rois{end},scanNum,matchScanNum,groupNum,matchGroupNum);
 		end
