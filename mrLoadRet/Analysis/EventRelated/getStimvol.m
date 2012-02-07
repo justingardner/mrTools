@@ -50,6 +50,7 @@ if isview(d)
   d.tr = viewGet(v,'framePeriod');
   d.concatInfo = viewGet(v,'concatInfo');
   d.junkFrames = viewGet(v,'totalJunkedFrames');
+  d.volTrigRatio = viewGet(v,'auxParam','volTrigRatio');
   if isempty(returnOnlyStimvol),returnOnlyStimvol = 1;end
 else
   if isempty(returnOnlyStimvol),returnOnlyStimvol = 0;end
@@ -219,6 +220,18 @@ for i = 1:length(d.stimfile)
     end
   end
   
+  % handle the case where volTrigRatio is 
+  if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio) && ~isequal(d.volTrigRatio,1)
+    % check volTrigRatio for this scan
+    if (length(d.volTrigRatio) >= i) && isscalar(d.volTrigRatio{i})
+      for iStimvol = 1:length(stimvol)
+	stimvol{iStimvol} = stimvol{iStimvol}*2-1;
+      end
+    else
+      disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
+    end
+  end
+  
   %if stimDurations does not exist, set all durations to value user
   %entered in the GUI in TRs
   if ieNotDefined('stimDurations')
@@ -295,8 +308,9 @@ for i = 1:length(d.stimfile)
     oldStimvol = d.stimvol;
     oldStimDurations = d.stimDurations;
     oldStimNames = d.stimNames;
-    %put names together (this also sorts names in alphabetical order)
-    d.stimNames = union(d.stimNames,stimNames);
+    %put names together (but, keep ordering, rather than sorting
+    [dump,indexA,indexB] = union(d.stimNames,stimNames);
+    d.stimNames = {d.stimNames{sort(indexA)} stimNames{sort(indexB)}};
     %create new cell arrays
     d.stimvol = cell(size(d.stimNames));
     d.stimDurations = cell(size(d.stimNames));
