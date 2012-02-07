@@ -52,6 +52,7 @@ if isview(d)
   d.tr = viewGet(v,'framePeriod');
   d.concatInfo = viewGet(v,'concatInfo');
   d.junkFrames = viewGet(v,'totalJunkedFrames');
+  d.volTrigRatio = viewGet(v,'auxParam','volTrigRatio');
   % and optional arguments (only necessary for eventtimes)
   if ~isempty(supersampling),d.supersampling = supersampling;end
   if ~isempty(impulse),d.impulse=impulse;end
@@ -172,6 +173,18 @@ for i = 1:length(d.stimfile)
     end
   end
 
+  % handle the case where volTrigRatio is 
+  if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio) && ~isequal(d.volTrigRatio,1)
+    % check volTrigRatio for this scan
+    if (length(d.volTrigRatio) >= i) && isscalar(d.volTrigRatio{i})
+      for iStimvol = 1:length(stimvol)
+	stimvol{iStimvol} = stimvol{iStimvol}*2-1;
+      end
+    else
+      disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
+    end
+  end
+  
   % compare to make sure we have the same stimulus names as last time
   if ~isempty(lastStimNames)
     if ~isequal(d.stimNames,lastStimNames)
