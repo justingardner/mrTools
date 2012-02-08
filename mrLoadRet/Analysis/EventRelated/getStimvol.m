@@ -61,6 +61,11 @@ else
   if isempty(returnOnlyStimvol),returnOnlyStimvol = 0;end
 end
 
+%make sure volTrigRatio is a cell array
+if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
+  d.volTrigRatio = cellArray(d.volTrigRatio);
+end
+
 % check to make sure we have a stimfile
 if ~isfield(d,'stimfile')
   disp(sprintf('(getStimvol) stimFile is not loaded'));
@@ -173,15 +178,20 @@ for i = 1:length(d.stimfile)
     end
   end
 
-  % handle the case where volTrigRatio is 
-  if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio) && ~isequal(d.volTrigRatio,1)
+  % handle the case where volTrigRatio specifies more volumes than triggers
+  if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
     % check volTrigRatio for this scan
-    if (length(d.volTrigRatio) >= i) && isscalar(d.volTrigRatio{i})
-      for iStimvol = 1:length(stimvol)
-	stimvol{iStimvol} = stimvol{iStimvol}*2-1;
+    if length(d.volTrigRatio) >= i
+      if iscell(d.volTrigRatio{i})
+	disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
+      else
+	% multply the stimvols out by what volTrigRatio says
+	for iStimvol = 1:length(stimvol)
+	  stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
+	end
       end
     else
-      disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
+      disp(sprintf('(getStimvol) !!! volTrigRatio missing entry for component scan: %i. Ignoring',i));
     end
   end
   
