@@ -293,12 +293,15 @@ for iscan = 1:length(params.scanList)
     else
       % get volTrigRatio
       volTrigRatio = viewGet(view,'auxParam','volTrigRatio');
+      if iscell(volTrigRatio),volTrigRatio = cell2mat(volTrigRatio);end
       if isscalar(volTrigRatio)
 	if volTrigRatio == 2
 	  d.notchFilterForTSense = volTrigRatio;
 	elseif volTrigRatio ~= 1
 	  mrWarnDlg(sprintf('(concatTSeries) !!! Notch filter for tSense has only be implemented for acceleration factors of 2 !!! Not running any notch filter'));
 	end
+      else
+	disp(sprintf('(concatTSeries) Notch filter not being run on concat of a concat'));
       end
     end
   end
