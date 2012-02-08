@@ -24,7 +24,7 @@ if nargin < 2
   return
 end
 straightXform=[];
-getArgs(varargin,{'straightXform=0'});
+getArgs(varargin,{'straightXform=0','baseNum'});
 
 % get  scan
 if ieNotDefined('scanNum') 
