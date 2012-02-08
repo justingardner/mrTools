@@ -57,38 +57,48 @@ while keepAsking
     params.componentsCombination = 'Or';
   end
 
-  if fieldIsNotDefined(params,'parametricTests')
-    params.parametricTests = 1;
-  end
-  if fieldIsNotDefined(params,'bootstrapTests')
-    params.bootstrapTests = 0;
-  end
-  if fieldIsNotDefined(params,'permutationTests')
-    params.permutationTests = 0;
-  end
-
-  if fieldIsNotDefined(params, 'bootstrapFweAdjustment')
+  if params.computeTtests || params.numberFtests
+    if fieldIsNotDefined(params,'parametricTests')
+      params.parametricTests = 1;
+    end
+    if fieldIsNotDefined(params,'bootstrapTests')
+      params.bootstrapTests = 0;
+    end
+    if fieldIsNotDefined(params,'permutationTests')
+      params.permutationTests = 0;
+    end
+    if fieldIsNotDefined(params, 'bootstrapFweAdjustment')
       params.bootstrapFweAdjustment = 0;
-  end
-  if fieldIsNotDefined(params, 'permutationFweAdjustment')
+    end
+    if fieldIsNotDefined(params, 'permutationFweAdjustment')
       params.permutationFweAdjustment = 0;
-  end
-  if fieldIsNotDefined(params, 'fweAdjustment')
+    end
+    if fieldIsNotDefined(params, 'fweAdjustment')
       params.fweAdjustment = 1;
-  end
-  if fieldIsNotDefined(params, 'fdrAdjustment')
+    end
+    if fieldIsNotDefined(params, 'fdrAdjustment')
       params.fdrAdjustment = 1;
-  end
-
-  if fieldIsNotDefined(params, 'TFCE')
+    end
+    if fieldIsNotDefined(params, 'TFCE')
       params.TFCE = 0;
-  end
-  if fieldIsNotDefined(params, 'nResamples')
+    end
+    if fieldIsNotDefined(params, 'nResamples')
       params.nResamples = 10000;
-  end
-
-  if fieldIsNotDefined(params, 'showAdvancedStatisticMenu') || ~(params.computeTtests || params.numberFtests)
+    end
+    if fieldIsNotDefined(params, 'showAdvancedStatisticMenu') 
       params.showAdvancedStatisticMenu = 0;
+    end
+  else
+    params.parametricTests = 0;
+    params.bootstrapTests = 0;
+    params.permutationTests = 0;
+    params.bootstrapFweAdjustment = 0;
+    params.permutationFweAdjustment = 0;
+    params.fweAdjustment = 0;
+    params.fdrAdjustment = 0;
+    params.TFCE = 0;
+    params.nResamples = 1;
+    params.showAdvancedStatisticMenu = 0;
   end
   
   tTestSideMenu = putOnTopOfList(params.tTestSide,{'Both','Right','Left'});
