@@ -17,15 +17,17 @@ end
 % generate params
 if ieNotDefined('params')
   params.groupName = groupName;
+  groupNum = viewGet([],'groupNum',groupName);
+  if ~isfield(params,'scanList')
     view = newView;
-    view = viewSet(view, 'groupName', groupName);
-    params.scanList = selectInList(view,'scans');
+    view = viewSet(view, 'groupName', groupName)
+    params.scanList = selectScans(view);
   end
   params.newGroupName = 'Concatenation';
   params.baseScan = params.scanList(1);
   params.description = sprintf('Concatenation from %s of scans: %s',params.groupName,num2str(params.scanList));
   % set to one to use highpass filter
-  params.filterType = 1;
+  params.filterType = 'Detrend and highpass';
   params.filterCutoff = 0.01;
   % set to one to convert to percent signal change
   params.percentSignal = 1;
