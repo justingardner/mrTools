@@ -98,11 +98,6 @@ if fieldIsNotDefined(params,'outputStatistic')
 end
 params.outputStatistic = params.outputStatistic && actualData;
 
-if fieldIsNotDefined(params,'parametricTests')
-  params.parametricTests=0;
-end
-params.parametricTests = actualData; %always output the parametric P if it's the actual data
-%because it's fast and we might need it in some cases, but I don't want to do all the tests
 if fieldIsNotDefined(params,'bootstrapFweAdjustment')
   params.bootstrapFweAdjustment=0;
 end
@@ -192,7 +187,6 @@ if strcmp(params.componentsCombination,'Or') && nnz(params.componentsToTest)>1 %
   %for contrasts, this amounts to  testing several contrats at once using an f test
   %So we have to change contrasts into f-tests (with the restriction that they have to be two-sided; this should be controlled for by the parameters)
   restrictions = [contrasts; restrictions];
-%   params.parametricTests=1; %force computing parametric tests (because there are cases where we need to compute T-tests for bootstrap/permutations
   contrasts = {};
 end
 numberFtests = length(restrictions);
@@ -287,7 +281,9 @@ if numberFtests || params.computeTtests
   if computeBootstrap || params.outputStatistic
     [out.statistic,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
   end
-  if params.parametricTests
+  if (numberFtests ||params.computeTtests) && actualData
+    %always output the parametric P if it's the actual data (even if params.parametricTests=0)
+    %because it's fast and we might need it in some cases, but I don't want to do all the tests
     [out.parametricP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
     if params.bootstrapFweAdjustment
       [out.bootstrapFweParametricP,totalBytes] = alloc('NaN',[numberTests d.dim(1) d.dim(2) d.dim(3)],precision,totalBytes);
@@ -586,7 +582,7 @@ for z = slices
               bootstrapTfceCount = bootstrapStatisticCount;
             end
           end
-          if params.parametricTests && bootstrapFweAdjustment
+          if (numberFtests ||params.computeTtests) && actualData && bootstrapFweAdjustment
             bootstrapFweStatisticCount = zeros(d.dim(1), numberTests,precision);
             if params.TFCE
               bootstrapFweTfceCount = bootstrapTfceCount;
@@ -667,7 +663,7 @@ for z = slices
           for iContrast = 1:numberTtests
             thisContrastBetas(:,iContrast) = (contrasts{iContrast}*betas)';
           end
-          if (numberTtests&&params.computeTtests)
+          if params.computeTtests
             for iContrast = 1:numberTtests
               switch(params.correctionType)
                 case 'none'
@@ -738,12 +734,12 @@ for z = slices
         if numberFtests || params.computeTtests
           if iBoot==1
             actualStatistic = thisStatistic;
-            if params.parametricTests && bootstrapFweAdjustment 
+            if actualData && bootstrapFweAdjustment 
               resampleFweData = initResampleFWE(actualStatistic,params,thisParametricP);
             end
             if params.TFCE
               actualTfce = thisTfce; 
-              if  params.parametricTests && bootstrapFweAdjustment
+              if  actualData && bootstrapFweAdjustment
                 resampleFweTfceTdata = initResampleFWE(actualTfce,params);
               end
             end
@@ -760,7 +756,7 @@ for z = slices
                 end
               end
             end
-            if params.parametricTests && bootstrapFweAdjustment
+            if actualData && bootstrapFweAdjustment
               bootstrapFweStatisticCount = bootstrapFweStatisticCount + resampleFWE(thisStatistic,actualStatistic,resampleFweData);
               if params.TFCE
                 bootstrapFweTfceCount = bootstrapFweTfceCount + resampleFWE(thisTfce,actualTfce,resampleFweTfceTdata);
@@ -784,7 +780,7 @@ for z = slices
           if numberTtests
             out.contrast(:,:,y,z) = thisContrastBetas';
           end
-          if (numberFtests ||params.computeTtests) && params.parametricTests
+          if (numberFtests ||params.computeTtests) && actualData
             out.parametricP(:,:,y,z) = thisParametricP';
           end
           if (numberFtests || (numberTtests&&params.computeTtests)) && params.outputStatistic
@@ -816,7 +812,7 @@ for z = slices
               out.tfceBootstrapP(:,:,y,z) = computeBootstrapP(bootstrapTfceCount',nResamples);
             end
           end
-          if params.parametricTests && bootstrapFweAdjustment
+          if actualData && bootstrapFweAdjustment
             bootstrapFweStatisticCount(isnan(actualStatistic))=NaN;
             bootstrapFweStatisticCount = computeBootstrapP(bootstrapFweStatisticCount,nResamples);
             out.bootstrapFweParametricP(:,:,y,z) = enforceMonotonicityResampleFWE(bootstrapFweStatisticCount,resampleFweData)';
@@ -948,7 +944,7 @@ if actualData
 
 end
 if numberTests
-  if params.parametricTests
+  if (numberFtests ||params.computeTtests) && actualData
     out.parametricP = permute(out.parametricP,[2 3 4 1]);
     if bootstrapFweAdjustment
       out.bootstrapFweParametricP = permute(out.bootstrapFweParametricP,[2 3 4 1]);
@@ -957,7 +953,7 @@ if numberTests
       end
     end
   end
-  if (numberFtests || (numberTtests&&params.computeTtests)) && params.outputStatistic
+  if (numberFtests || params.computeTtests) && params.outputStatistic
     out.statistic = permute(out.statistic,[2 3 4 1]);
   end
   if bootstrapTests

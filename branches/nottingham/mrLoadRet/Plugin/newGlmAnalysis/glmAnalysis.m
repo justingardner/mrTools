@@ -430,7 +430,7 @@ for iScan = params.scanNum
               contrastBootstrapCIs = cat(3,contrastBootstrapCIs,d.contrastBootstrapCIs);
             end
           end
-          if params.parametricTests
+          if (numberFtests ||params.computeTtests) && params.parametricTests
             parametricP{iScan} = cat(3,parametricP{iScan},out.parametricP);
             if params.outputStatistic
               statistic{iScan} = cat(3,statistic{iScan},out.statistic);
@@ -547,7 +547,7 @@ for iScan = params.scanNum
     end
   end
   
-  if numberTests
+  if (numberFtests ||params.computeTtests) && numberTests
     %make parametric probability maps
     if params.parametricTests
       [parametricP{iScan},fdrParametricP{iScan},fweParametricP{iScan}] = transformStatistic(parametricP{iScan},precision,params); 
