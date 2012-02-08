@@ -45,6 +45,7 @@ end
 offerNotchFilter = false;
 for iScan = 1:viewGet(view,'nScans')
   volTrigRatio = viewGet(view,'auxParam','volTrigRatio',iScan);
+  if iscell(volTrigRatio),volTrigRatio = cell2mat(volTrigRatio);end
   if isscalar(volTrigRatio) && (volTrigRatio > 1)
     offerNotchFilter = true;
     break;
