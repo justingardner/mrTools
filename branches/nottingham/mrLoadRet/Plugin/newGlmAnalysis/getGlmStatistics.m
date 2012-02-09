@@ -379,18 +379,20 @@ for z = slices
   %spatial smoothing
   if params.spatialSmoothing
     if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
-      timeseries2 = reshapeToRoiBox(timeseries,d.roiPositionInBox|d.marginVoxels,precision);
+      timeseries = reshapeToRoiBox(timeseries,d.roiPositionInBox|d.marginVoxels,precision);
     end
-    timeseries2 = convn(timeseries2,permute(gaussianKernel2D(params.spatialSmoothing),[3 1 2]),'same');
+    timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[3 1 2]),'same');
     if isfield(d,'roiPositionInBox') %if the data are not spatially organized
       %put the data back in a new matrix with only the voxels of interest
-      timeseries2 = reshape(timeseries2,d.dim(4), numel(d.roiPositionInBox));
+      timeseries = reshape(timeseries,d.dim(4), numel(d.roiPositionInBox));
       if params.covCorrection
-        timeseries = timeseries2(:,d.roiPositionInBox|d.marginVoxels); %if we estimate the residuals covariance matrix, we keep the margin voxels
+        timeseries = timeseries(:,d.roiPositionInBox|d.marginVoxels); %if we estimate the residuals covariance matrix, we keep the margin voxels
       else
-        timeseries = timeseries2(:,d.roiPositionInBox);
+        timeseries = timeseries(:,d.roiPositionInBox);
       end
-      clear('usedVoxelsInBox','timeseries2');
+      clear('usedVoxelsInBox');
+    else
+      
     end
   end    
 
