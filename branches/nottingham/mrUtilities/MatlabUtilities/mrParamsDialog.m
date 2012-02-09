@@ -344,7 +344,7 @@ gParams.callback = [];
 makeOkButton = 1;
 makeCancelButton = modal; %only put a cancel if dialog box is modal (or if a custom cancel callback is passed)
 
-if modal==0  %if the dialog is non-modal, ok just closes it, unless custom ok/cancel callbackz are passed)
+if modal==0 && fieldIsNotDefined(gParams,'okCallback') %if the dialog is non-modal, ok just closes it, unless custom ok/cancel callbackz are passed)
   gParams.okCallback = @closeHandler;
   okString = 'Close';
 else
