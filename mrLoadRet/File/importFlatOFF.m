@@ -69,28 +69,25 @@ if ieNotDefined('params');
 end
 
 
-% get four additional parameters if they were not passed in before
-paramsInfo = {};
-if fieldIsNotDefined(params, 'threshold')
+% get two additional parameters if they were not passed in before
+if ~any(isfield(params, {'threshold', 'flatRes'}));
+  paramsInfo = {};
   paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
-end
-if fieldIsNotDefined(params, 'flipFlag');
   paramsInfo{end+1} = {'flipFlag', 0, 'type=checkbox', 'Some patches come out flipped.  Use this option to correct this problem'};
-end
-if fieldIsNotDefined(params, 'flatRes');
-  paramsInfo{end+1} = {'flatRes', 3, 'incdec=[-1 1]', 'Factor by which the resolution of the flat patch is increased'};
-end
-if fieldIsNotDefined(params, 'flatBaseName');
+  paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
   paramsInfo{end+1} = {'flatBaseName', stripext(getLastDir(params.flatFileName)), 'Name of the flat base anatomy'};
-end
-if ~isempty(paramsInfo)
   flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
   % check for cancel
   if isempty(flatParams);
     return;
   end
+else
+  flatParams.threshold = params.threshold;
+  flatParams.flatRes = params.flatRes;
+  flatParams.flipFlag = 0;
+  flatParams.flatBaseName = stripext(getLastDir(params.flatFileName));
 end
-params = mrParamsCopyFields(flatParams,params);
+
 
 % check to see if we got here from the flatViewer
 % we need to translate a few variable names if we did
@@ -124,7 +121,7 @@ flat.locsFlat(:,2) = flat.locsFlat(:,2) - flat.minLocsFlat(2) + 1;
 
 imSize = round(max(flat.locsFlat));
 
-if params.flipFlag == 1
+if flatParams.flipFlag == 1
   disp(sprintf('(importFlatOFF) flipFlag was set to 1, so X-Y flipping flat patch'))
   x = flat.locsFlat(:,2);
   y = flat.locsFlat(:,1);
@@ -133,8 +130,8 @@ else
   y = flat.locsFlat(:,2);
 end
 
-xi = [1:(1/params.flatRes):imSize(1)];
-yi = [1:(1/params.flatRes):imSize(2)]';
+xi = [1:(1/flatParams.flatRes):imSize(1)];
+yi = [1:(1/flatParams.flatRes):imSize(2)]';
 
 % why is this flip required???  -epm
 yi = flipud(yi);
@@ -178,7 +175,7 @@ deleteView(v);
 % now generate a base structure
 clear base;
 base.hdr = flat.hdr;
-base.name = params.flatBaseName;
+base.name = flatParams.flatBaseName;
 base.vol2mag = b.vol2mag;
 base.vol2tal = b.vol2tal;
 
@@ -196,7 +193,7 @@ base.coordMap.anatFileName = params.anatFileName;
 % load all the flat maps into the base. We
 % need to make all the flat images have
 % the same width and height.
-if params.threshold
+if flatParams.threshold
   base.data(:,:,1) = flat.thresholdMap;
   base.range = [0 1];
   base.clip = [0 1];
