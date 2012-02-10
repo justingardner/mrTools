@@ -119,6 +119,10 @@ if ~isempty(flatBase)
   disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
   viewSet(view, 'newBase', flatBase);
   refreshMLRDisplay(viewNum);
+  
+  % remove the temporary off file
+  tempFileName = fullfile(params.path,params.flatFileName);
+  if isfile(tempFileName),delete(tempFileName);end
 end
 
 return;
