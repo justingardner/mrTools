@@ -1439,6 +1439,65 @@ switch lower(param)
       if isfield(view.baseVolumes(b),'coordMap')
         if ~isempty(view.baseVolumes(b).coordMap)
           val = view.baseVolumes(b).coordMap.path;
+	  % check if the path exists
+	  if ~isdir(val)
+	    % guess where the path is in from the canonical volume directory
+	    volumeDirectory = mrGetPref('volumeDirectory');
+	    volumeDirectoryList = dir(volumeDirectory);
+	    innerCoordsFilename = view.baseVolumes(b).coordMap.innerCoordsFileName;
+	    subjectDir = '';
+	    % tell user what we are doing
+	    disp(sprintf('(viewGet:baseCoordMapPath) Surface directory %s for base %s does not exist, searching in volumeDirectory: %s',val,viewGet(view,'baseName',b),volumeDirectory));
+	    for i = 1:length(volumeDirectoryList)
+	      % for each volume directory in the list, see if the directory name
+	      % matches the first part of the baseVolumes anatomy (this assumes
+	      % that people use a convention like calling the directory s001 and
+	      % calling the anatomy file s001anatomy or something like that.
+	      matchName = strfind(view.baseVolumes(b).coordMap.anatFileName,volumeDirectoryList(i).name);
+	      if ~isempty(matchName) && isequal(matchName(1),1)
+		% we have a match, for the subject directory under the volume direcotry
+		subjectDir = fullfile(volumeDirectory,volumeDirectoryList(i).name);
+		break;
+	      end
+	    end
+	    % not found, give up
+	    if isempty(subjectDir)
+	      disp(sprintf('(viewGet:baseCoordMapPath) Could not find a matchind subjectDir in %s',volumeDirectory));
+	    else
+	      % set to return subjectDir in case we don't find the surfRelax directory
+	      val = subjectDir;
+	      % check to see if there is a surfRelax directory right under this one
+	      if isdir(fullfile(subjectDir,'surfRelax'))
+		% then return that, if it contains the WM surface file
+		val = fullfile(subjectDir,'surfRelax');
+		if isfile(fullfile(val,innerCoordsFilename)),return,end
+	      end
+	      % look for the FreeSurfer directory, which should either directly contain the innerCoordsFilename
+	      % or have a sub directory called surfRelax which does
+	      subjectDirListing = dir(subjectDir);
+	      for i = 1:length(subjectDirListing)
+		if subjectDirListing(i).isdir
+		  % see if the file is directly here
+		  if isfile(fullfile(subjectDir,subjectDirListing(i).name,innerCoordsFilename))
+		    % found it, return the directory
+		    val = fullfile(subjectDir,subjectDirListing(i).name);
+		    return
+		  end
+		  % look for surfRelaxDir
+		  surfRelaxDir = fullfile(subjectDir,subjectDirListing(i).name,'surfRelax');
+		  if isdir(surfRelaxDir)
+		    % found surfRelaxDir
+		    val = surfRelaxDir;
+		    % return this one if we find the innerCoords - it is likely correct, if not
+		    % will continue searching to see if we find the file in some other directory
+		    if isfile(fullfile(val,innerCoordsFilename))
+		      return
+		    end
+		  end
+		end
+	      end
+	    end
+	  end
         end
       end
     end
