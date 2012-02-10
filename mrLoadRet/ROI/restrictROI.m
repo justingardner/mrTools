@@ -1,6 +1,6 @@
-function view = restrictROI(view,ROInum,scan)
+function thisView = restrictROI(thisView,ROInum,scan)
 
-% function view = restrictROI(view,[ROInum],[scan])
+% function thisView = restrictROI(thisView,[ROInum],[scan])
 %
 % ROInum can be either a name, a number, or empty (for current ROI).
 % Default: current ROI
@@ -11,43 +11,64 @@ function view = restrictROI(view,ROInum,scan)
 % djh 9/2005
 
 if ieNotDefined('ROInum')
-  ROInum = viewGet(view,'currentroinum');
+  ROInum = viewGet(thisView,'currentroinum');
 end
 if ischar(ROInum)
-  ROInum = viewGet(view,'roinum',ROInum);
+  ROInum = viewGet(thisView,'roinum',ROInum);
 end
 
 if ieNotDefined('scan')
-  scan = viewGet(view,'curscan');
+  scan = viewGet(thisView,'curscan');
 end
 
-ROIcoords = viewGet(view,'roiCoords',ROInum);
+ROIcoords = viewGet(thisView,'roiCoords',ROInum);
 % Save prevCoords for undo
-view = viewSet(view,'prevROIcoords',ROIcoords);
+thisView = viewSet(thisView,'prevROIcoords',ROIcoords);
 
 % Transform ROI roiScanCoords to overlay
-roiScanCoords = round( viewGet(view,'scan2roi',ROInum,scan) \ ROIcoords); 
+roiScanCoords = round( viewGet(thisView,'scan2roi',ROInum,scan) \ ROIcoords); 
 
 coordsInfo.base2overlay = eye(4);
 coordsInfo.baseCoordsHomogeneous = roiScanCoords;
 coordsInfo.baseDims = [size(ROIcoords,2) 1 1];
 
-%find which voxels are not clipped in the current overlay(s) (in overlay space)
-roiMask = maskOverlay(view,viewGet(view,'curOverlay'),scan,coordsInfo);
+%find which voxels are not clipped in the current overlay(s) and overlayAlpha (in overlay space)
+overlayList  = viewGet(thisView,'curOverlay');
+nOverlays = length(overlayList);
+cOverlay=0;
+alphaOverlayList = zeros(size(overlayList));
+for iOverlay=overlayList
+  cOverlay = cOverlay+1;
+  thisAlphaOverlay = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',iOverlay));
+  if ~isempty(thisAlphaOverlay)
+    alphaOverlayList(cOverlay) = thisAlphaOverlay;
+  end
+end
+roiMask = maskOverlay(thisView,[overlayList alphaOverlayList],scan,coordsInfo);
+roiMask = reshape(roiMask{1},[size(roiMask{1},1) nOverlays, 2]);
 % keep the corresponding voxels in ROI space
-ROIcoords = ROIcoords(:,any(roiMask{1},4));
+cOverlay=0;
+for iOverlay=overlayList
+  cOverlay = cOverlay+1;
+  if ~alphaOverlayList(cOverlay) %if there is no alpha overlay, it's as if all voxels were 1
+    roiMask(:,cOverlay,2)=1;
+  end
+end    
+%Keep voxels that are non-zero in any of the overlays, but non-zero both in overlay and alphaOverlay, 
+ROIcoords = ROIcoords(:,any(all(roiMask,3),2));
 
 
-view = viewSet(view,'roiCoords',ROIcoords,ROInum);
+thisView = viewSet(thisView,'roiCoords',ROIcoords,ROInum);
 
 return
 
-for overlayNum = 1:viewGet(view,'numberOfOverlays')
-  overlayData = viewGet(view,'overlayData',scan,overlayNum);
-  overlayClip = viewGet(view,'overlayClip',overlayNum);
+%old code, now replaced by call to maskOverlay
+for overlayNum = 1:viewGet(thisView,'numberOfOverlays')
+  overlayData = viewGet(thisView,'overlayData',scan,overlayNum);
+  overlayClip = viewGet(thisView,'overlayClip',overlayNum);
   if ~isempty(overlayData) & ~isempty(ROIcoords)
     % Transform ROI roiScanCoords to overlay
-    xform = inv(viewGet(view,'scan2roi',ROInum,scan));
+    xform = inv(viewGet(thisView,'scan2roi',ROInum,scan));
     roiScanCoords = round(xform * ROIcoords); 
     overlaySize = size(overlayData);
     % Find roiScanCoords that are within the overlay size
@@ -68,7 +89,7 @@ for overlayNum = 1:viewGet(view,'numberOfOverlays')
   else
     ROIcoords = [];
   end
-  view = viewSet(view,'roiCoords',ROIcoords,ROInum);
+  thisView = viewSet(thisView,'roiCoords',ROIcoords,ROInum);
 end
 
 return;
