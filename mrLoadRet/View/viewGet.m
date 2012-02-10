@@ -1466,11 +1466,14 @@ switch lower(param)
 	    else
 	      % set to return subjectDir in case we don't find the surfRelax directory
 	      val = subjectDir;
-	      % check to see if there is a surfRelax directory right under this one
-	      if isdir(fullfile(subjectDir,'surfRelax'))
-		% then return that, if it contains the WM surface file
-		val = fullfile(subjectDir,'surfRelax');
-		if isfile(fullfile(val,innerCoordsFilename)),return,end
+	      % Check for a directory right under this one called any of the following
+	      possibleSurfDirNames = {'surfRelax','surfaces','surface','Surface','Surfaces'};
+	      for i = 1:length(possibleSurfDirNames)
+		if isdir(fullfile(subjectDir,possibleSurfDirNames{i}))
+		  % then return that, if it contains the WM surface file
+		  val = fullfile(subjectDir,possibleSurfDirNames{i});
+		  if isfile(fullfile(val,innerCoordsFilename)),return,end
+		end
 	      end
 	      % look for the FreeSurfer directory, which should either directly contain the innerCoordsFilename
 	      % or have a sub directory called surfRelax which does
