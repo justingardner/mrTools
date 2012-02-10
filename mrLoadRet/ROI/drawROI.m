@@ -86,14 +86,34 @@ else
         baseX = baseCoords(mouseX,mouseY,1);
         baseY = baseCoords(mouseX,mouseY,2);
         baseS = baseCoords(mouseX,mouseY,3);
-        overlayNum = viewGet(thisView,'currentOverlay');
         scanNum = viewGet(thisView,'currentScan');
 
-        %First, get a mask of non-zero voxel representing the current overlay display
-        mask = maskOverlay(thisView,overlayNum,scanNum);
-        mask = any(mask{1},4);
-        base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
+        %First, get a mask of non-zero voxel representing the current overlays and alphaOverlays
+        overlayList  = viewGet(thisView,'curOverlay');
+        nOverlays = length(overlayList);
+        cOverlay=0;
+        alphaOverlayList = zeros(size(overlayList));
+        for iOverlay=overlayList
+          cOverlay = cOverlay+1;
+          thisAlphaOverlay = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',iOverlay));
+          if ~isempty(thisAlphaOverlay)
+            alphaOverlayList(cOverlay) = thisAlphaOverlay;
+          end
+        end
+        mask = maskOverlay(thisView,[overlayList alphaOverlayList],scanNum);
+        mask = reshape(mask{1},[size(mask{1},1) size(mask{1},2) size(mask{1},3) nOverlays, 2]);
+        % keep the corresponding voxels in ROI space
+        cOverlay=0;
+        for iOverlay=overlayList
+          cOverlay = cOverlay+1;
+          if ~alphaOverlayList(cOverlay) %if there is no alpha overlay, it's as if all voxels were 1
+            mask(:,:,:,cOverlay,2)=1;
+          end
+        end    
+        %Keep voxels that are non-zero in any of the overlays, but non-zero both in overlay and alphaOverlay, 
+        mask = any(all(mask,5),4);
 
+        base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
         if any(any((base2scan - eye(4))>1e-6)) %check if we're in the scan space
            %if not, transform the mask to the base space
            mrWarnDlg('This would be faster and more accurate if the base space was identical to the scan space');
