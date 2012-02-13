@@ -406,8 +406,23 @@ switch lower(param)
         if ~isempty(MLR.groups(g).auxParams(s).(paramName))
           % get the stored stimFileNames
           val = MLR.groups(g).auxParams(s).(paramName);
+	  % val can still be a cell array at this point - usually
+	  % because the scan has been copied from somewhere else
+	  % and it doesn't have the original raw scan to go back to.
+	  % in this case val is a cell array
+	  if iscell(val) && (length(val) == 1)
+	    val = val{1};
+	  end
 	  % call function on value (if function handle is specified)
-	  if ~isempty(fhandle) val = feval(fhandle,view,val); end
+	  if ~isempty(fhandle) 
+	    if iscell(val)
+	      for i = 1:length(val)
+		val{i} = feval(fhandle,view,val{i}); 
+	      end
+	    else
+	      val = feval(fhandle,view,val); 
+	    end
+	  end
 	end
       end
     end
