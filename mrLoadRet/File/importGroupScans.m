@@ -123,6 +123,8 @@ for i = 1:length(selectedScans)
   fromAuxParams(i) = viewGet(fromView,'auxParams',selectedScans(i));
 end
 
+disp(sprintf('(importGroupScans) Note that only the auxParam stimFileName is getting copied by this function - if you set other auxParams (like volTrigRatio), this code needs to be fixed to copy those settings'));
+
 % get the stimfiles for the selected scans
 for scanNum = 1:length(selectedScans)
   stimFileName{scanNum} = viewGet(fromView,'stimFileName',selectedScans(scanNum));
