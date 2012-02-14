@@ -229,7 +229,7 @@ while askForParams
             %check that scan frame Period are all identical
             framePeriod = viewGet(thisView,'framePeriod',scanNums(1));
             for iScan = scanNums(2:end);
-              if viewGet(thisView,'framePeriod',scanNums(iScan))~=framePeriod
+              if viewGet(thisView,'framePeriod',iScan)~=framePeriod
                 mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different frame periods. Copy scans in different groups.');
                 params=[];
                 return

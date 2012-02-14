@@ -35,6 +35,30 @@ if ~isempty(curOverlays)
     end
   end
   curOverlays = [curOverlays curAlphaOverlays];
+  
+  if strcmp(viewGet(thisView,'overlayInterpFunction',analysisNum),'corAnalInterp') ...    %if it's a correlation analysis
+    && size(sliceInfo.baseCoordsHomogeneous,3)>1 ...                                    %and there are several depths
+    && strcmp(mrGetPref('multiSliceProjectionMethod'),'Average')                        %and we need to average across depths
+    %check if overlays are phase or amplitude    
+    corAnalOverlays=zeros(size(curOverlays));
+    cOverlay=0;
+    for iOverlay=curOverlays
+      cOverlay = cOverlay+1;
+      if iOverlay
+        overlayType = viewGet(thisView,'overlayType',iOverlay,analysisNum);
+        % we assume that phase overlays always follow amplitude overlays
+        switch(overlayType)
+          case 'amp'
+            corAnalOverlays(cOverlay) = curOverlays(cOverlay)+1;
+          case 'ph'
+            corAnalOverlays(cOverlay) = curOverlays(cOverlay)-1;
+        end
+      end
+    end
+    curOverlays = [curOverlays corAnalOverlays];
+  end
+            
+
 
   %get overlays and masks of clipped values 
   [overlayMasks,overlayImages,overlays.coords]= maskOverlay(thisView,curOverlays,scan,sliceInfo);
@@ -43,19 +67,53 @@ else
 end
 if ~isempty(overlayImages)
   overlays.coords = overlays.coords{1};
-  alphaOverlayImages = overlayImages{1}(:,:,:,nCurOverlays+1:end);
-  alphaOverlayMasks = overlayMasks{1}(:,:,:,nCurOverlays+1:end);
-  overlayImages = overlayImages{1}(:,:,:,1:nCurOverlays);
+  alphaOverlayMasks = overlayMasks{1}(:,:,:,nCurOverlays+1:2*nCurOverlays);
   overlayMasks = overlayMasks{1}(:,:,:,1:nCurOverlays);
   
-  if size(overlayImages,3)>1
+  if size(overlayImages{1},3)>1
     overlayMasks = any(overlayMasks,3);
     alphaOverlayMasks = any(alphaOverlayMasks,3);
     switch(mrGetPref('multiSliceProjectionMethod'))
       case 'Average'
+        if strcmp(viewGet(thisView,'overlayInterpFunction',analysisNum),'corAnalInterp')
+          corAnalOverlayImages = overlayImages{1}(:,:,:,2*nCurOverlays+1:4*nCurOverlays);
+          overlayImages = overlayImages{1}(:,:,:,1:2*nCurOverlays);
+          %for amplitude and phase in a correlation analysis, transform into complex numbers
+          for iOverlay=1:2*nCurOverlays
+            if corAnalOverlays(iOverlay) %if we have the other part of the complex data (phase or amplitude)
+              switch(overlayType)
+                case 'amp'
+                  overlayImages(:,:,:,iOverlay) = overlayImages(:,:,:,iOverlay) .* exp(1i*corAnalOverlayImages(:,:,:,iOverlay));
+                case 'ph'
+                  overlayImages(:,:,:,iOverlay) = corAnalOverlayImages(:,:,:,iOverlay) .* exp(1i*overlayImages(:,:,:,iOverlay));
+              end
+            elseif strcmp(overlayType,'ph') %if we don't have the amplitude data but it's a phase overlay
+              overlayImages(:,:,:,iOverlay) = exp(1i*overlayImages(:,:,:,iOverlay));
+            end
+          end
+        else
+          overlayImages = overlayImages{1};
+        end
         overlayImages = nanmean(overlayImages,3);
-        alphaOverlayImages = nanmean(alphaOverlayImages,3);
+        if strcmp(viewGet(thisView,'overlayInterpFunction',analysisNum),'corAnalInterp')
+          for iOverlay=1:nCurOverlays
+            switch(overlayType)
+              case 'amp'
+                overlayImages(:,:,:,iOverlay) = abs(overlayImages(:,:,:,iOverlay)); %keep only the amplitude
+              case 'ph'
+                ang = angle(overlayImages(:,:,:,iOverlay));%keep only the phase
+                ang(ang < 0) = ang(ang < 0)+2*pi;
+                overlayImages(:,:,:,iOverlay) = ang;
+            end
+          end
+        end
+        alphaOverlayImages = overlayImages(:,:,:,nCurOverlays+1:2*nCurOverlays);
+        overlayImages = overlayImages(:,:,:,1:nCurOverlays);
+        
       case 'Maximum Intensity Projection'
+        %maybe could have a special case for phase data (in corAnal)
+        alphaOverlayImages = overlayImages{1}(:,:,:,nCurOverlays+1:2*nCurOverlays);
+        overlayImages = overlayImages{1}(:,:,:,1:nCurOverlays);
         alphaOverlayImages= permute(alphaOverlayImages,[4 3 1 2]);
         newAlphaOverlayImages = NaN([size(overlayImages,4) size(overlayImages,1) size(overlayImages,2)]);
         newOverlayImages = NaN([size(overlayImages,1) size(overlayImages,2) 1 size(overlayImages,4)]);
@@ -70,6 +128,9 @@ if ~isempty(overlayImages)
         alphaOverlayImages = permute(newAlphaOverlayImages,[2 3 4 1]);
         overlayImages = newOverlayImages;
     end
+  else
+    alphaOverlayImages = overlayImages{1}(:,:,:,nCurOverlays+1:2*nCurOverlays);
+    overlayImages = overlayImages{1}(:,:,:,1:nCurOverlays);
   end
   
   overlays.overlayIm = permute(overlayImages,[1 2 4 3]); 

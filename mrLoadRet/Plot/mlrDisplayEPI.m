@@ -376,7 +376,22 @@ if isempty(epiImage)
 	epiImage = [];
 	for scanNum = 1:gMLRDisplayEPI.nScans
 	  if (gMLRDisplayEPI.nSlices(scanNum) >= sliceNum(1)) && (gMLRDisplayEPI.nFrames(scanNum) >= frameNum(1))
-	    epiImage(:,:,scanNum) = loadTSeries(v,scanNum,sliceNum(1),frameNum(1));
+	    thisEpi = loadTSeries(v,scanNum,sliceNum(1),frameNum(1));
+      sizeEpiImage = size(epiImage);
+      if scanNum==1
+        epiImage=thisEpi;
+      elseif any(size(thisEpi)>sizeEpiImage(1:2)) %handle scans with different sizes
+        epiImage2 = NaN([size(thisEpi) gMLRDisplayEPI.nScans]);
+        epiImage2(1:sizeEpiImage(1),1:sizeEpiImage(2),1:scanNum-1) = epiImage;
+        epiImage = epiImage2;
+        epiImage(:,:,scanNum) = thisEpi;
+      elseif any(size(thisEpi)<sizeEpiImage(1:2))
+        sizeThisEpi = size(thisEpi);
+        epiImage(:,:,scanNum)=NaN;
+        epiImage(1:sizeThisEpi(1),1:sizeThisEpi(2),scnaNum) = thisEpi;
+      else
+        epiImage(:,:,scanNum) = thisEpi;
+      end
 	  end
 	end
       else
