@@ -176,7 +176,7 @@ for iRoi = 1:length(roiList)
           thisWarpedRoi.xform = fnirtInputXform;
           thisWarpedRoi.voxelSize = fnirtInputVoxelSize;
           if baseNum>0
-            thisRoi.coords = getROICoordinates(thisView,roiList(iRoi),0,[],baseNum);
+            thisRoi.coords = getROICoordinates(thisView,roiList(iRoi),0,[],'baseNum',baseNum);
             thisWarpedRoi.sformCode = viewGet(thisView,'baseSformCode',baseNum);
             thisWarpedRoi.vol2mag = viewGet(thisView,'baseVol2mag',baseNum);
             thisWarpedRoi.vol2tal = viewGet(thisView,'baseVol2tal',baseNum);

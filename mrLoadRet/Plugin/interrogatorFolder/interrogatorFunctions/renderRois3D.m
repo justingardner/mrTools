@@ -129,7 +129,7 @@ for iRoi = 1:nRois
 %   base2roi = viewGet(thisView, 'base2roi',roiList(iRoi));
 %   roiCoords = xformROIcoords(roi.coords,inv(base2roi),roi.voxelSize,basevoxelsize);
 %   %past 2 lines equivalent to:
-%   roiCoords = getROICoordinates(thisView,roiList(iRoi),0,[],baseNum);
+%   roiCoords = getROICoordinates(thisView,roiList(iRoi),0,[],'baseNum',baseNum);
   roiCoords = getROICoordinates(thisView,roiList(iRoi));
   roiColor(iRoi,:) = color2RGB(roi.color);
   roiName{iRoi} = roi.name;
