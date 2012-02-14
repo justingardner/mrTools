@@ -217,9 +217,9 @@ for i = 1:length(fidnames)
   if nargout == 0
     % make a filename 
     if isempty(outputName)
-      outputName = setext(fixBadChars(stripext(fidname),{'.','_'}),'hdr');
+      outputName = setext(fixBadChars(stripext(fidname),{'.','_'}),mrGetPref('niftiFileExtension'));
     else
-      outputName = setext(outputName,'hdr');
+      outputName = setext(outputName,mrGetPref('niftiFileExtension'));
     end
     disp(sprintf('(fid2nifti) Converting %s to %s',fidname,outputName));
     cbiWriteNifti(outputName,fid.data,hdr);
