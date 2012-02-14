@@ -233,8 +233,10 @@ for i = 1:length(d.stimfile)
 	disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
       elseif ~isempty(d.volTrigRatio{i})
 	% multply the stimvols out by what volTrigRatio says
-	for iStimvol = 1:length(stimvol)
-	  stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
+	if ~isempty(d.volTrigRatio{i})
+	  for iStimvol = 1:length(stimvol)
+	    stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
+	  end
 	end
       end
     else

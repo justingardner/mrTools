@@ -1,6 +1,6 @@
-function saveAnat(view,anatomyName,confirm,saveAs)
+function saveAnat(view,anatomyName,confirm,saveAs,savePath)
 %
-% saveOverlay(view,[anatomyName],[confirm],[saveAs])
+% saveAnat(view,[anatomyName],[confirm],[saveAs],[savePath])
 %
 % Saves a base anatomy as a nifti file: anatomyName.img
 %
@@ -9,6 +9,9 @@ function saveAnat(view,anatomyName,confirm,saveAs)
 % confirm: If filename already exists, prompt user to over-write. 
 %          Default: uses 'overwritePolicy' preference.
 %  saveAs: If 1, then asks user for where to put anatomy (default=0)
+% savePath: If set then saves the anatomy to the specified path
+% 
+% 
 %
 % djh, 7/2006
 % $Id$	
@@ -33,6 +36,10 @@ end
 if ieNotDefined('saveAs')
   saveAs = 0;
 end
+if ieNotDefined('savePath')
+  savePath = [];
+end
+
 % Extract data and hdr
 baseVolume = viewGet(view,'baseVolume',anatomyNum);
 data = baseVolume.data;
@@ -67,6 +74,8 @@ if saveAs
   anatomyName = stripext(anatomyName);
   % make into a path
   pathStr = fullfile(saveAnatPath,[anatomyName,niftiFileExtension]);
+elseif ~isempty(savePath)
+  pathStr = fullfile(savePath,[anatomyName,niftiFileExtension]);
 else
   pathStr = fullfile(viewGet(view,'anatomydir'),[anatomyName,niftiFileExtension]);
 end  
