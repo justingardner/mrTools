@@ -119,6 +119,13 @@ if ~isempty(flatBase)
   disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
   viewSet(view, 'newBase', flatBase);
   refreshMLRDisplay(viewNum);
+
+  % remove the temporary off file (actually we should leave the
+  % file since we need it to use the mrFlatViewer on the patch
+  % later - but is it worth storing this some place in the
+  % structure rather than as a file which migth get lost)? -jg
+  %tempFileName = fullfile(params.path,params.flatFileName);
+  %if isfile(tempFileName),delete(tempFileName);end
 end
 
 return;

@@ -81,7 +81,7 @@ for iRoi=roiList
   if ~strcmp(params.roiSpace,'Native')
     disp(sprintf('(convertROI) Converting ROI %i:%s to %s coordinate space',iRoi,roi.name,params.roiSpace));
     if ~isempty(roi.coords)
-      roi.coords = getROICoordinates(thisView,iRoi,whichVolume,[],baseNum);
+      roi.coords = getROICoordinates(thisView,iRoi,whichVolume,[],'baseNum',baseNum);
     else
       mrWarnDlg(sprintf('(convertROI) ROI %i:%s has empty coordinates in transformation, skipping conversion...',iRoi,roi.name));
     end

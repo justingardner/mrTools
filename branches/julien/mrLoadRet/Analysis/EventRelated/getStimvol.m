@@ -50,9 +50,15 @@ if isview(d)
   d.tr = viewGet(v,'framePeriod');
   d.concatInfo = viewGet(v,'concatInfo');
   d.junkFrames = viewGet(v,'totalJunkedFrames');
+  d.volTrigRatio = viewGet(v,'auxParam','volTrigRatio');
   if isempty(returnOnlyStimvol),returnOnlyStimvol = 1;end
 else
   if isempty(returnOnlyStimvol),returnOnlyStimvol = 0;end
+end
+
+%make sure volTrigRatio is a cell array
+if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
+  d.volTrigRatio = cellArray(d.volTrigRatio);
 end
 
 % check to make sure we have a stimfile
@@ -140,11 +146,11 @@ end
 resolutionLimit = .05; %temporal resolution limit in s
 remainders = [([time_remainders duration_remainders])*estimationSupersampling d.tr];
 remainders = round(remainders/resolutionLimit); %temporal resolution limited to .01 s
-remainders(remainders==0) = d.tr/resolutionLimit;    %replace zeros by TRs
+remainders(remainders==0) = round( d.tr/resolutionLimit );    %replace zeros by TRs; not always guaranteed to have integer result here, so round!
 remainders = unique(remainders);
-greatest_common_factor = 0;
+greatest_common_factor = 0; 
 for i = 1:length(remainders)
-   greatest_common_factor = gcd(greatest_common_factor,remainders(i));
+   greatest_common_factor = gcd(greatest_common_factor,remainders(i)); 
    if greatest_common_factor ==1
       break
    end
@@ -166,7 +172,7 @@ end
 % stimvolumes differently
 for i = 1:length(d.stimfile)
   % get the stimvol for this particular stimfile
-  stimNames = {};
+  stimNames = {};stimDurations = {};
   switch d.stimfile{i}.filetype,
    case 'mgl',
     % if we have a stimtrace then get the variables from that
@@ -219,11 +225,30 @@ for i = 1:length(d.stimfile)
     end
   end
   
+  % handle the case where volTrigRatio specifies more volumes than triggers
+  if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
+    % check volTrigRatio for this scan
+    if length(d.volTrigRatio) >= i
+      if iscell(d.volTrigRatio{i})
+	disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
+      elseif ~isempty(d.volTrigRatio{i})
+	% multply the stimvols out by what volTrigRatio says
+	if ~isempty(d.volTrigRatio{i})
+	  for iStimvol = 1:length(stimvol)
+	    stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
+	  end
+	end
+      end
+    else
+      disp(sprintf('(getStimvol) !!! volTrigRatio missing entry for component scan: %i. Ignoring',i));
+    end
+  end
+  
   %if stimDurations does not exist, set all durations to value user
   %entered in the GUI in TRs
   if ieNotDefined('stimDurations')
     for iStim = 1:length(stimvol)
-      stimDurations{iStim} = round(stimVariable.stimDuration/d.tr)*ones(size(stimvol{iStim}));;
+      stimDurations{iStim} = round(var.stimDuration/d.tr)*ones(size(stimvol{iStim}));;
     end
   end
 
@@ -295,8 +320,9 @@ for i = 1:length(d.stimfile)
     oldStimvol = d.stimvol;
     oldStimDurations = d.stimDurations;
     oldStimNames = d.stimNames;
-    %put names together (this also sorts names in alphabetical order)
-    d.stimNames = union(d.stimNames,stimNames);
+    %put names together (but, keep ordering, rather than sorting
+    [dump,indexA,indexB] = union(d.stimNames,stimNames);
+    d.stimNames = {d.stimNames{sort(indexA)} stimNames{sort(indexB)}};
     %create new cell arrays
     d.stimvol = cell(size(d.stimNames));
     d.stimDurations = cell(size(d.stimNames));

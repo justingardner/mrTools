@@ -74,7 +74,7 @@ if ~any(isfield(params, {'threshold', 'flatRes'}));
   paramsInfo = {};
   paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
   paramsInfo{end+1} = {'flipFlag', 0, 'type=checkbox', 'Some patches come out flipped.  Use this option to correct this problem'};
-  paramsInfo{end+1} = {'flatRes', 3, 'incdec=[-1 1]', 'Factor by which the resolution of the flat patch is increased'};
+  paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
   paramsInfo{end+1} = {'flatBaseName', stripext(getLastDir(params.flatFileName)), 'Name of the flat base anatomy'};
   flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
   % check for cancel
@@ -85,7 +85,9 @@ else
   flatParams.threshold = params.threshold;
   flatParams.flatRes = params.flatRes;
   flatParams.flipFlag = 0;
+  flatParams.flatBaseName = stripext(getLastDir(params.flatFileName));
 end
+
 
 % check to see if we got here from the flatViewer
 % we need to translate a few variable names if we did

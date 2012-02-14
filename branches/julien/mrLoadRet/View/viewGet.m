@@ -406,8 +406,23 @@ switch lower(param)
         if ~isempty(MLR.groups(g).auxParams(s).(paramName))
           % get the stored stimFileNames
           val = MLR.groups(g).auxParams(s).(paramName);
+	  % val can still be a cell array at this point - usually
+	  % because the scan has been copied from somewhere else
+	  % and it doesn't have the original raw scan to go back to.
+	  % in this case val is a cell array
+	  if iscell(val) && (length(val) == 1)
+	    val = val{1};
+	  end
 	  % call function on value (if function handle is specified)
-	  if ~isempty(fhandle) val = feval(fhandle,view,val); end
+	  if ~isempty(fhandle) 
+	    if iscell(val)
+	      for i = 1:length(val)
+		val{i} = feval(fhandle,view,val{i}); 
+	      end
+	    else
+	      val = feval(fhandle,view,val); 
+	    end
+	  end
 	end
       end
     end
@@ -1439,6 +1454,68 @@ switch lower(param)
       if isfield(view.baseVolumes(b),'coordMap')
         if ~isempty(view.baseVolumes(b).coordMap)
           val = view.baseVolumes(b).coordMap.path;
+	  % check if the path exists
+	  if ~isdir(val)
+	    % guess where the path is in from the canonical volume directory
+	    volumeDirectory = mrGetPref('volumeDirectory');
+	    volumeDirectoryList = dir(volumeDirectory);
+	    innerCoordsFilename = view.baseVolumes(b).coordMap.innerCoordsFileName;
+	    subjectDir = '';
+	    % tell user what we are doing
+	    disp(sprintf('(viewGet:baseCoordMapPath) Surface directory %s for base %s does not exist, searching in volumeDirectory: %s',val,viewGet(view,'baseName',b),volumeDirectory));
+	    for i = 1:length(volumeDirectoryList)
+	      % for each volume directory in the list, see if the directory name
+	      % matches the first part of the baseVolumes anatomy (this assumes
+	      % that people use a convention like calling the directory s001 and
+	      % calling the anatomy file s001anatomy or something like that.
+	      matchName = strfind(view.baseVolumes(b).coordMap.anatFileName,volumeDirectoryList(i).name);
+	      if ~isempty(matchName) && isequal(matchName(1),1)
+		% we have a match, for the subject directory under the volume direcotry
+		subjectDir = fullfile(volumeDirectory,volumeDirectoryList(i).name);
+		break;
+	      end
+	    end
+	    % not found, give up
+	    if isempty(subjectDir)
+	      disp(sprintf('(viewGet:baseCoordMapPath) Could not find a matchind subjectDir in %s',volumeDirectory));
+	    else
+	      % set to return subjectDir in case we don't find the surfRelax directory
+	      val = subjectDir;
+	      % Check for a directory right under this one called any of the following
+	      possibleSurfDirNames = {'surfRelax','surfaces','surface','Surface','Surfaces'};
+	      for i = 1:length(possibleSurfDirNames)
+		if isdir(fullfile(subjectDir,possibleSurfDirNames{i}))
+		  % then return that, if it contains the WM surface file
+		  val = fullfile(subjectDir,possibleSurfDirNames{i});
+		  if isfile(fullfile(val,innerCoordsFilename)),return,end
+		end
+	      end
+	      % look for the FreeSurfer directory, which should either directly contain the innerCoordsFilename
+	      % or have a sub directory called surfRelax which does
+	      subjectDirListing = dir(subjectDir);
+	      for i = 1:length(subjectDirListing)
+		if subjectDirListing(i).isdir
+		  % see if the file is directly here
+		  if isfile(fullfile(subjectDir,subjectDirListing(i).name,innerCoordsFilename))
+		    % found it, return the directory
+		    val = fullfile(subjectDir,subjectDirListing(i).name);
+		    return
+		  end
+		  % look for surfRelaxDir
+		  surfRelaxDir = fullfile(subjectDir,subjectDirListing(i).name,'surfRelax');
+		  if isdir(surfRelaxDir)
+		    % found surfRelaxDir
+		    val = surfRelaxDir;
+		    % return this one if we find the innerCoords - it is likely correct, if not
+		    % will continue searching to see if we find the file in some other directory
+		    if isfile(fullfile(val,innerCoordsFilename))
+		      return
+		    end
+		  end
+		end
+	      end
+	    end
+	  end
         end
       end
     end
