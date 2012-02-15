@@ -81,6 +81,11 @@ function mouseDownHandler(sysNum)
 
 set(gcf,'Pointer','arrow');
 global gVol;
+if isempty(gVol{sysNum}) || ~isfield(gVol{sysNum},'vols')
+  disp(sprintf('(mlrVol) Mouse down called on incomplete mlrVol figure. Closing'));
+  closeHandler(sysNum);
+  return
+end
 vol = gVol{sysNum}.vols(1);
 
 % stop any ongoing animation
@@ -102,6 +107,11 @@ refreshDisplay(sysNum);
 function mouseMoveHandler(sysNum)
 
 global gVol;
+if isempty(gVol{sysNum}) || ~isfield(gVol{sysNum},'vols')
+  disp(sprintf('(mlrVol) Mouse move called on incomplete mlrVol figure. Closing'));
+  closeHandler(sysNum);
+  return
+end
 vol = gVol{sysNum}.vols(1);
 f = gVol{sysNum}.fig(1);
 
@@ -271,9 +281,14 @@ end
 function closeHandler(sysNum)
 
 global gVol;
+if isempty(gVol{sysNum})
+  % nothing known, just return
+  disp(sprintf('(mlrVol) Close handler called but no figure information present'));
+  return
+end
 
 % stop any ongoing animation
-if gVol{sysNum}.animating
+if isfield(gVol{sysNum},'animating') && gVol{sysNum}.animating
   gVol{sysNum}.animating = 0;
 end
 
@@ -282,19 +297,21 @@ if isfield(gVol{sysNum},'dispCorrelationFig') && ishandle(gVol{sysNum}.dispCorre
   close(gVol{sysNum}.dispCorrelationFig);
 end
 
-uniqueFigs = unique(gVol{sysNum}.fig);
-% close the figures
-for i = 1:length(uniqueFigs)
-  % get the location of the figure - note that if
-  % we ever have multiple figures than we will need to change
-  % this code here and in initSystem to have more figlocs saved
-  mrSetFigLoc('mlrVol',get(uniqueFigs(i),'Position'));
+if isfield(gVol{sysNum},'fig')
+  uniqueFigs = unique(gVol{sysNum}.fig);
+  % close the figures
+  for i = 1:length(uniqueFigs)
+    % get the location of the figure - note that if
+    % we ever have multiple figures than we will need to change
+    % this code here and in initSystem to have more figlocs saved
+    mrSetFigLoc('mlrVol',get(uniqueFigs(i),'Position'));
 
-  % close the figure
-  delete(uniqueFigs(i));
+    % close the figure
+    delete(uniqueFigs(i));
+  end
 end
 
-if gVol{sysNum}.controlsUp
+if isfield(gVol{sysNum},'controlsUp') && gVol{sysNum}.controlsUp
   mrParamsClose;
 end
 
