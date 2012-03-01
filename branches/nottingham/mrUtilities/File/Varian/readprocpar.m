@@ -126,6 +126,9 @@ if (isfield(procpar,'petable'))
   end
 end
 
+% the number of shots should now be read from the field nseg rather than from the petable
+if isfield(procpar,'nseg') procpar.numshots = procpar.nseg;end
+
 % if navecho is not set by now, then there were no navecho's
 if ~isfield(procpar,'navecho'),procpar.navecho = 0;end
 
