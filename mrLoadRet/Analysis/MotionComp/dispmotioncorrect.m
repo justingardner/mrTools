@@ -1,18 +1,33 @@
 % dispmotioncorrect.m
 %
-%      usage: dispmotioncorrect.m()
+%      usage: dispmotioncorrect(v,<'scanNum=1'>,<'groupNum=1'>,<'titlestr=str'>)
 %         by: justin gardner
 %       date: 03/03/05
 %    purpose: check motion correction
+%             If you don't specify the optional arguments scanNum, groupNum and titlestr
+%             they will default to the current scan, current group and empty, respectively.
 %
-function retval = dispmotioncorrect(d)
+function retval = dispmotioncorrect(d,varargin)
 
-if (nargin ~= 1)
-  help dispmotioncorrect;
-  return
+if ~isview(d)
+  if (nargin ~= 1)
+    help dispmotioncorrect;
+    return
+  end
+  titlestr = d.expname;
+else
+  % the calling convention for a passed in view
+  v = d;
+  % get optional parameters
+  getArgs(varargin,{'scanNum=[]','groupNum=[]','titlestr=[]'});
+  if isempty(scanNum),scanNum = viewGet(v,'curScan');end
+  if isempty(groupNum),groupNum = viewGet(v,'curGroup');end
+  if isempty(titlestr),titlestr = '';end
+  % set the d structure appropriately
+  d.scanNum = scanNum;
+  d.groupNum = viewGet(v,'groupNum',groupNum);
+  d.expname = titlestr;
 end
-
-titlestr = d.expname;
   
 % get motion correct
 titlestr = sprintf('%s scan=%i',d.expname,d.scanNum);
