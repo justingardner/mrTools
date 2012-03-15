@@ -213,7 +213,7 @@ for iOperations = 1:size(overlayData,3)
          eval(functionString);
 %          toc
       catch exception
-         mrWarnDlg(sprintf('There was an error evaluating the combining function:\n%s',getReport(exception,'basic')));
+         mrWarnDlg(sprintf('There was an error evaluating function %s:\n%s',combineFunctionString,getReport(exception,'basic')));
          return
       end
       for iOutput = 1:params.nOutputOverlays
