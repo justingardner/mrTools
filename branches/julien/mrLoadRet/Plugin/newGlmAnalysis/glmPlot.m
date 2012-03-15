@@ -93,7 +93,7 @@ if ismember(analysisType,{'glmAnalStats','glmAnal','glmcAnal'})
       if isequal(deconvData.EVnames,glmData.EVnames)
         plotDeconvolution=1;
       else
-        mrWarnDlg('(glmPlot) Number of EVs in deconvolution and GLM analyses are incompatible.');
+        mrWarnDlg('(glmPlot) Name of EVs in deconvolution and GLM analyses are incompatible.');
         clear('deconvData');
       end
     end

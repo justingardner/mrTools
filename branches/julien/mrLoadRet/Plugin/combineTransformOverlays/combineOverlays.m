@@ -18,7 +18,7 @@ for iFile=1:length(combineFunctionFiles)
   combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
 end
 
-params.combineFunction = [{'User Defined'} combineFunctions];
+combineFunctionsMenu = [{'User Defined'} combineFunctions];
 params.customCombineFunction = '';%(''@(x)max(0,-norminv(x))';
 params.nOutputOverlays = 1;
 params.additionalArrayArgs = '';
@@ -30,7 +30,7 @@ params.outputName = '';
 askForParams = 1;
 while askForParams
   params = {...
-   {'combineFunction',params.combineFunction,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
+   {'combineFunction',combineFunctionsMenu,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
    {'customCombineFunction',params.customCombineFunction,'name of the function to apply. You can use any type of matlab function (including custom) that accepts either scalars or multidimensional arrays. Any string beginning with an @ will be considered an anonymous function and shoulde be of the form @(x)func(x), @(x,y)func(x,y) ..., where the number of variables equals the number of overlay inputs and additional arguments. '},...
    {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' is faster but not all functions accept multidimensional arrays as inputs. Choose ''Structure'' to pass the whole overlay structure'},...
    {'combinationMode',combinationModeMenu,'type=popupmenu', 'In the default mode,the number of inputs expected by the function must match the number of selected overlays.'},...
@@ -52,6 +52,7 @@ while askForParams
 
   inputOutputTypeMenu = putOnTopOfList(params.inputOutputType,inputOutputTypeMenu);
   combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
+  combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
 
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
     mrWarnDlg('(combineOverlays) Anonymous functions cannot be applied recursively');
