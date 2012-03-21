@@ -56,8 +56,10 @@ while askForParams
 
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
     mrWarnDlg('(combineOverlays) Anonymous functions cannot be applied recursively');
+  elseif isempty(params.combineFunction) && isempty(params.customCombineFunction)
+    mrWarnDlg('(combineOverlays) Please choose a combination/transformation function');
   %elseif
-    %other control here
+    %other controls here
   else
     askForParams = 0;
     overlayList = selectInList(thisView,'overlays');
@@ -352,7 +354,8 @@ else
   if isempty(helpString)
     mrWarnDlg('(combineOverlays) No help available');
   else
-    disp(helpString)
+    fprintf('\n');
+    disp(helpString);
   end
 end
 
