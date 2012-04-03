@@ -202,7 +202,7 @@ while keepAsking
   %check that F-tests are not empty
   restrictions = {};
   fTestNames={};
-  actualNumberFtests=0;
+  params.numberFtests = actualNumberFtests;
   for iFtest = 1:currentNumberFtests
     thisRestriction=params.(fixBadChars(sprintf('restriction%2d',iFtest)));
     params = mrParamsRemoveField(params,fixBadChars(sprintf('restriction%2d',iFtest)));
@@ -266,6 +266,8 @@ while keepAsking
     end
     disp('User changed the number of contrasts/F-tests')
   else
+    params.numberFtests = actualNumberFtests;
+    params.numberContrasts = actualNumberContrasts;
     tempParams = getGlmAdvancedStatisticParamsGUI(thisView,params,useDefault);
     % if empty, user hit cancel, go back
     if isempty(tempParams)
