@@ -176,7 +176,12 @@ eval([analysisName,'=analysis;']);
 % Finally, write the file
 pathStr = fullfile(pathStr,filename);
 fprintf('Saving %s...',pathStr);
-saveString = ['save(pathStr,','''',analysisName,'''',');'];
+if getfield(whos('analysis'),'bytes')<2e9
+  saveString = ['save(pathStr,','''',analysisName,'''',');'];
+else
+  
+end
+  
 eval(saveString);
 fprintf('done\n');
 
