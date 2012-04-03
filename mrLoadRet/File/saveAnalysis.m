@@ -178,8 +178,15 @@ pathStr = fullfile(pathStr,filename);
 fprintf('Saving %s...',pathStr);
 if getfield(whos('analysis'),'bytes')<2e9
   saveString = ['save(pathStr,','''',analysisName,'''',');'];
-else
-  
+else %if the structure is more than 2Gb
+  %check if matlab/the computer is 64bit
+  architecture = computer('arch');
+  if str2num(architecture(end-1:end))~=64
+    mrErrorDlg('(saveAnalysis) Analysis is more than 2Gb, but Matlab is 32bit. Cannot save analysis.');
+  else
+    mrWarnDlg('(saveAnalysis) Analysis is more than 2Gb, using option -v7.3 to save');
+    saveString = ['save(pathStr,','''',analysisName,'''',',''-v7.3'');'];
+  end
 end
   
 eval(saveString);
