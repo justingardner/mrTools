@@ -202,7 +202,7 @@ while keepAsking
   %check that F-tests are not empty
   restrictions = {};
   fTestNames={};
-  params.numberFtests = actualNumberFtests;
+  actualNumberFtests=0;
   for iFtest = 1:currentNumberFtests
     thisRestriction=params.(fixBadChars(sprintf('restriction%2d',iFtest)));
     params = mrParamsRemoveField(params,fixBadChars(sprintf('restriction%2d',iFtest)));
