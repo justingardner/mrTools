@@ -4250,6 +4250,18 @@ end
 % check to see what type it is, and set the field appropriately
 if isfield(stimFile,'mylog')
   stimFile.filetype = 'eventtimes';
+  %make sure time and duration vectors are rows
+  for iEvent=1:length(stimFile.mylog.stimtimes_s)
+    if size(stimFile.mylog.stimtimes_s{iEvent},1)>1
+      stimFile.mylog.stimtimes_s{iEvent} = stimFile.mylog.stimtimes_s{iEvent}';
+    end
+    if isfield(stimFile.mylog,'stimdurations_s') && size(stimFile.mylog.stimdurations_s{iEvent},1)>1
+      stimFile.mylog.stimdurations_s{iEvent} = stimFile.mylog.stimdurations_s{iEvent}';
+    end
+  end
+  %move stimNames field
+  stimFile.stimNames = stimFile.mylog.stimNames;
+  stimFile.mylog = rmfield(stimFile.mylog,'stimNames');
 elseif isfield(stimFile,'stimts')
   stimFile.filetype = 'afni';
 elseif isfield(stimFile,'myscreen')
