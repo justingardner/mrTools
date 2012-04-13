@@ -183,10 +183,10 @@ while keepAsking
   
   params = mrParamsCopyFields(tempParams,params);
   %check that contrasts are not empty
+  actualNumberContrasts=0;
   if isempty(params.contrasts) %mrParamsDialog returns an empty string instead of an empty array
     params.contrasts = [];
   else
-    actualNumberContrasts=0;
     for iContrast = 1:currentNumberContrasts
       if ~any(params.contrasts(iContrast,:))
         mrWarnDlg('(getGlmTestParamsGUI) Discarding empty contrast');
