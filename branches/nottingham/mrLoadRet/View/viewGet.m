@@ -4260,8 +4260,10 @@ if isfield(stimFile,'mylog')
     end
   end
   %move stimNames field
-  stimFile.stimNames = stimFile.mylog.stimNames;
-  stimFile.mylog = rmfield(stimFile.mylog,'stimNames');
+  if isfield(stimFile.mylog,'stimNames')
+      stimFile.stimNames = stimFile.mylog.stimNames;
+    stimFile.mylog = rmfield(stimFile.mylog,'stimNames');
+  end
 elseif isfield(stimFile,'stimts')
   stimFile.filetype = 'afni';
 elseif isfield(stimFile,'myscreen')
