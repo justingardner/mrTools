@@ -1,7 +1,7 @@
-% applyFSLWarpSurfOFF.m.m
+% fslApplyWarpSurfOFF.m.m
 %
-%       $Id: applyFSLWarpSurfOFF.m.m 1833 2010-11-13 18:37:14Z julien $	
-%      usage: applyFSLWarpSurfOFF.m()
+%       $Id: fslApplyWarpSurfOFF.m.m 1833 2010-11-13 18:37:14Z julien $	
+%      usage: fslApplyWarpSurfOFF.m()
 %         by: julien besle
 %       date: 10/05/2011
 %    purpose: applies FNIRT non-linear transformation to OFF surface files
@@ -9,7 +9,7 @@
 %             assumes that the FNIRT input volume has an sform matrix that puts it in the canonical base space
 
 
-function applyFSLWarpSurfOFF
+function fslApplyWarpSurfOFF
 
 startPathStr = pwd;
 filterspec = {'*.img','FNIRT warp coeff .img file'; '*.*','All files'};
@@ -77,7 +77,7 @@ if coordsCount
   allCoords = shiftOriginXform\allCoords;
 
 
-  warpedCoords = applyFSLWarpCoords(allCoords,inputHdr.pixdim(2:4)',[.5 .5 .5], warpCoefFileName, 'temp.img', inputHdr, 1);
+  warpedCoords = fslApplyWarpCoords(allCoords,inputHdr.pixdim(2:4)',[.5 .5 .5], warpCoefFileName, 'temp.img', inputHdr, 1);
 
   warpedCoords = shiftOriginXform*warpedCoords;
   warpedCoords = inputHdr.sform44*warpedCoords;

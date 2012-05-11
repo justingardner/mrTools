@@ -1,15 +1,15 @@
-% applyFSLWarpROI.m
+% fslApplyWarpROI.m
 %
-%        $Id: applyFSLWarpROI.m 2119 2011-05-09 22:46:58Z julien $ 
-%      usage: applyFSLWarpROI(thisView)
+%        $Id: fslApplyWarpROI.m 2119 2011-05-09 22:46:58Z julien $ 
+%      usage: fslApplyWarpROI(thisView)
 %         by: julien besle
 %       date: 06/10/2010
 %    purpose: applies non-linear FSL registration to chosen ROI(s)
 %
-function thisView = applyFSLWarpROI(thisView)
+function thisView = fslApplyWarpROI(thisView)
 
 if strcmp(mrGetPref('fslPath'),'FSL not installed')
-  mrWarnDlg('(applyFSLWarpROI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
+  mrWarnDlg('(fslApplyWarpROI) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
   return
 end
 
@@ -37,7 +37,7 @@ while keepAsking
    {'roiNamePrefix','FNIRT_','String to append at the start of each saved roi name'},...
    {'roiNameSuffix','','String to append at the end of each saved roi name'},...
           };
-  params = mrParamsDialog(params, 'applyFSLWarpROI parameters');
+  params = mrParamsDialog(params, 'fslApplyWarpROI parameters');
   % Abort if params empty
   if ieNotDefined('params')
     return
@@ -47,7 +47,7 @@ while keepAsking
 %   while length(baseNum)>1
 %     baseNum = selectInList(thisView,'bases','Select the input volume of the FNIRT warp coeffs (or equivalent)');
 %     if length(baseNum)>1
-%       mrWarnDlg('(applyFSLWarpROI) Please select only one base');
+%       mrWarnDlg('(fslApplyWarpROI) Please select only one base');
 %     end
 %   end
 %   if isempty(baseNum)
@@ -104,12 +104,12 @@ for iRoi = 1:length(roiList)
     outsideVoxels = any(baseCoords(1:3,:)< ones(3,size(baseCoords,2)) |...
     baseCoords(1:3,:)> repmat(fnirtInputDims',1,size(baseCoords,2)));
     if any(outsideVoxels) 
-      mrWarnDlg(['(applyFSLWarpROI) ' num2str(nnz(outsideVoxels)) ' voxels in ' thisRoi.name ' are outside the input FNIRT volume, removing...']);
+      mrWarnDlg(['(fslApplyWarpROI) ' num2str(nnz(outsideVoxels)) ' voxels in ' thisRoi.name ' are outside the input FNIRT volume, removing...']);
       thisRoi.coords(:,outsideVoxels)=[];
     end
     if useApplyWarp
       if any(any( (roi2fnirtInput - eye(4))>1e-6)) && strcmp(params.destinationSpace,'Keep original ROI space')
-        disp('(applyFSLWarpROI) ROI and FNIRT input volume spaces are different. Using partial volume correction...')
+        disp('(fslApplyWarpROI) ROI and FNIRT input volume spaces are different. Using partial volume correction...')
         %here we will be following the logic of xformROIcoords, supersampling the roi space, transforming
         % each sub-voxel volume into the FNIRT input volume and estimating the accumulated partial voluming at each point 
         % the difference will be that we will FNIRT the continous accumulated values, and then apply a threshold that conserve the total ROI volume
@@ -119,7 +119,7 @@ for iRoi = 1:length(roiList)
         roiVolume = zeros(fnirtInputDims,'single');
         % for each subsample of all roi coordinates, compute the coordinates in the FNIRT input volume 
         % and count how many times any input coordinate falls into any voxel of this volume (accumulated volume)
-        hWait = mrWaitBar(-inf,['(applyFSLWarpROI) Computing ROI partial voluming (supersampling = ' mat2str(superSampling) ')']);
+        hWait = mrWaitBar(-inf,['(fslApplyWarpROI) Computing ROI partial voluming (supersampling = ' mat2str(superSampling) ')']);
         counter=0;
         for i=-centeredSamples(1):sampleSizes(1):centeredSamples(1)
           for j=-centeredSamples(2):sampleSizes(2):centeredSamples(2)
@@ -137,7 +137,7 @@ for iRoi = 1:length(roiList)
         end
         mrCloseDlg(hWait)
         %apply FNIRT warp to the continuous accumulated values
-        warpedRoiVolume = applyFSLWarp(roiVolume, [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr, 'sinc');
+        warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr, 'sinc');
 
         %now interpolate into the roi volume (not sure this would be accurate if voxels are not isometric..)
         % find ROI coordinates bounding box in roi space
@@ -156,7 +156,7 @@ for iRoi = 1:length(roiList)
         % so we'll multiply by a correcting factor
         roiSize = round(size(thisRoi.coords,2)*sum(warpedRoiVolume(:))/sum(roiVolume(:)));
         if roiSize>nnz(boxVolume) %I don't think that would happen, unless FNIRT moves a lot of voxels out of the input volume
-          disp('(applyFSLWarpROI) Not enough partial volume voxels for new roi size, entering debug mode');
+          disp('(fslApplyWarpROI) Not enough partial volume voxels for new roi size, entering debug mode');
           keyboard;
         end
         [~,indices] = sort(boxVolume,'descend');
@@ -172,7 +172,7 @@ for iRoi = 1:length(roiList)
         %we simply use applyWarp with nearest neighbor interpolation, which seems to give better results in most cases
         %we require that ROI and scans be in the same space
         if any(any( (roi2fnirtInput - eye(4))>1e-6))
-          mrWarnDlg(['(applyFSLWarpROI) Roi ' thisWarpedRoi.name ' is not in the FNIRT input base space, converting ...']);
+          mrWarnDlg(['(fslApplyWarpROI) Roi ' thisWarpedRoi.name ' is not in the FNIRT input base space, converting ...']);
           thisWarpedRoi.xform = fnirtInputXform;
           thisWarpedRoi.voxelSize = fnirtInputVoxelSize;
           if baseNum>0
@@ -191,7 +191,7 @@ for iRoi = 1:length(roiList)
         warpIndices = sub2ind(fnirtInputDims(1:3),thisRoi.coords(1,:),thisRoi.coords(2,:),thisRoi.coords(3,:));
         roiVolume = zeros(fnirtInputDims(1:3));
         roiVolume(warpIndices) = iRoi;
-        warpedRoiVolume = applyFSLWarp(roiVolume, [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr, 'nearest');
+        warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr, 'nearest');
         warpedCoordsIndices = find(warpedRoiVolume==iRoi);
         [x,y,z] = ind2sub(fnirtInputDims(1:3),warpedCoordsIndices);
         thisWarpedRoi.coords = [x y z ones(length(warpedCoordsIndices),1)]';
@@ -202,7 +202,7 @@ for iRoi = 1:length(roiList)
       %since taking the volume into account is equivalent to making the ROI continuous, and that's what the other method naturally deals with
       % Also, this has not been re-tested after the xformROIcoords call was moved from above to here
       if any(any( (thisRoi.xform - fnirtInputXform)>1e-6))
-        mrWarnDlg(['(applyFSLWarpROI) ROI ' thisRoi.name ' is not in the requested base space, converting ...']);
+        mrWarnDlg(['(fslApplyWarpROI) ROI ' thisRoi.name ' is not in the requested base space, converting ...']);
         scalingFactor = ceil(fnirtInputVoxelSize./thisRoi.voxelSize);
         %transformation matrix between roi space and fnirt input volume space (base)
         roi2fnirtInput = diag([scalingFactor 1])*(fnirtInputXform\thisRoi.xform);
@@ -215,7 +215,7 @@ for iRoi = 1:length(roiList)
         scalingFactor = [1 1 1];
       end
 
-      thisWarpedRoi.coords = applyFSLWarpCoords([thisRoi.coords;ones(1,size(thisRoi.coords,2))], fnirtInputVoxelSize./scalingFactor, [.5 .5 .5], [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr);
+      thisWarpedRoi.coords = fslApplyWarpCoords([thisRoi.coords;ones(1,size(thisRoi.coords,2))], fnirtInputVoxelSize./scalingFactor, [.5 .5 .5], [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr);
 
       if any(any( (thisRoi.xform - fnirtInputXform)>1e-6))
         %convert back to roi space
@@ -223,7 +223,7 @@ for iRoi = 1:length(roiList)
       end
     end
     thisView = viewSet(thisView,'newROI',thisWarpedRoi);
-    disp(['(applyFSLWarpROI) Warped ROI ' thisRoi.name]);
+    disp(['(fslApplyWarpROI) Warped ROI ' thisRoi.name]);
     fprintf('\n');
     needToRefresh = 1;
   end
