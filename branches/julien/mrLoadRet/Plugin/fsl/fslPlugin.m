@@ -1,15 +1,15 @@
-% applyFslFnirtWarpPlugin.m
+% fslPlugin.m
 %
 %        $Id$ 
 %      usage: DefaultPlugin(action,<thisView>)
 %         by: julien besle
 %       date: 12/13/10
 %
-function retval = applyFslFnirtWarpPlugin(action,thisView)
+function retval = fslPlugin(action,thisView)
 
 % check arguments
 if ~any(nargin == [1 2])
-  help applyFslFnirtWarpPlugin
+  help fslPlugin
   return
 end
 
@@ -17,7 +17,7 @@ switch action
  case {'install','i'}
   % check for a valid view
   if (nargin ~= 2) || ~isview(thisView)
-     disp(sprintf('(applyFslFnirtWarpPlugin) Need a valid view to install plugin'));
+     disp(sprintf('(fslPlugin) Need a valid view to install plugin'));
   else
 % % %     %first check if there is already an Overlay Menu
 % % %     hFig = viewGet(thisView,'fignum');
@@ -42,18 +42,18 @@ switch action
    end
  % return a help string
  case {'help','h','?'}
-   retval = 'Adds items in menus ''Overlays'' and ''ROI'' to apply FSL FNIRT warp spline coefficients to overlays and/or ROIs';
+   retval = 'Adds FSL functionnalities: (1) add items in menus ''Overlays'' and ''ROI'' to apply FSL FNIRT warp spline coefficients to overlays and/or ROIs';
  otherwise
-   disp(sprintf('(applyFslFnirtWarpPlugin) Unknown command %s',action));
+   disp(sprintf('(fslPlugin) Unknown command %s',action));
 end
 
 %------------------------- applyWarpOverlaysCallback Function ------------------------------%
 function applyWarpOverlaysCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-applyFSLWarpOverlays(thisView);
+fslApplyWarpOverlays(thisView);
 
 %------------------------- applyWarpROICallback Function ------------------------------%
 function applyWarpROICallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-applyFSLWarpROI(thisView);
+fslApplyWarpROI(thisView);
 
