@@ -40,6 +40,7 @@ function retval = editOverlayGUImrParams(viewNum)
   overlayColorRange = viewGet(thisView,'overlayColorRange', overlayNum, analysisNum);
   overlayClipRange = viewGet(thisView,'overlayClip', overlayNum, analysisNum);
   overlayName = viewGet(thisView, 'overlayName', overlayNum, analysisNum);
+  overlayType = viewGet(thisView, 'overlayType', overlayNum,analysisNum);
   alphaOverlay = viewGet(thisView,'alphaOverlay');
   if isempty(alphaOverlay)
     alphaOverlay = 'none';
@@ -76,6 +77,7 @@ function retval = editOverlayGUImrParams(viewNum)
       'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
   paramsInfo{end+1} = {'setUsefulRange', 0, 'type=pushbutton','callback',@mrCmapSetUsefulRange,'callbackArg',viewNum,'buttonString=Set useful range to overlay min/max','passParams=1','passCallbackOutput=0',...
       'Sets the useful range to the min/max values of this overlay accross scans'};
+  paramsInfo{end+1} = {'overlayType', overlayType, 'The type of overlay (ph, amp, co ...'};
   paramsInfo{end+1} = {'interrogator', interrogator, 'Sets the overlay default interrogator function'};
   paramsInfo{end+1} = {'alphaOverlay', alphaOverlayMenu, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.'};
   paramsInfo{end+1} = {'alphaOverlayExponent', alphaOverlayExponent,'incdec=[-0.1 0.1]','If you are using an alphaOverlay, this sets an exponent on the alphaOverlay to pass through. For example, if you just want the value from the overlay to be the alpha value then set this to 1. If you want to have it so that lower values get accentuated (usually this is the case), set the exponent to less than 1, but greater than 0. The alpha values are passed through the function alpha = alpha.^alphaOverlayExponent'};
@@ -196,21 +198,29 @@ function mrCmapCallback(params,viewNum)
   %for some parameters, there is an existing viewSet
   newOverlay.interrogator = params.interrogator;
   if ~isequal(newOverlay.interrogator,currentOverlay.interrogator)
-    thisView=viewSet(thisView,'interrogator',newOverlay.interrogator);
+    viewSet(thisView,'interrogator',newOverlay.interrogator);
     refreshMLRDisplay(viewNum);
     return;
   end
+  %overlay type
+  newOverlay.overlayType = params.overlayType;
+  if ~isequal(newOverlay.overlayType,currentOverlay.type)
+    viewSet(thisView,'overlayType',newOverlay.overlayType);
+    refreshMLRDisplay(viewNum);
+    return;
+  end
+  % set the overlay useful range 
   newOverlay.range = [params.overlayUsefulRange(1) params.overlayUsefulRange(2)];
   %if the range has changed, we only need to update the slider
   if any(abs(newOverlay.range-currentOverlay.range)>5e-7)
-    thisView=viewSet(thisView,'overlayRange',newOverlay.range, overlayNum);
+    viewSet(thisView,'overlayRange',newOverlay.range, overlayNum);
     refreshMLRDisplay(viewNum);
     return;
   end
-  % set the overlay range 
+  % set the overlay color range 
   newOverlay.colorRange = [params.overlayColorRange(1) params.overlayColorRange(2)];
   if any(abs(newOverlay.colorRange-currentOverlay.colorRange)>5e-7)% && ~strcmp(newOverlay.colormapType,'normal')
-    thisView=viewSet(thisView,'overlayColorRange',newOverlay.colorRange, overlayNum);
+    viewSet(thisView,'overlayColorRange',newOverlay.colorRange, overlayNum);
     refreshMLRDisplay(viewNum);
     return;
   end
@@ -228,7 +238,7 @@ function mrCmapCallback(params,viewNum)
   % see if we need to call a function
   if ~isempty(params.userDefinedCmap)
     % look for the m function
-    if exist(sprintf('%s.m',params.userDefinedCmap))
+    if exist(sprintf('%s.m',params.userDefinedCmap),'file')
       colormap = eval(sprintf('%s(%i)',params.userDefinedCmap,params.numColors));
       if isequal(size(colormap),[params.numColors 3])
 	newOverlay.colormap = colormap;
