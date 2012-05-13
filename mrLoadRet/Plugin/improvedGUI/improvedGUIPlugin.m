@@ -179,6 +179,8 @@ switch action
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','callback',@exportImage_Callback);
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export Images');
     mlrAdjustGUI(thisView,'add','menu','Apply MotionComp Transforms','/Analysis/Motion Compensation/Slice Time Correction (only)','callback',@applyMotionCompTransformsCallBack,'tag','applyMotionCompTransformMenuItem');
+    mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/','callback',@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
+    mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/','callback',@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
     
     %remove show ROI menus and re-arrange ROI menus
     mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','location','/ROI/Convert');
@@ -234,6 +236,7 @@ else
 end
 
 
+% --------------------------------------------------------------------
 function corticalMaxDepthText_Callback(hObject,dump)
 
 handles = guidata(hObject);
@@ -259,11 +262,13 @@ else %otherwise, set the new value in the view and the GUI
   end
 end
 
+% --------------------------------------------------------------------
 function clipAcrossOverlays_Callback(hObject,dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 refreshMLRDisplay(viewNum);
 
+% --------------------------------------------------------------------
 function colorBlendingPopup_Callback(hObject,dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
@@ -306,6 +311,7 @@ end
 refreshMLRDisplay(viewNum);
 
 
+% --------------------------------------------------------------------
 function displayROILabels_Callback(hObject, dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
@@ -349,6 +355,7 @@ else
 end
 
 
+% --------------------------------------------------------------------
 function exportCallback(thisView,params)
 
 %update the view
@@ -373,9 +380,39 @@ end
 scanList = eval(params.scanList);
 mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
 
+
+% --------------------------------------------------------------------
 function applyMotionCompTransformsCallBack(hObject, dump)
+
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 thisView = viewGet(viewNum,'view');
 
 applyMotionCompTransform(thisView);
+
+
+% --------------------------------------------------------------------
+function copyBaseSformCallBack(hObject, dump)
+
+mrGlobals;
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
+MLR.clipboard = viewGet(thisView,'baseSform');
+
+
+% --------------------------------------------------------------------
+function pasteBaseSformCallBack(hObject, dump)
+
+mrGlobals;
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
+if all(size(MLR.clipboard)==4)
+    viewSet(thisView,'baseSform',MLR.clipboard);
+else
+    mrErrorDlg('(paste base sform) Cannot paste. Clipboard does not contain a valid transformation matrix. Use Edit -> Base Anatomy -> Transforms -> Copy sform.')
+end
+refreshMLRDisplay(viewNum);
+
+
