@@ -34,15 +34,17 @@ switch action
 % % %       %if not, install it
       mlrAdjustGUI(thisView,'add','menu','overlaysMenu','/Analysis','label','Overlays','tag','overlaysMenu');
 % %     end
-    %install overlays menu Item
-    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to overlays','/Overlays/','callback',@applyWarpOverlaysCallback,'tag','applyFnirtOverlayMenuItem');
-    %install overlays menu Item
-    mlrAdjustGUI(thisView,'add','menu','Apply FNIRT non-linear warps to ROIs','/ROI/Combine','callback',@applyWarpROICallback,'tag','applyFnirtRoiMenuItem');
+    %install fslApplyWarp overlays menu Item
+    mlrAdjustGUI(thisView,'add','menu','Apply FSL FNIRT non-linear warps to overlays','/Overlays/','callback',@applyWarpOverlaysCallback,'tag','applyFnirtOverlayMenuItem');
+    %install fslApplyWarp ROIs menu Item
+    mlrAdjustGUI(thisView,'add','menu','Apply FSL FNIRT non-linear warps to ROIs','/ROI/Combine','callback',@applyWarpROICallback,'tag','applyFnirtRoiMenuItem');
+    %install FUGUE ROIs menu Item
+    mlrAdjustGUI(thisView,'add','menu','Correct EPI distortions using FSL FUGUE','/Analysis/Motion Compensation','callback',@fugueTseriesCallback,'tag','applyFnirtRoiMenuItem');
     retval = true;
    end
  % return a help string
  case {'help','h','?'}
-   retval = 'Adds FSL functionnalities: (1) add items in menus ''Overlays'' and ''ROI'' to apply FSL FNIRT warp spline coefficients to overlays and/or ROIs';
+   retval = 'Adds FSL functionalities: (1) add items in menus ''Overlays'' and ''ROI'' to apply FSL FNIRT warp spline coefficients to overlays and/or ROIs (2) add item in "Analysis" menu to correct EPI distortions in timeseries using FSL FUGUE. You nee to have FSL installed on your system and work under Linux or MacOSX to use this plugin.';
  otherwise
    disp(sprintf('(fslPlugin) Unknown command %s',action));
 end
@@ -57,3 +59,7 @@ function applyWarpROICallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 fslApplyWarpROI(thisView);
 
+%------------------------- applyWarpROICallback Function ------------------------------%
+function fugueTseriesCallback(hObject,dump)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+fslFugueTseries(thisView);
