@@ -1,7 +1,7 @@
-% fslApplyWarpSurfOFF.m.m
+% fslApplyWarpSurfOFF.m
 %
-%       $Id: fslApplyWarpSurfOFF.m.m 1833 2010-11-13 18:37:14Z julien $	
-%      usage: fslApplyWarpSurfOFF.m()
+%       $Id: fslApplyWarpSurfOFF.m 1833 2010-11-13 18:37:14Z julien $	
+%      usage: fslApplyWarpSurfOFF()
 %         by: julien besle
 %       date: 10/05/2011
 %    purpose: applies FNIRT non-linear transformation to OFF surface files
