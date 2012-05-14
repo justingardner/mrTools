@@ -15,6 +15,10 @@ if ~any(nargin == [1 2])
 end
 
 switch action
+ % return a help string
+ case {'help','h','?'}
+   retval = 'Allows copy/paste of several scans/overlays and automatic interpolation of overlays to the destination space';
+   
  case {'install','i'}
   % check for a valid thisView
   if (nargin ~= 2) || ~isview(thisView)
@@ -30,10 +34,8 @@ switch action
     
     % return true to indicate successful plugin
     retval = true;
-   end
- % return a help string
- case {'help','h','?'}
-   retval = 'Allows copy/paste of several scans/overlays and automatic interpolation of overlays to the destination space';
+  end
+   
  otherwise
    disp(sprintf('(flexibleCopyPasteOverlaysPlugin) Unknown command %s',action));
 end

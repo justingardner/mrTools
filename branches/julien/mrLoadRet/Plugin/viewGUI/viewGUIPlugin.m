@@ -1,25 +1,29 @@
-% nottinghamGUIPlugin.m
+% viewGUIPlugin.m
 %
-%        $Id: nottinghamGUIPlugin.m 1950 2010-12-18 10:12:48Z julien $ 
-%      usage: nottinghamGUIPlugin(action,<thisView>)
+%        $Id: viewGUIPlugin.m 1950 2010-12-18 10:12:48Z julien $ 
+%      usage: viewGUIPlugin(action,<thisView>)
 %         by: julien besle
 %       date: 13/02/11
 %    purpose: 
 %
 
-function retval = nottinghamGUIPlugin(action,thisView)
+function retval = viewGUIPlugin(action,thisView)
 
 % check arguments
 if ~any(nargin == [1 2])
-  help nottinghamGUIPlugin
+  help viewGUIPlugin
   return
 end
 
 switch action
+ % return a help string
+ case {'help','h','?'}
+   retval = 'Reorganized menus, following the ''view'' logic';
+   
  case {'install','i'}
   % check for a valid view
   if (nargin ~= 2) || ~isview(thisView)
-     disp(sprintf('(nottinghamGUIPlugin) Need a valid view to install plugin'));
+     disp(sprintf('(viewGUIPlugin) Need a valid view to install plugin'));
   else
     
     %Create General Menu and move appropriate menu items
@@ -226,12 +230,10 @@ switch action
     
     % return 
     retval = true;
-   end
- % return a help string
- case {'help','h','?'}
-   retval = 'Reorganized menus, following the ''view'' logic';
- otherwise
-   disp(sprintf('(nottinghamGUIPlugin) Unknown command %s',action));
+  end
+  
+  otherwise
+   disp(sprintf('(viewGUIPlugin) Unknown command %s',action));
 end
 
 
