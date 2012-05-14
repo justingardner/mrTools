@@ -16,12 +16,31 @@ if ~any(nargin == [1 2])
 end
 
 switch action
- case {'install','i'}
+  % return a help string
+  case {'help','h','?'}
+   retval =['GUI Improvements: - superimposition of several overlays\n',...
+            '                  - average/projection over a range of cortical depths\n',...
+            '                  - multiple ROI selection\n',... 
+            '                  - folder mrLoadRet/Plugin/interrogatorFolder/interrogatorFunctions is scanned at MLR startup and functions to the default interrogator list',...
+            '                  - folder mrLoadRet/Plugin/colormapFolder/colormapFunctions is scanned at MLR startup and adds functions to the default colormap list',...
+            'Added functions: - New item in menu Edit/Scan menu to unlink stimfiles',...
+            '                 - New item in menu ROIs to transform ROIs with pre-defined or custom transformation functions',...
+            '                 - Improved GLM analysis that subsumes event-related and "GLM" analyses in a common GLM framework with statistical inference tests (see http://www.psychology.nottingham.ac.uk/staff/ds1/lab/doku.php?id=analysis:glm_statistics_in_mrtools',...
+            '                 - New item in Plot that calls a 3D viewer',...
+            '                 - New item in menu Overlays to combine/transform overlays using virtually any type of function',...
+            '                 - Improved Edit/Overlay dialog',...
+            '                 - Improved Exportt Images function',...
+            '                 - New item in menu Analysis/Motioncomp to appy existing motion compensation parameters to another set of scans',...
+            '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
+            ];
+   retval ='Adds new functionalities to GUI, including improved GLM analysis';
+   
+  case {'install','i'}
   % check for a valid view
   if (nargin ~= 2) || ~isview(thisView)
      disp(sprintf('(improvedGUIPlugin) Need a valid view to install plugin'));
   else
-    
+
     % new uicontrols and reposition old ones
     if viewGet(thisView,'baseType')>0
       corticalDepthVisibility = 'on';
@@ -94,7 +113,7 @@ switch action
     mlrAdjustGUI(thisView,'set','baseTiltSlider','position',      [0.055   0.7     0.175  0.02 ]);
     mlrAdjustGUI(thisView,'set','baseTiltText','position',        [0.24    0.7     0.04   0.025]);
     mlrAdjustGUI(thisView,'set','baseTiltText','fontSize',controlFontSize);
-    
+
     %---------------------------- ROI controls  --------------------------------------------------
     mlrAdjustGUI(thisView,'set','ROI','position',                 [0.01    0.66    0.08    0.025]);
     mlrAdjustGUI(thisView,'set','ROI','string','ROIs');
@@ -129,7 +148,7 @@ switch action
     mlrAdjustGUI(thisView,'set','roiPopup','callback',@roiList_Callback);
     mlrAdjustGUI(thisView,'set','roiPopup','value',viewGet(thisView,'currentRoi'));
     mlrAdjustGUI(thisView,'set','roiPopup','fontSize',controlFontSize);
-    
+
     %---------------------------- Analysis and overlays controls  --------------------------------
     mlrAdjustGUI(thisView,'set','analysis','position',            [0.01    0.45    0.08   0.025]);
     mlrAdjustGUI(thisView,'set','analysis','fontWeight','bold');
@@ -167,20 +186,40 @@ switch action
     mlrAdjustGUI(thisView,'set','alphaSlider','position',         [0.08    0.1     0.14   0.02 ]);
     mlrAdjustGUI(thisView,'set','alphaText','position',           [0.23    0.1     0.05   0.025]);
     mlrAdjustGUI(thisView,'set','alphaText','fontSize',controlFontSize);
-   
+
     mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.1     0.58   0.07 ]);
     mlrAdjustGUI(thisView,'set','colorbar','fontSize',10);
     mlrAdjustGUI(thisView,'add','axes','colorbarRightBorder',...
       'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.1     0.001  0.07 ]);
+    
 
-    % Add some useful menus
-    mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');
-    mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
+    %----------------------------  Add menus --------------------------------
+
+    % File menu
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','callback',@exportImage_Callback);
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export Images');
+
+    % Edit menu
+    mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');
+    mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
+    mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/','callback',@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
+    mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/','callback',@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
+    mlrAdjustGUI(thisView,'set','editOverlayMenuItem','Callback',@editOverlayCallback);
+
+    % Analysis menu
     mlrAdjustGUI(thisView,'add','menu','Apply MotionComp Transforms','/Analysis/Motion Compensation/Slice Time Correction (only)','callback',@applyMotionCompTransformsCallBack,'tag','applyMotionCompTransformMenuItem');
-    
-    %remove show ROI menus and re-arrange ROI menus
+    mlrAdjustGUI(thisView,'remove','menu','eventRelatedMenuItem');
+    mlrAdjustGUI(thisView,'set','glmMenuItem','Callback',@glmAnalysisCallback);
+    mlrAdjustGUI(thisView,'set','glmMenuItem','label','GLM analysis (v2)');
+    mlrAdjustGUI(thisView,'set','recomputeAnalysisMenuItem','Callback',@recomputeAnalysisCallback);
+
+    % Overlay menu
+    mlrAdjustGUI(thisView,'add','menu','overlaysMenu','/Analysis','label','Overlays','tag','overlaysMenu');
+    %install menu Item
+    mlrAdjustGUI(thisView,'add','menu','Combine/Transform Overlays','/Overlays/','callback',@combineOverlaysCallback,'tag','transformOverlaysMenuItem');
+
+    %ROI menu
+    %remove show ROI menus and re-arrange ROI menus 
     mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','location','/ROI/Convert');
     mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','separator','off');
     mlrAdjustGUI(thisView,'remove','menu','showRoiMenu');
@@ -193,24 +232,61 @@ switch action
     mlrAdjustGUI(thisView,'set','copyRoiMenuItem','label','Copy selected ROI(s)');
     mlrAdjustGUI(thisView,'set','pasteRoiMenuItem','label','Paste ROI(s)');
     mlrAdjustGUI(thisView,'set','editRoiMenuItem','label','Edit selected ROI(s)');
-    
+    %add functions
+    mlrAdjustGUI(thisView,'add','menu','Transform','/ROI/Combine','callback',@transformROIsCallback,'label','Transform','tag','transformRoiMenuItem');
+
+    %Plot menu
     %add 3D render viewer
     mlrAdjustGUI(thisView,'add','menu','3D Viewer','flatViewerMenuItem','callback',@renderIn3D,'tag','viewIn3DMenuItem');
+
     
+    %---------------------------- Add colormaps and interrogators
+  
+    %get interrogators in the interrogatorFunctions directory
+    interrogatorsFolder = [fileparts(which('improvedGUIPlugin')) '/InterrogatorFunctions/'];
+    interrogatorFiles =  dir([interrogatorsFolder '*.m']);
+    if ~isempty(interrogatorFiles)
+      interrogatorList = cell(1,length(interrogatorFiles));
+      for iFile=1:length(interrogatorFiles)
+         interrogatorList{iFile} = stripext(interrogatorFiles(iFile).name);
+      end
+      % install default interrogators
+      % that will show up when you do /Edit/Overlay
+      mlrAdjustGUI(thisView,'add','interrogator',interrogatorList);
+    else
+      disp('(interrogatorFolderPlugin) No interrogator function found in folder');
+    end
+    
+    %get colormaps in the colormapFunctions directory
+    colorMapsFolder = [fileparts(which('improvedGUIPlugin')) '/ColormapFunctions/'];
+    colorMapFiles =  dir([colorMapsFolder '*.m']);
+    if ~isempty(colorMapFiles)
+      colorMapList = cell(1,length(colorMapFiles));
+      for iFile=1:length(colorMapFiles)
+         colorMapList{iFile} = stripext(colorMapFiles(iFile).name);
+      end
+      % install default colormaps
+      % that will show up when you do /Edit/Overlay
+      mlrAdjustGUI(thisView,'add','colormap',colorMapList);
+    else
+      disp('(colormapFolderPlugin) No colormap function found in folder');
+    end
+   
     % return view
     retval = thisView;
-   end
- % return a help string
- case {'help','h','?'}
-   retval = 'Improvements include: superimposition of several overlays, average over a range of cortical depths, multiple ROI selection, 3D viewer ...';
- otherwise
-   disp(sprintf('(improvedGUIPlugin) Unknown command %s',action));
+  end
+
+  otherwise
+    disp(sprintf('(improvedGUIPlugin) Unknown command %s',action));
 end
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% --- Executes on slider movement.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Control Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% -------------------------------------------------------------------- Cortical depth controls
+
+% ----------------------------------- Executes on slider movement.
 function corticalMaxDepthSlider_Callback(hObject, dump)
 
 handles = guidata(hObject);
@@ -234,6 +310,7 @@ else
 end
 
 
+% -------------------------------------------------------------------- 
 function corticalMaxDepthText_Callback(hObject,dump)
 
 handles = guidata(hObject);
@@ -259,22 +336,17 @@ else %otherwise, set the new value in the view and the GUI
   end
 end
 
+% -------------------------------------------------------------------- Overlay controls
 function clipAcrossOverlays_Callback(hObject,dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 refreshMLRDisplay(viewNum);
 
+% --------------------------------------------------------------------
 function colorBlendingPopup_Callback(hObject,dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 refreshMLRDisplay(viewNum);
-
-
-% -------------------------------------------------------------------- Unlink stim menu
-function unlinkStimfileMenuItem_Callback(hObject, dump)
-handles = guidata(hObject);
-viewNum = handles.viewNum;
-viewSet(viewNum, 'stimfilename', '');
 
 
 % -------------------------------------------------------------------- ROI controls
@@ -306,12 +378,15 @@ end
 refreshMLRDisplay(viewNum);
 
 
+% --------------------------------------------------------------------
 function displayROILabels_Callback(hObject, dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 viewSet(viewNum,'labelROIs',get(hObject,'Value'));
 refreshMLRDisplay(viewNum);
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% File Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --------------------------------------------------------------------
 function exportImage_Callback(hObject, dump)
@@ -349,6 +424,7 @@ else
 end
 
 
+% --------------------------------------------------------------------
 function exportCallback(thisView,params)
 
 %update the view
@@ -373,9 +449,115 @@ end
 scanList = eval(params.scanList);
 mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Edit Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% -------------------------------------------------------------------- Unlink stim menu
+function unlinkStimfileMenuItem_Callback(hObject, dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+viewSet(viewNum, 'stimfilename', '');
+
+
+% --------------------------------------------------------------------
+function copyBaseSformCallBack(hObject, dump)
+
+mrGlobals;
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
+MLR.clipboard = viewGet(thisView,'baseSform');
+
+
+% --------------------------------------------------------------------
+function pasteBaseSformCallBack(hObject, dump)
+
+mrGlobals;
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
+if all(size(MLR.clipboard)==4)
+    viewSet(thisView,'baseSform',MLR.clipboard);
+else
+    mrErrorDlg('(paste base sform) Cannot paste. Clipboard does not contain a valid transformation matrix. Use Edit -> Base Anatomy -> Transforms -> Copy sform.')
+end
+refreshMLRDisplay(viewNum);
+
+
+% --------------------------------------------------------------------
+function editOverlayCallback(hObject, dump)
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+editOverlayGUI(viewNum);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Analysis Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% --------------------------------------------------------------------
 function applyMotionCompTransformsCallBack(hObject, dump)
+
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 thisView = viewGet(viewNum,'view');
 
 applyMotionCompTransform(thisView);
+
+
+%------------------------- glmAnalysisCallback Function ------------------------------%
+function glmAnalysisCallback(hObject,dump)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+glmAnalysis(thisView);
+
+
+%------------------------- RecomputeAnalysisCallback Function ------------------------------%
+% this is to replace the GUI function of old event-related analyses
+function recomputeAnalysisCallback(hObject,dump)
+
+viewNum = getfield(guidata(hObject),'viewNum');
+thisView = viewGet(viewNum,'view');
+
+if viewGet(thisView,'numAnalyses') > 0
+  n = viewGet(thisView,'currentAnalysis');
+  groupName = viewGet(thisView,'analysisGroupName',n);
+  analysisFunction = viewGet(thisView,'analysisFunction',n);
+  guiFunction = viewGet(thisView,'analysisGuiFunction',n);
+  switch(guiFunction)
+    case {'eventRelatedGUI','eventRelatedGlmGUI'}
+      guiFunction = 'glmAnalysisGUI';
+      analysisFunction = 'glmAnalysis';
+  end
+  params = viewGet(thisView,'analysisParams',n);
+  % params = guiFunction('groupName',groupName,'dummy',0,'params',params,'thisView',thisView);
+  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params,','''','thisView','''',',thisView);'];
+  eval(evalstring);
+  % params is empty if GUI cancelled
+  if isempty(params)
+    disp('(glmAnalysis) Analysis cancelled');
+    return
+  else
+    %check if the group has changed, in which case we need to remove the tseriesFile field so that reconcileParams doesn't get confused
+    if isfield(params,'groupName') && ~strcmp(groupName,params.groupName) && isfield(params,'tseriesFile')
+       params = rmfield(params,'tseriesFile');
+    end
+    % thisView = analysisFunction(thisView,params);
+    evalstring = ['thisView = ',analysisFunction,'(thisView,params);'];
+    eval(evalstring);
+    refreshMLRDisplay(viewNum);
+  end
+else
+  mrWarnDlg(sprintf('(mrLoadRetGUI) No analyses loaded'));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Overlay Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%------------------------- combineOverlaysCallback Function ------------------------------%
+function combineOverlaysCallback(hObject,dump)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+combineTransformOverlays(thisView);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ROI Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------- transformROIsCallback Function ------------------------------%
+function transformROIsCallback(hObject,dump)
+thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+transformROIs(thisView);
+

@@ -1,6 +1,6 @@
 % getGlmTestParamsGUI.m
 %
-%        $Id: getGlmTestParamsGUI.m 1932 2010-12-15 20:53:55Z julien $
+%        $Id$
 %      usage: params = getGlmTestParamsGUI(params,useDefault)
 %         by: julien besle, 
 %       date: 09/11/2010

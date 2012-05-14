@@ -202,7 +202,7 @@ if ~justGetParams
       end
       if strcmp(lower(mrGetPref('verbose')),'yes')
 	% 8 -> 10^0, 16 -> 10^3, 32-> 10^6
-	disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
+	disp(sprintf('(mrInit) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
       end
       scanParams(iScan).junkFrames = groupParams.junkFrames(iScan);
       scanParams(iScan).nFrames = groupParams.nFrames(iScan);

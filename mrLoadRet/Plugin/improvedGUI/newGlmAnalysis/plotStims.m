@@ -4,7 +4,7 @@
 %         by: julien besle 
 %       date: 02/12/2010
 %    purpose: Plots stimulus matrix (in cell vector or matrix form). Onsets and durations must be integers and expressed in frames;
-%              $Id: plotStims.m 1928 2010-12-14 23:22:11Z julien $
+%              $Id$
 
 function [hStims,hTransitions] = plotStims(stimOnsets, stimDurations, framePeriod, colors, axesHandle, runTransitions)
 

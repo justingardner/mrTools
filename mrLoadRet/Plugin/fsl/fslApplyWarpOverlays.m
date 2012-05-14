@@ -1,4 +1,4 @@
-function applyFSLWarpOverlays(thisView)
+function fslApplyWarpOverlays(thisView)
 % applyWarpOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   applies non-linear FSL registration to overlay in current view and current analysis
@@ -8,7 +8,7 @@ function applyFSLWarpOverlays(thisView)
 % $Id: applyWarpOverlays.m 2136 2011-05-31 10:23:12Z julien $ 
 
 if strcmp(mrGetPref('fslPath'),'FSL not installed')
-  mrWarnDlg('(applyFSLWarpOverlays) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
+  mrWarnDlg('(fslApplyWarpOverlays) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
   return
 end
 
@@ -59,7 +59,7 @@ for iOverlay = 1:overlaysNumber
       overlaysNumber = overlaysNumber+1;
       overlayNames = [overlayNames {alphaOverlayName}];
       overlays(overlaysNumber) = viewGet(thisView,'overlay',viewGet(thisView,'overlaynum',alphaOverlayName));
-      disp(['(applyFSLWarpOverlays) Alpha overlay ''' alphaOverlayName ''' will also be warped']);
+      disp(['(fslApplyWarpOverlays) Alpha overlay ''' alphaOverlayName ''' will also be warped']);
     end
     overlays(iOverlay).alphaOverlay = ['warp(' alphaOverlayName ') - ' warpCoefFilename];
   end
@@ -73,7 +73,7 @@ for iOverlay = 1:overlaysNumber
    if any(overlayIndices)
       %transform the non empty overlay in a 4D matrix
       data = permute(reshape(cell2mat(overlays(iOverlay).data(scanList(overlayIndices))),[scanDims([1 2]) sum(overlayIndices) scanDims(3)]), [1 2 4 3]);
-      warpedData = applyFSLWarp(data, [warpCoefPathname warpCoefFilename], 'tempInput.img', scanHdr, interpMethod);
+      warpedData = fslApplyWarp(data, [warpCoefPathname warpCoefFilename], 'tempInput.img', scanHdr, interpMethod);
       overlays(iOverlay).data = cell(1,length(overlays(iOverlay).data));
       overlays(iOverlay).data(scanList(overlayIndices)) = mat2cell(warpedData,scanDims(1),scanDims(2),scanDims(3),ones(1,sum(overlayIndices)));
       overlays(iOverlay).name = ['warp(' overlays(iOverlay).name ') - ' warpCoefFilename];

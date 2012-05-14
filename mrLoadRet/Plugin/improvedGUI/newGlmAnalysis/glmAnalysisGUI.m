@@ -4,7 +4,7 @@
 %         by: farshad moradi, modified by julien besle
 %       date: 06/14/07, 08/01/2010
 %    purpose: return parameters for GLM analysis
-%           $Id: glmAnalysisGUI.m 1929 2010-12-15 11:55:25Z julien $
+%           $Id$
 
 function params = glmAnalysisGUI(varargin)   
 
