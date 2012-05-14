@@ -135,7 +135,12 @@ while keepAsking
       tfceOptionVisible = testOptionsVisible;
   end
   
+  currentNumberContrasts = params.numberContrasts;
+  currentNumberFtests= params.numberFtests;
+  
   paramsInfo = {...
+      {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus', 'Number of contrasts that will be ouput as an overlay. If modifying the value, press OK to redraw the dialog with the new number of contrasts'},...
+      {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays'},...
       {'EVnames', params.EVnames, 'type=stringarray','editable=0','Name of the EVs'},...
       {'contrasts', params.contrasts,contrastOptionsVisible,...
             'incdec=[-1 1]','incdecType=plusMinus',...
@@ -168,8 +173,6 @@ while keepAsking
     tempParams = mrParamsDefault(paramsInfo);
   else
     tempParams = mrParamsDialog(paramsInfo,'Define Contrasts, T-tests and F-tests');
-    %buttonWidth = min(5/params.numberEVs,.4);
-    %tempParams = mrParamsDialog(paramsInfo,'Define Explanatory Variables, Contrasts and F-tests','buttonWidth',buttonWidth);
   end
 
   % user hit cancel
@@ -180,11 +183,11 @@ while keepAsking
   
   params = mrParamsCopyFields(tempParams,params);
   %check that contrasts are not empty
+  actualNumberContrasts=0;
   if isempty(params.contrasts) %mrParamsDialog returns an empty string instead of an empty array
     params.contrasts = [];
   else
-  actualNumberContrasts=0;
-    for iContrast = 1:size(params.contrasts,1)
+    for iContrast = 1:currentNumberContrasts
       if ~any(params.contrasts(iContrast,:))
         mrWarnDlg('(getGlmTestParamsGUI) Discarding empty contrast');
       else
@@ -200,7 +203,7 @@ while keepAsking
   restrictions = {};
   fTestNames={};
   actualNumberFtests=0;
-  for iFtest = 1:params.numberFtests
+  for iFtest = 1:currentNumberFtests
     thisRestriction=params.(fixBadChars(sprintf('restriction%2d',iFtest)));
     params = mrParamsRemoveField(params,fixBadChars(sprintf('restriction%2d',iFtest)));
     if ~any(any(thisRestriction))
@@ -217,8 +220,9 @@ while keepAsking
   {'fTestNames',fTestNames,'Self-explanatory'},...
   {'restrictions',restrictions,'Restrictions matrix defining F-tests. Each line of each matrix defines a contrast of EVs'},...
   }),params);
-  params.restrictions = restrictions; %copy this again, as mrParamsDefault changes the value of thses two parameters
+  params.restrictions = restrictions; %copy this again, as mrParamsDefault changes the value of these two parameters
   params.fTestNames = fTestNames; %but we use it to create a paramInfo entry for them, which gives acces to the hlep info later on
+  
 
   %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
   if isempty(params.TFCE)
@@ -244,7 +248,26 @@ while keepAsking
     mrWarnDlg('(getTestParamsGUI) permutation-based FWE adjustments must be performed on permutation or parametric tests','Yes');
   elseif (params.fweAdjustment || params.fdrAdjustment) && ~(params.permutationTests ||params.parametricTests||params.bootstrapTests)
     mrWarnDlg('(getTestParamsGUI) FWE/FDR adjustments must be performed on bootsrap/permutation/parametric tests','Yes');
+  elseif params.numberContrasts~=currentNumberContrasts || params.numberFtests~=currentNumberFtests 
+    %check if the number of contrasts and F-tests has changed and change the contrasts/restrictions matrices accordingly
+    if params.numberContrasts<=size(params.contrasts,1)
+      params.contrasts = params.contrasts(1:params.numberContrasts,:);
+    else
+      params.contrasts = [params.contrasts;zeros(params.numberContrasts-size(params.contrasts,1),size(params.contrasts,2))];
+    end
+    if params.numberFtests<=length(params.restrictions)
+      params.restrictions = params.restrictions(1:params.numberFtests);
+      params.fTestNames=params.fTestNames(1:params.numberFtests);
+    else
+      for iFtest = length(params.restrictions)+1:params.numberFtests
+        params.restrictions{iFtest} = zeros(params.numberEVs,params.numberEVs);
+        params.fTestNames{iFtest}=sprintf('fTest%2d',iFtest);
+      end
+    end
+    disp('User changed the number of contrasts/F-tests')
   else
+    params.numberFtests = actualNumberFtests;
+    params.numberContrasts = actualNumberContrasts;
     tempParams = getGlmAdvancedStatisticParamsGUI(thisView,params,useDefault);
     % if empty, user hit cancel, go back
     if isempty(tempParams)
@@ -265,5 +288,6 @@ while keepAsking
   end
 
 end
+
 
 
