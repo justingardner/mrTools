@@ -1,5 +1,5 @@
-function combineOverlays(thisView)
-% combineOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
+function combineTransformOverlays(thisView)
+% combineTransformOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   combines (masked) Overlays according to matlab or custom operators  in current view and current analysis
 %
@@ -12,13 +12,13 @@ combinationModeMenu = {'Apply function to all overlays','Apply function to each 
 
 %default params
 %get names of combine Functions in combineFunctions directory
-functionsDirectory = [fileparts(which('combineOverlays')) '/CombineOverlayFunctions/'];
+functionsDirectory = [fileparts(which('combineTransformOverlays')) '/combineTransformOverlayFunctions/'];
 combineFunctionFiles =  dir([functionsDirectory '*.m']);
 for iFile=1:length(combineFunctionFiles)
   combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
 end
 
-params.combineFunction = [{'User Defined'} combineFunctions];
+combineFunctionsMenu = [{'User Defined'} combineFunctions];
 params.customCombineFunction = '';%(''@(x)max(0,-norminv(x))';
 params.nOutputOverlays = 1;
 params.additionalArrayArgs = '';
@@ -30,7 +30,7 @@ params.outputName = '';
 askForParams = 1;
 while askForParams
   params = {...
-   {'combineFunction',params.combineFunction,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
+   {'combineFunction',combineFunctionsMenu,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
    {'customCombineFunction',params.customCombineFunction,'name of the function to apply. You can use any type of matlab function (including custom) that accepts either scalars or multidimensional arrays. Any string beginning with an @ will be considered an anonymous function and shoulde be of the form @(x)func(x), @(x,y)func(x,y) ..., where the number of variables equals the number of overlay inputs and additional arguments. '},...
    {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' is faster but not all functions accept multidimensional arrays as inputs. Choose ''Structure'' to pass the whole overlay structure'},...
    {'combinationMode',combinationModeMenu,'type=popupmenu', 'In the default mode,the number of inputs expected by the function must match the number of selected overlays.'},...
@@ -52,11 +52,14 @@ while askForParams
 
   inputOutputTypeMenu = putOnTopOfList(params.inputOutputType,inputOutputTypeMenu);
   combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
+  combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
 
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
-    mrWarnDlg('(combineOverlays) Anonymous functions cannot be applied recursively');
+    mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively');
+  elseif isempty(params.combineFunction) && isempty(params.customCombineFunction)
+    mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function');
   %elseif
-    %other control here
+    %other controls here
   else
     askForParams = 0;
     overlayList = selectInList(thisView,'overlays');
@@ -212,7 +215,7 @@ for iOperations = 1:size(overlayData,3)
          eval(functionString);
 %          toc
       catch exception
-         mrWarnDlg(sprintf('There was an error evaluating the combining function:\n%s',getReport(exception,'basic')));
+         mrWarnDlg(sprintf('There was an error evaluating function %s:\n%s',combineFunctionString,getReport(exception,'basic')));
          return
       end
       for iOutput = 1:params.nOutputOverlays
@@ -231,7 +234,7 @@ for iOperations = 1:size(overlayData,3)
         end
         %check that the size is compatible
         if ~isequal(size(outputData{iScan,iOutput,iOperations}),size(overlayData{iScan}))
-          mrWarnDlg(['(combineOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOutput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
+          mrWarnDlg(['(combineTransformOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOutput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
         end
       end
     end
@@ -286,8 +289,8 @@ end
             
 %save the output
 defaultOverlay.groupName = viewGet(thisView,'groupName');
-defaultOverlay.function = 'combineOverlays';
-defaultOverlay.interrogator = 'combineOverlays';
+defaultOverlay.function = 'combineTransformOverlays';
+defaultOverlay.interrogator = 'combineTransformOverlays';
 defaultOverlay.type = 'combination';
 defaultOverlay.params = params;
 defaultOverlay.clip = [];
@@ -345,13 +348,14 @@ end
 function printHelp(params)
 
 if strcmp(params.combineFunction,'User Defined')
-  mrWarnDlg('(combineOverlays) Please select a combination function');
+  mrWarnDlg('(combineTransformOverlays) Please select a combination function');
 else
   helpString = help(params.combineFunction);
   if isempty(helpString)
-    mrWarnDlg('(combineOverlays) No help available');
+    mrWarnDlg('(combineTransformOverlays) No help available');
   else
-    disp(helpString)
+    fprintf('\n');
+    disp(helpString);
   end
 end
 

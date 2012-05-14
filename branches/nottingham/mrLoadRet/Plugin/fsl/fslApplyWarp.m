@@ -1,4 +1,4 @@
-% warpedData = applyFSLWarp(data, warpCoefFilename, tempInputFilename, tempRefFilename)
+% warpedData = fslApplyWarp(data, warpCoefFilename, tempInputFilename, tempRefFilename)
 %
 %   applies non-linear FSL registration to 3/4D data
 %
@@ -15,7 +15,7 @@
 %      - verbose
 
 
-function warpedData = applyFSLWarp(data, warpCoefFilename, tempFilename, hdr, interpMethod, verbose)
+function warpedData = fslApplyWarp(data, warpCoefFilename, tempFilename, hdr, interpMethod, verbose)
 
 
 if ieNotDefined('interpMethod')
@@ -35,12 +35,12 @@ switch(interpMethod)
   case 'linear'%Linear interpolation (default)
     interpMethod = 'trilinear';
   case {'spline', 'cubic'}
-    mrWarnDlg(['(applyFSLWarp) ' interpMethod ' not implemented in FNIRT, using ''sinc'''])
+    mrWarnDlg(['(fslApplyWarp) ' interpMethod ' not implemented in FNIRT, using ''sinc'''])
     interpMethod = 'sinc';
   case {'trilinear','nn','sinc'}
     %do nothing
   otherwise
-    disp('(applyFSLWarp) Unknown interpolation method. Entering debug mode');
+    disp('(fslApplyWarp) Unknown interpolation method. Entering debug mode');
     keyboard;
     return;
 end
@@ -57,7 +57,7 @@ try
     return
   end
 catch 
-  disp('(applyFSLWarp) There was a problem running FSL applywarp command')
+  disp('(fslApplyWarp) There was a problem running FSL applywarp command')
   disp(sprintf('unix error code: %d; %s', s, w))
   return
 end
@@ -66,7 +66,7 @@ warpedData=cbiReadNifti(tempFilename);
 
 if any(isnan(data(:))) %is there are NaNs, warp a mask of non-NaNs
   mask = ~isnan(data);
-  warpedMask = logical(applyFSLWarp(mask, warpCoefFilename, tempFilename, hdr, 'nearest'));
+  warpedMask = logical(fslApplyWarp(mask, warpCoefFilename, tempFilename, hdr, 'nearest'));
   warpedData(~warpedMask) = NaN;
 end
 

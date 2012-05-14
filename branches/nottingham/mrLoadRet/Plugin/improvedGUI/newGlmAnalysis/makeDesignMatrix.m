@@ -1,6 +1,6 @@
 % makeDesignMatrix.m
 %
-%        $Id: makeDesignMatrix.m 1928 2010-12-14 23:22:11Z julien $
+%        $Id$
 %      usage: makeDesignMatrix(d,params,verbose)
 %         by: farshad moradi, modified by julien besle
 %       date: 06/14/07, 11/02/2010

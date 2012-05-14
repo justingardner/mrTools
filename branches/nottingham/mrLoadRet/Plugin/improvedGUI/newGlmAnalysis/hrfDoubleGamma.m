@@ -1,6 +1,6 @@
 % hrfDoubleGamma.m
 %
-%        $Id: hrfDoubleGamma.m 1928 2010-12-14 23:22:11Z julien $
+%        $Id$
 %      usage: [params,hrf] = hrfDoubleGamma(params, designSampling, justGetParams, defaultParams)
 %         by: farshad moradi, modified by julien besle
 %       date: 14/06/07, 09/02/2010

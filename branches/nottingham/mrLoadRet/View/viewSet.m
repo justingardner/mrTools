@@ -1480,6 +1480,19 @@ switch lower(param)
       mlrGuiSet(view,'overlaypopup',viewGet(view,'overlayNames',analysisNum));
     end
 
+  case {'overlaytype'}
+    % view = viewSet(view,'overlaytype',typeString,[overlayNum]);
+    if ieNotDefined('varargin')
+      overlayNum = viewGet(view,'currentOverlay');
+    else
+      overlayNum = varargin{1};
+    end
+    analysisNum = viewGet(view,'currentAnalysis');
+    if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+        ~isempty(view.analyses{analysisNum}.overlays)
+      view.analyses{analysisNum}.overlays(overlayNum).type = val;
+    end
+
   case {'overlaycmap'}
     % view = viewSet(view,'overlaycmap',cmapName,[overlayNum]);
     if ieNotDefined('varargin')

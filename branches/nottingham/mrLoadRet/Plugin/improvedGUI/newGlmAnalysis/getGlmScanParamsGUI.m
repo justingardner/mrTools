@@ -1,6 +1,6 @@
 % getScanParamsGUI.m
 %
-%        $Id: getGlmScanParamsGUI.m 1928 2010-12-14 23:22:11Z julien $
+%        $Id$
 %      usage: params = getScanParamsGUI(thisView,params,useDefault)
 %         by: julien besle, extracted from eventRelatedGLMGUI so taht it can be called from eventRelatedGUI eventually
 %       date: 23/03/2010

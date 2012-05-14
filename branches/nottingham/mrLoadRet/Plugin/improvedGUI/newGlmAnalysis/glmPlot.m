@@ -1,7 +1,7 @@
 function glmPlot(thisView,overlayNum,scanNum,x,y,s,roi)
 % glmPlot.m
 %
-%        $Id: glmPlot.m 1929 2010-12-15 11:55:25Z julien $
+%        $Id$
 %      usage: glmPlot() is an interrogator function
 %         by: julien besle, modified from eventRelatedPlot and glmPlot
 %       date: 09/14/07, 12/02/2010
@@ -93,7 +93,7 @@ if ismember(analysisType,{'glmAnalStats','glmAnal','glmcAnal'})
       if isequal(deconvData.EVnames,glmData.EVnames)
         plotDeconvolution=1;
       else
-        mrWarnDlg('(glmPlot) Number of EVs in deconvolution and GLM analyses are incompatible.');
+        mrWarnDlg('(glmPlot) Name of EVs in deconvolution and GLM analyses are incompatible.');
         clear('deconvData');
       end
     end

@@ -1,6 +1,6 @@
 % loadScanRois - load timeseries corresponding to the voxels of one or several loaded Rois
 %
-%        $Id: loadScanRois.m 1928 2010-12-14 23:22:11Z julien $
+%        $Id$
 %      usage: [d, roiVoxelIndices, roiCoords] = loadScanRois(thisView,<scanList>,<roiList>)
 %         by: julien besle
 %       date: 2010-04-26

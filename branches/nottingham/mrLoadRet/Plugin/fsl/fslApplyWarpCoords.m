@@ -1,4 +1,4 @@
-% warpedCoords = applyFSLWarpCoords(coords, coordsVoxelSize, warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
+% warpedCoords = fslApplyWarpCoords(coords, coordsVoxelSize, warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
 %
 %   applies non-linear FSL registration to coordinates
 %
@@ -12,9 +12,9 @@
 %
 % jb 16/04/2011
 %
-% $Id: applyFSLWarp.m 2107 2011-04-17 19:49:52Z julien $
+% $Id: fslApplyWarp.m 2107 2011-04-17 19:49:52Z julien $
 
-function warpedCoords = applyFSLWarpCoords(coords,coordsVoxelSize,warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
+function warpedCoords = fslApplyWarpCoords(coords,coordsVoxelSize,warpResolution, warpCoefFilename, tempFilename, hdr, verbose)
 
 
 if ieNotDefined('verbose')
@@ -34,7 +34,7 @@ clear data
 try
 command =  sprintf('fnirtfileutils --in=%s --ref=%s --out=%s  --withaff', warpCoefFilename, tempFilename, tempFilename);
   if verbose
-    fprintf('(applyFSLWarpCoords) Computing FNIRT warp fields at a resolution of %s mm:\n',mat2str(hdr.pixdim(2:4)));
+    fprintf('(fslApplyWarpCoords) Computing FNIRT warp fields at a resolution of %s mm:\n',mat2str(hdr.pixdim(2:4)));
     disp(['  ' command])
   end;
   [s,w] = unix(command);
@@ -45,7 +45,7 @@ command =  sprintf('fnirtfileutils --in=%s --ref=%s --out=%s  --withaff', warpCo
     return
   end
 catch 
-  disp('(applyFSLWarp) There was a problem running FSL applywarp command')
+  disp('(fslApplyWarpCoords) There was a problem running FSL applywarp command')
   disp(sprintf('unix error code: %d; %s', s, w))
   return
 end

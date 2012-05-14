@@ -1,6 +1,6 @@
 % getGlmEVParamsGUI.m
 %
-%        $Id: getGlmEVParamsGUI.m 1929 2010-12-15 11:55:25Z julien $
+%        $Id$
 %      usage: params = getGlmEVParamsGUI(thisView,params,useDefault)
 %         by: julien besle
 %       date: 03/12/2010
