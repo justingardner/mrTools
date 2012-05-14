@@ -18,32 +18,41 @@ end
 petablePath = [];verbose = [];
 getArgs(varargin,{'petablePath=~/vnmrsys/tablib','verbose=0'});
 
-% look for petable path
-if ~isdir(petablePath)
-  petablePath = '/usr4/justin/vnmrsys/tablib';
-  if ~isdir(petablePath)
-    disp(sprintf('(readpetable) Could not find petable directory: %s',petablePath));
-    return
+% look in the following paths for the petabel
+possiblePaths = {'.',petablePath,'/usr4/justin/vnmrsys/tablib'};
+foundpetable = false;
+for iPath  = 1:length(possiblePaths)
+  % see if petable exists
+  if isfile(fullfile(possiblePaths{iPath},filename))
+    foundfile = true;
+    petablePath = possiblePaths{iPath};
+    continue;
   end
 end
-
-% try to read petable file
-if ~isfile(fullfile(petablePath,filename))
-  disp(sprintf('(readpetable) Could not find petable: %s',fullfile(petablePath,filename)));
+if ~foundfile
+  disp(sprintf('(readpetabe) Could not find petable %s',filename));
   return
 end
 
 % open petable
 fPetable = fopen(fullfile(petablePath,filename),'r');
 
-varname = textscan(fPetable,'%s =',1);
-varval = textscan(fPetable,'%d');
-while ~isempty(varname{1})
-  % set the value in the petable variable
-  petable.(varname{1}{1}) = double(varval{1});
-  % and load the next part of the file
-  varname = textscan(fPetable,'%s =',1);
-  varval = textscan(fPetable,'%d');
+l = fgetl(fPetable);
+while ischar(l)
+  % see if it is a comment or empty
+  if isempty(findstr('/*',l)) && ~isempty(l)
+    % see if we have a variable name
+    if ~isempty(findstr('=',l))
+      varname = textscan(l,'%s =',1);
+      varname = varname{1}{1};
+      petable.(varname) = [];
+    else
+      % must be a line of numbers, get them
+      varval = textscan(l,'%d');
+      petable.(varname)(end+1,:) =  double(varval{1});
+    end
+  end
+  l = fgetl(fPetable);
 end
 
 % close petable

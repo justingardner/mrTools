@@ -60,8 +60,13 @@ info.isepi = 0;
 if (isfield(procpar,'petable'))
   token = procpar.petable{1};
   % the petable name should be something like
-  % "epi132alt8k". We want the second number
+  % "epi132alt8k". If so, it is an epi.
   if (strncmp(token,'epi',3)) 
+    info.isepi = 1;
+  % some files may not be named according to convention
+  % in that case we check for the cntr field. If it is there
+  % then this is an epi
+  elseif isfield(procpar,'cntr')
     info.isepi = 1;
   end
 end

@@ -103,7 +103,11 @@ while keepAsking
         % if there is more than one task, then ask the user for that
         task = cellArray(stimfile{1}.task,2);
         if length(task)>1
-          paramsInfo{end+1} = {'taskNum',num2cell(1:length(task)),'The task you want to use'};
+          taskNumList = num2cell(1:length(task));
+          if isfield(scanParams{iScan},'taskNum')
+            taskNumList = putOnTopOfList(scanParams{iScan}.taskNum,taskNumList);
+          end
+          paramsInfo{end+1} = {'taskNum',taskNumList,'The task you want to use'};
         end
         % if there are multiple phases, then ask for that
         maxPhaseNum = 0;
@@ -119,20 +123,32 @@ while keepAsking
         end
         if maxPhaseNum > 1
           if length(task) == 1
-            paramsInfo{end+1} = {'phaseNum',phaseNum{1},'The phase of the task you want to use'};
+            if ~isfield(scanParams{iScan},'phaseNum')
+              scanParams{iScan}.phaseNum = phaseNum{1};
+            end
+            paramsInfo{end+1} = {'phaseNum',scanParams{iScan}.phaseNum,'The phase of the task you want to use'};
           else
-            paramsInfo{end+1} = {'phaseNum',phaseNum,'The phase of the task you want to use','contingent=taskNum'};
+            if ~isfield(scanParams{iScan},'phaseNum')
+              scanParams{iScan}.phaseNum = phaseNum;
+            end
+            paramsInfo{end+1} = {'phaseNum',scanParams{iScan}.phaseNum,'The phase of the task you want to use','contingent=taskNum'};
           end
         end
 
          % if there is more than one segment in any of the phases, ask the user to specify
          % should add some error checking.
         if maxSegNum > 1
-          paramsInfo{end+1} = {'segmentNum',1,'The segment of the task you want to use','incdec=[-1 1]','incdecType=plusMinus'};
+          if ~isfield(scanParams{iScan},'segmentNum')
+             scanParams{iScan}.segmentNum = 1;
+          end
+          paramsInfo{end+1} = {'segmentNum',scanParams{iScan}.segmentNum,'The segment of the task you want to use','incdec=[-1 1]','incdecType=plusMinus'};
         end
 
-         %set up to get the variable name from the user
-        paramsInfo{end+1} ={'varname',varnames{1},sprintf('Analysis variables: %s',varnamesStr)};
+        %set up to get the variable name from the user
+        if ~isfield(scanParams{iScan},'varname')
+          scanParams{iScan}.varname = varnames{1};
+        end
+        paramsInfo{end+1} ={'varname',scanParams{iScan}.varname,sprintf('Analysis variables: %s',varnamesStr)};
       end
     elseif strfind(stimfile{1}.filetype,'eventtimes')  && ~isfield(scanParams{iScan},'stimDuration') && isfield(stimfile{1}.mylog,'stimdurations_s')
           scanParams{iScan}.stimDuration = 'fromFile';
