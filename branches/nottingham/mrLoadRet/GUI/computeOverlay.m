@@ -183,24 +183,42 @@ if ~isempty(overlayImages)
 
     % Rescale current overlay.
     overlays.cmap(:,:,iOverlay) = viewGet(thisView,'overlayCmap',curOverlays(iOverlay));
-    overlays.range(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
-    if strcmp(viewGet(thisView,'overlayCtype',curOverlays(iOverlay)),'setRangeToMax')
-      overlayClip = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
-      if ~isempty(overlays.overlayIm(alphaOverlayMasks(:,:,:,iOverlay)))
-        overlays.range(iOverlay,1) = max(overlayClip(1),min(overlays.overlayIm(alphaOverlayMasks(:,:,:,iOverlay))));
-        overlays.range(iOverlay,2) = min(max(overlays.overlayIm(alphaOverlayMasks(:,:,:,iOverlay))),overlayClip(2));
-      else
-        overlays.range(iOverlay,:) = overlayClip;
-      end
-    elseif strcmp(viewGet(thisView,'overlayCtype',curOverlays(iOverlay)),'setRangeToMaxAroundZero')
-      overlayClip = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
-      if ~isempty(overlays.overlayIm(alphaOverlayMasks(:,:,:,iOverlay)))
-        maxval = max(abs(overlays.overlayIm(alphaOverlayMasks(:,:,:,iOverlay))));
-        overlays.range(iOverlay,1) = -maxval;
-        overlays.range(iOverlay,2) = maxval;
-      else
-        overlays.range(iOverlay,:) = overlayClip;
-      end
+    switch(viewGet(thisView,'overlayCtype',curOverlays(iOverlay)))
+      case 'normal'
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
+      case 'setRangeToMax'
+        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
+          overlays.range(1) = max(overlays.range(1),min(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
+          overlays.range(2) = min(max(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(2));
+        end
+      case 'setRangeToMaxAroundZero'
+        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
+          maxval = max(abs(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
+          overlays.range(iOverlay,1) = -maxval;
+          overlays.range(iOverlay,2) = maxval;
+        end
+      case 'setRangeToMaxAcrossSlices' %this doesn't take into account voxels that would be masked in other slices than the one displayed 
+        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum,scan); 
+        maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum,scan);
+        if ~isempty(minOverlay)
+          overlays.range(iOverlay,1) = max(minOverlay,overlays.range(1));
+        end
+        if ~isempty(maxOverlay)
+          overlays.range(iOverlay,2) = min(maxOverlay,overlays.range(2));
+        end
+      case 'setRangeToMaxAcrossSlicesAndScans' %same here
+        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum); 
+        maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum);
+        if ~isempty(minOverlay)
+          overlays.range(iOverlay,1) = max(minOverlay,overlays.range(1));
+        end
+        if ~isempty(maxOverlay)
+          overlays.range(iOverlay,2) = min(maxOverlay,overlays.range(2));
+        end
     end
     overlays.RGB(:,:,:,iOverlay) = rescale2rgb(overlayImages(:,:,:,iOverlay),overlays.cmap(:,:,iOverlay),overlays.range(iOverlay,:));
       
