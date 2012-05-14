@@ -1,5 +1,5 @@
-function combineOverlays(thisView)
-% combineOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
+function combineTransformOverlays(thisView)
+% combineTransformOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   combines (masked) Overlays according to matlab or custom operators  in current view and current analysis
 %
@@ -12,7 +12,7 @@ combinationModeMenu = {'Apply function to all overlays','Apply function to each 
 
 %default params
 %get names of combine Functions in combineFunctions directory
-functionsDirectory = [fileparts(which('combineOverlays')) '/CombineOverlayFunctions/'];
+functionsDirectory = [fileparts(which('combineTransformOverlays')) '/combineTransformOverlayFunctions/'];
 combineFunctionFiles =  dir([functionsDirectory '*.m']);
 for iFile=1:length(combineFunctionFiles)
   combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
@@ -55,9 +55,9 @@ while askForParams
   combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
 
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
-    mrWarnDlg('(combineOverlays) Anonymous functions cannot be applied recursively');
+    mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively');
   elseif isempty(params.combineFunction) && isempty(params.customCombineFunction)
-    mrWarnDlg('(combineOverlays) Please choose a combination/transformation function');
+    mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function');
   %elseif
     %other controls here
   else
@@ -234,7 +234,7 @@ for iOperations = 1:size(overlayData,3)
         end
         %check that the size is compatible
         if ~isequal(size(outputData{iScan,iOutput,iOperations}),size(overlayData{iScan}))
-          mrWarnDlg(['(combineOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOutput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
+          mrWarnDlg(['(combineTransformOverlays) Dimensions of result are not compatible with overlay ([' num2str(size(outputData{iScan,iOutput,iOperations})) '] vs [' num2str(size(overlayData{iScan})) '])']);
         end
       end
     end
@@ -289,8 +289,8 @@ end
             
 %save the output
 defaultOverlay.groupName = viewGet(thisView,'groupName');
-defaultOverlay.function = 'combineOverlays';
-defaultOverlay.interrogator = 'combineOverlays';
+defaultOverlay.function = 'combineTransformOverlays';
+defaultOverlay.interrogator = 'combineTransformOverlays';
 defaultOverlay.type = 'combination';
 defaultOverlay.params = params;
 defaultOverlay.clip = [];
@@ -348,11 +348,11 @@ end
 function printHelp(params)
 
 if strcmp(params.combineFunction,'User Defined')
-  mrWarnDlg('(combineOverlays) Please select a combination function');
+  mrWarnDlg('(combineTransformOverlays) Please select a combination function');
 else
   helpString = help(params.combineFunction);
   if isempty(helpString)
-    mrWarnDlg('(combineOverlays) No help available');
+    mrWarnDlg('(combineTransformOverlays) No help available');
   else
     fprintf('\n');
     disp(helpString);
