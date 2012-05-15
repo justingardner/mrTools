@@ -57,6 +57,7 @@ end
 if justGetParams,return,end
 
 % Retrieve parameters
+fieldMapFile = params.fieldMapFile;
 dwellTime = params.dwellTime;
 unwarpDirection = params.unwarpDirection;
 targetScans = params.targetScans;
@@ -97,9 +98,27 @@ end
 fslFugueView = viewSet(fslFugueView,'currentGroup',undistortedGroupNum);
 
 tempFileName = 'temp.hdr';
+tempFieldMapFileName = 'temp2.hdr';
 B0correctedTseriesdir = viewGet(fslFugueView,'tseriesdir');
 tseriesdir = viewGet(baseView,'tseriesdir');
 
+if useMask
+  [mask view] = motionCompGetMask(view,params,scanNum,groupNum);
+  cbiWriteNifti(tempFieldMapFileName, mask, hdr);
+  %mask the field map with the ROI mask using fslmaths
+  command =  sprintf('fslmaths %s -mas %s %s',...
+  fieldMapFile, tempFieldMapFileName, tempFieldMapFileName);
+  executeCommand(command, 'fslmaths -mas')
+  fieldMapFile=tempFieldMapFileName;
+end
+
+if multiplyBy2pi
+  %multiply the field map by 2*pi using fslmaths
+  command =  sprintf('fslmaths %s -mul 6.283185307179586 %s',...
+  fieldMapFile,tempFieldMapFileName);
+  executeCommand(command, 'fslmaths -mul')
+  fieldMapFile=tempFieldMapFileName;
+end
 
 for iScan = 1:length(targetScans)
   scanNum = targetScans(iScan);
@@ -107,24 +126,7 @@ for iScan = 1:length(targetScans)
   % get the base qform and sform.  the warpedTSeries will inheret these
   baseQform = viewGet(baseView, 'scanqform', scanNum, groupName);
   baseSform = viewGet(baseView, 'scansform', scanNum, groupName);
-  fieldMapFile = params.fieldMapFile;
   
-  if useMask
-    [mask view] = motionCompGetMask(view,params,scanNum,groupNum);
-    cbiWriteNifti(tempFileName, mask, hdr);
-    %mask the field map with the ROI mask using fslmaths
-    command =  sprintf('fslmaths %s -mas %s %s',...
-    fieldMapFile, tempFileName, tempFileName);
-    executeCommand(command, 'fslmaths -mas')
-    fieldMapFile=tempFileName;
-  end
-  
-  if multiplyBy2pi
-    %multiply the field map by 2*pi using fslmaths
-    command =  sprintf('fslmaths %s -mul 6.283185307179586 %s',...
-    fieldMapFile,tempFileName);
-    executeCommand(command, 'fslmaths -mul')
-  end
   
   command =  sprintf('fugue -i %s --loadfmap=%s --dwell=%f -u %s --unwarpdir=%s',...
     fullfile(tseriesdir,scanFileName),fieldMapFile, dwellTime, tempFileName, unwarpDirection);
