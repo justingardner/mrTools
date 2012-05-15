@@ -233,6 +233,9 @@ switch action
     mlrAdjustGUI(thisView,'set','pasteRoiMenuItem','label','Paste ROI(s)');
     mlrAdjustGUI(thisView,'set','editRoiMenuItem','label','Edit selected ROI(s)');
     %add functions
+    mlrAdjustGUI(thisView,'add','menu','Single Voxels','/ROI/Create/Contiguous Voxels','callback',@createSingleVoxelsCallBack,'label','Single Voxels','tag','createSingleVoxelsRoiMenuItem','accelerator','S');
+    mlrAdjustGUI(thisView,'add','menu','Single Voxels2','/ROI/Add/Contiguous Voxels','callback',@addSingleVoxelsCallBack,'label','Single Voxels','tag','addSingleVoxelsRoiMenuItem','accelerator','A');
+    mlrAdjustGUI(thisView,'add','menu','Single Voxels3','/ROI/Subtract/Contiguous Voxels','callback',@removeSingleVoxelsCallBack,'label','Single Voxels','tag','removeSingleVoxelsRoiMenuItem','accelerator','Z');
     mlrAdjustGUI(thisView,'add','menu','Transform','/ROI/Combine','callback',@transformROIsCallback,'label','Transform','tag','transformRoiMenuItem');
 
     %Plot menu
@@ -555,7 +558,37 @@ function combineOverlaysCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 combineTransformOverlays(thisView);
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ROI Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------
+function createSingleVoxelsCallBack(hObject,dump)
+
+viewNum = getfield(guidata(hObject),'viewNum');
+thisView = viewGet(viewNum,'view');
+[thisView userCancel] = newROI(thisView);
+if userCancel,return,end
+drawROI(thisView,'single voxels',1);
+refreshMLRDisplay(viewNum);
+
+
+% --------------------------------------------------------------------
+function addSingleVoxelsCallBack(hObject,dump)
+
+viewNum = getfield(guidata(hObject),'viewNum');
+thisView = viewGet(viewNum,'view');
+drawROI(thisView,'single voxels',1);
+refreshMLRDisplay(viewNum);
+
+
+% --------------------------------------------------------------------
+function removeSingleVoxelsCallBack(hObject,dump)
+
+viewNum = getfield(guidata(hObject),'viewNum');
+thisView = viewGet(viewNum,'view');
+drawROI(thisView,'single voxels',0);
+refreshMLRDisplay(viewNum);
+
+
 %------------------------- transformROIsCallback Function ------------------------------%
 function transformROIsCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
