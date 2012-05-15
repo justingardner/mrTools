@@ -127,16 +127,20 @@ while keepAsking
   paramsInfo{end+1} = {'descriptions',descriptions,'group=scanNum','type=String','editable=0','Scan description'};
 
   % provide parameters for masking if passed in a view that has ROIs loaded
-  if ~isempty(v)
+  if isempty(v)
+    roiNames = [];
+  else
     roiNames = viewGet(v,'roiNames');
-    if ~isempty(roiNames)
-      paramsInfo{end+1} = {'useMask',0,'type=checkbox','Use a mask for the field map values: specify an ROI and field map outisde this ROI will be set to 0. This is useful to avoid artefacts from large phase gradients just outside the brain.'};
-      paramsInfo{end+1} = {'maskROI',roiNames,'The name of the ROI that you want to use as your mask','contingent=useMask'};
-  % following not implemented yet
-  %    maskTypes = {'Mask only during motion comp','Remove masked points from tSeries'};
-      %    paramsInfo{end+1} = {'maskType',maskTypes,'You can either just compute the motion compensation based on the mask region, but in the final time series keep the points in the image outside the mask, or you can compeltely mask out points of the image in the tSeries in which case they will show up in the final tSeries as nan','contingent=useMask'};
-    end
   end
+  if isempty(roiNames)
+    roiMaskOption='enable=0';
+    roiNames={'No ROI loaded'};
+  else
+    roiMaskOption='enable=1';
+  end
+  paramsInfo{end+1} = {'useMask',0,'type=checkbox',roiMaskOption,'Use a mask for the field map values: specify an ROI and field map outisde this ROI will be set to 0. This is useful to avoid artefacts from large phase gradients just outside the brain.'};
+  paramsInfo{end+1} = {'maskROI',roiNames,'The name of the ROI that you want to use as your mask','contingent=useMask'};
+
   % put up dialog
   if defaultParams
     params = mrParamsDefault(paramsInfo);

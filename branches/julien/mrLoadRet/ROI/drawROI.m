@@ -66,8 +66,45 @@ if baseType == 2
 else
   switch descriptor
      
+    case 'single voxels'
+      disp('Use mouse left button to add/remove a voxel. End selection with Alt or Command key')
+      [mouseY,mouseX] = ginput(1);
+      voxelXcoords = [.5 .5;-.5 -.5; -.5 .5; -.5 .5]'; 
+      voxelYcoords = [.5 -.5;.5 -.5; .5 .5; -.5 -.5]'; 
+      selectionY=[];
+      selectionX=[];
+      hSelection=[];
+      hold on;
+      while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'}))
+        [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
+        if index
+          delete(hSelection(:,index));
+          hSelection(:,index)=[];
+          selectionY(index)=[];
+          selectionX(index)=[];
+        else
+          selectionY(end+1) = round(mouseY);
+          selectionX(end+1) = round(mouseX);
+          index = length(selectionY);
+          hSelection(:,index)=plot(selectionY(index)+voxelXcoords,selectionX(index)+voxelYcoords,'w');%,'linewidth',mrGetPref('roiContourWidth'));
+        end
+        [mouseY,mouseX] = ginput(1);
+      end
+      
+      baseX = baseCoords(:,:,1);
+      baseY = baseCoords(:,:,2);
+      baseZ = baseCoords(:,:,3);
+      linearIndex=sub2ind(size(baseX),selectionX',selectionY');
+      baseX = baseX(linearIndex);
+      baseY = baseY(linearIndex);
+      baseZ = baseZ(linearIndex);
+      coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,numel(baseX))];
+      
+      if ~isempty(hSelection)
+        delete(hSelection);
+      end
+      
     case 'contiguous'
-
       [mouseY,mouseX] = ginput(1);
      
       if any(strcmp(get(fig,'CurrentModifier'),'command')) 
@@ -78,7 +115,6 @@ else
       
       mouseX = round(mouseX);
       mouseY = round(mouseY);
-      baseCoords = viewGet(thisView,'cursliceBaseCoords');
       % convert mouse to baseCoords
       if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
         
@@ -192,10 +228,10 @@ else
     end
     
     % Extract coordinates in base reference frame
-    baseX = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],1);
-    baseY = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],2);
-    baseZ = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],3);
-    coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,prod(size(baseX)))];
+    baseX = baseCoords(region(1,1):region(2,1),region(1,2):region(2,2),1);
+    baseY = baseCoords(region(1,1):region(2,1),region(1,2):region(2,2),2);
+    baseZ = baseCoords(region(1,1):region(2,1),region(1,2):region(2,2),3);
+    coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,numel(baseX))];
     
    case 'polygon'
     roiPolygonMethod = mrGetPref('roiPolygonMethod');
