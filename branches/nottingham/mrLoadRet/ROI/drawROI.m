@@ -73,6 +73,7 @@ else
       voxelYcoords = [.5 -.5;.5 -.5; .5 .5; -.5 -.5]'; 
       selectionY=[];
       selectionX=[];
+      hSelection=[];
       hold on;
       while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'}))
         [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
@@ -99,7 +100,9 @@ else
       baseZ = baseZ(linearIndex);
       coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,numel(baseX))];
       
-      delete(hSelection);
+      if ~isempty(hSelection)
+        delete(hSelection);
+      end
       
     case 'contiguous'
       [mouseY,mouseX] = ginput(1);
@@ -225,10 +228,10 @@ else
     end
     
     % Extract coordinates in base reference frame
-    baseX = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],1);
-    baseY = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],2);
-    baseZ = baseCoords([region(1,1):region(2,1)],[region(1,2):region(2,2)],3);
-    coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,prod(size(baseX)))];
+    baseX = baseCoords(region(1,1):region(2,1),region(1,2):region(2,2),1);
+    baseY = baseCoords(region(1,1):region(2,1),region(1,2):region(2,2),2);
+    baseZ = baseCoords(region(1,1):region(2,1),region(1,2):region(2,2),3);
+    coords = [baseX(:)'; baseY(:)'; baseZ(:)'; ones(1,numel(baseX))];
     
    case 'polygon'
     roiPolygonMethod = mrGetPref('roiPolygonMethod');
