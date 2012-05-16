@@ -33,7 +33,7 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'defaultInterrogators','systemInterrogators',...,
    'importROIPath','volumeDirectory','niftiFileExtension','fslPath',...
    'selectedROIColor','roiContourWidth','roiPolygonMethod',...,
-   'interpMethod','corticalDepthBins', 'multiSliceProjectionMethod'...
+   'interpMethod','corticalDepthBins', 'multiSliceProjectionMethod','colorBlending',...
    'pluginPaths','selectedPlugins',...
    'site','magnet','coil','pulseSequence'};
 
@@ -59,6 +59,7 @@ prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'roipoly','getpts','
 prefDefaults{find(strcmp('interpMethod',prefNames))} = {'nearest','linear','spline','cubic'};
 prefDefaults{find(strcmp('corticalDepthBins',prefNames))} = 11;
 prefDefaults{find(strcmp('multiSliceProjectionMethod',prefNames))} = {'Average','Maximum Intensity Projection'};
+prefDefaults{find(strcmp('colorBlending',prefNames))} = {'Additive','Alpha blend'};
 prefDefaults{find(strcmp('pluginPaths',prefNames))} = '';
 prefDefaults{find(strcmp('selectedPlugins',prefNames))} = '';
 prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
