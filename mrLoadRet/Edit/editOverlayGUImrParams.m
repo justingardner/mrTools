@@ -105,6 +105,7 @@ function mrCmapCallback(v,params)
 
   % set the overlay range & clip
   o.range = [params.overlayRange(1) params.overlayRange(2)];
+  o.colorRange = [params.overlayRange(1) params.overlayRange(2)];
   o.clip = [params.overlayClip(1) params.overlayClip(2)];
   
 
