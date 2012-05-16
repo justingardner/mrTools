@@ -20,12 +20,12 @@ end
 
 % some basic info about location of controls
 mrGlobals;
-MLR.interrogator{viewNum}.leftMargin = .02;
+MLR.interrogator{viewNum}.leftMargin = .015;
 MLR.interrogator{viewNum}.rightMargin = .02;
 MLR.interrogator{viewNum}.topMargin = .005;
 MLR.interrogator{viewNum}.bottomMargin = .01;
-MLR.interrogator{viewNum}.buttonWidth = .06;
-MLR.interrogator{viewNum}.buttonHeight = .03;
+MLR.interrogator{viewNum}.buttonWidth = .065;
+MLR.interrogator{viewNum}.buttonHeight = .035;
 MLR.interrogator{viewNum}.margin = 0;
 MLR.interrogator{viewNum}.fontsize = 10;
 MLR.interrogator{viewNum}.fontname = 'Helvetica';
@@ -462,16 +462,16 @@ interrogatorList = getDefaultInterrogators(v);
 
 if ~restart
     % set the x and y textbox
-    MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
-    MLR.interrogator{viewNum}.hPosBase = makeTextbox(viewNum,'',1,6,2);
-    MLR.interrogator{viewNum}.hPosTal = makeTextbox(viewNum,'',1,8,2);
-    MLR.interrogator{viewNum}.hOverlay = makeTextbox(viewNum,'',1,10,2);
-    MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,4,2);
-    MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,6,2);
-    MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Talairach',2,8,2);
-    MLR.interrogator{viewNum}.hOverlayLabel = makeTextbox(viewNum,'Overlay',2,10,2);
-    MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
-    MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',2,1,3);
+    MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',1,1,2);
+    MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,3,3);
+    MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,6,2);
+    MLR.interrogator{viewNum}.hPosBase = makeTextbox(viewNum,'',1,8,2);
+    MLR.interrogator{viewNum}.hPosTal = makeTextbox(viewNum,'',1,10,2);
+    MLR.interrogator{viewNum}.hOverlay = makeTextbox(viewNum,'',1,12,4);
+    MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,6,2);
+    MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,8,2);
+    MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Talairach',2,10,2);
+    MLR.interrogator{viewNum}.hOverlayLabel = makeTextbox(viewNum,'Overlay',2,12,4);
 else
     set(MLR.interrogator{viewNum}.hPos,'visible','on');
     set(MLR.interrogator{viewNum}.hPosBase,'visible','on');
@@ -538,7 +538,9 @@ end
 
 mrGlobals;
 
-h = uicontrol('Style','edit','Units','normalized','Callback',callback,'String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
+h = uicontrol('Style','edit','Units','normalized','Callback',callback,'String',displayString,...
+              'Position',getUIControlPos(viewNum,rownum,colnum,uisize)+[0 .005 0 0],...
+              'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makePopupmenu
