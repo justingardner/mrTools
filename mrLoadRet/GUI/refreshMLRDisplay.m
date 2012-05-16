@@ -105,7 +105,7 @@ view = viewSet(view,'cursliceOverlayCoords',overlays.coords);
 if verbose>1,disppercent(-inf,'combine base and overlays');,end
 if ~isempty(base.RGB) & ~isempty(overlays.RGB)
 
-  switch(viewGet(view,'colorBlending'))
+  switch(mrGetPref('colorBlending'))
     case 'Alpha blend'
       % alpha blending (non-commutative 'over' operator, each added overlay is another layer on top)
       % since commutative, depends on order
