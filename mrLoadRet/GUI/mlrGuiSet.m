@@ -210,14 +210,22 @@ switch lower(field)
     value = value(1); %if this is not a listbox, we set only one overlay;
   end
   set(handles.overlayPopup,'Value',value);
+    
   if length(value)==1
     set(handles.overlayMinSlider,'enable','on')
     set(handles.overlayMinText,'enable','on')
     set(handles.overlayMaxSlider,'enable','on')
     set(handles.overlayMaxText,'enable','on')
+    if isfield(handles,'clippingOverlaysListbox')
+      set(handles.clippingOverlaysListbox,'enable','on');
+    end
 %     set(handles.alphaText,'enable','on');
 %     set(handles.alphaSlider,'enable','on');
   else %if more than one overlay selected, disable overlay controls
+    if isfield(handles,'clippingOverlaysListbox')
+      set(handles.clippingOverlaysListbox,'enable','off');
+%       set(handles.clippingOverlaysListbox,'String',[],'enable','off');
+    end
     set(handles.overlayMinSlider,'enable','off')
     set(handles.overlayMinText,'enable','off')
     set(handles.overlayMaxSlider,'enable','off')
@@ -260,6 +268,12 @@ switch lower(field)
     set(handles.overlayMaxSlider,'Min',max(value(1),-realmax),'Max',min(value(2),realmax),'visible','off');
   else
     set(handles.overlayMaxSlider,'Min',value(1),'Max',value(2),'visible','on');
+  end
+
+ case {'clippingoverlays'}
+  % mlrGuiSet(view,'clippingOverlays',value);
+  if isfield(handles,'clippingOverlaysListbox') 
+    set(handles.clippingOverlaysListbox,'String',value,'value',1);
   end
 
  case {'alpha','overlayalpha'}
