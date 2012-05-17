@@ -2856,6 +2856,19 @@ switch lower(param)
     if ~isempty(analysis)
       val = analysis.curOverlay;
     end
+    
+  case {'curclippingoverlay','currentclippingoverlay'}
+    % overlayalpha = viewGet(view,'overlayalpha')
+    handles = guidata(view.figure);
+    if isempty(handles) || ~isfield(handles,'clippingOverlaysListbox') 
+      val=viewGet(view,'currentOverlay');
+    else
+      clippingOverlays = get(handles.clippingOverlaysListbox,'string');
+      clippingOverlay = clippingOverlays{get(handles.clippingOverlaysListbox,'value')};
+      val = viewGet(view,'overlayNum',clippingOverlay);
+    end
+    
+  
   case{'overlaynum'}
     % n = viewGet(view,'overlayNum',overlayName(s),[analysisNum])
     % n = viewGet(view,'overlayNum',overlayName(s),[])
@@ -3348,6 +3361,7 @@ switch lower(param)
         val = analysis.overlays(overlayNum).range;
       end
     end
+    
   case {'overlaycolorrange'}
     % overlaycolorrange = viewGet(view,'overlaycolorrange',[overlayNum],[analysisNum])
     % overlaycolorrange = viewGet(view,'overlaycolorrange',overlayNum,[])
@@ -3384,6 +3398,7 @@ switch lower(param)
         end
       end
     end
+    
   case {'overlayalpha'}
     % overlayalpha = viewGet(view,'overlayalpha',[overlayNum],[analysisNum])
     % overlayalpha = viewGet(view,'overlayalpha',overlayNum,[])

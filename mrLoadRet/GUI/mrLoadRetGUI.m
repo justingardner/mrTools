@@ -520,7 +520,7 @@ end
 function overlayMaxSlider_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
-viewSet(viewNum,'overlayMax',value);
+viewSet(viewNum,'overlayMax',value,viewGet(viewNum,'curClippingOverlay'));
 refreshMLRDisplay(viewNum);
 
 function overlayMaxText_Callback(hObject, eventdata, handles)
@@ -540,7 +540,7 @@ else
   end
 end
 %set the new value in the view and the GUI
-viewSet(viewNum,'overlayMax',value);
+viewSet(viewNum,'overlayMax',value,viewGet(viewNum,'curClippingOverlay'));
 refreshMLRDisplay(viewNum);
 
 % --- overlayMin
@@ -562,7 +562,7 @@ end
 function overlayMinSlider_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
-viewSet(viewNum,'overlayMin',value);
+viewSet(viewNum,'overlayMin',value,viewGet(viewNum,'curClippingOverlay'));
 refreshMLRDisplay(viewNum);
 
 function overlayMinText_Callback(hObject, eventdata, handles)
@@ -583,7 +583,7 @@ else %otherwise, set the new value in the view and the GUI
 %     value = sliderMinValue;
   end
 end
-viewSet(viewNum,'overlayMin',value);
+viewSet(viewNum,'overlayMin',value,viewGet(viewNum,'curClippingOverlay'));
 refreshMLRDisplay(viewNum);
 
 % --- alpha
