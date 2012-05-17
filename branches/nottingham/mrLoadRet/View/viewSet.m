@@ -1394,6 +1394,7 @@ switch lower(param)
 
   case{'currentoverlay','curoverlay'}
     % view = viewSet(view,'currentOverlay',overlayNum);
+    curOverlay = viewGet(view,'curOverlay');
     overlayNum = viewGet(view,'overlayNum',val);
     analysisNum = viewGet(view,'currentAnalysis');
     numAnalyses = viewGet(view,'numberofAnalyses');
@@ -1436,6 +1437,14 @@ switch lower(param)
           alpha = 1;
         end
         mlrGuiSet(view,'overlayAlpha',alpha);
+        
+        %check if an Edit Overlay Menu is open and relaunch if current overlay has changed
+        if ~isequal(curOverlay,overlayNum)
+          global gParams
+          if ~isempty(gParams) && strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
+            editOverlayGUImrParams(view);
+          end
+        end
       else
         view.analyses{analysisNum}.curOverlay = [];
         mlrGuiSet(view,'overlay',1);
