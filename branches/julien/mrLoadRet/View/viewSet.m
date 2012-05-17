@@ -1413,7 +1413,19 @@ switch lower(param)
         mlrGuiSet(view,'overlayMaxRange',overlayRange);
         mlrGuiSet(view,'overlayMin',overlayClip(1));
         mlrGuiSet(view,'overlayMax',overlayClip(2));
-
+        
+        handles = guidata(view.figure);
+        if ~isempty(handles) && isfield(handles,'clipAcrossOverlays') && get(handles.clipAcrossOverlays,'value')
+          clippingOverlayNames = viewGet(viewNum,'overlayNames');
+        else
+          %set overlay and alpha overlay names in clipping box 
+          clippingOverlayNames ={};
+          for iOverlay=1:length(overlayNum)
+            clippingOverlayNames = [clippingOverlayNames viewGet(view,'overlayName',overlayNum(iOverlay),analysisNum)];
+            clippingOverlayNames = [clippingOverlayNames viewGet(view,'alphaOverlay',overlayNum(iOverlay),analysisNum)];
+          end
+        end
+        mlrGuiSet(view,'clippingOverlays',clippingOverlayNames);
         % set overlay alpha slider
         alpha = viewGet(view,'overlayAlpha',overlayNum(1),analysisNum);
         if isempty(alpha)
@@ -1523,7 +1535,7 @@ switch lower(param)
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
       view.analyses{analysisNum}.overlays(overlayNum).clip(1) = val;
-      if (overlayNum == curOverlay)
+      if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMin',val);        
         %identify the overlay name in the list if any voxel is clipped 
         mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
@@ -1542,10 +1554,10 @@ switch lower(param)
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
       view.analyses{analysisNum}.overlays(overlayNum).clip(2) = val;
-      %if (overlayNum == curOverlay)
+      if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMax',val);
         mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
-      %end
+      end
     end
 
 % % % This was meant to avoid having to recompute max/min overlaydata when it has been compute before
@@ -1588,7 +1600,7 @@ switch lower(param)
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
       view.analyses{analysisNum}.overlays(overlayNum).range = val;
-      if (overlayNum == curOverlay)
+       if overlayNum==viewGet(view,'curClippingOverlay') 
         mlrGuiSet(view,'overlayMinRange',val);
         mlrGuiSet(view,'overlayMaxRange',val);
         clip = view.analyses{analysisNum}.overlays(overlayNum).clip;
