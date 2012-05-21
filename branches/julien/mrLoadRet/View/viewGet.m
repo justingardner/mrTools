@@ -3151,7 +3151,7 @@ switch lower(param)
 % %     end
     
   case  {'minoverlaydata'}
-    % minoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum],[scanlist])
+    % minoverlaydata = viewGet(view,'minoverlaydata',[overlayNum],[analysisNum],[scanlist])
     switch (length(varargin))
       case 0
         analysisNum = viewGet(view,'currentAnalysis');
