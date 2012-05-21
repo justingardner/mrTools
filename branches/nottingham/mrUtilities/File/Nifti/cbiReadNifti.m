@@ -264,26 +264,20 @@ end
 fclose(fPtr);
 
 % Scaling
-if (strcmp(prec,'double') || strcmp(prec,'single'))  
-
+if (strcmp(prec,'double')||strcmp(prec,'single'))
   if hdr.scl_slope~=0
     % NaN handling for int16 data
     if (hdr.datatype==4 & short_nan) 
       data(data==-32768)=NaN;
     end
-    % apply slope and intercept
     data=data.*hdr.scl_slope+hdr.scl_inter;
   end
-  
   % convert to single precision down here--probably better to read
   % in the data as a single, but that requires changing a lot of
   % code above -jg.
-  
-  % if prec asked for is SINGLE, then convert, otherwise leave as DOUBLE
   if strcmp(prec,'single')
     data=single(data);
   end
-  
 end
 
 % this part is payback for a cheap hack, I did above. Rewrite
