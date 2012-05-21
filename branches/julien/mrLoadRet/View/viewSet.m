@@ -1407,11 +1407,15 @@ switch lower(param)
         % Update the gui
         mlrGuiSet(view,'overlay',overlayNum);
         
-        clippingOverlayList=viewGet(view,'clippingOverlayList');
-        mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
-        
+        handles = guidata(view.figure);
+        if isempty(handles) || ~isfield(handles,'clippingOverlaysListbox') 
+          curClippingOverlay=val;
+        else
+          clippingOverlayList=viewGet(view,'clippingOverlayList');
+          mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
+          curClippingOverlay = viewGet(viewNum,'curClippingOverlay');
+        end
         % set overlay min and max sliders
-        curClippingOverlay = viewGet(viewNum,'curClippingOverlay');
         overlayClip = viewGet(view,'overlayClip',curClippingOverlay,analysisNum);
         overlayRange = viewGet(view,'overlayRange',curClippingOverlay,analysisNum); 
         mlrGuiSet(view,'overlayMinRange',overlayRange);
