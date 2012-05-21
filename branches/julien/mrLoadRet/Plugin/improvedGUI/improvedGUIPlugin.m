@@ -352,19 +352,7 @@ handles = guidata(hObject);
 viewNum = handles.viewNum;
 
 %set overlay names in clipping box 
-if get(hObject,'value')
-  clippingOverlayList = 1:viewGet(viewNum,'nOverlays');
-else
-  %set overlay and alpha overlay names in clipping box 
-  curOverlays = viewGet(viewNum,'curoverlay');
-  clippingOverlayList = curOverlays;
-  for iOverlay=1:length(curOverlays)
-    alphaOverlayNum = viewGet(viewNum,'overlayNum',viewGet(viewNum,'alphaOverlay',curOverlays(iOverlay)));
-    if ~isempty(alphaOverlayNum)
-      clippingOverlayList(end+1)=alphaOverlayNum;
-    end
-  end
-end
+clippingOverlayList=viewGet(viewNum,'clippingOverlayList');
 mlrGuiSet(viewNum,'clippingOverlays',unique(clippingOverlayList));
 
 % set overlay min and max sliders
