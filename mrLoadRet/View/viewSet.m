@@ -1442,7 +1442,12 @@ switch lower(param)
         if ~isequal(curOverlay,overlayNum)
           global gParams
           if ~isempty(gParams) && strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
-            editOverlayGUImrParams(view);
+            %see which version of editOverlayGUI(mrParams) we need to relaunch
+            if isfield(gParams,'okCallback')
+              editOverlayGUI(view);
+            else
+              editOverlayGUImrParams(view);
+            end
           end
         end
       else
