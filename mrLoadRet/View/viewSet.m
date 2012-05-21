@@ -1444,7 +1444,7 @@ switch lower(param)
             end
           end
         end
-     else
+      else
         view.analyses{analysisNum}.curOverlay = [];
         mlrGuiSet(view,'overlay',1);
       end
