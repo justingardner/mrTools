@@ -1,4 +1,4 @@
-function mlrGuiSet(view,field,value);
+function mlrGuiSet(view,field,value,varargin)
 %
 %        $Id$
 % mlrGuiSet(view,field,value);
@@ -182,12 +182,12 @@ switch lower(field)
  case {'basegamma'}
   % mlrGuiSet(view,'baseGamma',value);
   set(handles.baseGammaSlider,'Value',value);
-  set(handles.baseGammaText,'String',num2str(value));
+  set(handles.baseGammaText,'String',thisNum2str(value));
   
  case {'basetilt'}
   % mlrGuiSet(view,'baseMax',value);
   set(handles.baseTiltSlider,'Value',value);
-  set(handles.baseTiltText,'String',num2str(value));
+  set(handles.baseTiltText,'String',thisNum2str(value));
 
  case {'analysispopup'}
   % mlrGuiSet(view,'analysisPopup',strings);
@@ -199,7 +199,29 @@ switch lower(field)
   
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
-  if strcmp(value,'none') 
+  % mlrGuiSet(view,'overlayPopup',strings,overlayList); %optional argument overlayList indicates that this is a subset of strings to change
+  if ~strcmp(value,'none') 
+    %identify overlays that have been masked by putting a bullet before their name
+    epsilon = 1e-7; %value differing by less than epsilon are considered equal
+    if ieNotDefined('varargin')
+      overlayList = 1:length(value);
+    else
+      overlayList = varargin{1};
+      newStrings=  value;
+      value = get(handles.overlayPopup,'String');
+      value(overlayList) = newStrings;
+    end
+    for iOverlay = overlayList
+      clip = viewGet(view,'overlayclip',iOverlay);
+      minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
+      maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
+      if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
+            (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
+            clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
+         value{iOverlay} = [char(164) ' ' value{iOverlay}];
+      end
+    end
+  else
     set(handles.overlayPopup,'value',1);
   end
   set(handles.overlayPopup,'String',value);
@@ -210,7 +232,6 @@ switch lower(field)
     value = value(1); %if this is not a listbox, we set only one overlay;
   end
   set(handles.overlayPopup,'Value',value);
-    
   if length(value)==1
     set(handles.overlayMinSlider,'enable','on')
     set(handles.overlayMinText,'enable','on')
@@ -236,9 +257,12 @@ switch lower(field)
   
  case {'overlaymin'}
   % mlrGuiSet(view,'overlayMin',value);
+  if rem(value,1)~=0 %if the value is not an integer
+    value = floor(double(value)*1e6)/1e6; %round it down
+  end
   value = clipToSlider(handles.overlayMinSlider,value);
   set(handles.overlayMinSlider,'Value',value);
-  set(handles.overlayMinText,'String',num2str(value));
+  set(handles.overlayMinText,'String',thisNum2str(value)); 
 
  case {'overlayminrange'}
   % mlrGuiSet(view,'overlayMinRange',[min,max]);
@@ -254,9 +278,12 @@ switch lower(field)
 
  case {'overlaymax'}
   % mlrGuiSet(view,'overlayMax',value);
+  if rem(value,1)~=0 %if the value is not an integer
+    value = ceil(double(value)*1e6)/1e6; %round it up
+  end
   value = clipToSlider(handles.overlayMaxSlider,value);
   set(handles.overlayMaxSlider,'Value',value);
-  set(handles.overlayMaxText,'String',num2str(value));
+  set(handles.overlayMaxText,'String',thisNum2str(value)); 
 
  case {'overlaymaxrange'}
   % mlrGuiSet(view,'overlayMinRange',[min,max]);
@@ -280,7 +307,7 @@ switch lower(field)
   % mlrGuiSet(view,'alpha',value);
   value = clipToSlider(handles.alphaSlider,value);
   set(handles.alphaSlider,'Value',value);
-  set(handles.alphaText,'String',num2str(value));
+  set(handles.alphaText,'String',thisNum2str(value));
   set(handles.alphaSlider,'sliderStep',[0.1 0.5]);
 
  case {'nscans'}
@@ -437,3 +464,13 @@ else
     value = get(slider,'Max');
   end
 end
+
+%modified num2str to increase the number of decimals for reals
+function value = thisNum2str(value)
+
+  if rem(value,1)~=0
+    value = num2str(value,'%.6f');
+  else
+    value = num2str(value);
+  end
+

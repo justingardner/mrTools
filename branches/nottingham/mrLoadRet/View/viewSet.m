@@ -1364,6 +1364,7 @@ switch lower(param)
       view = viewSet(view,'curOverlay',newOverlayNum);
     end
     set(viewGet(view,'figNum'),'Pointer','arrow');%drawnow;
+      
 
   case {'deleteoverlay'}
     % view = viewSet(view,'deleteoverlay',overlayNum,[analysisNum]);
@@ -1546,7 +1547,9 @@ switch lower(param)
         ~isempty(view.analyses{analysisNum}.overlays)
       view.analyses{analysisNum}.overlays(overlayNum).clip(1) = val;
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
-        mlrGuiSet(view,'overlayMin',val);
+        mlrGuiSet(view,'overlayMin',val);        
+        %identify the overlay name in the list if any voxel is clipped 
+        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       end
     end
 
@@ -1564,8 +1567,37 @@ switch lower(param)
       view.analyses{analysisNum}.overlays(overlayNum).clip(2) = val;
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMax',val);
+        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayNames',overlayNum,analysisNum)},overlayNum); 
       end
     end
+
+% % % This was meant to avoid having to recompute max/min overlaydata when it has been compute before
+% % % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
+%   case {'maxoverlaydata'}
+%     % view = viewSet(view,'maxoverlaydata',number,[overlayNum]);
+%     if ieNotDefined('varargin')
+%       overlayNum = viewGet(view,'currentOverlay');
+%     else
+%       overlayNum = varargin{1};
+%     end
+%     analysisNum = viewGet(view,'currentAnalysis');
+%     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+%         ~isempty(view.analyses{analysisNum}.overlays)
+%       view.analyses{analysisNum}.overlays(overlayNum).maxOverlayData = val;
+%     end
+%
+%   case {'minoverlaydata'}
+%     % view = viewSet(view,'minoverlaydata',number,[overlayNum]);
+%     if ieNotDefined('varargin')
+%       overlayNum = viewGet(view,'currentOverlay');
+%     else
+%       overlayNum = varargin{1};
+%     end
+%     analysisNum = viewGet(view,'currentAnalysis');
+%     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+%         ~isempty(view.analyses{analysisNum}.overlays)
+%       view.analyses{analysisNum}.overlays(overlayNum).minoverlaydata = val;
+%     end
 
   case {'overlayrange'}
     % view = viewSet(view,'overlayrange',[min max],[overlayNum]);
