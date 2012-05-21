@@ -1094,8 +1094,7 @@ refreshAlignDisplay(handles);
 function computeAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function dummy = initializeFromQformMenuItem_Callback(hObject, eventdata, handles)
-dummy=[]; %this is so this callback can be called through mrParamsDialog
+function initializeFromQformMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 if ~isfield(ALIGN.volumeHdr,'qform44') || ~isfield(ALIGN.inplaneHdr,'qform44')
@@ -1128,8 +1127,7 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
-function dummy = initializeFromSformMenuItem_Callback(hObject, eventdata, handles)
-dummy=[]; %this is so this callback can be called through mrParamsDialog
+function initializeFromSformMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 if ~isfield(ALIGN.volumeHdr,'sform44') || ~isfield(ALIGN.inplaneHdr,'sform44')
@@ -1162,14 +1160,12 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
-function dummy = cropInplanesMenuItem_Callback(hObject, eventdata, handles)
-dummy=[]; %this is so this callback can be called through mrParamsDialog
+function cropInplanesMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 ALIGN.crop = selectCropRegion(ALIGN.inplanes);
 
 % --------------------------------------------------------------------
-function dummy = resetCropInplanesMenuItem_Callback(hObject, eventdata, handles)
-dummy=[]; %this is so this callback can be called through mrParamsDialog
+function resetCropInplanesMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 ALIGN.crop = [];
 
@@ -1238,8 +1234,7 @@ function fineAlignmentMenuItem_Callback(hObject, eventdata, handles)
 computeAlignment('fine',handles);
 
 % --------------------------------------------------------------------
-function dummy = stopComputingMenuItem_Callback(hObject, eventdata, handles)
-dummy=[]; %this is so this callback can be called through mrParamsDialog
+function stopComputingMenuItem_Callback(hObject, eventdata, handles)
 
 global ALIGN
 if ALIGN.currentlyComputingAlignment

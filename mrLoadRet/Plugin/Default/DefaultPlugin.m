@@ -55,7 +55,7 @@ switch action
  case {'help','h','?'}
    retval = 'This is an example plugin, it just installs a menu item to Select Plugins.';
  otherwise
-   disp(sprintf('(DefaultPlugin) Unknown command %s'));
+   disp(sprintf('(DefaultPlugin) Unknown command %s',action));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%

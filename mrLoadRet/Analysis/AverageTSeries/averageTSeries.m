@@ -241,7 +241,7 @@ hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',baseScan));
 
 % Save evalstring for recomputing and params
 evalstr = ['view = newView(','''','Volume','''','); view = averageTSeries(view,params);'];
-[pathstr,filename,ext] = fileparts(tseriesFileName);
+[pathstr,filename] = fileparts(tseriesFileName);
 tseriesdir = viewGet(viewAverage,'tseriesdir');
 save(fullfile(tseriesdir,filename),'evalstr','params','tseriesFileName');
 

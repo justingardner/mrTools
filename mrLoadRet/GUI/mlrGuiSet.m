@@ -232,6 +232,7 @@ switch lower(field)
     value = value(1); %if this is not a listbox, we set only one overlay;
   end
   set(handles.overlayPopup,'Value',value);
+    
   if length(value)==1
     set(handles.overlayMinSlider,'enable','on')
     set(handles.overlayMinText,'enable','on')

@@ -1461,7 +1461,7 @@ switch lower(param)
     if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
       mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
     end
-    
+        
   case {'overlaydatareplace'}
     % v = viewSet(v,'overlayDataReplace',overlayData,overlayName);
     % used to replace the overlay data with the passed in matrix
@@ -1606,7 +1606,6 @@ switch lower(param)
 
   case {'overlayrange'}
     % view = viewSet(view,'overlayrange',[min max],[overlayNum]);
-    range = val;
     curOverlay = viewGet(view,'currentOverlay');
     if ieNotDefined('varargin')
       overlayNum = curOverlay;
@@ -1616,10 +1615,10 @@ switch lower(param)
     analysisNum = viewGet(view,'currentAnalysis');
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
-      view.analyses{analysisNum}.overlays(overlayNum).range = range;
+      view.analyses{analysisNum}.overlays(overlayNum).range = val;
        if overlayNum==viewGet(view,'curClippingOverlay') 
-        mlrGuiSet(view,'overlayMinRange',range);
-        mlrGuiSet(view,'overlayMaxRange',range);
+        mlrGuiSet(view,'overlayMinRange',val);
+        mlrGuiSet(view,'overlayMaxRange',val);
         clip = view.analyses{analysisNum}.overlays(overlayNum).clip;
         mlrGuiSet(view,'overlayMin',clip(1));
         mlrGuiSet(view,'overlayMax',clip(2));

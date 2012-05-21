@@ -468,7 +468,6 @@ if params.projectOutMeanVector
   view = viewSet(view,'curGroup',curMLRGroup);
 end
 
-
 % Save evalstring for recomputing and params
 evalstr = ['view = newView; view = concatTSeries(view,params);'];
 tseriesdir = viewGet(viewConcat,'tseriesdir');
