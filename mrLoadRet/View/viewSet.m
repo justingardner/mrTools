@@ -146,6 +146,7 @@ switch lower(param)
       mlrGuiSet(view,'analysisPopup',{'none'});
       mlrGuiSet(view,'overlay',1);
       mlrGuiSet(view,'overlayPopup',{'none'});
+      mlrGuiSet(view,'clippingoverlays',1);
       % update the interrogator
       if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
         mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
@@ -1123,6 +1124,7 @@ switch lower(param)
       stringList = {'none'};
     end
     mlrGuiSet(view,'overlayPopup',stringList);
+    mlrGuiSet(view,'clippingoverlays',1);
     % Set current overlay
     curOverlay = viewGet(view,'currentOverlay',analysisNum);
     view = viewSet(view,'currentOverlay',curOverlay);
