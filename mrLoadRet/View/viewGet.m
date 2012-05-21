@@ -2887,7 +2887,9 @@ switch lower(param)
         end
       end
     end
-    val=unique(clippingOverlayList);
+    %unique without ordering
+    [~,uniqueIndices]=unique(clippingOverlayList,'first');
+    val=clippingOverlayList(unique(uniqueIndices));
   
   case{'overlaynum'}
     % n = viewGet(view,'overlayNum',overlayName(s),[analysisNum])
