@@ -352,17 +352,18 @@ handles = guidata(hObject);
 viewNum = handles.viewNum;
 
 %set overlay names in clipping box 
-if get(hObject,'value')
-  clippingOverlayNames = viewGet(viewNum,'overlayNames');
-else
-  clippingOverlayNames ={};
-  curOverlays = viewGet(viewNum,'curoverlay');
-  for iOverlay=1:length(curOverlays)
-    clippingOverlayNames = [clippingOverlayNames viewGet(viewNum,'overlayName',curOverlays(iOverlay))];
-    clippingOverlayNames = [clippingOverlayNames viewGet(viewNum,'alphaOverlay',curOverlays(iOverlay))];
-  end
-end
-mlrGuiSet(viewNum,'clippingOverlays',clippingOverlayNames);
+clippingOverlayList=viewGet(viewNum,'clippingOverlayList');
+mlrGuiSet(viewNum,'clippingOverlays',unique(clippingOverlayList));
+
+% set overlay min and max sliders
+curClippingOverlay = viewGet(viewNum,'curClippingOverlay');
+overlayClip = viewGet(viewNum,'overlayClip',curClippingOverlay);
+overlayRange = viewGet(viewNum,'overlayRange',curClippingOverlay);
+mlrGuiSet(viewNum,'overlayMinRange',overlayRange);
+mlrGuiSet(viewNum,'overlayMaxRange',overlayRange);
+mlrGuiSet(viewNum,'overlayMin',overlayClip(1));
+mlrGuiSet(viewNum,'overlayMax',overlayClip(2));
+
 refreshMLRDisplay(viewNum);
 
 

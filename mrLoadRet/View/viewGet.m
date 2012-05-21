@@ -2858,16 +2858,38 @@ switch lower(param)
     end
     
   case {'curclippingoverlay','currentclippingoverlay'}
-    % overlayalpha = viewGet(view,'overlayalpha')
+    % curclippingoverlay = viewGet(view,'curclippingoverlay')
     handles = guidata(view.figure);
     if isempty(handles) || ~isfield(handles,'clippingOverlaysListbox') 
       val=viewGet(view,'currentOverlay');
     else
       clippingOverlays = get(handles.clippingOverlaysListbox,'string');
       clippingOverlay = clippingOverlays{get(handles.clippingOverlaysListbox,'value')};
+      if clippingOverlay(1)==char(164)
+        clippingOverlay = clippingOverlay(3:end);
+      end
       val = viewGet(view,'overlayNum',clippingOverlay);
     end
     
+  case {'clippingoverlaylist'}
+    handles = guidata(view.figure);
+    if ~isempty(handles) && isfield(handles,'clipAcrossOverlays') && get(handles.clipAcrossOverlays,'value')
+      clippingOverlayList = 1:viewGet(view,'nOverlays');
+    else
+      %set overlay and alpha overlay names in clipping box 
+      curOverlays = viewGet(view,'curOverlay');
+      analysisNum = viewGet(view,'currentAnalysis');
+      clippingOverlayList = curOverlays;
+      for iOverlay=1:length(curOverlays)
+        alphaOverlayNum = viewGet(view,'overlayNum',viewGet(view,'alphaOverlay',curOverlays(iOverlay),analysisNum),analysisNum);
+        if ~isempty(alphaOverlayNum)
+          clippingOverlayList(end+1)=alphaOverlayNum;
+        end
+      end
+    end
+    %unique without ordering
+    [~,uniqueIndices]=unique(clippingOverlayList,'first');
+    val=clippingOverlayList(unique(uniqueIndices));
   
   case{'overlaynum'}
     % n = viewGet(view,'overlayNum',overlayName(s),[analysisNum])
@@ -4001,7 +4023,7 @@ switch lower(param)
         else
           val = [2:2:nslices,1:2:nslices-1];
         end
-      elseif strcmp(mrGetPref('site'),'Nottingham')
+      elseif strcmp(lower(mrGetPref('site')),'nottingham')
         %This is for the interleave setting on a Philips scanner (7T)
         jump=round(sqrt(nslices));  %the jump is the closest integer to the square root of the number of slices
         val=[];
@@ -4010,7 +4032,7 @@ switch lower(param)
         end
       else
 	% check for fidinfo
-	fidInfo = viewGet(v,'fidInfo',s,g);
+	fidInfo = viewGet(view,'fidInfo',s,g);
 	if isempty(fidInfo) 
 	  % DEFAULT, warn user and return slices in slice order
 	  mrWarnDlg('(viewGet) Slice ordering is unknown for this site. Using default order: [1:nslices]. If this is incorrect, then edit viewGet sliceOrder to add the convention for your site.');

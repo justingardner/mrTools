@@ -146,6 +146,7 @@ switch lower(param)
       mlrGuiSet(view,'analysisPopup',{'none'});
       mlrGuiSet(view,'overlay',1);
       mlrGuiSet(view,'overlayPopup',{'none'});
+      mlrGuiSet(view,'clippingoverlays',1);
       % update the interrogator
       if isfield(MLR,'interrogator') && (view.viewNum <=length(MLR.interrogator))
         mrInterrogator('updateInterrogator',view.viewNum,viewGet(view,'interrogator'));
@@ -1123,6 +1124,7 @@ switch lower(param)
       stringList = {'none'};
     end
     mlrGuiSet(view,'overlayPopup',stringList);
+    mlrGuiSet(view,'clippingoverlays',1);
     % Set current overlay
     curOverlay = viewGet(view,'currentOverlay',analysisNum);
     view = viewSet(view,'currentOverlay',curOverlay);
@@ -1406,9 +1408,18 @@ switch lower(param)
         view.analyses{analysisNum}.curOverlay = overlayNum;
         % Update the gui
         mlrGuiSet(view,'overlay',overlayNum);
+        
+        handles = guidata(view.figure);
+        if isempty(handles) || ~isfield(handles,'clippingOverlaysListbox') 
+          curClippingOverlay=val;
+        else
+          clippingOverlayList=viewGet(view,'clippingOverlayList');
+          mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
+          curClippingOverlay = viewGet(viewNum,'curClippingOverlay');
+        end
         % set overlay min and max sliders
-        overlayClip = viewGet(view,'overlayClip',overlayNum(1),analysisNum);
-        overlayRange = viewGet(view,'overlayRange',overlayNum(1),analysisNum);  %JB
+        overlayClip = viewGet(view,'overlayClip',curClippingOverlay,analysisNum);
+        overlayRange = viewGet(view,'overlayRange',curClippingOverlay,analysisNum); 
         if isempty(overlayClip)
           overlayClip = [0 1];
         end
@@ -1420,18 +1431,6 @@ switch lower(param)
         mlrGuiSet(view,'overlayMin',overlayClip(1));
         mlrGuiSet(view,'overlayMax',overlayClip(2));
         
-        handles = guidata(view.figure);
-        if ~isempty(handles) && isfield(handles,'clipAcrossOverlays') && get(handles.clipAcrossOverlays,'value')
-          clippingOverlayNames = viewGet(viewNum,'overlayNames');
-        else
-          %set overlay and alpha overlay names in clipping box 
-          clippingOverlayNames ={};
-          for iOverlay=1:length(overlayNum)
-            clippingOverlayNames = [clippingOverlayNames viewGet(view,'overlayName',overlayNum(iOverlay),analysisNum)];
-            clippingOverlayNames = [clippingOverlayNames viewGet(view,'alphaOverlay',overlayNum(iOverlay),analysisNum)];
-          end
-        end
-        mlrGuiSet(view,'clippingOverlays',clippingOverlayNames);
         % set overlay alpha slider
         alpha = viewGet(view,'overlayAlpha',overlayNum(1),analysisNum);
         if isempty(alpha)
@@ -1548,9 +1547,12 @@ switch lower(param)
       view.analyses{analysisNum}.overlays(overlayNum).clip(1) = val;
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMin',val);        
-        %identify the overlay name in the list if any voxel is clipped 
-        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       end
+      %identify the overlay name in the list if any voxel is clipped 
+      mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
+      %refresh clipping overlay list
+      clippingOverlayList=viewGet(view,'clippingOverlayList');
+      mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
     end
 
   case {'overlaymax'}
@@ -1567,8 +1569,11 @@ switch lower(param)
       view.analyses{analysisNum}.overlays(overlayNum).clip(2) = val;
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMax',val);
-        mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayNames',overlayNum,analysisNum)},overlayNum); 
       end
+      mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
+      %refresh clipping overlay list
+      clippingOverlayList=viewGet(view,'clippingOverlayList');
+      mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
     end
 
 % % % This was meant to avoid having to recompute max/min overlaydata when it has been compute before

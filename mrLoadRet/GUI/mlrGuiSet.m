@@ -298,9 +298,14 @@ switch lower(field)
   end
 
  case {'clippingoverlays'}
-  % mlrGuiSet(view,'clippingOverlays',value);
+  % mlrGuiSet(view,'clippingOverlays',overlayList);
   if isfield(handles,'clippingOverlaysListbox') 
-    set(handles.clippingOverlaysListbox,'String',value,'value',1);
+    overlayStrings=get(handles.overlayPopup,'String');
+    selected=get(handles.clippingOverlaysListbox,'value');
+    if selected>length(value)
+      selected=1;
+    end
+    set(handles.clippingOverlaysListbox,'String',overlayStrings(value),'value',selected);
   end
 
  case {'alpha','overlayalpha'}
