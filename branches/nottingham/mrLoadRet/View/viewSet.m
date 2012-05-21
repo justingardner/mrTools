@@ -1441,11 +1441,11 @@ switch lower(param)
         %check if an Edit Overlay Menu is open and relaunch if current overlay has changed
         if ~isequal(curOverlay,overlayNum)
           global gParams
-          if ~isempty(gParams) && strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
+          if ~isempty(gParams)
             %see which version of editOverlayGUI(mrParams) we need to relaunch
-            if isfield(gParams,'okCallback')
+            if strcmp(gParams.figlocstr{1},'mrParamsDialog_Edit_overlay_parameters')
               editOverlayGUI(view);
-            else
+            elseif strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
               editOverlayGUImrParams(view);
             end
           end
