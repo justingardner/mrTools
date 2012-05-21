@@ -6,7 +6,7 @@
 %       date: 09/04/07
 %    purpose: 
 %
-function retval = editOverlayGUImrParams(viewNum)
+function editOverlayGUI(viewNum)
 
 % check arguments
   if ~any(nargin == [1])
@@ -85,7 +85,7 @@ function retval = editOverlayGUImrParams(viewNum)
 %   paramsInfo{end+1} = {'overlayName', overlayName, 'The name for the overlay (e.g., co, am, or ph)'};
 
   % display dialog
-  mrParamsDialog(paramsInfo,'Change overlay colormap','modal=0','callback',@mrCmapCallback,'callbackArg',viewNum,'cancelCallback',{@mrCmapParamsCancel,overlay});
+  mrParamsDialog(paramsInfo,'Edit overlay parameters','modal=0','callback',@mrCmapCallback,'callbackArg',viewNum,'cancelCallback',{@mrCmapParamsCancel,overlay});
 
   return;
   
