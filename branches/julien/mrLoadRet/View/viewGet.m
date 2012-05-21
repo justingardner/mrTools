@@ -4058,7 +4058,7 @@ switch lower(param)
         else
           val = [2:2:nslices,1:2:nslices-1];
         end
-      elseif strcmp(mrGetPref('site'),'Nottingham')
+      elseif strcmp(lower(mrGetPref('site')),'nottingham')
         %This is for the interleave setting on a Philips scanner (7T)
         jump=round(sqrt(nslices));  %the jump is the closest integer to the square root of the number of slices
         val=[];
@@ -4067,7 +4067,7 @@ switch lower(param)
         end
       else
 	% check for fidinfo
-	fidInfo = viewGet(v,'fidInfo',s,g);
+	fidInfo = viewGet(view,'fidInfo',s,g);
 	if isempty(fidInfo) 
 	  % DEFAULT, warn user and return slices in slice order
 	  mrWarnDlg('(viewGet) Slice ordering is unknown for this site. Using default order: [1:nslices]. If this is incorrect, then edit viewGet sliceOrder to add the convention for your site.');
