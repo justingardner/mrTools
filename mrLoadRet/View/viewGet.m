@@ -3824,9 +3824,9 @@ switch lower(param)
     % overlayMax = viewGet(view,'overlayMax');
     % overlayMax = viewGet(view,'overlayMax',<overlayName>);
     fig = viewGet(view,'fignum'); %JB: this is a quick fix for the case in which several overlays are loaded
-    if ~isempty(fig)              %    but it doesn't solve the problem if used form a script (no figure)
+    if ~isempty(fig)              %    but it doesn't solve the problem if used from a script (no figure)
       handles = guidata(fig);
-      val = get(handles.overlayMinSlider,'Value');
+      val = get(handles.overlayMaxSlider,'Value');
     else
       if (length(varargin) > 0)
         overlayNum = viewGet(view,'overlayNum',varargin{1});
