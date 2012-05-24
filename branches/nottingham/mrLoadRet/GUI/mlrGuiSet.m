@@ -218,7 +218,7 @@ switch lower(field)
       if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
             (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
             clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
-         value{iOverlay} = [char(164) ' ' value{iOverlay}];
+         value{iOverlay} = [char(42) ' ' value{iOverlay}];
       end
     end
   else
