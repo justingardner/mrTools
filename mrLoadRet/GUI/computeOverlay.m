@@ -45,14 +45,16 @@ if ~isempty(curOverlays)
     for iOverlay=curOverlays
       cOverlay = cOverlay+1;
       if iOverlay
-        overlayType = viewGet(thisView,'overlayType',iOverlay,analysisNum);
+        overlayType{cOverlay} = viewGet(thisView,'overlayType',iOverlay,analysisNum);
         % we assume that phase overlays always follow amplitude overlays
-        switch(overlayType)
+        switch(overlayType{cOverlay})
           case 'amp'
             corAnalOverlays(cOverlay) = curOverlays(cOverlay)+1;
           case 'ph'
             corAnalOverlays(cOverlay) = curOverlays(cOverlay)-1;
         end
+      else
+        overlayType{cOverlay}='none';
       end
     end
     curOverlays = [curOverlays corAnalOverlays];
@@ -81,13 +83,13 @@ if ~isempty(overlayImages)
           %for amplitude and phase in a correlation analysis, transform into complex numbers
           for iOverlay=1:2*nCurOverlays
             if corAnalOverlays(iOverlay) %if we have the other part of the complex data (phase or amplitude)
-              switch(overlayType)
+              switch(overlayType{iOverlay})
                 case 'amp'
                   overlayImages(:,:,:,iOverlay) = overlayImages(:,:,:,iOverlay) .* exp(1i*corAnalOverlayImages(:,:,:,iOverlay));
                 case 'ph'
                   overlayImages(:,:,:,iOverlay) = corAnalOverlayImages(:,:,:,iOverlay) .* exp(1i*overlayImages(:,:,:,iOverlay));
               end
-            elseif strcmp(overlayType,'ph') %if we don't have the amplitude data but it's a phase overlay
+            elseif strcmp(overlayType{iOverlay},'ph') %if we don't have the amplitude data but it's a phase overlay
               overlayImages(:,:,:,iOverlay) = exp(1i*overlayImages(:,:,:,iOverlay));
             end
           end
@@ -97,7 +99,7 @@ if ~isempty(overlayImages)
         overlayImages = nanmean(overlayImages,3);
         if strcmp(viewGet(thisView,'overlayInterpFunction',analysisNum),'corAnalInterp')
           for iOverlay=1:nCurOverlays
-            switch(overlayType)
+            switch(overlayType{iOverlay})
               case 'amp'
                 overlayImages(:,:,:,iOverlay) = abs(overlayImages(:,:,:,iOverlay)); %keep only the amplitude
               case 'ph'
