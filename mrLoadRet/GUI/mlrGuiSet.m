@@ -300,6 +300,12 @@ switch lower(field)
     set(handles.overlayMaxSlider,'Min',value(1),'Max',value(2),'visible','on');
   end
 
+ case {'clipacrossoverlays'}
+  % mlrGuiSet(view,'clipAcrossOverlays',value);
+  if isfield(handles,'clipAcrossOverlays') 
+    set(handles.clipAcrossOverlays,'value',value)
+  end
+  
  case {'clippingoverlays'}
   % mlrGuiSet(view,'clippingOverlays',overlayList);
   if isfield(handles,'clippingOverlaysListbox') 
