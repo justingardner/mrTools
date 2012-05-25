@@ -3904,11 +3904,21 @@ switch lower(param)
     end
     
   case{'clipacrossoverlays'}
-    val=true;
-    if isfield(view,'figure')
-      handles = guidata(view.figure);
-      if isfield(handles,'clipAcrossOverlays') && ~get(handles.clipAcrossOverlays,'value')
-        val=false;
+    % clipacrossoverlays = viewGet(view,'clipacrossoverlays',[analysisNum]);
+    if (length(varargin) > 0)
+      analysisNum = varargin{1};
+    else
+      analysisNum = viewGet(view,'currentAnalysis');
+    end
+    if ~ isempty(analysisNum) 
+      if isfield(view.analyses{analysisNum},'clipAcrossOverlays')
+        val= view.analyses{analysisNum}.clipAcrossOverlays;
+      else
+        if ismember(view.analyses{analysisNum}.type,{'glmAnal','glmAnalStats'})
+          view.analyses{analysisNum}.clipAcrossOverlays=0;
+        else
+          view.analyses{analysisNum}.clipAcrossOverlays=1;
+        end
       end
     end
 

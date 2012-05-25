@@ -351,6 +351,8 @@ function clipAcrossOverlays_Callback(hObject,dump)
 handles = guidata(hObject);
 viewNum = handles.viewNum;
 
+viewSet(viewNum,'clipAcrossOverlays',get(hObject,'value'));
+
 %set overlay names in clipping box 
 clippingOverlayList=viewGet(viewNum,'clippingOverlayList');
 mlrGuiSet(viewNum,'clippingOverlays',unique(clippingOverlayList));
