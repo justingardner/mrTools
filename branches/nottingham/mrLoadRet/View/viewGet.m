@@ -2865,10 +2865,7 @@ switch lower(param)
     else
       clippingOverlays = get(handles.clippingOverlaysListbox,'string');
       clippingOverlay = clippingOverlays{get(handles.clippingOverlaysListbox,'value')};
-      if clippingOverlay(1)==char(42)
-        clippingOverlay = clippingOverlay(3:end);
-      end
-      val = viewGet(view,'overlayNum',clippingOverlay);
+      val = viewGet(view,'overlayNum',clippingOverlay(3:end));
     end
     
   case {'clippingoverlaylist'}
