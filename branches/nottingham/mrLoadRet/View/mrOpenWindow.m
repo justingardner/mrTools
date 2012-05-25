@@ -106,6 +106,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
         view = viewSet(view,'newAnalysis',mrLastView.view.analyses{anum});
 %         disppercent(anum /length(mrLastView.view.analyses));
       end
+      view = viewSet(view,'curAnalysis',mrLastView.view.curAnalysis);
       if anum >= 1
         % overlay settings
         if isfield(mrLastView.viewSettings,'overlayMin')
