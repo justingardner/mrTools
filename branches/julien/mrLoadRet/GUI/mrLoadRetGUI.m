@@ -1276,6 +1276,7 @@ paramsInfo{end+1} = {'GUIFunction',viewGet(view,'analysisGUIFunction'),'GUI func
 paramsInfo{end+1} = {'reconcileFunction',viewGet(view,'analysisReconcileFunction'),'Reconcile function for analysis'};
 paramsInfo{end+1} = {'mergeFunction',viewGet(view,'analysisMergeFunction'),'Merge function for analysis'};
 paramsInfo{end+1} = {'type',viewGet(view,'analysisType'),'Type of analysis'};
+paramsInfo{end+1} = {'clipAcrossOverlays',viewGet(view,'clipAcrossOverlays'),'type=checkbox','Clipping behaviour: if 1, only voxels that are inside clipping values in all overlays are displayed; if 0, only the clipping values of the current overlay and its alpha overlay are taken into account'};
 
 params = mrParamsDialog(paramsInfo,'Edit analysis');
 if ~isempty(params)
@@ -1284,6 +1285,7 @@ if ~isempty(params)
   view = viewSet(view,'analysisReconcileFunction',params.reconcileFunction);
   view = viewSet(view,'analysisMergeFunction',params.mergeFunction);
   view = viewSet(view,'analysisType',params.type);
+  view = viewSet(view,'clipAcrossOverlays',params.clipAcrossOverlays);
 end
 refreshMLRDisplay(viewNum);
 

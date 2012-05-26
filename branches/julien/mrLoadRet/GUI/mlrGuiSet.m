@@ -218,7 +218,9 @@ switch lower(field)
       if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
             (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
             clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
-         value{iOverlay} = [char(164) ' ' value{iOverlay}];
+         value{iOverlay} = [char(42) ' ' value{iOverlay}];
+      else
+         value{iOverlay} = ['  ' value{iOverlay}];
       end
     end
   else
@@ -298,6 +300,12 @@ switch lower(field)
     set(handles.overlayMaxSlider,'Min',value(1),'Max',value(2),'visible','on');
   end
 
+ case {'clipacrossoverlays'}
+  % mlrGuiSet(view,'clipAcrossOverlays',value);
+  if isfield(handles,'clipAcrossOverlays') 
+    set(handles.clipAcrossOverlays,'value',value)
+  end
+  
  case {'clippingoverlays'}
   % mlrGuiSet(view,'clippingOverlays',overlayList);
   if isfield(handles,'clippingOverlaysListbox') 

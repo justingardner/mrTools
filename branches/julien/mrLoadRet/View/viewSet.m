@@ -1125,6 +1125,7 @@ switch lower(param)
     end
     mlrGuiSet(view,'overlayPopup',stringList);
     mlrGuiSet(view,'clippingoverlays',1);
+    mlrGuiSet(view,'clipAcrossOverlays',viewGet(view,'clipAcrossOverlays',val));
     % Set current overlay
     curOverlay = viewGet(view,'currentOverlay',analysisNum);
     view = viewSet(view,'currentOverlay',curOverlay);
@@ -1146,6 +1147,18 @@ switch lower(param)
 	view.analyses{analysisNum}.overlays(i).interrogator = val;
       end
     end
+    
+  case{'clipacrossoverlays'}
+    % view = viewSet(view,'clipAcrossOverlays',value,[analysisNum]);
+    if ieNotDefined('varargin')
+      analysisNum = viewGet(view,'currentAnalysis');
+    else
+      analysisNum = varargin{1};
+    end
+    if ~isempty(analysisNum)
+      view.analyses{analysisNum}.clipAcrossOverlays=val;
+    end
+
   case{'analysisname'}
     % view = viewSet(view,'analysisname',nameString,[analysisNum]);
     if ieNotDefined('varargin')

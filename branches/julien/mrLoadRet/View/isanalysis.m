@@ -26,12 +26,13 @@ if (nargout == 2)
     'curOverlay',[];
     'reconcileFunction','defaultReconcileParams';
     'mergeFunction','defaultMergeParams';
-    'd',[]};
+    'd',[];
+    'clipAcrossOverlays',1};
 else
-  % Return 0 if the overlay structure is missing any fields required or
+  % Return 0 if the analysis structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
   requiredFields = {'function','groupName','guiFunction','name','params',...
-    'date','type','overlays','curOverlay','reconcileFunction','mergeFunction','d'};
+    'date','type','overlays','curOverlay','reconcileFunction','mergeFunction','d','clipAcrossOverlays'};
   optionalFields = {};
 end
 
