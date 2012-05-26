@@ -43,11 +43,16 @@ end
 % check to see if any scans have a volTrigRatio that is not one, if it
 % is then we will offer to notch filter the data, otherwise hide the option
 offerNotchFilter = false;
-for iScan = 1:viewGet(view,'nScans')
-  volTrigRatio = viewGet(view,'auxParam','volTrigRatio',iScan);
+defaultNotchFilterSetting = true;
+for iScan = 1:viewGet(view,'nScans','Raw')
+  volTrigRatio = viewGet(view,'auxParam','volTrigRatio',iScan,'Raw');
   if iscell(volTrigRatio),volTrigRatio = cell2mat(volTrigRatio);end
   if isscalar(volTrigRatio) && (volTrigRatio > 1)
     offerNotchFilter = true;
+    % set default setting to false if the current scan is a concat
+    if ~isempty(viewGet(view,'concatInfo'))
+      defaultNotchFilterSetting = false;
+    end
     break;
   end
 end
@@ -66,7 +71,7 @@ if needToWarp
 end
 paramsInfo{end+1} = {'projectOutMeanVector',0,'type=checkbox','Project out a mean vector defined from one roi out of the data. This is used if you want to remove a global component that is estimated as the mean over some roi from your data. If you select this you will be asked to choose one roi for defining the mean vector of what you want to project out and another roi from which you want to project out.'};
 if offerNotchFilter
-  paramsInfo{end+1} = {'notchFilterForTSense',1,'type=checkbox','This is used to notch out the highest frequency for tSense data'};
+  paramsInfo{end+1} = {'notchFilterForTSense',defaultNotchFilterSetting,'type=checkbox','This is used to notch out the highest frequency for tSense data'};
 end
     
 % First get parameters
