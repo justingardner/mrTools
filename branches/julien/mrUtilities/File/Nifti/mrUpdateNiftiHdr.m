@@ -98,7 +98,7 @@ if isfile('mrLastView.mat')
   disp(sprintf('(mrUpdateNiftiHdr) Removing base anatomies from mrLastView'));
   load mrLastView
   view.baseVolumes = [];
-  save mrLastView view viewSettings
+  save mrLastView view
 end
 
 

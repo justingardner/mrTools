@@ -147,10 +147,10 @@ if isfile('mrLastView.mat')
     disp(sprintf('(saveSform) Removing base anatomies from mrLastView. Note that if  you have a session open, you still have to remove the bases manually.'));
     view.baseVolumes(baselist) = [];
     if getfield(whos('view'),'bytes')<2e9
-      eval(sprintf('save %s view viewSettings -V6;','mrLastView'));
+      eval(sprintf('save %s view -V6;','mrLastView'));
     else
       mrWarnDlg('(mrQuit) Variable view is more than 2Gb, using option -v7.3 to save');
-      eval(sprintf('save %s view viewSettings -v7.3;','mrLastView'));
+      eval(sprintf('save %s view -v7.3;','mrLastView'));
     end
   end
 end

@@ -111,13 +111,6 @@ end
 
 % save the session
 saveSession
-% % also remove any base anatomies from mrLastView if it is
-% % there since those might have a different sform
-% if isfile('mrLastView.mat')
-%   disp(sprintf('(setFramePeriod) Removing base anatomies from mrLastView'));
-%   load mrLastView
-%   view.baseVolumes = [];
-%   save mrLastView view viewSettings
-% end
+
 deleteView(v);
 
