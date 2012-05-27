@@ -81,24 +81,16 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       disppercent(inf);
     end
     % change group
-    if isfield(mrLastView,'viewSettings')
-      view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
-      mlrGuiSet(view.viewNum,'group',mrLastView.viewSettings.curGroup);
-    end
+    view = viewSet(view,'curGroup',mrLastView.view.curGroup);
     nScans = viewGet(view,'nScans');
     mlrGuiSet(view,'nScans',nScans);
-    if baseLoaded && isfield(mrLastView,'viewSettings')
+    if baseLoaded 
       % slice orientation from last run
-      if isfield(mrLastView.viewSettings,'curBase')
-	view = viewSet(view,'curBase',mrLastView.viewSettings.curBase);
-      end
-      view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
-      % rotate
-      mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
+      view = viewSet(view,'curBase',mrLastView.view.curBase);
       % change scan
-      view = viewSet(view,'curScan',mrLastView.viewSettings.curScan);
+      view = viewSet(view,'curScan',mrLastView.view.curScan);
       % change slice
-      view = viewSet(view,'curSlice',mrLastView.viewSettings.curSlice);
+      view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
     end
     % read analyses
     if isfield(mrLastView.view,'analyses')
@@ -107,14 +99,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 %         disppercent(anum /length(mrLastView.view.analyses));
       end
       view = viewSet(view,'curAnalysis',mrLastView.view.curAnalysis);
-      if anum >= 1
-        % overlay settings
-        if isfield(mrLastView.viewSettings,'overlayMin')
-          mlrGuiSet(view.viewNum,'overlayMin',mrLastView.viewSettings.overlayMin);
-          mlrGuiSet(view.viewNum,'overlayMax',mrLastView.viewSettings.overlayMax);
-          mlrGuiSet(view.viewNum,'alpha',mrLastView.viewSettings.alpha);
-        end
-      end
     end
     % read loaded analyses
     if isfield(mrLastView.view,'loadedAnalyses')
@@ -128,7 +112,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	view = viewSet(view,'groupScanNum', mrLastView.view.groupScanNum(g),g);
       end
     end
-    %drawnow        %this doesn't seem useful because it will be done by refreshMLRDisplay
+    
     % read ROIs into current view
     if isfield(mrLastView.view,'ROIs')
       disppercent(-inf,sprintf('(mrOpenWindow) installing ROIs'));
@@ -136,14 +120,14 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
         view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
       end
       view = viewSet(view,'currentROI',mrLastView.view.curROI);
-      if isfield(mrLastView.viewSettings,'showROIs')
-	view = viewSet(view,'showROIs',mrLastView.viewSettings.showROIs);
+      if ~fieldIsNotDefined(mrLastView.view,'showROIs')
+	view = viewSet(view,'showROIs',mrLastView.view.showROIs);
       end
-      if isfield(mrLastView.viewSettings,'labelROIs')
-	view = viewSet(view,'labelROIs',mrLastView.viewSettings.labelROIs);
+      if ~fieldIsNotDefined(mrLastView.view,'labelROIs')
+	view = viewSet(view,'labelROIs',mrLastView.view.labelROIs);
       end
-      if isfield(mrLastView.viewSettings,'roiGroup')
-	view = viewSet(view,'roiGroup',mrLastView.viewSettings.roiGroup);
+      if ~fieldIsNotDefined(mrLastView.view,'roiGroup')
+	view = viewSet(view,'roiGroup',mrLastView.view.roiGroup);
       end
       disppercent(inf);
     end
@@ -154,7 +138,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
     refreshMLRDisplay(view.viewNum);
     disppercent(inf);
   end
-%   disppercent(inf);
 
 else
   [view,baseLoaded] = loadAnatomy(view);
