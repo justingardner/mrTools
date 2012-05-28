@@ -353,19 +353,20 @@ if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'
   minDepth = str2num(get(handles.corticalDepthText,'string'));
   newMaxValue = maxDepth+newMinValue-minDepth;
   if newMaxValue>=0 && newMaxValue<=1 %if both values are in [0 1]
-    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
-    mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+    viewSet(viewNum,'corticalMinDepth',newMinValue);
+    viewSet(viewNum,'corticalMaxDepth',newMaxValue);
     drawnow;
     refreshMLRDisplay(viewNum);
   else
     set(hObject,'Value',minDepth);
   end
+elseif isfield(handles,'corticalMaxDepthSlider')
+  viewSet(viewNum,'corticalMinDepth',newMinValue);
+  refreshMLRDisplay(viewNum);
 else
-  mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+  viewSet(viewNum,'corticalDepth',newMinValue);
   refreshMLRDisplay(viewNum);
 end
-
-
 
 % --- Executes during object creation, after setting all properties.
 function corticalDepthSlider_CreateFcn(hObject, eventdata, handles)
@@ -378,7 +379,6 @@ corticalDepthBins=mrGetPref('corticaldepthbins');
 corticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
 set(hObject,'value',corticalDepth);
 set(hObject,'SliderStep',min(1/(corticalDepthBins-1)*[1 3],1));
-
 
 function corticalDepthText_Callback(hObject, eventdata, handles)
 
@@ -395,14 +395,17 @@ else %otherwise, set the new value in the GUI (there is no field for cortical de
     minDepth = get(handles.corticalDepthSlider,'value');
     newMaxValue = maxDepth+newMinValue-minDepth;
     if newMaxValue>=0 && newMaxValue<=1 %if both values are in [0 1]
-      mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
-      mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+      viewSet(viewNum,'corticalMinDepth',newMinValue);
+      viewSet(viewNum,'corticalMaxDepth',newMaxValue);
       refreshMLRDisplay(viewNum);
     else
       set(hObject,'string',num2str(minDepth));
     end
+  elseif isfield(handles,'corticalMaxDepthSlider')
+    viewSet(viewNum,'corticalMinDepth',newMinValue);
+    refreshMLRDisplay(viewNum);
   else
-    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
+    viewSet(viewNum,'corticalDepth',newMinValue);
     refreshMLRDisplay(viewNum);
   end
 end
