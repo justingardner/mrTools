@@ -307,15 +307,15 @@ if get(handles.linkMinMaxDepthCheck,'value')
   maxDepth = str2num(get(handles.corticalMaxDepthText,'string'));
   newMinValue = minDepth+newMaxValue-maxDepth;
   if newMinValue>=0 && newMinValue<=1 %if both values are in [0 1]
-    mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
-    mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+    viewSet(viewNum,'corticalMinDepth',newMinValue);
+    viewSet(viewNum,'corticalMaxDepth',newMaxValue);
     drawnow;
     refreshMLRDisplay(viewNum);
   else
     set(hObject,'Value',maxDepth);
   end
 else
-  mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+  viewSet(viewNum,'corticalMaxDepth',newMaxValue);
   refreshMLRDisplay(viewNum);
 end
 
@@ -334,14 +334,14 @@ else %otherwise, set the new value in the view and the GUI
     maxDepth = get(handles.corticalMaxDepthSlider,'value');
     newMinValue = minDepth+newMaxValue-maxDepth;
     if newMinValue>=0 && newMinValue<=1 %if both values are in [0 1]
-      mlrGuiSet(viewNum,'corticalMinDepth',newMinValue);
-      mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+      viewSet(viewNum,'corticalMinDepth',newMinValue);
+      viewSet(viewNum,'corticalMaxDepth',newMaxValue);
       refreshMLRDisplay(viewNum);
     else
       set(hObject,'string',num2str(maxDepth));
     end
   else
-    mlrGuiSet(viewNum,'corticalMaxDepth',newMaxValue);
+    viewSet(viewNum,'corticalMaxDepth',newMaxValue);
     refreshMLRDisplay(viewNum);
   end
 end
