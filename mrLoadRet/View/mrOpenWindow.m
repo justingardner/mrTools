@@ -89,8 +89,12 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       view = viewSet(view,'curBase',mrLastView.view.curBase);
       % change scan
       view = viewSet(view,'curScan',mrLastView.view.curScan);
-      % change slice
-      view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
+      % change slice/corticalDepth
+      if viewGet(view,'baseType') && isfield(mrLastView.view.curslice,'corticalDepth')
+        view = viewSet(view,'corticalDepth',mrLastView.view.curslice.corticalDepth);
+      else
+        view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
+      end
     end
     % read analyses
     if isfield(mrLastView.view,'analyses')
