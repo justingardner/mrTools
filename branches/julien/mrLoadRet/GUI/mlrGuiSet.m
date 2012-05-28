@@ -400,18 +400,16 @@ switch lower(field)
  case {'corticalmindepth'}
   % mlrGuiSet(view,'corticalDepth',value);
   value = min(value,1);value = max(value,0);
-  corticalDepthBins = viewGet(view,'corticalDepthBins');
-  value = round(value*(corticalDepthBins-1))/(corticalDepthBins-1);
   set(handles.corticalDepthSlider,'Value',value);
   set(handles.corticalDepthText,'String',num2str(value));
   
  case {'corticalmaxdepth'}
   % mlrGuiSet(view,'corticalDepth',value);
-  value = min(value,1);value = max(value,0);
-  corticalDepthBins = viewGet(view,'corticalDepthBins');
-  value = round(value*(corticalDepthBins-1))/(corticalDepthBins-1);
-  set(handles.corticalMaxDepthSlider,'Value',value);
-  set(handles.corticalMaxDepthText,'String',num2str(value));
+  if isfield(handles,'corticalMaxDepthSlider')
+    value = min(value,1);value = max(value,0);
+    set(handles.corticalMaxDepthSlider,'Value',value);
+    set(handles.corticalMaxDepthText,'String',num2str(value));
+  end
   
  case {'sliceorientation'}
   % mlrGuiSet(view,'sliceorientation',value);

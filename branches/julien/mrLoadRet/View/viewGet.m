@@ -3891,27 +3891,35 @@ switch lower(param)
     
   case {'corticalmindepth'}
     % corticalmindepth = viewGet(view,'corticalmindepth');
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = get(handles.corticalDepthSlider,'Value');
+    if isfield(view.curslice,'corticalDepth')
+      val = min(view.curslice.corticalDepth);
     else
-      corticalDepthBins=viewGet(thisView,'corticaldepthbins');
+      fig = viewGet(view,'fignum');
+      if ~isempty(fig)
+        handles = guidata(fig);
+        val = get(handles.corticalDepthSlider,'Value');
+    else
+      corticalDepthBins=viewGet(view,'corticaldepthbins');
       val=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+      end
     end
     
   case {'corticalmaxdepth'}
     % corticalmaxdepth = viewGet(view,'corticalmaxdepth');
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      if isfield(handles,'corticalMaxDepthSlider')
-        val = get(handles.corticalMaxDepthSlider,'Value');
+    if isfield(view.curslice,'corticalDepth')
+      val = max(view.curslice.corticalDepth);
+    else
+      fig = viewGet(view,'fignum');
+      if ~isempty(fig)
+        handles = guidata(fig);
+        if isfield(handles,'corticalMaxDepthSlider')
+          val = get(handles.corticalMaxDepthSlider,'Value');
+        else
+          val = [];
+        end
       else
         val = [];
       end
-    else
-      val = [];
     end
     
   case {'sliceorientation'}
