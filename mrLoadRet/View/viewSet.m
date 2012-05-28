@@ -784,6 +784,38 @@ switch lower(param)
 	mlrGuiSet(view,'baseTilt',val);
       end
     end
+    
+  case {'corticaldepth'}
+    % corticaldepth = viewSet(view,'corticaldepth',value);
+    fig = viewGet(view,'fignum');
+    if ~isempty(fig)
+      handles = guidata(fig);
+      if ~isfield(handles,'corticalMaxDepthSlider')
+        val = val(1);
+      end
+    end
+    if length(val)==1
+      view = viewSet(view,'corticalMinDepth',val);
+      view = viewSet(view,'corticalMaxDepth',val);
+    elseif length(val)==2
+      corticalDepth=sort(val);
+      view = viewSet(view,'corticalMinDepth',corticalDepth(1));
+      view = viewSet(view,'corticalMaxDepth',corticalDepth(2));
+    end
+    
+  case {'corticalmindepth'}
+    % corticalmindepth = viewSet(view,'corticalmindepth',value);
+      corticalDepthBins = viewGet(view,'corticalDepthBins');
+      val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
+      view.curslice.corticalDepth(1) = val;
+      mlrGuiSet(view,'corticalMinDepth',val);
+    
+  case {'corticalmaxdepth'}
+    % corticalmaxdepth = viewSet(view,'corticalmaxdepth',value);
+      corticalDepthBins = viewGet(view,'corticalDepthBins');
+      val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
+      view.curslice.corticalDepth(2) = val;
+      mlrGuiSet(view,'corticalMaxDepth',val);
       
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
@@ -791,9 +823,14 @@ switch lower(param)
     numBases = viewGet(view,'numberofBaseVolumes');
     % first save rotation, curSlice and sliceIndex
     % for this base image
+    baseType = viewGet(view,'baseType');
     curBase = viewGet(view,'curBase');
     rotate = viewGet(view,'rotate');
-    curSlice = viewGet(view,'curSlice');
+    if baseType==0
+      curSlice = viewGet(view,'curSlice');
+    else
+      curSlice = viewGet(view,'corticalDepth');
+    end
     %if there was not base loaded, curSlice could be empty, set default to 1
     if isempty(curSlice)
       curSlice =1;
@@ -834,19 +871,28 @@ switch lower(param)
       if ~isempty(baseSliceOrientation)
 	view = viewSet(view,'sliceOrientation',baseSliceOrientation);
       end
-      % update nSlices and reset slice to be within range
-      sliceIndex = viewGet(view,'basesliceindex',baseNum);
-      nSlices = baseDims(sliceIndex);
-      % if the base has a current slice set, then use that
-      if isempty(baseCurSlice) || (baseCurSlice > nSlices)
-	view = viewSet(view,'curSlice',max(1,min(curSlice,nSlices)));
+      if baseType==0
+        % update nSlices and reset slice to be within range
+        sliceIndex = viewGet(view,'basesliceindex',baseNum);
+        nSlices = baseDims(sliceIndex);
+        % if the base has a current slice set, then use that
+        if isempty(baseCurSlice) || (baseCurSlice > nSlices)
+          view = viewSet(view,'curSlice',max(1,min(curSlice,nSlices)));
+        else
+         view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
+        end
+          mlrGuiSet(view,'nSlices',nSlices);
       else
-	view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
+        %flat and surfaces:baseCurSlice gives the cortical depth(s)
+        if isempty(baseCurSlice)
+          corticalDepthBins=viewGet(view,'corticaldepthbins');
+          baseCurSlice=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+        end
+        view = viewSet(view,'corticalDepth',baseCurSlice);
       end
       if ~isempty(baseRotate)
 	mlrGuiSet(view,'rotate',baseRotate);
       end
-      mlrGuiSet(view,'nSlices',nSlices);
       baseTilt = viewGet(view,'baseTilt',baseNum);
       if baseType == 2
 	mlrGuiSet(view,'baseTilt',baseTilt);
@@ -2005,6 +2051,7 @@ switch lower(param)
   case {'curslice'}
     % view = viewSet(view,'curSlice',sliceNum);
     baseDims = viewGet(view,'baseDims');
+    baseType = viewGet(view,'baseType');
     sliceIndex = viewGet(view,'basesliceindex');
     if ~isempty(baseDims)
       nSlices = baseDims(sliceIndex);
@@ -2015,7 +2062,7 @@ switch lower(param)
       curSlice = viewGet(view,'curSlice');
       if isempty(curSlice) || curSlice ~= val
 	view.curslice.sliceNum = val;
-	mlrGuiSet(view,'slice',val);
+  mlrGuiSet(view,'slice',val);
       end
     else
       disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,nSlices));
