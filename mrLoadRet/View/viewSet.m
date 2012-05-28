@@ -877,7 +877,7 @@ switch lower(param)
         nSlices = baseDims(sliceIndex);
         % if the base has a current slice set, then use that
         if isempty(baseCurSlice) || (baseCurSlice > nSlices)
-          view = viewSet(view,'curSlice',max(1,min(curSlice,nSlices)));
+          view = viewSet(view,'curSlice',round(nSlices/2));
         else
          view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
         end
