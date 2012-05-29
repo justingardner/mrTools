@@ -2865,7 +2865,7 @@ switch lower(param)
     else
       clippingOverlays = get(handles.clippingOverlaysListbox,'string');
       clippingOverlay = clippingOverlays{get(handles.clippingOverlaysListbox,'value')};
-      val = viewGet(view,'overlayNum',clippingOverlay(3:end));
+      val = viewGet(view,'overlayNum',clippingOverlay(3:end)); %ignore the first 2 characters which are used to put a star before the name (see mlrGuiSet, case 'clippingOverlays'))
     end
     
   case {'clippingoverlaylist'}
@@ -3128,21 +3128,23 @@ switch lower(param)
 % %     if isfield(overlay,'maxOverlayData')     % This was meant to avoid having to recompute minoverlaydata that has been compute before
 % %       val = overlay.maxoverlaydata;          % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
 % %     else
-    switch (length(varargin))
-      case {0 1 2}
-        scanlist = 1:length(overlay.data);
-      case 3
-        scanlist = varargin{3};
-        scanlist = scanlist(scanlist<=length(overlay.data));
-    end
-    val = -inf;
-    for iOverlay = scanlist
-       if ~isempty(overlay.data{iOverlay})
-          val = max(val,max(overlay.data{iOverlay}(:)));
-       end
-    end
-    if val==-inf
-       val = [];
+    if ~isempty(overlay)
+      switch (length(varargin))
+        case {0 1 2}
+          scanlist = 1:length(overlay.data);
+        case 3
+          scanlist = varargin{3};
+          scanlist = scanlist(scanlist<=length(overlay.data));
+      end
+      val = -inf;
+      for iOverlay = scanlist
+         if ~isempty(overlay.data{iOverlay})
+            val = max(val,max(overlay.data{iOverlay}(:)));
+         end
+      end
+      if val==-inf
+         val = [];
+      end
     end
 % %       viewSet(view,'maxoverlaydata',val,overlayNum);
 % %     end
@@ -3164,13 +3166,14 @@ switch lower(param)
 % %     if isfield(overlay,'minoverlaydata')    % This was meant to avoid having to recompute minoverlaydata that has been compute before
 % %       val = overlay.minoverlaydata;         % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
 % %     else
-    switch (length(varargin))
-      case {0 1 2}
-        scanlist = 1:length(overlay.data);
-      case 3
-        scanlist = varargin{3};
-        scanlist = scanlist(scanlist<=length(overlay.data));
-    end
+    if ~isempty(overlay)
+      switch (length(varargin))
+        case {0 1 2}
+          scanlist = 1:length(overlay.data);
+        case 3
+          scanlist = varargin{3};
+          scanlist = scanlist(scanlist<=length(overlay.data));
+      end
       val = inf;
       for iOverlay = scanlist
          if ~isempty(overlay.data{iOverlay})
@@ -3180,6 +3183,7 @@ switch lower(param)
       if val==inf
          val = [];
       end
+    end
 % %       viewSet(view,'minoverlaydata',val,overlayNum);
 % %     end
     
