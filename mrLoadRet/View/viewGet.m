@@ -3918,16 +3918,9 @@ switch lower(param)
     else
       analysisNum = viewGet(view,'currentAnalysis');
     end
-    if ~ isempty(analysisNum) 
-      if isfield(view.analyses{analysisNum},'clipAcrossOverlays')
-        val= view.analyses{analysisNum}.clipAcrossOverlays;
-      else
-        if ismember(view.analyses{analysisNum}.type,{'glmAnal','glmAnalStats'})
-          view.analyses{analysisNum}.clipAcrossOverlays=0;
-        else
-          view.analyses{analysisNum}.clipAcrossOverlays=1;
-        end
-      end
+    val = true;
+    if ~isempty(analysisNum) && (analysisNum > 0) && (analysisNum <= length(view.analyses))
+      val = view.analyses{analysisNum}.clipAcrossOverlays;
     end
 
   case{'colorblending'}
