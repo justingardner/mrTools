@@ -877,9 +877,13 @@ switch lower(param)
         nSlices = baseDims(sliceIndex);
         % if the base has a current slice set, then use that
         if isempty(baseCurSlice) || (baseCurSlice > nSlices)
-          view = viewSet(view,'curSlice',round(nSlices/2));
+          if length(curSlice)==1 && curSlice >=1
+            view = viewSet(view,'curSlice',min(curSlice,nSlices));
+          else
+            view = viewSet(view,'curSlice',round(nSlices/2));
+          end
         else
-         view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
+          view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
         end
           mlrGuiSet(view,'nSlices',nSlices);
       else
