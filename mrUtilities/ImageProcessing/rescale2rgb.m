@@ -39,12 +39,12 @@ end
 
 % Clip
 result = image;
-result(find(image < clipMin)) = clipMin;
-result(find(image > clipMax)) = clipMax;
+result(image < clipMin) = clipMin;
+result(image > clipMax) = clipMax;
 
 % Scale
 if isequal(clipMax-clipMin,0)
-  rgb = [];return
+  rgb = clipMax*ones([size(image),3]);return
 else
   indices = round(255 * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
 end

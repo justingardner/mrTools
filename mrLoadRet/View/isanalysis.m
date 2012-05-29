@@ -56,6 +56,15 @@ for f = 1:length(requiredFields)
 	end
 end
 
+% handle missing clipAcrossOverlays field separately, based on type
+if ~isfield(analysis,'clipAcrossOverlays')
+  if isfield(analysis,'type') && ismember(analysis.type,{'glmAnal','glmAnalStats'})
+    analysis.clipAcrossOverlays=0;
+  else
+    analysis.clipAcrossOverlays=1;
+  end
+end
+
 % Optional fields and defaults
 for f = 1:size(optionalFields,1)
   fieldName = optionalFields{f,1};
