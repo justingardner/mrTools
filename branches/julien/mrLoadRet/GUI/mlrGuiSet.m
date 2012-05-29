@@ -201,28 +201,28 @@ switch lower(field)
   % mlrGuiSet(view,'overlayPopup',strings);
   % mlrGuiSet(view,'overlayPopup',strings,overlayList); %optional argument overlayList indicates that this is a subset of strings to change
   if ~strcmp(value,'none') 
-    %identify overlays that have been masked by putting a bullet before their name
-    epsilon = 1e-6; %value differing by less than epsilon are considered equal
     if ieNotDefined('varargin')
-      overlayList = 1:length(value);
+% %       overlayList = 1:length(value);
     else
       overlayList = varargin{1};
       newStrings=  value;
       value = get(handles.overlayPopup,'String');
       value(overlayList) = newStrings;
     end
-    for iOverlay = overlayList
-      clip = viewGet(view,'overlayclip',iOverlay);
-      minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
-      maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
-      if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
-            (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
-            clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
-         value{iOverlay} = [char(42) ' ' value{iOverlay}];
-      else
-         value{iOverlay} = ['  ' value{iOverlay}];
-      end
-    end
+% %     %identify overlays that have been masked by putting a star before their name
+% %     epsilon = 1e-7; %value differing by less than epsilon are considered equal
+% %     for iOverlay = overlayList
+% %       clip = viewGet(view,'overlayclip',iOverlay);
+% %       minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
+% %       maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
+% %       if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
+% %             (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
+% %             clip(1)==clip(2) %if min and max clip values are equal, the whole overlay will be masked
+% %          value{iOverlay} = [char(42) ' ' value{iOverlay}];
+% %       else
+% %          value{iOverlay} = ['  ' value{iOverlay}];
+% %       end
+% %     end
   else
     set(handles.overlayPopup,'value',1);
   end
@@ -308,11 +308,28 @@ switch lower(field)
   
  case {'clippingoverlays'}
   % mlrGuiSet(view,'clippingOverlays',overlayList);
+  overlayList=value;
   if isfield(handles,'clippingOverlaysListbox') 
     overlayStrings=get(handles.overlayPopup,'String');
     selected=get(handles.clippingOverlaysListbox,'value');
-    if selected>length(value)
+    if selected>length(overlayList)
       selected=1;
+    end
+    if viewGet(view,'nOverlays')
+      %identify overlays that have been masked by putting a star before their name
+      epsilon = 1e-7; %value differing by less than epsilon are considered equal
+      for iOverlay = overlayList
+        clip = viewGet(view,'overlayclip',iOverlay);
+        minOverlayData = viewGet(view,'minoverlaydata',iOverlay);
+        maxOverlayData = viewGet(view,'maxoverlaydata',iOverlay);
+        if (~isempty(minOverlayData) && (clip(1)-minOverlayData)>epsilon) ||...
+              (~isempty(maxOverlayData) && (maxOverlayData-clip(2))>epsilon) || ...
+              (~isempty(clip) && clip(1)==clip(2)) %if min and max clip values are equal, the whole overlay will be masked
+           overlayStrings{iOverlay} = [char(42) ' ' overlayStrings{iOverlay}];
+        else
+           overlayStrings{iOverlay} = ['  ' overlayStrings{iOverlay}];
+        end
+      end
     end
     set(handles.clippingOverlaysListbox,'String',overlayStrings(value),'value',selected);
   end
