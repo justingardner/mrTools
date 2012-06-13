@@ -13,8 +13,10 @@ function procpar = readprocpar(procdir,verbose)
 if (nargin == 0)
   procdir = './';
   verbose = 0;
-elseif (nargin == 1)
-  procdir = setext(procdir,'fid',0);
+elseif (nargin == 1) 
+  if ~strcmp(getext(procdir),'par')
+    procdir = setext(procdir,'fid',0);
+  end
   verbose = 0;
 elseif (nargin ~= 2)
   help readprocpar;
