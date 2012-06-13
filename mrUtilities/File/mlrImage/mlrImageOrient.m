@@ -10,7 +10,7 @@
 %       e.g.: [d h] = mlrImageOrient('LPI',data,h);
 %  
 %
-function [data h] = mlrImageOrient(orient,varargin)
+function [data h xform] = mlrImageOrient(orient,varargin)
 
 % check arguments
 if nargin < 2

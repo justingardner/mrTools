@@ -72,12 +72,12 @@ for pathNum = 1:length(pathStr)
 
   anatFilePath = path;
 
-  % Load nifti file and reorder the axes and flip (site specific).
+  % Load nifti file
   h = mrMsgBox(['(loadAnat) Loading volume: ',pathStr{pathNum},'. Please wait']);
-  hdr = cbiReadNiftiHeader(pathStr{pathNum});
-  if ishandle(h)
-    close(h)
-  end
+  if ishandle(h), close(h), end
+  hdr = mlrImageHeaderLoad(pathStr{pathNum});
+  if isempty(hdr),return,end
+  hdr = mlrImageGetNiftiHeader(hdr);
 
   % get volume dimension...
   % hdr.dim(1) should probably be the number of dimensions
@@ -100,67 +100,39 @@ for pathNum = 1:length(pathStr)
     end
     % if frameNum is set to 0, take the mean
     if params.frameNum == 0
-      % either load the whole thing, or if it is too large,
-      % then load volume by volume
-      if 8*prod(hdr.dim(2:5)) < mrGetPref('maxBlocksize')
-	[vol hdr] = cbiReadNifti(pathStr{pathNum});
-	vol = nanmean(vol,4);
-      else
-	% too large, load volume by volume
-	vol = zeros(hdr.dim(2:4)');
-	disppercent(-inf,sprintf('(loadAnat) Reading %s',getLastDir(pathStr{pathNum})));
-	for i = 1:hdr.dim(5)
-	  vol = vol + (1/hdr.dim(5))*cbiReadNifti(pathStr{pathNum},{[],[],[],i});
-	  disppercent(i/hdr.dim(5));
-	end
-	disppercent(inf);
-      end
-      % other wise single time slice
+      % load the whole thing and average across volumes
+      [vol hdr] = mlrImageLoad(pathStr{pathNum});
+      if isempty(vol),return,end
+      [vol hdr] = mlrImageOrient('PLI',vol,hdr);
+      [vol hdr] = mlrImageXform(vol,hdr,'swapXY=1');
+      hdr = mlrImageGetNiftiHeader(hdr);
+      vol = nanmean(vol,4);
     else
-      [vol hdr] = cbiReadNifti(pathStr{pathNum},{[] [] [] params.frameNum});
+      % load a single volume
+      [vol hdr] = mlrImageLoad(pathStr{pathNum},'volNum',params.frameNum);
+      if isempty(vol),return,end
+      [vol hdr] = mlrImageOrient('PLI',vol,hdr);
+      [vol hdr] = mlrImageXform(vol,hdr,'swapXY=1');
+      hdr = mlrImageGetNiftiHeader(hdr);
     end
   else
     % if 3D file just load
-    [vol hdr] = cbiReadNifti(pathStr{pathNum});
+    [vol hdr] = mlrImageLoad(pathStr{pathNum});
+    if isempty(vol),return,end
+    [vol hdr] = mlrImageOrient('PLI',vol,hdr);
+    [vol hdr] = mlrImageXform(vol,hdr,'swapXY=1');
+    hdr = mlrImageGetNiftiHeader(hdr);
   end
+  
+  % permutation and sliceIndex and rotate take on default values
+  % now that we load and rotate using mlrImageLoad
+  permutationMatrix = eye(3);
+  sliceIndex = [1 2 3];
+  base.rotate = 90;
 
   % Warning if no alignment information in the header.
   if ~hdr.sform_code
     mrWarnDlg('(loadAnat) No base coordinate frame in the volume header. (i.e. sform is not set)');
-  end
-
-  % Extract permutation matrix to keep track of slice orientation.
-  % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you
-  % make changes here, please update that function as well.
-  [permutationMatrix sliceIndex] = getPermutationMatrix(hdr);
-
-  % keeping this code commented for now
-  if 0
-    
-    % check whether it is left/right reversed, first find which dimension goes from
-    % left to right. That is the sliceIndex for a sagittal image (i.e. the sagittal
-    % images slice directions goes from left to right).
-    lrIndex = sliceIndex(1);
-    coronalVector = [0 0 0 1]';
-    coronalVector(lrIndex) = 1;
-    % now multiply by the qform and see which way we go in the magnet space when we 
-    % move one coordinate in this dimension.
-    magShift = hdr.qform44*coronalVector-hdr.qform44*[0 0 0 1]';
-    if magShift(1) < 0 
-      disp(sprintf('(loadAnat) left/right ok'));
-    else
-      % swap left and right
-      disp(sprintf('(loadAnat) left/right reversed, flipping anatomy'));
-      vol = flipdim(vol,lrIndex);
-      % flip the qform and sform to track this flip
-      flipMatrix = eye(4);
-      flipMatrix(lrIndex,lrIndex) = -1;
-      flipMatrix(lrIndex,4) = size(vol,lrIndex)-1;
-      hdr = cbiSetNiftiQform(hdr,hdr.qform44*flipMatrix);
-      if hdr.sform_code
-	hdr = cbiSetNiftiSform(hdr,hdr.sform44*flipMatrix);
-      end
-    end
   end
 
   %%%%%%%%%%%%%%%%%%%%%%
