@@ -254,6 +254,11 @@ function header = mlrImageHeaderLoadNifti(filename,header)
 
 % read the nifti header
 nifti = cbiReadNiftiHeader(filename);
+if isempty(nifti)
+  disp(sprintf('(mlrImageHeaderLoad) Could not load header for %s',filename));
+  header=[];
+  return;
+end
 
 % set some info
 header.type = 'nifti';
