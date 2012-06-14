@@ -103,47 +103,23 @@ for pathNum = 1:length(pathStr)
       % load the whole thing and average across volumes
       [vol hdr] = mlrImageLoad(pathStr{pathNum});
       if isempty(vol),return,end
-      [vol hdr] = mlrImageOrient('PLI',vol,hdr);
-      [vol hdr] = mlrImageXform(vol,hdr,'swapXY=1');
-      hdr = mlrImageGetNiftiHeader(hdr);
       vol = nanmean(vol,4);
     else
       % load a single volume
       [vol hdr] = mlrImageLoad(pathStr{pathNum},'volNum',params.frameNum);
       if isempty(vol),return,end
-      [vol hdr] = mlrImageOrient('PLI',vol,hdr);
-      [vol hdr] = mlrImageXform(vol,hdr,'swapXY=1');
-      hdr = mlrImageGetNiftiHeader(hdr);
     end
   else
     % if 3D file just load
     [vol hdr] = mlrImageLoad(pathStr{pathNum});
     if isempty(vol),return,end
-    [vol hdr] = mlrImageOrient('PLI',vol,hdr);
-    [vol hdr] = mlrImageXform(vol,hdr,'swapXY=1');
-    hdr = mlrImageGetNiftiHeader(hdr);
   end
   
-  % permutation and sliceIndex and rotate take on default values
-  % now that we load and rotate using mlrImageLoad
-  permutationMatrix = eye(3);
-  sliceIndex = [1 2 3];
-  base.rotate = 90;
-
-  % Warning if no alignment information in the header.
-  if ~hdr.sform_code
-    mrWarnDlg('(loadAnat) No base coordinate frame in the volume header. (i.e. sform is not set)');
-  end
-
-  %%%%%%%%%%%%%%%%%%%%%%
-  % Add it to the view %
-  %%%%%%%%%%%%%%%%%%%%%%
-
   % now check for an assoicated .mat file, this is created by
   % mrLoadRet and contains parameters for the base anatomy.
   % (it is the base structure minus the data and hdr) This is
   % essential for flat files
-
+  base = [];
   matFilename = sprintf('%s.mat',stripext(pathStr{pathNum}));
   if isfile(matFilename)
     l = load(matFilename);
@@ -152,13 +128,53 @@ for pathNum = 1:length(pathStr)
     end
   end
 
+  % now put volume into an orientation that mrLoadRet viewer
+  % will show as correct L/R and have the axial/sagittal/coronal
+  % buttons work correctly. Only do this for anatomy files
+  % and not surfaces or flat maps.
+  if ~isfield(base,'type') || (base.type == 0)
+    % Convert volume into LPI orientation
+    [vol hdr] = mlrImageOrient('LPI',vol,hdr);
+    % get the nifti header from the mlrImage header
+    hdr = mlrImageGetNiftiHeader(hdr);
+    % permutation and sliceIndex and rotate take on default values
+    % now that we load and fix the volume above
+    permutationMatrix = eye(3);
+    sliceIndex = [1 2 3];
+    if ~isfield(base,'rotate') || isempty(base.rotate)
+      base.rotate = 90;
+    end
+    if ~isfield(base,'curSlice') || isempty(base.curSlice)
+      sliceOrientation = viewGet(view,'sliceOrientation');
+      if ~isempty(sliceOrientation) && any(sliceOrientation == [1 2 3])
+	% set current slice to the slice half way through the volume
+	voldim = fliplr(size(vol));
+	base.curSlice = max(1,floor(voldim(sliceOrientation)/2));
+      end
+    end
+  else
+    % get the nifti header from the mlrImage header
+    hdr = mlrImageGetNiftiHeader(hdr);
+    % and set permutation and sliceIndex the old way, based on the header
+    [permutationMatrix sliceIndex] = getPermutationMatrix(hdr);
+  end
+
+  % Warning if no alignment information in the header.
+  if ~hdr.sform_code
+    mrWarnDlg('(loadAnat) No base coordinate frame in the volume header. (i.e. sform is not set). To fix this, run mrAlign and do an alignment or Set Base Coordinate Frame. If this anatomy was taken in the same session, then overlay alignment will use the qform and should look fine.');
+  end
+
+  %%%%%%%%%%%%%%%%%%%%%%
+  % Add it to the view %
+  %%%%%%%%%%%%%%%%%%%%%%
+
   % Set required structure fields (additional fields are set to default
   % values when viewSet calls isbase).
   base.name = name;
   base.data = vol;
   base.hdr = hdr;
   base.permutationMatrix = permutationMatrix;
-
+  
   % Add it to the list of base volumes and select it
   view = viewSet(view,'newBase',base);
 end
