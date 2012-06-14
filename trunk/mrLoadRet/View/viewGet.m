@@ -1834,9 +1834,19 @@ switch lower(param)
             oneTimeWarning(sprintf('incompatibleB3S1_%i_%i_%i',s,g,b),...
               ['Base and Scan are not compatible: Scan is in magnet space '...
               'and Base is not. Using the '...
-              'identity matrix to transform from base to scan. Run mrAlign '...
+              'qform to transform from base to scan. Run mrAlign '...
               'to get base and scan into the same space.']);
-            val = eye(4);
+	    % Using the qforms for alignment. Note that this logic probably
+	    % can be put in other sections of the base2scan where the code
+	    % is returning an eye(4) matrix, but only tested here, so leaving
+	    % it out in other places.
+	    scanQform = viewGet(view,'scanQform');
+	    baseQform = viewGet(view,'baseQform');
+	    if ~isempty(scanQform) && ~isempty(baseQform)
+	      val = inv(scanQform * shiftOriginXform) * baseQform * shiftOriginXform;
+	    else
+	      val = eye(4);
+	    end
           end
         else % error if scan has neither a base nor a tal transform
           oneTimeWarning(sprintf('unknownSformCode_%i_%i_%i',s,g,b),...
