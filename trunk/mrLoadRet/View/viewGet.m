@@ -1444,6 +1444,7 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b);
+      [tf val] = isbase(val);
     end
   case {'basecoordmappath'}
     % basedata = viewGet(view,'baseCoordMapPath',[baseNum],[corticalDepth])

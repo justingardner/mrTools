@@ -133,8 +133,12 @@ for pathNum = 1:length(pathStr)
   % buttons work correctly. Only do this for anatomy files
   % and not surfaces or flat maps.
   if ~isfield(base,'type') || (base.type == 0)
+    % get what the current orientation is and save it (for export like mlrExportROI to be able
+    % to export to the original orientation
+    axisLabels = mlrImageGetAxisLabels(hdr.qform);
+    base.originalOrient = axisLabels.orient;
     % Convert volume into LPI orientation
-    [vol hdr] = mlrImageOrient('LPI',vol,hdr);
+    [vol hdr base.xformFromOriginal] = mlrImageOrient('LPI',vol,hdr);
     % get the nifti header from the mlrImage header
     hdr = mlrImageGetNiftiHeader(hdr);
     % permutation and sliceIndex and rotate take on default values
