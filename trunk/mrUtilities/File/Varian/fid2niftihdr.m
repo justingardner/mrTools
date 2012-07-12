@@ -40,7 +40,7 @@ if isempty(qform44),hdr = [];return;end
 
 % give warning for epi's that have not been processed
 if info.isepi && info.compressedFid
-  disp(sprintf('(fidniftihdr) Compressed EPI - needs epibsi processing'));
+  disp(sprintf('(fid2niftihdr) Compressed EPI - needs epibsi processing'));
   hdr = [];
   return
 end
