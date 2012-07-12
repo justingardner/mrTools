@@ -40,20 +40,40 @@ for i = 2:viewGet(view,'nScans')
   end
 end
 
+% check to see if any scans have a volTrigRatio that is not one, if it
+% is then we will offer to notch filter the data, otherwise hide the option
+offerNotchFilter = false;
+defaultNotchFilterSetting = true;
+for iScan = 1:viewGet(view,'nScans','Raw')
+  volTrigRatio = viewGet(view,'auxParam','volTrigRatio',iScan,'Raw');
+  if iscell(volTrigRatio),volTrigRatio = cell2mat(volTrigRatio);end
+  if isscalar(volTrigRatio) && (volTrigRatio > 1)
+    offerNotchFilter = true;
+    % set default setting to false if the current scan is a concat
+    if ~isempty(viewGet(view,'concatInfo'))
+      defaultNotchFilterSetting = false;
+    end
+    break;
+  end
+end
+
 % description of paramaters (used by mrParamsDialog functions)
 paramsInfo = {...
     {'groupName',putOnTopOfList(viewGet(view,'groupName'),viewGet(view,'groupNames')),'Name of group from which to make concatenation'},...
     {'newGroupName','Concatenation','Name of group to which concatenation will be saved. If group does not already exist, it will be created.'},...
     {'description','Concatenation of [x...x]','Description that will be set to have the scannumbers that are selected'},...
-    {'filterType',1,'minmax=[0 2]','incdec=[-1 1]','Which filter to use. Set to 0 for no filtering. Set to 1 for detrending followed by highpass filtering using the cutoff below. Set to 2 for detrending only.'},...
+    {'filterType',{'Detrend and highpass','Detrend only','None'},'Which filter to use. Highpass filtering will use the cutoff below.'},...
     {'filterCutoff',0.01,'minmax=[0 inf]','Highpass filter cutoff in Hz'},...
     {'percentSignal',1,'type=checkbox','Convert to percent signal change. This is done by simply dividing by the mean, so that you get a timecourse where the mean is 1. (The mean is not subtracted out so that if subsequent analysis tries to divide by mean again it will not affect the time series)'}};
-    if needToWarp
-      paramsInfo{end+1} = {'warp',1,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days. If the scans have the same slice prescription this will not do anything.'};
-      paramsInfo{end+1} = {'warpInterpMethod',interpTypes,'Interpolation method for warp','contingent=warp'};
-    end
-    paramsInfo{end+1} = {'projectOutMeanVector',0,'type=checkbox','Project out a mean vector defined from one roi out of the data. This is used if you want to remove a global component that is estimated as the mean over some roi from your data. If you select this you will be asked to choose one roi for defining the mean vector of what you want to project out and another roi from which you want to project out.'};
-
+if needToWarp
+  paramsInfo{end+1} = {'warp',1,'type=checkbox','Warp images based on alignment. This can be used to concatenate together scans taken on different days. If the scans have the same slice prescription this will not do anything.'};
+  paramsInfo{end+1} = {'warpInterpMethod',interpTypes,'Interpolation method for warp','contingent=warp'};
+end
+paramsInfo{end+1} = {'projectOutMeanVector',0,'type=checkbox','Project out a mean vector defined from one roi out of the data. This is used if you want to remove a global component that is estimated as the mean over some roi from your data. If you select this you will be asked to choose one roi for defining the mean vector of what you want to project out and another roi from which you want to project out.'};
+if offerNotchFilter
+  paramsInfo{end+1} = {'notchFilterForTSense',defaultNotchFilterSetting,'type=checkbox','This is used to notch out the highest frequency for tSense data'};
+end
+    
 % First get parameters
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
@@ -266,12 +286,38 @@ for iscan = 1:length(params.scanList)
   else
     d.data = tSeries; % if didn't warp, just set data
   end
+
+  % set up notch filter for tSense - this is intended to remove the highest
+  % temporal frequency component from the data that are introduced by
+  % the tSense reconstruction
+  if ~isfield(params,'notchFilterForTSense'),params.notchFilterForTSense = 0;end
+  d.notchFilterForTSense = 0;
+  if params.notchFilterForTSense
+    if ~strcmp(lower(params.filterType),lower('Detrend and highpass'))
+      mrWarnDlg(sprintf('(concatTSeries) !!! Notch filter for tSense is only implemented with the highpass filter for now. !!! Not applying any notch filter'));
+    else
+      % get volTrigRatio
+      volTrigRatio = viewGet(view,'auxParam','volTrigRatio');
+      if iscell(volTrigRatio),volTrigRatio = cell2mat(volTrigRatio);end
+      if isscalar(volTrigRatio)
+	if any(volTrigRatio == [2 4])
+	  d.notchFilterForTSense = volTrigRatio;
+	elseif volTrigRatio ~= 1
+	  mrWarnDlg(sprintf('(concatTSeries) !!! Notch filter for tSense has only be implemented for acceleration factors of 2 !!! Not running any notch filter'));
+	end
+      else
+	disp(sprintf('(concatTSeries) Notch filter not being run on concat of a concat'));
+      end
+    end
+  end
   
   % do other  processing here
-  if params.filterType == 1
+  if strcmp(lower(params.filterType),lower('Detrend and highpass'))
     d = eventRelatedHighpass(d,params.filterCutoff);
-  elseif params.filterType == 2
+  elseif strcmp(lower(params.filterType),lower('Detrend only'))
     d = detrendTSeries(d);
+  elseif ~strcmp(lower(params.filterType),lower('None'))
+    disp(sprintf('(concatTSeries) Unknown filterType; %s, not applying any filtering',params.filterType));
   end
   
   if params.projectOutMeanVector
@@ -426,7 +472,6 @@ if params.projectOutMeanVector
   % reset back to original group
   view = viewSet(view,'curGroup',curMLRGroup);
 end
-
 
 % Save evalstring for recomputing and params
 evalstr = ['view = newView; view = concatTSeries(view,params);'];
