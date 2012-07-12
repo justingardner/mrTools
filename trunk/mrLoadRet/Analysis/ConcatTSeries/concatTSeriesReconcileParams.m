@@ -27,7 +27,7 @@ if ieNotDefined('params')
   params.baseScan = params.scanList(1);
   params.description = sprintf('Concatenation from %s of scans: %s',params.groupName,num2str(params.scanList));
   % set to one to use highpass filter
-  params.filterType = 1;
+  params.filterType = 'Detrend and highpass';
   params.filterCutoff = 0.01;
   % set to one to convert to percent signal change
   params.percentSignal = 1;
