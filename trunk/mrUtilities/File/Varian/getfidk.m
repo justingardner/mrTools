@@ -57,6 +57,11 @@ numReceivers = info.numReceivers;
 if info.compressedFid
   % for compressedFid each line of data has all phase encode lines
   numLines = numSlices*numVolumes*numReceivers;
+  % but, if intlv is 'y', then each block of data contains all slices
+  if isequal(info.intlv,'y')
+    numLines = numLines/numSlices;
+    if verbose,disp(sprintf('(getfidk) intlv is %s: Assuming shot interleaving',info.intlv));end
+  end
   % we will also need to know the line order as returned form petable
   if ~isfield(info.procpar,'pelist') || length(info.procpar.pelist) > 1
     lineorder = info.procpar.pelist-min(info.procpar.pelist)+1;
@@ -93,18 +98,48 @@ kNum = 1;clear i;
 d.data = nan(info.dim(2),numPhaseEncodeLines,numSlices,numReceivers,numVolumes);
 if verbose,disppercent(-inf,'(getfidk) Reordering data');end
 if info.compressedFid
-  for volNum = 1:numVolumes
-    for sliceNum = 1:numSlices
+  % if intlv is set to y then it means that shots are interleaved - i.e. a shot is taken on
+  % each slice and then you come back. Thus each block contains the data from all slices
+  if isequal(info.intlv,'y')
+    % etl can be computed
+    etl = numPhaseEncodeLines/info.procpar.numshots;
+    % but, make sure we have etl field which tells how many lines per shot
+    if ~isfield(info.procpar,'etl') || isempty(info.procpar.etl)
+      disp(sprintf('(getfidk) Missing etl field which should tell us how many lines of k-space per shot'));
+      disp(sprintf('          Using %i based on having %i shots',etl,info.procpar.numshots));
+    else
+      % make sure they match what we calculated
+      if ~isequal(etl,info.procpar.etl)
+	disp(sprintf('(getfidk) Computed etl: %i does not match etl in procpar: %i',etl,info.procpar.etl));
+      end
+      etl = info.procpar.etl;
+    end
+    keyboard
+    for volNum = 1:numVolumes
       for receiverNum = 1:numReceivers
-	% compressed fids have all lines of k-space in one single block of data
+	% compressed fids with intlv have all lines of k-space in one single block of data
 	% note conversion here to double
 	d.data(:,lineorder,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
 	kNum = kNum+1;
       end
+      if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
     end
-    if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
+  else
+    % do processing for non itls compressed data
+    for volNum = 1:numVolumes
+      for sliceNum = 1:numSlices
+	for receiverNum = 1:numReceivers
+	  % compressed fids have all lines of k-space in one single block of data
+	  % note conversion here to double
+	  d.data(:,lineorder,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
+	  kNum = kNum+1;
+	end
+      end
+      if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
+    end
   end
 else
+  % do processing for non-compressed data
   for kLine = 1:numPhaseEncodeLines
     for volNum = 1:numVolumes
       for receiverNum = 1:numReceivers

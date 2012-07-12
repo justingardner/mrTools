@@ -66,7 +66,7 @@ if (isfield(procpar,'petable'))
   % some files may not be named according to convention
   % in that case we check for the cntr field. If it is there
   % then this is an epi
-  elseif isfield(procpar,'cntr')
+  elseif isfield(procpar,'cntr') && ~isequal(procpar.cntr,0)
     info.isepi = 1;
   end
 end
@@ -82,6 +82,17 @@ info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapse
 
 % set the console in the info for easy reference
 info.console = procpar.console{1};
+
+% get the ilts setting
+if isfield(procpar,'intlv')
+  if iscell(procpar.intlv)
+    info.intlv = procpar.intlv{1};
+  else
+    info.intlv = procpar.intlv;
+  end
+else
+  info.intlv = 'n';
+end
 
 % if there is no ni field then just return
 if ~isfield(procpar,'ni')
