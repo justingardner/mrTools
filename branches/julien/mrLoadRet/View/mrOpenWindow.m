@@ -162,9 +162,14 @@ function [view,baseLoaded] = loadAnatomy(view)
     baseLoaded = 1;
     % load the first anatomy in the list
     view = loadAnat(view,anatdir(1).name);
-    view = viewSet(view,'sliceOrientation','coronal');
-    % rotate 270
-    mlrGuiSet(view.viewNum,'rotate',270);
+    % if it is a regular anatomy
+    if viewGet(view,'baseType') == 0
+      view = viewSet(view,'sliceOrientation','coronal');
+      % set to display a middle slice
+      baseDims = viewGet(view,'baseDims');
+      baseSliceIndex = viewGet(view,'baseSliceIndex');
+      view = viewSet(view,'curSlice',floor(baseDims(baseSliceIndex)/2));
+    end
     % change group to last in list
     view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
     % and refresh

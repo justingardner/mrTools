@@ -31,7 +31,9 @@ if (nargout == 2)
 		    'gamma',1,;
 		    'vol2tal',[];
 		    'vol2mag',[];
-                    'talInfo',[] };
+                    'talInfo',[];
+		    'originalOrient',[];
+		    'xformFromOriginal',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).

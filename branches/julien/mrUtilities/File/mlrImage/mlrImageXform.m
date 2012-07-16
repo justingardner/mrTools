@@ -23,6 +23,7 @@ if nargin < 1
   help mlrImageXform
   return
 end
+d = [];h= [];xform=[];
 
 % parse arguments
 [imageArgs otherArgs] = mlrImageParseArgs(varargin);
@@ -173,10 +174,6 @@ for iImage = 1:length(imageArgs)
   [d h xform] = adjustDims(d,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData,xform);
   % make sure dim is correct
   h.dim = size(d);
-  % apply to sform if it exists
-  if applyToHeader && ~isempty(h.sform) && ~isempty(h.qform)
-    h.sform = h.sform*xform;
-  end
   % fix pixdim - thus if we have anisotropic voxels and we swap
   % dims or rotate this will fix the dimensions to be appropriate
   if applyToHeader
