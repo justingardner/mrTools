@@ -28,7 +28,6 @@ if isempty(hdr)
   mrWarnDlg('(mlrExportROI) Could not get base anatomy header');
   return
 end
-
 % tell the user what is going on
 disp(sprintf('(mlrExportROI) Exporting ROI to %s with dimensions set to match base %s: [%i %i %i]',saveFilename,viewGet(v,'baseName'),hdr.dim(2),hdr.dim(3),hdr.dim(4)));
 
@@ -57,9 +56,19 @@ roiBaseCoordsLinear = sub2ind(hdr.dim(2:4)',roiBaseCoords(1,:),roiBaseCoords(2,:
 % set all the roi coordinates to 1
 d(roiBaseCoordsLinear) = 1;
 
+b = viewGet(v,'base');
+% if the orientation has been changed in loadAnat, undo that here.
+if ~isempty(b.originalOrient)
+  % convert into mlrImage
+  [d h] = mlrImageLoad(d,hdr);
+  % convert the orientation back to original
+  [d h] = mlrImageOrient(b.originalOrient,d,h);
+  % covert back to nifti
+  hdr = mlrImageGetNiftiHeader(h);
+end
+
 % now save the nifti file
 cbiWriteNifti(saveFilename,d,hdr);
-
   
   
   

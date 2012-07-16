@@ -102,8 +102,26 @@ if verbose,statusStringAdd(statusHandle,'Checking group perimeter.');end
 % Check to make sure that this is a clean surface: no edge points yet.
 edgeList=findGroupPerimeter(mesh,1:length(mesh.uniqueVertices));
 if (~isempty(edgeList))
-  error('Error - initial mesh is not closed!');
-  return;
+  % it turns out that some surfaces can not be open and still not cause a problem
+  % especially if the edge points are not within the location being flattened. So,
+  % making this a warning, rather than a full on error (perhaps a better test
+  % would be to check whether the vertices in question live witin the are to be
+  % flattened, but since this seems to be a rather rare occurrence (happened for
+  % us with a freesurfer surface with a bright spot in the orbital frontal cortex).
+  %error('Error - initial mesh is not closed!');
+  %return;
+  dispHeader('(flattenSurfaceMFM) ERROR - initial mesh is not closed!',80);
+  disp(sprintf('(flattenSurfaceMFM) If this happens within the region to be flattened, this may cause a problem'));
+  disp(sprintf('(flattenSurfaceMFM) But otherwise, your flat surface may be ok. The following is a list of the'));
+  disp(sprintf('(flattenSurfaceMFM) coordinates in the 3D canonical volume from which the problem seems to be occurring'));
+  disp(sprintf('(flattenSurfaceMFM) You are ENCOURAGED to go check these points (load the canonical in mlrVol and look'));
+  disp(sprintf('(flattenSurfaceMFM) at the matching X,Y,Z locations and make sure this is out of the region that you want'));
+  disp(sprintf('(flattenSurfaceMFM) to flatten. You may also consider trying to fix the problem (perhaps scan another canonical'));
+  disp(sprintf('(flattenSurfaceMFM) and or change parameters of the segmentation software to get surfaces without this problem'));
+  for i = 1:length(edgeList(:))
+    disp(sprintf('(flattenSurfaceMFM) (X,Y,Z): (%i, %i, %i)',round(mesh.uniqueVertices(edgeList(i),1)),round(mesh.uniqueVertices(edgeList(i),2)),round(mesh.uniqueVertices(edgeList(i),3))));
+  end
+  dispHeader('',80);
 else
   str = sprintf('Initial mesh is closed.');
   if verbose,disp(sprintf(str));end
