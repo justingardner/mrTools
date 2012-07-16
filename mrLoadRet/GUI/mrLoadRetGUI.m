@@ -914,7 +914,7 @@ end
 
 % --------------------------------------------------------------------
 function exportROIMenuItem_Callback(hObject, eventdata, handles)
-pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',mrGetPref('niftiFileExtension'));
+pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext('exportROI',mrGetPref('niftiFileExtension')));
 % pathstr = [] if aborted
 if ~isempty(pathstr)
   mrGlobals;

@@ -40,6 +40,7 @@ end
 % Find the endian-ness of the file
 hdr.endian='b'; % open file in big-endian
 fid=fopen(hdr.hdr_name,'r',hdr.endian);
+if fid==-1,hdr=[];return,end
 % check if this gives the correct header size - if not use little-endian
 testval = fread(fid,1,'int32');
 if ~isequal(testval,348)
