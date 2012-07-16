@@ -13,8 +13,10 @@ function procpar = readprocpar(procdir,verbose)
 if (nargin == 0)
   procdir = './';
   verbose = 0;
-elseif (nargin == 1)
-  procdir = setext(procdir,'fid',0);
+elseif (nargin == 1) 
+  if ~strcmp(getext(procdir),'par')
+    procdir = setext(procdir,'fid',0);
+  end
   verbose = 0;
 elseif (nargin ~= 2)
   help readprocpar;
@@ -89,6 +91,7 @@ fclose(fprocpar);
 
 % these fields will get set from the petable name if available
 if ~isfield(procpar,'accfactor'),procpar.accfactor = 1;end
+if ~isfield(procpar,'tSesnseAccfactor'),procpar.tSenseAccfactor = 1;end
 if ~isfield(procpar,'numshots'),procpar.numshots = 1;end
 
 % for epi images, there are navigator echos, which
@@ -118,7 +121,13 @@ if (isfield(procpar,'petable'))
     k = j;
     while((k < length(token)) && (~isempty(strfind('0123456789',token(k))))),k=k+1;,end
     if j < length(token)
-      procpar.accfactor = str2num(token(j:k-1));
+      % r means that it is a sense petable
+      if token(j+1:k) == 'r'
+	procpar.accfactor = str2num(token(j:k-1));
+      % t means t-sense acc factor	
+      elseif token(j+1:k) == 't'
+	procpar.tSenseAccfactor = str2num(token(j:k-1));
+      end
     end
     % before we always had 1 navecho for epi, but now there is a field procpar.navecho that should
     % be set by Ken's prep program that reads the petable and gets the t3 field.

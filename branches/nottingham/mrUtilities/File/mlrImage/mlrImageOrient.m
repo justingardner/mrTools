@@ -1,6 +1,6 @@
 % mlrImageOrient.m
 %
-%      usage: [data h] = mlrImageOrient(orient,data,h)
+%      usage: [data h xform] = mlrImageOrient(orient,data,h)
 %         by: justin gardner
 %       date: 09/05/11
 %    purpose: re-orient image to a standard orientation like LPI
@@ -8,9 +8,12 @@
 %             qform/sform
 %
 %       e.g.: [d h] = mlrImageOrient('LPI',data,h);
+%        
+%             you can also get the xform that was applied to reorient the image
+%             [d h xform] = mlrImageOrient('LPI',data,h);
 %  
 %
-function [data h] = mlrImageOrient(orient,varargin)
+function [data h xform] = mlrImageOrient(orient,varargin)
 
 % check arguments
 if nargin < 2
