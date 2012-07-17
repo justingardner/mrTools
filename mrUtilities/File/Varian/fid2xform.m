@@ -112,6 +112,11 @@ if (procpar.ni == 1) && (procpar.nf > 1)
   end
   info.compressedFid = true;
   dim(2) = procpar.nf;
+  % if interleaving then the second dimension has been multiplied by the
+  % number of slices, so undo that
+  if isequal(info.intlv,'y')
+    dim(2) = dim(2)/dim(3);
+  end
 else
   info.compressedFid = false;
 end
