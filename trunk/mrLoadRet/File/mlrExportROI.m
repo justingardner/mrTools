@@ -15,7 +15,7 @@ if ~any(nargin == [2])
 end
 
 % get the roi we are being asked to export
-roiNum = viewGet(getMLRView,'currentroi');
+roiNum = viewGet(v,'currentroi');
 if isempty(roiNum)
   mrWarnDlg('(mlrExportROI) No current ROI to export');
   return
