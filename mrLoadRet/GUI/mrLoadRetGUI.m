@@ -829,12 +829,27 @@ end
 
 % --------------------------------------------------------------------
 function exportROIMenuItem_Callback(hObject, eventdata, handles)
-pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext('exportROI',mrGetPref('niftiFileExtension')));
+% get view
+mrGlobals;
+viewNum = handles.viewNum;
+v = viewGet(viewNum,'view');
+
+% get the roi we are being asked to export
+roiNum = viewGet(v,'currentroi');
+if isempty(roiNum)
+  mrWarnDlg('(mlrExportROI) No current ROI to export');
+  return
+end
+
+% get current roi name
+roiName = viewGet(v,'roiname');
+
+% put up dialog to select filename
+pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext(roiName,mrGetPref('niftiFileExtension')));
+
 % pathstr = [] if aborted
 if ~isempty(pathstr)
-  mrGlobals;
-  viewNum = handles.viewNum;
-  mlrExportROI(viewGet(viewNum,'view'), pathstr);
+  mlrExportROI(v, pathstr);
 end
 
 
