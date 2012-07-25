@@ -59,6 +59,25 @@ if strcmp(runtype,'both') || strcmp(runtype,'init')
     hipassfilter(n:-1:(n/2+2)) = hipassfilter(2:n/2);
   end  
 
+  % notch out highest frequency that we get with sense processing
+  if d.notchFilterForTSense
+    if iseven(n)
+      if d.notchFilterForTSense == 2
+	hipassfilter((n/2)+1) = 0;
+	disp(sprintf('(eventRelatedHighpass) Applying notch filter for acceleration of x%i',d.notchFilterForTSense));
+      elseif d.notchFilterForTSense == 4
+	hipassfilter((n/2)+1) = 0;
+	hipassfilter((n/4)+1) = 0;
+	hipassfilter((3*n/4)+1) = 0;
+	disp(sprintf('(eventRelatedHighpass) Applying notch filter for acceleration of x%i',d.notchFilterForTSense));
+      else
+	mrWarnDlg(sprintf('(eventRelatedHighpass) Notch for tSense not implemented yet for acceleration of %i',d.notchFilterForTSense));
+      end
+    else
+      mrWarnDlg(sprintf('(eventRelatedHighpass) Notch for tSense expects that the time series is even (because it was accelerated) - still running, but filtering out the highest frequency component for an odd length time series may not completely remove the artifact'));
+      hipassfilter((n+1)/2:((n+1)/2)+1)= 0;
+    end
+  end
   % give back the DC
   hipassfilter(1) = 1;
   %hipassfilter(1) = 0;
