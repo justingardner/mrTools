@@ -650,6 +650,11 @@ minDispSlice = min(dispSlice(:));
 maxDispSlice = max(dispSlice(:));
 dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
 
+% if image has all the same values, display as white if the value is not 0
+if isequal(minDispSlice,maxDispSlice) && ~isequal(minDispSlice,0)
+  dispSlice(:) = 256;
+end
+
 % do transpose if necessary
 if vol.transpose(iView)
   dispSlice = dispSlice';
