@@ -40,6 +40,7 @@ roiBaseCoords = getROICoordinates(v,roiNum,0);
 % check roiBaseCoords
 if isempty(roiBaseCoords)
   mrWarnDlg('(mlrExportROI) This ROI does not have any coordinates in the base');
+  return
 end
 
 % make sure we are inside the base dimensions
