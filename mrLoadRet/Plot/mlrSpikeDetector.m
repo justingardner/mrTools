@@ -286,7 +286,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   spikePlotOKCallback   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function spikePlotOKCallback
+function spikePlotOKCallback(spikeinfo)
 
 selectGraphWin;
 closeGraphWin;

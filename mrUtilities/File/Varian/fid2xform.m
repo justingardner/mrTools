@@ -83,7 +83,7 @@ info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapse
 % set the console in the info for easy reference
 info.console = procpar.console{1};
 
-% get the ilts setting
+% get the intlv setting
 if isfield(procpar,'intlv')
   if iscell(procpar.intlv)
     info.intlv = procpar.intlv{1};
@@ -92,6 +92,17 @@ if isfield(procpar,'intlv')
   end
 else
   info.intlv = 'n';
+end
+
+% get the ilts setting
+if isfield(procpar,'ilts')
+  if iscell(procpar.ilts)
+    info.ilts = procpar.ilts{1};
+  else
+    info.ilts = procpar.ilts;
+  end
+else
+  info.ilts = [];
 end
 
 % if there is no ni field then just return
