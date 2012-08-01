@@ -1045,6 +1045,11 @@ volNum = args{2};
 vol = gVol{sysNum}.vols(volNum);
 h = vol.h;
 
+% close controls
+if isfield(gVol{sysNum},'controlsUp') && gVol{sysNum}.controlsUp
+  mrParamsClose;
+end
+
 % edit the header
 gVol{sysNum}.vols(volNum).h = mlrImageHeaderEdit(h);
 
