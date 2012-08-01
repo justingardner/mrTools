@@ -9,7 +9,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 14-Jul-2010 16:13:39
+% Last Modified by GUIDE v2.5 01-Aug-2012 14:25:01
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -2543,3 +2543,31 @@ else
   end
   refreshMLRDisplay(viewNum);
 end
+
+
+% --------------------------------------------------------------------
+function editStimfileMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to editStimfileMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% check for mgl function editStimfile
+if exist('editStimfile') ~= 2
+  mrWarnDlg(sprintf('(mrLoadRetGUI) To use this functionality, you need to have mgl installed. See http://justingardner.net/mgl'));
+else
+  editStimfile(v);
+end
+
+
+% --------------------------------------------------------------------
+function scanViewInMlrVolMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to scanViewInMlrVolMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+mlrVol(v);
