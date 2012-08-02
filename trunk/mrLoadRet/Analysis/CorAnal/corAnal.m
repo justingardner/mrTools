@@ -292,6 +292,11 @@ tSeries = loadTSeries(view, scan, slice);
 % ATTN: added reshapeTSeries function, since loadTSeries not longer reshapes when it loads -eli
 tSeries = reshapeTSeries(tSeries);
 
+% check that junkframes and nframes settings are ok
+if size(tSeries,1) < (junkframes+nframes)
+  mrErrorDlg(sprintf('(corAnal) Number of junkframes (%i) plus nframes (%i) should not be larger than number of volumes in scan %i',junkframes,nframes,size(tSeries,1)));
+end
+
 % Remove junkFrames
 tSeries = tSeries(junkframes+1:junkframes+nframes,:);
 
