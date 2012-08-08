@@ -294,7 +294,7 @@ for s = 1:length(targetScans)
   
   % Save tseries with modified nifti header
   scanParams = viewGet(viewBase,'scanParams',scanNum);
-  scanParams.description = ['Full ' descriptions{s}];
+  scanParams.description = ['Full ' descriptions{scanNum}];
   scanParams.fileName = [];
   scanParams.originalFileName{1} = viewGet(viewBase,'tseriesfile',scanNum);
   scanParams.originalGroupName{1} = viewGet(viewBase,'groupName');
