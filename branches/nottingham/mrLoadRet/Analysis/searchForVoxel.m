@@ -240,10 +240,14 @@ global gCMode;
 if ~isfield(gCMode,'continuousMode') || (gCMode.continuousMode==0)
   return
 end
-if gCMode.baseType ~= 0
+if (gCMode.baseType ~= 0) || isempty(gCMode.base2base)
   cla(gCMode.a1);
   axis(gCMode.a1,'off');
-  title(sprintf('Continuous mode not implemented for surface/flat maps'),'Parent',gCMode.a1);
+  if isempty(gCMode.base2base)
+    title(sprintf('Could not compute xform to selected base - has base been aligned?'),'Parent',gCMode.a1);
+  else
+    title(sprintf('Continuous mode not implemented for surface/flat maps'),'Parent',gCMode.a1);
+  end
   cla(gCMode.a2);
   axis(gCMode.a2,'off');
   cla(gCMode.a3);

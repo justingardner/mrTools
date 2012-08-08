@@ -1677,7 +1677,7 @@ switch lower(param)
     % composited the shiftOriginXform.
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numBase');
-    if (b > 0) && (b <= n)
+    if ~isempty(b) && (b > 0) && (b <= n)
       sform_code = viewGet(view,'baseSformCode',b);
       baseSform = viewGet(view,'baseSform',b);
       if ~isempty(baseSform)

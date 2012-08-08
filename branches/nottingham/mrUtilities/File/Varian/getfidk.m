@@ -102,7 +102,8 @@ if info.compressedFid
   % each slice and then you come back. Thus each block contains the data from all slices
   if isequal(info.intlv,'y')
     % etl can be computed
-    etl = numPhaseEncodeLines/info.procpar.numshots;
+    numshots = info.procpar.numshots;
+    etl = numPhaseEncodeLines/numshots;
     % but, make sure we have etl field which tells how many lines per shot
     if ~isfield(info.procpar,'etl') || isempty(info.procpar.etl)
       disp(sprintf('(getfidk) Missing etl field which should tell us how many lines of k-space per shot'));
@@ -112,17 +113,28 @@ if info.compressedFid
       if ~isequal(etl,info.procpar.etl)
 	disp(sprintf('(getfidk) Computed etl: %i does not match etl in procpar: %i',etl,info.procpar.etl));
       end
+      % get etl from procpar setting
       etl = info.procpar.etl;
+      % and get numshots from that
+      numshots = numPhaseEncodeLines/etl;
+      if numshots ~= round(numshots)
+	disp(sprintf('(getfidk) Etl of %i does not divide evenly into num of phase encode lines %i',etl,numPhaseEncodeLines));
+	numshots = round(numshots);
+      end
     end
-    keyboard
+
+    subblockSize = info.dim(1)*etl*numSlices;
     for volNum = 1:numVolumes
       for receiverNum = 1:numReceivers
-	% compressed fids with intlv have all lines of k-space in one single block of data
-	% note conversion here to double
-	d.data(:,lineorder,sliceNum,receiverNum,volNum) = reshape(double(d.real(kNum,:)) + i*double(d.imag(kNum,:)),numPhaseEncodeLines,info.dim(2));
-	kNum = kNum+1;
+	blockData = double(d.real(kNum,:)) + i*double(d.imag(kNum,:));
+	kNum = kNum + 1;
+	for shotNum = 1:numshots
+	  % compressed fids with intlv have all lines of k-space in one
+	  % single block of data note conversion here to double
+	  d.data(:,lineorder((shotNum-1)*etl+1:shotNum*etl),:,receiverNum,volNum) = reshape(blockData((shotNum-1)*subblockSize+1:shotNum*subblockSize),info.dim(1),etl,numSlices);
+	end
       end
-      if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
+      if verbose,disppercent(calcPercentDone(volNum,numVolumes,receiverNum,numReceivers));end
     end
   else
     % do processing for non itls compressed data
