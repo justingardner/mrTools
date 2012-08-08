@@ -148,7 +148,25 @@ while keepAsking
         if ~isfield(scanParams{iScan},'varname')
           scanParams{iScan}.varname = varnames{1};
         end
-        paramsInfo{end+1} ={'varname',scanParams{iScan}.varname,sprintf('Analysis variables: %s',varnamesStr)};
+        if iscell(scanParams{iScan}.varname)
+            %convert cell array to string
+            varname = '{';
+            for iCell = 1:length(scanParams{iScan}.varname)
+                if iscell(scanParams{iScan}.varname{iCell})
+                    varname = [varname '{'];
+                    for jCell = 1:length(scanParams{iScan}.varname{iCell})
+                        varname = [varname '''' scanParams{iScan}.varname{iCell}{jCell} ''',',];
+                    end
+                    varname = [varname(1:end-1) '},'];
+                else
+                    varname = [varname '''' scanParams{iScan}.varname{iCell} ''',',];
+                end
+            end
+            varname = [varname(1:end-1) '}'];
+        else
+            varname = scanParams{iScan}.varname;
+        end
+        paramsInfo{end+1} ={'varname',varname,sprintf('Analysis variables: %s',varnamesStr)};
       end
     elseif strfind(stimfile{1}.filetype,'eventtimes')  && ~isfield(scanParams{iScan},'stimDuration') && isfield(stimfile{1}.mylog,'stimdurations_s')
           scanParams{iScan}.stimDuration = 'fromFile';
