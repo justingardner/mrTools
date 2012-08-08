@@ -90,7 +90,10 @@ if ismember(analysisType,{'glmAnalStats','glmAnal','glmcAnal'})
       deconvData = viewGet(thisView,'d',scanNum,erAnalNum);
       deconvAnalysisParams = convertOldGlmParams(viewGet(thisView,'analysisParams',erAnalNum));
       %check that the EVs are compatible between the deconvolution and the GLM analysis
-      if isequal(deconvData.EVnames,glmData.EVnames)
+      if ~isfield(deconvData,'EVnames')
+        mrWarnDlg('(glmPlot) Cannot plot old deconvolution analysis');
+        clear('deconvData');
+      elseif isequal(deconvData.EVnames,glmData.EVnames)
         plotDeconvolution=1;
       else
         mrWarnDlg('(glmPlot) Name of EVs in deconvolution and GLM analyses are incompatible.');
@@ -170,7 +173,7 @@ for iPlot = 1:length(roi)+1
     volumeIndices = sub2ind(size(r2data),roi{roiNum}.scanCoords(1,:),roi{roiNum}.scanCoords(2,:),roi{roiNum}.scanCoords(3,:));
     roiIndices = (r2data(volumeIndices)>r2clip(1)) & (r2data(volumeIndices)<r2clip(2));% & (~isnan(volumeBetas(volumeIndices,1,1)))';
     volumeIndices = volumeIndices(roiIndices);
-    [e,volumeIndices] = getEstimates(glmData,analysisParams,volumeIndices);
+    [e,volumeIndices] = getEstimates(glmData,analysisParams,volumeIndices');
     nVoxels = length(volumeIndices);
     nTotalVoxels = length(roiIndices);
     
@@ -334,7 +337,7 @@ for iPlot = 1:length(roi)+1
     if numberContrasts
       deconvAnalysisParams.contrasts = analysisParams.contrasts;
     end
-    [eDeconv,volumeIndices] = getEstimates(deconvData,deconvAnalysisParams,volumeIndices);
+    eDeconv = getEstimates(deconvData,deconvAnalysisParams,volumeIndices);
     if any(any(eDeconv.hdr))
       eDeconv.hdr = mean(eDeconv.hdr,3);
       h=plotEhdr(ehdrAxes,eDeconv.time,eDeconv.hdr);
