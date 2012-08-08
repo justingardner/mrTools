@@ -103,6 +103,11 @@ if ~isfield(d,'dataType')
     disp(sprintf('(readsdt) !!! dataType not found in header, setting to float32'));
     d.dataType = 'REAL';
   end
+elseif strcmp(type,'edt')
+  if ~strcmp(d.dataType,'COMPLEX')
+    disp(sprintf('(readsdt) EPR file has dataType as REAL, but EPR files contain complex data, so reading as COMPLEX'));
+  end
+  d.dataType = 'COMPLEX';
 end
 
 % get wordisze
