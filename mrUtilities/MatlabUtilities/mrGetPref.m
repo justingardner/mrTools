@@ -33,7 +33,7 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'defaultInterrogators','systemInterrogators',...,
    'importROIPath','volumeDirectory','niftiFileExtension','fslPath',...
    'selectedROIColor','roiContourWidth','roiPolygonMethod',...,
-   'interpMethod','corticalDepthBins', 'multiSliceProjectionMethod','colorBlending',...
+   'interpMethod','corticalDepthBins','roiCorticalDepthDisplayRatio', 'multiSliceProjectionMethod','colorBlending',...
    'pluginPaths','selectedPlugins',...
    'site','magnet','coil','pulseSequence'};
 
@@ -55,6 +55,7 @@ prefDefaults{find(strcmp('fslPath',prefNames))} = 'FSL not installed';
 prefDefaults{find(strcmp('selectedROIColor',prefNames))} = color2RGB;
 prefDefaults{find(strcmp('selectedROIColor',prefNames))}{end+1} = 'none';
 prefDefaults{find(strcmp('roiContourWidth',prefNames))} = 1;
+prefDefaults{find(strcmp('roiCorticalDepthDisplayRatio',prefNames))} = .5;
 prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'roipoly','getpts','getptsNoDoubleClick'};
 prefDefaults{find(strcmp('interpMethod',prefNames))} = {'nearest','linear','spline','cubic'};
 prefDefaults{find(strcmp('corticalDepthBins',prefNames))} = 11;

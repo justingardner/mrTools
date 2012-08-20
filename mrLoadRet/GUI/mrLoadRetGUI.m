@@ -1665,6 +1665,7 @@ interpMethod = mrGetPref('interpMethod');
 selectedROIColor = mrGetPref('selectedROIColor');
 roiContourWidth = mrGetPref('roiContourWidth');
 corticalDepthBins = mrGetPref('corticalDepthBins');
+roiCorticalDepthDisplayRatio = mrGetPref('roiCorticalDepthDisplayRatio');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1693,6 +1694,13 @@ if ~isempty(prefParams)
     refreshMLRDisplay(v.viewNum);
   end
   
+  % check to see if parameters affecting the ROI cache have changed
+  if ~isequal(roiCorticalDepthDisplayRatio,prefParams.roiCorticalDepthDisplayRatio)
+    % dump overlay cache and redraw
+    v = viewSet(v,'roiCache','init');
+    refreshMLRDisplay(v.viewNum);
+  end
+  
   if ~strcmp(corticalDepthBins,prefParams.corticalDepthBins)
     set(handles.corticalDepthSlider,'SliderStep',min(1/(prefParams.corticalDepthBins-1)*[1 3],1));
     if isfield(handles,'corticalMaxDepthSlider')
@@ -1701,7 +1709,7 @@ if ~isempty(prefParams)
     refreshMLRDisplay(v.viewNum);
   end
   
-  % check to see if any other parameters that affects the display have changed
+  % check to see if any other parameters that affects the display, but not the cache have changed
   if ~strcmp(selectedROIColor,prefParams.selectedROIColor) ||...
       ~strcmp(roiContourWidth,prefParams.roiContourWidth) || ...
     refreshMLRDisplay(v.viewNum);
