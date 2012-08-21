@@ -137,16 +137,22 @@ else
 end
 
 %find the least supersampling factor (= greatest common factor of all possible durations/times of the event)
-if isfield(var,'estimationSupersampling') %if sub-sample estimation is required
+
+if isfield(var,'estimationSupersampling') %if sub-sample estimation is required in a deconvolution model
   estimationSupersampling = var.estimationSupersampling;
 else
   estimationSupersampling=1;
 end
+if isfield(var,'designSupersampling') %if supersampling the GLM is required in a canonical HRF analysis
+  designSupersampling = var.designSupersampling;
+else
+  designSupersampling=1;
+end
 
-resolutionLimit = .05; %temporal resolution limit in s
-remainders = [([time_remainders duration_remainders])*estimationSupersampling d.tr];
-remainders = round(remainders/resolutionLimit); %temporal resolution limited to .01 s
-remainders(remainders==0) = round( d.tr/resolutionLimit );    %replace zeros by TRs; not always guaranteed to have integer result here, so round!
+resolutionLimit = .05; %temporal resolution limit in s (we assume that the sub-sampled TR is a multiple of this)
+remainders = [time_remainders duration_remainders d.tr/estimationSupersampling d.tr/designSupersampling]; %concatenate time and duration remainders with the supersampled TR value in seconds (to make sure there's at least one value
+remainders = round(remainders/resolutionLimit); % express time remainders in terms of the maximum time sampling
+remainders(remainders==0) = [];    %remove 0 values
 remainders = unique(remainders);
 greatest_common_factor = 0; 
 for i = 1:length(remainders)
@@ -155,14 +161,13 @@ for i = 1:length(remainders)
       break
    end
 end
-designSupersampling = round(d.tr*estimationSupersampling/(greatest_common_factor*resolutionLimit));
+designSupersampling = round(d.tr/(greatest_common_factor*resolutionLimit));
 
 %check if designSupersampling is supported for all runs
-if designSupersampling~=1 || ischar(var.stimDuration) || var.stimDuration ~= d.tr
+if designSupersampling~=1 || ischar(var.stimDuration) || rem(var.stimDuration,d.tr) ~= 0
    for i = 1:length(d.stimfile)
       if ~strcmp(d.stimfile{i}.filetype,'eventtimes')
-         disp(sprintf('(getStimvol) TR supersampling not supported for mgl or afni files. using default (1.0)'));
-         designSupersampling = 1;
+         mrErrorDlg('(getStimvol) TR supersampling and/or durations that are not multiples of the TR are not supported for mgl or afni files.');
       end
    end
 end

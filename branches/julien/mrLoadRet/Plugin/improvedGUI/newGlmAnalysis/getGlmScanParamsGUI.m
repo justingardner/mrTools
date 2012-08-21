@@ -44,6 +44,9 @@ while keepAsking
     if ~isfield(scanParams{iScan},'forceStimOnSampleOnset')
        scanParams{iScan}.forceStimOnSampleOnset = 1;
     end
+    if ~isfield(scanParams{iScan},'designSupersampling') || isempty(scanParams{iScan}.designSupersampling)
+       scanParams{iScan}.designSupersampling = 1;
+    end
     if ~isfield(scanParams{iScan},'estimationSupersampling') || isempty(scanParams{iScan}.estimationSupersampling)
        scanParams{iScan}.estimationSupersampling = 1;
     end
@@ -168,30 +171,48 @@ while keepAsking
         end
         paramsInfo{end+1} ={'varname',varname,sprintf('Analysis variables: %s',varnamesStr)};
       end
-    elseif strfind(stimfile{1}.filetype,'eventtimes')  && ~isfield(scanParams{iScan},'stimDuration') && isfield(stimfile{1}.mylog,'stimdurations_s')
+    elseif strcmp(stimfile{1}.filetype,'eventtimes')  && ~isfield(scanParams{iScan},'stimDuration') && isfield(stimfile{1}.mylog,'stimdurations_s')
           scanParams{iScan}.stimDuration = 'fromFile';
     end
 
     if fieldIsNotDefined(scanParams{iScan},'stimDuration') 
        scanParams{iScan}.stimDuration = num2str(framePeriod);
     elseif isnumeric(scanParams{iScan}.stimDuration)
+      if ~strcmp(stimfile{1}.filetype,'eventtimes') %if the stimfile is not the mylog type
+        scanParams{iScan}.stimDuration = max(framePeriod,framePeriod*round(scanParams{iScan}.stimDuration/framePeriod)); %round the duration to a multiple of the frame period
+      end
       scanParams{iScan}.stimDuration = num2str(scanParams{iScan}.stimDuration);
     end
 
-    if strcmp(params.hrfModel,'hrfDeconvolution')
-       canonicalVisibleOption = 'visible=0';
-       deconvolutionVisibleOption = 'visible=1';
+    if strcmp(params.hrfModel,'hrfDeconvolution') 
+      canonicalVisibleOption = 'visible=0';
+      designSupersamplingOption = 'visible=0';
+      if strcmp(stimfile{1}.filetype,'eventtimes')
+        deconvolutionVisibleOption = 'visible=1';
+      else
+        scanParams{iScan}.estimationSupersampling=1;
+        scanParams{iScan}.acquisitionSubsample=1;
+        deconvolutionVisibleOption = 'enable=0';
+      end
+      scanParams{iScan}.designSupersampling=scanParams{iScan}.estimationSupersampling;
     else
       scanParams{iScan}.estimationSupersampling=1;
       scanParams{iScan}.acquisitionSubsample=1;
       canonicalVisibleOption = 'visible=1';
       deconvolutionVisibleOption = 'visible=0';
+      if strcmp(stimfile{1}.filetype,'eventtimes')
+        designSupersamplingOption = 'visible=1';
+      else
+        designSupersamplingOption = 'visible=0';
+        scanParams{iScan}.designSupersampling=1;
+      end
     end
     
     paramsInfo = [paramsInfo {...
-      {'estimationSupersampling',scanParams{iScan}.estimationSupersampling, deconvolutionVisibleOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation'},...
+      {'estimationSupersampling',scanParams{iScan}.estimationSupersampling, deconvolutionVisibleOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation, and is not supported for MGL/AFNI stim files.'},...
       {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, deconvolutionVisibleOption, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'},...
-      {'stimDuration', scanParams{iScan}.stimDuration, canonicalVisibleOption, 'duration of stimulation/event (seconds, min=0.01s), a boxcar function that is convolved with the HRF model. If using deconvolution, should be equal to the (sub)frame period'},...
+      {'designSupersampling',scanParams{iScan}.designSupersampling, designSupersamplingOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame rate. This is not supported for MGL/AFNI stim files.'},...
+      {'stimDuration', scanParams{iScan}.stimDuration, canonicalVisibleOption, 'duration of stimulation/event (seconds, min=0.05s), a boxcar function that is convolved with the HRF model. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR). Use ''fromFile'' is the stimulus durations are specified in the stim files.'},...
       {'forceStimOnSampleOnset', scanParams{iScan}.forceStimOnSampleOnset,'type=checkbox','Forces stimulus onset to coincide with (sub)sample onsets'},...
        }];
 
