@@ -369,8 +369,8 @@ if ~isempty(roiBaseCoords)
     [baseIndices roiIndices] = ismember(baseCoordsLinear,roiBaseCoordsLinear);
     
     if nDepths>1%if it is a flat map with more than one depth
-      %only keep base voxels that are in at least half of the depth levels
-      baseIndices=(sum(reshape(baseIndices,[prod(imageDims) nDepths]),2)>=nDepths/2)';
+      %only keep base voxels that are in a given propotion of the depth levels (given by mrPref roiCorticalDepthDisplayRatio)
+      baseIndices=(sum(reshape(baseIndices,[prod(imageDims) nDepths]),2)>=nDepths*mrGetPref('roiCorticalDepthDisplayRatio'))';
       %Since there are several depths, there can be several base roi voxels at each image voxel
       % roiIndices=reshape(roiIndices,[prod(imageDims) nDepths]);
       %but which voxel is displayed is actually not used later because we can only display one depth at a time
