@@ -17,13 +17,21 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     mrDEFAULTS = loadMrDefaults;
 
     % Check Matlab version number
-    [mlrVersion, expectedMatlabVersion] = mrLoadRetVersion;
+    [mlrVersion, expectedMatlabVersion, expectedToolboxNames] = mrLoadRetVersion;
     version = ver('Matlab');
-    matlabVersion = str2num(version.Version(1:3));
+    matlabVersion = str2num(version.Version(1:min(length(version.Version),4)));
     if ~ismember(matlabVersion, expectedMatlabVersion);
-      oneTimeWarning('mrToolsMatlabVersionError',['(mrGlobals) mrLoadRet is intended for Matlab ',num2str(expectedMatlabVersion),'. You are running Matlab ',version.Version]);
+      oneTimeWarning('mrToolsMatlabVersionError',['(mrGlobals) mrTools has been tested on Matlab versions ',mlrnum2str(expectedMatlabVersion,'compact=1'),'. You are running Matlab ',version.Version]);
     end
 
+    % Check for expected toolboxes
+    versionAll = ver;
+    for iToolbox = 1:length(expectedToolboxNames)
+      if ~any(strcmp(expectedToolboxNames{iToolbox},{versionAll.Name}))
+	oneTimeWarning(sprintf('mrToolsMissing%s',expectedToolboxNames{iToolbox}),sprintf('(mrGlobals) mrTools uses the %s which you do not have installed - functions that rely on this toolbox may fail to work.',expectedToolboxNames{iToolbox}));
+      end
+    end
+    
     % Initialize MLR
     MLR.version = mlrVersion;
     MLR.homeDir = pwd;
