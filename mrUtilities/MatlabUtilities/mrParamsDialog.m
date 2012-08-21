@@ -255,12 +255,16 @@ for i = 1:length(gParams.vars)
 
 
   if isfield(gParams.varinfo{i},'incdec')
-    dParams.incdec(i,:)=gParams.varinfo{i}.incdec;
-    if isfield(gParams.varinfo{i},'incdecType')
-      dParams.incdecType{i} = gParams.varinfo{i}.incdecType;
+    if (~isfield(gParams.varinfo{i},'editable') || isequal(gParams.varinfo{i}.editable,1)) ...  % only display increment/decrement buttons
+      && (~isfield(gParams.varinfo{i},'enable') || isequal(gParams.varinfo{i}.enable,1))          % if the control is editable and enabled
+      dParams.incdec(i,:)=gParams.varinfo{i}.incdec;
+      if isfield(gParams.varinfo{i},'incdecType')
+        dParams.incdecType{i} = gParams.varinfo{i}.incdecType;
+      end
+    else
+      gParams.varinfo{i}=rmfield(gParams.varinfo{i},'incdec');
     end
   end
-
 end  
 
 %optimize figure dimensions
