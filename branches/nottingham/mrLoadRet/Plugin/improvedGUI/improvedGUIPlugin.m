@@ -215,7 +215,7 @@ switch action
 
     % Analysis menu
     mlrAdjustGUI(thisView,'add','menu','Apply MotionComp Transforms','/Analysis/Motion Compensation/Slice Time Correction (only)','callback',@applyMotionCompTransformsCallBack,'tag','applyMotionCompTransformMenuItem');
-    mlrAdjustGUI(thisView,'remove','menu','eventRelatedMenuItem');
+    %mlrAdjustGUI(thisView,'remove','menu','eventRelatedMenuItem');
     mlrAdjustGUI(thisView,'set','glmMenuItem','Callback',@glmAnalysisCallback);
     mlrAdjustGUI(thisView,'set','glmMenuItem','label','GLM analysis (v2)');
     mlrAdjustGUI(thisView,'set','recomputeAnalysisMenuItem','Callback',@recomputeAnalysisCallback);
