@@ -18,6 +18,7 @@ viewSettings.curBase = viewGet(v,'curBase');
 viewSettings.rotate = viewGet(v,'rotate');
 viewSettings.curScan = viewGet(v,'curScan');
 viewSettings.curSlice = viewGet(v,'curSlice');
+viewSettings.corticalDepth = viewGet(v,'corticalDepth');
 viewSettings.curGroup = viewGet(v,'curGroup');
 viewSettings.sliceOrientation = viewGet(v,'sliceOrientation');
 viewSettings.overlayMin = viewGet(v,'overlayMin');
