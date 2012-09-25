@@ -823,14 +823,9 @@ switch lower(param)
     numBases = viewGet(view,'numberofBaseVolumes');
     % first save rotation, curSlice and sliceIndex
     % for this base image
-    baseType = viewGet(view,'baseType');
     curBase = viewGet(view,'curBase');
     rotate = viewGet(view,'rotate');
-    if baseType==0
-      curSlice = viewGet(view,'curSlice');
-    else
-      curSlice = viewGet(view,'corticalDepth');
-    end
+    curSlice = viewGet(view,'curSlice');
     %if there was not base loaded, curSlice could be empty, set default to 1
     if isempty(curSlice)
       curSlice =1;
@@ -841,6 +836,9 @@ switch lower(param)
       view.baseVolumes(curBase).rotate = rotate;
       view.baseVolumes(curBase).curSlice = curSlice;
       view.baseVolumes(curBase).sliceOrientation = sliceOrientation;
+      if viewGet(view,'baseType');
+        view.baseVolumes(curBase).curCorticalDepth = viewGet(view,'corticalDepth');
+      end
     end
     % now switch to new base
     if (baseNum > 0) & (baseNum <= numBases)
@@ -851,14 +849,11 @@ switch lower(param)
       baseDims = viewGet(view,'baseDims',baseNum);
       mlrGuiSet(view,'baseDims',baseDims);
       % set gamma sliders
-      baseClip = viewGet(view,'baseClip',baseNum);
-      baseRange = viewGet(view,'baseRange',baseNum);
       baseType = viewGet(view,'baseType',baseNum);
       baseGamma = viewGet(view,'baseGamma',baseNum);
       mlrGuiSet(view,'baseType',baseType);
       mlrGuiSet(view,'baseGamma',baseGamma);
-      % get the last know settings for this base
-      baseCurSlice = viewGet(view,'baseCurSlice',baseNum);
+      % get the last known settings for this base
       baseSliceOrientation = viewGet(view,'baseSliceOrientation',baseNum);
       baseRotate = viewGet(view,'baseRotate',baseNum);
       % if this is a flat then we need to set the sliceIndex to 3
@@ -873,6 +868,7 @@ switch lower(param)
       end
       if baseType==0
         % update nSlices and reset slice to be within range
+        baseCurSlice = viewGet(view,'baseCurSlice',baseNum);
         sliceIndex = viewGet(view,'basesliceindex',baseNum);
         nSlices = baseDims(sliceIndex);
         % if the base has a current slice set, then use that
@@ -886,13 +882,13 @@ switch lower(param)
           view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
         end
           mlrGuiSet(view,'nSlices',nSlices);
-      else
-        %flat and surfaces:baseCurSlice gives the cortical depth(s)
-        if isempty(baseCurSlice)
+      else %flat and surfaces
+        baseCorticalDepth = viewGet(view,'baseCorticalDepth',baseNum);
+        if isempty(baseCorticalDepth)
           corticalDepthBins=viewGet(view,'corticaldepthbins');
-          baseCurSlice=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+          baseCorticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
         end
-        view = viewSet(view,'corticalDepth',baseCurSlice);
+        view = viewSet(view,'corticalDepth',baseCorticalDepth);
       end
       if ~isempty(baseRotate)
 	mlrGuiSet(view,'rotate',baseRotate);
@@ -916,7 +912,6 @@ switch lower(param)
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum)
-      baseType = viewGet(view,'baseType',baseNum);
       if isfield(view.baseVolumes(baseNum),'coordMap')
 	view.baseVolumes(baseNum).coordMap.path = val;
       end

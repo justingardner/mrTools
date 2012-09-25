@@ -33,12 +33,13 @@ if (nargout == 2)
 		    'vol2mag',[];
                     'talInfo',[];
 		    'originalOrient',[];
-		    'xformFromOriginal',[]};
+		    'xformFromOriginal',[];
+        'curCorticalDepth',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
   requiredFields = {'clip','coordMap','curSlice','data','hdr','name','permutationMatrix','range','rotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag','talInfo'};
-  optionalFields = {};
+  optionalFields = {'curCorticalDepth'};
 end
 
 % Initialize return value
