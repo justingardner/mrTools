@@ -1,6 +1,6 @@
 % fixBadChars.m
 %
-%      usage: str = fixBadChars(str,<fixList>,<replaceList>)
+%      usage: str = fixBadChars(str,<fixList>,<replaceList>,<clipLength>)
 %         by: justin gardner
 %       date: 04/20/07
 %    purpose: takes a string and replaces bad characters not
@@ -11,10 +11,14 @@
 % 
 %             if you want to mostly keep the fixList, but change one or two item:
 %             fixBadChars('change.dot but keep rest',[],{'.','_'});
-function str = fixBadChars(str,fixList,replaceList)
+%  
+%             The default is to clip the variable length at 63 characters for a matlab
+%             variable, but you can set a different clip length with the fourth argument.
+%             Set to 0 for no clipping, [] for default cliping
+function str = fixBadChars(str,fixList,replaceList,clipLength)
 
 % check arguments
-if ~any(nargin == [1 2 3])
+if ~any(nargin == [1 2 3 4])
   help fixBadChars
   return
 end
@@ -68,6 +72,11 @@ if ~userDefinedFixList
   end
 end
 
-if length(str) > 63
-  str = str(1:63);
+if ieNotDefined('clipLength'),clipLength = 63;end
+if clipLength > 0
+  if length(str) > clipLength
+    str = str(1:clipLength);
+  end
 end
+
+    
