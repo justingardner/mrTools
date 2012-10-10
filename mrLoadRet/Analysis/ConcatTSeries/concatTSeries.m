@@ -40,14 +40,14 @@ for i = 2:viewGet(view,'nScans')
   end
 end
 
-% check to see if any scans have a volTrigRatio that is not one, if it
+% check to see if any scans have a tSense that is not one, if it
 % is then we will offer to notch filter the data, otherwise hide the option
 offerNotchFilter = false;
 defaultNotchFilterSetting = true;
 for iScan = 1:viewGet(view,'nScans','Raw')
-  volTrigRatio = viewGet(view,'auxParam','volTrigRatio',iScan,'Raw');
-  if iscell(volTrigRatio),volTrigRatio = cell2mat(volTrigRatio);end
-  if isscalar(volTrigRatio) && (volTrigRatio > 1)
+  tSense = viewGet(view,'auxParam','tSense',iScan,'Raw');
+  if iscell(tSense),tSense = cell2mat(tSense);end
+  if isscalar(tSense) && (tSense > 1)
     offerNotchFilter = true;
     % set default setting to false if the current scan is a concat
     if ~isempty(viewGet(view,'concatInfo'))
@@ -296,14 +296,14 @@ for iscan = 1:length(params.scanList)
     if ~strcmp(lower(params.filterType),lower('Detrend and highpass'))
       mrWarnDlg(sprintf('(concatTSeries) !!! Notch filter for tSense is only implemented with the highpass filter for now. !!! Not applying any notch filter'));
     else
-      % get volTrigRatio
-      volTrigRatio = viewGet(view,'auxParam','volTrigRatio');
-      if iscell(volTrigRatio),volTrigRatio = cell2mat(volTrigRatio);end
-      if isscalar(volTrigRatio)
-	if any(volTrigRatio == [2 4])
-	  d.notchFilterForTSense = volTrigRatio;
-	elseif volTrigRatio ~= 1
-	  mrWarnDlg(sprintf('(concatTSeries) !!! Notch filter for tSense has only be implemented for acceleration factors of 2 !!! Not running any notch filter'));
+      % get tSense
+      tSense = viewGet(view,'auxParam','tSense');
+      if iscell(tSense),tSense = cell2mat(tSense);end
+      if isscalar(tSense)
+	if any(tSense == [2 4])
+	  d.notchFilterForTSense = tSense;
+	elseif tSense ~= 1
+	  mrWarnDlg(sprintf('(concatTSeries) !!! Notch filter for tSense has only be implemented for acceleration factors of 2 (tSense=%i) !!! Not running any notch filter',tSense));
 	end
       else
 	disp(sprintf('(concatTSeries) Notch filter not being run on concat of a concat'));
