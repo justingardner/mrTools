@@ -34,9 +34,15 @@
 %                signal(i,:) = noise+rand(1,1000);
 %             end
 %             p = projectOutMeanVector([],noise,signal);
+%
+%            If you want to apply remove junk frames, for example when using with a scan
+%            from the MotionComp group which has not already had junk frames removed, you
+%            need to set optional argument 'removeJunk' to 'true':
+%
+%            r_mt = projectOutMeanVector(v, 'l_mt', 'r_mt', [ ],  'removeJunk', true)
 % 
 %    
-function [targetROI tSeries] = projectOutMeanVector_rmJunk(v,sourceROI,targetROI,tSeries,varargin)
+function [targetROI tSeries] = projectOutMeanVector(v,sourceROI,targetROI,tSeries,varargin)
 
 % check arguments
 if ~any(nargin == [2 3 4 5 6])
