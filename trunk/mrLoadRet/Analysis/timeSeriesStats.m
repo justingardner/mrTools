@@ -43,8 +43,22 @@ if ieNotDefined('params')
   groupNum = viewGet(view,'groupNum',groupName);
   n = viewGet(view,'nScans',groupNum);
   params.groupName = groupName;
-  params.scanList = selectScans(view);%[1:n];
-  if isempty(params.scanList),return,end
+  % find out all the scans in the current group that have more than 2 volumes
+  % since we can't compute tSeriesStats for scans with less
+  for iScan = 1:n
+    nVols(iScan) = viewGet(view,'nVolumes',iScan);
+    if nVols(iScan) <= 2
+      disp(sprintf('(timeSeriesStats) Scan %s:%i has %i volumes - need at least 2 volumes to run tSeriesStats',groupName,iScan,nVols(iScan)));
+    end
+  end
+  scanList = find(nVols>2);
+  if length(scanList) > 0
+    params.scanList = selectScans(view,'Select scans for timeSeriesStats',scanList);
+    if isempty(params.scanList),return,end
+  else
+    disp(sprintf('(timeSeriesStats) Could not find any scans to process'));
+    return
+  end
 end
 
 % Reconcile params with current status of group and ensure that params
