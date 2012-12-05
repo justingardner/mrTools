@@ -975,7 +975,7 @@ if ~exist(pathStr,'file')
 end
 
 % Copy the nifti file to the tseries directory
-[dir,file,ext,versn] = fileparts(pathStr);
+[dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,tseriesDir)
     % If tseries file is already in the tseries directory, then use it
     hdr = cbiReadNiftiHeader(pathStr);
