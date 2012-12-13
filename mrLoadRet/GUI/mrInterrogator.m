@@ -65,7 +65,7 @@ if isActiveHandler(viewNum)
   set(MLR.interrogator{viewNum}.hInterrogatorLabel,'String',interrogatorList);
 
   % if not a valid function, go back to old one
-  if isempty(which(interrogator))
+  if ~isempty(which(interrogator))
     set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
     MLR.interrogator{viewNum}.interrogator = interrogator;
   end

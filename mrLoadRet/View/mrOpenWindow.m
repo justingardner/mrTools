@@ -84,7 +84,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
     view = viewSet(view,'curGroup',mrLastView.view.curGroup);
     nScans = viewGet(view,'nScans');
     mlrGuiSet(view,'nScans',nScans);
-    if baseLoaded 
+    if baseLoaded  && isfield(mrLastView,'viewSettings')
       % slice orientation from last run
       view = viewSet(view,'curBase',mrLastView.view.curBase);
       % change scan
@@ -94,6 +94,9 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
         view = viewSet(view,'corticalDepth',mrLastView.view.curslice.corticalDepth);
       else
         view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
+      end
+      if isfield(mrLastView.viewSettings,'corticalDepth')
+	view = viewSet(view,'corticalDepth',mrLastView.viewSettings.corticalDepth);
       end
     end
     % read analyses
