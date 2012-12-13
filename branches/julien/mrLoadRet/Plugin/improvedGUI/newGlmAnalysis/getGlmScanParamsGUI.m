@@ -192,7 +192,7 @@ while keepAsking
       else
         scanParams{iScan}.estimationSupersampling=1;
         scanParams{iScan}.acquisitionSubsample=1;
-        deconvolutionVisibleOption = 'enable=0';
+        deconvolutionVisibleOption = 'visible=0';
       end
       scanParams{iScan}.designSupersampling=scanParams{iScan}.estimationSupersampling;
     else

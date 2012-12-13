@@ -1616,6 +1616,13 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).curSlice;
     end
+  case {'basecorticaldepth'}
+    % baseslice = viewGet(view,'baseCorticalDepth',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).curCorticalDepth;
+    end
   case {'basesliceorientation'}
     % basesliceOrientation = viewGet(view,'baseSliceOrientation',[baseNum])
     b = getBaseNum(view,varargin);
