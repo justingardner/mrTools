@@ -165,7 +165,11 @@ for scanNum = 1:length(fromScanParams)
       disp(sprintf('(importGroupScans) Stimfile %s already exists',toStimFileName));
     else
       %      system(sprintf('cp %s %s',fromStimFileName,toStimFileName));
-      copyfile(fromStimFileName,toStimFileName);
+      if ~isfile(fromStimFileName)
+	mrWarnDlg(sprintf('(importGroupScans) !!! Missing stimfile: %s !!!',fromStimFileName));
+      else
+	copyfile(fromStimFileName,toStimFileName);
+      end
     end
     toStimFileNames{stimFileNum} = getLastDir(toStimFileName);
   end
