@@ -17,6 +17,15 @@ end
 % dot delimits ext
 if exist('delimiter')~=1,delimiter='.';,end
 
+% if cell array, then run on each element of cell array
+if iscell(filename)
+  for iFilename = 1:length(filename)
+    filename{iFilename} = stripext(filename{iFilename},delimiter);
+  end
+  retval = filename;
+  return
+end
+
 % look for delimiter
 retval = filename;
 dotloc = findstr(filename,delimiter);
