@@ -707,7 +707,7 @@ outOfBounds = coord(1:length(dim)) > dim;
 coord(outOfBounds) = dim(outOfBounds);
 
 % set the current x,y,z coordinate
-gVol{sysNum}.vols(iVol).coord = coord;
+gVol{sysNum}.vols(iVol).coord = round(coord);
 
 % now this sets the indexes from the volume for which the
 % image will be displayed

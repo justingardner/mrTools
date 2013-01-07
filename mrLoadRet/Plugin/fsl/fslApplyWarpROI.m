@@ -156,7 +156,7 @@ for iRoi = 1:length(roiList)
         %now interpolate into the roi volume (not sure this would be accurate if voxels are not isometric..)
         % find ROI coordinates bounding box in roi space
         minRoiCoords = min(thisRoi.coords(1:3,:),[],2);
-        maxRoiCoords = max(thisRoi.coords(1:3,:),[],2);
+        maxRoiCoords = max(max(thisRoi.coords(1:3,:),[],2),minRoiCoords+1); %(make sure the box is at least 2*2*2)
         boxDims = (maxRoiCoords - minRoiCoords +1)';
         [X,Y,Z]=ndgrid(minRoiCoords(1):maxRoiCoords(1),minRoiCoords(2):maxRoiCoords(2),minRoiCoords(3):maxRoiCoords(3));
         %transform it to base space
@@ -202,13 +202,18 @@ for iRoi = 1:length(roiList)
           end
         end
 
-        warpIndices = sub2ind(fnirtInputDims(1:3),thisRoi.coords(1,:),thisRoi.coords(2,:),thisRoi.coords(3,:));
-        roiVolume = zeros(fnirtInputDims(1:3));
-        roiVolume(warpIndices) = iRoi;
-        warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], tempFilename, fnirtInputHdr, 'nearest');
-        warpedCoordsIndices = find(warpedRoiVolume==iRoi);
-        [x,y,z] = ind2sub(fnirtInputDims(1:3),warpedCoordsIndices);
-        thisWarpedRoi.coords = [x y z ones(length(warpedCoordsIndices),1)]';
+        if isempty(thisRoi.coords)
+          mrwarnDlg(['Roi ' thisRoi.name ' is empty after conversion, skipping ...']);
+          fprintf('\n');
+        else
+          warpIndices = sub2ind(fnirtInputDims(1:3),thisRoi.coords(1,:),thisRoi.coords(2,:),thisRoi.coords(3,:));
+          roiVolume = zeros(fnirtInputDims(1:3));
+          roiVolume(warpIndices) = iRoi;
+          warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], tempFilename, fnirtInputHdr, 'nearest');
+          warpedCoordsIndices = find(warpedRoiVolume==iRoi);
+          [x,y,z] = ind2sub(fnirtInputDims(1:3),warpedCoordsIndices);
+          thisWarpedRoi.coords = [x y z ones(length(warpedCoordsIndices),1)]';
+        end
       end
     else
       %%%%%%%%%%%%%%%%%%%%%%%% using warp field, but that doesn't take the ROI volume into account

@@ -15,7 +15,7 @@ if nList == 0, return; end
 nFiles = 0;
 for iList=1:nList
 	fName = dS(iList).name;
-	[pathstr,bname,ext,v] = fileparts(fName);
+	[pathstr,bname,ext] = fileparts(fName);
 	if (strcmp(lower(ext), extension))
 		fileList = [fileList {fName}];
 		nFiles = nFiles + 1;

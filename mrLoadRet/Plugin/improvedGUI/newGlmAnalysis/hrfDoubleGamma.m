@@ -32,13 +32,18 @@ end
 if ~isfield(params,'includeDerivative')
   params.includeDerivative = 0;
 end
-  
+
+% figure handle if one is up
+global modelHRFFig;
+modelHRFFig = [];
+
 paramsInfo = {...
     {'description', params.description, 'Comment describing the hdr model'},...
     {'x', params.x, 'Shape parameter of the positive Gamma distribution function; hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
     {'y', params.y, 'Shape parameter of the negative Gamma distribution function; hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
     {'z', params.z, 'Scaling factor between the positive and negative gamma componenets; hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
     {'includeDerivative',params.includeDerivative,'type=checkbox','Includes derivative of the hrf in the model'},...
+    {'displayHRF',0,'type=pushbutton','callback',@dispModelHRF,'buttonString=Display HRF','passParams=1','callbackArg',{threshold designSampling},'Display the hrf with current parameters'},...
 };
       
 if defaultParams
@@ -47,9 +52,25 @@ else
   params = mrParamsDialog(paramsInfo, 'Set model HRF parameters');
 end
 
+% close figure that displays HRF if it is up
+if ~isempty(modelHRFFig)
+  close(modelHRFFig);
+end
+
 if justGetParams
    return
 end
+
+% get the model HRF
+if ~isempty(params)
+  [params hrf] = getModelHrf(params,threshold,designSampling);
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%
+%    getModelHrf    %
+%%%%%%%%%%%%%%%%%%%%%
+function [params hrf t] = getModelHrf(params,threshold,designSampling)
 
 tmax = max(params.y*3, 20); %min length of the hrf model in seconds
 
@@ -100,3 +121,25 @@ hrf = downsample(modelHrf', round(designSampling/dt));
 
 params.maxModelHrf = designSampling/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
 
+% return actual time
+t = t(1:round(designSampling/dt):length(t));
+% make sure t is same length as hrf
+if length(t) < length(hrf)
+  t = [t nan(1,length(hrf)-length(t))];
+elseif length(t) > length(hrf)
+  t = t(1:length(hrf));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%
+%    dispModelHRF    %
+%%%%%%%%%%%%%%%%%%%%%%
+function retval = dispModelHRF(callbackArg,params)
+
+global modelHRFFig;
+
+[params hrf t] = getModelHrf(params,callbackArg{1},callbackArg{2});
+modelHRFFig = mlrSmartfig('hrfDoubleGamma','reuse');clf;
+plot(t,hrf);
+title('Model HRF');
+xlabel('Time (sec)');
+ylabel('Response magnitude');
