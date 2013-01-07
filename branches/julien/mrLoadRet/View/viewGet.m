@@ -232,7 +232,10 @@ switch lower(param)
       dataDir = viewGet(view,'datadir',groupNum);
       val = fullfile(dataDir,analysis.type);
       if ~exist(val,'dir')
-        mkdir(dataDir,analysis.type);
+        mkdirSuccess = mkdir(dataDir,analysis.type);
+	if ~mkdirSuccess
+	  mrErrorDlg(sprintf('(viewGet:analysisDir) Could not make directory %s',dataDir));
+	end
       end
     end
   case {'overlaydir'}
@@ -3119,7 +3122,13 @@ switch lower(param)
             if length(data) >= scanList(end) && ~isempty(data{iScan})
               val{cScan}(:,:,:,cOverlay) = data{iScan};
             else
-              val{cScan}(:,:,:,cOverlay) = NaN(scanDims);
+	      %  No overlay found, filling with nans. check for empty scan dims
+	      % if no scandims return a nan for that overlay.
+	      if isempty(scanDims)
+		val{cScan}(:,:,:,cOverlay) = nan;
+	      else
+		val{cScan}(:,:,:,cOverlay) = NaN(scanDims);
+	      end
             end
           end
         end

@@ -242,6 +242,12 @@ for scanIndex=1:length(scanList)
   amp.data{scanNum} = NaN*ones(volDims);
   ph.data{scanNum} = NaN*ones(volDims);
 
+  % check for corAnal cycles set to 0
+  if params.ncycles(scanList(scanIndex)) == 0
+    mrWarnDlg(sprintf('(corAnal:computeCorrelationAnalysis) !!! Scan %i has ncycles set to 0 - this needs to be set to how many cycles of the stimulus you had per scan. Skipping this scan !!!',scanList(scanIndex)));
+    continue;
+  end
+  
   nslices = viewGet(view,'nslices',scanNum);
   for sliceNum = 1:nslices
     % Analysis parameters for this scan
