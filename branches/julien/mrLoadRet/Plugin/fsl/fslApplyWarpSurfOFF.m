@@ -12,19 +12,19 @@
 function fslApplyWarpSurfOFF
 
 startPathStr = pwd;
-filterspec = {'*.img','FNIRT warp coeff .img file'; '*.*','All files'};
+filterspec = {'*.img;*.nii','FNIRT warp coeff .img/.nii file'; '*.*','All files'};
 title = 'Choose structural to functional FNIRT coefficient file';
 warpCoefFileName = getPathStrDialog(startPathStr,title,filterspec,'off');
 if isempty(warpCoefFileName),return,end;
 
 startPathStr = fileparts(warpCoefFileName);
-filterspec = {'*.img','NIFTI .img file'; '*.*','All files'};
+filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
 title = 'Choose FNIRT input volume';
 inputVolumeFilename = getPathStrDialog(startPathStr,title,filterspec,'off');
 if isempty(inputVolumeFilename),return,end
 
 startPathStr = mrGetPref('volumeDirectory');
-filterspec = {'*.img','NIFTI .img file'; '*.*','All files'};
+filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
 title = 'Choose canonical base volume';
 canonicalBaseFilename = getPathStrDialog(startPathStr,title,filterspec,'off');
 if isempty(canonicalBaseFilename),return,end
@@ -36,6 +36,19 @@ surfFileNames = getPathStrDialog(startPathStr,title,filterspec,'on');
 % Aborted
 if isempty(surfFileNames),return,end
 
+%find temporary file extension based on FSL preference
+switch(getenv('FSLOUTPUTTYPE'))
+  case 'NIFTI'
+    tempFilename='temp.nii';
+  case 'NIFTI_PAIR'
+    tempFilename='temp.img';
+  case ''
+    mrWarnDlg('(fslApplyWarpSurfOFF) Environment variable FSLOUTPUTTYPE is not set');
+    return;
+  otherwise
+    mrWarnDlg(sprintf('(fslApplyWarpSurfOFF) Environment variable FSLOUTPUTTYPE is set to an unsupported value (%s)',getenv('FSLOUTPUTTYPE')));
+    return;
+end
 
 canonicalHdr = cbiReadNiftiHeader(canonicalBaseFilename);
 inputHdr = cbiReadNiftiHeader(inputVolumeFilename);
@@ -77,7 +90,7 @@ if coordsCount
   allCoords = shiftOriginXform\allCoords;
 
 
-  warpedCoords = fslApplyWarpCoords(allCoords,inputHdr.pixdim(2:4)',[.5 .5 .5], warpCoefFileName, 'temp.img', inputHdr, 1);
+  warpedCoords = fslApplyWarpCoords(allCoords,inputHdr.pixdim(2:4)',[.5 .5 .5], warpCoefFileName, tempFilename, inputHdr, 1);
 
   warpedCoords = shiftOriginXform*warpedCoords;
   warpedCoords = inputHdr.sform44*warpedCoords;

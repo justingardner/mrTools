@@ -6,7 +6,19 @@ if ieNotDefined('verbose')
   verbose = 1;
 end
 if ieNotDefined('tempFilename')
-  tempFilename = 'tempInput.img';
+  %find temporary file extension based on FSL preference
+  switch(getenv('FSLOUTPUTTYPE'))
+    case 'NIFTI'
+      tempFilename='temp.nii';
+    case 'NIFTI_PAIR'
+      tempFilename='temp.img';
+    case ''
+      mrWarnDlg('(fslApplyWarpSurfOFF) Environment variable FSLOUTPUTTYPE is not set');
+      return;
+    otherwise
+      mrWarnDlg(sprintf('(fslApplyWarpOverlays) Environment variable FSLOUTPUTTYPE is set to an unsupported value (%s)',getenv('FSLOUTPUTTYPE')));
+      return;
+  end
 end
 
 
