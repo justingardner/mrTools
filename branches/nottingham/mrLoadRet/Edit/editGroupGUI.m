@@ -93,8 +93,8 @@ if (nfilesImg ~= nfilesHdr)
     mrErrorDlg('Header file numbers (*.hdr) are inconsistent with data file numbers (*.img)');
 end
 for f = 1:nfilesImg
-    [path,fname1,ext,ver] = fileparts(fileListImg{f});
-    [path,fname2,ext,ver] = fileparts(fileListHdr{f});
+    [path,fname1,ext] = fileparts(fileListImg{f});
+    [path,fname2,ext] = fileparts(fileListHdr{f});
     if ~strcmp(fname1,fname2)
         mrErrorDlg('Header file numbers (*.hdr) are inconsistent with data file numbers (*.img)');
     end

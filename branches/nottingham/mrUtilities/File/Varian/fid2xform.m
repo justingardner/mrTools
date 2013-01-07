@@ -94,6 +94,13 @@ else
   info.intlv = 'n';
 end
 
+% check for an error in intlv setting, which happens when intlv is set to 'y' and
+% this is not an epi (which shouldn't happen)
+if strcmp(info.intlv,'y') && ~info.isepi
+  disp(sprintf('(fid2xform) !!! Intlv is set to y even though this is not an epi. This is likely a mistake. Setting intlv to n. !!!'));
+  info.intlv = 'n';
+end
+
 % get the ilts setting
 if isfield(procpar,'ilts')
   if iscell(procpar.ilts)

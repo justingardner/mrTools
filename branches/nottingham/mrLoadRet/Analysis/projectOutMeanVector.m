@@ -34,15 +34,26 @@
 %                signal(i,:) = noise+rand(1,1000);
 %             end
 %             p = projectOutMeanVector([],noise,signal);
+%
+%            If you want to apply remove junk frames, for example when using with a scan
+%            from the MotionComp group which has not already had junk frames removed, you
+%            need to set optional argument 'removeJunk' to 'true':
+%
+%            r_mt = projectOutMeanVector(v, 'l_mt', 'r_mt', [ ],  'removeJunk', true)
 % 
 %    
-function [targetROI tSeries] = projectOutMeanVector(v,sourceROI,targetROI,tSeries)
+function [targetROI tSeries] = projectOutMeanVector(v,sourceROI,targetROI,tSeries,varargin)
 
 % check arguments
-if ~any(nargin == [2 3 4])
+if ~any(nargin == [2 3 4 5 6])
   help projectOutMeanVector
   return
 end
+
+% Set the default (which applies to when 'projectOutMeanVector' is called
+% by 'concatTSeries' or is directly applied on a scan from 'Concatenation'
+% group). The default is 'not' to remove junk frames.
+getArgs(varargin,{'removeJunk',false});
 
 % This function can either be called with a params structure, or with
 % two arguments specifying the source and target ROI.
@@ -96,17 +107,30 @@ else
   concatInfo = [];
   nFrames = size(sourceROI.tSeries,2);
 end
-  
+ 
 if isempty(concatInfo)
-  % no concatInfo, just do all frames at once
-  frameNums{1} = 1:nFrames;
+    
+    % Check if projectOutMeanVector has been called directly on a scan from
+    % MotionComp group; if so, the junk frames should be removed
+    if removeJunk
+        
+        junkFrames = 0;
+        if isview(v)
+            junkFrames = viewGet(v,'junkFrames');
+        end
+        frameNums{1} = (junkFrames+1):(junkFrames+nFrames);
+    else
+        % no concatInfo, just do all frames at once
+        frameNums{1} = 1:nFrames;
+    end
+    
 else
-  % get each block of frames from each scan
-  % since we want to project out on a scan by scan basis
-  for i = 1:concatInfo.n
-    frameNums{i} = concatInfo.runTransition(i,1):concatInfo.runTransition(i,2);
-  end
-  disp(sprintf('(projectOutMeanVector) Scan is a concatenation. Projecting out separately for each of the %i concatenated scans',concatInfo.n));
+    % get each block of frames from each scan
+    % since we want to project out on a scan by scan basis
+    for i = 1:concatInfo.n
+        frameNums{i} = concatInfo.runTransition(i,1):concatInfo.runTransition(i,2);
+    end
+    disp(sprintf('(projectOutMeanVector) Scan is a concatenation. Projecting out separately for each of the %i concatenated scans',concatInfo.n));
 end
 
 % compute mean tSeries.
@@ -163,7 +187,7 @@ for i = 1:length(frameNums)
   if ~isempty(tSeries) && (nargout == 2)
     % special case if the roi contains all voxels
     if strcmp(targetROI.name,'allVoxels_target')
-      tSeries(:,:,:,frameNums{i}) = reshape(targetROI.tSeries,size(tSeries,1),size(tSeries,2),size(tSeries,3),length(frameNums{i}));
+      tSeries(:,:,:,frameNums{i}) = reshape(targetROI.tSeries(:,frameNums{i}),size(tSeries,1),size(tSeries,2),size(tSeries,3),length(frameNums{i}));
     else
       % go frame by frame and copy the voxels in this roi to the output structure
       for frameNum = 1:length(frameNums{i})
@@ -183,6 +207,19 @@ if ~isempty(tSeries) && (nargout == 2)
   targetROI.tSeries = [];
 end
 
+%% In case 'removeJunk:true' and we would like to remove the junk frames from the function outputs 
+if removeJunk
+    if isview(v) && isempty(concatInfo)
+        
+        if ~isempty(tSeries) && (nargout == 2)            
+            
+            tSeries = tSeries(:,:,:,frameNums{1});
+        else
+            targetROI.tSeries = targetROI.tSeries(:,frameNums{1});
+        end
+    end
+end
+%%
 % get linear coordinates, since that is usually easier
 if isview(v)
   targetROI.linearCoords = sub2ind(viewGet(v,'scanDims'),targetROI.scanCoords(1,:),targetROI.scanCoords(2,:),targetROI.scanCoords(3,:))';
