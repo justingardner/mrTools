@@ -92,7 +92,8 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       % change slice/corticalDepth
       if viewGet(view,'baseType') && isfield(mrLastView.view.curslice,'corticalDepth')
         view = viewSet(view,'corticalDepth',mrLastView.view.curslice.corticalDepth);
-      elseif isfield(mrLastView.view.curslice,'sliceNum')
+      end
+      if isfield(mrLastView.view.curslice,'sliceNum')
         view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
       end
       if isfield(mrLastView.viewSettings,'corticalDepth')
