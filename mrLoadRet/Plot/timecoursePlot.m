@@ -61,3 +61,5 @@ title(sprintf('Voxel: [%i %i %i]',x,y,s));
 xlabel('FFT components');
 ylabel('FFT of fMRI Signal');
 axis tight;
+zoom on
+

@@ -232,7 +232,10 @@ switch lower(param)
       dataDir = viewGet(view,'datadir',groupNum);
       val = fullfile(dataDir,analysis.type);
       if ~exist(val,'dir')
-        mkdir(dataDir,analysis.type);
+        mkdirSuccess = mkdir(dataDir,analysis.type);
+	if ~mkdirSuccess
+	  mrErrorDlg(sprintf('(viewGet:analysisDir) Could not make directory %s',dataDir));
+	end
       end
     end
   case {'overlaydir'}
