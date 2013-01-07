@@ -38,9 +38,23 @@ while keepAsking
    end
 end
 
-[warpCoefFilename warpCoefPathname] = uigetfile('*.img','FNIRT spline coefficient file');
+[warpCoefFilename warpCoefPathname] = uigetfile('*.img;*.nii','FNIRT spline coefficient file');
 if isnumeric(warpCoefFilename)
    return
+end
+
+%find temporary file extension based on FSL preference
+switch(getenv('FSLOUTPUTTYPE'))
+  case 'NIFTI'
+    tempFilename='temp.nii';
+  case 'NIFTI_PAIR'
+    tempFilename='temp.img';
+  case ''
+    mrWarnDlg('(fslApplyWarpSurfOFF) Environment variable FSLOUTPUTTYPE is not set');
+    return;
+  otherwise
+    mrWarnDlg(sprintf('(fslApplyWarpOverlays) Environment variable FSLOUTPUTTYPE is set to an unsupported value (%s)',getenv('FSLOUTPUTTYPE')));
+    return;
 end
 
 warning('off','MATLAB:mat2cell:TrailingUnityVectorArgRemoved');
@@ -73,7 +87,7 @@ for iOverlay = 1:overlaysNumber
    if any(overlayIndices)
       %transform the non empty overlay in a 4D matrix
       data = permute(reshape(cell2mat(overlays(iOverlay).data(scanList(overlayIndices))),[scanDims([1 2]) sum(overlayIndices) scanDims(3)]), [1 2 4 3]);
-      warpedData = fslApplyWarp(data, [warpCoefPathname warpCoefFilename], 'tempInput.img', scanHdr, interpMethod);
+      warpedData = fslApplyWarp(data, [warpCoefPathname warpCoefFilename], tempFilename, scanHdr, interpMethod);
       overlays(iOverlay).data = cell(1,length(overlays(iOverlay).data));
       overlays(iOverlay).data(scanList(overlayIndices)) = mat2cell(warpedData,scanDims(1),scanDims(2),scanDims(3),ones(1,sum(overlayIndices)));
       overlays(iOverlay).name = ['warp(' overlays(iOverlay).name ') - ' warpCoefFilename];

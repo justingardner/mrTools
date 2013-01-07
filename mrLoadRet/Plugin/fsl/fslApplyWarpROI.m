@@ -60,7 +60,7 @@ while keepAsking
          break;
       else
          keepAsking = 0;
-         [warpCoefFilename warpCoefPathname] = uigetfile('*.img','FNIRT Warp spline coefficient file');
+         [warpCoefFilename warpCoefPathname] = uigetfile('*.img;*.nii','FNIRT Warp spline coefficient file');
          if isnumeric(warpCoefFilename)
             keepAsking=1;
          end
@@ -68,8 +68,22 @@ while keepAsking
     end
   end
 end
+
+%find temporary file extension based on FSL preference
+switch(getenv('FSLOUTPUTTYPE'))
+  case 'NIFTI'
+    tempFilename='temp.nii';
+  case 'NIFTI_PAIR'
+    tempFilename='temp.img';
+  case ''
+    mrWarnDlg('(fslApplyWarpSurfOFF) Environment variable FSLOUTPUTTYPE is not set');
+    return;
+  otherwise
+    mrWarnDlg(sprintf('(fslApplyWarpOverlays) Environment variable FSLOUTPUTTYPE is set to an unsupported value (%s)',getenv('FSLOUTPUTTYPE')));
+    return;
+end
   
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%% using warping coefficient and applywarp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% using warping coefficient and applywarp
 [~,baseNum]=ismember(params.destinationSpace,baseNames);
 baseNum = baseNum-1;
 if baseNum>0
@@ -137,7 +151,7 @@ for iRoi = 1:length(roiList)
         end
         mrCloseDlg(hWait)
         %apply FNIRT warp to the continuous accumulated values
-        warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr, 'sinc');
+        warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], tempFilename, fnirtInputHdr, 'sinc');
 
         %now interpolate into the roi volume (not sure this would be accurate if voxels are not isometric..)
         % find ROI coordinates bounding box in roi space
@@ -191,7 +205,7 @@ for iRoi = 1:length(roiList)
         warpIndices = sub2ind(fnirtInputDims(1:3),thisRoi.coords(1,:),thisRoi.coords(2,:),thisRoi.coords(3,:));
         roiVolume = zeros(fnirtInputDims(1:3));
         roiVolume(warpIndices) = iRoi;
-        warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr, 'nearest');
+        warpedRoiVolume = fslApplyWarp(roiVolume, [warpCoefPathname warpCoefFilename], tempFilename, fnirtInputHdr, 'nearest');
         warpedCoordsIndices = find(warpedRoiVolume==iRoi);
         [x,y,z] = ind2sub(fnirtInputDims(1:3),warpedCoordsIndices);
         thisWarpedRoi.coords = [x y z ones(length(warpedCoordsIndices),1)]';
@@ -215,7 +229,7 @@ for iRoi = 1:length(roiList)
         scalingFactor = [1 1 1];
       end
 
-      thisWarpedRoi.coords = fslApplyWarpCoords([thisRoi.coords;ones(1,size(thisRoi.coords,2))], fnirtInputVoxelSize./scalingFactor, [.5 .5 .5], [warpCoefPathname warpCoefFilename], 'tempInput.img', fnirtInputHdr);
+      thisWarpedRoi.coords = fslApplyWarpCoords([thisRoi.coords;ones(1,size(thisRoi.coords,2))], fnirtInputVoxelSize./scalingFactor, [.5 .5 .5], [warpCoefPathname warpCoefFilename], tempFilename, fnirtInputHdr);
 
       if any(any( (thisRoi.xform - fnirtInputXform)>1e-6))
         %convert back to roi space
