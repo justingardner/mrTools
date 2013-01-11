@@ -787,8 +787,10 @@ if isfield(gParams,'fignum')
       mrSetFigLoc(fixBadChars(gParams.figlocstr{iFig}),get(gParams.fignum(iFig),'Position'));
     end
   end
-  % close figure
-  delete(gParams.fignum);
+  % close figure if it exists
+  if  ishghandle(gParams.fignum)
+    delete(gParams.fignum);
+  end
 end
 saveMrDefaults;
 
