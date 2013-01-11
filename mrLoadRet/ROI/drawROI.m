@@ -105,9 +105,10 @@ else
       end
       
     case 'contiguous'
+      disp('Hold Alt or Command key to select all connected regions')
       [mouseY,mouseX] = ginput(1);
      
-      if any(strcmp(get(fig,'CurrentModifier'),'command')) 
+      if any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) 
         selectAcrossVolume=true;
       else
         selectAcrossVolume=false;
@@ -162,12 +163,28 @@ else
            % That might solve the mismatch between displayed clusters and the ROI ...
         end
         
-        %find contiguous voxels
-        cc = bwconncomp(mask,6);
+        %see if we're using the image processing toolbox or not
+        if ~isempty(which('bwconncomp'))
+          useBwconncomp=true;
+          %find contiguous voxels
+          cc = bwconncomp(mask,6);
+        else
+          mrWarnDlg('(drawROI) Cannot find function bwconncomp, presumably because the Image Processing toolbox is not available. Using i4block_components instead...?');
+          useBwconncomp=false;
+          %find contiguous voxels
+          [numberComponents,labeledMask] = i4block_components(size(mask,1),size(mask,2),size(mask,3),mask);
+        end
+        
+        
         
         if selectAcrossVolume
           %put all the connected objects found together
-          roiCoordsIndices=find(labelmatrix(cc));
+          switch(useBwconncomp)
+            case true
+              roiCoordsIndices=find(labelmatrix(cc));
+            case false
+              roiCoordsIndices=find(labeledMask);
+          end
         else
           %select only the object that has been clicked
           if baseType==1 %if the base is a flat map
@@ -176,13 +193,18 @@ else
             baseS = round(mean(ceil(viewGet(thisView,'corticalDepth')*size(mask,3))));
           end
           if mask(baseX,baseY,baseS)
-            selectedVoxelIndex = sub2ind(size(mask),baseX,baseY,baseS);
-             for i_object = 1:cc.NumObjects
-                if ismember(selectedVoxelIndex,cc.PixelIdxList{i_object})
-                   break;
+            switch(useBwconncomp)
+              case true
+                selectedVoxelIndex = sub2ind(size(mask),baseX,baseY,baseS);
+                for i_object = 1:cc.NumObjects
+                  if ismember(selectedVoxelIndex,cc.PixelIdxList{i_object})
+                     break;
+                  end
                 end
-             end
-             roiCoordsIndices = cc.PixelIdxList{i_object};
+                roiCoordsIndices = cc.PixelIdxList{i_object};
+              case false
+                roiCoordsIndices = find(labeledMask==labeledMask(baseX,baseY,baseS));
+            end
           else
             coords = [];
             mrWarnDlg('(contiguousRoi) Please select a non-zero voxel');

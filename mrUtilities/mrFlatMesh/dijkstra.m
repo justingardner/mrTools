@@ -27,6 +27,7 @@ function D = dijkstra( G , S )
 %	Matlab function dijk.m (by Michael G. Kay).  Note that this Matlab
 %	code is several orders of magnitude slower than the C based mex file.
 
+fprintf(1,'\nWarning: You should compile the MEX code for "dijkstra".  It is MUCH faster.\n');
+
 N = size( G , 1 );
 D = dijk( G , S , 1:N );
-

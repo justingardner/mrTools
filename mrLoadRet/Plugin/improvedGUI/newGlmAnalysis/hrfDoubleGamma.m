@@ -53,7 +53,7 @@ else
 end
 
 % close figure that displays HRF if it is up
-if ~isempty(modelHRFFig)
+if ~isempty(modelHRFFig) &  ishghandle(modelHRFFig)
   close(modelHRFFig);
 end
 
