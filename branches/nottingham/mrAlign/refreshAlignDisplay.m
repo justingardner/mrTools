@@ -118,6 +118,10 @@ function inplanesXform = transformInplanes(inplanes,volSize,xform,sliceOrientati
 % Shift xform: matlab indexes from 1 but nifti uses 0,0,0 as the origin. 
 shiftXform = shiftOriginXform;
 xform = inv(shiftXform) * inv(xform) * shiftXform;
+%let's round the xform matrix for display. This avoids missing voxels
+%when the transforms of source and destination should be identical but their 
+%division results in non-zero rotations
+xform = 1e-7*round(1e7*xform);
 
 % Generate coordinates with meshgrid
 switch sliceOrientation

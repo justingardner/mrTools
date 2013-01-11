@@ -895,18 +895,20 @@ end
 % Try to remove unnecessary fields from the d structure in glmAnal so that it isn't too large to save
 removeFields = {'stimfile',{'varname','paramInfo'}};
 for iScan = 1:length(glmAnal.d)
-  for iField = 1:length(removeFields)
-    % simple string, means to remove that field
-    if ~iscell(removeFields{iField})
-      glmAnal.d{iScan} = rmfield(glmAnal.d{iScan},removeFields{iField});
-    else
-      % a cell means to remove the field within a field (like d{iScan}.varname.paramInfo)
-      structName = sprintf('glmAnal.d{%i}',iScan);
-      for jField = 1:(length(removeFields{iField})-1)
-	structName = sprintf('%s.%s',structName,removeFields{iField}{jField});
+  if ~isempty(glmAnal.d{iScan})
+    for iField = 1:length(removeFields)
+      % simple string, means to remove that field
+      if ~iscell(removeFields{iField})
+        glmAnal.d{iScan} = rmfield(glmAnal.d{iScan},removeFields{iField});
+      else
+        % a cell means to remove the field within a field (like d{iScan}.varname.paramInfo)
+        structName = sprintf('glmAnal.d{%i}',iScan);
+        for jField = 1:(length(removeFields{iField})-1)
+    structName = sprintf('%s.%s',structName,removeFields{iField}{jField});
+        end
+        % now remove it
+        eval(sprintf('%s = rmfield(%s,''%s'')',structName,structName,removeFields{iField}{end}));
       end
-      % now remove it
-      eval(sprintf('%s = rmfield(%s,''%s'')',structName,structName,removeFields{iField}{end}));
     end
   end
 end
