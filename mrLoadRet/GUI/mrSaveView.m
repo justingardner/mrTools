@@ -13,7 +13,9 @@ fig = viewGet(v,'fignum');
 if ~isempty(fig)
   mrSetFigLoc('mrLoadRetGUI',get(fig,'Position'));
 end
-% remember GUI settings
+
+%--------(This is obsolete, but kept for backward compatibility)
+% remember GUI settings 
 viewSettings.curBase = viewGet(v,'curBase');
 viewSettings.rotate = viewGet(v,'rotate');
 viewSettings.curScan = viewGet(v,'curScan');
@@ -27,6 +29,8 @@ viewSettings.alpha = viewGet(v,'alpha');
 viewSettings.showROIs = viewGet(v,'showROIs');
 viewSettings.labelROIs = viewGet(v,'labelROIs');
 viewSettings.roiGroup = viewGet(v,'roiGroupNames');
+%--------(This is obsolete, but kept for backward compatibility)
+
 homeDir = viewGet(v,'homeDir');
 try
   disppercent(-inf,sprintf('(mrSaveView) Saving %s/mrLastView',homeDir));
