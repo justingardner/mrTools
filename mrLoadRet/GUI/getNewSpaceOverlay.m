@@ -25,6 +25,11 @@ sliceDims(2) = size(newXCoords,2);
 numPixels = sliceDims(1)*sliceDims(2);
 newOverlayData = NaN([size(newXCoords) nOverlays]);
 
+% round xform to the 7th decimal to avoid missing voxel due to round-off error
+% when transformation should be a simple translation or the identity
+epsilon = 1e-7;
+xform = round(xform./epsilon).*epsilon;
+
 hWaitbar = mrWaitBar(0,'Resampling overlay to new space');
 % Compute new overlay data by base slice
 nSlices = size(newXCoords,3);
