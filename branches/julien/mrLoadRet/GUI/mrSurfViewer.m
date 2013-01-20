@@ -195,7 +195,7 @@ for i = 1:length(anatDir)
 end
 
 % check for 'canonical hdr'
-anatCanonicalDir = dir('../*.hdr');
+anatCanonicalDir = [dir('../*.hdr');dir('../*.nii')];
 for i= 1:length(anatCanonicalDir)
   if find(strcmp(anatCanonicalDir(i).name,anat))
     anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
@@ -203,7 +203,7 @@ for i= 1:length(anatCanonicalDir)
 end
 % if no files found, then ask user to go look for it
 if isempty(anat)
-  [filename, pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'},'Find 3D anatomy file');
+  [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Find 3D anatomy file');
   if isempty(filename),return,end
   if ~isCurrentPath(pathname)
     filename = fullfile(pathname,filename);
@@ -613,7 +613,7 @@ global gSurfViewer;
 
 % check for find file
 if strcmp(params.anatomy,'Find file')
-  [filename, pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'});
+  [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'});
   % update the control that displays the choices
   % first check to see if this is a new path
   global gParams;
@@ -919,7 +919,7 @@ end
 function save
 
 global gSurfViewer
-filename = sprintf('%s_modified.hdr',stripext(gSurfViewer.anat.filename));
+filename = sprintf('%s_modified%s',stripext(gSurfViewer.anat.filename),mrGetPref('niftiFileExtension'));
 disp(sprintf('(mrSurfViewer) Saving volume as %s',filename));
 cbiWriteNifti(filename,gSurfViewer.anat.data,gSurfViewer.anat.hdr);
 
