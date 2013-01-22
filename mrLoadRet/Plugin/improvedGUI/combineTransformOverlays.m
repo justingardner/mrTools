@@ -80,7 +80,9 @@ if params.clip
    mask = maskOverlay(thisView,overlayList);
    for iScan = 1:length(mask)
       for iOverlay = 1:length(overlayData)
-         overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
+        if ~isempty(overlayData(iOverlay).data{iScan})
+          overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
+        end
       end
    end
 end
@@ -92,7 +94,7 @@ if params.alphaClip
   mask = maskOverlay(thisView,alphaOverlayNum);
   for iScan = 1:length(mask)
     for iOverlay = 1:length(overlayData)
-      if alphaOverlayNum(iOverlay)
+      if alphaOverlayNum(iOverlay) &&  ~isempty(overlayData(iOverlay).data{iScan})
         overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
       end
     end
