@@ -1,12 +1,12 @@
 % hrfFslFlobs.m
 %
 %        $Id: hrfFslFlobs.m 1950 2010-12-18 10:12:48Z julien $
-%      usage: [params,hrf] = hrfFslFlobs(params, designSampling, justGetParams, defaultParams)
+%      usage: [params,hrf] = hrfFslFlobs(params, designSampling, notUsed, defaultParams)
 %         by: by julien besle
 %       date: 14/06/07, 09/02/2010
 %    purpose: reads a basis set from a flobs file
 %
-function [params, hrf] = hrfFslFlobs(params, designSampling, justGetParams, defaultParams)%, varargin)
+function [params, hrf] = hrfFslFlobs(params, designSampling, notUsed, defaultParams)
 
 if ~any(nargin == [1 2 3 4])% 5])
   help hrfDoubleGamma
@@ -21,7 +21,6 @@ end
 
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 
-if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 if ieNotDefined('params')
@@ -47,7 +46,7 @@ else
   params = mrParamsDialog(paramsInfo, 'Set model HRF parameters');
 end
 
-if justGetParams
+if nargout==1
    return
 end
 
