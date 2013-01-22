@@ -1,12 +1,12 @@
 % hrfDeconvolution.m
 %
 %        $Id$
-%      usage: [params,hrf] = hrfDeconvolution(params, designSampling, justGetParams, defaultParams)
+%      usage: [params,hrf] = hrfDeconvolution(params, designSampling, notUsed, defaultParams)
 %         by: julien besle
 %       date: 13/04/2010
 %    purpose: returns a deconvolution matrix given the design smapling period and the estimation sampling period
 %
-function [params,hrf] = hrfDeconvolution(params, designSampling, justGetParams, defaultParams)%, varargin)
+function [params,hrf] = hrfDeconvolution(params, designSampling, notUsed, defaultParams)
 
 if ~any(nargin == [1 2 3 4])% 5])
   help hrfDeconvolution
@@ -15,7 +15,6 @@ end
 
 %estimationSampling = varargin{1};
 
-if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 if ieNotDefined('params')
@@ -39,7 +38,7 @@ else
   params = mrParamsDialog(paramsInfo, 'Set Deconvolution parameters');
 end
 
-if justGetParams
+if nargout==1
    return
 end
 

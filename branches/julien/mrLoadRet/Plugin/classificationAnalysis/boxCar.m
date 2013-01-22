@@ -6,11 +6,10 @@
 %       date: 14/06/07, 09/02/2010
 %    purpose: returns a canonical hrf that's a difference of two gamma distribution function
 %
-function [params, hrf] = boxCar(params, tr, justGetParams, defaultParams )
+function [params, hrf] = boxCar(params, tr, notUsed, defaultParams )
 
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 
-if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('tr'),tr = 1;end
 
@@ -35,7 +34,7 @@ else
   params = mrParamsDialog(paramsInfo, 'Set model HRF parameters');
 end
 
-if justGetParams
+if nargout==1
    return
 end
 

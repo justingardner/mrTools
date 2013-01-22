@@ -1,16 +1,15 @@
 % hrfDoubleGamma.m
 %
 %        $Id$
-%      usage: [params,hrf] = hrfDoubleGamma(params, designSampling, justGetParams, defaultParams)
+%      usage: [params,hrf] = hrfDoubleGamma(params, designSampling, notUsed, defaultParams)
 %         by: farshad moradi, modified by julien besle
 %       date: 14/06/07, 09/02/2010
 %    purpose: returns a canonical hrf that's a difference of two gamma distribution function
 %
-function [params, hrf] = hrfDoubleGamma(params, designSampling, justGetParams, defaultParams)%, varargin )
+function [params, hrf] = hrfDoubleGamma(params, designSampling, notUsed, defaultParams)
 
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 
-if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('designSampling'),designSampling = 1;end
 
@@ -57,7 +56,7 @@ if ~isempty(modelHRFFig) &  ishghandle(modelHRFFig)
   close(modelHRFFig);
 end
 
-if justGetParams
+if nargout==1
    return
 end
 
@@ -104,7 +103,7 @@ if params.includeDerivative
   modelHrfDerivative = modelHrfDerivative - modelHrf*(modelHrfDerivative/modelHrf);
   % remove mean
   modelHrfDerivative = modelHrfDerivative - mean(modelHrfDerivative);
-  % normalize so that it's norm equals the Hrf norm
+  % normalize so that its norm equals the Hrf norm
   modelHrfDerivative = modelHrfDerivative / norm(modelHrfDerivative)*norm(modelHrf);
   %concatenate
   modelHrf = [modelHrf; modelHrfDerivative];
