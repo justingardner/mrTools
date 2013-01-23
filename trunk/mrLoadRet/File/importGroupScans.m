@@ -121,9 +121,11 @@ end
 for i = 1:length(selectedScans)
   fromScanParams(i) = viewGet(fromView,'scanParams',selectedScans(i));
   fromAuxParams(i) = viewGet(fromView,'auxParams',selectedScans(i));
+  if ~isempty(fromAuxParams(i)) && ~isempty(fromAuxParams(i).auxParams)
+    disp(sprintf('(importGroupScans) Note that only the auxParam stimFileName is getting copied by this function - if you set other auxParams (like volTrigRatio), this code needs to be fixed to copy those settings'));
+  end
 end
 
-disp(sprintf('(importGroupScans) Note that only the auxParam stimFileName is getting copied by this function - if you set other auxParams (like volTrigRatio), this code needs to be fixed to copy those settings'));
 
 % get the stimfiles for the selected scans
 for scanNum = 1:length(selectedScans)
