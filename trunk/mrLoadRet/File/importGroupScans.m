@@ -158,7 +158,7 @@ for scanNum = 1:length(fromScanParams)
   toStimFileNames = {};
   for stimFileNum = 1:length(stimFileName{scanNum})
     % get the from and to stim file names
-    fromStimFileName = fullfile(pathStr, 'Etc', stimFileName{scanNum}{stimFileNum});
+    fromStimFileName = fullfile(pathStr, 'Etc', getLastDir(stimFileName{scanNum}{stimFileNum}));
     toStimFileName = fullfile(viewGet(toView,'EtcDir'),getLastDir(stimFileName{scanNum}{stimFileNum}));
     % if it doesn't exist already, then copy it over
     if isfile(toStimFileName)
