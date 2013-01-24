@@ -289,6 +289,9 @@ switch lower(param)
       groupName = varargin{1};
       groupNames = {MLR.groups(:).name};
       val = find(strcmp(groupName,groupNames));
+      if isempty(val)
+        disp(sprintf('(viewGet) Could not find group: %s',groupName));
+      end
       % if passed in a valid number just return that number
     elseif isnumeric(varargin{1}) && isequal(size(varargin{1}),[1 1])
       if (varargin{1} >= 1) && (varargin{1} <= viewGet(view,'nGroups'))
@@ -302,7 +305,11 @@ switch lower(param)
     % n = viewGet(view,'nScans',[])
     % n = viewGet(view,'nScans')
     g = getGroup(view,varargin);
-    val = length(MLR.groups(g).scanParams);
+    if isempty(g)
+      val = [];
+    else
+      val = length(MLR.groups(g).scanParams);
+    end
   case{'scanparams'}
     % n = viewGet(view,'scanParams',scanNum,[groupNum])
     % n = viewGet([],'scanParams',scanNum,groupNum)
@@ -3968,6 +3975,7 @@ if isempty(g)
 end
 % if group is a string, then convert it to a number
 if isstr(g)
+  groupName = g;
   g = viewGet(view,'groupNum',g);
 end
 
