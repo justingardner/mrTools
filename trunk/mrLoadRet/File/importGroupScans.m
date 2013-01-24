@@ -121,8 +121,18 @@ end
 for i = 1:length(selectedScans)
   fromScanParams(i) = viewGet(fromView,'scanParams',selectedScans(i));
   fromAuxParams(i) = viewGet(fromView,'auxParams',selectedScans(i));
-  if ~isempty(fromAuxParams(i)) && ~isempty(fromAuxParams(i).auxParams)
-    disp(sprintf('(importGroupScans) Note that only the auxParam stimFileName is getting copied by this function - if you set other auxParams (like volTrigRatio), this code needs to be fixed to copy those settings'));
+  % go through auxParams and get all fields
+  if ~isempty(fromAuxParams(i))
+    % get names of aux params
+    fromAuxParamsNames{i} = fieldnames(fromAuxParams(i));
+    % dont worry about stimFileName
+    fromAuxParamsNames{i} = setdiff(fromAuxParamsNames{i},'stimFileName');
+    % look for a few other ones
+    fromAuxParamsNames{i} = {fromAuxParamsNames{i}{:} 'volTrigRatio' 'tSense' 'fidFilename'};
+    % get values
+    for iAuxParam = 1:length(fromAuxParamsNames{i})
+      fromAuxParamsValues{i}{iAuxParam} = viewGet(fromView,'auxParam',fromAuxParamsNames{i}{iAuxParam});
+    end
   end
 end
 
@@ -173,6 +183,13 @@ for scanNum = 1:length(fromScanParams)
   end
   % and set the stimfiles in the view
   toView = viewSet(toView,'stimFileName',toStimFileNames,toScanNum);
+  % now go through and add any non-empty auxparams
+  for iAuxParams = 1:length(fromAuxParamsNames{scanNum})
+    if ~isempty(fromAuxParamsValues{scanNum}{iAuxParams})
+      toView = viewSet(toView,'auxParam',fromAuxParamsNames{scanNum}{iAuxParams},fromAuxParamsValues{scanNum}{iAuxParams},toScanNum);
+    end
+  end
+
   % pause for 1 second (so that we don't end up writing scans out with the same exact timestamp
   if etime(clock,startTime) < 1
     disp(sprintf('(importGroupScans) Pause for one second to avoid having same exact timestamps'));
