@@ -44,16 +44,18 @@ end
 % is then we will offer to notch filter the data, otherwise hide the option
 offerNotchFilter = false;
 defaultNotchFilterSetting = true;
-for iScan = 1:viewGet(view,'nScans','Raw')
-  tSense = viewGet(view,'auxParam','tSense',iScan,'Raw');
-  if iscell(tSense),tSense = cell2mat(tSense);end
-  if isscalar(tSense) && (tSense > 1)
-    offerNotchFilter = true;
-    % set default setting to false if the current scan is a concat
-    if ~isempty(viewGet(view,'concatInfo'))
-      defaultNotchFilterSetting = false;
+if ~isempty(viewGet(view,'groupNum','Raw'))
+  for iScan = 1:viewGet(view,'nScans','Raw')
+    tSense = viewGet(view,'auxParam','tSense',iScan,'Raw');
+    if iscell(tSense),tSense = cell2mat(tSense);end
+    if isscalar(tSense) && (tSense > 1)
+      offerNotchFilter = true;
+      % set default setting to false if the current scan is a concat
+      if ~isempty(viewGet(view,'concatInfo'))
+        defaultNotchFilterSetting = false;
+      end
+      break;
     end
-    break;
   end
 end
 
