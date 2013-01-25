@@ -20,10 +20,10 @@ if ieNotDefined('defaultParams'),defaultParams = 0;end
 if ieNotDefined('params')
   params = struct;
 end
-if ~isfield(params,'description')
+if fieldIsNotDefined(params,'description')
   params.description = 'Deconvolution';
 end
-if ~isfield(params,'hdrlenS')
+if fieldIsNotDefined(params,'hdrlenS')
   params.hdrlenS = 25;
 end
    
@@ -43,5 +43,3 @@ if nargout==1
 end
 
 hrf = eye(round(params.hdrlenS/sampleDuration));
-
-%hrf = hrf(:,1:round(estimationSampling/sampleDuration):end);

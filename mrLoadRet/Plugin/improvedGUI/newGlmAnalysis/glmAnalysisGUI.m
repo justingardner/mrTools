@@ -175,13 +175,12 @@ while askForParams
   correctionTypeMenu = putOnTopOfList(tempParams.correctionType,correctionTypeMenu);
   covEstimationMenu = putOnTopOfList(tempParams.covEstimation,covEstimationMenu);
   covFactorizationMenu = putOnTopOfList(tempParams.covFactorization,covFactorizationMenu);
-%   fieldNames=fieldnames(tempParams);
-%   for i_field = 1:length(fieldNames)
-%     params.(fieldNames{i_field})=eval(['tempParams.' fieldNames{i_field}]);
-%   end
+  % remove description of HRF model if the type of model has changed
+  if ~strcmp(params.hrfModel,tempParams.hrfModel)
+    params.hrfParams.description='';
+  end
   params = copyFields(tempParams,params);
-
-
+  
   %perform some checks
   if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
     mrWarnDlg('(glmAnalysisGUI) Noise covariance estimation mask can only be used with ROI(s) analysis');
