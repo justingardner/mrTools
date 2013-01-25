@@ -30,10 +30,10 @@ end
 if ieNotDefined('params')
   params = struct;
 end
-if ~isfield(params,'description')
+if fieldIsNotDefined(params,'description')
   params.description = 'Flobs basis set';
 end
-if ~isfield(params,'flobsBasisSetFile')
+if fieldIsNotDefined(params,'flobsBasisSetFile')
   params.flobsBasisSetFile = [fslPath(1:end-4) '/etc/default_flobs.flobs/hrfbasisfns.txt'];
   if ~ exist(params.flobsBasisSetFile,'file')
     mrWarnDlg(sprintf('(hrfFslFlobs) Could not find default FLOBS file ''%s''. Please check your fslPath preference',params.flobsBasisSetFile));

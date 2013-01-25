@@ -19,19 +19,19 @@ end
 if ieNotDefined('params')
   params = struct;
 end
-if ~isfield(params,'description')
+if fieldIsNotDefined(params,'description')
   params.description = 'Double Gamma Function';
 end
-if ~isfield(params,'x')
+if fieldIsNotDefined(params,'x')
   params.x = 6;
 end
-if ~isfield(params,'y')
+if fieldIsNotDefined(params,'y')
   params.y = 16;
 end
-if ~isfield(params,'z')
+if fieldIsNotDefined(params,'z')
   params.z = 6;
 end
-if ~isfield(params,'includeDerivative')
+if fieldIsNotDefined(params,'includeDerivative')
   params.includeDerivative = 0;
 end
 
