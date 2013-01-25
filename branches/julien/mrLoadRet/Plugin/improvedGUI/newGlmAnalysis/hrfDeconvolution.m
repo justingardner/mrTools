@@ -1,12 +1,12 @@
 % hrfDeconvolution.m
 %
 %        $Id$
-%      usage: [params,hrf] = hrfDeconvolution(params, designSampling, notUsed, defaultParams)
+%      usage: [params,hrf] = hrfDeconvolution(params, sampleDuration, notUsed, defaultParams)
 %         by: julien besle
 %       date: 13/04/2010
-%    purpose: returns a deconvolution matrix given the design smapling period and the estimation sampling period
+%    purpose: returns a deconvolution matrix given the design sampling period and the estimation sampling period
 %
-function [params,hrf] = hrfDeconvolution(params, designSampling, notUsed, defaultParams)
+function [params,hrf] = hrfDeconvolution(params, sampleDuration, notUsed, defaultParams)
 
 if ~any(nargin == [1 2 3 4])% 5])
   help hrfDeconvolution
@@ -42,6 +42,6 @@ if nargout==1
    return
 end
 
-hrf = eye(round(params.hdrlenS/designSampling));
+hrf = eye(round(params.hdrlenS/sampleDuration));
 
-%hrf = hrf(:,1:round(estimationSampling/designSampling):end);
+%hrf = hrf(:,1:round(estimationSampling/sampleDuration):end);

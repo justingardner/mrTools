@@ -239,7 +239,9 @@ while askForParams
           %first get some sampling parameters
           %here we assume that all scans in this group have the same framePeriod and estimationSupersampling
           framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),groupNum);
-          hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod/params.scanParams{params.scanNum(1)}.estimationSupersampling,1,defaultParams);
+          estimationSuperSampling = params.scanParams{params.scanNum(1)}.estimationSupersampling;
+          acquisitionDelay = params.scanParams{params.scanNum(1)}.acquisitionDelay;
+          hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod/estimationSuperSampling,acquisitionDelay,defaultParams);
           % if empty user hit cancel, go back
           if isempty(hrfParams)
             if size(hrfParams,2) %if the top close button has been pressed
