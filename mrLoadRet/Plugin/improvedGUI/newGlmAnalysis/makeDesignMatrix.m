@@ -44,10 +44,15 @@ if ~fieldIsNotDefined(params.scanParams{scanNum},'estimationSupersampling')
 else
   estimationSupersampling = 1;
 end
-if ~fieldIsNotDefined(params.scanParams{scanNum},'acquisitionSubsample')
-  acquisitionSubsample = params.scanParams{scanNum}.acquisitionSubsample;
+% if ~fieldIsNotDefined(params.scanParams{scanNum},'acquisitionSubsample')
+%   acquisitionSubsample = params.scanParams{scanNum}.acquisitionSubsample;
+% else
+%   acquisitionSubsample = 1;
+% end
+if ~fieldIsNotDefined(params.scanParams{scanNum},'acquisitionDelay')
+  acquisitionDelay = params.scanParams{scanNum}.acquisitionDelay;
 else
-  acquisitionSubsample = 1;
+  acquisitionDelay = d.tr/2;
 end
 if isfield(params.scanParams{scanNum},'stimToEVmatrix') && ~isempty(params.scanParams{scanNum}.stimToEVmatrix)
   %match stimNames in params to stimNames in structure d
@@ -71,6 +76,7 @@ else
   runTransition = d.concatInfo.runTransition;
 end
 
+numberSamples = diff(runTransition,1,2)+1;
 runTransition(:,1) = ((runTransition(:,1)-1)*round(d.designSupersampling)+1);
 runTransition(:,2) = runTransition(:,2)*round(d.designSupersampling);
 
@@ -88,13 +94,16 @@ for iRun = 1:size(runTransition,1)
   % make stimulus convolution matrix
   for iEV = 1:size(thisEVmatrix,2)
       m = convn(thisEVmatrix(:,iEV), d.hrf);
-      m = m(1:size(thisEVmatrix,1),:);
       %apply saturation
-      m = min(m,repmat(saturationThreshold,size(thisEVmatrix,1),1));
+      m = min(m,repmat(saturationThreshold,size(m,1),1));
       % downsample to estimation sampling rate, with constant integral 
-      m = downsample(m, d.designSupersampling/estimationSupersampling);
+      % (we keep extra samples at the end because downsample can remove samples)
+      m = downsample(m, d.designSupersampling/estimationSupersampling, floor(rem(acquisitionDelay,d.tr/estimationSupersampling)*d.designSupersampling/estimationSupersampling/d.tr)+1);
+      %remove extra samples
+      m = m(1:estimationSupersampling*numberSamples(iRun),:);
       %only keep acquisition samples
-      m = m(acquisitionSubsample:estimationSupersampling:end,:);
+      %m = m(acquisitionSubsample:estimationSupersampling:end,:);
+      m = m(floor(acquisitionDelay/d.tr*estimationSupersampling)+1:estimationSupersampling:end,:);
       % remove mean 
       m = m-repmat(mean(m), size(m,1), 1); %DOES IT CHANGE ANYTHING IF I REMOVE THIS ?
       % apply the same filter as original data

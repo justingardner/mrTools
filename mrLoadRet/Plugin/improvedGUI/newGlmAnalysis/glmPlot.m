@@ -493,16 +493,20 @@ junkFrames = viewGet(thisView, 'junkFrames');
 nFrames = viewGet(thisView,'nFrames');
 actualTSeries = actualTSeries(junkFrames+1:junkFrames+nFrames);
 
-if isfield(analysisParams,'scanParams') && isfield(analysisParams.scanParams{thisView.curScan},'acquisitionSubsample')...
-    && ~isempty(analysisParams.scanParams{thisView.curScan}.acquisitionSubsample)
-  acquisitionSubsample = analysisParams.scanParams{thisView.curScan}.acquisitionSubsample;
-else
-  acquisitionSubsample = 1;
+% if isfield(analysisParams,'scanParams') && isfield(analysisParams.scanParams{thisView.curScan},'acquisitionSubsample')...
+%     && ~isempty(analysisParams.scanParams{thisView.curScan}.acquisitionSubsample)
+%   acquisitionSubsample = analysisParams.scanParams{thisView.curScan}.acquisitionSubsample;
+% else
+%   acquisitionSubsample = 1;
+% end
+% if ~isfield(d,'estimationSupersampling')
+%   d.estimationSupersampling=1;
+% end
+% time = ((0:length(actualTSeries)-1)+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
+if ~isfield(d,'acquisitionDelay')
+  d.acquisitionDelay=d.tr/2;
 end
-if ~isfield(d,'estimationSupersampling')
-  d.estimationSupersampling=1;
-end
-time = ((0:length(actualTSeries)-1)+(acquisitionSubsample-.5)/d.estimationSupersampling)*d.tr;
+time = rem(d.acquisitionDelay,d.tr)+d.tr*(0:length(actualTSeries)-1);
 
 % frequencies = 1/length(actualTSeries)/d.tr:1/length(actualTSeries)/d.tr:1/d.tr/2;
 % frequencies = (1/length(actualTSeries):1/length(actualTSeries):1/2)./d.tr;

@@ -39,16 +39,16 @@ while keepAsking
     end
   end
 
-  %create model HRF
-  %here we assume that all scans in this group have the same framePeriod
+  %create model HRF to get the number of components per EV
+  %here we assume that all scans in this group have the same sampling parameters 
+  %(which are needed to determine the number of components in the deconvolution case) 
   framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),viewGet(thisView,'groupNum',params.groupName));
   if ~fieldIsNotDefined(params.scanParams{params.scanNum(1)},'estimationSupersampling')
     estimationSupersampling = params.scanParams{params.scanNum(1)}.estimationSupersampling;
   else
     estimationSupersampling = 1;
   end
-  [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,...
-    framePeriod/estimationSupersampling,0,1);%,framePeriod/estimationSupersampling);
+  [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,framePeriod/estimationSupersampling,[],1);
   nComponents = size(hrf,2);
   if fieldIsNotDefined(params, 'componentsToTest') || ~isequal(nComponents,length(params.componentsToTest));
     params.componentsToTest = ones(1,nComponents);

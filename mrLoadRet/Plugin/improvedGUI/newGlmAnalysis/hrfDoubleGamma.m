@@ -1,17 +1,20 @@
 % hrfDoubleGamma.m
 %
 %        $Id$
-%      usage: [params,hrf] = hrfDoubleGamma(params, designSampling, notUsed, defaultParams)
+%      usage: [params,hrf] = hrfDoubleGamma(params, sampleDuration, notUsed, defaultParams)
 %         by: farshad moradi, modified by julien besle
 %       date: 14/06/07, 09/02/2010
 %    purpose: returns a canonical hrf that's a difference of two gamma distribution function
 %
-function [params, hrf] = hrfDoubleGamma(params, designSampling, notUsed, defaultParams)
+function [params, hrf] = hrfDoubleGamma(params, sampleDuration, sampleDelay, defaultParams)
 
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 
 if ieNotDefined('defaultParams'),defaultParams = 0;end
-if ieNotDefined('designSampling'),designSampling = 1;end
+if ieNotDefined('sampleDuration'),sampleDuration = 1;end
+if ieNotDefined('sampleDelay')
+  sampleDelay=sampleDuration/2;
+end
 
 if ieNotDefined('params')
   params = struct;
@@ -42,7 +45,7 @@ paramsInfo = {...
     {'y', params.y, 'Shape parameter of the negative Gamma distribution function; hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
     {'z', params.z, 'Scaling factor between the positive and negative gamma componenets; hrf = gampdf(...,x,1)-gampdf(...,y,1)/z'},...
     {'includeDerivative',params.includeDerivative,'type=checkbox','Includes derivative of the hrf in the model'},...
-    {'displayHRF',0,'type=pushbutton','callback',@dispModelHRF,'buttonString=Display HRF','passParams=1','callbackArg',{threshold designSampling},'Display the hrf with current parameters'},...
+    {'displayHRF',0,'type=pushbutton','callback',@dispModelHRF,'buttonString=Display HRF','passParams=1','callbackArg',{threshold sampleDuration sampleDelay},'Display the hrf with current parameters'},...
 };
       
 if defaultParams
@@ -62,14 +65,14 @@ end
 
 % get the model HRF
 if ~isempty(params)
-  [params hrf] = getModelHrf(params,threshold,designSampling);
+  [params hrf] = getModelHrf(params,threshold,sampleDuration,sampleDelay);
 end
 
 
 %%%%%%%%%%%%%%%%%%%%%
 %    getModelHrf    %
 %%%%%%%%%%%%%%%%%%%%%
-function [params hrf t] = getModelHrf(params,threshold,designSampling)
+function [params hrf t] = getModelHrf(params,threshold,sampleDuration,sampleDelay)
 
 tmax = max(params.y*3, 20); %min length of the hrf model in seconds
 
@@ -109,19 +112,22 @@ if params.includeDerivative
   modelHrf = [modelHrf; modelHrfDerivative];
 end
 
-%remove trailing zeros
-modelHrf = modelHrf(1:end-find(flipud(max(abs(modelHrf),[],2))>threshold,1,'first')+1,:);
 %normalise so that integral of sum = 1
 modelHrf = modelHrf./sum(modelHrf(:));
     
 %downsample with constant integral
-hrf = downsample(modelHrf', round(designSampling/dt));
+dsFactor = round(sampleDuration/dt);
+dsDelay = floor(rem(sampleDelay,sampleDuration)/dt)+1;
+hrf = downsample(modelHrf', dsFactor, dsDelay);
 
+%remove trailing zeros
+%hrf = hrf(1:end-find(flipud(max(abs(hrf),[],2))>threshold,1,'first')+1,:);
 
-params.maxModelHrf = designSampling/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
+%output the max amplitude of the actual model HRF
+params.maxModelHrf = sampleDuration/dt * max(modelHrf'); 
 
 % return actual time
-t = t(1:round(designSampling/dt):length(t));
+t = t(dsDelay:dsFactor:length(t));
 % make sure t is same length as hrf
 if length(t) < length(hrf)
   t = [t nan(1,length(hrf)-length(t))];
@@ -136,7 +142,7 @@ function retval = dispModelHRF(callbackArg,params)
 
 global modelHRFFig;
 
-[params hrf t] = getModelHrf(params,callbackArg{1},callbackArg{2});
+[params hrf t] = getModelHrf(params,callbackArg{1},callbackArg{2},callbackArg{3});
 modelHRFFig = mlrSmartfig('hrfDoubleGamma','reuse');clf;
 plot(t,hrf);
 title('Model HRF');
