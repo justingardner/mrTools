@@ -107,7 +107,7 @@ elseif ~isempty(flatFile);
   flat.curvature = surf.curv(flat.whichInx);
   flat.hdr       = anat.hdr;
 else
-  disp(sprintf('(importFlatOFF) cannot find paramters needed to make base anatomy'));
+  disp(sprintf('(importFlatOFF) cannot find parameters needed to make base anatomy'));
 end  
 
 
@@ -168,7 +168,7 @@ flat.thresholdMap(isnan(flat.map)) = 0;
 
 % now load the anatomy file, so that we can get the vol2mag/vol2tal fields
 v = newView;
-v = loadAnat(v,setext(params.anatFileName,'img'),params.path);
+v = loadAnat(v,setext(params.anatFileName,mrGetPref('niftiFileExtension')),params.path);
 b = viewGet(v,'base');
 deleteView(v);
 
