@@ -119,7 +119,7 @@ end
 askForParams = 1;
 % put group name on top of list to make it the default
 groupNames = putOnTopOfList(params.groupName,viewGet(thisView,'groupNames'));
-hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDoubleGamma','hrfFslFlobs','hrfDeconvolution'});
+hrfModelMenu = putOnTopOfList(params.hrfModel,{'hrfDoubleGamma','hrfFslFlobs','hrfDeconvolution','hrfBoxcar'});
 analysisVolumeMenu = {'Whole volume','Subset box'};
 if nRois
   analysisVolumeMenu{end+1} = 'Loaded ROI(s)';
@@ -175,13 +175,12 @@ while askForParams
   correctionTypeMenu = putOnTopOfList(tempParams.correctionType,correctionTypeMenu);
   covEstimationMenu = putOnTopOfList(tempParams.covEstimation,covEstimationMenu);
   covFactorizationMenu = putOnTopOfList(tempParams.covFactorization,covFactorizationMenu);
-%   fieldNames=fieldnames(tempParams);
-%   for i_field = 1:length(fieldNames)
-%     params.(fieldNames{i_field})=eval(['tempParams.' fieldNames{i_field}]);
-%   end
+  % remove description of HRF model if the type of model has changed
+  if ~strcmp(params.hrfModel,tempParams.hrfModel)
+    params.hrfParams.description='';
+  end
   params = copyFields(tempParams,params);
-
-
+  
   %perform some checks
   if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
     mrWarnDlg('(glmAnalysisGUI) Noise covariance estimation mask can only be used with ROI(s) analysis');
@@ -189,9 +188,17 @@ while askForParams
     %perform check on parameters here if needed
   else
     while askForParams       % get hrf model parameters
-      %here we assume that all scans in this group have the same framePeriod
-      framePeriod = viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName));
-      hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod,1,defaultParams);%,framePeriod);
+      %first get some parameters that will be used to plot the HRF model
+      %if scans have been chosen already, take the first chosen scan, otherwise take the first scan of the group
+      if ~fieldIsNotDefined(params,'scanNum')
+        scanNum = params.scanNum(1);
+      else
+        scanNum=1;
+      end
+      %we assume that all (chosen) scans in this group have the same framePeriod
+      framePeriod = viewGet(thisView,'framePeriod',scanNum,viewGet(thisView,'groupNum',params.groupName));
+      %and that the acquisition time is half the frame period
+      hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod,framePeriod/2,defaultParams);
       % if empty user hit cancel, go back
       if isempty(hrfParams)
         if size(hrfParams,2) %if the top close button has been pressed
@@ -235,7 +242,7 @@ while askForParams
                 return
               end
             end
-              
+
             params.scanNum = scanNums;
           end
         end
@@ -252,6 +259,7 @@ while askForParams
             end
           end
           params.scanParams = scanParams;
+
 
           while askForParams    %get the stim to EV matrices for each scan
             [scanParams, params] = getGlmEVParamsGUI(thisView,params,defaultParams);

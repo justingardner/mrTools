@@ -199,9 +199,13 @@ end
 if fieldIsNotDefined(d,'estimationSupersampling')
   d.estimationSupersampling =1;
 end
-if fieldIsNotDefined(d,'acquisitionSubsample')
-  d.acquisitionSubsample=1;
+% if fieldIsNotDefined(d,'acquisitionSubsample')
+%   d.acquisitionSubsample=1;
+% end
+if fieldIsNotDefined(d,'acquisitionDelay')
+  d.acquisitionDelay=d.tr/2;
 end
 tr = d.tr/d.estimationSupersampling;
-estimates.time = ((d.acquisitionSubsample-.5)*tr:tr:(hrfLength+d.acquisitionSubsample-1.5)*tr)';
+% estimates.time = ((d.acquisitionSubsample-.5)*tr:tr:(hrfLength+d.acquisitionSubsample-1.5)*tr)';
+estimates.time = rem(d.acquisitionDelay,tr)+tr*(0:hrfLength-1);
 

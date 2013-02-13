@@ -1,12 +1,12 @@
 % hrfDeconvolution.m
 %
 %        $Id$
-%      usage: [params,hrf] = hrfDeconvolution(params, designSampling, justGetParams, defaultParams)
+%      usage: [params,hrf] = hrfDeconvolution(params, sampleDuration, notUsed, defaultParams)
 %         by: julien besle
 %       date: 13/04/2010
-%    purpose: returns a deconvolution matrix given the design smapling period and the estimation sampling period
+%    purpose: returns a deconvolution matrix given the design sampling period and the estimation sampling period
 %
-function [params,hrf] = hrfDeconvolution(params, designSampling, justGetParams, defaultParams)%, varargin)
+function [params,hrf] = hrfDeconvolution(params, sampleDuration, notUsed, defaultParams)
 
 if ~any(nargin == [1 2 3 4])% 5])
   help hrfDeconvolution
@@ -15,16 +15,15 @@ end
 
 %estimationSampling = varargin{1};
 
-if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 if ieNotDefined('params')
   params = struct;
 end
-if ~isfield(params,'description')
+if fieldIsNotDefined(params,'description')
   params.description = 'Deconvolution';
 end
-if ~isfield(params,'hdrlenS')
+if fieldIsNotDefined(params,'hdrlenS')
   params.hdrlenS = 25;
 end
    
@@ -39,10 +38,8 @@ else
   params = mrParamsDialog(paramsInfo, 'Set Deconvolution parameters');
 end
 
-if justGetParams
+if nargout==1
    return
 end
 
-hrf = eye(round(params.hdrlenS/designSampling));
-
-%hrf = hrf(:,1:round(estimationSampling/designSampling):end);
+hrf = eye(round(params.hdrlenS/sampleDuration));

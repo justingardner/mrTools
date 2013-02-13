@@ -253,7 +253,7 @@ switch action
     %---------------------------- Add colormaps and interrogators
   
     %get interrogators in the interrogatorFunctions directory
-    interrogatorsFolder = [fileparts(which('improvedGUIPlugin')) '/InterrogatorFunctions/'];
+    interrogatorsFolder = [fileparts(which('improvedGUIPlugin')) '/interrogatorFunctions/'];
     interrogatorFiles =  dir([interrogatorsFolder '*.m']);
     if ~isempty(interrogatorFiles)
       interrogatorList = cell(1,length(interrogatorFiles));
@@ -268,7 +268,7 @@ switch action
     end
     
     %get colormaps in the colormapFunctions directory
-    colorMapsFolder = [fileparts(which('improvedGUIPlugin')) '/ColormapFunctions/'];
+    colorMapsFolder = [fileparts(which('improvedGUIPlugin')) '/colormapFunctions/'];
     colorMapFiles =  dir([colorMapsFolder '*.m']);
     if ~isempty(colorMapFiles)
       colorMapList = cell(1,length(colorMapFiles));

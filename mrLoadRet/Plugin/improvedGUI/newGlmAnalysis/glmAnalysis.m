@@ -310,7 +310,7 @@ for iScan = params.scanNum
       else
         estimationSupersampling = 1;
       end
-      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,0,1);%,d.tr/estimationSupersampling);
+      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,scanParams{iScan}.acquisitionDelay,1);
 
       d.volumes = 1:d.dim(4);
       %make a copy of d
@@ -592,11 +592,12 @@ for iScan = params.scanNum
     stimvol{i} = unique(ceil(stimvol{i}/d.designSupersampling));
   end
   glmAnal.d{iScan}.stimvol = stimvol;
-  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/estimationSupersampling);%/d.designSupersampling*scanParams{iScan}.estimationSupersampling;
+  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/estimationSupersampling,floor(rem(scanParams{iScan}.acquisitionDelay,d.tr/estimationSupersampling)*d.designSupersampling/estimationSupersampling/d.tr)+1);
   glmAnal.d{iScan}.actualhrf = d.hrf;
   clear('d');
   glmAnal.d{iScan}.estimationSupersampling = scanParams{iScan}.estimationSupersampling;
-  glmAnal.d{iScan}.acquisitionSubsample = scanParams{iScan}.acquisitionSubsample;
+%   glmAnal.d{iScan}.acquisitionSubsample = scanParams{iScan}.acquisitionSubsample;
+  glmAnal.d{iScan}.acquisitionDelay = scanParams{iScan}.acquisitionDelay;
   glmAnal.d{iScan}.EVnames = params.EVnames;                %this should be removed if viewGet can get params from GLM analysis
   glmAnal.d{iScan}.dim = [scanDims{iScan} numVolumes];
   glmAnal.d{iScan}.ehdr = NaN([scanDims{iScan} size(ehdr,4) size(ehdr,5)],precision);
@@ -907,7 +908,7 @@ for iScan = 1:length(glmAnal.d)
     structName = sprintf('%s.%s',structName,removeFields{iField}{jField});
         end
         % now remove it
-        eval(sprintf('%s = rmfield(%s,''%s'')',structName,structName,removeFields{iField}{end}));
+        eval(sprintf('%s = rmfield(%s,''%s'');',structName,structName,removeFields{iField}{end}));
       end
     end
   end

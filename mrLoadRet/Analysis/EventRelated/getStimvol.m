@@ -368,6 +368,9 @@ end
 
 % return the actual TR supersampling factor
 d.designSupersampling = designSupersampling;
+if isfield(var,'designSupersampling') && designSupersampling ~=var.designSupersampling
+  mrWarnDlg(sprintf('(getStimvol) Design super-sampling changed to %d',designSupersampling));
+end
 
 % update the eventRelatedVarname
 if isfield(d,'eventRelatedVarname')

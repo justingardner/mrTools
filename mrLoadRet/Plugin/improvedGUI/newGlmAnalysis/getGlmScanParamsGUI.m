@@ -50,9 +50,12 @@ while keepAsking
     if ~isfield(scanParams{iScan},'estimationSupersampling') || isempty(scanParams{iScan}.estimationSupersampling)
        scanParams{iScan}.estimationSupersampling = 1;
     end
-    if ~isfield(scanParams{iScan},'acquisitionSubsample') || isempty(scanParams{iScan}.acquisitionSubsample)
-       scanParams{iScan}.acquisitionSubsample = 1;
+    if fieldIsNotDefined(scanParams{iScan},'acquisitionDelay')
+       scanParams{iScan}.acquisitionDelay = framePeriod/2;
     end
+%     if ~isfield(scanParams{iScan},'acquisitionSubsample') || isempty(scanParams{iScan}.acquisitionSubsample)
+%        scanParams{iScan}.acquisitionSubsample = 1;
+%     end
     if ~isfield(scanParams{iScan},'sameForNextScans') || isempty(scanParams{iScan}.sameForNextScans)
        scanParams{iScan}.sameForNextScans = iScan == params.scanNum(1);
     end
@@ -191,13 +194,13 @@ while keepAsking
         deconvolutionVisibleOption = 'visible=1';
       else
         scanParams{iScan}.estimationSupersampling=1;
-        scanParams{iScan}.acquisitionSubsample=1;
+%         scanParams{iScan}.acquisitionSubsample=1;
         deconvolutionVisibleOption = 'visible=0';
       end
       scanParams{iScan}.designSupersampling=scanParams{iScan}.estimationSupersampling;
     else
       scanParams{iScan}.estimationSupersampling=1;
-      scanParams{iScan}.acquisitionSubsample=1;
+%       scanParams{iScan}.acquisitionSubsample=1;
       canonicalVisibleOption = 'visible=1';
       deconvolutionVisibleOption = 'visible=0';
       if strcmp(stimfile{1}.filetype,'eventtimes')
@@ -210,11 +213,12 @@ while keepAsking
     
     paramsInfo = [paramsInfo {...
       {'estimationSupersampling',scanParams{iScan}.estimationSupersampling, deconvolutionVisibleOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation, and is not supported for MGL/AFNI stim files.'},...
-      {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, deconvolutionVisibleOption, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'},...
+      {'acquisitionDelay',scanParams{iScan}.acquisitionDelay, sprintf('minmax=[0 %f]',framePeriod-0.05),'Specifies at what time the signal is actually acquired on average across slices. This is normally equal to half of the frame period. If slice motion correction has been used, change to reference slice acquisition time. You might also need to change this value is using sparse imaging.'},...
       {'designSupersampling',scanParams{iScan}.designSupersampling, designSupersamplingOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame rate. This is not supported for MGL/AFNI stim files.'},...
-      {'stimDuration', scanParams{iScan}.stimDuration, canonicalVisibleOption, 'duration of stimulation/event (seconds, min=0.05s), a boxcar function that is convolved with the HRF model. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR). Use ''fromFile'' is the stimulus durations are specified in the stim files.'},...
+      {'stimDuration', scanParams{iScan}.stimDuration, canonicalVisibleOption, 'duration of stimulation/event (seconds, min=0.05s), a boxcar function that is convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might change to accomodate durations that are not multiples of the frame period).'},...
       {'forceStimOnSampleOnset', scanParams{iScan}.forceStimOnSampleOnset,'type=checkbox','Forces stimulus onset to coincide with (sub)sample onsets'},...
        }];
+%       {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, deconvolutionVisibleOption, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'},...
 
      
      % give the option to use the same variable for remaining scans
@@ -246,12 +250,12 @@ while keepAsking
     subsetBox = eval(scanParams{iScan}.subsetBox);
     
     %various controls and variables settings
-    if scanParams{iScan}.estimationSupersampling<scanParams{iScan}.acquisitionSubsample
-      mrWarnDlg('(getScanParamsGUI) The acquisition subsample must be less than the subsample estimation factor','Yes');
-      scanParams{iScan} = [];
-    elseif params.covCorrection && strcmp(params.analysisVolume,'Subset box') any(diff(subsetBox(1:2,:),1,2)<=params.covEstimationAreaSize)
+    if params.covCorrection && strcmp(params.analysisVolume,'Subset box') any(diff(subsetBox(1:2,:),1,2)<=params.covEstimationAreaSize)
       mrWarnDlg('(getScanParamsGUI) subset box size is too small for covariance estimation area size','Yes');
       scanParams{iScan} = [];
+%     elseif scanParams{iScan}.estimationSupersampling<scanParams{iScan}.acquisitionSubsample
+%       mrWarnDlg('(getScanParamsGUI) The acquisition subsample must be less than the subsample estimation factor','Yes');
+%       scanParams{iScan} = [];
     elseif isempty(scanParams{iScan}.stimDuration) 
       mrWarnDlg('(getScanParamsGUI) unknown stimDuration parameter','Yes');
       scanParams{iScan} = [];

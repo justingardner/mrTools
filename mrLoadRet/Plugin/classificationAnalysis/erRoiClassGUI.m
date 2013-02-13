@@ -106,7 +106,7 @@ while askForParams
     params = copyFields(tempParams,params);
     while askForParams       % get hrf model parameters
       %here we assume that all scans in this group have the same framePeriod
-      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),1,defaultParams);
+      hrfParams = feval(params.hrfModel,params.hrfParams,viewGet(thisView,'framePeriod',1,viewGet(thisView,'groupNum',params.groupName)),0,defaultParams);
       % if empty user hit cancel, go back
       if isempty(hrfParams)
         if size(hrfParams,2) %if the top close button has been pressed

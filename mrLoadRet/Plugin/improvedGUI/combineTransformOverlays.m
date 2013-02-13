@@ -23,7 +23,8 @@ params.customCombineFunction = '';%(''@(x)max(0,-norminv(x))';
 params.nOutputOverlays = 1;
 params.additionalArrayArgs = '';
 params.additionalArgs = '';
-params.useMask = 0;
+params.clip = 0;
+params.alphaClip = 0;
 params.passView = 0;
 params.outputName = '';
 
@@ -38,7 +39,8 @@ while askForParams
    {'additionalArrayArgs',params.additionalArrayArgs,'constant arguments for functions that accept them. Arguments must be separated by commas. for Array input/output type, each argument will be repeated in a matrix of same dimensions of the overlay '},...
    {'additionalArgs',params.additionalArgs,'constant scalar arguments for functions that take both arrays and scalars. These arguments will be input at the end of each function call. They must be separated by commas. '},...
    {'passView',params.passView,'type=checkbox','Check this if the function requires the current mrLoadRet view'},...
-   {'useMask',params.useMask,'type=checkbox','use overlay masked by other overlays of the analysis according to clip values'},...
+   {'clip',params.clip,'type=checkbox','Mask overlays according to clip values'},...
+   {'alphaClip',params.alphaClip,'type=checkbox','Mask overlays according to alpha overlay clip values'},...
    {'outputName',params.outputName,'radical of the output overlay names'},...
    {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
           };
@@ -74,13 +76,29 @@ set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 nScans = viewGet(thisView,'nScans');   
 overlayData = viewGet(thisView,'overlays');
 overlayData = overlayData(overlayList);
-if params.useMask
+if params.clip
    mask = maskOverlay(thisView,overlayList);
    for iScan = 1:length(mask)
       for iOverlay = 1:length(overlayData)
-         overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
+        if ~isempty(overlayData(iOverlay).data{iScan})
+          overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
+        end
       end
    end
+end
+if params.alphaClip
+  alphaOverlayNum = zeros(1,length(overlayData));
+  for iOverlay = 1:length(overlayData)
+    alphaOverlayNum(iOverlay) = viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay);
+  end
+  mask = maskOverlay(thisView,alphaOverlayNum);
+  for iScan = 1:length(mask)
+    for iOverlay = 1:length(overlayData)
+      if alphaOverlayNum(iOverlay) &&  ~isempty(overlayData(iOverlay).data{iScan})
+        overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
+      end
+    end
+  end
 end
 
 %overlay names
