@@ -110,8 +110,8 @@ global modelHRFFig;
 
 [params hrf t] = getModelHrf(params,callbackArg{1},callbackArg{2},callbackArg{3});
 modelHRFFig = mlrSmartfig('hrfFlobs','reuse');clf;
-plot(t,hrf);
-title('Model HRF');
+plot(t,hrf,'o-','linewidth',2);
+title({'Model HRF (under the assumption that points are sampled','in the middle of the frame period. This can be changed in the next menu)'});
 xlabel('Time (sec)');
 ylabel('Response magnitude');
 

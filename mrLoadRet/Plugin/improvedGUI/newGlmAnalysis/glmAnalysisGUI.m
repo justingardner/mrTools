@@ -187,73 +187,78 @@ while askForParams
   elseif 0
     %perform check on parameters here if needed
   else
-    while askForParams    % get the scan numbers
-      groupNum = viewGet(thisView,'groupnum',params.groupName);
-      nScans=viewGet(thisView,'nScans',groupNum);
-      if nScans == 1
-        params.scanNum = 1;
-      elseif ~ieNotDefined('scanList')
-        params.scanNum = scanList;
-      elseif defaultParams
-        params.scanNum = 1:nScans;
-      elseif viewGet(thisView,'nScans',groupNum) >1
-        scanNums = selectInList(thisView,'scans','Select scans to analyse',params.scanNum,groupNum);
-        if isempty(scanNums)
-          if size(scanNums,2) %if the top close button has been pressed
-            params=[];
-            return
-          else
-            askForParams = 1;
-            break;
-          end
+    while askForParams       % get hrf model parameters
+      %first get some parameters that will be used to plot the HRF model
+      %if scans have been chosen already, take the first chosen scan, otherwise take the first scan of the group
+      if ~fieldIsNotDefined(params,'scanNum')
+        scanNum = params.scanNum(1);
+      else
+        scanNum=1;
+      end
+      %we assume that all (chosen) scans in this group have the same framePeriod
+      framePeriod = viewGet(thisView,'framePeriod',scanNum,viewGet(thisView,'groupNum',params.groupName));
+      %and that the acquisition time is half the frame period
+      hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod,framePeriod/2,defaultParams);
+      % if empty user hit cancel, go back
+      if isempty(hrfParams)
+        if size(hrfParams,2) %if the top close button has been pressed
+          params=[];
+          return
         else
-          %check that scan frame Period are all identical
-          framePeriod = viewGet(thisView,'framePeriod',scanNums(1));
-          for iScan = scanNums(2:end);
-            if viewGet(thisView,'framePeriod',iScan)~=framePeriod
-              mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different frame periods. Copy scans in different groups.');
-              params=[];
-              return
-            end
-          end
-
-          params.scanNum = scanNums;
+          break;
         end
       end
+      params.hrfParams = hrfParams;
+      if ~isfield(params.hrfParams, 'description')
+         params.hrfParams.description = params.hrfModel;
+      end
 
-      while askForParams    % get the parameters for each scan
-        [scanParams, params] = getGlmScanParamsGUI(thisView,params,defaultParams);
-        if isempty(scanParams)
-          if size(scanParams,2) %if the top close button has been pressed
-            params=[];
-            return
-          else
-            askForParams = 1;
-            break;
-          end
-        end
-        params.scanParams = scanParams;
-          
-        while askForParams       % get hrf model parameters
-          %first get some sampling parameters
-          %here we assume that all scans in this group have the same framePeriod and estimationSupersampling
-          framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),groupNum);
-          estimationSuperSampling = params.scanParams{params.scanNum(1)}.estimationSupersampling;
-          acquisitionDelay = params.scanParams{params.scanNum(1)}.acquisitionDelay;
-          hrfParams = feval(params.hrfModel,params.hrfParams,framePeriod/estimationSuperSampling,acquisitionDelay,defaultParams);
-          % if empty user hit cancel, go back
-          if isempty(hrfParams)
-            if size(hrfParams,2) %if the top close button has been pressed
+      while askForParams    % get the scan numbers
+        groupNum = viewGet(thisView,'groupnum',params.groupName);
+        nScans=viewGet(thisView,'nScans',groupNum);
+        if nScans == 1
+          params.scanNum = 1;
+        elseif ~ieNotDefined('scanList')
+          params.scanNum = scanList;
+        elseif defaultParams
+          params.scanNum = 1:nScans;
+        elseif viewGet(thisView,'nScans',groupNum) >1
+          scanNums = selectInList(thisView,'scans','Select scans to analyse',params.scanNum,groupNum);
+          if isempty(scanNums)
+            if size(scanNums,2) %if the top close button has been pressed
               params=[];
               return
             else
+              askForParams = 1;
+              break;
+            end
+          else
+            %check that scan frame Period are all identical
+            framePeriod = viewGet(thisView,'framePeriod',scanNums(1));
+            for iScan = scanNums(2:end);
+              if viewGet(thisView,'framePeriod',iScan)~=framePeriod
+                mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different frame periods. Copy scans in different groups.');
+                params=[];
+                return
+              end
+            end
+
+            params.scanNum = scanNums;
+          end
+        end
+
+        while askForParams    % get the parameters for each scan
+          [scanParams, params] = getGlmScanParamsGUI(thisView,params,defaultParams);
+          if isempty(scanParams)
+            if size(scanParams,2) %if the top close button has been pressed
+              params=[];
+              return
+            else
+              askForParams = 1;
               break;
             end
           end
-          params.hrfParams = hrfParams;
-          if ~isfield(params.hrfParams, 'description')
-             params.hrfParams.description = params.hrfModel;
-          end
+          params.scanParams = scanParams;
 
 
           while askForParams    %get the stim to EV matrices for each scan
