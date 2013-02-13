@@ -95,9 +95,9 @@ else
 end
 
 % check for an error in intlv setting, which happens when intlv is set to 'y' and
-% this is not an epi (which shouldn't happen)
-if strcmp(info.intlv,'y') && ~info.isepi
-  disp(sprintf('(fid2xform) !!! Intlv is set to y even though this is not an epi. This is likely a mistake. Setting intlv to n. !!!'));
+% this is a 3D mprage (which shouldn't happen)
+if strcmp(info.intlv,'y') && isequal(procpar.nD,3)
+  disp(sprintf('(fid2xform) !!! Intlv is set to y even though this is a 3D mprage. This is likely a mistake. Setting intlv to n. !!!'));
   info.intlv = 'n';
 end
 
