@@ -30,3 +30,12 @@ if ~isempty(mrDEFAULTS) && isfield(mrDEFAULTS.figloc,figname)
 else
     pos = [];
 end
+
+if isunix && strcmp(version,'7.14.0.739 (R2012a)') %some bugs in that version, disappears in next version, 
+                                                   %don't know if same happens in previous versions
+  pause(.1);                          % basically there is a mismatch between outerposition and position that 
+                                      % messes up the coordinates inside the figure but disappears when
+                                      % entering debug mode or pausing
+%   figloc = figloc + [0 38 -16 -38];  % if not pausing, this is the difference in location/size values   
+%   disp(['Position ' mat2str(get(h,'position'))]);
+end

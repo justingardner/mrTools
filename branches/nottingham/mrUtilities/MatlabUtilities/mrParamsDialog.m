@@ -1104,26 +1104,35 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
   %%%%%%%%%%%% compute total number of entries per multicols
   numRows = [dParams.numLines.*dParams.entryNumRows 1]; %we add one for the help/ok/cancel buttons
   %compute new number of rows per columns, but make sure we're not cutting an entry
-  dParams.figrows = ceil(sum(numRows)/dParams.multiCols)-1; %we remove one just because of the order of things in the while loop
-  cutsEntry=1; %this is just to enter the while loop
-  while cutsEntry
-    dParams.figrows = dParams.figrows+1;
+  dParams.figrows = max(max(numRows),ceil(sum(numRows)/dParams.multiCols)) - 1; %we remove one just because of the order of things in the while loop
+  %now check if any multirow entry is not split between two columns and if we have enough rowas per column
+  keepAddingRows=1; %this is just to enter the while loop
+  while keepAddingRows   %while an entry is split between two columns or 
+    %there are more rows than number of columns times number of rows per column
+    dParams.figrows = dParams.figrows+1;  % we try adding one row per column
     numRowsLeft = numRows;
     dParams.startMultiCol = zeros(1,dParams.multiCols);
     endMultiCol = 0;
-    for i=1:dParams.multiCols
+    cutsEntry=0;
+    for i=1:dParams.multiCols   %and we check for each column if an entry is split. 
+      %this is the entry index of the start of the current column (the first entry 
+      % whose cumulated number of rows is less than the number of rows per column)
       dParams.startMultiCol(i) = endMultiCol+find(cumsum(numRowsLeft)<=dParams.figrows,1,'first');
+      % similarly, this is the last entry whose cumulated number of rows is less than the number of rows per column
       endMultiCol = endMultiCol+find(cumsum(numRowsLeft)<=dParams.figrows,1,'last');
+      %these are the number of rows of all the entries attributed to the current columns
       thisNumRows = numRows(dParams.startMultiCol(i):endMultiCol);
+      % and the rows left for next columns
       numRowsLeft = numRows(endMultiCol+1:end);
-      cutsEntry = cutsEntry && ~(ismember(dParams.figrows,cumsum(thisNumRows)) || dParams.figrows>=sum(thisNumRows));
+      %an entry is split between two columns if it was split for any previous column
+      %or the cumulated number of rows per entry (from the start of the current column)
+      %does not include the total number of rows per column and the column is full 
+      %(if the total number of rows is less than the desired number, then an entry cannot be split over the next column)
+      cutsEntry = cutsEntry || ~(ismember(dParams.figrows,cumsum(thisNumRows)) || dParams.figrows>=sum(thisNumRows));
     end
-    %check that there are not entries left
-    cutsEntry = cutsEntry || ~isempty(numRowsLeft);
+    %check that there are not entries left (if there are, we need to increase the number of rows even if there no cut entries)
+    keepAddingRows = cutsEntry || ~isempty(numRowsLeft);
   end
-%   while ~all(ismember( (1:dParams.multiCols)*dParams.figrows , cumsum([dParams.numLines.*dParams.entryNumRows 1]) ))
-%     dParams.figrows = dParams.figrows+1;
-%   end
 
   %%%%%%%%%%%% compute figure dimensions
   figHeight = 2*uiParams.topMargin+dParams.figrows*uiParams.buttonHeight+(dParams.figrows-1)*uiParams.margin;

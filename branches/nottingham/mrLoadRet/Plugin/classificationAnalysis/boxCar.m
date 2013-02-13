@@ -1,18 +1,17 @@
-% hrfDoubleGamma.m
+% boxCar.m
 %
-%        $Id: hrfDoubleGamma.m 2081 2011-03-04 10:46:48Z julien $
-%      usage: [params,hrf] = hrfDoubleGamma(params, tr, stimDuration )
-%         by: farshad moradi, modified by julien besle
+%        $Id: boxCar.m 2081 2011-03-04 10:46:48Z julien $
+%      usage: [params,hrf] = boxCar(params, sampleDuration, stimDuration )
+%         by: julien besle
 %       date: 14/06/07, 09/02/2010
-%    purpose: returns a canonical hrf that's a difference of two gamma distribution function
+%    purpose: returns a canonical hrf modeled as a boxcar function
 %
-function [params, hrf] = boxCar(params, tr, justGetParams, defaultParams )
+function [params, hrf] = boxCar(params, sampleDuration, notUsed, defaultParams )
 
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 
-if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
-if ieNotDefined('tr'),tr = 1;end
+if ieNotDefined('sampleDuration'),sampleDuration = 1;end
 
 if ieNotDefined('params')
   params = struct;
@@ -35,7 +34,7 @@ else
   params = mrParamsDialog(paramsInfo, 'Set model HRF parameters');
 end
 
-if justGetParams
+if nargout==1
    return
 end
 
@@ -94,8 +93,8 @@ hrf = [zeros(1,params.hdLag),1]';
 % modelHrf = modelHrf./sum(modelHrf(:));
 %     
 % %downsample with constant integral
-% hrf = downsample(modelHrf', round(tr/dt));
+% hrf = downsample(modelHrf', round(sampleDuration/dt));
 % 
 % 
-% params.maxModelHrf = tr/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
+% params.maxModelHrf = sampleDuration/dt * max(modelHrf'); %output the max amplitude of the actual model HRF
 % 

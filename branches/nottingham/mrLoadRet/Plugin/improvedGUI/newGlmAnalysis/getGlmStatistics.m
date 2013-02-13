@@ -23,6 +23,9 @@
 
 function [d, out] = getGlmStatistics(d, params, verbose, precision, actualData)
 
+%DEBUG
+% lastwarn('','');
+
 approximate_value = 0;
 out = struct;
 %optimalXLength = [60 80 100 120 140 160 180 200];
@@ -256,6 +259,10 @@ numberTests = numberTtests+numberFtests;
 
 dInfo = whos('d');
 totalBytes = dInfo.bytes; %keep track of big variables, including the raw data
+
+[betas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),precision,totalBytes);
+[thisS2,totalBytes] = alloc('NaN',d.dim(1),1,precision,totalBytes);
+[thisResiduals,totalBytes] = alloc('NaN',d.dim(4),d.dim(1),precision,totalBytes);
 if actualData 
   if bootstrapIntervals
     [sortedBetas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),nResamples,precision,totalBytes);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
@@ -331,10 +338,6 @@ if numberFtests || params.computeTtests
     end
   end
 end
-
-[betas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),precision,totalBytes);
-[thisS2,totalBytes] = alloc('NaN',d.dim(1),1,precision,totalBytes);
-[thisResiduals,totalBytes] = alloc('NaN',d.dim(4),d.dim(1),precision,totalBytes);
 
 % turn off divide by zero warning
 warning('off','MATLAB:divideByZero');
@@ -646,6 +649,12 @@ for z = slices
                 residualsAcm = makeAcm(autoCorrelationParameters(:,x,y,z),d.dim(4),params.covEstimation);
                 %this is the part that makes GLS much slower than PW when bootstrapping
                 thisS2(x) = thisResiduals(:,x)' / residualsAcm * thisResiduals(:,x)/d.rdf; 
+%DEBUG                
+%                 [~,messageId]=lastwarn;
+%                 if strcmp(messageId,'MATLAB:nearlySingularMatrix')
+%                   keyboard
+%                 end
+                 
                 %Wicker & Fonlupt (2003)
                 if thisS2(x)<0
                   thisS2(x)=NaN;
@@ -994,7 +1003,7 @@ switch(precision)
 end
 
 if totalBytes> mrGetPref('maxBlocksize')
-  if ~askuser(sprintf('(getGlmStatistics) This analysis requires %.2f Gb of data to be loaded in memory at once, which is more than your MemoryBlock preference. Are you sure you want to proceed ?', totalBytes/1024^3));
+  if ~askuser(sprintf('(getGlmStatistics) This analysis requires %.2f Gb of data to be loaded in memory at once,\nwhich is more than your MemoryBlock preference. This presumably happens because you are using a large ROI.\nConsider running the analysis on a (sub)volume or a smaller ROI.\nAre you sure you want to proceed ?', totalBytes/1024^3));
     error('(getGlmStatistics) Analysis aborted');
   end
 end
