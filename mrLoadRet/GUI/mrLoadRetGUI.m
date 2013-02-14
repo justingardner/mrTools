@@ -10,7 +10,7 @@ function varargout = mrLoadRetGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Last Modified by GUIDE v2.5 08-Jun-2011 19:51:19
+% Last Modified by GUIDE v2.5 01-Aug-2012 14:25:01
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -914,12 +914,27 @@ end
 
 % --------------------------------------------------------------------
 function exportROIMenuItem_Callback(hObject, eventdata, handles)
-pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext('exportROI',mrGetPref('niftiFileExtension')));
+% get view
+mrGlobals;
+viewNum = handles.viewNum;
+v = viewGet(viewNum,'view');
+
+% get the roi we are being asked to export
+roiNum = viewGet(v,'currentroi');
+if isempty(roiNum)
+  mrWarnDlg('(mlrExportROI) No current ROI to export');
+  return
+end
+
+% get current roi name
+roiName = viewGet(v,'roiname');
+
+% put up dialog to select filename
+pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext(roiName,mrGetPref('niftiFileExtension')));
+
 % pathstr = [] if aborted
 if ~isempty(pathstr)
-  mrGlobals;
-  viewNum = handles.viewNum;
-  mlrExportROI(viewGet(viewNum,'view'), pathstr);
+  mlrExportROI(v, pathstr);
 end
 
 
@@ -2637,3 +2652,31 @@ else
   end
   refreshMLRDisplay(viewNum);
 end
+
+
+% --------------------------------------------------------------------
+function editStimfileMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to editStimfileMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+
+% check for mgl function editStimfile
+if exist('editStimfile') ~= 2
+  mrWarnDlg(sprintf('(mrLoadRetGUI) To use this functionality, you need to have mgl installed. See http://justingardner.net/mgl'));
+else
+  editStimfile(v);
+end
+
+
+% --------------------------------------------------------------------
+function scanViewInMlrVolMenuItem_Callback(hObject, eventdata, handles)
+% hObject    handle to scanViewInMlrVolMenuItem (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+mrGlobals;
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+mlrVol(v);

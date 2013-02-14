@@ -26,6 +26,14 @@ function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr,makeLink)
 % $Id$
 %
 
+% check arguments
+if ~any(nargin == [1:5])
+  help saveNewTSeries
+  return
+end
+
+
+
 if ieNotDefined('scanParams')
   scanParams.fileName = [];
   scanParams.junkFrames = 0;

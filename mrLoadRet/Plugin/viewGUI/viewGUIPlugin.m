@@ -67,6 +67,8 @@ switch action
     
     %Create Scan Menu and move appropriate menu items
     mlrAdjustGUI(thisView,'add','menu','scanMenu','/Group','label','Scan','tag','scanMenu');
+    mlrAdjustGUI(thisView,'set','scanViewInMlrVolMenuItem','location','/Scan/');
+    mlrAdjustGUI(thisView,'set','editStimfileMenuItem','location','/Scan/');
     mlrAdjustGUI(thisView,'set','unlinkStimfileMenuItem','location','/Scan/');
     mlrAdjustGUI(thisView,'set','linkStimfileMenuItem','location','/Scan/');
     mlrAdjustGUI(thisView,'set','deleteScanMenuItem','location','/Scan/');

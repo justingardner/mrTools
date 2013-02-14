@@ -83,7 +83,7 @@ info.elapsedTimeStr = sprintf('%i min %i sec',elapsedMin,info.elapsedSecs-elapse
 % set the console in the info for easy reference
 info.console = procpar.console{1};
 
-% get the ilts setting
+% get the intlv setting
 if isfield(procpar,'intlv')
   if iscell(procpar.intlv)
     info.intlv = procpar.intlv{1};
@@ -130,6 +130,11 @@ if (procpar.ni == 1) && (procpar.nf > 1)
   end
   info.compressedFid = true;
   dim(2) = procpar.nf;
+  % if interleaving then the second dimension has been multiplied by the
+  % number of slices, so undo that
+  if isequal(info.intlv,'y')
+    dim(2) = dim(2)/dim(3);
+  end
 else
   info.compressedFid = false;
 end
