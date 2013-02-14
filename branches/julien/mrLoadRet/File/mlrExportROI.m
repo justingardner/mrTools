@@ -15,7 +15,7 @@ if ~any(nargin == [2])
 end
 
 % get the roi we are being asked to export
-roiNum = viewGet(getMLRView,'currentroi');
+roiNum = viewGet(v,'currentroi');
 if isempty(roiNum)
   mrWarnDlg('(mlrExportROI) No current ROI to export');
   return
@@ -40,6 +40,7 @@ roiBaseCoords = getROICoordinates(v,roiNum,0);
 % check roiBaseCoords
 if isempty(roiBaseCoords)
   mrWarnDlg('(mlrExportROI) This ROI does not have any coordinates in the base');
+  return
 end
 
 % make sure we are inside the base dimensions

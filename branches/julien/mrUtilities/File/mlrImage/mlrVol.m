@@ -650,6 +650,11 @@ minDispSlice = min(dispSlice(:));
 maxDispSlice = max(dispSlice(:));
 dispSlice = ceil(256*(dispSlice-minDispSlice)/(maxDispSlice-minDispSlice));
 
+% if image has all the same values, display as white if the value is not 0
+if isequal(minDispSlice,maxDispSlice) && ~isequal(minDispSlice,0)
+  dispSlice(:) = 256;
+end
+
 % do transpose if necessary
 if vol.transpose(iView)
   dispSlice = dispSlice';
@@ -1044,6 +1049,11 @@ volNum = args{2};
 % get the header
 vol = gVol{sysNum}.vols(volNum);
 h = vol.h;
+
+% close controls
+if isfield(gVol{sysNum},'controlsUp') && gVol{sysNum}.controlsUp
+  mrParamsClose;
+end
 
 % edit the header
 gVol{sysNum}.vols(volNum).h = mlrImageHeaderEdit(h);
