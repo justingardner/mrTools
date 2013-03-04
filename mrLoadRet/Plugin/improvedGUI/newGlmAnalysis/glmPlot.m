@@ -682,7 +682,7 @@ if ieNotDefined('steOnly'),steOnly = 0;,end
 if steOnly
   h=[];
 else
-  h=plot(hAxes,repmat(time,1,size(ehdr,2)),ehdr,lineSymbol);
+  h=plot(hAxes,time,ehdr,lineSymbol);
   if drawSymbols
      for iEv = 1:size(ehdr,2)
         set(h(iEv),'Marker',getsymbol(iEv),'MarkerSize',8,'MarkerEdgeColor','k','MarkerFaceColor',colorOrder(iEv,:));
@@ -693,7 +693,7 @@ end
 if ~ieNotDefined('ehdrSte')
   hold on
   %if ~ishold(hAxes),hold(hAxes);end;
-  hSte=errorbar(hAxes,repmat(time,1,size(ehdr,2)),ehdr,ehdrSte,ehdrSte,'lineStyle','none')';
+  hSte=errorbar(hAxes,repmat(time',1,size(ehdr,2)),ehdr,ehdrSte,ehdrSte,'lineStyle','none')';
 end
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
