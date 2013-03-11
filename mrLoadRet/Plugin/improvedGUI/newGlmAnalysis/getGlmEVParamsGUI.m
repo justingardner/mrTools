@@ -64,7 +64,7 @@ while keepAsking
         'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
         ['How much stimulus ' fixBadChars(d.stimNames{iEvent}) ' contributes to each EV.']};
     end
-    paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Shows the experimental design (before convolution with an HRF model.)',...
+    paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.)',...
             'callback',{@plotExperimentalDesign,scanParams,params,iScan,thisView,d.stimNames},'passParams=1'};
 
     % give the option to use the same parameters for remaining scans (assumes the event names are identical in all files)
@@ -158,20 +158,14 @@ else
   scanList = scanNum;
 end
 
-fignum = selectGraphWin(0,'Make new');
-set(fignum,'name','plotExperimentalDesign');
 nScans = length(scanList);
-monitorPositions = getMonitorPositions;
-figurePosition = get(fignum,'position');
-[whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
-screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
-figurePosition(3) = screenSize(3);
-figurePosition(4) = min(screenSize(3)/8*nScans,screenSize(4));
-set(fignum,'position',figurePosition);
+expDesignFigure = initializeFigure('plotExperimentalDesign',nScans,'horizontal');
+designMatrixFigure = initializeFigure('plotDesignMatrix',nScans,'vertical');
 
 cScan=0;
 axisLength = zeros(1,length(params.scanNum));
 tSeriesAxes = zeros(1,length(params.scanNum));
+designMatrixAxes = zeros(1,length(params.scanNum));
 for iScan = scanList
   params.scanParams{iScan} = copyFields(scanParams{iScan},params.scanParams{iScan}); %we use copyFields here instead of mrParamsCopyFields because the latter only copies fields with a corresponding paramInfo entry
   EVnames = thisScanParams.EVnames;
@@ -194,11 +188,11 @@ for iScan = scanList
     %the length for the axis depends on the number of volumes times the frame period
     axisLength(cScan) = size(d.EVmatrix,1)/d.designSupersampling*d.tr;
 
-    tSeriesAxes(cScan) = axes('parent',fignum,'outerposition',getSubplotPosition(1,cScan,[7 1],ones(nScans,1),0,.05));
-    hold on
+    tSeriesAxes(cScan) = axes('parent',expDesignFigure,'outerposition',getSubplotPosition(1,cScan,[7 1],ones(nScans,1),0,.05));
+    hold(tSeriesAxes(cScan),'on')
     [h,hTransition] = plotStims(d.EVmatrix, d.stimDurations, d.tr/d.designSupersampling, colors, tSeriesAxes(cScan),d.runTransitions);
 
-    title(viewGet(thisView,'description',iScan),'interpreter','none');
+    title(tSeriesAxes(cScan),viewGet(thisView,'description',iScan),'interpreter','none');
     %legend
     legendStrings = EVnames(h>0);
     h = h(h>0);
@@ -208,8 +202,55 @@ for iScan = scanList
     end
     lhandle = legend(h,legendStrings,'position',getSubplotPosition(2,cScan,[7 1],ones(nScans,1),0,.05));
     set(lhandle,'Interpreter','none','box','off');
+    
+    %plot the design matrix
+    designMatrixAxes(cScan) = axes('parent',designMatrixFigure,'outerposition',getSubplotPosition(cScan,1,ones(nScans,1),[7 1],0,.05));
+    dimensions = size(d.scm);
+    extended_matrix = zeros(dimensions+1);
+    extended_matrix(1:size(d.scm,1),1:size(d.scm,2)) = d.scm;
+    hMatrix = pcolor(designMatrixAxes(cScan),(1:dimensions(2)+1)-.5,(1:dimensions(1)+1)-.5,  double(extended_matrix)); %first vector must correspond to columns of the matrix
+                %and second vector to the rows... (how retarded is that ?)
+    set(hMatrix,'EdgeColor','none');
+    Xticks = 1:size(d.scm,2);
+    set(designMatrixAxes(cScan), 'Ydir', 'reverse');
+    ylabel(designMatrixAxes(cScan),'Scans');
+    %set rotated component labels
+    set(designMatrixAxes(cScan), 'Xtick', Xticks );
+    xTickStringsStrings = cell(1,length(EVnames)*d.nHrfComponents);
+    for i = 1:length(EVnames)
+      for j = 1:d.nHrfComponents
+        xTickStringsStrings{(i-1)*d.nHrfComponents+j}=[EVnames{i} ' - Component ' num2str(j)];
+      end
+    end
+    axisCoords = axis(designMatrixAxes(cScan)); % Current axis limits
+    text(Xticks,axisCoords(4)*ones(1,length(Xticks)),xTickStringsStrings,...
+      'parent',designMatrixAxes(cScan),'HorizontalAlignment','right',...
+      'VerticalAlignment','top','Rotation',45,'interpreter','none');
+    % Remove the default labels
+    set(designMatrixAxes(cScan),'XTickLabel','')
+    colormap(designMatrixAxes(cScan),gray);
+    %add run transitions
+    if ~isempty(d.runTransitions)
+      hold(designMatrixAxes(cScan),'on');
+      for iRun = 2:size(d.runTransitions,1)
+        hTransitionDesign = plot(designMatrixAxes(cScan),axisCoords(1:2),repmat(d.runTransitions(iRun,1)/d.designSupersampling,1,2),'--r');
+      end
+    end
+    if iScan==scanList(end)
+      hColorbar = colorbar;
+      if size(d.runTransitions,1)>1
+        colorBarPosition = get(hColorbar,'position');
+        legendPosition = colorBarPosition;
+        legendPosition(2)= colorBarPosition(2)/2;
+        legendPosition(3)= 1-colorBarPosition(1);
+        legendPosition(4)= colorBarPosition(2)/2;
+        legendHandle = legend(hTransitionDesign,{'Run transitions'},'Position',legendPosition);
+        set(legendHandle,'Interpreter','none','box','off');
+      end
+    end
+    
   else
-    h = axes('parent',fignum,'outerposition',getSubplotPosition(1,cScan,[7 1],ones(nScans,1),0,.05));   
+    h = axes('parent',expDesignFigure,'outerposition',getSubplotPosition(1,cScan,[7 1],ones(nScans,1),0,.05));   
     set(h,'visible','off');
     text(.5,.5,{viewGet(thisView,'description',iScan), 'Number of EVs does not match', 'Change the stimToEV matrix for this scan'},...
       'parent',h,'units','normalized','HorizontalAlignment','center');
@@ -225,3 +266,21 @@ for iScan = 1:cScan
     set(tSeriesAxes(iScan),'position',figurePosition);
   end
 end
+
+function expDesignFigure = initializeFigure(figureName,nScans,mode)
+
+expDesignFigure = selectGraphWin(0,'Make new');
+set(expDesignFigure,'name',figureName);
+monitorPositions = getMonitorPositions;
+figurePosition = get(expDesignFigure,'position');
+[whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
+screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
+switch(mode)
+  case 'horizontal'
+    figurePosition(3) = screenSize(3);
+    figurePosition(4) = min(screenSize(3)/8*nScans,screenSize(4));
+  case 'vertical'
+    figurePosition(1) = screenSize(1);
+    figurePosition(2) = min(screenSize(1)/8*nScans,screenSize(2));
+end
+set(expDesignFigure,'position',figurePosition);
