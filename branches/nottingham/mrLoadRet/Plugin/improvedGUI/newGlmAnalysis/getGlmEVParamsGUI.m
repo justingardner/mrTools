@@ -58,13 +58,13 @@ while keepAsking
 
     paramsInfo = cell(1,nStims+4);
     paramsInfo{1}= {'scan', scanParams{iScan}.scan, 'editable=0','description of the scan'};
-    paramsInfo{2}= {'EVnames', EVnames, 'type=stringarray','Name of the Explanatory Variables to be estimated'};
+    paramsInfo{2}= {'EVnames', EVnames, 'type=stringarray','Name of the Explanatory Variables to be estimated. EVs that are set to 0 in all rows will be removed from the model.'};
     for iEvent = 1:nStims
       paramsInfo{iEvent+2} = {fixBadChars(d.stimNames{iEvent}), scanParams{iScan}.stimToEVmatrix(iEvent,:),...
         'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
-        ['How much stimulus ' fixBadChars(d.stimNames{iEvent}) ' contributes to each EV']};
+        ['How much stimulus ' fixBadChars(d.stimNames{iEvent}) ' contributes to each EV.']};
     end
-    paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Shows the experimental design (before convolution iwht the HRF model)',...
+    paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Experimental Design','Shows the experimental design (before convolution with an HRF model.)',...
             'callback',{@plotExperimentalDesign,scanParams,params,iScan,thisView,d.stimNames},'passParams=1'};
 
     % give the option to use the same parameters for remaining scans (assumes the event names are identical in all files)
@@ -88,8 +88,6 @@ while keepAsking
        return
     end
     
-%     tempParams = mrParamsRemoveField(tempParams,'showDesign');
-    
     % form stimToEV matrix from fields
     stimToEVmatrix = zeros(nStims,params.numberEVs);
     for iEvent = 1:nStims
@@ -108,7 +106,8 @@ while keepAsking
     newParams =  mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix,'Matrix forming EVs from combinations of stimulus types'},...
                        {'stimNames',d.stimNames,'type=strinArray','Names of stimulus types'}});
     scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
-%     scanParams{iScan} = mrParamsCopyFields(tempParams,scanParams{iScan});
+    %update number of EVs
+    params.numberEVs = size(stimToEVmatrix,2);
 
     % if sameForNextScans is set, copy the temporary parameters into all remaining scans and break out of loop
     if isfield(tempParams,'sameForNextScans') && tempParams.sameForNextScans
