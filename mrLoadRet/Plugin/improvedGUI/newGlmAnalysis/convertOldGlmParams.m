@@ -55,7 +55,10 @@ end
 if isfield(params,'trSupersampling')
   params = rmfield(params,'trSupersampling');
 end
-
+if isfield(params,'correctionType')
+  params.covCorrectionMethod = params.correctionType;
+  params = rmfield(params,'correctionType');
+end
 if isfield(params,'n_rand')
   params.nResamples = params.n_rand;
   params = rmfield(params,'n_rand');

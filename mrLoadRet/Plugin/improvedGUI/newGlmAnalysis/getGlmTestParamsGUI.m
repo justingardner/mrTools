@@ -23,6 +23,9 @@ while keepAsking
   if fieldIsNotDefined(params,'tTestSide')
     params.tTestSide = 'Both';
   end
+  if fieldIsNotDefined(params, 'testOutput')
+      params.testOutput = 'Z value';
+  end
 
   if fieldIsNotDefined(params, 'fTestNames') || ~isequal(length(params.fTestNames),params.numberFtests) 
     if params.numberFtests
@@ -56,91 +59,50 @@ while keepAsking
   if fieldIsNotDefined(params, 'componentsCombination')
     params.componentsCombination = 'Or';
   end
-
-  if params.computeTtests || params.numberFtests
-    if fieldIsNotDefined(params,'parametricTests')
-      params.parametricTests = 1;
-    end
-    if fieldIsNotDefined(params,'bootstrapTests')
-      params.bootstrapTests = 0;
-    end
-    if fieldIsNotDefined(params,'permutationTests')
-      params.permutationTests = 0;
-    end
-    if fieldIsNotDefined(params, 'bootstrapFweAdjustment')
-      params.bootstrapFweAdjustment = 0;
-    end
-    if fieldIsNotDefined(params, 'permutationFweAdjustment')
-      params.permutationFweAdjustment = 0;
-    end
-    if fieldIsNotDefined(params, 'fweAdjustment')
-      params.fweAdjustment = 1;
-    end
-    if fieldIsNotDefined(params, 'fdrAdjustment')
-      params.fdrAdjustment = 1;
-    end
-    if fieldIsNotDefined(params, 'TFCE')
-      params.TFCE = 0;
-    end
-    if fieldIsNotDefined(params, 'nResamples')
-      params.nResamples = 10000;
-    end
-    if fieldIsNotDefined(params, 'showAdvancedStatisticMenu') 
-      params.showAdvancedStatisticMenu = 0;
-    end
-  else
-    params.parametricTests = 0;
-    params.bootstrapTests = 0;
-    params.permutationTests = 0;
-    params.bootstrapFweAdjustment = 0;
-    params.permutationFweAdjustment = 0;
-    params.fweAdjustment = 0;
-    params.fdrAdjustment = 0;
-    params.TFCE = 0;
-    params.nResamples = 1;
+  if fieldIsNotDefined(params, 'fweAdjustment')
+    params.fweAdjustment = 1;
+  end
+  if fieldIsNotDefined(params, 'fdrAdjustment')
+    params.fdrAdjustment = 1;
+  end
+  if fieldIsNotDefined(params, 'maskContrastOverlay')
+      params.maskContrastOverlay = 1;
+  end
+  if fieldIsNotDefined(params, 'showAdvancedStatisticMenu') 
     params.showAdvancedStatisticMenu = 0;
   end
   
+  testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   tTestSideMenu = putOnTopOfList(params.tTestSide,{'Both','Right','Left'});
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
   
   contrastOptionsVisible = 'visible=0';
-  tTestOptionsVisible = 'visible=0';
-  fTestOptionsVisible = 'visible=0';
-  componentOptionsVisible = 'visible=0';
-  testOptionsVisible = 'visible=0';
-  tfceOptionVisible = 'visible=0';
-  
   if params.numberContrasts
     contrastOptionsVisible = 'visible=1';
   end
+  tTestOptionsVisible = 'visible=0';
   if params.computeTtests
     tTestOptionsVisible = 'visible=1';
   end
+  fTestOptionsVisible = 'visible=0';
   if params.numberFtests
     fTestOptionsVisible = 'visible=1';
   end
+  testOptionsVisible = 'visible=0';
   if params.computeTtests || params.numberFtests
-    if nComponents>1
-      componentOptionsVisible = 'visible=1';
-    end
     testOptionsVisible = 'visible=1';
   end
-  if strcmp(mrGetPref('fslPath'),'FSL not installed')
-    params.TFCE = 0;
-    if params.computeTtests || params.numberFtests
-      tfceOptionVisible = 'enable=0';
-    end
-  else
-      tfceOptionVisible = testOptionsVisible;
+  componentOptionsVisible = 'visible=0';
+  if (params.computeTtests || params.numberFtests) && nComponents>1
+      componentOptionsVisible = 'visible=1';
   end
   
   currentNumberContrasts = params.numberContrasts;
   currentNumberFtests= params.numberFtests;
   
   paramsInfo = {...
-      {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus', 'Number of contrasts that will be ouput as an overlay. If modifying the value, press OK to redraw the dialog with the new number of contrasts'},...
-      {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays'},...
+      {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus', 'Number of contrasts on which to perform a T-test. Both contrast values and inference test outcomes will be ouput as overlays. If modifying this number, press OK to redraw the dialog with the new number of contrasts'},...
+      {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays. If modifying this number, press OK to redraw the dialog with the new number of F-tests'},...
       {'EVnames', params.EVnames, 'type=stringarray','editable=0','Name of the EVs'},...
       {'contrasts', params.contrasts,contrastOptionsVisible,...
             'incdec=[-1 1]','incdecType=plusMinus',...
@@ -154,25 +116,20 @@ while keepAsking
             ['Restriction matrix defining F-test ' num2str(iFtest)]};
   end
   paramsInfo = [paramsInfo {...
+      {'testOutput', testOutputMenu,testOptionsVisible,'type=popupmenu', 'Type of statistics for output overlay.  P: outputs the probability value associated with the T/F statistic. p-values less than 1e-16 will be replaced by 0; Z: outputs standard normal values associated with probability p. Z values with a probability less than 1e-16 will be replaced by +/-8.209536145151493'},...
       {'componentsToTest', params.componentsToTest,componentOptionsVisible,...
-            'Vector defining which EV components are tested. Put zeros to exclude components or a weight to include them. '},...
+            'Vector defining which HRF component of each EV are tested for significance. Put zeros to exclude components or a non-zero weight to include them. '},...
       {'componentsCombination', componentsCombinationMenu,componentOptionsVisible,'type=popupmenu', 'How to combine EV components. ''Add'' adds the weighted components into a single EV for contrasts/F-test. ''Or'' ignores the weights and tests contrasts/F-tests at any component that is not 0. Note that ''Or'' is not compatible with one-sided T-tests'}...
-      {'TFCE', params.TFCE,tfceOptionVisible,'type=checkbox', 'Performs Threshold Free Cluster Enhancement on T/F maps using fslmaths. This option is only enabled if a path is specified for FSL by running mrSetPref(''fslPath'',''yourpath''). In addition it can only be used in conjonction with bootstrap/permutation tests or resample-based FWER control adjustment.'},...
-      {'parametricTests', params.parametricTests,testOptionsVisible,'type=checkbox', 'Performs parametric tests on contrasts/F values'},...
-      {'bootstrapTests', params.bootstrapTests,testOptionsVisible,'type=checkbox', 'Performs non-parametric residual bootstrap tests on T/F values. Bootstrapping consists in resampling the residuals with replacement after OLS/GLS fit, using these bootstrapped residuals as the new time-series for OLS/GLS fitting and estimating the null-hypothesis distributions for nResamples resamplings.'},...
-      {'permutationTests', params.permutationTests,testOptionsVisible,'type=checkbox', 'Performs non-parametric permutation tests on contrasts/F values. Permutations constist in shuffling stimulus event labels, re-fitting the GLM using OLS/GLS and estimating the null-hypothesis distribution for each statistic for nResamples permutations.'},...
-      {'nResamples', params.nResamples,testOptionsVisible, 'minmax=[10 inf]', 'Number of iterations for bootstrap/permutation tests.'},...
-      {'bootstrapFweAdjustment', params.bootstrapFweAdjustment,testOptionsVisible,'type=checkbox', 'Adjusts P-values for familywise error rate control by residuals bootstrapping (see advanced menu to change the method; default is the step-down method)'},...
-      {'permutationFweAdjustment', params.permutationFweAdjustment,testOptionsVisible,'type=checkbox', 'Adjusts P-values for familywise error rate control by permutations (see advanced menu to change the method; default is the adaptive step-down method)'},...
-      {'fweAdjustment', params.fweAdjustment,testOptionsVisible,'type=checkbox', 'Adjusts P-values for familywise error rate control by Bonferroni-type methods (see advanced menu to change the method; default is the adaptive step-down method)'},...
-      {'fdrAdjustment', params.fdrAdjustment,testOptionsVisible,'type=checkbox', 'Adjusts P-values for false discovery rate control (see advanced menu to change the method; default is the adaptive step-up method)'},...
-      {'showAdvancedStatisticMenu', params.showAdvancedStatisticMenu,testOptionsVisible,'type=checkbox', 'If you want to change adjustment methods or their parameters, compute bootstrap confidence intervals, change the default output of hypothesis tests...'},...
+      {'fweAdjustment', params.fweAdjustment,testOptionsVisible,'type=checkbox', 'Adjusts test outcomes for familywise error rate control by Bonferroni-type methods (see advanced menu to change the method; default is the adaptive step-down method)'},...
+      {'fdrAdjustment', params.fdrAdjustment,testOptionsVisible,'type=checkbox', 'Adjusts test outcomes for false discovery rate control (see advanced menu to change the method; default is the adaptive step-up method)'},...
+      {'maskContrastOverlay', params.maskContrastOverlay,testOptionsVisible,'type=checkbox', 'Whether to mask the contrast overlay(s) with the results of the test outcome'},...
+      {'showAdvancedStatisticMenu', params.showAdvancedStatisticMenu,testOptionsVisible,'type=checkbox', 'Advanced settings for correlated noise correction, test outputs, FDR/FWE corrections, bootstrap/permutation tests and confidence intervals.'},...
        }];
 
   if useDefault
     tempParams = mrParamsDefault(paramsInfo);
   else
-    tempParams = mrParamsDialog(paramsInfo,'Define Contrasts, T-tests and F-tests');
+    tempParams = mrParamsDialog(paramsInfo,'Statistics Menu (Contrasts, parametricT-tests and F-tests)');
   end
 
   % user hit cancel
@@ -197,6 +154,11 @@ while keepAsking
     end
     params.contrasts = params.contrasts(1:actualNumberContrasts,:);
   end
+  params.numberContrasts = actualNumberContrasts;
+  if ~params.numberContrasts %don't compute T-tests if there are no contrasts
+    params.computeTtests=0;
+  end
+
   allContrasts = params.contrasts;
   
   %check that F-tests are not empty
@@ -224,30 +186,9 @@ while keepAsking
   params.fTestNames = fTestNames; %but we use it to create a paramInfo entry for them, which gives acces to the hlep info later on
   
 
-  %this is because of the incoherent behaviour of mrParamsGet that empties disabled params fields
-  if isempty(params.TFCE)
-    params.TFCE = 0;
-  end
-  
   if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
       nnz(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
-  elseif params.bootstrapTests  && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
-    mrWarnDlg('(getTestParamsGUI) Bootstrap tests are currently only allowed for ROI(s) analyses','Yes');
-  elseif params.bootstrapFweAdjustment && params.bootstrapTests  && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
-    mrWarnDlg('(getTestParamsGUI) Resampled-based FWE adjustments are currently only allowed for ROI(s) analyses','Yes');
-  elseif params.permutationTests && ~all( (sum(logical(allContrasts),2)==2 & sum(allContrasts,2)==0) | ~any(allContrasts,2))
-    mrWarnDlg('(getTestParamsGUI) Randomization tests can only be run if all contrasts of all T/F tests are 1 to 1 comparisons','Yes');
-  elseif params.TFCE && ~(params.bootstrapTests || params.bootstrapFweAdjustment || params.permutationTests || params.permutationFweAdjustment)
-    mrWarnDlg('(getTestParamsGUI) TFCE requires resampling tests (bootstrap, permutation or resample-based FWE control)','Yes');
-  elseif params.permutationTests && params.permutationFweAdjustment && ~params.parametricTests
-    mrWarnDlg('(getTestParamsGUI) permutation-based adjustment for permutation tests is not implemented','Yes');
-  elseif params.bootstrapFweAdjustment && ~(params.bootstrapTests ||params.parametricTests)
-    mrWarnDlg('(getTestParamsGUI) bootstrap-based FWE adjustments must be performed on bootsrap or parametric tests','Yes');
-  elseif params.permutationFweAdjustment && ~(params.permutationTests ||params.parametricTests)
-    mrWarnDlg('(getTestParamsGUI) permutation-based FWE adjustments must be performed on permutation or parametric tests','Yes');
-  elseif (params.fweAdjustment || params.fdrAdjustment) && ~(params.permutationTests ||params.parametricTests||params.bootstrapTests)
-    mrWarnDlg('(getTestParamsGUI) FWE/FDR adjustments must be performed on bootsrap/permutation/parametric tests','Yes');
   elseif params.numberContrasts~=currentNumberContrasts || params.numberFtests~=currentNumberFtests 
     %check if the number of contrasts and F-tests has changed and change the contrasts/restrictions matrices accordingly
     if params.numberContrasts<=size(params.contrasts,1)

@@ -128,12 +128,12 @@ elseif fieldIsNotDefined(params,'nResamples')
 else
   nResamples = params.nResamples;
 end
-if ieNotDefined('params') || ~isfield(params,'covCorrection') || ~isfield(params,'correctionType') || strcmp(params.correctionType,'none')
+if ieNotDefined('params') || ~isfield(params,'covCorrection') || ~isfield(params,'covCorrectionMethod') || strcmp(params.covCorrectionMethod,'none')
    params.covCorrection = 0;
 end
 if params.covCorrection
-   if  ~isfield(params,'correctionType') || isempty(params.correctionType)
-      params.correctionType = 'preWhitening';
+   if  ~isfield(params,'covCorrectionMethod') || isempty(params.covCorrectionMethod)
+      params.covCorrectionMethod = 'preWhitening';
    end
    if  ~isfield(params,'covEstimation') || isempty(params.covEstimation)
       params.covEstimation = 'singleTukeyTapers';
@@ -151,7 +151,7 @@ if params.covCorrection
       params.covFactorization = params.covFactorization;
    end
 else
-   params.correctionType = 'none';
+   params.covCorrectionMethod = 'none';
 end
 
 %--------------------------------------------------- INITIALIZATION ------------------------------------%
@@ -206,7 +206,7 @@ end
 if ~isempty(restrictions)
   
   %this has not been tested, but this is only for generalized F-tests which do not give the expected results anyway
-  if strcmp(params.correctionType,'generalizedFTest')
+  if strcmp(params.covCorrectionMethod,'generalizedFTest')
     complementaryRestriction = cell(1,size(restrictions,1));
     baseRestriction =  kron(logical(eye(d.nhdr)),logical(params.componentsToTest)); 
     for iR = 1:numberFtests
@@ -321,7 +321,7 @@ if numberFtests || params.computeTtests
     for iR = 1:numberFtests
       [corrected_R_invCovEV_Rp{iR},totalBytes] = alloc('NaN',d.mdf(iR),d.mdf(iR),d.dim(1),'double',totalBytes);
     end
-    switch(params.correctionType)
+    switch(params.covCorrectionMethod)
       case 'generalizedLeastSquares'
         %pre allocate temporary variables
         [corrected_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of values on the first dimension
@@ -351,7 +351,7 @@ negativeSteWarning=false;
 negativeS2Warning=false;
 passesCounter = 0;
 passesInBootstrap = d.dim(1);
-switch(params.correctionType)
+switch(params.covCorrectionMethod)
   case 'none'
     preBootstrapTime = 1;
   case 'generalizedLeastSquares'
@@ -491,14 +491,14 @@ for z = slices
        end
     end
     
-    if ~strcmp(params.correctionType, 'generalizedFTest')
+    if ~strcmp(params.covCorrectionMethod, 'generalizedFTest')
       %%%%%%%%%%%% COMPUTATIONS THAT CAN BE DONE BEFORE BOOTSTRAP (do not depend on the recomputed betas or residuals)
-      if ismember(params.correctionType,{'none','varianceCorrection'})
+      if ismember(params.covCorrectionMethod,{'none','varianceCorrection'})
           %estimate the OLS beta weights 
           betas = pinv_X*timeseries(:,:,y); 
       end
 
-      if ~strcmp(params.correctionType, 'none')
+      if ~strcmp(params.covCorrectionMethod, 'none')
         %find non-NaN voxels in this y line
         xvals = find(~any(isnan(timeseries(:,:,y))) & ~any(isnan(autoCorrelationParameters(:,:,y,z))));
         thisPassesCounter=passesCounter;
@@ -506,7 +506,7 @@ for z = slices
           if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar,'(getGlmStatistics) Estimating model parameters');end
           residualsAcm = makeAcm(autoCorrelationParameters(:,x,y,z),d.dim(4),params.covEstimation);
           
-          switch(params.correctionType)
+          switch(params.covCorrectionMethod)
           
             case 'generalizedLeastSquares' %see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
               correctedCovEV = d.scm' / residualsAcm * d.scm;
@@ -610,7 +610,7 @@ for z = slices
           % here we replace the timeseries by the bootstrap timeseries for this y, 
           % as we won't need the actual timeseries anymore
           timeseries(:,:,y) = residuals(boostrapIndices(iBoot-1,:),:,y);
-          switch(params.correctionType)
+          switch(params.covCorrectionMethod)
             case {'none','varianceCorrection'}
               %estimate the OLS beta weights 
               betas = pinv_X*timeseries(:,:,y); 
@@ -638,7 +638,7 @@ for z = slices
         end
 
         if actualData || numberFtests || (numberTtests&&params.computeTtests)
-          switch(params.correctionType)
+          switch(params.covCorrectionMethod)
             case 'none'
               thisRss = sum(thisResiduals.^2,1)';
               thisS2 = thisRss/d.rdf;
@@ -676,7 +676,7 @@ for z = slices
           end
           if params.computeTtests
             for iContrast = 1:numberTtests
-              switch(params.correctionType)
+              switch(params.covCorrectionMethod)
                 case 'none'
                   thisContrastBetaSte(:,iContrast) = thisS2.*(contrasts{iContrast}*invCovEVs*contrasts{iContrast}');
                 case {'generalizedLeastSquares','varianceCorrection','preWhitening'} 
@@ -708,7 +708,7 @@ for z = slices
         % computed this way, the f-test can also be extended to contrasts and is equivalent to a two-sided T-test, if R describes a linear combination of EVs
         for iR = 1:numberFtests
           ss_beta = restrictions{iR}*betas;
-          switch(params.correctionType)
+          switch(params.covCorrectionMethod)
             case 'none'
               %computing time seems to be the fastest on my machine when computing 60 values at a time
               %but this might be because it was swapping. anyway, I'll leave it this way because if it doesn't swap
@@ -779,7 +779,7 @@ for z = slices
         if iBoot==1  %Actual values to save
           if actualData
             d.ehdr(:,:,y,z) = betas;
-            switch(params.correctionType)
+            switch(params.covCorrectionMethod)
               case 'none'
                 rss(:,y,z) = thisRss;     
               case {'generalizedLeastSquares','varianceCorrection','preWhitening'} 
@@ -807,7 +807,7 @@ for z = slices
           end
         end
         
-        if ismember(params.correctionType,{'none','varianceCorrection','preWhitening'})
+        if ismember(params.covCorrectionMethod,{'none','varianceCorrection','preWhitening'})
           passesCounter = thisPassesCounter+passesInBootstrap;
         end
       end
