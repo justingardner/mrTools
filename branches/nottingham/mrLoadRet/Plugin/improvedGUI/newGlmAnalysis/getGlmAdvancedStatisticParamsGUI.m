@@ -82,14 +82,11 @@ while keepAsking
       params.noDoubleBootstrap = 0;
   end
   
-  tfceOptionVisible = 'visible=0';
   if strcmp(mrGetPref('fslPath'),'FSL not installed')
     params.TFCE = 0;
-    if params.computeTtests || params.numberFtests
-      tfceOptionVisible = 'enable=0';
-    end
+    tfceOptionVisible = 'enable=0';
   else
-      tfceOptionVisible = testOptionsVisible;
+      tfceOptionVisible = 'visible=1';
   end
 
   covCorrectionMethodMenu = putOnTopOfList(params.covCorrectionMethod,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
@@ -102,6 +99,7 @@ while keepAsking
   trueNullsEstimationMethodMenu = putOnTopOfList(params.trueNullsEstimationMethod,{'Lowest Slope','Raw P-values Cut-off','Least Squares'});
   
   paramsInfo = {...
+    {'covCorrection',params.covCorrection,'type=checkbox','(EXPERIMENTAL) Correction for temporally-correlated noise. Correcting for noise correlation is important for single-subject level statistics but significantly increases analysis time. Uncorrected correlated noise biases statistical significance of contrasts/F-tests but should not affect parameter estimates (contrasts values).'},...
     {'covCorrectionMethod',covCorrectionMethodMenu,'type=popupmenu','contingent=covCorrection','Type of noise correlation correction. Generalized least square is the preferred method, but pre-whitening gives identical results and is more efficient in conjonction with bootstrap/permutation statistics. Variance correction is less conservative but faster (see Wiki for the different algorithms and computing time comparison).'},...
     {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
     {'covFactorization',covFactorizationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of factorization of the covariance matrix for the computation of the pre-whitening filter'},...
