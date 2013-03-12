@@ -83,3 +83,11 @@ end
 if isfield(params,'bootstrapTestOutput')
   params = rmfield(params,'bootstrapTestOutput');
 end
+if isfield(params, 'maskContrastOverlay')
+  if params.maskContrastOverlay
+    params.alphaContrastOverlay = 'FDR';
+  else
+    params.alphaContrastOverlay = 'None';
+  end
+  params = rmfield(params,'maskContrastOverlay');
+end

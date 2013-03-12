@@ -769,78 +769,96 @@ if numberTests
     clear('statistic','tempStatistic');
   end
 
+  lastUncorrectedTest = 0;
+  lastFDRCorrectedTest = 0;
+  lastFWECorrectedTest = 0;
   if params.parametricTests
     overlays = [overlays makeOverlay(defaultOverlay, parametricP, subsetBox, params.scanNum, scanParams, ...
-                                       '', params.testOutput, testNames)];
+                                       '', params.testOutput, testNames, params.statisticalThreshold)];
+    lastUncorrectedTest = length(overlays);
     clear('parametricP');
     if params.bootstrapFweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweParametricP, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap-FWE-adjusted ', params.testOutput, testNames)];
+                                         'bootstrap-FWE-adjusted ', params.testOutput, testNames, params.statisticalThreshold)];
+      lastFWECorrectedTest = length(overlays);
       clear('bootstrapFweParametricP');
       if params.TFCE  
         overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceP, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-FWE-adjusted TFCE ', params.testOutput, testNames)];
+                                           'bootstrap-FWE-adjusted TFCE ', params.testOutput, testNames, params.statisticalThreshold)];
+        lastFWECorrectedTest = length(overlays);
         clear('bootstrapFweTfceP');
       end
     end
     if params.permutationFweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, permuteFweParametricP, subsetBox, params.scanNum, scanParams, ...
-                                         'permutation-FWE-adjusted ', params.testOutput, testNames)];
+                                         'permutation-FWE-adjusted ', params.testOutput, testNames, params.statisticalThreshold)];
+      lastFWECorrectedTest = length(overlays);
       clear('permuteFweParametricP');
       if params.TFCE
         overlays = [overlays makeOverlay(defaultOverlay, permuteFweTfceP, subsetBox, params.scanNum, scanParams, ...
-                                         'permutation-FWE-adjusted TFCE ',params.testOutput, testNames)];
+                                         'permutation-FWE-adjusted TFCE ',params.testOutput, testNames, params.statisticalThreshold)];
+        lastFWECorrectedTest = length(overlays);
         clear('permuteFweTfceP');
       end
     end
     if params.fdrAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, fdrParametricP, subsetBox, params.scanNum, scanParams, ...
-                                      'FDR-adjusted ',params.testOutput, testNames)];
+                                      'FDR-adjusted ',params.testOutput, testNames, params.statisticalThreshold)];
+      lastFDRCorrectedTest = length(overlays);
       clear('fdrParametricP');
     end
     if params.fweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, fweParametricP, subsetBox, params.scanNum, scanParams, ...
-                                      'FWE-adjusted ',params.testOutput, testNames)];
+                                      'FWE-adjusted ',params.testOutput, testNames, params.statisticalThreshold)];
+      lastFWECorrectedTest = length(overlays);
       clear('fweParametricP');
     end
   end
 
   if params.bootstrapTests
     overlays = [overlays makeOverlay(defaultOverlay, bootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                       'bootstrap ', params.testOutput, testNames)];
+                                       'bootstrap ', params.testOutput, testNames, params.statisticalThreshold)];
+    lastUncorrectedTest = length(overlays);
     clear('bootstrapP');
     if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
       overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap-FWE-adjusted bootstrap ', params.testOutput, testNames)];
+                                         'bootstrap-FWE-adjusted bootstrap ', params.testOutput, testNames, params.statisticalThreshold)];
+      lastFWECorrectedTest = length(overlays);
       clear('bootstrapFweBootstrapP');
     end
     if params.fdrAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, fdrBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                      'FDR-adjusted bootstrap ',params.testOutput, testNames)];
+                                      'FDR-adjusted bootstrap ',params.testOutput, testNames, params.statisticalThreshold)];
+      lastFDRCorrectedTest = length(overlays);
       clear('fdrBootstrapTp');
     end
     if params.fweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, fweBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                      'FWE-adjusted bootstrap ',params.testOutput, testNames)];
+                                      'FWE-adjusted bootstrap ',params.testOutput, testNames, params.statisticalThreshold)];
+      lastFWECorrectedTest = length(overlays);
       clear('fweBootstrapTp');
     end
     if params.TFCE  
       overlays = [overlays makeOverlay(defaultOverlay, tfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                         'bootstrap TFCE ', params.testOutput, testNames)];
+                                         'bootstrap TFCE ', params.testOutput, testNames, params.statisticalThreshold)];
+      lastUncorrectedTest = length(overlays);
       clear('tfceBootstrapP');
       if params.bootstrapFweAdjustment && ~params.noDoubleBootstrap
         overlays = [overlays makeOverlay(defaultOverlay, bootstrapFweTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                           'bootstrap-FWE-adjusted bootstrap TFCE ', params.testOutput, testNames)];
+                                           'bootstrap-FWE-adjusted bootstrap TFCE ', params.testOutput, testNames, params.statisticalThreshold)];
+        lastFWECorrectedTest = length(overlays);
         clear('bootstrapFweTfceBootstrapP');
       end
       if params.fdrAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, fdrTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                           'FDR-adjusted bootstrap TFCE ', params.testOutput, testNames)];
+                                           'FDR-adjusted bootstrap TFCE ', params.testOutput, testNames, params.statisticalThreshold)];
+        lastFDRCorrectedTest = length(overlays);
         clear('fdrTfceBootstrapP');
       end
       if params.fweAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, fweTfceBootstrapP, subsetBox, params.scanNum, scanParams, ...
-                                           'FWE-adjusted bootstrap TFCE ', params.testOutput, testNames)];
+                                           'FWE-adjusted bootstrap TFCE ', params.testOutput, testNames, params.statisticalThreshold)];
+        lastFWECorrectedTest = length(overlays);
         clear('fweTfceBootstrapP');
       end
     end
@@ -848,36 +866,51 @@ if numberTests
 
   if params.permutationTests
     overlays = [overlays makeOverlay(defaultOverlay, permuteP, subsetBox, params.scanNum, scanParams, ...
-                                       'permutation ', params.testOutput, testNames)];
+                                       'permutation ', params.testOutput, testNames, params.statisticalThreshold)];
+    lastUncorrectedTest = length(overlays);
     clear('permuteP');
     if params.fdrAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, fdrPermuteP, subsetBox, params.scanNum, scanParams, ...
-                                      'FDR-adjusted permutation ',params.testOutput, testNames)];
+                                      'FDR-adjusted permutation ',params.testOutput, testNames, params.statisticalThreshold)];
+      lastFDRCorrectedTest = length(overlays);
       clear('fdrPermuteP');
     end
     if params.fweAdjustment
       overlays = [overlays makeOverlay(defaultOverlay, fwePermuteP, subsetBox, params.scanNum, scanParams, ...
-                                      'FWE-adjusted permutation ',params.testOutput, testNames)];
+                                      'FWE-adjusted permutation ',params.testOutput, testNames, params.statisticalThreshold)];
+      lastFWECorrectedTest = length(overlays);
       clear('fwePermuteP');
     end
     if params.TFCE
       overlays = [overlays makeOverlay(defaultOverlay, tfcePermuteP, subsetBox, params.scanNum, scanParams, ...
-                                      'permutation TFCE ',params.testOutput, testNames)];
+                                      'permutation TFCE ',params.testOutput, testNames, params.statisticalThreshold)];
+      lastUncorrectedTest = length(overlays);
       clear('tfcePermuteP');
       if params.fdrAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, fdrTfcePermuteP, subsetBox, params.scanNum, scanParams, ...
-                                        'FDR-adjusted permutation TFCE ',params.testOutput, testNames)];
+                                        'FDR-adjusted permutation TFCE ',params.testOutput, testNames, params.statisticalThreshold)];
+        lastFDRCorrectedTest = length(overlays);
         clear('fdrTfcePermuteP');
       end
       if params.fweAdjustment
         overlays = [overlays makeOverlay(defaultOverlay, fweTfceRandT, subsetBox, params.scanNum, scanParams, ...
-                                        'FWE-adjusted permutation TFCE ',params.testOutput, testNames)];
+                                        'FWE-adjusted permutation TFCE ',params.testOutput, testNames, params.statisticalThreshold)];
+        lastFWECorrectedTest = length(overlays);
         clear('fweTfceRandT');
       end
     end
   end
   
-  if params.computeTtests && params.maskContrastOverlay && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
+  if strcmp(params.alphaContrastOverlay,'Uncorrected') && lastUncorrectedTest
+    lastContrastAlphaOverlay = lastUncorrectedTest;
+  elseif strcmp(params.alphaContrastOverlay,'FDR') && lastFDRCorrectedTest
+    lastContrastAlphaOverlay = lastFDRCorrectedTest;
+  elseif strcmp(params.alphaContrastOverlay,'Uncorrected') && lastFWECorrectedTest
+    lastContrastAlphaOverlay = lastFWECorrectedTestl;
+  else
+    lastContrastAlphaOverlay = 0;
+  end
+  if lastContrastAlphaOverlay && params.computeTtests && (nnz(params.componentsToTest)==1 || strcmp(params.componentsCombination,'Add'))
     %set the contrast alpha overlay to the statistical value
     switch(params.testOutput)
       case 'P value'                                                  %statistical maps
@@ -887,7 +920,7 @@ if numberTests
     end
     for iContrast = 2:numberContrasts+1
       overlays(iContrast).alphaOverlayExponent=betaAlphaOverlayExponent;
-      overlays(iContrast).alphaOverlay = overlays(end-numberFtests-numberContrasts+iContrast-1).name;
+      overlays(iContrast).alphaOverlay = overlays(lastContrastAlphaOverlay-numberFtests-numberContrasts+iContrast-1).name;
     end
   end
   
@@ -944,16 +977,17 @@ outputData = reshape(outputData,[size(dataPosition,1) size(dataPosition,2) size(
 
 
 
-function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,testTypeString, testOutput, testNames)
+function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,testTypeString, testOutput, testNames, threshold)
   switch testOutput
     case 'P value'
       overlays.colormap = statsColorMap(256);
       namePrefix = [testTypeString 'P ['];
+      overlays.range = [0 threshold];
     case 'Z value'
-      overlays.range = [0 8.2096];
+      overlays.range = [norminv(1-max(threshold,eps)) norminv(1-eps)];
       namePrefix = [testTypeString 'Z ['];
     case '-log10(P) value'
-      overlays.range = [0 16];
+      overlays.range = [-log10(max(threshold,eps)) -log10(eps)];
       namePrefix = ['-log10(' testTypeString 'P) ['];
   end
   overlays.clip = overlays.range;
