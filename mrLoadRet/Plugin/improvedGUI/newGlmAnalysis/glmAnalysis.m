@@ -982,15 +982,17 @@ function overlays = makeOverlay(overlays,data,subsetBox,scanList,scanParams,test
     case 'P value'
       overlays.colormap = statsColorMap(256);
       namePrefix = [testTypeString 'P ['];
-      overlays.range = [0 threshold];
+      overlays.range = [0 1];
+      overlays.clip = [0 threshold];
     case 'Z value'
-      overlays.range = [norminv(1-max(threshold,eps)) norminv(1-eps)];
+      overlays.range = [0 norminv(1-eps)];
+      overlays.clip = [norminv(1-max(threshold,eps)) norminv(1-eps)];
       namePrefix = [testTypeString 'Z ['];
     case '-log10(P) value'
-      overlays.range = [-log10(max(threshold,eps)) -log10(eps)];
+      overlays.range = [0 -log10(eps)];
+      overlays.clip = [-log10(max(threshold,eps)) -log10(eps)];
       namePrefix = ['-log10(' testTypeString 'P) ['];
   end
-  overlays.clip = overlays.range;
   overlays = repmat(overlays,1,length(testNames));
   for iTest = 1:length(testNames)
     overlays(iTest).name = [namePrefix testNames{iTest} ']'];
