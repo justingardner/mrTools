@@ -41,9 +41,6 @@ while keepAsking
        scanDims = viewGet(thisView,'dims',iScan,groupNum);
        scanParams{iScan}.subsetBox = ['[1 ' num2str(scanDims(1)) ';1 ' num2str(scanDims(2)) ';1 ' num2str(scanDims(3)) ']'];
     end
-    if ~isfield(scanParams{iScan},'forceStimOnSampleOnset')
-       scanParams{iScan}.forceStimOnSampleOnset = 1;
-    end
     if ~isfield(scanParams{iScan},'designSupersampling') || isempty(scanParams{iScan}.designSupersampling)
        scanParams{iScan}.designSupersampling = 1;
     end
@@ -53,9 +50,6 @@ while keepAsking
     if fieldIsNotDefined(scanParams{iScan},'acquisitionDelay')
        scanParams{iScan}.acquisitionDelay = framePeriod/2;
     end
-%     if ~isfield(scanParams{iScan},'acquisitionSubsample') || isempty(scanParams{iScan}.acquisitionSubsample)
-%        scanParams{iScan}.acquisitionSubsample = 1;
-%     end
     if ~isfield(scanParams{iScan},'sameForNextScans') || isempty(scanParams{iScan}.sameForNextScans)
        scanParams{iScan}.sameForNextScans = iScan == params.scanNum(1);
     end
