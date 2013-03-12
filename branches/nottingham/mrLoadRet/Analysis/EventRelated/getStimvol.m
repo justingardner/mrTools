@@ -89,19 +89,17 @@ d.varname = var;
 
 % Design super-sampling for cases where the duration/time of the stimulation is not a multiple of TR (only supported for eventtimes file types)
 time_remainders = [];
-if isfield(var,'forceStimOnSampleOnset') && ~var.forceStimOnSampleOnset
-   %compute the remainders of all stim times divided by d.tr
-   for i_file = 1:length(d.stimfile)
-      if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
-         for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
-            time_remainders = [time_remainders rem(d.stimfile{i_file}.mylog.stimtimes_s{i_type},d.tr)];
-         end
-      else
-         disp(sprintf('(getStimvol) off TR stim onset is not supported for mgl or afni files. Forcing stim on (sub)sample onset'));
-         time_remainders = [];
-         break;
-      end
-   end
+%compute the remainders of all stim times divided by d.tr
+for i_file = 1:length(d.stimfile)
+  if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
+     for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
+        time_remainders = [time_remainders rem(d.stimfile{i_file}.mylog.stimtimes_s{i_type},d.tr)];
+     end
+  else
+     disp(sprintf('(getStimvol) off TR stim onset is not supported for mgl or afni files. Forcing stim on (sub)sample onset'));
+     time_remainders = [];
+     break;
+  end
 end
 duration_remainders = [];
 if isfield(var,'stimDuration')
