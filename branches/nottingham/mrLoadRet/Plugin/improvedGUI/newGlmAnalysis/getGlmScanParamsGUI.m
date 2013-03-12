@@ -214,10 +214,7 @@ while keepAsking
       {'acquisitionDelay',scanParams{iScan}.acquisitionDelay, sprintf('minmax=[0 %f]',framePeriod-0.05),'Time (in sec) at which the signal is actually acquired, on average across slices. This is normally set to half the frame period. If slice motion correction has been used, change to reference slice acquisition time. You might also need to change this value for sparse imaging designs.'},...
       {'designSupersampling',scanParams{iScan}.designSupersampling, designSupersamplingOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame period, or to round stimulus presentation times to the nearest sample onset. This is not supported for MGL/AFNI stim files.'},...
       {'stimDuration', scanParams{iScan}.stimDuration, canonicalVisibleOption, 'Duration of stimulation events (in sec, resolution=0.05s) = duration the boxcar function that will be convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might automatically change to accomodate durations that are not multiples of the frame period).'},...
-      {'forceStimOnSampleOnset', scanParams{iScan}.forceStimOnSampleOnset,'type=checkbox','Forces stimulus onset read from stimulus files to coincide with the onset of the sample period (or the onset of a subsample if estimationSupersampling has been selected)'},...
        }];
-%       {'acquisitionSubsample',scanParams{iScan}.acquisitionSubsample, deconvolutionVisibleOption, 'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','If the subsample estimation factor is more than 1, specifies at which subsample of the frame period the signal is actually acquired.'},...
-
      
      % give the option to use the same variable for remaining scans
     if (iScan ~= params.scanNum(end)) && (length(params.scanNum)>1)
@@ -251,17 +248,9 @@ while keepAsking
     if params.covCorrection && strcmp(params.analysisVolume,'Subset box') any(diff(subsetBox(1:2,:),1,2)<=params.covEstimationAreaSize)
       mrWarnDlg('(getScanParamsGUI) subset box size is too small for covariance estimation area size','Yes');
       scanParams{iScan} = [];
-%     elseif scanParams{iScan}.estimationSupersampling<scanParams{iScan}.acquisitionSubsample
-%       mrWarnDlg('(getScanParamsGUI) The acquisition subsample must be less than the subsample estimation factor','Yes');
-%       scanParams{iScan} = [];
     elseif isempty(scanParams{iScan}.stimDuration) 
       mrWarnDlg('(getScanParamsGUI) unknown stimDuration parameter','Yes');
       scanParams{iScan} = [];
-%     elseif (ischar(scanParams{iScan}.stimDuration) || scanParams{iScan}.stimDuration ~=framePeriod) ...
-%         && strcmp(params.hrfModel,'hrfDeconvolution')...
-%         && (params.computeTtests || params.numberFtests)
-%       mrWarnDlg('(getScanParamsGUI) subTR design sampling is not (yet) compatible with statistics on deconvolution weights','Yes');
-%       scanParams{iScan} = [];
     else
       keepAsking = 0;
 
