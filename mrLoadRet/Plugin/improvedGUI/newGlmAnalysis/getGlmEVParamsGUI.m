@@ -28,8 +28,8 @@ else
 end
 
 while keepAsking
-  % check for stimfile, and if it is mgl/type then ask the
-  % user which variable they want to do the anlysis on
+  % check for stimfile, and if it is mgl type then ask the
+  % user which variable they want to do the analysis on
   for iScan = params.scanNum
     
     %get the number of events after running the pre-processing function
