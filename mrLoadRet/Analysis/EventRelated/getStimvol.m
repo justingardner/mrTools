@@ -103,33 +103,45 @@ for i_file = 1:length(d.stimfile)
 end
 duration_remainders = [];
 if isfield(var,'stimDuration')
-   if ischar(var.stimDuration) && strcmp(var.stimDuration,'fromFile')
-      %compute the remainders of all stim durations divided by tr
-      for i_file = 1:length(d.stimfile)
-         if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
-            if isfield(d.stimfile{i_file}.mylog,'stimdurations_s') 
-               for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
-                  duration_remainders = [duration_remainders rem(d.stimfile{i_file}.mylog.stimdurations_s{i_type},d.tr)];
-               end
-            else
-               disp(sprintf('(getStimvol) Field stimdurations_s missing, using stimDuration = 1 (sub)frame'));
-               duration_remainders = [];
-               var.stimDuration = d.tr;
-               break;
-            end
-         else
-            disp(sprintf('(getStimvol) Stim duration from files not supported for mgl or afni files, using stimDuration = 1 (sub)frame'));
-            duration_remainders = [];
-            var.stimDuration = d.tr;
-            break;
-         end
+  if ischar(var.stimDuration) && strcmp(var.stimDuration,'fromFile')
+    %if the scan is a concatenationm there might be several stim files
+    for i_file = 1:length(d.stimfile) %for each file check if duration information is available
+      if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
+        if isfield(d.stimfile{i_file}.mylog,'stimdurations_s') 
+          %compute the remainders of all stim durations divided by tr
+          for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
+            duration_remainders = [duration_remainders rem(d.stimfile{i_file}.mylog.stimdurations_s{i_type},d.tr)];
+          end
+        else
+          disp(sprintf('(getStimvol) Field stimdurations_s missing, using stimDuration = 1 (sub)frame'));
+          duration_remainders = [];
+          var.stimDuration = d.tr;
+          break;
+        end
+      else
+        disp(sprintf('(getStimvol) Stim duration from files not supported for mgl or afni files, using stimDuration = 1 (sub)frame'));
+        duration_remainders = [];
+        var.stimDuration = d.tr;
+        break;
       end
-   else
-      if ischar(var.stimDuration) 
-         var.stimDuration = eval(var.stimDuration);
+    end
+  else
+    if ischar(var.stimDuration) 
+       var.stimDuration = eval(var.stimDuration);
+    end
+    %compute the remainders of all stim durations divided by tr
+    duration_remainders = [duration_remainders rem(var.stimDuration,d.tr)];
+    if rem(var.stimDuration,d.tr) %for each file check whether it is compatible with sub-tr durations
+      for i_file = 1:length(d.stimfile) 
+        if ~strcmp(d.stimfile{i_file}.filetype,'eventtimes')
+          var.stimDuration = d.tr*rem(var.stimDuration,d.tr);
+          disp(sprintf('(getStimvol) Stim duration that are not multiple of the frame period are not supported for mgl or afni files, rounding stimDuration to %f sec',var.stimDuration));
+          duration_remainders = [];
+          break;
+        end
       end
-      duration_remainders = [duration_remainders rem(var.stimDuration,d.tr)];
-   end
+    end
+  end
 else
    var.stimDuration = d.tr;
 end
