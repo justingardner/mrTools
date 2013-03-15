@@ -104,20 +104,21 @@ while keepAsking
         end
         % this is the new tyle, ask for a variable name
         [varnames varnamesStr] = getTaskVarnames(stimfile{1}.task);
-        % if there is more than one task, then ask the user for that
         task = cellArray(stimfile{1}.task,2);
+        taskNumList = num2cell(1:length(task));
+        if isfield(scanParams{iScan},'taskNum')
+          taskNumList = putOnTopOfList(scanParams{iScan}.taskNum,taskNumList);
+        end
+        % if there is more than one task, then ask the user for that
         if length(task)>1
-          taskNumList = num2cell(1:length(task));
-          if isfield(scanParams{iScan},'taskNum')
-            taskNumList = putOnTopOfList(scanParams{iScan}.taskNum,taskNumList);
-          end
           paramsInfo{end+1} = {'taskNum',taskNumList,'The task you want to use'};
         end
         % if there are multiple phases, then ask for that
         maxPhaseNum = 0;
         maxSegNum = 0;
+        phaseNumList = {};
         for tnum = 1:length(task)
-          phaseNum{tnum} = num2cell(1:length(task{tnum}));
+          phaseNumList{tnum} = num2cell(1:length(task{tnum}));
           maxPhaseNum = max(maxPhaseNum,length(task{tnum}));
           % if there are multiple _segments_, then ask for that
           for pnum = 1:length(task{tnum})
@@ -126,16 +127,14 @@ while keepAsking
           end
         end
         if maxPhaseNum > 1
+          if ~isfield(scanParams{iScan},'phaseNum')
+            scanParams{iScan}.phaseNum = phaseNumList{taskNumList{1}}{1};
+          end
+          phaseNumList{taskNumList{1}} = putOnTopOfList(scanParams{iScan}.phaseNum, phaseNumList{taskNumList{1}});
           if length(task) == 1
-            if ~isfield(scanParams{iScan},'phaseNum')
-              scanParams{iScan}.phaseNum = phaseNum{1};
-            end
-            paramsInfo{end+1} = {'phaseNum',scanParams{iScan}.phaseNum,'The phase of the task you want to use'};
+            paramsInfo{end+1} = {'phaseNum',phaseNumList,'The phase of the task you want to use'};
           else
-            if ~isfield(scanParams{iScan},'phaseNum')
-              scanParams{iScan}.phaseNum = phaseNum;
-            end
-            paramsInfo{end+1} = {'phaseNum',scanParams{iScan}.phaseNum,'The phase of the task you want to use','contingent=taskNum'};
+            paramsInfo{end+1} = {'phaseNum',phaseNumList,'The phase of the task you want to use','contingent=taskNum'};
           end
         end
 
