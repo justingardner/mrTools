@@ -237,7 +237,7 @@ for iScan = scanList
       end
     end
     if iScan==scanList(end)
-      hColorbar = colorbar;
+      hColorbar = colorbar('peer',designMatrixAxes(cScan));
       if size(d.runTransitions,1)>1
         colorBarPosition = get(hColorbar,'position');
         legendPosition = colorBarPosition;
