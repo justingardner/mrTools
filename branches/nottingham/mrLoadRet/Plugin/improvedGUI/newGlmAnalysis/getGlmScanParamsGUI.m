@@ -132,7 +132,7 @@ while keepAsking
           end
           phaseNumList{taskNumList{1}} = putOnTopOfList(scanParams{iScan}.phaseNum, phaseNumList{taskNumList{1}});
           if length(task) == 1
-            paramsInfo{end+1} = {'phaseNum',phaseNumList,'The phase of the task you want to use'};
+            paramsInfo{end+1} = {'phaseNum',phaseNumList{1},'The phase of the task you want to use'};
           else
             paramsInfo{end+1} = {'phaseNum',phaseNumList,'The phase of the task you want to use','contingent=taskNum'};
           end
