@@ -187,7 +187,12 @@ for i = 1:length(gParams.vars)
       dParams.entryString{i} = {gParams.varinfo{i}.value};
       %make up a string of Xs of lengh equal to the longest string in the menu list
       if strcmp(gParams.varinfo{i}.popuptype,'numeric')
-        charNum = length(num2str(max([dParams.entryString{i}{1}{:}])));
+	if iscell(dParams.entryString{i}{1})
+	  thisEntryString = cell2mat(dParams.entryString{i}{1});
+	else
+	  thisEntryString = [dParams.entryString{i}{1}{:}];
+	end
+        charNum = length(num2str(max(thisEntryString)));
       else
         charNum = size(char(dParams.entryString{i}{1}),2);
       end 
