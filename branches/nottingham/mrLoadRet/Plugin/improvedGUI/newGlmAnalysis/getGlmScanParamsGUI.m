@@ -53,6 +53,12 @@ while keepAsking
     if ~isfield(scanParams{iScan},'sameForNextScans') || isempty(scanParams{iScan}.sameForNextScans)
        scanParams{iScan}.sameForNextScans = iScan == params.scanNum(1);
     end
+    if fieldIsNotDefined(scanParams{iScan},'highpassDesign')
+       scanParams{iScan}.highpassDesign = 1;
+    end
+    if fieldIsNotDefined(scanParams{iScan},'projectOutGlobalComponent')
+       scanParams{iScan}.projectOutGlobalComponent = 1;
+    end
 
  % Standard parameters to set
     
@@ -68,11 +74,13 @@ while keepAsking
       subsetBoxHelp = sprintf('%s In order to estimate the noise covariance matrix for voxels of interest, this box should also include margins of %d voxels of no interest on both sides of the X and Y dimensions.',subsetBoxHelp,floor(params.covEstimationAreaSize/2));
     end
     
+    d= loadScan(thisView, iScan, groupNum, 0);
+    
     paramsInfo = {...
     {'scan',scanParams{iScan}.scan,'type=statictext','Description of scan to set parameters for (not editable)'},...
     {'description',scanParams{iScan}.description,'Event related analysis of [x...x]','Description of the analysis'}...
     {'preprocess',scanParams{iScan}.preprocess,'String of extra commands for preprocessing. Normally you will not need to set anything here, but this allows you to do corrections to the stimvols that are calculated so that you can modify the analysis. (see wiki for details)',...
-                  'callback',{@tryPreProcess,loadScan(thisView, iScan, groupNum, 0)},'passParams=1'}...
+                  'callback',{@tryPreProcess,d},'passParams=1'}...
     {'subsetBox', scanParams{iScan}.subsetBox, subsetBoxVisibleOption, subsetBoxEditableOption, subsetBoxHelp};
          };
 
@@ -214,10 +222,25 @@ while keepAsking
       {'designSupersampling',scanParams{iScan}.designSupersampling, designSupersamplingOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame period, or to round stimulus presentation times to the nearest sample onset. This is not supported for MGL/AFNI stim files.'},...
       {'stimDuration', scanParams{iScan}.stimDuration, canonicalVisibleOption, 'Duration of stimulation events (in sec, resolution=0.05s) = duration the boxcar function that will be convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might automatically change to accomodate durations that are not multiples of the frame period).'},...
        }];
+
+    if isfield(d,'concatInfo') %in case of concatenation files
+      % ask if hipass filter should be applied to the design matrix
+      if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{1})
+        paramsInfo = [paramsInfo {...
+          {'highpassDesign',scanParams{iScan}.highpassDesign, 'type=checkbox','For concatenated scans, applies to the design matrix the high-pass filter that has been applied to the individual scans.'},...
+           }];
+      end
+      % ask if  mean vector should be projected out the
+      if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{1})
+        paramsInfo = [paramsInfo {...
+          {'projectOutGlobalComponent',scanParams{iScan}.highpassDesign, 'type=checkbox','For concatenated scans, projects out the global activity estimated on an ROI from the design matrix.'},...
+           }];
+      end
+    end
      
      % give the option to use the same variable for remaining scans
     if (iScan ~= params.scanNum(end)) && (length(params.scanNum)>1)
-     paramsInfo{end+1} = {'sameForNextScans',scanParams{iScan}.sameForNextScans,'type=checkbox','Use the same parameters for all scans'};
+      paramsInfo{end+1} = {'sameForNextScans',scanParams{iScan}.sameForNextScans,'type=checkbox','Use the same parameters for all scans'};
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%
