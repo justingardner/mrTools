@@ -472,7 +472,7 @@ h=uicontrol('parent',fignum,'unit','normalized','style','text',...
 %in this case, we want it because it is useful to zoom on the time-series
 set(fignum,'toolbar','figure');
 drawnow;
-disppercent(-inf,'(eventRelatedPlot) Plotting time series');
+disppercent(-inf,'(glmPlot) Plotting time series');
 
 if isnumeric(roi) %if roi is numeric, it's the coordinates of a single voxel
   actualTSeries = squeeze(loadTSeries(thisView,[],roi(3),[],roi(1),roi(2)));
