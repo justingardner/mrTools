@@ -17,8 +17,14 @@ while keepAsking
     params.numberContrasts = params.numberEVs;
   end
   if fieldIsNotDefined(params, 'contrasts') || ~isnumeric(params.contrasts) || ...
-    ~isequal(size(params.contrasts,1),params.numberContrasts) || ~isequal(size(params.contrasts,2),params.numberEVs)
+    ~isequal(size(params.contrasts,2),params.numberEVs)
       params.contrasts=eye(params.numberContrasts,params.numberEVs);
+  end
+  %add or remove lines if number of contrasts does not match what's in the contrast matrix 
+  if params.numberContrasts>size(params.contrasts,1)
+    params.contrasts=[params.contrasts;zeros(params.numberContrasts-size(params.contrasts,1),size(params.contrasts,2))];
+  elseif params.numberContrasts<size(params.contrasts,1)
+    params.contrasts=params.contrasts(1:params.numberContrasts,:);
   end
   if fieldIsNotDefined(params,'tTestSide')
     params.tTestSide = 'Both';
