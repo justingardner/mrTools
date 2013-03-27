@@ -241,21 +241,23 @@ for i = 1:length(d.stimfile)
   end
   
   % handle the case where volTrigRatio specifies more volumes than triggers
-  if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
-    % check volTrigRatio for this scan
-    if length(d.volTrigRatio) >= i
-      if iscell(d.volTrigRatio{i})
-	disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
-      elseif ~isempty(d.volTrigRatio{i})
-	% multply the stimvols out by what volTrigRatio says
-	if ~isempty(d.volTrigRatio{i})
-	  for iStimvol = 1:length(stimvol)
-	    stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
-	  end
-	end
+  if ~strcmp(d.stimfile{i}.filetype,'eventtimes')
+    if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
+      % check volTrigRatio for this scan
+      if length(d.volTrigRatio) >= i
+        if iscell(d.volTrigRatio{i})
+    disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
+        elseif ~isempty(d.volTrigRatio{i})
+    % multply the stimvols out by what volTrigRatio says
+    if ~isempty(d.volTrigRatio{i})
+      for iStimvol = 1:length(stimvol)
+        stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
       end
-    else
-      disp(sprintf('(getStimvol) !!! volTrigRatio missing entry for component scan: %i. Ignoring',i));
+    end
+        end
+      else
+        disp(sprintf('(getStimvol) !!! volTrigRatio missing entry for component scan: %i. Ignoring',i));
+      end
     end
   end
   
