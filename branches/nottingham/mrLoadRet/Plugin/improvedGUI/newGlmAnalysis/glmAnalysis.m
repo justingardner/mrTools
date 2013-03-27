@@ -915,7 +915,7 @@ if numberTests
     switch(params.testOutput)
       case 'P value'                                                  %statistical maps
         betaAlphaOverlayExponent = -1;      % with inverse masking for p values
-      case {'Z value','-log10(P) value}'}
+      case {'Z value','-log10(P) value'}
         betaAlphaOverlayExponent = .5;      %or normal masking for Z or log10(p) values
     end
     for iContrast = 2:numberContrasts+1

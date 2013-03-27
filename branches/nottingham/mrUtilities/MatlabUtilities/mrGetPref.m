@@ -35,6 +35,7 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'selectedROIColor','roiContourWidth','roiPolygonMethod',...,
    'interpMethod','corticalDepthBins','roiCorticalDepthDisplayRatio', 'multiSliceProjectionMethod','colorBlending',...
    'pluginPaths','selectedPlugins',...
+   'statisticalTestOutput',...
    'site','magnet','coil','pulseSequence'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
@@ -63,6 +64,7 @@ prefDefaults{find(strcmp('multiSliceProjectionMethod',prefNames))} = {'Average',
 prefDefaults{find(strcmp('colorBlending',prefNames))} = {'Additive','Alpha blend'};
 prefDefaults{find(strcmp('pluginPaths',prefNames))} = '';
 prefDefaults{find(strcmp('selectedPlugins',prefNames))} = '';
+prefDefaults{find(strcmp('statisticalTestOutput',prefNames))} = {'P value','Z value','-log10(P) value'};
 prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
 prefDefaults{find(strcmp('magnet',prefNames))} = {{'Allegra 3T','other'}};
 prefDefaults{find(strcmp('coil',prefNames))} = {{'LifeScience','Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
