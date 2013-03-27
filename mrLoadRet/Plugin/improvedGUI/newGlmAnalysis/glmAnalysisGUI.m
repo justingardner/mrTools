@@ -221,20 +221,39 @@ while askForParams
               break;
             end
           else
-            %check that scan frame Period are all identical
-            framePeriod = viewGet(thisView,'framePeriod',scanNums(1));
-            for iScan = scanNums(2:end);
-              if viewGet(thisView,'framePeriod',iScan)~=framePeriod
-                mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different frame periods. Copy scans in different groups.');
-                params=[];
-                return
-              end
-            end
-
             params.scanNum = scanNums;
           end
         end
-
+        
+        framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),groupNum);
+        stimfile = viewGet(thisView,'stimfile',params.scanNum(1),groupNum);
+        %check that all stim files are identical within a (concatenated) scan
+        stimfileType = stimfile{1}.filetype;
+        for iFile=2:length(stimfile)
+          if ~strcmp(stimfile{iFile}.filetype,stimfileType)
+            mrWarnDlg('(glmAnalysisGUI) All stim file types must be the same type within a concatenated scan.');
+            params=[];
+            return
+          end
+        end
+        for iScan = params.scanNum(2:end);
+          %check that scan frame Period are all identical
+          if viewGet(thisView,'framePeriod',iScan)~=framePeriod
+            mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different frame periods. Copy scans in different groups.');
+            params=[];
+            return
+          end
+          %check that file type is the same for all scans (this check can be remove once all file types support duration coding and sub-TR sampling
+          stimfile = viewGet(thisView,'stimfile',iScan,groupNum);
+          for iFile=1:length(stimfile)
+            if ~strcmp(stimfile{iFile}.filetype,stimfileType)
+              mrWarnDlg('(glmAnalysisGUI) GLM analysis cannot be performed on scans with different stim file types');
+              params=[];
+              return
+            end
+          end
+        end
+        
         while askForParams    % get the parameters for each scan
           [scanParams, params] = getGlmScanParamsGUI(thisView,params,defaultParams);
           if isempty(scanParams)
