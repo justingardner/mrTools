@@ -28,137 +28,129 @@ else
 end
 
 while keepAsking
-  % check for stimfile, and if it is mgl type then ask the
-  % user which variable they want to do the analysis on
+  nStims = zeros(1,nScans);
   for iScan = params.scanNum
-    
-    %get the number of events after running the pre-processing function
+    %get the number of events after running the pre-processing function for each scan
     disp(sprintf('Getting number of conditions from scan %d', iScan)); 
     d = loadScan(thisView, iScan, groupNum, 0);
     d = getStimvol(d,scanParams{iScan});
     d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
-    nStims = length(d.stimvol);
-    disp(sprintf('%d conditions found', nStims));
+    nStims(iScan) = length(d.stimvol);
+    disp(sprintf('%d conditions found', nStims(iScan)));
+    stimNames{iScan}=d.stimNames;
+  end
+  
+  if ~params.numberEVs
+    params.numberEVs = max(nStims);
+  end
     
-    if ~params.numberEVs
-      params.numberEVs = nStims;
-    end
+  %get the stimToEV matrix from each scan and make single matrix with unique stim names
+  stimToEVmatrix=[];
+  uniqueStimNames = [];
+  for iScan = params.scanNum
     if ~isfield(scanParams{iScan}, 'stimToEVmatrix') || isempty(scanParams{iScan}.stimToEVmatrix) || ...
-      ~isequal(size(scanParams{iScan}.stimToEVmatrix,1),nStims) || ~isequal(size(scanParams{iScan}.stimToEVmatrix,2),params.numberEVs)
-        scanParams{iScan}.stimToEVmatrix = eye(nStims,params.numberEVs);
-    end
-    if isempty(EVnames) 
-      EVnames = repmat({' '},1,params.numberEVs);
-      if params.numberEVs <= nStims
-        EVnames = d.stimNames(1:params.numberEVs);
-      else
-        EVnames(1:nStims) = d.stimNames;
-      end
-    end
-
-    paramsInfo = cell(1,nStims+4);
-    paramsInfo{1}= {'scan', scanParams{iScan}.scan, 'editable=0','description of the scan'};
-    paramsInfo{2}= {'EVnames', EVnames, 'type=stringarray','Name of the Explanatory Variables to be estimated. EVs that are set to 0 in all rows will be removed from the model.'};
-    for iEvent = 1:nStims
-      paramsInfo{iEvent+2} = {fixBadChars(d.stimNames{iEvent}), scanParams{iScan}.stimToEVmatrix(iEvent,:),...
-        'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
-        ['How much stimulus ' fixBadChars(d.stimNames{iEvent}) ' contributes to each EV.']};
-    end
-    paramsInfo{nStims+3}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.)',...
-            'callback',{@plotExperimentalDesign,scanParams,params,iScan,thisView,d.stimNames},'passParams=1'};
-
-    % give the option to use the same parameters for remaining scans (assumes the event names are identical in all files)
-    if (iScan ~= params.scanNum(end)) && (length(params.scanNum)>1)
-      paramsInfo{nStims+4} = {'sameForNextScans',iScan == params.scanNum(1),'type=checkbox','Use the same parameters for all scans'};
+      ~isequal(size(scanParams{iScan}.stimToEVmatrix,2),params.numberEVs)
+        thisStimToEVmatrix = eye(nStims(iScan),params.numberEVs);
     else
-      paramsInfo(nStims+4) = [];
+      thisStimToEVmatrix = scanParams{iScan}.stimToEVmatrix;
     end
-
-    %%%%%%%%%%%%%%%%%%%%%%%
-    % now we have all the dialog information, ask the user to set parameters
-    if useDefault
-       tempParams = mrParamsDefault(paramsInfo);
+    if nStims(iScan)>size(thisStimToEVmatrix,1)
+      thisStimToEVmatrix=[thisStimToEVmatrix;zeros(nStims(iScan)-size(thisStimToEVmatrix,1),size(thisStimToEVmatrix,2))];
+    elseif nStims(iScan)<size(thisStimToEVmatrix,1)
+      thisStimToEVmatrix=thisStimToEVmatrix(1:nStims(iScan),:);
+    end
+    if iScan==params.scanNum(1)
+      uniqueStimNames = stimNames{params.scanNum(1)};
+      stimToEVmatrix = thisStimToEVmatrix;
     else
-       tempParams = mrParamsDialog(paramsInfo,'Set Stimulus/EV matrix');
-    end
-
-    % user hit cancel
-    if isempty(tempParams)
-       scanParams = tempParams;
-       return
-    end
-    
-    % form stimToEV matrix from fields
-    stimToEVmatrix = zeros(nStims,params.numberEVs);
-    for iEvent = 1:nStims
-      stimToEVmatrix(iEvent,:) = tempParams.(fixBadChars(d.stimNames{iEvent}));
-%       tempParams = mrParamsRemoveField(tempParams,fixBadChars(d.stimNames{iEvent}));
-    end
-    EVnames = tempParams.EVnames;
-%     tempParams = mrParamsRemoveField(tempParams,'EVnames');
-    EVsToRemove = find(~any(stimToEVmatrix,1));
-    for iEV = EVsToRemove
-      disp(sprintf('(getGlmEVParamsGUI) Removing EV ''%s'' because it is empty',EVnames{iEV}));
-    end
-    stimToEVmatrix(:,EVsToRemove) = [];
-    EVnames(EVsToRemove)=[];
-    %Add only these 2 parameters to the scanParams
-    newParams =  mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix,'Matrix forming EVs from combinations of stimulus types'},...
-                       {'stimNames',d.stimNames,'type=strinArray','Names of stimulus types'}});
-    scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
-    %update number of EVs
-    params.numberEVs = size(stimToEVmatrix,2);
-
-    % if sameForNextScans is set, copy the temporary parameters into all remaining scans and break out of loop
-    if isfield(tempParams,'sameForNextScans') && tempParams.sameForNextScans
-      for jScan = params.scanNum(find(params.scanNum>iScan,1,'first'):end)
-        % set the other scans params to the same as this one
-        scanParams{jScan} = mrParamsCopyFields(newParams,scanParams{jScan});
-      end
-      break
-    end
-  %          paramsInfo = {};
-    if keepAsking && useDefault %there were incompatible parameters but this is the script mode (no GUI)
-      scanParams = [];
-      return;
+      [additionalStimNames,indices] = setdiff(stimNames{iScan},uniqueStimNames);
+      uniqueStimNames = [uniqueStimNames additionalStimNames];
+      stimToEVmatrix = [stimToEVmatrix;thisStimToEVmatrix(indices,:)];
     end
   end
-  params.EVnames = EVnames;
+  nUniqueStims = length(uniqueStimNames);
+  
+  if isempty(EVnames) 
+    EVnames = repmat({' '},1,params.numberEVs);
+    if params.numberEVs <= nUniqueStims
+      EVnames = uniqueStimNames(1:params.numberEVs);
+    else
+      EVnames(1:nUniqueStims) = uniqueStimNames;
+    end
+  end
+
+  paramsInfo{1}= {'EVnames', EVnames, 'type=stringarray','Name of the Explanatory Variables to be estimated. EVs that are set to 0 in all rows will be removed from the model.'};
+  for iEvent = 1:nUniqueStims
+    paramsInfo{iEvent+1} = {fixBadChars(uniqueStimNames{iEvent}), stimToEVmatrix(iEvent,:),...
+      'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
+      ['How much stimulus ' fixBadChars(uniqueStimNames{iEvent}) ' contributes to each EV.']};
+  end
+  paramsInfo{end+1}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.)',...
+          'callback',{@plotExperimentalDesign,params,scanParams,thisView,uniqueStimNames,stimNames},'passParams=1'};
+
+  %%%%%%%%%%%%%%%%%%%%%%%
+  % now we have all the dialog information, ask the user to set parameters
+  if useDefault
+     tempParams = mrParamsDefault(paramsInfo);
+  else
+     tempParams = mrParamsDialog(paramsInfo,'Set design parameters');
+  end
+
+  % user hit cancel
+  if isempty(tempParams)
+     scanParams = tempParams;
+     return
+  end
+
+  [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames);
+  
+  if keepAsking && useDefault %there were incompatible parameters but this is the script mode (no GUI)
+    scanParams = [];
+    return;
+  end
+%   end
   keepAsking = 0;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%% convertStimToEVmatrix %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames)
+  % form stimToEV matrix from fields
+  stimToEVmatrix = zeros(length(uniqueStimNames),params.numberEVs);
+  for iEvent = 1:length(uniqueStimNames)
+    stimToEVmatrix(iEvent,:) = tempParams.(fixBadChars(uniqueStimNames{iEvent}));
+  end
+  EVnames = tempParams.EVnames;
+  EVsToRemove = find(~any(stimToEVmatrix,1));
+  for iEV = EVsToRemove
+    disp(sprintf('(getGlmEVParamsGUI) Removing EV ''%s'' because it is empty',EVnames{iEV}));
+  end
+  stimToEVmatrix(:,EVsToRemove) = [];
+  EVnames(EVsToRemove)=[];
+  %update number of EVs
+  params.numberEVs = size(stimToEVmatrix,2);
+  
+  %Add stimToEVmatrix and stimNames to each scan params
+  for iScan = params.scanNum
+    %get subset of stimToEVmatrix fro this scan
+    [~,whichStims] = ismember(stimNames{iScan},uniqueStimNames);
+    newParams =  mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix(whichStims,:),'Matrix forming EVs from combinations of stimulus types'},...
+                       {'stimNames',stimNames{iScan},'type=strinArray','Names of stimulus types'}});
+    scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
+  end
+  params.EVnames = EVnames;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%% plotStimDesign %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plotExperimentalDesign(thisScanParams,scanParams,params,scanNum,thisView,stimNames)
+function plotExperimentalDesign(thisScanParams,params,scanParams,thisView,uniqueStimNames,stimNames)
 
 %we need to convert the stimToEVmatrix
-for iEvent = 1:length(stimNames)
-  thisScanParams.stimToEVmatrix(iEvent,:) = thisScanParams.(fixBadChars(stimNames{iEvent}));
-end
-thisScanParams.stimNames = stimNames;
-EVsToRemove = find(~any(thisScanParams.stimToEVmatrix,1));
-for iEV = EVsToRemove
-  disp(sprintf('(getGlmEVParamsGUI) Removing EV %s because it is empty',thisScanParams.EVnames{iEV}));
-end
-thisScanParams.stimToEVmatrix(:,EVsToRemove) = [];
-thisScanParams.EVnames(EVsToRemove)=[];
-
-if ~isfield(thisScanParams,'sameForNextScans') || thisScanParams.sameForNextScans
-  %if it's the last scan or sameForNextScans is selected, we show all scans
-  %copy params to remaining scans
-  for jScan = params.scanNum(find(params.scanNum==scanNum,1,'first'):end)
-    scanParams{jScan} = copyFields(thisScanParams,scanParams{jScan});
-  end
-  scanList = params.scanNum;
-else
-  %otherwise we only show the current scan
-  scanParams = cell(1,scanNum);
-  scanParams{scanNum} = thisScanParams;
-  scanList = scanNum;
-end
-
-nScans = length(scanList);
+[params,scanParams]=convertStimToEVmatrix(params,thisScanParams,scanParams,uniqueStimNames,stimNames);
+ 
+nScans = length(scanParams);
 expDesignFigure = initializeFigure('plotExperimentalDesign',nScans,'horizontal');
 designMatrixFigure = initializeFigure('plotDesignMatrix',nScans,'vertical');
 
@@ -166,7 +158,7 @@ cScan=0;
 axisLength = zeros(1,length(params.scanNum));
 tSeriesAxes = zeros(1,length(params.scanNum));
 designMatrixAxes = zeros(1,length(params.scanNum));
-for iScan = scanList
+for iScan = params.scanNum
   params.scanParams{iScan} = copyFields(scanParams{iScan},params.scanParams{iScan}); %we use copyFields here instead of mrParamsCopyFields because the latter only copies fields with a corresponding paramInfo entry
   EVnames = thisScanParams.EVnames;
   colors = randomColors(length(EVnames));
@@ -236,7 +228,7 @@ for iScan = scanList
         hTransitionDesign = plot(designMatrixAxes(cScan),axisCoords(1:2),repmat(d.runTransitions(iRun,1)/d.designSupersampling,1,2),'--r');
       end
     end
-    if iScan==scanList(end)
+    if iScan==params.scanNum(end)
       hColorbar = colorbar('peer',designMatrixAxes(cScan));
       if size(d.runTransitions,1)>1
         colorBarPosition = get(hColorbar,'position');
