@@ -159,7 +159,7 @@ while askForParams
                 end
                 params.scanParams = scanParams;
                 while askForParams
-                    [scanParams, params] = getGlmEVParamsGUI(thisView,params,defaultParams);
+                    [scanParams, params] = getClassEVParamsGUI(thisView,params,defaultParams);
                     if isempty(scanParams)
                       if size(scanParams,2) %if the top close button has been pressed
                         params=[];
