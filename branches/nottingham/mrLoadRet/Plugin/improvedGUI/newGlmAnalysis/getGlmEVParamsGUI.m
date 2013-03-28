@@ -85,10 +85,66 @@ while keepAsking
       'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
       ['How much stimulus ' fixBadChars(uniqueStimNames{iEvent}) ' contributes to each EV.']};
   end
-  paramsInfo{end+1}= {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.)',...
-          'callback',{@plotExperimentalDesign,params,scanParams,thisView,uniqueStimNames,stimNames},'passParams=1'};
+        
+  %get timing parameters from scan parameters
+  framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),groupNum);
+  stimfile = viewGet(thisView,'stimfile',params.scanNum(1),groupNum);
+  designSupersampling = 1;
+  estimationSupersampling = 1;
+  acquisitionDelay = framePeriod/2;
+  stimDuration = num2str(framePeriod);
+  for iScan = params.scanNum
+    if ~fieldIsNotDefined(scanParams{iScan},'designSupersampling')
+       designSupersampling = scanParams{iScan}.designSupersampling;
+    end
+    if ~fieldIsNotDefined(scanParams{iScan},'estimationSupersampling')
+       estimationSupersampling = scanParams{iScan}.estimationSupersampling;
+    end
+    if ~fieldIsNotDefined(scanParams{iScan},'acquisitionDelay')
+       acquisitionDelay = scanParams{iScan}.acquisitionDelay;
+    end
+    if ~fieldIsNotDefined(scanParams{iScan},'stimDuration') 
+       stimDuration = scanParams{iScan}.stimDuration;
+    end
+  end
+  if isnumeric(stimDuration)
+    if ~strcmp(stimfile{1}.filetype,'eventtimes') %if the stimfile is not the mylog type
+      stimDuration = max(framePeriod,framePeriod*round(stimDuration/framePeriod)); %round the duration to a multiple of the frame period
+    end
+    stimDuration = num2str(stimDuration);
+  end
 
-  %%%%%%%%%%%%%%%%%%%%%%%
+  if strcmp(params.hrfModel,'hrfDeconvolution') 
+    canonicalVisibleOption = 'visible=0';
+    designSupersamplingOption = 'visible=0';
+    if strcmp(stimfile{1}.filetype,'eventtimes')
+      deconvolutionVisibleOption = 'visible=1';
+    else
+      estimationSupersampling=1;
+      deconvolutionVisibleOption = 'visible=0';
+    end
+    designSupersampling=estimationSupersampling;
+  else
+    estimationSupersampling=1;
+    canonicalVisibleOption = 'visible=1';
+    deconvolutionVisibleOption = 'visible=0';
+    if strcmp(stimfile{1}.filetype,'eventtimes')
+      designSupersamplingOption = 'visible=1';
+    else
+      designSupersamplingOption = 'visible=0';
+      designSupersampling=1;
+    end
+  end
+
+  paramsInfo = [paramsInfo {...
+    {'estimationSupersampling',estimationSupersampling, deconvolutionVisibleOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation, and is not supported for MGL/AFNI stim files.'},...
+    {'acquisitionDelay',acquisitionDelay, sprintf('minmax=[0 %f]',framePeriod-0.05),'Time (in sec) at which the signal is actually acquired, on average across slices. This is normally set to half the frame period. If slice motion correction has been used, change to reference slice acquisition time. You might also need to change this value for sparse imaging designs.'},...
+    {'designSupersampling',designSupersampling, designSupersamplingOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame period, or to round stimulus presentation times to the nearest sample onset. This is not supported for MGL/AFNI stim files.'},...
+    {'stimDuration', stimDuration, canonicalVisibleOption, 'Duration of stimulation events (in sec, resolution=0.05s) = duration the boxcar function that will be convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might automatically change to accomodate durations that are not multiples of the frame period).'},...
+    {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.)',...
+        'callback',{@plotExperimentalDesign,params,scanParams,thisView,uniqueStimNames,stimNames},'passParams=1'}...
+     }];
+
   % now we have all the dialog information, ask the user to set parameters
   if useDefault
      tempParams = mrParamsDefault(paramsInfo);
@@ -100,6 +156,12 @@ while keepAsking
   if isempty(tempParams)
      scanParams = tempParams;
      return
+  end
+
+  if strcmp(params.hrfModel,'hrfDeconvolution')
+    tempParams.stimDuration = framePeriod/tempParams.estimationSupersampling;
+  elseif ~strcmp(tempParams.stimDuration,'fromFile')
+    tempParams.stimDuration= str2num(tempParams.stimDuration);
   end
 
   [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames);
@@ -136,7 +198,12 @@ function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,
     %get subset of stimToEVmatrix fro this scan
     [~,whichStims] = ismember(stimNames{iScan},uniqueStimNames);
     newParams =  mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix(whichStims,:),'Matrix forming EVs from combinations of stimulus types'},...
-                       {'stimNames',stimNames{iScan},'type=strinArray','Names of stimulus types'}});
+                       {'stimNames',stimNames{iScan},'type=strinArray','Names of stimulus types'},...
+      {'estimationSupersampling',tempParams.estimationSupersampling, 'Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation, and is not supported for MGL/AFNI stim files.'},...
+      {'acquisitionDelay',tempParams.acquisitionDelay, 'Time (in sec) at which the signal is actually acquired, on average across slices. This is normally set to half the frame period. If slice motion correction has been used, change to reference slice acquisition time. You might also need to change this value for sparse imaging designs.'},...
+      {'designSupersampling',tempParams.designSupersampling, 'incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame period, or to round stimulus presentation times to the nearest sample onset. This is not supported for MGL/AFNI stim files.'},...
+      {'stimDuration', tempParams.stimDuration, 'Duration of stimulation events (in sec, resolution=0.05s) = duration the boxcar function that will be convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might automatically change to accomodate durations that are not multiples of the frame period).'},...
+                       });
     scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
   end
   params.EVnames = EVnames;
