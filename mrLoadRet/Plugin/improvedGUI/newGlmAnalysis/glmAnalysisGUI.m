@@ -61,27 +61,6 @@ else
   end
 end
 
-if ~isfield(params,'numberEVs') || isempty(params.numberEVs)
-  params.numberEVs = 0;
-end
-if ~isfield(params,'numberContrasts') || isempty(params.numberContrasts)
-  if isfield(params,'contrasts')
-    params.numberContrasts = size(params.contrasts,1);
-  else
-    params.numberContrasts = 0;
-  end
-end
-if ~isfield(params,'computeTtests') || isempty(params.computeTtests)
-  params.computeTtests = 0;
-end
-if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
-  if isfield(params,'params') && isfield(params,'restrictions')
-    params.numberFtests = length(params.restrictions);
-  else
-    params.numberFtests = 0;
-  end
-end
-
 if fieldIsNotDefined(params,'spatialSmoothing')
    params.spatialSmoothing = 0;
 end
@@ -130,10 +109,6 @@ while askForParams
     {'saveName',params.saveName,'File name to try to save the analysis as'},...
     {'hrfModel',hrfModelMenu,'type=popupmenu','Name of the function that defines the Hemodynamic Response Function model that will be convolved with the design matrix',},...
     {'analysisVolume',analysisVolumeMenu,'type=popupmenu','The analysis can be performed either on the whole scan volume, or only in the ROIs currently loaded/visible in the view, or only in a cubic subset of voxels, the coordinates of which will have to be specified in the scan parameter menu.'},...
-    {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Explanatory Variables in the model = number of columns in the design matrix. if 0, the number of EV will be set to the number of stimulus type in the stimulus file'},...
-    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of contrasts on which to perform a T-test. Both contrasts and T statistics will be ouput as overlays'},...
-    {'computeTtests', params.computeTtests,'type=checkbox', 'visible=0', 'Whether contrasts are tested for significance using T-tests'},...
-    {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays. An F-test tests the overall significance of a collection of contrasts.'},...
     {'spatialSmoothing',params.spatialSmoothing, 'minmax=[0 inf]','Width at half-maximum in voxels of a 2D gaussian kernel that will be convolved with each slice at each time-point. If 0, no spatial smoothing is applied'},...
     {'covCorrection',params.covCorrection,'type=checkbox','(EXPERIMENTAL) Correction for temporally-correlated noise. Correcting for noise correlation is important for single-subject level statistics but significantly increases analysis time. Uncorrected correlated noise biases statistical significance of contrasts/F-tests but should not affect parameter estimates (contrasts values).'},...
     {'covEstimationAreaSize',params.covEstimationAreaSize, 'minmax=[1 inf]','contingent=covCorrection','round=1','For correlated-noise correction: dimensions in voxels of a square spatial window around each voxel on which the noise covariance is estimated (in the X and Y dimensions)'},...
@@ -163,11 +138,6 @@ while askForParams
     params.hrfParams.description='';
   end
   params = copyFields(tempParams,params);
-  if params.numberContrasts %compute T-test for any contrast
-    params.computeTtests=1;
-  else
-    params.computeTtests=0;
-  end
   
   %perform some checks
   if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
@@ -211,6 +181,13 @@ while askForParams
         elseif defaultParams
           params.scanNum = 1:nScans;
         elseif viewGet(thisView,'nScans',groupNum) >1
+          if isempty(params.scanNum)
+            if groupNum == viewGet(thisView,'curGroup') 
+              params.scanNum = viewGet(thisView,'curscan');
+            else
+              params.scanNum = viewGet(thisView,'groupScanNum',groupNum);
+            end
+          end
           scanNums = selectInList(thisView,'scans','Select scans to analyse',params.scanNum,groupNum);
           if isempty(scanNums)
             if size(scanNums,2) %if the top close button has been pressed

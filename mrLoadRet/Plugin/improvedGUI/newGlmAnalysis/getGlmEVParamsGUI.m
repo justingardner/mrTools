@@ -21,39 +21,66 @@ else
    % make the output as long as the number of scans
    scanParams = cell(1,nScans);
 end
-if ~isfield(params, 'EVnames') || ~isequal(length(params.EVnames),params.numberEVs) 
-  EVnames = {};
-else
-  EVnames = params.EVnames;
+
+nStims = zeros(1,nScans);
+for iScan = params.scanNum
+  %get the number of events after running the pre-processing function for each scan
+  disp(sprintf('Getting number of conditions from scan %d', iScan)); 
+  d = loadScan(thisView, iScan, groupNum, 0);
+  d = getStimvol(d,scanParams{iScan});
+  d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
+  nStims(iScan) = length(d.stimvol);
+  disp(sprintf('%d conditions found', nStims(iScan)));
+  stimNames{iScan}=d.stimNames;
+end
+if ~all(nStims(params.scanNum))
+  for iScan = params.scanNum
+    mrWarnDlg(sprintf('No stimulus found for scan %d',iScan));
+  end
+  scanParams = [];
+  return;
+end
+
+if ~isfield(params,'numberEVs') || isempty(params.numberEVs)
+  params.numberEVs = min(nStims(params.scanNum));
+end
+
+if ~isfield(params,'numberContrasts') || isempty(params.numberContrasts)
+  if isfield(params,'contrasts')
+    params.numberContrasts = size(params.contrasts,1);
+  else
+    params.numberContrasts = 0;
+  end
+end
+if ~isfield(params,'computeTtests') || isempty(params.computeTtests)
+  params.computeTtests = 0;
+end
+if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
+  if isfield(params,'params') && isfield(params,'restrictions')
+    params.numberFtests = length(params.restrictions);
+  else
+    params.numberFtests = 0;
+  end
 end
 
 while keepAsking
-  nStims = zeros(1,nScans);
-  for iScan = params.scanNum
-    %get the number of events after running the pre-processing function for each scan
-    disp(sprintf('Getting number of conditions from scan %d', iScan)); 
-    d = loadScan(thisView, iScan, groupNum, 0);
-    d = getStimvol(d,scanParams{iScan});
-    d = eventRelatedPreProcess(d,scanParams{iScan}.preprocess);
-    nStims(iScan) = length(d.stimvol);
-    disp(sprintf('%d conditions found', nStims(iScan)));
-    stimNames{iScan}=d.stimNames;
-  end
-  
-  if ~params.numberEVs
-    params.numberEVs = max(nStims);
-  end
     
+  % check that the number of EVs is not greater than the smallest number of stims in a stim file
+  if params.numberEVs>min(nStims(params.scanNum))
+    params.numberEVs = min(nStims(params.scanNum));
+    mrWarnDlg(sprintf('(getGlmEVParamsGUI) Number of EV cannot be greater the number of stimuli in the stim file (%d)',min(nStims(params.scanNum))));
+  end
   %get the stimToEV matrix from each scan and make single matrix with unique stim names
   stimToEVmatrix=[];
   uniqueStimNames = [];
   for iScan = params.scanNum
-    if ~isfield(scanParams{iScan}, 'stimToEVmatrix') || isempty(scanParams{iScan}.stimToEVmatrix) || ...
-      ~isequal(size(scanParams{iScan}.stimToEVmatrix,2),params.numberEVs)
+    if ~isfield(scanParams{iScan}, 'stimToEVmatrix') || isempty(scanParams{iScan}.stimToEVmatrix) %|| ...
+%       ~isequal(size(scanParams{iScan}.stimToEVmatrix,2),params.numberEVs)
         thisStimToEVmatrix = eye(nStims(iScan),params.numberEVs);
     else
       thisStimToEVmatrix = scanParams{iScan}.stimToEVmatrix;
     end
+    %if the number of stim names has changed
     if nStims(iScan)>size(thisStimToEVmatrix,1)
       thisStimToEVmatrix=[thisStimToEVmatrix;zeros(nStims(iScan)-size(thisStimToEVmatrix,1),size(thisStimToEVmatrix,2))];
     elseif nStims(iScan)<size(thisStimToEVmatrix,1)
@@ -70,18 +97,34 @@ while keepAsking
   end
   nUniqueStims = length(uniqueStimNames);
   
-  if isempty(EVnames) 
-    EVnames = repmat({' '},1,params.numberEVs);
+  if fieldIsNotDefined(params, 'EVnames') 
+    params.EVnames = repmat({' '},1,params.numberEVs);
     if params.numberEVs <= nUniqueStims
-      EVnames = uniqueStimNames(1:params.numberEVs);
+      params.EVnames = uniqueStimNames(1:params.numberEVs);
     else
-      EVnames(1:nUniqueStims) = uniqueStimNames;
+      params.EVnames(1:nUniqueStims) = uniqueStimNames;
     end
   end
 
-  paramsInfo{1}= {'EVnames', EVnames, 'type=stringarray','Name of the Explanatory Variables to be estimated. EVs that are set to 0 in all rows will be removed from the model.'};
+  %if the number of EVs has changed
+  if params.numberEVs>size(thisStimToEVmatrix,2)
+    stimToEVmatrix=[thisStimToEVmatrix zeros(size(stimToEVmatrix,1),params.numberEVs-size(stimToEVmatrix,2))];
+  elseif params.numberEVs<size(thisStimToEVmatrix,2)
+    stimToEVmatrix=stimToEVmatrix(:,1:params.numberEVs);
+  end
+  if params.numberEVs>length(params.EVnames)
+    for iEV=size(params.EVnames)+1:params.numberEVs
+      params.EVnames{iEV}='';
+    end
+  elseif params.numberEVs<length(params.EVnames)
+    params.EVnames = params.EVnames(1:params.numberEVs);
+  end
+  
+  paramsInfo={};
+  paramsInfo{1} = {'numberEVs',params.numberEVs,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of Explanatory Variables in the model = number of columns in the design matrix. If modifying the number of F-tests, press OK to redraw the dialog with the new number of F-tests'};
+  paramsInfo{2} = {'EVnames', params.EVnames, 'type=stringarray','Name of the Explanatory Variables to be estimated. EVs that are set to 0 in all rows will be removed from the model.'};
   for iEvent = 1:nUniqueStims
-    paramsInfo{iEvent+1} = {fixBadChars(uniqueStimNames{iEvent}), stimToEVmatrix(iEvent,:),...
+    paramsInfo{end+1} = {fixBadChars(uniqueStimNames{iEvent}), stimToEVmatrix(iEvent,:),...
       'incdec=[-1 1]','incdecType=plusMinus','minmax=[0 inf]',...
       ['How much stimulus ' fixBadChars(uniqueStimNames{iEvent}) ' contributes to each EV.']};
   end
@@ -141,8 +184,11 @@ while keepAsking
     {'acquisitionDelay',acquisitionDelay, sprintf('minmax=[0 %f]',framePeriod-0.05),'Time (in sec) at which the signal is actually acquired, on average across slices. This is normally set to half the frame period. If slice motion correction has been used, change to reference slice acquisition time. You might also need to change this value for sparse imaging designs.'},...
     {'designSupersampling',designSupersampling, designSupersamplingOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame period, or to round stimulus presentation times to the nearest sample onset. This is not supported for MGL/AFNI stim files.'},...
     {'stimDuration', stimDuration, canonicalVisibleOption, 'Duration of stimulation events (in sec, resolution=0.05s) = duration the boxcar function that will be convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might automatically change to accomodate durations that are not multiples of the frame period).'},...
-    {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.)',...
+    {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.',...
         'callback',{@plotExperimentalDesign,params,scanParams,thisView,uniqueStimNames,stimNames},'passParams=1'}...
+    {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus', 'Number of contrasts on which to perform a T-test. Both contrast values and inference test outcomes will be ouput as overlays.'},...
+    {'computeTtests', params.computeTtests,'type=checkbox', 'visible=0', 'Whether contrasts are tested for significance using T-tests'},...
+    {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays. An F-test tests the overall significance of a collection of contrasts. A collection of contrast is defined by a restriction matrix (one contrast per row) '},...
      }];
 
   % now we have all the dialog information, ask the user to set parameters
@@ -164,14 +210,29 @@ while keepAsking
     tempParams.stimDuration= str2num(tempParams.stimDuration);
   end
 
+  if tempParams.numberContrasts %compute T-test for any contrast
+    tempParams.computeTtests=1;
+  else
+    tempParams.computeTtests=0;
+  end
+  
+  currentNumberEVs = params.numberEVs;
+  
   [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames);
+  
+  if tempParams.numberEVs~=currentNumberEVs 
+    params.numberEVs=tempParams.numberEVs;
+    %if the number of EVs has changed, redraw the menu
+    disp('User changed the number of EVs')
+  else
+    keepAsking = 0;
+  end
   
   if keepAsking && useDefault %there were incompatible parameters but this is the script mode (no GUI)
     scanParams = [];
     return;
   end
-%   end
-  keepAsking = 0;
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,16 +243,16 @@ function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,
   stimToEVmatrix = zeros(length(uniqueStimNames),params.numberEVs);
   for iEvent = 1:length(uniqueStimNames)
     stimToEVmatrix(iEvent,:) = tempParams.(fixBadChars(uniqueStimNames{iEvent}));
+    tempParams = mrParamsRemoveField(tempParams,fixBadChars(uniqueStimNames{iEvent}));
   end
-  EVnames = tempParams.EVnames;
   EVsToRemove = find(~any(stimToEVmatrix,1));
   for iEV = EVsToRemove
-    disp(sprintf('(getGlmEVParamsGUI) Removing EV ''%s'' because it is empty',EVnames{iEV}));
+    disp(sprintf('(getGlmEVParamsGUI) Removing EV ''%s'' because it is empty',tempParams.EVnames{iEV}));
   end
   stimToEVmatrix(:,EVsToRemove) = [];
-  EVnames(EVsToRemove)=[];
+  tempParams.EVnames(EVsToRemove)=[];
   %update number of EVs
-  params.numberEVs = size(stimToEVmatrix,2);
+  tempParams.numberEVs = size(stimToEVmatrix,2);
   
   %Add stimToEVmatrix and stimNames to each scan params
   for iScan = params.scanNum
@@ -206,7 +267,14 @@ function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,
                        });
     scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
   end
-  params.EVnames = EVnames;
+  
+  tempParams = mrParamsRemoveField(tempParams,'estimationSupersampling');
+  tempParams = mrParamsRemoveField(tempParams,'acquisitionDelay');
+  tempParams = mrParamsRemoveField(tempParams,'designSupersampling');
+  tempParams = mrParamsRemoveField(tempParams,'stimDuration');
+  tempParams = mrParamsRemoveField(tempParams,'showDesign');
+  
+  params = mrParamsCopyFields(tempParams,params);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
