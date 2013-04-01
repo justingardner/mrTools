@@ -107,12 +107,7 @@ while keepAsking
       componentOptionsVisible = 'visible=1';
   end
   
-  currentNumberContrasts = params.numberContrasts;
-  currentNumberFtests= params.numberFtests;
-  
   paramsInfo = {...
-      {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus', 'Number of contrasts on which to perform a T-test. Both contrast values and inference test outcomes will be ouput as overlays. If modifying this number, press OK to redraw the dialog with the new number of contrasts'},...
-      {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays. An F-test tests the overall significance of a collection of contrasts. A collection of contrast is defined by a restriction matrix (one contrast per row) If modifying the number of F-tests, press OK to redraw the dialog with the new number of F-tests'},...
       {'EVnames', params.EVnames, 'type=stringarray','editable=0','Name of the EVs'},...
       {'contrasts', params.contrasts,contrastOptionsVisible,...
             'incdec=[-1 1]','incdecType=plusMinus',...
@@ -155,7 +150,7 @@ while keepAsking
   if isempty(params.contrasts) %mrParamsDialog returns an empty string instead of an empty array
     params.contrasts = [];
   else
-    for iContrast = 1:currentNumberContrasts
+    for iContrast = 1:params.numberContrasts
       if ~any(params.contrasts(iContrast,:))
         mrWarnDlg('(getGlmTestParamsGUI) Discarding empty contrast');
       else
@@ -176,7 +171,7 @@ while keepAsking
   restrictions = {};
   fTestNames={};
   actualNumberFtests=0;
-  for iFtest = 1:currentNumberFtests
+  for iFtest = 1:params.numberFtests
     thisRestriction=params.(fixBadChars(sprintf('restriction%2d',iFtest)));
     params = mrParamsRemoveField(params,fixBadChars(sprintf('restriction%2d',iFtest)));
     if ~any(any(thisRestriction))
@@ -210,23 +205,6 @@ while keepAsking
   if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
       nnz(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
-  elseif params.numberContrasts~=currentNumberContrasts || params.numberFtests~=currentNumberFtests 
-    %check if the number of contrasts and F-tests has changed and change the contrasts/restrictions matrices accordingly
-    if params.numberContrasts<=size(params.contrasts,1)
-      params.contrasts = params.contrasts(1:params.numberContrasts,:);
-    else
-      params.contrasts = [params.contrasts;zeros(params.numberContrasts-size(params.contrasts,1),size(params.contrasts,2))];
-    end
-    if params.numberFtests<=length(params.restrictions)
-      params.restrictions = params.restrictions(1:params.numberFtests);
-      params.fTestNames=params.fTestNames(1:params.numberFtests);
-    else
-      for iFtest = length(params.restrictions)+1:params.numberFtests
-        params.restrictions{iFtest} = zeros(params.numberEVs,params.numberEVs);
-        params.fTestNames{iFtest}=sprintf('fTest%2d',iFtest);
-      end
-    end
-    disp('User changed the number of contrasts/F-tests')
   else
     params.numberFtests = actualNumberFtests;
     params.numberContrasts = actualNumberContrasts;
