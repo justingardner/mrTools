@@ -305,11 +305,6 @@ for iScan = params.scanNum
       end
 
       %create model HRF
-      if ~fieldIsNotDefined(scanParams{iScan},'estimationSupersampling')
-        estimationSupersampling = scanParams{iScan}.estimationSupersampling;
-      else
-        estimationSupersampling = 1;
-      end
       [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,scanParams{iScan}.acquisitionDelay,1);
 
       d.volumes = 1:d.dim(4);
@@ -592,11 +587,9 @@ for iScan = params.scanNum
     stimvol{i} = unique(ceil(stimvol{i}/d.designSupersampling));
   end
   glmAnal.d{iScan}.stimvol = stimvol;
-  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/estimationSupersampling,floor(rem(scanParams{iScan}.acquisitionDelay,d.tr/estimationSupersampling)*d.designSupersampling/estimationSupersampling/d.tr)+1);
+  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/d.estimationSupersampling,floor(rem(scanParams{iScan}.acquisitionDelay,d.tr/d.estimationSupersampling)*d.designSupersampling/d.estimationSupersampling/d.tr)+1);
   glmAnal.d{iScan}.actualhrf = d.hrf;
   clear('d');
-  glmAnal.d{iScan}.estimationSupersampling = scanParams{iScan}.estimationSupersampling;
-%   glmAnal.d{iScan}.acquisitionSubsample = scanParams{iScan}.acquisitionSubsample;
   glmAnal.d{iScan}.acquisitionDelay = scanParams{iScan}.acquisitionDelay;
   glmAnal.d{iScan}.EVnames = params.EVnames;                %this should be removed if viewGet can get params from GLM analysis
   glmAnal.d{iScan}.dim = [scanDims{iScan} numVolumes];
