@@ -169,19 +169,22 @@ while keepAsking
         paramsInfo{end+1} ={'varname',varname,sprintf('Analysis variables: %s',varnamesStr)};
       end
     end
-
-    if isfield(d,'concatInfo') %in case of concatenation files
+    
+    concatenationOptions = 0;
+    if isfield(d,'concatInfo') %in case of concatenated files
       % ask if hipass filter should be applied to the design matrix
       if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{1})
         paramsInfo = [paramsInfo {...
           {'highpassDesign',scanParams{iScan}.highpassDesign, 'type=checkbox','For concatenated scans, applies to the design matrix the high-pass filter that has been applied to the individual scans.'},...
            }];
+        concatenationOptions = 1;
       end
       % ask if  mean vector should be projected out the
       if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{1})
         paramsInfo = [paramsInfo {...
           {'projectOutGlobalComponent',scanParams{iScan}.highpassDesign, 'type=checkbox','For concatenated scans, projects out the global activity estimated on an ROI from the design matrix.'},...
            }];
+        concatenationOptions = 1;
       end
     end
      
@@ -192,7 +195,7 @@ while keepAsking
 
     %%%%%%%%%%%%%%%%%%%%%%%
     % now we have all the dialog information, ask the user to set parameters
-    if useDefault
+    if useDefault || (isempty(strfind(stimfile{1}.filetype,'mgl')) && ~strcmp(params.analysisVolume,'Subset box') && ~concatenationOptions)
        tempParams = mrParamsDefault(paramsInfo);
     else
        tempParams = mrParamsDialog(paramsInfo,'Set Scan Parameters');
