@@ -48,8 +48,10 @@ end
 if ~isfield(params,'numberContrasts') || isempty(params.numberContrasts)
   if isfield(params,'contrasts')
     params.numberContrasts = size(params.contrasts,1);
-  else
+  elseif  strcmp(params.hrfModel,'hrfDeconvolution') 
     params.numberContrasts = 0;
+  else
+    params.numberContrasts = params.numberEVs;
   end
 end
 if ~isfield(params,'computeTtests') || isempty(params.computeTtests)
@@ -131,12 +133,17 @@ while keepAsking
         
   %get timing parameters from scan parameters
   framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),groupNum);
-  stimfile = viewGet(thisView,'stimfile',params.scanNum(1),groupNum);
+  supersamplingMode = 'Set value';
   designSupersampling = 1;
   estimationSupersampling = 1;
   acquisitionDelay = framePeriod/2;
-  stimDuration = num2str(framePeriod);
+  stimDuration = [];
+  stimDurationMode = 'Event-related';
+  durationFromFile = 1;
   for iScan = params.scanNum
+    if ~fieldIsNotDefined(scanParams{iScan},'supersamplingMode')
+       supersamplingMode = scanParams{iScan}.supersamplingMode;
+    end
     if ~fieldIsNotDefined(scanParams{iScan},'designSupersampling')
        designSupersampling = scanParams{iScan}.designSupersampling;
     end
@@ -146,16 +153,28 @@ while keepAsking
     if ~fieldIsNotDefined(scanParams{iScan},'acquisitionDelay')
        acquisitionDelay = scanParams{iScan}.acquisitionDelay;
     end
+    if ~fieldIsNotDefined(scanParams{iScan},'stimDurationMode') 
+       stimDurationMode = scanParams{iScan}.stimDurationMode;
+    end
     if ~fieldIsNotDefined(scanParams{iScan},'stimDuration') 
        stimDuration = scanParams{iScan}.stimDuration;
     end
-  end
-  if isnumeric(stimDuration)
-    if ~strcmp(stimfile{1}.filetype,'eventtimes') %if the stimfile is not the mylog type
-      stimDuration = max(framePeriod,framePeriod*round(stimDuration/framePeriod)); %round the duration to a multiple of the frame period
+    stimfile = viewGet(thisView,'stimfile',params.scanNum(1),groupNum);
+    for iFile=1:length(stimfile)
+      if ~strcmp(stimfile{1}.filetype,'eventtimes') || ~isfield(stimfile{1}.mylog,'stimdurations_s')
+        durationFromFile=0;
+      end
     end
-    stimDuration = num2str(stimDuration);
   end
+  if durationFromFile
+    stimDurationModeMenu = {'Event-related','Block','Set value','From file'};
+  else
+    stimDurationModeMenu = {'Event-related','Block','Set value'};
+    if strcmp(stimDurationMode,'From file')
+      stimDurationMode = 'Event-related';
+    end
+  end
+  stimDurationModeMenu = putOnTopOfList(stimDurationMode,stimDurationModeMenu);
 
   if strcmp(params.hrfModel,'hrfDeconvolution') 
     canonicalVisibleOption = 'visible=0';
@@ -167,6 +186,7 @@ while keepAsking
       deconvolutionVisibleOption = 'visible=0';
     end
     designSupersampling=estimationSupersampling;
+    supersamplingModeMenu = {'Set value'};
   else
     estimationSupersampling=1;
     canonicalVisibleOption = 'visible=1';
@@ -177,15 +197,27 @@ while keepAsking
       designSupersamplingOption = 'visible=0';
       designSupersampling=1;
     end
+    supersamplingModeMenu = {'Set value','Automatic'};
   end
-
+  if ~strcmp(stimfile{1}.filetype,'eventtimes') %if the stimfile is not the mylog type
+    stimDuration = max(framePeriod,framePeriod*round(stimDuration/framePeriod)); %round the duration to a multiple of the frame period
+  end
+  if ~strcmp(params.hrfModel,'hrfDeconvolution')  && strcmp(stimfile{1}.filetype,'eventtimes')
+    superSamplingOption = 'visible=1';
+  else
+    superSamplingOption = 'visible=0';
+    supersamplingModeMenu = putOnTopOfList(supersamplingMode,supersamplingModeMenu);
+  end
+    
   paramsInfo = [paramsInfo {...
-    {'stimDuration', stimDuration, canonicalVisibleOption, 'Duration of stimulation events (in sec, resolution=0.05s) = duration the boxcar function that will be convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might automatically change to accomodate durations that are not multiples of the frame period).'},...
-    {'estimationSupersampling',estimationSupersampling, deconvolutionVisibleOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation, and is not supported for MGL/AFNI stim files.'},...
+    {'stimDurationMode', stimDurationModeMenu, canonicalVisibleOption, 'How the duration of each stimulation is specified in the design matrix: ''Event-related'': each event has the minimum possible duration given the chosen supersampling (generally 1 TR); ''Block'': each event lasts until an event of a different type is found; ''Set value'': uses  the value specified in stimDuration parameter. ''From file'': the stimulus durations are read from the stim files (only mylog file type).'},...
+    {'stimDuration', stimDuration, canonicalVisibleOption, 'type=numeric', 'Duration of the boxcar function that will be convolved with the HRF model at each stimulation event (in sec, resolution=0.05s). For MGL/AFNI files, the duration will be rounded to the closest multiple of the frame period (TR), excluding 0.'},...
+    {'supersamplingMode', supersamplingModeMenu,superSamplingOption, 'How the design matrix super-sampling is determined. ''Set value'': supersampling value is set manually in the edit box below, usually to 1 (no super-sampling); ''Automatic'': supersampling is automatically chosen to accomodate the fine temporal resolution specified in the stim file (with a 20 Hz resolution limit).'},...
+    {'estimationSupersampling',estimationSupersampling, deconvolutionVisibleOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the deconvolution HRF model. Set this to more than 1 in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation, and is not supported for MGL/AFNI stim files.'},...
     {'designSupersampling',designSupersampling, designSupersamplingOption,'incdec=[-1 1]','incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame period, or to round stimulus presentation times to the nearest sample onset. This is not supported for MGL/AFNI stim files.'},...
     {'acquisitionDelay',acquisitionDelay, sprintf('minmax=[0 %f]',framePeriod-0.05),'Time (in sec) at which the signal is actually acquired, on average across slices. This is normally set to half the frame period. If slice motion correction has been used, change to reference slice acquisition time. You might also need to change this value for sparse imaging designs.'},...
     {'showDesign', 0, 'type=pushbutton','buttonString=Show Design','Shows the experimental design (before convolution with an HRF model) and the design matrix.',...
-        'callback',{@plotExperimentalDesign,params,scanParams,thisView,uniqueStimNames,stimNames},'passParams=1'}...
+        'callback',{@plotExperimentalDesign,params,scanParams,thisView,uniqueStimNames,stimNames,framePeriod},'passParams=1'}...
     {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus', 'Number of contrasts on which to perform a T-test. Both contrast values and inference test outcomes will be ouput as overlays.'},...
     {'computeTtests', params.computeTtests,'type=checkbox', 'visible=0', 'Whether contrasts are tested for significance using T-tests'},...
     {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays. An F-test tests the overall significance of a collection of contrasts. A collection of contrast is defined by a restriction matrix (one contrast per row) '},...
@@ -204,26 +236,16 @@ while keepAsking
      return
   end
 
-  if strcmp(params.hrfModel,'hrfDeconvolution')
-    tempParams.stimDuration = framePeriod/tempParams.estimationSupersampling;
-  elseif ~strcmp(tempParams.stimDuration,'fromFile')
-    tempParams.stimDuration= str2num(tempParams.stimDuration);
-  end
-
-  if tempParams.numberContrasts %compute T-test for any contrast
-    tempParams.computeTtests=1;
-  else
-    tempParams.computeTtests=0;
-  end
-  
   currentNumberEVs = params.numberEVs;
   
-  [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames);
+  [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames,framePeriod);
   
   if tempParams.numberEVs~=currentNumberEVs 
     params.numberEVs=tempParams.numberEVs;
     %if the number of EVs has changed, redraw the menu
     disp('User changed the number of EVs')
+  elseif strcmp(scanParams{params.scanNum(1)}.stimDurationMode,'Set value') && isempty(scanParams{params.scanNum(1)}.stimDuration)
+    mrWarnDlg('Please set a stim duration value');
   else
     keepAsking = 0;
   end
@@ -238,7 +260,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%% convertStimToEVmatrix %%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames)
+function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,uniqueStimNames,stimNames,framePeriod)
   % form stimToEV matrix from fields
   stimToEVmatrix = zeros(length(uniqueStimNames),params.numberEVs);
   for iEvent = 1:length(uniqueStimNames)
@@ -254,24 +276,42 @@ function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,
   %update number of EVs
   tempParams.numberEVs = size(stimToEVmatrix,2);
   
-  %Add stimToEVmatrix and stimNames to each scan params
-  for iScan = params.scanNum
-    %get subset of stimToEVmatrix fro this scan
-    [~,whichStims] = ismember(stimNames{iScan},uniqueStimNames);
-    newParams =  mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix(whichStims,:),'Matrix forming EVs from combinations of stimulus types'},...
-                       {'stimNames',stimNames{iScan},'type=strinArray','Names of stimulus types'},...
-      {'estimationSupersampling',tempParams.estimationSupersampling, 'Supersampling factor of the deconvolution HRF model. Set this to more than one in order to resolve the estimated HDR at a temporal resolution that is less than the frame rate. This is only required if both the design and the acquisition have been designed to achieve subsample HDR estimation, and is not supported for MGL/AFNI stim files.'},...
-      {'acquisitionDelay',tempParams.acquisitionDelay, 'Time (in sec) at which the signal is actually acquired, on average across slices. This is normally set to half the frame period. If slice motion correction has been used, change to reference slice acquisition time. You might also need to change this value for sparse imaging designs.'},...
-      {'designSupersampling',tempParams.designSupersampling, 'incdecType=plusMinus','minmax=[1 inf]','Supersampling factor of the GLM model. Set this to more than one in order to take into account stimulus times and duration that do not coincide with the frame period, or to round stimulus presentation times to the nearest sample onset. This is not supported for MGL/AFNI stim files.'},...
-      {'stimDuration', tempParams.stimDuration, 'Duration of stimulation events (in sec, resolution=0.05s) = duration the boxcar function that will be convolved with the HRF model. Use ''fromFile'' is the stimulus durations are specified in the (mylog) stim files. If using MGL/AFNI files, the duration should be a multiple of the frame period (TR).  If using Mylog files, the value of designSupersampling might automatically change to accomodate durations that are not multiples of the frame period).'},...
-                       });
-    scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
+  if strcmp(params.hrfModel,'hrfDeconvolution')
+    tempParams.designSupersampling = tempParams.estimationSupersampling;
+  end
+  if strcmp(params.hrfModel,'hrfDeconvolution') || (strcmp(tempParams.stimDurationMode,'Event-related') ...
+      && ~strcmp(tempParams.supersamplingMode,'Automatic'))
+    tempParams.stimDuration = framePeriod/tempParams.designSupersampling;
+  elseif ismember(tempParams.stimDurationMode,{'From file','Block'})
+    tempParams.stimDuration = [];
+  elseif strcmp(tempParams.stimDurationMode,'Set value')
+    %round the duration to a multiple of the supersampled frame period
+    tempParams.stimDuration = max(framePeriod/tempParams.designSupersampling,framePeriod/tempParams.designSupersampling*round(tempParams.stimDuration/framePeriod*tempParams.designSupersampling)); 
+  end
+
+  if tempParams.numberContrasts %compute T-test for any contrast
+    tempParams.computeTtests=1;
+  else
+    tempParams.computeTtests=0;
   end
   
+  %Add stimToEVmatrix and stimNames to each scan params
+  for iScan = params.scanNum
+    %get subset of stimToEVmatrix for this scan
+    [~,whichStims] = ismember(stimNames{iScan},uniqueStimNames);
+    newParams =  mrParamsDefault({{'stimToEVmatrix',stimToEVmatrix(whichStims,:),'Matrix forming EVs from combinations of stimulus types'},...
+                       {'stimNames',stimNames{iScan},'type=stringArray','Names of stimulus types'},...
+                       });
+    scanParams{iScan} = mrParamsCopyFields(newParams,scanParams{iScan});
+    scanParams{iScan} = mrParamsCopyFields(tempParams,scanParams{iScan},{'stimDurationMode','stimDuration','supersamplingMode','designSupersampling','estimationSupersampling','acquisitionDelay'});
+  end
+  
+  tempParams = mrParamsRemoveField(tempParams,'stimDurationMode');
+  tempParams = mrParamsRemoveField(tempParams,'stimDuration');
+  tempParams = mrParamsRemoveField(tempParams,'supersamplingMode');
+  tempParams = mrParamsRemoveField(tempParams,'designSupersampling');
   tempParams = mrParamsRemoveField(tempParams,'estimationSupersampling');
   tempParams = mrParamsRemoveField(tempParams,'acquisitionDelay');
-  tempParams = mrParamsRemoveField(tempParams,'designSupersampling');
-  tempParams = mrParamsRemoveField(tempParams,'stimDuration');
   tempParams = mrParamsRemoveField(tempParams,'showDesign');
   
   params = mrParamsCopyFields(tempParams,params);
@@ -280,12 +320,17 @@ function [params,scanParams]=convertStimToEVmatrix(params,tempParams,scanParams,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%% plotStimDesign %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plotExperimentalDesign(thisScanParams,params,scanParams,thisView,uniqueStimNames,stimNames)
+function plotExperimentalDesign(thisScanParams,params,scanParams,thisView,uniqueStimNames,stimNames,framePeriod)
 
 %we need to convert the stimToEVmatrix
-[params,scanParams]=convertStimToEVmatrix(params,thisScanParams,scanParams,uniqueStimNames,stimNames);
+[params,scanParams]=convertStimToEVmatrix(params,thisScanParams,scanParams,uniqueStimNames,stimNames,framePeriod);
+
+if strcmp(scanParams{params.scanNum(1)}.stimDurationMode,'Set value') && isempty(scanParams{params.scanNum(1)}.stimDuration)
+    mrWarnDlg('Please set a stim duration value');
+    return
+end
  
-nScans = length(scanParams);
+nScans = length(params.scanNum);
 expDesignFigure = initializeFigure('plotExperimentalDesign',nScans,'horizontal');
 designMatrixFigure = initializeFigure('plotDesignMatrix',nScans,'vertical');
 
@@ -295,12 +340,11 @@ tSeriesAxes = zeros(1,length(params.scanNum));
 designMatrixAxes = zeros(1,length(params.scanNum));
 for iScan = params.scanNum
   params.scanParams{iScan} = copyFields(scanParams{iScan},params.scanParams{iScan}); %we use copyFields here instead of mrParamsCopyFields because the latter only copies fields with a corresponding paramInfo entry
-  EVnames = thisScanParams.EVnames;
-  colors = randomColors(length(EVnames));
+  colors = randomColors(length(params.EVnames));
   %replace all unused stimuli by one EV (if any)
   if any(~any(params.scanParams{iScan}.stimToEVmatrix,2))
     params.scanParams{iScan}.stimToEVmatrix(:,end+1) = ~any(params.scanParams{iScan}.stimToEVmatrix,2);
-    EVnames{end+1} = 'Not used';
+    params.EVnames{end+1} = 'Not used';
     colors(end+1,:) = [.85 .85 .85]; %last color for unused stims
   end
   
@@ -309,9 +353,20 @@ for iScan = params.scanNum
   [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,params.scanParams{iScan}.acquisitionDelay,1);
   d = eventRelatedPreProcess(d,params.scanParams{iScan}.preprocess);
   d = makeDesignMatrix(d,params,1,iScan);
+  if  strcmp(params.EVnames{end},'Not used')
+    scm = d.scm(:,1:end-d.nHrfComponents);
+    EVnames = params.EVnames(1:end-1);
+    nHdr = d.nhdr-1;
+  else
+    scm = d.scm;
+    EVnames = params.EVnames;
+    nHdr = d.nhdr;
+  end
+  testDesignMatrix(scm,nHdr,d.nHrfComponents,EVnames);
+  
   cScan=cScan+1;
   
-  if ~isempty(d.scm) && size(d.scm,2)==length(EVnames)*d.nHrfComponents
+  if ~isempty(d.scm) && size(d.scm,2)==length(params.EVnames)*d.nHrfComponents
     %the length for the axis depends on the number of volumes times the frame period
     axisLength(cScan) = size(d.EVmatrix,1)/d.designSupersampling*d.tr;
 
@@ -321,7 +376,7 @@ for iScan = params.scanNum
 
     title(tSeriesAxes(cScan),viewGet(thisView,'description',iScan),'interpreter','none');
     %legend
-    legendStrings = EVnames(h>0);
+    legendStrings = params.EVnames(h>0);
     h = h(h>0);
     if ~isempty(hTransition)
       h = [h hTransition];
@@ -332,13 +387,13 @@ for iScan = params.scanNum
     
     %plot the design matrix
     designMatrixAxes(cScan) = axes('parent',designMatrixFigure,'outerposition',getSubplotPosition(cScan,1,ones(nScans,1),[7 1],0,.05));
-    dimensions = size(d.scm);
+    dimensions = size(scm);
     extended_matrix = zeros(dimensions+1);
-    extended_matrix(1:size(d.scm,1),1:size(d.scm,2)) = d.scm;
+    extended_matrix(1:size(scm,1),1:size(scm,2)) = scm;
     hMatrix = pcolor(designMatrixAxes(cScan),(1:dimensions(2)+1)-.5,(1:dimensions(1)+1)-.5,  double(extended_matrix)); %first vector must correspond to columns of the matrix
                 %and second vector to the rows... (how retarded is that ?)
     set(hMatrix,'EdgeColor','none');
-    Xticks = 1:size(d.scm,2);
+    Xticks = 1:size(scm,2);
     set(designMatrixAxes(cScan), 'Ydir', 'reverse');
     ylabel(designMatrixAxes(cScan),'Scans');
     %set rotated component labels

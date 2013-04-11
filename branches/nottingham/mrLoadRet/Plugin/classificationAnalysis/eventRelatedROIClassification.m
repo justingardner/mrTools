@@ -188,6 +188,9 @@ for scanNum = params.scanNum
     
     d.volumes = 1:d.dim(4);
     d = makeDesignMatrix(d,params,1,scanNum);
+    if ~testDesignMatrix(d.scm,d.nhdr,d.nHrfComponents,params.EVnames)
+      mrErrorDlg(sprintf('(eventRelatedROIClassification) Not enough data in scan %i to estimate all EV components',iScan));
+    end
     params.TFCE=0;
     params.spatialSmoothing = 0;
     params.covCorrection = 0;

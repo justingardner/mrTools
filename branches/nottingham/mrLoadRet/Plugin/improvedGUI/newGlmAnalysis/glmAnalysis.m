@@ -341,6 +341,10 @@ for iScan = params.scanNum
 
       %compute the design matrix for this permutation
       d = makeDesignMatrix(d,params,verbose, iScan);
+      if ~testDesignMatrix(d.scm,d.nhdr,d.nHrfComponents,params.EVnames)
+        mrErrorDlg(sprintf('(glmAnalysis) Not enough data in scan %i to estimate all EV components',iScan));
+      end
+
       % compute estimates and statistics
       [d, out] = getGlmStatistics(d, params, verbose, precision, actualData);%, computeTtests,computeBootstrap);
        

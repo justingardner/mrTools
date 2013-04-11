@@ -134,15 +134,3 @@ d.scm = allscm;
 d.hdrlen = size(d.hrf,1);
 d.nHrfComponents = size(d.hrf,2);
 d.runTransitions = runTransition;
-
-if any(all(~allscm,1))
-  nullComponents = find((all(~allscm,1)));
-  disp('(makeDesignMatrix) The following EV components cannot be estimated because the corresponding column in the design is null');
-  for iEV = 1:d.nhdr;
-    whichComponents = find(ismember(nullComponents,(iEV-1)*d.nHrfComponents+1:d.nHrfComponents));
-    if ~isempty(whichComponents)
-      fprintf('EV ''%s'': Components %s\n',params.EVnames{iEV},mat2str(nullComponents(whichComponents)));
-    end
-  end
-  mrErrorDlg('(makeDesignMatrix) Not enough data to estimate all EV components');
-end

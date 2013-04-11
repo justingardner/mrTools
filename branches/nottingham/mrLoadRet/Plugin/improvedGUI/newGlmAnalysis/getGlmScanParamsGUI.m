@@ -168,8 +168,6 @@ while keepAsking
         end
         paramsInfo{end+1} ={'varname',varname,sprintf('Analysis variables: %s',varnamesStr)};
       end
-    elseif strcmp(stimfile{1}.filetype,'eventtimes')  && ~isfield(scanParams{iScan},'stimDuration') && isfield(stimfile{1}.mylog,'stimdurations_s')
-          scanParams{iScan}.stimDuration = 'fromFile';
     end
 
     if isfield(d,'concatInfo') %in case of concatenation files

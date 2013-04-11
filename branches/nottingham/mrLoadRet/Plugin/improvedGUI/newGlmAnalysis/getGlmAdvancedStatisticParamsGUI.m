@@ -143,9 +143,8 @@ while keepAsking
   end
   
   %check consistency of parameters
-  if (params.computeTtests || params.numberFtests) && params.permutationTests && ...
-      ischar(params.scanParams{params.scanNum(1)}.stimDuration) && strcmp(params.scanParams{params.scanNum(1)}.stimDuration,'fromFile')
-    mrWarnDlg('(getTestParamsGUI) Permutation tests are not compatible with stimulus duration from log file','Yes');
+  if (params.computeTtests || params.numberFtests) && params.permutationTests && ismember(params.scanParams{params.scanNum(1)}.stimDurationMode,{'From file','Block'})
+    mrWarnDlg('(getTestParamsGUI) Permutation tests are not compatible with stimulus duration from log file or block mode','Yes');
   elseif params.TFCE && params.parametricTests && (params.bootstrapFweAdjustment || params.permutationFweAdjustment) && ismember(params.resampleFweMethod,{'Step-down','Adaptive Step-down'})
     mrWarnDlg('(getTestParamsGUI) Step-down resample-based FWE adjustment is not implemented for TFCE-transformed data','Yes');
   elseif params.TFCE && params.parametricTests && (params.bootstrapFweAdjustment || params.permutationFweAdjustment) && ismember(params.resampleFweMethod,{'Adaptive Single-step'})
