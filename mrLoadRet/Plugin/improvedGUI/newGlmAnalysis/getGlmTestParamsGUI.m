@@ -44,7 +44,7 @@ while keepAsking
     ~isequal(length(params.restrictions),params.numberFtests) || ~isequal(size(params.restrictions{1},2),params.numberEVs)
     params.restrictions = {};
     for iFtest = 1:params.numberFtests
-        params.restrictions{iFtest}=zeros(params.numberEVs,params.numberEVs);
+        params.restrictions{iFtest}=zeros(params.numberEVs-1,params.numberEVs);
     end
   end
 
@@ -161,6 +161,11 @@ while keepAsking
   end
 
   allContrasts = params.contrasts;
+  %check if contrasts are pairwise orthogonal and issue a warning if not
+  dotProducts = allContrasts*allContrasts';
+  if any(dotProducts( ~(diag(ones(length(dotProducts),1))) )) %if any off-diagonal dot-product is non-zero
+    mrWarnDlg('(getGlmTestParamsGUI) Contrasts are not pairwise orthogonal.');
+  end
   
   %check that F-tests are not empty
   restrictions = {};
@@ -170,7 +175,7 @@ while keepAsking
     thisRestriction=params.(fixBadChars(sprintf('restriction%2d',iFtest)));
     params = mrParamsRemoveField(params,fixBadChars(sprintf('restriction%2d',iFtest)));
     if ~any(any(thisRestriction))
-      mrWarnDlg('(getGlmTestParamsGUI) Discarding F-test with empty restriction matrix');
+      mrWarnDlg('(getGlmTestParamsGUI) Discarding F-test with empty restriction matrix.');
     else
       actualNumberFtests = actualNumberFtests+1;
       fTestNames{actualNumberFtests} = params.(fixBadChars(sprintf('fTest%2d',iFtest)));
@@ -181,10 +186,20 @@ while keepAsking
   end
   params = mrParamsCopyFields(mrParamsDefault({...
   {'fTestNames',fTestNames,'Self-explanatory'},...
-  {'restrictions',restrictions,'Restrictions matrix defining F-tests. Each line of each matrix defines a contrast of EVs'},...
+  {'restrictions',restrictions,'Restrictions matrix defining F-tests. Each line of each matrix defines a contrast of EVs.'},...
   }),params);
   params.restrictions = restrictions; %copy this again, as mrParamsDefault changes the value of these two parameters
   params.fTestNames = fTestNames; %but we use it to create a paramInfo entry for them, which gives acces to the hlep info later on
+  
+  %check that contrasts in restriction matrices are orthogonal
+  orthogonal=1;
+  for iR = 1:length(restrictions)
+    dotProducts = params.restrictions{iR}*params.restrictions{iR}';
+    if any(dotProducts( ~(diag(ones(length(dotProducts),1))) )) %if any off-diagonal dot-product is non-zero
+      mrWarnDlg(sprintf('(getGlmTestParamsGUI) Contrasts for restriction matrix %i are not pairwise orthogonal.',iR));
+      orthogonal=0;
+    end
+  end
   
   %check that user has selected the correction (FDR or FWE) corresponding to their choice of alpha overlay
   if params.computeTtests && strcmp(params.alphaContrastOverlay,'FDR') && ~params.fdrAdjustment
@@ -200,6 +215,7 @@ while keepAsking
   if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
       nnz(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
+  elseif ~orthogonal %if there is at least one restriction matrix with non-orthogonal contrasts
   else
     params.numberFtests = actualNumberFtests;
     params.numberContrasts = actualNumberContrasts;
