@@ -75,10 +75,15 @@ end
 if ~isfield(params,'restrictions') || isempty(params.restrictions)
    params.restrictions = {};
 else
-   if size(d.scm,2)~=size(params.restrictions{1},2)*d.nHrfComponents
-      mrErrorDlg( 'F tests incompatible with number of EVs');
-      return;
-   end
+  if size(d.scm,2)~=size(params.restrictions{1},2)*d.nHrfComponents
+    mrErrorDlg( 'F tests incompatible with number of EVs');
+    return;
+  end
+  for iR = 1:length(params.restrictions)
+    if ~all(any(params.restrictions{iR},2)) %remove empty contrasts from restriction matrix (not necessary but why not)
+      params.restrictions{iR}(~any(params.restrictions{iR},2),:)=[];
+    end
+  end
 end
 restrictions = params.restrictions;
 
