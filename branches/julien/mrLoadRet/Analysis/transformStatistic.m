@@ -71,6 +71,9 @@ switch(outputStatistic)
     %Z = max(-norminv(p),0);  %because the left side of norminv seems to be less sensitive to round-off errors,
     %we get -norminv(x) instead of norminv(1-x). also we'renot interested in negative Z value
   case '-log10(P) value'
+    p = double(p);
+    % replace zeros by epsilon to avoid infinite values
+    p(p==0) = eps;
     %convert P to -log10(P) 
     p = -log10(p);
     

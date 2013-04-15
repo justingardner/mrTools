@@ -50,6 +50,14 @@ if ~isempty(volSize)
       z = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
     else
       oneTimeWarning('badSliceIndex',sprintf('(refreshMLRDisplay:getBaseSlice) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
+      %attempt to do it anyway
+      try
+        x = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
+        y = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
+        z = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
+      catch errorId
+        mrErrorDlg(errorId.message)
+      end
     end
   end
 

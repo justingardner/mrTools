@@ -109,11 +109,13 @@ for iRun = 1:size(runTransition,1)
       % apply the same filter as original data
       if isfield(d,'concatInfo') 
          % apply hipass filter
-         if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{iRun})
+         if isfield(d.concatInfo,'hipassfilter') && ~isempty(d.concatInfo.hipassfilter{iRun}) ...
+             && isfield(params.scanParams{scanNum},'highpassDesign') && params.scanParams{scanNum}.highpassDesign
            m = real(ifft(fft(m) .* repmat(d.concatInfo.hipassfilter{iRun}', 1, size(m,2)) ));
          end
          % project out the mean vector
-         if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{iRun})
+         if isfield(d.concatInfo,'projection') && ~isempty(d.concatInfo.projection{iRun})...
+              && isfield(params.scanParams{scanNum},'projectOutGlobalComponent') && params.scanParams{scanNum}.projectOutGlobalComponent
            projectionWeight = d.concatInfo.projection{iRun}.sourceMeanVector * m;
            m = m - d.concatInfo.projection{iRun}.sourceMeanVector'*projectionWeight;
          end
@@ -132,15 +134,3 @@ d.scm = allscm;
 d.hdrlen = size(d.hrf,1);
 d.nHrfComponents = size(d.hrf,2);
 d.runTransitions = runTransition;
-
-if any(all(~allscm,1))
-  nullComponents = find((all(~allscm,1)));
-  disp('(makeDesignMatrix) The following EV components cannot be estimated because the corresponding column in the design is null');
-  for iEV = 1:d.nhdr;
-    whichComponents = find(ismember(nullComponents,(iEV-1)*d.nHrfComponents+1:d.nHrfComponents));
-    if ~isempty(whichComponents)
-      fprintf('EV ''%s'': Components %s\n',params.EVnames{iEV},mat2str(nullComponents(whichComponents)));
-    end
-  end
-  mrErrorDlg('(makeDesignMatrix) Not enough data to estimate all EV components');
-end

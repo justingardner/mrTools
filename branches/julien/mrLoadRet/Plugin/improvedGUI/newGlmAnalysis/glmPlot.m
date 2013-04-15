@@ -472,7 +472,7 @@ h=uicontrol('parent',fignum,'unit','normalized','style','text',...
 %in this case, we want it because it is useful to zoom on the time-series
 set(fignum,'toolbar','figure');
 drawnow;
-disppercent(-inf,'(eventRelatedPlot) Plotting time series');
+disppercent(-inf,'(glmPlot) Plotting time series');
 
 if isnumeric(roi) %if roi is numeric, it's the coordinates of a single voxel
   actualTSeries = squeeze(loadTSeries(thisView,[],roi(3),[],roi(1),roi(2)));
@@ -682,7 +682,7 @@ if ieNotDefined('steOnly'),steOnly = 0;,end
 if steOnly
   h=[];
 else
-  h=plot(hAxes,repmat(time,1,size(ehdr,2)),ehdr,lineSymbol);
+  h=plot(hAxes,time,ehdr,lineSymbol);
   if drawSymbols
      for iEv = 1:size(ehdr,2)
         set(h(iEv),'Marker',getsymbol(iEv),'MarkerSize',8,'MarkerEdgeColor','k','MarkerFaceColor',colorOrder(iEv,:));
@@ -693,7 +693,7 @@ end
 if ~ieNotDefined('ehdrSte')
   hold on
   %if ~ishold(hAxes),hold(hAxes);end;
-  hSte=errorbar(hAxes,repmat(time,1,size(ehdr,2)),ehdr,ehdrSte,ehdrSte,'lineStyle','none')';
+  hSte=errorbar(hAxes,repmat(time',1,size(ehdr,2)),ehdr,ehdrSte,ehdrSte,'lineStyle','none')';
 end
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

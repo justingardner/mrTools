@@ -7,7 +7,7 @@
 %              only fields with a corresponding paramInfo cell are copied
 %              $Id$
 
-function params2 = mrParamsCopyFields(params1,params2)
+function params2 = mrParamsCopyFields(params1,params2,fieldNames)
 
 if ieNotDefined('params2')
   params2=[];
@@ -18,12 +18,22 @@ if ~isfield(params1,'paramInfo')
   return;
 end
 
+if ~ieNotDefined('fieldNames')
+  [~,paramsToCopy] = ismember(fieldNames,fieldnames(params1));
+  if ~all(paramsToCopy)
+    mrWarnDlg(sprintf('(mrParamsCopyFields) Fields %s do not exist',char(fieldNames(~paramsToCopy))'));
+    paramsToCopy(~paramsToCopy)=[];
+  end
+else
+  paramsToCopy = 1:length(params1.paramInfo);
+end
+
 if ~isfield(params2,'paramInfo')
   params2.paramInfo = [];
   foundParam = 0;
 end
 
-for iParam = 1:length(params1.paramInfo)
+for iParam = paramsToCopy
   params2.(params1.paramInfo{iParam}{1})=params1.(params1.paramInfo{iParam}{1});
   %find the paraminfo cell in struct2
   for jParam = 1:length(params2.paramInfo)
@@ -38,4 +48,8 @@ for iParam = 1:length(params1.paramInfo)
     params2.paramInfo{end+1} = params1.paramInfo{iParam};
   end
 end
+
+
+
+
 
