@@ -13,9 +13,6 @@ keepAsking = 1;
 
 while keepAsking
   %Default params
-  if fieldIsNotDefined(params,'outputStatistic')
-    params.outputStatistic = 0;
-  end
   if fieldIsNotDefined(params,'covCorrectionMethod')
      params.covCorrectionMethod = 'generalizedLeastSquares';
   end
@@ -24,6 +21,12 @@ while keepAsking
   end
   if fieldIsNotDefined(params,'covFactorization')
      params.covFactorization = 'Cholesky';
+  end
+  if fieldIsNotDefined(params,'outputStatistic')
+    params.outputStatistic = 0;
+  end
+  if fieldIsNotDefined(params, 'testOutput')
+      params.testOutput = mrGetPref('statisticalTestOutput');
   end
   if fieldIsNotDefined(params, 'bootstrapIntervals')
       params.bootstrapIntervals = 0;
@@ -92,6 +95,7 @@ while keepAsking
   covCorrectionMethodMenu = putOnTopOfList(params.covCorrectionMethod,{'varianceCorrection','preWhitening','generalizedLeastSquares'});%, 'generalizedFTest'});
   covEstimationMenu = putOnTopOfList(params.covEstimation,{'singleTukeyTapers','dampenedOscillator'});
   covFactorizationMenu = putOnTopOfList(params.covFactorization,{'Cholesky'});
+  testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   resampleFweMethodMenu = putOnTopOfList(params.resampleFweMethod,{'Single-step','Adaptive Single-step','Step-down','Adaptive Step-down'});
   fdrAssumptionMenu = putOnTopOfList(params.fdrAssumption,{'Independence/Positive dependence','None'});
   fweMethodMenu = putOnTopOfList(params.fweMethod,{'Single-step (Bonferroni)','Adaptive Single-step','Step-down (Holm)','Adaptive Step-down','Step-up (Hochberg)','Hommel'});
@@ -104,6 +108,7 @@ while keepAsking
     {'covEstimation',covEstimationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of Estimation of the noise covariance matrix'},...
     {'covFactorization',covFactorizationMenu,'visible=0','type=popupmenu','contingent=covCorrection','Type of factorization of the covariance matrix for the computation of the pre-whitening filter'},...
     {'outputStatistic', params.outputStatistic,'type=checkbox', 'Outputs the statistic (T/F) as an overlay in addition to the Z-transform/P value'},...
+    {'testOutput', testOutputMenu,'type=popupmenu', 'Type of statistics for output overlay.  P: outputs the probability value associated with the T/F statistic. Z: outputs standard normal values associated with probability p. Default output can be set using mrSetPref. P-values less than 1e-16 will be replaced by 0, corresponding Z values by +/-8.209536145151493, and corresponding -10log(P) values by 15.653559774527022'},...
     {'parametricTests', params.parametricTests,'type=checkbox', 'Performs parametric T-tests on contrasts and parametric F-tests. Disable this if you only want bootstrap or permutation-based T/F-tests.'},...
     {'fweAdjustment', params.fweAdjustment,'type=checkbox', 'Whether to perform adjustments for Bonferroni-type familywise error rate (FWER) control'},...
     {'fweMethod', fweMethodMenu,'contingent=fweAdjustment','type=popupmenu', 'Bonferroni-type FWER control method. Hommel method is the most powerful of non-adaptive methods. Adaptive methods estimate the number of true Null hypotheses from the raw p-values, making the procedure more powerful, but are only implemented for single-step and step-up methods.'},...

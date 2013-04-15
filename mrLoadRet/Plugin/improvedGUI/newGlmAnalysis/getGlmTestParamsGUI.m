@@ -29,9 +29,6 @@ while keepAsking
   if fieldIsNotDefined(params,'tTestSide')
     params.tTestSide = 'Both';
   end
-  if fieldIsNotDefined(params, 'testOutput')
-      params.testOutput = mrGetPref('statisticalTestOutput');
-  end
 
   if fieldIsNotDefined(params, 'fTestNames') || ~isequal(length(params.fTestNames),params.numberFtests) 
     if params.numberFtests
@@ -76,7 +73,6 @@ while keepAsking
     params.showAdvancedStatisticMenu = 0;
   end
   
-  testOutputMenu = putOnTopOfList(params.testOutput,{'P value','Z value','-log10(P) value'});
   tTestSideMenu = putOnTopOfList(params.tTestSide,{'Both','Right','Left'});
   componentsCombinationMenu = putOnTopOfList(params.componentsCombination,{'Add','Or'});
   alphaContrastOverlayMenu = putOnTopOfList(params.alphaContrastOverlay,{'FDR','FWE','Uncorrected','None'});
@@ -116,7 +112,6 @@ while keepAsking
             ['Restriction matrix defining F-test ' num2str(iFtest) '.']};
   end
   paramsInfo = [paramsInfo {...
-      {'testOutput', testOutputMenu,testOptionsVisible,'type=popupmenu', 'Type of statistics for output overlay.  P: outputs the probability value associated with the T/F statistic. Z: outputs standard normal values associated with probability p. Default output can be set using mrSetPref. P-values less than 1e-16 will be replaced by 0, corresponding Z values by +/-8.209536145151493, and corresponding -10log(P) values by 15.653559774527022'},...
       {'componentsToTest', params.componentsToTest,componentOptionsVisible,...
             'Vector defining which HRF component of each EV are tested for significance. Put zeros to exclude components or a non-zero weight to include them. '},...
       {'componentsCombination', componentsCombinationMenu,componentOptionsVisible,'type=popupmenu', 'How to combine EV components. ''Add'' adds the weighted components into a single EV for contrasts/F-test. ''Or'' ignores the weights and tests contrasts/F-tests at any component that is not 0. Note that ''Or'' is not compatible with one-sided T-tests'},...
