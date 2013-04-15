@@ -73,7 +73,7 @@ if ~fieldIsNotDefined(d,'s2')
       if ~isnan(s2(iVoxel))
         residualsAcm = makeAcm(acfParams(:,iVoxel),d.dim(4),params.covEstimation);
         %THIS IS WHAT TAKES TIME
-        switch(params.correctionType)
+        switch(params.covCorrectionMethod)
           case {'generalizedLeastSquares','preWhitening'} 
             %GLS: see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
             %PW: see Woolrich et al. (2001) NeuroImage, 14(6), p1370

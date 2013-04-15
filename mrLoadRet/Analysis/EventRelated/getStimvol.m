@@ -87,91 +87,102 @@ if ~ieNotDefined('segmentNum'),var.segmentNum = segmentNum;end
 % keep the varname that this was called with
 d.varname = var;
 
-% Design super-sampling for cases where the duration/time of the stimulation is not a multiple of TR (only supported for eventtimes file types)
-time_remainders = [];
-if isfield(var,'forceStimOnSampleOnset') && ~var.forceStimOnSampleOnset
-   %compute the remainders of all stim times divided by d.tr
-   for i_file = 1:length(d.stimfile)
-      if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
-         for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
-            time_remainders = [time_remainders rem(d.stimfile{i_file}.mylog.stimtimes_s{i_type},d.tr)];
-         end
-      else
-         disp(sprintf('(getStimvol) off TR stim onset is not supported for mgl or afni files. Forcing stim on (sub)sample onset'));
-         time_remainders = [];
-         break;
-      end
-   end
+if ~isfield(var,'stimDuration')
+  var.stimDuration = [];
 end
-duration_remainders = [];
-if isfield(var,'stimDuration')
-   if ischar(var.stimDuration) && strcmp(var.stimDuration,'fromFile')
-      %compute the remainders of all stim durations divided by tr
-      for i_file = 1:length(d.stimfile)
-         if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
-            if isfield(d.stimfile{i_file}.mylog,'stimdurations_s') 
-               for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
-                  duration_remainders = [duration_remainders rem(d.stimfile{i_file}.mylog.stimdurations_s{i_type},d.tr)];
-               end
-            else
-               disp(sprintf('(getStimvol) Field stimdurations_s missing, using stimDuration = 1 (sub)frame'));
-               duration_remainders = [];
-               var.stimDuration = d.tr;
-               break;
+
+
+if isfield(var,'supersamplingMode') && strcmp(var.supersamplingMode,'Automatic')
+  % Design super-sampling for cases where the duration/time of the stimulation is not a multiple of TR (only supported for eventtimes file types)
+  time_remainders = [];
+  %compute the remainders of all stim times divided by d.tr
+  for i_file = 1:length(d.stimfile)
+    if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
+       for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
+          time_remainders = [time_remainders rem(d.stimfile{i_file}.mylog.stimtimes_s{i_type},d.tr)];
+       end
+    else
+       disp(sprintf('(getStimvol) off TR stim onset is not supported for mgl or afni files. Forcing stim on (sub)sample onset'));
+       time_remainders = [];
+       break;
+    end
+  end
+  duration_remainders = [];
+  if isfield(var,'stimDuration') && isfield(var,'stimDurationMode')
+    if strcmp(var.stimDurationMode,'From file')
+      %if the scan is a concatenationm there might be several stim files
+      for i_file = 1:length(d.stimfile) %for each file check if duration information is available
+        if strfind(d.stimfile{i_file}.filetype,'eventtimes') 
+          if isfield(d.stimfile{i_file}.mylog,'stimdurations_s') 
+            %compute the remainders of all stim durations divided by tr
+            for i_type = 1:length(d.stimfile{i_file}.mylog.stimtimes_s)
+              duration_remainders = [duration_remainders rem(d.stimfile{i_file}.mylog.stimdurations_s{i_type},d.tr)];
             end
-         else
-            disp(sprintf('(getStimvol) Stim duration from files not supported for mgl or afni files, using stimDuration = 1 (sub)frame'));
+          else
+            disp(sprintf('(getStimvol) Field stimdurations_s missing, using stimDuration = 1 (sub)frame'));
             duration_remainders = [];
             var.stimDuration = d.tr;
             break;
-         end
+          end
+        else
+          disp(sprintf('(getStimvol) Stim duration from files not supported for mgl or afni files, using stimDuration = 1 (sub)frame'));
+          duration_remainders = [];
+          var.stimDuration = d.tr;
+          break;
+        end
       end
-   else
+    else
       if ischar(var.stimDuration) 
          var.stimDuration = eval(var.stimDuration);
       end
+      %compute the remainders of all stim durations divided by tr
       duration_remainders = [duration_remainders rem(var.stimDuration,d.tr)];
-   end
-else
-   var.stimDuration = d.tr;
-end
+      if rem(var.stimDuration,d.tr) %for each file check whether it is compatible with sub-tr durations
+        for i_file = 1:length(d.stimfile) 
+          if ~strcmp(d.stimfile{i_file}.filetype,'eventtimes')
+            var.stimDuration = d.tr*rem(var.stimDuration,d.tr);
+            disp(sprintf('(getStimvol) Stim duration that are not multiple of the frame period are not supported for mgl or afni files, rounding stimDuration to %f sec',var.stimDuration));
+            duration_remainders = [];
+            break;
+          end
+        end
+      end
+    end
+  else
+     var.stimDuration = d.tr;
+  end
 
-%find the least supersampling factor (= greatest common factor of all possible durations/times of the event)
-
-if isfield(var,'estimationSupersampling') %if sub-sample estimation is required in a deconvolution model
-  estimationSupersampling = var.estimationSupersampling;
+  %find the least supersampling factor (= greatest common factor of all possible durations/times of the event)
+  resolutionLimit = .05; %temporal resolution limit in s (we assume that the sub-sampled TR is a multiple of this)
+  remainders = [time_remainders duration_remainders d.tr]; %concatenate time and duration remainders in seconds (to make sure there's at least one value
+  remainders = round(remainders/resolutionLimit); % express time remainders in terms of the maximum time sampling
+  remainders(remainders==0) = [];    %remove 0 values
+  remainders = unique(remainders);
+  greatest_common_factor = 0; 
+  for i = 1:length(remainders)
+     greatest_common_factor = gcd(greatest_common_factor,remainders(i)); 
+     if greatest_common_factor ==1
+        break
+     end
+  end
+  designSupersampling = round(d.tr/(greatest_common_factor*resolutionLimit));
+  estimationSupersampling = designSupersampling;
+elseif isfield(var,'supersamplingMode') && strcmp(var.supersamplingMode,'Set value')
+  estimationSupersampling = var.estimationSupersampling; %if sub-sample estimation is required in a deconvolution model
+  designSupersampling = var.designSupersampling;  %if supersampling the GLM is required in a canonical HRF analysis
 else
   estimationSupersampling=1;
-end
-if isfield(var,'designSupersampling') %if supersampling the GLM is required in a canonical HRF analysis
-  designSupersampling = var.designSupersampling;
-else
   designSupersampling=1;
 end
 
-resolutionLimit = .05; %temporal resolution limit in s (we assume that the sub-sampled TR is a multiple of this)
-remainders = [time_remainders duration_remainders d.tr/estimationSupersampling d.tr/designSupersampling]; %concatenate time and duration remainders with the supersampled TR value in seconds (to make sure there's at least one value
-remainders = round(remainders/resolutionLimit); % express time remainders in terms of the maximum time sampling
-remainders(remainders==0) = [];    %remove 0 values
-remainders = unique(remainders);
-greatest_common_factor = 0; 
-for i = 1:length(remainders)
-   greatest_common_factor = gcd(greatest_common_factor,remainders(i)); 
-   if greatest_common_factor ==1
-      break
-   end
-end
-designSupersampling = round(d.tr/(greatest_common_factor*resolutionLimit));
-
 %check if designSupersampling is supported for all runs
-if designSupersampling~=1 || ischar(var.stimDuration) || rem(var.stimDuration,d.tr) ~= 0
+if designSupersampling~=1 %|| (isfiel(var,'stimDurationMode') && strcmp(var.stimDurationMode,'From file')) || rem(var.stimDuration,d.tr) ~= 0
    for i = 1:length(d.stimfile)
       if ~strcmp(d.stimfile{i}.filetype,'eventtimes')
          mrErrorDlg('(getStimvol) TR supersampling and/or durations that are not multiples of the TR are not supported for mgl or afni files.');
       end
    end
 end
-
 
 % depending on what kind of stimfile we have, we get the
 % stimvolumes differently
@@ -231,51 +242,58 @@ for i = 1:length(d.stimfile)
   end
   
   % handle the case where volTrigRatio specifies more volumes than triggers
-  if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
-    % check volTrigRatio for this scan
-    if length(d.volTrigRatio) >= i
-      if iscell(d.volTrigRatio{i})
-	disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
-      elseif ~isempty(d.volTrigRatio{i})
-	% multply the stimvols out by what volTrigRatio says
-	if ~isempty(d.volTrigRatio{i})
-	  for iStimvol = 1:length(stimvol)
-	    stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
-	  end
-	end
+  if ~strcmp(d.stimfile{i}.filetype,'eventtimes')
+    if isfield(d,'volTrigRatio') && ~isempty(d.volTrigRatio)
+      % check volTrigRatio for this scan
+      if length(d.volTrigRatio) >= i
+        if iscell(d.volTrigRatio{i})
+    disp(sprintf('(getStimvol) !!! volTrigRatio is not a scalar for component scan: %i. Ignoring',i));
+        elseif ~isempty(d.volTrigRatio{i})
+    % multiply the stimvols out by what volTrigRatio says
+    if ~isempty(d.volTrigRatio{i})
+      for iStimvol = 1:length(stimvol)
+        stimvol{iStimvol} = stimvol{iStimvol}*d.volTrigRatio{i}-(d.volTrigRatio{i}-1);
       end
-    else
-      disp(sprintf('(getStimvol) !!! volTrigRatio missing entry for component scan: %i. Ignoring',i));
+    end
+        end
+      else
+        disp(sprintf('(getStimvol) !!! volTrigRatio missing entry for component scan: %i. Ignoring',i));
+      end
     end
   end
   
-  %if stimDurations does not exist, set all durations to value user
-  %entered in the GUI in TRs
+  if isfield(var,'stimDurationMode') && strcmp(var.stimDurationMode,'Block')
+    %extend all durations to next event
+    % check for stimvol overrun
+    if ~isfield(d,'concatInfo') || isempty(d.concatInfo)
+        runLength = d.dim(end)*designSupersampling;
+    else
+        runLength = diff(d.concatInfo.runTransition(i,:))*designSupersampling+1;
+    end
+    stimMatrix = zeros(runLength,length(stimvol));
+    for iStim = 1:length(stimvol)
+      stimMatrix(stimvol{iStim},iStim) = 1;
+    end
+    allStims = any(stimMatrix,2);
+    allDurations = zeros(size(allStims));
+    allDurations(allStims) = diff([find(allStims);runLength+1]);
+    for iStim = 1:length(stimvol)
+      stimDurations{iStim} = allDurations(logical(stimMatrix(:,iStim)))';
+    end
+      
+  end
+ 
+  %if stimDurations does not exist (not a mylog file), set all durations to value user entered in the GUI in TRs
   if ieNotDefined('stimDurations')
     for iStim = 1:length(stimvol)
-      stimDurations{iStim} = round(var.stimDuration/d.tr)*ones(size(stimvol{iStim}));;
+      if isfield(var,'stimDuration') && ~isempty(var.stimDuration)
+        stimDurations{iStim} = max(1,round(var.stimDuration/d.tr*designSupersampling))*ones(size(stimvol{iStim}));
+      else
+        stimDurations{iStim} = ones(size(stimvol{iStim}));
+      end
     end
   end
-
- 
-%   % compare to make sure we have the same stimulus names as last time
-%   if ~isempty(lastStimNames)
-%     if ~isequal(d.stimNames,lastStimNames)
-%       % display what doesn't match
-%       missingLastTime = setdiff(d.stimNames,lastStimNames);
-%       for iMissing = 1:length(missingLastTime)
-% 	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i-1,missingLastTime{iMissing}));
-%       end
-%       missingThisTime = setdiff(lastStimNames,d.stimNames);
-%       for iMissing = 1:length(missingThisTime)
-% 	disp(sprintf('(getStimvol) **** Scan %i is missing stimulus type: %s ****',i,missingThisTime{iMissing}));
-%       end
-%       disp(sprintf('(getStimvol) This likely happened because you have not specified all the possible values a variable can take. For a randVar, you should add a field with the same name as the variable except with an _ after it (i.e. for randVar.calculated.myVar add randVar.calculated.myVar_ ) and set the variable to all the possible values that the variable can be set to. See the function addCalculatedVar for more info.'));
-%       keyboard
-%     end
-%   end
-%   lastStimNames = d.stimNames;
-
+  
   % get how many junk frames we have
   if isfield(d,'junkFrames'),junkFrames = d.junkFrames; else junkFrames = zeros(length(d.stimfile),1);end
   % then shift all the stimvols by that many junkvols
@@ -366,7 +384,8 @@ for i = 1:length(d.stimfile)
 %   end
 end
 
-% return the actual TR supersampling factor
+% return the actual TR supersampling factors
+d.estimationSupersampling = estimationSupersampling;
 d.designSupersampling = designSupersampling;
 if isfield(var,'designSupersampling') && designSupersampling ~=var.designSupersampling
   mrWarnDlg(sprintf('(getStimvol) Design super-sampling changed to %d',designSupersampling));
@@ -445,10 +464,12 @@ stimDurations = cell(1, nhdr);
 %just round to time resolution
 for i = 1:nhdr
   stimOnsets{i} = round(stimfile.stimtimes_s{i}/tr)+1;
-  if ischar(duration) && strcmp(duration,'fromFile')
+  if ~isempty(duration)
+    stimDurations{i} =  max(ones(size(stimOnsets{i})),round(duration/tr));
+  elseif isfield(stimfile,'stimdurations_s')
     stimDurations{i} = max(1,round(stimfile.stimdurations_s{i}/tr));
   else
-    stimDurations{i} =  max(ones(size(stimOnsets{i})),round(duration/tr));
+    stimDurations{i} = ones(size(stimOnsets{i}));
   end
 end   
          

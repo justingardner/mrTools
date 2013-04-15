@@ -120,9 +120,9 @@ else
       if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
         
         
-        baseX = baseCoords(mouseX,mouseY,1);
-        baseY = baseCoords(mouseX,mouseY,2);
-        baseS = baseCoords(mouseX,mouseY,3);
+        baseX = round(baseCoords(mouseX,mouseY,1));
+        baseY = round(baseCoords(mouseX,mouseY,2));
+        baseS = round(baseCoords(mouseX,mouseY,3));
         scanNum = viewGet(thisView,'currentScan');
 
         %First, get a mask of non-zero voxel representing the current overlays and alphaOverlays

@@ -57,7 +57,7 @@ d.filename = viewGet(view,'tseriesfile',scanNum,groupNum);
 d.filepath = viewGet(view,'tseriespathstr',scanNum,groupNum);
 d.expname = getLastDir(fileparts(fileparts(fileparts(d.filepath))));
 d.fullpath = fileparts(fileparts(fileparts(fileparts(d.filepath))));
-d.volTrigRatio = viewGet(view,'auxParam','volTrigRatio',scanNum);
+d.volTrigRatio = viewGet(view,'auxParam','volTrigRatio',scanNum,groupNum);
 
 % print out tr for 3d scans to make sure it is right
 if viewGet(view,'3D',scanNum,groupNum)

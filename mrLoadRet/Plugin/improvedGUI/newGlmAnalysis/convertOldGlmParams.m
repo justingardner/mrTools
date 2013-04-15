@@ -52,10 +52,33 @@ if isfield(params,'hrfParams')
   end
 end
 
-if isfield(params,'trSupersampling')
-  params = rmfield(params,'trSupersampling');
+%scan-specific parameters
+if isfield(params,'scanParams')
+  for iScan = 1:length(params.scanParams)
+    if ~isempty(params.scanParams{iScan})
+      if isfield(params.scanParams{iScan},'trSupersampling')
+        params.scanParams{iScan}.designSupersampling = params.scanParams{iScan}.trSupersampling;
+        params.scanParams{iScan} = rmfield(params.scanParams{iScan},'trSupersampling');
+      end
+      if isfield(params.scanParams{iScan},'forceStimOnSampleOnset') && params.scanParams{iScan}.forceStimOnSampleOnset
+        params.scanParams{iScan}.supersamplingMode = 'Set value';
+        params.scanParams{iScan} = rmfield(params.scanParams{iScan},'forceStimOnSampleOnset');
+      end
+      if isfield(params.scanParams{iScan},'stimDuration') 
+        if strcmp(params.scanParams{iScan}.stimDuration,'fromFile')
+          params.scanParams{iScan}.stimDurationMode = 'From file';
+        else
+           params.scanParams{iScan}.stimDurationMode = 'Set value';
+        end
+      end
+    end
+  end
 end
 
+if isfield(params,'correctionType')
+  params.covCorrectionMethod = params.correctionType;
+  params = rmfield(params,'correctionType');
+end
 if isfield(params,'n_rand')
   params.nResamples = params.n_rand;
   params = rmfield(params,'n_rand');
@@ -79,4 +102,12 @@ if isfield(params,'randomizationTestOutput')
 end
 if isfield(params,'bootstrapTestOutput')
   params = rmfield(params,'bootstrapTestOutput');
+end
+if isfield(params, 'maskContrastOverlay')
+  if params.maskContrastOverlay
+    params.alphaContrastOverlay = 'FDR';
+  else
+    params.alphaContrastOverlay = 'None';
+  end
+  params = rmfield(params,'maskContrastOverlay');
 end

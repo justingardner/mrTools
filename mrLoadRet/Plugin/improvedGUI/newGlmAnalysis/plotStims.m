@@ -35,7 +35,7 @@ if ieNotDefined('colors')
 end
 
 set(axesHandle,'drawMode','fast');
-hold on;
+hold(axesHandle,'on');
 Ylims = get(axesHandle,'Ylim');
 bottom = Ylims(1) - diff(Ylims);
 top = Ylims(2) + diff(Ylims);
