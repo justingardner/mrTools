@@ -40,10 +40,13 @@ for i = 1:length(gParams.varinfo)
       % if not grouped, just get the value from the gui
       for iRows = 1:size(gParams.ui.varentry{i},1)
         for iCols = 1:size(gParams.ui.varentry{i},2)
-          if strcmp(gParams.varinfo{i}.type,'array')
-            params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(get(gParams.ui.varentry{i}(iRows,iCols),'String'));
-          else
-            params.(gParams.varinfo{i}.name){iRows,iCols} = get(gParams.ui.varentry{i}(iRows,iCols),'String');
+          value = get(gParams.ui.varentry{i}(iRows,iCols),'String');
+          if ~isempty(value)
+            if strcmp(gParams.varinfo{i}.type,'array')
+              params.(gParams.varinfo{i}.name)(iRows,iCols) = mrStr2num(value);
+            else
+              params.(gParams.varinfo{i}.name){iRows,iCols} = value;
+            end
           end
         end
       end
