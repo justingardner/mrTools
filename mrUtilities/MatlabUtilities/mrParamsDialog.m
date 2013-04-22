@@ -565,7 +565,9 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   % if we got an invalid number entry
   if isempty(val)
     if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
-      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',gParams.varinfo{varnum}.value(entryRow,entryCol));
+      if ~isempty(gParams.varinfo{varnum}.value)
+        set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',gParams.varinfo{varnum}.value(entryRow,entryCol));
+      end
       return  %no need to go to callback if the value hasn't changed, so return
     end
     % otherwise remember this string as the default
