@@ -902,8 +902,8 @@ if numberTests
     lastContrastAlphaOverlay = lastUncorrectedTest;
   elseif strcmp(params.alphaContrastOverlay,'FDR') && lastFDRCorrectedTest
     lastContrastAlphaOverlay = lastFDRCorrectedTest;
-  elseif strcmp(params.alphaContrastOverlay,'Uncorrected') && lastFWECorrectedTest
-    lastContrastAlphaOverlay = lastFWECorrectedTestl;
+  elseif strcmp(params.alphaContrastOverlay,'FWE') && lastFWECorrectedTest
+    lastContrastAlphaOverlay = lastFWECorrectedTest;
   else
     lastContrastAlphaOverlay = 0;
   end
