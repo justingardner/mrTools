@@ -1,17 +1,17 @@
-% improvedGUIPlugin.m
+% GLM_v2Plugin.m
 %
-%        $Id: improvedGUIPlugin.m 1950 2010-12-18 10:12:48Z julien $ 
-%      usage: improvedGUIPlugin(action,<thisView>)
+%        $Id: GLM_v2Plugin.m 1950 2010-12-18 10:12:48Z julien $ 
+%      usage: GLM_v2Plugin(action,<thisView>)
 %         by: julien besle
 %       date: 13/02/11
 %    purpose: 
 %
 
-function retval = improvedGUIPlugin(action,thisView)
+function retval = GLM_v2Plugin(action,thisView)
 
 % check arguments
 if ~any(nargin == [1 2])
-  help improvedGUIPlugin
+  help GLM_v2Plugin
   return
 end
 
@@ -29,7 +29,7 @@ switch action
             '                 - New item in Plot that calls a 3D viewer',...
             '                 - New item in menu Overlays to combine/transform overlays using virtually any type of function',...
             '                 - Improved Edit/Overlay dialog',...
-            '                 - Improved Exportt Images function',...
+            '                 - Improved Export Images function',...
             '                 - New item in menu Analysis/Motioncomp to appy existing motion compensation parameters to another set of scans',...
             '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
             ];
@@ -38,7 +38,7 @@ switch action
   case {'install','i'}
   % check for a valid view
   if (nargin ~= 2) || ~isview(thisView)
-     disp(sprintf('(improvedGUIPlugin) Need a valid view to install plugin'));
+     disp(sprintf('(GLM_v2Plugin) Need a valid view to install plugin'));
   else
 
     % new uicontrols and reposition old ones
@@ -253,7 +253,7 @@ switch action
     %---------------------------- Add colormaps and interrogators
   
     %get interrogators in the interrogatorFunctions directory
-    interrogatorsFolder = [fileparts(which('improvedGUIPlugin')) '/interrogatorFunctions/'];
+    interrogatorsFolder = [fileparts(which('GLM_v2Plugin')) '/interrogatorFunctions/'];
     interrogatorFiles =  dir([interrogatorsFolder '*.m']);
     if ~isempty(interrogatorFiles)
       interrogatorList = cell(1,length(interrogatorFiles));
@@ -268,7 +268,7 @@ switch action
     end
     
     %get colormaps in the colormapFunctions directory
-    colorMapsFolder = [fileparts(which('improvedGUIPlugin')) '/colormapFunctions/'];
+    colorMapsFolder = [fileparts(which('GLM_v2Plugin')) '/colormapFunctions/'];
     colorMapFiles =  dir([colorMapsFolder '*.m']);
     if ~isempty(colorMapFiles)
       colorMapList = cell(1,length(colorMapFiles));
@@ -287,7 +287,7 @@ switch action
   end
 
   otherwise
-    disp(sprintf('(improvedGUIPlugin) Unknown command %s',action));
+    disp(sprintf('(GLM_v2Plugin) Unknown command %s',action));
 end
 
 
@@ -453,7 +453,7 @@ if viewType<2
 else
     % if surface, would need to change the ouput of refreshMLRDisplay to get a 2D image rather than the coordinates of the surface...
     % but not sure whether some other parts of mrLoadRet use this output..
-    mrWarnDlg('(improvedGUIPlugin) This function is not implemented for surfaces.');
+    mrWarnDlg('(GLM_v2Plugin) This function is not implemented for surfaces.');
 end
 
 
