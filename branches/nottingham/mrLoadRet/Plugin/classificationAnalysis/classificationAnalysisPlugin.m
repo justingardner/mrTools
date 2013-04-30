@@ -20,7 +20,7 @@ switch action
      disp(sprintf('(classificationAnalysisPlugin) Need a valid view to install plugin'));
   else
     %install menu Item
-    mlrAdjustGUI(thisView,'add','menu','Classification','/Analysis/GLM Analysis','callback',@classificationMenu_Callback);
+    mlrAdjustGUI(thisView,'add','menu','Classification','/Analysis/GLM analysis (v2)','callback',@classificationMenu_Callback);
     mlrAdjustGUI(thisView,'add','menu','Volume-Searchlight Classification','/Analysis/Classification/','callback',@searchlightClassification_Callback);
     mlrAdjustGUI(thisView,'add','menu','Surface-Searchlight Classification','/Analysis/Classification/','callback',@corticalSearchlightClassification_Callback);
     mlrAdjustGUI(thisView,'add','menu','ROI Classification','/Analysis/Classification/','callback',@roiClassification_Callback);
