@@ -2892,7 +2892,12 @@ switch lower(param)
       val=viewGet(view,'currentOverlay');
     else
       clippingOverlays = get(handles.clippingOverlaysListbox,'string');
-      clippingOverlay = clippingOverlays{get(handles.clippingOverlaysListbox,'value')};
+      clippingOverlayNum = get(handles.clippingOverlaysListbox,'value');
+      if isempty(clippingOverlayNum) %this can happen on a Mac
+        clippingOverlayNum = 1;
+        set(handles.clippingOverlaysListbox,'value',1);
+      end
+      clippingOverlay = clippingOverlays{clippingOverlayNum};
       val = viewGet(view,'overlayNum',clippingOverlay(3:end)); %ignore the first 2 characters which are used to put a star before the name (see mlrGuiSet, case 'clippingOverlays'))
     end
     
