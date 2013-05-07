@@ -95,7 +95,7 @@ end
 
 % read the data from fid block structure
 kNum = 1;clear i;
-d.data = nan(info.dim(2),numPhaseEncodeLines,numSlices,numReceivers,numVolumes);
+d.data = nan(numPhaseEncodeLines,info.dim(2),numSlices,numReceivers,numVolumes);
 if verbose,disppercent(-inf,'(getfidk) Reordering data');end
 if info.compressedFid
   % if intlv is set to y then it means that shots are interleaved - i.e. a shot is taken on
