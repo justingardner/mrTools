@@ -19,6 +19,18 @@ if ~isanalysis(viewGet(thisView,'analysis'))
     return
 end
 
+%first check that there is at least one scan and display scan selection dialog if more than one
+scan_number = viewGet(thisView,'nScans');
+switch(scan_number)
+  case 0
+    mrWarnDlg('(importOverlay) Group must have at least one scan.')
+    return
+  case 1
+    scanlist = 1;
+  otherwise
+    scanlist = selectInList(thisView,'scans');
+end
+
 % go find the group that user wants to load here
 [filename pathname] = uigetfile({sprintf('*%s',mrGetPref('niftiFileExtension')),'Nifti files'},'Select nifti file that you want to import');
 if (filename==0)
@@ -54,12 +66,7 @@ else
 end
 nFrames = length(frameList);
 
-scan_number = viewGet(thisView,'nScans');
-if scan_number>1
-   scanlist = selectInList(thisView,'scans');
-else
-   scanlist = 1;
-end
+
 
 for i_scan = scanlist
 scan_dims = viewGet(thisView,'datasize',i_scan);
