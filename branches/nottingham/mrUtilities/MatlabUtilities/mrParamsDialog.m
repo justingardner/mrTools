@@ -1091,8 +1091,8 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
   if ismac 
     uiParams.buttonHeight = uiParams.buttonHeight*1.25;
   end
-  % global mrDEFAULTS;                                       % The height of the button used to be dependent on the version of matlab             
-  % mver = ver('matlab');mver = str2num(mver.Version);       % in addition ot the computer type. not sure this is useful anymore
+  % global mrDEFAULTS;                % The height of the button used to be dependent on the version of matlab             
+  % mver = matlabVersionNumber;       % in addition ot the computer type. not sure this is useful anymore
   % if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
   %   ...
   
