@@ -565,7 +565,9 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   % if we got an invalid number entry
   if isempty(val)
     if ~strcmp(gParams.varinfo{varnum}.type,'popupmenu')
-      set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',gParams.varinfo{varnum}.value(entryRow,entryCol));
+      if ~isempty(gParams.varinfo{varnum}.value)
+        set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',gParams.varinfo{varnum}.value(entryRow,entryCol));
+      end
       return  %no need to go to callback if the value hasn't changed, so return
     end
     % otherwise remember this string as the default
@@ -1089,8 +1091,8 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
   if ismac 
     uiParams.buttonHeight = uiParams.buttonHeight*1.25;
   end
-  % global mrDEFAULTS;                                       % The height of the button used to be dependent on the version of matlab             
-  % mver = ver('matlab');mver = str2num(mver.Version);       % in addition ot the computer type. not sure this is useful anymore
+  % global mrDEFAULTS;                % The height of the button used to be dependent on the version of matlab             
+  % mver = matlabVersionNumber;       % in addition ot the computer type. not sure this is useful anymore
   % if strcmp(computer,'MACI') || strcmp(computer,'MACI64') || (mver > 7.4)
   %   ...
   

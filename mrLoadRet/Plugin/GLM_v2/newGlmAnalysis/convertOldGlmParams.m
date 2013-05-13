@@ -60,15 +60,19 @@ if isfield(params,'scanParams')
         params.scanParams{iScan}.designSupersampling = params.scanParams{iScan}.trSupersampling;
         params.scanParams{iScan} = rmfield(params.scanParams{iScan},'trSupersampling');
       end
+      if ~isfield(params.scanParams{iScan},'supersamplingMode')
+        params.scanParams{iScan}.supersamplingMode='Automatic';
+      end
       if isfield(params.scanParams{iScan},'forceStimOnSampleOnset') && params.scanParams{iScan}.forceStimOnSampleOnset
         params.scanParams{iScan}.supersamplingMode = 'Set value';
         params.scanParams{iScan} = rmfield(params.scanParams{iScan},'forceStimOnSampleOnset');
       end
-      if isfield(params.scanParams{iScan},'stimDuration') 
+      if isfield(params.scanParams{iScan},'stimDuration') && ~isfield(params.scanParams{iScan},'stimDurationMode')
         if strcmp(params.scanParams{iScan}.stimDuration,'fromFile')
           params.scanParams{iScan}.stimDurationMode = 'From file';
+          params.scanParams{iScan}.stimDuration = [];
         else
-           params.scanParams{iScan}.stimDurationMode = 'Set value';
+          params.scanParams{iScan}.stimDurationMode = 'Set value';
         end
       end
     end

@@ -206,6 +206,8 @@ while keepAsking
     superSamplingOption = 'visible=1';
   else
     superSamplingOption = 'visible=0';
+  end
+  if ismember(supersamplingMode,supersamplingModeMenu)
     supersamplingModeMenu = putOnTopOfList(supersamplingMode,supersamplingModeMenu);
   end
     

@@ -302,7 +302,7 @@ if ~isempty(currentAnalysis)
           d.overlayAlphaData(:,:,:,cOverlay) = zeros(overlayDims);
           d.overlayAlphaMaskData(:,:,:,cOverlay) = ones(overlayDims);
         else
-          range = viewGet(thisView,'overlayColorRange',iOverlay);
+          range = viewGet(thisView,'overlayClip',iOverlay);
           % handle setRangeToMax (to debug)
           if strcmp(viewGet(thisView,'overlayCtype',d.alphaOverlayList),'setRangeToMax')
             clip = viewGet(thisView,'overlayClip',iOverlay);
@@ -388,7 +388,7 @@ if ~isempty(currentAnalysis)
     cOverlay = cOverlay+1;
     %d.colorMap = viewGet(thisView,'colormap',iOverlay);
     colorMap = analysis.overlays(iOverlay).colormap;
-    colorRange = str2num(num2str(viewGet(thisView,'overlayColorRange',iOverlay))); %str2num(num2str()) is because the edit box rounds the values  
+    colorRange = str2num(num2str(viewGet(thisView,'overlayClip',iOverlay))); %str2num(num2str()) is because the edit box rounds the values  
                                                                             %and causes problems if the min/max of the sliders is not rounded
     d.overlayRGB(:,:,:,cOverlay) = rescale2rgb(d.overlayData(:,cOverlay),colorMap,colorRange);
   end
