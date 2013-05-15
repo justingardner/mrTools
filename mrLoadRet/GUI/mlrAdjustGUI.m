@@ -93,7 +93,7 @@ switch command
  case {'add'}
   switch varargin{1}
     case {'menu'}
-     placeMenu({varargin{2:end}},menuControls,'add',verbose);
+     placeMenu({varargin{2:end}},menuControls,'add',verbose,f);
     case {'interrogator','interrogators'}
      addInterrogator(v,varargin{2},verbose);
     case {'colormap','colormaps'}
@@ -288,7 +288,7 @@ guidata(f,h);
 %%%%%%%%%%%%%%%%%%
 %%%   placeMenu  %%%
 %%%%%%%%%%%%%%%%%%
-function placeMenu(args,menuControls,mode,verbose)
+function placeMenu(args,menuControls,mode,verbose,hFigure)
 
 % check length of arguments
 if length(args) < 2
@@ -364,6 +364,14 @@ end
 % add all the properties
 for i = 1:2:length(menuProperties)
   set(hAdded,menuProperties{i},menuProperties{i+1});
+  %if there is a tag property, add the new menu handle to the figure data
+  if strcmp(mode,'add') && strcmp(menuProperties{i},'tag')
+    handles = guidata(hFigure);
+    if ~ismember(menuProperties{i+1},fieldnames(handles))
+      handles.(menuProperties{i+1})=hAdded;
+      guidata(hFigure,handles)
+    end
+  end
 end
 
 % display what we have done
