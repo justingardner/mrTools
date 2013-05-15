@@ -41,7 +41,7 @@ set(fig,'CurrentAxes',gui.axis);
 baseCoords = viewGet(thisView,'cursliceBaseCoords');
 baseSliceDims = [size(baseCoords,1),size(baseCoords,2)];
 if isempty(baseCoords)
-  mrErrorDlg('Load base anatomy before drawing an ROI');
+  mrWarnDlg('Load base anatomy before drawing an ROI');
 end
 
 % turn off 3d rotate
@@ -62,7 +62,11 @@ set(fig,'WindowButtonUpFcn','');
 baseNum = viewGet(thisView,'currentBase');
 baseType = viewGet(thisView,'baseType');
 if baseType == 2
-  coords = drawSurfaceROI(thisView);
+  if strcmp(descriptor,'polygon')
+    coords = drawSurfaceROI(thisView);
+  else
+    mrWarnDlg('(drawROI) This ROI drawing function is not implemented for surfaces');
+  end
 else
   switch descriptor
      
