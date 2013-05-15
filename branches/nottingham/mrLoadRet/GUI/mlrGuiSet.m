@@ -136,15 +136,20 @@ switch lower(field)
     end
   end
   if value == 2
-    set(handles.createRoiMenu,'Enable','on');
-      set(handles.createLineMenuItem,'Enable','off');
-      set(handles.createRectangleMenuItem,'Enable','off');
-      set(handles.addLineMenuItem,'Enable','off');
-      set(handles.addRectangleMenuItem,'Enable','off');
-      set(handles.removeLineMenuItem,'Enable','off');
-      set(handles.removeRectangleMenuItem,'Enable','off');
-    set(handles.addRoiMenu,'Enable','on');
-    set(handles.removeRoiMenu,'Enable','on');
+    set(handles.createLineMenuItem,'Enable','off');
+    set(handles.createRectangleMenuItem,'Enable','off');
+    set(handles.createContiguousMenuItem,'Enable','off');
+    set(handles.addLineMenuItem,'Enable','off');
+    set(handles.addRectangleMenuItem,'Enable','off');
+    set(handles.addContiguousMenuItem,'Enable','off');
+    set(handles.removeLineMenuItem,'Enable','off');
+    set(handles.removeRectangleMenuItem,'Enable','off');
+    set(handles.removeContiguousMenuItem,'Enable','off');
+    if isfield(handles,'createSingleVoxelsRoiMenuItem')
+      set(handles.createSingleVoxelsRoiMenuItem,'Enable','off')
+      set(handles.addSingleVoxelsRoiMenuItem,'Enable','off')
+      set(handles.removeSingleVoxelsRoiMenuItem,'Enable','off')
+    end
     set(handles.rotateSlider,'SliderStep',[15 45]./360);
     set(handles.baseTiltSlider,'SliderStep',[15 45]./360);
     set(handles.baseTiltSlider,'Visible','on');
@@ -158,15 +163,20 @@ switch lower(field)
     set(handles.baseTiltSlider,'Visible','off');
     set(handles.baseTiltText,'Visible','off');
     set(handles.baseTilt,'Visible','off');
-    set(handles.createRoiMenu,'Enable','on');
-    set(handles.addRoiMenu,'Enable','on');
-      set(handles.createLineMenuItem,'Enable','on');
-      set(handles.createRectangleMenuItem,'Enable','on');
-      set(handles.addLineMenuItem,'Enable','on');
-      set(handles.addRectangleMenuItem,'Enable','on');
-      set(handles.removeLineMenuItem,'Enable','on');
-      set(handles.removeRectangleMenuItem,'Enable','on');
-    set(handles.removeRoiMenu,'Enable','on');
+    set(handles.createLineMenuItem,'Enable','on');
+    set(handles.createRectangleMenuItem,'Enable','on');
+    set(handles.createContiguousMenuItem,'Enable','on');
+    set(handles.addLineMenuItem,'Enable','on');
+    set(handles.addRectangleMenuItem,'Enable','on');
+    set(handles.addContiguousMenuItem,'Enable','on');
+    set(handles.removeLineMenuItem,'Enable','on');
+    set(handles.removeRectangleMenuItem,'Enable','on');
+    set(handles.removeContiguousMenuItem,'Enable','on');
+    if isfield(handles,'createSingleVoxelsRoiMenuItem')
+      set(handles.createSingleVoxelsRoiMenuItem,'Enable','on')
+      set(handles.addSingleVoxelsRoiMenuItem,'Enable','on')
+      set(handles.removeSingleVoxelsRoiMenuItem,'Enable','on')
+    end
     set(handles.rotateSlider,'SliderStep',[1 45]./360);
   end		  
  case {'basevolume'}
