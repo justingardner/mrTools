@@ -71,7 +71,7 @@ else
   switch descriptor
      
     case 'single voxels'
-      disp('Use mouse left button to add/remove a voxel. End selection with Alt or Command key')
+      disp('Use mouse left button to add/remove a voxel. End selection with Alt, Command key or right-click')
       [mouseY,mouseX] = ginput(1);
       voxelXcoords = [.5 .5;-.5 -.5; -.5 .5; -.5 .5]'; 
       voxelYcoords = [.5 -.5;.5 -.5; .5 .5; -.5 -.5]'; 
@@ -79,7 +79,8 @@ else
       selectionX=[];
       hSelection=[];
       hold on;
-      while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'}))
+      key=1;
+      while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) && key==1
         [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
         if index
           delete(hSelection(:,index));
@@ -92,7 +93,7 @@ else
           index = length(selectionY);
           hSelection(:,index)=plot(selectionY(index)+voxelXcoords,selectionX(index)+voxelYcoords,'w');%,'linewidth',mrGetPref('roiContourWidth'));
         end
-        [mouseY,mouseX] = ginput(1);
+        [mouseY,mouseX,key] = ginput(1);
       end
       
       baseX = baseCoords(:,:,1);
