@@ -76,7 +76,10 @@ end
 
 % now bring up mrFlatViewer to set initial round of parameters
 params = mrFlatViewer(flat,outerCoordsFileName,innerCoordsFileName,curvFileName,anatFileName,viewNum);
-if isempty(params),return,end
+if isempty(params)
+  disp('(makeFlat) User pressed Cancel.');
+  return;
+end
 
 % get some other parameters
 paramsInfo = {};
@@ -84,7 +87,10 @@ paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minma
 paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Thresholding the surface makes the background two-tone (binary curvature)'};
 paramsInfo{end+1} = {'flattenMethod', {'mrFlatMesh','surfRelax'},'type=popupmenu','Use either surfRelax or mrFlatMesh'};
 extraParams = mrParamsDialog(paramsInfo, 'makeFlat', []);
-if isempty(params),return;end
+if isempty(extraParams)
+  disp('(makeFlat) User pressed Cancel.');
+  return;
+end
 
 % add extraParams to params
 extraParamsFieldNames = fieldnames(extraParams);
