@@ -759,6 +759,48 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
+% Imports xform from separate file
+function importAlignFromFlirtMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+
+if isempty(ALIGN.volumeVoxelSize)
+  mrWarnDlg('(mrAlignGUI) You must load source and destination volumes before importing an alignment');
+  return
+end
+
+% Prompt user for file and load it
+pathstr = getPathStrDialog(pwd,'Choose FLIRT alignment text file','*.*');
+if ~exist(pathstr,'file')
+    return
+end
+
+%we assume that the file is a 4*4 float matrix in an ascii file
+try
+  xform=dlmread(pathstr);
+catch id
+    mrWarnDlg('(mrAlignGUI) Invalid FLIRT alignment file.');
+    disp(id.message);
+    return;
+end
+
+% Check that file contains a 4*4 matrix with a 1 in the last cell
+if ~all(size(xform)==4) || abs(xform(4,4)-1)>1e-7
+    mrWarnDlg('(mrAlignGUI) Invalid transformation matrix in FLIRT alignment file.');
+    disp(xform);
+    return;
+end
+
+%translation values are in mm and must be converted to voxels of the destination image !!!
+xform(1:3,4) = xform(1:3,4)./ALIGN.volumeVoxelSize;
+
+% Update ALIGN structure and GUI.
+ALIGN.xform = xform;
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+% --------------------------------------------------------------------
 function composeAlignmentMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
@@ -1731,4 +1773,5 @@ else
 end
 
 set(handles.figure1,'name',sprintf('mrAlign: %s -> %s',inplaneName,volumeName));
+
 

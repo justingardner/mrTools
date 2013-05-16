@@ -1543,7 +1543,7 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).coordMap;
       % see if the coordMap is calculated for the correct number of cortical depth bins
-      if ~isempty(val) && (~isfield(val,'corticalDepths') || val.corticalDepths~=corticalDepths)
+      if ~isempty(val) && (~isfield(val,'corticalDepths') || ~isequal(val.corticalDepths,corticalDepths))
         if isfield(val,'innerCoords') && isfield(val,'outerCoords')
           % if not, then we have to do it
           %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
