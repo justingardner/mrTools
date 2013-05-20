@@ -1467,7 +1467,11 @@ switch lower(param)
         % Update the gui
         mlrGuiSet(view,'overlay',overlayNum);
         
-        handles = guidata(view.figure);
+        if ~isempty(viewGet(view,'fignum'))
+          handles = guidata(view.figure);
+        else
+          handles=[];
+        end
         if isempty(handles) || ~isfield(handles,'clippingOverlaysListbox') 
           curClippingOverlay=val;
         else
