@@ -278,7 +278,7 @@ end
 if isempty(anat)
   % go look for it
   [filename pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Find 3D anatomy',flatPath);
-  if isempty(filename),return,end
+  if isnumeric(filename),return,end
   filename = fullfile(getRelativePath(flatPath,pathname),filename);
   anat{1} = filename;
 end
