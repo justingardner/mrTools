@@ -204,7 +204,7 @@ end
 % if no files found, then ask user to go look for it
 if isempty(anat)
   [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Find 3D anatomy file');
-  if isempty(filename),return,end
+  if isnumeric(filename),return,end
   if ~isCurrentPath(pathname)
     filename = fullfile(pathname,filename);
   end
