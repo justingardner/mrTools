@@ -262,14 +262,14 @@ disppercent(inf);
 gFlatViewer.mismatchWarning = 1;
 
 % guess any nifti file for anatomy
-anatDir = dir(sprintf('%s/*.hdr', flatPath));
+anatDir = [dir(sprintf('%s/*.hdr', flatPath)); dir(sprintf('%s/*.nii', flatPath))];
 for i = 1:length(anatDir)
   if ~any(strcmp(anatDir(i).name,anat))
     anat{end+1} = anatDir(i).name;
   end
 end
 % check for 'canonical hdr'
-anatCanonicalDir = dir(sprintf('%s/../*.hdr', flatPath));
+anatCanonicalDir = [dir(sprintf('%s/../*.hdr', flatPath)); dir(sprintf('%s/../*.nii', flatPath))];
 for i= 1:length(anatCanonicalDir)
   if find(strcmp(anatCanonicalDir(i).name,anat))
     anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
@@ -277,8 +277,8 @@ for i= 1:length(anatCanonicalDir)
 end
 if isempty(anat)
   % go look for it
-  [filename pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'},sprintf('Find 3D anatomy'),flatPath);
-  if isempty(filename),return,end
+  [filename pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Find 3D anatomy',flatPath);
+  if isnumeric(filename),return,end
   filename = fullfile(getRelativePath(flatPath,pathname),filename);
   anat{1} = filename;
 end
