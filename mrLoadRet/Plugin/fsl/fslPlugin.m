@@ -16,7 +16,7 @@ end
 switch action
   % return a help string
   case {'help','h','?'}
-    retval = 'Adds FSL functionalities: (1) add items in menus ''Overlays'' and ''ROI'' to apply FSL FNIRT warp spline coefficients to overlays and/or ROIs (2) add item in "Analysis" menu to correct EPI distortions in timeseries using FSL FUGUE. You nee to have FSL installed on your system and work under Linux or MacOSX to use this plugin.';
+    retval = 'Adds FSL functionalities: (1) adds items in menus ''Overlays'' and ''ROI'' to apply FSL FNIRT warp spline coefficients to overlays and/or ROIs. (2) adds item in "Analysis" menu to correct EPI distortions in timeseries using FSL FUGUE. (3) enables FLOBS and TFCE options in GLM v2 Plugin. You need to have FSL installed on your system and work under Linux or MacOSX to use this plugin.';
   
   case {'install','i'}
   % check for a valid view
