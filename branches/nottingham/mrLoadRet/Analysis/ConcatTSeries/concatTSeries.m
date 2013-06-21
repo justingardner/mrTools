@@ -96,7 +96,7 @@ if ieNotDefined('params')
   elseif defaultParams
     params.scanList = 1:viewGet(view,'nScans');
   else
-    params.scanList = selectScans(view);
+    params.scanList = selectInList(view,'scans','Select Scans',1:viewGet(view,'nScans'));
   end
   if isempty(params.scanList),return,end
 
