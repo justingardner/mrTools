@@ -15,8 +15,13 @@ nScans = viewGet(thisView,'nScans',groupNum);
 if ~isfield(params,'scanNum') || isempty(params.scanNum)
   params.scanNum = 1:nScans;
 end
-if isfield(params,'scanParams') && length(params.scanParams)==nScans
-   scanParams = params.scanParams;
+if isfield(params,'scanParams') 
+  if length(params.scanParams)>=nScans
+    scanParams = params.scanParams(1:nScans);
+  else
+    scanParams = cell(1,nScans);
+    scanParams(1:length(params.scanParams))=params.scanParams;
+  end
 else
    % make the output as long as the number of scans
    scanParams = cell(1,nScans);
