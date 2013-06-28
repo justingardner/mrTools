@@ -67,7 +67,7 @@ prefDefaults{find(strcmp('selectedPlugins',prefNames))} = '';
 prefDefaults{find(strcmp('statisticalTestOutput',prefNames))} = {'P value','Z value','-log10(P) value'};
 prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
 prefDefaults{find(strcmp('magnet',prefNames))} = {{'Allegra 3T','other'}};
-prefDefaults{find(strcmp('coil',prefNames))} = {{'LifeScience','Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
+prefDefaults{find(strcmp('coil',prefNames))} = {{'LifeService','Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
 prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
 
 if nargin == 0

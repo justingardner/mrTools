@@ -2887,7 +2887,11 @@ switch lower(param)
     
   case {'curclippingoverlay','currentclippingoverlay'}
     % curclippingoverlay = viewGet(view,'curclippingoverlay')
-    handles = guidata(view.figure);
+    if ~isempty(viewGet(view,'fignum'))
+      handles = guidata(view.figure);
+    else
+      handles=[];
+    end
     if isempty(handles) || ~isfield(handles,'clippingOverlaysListbox') 
       val=viewGet(view,'currentOverlay');
     else
@@ -2902,7 +2906,11 @@ switch lower(param)
     end
     
   case {'clippingoverlaylist'}
-    handles = guidata(view.figure);
+    if ~isempty(viewGet(view,'fignum'))
+      handles = guidata(view.figure);
+    else
+      handles=[];
+    end
     if ~isempty(handles) && isfield(handles,'clipAcrossOverlays') && get(handles.clipAcrossOverlays,'value')
       clippingOverlayList = 1:viewGet(view,'nOverlays');
     else

@@ -63,7 +63,7 @@ switch(outputStatistic)
   case 'Z value'
     p = double(p);
     % replace zeros by epsilon to avoid infinite values
-    p(p==0) = eps;
+    p(p==0) = 1e-16;
     %convert P value to Z value, 
     p = norminv(1-p);  
     p(p<0) = 0; % we're not interested in negative Z value
@@ -73,7 +73,7 @@ switch(outputStatistic)
   case '-log10(P) value'
     p = double(p);
     % replace zeros by epsilon to avoid infinite values
-    p(p==0) = eps;
+    p(p==0) = 1e-16;
     %convert P to -log10(P) 
     p = -log10(p);
     
