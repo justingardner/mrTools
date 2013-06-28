@@ -168,7 +168,14 @@ flat.thresholdMap(isnan(flat.map)) = 0;
 
 % now load the anatomy file, so that we can get the vol2mag/vol2tal fields
 v = newView;
-v = loadAnat(v,setext(params.anatFileName,mrGetPref('niftiFileExtension')),params.path);
+%if extension is hdr, change to img
+[~,~,anatFileExtension] = fileparts(params.anatFileName);
+if strcmp(anatFileExtension,'hdr')
+  anatfileName = setext(params.anatFileName,'img');
+else
+  anatfileName = params.anatFileName;
+end
+v = loadAnat(v,anatfileName,params.path);
 b = viewGet(v,'base');
 deleteView(v);
 
