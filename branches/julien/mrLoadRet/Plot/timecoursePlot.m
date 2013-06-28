@@ -31,6 +31,21 @@ tSeries = squeeze(loadTSeries(view,scan,s,[],x,y));
 jSeries = tSeries(1:junkFrames);
 tSeries = tSeries(junkFrames+1:junkFrames+nFrames);
 
+% check for nans in the timeseries
+nanLocs = find(isnan(tSeries));
+if ~isempty(nanLocs)
+  disp(sprintf('(timecoursePlot) Found %i nans in locs: %s',length(nanLocs),mlrnum2str(nanLocs(:)','sigfigs=0','compact=1')));
+  disp(sprintf('(timecoursePlot) Replacing nan points with mean of tSeries'));
+  % set those locations to the mean so that we can show an approximate fft
+  tSeriesNanMean = nanmean(tSeries);
+  if ~isnan(tSeriesNanMean)
+    tSeries(nanLocs) = tSeriesNanMean;
+  else
+    tSeries(nanLocs) = 0;
+  end
+end
+
+
 
 % get the mean and trend
 model = [(1:nFrames);ones(1,nFrames)]';

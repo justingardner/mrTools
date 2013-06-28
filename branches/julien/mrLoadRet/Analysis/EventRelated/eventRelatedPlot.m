@@ -38,7 +38,7 @@ set(fignum,'Name','eventRelatedPlot');
 % set roi coords
 for roinum = 1:length(roi)
   % get scan coordinates
-  roi{end}.scanCoords = getROICoordinates(view,roi{roinum},scan);
+  roi{roinum}.scanCoords = getROICoordinates(view,roi{roinum},scan);
 end
 
 % get cutoff value
