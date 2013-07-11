@@ -76,11 +76,6 @@ for i = 1:length(vars)
   % set defaults
   varinfo{i}.editable = 1;
   varinfo{i}.visible = 1; 
-  if strcmp(varinfo{i}.type,'pushbutton') %for historical reasons, defaults are different for pushbuttons
-    varinfo{i}.passCallbackOutput=1; 
-  else
-    varinfo{i}.passCallbackOutput=0; 
-  end
   varinfo{i}.passValue=0; 
   if length(vars{i}) > 2
     %JB: The following loop is the main reason why mrLoadRet is so slow at installing overlays and opening GUIs 
@@ -162,6 +157,11 @@ for i = 1:length(vars)
 % % % % 
 % % % %       end
 % % % %     end
+  end
+  if strcmp(varinfo{i}.type,'pushbutton') %for historical reasons, defaults are different for pushbuttons
+    varinfo{i}.passCallbackOutput=1; 
+  else
+    varinfo{i}.passCallbackOutput=0; 
   end
   %for popup menus, check the type
   if strcmp(varinfo{i}.type,'popupmenu')       
