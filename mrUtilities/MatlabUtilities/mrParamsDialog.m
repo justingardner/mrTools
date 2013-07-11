@@ -592,8 +592,10 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
         end
         % now store the value currently being displayed
         if gParams.varinfo{i}.oldControlVal
-          % get the current value
+          % get the current value according to the GUI
           currentValue = get(gParams.ui.varentry{i},'String');
+	  % for some types you need to parse things properly to
+	  % get the current value
           if strcmp(gParams.varinfo{i}.type,'popupmenu')
 	    valueNum = get(gParams.ui.varentry{i},'Value');
 	    % valueNum should not be 0, but sometimes it can get in that
@@ -607,6 +609,8 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
 	    end
           elseif strcmp(gParams.varinfo{i}.type,'checkbox')
             currentValue = get(gParams.ui.varentry{i},'Value');
+          elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
+	    currentValue = gParams.varinfo{i}.value;
           end
           % and save it
 	  if strcmp(gParams.varinfo{i}.type,'array')
@@ -623,19 +627,19 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
         if (val >=1) && (val <= length(gParams.varinfo{i}.allValues))
           gParams.varinfo{i}.value = gParams.varinfo{i}.allValues{val};
 	  % if this is an array, we have to set each individual array item
-    if strcmp(gParams.varinfo{i}.type,'array')
+	  if strcmp(gParams.varinfo{i}.type,'array')
 	    for k = 1:length(gParams.varinfo{i}.allValues{val})
 	      set(gParams.ui.varentry{i}(k),'String',gParams.varinfo{i}.allValues{val}(k));
 	    end
 	  else
-	    if ~strcmp(gParams.varinfo{i}.type,'checkbox')
+	    if ~any(strcmp(gParams.varinfo{i}.type,{'checkbox','pushbutton'})) 
 	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.allValues{val});
 	    end
 	  end
-	  % so more things to set for these types
+	  % some more things to set for these types
 	  if strcmp(gParams.varinfo{i}.type,'popupmenu')
-      set(gParams.ui.varentry{i},'Value',1);
-    elseif strcmp(gParams.varinfo{i}.type,'checkbox')
+	    set(gParams.ui.varentry{i},'Value',1);
+	  elseif strcmp(gParams.varinfo{i}.type,'checkbox')
 	    if ischar(gParams.varinfo{i}.value)
 	      set(gParams.ui.varentry{i},'Value',str2num(gParams.varinfo{i}.value));
 	    else

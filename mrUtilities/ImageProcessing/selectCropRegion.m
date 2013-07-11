@@ -1,7 +1,7 @@
 function cropRegion = selectCropRegion(volume)
 % function cropRegion = selectCropRegion(volume)
 
-cropRegion = []
+cropRegion = [];
 if isempty(volume)
   mrWarnDlg('(selectCropRegion) The source volume is empty');
   return
