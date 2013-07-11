@@ -30,7 +30,7 @@ function [view  params] = motionComp(view,params,varargin)
 %    Should be of the form [ymin xmin zmin; ymax xmax zmax]
 %    Default [].
 % niters: number of iterations in the motion estimation.
-%    Default 3.
+%    Default 10.
 % sliceTimeCorrection: Performs slice time correction if True.
 % sliceTimeString: Specifies slice time correction:
 %    'beginning of TR'

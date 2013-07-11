@@ -33,7 +33,7 @@ if ieNotDefined('params')
   newparams.gradIntensityCorrection = 0;
   newparams.driftCorrection = 1;
   newparams.crop = [];
-  newparams.niters = 3;
+  newparams.niters = 10;
   newparams.motionCompGroupName = 'MotionComp';
   newparams.interpMethod = 'linear';
   newparams.targetScans = [1:nScans];
