@@ -80,13 +80,12 @@ end
 
 % temporal smoothing
 if tSmooth
-  % make the temporal window symetrical going forward and backard
-  tSmoothWindow = 2*fix(tSmooth/2) + 1;  
+  % make a boxcar filter with tSmooth volumes on either side of each frame
   tmpTseries = correctedTseries;
   for frame = 1:totalFrames
-    frameMin = frame - fix(tSmoothWindow/2);
+    frameMin = frame - tSmooth;
     if frameMin < 1, frameMin = 1; end
-    frameMax = frame + fix(tSmoothWindow/2);
+    frameMax = frame + tSmooth;
     if frameMax > totalFrames, frameMax = totalFrames; end
     correctedTseries(:,:,:,frame) = nanmean(tmpTseries(:,:,:,frameMin:frameMax), 4);
   end
