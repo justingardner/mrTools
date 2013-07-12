@@ -99,7 +99,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %    dispModelHRF    %
 %%%%%%%%%%%%%%%%%%%%%%
-function retval = dispModelHRF(callbackArg,params)
+function dispModelHRF(callbackArg,params)
 
 if ~ exist(params.flobsBasisSetFile,'file')
     mrWarnDlg('(hrfFslFlobs) Please load a valid FLOBS output file');
