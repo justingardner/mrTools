@@ -158,10 +158,16 @@ for i = 1:length(vars)
 % % % %       end
 % % % %     end
   end
-  if strcmp(varinfo{i}.type,'pushbutton') %for historical reasons, defaults are different for pushbuttons
-    varinfo{i}.passCallbackOutput=1; 
-  else
-    varinfo{i}.passCallbackOutput=0; 
+  % Pushbuttons are defined so that you can press them and they set the value
+  % of the field (e.g. you can have the button call the rand function and it
+  % will set the field to whatever rand returns). You can bypass this behavior
+  % by setting passCallbackOutput to 0
+  if ~isfield(varinfo{i},'passCallbackOutput')
+    if strcmp(varinfo{i}.type,'pushbutton')
+      varinfo{i}.passCallbackOutput=1; 
+    else
+      varinfo{i}.passCallbackOutput=0; 
+    end
   end
   %for popup menus, check the type
   if strcmp(varinfo{i}.type,'popupmenu')       
