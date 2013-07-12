@@ -169,6 +169,24 @@ for i = 1:length(vars)
       varinfo{i}.passCallbackOutput=0; 
     end
   end
+  %if we need to return the callback output argument, make sure there is at least one 
+  if varinfo{i}.passCallbackOutput
+    if isfield(varinfo{i},'callback')
+      %get the number of output argument returned by the callback function
+      if iscell(varinfo{i}.callback) %a callback can be defined either as a cell array whose first cell contains the function handle/name
+        nArgout = nargout(varinfo{i}.callback{1});
+      else
+        nArgout = nargout(varinfo{i}.callback); %or simply as a function handle
+      end
+      if ~nArgout   %if the callback function returns no output, set this option to 0
+        varinfo{i}.passCallbackOutput=0;
+      end
+    else
+      %if there is no callback defined, there is no argument to return
+      varinfo{i}.passCallbackOutput=0;
+    end
+  end
+    
   %for popup menus, check the type
   if strcmp(varinfo{i}.type,'popupmenu')       
     varinfo{i}.popuptype = 'string';
