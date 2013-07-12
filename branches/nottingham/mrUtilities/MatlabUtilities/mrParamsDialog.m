@@ -795,7 +795,9 @@ if isfield(gParams,'fignum')
   if isfield(gParams,'figlocstr')
   % save figure locations .mrDefaults
     for iFig = 1:length(gParams.fignum)
-      mrSetFigLoc(fixBadChars(gParams.figlocstr{iFig}),get(gParams.fignum(iFig),'Position'));
+      if ishandle(gParams.fignum(iFig))
+	mrSetFigLoc(fixBadChars(gParams.figlocstr{iFig}),get(gParams.fignum(iFig),'Position'));
+      end
     end
   end
   % close figure if it exists
