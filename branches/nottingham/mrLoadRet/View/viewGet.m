@@ -4369,7 +4369,7 @@ elseif isfield(stimFile,'stimvol')
 else
   stimFile.filetype = 'unknown';
 end
-
+stimFile.filename = stimFileName;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    viewGetPrependPre    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
