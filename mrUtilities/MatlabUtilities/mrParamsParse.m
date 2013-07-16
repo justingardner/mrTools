@@ -49,7 +49,7 @@ for i = 1:length(vars)
     if isnumeric(vars{i}{2})
       % check to see if it is an array
       if isscalar(vars{i}{2})
-        vars{i}{2} = num2str(vars{i}{2});
+%         vars{i}{2} = num2str(vars{i}{2});
         varinfo{i}.type = 'numeric';
       else
         varinfo{i}.type = 'array';

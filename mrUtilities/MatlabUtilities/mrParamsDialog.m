@@ -224,7 +224,7 @@ for i = 1:length(gParams.vars)
       end
 
     case 'numeric'
-      dParams.entryString{i} = {gParams.varinfo{i}.value};
+      dParams.entryString{i} = {thisNum2str(gParams.varinfo{i}.value)};
       if isfield(gParams.varinfo{i},'editable') && isequal(gParams.varinfo{i}.editable,0)
         dParams.entryStyle{i} = 'text';
         dParams.testString(i) = dParams.entryString{i};
@@ -302,9 +302,9 @@ for i = 1:length(gParams.varinfo)
      makeUIcontrol(i,gParams.fignum,dParams,uiParams,'varentry');
   if isfield(gParams.varinfo{i},'incdec')
     switch(gParams.varinfo{i}.type)
-      case {'numeric','string'}
+      case 'string'
         values = mrStr2num(gParams.varinfo{i}.value);
-      case 'array'
+      case {'numeric','array'}
         values = gParams.varinfo{i}.value;
     end
     for j=1:size(values,1)
@@ -573,11 +573,11 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
     % otherwise remember this string as the default
   else
     if ~any(strcmp(gParams.varinfo{varnum}.type,{'popupmenu','checkbox'}))
-      if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
+%       if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
         gParams.varinfo{varnum}.value(entryRow,entryCol)=val;
-      else
-        gParams.varinfo{varnum}.value(entryRow,entryCol) = thisNum2str(val);
-      end
+%       else
+%         gParams.varinfo{varnum}.value(entryRow,entryCol) = thisNum2str(val);
+%       end
       set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',thisNum2str(val));
     end
     % now check to see if this variable controls another one
