@@ -3139,7 +3139,7 @@ switch lower(param)
           for iOverlay = overlayNum
             cOverlay = cOverlay+1;
             data = analysis.overlays(iOverlay).data;
-            if length(data) >= scanList(end) && ~isempty(data{iScan})
+            if length(data) >= iScan && ~isempty(data{iScan})
               val{cScan}(:,:,:,cOverlay) = data{iScan};
             else
 	      %  No overlay found, filling with nans. check for empty scan dims
