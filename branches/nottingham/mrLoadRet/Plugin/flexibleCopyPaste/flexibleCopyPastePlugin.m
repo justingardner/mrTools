@@ -61,11 +61,15 @@ refreshMLRDisplay(thisView.viewNum);
 function copyScanCallback(hObject, dump)
 mrGlobals;
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-if viewGet(thisView,'nScans')
+nScans = viewGet(thisView,'nScans');
+if nScans>1
   scanList = selectInList(thisView,'scans','Select Scans to copy');
-else
+elseif nScans==1
   scanList = 1;
+else
+  scanList=[];
 end
+scan=[];
 cScan=0;
 for iScan = scanList
   cScan = cScan+1;
