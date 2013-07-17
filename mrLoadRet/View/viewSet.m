@@ -654,6 +654,7 @@ switch lower(param)
     % Update GUI
     mlrGuiSet(view,'nScans',max(numscans-1,0));
     if (curscan >= scannum)
+      view = viewSet(view,'curscan',max(curscan-1,0));
       mlrGuiSet(view,'scan',max(curscan-1,0));
     end
     % Do the same for all the other views

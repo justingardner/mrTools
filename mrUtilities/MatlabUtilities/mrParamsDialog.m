@@ -224,7 +224,7 @@ for i = 1:length(gParams.vars)
       end
 
     case 'numeric'
-      dParams.entryString{i} = {gParams.varinfo{i}.value};
+      dParams.entryString{i} = {thisNum2str(gParams.varinfo{i}.value)};
       if isfield(gParams.varinfo{i},'editable') && isequal(gParams.varinfo{i}.editable,0)
         dParams.entryStyle{i} = 'text';
         dParams.testString(i) = dParams.entryString{i};
@@ -302,9 +302,9 @@ for i = 1:length(gParams.varinfo)
      makeUIcontrol(i,gParams.fignum,dParams,uiParams,'varentry');
   if isfield(gParams.varinfo{i},'incdec')
     switch(gParams.varinfo{i}.type)
-      case {'numeric','string'}
+      case 'string'
         values = mrStr2num(gParams.varinfo{i}.value);
-      case 'array'
+      case {'numeric','array'}
         values = gParams.varinfo{i}.value;
     end
     for j=1:size(values,1)
@@ -573,11 +573,11 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
     % otherwise remember this string as the default
   else
     if ~any(strcmp(gParams.varinfo{varnum}.type,{'popupmenu','checkbox'}))
-      if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
+%       if ismember(gParams.varinfo{varnum}.type,{'array','numeric'})
         gParams.varinfo{varnum}.value(entryRow,entryCol)=val;
-      else
-        gParams.varinfo{varnum}.value(entryRow,entryCol) = thisNum2str(val);
-      end
+%       else
+%         gParams.varinfo{varnum}.value(entryRow,entryCol) = thisNum2str(val);
+%       end
       set(gParams.ui.varentry{varnum}(entryRow,entryCol),'string',thisNum2str(val));
     end
     % now check to see if this variable controls another one
@@ -592,8 +592,10 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
         end
         % now store the value currently being displayed
         if gParams.varinfo{i}.oldControlVal
-          % get the current value
+          % get the current value according to the GUI
           currentValue = get(gParams.ui.varentry{i},'String');
+	  % for some types you need to parse things properly to
+	  % get the current value
           if strcmp(gParams.varinfo{i}.type,'popupmenu')
 	    valueNum = get(gParams.ui.varentry{i},'Value');
 	    % valueNum should not be 0, but sometimes it can get in that
@@ -607,6 +609,8 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
 	    end
           elseif strcmp(gParams.varinfo{i}.type,'checkbox')
             currentValue = get(gParams.ui.varentry{i},'Value');
+          elseif strcmp(gParams.varinfo{i}.type,'pushbutton')
+	    currentValue = gParams.varinfo{i}.value;
           end
           % and save it
 	  if strcmp(gParams.varinfo{i}.type,'array')
@@ -623,19 +627,19 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
         if (val >=1) && (val <= length(gParams.varinfo{i}.allValues))
           gParams.varinfo{i}.value = gParams.varinfo{i}.allValues{val};
 	  % if this is an array, we have to set each individual array item
-    if strcmp(gParams.varinfo{i}.type,'array')
+	  if strcmp(gParams.varinfo{i}.type,'array')
 	    for k = 1:length(gParams.varinfo{i}.allValues{val})
 	      set(gParams.ui.varentry{i}(k),'String',gParams.varinfo{i}.allValues{val}(k));
 	    end
 	  else
-	    if ~strcmp(gParams.varinfo{i}.type,'checkbox')
+	    if ~any(strcmp(gParams.varinfo{i}.type,{'checkbox','pushbutton'})) 
 	      set(gParams.ui.varentry{i},'String',gParams.varinfo{i}.allValues{val});
 	    end
 	  end
-	  % so more things to set for these types
+	  % some more things to set for these types
 	  if strcmp(gParams.varinfo{i}.type,'popupmenu')
-      set(gParams.ui.varentry{i},'Value',1);
-    elseif strcmp(gParams.varinfo{i}.type,'checkbox')
+	    set(gParams.ui.varentry{i},'Value',1);
+	  elseif strcmp(gParams.varinfo{i}.type,'checkbox')
 	    if ischar(gParams.varinfo{i}.value)
 	      set(gParams.ui.varentry{i},'Value',str2num(gParams.varinfo{i}.value));
 	    else
@@ -791,7 +795,9 @@ if isfield(gParams,'fignum')
   if isfield(gParams,'figlocstr')
   % save figure locations .mrDefaults
     for iFig = 1:length(gParams.fignum)
-      mrSetFigLoc(fixBadChars(gParams.figlocstr{iFig}),get(gParams.fignum(iFig),'Position'));
+      if ishandle(gParams.fignum(iFig))
+	mrSetFigLoc(fixBadChars(gParams.figlocstr{iFig}),get(gParams.fignum(iFig),'Position'));
+      end
     end
   end
   % close figure if it exists

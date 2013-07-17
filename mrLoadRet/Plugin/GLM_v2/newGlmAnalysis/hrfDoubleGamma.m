@@ -138,7 +138,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %    dispModelHRF    %
 %%%%%%%%%%%%%%%%%%%%%%
-function retval = dispModelHRF(callbackArg,params)
+function dispModelHRF(callbackArg,params)
 
 global modelHRFFig;
 
