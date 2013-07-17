@@ -21,7 +21,6 @@ if ~any(nargin == [2 4 6 8])
 end
 
 defaultParams = 0;
-
 % Parse varargin
 v = [];
 for index = 1:2:length(varargin)
@@ -100,7 +99,8 @@ for scan = 1:nScans
 end
 
 % Initialize group popup
-groupNames = {'New',groupNames{:}};
+makeNewGroupStr = 'Make a new group';
+groupNames = {'Make a new group',groupNames{:}};
 motionCompGroupName = params.motionCompGroupName;
 motionCompGroupNum = find(strcmp(motionCompGroupName,groupNames));
 if isempty(motionCompGroupNum)
@@ -122,13 +122,13 @@ paramsInfo{2} = {'interpMethod',putOnTopOfList(params.interpMethod,interpMethodS
 paramsInfo{3} = {'baseScan',params.baseScan,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans), 'Specifies the scan that everything else will be aligned to'};
 paramsInfo{4} = {'baseFrame',putOnTopOfList(params.baseFrame,baseFrameStrings),'type=popupmenu', 'Specifies which frame (or mean) to align to.  First frame can be bad choice b/c of different T2 contrast'};
 paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]', 'How many iterations to estimate the optimal transform (use more for high-res images)'};
-paramsInfo{6} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton', 'Crop the images.  This affects the intensity/contrast correction.  Important for high-res images'};
-paramsInfo{7} = {'sliceTimeCorrection',params.sliceTimeCorrection,'type=checkbox', 'Apply slice time correction along with motion compensation.  Not appropriate for 3D scans.'};
-paramsInfo{8} = {'sliceTimeString',putOnTopOfList(params.sliceTimeString,sliceTimeStrings),'type=popupmenu','Which point in time the slices should be aligned to. May loose first and last frames'};
-paramsInfo{9} = {'driftCorrection', params.driftCorrection, 'type=checkbox', 'Correction for fluctuations in mean intensity over time. This divides each frame by the average over the (cropped) volume. Note that this is only used to create a temporary time series for better estimation of motion parameters. The actual motion comp volume will be created from the original time series without drift correction applied.'};
-paramsInfo{10} = {'gradIntensityCorrection',params.gradIntensityCorrection,'type=checkbox', 'Compensation for intensity gradient before motion estimation. Like driftCorrection this is only applied to estimate head motion, not to final time series.'};
-paramsInfo{11} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]', 'How much temporal smoothing.  Like driftCorrection, only applied to estimate head motion, not to final time series'};
-paramsInfo{12} = {'robust',params.robust,'type=checkbox', 'Robust contrast estimator, should be used if images are noisy with lots of outliers'};
+paramsInfo{6} = {'sliceTimeCorrection',params.sliceTimeCorrection,'type=checkbox', 'Apply slice time correction along with motion compensation.  Not appropriate for 3D scans.'};
+paramsInfo{7} = {'sliceTimeString',putOnTopOfList(params.sliceTimeString,sliceTimeStrings),'type=popupmenu','Which point in time the slices should be aligned to. May loose first and last frames'};
+paramsInfo{8} = {'driftCorrection', params.driftCorrection, 'type=checkbox', 'Correction for fluctuations in mean intensity over time. This divides each frame by the average over the (cropped) volume. Note that this is only used to create a temporary time series for better estimation of motion parameters. The actual motion comp volume will be created from the original time series without drift correction applied.'};
+paramsInfo{9} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]','round=1' 'Size of boxcar window for temporal smoothing. That is, this averages across tSmooth frames before and after every frame. So, if set to 1 it will create a window of 1 volume on either side of every frame and average 3 frames together. This can be useful to get rid of sudden changes in the image which may not be real motion but are image artifacts (assuming that real head motion is slow).  Like driftCorrection, only applied to estimate head motion, not to final time series'};
+paramsInfo{10} = {'gradIntensityCorrection',params.gradIntensityCorrection,'type=checkbox', 'Compensation for intensity gradient before motion estimation. Like driftCorrection this is only applied to estimate head motion, not to final time series. This uses the crop region below'};
+paramsInfo{11} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton','contingent=gradIntensityCorrection','Crop the images.  This affects the gradIntensityCorrection.  Important for high-res images. The selected crop region is used to sample the intensities and should be draw in a small region of the brain. This does not mean that only the crop region will be used for motion comp (the whole volume will be used). If you want to crop so that only some small region of the volume is used for motion comp you should use the mask option which will be visible if you have an ROI loaded.'};
+paramsInfo{12} = {'robust',params.robust,'type=checkbox','contingent=gradIntensityCorrection','Robust contrast estimator, should be used if images are noisy with lots of outliers. This applies to gradIntensityCorrection'};
 paramsInfo{13} = {'include',includeScans,'type=checkbox','group=scanNum', 'Check this to include a particular scan, uncheck to skip'};
 paramsInfo{14} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'Scan selector. Use this to choose which scans to include'};
 paramsInfo{15} = {'tseriesfiles',tseriesfiles,'group=scanNum','type=String','editable=0','Filename of scan'};
@@ -163,7 +163,20 @@ end
 
 if ~isempty(mrParams)
   % do some clean up on the parameters
-  % to make it return exactly what the old GUI returned
+  % first check for a new group
+  if isfield(mrParams,'motionCompGroupName') && ~isempty(mrParams.motionCompGroupName) && strcmp(mrParams.motionCompGroupName,makeNewGroupStr)
+    paramsInfoNewGroupName = {{'groupName','','Name for new group'}};
+    groupName = mrParamsDialog(paramsInfoNewGroupName,'Name for new group');
+    if isempty(groupName) mrParams = [];return, end
+    if isempty(groupName.groupName) || ~isstr(groupName.groupName)
+      disp(sprintf('(motionCompGUImrParams) Invalid groupName'));
+      mrParams = [];
+      return;
+    else
+      mrParams.motionCompGroupName = fixBadChars(groupName.groupName);
+    end
+  end
+  % next makes sure it return exactly what the old GUI returned
   mrParams.groupName = params.groupName;
   if isempty(mrParams.crop)
     mrParams.crop = [];

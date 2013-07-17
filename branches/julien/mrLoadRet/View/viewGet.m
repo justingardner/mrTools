@@ -3139,7 +3139,7 @@ switch lower(param)
           for iOverlay = overlayNum
             cOverlay = cOverlay+1;
             data = analysis.overlays(iOverlay).data;
-            if length(data) >= scanList(end) && ~isempty(data{iScan})
+            if length(data) >= iScan && ~isempty(data{iScan})
               val{cScan}(:,:,:,cOverlay) = data{iScan};
             else
 	      %  No overlay found, filling with nans. check for empty scan dims
@@ -3804,7 +3804,7 @@ switch lower(param)
     val = view.figure;
   case {'curscan','currentscan'}
     % scan = viewGet(view,'currentScan');
-    val = view.curScan;
+    val = min(view.curScan,viewGet(view,'nscans'));
     if isempty(val),val = 1;end
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');
@@ -4406,7 +4406,7 @@ elseif isfield(stimFile,'stimvol')
 else
   stimFile.filetype = 'unknown';
 end
-
+stimFile.filename = stimFileName;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    viewGetPrependPre    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%

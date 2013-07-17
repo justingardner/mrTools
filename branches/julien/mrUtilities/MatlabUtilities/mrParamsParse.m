@@ -49,7 +49,7 @@ for i = 1:length(vars)
     if isnumeric(vars{i}{2})
       % check to see if it is an array
       if isscalar(vars{i}{2})
-        vars{i}{2} = num2str(vars{i}{2});
+%         vars{i}{2} = num2str(vars{i}{2});
         varinfo{i}.type = 'numeric';
       else
         varinfo{i}.type = 'array';
@@ -76,11 +76,6 @@ for i = 1:length(vars)
   % set defaults
   varinfo{i}.editable = 1;
   varinfo{i}.visible = 1; 
-  if strcmp(varinfo{i}.type,'pushbutton') %for historical reasons, defaults are different for pushbuttons
-    varinfo{i}.passCallbackOutput=1; 
-  else
-    varinfo{i}.passCallbackOutput=0; 
-  end
   varinfo{i}.passValue=0; 
   if length(vars{i}) > 2
     %JB: The following loop is the main reason why mrLoadRet is so slow at installing overlays and opening GUIs 
@@ -163,6 +158,35 @@ for i = 1:length(vars)
 % % % %       end
 % % % %     end
   end
+  % Pushbuttons are defined so that you can press them and they set the value
+  % of the field (e.g. you can have the button call the rand function and it
+  % will set the field to whatever rand returns). You can bypass this behavior
+  % by setting passCallbackOutput to 0
+  if ~isfield(varinfo{i},'passCallbackOutput')
+    if strcmp(varinfo{i}.type,'pushbutton')
+      varinfo{i}.passCallbackOutput=1; 
+    else
+      varinfo{i}.passCallbackOutput=0; 
+    end
+  end
+  %if we need to return the callback output argument, make sure there is at least one 
+  if varinfo{i}.passCallbackOutput
+    if isfield(varinfo{i},'callback')
+      %get the number of output argument returned by the callback function
+      if iscell(varinfo{i}.callback) %a callback can be defined either as a cell array whose first cell contains the function handle/name
+        nArgout = nargout(varinfo{i}.callback{1});
+      else
+        nArgout = nargout(varinfo{i}.callback); %or simply as a function handle
+      end
+      if ~nArgout   %if the callback function returns no output, set this option to 0
+        varinfo{i}.passCallbackOutput=0;
+      end
+    else
+      %if there is no callback defined, there is no argument to return
+      varinfo{i}.passCallbackOutput=0;
+    end
+  end
+    
   %for popup menus, check the type
   if strcmp(varinfo{i}.type,'popupmenu')       
     varinfo{i}.popuptype = 'string';

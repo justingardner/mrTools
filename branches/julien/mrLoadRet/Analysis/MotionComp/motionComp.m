@@ -30,7 +30,7 @@ function [view  params] = motionComp(view,params,varargin)
 %    Should be of the form [ymin xmin zmin; ymax xmax zmax]
 %    Default [].
 % niters: number of iterations in the motion estimation.
-%    Default 3.
+%    Default 10.
 % sliceTimeCorrection: Performs slice time correction if True.
 % sliceTimeString: Specifies slice time correction:
 %    'beginning of TR'
@@ -294,7 +294,7 @@ for s = 1:length(targetScans)
   
   % Save tseries with modified nifti header
   scanParams = viewGet(viewBase,'scanParams',scanNum);
-  scanParams.description = ['Full ' descriptions{scanNum}];
+  scanParams.description = ['Full ' descriptions{s}];
   scanParams.fileName = [];
   scanParams.originalFileName{1} = viewGet(viewBase,'tseriesfile',scanNum);
   scanParams.originalGroupName{1} = viewGet(viewBase,'groupName');
