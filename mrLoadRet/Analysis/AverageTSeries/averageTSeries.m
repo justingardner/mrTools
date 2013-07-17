@@ -232,7 +232,7 @@ mrCloseDlg(waitHandle);
 % the nifti header), and add it as a new scan.
 scanParams.fileName = [];
 scanParams.junkFrames = 0;
-scanParams.totalJunkedFrames = 8;
+scanParams.totalJunkedFrames = junkFrames;
 scanParams.nFrames = nFrames;
 scanParams.description = description;
 scanParams.vol2mag = vol2mag;
