@@ -37,10 +37,10 @@ for iFile = 1:length(filename)
   hdr = cbiReadNiftiHeader(fullFilename);
   if isempty(hdr),return,end
   % make sure it is 4 dimensional and then get the number of frames
-  if hdr.dim(1) ~= 4
-    mrWarnDlg(sprintf('(importTSeries) Could not import tSeries because it is a %i dimensional and not 4 dimensional file',hdr.dim(1)));
-    return
-  end
+%   if hdr.dim(1) ~= 4
+%     mrWarnDlg(sprintf('(importTSeries) Could not import tSeries because it is a %i dimensional and not 4 dimensional file',hdr.dim(1)));
+%     return
+%   end
   nFrames = hdr.dim(5);
 
   paramsInfo = {{'filename',filename{iFile},'The name of the nifti file that you are importing','editable=0'}};
