@@ -39,7 +39,7 @@ for g = 1:length(groups)
   else
     tseriesDirName = fullfile(viewGet(view,'groupName'),'TSeries');
   end
-  tseriesDir = dir(sprintf('%s/*.hdr',tseriesDirName));
+  tseriesDir = [dir(sprintf('%s/*.hdr',tseriesDirName));dir(sprintf('%s/*.nii',tseriesDirName))];
   for i = 1:length(tseriesDir)
     tseriesDir(i).match = 0;
   end
@@ -98,6 +98,8 @@ for g = 1:length(groups)
 	  filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
 	  if isfile(filename),delete(filename),end;
 	  filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
+	  if isfile(filename),delete(filename),end;
+	  filename = sprintf('%s/%s.nii',tseriesDirName,baseFilename);
 	  if isfile(filename),delete(filename),end;
 	  filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
 	  if isfile(filename),delete(filename),end;
@@ -180,6 +182,8 @@ if isfile(filename)
 	    if isfile(filename),disp(filename),end
 	    filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
 	    if isfile(filename),disp(filename),end
+	    filename = sprintf('%s/%s.nii',tseriesDirName,baseFilename);
+	    if isfile(filename),disp(filename),end
 	    filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
 	    if isfile(filename),disp(filename),end
 	  end
@@ -224,6 +228,8 @@ if ~recoverable && ~match
   filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
   if isfile(filename),disp(filename),end
   filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
+  if isfile(filename),disp(filename),end
+  filename = sprintf('%s/%s.nii',tseriesDirName,baseFilename);
   if isfile(filename),disp(filename),end
   filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
   if isfile(filename),disp(filename),end
