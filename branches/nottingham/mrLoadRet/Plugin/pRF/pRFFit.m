@@ -462,7 +462,7 @@ subplot(4,4,4);cla
 p = getFitParams(params,fitParams);
 canonical = getCanonicalHRF(p.canonical,fitParams.framePeriod);
 plot(canonical.time,canonical.hrf,'k-')
-myaxis;
+if exist('myaxis') == 2,myaxis;end
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %    scaleAndOffset    %
@@ -968,3 +968,22 @@ tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
 
 % make back into the right dimensions
 tSeries = tSeries(:)';
+
+%%%%%%%%%%%%%
+%%   r2d   %%
+%%%%%%%%%%%%%
+function degrees = r2d(angle)
+
+degrees = (angle/(2*pi))*360;
+
+% if larger than 360 degrees then subtract
+% 360 degrees
+while (sum(degrees>360))
+  degrees = degrees - (degrees>360)*360;
+end
+
+% if less than 360 degreees then add 
+% 360 degrees
+while (sum(degrees<-360))
+  degrees = degrees + (degrees<-360)*360;
+end
