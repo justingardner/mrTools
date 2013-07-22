@@ -2926,7 +2926,7 @@ switch lower(param)
       end
     end
     %unique without ordering
-    [~,uniqueIndices]=unique(clippingOverlayList,'first');
+    [dummy,uniqueIndices]=unique(clippingOverlayList,'first');
     val=clippingOverlayList(unique(uniqueIndices));
   
   case{'overlaynum'}
