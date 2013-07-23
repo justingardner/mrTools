@@ -14,6 +14,9 @@ if ~any(nargin == [1])
   return
 end
 
+minFramePeriod = .01;  %frame period in sec outside which the user is prompted
+maxFramePeriod = 100;  % that something weird's goin on
+
 % go find the group that user wants to load here
 [filename pathname] = uigetfile({sprintf('*%s',mrGetPref('niftiFileExtension')),'Nifti files'},'Select nifti tSeries that you want to import','multiselect','on');
 
@@ -22,6 +25,10 @@ if isnumeric(filename)
 elseif ~iscell(filename)
   filename = {filename};
 end
+
+nScans = viewGet(v,'nScans');
+cScan=0;  %count of succesfully added scans
+weirdFramePeriods = 0;
 
 for iFile = 1:length(filename)
   
@@ -51,15 +58,44 @@ for iFile = 1:length(filename)
   params = mrParamsDialog(paramsInfo);
   if isempty(params),return,end
 
-  scanParams.fileName = params.filename;
-  scanParams.description = params.description;
-  scanParams.nFrames = params.nFrames;
-  scanParams.junkFrames = params.junkFrames;
+  thisScanParams.fileName = params.filename;
+  thisScanParams.description = params.description;
+  thisScanParams.nFrames = params.nFrames;
+  thisScanParams.junkFrames = params.junkFrames;
 
   % now read the file
   %tSeries = cbiReadNifti(fullFilename);
 
-  v = saveNewTSeries(v,fullFilename,scanParams);
-
+  v = saveNewTSeries(v,fullFilename,thisScanParams);
+  
+  %get the new scan params and check that frame period is a reasonable value
+  newScanNum = viewGet(v,'nScans');
+  if newScanNum>nScans %if the new scan has been succesfully added
+    cScan=cScan+1;
+    scanNum(cScan)=newScanNum;
+    scanParams(cScan) = viewGet(v,'scanparams',newScanNum);
+    if scanParams(cScan).framePeriod>maxFramePeriod 
+      weirdFramePeriods(cScan) = scanParams(cScan).framePeriod;
+    elseif scanParams(cScan).framePeriod<minFramePeriod
+      weirdFramePeriods(cScan) = scanParams(cScan).framePeriod;
+    else
+      weirdFramePeriods(cScan) = 0;
+    end
+  end
+  
 end
+
+%fix apparently abnormal frame periods
+if any(weirdFramePeriods)
+  scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,viewGet(v,'tseriesDir'));
+end
+
+%set the new frame period values
+for iScan = 1:length(scanNum)
+  if weirdFramePeriods(iScan)
+    v=viewSet(v,'scanParams',scanParams(iScan),scanNum(iScan));
+  end
+end
+
+
 
