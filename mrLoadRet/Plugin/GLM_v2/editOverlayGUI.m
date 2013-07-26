@@ -65,7 +65,7 @@ function editOverlayGUI(viewNum)
   % set up params dialog
   paramsInfo = {};
   paramsInfo{end+1} = {'overlayCmap', colormaps,'type=popupmenu','List of possible colormaps'};
-  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overla colormap'};
+  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overlap colormap. You can specify additional input arguments after the function name, separating with commas. The user-defined function must be on the path, accept an integer representing the number of colors as its last input argument, and output a params.numColors*3 RGB colormap'};
   paramsInfo{end+1} = {'numColors', numColors, 'first argument to the colormap function'};
   paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function'};
   paramsInfo{end+1} = {'flipColormap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap'};
@@ -256,9 +256,20 @@ function mrCmapCallback(params,viewNum)
 
   % see if we need to call a function
   if ~isempty(params.userDefinedCmap)
+    %parse the function name and its arguments
+    cMapFunction=textscan(params.userDefinedCmap,'%s','delimiter',',');
+    cMapFunction=cMapFunction{1};
+    
     % look for the m function
-    if exist(sprintf('%s.m',params.userDefinedCmap),'file')
-      colormap = eval(sprintf('%s(%i)',params.userDefinedCmap,params.numColors));
+    if exist(sprintf('%s.m',cMapFunction{1}),'file')
+      cMapFunction{1} = str2func(cMapFunction{1}); %convert function string fo function handl
+      for iArg =2:length(cMapFunction) %if there are additional arguments, convert numerical ones
+        if ~isempty(str2num(cMapFunction{iArg}))
+          cMapFunction{iArg} = str2num(cMapFunction{iArg});
+        end
+      end
+      cMapFunction{end+1}=params.numColors; %add number of colors as last argument
+      colormap = callbackEval(cMapFunction);
       if isequal(size(colormap),[params.numColors 3])
 	newOverlay.colormap = colormap;
       else
