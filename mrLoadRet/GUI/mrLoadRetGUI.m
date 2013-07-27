@@ -288,13 +288,12 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-if length(value)~=1 %if the user just erased the value, get it from the view and do nothing
-  set(hObject,'String',num2str(viewGet(view,'curScan')));
+if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
+  set(hObject,'String',num2str(get(handles.scanSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
-  %set the current scan in the view
+  mlrGuiSet(viewNum,'scan',value);
   view = viewSet(view,'curScan',value);
-  %set the current scan on slider
-  mlrGuiSet(viewNum,'scan',viewGet(view,'curScan'));
+  viewSet(view,'curScan',get(handles.scanSlider,'Value'));
   refreshMLRDisplay(viewNum);
 end
 

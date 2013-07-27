@@ -354,7 +354,7 @@ switch lower(field)
  case {'nscans'}
   % mlrGuiSet(view,'nscans',value);
   nScans = round(value);
-  curScan = round(str2num(get(handles.scanText,'String')));
+  curScan = round(get(handles.scanSlider,'Value'));
   if (nScans > 1)
     set(handles.scanSlider,'Min',1);
     set(handles.scanSlider,'Max',nScans);
@@ -365,12 +365,14 @@ switch lower(field)
     set(handles.scanSlider,'Min',0.9);
     set(handles.scanSlider,'Max',1.1);
     set(handles.scanSlider,'Visible','off');
+    curScan = 1;
   end
   mlrGuiSet(view,'scan',curScan);
 
  case {'scan'}
   % mlrGuiSet(view,'scan',value);
-  set(handles.scanSlider,'Value',clipToSlider(handles.scanSlider,value,1));
+  value = clipToSlider(handles.scanSlider,value,1);
+  set(handles.scanSlider,'Value',value);
   set(handles.scanText,'String',num2str(value));
   % description
   description = viewGet(view,'description',value);
