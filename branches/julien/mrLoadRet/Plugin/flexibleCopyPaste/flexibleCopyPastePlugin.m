@@ -53,8 +53,12 @@ end
 function pasteOverlayCallback(hObject, dump)
 mrGlobals;
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-pasteOverlay(thisView, MLR.clipboard);
-refreshMLRDisplay(thisView.viewNum);
+if isfield(MLR,'clipboard') 
+  pasteOverlay(thisView, MLR.clipboard);
+  refreshMLRDisplay(thisView.viewNum);
+else
+  mrWarnDlg('(pasteOverlayCallback) There is no overlay to paste.')
+end
 
 
 % --------------------------------------------------------------------
@@ -67,7 +71,8 @@ if nScans>1
 elseif nScans==1
   scanList = 1;
 else
-  scanList=[];
+  mrWarnDlg('(copyScanCallback) There is no scan to copy');
+  return;
 end
 scan=[];
 cScan=0;
@@ -86,7 +91,7 @@ MLR.clipboard = scan;
 function pasteScanCallback(hObject, dump)
 mrGlobals;
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-if isfield(MLR.clipboard,'tseries') && isfield(MLR.clipboard,'scanParams') 
+if isfield(MLR,'clipboard') && isfield(MLR.clipboard,'tseries') && isfield(MLR.clipboard,'scanParams') 
   for iScan = 1:length(MLR.clipboard)
     if isscan(MLR.clipboard(iScan).scanParams)
     	saveNewTSeries(thisView,MLR.clipboard(iScan).tseries,MLR.clipboard(iScan).scanParams,MLR.clipboard(iScan).scanParams.niftiHdr);
@@ -95,5 +100,5 @@ if isfield(MLR.clipboard,'tseries') && isfield(MLR.clipboard,'scanParams')
     end
   end
 else
-    mrErrorDlg('(paste scan) Cannot paste. Clipboard does not contain valid scans. Use Edit -> Scan -> Copy Scan.')
+    mrWarnDlg('(paste scan) Cannot paste. Clipboard does not contain valid scans. Use Edit -> Scan -> Copy Scan.')
 end

@@ -2926,7 +2926,7 @@ switch lower(param)
       end
     end
     %unique without ordering
-    [~,uniqueIndices]=unique(clippingOverlayList,'first');
+    [dummy,uniqueIndices]=unique(clippingOverlayList,'first');
     val=clippingOverlayList(unique(uniqueIndices));
   
   case{'overlaynum'}
@@ -3126,8 +3126,8 @@ switch lower(param)
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if all(overlayNum & (overlayNum > 0) & (overlayNum <= n))
-        if isempty(scan)
-          scanList = 1:viewGet(view,'nScans');
+        if isempty(scan) %if we want the whole data structure
+          scanList = 1:length(analysis.overlays(overlayNum(end)).data); %we assume that the number of scans is identical for all overlays
         else
           scanList = scan;
         end

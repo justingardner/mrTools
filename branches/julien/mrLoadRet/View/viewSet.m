@@ -563,7 +563,7 @@ switch lower(param)
     else % for old Analyze files
       scanParams.framePeriod = hdr.pixdim(5)./1000;
     end
-    disp(sprintf('(viewSet) framePeriod set to: %f',scanParams.framePeriod))
+    disp(sprintf('(viewSet) framePeriod set to: %f seconds',scanParams.framePeriod))
     if strcmp(lower(mrGetPref('verbose')),'yes')
       % 8 -> 10^0, 16 -> 10^3, 32-> 10^6
       disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));

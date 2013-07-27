@@ -21,7 +21,12 @@ end
 if ispref('mrLoadRet','mrDefaultsFilename')
   defaultsFilename = getpref('mrLoadRet','mrDefaultsFilename');
 else
-  defaultsFilename = '~/.mrDefaults';
+  if ispc
+    homeDir = [getenv('HOMEDRIVE') getenv('HOMEPATH')];
+  else
+    homeDir = getenv('HOME');
+  end
+  defaultsFilename = fullfile(homeDir,'.mrDefaults');
 end
 defaultsFilename = [defaultsFilename '.mat'];
 
