@@ -3143,9 +3143,9 @@ switch lower(param)
               val{cScan}(:,:,:,cOverlay) = data{iScan};
             else
 	      %  No overlay found, filling with nans. check for empty scan dims
-	      % if no scandims return a nan for that overlay.
+	      % if no scandims return empty data.
 	      if isempty(scanDims)
-		val{cScan}(:,:,:,cOverlay) = nan;
+		val{cScan} = [];
 	      else
 		val{cScan}(:,:,:,cOverlay) = NaN(scanDims);
 	      end
