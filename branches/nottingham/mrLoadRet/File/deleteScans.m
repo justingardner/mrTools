@@ -71,8 +71,8 @@ for iScan = 1:length(scanList)
         disp(sprintf('(mrDeleteScans) Could not delete scan for file %s',tSeriesFile{iScan}));
     end
     if ~isempty(v.figure)
+      v = viewSet(v,'overlayCache','init'); %need to empty the cache because scan numbers have changed
       refreshMLRDisplay(v.viewNum);
-      v = viewSet(v,'overlayCache','init');
     end
 end
 if ~isempty(scanList)
