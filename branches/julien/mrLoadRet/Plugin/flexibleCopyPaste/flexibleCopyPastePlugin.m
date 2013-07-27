@@ -94,7 +94,7 @@ thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 if isfield(MLR,'clipboard') && isfield(MLR.clipboard,'tseries') && isfield(MLR.clipboard,'scanParams') 
   for iScan = 1:length(MLR.clipboard)
     if isscan(MLR.clipboard(iScan).scanParams)
-    	saveNewTSeries(thisView,MLR.clipboard(iScan).tseries,MLR.clipboard(iScan).scanParams,MLR.clipboard(iScan).scanParams.niftiHdr);
+    	thisView = saveNewTSeries(thisView,MLR.clipboard(iScan).tseries,MLR.clipboard(iScan).scanParams,MLR.clipboard(iScan).scanParams.niftiHdr);
     else
       mrWarnDlg(['(paste scan) Could not paste scan ' MLR.clipboard(iScan).tseries ' because its parameters are not valid'])
     end
