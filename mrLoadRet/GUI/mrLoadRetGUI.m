@@ -288,7 +288,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.scanSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
   mlrGuiSet(viewNum,'scan',value);
@@ -335,7 +335,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.sliceSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
   mlrGuiSet(viewNum,'slice',value);
@@ -387,7 +387,7 @@ function corticalDepthText_Callback(hObject, eventdata, handles)
 
 viewNum = handles.viewNum;
 newMinValue = str2num(get(hObject,'String'));
-if isempty(newMinValue) %if the user just erased the value, get it from the slider and do nothing
+if length(newMinValue) ~= 1%if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.corticalDepthSlider,'value')));
 else %otherwise, set the new value in the GUI (there is no field for cortical depth in the view, although there probably should)
   if isfield(handles,'linkMinMaxDepthCheck') && get(handles.linkMinMaxDepthCheck,'value')
@@ -449,7 +449,7 @@ refreshMLRDisplay(viewNum);
 function baseGammaText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.baseGammaSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
   viewSet(viewNum,'baseGamma',value);
@@ -487,7 +487,7 @@ end
 function baseTiltText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.baseTiltSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
   if value < 0,value = 0;end
@@ -529,7 +529,7 @@ refreshMLRDisplay(viewNum);
 function overlayMaxText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value
+if length(value) ~= 1 %if the user just erased the value
   % then  get it from the slider
   value = get(handles.overlayMaxSlider,'value');
 else
@@ -571,7 +571,7 @@ refreshMLRDisplay(viewNum);
 function overlayMinText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+if length(value) ~= 1%if the user just erased the value, get it from the slider and do nothing
   % then  get it from the slider
   value = get(handles.overlayMinSlider,'value');
 %  set(hObject,'String',num2str(get(handles.overlayMinSlider,'value')));
@@ -614,7 +614,7 @@ refreshMLRDisplay(viewNum);
 function alphaText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.alphaSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
   viewSet(viewNum,'alpha',value);
@@ -653,7 +653,7 @@ end
 function rotateText_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
 value = str2num(get(hObject,'String'));
-if isempty(value) %if the user just erased the value, get it from the slider and do nothing
+if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.rotateSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
   mlrGuiSet(viewNum,'rotate',value);
@@ -1119,8 +1119,7 @@ if viewGet(view,'nScans') == 0
   disp(sprintf('(mrLoadRetGUI) No scans in group %s to delete',viewGet(view,'groupName')));
   return
 end
-view = deleteScans(view);
-refreshMLRDisplay(viewNum);
+deleteScans(view);
 
 % --------------------------------------------------------------------
 function transformsMenu_Callback(hObject, eventdata, handles)

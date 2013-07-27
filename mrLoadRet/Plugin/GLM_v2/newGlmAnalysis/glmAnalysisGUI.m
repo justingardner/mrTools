@@ -204,6 +204,11 @@ while askForParams
         
         framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),groupNum);
         stimfile = viewGet(thisView,'stimfile',params.scanNum(1),groupNum);
+        if isempty(stimfile)
+          mrWarnDlg('(glmAnalysisGUI) No stim file linked to scan.');
+          params=[];
+          return
+        end
         %check that all stim files are identical within a (concatenated) scan
         stimfileType = stimfile{1}.filetype;
         for iFile=2:length(stimfile)
