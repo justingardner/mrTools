@@ -21,6 +21,7 @@ newparams.groupName = groupName;
 newparams.recompute = zeros(1,nScans);
 newparams.ncycles = zeros(1,nScans);
 newparams.detrend = cell(1,nScans);
+newparams.trigonometricFunction = cell(1,nScans);
 newparams.spatialnorm = cell(1,nScans);
 newparams.tseriesfile = cell(1,nScans);
 for scan = 1:nScans

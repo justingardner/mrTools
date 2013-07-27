@@ -102,14 +102,15 @@ switch lower(param)
   case{'currentscan','curscan'}
     % view = viewSet(view,'currentScan',n);
     nScans = viewGet(view,'nScans');
-    if ((val > 0) && (val <= nScans))
+    if ( (val>0 && nScans>0) || (val==0 && nScans==0) ) && (val <= nScans)
       if viewGet(view,'curScan') ~= val
 	view.curScan = val;
 	mlrGuiSet(view,'scan',val);
       end
     else
-      disp(sprintf('(viewSet) Scan %i out of range [%i:%i]',val,1,nScans));
+      disp(sprintf('(viewSet) Scan %i out of range [%i:%i]',val,min(nScans,1),nScans));
     end
+    
   case{'currentgroup','curgroup'}
     % view = viewSet(view,'currentGroup',n);
     % view = viewSet(view,'currentGroup','groupName')
@@ -139,7 +140,13 @@ switch lower(param)
       mlrGuiSet(view,'group',val);
       nScans = viewGet(view,'nScans',val);
       mlrGuiSet(view,'nScans',nScans);
-      scanNum = max(min(viewGet(view,'groupScanNum',view.curGroup),nScans),1);
+      %get the current scan number for this group
+      % however, we want the current scan to be no more than the number of scans in the group
+      scanNum = min(viewGet(view,'groupScanNum',view.curGroup),nScans); 
+      % but we  don't want it to be 0 if there is at least one scan in the group
+      if ~scanNum && nScans
+        scanNum=1;
+      end
       mlrGuiSet(view,'scan',scanNum);
       view.curScan = scanNum;
       mlrGuiSet(view,'analysis',1);
@@ -607,6 +614,11 @@ switch lower(param)
           MLR.groups(curgroup).auxParams(nscans+1) = auxParams;
         end
       end
+      if nscans < 1 || viewGet(view,'curscan')<1
+        %set the current scan to first scan if there were no scan or if it was set to 0 
+        view=viewSet(view,'curscan',1);
+        mlrGuiSet(view,'scan',viewGet(view,'curscan'));
+      end
       % Reconcile analysis params and overlay data/params with tseries
       % files, adding empty data and default params to new scan.
       view = reconcileAnalyses(view);
@@ -644,7 +656,6 @@ switch lower(param)
     scannum = val;
     numscans = viewGet(view,'nscans');
     curgroup = viewGet(view,'currentGroup');
-    curGroupName = viewGet(view,'groupName',curgroup);
     curscan = viewGet(view,'currentScan');
     % Remove it and reset curscan
     MLR.groups(curgroup).scanParams = MLR.groups(curgroup).scanParams(scannum ~= [1:numscans]);
@@ -653,11 +664,11 @@ switch lower(param)
     view = reconcileAnalyses(view);
     % Update GUI
     mlrGuiSet(view,'nScans',max(numscans-1,0));
-    if (curscan >= scannum)
+    if curscan > scannum || curscan==numscans
       view = viewSet(view,'curscan',max(curscan-1,0));
-      mlrGuiSet(view,'scan',max(curscan-1,0));
+      mlrGuiSet(view,'scan',viewGet(view,'curscan'));
     end
-    % Do the same for all the other views
+    % Do the same for all the other views       %%% This should be changed to reflect the changes made just above. JB.
     for v = find(view.viewNum ~= [1:length(MLR.views)])
       if isview(MLR.views{v})
         group = viewGet(v,'currentGroup');
