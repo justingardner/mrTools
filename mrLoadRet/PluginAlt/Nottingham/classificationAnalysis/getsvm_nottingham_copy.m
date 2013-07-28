@@ -1,6 +1,6 @@
-% getsvm
+% getsvm_nottingham_copy
 %
-%      usage: svm = getsvm(x1,x2,kernelfun,kernalargs,C)
+%      usage: svm = getsvm_nottingham_copy(x1,x2,kernelfun,kernalargs,C)
 %         by: justin gardner
 %       date: 08/03/05
 %    purpose: construct a support vector machine
@@ -19,7 +19,7 @@
 %            Muller, Mika Ratsch Tsuda and Scholkopf 
 %            IEEE Transactions on neural networks 12.2 (2001)
 %
-%      e.g.: svm = getsvm(x1,x2);
+%      e.g.: svm = getsvm_nottingham_copy(x1,x2);
 %            where x1 and x2 hold arrays of exemplars from the wo
 %            groups to be classified. Each row is a different
 %            exmplar, and each column holds the value of the
@@ -27,17 +27,17 @@
 %            The default method is to use a linear classifier
 %  
 %            radial basis functions with C=specified penalty for errors
-%            svm = getsvm(x1,x2,'radialbasis',0.5,10);
+%            svm = getsvm_nottingham_copy(x1,x2,'radialbasis',0.5,10);
 %            2nd order polynomial
-%            svm = getsvm(x1,x2,'polynomial',2,10);
+%            svm = getsvm_nottingham_copy(x1,x2,'polynomial',2,10);
 %            
 %            To classify new points with a previously constructed
 %            classifier do
-%            classification = getsvm(xnew,svm);
+%            classification = getsvm_nottingham_copy(xnew,svm);
 %
 %            try svmtest to play with this function
 %            
-function svm = getsvm(x1,x2,kernelfun,kernelargs,C)
+function svm = getsvm_nottingham_copy(x1,x2,kernelfun,kernelargs,C)
 
 if (nargin == 2)
   % if the second argument is a svm structure then
@@ -58,7 +58,7 @@ elseif (nargin == 3)
 elseif (nargin == 4)
   C = 1;
 elseif (nargin ~= 5)
-  help getsvm;
+  help getsvm_nottingham_copy;
   return
 end
 

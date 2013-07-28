@@ -15,17 +15,35 @@
 %             allc urrently selected plugins.
 %
 %             With a view argument initializes all plugins that the user has selected for that view
+%             If you call with altPlugins set to 1 it will check the directories
+%             under mrLoadRet/PluginAlt for more plugin directories. These are 
+%             advanced / undocumented / untested plugins that can be chosen 
 %
-function v = mlrPlugin(v)
+%             mlrPlugin('altPlugins=1');
+%     
+function v = mlrPlugin(varargin)
+
+v = [];
+altPlugins = 0;
 
 % check arguments
-if ~any(nargin == [0 1])
+if ~any(nargin == [0 1 2])
   help mlrPlugin
   return
 end
 
-% default to view is empty
-if nargin == 0,v = [];end
+if nargin > 0
+  % if the first argument is a view than we are initializing
+  if isview(varargin{1})
+    v = varargin{1};
+    % when initializing, set altPlugins to true so that it checks there
+    % for the plugins
+    getArgs({varargin{2:end}},'altPlugins=1');
+  else
+    % with no arguments, setting plugins default to not showing altPlugins
+    getArgs(varargin,{'altPlugins=0'});
+  end
+end
 
 % check Plugin directory for possible plugins
 % first, find where this function lives. Under that
@@ -45,6 +63,29 @@ for i = 1:length(pluginPaths)
   plugins = getPlugins(pluginPaths{i},plugins);
 end
 
+% check alt plugins if asked for
+if altPlugins
+  % Check mrLoadRet/PluginAlt directory
+  pluginAltDirname = sprintf('%sAlt',fileparts(which('mlrPlugin')));
+  if ~isdir(pluginAltDirname)
+    disp(sprintf('(mlrPlugin) Could not find %s directory',pluginAltDirname));
+  else
+    % check each sub-directory
+    pluginAltDir = dir(pluginAltDirname);
+    for i = 1:length(pluginAltDir)
+      if pluginAltDir(i).isdir 
+	dirName = pluginAltDir(i).name;
+	if (length(dirName) >= 1) && (dirName(1) ~= '.')
+	  dirName = fullfile(pluginAltDirname,dirName);
+	  if isdir(dirName)
+	    % load the plugins
+	    plugins = getPlugins(dirName,plugins);
+	  end
+	end
+      end
+    end
+  end
+end
 % no plugins - display message and return
 if isempty(plugins)
   disp(sprintf('(mlrPlugin) No plugin directories found. Plugins should be in directory mrLoadRet/Plugins'));
@@ -66,8 +107,8 @@ for i = 1:length(selectedPlugins)
   end
 end
 
-% when run with no arguments...
-if nargin == 0
+% when run with no view...
+if isempty(v)
   % keep the list of which plugins were selected
   previousSelectedPlugins = selectedPlugins;
   % put up a selection dialog box
