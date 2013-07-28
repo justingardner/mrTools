@@ -131,16 +131,20 @@ end
 viewAverage = viewSet(viewAverage,'currentGroup',aveGroupNum);
 
 % Check that all scans in scanList have the same nframes, frameperiod,
-% scanvoxelsize, scandims
-nFrames = viewGet(viewBase,'nFrames',baseScan);
-framePeriod = viewGet(viewBase,'framePeriod',baseScan);
+% scanvoxelsize, scandims. Note that we check the nFrames and framePeriod
+% for the first scan in the list. For other parameters it is relevant
+% to which scan we are warping to
+nFrames = viewGet(viewBase,'nFrames',scanList(1));
+framePeriod = viewGet(viewBase,'framePeriod',scanList(1));
 voxelSize = viewGet(viewBase,'scanvoxelsize',baseScan);
 scanDims = viewGet(viewBase,'scandims',baseScan);
 vol2mag = viewGet(viewBase,'scanVol2mag',baseScan);
 vol2tal = viewGet(viewBase,'scanVol2tal',baseScan);
 for iscan = 1:length(scanList)
   if (viewGet(viewBase,'nFrames',scanList(iscan)) ~= nFrames)
-    mrErrorDlg('(averageTSeries) Can not average these scans because they have different numFrames.');
+    mrWarnDlg('(averageTSeries) Can not average these scans because they have different numFrames.');
+    keyboard
+    return
   end
   if (viewGet(viewBase,'framePeriod',scanList(iscan)) ~= framePeriod)
     mrWarnDlg('These scans  have different frame periods.');

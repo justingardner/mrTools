@@ -99,7 +99,7 @@ rfHalfWidth.colormapType = 'normal';
 rfHalfWidth.colormap = pink(256);
 
 % get number of workers 
-nProcessors = mlrNumWorkers(1);
+nProcessors = mlrNumWorkers;
 
 % code snippet for clearing precomputed prefit
 %global gpRFFitStimImage;gpRFFitStimImage = [];
