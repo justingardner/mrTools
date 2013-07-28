@@ -62,7 +62,7 @@ if isempty(params)
 end
 
 % switch to the chosen base
-if ~strcmp(baseName,params.baseName)
+if ~strcmp(viewGet(v,'baseName'),params.baseName)
   v = viewSet(v,'curBase',viewGet(v,'baseNum',params.baseName));
 end
 
