@@ -12,7 +12,7 @@
 %             a group plugin path you could do: mrSetPref('pluginPaths','/path/to/group/plugins');
 % 
 %             It saves in the preference 'selectedPlugins', a cell array with the names of 
-%             allc urrently selected plugins.
+%             all currently selected plugins.
 %
 %             With a view argument initializes all plugins that the user has selected for that view
 %             If you call with altPlugins set to 1 it will check the directories
@@ -220,6 +220,9 @@ if nargin == 1,plugins = [];end
 
 % check for plugin function in each directory
 pluginDir = dir(pluginPath);
+if isempty(pluginDir)
+  mrWarnDlg(['(mlrPlugin) Plugin directory ' pluginPath ' does not exist.']);
+end
 for i = 1:length(pluginDir)
   if pluginDir(i).isdir && (length(pluginDir(i).name) > 1) && (pluginDir(i).name(1)~='.')
     % check for proper file, that is there should be a file
