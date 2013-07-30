@@ -98,7 +98,7 @@ for iRun = 1:size(runTransition,1)
       m = min(m,repmat(saturationThreshold,size(m,1),1));
       % downsample to estimation sampling rate, with constant integral 
       % (we keep extra samples at the end because downsample can remove samples)
-      m = downsample(m, d.designSupersampling/estimationSupersampling, floor(rem(acquisitionDelay,d.tr/estimationSupersampling)*d.designSupersampling/estimationSupersampling/d.tr)+1);
+      m = mrDownsample(m, d.designSupersampling/estimationSupersampling, floor(rem(acquisitionDelay,d.tr/estimationSupersampling)*d.designSupersampling/estimationSupersampling/d.tr)+1);
       %remove extra samples
       m = m(1:estimationSupersampling*numberSamples(iRun),:);
       %only keep acquisition samples

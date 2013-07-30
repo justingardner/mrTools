@@ -1,4 +1,4 @@
-function ds = downsample(s, factor, sampleNumber)
+function ds = mrDownsample(s, factor, sampleNumber)
   % downsample a signal by factor. the original and downsampled signals
   % have equal integrals. sampleNumber, if it exists, is the old sample at which the new value is estimated
   % (1<=sampleNumber<=factor; default: sampleNumber=factor)
