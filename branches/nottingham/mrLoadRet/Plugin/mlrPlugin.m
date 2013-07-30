@@ -20,6 +20,12 @@
 %             advanced / undocumented / untested plugins that can be chosen 
 %
 %             mlrPlugin('altPlugins=1');
+%
+%             If you add a plugin with altPlugins set above then it will add that
+%             alt plugin's parent directory to your list of pluginPaths and if
+%             you remove all alt plugins then it will rekove that alt plugins parent
+%             directory from your pluginPaths. This is so that when you call with
+%             mlrPlugin it will show / not show relevant PluginAlt directories
 %     
 function v = mlrPlugin(varargin)
 
@@ -57,16 +63,30 @@ end
 % get the plugins from the default location within the MLR distribution
 plugins = getPlugins(mlrPluginPath);
 
+% alternative plugin directory name
+pluginAltDirname = sprintf('%sAlt',fileparts(which('mlrPlugin')));
+
 % check any directories found in the alternate plugin path
 pluginPaths = commaDelimitedToCell(mrGetPref('pluginPaths'));
+
 for i = 1:length(pluginPaths)
+  % check if the first part is equal to PluginAlt in which case we append
+  % the correct path
+  if strncmp('PluginAlt',pluginPaths{i},length('PluginAlt'))
+    pluginPaths{i} = fullfile(pluginAltDirname,getLastDir(pluginPaths{i}));
+  end
+end
+
+% add the plugin paths
+pluginPaths = unique(pluginPaths);
+for i = 1:length(pluginPaths)
+  % add the plugin path
   plugins = getPlugins(pluginPaths{i},plugins);
 end
 
 % check alt plugins if asked for
 if altPlugins
   % Check mrLoadRet/PluginAlt directory
-  pluginAltDirname = sprintf('%sAlt',fileparts(which('mlrPlugin')));
   if ~isdir(pluginAltDirname)
     disp(sprintf('(mlrPlugin) Could not find %s directory',pluginAltDirname));
   else
@@ -86,6 +106,7 @@ if altPlugins
     end
   end
 end
+
 % no plugins - display message and return
 if isempty(plugins)
   disp(sprintf('(mlrPlugin) No plugin directories found. Plugins should be in directory mrLoadRet/Plugins'));
@@ -128,7 +149,46 @@ if isempty(v)
     if ~isempty(getMLRView) && ~isequal(previousSelectedPlugins,selectedPlugins)
       mrWarnDlg(sprintf('(mlrPlugin) Restart of MLR is required for change in plugin list to take effect'));
     end
+    % save the choices
     mrSetPref('selectedPlugins',selectedPlugins);
+    % if we have altPlugins selected and the user has selected a plugin from
+    % one of those directories, then make that a default plugin path for the user
+    % so that it comes up when they call mlrPlugin from the menu. Also remove
+    % any default pluginPaths for a choice that has been deselected
+    if altPlugins
+      % get which have been deselected
+      deselectedPlugins = setdiff(previousSelectedPlugins,selectedPlugins);
+      deselectedAltPath = {};
+      % find the path (if it is in Alt) for each deselectedPlugin
+      for i = 1:length(deselectedPlugins)
+	% get the path for the selected plugin
+	selectedPluginNum = find(strcmp(deselectedPlugins{i},{plugins(:).name}));
+	% check if it is an Alt
+	if strcmp(fileparts(fileparts(plugins(selectedPluginNum).path)),pluginAltDirname)
+	  deselectedAltPath{end+1} = fullfile('PluginAlt',getLastDir(fileparts(plugins(selectedPluginNum).path)));
+	end
+      end
+      deselectedAltPath = unique(deselectedAltPath);
+      % find the path (if it is in Alt) for each selectedPlugin
+      selectedAltPath = {};
+      for i = 1:length(selectedPlugins)
+	% get the path for the selected plugin
+	selectedPluginNum = find(strcmp(selectedPlugins{i},{plugins(:).name}));
+	% check if it is an Alt
+	if strcmp(fileparts(fileparts(plugins(selectedPluginNum).path)),pluginAltDirname)
+	  selectedAltPath{end+1} = fullfile('PluginAlt',getLastDir(fileparts(plugins(selectedPluginNum).path)));
+	end
+      end
+      selectedAltPath = unique(selectedAltPath);
+      % deselect any alt paths that do not have any plugins in them anymore
+      deselectedAltPath = setdiff(deselectedAltPath,selectedAltPath);
+      pluginPaths = commaDelimitedToCell(mrGetPref('pluginPaths'));
+      pluginPaths = setdiff(pluginPaths,deselectedAltPath);
+      % and add and selectedAltPaths
+      pluginPaths = union(pluginPaths,selectedAltPath);
+      % and save
+      mrSetPref('pluginPaths',cellToCommaDelimited(pluginPaths));
+    end
   end
 % with a view argument, then run plugins
 else
@@ -176,21 +236,24 @@ for i = 1:length(pluginDir)
       end
       % make sure that calling the function returns the correct one on the path
       if ~isequal(pluginFullName,which(pluginName))
-	keyboard
 	% just give a warning
 	disp(sprintf('(mlrPlugin) Plugin function %s found in %s but should be in %s',pluginName,which(pluginName),pluginFullName));
+	keyboard
       end
-      % now keep info about the plugin
-      plugins(end+1).name = pluginDir(i).name;
-      plugins(end).path = fileparts(pluginFullName);
-      plugins(end).help = eval(sprintf('%s(''help'')',pluginName));
-      % make sure we got a string back for the help
-      if ~isstr(plugins(end).help)
-	disp(sprintf('(mlrPlugin) Plugin %s did not return help string correctly',pluginName));
-	plugins(end).help = 'No help information for plugin';
+      % only add the plugin if it does not already exist
+      if isempty(plugins) || ~any(strcmp(pluginDir(i).name,{plugins(:).name}))
+	% now keep info about the plugin
+	plugins(end+1).name = pluginDir(i).name;
+	plugins(end).path = fileparts(pluginFullName);
+	plugins(end).help = eval(sprintf('%s(''help'')',pluginName));
+        % make sure we got a string back for the help
+	if ~isstr(plugins(end).help)
+	  disp(sprintf('(mlrPlugin) Plugin %s did not return help string correctly',pluginName));
+	  plugins(end).help = 'No help information for plugin';
+	end
+	plugins(end).installCommand = sprintf('%s(''install'',v);',pluginName);
+	plugins(end).selected = 0;
       end
-      plugins(end).installCommand = sprintf('%s(''install'',v);',pluginName);
-      plugins(end).selected = 0;
     else
       disp(sprintf('(mlrPlugin) Plugin function %s not found in %s',pluginName,fileparts(pluginFullName)));
     end
