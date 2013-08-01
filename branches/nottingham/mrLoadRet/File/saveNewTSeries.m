@@ -45,7 +45,12 @@ end
 if ieNotDefined('makeLink'),makeLink=0;end
 
 if isempty(scanParams.fileName)
-  scanParams.fileName = ['tseries-',datestr(now,'yymmdd'),'-',datestr(now,'HHMMSS'),'.',getext(tseries)];
+  if ischar(tseries)
+    extension = getext(tseries);
+  else
+    extension = mrGetPref('niftiFileExtension');
+  end
+  scanParams.fileName = ['tseries-',datestr(now,'yymmdd'),'-',datestr(now,'HHMMSS'),'.',extension];
 end
 filename = scanParams.fileName;
 
@@ -55,7 +60,7 @@ path = fullfile(tseriesdir,scanParams.fileName);
 
 % see if the tseries is actually a string in which case we should
 % copy the nifti file.
-if isstr(tseries)
+if ischar(tseries)
   success = copyNiftiFile(tseries,path,makeLink);
   if ~success,return,end
 
