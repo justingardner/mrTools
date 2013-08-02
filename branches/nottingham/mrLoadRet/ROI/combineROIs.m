@@ -97,6 +97,8 @@ switch action
      else       
        newCoords = setdiff(coords1,coords2,'rows');
      end
+   otherwise
+     error('unknown action: %s',action);
 end
 
 % Transpose back 
