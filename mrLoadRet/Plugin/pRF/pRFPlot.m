@@ -131,7 +131,7 @@ hline(0,'w:');vline(0,'w:');
 subplot(5,5,5);cla
 plot(m.canonical.time,m.canonical.hrf,'k-');
 title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
-myaxis;
+
 % display the stimulus images
 plotStim(gpRFPlot.t);
 

@@ -591,7 +591,7 @@ for iScan = params.scanNum
     stimvol{i} = unique(ceil(stimvol{i}/d.designSupersampling));
   end
   glmAnal.d{iScan}.stimvol = stimvol;
-  glmAnal.d{iScan}.hrf = downsample(d.hrf, d.designSupersampling/d.estimationSupersampling,floor(rem(scanParams{iScan}.acquisitionDelay,d.tr/d.estimationSupersampling)*d.designSupersampling/d.estimationSupersampling/d.tr)+1);
+  glmAnal.d{iScan}.hrf = mrDownsample(d.hrf, d.designSupersampling/d.estimationSupersampling,floor(rem(scanParams{iScan}.acquisitionDelay,d.tr/d.estimationSupersampling)*d.designSupersampling/d.estimationSupersampling/d.tr)+1);
   glmAnal.d{iScan}.actualhrf = d.hrf;
   clear('d');
   glmAnal.d{iScan}.acquisitionDelay = scanParams{iScan}.acquisitionDelay;

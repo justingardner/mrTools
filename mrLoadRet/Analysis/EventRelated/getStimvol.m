@@ -169,7 +169,13 @@ if isfield(var,'supersamplingMode') && strcmp(var.supersamplingMode,'Automatic')
   estimationSupersampling = designSupersampling;
 elseif isfield(var,'supersamplingMode') && strcmp(var.supersamplingMode,'Set value')
   estimationSupersampling = var.estimationSupersampling; %if sub-sample estimation is required in a deconvolution model
-  designSupersampling = var.designSupersampling;  %if supersampling the GLM is required in a canonical HRF analysis
+  if ~isfield(var,'designSupersampling')
+      warning(['supersampleMode is Set value but no designSupersampling '...
+          'field. Recomputing old GLM result?']);
+      designSupersampling = 1;
+  else
+      designSupersampling = var.designSupersampling;  %if supersampling the GLM is required in a canonical HRF analysis
+  end
 else
   estimationSupersampling=1;
   designSupersampling=1;

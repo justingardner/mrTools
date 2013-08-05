@@ -45,8 +45,26 @@ stimMatrix = zeros(runTransitions(end,2)-runTransitions(1,1)+1,length(stimOnsets
 for iRun = 1:size(runTransitions,1)
   thisStimMatrix = zeros(runTransitions(iRun,2)-runTransitions(iRun,1)+1,length(stimOnsets));
   for iStim = 1:length(stimOnsets)
+    ons = stimOnsets{iStim}(stimOnsets{iStim}>=runTransitions(iRun,1) & ...
+      stimOnsets{iStim}<=runTransitions(iRun,2) ) - ...
+      runTransitions(iRun,1)+1;
+    % detect non-integer onset indices. This can happen when doing
+    % multi-shot EPI and the experiment misses the volume acquisition
+    % trigger and catches a non-volume shot trigger instead. So we floor
+    % because triggers are more likely to be late than early
+    roundons = floor(ons);
+    if ~all(ons == roundons)
+      % make sure the rounding hasn't interpolated onsets outside the run
+      roundons(roundons<runTransitions(iRun,1)) = runTransitions(iRun,1);
+      roundons(roundons>runTransitions(iRun,2)) = runTransitions(iRun,2);
+      inter = roundons - ons;
+      warning(['rounding onsets to nearest full volume ' ...
+        '(interpolating min=%.2f, max=%.2f mean=%.2f volumes)'],...
+        min(inter),max(inter),mean(inter));
+      ons = roundons;
+    end
     %only use stimOnsets{iStim}s that are within this runs volume numbers
-    thisStimMatrix( stimOnsets{iStim}(stimOnsets{iStim}>=runTransitions(iRun,1) & stimOnsets{iStim}<=runTransitions(iRun,2) )- runTransitions(iRun,1)+1,iStim ) = 1;
+    thisStimMatrix(ons,iStim ) = 1;
   end
   stimMatrix(runTransitions(iRun,1):runTransitions(iRun,2),:)=thisStimMatrix;
 end

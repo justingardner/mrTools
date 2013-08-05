@@ -30,12 +30,8 @@ if exist(pathStr,'file')
     end
     
     % Check version numbers for consistency
-    if (session.mrLoadRetVersion < version)
-        mrErrorDlg(['This session was created with mrLoadRet version ',...
-            num2str(session.mrLoadRetVersion),...
-            '. Current mrLoadRet version is ',...
-            num2str(version),...
-            '. Use mrInitRet and start from scratch.']);
+    if (session.mrLoadRetVersion > version)
+      disp('(loadSession) This session was created with mrLoadRet version %i the current mrLoadRet version is %i.',session.mrLoadRetVersion,version);
     end
 else
 %    mrErrorDlg(['No mrSESSION.mat file in directory: ',dirPathStr]);

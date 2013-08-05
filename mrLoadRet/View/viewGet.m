@@ -4352,6 +4352,8 @@ else
   r = varg{argnum};
   if isstr(r)
     r = viewGet(view,'roiNum',r);
+    % avoid behaviour where a bad ROI name gives you current ROI instead...
+    assert(~isempty(r),'no roi %s found',varg{1});
   end
 end
 if isempty(r)

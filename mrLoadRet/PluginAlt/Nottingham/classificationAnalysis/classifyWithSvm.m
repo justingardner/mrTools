@@ -21,8 +21,8 @@ for j = 1:(ncat-1)
 %       trainset1 = setdiff(1:size(x1,1),test_idx);
 %       trainset2 = setdiff(1:size(x2,1),test_idx);
       % create the classifer
-%       svm{i_sphere}{test_idx,j,k} = getsvm(x1',x2');%,kernelfun,kernelargs,C);
-      svm{j,k} = getsvm(x1',x2');%,kernelfun,kernelargs,C);
+%       svm{i_sphere}{test_idx,j,k} = getsvm_nottingham_copy(x1',x2');%,kernelfun,kernelargs,C);
+      svm{j,k} = getsvm_nottingham_copy(x1',x2');%,kernelfun,kernelargs,C);
       % store the weights
       weights(j,k,:) = svm{j,k}.w;
       weights(k,j,:) = -svm{j,k}.w;
@@ -45,7 +45,7 @@ classifierout = nan(ncat,ncat,size(test_patt,2));
           % use the svm, calculated above w/out the
           % test stimulus to classify the stimulus against
           % each one of the other stimuli categories
-          classifierout(j,k,:) = getsvm(testvec',svm{j,k});
+          classifierout(j,k,:) = getsvm_nottingham_copy(testvec',svm{j,k});
           % in the matrix of outputs, the classification of the
           % other stimulus categories vs. this one, is symmetric
           % i.e. if we know the classification for stimulus 1 vs
