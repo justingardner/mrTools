@@ -118,7 +118,7 @@ modelHrf = modelHrf./sum(modelHrf(:));
 %downsample with constant integral
 dsFactor = round(sampleDuration/dt);
 dsDelay = floor(rem(sampleDelay,sampleDuration)/dt)+1;
-hrf = downsample(modelHrf', dsFactor, dsDelay);
+hrf = mrDownsample(modelHrf', dsFactor, dsDelay);
 
 %remove trailing zeros
 %hrf = hrf(1:end-find(flipud(max(abs(hrf),[],2))>threshold,1,'first')+1,:);

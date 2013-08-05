@@ -14,7 +14,7 @@ if ~any(nargin == [1])
   help cellToCommaDelimited
   return
 end
-
+in = cellArray(in);
 out = '';
 if isempty(in)
   return

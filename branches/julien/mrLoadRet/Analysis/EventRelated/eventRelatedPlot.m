@@ -172,6 +172,7 @@ if viewGet(view,'nFrames') > 500
 else
   eventRelatedPlotTSeries;
 end
+  zoom on
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   function to plot the time series for the voxel   %%
