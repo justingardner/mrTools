@@ -15,6 +15,11 @@ if ~any(nargin == [1:7])
   return
 end
 
+% see if the shift key is down on MLR fig
+%shiftDown = any(strcmp(get(viewGet(view,'figureNumber'),'CurrentModifier'),'shift'));
+shiftDown = any(strcmp(get(viewGet(view,'figureNumber'),'SelectionType'),'extend'));
+
+
 % get the analysis structure
 analysis = viewGet(view,'analysis');
 if ~isfield(analysis,'d') || (length(analysis.d) < scan) || isempty(analysis.d)
@@ -34,6 +39,13 @@ fignum = selectGraphWin;
 % turn off menu/title etc.
 set(fignum,'NumberTitle','off');
 set(fignum,'Name','eventRelatedPlot');
+
+% don't do roi if shift key is down
+if shiftDown
+  roi = [];
+elseif length(roi) > 0
+  oneTimeWarning('eventRelatedPlotShiftKey',sprintf('(eventRelatedPlot) To avoid showing ROI plots, hold shift down when clicking'),1);
+end
 
 % set roi coords
 for roinum = 1:length(roi)
