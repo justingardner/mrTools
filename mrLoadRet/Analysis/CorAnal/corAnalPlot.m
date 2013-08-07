@@ -14,6 +14,10 @@ if isempty(co) || isempty(amp) || isempty(ph)
     mrErrorDlg('(corAnalPlot) corAnal must be loaded.');
 end
 
+% see if the shift key is down on MLR fig
+%shiftDown = any(strcmp(get(viewGet(view,'figureNumber'),'CurrentModifier'),'shift'));
+shiftDown = any(strcmp(get(viewGet(view,'figureNumber'),'SelectionType'),'extend'));
+
 % Analysis parameters
 ncycles = viewGet(view,'ncycles',scan);
 detrend = viewGet(view,'detrend',scan);
@@ -28,6 +32,12 @@ if ncycles == 0
     return
 end
 
+% don't do roi if shift key is down
+if shiftDown
+  roi = [];
+elseif length(roi) > 0
+  oneTimeWarning('eventRelatedPlotShiftKey',sprintf('(corAnalPlot) To avoid showing ROI plots, hold shift down when clicking'),1);
+end
 
 % now if we have an roi then load its time series
 % and get the mean and plot that instead of the
