@@ -105,6 +105,7 @@ switch action
     mlrAdjustGUI(thisView,'set','editBaseMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','infoBaseAnatomyMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'remove','menu','exportAnatomyMenuItem'); %this is not implemented/would be the same as 'Save as ...
+    mlrAdjustGUI(thisView,'set','displaySurfaceOnVolumeMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','importSurfaceMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','importFlatMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','SaveAsMenuItem','location','/Anatomy/');

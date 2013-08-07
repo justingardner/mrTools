@@ -23,6 +23,7 @@ switch action
             '                  - multiple ROI selection\n',... 
             '                  - folder mrLoadRet/Plugin/interrogatorFolder/interrogatorFunctions is scanned at MLR startup and functions to the default interrogator list',...
             '                  - folder mrLoadRet/Plugin/colormapFolder/colormapFunctions is scanned at MLR startup and adds functions to the default colormap list',...
+            '                  - copy/paste several scans/overlay simultaneously',...
             'Added functions: - New item in menu Edit/Scan menu to unlink stimfiles',...
             '                 - New item in menu ROIs to transform ROIs with pre-defined or custom transformation functions',...
             '                 - Improved GLM analysis that subsumes event-related and "GLM" analyses in a common GLM framework with statistical inference tests (see http://www.psychology.nottingham.ac.uk/staff/ds1/lab/doku.php?id=analysis:glm_statistics_in_mrtools',...
@@ -211,6 +212,7 @@ switch action
     % File menu
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','callback',@exportImage_Callback);
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export Images');
+    mlrAdjustGUI(thisView,'add','menu','Display Surface on Volume','/File/Base anatomy/Use current scan','callback',@displaySurfaceOnVolume,'tag','displaySurfaceOnVolumeMenuItem','separator','on');
 
     % Edit menu
     mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');
@@ -487,6 +489,32 @@ end
 
 scanList = eval(params.scanList);
 mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
+
+
+% --------------------------------------------------------------------
+function displaySurfaceOnVolume(hObject, dump)
+
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
+baseNames = viewGet(thisView,'baseNames');
+for iBase = 1:viewGet(thisView,'numberOfBaseVolumes')
+  isSurface(iBase) = viewGet(thisView,'baseType',iBase)==2;
+end
+isSurface = find(isSurface);
+selected = viewGet(thisView,'surfaceOnVolume');
+
+newSelection = isSurface(logical(buttondlg('Select surface(s) to display', baseNames(isSurface),ismember(isSurface,selected))));
+if isempty(newSelection)
+  set(hObject,'checked','off');
+else
+  set(hObject,'checked','on');
+end
+thisView=viewSet(thisView,'surfaceOnVolume',newSelection);
+if ~isequal(selected,newSelection)
+  refreshMLRDisplay(viewNum);
+end
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Edit Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

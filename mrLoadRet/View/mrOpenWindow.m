@@ -96,6 +96,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       if isfield(mrLastView.view.curslice,'sliceNum')
         view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
       end
+      view = viewSet(view,'surfaceOnVolume',viewGet(mrLastView.view,'surfaceOnVolume'));
     end
     % read analyses
     if isfield(mrLastView.view,'analyses')

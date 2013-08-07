@@ -209,7 +209,7 @@ else
   set(gui.axis,'XDir','reverse');
   set(gui.axis,'YDir','normal');
   set(gui.axis,'ZDir','normal');
-  % set the camera taret to center of surface
+  % set the camera target to center of surface
   camtarget(gui.axis,mean(baseSurface.vtcs))
   % set the size of the field of view in degrees
   % i.e. 90 would be very wide and 1 would be ver
@@ -258,10 +258,22 @@ if verbose>1,disppercent(inf);,end
 nROIs = viewGet(view,'numberOfROIs');
 if nROIs
 %  if baseType <= 1
-    roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(view,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,verbose);
 %  end
 else
   roi = [];
+end
+
+%Display Surface contours on volume
+if ~baseType
+  if  viewGet(view,'basesliceindex')~=3
+    %keyboard %not implemented for views other than axial
+  end
+  if  rotate~=0
+    mrWarnDlg('(refreshMLRDisplay) displaySurfaceOnVolume not implemented for rotations other than 0');
+  else
+    displaySurfaceOnVolume(view,viewGet(view,'surfaceOnVolume'),gui.axis,sliceIndex);
+  end
 end
 
 if verbose>1,disppercent(-inf,'rendering');end
@@ -376,7 +388,7 @@ if ~isempty(roiBaseCoords)
       %but which voxel is displayed is actually not used later because we can only display one depth at a time
       %(roiIndices used to go into s, which was not used for flat maps)
       %so let's just forget about roiIndices 
-      %(this also avoid having to think about at what deptht o take the base coords)
+      %(this also avoids having to think about at what depth to take the base coords)
     end
     baseIndices = find(baseIndices);
 %     roiIndices = roiIndices(baseIndices);
@@ -389,9 +401,9 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%
-%%   displayROIs   %%
+%    displayROIs    %
 %%%%%%%%%%%%%%%%%%%%%
-function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
+function roi = displayROIs(view,sliceNum,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims,verbose)
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -658,4 +670,79 @@ end
 if verbose>1,disppercent(inf);,end
 return;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    displaySurfaceOnVolume    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function displaySurfaceOnVolume(view,surfaceNum,axis,sliceIndex)
+
+for iSurf=surfaceNum
+  if viewGet(view,'baseType',iSurf)~=2
+    mrWarnDlg(['(refreshMLRDisplay:displaySurfaceOnVolume) Base anatomy ''' viewGet(view,'baseName',iSurf) ''' is not a surface']);
+  else
+    baseCoordMap = viewGet(view,'baseCoordmap',iSurf,0);
+
+    innerCoords = permute(baseCoordMap.innerCoords,[2 4 1 3]);
+    outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
+    %convert surface coordinates to base coordinates
+    base2surf=viewGet(view,'base2base',iSurf);
+    innerCoords = (inv(base2surf)*[innerCoords ones(size(innerCoords,1),1)]')';
+    outerCoords = (inv(base2surf)*[outerCoords ones(size(outerCoords,1),1)]')';
+
+    % %switch x and y because that's the way everything is plotted in the GUI
+    % innerCoords = innerCoords(:,[2 1 3]);
+    % outerCoords = outerCoords(:,[2 1 3]);
+
+    %compute the intersection of the surface mesh with the slice
+    %each triangle intersects with the current slice plane along a segment defined by two intersections
+    currentSlice = viewGet(view,'curslice');
+    %first the WM/GM boundary
+    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex);
+
+    %plot all the segments between the first and second intersections
+    line([firstIntersection(:,1) secondIntersection(:,1)]',...
+          [firstIntersection(:,2) secondIntersection(:,2)]',...
+          'color','g','Parent',axis);
+
+    %and the GM/CSF boundary
+    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex);
+
+    %plot all the segments between the first and second intersections
+    line([firstIntersection(:,1) secondIntersection(:,1)]',...
+          [firstIntersection(:,2) secondIntersection(:,2)]',...
+          'color','m','Parent',axis);
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     computeIntersection     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [firstIntersection,secondIntersection]=computeIntersection(triangles,vertices,currentSlice,sliceIndex)
+
+axes2D=fliplr(setdiff([1 2 3],sliceIndex)); %axes of the display depending on the base slice index (slice orientation)
+                                             %(this is set in getBaseSlice and axes are switched for unknown reasons)
+%keep triangles that intersect with the middle current slice
+%look at the z coordinates of each triangle's vertices and see if it is above (1) or below (-1) the centre of the current slice
+isAboveCurrentSlice = reshape(vertices(triangles,sliceIndex),size(triangles))>currentSlice;
+% we can use this to find
+%1) which triangles to keep (those whose vertices are both above and below the current slice)
+trianglesToKeep = find(any(isAboveCurrentSlice,2) & ~all(isAboveCurrentSlice,2));
+triangles = triangles(trianglesToKeep,:);
+isAboveCurrentSlice = isAboveCurrentSlice(trianglesToKeep,:);
+%2) which sides of the triangles intersect with the current slice (those between vertices that are on both sides of the current slice)
+%find the vertices that are alone on one side of the slice
+loneVertices = [isAboveCurrentSlice(:,1)~=isAboveCurrentSlice(:,2) & isAboveCurrentSlice(:,1)~=isAboveCurrentSlice(:,3) ...
+                isAboveCurrentSlice(:,2)~=isAboveCurrentSlice(:,1) & isAboveCurrentSlice(:,2)~=isAboveCurrentSlice(:,3) ...
+                isAboveCurrentSlice(:,3)~=isAboveCurrentSlice(:,1) & isAboveCurrentSlice(:,3)~=isAboveCurrentSlice(:,2)]';
+triangles = triangles'; %transpose so that we can index more easily
+pairVertices = reshape(triangles(~loneVertices),2,size(triangles,2))';
+loneVertices = triangles(loneVertices);
+%find the intersection between each of these segments and the centre of the current slice
+% firstIntersection = currentSlice*ones(size(triangles,2),3);
+a = (currentSlice-vertices(loneVertices,sliceIndex))./(vertices(pairVertices(:,1),sliceIndex) - vertices(loneVertices,sliceIndex));
+firstIntersection(:,1) = vertices(loneVertices,axes2D(1)) + a .* (vertices(pairVertices(:,1),axes2D(1)) - vertices(loneVertices,axes2D(1)));
+firstIntersection(:,2) = vertices(loneVertices,axes2D(2)) + a .* (vertices(pairVertices(:,1),axes2D(2)) - vertices(loneVertices,axes2D(2)));
+% secondIntersection = currentSlice*ones(size(triangles,2),3);
+b = (currentSlice-vertices(loneVertices,sliceIndex))./(vertices(pairVertices(:,2),sliceIndex) - vertices(loneVertices,sliceIndex));
+secondIntersection(:,1) = vertices(loneVertices,axes2D(1)) + b .* (vertices(pairVertices(:,2),axes2D(1)) - vertices(loneVertices,axes2D(1)));
+secondIntersection(:,2) = vertices(loneVertices,axes2D(2)) + b .* (vertices(pairVertices(:,2),axes2D(2)) - vertices(loneVertices,axes2D(2)));
 
