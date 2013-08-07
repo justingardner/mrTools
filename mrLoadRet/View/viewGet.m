@@ -1397,6 +1397,14 @@ switch lower(param)
   case {'curbase','currentbase'}
     % baseNum = viewGet(view,'currentBase')
     val = view.curBase;
+  case {'surfaceonvolume'}
+    % baseNum = viewGet(view,'surfaceonvolume')
+    % returns the indices of the surfaces (in the base anatomy list) that are to be displayed on the volume
+    if isfield(view,'surfaceOnVolume')
+      val = view.surfaceOnVolume;
+    else
+      val=[];
+    end
   case{'basenum'}
     % baseNum = viewGet(view,'baseNum',baseName)
     baseName = varargin{1};

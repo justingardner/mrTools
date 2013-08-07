@@ -29,6 +29,7 @@ if (nargout >= 2)
 		    'roiGroup',{};
 		    'sliceOrientation',1;
         'groupSettings',[];
+        'surfaceOnVolume',[];
        };
 else
   % Return 0 if the overlay structure is missing any fields required or
@@ -36,7 +37,7 @@ else
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
 		    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan','sliceOrientation','roiGroup',...
         'groupSettings'};
-  optionalFields = {};
+  optionalFields = {'surfaceOnVolume',[]};
 end
 
 % Initialize return value

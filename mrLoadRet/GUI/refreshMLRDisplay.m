@@ -375,7 +375,7 @@ if isempty(fig)
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
     %  if baseType <= 1
-    roi = displayROIs(v,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(v,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,verbose);
     %  end
   else
     roi = [];
@@ -398,7 +398,7 @@ if isempty(hAxis)
   % drawing the coordinates into the multiAxis 3D
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
-    roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,verbose);
   else
     roi = [];
   end
@@ -484,7 +484,7 @@ else
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');
   set(hAxis,'ZDir','normal');
-  % set the camera taret to center of surface (but only if curBase)
+  % set the camera target to center of surface (but only if curBase)
   if isequal(viewGet(v,'curBase'),baseNum)
     camtarget(hAxis,mean(baseSurface.vtcs))
   end
@@ -506,9 +506,29 @@ if verbose>1,disppercent(inf);,end
 % Display ROIs
 nROIs = viewGet(v,'numberOfROIs');
 if nROIs
-  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+  roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,verbose);
 else
   roi = [];
+end
+
+%Display Surface contours on volume
+if ~baseType
+  surfaceOnVolume = viewGet(v,'surfaceOnVolume');
+  if ~isfield(gui,'surfOnVolGUIXform')
+    gui.surfOnVolGUIXform = eye(4);
+  end
+  if ~isempty(surfaceOnVolume)
+    if  mod(rotate,90)
+      mrWarnDlg('(refreshMLRDisplay) DisplaySurfaceOnVolume not implemented for rotations that are not 0 or multiples of 90');
+    elseif isempty(viewGet(v,'base2mag')) 
+      mrWarnDlg('(refreshMLRDisplay) Cannot display surface contours because the base coordinate system is not defined');
+    else
+      if ~isfield(gui,'surfOnVolGUIXform')
+        gui.surfOnVolGUIXform = eye(4);
+      end
+      displaySurfaceOnVolume(v,surfaceOnVolume,hAxis,slice,sliceIndex,gui.surfOnVolGUIXform,rotate, base.dims);
+    end
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -666,7 +686,7 @@ if ~isempty(roiBaseCoords)
       %but which voxel is displayed is actually not used later because we can only display one depth at a time
       %(roiIndices used to go into s, which was not used for flat maps)
       %so let's just forget about roiIndices 
-      %(this also avoid having to think about at what deptht o take the base coords)
+      %(this also avoids having to think about at what depth to take the base coords)
     end
     baseIndices = find(baseIndices);
 %     roiIndices = roiIndices(baseIndices);
@@ -679,9 +699,9 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%
-%%   displayROIs   %%
+%    displayROIs    %
 %%%%%%%%%%%%%%%%%%%%%
-function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
+function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims,verbose);
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -951,6 +971,143 @@ end
 if verbose>1,disppercent(inf);,end
 return;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    displaySurfaceOnVolume    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function displaySurfaceOnVolume(view,surfaceNum,axis,currentSlice,sliceIndex,surfOnVolGUIXform,rotate, sliceDims)
+
+colors = [.9 .4 .9;... % color of first inner surface
+          .4 .7 .9;... % color of first outer surface
+          .9 .4 .4;... % color of second inner surface
+          .4 .9 .7;... % color of second outer surface
+          .9 .9 .4;... % color of third inner surface
+          .6 .4 .9];   % color of third outer surface
+numberDifferentColors=1; %maximum number of inner+outer with different colors (up to 3)
+cSurf=0;        
+for iSurf=surfaceNum
+  if viewGet(view,'baseType',iSurf)~=2
+    mrWarnDlg(['(refreshMLRDisplay:displaySurfaceOnVolume) Base anatomy ''' viewGet(view,'baseName',iSurf) ''' is not a surface']);
+  else
+    cSurf=cSurf+1;
+    baseCoordMap = viewGet(view,'baseCoordmap',iSurf,0);
+
+    innerCoords = permute(baseCoordMap.innerCoords,[2 4 1 3]);
+    outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
+    %convert surface coordinates to base coordinates
+    base2surf=viewGet(view,'base2base',iSurf);
+    innerCoords = (surfOnVolGUIXform * inv(base2surf)*[innerCoords ones(size(innerCoords,1),1)]')';
+    outerCoords = (surfOnVolGUIXform * inv(base2surf)*[outerCoords ones(size(outerCoords,1),1)]')';
+
+    % %switch x and y because that's the way everything is plotted in the GUI
+    % innerCoords = innerCoords(:,[2 1 3]);
+    % outerCoords = outerCoords(:,[2 1 3]);
+
+    %compute the intersection of the surface mesh with the slice
+    %each triangle intersects with the current slice plane along a segment defined by two intersections
+    %first the WM/GM boundary
+    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+
+    %plot all the segments between the first and second intersections
+    h = line([firstIntersection(:,1) secondIntersection(:,1)]',...
+          [firstIntersection(:,2) secondIntersection(:,2)]',...
+          'color',colors(2*rem(cSurf-1,numberDifferentColors)+1,:),'Parent',axis);
+
+    %and the GM/CSF boundary
+    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+
+    %plot all the segments between the first and second intersections
+    h = line([firstIntersection(:,1) secondIntersection(:,1)]',...
+          [firstIntersection(:,2) secondIntersection(:,2)]',...
+          'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     computeIntersection     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [firstIntersection,secondIntersection]=computeIntersection(triangles,vertices,currentSlice,sliceIndex,rotate, sliceDims)
+
+axes2D=fliplr(setdiff([1 2 3],sliceIndex)); %axes of the display depending on the base slice index (slice orientation)
+                                             %(this is set in getBaseSlice and axes are switched for unknown reasons)
+% axes2D=setdiff([1 2 3],sliceIndex);
+%look at x and y coordinates of each triangles vertices and keep those
+%that have at least one vertex within sliceDims (irrespective of the z coordinates)
+isWithinSlice = reshape(vertices(triangles,axes2D),[size(triangles) 2]);
+isWithinSlice = any(isWithinSlice(:,:,1)>0.5 & isWithinSlice(:,:,1)<sliceDims(2)+0.5 & ...
+                isWithinSlice(:,:,2)>0.5 & isWithinSlice(:,:,2)<sliceDims(1)+0.5,2);
+triangles = triangles(isWithinSlice,:);
+% axes2D=fliplr(setdiff([1 2 3],sliceIndex));
+%look at the z coordinates of each triangle's vertices and see if it is above (1) or below (-1) the centre of the current slice
+isAboveCurrentSlice = reshape(vertices(triangles,sliceIndex),size(triangles))>currentSlice;
+% we can use this to find
+%1) which triangles to keep (those whose vertices are both above and below the current slice)
+trianglesToKeep = find(any(isAboveCurrentSlice,2) & ~all(isAboveCurrentSlice,2));
+triangles = triangles(trianglesToKeep,:);
+isAboveCurrentSlice = isAboveCurrentSlice(trianglesToKeep,:);
+%2) which sides of the triangles intersect with the current slice (those between vertices that are on both sides of the current slice)
+%find the vertices that are alone on one side of the slice
+loneVertices = [isAboveCurrentSlice(:,1)~=isAboveCurrentSlice(:,2) & isAboveCurrentSlice(:,1)~=isAboveCurrentSlice(:,3) ...
+                isAboveCurrentSlice(:,2)~=isAboveCurrentSlice(:,1) & isAboveCurrentSlice(:,2)~=isAboveCurrentSlice(:,3) ...
+                isAboveCurrentSlice(:,3)~=isAboveCurrentSlice(:,1) & isAboveCurrentSlice(:,3)~=isAboveCurrentSlice(:,2)]';
+triangles = triangles'; %transpose so that we can index more easily
+pairVertices = reshape(triangles(~loneVertices),2,size(triangles,2))';
+loneVertices = triangles(loneVertices);
+%find the intersection between each of these segments and the centre of the current slice
+% firstIntersection = currentSlice*ones(size(triangles,2),3);
+a = (currentSlice-vertices(loneVertices,sliceIndex))./(vertices(pairVertices(:,1),sliceIndex) - vertices(loneVertices,sliceIndex));
+firstIntersection(:,1) = vertices(loneVertices,axes2D(1)) + a .* (vertices(pairVertices(:,1),axes2D(1)) - vertices(loneVertices,axes2D(1)));
+firstIntersection(:,2) = vertices(loneVertices,axes2D(2)) + a .* (vertices(pairVertices(:,1),axes2D(2)) - vertices(loneVertices,axes2D(2)));
+% secondIntersection = currentSlice*ones(size(triangles,2),3);
+b = (currentSlice-vertices(loneVertices,sliceIndex))./(vertices(pairVertices(:,2),sliceIndex) - vertices(loneVertices,sliceIndex));
+secondIntersection(:,1) = vertices(loneVertices,axes2D(1)) + b .* (vertices(pairVertices(:,2),axes2D(1)) - vertices(loneVertices,axes2D(1)));
+secondIntersection(:,2) = vertices(loneVertices,axes2D(2)) + b .* (vertices(pairVertices(:,2),axes2D(2)) - vertices(loneVertices,axes2D(2)));
+
+%apply rotation to 2D coordinates (only working for rotations that are multiples of 90 deg)
+switch rotate
+  case 0
+    %do nothing
+  case 90
+    %flip x coordinates
+    firstIntersection(:,1) = sliceDims(1)+1 - firstIntersection(:,1);
+    secondIntersection(:,1) = sliceDims(1)+1 - secondIntersection(:,1);
+    %swap x and y
+    firstIntersection = firstIntersection * [0 1 ;1 0];
+    secondIntersection = secondIntersection * [0 1 ;1 0];
+  case 180
+    %flip x and y coordinates
+    firstIntersection(:,1) = sliceDims(1)+1 - firstIntersection(:,1);
+    firstIntersection(:,2) = sliceDims(2)+1 - firstIntersection(:,2);
+    secondIntersection(:,1) = sliceDims(1)+1 - secondIntersection(:,1);
+    secondIntersection(:,2) = sliceDims(2)+1 - secondIntersection(:,2);
+  case 270
+    %flip y coordinates
+    firstIntersection(:,2) = sliceDims(2)+1 - firstIntersection(:,2);
+    secondIntersection(:,2) = sliceDims(2)+1 - secondIntersection(:,2);
+    %swap x and y
+    firstIntersection = firstIntersection * [0 1 ;1 0];
+    secondIntersection = secondIntersection * [0 1 ;1 0];
+  otherwise
+    %the more general case would require to figure out how exactly imrotate pads the rotated image
+    %(see getBaseSlice.m). No time to do that + not very useful
+    %However, this is a start, but has not been tested
+    %first need to center the coordinates at the centre of the original (non-rotated) slice 
+    %(not available in this function at the moment)
+    
+    %then rotate the coordinates
+    rotateRad = rotate/180*pi;
+    xform = eye(3);
+    xform(1:2,1:2) = [cos(rotateRad) -sin(rotateRad); sin(rotateRad) cos(rotateRad)];
+    firstIntersection = (xform * [firstIntersection ones(size(firstIntersection,1),1)]')';
+    secondIntersection = (xform * [secondIntersection ones(size(secondIntersection,1),1)]')';
+    
+    %then would need to de-center the coordinates using the dimensions of the rotated image output by imrotate
+    %this depends on how exactly imrotate pads the rotated image and is probably wrong
+    firstIntersection(:,1) = sliceDims(1)/2 + firstIntersection(:,1);
+    firstIntersection(:,2) = sliceDims(2)/2 + firstIntersection(:,2);
+    secondIntersection(:,1) = sliceDims(1)/2 + secondIntersection(:,1);
+    secondIntersection(:,2) = sliceDims(2)/2 + secondIntersection(:,2);
+
+end
 
 function kernel = gaussianKernel2D(FWHM)
 
@@ -963,5 +1120,4 @@ kernelCenter = ceil(kernelDims/2);
 kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2)/(2*sigma_d^2)); %Gaussian function
 kernel = kernel./sum(kernel(:));
 
-  
 

@@ -94,6 +94,7 @@ switch action
    
     %Create Anatomy Menu and move appropriate menu items
     mlrAdjustGUI(thisView,'add','menu','anatomyMenu','/Scan','label','Anatomy','tag','anatomyMenu');
+    mlrAdjustGUI(thisView,'set','displaySurfaceOnVolumeMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','Multiple base display','location','/Anatomy/');
     mlrAdjustGUI(thisView,'add','menu','removeAnatomyMenu','/Anatomy/','label','Remove','tag','removeAnatomyMenu');
     mlrAdjustGUI(thisView,'set','deleteAllBasesMenuItem','location','/Anatomy/Remove/');

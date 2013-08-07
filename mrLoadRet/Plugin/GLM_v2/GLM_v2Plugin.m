@@ -23,6 +23,7 @@ switch action
             '                  - multiple ROI selection\n',... 
             '                  - folder mrLoadRet/Plugin/interrogatorFolder/interrogatorFunctions is scanned at MLR startup and functions to the default interrogator list',...
             '                  - folder mrLoadRet/Plugin/colormapFolder/colormapFunctions is scanned at MLR startup and adds functions to the default colormap list',...
+            '                  - copy/paste several scans/overlay simultaneously',...
             'Added functions: - New item in menu Edit/Scan menu to unlink stimfiles',...
             '                 - New item in menu ROIs to transform ROIs with pre-defined or custom transformation functions',...
             '                 - Improved GLM analysis that subsumes event-related and "GLM" analyses in a common GLM framework with statistical inference tests (see http://www.psychology.nottingham.ac.uk/staff/ds1/lab/doku.php?id=analysis:glm_statistics_in_mrtools',...
@@ -32,6 +33,7 @@ switch action
             '                 - Improved Export Images function',...
             '                 - New item in menu Analysis/Motioncomp to appy existing motion compensation parameters to another set of scans',...
             '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
+            '                 - New item in menu View/ to overlay surface contours on volume base anatomy',...
             ];
    retval ='Adds new functionalities to GUI, including improved GLM analysis';
    
@@ -260,7 +262,10 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','Single Voxels2','/ROI/Add/Contiguous Voxels','callback',@addSingleVoxelsCallBack,'label','Single Voxels','tag','addSingleVoxelsRoiMenuItem','accelerator','N');
     mlrAdjustGUI(thisView,'add','menu','Single Voxels3','/ROI/Subtract/Contiguous Voxels','callback',@removeSingleVoxelsCallBack,'label','Single Voxels','tag','removeSingleVoxelsRoiMenuItem','accelerator','U');
     mlrAdjustGUI(thisView,'add','menu','Transform','/ROI/Combine','callback',@transformROIsCallback,'label','Transform','tag','transformRoiMenuItem');
-
+    
+    %View menu
+    mlrAdjustGUI(thisView,'add','menu','Show Surface on Volume...','/View/Remove All Overlays','callback',@displaySurfaceOnVolume,'tag','displaySurfaceOnVolumeMenuItem','separator','on');
+    
     %Plot menu
     %add 3D render viewer
     mlrAdjustGUI(thisView,'add','menu','3D Viewer','flatViewerMenuItem','callback',@renderIn3D,'tag','viewIn3DMenuItem');
@@ -507,6 +512,201 @@ end
 
 scanList = eval(params.scanList);
 mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
+
+
+% --------------------------------------------------------------------
+function displaySurfaceOnVolume(hObject, dump)
+
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+thisView = viewGet(viewNum,'view');
+baseNames = viewGet(thisView,'baseNames');
+for iBase = 1:viewGet(thisView,'numberOfBaseVolumes')
+  isSurface(iBase) = viewGet(thisView,'baseType',iBase)==2;
+end
+isSurface = find(isSurface);
+selected = viewGet(thisView,'surfaceOnVolume');
+
+paramsInfo = {};
+for iSurf=1:length(isSurface)
+  paramsInfo{end+1}={fixBadChars(baseNames{isSurface(iSurf)}),ismember(isSurface(iSurf),selected),'type=checkbox','callback',{@refreshSurfOnVol,viewNum, hObject},'passParams=1',...
+                                'passCallbackOutput=0','Check to display surface'};
+end
+%I have implemented something to modify the surface alignment manually but
+%it should not be needed if the surface and volumes have correctly been
+%imported from freesurfer. and it`s awkward to use anyway
+% paramsInfo{end+1} = {'reset',[],'type=pushbutton','buttonString=Modify SurfToBase Xform', 'callback',{@modifySurf2baseGUI,viewNum, hObject},'passParams=1','passCallbackOutput=0',...
+%                                 'To manually modify the surface to base alignment (xform)'};
+mrParamsDialog(paramsInfo,'Select surface(s) to display','modal=0');
+
+%newSelection = isSurface(logical(buttondlg('Select surface(s) to display', baseNames(isSurface),ismember(isSurface,selected))));
+
+% --------------------------------------------------------------------
+function refreshSurfOnVol(params, viewNum, hObject)
+
+newSelection=getSelectedSurfaces(params,viewNum);
+if isempty(newSelection)
+  set(hObject,'checked','off');
+else
+  set(hObject,'checked','on');
+end
+viewSet(viewNum,'surfaceOnVolume',newSelection);
+
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function selection = getSelectedSurfaces(params,viewNum)
+
+baseNames = viewGet(viewNum,'baseNames');
+surfNames = fieldnames(params);
+selection=[];
+for iSurf=1:length(surfNames)-1
+  if params.(surfNames{iSurf})
+    [~,surfNum]= ismember(surfNames{iSurf},baseNames);
+    selection=[selection surfNum];
+  end
+end
+
+% --------------------------------------------------------------------
+function modifySurf2baseGUI(params,viewNum, hObject)
+
+handles = guidata(hObject);
+startingTrans = [0 0 0];
+startingRot = [0 0 0];
+handles.surfOnVolGUIXform = eye(4);
+guidata(hObject,handles);
+
+newSelection=getSelectedSurfaces(params,viewNum);
+if ~isempty(newSelection)
+  % set up params dialog
+  paramsInfo = {};
+  paramsInfo{end+1} = {'Axes', {'X (L->R)','Y (P->A)','Z (I->S)'},'editable=0','type=stringarray','Axes in the current base space'};
+  paramsInfo{end+1} = {'surf2baseTrans', startingTrans,'incdec=[-.5 .5]', 'callback',{@modifySurf2baseCallback,viewNum, hObject},'passParams=1',...
+                                'Translation (in mm) of the surface relative to the current base'};
+  paramsInfo{end+1} = {'surf2baseRot',startingRot,'incdec=[-.2 .2]', 'callback',{@modifySurf2baseCallback,viewNum, hObject},'passParams=1',...
+                                'Rotation (in deg) of the surface relative ot the center of the current base'};
+  paramsInfo{end+1} = {'reset',[],'type=pushbutton','buttonString=Reset Xform', 'callback',{@resetSurf2baseCallback,viewNum, hObject},'passParams=1','passCallbackOutput=0',...
+                                'Resets translation and rotation to 0 on all axes'};
+  paramsInfo{end+1} = {'apply',[],'type=pushbutton','buttonString=Apply Xform', 'callback',{@applyTransform,viewNum, hObject},'passParams=1','passCallbackOutput=0',...
+                                'Composes the above relative translation/rotation with the transform of current and/or other bases and with scan transforms (The nifti Header of the corresponding files will not be modified).'};
+  % display dialog
+  mrParamsDialog(paramsInfo,'Modify Surface to Volume xform','modal=0','okCallback',{@closeCallback,viewNum,hObject});
+end
+
+
+% --------------------------------------------------------------------
+function modifySurf2baseCallback(params, viewNum, hObject)
+
+
+translate = params.surf2baseTrans;
+rotate = pi/180 * params.surf2baseRot;
+
+% Stuff rotate and translate into 4x4 matrix
+rotateXform = eye(4);
+cosx = cos(rotate(1));		sinx = sin(rotate(1));
+cosy = cos(rotate(2));		siny = sin(rotate(2));
+cosz = cos(rotate(3));		sinz = sin(rotate(3));
+rotateXform(1,1) = cosz*cosy+sinz*sinx*siny;
+rotateXform(1,2) = sinz*cosy-cosz*sinx*siny;
+rotateXform(1,3) = cosx*siny;
+rotateXform(2,1) = -sinz*cosx;
+rotateXform(2,2) = cosz*cosx;
+rotateXform(2,3) = sinx;
+rotateXform(3,1) = sinz*sinx*cosy-cosz*siny;
+rotateXform(3,2) = -cosz*sinx*cosy-sinz*siny;
+rotateXform(3,3) = cosx*cosy;
+
+thisView = viewGet(viewNum,'view');
+baseDims = viewGet(thisView,'baseDims');
+baseVoxelSize = viewGet(thisView,'baseVoxelSize');
+
+transXform = eye(4);
+transXform(1,4) = translate(1)/baseVoxelSize(1);
+transXform(2,4) = translate(2)/baseVoxelSize(2);
+transXform(3,4) = translate(3)/baseVoxelSize(3);
+
+prerotateXform = eye(4);
+prerotateXform(1:3,4) = -baseDims'/2;
+
+handles = guidata(hObject);
+handles.surfOnVolGUIXform = transXform / prerotateXform * rotateXform * prerotateXform;
+guidata(hObject,handles);
+
+refreshMLRDisplay(viewNum);
+
+%-------------------------------------------------------------------------
+function applyTransform(params,viewNum,hObject)
+
+
+thisView = viewGet(viewNum,'view');
+handles = guidata(hObject);
+
+%get a list of scan groups to modify
+groupList = selectInList(thisView,'group','Select scan group(s) to which to apply the new transform',1:viewGet(thisView,'ngroups'));
+for iGroup = groupList
+  for iScan = 1:viewGet(thisView,'nScans',iGroup)
+    % compute new scan Sform
+    curbase2scan = viewGet(thisView,'base2scan',iScan,iGroup);
+    % because surfOnVolGUIXform has been calculated in matlab (with the origin at 1,1,1), we first apply the inverse of the origin shift,
+    % then convert to base coordinates 
+    % then we apply the new transform relative to the base space, convert back to scan space
+    % and then apply the old scan2mag (scanSform with the origin shift included)
+    newSform = viewGet(thisView,'scan2mag',iScan,iGroup) * curbase2scan / handles.surfOnVolGUIXform / curbase2scan / shiftOriginXform;
+  %   newSform = viewGet(thisView,'base2mag',iGroup) * curbase2scan * inv(handles.surfOnVolGUIXform) * inv(curbase2scan) * inv(shiftOriginXform);
+    thisView = viewSet(thisView,'scanSform',newSform,iScan,iGroup);
+  end
+end
+
+%get a list of bases to modify (select current base by default)
+curBase = viewGet(thisView,'curbase');
+baseList = selectInList(thisView,'base','Select bases to which to apply the new transform',curBase);
+for iBase = baseList
+  %check if any are surfaces and canonical bases ?
+  
+  % compute new base Sform
+  curbase2base = viewGet(thisView,'base2base',iBase);
+  newSform = viewGet(thisView,'base2mag',iBase) * curbase2base / handles.surfOnVolGUIXform / curbase2base / shiftOriginXform;
+%   newSform = viewGet(thisView,'base2mag',iBase) * curbase2base * inv(handles.surfOnVolGUIXform) * inv(curbase2base) * inv(shiftOriginXform);
+  thisView = viewSet(thisView,'baseSform',newSform,iBase);
+end
+
+% clear the caches
+thisView = viewSet(thisView,'roiCache','init');
+thisView = viewSet(thisView,'overlayCache','init');
+thisView = viewSet(thisView,'baseCache','init');
+
+%reset surfOnVolGUIXform
+handles.surfOnVolGUIXform = eye(4);
+guidata(hObject,handles);
+params.surf2baseTrans = [0 0 0];
+params.surf2baseRot = [0 0 0];
+mrParamsSet(params);
+  
+if ismember(curBase,baseList) || ismember(viewGet(thisView,'curGroup'),groupList)
+  % and refresh
+  refreshMLRDisplay(viewNum);
+end
+
+
+%-------------------------------------------------------------------------
+function resetSurf2baseCallback(params,viewNum,hObject)
+
+handles = guidata(hObject);
+handles.surfOnVolGUIXform = eye(4);
+guidata(hObject,handles);
+params.surf2baseTrans = [0 0 0];
+params.surf2baseRot = [0 0 0];
+mrParamsSet(params);
+refreshMLRDisplay(viewNum);
+
+
+%-------------------------------------------------------------------------
+function closeCallback(viewNum,hObject)
+
+handles = guidata(hObject);
+handles.surfOnVolGUIXform = eye(4);
+guidata(hObject,handles);
+refreshMLRDisplay(viewNum);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Edit Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
