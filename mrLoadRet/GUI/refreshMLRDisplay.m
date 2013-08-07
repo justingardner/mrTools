@@ -221,7 +221,27 @@ end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(gui.axis,'off');
-axis(gui.axis,'image');
+if ~baseType && ~mod(rotate,90)
+  %set aspect ratio according to voxel size
+  baseVoxelSize = viewGet(view,'basevoxelsize',baseNum);
+  %find how the volume dimensions are mapped onto the 2D image plot (this is set in getBaseSlice)
+  switch sliceIndex   
+    case 1
+      swapAxes = [2 3 1];
+    case 2
+      swapAxes = [1 3 2];
+    case 3
+      swapAxes = [1 2 3];
+  end
+  axisAspectRatio = baseVoxelSize(swapAxes);
+  %and it also depends on the rotation (when it is a multiple of 90)
+  if ismember(rotate,[90 270])
+    axisAspectRatio = axisAspectRatio([2 1 3]);
+  end
+  set(gui.axis,'dataAspectRatio',axisAspectRatio);
+else
+  axis(gui.axis,'image');
+end
 if verbose>1,disppercent(inf);,end
 
 
