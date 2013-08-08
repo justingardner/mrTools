@@ -206,7 +206,7 @@ switch action
     % File menu
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','callback',@exportImage_Callback);
     mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export Images');
-    mlrAdjustGUI(thisView,'add','menu','Display Surface on Volume','/File/Base anatomy/Use current scan','callback',@displaySurfaceOnVolume,'tag','displaySurfaceOnVolumeMenuItem','separator','on');
+    mlrAdjustGUI(thisView,'add','menu','Show Surface on Volume...','/File/Base anatomy/Use current scan','callback',@displaySurfaceOnVolume,'tag','displaySurfaceOnVolumeMenuItem','separator','on');
 
     % Edit menu
     mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');

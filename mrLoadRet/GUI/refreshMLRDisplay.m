@@ -286,13 +286,11 @@ end
 
 %Display Surface contours on volume
 if ~baseType
-  if  viewGet(view,'basesliceindex')~=3
-    %keyboard %not implemented for views other than axial
-  end
-  if  rotate~=0
+  surfaceOnVolume = viewGet(view,'surfaceOnVolume');
+  if  rotate~=0 && ~isempty(surfaceOnVolume)
     mrWarnDlg('(refreshMLRDisplay) displaySurfaceOnVolume not implemented for rotations other than 0');
-  else
-    displaySurfaceOnVolume(view,viewGet(view,'surfaceOnVolume'),gui.axis,sliceIndex);
+  elseif ~isempty(surfaceOnVolume)
+    displaySurfaceOnVolume(view,surfaceOnVolume,gui.axis,sliceIndex);
   end
 end
 
@@ -721,7 +719,7 @@ for iSurf=surfaceNum
     %plot all the segments between the first and second intersections
     line([firstIntersection(:,1) secondIntersection(:,1)]',...
           [firstIntersection(:,2) secondIntersection(:,2)]',...
-          'color','g','Parent',axis);
+          'color',[.9 .4 .9],'Parent',axis);
 
     %and the GM/CSF boundary
     [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex);
@@ -729,7 +727,7 @@ for iSurf=surfaceNum
     %plot all the segments between the first and second intersections
     line([firstIntersection(:,1) secondIntersection(:,1)]',...
           [firstIntersection(:,2) secondIntersection(:,2)]',...
-          'color','m','Parent',axis);
+          'color',[.4 .7 .9],'Parent',axis);
   end
 end
 
