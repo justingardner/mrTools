@@ -133,25 +133,25 @@ switch action
         'callback',@displayROILabels_Callback,'fontSize', checkFontSize,'String',...
         'Display Labels','position',                              [0.09    0.665   0.18   checkBoxHeight]);
     switch(viewGet(thisView,'showROIs'))
-      case {'group','selected'}
-        thisView=viewSet(thisView,'showROIs','selected');
+      case {'selected'}
         roiDisplayMode = 1;
-      case {'group perimeter','selected perimeter'}
+      case {'selected perimeter'}
         roiDisplayMode = 2;
-        thisView=viewSet(thisView,'showROIs','selected perimeter');
-      case {'all'}
-        thisView=viewSet(thisView,'showROIs','selected');
+      case {'group'}
         roiDisplayMode = 3;
-      case {'all perimeter'}
+      case {'group perimeter'}
         roiDisplayMode = 4;
-        thisView=viewSet(thisView,'showROIs','selected perimeter');
-      case 'hide'
+      case {'all'}
         roiDisplayMode = 5;
+      case {'all perimeter'}
+        roiDisplayMode = 6;
+      case 'hide'
+        roiDisplayMode = 7;
     end
     mlrAdjustGUI(thisView,'add','control','roiDisplayMode','style','text','fontSize', checkFontSize,...
         'String','Display mode','position',                       [0.02    0.635   0.12   0.025]);
     mlrAdjustGUI(thisView,'add','control','roiDisplayModePopup','style','popupmenu','value',roiDisplayMode,...
-        'callback',@roiDislayModePopup_Callback,'String',{'Selected ROIs (Voxels)' 'Selected ROIs (Perimeter)' 'All ROIs (Voxels)' 'All ROIs (Perimeter)','Hide'},...
+        'callback',@roiDislayModePopup_Callback,'String',{'Selected ROIs (Voxels)' 'Selected ROIs (Perimeter)' 'ROIs group (Voxels)' 'ROIs group (Perimeter)' 'All ROIs (Voxels)' 'All ROIs (Perimeter)','Hide'},...
         'fontSize', popupFontSize,'position',                     [0.14    0.63    0.14   0.035]);
     mlrAdjustGUI(thisView,'set','roiPopup','position',            [0.02    0.51    0.26   0.125]);
     mlrAdjustGUI(thisView,'set','roiPopup','style','listbox');
@@ -232,10 +232,10 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','Combine/Transform Overlays','/Overlays/','callback',@combineOverlaysCallback,'tag','transformOverlaysMenuItem');
 
     %ROI menu
-    %remove show ROI menus and re-arrange ROI menus 
-    mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','location','/ROI/Convert');
-    mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','separator','off');
-    mlrAdjustGUI(thisView,'remove','menu','showRoiMenu');
+    %remove show group ROI menus and re-arrange ROI menus 
+%     mlrAdjustGUI(thisView,'remove','menu','showGroupMenuItem');
+%     mlrAdjustGUI(thisView,'remove','menu','showGroupPerimeterMenuItem');
+%     mlrAdjustGUI(thisView,'remove','menu','setROIGroupMenuItem');
     mlrAdjustGUI(thisView,'set','undoRoiMenuItem','location','/ROI/Restrict');
     mlrAdjustGUI(thisView,'set','convertRoiMenuItem','separator','off');
     mlrAdjustGUI(thisView,'set','deleteRoiMenu','separator','on');
@@ -246,9 +246,9 @@ switch action
     mlrAdjustGUI(thisView,'set','pasteRoiMenuItem','label','Paste ROI(s)');
     mlrAdjustGUI(thisView,'set','editRoiMenuItem','label','Edit selected ROI(s)');
     %add functions
-    mlrAdjustGUI(thisView,'add','menu','Single Voxels','/ROI/Create/Contiguous Voxels','callback',@createSingleVoxelsCallBack,'label','Single Voxels','tag','createSingleVoxelsRoiMenuItem','accelerator','S');
-    mlrAdjustGUI(thisView,'add','menu','Single Voxels2','/ROI/Add/Contiguous Voxels','callback',@addSingleVoxelsCallBack,'label','Single Voxels','tag','addSingleVoxelsRoiMenuItem','accelerator','A');
-    mlrAdjustGUI(thisView,'add','menu','Single Voxels3','/ROI/Subtract/Contiguous Voxels','callback',@removeSingleVoxelsCallBack,'label','Single Voxels','tag','removeSingleVoxelsRoiMenuItem','accelerator','Z');
+    mlrAdjustGUI(thisView,'add','menu','Single Voxels','/ROI/Create/Contiguous Voxels','callback',@createSingleVoxelsCallBack,'label','Single Voxels','tag','createSingleVoxelsRoiMenuItem','accelerator','T');
+    mlrAdjustGUI(thisView,'add','menu','Single Voxels2','/ROI/Add/Contiguous Voxels','callback',@addSingleVoxelsCallBack,'label','Single Voxels','tag','addSingleVoxelsRoiMenuItem','accelerator','N');
+    mlrAdjustGUI(thisView,'add','menu','Single Voxels3','/ROI/Subtract/Contiguous Voxels','callback',@removeSingleVoxelsCallBack,'label','Single Voxels','tag','removeSingleVoxelsRoiMenuItem','accelerator','U');
     mlrAdjustGUI(thisView,'add','menu','Transform','/ROI/Combine','callback',@transformROIsCallback,'label','Transform','tag','transformRoiMenuItem');
 
     %Plot menu
@@ -412,6 +412,10 @@ switch(get(hObject,'value'))
   case 4
     viewSet(viewNum,'showROIs','group perimeter');
   case 5
+    viewSet(viewNum,'showROIs','all');
+  case 6
+    viewSet(viewNum,'showROIs','all perimeter');
+  case 7
     viewSet(viewNum,'showROIs','hide');
 end
 refreshMLRDisplay(viewNum);
