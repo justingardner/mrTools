@@ -2255,7 +2255,7 @@ if nROIs > 0
   % create a cell array with the names of the ROIs to display
   roiGroup = {};
   for i = 1:length(roiNames)
-    if params.(roiNames{i})
+    if params.(fixBadChars(roiNames{i}))
       roiGroup{end+1} = roiNames{i};
     end
   end
