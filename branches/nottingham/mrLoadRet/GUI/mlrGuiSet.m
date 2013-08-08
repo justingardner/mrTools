@@ -68,6 +68,10 @@ switch lower(field)
   else
     set(handles.labelsROIsMenuItem,'Checked','off');
   end
+  if isfield(handles,'displayROILabels')
+    set(handles.displayROILabels,'value',value);
+  end
+  
  case {'showrois'}
   % mlrGuiSet(view,'showrois',value);
   
@@ -86,16 +90,20 @@ switch lower(field)
   
   if isfield(handles,'roiDisplayModePopup')
     switch(value)
-      case {'group','selected'}
+      case {'selected'}
         roiDisplayMode = 1;
-      case {'group perimeter','selected perimeter'}
+      case {'selected perimeter'}
         roiDisplayMode = 2;
-      case {'all'}
+      case {'group'}
         roiDisplayMode = 3;
-      case {'all perimeter'}
+      case {'group perimeter'}
         roiDisplayMode = 4;
-      case 'hide'
+      case {'all'}
         roiDisplayMode = 5;
+      case {'all perimeter'}
+        roiDisplayMode = 6;
+      case 'hide'
+        roiDisplayMode = 7;
     end
     set(handles.roiDisplayModePopup,'value',roiDisplayMode);
   end
