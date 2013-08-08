@@ -187,6 +187,8 @@ switch action
     mlrAdjustGUI(thisView,'set','transformOverlaysMenuItem','separator','on');
 
     %move ROI menu items
+    mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','location','/ROI/Show');
+    mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','separator','off');
     mlrAdjustGUI(thisView,'set','deleteRoiMenu','location','/ROI/');
     mlrAdjustGUI(thisView,'set','convertRoiCoordsMenuItem','location','/ROI/');
     mlrAdjustGUI(thisView,'remove','menu','pasteRoiMenuItem'); %will be replaced by 'duplicate ROI'
@@ -221,9 +223,7 @@ switch action
     mlrAdjustGUI(thisView,'set','addRoiMenu','separator','on');
 %     mlrAdjustGUI(thisView,'set','copyRoiMenuItem','separator','on');
     mlrAdjustGUI(thisView,'set','convertRoiMenuItem','separator','on');
-    mlrAdjustGUI(thisView,'set','deleteRoiMenu','separator','off');
-    mlrAdjustGUI(thisView,'set','findCurrentROIMenuItem','separator','on');
-    
+    mlrAdjustGUI(thisView,'set','deleteRoiMenu','separator','off');    
 
     %remove unused menus
     mlrAdjustGUI(thisView,'remove','menu','fileMenu');

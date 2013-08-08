@@ -15,7 +15,8 @@ if ~any(nargin == [7])
 end
 
 % see if the shift key is down
-shiftDown = any(strcmp(get(gcf,'CurrentModifier'),'shift'));
+%shiftDown = any(strcmp(get(viewGet(v,'figureNumber'),'CurrentModifier'),'shift'));
+shiftDown = any(strcmp(get(viewGet(v,'figureNumber'),'SelectionType'),'extend'));
 
 % check if pRF has been run
 a = viewGet(v,'Analysis');

@@ -240,8 +240,7 @@ for i = 1:length(pluginDir)
       % make sure that calling the function returns the correct one on the path
       if ~isequal(pluginFullName,which(pluginName))
 	% just give a warning
-	disp(sprintf('(mlrPlugin) Plugin function %s found in %s but should be in %s',pluginName,which(pluginName),pluginFullName));
-	keyboard
+	mrWarnDlg(sprintf('(mlrPlugin) Plugin function %s found in %s but should be in %s',pluginName,which(pluginName),pluginFullName));
       end
       % only add the plugin if it does not already exist
       if isempty(plugins) || ~any(strcmp(pluginDir(i).name,{plugins(:).name}))
