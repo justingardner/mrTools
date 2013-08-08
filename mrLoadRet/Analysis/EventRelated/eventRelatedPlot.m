@@ -51,7 +51,25 @@ end
 for roinum = 1:length(roi)
   % get scan coordinates
   roi{roinum}.scanCoords = getROICoordinates(view,roi{roinum},scan);
+  roin(roinum) = size(roi{roinum}.scanCoords,2);
 end
+
+% see which one has the leastg number of scan coordinates
+% we are going to aribtrarily only show results for that
+% ROI. This happens when you click on multiple overlapping
+% rois - and the assumption here is that you usually want
+% the one that is inside a bigger one (like you clicked on
+% an ROI that is a subset of V1. If you don't want this,
+% then you just have to set which ROI is viewing properly
+% to get the roi average you want)
+if length(roi)>1
+  [minROIn minROInIndex] = min(roin);
+  if ~isempty(minROInIndex)
+    roi = cellArray(roi{minROInIndex});
+    disp(sprintf('(eventRelatedPlot) Showing the ROI average for the smallest of overlapping ROIs. If you want a different ROI then Select it and show only that ROI'));
+  end
+end
+
 
 % get cutoff value
 cutoffr2 = viewGet(view,'overlayMin');
