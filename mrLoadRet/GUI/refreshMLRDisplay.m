@@ -221,6 +221,7 @@ end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(gui.axis,'off');
+axis(gui.axis,'image');
 if ~baseType && ~mod(rotate,90)
   %set aspect ratio according to voxel size
   baseVoxelSize = viewGet(view,'basevoxelsize',baseNum);
@@ -239,8 +240,6 @@ if ~baseType && ~mod(rotate,90)
     axisAspectRatio = axisAspectRatio([2 1 3]);
   end
   set(gui.axis,'dataAspectRatio',axisAspectRatio);
-else
-  axis(gui.axis,'image');
 end
 if verbose>1,disppercent(inf);,end
 
