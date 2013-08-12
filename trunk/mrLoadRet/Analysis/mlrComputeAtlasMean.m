@@ -1,6 +1,6 @@
 % mlrComputeAtlasMean.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: mlrComputeAtlasMean(sessionPath,groupNum,scanNum,analysisName,overlayName,baseAnatomy)
 %         by: justin gardner
 %       date: 12/11/09
@@ -97,7 +97,9 @@ for iSession = 1:sessions.nSessions
     v = loadAnat(v,sessions.baseAnatomies{iBase});
     % get the base
     b = viewGet(v,'baseCoordMap');
-    coords = squeeze(b.coords);
+    %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+    corticalSlice = ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5));
+    coords = squeeze(b.coords(:,:,:,:,corticalSlice));
     
     % and put the coordinates of those vertices into our search ROI
     thisROI.coords = coords(meanROIs{iBase}.vertices,:)';
@@ -233,7 +235,9 @@ for iSession = 1:sessions.nSessions
     % get the transformation from base2scan coordinates
     base2scan = viewGet(v,'base2scan');
     % get the coordinates of each vertex
-    baseCoords = squeeze(b.coords);
+    %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+    corticalSlice = ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5));
+    baseCoords = squeeze(b.coords(:,:,:,:,corticalSlice));
     baseCoords(:,4) = 1;
     % convert into scan coords
     scanCoords = round(base2scan*baseCoords');

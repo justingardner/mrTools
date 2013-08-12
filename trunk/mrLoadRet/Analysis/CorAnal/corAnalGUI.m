@@ -16,7 +16,7 @@ function varargout = corAnalGUI(varargin)
 %
 % djh, 7/2004
 
-% Last Modified by GUIDE v2.5 04-Aug-2006 22:14:19
+% Last Modified by GUIDE v2.5 15-Nov-2010 16:59:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -98,6 +98,7 @@ handles.recompute = params.recompute;
 handles.ncycles = params.ncycles;
 handles.detrend = params.detrend;
 handles.spatialnorm = params.spatialnorm;
+handles.trigonometricFunction = params.trigonometricFunction;
 handles.tseriesfile = params.tseriesfile;
 setScan(handles,1);
 
@@ -125,6 +126,7 @@ else
     params.ncycles = handles.ncycles;
     params.detrend = handles.detrend;
     params.spatialnorm = handles.spatialnorm;
+    params.trigonometricFunction = handles.trigonometricFunction;
     params.tseriesfile = handles.tseriesfile;
     % Reconcile params and return
     params = corAnalReconcileParams(params.groupName,params);
@@ -179,6 +181,10 @@ set(handles.detrendPopup,'Value',detrendValue);
 spatialnormValue = find(strcmp(handles.spatialnorm{curScan},...
     get(handles.spatialNormPopup,'String')));
 set(handles.spatialNormPopup,'Value',spatialnormValue);
+% trigonometricFunctionlabel
+trigonometricFunctionValue = find(strcmp(handles.trigonometricFunction{curScan},...
+    get(handles.trigonometricFunctionPopup,'String')));
+set(handles.trigonometricFunctionPopup,'Value',trigonometricFunctionValue);
 
 % --- copyButton.
 function copyButton_Callback(hObject, eventdata, handles)
@@ -189,6 +195,7 @@ for scan = 1:nScans
     handles.ncycles(scan) = handles.ncycles(curScan);
     handles.detrend{scan} = handles.detrend{curScan};
     handles.spatialnorm{scan} = handles.spatialnorm{curScan};
+    handles.trigonometricFunction{scan} = handles.trigonometricFunction{curScan};
 end
 guidata(hObject, handles);
 
@@ -245,6 +252,20 @@ curScan = str2double(get(handles.scanText,'String'));
 string = get(hObject,'String');
 value = get(hObject,'Value');
 handles.spatialnorm{curScan} = string{value};
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function trigonometricFunctionPopup_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on selection change in trigonometricFunctionPopup.
+function trigonometricFunctionPopup_Callback(hObject, eventdata, handles)
+curScan = str2double(get(handles.scanText,'String'));
+string = get(hObject,'String');
+value = get(hObject,'Value');
+handles.trigonometricFunction{curScan} = string{value};
 guidata(hObject, handles);
 
 % --- okButton.

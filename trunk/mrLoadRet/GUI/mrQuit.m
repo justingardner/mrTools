@@ -16,6 +16,8 @@
 %
 %             mrQuit(0);
 %
+%             jb 2011/08/03 took some code out into mrSaveLastView.m so that it can be called by other functions
+%
 %
 function retval = mrQuit(saveMrLastView,v)
 
@@ -45,33 +47,11 @@ if ieNotDefined('v')
   end
 end
 
-% if we are not saving, then set the view to save from to empty
-if ~ieNotDefined('saveMrLastView') & ~saveMrLastView
-  v = [];
+if (ieNotDefined('saveMrLastView') || saveMrLastView) && ~isempty(v)
+  mrSaveView(v);
 end
 
 if isfield(MLR,'views') && ~isempty(MLR.views)
-  if ~isempty(v)
-    % remember figure location
-    fig = viewGet(v,'fignum');
-    if ~isempty(fig)
-      mrSetFigLoc('mrLoadRetGUI',get(fig,'Position'));
-    end
-    % remember GUI settings
-    viewSettings.curBase = viewGet(v,'curBase');
-    viewSettings.rotate = viewGet(v,'rotate');
-    viewSettings.curScan = viewGet(v,'curScan');
-    viewSettings.curSlice = viewGet(v,'curSlice');
-    viewSettings.curGroup = viewGet(v,'curGroup');
-    viewSettings.sliceOrientation = viewGet(v,'sliceOrientation');
-    viewSettings.overlayMin = viewGet(v,'overlayMin');
-    viewSettings.overlayMax = viewGet(v,'overlayMax');
-    viewSettings.alpha = viewGet(v,'alpha');
-    viewSettings.showROIs = viewGet(v,'showROIs');
-    viewSettings.labelROIs = viewGet(v,'labelROIs');
-    viewSettings.roiGroup = viewGet(v,'roiGroupNames');
-    homeDir = viewGet(v,'homeDir');
-  end
   % close graph figure, remembering figure location
   if ~isempty(MLR.graphFigure)
     mrSetFigLoc('graphFigure',get(MLR.graphFigure,'Position'));
@@ -95,20 +75,6 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     disp(sprintf('(mrQuit) Closing %i open views',viewCount));
   end
   drawnow
-  % save mrLastView
-  if ~isempty(v)
-    try
-      disppercent(-inf,sprintf('(mrQuit) Saving %s/mrLastView',homeDir));
-						% save the view in the current directory
-      view = v;
-      eval(sprintf('save %s view viewSettings -V6;',fullfile(homeDir,'mrLastView')));
-      % save .mrDefaults in the home directory
-      disppercent(inf);
-    catch
-      disppercent(inf);
-      mrErrorDlg('(mrQuit) Could not save mrLastView.mat');
-    end
-  end
   disppercent(-inf,sprintf('(mrQuit) Saving %s',mrDefaultsFilename));
   saveMrDefaults;
   disppercent(inf);

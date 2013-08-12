@@ -96,7 +96,7 @@ if ieNotDefined('params')
   elseif defaultParams
     params.scanList = 1:viewGet(view,'nScans');
   else
-    params.scanList = selectScans(view);
+    params.scanList = selectInList(view,'scans','Select Scans',1:viewGet(view,'nScans'));
   end
   if isempty(params.scanList),return,end
 
@@ -416,7 +416,8 @@ for iscan = 1:length(params.scanList)
   if isfield(d,'hipassfilter')
     concatInfo.hipassfilter{concatInfo.n} = d.hipassfilter;
   end
-  
+  concatInfo.filterType = params.filterType;
+
   % keep the projection info if that was used
   if isfield(d,'projection')
     projectionConcat{concatInfo.n} = d.projection;

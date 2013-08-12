@@ -7,101 +7,49 @@ function[] = mrExport2SR(viewNum, pathstr)
 %    purpose: exports a MLR overlay to a Nifti file compatible with SurfRelax
 %        $Id$	
 %
+% modified by julien besle 22/01/2010 to speed up things and take getBaseSpaceOverlay.m out
 
-mrGlobals
-
-% interpMethod and interpExtrapVal are used by calls to interp3 when
-% extracting slices from the base and overlay arrays.
-interpMethod = mrGetPref('interpMethod');
-if isempty(interpMethod)
-    interpMethod = 'linear';
-end
-interpExtrapVal = NaN;
+%mrGlobals
 
 % Get view
 view = viewGet(viewNum,'view');
 
 % Get values from the GUI
-scan = viewGet(view,'curscan');
-
-% sliceIndex depends both on sliceOrientation and on the orientation
-% of baseVolume.
+scanNum = viewGet(view,'curscan');
 baseNum = viewGet(view,'currentBase');
-
-rotate = 0;
-sliceIndex = 1;
-
-basedims = viewGet(view, 'basedims');
-overlayIm = zeros(basedims);
 overlayNum = viewGet(view,'currentOverlay');
-overlayData = viewGet(view,'overlayData',scan,overlayNum);
+overlayData = viewGet(view,'overlayData',scanNum,overlayNum);
 
-disppercent(-inf,sprintf('Exporting resampled Nifti file: %s', pathstr));
-for baseSlice = 1:basedims(1)
-    % Compute base and overlay coordinates for the current slice
-    [baseCoords,overlayCoords] = getSliceCoords(view,scan,baseSlice,sliceIndex,rotate);
-    view = viewSet(view,'cursliceBaseCoords',baseCoords);
-    view = viewSet(view,'cursliceOverlayCoords',overlayCoords);
-    
-    % Extract slice from current overlay.
-    if ~isempty(overlayNum) & ~isempty(overlayCoords) & ~isempty(overlayData)
-        overlayIm(baseSlice,:,:) = interp3(overlayData,overlayCoords(:,:,2),overlayCoords(:,:,1),overlayCoords(:,:,3), interpMethod,interpExtrapVal);
-    end
-    disppercent(baseSlice/basedims(1));
+
+%basedims = viewGet(view, 'basedims');
+
+%transform values in base space
+[new_overlay_data, new_base_voxel_size] = getBaseSpaceOverlay(view, overlayData, scanNum, baseNum);
+
+if isempty(new_overlay_data)
+  return
 end
-
-disppercent(inf)
+%write nifti file
 baseVolume = viewGet(viewNum,'baseVolume');
 hdr = baseVolume.hdr;
+%hdr.dim = [size(size(new_overlay_data),2); size(new_overlay_data,1); size(new_overlay_data,2); size(new_overlay_data,3); 1; 1; 1; 1];
 hdr.bitpix = 32;   
 hdr.datatype = 16;
 hdr.is_analyze = 1;
 hdr.scl_slope = 1;
 hdr.endian = 'l';
-hdr.pixdim = [1 1 1 1 0 0 0 0]';        % all pix dims must be specified here
-                                        %cbiWriteNifti(pathstr, overlayIm, hdr);
-cbiWriteNifti(sprintf('%s.hdr',stripext(pathstr)), overlayIm);
+if any(new_base_voxel_size ~= viewGet(view,'basevoxelsize',baseNum))
+   hdr.pixdim = [0 new_base_voxel_size 0 0 0 0]';        % all pix dims must be specified here
+   hdr.qform44 = diag([new_base_voxel_size 0]);
+   hdr.sform44 = hdr.qform44;
+end
+   
+cbiWriteNifti(sprintf('%s.hdr',stripext(pathstr)), new_overlay_data,hdr);
 
 return
 
 
-function [baseCoords,overlayCoords] = getSliceCoords(view,scanNum,sliceNum,sliceIndex,rotate)
 
-baseCoords = [];
-overlayCoords = [];
-
-% Use baseVolume.xform to transform the overlay data into the
-% selected slice.
-baseNum = viewGet(view,'currentBase');
-if baseNum
-  volSize = viewGet(view,'baseDims',baseNum);
-else
-  return
-end
-
-% Generate coordinates with meshgrid
-x = sliceNum * ones(volSize(2),volSize(3));
-[z,y] = meshgrid(1:volSize(3),1:volSize(2));
-
-% Reformat coordinates
-sliceDims = size(x);
-numPixels = prod(sliceDims);
-xvec = reshape(x,1,numPixels);
-yvec = reshape(y,1,numPixels);
-zvec = reshape(z,1,numPixels);
-baseCoordsHomogeneous = [xvec; yvec; zvec; ones(1,numPixels)];
-baseCoords = reshape(baseCoordsHomogeneous(1:3,:)',[sliceDims 3]);
-
-% Transform to overlay coordinates
-overlayNum = viewGet(view,'currentOverlay');
-if overlayNum
-  base2scan = viewGet(view,'base2scan',scanNum,[],baseNum);
-  if ~isempty(base2scan)
-    % Transform coordinates
-    overlayCoordsHomogeneous = base2scan * baseCoordsHomogeneous;
-    overlayCoords = reshape(overlayCoordsHomogeneous(1:3,:)',[sliceDims 3]);
-  end
-end
 
 
 

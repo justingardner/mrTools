@@ -54,7 +54,7 @@ for i = 1:length(vars)
     end
   end
   % otherwise set the parameter to the default value
-  if ~iscell(varinfo{i}.value)
+  if ~strcmp(varinfo{i}.type,'popupmenu')
     params.(varinfo{i}.name) = varinfo{i}.value;
   else
     params.(varinfo{i}.name) = varinfo{i}.value{1};

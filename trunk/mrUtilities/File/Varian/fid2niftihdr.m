@@ -1,6 +1,6 @@
 % fid2niftihdr.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: hdr = fid2niftihdr(fidname,<verbose>,<movepro=0>)
 %         by: justin gardner
 %       date: 12/09/09

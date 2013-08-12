@@ -16,6 +16,22 @@ if ieNotDefined('roiName')
 	roiNum = viewGet(view,'currentROI');
 	roiName = viewGet(view,'roiName',roiNum);
 end
+
+if ieNotDefined('confirm')
+    pref = mrGetPref('overwritePolicy');
+    confirm = ~strcmp(pref,'Overwrite');
+end
+
+% support saving multiple ROIs at once
+if iscell(roiName)
+    for r = 1:length(roiName)
+        % recurse
+        saveROI(view,roiName{r},confirm);
+    end
+    % and finish
+    return
+end
+
 if isstr(roiName)
     roiNum = viewGet(view,'roiNum',roiName);
 elseif isnumeric(roiName)
@@ -23,11 +39,6 @@ elseif isnumeric(roiName)
 	roiName = viewGet(view,'roiName',roiNum);
 else
 	myErrorDlg(['Bad ROI name: ',roiName]);
-end
-
-if ieNotDefined('confirm')
-    pref = mrGetPref('overwritePolicy');
-    confirm = ~strcmp(pref,'Overwrite');
 end
 
 % Assign local variable with roiName = roi

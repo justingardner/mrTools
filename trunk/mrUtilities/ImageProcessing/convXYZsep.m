@@ -28,6 +28,7 @@ function volf = convXYZsep(vol, xfilter, yfilter, zfilter, Zb, shape);
 % - volf: filtered volume
 %
 % Oscar Nestares - 5/99
+% 10/2010: julien besle, cleared unused variables to limit memory usage
 
 if ieNotDefined('yfilter')
     yfilter = xfilter;
@@ -57,6 +58,7 @@ elseif strcmp(shape, 'same') == 1
     tmp = zeros(Ny, Nx, Nz+2*Bz);
 end
 tmp(:,:,Bz+1:Nz+Bz) = convXYsep(vol, xfilter, yfilter, shape);
+clear('vol');
 
 % putting appropriate border in Z to tmp
 if strcmp(Zb, 'repeat') == 1

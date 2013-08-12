@@ -136,7 +136,7 @@ if isempty(ph)
 end
 
 % Compute it
-[co,amp,ph] = computeCorAnal(view,params,co,amp,ph);
+[co,amp,ph] = computeCorrelationAnalysis(view,params,co,amp,ph);
 
 % Set params field, merging with previous params
 if ~isempty(oldparams)
@@ -220,115 +220,71 @@ return;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [co,amp,ph] = computeCorAnal(view,params,co,amp,ph)
+function [co,amp,ph] = computeCorrelationAnalysis(view,params,co,amp,ph)
 % Required fields in params: 'recompute','ncycles','detrend','spatialnorm'
 
-% Get scanList fromp params.recompute field
+% Get scanList from params.recompute field
 scanList = find(params.recompute(:));
 
 disp('Computing corAnal...');
-waitHandle = mrWaitBar(0,'Computing corAnal matrices from the tSeries.  Please wait...');
 warning('off','MATLAB:divideByZero');
 for scanIndex=1:length(scanList)
-    scanNum = scanList(scanIndex);
-    disp(['Processing scan ', int2str(scanNum),'...']);
+  scanNum = scanList(scanIndex);
+  waitHandle = mrWaitBar(0,['Computing Correlation Analysis for scan ' int2str(scanNum) ':']);
+
+  % sliceDims: [ydim xdim] for single slice
+  % volDims; [ydim xdim nslices] for single scan
+  sliceDims = viewGet(view,'sliceDims',scanNum);
+  volDims = viewGet(view,'dims',scanNum);
+
+  % Initialize data with NaNs
+  co.data{scanNum} = NaN*ones(volDims);
+  amp.data{scanNum} = NaN*ones(volDims);
+  ph.data{scanNum} = NaN*ones(volDims);
+
+  % check for corAnal cycles set to 0
+  if params.ncycles(scanList(scanIndex)) == 0
+    mrWarnDlg(sprintf('(corAnal:computeCorrelationAnalysis) !!! Scan %i has ncycles set to 0 - this needs to be set to how many cycles of the stimulus you had per scan. Skipping this scan !!!',scanList(scanIndex)));
+    continue;
+  end
+  
+  nslices = viewGet(view,'nslices',scanNum);
+  for sliceNum = 1:nslices
+    % Analysis parameters for this scan
+    junkframes = viewGet(view,'junkframes',scanNum);
+    nframes = viewGet(view,'nframes',scanNum);
+    % Load tSeries
+    tSeries = loadTSeries(view, scanNum, sliceNum);
+    % Reshape the tSeries
+    % ATTN: added reshapeTSeries function, since loadTSeries not longer reshapes when it loads -eli
+    tSeries = reshapeTSeries(tSeries);
     
-    % sliceDims: [ydim xdim] for single slice
-    % volDims; [ydim xdim nslices] for single scan
-    sliceDims = viewGet(view,'sliceDims',scanNum);
-    volDims = viewGet(view,'dims',scanNum);
-    
-    % Initialize data with NaNs
-    co.data{scanNum} = NaN*ones(volDims);
-    amp.data{scanNum} = NaN*ones(volDims);
-    ph.data{scanNum} = NaN*ones(volDims);
-    
-    nslices = viewGet(view,'nslices',scanNum);
-    for sliceNum = 1:nslices
-        [coSeries,ampSeries,phSeries] = computeCorAnalSeries(view,scanNum,sliceNum,params);
-        switch view.viewType
-        case {'Volume'}
-            co.data{scanNum}(:,:,sliceNum) = reshape(coSeries,sliceDims);
-            amp.data{scanNum}(:,:,sliceNum) = reshape(ampSeries,sliceDims);
-            ph.data{scanNum}(:,:,sliceNum) = reshape(phSeries,sliceDims);
-        case {'Surface'}
-            co.data{scanNum} = coSeries;
-            amp.data{scanNum} = ampSeries;
-            ph.data{scanNum} = phSeries;
-        case {'Flat'}
-            co.data{scanNum}(:,:,sliceNum) = reshape(coSeries,sliceDims);
-            amp.data{scanNum}(:,:,sliceNum) = reshape(ampSeries,sliceDims);
-            ph.data{scanNum}(:,:,sliceNum) = reshape(phSeries,sliceDims);
-        end
+    % check that junkframes and nframes settings are ok
+    if size(tSeries,1) < (junkframes+nframes)
+      mrErrorDlg(sprintf('(corAnal) Number of junkframes (%i) plus nframes (%i) should not be larger than number of volumes in scan %i',junkframes,nframes,size(tSeries,1)));
+    end
+    % Remove junkFrames
+    tSeries = tSeries(junkframes+1:junkframes+nframes,:);
+    %compute corAnal
+    [coSeries,ampSeries,phSeries] = computeCoranal(tSeries,params.ncycles(scanNum),params.detrend{scanNum},params.spatialnorm{scanNum},params.trigonometricFunction{scanNum});
+
+    switch view.viewType
+      case {'Volume'}
+          co.data{scanNum}(:,:,sliceNum) = reshape(coSeries,sliceDims);
+          amp.data{scanNum}(:,:,sliceNum) = reshape(ampSeries,sliceDims);
+          ph.data{scanNum}(:,:,sliceNum) = reshape(phSeries,sliceDims);
+      case {'Surface'}
+          co.data{scanNum} = coSeries;
+          amp.data{scanNum} = ampSeries;
+          ph.data{scanNum} = phSeries;
+      case {'Flat'}
+          co.data{scanNum}(:,:,sliceNum) = reshape(coSeries,sliceDims);
+          amp.data{scanNum}(:,:,sliceNum) = reshape(ampSeries,sliceDims);
+          ph.data{scanNum}(:,:,sliceNum) = reshape(phSeries,sliceDims);
     end
     % Update waitbar
-    mrWaitBar(scanIndex/length(scanList),waitHandle);
+    mrWaitBar(sliceNum/nslices,waitHandle);
+  end
+  mrCloseDlg(waitHandle);
 end
 warning('on','MATLAB:divideByZero');
-mrCloseDlg(waitHandle);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function [co, amp, ph] = computeCorAnalSeries(view, scan, slice, params)
-% function [co, amp, ph] = ...
-%     computeCorAnalSeries(view, scan, slice, params)
-%
-% Computes correlation analysis for the given scan and slice.
-%
-% Required fields in params: 'ncycles','detrend','spatialnorm'
-
-% Analysis parameters for this scan
-junkframes = viewGet(view,'junkframes',scan);
-nframes = viewGet(view,'nframes',scan);
-ncycles = params.ncycles(scan);
-detrend = params.detrend{scan};
-spatialnorm = params.spatialnorm{scan};
-
-% Load tSeries
-tSeries = loadTSeries(view, scan, slice);
-
-% Reshape the tSeries
-% ATTN: added reshapeTSeries function, since loadTSeries not longer reshapes when it loads -eli
-tSeries = reshapeTSeries(tSeries);
-
-% check that junkframes and nframes settings are ok
-if size(tSeries,1) < (junkframes+nframes)
-  mrErrorDlg(sprintf('(corAnal) Number of junkframes (%i) plus nframes (%i) should not be larger than number of volumes in scan %i',junkframes,nframes,size(tSeries,1)));
-end
-
-% Remove junkFrames
-tSeries = tSeries(junkframes+1:junkframes+nframes,:);
-
-% Set highpassPeriod
-highpassPeriod = round(nframes/ncycles);
-
-% Remove dc, convert to percent, detrend, and spatial normalization
-warnState = warning('query','MATLAB:divideByZero');
-warning('off','MATLAB:divideByZero');
-ptSeries = percentTSeries(tSeries,...
-    'detrend', detrend,...
-    'highpassPeriod', highpassPeriod,...
-    'spatialNormalization', spatialnorm,...
-    'subtractMean', 'Yes',...
-    'temporalNormalization', 'No');
-warning(warnState.state,warnState.identifier);
-
-% Compute Fourier transform
-ft = fft(ptSeries);
-ft = ft(1:1+fix(size(ft, 1)/2), :);
-ampFT = 2*abs(ft)/nframes;
-
-% Compute co and amp (avoiding divide by zero)
-amp = ampFT(ncycles+1,:);
-co = zeros(size(amp));
-sumAmp = sqrt(sum(ampFT.^2));
-nonzeroIndices = find(sumAmp >0);
-co(nonzeroIndices) = ampFT(ncycles+1,nonzeroIndices) ./ sumAmp(nonzeroIndices);
-
-% Calculate phase:
-% 1) add pi/2 so that it is in sine phase.
-% 2) minus sign because sin(x-phi) is shifted to the right by phi.
-% 3) Add 2pi to any negative values so phases increase from 0 to 2pi.
-ph = -(pi/2) - angle(ft(ncycles+1,:));
-ph(ph<0) = ph(ph<0)+pi*2;

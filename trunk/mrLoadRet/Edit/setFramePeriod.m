@@ -73,7 +73,7 @@ if isempty(params),return,end
 % now go through and update the headers
 for iGroup = 1:viewGet(v, 'numberofGroups')
   % see if we are supposed to update the group
-  if params.(viewGet(v,'groupName',iGroup))
+  if params.(fixBadChars(viewGet(v,'groupName',iGroup)))
     for iScan = 1:viewGet(v, 'nScans', iGroup);
       % load the nifti header from the mrSession file
       curhdr = viewGet(v, 'niftiHdr', iScan, iGroup);
@@ -111,13 +111,6 @@ end
 
 % save the session
 saveSession
-% also remove any base anatomies from mrLastView if it is
-% there since those might have a different sform
-if isfile('mrLastView.mat')
-  disp(sprintf('(setFramePeriod) Removing base anatomies from mrLastView'));
-  load mrLastView
-  view.baseVolumes = [];
-  save mrLastView view viewSettings
-end
+
 deleteView(v);
 

@@ -3,11 +3,13 @@
 %      usage: mrInterrogator()
 %         by: justin gardner
 %       date: 03/14/07
+%        $Id$
 %    purpose: this functions sets up the figure to have an interrogator
 %             start by calling
 %             mrInterrogator('init',viewNum);
 %             turn off
 %             mrInterrogator('end',viewNum);
+
 function retval = mrInterrogator(event,viewNum,val)
 
 % check arguments
@@ -18,13 +20,13 @@ end
 
 % some basic info about location of controls
 mrGlobals;
-MLR.interrogator{viewNum}.leftMargin = 5;
-MLR.interrogator{viewNum}.rightMargin = 5;
-MLR.interrogator{viewNum}.topMargin = 5;
-MLR.interrogator{viewNum}.bottomMargin = 5;
-MLR.interrogator{viewNum}.buttonWidth = 50;
-MLR.interrogator{viewNum}.buttonHeight = 26;
-MLR.interrogator{viewNum}.margin = 5;
+MLR.interrogator{viewNum}.leftMargin = .015;
+MLR.interrogator{viewNum}.rightMargin = .02;
+MLR.interrogator{viewNum}.topMargin = .005;
+MLR.interrogator{viewNum}.bottomMargin = .01;
+MLR.interrogator{viewNum}.buttonWidth = .065;
+MLR.interrogator{viewNum}.buttonHeight = .035;
+MLR.interrogator{viewNum}.margin = 0;
 MLR.interrogator{viewNum}.fontsize = 10;
 MLR.interrogator{viewNum}.fontname = 'Helvetica';
 
@@ -63,7 +65,7 @@ if isActiveHandler(viewNum)
   set(MLR.interrogator{viewNum}.hInterrogatorLabel,'String',interrogatorList);
 
   % if not a valid function, go back to old one
-  if exist(interrogator)==2
+  if ~isempty(which(interrogator))
     set(MLR.interrogator{viewNum}.hInterrogator,'String',interrogator);
     MLR.interrogator{viewNum}.interrogator = interrogator;
   end
@@ -81,7 +83,7 @@ interrogator = get(MLR.interrogator{viewNum}.hInterrogator,'String');
 
 % if not a valid function, go back to old one
 if isfield(MLR.interrogator{viewNum},'hInterrogator')
-  if exist(interrogator)~=2
+  if isempty(which(interrogator))
     set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
   else
     MLR.interrogator{viewNum}.interrogator = interrogator;
@@ -108,7 +110,7 @@ if value > 1
   % set the popupmenu back to the top value
   set(MLR.interrogator{viewNum}.hInterrogatorLabel,'Value',1);
   % see if the interrogator exists
-  if exist(newInterrogator)==2
+  if ~isempty(which(newInterrogator))
     % set the string
     set(MLR.interrogator{viewNum}.hInterrogator,'String',newInterrogator);
     MLR.interrogator{viewNum}.interrogator = newInterrogator;
@@ -170,13 +172,13 @@ if mouseInImage(xTal, yTal)
   set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Tal');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.4g %0.4g %0.4g]',xTal,yTal,zTal));
-else
-  set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
-  set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
-end
-
-% display magnet coordinates as well
-if ~mouseInImage(xTal,yTal) && mouseInImage(xBase,yBase)
+% % else
+% %   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
+% %   set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
+% % end
+% % 
+% % if ~mouseInImage(xTal,yTal) && mouseInImage(xBase,yBase) % display magnet coordinates as well
+elseif mouseInImage(xBase,yBase) % display magnet coordinates as well
   % get the *original* base2mag 
   base2mag = viewGet(MLR.interrogator{viewNum}.viewNum,'baseQform');
   base2mag = base2mag * shiftOriginXform;
@@ -185,6 +187,8 @@ if ~mouseInImage(xTal,yTal) && mouseInImage(xBase,yBase)
   set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Magnet');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.1f %0.1f %0.1f]',magCoords(1),magCoords(2),magCoords(3)));
+else
+	set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
 end
 
 
@@ -265,7 +269,10 @@ else
     % convert the index to the coordinates
     if ~isempty(pos)
       baseCoordMap = viewGet(view,'baseCoordMap');
-      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
+      %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+      corticalSlice = max(1,ceil(mean(viewGet(view,'corticalDepth'))*size(baseCoordMap.coords,5)));
+      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:,corticalSlice)));
+      %pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
       xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
   end      
@@ -328,7 +335,7 @@ MLR.interrogator{viewNum}.mouseDownScanCoords = [x y s];
 
 if mouseInImage(x,y)
     global MLR;
-    if exist(MLR.interrogator{viewNum}.interrogator) ~= 2
+    if isempty(which(MLR.interrogator{viewNum}.interrogator))
       disp(sprintf('(mrInterrogator) Cannot find interrogator function'));
       return
     end
@@ -455,16 +462,16 @@ interrogatorList = getDefaultInterrogators(v);
 
 if ~restart
     % set the x and y textbox
-    MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,4,2);
-    MLR.interrogator{viewNum}.hPosBase = makeTextbox(viewNum,'',1,6,2);
-    MLR.interrogator{viewNum}.hPosTal = makeTextbox(viewNum,'',1,8,2);
-    MLR.interrogator{viewNum}.hOverlay = makeTextbox(viewNum,'',1,10,2);
-    MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,4,2);
-    MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,6,2);
-    MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Talairach',2,8,2);
-    MLR.interrogator{viewNum}.hOverlayLabel = makeTextbox(viewNum,'Overlay',2,10,2);
-    MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,1,3);
-    MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',2,1,3);
+    MLR.interrogator{viewNum}.hInterrogatorLabel = makePopupmenu(viewNum,interrogatorList,'defaultInterrogators',1,1,2);
+    MLR.interrogator{viewNum}.hInterrogator = makeTextentry(viewNum,'test','interrogator',1,3,3);
+    MLR.interrogator{viewNum}.hPos = makeTextbox(viewNum,'',1,6,2);
+    MLR.interrogator{viewNum}.hPosBase = makeTextbox(viewNum,'',1,8,2);
+    MLR.interrogator{viewNum}.hPosTal = makeTextbox(viewNum,'',1,10,2);
+    MLR.interrogator{viewNum}.hOverlay = makeTextbox(viewNum,'',1,12,4);
+    MLR.interrogator{viewNum}.hPosLabel = makeTextbox(viewNum,'Scan',2,6,2);
+    MLR.interrogator{viewNum}.hPosBaseLabel = makeTextbox(viewNum,'Base',2,8,2);
+    MLR.interrogator{viewNum}.hPosTalLabel = makeTextbox(viewNum,'Talairach',2,10,2);
+    MLR.interrogator{viewNum}.hOverlayLabel = makeTextbox(viewNum,'Overlay',2,12,4);
 else
     set(MLR.interrogator{viewNum}.hPos,'visible','on');
     set(MLR.interrogator{viewNum}.hPosBase,'visible','on');
@@ -514,7 +521,8 @@ end
 function h = makeTextbox(viewNum,displayString,rownum,colnum,uisize)
 
 mrGlobals;
-h = uicontrol('Style','text','String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname,'HorizontalAlignment','Center');
+h = uicontrol('Style','text','Units','normalized','String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),...
+  'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname,'HorizontalAlignment','Center');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makeTextentry makes a uicontrol to handle text entry
@@ -530,7 +538,9 @@ end
 
 mrGlobals;
 
-h = uicontrol('Style','edit','Callback',callback,'String',displayString,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
+h = uicontrol('Style','edit','Units','normalized','Callback',callback,'String',displayString,...
+              'Position',getUIControlPos(viewNum,rownum,colnum,uisize)+[0 .005 0 0],...
+              'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % makePopupmenu
@@ -555,7 +565,7 @@ else
 end
 
 mrGlobals;
-h = uicontrol('Style','Popupmenu','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
+h = uicontrol('Style','Popupmenu','Units','normalized','Callback',callback,'Max',length(choices),'Min',1,'String',choices,'Value',1,'Position',getUIControlPos(viewNum,rownum,colnum,uisize),'FontSize',MLR.interrogator{viewNum}.fontsize,'FontName',MLR.interrogator{viewNum}.fontname);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -566,9 +576,6 @@ function pos = getUIControlPos(viewNum,rownum,colnum,uisize)
 % get global parameters
 mrGlobals;
 
-% get figure position
-figpos = get(MLR.interrogator{viewNum}.fignum,'Position');
-
 % set this buttons width
 thisButtonWidth = MLR.interrogator{viewNum}.buttonWidth*uisize+(uisize-1)*MLR.interrogator{viewNum}.margin;
 
@@ -576,7 +583,7 @@ thisButtonWidth = MLR.interrogator{viewNum}.buttonWidth*uisize+(uisize-1)*MLR.in
 %pos(1) = figpos(3)-MLR.interrogator{viewNum}.margin - (MLR.interrogator{viewNum}.buttonWidth+MLR.interrogator{viewNum}.margin)*(colnum-1)-MLR.interrogator{viewNum}.rightMargin-MLR.interrogator{viewNum}.buttonWidth;
 %pos(2) = figpos(4)-MLR.interrogator{viewNum}.buttonHeight-MLR.interrogator{viewNum}.topMargin - (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1);
 pos(1) = (MLR.interrogator{viewNum}.buttonWidth+MLR.interrogator{viewNum}.margin)*(colnum-1)+MLR.interrogator{viewNum}.leftMargin;
-pos(2) = MLR.interrogator{viewNum}.bottomMargin + (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1)+MLR.interrogator{viewNum}.buttonHeight;
+pos(2) = MLR.interrogator{viewNum}.bottomMargin + (MLR.interrogator{viewNum}.buttonHeight+MLR.interrogator{viewNum}.margin)*(rownum-1);%+MLR.interrogator{viewNum}.buttonHeight;
 pos(3) = thisButtonWidth;
 pos(4) = MLR.interrogator{viewNum}.buttonHeight;
 
@@ -588,6 +595,14 @@ function interrogatorList = getDefaultInterrogators(v);
 interrogatorList = mrGetPref('defaultInterrogators');
 if isstr(interrogatorList)
   interrogatorList = commaDelimitedToCell(interrogatorList);
+end
+
+%get names of interrogators in interrogators directory
+interrogatorsDirectory = which('mrLoadRetGUI');
+interrogatorsDirectory = [interrogatorsDirectory(1:strfind(interrogatorsDirectory,'GUI/mrLoadRetGUI.m')-1) 'Plugins/Interrogators/'];
+interrogatorFiles =  dir([interrogatorsDirectory '*.m']);
+for iFile=1:length(interrogatorFiles)
+   interrogatorList{end+1} = stripext(interrogatorFiles(iFile).name);
 end
 
 % put the interrogator associated with this overlay on the list

@@ -18,6 +18,7 @@ function result = warpAffineInterp3(tseries,frame,A,sliceTimes,badVal,method)
 %    (interplation in time) as well as warping in space. This involved
 %    changing the input parameters to be a time series instead of a single
 %    frame.
+% JB 12/2011, replicates first and/or last frames if temporal interpolation has to be performed before/after first/last frame
 
 if ieNotDefined('sliceTimes')
   sliceTimes = zeros(1,size(tseries,3));
@@ -31,6 +32,17 @@ end
 
 if (size(A,1)>3)
   A = A(1:3,:);
+end
+
+%replicate first or last frames if needed (if any temporal interpolation have to be made before/after the first/last frame)
+if size(tseries,4)>1 && frame==1 && any(sliceTimes>0)
+  %replicate first frame
+  tseries(:,:,:,2:end+1)=tseries(:,:,:,1:end);
+  frame=2;
+end
+if size(tseries,4)>1 && frame==size(tseries,4) && any(sliceTimes<0)
+  %replicate last frame
+  tseries(:,:,:,end+1)=tseries(:,:,:,end);
 end
 
 % original size

@@ -30,12 +30,12 @@ paramsInfo = {};
 scanDims = viewGet(v,'scanDims');
 sliceOrientations = {'default','axial','coronal','sagittal'};
 baseNames = putOnTopOfList(baseName,viewGet(v,'baseNames'));
-paramsInfo{end+1} = {'baseName',baseNames,'Choose which base to find voxel on'};
-paramsInfo{end+1} = {'baseOrientation',sliceOrientations,'Choose which slice orientation to view voxel in'};
+paramsInfo{end+1} = {'baseName',baseNames,'type=popupmenu','Choose which base to find voxel on'};
+paramsInfo{end+1} = {'baseOrientation',sliceOrientations,'type=popupmenu','Choose which slice orientation to view voxel in'};
 paramsInfo{end+1} = {'x',x,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',scanDims(1)),'Choose X coordinate to look for'};
 paramsInfo{end+1} = {'y',y,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',scanDims(2)),'Choose Y coordinate to look for'};
 paramsInfo{end+1} = {'s',s,'incdec=[-1 1]','round=1',sprintf('minmax=[1 %i]',scanDims(3)),'Choose S coordinate to look for'};
-paramsInfo{end+1} = {'color',color2RGB,'Choose color to display voxel in'};
+paramsInfo{end+1} = {'color',color2RGB,'type=popupmenu','Choose color to display voxel in'};
 paramsInfo{end+1} = {'maxSearchRadius',5,'type=numeric','If there is no exact match, then will display the closest voxel within this search radius. Set smaller to force only display of more exact matches. Set higher if you want to allow matches that are farther away.'};
 paramsInfo{end+1} = {'continuousMode',~isempty(startBaseNum),'type=checkbox','Opens another window with your anatomy that will be continuously update with the position as you move your mouse over points in the viewer','callback',@continuousModeCallback,'passParams=1','callbackArg',v,'editable',isempty(startBaseNum)};
 if hasOverlay
@@ -62,7 +62,7 @@ if isempty(params)
 end
 
 % switch to the chosen base
-if ~strcmp(baseName,params.baseName)
+if ~strcmp(viewGet(v,'baseName'),params.baseName)
   v = viewSet(v,'curBase',viewGet(v,'baseNum',params.baseName));
 end
 
@@ -385,7 +385,9 @@ else
     % convert the index to the coordinates
     if ~isempty(pos)
       baseCoordMap = viewGet(v,'baseCoordMap');
-      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
+      %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+      corticalSlice = ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5));
+      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:,corticalSlice)));
       xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
   end      

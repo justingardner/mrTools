@@ -1,6 +1,6 @@
 % fid2xform.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: [xform info] = fid2xform(fidname,<verbose>)
 %         by: justin gardner
 %       date: 05/05/09

@@ -297,14 +297,12 @@ if isempty(viewGet(v,'curAnalysis'))
   end
   v = viewSet(v,'newAnalysis',a.(analName));
 % or just install this overlay into the current analysis
-else
+    else
   % install overlay
   if ~isempty(overlay)
     for onum = 1:length(o)
-      % validate overlay
-      [tf thisOverlay] = isoverlay(o(onum));
-      % and install
-      v = viewSet(v,'newOverlay',thisOverlay);
+      thisOverlay = o(onum);  
+      v = viewSet(v,'newOverlay',thisOverlay); %no need to validate, as this is performed by viewSet
     end
   end
   % install d structure

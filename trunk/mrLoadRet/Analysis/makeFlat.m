@@ -76,15 +76,21 @@ end
 
 % now bring up mrFlatViewer to set initial round of parameters
 params = mrFlatViewer(flat,outerCoordsFileName,innerCoordsFileName,curvFileName,anatFileName,viewNum);
-if isempty(params),return,end
+if isempty(params)
+  disp('(makeFlat) User pressed Cancel.');
+  return;
+end
 
 % get some other parameters
 paramsInfo = {};
 paramsInfo{end+1} = {'flatRes', 2, 'resolution of flat patch', 'round=1', 'minmax=[1 10]', 'incdec=[-1 1]', 'The resolution of the flat patch -- a value of 2 doubles the resolution'};
 paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Thresholding the surface makes the background two-tone (binary curvature)'};
-paramsInfo{end+1} = {'flattenMethod', {'mrFlatMesh','surfRelax'},'Use either surfRelax or mrFlatMesh'};
+paramsInfo{end+1} = {'flattenMethod', {'mrFlatMesh','surfRelax'},'type=popupmenu','Use either surfRelax or mrFlatMesh'};
 extraParams = mrParamsDialog(paramsInfo, 'makeFlat', []);
-if isempty(params),return;end
+if isempty(extraParams)
+  disp('(makeFlat) User pressed Cancel.');
+  return;
+end
 
 % add extraParams to params
 extraParamsFieldNames = fieldnames(extraParams);
@@ -119,7 +125,7 @@ if ~isempty(flatBase)
   disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
   viewSet(view, 'newBase', flatBase);
   refreshMLRDisplay(viewNum);
-  
+
   % remove the temporary off file (actually we should leave the
   % file since we need it to use the mrFlatViewer on the patch
   % later - but is it worth storing this some place in the

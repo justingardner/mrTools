@@ -36,7 +36,7 @@ switch action
     
     % this installs a new menu item called 'Select Plugins' under /Edit/ROI with the
     % separator turned on above it. It sets the callback to selectPlugins defined below.
-    mlrAdjustGUI(v,'add','menu','Select Plugins','/Edit/ROI','Callback',@selectPlugins,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Select Plugins','/Edit/ROI','Callback',@selectPlugins,'Separator','on','tag','selectPluginMenuItem');
 
     % This is a command that could be used to install some default interrogators
     %mlrAdjustGUI(v,'add','interrogator',{'eventRelatedPlot','glmContrastPlot'});
@@ -55,7 +55,7 @@ switch action
  case {'help','h','?'}
    retval = 'This is an example plugin, it just installs a menu item to Select Plugins.';
  otherwise
-   disp(sprintf('(DefaultPlugin) Unknown command %s'));
+   disp(sprintf('(DefaultPlugin) Unknown command %s',action));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%

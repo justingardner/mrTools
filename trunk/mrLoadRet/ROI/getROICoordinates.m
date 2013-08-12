@@ -1,11 +1,12 @@
 % getROICoordinates.m
 %
-%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<straightXform=0>)
+%        $Id$
+%      usage: scanCoords = getROICoordinates(view,roiNum,<scanNum>,<groupNum>,<baseNum=3>,<straightXform=0>)
 %         by: david heeger and justin gardner
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
 %             if scanNum is 0, then will compute in the current base
-%             coordinates. 
+%             coordinates, unless basenum is specified, in which case. 
 %             if roinum is a structure, works on the structure
 %             rather than the roinum
 %             if roinum is a string, will load the roi from
@@ -23,14 +24,15 @@ if nargin < 2
   return
 end
 straightXform=[];
-getArgs(varargin,{'straightXform=0'});
+getArgs(varargin,{'straightXform=0','baseNum=[]'});
 
-% get group and scan
-if ieNotDefined('groupNum')
-  groupNum = viewGet(view,'currentGroup');
-end
-if ieNotDefined('scanNum')
-  scanNum = viewGet(view,'currentScan');
+% get  scan
+if ieNotDefined('scanNum') 
+  if ieNotDefined('baseNum')
+    scanNum = viewGet(view,'currentScan');
+  else
+    scanNum = 0;
+  end
 end
 
 % if roiNum is a string see if it is loaded, otherwise
@@ -59,7 +61,7 @@ elseif isstruct(roiNum)
   currentROIname = viewGet(view,'roiName');
   view = viewSet(view,'newROI',roiNum,1);
   roiNum = viewGet(view,'ROINum',roiNum.name);
-  view = viewSet(view,'currentROI',viewGet(view,'ROINum',currentROIname));
+  %view = viewSet(view,'currentROI',viewGet(view,'ROINum',currentROIname)); %JB: do not change current roi in the view
 end
 
 % get the roi transforms
@@ -73,13 +75,19 @@ end
 
 % get the scan transforms
 if scanNum
+  if ieNotDefined('groupNum')
+    groupNum = viewGet(view,'currentGroup');
+  end
   scan2roi = viewGet(view,'scan2roi',roiNum,scanNum,groupNum);
   scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
 else
   % use base xform if scanNum == 0
-  view = viewSet(view,'curGroup',groupNum);
-  scan2roi = viewGet(view,'base2roi',roiNum);
-  scanVoxelSize = viewGet(view,'baseVoxelSize');
+  %view = viewSet(view,'curGroup',groupNum); %JB: I don't think that's necessary
+  if ieNotDefined('baseNum')
+    baseNum = viewGet(view,'curbase');
+  end
+  scan2roi = viewGet(view,'base2roi',roiNum,baseNum);
+  scanVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
 end  
 
 if (isempty(scan2roi)) 

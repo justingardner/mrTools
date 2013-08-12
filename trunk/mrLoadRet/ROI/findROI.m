@@ -24,23 +24,30 @@ end
 roiNum = viewGet(view,'currentROI');
 if isempty(roiNum),return,end
 
-% get roi coordinates from the cache
-roi = viewGet(view,'ROICache',viewGet(view,'currentROI'));
-if isempty(roi)
-  disp(sprintf('(findROI) ROI cache is emtpy (probably you are not viewing ROIs)'));
-  return
-end
-
 baseNum = viewGet(view,'currentBase');
 baseName = fixBadChars(viewGet(view,'baseName',baseNum));
 sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
-if ((~isfield(roi,baseName)) || ...
-    (length(roi.(baseName)) < sliceIndex) || ...
-    (isempty(roi.(baseName){sliceIndex})))
-  msgbox(sprintf('ROI %s has no voxels in the current anatomy',viewGet(view,'roiName',roiNum)));
+
+% get roi coordinates from the cache
+for r = viewGet(view,'currentROI')
+  % look in cache for roi
+  roi = viewGet(view,'ROICache',r);
+
+  if ~isempty(roi)
+    if ((~isfield(roi,baseName)) || ...
+        (length(roi.(baseName)) < sliceIndex) || ...
+        (isempty(roi.(baseName){sliceIndex})))
+      msgbox(sprintf('ROI %s has no voxels in the current anatomy',viewGet(view,'roiName',roiNum)));
+    else
+      s = roi.(baseName){sliceIndex}.s;
+      break;
+    end
+  end
+end
+
+if isempty(roi)
+  disp(sprintf('(findROI) ROI cache is emtpy (probably you are not viewing ROIs)'));
   return
-else
-  s = roi.(baseName){sliceIndex}.s;
 end
 
 % get current slice

@@ -103,17 +103,24 @@ end
 
 % convert the volume to mlr volume
 anatFile = fullfile(params.freeSurferDir, 'mri', params.anatFile);
-outFile = fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr'));
+niftiExt = mrGetPref('niftiFileExtension');
+switch niftiExt
+  case '.nii'
+    out_type='nii';
+  case '.img'
+    out_type='nifti1';
+end
+outFile = fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt));
 if isfile(anatFile)
   disp(sprintf('(mlrImportFreeSurfer) Converting the volume anatomy to nifti format'))
   setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
-  system(sprintf('mri_convert --out_type nifti1 --out_orientation RAS --cropsize %i %i %i %s %s',params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
+  system(sprintf('mri_convert --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
 
-  h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr')));
-  h.qform44(1,4) = -(h.dim(2)-1)/2;
-  h = cbiSetNiftiQform(h, h.qform44);
-  h = cbiSetNiftiSform(h, h.qform44);
-  cbiWriteNiftiHeader(h, fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr')));
+%   h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
+%   h.qform44(1,4) = -(h.dim(2)-1)/2;
+%   h = cbiSetNiftiQform(h, h.qform44);
+%   h = cbiSetNiftiSform(h, h.qform44);
+%   cbiWriteNiftiHeader(h, fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 else
   disp(sprintf('(mlrImportFreeSurfer) Could not find volume %s',getLastDir(anatFile,2)));
 end

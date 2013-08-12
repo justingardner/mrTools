@@ -13,7 +13,7 @@ function retval = makeCorrelationMap(v,overlayNum,scan,x,y,s,roi,varargin)
 viewNum = viewGet(v,'viewNum');
 
 % if we have it
-if strcmp('erAnal',viewGet(v,'analysisType'));
+if ismember(viewGet(v,'analysisType'),{'erAnal','deconvAnal');
   
   % then get the d strucutre
   analysis = viewGet(v,'analysis',viewGet(v,'curAnalysis'));

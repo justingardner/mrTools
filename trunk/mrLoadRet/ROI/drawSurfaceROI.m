@@ -1,6 +1,6 @@
 % drawSurfaceROI.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: drawSurfaceROI()
 %         by: Luke Robot Hospadaruk <hospada1@msu.edu>
 %       date: 11/28/09
@@ -28,7 +28,9 @@ for i=1:(numel(xi))
 end
 %make sure there are at least 3 perimiter and 1 interior vertices
 if(numel(roiKeyVertices) < 4)
-	error('(drawSurfaceROI) Not enough vertices selected, you need at least 4');
+	mrWarnDlg('(drawSurfaceROI) Not enough vertices selected, you need at least 4');
+  coords = [];
+  return
 end
 
 disp('(drawSurfaceROI) Setting up boundary search');
@@ -73,7 +75,9 @@ seed = roiKeyVertices(end);
 roiVertices = growROI(edgeDistances, boundaryVertices, seed);
 
 baseCoordMap = viewGet(view,'baseCoordMap');
-pos = round(squeeze(baseCoordMap.coords(1,roiVertices,1,:)));
+%we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+corticalSlice = ceil(mean(viewGet(view,'corticalDepth'))*size(baseCoordMap.coords,5));
+pos = round(squeeze(baseCoordMap.coords(1,roiVertices,1,:,corticalSlice)));
 xBase = pos(:,1);yBase = pos(:,2);sBase = pos(:,3);
 
 base2scan = viewGet(view,'base2scan');
@@ -179,7 +183,9 @@ else
 		% convert the index to the coordinates
 		if ~isempty(pos)
 			baseCoordMap = viewGet(view,'baseCoordMap');
-			pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
+      %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+      corticalSlice = ceil(mean(viewGet(view,'corticalDepth'))*size(baseCoordMap.coords,5));
+			pos = round(squeeze(baseCoordMap.coords(1,vi,1,:,corticalSlice)));
 			xBase = pos(1);yBase = pos(2);sBase = pos(3);
 		end
 	end

@@ -14,7 +14,7 @@ if nargin < 3,a = gca;end
 ax = axis(a);
 miny = ax(3);maxy = ax(4);
 if isequal(get(a,'YScale'),'log')
-  miny = min(get(a,'Ytick'));
+  miny = min(min(get(a,'Ytick')),miny);
 end
 
 h = [];

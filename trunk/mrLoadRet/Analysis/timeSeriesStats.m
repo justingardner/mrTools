@@ -40,12 +40,11 @@ end
 if ieNotDefined('params')
   % Initialize analysis parameters with default values
   groupName = viewGet(view,'groupName');
-  groupNum = viewGet(view,'groupNum',groupName);
-  n = viewGet(view,'nScans',groupNum);
   params.groupName = groupName;
   % find out all the scans in the current group that have more than 2 volumes
   % since we can't compute tSeriesStats for scans with less
-  for iScan = 1:n
+  groupNum = viewGet(view,'groupNum',groupName);
+  for iScan = 1:viewGet(view,'nScans',groupNum)
     nVols(iScan) = viewGet(view,'nVolumes',iScan);
     if nVols(iScan) <= 2
       disp(sprintf('(timeSeriesStats) Scan %s:%i has %i volumes - need at least 2 volumes to run tSeriesStats',groupName,iScan,nVols(iScan)));
@@ -53,7 +52,7 @@ if ieNotDefined('params')
   end
   scanList = find(nVols>2);
   if length(scanList) > 0
-    params.scanList = selectScans(view,'Select scans for timeSeriesStats',scanList);
+    params.scanList = selectInList(view,'scans','Select scans for timeSeriesStats',scanList);
     if isempty(params.scanList),return,end
   else
     disp(sprintf('(timeSeriesStats) Could not find any scans to process'));
@@ -172,41 +171,40 @@ tsMeanDividedByStd.groupName = params.groupName;
 tsMeanDividedByStd.interrogator = 'timeSeriesStatsPlot';
 
 disp('Computing time series statistics...');
-waitHandle = mrWaitBar(0,'Computing statistics from the tSeries.  Please wait...');
 warning('off','MATLAB:divideByZero');
 for scanIndex=1:length(scanList)
-    scanNum = scanList(scanIndex);
-    disp(['Processing scan ', int2str(scanNum),'...']);
-    
-    % sliceDims: [ydim xdim] for single slice
-    % volDims; [ydim xdim nslices] for single scan
-    sliceDims = viewGet(view,'sliceDims',scanNum);
-    volDims = viewGet(view,'dims',scanNum);
-    
-    % Initialize data with NaNs
-    tsMean.data{scanNum} = NaN*ones(volDims);
-    tsMedian.data{scanNum} = NaN*ones(volDims);
-    tsStd.data{scanNum} = NaN*ones(volDims);
-    tsMaxFrameDiff.data{scanNum} = NaN*ones(volDims);
-    tsMaxMedianDiff.data{scanNum} = NaN*ones(volDims);
-    tsMeanDividedByStd.data{scanNum} = NaN*ones(volDims);
-    
-    nslices = viewGet(view,'nslices',scanNum);
-    for sliceNum = 1:nslices
-        [tsMeanSeries,tsMedianSeries,tsStdSeries,tsMaxFrameDiffSeries,tsMaxMedianDiffSeries] = ...
-          computeTimeSeriesStatsSeries(view,scanNum,sliceNum);
-        tsMean.data{scanNum}(:,:,sliceNum) = reshape(tsMeanSeries,sliceDims);
-        tsMedian.data{scanNum}(:,:,sliceNum) = reshape(tsMedianSeries,sliceDims);
-        tsStd.data{scanNum}(:,:,sliceNum) = reshape(tsStdSeries,sliceDims);
-        tsMaxFrameDiff.data{scanNum}(:,:,sliceNum) = reshape(tsMaxFrameDiffSeries,sliceDims);
-        tsMaxMedianDiff.data{scanNum}(:,:,sliceNum) = reshape(tsMaxMedianDiffSeries,sliceDims);
-        tsMeanDividedByStd.data{scanNum}(:,:,sliceNum) = reshape(tsMeanSeries,sliceDims)./reshape(tsStdSeries,sliceDims);
-    end
-    % Update waitbar
-    mrWaitBar(scanIndex/length(scanList),waitHandle);
+   scanNum = scanList(scanIndex);
+   waitHandle = mrWaitBar(0,['Computing time-series statistics for Scan ' int2str(scanNum) ':']);
+
+   % sliceDims: [ydim xdim] for single slice
+   % volDims; [ydim xdim nslices] for single scan
+   sliceDims = viewGet(view,'sliceDims',scanNum);
+   volDims = viewGet(view,'dims',scanNum);
+
+   % Initialize data with NaNs
+   tsMean.data{scanNum} = NaN*ones(volDims);
+   tsMedian.data{scanNum} = NaN*ones(volDims);
+   tsStd.data{scanNum} = NaN*ones(volDims);
+   tsMaxFrameDiff.data{scanNum} = NaN*ones(volDims);
+   tsMaxMedianDiff.data{scanNum} = NaN*ones(volDims);
+   tsMeanDividedByStd.data{scanNum} = NaN*ones(volDims);
+
+   nslices = viewGet(view,'nslices',scanNum);
+   for sliceNum = 1:nslices
+     [tsMeanSeries,tsMedianSeries,tsStdSeries,tsMaxFrameDiffSeries,tsMaxMedianDiffSeries] = ...
+       computeTimeSeriesStatsSeries(view,scanNum,sliceNum);
+     tsMean.data{scanNum}(:,:,sliceNum) = reshape(tsMeanSeries,sliceDims);
+     tsMedian.data{scanNum}(:,:,sliceNum) = reshape(tsMedianSeries,sliceDims);
+     tsStd.data{scanNum}(:,:,sliceNum) = reshape(tsStdSeries,sliceDims);
+     tsMaxFrameDiff.data{scanNum}(:,:,sliceNum) = reshape(tsMaxFrameDiffSeries,sliceDims);
+     tsMaxMedianDiff.data{scanNum}(:,:,sliceNum) = reshape(tsMaxMedianDiffSeries,sliceDims);
+     tsMeanDividedByStd.data{scanNum}(:,:,sliceNum) = reshape(tsMeanSeries,sliceDims)./reshape(tsStdSeries,sliceDims);
+     % Update waitbar
+     mrWaitBar(sliceNum/nslices,waitHandle);
+   end
+   mrCloseDlg(waitHandle);
 end
 
-mrCloseDlg(waitHandle);
 
 % Fill range fields 
 tsMean.range = findRange(tsMean.data);
@@ -250,8 +248,10 @@ ampMax = 0;
 nScans = length(data);
 for scan=1:nScans
   if ~isempty(data{scan})
-    ampMin = min([ampMin min(data{scan}(:))]);
-    ampMax = max([ampMax max(data{scan}(:))]);
+     thisData = data{scan}(:);
+     thisData = thisData(~isinf(thisData));
+    ampMin = min([ampMin min(thisData)]);
+    ampMax = max([ampMax max(thisData)]);
   end
 end
 if (ampMin <= ampMax)

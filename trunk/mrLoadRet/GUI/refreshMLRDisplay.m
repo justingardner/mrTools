@@ -1,8 +1,8 @@
-function [img base roi overlay] = refreshMLRDisplay(viewNum)
+function [img base roi overlays] = refreshMLRDisplay(viewNum)
 %	$Id$
 
 mrGlobals
-img = [];base = [];roi = [];overlay=[];
+img = [];base = [];roi = [];overlays=[];
 % for debugging/performance tests
 % set to 0 for no info
 % set to 1 for info on caching
@@ -37,10 +37,11 @@ if isempty(baseNum)
   end
   return
 end
+set(viewGet(viewNum,'figNum'),'Pointer','watch');drawnow;
 if verbose>1,disppercent(inf);,end
 
-% for debugging, clears caches when user holds down shift key
-if ~isempty(fig) && any(strcmp(get(fig,'CurrentModifier'),'shift'))
+% for debugging, clears caches when user holds down alt key
+if ~isempty(fig) && any(strcmp(get(fig,'CurrentModifier'),'alt'))
   disp(sprintf('(refreshMLRDisplay) Dumping caches'));
   view = viewSet(view,'roiCache','init');
   view = viewSet(view,'overlayCache','init');
@@ -69,35 +70,67 @@ if isempty(base)
 else
   if verbose,disppercent(inf);end
 end
-view = viewSet(view,'cursliceBaseCoords',base.coords);
 
-% Extract overlay images and overlay coords, and alphaMap
-if verbose,disppercent(-inf,'extract overlay images');end
-overlay = viewGet(view,'overlayCache');
-if isempty(overlay)
+if size(base.coords,4)>1
+  corticalDepth = viewGet(view,'corticalDepth');
+  corticalDepthBins = viewGet(view,'corticalDepthBins');
+  corticalDepths = 0:1/(corticalDepthBins-1):1;
+  slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
+  view = viewSet(view,'cursliceBaseCoords',mean(base.coords(:,:,:,slices),4));
+else
+  view = viewSet(view,'cursliceBaseCoords',base.coords);
+end
+
+
+% Extract overlays images and overlays coords, and alphaMap
+% right now combinations of overlays are cached as is
+% but it would make more sense to cache them separately
+% because actual blending occurs after they're separately computed
+if verbose,disppercent(-inf,'extract overlays images');end
+overlays = viewGet(view,'overlayCache');
+if isempty(overlays)
   % get the transform from the base to the scan
   base2scan = viewGet(view,'base2scan',[],[],baseNum);
-  % compute the overlay
-  overlay = computeOverlay(view,base2scan,base.coordsHomogeneous,base.dims);
+  % compute the overlays
+  overlays = computeOverlay(view,base2scan,base.coordsHomogeneous,base.dims);
   % save in cache
-  view = viewSet(view,'overlayCache',overlay);
-  if verbose,disppercent(inf);disp('Recomputed overlay');end
+  view = viewSet(view,'overlayCache',overlays);
+  if verbose,disppercent(inf);disp('Recomputed overlays');end
 else
   if verbose,disppercent(inf);end
 end
-view = viewSet(view,'cursliceOverlayCoords',overlay.coords);
+view = viewSet(view,'cursliceOverlayCoords',overlays.coords);
 
-% figure
-% image(overlayRGB)
-% colormap(overlayCmap)
-% return
+% Combine base and overlays
+if verbose>1,disppercent(-inf,'combine base and overlays');,end
+if ~isempty(base.RGB) & ~isempty(overlays.RGB)
 
-% Combine base and overlay
-if verbose>1,disppercent(-inf,'combine base and overlay');,end
-if ~isempty(base.RGB) & ~isempty(overlay.RGB)
-  img = (1-overlay.alphaMap).*base.RGB + overlay.alphaMap.*overlay.RGB;
-  cmap = overlay.cmap;
-  cbarRange = overlay.range;
+  switch(mrGetPref('colorBlending'))
+    case 'Alpha blend'
+      % alpha blending (non-commutative 'over' operator, each added overlay is another layer on top)
+      % since commutative, depends on order
+      img = base.RGB;
+      for iOverlay = 1:size(overlays.RGB,4)
+        img = overlays.alphaMaps(:,:,:,iOverlay).*overlays.RGB(:,:,:,iOverlay)+(1-overlays.alphaMaps(:,:,:,iOverlay)).*img;
+      end
+  
+    case 'Additive'
+      %additive method (commutative: colors are blended in additive manner and then added as a layer on top of the base)
+      % 1) additively multiply colors weighted by their alpha
+      RGB = overlays.alphaMaps.*overlays.RGB;
+      % 2) add pre-multipliedcolormaps (and alpha channels)
+      img = RGB(:,:,:,1);
+      alpha = overlays.alphaMaps(:,:,:,1);
+      for iOverlay = 2:size(overlays.RGB,4)
+        img = img.*(1-RGB(:,:,:,iOverlay))+ RGB(:,:,:,iOverlay);
+        alpha = alpha .* (1-overlays.alphaMaps(:,:,:,iOverlay))+overlays.alphaMaps(:,:,:,iOverlay);
+      end
+      % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
+       img = img+(1-alpha).*base.RGB;
+       
+  end
+  cmap = overlays.cmap;
+  cbarRange = overlays.range;
 elseif ~isempty(base.RGB)
   img = base.RGB;
   cmap = base.cmap;
@@ -115,7 +148,7 @@ if ieNotDefined('img')
   return
 end
 
-% if no figure, then just return, this is being called just to create the overlay
+% if no figure, then just return, this is being called just to create the overlays
 fig = viewGet(view,'figNum');
 if isempty(fig)
  	nROIs = viewGet(view,'numberOfROIs');
@@ -146,6 +179,22 @@ if baseType <= 1
   % to the 3D surfaces.
   set(fig,'Renderer','painters')
   image(img,'Parent',gui.axis);
+  
+%   %an alterative way of plotting using independent patches:
+%   set(fig,'Renderer','OpenGL')
+%   [x,y]=meshgrid(1:base.dims(1),1:base.dims(2));
+%   x=reshape(x,1,numel(x));
+%   y=reshape(y,1,numel(y));
+%   xdata=[x-.5; x+.5;x+.5; x-.5];
+%   ydata=[y-.5; y-.5;y+.5; y+.5];
+%   zdata=ones(size(xdata));
+%   cdata = reshape(base.RGB,[prod(base.dims) 1 3]);
+%   p =patch(xdata,ydata,zdata,'FaceColor','flat','EdgeColor','none','Parent',gui.axis);
+%   set(p,'cdata',cdata);
+% 
+%   o = patch(xdata,ydata,zdata,'FaceColor','flat','EdgeColor','none','faceAlpha','flat','AlphaDataMapping','none','Parent',gui.axis);
+%   set(o,'cData', reshape(overlays.RGB,[prod(base.dims) 1 3]));
+%   set(o,'facevertexAlphadata',reshape(overlays.alphaMaps(:,:,1),361*361,1))
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms
@@ -178,17 +227,34 @@ if verbose>1,disppercent(inf);,end
 
 % Display colorbar
 if verbose>1,disppercent(-inf,'colorbar');,end
-cbar = rescale2rgb([1:256],cmap,[1,256],baseGamma);
+cbar = permute(NaN(size(cmap)),[3 1 2]);
+for iOverlay = 1:size(cmap,3)
+  %cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],baseGamma);%JB: this baseGamma argument does seem to make any sense
+  cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],1); %JB: or at least the result is  not what's expected if baseGamma<1...
+end
 image(cbar,'Parent',gui.colorbar);
-set(gui.colorbar,'YTick',[]);
-set(gui.colorbar,'XTick',[1 64 128 192 256]);
-set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
+if size(cbar,1)==1
+  set(gui.colorbar,'YTick',[]);
+  set(gui.colorbar,'XTick',[1 64 128 192 256]);
+  set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
+  if isfield(gui,'colorbarRightBorder')
+    set(gui.colorbarRightBorder,'YTick',[]);
+  end
+else 
+  set(gui.colorbar,'XTick',[]);
+  set(gui.colorbar,'YTick',(1:size(cbar,1)));
+  set(gui.colorbar,'YTickLabel',cbarRange(:,1));
+  if isfield(gui,'colorbarRightBorder')
+    set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
+    set(gui.colorbarRightBorder,'YTickLabel',flipud(cbarRange(:,2)));
+  end
+end
 if verbose>1,disppercent(inf);,end
 
 % Display the ROIs
-if baseType <= 1
-  drawnow;
-end
+% if baseType <= 1
+%   drawnow;        %JB: this doesn't seem useful
+% end
 nROIs = viewGet(view,'numberOfROIs');
 if nROIs
 %  if baseType <= 1
@@ -198,17 +264,31 @@ else
   roi = [];
 end
 
-if verbose>1,disppercent(-inf,'rendering');,end
+if verbose>1,disppercent(-inf,'rendering');end
+%this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
+%In cases where it is more than the number of overlay names in the box
+%it has to be changed, but it is necessary to wait until drawnow before changing it  
+%otherwise the change is not taken into account
+%Even in this case, It still outputs a warning, that has to be disabled
+if strcmp(get(gui.overlayPopup,'style'),'listbox')
+  warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+  set(gui.overlayPopup,'ListboxTop',min(get(gui.overlayPopup,'ListboxTop'),length(get(gui.overlayPopup,'string'))));
+end
+%draw the figure
 drawnow
-if verbose>1,disppercent(inf);,end
+if strcmp(get(gui.overlayPopup,'style'),'listbox')
+  warning('on','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+end
+if verbose>1,disppercent(inf);end
 if verbose,toc,end
+set(viewGet(view,'figNum'),'Pointer','arrow');
 
 return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function roiBaseCoords= getROIBaseCoords(view,baseNum,roiNum);
+function roiBaseCoords= getROIBaseCoords(view,baseNum,roiNum)
 
 roiBaseCoords = [];
 
@@ -218,32 +298,30 @@ roiCoords = viewGet(view,'roiCoords',roiNum);
 roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
 base2roi = viewGet(view,'base2roi',roiNum,baseNum);
 
-if ~isempty(roiCoords) & ~isempty(base2roi)
+if ~isempty(roiCoords) && ~isempty(base2roi)
   % Use xformROI to supersample the coordinates
   roiBaseCoords = round(xformROIcoords(roiCoords,inv(base2roi),roiVoxelSize,baseVoxelSize));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIImageCoords: get the roiBaseCoords as x,y and s positions for this
-% particular view of the volume (i.e these are coorinates that can
+% particular view of the volume (i.e these are coordinates that can
 % be plotted on the image.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x y s]= getROIImageCoords(view,roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims);
+function [x y s]= getROIImageCoords(view,roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims)
 
 x=[];y=[];s=[];
 
 if ~isempty(roiBaseCoords)
-  % make sure that baseCoords are rounded (they may not be
-  % if we are working with a baseCoordMap'd flat map
-  baseCoordsHomogeneous = round(baseCoordsHomogeneous);
 
   % base dims
-  baseDims = viewGet(view,'baseDims');
   % get the mapping between the image plane and the
   % actual voxel numbers. This will be non-empty for flat surfaces
   baseCoordMap = viewGet(view,'baseCoordMap',baseNum);
   if isfield(baseCoordMap,'dims')
     baseDims = baseCoordMap.dims;
+  else
+    baseDims = viewGet(view,'baseDims');
   end
 
   % get base and roi coordinates linearly (this is so that
@@ -261,9 +339,27 @@ if ~isempty(roiBaseCoords)
     [roiIndices baseIndices] = ismember(roiBaseCoordsLinear,baseCoordsLinear);
     roiIndices = find(roiIndices);
     baseIndices = baseIndices(roiIndices);
+    s = roiBaseCoords(sliceIndex,roiIndices); %s will only be used for volume, not flat maps/surfaces
   else
     % for flat maps, we have only one slice and all coordinates
     % are important to match
+    
+    if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
+      corticalDepth = viewGet(view,'corticalDepth');
+      corticalDepthBins = viewGet(view,'corticalDepthBins');
+      corticalDepths = 0:1/(corticalDepthBins-1):1;
+      slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
+      nDepths = nnz(slices);
+      baseCoordsHomogeneous = reshape(baseCoordsHomogeneous(:,:,slices),[4 prod(imageDims)*nDepths]);
+      
+    else
+      nDepths=1;
+    end
+    
+    % make sure that baseCoords are rounded (they may not be
+    % if we are working with a baseCoordMap's flat map
+    baseCoordsHomogeneous = round(baseCoordsHomogeneous);
+
     baseCoordsLinear = mrSub2ind(baseDims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
     roiBaseCoordsLinear = mrSub2ind(baseDims,roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
     % we use ismember here since it will keep duplicates.
@@ -271,13 +367,24 @@ if ~isempty(roiBaseCoords)
     % the roi will have unique coordinates, so we switch
     % the order of arguments from above
     [baseIndices roiIndices] = ismember(baseCoordsLinear,roiBaseCoordsLinear);
+    
+    if nDepths>1%if it is a flat map with more than one depth
+      %only keep base voxels that are in a given propotion of the depth levels (given by mrPref roiCorticalDepthDisplayRatio)
+      baseIndices=(sum(reshape(baseIndices,[prod(imageDims) nDepths]),2)>=nDepths*mrGetPref('roiCorticalDepthDisplayRatio'))';
+      %Since there are several depths, there can be several base roi voxels at each image voxel
+      % roiIndices=reshape(roiIndices,[prod(imageDims) nDepths]);
+      %but which voxel is displayed is actually not used later because we can only display one depth at a time
+      %(roiIndices used to go into s, which was not used for flat maps)
+      %so let's just forget about roiIndices 
+      %(this also avoid having to think about at what deptht o take the base coords)
+    end
     baseIndices = find(baseIndices);
-    roiIndices = roiIndices(baseIndices);
+%     roiIndices = roiIndices(baseIndices);
+    s=[];%s will only be used for volume, not flat maps/surfaces
   end
   % now transform the coordinates that exist in this
-  % base into image coordinates.
+  % base into volume coordinates.
   [x,y] = ind2sub(imageDims,baseIndices);
-  s = roiBaseCoords(sliceIndex,roiIndices);
 end
 
 
@@ -300,24 +407,10 @@ roi = {};
 
 selectedROI = viewGet(view,'currentroi');
 labelROIs = viewGet(view,'labelROIs');
-n = viewGet(view,'numberOfROIs');
 
 % Order in which to draw the ROIs
+order = viewGet(view,'visibleROIs');
 option = viewGet(view,'showROIs');
-switch option
-  case{'all','all perimeter'}
-    if selectedROI
-      order = [1:selectedROI-1,selectedROI+1:n,selectedROI];
-    else
-      order = 1:n;
-    end
-  case{'selected','selected perimeter'}
-    order = selectedROI;
-  case{'group','group perimeter'}
-    order = viewGet(view,'roiGroup');
-  otherwise
-    return
-end
 
 % Loop through ROIs in order
 for r = order
@@ -325,12 +418,14 @@ for r = order
   roiCache = viewGet(view,'ROICache',r);
   % if not found
   if isempty(roiCache)
-    disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    if verbose
+      disppercent(-inf,sprintf('Computing ROI base coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    end
     % Get ROI coords transformed to the base dimensions
     roi{r}.roiBaseCoords = getROIBaseCoords(view,baseNum,r);
     % save to cache
     view = viewSet(view,'ROICache',roi{r},r);
-    disppercent(inf);
+    if verbose,disppercent(inf);end
   else
     roi{r} = roiCache;
   end
@@ -346,8 +441,6 @@ baseType = viewGet(view,'baseType',baseNum);
 
 % Draw it
 if verbose>1,disppercent(-inf,'Drawing ROI');,end
-lineWidth = 0.5;
-w = 0.5;
 
 % get which color to draw the selected ROI in
 selectedROIColor = mrGetPref('selectedROIColor');
@@ -384,13 +477,15 @@ for r = order
   if ((~isfield(roi{r},baseName)) || ...
       (length(roi{r}.(baseName)) < sliceIndex) || ...
       (isempty(roi{r}.(baseName){sliceIndex})))
-    disppercent(-inf,sprintf('Computing ROI image coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    if verbose
+      disppercent(-inf,sprintf('Computing ROI image coordinates for %i:%s',r,viewGet(view,'roiName',r)));
+    end
     [x y s] = getROIImageCoords(view,roi{r}.roiBaseCoords,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims);
     % keep the coordinates
     roi{r}.(baseName){sliceIndex}.x = x;
     roi{r}.(baseName){sliceIndex}.y = y;
     roi{r}.(baseName){sliceIndex}.s = s;
-    disppercent(inf);
+    if verbose, disppercent(inf); end
     % save in cache
     view = viewSet(view,'ROICache',roi{r},r);
   else
@@ -406,7 +501,7 @@ for r = order
   if baseType == 2
     baseSurface = viewGet(view,'baseSurface');
     if 0 %%doPerimeter
-      disppercent(-inf,'(refreshMLRDisplay) Computing perimeter');
+      if verbose, disppercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
       newy = [];
       for i = 1:length(y)
@@ -422,9 +517,9 @@ for r = order
 	if numNeighbors(i) ~= numROINeighbors(i)
 	  newy = union(newy,baseCoordMap.tris(row(1),:));
 	end
-	disppercent(i/length(y));
+	if verbose, disppercent(i/length(y)); end;
       end
-      disppercent(inf);
+      if verbose, disppercent(-inf); end;
       disp(sprintf('%i/%i edges',length(newy),length(y)));
       y = newy;
     end
@@ -452,6 +547,12 @@ for r = order
     % we will have to fix this up here to take that
     % into account.
     sliceNum = 1;
+    % JB edit: I've now implemented flat maps/surfaces that average overlay values across
+    % different depths. But for ROIs, it is not clear how that would translate
+    % in terms of showing the 3D ROI across depths onto the 2D display...
+    % so I chose to only display ROI voxels that appear in at least half of the averaged depths
+    % (see subfunction getROIImageCoords)
+    % Therefore, here we still ignore in which slice (at which depth) ROI voxels actually are
   end
   if ~isempty(x) & ~isempty(y)
     % removing the loop from this algorithm speeds things
@@ -526,7 +627,7 @@ for r = order
     % save to cache (since other functions like mrPrint need this
     view = viewSet(view,'ROICache',roi{r},r);
     % now render those lines
-    line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',lineWidth,'Parent',gui.axis);
+    line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',gui.axis);
   else
     roi{r}.lines.x = [];
     roi{r}.lines.y = [];

@@ -1,32 +1,9 @@
-function analysesList = selectAnalyses(thisView,title)
-% analysesList = selectAnalyses(thisView,[title]);
+function analysesList = selectAnalyses(thisView,varargin)
+% analysesList = selectAnalyses(thisView,[title],[preselected]);
 %
-%   Gather a list of analyses available in current group/analysis
-%   and query the user for a sub-selection.
-%
-% Output:
-%  analysesList: list of selected analyses.
-%
-% 14/07/10 jb adapted from selectScans
+%   this function is deprecated, use analysesList = selectInList(thisView,'analyses',title,preselected)
 %
 % $Id$ 
 
-analysesList = [];
-
-if ieNotDefined('title')
-  title = 'Choose analyses';
-end
-
-analysisNames = viewGet(thisView,'analysisNames');
-
-%Check for zero:
-if isempty(analysisNames)
-  mrWarnDlg('(selectAnalysis) No analysis found!');
-  return
-end
-
-% Which overlays to analyze?
-iSel = buttondlg(title, analysisNames);
-analysesList = find(iSel);
-
-return;
+analysesList = selectInList(thisView,'analyses',varargin);
+mrWarnDlg('(selectAnalyses) selectAnalyses is deprecated. Please use ''selectInList(view,''analyses'',...)'' instead');

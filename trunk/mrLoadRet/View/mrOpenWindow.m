@@ -3,6 +3,7 @@ function view = mrOpenWindow(viewType,mrLastView)
 %  view = openWindow(viewType)
 %
 % djh, 6/2004
+%        $Id$
 
 if ieNotDefined('viewType'),viewType = 'Volume';end
 % note we don't use ieNotDefined here, because
@@ -28,6 +29,8 @@ end
 % set the location of the figure
 figloc = mrGetFigLoc('mrLoadRetGUI');
 if ~isempty(figloc)
+  %deal with multiple monitors
+  [whichMonitor,figloc]=getMonitorNumber(figloc,getMonitorPositions);
   set(fig,'Position',figloc);
 end
 
@@ -45,15 +48,20 @@ mlrGuiSet(view,'nSlices',0);
 view = viewSet(view,'showROIs','all perimeter');
 view = viewSet(view,'labelROIs',1);
 
+% Add plugins
+if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
+
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
   mrLastView=load(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
+%   disppercent(-inf,'(mrOpenWindow) Restoring last view');
   if isfield(mrLastView,'view')
     % open up base anatomy from last session
     if isfield(mrLastView.view,'baseVolumes')
+      disppercent(-inf,sprintf('(mrOpenWindow) installing Base Anatomies'));
       if length(mrLastView.view.baseVolumes) >= 1
         baseLoaded = 1;
         % Add it to the list of base volumes and select it
@@ -66,44 +74,36 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	  % install the base
 	  view = viewSet(view,'newBase',mrLastView.view.baseVolumes(i));
 	end
+      else
+        %try to load 
+  [view,baseLoaded] = loadAnatomy(view);
       end
+      disppercent(inf);
     end
-
     % change group
-    if isfield(mrLastView,'viewSettings')
-      view = viewSet(view,'curGroup',mrLastView.viewSettings.curGroup);
-      mlrGuiSet(view.viewNum,'group',mrLastView.viewSettings.curGroup);
-    end
+    view = viewSet(view,'curGroup',mrLastView.view.curGroup);
     nScans = viewGet(view,'nScans');
     mlrGuiSet(view,'nScans',nScans);
-
-    if baseLoaded && isfield(mrLastView,'viewSettings')
+    if baseLoaded
       % slice orientation from last run
-      if isfield(mrLastView.viewSettings,'curBase')
-	view = viewSet(view,'curBase',mrLastView.viewSettings.curBase);
-      end
-      view = viewSet(view,'sliceOrientation',mrLastView.viewSettings.sliceOrientation);
-      % rotate
-      mlrGuiSet(view.viewNum,'rotate',mrLastView.viewSettings.rotate);
+      view = viewSet(view,'curBase',mrLastView.view.curBase);
       % change scan
-      view = viewSet(view,'curScan',mrLastView.viewSettings.curScan);
-      % change slice
-      viewSet(view,'curSlice',mrLastView.viewSettings.curSlice);
+      view = viewSet(view,'curScan',mrLastView.view.curScan);
+      % change slice/corticalDepth
+      if viewGet(view,'baseType') && isfield(mrLastView.view.curslice,'corticalDepth')
+        view = viewSet(view,'corticalDepth',mrLastView.view.curslice.corticalDepth);
+      end
+      if isfield(mrLastView.view.curslice,'sliceNum')
+        view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
+      end
     end
-
     % read analyses
     if isfield(mrLastView.view,'analyses')
       for anum = 1:length(mrLastView.view.analyses)
         view = viewSet(view,'newAnalysis',mrLastView.view.analyses{anum});
+%         disppercent(anum /length(mrLastView.view.analyses));
       end
-      if anum >= 1
-        % overlay settings
-        if isfield(mrLastView.viewSettings,'overlayMin')
-          mlrGuiSet(view.viewNum,'overlayMin',mrLastView.viewSettings.overlayMin);
-          mlrGuiSet(view.viewNum,'overlayMax',mrLastView.viewSettings.overlayMax);
-          mlrGuiSet(view.viewNum,'alpha',mrLastView.viewSettings.alpha);
-        end
-      end
+      view = viewSet(view,'curAnalysis',mrLastView.view.curAnalysis);
     end
     % read loaded analyses
     if isfield(mrLastView.view,'loadedAnalyses')
@@ -117,40 +117,50 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	view = viewSet(view,'groupScanNum', mrLastView.view.groupScanNum(g),g);
       end
     end
-    drawnow
-
+    
     % read ROIs into current view
     if isfield(mrLastView.view,'ROIs')
+      disppercent(-inf,sprintf('(mrOpenWindow) installing ROIs'));
       for roinum = 1:length(mrLastView.view.ROIs)
         view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
       end
-      view = viewSet(view,'currentROI',1);
-      if isfield(mrLastView.viewSettings,'showROIs')
-	view = viewSet(view,'showROIs',mrLastView.viewSettings.showROIs);
+      view = viewSet(view,'currentROI',mrLastView.view.curROI);
+      if ~fieldIsNotDefined(mrLastView.view,'showROIs')
+	view = viewSet(view,'showROIs',mrLastView.view.showROIs);
       end
-      if isfield(mrLastView.viewSettings,'labelROIs')
-	view = viewSet(view,'labelROIs',mrLastView.viewSettings.labelROIs);
+      if ~fieldIsNotDefined(mrLastView.view,'labelROIs')
+	view = viewSet(view,'labelROIs',mrLastView.view.labelROIs);
       end
-      if isfield(mrLastView.viewSettings,'roiGroup')
-	view = viewSet(view,'roiGroup',mrLastView.viewSettings.roiGroup);
+      if ~fieldIsNotDefined(mrLastView.view,'roiGroup')
+	view = viewSet(view,'roiGroup',mrLastView.view.roiGroup);
       end
+      disppercent(inf);
     end
-
-    % Add plugins
-    if ~isempty(which('mlrPlugin')) mlrPlugin(view);end
     
     % add here, to load more info...
     % and refresh
+    disppercent(-inf,sprintf('(mrOpenWindow) Refreshing MLR display'));
     refreshMLRDisplay(view.viewNum);
+    disppercent(inf);
   end
 
+else
+  [view,baseLoaded] = loadAnatomy(view);
+
+  if baseLoaded
+    refreshMLRDisplay(view.viewNum);
+  end
 end
 
-if ~baseLoaded
+% reset some preferences
+mrSetPref('importROIPath','');
+
+function [view,baseLoaded] = loadAnatomy(view)
   % for when there is no mrLastView
   % open an anatomy, if there is one
   anatdir = dir('Anatomy/*.img');
   if ~isempty(anatdir)
+    baseLoaded = 1;
     % load the first anatomy in the list
     view = loadAnat(view,anatdir(1).name);
     % if it is a regular anatomy
@@ -164,9 +174,7 @@ if ~baseLoaded
     % change group to last in list
     view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
     % and refresh
-    refreshMLRDisplay(view.viewNum);
+  else
+    baseLoaded = 0;
   end
-end
 
-% reset some preferences
-mrSetPref('importROIPath','');

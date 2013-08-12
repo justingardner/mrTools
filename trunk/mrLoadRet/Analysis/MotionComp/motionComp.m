@@ -30,7 +30,7 @@ function [view  params] = motionComp(view,params,varargin)
 %    Should be of the form [ymin xmin zmin; ymax xmax zmax]
 %    Default [].
 % niters: number of iterations in the motion estimation.
-%    Default 3.
+%    Default 10.
 % sliceTimeCorrection: Performs slice time correction if True.
 % sliceTimeString: Specifies slice time correction:
 %    'beginning of TR'
@@ -181,7 +181,7 @@ warpedTseries = zeros(size(tseries));
 
 % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
 % also correct crop, get slice times, and extract base volume.
-[tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask);
+[tseriesTemp,crop,newSliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask);
 
 % Loop: computing motion estimates and warping the volumes to
 % compensate for the motion in each temporal frame.
@@ -202,9 +202,9 @@ for frame = 1:totalFrames
     % Compute rigid-body motion estimate
     if sliceTimeCorrection
       if strcmp(baseFrame,'mean')
-        M = estMotionInterp3(baseVol,tseriesTemp,1,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
+        M = estMotionInterp3(baseVol,tseriesTemp,1,frame,niters,Minitial,newSliceTimes,1,robust,0,crop);
       else
-        M = estMotionInterp3(tseriesTemp,tseriesTemp,baseF,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
+        M = estMotionInterp3(tseriesTemp,tseriesTemp,baseF,frame,niters,Minitial,newSliceTimes,1,robust,0,crop);
       end
     else
       M = estMotionIter3(baseVol,tseriesTemp(:,:,:,frame),niters,Minitial,1,robust,0,crop);
@@ -212,7 +212,7 @@ for frame = 1:totalFrames
   end
   % Warp the volume
   if sliceTimeCorrection
-    warpedTseries(:,:,:,frame) = warpAffineInterp3(tseriesTemp,frame,M,sliceTimes,NaN,interpMethod);
+    warpedTseries(:,:,:,frame) = warpAffineInterp3(tseriesTemp,frame,M,newSliceTimes,NaN,interpMethod);
   else
     warpedTseries(:,:,:,frame) = warpAffine3(tseriesTemp(:,:,:,frame),M,NaN,0,interpMethod);
   end
@@ -251,7 +251,7 @@ for s = 1:length(targetScans)
 
   % Preprocess (drift correction, intensit gradient correction, temporal smoothing)
   % also correct crop, get slice times, and extract base volume.
-  [tseriesTemp,crop,sliceTimes,baseVol,baseF] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask);
+  [tseriesTemp,crop,newSliceTimes] = motionCompPreprocessing(tseries,params,junkFrames,nFrames,totalFrames,sliceTimes,mask);
   
   % Loop through frames of target scan and estimate motion params
   waitHandle = mrWaitBar(0,['(motionComp) Computing motion estimates for scan ',num2str(scanNum),'.  Please wait...']);
@@ -267,10 +267,9 @@ for s = 1:length(targetScans)
     else
       Minitial = M;
     end
-
     % Compute rigid-body motion estimate with respect to baseMean
     if sliceTimeCorrection
-      M = estMotionInterp3(baseMean,tseriesTemp,1,frame,niters,Minitial,sliceTimes,1,robust,0,crop);
+      M = estMotionInterp3(baseMean,tseriesTemp,1,frame,niters,Minitial,newSliceTimes,1,robust,0,crop);
     else
       M = estMotionIter3(baseMean,tseriesTemp(:,:,:,frame),niters,Minitial,1,robust,0,crop);
     end
@@ -285,7 +284,7 @@ for s = 1:length(targetScans)
   for frame = 1:totalFrames
     mrWaitBar(frame/totalFrames,waitHandle)
     if sliceTimeCorrection
-      warpedTseries(:,:,:,frame) = warpAffineInterp3(tseries,frame,transforms{frame},sliceTimes,NaN,interpMethod);
+      warpedTseries(:,:,:,frame) = warpAffineInterp3(tseries,frame,transforms{frame},newSliceTimes,NaN,interpMethod);
     else
       warpedTseries(:,:,:,frame) = warpAffine3(tseries(:,:,:,frame),transforms{frame},NaN,0,interpMethod);
     end
@@ -308,7 +307,7 @@ for s = 1:length(targetScans)
 
   % Save evalstring for recomputing and params
   evalstr = ['view = newView(','''','Volume','''','); view = motionComp(view,params);'];
-  [pathstr,filename,ext] = fileparts(tseriesFileName);
+  [pathstr,filename] = fileparts(tseriesFileName);
   tseriesdir = viewGet(viewMotionComp,'tseriesdir');
   save(fullfile(tseriesdir,filename),'evalstr','params','transforms','tseriesFileName');
 

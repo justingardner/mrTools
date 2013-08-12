@@ -21,7 +21,7 @@ if ieNotDefined('params')
   if ~isfield(params,'scanList')
     view = newView;
     view = viewSet(view, 'groupName', groupName)
-    params.scanList = selectScans(view);
+    params.scanList = selectInList(view,'scans');
   end
   params.newGroupName = 'Concatenation';
   params.baseScan = params.scanList(1);

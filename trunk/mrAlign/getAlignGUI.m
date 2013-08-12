@@ -1,6 +1,6 @@
 % getAlignGUI.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: [trans rot] = getAlignGUI(handles)
 %         by: justin gardner
 %       date: 05/16/09

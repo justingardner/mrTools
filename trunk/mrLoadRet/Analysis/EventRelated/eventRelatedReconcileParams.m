@@ -20,7 +20,7 @@ end
 params.groupNum = viewGet([],'groupNum',groupName);
 if ~isfield(params,'scanNum')
   view = newView;
-  params.scanNum = selectScans(view);
+  params.scanNum = selectInList(view,'scans');
 end
 if ~isfield(params,'description')
   params.description = sprintf('Event related analysis of scan %i in group %s',params.scanNum,params.groupName);

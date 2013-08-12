@@ -1,33 +1,27 @@
 % calcDist.m
 %
 %	$Id$	
-%      usage: calcDist()
+%      usage: calcDist(v,method,[coords])
 %         by: eli merriam
 %       date: 11/28/07
-%    purpose: 
+%    purpose: Calculate surface/euclidean distance between points. Updated
+%    by Johan to add support for batch processing with 'coords' input,
+%    euclidean distance output for 'roi' method.
 %
-function retval = calcDist(view, method)
+function [dijkstraDistance, euclideanDistance] = calcDist(view,method,coords)
   
 % check arguments
-if ~any(nargin == [1 2])
+if ~any(nargin == [1 2 3])
   help calcDist
   return
-
 end
-retval = [];
+
+euclideanDistance = [];
+dijkstraDistance = [];
 if ieNotDefined('method'); method = 'pairs'; end
 
-
-% baseCoords contains the mapping from pixels in the displayed slice to
-% voxels in the current base volume.
-baseCoords = viewGet(view,'cursliceBaseCoords');
-if isempty(baseCoords)
-  mrWarnDlg('Load base anatomy before drawing an ROI');
-  return;
-end
-
 % get the base CoordMap for the current flat patch
-corticalDepth = viewGet(view, 'corticalDepth');
+corticalDepth = mean(viewGet(view, 'corticalDepth'));
 baseCoordMap = viewGet(view,'baseCoordMap');
 baseHdr = viewGet(view, 'basehdr');
 
@@ -35,43 +29,56 @@ if isempty(baseCoordMap)
   mrWarnDlg('(calcDist) You cannot use this function unless you are viewing a flatpatch with a baseCoordMap');
   return;
 end
-disp('(calcDist) Draw line segments for which you want to compute the distance of. Click to add a point. Double-click to end making line segments');
-if strcmp(method, 'roi')
-  disp(sprintf('(calcDist) ROI method not implemented'));
-else
-  % Select main axes of view figure for user input
-  fig = viewGet(view,'figNum');
-  gui = guidata(fig);
-  set(fig,'CurrentAxes',gui.axis);
-  
-  % pick some points
-  [xi yi] = getpts;
 
-  % draw the lines temporarily
-  switch lower(method)
-    case {'segments'}
-      line(xi,yi, 'linewidth', 3);
-    case {'pairs'}
-      % ignore the last point if there are an odd number of inputs
-      if ~iseven(length(xi))
-        xi = xi(1:end-1);
-        yi = yi(1:end-1);
-      end
-      for p=1:2:length(xi)
-        line(xi(p:p+1), yi(p:p+1));
-      end
+% use GUI to select points on surface and convert to base coords (default
+% behavior)
+if ieNotDefined('coords')
+  % baseCoords contains the mapping from pixels in the displayed slice to
+  % voxels in the current base volume.
+  baseCoords = viewGet(view,'cursliceBaseCoords');
+  if isempty(baseCoords)
+    mrWarnDlg('Load base anatomy before drawing an ROI');
+    return;
   end
-  drawnow;  
 
-  % Extract coordinates in base reference frame
-  baseX = baseCoords(:,:,1);
-  baseY = baseCoords(:,:,2);
-  baseZ = baseCoords(:,:,3);
-  lineInd = sub2ind(size(baseX), round(yi), round(xi));
-  x = baseX(lineInd);
-  y = baseY(lineInd);
-  z = baseZ(lineInd);
-  coords = [x y z];
+  disp('(calcDist) Draw line segments for which you want to compute the distance of. Click to add a point. Double-click to end making line segments');
+  if strcmp(method, 'roi')
+    disp(sprintf('(calcDist) ROI method not implemented'));
+  else
+    % Select main axes of view figure for user input
+    fig = viewGet(view,'figNum');
+    gui = guidata(fig);
+    set(fig,'CurrentAxes',gui.axis);
+    
+    % pick some points
+    [xi yi] = getpts;
+
+    % draw the lines temporarily
+    switch lower(method)
+      case {'segments'}
+        line(xi,yi, 'linewidth', 3);
+      case {'pairs'}
+        % ignore the last point if there are an odd number of inputs
+        if ~iseven(length(xi))
+          xi = xi(1:end-1);
+          yi = yi(1:end-1);
+        end
+        for p=1:2:length(xi)
+          line(xi(p:p+1), yi(p:p+1));
+        end
+    end
+    drawnow;  
+
+    % Extract coordinates in base reference frame
+    baseX = baseCoords(:,:,1);
+    baseY = baseCoords(:,:,2);
+    baseZ = baseCoords(:,:,3);
+    lineInd = sub2ind(size(baseX), round(yi), round(xi));
+    x = baseX(lineInd);
+    y = baseY(lineInd);
+    z = baseZ(lineInd);
+    coords = [x y z];
+  end
 end
 
 disp('(calcDist) Computing distance');
@@ -116,31 +123,36 @@ end
 scaleFactor = [1 1 1];
 D = find3DNeighbourDists(mesh,scaleFactor); 
 
-retval = [];
+dijkstraDistance = [];
 switch lower(method)
   case {'segments'}
     % calculate length of each segment (1-2, 2-3, 3-4)
     for p=1:length(nearestVtcs)-1
       dist = dijkstra(D, nearestVtcs(p))';
-      retval(p) = dist(nearestVtcs(p+1));
+      dijkstraDistance(p) = dist(nearestVtcs(p+1));
+      euclideanDistance(p) = norm(diff(coords(p:p+1,:)));
     end 
  case {'pairs'}
     % calculate lengths of a bunch of pairs (1-2, 3-4, 5-6)
     for p=1:2:length(nearestVtcs)
       dist = dijkstra(D, nearestVtcs(p))';
-      retval(end+1) = dist(nearestVtcs(p+1));
+      dijkstraDistance(end+1) = dist(nearestVtcs(p+1));
+      euclideanDistance(end+1) = norm(diff(coords(p:p+1,:)));
     end
   case {'roi'}
     % calculate lengths of each point from the first coordinate
     dist = dijkstra(D, nearestVtcs(1))';
-    retval = dist(nearestVtcs);
+    dijkstraDistance = dist(nearestVtcs);
+    % JC - euclidean distance between first coord and all others
+    normcoords = bsxfun(@minus,coords,coords(1,:));
+    euclideanDistance = sqrt(sum(normcoords.^2,2));
   otherwise
     mesh.dist = dijkstra(D, nearestVtcs(1))';
 end
 
-if nargout == 1
-  retval = dist(nearestVtcs);
-end
+% if nargout == 1
+%   dijkstraDistance = dist(nearestVtcs);
+% end
 
 
 % $$$ patch('vertices', mesh.uniqueVertices, 'faces', mesh.uniqueFaceIndexList,'FaceVertexCData', mesh.dist,'facecolor', 'interp','edgecolor', 'none');

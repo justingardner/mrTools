@@ -1,6 +1,7 @@
 function varargout = mrAlignGUI(varargin)
 % mrAlignGUI M-file for mrAlignGUI.fig
 % See also: GUIDE, GUIDATA, GUIHANDLES
+%        $Id$
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -361,10 +362,13 @@ ALIGN.volumeClip = clipRange(ALIGN.volume);
 
 % If both inplane and volume are loaded, then use the sforms from each for
 % the alignment. Otherwise, use identity.
+ALIGN.xform = eye(4);
 if ~isempty(ALIGN.volumeHdr) & ~isempty(ALIGN.inplaneHdr)
-	ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
-else
-    ALIGN.xform = eye(4);
+   if ALIGN.inplaneHdr.sform_code && hdr.sform_code
+      ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
+   elseif ALIGN.inplaneHdr.qform_code && hdr.qform_code
+      ALIGN.xform = ALIGN.volumeHdr.qform44 \ ALIGN.inplaneHdr.qform44;
+   end
 end
 
 % Refresh GUI
@@ -481,13 +485,13 @@ end
 % Warning if no (qform) alignment information in the header.
 % qform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.qform_code)
-    mrWarnDlg('No alignment information in the inplane header.');
+    mrWarnDlg('(mrAlignGUI) No scanner alignment information in the inplane header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
 % sform is initialized to identity by default in cbiReadNiftiHeader.
 if ~(hdr.sform_code)
-    mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the inplane header. Usually this is because this inplane has not yet been aligned. Initializing transformation to identity.');
+    mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the inplane header. Usually this is because this inplane has not yet been aligned.');
 end
 
 % Update ALIGN structure
@@ -499,11 +503,26 @@ ALIGN.inplaneVoxelSize = hdr.pixdim([2,3,4]);
 
 % If both inplane and volume are loaded, then use the sforms from each for
 % the alignment. Otherwise, use identity.
-if ~isempty(ALIGN.volumeHdr) & ~isempty(ALIGN.inplaneHdr)
-	ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
+ALIGN.xform = eye(4);
+if ~isempty(ALIGN.volumeHdr) && ~isempty(ALIGN.inplaneHdr)
+   if hdr.sform_code && ALIGN.volumeHdr.sform_code
+      ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
+   elseif hdr.qform_code && ALIGN.volumeHdr.qform_code
+      ALIGN.xform = ALIGN.volumeHdr.qform44 \ ALIGN.inplaneHdr.qform44;
+      mrWarnDlg('(mrAlignGUI) Initializing transformation from qforms.');
+  else
+    mrWarnDlg('(mrAlignGUI) Initializing transformation to identity.');
+   end
 else
-	ALIGN.xform = eye(4);
+  mrWarnDlg('(mrAlignGUI) Initializing transformation to identity.');
 end
+ALIGN.xformICCorrection = ALIGN.xform;
+ALIGN.correctedInplanes = [];    
+ALIGN.correctedVolume = [];      
+ALIGN.xformIsRigidBody = 1; %or is it ? would be better to find out with some clever calculation...
+
+%reset crop region
+ALIGN.crop = [];
 
 % allow source to be loaded as destination
 set(handles.loadSourceAsDestination,'Enable','on');
@@ -591,12 +610,15 @@ else
 end
 pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
 if isempty(pathStr)
-  mrWarnDlg('saveAlignedSource aborted');
+  mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
 end
 
 % Reload
-[data,hdr] = cbiReadNifti(ALIGN.inplanePath);
+%[data,hdr] = cbiReadNifti(ALIGN.inplanePath);
+% do not reload data to save memory usage %JB
+data = ALIGN.inplanes;
+hdr = cbiReadNiftiHeader(ALIGN.inplanePath);
 
 % Compose xform
 xform = ALIGN.guiXform * ALIGN.xform;
@@ -659,7 +681,7 @@ else
 end
 pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
 if isempty(pathStr)
-  mrWarnDlg('saveAlignedSource aborted');
+  mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
 end
 
@@ -722,12 +744,54 @@ end
 load(pathstr);
 % Warning if old version.
 if ~exist('mrAlignVersion','var') | ~isnumeric(mrAlignVersion) | (mrAlignVersion < ALIGN.version)
-    mrWarnDlg('This alignment file appears to correspond to an older version of mrAlign. You may need to use "Import" from the "File" menu.');
+    mrWarnDlg('(mrAlignGUI) This alignment file appears to correspond to an older version of mrAlign. You may need to use "Import" from the "File" menu.');
 end
 % Error if xform isn't loaded from the file.
 if ~exist('xform','var')
     mrErrorDlg('Invalid alignment file.');
 end
+
+% Update ALIGN structure and GUI.
+ALIGN.xform = xform;
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+% --------------------------------------------------------------------
+% Imports xform from separate file
+function importAlignFromFlirtMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+
+if isempty(ALIGN.volumeVoxelSize)
+  mrWarnDlg('(mrAlignGUI) You must load source and destination volumes before importing an alignment');
+  return
+end
+
+% Prompt user for file and load it
+pathstr = getPathStrDialog(pwd,'Choose FLIRT alignment text file','*.*');
+if ~exist(pathstr,'file')
+    return
+end
+
+%we assume that the file is a 4*4 float matrix in an ascii file
+try
+  xform=dlmread(pathstr);
+catch id
+    mrWarnDlg('(mrAlignGUI) Invalid FLIRT alignment file.');
+    disp(id.message);
+    return;
+end
+
+% Check that file contains a 4*4 matrix with a 1 in the last cell
+if ~all(size(xform)==4) || abs(xform(4,4)-1)>1e-7
+    mrWarnDlg('(mrAlignGUI) Invalid transformation matrix in FLIRT alignment file.');
+    disp(xform);
+    return;
+end
+
+%translation values are in mm and must be converted to voxels of the destination image !!!
+xform(1:3,4) = xform(1:3,4)./ALIGN.volumeVoxelSize;
 
 % Update ALIGN structure and GUI.
 ALIGN.xform = xform;
@@ -748,7 +812,7 @@ end
 load(pathstr);
 % Warning if old version.
 if ~exist('mrAlignVersion','var') | ~isnumeric(mrAlignVersion) | (mrAlignVersion < ALIGN.version)
-    mrWarnDlg('This alignment file appears to correspond to an older version of mrAlign.');
+    mrWarnDlg('(mrAlignGUI) This alignment file appears to correspond to an older version of mrAlign.');
 end
 % Error if  xform isn't loaded from the file.
 if ~exist('xform','var')
@@ -765,7 +829,7 @@ if ~exist(pathstr,'file')
 end
 % Warning if old version.
 if ~exist('mrAlignVersion','var') | ~isnumeric(mrAlignVersion) | (mrAlignVersion < ALIGN.version)
-    mrWarnDlg('This alignment file appears to correspond to an older version of mrAlign.');
+    mrWarnDlg('(mrAlignGUI) This alignment file appears to correspond to an older version of mrAlign.');
 end  
 % Error if xform isn't loaded from the file.
 if ~exist('xform','var')
@@ -931,15 +995,42 @@ delete(handles.figure1);
 % save .mrDefaults in the home directory
 saveMrDefaults;
 
+
+
+% --------------------------------------------------------------------
+function editMenu_Callback(hObject, eventdata, handles)
+
+% --------------------------------------------------------------------
+function prefMenu_Callback(hObject, eventdata, handles)
+
+mrEditPrefs;
+
 % --------------------------------------------------------------------
 function manualAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function initializeIdentityMenuItem_Callback(hObject, eventdata, handles)
+function dummy = initializeIdentityMenuItem_Callback(hObject, eventdata, handles)
+dummy=[]; %this is so this callback can be called through mrParamsDialog
 global ALIGN
 
 % Set xform to identity, but scaled by voxel sizes
 % *** Not yet test/debugged ***
+
+%first check the qform matrices of the inplane and volumes (if loaded)
+if isempty(ALIGN.volumeHdr) || isempty(ALIGN.inplaneHdr)
+	mrWarnDlg('(mrAlignGUI) Load source and destination');
+	return
+else
+   answer = '';
+   if ALIGN.inplaneHdr.sform_code && ALIGN.volumeHdr.sform_code && det(ALIGN.inplaneHdr.sform44)*det(ALIGN.volumeHdr.sform44)<0
+      question = 'It seems that one of the axes of this source has been previously flipped in order for the data to be in right-handed space.';
+      question = [question ' Setting the transformation matrix to identity will undo this.']; 
+      question = [question ' You should flip one axis before continuing.']; 
+      question = [question ' What do you want to do ?']; 
+      answer = questdlg(question,'Space Orientation Mismatch ?','Flip X', 'Do nothing', 'Do nothing');
+   end
+end
+
 % jg: These were set to 1/voxelSize which I believe
 % was wrong. Flipped these and now this seems to work
 % correctly
@@ -951,7 +1042,18 @@ volumeXform = eye(4);
 volumeXform(1,1) = ALIGN.volumeVoxelSize(1);
 volumeXform(2,2) = ALIGN.volumeVoxelSize(2);
 volumeXform(3,3) = ALIGN.volumeVoxelSize(3);
-ALIGN.xform = inv(volumeXform) * inplaneXform;
+ALIGN.xform = volumeXform\inplaneXform;
+ALIGN.xformIsRigidBody = 1;
+
+switch answer
+   case 'Flip X'
+      flipXMenuItem_Callback([], [], handles);
+   case 'Flip Y'
+      flipYMenuItem_Callback([], [], handles);
+   case 'Flip Z'
+      flipZMenuItem_Callback([], [], handles);
+end    
+
 
 % Reset GUI
 setAlignGUI(handles,'rot',[0 0 0]);
@@ -1034,7 +1136,7 @@ refreshAlignDisplay(handles);
 function computeAlignmentMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function initializeMenuItem_Callback(hObject, eventdata, handles)
+function initializeFromQformMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
 if ~isfield(ALIGN.volumeHdr,'qform44') || ~isfield(ALIGN.inplaneHdr,'qform44')
@@ -1042,17 +1144,56 @@ if ~isfield(ALIGN.volumeHdr,'qform44') || ~isfield(ALIGN.inplaneHdr,'qform44')
   return
 end
 
-  % Error if there's no alignment information in the header.
+% Error if there's no alignment information in the header.
 % This would happen if these were analyze, not nifti, files.
 if isempty(ALIGN.volumeHdr.qform44)
     mrErrorDlg('No alignment information in the volume header.');
 end
+if ~isempty(ALIGN.volumeHdr.qform_code) && ~ALIGN.volumeHdr.qform_code
+    mrWarnDlg('(mrAlignGUI) Volume qform_code is not set.');
+end
 if isempty(ALIGN.inplaneHdr.qform44)
     mrErrorDlg('No alignment information in the inplane header.');
 end
+if ~isempty(ALIGN.inplaneHdr.qform_code) && ~ALIGN.inplaneHdr.qform_code
+    mrWarnDlg('(mrAlignGUI) Inplanes qform_code is not set.');
+end
 
-% Compute alignment by composing the xforms from the two nifti headers.
-ALIGN.xform = inv(ALIGN.volumeHdr.qform44) * ALIGN.inplaneHdr.qform44;
+% Compute alignment by composing the qforms from the two nifti headers.
+ALIGN.xform = ALIGN.volumeHdr.qform44 \ ALIGN.inplaneHdr.qform44;
+
+% Reset GUI
+setAlignGUI(handles,'rot',[0 0 0]);
+setAlignGUI(handles,'trans',[0 0 0]);
+ALIGN.guiXform = getGuiXform(handles);
+refreshAlignDisplay(handles);
+
+% --------------------------------------------------------------------
+function initializeFromSformMenuItem_Callback(hObject, eventdata, handles)
+global ALIGN
+
+if ~isfield(ALIGN.volumeHdr,'sform44') || ~isfield(ALIGN.inplaneHdr,'sform44')
+  mrWarnDlg('(mrAlignGUI) Need to load both src and dest images');
+  return
+end
+
+% Error if there's no alignment information in the header.
+% This would happen if these were analyze, not nifti, files.
+if isempty(ALIGN.volumeHdr.sform44)
+    mrErrorDlg('No alignment information in the volume header.');
+end
+if ~isempty(ALIGN.volumeHdr.sform_code) && ~ALIGN.volumeHdr.sform_code
+    mrWarnDlg('(mrAlignGUI) Volume sform_code is not set.');
+end
+if isempty(ALIGN.inplaneHdr.sform44)
+    mrErrorDlg('No alignment information in the inplane header.');
+end
+if ~isempty(ALIGN.inplaneHdr.sform_code) && ~ALIGN.inplaneHdr.sform_code
+    mrWarnDlg('(mrAlignGUI) Inplanes sform_code is not set.');
+end
+
+% Compute alignment by composing the sforms from the two nifti headers.
+ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
 
 % Reset GUI
 setAlignGUI(handles,'rot',[0 0 0]);
@@ -1066,99 +1207,107 @@ global ALIGN
 ALIGN.crop = selectCropRegion(ALIGN.inplanes);
 
 % --------------------------------------------------------------------
-function fineMenuItem_Callback(hObject, eventdata, handles)
+function resetCropInplanesMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
-end
-
-% Compute alignment
-xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 0, ALIGN.crop, ALIGN.NIter);
-ALIGN.xform = xform;
-
-% Reset GUI and refresh display
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-refreshAlignDisplay(handles);
+ALIGN.crop = [];
 
 % --------------------------------------------------------------------
-function coarseMenuItem_Callback(hObject, eventdata, handles)
+function advancedAlignmentMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
+paramsInfo = {...
+  {'identity', 0,'type=pushbutton','buttonString=Set Alignment to Identity','callback',{@initializeIdentityMenuItem_Callback,[],[],handles},'passCallbackOutput=0',...
+      'Sets the transformation to dentiy, taking into account differences in voxel sizes between the source and destination volumes.'},...
+  {'qform', 0,'type=pushbutton','buttonString=Initialize Alignment from Header Qform','callback',{@initializeFromQformMenuItem_Callback,[],[],handles},'passCallbackOutput=0',...
+      'Sets the transformation to the qform matrix of the NIFTI header. This will revert back to the original alignment of the volumes right off the scanner.'},...
+  {'sform', 0,'type=pushbutton','buttonString=Initialize Alignment from Header Sform','callback',{@initializeFromSformMenuItem_Callback,[],[],handles},'passCallbackOutput=0',...
+      'Sets the transformation to the sform matrix of the NIFTI header. This will revert back to the last saved alignment.'},...
+  {'set', 0,'type=pushbutton','buttonString=Set Crop Region','callback',{@selectCropRegion,ALIGN.inplanes},'passCallbackOutput=0',...
+      'Sets a 3D box in the source volume that constrains the alignment estimation. Voxels outside this box are ignored in the motion estimation'},...
+  {'reset', 0,'type=pushbutton','buttonString=Reset Crop Region','callback',{@resetCropInplanesMenuItem_Callback},'passCallbackOutput=0',...
+      'Resets the 3D box to the whold source volume.'},...
+  {'robust',ALIGN.robustAlignment,'type=checkbox','buttonString=Robust Alignment','callback',@setAlignmentOption,'callbackArg','robust',...
+      'Uses robust non-linear iterative motion estimation algorithm.'},...
+  {'rigid',ALIGN.rigidBodyAlignment,'type=checkbox','buttonString=Rigid-body Alignment','','callback',@setAlignmentOption,'callbackArg','rigid',...
+      'Restricts the search space to rigid transformations (=6 degrees of freedom). If unchecked, an additional parameter of scaling is estiamting (7DOF)'},...
+  {'reverse',ALIGN.reverseContrastAlignment,'type=checkbox','buttonString=Reverse Contrast (T2*)','callback',@setAlignmentOption,'callbackArg','reverse',...
+      'Reverses the source image contrast and treats the voxel values as periodic (phases of complex number on the unit circle). This is used mainly to align high-resolution T2(*)-weighted images to T1-weighted images'},...
+  {'ignore',ALIGN.ignoreZeroVoxels,'type=checkbox','buttonString=Ignore Zero Voxels','callback',@setAlignmentOption,'callbackArg','ignore',...
+      'Ignores voxels that are exactly 0 in the source and destination volumes'},...
+  {'display',ALIGN.displayAlignmentSteps,'type=checkbox','buttonString=Display Alignment Steps','callback',@setAlignmentOption,'callbackArg','display',...
+      'Displays the new alignment in the main window at each iteration of the computation'},...
+  {'coarse', 0,'type=pushbutton','buttonString=Compute Coarse Alignment','callback',{@computeAlignment,'coarse',handles},'passCallbackOutput=0',...
+      'Downsamples the images to a minimum of 3 mm resolution in all dimensions (2mm for reverse contrast) and computes the alignment'},...
+  {'fine', 0,'type=pushbutton','buttonString=Compute Fine Alignment','callback',{@computeAlignment,'fine',handles},'passCallbackOutput=0',...
+      'Computes the alignment at the native volume resolution (to a 1mm minimum voxels; .5 for reverse contrast)'},...
+  {'stop', 0,'type=pushbutton','buttonString=Stop Computing','callback',{@stopComputingMenuItem_Callback},'passCallbackOutput=0',...
+      'Stops the current computation'},...
+  {'undo', 0,'type=pushbutton','buttonString=Undo Last Alignment','callback',{@undoLastAlignmentMenuItem_Callback,[],[],handles},'passCallbackOutput=0',...
+      'Undoes the last computed alignment and restore any manual alignment pre-existing to this alignment computation.'},...
+   };
+
+  % display dialog
+  mrParamsDialog(paramsInfo,'Advanced Alignment Menu','modal=0');
+  
+function setAlignmentOption(option,params)
 global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
-end
 
-% reduce images
-wbh = mrMsgBox('Reducing volumes. Please wait...');
-lpf=[.0625 .25 .375 .25 .0625]';
-volFilt = convXYZsep(ALIGN.volume, lpf, lpf, lpf, 'repeat', 'same');
-inpFilt = convXYZsep(ALIGN.inplanes, lpf, lpf, lpf, 'repeat', 'same');
-volReduce = volFilt(1:2:size(volFilt,1),1:2:size(volFilt,2),1:2:size(volFilt,3));
-inpReduce = inpFilt(1:2:size(inpFilt,1),1:2:size(inpFilt,2),1:2:size(inpFilt,3));
-mrCloseDlg(wbh);
-
-% reduce xform & crop
-xform = ALIGN.guiXform * ALIGN.xform;
-xform(1:3,4) = xform(1:3,4)/2;
-crop = floor(ALIGN.crop/2);
-
-% compute alignment & expand new xform
-xform = computeAlignment(inpReduce, volReduce, xform, 0, crop, ALIGN.NIter);
-
-% expand xform
-xform(1:3,4) = xform(1:3,4)*2;
-ALIGN.xform = xform;
-
-% Reset GUI and refresh display
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-refreshAlignDisplay(handles);
+switch option
+  case 'robust'
+    ALIGN.robustAlignment = params.robust;
+  case 'rigid'
+    ALIGN.rigidBodyAlignment = params.rigid;
+  case 'reverse'
+    ALIGN.reverseContrastAlignment = params.reverse;
+  case 'ignore'
+    ALIGN.ignoreZeroVoxels = params.ignore;
+  case 'display'
+    ALIGN.displayAlignmentSteps = params.display;
+end    
 
 % --------------------------------------------------------------------
-function reverseContrastAlignment_Callback(hObject, eventdata, handles)
+function coarseAlignmentMenuItem_Callback(hObject, eventdata, handles)
+
+computeAlignment('coarse',handles);
+
+% --------------------------------------------------------------------
+function fineAlignmentMenuItem_Callback(hObject, eventdata, handles)
+
+computeAlignment('fine',handles);
+
+% --------------------------------------------------------------------
+function stopComputingMenuItem_Callback(hObject, eventdata, handles)
+
 global ALIGN
-
-mrWarnDlg('Warning: This feature is not yet fully debugged. It should be used only for the first frame of a high resolution EPI.');
-
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
+if ALIGN.currentlyComputingAlignment
+   ALIGN.stopComputingAlignment = 1;
+   mrWarnDlg('(mrAlignGUI) Cancelling alignment computation. This might take some time. Please wait...');
+else
+   mrWarnDlg('(mrAlignGUI) No Alignment Computation is running');
 end
 
-% Compute alignment
-xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 1, ALIGN.crop, ALIGN.NIter);
-ALIGN.xform = xform;
+% --------------------------------------------------------------------
+function undoLastAlignmentMenuItem_Callback(hObject, eventdata, handles)
 
-% Reset GUI and refresh display
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-refreshAlignDisplay(handles);
+global ALIGN
+if isempty(ALIGN.oldXform)
+  mrWarnDlg('(mrAlignGUI) There is no stored alignment')
+else
+  ALIGN.xform = ALIGN.oldXform;
+  ALIGN.oldXform = [];
+  setAlignGUI(handles,'rot',ALIGN.oldGuiRotation);
+  setAlignGUI(handles,'trans',ALIGN.oldGuiTranslation);
+  ALIGN.guiXform = getGuiXform(handles);
+  ALIGN.oldGuiRotation = [];       
+  ALIGN.oldGuiTranlastion = [];    
+  refreshAlignDisplay(handles);
+end
 
 % --------------------------------------------------------------------
 function mutualInformationMenuItem_Callback(hObject, eventdata, handles)
 
-mrErrorDlg('Mutual information registration not yet implemented.');
+mrWarnDlg('(mrAlignGUI) Mutual information registration not yet implemented.');
+return;
 
 global ALIGN
 % Options
@@ -1171,6 +1320,8 @@ x0 = zeros(1,6);
 % Search
 x = fminunc(@mutualInformationFun,x0,opts);
 ALIGN.xform = extractXform(x);
+ALIGN.xformICCorrection = ALIGN.xform;
+
 % Reset GUI and refresh display
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
@@ -1218,61 +1369,43 @@ addXform(1,5) = x(5);
 addXform(1,6) = x(6);
 xform = addXform * ALIGN.xform;
 
-% --------------------------------------------------------------------
-function computeNonRigidBodyAlignment_Callback(hObject, eventdata, handles)
-% hObject    handle to computeNonRigidBodyAlignment (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before computing alignment');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Initialize aligment or load a previously saved alignment before computing.');
-	return
-end
-
-% Compute alignment
-xform = ALIGN.guiXform * ALIGN.xform;
-xform = computeAlignment(ALIGN.inplanes, ALIGN.volume, xform, 0, ALIGN.crop, ALIGN.NIter, 0);
-ALIGN.xform = xform;
-
-% Reset GUI and refresh display
-setAlignGUI(handles,'rot',[0 0 0]);
-setAlignGUI(handles,'trans',[0 0 0]);
-ALIGN.guiXform = getGuiXform(handles);
-refreshAlignDisplay(handles);
 
 % --------------------------------------------------------------------
 function checkAlignmentMenu_Callback(hObject, eventdata, handles)
 
-% --------------------------------------------------------------------
-function checkWithCorrectionMenuItem_Callback(hObject, eventdata, handles)
-global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before checking alignment.');
-	return
-end
-if isempty(ALIGN.xform) 
-	mrWarnDlg('Load, Initialize, or Compute the alignment before checking it.');
-	return
-end
-checkAlignment(1)
 
 % --------------------------------------------------------------------
-function checkWithoutCorrectionMenuItem_Callback(hObject, eventdata, handles)
+function showMosaicMenuItem_Callback(hObject, eventdata, handles)
+
 global ALIGN
-if isempty(ALIGN.volume) | isempty(ALIGN.inplanes)
-	mrWarnDlg('Load Volume and Load Inplanes before checking alignment.');
+
+if isempty(ALIGN.volume) || isempty(ALIGN.inplanes)
+	mrWarnDlg('(mrAlignGUI) Load Volume and Load Inplanes before checking alignment.');
 	return
 end
 if isempty(ALIGN.xform) 
-	mrWarnDlg('Load, Initialize, or Compute the alignment before checking it.');
+	mrWarnDlg('(mrAlignGUI) Load, Initialize, or Compute the alignment before checking it.');
 	return
 end
-checkAlignment(0)
+
+if isequal(ALIGN.xformICCorrection,ALIGN.guiXform * ALIGN.xform) &&...        % if the alignment hasn't changed (this should be the most common scenario) 
+      ~isempty(ALIGN.correctedInplanes) && ~isempty(ALIGN.correctedVolume)    % AND the corrected volumes have been computed
+  
+   %then just make mosaic
+   inplanes = ALIGN.correctedInplanes;
+   volume = ALIGN.correctedVolume;
+   mosaic = imageMosaic(volume,inplanes);
+
+else  %otherwise, we have to recompute the interpolated/corrected inplanes/volume
+   
+   [inplanes,volume,mosaic] = checkAlignment(ALIGN.reversedContrast+1);
+
+end
+   
+% open checkAlignmentGUI
+checkAlignmentGUI(inplanes,mosaic,volume,ALIGN.reversedContrast+1);
+
+
 
 % --------------------------------------------------------------------
 function jointHistogramMenuItem_Callback(hObject, eventdata, handles)
@@ -1291,15 +1424,6 @@ axis('image'); colormap('gray'); axis('off');
 disp('Press a key to continue...')
 pause
 close(FF)
-
-
-% --------------------------------------------------------------------
-function editMenu_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function prefMenu_Callback(hObject, eventdata, handles)
-
-mrEditPrefs;
 
 
 % --------------------------------------------------------------------
@@ -1370,7 +1494,7 @@ end
 
 % set the transform 
 ALIGN.inplaneHdr.sform44 = params.srcSform;
-ALIGN.xform = inv(ALIGN.volumeHdr.sform44) * ALIGN.inplaneHdr.sform44;
+ALIGN.xform = ALIGN.volumeHdr.sform44 \ ALIGN.inplaneHdr.sform44;
 setAlignGUI(handles,'rot',[0 0 0]);
 setAlignGUI(handles,'trans',[0 0 0]);
 ALIGN.guiXform = getGuiXform(handles);
@@ -1586,7 +1710,7 @@ function Trans3R_Callback(hObject, eventdata, handles)
 incrementTrans(handles,3,1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
-%%   incrementTrans   %%
+%    incrementTrans   %%
 %%%%%%%%%%%%%%%%%%%%%%%%
 function incrementTrans(handles,axisnum,incdec)
 
@@ -1608,7 +1732,7 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 %%%%%%%%%%%%%%%%%%%%%%
-%%   incrementRot   %%
+%     incrementRot  %%
 %%%%%%%%%%%%%%%%%%%%%%
 function incrementRot(handles,axisnum,incdec)
 
@@ -1630,7 +1754,7 @@ ALIGN.guiXform = getGuiXform(handles);
 refreshAlignDisplay(handles);
 
 %%%%%%%%%%%%%%%%%%%%%%%
-%%   setAlignTitle   %%
+%     setAlignTitle  %%
 %%%%%%%%%%%%%%%%%%%%%%%
 function setAlignTitle(handles)
 
@@ -1649,3 +1773,5 @@ else
 end
 
 set(handles.figure1,'name',sprintf('mrAlign: %s -> %s',inplaneName,volumeName));
+
+
