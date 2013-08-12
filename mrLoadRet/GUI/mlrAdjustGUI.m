@@ -21,10 +21,10 @@
 %             what is called the "controlName" below and you
 %             can get a full list of all possible controlNames 
 %             by doing:
-%             mlrAdjustGUI(getMLRView,'list');
+%             controlList = mlrAdjustGUI(getMLRView,'list');
 %
 %             To set a property of a control: 
-%             mlrAdjustGUI(v,'set',controlName,propertyName,propertyValue);
+%             mlrAdjustGUI(v,'set',controlName or tag,propertyName,propertyValue);
 %      e.g.:  mlrAdjustGUI(getMLRView,'set','baseGammaSlider','Visible','off');
 % 
 %             Similarly, to set the callback for a control
@@ -40,7 +40,17 @@
 %             The above will add the menu item Plugin after the menu identified
 %             as Plots. If you wanted instead to put it at the top
 %             of the Plots menu, then set the menuLocation to /Plots/
-%             
+%             An alternative way is to use a tag to add a menu, and specify the name and tag property 
+%             mlrAdjustGUI(v,'add','menu',menuTag,menuLocation,'label',menuName,'tag',menuTag...);
+%      e.g.:  mlrAdjustGUI(getMLRView,'add','menu','pluginMenuItem','Plots','label','Plugin','tag','pluginMenuItem');
+%             It is easier to make tags unique
+% 
+%             To move a menu item around
+%             mlrAdjustGUI(v,'set',menuName or tag,'location',menuLocation);
+%
+%             to remove a menu item
+%             mlrAdjustGUI(v,'remove','menu',menuName or tag)
+%
 %             To add an interrogator function as a default one
 %             (that shows up in the GUI)
 %             mlrAdjustGUI(v,'add','interrogator',interrogatorName)
@@ -53,7 +63,7 @@
 %
 function retval = mlrAdjustGUI(v,command,varargin)
 
-% test code
+verbose=false;
 
 % default return empty
 retval = [];
@@ -70,35 +80,53 @@ f = viewGet(v,'fignum');
 if isempty(f),disp(sprintf('(mlrAdjustGUI) Passed in view does not have a figure associated with it'));return;end
 
 % get controls and menus
+plotAxes = getAxes(f);
 uiControls = getUiControls(f);
 menuControls = getMenuControls(f);
 
-% do the commandedaction
+% do the commanded action
 switch command
  case {'set'}
-  setItemProperty(varargin,uiControls,menuControls)
+  setItemProperty(varargin,uiControls,menuControls,plotAxes,verbose)
  case {'list'}
-  listControlNames(uiControls,menuControls);
+  retval = listControlNames(uiControls,menuControls,plotAxes);
  case {'add'}
   switch varargin{1}
     case {'menu'}
-     addMenu({varargin{2:end}},menuControls)
+     placeMenu({varargin{2:end}},menuControls,'add',verbose,f);
     case {'interrogator','interrogators'}
-     addInterrogator(v,varargin{2});
+     addInterrogator(v,varargin{2},verbose);
     case {'colormap','colormaps'}
-     addColormap(v,varargin{2});
+     addColormap(v,varargin{2},verbose);
+    case {'control'}
+     addControl(f,{varargin{2:end}},uiControls,verbose);
+    case {'axes'}
+     addAxes(f,{varargin{2:end}},plotAxes,verbose);
+    otherwise
+      mrWarnDlg(['(mlrAdjustGUI) Unknow object type ' varargin{1}]);
+  end
+ case {'remove'}
+  switch varargin{1}
+    case {'menu'}
+     removeMenu(varargin(2),menuControls,verbose);
   end
  case {'get'}
   % return handle, check menu items and ui controls
-  retval = getHandle(varargin{1},menuControls,uiControls);
+  retval = getHandle(varargin{1},menuControls,uiControls,plotAxes);
  otherwise
   disp(sprintf('(mlrAdjustGUI) Unknown command: %s',command));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   listControlNames   %%
+%%%  listControlNames   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function listControlNames(uiControls,menuControls)
+function retval = listControlNames(uiControls,menuControls,plotAxes)
+
+% list Axes tags
+disp('==============    Axes     ============== ');
+for i = 1:length(plotAxes)
+  disp(sprintf('(%i) tag: %s',i,plotAxes(i).tag));
+end
 
 % list uiControl tags
 disp('============== UI Controls ============== ');
@@ -108,15 +136,18 @@ end
 
 % list menu labels and tags
 disp('============== Menu Items ============== ');
-for i = 1:length(menuControls)
-  disp(sprintf('(%i) Menu label: ''%s'' tag: %s',i,menuControls(i).fullLabel,menuControls(i).tag));
+for i = length(menuControls):-1:1
+  disp(sprintf('(%i) Menu label: ''%s'' tag: %s',length(menuControls)-i+1,menuControls(i).fullLabel,menuControls(i).tag));
 end
 
+retval.uiControls=uiControls;
+retval.menuControls=menuControls;
+retval.plotAxes=plotAxes;
 
 %%%%%%%%%%%%%%%%%%%
-%%   getHandle   %%
+%%%   getHandle  %%
 %%%%%%%%%%%%%%%%%%%
-function h = getHandle(itemName,controls,controls2)
+function h = getHandle(itemName,controls,controls2,controls3)
 
 h = [];
 
@@ -137,8 +168,12 @@ end
   
 % if we didn't find anything and we were passed two
 % sets of controls, then check second set
-if isempty(h) && (nargin ==3)
+if isempty(h) && (nargin >=3)
   h = getHandle(itemName,controls2);
+end
+%same for the 
+if isempty(h) && (nargin ==4)
+  h = getHandle(itemName,controls3);
 end
 
 % if we didn't find anything and the thing ends with '/' then
@@ -153,38 +188,111 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%   addInterrogator   %%
+%%%  addInterrogator   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function addInterrogator(v,interrogatorList)
+function addInterrogator(v,interrogatorList,verbose)
 
 % make into a cell array and set in view
 interrogatorList = cellArray(interrogatorList);
 viewSet(v,'defaultInterrogators',interrogatorList);
 
 % display what we are doing
-disp(sprintf('(mlrAdjustGUI) Adding default interrogators: %s',cellToCommaDelimited(interrogatorList)));
+if verbose, disp(sprintf('(mlrAdjustGUI) Adding default interrogators: %s',cellToCommaDelimited(interrogatorList))); end
 
 %%%%%%%%%%%%%%%%%%%%%
-%%   addColormap   %%
+%%%  addColormap   %%
 %%%%%%%%%%%%%%%%%%%%%
-function addColormap(v,colormapList)
+function addColormap(v,colormapList,verbose)
 
 % make into a cell array and set in view
 colormapList = cellArray(colormapList);
 viewSet(v,'colormaps',colormapList);
 
 % display what we are doing
-disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimited(colormapList)));
+if verbose, disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimited(colormapList))); end
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%   addControl  %%%
+%%%%%%%%%%%%%%%%%%%%%
+function addControl(f,args,uiControls,verbose)
+
+% check length of arguments
+if length(args) < 1
+  disp(sprintf('(mlrAdjustGUI:addControl) Requires at least arguments: controlTag'));
+  return
+else
+  % name the arguments
+  controlTag = args{1};
+  controlProperties = {args{2:end}};
+  if isodd(length(controlProperties) )
+    disp(sprintf('(mlrAdjustGUI:addControl) Properties must all have a matching property value'));
+    return
+  end
+end
+
+% check to see if it has already been added
+if ~isempty(getHandle(controlTag,uiControls))
+  disp(sprintf('(mlrAdjustGUI:addControl) Already added menu item: %s',controlTag));
+  return
+end
+
+% get the gui data
+h = guidata(f);
+
+h.(controlTag)=uicontrol(f);
+set(h.(controlTag),'unit','normalized');
+% add all the properties
+for i = 1:2:length(controlProperties)
+  set(h.(controlTag),controlProperties{i},controlProperties{i+1});
+end
+
+guidata(f,h);
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%   addAxes  %%%
+%%%%%%%%%%%%%%%%%%%%%
+function addAxes(f,args,plotAxes,verbose)
+
+% check length of arguments
+if length(args) < 1
+  disp(sprintf('(mlrAdjustGUI:addAxes) Requires at least arguments: axesTag'));
+  return
+else
+  % name the arguments
+  axesTag = args{1};
+  axesProperties = {args{2:end}};
+  if isodd(length(axesProperties) )
+    disp(sprintf('(mlrAdjustGUI:addAxes) Properties must all have a matching property value'));
+    return
+  end
+end
+
+% check to see if it has already been added
+if ~isempty(getHandle(axesTag,plotAxes))
+  disp(sprintf('(mlrAdjustGUI:addAxes) Already added menu item: %s',axesTag));
+  return
+end
+
+% get the gui data
+h = guidata(f);
+
+h.(axesTag)=axes('parent',f);
+% add all the properties
+for i = 1:2:length(axesProperties)
+  set(h.(axesTag),axesProperties{i},axesProperties{i+1});
+end
+
+guidata(f,h);
 
 
 %%%%%%%%%%%%%%%%%%
-%%   addMenu   %%%
+%%%   placeMenu  %%%
 %%%%%%%%%%%%%%%%%%
-function addMenu(args,menuControls)
+function placeMenu(args,menuControls,mode,verbose,hFigure)
 
 % check length of arguments
 if length(args) < 2
-  disp(sprintf('(mlrAdjustGUI:addMenu) Requires 2 arguments: menuName, menuLocation'));
+  disp(sprintf('(mlrAdjustGUI:placeMenu) Requires 2 arguments: menuName, menuLocation'));
   return
 else
   % name the arguments
@@ -192,7 +300,7 @@ else
   menuLocation = args{2};
   menuProperties = {args{3:end}};
   if isodd(length(menuProperties) )
-    disp(sprintf('(mlrAdjustGUI:addMenu) Properties must all have a matching property value'));
+    disp(sprintf('(mlrAdjustGUI:placeMenu) Properties must all have a matching property value'));
     return
   end
 end
@@ -201,69 +309,113 @@ end
 h = getHandle(menuLocation,menuControls);
 % if not found, then print warning, return
 if isempty(h)
-  disp(sprintf('(mlrAdjustGUI:addMenu) Could not find menu location: %s',menuLocation));
+  disp(sprintf('(mlrAdjustGUI:placeMenu) Could not find menu location: %s',menuLocation));
   return
 end
 
 % check to see if it has already been added
-if ~isempty(getHandle(menuName,menuControls))
-  disp(sprintf('(mlrAdjustGUI:addMenu) Already added menu item: %s',menuName));
+if strcmp(mode,'add') && ~isempty(getHandle(menuName,menuControls))
+  disp(sprintf('(mlrAdjustGUI:placeMenu) Already added menu item: %s',menuName));
   return
 end
 
 % check to see if the location has a / on the end of it, which
 % means to add it *underneath* the location specified
 if menuLocation(end) == '/'
-  % add the menu to the parent
-  hAdded = uimenu(h,'Label',menuName);
+  switch(mode)
+    case 'add'
+      % add the menu to the parent
+      hAdded = uimenu(h,'Label',menuName);
+    case 'move'
+      %change the menu's parent
+      hAdded = menuName;
+      set(hAdded,'Parent',h);
+  end
+      
   % and reorder to top
   hChildren = get(h,'Children');
-  hChildren = [hChildren(2:end)' hAdded]';
+  hChildren = [hChildren(hChildren~=hAdded); hAdded];
   set(h,'Children',hChildren);
 else
   
   % get the parent
   hParent = get(h,'Parent');
 
-  % add the menu to the parent
-  hAdded = uimenu(hParent,'Label',menuName);
+  switch(mode)
+    case 'add'
+      % add the menu to the parent
+      hAdded = uimenu(hParent,'Label',menuName);
+    case 'move'
+      %change the menu's parent
+      hAdded = menuName;
+      set(hAdded,'Parent',hParent);
+  end
 
   % reorder the children so that the item created is below the menuLocation
   hChildren = get(hParent,'Children');
-
-  % get where these menu items live
-  hAddedNum = find(hAdded==hChildren);
-  hLocationNum = find(h==hChildren);
-
-  % now create a reordered children list
-  hNewChildren = [];
-  for i = 1:length(hChildren)
-    % if this one is the location menu item, then add the new child after it
-    if i == hLocationNum
-      hNewChildren(end+1) = hChildren(hAddedNum);
-    end
-    % add all the menu items except for the added one to the new children list
-    if i ~= hAddedNum
-      hNewChildren(end+1) = hChildren(i);
-    end
-  end
-  
+  % remove hAdded 
+  hChildren = hChildren(hChildren~=hAdded);
+  hChildren = [hChildren(1:find(hChildren==h)-1);hAdded;hChildren(find(hChildren==h):end)];
   % now set the children so that everything will be in the right order
-  set(hParent,'Children',hNewChildren');
+  set(hParent,'Children',hChildren');
+ 
 end
 
 % add all the properties
 for i = 1:2:length(menuProperties)
   set(hAdded,menuProperties{i},menuProperties{i+1});
+  %if there is a tag property, add the new menu handle to the figure data
+  if strcmp(mode,'add') && strcmp(menuProperties{i},'tag')
+    handles = guidata(hFigure);
+    if ~ismember(menuProperties{i+1},fieldnames(handles))
+      handles.(menuProperties{i+1})=hAdded;
+      guidata(hFigure,handles)
+    end
+  end
 end
 
 % display what we have done
-disp(sprintf('(mlrAdjustGUI:addMenu) Added menu: %s',menuName));
+if verbose
+  switch(mode)
+    case 'add'
+      disp(sprintf('(mlrAdjustGUI:placeMenu) Added menu: %s',get(hAdded,'label')));
+    case 'move'
+      disp(sprintf('(mlrAdjustGUI:placeMenu) Moved menu: %s',get(hAdded,'label')));
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%   removeMenu  %%%
+%%%%%%%%%%%%%%%%%%%%%
+function removeMenu(args,menuControls,verbose)
+
+% check length of arguments
+if length(args) < 1
+  disp(sprintf('(mlrAdjustGUI:removeMenu) Requires 1 argument: menuLocation'));
+  return
+else
+  % name the arguments
+  menuLocation = args{1};
+end
+
+% go look for the item location
+h = getHandle(menuLocation,menuControls);
+% if not found, then print warning, return
+if isempty(h)
+  disp(sprintf('(mlrAdjustGUI:removeMenu) Could not find menu location: %s',menuLocation));
+  return
+end
+
+set(h,'visible','off')
+%delete(h);
+
+% display what we have done
+if verbose, disp(sprintf('(mlrAdjustGUI:removeMenu) Removed menu: %s',menuLocation)); end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%   setItemProperty   %%
+%%%  setItemProperty   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function setItemProperty(args,uiControls,menuControls)
+function setItemProperty(args,uiControls,menuControls,plotAxes,verbose)
 
 % check arguments
 if length(args) ~= 3
@@ -277,7 +429,7 @@ else
 end
 
 % go look for the control
-h = getHandle(controlName,uiControls,menuControls);
+h = getHandle(controlName,uiControls,menuControls,plotAxes);
 
 % if not found, then print warning, return
 if isempty(h),
@@ -285,39 +437,58 @@ if isempty(h),
   return
 end
 
-% check if the property exists
-if ~isfield(get(h),propertyName)
-  % if not, warn and continue
-  if isstr(propertyName)
-    disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of uicontrol %s ***',propertyName,controlName));
-  else
-    disp(sprintf('(mlrAdjustGUI) *** Could not find correct property of uicontrol %s. Did you pass in a string indicating a property to set ***',controlName));
-  end
-  return
-end
+controlType = get(h,'type');
+if ~isempty(propertyName)
+    propertyName = lower(propertyName);
+end    
 
-% if it does, make sure we have a valid property to set it to
-if ~any(strcmp(propertyName,{'Callback','TooltipString'}))
-  validValues = set(h,propertyName);
-  tf = false;
-  for j = 1:length(validValues) 
-    if isequal(propertyValue,validValues{j}),tf = true;end
+if strcmp(propertyName,'location')
+  if ~strcmp(get(h,'type'),'uimenu')
+    disp(['(mlrAdjustGUI) Cannot change location property for ' controlName]);
+    return;
   end
-  if ~tf
-    disp(sprintf('(mlrAdjustGUI) Property value:'))
-    disp(propertyValue);
-    disp(sprintf('is invalid for uicontrol %s property %s. Valid values are: ',controlName,propertyName));
-    disp(validValues);
+  placeMenu({h,propertyValue},menuControls,'move',verbose);
+  
+else %if the property is not 'location', then we just set the property using set
+
+  % check if the property exists
+  fieldNames = lower(fieldnames(get(h)));
+
+  if ~ismember(propertyName,fieldNames)
+    % if not, warn and continue
+    if isstr(propertyName)
+        disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of %s %s ***',propertyName,controlType,controlName));
+    else
+      disp(sprintf('(mlrAdjustGUI) *** Could not find correct property of %s %s. Did you pass in a string indicating a property to set ***',controlType,controlName));
+    end
     return
   end
+
+  % if it does, make sure we have a valid property to set it to
+  %if ~any(strcmp(propertyName,{'Callback','TooltipString'}))
+  validValues = set(h,propertyName);
+  if ~isempty(validValues)
+    tf = false;
+    for j = 1:length(validValues) 
+      if isequal(propertyValue,validValues{j}),tf = true;end
+    end
+    if ~tf
+      disp(sprintf('(mlrAdjustGUI) Property value:'))
+      disp(propertyValue);
+      disp(sprintf('is invalid for %s %s property %s. Valid values are: ',controlType,controlName,propertyName));
+      disp(validValues);
+      return
+    end
+  end
+
+  % if we got here, then the value is ok so set it
+  if verbose
+    disp(sprintf('(mlrAdjustGUI) Setting property %s of %s %s',propertyName,controlType,controlName));
+  end;
+  set(h,propertyName,propertyValue);
 end
-
-% if we got here, then the value is ok so set it
-disp(sprintf('(mlrAdjustGUI) Setting property %s of uicontrol %s',propertyName,controlName));
-set(h,propertyName,propertyValue);
-
 %%%%%%%%%%%%%%%%%%%%%%%
-%%   getUiControls   %%
+%%%  getUiControls  %%%
 %%%%%%%%%%%%%%%%%%%%%%%
 function uiControls = getUiControls(f,verbose)
 
@@ -356,8 +527,49 @@ if verbose
   end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%  getAxes  %%%
+%%%%%%%%%%%%%%%%%%%%%%%
+function plotAxes = getAxes(f,verbose)
+
+if nargin == 1,verbose = 0;end
+plotAxes = [];
+
+% get the gui data
+h = guidata(f);
+itemNames = fieldnames(h);
+
+% for each guidata, check if it is a handle and
+% not a menu item
+for i = 1:length(itemNames)
+  for j = 1:length(h.(itemNames{i}))
+    if ishandle(h.(itemNames{i})(j))
+      % check if it is not a menu item
+      if isequal(get(h.(itemNames{i})(j),'Type'),'axes')
+	% keep track of this one.
+	plotAxes(end+1).tag = itemNames{i};
+	plotAxes(end).fieldNum = j;
+	plotAxes(end).h = h.(itemNames{i})(j);
+      end
+    end
+  end
+end
+
+% print out info
+if verbose
+  for i = 1:length(plotAxes)
+    if plotAxes(i).fieldNum == 1
+      disp(sprintf('(mlrAdjustGUI) Found axes: %i:%s',i,plotAxes(i).tag));
+      disp(get(uiControls(i).h,'Callback'));
+    else
+      disp(sprintf('(mlrAdjustGUI) Found axes: %i:%s %i',i,plotAxes(i).tag,plotAxes(i).fieldNum));
+    end
+  end
+end
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%   getMenuControls   %%
+%%%  getMenuControls  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 function menuControls = getMenuControls(f,menuControls)
 

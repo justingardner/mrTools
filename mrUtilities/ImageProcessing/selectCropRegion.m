@@ -1,6 +1,12 @@
 function cropRegion = selectCropRegion(volume)
 % function cropRegion = selectCropRegion(volume)
 
+cropRegion = [];
+if isempty(volume)
+  mrWarnDlg('(selectCropRegion) The source volume is empty');
+  return
+end
+
 nImages = size(volume,3);
 aSize = [size(volume,1) size(volume,2)];
 

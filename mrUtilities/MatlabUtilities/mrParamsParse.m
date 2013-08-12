@@ -9,7 +9,7 @@
 %
 %	$Id$
 
-function [vars varinfo nrows ncols] = mrParamsParse(vars)
+function [vars varinfo] = mrParamsParse(vars)
 
 % check arguments
 if ~any(nargin == [1])
@@ -17,11 +17,9 @@ if ~any(nargin == [1])
   return
 end
 
-nrows = 1;
-ncols = 2;
-% first parse the argument
+%-------------------------------- first parse the argument
+varinfo = cell(size(vars));
 for i = 1:length(vars)
-  nrows = nrows+1;
   % if the variable is just a string, then
   % it got passed in without a default argument
   % so make it into a cell array with the second
@@ -39,6 +37,7 @@ for i = 1:length(vars)
   elseif isempty(vars{i}{2})
     vars{i}{2} = '';
     varinfo{i}.type = 'string';
+    
     % default arguments have to be strings so they
     % can be put into the text fields properly. here
     % we change them into strings, but remember what
@@ -50,33 +49,18 @@ for i = 1:length(vars)
     if isnumeric(vars{i}{2})
       % check to see if it is an array
       if isscalar(vars{i}{2})
-        vars{i}{2} = num2str(vars{i}{2});
+%         vars{i}{2} = num2str(vars{i}{2});
         varinfo{i}.type = 'numeric';
       else
         varinfo{i}.type = 'array';
-        nrows = nrows+size(vars{i}{2},1)-1;
-        ncols = max(ncols,1+size(vars{i}{2},2));
       end
     elseif iscell(vars{i}{2})
       varinfo{i}.type = 'popupmenu';
-      % see if the default argument is a string
-      if isstr(vars{i}{2}{1})
-        varinfo{i}.popuptype = 'string';
-	% if it is a cell (contingent variable, check its first member
-      elseif iscell(vars{i}{2}{1})
-	if isstr(vars{i}{2}{1}{1})
-	  varinfo{i}.popuptype = 'string';
-	else
-	  varinfo{i}.popuptype = 'numeric';
-	end
-      % otherwise numeric
-      else
-        varinfo{i}.popuptype = 'numeric';
-      end
     else
       varinfo{i}.type = 'string';
     end
   end
+  
   % check to see if name is valid
   fixedName = fixBadChars(vars{i}{1});
   if ~strcmp(fixedName,vars{i}{1})
@@ -87,8 +71,21 @@ for i = 1:length(vars)
   varinfo{i}.name = vars{i}{1};
   varinfo{i}.value = vars{i}{2};
   varinfo{i}.description = '';
-  % check for options
+  
+  %--------------------------------------- check for options
+  % set defaults
+  varinfo{i}.editable = 1;
+  varinfo{i}.visible = 1; 
+  varinfo{i}.passValue=0; 
   if length(vars{i}) > 2
+    %JB: The following loop is the main reason why mrLoadRet is so slow at installing overlays and opening GUIs 
+    %(of the mrParams type). mrParamsParse is called by both defaultReconcileParams and mrParamsDialog.
+    % I've modified it to make it more efficient 
+    %  - by reorganizing the order of the tests
+    %  - minimizing calls to string operations
+    %  - replacing calls to evalargs by the core operations we need in this case 
+    %       (putting a value in a structure field and evaluating a string containing an equal sign)
+    % but it's still quite slow...
     skipNext = 0;
     for j = 3:length(vars{i})
       % skip this argument
@@ -96,44 +93,120 @@ for i = 1:length(vars)
         skipNext = 0;
         continue;
       end
-      % if this looks like a description then save it as a
-      % description, descriptions either have no equal sign
-      % and are not a single word, or have an equal sign but
-      % have spaces before the equal sign
-      if ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
-          ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
-        varinfo{i}.description = vars{i}{j};
-        % now look for settings that involve the next parameter
-        % i.e. onest that are like 'varname',varvalue. These are
-        % distinugished from comments by the fact that the varname
-        % has no equal sign but is a single word
-      elseif ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) == 0)) && (j < (length(vars{i})))
-        % we are going to call evalargs but we want the variables
-        % set as a part of gParams (also do it quietly)--> that is
-        % evalargs, will do the parsing of the variable=value strings
-        varargin{1} = 'gVerbose = 0';
-        varargin{2} = sprintf('varinfo{i}.%s',vars{i}{j});
-        varargin{3} = vars{i}{j+1};
-        % set the argument
-        eval(evalargs(varargin));
-        skipNext = 1;
+      if ~isempty(vars{i}{j})
+        equals = strfind(vars{i}{j},'=');
+        spaces = strfind(vars{i}{j},' ');
+        if isempty(equals)
+          if isempty(spaces) && j < (length(vars{i})) %this is a singleword and there is at least one argument after
+              varinfo{i}.(vars{i}{j})=vars{i}{j+1}; %so it's the varname/value pair form
+              skipNext = 1;
+          else % there is at least one space or it's the last argument
+            varinfo{i}.description = vars{i}{j}; %this is a description
+          end
+        elseif isempty(spaces) || spaces(1)>equals(1) %if there is no space or it is after the first equal sign
+            %this is a string to evaluate
+            value = vars{i}{j}(equals+1:end);
+            numericValue = mrStr2num(value);
+            if ~isempty(numericValue)
+              varinfo{i}.(vars{i}{j}(1:equals-1))= numericValue;
+            else
+              varinfo{i}.(vars{i}{j}(1:equals-1))=value;
+            end
+        else %otherwise it's a description
+          varinfo{i}.description = vars{i}{j}; %this is a description
+        end
+      end
+    end
+    
+% % % %     skipNext = 0;
+% % % %     for j = 3:length(vars{i})
+% % % %       % skip this argument
+% % % %       if skipNext
+% % % %         skipNext = 0;
+% % % %         continue;
+% % % %       end
+% % % %       % if this looks like a description then save it as a
+% % % %       % description, descriptions either have no equal sign
+% % % %       % and are not a single word, or have an equal sign but
+% % % %       % have spaces before the equal sign
+% % % %       if isempty(vars{i}{j}) || ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) ~= 0)) || ...
+% % % %           ~isempty(strfind(vars{i}{j}(1:strfind(vars{i}{j},'=')),' '))
+% % % %         varinfo{i}.description = vars{i}{j};
+% % % %         % now look for settings that involve the next parameter
+% % % %         % i.e. ones that are like 'varname',varvalue. These are
+% % % %         % distinugished from comments by the fact that the varname
+% % % %         % has no equal sign but is a single word
+% % % %       elseif ((length(strfind(vars{i}{j},'=')) ~= 1) && (length(strfind(vars{i}{j},' ')) == 0)) && (j < (length(vars{i})))
+% % % %         % we are going to call evalargs but we want the variables
+% % % %         % set as a part of gParams (also do it quietly)--> that is
+% % % %         % evalargs, will do the parsing of the variable=value strings
+% % % %         varargin{1} = 'gVerbose = 0';
+% % % %         varargin{2} = sprintf('varinfo{i}.%s',vars{i}{j});
+% % % %         varargin{3} = vars{i}{j+1};
+% % % %         % set the argument
+% % % %         eval(evalargs(varargin));
+% % % %         skipNext = 1;
+% % % %       else
+% % % %         % we are going to call evalargs but we want the variables
+% % % %         % set as a part of gParams (also do it quietly)--> that is
+% % % %         % evalargs, will do the parsing of the variable=value strings
+% % % %         setparam{1} = 'gVerbose = 0';
+% % % %         setparam{2} = sprintf('varinfo{i}.%s',vars{i}{j});
+% % % %         % set the argument
+% % % %         eval(evalargs(setparam));
+% % % % 
+% % % %       end
+% % % %     end
+  end
+  % Pushbuttons are defined so that you can press them and they set the value
+  % of the field (e.g. you can have the button call the rand function and it
+  % will set the field to whatever rand returns). You can bypass this behavior
+  % by setting passCallbackOutput to 0
+  if ~isfield(varinfo{i},'passCallbackOutput')
+    if strcmp(varinfo{i}.type,'pushbutton')
+      varinfo{i}.passCallbackOutput=1; 
+    else
+      varinfo{i}.passCallbackOutput=0; 
+    end
+  end
+  %if we need to return the callback output argument, make sure there is at least one 
+  if varinfo{i}.passCallbackOutput
+    if isfield(varinfo{i},'callback')
+      %get the number of output argument returned by the callback function
+      if iscell(varinfo{i}.callback) %a callback can be defined either as a cell array whose first cell contains the function handle/name
+        nArgout = nargout(varinfo{i}.callback{1});
       else
-        % we are going to call evalargs but we want the variables
-        % set as a part of gParams (also do it quietly)--> that is
-        % evalargs, will do the parsing of the variable=value strings
-        setparam{1} = 'gVerbose = 0';
-        setparam{2} = sprintf('varinfo{i}.%s',vars{i}{j});
-        % set the argument
-        eval(evalargs(setparam));
+        nArgout = nargout(varinfo{i}.callback); %or simply as a function handle
+      end
+      if ~nArgout   %if the callback function returns no output, set this option to 0
+        varinfo{i}.passCallbackOutput=0;
+      end
+    else
+      %if there is no callback defined, there is no argument to return
+      varinfo{i}.passCallbackOutput=0;
+    end
+  end
+    
+  %for popup menus, check the type
+  if strcmp(varinfo{i}.type,'popupmenu')       
+    varinfo{i}.popuptype = 'string';
+    if ~isempty(vars{i}{2})
+      if iscell(vars{i}{2}{1}) % if it is a cell (contingent variable, check its first member
+        if ischar(vars{i}{2}{1}{1})
+          varinfo{i}.popuptype = 'string';
+        else
+          varinfo{i}.popuptype = 'numeric';
+        end
+        % see if the default argument is a string
+      elseif  ~ischar(vars{i}{2}{1})
+        varinfo{i}.popuptype = 'numeric';
+      % otherwise numeric
       end
     end
   end
+
   % make sure type is in lower case
   varinfo{i}.type = lower(varinfo{i}.type);
-  % only keep two columns for checkbox
-  if ~strcmp(varinfo{i}.type,'checkbox')
-    ncols = max(ncols,4);
-  end
   % check for minmax violation
   if strcmp(varinfo{i}.type,'numeric') && isfield(varinfo{i},'minmax')
     if vars{i}{2} < varinfo{i}.minmax(1)
@@ -142,13 +215,9 @@ for i = 1:length(vars)
       vars{i}{2} = varinfo{i}.minmax(2);
     end
   end
-  % make editable by default
-  if ~isfield(varinfo{i},'editable')
-    varinfo{i}.editable = 1;
-  end
 end
 
-% now check any contingencies
+%----------------------------------- now check any contingencies
 for i = 1:length(varinfo)
   % groups are handled just like contingent
   if isfield(varinfo{i},'group')
@@ -205,3 +274,4 @@ for i = 1:length(varinfo)
     end
   end
 end
+

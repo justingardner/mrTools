@@ -29,6 +29,7 @@ tseries = meanTSeries(view, groupNum, roiList, scanList, varargin{:});
 
 % Select window
 selectGraphWin;
+set(gcf,'name',['Mean timeseries, group ' viewGet(view,'groupName')]);
 
 for iROI = 1:nROIs
   roiName = viewGet(view,'roiName',roiList(iROI));

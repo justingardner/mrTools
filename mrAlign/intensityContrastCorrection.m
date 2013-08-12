@@ -1,5 +1,7 @@
-function volIC = intensityContrastCorrection(vol, crop);
+function volIC = intensityContrastCorrection(vol, crop)
 % function volIC = intensityContrastCorrection(vol, crop);
+%
+%        $Id$
 %
 % Intensity and contrast normalization. 
 %
@@ -55,8 +57,9 @@ if ~isempty(crop)
 else
     noiseCrop = noise;
 end
-II = find(~isnan(noiseCrop));
-sigma2 = mean(noiseCrop(II));
+clear('noise');
+sigma2 = mean(noiseCrop(~isnan(noiseCrop)));
+clear('noiseCrop');
 
 % Correct intensity gradient applying a wiener-like filtering.
 % Old version:
@@ -64,11 +67,13 @@ sigma2 = mean(noiseCrop(II));
 % Modified (djh, 1/2007) because noise is actually spatially homogeneous.
 denominator = (int.^2 + sigma2);
 volI = vol.*int ./ denominator;
+clear('vol');
 
 % Loop through frames, doing the same.
 for f=1:nFrames
     volIC(:,:,:,f) = (volIC(:,:,:,f) .* int) ./ denominator;
 end
+clear('int','denominator');
 
 %%% Contrast correction
 
@@ -78,6 +83,7 @@ if ~isempty(crop)
 else
     volCrop = volI;
 end
+clear('volI');
 
 % Build the histogram
 II = find(~isnan(volCrop));
@@ -96,8 +102,10 @@ h = h/(sum(h)*mean(diff(x)));
 % variance, and the second gaussian around 1 and with 1/10 of the actual
 % variance, both with weights of 0.5 
 pinit = [mean(volCrop(II)) var(volCrop(II)) 1 var(volCrop(II))/10 0.5 0.5];
+clear('volCrop','II');
 % Minimize the robust measure of the error
-p = fminsearch('errGaussRob', pinit, [], x, h);
+options = optimset('MaxFunEvals',10000,'MaxIter',10000);  %JB: these values are totally arbitrary
+p = fminsearch('errGaussRob', double(pinit) , options, double(x), double(h));
 
 % Select the mean closer to 1
 if abs(p(1)-1)>abs(p(3)-1)
@@ -136,6 +144,7 @@ function [Int, Noise] = estFilIntGrad(vol, PbyPflag, lpf);
 %          local variance
 %
 % Oscar Nestares - 5/99
+% Julien Besle, 10/2010: added some variable initialization and cleared unused variables
 
 % default low-pass filter
 if ~exist('lpf')
@@ -151,12 +160,15 @@ end
 B = (length(lpf)-1)/2;
 
 % add border to the volume and estimate the intensity as the local mean
+volB = zeros(size(vol,1)+2*B,size(vol,2)+2*B,size(vol,3));
 for k=1:size(vol,3)
 	volB(:,:,k) = addBorder(vol(:,:,k), B, B, 2);
 end
+clear('vol');
 Int = convXYZsep(volB, lpf, lpf, lpfZ, 'repeat', 'valid');
 
 % estimate the noise as the mean local variance
+IntB = zeros(size(Int,1)+2*B,size(Int,2)+2*B,size(Int,3));
 for k=1:size(Int,3)
    IntB(:,:,k) = addBorder(Int(:,:,k), B, B, 2);
 end

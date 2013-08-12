@@ -1,6 +1,6 @@
 % mrParamsEnable.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: mrParamsEnable(paramname,enable)
 %         by: justin gardner
 %       date: 07/23/09

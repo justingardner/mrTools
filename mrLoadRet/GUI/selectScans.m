@@ -1,6 +1,8 @@
 function scanList = selectScans(view,title,scanNums)
 % scanList = selectScans(view,[title],[scanNums]);
 %
+%   this function is deprecated, use scanList = selectInList(thisView,'scans',title,preselected)
+%
 %   Gather a list of scans available in Inplane/TSeries
 %   and query the user for a sub-selection.
 %

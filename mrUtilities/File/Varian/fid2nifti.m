@@ -1,6 +1,6 @@
 % fid2nifti.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: fid2nifti(fidname,<verbose>,<movepro>,<receiverNum>)
 %         by: justin gardner
 %       date: 04/30/09

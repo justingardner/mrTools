@@ -47,7 +47,10 @@ if nargout >=3
   hdrste = shiftdim(d.ehdrste(x,y,s,:,:), 3);
   % not sure about this part
   if isfield(d, 'hrf')
-     hdrste = sqrt(hdrste.^2*abs(d.hrf)');
+     %hdrste = sqrt(hdrste.^2*abs(d.hrf)');
+     %JB: this is the right way of doing it:
+     hdrste = sqrt(hdrste.^2*(d.hrf.^2)'); %the variance (squared stddev) of a random variable multiplied by a constant 
+     %is equal to the variance multiplied by the square of the constant. 
   end
 
 end

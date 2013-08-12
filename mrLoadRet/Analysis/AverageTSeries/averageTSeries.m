@@ -131,16 +131,20 @@ end
 viewAverage = viewSet(viewAverage,'currentGroup',aveGroupNum);
 
 % Check that all scans in scanList have the same nframes, frameperiod,
-% scanvoxelsize, scandims
-nFrames = viewGet(viewBase,'nFrames',baseScan);
-framePeriod = viewGet(viewBase,'framePeriod',baseScan);
+% scanvoxelsize, scandims. Note that we check the nFrames and framePeriod
+% for the first scan in the list. For other parameters it is relevant
+% to which scan we are warping to
+nFrames = viewGet(viewBase,'nFrames',scanList(1));
+framePeriod = viewGet(viewBase,'framePeriod',scanList(1));
 voxelSize = viewGet(viewBase,'scanvoxelsize',baseScan);
 scanDims = viewGet(viewBase,'scandims',baseScan);
 vol2mag = viewGet(viewBase,'scanVol2mag',baseScan);
 vol2tal = viewGet(viewBase,'scanVol2tal',baseScan);
 for iscan = 1:length(scanList)
   if (viewGet(viewBase,'nFrames',scanList(iscan)) ~= nFrames)
-    mrErrorDlg('(averageTSeries) Can not average these scans because they have different numFrames.');
+    mrWarnDlg('(averageTSeries) Can not average these scans because they have different numFrames.');
+    keyboard
+    return
   end
   if (viewGet(viewBase,'framePeriod',scanList(iscan)) ~= framePeriod)
     mrWarnDlg('These scans  have different frame periods.');
@@ -168,18 +172,6 @@ for iscan = 1:length(scanList)
   % Dump junk frames
   junkFrames = viewGet(viewBase,'junkframes',scanNum);
   tseries = tseries(:,:,:,junkFrames+1:junkFrames+nFrames);
-
-  % get the total junked frames. This is the number of frames
-  % we have junked here, plus whatever has been junked in previous ones
-  thisTotalJunkedFrames = viewGet(viewBase,'totalJunkedFrames',scanNum);
-  if length(thisTotalJunkedFrames > 1)
-    % give warning if there are non-zero total junked frames
-    if sum(thisTotalJunkedFrames) ~= 0
-      disp(sprintf('(averageTSeries) This scan has multiple total junked frames [%s] -- i.e. it looks like an average or a concat. Using a junk frame count of %i',num2str(thisTotalJunkedFrames),median(thisTotalJunkedFrames)));
-    end
-    thisTotalJunkedFrames = median(thisTotalJunkedFrames);
-  end    
-  totalJunkedFrames(iscan) = junkFrames+thisTotalJunkedFrames;
 
   
   % Time shift
@@ -244,7 +236,7 @@ mrCloseDlg(waitHandle);
 % the nifti header), and add it as a new scan.
 scanParams.fileName = [];
 scanParams.junkFrames = 0;
-scanParams.totalJunkedFrames = totalJunkedFrames;
+scanParams.totalJunkedFrames = junkFrames;
 scanParams.nFrames = nFrames;
 scanParams.description = description;
 scanParams.vol2mag = vol2mag;
@@ -254,7 +246,7 @@ hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',baseScan));
 
 % Save evalstring for recomputing and params
 evalstr = ['view = newView(','''','Volume','''','); view = averageTSeries(view,params);'];
-[pathstr,filename,ext] = fileparts(tseriesFileName);
+[pathstr,filename] = fileparts(tseriesFileName);
 tseriesdir = viewGet(viewAverage,'tseriesdir');
 save(fullfile(tseriesdir,filename),'evalstr','params','tseriesFileName');
 

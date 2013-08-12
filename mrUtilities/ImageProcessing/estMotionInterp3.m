@@ -83,7 +83,7 @@ for iter=1:numIters
     volWarp1=warpAffineInterp3(tseries1,frame1,Mhalf1,sliceTimes);
   end
   if (nframes2 == 1)
-    volWarp2=warpAffine3(tseries1(:,:,:,1),Mhalf2);
+    volWarp2=warpAffine3(tseries2(:,:,:,1),Mhalf2); %JB: I think this is supposed to be tseries2 and not tseries1 (although this case probably never happens)
   else
     volWarp2=warpAffineInterp3(tseries2,frame2,Mhalf2,sliceTimes);
   end

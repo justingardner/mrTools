@@ -1,8 +1,10 @@
 function varargout = checkAlignmentGUI(varargin)
 % CHECKALIGNMENTGUI M-file for checkAlignmentGUI.fig
 
-% Last Modified by GUIDE v2.5 07-Jan-2007 12:07:03
-
+% Last Modified by GUIDE v2.5 10-Oct-2010 16:51:18
+%
+%        $Id$
+%
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -29,6 +31,16 @@ function checkAlignmentGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.vol1 = varargin{1};
 handles.vol2 = varargin{2};
 handles.vol3 = varargin{3};
+switch(varargin{4})
+   case 0
+      title = 'Check Alignment Without Intensity/Contrast Correction';
+   case 1
+      title = 'Check Alignment With Intensity/Contrast Correction';
+   case 2
+      title = 'Check Alignment With Intensity/Contrast Correction and Reverse Contrast';
+end
+set(handles.checkAlignmentFigure,'Name',title);
+
 % Set nSlices in slider
 nSlices = size(handles.vol1,3);
 set(handles.sliceSlider,'Value',1);
@@ -58,13 +70,13 @@ function sliceSlider_Callback(hObject, eventdata, handles)
 % current slice.
 figure(handles.checkAlignmentFigure)
 slice = round(get(hObject,'Value'));
-subplot(1,3,1);
+subplot('Position',[.01 .15 .32 .80]);
 imagesc(handles.vol1(:,:,slice));
 axis('image'); axis('off'); colormap(gray(256)); 
-subplot(1,3,2);
+subplot('Position',[.34 .15 .32 .80]);
 imagesc(handles.vol2(:,:,slice));
 axis('image'); axis('off'); colormap(gray(256)); 
-subplot(1,3,3);
+subplot('Position',[.67 .15 .32 .80]);
 imagesc(handles.vol3(:,:,slice));
 axis('image'); axis('off'); colormap(gray(256)); 
 
@@ -76,9 +88,28 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
 end
 
 
+% --- Executes on button press in pushbutton2.
+function recomputeMosaicWithoutCorrection_Callback(hObject, eventdata, handles)
+
+[inplanes,volume,mosaic] = checkAlignment(0);
+
+checkAlignmentGUI_OpeningFcn(hObject, eventdata, handles, inplanes, mosaic, volume, 0)
+
+% --- Executes on button press in pushbutton3.
+function recomputeMosaicWithCorrection_Callback(hObject, eventdata, handles)
+
+[inplanes,volume,mosaic] = checkAlignment(1);
+
+checkAlignmentGUI_OpeningFcn(hObject, eventdata, handles, inplanes, mosaic, volume, 1)
+
+% --- Executes on button press in pushbutton4.
+function recomputeMosaicWithReverseCorrection_Callback(hObject, eventdata, handles)
+
+[inplanes,volume,mosaic] = checkAlignment(2);
+
+checkAlignmentGUI_OpeningFcn(hObject, eventdata, handles, inplanes, mosaic, volume, 2)
+
 % --- Executes on button press in okButton.
 function okButton_Callback(hObject, eventdata, handles)
 % uiresume triggers corAnalGUI_OutputFcn
 uiresume;
-
-

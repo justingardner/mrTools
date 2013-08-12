@@ -37,6 +37,9 @@ if ieNotDefined('justGetParams'),justGetParams=0;end
 if ieNotDefined('defaultParams'),defaultParams=0;end
 if ieNotDefined('makeReadme'),makeReadme=1;end
 
+minFramePeriod = .01;  %frame period in sec outside which the user is prompted
+maxFramePeriod = 100;  % that something weird's goin on
+
 % get session params
 if ieNotDefined('sessionParams')
   % get some defaults
@@ -61,8 +64,8 @@ if ieNotDefined('sessionParams')
   paramsInfo{end+1} = {'description',description,'type=string','Description of the session. Can be anything to help you remember what the session was'};
   paramsInfo{end+1} = {'subject',subject,'type=string','Subject ID. Use an identifier that does not break the subject confidentiality'};
   paramsInfo{end+1} = {'operator',operator,'type=string','Person who operated the scanner'};
-  paramsInfo{end+1} = {'magnet',magnet,'Choose which magnet you scanned on'};
-  paramsInfo{end+1} = {'coil',coil,'Choose which coil you used'};
+  paramsInfo{end+1} = {'magnet',magnet,'type=popupmenu','Choose which magnet you scanned on'};
+  paramsInfo{end+1} = {'coil',coil,'type=popupmenu','Choose which coil you used'};
   paramsInfo{end+1} = {'pulseSequence',pulseSequence,'Choose which pulse sequence you scanned with'};
   paramsInfo{end+1} = {'pulseSequenceText','','Optional: enter some text to describe or qualify the pulseSequence text. This will get appended to the pulseSequence name chosen above'};
 
@@ -160,6 +163,7 @@ end
 if ~justGetParams
   if ~ieNotDefined('sessionParams') && ~ieNotDefined('groupParams')
     disp(sprintf('(mrInit) Saving session information'));
+    weirdFramePeriods = zeros(1,length(groupParams.totalFrames));
     % create session variable
     session.mrLoadRetVersion = mrLoadRetVersion;
     session.description = sessionParams.description;
@@ -190,16 +194,30 @@ if ~justGetParams
       elseif niftiTimeUnit == 32 % microseconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./10e6;
       end
+      %detect weird frame periods
+      if scanParams(iScan).framePeriod>maxFramePeriod 
+        weirdFramePeriods(iScan) = scanParams(iScan).framePeriod;
+      elseif scanParams(iScan).framePeriod<minFramePeriod
+        weirdFramePeriods(iScan) = scanParams(iScan).framePeriod;
+      end
       if strcmp(lower(mrGetPref('verbose')),'yes')
 	% 8 -> 10^0, 16 -> 10^3, 32-> 10^6
-	disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
+	disp(sprintf('(mrInit) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
       end
       scanParams(iScan).junkFrames = groupParams.junkFrames(iScan);
       scanParams(iScan).nFrames = groupParams.nFrames(iScan);
       scanParams(iScan).niftiHdr = hdr;
       scanParams(iScan).totalFrames = hdr.dim(5);
       scanParams(iScan).voxelSize = hdr.pixdim([2,3,4])';
-      % put into group variable
+    end  
+    
+    %if weird frame periods have been detected, ask user
+    if any(weirdFramePeriods)
+      scanParams = fixFramePeriods(scanParams,weirdFramePeriods,minFramePeriod,maxFramePeriod,tseriesDir);
+    end
+    
+    % put into group variable
+    for iScan=1:length(groupParams.totalFrames)
       [tf groups(1).scanParams(iScan)] = isscan(scanParams(iScan));
       if ~tf
 	disp(sprintf('(mrInit) Scan params for %i did not validate',iScan));
@@ -213,7 +231,8 @@ if ~justGetParams
 	  groups(1).auxParams(iScan).stimFileName = '';
 	end	  
       end
-    end  
+    end
+    
     % tag on auxParams to groups if it wasn't set above
     if ~isfield(groups(1),'auxParams')
       groups(1).auxParams = [];
@@ -243,9 +262,9 @@ if ~justGetParams
     disp(sprintf('(mrInit) No session information saved'));
   end
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrInitCopyParameters %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   mrInitCopyParameters  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function params = mrInitCopyParameters(params)
 
 % put a button dialog to choose which scans to copy parameters to
@@ -265,7 +284,7 @@ end
 mrParamsSet(params);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   mrInitJunkFrames   %%
+%    mrInitJunkFrames    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 function params = mrInitJunkFrames(params)
 
@@ -273,9 +292,9 @@ function params = mrInitJunkFrames(params)
 params.nFrames(params.scanNum) = params.totalFrames(params.scanNum)-params.junkFrames(params.scanNum);
 mrParamsSet(params);
 
-%%%%%%%%%%%%%%%%%%%%
-% match stimfiles with scans
-%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% match stimfiles with scans  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function stimFileMatch = matchStimFiles(stimFileNames,stimFileVols,totalFrames)
 
 stimFileMatch = {};
@@ -299,9 +318,9 @@ for i = length(stimFileMatch)+1:length(totalFrames)
   stimFileMatch{end+1} = putOnTopOfList('None',cellcat(stimFileNames,{'None'}));
 end
 
-%%%%%%%%%%%%%%%%%%%%
-% get stimFileNums
-%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+%  get stimFileNums  %
+%%%%%%%%%%%%%%%%%%%%%%
 function [stimFileNames stimFileVols] = getStimFiles
 
 stimfileDir = 'Etc';
@@ -336,4 +355,3 @@ for i = 1:length(dirList);
     stimFileNames{end+1} = sprintf('%s: %s',name,stimfileStr);
   end
 end
-

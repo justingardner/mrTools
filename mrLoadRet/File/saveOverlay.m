@@ -60,7 +60,7 @@ if isfile(fullfile(pathStr,filename))
   saveMethod = find(strcmp(saveMethod,saveMethodTypes));
   if confirm || isempty(saveMethod) || (saveMethod==0)
     % ask the user what to do
-    paramsInfo = {{'saveMethod',saveMethodTypes,'Choose how you want to save the variable'}};
+    paramsInfo = {{'saveMethod',saveMethodTypes,'type=popupmenu','Choose how you want to save the variable'}};
     params = mrParamsDialog(paramsInfo,sprintf('%s already exists',filename));
     if isempty(params),return,end
     saveMethod = find(strcmp(params.saveMethod,saveMethodTypes));

@@ -21,10 +21,12 @@ newparams.groupName = groupName;
 newparams.recompute = zeros(1,nScans);
 newparams.ncycles = zeros(1,nScans);
 newparams.detrend = cell(1,nScans);
+newparams.trigonometricFunction = cell(1,nScans);
 newparams.spatialnorm = cell(1,nScans);
 newparams.tseriesfile = cell(1,nScans);
 for scan = 1:nScans
   newparams.detrend{scan} = 'Highpass';
+  newparams.trigonometricFunction{scan} = 'Sine';
   newparams.spatialnorm{scan} = 'Divide by mean';
   tseriesfile = viewGet([],'tseriesFile',scan,groupNum);
   newparams.tseriesfile{scan} = tseriesfile;
@@ -44,6 +46,10 @@ newdata = cell(1,nScans);
 % This is useful so that you can run the analysis on multiple data sets
 % using the same params.
 if ~ieNotDefined('params')
+  %add field trigonometricFunction with default value (this is because this parameter has been introduced later)
+  if ~isfield(params,'trigonometricFunction')
+    params.trigonometricFunction = repmat({'Sine'},1,length(params.spatialnorm));
+  end
   for scan = 1:nScans
     tseriesfile = viewGet([],'tseriesFile',scan,groupNum);
     if strcmp(params.tseriesfile,'any')
@@ -56,6 +62,7 @@ if ~ieNotDefined('params')
       newparams.ncycles(scan) = params.ncycles(match);
       newparams.detrend{scan} = params.detrend{match};
       newparams.spatialnorm{scan} = params.spatialnorm{match};
+      newparams.trigonometricFunction{scan} = params.trigonometricFunction{match};
       newparams.tseriesfile{scan} = tseriesfile;
       if (length(data) >= match)
           newdata{scan} = data{match};

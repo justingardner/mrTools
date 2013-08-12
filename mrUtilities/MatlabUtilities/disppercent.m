@@ -55,10 +55,10 @@ if (percentdone < 0)
   gDisppercent.t0 = clock;
   % default to no message
   if (nargin < 2)
-    mrDisp(sprintf('00%% (00:00:00)'));
+    mrDisp(sprintf('00.00%% (00 hrs 00 min 00 sec)'));
     gDisppercent.mesg = '';
   else
-    mrDisp(sprintf('%s 00%% (00:00:00)',mesg));
+    mrDisp(sprintf('%s 00.00%% (00 hrs 00 min 00 sec)',mesg));
     gDisppercent.mesg = mesg;
   end    
   if isinf(percentdone)
@@ -72,7 +72,7 @@ if (percentdone < 0)
 elseif (percentdone == inf)
   if ~gDisppercent.verbose,return,end
   % reprint message if necessary
-  if (nargin == 2) && isstr(mesg)
+  if (nargin == 2) && ischar(mesg)
     reprintMessage(mesg);
   end
   % get elapsed time
@@ -96,7 +96,7 @@ elseif (percentdone == inf)
     timestr = sprintf('%i secs %i ms',numsecs,numms);
   end
   % display time string
-  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\btook %s\n',timestr));
+  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\btook %s\n',timestr));
   retval = elapsedTime;
 % otherwise show update
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,7 +116,7 @@ else
   % see if we should reprint message
   newmesg = '';
   if nargin == 2
-    if isstr(mesg)
+    if ischar(mesg)
       newmesg = reprintMessage(mesg);
     % otherwise if the second argument is a number,
     % it means we have a secondary value for percent done
@@ -133,22 +133,24 @@ else
       
   % avoid things that will end up dividing by 0
   if (percentdone >= 1)
-    percentdone = .99;
+    percentdone = .9999;
   elseif (percentdone <= 0)
-    percentdone = 0.01;
+    percentdone = 0.0001;
   end
+  elapsedTime = etime(clock,gDisppercent.t0);
 
   % display percent done and estimated time to end
   if ~isempty(newmesg)
     % always display if there is a new message
-    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%02i%% (%s)',newmesg,floor(100*percentdone),disptime(etime(clock,gDisppercent.t0)*(1/percentdone - 1))));
-  % display only if we have update by a percent or more
-  elseif (gDisppercent.percentdone ~= floor(100*percentdone))
-    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%02i%% (%s)',floor(100*percentdone),disptime(etime(clock,gDisppercent.t0)*(1/percentdone - 1))));
+    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%05.2f%% (%s)',newmesg,floor(10000*percentdone)/100,disptime(elapsedTime*(1/percentdone - 1))));
+  % display only if we have update by a least a percent or if at least 1 second has elapsed since last display
+  elseif (gDisppercent.percentdone ~= floor(100*percentdone)) || floor(elapsedTime)~=gDisppercent.elapsedTime
+    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%05.2f%% (%s)',floor(10000*percentdone)/100,disptime(elapsedTime*(1/percentdone - 1))));
   end
 end
 % remember current percent done
 gDisppercent.percentdone = floor(100*percentdone);
+gDisppercent.elapsedTime = floor(etime(clock,gDisppercent.t0));
 
 
 %%%%%%%%%%%%%%%%%%
@@ -160,12 +162,12 @@ hours = floor(t/(60*60));
 minutes = floor((t-hours*60*60)/60);
 seconds = floor(t-hours*60*60-minutes*60);
 
-retval = sprintf('%02i:%02i:%02i',hours,minutes,seconds);
+retval = sprintf('%02i hrs %02i min %02i sec',hours,minutes,seconds);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   reprintMessage   %%
 %%%%%%%%%%%%%%%%%%%%%%%%
-function newmesg = reprintMessage(mesg);
+function newmesg = reprintMessage(mesg)
 
 global gDisppercent;
 
@@ -173,12 +175,12 @@ newmesg = '';
 
 if ~strcmp(mesg,gDisppercent.mesg)
   % first clear old message
-  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s              ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),repmat(sprintf(' '),1,length(gDisppercent.mesg)+1)));
+  mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s                             ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),repmat(sprintf(' '),1,length(gDisppercent.mesg)+1)));
   % print <or return> new message
   if nargout == 1
     newmesg = sprintf('%s%s ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg);
   else
-    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s               ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg));
+    mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%s                              ',repmat(sprintf('\b'),1,length(gDisppercent.mesg)+1),mesg));
   end
   gDisppercent.mesg = mesg;
 end

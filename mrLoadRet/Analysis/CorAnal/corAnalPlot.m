@@ -2,38 +2,42 @@ function corAnalPlot(view,overlayNum,scan,x,y,z,roi)
 %
 % corAnal(view,view,overlayNum,scan,x,y,z)
 %
+%        $Id$
+%
 % djh 9/2005
 
 % If corAnal is loaded, then use it. Otherwise, error.
 co = viewGet(view,'co');
 amp = viewGet(view,'amp');
 ph = viewGet(view,'ph');
-if isempty(co) | isempty(amp) | isempty(ph)
-    mrErrorDlg('corAnal must be loaded.');
+if isempty(co) || isempty(amp) || isempty(ph)
+    mrErrorDlg('(corAnalPlot) corAnal must be loaded.');
 end
-if (length(co.data) >= scan) && ~isempty(co.data{scan})
-  coval = co.data{scan}(x,y,z);
-  ampval = amp.data{scan}(x,y,z);
-  phval = ph.data{scan}(x,y,z);
-else
-  disp(sprintf('(corAnalPlot) overlays do not exist for this scan. Consider rerunning corAnal'));
-  return
-end
+
+% see if the shift key is down on MLR fig
+%shiftDown = any(strcmp(get(viewGet(view,'figureNumber'),'CurrentModifier'),'shift'));
+shiftDown = any(strcmp(get(viewGet(view,'figureNumber'),'SelectionType'),'extend'));
 
 % Analysis parameters
 ncycles = viewGet(view,'ncycles',scan);
 detrend = viewGet(view,'detrend',scan);
 spatialnorm = viewGet(view,'spatialnorm',scan);
-junkframes = viewGet(view,'junkFrames',scan);
-nframes = viewGet(view,'nFrames',scan);
+junkframes = viewGet(view,'junkframes',scan);
+nframes = viewGet(view,'nframes',scan);
 framePeriod = viewGet(view,'framePeriod',scan);
-highpassPeriod = round(nframes/ncycles);
+trigonometricFunction = viewGet(view,'trigonometricFunction',scan);
 
 if ncycles == 0
     mrWarnDlg(sprintf('(corAnalPlot) Number of cycles per scan for the corAnal should not be: %i',ncycles));
     return
 end
 
+% don't do roi if shift key is down
+if shiftDown
+  roi = [];
+elseif length(roi) > 0
+  oneTimeWarning('eventRelatedPlotShiftKey',sprintf('(corAnalPlot) To avoid showing ROI plots, hold shift down when clicking'),1);
+end
 
 % now if we have an roi then load its time series
 % and get the mean and plot that instead of the
@@ -59,14 +63,9 @@ end
 
 tseries = tseries(junkframes+1:junkframes+nframes);
 
-% Remove dc, convert to percent, detrend, and spatial normalization
-ptseries = percentTSeries(tseries,...
-    'detrend', detrend,...
-    'highpassPeriod', highpassPeriod,...
-    'spatialNormalization', spatialnorm,...
-    'subtractMean', 'Yes',...
-    'temporalNormalization', 'No');
-
+%recalculate CorAnal (not necessary for single voxels, but greatly simplifies the code)
+ [coval, ampval, phval, ptseries] = computeCoranal(tseries,ncycles,detrend,spatialnorm,trigonometricFunction);
+ 
 % calculate mean cycle
 if rem(nframes,ncycles)
   disp(sprintf('(corAnalPlot) Scan has %i frames, not evenly divisible by %i cycles',nframes,ncycles));
@@ -83,24 +82,13 @@ noiseFreq = round(2*length(absft)/3):length(absft);
 noiseAmp = mean(absft(noiseFreq));
 snr = signalAmp/noiseAmp;
 
-% if this is the roi we will need to recompute the corAnal
-if roiPlot
-    % code for this studiously copied from corAnal.m
-    ft = ft(1:1+fix(size(ft, 1)/2), :);
-    ampFT = 2*abs(ft)/nframes;
-    sumAmp = sqrt(sum(ampFT.^2));
-    if sumAmp ~= 0
-        coval = ampFT(ncycles+1) ./ sumAmp;
-    else
-        coval = nan;
-    end
-    ampval = ampFT(ncycles+1);
-    phval = -(pi/2) - angle(ft(ncycles+1,:));
-    phval(phval<0) = phval(phval<0)+pi*2;
-end
-
 % Create model fit
-model = ampval * sin(2*pi*ncycles/nframes * [0:nframes-1]' - phval);
+switch (trigonometricFunction)
+  case 'Cosine'
+    model = ampval * cos(2*pi*ncycles/nframes * [0:nframes-1]' - phval);
+  case 'Sine'
+    model = ampval * sin(2*pi*ncycles/nframes * [0:nframes-1]' - phval);
+end
 
 % Change xlabel to be in seconds
 % Change ylabel contingent upon detrend to include units
@@ -110,7 +98,7 @@ selectGraphWin;
 
 % Plot it
 subplot(2,3,1:3)
-time = linspace(framePeriod,nframes*framePeriod,nframes)';
+time = linspace(framePeriod/2,(nframes-.5)*framePeriod,nframes)';
 if roiPlot
     errorbar(time,ptseries,ptseriesSte,'k.-','LineWidth',1);hold on
 else
@@ -121,8 +109,9 @@ plot(time,model,'r-','LineWidth',1.5);
 % Ticks and labels
 fontSize = 14;
 set(gca,'FontSize',fontSize);
-headerStr = sprintf('%s co=%f amp=%f ph=%f (%i deg)\n%s',headerStr,coval,ampval,phval,round(180*phval/pi),viewGet(view,'description',viewGet(view,'curScan')));
-title(headerStr);
+headerStr = sprintf('%s co=%f amp=%f ph(%s)=%f (%i deg)\n%s',...
+  headerStr,coval,ampval,trigonometricFunction,phval,round(180*phval/pi),viewGet(view,'description',viewGet(view,'curScan')));
+title(headerStr,'Interpreter','none');
 xtickStep = nframes*framePeriod/ncycles;
 xtick = ceil([0:xtickStep:nframes*framePeriod]);
 xtick = sort(unique(xtick));
@@ -140,7 +129,7 @@ end
 
 % Plot single cylce
 subplot(2,3,4)
-time = linspace(framePeriod,(nframes/ncycles)*framePeriod,(nframes/ncycles))';
+time = linspace(framePeriod/2,(nframes/ncycles-.5)*framePeriod,nframes/ncycles)';
 errorbar(time,singleCycle,singleCycleSte,'k.-','LineWidth',1);hold on
 plot(time,model(1:length(time)),'r-','LineWidth',1.5);
 
@@ -153,8 +142,6 @@ switch spatialnorm
     otherwise
         ylabel('fMRI response(arbitrary units)');
 end
-axis tight
-xaxis(0,max(time));
 
 % plot fourier amplitude
 subplot(2,3,5:6)

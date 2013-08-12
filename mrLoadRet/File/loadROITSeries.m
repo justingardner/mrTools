@@ -1,4 +1,4 @@
-function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin);
+function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin)
 % loadROITSeries.m
 %
 %      usage: rois = loadROITSeries(view,<roiname>,<scanList>,<groupNum>,<varargin>)
@@ -103,15 +103,15 @@ end
 % load the rois in turn
 for roinum = 1:length(roiname)
     % if the name is a string which is an already loaded roi
-    if isstr(roiname{roinum}) & ~isempty(viewGet(view,'roinum',getLastDir(roiname{roinum})))
+    if ischar(roiname{roinum}) & ~isempty(viewGet(view,'roinum',getLastDir(roiname{roinum})))
         roiname{roinum} = viewGet(view,'roinum',roiname{roinum});
     end
     % see if we have to paste roi directory on
-    if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
+    if ischar(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
         roiname{roinum} = fullfile(roidir,stripext(roiname{roinum}));
     end
     % check for file
-    if isstr(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
+    if ischar(roiname{roinum}) && ~isfile(sprintf('%s.mat',stripext(roiname{roinum})))
         disp(sprintf('(loadROITSeries) Could not find roi %s',roiname{roinum}));
         dir(fullfile(roidir,'*.mat'))
     elseif isnumeric(roiname{roinum}) && ((roiname{roinum} < 1) || (roiname{roinum} > viewGet(view,'numberOfROIs')))
@@ -120,7 +120,7 @@ for roinum = 1:length(roiname)
         % load the roi, if the name is actually a struct
         % then assume it is an roi struct. if it is a number choose
         % from a loaded roi
-        if isstr(roiname{roinum})
+        if ischar(roiname{roinum})
             roi = load(roiname{roinum});
         elseif isnumeric(roiname{roinum})
             thisroi = viewGet(view,'roi',roiname{roinum});

@@ -15,12 +15,13 @@ if ~any(nargin == [1])
   return
 end
 
-if (length(filename) > 1) && (filename(1) == '~')
+if (length(filename) >= 1) && (filename(1) == '~')
   % get tilde dir
-  thispwd = pwd;
-  cd ~
-  tildeDir = pwd;
-  cd(thispwd);
+  if ispc
+    tildeDir = [getenv('HOMEDRIVE') getenv('HOMEPATH')];
+  else
+    tildeDir = getenv('HOME');
+  end
 
   % apend tildeDir
   filename = fullfile(tildeDir,filename(2:end));

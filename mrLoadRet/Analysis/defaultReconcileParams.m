@@ -1,5 +1,6 @@
 % defaultReconcileParams.m
 %
+%        $Id$
 %      usage: defaultReconcileParams(groupName,params,data)
 %         by: justin gardner
 %       date: 03/13/07
@@ -69,7 +70,9 @@ end
 % mrDefaultParamsGUI and we can check the parameters 
 % for consistency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-params = checkParams(params);
+if strcmpi(mrGetPref('checkParamsConsistency'),'Yes') %JB: this is annoyingly slow, too complicated to fix and probably unnecessary, so I added an option to slip
+  params = checkParams(params);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % look for a description, and see if it has something like [x...x], that should be replaced by the scan numbers selected in scanList and groupName 
@@ -86,6 +89,9 @@ if isfield(params,'scanList')
   scanListName = 'scanList';
 elseif isfield(params,'scanNum')
   scanListName = 'scanNum';
+elseif isfield(params,'tseriesFile')
+  scanListName = 'scanList';
+  params.scanList = 1:length(params.tseriesFile);
 else
   scanListName = '';
 end
@@ -98,7 +104,7 @@ if isfield(params,'scanParams')
   scanFields{end+1} = 'scanParams';
 end
 
-if ~isempty(scanListName)
+if ~isempty(scanListName) && ~isempty(params.(scanListName))
   % if we don't have a tseriesFile field then generate it
   % this will usually happen the first time this function
   % is called on some params
@@ -158,7 +164,7 @@ if ~isempty(scanListName)
     params.tseriesFile = newTSeriesFile;
     % if there are no valid scan numbers then warn and return empty data
     if isempty(newScanNums)
-      disp(sprintf('(defaultReconcileParams) All the previous scans that had been analyzed in this analysis no longer exists.'));
+      disp(sprintf('(defaultReconcileParams) All the previous scans that had been analyzed in this analysis no longer exist.'));
       data = {};
     % and reset the data
     else
@@ -204,10 +210,10 @@ if isfield(params,'paramInfo')
 	% also check if there is a minmax
 	if isfield(varinfo{i},'minmax')
 	  if params.(varinfo{i}.name) < varinfo{i}.minmax(1)
-	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo.minmax(1)));
+	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to min=%f',varinfo{i}.name,varinfo{i}.minmax(1)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(1);
 	  elseif params.(varinfo{i}.name) > varinfo{i}.minmax(2)
-	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo.minmax(2)));
+	    disp(sprintf('(defaultReconcileParams) %s out of range. Setting to max=%f',varinfo{i}.name,varinfo{i}.minmax(2)));
 	    params.(varinfo{i}.name) = varinfo{i}.minmax(2);
 	  end
 	end

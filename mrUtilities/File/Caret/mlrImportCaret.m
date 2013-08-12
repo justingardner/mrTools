@@ -1,6 +1,6 @@
 % importCaret.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: mlrImportCaret()
 %         by: justin gardner
 %       date: 12/03/09
@@ -201,8 +201,8 @@ if isempty(rightAtlasTopo)
 end
 
 % ask user to select topo files
-paramsInfo{1} = {'leftTopo',dir2cell(leftAtlasTopo),'Choose the topo file for the left hemisphere'};
-paramsInfo{2} = {'rightTopo',dir2cell(rightAtlasTopo),'Choose the topo file for the left hemisphere'};
+paramsInfo{1} = {'leftTopo',dir2cell(leftAtlasTopo),'type=popupmenu','Choose the topo file for the left hemisphere'};
+paramsInfo{2} = {'rightTopo',dir2cell(rightAtlasTopo),'type=popupmenu','Choose the topo file for the left hemisphere'};
 params = mrParamsDialog(paramsInfo,'Select atlas topo files');
 if isempty(params),return,end
 

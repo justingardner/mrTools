@@ -1,6 +1,6 @@
-function tseries = loadTSeries(view,scan,slice,frame,x,y,precision)
+function tseries = loadTSeries(view,scan,slice,frame,x,y,precision, groupNum)
 %
-% tSeries = loadTSeries(view,[scan],[slice],[frame],[x],[y],[precision])
+% tSeries = loadTSeries(view,[scan],[slice],[frame],[x],[y],[precision], [groupNum])
 %
 % Loads the tSeries corresponding to the specified scan and slice. The
 % tseries files must be in <homedir>/<view>/<group>/TSeries, and must be
@@ -29,6 +29,7 @@ function tseries = loadTSeries(view,scan,slice,frame,x,y,precision)
 % jlg 3/2007 Streamlined code, also selection of a set of
 %            slices/frames by adding argument slice=[min max], or
 %            frame=[min max]. No longer reshapes tseries for single slice
+% JB 07/2011 Added groupNum option
 
 if ieNotDefined('scan')
   scan = viewGet(view,'curScan');
@@ -45,10 +46,11 @@ end
 if ieNotDefined('y')
   y = [];
 end
-if ieNotDefined('precision'), precision = 'double';end
+if ieNotDefined('precision'), precision = mrGetPref('defaultPrecision');end
+if ieNotDefined('groupNum'), groupNum = viewGet(view,'curGroup');end
 
 % Get the pathStr to the tseries file
-pathStr = viewGet(view,'tseriesPathStr',scan);
+pathStr = viewGet(view,'tseriesPathStr',scan,groupNum);
 % Error if file not found
 if ~exist(pathStr,'file')
   mrErrorDlg(['File ',pathStr,' not found']);
@@ -57,13 +59,13 @@ end
 % change slices to an array
 if strcmp(slice,'all'),slice = [];,end
 % and validate it
-if ~isempty(slice) & ((1 > min(slice)) | (max(slice) > viewGet(view,'nslices',scan)))
+if ~isempty(slice) & ((1 > min(slice)) | (max(slice) > viewGet(view,'nslices',scan,groupNum)))
   mrErrorDlg(['Invalid slice number: ',num2str(slice)]);
   keyboard
 end
 
 % validate frames
-if ~isempty(frame) & ((1 > frame) | (frame > viewGet(view,'nframes',scan)))
+if ~isempty(frame) & ((1 > frame) | (frame > viewGet(view,'nframes',scan,groupNum)))
   mrErrorDlg(['Invalid frame number: ',num2str(frame)]);
 end
 
@@ -73,7 +75,7 @@ dims = size(tseries);
 
 % check frame count
 if isempty(frame)
-  nFramesExpected = viewGet(view,'totalFrames',scan);
+  nFramesExpected = viewGet(view,'totalFrames',scan,groupNum);
 elseif length(frame) == 1
   nFramesExpected = 1;
 elseif length(frame) == 2

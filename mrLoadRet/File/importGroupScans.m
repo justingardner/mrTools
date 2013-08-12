@@ -62,8 +62,8 @@ end
 
 % get from which and to which group we are doing
 paramsInfo = {...
-    {'fromGroup',fromGroups,'The group to import from'},...
-    {'toGroup',toGroupNames,'The group to import into'},...
+    {'fromGroup',fromGroups,'type=popupmenu','The group to import from'},...
+    {'toGroup',toGroupNames,'type=popupmenu','The group to import into'},...
     {'linkFiles',1,'type=checkbox','Link rather than copy the files. This will make a soft link rather than copying the files which saves disk space.'},...
     {'hardLink',0,'type=checkbox','contingent=linkFiles','Use hard links when linking files instead of soft links.'}};
     
@@ -110,7 +110,7 @@ fromName = getLastDir(pathStr);
 fromView = viewSet(fromView,'curGroup',fromGroupNum);
 
 % choose the scans to import
-selectedScans = selectScans(fromView,'Choose scans to import');
+selectedScans = selectInList(fromView,'scans','Choose scans to import');
 if isempty(selectedScans)
   switchSession;
   deleteView(toView);
@@ -177,7 +177,11 @@ for scanNum = 1:length(fromScanParams)
       disp(sprintf('(importGroupScans) Stimfile %s already exists',toStimFileName));
     else
       %      system(sprintf('cp %s %s',fromStimFileName,toStimFileName));
-      copyfile(fromStimFileName,toStimFileName);
+      if ~isfile(fromStimFileName)
+	mrWarnDlg(sprintf('(importGroupScans) !!! Missing stimfile: %s !!!',fromStimFileName));
+      else
+	copyfile(fromStimFileName,toStimFileName);
+      end
     end
     toStimFileNames{stimFileNum} = getLastDir(toStimFileName);
   end

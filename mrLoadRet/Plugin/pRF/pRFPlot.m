@@ -15,7 +15,8 @@ if ~any(nargin == [7])
 end
 
 % see if the shift key is down
-shiftDown = any(strcmp(get(gcf,'CurrentModifier'),'shift'));
+%shiftDown = any(strcmp(get(viewGet(v,'figureNumber'),'CurrentModifier'),'shift'));
+shiftDown = any(strcmp(get(viewGet(v,'figureNumber'),'SelectionType'),'extend'));
 
 % check if pRF has been run
 a = viewGet(v,'Analysis');
@@ -131,7 +132,7 @@ hline(0,'w:');vline(0,'w:');
 subplot(5,5,5);cla
 plot(m.canonical.time,m.canonical.hrf,'k-');
 title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
-myaxis;
+
 % display the stimulus images
 plotStim(gpRFPlot.t);
 
@@ -341,3 +342,23 @@ function h = plotCircle(xCenter,yCenter,radius,c)
 
 a = 0:0.01:2*pi;
 h = plot(xCenter+radius*cos(a),yCenter+radius*sin(a),'k-','Color',c);
+
+
+%%%%%%%%%%%%%
+%%   r2d   %%
+%%%%%%%%%%%%%
+function degrees = r2d(angle)
+
+degrees = (angle/(2*pi))*360;
+
+% if larger than 360 degrees then subtract
+% 360 degrees
+while (sum(degrees>360))
+  degrees = degrees - (degrees>360)*360;
+end
+
+% if less than 360 degreees then add 
+% 360 degrees
+while (sum(degrees<-360))
+  degrees = degrees + (degrees<-360)*360;
+end

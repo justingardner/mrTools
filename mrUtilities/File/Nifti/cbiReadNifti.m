@@ -1,5 +1,5 @@
-function [data,hdr]=cbiReadNifti(fname,subset,prec,short_nan)
-% [data,hdr]=cbiReadNifti(fname,subset,prec,short_nan)
+function [data,hdr]=cbiReadNifti(fname,subset,prec,short_nan,verbose)
+% [data,hdr]=cbiReadNifti(fname,subset,prec,short_nan,verbose)
 % 
 % Loads all or part of a Nifti-1 file.
 %  Default is to load entire file as a double precision array
@@ -34,18 +34,22 @@ function [data,hdr]=cbiReadNifti(fname,subset,prec,short_nan)
 %             treats -32786 as a real value. Default is 1. 
 % 
 % JL 20050223
+% $Id$
 
 
   
   
-if (~exist('subset'))
+if ieNotDefined('subset')
   subset={[],[],[],[]};
 end
-if (~exist('prec'))
-  prec='double';
+if ieNotDefined('prec')
+  prec=mrGetPref('defaultPrecision');
 end
-if (~exist('short_nan'))
+if ieNotDefined('short_nan')
   short_nan=1;
+end
+if ieNotDefined('verbose')
+  verbose=1;
 end
 
 % first check for valid filename
@@ -72,7 +76,7 @@ if (hdr.dim(2) ==1) && (hdr.dim(3) == maxWidth)
   dataDir = dir(sprintf('%s.img',stripext(fname)));
   dataBytes = dataDir(1).bytes/(hdr.bitpix/8);
   if dataBytes ~= hdr.dim(3)
-    disp(sprintf('(cbiReadNifti) Image dimension 2 greater than nifti max (%i), fixing and rereading %i bytes',hdr.dim(3),dataBytes))
+    if verbose, disp(sprintf('(cbiReadNifti) Image dimension 2 greater than nifti max (%i), fixing and rereading %i bytes',hdr.dim(3),dataBytes));end
     hdr.dim(3) = dataBytes;
   end
   % this part is payback for this cheap hack, I did above. Rewrite
@@ -90,7 +94,7 @@ if (hdr.dim(6)>1)
   end
   is5D=1;
   headerdim(4)=hdr.dim(6);
-  disp('5D data set detected');
+  if verbose, disp('5D data set detected');end;
 end
 
 loadSize=zeros(4,1);
@@ -116,7 +120,7 @@ if (strcmp(prec,'native'))
   if (loadSize(1:3)==headerdim(1:3))
     readformat=[hdr.matlab_datatype '=>' hdr.matlab_datatype]; % Loads data in native format
   else
-    disp('Warning: native readformat only supported for loading contiguous volumes. Forcing double precision...');
+    mrWarnDlg('(cbiReadNifti) native readformat only supported for loading contiguous volumes. Forcing double precision...');
     prec='double';
     readformat=hdr.matlab_datatype;    
   end
@@ -132,13 +136,13 @@ switch (hdr.matlab_datatype)
   error('No support for 128-bit data on this platform!');
  case 'complex64'
   if (strcmp(prec,'native'))
-    disp('Warning: native data type not supported by Matlab. Forcing conversion to double.');
+    mrWarnDlg('Warning: native data type not supported by Matlab. Forcing conversion to double.');
   end
   readformat='float32';
   prec='double';
  case 'complex128'
   if (strcmp(prec,'native'))
-    disp('Warning: native data type not supported by Matlab. Forcing conversion to double.');
+    mrWarnDlg('(cbiReadNifti) Native data type not supported by Matlab. Forcing conversion to double.');
   end
   readformat='float64';
   prec='double';
@@ -261,18 +265,19 @@ end
 fclose(fPtr);
 
 % Scaling
-if ((strcmp(prec,'double')||strcmp(prec,'single')) && hdr.scl_slope~=0)  
-  % NaN handling for int16 data
-  if (hdr.datatype==4 & short_nan) 
-    data(data==-32768)=NaN;
+if (strcmp(prec,'double')||strcmp(prec,'single'))
+  if hdr.scl_slope~=0
+    % NaN handling for int16 data
+    if (hdr.datatype==4 & short_nan) 
+      data(data==-32768)=NaN;
+    end
+    data=data.*hdr.scl_slope+hdr.scl_inter;
   end
-  % convert to signle precision down here--probably better to read
+  % convert to single precision down here--probably better to read
   % in the data as a single, but that requires changing a lot of
   % code above -jg.
-  if strcmp(prec,'double')
-    data=data.*hdr.scl_slope+hdr.scl_inter;
-  else
-    data=single(data).*hdr.scl_slope+hdr.scl_inter;
+  if strcmp(prec,'single')
+    data=single(data);
   end
 end
 
@@ -283,7 +288,7 @@ if needsRewrite
   [tf permissions] = isfile(fname);
   if tf && permissions.UserWrite
     if strcmp(questdlg(sprintf('(cbiReadNifti) %s is an old style surface curvature file. Answer yes to update the format of the surface (recommended).',getLastDir(fname)),'Yes','No'),'Yes')
-      disp(sprintf('(cbiReadNifti) Fixing 1D image dimensions by rewriting %s',fname));
+      if verbose, disp(sprintf('(cbiReadNifti) Fixing 1D image dimensions by rewriting %s',fname));end;
       cbiWriteNifti(fname,data,hdr); 
     end
   else
@@ -302,7 +307,7 @@ if (hdr.dim(3) == maxWidth)
     hdr.descrip = hdr.descrip(realWidthEnd+1:end);
     hdr.descrip(end+1:80) = 0;
     % tell user what we are doing
-    disp(sprintf('(cbiReadNifti) Fixing dimensions of image that was written as %ix%i but actually is 1x%i',hdr.dim(2),hdr.dim(3),realWidth));
+    if verbose, disp(sprintf('(cbiReadNifti) Fixing dimensions of image that was written as %ix%i but actually is 1x%i',hdr.dim(2),hdr.dim(3),realWidth));end;
     % fix the header
     hdr.dim(2) = 1;
     hdr.dim(3) = realWidth;

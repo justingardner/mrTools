@@ -111,7 +111,7 @@ leftoverMag = tSeries*sourceMeanVector';
 
 % now check for erAnal
 analysisTypes = viewGet(view,'analysisTypes');
-erAnalNums = find(strcmp('erAnal',analysisTypes));
+erAnalNums = find(strcmp('erAnal',analysisTypes)||strcmp('deconvAnal',analysisTypes));
 if isempty(erAnalNums) || (length(dnums)==1)
   nrows = 2;
   ncols = 3;

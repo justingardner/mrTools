@@ -30,14 +30,18 @@ end
 % Get slice times and replicate the last frame of tseries for slice time
 % correction
 if sliceTimeCorrection
-  correctedTseries(:,:,:,end+1) = correctedTseries(:,:,:,end);
+%  correctedTseries(:,:,:,end+1) = correctedTseries(:,:,:,end); %JB I commented this because the last frame should be replicated only after preprocessing (if it is at all replicated, see end of function) 
   switch params.sliceTimeString
     case 'end of TR'
-      sliceTimes = sliceTimes;
-    case 'middle of TR'
-      sliceTimes = sliceTimes - 0.5;
-    case 'beginning of TR'
-      sliceTimes = sliceTimes - 1;
+      sliceTimes = sliceTimes - 1;  %JB: by removing 1TR to all the acquisition times, 
+                                    %the last acquired frame becomes the one with the time closest to 0, hence the reference frame
+                                    %(and the first-acquired slices will have to be interpolated closer to their respective next frame)
+    case 'middle of TR'             
+      sliceTimes = sliceTimes - 0.5; %JB: same with .5 TR
+    case 'beginning of TR'         
+      %JB: the first acquired frame is the reference time
+      % so the slice acquisition times do not change (0 for the first acquired frame and close to 1 for the last-acquired frame,
+      % which will have to be interpolated closer to the previous frame)
     otherwise
       mrErrorDlg('Invalid slice times');
   end
@@ -76,13 +80,12 @@ end
 
 % temporal smoothing
 if tSmooth
-  % make the temporal window symetrical going forward and backard
-  tSmoothWindow = 2*fix(tSmooth/2) + 1;  
+  % make a boxcar filter with tSmooth volumes on either side of each frame
   tmpTseries = correctedTseries;
   for frame = 1:totalFrames
-    frameMin = frame - fix(tSmoothWindow/2);
+    frameMin = frame - tSmooth;
     if frameMin < 1, frameMin = 1; end
-    frameMax = frame + fix(tSmoothWindow/2);
+    frameMax = frame + tSmooth;
     if frameMax > totalFrames, frameMax = totalFrames; end
     correctedTseries(:,:,:,frame) = nanmean(tmpTseries(:,:,:,frameMin:frameMax), 4);
   end
@@ -94,9 +97,18 @@ end
 switch baseFrame
   case 'first'
     baseF = junkFrames+1;
+    if sliceTimeCorrection && ~strcmp(params.sliceTimeString,'end of TR')
+      baseF = max(2,baseF); % if slice-time correction, the  reference cannot be the first frame 
+      %because that means the reference would be interpolated outside the time-series (unless everything is interpolated to the end of the TR)
+    end
     baseVol = correctedTseries(:,:,:,baseF);
   case 'last'
-    baseF = size(correctedTseries,4);
+    if sliceTimeCorrection && ~strcmp(params.sliceTimeString,'beginning of TR')
+      baseF = size(correctedTseries,4)-1; % if slice-time correction, the  reference cannot be the last frame 
+      %because that means the reference would be interpolated outside the time-series (unless everything is interpolated to the beginning of the TR)
+    else
+      baseF = size(correctedTseries,4);
+    end
     baseVol = correctedTseries(:,:,:,baseF);
   case 'mean'
     baseF = 0;
@@ -122,6 +134,11 @@ if ~isempty(mask) && any(mask(:)~=1)
   end
 end
 
+%no need to replicate last slice as this is now done in warpaffineInterp3
+% % %JB: replicate last slice only after all preprocessing
+% % if sliceTimeCorrection
+% %   correctedTseries(:,:,:,end+1) = correctedTseries(:,:,:,end);
+% % end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

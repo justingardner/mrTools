@@ -51,6 +51,8 @@ averageAcrossScans = 0;
 % them into one big matrix
 maxy = 0;
 selectGraphWin;
+set(gcf,'name',['Mean Fourier amplitude, group ' viewGet(view,'groupName')]);
+
 for iROI = 1:nROIs
   ffts = [];
   roiName = viewGet(view,'roiName',roiList(iROI));

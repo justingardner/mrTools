@@ -224,7 +224,8 @@ switch lower(param)
       groupNum = viewGet(view,'currentGroup');
     end
     if isempty(analysisNum)
-      analysisNum = viewGet(view,'currentAnalysis');
+       mrWarnDlg('(viewGet) No analysis is loaded');
+       return;
     end
     analysis = view.analyses{analysisNum};
     if ~isempty(groupNum) & ~isempty(analysis)
@@ -240,7 +241,6 @@ switch lower(param)
   case {'overlaydir'}
     % overlaydir = viewGet(view,'overlaydir',[groupNum],[analysisNum])
     val = viewGet(view,'analysisdir',varargin{:});
-    
     % group
   case{'numberofgroups','numgroups','ngroups'}
     % n = viewGet(view,'numberofGroups')
@@ -1531,24 +1531,29 @@ switch lower(param)
       end
     end
   case {'basecoordmap'}
-    % basedata = viewGet(view,'baseCoordMap',[baseNum],[corticalDepth])
+    % basedata = viewGet(view,'baseCoordMap',[baseNum],[corticalDepths])
     b = getBaseNum(view,varargin);
-    % get cortical depth
-    if ieNotDefined('varargin') || (length(varargin)<2)
-      corticalDepth = viewGet(view,'corticalDepth');
-    else
-      corticalDepth = varargin{2};
-    end
     n = viewGet(view,'numberofbasevolumes');
+    % get number of cortical depth bins
+    if ieNotDefined('varargin') || (length(varargin)<2)
+      corticalDepths = 0:1/(viewGet(view,'corticalDepthBins')-1):1;
+    else
+      corticalDepths = varargin{2};
+    end
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).coordMap;
-      % see if the coordMap is calculated for the correct cortical depth
-      if ~isempty(val) && (~isfield(val,'corticalDepth') || (val.corticalDepth ~= corticalDepth))
+      % see if the coordMap is calculated for the correct number of cortical depth bins
+      if ~isempty(val) && (~isfield(val,'corticalDepths') || ~isequal(val.corticalDepths,corticalDepths))
         if isfield(val,'innerCoords') && isfield(val,'outerCoords')
           % if not, then we have to do it
           %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
-          val.coords = val.innerCoords + corticalDepth*(val.outerCoords-val.innerCoords);
-          val.corticalDepth = corticalDepth;
+          val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
+          cDepth=0;
+          for iDepth = corticalDepths;
+            cDepth=cDepth+1;
+            val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
+          end
+          val.corticalDepths = corticalDepths;
         end
       end
     end
@@ -1567,7 +1572,7 @@ switch lower(param)
       coordMap = view.baseVolumes(b).coordMap;
       if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
         % find intermideate values
-        vtcs = coordMap.innerVtcs + corticalDepth*(coordMap.outerVtcs-coordMap.innerVtcs);
+        vtcs = coordMap.innerVtcs + mean(corticalDepth)*(coordMap.outerVtcs-coordMap.innerVtcs);
         val.tris = coordMap.tris;
       elseif isfield(coordMap,'innerVtcs')
         % if only inner is present then just return that
@@ -1620,6 +1625,13 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).curSlice;
+    end
+  case {'basecorticaldepth'}
+    % baseslice = viewGet(view,'baseCorticalDepth',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).curCorticalDepth;
     end
   case {'basesliceorientation'}
     % basesliceOrientation = viewGet(view,'baseSliceOrientation',[baseNum])
@@ -2044,6 +2056,27 @@ switch lower(param)
     end
     
     % ROI
+  case {'visiblerois'}
+    % roiList = viewGet(view,'visiblerois')
+    % returns the number of all visible ROIs
+    selectedROI = viewGet(view,'currentroi');
+    n = viewGet(view,'numberOfROIs');
+    option = viewGet(view,'showROIs');
+    switch option
+      case{'all','all perimeter'}
+        if selectedROI
+          val = [1:selectedROI-1,selectedROI+1:n,selectedROI];
+        else
+          val = 1:n;
+        end
+      case{'selected','selected perimeter'}
+        val = selectedROI;
+      case{'group','group perimeter'}
+        val = viewGet(view,'roiGroup');
+      otherwise
+        val = [];
+    end
+    
   case {'showrois'}
     % show = viewGet(view,'showROIs')
     val = view.showROIs;
@@ -2442,11 +2475,11 @@ switch lower(param)
     sliceIndex = viewGet(view,'baseSliceIndex');
     % only use the corticalDepth if this is a flat
     if viewGet(view,'baseType')
-      corticalDepth = viewGet(view,'corticalDepth');
+      corticalDepthBins = viewGet(view,'corticalDepthBins');
     else
-      corticalDepth = 0;
+      corticalDepthBins = 0;
     end
-    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepth);
+    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepthBins);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
@@ -2480,6 +2513,8 @@ switch lower(param)
         rotate = viewGet(view,'rotate');
         alpha = viewGet(view,'alpha');
         sliceIndex = viewGet(view,'baseSliceIndex');
+        clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
+        multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
         % need to recalculate overlay if this is aflat
         % and the cortical depth has changed
         if viewGet(view,'baseType')
@@ -2488,7 +2523,7 @@ switch lower(param)
           corticalDepth = 0;
         end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%i_%s_%s_%i_%i_%0.2f',scanNum,baseName,curSlice,sliceIndex,analysisNum,curOverlay,num2str(clip),num2str(overlayRange),rotate,alpha,corticalDepth);
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection);
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
@@ -2589,12 +2624,23 @@ switch lower(param)
       end
     end
   case {'analysisnames'}
-    % analysisNames = viewGet(view,'analysisNames')
-    if ~isempty(view.analyses)
-      numAnalyses = viewGet(view,'numberofAnalyses');
+    % analysisNames = viewGet(view,'analysisNames',[groupnum])
+    if ieNotDefined('varargin')
+      analyses = view.analyses;
+      groupnum = viewGet(view,'currentGroup');
+    elseif length(varargin)==1
+      groupnum = varargin{1};
+      if groupnum == viewGet(view,'currentGroup')
+        analyses = view.analyses;
+      else
+        analyses = viewGet(view,'loadedanalyses',varargin{1});
+      end
+    end
+    if ~isempty(analyses)
+      numAnalyses = viewGet(view,'numberofAnalyses',groupnum);
       names = cell(1,numAnalyses);
       for a = 1:numAnalyses
-        names{a} = view.analyses{a}.name;
+        names{a} = analyses{a}.name;
       end
       val = names;
     end
@@ -2838,10 +2884,56 @@ switch lower(param)
     if ~isempty(analysis)
       val = analysis.curOverlay;
     end
+    
+  case {'curclippingoverlay','currentclippingoverlay'}
+    % curclippingoverlay = viewGet(view,'curclippingoverlay')
+    if ~isempty(viewGet(view,'fignum'))
+      handles = guidata(view.figure);
+    else
+      handles=[];
+    end
+    if isempty(handles) || ~isfield(handles,'clippingOverlaysListbox') 
+      val=viewGet(view,'currentOverlay');
+    else
+      clippingOverlays = get(handles.clippingOverlaysListbox,'string');
+      clippingOverlayNum = get(handles.clippingOverlaysListbox,'value');
+      if isempty(clippingOverlayNum) %this can happen on a Mac
+        clippingOverlayNum = 1;
+        set(handles.clippingOverlaysListbox,'value',1);
+      end
+      clippingOverlay = clippingOverlays{clippingOverlayNum};
+      val = viewGet(view,'overlayNum',clippingOverlay(3:end)); %ignore the first 2 characters which are used to put a star before the name (see mlrGuiSet, case 'clippingOverlays'))
+    end
+    
+  case {'clippingoverlaylist'}
+    if ~isempty(viewGet(view,'fignum'))
+      handles = guidata(view.figure);
+    else
+      handles=[];
+    end
+    if ~isempty(handles) && isfield(handles,'clipAcrossOverlays') && get(handles.clipAcrossOverlays,'value')
+      clippingOverlayList = 1:viewGet(view,'nOverlays');
+    else
+      %set overlay and alpha overlay names in clipping box 
+      curOverlays = viewGet(view,'curOverlay');
+      analysisNum = viewGet(view,'currentAnalysis');
+      clippingOverlayList = curOverlays;
+      for iOverlay=1:length(curOverlays)
+        alphaOverlayNum = viewGet(view,'overlayNum',viewGet(view,'alphaOverlay',curOverlays(iOverlay),analysisNum),analysisNum);
+        if ~isempty(alphaOverlayNum)
+          clippingOverlayList(end+1)=alphaOverlayNum;
+        end
+      end
+    end
+    %unique without ordering
+    [dummy,uniqueIndices]=unique(clippingOverlayList,'first');
+    val=clippingOverlayList(unique(uniqueIndices));
+  
   case{'overlaynum'}
-    % n = viewGet(view,'overlayNum',overlayName,[analysisNum])
-    % n = viewGet(view,'overlayNum',overlayName,[])
-    % n = viewGet(view,'overlayNum',overlayName)
+    % n = viewGet(view,'overlayNum',overlayName(s),[analysisNum])
+    % n = viewGet(view,'overlayNum',overlayName(s),[])
+    % n = viewGet(view,'overlayNum',overlayName(s))
+    %     overlayName(s) may be a string or cell array of strings
     if ieNotDefined('varargin')
       mrErrorDlg('viewGet overlayNum: must specify overlayName.');
     end
@@ -2856,13 +2948,13 @@ switch lower(param)
     end
     analysis = viewGet(view,'analysis',analysisNum);
     % handle if passed in a number
-    if isscalar(overlayName)
-      if (overlayName > 0) && (overlayName <= viewGet(view,'numOverlays'))
-	val = overlayName;
+    if isnumeric(overlayName)
+      if any((overlayName > 0) & (overlayName <= viewGet(view,'numOverlays')))
+	val = overlayName(logical(overlayName));
       end
     elseif ~isempty(analysis) & ~isempty(analysis.overlays)
       overlayNames = {analysis.overlays(:).name};
-      val = find(strcmp(overlayName,overlayNames));
+      val = find(ismember(overlayNames,overlayName));
     end
   case {'overlay'}
     % overlay = viewGet(view,'overlay',[overlayNum],[analysisNum])
@@ -3033,16 +3125,115 @@ switch lower(param)
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
-      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        if isempty(scan)
-          val = analysis.overlays(overlayNum).data;
+      if all(overlayNum & (overlayNum > 0) & (overlayNum <= n))
+        if isempty(scan) %if we want the whole data structure
+          scanList = 1:length(analysis.overlays(overlayNum(end)).data); %we assume that the number of scans is identical for all overlays
         else
-          if length(analysis.overlays(overlayNum).data) >= scan
-            val = analysis.overlays(overlayNum).data{scan};
+          scanList = scan;
+        end
+        cScan = 0;
+        for iScan = scanList
+          cScan = cScan+1;
+          scanDims = viewGet(view,'scanDims',iScan);
+          cOverlay=0;
+          for iOverlay = overlayNum
+            cOverlay = cOverlay+1;
+            data = analysis.overlays(iOverlay).data;
+            if length(data) >= iScan && ~isempty(data{iScan})
+              val{cScan}(:,:,:,cOverlay) = data{iScan};
+            else
+	      %  No overlay found, filling with nans. check for empty scan dims
+	      % if no scandims return empty data.
+	      if isempty(scanDims)
+		val{cScan} = [];
+	      else
+		val{cScan}(:,:,:,cOverlay) = NaN(scanDims);
+	      end
+            end
           end
+        end
+        if ~isempty(scan)
+          val = val{1};
         end
       end
     end
+    
+  case  {'maxoverlaydata'}
+    % maxoverlaydata = viewGet(view,'maxoverlaydata',[overlayNum],[analysisNum],[scanlist])
+    switch (length(varargin))
+      case 0
+        analysisNum = viewGet(view,'currentAnalysis');
+        overlayNum = viewGet(view,'currentOverlay');
+      case 1
+        overlayNum = varargin{1};
+        analysisNum = viewGet(view,'currentAnalysis');
+      case {2,3}
+        overlayNum = varargin{1};
+        analysisNum = varargin{2};
+    end
+    overlay = viewGet(view,'overlay',overlayNum,analysisNum);
+% %     if isfield(overlay,'maxOverlayData')     % This was meant to avoid having to recompute minoverlaydata that has been compute before
+% %       val = overlay.maxoverlaydata;          % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
+% %     else
+    if ~isempty(overlay)
+      switch (length(varargin))
+        case {0 1 2}
+          scanlist = 1:length(overlay.data);
+        case 3
+          scanlist = varargin{3};
+          scanlist = scanlist(scanlist<=length(overlay.data));
+      end
+      val = -inf;
+      for iOverlay = scanlist
+         if ~isempty(overlay.data{iOverlay})
+            val = max(val,max(overlay.data{iOverlay}(:)));
+         end
+      end
+      if val==-inf
+         val = [];
+      end
+    end
+% %       viewSet(view,'maxoverlaydata',val,overlayNum);
+% %     end
+    
+  case  {'minoverlaydata'}
+    % minoverlaydata = viewGet(view,'minoverlaydata',[overlayNum],[analysisNum],[scanlist])
+    switch (length(varargin))
+      case 0
+        analysisNum = viewGet(view,'currentAnalysis');
+        overlayNum = viewGet(view,'currentOverlay');
+      case 1
+        overlayNum = varargin{1};
+        analysisNum = viewGet(view,'currentAnalysis');
+      case {2,3}
+        overlayNum = varargin{1};
+        analysisNum = varargin{2};
+    end
+    overlay = viewGet(view,'overlay',overlayNum,analysisNum);
+% %     if isfield(overlay,'minoverlaydata')    % This was meant to avoid having to recompute minoverlaydata that has been compute before
+% %       val = overlay.minoverlaydata;         % but turns out to be too much of a headache, plus what if an overlay is added to a scan and the value changes ?
+% %     else
+    if ~isempty(overlay)
+      switch (length(varargin))
+        case {0 1 2}
+          scanlist = 1:length(overlay.data);
+        case 3
+          scanlist = varargin{3};
+          scanlist = scanlist(scanlist<=length(overlay.data));
+      end
+      val = inf;
+      for iOverlay = scanlist
+         if ~isempty(overlay.data{iOverlay})
+            val = min(val,min(overlay.data{iOverlay}(:)));
+         end
+      end
+      if val==inf
+         val = [];
+      end
+    end
+% %       viewSet(view,'minoverlaydata',val,overlayNum);
+% %     end
+    
   case {'overlaydims'}
     % overlaydims = viewGet(view,'overlaydims',scanNum,[overlayNum],[analysisNum])
     % overlaydims = viewGet(view,'overlaydims',scanNum,overlayNum,[])
@@ -3111,14 +3302,21 @@ switch lower(param)
       end
     end
   case {'alphaoverlay'}
-    % overlayclip = viewGet(view,'alphaOverlay')
+    % alphaoverlay = viewGet(view,'alphaOverlay',[overlaynumn])
     analysisNum = viewGet(view,'currentAnalysis');
-    overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    if isempty(varargin) || isempty(varargin{1})
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    else
+      overlayNum = varargin{1};
+    end
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = analysis.overlays(overlayNum).alphaOverlay;
+        val = {analysis.overlays(overlayNum).alphaOverlay};
+      end
+      if length(val)==1
+        val = val{1};
       end
     end
   case {'alphaoverlayexponent'}
@@ -3233,38 +3431,7 @@ switch lower(param)
         val = analysis.overlays(overlayNum).range;
       end
     end
-  case {'overlayclip'}
-    % overlayrange = viewGet(view,'overlayClip',[overlayNum],[analysisNum])
-    % overlayrange = viewGet(view,'overlayClip',overlayNum,[])
-    % overlayrange = viewGet(view,'overlayClip',[],analysisNum)
-    % overlayrange = viewGet(view,'overlayClip',[],[])
-    % overlayrange = viewGet(view,'overlayClip',overlayNum)
-    % overlayrange = viewGet(view,'overlayClip')
-    if ieNotDefined('varargin')
-      analysisNum = viewGet(view,'currentAnalysis');
-      overlayNum = viewGet(view,'currentOverlay',analysisNum);
-    end
-    switch (length(varargin))
-      case 1
-        overlayNum = varargin{1};
-        analysisNum = viewGet(view,'currentAnalysis');
-      case 2
-        overlayNum = varargin{1};
-        analysisNum = varargin{2};
-    end
-    if isempty(analysisNum)
-      analysisNum = viewGet(view,'currentAnalysis');
-    end
-    if isempty(overlayNum)
-      overlayNum = viewGet(view,'currentOverlay',analysisNum);
-    end
-    analysis = viewGet(view,'analysis',analysisNum);
-    if ~isempty(analysis) & ~isempty(analysis.overlays)
-      n = viewGet(view,'numberofOverlays',analysisNum);
-      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = analysis.overlays(overlayNum).clip;
-      end
-    end
+    
   case {'overlayalpha'}
     % overlayalpha = viewGet(view,'overlayalpha',[overlayNum],[analysisNum])
     % overlayalpha = viewGet(view,'overlayalpha',overlayNum,[])
@@ -3542,7 +3709,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.ncycles(scanNum);
+      if isfield(params,'ncycles')
+        val = params.ncycles(scanNum);
+      else
+        val = params.scanParams{scanNum}.ncycles;
+      end
     end
   case {'detrend'}
     % detrend = viewGet(view,'detrend',scanNum)
@@ -3552,7 +3723,11 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.detrend{scanNum};
+      if isfield(params,'detrend')
+        val = params.detrend{scanNum};
+      else
+        val = params.scanParams{scanNum}.detrend;
+      end
     end
   case {'spatialnorm'}
     % spatialnorm = viewGet(view,'spatialnorm',scanNum)
@@ -3562,8 +3737,29 @@ switch lower(param)
     scanNum = varargin{1};
     params = viewGet(view,'corAnalParams');
     if ~isempty(params)
-      val = params.spatialnorm{scanNum};
+      if isfield(params,'spatialnorm')
+        val = params.spatialnorm{scanNum};
+      else
+        val = params.scanParams{scanNum}.spatialnorm;
+      end
     end
+  case {'trigonometricfunction'}
+    % spatialnorm = viewGet(view,'spatialnorm',scanNum)
+    if ieNotDefined('varargin')
+      mrErrorDlg('viewGet trigonometricFunction: must specify scan.');
+    end
+    scanNum = varargin{1};
+    params = viewGet(view,'corAnalParams');
+    if ~isempty(params)
+      if isfield(params,'trigonometricFunction')
+        val = params.trigonometricFunction{scanNum};
+      elseif isfield(params,'scanParams') && isfield(params.scanParams{scanNum},'trigonometricFunction')
+        val = params.scanParams{scanNum}.trigonometricFunction;
+      else
+        val = 'Sine'; %value by default because it used to not be a parameter
+      end
+    end
+
     
     % GUI
   case {'fignum','figurenumber'}
@@ -3571,15 +3767,15 @@ switch lower(param)
     val = view.figure;
   case {'curscan','currentscan'}
     % scan = viewGet(view,'currentScan');
-    val = view.curScan;
+    val = min(view.curScan,viewGet(view,'nscans'));
     if isempty(val),val = 1;end
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');
     if isfield(view.curslice,'sliceNum')
       val = view.curslice.sliceNum;
-    else
-      % never set in structure. Default to 1
-      val = 1;
+%     else    %JB: Setting a default leads to incoherent behaviour when first base is loaded
+%       % never set in structure. Default to 1
+%       val = 1;
     end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
@@ -3591,14 +3787,19 @@ switch lower(param)
       val = [];
     end
   case {'alpha'}
-    % alpha = viewGet(view,'alpha');
-    fig = viewGet(view,'fignum');
+    % alpha = viewGet(view,'alpha',[overlaynum]);
+    if isempty(varargin) || isempty(varargin{1})
+      fig = viewGet(view,'fignum');
+      overlayNum = viewGet(view,'currentOverlay');
+    else
+      fig =[];
+      overlayNum = varargin{1};
+    end
     if ~isempty(fig)
       handles = guidata(fig);
       val = get(handles.alphaSlider,'Value');
     else
       % get alpha from analysis structure
-      overlayNum = viewGet(view,'currentOverlay');
       analysisNum = viewGet(view,'currentAnalysis');
       if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
         val = view.analyses{analysisNum}.overlays(overlayNum).alpha;
@@ -3609,38 +3810,50 @@ switch lower(param)
   case {'overlaymin'}
     % overlayMin = viewGet(view,'overlayMin');
     % overlayMin = viewGet(view,'overlayMin',<overlayName>);
-    if (length(varargin) > 0)
-      overlayNum = viewGet(view,'overlayNum',varargin{1});
+    fig = viewGet(view,'fignum'); %JB: this is a quick fix for the case in which several overlays are loaded
+    if ~isempty(fig)              %    but it doesn't solve the problem if used form a script (no figure)
+      handles = guidata(fig);          
+      val = get(handles.overlayMinSlider,'Value');
     else
-      overlayNum = viewGet(view,'currentOverlay');
-    end
-    if isempty(overlayNum)
-      disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
-    end
-    % get overlayMin from analysis structure
-    analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
-      val = view.analyses{analysisNum}.overlays(overlayNum).clip(1);
-    else
-      val = 0;
+      if (length(varargin) > 0)
+        overlayNum = viewGet(view,'overlayNum',varargin{1});
+      else
+        overlayNum = viewGet(view,'currentOverlay');
+      end
+      if isempty(overlayNum)
+        disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
+      end
+      % get overlayMin from analysis structure
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+        val = view.analyses{analysisNum}.overlays(overlayNum).clip(1);
+      else
+        val = 0;
+      end
     end
   case {'overlaymax'}
     % overlayMax = viewGet(view,'overlayMax');
     % overlayMax = viewGet(view,'overlayMax',<overlayName>);
-    if (length(varargin) > 0)
-      overlayNum = viewGet(view,'overlayNum',varargin{1});
+    fig = viewGet(view,'fignum'); %JB: this is a quick fix for the case in which several overlays are loaded
+    if ~isempty(fig)              %    but it doesn't solve the problem if used from a script (no figure)
+      handles = guidata(fig);
+      val = get(handles.overlayMaxSlider,'Value');
     else
-      overlayNum = viewGet(view,'currentOverlay');
-    end
-    if isempty(overlayNum)
-      disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
-    end
-    % get overlayMax from analysis structure
-    analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
-      val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
-    else
-      val = 1;
+      if (length(varargin) > 0)
+        overlayNum = viewGet(view,'overlayNum',varargin{1});
+      else
+        overlayNum = viewGet(view,'currentOverlay');
+      end
+      if isempty(overlayNum)
+        disp(sprintf('(viewGet:overlayMin) Unknown overlay'));
+      end
+      % get overlayMax from analysis structure
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ~isempty(analysisNum) & ~isempty(overlayNum) &  ~isempty(view.analyses{analysisNum}.overlays)
+        val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
+      else
+        val = 1;
+      end
     end
   case {'rotate'}
     % rotate = viewGet(view,'rotate');
@@ -3681,15 +3894,48 @@ switch lower(param)
     else
       val = 0;
     end
+    
+  case {'corticaldepthbins'}
+    % corticaldepthBins = viewGet(view,'corticaldepthBins');
+    val = mrGetPref('corticalDepthBins');
+    
   case {'corticaldepth'}
-    % rotate = viewGet(view,'rotate');
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = get(handles.corticalDepthSlider,'Value');
+    % corticaldepth = viewGet(view,'corticaldepth');
+    val = sort([viewGet(view,'corticalMinDepth') viewGet(view,'corticalMaxDepth')]);
+    
+  case {'corticalmindepth'}
+    % corticalmindepth = viewGet(view,'corticalmindepth');
+    if isfield(view.curslice,'corticalDepth')
+      val = min(view.curslice.corticalDepth);
     else
-      val = 0.5;
+      fig = viewGet(view,'fignum');
+      if ~isempty(fig)
+        handles = guidata(fig);
+        val = get(handles.corticalDepthSlider,'Value');
+    else
+      corticalDepthBins=viewGet(view,'corticaldepthbins');
+      val=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+      end
     end
+    
+  case {'corticalmaxdepth'}
+    % corticalmaxdepth = viewGet(view,'corticalmaxdepth');
+    if isfield(view.curslice,'corticalDepth')
+      val = max(view.curslice.corticalDepth);
+    else
+      fig = viewGet(view,'fignum');
+      if ~isempty(fig)
+        handles = guidata(fig);
+        if isfield(handles,'corticalMaxDepthSlider')
+          val = get(handles.corticalMaxDepthSlider,'Value');
+        else
+          val = [];
+        end
+      else
+        val = [];
+      end
+    end
+    
   case {'sliceorientation'}
     % sliceorientation = viewGet(view,'sliceorientation');
     val = view.sliceOrientation;
@@ -3715,6 +3961,30 @@ switch lower(param)
     else
       val = [];
     end
+    
+  case{'clipacrossoverlays'}
+    % clipacrossoverlays = viewGet(view,'clipacrossoverlays',[analysisNum]);
+    if (length(varargin) > 0)
+      analysisNum = varargin{1};
+    else
+      analysisNum = viewGet(view,'currentAnalysis');
+    end
+    val = true;
+    if ~isempty(analysisNum) && (analysisNum > 0) && (analysisNum <= length(view.analyses))
+      val = view.analyses{analysisNum}.clipAcrossOverlays;
+    end
+
+  case{'colorblending'}
+    val='Alpha blend';
+    if isfield(view,'figure')
+      handles = guidata(view.figure);
+      if isfield(handles,'colorBlendingPopup') 
+        colorBlendingOptions = get(handles.colorBlendingPopup,'string');
+        val = colorBlendingOptions{get(handles.colorBlendingPopup,'value')};
+      end
+    end
+
+    
  otherwise
     if isempty(view)
       disp(sprintf('(viewGet) No viewGet for %s',param));
@@ -3811,6 +4081,13 @@ switch lower(param)
           val = [1:2:nslices,2:2:nslices-1];
         else
           val = [2:2:nslices,1:2:nslices-1];
+        end
+      elseif strcmp(lower(mrGetPref('site')),'nottingham')
+        %This is for the interleave setting on a Philips scanner (7T)
+        jump=round(sqrt(nslices));  %the jump is the closest integer to the square root of the number of slices
+        val=[];
+        for i=1:jump
+          val = [val i:jump:nslices];
         end
       else
 	% check for fidinfo
@@ -4038,6 +4315,8 @@ else
   r = varg{argnum};
   if isstr(r)
     r = viewGet(view,'roiNum',r);
+    % avoid behaviour where a bad ROI name gives you current ROI instead...
+    assert(~isempty(r),'no roi %s found',varg{1});
   end
 end
 if isempty(r)
@@ -4069,6 +4348,20 @@ end
 % check to see what type it is, and set the field appropriately
 if isfield(stimFile,'mylog')
   stimFile.filetype = 'eventtimes';
+  %make sure time and duration vectors are rows
+  for iEvent=1:length(stimFile.mylog.stimtimes_s)
+    if size(stimFile.mylog.stimtimes_s{iEvent},1)>1
+      stimFile.mylog.stimtimes_s{iEvent} = stimFile.mylog.stimtimes_s{iEvent}';
+    end
+    if isfield(stimFile.mylog,'stimdurations_s') && size(stimFile.mylog.stimdurations_s{iEvent},1)>1
+      stimFile.mylog.stimdurations_s{iEvent} = stimFile.mylog.stimdurations_s{iEvent}';
+    end
+  end
+  %move stimNames field
+  if isfield(stimFile.mylog,'stimNames')
+      stimFile.stimNames = stimFile.mylog.stimNames;
+    stimFile.mylog = rmfield(stimFile.mylog,'stimNames');
+  end
 elseif isfield(stimFile,'stimts')
   stimFile.filetype = 'afni';
 elseif isfield(stimFile,'myscreen')
@@ -4078,7 +4371,7 @@ elseif isfield(stimFile,'stimvol')
 else
   stimFile.filetype = 'unknown';
 end
-
+stimFile.filename = stimFileName;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    viewGetPrependPre    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%

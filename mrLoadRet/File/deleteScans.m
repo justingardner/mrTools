@@ -25,7 +25,7 @@ if ieNotDefined('v')
   end
   % choose a group
   groupNames = viewGet(v,'groupNames');
-  params = mrParamsDialog({{'groupName',groupNames,'Choose a group from which to delete scans'}},'Choose a group from which to delete scans');
+  params = mrParamsDialog({{'groupName',groupNames,'type=popupmenu','Choose a group from which to delete scans'}},'Choose a group from which to delete scans');
   if isempty(params)
     if deleteViewWhenDone
       deleteView(v);
@@ -44,7 +44,7 @@ end
 
 % get a scan list if it has not been passed in
 if ieNotDefined('scanList')
-  scanList = selectScans(v);
+  scanList = selectInList(v,'scans');
 end
 
 % check the scan list
@@ -71,8 +71,8 @@ for iScan = 1:length(scanList)
         disp(sprintf('(mrDeleteScans) Could not delete scan for file %s',tSeriesFile{iScan}));
     end
     if ~isempty(v.figure)
+      v = viewSet(v,'overlayCache','init'); %need to empty the cache because scan numbers have changed
       refreshMLRDisplay(v.viewNum);
-      v = viewSet(v,'overlayCache','init');
     end
 end
 if ~isempty(scanList)

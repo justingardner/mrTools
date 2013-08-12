@@ -1,6 +1,6 @@
 % freesurfer_load_xfm.m
 %
-%        $Id:$ 
+%        $Id$ 
 %      usage: xform = freesurfer_load_xfm(filename,<fieldname>)
 %         by: justin gardner
 %       date: 12/03/09

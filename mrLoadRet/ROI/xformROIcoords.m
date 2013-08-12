@@ -1,5 +1,7 @@
 function newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,sampRate)
 %
+%        $Id$
+%
 % newcoords = xformROIcoords(coords,xform,inputVoxSize,outputVoxSize,[sampRate])
 %
 % Transforms ROI coords using Xform, supersampling in each dimension to
@@ -66,8 +68,8 @@ tmpNewCoords = xform * coords;
 %
 minPos = [min(tmpNewCoords(1,:));min(tmpNewCoords(2,:));min(tmpNewCoords(3,:));1];
 maxPos = [max(tmpNewCoords(1,:));max(tmpNewCoords(2,:));max(tmpNewCoords(3,:));1];
-minPos = floor(minPos)-[2,2,2,0]';
-maxPos = ceil(maxPos)+[2,2,2,0]';
+minPos = floor(minPos)-[round((inputVoxSize ./ outputVoxSize)+1) 0]'; %JB: this is to make sure that all potentially transformed coordinates fall in the bounding box
+maxPos = ceil(maxPos)+[round((inputVoxSize ./ outputVoxSize)+1) 0]';  % it used to be +/-[2 2 2 0], but this doesn't work if new voxel size < old_voxel_size/2
 dims = (maxPos(1:3)-minPos(1:3)+ones(3,1))';
 
 % Initialize accumulator for partial volume calculation, a vector
@@ -103,15 +105,15 @@ for ioff=1:length(xoffsets)
       tmpNewCoords = xform * tmpNewCoords;
       % Round and subtract minPos
       tmpNewCoords(1:3,:) = round(tmpNewCoords(1:3,:)) - repmat(minPos(1:3),[1,size(tmpNewCoords,2)]);
-      % jg: make sure that tmpNewCoords doesn't go to zero--this
-      % seems to happen because of a rounding error from the above
-      % statement.
-      if sum(tmpNewCoords(:)==0)
-	%disp(sprintf('(xformROIcoords) Zero index corrected'));
-	tmpNewCoords((tmpNewCoords(:)==0)) = 1;
-      end
-      % Convert to indices
-      indices = sub2ind(dims,tmpNewCoords(1,:),tmpNewCoords(2,:),tmpNewCoords(3,:));
+%          % jg: make sure that tmpNewCoords doesn't go to zero--this      % JB  i don't think we need this here anymore (see above)
+%          % seems to happen because of a rounding error from the above    %
+%          % statement.                                                    %
+%          if sum(tmpNewCoords(:)==0)                                      %   
+%       %disp(sprintf('(xformROIcoords) Zero index corrected'));           %
+%       tmpNewCoords((tmpNewCoords(:)==0)) = 1;                            %
+%          end                                                             %
+       % Convert to indices
+      indices = sub2ind(dims,tmpNewCoords(1,:),tmpNewCoords(2,:),tmpNewCoords(3,:));%JB: not sure why that would be necessary... I thought sub2ind returned an error if coordinates outside dims
       indices = indices(~isnan(indices));
       % Accumulate partial volume. Need to do it in a loop
       % instead of:
@@ -127,10 +129,14 @@ end
 
 % Build newROIcoords
 %
+%voxels in new space are sorted according to how many old-space supersampled voxels they received
 [sortedAccum,indices] = sort(accum);
-nonZeroSize = length(find(accum > 0));
+nonZeroSize = nnz(accum);
+%Compute number of voxels necessary to maintain the ROI volume with the new voxel size
 newROIsize = round(prod(inputVoxSize)*size(coords,2) / prod(outputVoxSize));
+%we don't want to keep voxels that have zero partial voluming
 newROIsize = min(nonZeroSize,newROIsize);
+%the volume is conserved by keeping the appropriate number of voxels with highest partial voluming
 indices = indices(length(indices)-newROIsize+1:length(indices));
 if ~isempty(indices)
   [newcoords1,newcoords2,newcoords3] = ind2sub(dims,indices);

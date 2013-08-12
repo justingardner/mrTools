@@ -67,7 +67,7 @@ else
     % now append that file to the end of the old one
     % make sure to get the filename with .img appended
     [oldpath,oldname,oldext] = fileparts(path);
-    oldImgFilename = fullfile(oldpath,sprintf('%s.img',oldname));
+    oldImgFilename = fullfile(oldpath,sprintf('%s%s',oldname,oldext));
     % now append the files together
     fNew = fopen(tempFilename);
     if (fNew == -1)

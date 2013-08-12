@@ -44,7 +44,7 @@ if isfile(fullfile(pathStr,filename))
   saveMethod = find(strcmp(saveMethod,saveMethodTypes));
   if confirm || isempty(saveMethod) || (saveMethod==0)
     % ask the user what to do
-    paramsInfo = {{'saveMethod',saveMethodTypes,'Choose how you want to save the variable'}};
+    paramsInfo = {{'saveMethod',saveMethodTypes,'type=popupmenu','Choose how you want to save the variable'}};
     params = mrParamsDialog(paramsInfo,sprintf('%s already exists',filename));
     if isempty(params),return,end
     saveMethod = find(strcmp(params.saveMethod,saveMethodTypes));
@@ -176,7 +176,19 @@ eval([analysisName,'=analysis;']);
 % Finally, write the file
 pathStr = fullfile(pathStr,filename);
 fprintf('Saving %s...',pathStr);
-saveString = ['save(pathStr,','''',analysisName,'''',');'];
+if getfield(whos('analysis'),'bytes')<2e9
+  saveString = ['save(pathStr,','''',analysisName,'''',');'];
+else %if the structure is more than 2Gb
+  %check if matlab/the computer is 64bit
+  architecture = computer('arch');
+  if str2num(architecture(end-1:end))~=64
+    mrErrorDlg('(saveAnalysis) Analysis is more than 2Gb, but Matlab is 32bit. Cannot save analysis.');
+  else
+    mrWarnDlg('(saveAnalysis) Analysis is more than 2Gb, using option -v7.3 to save');
+    saveString = ['save(pathStr,','''',analysisName,'''',',''-v7.3'');'];
+  end
+end
+  
 eval(saveString);
 fprintf('done\n');
 

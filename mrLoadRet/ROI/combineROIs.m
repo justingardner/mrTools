@@ -97,6 +97,8 @@ switch action
      else       
        newCoords = setdiff(coords1,coords2,'rows');
      end
+   otherwise
+     error('unknown action: %s',action);
 end
 
 % Transpose back 
@@ -107,8 +109,7 @@ if ieNotDefined('newName')
   view = viewSet(view,'currentROI',roi1);
   % add coordinates, they are all roi1 coordinates, so we pass
   % the identity as the xform
-  view = modifyROI(view,roiCoords1,eye(4),roiVoxelSize1,0);
-  view = modifyROI(view,newCoords,eye(4),roiVoxelSize1,1);
+  view = modifyROI(view,newCoords,eye(4),roiVoxelSize1,-1); %JB: added new option -1 to replace coordinates, so that Undo can be used
 % make a new one
 else
   roi = viewGet(view,'ROI',roi1);

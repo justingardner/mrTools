@@ -1,4 +1,4 @@
-function h = mrWaitBar(x,t)
+function h = mrWaitBar(x,t,newMessage)
 %
 % h = mrWaitBar([x],[title or handle])
 %
@@ -25,28 +25,50 @@ end
 
 % update of wait bar
 if ishandle(t)
+  if ieNotDefined('newMessage')
     waitbar(x,t);
-    drawnow;
+  else
+    waitbar(x,t,newMessage);
+  end
+  drawnow;
 elseif isfield(t,'disppercent')
+  if ieNotDefined('newMessage')
     disppercent(x);
+  else
+    disppercent(x,newMessage);
+  end
     
 % initial call
 elseif ischar(t)
-    % check the verbose preference
-    verbose = mrGetPref('verbose');
-    if strcmp(verbose,'Yes')
-        % if verbose, make a window wait bar
-        h = waitbar(x,t);
-        drawnow;
+  % check the verbose preference
+  verbose = mrGetPref('verbose');
+  if strcmp(verbose,'Yes')
+    % if verbose, make a window wait bar
+    if length(t)<=35
+      if ieNotDefined('newMessage')
+         h = waitbar(x,'','name',t);
+      else
+         h = waitbar(x,newMessage,'name',t);
+      end
     else
-        % otherwise use disppercent
-        disppercent(-inf,t);
-        h.disppercent = 1;
+      if ieNotDefined('newMessage')
+        h = waitbar(x,t,'name','mrWaitBar');
+      else
+        h = waitbar(x,{t,newMessage},'name','mrWaitBar');
+      end
     end
-    
+    drawnow;
+  else
+    % otherwise use disppercent
+    if ieNotDefined('newMessage')
+      disppercent(-inf,t);
+    else
+      disppercent(-inf,[t '; ' newMessage]);
+    end 
+    h.disppercent = 1;
+  end
 end
 return
-
 
 % Test/debug
 mrSetPref('verbose','Yes');

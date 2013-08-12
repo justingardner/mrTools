@@ -175,8 +175,9 @@ else
   for i = 1:length(extraFields)
     disp(sprintf('%s: %s',extraFields{i},extraFieldsValue{i}));
   end
-end
+  
   disp(sprintf('sformCode: %i',scanSformCode));
+end
 
 deleteView(view);
 

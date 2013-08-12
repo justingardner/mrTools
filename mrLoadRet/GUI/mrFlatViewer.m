@@ -215,8 +215,11 @@ outer{end+1} = 'Find file';
 checkForMore = 1;
 if isempty(curv)
   curvGuess = sprintf('%s_Curv.vff', fullfile(flatPath, stripext(inner{1})));
+  secondCurvGuess = sprintf('%sCurv.vff', fullfile(flatPath, stripext(stripext(inner{1}),'WM')));
   if isfile(curvGuess)
     curv{1} = getLastDir(curvGuess);
+  elseif isfile(secondCurvGuess)
+    curv{1} = getLastDir(secondCurvGuess);
   else
     % go look for it
     [filename pathname] = uigetfile({'*.vff','Curvature file (*.vff)'},sprintf('Find curvature file'),flatPath);
@@ -259,14 +262,14 @@ disppercent(inf);
 gFlatViewer.mismatchWarning = 1;
 
 % guess any nifti file for anatomy
-anatDir = dir(sprintf('%s/*.hdr', flatPath));
+anatDir = [dir(sprintf('%s/*.hdr', flatPath)); dir(sprintf('%s/*.nii', flatPath))];
 for i = 1:length(anatDir)
   if ~any(strcmp(anatDir(i).name,anat))
     anat{end+1} = anatDir(i).name;
   end
 end
 % check for 'canonical hdr'
-anatCanonicalDir = dir(sprintf('%s/../*.hdr', flatPath));
+anatCanonicalDir = [dir(sprintf('%s/../*.hdr', flatPath)); dir(sprintf('%s/../*.nii', flatPath))];
 for i= 1:length(anatCanonicalDir)
   if find(strcmp(anatCanonicalDir(i).name,anat))
     anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
@@ -274,8 +277,8 @@ for i= 1:length(anatCanonicalDir)
 end
 if isempty(anat)
   % go look for it
-  [filename pathname] = uigetfile({'*.hdr','Nifti file (*.hdr)'},sprintf('Find 3D anatomy'),flatPath);
-  if isempty(filename),return,end
+  [filename pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Find 3D anatomy',flatPath);
+  if isnumeric(filename),return,end
   filename = fullfile(getRelativePath(flatPath,pathname),filename);
   anat{1} = filename;
 end
@@ -321,14 +324,14 @@ gFlatViewer.guiloc.whichSurface = 1;
 gFlatViewer.guiloc.filenames = 3;
 % Now give choice of viewing gray or white
 gFlatViewer.whichSurfaceTypes = {'Outer (Gray matter) surface','Inner (White matter) surface','3D Anatomy','Patch'};
-paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
+paramsInfo{end+1} = {'whichSurface',gFlatViewer.whichSurfaceTypes,'type=popupmenu','callback',@whichSurfaceCallback,'Choose which surface to view the patch on'};
 gFlatViewer.patchColoringTypes = {'Uniform','Right in red','Rostral in red','Dorsal in red','Positive curvature in red','Negative curvature in red','Compressed areas in red','Stretched areas in red','High outer areal distortion in red','High inner areal distortion in red'};
 if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.patchColoringTypes{end+1} = 'Current overlay';
   gFlatViewer.patchColoringTypes{end+1} = 'Current overlay with patch';
 end
 gFlatViewer.patchColoringTypes{end+1} = 'None';
-paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'Choose how to color the patch','callback',@patchColoringCallback};
+paramsInfo{end+1} = {'patchColoring',gFlatViewer.patchColoringTypes,'type=popupmenu','Choose how to color the patch','callback',@patchColoringCallback};
 if ~isempty(gFlatViewer.viewNum)
   gFlatViewer.guiloc.filenames = gFlatViewer.guiloc.filenames+1;
   paramsInfo{end+1} = {'displayROIs',0,'type=checkbox','Display the ROIs','callback',@whichSurfaceCallback};
