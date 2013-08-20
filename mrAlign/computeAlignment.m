@@ -179,7 +179,7 @@ while strcmp(keepIterating, 'Yes') && ~ALIGN.stopComputingAlignment
      if ALIGN.ignoreZeroVoxels %if ignore zero voxels
         mask = volInterp;
         mask(isnan(mask)) = 0;
-        mask = logical(mask) | inplanesMask;
+        mask = logical(mask) & inplanesMask;
      end
      % correct intensity & contrast of interpolated volume
      try
