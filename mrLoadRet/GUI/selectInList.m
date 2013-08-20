@@ -5,7 +5,7 @@
 %       date: 20/12/2010
 %        $Id$
 %    purpose: asks users to select a list of a given type of mrLoadRet variables from the thisView
-%                 type can be: 'overlays','scans','analyses','bases','rois'
+%                 type can be: 'overlays','scans','analyses','bases','rois', 'groups
 
 
 
@@ -37,6 +37,10 @@ switch(lower(type))
   case {'rois','roi'}
     type='ROIs';
     names = viewGet(thisView,'roiNames');
+    
+  case {'groups','group'}
+    type='Groups';
+    names = viewGet(thisView,'groupNames');
     
   otherwise
     mrWarnDlg(['(selectInList) Unknown type ''' type '''']);
@@ -75,6 +79,9 @@ if ~exist('preselected','var') %if preselected exists but is empty, leave as it 
 
     case {'rois','roi'}
       preselected = viewGet(thisView,'currentROI');
+      
+    case {'groups','group'}
+      preselected = viewGet(thisView,'currentGroup');
   end
 end
 
