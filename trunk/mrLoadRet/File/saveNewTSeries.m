@@ -46,11 +46,11 @@ if ieNotDefined('makeLink'),makeLink=0;end
 
 if isempty(scanParams.fileName)
   if ischar(tseries)
-    extension = getext(tseries);
+    extension = ['.',getext(tseries)];
   else
     extension = mrGetPref('niftiFileExtension');
   end
-  scanParams.fileName = ['tseries-',datestr(now,'yymmdd'),'-',datestr(now,'HHMMSS'),'.',extension];
+  scanParams.fileName = ['tseries-',datestr(now,'yymmdd'),'-',datestr(now,'HHMMSS'),extension];
 end
 filename = scanParams.fileName;
 
