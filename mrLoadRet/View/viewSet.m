@@ -500,10 +500,14 @@ switch lower(param)
       MLR.groups(g).scanParams(s).niftiHdr.sform44 = val;
       % now get the pix dimensions
       [q r] = qr(val);
-      pixdim = diag(r(1:3,1:3));
-      disp(sprintf('(viewSet:scanSform) The implied pixel dims are being reset to [%0.2f %0.2f %0.2f]',pixdim(1),pixdim(2),pixdim(3)));
-      MLR.groups(g).scanParams(s).niftiHdr.pixdim(2:4) = pixdim;
-      MLR.groups(g).scanParams(s).voxelSize = pixdim';
+      pixdim = abs(diag(r(1:3,1:3)));
+      oldVoxelSize = viewGet(view,'scanVoxelSize',s);
+      if ~isequal(round(pixdim*100),round(oldVoxelSize*100))
+        mrWarnDlg(sprintf('(viewSet:scanSform) The implied pixel dims for the new transform are [%0.2f %0.2f %0.2f] (original: [%0.2f %0.2f %0.2f])',...
+          pixdim(1),pixdim(2),pixdim(3),oldVoxelSize(1),oldVoxelSize(2),oldVoxelSize(3)));
+      end
+%       MLR.groups(g).scanParams(s).niftiHdr.pixdim(2:4) = pixdim;
+%       MLR.groups(g).scanParams(s).voxelSize = pixdim';
     end
   case {'sformcode','scansformcode'}
     % view = viewSet(view,'sformcode',sformcode,scanNum,groupNum);
@@ -1054,9 +1058,13 @@ switch lower(param)
       view.baseVolumes(baseNum).hdr = hdr;
       % now get the pix dimensions
       [q r] = qr(val);
-      pixdim = diag(r(1:3,1:3));
-      disp(sprintf('(viewSet:baseSform) The implied pixel dims are being reset to [%0.2f %0.2f %0.2f]',pixdim(1),pixdim(2),pixdim(3)));
-      view.baseVolumes(baseNum).hdr.pixdim(2:4) = pixdim;
+      pixdim = abs(diag(r(1:3,1:3)));
+      oldVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
+      if ~isequal(round(pixdim*100),round(oldVoxelSize*100))
+        mrWarnDlg(sprintf('(viewSet:baseSform) The implied pixel dims for the new transform are [%0.2f %0.2f %0.2f] (original: [%0.2f %0.2f %0.2f])',...
+          pixdim(1),pixdim(2),pixdim(3),oldVoxelSize(1),oldVoxelSize(2),oldVoxelSize(3)));
+      end
+      %view.baseVolumes(baseNum).hdr.pixdim(2:4) = pixdim;
     end
 
   case {'basesformcode'}
