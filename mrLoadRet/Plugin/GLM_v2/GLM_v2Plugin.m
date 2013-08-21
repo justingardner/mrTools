@@ -119,12 +119,6 @@ switch action
     mlrAdjustGUI(thisView,'set','baseTiltText','position',        [0.24    0.695   0.04   textEditHeight]);
     mlrAdjustGUI(thisView,'set','baseTiltText','fontSize',controlFontSize);
 
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Copy Overlay','Callback',@copyOverlayCallback);
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Paste Overlay','Callback',@pasteOverlayCallback);
-
-    mlrAdjustGUI(thisView,'set','copyScanMenuItem','Callback',@copyScanCallback);
-    mlrAdjustGUI(thisView,'set','pasteScanMenuItem','Callback',@pasteScanCallback);
-
     %---------------------------- ROI controls  --------------------------------------------------
     mlrAdjustGUI(thisView,'set','ROI','position',                 [0.01    0.665   0.08    boldTextLabelHeight]);
     mlrAdjustGUI(thisView,'set','ROI','string','ROIs');
@@ -218,6 +212,10 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/','callback',@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
     mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/','callback',@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
     mlrAdjustGUI(thisView,'set','editOverlayMenuItem','Callback',@editOverlayCallback);
+    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Copy Overlay','Callback',@copyOverlayCallback);
+    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Paste Overlay','Callback',@pasteOverlayCallback);
+    mlrAdjustGUI(thisView,'set','copyScanMenuItem','Callback',@copyScanCallback);
+    mlrAdjustGUI(thisView,'set','pasteScanMenuItem','Callback',@pasteScanCallback);
 
     % Analysis menu
     mlrAdjustGUI(thisView,'add','menu','Apply MotionComp Transforms','/Analysis/Motion Compensation/Slice Time Correction (only)','callback',@applyMotionCompTransformsCallBack,'tag','applyMotionCompTransformMenuItem');
@@ -230,6 +228,7 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','overlaysMenu','/Analysis','label','Overlays','tag','overlaysMenu');
     %install menu Item
     mlrAdjustGUI(thisView,'add','menu','Combine/Transform Overlays','/Overlays/','callback',@combineOverlaysCallback,'tag','transformOverlaysMenuItem');
+
 
     %ROI menu
     %remove show group ROI menus and re-arrange ROI menus 
