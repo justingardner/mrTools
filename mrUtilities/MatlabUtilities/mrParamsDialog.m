@@ -795,7 +795,7 @@ if isfield(gParams,'fignum')
   if isfield(gParams,'figlocstr')
   % save figure locations .mrDefaults
     for iFig = 1:length(gParams.fignum)
-      if ishandle(gParams.fignum(iFig))
+      if ishandle(gParams.fignum(iFig)) && (length(gParams.figlocstr)>=iFig)
 	mrSetFigLoc(fixBadChars(gParams.figlocstr{iFig}),get(gParams.fignum(iFig),'Position'));
       end
     end
@@ -955,14 +955,27 @@ for i=1:length(rownums)
       incPosition(1) = entryPosition(1)+entryPosition(3)+incdecMargin;
       decPosition(3) = incdecWidth;
       incPosition(3) = incdecWidth;
-      
-      %correct position of entry field
-      set(hEntry(i,j),'position',entryPosition);
-      %make decrement and increment buttons
-      hMinus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',deccallback,'String',decString,...
-        'Position',decPosition,'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
-      hPlus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',inccallback,'String',incString,...
-        'Position',incPosition,'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
+
+      % if width goes below this amount, then skip the +/- buttons
+      minUISize = 0.001;
+      if (incdecWidth < minUISize)
+	% Resize entry to not include incdec
+	entryPosition(3) = entryPosition(3)+(incdecWidth+incdecMargin);
+	set(hEntry(i,j),'position',entryPosition);
+	% remove the incdec field from gParams
+	global gParams;
+	if isfield(gParams.varinfo{varnum},'incdec')
+	  gParams.varinfo{varnum} = rmfield(gParams.varinfo{varnum},'incdec');
+	end
+      else
+	%correct position of entry field
+	set(hEntry(i,j),'position',entryPosition);
+	%make decrement and increment buttons
+	hMinus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',deccallback,'String',decString,...
+				'Position',decPosition,'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
+	hPlus(i,j) = uicontrol(fignum,'Style','pushbutton','Callback',inccallback,'String',incString,...
+			       'Position',incPosition,'FontSize',uiParams.fontsize,'FontName',uiParams.fontname);
+      end
     end
   end
 end
