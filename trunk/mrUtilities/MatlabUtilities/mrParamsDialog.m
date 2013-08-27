@@ -1047,35 +1047,37 @@ monitorPositions = getMonitorPositions;
 [whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
 screenSize = monitorPositions(whichMonitor,:); % find which monitor the figure is displayed in
 
-dParams.multiCols=0;                             %these are meaningless values to pass the first test
+dParams.multiCols=0;                             %
+actualMultiCols = 0;                             %these values are set only to pass the first test
 figHeight = uiParams.maxFigHeightWidthRatio+1;   %
 figWidth = 1;                                    %
-reachedScreenWidth = 0;
-decreasedFontSize = 0;
+triedReduceEntryWidth = 0;
+minFontSize = 6;
 %while one of the dimensions is larger than the screen or the height/width is over the threshold, resize
-while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize(1,4) || figWidth>screenSize(1,3)
+while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figWidth>screenSize(1,3) || figHeight>screenSize(1,4)
 
-  % test is figure respect constraints, if not, change something
-  if figHeight>screenSize(1,4) && (reachedScreenWidth || figWidth > screenSize(1,3))
-  %if both height and width are larger than the screen size, we reduce the fontsize, but only if the screen width has been reached
-    uiParams.fontsize = uiParams.fontsize-1;
-    decreasedFontSize =1;
-  elseif figWidth > screenSize(1,3)
-  %else if width>screen width, we try reducing  the max entry width
+  % test is figure respects constraints, if not, change something
+  if figWidth<screenSize(1,3) && dParams.multiCols<length(dParams.numLines)+1
+  % first try adding columns (no more than the number of entries), but only if the screen width has not been reached
+    dParams.multiCols = dParams.multiCols+1;
+  elseif figWidth>screenSize(1,3) && ~triedReduceEntryWidth
+  %then try reducing  the max entry width (only if figure width is large than screen width)
     %compute the max entries width as what's left to the screen width when you remove varnames and margins and divide by multicols
     uiParams.maxEntriesWidth = floor((screenSize(1,3)- 2*uiParams.leftMargin ...
-                              - dParams.multiCols*(uiParams.varNameWidth+uiParams.margin)...
-                              - (dParams.multiCols-1)*uiParams.margin)...
-                              / dParams.multiCols);
+                              - actualMultiCols*(uiParams.varNameWidth+uiParams.margin)...
+                              - (actualMultiCols-1)*uiParams.margin)...
+                              / actualMultiCols);
     uiParams.maxSingleFieldWidth = uiParams.maxEntriesWidth / maxEntryNumCols;
     %set the min entry width to 0
     uiParams.minEntriesWidth = 0;
-    reachedScreenWidth=1;
+    triedReduceEntryWidth=1;
     
-  elseif figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize(1,4) && ~reachedScreenWidth && ~decreasedFontSize
-  %if height/width > uiParams.maxFigHeightWidthRatio or if height > screenheight, we add a column
-  % but only if the screen width hasn't been reached or if the font size hasn't been decreased
-    dParams.multiCols = dParams.multiCols+1;
+  elseif uiParams.fontsize>minFontSize
+  %finally try reduce the fontsize
+    uiParams.fontsize = uiParams.fontsize-1;
+  else
+    %if everything has been tried, break out of the while loop
+    break;
   end
 
   %-------------------compute the uicontrol and figure dimensions
@@ -1131,7 +1133,7 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
   numRows = [dParams.numLines.*dParams.entryNumRows 1]; %we add one for the help/ok/cancel buttons
   %compute new number of rows per columns, but make sure we're not cutting an entry
   dParams.figrows = max(max(numRows),ceil(sum(numRows)/dParams.multiCols)) - 1; %we remove one just because of the order of things in the while loop
-  %now check if any multirow entry is not split between two columns and if we have enough rowas per column
+  %now check if any multirow entry is split between two columns and if we have enough rows per column
   keepAddingRows=1; %this is just to enter the while loop
   while keepAddingRows   %while an entry is split between two columns or 
     %there are more rows than number of columns times number of rows per column
@@ -1140,14 +1142,17 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
     dParams.startMultiCol = zeros(1,dParams.multiCols);
     endMultiCol = 0;
     cutsEntry=0;
-    for i=1:dParams.multiCols   %and we check for each column if an entry is split. 
+    iCol=0;
+    while iCol<dParams.multiCols && ~isempty(numRowsLeft) %and we check for each column if an entry is split. 
+      iCol=iCol+1;  % we do this in a while rather than a for loop because there are cases where adding a row removes more than one column at once
+                    % in which case the last column can be empty
       %this is the entry index of the start of the current column (the first entry 
       % whose cumulated number of rows is less than the number of rows per column)
-      dParams.startMultiCol(i) = endMultiCol+find(cumsum(numRowsLeft)<=dParams.figrows,1,'first');
+      dParams.startMultiCol(iCol) = endMultiCol+find(cumsum(numRowsLeft)<=dParams.figrows,1,'first');
       % similarly, this is the last entry whose cumulated number of rows is less than the number of rows per column
       endMultiCol = endMultiCol+find(cumsum(numRowsLeft)<=dParams.figrows,1,'last');
       %these are the number of rows of all the entries attributed to the current columns
-      thisNumRows = numRows(dParams.startMultiCol(i):endMultiCol);
+      thisNumRows = numRows(dParams.startMultiCol(iCol):endMultiCol);
       % and the rows left for next columns
       numRowsLeft = numRows(endMultiCol+1:end);
       %an entry is split between two columns if it was split for any previous column
@@ -1156,17 +1161,21 @@ while figHeight/figWidth>uiParams.maxFigHeightWidthRatio || figHeight>screenSize
       %(if the total number of rows is less than the desired number, then an entry cannot be split over the next column)
       cutsEntry = cutsEntry || ~(ismember(dParams.figrows,cumsum(thisNumRows)) || dParams.figrows>=sum(thisNumRows));
     end
-    %check that there are not entries left (if there are, we need to increase the number of rows even if there no cut entries)
+    % We remember the actual number of column needed, in case we got out of the while loop before reaching the last column
+    actualMultiCols=iCol; 
+    %check that there are not entries left (if there are, we need to increase the number of rows even if there are no cut entries)
     keepAddingRows = cutsEntry || ~isempty(numRowsLeft);
   end
 
   %%%%%%%%%%%% compute figure dimensions
   figHeight = 2*uiParams.topMargin+dParams.figrows*uiParams.buttonHeight+(dParams.figrows-1)*uiParams.margin;
   figWidth = 2*uiParams.leftMargin...
-              + (dParams.multiCols- 1)*uiParams.margin...
-              + dParams.multiCols*(uiParams.varNameWidth+dParams.allEntriesWidth+uiParams.margin);
+              + (actualMultiCols- 1)*uiParams.margin...
+              + actualMultiCols*(uiParams.varNameWidth+dParams.allEntriesWidth+uiParams.margin);
 
 end
+
+dParams.multiCols = actualMultiCols;
 
 % set the figure position
 figurePosition(4) = figHeight;
