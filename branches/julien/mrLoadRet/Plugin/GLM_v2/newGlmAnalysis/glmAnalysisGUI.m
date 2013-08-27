@@ -60,9 +60,11 @@ else
     end
   end
 end
-
 if fieldIsNotDefined(params,'spatialSmoothing')
    params.spatialSmoothing = 0;
+end
+if fieldIsNotDefined(params,'smoothingPlane')
+   params.smoothingPlane = 'Axial';
 end
 
 if fieldIsNotDefined(params,'covCorrection')
@@ -72,6 +74,9 @@ if fieldIsNotDefined(params,'covEstimationAreaSize') %this is necessary so that 
    params.covEstimationAreaSize = 20;
 end
 roiNames = viewGet(thisView,'roinames');
+if fieldIsNotDefined(params,'covEstimationPlane')
+   params.covEstimationPlane = 'Axial';
+end
 if fieldIsNotDefined(params,'covEstimationBrainMask')
    params.covEstimationBrainMask = 'None';
 elseif ~ismember(params.covEstimationBrainMask,roiNames)
@@ -99,6 +104,8 @@ if nVisibleRois
 end
 analysisVolumeMenu{end+1} = 'Subset box'; 
 analysisVolumeMenu = putOnTopOfList(params.analysisVolume,analysisVolumeMenu);
+smoothingPlaneMenu = putOnTopOfList(params.smoothingPlane,{'Sagittal','Axial','Coronal','3D'});
+covEstimationPlaneMenu = putOnTopOfList(params.covEstimationPlane,{'Sagittal','Axial','Coronal'});
 covEstimationBrainMaskMenu = putOnTopOfList(params.covEstimationBrainMask,[{'None'} roiNames]);
 
 
@@ -109,10 +116,12 @@ while askForParams
     {'saveName',params.saveName,'File name to try to save the analysis as'},...
     {'hrfModel',hrfModelMenu,'type=popupmenu','Name of the function that defines the Hemodynamic Response Function model that will be convolved with the design matrix',},...
     {'analysisVolume',analysisVolumeMenu,'type=popupmenu','The analysis can be performed either on the whole scan volume, or only in the ROIs currently loaded/visible in the view, or only in a cubic subset of voxels, the coordinates of which will have to be specified in the scan parameter menu.'},...
-    {'spatialSmoothing',params.spatialSmoothing, 'minmax=[0 inf]','Width at half-maximum in voxels of a 2D gaussian kernel that will be convolved with each slice at each time-point. If 0, no spatial smoothing is applied'},...
+    {'spatialSmoothing',params.spatialSmoothing, 'minmax=[0 inf]','Width at half-maximum in voxels of a 2D/3D gaussian kernel that will be convolved with each slice at each time-point. If 0, no spatial smoothing is applied'},...
+    {'smoothingPlane',smoothingPlaneMenu, 'Plane in which to perform 2D spatial smoothing. If ''3D'', a 3D Gaussian kernel is used.'},...
     {'covCorrection',params.covCorrection,'type=checkbox','(EXPERIMENTAL) Correction for temporally-correlated noise. Correcting for noise correlation is important for single-subject level statistics but significantly increases analysis time. Uncorrected correlated noise biases statistical significance of contrasts/F-tests but should not affect parameter estimates (contrasts values).'},...
-    {'covEstimationAreaSize',params.covEstimationAreaSize, 'minmax=[1 inf]','contingent=covCorrection','round=1','For correlated-noise correction: dimensions in voxels of a square spatial window around each voxel on which the noise covariance is estimated (in the X and Y dimensions)'},...
-    {'covEstimationBrainMask',covEstimationBrainMaskMenu,'contingent=covCorrection','For correlated-noise correction: voxels outside this ROI mask will be excluded from noise covariance estimation.'},...
+    {'covEstimationAreaSize',params.covEstimationAreaSize, 'minmax=[1 inf]','contingent=covCorrection','round=1','For correlated-noise correction: dimensions in voxels of a square spatial window around each voxel on which the noise covariance is estimated'},...
+    {'covEstimationPlane',covEstimationPlaneMenu, 'contingent=covCorrection', 'Plane in which voxel timeseries are averaged for covariance estimation.'},...
+    {'covEstimationBrainMask',covEstimationBrainMaskMenu, 'contingent=covCorrection','For correlated-noise correction: voxels outside this ROI mask will be excluded from noise covariance estimation.'},...
     {'nonLinearityCorrection',params.nonLinearityCorrection,'visible=0','type=checkbox','Correction for non linearity. if Yes, the response saturates when it reaches some value defined below'},...
     {'saturationThreshold',params.saturationThreshold,'visible=0', 'minmax=[1 inf]','contingent=nonLinearityCorrection','Saturation threshold, expressed in terms of the maximum amplitude of the model HRF (e.g. 2 means that the response saturates when it reaches twice the maximum of the model HRF '},...
    };
@@ -124,15 +133,18 @@ while askForParams
     tempParams = mrParamsDialog(paramsInfo, 'GLM parameters');
   end
 
-
   % if empty user hit cancel
   if isempty(tempParams)
     params = [];
     return;
   end
+  
   %replace params in the structure that has been passed in
   hrfModelMenu = putOnTopOfList(tempParams.hrfModel,hrfModelMenu);
   analysisVolumeMenu = putOnTopOfList(tempParams.analysisVolume,analysisVolumeMenu);
+  smoothingPlaneMenu = putOnTopOfList(tempParams.smoothingPlane,smoothingPlaneMenu);
+  covEstimationPlaneMenu = putOnTopOfList(tempParams.covEstimationPlane,covEstimationPlaneMenu);
+  
   % remove description of HRF model if the type of model has changed
   if ~strcmp(params.hrfModel,tempParams.hrfModel)
     params.hrfParams.description='';
@@ -142,6 +154,9 @@ while askForParams
   %perform some checks
   if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~ismember(params.analysisVolume,{'Loaded ROI(s)' 'Visible ROI(s)'})
     mrWarnDlg('(glmAnalysisGUI) Noise covariance estimation mask can only be used with ROI(s) analysis');
+  elseif  ~ismember(params.analysisVolume,{'Visible ROI(s)','Loaded ROI(s)'}) && ...
+    ( (params.spatialSmoothing && ~strcmp(params.smoothingPlane,'Axial')) || (params.covCorrection && ~strcmp(params.covEstimationPlane,'Axial')))
+    mrWarnDlg('glmAnalysisGUI) Smoothing or covariance estimation planes other than ''Axial'' can only be used with ROI(s) analysis');
   elseif 0
     %perform check on parameters here if needed
   else

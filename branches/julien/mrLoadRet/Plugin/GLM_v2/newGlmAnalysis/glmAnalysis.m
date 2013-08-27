@@ -61,14 +61,30 @@ numberTests = numberFtests+numberContrasts;
 computePermutations = numberTests && (params.permutationTests || (params.parametricTests && params.permutationFweAdjustment));
 
 if params.covCorrection   %number of voxels to get around the ROI/subset box in case the covariance matrix is estimated
-   voxelsMargin = floor(params.covEstimationAreaSize/2);
+  voxelsMargin = repmat(floor(params.covEstimationAreaSize/2),1,3);
+  switch(params.covEstimationPlane)
+    case {'Sagittal'}
+      voxelsMargin(1)=0;
+    case {'Axial'}
+      voxelsMargin(3)=0;
+    case {'Coronal'}
+      voxelsMargin(2)=0;
+  end
 else
-   voxelsMargin = 0;
+   voxelsMargin = [0 0 0];
 end
 if params.spatialSmoothing  %we'll also need a margin if we're spatially smoothing
-  voxelsMargin = max(voxelsMargin,params.spatialSmoothing);
+  switch(params.smoothingPlane)
+      case {'Sagittal'}
+        voxelsMargin = max(voxelsMargin, [0 params.spatialSmoothing params.spatialSmoothing]);
+      case {'Axial'}
+        voxelsMargin = max(voxelsMargin,[params.spatialSmoothing params.spatialSmoothing 0]);
+      case {'Coronal'}
+        voxelsMargin = max(voxelsMargin,[params.spatialSmoothing 0 params.spatialSmoothing]);
+      case '3D'
+        voxelsMargin = max(voxelsMargin,repmat(params.spatialSmoothing,1,3));
+  end
 end
-
 %--------------------------------------------------------- Main loop over scans ---------------------------------------------------
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 %initialize the data we're keeping for output overlays
@@ -144,7 +160,7 @@ for iScan = params.scanNum
       else
         roiList = 1:viewGet(thisView,'numberOfRois');
       end
-      [subsetBox{iScan}, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,[voxelsMargin voxelsMargin 0],roiList);
+      [subsetBox{iScan}, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,voxelsMargin,roiList);
       usedVoxelsInBox = marginVoxels | any(whichRoi,4);
       %clear('whichRoi','marginVoxels');
       if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')

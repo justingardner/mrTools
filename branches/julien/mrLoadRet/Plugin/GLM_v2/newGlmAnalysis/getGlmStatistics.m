@@ -175,7 +175,15 @@ end
 %initialize variables for covariance matrix estimation
 if params.covCorrection 
   if params.covEstimationAreaSize>1
-    sliceAverager3D = ones(1,params.covEstimationAreaSize,params.covEstimationAreaSize)/params.covEstimationAreaSize^2;
+    sliceAverager4D = ones(params.covEstimationAreaSize,params.covEstimationAreaSize)/params.covEstimationAreaSize^2;
+    switch(params.covEstimationPlane)
+      case {'Sagittal'}
+        sliceAverager4D = permute(sliceAverager4D,[4 3 1 2]);
+      case {'Axial'}
+        sliceAverager4D = permute(sliceAverager4D,[4 1 2 3]);
+      case {'Coronal'}
+        sliceAverager4D = permute(sliceAverager4D,[4 1 3 2]);
+    end
     if ~isfield(d,'roiPositionInBox') %this is in case we only compute for voxels in the loaded ROIs
       longMargin = ceil(params.covEstimationAreaSize/2); %we exclude voxels that are not surrounded by voxels with valid data
       shortMargin = floor(params.covEstimationAreaSize/2);
@@ -389,7 +397,16 @@ for z = slices
     if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
       timeseries = reshapeToRoiBox(timeseries,d.roiPositionInBox|d.marginVoxels,precision);
     end
-    timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[3 1 2]),'same');
+    switch params.smoothingPlane %planes other than sagittal will only work for ROIs because it's the only case in which the data is 3D at this point in the loop
+      case {'Sagittal'}
+        timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[4 3 1 2]),'same');
+      case {'Axial'}
+        timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[4 1 2 3]),'same');
+      case {'Coronal'}
+        timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[4 1 3 2]),'same');
+      case '3D'
+        timeseries = convn(timeseries,permute(gaussianKernel(params.spatialSmoothing),[4 1 2 3]),'same');
+    end
     if isfield(d,'roiPositionInBox') %if the data are not spatially organized
       %put the data back in a new matrix with only the voxels of interest
       timeseries = reshape(timeseries,d.dim(4), numel(d.roiPositionInBox));
@@ -437,9 +454,9 @@ for z = slices
         %average
         if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None') && ~isempty(d.covEstimationBrainMask)
           averaged_residuals(:,~d.covEstimationBrainMask)=NaN;
-          averaged_residuals = nanconvn(averaged_residuals,sliceAverager3D,'same'); %only do this if required because nanconvn takes a bit longer than nconv
+          averaged_residuals = nanconvn(averaged_residuals,sliceAverager4D,'same'); %only do this if required because nanconvn takes a bit longer than convn
         else
-          averaged_residuals = convn(averaged_residuals,sliceAverager3D,'same');
+          averaged_residuals = convn(averaged_residuals,sliceAverager4D,'same');
         end
         %put the data back in a new matrix with only the voxels of interest
         averaged_residuals = reshape(averaged_residuals,d.dim(4), numel(d.roiPositionInBox));
@@ -455,7 +472,7 @@ for z = slices
         averaged_residuals = NaN(size(residuals),precision);
         %averaged_residuals(isnan(residuals)) = 0;            %convert NaNs to 0... actually no, don't
         %average residuals over space
-        averaged_residuals(:,longMargin:end-shortMargin,longMargin:end-shortMargin) = convn(residuals,sliceAverager3D,'valid');
+        averaged_residuals(:,longMargin:end-shortMargin,longMargin:end-shortMargin) = convn(residuals,sliceAverager4D,'valid');
       end
     else
       averaged_residuals = residuals;
@@ -1085,6 +1102,7 @@ kernelDims = 2*[w w w]+1;
 kernelCenter = ceil(kernelDims/2);
 [X,Y,Z] = meshgrid(1:kernelDims(1),1:kernelDims(2),1:kernelDims(3));
 kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2+(Z-kernelCenter(3)).^2)/(2*sigma_d^2)); %Gaussian function
+kernel = kernel./sum(kernel(:));
 
 
 function kernel = gaussianKernel2D(FWHM)
