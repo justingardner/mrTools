@@ -92,6 +92,8 @@ for i = 1:length(gParams.varinfo)
     else
       params.(gParams.varinfo{i}.name) = list{val};
     end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % All other values
   else
     if isfield(gParams.varinfo{i},'group')
       for j = 1:length(gParams.varinfo{i}.allValues)
@@ -104,6 +106,11 @@ for i = 1:length(gParams.varinfo)
       end
     else
       params.(gParams.varinfo{i}.name) = get(gParams.ui.varentry{i},'String');
+    end
+    % check to see if this is an array that could not be displayed
+    if isfield(gParams.varinfo{i},'tooBigArrayValue')
+      % if so then set to the original array value
+      params.(gParams.varinfo{i}.name) = gParams.varinfo{i}.tooBigArrayValue;
     end
   end
   % change numeric popupmenu to number
