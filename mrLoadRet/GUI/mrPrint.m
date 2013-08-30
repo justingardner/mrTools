@@ -36,7 +36,7 @@ if baseType == 1
 end
 % options for surfaces
 if baseType == 2
-  paramsInfo{end+1} = {'thresholdCurvature',1,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
+  paramsInfo{end+1} = {'thresholdCurvature',0,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
 
   % compute a good threshold value
   grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
