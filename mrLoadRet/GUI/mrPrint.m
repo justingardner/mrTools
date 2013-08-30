@@ -36,7 +36,16 @@ if baseType == 1
 end
 % options for surfaces
 if baseType == 2
-  paramsInfo{end+1} = {'thresholdCurvature',0,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
+  paramsInfo{end+1} = {'thresholdCurvature',1,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
+
+  % compute a good threshold value
+  grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
+  thresholdValue = mean(img(1,grayscalePoints,1));
+  thresholdValue = round(thresholdValue*100)/100;
+
+  paramsInfo{end+1} = {'thresholdValue',thresholdValue,'minmax=[0 1]','incdec=[-0.01 0.01]','contingent=thresholdCurvature','Threshold point - all values below this will turn to the thresholdMin value and all values above this will turn to thresholdMax if thresholdCurvature is turned on.'};
+  paramsInfo{end+1} = {'thresholdMin',0,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values less than thresholdValue will turn to if thresholdCurvature is set.'};
+  paramsInfo{end+1} = {'thresholdMax',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values greater than thresholdValue will turn to if thresholdCurvature is set.'};
   if ~isempty(roi)
     paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
   end
@@ -196,9 +205,11 @@ if baseType == 2
     % get all grayscale points (assuming these are the ones that are from the surface)
     grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
     % get points less than 0.5
-    lowThresholdPoints = grayscalePoints(img(1,grayscalePoints,1) < 0.5);
-    % set any value above 0.5 to 0.2 this gives a reasonable thresholded look
-    img(1,lowThresholdPoints,:) = 0.2;
+    lowThresholdPoints = grayscalePoints(img(1,grayscalePoints,1) < params.thresholdValue);
+    hiThresholdPoints = grayscalePoints(img(1,grayscalePoints,1) >= params.thresholdValue);
+    % set the values to the threshold values
+    img(1,lowThresholdPoints,:) = params.thresholdMin;
+    img(1,hiThresholdPoints,:) = params.thresholdMax;
   end
   % display the surface
   patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',axisHandle);
