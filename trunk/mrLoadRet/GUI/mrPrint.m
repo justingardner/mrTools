@@ -19,10 +19,6 @@ mrGlobals;
 % get base type
 baseType = viewGet(v,'baseType');
 
-if baseType > 1
-  mrWarnDlg('(mrPrint) Not yet implemented for surfaces');
-  return
-end
 
 % grab the image
 disppercent(-inf,'(mrPrint) Rerendering image');
@@ -38,18 +34,27 @@ paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colo
 if baseType == 1
   paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'type=popupmenu','Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
 end
-if ~isempty(roi)
-  paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
-  paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
-  paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
-  paramsInfo{end+1} = {'roiLabels',0,'type=checkbox','Print ROI name at center coordinate of ROI'};
-  if baseType == 1
-    paramsInfo{end+1} = {'smoothROI',1,'type=checkbox','Smooth the ROI boundaries'};
-    paramsInfo{end+1} = {'whichROIisMask',0,'incdec=[-1 1]', 'minmax=[0 inf]', 'Which ROI to use as a mask. 0 does no masking'};
-    paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=smoothROI'};
+% options for surfaces
+if baseType == 2
+  paramsInfo{end+1} = {'thresholdCurvature',0,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
+  if ~isempty(roi)
+    paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
   end
+else
+  % ROI options for flatmaps and images  
+  if ~isempty(roi)
+    paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
+    paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
+    paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
+    paramsInfo{end+1} = {'roiLabels',0,'type=checkbox','Print ROI name at center coordinate of ROI'};
+    if baseType == 1
+      paramsInfo{end+1} = {'smoothROI',1,'type=checkbox','Smooth the ROI boundaries'};
+      paramsInfo{end+1} = {'whichROIisMask',0,'incdec=[-1 1]', 'minmax=[0 inf]', 'Which ROI to use as a mask. 0 does no masking'};
+      paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=smoothROI'};
+    end
+  end
+  paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
 end
-paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
 
 params = mrParamsDialog(paramsInfo,'Print figure options');;
 if isempty(params),return,end
@@ -68,6 +73,7 @@ cmap = squeeze(get(H(end),'CData'));
 % display in graph window
 f = selectGraphWin;
 clf(f);drawnow;
+axisHandle = gca(f);
 
 set(f,'Name','Print figure');
 set(f,'NumberTitle','off');
@@ -116,26 +122,28 @@ else
   foregroundColor = [1 1 1];
 end
 
-% convert upSampleFactor into power of 2
-params.upSampleFactor = 2^params.upSampleFactor;
-% up sample if called for
-if params.upSampleFactor > 1
-  upSampImage(:,:,1) = upSample(img(:,:,1),log2(params.upSampleFactor));
-  upSampImage(:,:,2) = upSample(img(:,:,2),log2(params.upSampleFactor));
-  upSampImage(:,:,3) = upSample(img(:,:,3),log2(params.upSampleFactor));
-  upSampMask(:,:,1) = upBlur(double(mask(:,:,1)),log2(params.upSampleFactor));
-  upSampMask(:,:,2) = upBlur(double(mask(:,:,2)),log2(params.upSampleFactor));
-  upSampMask(:,:,3) = upBlur(double(mask(:,:,3)),log2(params.upSampleFactor));
-  img = upSampImage;
-  mask = upSampMask/max(upSampMask(:));;
-  % make sure we clip to 0 and 1
-  mask(mask<0) = 0;mask(mask>1) = 1;
-  img(img<0) = 0;img(img>1) = 1;
-  % fix the parameters that are used for clipping to a circular aperture
-  if exist('circd','var')
-    circd = circd*params.upSampleFactor;
-    xCenter = xCenter*params.upSampleFactor;
-    yCenter = yCenter*params.upSampleFactor;
+if isfield(params,'upSampleFactor')
+  % convert upSampleFactor into power of 2
+  params.upSampleFactor = 2^params.upSampleFactor;
+  % up sample if called for
+  if params.upSampleFactor > 1
+    upSampImage(:,:,1) = upSample(img(:,:,1),log2(params.upSampleFactor));
+    upSampImage(:,:,2) = upSample(img(:,:,2),log2(params.upSampleFactor));
+    upSampImage(:,:,3) = upSample(img(:,:,3),log2(params.upSampleFactor));
+    upSampMask(:,:,1) = upBlur(double(mask(:,:,1)),log2(params.upSampleFactor));
+    upSampMask(:,:,2) = upBlur(double(mask(:,:,2)),log2(params.upSampleFactor));
+    upSampMask(:,:,3) = upBlur(double(mask(:,:,3)),log2(params.upSampleFactor));
+    img = upSampImage;
+    mask = upSampMask/max(upSampMask(:));;
+    % make sure we clip to 0 and 1
+    mask(mask<0) = 0;mask(mask>1) = 1;
+    img(img<0) = 0;img(img>1) = 1;
+    % fix the parameters that are used for clipping to a circular aperture
+    if exist('circd','var')
+      circd = circd*params.upSampleFactor;
+      xCenter = xCenter*params.upSampleFactor;
+      yCenter = yCenter*params.upSampleFactor;
+    end
   end
 end
 
@@ -174,10 +182,51 @@ if ~strcmp(params.maskType,'None')
 end
 img(img<0) = 0;img(img>1) = 1;
 
-% display the image
+% set the colormap
 colormap(cmap);
-image(img);
-axis equal; axis off;axis tight;hold on
+
+% now display the images
+if baseType == 2
+  % this is the surface display
+  
+  % taken from refreshMLRDisplay
+  baseSurface = viewGet(v,'baseSurface');
+  % threshold curvature if asked for
+  if params.thresholdCurvature
+    % get all grayscale points (assuming these are the ones that are from the surface)
+    grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
+    % get points less than 0.5
+    lowThresholdPoints = grayscalePoints(img(1,grayscalePoints,1) < 0.5);
+    % set any value above 0.5 to 0.2 this gives a reasonable thresholded look
+    img(1,lowThresholdPoints,:) = 0.2;
+  end
+  % display the surface
+  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',axisHandle);
+  % make sure x direction is normal to make right/right
+  set(axisHandle,'XDir','reverse');
+  set(axisHandle,'YDir','normal');
+  set(axisHandle,'ZDir','normal');
+  % set the camera taret to center of surface
+  camtarget(axisHandle,mean(baseSurface.vtcs))
+  % set the size of the field of view in degrees
+  % i.e. 90 would be very wide and 1 would be ver
+  % narrow. 9 seems to fit the whole brain nicely
+  camva(axisHandle,9);
+  setMLRViewAngle(v,axisHandle);
+  % draw the rois
+  for roiNum = 1:length(roi)
+    patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roi{roiNum}.overlayImage,'facecolor','interp','edgecolor','none','FaceAlpha',params.roiAlpha,'Parent',axisHandle);
+  end
+else
+  % display the image (this is for flat maps and images)
+  image(img);
+end
+
+% set axis
+axis(axisHandle,'equal');
+axis(axisHandle,'off');
+axis(axisHandle,'tight');
+hold(axisHandle,'on');
 
 % calcuate directions
 params.plotDirections = 0;
@@ -259,85 +308,87 @@ set(H,'FontSize',16);
 drawnow;
 
 % draw the roi
-sliceNum = viewGet(v,'currentSlice');
-label = {};
-disppercent(-inf,'(mrPrint) Rendering ROIs');
-for rnum = 1:length(roi)
-  % check for lines
-  if params.roiLineWidth > 0
-    if ~isempty(roi{rnum})
-      if isfield(roi{rnum},'lines')
-	if ~isempty(roi{rnum}.lines.x)
-	  % get color
-	  if strcmp(params.roiColor,'default')
-	    color = roi{rnum}.color;
-	  else
-	    color = color2RGB(params.roiColor);
-	  end
-	  % deal with upSample factor
-	  roi{rnum}.lines.x = roi{rnum}.lines.x*params.upSampleFactor;
-	  roi{rnum}.lines.y = roi{rnum}.lines.y*params.upSampleFactor;
-	  % labels for rois, just create here
-	  % and draw later so they are always on top
-	  if params.roiLabels
-	    x = roi{rnum}.lines.x;
-	    y = roi{rnum}.lines.y;
-	    label{end+1}.x = median(x(~isnan(x)));
-	    label{end}.y = median(y(~isnan(y)));
-	    label{end}.str = viewGet(v,'roiName',rnum);
-	    label{end}.color = color;
-	  end
-	  % if we have a circular apertuer then we need to
-	  % fix all the x and y points so they don't go off the end
-	  if strcmp(params.maskType,'Circular')
-	    % get the distance from center
-	    x = roi{rnum}.lines.x-xCenter;
-	    y = roi{rnum}.lines.y-yCenter;
-	    d = sqrt(x.^2+y.^2);
-	    if strcmp(params.roiOutOfBoundsMethod,'Max radius')
-	      % find the angle of all points
-	      ang = atan(y./x);
-	      ysign = (y > 0)*2-1;
-	      xsign = (x > 0)*2-1;
-	      newx = circd*cos(ang);
-	      newy = circd*sin(ang);
-	      % now reset all points past the maximum radius
-	      % with values at the outermost edge of the aperture
-	      x(d>circd) = newx(d>circd);
-	      y(d>circd) = newy(d>circd);
-	      % set them back in the structure
-	      roi{rnum}.lines.x = xsign.*abs(x)+xCenter;
-	      roi{rnum}.lines.y = ysign.*abs(y)+yCenter;
+if baseType ~= 2
+  sliceNum = viewGet(v,'currentSlice');
+  label = {};
+  disppercent(-inf,'(mrPrint) Rendering ROIs');
+  for rnum = 1:length(roi)
+    % check for lines
+    if params.roiLineWidth > 0
+      if ~isempty(roi{rnum})
+	if isfield(roi{rnum},'lines')
+	  if ~isempty(roi{rnum}.lines.x)
+	    % get color
+	    if strcmp(params.roiColor,'default')
+	      color = roi{rnum}.color;
 	    else
-	      % set all values greater than the radius to nan
-	      x(d>circd) = nan;
-	      y(d>circd) = nan;
-	      
-	      % set them back in the strucutre
-	      roi{rnum}.lines.x = x+xCenter;
-	      roi{rnum}.lines.y = y+yCenter;
+	      color = color2RGB(params.roiColor);
 	    end
-	  end
-	  if ~params.smoothROI
-	    % draw the lines
-	    line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth);
+	    % deal with upSample factor
+	    roi{rnum}.lines.x = roi{rnum}.lines.x*params.upSampleFactor;
+	    roi{rnum}.lines.y = roi{rnum}.lines.y*params.upSampleFactor;
+	    % labels for rois, just create here
+	    % and draw later so they are always on top
+	    if params.roiLabels
+	      x = roi{rnum}.lines.x;
+	      y = roi{rnum}.lines.y;
+	      label{end+1}.x = median(x(~isnan(x)));
+	      label{end}.y = median(y(~isnan(y)));
+	      label{end}.str = viewGet(v,'roiName',rnum);
+	      label{end}.color = color;
+	    end
+	    % if we have a circular apertuer then we need to
+	    % fix all the x and y points so they don't go off the end
+	    if strcmp(params.maskType,'Circular')
+	      % get the distance from center
+	      x = roi{rnum}.lines.x-xCenter;
+	      y = roi{rnum}.lines.y-yCenter;
+	      d = sqrt(x.^2+y.^2);
+	      if strcmp(params.roiOutOfBoundsMethod,'Max radius')
+		% find the angle of all points
+		ang = atan(y./x);
+		ysign = (y > 0)*2-1;
+		xsign = (x > 0)*2-1;
+		newx = circd*cos(ang);
+		newy = circd*sin(ang);
+		% now reset all points past the maximum radius
+		% with values at the outermost edge of the aperture
+		x(d>circd) = newx(d>circd);
+		y(d>circd) = newy(d>circd);
+		% set them back in the structure
+		roi{rnum}.lines.x = xsign.*abs(x)+xCenter;
+		roi{rnum}.lines.y = ysign.*abs(y)+yCenter;
+	      else
+		% set all values greater than the radius to nan
+		x(d>circd) = nan;
+		y(d>circd) = nan;
+		
+		% set them back in the strucutre
+		roi{rnum}.lines.x = x+xCenter;
+		roi{rnum}.lines.y = y+yCenter;
+	      end
+	    end
+	    if ~params.smoothROI
+	      % draw the lines
+	      line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth);
+	    end
 	  end
 	end
       end
     end
   end
-end
 
-for i = 1:length(label)
-  h = text(label{i}.x,label{i}.y,label{i}.str);
-  set(h,'Color',foregroundColor);
-  set(h,'Interpreter','None');
-  set(h,'EdgeColor',label{i}.color);
-  set(h,'BackgroundColor',params.backgroundColor);
-  set(h,'FontSize',10);
-  set(h,'HorizontalAlignment','center');
+  for i = 1:length(label)
+    h = text(label{i}.x,label{i}.y,label{i}.str);
+    set(h,'Color',foregroundColor);
+    set(h,'Interpreter','None');
+    set(h,'EdgeColor',label{i}.color);
+    set(h,'BackgroundColor',params.backgroundColor);
+    set(h,'FontSize',10);
+    set(h,'HorizontalAlignment','center');
+  end
+  disppercent(inf);
 end
-disppercent(inf);
 
 % bring up print dialog
 global mrPrintWarning
