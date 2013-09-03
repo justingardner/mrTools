@@ -331,12 +331,21 @@ if info.isepi
     % new console needs a phase encode flip
     epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
   end
+  % we also seem need these strange 1 voxel shifts to align with mprage data, blech, blech, blech.
+  shiftBlech = eye(4);
+  shiftBlech(1,4) = -1;
+  shiftBlech(2,4) = 1;
+  % if ppe is set then that is the shift in the phase encode direction (this is ignored by mprage)
+  offset(2,4) = procpar.ppe*10;
 else
   epiFlip = eye(4);
+  shiftBlech = eye(4);
+%  shiftBlech(1,4) = 1;
+%  shiftBlech(2,4) = 1;
 end
 
 % now create the final shifted rotation matrix
-xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*shiftBlech*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);
