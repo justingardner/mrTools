@@ -15,8 +15,13 @@ end
 
 global gParams;
 if isfield(gParams,'fignum')
-  if ishandle(gParams.fignum)
-    close(gParams.fignum);
+  for i = 1:length(gParams.fignum)
+    if ishandle(gParams.fignum(i))
+      close(gParams.fignum(i));
+    end
+    if ishandle(gParams.fignum(i))
+      delete(gParams.fignum(i));
+    end
   end
 end
 
