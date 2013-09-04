@@ -37,7 +37,8 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'pluginPaths','selectedPlugins',...
    'statisticalTestOutput',...
    'site','magnet','coil','pulseSequence',...
-   'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog'};
+   'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
+   'mlrVolDisplayControls','mlrVolOverlayAlpha'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
@@ -72,6 +73,8 @@ prefDefaults{find(strcmp('coil',prefNames))} = {{'LifeService','Siemens birdcage
 prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
 prefDefaults{find(strcmp('maxArrayWidthForParamsDialog',prefNames))} = 25;
 prefDefaults{find(strcmp('maxArrayHeightForParamsDialog',prefNames))} = 50;
+prefDefaults{find(strcmp('mlrVolDisplayControls',prefNames))} = false;
+prefDefaults{find(strcmp('mlrVolOverlayAlpha',prefNames))} = 0.8;
 
 if nargin == 0
   if nargout > 0
