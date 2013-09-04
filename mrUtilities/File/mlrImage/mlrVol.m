@@ -312,8 +312,15 @@ if isfield(gVol{sysNum},'fig')
 end
 
 if isfield(gVol{sysNum},'controlsUp') && gVol{sysNum}.controlsUp
+  % remember next time to bring up controls
+  mrSetPref('mlrVolDisplayControls',true);
   mrParamsClose;
+else
+  mrSetPref('mlrVolDisplayControls',false);
 end
+
+% remember alpha overlay setting for next time
+mrSetPref('mlrVolOverlayAlpha',gVol{sysNum}.overlayAlpha);
 
 % remove the variable
 gVol{sysNum} = [];
@@ -1804,10 +1811,10 @@ gVol{sysNum}.animating = false;
 gVol{sysNum}.interpMethod = mrGetPref('interpMethod');
 
 % alpha for overlay
-gVol{sysNum}.overlayAlpha = 0.2;
+gVol{sysNum}.overlayAlpha = mrGetPref('mlrVolOverlayAlpha');;
 
 % default not to display controls
-gVol{sysNum}.displayControls = false;
+gVol{sysNum}.displayControls = mrGetPref('mlrVolDisplayControls');
 
 % overlay toggle state starts as on
 gVol{sysNum}.overlayToggleState = toggleOverlay;
