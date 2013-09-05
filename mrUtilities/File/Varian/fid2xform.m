@@ -22,7 +22,7 @@ end
 
 % get extra arguments
 movepro=[];movepss=[];
-getArgs(varargin,{'movepro=0','movepss=0'});
+getArgs(varargin,{'movepro=0','movepss=0','fixConsoleUpgradeBug=1'});
 
 if ieNotDefined('verbose'),verbose = 0;end
 
@@ -333,8 +333,10 @@ if info.isepi
     % new console needs a phase encode flip
     epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
     % we also seem need these strange 1 voxel shifts to align with mprage data, blech, blech, blech.
-    shiftBlech(1,4) = -1;
-    shiftBlech(2,4) = 1;
+    if fixConsoleUpgradeBug
+      shiftBlech(1,4) = -1;
+      shiftBlech(2,4) = 1;
+    end
   end
   % if ppe is set then that is the shift in the phase encode direction (this is ignored by mprage)
   offset(2,4) = procpar.ppe*10;
