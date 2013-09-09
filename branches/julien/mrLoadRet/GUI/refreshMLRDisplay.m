@@ -286,10 +286,16 @@ end
 %Display Surface contours on volume
 if ~baseType
   surfaceOnVolume = viewGet(view,'surfaceOnVolume');
+  if ~isfield(gui,'surfOnVolGUIXform')
+    gui.surfOnVolGUIXform = eye(4);
+  end
   if  rotate~=0 && ~isempty(surfaceOnVolume)
     mrWarnDlg('(refreshMLRDisplay) displaySurfaceOnVolume not implemented for rotations other than 0');
   elseif ~isempty(surfaceOnVolume)
-    displaySurfaceOnVolume(view,surfaceOnVolume,gui.axis,sliceIndex);
+    if ~isfield(gui,'surfOnVolGUIXform')
+      gui.surfOnVolGUIXform = eye(4);
+    end
+    displaySurfaceOnVolume(view,surfaceOnVolume,gui.axis,sliceIndex,gui.surfOnVolGUIXform,rotate);
   end
 end
 
@@ -690,7 +696,7 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    displaySurfaceOnVolume    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function displaySurfaceOnVolume(view,surfaceNum,axis,sliceIndex)
+function displaySurfaceOnVolume(view,surfaceNum,axis,sliceIndex,surfOnVolGUIXform,rotate)
 
 for iSurf=surfaceNum
   if viewGet(view,'baseType',iSurf)~=2
@@ -702,8 +708,8 @@ for iSurf=surfaceNum
     outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
     %convert surface coordinates to base coordinates
     base2surf=viewGet(view,'base2base',iSurf);
-    innerCoords = (inv(base2surf)*[innerCoords ones(size(innerCoords,1),1)]')';
-    outerCoords = (inv(base2surf)*[outerCoords ones(size(outerCoords,1),1)]')';
+    innerCoords = (surfOnVolGUIXform * inv(base2surf)*[innerCoords ones(size(innerCoords,1),1)]')';
+    outerCoords = (surfOnVolGUIXform * inv(base2surf)*[outerCoords ones(size(outerCoords,1),1)]')';
 
     % %switch x and y because that's the way everything is plotted in the GUI
     % innerCoords = innerCoords(:,[2 1 3]);
@@ -713,15 +719,15 @@ for iSurf=surfaceNum
     %each triangle intersects with the current slice plane along a segment defined by two intersections
     currentSlice = viewGet(view,'curslice');
     %first the WM/GM boundary
-    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex);
+    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex,rotate);
 
     %plot all the segments between the first and second intersections
-    line([firstIntersection(:,1) secondIntersection(:,1)]',...
+    h = line([firstIntersection(:,1) secondIntersection(:,1)]',...
           [firstIntersection(:,2) secondIntersection(:,2)]',...
           'color',[.9 .4 .9],'Parent',axis);
 
     %and the GM/CSF boundary
-    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex);
+    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate);
 
     %plot all the segments between the first and second intersections
     line([firstIntersection(:,1) secondIntersection(:,1)]',...
@@ -733,7 +739,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     computeIntersection     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [firstIntersection,secondIntersection]=computeIntersection(triangles,vertices,currentSlice,sliceIndex)
+function [firstIntersection,secondIntersection]=computeIntersection(triangles,vertices,currentSlice,sliceIndex,rotate)
 
 axes2D=fliplr(setdiff([1 2 3],sliceIndex)); %axes of the display depending on the base slice index (slice orientation)
                                              %(this is set in getBaseSlice and axes are switched for unknown reasons)
@@ -763,3 +769,12 @@ b = (currentSlice-vertices(loneVertices,sliceIndex))./(vertices(pairVertices(:,2
 secondIntersection(:,1) = vertices(loneVertices,axes2D(1)) + b .* (vertices(pairVertices(:,2),axes2D(1)) - vertices(loneVertices,axes2D(1)));
 secondIntersection(:,2) = vertices(loneVertices,axes2D(2)) + b .* (vertices(pairVertices(:,2),axes2D(2)) - vertices(loneVertices,axes2D(2)));
 
+%apply rotation to 2D coordinates (not working yet)
+if rotate
+  rotateRad = deg2rad(rotate);
+  xform = eye(3);
+  xform(1:2,1:2) = [cos(rotateRad) -sin(rotateRad); sin(rotateRad) cos(rotateRad)];
+  firstIntersection = (xform * [firstIntersection ones(size(firstIntersection,1),1)]')';
+  secondIntersection = (xform * [secondIntersection ones(size(secondIntersection,1),1)]')';
+end
+  
