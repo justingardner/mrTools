@@ -1765,7 +1765,7 @@ gVol{sysNum}.n = 0;
 
 % parse args here when we have settings
 imageOrientation = [];verbose = [];toggleOverlay = [];
-getArgs(otherArgs,{'imageOrientation=0','verbose=1','toggleOverlay=1'});
+getArgs(otherArgs,{'imageOrientation=0','verbose=1','toggleOverlay=1','showControls=[]'});
 gVol{sysNum}.imageOrientation = imageOrientation;
 gVol{sysNum}.verbose = verbose;
 
@@ -1813,8 +1813,12 @@ gVol{sysNum}.interpMethod = mrGetPref('interpMethod');
 % alpha for overlay
 gVol{sysNum}.overlayAlpha = mrGetPref('mlrVolOverlayAlpha');;
 
-% default not to display controls
-gVol{sysNum}.displayControls = mrGetPref('mlrVolDisplayControls');
+% set display controls
+if isempty(showControls)
+  gVol{sysNum}.displayControls = mrGetPref('mlrVolDisplayControls');
+else
+  gVol{sysNum}.displayControls = showControls;
+end  
 
 % overlay toggle state starts as on
 gVol{sysNum}.overlayToggleState = toggleOverlay;
