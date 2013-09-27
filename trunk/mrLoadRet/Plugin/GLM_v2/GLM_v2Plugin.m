@@ -364,12 +364,18 @@ mlrGuiSet(viewNum,'clippingOverlays',unique(clippingOverlayList));
 
 % set overlay min and max sliders
 curClippingOverlay = viewGet(viewNum,'curClippingOverlay');
-overlayClip = viewGet(viewNum,'overlayClip',curClippingOverlay);
-overlayRange = viewGet(viewNum,'overlayRange',curClippingOverlay);
-mlrGuiSet(viewNum,'overlayMinRange',overlayRange);
-mlrGuiSet(viewNum,'overlayMaxRange',overlayRange);
-mlrGuiSet(viewNum,'overlayMin',overlayClip(1));
-mlrGuiSet(viewNum,'overlayMax',overlayClip(2));
+if ~isempty(curClippingOverlay)
+  overlayClip = viewGet(viewNum,'overlayClip',curClippingOverlay);
+  overlayRange = viewGet(viewNum,'overlayRange',curClippingOverlay);
+  if ~isempty(overlayRange)
+    mlrGuiSet(viewNum,'overlayMinRange',overlayRange);
+    mlrGuiSet(viewNum,'overlayMaxRange',overlayRange);
+  end
+  if ~isempty(overlayClip)
+    mlrGuiSet(viewNum,'overlayMin',overlayClip(1));
+    mlrGuiSet(viewNum,'overlayMax',overlayClip(2));
+  end
+end
 
 refreshMLRDisplay(viewNum);
 
