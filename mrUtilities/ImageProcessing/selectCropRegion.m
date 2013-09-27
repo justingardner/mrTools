@@ -10,23 +10,35 @@ end
 nImages = size(volume,3);
 aSize = [size(volume,1) size(volume,2)];
 
-h = figure('MenuBar', 'none');
+%get the screen size of the default monitor
+screenSize = getMonitorPositions;
+screenSize = screenSize(1,3:4);
+hFigure = figure('MenuBar', 'none');
+
 OK = 0;    % Flag to accept chosen crop
 while ~OK
     clf
-    m = round(sqrt(nImages));
-    n = ceil(nImages/m);
-    for sliceNum = 1:nImages
-        h_slice = subplot(m, n, sliceNum);
-        h_image = imagesc(volume(:, :, sliceNum), 'Tag', sprintf(' %d', sliceNum));
-        colormap(gray)
-        axis off
-        axis equal
+    %optimize number of columns and rows based on screen dimensions and images dimensions
+    [m,n]=getArrayDimensions(nImages,screenSize(2)/aSize(1)*aSize(2)/screenSize(1));
+    %optimize figure proportions for subplot
+    figureDims = get(hFigure,'position');
+    figureDims(3)=figureDims(4)*n/m;
+    set(hFigure,'position',figureDims);
+    for row = 1:m
+      for col = 1:n
+        sliceNum = (row-1)*n+col;
+        if sliceNum<=nImages
+          h(sliceNum) =  subplot('position',getSubplotPosition(col,row,ones(1,n),ones(1,m),0.02,0.02));
+          imagesc(volume(:, :, sliceNum), 'Tag', sprintf(' %d', sliceNum));
+          colormap(gray)
+          axis off
+          axis equal
+        end
+      end
     end
     brighten(0.6);
 
-    subplot(m, n, 1)
-    title('Click on the first slice.')
+    set(hFigure,'name','Click on the first slice.')
     sliceNum = 0;
     while sliceNum == 0
         waitforbuttonpress
@@ -36,9 +48,9 @@ while ~OK
         end
     end
     firstSlice = sliceNum;
+    hFirst = text(aSize(2)/2,aSize(1)/2,{'First','slice'},'parent',h(firstSlice),'HorizontalAlignment','center','color','g','fontweight','bold');
     
-    subplot(m, n, 1)
-    title('Click on the last slice.')
+    set(hFigure,'name','Click on the last slice.')
     sliceNum = 0;
     while sliceNum == 0
         waitforbuttonpress
@@ -49,17 +61,15 @@ while ~OK
     end
     if sliceNum > firstSlice
         lastSlice = sliceNum;
+        text(aSize(2)/2,aSize(1)/2,{'Last','slice'},'parent',h(lastSlice),'HorizontalAlignment','center','color','g','fontweight','bold');
     else
         lastSlice = firstSlice;
         firstSlice = sliceNum;
+        set(hFirst,'string',{'Last','slice'});
+        text(aSize(2)/2,aSize(1)/2,{'First','slice'},'parent',h(firstSlice),'HorizontalAlignment','center','color','g','fontweight','bold');
     end
-    subplot(m, n, firstSlice)
-    title('First slice')
-    subplot(m, n, lastSlice)
-    title('Last slice')
 
-    subplot(m, n, 1)
-    title('Click on an image to crop.')
+    set(hFigure,'name','Click on an image to crop.')
     sliceNum = 0;
     while sliceNum == 0
         waitforbuttonpress
@@ -75,7 +85,7 @@ while ~OK
     brighten(0.6);
     axis off
     axis equal
-    title('Crop the image.')
+    set(hFigure,'name','Crop the image.')
 
     [x,y] = ginput(2);
     x = sort(round(x));
@@ -84,21 +94,30 @@ while ~OK
     x = max(1, min(x, size(volume, 2)));
     y = max(1, min(y, size(volume, 1)));
     
-    % 
     cropRegion = [y(1), x(1), firstSlice; y(2), x(2), lastSlice];
 
     % Confirm crop
-    tmp = volume([cropRegion(1,1):cropRegion(2,1)], ...
-        [cropRegion(1,2):cropRegion(2,2)], ...
-        [cropRegion(1,3):cropRegion(2,3)]);
-
-    for sliceNum = 1:size(tmp,3)
-        subplot(m, n, sliceNum)
-
-        h_slice(sliceNum) = imagesc(tmp(:, :, sliceNum));
-        colormap(gray)
-        axis off
-        axis equal
+    tmp = volume(cropRegion(1,1):cropRegion(2,1), ...
+        cropRegion(1,2):cropRegion(2,2), ...
+        cropRegion(1,3):cropRegion(2,3));
+    clf
+    %optimize number of columns and rows based on screen dimensions and images dimensions
+    [m,n]=getArrayDimensions(size(tmp,3),screenSize(2)/size(tmp,1)*size(tmp,2)/screenSize(1));
+    %optimize figure proportions for subplot
+    figureDims = get(hFigure,'position');
+    figureDims(3)=figureDims(4)*n/m;
+    set(hFigure,'position',figureDims);
+    for row = 1:m
+      for col = 1:n
+        sliceNum = (row-1)*n+col;
+        if sliceNum<=size(tmp,3)
+          h(sliceNum) =  subplot('position',getSubplotPosition(col,row,ones(1,n),ones(1,m),0.02,0.02));
+          imagesc(volume(:, :, sliceNum), 'Tag', sprintf(' %d', sliceNum));
+          colormap(gray)
+          axis off
+          axis equal
+        end
+      end
     end
     brighten(0.6);
 
@@ -106,7 +125,7 @@ while ~OK
         case 'Cancel'
             % Cancel
             cropRegion = [1, 1, 1; size(volume)];
-            close(h);
+            close(hFigure);
             disp('Crop aborted');
             return
         case 'Yes'
@@ -118,5 +137,5 @@ while ~OK
     end
 end  %if ~OK
 
-close(h)
+close(hFigure)
 

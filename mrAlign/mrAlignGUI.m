@@ -239,13 +239,7 @@ initPath = mrGetPref('volumeDirectory');
 if isempty(initPath)
     initPath = pwd;
 end
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = getPathStrDialog(initPath,'Choose vAnatomy file',filterspec);
+pathStr = getPathStrDialog(initPath,'Choose vAnatomy file',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr),return,end
 
 mrAlignLoadVol(pathStr,hObject,eventdata,handles);
@@ -411,13 +405,7 @@ global ALIGN
 
 % Prompt user to choose inplanes. 
 initPath = pwd;
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = getPathStrDialog(initPath,'Choose inplane anatomy file',filterspec);
+pathStr = getPathStrDialog(initPath,'Choose inplane anatomy file',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr),return,end
 ALIGN.inplanePath = pathStr;
 
@@ -570,13 +558,7 @@ sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
 sform_code = ALIGN.volumeHdr.sform_code;
 
 % Prompt user for filename(s)
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = getPathStrDialog(pwd,'Choose one or more nifti files',filterspec,'on');
+pathStr = getPathStrDialog(pwd,'Choose one or more nifti files',{'*.img;*.nii','NIFTI Files'},'on');
 if ~iscell(pathStr)
 	pathStr = {pathStr};
 end
@@ -602,13 +584,7 @@ if isempty(ALIGN.inplanes)
 end
 
 % Prompt user for filename(s)
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
+pathStr = putPathStrDialog(pwd,'Specify a nifti filename',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr)
   mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
@@ -673,13 +649,7 @@ if isempty(ALIGN.inplanes)
 end
 
 % Prompt user for filename(s)
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
+pathStr = putPathStrDialog(pwd,'Specify a nifti filename',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr)
   mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
@@ -1222,7 +1192,7 @@ paramsInfo = {...
       'Sets the transformation to the qform matrix of the NIFTI header. This will revert back to the original alignment of the volumes right off the scanner.'},...
   {'sform', 0,'type=pushbutton','buttonString=Initialize Alignment from Header Sform','callback',{@initializeFromSformMenuItem_Callback,[],[],handles},'passCallbackOutput=0',...
       'Sets the transformation to the sform matrix of the NIFTI header. This will revert back to the last saved alignment.'},...
-  {'set', 0,'type=pushbutton','buttonString=Set Crop Region','callback',{@selectCropRegion,ALIGN.inplanes},'passCallbackOutput=0',...
+  {'set', 0,'type=pushbutton','buttonString=Set Crop Region','callback',@setCropRegion,'passCallbackOutput=0',...
       'Sets a 3D box in the source volume that constrains the alignment estimation. Voxels outside this box are ignored in the motion estimation'},...
   {'reset', 0,'type=pushbutton','buttonString=Reset Crop Region','callback',{@resetCropInplanesMenuItem_Callback},'passCallbackOutput=0',...
       'Resets the 3D box to the whold source volume.'},...
@@ -1248,6 +1218,11 @@ paramsInfo = {...
 
   % display dialog
   mrParamsDialog(paramsInfo,'Advanced Alignment Menu','modal=0');
+  
+function setCropRegion
+  %this function is just so that we get the new inplane volume if it has changed
+  global ALIGN
+  ALIGN.crop=selectCropRegion(ALIGN.inplanes);
   
 function setAlignmentOption(option,params)
 global ALIGN

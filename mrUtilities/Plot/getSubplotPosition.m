@@ -5,15 +5,18 @@ function position = getSubplotPosition(X,Y,horizontalGrid,verticalGrid,xMargin,y
 %      usage: position  =getSubplotPosition(X,Y,verticalGrid,horizontalGrid,xMargin,yMargin)
 %         by: julien besle
 %       date: 28/11/2010
-%    purpose: returns normalized position for subplot or uicontrol
-%     inputs: - X and Y are integers specifying the extent and location of the subplot in the grid (from left to right and top to bottom)
-%             - horizontalGrid and verticalGrid are vector specifying the dimensions of each subplot row and columns (in any unit,from left to right and top to bottom)
-%             - xMargin and yMargin are the width left blank between subplots (same units as horizontal and vertical Grid). 
+%    purpose: returns normalized position for subplot or uicontrol in a virtual grid  of given dimensions
+%     inputs: - X and Y are integers specifying the extent and location of the subplot in the virtual grid (from left to right and top to bottom)
+%             - horizontalGrid and verticalGrid are vector specifying the relative dimensions of the rows and columns 
+%                 in the grid (in arbitrary units,from left to right and top to bottom)
+%             - xMargin and yMargin are the width left blank between the rows and columns of the grid (same units as horizontal and vertical Grid). 
 %                 They are independent from the dimensions of the grid and are removed from it
-%     output: - position vector [left bottom width height]. if no margin is specified, it is better to use this position as 'outerposition'
+%     output: - position vector [left bottom width height] to use as input to subplot or uicontrol 'position' property. 
+%               if no margin is specified, it is better to use this position as 'outerposition'
 %
 %   example: h = axes('outerposition',getSubplotPosition(2,2:3,[1 1 .5],[.5 1 1 .5],.1)) 
-%                     creates a virtual 3*4 grid in the figure
+%                     creates a virtual 3 columns * 4 rows grid in the figure, with the last column half the width of the first two 
+%                     and the first and last rows, half the height of the middle ones
 %                     and draws axes on the second columns, spanning the second and third rows of the grid
 
 

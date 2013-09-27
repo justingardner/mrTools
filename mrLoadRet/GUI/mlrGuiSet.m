@@ -290,13 +290,13 @@ switch lower(field)
   if ~isempty(value)
     if ~all(isfinite(value))
       mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Min Slider because overlay range is not finite [%f %f]',value(1),value(2)));
-      set(handles.overlayMinSlider,'Min',max(value(1),-realmax),'Max',min(value(2),realmax),'visible','off');
+      set(handles.overlayMinSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
     elseif value(2) < value(1)
       mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Min Slider because overlay range is not increasing [%f > %f]',value(1),value(2)));
-      set(handles.overlayMinSlider,'Min',max(value(1),-realmax),'Max',min(value(2),realmax),'visible','off');
+      set(handles.overlayMinSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
     else
       set(handles.overlayMinSlider,'Min',value(1),'Max',value(2),'visible','on');
-    end
+      end
   end
  case {'overlaymax'}
   % mlrGuiSet(view,'overlayMax',value);
@@ -313,10 +313,10 @@ switch lower(field)
   if ~isempty(value)
     if ~all(isfinite(value))
       mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Max Slider because overlay range is not finite [%f %f]',value(1),value(2)));
-      set(handles.overlayMaxSlider,'Min',max(value(1),-realmax),'Max',min(value(2),realmax),'visible','off');
+      set(handles.overlayMaxSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
     elseif value(2) < value(1)
       mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Max Slider because overlay range is not increasing [%f > %f]',value(1),value(2)));
-      set(handles.overlayMaxSlider,'Min',max(value(1),-realmax),'Max',min(value(2),realmax),'visible','off');
+      set(handles.overlayMaxSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
     else
       set(handles.overlayMaxSlider,'Min',value(1),'Max',value(2),'visible','on');
     end
