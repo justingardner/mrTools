@@ -239,13 +239,7 @@ initPath = mrGetPref('volumeDirectory');
 if isempty(initPath)
     initPath = pwd;
 end
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = getPathStrDialog(initPath,'Choose vAnatomy file',filterspec);
+pathStr = getPathStrDialog(initPath,'Choose vAnatomy file',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr),return,end
 
 mrAlignLoadVol(pathStr,hObject,eventdata,handles);
@@ -411,13 +405,7 @@ global ALIGN
 
 % Prompt user to choose inplanes. 
 initPath = pwd;
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = getPathStrDialog(initPath,'Choose inplane anatomy file',filterspec);
+pathStr = getPathStrDialog(initPath,'Choose inplane anatomy file',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr),return,end
 ALIGN.inplanePath = pathStr;
 
@@ -570,13 +558,7 @@ sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
 sform_code = ALIGN.volumeHdr.sform_code;
 
 % Prompt user for filename(s)
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = getPathStrDialog(pwd,'Choose one or more nifti files',filterspec,'on');
+pathStr = getPathStrDialog(pwd,'Choose one or more nifti files',{'*.img;*.nii','NIFTI Files'},'on');
 if ~iscell(pathStr)
 	pathStr = {pathStr};
 end
@@ -602,13 +584,7 @@ if isempty(ALIGN.inplanes)
 end
 
 % Prompt user for filename(s)
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
+pathStr = putPathStrDialog(pwd,'Specify a nifti filename',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr)
   mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
@@ -673,13 +649,7 @@ if isempty(ALIGN.inplanes)
 end
 
 % Prompt user for filename(s)
-ext = mrGetPref('niftiFileExtension');
-if strcmp(ext,'.nii')
-  filterspec = {'*.nii';'*.img'};
-else
-  filterspec = {'*.img';'*.nii'};
-end
-pathStr = putPathStrDialog(pwd,'Specify a nifti filename',filterspec);
+pathStr = putPathStrDialog(pwd,'Specify a nifti filename',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr)
   mrWarnDlg('(mrAlignGUI) saveAlignedSource aborted');
   return
