@@ -22,7 +22,7 @@ end
 
 % get extra arguments
 movepro=[];movepss=[];
-getArgs(varargin,{'movepro=0','movepss=0'});
+getArgs(varargin,{'movepro=0','movepss=0','fixConsoleUpgradeBug=1'});
 
 if ieNotDefined('verbose'),verbose = 0;end
 
@@ -323,6 +323,8 @@ end
 
 % epi images appear to nead a flip in X and Y
 if info.isepi
+  % strange 1 voxel shifts needed after console update
+  shiftBlech = eye(4);
   % before about 2011/09/01 the readout was flipped too
   %epiFlip = [-1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
   if strcmp(lower(info.console),'inova')  
@@ -330,13 +332,21 @@ if info.isepi
   else
     % new console needs a phase encode flip
     epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+    % we also seem need these strange 1 voxel shifts to align with mprage data, blech, blech, blech.
+    if fixConsoleUpgradeBug
+      shiftBlech(1,4) = -1;
+      shiftBlech(2,4) = 1;
+    end
   end
+  % if ppe is set then that is the shift in the phase encode direction (this is ignored by mprage)
+  offset(2,4) = procpar.ppe*10;
 else
   epiFlip = eye(4);
+  shiftBlech = eye(4);
 end
 
 % now create the final shifted rotation matrix
-xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*originOffset;
+xform = swapDim2*rotmat*swapDim*offset*diag(voxspacing)*epiFlip*shiftBlech*originOffset;
 
 % testing rotmat
 %rotmatpsi = euler2rotmatrix(procpar.psi,0,0);

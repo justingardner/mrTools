@@ -36,7 +36,9 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'interpMethod','corticalDepthBins','roiCorticalDepthDisplayRatio', 'multiSliceProjectionMethod','colorBlending',...
    'pluginPaths','selectedPlugins',...
    'statisticalTestOutput',...
-   'site','magnet','coil','pulseSequence'};
+   'site','magnet','coil','pulseSequence',...
+   'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
+   'mlrVolDisplayControls','mlrVolOverlayAlpha'};
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
@@ -69,6 +71,10 @@ prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
 prefDefaults{find(strcmp('magnet',prefNames))} = {{'Allegra 3T','other'}};
 prefDefaults{find(strcmp('coil',prefNames))} = {{'LifeService','Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
 prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
+prefDefaults{find(strcmp('maxArrayWidthForParamsDialog',prefNames))} = 25;
+prefDefaults{find(strcmp('maxArrayHeightForParamsDialog',prefNames))} = 50;
+prefDefaults{find(strcmp('mlrVolDisplayControls',prefNames))} = false;
+prefDefaults{find(strcmp('mlrVolOverlayAlpha',prefNames))} = 0.8;
 
 if nargin == 0
   if nargout > 0

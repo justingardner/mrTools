@@ -95,7 +95,10 @@ surf.Ntris  = Ninfo(2);
 surf.Nedges = Ninfo(3);
 
 % return here if we only want the header
-if loadOnlyHeader,return,end
+if loadOnlyHeader
+  fclose(fid);
+  return
+end
 
 [surf.vtcs, count] = fread(fid, surf.Nvtcs*3, 'float32');
 if (count ~= 3*surf.Nvtcs), mrErrorDlg(sprintf('(loadSurfOFF) Error reading file %s',surffile)); end

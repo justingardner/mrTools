@@ -60,7 +60,7 @@ for i = 1:length(vars)
       varinfo{i}.type = 'string';
     end
   end
-  
+
   % check to see if name is valid
   fixedName = fixBadChars(vars{i}{1});
   if ~strcmp(fixedName,vars{i}{1})
@@ -213,6 +213,48 @@ for i = 1:length(vars)
       vars{i}{2} = varinfo{i}.minmax(1);
     elseif vars{i}{2} > varinfo{i}.minmax(2)
       vars{i}{2} = varinfo{i}.minmax(2);
+    end
+  end
+
+  % if it is an array, check to see how bit it is because really big arrays are
+  % not able to be displayed
+  if strcmp(varinfo{i}.type,'array')
+    % first we should not display variables that are larger than 2 dims
+    arrayDims = ndims(vars{i}{2});
+    if arrayDims > 2
+      mrWarnDlg(sprintf('(mrParamsParse) Cannot handle arrays that are greater than 2 dims: %s',vars{i}{1}));
+      keyboard
+    end
+    % now check that the product of dimensions does not exceed
+    % the pref: maxArrayWidthForParamsDialog and maxArrayHeightForParamsDialog
+    arrayToBig = false;
+    arraySize = size(vars{i}{2});
+    maxArrayWidthForParamsDialog = mrGetPref('maxArrayWidthForParamsDialog');
+    maxArrayHeightForParamsDialog = mrGetPref('maxArrayHeightForParamsDialog');
+    if arraySize(2) > maxArrayWidthForParamsDialog
+      maxArrayWarning = sprintf('(mrParamsParse) The array for variable ''%s'' is of size [%i %i] which is too big to be displayed by mrParamsDialog (the maximum displayable width is set to %i). You will not be able to set or view this variable. If you would like to try to display anyway, you should set mrSetPref(''maxArrayWidthForParamsDialog'',%i) - or greater. Or you can set the variable by hand after calling mrParamsDialog',vars{i}{1},arraySize(1),arraySize(2),maxArrayWidthForParamsDialog,arraySize(2));
+      disp(maxArrayWarning);
+      arrayToBig = true;
+    end
+    if arraySize(1) > maxArrayHeightForParamsDialog
+      maxArrayWarning = sprintf('(mrParamsParse) The array for variable ''%s'' is of size [%i %i] which is too big to be displayed by mrParamsDialog (the maximum displayable height is set to %i). You will not be able to set or view this variable. If you would like to try to display anyway, you should set mrSetPref(''maxArrayHeightForParamsDialog'',%i) - or greater. Or you can set the variable by hand after calling mrParamsDialog',vars{i}{1},arraySize(1),arraySize(2),maxArrayHeightForParamsDialog,arraySize(1));
+      disp(maxArrayWarning);
+      arrayToBig = true;
+    end
+    % if the array was to big, then we set the variable to display as an uneditable string
+    if arrayToBig
+      varinfo{i}.tooBigArrayValue = varinfo{i}.value;
+      varinfo{i}.value = 'Array too large to display';
+      varinfo{i}.editable = 0;
+      varinfo{i}.type = 'string';
+      varinfo{i}.description = sprintf('%s: %s',varinfo{i}.description,maxArrayWarning);
+      % remove the following fields
+      fieldsToRemove = {'incdec','incdecType','minmax','passCallbackOutput'};
+      for iField = 1:length(fieldsToRemove)
+	if isfield(varinfo{i},fieldsToRemove{iField})
+	  varinfo{i} = rmfield(varinfo{i},fieldsToRemove{iField});
+	end
+      end
     end
   end
 end

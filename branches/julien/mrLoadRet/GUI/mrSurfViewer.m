@@ -126,7 +126,14 @@ end
 
 outerSurface = putOnTopOfList(outerSurface{1},allSurfaces);
 outerSurface{end+1} = 'Find file';
-outerCoords = putOnTopOfList('Same as surface',allSurfaces);
+if ~exist('outerCoords') || isempty(outerCoords)
+  outerCoords = putOnTopOfList('Same as surface',allSurfaces);
+  gSurfViewer.outerCoords = gSurfViewer.outerSurface;
+else
+  outerCoords = cellArray(outerCoords);
+  outerCoords = putOnTopOfList(outerCoords{1},allSurfaces);
+  gSurfViewer.outerCoords = myLoadSurface(outerCoords{1});
+end
 outerCoords {end+1} = 'Find file';
 
 % check for an inner surface
@@ -147,11 +154,16 @@ elseif length(innerSurface) == 1
   end
 end
 
-innerCoords = putOnTopOfList('Same as surface',allSurfaces);
+if ~exist('innerCoords') || isempty(innerCoords)
+  innerCoords = putOnTopOfList('Same as surface',allSurfaces);
+  gSurfViewer.innerCoords = gSurfViewer.innerSurface
+else
+  innerCoords = cellArray(innerCoords);
+  innerCoords = putOnTopOfList(innerCoords{1},allSurfaces);
+  gSurfViewer.innerCoords = myLoadSurface(innerCoords{1});
+end
 innerCoords {end+1} = 'Find file';
 innerSurface{end+1} = 'Find file';
-gSurfViewer.outerCoords = [];
-gSurfViewer.innerCoords = [];
 
 % load any vff file
 curv = {};
@@ -588,8 +600,17 @@ if min(img(:)) ~= max(img(:))
   set(gca,'CLim',[min(img(:)) max(img(:))]);
 end
 % display patch and white matter/gray matter
-innerNodes = gSurfViewer.innerSurface.vtcs;
-outerNodes = gSurfViewer.outerSurface.vtcs;
+if ~isempty(gSurfViewer.innerCoords)
+  innerNodes = gSurfViewer.innerCoords.vtcs;
+else
+  innerNodes = gSurfViewer.innerSurface.vtcs;
+end
+if ~isempty(gSurfViewer.outerCoords)
+  outerNodes = gSurfViewer.outerCoords.vtcs;
+else
+  outerNodes = gSurfViewer.outerSurface.vtcs;
+end
+  
 
 % Plot the nodes for the gray/white matter surfaces
 innerNodes = innerNodes( find( round(innerNodes(:,gSurfViewer.sliceIndex))==slice), : );

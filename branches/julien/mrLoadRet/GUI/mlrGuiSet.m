@@ -287,37 +287,40 @@ switch lower(field)
 
  case {'overlayminrange'}
   % mlrGuiSet(view,'overlayMinRange',[min,max]);
-  if ~all(isfinite(value))
-    mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Min Slider because overlay range is not finite [%f %f]',value(1),value(2)));
-    set(handles.overlayMinSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
-  elseif value(2) < value(1)
-    mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Min Slider because overlay range is not increasing [%f > %f]',value(1),value(2)));
-    set(handles.overlayMinSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
-  else
-    set(handles.overlayMinSlider,'Min',value(1),'Max',value(2),'visible','on');
+  if ~isempty(value)
+    if ~all(isfinite(value))
+      mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Min Slider because overlay range is not finite [%f %f]',value(1),value(2)));
+      set(handles.overlayMinSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
+    elseif value(2) < value(1)
+      mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Min Slider because overlay range is not increasing [%f > %f]',value(1),value(2)));
+      set(handles.overlayMinSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
+    else
+      set(handles.overlayMinSlider,'Min',value(1),'Max',value(2),'visible','on');
+    end
   end
-
  case {'overlaymax'}
   % mlrGuiSet(view,'overlayMax',value);
-  if rem(value,1)~=0 %if the value is not an integer
-    value = ceil(double(value)*1e6)/1e6; %round it up
+  if ~isempty(value)
+    if rem(value,1)~=0 %if the value is not an integer
+      value = ceil(double(value)*1e6)/1e6; %round it up
+    end
+    value = clipToSlider(handles.overlayMaxSlider,value);
+    set(handles.overlayMaxSlider,'Value',value);
+    set(handles.overlayMaxText,'String',thisNum2str(value)); 
   end
-  value = clipToSlider(handles.overlayMaxSlider,value);
-  set(handles.overlayMaxSlider,'Value',value);
-  set(handles.overlayMaxText,'String',thisNum2str(value)); 
-
  case {'overlaymaxrange'}
   % mlrGuiSet(view,'overlayMinRange',[min,max]);
-  if ~all(isfinite(value))
-    mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Max Slider because overlay range is not finite [%f %f]',value(1),value(2)));
-    set(handles.overlayMaxSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
-  elseif value(2) < value(1)
-    mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Max Slider because overlay range is not increasing [%f > %f]',value(1),value(2)));
-    set(handles.overlayMaxSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
-  else
-    set(handles.overlayMaxSlider,'Min',value(1),'Max',value(2),'visible','on');
+  if ~isempty(value)
+    if ~all(isfinite(value))
+      mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Max Slider because overlay range is not finite [%f %f]',value(1),value(2)));
+      set(handles.overlayMaxSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
+    elseif value(2) < value(1)
+      mrWarnDlg(sprintf('(mlrGuiSet) Cannot display Overlay Max Slider because overlay range is not increasing [%f > %f]',value(1),value(2)));
+      set(handles.overlayMaxSlider,'Min',max(value(1),-realmax(class(value))),'Max',min(value(2),realmax(class(value))),'visible','off');
+    else
+      set(handles.overlayMaxSlider,'Min',value(1),'Max',value(2),'visible','on');
+    end
   end
-
  case {'clipacrossoverlays'}
   % mlrGuiSet(view,'clipAcrossOverlays',value);
   if isfield(handles,'clipAcrossOverlays') 
