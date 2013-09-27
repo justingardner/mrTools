@@ -178,6 +178,8 @@ if baseType <= 1
   % faster for displaying images as opposed
   % to the 3D surfaces.
   set(fig,'Renderer','painters')
+  set(gui.axis,'View',[-0 90]) % in some cases (not clear which ones), when switching back from displaying a surface, the camera properties
+  % are not adequate to display a 2D image (the image is not visible). Setting the view property to [0 90] seems to solve the problem but i don't understand why
   image(img,'Parent',gui.axis);
   
 %   %an alterative way of plotting using independent patches:
