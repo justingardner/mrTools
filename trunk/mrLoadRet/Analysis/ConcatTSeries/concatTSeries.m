@@ -43,7 +43,7 @@ end
 % check to see if any scans have a tSense that is not one, if it
 % is then we will offer to notch filter the data, otherwise hide the option
 offerNotchFilter = false;
-defaultNotchFilterSetting = true;
+defaultNotchFilterSetting = false;
 if ~isempty(viewGet(view,'groupNum','Raw'))
   for iScan = 1:viewGet(view,'nScans','Raw')
     tSense = viewGet(view,'auxParam','tSense',iScan,'Raw');
