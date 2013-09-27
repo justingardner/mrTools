@@ -204,7 +204,7 @@ else
   % renderer (order of 5-10 ms)
   set(fig,'Renderer','OpenGL')
   % get the base surface
-  baseSurface = viewGet(view,'baseSurface');
+  baseSurface = getBaseSurface(view); %get baseSurface coordinates, converted to canonical space
   % display the surface
   patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',gui.axis);
   % make sure x direction is normal to make right/right
@@ -325,6 +325,21 @@ if verbose,toc,end
 set(viewGet(view,'figNum'),'Pointer','arrow');
 
 return
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% getBaseSurface: gets baseSurface using viewGet, but converts vertices
+% coordinates to magnet space so that surfaces are appropriately displayed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function baseSurface = getBaseSurface(view)
+  baseSurface = viewGet(view,'baseSurface');
+  %convert vertices coordinates to corresponding magnet space so that surface appears correctly oriented 
+  %(in case axes are flipped or swapped relative to expected coordinate system in the surface volume space
+  base2mag = viewGet(view,'base2mag');
+  if ~isempty(base2mag)
+    swapxy = [0 1 0 0;1 0 0 0;0 0 1 0; 0 0 0 1];
+    baseSurface.vtcs = [baseSurface.vtcs ones(length(baseSurface.vtcs),1)]*swapxy*base2mag'*swapxy; %( x and y are swapped in the base surface vertex coordinates)
+    baseSurface.vtcs = baseSurface.vtcs(:,1:3);
+  end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
@@ -540,7 +555,7 @@ for r = order
   % decide whether we are drawing perimeters or not
   doPerimeter = ismember(option,{'all perimeter','selected perimeter','group perimeter'});
   if baseType == 2
-    baseSurface = viewGet(view,'baseSurface');
+    baseSurface = getBaseSurface(view);
     if 0 %%doPerimeter
       if verbose, disppercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
