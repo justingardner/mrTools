@@ -702,10 +702,19 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function displaySurfaceOnVolume(view,surfaceNum,axis,sliceIndex,surfOnVolGUIXform,rotate, sliceDims)
 
+colors = [.9 .4 .9;... % color of first inner surface
+          .4 .7 .9;... % color of first outer surface
+          .9 .4 .4;... % color of second inner surface
+          .4 .9 .7;... % color of second outer surface
+          .9 .9 .4;... % color of third inner surface
+          .6 .4 .9];   % color of third outer surface
+numberDifferentColors=1; %maximum number of inner+outer with different colors (up to 3)
+cSurf=0;        
 for iSurf=surfaceNum
   if viewGet(view,'baseType',iSurf)~=2
     mrWarnDlg(['(refreshMLRDisplay:displaySurfaceOnVolume) Base anatomy ''' viewGet(view,'baseName',iSurf) ''' is not a surface']);
   else
+    cSurf=cSurf+1;
     baseCoordMap = viewGet(view,'baseCoordmap',iSurf,0);
 
     innerCoords = permute(baseCoordMap.innerCoords,[2 4 1 3]);
@@ -728,15 +737,15 @@ for iSurf=surfaceNum
     %plot all the segments between the first and second intersections
     h = line([firstIntersection(:,1) secondIntersection(:,1)]',...
           [firstIntersection(:,2) secondIntersection(:,2)]',...
-          'color',[.9 .4 .9],'Parent',axis);
+          'color',colors(2*rem(cSurf-1,numberDifferentColors)+1,:),'Parent',axis);
 
     %and the GM/CSF boundary
     [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
 
     %plot all the segments between the first and second intersections
-    line([firstIntersection(:,1) secondIntersection(:,1)]',...
+    h = line([firstIntersection(:,1) secondIntersection(:,1)]',...
           [firstIntersection(:,2) secondIntersection(:,2)]',...
-          'color',[.4 .7 .9],'Parent',axis);
+          'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
   end
 end
 
