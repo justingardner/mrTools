@@ -312,8 +312,15 @@ if isfield(gVol{sysNum},'fig')
 end
 
 if isfield(gVol{sysNum},'controlsUp') && gVol{sysNum}.controlsUp
+  % remember next time to bring up controls
+  mrSetPref('mlrVolDisplayControls',true);
   mrParamsClose;
+else
+  mrSetPref('mlrVolDisplayControls',false);
 end
+
+% remember alpha overlay setting for next time
+mrSetPref('mlrVolOverlayAlpha',gVol{sysNum}.overlayAlpha);
 
 % remove the variable
 gVol{sysNum} = [];
@@ -499,6 +506,7 @@ figure(f);
 %%%%%%%%%%%%%%%%%%%%
 function dispVolume(iVol,sysNum)
 
+%if iVol == 2,keyboard,end
 global gVol;
 vol = gVol{sysNum}.vols(iVol);
 
@@ -526,7 +534,7 @@ for iView = 1:3
       % the transpose and axis directions need to be taken from the volume this is tethered to
       % prepare image for display
       [dispOverlaySlice xLabelStr yLabelStr] = prepareImageForDisplay(sysNum,dispSlice,gVol{sysNum}.vols(vol.tethered),iView);
-      
+
       % if we are not displaying the interpolated image in the
       % second row, then we have to prepare the image that
       % corresponds to the same location
@@ -956,7 +964,7 @@ if gVol{sysNum}.n > 1
   paramsInfo = {...
     {'toggleOverlay',0,'type=pushbutton','callback',@toggleOverlay,'buttonString','Toggle overlay','callbackArg',sysNum,'Toggle display the overlay'}...
     {'overlayAlpha',gVol{sysNum}.overlayAlpha,'incdec=[-0.2 0.2]','minmax=[0 1]','callback',@overlayAlpha,'callbackArg',sysNum,'passParams=1','Change the alpha of the overlay to make it more or less transparent'}...
-    {'displayInterpolated',1,'type=checkbox','callback',@displayInterpolated,'callbackArg',sysNum,'Display image interpolated to match the primary volume'}...
+    {'displayInterpolated',0,'type=checkbox','callback',@displayInterpolated,'callbackArg',sysNum,'Display image interpolated to match the primary volume'}...
     {'dispCorrelation',0,'type=pushbutton','callback',@dispCorrelation,'buttonString','Display correlation','callbackArg',sysNum,'Display correlation between aligned volume images'}...
     {'initFromHeader',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Init from header','callbackArg',{sysNum 'initFromHeader'},'passParams=1','Reinit the alignment using the qform/sform info from the headers'}...
     {'setToIdentity',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Set to identity','callbackArg',{sysNum 'setToIdentity'},'passParams=1','Set the alignment to identity'}...
@@ -966,9 +974,9 @@ if gVol{sysNum}.n > 1
     {'flipX',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip X','callbackArg',{sysNum 'flipX'},'passParams=1','Flip X axis in alignment'}...
     {'flipY',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Y','callbackArg',{sysNum 'flipY'},'passParams=1','Flip Y axis in alignment'}...
     {'flipZ',0,'type=pushbutton','callback',@adjustAlignment,'buttonString','Flip Z','callbackArg',{sysNum 'flipZ'},'passParams=1','Flip Z axis in alignment'}...
-    {'shiftX',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of voxels'}...
-    {'shiftY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftY'},'passParams=1','Shift Y axis in alignment in units of voxels'}...
-    {'shiftZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftZ'},'passParams=1','Shift Z axis in alignment in units of voxels'}...
+    {'shiftX',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of mm (Note that x axis is the axis of the volume which is being interpolated - make sure to unclick displayInterpolated to see these axis)'}...
+    {'shiftY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftY'},'passParams=1','Shift Y axis in alignment in units of mm (Note that y axis is the axis of the volume which is being interpolated - make sure to unclick displayInterpolated to see these axis)'}...
+    {'shiftZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftZ'},'passParams=1','Shift Z axis in alignment in units of mm (Note that z axis is the axis of the volume which is being interpolated - make sure to unclick displayInterpolated to see these axis)'}...
     {'rotateXY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
     {'rotateXZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
     {'rotateYZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
@@ -1757,7 +1765,7 @@ gVol{sysNum}.n = 0;
 
 % parse args here when we have settings
 imageOrientation = [];verbose = [];toggleOverlay = [];
-getArgs(otherArgs,{'imageOrientation=0','verbose=1','toggleOverlay=1'});
+getArgs(otherArgs,{'imageOrientation=0','verbose=1','toggleOverlay=1','showControls=[]'});
 gVol{sysNum}.imageOrientation = imageOrientation;
 gVol{sysNum}.verbose = verbose;
 
@@ -1803,17 +1811,21 @@ gVol{sysNum}.animating = false;
 gVol{sysNum}.interpMethod = mrGetPref('interpMethod');
 
 % alpha for overlay
-gVol{sysNum}.overlayAlpha = 0.2;
+gVol{sysNum}.overlayAlpha = mrGetPref('mlrVolOverlayAlpha');;
 
-% default not to display controls
-gVol{sysNum}.displayControls = false;
+% set display controls
+if isempty(showControls)
+  gVol{sysNum}.displayControls = mrGetPref('mlrVolDisplayControls');
+else
+  gVol{sysNum}.displayControls = showControls;
+end  
 
 % overlay toggle state starts as on
 gVol{sysNum}.overlayToggleState = toggleOverlay;
 
 % display the tethered volume interpolated to
 % match the primary volume display
-gVol{sysNum}.displayInterpolated = true;
+gVol{sysNum}.displayInterpolated = false;
 
 % set the clipping value (i.e. the lower and higher clipPercent of values will be clipped to the min and max of the image).
 gVol{sysNum}.clipPercent = 0.2;

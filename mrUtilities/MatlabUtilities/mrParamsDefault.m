@@ -65,6 +65,11 @@ for i = 1:length(vars)
       params.(varinfo{i}.name) = str2num(params.(varinfo{i}.name));
     end
   end
+  % check to see if this is an array that could not be displayed
+  if isfield(varinfo{i},'tooBigArrayValue')
+    % if so then set to the original array value
+    params.(varinfo{i}.name) = varinfo{i}.tooBigArrayValue;
+  end
 end
 params.paramInfo = paramInfo;
 
