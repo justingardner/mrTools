@@ -4,7 +4,7 @@ function [i,j]=getArrayDimensions(n,maxRatio)
 %
 %       [i,j]=getArrayDimensions(n,maxRatio)
 %
-%        $Id: findMaxRoi.m 2134 2011-05-31 08:49:17Z julien $
+%        $Id: getArrayDimensions.m 2134 2011-05-31 08:49:17Z julien $
 %             jb 01/06/2011
 %
 %           returns a number of rows and columns for a matrix of n elements 
