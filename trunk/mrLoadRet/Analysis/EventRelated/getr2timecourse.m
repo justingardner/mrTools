@@ -30,7 +30,9 @@ if ieNotDefined('verbose'),verbose = 1;end
 % which converts to percent signal change will divide by a value
 % close to zero which causes the responses to to have strange magnitudes)
 if max(abs(mean(timecourses,2))) < 1e-10
-  disp(sprintf('(getr2timecourse) Adding 1 to timecourses because timecourses apparently have 0 mean'));
+  if verbose
+    disp(sprintf('(getr2timecourse) Adding 1 to timecourses because timecourses apparently have 0 mean'));
+  end
   timecourses = timecourses+1;
 end
 
