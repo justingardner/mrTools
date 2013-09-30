@@ -68,7 +68,7 @@ for i = 1:length(hLegendChildren)
     c = [];
     if ~isempty(h)
       % check which name is corresponds to
-      whichSymbol = find(strcmp(get(hLegendChildren(i),'String'),names));
+      whichSymbol = first(find(strcmp(get(hLegendChildren(i),'String'),names)));
       if ~isempty(whichSymbol)
 	% get the color of the symbol
 	c = get(h(whichSymbol),'Color');

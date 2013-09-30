@@ -49,6 +49,13 @@
 %             you can then call again in a different function:
 %             getArgs(args,{'fun2var=1'});            
 %
+%             Some other options:
+%
+%             'verbose=0': Display verbose info
+%             'doAssignment=1': Actually set variables.
+%             'suppressUnkownArgMessage=0': Set to true to suppress warning for
+%                unknown variables
+%
 function [argNames argValues invalidArgs] = getArgs(args,validVars,varargin)
 
 % check input arguments
