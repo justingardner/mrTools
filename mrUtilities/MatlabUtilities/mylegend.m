@@ -163,6 +163,14 @@ elseif nargs >= 3
   end
 end
 
+% if passed in numbers then convert to strings
+if isnumeric(names)
+  for i = 1:length(names)
+    namesStr{i} = mlrnum2str(names(i),'sigfigs=-1');
+  end
+  names = namesStr;
+end
+  
 % old style calling, in which position was 1 of 4 locations
 if pos == 1
   pos = 'NorthEast';
