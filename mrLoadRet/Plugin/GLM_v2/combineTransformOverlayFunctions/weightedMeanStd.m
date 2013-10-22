@@ -8,7 +8,7 @@
 %                                                    and stddev = (x*(1-average)^2 + y*(2-average)^2 + z*(3-average)^2) / (x+y+z)
 %           
 
-function [average,stddev] = weightedMeanStd(varargin)
+function [average,stddev,correctedAverage,correctedStddev] = weightedMeanStd(varargin)
 
 
 nDims = length(size(varargin{1}));
@@ -33,3 +33,28 @@ average = sum( array .* indices, 4) ./ sum(array,4);
 stddev = sqrt( sum( array .* (indices - repmat(average,[1 1 1 nOverlays]) ).^2, 4) ./ sum(array,4) );
 
 
+%correct partial-sampling bias
+if nargout == 4
+  popMean = 0:.1:10 ;
+  popStddev = .1:.1:5 ;
+  nMeans = length(popMean);
+  nStddevs = length(popStddev);
+  [sampleAverage,sampleStddev] = meanEstimationBias(popMean,popStddev,1:nOverlays);
+  
+  nonNaN = find(all(~isnan(array),4))';
+  correctedAverage = NaN(overlaySize);
+  correctedStddev = NaN(overlaySize);
+  hWaitBar = mrWaitBar(-inf,'(weightedMeanStd) Correcting bias');
+  c = 0;
+  for i=nonNaN
+    c = c+1;
+    minimization = abs(sampleAverage-average(i))+abs(sampleStddev-stddev(i));
+    [minValue,minIndex] = min(minimization(:));
+    [whichMean,whichStddev] = ind2sub([nMeans nStddevs],minIndex);
+    correctedAverage(i) = popMean(whichMean);
+    correctedStddev(i) = popStddev(whichStddev);
+    mrWaitBar( c/numel(nonNaN), hWaitBar);
+  end
+  mrCloseDlg(hWaitBar);
+end
+    
