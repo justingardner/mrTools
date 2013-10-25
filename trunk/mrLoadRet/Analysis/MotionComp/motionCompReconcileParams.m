@@ -23,23 +23,23 @@ for scan = 1:nScans
 end
 
 if ieNotDefined('params')
-  % Use default params
+  % Use default params (some defaults can be set with mrSetPref/mrGetPref)
   newparams.groupName = groupName;
   newparams.baseScan = 1;
-  newparams.baseFrame = 'first';
-  newparams.sliceTimeCorrection = 1;
-  newparams.sliceTimeString = 'middle of TR';
-  newparams.robust = 0;
-  newparams.gradIntensityCorrection = 0;
-  newparams.driftCorrection = 1;
+  newparams.baseFrame = mrGetPref('motionCompBaseFrame');
+  newparams.sliceTimeCorrection = mrGetPref('motionCompSliceTimeCorrection');
+  newparams.sliceTimeString = mrGetPref('motionCompSliceTimeString');
+  newparams.robust = mrGetPref('motionCompRobust');
+  newparams.gradIntensityCorrection = mrGetPref('motionCompGradIntensityCorrection');
+  newparams.driftCorrection = mrGetPref('motionCompDriftCorrection');1;
   newparams.crop = [];
-  newparams.niters = 10;
+  newparams.niters = mrGetPref('motionCompNiters');
   newparams.motionCompGroupName = 'MotionComp';
-  newparams.interpMethod = 'linear';
+  newparams.interpMethod = mrGetPref('motionCompInterpMethod');
   newparams.targetScans = [1:nScans];
   newparams.tseriesfiles = tseriesfiles;
   newparams.descriptions = descriptions;
-  newparams.tSmooth = 0;
+  newparams.tSmooth = mrGetPref('motionCompTSmooth');
 else
   % Set newparams according to params, reconciling with tseries files.
   newparams.groupName = params.groupName;
