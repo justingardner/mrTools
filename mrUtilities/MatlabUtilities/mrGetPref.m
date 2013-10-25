@@ -38,7 +38,11 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'statisticalTestOutput',...
    'site','magnet','coil','pulseSequence',...
    'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
-   'mlrVolDisplayControls','mlrVolOverlayAlpha'};
+   'mlrVolDisplayControls','mlrVolOverlayAlpha',...
+   'motionCompSliceTimeCorrection','motionCompBaseFrame','motionCompSliceTimeString','motionCompRobust',...
+   'motionCompGradIntensityCorrection','motionCompDriftCorrection','motionCompNiters',...
+   'motionCompInterpMethod','motionCompTSmooth'...
+	    };
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
@@ -75,6 +79,17 @@ prefDefaults{find(strcmp('maxArrayWidthForParamsDialog',prefNames))} = 25;
 prefDefaults{find(strcmp('maxArrayHeightForParamsDialog',prefNames))} = 50;
 prefDefaults{find(strcmp('mlrVolDisplayControls',prefNames))} = false;
 prefDefaults{find(strcmp('mlrVolOverlayAlpha',prefNames))} = 0.8;
+prefDefaults{find(strcmp('motionCompSliceTimeCorrection',prefNames))} = 1;
+prefDefaults{find(strcmp('motionCompBaseFrame',prefNames))} = 'first';
+prefDefaults{find(strcmp('motionCompSliceTimeString',prefNames))} = 'middle of TR';
+prefDefaults{find(strcmp('motionCompRobust',prefNames))} = 0;
+prefDefaults{find(strcmp('motionCompGradIntensityCorrection',prefNames))} = 0;
+prefDefaults{find(strcmp('motionCompDriftCorrection',prefNames))} = 1;
+prefDefaults{find(strcmp('motionCompNiters',prefNames))} = 10;
+prefDefaults{find(strcmp('motionCompInterpMethod',prefNames))} = 'linear';
+prefDefaults{find(strcmp('motionCompTSmooth',prefNames))} = 0;
+
+
 
 if nargin == 0
   if nargout > 0
