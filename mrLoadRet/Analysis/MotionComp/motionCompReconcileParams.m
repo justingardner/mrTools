@@ -23,23 +23,40 @@ for scan = 1:nScans
 end
 
 if ieNotDefined('params')
-  % Use default params (some defaults can be set with mrSetPref/mrGetPref)
+  defaultParams = mrGetPref('motionCompDefaultParams');
+  % default param names and values
+  defaultParamNameValues = ...
+      {{'baseFrame','first'},...
+       {'sliceTimeCorrection',1},...
+       {'sliceTimeString','middle of TR'},...
+       {'robust',0},...
+       {'gradIntensityCorrection',0},...
+       {'driftCorrection',1},...
+       {'niters',10},...
+       {'interpMethod','linear'},...
+       {'tSmooth',0}};
+  for iDefaultParam = 1:length(defaultParamNameValues)
+    if isfield(defaultParams,defaultParamNameValues{iDefaultParam}{1}) && ~isempty(defaultParams.(defaultParamNameValues{iDefaultParam}{1}))
+      % set according to what was stored (usually comes from
+      % the last time this was run)
+      newparams.(defaultParamNameValues{iDefaultParam}{1}) = ...
+	  defaultParams.(defaultParamNameValues{iDefaultParam}{1});
+    else
+      % if the field does not exist in the stored values, then set its
+      % default list from the value listed above
+      newparams.(defaultParamNameValues{iDefaultParam}{1}) = ...
+	  defaultParamNameValues{iDefaultParam}{2};
+    end
+  end
+  % Set other default params 
   newparams.groupName = groupName;
   newparams.baseScan = 1;
-  newparams.baseFrame = mrGetPref('motionCompBaseFrame');
-  newparams.sliceTimeCorrection = mrGetPref('motionCompSliceTimeCorrection');
-  newparams.sliceTimeString = mrGetPref('motionCompSliceTimeString');
-  newparams.robust = mrGetPref('motionCompRobust');
-  newparams.gradIntensityCorrection = mrGetPref('motionCompGradIntensityCorrection');
-  newparams.driftCorrection = mrGetPref('motionCompDriftCorrection');1;
   newparams.crop = [];
-  newparams.niters = mrGetPref('motionCompNiters');
   newparams.motionCompGroupName = 'MotionComp';
-  newparams.interpMethod = mrGetPref('motionCompInterpMethod');
   newparams.targetScans = [1:nScans];
   newparams.tseriesfiles = tseriesfiles;
   newparams.descriptions = descriptions;
-  newparams.tSmooth = mrGetPref('motionCompTSmooth');
+  newparams = orderfields(newparams);
 else
   % Set newparams according to params, reconciling with tseries files.
   newparams.groupName = params.groupName;
@@ -78,4 +95,5 @@ else
   newparams.targetScans = targetScans;
   newparams.tseriesfiles = {params.tseriesfiles{match}};
   newparams.descriptions = {params.descriptions{match}};
+  newparams = orderfields(newparams);
 end

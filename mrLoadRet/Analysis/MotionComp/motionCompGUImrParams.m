@@ -125,7 +125,7 @@ paramsInfo{5} = {'niters',params.niters,'incdec=[-1 1]','minmax=[0 inf]', 'How m
 paramsInfo{6} = {'sliceTimeCorrection',params.sliceTimeCorrection,'type=checkbox', 'Apply slice time correction along with motion compensation.  Not appropriate for 3D scans.'};
 paramsInfo{7} = {'sliceTimeString',putOnTopOfList(params.sliceTimeString,sliceTimeStrings),'type=popupmenu','Which point in time the slices should be aligned to. May loose first and last frames'};
 paramsInfo{8} = {'driftCorrection', params.driftCorrection, 'type=checkbox', 'Correction for fluctuations in mean intensity over time. This divides each frame by the average over the (cropped) volume. Note that this is only used to create a temporary time series for better estimation of motion parameters. The actual motion comp volume will be created from the original time series without drift correction applied.'};
-paramsInfo{9} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[1 10]','round=1' 'Size of boxcar window for temporal smoothing. That is, this averages across tSmooth frames before and after every frame. So, if set to 1 it will create a window of 1 volume on either side of every frame and average 3 frames together. This can be useful to get rid of sudden changes in the image which may not be real motion but are image artifacts (assuming that real head motion is slow).  Like driftCorrection, only applied to estimate head motion, not to final time series'};
+paramsInfo{9} = {'tSmooth', params.tSmooth, 'incdec=[-1 1]', 'minmax=[0 10]','round=1' 'Size of boxcar window for temporal smoothing. That is, this averages across tSmooth frames before and after every frame. So, if set to 1 it will create a window of 1 volume on either side of every frame and average 3 frames together. This can be useful to get rid of sudden changes in the image which may not be real motion but are image artifacts (assuming that real head motion is slow).  Like driftCorrection, only applied to estimate head motion, not to final time series'};
 paramsInfo{10} = {'gradIntensityCorrection',params.gradIntensityCorrection,'type=checkbox', 'Compensation for intensity gradient before motion estimation. Like driftCorrection this is only applied to estimate head motion, not to final time series. This uses the crop region below'};
 paramsInfo{11} = {'crop',params.crop,'callback',@thisSelectCropRegion,'buttonString=Set crop region','passParams=1','type=pushbutton','contingent=gradIntensityCorrection','Crop the images.  This affects the gradIntensityCorrection.  Important for high-res images. The selected crop region is used to sample the intensities and should be draw in a small region of the brain. This does not mean that only the crop region will be used for motion comp (the whole volume will be used). If you want to crop so that only some small region of the volume is used for motion comp you should use the mask option which will be visible if you have an ROI loaded.'};
 paramsInfo{12} = {'robust',params.robust,'type=checkbox','contingent=gradIntensityCorrection','Robust contrast estimator, should be used if images are noisy with lots of outliers. This applies to gradIntensityCorrection'};
@@ -162,6 +162,8 @@ else
 end
 
 if ~isempty(mrParams)
+  % save these params to come up as defaults the next time
+  mrSetPref('motionCompDefaultParams',mrParams);
   % do some clean up on the parameters
   % first check for a new group
   if isfield(mrParams,'motionCompGroupName') && ~isempty(mrParams.motionCompGroupName) && strcmp(mrParams.motionCompGroupName,makeNewGroupStr)
