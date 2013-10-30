@@ -197,6 +197,9 @@ end
 if setValidVars
   for i = 1:length(validVarNames)
     matchingArgNum = find(strcmp(validVarNames{i},argNames));
+    if length(matchingArgNum)>1
+      matchingArgNum = matchingArgNum(1);
+    end
     % if we haven't set the variable, or the variable has been set to []
     if isempty(matchingArgNum) || isempty(argValues{matchingArgNum})
       % assign the default value

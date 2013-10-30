@@ -64,6 +64,9 @@ for i = 1:length(hLegendChildren)
   if strcmp(get(hLegendChildren(i),'Type'),'text')
     % turn off tex interpreter
     set(hLegendChildren(i),'Interpreter','none');
+    % set the font
+    set(hLegendChildren(i),'FontName','Helvetica');
+    set(hLegendChildren(i),'FontAngle','oblique');
     % if we have plotted symbols, figure out color from matching symbol
     c = [];
     if ~isempty(h)
