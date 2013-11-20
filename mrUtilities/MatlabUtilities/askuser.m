@@ -36,7 +36,7 @@ while isempty(r)
   % ask the question
   if ~verbose
     % not verbose, use text question
-    fprintf('\n');
+    %fprintf('\n');
     for iLine = 1:length(question)-1
       fprintf([question{iLine} '\n']);
     end
