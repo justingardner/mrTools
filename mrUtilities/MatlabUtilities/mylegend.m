@@ -199,4 +199,24 @@ if isstr(pos) && ~any(strcmp(pos,{'North','South','East','West','NorthEast','Nor
   disp(sprintf('(mylegend) Unknown legend location %s - changing to NorthEast',pos));
   pos = 'NorthEast';
 end
- 
+
+% check symbols to see if it is a cell array of color
+for iSymbol = 1:length(symbols)
+  % check if they are all colors
+  isListOfColors = 1;
+  if ~isnumeric(symbols{iSymbol}) || (length(symbols{iSymbol}) ~= 3)
+    isListOfColors = 0;
+    break
+  end
+  % if so, then fix up into a symbol list pairing
+  if isListOfColors
+    for iSymbol = 1:length(symbols)
+      newSymbols{iSymbol}{1} = 'ks';
+      newSymbols{iSymbol}{2} = symbols{iSymbol};
+      newSymbols{iSymbol}{3} = 'MarkerFaceColor';
+      newSymbols{iSymbol}{4} = symbols{iSymbol};
+      
+    end      
+    symbols = newSymbols;
+  end
+end
