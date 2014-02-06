@@ -112,7 +112,7 @@ while ~OK
         sliceNum = (row-1)*n+col;
         if sliceNum<=size(tmp,3)
           h(sliceNum) =  subplot('position',getSubplotPosition(col,row,ones(1,n),ones(1,m),0.02,0.02));
-          imagesc(volume(:, :, sliceNum), 'Tag', sprintf(' %d', sliceNum));
+          imagesc(tmp(:, :, sliceNum), 'Tag', sprintf(' %d', sliceNum));
           colormap(gray)
           axis off
           axis equal

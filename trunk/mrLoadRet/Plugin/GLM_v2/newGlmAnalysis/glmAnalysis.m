@@ -61,14 +61,30 @@ numberTests = numberFtests+numberContrasts;
 computePermutations = numberTests && (params.permutationTests || (params.parametricTests && params.permutationFweAdjustment));
 
 if params.covCorrection   %number of voxels to get around the ROI/subset box in case the covariance matrix is estimated
-   voxelsMargin = floor(params.covEstimationAreaSize/2);
+  voxelsMargin = repmat(floor(params.covEstimationAreaSize/2),1,3);
+  switch(params.covEstimationPlane)
+    case {'Sagittal'}
+      voxelsMargin(1)=0;
+    case {'Axial'}
+      voxelsMargin(3)=0;
+    case {'Coronal'}
+      voxelsMargin(2)=0;
+  end
 else
-   voxelsMargin = 0;
+   voxelsMargin = [0 0 0];
 end
 if params.spatialSmoothing  %we'll also need a margin if we're spatially smoothing
-  voxelsMargin = max(voxelsMargin,params.spatialSmoothing);
+  switch(params.smoothingPlane)
+      case {'Sagittal'}
+        voxelsMargin = max(voxelsMargin, [0 params.spatialSmoothing params.spatialSmoothing]);
+      case {'Axial'}
+        voxelsMargin = max(voxelsMargin,[params.spatialSmoothing params.spatialSmoothing 0]);
+      case {'Coronal'}
+        voxelsMargin = max(voxelsMargin,[params.spatialSmoothing 0 params.spatialSmoothing]);
+      case '3D'
+        voxelsMargin = max(voxelsMargin,repmat(params.spatialSmoothing,1,3));
+  end
 end
-
 %--------------------------------------------------------- Main loop over scans ---------------------------------------------------
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 %initialize the data we're keeping for output overlays
@@ -144,7 +160,7 @@ for iScan = params.scanNum
       else
         roiList = 1:viewGet(thisView,'numberOfRois');
       end
-      [subsetBox{iScan}, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,[voxelsMargin voxelsMargin 0],roiList);
+      [subsetBox{iScan}, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,voxelsMargin,roiList);
       usedVoxelsInBox = marginVoxels | any(whichRoi,4);
       %clear('whichRoi','marginVoxels');
       if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')
@@ -164,66 +180,71 @@ for iScan = params.scanNum
       end
   end
   subsetDims = diff(subsetBox{iScan},1,2)'+1;
+  
   %Compute the number of slices to load at once in order to minimize memory usage
   if params.TFCE && computePermutations
-   %in this particular case, we force loading the whole dataset at once
-   slicesToLoad = subsetDims(3);
-   loadCallsPerBatch = {1};
-   rawNumSlices = subsetDims(3);
-   %compare the size of the array to load to the memory preference and ask for confirmation if larger than maxBlockSize
-   switch (precision)
-     case {'double'}
-      bytesPerNum = 8;
-     case{'single'}
-      bytesPerNum = 4;
-   end
-   sizeArray = bytesPerNum*numVolumes*prod(subsetDims);
-   if sizeArray> mrGetPref('maxBlocksize')
+    %in this particular case, we force loading the whole dataset at once
+    slicesToLoad = subsetDims(3);
+    loadCallsPerBatch = {1};
+    rawNumSlices = subsetDims(3);
+    %compare the size of the array to load to the memory preference and ask for confirmation if larger than maxBlockSize
+    switch (precision)
+      case {'double'}
+        bytesPerNum = 8;
+      case{'single'}
+        bytesPerNum = 4;
+    end
+    sizeArray = bytesPerNum*numVolumes*prod(subsetDims);
+    if sizeArray> mrGetPref('maxBlocksize')
       if ~askuser(sprintf('(glmAnalysis) This will load an array of %.2f Gb in memory. Are you sure you want to proceed ?', sizeArray/1024^3));
         return;
       end
-   end
+    end
   else
+    % otherwise, see how many slices we can load at once 
+    [maxNSlices rawNumSlices numRowsAtATime precision] = getNumSlicesAtATime(numVolumes,subsetDims,precision);
+    maxNSlices = min(subsetDims(3),maxNSlices);
+    slicesToLoad = maxNSlices*ones(1,floor(subsetDims(3)/maxNSlices));
+    if rem(subsetDims(3),maxNSlices)
+      slicesToLoad(end+1) = rem(subsetDims(3),maxNSlices);  %list of the number of slices to load at once
+    end
+    
     switch(params.analysisVolume)
-
-      case {'Whole volume','Subset box'}
-        [maxNSlices rawNumSlices numRowsAtATime precision] = getNumSlicesAtATime(numVolumes,subsetDims,precision);
-        maxNSlices = min(subsetDims(3),maxNSlices);
-        slicesToLoad = maxNSlices*ones(1,floor(subsetDims(3)/maxNSlices));
-        if rem(subsetDims(3),maxNSlices)
-          slicesToLoad(end+1) = rem(subsetDims(3),maxNSlices);
-        end
-        loadCallsPerBatch = num2cell(1:length(slicesToLoad));
-
       case {'Loaded ROI(s)','Visible ROI(s)'}
-        [maxNSlices rawNumSlices numRowsAtATime precision] = getNumSlicesAtATime(numVolumes,subsetDims,precision);
-        maxNSlices = min(subsetDims(3),maxNSlices);
-        slicesToLoad = maxNSlices*ones(1,floor(subsetDims(3)/maxNSlices));
-        if rem(subsetDims(3),maxNSlices)
-          slicesToLoad(end+1) = rem(subsetDims(3),maxNSlices);
-        end
-        % since the box contains voxels we won't use, 
-        % choose how many loads we can do while still computing all voxels at once 
+        % for ROIs, since the box contains voxels we won't use, 
+        % choose how many loads we can do while still computing all voxels at once (=batch)
         %(we assume that we can at least load one entire slice by calls to loadScan)
-        loadCallsPerBatch = {[]};
+        loadCallsPerBatch = {[]};   %this will contains nBatches lists of loads (indices to the slicesToLoad vector) whose total number of useful voxels can be held in memory at once
         nVoxels = 0;
         currentFirstSlice = 0;
         nBatches = 1;
         for iLoad = 1:length(slicesToLoad)
-          nVoxels =  nVoxels+nnz(usedVoxelsInBox(:,:,currentFirstSlice+(1:slicesToLoad(iLoad))) > 0);
-          [roiSlicesAtATime rawRoiSlices] = getNumSlicesAtATime(numVolumes,[nVoxels 1 1]);
-          if rawRoiSlices<1
+          thisNvoxels = nnz(usedVoxelsInBox(:,:,currentFirstSlice+(1:slicesToLoad(iLoad))) > 0);
+          nVoxels =  nVoxels+thisNvoxels; %total number of useful voxels loaded in this batch
+          % check if the total number of voxels can be held at once in memory
+          [roiSlicesAtATime rawRoiSlices] = getNumSlicesAtATime(numVolumes,[nVoxels 1 1],precision);
+          if rawRoiSlices<1 %if the returned value is less than 1, this means it can't, and we have to create another batch
             nBatches = nBatches+1;
             currentFirstSlice = sum(slicesToLoad(1:iLoad));
             loadCallsPerBatch{nBatches} = [];
+            nVoxels=thisNvoxels;
           end
-          loadCallsPerBatch{nBatches} = [loadCallsPerBatch{nBatches} iLoad];
+          loadCallsPerBatch{nBatches} = [loadCallsPerBatch{nBatches} iLoad];  %add the current load to the list of loads in the batch
         end
+        if nBatches>1 && ( (params.spatialSmoothing && ~strcmp(params.smoothingPlane,'Axial')) || (params.covCorrection && ~strcmp(params.covEstimationPlane,'Axial')))
+          mrWarnDlg('(glmAnalysis) Smoothing or covariance estimation planes other than ''Axial'' cannot be used if the analysis is run separately on subsets of slices because of memory limits.');
+          mrWarnDlg('Increase memory block size or reduce the size of the ROI(s). Aborting...');
+          return;
+        end
+
+      case {'Whole volume','Subset box'}
+        loadCallsPerBatch = num2cell(1:length(slicesToLoad)); %in this case, each batch comprises of only one load
+
     end
   end
 
   if rawNumSlices<1
-      mrWarnDlg(['Too many data points to perform the analysis on whole slices. Implement row analysis support, increase memory block size or reduce subset box/ROI(s) size (by a factor ' num2str(subsetDims(3)/rawNumSlices) ')']);
+      mrWarnDlg(['Too many data points to perform the analysis on whole slices. Implement row analysis support, increase memory block size or reduce subset box/ROI(s) size (by a factor ' num2str(subsetDims(3)/rawNumSlices) '). Aborting...']);
       return;
   end
 
@@ -245,21 +266,14 @@ for iScan = params.scanNum
           dummy = loadScan(thisView,iScan,[],subsetBox{iScan}(3,1) + [firstSlices(iLoad) lastSlices(iLoad)] -1, precision,subsetBox{iScan}(1,:),subsetBox{iScan}(2,:));
           dummy.data = reshape(dummy.data,[prod(dummy.dim(1:3)) dummy.dim(4)]);
           dummy.data = dummy.data(usedVoxelsInBox(:,:,firstSlices(iLoad):lastSlices(iLoad))>0,:);
-          if iLoad==1
+          if iLoad==loadCallsPerBatch{iBatch}(1)
             d=dummy;
           else
             d.data = cat(1,d.data, dummy.data);
           end
         end
-        clear('dummy','usedVoxelsInBox');
+        clear('dummy');
         d.data = permute(d.data,[1 3 4 2]);
-        d.roiPositionInBox = any(whichRoi(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:),4);
-        d.marginVoxels = marginVoxels(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
-        if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')&& ~isempty(covEstimationBrainMask)
-          d.covEstimationBrainMask = covEstimationBrainMask(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
-        else
-          d.covEstimationBrainMask = [];
-        end
     end
     clear('dummy');
     
@@ -318,6 +332,18 @@ for iScan = params.scanNum
       clear('thisD');
     end
     d.dim = size(d.data);
+    
+    
+    switch(params.analysisVolume)
+      case {'Loaded ROI(s)','Visible ROI(s)'}
+            d.roiPositionInBox = any(whichRoi(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:),4);
+        d.marginVoxels = marginVoxels(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
+        if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')&& ~isempty(covEstimationBrainMask)
+          d.covEstimationBrainMask = covEstimationBrainMask(:,:,firstSlices(loadCallsPerBatch{iBatch}(1)):lastSlices(loadCallsPerBatch{iBatch}(end)),:);
+        else
+          d.covEstimationBrainMask = [];
+        end
+    end
       
     %-------------------------------Permutations------------------------------------------
     for iPerm = 1:nResamples+1
@@ -545,6 +571,7 @@ for iScan = params.scanNum
       d = rmfield(d,'roiPositionInBox');
     end
   end
+  clear ('usedVoxelsInBox');
   
   if (numberFtests ||params.computeTtests) && numberTests
     %make parametric probability maps

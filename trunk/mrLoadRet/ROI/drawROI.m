@@ -169,12 +169,12 @@ else
         end
         
         %see if we're using the image processing toolbox or not
-        if ~isempty(which('bwconncomp'))
+        if ~isempty(which('bwconncomp')) && license('test','Image_Toolbox')
           useBwconncomp=true;
           %find contiguous voxels
           cc = bwconncomp(mask,6);
         else
-          mrWarnDlg('(drawROI) Cannot find function bwconncomp, presumably because the Image Processing toolbox is not available. Using i4block_components instead...?');
+          mrWarnDlg('(drawROI) Cannot find function bwconncomp, presumably because the Image Processing toolbox is not available. Using i4block_components instead...');
           useBwconncomp=false;
           %find contiguous voxels
           [numberComponents,labeledMask] = i4block_components(size(mask,1),size(mask,2),size(mask,3),mask);
