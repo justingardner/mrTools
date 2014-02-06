@@ -96,7 +96,7 @@ if ~isempty(overlayImages)
         else
           overlayImages = overlayImages{1};
         end
-        overlayImages = nanmean(overlayImages,3);
+        overlayImages = cast(nanmean(double(overlayImages),3),class(overlayImages));
         if strcmp(viewGet(thisView,'overlayInterpFunction',analysisNum),'corAnalInterp')
           for iOverlay=1:nCurOverlays
             switch(overlayType{iOverlay})
