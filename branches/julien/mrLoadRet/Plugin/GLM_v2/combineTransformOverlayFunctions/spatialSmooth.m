@@ -5,7 +5,7 @@
 
 function smoothed = spatialSmooth(overlay,FWHM)
 
-smoothed = convn(overlay,gaussianKernel(FWHM),'same');
+smoothed = nanconvn(overlay,gaussianKernel(FWHM),'same');
 
 function kernel = gaussianKernel(FWHM)
 
