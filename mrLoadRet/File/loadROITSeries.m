@@ -37,6 +37,11 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin)
 %             the function getROICoordinatesMatching for more info)
 %
 % rois = loadROITSeries(v,[],1,1,'keepNAN',true,'matchScanNum=1','matchGroupNum=2');
+%
+%             You can also use the "straightXform" (without doing the fancy matching
+%             of ROI size) see getROICoordinates for more info. Defaults to 0.
+%
+% rois = loadROITSeries(v,[],1,1,'keepNAN',true,'straightXform=1');
 %   
 %
 % see also tseriesROI

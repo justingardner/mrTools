@@ -88,6 +88,8 @@ if tf && ~isempty(roi.coords) && (size(roi.coords,1) == 3)
 end
 
 % make sure voxelSize is
-roi.voxelSize = roi.voxelSize(:)';
+if isfield(roi,'voxelSize')
+  roi.voxelSize = roi.voxelSize(:)';
+end
 % order the fields
 roi = orderfields(roi);
