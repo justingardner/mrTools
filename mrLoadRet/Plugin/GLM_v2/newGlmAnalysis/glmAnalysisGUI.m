@@ -156,7 +156,7 @@ while askForParams
     mrWarnDlg('(glmAnalysisGUI) Noise covariance estimation mask can only be used with ROI(s) analysis');
   elseif  ~ismember(params.analysisVolume,{'Visible ROI(s)','Loaded ROI(s)'}) && ...
     ( (params.spatialSmoothing && ~strcmp(params.smoothingPlane,'Axial')) || (params.covCorrection && ~strcmp(params.covEstimationPlane,'Axial')))
-    mrWarnDlg('glmAnalysisGUI) Smoothing or covariance estimation planes other than ''Axial'' can only be used with ROI(s) analysis');
+    mrWarnDlg('(glmAnalysisGUI) Smoothing or covariance estimation planes other than ''Axial'' can only be used with ROI(s) analysis');
   elseif 0
     %perform check on parameters here if needed
   else
