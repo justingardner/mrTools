@@ -1,12 +1,13 @@
-% nanconvn - performs n-dimensional convolution, ignoring NaNs in Aand weighting each point by the actual number of datapoints involved
+% nanconvn - performs n-dimensional convolution, ignoring NaNs in A and weighting each point 
+%            by the actual number of datapoints involved (weighted by B values)
 %
 %        $Id$
-%      usage: C = nanconv4(A,B,shape)
+%      usage: [C,weights] = nanconvn(A,B,shape)
 %         by: julien besle
 %       date: 2011-02-10
 %     inputs: same as convn
 %       goal: values whose computation involve NaNs are computed, replacing NaNs with zeros
-%             and normalized according to the number of non-NaN values involved
+%             and normalizing according to the weighted number of non-NaN values involved
 %
 %             Note that for simplicity, values outside the valid area are also 
 %             modified relative to what convn would output. This is because
@@ -18,7 +19,7 @@
 %
 %             This function only accounts for NaNs in array A
 
-function C = nanconvn(A,B,shape)
+function [C,weights] = nanconvn(A,B,shape)
 
 
 if ieNotDefined('shape')
@@ -34,7 +35,8 @@ mask = ~isnan(A);
 A(isnan(A))=0;
 
 %convolve thsi new A with B and divide by the weights
-C = convn(A,B,shape)./convn(mask,B,shape);
+weights=convn(mask,B,shape);
+C = convn(A,B,shape)./weights;
 
 %Note that some points will be undefined (those that don't receive any contribution from any point of A)
 
