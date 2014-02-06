@@ -64,11 +64,14 @@ for i = 1:length(hLegendChildren)
   if strcmp(get(hLegendChildren(i),'Type'),'text')
     % turn off tex interpreter
     set(hLegendChildren(i),'Interpreter','none');
+    % set the font
+    set(hLegendChildren(i),'FontName','Helvetica');
+    set(hLegendChildren(i),'FontAngle','oblique');
     % if we have plotted symbols, figure out color from matching symbol
     c = [];
     if ~isempty(h)
       % check which name is corresponds to
-      whichSymbol = find(strcmp(get(hLegendChildren(i),'String'),names));
+      whichSymbol = first(find(strcmp(get(hLegendChildren(i),'String'),names)));
       if ~isempty(whichSymbol)
 	% get the color of the symbol
 	c = get(h(whichSymbol),'Color');
@@ -163,6 +166,14 @@ elseif nargs >= 3
   end
 end
 
+% if passed in numbers then convert to strings
+if isnumeric(names)
+  for i = 1:length(names)
+    namesStr{i} = mlrnum2str(names(i),'sigfigs=-1');
+  end
+  names = namesStr;
+end
+  
 % old style calling, in which position was 1 of 4 locations
 if pos == 1
   pos = 'NorthEast';
@@ -188,4 +199,24 @@ if isstr(pos) && ~any(strcmp(pos,{'North','South','East','West','NorthEast','Nor
   disp(sprintf('(mylegend) Unknown legend location %s - changing to NorthEast',pos));
   pos = 'NorthEast';
 end
- 
+
+% check symbols to see if it is a cell array of color
+for iSymbol = 1:length(symbols)
+  % check if they are all colors
+  isListOfColors = 1;
+  if ~isnumeric(symbols{iSymbol}) || (length(symbols{iSymbol}) ~= 3)
+    isListOfColors = 0;
+    break
+  end
+  % if so, then fix up into a symbol list pairing
+  if isListOfColors
+    for iSymbol = 1:length(symbols)
+      newSymbols{iSymbol}{1} = 'ks';
+      newSymbols{iSymbol}{2} = symbols{iSymbol};
+      newSymbols{iSymbol}{3} = 'MarkerFaceColor';
+      newSymbols{iSymbol}{4} = symbols{iSymbol};
+      
+    end      
+    symbols = newSymbols;
+  end
+end
