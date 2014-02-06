@@ -18,7 +18,7 @@ minFramePeriod = .01;  %frame period in sec outside which the user is prompted
 maxFramePeriod = 100;  % that something weird's goin on
 
 % go find the group that user wants to load here
-[filename pathname] = uigetfile({sprintf('*%s',mrGetPref('niftiFileExtension')),'Nifti files'},'Select nifti tSeries that you want to import','multiselect','on');
+[filename pathname] = uigetfile({'*.nii;*.img','Nifti files'},'Select nifti tSeries that you want to import','multiselect','on');
 
 if isnumeric(filename)
   return

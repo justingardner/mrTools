@@ -221,9 +221,9 @@ function mrCmapCallback(params,viewNum)
     return;
   end
   %overlay type
-  newOverlay.overlayType = params.overlayType;
-  if ~isequal(newOverlay.overlayType,currentOverlay.type)
-    viewSet(thisView,'overlayType',newOverlay.overlayType);
+  newOverlay.type = params.overlayType;
+  if ~isequal(newOverlay.type,currentOverlay.type)
+    viewSet(thisView,'overlayType',newOverlay.type);
     refreshMLRDisplay(viewNum);
     return;
   end
