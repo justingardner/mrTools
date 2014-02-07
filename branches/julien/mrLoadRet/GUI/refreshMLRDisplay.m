@@ -128,6 +128,24 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
        img = img+(1-alpha).*base.RGB;
        
+    case 'Contours'
+      if size(overlays.RGB,4)==1
+        img=base.RGB; %only display base in the background
+        contours=overlays.overlayIm;  %display first overlay as contours 
+        contours(~overlays.alphaMaps(:,:,1,1))=NaN;   % use non-zero alpha map as mask
+        contourCscale=overlays.colorRange(1,:); 
+        contourCmap = overlays.cmap(:,:,1);
+      else
+        %combine first overlay and base
+        img=overlays.alphaMaps(:,:,:,1).*overlays.RGB(:,:,:,1)+(1-overlays.alphaMaps(:,:,:,1)).*base.RGB;
+        contours=overlays.overlayIm(:,:,2); %display second overlay as contours
+        contours(~overlays.alphaMaps(:,:,1,2))=NaN;   % use non-zero alpha map as mask
+        contourCscale=overlays.colorRange(2,:);
+        contourCmap = overlays.cmap(:,:,2);
+      end
+      if size(overlays.RGB,4)>2
+        mrWarnDlg('(refreshMLRDisplay) Number of overlays limited to 2 for ''Contours'' display option');
+      end
   end
   cmap = overlays.cmap;
   cbarRange = overlays.colorRange;
@@ -181,6 +199,16 @@ if baseType <= 1
   set(gui.axis,'View',[-0 90]) % in some cases (not clear which ones), when switching back from displaying a surface, the camera properties
   % are not adequate to display a 2D image (the image is not visible). Setting the view property to [0 90] seems to solve the problem but i don't understand why
   image(img,'Parent',gui.axis);
+  if strcmp(mrGetPref('colorBlending'),'Contours')
+    hold(gui.axis,'on');
+    nContours = 9;
+    contourStepSize =diff(contourCscale)/(nContours-1);
+    minContourStep = ceil(min(min(contours))/contourStepSize)*contourStepSize;
+    maxContourStep = floor(max(max(contours))/contourStepSize)*contourStepSize;
+    contour(gui.axis,contours,minContourStep:contourStepSize:maxContourStep,'cdatamapping','scaled')
+    caxis(gui.axis,contourCscale);
+    colormap(contourCmap);
+  end
   
 %   %an alterative way of plotting using independent patches:
 %   set(fig,'Renderer','OpenGL')
