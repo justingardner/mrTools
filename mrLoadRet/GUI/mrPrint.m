@@ -97,7 +97,11 @@ gui = guidata(fig);
 
 % grab the colorbar data
 H = get(gui.colorbar,'children');
-cmap = squeeze(get(H(end),'CData'));
+cmap = get(H(end),'CData');
+if size(cmap,1)>1
+  mrWarnDlg('(mrPrint) printing colorbar for multiple overlays is not implemented');
+end
+cmap=squeeze(cmap(1,:,:));
 
 % display in graph window
 f = selectGraphWin;
