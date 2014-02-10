@@ -68,7 +68,7 @@ else
   paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
 end
 
-params = mrParamsDialog(paramsInfo,'Print figure options');;
+params = mrParamsDialog(paramsInfo,'Print figure options');
 if isempty(params),return,end
 
 % just so the code won't break. smoothROI is only fro baseType = 1
@@ -80,7 +80,11 @@ gui = guidata(fig);
 
 % grab the colorbar data
 H = get(gui.colorbar,'children');
-cmap = squeeze(get(H(end),'CData'));
+cmap = get(H(end),'CData');
+if size(cmap,1)>1
+  mrWarnDlg('(mrPrint) printing colorbar for multiple overlays is not implemented');
+end
+cmap=squeeze(cmap(1,:,:));
 
 % display in graph window
 f = selectGraphWin;
