@@ -1,20 +1,30 @@
 % getBaseSpaceOverlay.m
 %
-%      usage: [newOverlayData, baseVoxelSize] = getBaseSpaceOverlay(thisView,overlayData,scanNum,baseNum,interpMethod)
+%      usage: [newOverlayData, baseVoxelSize, baseCoords] = getBaseSpaceOverlay(thisView,overlayData,scanNum,baseNum,interpMethod, depthBins, rotateAngle)
 %         by: julien besle, loosely based on mrExport2SR by eli merriam
 %       date: 25/01/2010
 %    purpose: computes overlay values in a base anatomy space
 %        $Id$ 
+%     output: newOverlayData: interpolated values
+%             baseVoxelSize: size of voxels in base anatomy (estimated in the case of flat maps)
+%             baseCoords: base coordinates arranged in the same volume as the returned data
+%                         (useful to remap interpolated values into 3D space for flat maps)
 %
 
 function [newOverlayData, baseVoxelSize, baseCoords] = getBaseSpaceOverlay(thisView,overlayData,scanNum,baseNum,interpMethod, depthBins, rotateAngle)
 
+if ieNotDefined('scanNum')
+    scanNum = viewGet(thisView,'curscan');
+end
+if ieNotDefined('baseNum')
+    baseNum = viewGet(thisView,'curbase');
+end
 % interpMethod and interpExtrapVal are used by calls to interp3 when
 % extracting slices from the base and overlay arrays.
 if ieNotDefined('interpMethod')
    interpMethod = mrGetPref('interpMethod');
 end
-if isempty(interpMethod)
+if ieNotDefined('interpMethod')
     interpMethod = 'linear';
 end
 
