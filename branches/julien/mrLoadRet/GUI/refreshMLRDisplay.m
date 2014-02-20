@@ -188,16 +188,22 @@ gui = guidata(fig);
 % the rendering gets impossibly slow... -j.
 cla(gui.axis);
 if verbose>1,disppercent(inf);,end
-if verbose>1,disppercent(-inf,'Displaying image');,end
+if verbose>1,disppercent(-inf,'Displaying image');,end,
 if baseType <= 1
   % set the renderer to painters (this seems
   % to avoid some weird gliches in the OpenGL
   % renderer. It also appears about 20ms or so
   % faster for displaying images as opposed
   % to the 3D surfaces.
-  set(fig,'Renderer','painters')
-  set(gui.axis,'View',[-0 90]) % in some cases (not clear which ones), when switching back from displaying a surface, the camera properties
-  % are not adequate to display a 2D image (the image is not visible). Setting the view property to [0 90] seems to solve the problem but i don't understand why
+  set(fig,'Renderer','painters');
+  % in some cases (not clear which ones), when switching back from displaying a surface, the camera properties
+  % are not adequate to display a 2D image (the image is not visible). 
+  % Resetting these view properties seems to solve the problem
+  set(gui.axis,'cameraViewAngleMode','auto');
+  set(gui.axis,'xDir','normal');
+  set(gui.axis,'yDir','reverse');
+  set(gui.axis,'View',[0 90]) 
+
   image(img,'Parent',gui.axis);
   if strcmp(mrGetPref('colorBlending'),'Contours')
     hold(gui.axis,'on');
@@ -272,7 +278,6 @@ if ~baseType && ~mod(rotate,90)
   set(gui.axis,'dataAspectRatio',axisAspectRatio);
 end
 if verbose>1,disppercent(inf);,end
-
 
 % Display colorbar
 if verbose>1,disppercent(-inf,'colorbar');,end
