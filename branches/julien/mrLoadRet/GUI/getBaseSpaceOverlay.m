@@ -64,15 +64,15 @@ switch(baseType)
         % in the third dimension (no other thisView of a 
         % flat map is really valid).
         if sliceIndex == 3
-          Xcoords = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
-          Ycoords = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
-          Zcoords = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
+          Xcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
+          Ycoords0 = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
+          Zcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
           %rotate coordinates
           if  rotateAngle
             for iDepth = 1:depthBins
-               Xcoords(:,:,iDepth) = imrotate(Xcoords(:,:,iDepth),rotateAngle,'bilinear','crop');
-               Ycoords(:,:,iDepth) = imrotate(Ycoords(:,:,iDepth),rotateAngle,'bilinear','crop');
-               Zcoords(:,:,iDepth) = imrotate(Zcoords(:,:,iDepth),rotateAngle,'bilinear','crop');
+               Xcoords(:,:,iDepth) = imrotate(Xcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+               Ycoords(:,:,iDepth) = imrotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+               Zcoords(:,:,iDepth) = imrotate(Zcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
             end
           end
 
@@ -82,10 +82,19 @@ switch(baseType)
       end
       
       %just as an indication, the voxel size is the mean distance between voxels consecutive in the 3 directions
-      baseVoxelSize(1) = baseVoxelSize(1)*mean(mean(mean(sqrt(diff(Xcoords,1,1).^2 + diff(Ycoords,1,1).^2 + diff(Zcoords,1,1).^2))));
-      baseVoxelSize(2) = baseVoxelSize(2)*mean(mean(mean(sqrt(diff(Xcoords,1,2).^2 + diff(Ycoords,1,2).^2 + diff(Zcoords,1,2).^2))));
-      baseVoxelSize(3) = baseVoxelSize(3)*mean(mean(mean(sqrt(diff(Xcoords,1,3).^2 + diff(Ycoords,1,3).^2 + diff(Zcoords,1,3).^2))));
-     
+      %mask coordinates with non-rotated coordinates (to avoid edges introduced by imrotate)
+      Xcoords0Mask = Xcoords0==0;
+      Xcoords0Mask = convn(Xcoords0Mask,ones(5,5,5),'same'); %expand the mask a bit to make sure we don't include any edge voxels
+      XcoordsNaN = Xcoords; 
+      XcoordsNaN(Xcoords0Mask>0)=NaN;
+      YcoordsNaN = Ycoords;
+      YcoordsNaN(Xcoords0Mask>0)=NaN;
+      ZcoordsNaN = Zcoords;
+      ZcoordsNaN(Xcoords0Mask>0)=NaN;
+      baseVoxelSize(1) = baseVoxelSize(1)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,1).^2 + diff(YcoordsNaN,1,1).^2 + diff(ZcoordsNaN,1,1).^2))));
+      baseVoxelSize(2) = baseVoxelSize(2)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,2).^2 + diff(YcoordsNaN,1,2).^2 + diff(ZcoordsNaN,1,2).^2))));
+      baseVoxelSize(3) = baseVoxelSize(3)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,3).^2 + diff(YcoordsNaN,1,3).^2 + diff(ZcoordsNaN,1,3).^2))));
+
    otherwise
       mrWarnDlg('(getBaseSpaceOverlay) This function is not implemented for surfaces')
       
