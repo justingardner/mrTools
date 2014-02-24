@@ -26,7 +26,13 @@ params.additionalArgs = '';
 params.clip = 0;
 params.alphaClip = 0;
 params.passView = 0;
+params.baseSpace= 0;
 params.outputName = '';
+if viewGet(thisView,'basetype')~=1
+  baseSpaceOption='enable=0';
+else
+  baseSpaceOption='enable=1';
+end
 
 askForParams = 1;
 while askForParams
@@ -41,6 +47,7 @@ while askForParams
    {'passView',params.passView,'type=checkbox','Check this if the function requires the current mrLoadRet view'},...
    {'clip',params.clip,'type=checkbox','Mask overlays according to clip values'},...
    {'alphaClip',params.alphaClip,'type=checkbox','Mask overlays according to alpha overlay clip values'},...
+   {'baseSpace',params.baseSpace,'type=checkbox',baseSpaceOption,'Transforms overlays into the current base volume before applying the transform/combine function, and back into overlay space afterwards. Only implemented for flat maps (all cortical depths are used).'},...
    {'outputName',params.outputName,'radical of the output overlay names'},...
    {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
           };
@@ -50,16 +57,18 @@ while askForParams
 
   if strcmp(params.combineFunction,'User Defined')
     params.combineFunction = params.customCombineFunction;
-  end
+  end 
 
   inputOutputTypeMenu = putOnTopOfList(params.inputOutputType,inputOutputTypeMenu);
   combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
   combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
 
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
-    mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively');
+    mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively.');
   elseif isempty(params.combineFunction) && isempty(params.customCombineFunction)
-    mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function');
+    mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function.');
+  elseif (params.clip || params.alphaClip) && params.baseSpace
+    mrWarnDlg('(combineTransformOverlays) Base space conversion is not yet compatible with using (alpha) masking.');
   %elseif
     %other controls here
   else
@@ -72,10 +81,29 @@ while askForParams
 end
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 
-%get and mask the overlay data
+%get the overlay data
 nScans = viewGet(thisView,'nScans');   
 overlayData = viewGet(thisView,'overlays');
 overlayData = overlayData(overlayList);
+if params.baseSpace
+  base2scan = viewGet(thisView,'base2scan');
+  if any(any((base2scan - eye(4))>1e-6)) %check if we're in the scan space
+    baseCoordsMap=cell(nScans,1);
+    %if not, transform the overlay to the base space
+    for iScan = 1:nScans
+      %here could probably put all overlays of a single scan in a 4D array, but the would have to put it back 
+      % into the overlays structure array if inputOutputType is 'structure' 
+      for iOverlay = 1:length(overlayData) 
+        [overlayData(iOverlay).data{iScan}, voxelSize, baseCoordsMap{iScan}] = getBaseSpaceOverlay(thisView, overlayData(iOverlay).data{iScan});
+      end
+    end
+  end
+end
+
+% mask the overlay data if needed
+%   Rk: to implement conversion to base space with masking/clip masking, it would be better
+%   to get both the overlays and masks at the same time and use maskoverlay
+%   with the boxInfo option
 if params.clip
    mask = maskOverlay(thisView,overlayList);
    for iScan = 1:length(mask)
@@ -289,7 +317,7 @@ for iOutput=1:params.nOutputOverlays
       end
       for iInput = 1:length(additionalArgs)
          if isnumeric(additionalArgs{iInput})
-            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} num2str(additionalArgs{iInput}) ','];
+            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} mat2str(additionalArgs{iInput}) ','];
          elseif isa(additionalArgs{iInput},'function_handle')
             outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} func2str(additionalArgs{iInput}) ','];
          else
@@ -304,7 +332,82 @@ if size(overlayData,3)>1 %reshape the overlay cell array
    outputData = cellReshape(outputData,size(outputData,1),size(outputData,2)*size(outputData,3));
    outputOverlayNames = cellReshape(outputOverlayNames,numel(outputOverlayNames),1);
 end
-            
+         
+%pre-compute coordinates map to put values back from base space to overlay space
+if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) 
+  overlayIndexMap=cell(nScans,1);
+  overlayCoordsMap=cell(nScans,1);
+  baseCoordsOverlay=cell(nScans,1);
+  for iScan=1:nScans
+    %make a coordinate map of which overlay voxel each base map voxel corresponds to (convert base coordmap to overlay coord map)
+    baseCoordsMap{iScan} = reshape(baseCoordsMap{iScan},numel(baseCoordsMap{iScan})/3,3);
+    overlayCoordsMap{iScan} = (base2scan*[baseCoordsMap{iScan}';ones(1,size(baseCoordsMap{iScan},1))])';
+    overlayCoordsMap{iScan} = overlayCoordsMap{iScan}(:,1:3);
+    overlayCoordsMap{iScan}(all(~overlayCoordsMap{iScan},2),:)=NaN;
+    scanDims = viewGet(thisView,'dims',iScan);
+    overlayCoordsMap{iScan}(any(overlayCoordsMap{iScan}>repmat(scanDims,size(overlayCoordsMap{iScan},1),1)|overlayCoordsMap{iScan}<0,2),:)=NaN;
+    overlayCoordsMap{iScan} = ceil(overlayCoordsMap{iScan});
+    %convert overlay coordinates to overlay indices for manipulation ease
+    overlayIndexMap{iScan} = sub2ind(scanDims, overlayCoordsMap{iScan}(:,1), overlayCoordsMap{iScan}(:,2), overlayCoordsMap{iScan}(:,3));
+
+    %now make a coordinate map of which base map voxels each overlay index corresponds to
+    %(there will be several maps because each overlay voxels might correspond to several base voxels)
+
+% %       %METHOD 1
+% %       %sort base indices
+% %       [sortedOverlayIndices,whichBaseIndices] = sort(overlayIndexMap{iScan});
+% %       %remove NaNs (which should be at the end of the vector)
+% %       whichBaseIndices(isnan(sortedOverlayIndices))=[];
+% %       sortedOverlayIndices(isnan(sortedOverlayIndices))=[];
+% %       %find the first instance of each unique index
+% %       firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
+% %       firstInstances = [true;firstInstances];
+% %       %get the unique overlay indices
+% %       uniqueOverlayIndices = sortedOverlayIndices(firstInstances);
+% %       %compute the number of instances for each  unique overlay index (= number
+% %       %of base different indices for each unique overlay index)
+% %       numberInstances = diff(find([firstInstances;true]));
+% %       maxInstances = max(numberInstances);
+% %       baseCoordsOverlay2{iScan} = sparse(prod(scanDims),maxInstances);
+% %       hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
+% %       %for each unique overlay index, find all the corresponding base indices
+% %       for i = 1:length(uniqueOverlayIndices)
+% %         mrWaitBar( i/length(uniqueOverlayIndices), hWaitBar);
+% %         theseBaseIndices = whichBaseIndices(sortedOverlayIndices==uniqueOverlayIndices(i));
+% %         baseCoordsOverlay2{iScan}(uniqueOverlayIndices(i),1:length(theseBaseIndices))=theseBaseIndices';
+% %       end
+% %       mrCloseDlg(hWaitBar);
+
+    %METHOD 2 (faster)
+    %first find the maximum number of base voxels corresponding to a single overlay voxel (this is modified from function 'unique')
+    %sort base non-NaN indices
+    sortedIndices = sort(overlayIndexMap{iScan}(~isnan(overlayIndexMap{iScan})));
+    %find the first instance of each unique index
+    firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
+    firstInstances = [true;firstInstances];
+    %compute the number of instances for each unique overlay index 
+    %(= number of base different indices for each unique overlay index)
+    numberInstances = diff(find([firstInstances;true]));
+    maxInstances = max(numberInstances);
+    baseCoordsOverlay{iScan} = sparse(prod(scanDims),maxInstances);
+    %Now for each set of unique overlay indices, find the corresponding base indices
+    hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
+    for i=1:maxInstances
+      mrWaitBar( i/maxInstances, hWaitBar);
+      %find set of unique instances of overlay indices
+      [uniqueOverlayIndices, whichBaseIndices]= unique(overlayIndexMap{iScan});
+      %remove NaNs
+      whichBaseIndices(isnan(uniqueOverlayIndices))=[];
+      uniqueOverlayIndices(isnan(uniqueOverlayIndices))=[];
+      %for each overlay voxel found, set the corresponding base index
+      baseCoordsOverlay{iScan}(uniqueOverlayIndices,i)=whichBaseIndices;
+      %remove instances that were found from the overlay index map before going throught the loop again
+      overlayIndexMap{iScan}(whichBaseIndices)=NaN;
+    end
+    mrCloseDlg(hWaitBar);
+  end
+end
+
 %save the output
 defaultOverlay.groupName = viewGet(thisView,'groupName');
 defaultOverlay.function = 'combineTransformOverlays';
@@ -327,6 +430,26 @@ for iOverlay = 1:size(outputData,2)
     case 'Structure'
       outputOverlay(iOverlay) = copyFields(defaultOverlay,outputData{iOverlay});
       allScansData = cell2mat(outputOverlay(iOverlay).data);
+  end
+  if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) %put back into scan/overlay space
+    for iScan=1:nScans
+      if ~isempty(outputOverlay(iOverlay).data{iScan}) 
+        if viewGet(thisView,'basetype')==1
+          data = zeros(scanDims);
+          datapoints=zeros(prod(scanDims),1);;
+          for i=1:size(baseCoordsOverlay{iScan},2)
+            thisBaseCoordsMap = full(baseCoordsOverlay{iScan}(:,i));
+            data(logical(thisBaseCoordsMap)) = data(logical(thisBaseCoordsMap)) + ...
+                  outputOverlay(iOverlay).data{iScan}(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
+            datapoints = datapoints+logical(thisBaseCoordsMap);
+          end
+          datapoints = reshape(datapoints,scanDims);
+          outputOverlay(iOverlay).data{iScan} = data ./datapoints;
+        else
+          keyboard %not implemented
+        end
+      end
+    end
   end
   maxValue = max(allScansData(allScansData<inf));
   minValue = min(allScansData(allScansData>-inf));
