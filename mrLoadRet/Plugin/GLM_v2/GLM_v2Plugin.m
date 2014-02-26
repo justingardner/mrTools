@@ -214,9 +214,11 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/','callback',@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
     mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/','callback',@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
     mlrAdjustGUI(thisView,'set','editOverlayMenuItem','Callback',@editOverlayCallback);
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Copy Overlay','Callback',@copyOverlayCallback);
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Paste Overlay','Callback',@pasteOverlayCallback);
+    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','Callback',@copyOverlayCallback);
+    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','label','Copy overlay(s)...');
+    mlrAdjustGUI(thisView,'set','pasteOverlayMenuItem','Callback',@pasteOverlayCallback);
     mlrAdjustGUI(thisView,'set','copyScanMenuItem','Callback',@copyScanCallback);
+    mlrAdjustGUI(thisView,'set','copyScanMenuItem','label','Copy scan(s)...');
     mlrAdjustGUI(thisView,'set','pasteScanMenuItem','Callback',@pasteScanCallback);
 
     % Analysis menu
