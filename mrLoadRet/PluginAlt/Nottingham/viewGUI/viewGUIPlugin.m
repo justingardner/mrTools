@@ -85,7 +85,7 @@ switch action
     mlrAdjustGUI(thisView,'set','addScanMenuItem','label','Add');
     mlrAdjustGUI(thisView,'set','importTSeriesMenuItem','label','Import');
     mlrAdjustGUI(thisView,'set','exportTSeriesMenuItem','label','Export');
-    mlrAdjustGUI(thisView,'set','copyScanMenuItem','label','Copy');
+    mlrAdjustGUI(thisView,'set','copyScanMenuItem','label','Copy...');
     mlrAdjustGUI(thisView,'set','pasteScanMenuItem','label','Paste');
     mlrAdjustGUI(thisView,'set','transformsMenu','label','Edit transform');
     %add/remove separators
@@ -171,7 +171,7 @@ switch action
     %rename menu items
     mlrAdjustGUI(thisView,'set','exportOverlayMenuItem','label','Export');
     mlrAdjustGUI(thisView,'set','importOverlayMenuItem','label','Import');
-    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','label','Copy');
+    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','label','Copy...');
     mlrAdjustGUI(thisView,'set','pasteOverlayMenuItem','label','Paste');
     mlrAdjustGUI(thisView,'set','editOverlayMenuItem','label','Edit');
     mlrAdjustGUI(thisView,'set','viewMenu','label','Remove');
