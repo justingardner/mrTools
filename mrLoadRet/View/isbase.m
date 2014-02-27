@@ -150,11 +150,17 @@ base.name = getLastDir(base.name);
 %%%%%%%%%%%%%%%%%%%%%
 function clip = defaultClip(image)
 % Choose default clipping based on histogram
-histThresh = length(image(:))/1000;
-[cnt, val] = hist(image(:),100);
+histThresh = length(image(~isnan(image)))/1000;
+[cnt, val] = hist(image(~isnan(image)),100);
 goodVals = find(cnt>histThresh);
 clipMin = val(min(goodVals));
 clipMax = val(max(goodVals));
+%if that doesn't work, take the 5th and 95th percentiles
+if clipMin==clipMax
+  im = sort(image(~isnan(image)));
+  clipMin = im(round(0.05*length(im)));
+  clipMax = im(round(0.95*length(im)));
+end
 clip = [clipMin,clipMax];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
