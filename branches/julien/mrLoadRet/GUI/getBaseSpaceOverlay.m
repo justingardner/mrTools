@@ -67,17 +67,24 @@ switch(baseType)
           Xcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
           Ycoords0 = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
           Zcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
-          %rotate coordinates
-          if  rotateAngle
-            for iDepth = 1:depthBins
-               Xcoords(:,:,iDepth) = imrotate(Xcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
-               Ycoords(:,:,iDepth) = imrotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
-               Zcoords(:,:,iDepth) = imrotate(Zcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
-            end
-          end
-
         else
-          oneTimeWarning('badSliceIndex',sprintf('(refreshMLRDisplay:getBaseSlice) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
+          oneTimeWarning('badSliceIndex',sprintf('(getBaseSpaceOverlay) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
+          %attempt to do it anyway
+          try
+            Xcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
+            Ycoords0 = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
+            Zcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
+          catch errorId
+            mrErrorDlg(errorId.message)
+          end
+        end
+        %rotate coordinates
+        if  rotateAngle
+          for iDepth = 1:depthBins
+             Xcoords(:,:,iDepth) = imrotate(Xcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+             Ycoords(:,:,iDepth) = imrotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+             Zcoords(:,:,iDepth) = imrotate(Zcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+          end
         end
       end
       
