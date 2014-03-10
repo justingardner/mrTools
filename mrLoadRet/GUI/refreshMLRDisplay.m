@@ -205,7 +205,7 @@ if baseType <= 1
   set(gui.axis,'View',[0 90]) 
 
   image(img,'Parent',gui.axis);
-  if strcmp(mrGetPref('colorBlending'),'Contours')
+  if ~isempty(overlays.RGB) && strcmp(mrGetPref('colorBlending'),'Contours') 
     hold(gui.axis,'on');
     nContours = 9;
     contourStepSize =diff(contourCscale)/(nContours-1);
