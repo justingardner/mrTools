@@ -70,7 +70,7 @@ function editOverlayGUI(viewNum)
   paramsInfo{end+1} = {'shiftColormap', 0, 'incdec=[-16 16]', 'shift the colormap -- this can be useful for retinotopy scans with circular colormaps'}; 
   paramsInfo{end+1} = {'overlayColormapType',overlayColormapTypeMenu , 'type=popupmenu',...
       '''normal'' scales the colormap to the value specified by colormap range; ''setRangeToMax'' scales the colormap to the min amnd max of the displayed overlay slice and ignores the color range (like R2 maps)'};
-  paramsInfo{end+1} = {'overlayColorRange', overlayColorRange, 'The lower and upper bound on the colormap when overlayColormapType=''normal'''};
+  paramsInfo{end+1} = {'overlayColorRange', overlayColorRange, 'callback',{@checkCmapParams,'colorrange'},'passCallbackOutput=1','passValue=1','passParams=1', 'The lower and upper bound on the colormap when overlayColormapType=''normal'''};
   paramsInfo{end+1} = {'overlayClipRange', overlayClipRange, 'callback',{@checkCmapParams,'cliprange'},'passCallbackOutput=1','passValue=1','passParams=1',...
       'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range. If clip(1)>clip(2), then values inside the clip range are masked.'};
   paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, 'callback',{@checkCmapParams,'usefulrange'},'passCallbackOutput=1','passValue=1','passParams=1',...
@@ -140,6 +140,11 @@ end
 function value = checkCmapParams(params,value,whichParam)
 
 switch(whichParam)
+  case 'colorrange'
+    if diff(params.overlayColorRange)<=0
+      mrWarnDlg('(editOverlayGUImrParams) colorange values cannot be equal or decreasing.');
+      value=[];
+    end  
   case 'cliprange'
     %we don't know what value we got so we need to find out first
     indexInArray = find(params.overlayClipRange==value);
