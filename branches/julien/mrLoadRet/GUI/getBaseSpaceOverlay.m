@@ -85,6 +85,10 @@ switch(baseType)
              Ycoords(:,:,iDepth) = imrotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
              Zcoords(:,:,iDepth) = imrotate(Zcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
           end
+        else
+          Xcoords=Xcoords0;
+          Ycoords=Ycoords0;
+          Zcoords=Zcoords0;
         end
       end
       
