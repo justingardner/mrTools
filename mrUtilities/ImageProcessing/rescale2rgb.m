@@ -52,9 +52,9 @@ result(image > clipMax) = clipMax;
 if isequal(clipMax-clipMin,0)
   rgb = clipMax*ones([size(image),3]);return
 else
-  indices = round(255 * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
+  indices = round((size(cmap,1)-1) * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
 end
-indices = max(1,min(indices,size(cmap,1)));
+indices = min(size(cmap,1),max(indices,1)); %this removes replaces NaNs by the lowest index
 
 % Extract r,g,b components
 r = zeros(size(image));
