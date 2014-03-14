@@ -159,12 +159,12 @@ flat.baseCoordsOuter(~isfinite(flat.baseCoordsOuter)) = 0;
 % now blur image
 flat.blurMap(:,:) = blur(flat.map(:,:));
 % threshold image
-flat.thresholdMap(:,:) = (flat.blurMap(:,:)>nanmedian(flat.blurMap(:)))*0.5+0.25;
+flat.thresholdMap(:,:) = (flat.map(:,:)>nanmedian(flat.map(:)))*0.5+0.25;
 % flat.medianVal = nanmedian(flat.blurMap(:));
 % flat.blurMap(flat.blurMap<flat.medianVal) = -1;
 % flat.blurMap(flat.blurMap>flat.medianVal) = 1;
 flat.thresholdMap = blur(flat.thresholdMap);
-flat.thresholdMap(isnan(flat.map)) = 0;
+flat.thresholdMap(isnan(flat.map)) = NaN;
 
 % now load the anatomy file, so that we can get the vol2mag/vol2tal fields
 v = newView;
