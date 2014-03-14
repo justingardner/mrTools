@@ -96,7 +96,10 @@ if ~isempty(baseData)
       baseIm = squeeze(baseData(:,:,sliceNum));
   end
   if (rotate ~= 0)
+    mask = imrotate(ones(size(baseIm)),rotate,'bilinear',cropType);
     baseIm = imrotate(baseIm,rotate,'bilinear',cropType);
+    %replace non-existent voxels by NaNs
+    baseIm(~mask)=NaN;
   end
 end
 

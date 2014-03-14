@@ -2481,13 +2481,14 @@ switch lower(param)
     gamma = viewGet(view,'baseGamma',currentBase);
     currentSlice = viewGet(view,'curSlice');
     sliceIndex = viewGet(view,'baseSliceIndex');
+    baseNaNsColor = mrGetPref('baseNaNsColor');
     % only use the corticalDepth if this is a flat
     if viewGet(view,'baseType')
       corticalDepthBins = viewGet(view,'corticalDepthBins');
     else
       corticalDepthBins = 0;
     end
-    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepthBins);
+    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f_%s',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepthBins,baseNaNsColor);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     baseID = viewGet(view,'baseCacheID');
