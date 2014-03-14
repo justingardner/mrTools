@@ -236,12 +236,13 @@ if nargin < 7
 else
   rotate = 0;
 end
-if verbose>1,disppercent(inf);,end
+if verbose>1,disppercent(inf);end
 
+fig = viewGet(v,'figNum');
 %disp(sprintf('(refreshMLRDIsplay:dispBase) DEBUG: sliceIndex: %i slice: %i',sliceIndex,slice));
 
 % Compute base coordinates and extract baseIm for the current slice
-if verbose,disppercent(-inf,'extract base image');,end
+if verbose,disppercent(-inf,'extract base image');end
 base = viewGet(v,'baseCache',baseNum,slice,sliceIndex,rotate);
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
@@ -253,6 +254,33 @@ if isempty(base)
     base.cmap = gray(256);
     base.clip = viewGet(v,'baseClip',baseNum);
     base.RGB = rescale2rgb(base.im,base.cmap,base.clip,baseGamma);
+    switch lower(mrGetPref('baseNaNsColor'))
+      case 'transparent' %display NaNs the same color as figure background
+        if ~isempty(fig) 
+          backgroundColor = get(fig,'color');
+        else
+          backgroundColor = [0 0 0];
+        end
+      case 'black'
+        backgroundColor = [0 0 0];
+      case 'white'
+        backgroundColor = [1 1 1];
+    end
+    if baseType==1 %make smooth transition beetween figure background and flat map
+      alpha = zeros(base.dims(1),base.dims(2));
+      alpha(isnan(base.im))=1;
+      kernel = gaussianKernel2D(3)   ;     
+      alpha = conv2(alpha,ones(4,4),'same');
+      alpha = conv2(1-(alpha>0),kernel,'same');
+      alpha = repmat(alpha,[1 1 3]);
+      mask = repmat(permute(backgroundColor,[1 3 2]),[base.dims(1) base.dims(2) 1]);
+      base.RGB = base.RGB.*alpha+(1-alpha).*mask;
+      base.RGB=min(1,max(0,base.RGB));
+    else
+      base.RGB = reshape(base.RGB,base.dims(1)*base.dims(2),3);
+      base.RGB(isnan(base.im),:)=repmat(backgroundColor,[nnz(isnan(base.im)) 1]);
+      base.RGB = reshape(base.RGB,[base.dims 3]);
+    end
   else
     base.RGB = [];
   end
@@ -343,7 +371,6 @@ img=double(img); %in case data are stored as singles (later instances of surf/se
 
 
 % if no figure, then just return, this is being called just to create the overlays
-fig = viewGet(v,'figNum');
 if isempty(fig)
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
@@ -923,4 +950,18 @@ end
 
 if verbose>1,disppercent(inf);,end
 return;
+
+
+function kernel = gaussianKernel2D(FWHM)
+
+sigma_d = FWHM/2.35482;
+w = ceil(FWHM); %deals with resolutions that are not integer
+%make the gaussian kernel large enough for FWHM
+kernelDims = 2*[w w]+1;
+kernelCenter = ceil(kernelDims/2);
+[X,Y] = meshgrid(1:kernelDims(1),1:kernelDims(2));
+kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2)/(2*sigma_d^2)); %Gaussian function
+kernel = kernel./sum(kernel(:));
+
+  
 
