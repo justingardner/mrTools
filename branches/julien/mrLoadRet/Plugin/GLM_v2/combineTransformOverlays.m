@@ -352,9 +352,9 @@ if params.nOutputOverlays
       overlayCoordsMap{iScan} = (base2scan*[baseCoordsMap{iScan}';ones(1,size(baseCoordsMap{iScan},1))])';
       overlayCoordsMap{iScan} = overlayCoordsMap{iScan}(:,1:3);
       overlayCoordsMap{iScan}(all(~overlayCoordsMap{iScan},2),:)=NaN;
+      overlayCoordsMap{iScan} = round(overlayCoordsMap{iScan});
       scanDims = viewGet(thisView,'dims',iScan);
-      overlayCoordsMap{iScan}(any(overlayCoordsMap{iScan}>repmat(scanDims,size(overlayCoordsMap{iScan},1),1)|overlayCoordsMap{iScan}<0,2),:)=NaN;
-      overlayCoordsMap{iScan} = ceil(overlayCoordsMap{iScan});
+      overlayCoordsMap{iScan}(any(overlayCoordsMap{iScan}>repmat(scanDims,size(overlayCoordsMap{iScan},1),1)|overlayCoordsMap{iScan}<1,2),:)=NaN;
       %convert overlay coordinates to overlay indices for manipulation ease
       overlayIndexMap{iScan} = sub2ind(scanDims, overlayCoordsMap{iScan}(:,1), overlayCoordsMap{iScan}(:,2), overlayCoordsMap{iScan}(:,3));
 
