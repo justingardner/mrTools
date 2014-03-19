@@ -26,7 +26,8 @@ params.additionalArgs = '';
 params.clip = 0;
 params.alphaClip = 0;
 params.passView = 0;
-params.baseSpace= 0;
+params.baseSpace = 0;
+params.exportToNewGroup = 0;
 params.outputName = '';
 if viewGet(thisView,'basetype')~=1
   baseSpaceOption='enable=0';
@@ -48,6 +49,7 @@ while askForParams
    {'clip',params.clip,'type=checkbox','Mask overlays according to clip values'},...
    {'alphaClip',params.alphaClip,'type=checkbox','Mask overlays according to alpha overlay clip values'},...
    {'baseSpace',params.baseSpace,'type=checkbox',baseSpaceOption,'Transforms overlays into the current base volume before applying the transform/combine function, and back into overlay space afterwards. Only implemented for flat maps (all cortical depths are used).'},...
+   {'exportToNewGroup',params.exportToNewGroup,'type=checkbox','contingent=baseSpace','Exports results in base sapce to new group, scan and analysis. Warning: for flat maps, the data is exported to a volume in an arbitrary space. ROIs and overlays defined outside this new group will not be in register.'},...
    {'outputName',params.outputName,'radical of the output overlay names'},...
    {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
           };
@@ -342,7 +344,7 @@ if params.nOutputOverlays
   end
 
   %pre-compute coordinates map to put values back from base space to overlay space
-  if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) 
+  if params.baseSpace && ~params.exportToNewGroup && any(any((base2scan - eye(4))>1e-6)) 
     overlayIndexMap=cell(nScans,1);
     overlayCoordsMap=cell(nScans,1);
     baseCoordsOverlay=cell(nScans,1);
@@ -409,7 +411,7 @@ if params.nOutputOverlays
         uniqueOverlayIndices(isnan(uniqueOverlayIndices))=[];
         %for each overlay voxel found, set the corresponding base index
         baseCoordsOverlay{iScan}(uniqueOverlayIndices,i)=whichBaseIndices;
-        %remove instances that were found from the overlay index map before going throught the loop again
+        %remove instances that were found from the overlay index map before going through the loop again
         overlayIndexMap{iScan}(whichBaseIndices)=NaN;
       end
       mrCloseDlg(hWaitBar);
@@ -417,7 +419,71 @@ if params.nOutputOverlays
   end
 
   %save the output
-  defaultOverlay.groupName = viewGet(thisView,'groupName');
+  if params.exportToNewGroup
+    baseName = [viewGet(thisView,'currentBaseName') 'Volume'];
+    groupName=baseName;
+    if ismember(groupName,viewGet(thisView,'groupNames'))
+      fprintf('(combineTransformOverlays) Installing output overlays in group %s.\n',groupName);
+      thisView = viewSet(thisView,'currentGroup',groupName);
+      thisView = viewSet(thisView,'currentBase',viewGet(thisView,'baseNum',groupName));
+    else
+      fprintf('(combineTransformOverlays) Creating group %s.\n',groupName);
+      thisView = viewSet(thisView,'newGroup',groupName);
+      thisView = viewSet(thisView,'currentGroup',groupName);
+      % export the flat map as an empty volume
+      base = viewGet(thisView,'baseCache');
+      baseNum = viewGet(thisView,'currentBase');
+      if isempty(base)
+        base.im = getBaseSlice(thisView,viewGet(thisView,'curslice'),viewGet(thisView,'baseSliceIndex',baseNum),viewGet(thisView,'rotate'),baseNum,viewGet(thisView,'basetype'));
+      end
+      baseVolume = viewGet(thisView,'baseVolume');
+      hdr = baseVolume.hdr;
+      hdr.bitpix = 32;   
+      hdr.datatype = 16;
+      hdr.is_analyze = 1;
+      hdr.scl_slope = 1;
+      hdr.endian = 'l';
+      voxelSize(1:2) = repmat(mean(voxelSize(1:2)),1,2);
+      if any(voxelSize ~= viewGet(thisView,'basevoxelsize',baseNum))
+         hdr.pixdim = [0 voxelSize 0 0 0 0]';        % all pix dims must be specified here
+         hdr.qform44 = diag([voxelSize 0]);
+         hdr.sform44 = hdr.qform44;
+      end
+      % Copy file to the tseries directory
+      tseriesDir = viewGet(thisView,'tseriesDir');
+      scanFileName = [baseName mrGetPref('niftiFileExtension')];
+      newPathStr = fullfile(tseriesDir,scanFileName);
+      [bytes,hdr] = cbiWriteNifti(newPathStr,repmat(base.im,[1 1 size(outputData{1},3)]),hdr);
+      % Add it
+      scanParams.fileName = scanFileName;
+      thisView = viewSet(thisView,'newScan',scanParams);
+      % create dummy analysis
+      analysis.name = 'combineTransformOverlays';
+      fprintf('(combineTransformOverlays) Creating Analysis %s.\n',analysis.name);
+      analysis.type = 'dummy';
+      analysis.groupName = baseName;
+      analysis.function = '';
+      analysis.reconcileFunction = 'dummyAnalysisReconcileParams';
+      analysis.guiFunction = '';
+      analysis.params = [];
+      analysis.overlays =[];
+      analysis.curOverlay = [];
+      analysis.date = datestr(now);
+      thisView = viewSet(thisView,'newanalysis',analysis);
+      
+      %if the base is a flat map, need to create a new volume flat map
+      if viewGet(thisView,'basetype')==1
+        thisView = loadAnat(thisView,getLastDir(newPathStr),fileparts(newPathStr));
+        saveAnat(thisView,getLastDir(newPathStr));
+        thisView.baseVolumes(thisView.curBase).clip=[0 1]; %should add a viewSet case for this but I don't have time
+        thisView = viewSet(thisView,'rotate',0);
+      end
+    end
+  else
+    groupName=viewGet(thisView,'groupName');
+  end
+  
+  defaultOverlay.groupName = groupName;
   defaultOverlay.function = 'combineTransformOverlays';
   defaultOverlay.interrogator = '';
   defaultOverlay.type = 'combination';
@@ -439,12 +505,12 @@ if params.nOutputOverlays
         outputOverlay(iOverlay) = copyFields(defaultOverlay,outputData{iOverlay});
         allScansData = cell2mat(outputOverlay(iOverlay).data);
     end
-    if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) %put back into scan/overlay space
+    if ~params.exportToNewGroup && params.baseSpace && any(any((base2scan - eye(4))>1e-6)) %put back into scan/overlay space
       for iScan=1:nScans
         if ~isempty(outputOverlay(iOverlay).data{iScan}) 
           if viewGet(thisView,'basetype')==1
             data = zeros(scanDims);
-            datapoints=zeros(prod(scanDims),1);;
+            datapoints=zeros(prod(scanDims),1);
             for i=1:size(baseCoordsOverlay{iScan},2)
               thisBaseCoordsMap = full(baseCoordsOverlay{iScan}(:,i));
               data(logical(thisBaseCoordsMap)) = data(logical(thisBaseCoordsMap)) + ...
