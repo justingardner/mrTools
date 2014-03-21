@@ -27,6 +27,7 @@ params.clip = 0;
 params.alphaClip = 0;
 params.passView = 0;
 params.baseSpace = 0;
+baseSpaceInterpMenu = {'Same as display','nearest','linear','spline','cubic'};
 params.exportToNewGroup = 0;
 params.outputName = '';
 if viewGet(thisView,'basetype')~=1
@@ -49,6 +50,7 @@ while askForParams
    {'clip',params.clip,'type=checkbox','Mask overlays according to clip values'},...
    {'alphaClip',params.alphaClip,'type=checkbox','Mask overlays according to alpha overlay clip values'},...
    {'baseSpace',params.baseSpace,'type=checkbox',baseSpaceOption,'Transforms overlays into the current base volume before applying the transform/combine function, and back into overlay space afterwards. Only implemented for flat maps (all cortical depths are used).'},...
+   {'baseSpaceInterp',baseSpaceInterpMenu,'type=popupmenu','contingent=baseSpace','Type of base space interpolation '},...
    {'exportToNewGroup',params.exportToNewGroup,'type=checkbox','contingent=baseSpace','Exports results in base sapce to new group, scan and analysis. Warning: for flat maps, the data is exported to a volume in an arbitrary space. ROIs and overlays defined outside this new group will not be in register.'},...
    {'outputName',params.outputName,'radical of the output overlay names'},...
    {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
@@ -56,18 +58,23 @@ while askForParams
   params = mrParamsDialog(params, 'Overlay Combination parameters');
   % Abort if params empty
   if ieNotDefined('params'),return,end
-  if isempty(params.baseSpace)
-    params.baseSpace=0;
-  end
-
   if strcmp(params.combineFunction,'User Defined')
     params.combineFunction = params.customCombineFunction;
   end 
-
+  if isempty(params.baseSpace)
+    params.baseSpace=0;
+  end
+  if strcmp(params.baseSpaceInterp,'Same as display')
+    baseSpaceInterp='';
+  else
+    baseSpaceInterp=params.baseSpaceInterp;
+  end
+  
   inputOutputTypeMenu = putOnTopOfList(params.inputOutputType,inputOutputTypeMenu);
   combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
   combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
-
+  baseSpaceInterpMenu = putOnTopOfList(params.baseSpaceInterp,baseSpaceInterpMenu);
+  
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
     mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively.');
   elseif isempty(params.combineFunction) && isempty(params.customCombineFunction)
@@ -99,7 +106,7 @@ if params.baseSpace
       %here could probably put all overlays of a single scan in a 4D array, but the would have to put it back 
       % into the overlays structure array if inputOutputType is 'structure' 
       for iOverlay = 1:length(overlayData) 
-        [overlayData(iOverlay).data{iScan}, voxelSize, baseCoordsMap{iScan}] = getBaseSpaceOverlay(thisView, overlayData(iOverlay).data{iScan});
+        [overlayData(iOverlay).data{iScan}, voxelSize, baseCoordsMap{iScan}] = getBaseSpaceOverlay(thisView, overlayData(iOverlay).data{iScan},[],[],baseSpaceInterp);
       end
     end
   end
@@ -469,14 +476,16 @@ if params.nOutputOverlays
       analysis.overlays =[];
       analysis.curOverlay = [];
       analysis.date = datestr(now);
+%       analysis.clipAcrossOVerlays = 0; %this doesn't work
       thisView = viewSet(thisView,'newanalysis',analysis);
+      thisView = viewSet(thisView,'clipAcrossOverlays',0); %this doesn't work
       
       %if the base is a flat map, need to create a new volume flat map
       if viewGet(thisView,'basetype')==1
         thisView = loadAnat(thisView,getLastDir(newPathStr),fileparts(newPathStr));
         saveAnat(thisView,getLastDir(newPathStr));
         thisView.baseVolumes(thisView.curBase).clip=[0 1]; %should add a viewSet case for this but I don't have time
-        thisView = viewSet(thisView,'rotate',0);
+        thisView = viewSet(thisView,'rotate',0); %this doesn't work
       end
     end
   else
