@@ -1,16 +1,16 @@
 % freeSurfer2off.m
 %
 %        $Id$
-%      usage: freeSurfer2off(fsSurf, offSurf, <volumeSize>)
+%      usage: freeSurfer2off(fsSurf, offSurf, <volumeSize>, <volumeSize>)
 %         by: eli merriam
 %       date: 07/11/07
 %    purpose: Converts vertices from free surfer conventions and saves as an off. Note that
 %             freeSurfer is 1 based and coordinates start in the middle of the volume. We
-%             therefore have to add half the volume size to the coordinates to convert.
-%             The default is to assume that the volumeSize is 176x256x256. Note that the
-%             script mlrImportFreeSurfer crops volumes to that size.
+%             therefore have to add half the volume size (in mm) to the coordinates to convert.
+%             The default is to assume that the volumeSize is 176x256x256 and the pixelSize 1x1x1. 
+%             Note that the script mlrImportFreeSurfer crops volumes to that size.
 %
-function[] = freeSurfer2off(fsSurf, offSurf, volumeSize)
+function [] = freeSurfer2off(fsSurf, offSurf, volumeSize, pixelSize)
 
 % check arguments
 if (nargin < 2)
@@ -22,6 +22,10 @@ end
 if nargin < 3
   volumeSize = [176 256 256];
 end
+if nargin < 4
+  pixelSize = [1 1 1];
+end
+  
 
 % read in the freesurfer file
 [vertices, triangles] = freesurfer_read_surf(fsSurf);
@@ -30,10 +34,10 @@ end
 triangles = triangles' -1;
 vertices  = vertices'  -1;
 
-% center image
-vertices(1,:) = vertices(1,:) + volumeSize(1)/2;   % higher, more right
-vertices(2,:) = vertices(2,:) + volumeSize(2)/2;   % higher, more anterior
-vertices(3,:) = vertices(3,:) + volumeSize(3)/2;   % higher, more superior
+% center image (including -1 for OFF compatibility)
+vertices(1,:) = vertices(1,:) + pixelSize(1)*volumeSize(1)/2;   % higher, more right
+vertices(2,:) = vertices(2,:) + pixelSize(2)*volumeSize(2)/2;   % higher, more anterior
+vertices(3,:) = vertices(3,:) + pixelSize(3)*volumeSize(3)/2;   % higher, more superior
 
 % triangles(1) is number of vert/triangle: 3
 % triangles(2:4) are the vertices of that triangles

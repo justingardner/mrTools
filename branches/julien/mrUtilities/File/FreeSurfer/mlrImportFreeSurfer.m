@@ -47,7 +47,7 @@ paramsInfo = {...
     {'infFile', infFile, 'name of the inflated surface'}, ...
     {'anatFile', anatFile, 'name of the base anatomy file'}, ...
     {'baseName', baseName, 'subject initials'}, ...
-    {'volumeCropSize',volumeCropSize, 'Size to crop the volume anatomy to'},...
+    {'volumeCropSize',volumeCropSize, 'Size to crop the volume anatomy to (in voxels)'},...
              };
 
 % get the parameters from the user
@@ -62,44 +62,6 @@ if ~isdir(outDir)
   mkdir(outDir);
 end
 
-% import the white and gray matter surface, as well as the inflated surface and curvature
-disp(sprintf('(mlrImportFreeSurfer) Converting FreeSurfer surfaces to OFF format'))
-for i = 1:length(hemi)
-  % convert inner surface
-  surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.wmFile));
-  outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_WM.off'));
-  if isfile(surfFile)
-    freeSurfer2off(surfFile, outFile, params.volumeCropSize);
-  else
-    disp(sprintf('(mlrImportFreeSurfer) Could not find inner (white matter) surface %s',getLastDir(surfFile,2)));
-  end
-
-  % convert outer surface
-  surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.gmFile));
-  outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_GM.off'));
-  if isfile(surfFile)
-    freeSurfer2off(surfFile, outFile, params.volumeCropSize);
-  else
-    disp(sprintf('(mlrImportFreeSurfer) Could not find outer (pial/gray matter) surface %s',getLastDir(surfFile,2)));
-  end
-
-  % convert inflated surface
-  surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.infFile));
-  outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Inf.off'));
-  if isfile(surfFile)
-    freeSurfer2off(surfFile, outFile, params.volumeCropSize);
-  else
-    disp(sprintf('(mlrImportFreeSurfer) Could not find inflated surface %s',getLastDir(surfFile,2)));
-  end
-
-  curvFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.curvFile));
-  if isfile(curvFile)
-    [curv, fnum] = freesurfer_read_curv(curvFile);
-    saveVFF(fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Curv.vff')), -curv)
-  else
-    disp(sprintf('(mlrImportFreeSurfer) Could not find curvature file %s',getLastDir(curvFile)));
-  end
-end
 
 % convert the volume to mlr volume
 anatFile = fullfile(params.freeSurferDir, 'mri', params.anatFile);
@@ -116,13 +78,54 @@ if isfile(anatFile)
   setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
   system(sprintf('mri_convert --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
 
+  hdr = cbiReadNiftiHeader(outFile);
+  pixelSize=hdr.pixdim(2:4);
 %   h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 %   h.qform44(1,4) = -(h.dim(2)-1)/2;
 %   h = cbiSetNiftiQform(h, h.qform44);
 %   h = cbiSetNiftiSform(h, h.qform44);
 %   cbiWriteNiftiHeader(h, fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 else
-  disp(sprintf('(mlrImportFreeSurfer) Could not find volume %s',getLastDir(anatFile,2)));
+  disp(sprintf('(mlrImportFreeSurfer) Could not find volume %s. Assuming voxel size is 1x1x1.',getLastDir(anatFile,2)));
+end
+
+% import the white and gray matter surface, as well as the inflated surface and curvature
+disp(sprintf('(mlrImportFreeSurfer) Converting FreeSurfer surfaces to OFF format'))
+for i = 1:length(hemi)
+  % convert inner surface
+  surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.wmFile));
+  outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_WM.off'));
+  if isfile(surfFile)
+    freeSurfer2off(surfFile, outFile, params.volumeCropSize, pixelSize);
+  else
+    disp(sprintf('(mlrImportFreeSurfer) Could not find inner (white matter) surface %s',getLastDir(surfFile,2)));
+  end
+
+  % convert outer surface
+  surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.gmFile));
+  outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_GM.off'));
+  if isfile(surfFile)
+    freeSurfer2off(surfFile, outFile, params.volumeCropSize, pixelSize);
+  else
+    disp(sprintf('(mlrImportFreeSurfer) Could not find outer (pial/gray matter) surface %s',getLastDir(surfFile,2)));
+  end
+
+  % convert inflated surface
+  surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.infFile));
+  outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Inf.off'));
+  if isfile(surfFile)
+    freeSurfer2off(surfFile, outFile, params.volumeCropSize, pixelSize);
+  else
+    disp(sprintf('(mlrImportFreeSurfer) Could not find inflated surface %s',getLastDir(surfFile,2)));
+  end
+
+  curvFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.curvFile));
+  if isfile(curvFile)
+    [curv, fnum] = freesurfer_read_curv(curvFile);
+    saveVFF(fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_Curv.vff')), -curv)
+  else
+    disp(sprintf('(mlrImportFreeSurfer) Could not find curvature file %s',getLastDir(curvFile)));
+  end
 end
 
 
