@@ -33,6 +33,7 @@ switch action
             '                 - Improved Export Images function',...
             '                 - New item in menu Analysis/Motioncomp to appy existing motion compensation parameters to another set of scans',...
             '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
+            '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
             ];
    retval ='Adds new functionalities to GUI, including improved GLM analysis';
    
@@ -515,20 +516,56 @@ end
 isSurface = find(isSurface);
 selected = viewGet(thisView,'surfaceOnVolume');
 
-newSelection = isSurface(logical(buttondlg('Select surface(s) to display', baseNames(isSurface),ismember(isSurface,selected))));
+paramsInfo = {};
+for iSurf=1:length(isSurface)
+  paramsInfo{end+1}={fixBadChars(baseNames{isSurface(iSurf)}),ismember(isSurface(iSurf),selected),'type=checkbox','callback',{@refreshSurfOnVol,viewNum, hObject},'passParams=1',...
+                                'passCallbackOutput=0','Check to display surface'};
+end
+%I have implemented something to modify the surface alignment manually but
+%it should not be needed if the surface and volumes have correctly been
+%imported from freesurfer. and it`s awkward to use anyway
+% paramsInfo{end+1} = {'reset',[],'type=pushbutton','buttonString=Modify SurfToBase Xform', 'callback',{@modifySurf2baseGUI,viewNum, hObject},'passParams=1','passCallbackOutput=0',...
+%                                 'To manually modify the surface to base alignment (xform)'};
+mrParamsDialog(paramsInfo,'Select surface(s) to display','modal=0');
+
+%newSelection = isSurface(logical(buttondlg('Select surface(s) to display', baseNames(isSurface),ismember(isSurface,selected))));
+
+% --------------------------------------------------------------------
+function refreshSurfOnVol(params, viewNum, hObject)
+
+newSelection=getSelectedSurfaces(params,viewNum);
 if isempty(newSelection)
   set(hObject,'checked','off');
 else
   set(hObject,'checked','on');
 end
-thisView=viewSet(thisView,'surfaceOnVolume',newSelection);
+viewSet(viewNum,'surfaceOnVolume',newSelection);
 
+refreshMLRDisplay(viewNum);
+
+% --------------------------------------------------------------------
+function selection = getSelectedSurfaces(params,viewNum)
+
+baseNames = viewGet(viewNum,'baseNames');
+surfNames = fieldnames(params);
+selection=[];
+for iSurf=1:length(surfNames)-1
+  if params.(surfNames{iSurf})
+    [~,surfNum]= ismember(surfNames{iSurf},baseNames);
+    selection=[selection surfNum];
+  end
+end
+
+% --------------------------------------------------------------------
+function modifySurf2baseGUI(params,viewNum, hObject)
+
+handles = guidata(hObject);
 startingTrans = [0 0 0];
 startingRot = [0 0 0];
 handles.surfOnVolGUIXform = eye(4);
 guidata(hObject,handles);
 
-
+newSelection=getSelectedSurfaces(params,viewNum);
 if ~isempty(newSelection)
   % set up params dialog
   paramsInfo = {};
@@ -545,9 +582,6 @@ if ~isempty(newSelection)
   mrParamsDialog(paramsInfo,'Modify Surface to Volume xform','modal=0','okCallback',{@closeCallback,viewNum,hObject});
 end
 
-if ~isequal(selected,newSelection)
-  refreshMLRDisplay(viewNum);
-end
 
 % --------------------------------------------------------------------
 function modifySurf2baseCallback(params, viewNum, hObject)
