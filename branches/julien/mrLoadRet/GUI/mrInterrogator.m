@@ -255,9 +255,9 @@ else
   baseSurface = viewGet(view,'baseSurface');
   baseDims = viewGet(view,'baseSurfaceDims');
   pos = [];xBase = nan; yBase = nan; sBase = nan;
-  % check mouse bounding box coords against baseDims
-  % for a quick check to see if we are in the volume
-  if all(pointerLoc(1,:) >= 0)
+%   % check mouse bounding box coords against baseDims    % this doesn`t work now that 
+%   % for a quick check to see if we are in the volume    % surface is displayed in magnet space
+%   if all(pointerLoc(1,:) >= 0)                          % but not really needed...
     % then use select3d which is slooow, but accurate
     hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
     % make sure we are using the correct object (should be the 3D
@@ -275,7 +275,7 @@ else
       %pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
       xBase = pos(1);yBase = pos(2);sBase = pos(3);
     end
-  end      
+%   end      
 end
 
 % transform from base coordinates to talairach coordinates, if the base has a talairach transform defined
