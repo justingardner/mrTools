@@ -64,6 +64,9 @@ while askForParams
   if isempty(params.baseSpace)
     params.baseSpace=0;
   end
+  if isempty(params.exportToNewGroup)
+    params.exportToNewGroup=0;
+  end
   if strcmp(params.baseSpaceInterp,'Same as display')
     baseSpaceInterp='';
   else
