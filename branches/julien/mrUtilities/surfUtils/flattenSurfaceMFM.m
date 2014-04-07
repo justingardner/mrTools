@@ -1,4 +1,4 @@
-function [unfoldMeshSummary] = flattenSurfaceMFM(mesh, startCoords, perimDist);
+function [unfoldMeshSummary] = flattenSurfaceMFM(mesh, startCoords, perimDist,scaleFactorFromMesh)
 % Author: Wade
 % Purpose:
 %    Unfolds a properly triangulated mesh using Floater/Tutte's sparse
@@ -41,10 +41,9 @@ startTime=now;
 str = sprintf('****** mrFlatMesh %s *****',datestr(now));
 if verbose,disp(sprintf(str));end
 
-scaleFactorFromMesh = [1 1 1];
-
 if ieNotDefined('scaleFactorFromMesh')
-  errordlg('No mesh scale factor. You must create a new (modern) mesh.'); 
+  scaleFactorFromMesh = [1 1 1];
+%   errordlg('No mesh scale factor. You must create a new (modern) mesh.'); 
 end
 str = sprintf('Scale factor %.03f,%.03f,%.03f',scaleFactorFromMesh);
 if verbose,disp(sprintf(str));end
@@ -149,8 +148,8 @@ if verbose,statusStringAdd(statusHandle,'Finding distances from start node');end
 % To this point, we are in a voxel framework: 
 % Everything has been scaled in the mrReadMrM function. 
 %
-% D is the connection matrix using the true (non-squared) distance.
-D = sqrt(find3DNeighbourDists(mesh,scaleFactor)); 
+% D is the connection matrix using the true distance.
+D = find3DNeighbourDists(mesh,scaleFactor); 
 
 str=sprintf('Mean inter-node distance: %.03f',full(sum(sum(D)))/nnz(D));
 if verbose,disp(sprintf(str));end
@@ -193,7 +192,10 @@ mesh.connectionMatrix(orderedUniquePerimeterPoints,:)=0;
 mesh.connectionMatrix(:,orderedUniquePerimeterPoints)=0;
 if verbose,statusStringAdd(statusHandle,'Doing flood fill.');end
 
-[insideNodes,insideNodeStruct]=floodFillFindPerim(mesh,Inf,startNode,busyHandle);
+%JB: restrict the floodfill to vertices within the required perimeter. This can
+%be useful if there are topological defects connecting parts of the cortex that 
+%shouldn't be connected (otherwise the whole hemisphere gets filled)  
+[insideNodes,insideNodeStruct]=floodFillFindPerim(mesh,max(mesh.dist(orderedUniquePerimeterPoints)),startNode,statusHandle);
 insideNodes=[insideNodes(:);orderedUniquePerimeterPoints(:)];
 mesh.connectionMatrix=tempConMat;
 [perimeterEdges,eulerCondition]=findGroupPerimeter(mesh,insideNodes);

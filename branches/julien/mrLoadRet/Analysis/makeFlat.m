@@ -256,10 +256,14 @@ mesh.faceIndexList  = surf.inner.tris;
 mesh.rgba           = surf.curv;
 mesh.normal = surf.inner.vtcs - surf.outer.vtcs;
 
+%get base anatomy voxel size
+hdr = cbiReadNiftiHeader(fullfile(params.path,params.anatFileName));
+voxelSize=hdr.pixdim(2:4);
+
 % run a modified version of the mrFlatMesh code
 % this outputs and flattened surface
 disppercent(-inf,'(makeFlat) Calling flattenSurfaceMFM');
-surf.flat = flattenSurfaceMFM(mesh, [params.x params.y params.z], params.radius);
+surf.flat = flattenSurfaceMFM(mesh, [params.x params.y params.z], params.radius,voxelSize');
 disppercent(inf);
 
 % we need to figure out whether the flattened patch has been flipped
