@@ -69,12 +69,13 @@ if ieNotDefined('params');
 end
 
 
-% get two additional parameters if they were not passed in before
-if ~any(isfield(params, {'threshold', 'flatRes'}));
+% get additional parameters if they were not passed in before
+if ~any(isfield(params, {'threshold', 'flatRes','baseValues'}));
   paramsInfo = {};
+  paramsInfo{end+1} = {'baseValues', {'curvature','thickness'},  'What values to use for the flat patch base amplitudes'};
   paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
   paramsInfo{end+1} = {'flipFlag', 0, 'type=checkbox', 'Some patches come out flipped.  Use this option to correct this problem'};
-  paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
+  paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factor by which the resolution of the flat patch is increased'};
   paramsInfo{end+1} = {'flatBaseName', stripext(getLastDir(params.flatFileName)), 'Name of the flat base anatomy'};
   flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
   % check for cancel
@@ -82,6 +83,7 @@ if ~any(isfield(params, {'threshold', 'flatRes'}));
     return;
   end
 else
+  flatParams.baseValues = 'curvature';
   flatParams.threshold = params.threshold;
   flatParams.flatRes = params.flatRes;
   flatParams.flipFlag = 0;
@@ -137,7 +139,14 @@ yi = [1:(1/flatParams.flatRes):imSize(2)]';
 yi = flipud(yi);
 
 warning off
-flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
+switch(flatParams.baseValues)
+  case 'curvature'
+    flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
+  case 'thickness'
+    %compute thickness as the distance between corresponding inner and outer vertices
+    flat.map= sqrt(sum(((flat.locsInner-flat.locsOuter).*repmat(flat.hdr.pixdim(2:4)',size(flat.locsInner,1),1)).^2,2));
+    flat.map = griddata(x,y,flat.map,xi,yi,'linear');
+end
 
 % grid the 3d coords
 for i=1:3
@@ -205,10 +214,16 @@ if flatParams.threshold
   base.range = [0 1];
   base.clip = [0 1];
 else
-  flat.map(flat.map>1) = 1;
-  flat.map(flat.map<-1) = -1;
-  flat.map = 32*(flat.map+1);
+  switch(flatParams.baseValues)
+    case 'curvature'
+      flat.map(flat.map>1) = 1;
+      flat.map(flat.map<-1) = -1;
+      flat.map = 32*(flat.map+1); %JB: why multiply by 32 ?
+    case 'thickness'   
+  end
   base.data(:,:,1) = flat.map;
+  base.range = [min(min(base.data)) max(max(base.data))];
+  base.clip = [min(min(base.data)) max(max(base.data))];
 end    
 
 % start of coords as inner coords 
@@ -228,8 +243,6 @@ base.coordMap.outerCoords(:,:,1,3) = flat.baseCoordsOuter(:,:,3);
 base.coordMap.dims = flat.hdr.dim([2 3 4])';
 
 % set base
-base.range = [min(min(base.data)) max(max(base.data))];
-base.clip = [0 1.5];
 base.type = 1;
 
 clear global gFlatViewer;
