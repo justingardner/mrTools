@@ -102,7 +102,7 @@ overlayData = viewGet(thisView,'overlays');
 overlayData = overlayData(overlayList);
 if params.baseSpace
   base2scan = viewGet(thisView,'base2scan');
-  if any(any((base2scan - eye(4))>1e-6)) %check if we're in the scan space
+  if any(any(abs(base2scan - eye(4))>1e-6)) || viewGet(thisView,'basetype')>0 %check if we're in the scan space
     baseCoordsMap=cell(nScans,1);
     %if not, transform the overlay to the base space
     for iScan = 1:nScans

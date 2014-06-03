@@ -232,7 +232,7 @@ if baseType <= 1
   image(img,'Parent',gui.axis);
   if ~isempty(overlays.RGB) && strcmp(mrGetPref('colorBlending'),'Contours') 
     hold(gui.axis,'on');
-    nContours = 9;
+    nContours = 20;
     contourStepSize =diff(contourCscale)/(nContours-1);
     minContourStep = ceil(min(min(contours))/contourStepSize)*contourStepSize;
     maxContourStep = floor(max(max(contours))/contourStepSize)*contourStepSize;
@@ -783,7 +783,7 @@ colors = [.9 .4 .9;... % color of first inner surface
           .4 .9 .7;... % color of second outer surface
           .9 .9 .4;... % color of third inner surface
           .6 .4 .9];   % color of third outer surface
-numberDifferentColors=1; %maximum number of inner+outer with different colors (up to 3)
+numberDifferentColors=3; %maximum number of inner+outer with different colors (up to 3)
 cSurf=0;        
 for iSurf=surfaceNum
   if viewGet(view,'baseType',iSurf)~=2
