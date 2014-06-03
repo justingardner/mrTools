@@ -555,6 +555,8 @@ global ALIGN
 
 % Extract sform
 sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
+sform_code = ALIGN.volumeHdr.sform_code;
+
 % Prompt user for filename(s)
 pathStr = getPathStrDialog(pwd,'Choose one or more nifti files',{'*.img;*.nii','NIFTI Files'},'on');
 if ~iscell(pathStr)
@@ -566,6 +568,7 @@ for p = 1:length(pathStr)
 	if exist(pathStr{p},'file')
 		hdr = cbiReadNiftiHeader(pathStr{p});
 		hdr = cbiSetNiftiSform(hdr,sform);
+                hdr.sform_code = sform_code;
 		hdr = cbiWriteNiftiHeader(hdr,pathStr{p});
 	else
 		mrWarnDlg(['File ',pathStr{p},' not found.']);
