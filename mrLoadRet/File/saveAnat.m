@@ -43,7 +43,21 @@ end
 
 % Extract data and hdr
 baseVolume = viewGet(view,'baseVolume',anatomyNum);
-data = baseVolume.data;
+switch viewGet(view,'baseType',anatomyNum)
+  case 0
+    data = baseVolume.data;
+  case 1
+    %if flat, rotate and repeat map number-of-depths times
+    repeatVector = [1 1 1];
+    repeatVector(viewGet(view,'basesliceindex',anatomyNum))= viewGet(view,'corticaldepthBins',anatomyNum);
+    nanData=isnan(baseVolume.data);
+    data = repmat(imrotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop'),repeatVector);
+    data(repmat(nanData,repeatVector))=NaN;
+  case 2
+    %surface
+    mrErrorDlg('(saveAnat) Cannot save surface as volume (not implemented)')
+    return;
+end
 hdr = baseVolume.hdr;
 
 % also get the base structure, and remove the data and hdr
