@@ -98,8 +98,17 @@ else
   flatPath = flat{1}.path;
   % convert start point from base space to world cordinates (the surfRelax
   % space) because that`s the space used by makeFlatFromRadius
-  % (we assume the base anatomy is in the same folder as the parent surface)
-  array2worldXform = mlrXFormFromHeader(fullfile(flat{1}.path,anat{1}),'array2world');
+  % if anatomy file does not have a path, use flat path
+  if isempty(anat)
+    [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Select 3D Anatomy File',flat{1}.path);
+    anat{1} = [pathname filename];
+    anatomyFile=anat{1};
+  elseif isempty(fileparts(anat{1}))
+    anatomyFile=fullfile(flat{1}.path,anat{1});
+  else
+    anatomyFile=anat{1};
+  end
+  array2worldXform = mlrXFormFromHeader(anatomyFile,'array2world');
   worldStartPoint = array2worldXform*[flat{1}.startPoint';1];
   gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,worldStartPoint(1:3)',flat{1}.parentSurfaceName);
   if isempty(gFlatViewer.flat),return,end
@@ -297,6 +306,7 @@ if (length(anat)>=1) && isfile(fullfile(flatPath, anat{1}))
 else
   gFlatViewer.anat = [];
 end
+anat{end+1} = 'Find file';
 
 % save the view
 gFlatViewer.viewNum = viewNum;
@@ -372,11 +382,7 @@ if ~editable && (length(curv) == 1)
 else
   paramsInfo{end+1} = {'curvFileName',curv,'The curvature file','callback',@switchFile,'callbackArg=curvFileName'};
 end
-if ~editable && (length(anat) == 1)
-  paramsInfo{end+1} = {'anatFileName',anat{1},'editable=0','The 3D anatomy file'};
-else
-  paramsInfo{end+1} = {'anatFileName',anat,'The 3D anatomy file','callback',@switchAnatomy};
-end
+paramsInfo{end+1} = {'anatFileName',anat,'The 3D anatomy file','callback',@switchAnatomy};
 
 % put up dialog
 if isfield(gFlatViewer.flat,'radius')
@@ -1102,9 +1108,33 @@ function switchAnatomy(params)
 
 global gFlatViewer;
 
+% check for find file
+if strcmp(params.anatFileName,'Find file')
+  [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Select 3D Anatomy File',gFlatViewer.path);
+  % update the control that displays the choices
+  % first check to see if this is a new path
+  global gParams;
+  if ~strcmp(pathname,gFlatViewer.path)
+    filename = fullfile(pathname,filename);
+  end
+  whichControl = gFlatViewer.guiloc.filenames+5;
+  currentChoices = get(gParams.ui.varentry{whichControl},'String');
+  currentChoices = setdiff(currentChoices,'Find file');
+  currentChoices = putOnTopOfList(filename,currentChoices);
+  currentChoices{end+1} = 'Find file';
+  set(gParams.ui.varentry{whichControl},'String',currentChoices)
+  set(gParams.ui.varentry{whichControl},'Value',1)
+  params.anatFileName = filename;
+end
+
 % load the anatomy and view
-disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatomy));
-[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(params.path, params.anatomy));
+disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatFileName));
+if isempty(fileparts(params.anatFileName))
+  anatFileName=fullfile(gFlatViewer.path,params.anatFileName);
+else
+  anatFileName=params.anatFileName;
+end
+[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(anatFileName);
 gFlatViewer = xformSurfaces(gFlatViewer);
 % switch to 3D anatomy view
 global gParams
@@ -1156,7 +1186,7 @@ disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curvFileName')
     file = myLoadCurvature(fullfile(params.path, filename));
-    whichControl = gFlatViewer.guiloc.filenames+3;;
+    whichControl = gFlatViewer.guiloc.filenames+4;;
   else
     file = myLoadSurface(fullfile(params.path, filename));
     whichControl = gFlatViewer.guiloc.filenames+1+find(strcmp(whichSurface,{'outerCoordsFileName','innerCoordsFileName'}));
