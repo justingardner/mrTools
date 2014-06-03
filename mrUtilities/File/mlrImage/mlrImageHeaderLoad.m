@@ -297,16 +297,18 @@ end
 function header = setHeaderBasedOnNifti(header,hdr);
 
 % set qform
-if hdr.qform_code == 1
+if hdr.qform_code >= 1
   header.qform = hdr.qform44;
-elseif hdr.qform_code ~= 0
+end
+if hdr.qform_code > 1
   disp(sprintf('(mlrImageHeaderLoad) Unrecognized qform_code: %i',hdr.qform_code));
 end
 
 % set vol2mag and vol2tal based on sform
-if hdr.sform_code == 1
+if hdr.sform_code >= 1
   header.sform = hdr.sform44;
-elseif hdr.sform_code ~= 0
+end
+if hdr.sform_code > 1
   disp(sprintf('(mlrImageHeaderLoad) Unrecognized sform_code: %i',hdr.sform_code));
 end  
 
