@@ -113,7 +113,12 @@ for iCall = 1:length(rois)
   if strcmp(params.passRoiMode,'One ROI at a time')
     disp(sprintf('(transformROI) Calling %s for ROI %s', params.transformFunction, rois{iCall}.name));
   end
-  roi = eval([params.transformFunction '(rois{iCall}' functionString]);
+  try
+    roi = eval([params.transformFunction '(rois{iCall}' functionString]);
+  catch exception
+     mrWarnDlg(sprintf('(transformROI) There was an error evaluating function %s:\n%s',functionString,getReport(exception,'basic')));
+     return
+  end
   for iRoi = 1:length(roi)
     thisView = viewSet(thisView,'newROI',roi(iRoi));
     needToRefresh = 1;
