@@ -56,7 +56,12 @@ if isstruct(flatFile);
     surf.inner = loadSurfOFF(fullfile(params.path, params.innerCoordsFileName));
     surf.outer = loadSurfOFF(fullfile(params.path, params.outerCoordsFileName));
     surf.curv = loadVFF(fullfile(params.path, params.curvFileName));
-    anat.hdr = cbiReadNiftiHeader(fullfile(params.path, params.anatFileName));
+    if isempty(fileparts(params.anatFileName))
+      anatFileName=fullfile(params.path,params.anatFileName);
+    else
+      anatFileName=params.anatFileName;
+    end
+    anat.hdr = cbiReadNiftiHeader(anatFileName);
     % now do necessary world2array xformation here
     surf.outer = xformSurfaceWorld2Array(surf.outer,anat.hdr);
     surf.inner = xformSurfaceWorld2Array(surf.inner,anat.hdr);
@@ -177,14 +182,19 @@ flat.thresholdMap(isnan(flat.map)) = NaN;
 
 % now load the anatomy file, so that we can get the vol2mag/vol2tal fields
 v = newView;
-%if extension is hdr, change to img
-[~,~,anatFileExtension] = fileparts(params.anatFileName);
-if strcmp(anatFileExtension,'hdr')
-  anatfileName = setext(params.anatFileName,'img');
+if isempty(fileparts(params.anatFileName))
+  anatFileName=fullfile(params.path,params.anatFileName);
 else
-  anatfileName = params.anatFileName;
+  anatFileName=params.anatFileName;
 end
-v = loadAnat(v,anatfileName,params.path);
+%if extension is hdr, change to img
+[anatPath,anatFileName,anatFileExtension] = fileparts(anatFileName);
+if strcmp(anatFileExtension,'hdr')
+  anatFileName = setext(anatFileName,'img');
+else
+  anatFileName = setext(anatFileName,anatFileExtension);
+end
+v = loadAnat(v,anatFileName,anatPath);
 b = viewGet(v,'base');
 deleteView(v);
 
