@@ -258,7 +258,7 @@ if strcmp(saveNewXform,'Yes')
    ALIGN.oldGuiTranslation = oldGuiTranslation;
    ALIGN.oldGuiRotation = oldGuiRotation;
    ALIGN.xform = volumeReductionMatrix*xform/inplanesReductionMatrix;
-
+  oldXform/ALIGN.xform
    % resample and IC correct volume according to final xform, for later use (in checkAlignment)
    wbh = mrMsgBox('Please wait: interpolating slices, correcting intensity & contrast...');
    volInterp = interpVolume(volume, xform, inplanesSize);

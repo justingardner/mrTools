@@ -288,10 +288,10 @@ for iPlot = 1:length(roi)+1
         % plot the contrast estimates
         [h,hEhdrSte(numberEVs+1:numberEVs+numberContrasts,1,iSte)] = plotBetas(contrastAxes,e.contrastBetas,e.contrastBetaSte(:,:,iSte),iSte~=1);
         if iSte==1 && iPlot==1,hContrastBeta=h;end;
-%         if iPlot>1 && iSte ==1
-%           disp(titleString{1});
-%           disp(e.contrastBetas);
-%         end
+        if iPlot>1 && iSte ==1
+          disp(titleString{1});
+          disp(e.contrastBetas);
+        end
       end
     end  
     % plot the hemodynamic response for voxel

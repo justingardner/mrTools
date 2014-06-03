@@ -105,12 +105,17 @@ if ieNotDefined('groupParams')
     for i = 1:length(scanFilenames);
       % read the nifti header
       imageHeader = mlrImageHeaderLoad(fullfile(scanDirName,scanFilenames{i}));
-      if imageHeader.nDim == 4
+      if ismember(imageHeader.nDim,[3 4])
 	nScans = nScans+1;
 	scanNames{end+1} = scanFilenames{i};
 	descriptions{end+1} = '';
-	totalFrames{end+1} = imageHeader.dim(4);
-	nFrames{end+1} = imageHeader.dim(4);
+  if imageHeader.nDim==4
+    totalFrames{end+1} = imageHeader.dim(4);
+    nFrames{end+1} = imageHeader.dim(4);
+  else
+    totalFrames{end+1} = 1;
+    nFrames{end+1} = 1;
+  end
 	junkFrames{end+1} = 0;
       else
 	disp(sprintf('(mrInit) File %s is not a 4D Nifti file',scanFilenames{i}));

@@ -25,18 +25,50 @@ end
 if ~ismember(kernelType,{'sphere','cube','disc','square'})
   mrWarnDlg(['(expandROI) unknown kernel type ' kernelType]);
   roi=[];
+  return
 end
 
-trim = margin<0;
+if numel(margin)==1
+  switch(kernelType)
+    case {'sphere','cube'}
+      margin = [margin margin margin];
+    case {'disc','square'}
+      margin = [margin margin];
+  end
+elseif numel(margin)==2
+  if ~ismember(kernelType,{'disc','square'})
+    margin = margin(1:2);
+    mrWarnDlg('(expandROI) Ignoring third element of margin');
+  end
+elseif numel(margin)==3
+  if ~ismember(kernelType,{'sphere','cube'})
+    mrWarnDlg('(expandROI) margin must be a 1 or 2 element vector');
+    roi=[];
+    return
+  end
+else
+  mrWarnDlg('(expandROI) margin must be a 1, 2 or 3 element vector');
+  roi=[];
+  return
+end
+  
+if diff(margin>0,2)
+  mrWarnDlg('(expandROI) All elements of margin must have the same sign');
+  roi=[];
+  return
+end
+  
+
+trim = any(margin<0);
 margin = abs(margin);
 
-boxCoords = [min(roi.coords,[],2)-margin  max(roi.coords,[],2)+margin];
+boxCoords = [min(roi.coords(1:3,:),[],2)-margin'  max(roi.coords(1:3,:),[],2)+margin'];
 
 %shift coordinates so that the boxes starts at 1 on all dimensions
 voxelShift = -boxCoords(:,1)+1;
 
 boxCoords = boxCoords+repmat(voxelShift,1,2);
-roiCoords = roi.coords+repmat(voxelShift,1,size(roi.coords,2));
+roiCoords = roi.coords(1:3,:)+repmat(voxelShift,1,size(roi.coords,2));
 
 volume = zeros(boxCoords(:,2)');
 volume(sub2ind(boxCoords(:,2)',roiCoords(1,:),roiCoords(2,:),roiCoords(3,:)))=1;
@@ -47,17 +79,17 @@ end
 
 switch(kernelType)
   case 'sphere'
-    [sphereX,sphereY,sphereZ] = ndgrid(-margin:margin,-margin:margin,-margin:margin);
-    kernel = zeros(2*margin+1,2*margin+1,2*margin+1);
-    kernel((sphereX.^2+sphereY.^2+sphereZ.^2)<margin^2)=1;
+    [sphereX,sphereY,sphereZ] = ndgrid(-margin(1):margin(1),-margin(2):margin(2),-margin(3):margin(3));
+    kernel = zeros(2*margin(1)+1,2*margin(2)+1,2*margin(3)+1);
+    kernel(abs(sphereX)<margin(1) & abs(sphereY)<margin(2) & abs(sphereZ)<margin(3))=1;
   case 'cube'
-    kernel = ones(2*margin,2*margin,2*margin);
+    kernel = ones(2*margin(1),2*margin(2),2*margin(3));
   case 'square'
-    kernel = ones(2*margin,2*margin);
+    kernel = ones(2*margin(1),2*margin(2));
   case 'disc'
-    [discX,discY] = ndgrid(-margin:margin,-margin:margin);
-    kernel = zeros(2*margin+1,2*margin+1);
-    kernel((discX.^2+discY.^2)<margin^2)=1;
+    [discX,discY] = ndgrid(-margin(1):margin(1),-margin(2):margin(2));
+    kernel = zeros(2*margin(1)+1,2*margin(2)+1);
+    kernel(abs(discX)<margin(1) & abs(discY)<margin(2))=1;
 end
 
 volume = logical(convn(volume,kernel,'same'));
