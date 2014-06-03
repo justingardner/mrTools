@@ -38,12 +38,12 @@ for iRoi = roiList
 end
 nRois = length(rois);
 
+figure('name',['Base anatomy: ' baseName]);
 nTissueVoxels = zeros(nRois,nOverlays);
 nVeinsVoxels = zeros(nRois,nOverlays);
 nAllVoxels = zeros(nRois,nOverlays);
 meanTissue = zeros(nRois,nOverlays);
 meanVeins = zeros(nRois,nOverlays);
-
 
 cOverlay=0;
 for iOverlay = overlayNum
@@ -51,126 +51,104 @@ for iOverlay = overlayNum
   overlayMin = 0;
   cOverlay=cOverlay+1;
   %transform values in base space
-  thisOverlayData{cOverlay} = getBaseSpaceOverlay(thisView, overlayData(:,:,:,cOverlay), scanNum, baseNum);
-  dataSize = size(thisOverlayData{cOverlay});
-  overlayName{cOverlay} = viewGet(thisView,'overlayName',iOverlay);
-end
+  thisOverlayData = getBaseSpaceOverlay(thisView, overlayData(:,:,:,cOverlay), scanNum, baseNum);
+  dataSize = size(thisOverlayData);
+  overlayName = viewGet(thisView,'overlayName',iOverlay);
 
-for iRoi = 1:nRois
-  
-  scancoords = xformROIcoords(rois{iRoi}.coords,inv(base2roi(:,:,iRoi)),rois{iRoi}.voxelSize,baseVoxelSize);
-  % we need to remove any coordinate that might fall outside the base anatomy
-  if ~isempty(scancoords)
-    outside_voxels = find(scancoords(1,:)<1 | scancoords(1,:)>dataSize(1) |...
-                      scancoords(2,:)<1 | scancoords(2,:)>dataSize(2) |...
-                      scancoords(3,:)<1 | scancoords(3,:)>dataSize(3) );
-    scancoords(:,outside_voxels) = [];
-  end
+  for iRoi = 1:nRois
+     hSubplot(cOverlay,iRoi) = subplot(nOverlays,nRois,(cOverlay-1)*nRois+iRoi);
+     hold on
 
-  if ~isempty(scancoords)
-    %RoiData
-    scanRoiCoordsIndex = sub2ind(dataSize, scancoords(1,:)',  scancoords(2,:)',  scancoords(3,:)' );
-    baseData = base.data(scanRoiCoordsIndex);
-  end
-  
-  if ~isempty(scanRoiCoordsIndex)
-    hFigure(iRoi) = figure('name',['ROI anatomy: ' rois{iRoi}.name]);
-    
-    for iOverlay = 1:cOverlay
-      for jOverlay = iOverlay+1:cOverlay+1
-        
-        yData = thisOverlayData{iOverlay}(scanRoiCoordsIndex);
-        yName = overlayName{iOverlay}(1:min(end,40));
-        if jOverlay==cOverlay+1
-          xData = baseData;
-          xName=baseName;
-        else
-          xData = thisOverlayData{jOverlay}(scanRoiCoordsIndex);
-          xName=overlayName{jOverlay};
-        end
-        xName = xName(1:min(end,50));
-        nonNanValues = find(~isnan(yData)&~isnan(xData));
-        yData = yData(nonNanValues);
-        xData = xData(nonNanValues);
+     scancoords = xformROIcoords(rois{iRoi}.coords,inv(base2roi(:,:,iRoi)),rois{iRoi}.voxelSize,baseVoxelSize);
+     % we need to remove any coordinate that might fall outside the base anatomy
+     if ~isempty(scancoords)
+        outside_voxels = find(scancoords(1,:)<1 | scancoords(1,:)>dataSize(1) |...
+                          scancoords(2,:)<1 | scancoords(2,:)>dataSize(2) |...
+                          scancoords(3,:)<1 | scancoords(3,:)>dataSize(3) );
+        scancoords(:,outside_voxels) = [];
+     end
 
-       hSubplot(iOverlay,jOverlay,iRoi) = subplot(nOverlays,nOverlays,(jOverlay-2)*nOverlays+iOverlay,'parent',hFigure(iRoi));
-       hold on
+     if ~isempty(scancoords)
+        %RoiData
+        scanRoiCoordsIndex = sub2ind(dataSize, scancoords(1,:)',  scancoords(2,:)',  scancoords(3,:)' );
+        roiOverlayData = thisOverlayData(scanRoiCoordsIndex);
+        baseData = base.data(scanRoiCoordsIndex);
+
+        nonNanValues = find(~isnan(roiOverlayData));
+        roiOverlayData = roiOverlayData(nonNanValues);
+        baseData = baseData(nonNanValues);
+
         %see if base anatomy data are logical or continuous
-        if length(unique(xData))<3 && jOverlay==cOverlay+1
-           if length(unique(xData))==1
+        if length(unique(baseData))<3
+           if length(unique(baseData))==1
               vein_value = 1;
               tissue_value = 0;
            else
-              vein_value = max(xData);
-              tissue_value = min(xData);
+              vein_value = max(baseData);
+              tissue_value = min(baseData);
            end
            scatter_plot = 0;
 
            %calculate number of voxel which are veins 
-           vein_index = find(xData==vein_value);
-           tissue_index = find(xData==tissue_value);
-           labels = cell(size(yData));
+           vein_index = find(baseData==vein_value);
+           tissue_index = find(baseData==tissue_value);
+           labels = cell(size(roiOverlayData));
            labels(tissue_index) = {'Tissue'};
            labels(vein_index) = {'Veins'};
 
            if ~isempty(vein_index) && ~isempty(tissue_index)
-              boxplot(hSubplot(iOverlay,jOverlay,iRoi),yData,labels,'grouporder',{'Veins','Tissue'},'notch','on')
+              boxplot(roiOverlayData,labels,'grouporder',{'Veins','Tissue'},'notch','on')
            end
            nTissueVoxels(iRoi,cOverlay) = length(tissue_index);
            nVeinsVoxels(iRoi,cOverlay) = length(vein_index);
-           nAllVoxels(iRoi,cOverlay) = size(yData,1);
+           nAllVoxels(iRoi,cOverlay) = size(roiOverlayData,1);
 
-           title(hSubplot(iOverlay,jOverlay,iRoi),sprintf('%s (%d voxels, %.2f %% veins)', rois{iRoi}.name, nTissueVoxels(iRoi,cOverlay), nVeinsVoxels(iRoi,cOverlay)./nAllVoxels(iRoi,cOverlay)*100),'interpreter','none');
+           title(sprintf('%s (%d voxels, %.2f %% veins)', rois{iRoi}.name, nTissueVoxels(iRoi,cOverlay), nVeinsVoxels(iRoi,cOverlay)./nAllVoxels(iRoi,cOverlay)*100),'interpreter','none');
 
            %calculate mean and range of overlay for the veins and for the tissue
            %voxels
            fprintf(1,[rois{iRoi}.name '\n']);
            fprintf(1,['Veins: ' num2str(length(vein_index)) '/' num2str(nAllVoxels(iRoi,cOverlay)) ' voxels\t']);
-           [string,meanVeins(iRoi,cOverlay)] = meanAndRange(yData(vein_index));
+           [string,meanVeins(iRoi,cOverlay)] = meanAndRange(roiOverlayData(vein_index));
             strings{1} = ['Veins: ' string];
            fprintf(1,['Tissue: ' num2str(length(tissue_index)) '/' num2str(nAllVoxels(iRoi,cOverlay)) ' voxels\t']);
-           [string,meanTissue(iRoi,cOverlay)] = meanAndRange(yData(tissue_index));
+           [string,meanTissue(iRoi,cOverlay)] = meanAndRange(roiOverlayData(tissue_index));
             strings{2} = ['Tissue: ' string];
-            xlabel(hSubplot(iOverlay,jOverlay,iRoi),strings);
+            xlabel(strings);
 
         else
            scatter_plot = 1;
-           scatter(hSubplot(iOverlay,jOverlay,iRoi),xData,yData,2);
-           %compute correlation
-           [rho,p]=corrcoef([xData yData]);
-           X=[ones(length(xData),1) xData];
-           params = (X'*X)\X'*yData;
-           if p(2)<.05
-             xlim=get(hSubplot(iOverlay,jOverlay,iRoi),'xlim');
-             ylim=get(hSubplot(iOverlay,jOverlay,iRoi),'ylim');
-%              plot(hSubplot(iOverlay,jOverlay,iRoi),xData,X*params,'g');
-             plot(hSubplot(iOverlay,jOverlay,iRoi),xlim,params(1)+params(2)*xlim,'r');
-             set(hSubplot(iOverlay,jOverlay,iRoi),'ylim',ylim);
-           end
-           title(hSubplot(iOverlay,jOverlay,iRoi),sprintf('%d/%d voxels r=%.2f (p=%.3f) y=%.3f*x+%.3f',size(yData,1),length(scanRoiCoordsIndex),rho(2),p(2),params(2),params(1)),'interpreter','none');
+           scatter(baseData,roiOverlayData,2);
+           title(sprintf('%s (%d voxels)', rois{iRoi}.name, size(roiOverlayData,1)),'interpreter','none');
 
-           xlabel(hSubplot(iOverlay,jOverlay,iRoi),xName,'interpreter','none');
-           ylabel(hSubplot(iOverlay,jOverlay,iRoi),yName,'interpreter','none');
+           xlabel(baseName,'interpreter','none');
+           ylabel(overlayName,'interpreter','none');
 
-%            base_max = max(base_max,max(baseData));
-%            base_min = min(base_max,min(baseData));
+           base_max = max(overlayMax,max(baseData));
+           base_min = min(overlayMin,min(baseData));
         end
-      end
-%         overlayMax = max(overlayMax,max(roiOverlayData));
-%         overlayMin = min(overlayMin,min(roiOverlayData));
-    end
+
+        overlayMax = max(overlayMax,max(roiOverlayData));
+        overlayMin = min(overlayMin,min(roiOverlayData));
+     end
   end
 
-%   for iRoi = 1:nRois
-%      if ~isempty(nTissueVoxels(iRoi,cOverlay)) && ~isempty(nVeinsVoxels(iRoi,cOverlay))
-%         subplot(hSubplot(cOverlay,iRoi))
-%         scale = axis;
-%         if scatter_plot
-%            scale = [base_min base_max overlayMin overlayMax];
-%         else
-%            scale(3:4) = [overlayMin overlayMax];
-%         end
-%         axis(scale);
-%      end
-%   end
+  for iRoi = 1:nRois
+     if ~isempty(nTissueVoxels(iRoi,cOverlay)) && ~isempty(nVeinsVoxels(iRoi,cOverlay))
+        subplot(hSubplot(cOverlay,iRoi))
+        scale = axis;
+        if scatter_plot
+           scale = [base_min base_max overlayMin overlayMax];
+        else
+           scale(3:4) = [overlayMin overlayMax];
+        end
+        axis(scale);
+     end
+  end
 end
+
+           nTissueVoxels
+           nVeinsVoxels
+           nAllVoxels
+           meanTissue
+           meanVeins
