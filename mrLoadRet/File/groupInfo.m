@@ -25,9 +25,11 @@ if ~any(nargin == [0 1 2 3])
   return
 end
 
+retval = [];
 if ieNotDefined('verbose'),verbose = 0;end
 if ieNotDefined('dispDialog'),dispDialog = 0;end
 view = newView;
+if isempty(view),return,end
 
 % check home dir
 homeDir = viewGet(view,'homeDir');
