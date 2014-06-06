@@ -35,7 +35,7 @@ end
 % evaluate other arguments
 taskNum=[];phaseNum=[];segmentNum=[];stimfile=[];tr=[];nFrames=[];concatInfo=[];
 junkFrames=[];returnOnlyStimvol=[];
-getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[]});
+getArgs(varargin,{'taskNum=[]','phaseNum=[]','segmentNum=[]','stimfile=[]','tr=[]','nFrames',[],'concatInfo',[],'junkFrames',[],'returnOnlyStimvol',[]});
 
 if ~exist('stimVariable','var'),stimVariable = ''; end
 
