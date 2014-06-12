@@ -2516,7 +2516,7 @@ switch lower(param)
         for i = 1:length(view.analyses{analysisNum}.overlays)
           clip = [clip view.analyses{analysisNum}.overlays(i).clip];
         end
-        overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
+        overlayRange = view.analyses{analysisNum}.overlays(curOverlay).colorRange;
         baseName = viewGet(view,'curBaseName');
         scanNum = viewGet(view,'curScan');
         rotate = viewGet(view,'rotate');
@@ -2524,7 +2524,7 @@ switch lower(param)
         sliceIndex = viewGet(view,'baseSliceIndex');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
-        % need to recalculate overlay if this is aflat
+        % need to recalculate overlay if this is a flat
         % and the cortical depth has changed
         if viewGet(view,'baseType')
           corticalDepth = viewGet(view,'corticalDepth');
