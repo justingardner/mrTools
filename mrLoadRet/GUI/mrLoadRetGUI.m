@@ -1271,20 +1271,9 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 userInput = inputdlg('Enter name for new analysis: ','New analysis');
 if ~isempty(userInput)
-    analysis.name = userInput{1};
-    analysis.type = 'dummy';
-    analysis.groupName = viewGet(view,'groupName',viewGet(view,'currentGroup'));
-    analysis.function = 'dummyAnalysis';
-    analysis.reconcileFunction = 'dummyAnalysisReconcileParams';
-    analysis.reconcileFunction = 'dummyAnalysisMergeParams';
-    analysis.guiFunction = 'dummyAnalysisGUI';
-    analysis.params = [];
-    analysis.overlays =[];
-    analysis.curOverlay = [];
-    analysis.date = datestr(now);
-    view = viewSet(view,'newanalysis',analysis);
+  newAnalysis(view,userInput{1});
+  refreshMLRDisplay(viewNum);
 end
-refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function copyAnalysisMenuItem_Callback(hObject, eventdata, handles)
