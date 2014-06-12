@@ -3316,7 +3316,7 @@ switch lower(param)
       end
     end
   case {'alphaoverlay'}
-    % alphaoverlay = viewGet(view,'alphaOverlay',[overlaynumn])
+    % alphaoverlay = viewGet(view,'alphaOverlay',[overlaynum])
     analysisNum = viewGet(view,'currentAnalysis');
     if isempty(varargin) || isempty(varargin{1})
       overlayNum = viewGet(view,'currentOverlay',analysisNum);
@@ -3334,10 +3334,14 @@ switch lower(param)
       end
     end
   case {'alphaoverlayexponent'}
-    % overlayclip = viewGet(view,'alphaOverlayExponent')
+    % overlayclip = viewGet(view,'alphaOverlayExponent',[overlaynum])
     val = 1;
     analysisNum = viewGet(view,'currentAnalysis');
-    overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    if isempty(varargin) || isempty(varargin{1})
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    else
+      overlayNum = varargin{1};
+    end
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
