@@ -1750,6 +1750,36 @@ switch lower(param)
     if isequal(overlayNum,curOverlay)
       mlrGuiSet(view,'alpha',val);
     end
+    
+  case {'alphaoverlay'}
+    % view = viewSet(view,'alphaoverlay',alphaOverlayNum,[overlayNum]);
+    curOverlay = viewGet(view,'currentOverlay');
+    if ~isempty(varargin)
+      overlayNum = varargin{1};
+    else
+      overlayNum = curOverlay;
+    end
+    analysisNum = viewGet(view,'currentAnalysis');
+    for iOverlay = overlayNum
+      if ~isempty(analysisNum)  & ~isempty(view.analyses{analysisNum}.overlays)
+        view.analyses{analysisNum}.overlays(iOverlay).alphaOverlay = viewGet(view,'overlayName',val);
+      end
+    end
+
+  case {'alphaoverlayexponent'}
+    % view = viewSet(view,'alphaoverlayexponent',value,[overlayNum]);
+    curOverlay = viewGet(view,'currentOverlay');
+    if ~isempty(varargin)
+      overlayNum = varargin{1};
+    else
+      overlayNum = curOverlay;
+    end
+    analysisNum = viewGet(view,'currentAnalysis');
+    for iOverlay = overlayNum
+      if ~isempty(analysisNum)  & ~isempty(view.analyses{analysisNum}.overlays)
+        view.analyses{analysisNum}.overlays(iOverlay).alphaOverlayExponent = val;
+      end
+    end
 
 
     % -------------------------------------------
