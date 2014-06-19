@@ -1727,9 +1727,8 @@ switch lower(param)
     analysisNum = viewGet(view,'currentAnalysis');
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
-      view.analyses{analysisNum}.overlays(overlayNum).colorRange = val;
-      if (overlayNum == curOverlay) && strcmp(view.analyses{analysisNum}.overlays(overlayNum).colormapType,'normal')
-        view = viewSet(view,'currentOverlay', overlayNum);
+      for iOverlay = overlayNum
+        view.analyses{analysisNum}.overlays(iOverlay).colorRange = val;
       end
     end
 
