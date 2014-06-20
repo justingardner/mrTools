@@ -147,6 +147,7 @@ if ~isempty(overlayImages)
   % overlays has an alphaOverlay field set to the name
   % of another overlays, then we will use the values in
   % that overlays to set the alpha
+  alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
   for iOverlay = 1:nCurOverlays
     if nargin == 4
       alpha = viewGet(thisView,'alpha',curOverlays(iOverlay));
@@ -168,12 +169,11 @@ if ~isempty(overlayImages)
       % now compute the alphaOverlay as a number from
       % 0 to 1 of the range
       alphaOverlayImage = ((alphaOverlayImage-range(1))./diff(range));
-      alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
-      if alphaOverlayExponent<0   % if the alpha overlays exponent is negative, set it positive and take the 1-alpha for the alpha map
-         alphaOverlayExponent = -alphaOverlayExponent;
+      if alphaOverlayExponent(iOverlay)<0   % if the alpha overlays exponent is negative, set it positive and take the 1-alpha for the alpha map
+         alphaOverlayExponent(iOverlay) = -alphaOverlayExponent(iOverlay);
          alphaOverlayImage = 1-alphaOverlayImage;
       end
-      alphaOverlayImage = alpha*(alphaOverlayImage.^alphaOverlayExponent);
+      alphaOverlayImage = alpha*(alphaOverlayImage.^alphaOverlayExponent(iOverlay));
       alphaOverlayImage(isnan(alphaOverlayImage)) = 0;
       alphaOverlayImage(alphaOverlayImage>alpha) = alpha;
       alphaOverlayImage(alphaOverlayImage<0) = 0;
