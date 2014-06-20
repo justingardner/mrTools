@@ -669,8 +669,8 @@ function rotateSlider_Callback(hObject, eventdata, handles)
 
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
-mlrGuiSet(viewNum,'rotate',value);
 v = viewGet([],'view',viewNum);
+v = viewSet(v,'rotate',value);
 
 if (viewGet(v,'baseType') == 2)
   setMLRViewAngle(v);
@@ -684,9 +684,9 @@ value = str2num(get(hObject,'String'));
 if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.rotateSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'rotate',value);
   v = viewGet([],'view',viewNum);
-
+  v = viewSet(v,'rotate',value);
+  
   if (viewGet(v,'baseType') == 2)
     setMLRViewAngle(v);
   else

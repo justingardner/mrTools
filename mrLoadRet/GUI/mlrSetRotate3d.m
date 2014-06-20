@@ -70,4 +70,3 @@ rot = newRotTilt(1);
 if rot < 0,rot = -rot;else,rot = 360-rot;end  
 % and set the slider
 v = viewSet(v,'rotate',rot);
-mlrGuiSet(v,'rotate',rot);
