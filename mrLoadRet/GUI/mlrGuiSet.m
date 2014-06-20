@@ -470,12 +470,13 @@ switch lower(field)
     set(handles.coronalRadioButton,'Value',0);
     set(handles.axialRadioButton,'Value',0);
   end
+  
  case {'rotate'}
   % mlrGuiSet(view,'rotate',value);
   value = clipToSlider(handles.rotateSlider,value);
   set(handles.rotateText,'String',num2str(value));
   set(handles.rotateSlider,'Value',value);
-  viewSet(view,'rotate',value);
+
  case {'viewnum'}
   % mlrGuiSet(view,'viewnum',value);
   handles.viewNum = value;
