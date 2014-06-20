@@ -2521,6 +2521,8 @@ switch lower(param)
         scanNum = viewGet(view,'curScan');
         rotate = viewGet(view,'rotate');
         alpha = viewGet(view,'alpha');
+        alphaOverlay = char(viewGet(view,'alphaOverlay'))';
+        alphaOverlayExponent = viewGet(view,'alphaOverlayExponent');
         sliceIndex = viewGet(view,'baseSliceIndex');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
@@ -2532,7 +2534,7 @@ switch lower(param)
           corticalDepth = 0;
         end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection);
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,alphaOverlay(:)',mat2str(alphaOverlayExponent));
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
@@ -3327,7 +3329,9 @@ switch lower(param)
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = {analysis.overlays(overlayNum).alphaOverlay};
+        for iOverlay=1:length(overlayNum)
+          val{iOverlay} = char(analysis.overlays(overlayNum(iOverlay)).alphaOverlay);
+        end
       end
       if length(val)==1
         val = val{1};
@@ -3345,8 +3349,8 @@ switch lower(param)
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
-      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = analysis.overlays(overlayNum).alphaOverlayExponent;
+      if overlayNum & all(overlayNum > 0) & all(overlayNum <= n)
+        val = [analysis.overlays(overlayNum).alphaOverlayExponent];
       end
     end
   case {'overlaycmap'}
