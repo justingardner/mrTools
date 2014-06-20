@@ -786,9 +786,11 @@ switch lower(param)
       % need to set the appropriate field
       if baseType <= 1
 	view.baseVolumes(curBase).rotate = val;
+	mlrGuiSet(view,'rotate',val);
       else
 	view.baseVolumes(curBase).coordMap.rotate = val;
       end
+      
     end
       
   case{'tilt'}
