@@ -9,32 +9,43 @@
 %             assumes that the FNIRT input volume has an sform matrix that puts it in the canonical base space
 
 
-function fslApplyWarpSurfOFF
+function fslApplyWarpSurfOFF(warpCoefFileName,inputVolumeFilename,canonicalBaseFilename,suffix)
 
-startPathStr = pwd;
-filterspec = {'*.img;*.nii','FNIRT warp coeff .img/.nii file'; '*.*','All files'};
-title = 'Choose structural to functional FNIRT coefficient file';
-warpCoefFileName = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
-if isempty(warpCoefFileName),return,end;
+if ieNotDefined('warpCoefFileName')
+  startPathStr = pwd;
+  filterspec = {'*.img;*.nii','FNIRT warp coeff .img/.nii file'; '*.*','All files'};
+  title = 'Choose structural to functional FNIRT coefficient file';
+  warpCoefFileName = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
+  if isempty(warpCoefFileName),return,end;
+end
 
-startPathStr = fileparts(warpCoefFileName);
-filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
-title = 'Choose FNIRT input volume';
-inputVolumeFilename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
-if isempty(inputVolumeFilename),return,end
+if ieNotDefined('inputVolumeFilename')
+  startPathStr = fileparts(warpCoefFileName);
+  filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
+  title = 'Choose FNIRT input volume';
+  inputVolumeFilename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
+  if isempty(inputVolumeFilename),return,end
+end
 
-startPathStr = mrGetPref('volumeDirectory');
-filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
-title = 'Choose canonical base volume';
-canonicalBaseFilename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
-if isempty(canonicalBaseFilename),return,end
+if ieNotDefined('canonicalBaseFilename')
+  startPathStr = mrGetPref('volumeDirectory');
+  filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
+  title = 'Choose canonical base volume';
+  canonicalBaseFilename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
+  if isempty(canonicalBaseFilename),return,end
 
-startPathStr = fileparts(canonicalBaseFilename);
-filterspec = {'*.off','SurfRelax OFF file';'*.off','SurfRelax off surface file'; '*.*','All files'};
-title = 'Choose surface OFF file(s) to convert';
-surfFileNames = mlrGetPathStrDialog(startPathStr,title,filterspec,'on');
-% Aborted
-if isempty(surfFileNames),return,end
+  startPathStr = fileparts(canonicalBaseFilename);
+  filterspec = {'*.off','SurfRelax OFF file';'*.off','SurfRelax off surface file'; '*.*','All files'};
+  title = 'Choose surface OFF file(s) to convert';
+  surfFileNames = mlrGetPathStrDialog(startPathStr,title,filterspec,'on');
+  % Aborted
+  if isempty(surfFileNames),return,end
+else
+  surfFiles = [dir([fileparts(canonicalBaseFilename) '/*_GM.off']);dir([fileparts(canonicalBaseFilename) '/*_WM.off'])];
+  for iSurf = 1:length(surfFiles)
+    surfFileNames{iSurf} = fullfile(fileparts(canonicalBaseFilename),surfFiles(iSurf).name);
+  end
+end
 
 %find temporary file extension based on FSL preference
 switch(getenv('FSLOUTPUTTYPE'))
@@ -104,39 +115,44 @@ end
 for iSurf = find(~isFlat)
   surf{iSurf}.vtcs = warpedCoords(1:3,coordsIndices(iSurf,1):coordsIndices(iSurf,2))';
   [pathname,filename,extension] = fileparts(surfFileNames{iSurf});
-  outputFilename =  [pathname,'/',filename,'_invFNIRT',extension];
-  [filename,pathname]=uiputfile('*.off',['Save surface converted from ' filename],outputFilename);
-  newFilename{iSurf} = fullfile(pathname,filename);
+  if ieNotDefined('suffix')
+    outputFilename =  [pathname,'/',filename,'_invFNIRT',extension];
+    [filename,pathname]=uiputfile('*.off',['Save surface converted from ' filename],outputFilename);
+    newFilename{iSurf} = fullfile(pathname,filename);
+  else
+    newFilename{iSurf} = [pathname,'/',filename,'_invFNIRT_',suffix,extension];
+  end
   if ~isnumeric(filename)
     writeOFF(surf{iSurf}, newFilename{iSurf});
+    fprintf('(fslApplyWarpSurfOFF) Writing %s\n',newFilename{iSurf});
   end
 end
 
-%now save flat files with new parent file name (it's actually the only thing that changes)
-%in fact it's kind of useless because when importing the file in mrLoad it is possible to change the parent surface...
-%but at least I learnt something
-for iSurf = find(isFlat)
-  saveFile = true;
-  [isconverted,whichSurface] = ismember(surf{iSurf}.parentSurfaceName,surfFileNames);
-  [pathname,filename,extension] = fileparts(surfFileNames{iSurf});
-  if ~isconverted
-    surf{iSurf}.parentSurfaceName = mlrGetPathStrDialog(startPathStr,['Choose new parent surface (WM) for flat file converted from ' filename],{'*WM*.off','Inner surface OFF file'});
-    if isempty(surf{iSurf}.parentSurfaceName)
-      saveFile=false;
-    end
-  else
-    saveFile=true;
-    surf{iSurf}.parentSurfaceName = newFilename{whichSurface};
-  end
-  if saveFile
-    outputFilename =  [pathname,'/',filename,'_invFNIRT',extension];
-    [filename,pathname]=uiputfile('*.off',['Save flat surface converted from ' filename],outputFilename);
-    outputFilename = fullfile(pathname,filename);
-    if ~isnumeric(filename)
-      writePatchOFF(surf{iSurf}, outputFilename)
-    end
-  end
-end  
+% % %now save flat files with new parent file name (it's actually the only thing that changes)
+% % %in fact it's kind of useless because when importing the file in mrLoad it is possible to change the parent surface...
+% % %but at least I learnt something
+% % for iSurf = find(isFlat)
+% %   saveFile = true;
+% %   [isconverted,whichSurface] = ismember(surf{iSurf}.parentSurfaceName,surfFileNames);
+% %   [pathname,filename,extension] = fileparts(surfFileNames{iSurf});
+% %   if ~isconverted
+% %     surf{iSurf}.parentSurfaceName = mlrGetPathStrDialog(startPathStr,['Choose new parent surface (WM) for flat file converted from ' filename],{'*WM*.off','Inner surface OFF file'});
+% %     if isempty(surf{iSurf}.parentSurfaceName)
+% %       saveFile=false;
+% %     end
+% %   else
+% %     saveFile=true;
+% %     surf{iSurf}.parentSurfaceName = newFilename{whichSurface};
+% %   end
+% %   if saveFile
+% %     outputFilename =  [pathname,'/',filename,'_invFNIRT',extension];
+% %     [filename,pathname]=uiputfile('*.off',['Save flat surface converted from ' filename],outputFilename);
+% %     outputFilename = fullfile(pathname,filename);
+% %     if ~isnumeric(filename)
+% %       writePatchOFF(surf{iSurf}, outputFilename)
+% %     end
+% %   end
+% % end  
 
 
 % writeOFF.m

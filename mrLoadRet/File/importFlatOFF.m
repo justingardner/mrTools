@@ -88,10 +88,26 @@ if ~any(isfield(params, {'threshold', 'flatRes','baseValues'}));
     return;
   end
 else
-  flatParams.baseValues = 'curvature';
-  flatParams.threshold = params.threshold;
-  flatParams.flatRes = params.flatRes;
-  flatParams.flipFlag = 0;
+  if isfield(params,'baseValues')
+    flatParams.baseValues = params.baseValues;
+  else
+    flatParams.baseValues = 'curvature';
+  end
+  if isfield(params,'threshold')
+    flatParams.threshold = params.threshold;
+  else
+    flatParams.threshold = 1;
+  end
+  if isfield(params,'flatRes')
+    flatParams.flatRes = params.flatRes;
+  else
+    flatParams.flatRes = 2;
+  end
+  if isfield(params,'flipFlag')
+    flatParams.flipFlag = params.flipFlag;
+  else
+    flatParams.flipFlag = 0;
+  end
   flatParams.flatBaseName = stripext(getLastDir(params.flatFileName));
 end
 

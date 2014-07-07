@@ -6,7 +6,7 @@
 %       date: 07/11/07
 %    purpose: 
 %
-function retval = mlrImportFreeSurfer(varargin)
+function params = mlrImportFreeSurfer(varargin)
 
 % check arguments
 % if ~any(nargin == [0])
@@ -28,6 +28,7 @@ end
 
 % evaluate the arguments
 eval(evalargs(varargin));
+if ieNotDefined('defaultParams'),defaultParams = 0;end
 
 % check directories
 if ~isdir('surf'),disp(sprintf('(mlrImportFreeSurfer) Could not find surf directory'));return,end
@@ -43,7 +44,9 @@ anatFile  = 'T1.mgz';
 hemi      = {'lh', 'rh'};
 hemiNames = {'left', 'right'};
 outDir    = fullfile(pwd,'surfRelax');
-volumeCropSize = [176 256 256];
+if ~exist('volumeCropSize')
+  volumeCropSize = [176 256 256];
+end
 
 paramsInfo = {...
     {'freeSurferDir',pwd,'directory where the freeSurfer files live'}, ...
@@ -58,7 +61,11 @@ paramsInfo = {...
              };
 
 % get the parameters from the user
-params = mrParamsDialog(paramsInfo,'mlrImportFreeSurfer',1.5);
+if defaultParams
+  params = mrParamsDefault(paramsInfo);
+else
+  params = mrParamsDialog(paramsInfo,'mlrImportFreeSurfer',1.5);
+end
 
 % return if user hit cancel
 if isempty(params)

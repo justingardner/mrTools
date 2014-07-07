@@ -6,6 +6,7 @@
 %    purpose: Import a pair of inner and outer cortical surfaces in OFF format
 %
 %    base = importSurfaceOFF('/path/to/surfaces/subject_left_WM.off', bothHemiFlag);
+%    or [base = importSurfaceOFF(params, bothHemiFlag); %where params is a structure similar to the output of mrSurfViewer with added field 'path']
 %    viewSet(getMLRView, 'newbase', base);
 %
 function base = importSurfaceOFF(pathStr,bothHemiFlag)
@@ -34,11 +35,27 @@ end
 % Aborted
 if ieNotDefined('pathStr'),return,end
 
-% get surface name using mrSurfViewer
-[filepath filename] = fileparts(pathStr);
-thispwd = pwd;
-if ~isempty(filepath),cd(filepath);end
-params1 = mrSurfViewer(filename);
+if isstr(pathStr);
+  % get surface name using mrSurfViewer
+  [filepath filename] = fileparts(pathStr);
+  thispwd = pwd;
+  if ~isempty(filepath),cd(filepath);end
+  params1 = mrSurfViewer(filename);
+elseif isstruct(pathStr) %if pathStr is a parameter structure
+  if bothHemiFlag
+    mrWarnDlg('(importSurfaceOFF) option bothHemiFlag not implemented for parameter structure input')
+    return;
+  end
+  params1=pathStr;
+  filepath=pathStr.path;
+  if strcmp(params1.outerCoords,'Same as surface')
+    filename = params1.outerSurface;
+  else
+    filename = params1.outerCoords;
+  end
+  thispwd = pwd;
+  if ~isempty(filepath),cd(filepath);end
+end
 
 % Aborted
 if isempty(params1),cd(thispwd);return,end
