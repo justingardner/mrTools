@@ -97,7 +97,7 @@ else
   gFlatViewer.path = flat{1}.path;
   flatPath = flat{1}.path;
   % convert start point from base space to world cordinates (the surfRelax
-  % space) because that`s the space used by makeFlatFromRadius
+  % space) because that's the space used by makeFlatFromRadius
   % if anatomy file does not have a path, use flat path
   if isempty(anat)
     [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Select 3D Anatomy File',flat{1}.path);
@@ -108,11 +108,14 @@ else
   else
     anatomyFile=anat{1};
   end
+  %first convert coordinates from current base to the surface base
+  hdr= cbiReadNiftiHeader(anatomyFile);
+  baseStartPoint = hdr.sform44 \ viewGet(viewNum,'basexform') * [flat{1}.startPoint';1];
   array2worldXform = mlrXFormFromHeader(anatomyFile,'array2world');
-  worldStartPoint = array2worldXform*[flat{1}.startPoint';1];
+  worldStartPoint = array2worldXform*baseStartPoint;
   gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,worldStartPoint(1:3)',flat{1}.parentSurfaceName);
   if isempty(gFlatViewer.flat),return,end
-  % convert start point back to base coordinates to print falt name
+  % convert start point back to base coordinates to print flat name
   arrayStartPoint = round(array2worldXform\[gFlatViewer.flat.startPoint';1]);
   % set the name of the patch
   gFlatViewer.flat.name = sprintf('%s_Flat_%i_%i_%i_Rad%i.off',stripext(flat{1}.parentSurfaceName),round(arrayStartPoint(1)),round(arrayStartPoint(2)),round(arrayStartPoint(3)),gFlatViewer.flat.radius);
