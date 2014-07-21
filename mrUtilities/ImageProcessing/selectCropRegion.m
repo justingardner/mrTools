@@ -22,7 +22,7 @@ while ~OK
     [m,n]=getArrayDimensions(nImages,screenSize(2)/aSize(1)*aSize(2)/screenSize(1));
     %optimize figure proportions for subplot
     figureDims = get(hFigure,'position');
-    figureDims(3)=figureDims(4)*n/m;
+    figureDims(3)=figureDims(4)*n/m*aSize(2)/aSize(1);
     set(hFigure,'position',figureDims);
     for row = 1:m
       for col = 1:n
@@ -105,7 +105,7 @@ while ~OK
     [m,n]=getArrayDimensions(size(tmp,3),screenSize(2)/size(tmp,1)*size(tmp,2)/screenSize(1));
     %optimize figure proportions for subplot
     figureDims = get(hFigure,'position');
-    figureDims(3)=figureDims(4)*n/m;
+    figureDims(3)=figureDims(4)*n/m*size(tmp,2)/size(tmp,1);
     set(hFigure,'position',figureDims);
     for row = 1:m
       for col = 1:n
