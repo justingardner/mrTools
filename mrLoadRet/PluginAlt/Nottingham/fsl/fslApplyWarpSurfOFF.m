@@ -14,25 +14,25 @@ function fslApplyWarpSurfOFF
 startPathStr = pwd;
 filterspec = {'*.img;*.nii','FNIRT warp coeff .img/.nii file'; '*.*','All files'};
 title = 'Choose structural to functional FNIRT coefficient file';
-warpCoefFileName = getPathStrDialog(startPathStr,title,filterspec,'off');
+warpCoefFileName = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
 if isempty(warpCoefFileName),return,end;
 
 startPathStr = fileparts(warpCoefFileName);
 filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
 title = 'Choose FNIRT input volume';
-inputVolumeFilename = getPathStrDialog(startPathStr,title,filterspec,'off');
+inputVolumeFilename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
 if isempty(inputVolumeFilename),return,end
 
 startPathStr = mrGetPref('volumeDirectory');
 filterspec = {'*.img;*.nii','NIFTI .img/.nii file'; '*.*','All files'};
 title = 'Choose canonical base volume';
-canonicalBaseFilename = getPathStrDialog(startPathStr,title,filterspec,'off');
+canonicalBaseFilename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
 if isempty(canonicalBaseFilename),return,end
 
 startPathStr = fileparts(canonicalBaseFilename);
 filterspec = {'*.off','SurfRelax OFF file';'*.off','SurfRelax off surface file'; '*.*','All files'};
 title = 'Choose surface OFF file(s) to convert';
-surfFileNames = getPathStrDialog(startPathStr,title,filterspec,'on');
+surfFileNames = mlrGetPathStrDialog(startPathStr,title,filterspec,'on');
 % Aborted
 if isempty(surfFileNames),return,end
 
@@ -120,7 +120,7 @@ for iSurf = find(isFlat)
   [isconverted,whichSurface] = ismember(surf{iSurf}.parentSurfaceName,surfFileNames);
   [pathname,filename,extension] = fileparts(surfFileNames{iSurf});
   if ~isconverted
-    surf{iSurf}.parentSurfaceName = getPathStrDialog(startPathStr,['Choose new parent surface (WM) for flat file converted from ' filename],{'*WM*.off','Inner surface OFF file'});
+    surf{iSurf}.parentSurfaceName = mlrGetPathStrDialog(startPathStr,['Choose new parent surface (WM) for flat file converted from ' filename],{'*WM*.off','Inner surface OFF file'});
     if isempty(surf{iSurf}.parentSurfaceName)
       saveFile=false;
     end

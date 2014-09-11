@@ -5,6 +5,9 @@
 %         by: justin gardner
 %       date: 11/15/11
 %    purpose: Pass in an mlrImage header and will return a nifti header
+%             To create a new header:
+%             h.dim = [64 64 3];
+%             hdr = mlrImageGetNiftiHeader(h);
 %
 function hdr = mlrImageGetNiftiHeader(h)
 

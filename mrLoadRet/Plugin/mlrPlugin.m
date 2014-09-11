@@ -90,6 +90,8 @@ if altPlugins
   if ~isdir(pluginAltDirname)
     disp(sprintf('(mlrPlugin) Could not find %s directory',pluginAltDirname));
   else
+    % chekc the top directory for plugins
+    plugins = getPlugins(pluginAltDirname,plugins,false);
     % check each sub-directory
     pluginAltDir = dir(pluginAltDirname);
     for i = 1:length(pluginAltDir)
@@ -213,10 +215,11 @@ end
 %%%%%%%%%%%%%%%%%%%%
 %    getPlugins    %
 %%%%%%%%%%%%%%%%%%%%
-function plugins = getPlugins(pluginPath,plugins)
+function plugins = getPlugins(pluginPath,plugins,warnMissingPluginFunction)
 
 % empty plugins directory to start with
 if nargin == 1,plugins = [];end
+if nargin < 3,warnMissingPluginFunction = true;end
 
 % check for plugin function in each directory
 pluginDir = dir(pluginPath);
@@ -234,7 +237,9 @@ for i = 1:length(pluginDir)
     if isfile(pluginFullName)
       % Make sure plugin function exists
       if isempty(which(pluginName))
-	disp(sprintf('(mlrPlugin) Plugin function %s does not exist on path',pluginFullName));
+	if warnMissingPluginFunction
+	  disp(sprintf('(mlrPlugin) Plugin function %s does not exist on path',pluginFullName));
+	end
 	continue
       end
       % make sure that calling the function returns the correct one on the path
@@ -257,7 +262,9 @@ for i = 1:length(pluginDir)
 	plugins(end).selected = 0;
       end
     else
-      disp(sprintf('(mlrPlugin) Plugin function %s not found in %s',pluginName,fileparts(pluginFullName)));
+      if warnMissingPluginFunction
+	disp(sprintf('(mlrPlugin) Plugin function %s not found in %s',pluginName,fileparts(pluginFullName)));
+      end
     end
   end
 end
