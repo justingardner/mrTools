@@ -26,7 +26,7 @@ if ieNotDefined('flatFileName')
   end
   filterspec = {'*.mat','Matlab flat file'};
   title = 'Choose flat file';
-  pathStr = getPathStrDialog(startPathStr,title,filterspec,'on');
+  pathStr = mlrGetPathStrDialog(startPathStr,title,filterspec,'on');
 else
   pathStr = flatFileName;
 end
@@ -44,7 +44,7 @@ pathStr = cellArray(pathStr);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 filterspec = {'*.hdr','Nifti file header'};
 title = 'Choose volume anatomy file header for this flat image';
-anatPathStr = getPathStrDialog(fileparts(pathStr{1}),title,filterspec);
+anatPathStr = mlrGetPathStrDialog(fileparts(pathStr{1}),title,filterspec);
 
 % Strip extension to make sure it is .mat
 anatPathStr = [stripext(anatPathStr),'.hdr'];

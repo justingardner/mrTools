@@ -52,7 +52,7 @@ end
 
 % Complete pathStr
 if ieNotDefined('pathStr')
-  pathStr = getPathStrDialog(startPathStr,'Choose one or more analyses','*.mat','on');
+  pathStr = mlrGetPathStrDialog(startPathStr,'Choose one or more analyses','*.mat','on');
 else
   if iscell(pathStr)
     for p=1:length(pathStr)

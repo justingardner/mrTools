@@ -37,7 +37,7 @@ if ~isempty(baseCoordMap)
     startPathStr = baseCoordMapPath;
     filterspec = {'*.off','SurfRelax off file';'*WM*.off', 'SurfRelax OFF WM file'; '*.*','All files'};
     title = 'Choose inner (WM) OFF surface file';    
-    innerCoordsFileName = getPathStrDialog(startPathStr,title,filterspec,'off');
+    innerCoordsFileName = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
     % Aborted
     if isempty(innerCoordsFileName),return,end
     % get path and name
@@ -59,7 +59,7 @@ else
   startPathStr = mrGetPref('volumeDirectory');
   filterspec = {'*.off','SurfRelax OFF file';'*WM*.off','SurfRelax off gray matter file'; '*.*','All files'};
   title = 'Choose inner (WM) OFF file';
-  innerCoordsFileName = getPathStrDialog(startPathStr,title,filterspec,'off');
+  innerCoordsFileName = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
   % Aborted
   if isempty(innerCoordsFileName),return,end
   % get path and name
