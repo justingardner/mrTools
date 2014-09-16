@@ -64,6 +64,7 @@ dt6Filename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
 
 % use mrDiffusion functions to load dti
 [dt, t1, o] = dtiLoadDt6(dt6Filename);
+if isempty(dt),return,end
 
 % now bring up selection dialog
 paramsInfo = {{'groupName','DTI'},...
@@ -197,4 +198,97 @@ function mlrLifeImportFascicles(hObject,eventdata)
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-fg = fgRead;
+% Load the fascicles from disk
+[fg, fgFilename] = fgRead;
+if isempty(fg), return,end
+
+% bring up file dialog to select dt6 file
+% this is so that we can get the T1 file
+% FIX, FIX, FIX - should find some way to automatically
+% load the T1 file without having the user have to go find it.
+startPathStr = fullfile(fileparts(fgFilename),'..');
+filterspec = {'dt6.mat','Diffusion tensor 6 parameter file';'*.*','All files'};
+title = 'Choose diffusion tensor 6 parameter file';
+dt6Filename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
+
+% use mrDiffusion functions to load dti
+[dt, t1, o] = dtiLoadDt6(dt6Filename);
+if isempty(dt),return,end
+
+% Get the header from the T1 so that we have the correct sform etc
+h.dim = size(t1.img);
+[tf h] = mlrImageIsHeader(h);
+h.pixdim = t1.mmPerVoxel;
+h.qform = diag([h.pixdim 1]);
+h.sform = t1.xformToAcpc;
+h.sform = eye(4);
+% Build frames from the fascicles
+[X, Y, Z] = mbaBuildFascicleFrame(fg.fibers);
+
+% number of fascicles
+nFascicles = length(X);
+
+% Build a patch from the frame
+for i = 1:nFascicles
+  fasciclePatches{i} = surf2patch(X{i},Y{i},Z{i},'triangles');
+end
+
+% create an MLR base structure
+fascicleBase.name = fixBadChars(fg.name);
+
+% set this to be a surface
+fascicleBase.type = 2; 
+
+% set nifti header and permutation matrix in base structure
+fascicleBase.hdr = mlrImageGetNiftiHeader(h);
+fascicleBase.permutationMatrix = getPermutationMatrix(fascicleBase.hdr);
+fascicleBase.vol2mag = fascicleBase.hdr.sform44;
+
+% set path and names of files
+fascicleBase.coordMap.path = fileparts(fgFilename);
+fascicleBase.coordMap.innerSurfaceFileName = getLastDir(fgFilename);
+fascicleBase.coordMap.outerSurfaceFileName = getLastDir(fgFilename);
+fascicleBase.coordMap.innerCoordsFileName = getLastDir(fgFilename);
+fascicleBase.coordMap.outerCoordsFileName = getLastDir(fgFilename);
+fascicleBase.coordMap.curvFileName = '';
+fascicleBase.coordMap.anatFileName = dt.files.t1;
+
+% initalize fields
+fascicleBase.data = [];
+% set dimensions for coordMap
+fascicleBase.coordMap.dims = h.dim;
+fascicleBase.coordMap.innerVtcs = [];
+fascicleBase.coordMap.tris = [];
+nTotalVertices = 0;
+
+disppercent(-inf,sprintf('(mlrLifePlugin) Converting %i fascicles',nFascicles));
+for iFascicle = 1:nFascicles
+  nVertices = size(fasciclePatches{iFascicle}.vertices,1);
+  fascicleBase.data = [fascicleBase.data rand(1,nVertices)];
+  % convert vertices to a coord map which has one x,y,z element for each possible
+  % location on the surface (which actually is just a 1xnVerticesx1 image)
+  % add these vertices to existing vertices
+  fascicleBase.coordMap.innerCoords(1,nTotalVertices+1:nTotalVertices+nVertices,1,1) = fasciclePatches{iFascicle}.vertices(:,1);
+  fascicleBase.coordMap.innerCoords(1,nTotalVertices+1:nTotalVertices+nVertices,1,2) = fasciclePatches{iFascicle}.vertices(:,2);
+  fascicleBase.coordMap.innerCoords(1,nTotalVertices+1:nTotalVertices+nVertices,1,3) = fasciclePatches{iFascicle}.vertices(:,3);
+  % inner and outer coords are the same
+  fascicleBase.coordMap.outerCoords = fascicleBase.coordMap.innerCoords;
+  % these are the display vertices which are the same as the coords
+  fascicleBase.coordMap.innerVtcs = [fascicleBase.coordMap.innerVtcs ; fasciclePatches{iFascicle}.vertices];
+  fascicleBase.coordMap.outerVtcs = fascicleBase.coordMap.innerVtcs;
+  fascicleBase.coordMap.tris = [fascicleBase.coordMap.tris ; (fasciclePatches{iFascicle}.faces + nTotalVertices)];
+  % update nTotalVertices
+  nTotalVertices = nTotalVertices + nVertices;
+  disppercent(iFascicle/nFascicles);
+end
+disppercent(inf);
+
+% make it a full base
+[tf fascicleBase] = isbase(fascicleBase);
+
+% add it to the view
+v = viewSet(v,'newBase',fascicleBase);
+
+refreshMLRDisplay(v);
+
+keyboard
