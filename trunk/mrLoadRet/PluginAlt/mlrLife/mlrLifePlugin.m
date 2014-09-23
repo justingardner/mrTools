@@ -221,16 +221,34 @@ h.dim = size(t1.img);
 h.pixdim = t1.mmPerVoxel;
 h.qform = diag([h.pixdim 1]);
 h.sform = t1.xformToAcpc;
-h.sform = eye(4);
+
+% convert the X, Y, Z coordinates which are in AC/PC back to 3D image coordinates
+huh = h.sform;
+%huh(1,1) = 1*t1.mmPerVoxel(1);
+%huh(2,2) = 1*t1.mmPerVoxel(2);
+%huh(3,3) = 1*t1.mmPerVoxel(3);
+%huh(1,4) = huh(1,4)*t1.mmPerVoxel(1);
+%huh(2,4) = huh(2,4)*t1.mmPerVoxel(2);
+%huh(3,4) = huh(3,4)*t1.mmPerVoxel(3);
+%scaleXform = diag([t1.mmPerVoxel 1]);
+%fg = dtiXformFiberCoords(fg,scaleXform);
+%huh = huh*inv(scaleXform);
+%fg = dtiXformFiberCoords(fg,inv(huh));
+
 % Build frames from the fascicles
 [X, Y, Z] = mbaBuildFascicleFrame(fg.fibers);
+%[Y, X, Z] = mbaBuildFascicleFrame(fg.fibers);
 
 % number of fascicles
 nFascicles = length(X);
 
 % Build a patch from the frame
+nTotalVertices = 0;nTotalTris = 0;
 for i = 1:nFascicles
   fasciclePatches{i} = surf2patch(X{i},Y{i},Z{i},'triangles');
+  % compute how many vertices and tris we have all together
+  nTotalVertices = size(fasciclePatches{i}.vertices,1) + nTotalVertices;
+  nTotalTris = size(fasciclePatches{i}.faces,1) + nTotalTris;
 end
 
 % create an MLR base structure
@@ -257,31 +275,40 @@ fascicleBase.coordMap.anatFileName = dt.files.t1;
 fascicleBase.data = [];
 % set dimensions for coordMap
 fascicleBase.coordMap.dims = h.dim;
-fascicleBase.coordMap.innerVtcs = [];
-fascicleBase.coordMap.tris = [];
-nTotalVertices = 0;
+fascicleBase.coordMap.innerCoords = nan(1,nTotalVertices,1,3);
+fascicleBase.coordMap.innerVtcs = nan(nTotalVertices,3);
+fascicleBase.coordMap.tris = nan(nTotalTris,3);
+nRunningTotalVertices = 0;
+nRunningTotalTris = 0;
 
+% now put all fascicles vertices and triangles into one coordMap
 disppercent(-inf,sprintf('(mlrLifePlugin) Converting %i fascicles',nFascicles));
 for iFascicle = 1:nFascicles
+  % number of vertices and triangles
   nVertices = size(fasciclePatches{iFascicle}.vertices,1);
+  nTris = size(fasciclePatches{iFascicle}.faces,1);
+  % the data which is the grayscale value to color the fascicles with (rand for now)
   fascicleBase.data = [fascicleBase.data rand(1,nVertices)];
   % convert vertices to a coord map which has one x,y,z element for each possible
   % location on the surface (which actually is just a 1xnVerticesx1 image)
   % add these vertices to existing vertices
-  fascicleBase.coordMap.innerCoords(1,nTotalVertices+1:nTotalVertices+nVertices,1,1) = fasciclePatches{iFascicle}.vertices(:,1);
-  fascicleBase.coordMap.innerCoords(1,nTotalVertices+1:nTotalVertices+nVertices,1,2) = fasciclePatches{iFascicle}.vertices(:,2);
-  fascicleBase.coordMap.innerCoords(1,nTotalVertices+1:nTotalVertices+nVertices,1,3) = fasciclePatches{iFascicle}.vertices(:,3);
-  % inner and outer coords are the same
-  fascicleBase.coordMap.outerCoords = fascicleBase.coordMap.innerCoords;
+  fascicleBase.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,1) = fasciclePatches{iFascicle}.vertices(:,1);
+  fascicleBase.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,2) = fasciclePatches{iFascicle}.vertices(:,2);
+  fascicleBase.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,3) = fasciclePatches{iFascicle}.vertices(:,3);
   % these are the display vertices which are the same as the coords
-  fascicleBase.coordMap.innerVtcs = [fascicleBase.coordMap.innerVtcs ; fasciclePatches{iFascicle}.vertices];
-  fascicleBase.coordMap.outerVtcs = fascicleBase.coordMap.innerVtcs;
-  fascicleBase.coordMap.tris = [fascicleBase.coordMap.tris ; (fasciclePatches{iFascicle}.faces + nTotalVertices)];
-  % update nTotalVertices
-  nTotalVertices = nTotalVertices + nVertices;
+  fascicleBase.coordMap.innerVtcs(nRunningTotalVertices+1:nRunningTotalVertices+nVertices,:) = fasciclePatches{iFascicle}.vertices;
+  % triangle faces
+  fascicleBase.coordMap.tris(nRunningTotalTris+1:nRunningTotalTris+nTris,:) = (fasciclePatches{iFascicle}.faces + nRunningTotalVertices);
+  % update runing totals
+  nRunningTotalVertices = nRunningTotalVertices + nVertices;
+  nRunningTotalTris= nRunningTotalTris + nTris;
   disppercent(iFascicle/nFascicles);
 end
 disppercent(inf);
+
+% copy the inner to outer since they are all the same for fascicles
+fascicleBase.coordMap.outerCoords = fascicleBase.coordMap.innerCoords;
+fascicleBase.coordMap.outerVtcs = fascicleBase.coordMap.innerVtcs;
 
 % make it a full base
 [tf fascicleBase] = isbase(fascicleBase);
