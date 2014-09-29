@@ -1,6 +1,6 @@
 % copyFields.m
 %
-%      usage: struct1 = copyFields(struct1,struct2,indices)
+%      usage: struct2 = copyFields(struct1,struct2,indices)
 %         by: julien besle 
 %       date: 03/12/2010
 %    purpose: copies (and replaces) all fields from struct1 to struct2, or struct2(indices) if indices is defined
