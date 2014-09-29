@@ -36,7 +36,7 @@ if ieNotDefined('anatFileName')
     end
     filterspec = {'*.img;*.nii','Nifti/Analyze files'};
     title = 'Choose anatomy file';
-    pathStr = getPathStrDialog(startPathStr,title,filterspec,'on');
+    pathStr = mlrGetPathStrDialog(startPathStr,title,filterspec,'on');
 elseif ieNotDefined('anatFilePath')
     pathStr = fullfile(viewGet(view,'anatomyDir'),anatFileName);
 else

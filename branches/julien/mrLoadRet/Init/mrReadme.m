@@ -123,7 +123,7 @@ function createReadmeAppendNotes
 
 
 % Dialog box to get notes file
-pathStr = getPathStrDialog(pwd,'Select notes to append to Readme.txt','*.*');
+pathStr = mlrGetPathStrDialog(pwd,'Select notes to append to Readme.txt','*.*');
 if isempty(pathStr)
   return
 end

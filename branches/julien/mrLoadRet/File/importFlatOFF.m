@@ -26,7 +26,7 @@ if nargin == 0
   startPathStr = mrGetPref('volumeDirectory');
   filterspec = {'*.off','SurfRelax off file';'*lat.off','SurfRelax off flat file';'*.*','All files'};
   title = 'Choose flat OFF file';
-  flatFile = getPathStrDialog(startPathStr,title,filterspec,'off');
+  flatFile = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
   flatFile = cellArray(flatFile);
   flatFile = flatFile{1};
 end

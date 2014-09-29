@@ -26,7 +26,7 @@ if ieNotDefined('pathStr')
   end
   if ~isdir(startPathStr),startPathStr='';,end
   % get the user defined path
-  pathStr = getPathStrDialog(startPathStr,'Choose roi files to import','*.mat','on');
+  pathStr = mlrGetPathStrDialog(startPathStr,'Choose roi files to import','*.mat','on');
 end
 if isempty(pathStr),disp('No ROI selected');,return,end
 mrSetPref('importROIPath',fileparts(pathStr{1}));

@@ -78,7 +78,7 @@ view = viewSet(view,'currentGroup',groupNum);
 
 % if there is no roi, ask the user to select
 if ieNotDefined('roiname')
-  roiname = getPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
+  roiname = mlrGetPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
 end
 
 %make into a cell array

@@ -221,6 +221,7 @@ tf = true;
 for f = 1:length(requiredFields)
   fieldName = requiredFields{f};
   if ~isfield(coordMap,fieldName)
+    disp(sprintf('(isbase) Missing coordMap field: %s',fieldName));
     tf = false;
   end
 end
