@@ -65,6 +65,7 @@ for iSide=1:2
 %       subjFiles{iSide,iSurf} = subjFiles{iSide,iSurf}(filelist);
 %     end
   end
+  disp([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])
 end
 
 for iSide=1:2
@@ -82,7 +83,7 @@ for iSide=1:2
     
     for jSurf = subjFiles{iSide,iSurf}
       pattern = ['_' side{iSide} '_' surfs{iSurf}];
-      fssubject = jSurf{1}([1:strfind(jSurf{1},pattern)-1 strfind(jSurf{1},pattern)+length(pattern):end-4]);
+      fssubjectPrefix = jSurf{1}([1:strfind(jSurf{1},pattern)-1 strfind(jSurf{1},pattern)+length(pattern):end-4]);
       subjSurf = loadSurfOFF([subjPath '/surfRelax/' jSurf{1}]);
 
       %apply regridding matrix to surfaces
@@ -95,15 +96,29 @@ for iSide=1:2
       [path,filename,extension]=fileparts(subjSurf.filename);
       subjSurf.filename = [path '/' filename '_' fsaverage extension];
       [path,filename,extension]=fileparts(thisAverageSurf.filename);
-      thisAverageSurf.filename = [path '/' filename '_' fssubject extension];
+      thisAverageSurf.filename = [path '/' filename '_' fssubjectPrefix extension];
 
       %save file
       disp(['(remapSurfaces) Writing ' subjSurf.filename]);
       writeOFF(subjSurf, subjSurf.filename);
       disp(['(remapSurfaces) Writing ' thisAverageSurf.filename]);
       writeOFF(thisAverageSurf, thisAverageSurf.filename);
+
     end
   end
+  
+  %interpolate curvature data
+  subjCurv = loadVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])';
+  subjToAverageCurv = subjToAverage*subjCurv;
+  subjToAverageCurv(subjToAverageCurv>max(subjCurv))=max(subjCurv); %clip the data to original min/max (because saveVFF normalizes them)
+  subjToAverageCurv(subjToAverageCurv<min(subjCurv))=min(subjCurv);
+  saveVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv_' fssubject '.vff'], subjToAverageCurv');
+  averageCurv = loadVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv.vff'])';
+  averageToSubjCurv = averageToSubj*averageCurv;
+  averageToSubjCurv(averageToSubjCurv>max(averageCurv))=max(subjCurv);
+  averageToSubjCurv(averageToSubjCurv<min(averageCurv))=min(averageCurv);
+  saveVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv_' fsaverage '.vff'], averageToSubjCurv');
+
 end
     
     
