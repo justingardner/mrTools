@@ -20,6 +20,12 @@ if ~any(nargin == [1])
   return
 end
 
+% check for empy
+if isempty(str)
+  retrval = [];
+  return;
+end
+
 % remove from the string any nan/inf for testing
 % since these are valid strings to have.
 teststr = fixBadChars(lower(str),{{'nan',''},{'inf',''},{'-',''}});

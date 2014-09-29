@@ -28,7 +28,7 @@ if ieNotDefined('pathStr')
   startPathStr = mrGetPref('volumeDirectory');
   filterspec = {'*.off','Off Surface file (*.off)'};
   title = 'Choose outer surface file';
-  pathStr = getPathStrDialog(startPathStr,title,filterspec,'off');
+  pathStr = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
 end
 
 % Aborted

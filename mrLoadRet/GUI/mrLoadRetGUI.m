@@ -1049,7 +1049,7 @@ view = MLR.views{viewNum};
 
 % Choose nifti file to add
 tseriesDir = viewGet(view,'tseriesDir');
-pathStr = getPathStrDialog(tseriesDir,'Add scan: choose nifti file',['*',mrGetPref('niftiFileExtension')]);
+pathStr = mlrGetPathStrDialog(tseriesDir,'Add scan: choose nifti file',['*',mrGetPref('niftiFileExtension')]);
 if isempty(pathStr)
     % Aborted
     return
@@ -1215,7 +1215,7 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 % Choose stimfile to add
 etcDir = viewGet(view,'etcDir');
-pathStr = getPathStrDialog(etcDir,'Link Stimfile: choose matlab file');
+pathStr = mlrGetPathStrDialog(etcDir,'Link Stimfile: choose matlab file');
 if isempty(pathStr)
     % Aborted
     return

@@ -40,7 +40,7 @@ end
 
 % Complete pathStr
 if ieNotDefined('filename')
-    pathStr = getPathStrDialog(startPathStr,'Choose one or more ROIs','*.mat','on');
+    pathStr = mlrGetPathStrDialog(startPathStr,'Choose one or more ROIs','*.mat','on');
 else
     if iscell(filename)
         pathStr = cell(size(filename));
