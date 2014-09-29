@@ -156,7 +156,7 @@ else
         mask = any(all(mask,5),4);
 
         base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
-        if any(any((base2scan - eye(4))>1e-6)) %check if we're in the scan space
+        if any(any((base2scan - eye(4))>1e-6)) || baseType>0 %check if we're in the scan space
            %if not, transform the mask to the base space
            mrWarnDlg('This would be faster and more accurate if the base space was identical to the scan space');
            interpMethod = 'nearest';
