@@ -51,7 +51,7 @@ function [view tf] = viewSet(view,param,val,varargin)
 % function.
 %
 % 6/2004 djh
-%        $Id$
+%        $Id: viewSet.m 2838 2013-08-12 12:52:20Z julien $
 
 mrGlobals
 
@@ -908,7 +908,14 @@ switch lower(param)
 	mlrSetRotate3d(view,0);
       end
     end
-
+    % see if there are any registered callbacks
+    if ~isempty(viewGet(view,'figNum'))
+      callbacks = viewGet(view,'callback','curBaseChange');
+      % and call them
+      for iCallback = 1:length(callbacks)
+	feval(callbacks{1},view);
+      end
+    end
   case{'basecoordmappath'}
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
     baseNum = getBaseNum(view,varargin);
@@ -958,6 +965,35 @@ switch lower(param)
     end
     if (baseNum == curBase)
       mlrGuiSet(view,'baseGamma',gamma);
+    end
+
+  case{'basealpha'}
+    % view = viewSet(view,'baseAlpha',alpha,[baseNum]);
+    alpha = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).alpha = alpha;
+    end
+    if (baseNum == curBase)
+      keyboard
+      mlrGuiSet(view,'baseAlpha',alpha);
+    end
+
+  case{'basemultidisplay'}
+    % view = viewSet(view,'baseMultiDisplay',multiDisplay,[baseNum]);
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).multiDisplay = val;
+    end
+
+  case{'basedisplayoverlay'}
+    % view = viewSet(view,'baseDisplayOverlay',displayOverlay,[baseNum]);
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).displayOverlay = val;
     end
 
   case {'basevol2mag'}
@@ -2044,7 +2080,6 @@ switch lower(param)
   case {'curslice'}
     % view = viewSet(view,'curSlice',sliceNum);
     baseDims = viewGet(view,'baseDims');
-    baseType = viewGet(view,'baseType');
     sliceIndex = viewGet(view,'basesliceindex');
     if ~isempty(baseDims)
       nSlices = baseDims(sliceIndex);
@@ -2055,7 +2090,7 @@ switch lower(param)
       curSlice = viewGet(view,'curSlice');
       if isempty(curSlice) || curSlice ~= val
 	view.curslice.sliceNum = val;
-  mlrGuiSet(view,'slice',val);
+	mlrGuiSet(view,'slice',val);
       end
     else
       disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,nSlices));
@@ -2063,8 +2098,8 @@ switch lower(param)
   case {'curslicebasecoords'}
     % view = viewSet(view,'curslicebasecoords',array);
     view.curslice.baseCoords = val;
-
-  case {'cursliceoverlaycoords'}
+ 
+ case {'cursliceoverlaycoords'}
     % view = viewSet(view,'cursliceoverlaycoords',array);
     view.curslice.overlayCoords = val;
 
@@ -2156,6 +2191,47 @@ switch lower(param)
       %otherwise append to list
       MLR.colormaps = {MLR.colormaps{:} colormaps{:}};
     end
+ case {'callback'}
+    % view = viewSet(view,'callback',callbackName,callbackFunction)
+    % Use this to set a registered callback, which will get called
+    % at appropriate times from the GUI. For instance,baseChange
+    % will be called when any of the base information has been updated
+    % call viewSet(v,'callback') for a list of valid callbackNames
+
+    callbackNames = {'baseChange','curBaseChange'};
+
+    if length(varargin) ~= 1
+      disp(sprintf('(viewSet:callback) Registering callback requires two arguments: callbackName and callback function handle. callbackName can be any of: '));
+      for iCallback = 1:length(callbackNames)
+	disp(sprintf('     %s',callbackNames{iCallback}));
+      end
+      return
+    end
+    if ~any(strcmp(callbackNames,val))
+      disp(sprintf('(viewSet:callback) Unknown callbackName: %s Valid callbackNames are:',val));
+      for iCallback = 1:length(callbackNames)
+	disp(sprintf('     %s',callbackNames{iCallback}));
+      end
+      return
+    end
+    val = lower(val);
+    % save the callback name
+    if ~isfield(MLR,'callbacks')
+      MLR.callbacks{1}{1} = val;
+      MLR.callbacks{2}{1} = {varargin{1}};
+    else
+      % see if the callback already exists
+      callbackNum = find(strcmp(MLR.callbacks{1},val));
+      if ~isempty(callbackNum)
+	% add the callback to the existing list
+	MLR.callbacks{2}{callbackNum}{end+1} = varargin{1};
+      else
+	% add a new one
+	MLR.callbacks{1}{end+1} = val;
+	MLR.callbacks{2}{end+1} = {varargin{1}};
+      end
+    end
+	
  otherwise
    mrWarnDlg(sprintf('(viewSet) Unknown parameter %s',param));
 end

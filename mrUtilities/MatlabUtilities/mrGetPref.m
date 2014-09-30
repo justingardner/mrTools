@@ -25,7 +25,7 @@ function [value prefDefaults] = mrGetPref(pref)
 %   mrGetPref;
 %
 % djh, 5/2007
-% %	$Id$	
+% %	$Id: mrGetPref.m 2890 2013-10-27 12:52:21Z justin $	
 
 % with no arguments, return a list of possible preferences
 prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'...
@@ -39,6 +39,7 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'site','magnet','coil','pulseSequence',...
    'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
    'mlrVolDisplayControls','mlrVolOverlayAlpha','motionCompDefaultParams',...
+   'dispAllPlanesOfAnatomy',...
 	    };
 
 % set the defaults for preference we have defaults for. Note that the "find" in
@@ -77,6 +78,7 @@ prefDefaults{find(strcmp('maxArrayHeightForParamsDialog',prefNames))} = 50;
 prefDefaults{find(strcmp('mlrVolDisplayControls',prefNames))} = false;
 prefDefaults{find(strcmp('mlrVolOverlayAlpha',prefNames))} = 0.8;
 prefDefaults{find(strcmp('motionCompDefaultParams',prefNames))} = [];
+prefDefaults{find(strcmp('dispAllPlanesOfAnatomy',prefNames))} = true;
 
 if nargin == 0
   if nargout > 0

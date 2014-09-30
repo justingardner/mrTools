@@ -3,7 +3,7 @@ function view = mrOpenWindow(viewType,mrLastView)
 %  view = openWindow(viewType)
 %
 % djh, 6/2004
-%        $Id$
+%        $Id: mrOpenWindow.m 2838 2013-08-12 12:52:20Z julien $
 
 if ieNotDefined('viewType'),viewType = 'Volume';end
 % note we don't use ieNotDefined here, because
@@ -38,6 +38,27 @@ set(fig,'Renderer','painters')
 % set the keyoard accelerator
 %mrAcceleratorKeys('init',view.viewNum);
 
+% set the position of the main base viewer
+gui = guidata(fig);
+gui.marginSize = 0.01;
+gui.anatPosition = [0.3 0.2+gui.marginSize 1-0.3-gui.marginSize 1-0.2-2*gui.marginSize];
+
+% create 3 axis for display all three orientations at once
+% set up the position of each of the 3 axis. Start them
+% in an arbitrary position, being careful not to overlap
+gui.sliceAxis(1) = subplot('Position',[0 0 0.01 0.01],'Parent',fig);
+axis(gui.sliceAxis(1),'off');
+set(gui.sliceAxis(1),'ButtonDownFcn',@sliceAxisButtonDown);
+gui.sliceAxis(2) = subplot('Position',[0.02 0 0.01 0.01],'Parent',fig);
+axis(gui.sliceAxis(2),'off');
+set(gui.sliceAxis(2),'ButtonDownFcn',@sliceAxisButtonDown);
+gui.sliceAxis(3) = subplot('Position',[0.02 0.02 0.01 0.01],'Parent',fig);
+axis(gui.sliceAxis(3),'off');
+set(gui.sliceAxis(3),'ButtonDownFcn',@sliceAxisButtonDown);
+
+% save the axis handles
+guidata(fig,gui);
+
 % Initialize the scan slider
 nScans = viewGet(view,'nScans');
 mlrGuiSet(view,'nScans',nScans);
@@ -47,6 +68,7 @@ mlrGuiSet(view,'nSlices',0);
 % init showROIs to all perimeter
 view = viewSet(view,'showROIs','all perimeter');
 view = viewSet(view,'labelROIs',1);
+
 
 % Add plugins
 if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
@@ -155,6 +177,9 @@ end
 % reset some preferences
 mrSetPref('importROIPath','');
 
+%%%%%%%%%%%%%%%%%%%%%
+%    loadAnatomy    %
+%%%%%%%%%%%%%%%%%%%%%
 function [view,baseLoaded] = loadAnatomy(view)
   % for when there is no mrLastView
   % open an anatomy, if there is one
@@ -178,3 +203,9 @@ function [view,baseLoaded] = loadAnatomy(view)
     baseLoaded = 0;
   end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    sliceAxisButtonDown    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function sliceAxisButtonDown(hObject,eventdata)
+
+keyboard

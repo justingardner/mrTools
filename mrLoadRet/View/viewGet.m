@@ -37,7 +37,7 @@ function [val val2] = viewGet(view,param,varargin)
 % 11/2006 jlg added help and
 % originalScanNum,originalFileName,originalGroupName, scanNum,
 % dicomName, dicom, stimFileName, stimFile, concatInfo, transforms, TR
-%	$Id$
+%	$Id: viewGet.m 2868 2013-09-27 04:17:24Z justin $
 
 mrGlobals
 
@@ -1655,12 +1655,37 @@ switch lower(param)
       val = view.baseVolumes(b).gamma;
     end
   case {'basetype'}
-    % baserange = viewGet(view,'baserange',[baseNum])
+    % baseType = viewGet(view,'baseType',[baseNum])
     % 0 is for a regular volume, 1 is for a flat, 2 is for a surface
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).type;
+    end
+  case {'basealpha'}
+    % baseAlpha = viewGet(view,'baseAlpha',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).alpha;
+    end
+  case {'basedisplayoverlay'}
+    % baseDisplayOverlay = viewGet(view,'baseDisplayOverlay',[baseNum])
+    % used for setting whether a base displays an overlay or not
+    % some anatomy bases like fascicles do not always display overlays
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).displayOverlay;
+    end
+  case {'basemultidisplay'}
+    % baseMultiDisplay = viewGet(view,'baseMultiDisplay',[baseNum])
+    % sets whether the base will display even if it is not the
+    % current basy
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).multiDisplay;
     end
   case {'basesurfacedims'}
     % basedims = viewGet(view,'basedims',[baseNum])
@@ -4121,7 +4146,41 @@ switch lower(param)
     nslices = viewGet(view,'nslices',s,g);
     val = zeros(1,nslices);
     val(sliceOrder) = [0:nslices-1]/nslices;
-    
+  case{'panelhandle'}
+   % h = viewGet(view,'panelHandle','Panel name')
+   val = [];
+   if length(varargin)<1
+     disp(sprintf('(viewGet) Must specify panel name to get panel handle'));
+     return
+   end
+   if isfield(MLR,'panels')
+     for iPanel = 1:length(MLR.panels)
+       if strcmp(MLR.panels{iPanel}{1},varargin{1})
+	 val = MLR.panels{iPanel}{2};
+       end
+     end
+   end
+ case {'callback'}
+  % callbackFunctionHandles = viewGet(v,'callback',callbackName)
+  % retrieves a cell array of function handles for the callback
+  % this is used for parts of the code, like when a base changes,
+  % to call external functions that can adjust the behavior of the
+  % GUI
+  val = {};
+  if length(varargin) < 1
+    disp(sprintf('(viewGet) Need to specify callbackName'));
+    return
+  end
+  if isfield(MLR,'callbacks')
+    % look for the named callback (not case-sensitive)
+    callbackNum = find(strcmp(MLR.callbacks{1},lower(varargin{1})));
+    if ~isempty(callbackNum)
+      % if found, return the callback
+      val = MLR.callbacks{2}{callbackNum};
+    end
+  end
+
+  %% New viewGets go here
   otherwise
     if strcmp(mrGetPref('verbose'),'Yes')
       dispViewGetHelp;

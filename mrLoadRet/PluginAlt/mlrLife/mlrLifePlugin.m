@@ -18,25 +18,33 @@ switch action
  case {'install','i'}
   % check for a valid view
   if (nargin ~= 2) || ~isview(v)
-     disp(sprintf('(DefaultPlugin) Need a valid view to install plugin'));
+     disp(sprintf('(mlrLifePlugin) Need a valid view to install plugin'));
   else
-    % if the view is valid, then use mlrAdjustGUI to adjust the GUI for this plugin.
-    
-    % this installs a new menu item called 'Select Plugins' under /Edit/ROI with the
-    % separator turned on above it. It sets the callback to selectPlugins defined below.
+    % add the menu item for LiFE - this one should open Dt6 file
     mlrAdjustGUI(v,'add','menu','LiFE','/File/ROI','Callback',@mlrLifeFileOpen);
-%    mlrAdjustGUI(v,'add','menu','Import','/File/LiFE/','Callback',@mlrLifeFileOpen);
-
+    % this menu item allows importation of fascicles as a surface
     mlrAdjustGUI(v,'add','menu','Import fascicles','/File/Base anatomy/Import surface','Callback',@mlrLifeImportFascicles);
+    % now create a panel - this will be used for adding some UI
+    % controls to the right side of the figure for displaying
+    % multiple surfaces at once.
+    mlrAdjustGUI(v,'add','panel','Multiple base display',.5);
+    % add the list box that displays base images
+    mlrAdjustGUI(v,'add','control','multiBaseListboxText','panel','Multiple base display','style','text','position', [0.02    0.92    0.96   0.06 ],'string','Multi-view bases:','HorizontalAlignment','Left');
+    mlrAdjustGUI(v,'add','control','multiBaseListbox','panel','Multiple base display','style','listbox','position', [0.02    0.5    0.96   0.40 ],'Callback',@multiBaseListboxSelect,'Max',2);
+    % add the callback that will tell the above listbox when new
+    % bases have been added
+    v = viewSet(v,'callback','baseChange',@mlrLifeBaseChange);
+    % also register a change when someone switches the curBase
+    v = viewSet(v,'callback','curBaseChange',@mlrLifeBaseChange);
+    %mlrAdjustGUI(v,'add','panel','Multiple ROI display',.25);
+
+
     % This is a command that could be used to install some default interrogators
-    %mlrAdjustGUI(v,'add','interrogator',{'eventRelatedPlot','glmContrastPlot'});
+    %mlrAdjustGUI(v,'add','interrogator',{'makeTract'});
 
     % This is a command that could be used to install some default colormaps
     % that will show up when you do /Edit/Overlay
     %mlrAdjustGUI(v,'add','colormap','gray');
-
-    % This is a command that could be used to set a property of an existing menu item
-    %mlrAdjustGUI(v,'set','Plots/Mean Time Series','Separator','on');
 
     % return true to indicate successful plugin
     retval = true;
@@ -45,7 +53,7 @@ switch action
  case {'help','h','?'}
    retval = 'This is an example plugin, it just installs a menu item to Select Plugins.';
  otherwise
-   disp(sprintf('(DefaultPlugin) Unknown command %s',action));
+   disp(sprintf('(mlrLifePlugin) Unknown command %s',action));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -319,3 +327,97 @@ v = viewSet(v,'newBase',fascicleBase);
 refreshMLRDisplay(v);
 
 keyboard
+
+%%%%%%%%%%%%%%%%%%%%
+%    baseChange    %
+%%%%%%%%%%%%%%%%%%%%
+function v = mlrLifeBaseChange(v)
+
+% get control
+baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
+
+% get current base names
+baseNames = viewGet(v,'baseNames');
+
+% no bases
+if isempty(baseNames)
+  % set its values
+  set(baseListbox,'String','');
+
+  % and set which ones are selected
+  set(baseListbox,'Value',[]);
+  return
+end
+  
+% get the curBase and what type it is
+curBase = viewGet(v,'curBase');
+curBaseType = viewGet(v,'baseType');
+curBaseName = viewGet(v,'baseName');
+
+% get the types for everyone
+baseType = [];
+for iBase = 1:viewGet(v,'numBase')
+  baseType(iBase) = viewGet(v,'baseType',iBase);
+end
+    
+% get surfaces
+baseNames = {baseNames{(baseType==2)|(baseType==3)}};
+baseType = baseType((baseType==2)|(baseType==3));
+
+% see which ones need to be selected
+selectedBases = [];displayBases = {};
+for iBase = 1:length(baseNames)
+  % display only ones that are surfaces
+  if baseType(iBase)>=2
+    % other bases have to have baseMultiDisplay set to be selected
+    selectedBases(end+1) = viewGet(v,'baseMultiDisplay',viewGet(v,'baseNum',baseNames{iBase}));
+    displayBases{end+1} = baseNames{iBase};
+  end
+  % always make current base selected
+  if strcmp(baseNames{iBase},curBaseName)
+    selectedBases(end) = 1;
+  end
+end
+
+% set its values
+set(baseListbox,'String',displayBases);
+
+% and set which ones are selected
+set(baseListbox,'Value',find(selectedBases));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    multiBaseListboxSelect     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function multiBaseListboxSelect(hObject,eventdata)
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% get control
+baseListbox = hObject;
+
+% get current selection
+selectedBases = get(baseListbox,'Value');
+
+% get baseNames
+baseNames = get(baseListbox,'String');
+
+% if the curBase is not selected anymore, then we need
+% to change the curBase to one that is selected
+curBaseName = viewGet(v,'baseName');
+if ~any(find(strcmp(baseNames,curBaseName)) == selectedBases)
+  v = viewSet(v,'curBase',viewGet(v,'baseNum',baseNames{first(selectedBases)}));
+end
+
+% change the baseMultiDisplay property accordingly
+for iBase = 1:length(baseNames)
+  if any(iBase==selectedBases)
+    v = viewSet(v,'baseMultiDisplay',true,viewGet(v,'baseNum',baseNames{iBase}));
+  else
+    v = viewSet(v,'baseMultiDisplay',false,viewGet(v,'baseNum',baseNames{iBase}));
+  end
+end
+
+% refresh the display 
+refreshMLRDisplay(viewGet(v,'viewNum'));
+

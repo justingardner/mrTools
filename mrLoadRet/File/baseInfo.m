@@ -31,6 +31,9 @@ baseType = viewGet(v,'baseType');
 base2tal = viewGet(v,'base2tal');
 vol2mag = viewGet(v,'baseVol2mag');
 vol2tal = viewGet(v,'baseVol2tal');
+baseAlpha = viewGet(v,'baseAlpha');
+baseMultiDisplay = viewGet(v,'baseMultiDisplay');
+baseDisplayOverlay = viewGet(v,'baseDisplayOverlay');
 
 % set parameters
 paramsInfo = {};
@@ -46,6 +49,9 @@ paramsInfo{end+1} = {'clip',baseClip,'editable=0','Clip values for display'};
 paramsInfo{end+1} = {'range',baseRange,'editable=0','Range of values in anatomy image'};
 paramsInfo{end+1} = {'gamma',baseGamma,'editable=0','Gamma for display'};
 paramsInfo{end+1} = {'baseType',baseType,'editable=0','Type of base. 0 = inplane. 1 = flat. 2 = surface'};
+paramsInfo{end+1} = {'baseAlpha',baseAlpha,'editable=0','Alpha value with which this base will be drawn'};
+paramsInfo{end+1} = {'baseDisplayOverlay',baseDisplayOverlay,'editable=0','Whether this base will display overlays - this is useful sometimes for fascicles and other bases that may not need to be shown with an overlay'};
+paramsInfo{end+1} = {'baseMultiDisplay',baseMultiDisplay,'editable=0','Toggles whether this base will be shown with other bases at the same time - like when you show fascicles with a cortical surface at the same time'};
 
 % add baseCoordMap info for flat files
 if baseType == 1

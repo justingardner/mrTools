@@ -99,16 +99,18 @@ switch command
     case {'colormap','colormaps'}
      addColormap(v,varargin{2},verbose);
     case {'control'}
-     addControl(f,{varargin{2:end}},uiControls,verbose);
+     addControl(f,{varargin{2:end}},uiControls,v,verbose);
     case {'axes'}
      addAxes(f,{varargin{2:end}},plotAxes,verbose);
+    case {'panel'}
+     addPanel(f,{varargin{2:end}},v,verbose);
     otherwise
       mrWarnDlg(['(mlrAdjustGUI) Unknow object type ' varargin{1}]);
   end
  case {'remove'}
   switch varargin{1}
     case {'menu'}
-     removeMenu(varargin(2),menuControls,verbose);
+     removeMenu(varargin{2},menuControls,verbose);
   end
  case {'get'}
   % return handle, check menu items and ui controls
@@ -214,7 +216,7 @@ if verbose, disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimi
 %%%%%%%%%%%%%%%%%%%%%
 %%%   addControl  %%%
 %%%%%%%%%%%%%%%%%%%%%
-function addControl(f,args,uiControls,verbose)
+function addControl(f,args,uiControls,v,verbose)
 
 % check length of arguments
 if length(args) < 1
@@ -230,6 +232,23 @@ else
   end
 end
 
+% check for panel
+panelHandle = [];
+for iArg = 1:2:length(controlProperties)
+  if strcmp(lower(controlProperties{iArg}),'panel')
+    % get panel name
+    panelName = controlProperties{iArg+1};
+    % ge tpanel handle
+    panelHandle = viewGet(v,'panelHandle',panelName);
+    if isempty(panelHandle)
+      disp(sprintf('(mlrAdjustGUI) Could not find panel: %s',panelName));
+    end
+    % remove panel from controlProperties
+    controlProperties = {controlProperties{1:iArg-1} controlProperties{iArg+2:end}};
+    break;
+  end
+end
+
 % check to see if it has already been added
 if ~isempty(getHandle(controlTag,uiControls))
   disp(sprintf('(mlrAdjustGUI:addControl) Already added menu item: %s',controlTag));
@@ -239,7 +258,13 @@ end
 % get the gui data
 h = guidata(f);
 
-h.(controlTag)=uicontrol(f);
+if ~isempty(panelHandle)
+  % add to panel
+  h.(controlTag)=uicontrol(f,'Parent',panelHandle);
+else
+  % add to main GUI
+  h.(controlTag)=uicontrol(f);
+end
 set(h.(controlTag),'unit','normalized');
 % add all the properties
 for i = 1:2:length(controlProperties)
@@ -247,6 +272,72 @@ for i = 1:2:length(controlProperties)
 end
 
 guidata(f,h);
+
+%%%%%%%%%%%%%%%%%%%
+%%%   addPanel  %%%
+%%%%%%%%%%%%%%%%%%%
+function addPanel(f,args,v,verbose)
+
+% first argument is panel name
+if length(args)>1
+  panelName = args{1};
+else
+  % default panel name
+  panelName = 'Default panel';
+end
+
+% second argument should be percent size
+% which is the height (in percent of the
+% full figure height) - panels will get stuck
+% on to the right hand side of the figure.
+if length(args)>=2
+  percentSize = args{2};
+  if ~isnumeric(percentSize) || (length(percentSize)~=1) || (percentSize<0) || (percentSize>1)
+    disp(sprintf('(mlrAdjustGUI) Panel must specify a percent size between 0 and 1'));
+    return
+  end
+else
+  % default to 25% percentSize
+  percentSize = .25;
+end
+
+% check if this is the first panel, just so we can decide
+% whether to put a separator above the menu item
+mrGlobals;
+if ~isfield(MLR,'panels') || (length(MLR.panels) == 0)
+  separator = 'on';
+else
+  separator = 'off';
+end
+
+% add an invisible panel of the appropriate size to the GUI
+mlrGuiSet(v,'addPanel',panelName,percentSize);
+% add a menu item that allows you to turn on and off the panel
+mlrAdjustGUI(v,'add','menu',panelName,'/View/Remove All Overlays','Callback',@mlrAdjustGUIPanel,'Checked','on','separator',separator);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAdjustGUIPanel    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAdjustGUIPanel(hObject,eventdata)
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% get panelName
+panelName = get(hObject,'Label');
+
+% Check if we are on or off
+if strcmp(get(hObject,'Checked'),'on')
+  % hide panel
+  mlrGuiSet(v,'hidePanel',panelName);
+  % turn off check
+  mlrAdjustGUI(v,'set',panelName,'Checked','off');
+else
+  % dispaly panel
+  mlrGuiSet(v,'dispPanel',panelName);
+  % turn off check
+  mlrAdjustGUI(v,'set',panelName,'Checked','on');
+end
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%   addAxes  %%%

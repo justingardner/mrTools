@@ -1,7 +1,7 @@
 
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
-% $Id$
+% $Id: mrLoadRetGUI.m 2962 2014-09-11 22:04:32Z justin $
 %
 % Creates a new mrLoadRet GUI.
 % This function was created along with mrLoadRetGui.fig using GUIDE.
@@ -103,6 +103,41 @@ function axis_ButtonDownFcn(hObject, eventdata, handles)
 function figure_ButtonDownFcn(hObject, eventdata, handles)
 
 function figure_WindowButtonDownFcn(hObject, eventdata, handles)
+
+% get the view
+v = viewGet(handles.viewNum,'view');
+
+curSliceOrientation = viewGet(v,'sliceOrientation');
+
+% see if we are displaying a base and are displaying all planes
+if (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+  for iAxis = 1:3
+    v = viewSet(v,'sliceOrientation',iAxis);
+    base = viewGet(v,'baseCache');
+    % check if we are in bounds on any axis
+    currentPoint = get(handles.sliceAxis(iAxis),'CurrentPoint');
+    xLim = get(handles.sliceAxis(iAxis),'xLim');
+    % get the x,y point
+    mouseX = round(currentPoint(1,1));
+    mouseY = round(xLim(2)-currentPoint(1,2));
+    % convert mouse to base.coords
+    if (mouseX>0) && (mouseX<=size(base.coords,1)) && (mouseY>0) && (mouseY<=size(base.coords,2))
+      xBase = base.coords(mouseX,mouseY,1);
+      yBase = base.coords(mouseX,mouseY,2);
+      sBase = base.coords(mouseX,mouseY,3);
+      disp(sprintf('%i: (%i %i) -> (%i, %i, %i)',iAxis,mouseX,mouseY,xBase,yBase,sBase));
+      % if we are here, then change coords appropriately
+      % to redisplay base
+      handles.coords = [xBase yBase sBase];
+      % set the change in coords
+      guidata(viewGet(v,'figNum'),handles);
+      % and display
+      refreshMLRDisplay(viewGet(v,'viewNum'));
+    end
+  end
+  v = viewSet(v,'sliceOrientation',curSliceOrientation);
+end
+
 
 % --------------------------------------------------------------------
 % Resize
