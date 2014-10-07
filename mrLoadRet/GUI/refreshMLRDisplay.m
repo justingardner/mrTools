@@ -64,20 +64,14 @@ if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
   set(gui.sliceAxis(2),'Position',pos2);set(gui.sliceAxis(2),'Visible','on');cla(gui.sliceAxis(2));
   set(gui.sliceAxis(3),'Position',pos3);set(gui.sliceAxis(3),'Visible','on');cla(gui.sliceAxis(3));
 
-  % now display on these axis
-  curOrientation = viewGet(view,'sliceOrientation');
+  curCoords = viewGet(view,'curCoords');
   for iSliceOrientation = 1:3
-    % set the orientation
-    view = viewSet(view,'sliceOrientation',iSliceOrientation);
-    % draw the image
-    if iSliceOrientation == curOrientation
-      % if this is the "real" orientation, then return the correct stuff
-      [view img base roi overlays] = dispBase(gui.sliceAxis(iSliceOrientation),view,baseNum,gui,true,verbose);
-    else
-      dispBase(gui.sliceAxis(iSliceOrientation),view,baseNum,gui,false,verbose);
-    end
+    % get slice to display
+    baseRawSlice = viewGet(view,'baseRawSlice',iSliceOrientation,curCoords(iSliceOrientation));
+    cla(gui.sliceAxis(iSliceOrientation));
+    imagesc(baseRawSlice,'Parent',gui.sliceAxis(iSliceOrientation));
+    colormap(gray);
   end
-  view = viewSet(view,'sliceOrientation',curOrientation);
 else
   set(gui.axis,'Position',gui.anatPosition);
   % remove the other axis

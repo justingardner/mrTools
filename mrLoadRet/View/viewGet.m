@@ -1626,6 +1626,39 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).curSlice;
     end
+  case {'baserawslice'}
+    % baseRawSlice = viewGet(view,'baseRawSlice',orientation,sliceNum,[baseNum])
+    % used to get the raw slice from the base (that is, not applying
+    % any rotation that the user has set).
+    if length(varargin) < 2
+      disp(sprintf('(viewGet:baseRawSlice) Must specify orientation and sliceNum'));
+      return
+    end
+    orientation = varargin{1};
+    sliceNum = varargin{2};
+    b = getBaseNum(view,varargin,3);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      if any(orientation==[1 2 3])
+	baseDims = size(view.baseVolumes(b).data);
+	if (sliceNum>=1) && (sliceNum<=baseDims(orientation))
+	  switch(orientation)
+	    case {1}
+	     val = squeeze(view.baseVolumes(b).data(sliceNum,:,:));
+	    case {2}
+	     val = squeeze(view.baseVolumes(b).data(:,sliceNum,:));
+	    case {3}
+	     val = squeeze(view.baseVolumes(b).data(:,:,sliceNum));
+	  end
+	else
+	  disp(sprintf('(viewGet:baseRawSlice) sliceNum: %i out of range',sliceNum));
+	end
+      else
+	disp(sprintf('(viewGet:baseRawSlice) orientation: %i out of range',orientation));
+      end
+    else
+      disp(sprintf('(viewGet:baseRawSlice) baseNum: %i out of range',b));
+    end
   case {'basecorticaldepth'}
     % baseslice = viewGet(view,'baseCorticalDepth',[baseNum])
     b = getBaseNum(view,varargin);

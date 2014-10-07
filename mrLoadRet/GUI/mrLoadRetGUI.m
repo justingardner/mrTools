@@ -106,38 +106,39 @@ function figure_WindowButtonDownFcn(hObject, eventdata, handles)
 
 % get the view
 v = viewGet(handles.viewNum,'view');
-
-curSliceOrientation = viewGet(v,'sliceOrientation');
+      disp(sprintf('[%i %i %i]',handles.coords(1),handles.coords(2),handles.coords(3)))
 
 % see if we are displaying a base and are displaying all planes
 if (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
-  for iAxis = 1:3
-    v = viewSet(v,'sliceOrientation',iAxis);
-    base = viewGet(v,'baseCache');
-    % check if we are in bounds on any axis
-    currentPoint = get(handles.sliceAxis(iAxis),'CurrentPoint');
-    xLim = get(handles.sliceAxis(iAxis),'xLim');
-    % get the x,y point
-    mouseX = round(currentPoint(1,1));
-    mouseY = round(xLim(2)-currentPoint(1,2));
-    % convert mouse to base.coords
-    if (mouseX>0) && (mouseX<=size(base.coords,1)) && (mouseY>0) && (mouseY<=size(base.coords,2))
-      xBase = base.coords(mouseX,mouseY,1);
-      yBase = base.coords(mouseX,mouseY,2);
-      sBase = base.coords(mouseX,mouseY,3);
-      disp(sprintf('%i: (%i %i) -> (%i, %i, %i)',iAxis,mouseX,mouseY,xBase,yBase,sBase));
+ for iAxis = 1:3
+   % get current mouse position
+   currentPoint = get(handles.sliceAxis(iAxis),'CurrentPoint');
+   % get limits on axis
+   xLim = get(handles.sliceAxis(iAxis),'xLim');
+   yLim = get(handles.sliceAxis(iAxis),'yLim');
+   % get the x,y point
+   mouseX = round(currentPoint(1,1));
+   mouseY = round(currentPoint(1,2));
+   % see if we are in bounds
+    if (mouseX>0) && (mouseX<=xLim(2)) && (mouseY>0) && (mouseY<=yLim(2))
+      disp(sprintf('%i: (%i %i)',iAxis,mouseX,mouseY));
       % if we are here, then change coords appropriately
       % to redisplay base
-      handles.coords = [xBase yBase sBase];
+      if iAxis==1
+	 handles.coords([3 2]) = [mouseX mouseY];
+      elseif iAxis==2
+	 handles.coords([3 1]) = [mouseX mouseY];
+      elseif iAxis==3
+	 handles.coords([2 1]) = [mouseX mouseY];
+      end
       % set the change in coords
       guidata(viewGet(v,'figNum'),handles);
       % and display
       refreshMLRDisplay(viewGet(v,'viewNum'));
-    end
-  end
-  v = viewSet(v,'sliceOrientation',curSliceOrientation);
+      disp(sprintf('[%i %i %i]',handles.coords(1),handles.coords(2),handles.coords(3)))
+   end
+ end
 end
-
 
 % --------------------------------------------------------------------
 % Resize
