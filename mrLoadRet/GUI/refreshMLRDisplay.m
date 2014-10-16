@@ -65,7 +65,9 @@ else
   % set the gui to display only a single axis
   mlrGuiSet(view,'multiAxis','off');
   % just draw a single base
-  [view img base roi overlays] = dispBase(gui.axis,view,baseNum,gui,true,verbose);
+  [view img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,view,baseNum,gui,true,verbose,[],[]);
+  % keep cursliceBaseCoords
+  view = viewSet(view,'cursliceBaseCoords',curSliceBaseCoords);
 end
 
 axes(gui.axis);
@@ -76,7 +78,7 @@ if (baseType >= 2) || ((baseType == 0) && isequal(true,mrGetPref('dispAllPlanesO
   for iBase = setdiff(1:viewGet(view,'numBase'),baseNum)
     if viewGet(view,'baseType',iBase)>=2
       if viewGet(view,'baseMultiDisplay',iBase)
-	dispBase(gui.axis,view,iBase,gui,false,verbose);
+	dispBase(gui.axis,view,iBase,gui,false,verbose,[],[]);
       end
     end
   end
@@ -106,7 +108,7 @@ set(fig,'Pointer','arrow');
 %%%%%%%%%%%%%%%%%%
 %    dispBase    %
 %%%%%%%%%%%%%%%%%%
-function [view img base roi overlays] = dispBase(hAxis,view,baseNum,gui,isMainBase,verbose)
+function [view img base roi overlays curSliceBaseCoords] = dispBase(hAxis,view,baseNum,gui,dispColorbar,verbose,rotate,sliceIndex)
 
 % slight hack here - we set the current base to draw
 % each base since that is the way refreshMLRDisplay used
@@ -122,8 +124,12 @@ view = viewSet(view,'curBase',baseNum);
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
 if verbose>1,disppercent(-inf,'viewGet');,end
 slice = viewGet(view,'curslice');
-rotate = viewGet(view,'rotate');
-sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+if isempty(rotate)
+  rotate = viewGet(view,'rotate');
+end
+if isempty(sliceIndex)
+  sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+end
 baseType = viewGet(view,'baseType',baseNum);
 baseGamma = viewGet(view,'baseGamma',baseNum);
 if verbose>1,disppercent(inf);,end
@@ -156,13 +162,9 @@ if size(base.coords,4)>1
   corticalDepthBins = viewGet(view,'corticalDepthBins');
   corticalDepths = 0:1/(corticalDepthBins-1):1;
   slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
-  if isMainBase
-    view = viewSet(view,'cursliceBaseCoords',mean(base.coords(:,:,:,slices),4));
-  end
+  curSliceBaseCoords = mean(base.coords(:,:,:,slices),4);
 else
-  if isMainBase
-    view = viewSet(view,'cursliceBaseCoords',base.coords);
-  end
+  curSliceBaseCoords = base.coords;
 end
 
 
@@ -172,7 +174,6 @@ end
 % because actual blending occurs after they're separately computed
 if verbose,disppercent(-inf,'extract overlays images');end
 overlays = viewGet(view,'overlayCache');
-keyboard
 if isempty(overlays)
   % get the transform from the base to the scan
   base2scan = viewGet(view,'base2scan',[],[],baseNum);
@@ -291,7 +292,7 @@ axis(hAxis,'image');
 if verbose>1,disppercent(inf);,end
 
 % Display colorbar
-if isMainBase
+if dispColorbar
   if verbose>1,disppercent(-inf,'colorbar');,end
   cbar = permute(NaN(size(cmap)),[3 1 2]);
   for iOverlay = 1:size(cmap,3)
