@@ -56,13 +56,6 @@ gui.sliceAxis(3) = subplot('Position',[0.02 0.02 0.01 0.01],'Parent',fig);
 axis(gui.sliceAxis(3),'off');
 set(gui.sliceAxis(3),'ButtonDownFcn',@sliceAxisButtonDown);
 
-% create the locations for the 3 axis
-gui.anatMultiPosition(1,:) = 
-  pos3 = gui.anatPosition; pos3(3) = (pos3(3)-gui.marginSize)/2;pos3(4) = (pos3(4)-gui.marginSize)/2;
-  pos2 = pos3;pos2(2) = pos2(2)+(gui.anatPosition(4)+gui.marginSize)/2;
-  pos1 = pos2;pos1(1) = pos1(1)+(gui.anatPosition(3)+gui.marginSize)/2;
-  pos4 = pos3;pos4(1) = pos1(1);
-
 % save the axis handles
 guidata(fig,gui);
 

@@ -333,7 +333,33 @@ switch lower(field)
   if isfield(handles,'clipAcrossOverlays') 
     set(handles.clipAcrossOverlays,'value',value)
   end
-  
+
+ case {'multiaxis'}
+  if strcmp(value,'on')
+    % create the locations for the 3 axis
+    handles.anatMultiPosition(3,:) = handles.anatPosition;
+    handles.anatMultiPosition(3,3) = (handles.anatMultiPosition(3,3)-handles.marginSize)/2;
+    handles.anatMultiPosition(3,4) = (handles.anatMultiPosition(3,4)-handles.marginSize)/2;
+    handles.anatMultiPosition(2,:) = handles.anatMultiPosition(3,:);
+    handles.anatMultiPosition(2,2) = handles.anatMultiPosition(2,2)+(handles.anatPosition(4)+handles.marginSize)/2;
+    handles.anatMultiPosition(1,:) = handles.anatMultiPosition(2,:);
+    handles.anatMultiPosition(1,1) = handles.anatMultiPosition(1,1)+(handles.anatPosition(3)+handles.marginSize)/2;
+    handles.anatMultiPosition(4,:) = handles.anatMultiPosition(3,:);
+    handles.anatMultiPosition(4,1) = handles.anatMultiPosition(1,1);
+    % set the regular window to the bottom right
+    set(handles.axis,'Position',handles.anatMultiPosition(4,:));
+    % display the axis and clear
+    set(handles.sliceAxis(1),'Position',handles.anatMultiPosition(1,:));set(handles.sliceAxis(1),'Visible','on');cla(handles.sliceAxis(1));axis(handles.sliceAxis(1),'off');
+    set(handles.sliceAxis(2),'Position',handles.anatMultiPosition(2,:));set(handles.sliceAxis(2),'Visible','on');cla(handles.sliceAxis(2));axis(handles.sliceAxis(2),'off');
+    set(handles.sliceAxis(3),'Position',handles.anatMultiPosition(3,:));set(handles.sliceAxis(3),'Visible','on');cla(handles.sliceAxis(3));axis(handles.sliceAxis(3),'off');
+  else
+    % set the regular window to the normal position
+    set(handles.axis,'Position',handles.anatPosition);
+    % clear and hide the other axes
+    cla(handles.sliceAxis(1),'reset');set(handles.sliceAxis(1),'Visible','off');
+    cla(handles.sliceAxis(2),'reset');set(handles.sliceAxis(2),'Visible','off');
+    cla(handles.sliceAxis(3),'reset');set(handles.sliceAxis(3),'Visible','off');
+  end
  case {'clippingoverlays'}
   % mlrGuiSet(view,'clippingOverlays',overlayList);
   overlayList=value;

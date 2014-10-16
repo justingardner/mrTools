@@ -30,7 +30,9 @@ switch action
     mlrAdjustGUI(v,'add','panel','Multiple base display',.5);
     % add the list box that displays base images
     mlrAdjustGUI(v,'add','control','multiBaseListboxText','panel','Multiple base display','style','text','position', [0.02    0.92    0.96   0.06 ],'string','Multi-view bases:','HorizontalAlignment','Left');
-    mlrAdjustGUI(v,'add','control','multiBaseListbox','panel','Multiple base display','style','listbox','position', [0.02    0.5    0.96   0.40 ],'Callback',@multiBaseListboxSelect,'Max',2);
+    mlrAdjustGUI(v,'add','control','multiBaseListbox','panel','Multiple base display','style','listbox','position', [0.02    0.5    0.96   0.45 ],'Callback',@multiBaseListboxSelect,'Max',2);
+    mlrAdjustGUI(v,'add','control','roiBaseListBox','panel','Multiple base display','style','listbox','position', [0.02    0.1    0.96   0.38 ],'Callback',@roiListboxSelect,'Max',2);
+
     % add the callback that will tell the above listbox when new
     % bases have been added
     v = viewSet(v,'callback','baseChange',@mlrLifeBaseChange);
@@ -421,3 +423,16 @@ end
 % refresh the display 
 refreshMLRDisplay(viewGet(v,'viewNum'));
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    roiListboxSelect     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function roiListboxSelect(hObject,eventdata)
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% get control
+roiListbox = hObject;
+
+% get current selection
+selectedBases = get(roiListbox,'Value');

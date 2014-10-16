@@ -52,34 +52,18 @@ if verbose>1,disppercent(inf);,end
 % check if these are inplanes (not flats or surfaces)
 % and see if we should draw all three possible views
 if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
-  % create the locations for the 3 axis
-  pos3 = gui.anatPosition; pos3(3) = (pos3(3)-gui.marginSize)/2;pos3(4) = (pos3(4)-gui.marginSize)/2;
-  pos2 = pos3;pos2(2) = pos2(2)+(gui.anatPosition(4)+gui.marginSize)/2;
-  pos1 = pos2;pos1(1) = pos1(1)+(gui.anatPosition(3)+gui.marginSize)/2;
-  pos4 = pos3;pos4(1) = pos1(1);
-  % set the regular window to the bottom right
-  set(gui.axis,'Position',pos4);
-  % display the axis and clear
-  set(gui.sliceAxis(1),'Position',pos1);set(gui.sliceAxis(1),'Visible','on');cla(gui.sliceAxis(1));
-  set(gui.sliceAxis(2),'Position',pos2);set(gui.sliceAxis(2),'Visible','on');cla(gui.sliceAxis(2));
-  set(gui.sliceAxis(3),'Position',pos3);set(gui.sliceAxis(3),'Visible','on');cla(gui.sliceAxis(3));
-
+  mlrGuiSet(view,'multiAxis','on');
   curCoords = viewGet(view,'curCoords');
   for iSliceOrientation = 1:3
     % get slice to display
     baseRawSlice = viewGet(view,'baseRawSlice',iSliceOrientation,curCoords(iSliceOrientation));
-    cla(gui.sliceAxis(iSliceOrientation));
-    imagesc(baseRawSlice,'Parent',gui.sliceAxis(iSliceOrientation));
-    colormap(gray);
+    imagesc(flipud(baseRawSlice'),'Parent',gui.sliceAxis(iSliceOrientation));
+    colormap(gui.sliceAxis(iSliceOrientation),gray);
+    axis(gui.sliceAxis(iSliceOrientation),'off');
   end
 else
-  set(gui.axis,'Position',gui.anatPosition);
-  % remove the other axis
-  if isfield(gui,'sliceAxis')
-    cla(gui.sliceAxis(1),'reset');set(gui.sliceAxis(1),'Visible','off');
-    cla(gui.sliceAxis(2),'reset');set(gui.sliceAxis(2),'Visible','off');
-    cla(gui.sliceAxis(3),'reset');set(gui.sliceAxis(3),'Visible','off');
-  end
+  % set the gui to display only a single axis
+  mlrGuiSet(view,'multiAxis','off');
   % just draw a single base
   [view img base roi overlays] = dispBase(gui.axis,view,baseNum,gui,true,verbose);
 end
@@ -188,6 +172,7 @@ end
 % because actual blending occurs after they're separately computed
 if verbose,disppercent(-inf,'extract overlays images');end
 overlays = viewGet(view,'overlayCache');
+keyboard
 if isempty(overlays)
   % get the transform from the base to the scan
   base2scan = viewGet(view,'base2scan',[],[],baseNum);
@@ -336,7 +321,7 @@ end
 nROIs = viewGet(view,'numberOfROIs');
 if nROIs
   %  if baseType <= 1
-  roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+  roi = displayROIs(view,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
   %  end
 else
   roi = [];
@@ -451,7 +436,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 %%   displayROIs   %%
 %%%%%%%%%%%%%%%%%%%%%
-function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
+function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
 %
 % displayROIs: draws the ROIs in the current slice.
 %
