@@ -203,7 +203,7 @@ switch lower(field)
   newDims = value;
   newCoords = min(handles.coords,newDims);
   handles.coords = min(handles.coords,newCoords);
-  keyboard
+ 
  case {'basegamma'}
   % mlrGuiSet(view,'baseGamma',value);
   set(handles.baseGammaSlider,'Value',value);
