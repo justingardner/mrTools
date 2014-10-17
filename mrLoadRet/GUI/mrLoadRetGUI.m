@@ -118,20 +118,16 @@ if (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatom
    % get the x,y point
    mouseX = round(currentPoint(1,1));
    mouseY = round(currentPoint(1,2));
-   % convert that to x,y for multiAxis we are always
-   % transposing and y-flipping so account for that
-   x = round((yLim(2)-mouseY));
-   y = mouseX;
    % see if we are in bounds
-    if (x>0) && (x<=yLim(2)) && (y>0) && (y<=xLim(2))
+    if (mouseX>0) && (mouseX<=xLim(2)) && (mouseY>0) && (mouseY<=yLim(2))
       % if we are here, then change coords appropriately
       % to redisplay base
       if iAxis==1
-	 handles.coords([3 2]) = [x y];
+	 handles.coords([3 2]) = [mouseX mouseY];
       elseif iAxis==2
-	 handles.coords([3 1]) = [x y];
+	 handles.coords([3 1]) = [mouseX mouseY];
       elseif iAxis==3
-	 handles.coords([2 1]) = [x y];
+	 handles.coords([2 1]) = [mouseX mouseY];
       end
       % set the change in coords
       guidata(viewGet(v,'figNum'),handles);

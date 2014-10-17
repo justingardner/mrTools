@@ -54,18 +54,36 @@ if verbose>1,disppercent(inf);,end
 if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
   mlrGuiSet(view,'multiAxis','on');
   curCoords = viewGet(view,'curCoords');
-  for iSliceOrientation = 1:3
+  for iSliceIndex = 1:3
+    [view img{iSliceIndex} base roi overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),view,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
     % get slice to display
-    baseRawSlice = viewGet(view,'baseRawSlice',iSliceOrientation,curCoords(iSliceOrientation));
-    imagesc(flipud(baseRawSlice'),'Parent',gui.sliceAxis(iSliceOrientation));
-    colormap(gui.sliceAxis(iSliceOrientation),gray);
-    axis(gui.sliceAxis(iSliceOrientation),'off');
+%    baseRawSlice = viewGet(view,'baseRawSlice',iSliceOrientation,curCoords(iSliceOrientation));
+%    imagesc(flipud(baseRawSlice'),'Parent',gui.sliceAxis(iSliceOrientation));
+%    colormap(gui.sliceAxis(iSliceOrientation),gray);
+%    axis(gui.sliceAxis(iSliceOrientation),'off');
   end
+  % now draw the 3D intersection
+  baseDims = viewGet(view,'baseDims',baseNum);
+
+  [x y] = meshgrid(1:baseDims(1),1:baseDims(2));
+  imgSurface = surf(gui.axis,x,y,ones(size(x,1),size(x,2))*curCoords(3));
+  set(imgSurface,'CData',permute(img{3},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+  hold(gui.axis,'on');
+  
+  [x z] = meshgrid(1:baseDims(1),1:baseDims(3));
+  imgSurface = surf(gui.axis,x,ones(size(x,1),size(x,2))*curCoords(2),z);
+  set(imgSurface,'CData',permute(img{2},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+
+  [y z] = meshgrid(1:baseDims(2),1:baseDims(3));
+  imgSurface = surf(gui.axis,ones(size(y,1),size(y,2))*curCoords(1),y,z);
+  set(imgSurface,'CData',permute(img{1},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+
+  axis(gui.axis,'off');
 else
   % set the gui to display only a single axis
   mlrGuiSet(view,'multiAxis','off');
   % just draw a single base
-  [view img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,view,baseNum,gui,true,verbose,[],[]);
+  [view img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,view,baseNum,gui,true,verbose);
   % keep cursliceBaseCoords
   view = viewSet(view,'cursliceBaseCoords',curSliceBaseCoords);
 end
@@ -78,7 +96,7 @@ if (baseType >= 2) || ((baseType == 0) && isequal(true,mrGetPref('dispAllPlanesO
   for iBase = setdiff(1:viewGet(view,'numBase'),baseNum)
     if viewGet(view,'baseType',iBase)>=2
       if viewGet(view,'baseMultiDisplay',iBase)
-	dispBase(gui.axis,view,iBase,gui,false,verbose,[],[]);
+	dispBase(gui.axis,view,iBase,gui,false,verbose);
       end
     end
   end
@@ -108,7 +126,8 @@ set(fig,'Pointer','arrow');
 %%%%%%%%%%%%%%%%%%
 %    dispBase    %
 %%%%%%%%%%%%%%%%%%
-function [view img base roi overlays curSliceBaseCoords] = dispBase(hAxis,view,baseNum,gui,dispColorbar,verbose,rotate,sliceIndex)
+function [v img base roi overlays curSliceBaseCoords] = dispBase(hAxis,v,baseNum,gui,dispColorbar,verbose,sliceIndex,slice)
+
 
 % slight hack here - we set the current base to draw
 % each base since that is the way refreshMLRDisplay used
@@ -116,50 +135,59 @@ function [view img base roi overlays curSliceBaseCoords] = dispBase(hAxis,view,b
 % needs to display any base that is asked for, so we 
 % do that by temporarily making whatever base is is that
 % we wish to draw the curBase.
-curBase = viewGet(view,'curBase');
-view = viewSet(view,'curBase',baseNum);
+curBase = viewGet(v,'curBase');
+v = viewSet(v,'curBase',baseNum);
 
 % Get current view and baseNum.
 % Get interp preferences.
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
 if verbose>1,disppercent(-inf,'viewGet');,end
-slice = viewGet(view,'curslice');
-if isempty(rotate)
-  rotate = viewGet(view,'rotate');
+% get variables for current base, but only if they are not set in input 
+% if the arguments sliceIndex and slice are set it means we are being
+% called to do a "mutliAxis" plot -one in which we are plotting each
+% different slice plan in a different axis. For these rotate is going
+% to always be 0 since we don't allow that option (it's slow and unnecessary
+% and also makes getting the mouse coordinates harder). Also, now that
+% volumes with a proper nifti get loaded up in the proper orientation
+% it should no longer be necessary to actually rotate images
+if nargin < 7
+  slice = viewGet(v,'curslice');
+  rotate = viewGet(v,'rotate');
+  sliceIndex = viewGet(v,'baseSliceIndex',baseNum);
+else
+  rotate = 0;
 end
-if isempty(sliceIndex)
-  sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
-end
-baseType = viewGet(view,'baseType',baseNum);
-baseGamma = viewGet(view,'baseGamma',baseNum);
+baseType = viewGet(v,'baseType',baseNum);
+baseGamma = viewGet(v,'baseGamma',baseNum);
 if verbose>1,disppercent(inf);,end
 
 % Compute base coordinates and extract baseIm for the current slice
 if verbose,disppercent(-inf,'extract base image');,end
-base = viewGet(view,'baseCache');
+%base = viewGet(v,'baseCache');
+base = [];
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
-    getBaseSlice(view,slice,sliceIndex,rotate,baseNum,baseType);
+    getBaseSlice(v,slice,sliceIndex,rotate,baseNum,baseType);
   base.dims = size(base.im);
 
   % Rescale base volume
   if ~isempty(base.im)
     base.cmap = gray(256);
-    base.clip = viewGet(view,'baseClip',baseNum);
+    base.clip = viewGet(v,'baseClip',baseNum);
     base.RGB = rescale2rgb(base.im,base.cmap,base.clip,baseGamma);
   else
     base.RGB = [];
   end
   % save extracted image
-  view = viewSet(view,'baseCache',base);
+  v = viewSet(v,'baseCache',base);
   if verbose,disppercent(inf);disp('Recomputed base');end
 else
   if verbose,disppercent(inf);end
 end
 
 if size(base.coords,4)>1
-  corticalDepth = viewGet(view,'corticalDepth');
-  corticalDepthBins = viewGet(view,'corticalDepthBins');
+  corticalDepth = viewGet(v,'corticalDepth');
+  corticalDepthBins = viewGet(v,'corticalDepthBins');
   corticalDepths = 0:1/(corticalDepthBins-1):1;
   slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
   curSliceBaseCoords = mean(base.coords(:,:,:,slices),4);
@@ -167,30 +195,29 @@ else
   curSliceBaseCoords = base.coords;
 end
 
-
 % Extract overlays images and overlays coords, and alphaMap
 % right now combinations of overlays are cached as is
 % but it would make more sense to cache them separately
 % because actual blending occurs after they're separately computed
 if verbose,disppercent(-inf,'extract overlays images');end
-overlays = viewGet(view,'overlayCache');
+%overlays = viewGet(v,'overlayCache');
+overlays = [];
 if isempty(overlays)
   % get the transform from the base to the scan
-  base2scan = viewGet(view,'base2scan',[],[],baseNum);
+  base2scan = viewGet(v,'base2scan',[],[],baseNum);
   % compute the overlays
-  overlays = computeOverlay(view,base2scan,base.coordsHomogeneous,base.dims);
+  overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims);
   % save in cache
-  view = viewSet(view,'overlayCache',overlays);
+  v = viewSet(v,'overlayCache',overlays);
   if verbose,disppercent(inf);disp('Recomputed overlays');end
 else
   if verbose,disppercent(inf);end
 end
-view = viewSet(view,'cursliceOverlayCoords',overlays.coords);
+v = viewSet(v,'cursliceOverlayCoords',overlays.coords);
 
 % Combine base and overlays
 if verbose>1,disppercent(-inf,'combine base and overlays');,end
 if ~isempty(base.RGB) & ~isempty(overlays.RGB)
-
   switch(mrGetPref('colorBlending'))
     case 'Alpha blend'
       % alpha blending (non-commutative 'over' operator, each added overlay is another layer on top)
@@ -213,7 +240,6 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       end
       % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
        img = img+(1-alpha).*base.RGB;
-       
   end
   cmap = overlays.cmap;
   cbarRange = overlays.range;
@@ -231,22 +257,22 @@ if verbose>1,disppercent(inf);,end
 
 % If no image at this point then return
 if ieNotDefined('img')
-  view = viewSet(view,'curBase',curBase);
+  v = viewSet(v,'curBase',curBase);
   return
 end
 
 % if no figure, then just return, this is being called just to create the overlays
-fig = viewGet(view,'figNum');
+fig = viewGet(v,'figNum');
 if isempty(fig)
-  nROIs = viewGet(view,'numberOfROIs');
+  nROIs = viewGet(v,'numberOfROIs');
   if nROIs
     %  if baseType <= 1
-    roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(v,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
     %  end
   else
     roi = [];
   end
-  view = viewSet(view,'curBase',curBase);
+  v = viewSet(v,'curBase',curBase);
   return;
 end 
 
@@ -258,10 +284,18 @@ if baseType <= 1
   % renderer. It also appears about 20ms or so
   % faster for displaying images as opposed
   % to the 3D surfaces.
-  set(fig,'Renderer','painters')
-  image(img,'Parent',hAxis);
-  axis(hAxis,'xy');
-  
+  % 
+  % Getting rid of this - to try to rotate the images
+  % using view - which apparently cannot be done
+  % with 2D images. This way we can display
+  % all the images in the correct orientation
+  % without having to manually rotate 270 degrees
+  %  set(fig,'Renderer','painters')
+  %  image(img,'Parent',hAxis);
+  set(fig,'Renderer','OpenGL');
+  imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
+  set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
+  view(hAxis,-90,90);
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms
@@ -269,7 +303,7 @@ else
   % renderer (order of 5-10 ms)
   set(fig,'Renderer','OpenGL')
   % get the base surface
-  baseSurface = viewGet(view,'baseSurface');
+  baseSurface = viewGet(v,'baseSurface');
   % display the surface
   patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis);
   % make sure x direction is normal to make right/right
@@ -283,7 +317,7 @@ else
   % narrow. 9 seems to fit the whole brain nicely
   camva(hAxis,9);
   % set the view angle
-  setMLRViewAngle(view);
+  setMLRViewAngle(v);
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
@@ -319,17 +353,17 @@ if dispColorbar
 end
 
 % Display the ROIs
-nROIs = viewGet(view,'numberOfROIs');
+nROIs = viewGet(v,'numberOfROIs');
 if nROIs
   %  if baseType <= 1
-  roi = displayROIs(view,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
   %  end
 else
   roi = [];
 end
 
 % reset curBase
-view = viewSet(view,'curBase',curBase);
+v = viewSet(v,'curBase',curBase);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
