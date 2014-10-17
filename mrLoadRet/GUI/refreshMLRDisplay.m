@@ -128,7 +128,6 @@ set(fig,'Pointer','arrow');
 %%%%%%%%%%%%%%%%%%
 function [v img base roi overlays curSliceBaseCoords] = dispBase(hAxis,v,baseNum,gui,dispColorbar,verbose,sliceIndex,slice)
 
-
 % slight hack here - we set the current base to draw
 % each base since that is the way refreshMLRDisplay used
 % to work - it defaulted to display the curBase - now it
@@ -163,7 +162,7 @@ if verbose>1,disppercent(inf);,end
 
 % Compute base coordinates and extract baseIm for the current slice
 if verbose,disppercent(-inf,'extract base image');,end
-%base = viewGet(v,'baseCache');
+base = viewGet(v,'baseCache',baseNum,slice,sliceIndex,rotate);
 base = [];
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
@@ -179,9 +178,10 @@ if isempty(base)
     base.RGB = [];
   end
   % save extracted image
-  v = viewSet(v,'baseCache',base);
+  v = viewSet(v,'baseCache',base,baseNum,slice,sliceIndex,rotate);
   if verbose,disppercent(inf);disp('Recomputed base');end
 else
+  disp(sprintf('(refershMLRDisplay) Found base'));
   if verbose,disppercent(inf);end
 end
 
@@ -200,15 +200,14 @@ end
 % but it would make more sense to cache them separately
 % because actual blending occurs after they're separately computed
 if verbose,disppercent(-inf,'extract overlays images');end
-%overlays = viewGet(v,'overlayCache');
-overlays = [];
+overlays = viewGet(v,'overlayCache',baseNum,slice,sliceIndex,rotate);
 if isempty(overlays)
   % get the transform from the base to the scan
   base2scan = viewGet(v,'base2scan',[],[],baseNum);
   % compute the overlays
   overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims);
   % save in cache
-  v = viewSet(v,'overlayCache',overlays);
+  v = viewSet(v,'overlayCache',overlays,baseNum,slice,sliceIndex,rotate);
   if verbose,disppercent(inf);disp('Recomputed overlays');end
 else
   if verbose,disppercent(inf);end
@@ -296,6 +295,7 @@ if baseType <= 1
   imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
   set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
   view(hAxis,-90,90);
+  set(hAxis,'yDir','reverse');
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms

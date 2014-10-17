@@ -2524,13 +2524,32 @@ switch lower(param)
       mrCache('find',MLR.caches{view.viewNum}.roiCache,roiID);
   case{'basecacheid'}
     % cacheID = viewGet(view,'baseCacheID')
-    rotate = viewGet(view,'rotate');
-    baseName = viewGet(view,'curBaseName');
-    currentBase = viewGet(view,'currentBase');
-    clip = viewGet(view,'baseClip',currentBase);
-    gamma = viewGet(view,'baseGamma',currentBase);
-    currentSlice = viewGet(view,'curSlice');
-    sliceIndex = viewGet(view,'baseSliceIndex');
+    % cacheID = viewGet(view,'baseCacheID',baseNum);
+    % cacheID = viewGet(view,'baseCacheID',baseNum,sliceNum);
+    % cacheID = viewGet(view,'baseCacheID',baseNum,sliceNum,sliceIndex);
+    if length(varargin)<1
+      baseNum = viewGet(view,'curBase');
+    else
+      baseNum = varargin{1};
+    end
+    if length(varargin)>=2
+      currentSlice = varargin{2};
+    else
+      currentSlice = viewGet(view,'curSlice');
+    end
+    if length(varargin)>=3
+      sliceIndex = varargin{3};
+    else
+      sliceIndex = viewGet(view,'baseSliceIndex');
+    end
+    if length(varargin)>=4
+      rotate = varargin{4};
+    else
+      rotate = viewGet(view,'rotate');
+    end
+    baseName = viewGet(view,'baseName',baseNum);
+    clip = viewGet(view,'baseClip',baseNum);
+    gamma = viewGet(view,'baseGamma',baseNum);
     % only use the corticalDepth if this is a flat
     if viewGet(view,'baseType')
       corticalDepthBins = viewGet(view,'corticalDepthBins');
@@ -2540,12 +2559,19 @@ switch lower(param)
     val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepthBins);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
-    baseID = viewGet(view,'baseCacheID');
+    % cacheVal = viewGet(view,'baseCache',baseNum)
+    % cacheVal = viewGet(view,'baseCache',baseNum,sliceNum)
+    % cacheVal = viewGet(view,'baseCache',baseNum,sliceNum,sliceIndex)
+    baseID = viewGet(view,'baseCacheID',varargin{:});
     % and retrieve from the cache
     [val MLR.caches{view.viewNum}.baseCache] = ...
       mrCache('find',MLR.caches{view.viewNum}.baseCache,baseID);
   case{'overlaycacheid'}
     % cacheID = viewGet(view,'overlayCacheID')
+    % cacheID = viewGet(view,'overlayCacheID',baseNum)
+    % cacheID = viewGet(view,'overlayCacheID',baseNum,sliceNum)
+    % cacheID = viewGet(view,'overlayCacheID',baseNum,sliceNum,sliceIndex)
+    % cacheID = viewGet(view,'overlayCacheID',baseNum,sliceNum,sliceIndex,rotate)
     %curSlice = viewGet(view,'curSlice');
     %analysisNum = viewGet(view,'currentAnalysis');
     %curOverlay = viewGet(view,'currentOverlay');
@@ -2557,7 +2583,27 @@ switch lower(param)
     val = -1;
     analysisNum = view.curAnalysis;
     if ~isempty(analysisNum)
-      curSlice = viewGet(view,'curSlice');
+      if length(varargin)<1
+	baseNum = viewGet(view,'curBase');
+      else
+	baseNum = varargin{1};
+      end
+      if length(varargin)>=2
+	curSlice = varargin{2};
+      else
+	curSlice = viewGet(view,'curSlice');
+      end
+      if length(varargin)>=3
+	sliceIndex = varargin{3};
+      else
+	sliceIndex = viewGet(view,'baseSliceIndex');
+      end
+      if length(varargin)>=4
+	rotate = varargin{4};
+      else
+	rotate = viewGet(view,'rotate');
+      end
+      baseName = viewGet(view,'baseName',baseNum);
       curOverlay = view.analyses{analysisNum}.curOverlay;
       if ~isempty(curOverlay)
         % get all clips
@@ -2566,16 +2612,13 @@ switch lower(param)
           clip = [clip view.analyses{analysisNum}.overlays(i).clip];
         end
         overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
-        baseName = viewGet(view,'curBaseName');
         scanNum = viewGet(view,'curScan');
-        rotate = viewGet(view,'rotate');
         alpha = viewGet(view,'alpha');
-        sliceIndex = viewGet(view,'baseSliceIndex');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
         % need to recalculate overlay if this is aflat
         % and the cortical depth has changed
-        if viewGet(view,'baseType')
+        if viewGet(view,'baseType',baseNum)
           corticalDepth = viewGet(view,'corticalDepth');
         else
           corticalDepth = 0;
@@ -2587,8 +2630,13 @@ switch lower(param)
     %    val = curSlice*analysisNum*curOverlay;
   case{'overlaycache'}
     % cacheVal = viewGet(view,'overlayCache')
+    % cacheVal = viewGet(view,'overlayCache',baseNum)
+    % cacheVal = viewGet(view,'overlayCache',baseNum,sliceNum)
+    % cacheVal = viewGet(view,'overlayCache',baseNum,sliceNum,sliceIndex)
+    % cacheVal = viewGet(view,'overlayCache',baseNum,sliceNum,sliceIndex,rotate)
+
     % get the overlay ID
-    overlayID = viewGet(view,'overlayCacheID');
+    overlayID = viewGet(view,'overlayCacheID',varargin{:});
     % and retrieve from the cache
     [val MLR.caches{view.viewNum}.overlayCache] = ...
       mrCache('find',MLR.caches{view.viewNum}.overlayCache,overlayID);

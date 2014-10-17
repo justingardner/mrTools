@@ -2035,6 +2035,7 @@ switch lower(param)
     end
   case {'basecache'}
     % view = viewSet(view,'baseCache',basedata);
+    % view = viewSet(view,'baseCache',basedata,{baseNum sliceNum sliceIndex});
     % view = viewSet(view,'baseCache','clear',baseName);
     if isstr(val)
       if strcmp(val,'clear')
@@ -2049,12 +2050,16 @@ switch lower(param)
       end
       % add to the cache
     else
-      baseID = viewGet(view,'baseCacheID');
+      baseID = viewGet(view,'baseCacheID',varargin{:});
       MLR.caches{view.viewNum}.baseCache = ...
         mrCache('add',MLR.caches{view.viewNum}.baseCache,baseID,val);
     end
   case {'overlaycache'}
     % view = viewSet(view,'overlayCache',overlaydata);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum,sliceNum);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum,sliceNum,sliceIndex);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum,sliceNum,sliceIndex,rotate);
     % view = viewSet(view,'overlayCache','clear',overlayName);
     if isstr(val)
       if strcmp(val,'clear')
@@ -2069,7 +2074,7 @@ switch lower(param)
       end
       % add to the cache
     else
-      overlayID = viewGet(view,'overlayCacheID');
+      overlayID = viewGet(view,'overlayCacheID',varargin{:});
       MLR.caches{view.viewNum}.overlayCache = ...
         mrCache('add',MLR.caches{view.viewNum}.overlayCache,overlayID,val);
     end
