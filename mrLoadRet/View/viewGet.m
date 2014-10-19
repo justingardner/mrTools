@@ -3999,8 +3999,17 @@ switch lower(param)
       else
         val = 0;
       end
-    else
+    elseif baseType == 0
       val = 0;
+      % normally does not apply to inplanes, but if we are displaying
+      % all planes of anatomy then it applies to the 3D slice view
+      if isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+	fig = viewGet(view,'fignum');
+	if ~isempty(fig)
+	  handles = guidata(fig);
+	  val = 360-get(handles.rotateSlider,'Value');
+	end
+      end	  
     end
     
   case {'corticaldepthbins'}

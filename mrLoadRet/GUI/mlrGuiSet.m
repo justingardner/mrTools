@@ -117,7 +117,7 @@ switch lower(field)
   
  case {'basetype'}
   % mlrGuiSet(view,'baseType',value);
-  % value = 0 for regular or 1 for flat
+  % value = 0 for regular or 1 for flat, 2 for surface
   if value == 0
     set(handles.sagittalRadioButton,'Visible','on');
     set(handles.coronalRadioButton,'Visible','on');
@@ -352,6 +352,12 @@ switch lower(field)
     set(handles.sliceAxis(1),'Position',handles.anatMultiPosition(1,:));set(handles.sliceAxis(1),'Visible','on');cla(handles.sliceAxis(1));axis(handles.sliceAxis(1),'off');
     set(handles.sliceAxis(2),'Position',handles.anatMultiPosition(2,:));set(handles.sliceAxis(2),'Visible','on');cla(handles.sliceAxis(2));axis(handles.sliceAxis(2),'off');
     set(handles.sliceAxis(3),'Position',handles.anatMultiPosition(3,:));set(handles.sliceAxis(3),'Visible','on');cla(handles.sliceAxis(3));axis(handles.sliceAxis(3),'off');
+    % turn on tilt slider
+    set(handles.rotateSlider,'SliderStep',[15 45]./360);
+    set(handles.baseTiltSlider,'SliderStep',[15 45]./360);
+    set(handles.baseTiltSlider,'Visible','on');
+    set(handles.baseTiltText,'Visible','on');
+    set(handles.baseTilt,'Visible','on');
   else
     % set the regular window to the normal position
     set(handles.axis,'Position',handles.anatPosition);
@@ -359,6 +365,11 @@ switch lower(field)
     cla(handles.sliceAxis(1),'reset');set(handles.sliceAxis(1),'Visible','off');
     cla(handles.sliceAxis(2),'reset');set(handles.sliceAxis(2),'Visible','off');
     cla(handles.sliceAxis(3),'reset');set(handles.sliceAxis(3),'Visible','off');
+    % turn off tilt slider
+    set(handles.rotateSlider,'SliderStep',[1 45]./360);
+    set(handles.baseTiltSlider,'Visible','off');
+    set(handles.baseTiltText,'Visible','off');
+    set(handles.baseTilt,'Visible','off');
   end
  case {'clippingoverlays'}
   % mlrGuiSet(view,'clippingOverlays',overlayList);

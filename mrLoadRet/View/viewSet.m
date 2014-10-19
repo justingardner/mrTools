@@ -779,8 +779,9 @@ switch lower(param)
     numBases = viewGet(view,'numberofBaseVolumes');
     baseType = viewGet(view,'baseType');
     if (curBase > 0) & (curBase <= numBases)
-      % surfaces are the ones that can be tilted.
-      if baseType == 2
+      % surfaces (or 3D's when multiaxis are shown) 
+      % are the ones that can be tilted.
+      if (baseType == 2) || ((baseType==0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy')))
 	view.baseVolumes(curBase).tilt = val;
 	mlrGuiSet(view,'baseTilt',val);
       end

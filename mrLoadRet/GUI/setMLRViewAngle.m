@@ -38,7 +38,7 @@ if baseTilt == 270,baseTilt = 279;end
 view(axisHandle,viewGet(v,'rotateSurface'),-baseTilt);
 
 % change the camera position to avoid the volume
-% flipping back and forth, another starnge matlab thing
+% flipping back and forth, another strange matlab thing
 if (baseTilt > 90) && baseTilt < 270
   camup(axisHandle,[0 0 -1]);
 else

@@ -102,6 +102,40 @@ function axis_ButtonDownFcn(hObject, eventdata, handles)
 
 function figure_ButtonDownFcn(hObject, eventdata, handles)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    windowButtonMotion function    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function figure_WindowButtonMotionFcn(hObject, eventdata, handles)
+
+gui = guidata(hObject);
+v = viewGet([],'view',gui.viewNum);
+if ~isempty(viewGet(v,'curBase')) && (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+  inAxis = 0;
+  for iAxis = 1:3
+    % get current mouse position
+    currentPoint = get(gui.sliceAxis(iAxis),'CurrentPoint');
+    % get limits on axis
+    xLim = get(gui.sliceAxis(iAxis),'xLim');
+    yLim = get(gui.sliceAxis(iAxis),'yLim');
+    % get the x,y point
+    mouseX = round(currentPoint(1,1));
+    mouseY = round(currentPoint(1,2));
+    % see if we are in bounds
+    if (mouseX>0) && (mouseX<=xLim(2)) && (mouseY>0) && (mouseY<=yLim(2))
+      inAxis = iAxis;
+      break;
+    end
+  end
+  if (inAxis)
+    set(hObject,'Pointer','fullcrosshair');
+  else
+    set(hObject,'Pointer','arrow');
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    windowButtonDown function    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function figure_WindowButtonDownFcn(hObject, eventdata, handles)
 
 % get the view
@@ -137,8 +171,9 @@ if (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatom
  end
 end
 
-% --------------------------------------------------------------------
-% Resize
+%%%%%%%%%%%%%%%%
+%    Resize    %
+%%%%%%%%%%%%%%%%
 function figure_ResizeFcn(hObject, eventdata, handles)
 % Change the axis size to fill the figure, leaving room at the bottom for
 % the widgets.
@@ -152,9 +187,13 @@ if exist('handles','var') & ~isempty(handles)
 end
 
 
-% --------------------------------------------------------------------
-% Create function
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    Create function    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
 function figure_CreateFcn(hObject, eventdata, handles)
+
+% hook the above button motion function in
+set(hObject,'WindowButtonMotionFcn',@figure_WindowButtonMotionFcn);
 
 % --------------------------------------------------------------------
 % Delete  and Close functions

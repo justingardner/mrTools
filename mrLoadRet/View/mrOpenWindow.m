@@ -49,12 +49,15 @@ gui.anatPosition = [0.3 0.2+gui.marginSize 1-0.3-gui.marginSize 1-0.2-2*gui.marg
 gui.sliceAxis(1) = subplot('Position',[0 0 0.01 0.01],'Parent',fig);
 axis(gui.sliceAxis(1),'off');
 set(gui.sliceAxis(1),'ButtonDownFcn',@sliceAxisButtonDown);
+set(gui.sliceAxis(1),'HandleVisibility','off');
 gui.sliceAxis(2) = subplot('Position',[0.02 0 0.01 0.01],'Parent',fig);
 axis(gui.sliceAxis(2),'off');
 set(gui.sliceAxis(2),'ButtonDownFcn',@sliceAxisButtonDown);
+set(gui.sliceAxis(2),'HandleVisibility','off');
 gui.sliceAxis(3) = subplot('Position',[0.02 0.02 0.01 0.01],'Parent',fig);
 axis(gui.sliceAxis(3),'off');
 set(gui.sliceAxis(3),'ButtonDownFcn',@sliceAxisButtonDown);
+set(gui.sliceAxis(3),'HandleVisibility','off');
 
 % save the axis handles
 guidata(fig,gui);

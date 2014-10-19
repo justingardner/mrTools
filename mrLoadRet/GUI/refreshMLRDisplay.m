@@ -13,11 +13,11 @@ verbose = 0;
 if verbose,tic,end
 
 % get current base
-view = viewGet(viewNum,'view');
-fig = viewGet(view,'figNum');
+v = viewGet(viewNum,'view');
+fig = viewGet(v,'figNum');
 gui = guidata(fig);
-baseNum = viewGet(view,'currentBase');
-baseType = viewGet(view,'baseType');
+baseNum = viewGet(v,'currentBase');
+baseType = viewGet(v,'baseType');
 
 % if no base then clear axis and return
 if isempty(baseNum)
@@ -37,9 +37,9 @@ set(fig,'Pointer','watch');drawnow;
 % for debugging, clears caches when user holds down alt key
 if ~isempty(fig) && any(strcmp(get(fig,'CurrentModifier'),'alt'))
   disp(sprintf('(refreshMLRDisplay) Dumping caches'));
-  view = viewSet(view,'roiCache','init');
-  view = viewSet(view,'overlayCache','init');
-  view = viewSet(view,'baseCache','init');
+  v = viewSet(v,'roiCache','init');
+  v = viewSet(v,'overlayCache','init');
+  v = viewSet(v,'baseCache','init');
 end
 
 if verbose>1,disppercent(-inf,'Clearing figure');,end
@@ -52,19 +52,22 @@ if verbose>1,disppercent(inf);,end
 % check if these are inplanes (not flats or surfaces)
 % and see if we should draw all three possible views
 if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
-  mlrGuiSet(view,'multiAxis','on');
-  curCoords = viewGet(view,'curCoords');
+  mlrGuiSet(v,'multiAxis','on');
+  curCoords = viewGet(v,'curCoords');
   for iSliceIndex = 1:3
-    [view img{iSliceIndex} base roi overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),view,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+    [v img{iSliceIndex} base roi overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
     % get slice to display
-%    baseRawSlice = viewGet(view,'baseRawSlice',iSliceOrientation,curCoords(iSliceOrientation));
+%    baseRawSlice = viewGet(v,'baseRawSlice',iSliceOrientation,curCoords(iSliceOrientation));
 %    imagesc(flipud(baseRawSlice'),'Parent',gui.sliceAxis(iSliceOrientation));
 %    colormap(gui.sliceAxis(iSliceOrientation),gray);
 %    axis(gui.sliceAxis(iSliceOrientation),'off');
   end
   % now draw the 3D intersection
-  baseDims = viewGet(view,'baseDims',baseNum);
+  baseDims = viewGet(v,'baseDims',baseNum);
 
+  % draw each dimension in turn using images that were returned
+  % by each call to dispBase from above
+  cla(gui.axis);
   [x y] = meshgrid(1:baseDims(1),1:baseDims(2));
   imgSurface = surf(gui.axis,x,y,ones(size(x,1),size(x,2))*curCoords(3));
   set(imgSurface,'CData',permute(img{3},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
@@ -78,14 +81,31 @@ if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
   imgSurface = surf(gui.axis,ones(size(y,1),size(y,2))*curCoords(1),y,z);
   set(imgSurface,'CData',permute(img{1},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
 
+  % set the axis
   axis(gui.axis,'off');
+  axis(gui.axis,'tight');
+  setMLRViewAngle(v,gui.axis);
+
+  % would be nice to get this rotate tool to work on the 3D axis
+  % but, couldn't get this to work - it is apparently not an axis
+  % property - but a figure property and did not play well with the
+  % other axis (which shouldn't be rotated and should show the
+  % fullcrosshair - which is implemented in mrLoadRetGUI. Leaving
+  % this in here, in case someone else can figure out how
+  % to get this working - jg
+  
+  %  hRotate = rotate3d(gui.axis);
+  %  set(hRotate,'Enable','on');
+  %  setAllowAxesRotate(hRotate,gui.sliceAxis(1),false);
+  %  setAllowAxesRotate(hRotate,gui.sliceAxis(2),false);
+  %  setAllowAxesRotate(hRotate,gui.sliceAxis(3),false);
 else
   % set the gui to display only a single axis
-  mlrGuiSet(view,'multiAxis','off');
+  mlrGuiSet(v,'multiAxis','off');
   % just draw a single base
-  [view img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,view,baseNum,gui,true,verbose);
+  [v img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,v,baseNum,gui,true,verbose);
   % keep cursliceBaseCoords
-  view = viewSet(view,'cursliceBaseCoords',curSliceBaseCoords);
+  v = viewSet(v,'cursliceBaseCoords',curSliceBaseCoords);
 end
 
 axes(gui.axis);
@@ -93,10 +113,10 @@ axes(gui.axis);
 % draw any other base that has multiDisplay set
 % only do this for surfaces for now
 if (baseType >= 2) || ((baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy')))
-  for iBase = setdiff(1:viewGet(view,'numBase'),baseNum)
-    if viewGet(view,'baseType',iBase)>=2
-      if viewGet(view,'baseMultiDisplay',iBase)
-	dispBase(gui.axis,view,iBase,gui,false,verbose);
+  for iBase = setdiff(1:viewGet(v,'numBase'),baseNum)
+    if viewGet(v,'baseType',iBase)>=2
+      if viewGet(v,'baseMultiDisplay',iBase)
+	dispBase(gui.axis,v,iBase,gui,false,verbose);
       end
     end
   end
@@ -127,15 +147,6 @@ set(fig,'Pointer','arrow');
 %    dispBase    %
 %%%%%%%%%%%%%%%%%%
 function [v img base roi overlays curSliceBaseCoords] = dispBase(hAxis,v,baseNum,gui,dispColorbar,verbose,sliceIndex,slice)
-
-% slight hack here - we set the current base to draw
-% each base since that is the way refreshMLRDisplay used
-% to work - it defaulted to display the curBase - now it
-% needs to display any base that is asked for, so we 
-% do that by temporarily making whatever base is is that
-% we wish to draw the curBase.
-curBase = viewGet(v,'curBase');
-v = viewSet(v,'curBase',baseNum);
 
 % Get current view and baseNum.
 % Get interp preferences.
@@ -256,7 +267,6 @@ if verbose>1,disppercent(inf);,end
 
 % If no image at this point then return
 if ieNotDefined('img')
-  v = viewSet(v,'curBase',curBase);
   return
 end
 
@@ -271,7 +281,6 @@ if isempty(fig)
   else
     roi = [];
   end
-  v = viewSet(v,'curBase',curBase);
   return;
 end 
 
@@ -361,9 +370,6 @@ if nROIs
 else
   roi = [];
 end
-
-% reset curBase
-v = viewSet(v,'curBase',curBase);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
