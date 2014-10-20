@@ -361,6 +361,7 @@ switch lower(field)
   else
     % set the regular window to the normal position
     set(handles.axis,'Position',handles.anatPosition);
+    cla(handles.axis,'reset');
     % clear and hide the other axes
     cla(handles.sliceAxis(1),'reset');set(handles.sliceAxis(1),'Visible','off');
     cla(handles.sliceAxis(2),'reset');set(handles.sliceAxis(2),'Visible','off');

@@ -72,11 +72,13 @@ if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
   imgSurface = surf(gui.axis,x,y,ones(size(x,1),size(x,2))*curCoords(3));
   set(imgSurface,'CData',permute(img{3},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
   hold(gui.axis,'on');
-  
+
+  % 2nd dimension
   [x z] = meshgrid(1:baseDims(1),1:baseDims(3));
   imgSurface = surf(gui.axis,x,ones(size(x,1),size(x,2))*curCoords(2),z);
   set(imgSurface,'CData',permute(img{2},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
 
+  % 3rd dimension
   [y z] = meshgrid(1:baseDims(2),1:baseDims(3));
   imgSurface = surf(gui.axis,ones(size(y,1),size(y,2))*curCoords(1),y,z);
   set(imgSurface,'CData',permute(img{1},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
@@ -174,7 +176,6 @@ if verbose>1,disppercent(inf);,end
 % Compute base coordinates and extract baseIm for the current slice
 if verbose,disppercent(-inf,'extract base image');,end
 base = viewGet(v,'baseCache',baseNum,slice,sliceIndex,rotate);
-base = [];
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
     getBaseSlice(v,slice,sliceIndex,rotate,baseNum,baseType);
@@ -192,7 +193,6 @@ if isempty(base)
   v = viewSet(v,'baseCache',base,baseNum,slice,sliceIndex,rotate);
   if verbose,disppercent(inf);disp('Recomputed base');end
 else
-  disp(sprintf('(refershMLRDisplay) Found base'));
   if verbose,disppercent(inf);end
 end
 
@@ -293,18 +293,24 @@ if baseType <= 1
   % faster for displaying images as opposed
   % to the 3D surfaces.
   % 
-  % Getting rid of this - to try to rotate the images
-  % using view - which apparently cannot be done
-  % with 2D images. This way we can display
-  % all the images in the correct orientation
-  % without having to manually rotate 270 degrees
-  %  set(fig,'Renderer','painters')
-  %  image(img,'Parent',hAxis);
-  set(fig,'Renderer','OpenGL');
-  imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
-  set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
-  view(hAxis,-90,90);
-  set(hAxis,'yDir','reverse');
+  % Just draw with img for regular image,
+  if isequal(false,mrGetPref('dispAllPlanesOfAnatomy'))
+    set(fig,'Renderer','painters')
+    image(img,'Parent',hAxis);
+  else  
+    % for multi axis, we want to have them roated by 270
+    % which apparently cannot be done using view with 2D images. 
+    % We want 270 rotation since This way we can display
+    % all the images in the correct orientation
+    % without having to manually rotate 270 degrees
+    % so we display them as textures on planer surfaces and
+    % display those rotated correctly usinv view
+    set(fig,'Renderer','OpenGL');
+    imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
+    set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
+    view(hAxis,-90,90);
+    set(hAxis,'yDir','reverse');
+  end
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms

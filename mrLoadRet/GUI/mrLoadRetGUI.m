@@ -1731,6 +1731,7 @@ selectedROIColor = mrGetPref('selectedROIColor');
 roiContourWidth = mrGetPref('roiContourWidth');
 corticalDepthBins = mrGetPref('corticalDepthBins');
 roiCorticalDepthDisplayRatio = mrGetPref('roiCorticalDepthDisplayRatio');
+dispAllPlanesOfAnatomy = mrGetPref('dispAllPlanesOfAnatomy');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1777,6 +1778,11 @@ if ~isempty(prefParams)
   % check to see if any other parameters that affects the display, but not the cache have changed
   if ~strcmp(selectedROIColor,prefParams.selectedROIColor) ||...
       ~strcmp(roiContourWidth,prefParams.roiContourWidth) || ...
+    refreshMLRDisplay(v.viewNum);
+  end
+
+  if (dispAllPlanesOfAnatomy ~= mrGetPref('dispAllPlanesOfAnatomy')) && isequal(viewGet(v,'baseType'),1)
+    % refresh the display so as to draw the multiplanes
     refreshMLRDisplay(v.viewNum);
   end
 end
