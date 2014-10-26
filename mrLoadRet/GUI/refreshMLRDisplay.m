@@ -318,9 +318,27 @@ else
   % renderer (order of 5-10 ms)
   set(fig,'Renderer','OpenGL')
   % get the base surface
-  baseSurface = viewGet(v,'baseSurface');
+  baseSurface = viewGet(v,'baseSurface',baseNum);
+  % if this is not the current base then we need to xform
+  % coordinates so that it will display in the same space
+  % as the current one
+  if baseNum ~= viewGet(v,'currentBase')
+    % get xform that xforms coordinates from this base to
+    % the current base
+    base2base = inv(viewGet(v,'base2base',baseNum));
+    if ~isequal(base2base,eye(4))
+      % homogenous coordinates
+      baseSurface.vtcs(:,4) = 1;
+      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+      swapXY = eye(4);
+      % xform to current base coordinates
+      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
+      % and remove the homogenous 1
+      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
+    end
+  end
   % display the surface
-  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis);
+  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',1.0);
   % make sure x direction is normal to make right/right
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');

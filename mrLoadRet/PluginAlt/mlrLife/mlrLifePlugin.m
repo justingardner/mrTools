@@ -234,6 +234,7 @@ h.sform = t1.xformToAcpc;
 
 % convert the X, Y, Z coordinates which are in AC/PC back to 3D image coordinates
 huh = h.sform;
+h.sform = eye(4);
 %huh(1,1) = 1*t1.mmPerVoxel(1);
 %huh(2,2) = 1*t1.mmPerVoxel(2);
 %huh(3,3) = 1*t1.mmPerVoxel(3);
