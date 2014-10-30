@@ -828,6 +828,7 @@ switch lower(param)
     curBase = viewGet(view,'curBase');
     rotate = viewGet(view,'rotate');
     curSlice = viewGet(view,'curSlice');
+    curCoords = viewGet(view,'curCoords');
     %if there was not base loaded, curSlice could be empty, set default to 1
     if isempty(curSlice)
       curSlice =1;
@@ -837,6 +838,10 @@ switch lower(param)
     if (curBase > 0) & (curBase <= numBases)
       view.baseVolumes(curBase).rotate = rotate;
       view.baseVolumes(curBase).curSlice = curSlice;
+      % save the full 3D coords that are being viewed - this is
+      % partially redundant with curSlice which is around from
+      % when base volumes only showed one dimension at a time
+      view.baseVolumes(curBase).curCoords = curCoords;
       view.baseVolumes(curBase).sliceOrientation = sliceOrientation;
       if viewGet(view,'baseType');
         view.baseVolumes(curBase).curCorticalDepth = viewGet(view,'corticalDepth');
@@ -883,7 +888,9 @@ switch lower(param)
         else
           view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
         end
-          mlrGuiSet(view,'nSlices',nSlices);
+	% set the current coordinates
+	mlrGuiSet(view,'curCoords',viewGet(view,'baseCurCoords',baseNum));
+	mlrGuiSet(view,'nSlices',nSlices);
       else %flat and surfaces
         baseCorticalDepth = viewGet(view,'baseCorticalDepth',baseNum);
         if isempty(baseCorticalDepth)
