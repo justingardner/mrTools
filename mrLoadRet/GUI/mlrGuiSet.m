@@ -128,6 +128,9 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Enable','off');
     set(handles.calcDistMenu, 'Enable', 'off');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
+    set(handles.axisSingle,'Visible','on');
+    set(handles.axisMulti,'Visible','on');
+    set(handles.axis3D,'Visible','on');
     if isfield(handles,'corticalMaxDepthSlider')
       set(handles.corticalMaxDepthSlider,'Visible','off');
       set(handles.corticalMaxDepthText,'Visible','off');
@@ -144,6 +147,9 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Label','Flat Viewer');
     set(handles.calcDistMenu, 'Enable', 'on');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
+    set(handles.axisSingle,'Visible','off');
+    set(handles.axisMulti,'Visible','off');
+    set(handles.axis3D,'Visible','off');
     if isfield(handles,'corticalMaxDepthSlider')
       set(handles.corticalMaxDepthSlider,'Visible','on');
       set(handles.corticalMaxDepthText,'Visible','on');

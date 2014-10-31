@@ -109,7 +109,7 @@ function figure_WindowButtonMotionFcn(hObject, eventdata, handles)
 
 gui = guidata(hObject);
 v = viewGet([],'view',gui.viewNum);
-if ~isempty(viewGet(v,'curBase')) && (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+if ~isempty(viewGet(v,'curBase')) && isequal(1,viewGet(v,'baseMultiAxis'))
   inAxis = 0;
   for iAxis = 1:3
     % get current mouse position

@@ -99,7 +99,7 @@ switch command
     case {'colormap','colormaps'}
      addColormap(v,varargin{2},verbose);
     case {'control'}
-     addControl(f,{varargin{2:end}},uiControls,v,verbose);
+     retval = addControl(f,{varargin{2:end}},uiControls,v,verbose);
     case {'axes'}
      addAxes(f,{varargin{2:end}},plotAxes,verbose);
     case {'panel'}
@@ -216,7 +216,7 @@ if verbose, disp(sprintf('(mlrAdjustGUI) Adding colormaps: %s',cellToCommaDelimi
 %%%%%%%%%%%%%%%%%%%%%
 %%%   addControl  %%%
 %%%%%%%%%%%%%%%%%%%%%
-function addControl(f,args,uiControls,v,verbose)
+function retval = addControl(f,args,uiControls,v,verbose)
 
 % check length of arguments
 if length(args) < 1
@@ -271,7 +271,10 @@ for i = 1:2:length(controlProperties)
   set(h.(controlTag),controlProperties{i},controlProperties{i+1});
 end
 
+% store the guidata
 guidata(f,h);
+
+retval=h.(controlTag);
 
 %%%%%%%%%%%%%%%%%%%
 %%%   addPanel  %%%

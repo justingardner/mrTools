@@ -989,6 +989,15 @@ switch lower(param)
       view.baseVolumes(baseNum).multiDisplay = val;
     end
 
+ case{'basemultiaxis'}
+    % can be 0,1 or 2 for single, multi or 3D axis views
+    % view = viewSet(view,'baseMultiAxis',multiAxis,[baseNum]);
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).multiAxis = val;
+    end
+
   case{'basedisplayoverlay'}
     % view = viewSet(view,'baseDisplayOverlay',displayOverlay,[baseNum]);
     curBase = viewGet(view, 'curBase');

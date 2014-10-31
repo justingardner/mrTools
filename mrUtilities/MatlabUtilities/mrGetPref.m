@@ -39,7 +39,6 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'site','magnet','coil','pulseSequence',...
    'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
    'mlrVolDisplayControls','mlrVolOverlayAlpha','motionCompDefaultParams','colorNames'...
-   'dispAllPlanesOfAnatomy',...
 	    };
 
 % set the defaults for preference we have defaults for. Note that the "find" in
@@ -78,7 +77,6 @@ prefDefaults{find(strcmp('maxArrayHeightForParamsDialog',prefNames))} = 50;
 prefDefaults{find(strcmp('mlrVolDisplayControls',prefNames))} = false;
 prefDefaults{find(strcmp('mlrVolOverlayAlpha',prefNames))} = 0.8;
 prefDefaults{find(strcmp('motionCompDefaultParams',prefNames))} = [];
-prefDefaults{find(strcmp('dispAllPlanesOfAnatomy',prefNames))} = true;
 prefDefaults{find(strcmp('colorNames',prefNames))} = {};
 
 if nargin == 0

@@ -62,6 +62,11 @@ set(gui.sliceAxis(3),'HandleVisibility','off');
 % save the axis handles
 guidata(fig,gui);
 
+% add controls for multiAxis
+mlrAdjustGUI(view,'add','control','axisSingle','style','radio','value',0,'position',  [0.152    0.725   0.1    0.025],'String','Single','Callback',@multiAxisCallback);
+mlrAdjustGUI(view,'add','control','axisMulti','style','radio','value',0,'position',  [0.152    0.695   0.1    0.025],'String','Multi','Callback',@multiAxisCallback);
+mlrAdjustGUI(view,'add','control','axis3D','style','radio','value',0,'position',  [0.152    0.665   0.1    0.025],'String','3D','Callback',@multiAxisCallback);
+
 % Initialize the scan slider
 nScans = viewGet(view,'nScans');
 mlrGuiSet(view,'nScans',nScans);
@@ -212,3 +217,35 @@ function [view,baseLoaded] = loadAnatomy(view)
 function sliceAxisButtonDown(hObject,eventdata)
 
 keyboard
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    multiAxisCallback    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function multiAxisCallback(hObject,eventdata)
+
+% get gui data and v
+gui = guidata(get(hObject,'Parent'));
+v = viewGet(gui.viewNum,'view');
+
+% this function gets called when single/Multi/3D radio button
+% get called. 
+
+% First, determine who was hit
+controlNames = {'Single','Multi','3D'};
+multiAxisVal = find(strcmp(controlNames,get(hObject,'String')));
+
+% and turn off the others radio buttons
+turnOffControls = {controlNames{setdiff([1:3],multiAxisVal)}};
+for iControl = 1:length(turnOffControls)
+  set(gui.(['axis' turnOffControls{iControl}]),'Value',0);
+end
+
+% now set the curent base val
+viewSet(v,'baseMultiAxis',multiAxisVal-1);
+
+% redraw
+refreshMLRDisplay(v.viewNum);
+
+
+
+  

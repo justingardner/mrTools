@@ -51,16 +51,28 @@ if verbose>1,disppercent(inf);,end
 
 % check if these are inplanes (not flats or surfaces)
 % and see if we should draw all three possible views
-if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
-  mlrGuiSet(v,'multiAxis','on');
+baseMultiAxis = viewGet(v,'baseMultiAxis');
+if (baseType == 0) && (baseMultiAxis>0)
+  % set the axis, either to dispaly all 3 views + a 3D
+  % or just a 3d
+  if baseMultiAxis == 1
+    mlrGuiSet(v,'multiAxis','on');
+  else
+    mlrGuiSet(v,'multiAxis','3D');
+  end
+  % get what coords display
   curCoords = viewGet(v,'curCoords');
+  % display the images, but if we are set to 3D just compute
+  % the images, so that we can display the 3D.
   for iSliceIndex = 1:3
-    [v img{iSliceIndex} base roi overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
-    % get slice to display
-%    baseRawSlice = viewGet(v,'baseRawSlice',iSliceOrientation,curCoords(iSliceOrientation));
-%    imagesc(flipud(baseRawSlice'),'Parent',gui.sliceAxis(iSliceOrientation));
-%    colormap(gui.sliceAxis(iSliceOrientation),gray);
-%    axis(gui.sliceAxis(iSliceOrientation),'off');
+    % if we are displaying all slice dimenons and the #d
+    if baseMultiAxis == 1
+      % display each slice index
+      [v img{iSliceIndex} base roi overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+    else
+      % display each slice index
+      [v img{iSliceIndex} base] = dispBase([],v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+    end
   end
   % now draw the 3D intersection
   baseDims = viewGet(v,'baseDims',baseNum);
@@ -87,20 +99,13 @@ if (baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
   axis(gui.axis,'off');
   axis(gui.axis,'tight');
   setMLRViewAngle(v,gui.axis);
-
-  % would be nice to get this rotate tool to work on the 3D axis
-  % but, couldn't get this to work - it is apparently not an axis
-  % property - but a figure property and did not play well with the
-  % other axis (which shouldn't be rotated and should show the
-  % fullcrosshair - which is implemented in mrLoadRetGUI. Leaving
-  % this in here, in case someone else can figure out how
-  % to get this working - jg
   
-  %  hRotate = rotate3d(gui.axis);
-  %  set(hRotate,'Enable','on');
-  %  setAllowAxesRotate(hRotate,gui.sliceAxis(1),false);
-  %  setAllowAxesRotate(hRotate,gui.sliceAxis(2),false);
-  %  setAllowAxesRotate(hRotate,gui.sliceAxis(3),false);
+  % turn on 3D free roate if we are just displaying the one 3D axis
+  if baseMultiAxis == 2
+    rotate3d(gui.axis,'on');
+  else
+    rotate3d(gui.axis,'off');
+  end
 else
   % set the gui to display only a single axis
   mlrGuiSet(v,'multiAxis','off');
@@ -113,8 +118,10 @@ end
 axes(gui.axis);
 
 % draw any other base that has multiDisplay set
-% only do this for surfaces for now
-if (baseType >= 2) || ((baseType == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy')))
+% do this for surfaces for now or for 3D anatomies
+% when we have multiAxis on (since that draws a 3D
+% view with all the relevant planes)
+if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
   for iBase = setdiff(1:viewGet(v,'numBase'),baseNum)
     if viewGet(v,'baseType',iBase)>=2
       if viewGet(v,'baseMultiDisplay',iBase)
@@ -284,6 +291,9 @@ if isempty(fig)
   return;
 end 
 
+% if we are not displaying then, just return
+if isempty(hAxis),return,end
+
 % Display the image
 if verbose>1,disppercent(-inf,'Displaying image');,end
 if baseType <= 1
@@ -294,7 +304,7 @@ if baseType <= 1
   % to the 3D surfaces.
   % 
   % Just draw with img for regular image,
-  if isequal(false,mrGetPref('dispAllPlanesOfAnatomy'))
+  if isequal(0,viewGet(v,'baseMultiAxis',baseNum))
     set(fig,'Renderer','painters')
     image(img,'Parent',hAxis);
   else  

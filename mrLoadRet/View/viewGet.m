@@ -1720,6 +1720,16 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).multiDisplay;
     end
+  case {'basemultiaxis'}
+    % baseMultiAxis = viewGet(view,'baseMultiDisplay',[baseNum])
+    % can be 0,1 or 2 depending on whether the base should
+    % display as a single, multi or 3D axis (only relevant
+    % for non-flat, non-surface anatomies
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).multiAxis;
+    end
   case {'basesurfacedims'}
     % basedims = viewGet(view,'basedims',[baseNum])
     % basedims = viewGet(view,'basedims',[])
