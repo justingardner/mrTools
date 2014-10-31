@@ -1754,6 +1754,14 @@ switch lower(param)
         val(3) = 1;
       end
     end
+  case {'basecurcoords'}
+    % baseCurCoords = viewGet(view,'baseCurCoords',[baseNum])
+    % baseCurCoords = viewGet(view,'baseCurCoords',[])
+    % baseCurCoords = viewGet(view,'baseCurCoords')
+    b = getBaseNum(view,varargin);
+    if ~isempty(b)
+      val = view.baseVolumes(b).curCoords;
+    end
   case{'base2tal'}
     % xform = viewGet(view,'base2tal',[baseNum])
     % This will return the xform matrix that specifies the

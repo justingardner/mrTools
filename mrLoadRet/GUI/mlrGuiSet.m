@@ -209,7 +209,13 @@ switch lower(field)
   newDims = value;
   newCoords = min(handles.coords,newDims);
   handles.coords = min(handles.coords,newCoords);
- 
+
+ case {'curcoords'}
+  % mlrGuiSet(view,'curcoords',[ydim xdim zdim]);
+  if length(value)==3
+    handles.coords = value;
+  end
+
  case {'basegamma'}
   % mlrGuiSet(view,'baseGamma',value);
   set(handles.baseGammaSlider,'Value',value);
@@ -230,7 +236,8 @@ switch lower(field)
   
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
-  % mlrGuiSet(view,'overlayPopup',strings,overlayList); %optional argument overlayList indicates that this is a subset of strings to change
+  % mlrGuiSet(view,'overlayPopup',strings,overlayList); 
+  %optional argument overlayList indicates that this is a subset of strings to change
   if ~strcmp(value,'none') 
     if ieNotDefined('varargin')
 % %       overlayList = 1:length(value);

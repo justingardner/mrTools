@@ -25,13 +25,18 @@ if ~isempty(volSize)
 
   % Generate coordinates with meshgrid
   switch sliceIndex
-    case 1
+     case 1
+      % validate sliceNum against base dimensions
+      if sliceNum>volSize(1),sliceNum = volSize(1);end  
+      % set up the coordinates
       x = sliceNum * ones(volSize(2),volSize(3));
       [z,y] = meshgrid(1:volSize(3),1:volSize(2));
     case 2
+      if sliceNum>volSize(2),sliceNum = volSize(2);end  
       y = sliceNum * ones(volSize(1),volSize(3));
       [z,x] = meshgrid(1:volSize(3),1:volSize(1));
     case 3
+      if sliceNum>volSize(3),sliceNum = volSize(3);end  
       z = sliceNum * ones(volSize(1),volSize(2));
       [y,x] = meshgrid(1:volSize(2),1:volSize(1));
   end
