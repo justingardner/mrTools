@@ -56,9 +56,9 @@ if (baseType == 0) && (baseMultiAxis>0)
   % set the axis, either to dispaly all 3 views + a 3D
   % or just a 3d
   if baseMultiAxis == 1
-    mlrGuiSet(v,'multiAxis','on');
+    mlrGuiSet(v,'multiAxis',1);
   else
-    mlrGuiSet(v,'multiAxis','3D');
+    mlrGuiSet(v,'multiAxis',2);
   end
   % get what coords display
   curCoords = viewGet(v,'curCoords');
@@ -80,6 +80,7 @@ if (baseType == 0) && (baseMultiAxis>0)
   % draw each dimension in turn using images that were returned
   % by each call to dispBase from above
   cla(gui.axis);
+  set(fig,'Renderer','OpenGL');
   [x y] = meshgrid(1:baseDims(1),1:baseDims(2));
   imgSurface = surf(gui.axis,x,y,ones(size(x,1),size(x,2))*curCoords(3));
   set(imgSurface,'CData',permute(img{3},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
@@ -108,7 +109,7 @@ if (baseType == 0) && (baseMultiAxis>0)
   end
 else
   % set the gui to display only a single axis
-  mlrGuiSet(v,'multiAxis','off');
+  mlrGuiSet(v,'multiAxis',0);
   % just draw a single base
   [v img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,v,baseNum,gui,true,verbose);
   % keep cursliceBaseCoords

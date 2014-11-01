@@ -348,7 +348,20 @@ switch lower(field)
   end
 
  case {'multiaxis'}
-  if strcmp(value,'on')
+  % mlrGuiSet(view,'multiAxis',value);
+
+  % set the radio buttons appropriately
+  controlNames = {'Single','Multi','3D'};
+  for iControl = 1:3
+    if iControl~=(value+1)
+      set(handles.(['axis' controlNames{iControl}]),'Value',0);
+    else
+      set(handles.(['axis' controlNames{iControl}]),'Value',1);
+    end
+  end
+
+  
+  if value == 1
     % create the locations for the 3 axis
     handles.anatMultiPosition(3,:) = handles.anatPosition;
     handles.anatMultiPosition(3,3) = (handles.anatMultiPosition(3,3)-handles.marginSize)/2;
@@ -379,11 +392,20 @@ switch lower(field)
     cla(handles.sliceAxis(1),'reset');set(handles.sliceAxis(1),'Visible','off');
     cla(handles.sliceAxis(2),'reset');set(handles.sliceAxis(2),'Visible','off');
     cla(handles.sliceAxis(3),'reset');set(handles.sliceAxis(3),'Visible','off');
-    % turn off tilt slider
-    set(handles.rotateSlider,'SliderStep',[1 45]./360);
-    set(handles.baseTiltSlider,'Visible','off');
-    set(handles.baseTiltText,'Visible','off');
-    set(handles.baseTilt,'Visible','off');
+    if value == 2
+      % turn on tilt slider
+      set(handles.rotateSlider,'SliderStep',[15 45]./360);
+      set(handles.baseTiltSlider,'SliderStep',[15 45]./360);
+      set(handles.baseTiltSlider,'Visible','on');
+      set(handles.baseTiltText,'Visible','on');
+      set(handles.baseTilt,'Visible','on');
+    else
+      % turn off tilt slider
+      set(handles.rotateSlider,'SliderStep',[1 45]./360);
+      set(handles.baseTiltSlider,'Visible','off');
+      set(handles.baseTiltText,'Visible','off');
+      set(handles.baseTilt,'Visible','off');
+    end
   end
  case {'clippingoverlays'}
   % mlrGuiSet(view,'clippingOverlays',overlayList);
@@ -628,6 +650,7 @@ switch lower(field)
   end
  case {'rotate'}
   % mlrGuiSet(view,'rotate',value);
+  
   value = clipToSlider(handles.rotateSlider,value);
   set(handles.rotateText,'String',num2str(value));
   set(handles.rotateSlider,'Value',value);

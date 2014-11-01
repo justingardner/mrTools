@@ -761,15 +761,16 @@ switch lower(param)
     curBase = viewGet(view,'curBase');
     numBases = viewGet(view,'numberofBaseVolumes');
     baseType = viewGet(view,'baseType');
+    baseMultiAxis = viewGet(view,'baseMultiAxis');
     if (curBase > 0) & (curBase <= numBases)
-      % surfaces are rotated differently, the
-      % rotate field causes surfaceRotate to
+      % surfaces (and 3D multiBase) are rotated differently, 
+      % the rotate field causes surfaceRotate to
       % change rather than rotate. So we
       % need to set the appropriate field
-      if baseType <= 1
+      if (baseType == 1) || ((baseType==0) && (baseMultiAxis==0))
 	view.baseVolumes(curBase).rotate = val;
       else
-	view.baseVolumes(curBase).coordMap.rotate = val;
+	view.baseVolumes(curBase).surfaceRotate = val;
       end
     end
       
@@ -837,10 +838,7 @@ switch lower(param)
     % set the current state of the gui in the base
     if (curBase > 0) & (curBase <= numBases)
       view.baseVolumes(curBase).rotate = rotate;
-      view.baseVolumes(curBase).curSlice = curSlice;
-      % save the full 3D coords that are being viewed - this is
-      % partially redundant with curSlice which is around from
-      % when base volumes only showed one dimension at a time
+      % save the full 3D coords that are being viewed 
       view.baseVolumes(curBase).curCoords = curCoords;
       view.baseVolumes(curBase).sliceOrientation = sliceOrientation;
       if viewGet(view,'baseType');
@@ -891,6 +889,8 @@ switch lower(param)
 	% set the current coordinates
 	mlrGuiSet(view,'curCoords',viewGet(view,'baseCurCoords',baseNum));
 	mlrGuiSet(view,'nSlices',nSlices);
+	% set the multiAxis
+	mlrGuiSet(view,'multiAxis',viewGet(view,'baseMultiAxis',baseNum));
       else %flat and surfaces
         baseCorticalDepth = viewGet(view,'baseCorticalDepth',baseNum);
         if isempty(baseCorticalDepth)
@@ -1003,6 +1003,8 @@ switch lower(param)
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).multiAxis = val;
+      % update the rotate slider
+      mlrGuiSet(view,'rotate',viewGet(view,'baseRotate',curBase));
     end
 
   case{'basedisplayoverlay'}

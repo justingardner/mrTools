@@ -1602,14 +1602,11 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       baseType = viewGet(view,'baseType',b);
-      if baseType <= 1
+      baseMultiAxis = viewGet(view,'baseMultiAxis',b);
+      if (baseType == 1) || ((baseType==0) && (baseMultiAxis==0))
         val = view.baseVolumes(b).rotate;
       else
-        if isfield(view.baseVolumes(b).coordMap,'rotate')
-          val = view.baseVolumes(b).coordMap.rotate;
-        else
-          val = 0;
-        end
+	val = view.baseVolumes(b).surfaceRotate;
       end
     end
   case {'basetilt'}
@@ -1621,10 +1618,13 @@ switch lower(param)
     end
   case {'basecurslice','baseslice'}
     % baseslice = viewGet(view,'baseslice',[baseNum])
+    val = 1;
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      val = view.baseVolumes(b).curSlice;
+      if ~length(view.baseVolumes(b).curCoords) == 3
+	val = view.baseVolumes(b).curCoords(viewGet(view,'baseSliceIndex',b));
+      end
     end
   case {'baserawslice'}
     % baseRawSlice = viewGet(view,'baseRawSlice',orientation,sliceNum,[baseNum])
@@ -3992,7 +3992,9 @@ switch lower(param)
       fig = viewGet(view,'fignum');
       if ~isempty(fig)
         handles = guidata(fig);
-        val = get(handles.rotateSlider,'Value');
+	% adding 90 because this puts a typical base
+	% in the most natural orientation
+        val = get(handles.rotateSlider,'Value')+90;
       else
         % otherwise gui is not running get from the structure
         curBase = viewGet(view,'curBase');

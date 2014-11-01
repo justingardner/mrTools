@@ -234,12 +234,6 @@ v = viewGet(gui.viewNum,'view');
 controlNames = {'Single','Multi','3D'};
 multiAxisVal = find(strcmp(controlNames,get(hObject,'String')));
 
-% and turn off the others radio buttons
-turnOffControls = {controlNames{setdiff([1:3],multiAxisVal)}};
-for iControl = 1:length(turnOffControls)
-  set(gui.(['axis' turnOffControls{iControl}]),'Value',0);
-end
-
 % now set the curent base val
 viewSet(v,'baseMultiAxis',multiAxisVal-1);
 
