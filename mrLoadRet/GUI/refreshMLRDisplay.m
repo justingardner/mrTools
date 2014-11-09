@@ -19,6 +19,10 @@ gui = guidata(fig);
 baseNum = viewGet(v,'currentBase');
 baseType = viewGet(v,'baseType');
 
+% debug code
+curCoords = viewGet(v,'curCoords');
+disp(sprintf('(refreshMLRDisplay) DEBUG: [%i %i %i]',curCoords(1),curCoords(2),curCoords(3)));
+
 % if no base then clear axis and return
 if isempty(baseNum)
   if ~isempty(fig)
@@ -62,6 +66,7 @@ if (baseType == 0) && (baseMultiAxis>0)
   end
   % get what coords display
   curCoords = viewGet(v,'curCoords');
+
   % display the images, but if we are set to 3D just compute
   % the images, so that we can display the 3D.
   for iSliceIndex = 1:3
@@ -74,26 +79,28 @@ if (baseType == 0) && (baseMultiAxis>0)
       [v img{iSliceIndex} base] = dispBase([],v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
     end
   end
+
   % now draw the 3D intersection
   baseDims = viewGet(v,'baseDims',baseNum);
 
   % draw each dimension in turn using images that were returned
   % by each call to dispBase from above
+  % 1st dimension (axial)
   cla(gui.axis);
   set(fig,'Renderer','OpenGL');
   [x y] = meshgrid(1:baseDims(1),1:baseDims(2));
-  imgSurface = surf(gui.axis,x,y,ones(size(x,1),size(x,2))*curCoords(3));
+  imgSurface = surf(gui.axis,y,x,ones(size(x,1),size(x,2))*curCoords(3));
   set(imgSurface,'CData',permute(img{3},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
   hold(gui.axis,'on');
 
-  % 2nd dimension
+  % 2nd dimension (coronal)
   [x z] = meshgrid(1:baseDims(1),1:baseDims(3));
-  imgSurface = surf(gui.axis,x,ones(size(x,1),size(x,2))*curCoords(2),z);
+  imgSurface = surf(gui.axis,ones(size(x,1),size(x,2))*curCoords(2),x,z);
   set(imgSurface,'CData',permute(img{2},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
 
-  % 3rd dimension
+  % 3rd dimension (saggital)
   [y z] = meshgrid(1:baseDims(2),1:baseDims(3));
-  imgSurface = surf(gui.axis,ones(size(y,1),size(y,2))*curCoords(1),y,z);
+  imgSurface = surf(gui.axis,y,ones(size(y,1),size(y,2))*curCoords(1),z);
   set(imgSurface,'CData',permute(img{1},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
 
   % set the axis
@@ -108,6 +115,8 @@ if (baseType == 0) && (baseMultiAxis>0)
     rotate3d(gui.axis,'off');
   end
 else
+  % no rotate
+  rotate3d(gui.axis,'off');
   % set the gui to display only a single axis
   mlrGuiSet(v,'multiAxis',0);
   % just draw a single base
@@ -158,6 +167,9 @@ set(fig,'Pointer','arrow');
 %%%%%%%%%%%%%%%%%%
 function [v img base roi overlays curSliceBaseCoords] = dispBase(hAxis,v,baseNum,gui,dispColorbar,verbose,sliceIndex,slice)
 
+baseType = viewGet(v,'baseType',baseNum);
+baseGamma = viewGet(v,'baseGamma',baseNum);
+
 % Get current view and baseNum.
 % Get interp preferences.
 % Get slice, scan, alpha, rotate, and sliceIndex from the gui.
@@ -172,14 +184,18 @@ if verbose>1,disppercent(-inf,'viewGet');,end
 % it should no longer be necessary to actually rotate images
 if nargin < 7
   slice = viewGet(v,'curslice');
-  rotate = viewGet(v,'rotate');
+  if baseType == 0
+    rotate = viewGet(v,'rotate');
+  else
+    rotate = 0;
+  end
   sliceIndex = viewGet(v,'baseSliceIndex',baseNum);
 else
   rotate = 0;
 end
-baseType = viewGet(v,'baseType',baseNum);
-baseGamma = viewGet(v,'baseGamma',baseNum);
 if verbose>1,disppercent(inf);,end
+
+disp(sprintf('(refreshMLRDIsplay:dispBase) DEBUG: sliceIndex: %i slice: %i',sliceIndex,slice));
 
 % Compute base coordinates and extract baseIm for the current slice
 if verbose,disppercent(-inf,'extract base image');,end
@@ -204,7 +220,9 @@ else
   if verbose,disppercent(inf);end
 end
 
+% for surfaces and flats calculate things based on cortical depth
 if size(base.coords,4)>1
+  % code allows for averaging across cortical depth
   corticalDepth = viewGet(v,'corticalDepth');
   corticalDepthBins = viewGet(v,'corticalDepthBins');
   corticalDepths = 0:1/(corticalDepthBins-1):1;

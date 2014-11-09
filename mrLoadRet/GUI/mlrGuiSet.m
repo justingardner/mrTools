@@ -633,20 +633,20 @@ switch lower(field)
   switch sliceOrientation
     % axial
    case 1
-    % axial
-    set(handles.sagittalRadioButton,'Value',0);
+    % sagittal
+    set(handles.sagittalRadioButton,'Value',1);
     set(handles.coronalRadioButton,'Value',0);
-    set(handles.axialRadioButton,'Value',1);
+    set(handles.axialRadioButton,'Value',0);
    case 2
     % coronal
     set(handles.sagittalRadioButton,'Value',0);
     set(handles.coronalRadioButton,'Value',1);
     set(handles.axialRadioButton,'Value',0);
    case 3
-    % sagittal
-    set(handles.sagittalRadioButton,'Value',1);
+    % axial
+    set(handles.sagittalRadioButton,'Value',0);
     set(handles.coronalRadioButton,'Value',0);
-    set(handles.axialRadioButton,'Value',0);
+    set(handles.axialRadioButton,'Value',1);
   end
  case {'rotate'}
   % mlrGuiSet(view,'rotate',value);

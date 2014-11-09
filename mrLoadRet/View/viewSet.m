@@ -2132,11 +2132,11 @@ switch lower(param)
     if ~isscalar(val)
       switch val
         case 'sagittal'
-          sliceOrientation = 3;
+          sliceOrientation = 1;
         case 'coronal'
           sliceOrientation = 2;
         case 'axial'
-          sliceOrientation = 1;
+          sliceOrientation = 3;
       end
     else
       sliceOrientation = val;

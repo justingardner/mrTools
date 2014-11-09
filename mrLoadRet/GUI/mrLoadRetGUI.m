@@ -142,7 +142,7 @@ function figure_WindowButtonDownFcn(hObject, eventdata, handles)
 v = viewGet(handles.viewNum,'view');
 
 % see if we are displaying a base and are displaying all planes
-if (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+if (viewGet(v,'baseType') == 0) && isequal(viewGet(v,'baseMultiAxis'),1)
  for iAxis = 1:3
    % get current mouse position
    currentPoint = get(handles.sliceAxis(iAxis),'CurrentPoint');
@@ -165,6 +165,7 @@ if (viewGet(v,'baseType') == 0) && isequal(true,mrGetPref('dispAllPlanesOfAnatom
       end
       % set the change in coords
       guidata(viewGet(v,'figNum'),handles);
+      mlrGuiSet(v,'slice',handles.coords(viewGet(v,'baseSliceIndex')));
       % and display
       refreshMLRDisplay(viewGet(v,'viewNum'));
    end

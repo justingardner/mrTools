@@ -2116,11 +2116,11 @@ switch lower(param)
     sliceOrientation = viewGet(view,'sliceOrientation');
     permutation = viewGet(view,'baseVolPermutation',b);
     switch sliceOrientation
-      case 3   % Sagittal
+      case 1   % Axial
         [m,index] = max(permutation * [1 0 0]');
       case 2   % Coronal
         [m,index] = max(permutation * [0 1 0]');
-      case 1   % Axial
+      case 3   % Sagittal
         [m,index] = max(permutation * [0 0 1]');
     end
     val = index;
