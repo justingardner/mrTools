@@ -1687,6 +1687,21 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).gamma;
     end
+  case {'baseoverlay'}
+    % baseGamma = viewGet(view,'baseoverlay',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).overlay;
+    end
+  case {'baseoverlayalpha'}
+    % baseGamma = viewGet(view,'baseoverlayAlpha',[baseNum])
+    val = 1;
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).overlayAlpha;
+    end
   case {'basetype'}
     % baseType = viewGet(view,'baseType',[baseNum])
     % 0 is for a regular volume, 1 is for a flat, 2 is for a surface
@@ -2113,6 +2128,11 @@ switch lower(param)
     % function. Permutation matrix is set by loadAnat using even more
     % arcane logic.
     b = getBaseNum(view,varargin);
+    % flat and surface always have to be 1
+    if viewGet(view,'baseType',b)>2
+      val = 1;
+      return
+    end
     sliceOrientation = viewGet(view,'sliceOrientation');
     permutation = viewGet(view,'baseVolPermutation',b);
     switch sliceOrientation
@@ -2574,7 +2594,7 @@ switch lower(param)
     else
       corticalDepthBins = 0;
     end
-    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepthBins);
+    val = sprintf('%s_%i_%i_%i_%s_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip(1)),num2str(clip(end)),gamma,corticalDepthBins);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     % cacheVal = viewGet(view,'baseCache',baseNum)
@@ -2641,8 +2661,24 @@ switch lower(param)
         else
           corticalDepth = 0;
         end
+	baseOverlayAlpha = viewGet(view,'baseOverlayAlpha',baseNum);
+	if length(baseOverlayAlpha)>1
+	  % use the sum of all alpha as a proxy for computing cache
+	  % this might fail sometimes to produce unique values, but
+	  % should be ok for most situations
+	  baseOverlayAlpha = sum(baseOverlayAlpha(:));
+	end
+	baseOverlay = viewGet(view,'baseOverlay',baseNum);
+	if isempty(baseOverlay)
+	  baseOverlay = '';
+	elseif ~isstr(baseOverlay)
+	  % if baseOverlay is actually RGB values, then take
+	  % the sum - again, this could fail be to unique, but
+	  % likely will be ok in most situations
+	  baseOverlay = sprinf('%f',sum(baseOverlay(:)));
+	end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection);
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay);
       end
     end
     %    val = curSlice*analysisNum*curOverlay;

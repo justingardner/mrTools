@@ -975,6 +975,27 @@ switch lower(param)
       mlrGuiSet(view,'baseGamma',gamma);
     end
 
+  case{'baseoverlay'}
+    % view = viewSet(view,'baseOverlay',color,[baseNum]);
+    % color can be a color name: like 'red'
+    % or can be a triplet [1 0 0]
+    % or can be a different triplet color for each voxel in the base
+    c = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).overlay = c;
+    end
+
+  case{'baseoverlayalpha'}
+    % view = viewSet(view,'baseOverlayAlpha',alpha,[baseNum]);
+    overlayAlpha = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).overlayAlpha = overlayAlpha;
+    end
+
   case{'basealpha'}
     % view = viewSet(view,'baseAlpha',alpha,[baseNum]);
     alpha = val;
@@ -982,10 +1003,6 @@ switch lower(param)
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).alpha = alpha;
-    end
-    if (baseNum == curBase)
-      keyboard
-      mlrGuiSet(view,'baseAlpha',alpha);
     end
 
   case{'basemultidisplay'}

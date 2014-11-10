@@ -20,8 +20,8 @@ baseNum = viewGet(v,'currentBase');
 baseType = viewGet(v,'baseType');
 
 % debug code
-curCoords = viewGet(v,'curCoords');
-disp(sprintf('(refreshMLRDisplay) DEBUG: [%i %i %i]',curCoords(1),curCoords(2),curCoords(3)));
+%curCoords = viewGet(v,'curCoords');
+%disp(sprintf('(refreshMLRDisplay) DEBUG: [%i %i %i]',curCoords(1),curCoords(2),curCoords(3)));
 
 % if no base then clear axis and return
 if isempty(baseNum)
@@ -110,13 +110,18 @@ if (baseType == 0) && (baseMultiAxis>0)
   
   % turn on 3D free roate if we are just displaying the one 3D axis
   if baseMultiAxis == 2
-    rotate3d(gui.axis,'on');
+    mlrSetRotate3d(v,'on');
   else
-    rotate3d(gui.axis,'off');
+    mlrSetRotate3d(v,'off');
   end
 else
-  % no rotate
-  rotate3d(gui.axis,'off');
+  if baseType == 0
+    % no rotate
+    mlrSetRotate3d(v,'off');
+  else
+    % no rotate
+    mlrSetRotate3d(v,'on');
+  end
   % set the gui to display only a single axis
   mlrGuiSet(v,'multiAxis',0);
   % just draw a single base
@@ -195,7 +200,7 @@ else
 end
 if verbose>1,disppercent(inf);,end
 
-disp(sprintf('(refreshMLRDIsplay:dispBase) DEBUG: sliceIndex: %i slice: %i',sliceIndex,slice));
+%disp(sprintf('(refreshMLRDIsplay:dispBase) DEBUG: sliceIndex: %i slice: %i',sliceIndex,slice));
 
 % Compute base coordinates and extract baseIm for the current slice
 if verbose,disppercent(-inf,'extract base image');,end
@@ -243,6 +248,7 @@ if isempty(overlays)
   base2scan = viewGet(v,'base2scan',[],[],baseNum);
   % compute the overlays
   overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims);
+  overlays = addBaseOverlays(v,baseNum,overlays);
   % save in cache
   v = viewSet(v,'overlayCache',overlays,baseNum,slice,sliceIndex,rotate);
   if verbose,disppercent(inf);disp('Recomputed overlays');end
@@ -366,8 +372,10 @@ else
       baseSurface.vtcs = baseSurface.vtcs(:,1:3);
     end
   end
+  % get alpha
+  baseAlpha = viewGet(v,'baseAlpha',baseNum);
   % display the surface
-  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',1.0);
+  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
   % make sure x direction is normal to make right/right
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');
