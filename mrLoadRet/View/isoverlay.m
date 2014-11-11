@@ -46,7 +46,6 @@ if (nargout == 2)
                     'data',[];
 		    'alphaOverlay',[];
 		    'alphaOverlayExponent',1;
-		    'rgbOverlay',false;
 		   };
 else
   % Return 0 if the overlay structure is missing any fields required or
@@ -54,7 +53,7 @@ else
   requiredFields = {'function','groupName','name','params','range',...
                     'date','type','alpha','clip','colormap',...
                     'interrogator','reconcileFunction','mergeFunction',...
-		    'data','alphaOverlay','alphaOverlayExponent','rgbOverlay'};
+		    'data','alphaOverlay','alphaOverlayExponent'};
   optionalFields = {};
 end
 
