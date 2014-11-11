@@ -1889,16 +1889,24 @@ if viewGet(view,'numAnalyses') > 0
   analysisFunction = viewGet(view,'analysisFunction',n);
   guiFunction = viewGet(view,'analysisGuiFunction',n);
   params = viewGet(view,'analysisParams',n);
-  % params = guiFunction('groupName',groupName,'params',params);
-  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
-  eval(evalstring);
+  % run parameters again if guiFunction is valid
+  if ~isempty(guiFunction)
+    % params = guiFunction('groupName',groupName,'params',params);
+    evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
+    eval(evalstring);
+  else
+    mrWarnDlg('(mrLoadRetGUI) No guiFunction set for analysis to display parameters');
+  end
   % params is empty if GUI cancelled
-  if ~isempty(params)
+  if ~isempty(params) && ~isempty(analysisFunction)
     % view = analysisFunction(view,params);
     evalstring = ['view = ',analysisFunction,'(view,params);'];
     eval(evalstring);
     refreshMLRDisplay(viewNum);
+  elseif isempty(analysisFunction)
+    mrWarnDlg('(mrLoadRetGUI) No analysis function set for analysis to rerun analysis');
   end
+
 else
   mrWarnDlg(sprintf('(mrLoadRetGUI) No analyses loaded'));
 end

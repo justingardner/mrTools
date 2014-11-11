@@ -20,8 +20,10 @@ switch action
   if (nargin ~= 2) || ~isview(v)
      disp(sprintf('(mlrLifePlugin) Need a valid view to install plugin'));
   else
-    % add the menu item for LiFE - this one should open Dt6 file
-    mlrAdjustGUI(v,'add','menu','LiFE','/File/ROI','Callback',@mlrLifeFileOpen);
+    % add the menu item for Diffusion
+    mlrAdjustGUI(v,'add','menu','Diffusion','/File/ROI');
+    % add one to open Dt6 file
+    mlrAdjustGUI(v,'add','menu','Load Dt6','/File/Diffusion/','Callback',@mlrLifeLoadDt6);
     % this menu item allows importation of fascicles as a surface
     mlrAdjustGUI(v,'add','menu','Import fascicles','/File/Base anatomy/Import surface','Callback',@mlrLifeImportFascicles);
     % now create a panel - this will be used for adding some UI
@@ -73,27 +75,34 @@ switch action
    disp(sprintf('(mlrLifePlugin) Unknown command %s',action));
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrLifeFileOpen    %
-%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrLifeFileOpen(hObject,eventdata)
+%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrLifeLoadDt6   %
+%%%%%%%%%%%%%%%%%%%%%%%
+function mlrLifeLoadDt6(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
 % bring up file dialog to select dt6 file
-startPathStr = pwd;
+global mlrLifePluginStartPathStr;
+if isempty(mlrLifePluginStartPathStr)
+  mlrLifePluginStartPathStr = pwd;
+end
 filterspec = {'dt6.mat','Diffusion tensor 6 parameter file';'*.*','All files'};
 title = 'Choose diffusion tensor 6 parameter file';
-dt6Filename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
+dt6Filename = mlrGetPathStrDialog(mlrLifePluginStartPathStr,title,filterspec,'off');
+if isempty(dt6Filename),return,end
 
 % use mrDiffusion functions to load dti
 [dt, t1, o] = dtiLoadDt6(dt6Filename);
 if isempty(dt),return,end
 
+% save the path
+mlrLifePluginStartPathStr = fileparts(dt6Filename);
+
 % now bring up selection dialog
-paramsInfo = {{'groupName','DTI'},...
-	      {'analysisName','DTI'}};
+paramsInfo = {{'groupName','Diffusion'},...
+	      {'analysisName','Dt6'}};
 params = mrParamsDialog(paramsInfo);
 if isempty(params),return,end
 
@@ -135,85 +144,27 @@ hdr = mlrImageGetNiftiHeader(h);
 % save tseries
 saveNewTSeries(v,dt.dt6,[],hdr);
 scanNum = viewGet(v,'nScans');
+v = viewSet(v,'curScan',scanNum);
 
-% get the overlay
+% make the analysis
+a = mlrMakeAnalysis(v,params.analysisName);
+% add the b0 Overlay
+a = mlrMakeAnalysis(v,a,double(o.b0),'overlayName','b0','overlayColormap',hot(312));
+
+% convert RGB image into an indexed image
+cmap = [gray(16);hsv(48);hsv(48)*0.8;hsv(48)*0.6;hsv(48)*0.4;hsv(48)*0.2];
+RGB = reshape(o.vectorRGB,prod(h.dim(1:2)),h.dim(3),3);
+[RGB cmap] = rgb2ind(RGB,cmap,'nodither');
+RGB = reshape(RGB,h.dim(1:3));
+% add it as an overlay
+a = mlrMakeAnalysis(v,a,double(RGB)/size(cmap,1),'overlayName','vectorRGB','overlayColormap',cmap,'overlayRange',[0 1]);
+
+% set the analysis in the view
+v = viewSet(v,'newAnalysis',a);
+% save it
+saveAnalysis(v,a.name);
+% and refresh the display
 refreshMLRDisplay(v);
-
-% convert RGB into a colormap
-% make table
-numValues = 8;
-values = 0:(256/(numValues-1)):256;
-rgbTable = [];
-for rValue = 1:length(values)
-  for gValue = 1:length(values)
-    for bValue = 1:length(values)
-      rgbTable(end+1,:) = [values(rValue) values(gValue) values(bValue)];
-    end
-  end
-end
-rgbTable = rgbTable(1:2:end,:);
-
-% convert overlay to this table
-disppercent(-inf,'Converting vectorRGB to index');
-for x = 1:size(o.vectorRGB,1)
-  disppercent(x/size(o.vectorRGB,1));
-  for y = 1:size(o.vectorRGB,2)
-    for z = 1:size(o.vectorRGB,3)
-      colorVal = double(squeeze(o.vectorRGB(x,y,z,:)));
-      [dummy colorIndex] = min(sum((rgbTable - repmat(colorVal',size(rgbTable,1),1)).^2,2));
-      colormapRGB(x,y,z) = colorIndex;
-    end
-  end
-end
-disppercent(inf);
-
-% display the overlay
-rgbTable = rgbTable/256.0;
-% FIX, FIX, FIX Create a proper analysis structure with all the overlays.
-mrDispOverlay(colormapRGB,scanNum,params.groupName,v,'overlayName=principleDiffusionDirection','saveName=diffusionAnalysis','cmap',rgbTable);
-a = viewGet(v,'curAnalysis');
-mrDispOverlay(double(o.b0),scanNum,params.groupName,v,'overlayName=b0','saveName=diffusionAnalysis');
-
-dateString = datestr(now);
-b0.name = 'b)';
-b0.groupName = params.groupName;
-b0.function = '';
-b0.reconcileFunction = 'defaultReconcileParams';
-b0.data = double(o.b0);
-b0.date = dateString;
-b0.params = cell(1,viewGet(v,'nScans'));
-b0.range = [0 1];
-b0.clip = [0 1];
-% colormap is made with a little bit less on the dark end
-b0.colormap = hot(312);
-r2.colormap = r2.colormap(end-255:end,:);
-r2.alpha = 1;
-r2.colormapType = 'setRangeToMax';
-r2.interrogator = 'eventRelatedPlot';
-r2.mergeFunction = 'defaultMergeParams';
-
-
-% create analysis
-dti.name = params.analysisName;
-dti.type = 'dti';
-dti.groupName = params.groupName;
-dti.function = '';
-dti.reconcileFunction = 'defaultReconcileParams';
-dti.mergeFunction = 'defaultMergeParams';
-dti.guiFunction = '';
-dti.params = params;
-dti.overlays = b0;
-dti.curOverlay = 1;
-dti.date = dateString;
-v = viewSet(v,'newAnalysis',dti);
-
-% Save it
-saveAnalysis(v,dti.name);
-
-
-refreshMLRDisplay(v);
-
-keyboard
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrLifeImportFascicles    %

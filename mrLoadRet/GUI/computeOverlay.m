@@ -59,14 +59,13 @@ if ~isempty(curOverlays) && viewGet(thisView,'nscans') % there needs to be at le
     end
     curOverlays = [curOverlays corAnalOverlays];
   end
-            
-
 
   %get overlays and masks of clipped values 
   [overlayMasks,overlayImages,overlays.coords]= maskOverlay(thisView,curOverlays,scan,sliceInfo);
 else
   overlayImages = [];
 end
+
 if ~isempty(overlayImages)
   overlays.coords = overlays.coords{1};
   alphaOverlayMasks = overlayMasks{1}(:,:,:,nCurOverlays+1:2*nCurOverlays);

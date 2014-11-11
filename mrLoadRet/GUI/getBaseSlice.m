@@ -90,5 +90,5 @@ if ~isempty(baseData)
   end
 end
 
-disp(sprintf('(getBaseSlice) DEBUG: sliceIndex=%i, sliceNum=%i',sliceIndex,sliceNum));
+%disp(sprintf('(getBaseSlice) DEBUG: sliceIndex=%i, sliceNum=%i',sliceIndex,sliceNum));
 return

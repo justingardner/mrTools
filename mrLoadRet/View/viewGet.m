@@ -2129,7 +2129,7 @@ switch lower(param)
     % arcane logic.
     b = getBaseNum(view,varargin);
     % flat and surface always have to be 1
-    if viewGet(view,'baseType',b)>2
+    if viewGet(view,'baseType',b)>0
       val = 1;
       return
     end
@@ -4361,6 +4361,11 @@ for i = 1:length(C{1})
   if (strncmp(C{1}{i},'case',4))
     collectComments = 1;
     commands{end+1} = C{2}{i};
+    % get rid of any commands that start with a number (this are spuriuse
+    % case clauses from above
+    if (length(commands{end})==0) || any(strcmp(commands{end}(1),{'0','1','2','3'}))
+      commands = {commands{1:end-1}};
+    end
   end
 end
 
