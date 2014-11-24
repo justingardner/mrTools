@@ -104,11 +104,11 @@ switch action
     mlrAdjustGUI(thisView,'set','coronalRadioButton','fontSize',checkFontSize);
 
     % change multiAxis control position and fontSize
-    mlrAdjustGUI(thisView,'set','axisSingle','position',  [0.01    0.788   0.23    checkBoxHeight]);
+    mlrAdjustGUI(thisView,'set','axisSingle','position',  [0.01    0.788   0.1    checkBoxHeight]);
     mlrAdjustGUI(thisView,'set','axisSingle','fontSize',checkFontSize);
-    mlrAdjustGUI(thisView,'set','axisMulti','position',  [0.11    0.788   0.23    checkBoxHeight]);
+    mlrAdjustGUI(thisView,'set','axisMulti','position',  [0.11    0.788   0.1    checkBoxHeight]);
     mlrAdjustGUI(thisView,'set','axisMulti','fontSize',checkFontSize);
-    mlrAdjustGUI(thisView,'set','axis3D','position',  [0.19    0.788   0.23    checkBoxHeight]);
+    mlrAdjustGUI(thisView,'set','axis3D','position',  [0.19    0.788   0.1    checkBoxHeight]);
     mlrAdjustGUI(thisView,'set','axis3D','fontSize',checkFontSize);
 
     mlrAdjustGUI(thisView,'set','baseGamma','string','Gamma');
