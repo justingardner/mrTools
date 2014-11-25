@@ -11,11 +11,32 @@
 %             mrTools - also, will bring back those paths when
 %             you quit and go back
 %
+%             run without any arguments to switch between mrTools/vistasoft
+%
+%             mlrPath
+%
+%             Or set which one you want to use:
+%
+%             mlrPath mrTools
+%             % -or-
+%             mlrPath vistasoft
+%
+%             figure out which mrTools path you are using
+% 
+%             mlrPath which
+%
+%             Or switch back to the one you started with
+%
+%             mlrPath revert
+%
+%
 function mlrPath(switchTo)
 
+verbose = true;
+
 % try to get paths for vista and for mlr
-vistaRoot = getRootPath('vista');
 mlrRoot = getRootPath('mlr');
+vistaRoot = getRootPath('vista');
 
 % try to guess vista from mlr if we didn't get it
 if isempty(vistaRoot) && ~isempty(mlrRoot)
@@ -29,13 +50,34 @@ if isempty(mlrRoot) && ~isempty(vistaRoot)
   if ~isdir(mlrRoot), mlrRoot = []; end
 end
 
+% add matlab utilities if we have it
+matlabUtilitiesPath = fullfile(mlrRoot,'mrUtilities');
+if ~isempty(mlrRoot) && isempty(findstr(matlabUtilitiesPath,path))
+  addpath(genpath(matlabUtilitiesPath));
+end
+
 % save as prefs
-if ~isempty(mlrRoot), mrSetPref('mlrPath',mlrRoot);end
-if ~isempty(vistaRoot), mrSetPref('vistaPath',vistaRoot);end
+if ~exist('mrSetPref')==2
+  if ~isempty(mlrRoot), mrSetPref('mlrPath',mlrRoot);end
+  if ~isempty(vistaRoot), mrSetPref('vistaPath',vistaRoot);end
+end
 
 % get which one we are using
 whichMLR = fileparts(fileparts(which('mrAlign')));
+[dump whichMLRName] = fileparts(whichMLR);
+whichMLRName = lower(whichMLRName);
 
+% check for secondary path
+hasBothPaths = false;
+otherPath = '';
+if strcmp(whichMLR,mlrRoot)
+  if ~isempty(which('mrVista')),hasBothPaths = true;end
+  otherPath = vistaRoot;
+else
+  if ~isempty(which('mrLoadRet')),hasBothPaths = true;end
+  otherPath = mlrRoot;
+end
+  
 % decide which one to switch to.
 if (nargin <= 0) || isempty(switchTo)
   if strcmp(whichMLR,vistaRoot) 
@@ -45,51 +87,146 @@ if (nargin <= 0) || isempty(switchTo)
   end
 end
 
-% get the top level names of paths
-[dump mlrRootName] = fileparts(mlrRoot);
-if isempty(mlrRootName),mlrRootName = mlrRoot;end
-mlrRootName = lower(mlrRootName);
-[dump vistaName] = fileparts(mlrRoot);
-if isempty(vistaName),vistaName = vistaRoot;end
-vistaName = lower(vistaName);
-[dump switchToName] = fileparts(switchTo);
-if isempty(switchToName),switchToName = switchTo;end
-switchToName = lower(switchToName);
+% get the top level names of mlrRoot
+if ~isempty(mlrRoot)
+  [dump mlrName] = fileparts(mlrRoot);
+  if isempty(mlrName),mlrName = mlrRoot;end
+  mlrName = lower(mlrName);
+else
+  % set root to empty string (so it works in fileparts)
+  mlrName = '';mlrRoot = '';
+end
+% get the top level names of vistaRoot
+if ~isempty(vistaRoot)
+  [dump vistaName] = fileparts(vistaRoot);
+  if isempty(vistaName),vistaName = vistaRoot;end
+  vistaName = lower(vistaName);
+else
+  vistaName = '';vistaRoot = '';
+end
+if ~isempty(switchTo)
+  [dump switchToName] = fileparts(switchTo);
+  if isempty(switchToName),switchToName = switchTo;end
+  switchToName = lower(switchToName);
+else
+  switchToName = '';switchTo = '';
+end
 
-% unknown switchTo
-if ~any(strcmp(switchToName,{mlrRootName,vistaName}))
-  disp(sprintf('(mlrLife) Currently using: %s',whichMLR));
+% a few names that the user can put for switchTo
+% make these the same as the actual directory name
+if any(strcmp(switchToName,{'mlr','mrtools'}))
+  switchToName = mlrName;
+  switchTo = mlrRoot;
+end
+if any(strcmp(switchToName,{'vista','vistasoft'}))
+  switchToName = vistaName;
+  switchTo = vistaRoot;
+end
+
+% user wants to revert to original path that was set
+% this happens when mrTools quits
+addOtherPath = [];
+if any(strcmp(switchToName,{'revert'}))
+  global mlrOriginalPath;
+  if isempty(mlrOriginalPath)
+    % not set in global, so grab from lastPath preference
+    [switchTo switchToName] = fileparts(mrGetPref('lastPath'));
+  else
+    [switchTo switchToName] = fileparts(mlrOriginalPath);
+  end
+  switchTo = fullfile(switchTo,switchToName);
+  switchToName = lower(switchToName);
+  % check whether we have to install the other path as well
+  global mlrOriginalHasBothPaths;
+  if isequal(mlrOriginalHasBothPaths,true)
+    if isequal(switchToName,mlrName)
+      addOtherPath = vistaRoot;
+    else
+      addOtherPath = mlrRoot;
+    end
+  end
+end
+  
+% unknown switchTo or missing path
+if ~any(strcmp(switchToName,{mlrName,vistaName}))
+  disp(sprintf('(mlrPath) Currently using: %s',whichMLR));
+  % check both paths
+  if hasBothPaths
+    disp(sprintf('(mlrPath) Secondary path is: %s',otherPath));
+  end
   return
 end  
 
+% no vista path
+if (strcmp(switchToName,vistaName) && isempty(vistaRoot))
+  disp(sprintf('(mlrPath) Could not find vistasoft path'));
+  return
+end
+
+% already have correct path (and there is only one path)
+% so nothing to do
+if isequal(whichMLRName,switchToName) && ~hasBothPaths && isempty(addOtherPath)
+  return
+end
+
 % display what we are going to do
 if verbose
-  disp(sprintf('(vista) Switching from %s to %s',whichMLR,switchTo));
+  % check both paths
+  if hasBothPaths
+    disp(sprintf('(mlrPath) Had both %s and %s leaving only %s',whichMLR,otherPath,switchTo));
+  else
+    disp(sprintf('(mlrPath) Switching from %s to %s',whichMLR,switchTo));
+  end
 end
+
+% now save what path we are using
+global mlrOriginalPath
+global mlrOriginalHasBothPaths
+if isempty(mlrOriginalPath)
+  mlrOriginalPath = whichMLR;
+  mlrOriginalHasBothPaths = hasBothPaths;
+end
+mrSetPref('lastPath',whichMLR);
 
 % first remove everyone
 warning('off','MATLAB:rmpath:DirNotFound')
-rmpath(genpath(mlrPath));
-rmpath(genpath(vistaPath));
+rmpath(genpath(mlrRoot));
+rmpath(genpath(vistaRoot));
 warning('on','MATLAB:rmpath:DirNotFound')
 
+% if adding the other path (this happens when we are adding
+% back both paths since this is the way they used to be - i.e. 
+% a revert call. Note this comes first so that it will not have
+% precedence in the path
+if ~isempty(addOtherPath)
+  addpath(genpath(addOtherPath));
+  if verbose
+    disp(sprintf('(mlrPath) Adding secondary path: %s',addOtherPath));
+  end
+end
+
 % switch path
-if strcmp(lower(switchToName),'mrtools')
+if strcmp(switchToName,mlrName)
   % add mrTools
   addpath(genpath(mlrRoot));
   % selectively add some paths from vista
   pathNames = {'mrDiffusion','mrMesh','utilities','mrBOLD/Utilities','fileFilters','mrAnatomy','mrBOLD/UI','external/pyrTools'};
+  addpath(vistaRoot);
   for i = 1:length(pathNames)
     if isdir(pathNames{i})
       addpath(genpath(fullfile(vistaRoot,pathNames{i})));
     end
   end
-elseif strcmp(lower(switchTo),'vista')
+elseif strcmp(switchToName,vistaName)
   % add vista
   addpath(genpath(vistaRoot));
   % add just the top level directory for mlr (so that we can have this
-  % function
+  % function)
   addpath(mlrRoot);
+else
+  % add back both
+  addpath(genpath(vistaRoot));
+  addpath(genpath(mlrRoot));
 end
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -107,6 +244,10 @@ if exist(functionName)
 else
   rootPath = [];
   % try to get the path
-  rootPath = mrGetPref(prefName);
+  if exist('mrGetPref')==2
+    rootPath = mrGetPref(prefName);
+  end
 end
 
+% make sure it exists
+if ~isdir(rootPath),rootPath = [];end

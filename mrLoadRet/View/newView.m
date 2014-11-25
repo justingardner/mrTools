@@ -9,6 +9,10 @@ if nargin == 0
 end
 
 view = [];
+
+% make sure paths are fixed to not to conflict with vista
+mlrPath mrTools
+
 % Define and initialize global variable MLR.
 mrGlobals
 if isempty(MLR.session)

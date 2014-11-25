@@ -85,3 +85,7 @@ else
 end
 clear global MLR
 
+% revert paths to what they were from before running mrTools
+mlrPath revert
+
+

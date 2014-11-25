@@ -27,6 +27,8 @@ if ~isfile('mrSession.mat')
   return
 end
 
+mlrPath mrTools;
+
 % Define and initialize global variable MLR.
 mrGlobals
 

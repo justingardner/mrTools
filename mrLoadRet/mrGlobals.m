@@ -12,6 +12,9 @@ global mrDEFAULTS
 
 % If MLR is not yet initialized then do so
 if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
+  
+    % make sure paths are fixed to not to conflict with vista
+    mlrPath mrTools
 
     % read the preferences and figlocs
     mrDEFAULTS = loadMrDefaults;
