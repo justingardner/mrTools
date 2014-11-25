@@ -1570,23 +1570,27 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       % get coordmap
       coordMap = view.baseVolumes(b).coordMap;
-      if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
-        % find intermideate values
-        vtcs = coordMap.innerVtcs + mean(corticalDepth)*(coordMap.outerVtcs-coordMap.innerVtcs);
-        val.tris = coordMap.tris;
-      elseif isfield(coordMap,'innerVtcs')
-        % if only inner is present then just return that
-        vtcs = coordMap.innerVtcs;
-        val.tris = coordMap.tris;
+      if ~isempty(coordMap)
+	if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
+	  % find intermideate values
+	  vtcs = coordMap.innerVtcs + mean(corticalDepth)*(coordMap.outerVtcs-coordMap.innerVtcs);
+	  val.tris = coordMap.tris;
+	elseif isfield(coordMap,'innerVtcs')
+	  % if only inner is present then just return that
+	  vtcs = coordMap.innerVtcs;
+	  val.tris = coordMap.tris;
+	else
+	  vtcs = [];
+	  val.tris = [];
+	end
+	% center surface
+	if ~isempty(vtcs)
+	  val.vtcs(:,1) = vtcs(:,2);
+	  val.vtcs(:,2) = vtcs(:,1);
+	  val.vtcs(:,3) = vtcs(:,3);
+	end
       else
-        vtcs = [];
-        val.tris = [];
-      end
-      % center surface
-      if ~isempty(vtcs)
-        val.vtcs(:,1) = vtcs(:,2);
-        val.vtcs(:,2) = vtcs(:,1);
-        val.vtcs(:,3) = vtcs(:,3);
+	val = [];
       end
     end
   case {'baseclip'}
