@@ -130,10 +130,16 @@ if any(strcmp(switchToName,{'revert'}))
   global mlrOriginalPath;
   if isempty(mlrOriginalPath)
     % not set in global, so grab from lastPath preference
-    [switchTo switchToName] = fileparts(mrGetPref('lastPath'));
+    revertPath = mrGetPref('lastPath');
   else
-    [switchTo switchToName] = fileparts(mlrOriginalPath);
+    revertPath = mlrOriginalPath;
   end
+  if isempty(revertPath)
+    disp(sprintf('(mlrPath) No path settings to revert to'));
+    return
+  end
+  % get the path parameters
+  [switchTo switchToName] = fileparts(revertPath);
   switchTo = fullfile(switchTo,switchToName);
   switchToName = lower(switchToName);
   % check whether we have to install the other path as well

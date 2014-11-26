@@ -652,7 +652,7 @@ for r = order
   % decide whether we are drawing perimeters or not
   doPerimeter = ismember(option,{'all perimeter','selected perimeter','group perimeter'});
   if baseType == 2
-    baseSurface = viewGet(view,'baseSurface');
+    baseSurface = viewGet(view,'baseSurface',baseNum);
     if 0 %%doPerimeter
       if verbose, disppercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
