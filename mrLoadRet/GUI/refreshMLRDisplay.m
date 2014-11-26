@@ -397,29 +397,35 @@ if verbose>1,disppercent(inf);,end
 
 % Display colorbar
 if dispColorbar
-  if verbose>1,disppercent(-inf,'colorbar');,end
-  cbar = permute(NaN(size(cmap)),[3 1 2]);
-  for iOverlay = 1:size(cmap,3)
-    cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,256],1); 
-  end
-  image(cbar,'Parent',gui.colorbar);
-  if size(cbar,1)==1
-    set(gui.colorbar,'YTick',[]);
-    set(gui.colorbar,'XTick',[1 64 128 192 256]);
-    set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
-    if isfield(gui,'colorbarRightBorder')
-      set(gui.colorbarRightBorder,'YTick',[]);
+  if isempty(cmap)
+    set(gui.colorbar,'Visible','off');
+  else
+    set(gui.colorbar,'Visible','on');
+    
+    if verbose>1,disppercent(-inf,'colorbar');,end
+    cbar = permute(NaN(size(cmap)),[3 1 2]);
+    for iOverlay = 1:size(cmap,3)
+      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,256],1); 
     end
-  else 
-    set(gui.colorbar,'XTick',[]);
-    set(gui.colorbar,'YTick',(1:size(cbar,1)));
-    set(gui.colorbar,'YTickLabel',cbarRange(:,1));
-    if isfield(gui,'colorbarRightBorder')
-      set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
-      set(gui.colorbarRightBorder,'YTickLabel',flipud(cbarRange(:,2)));
+    image(cbar,'Parent',gui.colorbar);
+    if size(cbar,1)==1
+      set(gui.colorbar,'YTick',[]);
+      set(gui.colorbar,'XTick',[1 64 128 192 256]);
+      set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
+      if isfield(gui,'colorbarRightBorder')
+	set(gui.colorbarRightBorder,'YTick',[]);
+      end
+    else 
+      set(gui.colorbar,'XTick',[]);
+      set(gui.colorbar,'YTick',(1:size(cbar,1)));
+      set(gui.colorbar,'YTickLabel',cbarRange(:,1));
+      if isfield(gui,'colorbarRightBorder')
+	set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
+	set(gui.colorbarRightBorder,'YTickLabel',flipud(cbarRange(:,2)));
+      end
     end
+    if verbose>1,disppercent(inf);,end
   end
-  if verbose>1,disppercent(inf);,end
 end
 
 % Display the ROIs

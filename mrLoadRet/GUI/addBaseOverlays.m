@@ -57,5 +57,7 @@ end
 % add alpha map
 overlays.alphaMaps(:,:,:,overlayNum) = baseOverlayAlpha;
 
-  
+% add bogus cmap (so that refreshMLRDisplay has something)
+overlays.cmap = [];
+overlays.range = [0 1];
 
