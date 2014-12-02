@@ -39,8 +39,10 @@ switch action
     mlrAdjustGUI(v,'add','control','multiBaseAlphaSlider','panel','Multiple base display','style','slider','position', [0.22    0.76    0.57   0.07 ],'String','Alpha','SliderStep',[0.1 0.25],'Callback',@multiBaseAlpha);
     mlrAdjustGUI(v,'add','control','multiBaseAlphaEdit','panel','Multiple base display','style','edit','position', [0.8    0.76    0.19   0.07 ],'Callback',@multiBaseAlpha);
     % add overlay popup (for setting the base pseudo color - or overlay)
+    colors = color2RGB;
+    colors = {'none' colors{:}};
     mlrAdjustGUI(v,'add','control','multiBaseOverlayText','panel','Multiple base display','style','text','position', [0.01    0.68    0.2   0.07 ],'String','Overlay');
-    mlrAdjustGUI(v,'add','control','multiBaseOverlay','panel','Multiple base display','style','popup','position', [0.22    0.68    0.72   0.07 ],'String',color2RGB,'Callback',@multiBaseOverlay);
+    mlrAdjustGUI(v,'add','control','multiBaseOverlay','panel','Multiple base display','style','popup','position', [0.22    0.68    0.72   0.07 ],'String',colors,'Callback',@multiBaseOverlay);
     % add color alpha
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaText','panel','Multiple base display','style','text','position', [0.01    0.6    0.2   0.07 ],'String','Overlay Alpha');
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaSlider','panel','Multiple base display','style','slider','position', [0.22    0.6    0.57   0.07 ],'String','Alpha','SliderStep',[0.1 0.25],'Callback',@multiBaseOverlayAlpha);
@@ -48,7 +50,7 @@ switch action
     
 
     % ROI controls
-    mlrAdjustGUI(v,'add','control','roiBaseListBox','panel','Multiple base display','style','listbox','position', [0.02    0.1    0.96   0.38 ],'Callback',@roiListboxSelect,'Max',2);
+    %mlrAdjustGUI(v,'add','control','roiBaseListBox','panel','Multiple base display','style','listbox','position', [0.02    0.1    0.96   0.38 ],'Callback',@roiListboxSelect,'Max',2);
 
     % add the callback that will tell the above listbox when new
     % bases have been added
@@ -392,7 +394,12 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     multiBaseOverlay = mlrAdjustGUI(v,'get','multiBaseOverlay');
     baseColorNames = get(multiBaseOverlay,'String');
     % find a match
-    baseMatch = find(strcmp(base.overlay,baseColorNames));
+    if isempty(base.overlay)
+      baseMatch = 1;
+    else
+      baseMatch = find(strcmp(base.overlay,baseColorNames));
+    end
+      
     if ~isempty(baseMatch)
       % set the value
       set(multiBaseOverlay,'Value',baseMatch);
@@ -505,6 +512,7 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
   % set the base color
   baseColors = get(hObject,'String');
   baseColor = baseColors{get(hObject,'Value')};
+  if strcmp(baseColor,'none') baseColor = [];end
   
   % and set the base with that color
   v = viewSet(v,'baseOverlay',baseColor,baseNum);

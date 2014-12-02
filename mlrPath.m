@@ -135,7 +135,6 @@ if any(strcmp(switchToName,{'revert'}))
     revertPath = mlrOriginalPath;
   end
   if isempty(revertPath)
-    disp(sprintf('(mlrPath) No path settings to revert to'));
     return
   end
   % get the path parameters
