@@ -33,7 +33,7 @@ for i = 1:length(prefNames)
   if ~isfield(mrDefaults.prefs,prefNames{i}) | isempty(mrDefaults.prefs.(prefNames{i}))
     % if we have a cell array, that means a list of different possibilities, default
     % to the top of the list
-    if iscell(prefDefaults{i})
+    if iscell(prefDefaults{i}) && ~isempty(prefDefaults{i})
       mrDefaults.prefs.(prefNames{i}) = prefDefaults{i}{1};
     % otherwise as long as the default is not empty, use it.
     elseif ~isempty(prefDefaults{i})
