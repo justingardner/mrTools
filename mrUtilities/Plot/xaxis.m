@@ -26,4 +26,6 @@ a = axis;
 if isempty(xmin),xmin = a(1);end
 if isempty(xmax),xmax = a(2);end
 
-axis([xmin xmax a(3) a(4)]);
+if xmin<xmax
+  axis([xmin xmax a(3) a(4)]);
+end
