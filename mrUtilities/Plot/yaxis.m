@@ -26,4 +26,6 @@ a = axis;
 if isempty(ymin),ymin=a(3);end
 if isempty(ymax),ymax=a(4);end
 
-axis([a(1) a(2) ymin ymax]);
+if ymin < ymax
+  axis([a(1) a(2) ymin ymax]);
+end
