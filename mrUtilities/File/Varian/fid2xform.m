@@ -91,7 +91,12 @@ if isfield(procpar,'intlv')
     info.intlv = procpar.intlv;
   end
 else
-  info.intlv = 'n';
+  if isfield(procpar,'transhim')
+    info.intlv = 'y';
+    procpar.numshots = procpar.nv;
+  else
+    info.intlv = 'n';
+  end
 end
 
 % check for an error in intlv setting, which happens when intlv is set to 'y' and
