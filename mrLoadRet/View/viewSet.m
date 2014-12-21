@@ -820,6 +820,17 @@ switch lower(param)
       view.curslice.corticalDepth(2) = val;
       mlrGuiSet(view,'corticalMaxDepth',val);
       
+  case{'curcoords'}
+    % view = viewSet(view,'curcoords');
+    curBase = viewGet(view,'curBase');
+    numBases = viewGet(view,'numberofBaseVolumes');
+    if (curBase > 0) & (curBase <= numBases)
+      % set curCoords in base
+      view.baseVolumes(curBase).curCoords = val;
+    end
+    % update gui
+    mlrGuiSet(view,'curCoords',val);
+    
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
@@ -1005,7 +1016,7 @@ switch lower(param)
       view.baseVolumes(baseNum).alpha = alpha;
     end
 
-  case{'basemultidisplay'}
+ case{'basemultidisplay'}
     % view = viewSet(view,'baseMultiDisplay',multiDisplay,[baseNum]);
     curBase = viewGet(view, 'curBase');
     baseNum = getBaseNum(view,varargin);
@@ -2132,6 +2143,13 @@ switch lower(param)
       if isempty(curSlice) || curSlice ~= val
 	view.curslice.sliceNum = val;
 	mlrGuiSet(view,'slice',val);
+	% set in base
+	curBase = viewGet(view,'curBase');
+	numBases = viewGet(view,'numberofBaseVolumes');
+	if (curBase > 0) & (curBase <= numBases)
+	  % set curCoords in base
+	  view.baseVolumes(curBase).curCoords(sliceIndex) = val;
+	end
       end
     else
       disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,nSlices));

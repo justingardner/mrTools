@@ -48,15 +48,12 @@ gui.anatPosition = [0.3 0.2+gui.marginSize 1-0.3-gui.marginSize 1-0.2-2*gui.marg
 % in an arbitrary position, being careful not to overlap
 gui.sliceAxis(1) = subplot('Position',[0 0 0.01 0.01],'Parent',fig);
 axis(gui.sliceAxis(1),'off');
-set(gui.sliceAxis(1),'ButtonDownFcn',@sliceAxisButtonDown);
 set(gui.sliceAxis(1),'HandleVisibility','off');
 gui.sliceAxis(2) = subplot('Position',[0.02 0 0.01 0.01],'Parent',fig);
 axis(gui.sliceAxis(2),'off');
-set(gui.sliceAxis(2),'ButtonDownFcn',@sliceAxisButtonDown);
 set(gui.sliceAxis(2),'HandleVisibility','off');
 gui.sliceAxis(3) = subplot('Position',[0.02 0.02 0.01 0.01],'Parent',fig);
 axis(gui.sliceAxis(3),'off');
-set(gui.sliceAxis(3),'ButtonDownFcn',@sliceAxisButtonDown);
 set(gui.sliceAxis(3),'HandleVisibility','off');
 
 % save the axis handles
@@ -106,7 +103,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	end
       else
         %try to load 
-  [view,baseLoaded] = loadAnatomy(view);
+	[view,baseLoaded] = loadAnatomy(view);
       end
       disppercent(inf);
     end
@@ -166,7 +163,18 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       end
       disppercent(inf);
     end
-    
+    % check panels that need to be hidden
+    if isfield(mrLastView.viewSettings,'panels')
+      for iPanel = 1:length(mrLastView.viewSettings.panels)
+	% if it is not displaying then turn it off
+	if ~mrLastView.viewSettings.panels{iPanel}{4}
+	  panelName = mrLastView.viewSettings.panels{iPanel}{1};
+	  mlrGuiSet(view,'hidePanel',panelName);
+	  % turn off check
+	  mlrAdjustGUI(view,'set',panelName,'Checked','off');
+	end
+      end
+    end
     % add here, to load more info...
     % and refresh
     disppercent(-inf,sprintf('(mrOpenWindow) Refreshing MLR display'));
@@ -189,34 +197,28 @@ mrSetPref('importROIPath','');
 %    loadAnatomy    %
 %%%%%%%%%%%%%%%%%%%%%
 function [view,baseLoaded] = loadAnatomy(view)
-  % for when there is no mrLastView
-  % open an anatomy, if there is one
-  anatdir = dir('Anatomy/*.img');
-  if ~isempty(anatdir)
-    baseLoaded = 1;
-    % load the first anatomy in the list
-    view = loadAnat(view,anatdir(1).name);
-    % if it is a regular anatomy
-    if viewGet(view,'baseType') == 0
-      view = viewSet(view,'sliceOrientation','coronal');
-      % set to display a middle slice
-      baseDims = viewGet(view,'baseDims');
-      baseSliceIndex = viewGet(view,'baseSliceIndex');
-      view = viewSet(view,'curSlice',floor(baseDims(baseSliceIndex)/2));
-    end
-    % change group to last in list
-    view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
-    % and refresh
-  else
-    baseLoaded = 0;
+
+% for when there is no mrLastView
+% open an anatomy, if there is one
+anatdir = dir('Anatomy/*.img');
+if ~isempty(anatdir)
+  baseLoaded = 1;
+  % load the first anatomy in the list
+  view = loadAnat(view,anatdir(1).name);
+  % if it is a regular anatomy
+  if viewGet(view,'baseType') == 0
+    view = viewSet(view,'sliceOrientation','coronal');
+    % set to display a middle slice
+    baseDims = viewGet(view,'baseDims');
+    baseSliceIndex = viewGet(view,'baseSliceIndex');
+    view = viewSet(view,'curSlice',floor(baseDims(baseSliceIndex)/2));
   end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    sliceAxisButtonDown    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function sliceAxisButtonDown(hObject,eventdata)
-
-keyboard
+  % change group to last in list
+  view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
+  % and refresh
+else
+  baseLoaded = 0;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    multiAxisCallback    %

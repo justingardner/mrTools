@@ -14,6 +14,7 @@ if verbose,tic,end
 
 % get current base
 v = viewGet(viewNum,'view');
+viewNum = viewGet(v,'viewNum');
 fig = viewGet(v,'figNum');
 gui = guidata(fig);
 baseNum = viewGet(v,'currentBase');
@@ -73,15 +74,17 @@ if (baseType == 0) && (baseMultiAxis>0)
     % if we are displaying all slice dimenons and the #d
     if baseMultiAxis == 1
       % display each slice index
-      [v img{iSliceIndex} base roi overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
     else
       % display each slice index
-      [v img{iSliceIndex} base] = dispBase([],v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
     end
   end
 
   % now draw the 3D intersection
   baseDims = viewGet(v,'baseDims',baseNum);
+
+  roiContourWidth = mrGetPref('roiContourWidth');
 
   % draw each dimension in turn using images that were returned
   % by each call to dispBase from above
@@ -92,42 +95,69 @@ if (baseType == 0) && (baseMultiAxis>0)
   imgSurface = surf(gui.axis,y,x,ones(size(x,1),size(x,2))*curCoords(3));
   set(imgSurface,'CData',permute(img{3},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
   hold(gui.axis,'on');
+  % draw rois
+  for iROI = 1:length(roi{3})
+    if ~isempty(roi{3}{iROI})
+      z = ones(size(roi{3}{iROI}.lines.x))*curCoords(3);
+      line(roi{3}{iROI}.lines.x,roi{3}{iROI}.lines.y,z,'Color',roi{3}{iROI}.color,'LineWidth',roiContourWidth,'Parent',gui.axis);
+    end
+  end
 
   % 2nd dimension (coronal)
   [x z] = meshgrid(1:baseDims(1),1:baseDims(3));
   imgSurface = surf(gui.axis,ones(size(x,1),size(x,2))*curCoords(2),x,z);
   set(imgSurface,'CData',permute(img{2},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+  % draw rois
+  for iROI = 1:length(roi{2})
+    if ~isempty(roi{2}{iROI})
+      z = ones(size(roi{2}{iROI}.lines.x))*curCoords(2);
+      line(z,roi{2}{iROI}.lines.y,roi{2}{iROI}.lines.x,'Color',roi{2}{iROI}.color,'LineWidth',roiContourWidth,'Parent',gui.axis);
+    end
+  end
 
   % 3rd dimension (saggital)
   [y z] = meshgrid(1:baseDims(2),1:baseDims(3));
   imgSurface = surf(gui.axis,y,ones(size(y,1),size(y,2))*curCoords(1),z);
   set(imgSurface,'CData',permute(img{1},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+  % draw rois
+  for iROI = 1:length(roi{1})
+    if ~isempty(roi{1}{iROI})
+      z = ones(size(roi{1}{iROI}.lines.x))*curCoords(1);
+      line(roi{1}{iROI}.lines.y,z,roi{1}{iROI}.lines.x,'Color',roi{1}{iROI}.color,'LineWidth',roiContourWidth,'Parent',gui.axis);
+    end
+  end
 
   % set the axis
   axis(gui.axis,'off');
   axis(gui.axis,'tight');
+  % make sure x direction is normal to make right/right
+  set(gui.axis,'XDir','reverse');
+  set(gui.axis,'YDir','normal');
+  set(gui.axis,'ZDir','normal');
+  % set the size of the field of view in degrees
+  % i.e. 90 would be very wide and 1 would be ver
+  % narrow. 9 seems to fit the whole brain nicely
+  % this hard-coded value also appears in dispBase
+  camva(gui.axis,9);
+  axis(gui.axis,'equal');
   setMLRViewAngle(v,gui.axis);
   
-  % turn on 3D free roate if we are just displaying the one 3D axis
-  if baseMultiAxis == 2
-    mlrSetRotate3d(v,'on');
-  else
-    mlrSetRotate3d(v,'off');
-  end
 else
-  if baseType == 0
-    % no rotate
-    mlrSetRotate3d(v,'off');
-  else
-    % no rotate
-    mlrSetRotate3d(v,'on');
-  end
   % set the gui to display only a single axis
   mlrGuiSet(v,'multiAxis',0);
   % just draw a single base
   [v img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,v,baseNum,gui,true,verbose);
   % keep cursliceBaseCoords
   v = viewSet(v,'cursliceBaseCoords',curSliceBaseCoords);
+end
+
+% turn on 3D free roate if we are just displaying the one 3D axis
+if ~mrInterrogator('isactive',viewNum)
+  if (baseType == 2) || (baseMultiAxis == 2)
+    mlrSetRotate3d(v,'on');
+  else
+    mlrSetRotate3d(v,'off');
+  end
 end
 
 axes(gui.axis);
@@ -146,6 +176,11 @@ if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
   end
 end
 
+if (baseType == 0) && (baseMultiAxis>0)
+  % set the camera taret to center of the volume
+  camtarget(gui.axis,baseDims([2 1 3])/2)
+end
+
 if verbose>1,disppercent(-inf,'rendering');end
 %this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
 %In cases where it is more than the number of overlay names in the box
@@ -156,8 +191,9 @@ if strcmp(get(gui.overlayPopup,'style'),'listbox')
   warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
   set(gui.overlayPopup,'ListboxTop',min(get(gui.overlayPopup,'ListboxTop'),length(get(gui.overlayPopup,'string'))));
 end
+
 %draw the figure
-drawnow
+drawnow('update');
 if strcmp(get(gui.overlayPopup,'style'),'listbox')
   warning('on','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
 end
@@ -317,7 +353,19 @@ if isempty(fig)
 end 
 
 % if we are not displaying then, just return
-if isempty(hAxis),return,end
+% after computing rois
+if isempty(hAxis)
+  % just compute the axis (displayROIs will not draw
+  % if hAxis is set to empty. We need the ROI x,y for
+  % drawing the coordinates into the multiAxis 3D
+  nROIs = viewGet(v,'numberOfROIs');
+  if nROIs
+    roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+  else
+    roi = [];
+  end
+  return
+end
 
 % Display the image
 if verbose>1,disppercent(-inf,'Displaying image');,end
@@ -361,11 +409,11 @@ else
     % get xform that xforms coordinates from this base to
     % the current base
     base2base = inv(viewGet(v,'base2base',baseNum));
-    if ~isequal(base2base,eye(4))
+    % remove some sigfigs so that the isequal check works
+    if ~isequal(round(base2base*100000)/100000,eye(4))
       % homogenous coordinates
       baseSurface.vtcs(:,4) = 1;
       swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-      swapXY = eye(4);
       % xform to current base coordinates
       baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
       % and remove the homogenous 1
@@ -428,12 +476,10 @@ if dispColorbar
   end
 end
 
-% Display the ROIs
+% Display ROIs
 nROIs = viewGet(v,'numberOfROIs');
 if nROIs
-  %  if baseType <= 1
   roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
-  %  end
 else
   roi = [];
 end
@@ -682,9 +728,9 @@ for r = order
     roiColors(y,1) = roi{r}.color(1);
     roiColors(y,2) = roi{r}.color(2);
     roiColors(y,3) = roi{r}.color(3);
- 		roi{r}.vertices=y;
-		roi{r}.overlayImage = roiColors;
-    if ~isempty(fig)
+    roi{r}.vertices=y;
+    roi{r}.overlayImage = roiColors;
+    if ~isempty(fig) && ~isempty(hAxis)
       patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',hAxis);
     end
     continue
@@ -780,15 +826,18 @@ for r = order
     % save to cache (since other functions like mrPrint need this
     view = viewSet(view,'ROICache',roi{r},r);
     % now render those lines
-    line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',hAxis);
+    if ~isempty(hAxis)
+      line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',hAxis);
+    end
   else
     roi{r}.lines.x = [];
     roi{r}.lines.y = [];
   end
 end
 if baseType == 2,return,end
+
 % label them, if labelROIs is set
-if labelROIs
+if labelROIs && ~isempty(hAxis)
   for r = order
     % get x, y lines for this roi on this slice (calculated above)
     x = roi{r}.lines.x(~isnan(roi{r}.lines.x));

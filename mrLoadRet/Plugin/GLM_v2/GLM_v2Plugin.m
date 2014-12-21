@@ -95,7 +95,7 @@ switch action
     mlrGuiSet(thisView,'corticalmindepth',corticalDepth);
     mlrAdjustGUI(thisView,'add','control','linkMinMaxDepthCheck','style','checkbox','value',1,...
         'fontSize', checkFontSize,'visible',corticalDepthVisibility,...
-        'String','Fix Depth Range','position',                    [0.095   0.79    0.23   checkBoxHeight]);
+        'String','Fix Depth Range','position',                    [0.095   0.79    0.13   checkBoxHeight]);
     mlrAdjustGUI(thisView,'set','sagittalRadioButton','position', [0.01    0.815   0.1    0.025]);
     mlrAdjustGUI(thisView,'set','sagittalRadioButton','fontSize',checkFontSize);
     mlrAdjustGUI(thisView,'set','axialRadioButton','position',    [0.11    0.815   0.07   0.025]);

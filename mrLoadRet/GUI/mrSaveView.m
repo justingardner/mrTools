@@ -14,22 +14,9 @@ if ~isempty(fig)
   mrSetFigLoc('mrLoadRetGUI',get(fig,'Position'));
 end
 
-%--------(This is obsolete, but kept for backward compatibility)
-% remember GUI settings 
-viewSettings.curBase = viewGet(v,'curBase');
-viewSettings.rotate = viewGet(v,'rotate');
-viewSettings.curScan = viewGet(v,'curScan');
-viewSettings.curSlice = viewGet(v,'curSlice');
-viewSettings.corticalDepth = viewGet(v,'corticalDepth');
-viewSettings.curGroup = viewGet(v,'curGroup');
-viewSettings.sliceOrientation = viewGet(v,'sliceOrientation');
-viewSettings.overlayMin = viewGet(v,'overlayMin');
-viewSettings.overlayMax = viewGet(v,'overlayMax');
-viewSettings.alpha = viewGet(v,'alpha');
-viewSettings.showROIs = viewGet(v,'showROIs');
-viewSettings.labelROIs = viewGet(v,'labelROIs');
-viewSettings.roiGroup = viewGet(v,'roiGroupNames');
-%--------(This is obsolete, but kept for backward compatibility)
+% remember settings that are not in view
+mrGlobals;
+viewSettings.panels = MLR.panels;
 
 homeDir = viewGet(v,'homeDir');
 try

@@ -50,7 +50,7 @@ elseif ~ieNotDefined('varargin') && (length(varargin)==1) && isstr(varargin{1}) 
   return
 end
 % If 'view' is a viewNum, find the corresponding view structure
-if isnumeric(view) & ~isempty(view)
+if isnumeric(view) && isscalar(view) && ~isempty(view) && (view<= length(MLR.views))
   view = MLR.views{view};
 end
 
@@ -1626,7 +1626,7 @@ switch lower(param)
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      if ~length(view.baseVolumes(b).curCoords) == 3
+      if length(view.baseVolumes(b).curCoords) == 3
 	val = view.baseVolumes(b).curCoords(viewGet(view,'baseSliceIndex',b));
       end
     end
@@ -2132,9 +2132,14 @@ switch lower(param)
     % function. Permutation matrix is set by loadAnat using even more
     % arcane logic.
     b = getBaseNum(view,varargin);
-    % flat and surface always have to be 1
-    if viewGet(view,'baseType',b)>0
+    baseType = viewGet(view,'baseType',b);
+    % surface always has to be 1
+    if baseType==2
       val = 1;
+      return
+    % flats have to be 3
+    elseif baseType == 1
+      val = 3;
       return
     end
     sliceOrientation = viewGet(view,'sliceOrientation');
@@ -4034,7 +4039,7 @@ switch lower(param)
         handles = guidata(fig);
 	% adding 90 because this puts a typical base
 	% in the most natural orientation
-        val = get(handles.rotateSlider,'Value')+90;
+        val = get(handles.rotateSlider,'Value');
       else
         % otherwise gui is not running get from the structure
         curBase = viewGet(view,'curBase');

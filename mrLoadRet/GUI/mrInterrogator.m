@@ -118,19 +118,6 @@ if value > 1
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% test whether mouse is in image
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function retval = mouseInImage(xpos,ypos)
-
-mrGlobals;
-
-if isnan(xpos)
-    retval = 0;
-else
-    retval = 1;
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mousemove
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mouseMoveHandler(viewNum)
@@ -138,57 +125,51 @@ function mouseMoveHandler(viewNum)
 mrGlobals;
 
 % get pointer
-[x y s xBase yBase sBase xTal yTal zTal] = getMouseCoords(viewNum);
+coords = mlrGetMouseCoords(viewNum);
 
 % check location in bounds on image
-if mouseInImage(x,y)
-    % set pointer to crosshairs
-    set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
-    % set the xpos/ypos textbox
-    set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
-    % set the overlay value
-    overlayVal = viewGet(MLR.interrogator{viewNum}.viewNum,'overlayDataVal',x,y,s);
-    set(MLR.interrogator{viewNum}.hOverlayLabel,'String',viewGet(MLR.interrogator{viewNum}.viewNum,'overlayName'));
-    if ~isempty(overlayVal)
-      set(MLR.interrogator{viewNum}.hOverlay,'String',sprintf('[%f]',overlayVal));
-    else
-      set(MLR.interrogator{viewNum}.hOverlay,'String','');
-    end
-else
-    % set pointer to arrow
-    set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
-    % set strings to empty
-    set(MLR.interrogator{viewNum}.hPos,'String','');
+if ~isempty(coords.scan)
+  % set pointer to crosshairs
+  set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
+  % set the xpos/ypos textbox
+  set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',coords.scan.x,coords.scan.y,coords.scan.z));
+  % set the overlay value
+  overlayVal = viewGet(MLR.interrogator{viewNum}.viewNum,'overlayDataVal',coords.scan.x,coords.scan.y,coords.scan.z);
+  set(MLR.interrogator{viewNum}.hOverlayLabel,'String',viewGet(MLR.interrogator{viewNum}.viewNum,'overlayName'));
+  if ~isempty(overlayVal)
+    set(MLR.interrogator{viewNum}.hOverlay,'String',sprintf('[%f]',overlayVal));
+  else
     set(MLR.interrogator{viewNum}.hOverlay,'String','');
+  end
+else
+  % set pointer to arrow
+  set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
+  % set strings to empty
+  set(MLR.interrogator{viewNum}.hPos,'String','');
+  set(MLR.interrogator{viewNum}.hOverlay,'String','');
 end
-if mouseInImage(xBase,yBase)
-  set(MLR.interrogator{viewNum}.hPosBase,'String',sprintf('[%0.4g %0.4g %0.4g]',xBase,yBase,sBase));
+if ~isempty(coords.base)
+  set(MLR.interrogator{viewNum}.hPosBase,'String',sprintf('[%0.4g %0.4g %0.4g]',coords.base.x,coords.base.y,coords.base.z));
 else
   set(MLR.interrogator{viewNum}.hPosBase,'String','');
 end
 
-if mouseInImage(xTal, yTal)
+if ~isempty(coords.tal)
   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Tal');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
-  set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.4g %0.4g %0.4g]',xTal,yTal,zTal));
-% % else
-% %   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','off');
-% %   set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
-% % end
-% % 
-% % if ~mouseInImage(xTal,yTal) && mouseInImage(xBase,yBase) % display magnet coordinates as well
-elseif mouseInImage(xBase,yBase) % display magnet coordinates as well
+  set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.4g %0.4g %0.4g]',coords.tal.x,coords.tal.y,coords.tal.z));
+elseif ~isempty(coords.base) % display magnet coordinates as well
   % get the *original* base2mag 
   base2mag = viewGet(MLR.interrogator{viewNum}.viewNum,'baseQform');
   base2mag = base2mag * shiftOriginXform;
-  magCoords = base2mag*[xBase yBase sBase 1]';
+  magCoords = base2mag*[coords.base.x coords.base.y coords.base.z 1]';
   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Magnet');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.1f %0.1f %0.1f]',magCoords(1),magCoords(2),magCoords(3)));
 else
-	set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
+  set(MLR.interrogator{viewNum}.hPosTal,'visible','off');
 end
 
 
@@ -214,100 +195,6 @@ if 0
     end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% get current mouse position in image coordinates
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x y s xBase yBase sBase xTal yTal zTal] = getMouseCoords(viewNum)
-
-% get the view
-mrGlobals;
-view = viewGet([],'view',viewNum);
-
-% no bases
-if viewGet(view,'numBase') == 0
-  x = nan;y= nan;s = nan;xBase = nan;yBase = nan;sBase = nan;xTal = nan;yTal = nan;zTal = nan;
-  return
-end
-baseType = viewGet(view,'baseType');
-
-% get location of pointer
-pointerLoc = get(MLR.interrogator{viewNum}.axesnum,'CurrentPoint');
-
-if baseType <= 1
-  mouseY = round(pointerLoc(1,1));
-  mouseX = round(pointerLoc(1,2));
-
-  % get base coordinates
-  baseCoords = viewGet(view,'cursliceBaseCoords');
-  % convert mouse to baseCoords
-  if (mouseX>0) && (mouseX<=size(baseCoords,1)) && (mouseY>0) && (mouseY<=size(baseCoords,2))
-    xBase = baseCoords(mouseX,mouseY,1);
-    yBase = baseCoords(mouseX,mouseY,2);
-    sBase = baseCoords(mouseX,mouseY,3);
-  else
-    x = nan;y = nan; s = nan;
-    xBase = nan;yBase = nan; sBase = nan;
-    xTal = nan; yTal = nan; zTal = nan;
-    return
-  end
-else
-  % handle getting coordinates for surface
-  baseSurface = viewGet(view,'baseSurface');
-  baseDims = viewGet(view,'baseSurfaceDims');
-  pos = [];xBase = nan; yBase = nan; sBase = nan;
-  % check mouse bounding box coords against baseDims
-  % for a quick check to see if we are in the volume
-  if all(pointerLoc(1,:) >= 0)
-    % then use select3d which is slooow, but accurate
-    hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
-    % make sure we are using the correct object (should be the 3D
-    % brain). Use end here because with searchForVoxel we plot a
-    % point on the image and the brain object always seems to be
-    % last. But if this is not always the case, then we may need
-    % to do a little more work here to find the correct object
-    [pos v vi] = select3d(hobj(end));
-    % convert the index to the coordinates
-    if ~isempty(pos)
-      baseCoordMap = viewGet(view,'baseCoordMap');
-      %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
-      corticalSlice = max(1,ceil(mean(viewGet(view,'corticalDepth'))*size(baseCoordMap.coords,5)));
-      pos = round(squeeze(baseCoordMap.coords(1,vi,1,:,corticalSlice)));
-      %pos = round(squeeze(baseCoordMap.coords(1,vi,1,:)));
-      xBase = pos(1);yBase = pos(2);sBase = pos(3);
-    end
-  end      
-end
-
-% transform from base coordinates to talairach coordinates, if the base has a talairach transform defined
-base2tal = viewGet(view,'base2tal'); % keyboard
-if(~isempty(base2tal))
-  talCoords = round(base2tal * [xBase yBase sBase 1]');
-  xTal = talCoords(1); yTal = talCoords(2); zTal = talCoords(3);
-else
-  xTal = nan; yTal = nan; zTal = nan;
-end
-
-
-% transform from base coordinates into scan coordinates
-base2scan = viewGet(view,'base2scan');
-if isempty(base2scan), x = nan; y=nan; s=nan; return,  end
-transformed = round(base2scan*[xBase yBase sBase 1]');
-
-x = transformed(1);
-y = transformed(2);
-s = transformed(3);
-
-% get the scan dims to make sure we haven't jumped off end
-% of scan
-scanDims = viewGet(view,'scanDims',viewGet(view,'curScan'));
-if ((x < 1) || (x > scanDims(1)) || ...
-        (y < 1) || (y > scanDims(2)) || ...
-        (s < 1) || (s > scanDims(3)))
-    x = nan;y = nan;s = nan;
-end
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % mouseup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -326,24 +213,29 @@ function mouseDownHandler(viewNum)
 mrGlobals;
 
 % get pointer
-[x y s xBase yBase sBase xTal yTal zTal] = getMouseCoords(viewNum);
+coords = mlrGetMouseCoords(viewNum);
 
 % set the points in the global, so that they
 % are accessible by doing a viewGet
-MLR.interrogator{viewNum}.mouseDownBaseCoords = [xBase yBase sBase];
-MLR.interrogator{viewNum}.mouseDownScanCoords = [x y s];
+if ~isempty(coords.base)
+  MLR.interrogator{viewNum}.mouseDownBaseCoords = [coords.base.x coords.base.y coords.base.z];
+else
+  MLR.interrogator{viewNum}.mouseDownBaseCoords = [nan nan nan];
+end
 
-if mouseInImage(x,y)
-    global MLR;
-    if isempty(which(MLR.interrogator{viewNum}.interrogator))
-      disp(sprintf('(mrInterrogator) Cannot find interrogator function'));
-      return
-    end
-    view = MLR.views{viewNum};
-    % make a waiting cursor
-    %set(MLR.interrogator{viewNum}.fignum,'Pointer','watch');
-    % find all rois that the user clicked on
-    roi = {};roinums = [];
+% see if we have valid scan coordinates
+if ~isempty(coords.scan)
+  % set in the global
+  MLR.interrogator{viewNum}.mouseDownScanCoords = [coords.scan.x coords.scan.y coords.scan.z];
+  global MLR;
+  if isempty(which(MLR.interrogator{viewNum}.interrogator))
+    disp(sprintf('(mrInterrogator) Cannot find interrogator function'));
+    return
+  end
+  view = MLR.views{viewNum};
+  % find all rois that the user clicked on
+  roi = {};roinums = [];
+  if ~isempty(coords.base)
     switch lower(viewGet(view,'showROIs'))
      case {'hide'}
       roinums = [];
@@ -357,19 +249,20 @@ if mouseInImage(x,y)
     for roinum = roinums
       roicoords = getROICoordinates(view,roinum,0);
       % see if this is a matching roi
-      if ismember(round([xBase yBase sBase]),roicoords','rows')
+      if ismember(round([coords.base.x coords.base.y coords.base.z]),roicoords','rows')
 	% get the roi
 	roi{end+1} = viewGet(view,'roi',roinum);
       end
     end
-    % get some info
-    overlayNum = viewGet(view,'currentOverlay');
-    analysisNum = viewGet(view,'currentAnalysis');
-    scanNum = viewGet(view,'currentScan');
-    % call interrogator
-    feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,x,y,s,roi);
-    % reset to full crosshair
-    %set(MLR.interrogator{viewNum}.fignum,'Pointer','fullcrosshair');
+  end
+  % get some info
+  overlayNum = viewGet(view,'currentOverlay');
+  analysisNum = viewGet(view,'currentAnalysis');
+  scanNum = viewGet(view,'currentScan');
+  % call interrogator
+  feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,coords.scan.x,coords.scan.y,coords.scan.z,roi);
+else
+  MLR.interrogator{viewNum}.mouseDownScanCoords = [nan nan nan];
 end
 
 % eval the old handler
@@ -410,7 +303,7 @@ set(MLR.interrogator{viewNum}.hInterrogator,'visible','off');
 set(MLR.interrogator{viewNum}.hInterrogatorLabel,'visible','off');
 
 % turn on free rotation
-if viewGet(v,'baseType') == 2
+if (viewGet(v,'baseType') == 2) || (viewGet(v,'baseMultiAxis') == 2)
   mlrSetRotate3d(v,1);
 end
 
@@ -429,8 +322,8 @@ fignum = viewGet(MLR.views{viewNum},'figNum');
 % see if this is a restart
 restart = 0;
 if isfield(MLR.interrogator{viewNum},'fignum') && isequal(MLR.interrogator{viewNum}.fignum,fignum)
-    disp('(mrInterrogator) Restarting');
-    restart = 1;
+  disp('(mrInterrogator) Restarting');
+  restart = 1;
 end
 
 % turn off free rotation
