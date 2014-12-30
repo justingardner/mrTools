@@ -1,4 +1,4 @@
-function mrWarnDlg(warnstr,verbose)
+function h = mrWarnDlg(warnstr,verbose)
 %
 % mrWarnDlg(warnstr,verbose)
 %
@@ -14,6 +14,7 @@ function mrWarnDlg(warnstr,verbose)
 %
 % $Id$
 
+h = [];
 if ieNotDefined('verbose')
   verbose = mrGetPref('verbose');
 end
@@ -21,6 +22,6 @@ end
 % always display warning on command line
 disp(sprintf('Warning: %s',warnstr));
 if strcmp(verbose,'Yes')
-  warndlg(warnstr);
+  h = warndlg(warnstr);
   drawnow;
 end

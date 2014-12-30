@@ -1,7 +1,7 @@
 % oneTimeWarning.m
 %
 %        $Id$
-%      usage: oneTimeWarning(warningName,warningText,<justPrint>)
+%      usage: h = oneTimeWarning(warningName,warningText,<justPrint>)
 %         by: justin gardner
 %       date: 02/26/08
 %    purpose: Brought over from Shani's viewGet function. This
@@ -25,15 +25,27 @@
 %             To reset the warning so that it will dislay again, do
 %             oneTimeWarning('someWarning',0);
 %
-function oneTimeWarning(fieldCheck,warnText,justPrint)
+%             If you want to make this modal, then do the following
+%             h = oneTimeWarning('someWarning','I am warning you');
+%             if ~isempty(h),uiwait(h);end
+%
+function h = oneTimeWarning(fieldCheck,warnText,justPrint)
 
+h = [];
 % check arguments
 if ~any(nargin == [2 3])
   help oneTimeWarning
   return
 end
 
-if ieNotDefined('justPrint'),justPrint = 0;end
+if ieNotDefined('justPrint')
+  % default to justPrint if verbose setting is yes
+  if isequal(mrGetPref('verbose'),'Yes')
+    justPrint = false;
+  else
+    justPrint = true;
+  end
+end
 
 % get the warning variable
 global gMLRWarning
@@ -53,7 +65,7 @@ if ~isfield(gMLRWarning,fieldCheck) | isempty(gMLRWarning.(fieldCheck))
   gMLRWarning.(fieldCheck) = 1;
   % and print out a warning
   if justPrint ~= 1
-    mrWarnDlg(warnText)
+    h = mrWarnDlg(warnText,'Yes');
   else
     disp(warnText);
   end
