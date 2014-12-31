@@ -39,7 +39,8 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'site','magnet','coil','pulseSequence',...
    'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
    'mlrVolDisplayControls','mlrVolOverlayAlpha','motionCompDefaultParams','colorNames',...
-    'mlrPath','vistaPath','lastPath','mlrAnatDBGitRepo'...
+    'mlrPath','vistaPath','lastPath',...
+    'mlrAnatDBCentralRepo','mlrAnatDBVCS'...
 	    };
 
 % set the defaults for preference we have defaults for. Note that the "find" in
@@ -82,7 +83,8 @@ prefDefaults{find(strcmp('colorNames',prefNames))} = {};
 prefDefaults{find(strcmp('mlrPath',prefNames))} = '';
 prefDefaults{find(strcmp('vistaPath',prefNames))} = '';
 prefDefaults{find(strcmp('lastPath',prefNames))} = '';
-prefDefaults{find(strcmp('mlrAnatDBGitRepo',prefNames))} = '';
+prefDefaults{find(strcmp('mlrAnatDBCentralRepo',prefNames))} = '';
+prefDefaults{find(strcmp('mlrAnatDBVCS',prefNames))} = 'mercurial';
 
 if nargin == 0
   if nargout > 0
