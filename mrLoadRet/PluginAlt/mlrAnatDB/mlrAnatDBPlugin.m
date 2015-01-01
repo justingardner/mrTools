@@ -4,7 +4,7 @@
 %      usage: mlrAnatDBPlugin(action,<v>)
 %         by: justin gardner
 %       date: 12/28/2014
-%    purpose: Plugin function for git based anatomy database
+%    purpose: Plugin function for mercurial based anatomy database
 %
 function retval = mlrAnatDBPlugin(action,v)
 
@@ -20,10 +20,13 @@ switch action
   if (nargin ~= 2) || ~isview(v)
      disp(sprintf('(mlrAnatDBPlugin) Need a valid view to install plugin'));
   else
-    % add the Export for mlrAnatDB menu
-    mlrAdjustGUI(v,'add','menu','Anat DB','/File/Export/','Callback',@mlrAnatDBExport);
-    mlrAdjustGUI(v,'add','menu','Session','/File/Export/Anat DB/','Callback',@mlrAnatDBSession);
-    mlrAdjustGUI(v,'add','menu','ROIs','/File/Export/Anat DB/Session','Callback',@mlrAnatDBROIs);
+    % add the Add for mlrAnatDB menu
+    mlrAdjustGUI(v,'add','menu','Anat DB','/File/ROI','Callback',@mlrAnatDB,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Anat DB Preferences','/File/Anat DB/','Callback',@mlrAnatDBPreferences);
+    mlrAdjustGUI(v,'add','menu','Add Session to Anat DB','/File/Anat DB/Anat DB Preferences','Callback',@mlrAnatDBAddSession,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Add ROIs to Anat DB','/File/Anat DB/Add Session to Anat DB','Callback',@mlrAnatDBAddROIs);
+    mlrAdjustGUI(v,'add','menu','Add Surfaces to Anat DB','/File/Anat DB/Add ROIs to Anat DB','Callback',@mlrAnatDBAddSurfaces);
+    mlrAdjustGUI(v,'add','menu','Examine ROI in Anat DB','/File/Anat DB/Add Surfaces to Anat DB','Callback',@mlrAnatDBEditROI,'Separator','on');
 
     % return true to indicate successful plugin
     retval = true;
@@ -35,25 +38,91 @@ switch action
    disp(sprintf('(mlrAnatDBPlugin) Unknown command %s',action));
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBExport    %
-%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatDBExport(hObject,eventdata)
+%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDB    %
+%%%%%%%%%%%%%%%%%%%
+function mlrAnatDB(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-% see if we have any rois loaded, and gray out Export/AnatDB/ROIs menu accordingly
-if viewGet(v,'nROIs')
-  mlrAdjustGUI(v,'set','ROIs','Enable','on');
-else
-  mlrAdjustGUI(v,'set','ROIs','Enable','off');
+% get repo locations
+centralRepo = mrGetPref('mlrAnatDBCentralRepo');
+localRepo = mrGetPref('mlrAnatDBLocalRepo');
+
+% see if the preference is set
+if isempty(centralRepo) || isempty(localRepo) 
+  % do not enable any thing, because we don't have correct
+  % preferences set
+  mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Add Surfaces to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','off');
+  return
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBSession    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatDBSession(hObject,eventdata)
+% see if we are in an Anat DB session, get full path to local repo and 
+% the current sessions home directory
+localRepo = mlrReplaceTilde(localRepo);
+homeDir = mlrReplaceTilde(viewGet(v,'homeDir'));
+% if they are not the same, then offer add session as a menu item,
+% but nothing else.
+if ~strncmp(localRepo,homeDir,length(localRepo))
+  mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','on');
+  mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Add Surfaces to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','off');
+else
+  % otherwise don't offer add seesion, but add everything else
+  % contingent on whether there are ROIs loaded and so forth
+  mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Add Surfaces to Anat DB','Enable','on');
+
+  % see if we have any rois loaded, and gray out Add/AnatDB/ROIs menu accordingly
+  if viewGet(v,'nROIs')
+    mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','on');
+    mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','on');
+  else
+    mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
+    mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','off');
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBPreferences    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBPreferences(hObject,eventdata)
+
+% code-snippet to get the view from the hObject variable. Not needed for this callback.
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% get repo locations
+centralRepo = mrGetPref('mlrAnatDBCentralRepo');
+localRepo = mrGetPref('mlrAnatDBLocalRepo');
+
+% set defaults
+if isempty(centralRepo),centralRepo = '';end
+if isempty(localRepo),localRepo = '~/data/mlrAnatDB';end
+
+% setup params info for mrParamsDialog
+paramsInfo = {...
+    {'mlrAnatDBCentralRepo',centralRepo,'Location of central repo, Typically on a shared server with an https address, but could be on a shared drive in the file structure.'}...
+    {'mlrAnatDBLocalRepo',localRepo,'Location of local repo which is typically under a data directory - this will have local copies of ROIs and other data but can be removed the file system as copies will be stored in the central repo'}...
+};
+
+% and display the dialog
+params = mrParamsDialog(paramsInfo);
+
+% save params, if user did not hit cancel
+if ~isempty(params)
+  mrSetPref('mlrAnatDBCentralRepo',params.mlrAnatDBCentralRepo,false);
+  mrSetPref('mlrAnatDBLocalRepo',params.mlrAnatDBLocalRepo,false);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBAddSession    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBAddSession(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
@@ -219,7 +288,7 @@ disp(sprintf('!!!! DEBUG: What happens here if you have uncommitted changes in t
 homeDir = mlrReplaceTilde(viewGet(v,'homeDir'));
 if ~strcmp(homeDir,mlrAnatDirSession)
   % we are not, so we need to move data into that directory
-  if strcmp(questdlg(sprintf('(mlrAnatDBPlugin) Will now copy (using hard links) your current session into directory: %s (which is part of the mlrAnatDB). To do so, will need to temporarily close the current session and then reopen in the mlrAnatDB session. Your current work will be saved as usual through the mrLastView mechanism which stores all your current settings. Also, this will not take any more hard disk space, since the files will be copied as hard links. Click OK to continue, or cancel to cancel this operation. If you hit cancel, you will be able to run File/Export/AnatDB/Session at a later time, as only a stub directory will have been created in the mlrAnatDB and none of your data will have yet been exported there.',mlrAnatDirSession),'mlrAnatDBPlugin','Ok','Cancel','Cancel'),'Cancel')
+  if strcmp(questdlg(sprintf('(mlrAnatDBPlugin) Will now copy (using hard links) your current session into directory: %s (which is part of the mlrAnatDB). To do so, will need to temporarily close the current session and then reopen in the mlrAnatDB session. Your current work will be saved as usual through the mrLastView mechanism which stores all your current settings. Also, this will not take any more hard disk space, since the files will be copied as hard links. Click OK to continue, or cancel to cancel this operation. If you hit cancel, you will be able to run File/Anat DB/Add Session at a later time, as only a stub directory will have been created in the mlrAnatDB and none of your data will have yet been exported there.',mlrAnatDirSession),'mlrAnatDBPlugin','Ok','Cancel','Cancel'),'Cancel')
     cd(curpwd);
     return
   end
@@ -268,9 +337,67 @@ if status ~= 0
   return
 end
 
-% DEBUG: now need to upload to database
-keyboard
+% DEBUG: now need to upload to central database
+disp(sprintf('!!! DEBUG Need to upload to central repository here !!!!'));
 
+% now make light directory (for ROIs and surfaces)
+mlrAnatDirROIs = fullfile(mlrAnatDir,subjectID);
+if ~isdir(mlrAnatDirROIs)
+  mkdir(mlrAnatDirROIs)
+end
+if ~isdir(mlrAnatDirROIs)
+  mrWarnDlg(sprintf('(mlrAnatDBPlugin) Could not make directory for ROIs and Surfaces: %s. Permission problem?',mlrAnatDirROIs));
+  cd(curpwd);
+  return
+end
+% now change to that directory
+cd(mlrAnatDirROIs)
+% make directories with dummy files in them to get things going
+mkdir('mlrROIs');system('touch mlrROIs/.mlrAnatDBInit');
+mkdir('niftiROIs');system('touch niftiROIs/.mlrAnatDBInit');
+mkdir('mlrSurfaces');system('touch mlrSurfaces/.mlrAnatDBInit');
+mkdir('mlrBaseAnatomies');system('touch mlrBaseAnatomies/.mlrAnatDBInit');
+mkdir('3D');system('touch 3D/.mlrAnatDBInit');
+mkdir('localizers');
+cd localizers
+system(sprintf('ln -s ../../%s %s',getLastDir(mlrAnatDirSession,2),getLastDir(mlrAnatDirSession)));
+cd ..
+
+% init the repo
+[status,result] = system(sprintf('%s %s',vcs,vcsInit));
+if status~=0
+  disp(sprintf('(mlrAnatDBPlugin) %s init has failed on directory %s',vcs,mlrAnatDirSession));
+  cd(curpwd);
+  return
+end
+% add a single bogus file just so that we can start branching correctly
+% this is for git land
+if strcmp(vcs,'git');
+  system('touch .mlrAnatDBInit');
+  system('git add .mlrAnatDBInit');
+  system('git commit -m ''Init repo''');
+  % change the first branch to be called v0000
+  system('git branch -m master v0000');
+else
+  % simpler in mercurial
+  system('hg branch v0000');
+end
+[status,result] = system(sprintf('%s %s .',vcs,vcsAdd));
+if status ~= 0
+  mrWarnDlg(sprintf('(mlrAnatDBPlugin) Could not add files to local repo. Have you setup your config file for %s?',vcs));
+  cd(curpwd);
+  return
+end
+
+% commit files
+[status,result] = system(sprintf('%s %s -m ''Initial commit''',vcs,vcsCommit));
+if status ~= 0
+  mrWarnDlg(sprintf('(mlrAnatDBPlugin) Could not commit files to local repo. Have you setup your config file for %s?',vcs));
+  cd(curpwd);
+  return
+end
+ 
+keyboard
 cd(curpwd);
     
 
@@ -284,10 +411,26 @@ cd(curpwd);
   
 
 
-%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBROIs    %
-%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatDBROIs(hObject,eventdata)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBAddROIs    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBAddROIs(hObject,eventdata)
+
+% code-snippet to get the view from the hObject variable. Not needed for this callback.
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBAddSurfaces    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBAddSurfaces(hObject,eventdata)
+
+% code-snippet to get the view from the hObject variable. Not needed for this callback.
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBEditROIs    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBEditROIs(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
