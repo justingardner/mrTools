@@ -2028,6 +2028,58 @@ switch lower(param)
     if ~isempty(roiNum)
       view.ROIs(roiNum).voxelSize = val;
     end
+ 
+ case {'roicreatedby'}
+    % v = viewSet(v,'roiCreatedBy',createdByPerson,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).createdBy = val;
+    end
+
+ case {'roicreatedonbase'}
+    % v = viewSet(v,'roiCreatedOnBase',baseName,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).createdOnBase = val;
+    end
+
+ case {'roicreatedfromsession'}
+    % v = viewSet(v,'roiCreatedFromSession',sessionName,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).createdFromSession = val;
+    end
+
+ case {'roidisplayonbase'}
+    % v = viewSet(v,'roiDisplayOnBase',baseName,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).displayOnBase = val;
+    end
 
   case {'roiname'}
     % view = viewSet(view,'roiName',nameString,[roiNum]);

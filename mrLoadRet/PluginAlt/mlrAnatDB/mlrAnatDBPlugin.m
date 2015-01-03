@@ -24,11 +24,11 @@ switch action
     mlrAdjustGUI(v,'add','menu','Anat DB','/File/ROI','Callback',@mlrAnatDB,'Separator','on');
     mlrAdjustGUI(v,'add','menu','Anat DB Preferences','/File/Anat DB/','Callback',@mlrAnatDBPreferences);
     mlrAdjustGUI(v,'add','menu','Load ROIs from Anat DB','/File/Anat DB/Anat DB Preferences','Callback',@mlrAnatDBLoadROIs,'Separator','on');
-    mlrAdjustGUI(v,'add','menu','Load Surfaces from Anat DB','/File/Anat DB/Load ROIs from Anat DB','Callback',@mlrAnatDBLoadSurfaces);
-    mlrAdjustGUI(v,'add','menu','Add Session to Anat DB','/File/Anat DB/Load Surfaces from Anat DB','Callback',@mlrAnatDBAddSession,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Load Base Anatomies from Anat DB','/File/Anat DB/Load ROIs from Anat DB','Callback',@mlrAnatDBLoadBaseAnatomies);
+    mlrAdjustGUI(v,'add','menu','Add Session to Anat DB','/File/Anat DB/Load Base Anatomies from Anat DB','Callback',@mlrAnatDBAddSession,'Separator','on');
     mlrAdjustGUI(v,'add','menu','Add ROIs to Anat DB','/File/Anat DB/Add Session to Anat DB','Callback',@mlrAnatDBAddROIs);
-    mlrAdjustGUI(v,'add','menu','Add Surfaces to Anat DB','/File/Anat DB/Add ROIs to Anat DB','Callback',@mlrAnatDBAddSurfaces);
-    mlrAdjustGUI(v,'add','menu','Examine ROI in Anat DB','/File/Anat DB/Add Surfaces to Anat DB','Callback',@mlrAnatDBEditROI,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Add Base Anatomies to Anat DB','/File/Anat DB/Add ROIs to Anat DB','Callback',@mlrAnatDBAddBaseAnatomies);
+    mlrAdjustGUI(v,'add','menu','Examine ROI in Anat DB','/File/Anat DB/Add Base Anatomies to Anat DB','Callback',@mlrAnatDBExamineROI,'Separator','on');
 
     % return true to indicate successful plugin
     retval = true;
@@ -57,35 +57,41 @@ if isempty(centralRepo) || isempty(localRepo)
   % do not enable any thing, because we don't have correct
   % preferences set
   mlrAdjustGUI(v,'set','Load ROIs from Anat DB','Enable','off');
-  mlrAdjustGUI(v,'set','Load Surfaces from Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Load Base Anatomies from Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
-  mlrAdjustGUI(v,'set','Add Surfaces to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','off');
   return
 end
 
-% see if we are in an Anat DB session, get full path to local repo and 
-% the current sessions home directory
-localRepo = mlrReplaceTilde(localRepo);
-homeDir = mlrReplaceTilde(viewGet(v,'homeDir'));
-% if they are not the same, then offer add session as a menu item,
-% but nothing else.
-if ~strncmp(localRepo,homeDir,length(localRepo))
+% see if we are in an Anat DB session
+if ~mlrAnatDBInLocalRepo(v)
+  % if not, then only allow add session and examine ROI
   mlrAdjustGUI(v,'set','Load ROIs from Anat DB','Enable','on');
-  mlrAdjustGUI(v,'set','Load Surfaces from Anat DB','Enable','on');
+  mlrAdjustGUI(v,'set','Load Base Anatomies from Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
-  mlrAdjustGUI(v,'set','Add Surfaces to Anat DB','Enable','off');
-  mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','off');
+  if viewGet(v,'nROIs')
+    mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','on');
+  else
+    mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','off');
+  end
 else
   % otherwise don't offer add seesion, but add everything else
   % contingent on whether there are ROIs loaded and so forth
   mlrAdjustGUI(v,'set','Load ROIs from Anat DB','Enable','on');
-  mlrAdjustGUI(v,'set','Load Surfaces from Anat DB','Enable','on');
+  mlrAdjustGUI(v,'set','Load Base Anatomies from Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','off');
-  mlrAdjustGUI(v,'set','Add Surfaces to Anat DB','Enable','on');
 
+  % see if any bases are loaded
+  if viewGet(v,'numBase')
+    mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','on');
+  else
+    mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','off');
+  end    
+  
   % see if we have any rois loaded, and gray out Add/AnatDB/ROIs menu accordingly
   if viewGet(v,'nROIs')
     mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','on');
@@ -225,31 +231,26 @@ v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 if ~mlrAnatDBCheckHg,return,end
 
 % get subject number from directory
-subjectID = getLastDir(fileparts(viewGet(v,'homeDir')));
-subjectID = subjectID(2:end);
+subjectID = mlrAnatDBSubjectID(v);
 
 % get the local repos
-[tf localRepoROI localRepoSession] = mlrAnatDBGetLocal(subjectID,true);
+[tf localRepoROI localRepoSession] = mlrAnatDBGetLocal(subjectID);
 if ~tf,return,end
 
 % get list of ROIs to save
 roiList = selectInList(v,'rois','Select ROI(s) to save');
 
 % where to save them to
-localROIDir = fullfile(localRepoROI,'ROIs');
+localROIDir = fullfile(localRepoROI,'mlrROIs');
 
-% get current branch number
-branchNum = mlrAnatDBGetBranchNum(localRepoSession);
-if isempty(branchNum),return,end
-
-% increment branch num
-if ~mlrAnatDBSetBranchNum(localRepoROI,branchNum+1), return,end
-if ~mlrAnatDBSetBranchNum(localRepoSession,branchNum+1), return,end
+% sessin name
+sessionName = getLastDir(viewGet(v,'homeDir'));
 
 % and save them
 for iRoi = roiList
   % FIx, FIx, FIx, set new parameters for ROI here (like username
   % etc)
+  v = viewSet(v,'roiCreatedFromSession',sessionName,iRoi);
   saveROI(v,iRoi,false,localROIDir);
 end
 
@@ -257,35 +258,146 @@ end
 % get user comments
 comments = 'Saving ROIS';
 
+% get current branch number
+branchNum = mlrAnatDBGetBranchNum(localRepoROI);
+if isempty(branchNum),return,end
+
+% increment branch num
+if ~mlrAnatDBSetBranchNum(localRepoROI,branchNum+1), return,end
+if ~mlrAnatDBSetBranchNum(localRepoSession,branchNum+1), return,end
+
 % add/commit/push roi repo
-if ~mlrAnatDBAddCommitPush(localRepoROI,'ROIs',comments)
+if ~mlrAnatDBAddCommitPush(localRepoROI,'mlrROIs',comments)
   return
 end
 
 % update a bogus file with version number to make sure a version gets saved
 bogusFile = fullfile(localRepoSession,'.mlrAnatDB');
-[status,results] = system('echo s%04i >> %s',branchNum+1,bogusFile);
+[status,results] = system(sprintf('echo s%04i >> %s',branchNum+1,bogusFile));
 
 % add/commit/push
 if ~mlrAnatDBAddCommitPush(localRepoSession,bogusFile,comments,true,true)
   return
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBAddSurfaces    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatDBAddSurfaces(hObject,eventdata)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBAddBaseAnatomies    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBAddBaseAnatomies(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBEditROIs    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatDBEditROIs(hObject,eventdata)
+% Check that we have mercurial installed correctly
+if ~mlrAnatDBCheckHg,return,end
+
+% get subject number from directory
+subjectID = mlrAnatDBSubjectID(v);
+
+% get the local repos
+[tf localRepoROI localRepoSession] = mlrAnatDBGetLocal(subjectID);
+if ~tf,return,end
+
+% get list of ROIs to save
+baseList = selectInList(v,'bases','Select MLR Base Anatomies to save');
+
+% where to save them to
+localBaseAnatomyDir = fullfile(localRepoROI,'mlrBaseAnatomies');
+
+% and save them
+for iBase = baseList
+  saveAnat(v,iBase,false,false,localBaseAnatomyDir);
+end
+
+% Fix, FIx, FIx, 
+% get user comments
+comments = 'Saving mlrBaseAnatomise';
+
+% get current branch number
+branchNum = mlrAnatDBGetBranchNum(localRepoROI);
+if isempty(branchNum),return,end
+
+% increment branch num
+if ~mlrAnatDBSetBranchNum(localRepoROI,branchNum+1), return,end
+if ~mlrAnatDBSetBranchNum(localRepoSession,branchNum+1), return,end
+
+% add/commit/push roi repo
+if ~mlrAnatDBAddCommitPush(localRepoROI,'mlrROIs',comments)
+  return
+end
+
+% update a bogus file with version number to make sure a version gets saved
+bogusFile = fullfile(localRepoSession,'.mlrAnatDB');
+[status,results] = system(sprintf('echo s%04i >> %s',branchNum+1,bogusFile));
+
+% add/commit/push
+if ~mlrAnatDBAddCommitPush(localRepoSession,bogusFile,comments,true,true)
+  return
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBExamineROI    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBExamineROI(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% select an ROI to examine
+roiNames = viewGet(v,'roiNames');
+curROI = viewGet(v,'curROI');
+if (curROI >1) && (length(roiNames)>=curROI)
+  roiNames = putOnTopOfList(roiNames{curROI},roiNames);
+end
+paramsInfo = {{'roiToExamine',roiNames,'Choose which ROI to examine in its original localizer session'}};
+params = mrParamsDialog(paramsInfo,'Choose ROI');
+if isempty(params),return,end
+
+% get the original session that the ROI was defined in and make
+% sure we have it in the repo
+roi = viewGet(v,'roi',params.roiToExamine);
+
+% check for createdFromSession
+if isempty(roi.createdFromSession)
+  mrWarnDlg(sprintf('(mlrAnatDBPlugin:mlrAnatDBExamineROI) The ROI %s does not have the field createdFromSession set. Not sure which session it was created from',roi.name));
+  return
+end
+
+% Check that we have mercurial installed correctly
+if ~mlrAnatDBCheckHg,return,end
+
+% get subject ID
+subjectID = mlrAnatDBSubjectID(v);
+if isempty(subjectID),return,end
+
+% get the local repos
+[tf localRepoROI localRepoSession] = mlrAnatDBGetLocal(subjectID);
+if ~tf,return,end
+
+% check to see if session exists in repo
+createdFromSession = fullfile(localRepoSession,roi.createdFromSession);
+if ~isdir(createdFromSession)
+  mrWarnDlg(sprintf('(mlrAnatDBPlugin:mlrAnatDBExamineROI) Could not find session %s in mlrAnatDB',createdFromSession));
+  return
+end
+  
+% now confirm that this is what the user really wants to do
+if strcmp(questdlg(sprintf('(mlrAnatDBPlugin:mlrAnatDBExamineROI) Will now close this current session (saving work as always) and will load up the localizer session where ROI: %s was defined',params.roiToExamine),'Switch to Localizer session','Ok','Cancel','Cancel'),'Cancel')
+  return
+end
+
+% ok, user said we could close, so do it
+mrQuit;
+cd(createdFromSession);
+mrLoadRet
+v = getMLRView;
+
+% check to see if ROI is loaded
+if ~any(strcmp(viewGet(v,'roiNames'),params.roiToExamine))
+  % then load it
+  v = loadROI(v,params.roiToExamine,0,fullfile(localRepoROI,'mlrROIs'));
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatDBLoadROIs    %
@@ -295,14 +407,48 @@ function mlrAnatDBLoadROIs(hObject,eventdata)
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBLoadSurfaces    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatDBLoadSurfaces(hObject,eventdata)
+% Check that we have mercurial installed correctly
+if ~mlrAnatDBCheckHg,return,end
+
+% get subject ID
+subjectID = mlrAnatDBSubjectID(v);
+if isempty(subjectID),return,end
+
+% get the local repos
+[tf localRepoROI localRepoSession] = mlrAnatDBGetLocal(subjectID,true);
+if ~tf,return,end
+
+% load the rois
+v = loadROI(v,[],[],fullfile(localRepoROI,'mlrROIs'));
+
+% and refresh
+refreshMLRDisplay(v);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBLoadBaseAnatomies    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBLoadBaseAnatomies(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
+% Check that we have mercurial installed correctly
+if ~mlrAnatDBCheckHg,return,end
+
+% get subject ID
+subjectID = mlrAnatDBSubjectID(v);
+if isempty(subjectID),return,end
+
+% get the local repos
+[tf localRepoROI localRepoSession] = mlrAnatDBGetLocal(subjectID,true);
+if ~tf,return,end
+
+% load the rois
+v = loadAnat(v,[],fullfile(localRepoROI,'mlrBaseAnatomies'));
+
+% and refresh
+refreshMLRDisplay(v);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -345,11 +491,31 @@ tf = true;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function subjectID = mlrAnatDBSubjectID(v)
 
+% check if we are in the reop
+if mlrAnatDBInLocalRepo(v)
+  % then just get subject ID from path
+  subjectID = getLastDir(fileparts(viewGet(v,'homeDir')));
+  [idLocStart idLocEnd] = regexp(subjectID,'s\d+');
+  id = str2num(subjectID(idLocStart+1:idLocEnd));
+  subjectID = sprintf('s%04i',id);
+  return
+end
+    
 % get the subject
 subjectID = viewGet(v,'subject');
-if (length(subjectID) > 1) && isequal(subjectID(1),'s')
+if (length(subjectID) > 1) 
+  [idLocStart idLocEnd] = regexp(subjectID,'s\d+');
+  id = 0;
+  if ~isempty(idLocStart)
+    id = str2num(subjectID(idLocStart+1:idLocEnd));
+  else
+    [idLocStart idLocEnd] = regexp(subjectID,'\d+');
+    if ~isempty(idLocStart)
+      id = str2num(subjectID(idLocStart:idLocEnd));
+    end
+  end
   % format subject ID
-  subjectID = sprintf('s%04i',str2num(subjectID(2:end)));
+  subjectID = sprintf('s%04i',id);
 end
 
 % ask if this is the correct subjectID
@@ -361,9 +527,17 @@ if isempty(params)
 end
 subjectID = params.subjectID;
 % check input format
-if length(subjectID) < 5
-  subjectID = sprintf('s%04i',str2num(subjectID(2:end)));
+[idLocStart idLocEnd] = regexp(subjectID,'s\d+');
+id = 0;
+if ~isempty(idLocStart)
+  id = str2num(subjectID(idLocStart+1:idLocEnd));
+else
+  [idLocStart idLocEnd] = regexp(subjectID,'\d+');
+  if ~isempty(idLocStart)
+    id = str2num(subjectID(idLocStart:idLocEnd));
+  end
 end
+subjectID = sprintf('s%04i',id);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatDBGetLocal    %
@@ -428,11 +602,15 @@ else
   [status,result] = system(sprintf('hg clone %s %s',centralRepoROI,localRepoROI));
   % if successful, then we have it
   if status~=0
-    mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to clonal central Repo %s to local %s',centralRepoROI,localRepoROI));
+    mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to clone central Repo %s to local %s',centralRepoROI,localRepoROI));
     return    
   end
 end
 
+if ROIonly
+  tf = true;
+  return
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 % Now get Session repo
@@ -454,7 +632,7 @@ else
   [status,result] = system(sprintf('hg clone %s %s',centralRepoSession,localRepoSession));
   % if successful, then we have it
   if status~=0
-    mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to clonal central Repo %s to local %s',centralRepoSession,localRepoSession));
+    mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to clone central Repo %s to local %s',centralRepoSession,localRepoSession));
     return    
   end
 end
@@ -557,3 +735,18 @@ if status == 0
 end
 
 cd(curpwd);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBInLocalRepo    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function tf = mlrAnatDBInLocalRepo(v)
+
+localRepo = mlrReplaceTilde(mrGetPref('mlrAnatDBLocalRepo'));
+homeDir = mlrReplaceTilde(viewGet(v,'homeDir'));
+% if they are not the same, then offer add session as a menu item,
+% but nothing else.
+if ~strncmp(localRepo,homeDir,length(localRepo))
+  tf = false;
+else
+  tf = true;
+end
