@@ -76,10 +76,10 @@ baseNames = viewGet(v,'baseNames');
 % no bases
 if isempty(baseNames)
   % set its values
-  set(baseListbox,'String','');
+  set(baseListbox,'String',{'empty'});
 
   % and set which ones are selected
-  set(baseListbox,'Value',[]);
+  set(baseListbox,'Value',1);
   return
 end
   
@@ -108,18 +108,28 @@ baseNames = {baseNames{(baseType==2)|(baseType==3)}};
 baseType = baseType((baseType==2)|(baseType==3));
 
 % set values
-set(baseListbox,'String',baseNames);
+if isempty(baseNames)
+  % set its values
+  set(baseListbox,'String',{'empty'});
 
-% and set which ones are selected
-selectedBaseNum = find(strcmp(selectedBaseName,baseNames));
-if ~isempty(selectedBaseNum)
-  set(baseListbox,'Value',selectedBaseNum);
-else
+  % and set which ones are selected
   set(baseListbox,'Value',1);
-end
+  return
+else
+  
+  set(baseListbox,'String',baseNames);
 
-% call multiBaseListboxSelect to set the base info
-multiBaseListboxSelect(baseListbox,[]);
+  % and set which ones are selected
+  selectedBaseNum = find(strcmp(selectedBaseName,baseNames));
+  if ~isempty(selectedBaseNum)
+    set(baseListbox,'Value',selectedBaseNum);
+  else
+    set(baseListbox,'Value',1);
+  end
+
+  % call multiBaseListboxSelect to set the base info
+  multiBaseListboxSelect(baseListbox,[]);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    multiBaseListboxSelect     %%
@@ -137,7 +147,7 @@ baseNames = get(multiBaseListbox,'String');
 selectedVal = get(multiBaseListbox,'Value');
 
 % validate selection val
-if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames))
+if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)) && ~isequal(baseNames{selectedVal},'empty')
   % get base num
   baseNum = viewGet(v,'baseNum',baseNames{selectedVal});
 

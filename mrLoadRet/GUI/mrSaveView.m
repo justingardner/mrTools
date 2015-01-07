@@ -16,7 +16,9 @@ end
 
 % remember settings that are not in view
 mrGlobals;
-viewSettings.panels = MLR.panels;
+if isfield(MLR,'panels')
+  viewSettings.panels = MLR.panels;
+end
 
 homeDir = viewGet(v,'homeDir');
 try

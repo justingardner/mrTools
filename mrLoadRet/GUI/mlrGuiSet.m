@@ -512,19 +512,21 @@ switch lower(field)
     % hide panel - this is used to hide a panel that has
     % been added by addPanel
     panelsDisplaying = 0;panelFound = false;
-    for iPanel = 1:length(MLR.panels)
-      % make panel invisible if we found a match
-      if strcmp(MLR.panels{iPanel}{1},value) 
-	set(MLR.panels{iPanel}{2},'Visible','off');
-	% set the field to say that it is not displaying
-	MLR.panels{iPanel}{4} = false;
-	% we have found our panel
-	panelFound = true;
-	% not the panel to hide and is being displayed
-      elseif MLR.panels{iPanel}{4}
-	panelsDisplaying = true;
-	% FIX, FIX, FIX - need to move up panels below this one
-	if panelFound
+    if isfield(MLR,'panels')
+      for iPanel = 1:length(MLR.panels)
+	% make panel invisible if we found a match
+	if strcmp(MLR.panels{iPanel}{1},value) 
+	  set(MLR.panels{iPanel}{2},'Visible','off');
+	  % set the field to say that it is not displaying
+	  MLR.panels{iPanel}{4} = false;
+	  % we have found our panel
+	  panelFound = true;
+	  % not the panel to hide and is being displayed
+	elseif MLR.panels{iPanel}{4}
+	  panelsDisplaying = true;
+	  % FIX, FIX, FIX - need to move up panels below this one
+	  if panelFound
+	  end
 	end
       end
     end
