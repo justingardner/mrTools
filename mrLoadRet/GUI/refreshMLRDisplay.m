@@ -225,7 +225,7 @@ if verbose>1,disppercent(-inf,'viewGet');,end
 % it should no longer be necessary to actually rotate images
 if nargin < 7
   slice = viewGet(v,'curslice');
-  if baseType == 0
+  if baseType < 2
     rotate = viewGet(v,'rotate');
   else
     rotate = 0;
