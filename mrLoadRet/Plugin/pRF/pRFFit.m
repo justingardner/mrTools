@@ -639,6 +639,7 @@ if (length(args) >= 7) && isnumeric(args{6})
   %roi = args{7};
   fitParams.dispFit = true;
   fitParams.optimDisplay = 'final';
+  fitParams.algorithm = 'nelder-mead';
   fitParams.getModelResponse = false;
   fitParams.prefit = [];
   fitParams.xFlipStimulus = 0;
@@ -648,6 +649,9 @@ if (length(args) >= 7) && isnumeric(args{6})
   fitParams.justGetStimImage = false;
   fitParams.returnPrefit = false;
   fitParams.verbose = 1;
+  fitParams.timelag = 1;
+  fitParams.tau = 0.6;
+  fitParams.exponent = 6;
   clearConstraints = false;
   getArgs({args{8:end}},{'fitTypeParams=[]'});
   if isempty(fitTypeParams)
