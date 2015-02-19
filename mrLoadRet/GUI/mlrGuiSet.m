@@ -403,9 +403,9 @@ switch lower(field)
     else
       % turn off tilt slider
       set(handles.rotateSlider,'SliderStep',[1 45]./360);
-      set(handles.baseTiltSlider,'Visible','off');
-      set(handles.baseTiltText,'Visible','off');
-      set(handles.baseTilt,'Visible','off');
+      %set(handles.baseTiltSlider,'Visible','off');
+      %set(handles.baseTiltText,'Visible','off');
+      %set(handles.baseTilt,'Visible','off');
     end
   end
  case {'clippingoverlays'}

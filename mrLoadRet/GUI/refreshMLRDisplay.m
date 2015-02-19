@@ -1,8 +1,8 @@
-function [img base roi overlays] = refreshMLRDisplay(viewNum)
+function [img base roi overlays altBase] = refreshMLRDisplay(viewNum)
 %	$Id: refreshMLRDisplay.m 2838 2013-08-12 12:52:20Z julien $
 
 mrGlobals
-img = [];base = [];roi = [];overlays=[];
+img = [];base = [];roi = [];overlays=[];altBase = [];
 % for debugging/performance tests
 % set to 0 for no info
 % set to 1 for info on caching
@@ -170,7 +170,8 @@ if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
   for iBase = setdiff(1:viewGet(v,'numBase'),baseNum)
     if viewGet(v,'baseType',iBase)>=2
       if viewGet(v,'baseMultiDisplay',iBase)
-	dispBase(gui.axis,v,iBase,gui,false,verbose);
+	% display the base and keep the information about what is drawn for functions like mrPrint
+	[v altBase(iBase).img altBase(iBase).base altBase(iBase).roi altBase(iBase).overlays] = dispBase(gui.axis,v,iBase,gui,false,verbose);
       end
     end
   end
@@ -428,8 +429,10 @@ else
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');
   set(hAxis,'ZDir','normal');
-  % set the camera taret to center of surface
-  camtarget(hAxis,mean(baseSurface.vtcs))
+  % set the camera taret to center of surface (but only if curBase)
+  if isequal(viewGet(v,'curBase'),baseNum)
+    camtarget(hAxis,mean(baseSurface.vtcs))
+  end
   % set the size of the field of view in degrees
   % i.e. 90 would be very wide and 1 would be ver
   % narrow. 9 seems to fit the whole brain nicely
