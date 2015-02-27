@@ -15,7 +15,7 @@ mrGlobals
 h=figure;
 MLR.graphFigure = [h MLR.graphFigure];
 set(h,'CloseRequestFcn','closeGraphWin');
-figloc = mrGetFigLoc(['graphFigure' int2str(h)]);
+figloc = mrGetFigLoc(['graphFigure' int2str(mlrGetFignum(h))]);
 if ~isempty(figloc)
   %deal with multiple monitors
   [whichMonitor,figloc]=getMonitorNumber(figloc,getMonitorPositions);
