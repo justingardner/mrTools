@@ -16,7 +16,7 @@ if ~isempty(MLR.graphFigure)
   end
   % save the position
   if ismember(h,MLR.graphFigure)
-    mrSetFigLoc(['graphFigure' int2str(h)],get(h,'Position'));
+    mrSetFigLoc(['graphFigure' int2str(mlrGetFignum(h))],get(h,'Position'));
     MLR.graphFigure = setdiff(MLR.graphFigure,h); 
     delete(h)
     return;
