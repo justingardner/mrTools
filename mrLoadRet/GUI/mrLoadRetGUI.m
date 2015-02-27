@@ -112,7 +112,7 @@ if ~isempty(viewGet(v,'curBase')) && isequal(1,viewGet(v,'baseMultiAxis'))
   % then get coords
   coords = mlrGetMouseCoords(v);
   if (coords.inAxis ~= -1)
-    set(hObject,'Pointer','fullcrosshair');
+    set(hObject,'Pointer','crosshair');
   else
     set(hObject,'Pointer','arrow');
   end
