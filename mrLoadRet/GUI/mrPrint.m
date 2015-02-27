@@ -25,6 +25,15 @@ disppercent(-inf,'(mrPrint) Rerendering image');
 [img base roi overlays altBase] = refreshMLRDisplay(viewGet(v,'viewNum'));
 disppercent(inf);
 
+% validate rois
+validROIs = {};
+for roiNum = 1:length(roi)
+  if ~isempty(roi{roiNum})
+    validROIs{end+1} = roi{roiNum};
+  end
+end
+roi = validROIs;
+
 % first get parameters that the user wants to display
 paramsInfo = {};
 paramsInfo{end+1} = {'title',sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,'description')),'Title of figure'};
