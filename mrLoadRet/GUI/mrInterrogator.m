@@ -143,7 +143,7 @@ mrGlobals;
 % check location in bounds on image
 if mouseInImage(x,y)
     % set pointer to crosshairs
-    set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
+    set(MLR.interrogator{viewNum}.fignum,'pointer','crosshair');
     % set the xpos/ypos textbox
     set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
     % set the overlay value
