@@ -35,7 +35,7 @@ if ieNotDefined('v')
   % go through and look for the view with the figure
   if isfield(MLR,'views')
     for i = 1:length(MLR.views)
-      if ~isempty(MLR.views{i}) & isfield(MLR.views{i},'figure') & ~isempty(MLR.views{i}.figure)
+      if ~isempty(MLR.views{i}) && isfield(MLR.views{i},'figure') && ~isempty(MLR.views{i}.figure)
 	if isempty(v)
 	  v = MLR.views{i};
 	else
@@ -47,7 +47,10 @@ if ieNotDefined('v')
   end
 end
 
-if (ieNotDefined('saveMrLastView') || saveMrLastView) && ~isempty(v)
+if (ieNotDefined('saveMrLastView') || ...
+    ( ishghandle(saveMrLastView) &&  isobject(saveMrLastView) ) || ... % r2014b
+    ( isnumeric(saveMrLastView) && (saveMrLastView ~=0) )) ... % pre-2014b
+    && ~isempty(v)
   mrSaveView(v);
 end
 
@@ -72,7 +75,7 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     end
   end
   if viewCount > 1
-    disp(sprintf('(mrQuit) Closing %i open views',viewCount));
+    fprintf('(mrQuit) Closing %i open views',viewCount);
   end
   drawnow
   disppercent(-inf,sprintf('(mrQuit) Saving %s',mrDefaultsFilename));
