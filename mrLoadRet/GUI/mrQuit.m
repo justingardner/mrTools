@@ -29,7 +29,7 @@ end
 
 mrGlobals;
 
-if strcmp(class(v),'matlab.ui.eventdata.WindowCloseRequestData')
+if ~isempty(v) && strcmp(class(v),'matlab.ui.eventdata.WindowCloseRequestData')
     disp('(mrQuit) v not passed in [CloseRequestData instead]')
     v = [];
 end
