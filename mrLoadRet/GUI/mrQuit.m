@@ -68,7 +68,8 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     view = views{viewNum};
     if isview(view)
       viewCount = viewCount+1;
-      delete(view.figure);
+      delete(view.figure); % deletes object, but apparently we still need
+      closereq;            % a closereq to remove the window in r2014b
     end
   end
   if viewCount > 1

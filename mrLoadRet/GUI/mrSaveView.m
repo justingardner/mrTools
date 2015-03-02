@@ -9,9 +9,15 @@
 function mrSaveView(v)
 
 % remember figure location
-fig = viewGet(v,'fignum');
-if ~isempty(fig)
-  mrSetFigLoc('mrLoadRetGUI',get(fig,'Position'));
+if isprop(v,'Source') && ~isempty(v.Source)
+    mrSetFigLoc('mrLoadRetGUI',v.Source.Position)
+elseif isfield(v,'fignum')
+    fig = viewGet(v,'fignum');
+    if ~isempty(fig)
+      mrSetFigLoc('mrLoadRetGUI',get(fig,'Position'));
+    end
+else
+    mrErrorDlg('(mrSaveView) problem saving figure position')
 end
 
 % remember settings that are not in view
