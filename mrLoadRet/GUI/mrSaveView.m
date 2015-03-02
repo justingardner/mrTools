@@ -9,13 +9,13 @@
 function mrSaveView(v)
 
 % remember figure location
-if isprop(v,'Source') && ~isempty(v.Source)
-    mrSetFigLoc('mrLoadRetGUI',v.Source.Position)
-elseif isfield(v,'fignum')
+if isfield(v,'fignum')
     fig = viewGet(v,'fignum');
     if ~isempty(fig)
       mrSetFigLoc('mrLoadRetGUI',get(fig,'Position'));
     end
+elseif isfield(v,'figure') && ~isempty(v.figure)
+    mrSetFigLoc('mrLoadRetGUI',v.figure.Position)
 else
     mrErrorDlg('(mrSaveView) problem saving figure position')
 end
@@ -33,6 +33,10 @@ try
   disppercent(-inf,sprintf('(mrSaveView) Saving %s/mrLastView',homeDir));
         % save the view in the current directory
   view = v;
+  % replace view.figure with figure number (to prevent opening on loading
+  % of the .mat file)
+  view.figure = mlrGetFignum(view);
+  
   if getfield(whos('view'),'bytes')<2e9
     save(fullfile(homeDir,'mrLastView'), 'view','viewSettings', '-V6');
   else
