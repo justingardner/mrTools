@@ -116,7 +116,7 @@ if isfile(anatFile)
   setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
   system(sprintf('mri_convert --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
 
-%   h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
+%   h = mlrImageReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 %   h.qform44(1,4) = -(h.dim(2)-1)/2;
 %   h = cbiSetNiftiQform(h, h.qform44);
 %   h = cbiSetNiftiSform(h, h.qform44);
@@ -143,7 +143,7 @@ end
 
 return;
 % disp(sprintf('(mlrImportFreeSurfer) Fixing nifti header so that the volume is centered'))
-% h = cbiReadNiftiHeader(sprintf(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr'))));
+% h = mlrImageReadNiftiHeader(sprintf(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr'))));
 % h.qform44(1,4) = (h.dim(2)-1)/2;
 % h.qoffset_x = -1*(h.dim(2)-1)/2;
 % h.sform_code = 0;

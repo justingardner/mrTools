@@ -56,7 +56,7 @@ if ~exist(anatPathStr,'file')
 end
 
 % load the anatomy file header
-hdr = cbiReadNiftiHeader(anatPathStr);
+hdr = mlrImageReadNiftiHeader(anatPathStr);
 
 % Extract permutation matrix to keep track of slice orientation.
 % This logic which is admittedly arcane is duplicated in mrAlignGUI. If you

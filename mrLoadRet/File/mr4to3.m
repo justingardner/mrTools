@@ -22,7 +22,7 @@ if ~any(nargin == [0 1])
 end
 
 % install mrLoadRet 3.1 paths, if none exist
-if ~exist('cbiReadNifti')
+if ~exist('mlrImageReadNifti')
   mrPaths(3.1);
 end
 
@@ -224,11 +224,11 @@ printBlockEnd;
 
 if ~isfile('Inplane/Inplane.hdr') && anatnum
   printBlockBegin('Saving anatomy file');
-  [anatimg anathdr] = cbiReadNifti(fullfile('Anatomy',anatdir(anatnum).name));
+  [anatimg anathdr] = mlrImageReadNifti(fullfile('Anatomy',anatdir(anatnum).name));
   cbiWriteNifti('Inplane/Inplane.hdr',anatimg,anathdr);
   printBlockEnd;
 else
-  [anatimg anathdr] = cbiReadNifti('Inplane/Inplane.hdr');
+  [anatimg anathdr] = mlrImageReadNifti('Inplane/Inplane.hdr');
 end
 
 % move the old mr session

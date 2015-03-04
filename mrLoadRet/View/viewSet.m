@@ -534,7 +534,7 @@ switch lower(param)
     if ~exist(path,'file')
       mrErrorDlg(['Tseries file not found: ', path]);
     end
-    hdr = cbiReadNiftiHeader(path);
+    hdr = mlrImageReadNiftiHeader(path);
     if ~isfield(scanParams,'description')
       scanParams.description = '';
     end

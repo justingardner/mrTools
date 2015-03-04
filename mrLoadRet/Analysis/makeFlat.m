@@ -207,7 +207,7 @@ function [surf, params] = loadSurfHandler(params)
 % now load the rest of the surfaces
 
 % read in the anatomy file
-[surf.anat.data  surf.anat.hdr] = cbiReadNifti(fullfile(params.path, params.anatFileName));
+[surf.anat.data  surf.anat.hdr] = mlrImageReadNifti(fullfile(params.path, params.anatFileName));
 % get vol2tal and vol2mag from the anatomy file
 matFileName = [stripext(params.anatFileName) '.mat'];
 if(exist([params.path '/' matFileName]))

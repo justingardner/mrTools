@@ -253,7 +253,7 @@ ALIGN.volumePath = pathStr;
 
 % Load volume and header
 h = mrMsgBox('Loading volume. Please wait');
-[vData,hdr] = cbiReadNifti(ALIGN.volumePath);
+[vData,hdr] = mlrImageReadNifti(ALIGN.volumePath);
 volumeDimension = length(size(vData));
 mrCloseDlg(h);
 
@@ -331,13 +331,13 @@ if (volumeDimension == 4)
 end
 
 % Warning if no (qform) alignment information in the header.
-% qform is initialized to identity by default in cbiReadNiftiHeader.
+% qform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.qform_code)
     mrWarnDlg('(mrAlignGUI) No alignment information in the volume header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
-% sform is initialized to identity by default in cbiReadNiftiHeader.
+% sform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.sform_code)
     mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the volume header. Usually this is because the volume is straight off the magnet and has never had its base coordinate frame set. If this is a canonical base volume which you wish to align inplanes to, you should Set Base Coordinate Frame from the File menu.');
 end
@@ -411,7 +411,7 @@ ALIGN.inplanePath = pathStr;
 
 % Load inplane file and header
 h = mrMsgBox('Loading inplanes. Please wait');
-[vData,hdr] = cbiReadNifti(ALIGN.inplanePath);
+[vData,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
 mrCloseDlg(h);
 
 % Load associated .mat file for the inplanes (used in mrLR for bases,
@@ -471,13 +471,13 @@ if (inplaneDimension == 4)
 end
 
 % Warning if no (qform) alignment information in the header.
-% qform is initialized to identity by default in cbiReadNiftiHeader.
+% qform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.qform_code)
     mrWarnDlg('(mrAlignGUI) No scanner alignment information in the inplane header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
-% sform is initialized to identity by default in cbiReadNiftiHeader.
+% sform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.sform_code)
     mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the inplane header. Usually this is because this inplane has not yet been aligned.');
 end
@@ -566,7 +566,7 @@ end
 % Loop through files and add sform to the headers
 for p = 1:length(pathStr)
 	if exist(pathStr{p},'file')
-		hdr = cbiReadNiftiHeader(pathStr{p});
+		hdr = mlrImageReadNiftiHeader(pathStr{p});
 		hdr = cbiSetNiftiSform(hdr,sform);
                 hdr.sform_code = sform_code;
 		hdr = cbiWriteNiftiHeader(hdr,pathStr{p});
@@ -591,10 +591,10 @@ if isempty(pathStr)
 end
 
 % Reload
-%[data,hdr] = cbiReadNifti(ALIGN.inplanePath);
+%[data,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
 % do not reload data to save memory usage %JB
 data = ALIGN.inplanes;
-hdr = cbiReadNiftiHeader(ALIGN.inplanePath);
+hdr = mlrImageReadNiftiHeader(ALIGN.inplanePath);
 
 % Compose xform
 xform = ALIGN.guiXform * ALIGN.xform;

@@ -372,7 +372,7 @@ for iscan = 1:length(params.scanList)
     scanParams.vol2mag = d.vol2mag;
     scanParams.vol2tal = d.vol2tal;
 
-    hdr = cbiReadNiftiHeader(viewGet(viewBase,'tseriesPath',baseScanNum));
+    hdr = mlrImageReadNiftiHeader(viewGet(viewBase,'tseriesPath',baseScanNum));
     % data *MUST* be written out as float32 b/c of the small values-epm
     hdr.datatype = 16;
     % if we are warping, then we need to change the sform to the

@@ -44,7 +44,7 @@ params1 = mrSurfViewer(filename);
 if isempty(params1),cd(thispwd);return,end
 
 % Create the base
-base.hdr = cbiReadNiftiHeader(params1.anatomy);
+base.hdr = mlrImageReadNiftiHeader(params1.anatomy);
 base.name = filename;
 base.permutationMatrix = getPermutationMatrix(base.hdr);
 base.range = [-1.5 1.5];

@@ -56,7 +56,7 @@ else
     if ~exist(pathStr,'file')
         mrErrorDlg(['File ',pathStr,' not found']);
     end
-    [tseries,hdr] = cbiReadNifti(pathStr,{x,y,z,[]});
+    [tseries,hdr] = mlrImageReadNifti(pathStr,{x,y,z,[]});
     headerStr = sprintf('Times series from voxel [%i %i %i] ',x,y,z);
     tseries = squeeze(tseries);
 end

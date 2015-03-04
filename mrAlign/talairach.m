@@ -342,7 +342,7 @@ global gTalairach;
 talinfo.filename = sprintf('%s.img',stripext(talinfo.filename));
 if isfile(talinfo.filename)
   % read header
-  hdr = cbiReadNiftiHeader(talinfo.filename);
+  hdr = mlrImageReadNiftiHeader(talinfo.filename);
   % check to see if this is an LPI volume
   if hdr.qform_code==1
     axisLabels = mlrImageGetAxisLabels(hdr.qform44);
@@ -370,9 +370,9 @@ if isfile(talinfo.filename)
   % read it
   disppercent(-inf,sprintf('Loading %s',talinfo.filename));
   if ~isempty(subset)
-    [vol hdr] = cbiReadNifti(talinfo.filename,subset);
+    [vol hdr] = mlrImageReadNifti(talinfo.filename,subset);
   else
-    [vol hdr] = cbiReadNifti(talinfo.filename);
+    [vol hdr] = mlrImageReadNifti(talinfo.filename);
   end
   if doMean,vol = mean(vol,4);end
   disppercent(inf);

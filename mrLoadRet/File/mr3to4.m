@@ -22,7 +22,7 @@ if ~any(nargin == [0 1])
 end
 
 % install mrLoadRet 3.1 paths, if none exist
-if ~exist('cbiReadNifti')
+if ~exist('mlrImageReadNifti')
   mrPaths(3.1);
 end
 
