@@ -37,7 +37,7 @@ if nargin == 1
     end
     % otherwise it is init event
   elseif isstr(event)
-    talinfo.filename = sprintf('%s.img',stripext(event));
+    talinfo.filename = event;
     event = 'init';
   end
 end
@@ -99,7 +99,7 @@ if ((mouseX > 0) && (mouseX < gTalairach.dim(a(2))) && ...
     (mouseY > 0) && (mouseY < gTalairach.dim(a(3))))
     gTalairach.pos(a(2)) = mouseX;
     gTalairach.pos(a(3)) = mouseY;
-    set(gTalairach.fig(a(1)),'pointer','fullcrosshair');
+    set(gTalairach.fig(a(1)),'pointer',mlrFullCrosshair);
 else
     set(gTalairach.fig(a(1)),'pointer','arrow');
 end
@@ -338,8 +338,11 @@ function talinfo = initHandler(talinfo)
 
 global gTalairach;
 
+% add img extension if it is not a single file nifti
+if ~getext(talinfo.filename,'nii')
+  talinfo.filename = sprintf('%s.img',stripext(talinfo.filename));
+end
 % check for file
-talinfo.filename = sprintf('%s.img',stripext(talinfo.filename));
 if isfile(talinfo.filename)
   % read header
   hdr = cbiReadNiftiHeader(talinfo.filename);
@@ -404,9 +407,9 @@ for i= 1:3
 end
 
 % set pointer to crosshairs
-set(gTalairach.fig(1),'pointer','fullcrosshair');
-set(gTalairach.fig(2),'pointer','fullcrosshair');
-set(gTalairach.fig(3),'pointer','fullcrosshair');
+set(gTalairach.fig(1),'pointer',mlrFullCrosshair);
+set(gTalairach.fig(2),'pointer',mlrFullCrosshair);
+set(gTalairach.fig(3),'pointer',mlrFullCrosshair);
 
 % set volume
 gTalairach.vol = vol;

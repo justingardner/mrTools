@@ -128,7 +128,7 @@ if isempty(coord)
   % nDims hard coded to 5 here
   set(gVol{sysNum}.hValTextbox(1),'String',vol.data(vol.coord(1),vol.coord(2),vol.coord(3),vol.coord(4),vol.coord(5)));
 else
-  set(gcf,'Pointer','fullcrosshair');
+  set(gcf,'Pointer',mlrFullCrosshair);
   set(gVol{sysNum}.hCoordTextbox(1),'String',coord(1));
   set(gVol{sysNum}.hCoordTextbox(2),'String',coord(2));
   set(gVol{sysNum}.hCoordTextbox(3),'String',coord(3));
