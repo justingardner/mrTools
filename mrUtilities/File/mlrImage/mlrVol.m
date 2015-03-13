@@ -1002,7 +1002,6 @@ else
 	       };
 end
 
-keyboard
 % add ability to change display of alternate coordinates
 altXforms = gVol{sysNum}.vols(1).altXforms;
 if altXforms.n 
