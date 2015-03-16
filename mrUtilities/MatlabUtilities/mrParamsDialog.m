@@ -549,7 +549,14 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   end
   % check if number needs to be round
   if isfield(gParams.varinfo{varnum},'round') && gParams.varinfo{varnum}.round
-    val = round(val);
+    roundVal = gParams.varinfo{varnum}.round;
+    if (round(roundVal) == roundVal) && (roundVal > 1)
+      % round to a significant number of digits
+      val = round(val*(10^(roundVal-1)))/(10^(roundVal-1));
+    else
+      % round if set to 1
+      val = round(val);
+    end
   end
   % check for minmax violations
   if isfield(gParams.varinfo{varnum},'minmax')
