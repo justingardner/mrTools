@@ -102,8 +102,9 @@ for fnum = 1:length(paramFields)
 	  disp(sprintf('(mrParamsSet) %s is not a valid option for variable %s',params.(paramFields{fnum}),paramFields{fnum}));
 	end
       end
-    % push button. Don't do anything
+    % push button. 
     elseif strcmp(gParams.varinfo{match}.type,'pushbutton')
+      gParams.varinfo{match}.value = params.(paramFields{fnum});
     % string
     elseif strcmp(gParams.varinfo{match}.type,'string')
       % check if we are group'd
