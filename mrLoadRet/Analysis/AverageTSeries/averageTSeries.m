@@ -241,7 +241,7 @@ scanParams.nFrames = nFrames;
 scanParams.description = description;
 scanParams.vol2mag = vol2mag;
 scanParams.vol2tal = vol2tal;
-hdr = cbiReadNiftiHeader(viewGet(view,'tseriesPath',baseScan));
+hdr = mlrImageReadNiftiHeader(viewGet(view,'tseriesPath',baseScan));
 [viewAverage,tseriesFileName] = saveNewTSeries(viewAverage,aveTSeries,scanParams,hdr);
 
 % Save evalstring for recomputing and params

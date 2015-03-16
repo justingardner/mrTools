@@ -156,32 +156,40 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
 
   % set the various properties
   mlrAdjustGUI(v,'set','multiBaseCheckbox','Value',base.multiDisplay);
-  mlrAdjustGUI(v,'set','multiBaseAlphaSlider','Value',base.alpha);
-  mlrAdjustGUI(v,'set','multiBaseAlphaEdit','String',base.alpha);
-  mlrAdjustGUI(v,'set','multiBaseOverlayAlphaSlider','Value',base.overlayAlpha);
-  mlrAdjustGUI(v,'set','multiBaseOverlayAlphaEdit','String',base.overlayAlpha);
+  % set alpha
+  if isempty(base.alpha) alpha = 1;else alpha = base.alpha;end
+  mlrAdjustGUI(v,'set','multiBaseAlphaSlider','Value',alpha);
+  mlrAdjustGUI(v,'set','multiBaseAlphaEdit','String',alpha);
+  % set overlayAlpha
+  if isempty(base.overlayAlpha) overlayAlpha = 1;else overlayAlpha = base.overlayAlpha;end
+  mlrAdjustGUI(v,'set','multiBaseOverlayAlphaSlider','Value',overlayAlpha);
+  mlrAdjustGUI(v,'set','multiBaseOverlayAlphaEdit','String',overlayAlpha);
+  % get overlay
   if ~isempty(base.overlay) && isstr(base.overlay)
-    % for overlays that are strings, this is usually a color name
-    % so first get the color names in the multiBaseOverlay control
-    % (These originate from color2RGB
-    multiBaseOverlay = mlrAdjustGUI(v,'get','multiBaseOverlay');
-    baseColorNames = get(multiBaseOverlay,'String');
-    % find a match
-    if isempty(base.overlay)
-      baseMatch = 1;
-    else
-      baseMatch = find(strcmp(base.overlay,baseColorNames));
-    end
+    overlay = base.overlay;
+  else
+    overlay = 'none';
+  end
+  % for overlays that are strings, this is usually a color name
+  % so first get the color names in the multiBaseOverlay control
+  % (These originate from color2RGB
+  multiBaseOverlay = mlrAdjustGUI(v,'get','multiBaseOverlay');
+  baseColorNames = get(multiBaseOverlay,'String');
+  % find a match
+  if isempty(overlay)
+    baseMatch = 1;
+  else
+    baseMatch = find(strcmp(overlay,baseColorNames));
+  end
       
-    if ~isempty(baseMatch)
-      % set the value
-      set(multiBaseOverlay,'Value',baseMatch);
-    else
-      % add the name if it does not already exist
-      baseColorNames{end+1} = base.overlay;
-      set(multiBaseOverlay,'String',baseColorNames);
-      set(multiBaseOverlay,'Value',length(baseColorNames));
-    end
+  if ~isempty(baseMatch)
+    % set the value
+    set(multiBaseOverlay,'Value',baseMatch);
+  else
+    % add the name if it does not already exist
+    baseColorNames{end+1} = overlay;
+    set(multiBaseOverlay,'String',baseColorNames);
+    set(multiBaseOverlay,'Value',length(baseColorNames));
   end
 end
 

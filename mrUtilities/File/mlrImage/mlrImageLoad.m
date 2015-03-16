@@ -36,8 +36,8 @@ end
 verbose=0;orient=[];xMin=1;xMax=inf;yMin=1;yMax=inf;zMin=1;zMax=inf;volNum = [];
 returnRaw=0;
 swapXY=0;swapXZ=0;swapYZ=0;flipX=0;flipY=0;flipZ=0;shiftX=0;shiftY=0;shiftZ=0;rescale=0;
-rotateXY=0;rotateXZ=0;rotateYZ=0;interpMethod='linear';applyToHeader=1;applyToData=1;nifti=0;
-validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','returnRaw','rescale','nifti'};
+rotateXY=0;rotateXZ=0;rotateYZ=0;interpMethod='linear';applyToHeader=1;applyToData=1;nifti=0;precision=[];
+validArgs = {'verbose','orient','xMin','xMax','yMin','yMax','zMin','zMax','volNum','swapXY','swapXZ','swapYZ','flipX','flipY','flipZ','shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ','interpMethod','applyToHeader','applyToData','returnRaw','rescale','nifti','precision'};
 getArgs(otherArgs,validArgs);
 
 % check volNum argument
@@ -118,6 +118,32 @@ for iImage = 1:nImages
 	end
       end
       volNum = [];
+     case {'gz'}
+      % make sure this is actually a nifti file that has been compressed
+      % by checking the filename should be: filename.nii.gz
+      uncompressedFilename = stripext(filename);
+      if ~any(strcmp(getext(uncompressedFilename),{'nii'}))
+	disp(sprintf('(mlrImageLoad) File %s does not appear to be a compressed nifti file (which should have extensions like: filename.nii.gz)',filename));
+	data = [];
+      else
+	% filename looks ok, so try to decompress
+	% first try to decompress
+	uncompressedExists = false;
+	if ~isfile(uncompressedFilename)
+	  % uncompress the file first
+	  system(sprintf('gunzip --keep %s',filename));
+	else
+	  % uncompressed file already exists, so no need to gunzip
+	  uncompressedExists = true;
+	end
+	% ok, now read by recursively calling
+	data = mlrImageLoad(uncompressedFilename,'volNum',volNum);
+	volNum = [];
+	% remove uncompressed (but only if it wasn't preexistent)
+	if ~uncompressedExists
+	  system(sprintf('rm -f %s',uncompressedFilename));
+	end
+      end
      case {'hdr','nii'}
       if isempty(volNum)
 	data = cbiReadNifti(filename);
@@ -176,21 +202,52 @@ for iImage = 1:nImages
 
   % package up for returning
   if nImages > 1
+    % converting to nifti if called for
     if nifti
       headerRetval{iImage} = mlrImageGetNiftiHeader(header);
     else
       headerRetval{iImage} = header;
     end
-      
-    dataRetval{iImage} = data;
+    % setting precision of output
+    if ~isempty(precision)
+      % single
+      if strcmp(lower(precision),'single')
+	dataRetval{iImage} = single(data);
+      % double
+      elseif strcmp(lower(precision),'double')
+	dataRetval{iImage} = double(data);
+      % unknown
+      else
+	disp(sprintf('(mlrImageLoad) Unknown value %s of precision (should be single or double). Ignoring.',precision));
+      end
+    else
+      % just get data without any precision conversion
+      dataRetval{iImage} = data;
+    end
   else
+    % converting to nifti if called for
     if nifti
       headerRetval = mlrImageGetNiftiHeader(header);
     else
       headerRetval = header;
     end
       
-    dataRetval = data;
+    % setting precision of output
+    if ~isempty(precision)
+      % single
+      if strcmp(lower(precision),'single')
+	dataRetval = single(data);
+      % double
+      elseif strcmp(lower(precision),'double')
+	dataRetval = double(data);
+      % unknown
+      else
+	disp(sprintf('(mlrImageLoad) Unknown value %s of precision (should be single or double). Ignoring.',precision));
+      end
+    else
+      % just get data without any precision conversion
+      dataRetval = data;
+    end
   end
 end
 

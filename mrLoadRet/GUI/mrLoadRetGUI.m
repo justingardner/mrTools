@@ -1081,12 +1081,12 @@ end
 [dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,tseriesDir)
     % If tseries file is already in the tseries directory, then use it
-    hdr = cbiReadNiftiHeader(pathStr);
+    hdr = mlrImageReadNiftiHeader(pathStr);
     fileName = [file,ext];
 else
     % Copy file to the tseries directory
     fileName = ['tseries-',datestr(now,'mmddyy-HHMMSS'),mrGetPref('niftiFileExtension')];
-    [data,hdr] = cbiReadNifti(pathStr);
+    [data,hdr] = mlrImageReadNifti(pathStr);
     newPathStr = fullfile(tseriesDir,fileName);
     [bytes,hdr] = cbiWriteNifti(newPathStr,data,hdr);
 end

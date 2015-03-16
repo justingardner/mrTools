@@ -78,7 +78,7 @@ baseView = viewSet(baseView,'currentGroup',groupNum);
 
 % Ignore scans if data size is different from that for base scan.
 % *** get rid of this by using warpAffine3 below to resample each scan to base scan size
-hdr=cbiReadNiftiHeader(params.fieldMapFile);
+hdr=mlrImageReadNiftiHeader(params.fieldMapFile);
 for scanNum = targetScans
   datasize = viewGet(baseView,'datasize',scanNum);
   if any(datasize ~= hdr.dim(2:4)')
@@ -148,7 +148,7 @@ for iScan = 1:length(targetScans)
   %if frame period was in milliseconds in original file, fugue changes it to second without changing the value, fix that
   newFramePeriod=viewGet(fslFugueView,'framePeriod',viewGet(fslFugueView,'nscans'));
   if newFramePeriod~=scanParams.framePeriod
-    newHdr=cbiReadNiftiHeader(fullfile(B0correctedTseriesdir,tseriesFileName));
+    newHdr=mlrImageReadNiftiHeader(fullfile(B0correctedTseriesdir,tseriesFileName));
     niftiSpaceUnit = rem(newHdr.xyzt_units, 8); 
     niftiTimeUnit = rem(newHdr.xyzt_units-niftiSpaceUnit, 64);
     switch(niftiTimeUnit)

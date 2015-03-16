@@ -50,7 +50,7 @@ catch
   return
 end
 %read the warped fields
-warpFields = cbiReadNifti(tempFilename);
+warpFields = mlrImageReadNifti(tempFilename);
 
 scaledCoords = repmat([scalingFactor 1]',1,size(coords,2)).*(coords-.5) + .5;
 
