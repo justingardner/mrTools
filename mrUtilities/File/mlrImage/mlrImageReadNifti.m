@@ -6,13 +6,16 @@
 %       date: 03/04/15
 %    purpose: This is a transitional wrapper function that works identically
 %             to cbiReadNifti, so that we can transition away from cbiReadNifti
-%             to mlrImage. Just transforms inputs to a way that mlrImage can
-%             handle and returns what cbiReadNifti would have. Ideally
-%             we would get rid of cbiReadNifit all together and work with
-%             mlrImage structures which are meant to be file format independent
-%             but I don't want to break everything... just yet.
+%             to mlrImage. You should use mlrImageLoad directly in most
+%             cases and only use this function if you are replacing an
+%             old  call to cbiReadNifti. This Just transforms inputs to
+%             a way that mlrImage can handle and returns what cbiReadNifti
+%             would have. Ideally we would get rid of cbiReadNifit all
+%             together and work with mlrImage structures which are meant
+%             to be file format independent but I don't want to risk breaking
+%             everything... just yet.
 %
-function [data hdr] = mlrImageReadNifti(fname,subset,prec,short_nan,verbose)
+function [tseries hdr] = mlrImageReadNifti(fname,subset,prec,short_nan,verbose)
 
 % check arguments
 if ~any(nargin == [1:5])
@@ -32,7 +35,7 @@ data = [];hdr = [];
 xMin = [];xMax = [];
 yMin = [];yMax = [];
 zMin = [];zMax = [];
-volMin = [];volMax = [];
+volNum = [];
 if nargin >= 2
   if length(subset) >= 1
     % get x arguments
@@ -92,6 +95,10 @@ if (nargin < 5),verbose = [];end
 % t = loadTSeries(v,1,11,[2 4],15,18);
 % so, probably never occurred in practice. jg
 if debugCheck
+  if ~isequal(exist('subset'),1),subset = [];end
+  if ~isequal(exist('prec'),1),prec = [];end
+  if ~isequal(exist('short_nan'),1),short_nan = [];end
+  if ~isequal(exist('verbose'),1),verbose = [];end
   % load old style
   [tseries2,hdr2] = cbiReadNifti(fname,subset,prec,short_nan,verbose);
   % display match or not

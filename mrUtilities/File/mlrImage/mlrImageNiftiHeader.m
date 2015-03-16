@@ -1,25 +1,22 @@
-% mlrImageReadNiftiHeader.m
+% mlrImageReadNifti.m
 %
 %        $Id:$ 
-%      usage: function hdr = mlrImageReadNiftiHeader(fname)
+%      usage: function hdr = cbiReadNiftiHeader(fname)
 %         by: justin gardner
 %       date: 03/04/15
 %    purpose: This is a transitional wrapper function that works identically
-%             to cbiReadNiftiHeader, so that we can transition away from 
-%             cbiReadNiftiHeader to mlrImage. You should use mlrImageHeaderLoad 
-%             directly in most cases and only use this function if you are 
-%             replacing an old  call to cbiReadNiftiHeader. This Just transforms
-%             inputs to way that mlrImage can handle and returns what
-%             cbiReadNiftiHeader would have. Ideally we would get rid of
-%             cbiReadNiftiHeader all together and work with mlrImage
-%             structures which are meant to be file format independent
-%             but I don't want to risk breaking everything... just yet.
+%             to cbiReadNiftiHeader, so that we can use mlrImage. 
+%             Just transforms inputs to a way that mlrImage can
+%             handle and return what cbiReadNiftiHeader would have. Ideally
+%             we would get rid of cbiReadNiftiHeader all together and work with
+%             mlrImage structures which are meant to be file format independent
+%             but I don't want to break everything... just yet.
 %
-function hdr = mlrImageReadNiftiHeader(fname)
+function hdr = mlrImageNiftiHeader(fname)
 
 % check arguments
 if ~any(nargin == [1])
-  help mlrImageReadNiftiHeader
+  help mlrImageNiftiHeader
   return
 end
 
