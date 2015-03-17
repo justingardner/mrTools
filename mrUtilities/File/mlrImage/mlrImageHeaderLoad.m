@@ -267,7 +267,7 @@ end
 uncompressedExists = false;
 if ~isfile(uncompressedFilename)
   % uncompress the file first
-  system(sprintf('gunzip --keep %s',filename));
+  system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
 else
   % uncompressed file already exists, so no need to gunzip
   uncompressedExists = true;

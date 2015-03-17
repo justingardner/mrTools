@@ -25,7 +25,7 @@ end
 
 % set this to check that mlrImage and cbiReadNifti return the
 % same data
-debugCheck = true;
+debugCheck = false;
 
 % default to return empty
 data = [];hdr = [];
