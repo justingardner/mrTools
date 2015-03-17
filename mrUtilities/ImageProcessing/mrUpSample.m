@@ -43,7 +43,7 @@ end
 if isstr(data)
   % Input is a file
   isfile = 1;
-  [data, hdr] = cbiReadNifti(data);
+  [data, hdr] = mlrImageReadNifti(data);
 else
   % Input is a Matlab data array
   isarray = 1;

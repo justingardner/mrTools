@@ -199,7 +199,7 @@ curv{end+1} = 'Find file';
 anatDir = dir('*.hdr');
 for i = 1:length(anatDir)
   if ~any(strcmp(anatDir(i).name,anat))
-    h = cbiReadNiftiHeader(anatDir(i).name);
+    h = mlrImageReadNiftiHeader(anatDir(i).name);
     if h.dim(1) ==3
       anat{end+1} = anatDir(i).name;
     end
@@ -999,7 +999,7 @@ function initAnatomy(filename)
 global gSurfViewer
 
 gSurfViewer.anat.filename = filename;
-[gSurfViewer.anat.data gSurfViewer.anat.hdr] = cbiReadNifti(filename);
+[gSurfViewer.anat.data gSurfViewer.anat.hdr] = mlrImageReadNifti(filename);
 gSurfViewer.anat.min = min(gSurfViewer.anat.data(:));
 gSurfViewer.anat.max = max(gSurfViewer.anat.data(:));
 gSurfViewer.anat.permutationMatrix = getPermutationMatrix(gSurfViewer.anat.hdr);

@@ -230,7 +230,7 @@ zMin = round(max(1,zMin));
 zMax = round(min(zMax,dims(3)));
 
 % make some checks
-if (zMax <= zMin) || (yMax <= yMin) || (xMax <= xMin)
+if (zMax < zMin) || (yMax < yMin) || (xMax < xMin)
   disp(sprintf('(mlrImageXform:adjustDims) Could not adjust dims to [%i:%i,%i:%i,%i:%i]',xMin,xMax,yMin,yMax,zMin,zMax));
   return
 end

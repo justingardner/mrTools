@@ -41,7 +41,7 @@ for iFile = 1:length(filename)
   fullFilename = fullfile(pathname,filename{iFile});
 
   % read the nifti header
-  hdr = cbiReadNiftiHeader(fullFilename);
+  hdr = mlrImageReadNiftiHeader(fullFilename);
   if isempty(hdr),return,end
   % make sure it is 4 dimensional and then get the number of frames
 %   if hdr.dim(1) ~= 4
@@ -64,7 +64,7 @@ for iFile = 1:length(filename)
   thisScanParams.junkFrames = params.junkFrames;
 
   % now read the file
-  %tSeries = cbiReadNifti(fullFilename);
+  %tSeries = mlrImageReadNifti(fullFilename);
 
   v = saveNewTSeries(v,fullFilename,thisScanParams);
   

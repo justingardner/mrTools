@@ -90,7 +90,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       % check if it is there
       if isfile(filename)
 	% load the header
-	hdr = cbiReadNiftiHeader(filename);
+	hdr = mlrImageReadNiftiHeader(filename);
 	% set the sform
 	hdr = cbiSetNiftiSform(hdr,sform);
 	% if the alignment was to a Tal base, need to set the sform_code correctly
@@ -103,7 +103,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
 	% written to when it is read). This doesn't
 	% affect anything, but gives better consistency
 	% checking for mrUpdateNiftiHeader
-	hdr = cbiReadNiftiHeader(filename);
+	hdr = mlrImageReadNiftiHeader(filename);
 	% now save it in the session
 	v = viewSet(v,'niftiHdr',hdr,iScan,iGroup);
         

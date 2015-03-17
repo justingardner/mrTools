@@ -41,7 +41,7 @@ end
 fullFilename = fullfile(pathname,filename);
 
 % read the nifti header
-[data,hdr] = cbiReadNifti(fullFilename);
+[data,hdr] = mlrImageReadNifti(fullFilename);
 if isempty(hdr),return,end
 
 % make sure it has only 1 frame

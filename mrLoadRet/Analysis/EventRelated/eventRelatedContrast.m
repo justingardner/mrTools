@@ -47,13 +47,13 @@ coords = roi{1}.scanCoords;
 handleWaitBar = mrWaitBar(0,'Loading data...');
 for ii = 1:size(coords,2)
 
-  [dd,hh] = cbiReadNifti(datafile,{[coords(1,ii)],[coords(2,ii)],[coords(3,ii)],[]},'double',1);
+  [dd,hh] = mlrImageReadNifti(datafile,{[coords(1,ii)],[coords(2,ii)],[coords(3,ii)],[]},'double',1);
   voxelTS(:,ii) = squeeze(dd);
 
   mrWaitBar(ii/size(coords,2),handleWaitBar);
 end
 close(handleWaitBar);
-[dd,hh] = cbiReadNifti(datafile,{[x],[y],[s],[]},'double',1);
+[dd,hh] = mlrImageReadNifti(datafile,{[x],[y],[s],[]},'double',1);
 voxelTSthis = squeeze(dd);
 %
 %%%%%%%%%%

@@ -28,7 +28,7 @@ if yes
   for iScan = 1:length(weirdFramePeriods)
     if newFramePeriod(iScan)
       filename = fullfile(tseriesDir, scanParams(iScan).fileName);
-      hdr = cbiReadNiftiHeader(filename);
+      hdr = mlrImageReadNiftiHeader(filename);
       %set time units to seconds (4th bit = 8)
       niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
       niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
