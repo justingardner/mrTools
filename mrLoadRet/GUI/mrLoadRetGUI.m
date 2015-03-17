@@ -127,7 +127,8 @@ function figure_WindowButtonDownFcn(hObject, eventdata, handles)
 v = viewGet(handles.viewNum,'view');
 
 % see if we are displaying a base and are displaying all planes
-if (viewGet(v,'baseType') == 0) && isequal(viewGet(v,'baseMultiAxis'),1)
+baseType = viewGet(v,'baseType');
+if ~isempty(baseType) && isequal(viewGet(v,'baseType'),0) && isequal(viewGet(v,'baseMultiAxis'),1)
   % then get coords
   coords = mlrGetMouseCoords(v);
   if ~isempty(coords.base)
