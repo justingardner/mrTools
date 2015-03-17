@@ -254,8 +254,9 @@ ALIGN.volumePath = pathStr;
 % Load volume and header
 h = mrMsgBox('Loading volume. Please wait');
 [vData,hdr] = mlrImageReadNifti(ALIGN.volumePath);
-volumeDimension = length(size(vData));
 mrCloseDlg(h);
+if isempty(vData),return,end
+volumeDimension = length(size(vData));
 
 % Load associated .mat file for the volume (used in mrLR for bases,
 % and needed here for keeping track of Talairach information). If
@@ -413,6 +414,7 @@ ALIGN.inplanePath = pathStr;
 h = mrMsgBox('Loading inplanes. Please wait');
 [vData,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
 mrCloseDlg(h);
+if isempty(vData),return,end
 
 % Load associated .mat file for the inplanes (used in mrLR for bases,
 % and needed here for keeping track of Talairach information). If
@@ -542,7 +544,7 @@ else
   sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
   ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
   ALIGN.inplaneHdr.sform_code = ALIGN.volumeHdr.sform_code;
-  hdr = cbiWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
+  hdr = mlrImageWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
 
   %also save the base structure with the appropriate vol2mag and vol2tal
   ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
@@ -574,7 +576,7 @@ for p = 1:length(pathStr)
 		hdr = mlrImageReadNiftiHeader(pathStr{p});
 		hdr = cbiSetNiftiSform(hdr,sform);
                 hdr.sform_code = sform_code;
-		hdr = cbiWriteNiftiHeader(hdr,pathStr{p});
+		hdr = mlrImageWriteNiftiHeader(hdr,pathStr{p});
 	else
 		mrWarnDlg(['File ',pathStr{p},' not found.']);
 	end
@@ -630,7 +632,7 @@ hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.sform44);
 hdr = cbiSetNiftiQform(hdr,ALIGN.volumeHdr.qform44);
 
 % Save and clear
-[byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
+[byteswritten,hdr] = mlrImageWriteNifti(pathStr,interpData,hdr);
 clear interpData data
 
 % also save the base structure with the appropriate vol2mag and vol2tal
@@ -690,7 +692,7 @@ hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.qform44*xform);
 hdr.pixdim(2:4) = outputVoxSize;
 
 % Save and clear
-[byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
+[byteswritten,hdr] = mlrImageWriteNifti(pathStr,interpData,hdr);
 clear interpData data
 
 % also save the base structure with the appropriate vol2mag and vol2tal
@@ -935,7 +937,7 @@ if sform_code == 3 % just set the vol2tal and vol2mag fields
 else % if sform_code is 0 or 1, set sform = qform and get vol2mag.
   sform = ALIGN.volumeHdr.qform44;
   ALIGN.volumeHdr = cbiSetNiftiSform(ALIGN.volumeHdr,sform);
-  hdr = cbiWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
+  hdr = mlrImageWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
   ALIGN.volBase.vol2mag = sform; % set the vol2mag field
   disp(sprintf('(mrAlignGUI) Setting sform_code=1 and sform equal to qform and saving in nifti header'));
 end

@@ -360,6 +360,19 @@ end
 
 % set dimensions
 header.nDim = hdr.dim(1);
+
+% check nDIm - should not be set to > 7
+if header.nDim > 7
+  header.nDim = find(hdr.dim==0);
+  if isempty(header.nDim)
+    header.nDim == 7;
+  else
+    header.nDim = header.nDim(1);
+  end
+  disp(sprintf('(mlrImageheaderLoad) Nifti header has the first element of dim set to %i - but the max number of dimensions possible is 7. Resetting to %i',hdr.dim(1),header.nDim));
+end
+
+% set the rest of the dimensions
 header.dim = hdr.dim(2:header.nDim+1);
 header.pixdim = hdr.pixdim(2:header.nDim+2);
 
