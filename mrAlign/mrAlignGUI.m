@@ -535,20 +535,25 @@ mrAlignLoadVol(ALIGN.inplanePath,hObject,eventdata,handles);
 function saveAlignMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
-sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
-ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
-ALIGN.inplaneHdr.sform_code = ALIGN.volumeHdr.sform_code;
-hdr = cbiWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
+if ~isfield(ALIGN,'inplaneHdr') || isempty(ALIGN.inplaneHdr)
+  mrWarnDlg('(mrAlign) You have not yet loaded an inplane - no alignement to save');
+  return
+else
+  sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
+  ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
+  ALIGN.inplaneHdr.sform_code = ALIGN.volumeHdr.sform_code;
+  hdr = cbiWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
 
-%also save the base structure with the appropriate vol2mag and vol2tal
-ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
-ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
-base = ALIGN.inplaneBase;
-matFilename = sprintf('%s.mat',stripext(base.name));
-base.data = [];base.hdr = [];
-inplanePath=fileparts(ALIGN.inplanePath);
-eval(sprintf('save %s base',fullfile(inplanePath,matFilename)));
-clear base
+  %also save the base structure with the appropriate vol2mag and vol2tal
+  ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
+  ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
+  base = ALIGN.inplaneBase;
+  matFilename = sprintf('%s.mat',stripext(base.name));
+  base.data = [];base.hdr = [];
+  inplanePath=fileparts(ALIGN.inplanePath);
+  eval(sprintf('save %s base',fullfile(inplanePath,matFilename)));
+  clear base
+end
 % --------------------------------------------------------------------
 function saveAlignToFileMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
