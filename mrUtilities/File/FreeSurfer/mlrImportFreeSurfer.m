@@ -19,6 +19,11 @@ if ~exist('mrParamsDialog')
   return
 end
 
+[retval retstr] = system('which mri_convert');
+if retval == 1
+  mrWarnDlg('(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path','Yes');
+end
+
 % evaluate the arguments
 eval(evalargs(varargin));
 

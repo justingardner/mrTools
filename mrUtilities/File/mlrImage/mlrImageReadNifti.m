@@ -27,6 +27,19 @@ end
 % same data
 debugCheck = false;
 
+if nargin == 1
+  [tseries hdr] = cbiReadNifti(fname);
+elseif nargin == 2
+  [tseries hdr] = cbiReadNifti(fname,subset);
+elseif nargin == 3
+  [tseries hdr] = cbiReadNifti(fname,subset,prec);
+elseif nargin == 4 
+  [tseries hdr] = cbiReadNifti(fname,subset,prec,short_nan);
+elseif nargin == 4
+  [tseries hdr] = cbiReadNifti(fname,subset,prec,short_nan,verbose);
+end
+return
+  
 % default to return empty
 data = [];hdr = [];
 
