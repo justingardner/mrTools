@@ -19,9 +19,15 @@ if ~exist('mrParamsDialog')
   return
 end
 
+mriConvert = 'mri_convert';
 [retval retstr] = system('which mri_convert');
 if retval == 1
-  mrWarnDlg('(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path','Yes');
+  mriConvert = '/Applications/freesurfer/bin/mri_convert';
+  [retval retstr] = system(sprintf('which %s',mriConvert));
+  if retval == 1
+    mrWarnDlg('(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path','Yes');
+    mriConvert = [];
+  end
 end
 
 % evaluate the arguments
@@ -117,10 +123,13 @@ switch niftiExt
 end
 outFile = fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt));
 if isfile(anatFile)
-  disp(sprintf('(mlrImportFreeSurfer) Converting the volume anatomy to nifti format'))
-  setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
-  system(sprintf('mri_convert --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
-
+  if ~isempty(mri_convert)
+    disp(sprintf('(mlrImportFreeSurfer) Converting the volume anatomy to nifti format'))
+    setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
+    system(sprintf('mri_convert --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
+  else
+    disp(sprintf('(mlrImportFreeSurfer) !!!! No mlr_convert command available, so not making canonical anatomy !!!!'));
+  end
 %   h = mlrImageReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 %   h.qform44(1,4) = -(h.dim(2)-1)/2;
 %   h = cbiSetNiftiQform(h, h.qform44);
