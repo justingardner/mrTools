@@ -1,6 +1,6 @@
 % fid2xform.m
 %
-%        $Id$ 
+%        $Id: fid2xform.m 2855 2013-09-05 06:51:33Z justin $ 
 %      usage: [xform info] = fid2xform(fidname,<verbose>)
 %         by: justin gardner
 %       date: 05/05/09
@@ -336,11 +336,30 @@ if info.isepi
     epiFlip = eye(4);
   else
     % new console needs a phase encode flip
-    epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
-    % we also seem need these strange 1 voxel shifts to align with mprage data, blech, blech, blech.
-    if fixConsoleUpgradeBug
-      shiftBlech(1,4) = -1;
-      shiftBlech(2,4) = 1;
+    if isfield(procpar,'pe_dir')
+      pe_dir=procpar.pe_dir{1};
+      if (pe_dir(1) == 'l')
+        epiFlip = eye(4);
+        % we also seem need these strange 1 voxel shifts to align with mprage data, blech, blech, blech.
+        if fixConsoleUpgradeBug
+          shiftBlech(1,4) = -1;
+          shiftBlech(2,4) = -1;
+        end
+      else
+       epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+        % we also seem need these strange 1 voxel shifts to align with mprage data, blech, blech, blech.
+        if fixConsoleUpgradeBug
+          shiftBlech(1,4) = -1;
+          shiftBlech(2,4) = 1;
+        end
+      end
+    else
+      epiFlip = [1 0 0 1;0 -1 0 1;0 0 1 0;0 0 0 1];
+        % we also seem need these strange 1 voxel shifts to align with mprage data, blech, blech, blech.
+        if fixConsoleUpgradeBug
+          shiftBlech(1,4) = -1;
+          shiftBlech(2,4) = 1;
+        end
     end
   end
   % if ppe is set then that is the shift in the phase encode direction (this is ignored by mprage)
