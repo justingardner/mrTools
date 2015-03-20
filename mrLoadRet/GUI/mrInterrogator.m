@@ -128,17 +128,24 @@ mrGlobals;
 coords = mlrGetMouseCoords(viewNum);
 
 % check location in bounds on image
-if ~isempty(coords.scan)
-  % set pointer to crosshairs
-  set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
-  % set the xpos/ypos textbox
-  set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',coords.scan.x,coords.scan.y,coords.scan.z));
-  % set the overlay value
-  overlayVal = viewGet(MLR.interrogator{viewNum}.viewNum,'overlayDataVal',coords.scan.x,coords.scan.y,coords.scan.z);
-  set(MLR.interrogator{viewNum}.hOverlayLabel,'String',viewGet(MLR.interrogator{viewNum}.viewNum,'overlayName'));
-  if ~isempty(overlayVal)
-    set(MLR.interrogator{viewNum}.hOverlay,'String',sprintf('[%f]',overlayVal));
-  else
+if mouseInImage(x,y)
+    % set pointer to crosshairs
+    set(MLR.interrogator{viewNum}.fignum,'pointer','crosshair');
+    % set the xpos/ypos textbox
+    set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',x,y,s));
+    % set the overlay value
+    overlayVal = viewGet(MLR.interrogator{viewNum}.viewNum,'overlayDataVal',x,y,s);
+    set(MLR.interrogator{viewNum}.hOverlayLabel,'String',viewGet(MLR.interrogator{viewNum}.viewNum,'overlayName'));
+    if ~isempty(overlayVal)
+      set(MLR.interrogator{viewNum}.hOverlay,'String',sprintf('[%f]',overlayVal));
+    else
+      set(MLR.interrogator{viewNum}.hOverlay,'String','');
+    end
+else
+    % set pointer to arrow
+    set(MLR.interrogator{viewNum}.fignum,'pointer','arrow');
+    % set strings to empty
+    set(MLR.interrogator{viewNum}.hPos,'String','');
     set(MLR.interrogator{viewNum}.hOverlay,'String','');
   end
 else

@@ -28,6 +28,7 @@ else
     % can't figure out fignum
     disp(sprintf('(mlrGetFignum) Could not get a fignum for figure. Returning arbitray value'));
     fignum = round(rand*100);
+
   end
 end
 
