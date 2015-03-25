@@ -320,7 +320,9 @@ else
 end
 
 % remember alpha overlay setting for next time
-mrSetPref('mlrVolOverlayAlpha',gVol{sysNum}.overlayAlpha);
+if isfield(gVol{sysNum},'overlayAlpha')
+  mrSetPref('mlrVolOverlayAlpha',gVol{sysNum}.overlayAlpha);
+end
 
 % remove the variable
 gVol{sysNum} = [];
