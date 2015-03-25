@@ -68,7 +68,7 @@ function varargout=cbiQuaternionToHomogeneous(varargin)
   a=sqrt(1.0-(b*b+c*c+d*d));
 
   if (any(imag(a)))
-    disp('(cbiQuaternionToHomogenous) Imaginary residual found.')
+%    disp('(cbiQuaternionToHomogenous) Imaginary residual found.')
     %disp(['Quaternion component a=' num2str(a)])
     %disp('Assuming this is roundoff error, and forcing a=0.0.');
     %disp('If this is not what you want, you may want to reconstruct the quaternion manually from the header.')

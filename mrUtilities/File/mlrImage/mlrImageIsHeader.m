@@ -89,6 +89,21 @@ if ~isstruct(h)
   return
 end
 
+% check if it is nifti header
+if mlrImageIsNiftiHeader(h)
+  % If we are being asked to convert, then
+  % grab fields from nifti header and convert into mlrHeader
+  hdr.nDim = h.dim(1);
+  hdr.dim = h.dim(2:h.dim(1)+1);
+  hdr.qform = h.qform44;
+  hdr.pixdim = h.pixdim(2:h.dim(1)+1);
+  hdr.sform = h.sform44;
+  hdr.hdr = h;
+  % pump back through this function to add other fields
+  [tf h] = mlrImageIsHeader(hdr);
+  return
+end
+
 % Check required fields
 for f = 1:length(requiredFields)
   fieldName = requiredFields{f};
@@ -125,3 +140,15 @@ h.pixdim = h.pixdim(:)';
 
 % always have the same sort order of fields
 h = orderfields(h);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mlrImageIsHeader   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function tf = mlrImageIsNiftiHeader(h)
+
+tf = false;
+% a bit arbitrary, but just seeing if it has some expected fields
+if all(isfield(h,{'intent_ps','qform44','sform44','dim','pixdim'}))
+  tf = true;
+end

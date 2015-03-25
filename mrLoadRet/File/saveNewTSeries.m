@@ -65,7 +65,7 @@ if ischar(tseries)
   if ~success,return,end
 
   % get the number of frames
-  hdr = cbiReadNiftiHeader(tseries);
+  hdr = mlrImageReadNiftiHeader(tseries);
   nFrames = hdr.dim(5);
 else
   [byteswritten,hdr] = cbiWriteNifti(path,single(tseries),hdr,'float32');

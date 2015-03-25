@@ -207,7 +207,7 @@ function [surf, params] = loadSurfHandler(params)
 % now load the rest of the surfaces
 
 % read in the anatomy file
-[surf.anat.data  surf.anat.hdr] = cbiReadNifti(fullfile(params.path, params.anatFileName));
+[surf.anat.data  surf.anat.hdr] = mlrImageReadNifti(fullfile(params.path, params.anatFileName));
 % get vol2tal and vol2mag from the anatomy file
 matFileName = [stripext(params.anatFileName) '.mat'];
 if(exist([params.path '/' matFileName]))
@@ -360,6 +360,11 @@ patch2parent = surf.flat.vertsToUnique(surf.flat.insideNodes);
 
 % write the OFF format file 
 fid = fopen(fullfile(params.path, params.flatFileName), 'w', 'ieee-be');
+if fid == -1
+  disp(sprintf('(makeFlat) Could not open %s for saving the flat patch. Do you have permissions set correctly in the directory?',fullfile(params.path, params.flatFileName)));
+  disp(sprintf('(makeFlat) Stopping execution. Type dbquit to get out of keyboard mode'));
+  keyboard
+end
 fprintf(fid, '#PATCH\n');
 fprintf(fid, '#parent_surface=%s\n', fullfile(params.path, params.innerCoordsFileName));
 fprintf(fid, '#parent_dimensions=%i %i %i\n', surf.inner.Nvtcs,  surf.inner.Ntris, 1);

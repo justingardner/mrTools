@@ -403,10 +403,10 @@ if length(niftiVolumes) > 1
   params = mrParamsDialog(paramsInfo,'Select topo and coord file to display');
   if isempty(params),return,end
   volumeFileName = fullfile(surfRelaxDir,params.niftiVolume);
-  hdr = cbiReadNiftiHeader(volumeFileName);
+  hdr = mlrImageReadNiftiHeader(volumeFileName);
 else
   volumeFileName = fullfile(surfRelaxDir,niftiVolumes.name);
-  hdr = cbiReadNiftiHeader(volumeFileName);
+  hdr = mlrImageReadNiftiHeader(volumeFileName);
 end
 
 

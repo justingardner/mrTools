@@ -163,7 +163,7 @@ while keepAsking
     if strcmp(params.fieldMapFile,'empty')
       mrWarnDlg('(fslFugueTSeriesGUI) you must choose a field map file')
     else
-      hdr=cbiReadNiftiHeader(params.fieldMapFile);
+      hdr=mlrImageReadNiftiHeader(params.fieldMapFile);
       if any(viewGet(v,'scanDims',params.targetScans(1))~=hdr.dim(2:4)')
         mrWarnDlg('(fslFugueTSeriesGUI) The dimensions of the field map file are not compatible with these scans. Please choose another file.')
       else

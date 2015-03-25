@@ -178,7 +178,7 @@ if ~justGetParams
     tseriesDir = 'Raw/TSeries';
     for iScan=1:length(groupParams.totalFrames)
       name = fullfile(tseriesDir, groupParams.name{iScan});
-      hdr = cbiReadNiftiHeader(name);
+      hdr = mlrImageReadNiftiHeader(name);
       scanParams(iScan).dataSize = hdr.dim([2,3,4])';
       scanParams(iScan).description = groupParams.description{iScan};
       scanParams(iScan).fileName = groupParams.name{iScan};

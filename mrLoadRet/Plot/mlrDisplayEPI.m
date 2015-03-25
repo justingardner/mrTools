@@ -10,7 +10,7 @@
 %             mlrDisplayEPI(v,'MotionComp')
 %
 %             or with a volume
-%             data = cbiReadNifti('epiImages.hdr');
+%             data = mlrImageReadNifti('epiImages.hdr');
 %             mlrDisplayEPI(data);
 %
 %             or with a filename
@@ -43,7 +43,7 @@ if ~ieNotDefined('v') && ~isview(v)
   if isstr(v)
     filename = setext(v,'hdr');
     if isfile(filename)
-      [v hdr] = cbiReadNifti(filename);
+      [v hdr] = mlrImageReadNifti(filename);
       if isempty(v),return,end
       gMLRDisplayEPI.hdr = hdr;
     else

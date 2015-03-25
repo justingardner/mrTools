@@ -62,7 +62,7 @@ catch
   return
 end
 %read the warped values
-warpedData=cbiReadNifti(tempFilename);
+warpedData=mlrImageReadNifti(tempFilename);
 
 if any(isnan(data(:))) %is there are NaNs, warp a mask of non-NaNs
   mask = ~isnan(data);

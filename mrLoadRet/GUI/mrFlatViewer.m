@@ -293,7 +293,7 @@ for iAnat = 1:length(anat)
   validAnat(iAnat) = false;
   % check for file
   if isfile(thisAnatName)
-    [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(thisAnatName);
+    [gFlatViewer.anat.data gFlatViewer.anat.hdr] = mlrImageReadNifti(thisAnatName);
     % if no data, then there was a failure to load
     if isempty(gFlatViewer.anat.data)
       mrWarnDlg(sprintf('(mrFlatViewer) Could not load nifti file %s',thisAnatName));
@@ -1121,7 +1121,7 @@ global gFlatViewer;
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatFileName));
-[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(params.path, params.anatFileName));
+[gFlatViewer.anat.data gFlatViewer.anat.hdr] = mlrImageReadNifti(fullfile(params.path, params.anatFileName));
 gFlatViewer = xformSurfaces(gFlatViewer);
 % switch to 3D anatomy view
 global gParams
