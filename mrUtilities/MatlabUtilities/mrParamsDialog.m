@@ -207,7 +207,12 @@ for i = 1:length(gParams.vars)
       if isnumeric(gParams.varinfo{i}.value)
         dParams.entryValue(i) = gParams.varinfo{i}.value;
       else
-        dParams.entryValue(i) = str2num(gParams.varinfo{i}.value);
+	entryValue = str2num(gParams.varinfo{i}.value);
+	if isempty(entryValue)
+	  dParams.entryValue(i) = 0;
+	else
+	  dParams.entryValue(i) = entryValue;
+	end
       end
       dParams.entryStyle{i} = 'checkbox';
       if isfield(gParams.varinfo{i},'buttonString')
