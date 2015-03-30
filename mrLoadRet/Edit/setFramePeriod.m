@@ -86,7 +86,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       % check if it is there
       if isfile(filename)
 	% load the header
-	hdr = cbiReadNiftiHeader(filename);
+	hdr = mlrImageReadNiftiHeader(filename);
 	newUnits = bitand(hdr.xyzt_units,7)+16;
 	if (newUnits ~= hdr.xyzt_units)
 	  disp(sprintf('(setFramePeriod) Changing xyzt_units in nifit header from %s (%i) to %s (%i)',dec2bin(hdr.xyzt_units),hdr.xyzt_units,dec2bin(newUnits),newUnits));

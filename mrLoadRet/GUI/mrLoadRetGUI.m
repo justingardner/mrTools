@@ -127,7 +127,8 @@ function figure_WindowButtonDownFcn(hObject, eventdata, handles)
 v = viewGet(handles.viewNum,'view');
 
 % see if we are displaying a base and are displaying all planes
-if (viewGet(v,'baseType') == 0) && isequal(viewGet(v,'baseMultiAxis'),1)
+baseType = viewGet(v,'baseType');
+if ~isempty(baseType) && isequal(viewGet(v,'baseType'),0) && isequal(viewGet(v,'baseMultiAxis'),1)
   % then get coords
   coords = mlrGetMouseCoords(v);
   if ~isempty(coords.base)
@@ -1081,12 +1082,12 @@ end
 [dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,tseriesDir)
     % If tseries file is already in the tseries directory, then use it
-    hdr = cbiReadNiftiHeader(pathStr);
+    hdr = mlrImageReadNiftiHeader(pathStr);
     fileName = [file,ext];
 else
     % Copy file to the tseries directory
     fileName = ['tseries-',datestr(now,'mmddyy-HHMMSS'),mrGetPref('niftiFileExtension')];
-    [data,hdr] = cbiReadNifti(pathStr);
+    [data,hdr] = mlrImageReadNifti(pathStr);
     newPathStr = fullfile(tseriesDir,fileName);
     [bytes,hdr] = cbiWriteNifti(newPathStr,data,hdr);
 end

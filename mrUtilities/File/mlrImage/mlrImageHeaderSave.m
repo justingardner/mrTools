@@ -31,6 +31,25 @@ if isempty(ext)
   ext = getext(filename);
 end
 
+% check for compressed file
+compressFile = false;
+if strcmp(ext,'gz')
+  compressFile = true;
+  % need to uncompress the file (so that we can just write the header)
+  if isfile(filename)
+    system(sprintf('gunzip %s',filename));
+  end
+  % strip off the gz
+  filename = stripext(filename);
+  % get the extension
+  ext = getext(stripext(filename));
+  % if the extension is empty then, we should set it to nii
+  if isempty(ext)
+    ext = 'nii';
+    filename = setext(filename,ext);
+  end
+end
+
 % make sure the header is valid
 [tf h] = mlrImageIsHeader(h);
 if ~tf
@@ -51,6 +70,11 @@ switch(ext)
  otherwise
   disp(sprintf('(mlrImageHeaderSave) Unknown extension type: %s',ext));
   return
+end
+
+% now compress if asked for
+if compressFile
+  system(sprintf('gzip %s',filename));
 end
 
 % see if we need to save out a matlab extension

@@ -184,7 +184,9 @@ if (loadSize(1:3)==headerdim(1:3))
     [data,count]=fread(fPtr,dataSize,readformat);
     if (count~=dataSize) 
       fclose(fPtr);
-      error(['Error reading file ' hdr.img_name]);
+      mrWarnDlg(sprintf('(cbiReadNifti) File contains %i bytes, but expected %i. Could not read (file corrupted?)',count,dataSize));
+      data = [];
+      return
     end
   end
   data=reshape(data,loadSize');

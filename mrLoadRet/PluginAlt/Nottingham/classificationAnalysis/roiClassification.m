@@ -66,7 +66,7 @@ view = viewSet(view,'groupName',params.groupName);
 params = defaultReconcileParams([],params);
 if params.selectVox
     [sortFile,sortPath]=uigetfile({'*.hdr;*.img;*.nii','Nifti File (*.hdr,*.img,*.nii)'},'Pick file for ROI voxel sorting');
-    sortValues=cbiReadNifti([sortPath,sortFile]);
+    sortValues=mlrImageReadNifti([sortPath,sortFile]);
 end
 tic
 scanParams = params.scanParams;

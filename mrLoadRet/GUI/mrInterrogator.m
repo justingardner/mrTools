@@ -130,7 +130,7 @@ coords = mlrGetMouseCoords(viewNum);
 % check location in bounds on image
 if ~isempty(coords.scan)
   % set pointer to crosshairs
-  set(MLR.interrogator{viewNum}.fignum,'pointer','fullcrosshair');
+  set(MLR.interrogator{viewNum}.fignum,'pointer',mlrFullCrosshair);
   % set the xpos/ypos textbox
   set(MLR.interrogator{viewNum}.hPos,'String',sprintf('[%i %i %i]',coords.scan.x,coords.scan.y,coords.scan.z));
   % set the overlay value

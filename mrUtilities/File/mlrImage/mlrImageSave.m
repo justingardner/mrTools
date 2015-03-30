@@ -23,6 +23,21 @@ if isempty(ext)
   ext = getext(filename);
 end
 
+% check for compressed file
+compressFile = false;
+if strcmp(ext,'gz')
+  compressFile = true;
+  % strip off the gz
+  filename = stripext(filename);
+  % get the extension
+  ext = getext(stripext(filename));
+  % if the extension is empty then, we should set it to nii
+  if isempty(ext)
+    ext = 'nii';
+    filename = setext(filename,ext);
+  end
+end
+
 %if data is a structure than grab its data field
 if isstruct(data) 
   if isfield(data,'data')
@@ -56,13 +71,6 @@ if ~tf
   return
 end
 
-% check ext
-ext = getext(filename);
-if isempty(ext)
-  filename = setext(filename,mrGetPref('niftiFileExtension'));
-  ext = getext(filename);
-end
-
 switch (ext)
  case {'hdr','img','nii'}
   % write out nifti file
@@ -74,9 +82,8 @@ switch (ext)
   disp(sprintf('(mlrImageSave) Unknown extension type: %s',ext));
 end
 
+% now compress if asked for
+if compressFile
+  system(sprintf('gzip %s',filename));
+end
 
-  
-
-
-
-  

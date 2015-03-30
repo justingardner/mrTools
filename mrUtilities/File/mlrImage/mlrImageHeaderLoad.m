@@ -103,6 +103,8 @@ for iImage = 1:nImages
       end
      case {'hdr','nii'}
       header = mlrImageHeaderLoadNifti(filename,header);
+     case {'gz'}
+      header = mlrImageHeaderLoadCompressedNifti(filename,header);
      case {'sdt','spr','edt','epr'}
       header = mlrImageHeaderLoadSDT(filename,header);
      case {'fid'}
@@ -247,6 +249,52 @@ if isfield(d,'vol2tal')
   header.vol2tal = reshape(d.vol2tal,4,4);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrImageHeaderLoadCompressedNifti    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function header = mlrImageHeaderLoadCompressedNifti(filename,header)
+
+header = [];
+
+% make sure this is actually a nifti file that has been compressed
+% by checking the filename
+uncompressedFilename = stripext(filename);
+if ~any(strcmp(getext(uncompressedFilename),{'nii'}))
+  disp(sprintf('(mlrImageHeaderLoadCompressedNifti) File %s does not appear to be a compressed nifti file (which should have extensions like: filename.nii.gz)',filename));
+  return
+end
+
+uncompressedExists = false;
+if ~isfile(uncompressedFilename)
+  % uncompress the file first
+  system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
+else
+  % uncompressed file already exists, so no need to gunzip
+  uncompressedExists = true;
+end
+
+% read the nifti header
+nifti = cbiReadNiftiHeader(uncompressedFilename);
+
+% remove uncompressed (but only if it wasn't preexistent)
+if ~uncompressedExists
+  system(sprintf('rm -f %s',uncompressedFilename));
+end
+
+% check that it was loaded properly
+if isempty(nifti)
+  disp(sprintf('(mlrImageHeaderLoad) Could not load header for %s',uncompressedFilename));
+  header=[];
+  return;
+end
+
+% set some info
+header.type = 'nifti';
+header.hdr = nifti;
+
+% set rest of fields based on the nifti header
+header = setHeaderBasedOnNifti(header,nifti);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadNifti    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -312,6 +360,19 @@ end
 
 % set dimensions
 header.nDim = hdr.dim(1);
+
+% check nDIm - should not be set to > 7
+if header.nDim > 7
+  header.nDim = find(hdr.dim==0);
+  if isempty(header.nDim)
+    header.nDim == 7;
+  else
+    header.nDim = header.nDim(1);
+  end
+  disp(sprintf('(mlrImageheaderLoad) Nifti header has the first element of dim set to %i - but the max number of dimensions possible is 7. Resetting to %i',hdr.dim(1),header.nDim));
+end
+
+% set the rest of the dimensions
 header.dim = hdr.dim(2:header.nDim+1);
 header.pixdim = hdr.pixdim(2:header.nDim+2);
 

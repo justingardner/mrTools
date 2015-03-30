@@ -157,7 +157,7 @@ if isfile(filename)
 	    v = newView;
 	    v = viewSet(v,'curGroup',viewGet(v,'groupNum',matfile.params.groupName));
 	    % read the image header
-	    hdr = cbiReadNiftiHeader(tseriesHdrFileName);
+	    hdr = mlrImageReadNiftiHeader(tseriesHdrFileName);
 	    % get the scan params
 	    scanParams.junkFrames = 0;
 	    scanParams.nFrames = hdr.dim(5);
@@ -188,7 +188,7 @@ if isfile(filename)
 	    if isfile(filename),disp(filename),end
 	  end
 	  % read the image header
-	  hdr = cbiReadNiftiHeader(tseriesHdrFileName);
+	  hdr = mlrImageReadNiftiHeader(tseriesHdrFileName);
 	  scanParams.junkFrames = 0;
 	  scanParams.nFrames = hdr.dim(5);
 	  if isfield(matfile.params,'description')
