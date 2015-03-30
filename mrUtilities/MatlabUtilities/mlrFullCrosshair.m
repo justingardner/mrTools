@@ -16,7 +16,7 @@ if ~any(nargin == [0])
   return
 end
 
-if verLessThan('matlab','8.5')
+if verLessThan('matlab','8.4')
   retval = 'fullcrosshair';
 else
   retval = 'crosshair';
