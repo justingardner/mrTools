@@ -81,7 +81,7 @@ if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
-  mrLastView=load(mrLastView);
+  mrLastView=loadLastView(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
 %   disppercent(-inf,'(mrOpenWindow) Restoring last view');
@@ -164,7 +164,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       disppercent(inf);
     end
     % check panels that need to be hidden
-    if isfield(mrLastView.viewSettings,'panels')
+    if isfield(mrLastView,'viewSettings') && isfield(mrLastView.viewSettings,'panels')
       for iPanel = 1:length(mrLastView.viewSettings.panels)
 	% if it is not displaying then turn it off
 	if ~mrLastView.viewSettings.panels{iPanel}{4}

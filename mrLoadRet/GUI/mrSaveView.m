@@ -38,6 +38,11 @@ try
   % replace view.figure with figure number (to prevent opening on loading
   % of the .mat file)
   view.figure = mlrGetFignum(view);
+  % put a setting in viewSettings to tell that we have a good handle
+  % so that we can load in versions of mathworks that have recently
+  % become too stupide to be able to load objects with the old style
+  % figure handles
+  viewSettings.version = 2.0;
   
   if getfield(whos('view'),'bytes')<2e9
     save(fullfile(homeDir,'mrLastView'), 'view','viewSettings', '-V6');
