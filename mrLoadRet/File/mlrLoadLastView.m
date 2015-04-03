@@ -58,7 +58,9 @@ if ~verLessThan('matlab','8.1')
       mrWarnDlg(sprintf('(mlrLoadLastView) The mrLastView found: %s is from an older version of matlab, you will likely see a bunch of weird warnings here, but ignore them - they have to do with the latest matlab not having the ability to load old mat files that had figure handles in them. Send complaints to Mathworks!',filename));
       % this causes lots of weird warnings, but doesn't seem to crash
       if isfield(l,'view') && isfield(l.view,'figure')
-	close(l.view.figure);
+	if ishandle(l.view.figure)
+	  close(l.view.figure);
+	end
 	l.view.figure = [];
       end
       % return as either one or two arguments
