@@ -81,7 +81,7 @@ if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
-  mrLastView=loadLastView(mrLastView);
+  mrLastView=mlrLoadLastView(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
 %   disppercent(-inf,'(mrOpenWindow) Restoring last view');

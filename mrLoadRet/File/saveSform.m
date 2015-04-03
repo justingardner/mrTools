@@ -135,7 +135,7 @@ saveSession
 % there since those might have a different sform
 if isfile('mrLastView.mat')
   try
-    [view viewSettings] = loadLastView;
+    [view viewSettings] = mlrLoadLastView;
     if isempty(view),return,end
     %here do something something stupid with variable view, otherwise the code analyser is not happy
     %because view is also a function name
