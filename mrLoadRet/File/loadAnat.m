@@ -60,7 +60,7 @@ for pathNum = 1:length(pathStr)
   if isempty(extension)
     pathStr{pathNum} = setext(pathStr{pathNum},mrGetPref('niftiFileExtension'),0);
  % extension is not .nii or .img
-  elseif ~any(strcmp(extension,{'.nii', '.img', '.hdr'}))
+  elseif ~any(strcmp(extension,{'.nii', '.img', '.hdr','.gz'}))
     mrWarnDlg(['(loadAnat) File type ',extension,' is not a valid anatomy file format']);
     return
   end

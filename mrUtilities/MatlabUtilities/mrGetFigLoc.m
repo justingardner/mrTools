@@ -39,3 +39,8 @@ if isunix && strcmp(version,'7.14.0.739 (R2012a)') %some bugs in that version, d
 %   figloc = figloc + [0 38 -16 -38];  % if not pausing, this is the difference in location/size values   
 %   disp(['Position ' mat2str(get(h,'position'))]);
 end
+
+if ~verLessThan('matlab','8.4') && ~isempty(pos)
+  pos(2) = pos(2)+30;
+end
+  

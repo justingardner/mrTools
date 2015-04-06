@@ -90,6 +90,7 @@ else
   end
   currentScan = viewGet(v,'currentScan');
   curSlice = viewGet(v,'curSlice');
+  if isempty(curSlice),curSlice = 1;end
   dialogTitle = sprintf('EPI images for %s',viewGet(v,'groupName'));
 
   % get descriptions and scan2scan
@@ -282,7 +283,6 @@ mlrDisplayEPIDispImage(params);
 function epiImage = mlrDisplayEPIDispImage(params)
 
 global gMLRDisplayEPI;
-
 if ~isfield(params,'warp'),params.warp = 0;end
   
 % check input arguments

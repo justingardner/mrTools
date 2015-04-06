@@ -26,16 +26,7 @@
 function [sessionParams groupParams] = mrInit(sessionParams,groupParams,varargin)
 
 % check arguments
-if ~any(nargin == [0 1 2 3 4])
-  help mrInit
-  return
-end
-eval(evalargs(varargin));
-
-% some variables
-if ieNotDefined('justGetParams'),justGetParams=0;end
-if ieNotDefined('defaultParams'),defaultParams=0;end
-if ieNotDefined('makeReadme'),makeReadme=1;end
+getArgs(varargin,{'justGetParams=0','defaultParams=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]'});
 
 minFramePeriod = .01;  %frame period in sec outside which the user is prompted
 maxFramePeriod = 100;  % that something weird's goin on
@@ -52,12 +43,24 @@ if ieNotDefined('sessionParams')
     subject = session.subject;
     operator = session.operator;
   else
-    magnet = mrGetPref('magnet');
-    coil = mrGetPref('coil');
-    pulseSequence = mrGetPref('pulseSequence');
-    description = '';
-    if ieNotDefined('subject') subject = '';end
-    if ieNotDefined('operator') operator = '';end
+    if isempty('magnet') 
+      magnet = mrGetPref('magnet');
+    else 
+      magnet = putOnTopOfList(magnet,mrGetPref('magnet'));
+    end
+    if isempty('coil') 
+      coil = mrGetPref('coil');
+    else
+      coil = putOnTopOfList(coil,mrGetPref('coil'));
+    end
+    if isempty('pulseSequence') 
+      pulseSequence = mrGetPref('pulseSequence');
+    else
+      pulseSequence = putOnTopOfList(pulseSequence,mrGetPref('pulseSequence'));
+    end
+    if isempty('description') description = '';end
+    if isempty('subject') subject = '';end
+    if isempty('operator') operator = '';end
   end
   % setup params dialog
   paramsInfo = {};

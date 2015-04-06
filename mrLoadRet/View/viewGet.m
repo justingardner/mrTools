@@ -848,7 +848,9 @@ switch lower(param)
       return
     end
     for i = 1:length(dicom)
-      if isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'MR_Acquisition_Type_')
+      if isfield(dicom{i},'MRAcquisitionType')
+	thisval = dicom{i}.MRAcquisitionType;
+      elseif isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'MR_Acquisition_Type_')
         thisval = strcmp(dicom{i}.ACQ.MR_Acquisition_Type_,'3D');
       end
       if (isempty(val))
@@ -870,8 +872,13 @@ switch lower(param)
       return
     end
     for i = 1:length(dicom)
-      if isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'Repetition_Time')
+      thistr = [];
+      if isfield(dicom{i},'RepetitionTime')
+	thistr = dicom{i}.RepetitionTime/1000;
+      elseif isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'Repetition_Time')
         thistr = dicom{i}.ACQ.Repetition_Time/1000;
+      end
+      if  ~isempty(thistr)
         if (isempty(val))
           val = thistr;
         elseif (val ~= thistr)
@@ -882,12 +889,20 @@ switch lower(param)
   case {'dicom'}
     % dicom = viewGet(view,'dicom',scanNum,[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
-    dicomName = viewGet(view,'dicomName',s,g);
-    val = {};
-    if ~isempty(dicomName)
-      for j = 1:length(dicomName)
-        val{j} = readdicomheader(dicomName{j});
+    % see if we have dicom info in auxparam
+    val = viewGet(view,'auxParam','dicomInfo',s,g);
+    if isempty(val)
+      dicomName = viewGet(view,'dicomName',s,g);
+      val = {};
+      if ~isempty(dicomName)
+	for j = 1:length(dicomName)
+	  val{j} = readdicomheader(dicomName{j});
+	end
       end
+    end
+    % make into a cell array
+    if ~isempty(val)
+      val = cellArray(val);
     end
   case {'dicomname'}
     % dicomName = viewGet(view,'dicomName',scanNum,[groupNum]);
