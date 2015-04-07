@@ -46,7 +46,7 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
 % here is to make sure that the prefDefaults list matches the prefNames order
 prefDefaults{length(prefNames)} = [];
 prefDefaults{find(strcmp('overwritePolicy',prefNames))} = {'Ask','Merge','Rename','Overwrite'};
-prefDefaults{find(strcmp('verbose',prefNames))} = {'Yes','No'};
+prefDefaults{find(strcmp('verbose',prefNames))} = {'No','Yes'};
 prefDefaults{find(strcmp('graphWindow',prefNames))} = {'Replace','Make new'};
 prefDefaults{find(strcmp('checkParamsConsistency',prefNames))} = {'Yes','No'};
 prefDefaults{find(strcmp('maxBlocksize',prefNames))} = 250000000;
