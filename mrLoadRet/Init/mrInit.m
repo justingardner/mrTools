@@ -188,13 +188,13 @@ if ~justGetParams
       scanParams(iScan).originalFileName{1} = groupParams.name{iScan}; % otherwise motionComp has problems 
       scanParams(iScan).originalGroupName{1} = groups(1).name; % ditto
       scanParams(iScan).fileType = 'Nifti';
-      niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
-      niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
+      niftiSpaceUnit = bitand(hdr.xyzt_units, hex2dec('07')); 
+      niftiTimeUnit = bitand(hdr.xyzt_units,hex2dec('38'))
       if niftiTimeUnit == 8 % seconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./1;
       elseif niftiTimeUnit == 16 % milliseconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./1000;
-      elseif niftiTimeUnit == 32 % microseconds
+      elseif niftiTimeUnit == 24 % microseconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./10e6;
       end
       %detect weird frame periods
@@ -204,6 +204,7 @@ if ~justGetParams
         weirdFramePeriods(iScan) = scanParams(iScan).framePeriod;
       end
       if strcmp(lower(mrGetPref('verbose')),'yes')
+	keyboard
 	% 8 -> 10^0, 16 -> 10^3, 32-> 10^6
 	disp(sprintf('(mrInit) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
       end
