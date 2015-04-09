@@ -75,7 +75,6 @@ if ~isempty(prefParams)
   mrSetPref('colorBlending',prefParams.colorBlending);
   mrSetPref('maxBlocksize',prefParams.maxBlocksize);
   mrSetPref('volumeDirectory',prefParams.volumeDirectory);
-  mrSetPref('mlrAnatDBCentralRepo',prefParams.mlrAnatDBCentralRepo);
   mrSetPref('overwritePolicy',prefParams.overwritePolicy);
   mrSetPref('niftiFileExtension',prefParams.niftiFileExtension);
   mrSetPref('roiPolygonMethod',prefParams.roiPolygonMethod);
