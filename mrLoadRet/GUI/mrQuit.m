@@ -27,6 +27,7 @@ if ~any(nargin == [0 1 2])
   return
 end
 
+mlrPath mrTools;
 mrGlobals;
 
 if ~ieNotDefined('v') && strcmp(class(v),'matlab.ui.eventdata.WindowCloseRequestData')
