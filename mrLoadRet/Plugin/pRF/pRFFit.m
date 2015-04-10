@@ -120,6 +120,17 @@ for iField = 1:length(paramsInfoFields)
   fit.paramsInfo.(paramsInfoFields{iField}) = fitParams.(paramsInfoFields{iField});
 end
 
+% test to see if scan lengths and stim lengths match
+tf = true;
+for iScan = 1:fit.concatInfo.n
+  if fit.concatInfo.runTransition(iScan,2) ~= size(fitParams.stim{iScan}.im,3)
+    mrWarnDlg(sprintf('(pRFFit) Data length of %i for scan %i (concatNum:%i) does not match stimfile length %i',fit.concatInfo.runTransition(iScan,2),scanNum,iScan,size(fitParams.stim{iScan}.im,3)));
+    tf = false;
+  end
+end
+
+if ~tf,fit = [];return,end
+
 % do prefit. This computes (or is passed in precomputed) model responses
 % for a variety of parameters and calculates the correlation between
 % the models and the time series. The one that has the best correlation
@@ -231,7 +242,7 @@ fitParams.stimX = fitParams.stim{1}.x;
 fitParams.stimY = fitParams.stim{1}.y;
 fitParams.stimT = fitParams.stim{1}.t;
 
-% set stimulus extenets
+% set stimulus extents
 fitParams.stimExtents(1) = min(fitParams.stimX(:));
 fitParams.stimExtents(3) = max(fitParams.stimX(:));
 fitParams.stimExtents(2) = min(fitParams.stimY(:));
