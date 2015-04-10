@@ -67,6 +67,7 @@ end
 % get the roi transforms
 roiVoxelSize = viewGet(view,'roiVoxelSize',roiNum);
 roiCoords = viewGet(view,'roiCoords',roiNum);
+if isempty(roiCoords),return,end
 
 % make sure we have normalized coordinates
 if (size(roiCoords,1)==3)

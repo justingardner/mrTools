@@ -113,7 +113,10 @@ for scanNum = params.scanNum
   
   % get voxels that we are restricted to
   [x y z] = getVoxelRestriction(v,params,scanNum);
-  
+  if isempty(x)
+    disp(sprintf('(pRF) No voxels to analyze with current restriction'));
+    return
+  end
   % load all time series, we do this to pass inot pRFFit. Generally
   % the purpose here is that if we run on distributed computing, we
   % can't load each voxel's time series one at a time. If this is
@@ -300,6 +303,7 @@ elseif strncmp(params.restrict,'ROI: ',5)
   % get the roi name
   roiName = params.restrict(6:end);
   scanCoords = getROICoordinates(v,roiName,scanNum,params.groupName,'straightXform=1');
+  if isempty(scanCoords),return,end
   x = scanCoords(1,:);y = scanCoords(2,:);z = scanCoords(3,:);
 elseif strncmp(params.restrict,'None',4)
   scanDims = viewGet(v,'scanDims',scanNum,params.groupName);
