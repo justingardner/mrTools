@@ -852,6 +852,8 @@ switch lower(param)
 	thisval = dicom{i}.MRAcquisitionType;
       elseif isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'MR_Acquisition_Type_')
         thisval = strcmp(dicom{i}.ACQ.MR_Acquisition_Type_,'3D');
+      else
+	thisval = [];
       end
       if (isempty(val))
         val = thisval;
