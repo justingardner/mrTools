@@ -82,8 +82,8 @@ function mouseDownHandler(sysNum)
 set(gcf,'Pointer','arrow');
 global gVol;
 if isempty(gVol{sysNum}) || ~isfield(gVol{sysNum},'vols')
-  disp(sprintf('(mlrVol) Mouse down called on incomplete mlrVol figure. Closing'));
-  closeHandler(sysNum);
+  disp(sprintf('(mlrVol) Mouse down called on incomplete mlrVol figure.'));
+%  closeHandler(sysNum);
   return
 end
 vol = gVol{sysNum}.vols(1);
@@ -108,8 +108,8 @@ function mouseMoveHandler(sysNum)
 
 global gVol;
 if isempty(gVol{sysNum}) || ~isfield(gVol{sysNum},'vols')
-  disp(sprintf('(mlrVol) Mouse move called on incomplete mlrVol figure. Closing'));
-  closeHandler(sysNum);
+  disp(sprintf('(mlrVol) Mouse move called on incomplete mlrVol figure.'));
+%  closeHandler(sysNum);
   return
 end
 vol = gVol{sysNum}.vols(1);
@@ -491,6 +491,9 @@ for iVol = 1:gVol{sysNum}.n
 
   % set that we have displayed this coordinate
   gVol{sysNum}.vols(iVol).curCoord = gVol{sysNum}.vols(iVol).coord;
+
+  % draw
+  drawnow
 end
 
 % update the display of other coordinates
@@ -972,6 +975,7 @@ if gVol{sysNum}.n > 1
     {'shiftX',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftX'},'passParams=1','Shift X axis in alignment in units of mm (Note that x axis is the axis of the volume which is being interpolated - make sure to unclick displayInterpolated to see these axis)'}...
     {'shiftY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftY'},'passParams=1','Shift Y axis in alignment in units of mm (Note that y axis is the axis of the volume which is being interpolated - make sure to unclick displayInterpolated to see these axis)'}...
     {'shiftZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftZ'},'passParams=1','Shift Z axis in alignment in units of mm (Note that z axis is the axis of the volume which is being interpolated - make sure to unclick displayInterpolated to see these axis)'}...
+    {'shiftSlice',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'shiftSlice'},'passParams=1','Shift alignment by number of slices. For example, you can shift your xform so that the xform starts at a different slice number - this is in units of slices'}...
     {'rotateXY',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXY'},'passParams=1','Rotate in XY plane in units of degrees'}...
     {'rotateXZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateXZ'},'passParams=1','Rotate in XZ plane in units of degrees'}...
     {'rotateYZ',0,'incdec=[-1 1]','callback',@adjustAlignment,'callbackArg',{sysNum 'rotateYZ'},'passParams=1','Rotate in YZ plane in units of degrees'}...
@@ -1275,6 +1279,15 @@ for iStep = (startCommandNum+1):length(gVol{sysNum}.alignmentSteps)
       lastCommandVal(3) = lastCommandVal(3) + commandVal;
     end
     lastCommand = 'shift';
+  elseif any(strcmp(commandName,{'shiftSlice'}))
+    % if the last command was not a shiftSlice
+    if ~strcmp(lastCommand,'shiftSlice')
+      % display the last command
+      disp(dispAlignmentCommand(lastCommand,lastCommandVal));
+      lastCommandVal = 0;
+    end
+    lastCommandVal = lastCommandVal+commandVal;
+    lastCommand = 'shiftSlice';
   elseif any(strcmp(commandName,{'rotateXY','rotateXZ','rotateYZ'}))
     % if the last command was the same rotation or not
     if strcmp(lastCommand,commandName)
@@ -1508,6 +1521,11 @@ switch args{2}
   changeXform = true;
  case {'flipZ'}
   xformLeft = [1 0 0 0;0 1 0 0;0 0 -1 nan; 0 0 0 1];
+  changeXform = true;
+ case {'shiftSlice'}
+  xformRight = [1 0 0 0;0 1 0 0;0 0 1 params.shiftSlice; 0 0 0 1];
+  params.shiftSlice = 0;
+  mrParamsSet(params);
   changeXform = true;
  case {'shiftX','shiftY','shiftZ','rotateXY','rotateXZ','rotateYZ'}
   % make rotation matrix, but need to rotate around center coordinates
@@ -1788,7 +1806,7 @@ if ~isempty(figloc)
 end
 gVol{sysNum}.fig(2) = gVol{sysNum}.fig(1);
 gVol{sysNum}.fig(3) = gVol{sysNum}.fig(1);
-clf;
+clf;drawnow
 
 % set the mouse functions
 set(gVol{sysNum}.fig(1),'WindowButtonDownFcn',sprintf('mlrVol(1,%i)',sysNum));
@@ -1801,6 +1819,9 @@ gVol{sysNum}.a(2) = subplot(1,3,2);cla;axis off;
 gVol{sysNum}.a(3) = subplot(1,3,3);cla;axis off;
 gVol{sysNum}.subplotRows = [1 1 1];
 gVol{sysNum}.subplotCols = [3 3 3];
+
+% update display
+drawnow
 
 % no animation is running
 gVol{sysNum}.animating = false;
@@ -1816,6 +1837,8 @@ if isempty(showControls)
   gVol{sysNum}.displayControls = mrGetPref('mlrVolDisplayControls');
 else
   gVol{sysNum}.displayControls = showControls;
+  % update display
+  drawnow
 end  
 
 % overlay toggle state starts as on
@@ -1950,6 +1973,7 @@ if n == 1
     vol.altXforms.currentXform = 1;
     makeExtraCoordControls(sysNum,vol.altXforms.shortNames{vol.altXforms.currentXform},h.nDim+2);
   end
+  drawnow
 end
 
 % add another row for displaying the image
@@ -1987,6 +2011,7 @@ if n > 1
   end
   % set to display controls
 %  gVol{sysNum}.displayControls = true;
+  drawnow
 else
   % first volume is displayed independently
   vol.tethered = 0;
@@ -1996,6 +2021,7 @@ else
   % set some fields to empty
   vol.c = [];
   vol.xform = [];
+  drawnow
 end
 
 % place some empty fields that will get filled by setVolCoord
