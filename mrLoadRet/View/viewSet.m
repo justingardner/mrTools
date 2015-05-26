@@ -552,8 +552,8 @@ switch lower(param)
     % scanParams.framePeriod = hdr.pixdim(5)/1000;
     % see definitions for NIFTI_UNITS in nifti1.h
     % space units are multiples of 1, time units multiples of 8 up to 64
-    niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
-    niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
+    niftiSpaceUnit = bitand(hdr.xyzt_units,hex2dec('07')); 
+    niftiTimeUnit = bitand(hdr.xyzt_units,hex2dec('38'));
     if niftiTimeUnit == 8 % seconds
       scanParams.framePeriod = hdr.pixdim(5)./1;
     elseif niftiTimeUnit == 16 % milliseconds

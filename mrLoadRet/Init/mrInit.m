@@ -26,7 +26,7 @@
 function [sessionParams groupParams] = mrInit(sessionParams,groupParams,varargin)
 
 % check arguments
-getArgs(varargin,{'justGetParams=0','defaultParams=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]'});
+getArgs(varargin,{'justGetParams=0','defaultParams=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]','stimfileMatchList=[]'});
 
 minFramePeriod = .01;  %frame period in sec outside which the user is prompted
 maxFramePeriod = 100;  % that something weird's goin on
@@ -141,8 +141,25 @@ if ieNotDefined('groupParams')
   [stimFileNames stimFileVols] = getStimFiles;
 
   if ~isempty(stimFileNames)
-    % match the stimfiles with the scans
-    stimFileMatch = matchStimFiles(stimFileNames,stimFileVols,totalFrames);
+    if isempty(stimfileMatchList)
+      % match the stimfiles with the scans
+      stimFileMatch = matchStimFiles(stimFileNames,stimFileVols,totalFrames);
+    else
+      % passed in stimFileMatch, need to make a cell array of cell arrays
+      for i = 1:length(totalFrames)
+	% for each scan, check to see if we have a matching entry in stimfileMatchList
+	matchNum = [];
+	if length(stimfileMatchList) >= i
+	  % then go look for the name in our stimFileNames array
+	  matchNum = find(strncmp(stimfileMatchList{i},stimFileNames,length(stimfileMatchList{i})));
+	end
+	% if there was no match, just choose the top most stimfile (this will create duplicates, I suppose
+	% but it should not really happen if a user passes in the list
+	if isempty(matchNum), matchNum = 1;end
+	% put the matched one on top of list 
+	stimFileMatch{i} = putOnTopOfList(stimFileNames{matchNum},stimFileNames);
+      end
+    end
     paramsInfo{end+1} = {'stimFile',stimFileMatch,'group=scanNum','Stimfile to use for this scan'};
   end
 
@@ -189,7 +206,7 @@ if ~justGetParams
       scanParams(iScan).originalGroupName{1} = groups(1).name; % ditto
       scanParams(iScan).fileType = 'Nifti';
       niftiSpaceUnit = bitand(hdr.xyzt_units, hex2dec('07')); 
-      niftiTimeUnit = bitand(hdr.xyzt_units,hex2dec('38'))
+      niftiTimeUnit = bitand(hdr.xyzt_units,hex2dec('38'));
       if niftiTimeUnit == 8 % seconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./1;
       elseif niftiTimeUnit == 16 % milliseconds
