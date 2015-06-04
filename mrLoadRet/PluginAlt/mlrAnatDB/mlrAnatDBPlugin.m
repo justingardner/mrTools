@@ -582,28 +582,33 @@ if ~isdir(localRepo)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%
-% Now get ROI repo
+% Now get repo
 %%%%%%%%%%%%%%%%%%%%%%%%
-disp(sprintf('(mlrAnatDBGetLocal) Getting local ROI repo for %s',subjectID));
+disp(sprintf('(mlrAnatDBGetLocal) Getting local repo for %s',subjectID));
 localRepoROI = fullfile(localRepo,sprintf('%s',subjectID));
 if isdir(localRepoROI)
   % update it
   cd(localRepoROI);
-  [status,result] = system(sprintf('hg pull'));
-  [status,result] = system(sprintf('hg update'));
+  [status,result] = mysystem(sprintf('hg pull'));
+  [status,result] = mysystem(sprintf('hg update'));
   cd(curpwd);
   if status ~= 0
     mrWarnDlg('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepoROI);
     return
+  else
+    disp(sprintf('(mlrAnatDBGetLocal) Successful update of %s',localRepoROI));
   end
 else
+  disp(sprintf('(mlrAnatDBGetLocal) This may take a few minutes...'));
   centralRepoROI = fullfile(centralRepo,sprintf('%s',subjectID));
   % try to retrieve from remote repo by cloning
-  [status,result] = system(sprintf('hg clone %s %s',centralRepoROI,localRepoROI));
+  [status,result] = mysystem(sprintf('hg -v clone %s %s',centralRepoROI,localRepoROI));
   % if successful, then we have it
   if status~=0
     mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to clone central Repo %s to local %s',centralRepoROI,localRepoROI));
     return    
+  else
+    disp(sprintf('(mlrAnatDBGetLocal) Successful clone of %s',centralRepoROI));
   end
 end
 
@@ -750,3 +755,12 @@ if ~strncmp(localRepo,homeDir,length(localRepo))
 else
   tf = true;
 end
+
+%%%%%%%%%%%%%%%%%%
+%    mysystem    %
+%%%%%%%%%%%%%%%%%%
+function [status,result] = mysystem(command)
+
+disp(sprintf('(mlrAnatDBPlugin): %s',command));
+[status,result] = system(command);
+
