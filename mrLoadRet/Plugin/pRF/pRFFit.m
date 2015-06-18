@@ -12,7 +12,7 @@ fit = [];
 % up so that it can also be called as an interrogator
 [v scanNum x y z fitParams tSeries] = parseArgs(varargin);
 if isempty(v),return,end
-  
+ 
 % get concat info
 if ~isfield(fitParams,'concatInfo') || isempty(fitParams.concatInfo)
   fitParams.concatInfo = viewGet(v,'concatInfo',scanNum);
