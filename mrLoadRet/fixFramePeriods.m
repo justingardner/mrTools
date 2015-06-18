@@ -45,10 +45,12 @@ if yes
       fprintf('Changing frame period from %f %s to %f sec in file %s\n',weirdFramePeriods(iScan),timeUnit,newFramePeriod(iScan),scanParams(iScan).fileName);
       % set the frameperiod
       scanParams(iScan).framePeriod = newFramePeriod(iScan);
-      scanParams(iScan).niftiHdr.pixdim(5) = newFramePeriod(iScan); %don't forget to modify the hdr kept in scanParams, otherwise, problems with motionComp (and maybe others)
-      %which makes me think that it's not the cleverest thing to keep this niftiHdr field... because someone will always be tempted to change headers outside mrLoadRet anyway
-      hdr.pixdim(5) = newFramePeriod(iScan);
-      % and write it back
+      % change the nifti header
+      hdr.pixdim(5) = newFramePeriod(iScan); 
+      hdr.xyzt_units = 8+niftiSpaceUnit;
+      % set in scanParams
+      scanParams(iScan).niftiHdr = hdr;
+      % and save back the header
       cbiWriteNiftiHeader(hdr,filename);
     end
   end
