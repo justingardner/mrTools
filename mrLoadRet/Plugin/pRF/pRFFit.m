@@ -123,7 +123,8 @@ end
 % test to see if scan lengths and stim lengths match
 tf = true;
 for iScan = 1:fit.concatInfo.n
-  if fit.concatInfo.runTransition(iScan,2) ~= size(fitParams.stim{iScan}.im,3)
+  sLength = fit.concatInfo.runTransition(iScan,2) - fit.concatInfo.runTransition(iScan,1) + 1;
+  if sLength ~= size(fitParams.stim{iScan}.im,3)
     mrWarnDlg(sprintf('(pRFFit) Data length of %i for scan %i (concatNum:%i) does not match stimfile length %i',fit.concatInfo.runTransition(iScan,2),scanNum,iScan,size(fitParams.stim{iScan}.im,3)));
     tf = false;
   end
