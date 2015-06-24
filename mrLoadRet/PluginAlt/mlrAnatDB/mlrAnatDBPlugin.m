@@ -451,59 +451,6 @@ v = loadAnat(v,[],fullfile(localRepoSubject,'mlrBaseAnatomies'));
 refreshMLRDisplay(v);
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBSubjectID    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function subjectID = mlrAnatDBSubjectID(v)
-
-% check if we are in the reop
-if mlrAnatDBInLocalRepo(v)
-  % then just get subject ID from path
-  subjectID = getLastDir(fileparts(viewGet(v,'homeDir')));
-  [idLocStart idLocEnd] = regexp(subjectID,'s\d+');
-  id = str2num(subjectID(idLocStart+1:idLocEnd));
-  subjectID = sprintf('s%04i',id);
-  return
-end
-    
-% get the subject
-subjectID = viewGet(v,'subject');
-if (length(subjectID) > 1) 
-  [idLocStart idLocEnd] = regexp(subjectID,'s\d+');
-  id = 0;
-  if ~isempty(idLocStart)
-    id = str2num(subjectID(idLocStart+1:idLocEnd));
-  else
-    [idLocStart idLocEnd] = regexp(subjectID,'\d+');
-    if ~isempty(idLocStart)
-      id = str2num(subjectID(idLocStart:idLocEnd));
-    end
-  end
-  % format subject ID
-  subjectID = sprintf('s%04i',id);
-end
-
-% ask if this is the correct subjectID
-paramsInfo{1} = {'subjectID',subjectID,'The subject ID that this session will be filed under in the anatDB. Usually this is of the form sXXXX. If you do not know it, you may be able to look it up using mglSetSID if you are usuing the mgl ID database'};
-params = mrParamsDialog(paramsInfo,'Set subjectID');
-if isempty(params)
-  subjectID = '';
-  return
-end
-subjectID = params.subjectID;
-% check input format
-[idLocStart idLocEnd] = regexp(subjectID,'s\d+');
-id = 0;
-if ~isempty(idLocStart)
-  id = str2num(subjectID(idLocStart+1:idLocEnd));
-else
-  [idLocStart idLocEnd] = regexp(subjectID,'\d+');
-  if ~isempty(idLocStart)
-    id = str2num(subjectID(idLocStart:idLocEnd));
-  end
-end
-subjectID = sprintf('s%04i',id);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatDBAddCommitPush    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -599,21 +546,6 @@ if status == 0
 end
 
 cd(curpwd);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBInLocalRepo    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function tf = mlrAnatDBInLocalRepo(v)
-
-localRepoTop = mlrReplaceTilde(mrGetPref('mlrAnatDBLocalRepo'));
-homeDir = mlrReplaceTilde(viewGet(v,'homeDir'));
-% if they are not the same, then offer add session as a menu item,
-% but nothing else.
-if ~strncmp(localRepoTop,homeDir,length(localRepoTop))
-  tf = false;
-else
-  tf = true;
-end
 
 %%%%%%%%%%%%%%%%%%
 %    mysystem    %

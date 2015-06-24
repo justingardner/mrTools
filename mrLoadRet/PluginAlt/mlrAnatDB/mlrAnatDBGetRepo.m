@@ -32,6 +32,15 @@
 %
 function [localRepo localRepoLargeFiles] = mlrAnatDBGetRepo(subjectID)
 
+% check arguments
+if nargin < 1
+  help mlrAnatDBGetRepo;
+  return
+end
+
+% validate format of subjectID
+subjectID = mlrAnatDBSubjectID(subjectID);
+
 % default return arguments
 localRepo = [];
 localRepoLargeFiles = [];
@@ -67,6 +76,9 @@ if ~isdir(localRepoTop)
   return
 end
 
+% check HG installation
+if ~mlrAnatDBCheckHg, return, end
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 % Now get repo
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,7 +91,7 @@ if isdir(localRepo)
   [status,result] = mysystem(sprintf('hg update'));
   cd(curpwd);
   if status ~= 0
-    mrWarnDlg('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepo);
+    mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepo));
     localRepo = [];
     return
   else
@@ -136,12 +148,26 @@ end
 % now make links in local repo
 curpwd = pwd;
 cd(localRepo);
-linkList = {'3D','localizers'};
+linkList = {'anatomy','localizers'};
 for iLink = 1:length(linkList)
   linkFrom = fullfile('..',getLastDir(localRepoLargeFiles),linkList{iLink});
   system(sprintf('ln -sfh %s %s',linkFrom,linkList{iLink}));
 end
+% make links within surfaces to proper anatomy
+cd('surfaces');
+% check for .freesurfer file which contains correct link
+if isfile('.freesurfer')
+  freesurfer = textread('.freesurfer','%s');
+  if length(freesurfer) == 1
+    % then make the link
+    linkFrom = fullfile('..','..',getLastDir(localRepoLargeFiles),'anatomy',freesurfer{1});
+    if isdir(linkFrom)
+      mysystem(sprintf('ln -sfh %s freesurfer',linkFrom));
+    end
+  end
+end
 cd(curpwd);
+
 
 %%%%%%%%%%%%%%%%%%
 %    mysystem    %

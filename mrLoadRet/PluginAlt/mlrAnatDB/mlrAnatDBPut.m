@@ -1,14 +1,14 @@
 % mlrAnatDBPut.m
 %
 %        $Id:$ 
-%      usage: mlrAnatDBPut(subjectID,filePath,fileType,<toPath=[]>,<largefiles=[]>,<verbose=0>,<comments=[]>)
+%      usage: mlrAnatDBPut(subjectID,filePath,fileType,<verbose=0>,<comments=[]>)
 %         by: justin gardner
 %       date: 06/22/15
 %    purpose: Puts files into repo. The filePath should point to a directory outside of mlrAnatDB and
 %             that file or directory will be copied into an appropriate place into mlrAnatDBm added to the
 %             repo, committed and pushed (if the user accepts)
 %
-%             Typically you specify what kind of file you have (roi, 3D, baseAnat, localizer) and
+%             Typically you specify what kind of file you have (roi, freesurfer, baseAnat, localizer) and
 %             this will put it into the correct directory
 % 
 %             e.g. To put an roi
@@ -20,7 +20,7 @@
 %             e.g. To put a freesurfer directory
 %             mlrAnatDBPut(25,'~/data/freesurfer','freesurfer');
 %
-%             Valid types can be found in the code below: roi, 3D, baseAnat, freesurfer, canonical, localizer
+%             Valid types can be found in the code below: roi, freesurfer, baseAnat, freesurfer, canonical, localizer
 %
 function tf = mlrAnatDBPut(subjectID,filePath,fileType,varargin)
 
@@ -32,10 +32,10 @@ if nargin < 2
 end
 
 % format the subject id
-subjectID = formatSubjectID(subjectID);
+subjectID = mlrAnatDBSubjectID(subjectID);
 
 % and get arguments
-getArgs(varargin,{'fileDir=[]','largefiles=[]','verbose=0','comments=[]'});
+getArgs(varargin,{'fileDir=[]','largefiles=[]','verbose=0','comments=[]','freesurfer=[]'});
 
 % check file
 if ~isfile(filePath) && ~isdir(filePath)
@@ -51,10 +51,10 @@ if isempty(fileDir)
     if isempty(largefiles),largefiles = false;end
     if isdir(filePath),filePath = getFilenames(filePath,'*.mat');end
    case 'freesurfer'
-    fileDir = '3D';
+    fileDir = 'anatomy';
     if isempty(largefiles),largefiles = true;end
-   case {'3d','canonical'}
-    fileDir = '3D';
+   case {'3d','canonical','anatomy','anat'}
+    fileDir = 'anatomy';
     if isempty(largefiles),largefiles = false;end
    case {'baseanat','mlrbaseAnat','mlrbaseanatomy','mlrbaseanatomies'}
     fileDir = 'mlrBaseAnatomies';
@@ -63,7 +63,7 @@ if isempty(fileDir)
    case {'surfaces','surface'}
     fileDir = 'surfaces';
     if isempty(largefiles),largefiles = false;end
-    if isdir(filePath),filePath = getFilenames(filePath,{'*.off','*.vff'});end
+    if isdir(filePath),filePath = getFilenames(filePath,{'*.off','*.vff','*.hdr','*.img','*.nii'});end
    case {'localizer','localizers'}
     fileDir = 'localizers';
     if isempty(largefiles),largefiles = true;end
@@ -77,10 +77,11 @@ end
 % get local repo
 if ~largefiles
   [localRepo] = mlrAnatDBGetRepo(subjectID);
+  if isempty(localRepo),return,end
 else
   [localRepo localRepoLargeFiles] = mlrAnatDBGetRepo(subjectID);
+  if isempty(localRepo)||isempty(localRepoLargeFiles),return,end
 end
-if isempty(localRepo),return,end
 
 % get location to copy to 
 if largefiles
@@ -107,6 +108,43 @@ for iFile = 1:length(filePath)
   toPath{iFile} = fullfile(fileDir,getLastDir(filePath{iFile}));
 end
 
+% make links to canonical for surfaces
+if strcmp(lower(fileType),'surfaces')
+  % get list of nifti files in directory - these should be canonical
+  canonicals = getFilenames(destDir,{'*.hdr','*.img','*.nii'});
+  cd(localRepo);
+  % make links to canonical
+  for iFile = 1:length(canonicals)
+    linkFrom = fullfile('surfaces',getLastDir(canonicals{iFile}));
+    toPath{end+1} = setext(subjectID,getext(canonicals{iFile}));
+    mysystem(sprintf('ln -sfh %s %s',linkFrom,toPath{end}));
+  end
+  % make a link to freesurfer dir(this will not be tracked by 
+  % hg because thereis an .hgignore file already there to hide it)
+  cd('surfaces');
+  linkFrom = fullfile('..','anatomy',freesurfer);
+  mysystem(sprintf('ln -sfh %s freesurfer',linkFrom));
+  % and also make a text file that contains the freesurfer link
+  if isfile('.freesurfer')
+    mysystem(sprintf('rm -f .freesurfer'));
+  end
+  mysystem(sprintf('echo %s > .freesurfer',freesurfer));
+  toPath{end+1} = fullfile('surfaces','.freesurfer');
+end
+
+% if this is a freesurfer directory, then go look for surfRelax
+% so that we can remove it and then add it back later to the surfaces dir
+if strcmp(lower(fileType),'freesurfer')
+  surfRelaxDir = fullfile(localRepoLargeFiles,toPath{1},'surfRelax');
+  if isdir(surfRelaxDir)
+    % remove it (we are going to add it back later to surfaces)
+    rmdir(surfRelaxDir,'s');
+    surfRelaxDir = fullfile(filePath{1},'surfRelax');
+  else
+    surfRelaxDir = '';
+  end
+end
+
 % now do the commit part
 if largefiles
   % add/commit/push to large files repo
@@ -119,6 +157,12 @@ else
 end
 
 cd(curpwd);
+
+% for freesurfer, go and add the surfRelax directory as surfaces
+if strcmp(lower(fileType),'freesurfer') && ~isempty(surfRelaxDir)
+  mlrAnatDBPut(subjectID,surfRelaxDir,'surfaces','comments',comments,'freesurfer',filePath{1});
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %    addCommitPush    %
@@ -135,9 +179,9 @@ end
 % add file to repo
 for iFile = 1:length(toPath)
   if largefiles
-    [status,result] = system(sprintf('hg add %s',toPath{iFile}));
+    [status,result] = mysystem(sprintf('hg add %s --large',toPath{iFile}));
   else
-    [status,result] = system(sprintf('hg add %s --large',toPath{iFile}));
+    [status,result] = mysystem(sprintf('hg add %s',toPath{iFile}));
   end
 
   if status ~= 0
@@ -152,16 +196,18 @@ if isempty(comments)
   comments = inputdlg('Enter commit comments','Commit comments',[1 100],{''},options);
   if ~isempty(comments)
     comments = comments{1};
+  else
+    comments = '';
   end
 end
 
-[status,result] = system(sprintf('hg commit -m ''%s''',comments));
+[status,result] = mysystem(sprintf('hg commit -m ''%s''',comments));
 if largefiles,disppercent(inf);,end
 
 % and push
 if ~verbose || isequal(questdlg(sprintf('Do you want to push to the central repo: %s? This can take several minutes depending on your connection. You will be able to work while this occurs (it will push in the background), but you should not shut off your matlab/computer. If you choose no now, you will need to push manually later.',mrGetPref('mlrAnatDBCentralRepo')),'Do push?','Yes','No','Yes'),'Yes')
   disp(sprintf('(mlrAnatDBAddCommitPush) Pushing repo %s in the background',pwd));
-  system(sprintf('hg push --new-branch &'));
+  mysystem(sprintf('hg push --new-branch &'));
 end
 
 
@@ -182,27 +228,10 @@ for iMatch = 1:length(matchStr)
   end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%    formatSubjectID    %
-%%%%%%%%%%%%%%%%%%%%%%%%%
-function subjectID = formatSubjectID(subjectID)
+%%%%%%%%%%%%%%%%%%
+%    mysystem    %
+%%%%%%%%%%%%%%%%%%
+function [status,result] = mysystem(command)
 
-if isstr(subjectID)
-  if (length(subjectID) > 1) 
-    [idLocStart idLocEnd] = regexp(subjectID,'s\d+');
-    id = 0;
-    if ~isempty(idLocStart)
-      id = str2num(subjectID(idLocStart+1:idLocEnd));
-    else
-      [idLocStart idLocEnd] = regexp(subjectID,'\d+');
-      if ~isempty(idLocStart)
-	id = str2num(subjectID(idLocStart:idLocEnd));
-      end
-    end
-    % format subject ID
-    subjectID = sprintf('s%04i',id);
-  end
-else
-  subjectID = sprintf('s%04i',subjectID);
-end
-
+disp(sprintf('(mlrAnatDBPlugin): %s',command));
+[status,result] = system(command,'-echo');
