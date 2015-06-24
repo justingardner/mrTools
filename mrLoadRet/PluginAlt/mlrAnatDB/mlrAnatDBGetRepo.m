@@ -91,9 +91,14 @@ if isdir(localRepo)
   [status,result] = mysystem(sprintf('hg update'));
   cd(curpwd);
   if status ~= 0
-    mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepo));
-    localRepo = [];
-    return
+    % if this is because the branch does not exist yet, then ignore
+    if isempty(strfind(result,'branch'))
+      mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepo));
+      localRepo = [];
+      return
+    else
+      disp(sprintf('(mlrAnatDBGetRepo) Branch not yet pushed but otherwise succesful update of %s',localRepo));
+    end      
   else
     disp(sprintf('(mlrAnatDBGetRepo) Successful update of %s',localRepo));
   end
@@ -127,11 +132,19 @@ if isdir(localRepoLargeFiles)
   % update it
   cd(localRepoLargeFiles);
   [status,result] = mysystem(sprintf('hg pull'));
+  [status,result] = mysystem(sprintf('hg update'));
   cd(curpwd);
   if status ~= 0
-    mrWarnDlg('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepoLargeFiles);
-    localRepoLargeFiles = [];
-    return
+    % if this is because the branch does not exist yet, then ignore
+    if isempty(strfind(result,'branch'))
+      mrWarnDlg('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepoLargeFiles);
+      localRepoLargeFiles = [];
+      return
+    else
+      disp(sprintf('(mlrAnatDBGetRepo) Branch not yet pushed but otherwise succesful update of %s',localRepoLargeFiles));
+    end      
+  else
+    disp(sprintf('(mlrAnatDBGetRepo) Successful update of %s',localRepoLargeFiles));
   end
 else
   centralRepoLargeFiles = fullfile(centralRepoTop,sprintf('%sd',subjectID));
@@ -174,5 +187,5 @@ cd(curpwd);
 %%%%%%%%%%%%%%%%%%
 function [status,result] = mysystem(command)
 
-disp(sprintf('(mlrAnatDBPlugin): %s',command));
+disp(sprintf('(mlrAnatDBGetRepo): %s',command));
 [status,result] = system(command,'-echo');

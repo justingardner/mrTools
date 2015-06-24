@@ -503,55 +503,11 @@ end
 tf = true;
 cd(curpwd);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBGetBranchNum    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function branchNum = mlrAnatDBGetBranchNum(localRepoTop)
-
-branchNum = [];
-
-% set path
-curpwd = pwd;
-cd(localRepoTop);
-
-% get the branch name
-[status,result] = system(sprintf('hg branch'));
-branchNameLoc = regexp(result,'v\d');
-if ~isempty(branchNameLoc)
-  branchNum = str2num(result(branchNameLoc+1:end));
-else
-  mrWarnDlg(sprintf('(mlrAnatDbPlugin) Could not figure out version number. This should be the current branch of the git repository and should be in the format vXXXX where XXX is a number (e.g. v0001). Not able to commit changes. Aborting. you can fix by going to repo %s and assiging a valid version number as the branch name'));
-  cd(curpwd);
-  return
-end
-
-cd(curpwd);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBSetBranchNum    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function tf = mlrAnatDBSetBranchNum(localRepoTop,branchNum)
-
-tf = false;
-
-% set path
-curpwd = pwd;
-cd(localRepoTop);
-
-% update branch number
-branchName = sprintf('v%04i',branchNum);
-[status,result] = system(sprintf('hg branch %s',branchName));
-if status == 0
-  tf = true;
-end
-
-cd(curpwd);
-
 %%%%%%%%%%%%%%%%%%
 %    mysystem    %
 %%%%%%%%%%%%%%%%%%
 function [status,result] = mysystem(command)
 
 disp(sprintf('(mlrAnatDBPlugin): %s',command));
-[status,result] = system(command);
+[status,result] = system(command,'-echo');
 

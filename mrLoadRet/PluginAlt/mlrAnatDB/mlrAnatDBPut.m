@@ -74,6 +74,17 @@ if isempty(fileDir)
   return
 end
 
+% if there are no comments then ask user for comments
+if isempty(comments)
+  options.Resize='on';
+  comments = inputdlg('Enter commit comments','Commit comments',[1 100],{''},options);
+  if ~isempty(comments)
+    comments = comments{1};
+  else
+    comments = '';
+  end
+end
+
 % get local repo
 if ~largefiles
   [localRepo] = mlrAnatDBGetRepo(subjectID);
@@ -146,6 +157,10 @@ if strcmp(lower(fileType),'freesurfer')
   else
     surfRelaxDir = '';
   end
+  % update the branch numbers for both the small and large files
+  branchNum = mlrAnatDBGetBranchNum(localRepo);
+  mlrAnatDBSetBranchNum(localRepo,branchNum+1);
+  mlrAnatDBSetBranchNum(localRepoLargeFiles,branchNum+1);
 end
 
 % now do the commit part
@@ -163,9 +178,12 @@ cd(curpwd);
 
 % for freesurfer, go and add the surfRelax directory as surfaces
 if strcmp(lower(fileType),'freesurfer') && ~isempty(surfRelaxDir)
-  mlrAnatDBPut(subjectID,surfRelaxDir,'surfaces','comments',comments,'freesurfer',filePath{1});
+  tf = mlrAnatDBPut(subjectID,surfRelaxDir,'surfaces','comments',comments,'freesurfer',filePath{1});
+  if ~tf,return,end
 end
 
+% success.
+tf = true;
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %    addCommitPush    %
@@ -193,24 +211,15 @@ for iFile = 1:length(toPath)
   end
 end
 
-% if there are no comments then ask user for comments
-if isempty(comments)
-  options.Resize='on';
-  comments = inputdlg('Enter commit comments','Commit comments',[1 100],{''},options);
-  if ~isempty(comments)
-    comments = comments{1};
-  else
-    comments = '';
-  end
-end
-
+% commit
 [status,result] = mysystem(sprintf('hg commit -m ''%s''',comments));
 if largefiles,disppercent(inf);,end
 
 % and push
 if ~verbose || isequal(questdlg(sprintf('Do you want to push to the central repo: %s? This can take several minutes depending on your connection. You will be able to work while this occurs (it will push in the background), but you should not shut off your matlab/computer. If you choose no now, you will need to push manually later.',mrGetPref('mlrAnatDBCentralRepo')),'Do push?','Yes','No','Yes'),'Yes')
-  disp(sprintf('(mlrAnatDBAddCommitPush) Pushing repo %s in the background',pwd));
-  mysystem(sprintf('hg push --new-branch &'));
+  disppercent(-inf,sprintf('(mlrAnatDBAddCommitPush) Pushing repo %s',pwd));
+  mysystem(sprintf('hg push --new-branch'));
+  disppercent(inf);
 end
 
 
@@ -236,5 +245,5 @@ end
 %%%%%%%%%%%%%%%%%%
 function [status,result] = mysystem(command)
 
-disp(sprintf('(mlrAnatDBPlugin): %s',command));
+disp(sprintf('(mlrAnatDBPut): %s',command));
 [status,result] = system(command,'-echo');
