@@ -24,8 +24,9 @@ if (nargout == 2)
 		    'clip',defaultClip(base.data);
 		    'coordMap',[];
 		    'rotate',0;
+		    'surfaceRotate',0;
 		    'tilt',0;
-		    'curSlice',[];
+		    'curCoords',[];
 		    'sliceOrientation',[],;
 		    'type',[],;
 		    'gamma',1,;
@@ -34,11 +35,18 @@ if (nargout == 2)
                     'talInfo',[];
 		    'originalOrient',[];
 		    'xformFromOriginal',[];
-        'curCorticalDepth',[]};
+		    'alpha',1;
+		    'displayOverlay',true;
+		    'multiDisplay',false;
+		    'multiAxis',0;
+		    'overlay',[];
+		    'overlayAlpha',0.5;
+		    'overlays',{};
+		    'curCorticalDepth',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
-  requiredFields = {'clip','coordMap','curSlice','data','hdr','name','permutationMatrix','range','rotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag','talInfo'};
+  requiredFields = {'clip','coordMap','curCoords','data','hdr','name','permutationMatrix','range','rotate','surfaceRotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag','talInfo','originalOrient','xformFromOriginal','alpha','displayOverlay','multiDisplay','multiAxis','overlay','overlayAlpha','overlays'};
   optionalFields = {'curCorticalDepth'};
 end
 
@@ -171,9 +179,6 @@ elseif isfield(coordMap,'innerFileName')
   newCoordMap.innerVtcs = coordMap.innerVtcs;
   newCoordMap.outerVtcs = coordMap.outerVtcs;
   newCoordMap.tris = coordMap.tris;
-  if isfield(coordMap,'rotate')
-    newCoordMap.rotate = coordMap.rotate;
-  end
   coordMap = newCoordMap;
 elseif isfield(coordMap,'inner')
   disp(sprintf('(isbase) Updating format of coordMap'));
@@ -196,9 +201,6 @@ elseif isfield(coordMap,'inner')
   newCoordMap.innerVtcs = coordMap.innerVtcs;
   newCoordMap.outerVtcs = coordMap.outerVtcs;
   newCoordMap.tris = coordMap.tris;
-  if isfield(coordMap,'rotate')
-    newCoordMap.rotate = coordMap.rotate;
-  end
   coordMap = newCoordMap;
 end
 
@@ -207,7 +209,7 @@ if baseType == 1
   optionalFields = {'coords',[]};
 elseif baseType == 2
   requiredFields = {'path','dims','innerSurfaceFileName','innerCoordsFileName','outerSurfaceFileName','outerCoordsFileName','curvFileName','anatFileName','innerCoords','outerCoords','innerVtcs','outerVtcs','tris'};
-  optionalFields = {'coords',[];'rotate',0};
+  optionalFields = {'coords',[]};
 end  
 
 % Check required fields

@@ -46,6 +46,10 @@ result(image > clipMax) = clipMax;
 if isequal(clipMax-clipMin,0)
   rgb = clipMax*ones([size(image),3]);return
 else
+  % JG: This seems to assume that a colormap has 256 values
+  % or less, would be better not to make that assumption
+  % but that propogated some errors (the colorbar didn't fully paint)
+  % so keeping the assumption here.
   indices = round(255 * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
 end
 indices = max(1,min(indices,size(cmap,1)));

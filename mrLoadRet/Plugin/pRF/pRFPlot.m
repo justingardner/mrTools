@@ -306,21 +306,28 @@ if length(roi)
     end
     hold on
     % limit the fit to the central 6 deg (b/c it is often off for higher eccentricities)
-    ind = thisEccentricity <= 6;
-    regfit = myregress(thisEccentricity(ind),thisRfHalfWidth(ind),0,0);
-    w = diag(thisr2(ind));
-    x = thisEccentricity(ind);
-    x = [x(:) ones(size(x(:)))];
-    y = thisRfHalfWidth(ind);
-    beta = ((x'*w*x)^-1)*(x'*w)*y';
-    maxXaxis = min(maxX,maxY);
-    xaxis(0,maxXaxis);
-    yaxis(0,maxXaxis);
-    plot([0 maxXaxis],[0 maxXaxis]*beta(1)+beta(2),'k-');
-    xlabel('Eccentricity (deg)');
-    ylabel('RF half width (deg)');
-    title(sprintf('slope: %0.2f (%s) offset: %0.2f (%s) (r2=%0.2f)',beta(1),pvaldisp(regfit.pm),beta(2),pvaldisp(regfit.pb),regfit.r2));
-    axis square
+    eccLimit = 6;
+    ind = thisEccentricity <= eccLimit;
+    if any(ind)
+      regfit = myregress(thisEccentricity(ind),thisRfHalfWidth(ind),0,0);
+      w = diag(thisr2(ind));
+      x = thisEccentricity(ind);
+      x = [x(:) ones(size(x(:)))];
+      y = thisRfHalfWidth(ind);
+      beta = ((x'*w*x)^-1)*(x'*w)*y';
+      maxXaxis = min(maxX,maxY);
+      xaxis(0,maxXaxis);
+      yaxis(0,maxXaxis);
+      if ~isempty(beta)
+	plot([0 maxXaxis],[0 maxXaxis]*beta(1)+beta(2),'k-');
+      end
+      xlabel('Eccentricity (deg)');
+      ylabel('RF half width (deg)');
+      title(sprintf('slope: %0.2f (%s) offset: %0.2f (%s) (r2=%0.2f)',beta(1),pvaldisp(regfit.pm),beta(2),pvaldisp(regfit.pb),regfit.r2));
+      axis square
+    else
+      disp(sprintf('(pRFPlot) No matching fits to plot with eccentricity less than %f',eccLimit));
+    end
     % plot hdr parameters, first get the voxels to plot
     [temp dCoords] = intersect(d.linearCoords,roiCoordsLinear);
     for i = 1:length(plotParams)

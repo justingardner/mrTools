@@ -50,8 +50,8 @@ switch(getenv('FSLOUTPUTTYPE'))
     return;
 end
 
-canonicalHdr = cbiReadNiftiHeader(canonicalBaseFilename);
-inputHdr = cbiReadNiftiHeader(inputVolumeFilename);
+canonicalHdr = mlrImageReadNiftiHeader(canonicalBaseFilename);
+inputHdr = mlrImageReadNiftiHeader(inputVolumeFilename);
 
 % load the surface coordinates
 coordsCount = 0;

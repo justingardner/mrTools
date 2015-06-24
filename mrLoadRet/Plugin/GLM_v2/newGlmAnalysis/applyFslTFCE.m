@@ -55,7 +55,7 @@ catch
   return
 end
 %read the TFCE values
-tfceData=cbiReadNifti(tempFilename,[],[],[],verbose);
+tfceData=mlrImageReadNifti(tempFilename,[],[],[],verbose);
 
 if all(tfceData(:)==0)
   oneTimeWarning('tfceOutputsZeros','(applyFslTFCE) There is a problem with fslmaths -tfce (it outputs only zeros). try using another version of FSL');

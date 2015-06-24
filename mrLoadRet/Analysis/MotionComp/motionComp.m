@@ -244,6 +244,11 @@ for s = 1:length(targetScans)
   totalFrames = viewGet(viewBase,'totalFrames',scanNum); 
   scan2scan = viewGet(viewBase, 'scan2scan', baseScan, groupNum, scanNum, groupNum);
   [mask view] = motionCompGetMask(view,params,scanNum,groupNum);
+  if sliceTimeCorrection
+    sliceTimes = viewGet(viewBase,'sliceTimes',scanNum);
+  else
+    sliceTimes = [];
+  end
   
   % Initialize the warped time series to zeros. Need to re-initialize this
   % for each scan because number of frames can differ. 

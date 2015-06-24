@@ -1,8 +1,8 @@
-function [img base roi overlays] = refreshMLRDisplay(viewNum)
-%	$Id$
+function [img base roi overlays altBase] = refreshMLRDisplay(viewNum)
+%	$Id: refreshMLRDisplay.m 2838 2013-08-12 12:52:20Z julien $
 
 mrGlobals
-img = [];base = [];roi = [];overlays=[];
+img = [];base = [];roi = [];overlays=[];altBase = [];
 % for debugging/performance tests
 % set to 0 for no info
 % set to 1 for info on caching
@@ -12,23 +12,21 @@ img = [];base = [];roi = [];overlays=[];
 verbose = 0;
 if verbose,tic,end
 
-% Get current view and baseNum.
-% Get interp preferences.
-% Get slice, scan, alpha, rotate, and sliceIndex from the gui.
-if verbose>1,disppercent(-inf,'viewGet');,end
-view = viewGet(viewNum,'view');
-fig = viewGet(view,'figNum');
-slice = viewGet(view,'curslice');
-rotate = viewGet(view,'rotate');
-baseNum = viewGet(view,'currentBase');
-sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
-baseType = viewGet(view,'baseType',baseNum);
-baseGamma = viewGet(view,'baseGamma',baseNum);
+% get current base
+v = viewGet(viewNum,'view');
+viewNum = viewGet(v,'viewNum');
+fig = viewGet(v,'figNum');
+gui = guidata(fig);
+baseNum = viewGet(v,'currentBase');
+baseType = viewGet(v,'baseType');
+
+% debug code
+%curCoords = viewGet(v,'curCoords');
+%disp(sprintf('(refreshMLRDisplay) DEBUG: [%i %i %i]',curCoords(1),curCoords(2),curCoords(3)));
+
 % if no base then clear axis and return
 if isempty(baseNum)
-  fig = viewGet(view,'figNum');
   if ~isempty(fig)
-    gui = guidata(fig);
     cla(gui.axis,'reset');
     set(fig,'CurrentAxes',gui.colorbar);
     cla(gui.colorbar,'reset');
@@ -37,74 +35,268 @@ if isempty(baseNum)
   end
   return
 end
-set(viewGet(viewNum,'figNum'),'Pointer','watch');drawnow;
-if verbose>1,disppercent(inf);,end
+
+% set pointer to watch
+set(fig,'Pointer','watch');drawnow;
 
 % for debugging, clears caches when user holds down alt key
 if ~isempty(fig) && any(strcmp(get(fig,'CurrentModifier'),'alt'))
   disp(sprintf('(refreshMLRDisplay) Dumping caches'));
-  view = viewSet(view,'roiCache','init');
-  view = viewSet(view,'overlayCache','init');
-  view = viewSet(view,'baseCache','init');
+  v = viewSet(v,'roiCache','init');
+  v = viewSet(v,'overlayCache','init');
+  v = viewSet(v,'baseCache','init');
 end
+
+if verbose>1,disppercent(-inf,'Clearing figure');,end
+% note: This cla here is VERY important. Otherwise
+% we keep drawing over old things on the axis and
+% the rendering gets impossibly slow... -j.
+cla(gui.axis);
+if verbose>1,disppercent(inf);,end
+
+% check if these are inplanes (not flats or surfaces)
+% and see if we should draw all three possible views
+baseMultiAxis = viewGet(v,'baseMultiAxis');
+if (baseType == 0) && (baseMultiAxis>0)
+  % set the axis, either to dispaly all 3 views + a 3D
+  % or just a 3d
+  if baseMultiAxis == 1
+    mlrGuiSet(v,'multiAxis',1);
+  else
+    mlrGuiSet(v,'multiAxis',2);
+  end
+  % get what coords display
+  curCoords = viewGet(v,'curCoords');
+
+  % display the images, but if we are set to 3D just compute
+  % the images, so that we can display the 3D.
+  for iSliceIndex = 1:3
+    % if we are displaying all slice dimenons and the #d
+    if baseMultiAxis == 1
+      % display each slice index
+      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+    else
+      % display each slice index
+      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+    end
+  end
+
+  % now draw the 3D intersection
+  baseDims = viewGet(v,'baseDims',baseNum);
+
+  roiContourWidth = mrGetPref('roiContourWidth');
+
+  % draw each dimension in turn using images that were returned
+  % by each call to dispBase from above
+  % 1st dimension (axial)
+  cla(gui.axis);
+  set(fig,'Renderer','OpenGL');
+  [x y] = meshgrid(1:baseDims(1),1:baseDims(2));
+  imgSurface = surf(gui.axis,y,x,ones(size(x,1),size(x,2))*curCoords(3));
+  set(imgSurface,'CData',permute(img{3},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+  hold(gui.axis,'on');
+  % draw rois
+  for iROI = 1:length(roi{3})
+    if ~isempty(roi{3}{iROI})
+      z = ones(size(roi{3}{iROI}.lines.x))*curCoords(3);
+      line(roi{3}{iROI}.lines.x,roi{3}{iROI}.lines.y,z,'Color',roi{3}{iROI}.color,'LineWidth',roiContourWidth,'Parent',gui.axis);
+    end
+  end
+
+  % 2nd dimension (coronal)
+  [x z] = meshgrid(1:baseDims(1),1:baseDims(3));
+  imgSurface = surf(gui.axis,ones(size(x,1),size(x,2))*curCoords(2),x,z);
+  set(imgSurface,'CData',permute(img{2},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+  % draw rois
+  for iROI = 1:length(roi{2})
+    if ~isempty(roi{2}{iROI})
+      z = ones(size(roi{2}{iROI}.lines.x))*curCoords(2);
+      line(z,roi{2}{iROI}.lines.y,roi{2}{iROI}.lines.x,'Color',roi{2}{iROI}.color,'LineWidth',roiContourWidth,'Parent',gui.axis);
+    end
+  end
+
+  % 3rd dimension (saggital)
+  [y z] = meshgrid(1:baseDims(2),1:baseDims(3));
+  imgSurface = surf(gui.axis,y,ones(size(y,1),size(y,2))*curCoords(1),z);
+  set(imgSurface,'CData',permute(img{1},[2 1 3]),'FaceColor','texturemap','EdgeAlpha',0);
+  % draw rois
+  for iROI = 1:length(roi{1})
+    if ~isempty(roi{1}{iROI})
+      z = ones(size(roi{1}{iROI}.lines.x))*curCoords(1);
+      line(roi{1}{iROI}.lines.y,z,roi{1}{iROI}.lines.x,'Color',roi{1}{iROI}.color,'LineWidth',roiContourWidth,'Parent',gui.axis);
+    end
+  end
+
+  % set the axis
+  axis(gui.axis,'off');
+  axis(gui.axis,'tight');
+  % make sure x direction is normal to make right/right
+  set(gui.axis,'XDir','reverse');
+  set(gui.axis,'YDir','normal');
+  set(gui.axis,'ZDir','normal');
+  % set the size of the field of view in degrees
+  % i.e. 90 would be very wide and 1 would be ver
+  % narrow. 9 seems to fit the whole brain nicely
+  % this hard-coded value also appears in dispBase
+  camva(gui.axis,9);
+  axis(gui.axis,'equal');
+  setMLRViewAngle(v,gui.axis);
+  
+else
+  % set the gui to display only a single axis
+  mlrGuiSet(v,'multiAxis',0);
+  % just draw a single base
+  [v img base roi overlays curSliceBaseCoords] = dispBase(gui.axis,v,baseNum,gui,true,verbose);
+  % keep cursliceBaseCoords
+  v = viewSet(v,'cursliceBaseCoords',curSliceBaseCoords);
+end
+
+% turn on 3D free roate if we are just displaying the one 3D axis
+if ~mrInterrogator('isactive',viewNum)
+  if (baseType == 2) || (baseMultiAxis == 2)
+    mlrSetRotate3d(v,'on');
+  else
+    mlrSetRotate3d(v,'off');
+  end
+end
+
+axes(gui.axis);
+
+% draw any other base that has multiDisplay set
+% do this for surfaces for now or for 3D anatomies
+% when we have multiAxis on (since that draws a 3D
+% view with all the relevant planes)
+if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
+  for iBase = setdiff(1:viewGet(v,'numBase'),baseNum)
+    if viewGet(v,'baseType',iBase)>=2
+      if viewGet(v,'baseMultiDisplay',iBase)
+	% display the base and keep the information about what is drawn for functions like mrPrint
+	[v altBase(iBase).img altBase(iBase).base altBase(iBase).roi altBase(iBase).overlays] = dispBase(gui.axis,v,iBase,gui,false,verbose);
+      end
+    end
+  end
+end
+
+if (baseType == 0) && (baseMultiAxis>0)
+  % set the camera taret to center of the volume
+  camtarget(gui.axis,baseDims([2 1 3])/2)
+end
+
+if verbose>1,disppercent(-inf,'rendering');end
+%this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
+%In cases where it is more than the number of overlay names in the box
+%it has to be changed, but it is necessary to wait until drawnow before changing it  
+%otherwise the change is not taken into account
+%Even in this case, It still outputs a warning, that has to be disabled
+if strcmp(get(gui.overlayPopup,'style'),'listbox')
+  warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+  set(gui.overlayPopup,'ListboxTop',min(get(gui.overlayPopup,'ListboxTop'),length(get(gui.overlayPopup,'string'))));
+end
+
+%draw the figure
+drawnow('update');
+if strcmp(get(gui.overlayPopup,'style'),'listbox')
+  warning('on','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+end
+if verbose>1,disppercent(inf);end
+if verbose,toc,end
+
+% set pointer back
+set(fig,'Pointer','arrow');
+
+%%%%%%%%%%%%%%%%%%
+%    dispBase    %
+%%%%%%%%%%%%%%%%%%
+function [v img base roi overlays curSliceBaseCoords] = dispBase(hAxis,v,baseNum,gui,dispColorbar,verbose,sliceIndex,slice)
+
+baseType = viewGet(v,'baseType',baseNum);
+baseGamma = viewGet(v,'baseGamma',baseNum);
+
+% Get current view and baseNum.
+% Get interp preferences.
+% Get slice, scan, alpha, rotate, and sliceIndex from the gui.
+if verbose>1,disppercent(-inf,'viewGet');,end
+% get variables for current base, but only if they are not set in input 
+% if the arguments sliceIndex and slice are set it means we are being
+% called to do a "mutliAxis" plot -one in which we are plotting each
+% different slice plan in a different axis. For these rotate is going
+% to always be 0 since we don't allow that option (it's slow and unnecessary
+% and also makes getting the mouse coordinates harder). Also, now that
+% volumes with a proper nifti get loaded up in the proper orientation
+% it should no longer be necessary to actually rotate images
+if nargin < 7
+  slice = viewGet(v,'curslice');
+  if baseType < 2
+    rotate = viewGet(v,'rotate');
+  else
+    rotate = 0;
+  end
+  sliceIndex = viewGet(v,'baseSliceIndex',baseNum);
+else
+  rotate = 0;
+end
+if verbose>1,disppercent(inf);,end
+
+%disp(sprintf('(refreshMLRDIsplay:dispBase) DEBUG: sliceIndex: %i slice: %i',sliceIndex,slice));
 
 % Compute base coordinates and extract baseIm for the current slice
 if verbose,disppercent(-inf,'extract base image');,end
-base = viewGet(view,'baseCache');
+base = viewGet(v,'baseCache',baseNum,slice,sliceIndex,rotate);
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
-    getBaseSlice(view,slice,sliceIndex,rotate,baseNum,baseType);
+    getBaseSlice(v,slice,sliceIndex,rotate,baseNum,baseType);
   base.dims = size(base.im);
 
   % Rescale base volume
   if ~isempty(base.im)
     base.cmap = gray(256);
-    base.clip = viewGet(view,'baseClip',baseNum);
+    base.clip = viewGet(v,'baseClip',baseNum);
     base.RGB = rescale2rgb(base.im,base.cmap,base.clip,baseGamma);
   else
     base.RGB = [];
   end
   % save extracted image
-  view = viewSet(view,'baseCache',base);
+  v = viewSet(v,'baseCache',base,baseNum,slice,sliceIndex,rotate);
   if verbose,disppercent(inf);disp('Recomputed base');end
 else
   if verbose,disppercent(inf);end
 end
 
+% for surfaces and flats calculate things based on cortical depth
 if size(base.coords,4)>1
-  corticalDepth = viewGet(view,'corticalDepth');
-  corticalDepthBins = viewGet(view,'corticalDepthBins');
+  % code allows for averaging across cortical depth
+  corticalDepth = viewGet(v,'corticalDepth');
+  corticalDepthBins = viewGet(v,'corticalDepthBins');
   corticalDepths = 0:1/(corticalDepthBins-1):1;
   slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
-  view = viewSet(view,'cursliceBaseCoords',mean(base.coords(:,:,:,slices),4));
+  curSliceBaseCoords = mean(base.coords(:,:,:,slices),4);
 else
-  view = viewSet(view,'cursliceBaseCoords',base.coords);
+  curSliceBaseCoords = base.coords;
 end
-
 
 % Extract overlays images and overlays coords, and alphaMap
 % right now combinations of overlays are cached as is
 % but it would make more sense to cache them separately
 % because actual blending occurs after they're separately computed
 if verbose,disppercent(-inf,'extract overlays images');end
-overlays = viewGet(view,'overlayCache');
+overlays = viewGet(v,'overlayCache',baseNum,slice,sliceIndex,rotate);
 if isempty(overlays)
   % get the transform from the base to the scan
-  base2scan = viewGet(view,'base2scan',[],[],baseNum);
+  base2scan = viewGet(v,'base2scan',[],[],baseNum);
   % compute the overlays
-  overlays = computeOverlay(view,base2scan,base.coordsHomogeneous,base.dims);
+  overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims);
+  overlays = addBaseOverlays(v,baseNum,overlays);
   % save in cache
-  view = viewSet(view,'overlayCache',overlays);
+  v = viewSet(v,'overlayCache',overlays,baseNum,slice,sliceIndex,rotate);
   if verbose,disppercent(inf);disp('Recomputed overlays');end
 else
   if verbose,disppercent(inf);end
 end
-view = viewSet(view,'cursliceOverlayCoords',overlays.coords);
+v = viewSet(v,'cursliceOverlayCoords',overlays.coords);
 
 % Combine base and overlays
 if verbose>1,disppercent(-inf,'combine base and overlays');,end
 if ~isempty(base.RGB) & ~isempty(overlays.RGB)
-
   switch(mrGetPref('colorBlending'))
     case 'Alpha blend'
       % alpha blending (non-commutative 'over' operator, each added overlay is another layer on top)
@@ -127,7 +319,6 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       end
       % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
        img = img+(1-alpha).*base.RGB;
-       
   end
   cmap = overlays.cmap;
   cbarRange = overlays.range;
@@ -149,27 +340,35 @@ if ieNotDefined('img')
 end
 
 % if no figure, then just return, this is being called just to create the overlays
-fig = viewGet(view,'figNum');
+fig = viewGet(v,'figNum');
 if isempty(fig)
- 	nROIs = viewGet(view,'numberOfROIs');
-	if nROIs
-		%  if baseType <= 1
-		roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
-		%  end
-	else
-		roi = [];
-	end
-	return;
+  nROIs = viewGet(v,'numberOfROIs');
+  if nROIs
+    %  if baseType <= 1
+    roi = displayROIs(v,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    %  end
+  else
+    roi = [];
+  end
+  return;
 end 
 
+% if we are not displaying then, just return
+% after computing rois
+if isempty(hAxis)
+  % just compute the axis (displayROIs will not draw
+  % if hAxis is set to empty. We need the ROI x,y for
+  % drawing the coordinates into the multiAxis 3D
+  nROIs = viewGet(v,'numberOfROIs');
+  if nROIs
+    roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+  else
+    roi = [];
+  end
+  return
+end
+
 % Display the image
-if verbose>1,disppercent(-inf,'Clearing figure');,end
-gui = guidata(fig);
-% note: This cla here is VERY important. Otherwise
-% we keep drawing over old things on the axis and
-% the rendering gets impossibly slow... -j.
-cla(gui.axis);
-if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Displaying image');,end
 if baseType <= 1
   % set the renderer to painters (this seems
@@ -177,24 +376,25 @@ if baseType <= 1
   % renderer. It also appears about 20ms or so
   % faster for displaying images as opposed
   % to the 3D surfaces.
-  set(fig,'Renderer','painters')
-  image(img,'Parent',gui.axis);
-  
-%   %an alterative way of plotting using independent patches:
-%   set(fig,'Renderer','OpenGL')
-%   [x,y]=meshgrid(1:base.dims(1),1:base.dims(2));
-%   x=reshape(x,1,numel(x));
-%   y=reshape(y,1,numel(y));
-%   xdata=[x-.5; x+.5;x+.5; x-.5];
-%   ydata=[y-.5; y-.5;y+.5; y+.5];
-%   zdata=ones(size(xdata));
-%   cdata = reshape(base.RGB,[prod(base.dims) 1 3]);
-%   p =patch(xdata,ydata,zdata,'FaceColor','flat','EdgeColor','none','Parent',gui.axis);
-%   set(p,'cdata',cdata);
-% 
-%   o = patch(xdata,ydata,zdata,'FaceColor','flat','EdgeColor','none','faceAlpha','flat','AlphaDataMapping','none','Parent',gui.axis);
-%   set(o,'cData', reshape(overlays.RGB,[prod(base.dims) 1 3]));
-%   set(o,'facevertexAlphadata',reshape(overlays.alphaMaps(:,:,1),361*361,1))
+  % 
+  % Just draw with img for regular image,
+  if isequal(0,viewGet(v,'baseMultiAxis',baseNum))
+    set(fig,'Renderer','painters')
+    image(img,'Parent',hAxis);
+  else  
+    % for multi axis, we want to have them roated by 270
+    % which apparently cannot be done using view with 2D images. 
+    % We want 270 rotation since This way we can display
+    % all the images in the correct orientation
+    % without having to manually rotate 270 degrees
+    % so we display them as textures on planer surfaces and
+    % display those rotated correctly usinv view
+    set(fig,'Renderer','OpenGL');
+    imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
+    set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
+    view(hAxis,-90,90);
+    set(hAxis,'yDir','reverse');
+  end
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms
@@ -202,88 +402,90 @@ else
   % renderer (order of 5-10 ms)
   set(fig,'Renderer','OpenGL')
   % get the base surface
-  baseSurface = viewGet(view,'baseSurface');
+  baseSurface = viewGet(v,'baseSurface',baseNum);
+  % if this is not the current base then we need to xform
+  % coordinates so that it will display in the same space
+  % as the current one
+  if baseNum ~= viewGet(v,'currentBase')
+    % get xform that xforms coordinates from this base to
+    % the current base
+    base2base = inv(viewGet(v,'base2base',baseNum));
+    % remove some sigfigs so that the isequal check works
+    if ~isequal(round(base2base*100000)/100000,eye(4))
+      % homogenous coordinates
+      baseSurface.vtcs(:,4) = 1;
+      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+      % xform to current base coordinates
+      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
+      % and remove the homogenous 1
+      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
+    end
+  end
+  % get alpha
+  baseAlpha = viewGet(v,'baseAlpha',baseNum);
   % display the surface
-  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',gui.axis);
+  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
   % make sure x direction is normal to make right/right
-  set(gui.axis,'XDir','reverse');
-  set(gui.axis,'YDir','normal');
-  set(gui.axis,'ZDir','normal');
-  % set the camera taret to center of surface
-  camtarget(gui.axis,mean(baseSurface.vtcs))
+  set(hAxis,'XDir','reverse');
+  set(hAxis,'YDir','normal');
+  set(hAxis,'ZDir','normal');
+  % set the camera taret to center of surface (but only if curBase)
+  if isequal(viewGet(v,'curBase'),baseNum)
+    camtarget(hAxis,mean(baseSurface.vtcs))
+  end
   % set the size of the field of view in degrees
   % i.e. 90 would be very wide and 1 would be ver
   % narrow. 9 seems to fit the whole brain nicely
-  camva(gui.axis,9);
+  camva(hAxis,9);
   % set the view angle
-  setMLRViewAngle(view);
+  setMLRViewAngle(v);
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
-axis(gui.axis,'off');
-axis(gui.axis,'image');
+axis(hAxis,'off');
+axis(hAxis,'image');
 if verbose>1,disppercent(inf);,end
-
 
 % Display colorbar
-if verbose>1,disppercent(-inf,'colorbar');,end
-cbar = permute(NaN(size(cmap)),[3 1 2]);
-for iOverlay = 1:size(cmap,3)
-  %cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],baseGamma);%JB: this baseGamma argument does seem to make any sense
-  cbar(iOverlay,:,:) = rescale2rgb(1:256,cmap(:,:,iOverlay),[1,256],1); %JB: or at least the result is  not what's expected if baseGamma<1...
-end
-image(cbar,'Parent',gui.colorbar);
-if size(cbar,1)==1
-  set(gui.colorbar,'YTick',[]);
-  set(gui.colorbar,'XTick',[1 64 128 192 256]);
-  set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
-  if isfield(gui,'colorbarRightBorder')
-    set(gui.colorbarRightBorder,'YTick',[]);
+if dispColorbar
+  if isempty(cmap)
+    set(gui.colorbar,'Visible','off');
+  else
+    set(gui.colorbar,'Visible','on');
+    
+    if verbose>1,disppercent(-inf,'colorbar');,end
+    cbar = permute(NaN(size(cmap)),[3 1 2]);
+    for iOverlay = 1:size(cmap,3)
+      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,256],1); 
+    end
+    image(cbar,'Parent',gui.colorbar);
+    if size(cbar,1)==1
+      set(gui.colorbar,'YTick',[]);
+      set(gui.colorbar,'XTick',[1 64 128 192 256]);
+      set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
+      if isfield(gui,'colorbarRightBorder')
+	set(gui.colorbarRightBorder,'YTick',[]);
+      end
+    else 
+      set(gui.colorbar,'XTick',[]);
+      set(gui.colorbar,'YTick',(1:size(cbar,1)));
+      set(gui.colorbar,'YTickLabel',cbarRange(:,1));
+      if isfield(gui,'colorbarRightBorder')
+	set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
+	set(gui.colorbarRightBorder,'YTickLabel',flipud(cbarRange(:,2)));
+      end
+    end
+    if verbose>1,disppercent(inf);,end
   end
-else 
-  set(gui.colorbar,'XTick',[]);
-  set(gui.colorbar,'YTick',(1:size(cbar,1)));
-  set(gui.colorbar,'YTickLabel',cbarRange(:,1));
-  if isfield(gui,'colorbarRightBorder')
-    set(gui.colorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
-    set(gui.colorbarRightBorder,'YTickLabel',flipud(cbarRange(:,2)));
-  end
 end
-if verbose>1,disppercent(inf);,end
 
-% Display the ROIs
-% if baseType <= 1
-%   drawnow;        %JB: this doesn't seem useful
-% end
-nROIs = viewGet(view,'numberOfROIs');
+% Display ROIs
+nROIs = viewGet(v,'numberOfROIs');
 if nROIs
-%  if baseType <= 1
-    roi = displayROIs(view,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
-%  end
+  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
 else
   roi = [];
 end
-
-if verbose>1,disppercent(-inf,'rendering');end
-%this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
-%In cases where it is more than the number of overlay names in the box
-%it has to be changed, but it is necessary to wait until drawnow before changing it  
-%otherwise the change is not taken into account
-%Even in this case, It still outputs a warning, that has to be disabled
-if strcmp(get(gui.overlayPopup,'style'),'listbox')
-  warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
-  set(gui.overlayPopup,'ListboxTop',min(get(gui.overlayPopup,'ListboxTop'),length(get(gui.overlayPopup,'string'))));
-end
-%draw the figure
-drawnow
-if strcmp(get(gui.overlayPopup,'style'),'listbox')
-  warning('on','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
-end
-if verbose>1,disppercent(inf);end
-if verbose,toc,end
-set(viewGet(view,'figNum'),'Pointer','arrow');
-
-return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
@@ -391,7 +593,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 %%   displayROIs   %%
 %%%%%%%%%%%%%%%%%%%%%
-function roi = displayROIs(view,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
+function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -499,7 +701,7 @@ for r = order
   % decide whether we are drawing perimeters or not
   doPerimeter = ismember(option,{'all perimeter','selected perimeter','group perimeter'});
   if baseType == 2
-    baseSurface = viewGet(view,'baseSurface');
+    baseSurface = viewGet(view,'baseSurface',baseNum);
     if 0 %%doPerimeter
       if verbose, disppercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
@@ -529,10 +731,10 @@ for r = order
     roiColors(y,1) = roi{r}.color(1);
     roiColors(y,2) = roi{r}.color(2);
     roiColors(y,3) = roi{r}.color(3);
- 		roi{r}.vertices=y;
-		roi{r}.overlayImage = roiColors;
-    if ~isempty(fig)
-      patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',gui.axis);
+    roi{r}.vertices=y;
+    roi{r}.overlayImage = roiColors;
+    if ~isempty(fig) && ~isempty(hAxis)
+      patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',hAxis);
     end
     continue
   end
@@ -627,22 +829,25 @@ for r = order
     % save to cache (since other functions like mrPrint need this
     view = viewSet(view,'ROICache',roi{r},r);
     % now render those lines
-    line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',gui.axis);
+    if ~isempty(hAxis)
+      line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',hAxis);
+    end
   else
     roi{r}.lines.x = [];
     roi{r}.lines.y = [];
   end
 end
 if baseType == 2,return,end
+
 % label them, if labelROIs is set
-if labelROIs
+if labelROIs && ~isempty(hAxis)
   for r = order
     % get x, y lines for this roi on this slice (calculated above)
     x = roi{r}.lines.x(~isnan(roi{r}.lines.x));
     y = roi{r}.lines.y(~isnan(roi{r}.lines.y));
     if ~isempty(x) & ~isempty(y)
       % draw roi label text
-      h = text(median(x),median(y),viewGet(view,'roiName',r),'Parent',gui.axis);
+      h = text(median(x),median(y),viewGet(view,'roiName',r),'Parent',hAxis);
       % and set properties
       set(h,'Color','w');
       set(h,'Interpreter','None');

@@ -59,14 +59,13 @@ if ~isempty(curOverlays) && viewGet(thisView,'nscans') % there needs to be at le
     end
     curOverlays = [curOverlays corAnalOverlays];
   end
-            
-
 
   %get overlays and masks of clipped values 
   [overlayMasks,overlayImages,overlays.coords]= maskOverlay(thisView,curOverlays,scan,sliceInfo);
 else
   overlayImages = [];
 end
+
 if ~isempty(overlayImages)
   overlays.coords = overlays.coords{1};
   alphaOverlayMasks = overlayMasks{1}(:,:,:,nCurOverlays+1:2*nCurOverlays);
@@ -185,7 +184,13 @@ if ~isempty(overlayImages)
 
     % Rescale current overlay.
     overlays.cmap(:,:,iOverlay) = viewGet(thisView,'overlayCmap',curOverlays(iOverlay));
-    switch(viewGet(thisView,'overlayCtype',curOverlays(iOverlay)))
+    overlayCType = viewGet(thisView,'overlayCtype',curOverlays(iOverlay));
+    % For multiAxis we need to have a consistent colorbar, so we force
+    % setRangeToMax to go across slices
+    if (viewGet(thisView,'baseType') == 0) && viewGet(thisView,'baseMultiAxis') && isequal(overlayCType,'setRangeToMax')
+      overlayCType = 'setRangeToMaxAcrossSlices';
+    end
+    switch(overlayCType)
       case 'normal'
         overlays.range(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
       case 'setRangeToMax'
@@ -195,6 +200,9 @@ if ~isempty(overlayImages)
           overlays.range(2) = min(max(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(2));
         end
       case 'setRangeToMaxAroundZero'
+       if (viewGet(thisView,'baseType') == 0) && viewGet(thisView,'baseMultiAxis')
+	 oneTimeWarning('setRangeToMaxWithMultiAxis','(computeOverlay) !!! Overlay set to setRangeToMaxAroundZero and you are displaying with multiple axis. Note that the colorbar will only be accurate for the axial view. Consider setting Edit/Overlay/Edit OVerlay to setRangeToMaxAcrossSlices. !!!',1);
+       end
         overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
           maxval = max(abs(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));

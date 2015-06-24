@@ -10,7 +10,7 @@
 %             mlrDisplayEPI(v,'MotionComp')
 %
 %             or with a volume
-%             data = cbiReadNifti('epiImages.hdr');
+%             data = mlrImageReadNifti('epiImages.hdr');
 %             mlrDisplayEPI(data);
 %
 %             or with a filename
@@ -43,7 +43,7 @@ if ~ieNotDefined('v') && ~isview(v)
   if isstr(v)
     filename = setext(v,'hdr');
     if isfile(filename)
-      [v hdr] = cbiReadNifti(filename);
+      [v hdr] = mlrImageReadNifti(filename);
       if isempty(v),return,end
       gMLRDisplayEPI.hdr = hdr;
     else
@@ -90,6 +90,7 @@ else
   end
   currentScan = viewGet(v,'currentScan');
   curSlice = viewGet(v,'curSlice');
+  if isempty(curSlice),curSlice = 1;end
   dialogTitle = sprintf('EPI images for %s',viewGet(v,'groupName'));
 
   % get descriptions and scan2scan
@@ -282,7 +283,6 @@ mlrDisplayEPIDispImage(params);
 function epiImage = mlrDisplayEPIDispImage(params)
 
 global gMLRDisplayEPI;
-
 if ~isfield(params,'warp'),params.warp = 0;end
   
 % check input arguments

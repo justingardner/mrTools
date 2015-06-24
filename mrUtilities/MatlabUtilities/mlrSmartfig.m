@@ -63,7 +63,7 @@ else
     entryNum = first(find([gMLRSmartfig.fignum] == -1));
   end
   % remember figure number
-  gMLRSmartfig(entryNum).fignum = f;
+  gMLRSmartfig(entryNum).fignum = mlrGetFignum(f);
   % remember figure name
   gMLRSmartfig(entryNum).figname = figname;
   % set the position

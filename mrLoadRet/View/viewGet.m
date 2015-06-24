@@ -37,7 +37,7 @@ function [val val2] = viewGet(view,param,varargin)
 % 11/2006 jlg added help and
 % originalScanNum,originalFileName,originalGroupName, scanNum,
 % dicomName, dicom, stimFileName, stimFile, concatInfo, transforms, TR
-%	$Id$
+%	$Id: viewGet.m 2868 2013-09-27 04:17:24Z justin $
 
 mrGlobals
 
@@ -50,7 +50,7 @@ elseif ~ieNotDefined('varargin') && (length(varargin)==1) && isstr(varargin{1}) 
   return
 end
 % If 'view' is a viewNum, find the corresponding view structure
-if isnumeric(view) & ~isempty(view)
+if isnumeric(view) && isscalar(view) && ~isempty(view) && (view<= length(MLR.views))
   view = MLR.views{view};
 end
 
@@ -848,8 +848,12 @@ switch lower(param)
       return
     end
     for i = 1:length(dicom)
-      if isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'MR_Acquisition_Type_')
+      if isfield(dicom{i},'MRAcquisitionType')
+	thisval = dicom{i}.MRAcquisitionType;
+      elseif isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'MR_Acquisition_Type_')
         thisval = strcmp(dicom{i}.ACQ.MR_Acquisition_Type_,'3D');
+      else
+	thisval = [];
       end
       if (isempty(val))
         val = thisval;
@@ -870,8 +874,13 @@ switch lower(param)
       return
     end
     for i = 1:length(dicom)
-      if isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'Repetition_Time')
+      thistr = [];
+      if isfield(dicom{i},'RepetitionTime')
+	thistr = dicom{i}.RepetitionTime/1000;
+      elseif isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'Repetition_Time')
         thistr = dicom{i}.ACQ.Repetition_Time/1000;
+      end
+      if  ~isempty(thistr)
         if (isempty(val))
           val = thistr;
         elseif (val ~= thistr)
@@ -882,12 +891,20 @@ switch lower(param)
   case {'dicom'}
     % dicom = viewGet(view,'dicom',scanNum,[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
-    dicomName = viewGet(view,'dicomName',s,g);
-    val = {};
-    if ~isempty(dicomName)
-      for j = 1:length(dicomName)
-        val{j} = readdicomheader(dicomName{j});
+    % see if we have dicom info in auxparam
+    val = viewGet(view,'auxParam','dicomInfo',s,g);
+    if isempty(val)
+      dicomName = viewGet(view,'dicomName',s,g);
+      val = {};
+      if ~isempty(dicomName)
+	for j = 1:length(dicomName)
+	  val{j} = readdicomheader(dicomName{j});
+	end
       end
+    end
+    % make into a cell array
+    if ~isempty(val)
+      val = cellArray(val);
     end
   case {'dicomname'}
     % dicomName = viewGet(view,'dicomName',scanNum,[groupNum]);
@@ -1570,23 +1587,27 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       % get coordmap
       coordMap = view.baseVolumes(b).coordMap;
-      if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
-        % find intermideate values
-        vtcs = coordMap.innerVtcs + mean(corticalDepth)*(coordMap.outerVtcs-coordMap.innerVtcs);
-        val.tris = coordMap.tris;
-      elseif isfield(coordMap,'innerVtcs')
-        % if only inner is present then just return that
-        vtcs = coordMap.innerVtcs;
-        val.tris = coordMap.tris;
+      if ~isempty(coordMap)
+	if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
+	  % find intermideate values
+	  vtcs = coordMap.innerVtcs + mean(corticalDepth)*(coordMap.outerVtcs-coordMap.innerVtcs);
+	  val.tris = coordMap.tris;
+	elseif isfield(coordMap,'innerVtcs')
+	  % if only inner is present then just return that
+	  vtcs = coordMap.innerVtcs;
+	  val.tris = coordMap.tris;
+	else
+	  vtcs = [];
+	  val.tris = [];
+	end
+	% center surface
+	if ~isempty(vtcs)
+	  val.vtcs(:,1) = vtcs(:,2);
+	  val.vtcs(:,2) = vtcs(:,1);
+	  val.vtcs(:,3) = vtcs(:,3);
+	end
       else
-        vtcs = [];
-        val.tris = [];
-      end
-      % center surface
-      if ~isempty(vtcs)
-        val.vtcs(:,1) = vtcs(:,2);
-        val.vtcs(:,2) = vtcs(:,1);
-        val.vtcs(:,3) = vtcs(:,3);
+	val = [];
       end
     end
   case {'baseclip'}
@@ -1602,14 +1623,11 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       baseType = viewGet(view,'baseType',b);
-      if baseType <= 1
+      baseMultiAxis = viewGet(view,'baseMultiAxis',b);
+      if (baseType == 1) || ((baseType==0) && (baseMultiAxis==0))
         val = view.baseVolumes(b).rotate;
       else
-        if isfield(view.baseVolumes(b).coordMap,'rotate')
-          val = view.baseVolumes(b).coordMap.rotate;
-        else
-          val = 0;
-        end
+	val = view.baseVolumes(b).surfaceRotate;
       end
     end
   case {'basetilt'}
@@ -1621,10 +1639,46 @@ switch lower(param)
     end
   case {'basecurslice','baseslice'}
     % baseslice = viewGet(view,'baseslice',[baseNum])
+    val = 1;
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      val = view.baseVolumes(b).curSlice;
+      if length(view.baseVolumes(b).curCoords) == 3
+	val = view.baseVolumes(b).curCoords(viewGet(view,'baseSliceIndex',b));
+      end
+    end
+  case {'baserawslice'}
+    % baseRawSlice = viewGet(view,'baseRawSlice',orientation,sliceNum,[baseNum])
+    % used to get the raw slice from the base (that is, not applying
+    % any rotation that the user has set).
+    if length(varargin) < 2
+      disp(sprintf('(viewGet:baseRawSlice) Must specify orientation and sliceNum'));
+      return
+    end
+    orientation = varargin{1};
+    sliceNum = varargin{2};
+    b = getBaseNum(view,varargin,3);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      if any(orientation==[1 2 3])
+	baseDims = size(view.baseVolumes(b).data);
+	if (sliceNum>=1) && (sliceNum<=baseDims(orientation))
+	  switch(orientation)
+	    case {1}
+	     val = squeeze(view.baseVolumes(b).data(sliceNum,:,:));
+	    case {2}
+	     val = squeeze(view.baseVolumes(b).data(:,sliceNum,:));
+	    case {3}
+	     val = squeeze(view.baseVolumes(b).data(:,:,sliceNum));
+	  end
+	else
+	  disp(sprintf('(viewGet:baseRawSlice) sliceNum: %i out of range',sliceNum));
+	end
+      else
+	disp(sprintf('(viewGet:baseRawSlice) orientation: %i out of range',orientation));
+      end
+    else
+      disp(sprintf('(viewGet:baseRawSlice) baseNum: %i out of range',b));
     end
   case {'basecorticaldepth'}
     % baseslice = viewGet(view,'baseCorticalDepth',[baseNum])
@@ -1654,13 +1708,63 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).gamma;
     end
+  case {'baseoverlay'}
+    % baseGamma = viewGet(view,'baseoverlay',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).overlay;
+    end
+  case {'baseoverlayalpha'}
+    % baseGamma = viewGet(view,'baseoverlayAlpha',[baseNum])
+    val = 1;
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).overlayAlpha;
+    end
   case {'basetype'}
-    % baserange = viewGet(view,'baserange',[baseNum])
+    % baseType = viewGet(view,'baseType',[baseNum])
     % 0 is for a regular volume, 1 is for a flat, 2 is for a surface
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).type;
+    end
+  case {'basealpha'}
+    % baseAlpha = viewGet(view,'baseAlpha',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).alpha;
+    end
+  case {'basedisplayoverlay'}
+    % baseDisplayOverlay = viewGet(view,'baseDisplayOverlay',[baseNum])
+    % used for setting whether a base displays an overlay or not
+    % some anatomy bases like fascicles do not always display overlays
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).displayOverlay;
+    end
+  case {'basemultidisplay'}
+    % baseMultiDisplay = viewGet(view,'baseMultiDisplay',[baseNum])
+    % sets whether the base will display even if it is not the
+    % current basy
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).multiDisplay;
+    end
+  case {'basemultiaxis'}
+    % baseMultiAxis = viewGet(view,'baseMultiDisplay',[baseNum])
+    % can be 0,1 or 2 depending on whether the base should
+    % display as a single, multi or 3D axis (only relevant
+    % for non-flat, non-surface anatomies
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).multiAxis;
     end
   case {'basesurfacedims'}
     % basedims = viewGet(view,'basedims',[baseNum])
@@ -1685,6 +1789,14 @@ switch lower(param)
       if length(val) == 2
         val(3) = 1;
       end
+    end
+  case {'basecurcoords'}
+    % baseCurCoords = viewGet(view,'baseCurCoords',[baseNum])
+    % baseCurCoords = viewGet(view,'baseCurCoords',[])
+    % baseCurCoords = viewGet(view,'baseCurCoords')
+    b = getBaseNum(view,varargin);
+    if ~isempty(b)
+      val = view.baseVolumes(b).curCoords;
     end
   case{'base2tal'}
     % xform = viewGet(view,'base2tal',[baseNum])
@@ -2037,14 +2149,24 @@ switch lower(param)
     % function. Permutation matrix is set by loadAnat using even more
     % arcane logic.
     b = getBaseNum(view,varargin);
+    baseType = viewGet(view,'baseType',b);
+    % surface always has to be 1
+    if baseType==2
+      val = 1;
+      return
+    % flats have to be 3
+    elseif baseType == 1
+      val = 3;
+      return
+    end
     sliceOrientation = viewGet(view,'sliceOrientation');
     permutation = viewGet(view,'baseVolPermutation',b);
     switch sliceOrientation
-      case 3   % Sagittal
+      case 1   % Axial
         [m,index] = max(permutation * [1 0 0]');
       case 2   % Coronal
         [m,index] = max(permutation * [0 1 0]');
-      case 1   % Axial
+      case 3   % Sagittal
         [m,index] = max(permutation * [0 0 1]');
     end
     val = index;
@@ -2466,28 +2588,54 @@ switch lower(param)
       mrCache('find',MLR.caches{view.viewNum}.roiCache,roiID);
   case{'basecacheid'}
     % cacheID = viewGet(view,'baseCacheID')
-    rotate = viewGet(view,'rotate');
-    baseName = viewGet(view,'curBaseName');
-    currentBase = viewGet(view,'currentBase');
-    clip = viewGet(view,'baseClip',currentBase);
-    gamma = viewGet(view,'baseGamma',currentBase);
-    currentSlice = viewGet(view,'curSlice');
-    sliceIndex = viewGet(view,'baseSliceIndex');
+    % cacheID = viewGet(view,'baseCacheID',baseNum);
+    % cacheID = viewGet(view,'baseCacheID',baseNum,sliceNum);
+    % cacheID = viewGet(view,'baseCacheID',baseNum,sliceNum,sliceIndex);
+    if length(varargin)<1
+      baseNum = viewGet(view,'curBase');
+    else
+      baseNum = varargin{1};
+    end
+    if length(varargin)>=2
+      currentSlice = varargin{2};
+    else
+      currentSlice = viewGet(view,'curSlice');
+    end
+    if length(varargin)>=3
+      sliceIndex = varargin{3};
+    else
+      sliceIndex = viewGet(view,'baseSliceIndex');
+    end
+    if length(varargin)>=4
+      rotate = varargin{4};
+    else
+      rotate = viewGet(view,'rotate');
+    end
+    baseName = viewGet(view,'baseName',baseNum);
+    clip = viewGet(view,'baseClip',baseNum);
+    gamma = viewGet(view,'baseGamma',baseNum);
     % only use the corticalDepth if this is a flat
     if viewGet(view,'baseType')
       corticalDepthBins = viewGet(view,'corticalDepthBins');
     else
       corticalDepthBins = 0;
     end
-    val = sprintf('%s_%i_%i_%i_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip),gamma,corticalDepthBins);
+    val = sprintf('%s_%i_%i_%i_%s_%s_%0.2f_%0.2f',baseName,currentSlice,sliceIndex,rotate,num2str(clip(1)),num2str(clip(end)),gamma,corticalDepthBins);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
-    baseID = viewGet(view,'baseCacheID');
+    % cacheVal = viewGet(view,'baseCache',baseNum)
+    % cacheVal = viewGet(view,'baseCache',baseNum,sliceNum)
+    % cacheVal = viewGet(view,'baseCache',baseNum,sliceNum,sliceIndex)
+    baseID = viewGet(view,'baseCacheID',varargin{:});
     % and retrieve from the cache
     [val MLR.caches{view.viewNum}.baseCache] = ...
       mrCache('find',MLR.caches{view.viewNum}.baseCache,baseID);
   case{'overlaycacheid'}
     % cacheID = viewGet(view,'overlayCacheID')
+    % cacheID = viewGet(view,'overlayCacheID',baseNum)
+    % cacheID = viewGet(view,'overlayCacheID',baseNum,sliceNum)
+    % cacheID = viewGet(view,'overlayCacheID',baseNum,sliceNum,sliceIndex)
+    % cacheID = viewGet(view,'overlayCacheID',baseNum,sliceNum,sliceIndex,rotate)
     %curSlice = viewGet(view,'curSlice');
     %analysisNum = viewGet(view,'currentAnalysis');
     %curOverlay = viewGet(view,'currentOverlay');
@@ -2499,7 +2647,27 @@ switch lower(param)
     val = -1;
     analysisNum = view.curAnalysis;
     if ~isempty(analysisNum)
-      curSlice = viewGet(view,'curSlice');
+      if length(varargin)<1
+	baseNum = viewGet(view,'curBase');
+      else
+	baseNum = varargin{1};
+      end
+      if length(varargin)>=2
+	curSlice = varargin{2};
+      else
+	curSlice = viewGet(view,'curSlice');
+      end
+      if length(varargin)>=3
+	sliceIndex = varargin{3};
+      else
+	sliceIndex = viewGet(view,'baseSliceIndex');
+      end
+      if length(varargin)>=4
+	rotate = varargin{4};
+      else
+	rotate = viewGet(view,'rotate');
+      end
+      baseName = viewGet(view,'baseName',baseNum);
       curOverlay = view.analyses{analysisNum}.curOverlay;
       if ~isempty(curOverlay)
         % get all clips
@@ -2508,29 +2676,47 @@ switch lower(param)
           clip = [clip view.analyses{analysisNum}.overlays(i).clip];
         end
         overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
-        baseName = viewGet(view,'curBaseName');
         scanNum = viewGet(view,'curScan');
-        rotate = viewGet(view,'rotate');
         alpha = viewGet(view,'alpha');
-        sliceIndex = viewGet(view,'baseSliceIndex');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
         % need to recalculate overlay if this is aflat
         % and the cortical depth has changed
-        if viewGet(view,'baseType')
+        if viewGet(view,'baseType',baseNum)
           corticalDepth = viewGet(view,'corticalDepth');
         else
           corticalDepth = 0;
         end
+	baseOverlayAlpha = viewGet(view,'baseOverlayAlpha',baseNum);
+	if length(baseOverlayAlpha)>1
+	  % use the sum of all alpha as a proxy for computing cache
+	  % this might fail sometimes to produce unique values, but
+	  % should be ok for most situations
+	  baseOverlayAlpha = sum(baseOverlayAlpha(:));
+	end
+	baseOverlay = viewGet(view,'baseOverlay',baseNum);
+	if isempty(baseOverlay)
+	  baseOverlay = '';
+	elseif ~isstr(baseOverlay)
+	  % if baseOverlay is actually RGB values, then take
+	  % the sum - again, this could fail be to unique, but
+	  % likely will be ok in most situations
+	  baseOverlay = sprinf('%f',sum(baseOverlay(:)));
+	end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection);
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay);
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
   case{'overlaycache'}
     % cacheVal = viewGet(view,'overlayCache')
+    % cacheVal = viewGet(view,'overlayCache',baseNum)
+    % cacheVal = viewGet(view,'overlayCache',baseNum,sliceNum)
+    % cacheVal = viewGet(view,'overlayCache',baseNum,sliceNum,sliceIndex)
+    % cacheVal = viewGet(view,'overlayCache',baseNum,sliceNum,sliceIndex,rotate)
+
     % get the overlay ID
-    overlayID = viewGet(view,'overlayCacheID');
+    overlayID = viewGet(view,'overlayCacheID',varargin{:});
     % and retrieve from the cache
     [val MLR.caches{view.viewNum}.overlayCache] = ...
       mrCache('find',MLR.caches{view.viewNum}.overlayCache,overlayID);
@@ -3778,9 +3964,6 @@ switch lower(param)
     % slice = viewGet(view,'currentSlice');
     if isfield(view.curslice,'sliceNum')
       val = view.curslice.sliceNum;
-%     else    %JB: Setting a default leads to incoherent behaviour when first base is loaded
-%       % never set in structure. Default to 1
-%       val = 1;
     end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
@@ -3871,6 +4054,8 @@ switch lower(param)
       fig = viewGet(view,'fignum');
       if ~isempty(fig)
         handles = guidata(fig);
+	% adding 90 because this puts a typical base
+	% in the most natural orientation
         val = get(handles.rotateSlider,'Value');
       else
         % otherwise gui is not running get from the structure
@@ -3896,8 +4081,17 @@ switch lower(param)
       else
         val = 0;
       end
-    else
+    elseif baseType == 0
       val = 0;
+      % normally does not apply to inplanes, but if we are displaying
+      % all planes of anatomy then it applies to the 3D slice view
+      if isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+	fig = viewGet(view,'fignum');
+	if ~isempty(fig)
+	  handles = guidata(fig);
+	  val = 360-get(handles.rotateSlider,'Value');
+	end
+      end	  
     end
     
   case {'corticaldepthbins'}
@@ -4121,7 +4315,41 @@ switch lower(param)
     nslices = viewGet(view,'nslices',s,g);
     val = zeros(1,nslices);
     val(sliceOrder) = [0:nslices-1]/nslices;
-    
+  case{'panelhandle'}
+   % h = viewGet(view,'panelHandle','Panel name')
+   val = [];
+   if length(varargin)<1
+     disp(sprintf('(viewGet) Must specify panel name to get panel handle'));
+     return
+   end
+   if isfield(MLR,'panels')
+     for iPanel = 1:length(MLR.panels)
+       if strcmp(MLR.panels{iPanel}{1},varargin{1})
+	 val = MLR.panels{iPanel}{2};
+       end
+     end
+   end
+ case {'callback'}
+  % callbackFunctionHandles = viewGet(v,'callback',callbackName)
+  % retrieves a cell array of function handles for the callback
+  % this is used for parts of the code, like when a base changes,
+  % to call external functions that can adjust the behavior of the
+  % GUI
+  val = {};
+  if length(varargin) < 1
+    disp(sprintf('(viewGet) Need to specify callbackName'));
+    return
+  end
+  if isfield(MLR,'callbacks')
+    % look for the named callback (not case-sensitive)
+    callbackNum = find(strcmp(MLR.callbacks{1},lower(varargin{1})));
+    if ~isempty(callbackNum)
+      % if found, return the callback
+      val = MLR.callbacks{2}{callbackNum};
+    end
+  end
+
+  %% New viewGets go here
   otherwise
     if strcmp(mrGetPref('verbose'),'Yes')
       dispViewGetHelp;
@@ -4159,6 +4387,11 @@ for i = 1:length(C{1})
   if (strncmp(C{1}{i},'case',4))
     collectComments = 1;
     commands{end+1} = C{2}{i};
+    % get rid of any commands that start with a number (this are spuriuse
+    % case clauses from above
+    if (length(commands{end})==0) || any(strcmp(commands{end}(1),{'0','1','2','3'}))
+      commands = {commands{1:end-1}};
+    end
   end
 end
 

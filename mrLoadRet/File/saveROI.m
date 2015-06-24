@@ -1,6 +1,6 @@
-function saveROI(view,roiName,confirm)
+function saveROI(view,roiName,confirm,pathStr)
 %
-% saveROI(view,[roiName],[confirm])
+% saveROI(view,[roiName],[confirm],[pathStr])
 %
 % Saves an ROI to a file. The filename = ROI.name.
 %
@@ -9,6 +9,11 @@ function saveROI(view,roiName,confirm)
 % confirm: If filename already exists, prompt user to over-write.
 %          Default: uses mrLoadRet 'verbose' preference or 0 (if preference
 %          not defined.
+%
+%          If pathStr is specified, will store ROI in that 
+%          directory instead of the default session one:
+%          e.g.
+%          saveROI(v,'V1',0,'~/data/mlrAnatDB/s0001/ROIs')
 %
 % djh, 9/2005
 
@@ -49,7 +54,11 @@ eval([roiName,'=roi;']);
 
 % path to file
 filename = roiName;
-pathStr = fullfile(viewGet(view,'roiDir'),filename);
+if ieNotDefined('pathStr')
+  pathStr = fullfile(viewGet(view,'roiDir'),filename);
+else
+  pathStr = fullfile(pathStr,filename);
+end
 
 % Write, though check for over-writing
 %

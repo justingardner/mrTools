@@ -311,7 +311,9 @@ function h=generateEmptyNiftiHeader(h)
   end
   
   if (~isfield(h,'xyzt_units'))
-    h.xyzt_units=18; % NIFTI_UNITS_MM | NIFTI_UNITS_SEC
+    % Note, this used to be wrong before 6/17/2015 and
+    % was set to 18 which is not secs but ms. Fixed jg
+    h.xyzt_units=10; % NIFTI_UNITS_MM | NIFTI_UNITS_SEC
   end
   if (~isfield(h,'cal_max'))
     h.cal_max=0;

@@ -401,7 +401,7 @@ for i = 1:length(s)
   dispstr = sprintf('%s: vols=%i',thiss.myscreen.stimfile,thiss.myscreen.volnum);
   % first check if this is a retinotpy stimfile - it should
   % have two tasks the second of which is the mglRetinotopy
-  if (length(thiss.task) < 2) || ~isequal(thiss.task{2}{1}.taskFilename,'mglRetinotopy.m')
+  if (length(thiss.task) < 2) || (~isequal(thiss.task{2}{1}.taskFilename,'mglRetinotopy.m') && ~isequal(thiss.task{2}{1}.taskFilename,'gruRetinotopy.m'))
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by mglRetinotopy'));
     tf = false;

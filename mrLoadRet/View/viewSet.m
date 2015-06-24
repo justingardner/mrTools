@@ -51,7 +51,7 @@ function [view tf] = viewSet(view,param,val,varargin)
 % function.
 %
 % 6/2004 djh
-%        $Id$
+%        $Id: viewSet.m 2838 2013-08-12 12:52:20Z julien $
 
 mrGlobals
 
@@ -534,7 +534,7 @@ switch lower(param)
     if ~exist(path,'file')
       mrErrorDlg(['Tseries file not found: ', path]);
     end
-    hdr = cbiReadNiftiHeader(path);
+    hdr = mlrImageReadNiftiHeader(path);
     if ~isfield(scanParams,'description')
       scanParams.description = '';
     end
@@ -552,8 +552,8 @@ switch lower(param)
     % scanParams.framePeriod = hdr.pixdim(5)/1000;
     % see definitions for NIFTI_UNITS in nifti1.h
     % space units are multiples of 1, time units multiples of 8 up to 64
-    niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
-    niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
+    niftiSpaceUnit = bitand(hdr.xyzt_units,hex2dec('07')); 
+    niftiTimeUnit = bitand(hdr.xyzt_units,hex2dec('38'));
     if niftiTimeUnit == 8 % seconds
       scanParams.framePeriod = hdr.pixdim(5)./1;
     elseif niftiTimeUnit == 16 % milliseconds
@@ -761,15 +761,16 @@ switch lower(param)
     curBase = viewGet(view,'curBase');
     numBases = viewGet(view,'numberofBaseVolumes');
     baseType = viewGet(view,'baseType');
+    baseMultiAxis = viewGet(view,'baseMultiAxis');
     if (curBase > 0) & (curBase <= numBases)
-      % surfaces are rotated differently, the
-      % rotate field causes surfaceRotate to
+      % surfaces (and 3D multiBase) are rotated differently, 
+      % the rotate field causes surfaceRotate to
       % change rather than rotate. So we
       % need to set the appropriate field
-      if baseType <= 1
+      if (baseType == 1) || ((baseType==0) && (baseMultiAxis==0))
 	view.baseVolumes(curBase).rotate = val;
       else
-	view.baseVolumes(curBase).coordMap.rotate = val;
+	view.baseVolumes(curBase).surfaceRotate = val;
       end
     end
       
@@ -779,8 +780,9 @@ switch lower(param)
     numBases = viewGet(view,'numberofBaseVolumes');
     baseType = viewGet(view,'baseType');
     if (curBase > 0) & (curBase <= numBases)
-      % surfaces are the ones that can be tilted.
-      if baseType == 2
+      % surfaces (or 3D's when multiaxis are shown) 
+      % are the ones that can be tilted.
+      if (baseType == 2) || ((baseType==0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy')))
 	view.baseVolumes(curBase).tilt = val;
 	mlrGuiSet(view,'baseTilt',val);
       end
@@ -818,6 +820,17 @@ switch lower(param)
       view.curslice.corticalDepth(2) = val;
       mlrGuiSet(view,'corticalMaxDepth',val);
       
+  case{'curcoords'}
+    % view = viewSet(view,'curcoords');
+    curBase = viewGet(view,'curBase');
+    numBases = viewGet(view,'numberofBaseVolumes');
+    if (curBase > 0) & (curBase <= numBases)
+      % set curCoords in base
+      view.baseVolumes(curBase).curCoords = val;
+    end
+    % update gui
+    mlrGuiSet(view,'curCoords',val);
+    
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
@@ -827,6 +840,7 @@ switch lower(param)
     curBase = viewGet(view,'curBase');
     rotate = viewGet(view,'rotate');
     curSlice = viewGet(view,'curSlice');
+    curCoords = viewGet(view,'curCoords');
     %if there was not base loaded, curSlice could be empty, set default to 1
     if isempty(curSlice)
       curSlice =1;
@@ -835,7 +849,8 @@ switch lower(param)
     % set the current state of the gui in the base
     if (curBase > 0) & (curBase <= numBases)
       view.baseVolumes(curBase).rotate = rotate;
-      view.baseVolumes(curBase).curSlice = curSlice;
+      % save the full 3D coords that are being viewed 
+      view.baseVolumes(curBase).curCoords = curCoords;
       view.baseVolumes(curBase).sliceOrientation = sliceOrientation;
       if viewGet(view,'baseType');
         view.baseVolumes(curBase).curCorticalDepth = viewGet(view,'corticalDepth');
@@ -882,7 +897,11 @@ switch lower(param)
         else
           view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
         end
-          mlrGuiSet(view,'nSlices',nSlices);
+	% set the current coordinates
+	mlrGuiSet(view,'curCoords',viewGet(view,'baseCurCoords',baseNum));
+	mlrGuiSet(view,'nSlices',nSlices);
+	% set the multiAxis
+	mlrGuiSet(view,'multiAxis',viewGet(view,'baseMultiAxis',baseNum));
       else %flat and surfaces
         baseCorticalDepth = viewGet(view,'baseCorticalDepth',baseNum);
         if isempty(baseCorticalDepth)
@@ -908,7 +927,14 @@ switch lower(param)
 	mlrSetRotate3d(view,0);
       end
     end
-
+    % see if there are any registered callbacks
+    if ~isempty(viewGet(view,'figNum'))
+      callbacks = viewGet(view,'callback','curBaseChange');
+      % and call them
+      for iCallback = 1:length(callbacks)
+	feval(callbacks{1},view);
+      end
+    end
   case{'basecoordmappath'}
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
     baseNum = getBaseNum(view,varargin);
@@ -958,6 +984,63 @@ switch lower(param)
     end
     if (baseNum == curBase)
       mlrGuiSet(view,'baseGamma',gamma);
+    end
+
+  case{'baseoverlay'}
+    % view = viewSet(view,'baseOverlay',color,[baseNum]);
+    % color can be a color name: like 'red'
+    % or can be a triplet [1 0 0]
+    % or can be a different triplet color for each voxel in the base
+    c = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).overlay = c;
+    end
+
+  case{'baseoverlayalpha'}
+    % view = viewSet(view,'baseOverlayAlpha',alpha,[baseNum]);
+    overlayAlpha = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).overlayAlpha = overlayAlpha;
+    end
+
+  case{'basealpha'}
+    % view = viewSet(view,'baseAlpha',alpha,[baseNum]);
+    alpha = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).alpha = alpha;
+    end
+
+ case{'basemultidisplay'}
+    % view = viewSet(view,'baseMultiDisplay',multiDisplay,[baseNum]);
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).multiDisplay = val;
+    end
+
+ case{'basemultiaxis'}
+    % can be 0,1 or 2 for single, multi or 3D axis views
+    % view = viewSet(view,'baseMultiAxis',multiAxis,[baseNum]);
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).multiAxis = val;
+      % update the rotate slider
+      mlrGuiSet(view,'rotate',viewGet(view,'baseRotate',curBase));
+    end
+
+  case{'basedisplayoverlay'}
+    % view = viewSet(view,'baseDisplayOverlay',displayOverlay,[baseNum]);
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).displayOverlay = val;
     end
 
   case {'basevol2mag'}
@@ -1945,6 +2028,58 @@ switch lower(param)
     if ~isempty(roiNum)
       view.ROIs(roiNum).voxelSize = val;
     end
+ 
+ case {'roicreatedby'}
+    % v = viewSet(v,'roiCreatedBy',createdByPerson,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).createdBy = val;
+    end
+
+ case {'roicreatedonbase'}
+    % v = viewSet(v,'roiCreatedOnBase',baseName,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).createdOnBase = val;
+    end
+
+ case {'roicreatedfromsession'}
+    % v = viewSet(v,'roiCreatedFromSession',sessionName,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).createdFromSession = val;
+    end
+
+ case {'roidisplayonbase'}
+    % v = viewSet(v,'roiDisplayOnBase',baseName,[roiNum]);
+    % sets the voxel size for the roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).displayOnBase = val;
+    end
 
   case {'roiname'}
     % view = viewSet(view,'roiName',nameString,[roiNum]);
@@ -1999,6 +2134,7 @@ switch lower(param)
     end
   case {'basecache'}
     % view = viewSet(view,'baseCache',basedata);
+    % view = viewSet(view,'baseCache',basedata,{baseNum sliceNum sliceIndex});
     % view = viewSet(view,'baseCache','clear',baseName);
     if isstr(val)
       if strcmp(val,'clear')
@@ -2013,12 +2149,16 @@ switch lower(param)
       end
       % add to the cache
     else
-      baseID = viewGet(view,'baseCacheID');
+      baseID = viewGet(view,'baseCacheID',varargin{:});
       MLR.caches{view.viewNum}.baseCache = ...
         mrCache('add',MLR.caches{view.viewNum}.baseCache,baseID,val);
     end
   case {'overlaycache'}
     % view = viewSet(view,'overlayCache',overlaydata);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum,sliceNum);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum,sliceNum,sliceIndex);
+    % view = viewSet(view,'overlayCache',overlaydata,baseNum,sliceNum,sliceIndex,rotate);
     % view = viewSet(view,'overlayCache','clear',overlayName);
     if isstr(val)
       if strcmp(val,'clear')
@@ -2033,7 +2173,7 @@ switch lower(param)
       end
       % add to the cache
     else
-      overlayID = viewGet(view,'overlayCacheID');
+      overlayID = viewGet(view,'overlayCacheID',varargin{:});
       MLR.caches{view.viewNum}.overlayCache = ...
         mrCache('add',MLR.caches{view.viewNum}.overlayCache,overlayID,val);
     end
@@ -2044,7 +2184,6 @@ switch lower(param)
   case {'curslice'}
     % view = viewSet(view,'curSlice',sliceNum);
     baseDims = viewGet(view,'baseDims');
-    baseType = viewGet(view,'baseType');
     sliceIndex = viewGet(view,'basesliceindex');
     if ~isempty(baseDims)
       nSlices = baseDims(sliceIndex);
@@ -2055,7 +2194,14 @@ switch lower(param)
       curSlice = viewGet(view,'curSlice');
       if isempty(curSlice) || curSlice ~= val
 	view.curslice.sliceNum = val;
-  mlrGuiSet(view,'slice',val);
+	mlrGuiSet(view,'slice',val);
+	% set in base
+	curBase = viewGet(view,'curBase');
+	numBases = viewGet(view,'numberofBaseVolumes');
+	if (curBase > 0) & (curBase <= numBases)
+	  % set curCoords in base
+	  view.baseVolumes(curBase).curCoords(sliceIndex) = val;
+	end
       end
     else
       disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,nSlices));
@@ -2063,8 +2209,8 @@ switch lower(param)
   case {'curslicebasecoords'}
     % view = viewSet(view,'curslicebasecoords',array);
     view.curslice.baseCoords = val;
-
-  case {'cursliceoverlaycoords'}
+ 
+ case {'cursliceoverlaycoords'}
     % view = viewSet(view,'cursliceoverlaycoords',array);
     view.curslice.overlayCoords = val;
 
@@ -2073,11 +2219,11 @@ switch lower(param)
     if ~isscalar(val)
       switch val
         case 'sagittal'
-          sliceOrientation = 3;
+          sliceOrientation = 1;
         case 'coronal'
           sliceOrientation = 2;
         case 'axial'
-          sliceOrientation = 1;
+          sliceOrientation = 3;
       end
     else
       sliceOrientation = val;
@@ -2156,6 +2302,47 @@ switch lower(param)
       %otherwise append to list
       MLR.colormaps = {MLR.colormaps{:} colormaps{:}};
     end
+ case {'callback'}
+    % view = viewSet(view,'callback',callbackName,callbackFunction)
+    % Use this to set a registered callback, which will get called
+    % at appropriate times from the GUI. For instance,baseChange
+    % will be called when any of the base information has been updated
+    % call viewSet(v,'callback') for a list of valid callbackNames
+
+    callbackNames = {'baseChange','curBaseChange'};
+
+    if length(varargin) ~= 1
+      disp(sprintf('(viewSet:callback) Registering callback requires two arguments: callbackName and callback function handle. callbackName can be any of: '));
+      for iCallback = 1:length(callbackNames)
+	disp(sprintf('     %s',callbackNames{iCallback}));
+      end
+      return
+    end
+    if ~any(strcmp(callbackNames,val))
+      disp(sprintf('(viewSet:callback) Unknown callbackName: %s Valid callbackNames are:',val));
+      for iCallback = 1:length(callbackNames)
+	disp(sprintf('     %s',callbackNames{iCallback}));
+      end
+      return
+    end
+    val = lower(val);
+    % save the callback name
+    if ~isfield(MLR,'callbacks')
+      MLR.callbacks{1}{1} = val;
+      MLR.callbacks{2}{1} = {varargin{1}};
+    else
+      % see if the callback already exists
+      callbackNum = find(strcmp(MLR.callbacks{1},val));
+      if ~isempty(callbackNum)
+	% add the callback to the existing list
+	MLR.callbacks{2}{callbackNum}{end+1} = varargin{1};
+      else
+	% add a new one
+	MLR.callbacks{1}{end+1} = val;
+	MLR.callbacks{2}{end+1} = {varargin{1}};
+      end
+    end
+	
  otherwise
    mrWarnDlg(sprintf('(viewSet) Unknown parameter %s',param));
 end

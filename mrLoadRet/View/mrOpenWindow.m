@@ -3,7 +3,7 @@ function view = mrOpenWindow(viewType,mrLastView)
 %  view = openWindow(viewType)
 %
 % djh, 6/2004
-%        $Id$
+%        $Id: mrOpenWindow.m 2838 2013-08-12 12:52:20Z julien $
 
 if ieNotDefined('viewType'),viewType = 'Volume';end
 % note we don't use ieNotDefined here, because
@@ -38,6 +38,32 @@ set(fig,'Renderer','painters')
 % set the keyoard accelerator
 %mrAcceleratorKeys('init',view.viewNum);
 
+% set the position of the main base viewer
+gui = guidata(fig);
+gui.marginSize = 0.01;
+gui.anatPosition = [0.3 0.2+gui.marginSize 1-0.3-gui.marginSize 1-0.2-2*gui.marginSize];
+
+% create 3 axis for display all three orientations at once
+% set up the position of each of the 3 axis. Start them
+% in an arbitrary position, being careful not to overlap
+gui.sliceAxis(1) = subplot('Position',[0 0 0.01 0.01],'Parent',fig);
+axis(gui.sliceAxis(1),'off');
+set(gui.sliceAxis(1),'HandleVisibility','off');
+gui.sliceAxis(2) = subplot('Position',[0.02 0 0.01 0.01],'Parent',fig);
+axis(gui.sliceAxis(2),'off');
+set(gui.sliceAxis(2),'HandleVisibility','off');
+gui.sliceAxis(3) = subplot('Position',[0.02 0.02 0.01 0.01],'Parent',fig);
+axis(gui.sliceAxis(3),'off');
+set(gui.sliceAxis(3),'HandleVisibility','off');
+
+% save the axis handles
+guidata(fig,gui);
+
+% add controls for multiAxis
+mlrAdjustGUI(view,'add','control','axisSingle','style','radio','value',0,'position',  [0.152    0.725   0.1    0.025],'String','Single','Callback',@multiAxisCallback);
+mlrAdjustGUI(view,'add','control','axisMulti','style','radio','value',0,'position',  [0.152    0.695   0.1    0.025],'String','Multi','Callback',@multiAxisCallback);
+mlrAdjustGUI(view,'add','control','axis3D','style','radio','value',0,'position',  [0.152    0.665   0.1    0.025],'String','3D','Callback',@multiAxisCallback);
+
 % Initialize the scan slider
 nScans = viewGet(view,'nScans');
 mlrGuiSet(view,'nScans',nScans);
@@ -48,13 +74,14 @@ mlrGuiSet(view,'nSlices',0);
 view = viewSet(view,'showROIs','all perimeter');
 view = viewSet(view,'labelROIs',1);
 
+
 % Add plugins
 if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
 
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
-  mrLastView=load(mrLastView);
+  mrLastView=mlrLoadLastView(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
 %   disppercent(-inf,'(mrOpenWindow) Restoring last view');
@@ -76,7 +103,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
 	end
       else
         %try to load 
-  [view,baseLoaded] = loadAnatomy(view);
+	[view,baseLoaded] = loadAnatomy(view);
       end
       disppercent(inf);
     end
@@ -136,7 +163,18 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       end
       disppercent(inf);
     end
-    
+    % check panels that need to be hidden
+    if isfield(mrLastView,'viewSettings') && isfield(mrLastView.viewSettings,'panels')
+      for iPanel = 1:length(mrLastView.viewSettings.panels)
+	% if it is not displaying then turn it off
+	if ~mrLastView.viewSettings.panels{iPanel}{4}
+	  panelName = mrLastView.viewSettings.panels{iPanel}{1};
+	  mlrGuiSet(view,'hidePanel',panelName);
+	  % turn off check
+	  mlrAdjustGUI(view,'set',panelName,'Checked','off');
+	end
+      end
+    end
     % add here, to load more info...
     % and refresh
     disppercent(-inf,sprintf('(mrOpenWindow) Refreshing MLR display'));
@@ -155,26 +193,55 @@ end
 % reset some preferences
 mrSetPref('importROIPath','');
 
+%%%%%%%%%%%%%%%%%%%%%
+%    loadAnatomy    %
+%%%%%%%%%%%%%%%%%%%%%
 function [view,baseLoaded] = loadAnatomy(view)
-  % for when there is no mrLastView
-  % open an anatomy, if there is one
-  anatdir = dir('Anatomy/*.img');
-  if ~isempty(anatdir)
-    baseLoaded = 1;
-    % load the first anatomy in the list
-    view = loadAnat(view,anatdir(1).name);
-    % if it is a regular anatomy
-    if viewGet(view,'baseType') == 0
-      view = viewSet(view,'sliceOrientation','coronal');
-      % set to display a middle slice
-      baseDims = viewGet(view,'baseDims');
-      baseSliceIndex = viewGet(view,'baseSliceIndex');
-      view = viewSet(view,'curSlice',floor(baseDims(baseSliceIndex)/2));
-    end
-    % change group to last in list
-    view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
-    % and refresh
-  else
-    baseLoaded = 0;
-  end
 
+% for when there is no mrLastView
+% open an anatomy, if there is one
+anatdir = dir('Anatomy/*.img');
+if ~isempty(anatdir)
+  baseLoaded = 1;
+  % load the first anatomy in the list
+  view = loadAnat(view,anatdir(1).name);
+  % if it is a regular anatomy
+  if viewGet(view,'baseType') == 0
+    view = viewSet(view,'sliceOrientation','coronal');
+    % set to display a middle slice
+    baseDims = viewGet(view,'baseDims');
+    baseSliceIndex = viewGet(view,'baseSliceIndex');
+    view = viewSet(view,'curSlice',floor(baseDims(baseSliceIndex)/2));
+  end
+  % change group to last in list
+  view = viewSet(view,'curGroup',viewGet(view,'numberOfGroups'));
+  % and refresh
+else
+  baseLoaded = 0;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    multiAxisCallback    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function multiAxisCallback(hObject,eventdata)
+
+% get gui data and v
+gui = guidata(get(hObject,'Parent'));
+v = viewGet(gui.viewNum,'view');
+
+% this function gets called when single/Multi/3D radio button
+% get called. 
+
+% First, determine who was hit
+controlNames = {'Single','Multi','3D'};
+multiAxisVal = find(strcmp(controlNames,get(hObject,'String')));
+
+% now set the curent base val
+viewSet(v,'baseMultiAxis',multiAxisVal-1);
+
+% redraw
+refreshMLRDisplay(v.viewNum);
+
+
+
+  

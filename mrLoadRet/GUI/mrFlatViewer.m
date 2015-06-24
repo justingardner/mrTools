@@ -268,13 +268,15 @@ for i = 1:length(anatDir)
     anat{end+1} = anatDir(i).name;
   end
 end
+
 % check for 'canonical hdr'
 anatCanonicalDir = [dir(sprintf('%s/../*.hdr', flatPath)); dir(sprintf('%s/../*.nii', flatPath))];
 for i= 1:length(anatCanonicalDir)
-  if find(strcmp(anatCanonicalDir(i).name,anat))
-    anat = putOnTopOfList(anatCanonicalDir(i).name,anat);
-  end
+  anat = putOnTopOfList(fullfile('..',anatCanonicalDir(i).name),anat);
 end
+
+% now try to open the file
+% if we haven't yet found a good candidate, then ask user
 if isempty(anat)
   % go look for it
   [filename pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Find 3D anatomy',flatPath);
@@ -282,11 +284,34 @@ if isempty(anat)
   filename = fullfile(getRelativePath(flatPath,pathname),filename);
   anat{1} = filename;
 end
-if (length(anat)>=1) && isfile(fullfile(flatPath, anat{1}))
-  [gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(flatPath, anat{1}));
-  gFlatViewer = xformSurfaces(gFlatViewer);
-else
-  gFlatViewer.anat = [];
+
+% now go through and load (to make sure we have valid nifti files
+validAnat = [];
+for iAnat = 1:length(anat)
+  thisAnatName = fullfile(flatPath, anat{iAnat});
+  % assume not valid at first
+  validAnat(iAnat) = false;
+  % check for file
+  if isfile(thisAnatName)
+    [gFlatViewer.anat.data gFlatViewer.anat.hdr] = mlrImageReadNifti(thisAnatName);
+    % if no data, then there was a failure to load
+    if isempty(gFlatViewer.anat.data)
+      mrWarnDlg(sprintf('(mrFlatViewer) Could not load nifti file %s',thisAnatName));
+      validAnat(iAnat) = false;
+    else
+      gFlatViewer = xformSurfaces(gFlatViewer);
+      validAnat(iAnat) = true;
+    end
+  end
+end
+
+% remove all non-working anatomies (also flip order, so that the last one loaded above
+% is the one we put at the top of the list - so that the list matches what is loaded).
+anat = {anat{fliplr(find(validAnat))}};
+if isempty(anat)      
+  % there are no candidate anatomies. This is a problem.
+  mrWarnDlg('(mrFlatViewer) Could not find any valid 3D anatomies');
+  return
 end
 
 % save the view
@@ -747,7 +772,7 @@ function dispVolume(sliceIndex,slice)
 
 global gFlatViewer;
 figure(gFlatViewer.f);
-cla;
+cla(gca(gFlatViewer.f),'reset');
 
 if length(size(gFlatViewer.anat.data)) < 3
   disp(sprintf('(mrFlatViewer) Could not display image becuase it does not have 3 dimensions'));
@@ -765,6 +790,7 @@ switch sliceIndex
 end
 imagesc(img);
 colormap(gray);
+
 axis image;
 % axis off;
 hold on
@@ -1094,8 +1120,8 @@ function switchAnatomy(params)
 global gFlatViewer;
 
 % load the anatomy and view
-disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatomy));
-[gFlatViewer.anat.data gFlatViewer.anat.hdr] = cbiReadNifti(fullfile(params.path, params.anatomy));
+disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatFileName));
+[gFlatViewer.anat.data gFlatViewer.anat.hdr] = mlrImageReadNifti(fullfile(params.path, params.anatFileName));
 gFlatViewer = xformSurfaces(gFlatViewer);
 % switch to 3D anatomy view
 global gParams

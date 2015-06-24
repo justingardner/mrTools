@@ -62,3 +62,19 @@ if ~isempty(h.sform)
   end
 end
 
+% grab some fields from nifti header if it exists
+if isfield(h,'hdr') 
+  % we've made the nifti header from scratch, but if there
+  % is a nifti header as field in the mlrImage header, then
+  % copy the following fields over to the nifti. This may
+  % seem a bit strange (why recreate the nifti header if
+  % it already exists as a field) but this is done so that
+  % we can get a clean header
+  fieldsToCopyFromOriginalNiftiHeader = {'datatype','endian','bitpix','vox_offset'};
+  for iField = 1:length(fieldsToCopyFromOriginalNiftiHeader)
+    if isfield(h.hdr,fieldsToCopyFromOriginalNiftiHeader{iField})
+      hdr.(fieldsToCopyFromOriginalNiftiHeader{iField}) = h.hdr.(fieldsToCopyFromOriginalNiftiHeader{iField});
+    end
+  end
+end
+  

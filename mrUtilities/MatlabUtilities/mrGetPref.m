@@ -25,7 +25,7 @@ function [value prefDefaults] = mrGetPref(pref)
 %   mrGetPref;
 %
 % djh, 5/2007
-% %	$Id$	
+% %	$Id: mrGetPref.m 2890 2013-10-27 12:52:21Z justin $	
 
 % with no arguments, return a list of possible preferences
 prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'...
@@ -38,14 +38,15 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'statisticalTestOutput',...
    'site','magnet','coil','pulseSequence',...
    'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
-   'mlrVolDisplayControls','mlrVolOverlayAlpha','motionCompDefaultParams','colorNames'...
+   'mlrVolDisplayControls','mlrVolOverlayAlpha','motionCompDefaultParams','colorNames',...
+    'mlrPath','vistaPath','lastPath'...
 	    };
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
 prefDefaults{length(prefNames)} = [];
 prefDefaults{find(strcmp('overwritePolicy',prefNames))} = {'Ask','Merge','Rename','Overwrite'};
-prefDefaults{find(strcmp('verbose',prefNames))} = {'Yes','No'};
+prefDefaults{find(strcmp('verbose',prefNames))} = {'No','Yes'};
 prefDefaults{find(strcmp('graphWindow',prefNames))} = {'Replace','Make new'};
 prefDefaults{find(strcmp('checkParamsConsistency',prefNames))} = {'Yes','No'};
 prefDefaults{find(strcmp('maxBlocksize',prefNames))} = 250000000;
@@ -78,6 +79,9 @@ prefDefaults{find(strcmp('mlrVolDisplayControls',prefNames))} = false;
 prefDefaults{find(strcmp('mlrVolOverlayAlpha',prefNames))} = 0.8;
 prefDefaults{find(strcmp('motionCompDefaultParams',prefNames))} = [];
 prefDefaults{find(strcmp('colorNames',prefNames))} = {};
+prefDefaults{find(strcmp('mlrPath',prefNames))} = '';
+prefDefaults{find(strcmp('vistaPath',prefNames))} = '';
+prefDefaults{find(strcmp('lastPath',prefNames))} = '';
 
 if nargin == 0
   if nargout > 0

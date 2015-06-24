@@ -22,8 +22,17 @@ baseType = viewGet(v,'baseType');
 
 % grab the image
 disppercent(-inf,'(mrPrint) Rerendering image');
-[img base roi] = refreshMLRDisplay(viewGet(v,'viewNum'));
+[img base roi overlays altBase] = refreshMLRDisplay(viewGet(v,'viewNum'));
 disppercent(inf);
+
+% validate rois
+validROIs = {};
+for roiNum = 1:length(roi)
+  if ~isempty(roi{roiNum})
+    validROIs{end+1} = roi{roiNum};
+  end
+end
+roi = validROIs;
 
 % first get parameters that the user wants to display
 paramsInfo = {};
@@ -201,35 +210,51 @@ colormap(cmap);
 if baseType == 2
   % this is the surface display
   
-  % taken from refreshMLRDisplay
-  baseSurface = viewGet(v,'baseSurface');
-  % threshold curvature if asked for
-  if params.thresholdCurvature
-    % get all grayscale points (assuming these are the ones that are from the surface)
-    grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
-    % get points less than 0.5
-    lowThresholdPoints = grayscalePoints(img(1,grayscalePoints,1) < params.thresholdValue);
-    hiThresholdPoints = grayscalePoints(img(1,grayscalePoints,1) >= params.thresholdValue);
-    % set the values to the threshold values
-    img(1,lowThresholdPoints,:) = params.thresholdMin;
-    img(1,hiThresholdPoints,:) = params.thresholdMax;
-  end
-  % display the surface
-  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',axisHandle);
-  % make sure x direction is normal to make right/right
-  set(axisHandle,'XDir','reverse');
-  set(axisHandle,'YDir','normal');
-  set(axisHandle,'ZDir','normal');
-  % set the camera taret to center of surface
-  camtarget(axisHandle,mean(baseSurface.vtcs))
-  % set the size of the field of view in degrees
-  % i.e. 90 would be very wide and 1 would be ver
-  % narrow. 9 seems to fit the whole brain nicely
-  camva(axisHandle,9);
-  setMLRViewAngle(v,axisHandle);
-  % draw the rois
-  for roiNum = 1:length(roi)
-    patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roi{roiNum}.overlayImage,'facecolor','interp','edgecolor','none','FaceAlpha',params.roiAlpha,'Parent',axisHandle);
+  curBase = viewGet(v,'curBase');
+  for iBase = 1:viewGet(v,'numBase')
+    if viewGet(v,'baseType',iBase)>=2
+      if viewGet(v,'baseMultiDisplay',iBase) || isequal(iBase,curBase)
+	% get the img (returned by refreshMLRDisplay. This is different
+	% for each base when we are displaying more than one. Note 
+	% that this code hasn't been fully tested with all options yet (jg 2/18/2015)
+	if iBase ~= curBase
+	  thisimg = altBase(iBase).img;
+	else
+	  thisimg = img;
+	end
+	% taken from refreshMLRDisplay
+	baseSurface = viewGet(v,'baseSurface',iBase);
+	% threshold curvature if asked for
+	if params.thresholdCurvature
+	  % get all grayscale points (assuming these are the ones that are from the surface)
+	  grayscalePoints = find((thisimg(1,:,1)==thisimg(1,:,2))&(thisimg(1,:,3)==thisimg(1,:,2)));
+	  % get points less than 0.5
+	  lowThresholdPoints = grayscalePoints(thisimg(1,grayscalePoints,1) < params.thresholdValue);
+	  hiThresholdPoints = grayscalePoints(thisimg(1,grayscalePoints,1) >= params.thresholdValue);
+	  % set the values to the threshold values
+	  thisimg(1,lowThresholdPoints,:) = params.thresholdMin;
+	  thisimg(1,hiThresholdPoints,:) = params.thresholdMax;
+	end
+	% display the surface
+	patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(thisimg),'facecolor','interp','edgecolor','none','Parent',axisHandle);
+	hold on
+	% make sure x direction is normal to make right/right
+	set(axisHandle,'XDir','reverse');
+	set(axisHandle,'YDir','normal');
+	set(axisHandle,'ZDir','normal');
+	% set the camera taret to center of surface
+	camtarget(axisHandle,mean(baseSurface.vtcs))
+	% set the size of the field of view in degrees
+	% i.e. 90 would be very wide and 1 would be ver
+	% narrow. 9 seems to fit the whole brain nicely
+	camva(axisHandle,9);
+	setMLRViewAngle(v,axisHandle);
+	% draw the rois
+	for roiNum = 1:length(roi)
+	  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roi{roiNum}.overlayImage,'facecolor','interp','edgecolor','none','FaceAlpha',params.roiAlpha,'Parent',axisHandle);
+	end
+      end
+    end
   end
 else
   % display the image (this is for flat maps and images)

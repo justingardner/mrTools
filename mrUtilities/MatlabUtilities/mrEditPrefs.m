@@ -3,7 +3,7 @@ function prefParams = mrEditPrefs()
 % Dialog box for changing mrDEFAULTS.prefs
 %
 % jg & djh, 5/2007
-% $Id$
+% $Id: mrEditPrefs.m 2838 2013-08-12 12:52:20Z julien $
 
 % get pref names /defaults
 [prefNames prefDefaults] = mrGetPref();
@@ -56,7 +56,9 @@ prefParams = {{'site',site,'Where you are using this code'},...
     {'defaultInterrogators',defaultInterrogators,'This is a comma separated list that contains interrogators that you can use.'},...
     {'roiCacheSize',roiCacheSize,'Size of ROI cache, usually 100.','minmax=[0 inf]','incdec=[-1 1]'},...
     {'baseCacheSize',baseCacheSize,'Size of base image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},...
-    {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'}};
+    {'overlayCacheSize',overlayCacheSize,'Size of overlay image cache. Set to the number of base slices you want to be able to quickly view','minmax=[0 inf]','incdec=[-1 1]'},...
+	     };
+
 
 % open up dialog
 prefParams = mrParamsDialog(prefParams,'Set mrTools preferences');

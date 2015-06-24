@@ -115,7 +115,7 @@ end
 
 for iScan=1:nfiles
   name = fullfile(tseriesDir, headerFileList{iScan});
-  hdr = cbiReadNiftiHeader(name);
+  hdr = mlrImageReadNiftiHeader(name);
   scanParams(iScan).dataSize = hdr.dim([2,3,4])';
   scanParams(iScan).description = 'description';
   scanParams(iScan).fileName = fileList{iScan};

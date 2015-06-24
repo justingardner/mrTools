@@ -1,6 +1,6 @@
 function mlrGuiSet(view,field,value,varargin)
 %
-%        $Id$
+%        $Id: mlrGuiSet.m 2875 2013-09-27 12:05:35Z julien $
 % mlrGuiSet(view,field,value);
 %
 % view can be either a view structure or a viewNum. Either way, sets
@@ -60,7 +60,14 @@ switch lower(field)
  case {'basepopup'}
   % Set the basePopup string array
   set(handles.basePopup,'String',value);
-
+  % see if there are any registered callbacks
+  if ~isempty(viewGet(view,'figNum'))
+    callbacks = viewGet(view,'callback','baseChange');
+    % and call them
+    for iCallback = 1:length(callbacks)
+      feval(callbacks{1},view);
+    end
+  end
  case {'labelrois'}
   % mlrGuiSet(view,'labelrois',value);
   if value
@@ -110,7 +117,7 @@ switch lower(field)
   
  case {'basetype'}
   % mlrGuiSet(view,'baseType',value);
-  % value = 0 for regular or 1 for flat
+  % value = 0 for regular or 1 for flat, 2 for surface
   if value == 0
     set(handles.sagittalRadioButton,'Visible','on');
     set(handles.coronalRadioButton,'Visible','on');
@@ -121,6 +128,9 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Enable','off');
     set(handles.calcDistMenu, 'Enable', 'off');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','off');
+    set(handles.axisSingle,'Visible','on');
+    set(handles.axisMulti,'Visible','on');
+    set(handles.axis3D,'Visible','on');
     if isfield(handles,'corticalMaxDepthSlider')
       set(handles.corticalMaxDepthSlider,'Visible','off');
       set(handles.corticalMaxDepthText,'Visible','off');
@@ -137,6 +147,9 @@ switch lower(field)
     set(handles.flatViewerMenuItem,'Label','Flat Viewer');
     set(handles.calcDistMenu, 'Enable', 'on');
     set(handles.convertCorticalDepthRoiMenuItem,'Enable','on');
+    set(handles.axisSingle,'Visible','off');
+    set(handles.axisMulti,'Visible','off');
+    set(handles.axis3D,'Visible','off');
     if isfield(handles,'corticalMaxDepthSlider')
       set(handles.corticalMaxDepthSlider,'Visible','on');
       set(handles.corticalMaxDepthText,'Visible','on');
@@ -197,6 +210,12 @@ switch lower(field)
   newCoords = min(handles.coords,newDims);
   handles.coords = min(handles.coords,newCoords);
 
+ case {'curcoords'}
+  % mlrGuiSet(view,'curcoords',[ydim xdim zdim]);
+  if length(value)==3
+    handles.coords = value;
+  end
+
  case {'basegamma'}
   % mlrGuiSet(view,'baseGamma',value);
   set(handles.baseGammaSlider,'Value',value);
@@ -217,7 +236,8 @@ switch lower(field)
   
  case {'overlaypopup'}
   % mlrGuiSet(view,'overlayPopup',strings);
-  % mlrGuiSet(view,'overlayPopup',strings,overlayList); %optional argument overlayList indicates that this is a subset of strings to change
+  % mlrGuiSet(view,'overlayPopup',strings,overlayList); 
+  %optional argument overlayList indicates that this is a subset of strings to change
   if ~strcmp(value,'none') 
     if ieNotDefined('varargin')
 % %       overlayList = 1:length(value);
@@ -326,7 +346,68 @@ switch lower(field)
   if isfield(handles,'clipAcrossOverlays') 
     set(handles.clipAcrossOverlays,'value',value)
   end
+
+ case {'multiaxis'}
+  % mlrGuiSet(view,'multiAxis',value);
+
+  % set the radio buttons appropriately
+  controlNames = {'Single','Multi','3D'};
+  for iControl = 1:3
+    if iControl~=(value+1)
+      set(handles.(['axis' controlNames{iControl}]),'Value',0);
+    else
+      set(handles.(['axis' controlNames{iControl}]),'Value',1);
+    end
+  end
+
   
+  if value == 1
+    % create the locations for the 3 axis
+    handles.anatMultiPosition(3,:) = handles.anatPosition;
+    handles.anatMultiPosition(3,3) = (handles.anatMultiPosition(3,3)-handles.marginSize)/2;
+    handles.anatMultiPosition(3,4) = (handles.anatMultiPosition(3,4)-handles.marginSize)/2;
+    handles.anatMultiPosition(2,:) = handles.anatMultiPosition(3,:);
+    handles.anatMultiPosition(2,2) = handles.anatMultiPosition(2,2)+(handles.anatPosition(4)+handles.marginSize)/2;
+    handles.anatMultiPosition(1,:) = handles.anatMultiPosition(2,:);
+    handles.anatMultiPosition(1,1) = handles.anatMultiPosition(1,1)+(handles.anatPosition(3)+handles.marginSize)/2;
+    handles.anatMultiPosition(4,:) = handles.anatMultiPosition(3,:);
+    handles.anatMultiPosition(4,1) = handles.anatMultiPosition(1,1);
+    % set the regular window to the bottom right
+    set(handles.axis,'Position',handles.anatMultiPosition(4,:));
+    % display the axis and clear
+    set(handles.sliceAxis(1),'Position',handles.anatMultiPosition(1,:));set(handles.sliceAxis(1),'Visible','on');cla(handles.sliceAxis(1));axis(handles.sliceAxis(1),'off');
+    set(handles.sliceAxis(2),'Position',handles.anatMultiPosition(2,:));set(handles.sliceAxis(2),'Visible','on');cla(handles.sliceAxis(2));axis(handles.sliceAxis(2),'off');
+    set(handles.sliceAxis(3),'Position',handles.anatMultiPosition(3,:));set(handles.sliceAxis(3),'Visible','on');cla(handles.sliceAxis(3));axis(handles.sliceAxis(3),'off');
+    % turn on tilt slider
+    set(handles.rotateSlider,'SliderStep',[15 45]./360);
+    set(handles.baseTiltSlider,'SliderStep',[15 45]./360);
+    set(handles.baseTiltSlider,'Visible','on');
+    set(handles.baseTiltText,'Visible','on');
+    set(handles.baseTilt,'Visible','on');
+  else
+    % set the regular window to the normal position
+    set(handles.axis,'Position',handles.anatPosition);
+    cla(handles.axis,'reset');
+    axis(handles.axis,'off');
+    % clear and hide the other axes
+    cla(handles.sliceAxis(1),'reset');set(handles.sliceAxis(1),'Visible','off');
+    cla(handles.sliceAxis(2),'reset');set(handles.sliceAxis(2),'Visible','off');
+    cla(handles.sliceAxis(3),'reset');set(handles.sliceAxis(3),'Visible','off');
+    if value == 2
+      % turn on tilt slider
+      set(handles.rotateSlider,'SliderStep',[15 45]./360);
+      set(handles.baseTiltSlider,'SliderStep',[15 45]./360);
+      set(handles.baseTiltSlider,'Visible','on');
+      set(handles.baseTiltText,'Visible','on');
+      set(handles.baseTilt,'Visible','on');
+    else
+      % turn off tilt slider
+      set(handles.rotateSlider,'SliderStep',[1 45]./360);
+      %set(handles.baseTiltSlider,'Visible','off');
+      %set(handles.baseTiltText,'Visible','off');
+      %set(handles.baseTilt,'Visible','off');
+    end
+  end
  case {'clippingoverlays'}
   % mlrGuiSet(view,'clippingOverlays',overlayList);
   overlayList=value;
@@ -362,6 +443,104 @@ switch lower(field)
   set(handles.alphaText,'String',thisNum2str(value));
   set(handles.alphaSlider,'sliderStep',[0.1 0.5]);
 
+ case {'addpanel'}
+    % add a panel - this is to display a set of controls on the
+    % right - this is used by mlrAdjustGUI
+    % mlrGuiSet(v,'addPanel','panelName',.5)
+    % where panelName is an arbitraty name of panel
+    % .5 is the percent height of the panel (has to be between 0 and 1)
+    if length(varargin)<1
+      disp(sprint('(mlrGuiSet) addPanel must specify percent height'));
+      return
+    end
+    % check argument for panelSize
+    if length(varargin)>=1
+      percentSize = varargin{1};
+      if ~isnumeric(percentSize) || (length(percentSize)~=1) || (percentSize<0) || (percentSize>1)
+	disp(sprintf('(mlrGuiSet) Panel must specify a percent size between 0 and 1'));
+	return
+      end
+    else
+      percentSize = 0.25;
+    end
+    % create a panel item
+    f = viewGet(view,'figNum');
+    if ~isempty(f)
+      panelHandle = uipanel(f,'Visible','off');
+      % add the fields to the global
+      if ~isfield(MLR,'panels')
+	MLR.panels{1} = {value,panelHandle,percentSize,false};
+      else
+	MLR.panels{end+1} = {value,panelHandle,percentSize,false};
+      end
+      % display the panel
+      mlrGuiSet(view,'dispPanel',value);
+      handles = guidata(viewGet(view,'figNum'));
+    end
+      
+ case {'disppanel'}
+    % display a panel - this is used to display a panel that has
+    % been added by addPanel
+    panelY = 1;
+    % make the axis display shorter
+    handles.anatPosition(3) = 1-handles.anatPosition(1)-0.25-handles.marginSize;
+    % save the anat position
+    guidata(viewGet(view,'figNum'),handles);
+    % make the colorbar display shorter
+    colorbarPosition = get(handles.colorbar,'Position');
+    colorbarPosition(3) = 1-colorbarPosition(1)-0.25-handles.marginSize;
+    set(handles.colorbar,'Position',colorbarPosition);
+    refreshMLRDisplay(viewGet(view,'viewNum'));
+    for iPanel = 1:length(MLR.panels)
+      % if panel is visible, then shift panelY accordingly
+      if ~strcmp(MLR.panels{iPanel}{1},value) && MLR.panels{iPanel}{4}
+	panelY = panelY - MLR.panels{iPanel}{3};
+	% found panel to display
+      elseif strcmp(MLR.panels{iPanel}{1},value) 
+	if (panelY - MLR.panels{iPanel}{3}) >= 0
+	  set(MLR.panels{iPanel}{2},'Position',[.75 (panelY-MLR.panels{iPanel}{3}-handles.marginSize) .25-handles.marginSize (1-2*handles.marginSize)*MLR.panels{iPanel}{3}]);
+	  set(MLR.panels{iPanel}{2},'Visible','on');
+	  % set the field so that we know this one is visible
+	  MLR.panels{iPanel}{4} = true;
+	  % FIX, FIX, FIX - need to shift down panels below this one
+	else
+	  disp(sprintf('(mlrGuiSet) Could not display panel %s, because there is not enough space',value));
+	end
+      end
+    end
+ case {'hidepanel'}
+    % hide panel - this is used to hide a panel that has
+    % been added by addPanel
+    panelsDisplaying = 0;panelFound = false;
+    if isfield(MLR,'panels')
+      for iPanel = 1:length(MLR.panels)
+	% make panel invisible if we found a match
+	if strcmp(MLR.panels{iPanel}{1},value) 
+	  set(MLR.panels{iPanel}{2},'Visible','off');
+	  % set the field to say that it is not displaying
+	  MLR.panels{iPanel}{4} = false;
+	  % we have found our panel
+	  panelFound = true;
+	  % not the panel to hide and is being displayed
+	elseif MLR.panels{iPanel}{4}
+	  panelsDisplaying = true;
+	  % FIX, FIX, FIX - need to move up panels below this one
+	  if panelFound
+	  end
+	end
+      end
+    end
+    % if there are no panels displaying, then
+    % can show the anatomy and colorbar wider
+    % make the axis display shorter
+    handles.anatPosition(3) = 1-handles.anatPosition(1)-handles.marginSize;
+    % save back anatPosition
+    guidata(viewGet(view,'figNum'),handles);
+    % make the colorbar display shorter
+    colorbarPosition = get(handles.colorbar,'Position');
+    colorbarPosition(3) = 1-colorbarPosition(1)-handles.marginSize;
+    set(handles.colorbar,'Position',colorbarPosition);
+    refreshMLRDisplay(viewGet(view,'viewNum'));
  case {'nscans'}
   % mlrGuiSet(view,'nscans',value);
   nScans = round(value);
@@ -457,23 +636,24 @@ switch lower(field)
   switch sliceOrientation
     % axial
    case 1
-    % axial
-    set(handles.sagittalRadioButton,'Value',0);
+    % sagittal
+    set(handles.sagittalRadioButton,'Value',1);
     set(handles.coronalRadioButton,'Value',0);
-    set(handles.axialRadioButton,'Value',1);
+    set(handles.axialRadioButton,'Value',0);
    case 2
     % coronal
     set(handles.sagittalRadioButton,'Value',0);
     set(handles.coronalRadioButton,'Value',1);
     set(handles.axialRadioButton,'Value',0);
    case 3
-    % sagittal
-    set(handles.sagittalRadioButton,'Value',1);
+    % axial
+    set(handles.sagittalRadioButton,'Value',0);
     set(handles.coronalRadioButton,'Value',0);
-    set(handles.axialRadioButton,'Value',0);
+    set(handles.axialRadioButton,'Value',1);
   end
  case {'rotate'}
   % mlrGuiSet(view,'rotate',value);
+  
   value = clipToSlider(handles.rotateSlider,value);
   set(handles.rotateText,'String',num2str(value));
   set(handles.rotateSlider,'Value',value);

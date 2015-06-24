@@ -26,16 +26,7 @@
 function [sessionParams groupParams] = mrInit(sessionParams,groupParams,varargin)
 
 % check arguments
-if ~any(nargin == [0 1 2 3 4])
-  help mrInit
-  return
-end
-eval(evalargs(varargin));
-
-% some variables
-if ieNotDefined('justGetParams'),justGetParams=0;end
-if ieNotDefined('defaultParams'),defaultParams=0;end
-if ieNotDefined('makeReadme'),makeReadme=1;end
+getArgs(varargin,{'justGetParams=0','defaultParams=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]','stimfileMatchList=[]'});
 
 minFramePeriod = .01;  %frame period in sec outside which the user is prompted
 maxFramePeriod = 100;  % that something weird's goin on
@@ -52,12 +43,24 @@ if ieNotDefined('sessionParams')
     subject = session.subject;
     operator = session.operator;
   else
-    magnet = mrGetPref('magnet');
-    coil = mrGetPref('coil');
-    pulseSequence = mrGetPref('pulseSequence');
-    description = '';
-    if ieNotDefined('subject') subject = '';end
-    if ieNotDefined('operator') operator = '';end
+    if isempty('magnet') 
+      magnet = mrGetPref('magnet');
+    else 
+      magnet = putOnTopOfList(magnet,mrGetPref('magnet'));
+    end
+    if isempty('coil') 
+      coil = mrGetPref('coil');
+    else
+      coil = putOnTopOfList(coil,mrGetPref('coil'));
+    end
+    if isempty('pulseSequence') 
+      pulseSequence = mrGetPref('pulseSequence');
+    else
+      pulseSequence = putOnTopOfList(pulseSequence,mrGetPref('pulseSequence'));
+    end
+    if isempty('description') description = '';end
+    if isempty('subject') subject = '';end
+    if isempty('operator') operator = '';end
   end
   % setup params dialog
   paramsInfo = {};
@@ -138,8 +141,25 @@ if ieNotDefined('groupParams')
   [stimFileNames stimFileVols] = getStimFiles;
 
   if ~isempty(stimFileNames)
-    % match the stimfiles with the scans
-    stimFileMatch = matchStimFiles(stimFileNames,stimFileVols,totalFrames);
+    if isempty(stimfileMatchList)
+      % match the stimfiles with the scans
+      stimFileMatch = matchStimFiles(stimFileNames,stimFileVols,totalFrames);
+    else
+      % passed in stimFileMatch, need to make a cell array of cell arrays
+      for i = 1:length(totalFrames)
+	% for each scan, check to see if we have a matching entry in stimfileMatchList
+	matchNum = [];
+	if length(stimfileMatchList) >= i
+	  % then go look for the name in our stimFileNames array
+	  matchNum = find(strncmp(stimfileMatchList{i},stimFileNames,length(stimfileMatchList{i})));
+	end
+	% if there was no match, just choose the top most stimfile (this will create duplicates, I suppose
+	% but it should not really happen if a user passes in the list
+	if isempty(matchNum), matchNum = 1;end
+	% put the matched one on top of list 
+	stimFileMatch{i} = putOnTopOfList(stimFileNames{matchNum},stimFileNames);
+      end
+    end
     paramsInfo{end+1} = {'stimFile',stimFileMatch,'group=scanNum','Stimfile to use for this scan'};
   end
 
@@ -178,20 +198,20 @@ if ~justGetParams
     tseriesDir = 'Raw/TSeries';
     for iScan=1:length(groupParams.totalFrames)
       name = fullfile(tseriesDir, groupParams.name{iScan});
-      hdr = cbiReadNiftiHeader(name);
+      hdr = mlrImageReadNiftiHeader(name);
       scanParams(iScan).dataSize = hdr.dim([2,3,4])';
       scanParams(iScan).description = groupParams.description{iScan};
       scanParams(iScan).fileName = groupParams.name{iScan};
       scanParams(iScan).originalFileName{1} = groupParams.name{iScan}; % otherwise motionComp has problems 
       scanParams(iScan).originalGroupName{1} = groups(1).name; % ditto
       scanParams(iScan).fileType = 'Nifti';
-      niftiSpaceUnit = rem(hdr.xyzt_units, 8); 
-      niftiTimeUnit = rem(hdr.xyzt_units-niftiSpaceUnit, 64);
+      niftiSpaceUnit = bitand(hdr.xyzt_units, hex2dec('07')); 
+      niftiTimeUnit = bitand(hdr.xyzt_units,hex2dec('38'));
       if niftiTimeUnit == 8 % seconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./1;
       elseif niftiTimeUnit == 16 % milliseconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./1000;
-      elseif niftiTimeUnit == 32 % microseconds
+      elseif niftiTimeUnit == 24 % microseconds
 	scanParams(iScan).framePeriod = hdr.pixdim(5)./10e6;
       end
       %detect weird frame periods
@@ -199,10 +219,6 @@ if ~justGetParams
         weirdFramePeriods(iScan) = scanParams(iScan).framePeriod;
       elseif scanParams(iScan).framePeriod<minFramePeriod
         weirdFramePeriods(iScan) = scanParams(iScan).framePeriod;
-      end
-      if strcmp(lower(mrGetPref('verbose')),'yes')
-	% 8 -> 10^0, 16 -> 10^3, 32-> 10^6
-	disp(sprintf('(mrInit) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
       end
       scanParams(iScan).junkFrames = groupParams.junkFrames(iScan);
       scanParams(iScan).nFrames = groupParams.nFrames(iScan);

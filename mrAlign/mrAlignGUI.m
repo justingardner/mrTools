@@ -253,9 +253,10 @@ ALIGN.volumePath = pathStr;
 
 % Load volume and header
 h = mrMsgBox('Loading volume. Please wait');
-[vData,hdr] = cbiReadNifti(ALIGN.volumePath);
-volumeDimension = length(size(vData));
+[vData,hdr] = mlrImageReadNifti(ALIGN.volumePath);
 mrCloseDlg(h);
+if isempty(vData),return,end
+volumeDimension = length(size(vData));
 
 % Load associated .mat file for the volume (used in mrLR for bases,
 % and needed here for keeping track of Talairach information). If
@@ -331,13 +332,13 @@ if (volumeDimension == 4)
 end
 
 % Warning if no (qform) alignment information in the header.
-% qform is initialized to identity by default in cbiReadNiftiHeader.
+% qform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.qform_code)
     mrWarnDlg('(mrAlignGUI) No alignment information in the volume header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
-% sform is initialized to identity by default in cbiReadNiftiHeader.
+% sform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.sform_code)
     mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the volume header. Usually this is because the volume is straight off the magnet and has never had its base coordinate frame set. If this is a canonical base volume which you wish to align inplanes to, you should Set Base Coordinate Frame from the File menu.');
 end
@@ -411,8 +412,9 @@ ALIGN.inplanePath = pathStr;
 
 % Load inplane file and header
 h = mrMsgBox('Loading inplanes. Please wait');
-[vData,hdr] = cbiReadNifti(ALIGN.inplanePath);
+[vData,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
 mrCloseDlg(h);
+if isempty(vData),return,end
 
 % Load associated .mat file for the inplanes (used in mrLR for bases,
 % and needed here for keeping track of Talairach information). If
@@ -471,13 +473,13 @@ if (inplaneDimension == 4)
 end
 
 % Warning if no (qform) alignment information in the header.
-% qform is initialized to identity by default in cbiReadNiftiHeader.
+% qform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.qform_code)
     mrWarnDlg('(mrAlignGUI) No scanner alignment information in the inplane header.');
 end
 
 % Warning if no (sform) base coordinate frame in the header.
-% sform is initialized to identity by default in cbiReadNiftiHeader.
+% sform is initialized to identity by default in mlrImageReadNiftiHeader.
 if ~(hdr.sform_code)
     mrWarnDlg('(mrAlignGUI) No base coordinate frame (i.e. sform_code = 0) in the inplane header. Usually this is because this inplane has not yet been aligned.');
 end
@@ -535,20 +537,25 @@ mrAlignLoadVol(ALIGN.inplanePath,hObject,eventdata,handles);
 function saveAlignMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
 
-sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
-ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
-ALIGN.inplaneHdr.sform_code = ALIGN.volumeHdr.sform_code;
-hdr = cbiWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
+if ~isfield(ALIGN,'inplaneHdr') || isempty(ALIGN.inplaneHdr)
+  mrWarnDlg('(mrAlign) You have not yet loaded an inplane - no alignement to save');
+  return
+else
+  sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
+  ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
+  ALIGN.inplaneHdr.sform_code = ALIGN.volumeHdr.sform_code;
+  hdr = mlrImageWriteNiftiHeader(ALIGN.inplaneHdr,ALIGN.inplanePath);
 
-%also save the base structure with the appropriate vol2mag and vol2tal
-ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
-ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
-base = ALIGN.inplaneBase;
-matFilename = sprintf('%s.mat',stripext(base.name));
-base.data = [];base.hdr = [];
-inplanePath=fileparts(ALIGN.inplanePath);
-eval(sprintf('save %s base',fullfile(inplanePath,matFilename)));
-clear base
+  %also save the base structure with the appropriate vol2mag and vol2tal
+  ALIGN.inplaneBase.vol2mag = ALIGN.volBase.vol2mag; % inherit from the volume
+  ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
+  base = ALIGN.inplaneBase;
+  matFilename = sprintf('%s.mat',stripext(base.name));
+  base.data = [];base.hdr = [];
+  inplanePath=fileparts(ALIGN.inplanePath);
+  eval(sprintf('save %s base',fullfile(inplanePath,matFilename)));
+  clear base
+end
 % --------------------------------------------------------------------
 function saveAlignToFileMenuItem_Callback(hObject, eventdata, handles)
 global ALIGN
@@ -566,10 +573,10 @@ end
 % Loop through files and add sform to the headers
 for p = 1:length(pathStr)
 	if exist(pathStr{p},'file')
-		hdr = cbiReadNiftiHeader(pathStr{p});
+		hdr = mlrImageReadNiftiHeader(pathStr{p});
 		hdr = cbiSetNiftiSform(hdr,sform);
                 hdr.sform_code = sform_code;
-		hdr = cbiWriteNiftiHeader(hdr,pathStr{p});
+		hdr = mlrImageWriteNiftiHeader(hdr,pathStr{p});
 	else
 		mrWarnDlg(['File ',pathStr{p},' not found.']);
 	end
@@ -591,10 +598,10 @@ if isempty(pathStr)
 end
 
 % Reload
-%[data,hdr] = cbiReadNifti(ALIGN.inplanePath);
+%[data,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
 % do not reload data to save memory usage %JB
 data = ALIGN.inplanes;
-hdr = cbiReadNiftiHeader(ALIGN.inplanePath);
+hdr = mlrImageReadNiftiHeader(ALIGN.inplanePath);
 
 % Compose xform
 xform = ALIGN.guiXform * ALIGN.xform;
@@ -625,7 +632,7 @@ hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.sform44);
 hdr = cbiSetNiftiQform(hdr,ALIGN.volumeHdr.qform44);
 
 % Save and clear
-[byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
+[byteswritten,hdr] = mlrImageWriteNifti(pathStr,interpData,hdr);
 clear interpData data
 
 % also save the base structure with the appropriate vol2mag and vol2tal
@@ -685,7 +692,7 @@ hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.qform44*xform);
 hdr.pixdim(2:4) = outputVoxSize;
 
 % Save and clear
-[byteswritten,hdr] = cbiWriteNifti(pathStr,interpData,hdr);
+[byteswritten,hdr] = mlrImageWriteNifti(pathStr,interpData,hdr);
 clear interpData data
 
 % also save the base structure with the appropriate vol2mag and vol2tal
@@ -930,7 +937,7 @@ if sform_code == 3 % just set the vol2tal and vol2mag fields
 else % if sform_code is 0 or 1, set sform = qform and get vol2mag.
   sform = ALIGN.volumeHdr.qform44;
   ALIGN.volumeHdr = cbiSetNiftiSform(ALIGN.volumeHdr,sform);
-  hdr = cbiWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
+  hdr = mlrImageWriteNiftiHeader(ALIGN.volumeHdr,ALIGN.volumePath);
   ALIGN.volBase.vol2mag = sform; % set the vol2mag field
   disp(sprintf('(mrAlignGUI) Setting sform_code=1 and sform equal to qform and saving in nifti header'));
 end

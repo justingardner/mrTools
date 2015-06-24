@@ -90,7 +90,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       % check if it is there
       if isfile(filename)
 	% load the header
-	hdr = cbiReadNiftiHeader(filename);
+	hdr = mlrImageReadNiftiHeader(filename);
 	% set the sform
 	hdr = cbiSetNiftiSform(hdr,sform);
 	% if the alignment was to a Tal base, need to set the sform_code correctly
@@ -103,7 +103,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
 	% written to when it is read). This doesn't
 	% affect anything, but gives better consistency
 	% checking for mrUpdateNiftiHeader
-	hdr = cbiReadNiftiHeader(filename);
+	hdr = mlrImageReadNiftiHeader(filename);
 	% now save it in the session
 	v = viewSet(v,'niftiHdr',hdr,iScan,iGroup);
         
@@ -134,24 +134,29 @@ saveSession
 % also remove any base anatomies from mrLastView if it is
 % there since those might have a different sform
 if isfile('mrLastView.mat')
-  load mrLastView
-  %here do something something stupid with variable view, otherwise the code analyser is not happy
-  %because view is also a function name
-  view.baseVolumes;
-%JB: Any base anatomy that is in canonical anatomical base 
-% shouldn't have to be changed, so no need to remove all of them.
-% better to let the user choose wich bases to remove
-  %view.baseVolumes = [];
-  baselist = selectInList(view,'base','Choose bases to remove',[]);
-  if ~isempty(baselist)
-    disp(sprintf('(saveSform) Removing base anatomies from mrLastView. Note that if  you have a session open, you still have to remove the bases manually.'));
-    view.baseVolumes(baselist) = [];
-    if getfield(whos('view'),'bytes')<2e9
-      eval(sprintf('save %s view viewSettings -V6;','mrLastView'));
-    else
-      mrWarnDlg('(mrQuit) Variable view is more than 2Gb, using option -v7.3 to save');
-      eval(sprintf('save %s view viewSettings -v7.3;','mrLastView'));
+  try
+    [view viewSettings] = mlrLoadLastView;
+    if isempty(view),return,end
+    %here do something something stupid with variable view, otherwise the code analyser is not happy
+    %because view is also a function name
+    view.baseVolumes;
+    %JB: Any base anatomy that is in canonical anatomical base 
+    % shouldn't have to be changed, so no need to remove all of them.
+    % better to let the user choose wich bases to remove
+    %view.baseVolumes = [];
+    baselist = selectInList(view,'base','Choose bases to remove',[]);
+    if ~isempty(baselist)
+      disp(sprintf('(saveSform) Removing base anatomies from mrLastView. Note that if  you have a session open, you still have to remove the bases manually.'));
+      view.baseVolumes(baselist) = [];
+      if getfield(whos('view'),'bytes')<2e9
+	eval(sprintf('save %s view viewSettings -V6;','mrLastView'));
+      else
+	mrWarnDlg('(mrQuit) Variable view is more than 2Gb, using option -v7.3 to save');
+	eval(sprintf('save %s view viewSettings -v7.3;','mrLastView'));
+      end
     end
+  catch
+    disp(sprintf('(saveSform) Error loading mrLastView. This is probably due to some Mathworks issues trying to load a mat file that has old-style figure handles in it. You will need to remove the file mrLastView.mat since Mathworks can no longer seem to load it (complain to them ;-)'));
   end
 end
 deleteView(v);

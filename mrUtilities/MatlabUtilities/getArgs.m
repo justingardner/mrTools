@@ -55,6 +55,9 @@
 %             'doAssignment=1': Actually set variables.
 %             'suppressUnkownArgMessage=0': Set to true to suppress warning for
 %                unknown variables
+%             'suppressMultipleSettingMessage=false': set to true if you wish to%                suppress message that variables have been set multiple times
+%                in the same argument list. If set multiple times, the last
+%                one in the list will take precedence
 %
 function [argNames argValues invalidArgs] = getArgs(args,validVars,varargin)
 
@@ -68,9 +71,10 @@ end
 if ~ieNotDefined('varargin')
   getArgs(varargin);
 end
-if ieNotDefined('verbose'),verbose=0;end
-if ieNotDefined('doAssignment'),doAssignment=1;end
-if ieNotDefined('suppressUnknownArgMessage'),suppressUnknownArgMessage=0;end
+if ieNotDefined('verbose'),verbose=false;end
+if ieNotDefined('doAssignment'),doAssignment=true;end
+if ieNotDefined('suppressUnknownArgMessage'),suppressUnknownArgMessage=false;end
+if ieNotDefined('suppressMultipleSettingMessage'),suppressMultipleSettingMessage=false;end
 % now deal with validVars list
 setValidVars = 0;
 if ~ieNotDefined('validVars')
@@ -156,7 +160,9 @@ if length(uniqueArgNames) ~= length(argNames)
   for i = 1:length(uniqueLocs)
     varnameCount = sum(uniqueOriginalLocs==i);
     if varnameCount > 1
-      disp(sprintf('(%s) Warning: Variable ''%s'' has been set %i times',funname,uniqueArgNames{i},varnameCount));
+      if ~suppressMultipleSettingMessage
+	disp(sprintf('(%s) Warning: Variable ''%s'' has been set %i times',funname,uniqueArgNames{i},varnameCount));
+      end
     end
   end
 end

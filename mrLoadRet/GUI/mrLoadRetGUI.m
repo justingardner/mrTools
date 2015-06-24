@@ -1,7 +1,6 @@
-
 function varargout = mrLoadRetGUI(varargin)
 % fig = mrLoadRetGUI('viewNum',viewNum)
-% $Id$
+% $Id: mrLoadRetGUI.m 2962 2014-09-11 22:04:32Z justin $
 %
 % Creates a new mrLoadRet GUI.
 % This function was created along with mrLoadRetGui.fig using GUIDE.
@@ -102,10 +101,49 @@ function axis_ButtonDownFcn(hObject, eventdata, handles)
 
 function figure_ButtonDownFcn(hObject, eventdata, handles)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    windowButtonMotion function    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function figure_WindowButtonMotionFcn(hObject, eventdata, handles)
+
+gui = guidata(hObject);
+v = viewGet([],'view',gui.viewNum);
+if ~isempty(viewGet(v,'curBase')) && isequal(1,viewGet(v,'baseMultiAxis'))
+  % then get coords
+  coords = mlrGetMouseCoords(v);
+  if (coords.inAxis ~= -1)
+    set(hObject,'Pointer','crosshair');
+  else
+    set(hObject,'Pointer','arrow');
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    windowButtonDown function    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function figure_WindowButtonDownFcn(hObject, eventdata, handles)
 
-% --------------------------------------------------------------------
-% Resize
+% get the view
+v = viewGet(handles.viewNum,'view');
+
+% see if we are displaying a base and are displaying all planes
+baseType = viewGet(v,'baseType');
+if ~isempty(baseType) && isequal(viewGet(v,'baseType'),0) && isequal(viewGet(v,'baseMultiAxis'),1)
+  % then get coords
+  coords = mlrGetMouseCoords(v);
+  if ~isempty(coords.base)
+    % set the change in coords
+    curCoords = [coords.base.x coords.base.y coords.base.z];
+    v = viewSet(v,'curCoords',curCoords);
+    v = viewSet(v,'curSlice',curCoords(viewGet(v,'baseSliceIndex')));
+    % and display
+    refreshMLRDisplay(viewGet(v,'viewNum'));
+  end
+end
+
+%%%%%%%%%%%%%%%%
+%    Resize    %
+%%%%%%%%%%%%%%%%
 function figure_ResizeFcn(hObject, eventdata, handles)
 % Change the axis size to fill the figure, leaving room at the bottom for
 % the widgets.
@@ -119,9 +157,13 @@ if exist('handles','var') & ~isempty(handles)
 end
 
 
-% --------------------------------------------------------------------
-% Create function
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    Create function    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
 function figure_CreateFcn(hObject, eventdata, handles)
+
+% hook the above button motion function in
+set(hObject,'WindowButtonMotionFcn',@figure_WindowButtonMotionFcn);
 
 % --------------------------------------------------------------------
 % Delete  and Close functions
@@ -1040,12 +1082,12 @@ end
 [dir,file,ext] = fileparts(pathStr);
 if strcmp(dir,tseriesDir)
     % If tseries file is already in the tseries directory, then use it
-    hdr = cbiReadNiftiHeader(pathStr);
+    hdr = mlrImageReadNiftiHeader(pathStr);
     fileName = [file,ext];
 else
     % Copy file to the tseries directory
     fileName = ['tseries-',datestr(now,'mmddyy-HHMMSS'),mrGetPref('niftiFileExtension')];
-    [data,hdr] = cbiReadNifti(pathStr);
+    [data,hdr] = mlrImageReadNifti(pathStr);
     newPathStr = fullfile(tseriesDir,fileName);
     [bytes,hdr] = cbiWriteNifti(newPathStr,data,hdr);
 end
@@ -1659,6 +1701,7 @@ selectedROIColor = mrGetPref('selectedROIColor');
 roiContourWidth = mrGetPref('roiContourWidth');
 corticalDepthBins = mrGetPref('corticalDepthBins');
 roiCorticalDepthDisplayRatio = mrGetPref('roiCorticalDepthDisplayRatio');
+dispAllPlanesOfAnatomy = mrGetPref('dispAllPlanesOfAnatomy');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1705,6 +1748,11 @@ if ~isempty(prefParams)
   % check to see if any other parameters that affects the display, but not the cache have changed
   if ~strcmp(selectedROIColor,prefParams.selectedROIColor) ||...
       ~strcmp(roiContourWidth,prefParams.roiContourWidth) || ...
+    refreshMLRDisplay(v.viewNum);
+  end
+
+  if (dispAllPlanesOfAnatomy ~= mrGetPref('dispAllPlanesOfAnatomy')) && isequal(viewGet(v,'baseType'),1)
+    % refresh the display so as to draw the multiplanes
     refreshMLRDisplay(v.viewNum);
   end
 end
@@ -1810,16 +1858,24 @@ if viewGet(view,'numAnalyses') > 0
   analysisFunction = viewGet(view,'analysisFunction',n);
   guiFunction = viewGet(view,'analysisGuiFunction',n);
   params = viewGet(view,'analysisParams',n);
-  % params = guiFunction('groupName',groupName,'params',params);
-  evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
-  eval(evalstring);
+  % run parameters again if guiFunction is valid
+  if ~isempty(guiFunction)
+    % params = guiFunction('groupName',groupName,'params',params);
+    evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,','''','params','''',',params);'];
+    eval(evalstring);
+  else
+    mrWarnDlg('(mrLoadRetGUI) No guiFunction set for analysis to display parameters');
+  end
   % params is empty if GUI cancelled
-  if ~isempty(params)
+  if ~isempty(params) && ~isempty(analysisFunction)
     % view = analysisFunction(view,params);
     evalstring = ['view = ',analysisFunction,'(view,params);'];
     eval(evalstring);
     refreshMLRDisplay(viewNum);
+  elseif isempty(analysisFunction)
+    mrWarnDlg('(mrLoadRetGUI) No analysis function set for analysis to rerun analysis');
   end
+
 else
   mrWarnDlg(sprintf('(mrLoadRetGUI) No analyses loaded'));
 end

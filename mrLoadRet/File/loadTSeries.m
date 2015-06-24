@@ -70,7 +70,7 @@ if ~isempty(frame) & ((1 > frame) | (frame > viewGet(view,'nframes',scan,groupNu
 end
 
 % Load it
-[tseries,hdr] = cbiReadNifti(pathStr,{x,y,slice,frame},precision);
+[tseries,hdr] = mlrImageReadNifti(pathStr,{x,y,slice,frame},precision);
 dims = size(tseries);
 
 % check frame count
