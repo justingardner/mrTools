@@ -160,7 +160,7 @@ if isfile('.freesurfer')
   freesurfer = textread('.freesurfer','%s');
   if length(freesurfer) == 1
     % then make the link
-    linkFrom = fullfile('..','..',getLastDir(localRepoLargeFiles),'anatomy',freesurfer{1});
+    linkFrom = fullfile('..','..',getLastDir(localRepoLargeFiles),freesurfer{1});
     if isdir(linkFrom)
       mysystem(sprintf('ln -sfh %s freesurfer',linkFrom));
     end

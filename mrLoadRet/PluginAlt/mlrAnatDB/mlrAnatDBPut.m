@@ -128,7 +128,10 @@ if strcmp(lower(fileType),'surfaces')
   if isfile('.freesurfer')
     mysystem(sprintf('rm -f .freesurfer'));
   end
-  mysystem(sprintf('echo %s > .freesurfer',freesurfer));
+  % store what the file links to in the .freesurfer file
+  % this is so the mlrAnatDBGetRepo can remake the link as needed
+  % since hg will not store a link to outside the repo
+  mysystem(sprintf('echo %s > .freesurfer',fullfile('anatomy',freesurfer)));
   toPath{end+1} = fullfile('surfaces','.freesurfer');
 end
 
