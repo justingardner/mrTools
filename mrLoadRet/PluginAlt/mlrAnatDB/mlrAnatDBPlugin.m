@@ -172,7 +172,7 @@ if ~strcmp(homeDir,localRepoSubjectLargeFiles)
   % ok, user said we could close, so do it
   mrQuit;
   localRepoSubjectLargeFiles = fullfile(localRepoSubjectLargeFiles,'localizers',getLastDir(homeDir));
-  disppercent(-inf,sprintf('(mlrAnatDBPlugin) Copying %s to %s using hard links.',homeDir,localRepoSubjectLargeFiles);
+  disppercent(-inf,sprintf('(mlrAnatDBPlugin) Copying %s to %s using hard links.',homeDir,localRepoSubjectLargeFiles));
   % make the directory
   mkdir(localRepoSubjectLargeFiles);
   % copy the data from this session over
