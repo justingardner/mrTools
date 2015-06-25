@@ -171,9 +171,9 @@ if ~strcmp(homeDir,localRepoSubjectLargeFiles)
   end
   % ok, user said we could close, so do it
   mrQuit;
-  disppercent(-inf,sprintf('(mlrAnatDBPlugin) Copying %s to %s using hard links.',homeDir,localRepoSubjectLargeFiles));
-  % tag on the name of the session
-  localRepoSubjectLargeFiles = fullfile(localRepoSubjectLargeFiles,getLastDir(homeDir));
+  localRepoSubjectLargeFiles = fullfile(localRepoSubjectLargeFiles,'localizers',getLastDir(homeDir));
+  disppercent(-inf,sprintf('(mlrAnatDBPlugin) Copying %s to %s using hard links.',homeDir,localRepoSubjectLargeFiles);
+  % make the directory
   mkdir(localRepoSubjectLargeFiles);
   % copy the data from this session over
   [status,result] = system(sprintf('rsync -a --link-dest=%s %s/ %s',homeDir,homeDir,localRepoSubjectLargeFiles));
@@ -192,23 +192,11 @@ if ~strcmp(homeDir,localRepoSubjectLargeFiles)
   mrLoadRet;
 end
 
-% add link to localizers in ROI repo
-cd(fullfile(localRepoSubject,'Localizers'));
-[status,result] = system(sprintf('ln -s ../../%s %s',getLastDir(localRepoSubjectLargeFiles,2),getLastDir(localRepoSubjectLargeFiles)));
-if status ~= 0
-  mrWarnDlg(sprintf('(mlrAnatDBPlugin) Could not make link for %s in ROI database',getLastDir(localRepoSubjectLargeFiles)));
-else
-  % set branch number
-  if ~mlrAnatDBSetBranchNum(localRepoSubject,branchNum+1), return,end
-  % add/commit/push the repo
-  if ~mlrAnatDBAddCommitPush(localRepoSubject,'Localizers',sprintf('Adding link to %s',getLastDir(localRepoSubjectLargeFiles)));
-    return
-  end
-end
-
+% set branch number
+if ~mlrAnatDBSetBranchNum(localRepoSubject,branchNum+1), return,end
 
 % set branch number
-if ~mlrAnatDBSetBranchNum(fileparts(localRepoSubjectLargeFiles),branchNum+1), return,end
+if ~mlrAnatDBSetBranchNum(fileparts(fileparts(localRepoSubjectLargeFiles)),branchNum+1), return,end
 
 % add this directory to the local repo
 % debug - FIX, FIX, FIX get comments from user to add as commit
