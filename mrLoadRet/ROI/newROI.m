@@ -94,6 +94,12 @@ ROI.notes = params.notes;
 ROI.vol2mag = vol2mag;
 ROI.vol2tal = vol2tal;
 
+% add some additional information about where this was created
+baseName = viewGet(view,'basename');
+ROI.createdOnBase = baseName;
+ROI.displayOnBase = baseName;
+ROI.createdFromSession = getLastDir(viewGet(view,'homeDir'));
+
 % Add it to the view
 [view tf]= viewSet(view,'newROI',ROI);
  

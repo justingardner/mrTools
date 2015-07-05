@@ -19,8 +19,10 @@
 function subjectID = mlrAnatDBSubjectID(v)
 
 subjectID = '';
+% check if we are passed in a string
 if isstr(v)
   subjectID = v;
+  % see if it is of the form snnn
   if (length(subjectID) > 1) 
     [idLocStart idLocEnd] = regexp(subjectID,'s\d+');
     id = 0;
@@ -34,11 +36,15 @@ if isstr(v)
     end
     % format subject ID
     subjectID = sprintf('s%04i',id);
+  elseif ~isempty(regexp(subjectID,'\d+'))
+    subjectID = mlrAnatDBSubjectID(str2num(subjectID));
   end
   return
+% check if we are passed in a number
 elseif isnumeric(v)
   subjectID = mlrAnatDBSubjectID(sprintf('s%i',v));
   return
+% otherwise it should have been a view
 elseif isempty(v)
   return
 end
@@ -51,10 +57,8 @@ end
 % check if we are in the reop
 if mlrAnatDBInLocalRepo(v)
   % then just get subject ID from path
-  subjectID = getLastDir(fileparts(viewGet(v,'homeDir')));
-  [idLocStart idLocEnd] = regexp(subjectID,'s\d+');
-  id = str2num(subjectID(idLocStart+1:idLocEnd));
-  subjectID = sprintf('s%04i',id);
+  subjectID = getLastDir(fileparts(fileparts(viewGet(v,'homeDir'))));
+  subjectID = mlrAnatDBSubjectID(subjectID);
   return
 end
     

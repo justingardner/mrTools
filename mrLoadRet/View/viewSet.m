@@ -2031,7 +2031,7 @@ switch lower(param)
  
  case {'roicreatedby'}
     % v = viewSet(v,'roiCreatedBy',createdByPerson,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the createdby field in the roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};
@@ -2041,10 +2041,23 @@ switch lower(param)
     if ~isempty(roiNum)
       view.ROIs(roiNum).createdBy = val;
     end
+ 
+ case {'roibranchnum'}
+    % v = viewSet(v,'roiBranchNum',branchNumInRepo,[roiNum]);
+    % sets the branch num in repo
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).branchNum = val;
+    end
 
  case {'roicreatedonbase'}
     % v = viewSet(v,'roiCreatedOnBase',baseName,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the created on base field of roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};
@@ -2057,7 +2070,7 @@ switch lower(param)
 
  case {'roicreatedfromsession'}
     % v = viewSet(v,'roiCreatedFromSession',sessionName,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the created from session field in roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};
@@ -2070,7 +2083,7 @@ switch lower(param)
 
  case {'roidisplayonbase'}
     % v = viewSet(v,'roiDisplayOnBase',baseName,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the displayOnBase filed of roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};

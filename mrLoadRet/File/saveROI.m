@@ -1,4 +1,4 @@
-function saveROI(view,roiName,confirm,pathStr)
+function pathStr = saveROI(view,roiName,confirm,pathStr)
 %
 % saveROI(view,[roiName],[confirm],[pathStr])
 %
@@ -17,6 +17,7 @@ function saveROI(view,roiName,confirm,pathStr)
 %
 % djh, 9/2005
 
+pathStr = [];
 if ieNotDefined('roiName')
 	roiNum = viewGet(view,'currentROI');
 	roiName = viewGet(view,'roiName',roiNum);

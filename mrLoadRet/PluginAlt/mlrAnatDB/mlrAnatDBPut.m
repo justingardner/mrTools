@@ -11,8 +11,8 @@
 %             Typically you specify what kind of file you have (roi, freesurfer, baseAnat, localizer) and
 %             this will put it into the correct directory
 % 
-%             e.g. To put an roi
-%             mlrAnatDBPut(25,'~/data/mtroi.mat','roi');
+%             e.g. To put mlr surfaces from a view
+%             mlrAnatDBPut(25,v,'mlrBaseAnat');
 %
 %             e.g. To put a directory of rois
 %             mlrAnatDBPut(25,'~/data/rois','roi');
@@ -35,10 +35,10 @@ end
 subjectID = mlrAnatDBSubjectID(subjectID);
 
 % and get arguments
-getArgs(varargin,{'fileDir=[]','largefiles=[]','verbose=0','comments=[]','freesurfer=[]'});
+getArgs(varargin,{'fileDir=[]','largefiles=[]','verbose=0','comments=[]','freesurfer=[]','useHardLinks=1'});
 
 % check file
-if ~isfile(filePath) && ~isdir(filePath)
+if ~isview(filePath) && (~isfile(filePath) && ~isdir(filePath))
   disp(sprintf('(mlrAnatDBPut) Could not find: %s',filePath));
   return
 end
@@ -49,17 +49,27 @@ if isempty(fileDir)
    case {'roi','rois'}
     fileDir = 'mlrROIs';
     if isempty(largefiles),largefiles = false;end
-    if isdir(filePath),filePath = getFilenames(filePath,'*.mat');end
+    if isview(filePath)
+      % if a view then have user select which bases to get
+      filePath = getROIFilenames(filePath,subjectID);
+    elseif isdir(filePath)
+      filePath = getFilenames(filePath,'*.mat');
+    end
    case 'freesurfer'
     fileDir = 'anatomy';
     if isempty(largefiles),largefiles = true;end
    case {'3d','canonical','anatomy','anat'}
     fileDir = 'anatomy';
     if isempty(largefiles),largefiles = false;end
-   case {'baseanat','mlrbaseAnat','mlrbaseanatomy','mlrbaseanatomies'}
+   case {'baseanat','mlrbaseanat','mlrbaseanatomy','mlrbaseanatomies'}
     fileDir = 'mlrBaseAnatomies';
     if isempty(largefiles),largefiles = false;end
-    if isdir(filePath),filePath = getFilenames(filePath,'*.mat');end
+    if isview(filePath)
+      % if a view then have user select which bases to get
+      filePath = getBaseFilenames(filePath);
+    elseif isdir(filePath)
+      filePath = getFilenames(filePath,'*.mat');
+    end
    case {'surfaces','surface'}
     fileDir = 'surfaces';
     if isempty(largefiles),largefiles = false;end
@@ -69,6 +79,7 @@ if isempty(fileDir)
     if isempty(largefiles),largefiles = true;end
   end    
 end
+if isempty(filePath),return,end
 if isempty(fileDir)
   disp(sprintf('(mlrAnatDBPut) Must specify a vaild fileType or fileDir'));
   return
@@ -110,11 +121,28 @@ filePath = cellArray(filePath);
 % remember current directory
 curpwd = pwd;
 
-% copy each file using force
+% hard link or copy each file using force
 for iFile = 1:length(filePath)
-  disp(sprintf('(mlrAnatDBPut) Copying %s to %s',filePath{iFile},destDir));
-  success = copyfile(filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile})),'f');
-  if ~success,return,end
+  if useHardLinks
+    disp(sprintf('(mlrAnatDBPut) Hard linking %s to %s',filePath{iFile},destDir));
+    if isdir(filePath{iFile})
+      % rsync if a directory
+      [status,result] = system(sprintf('rsync -a --link-dest=%s %s/ %s',filePath{iFile},filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile}))));
+    else
+      % link if a file
+      [status,result] = system(sprintf('ln -f %s %s',filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile}))));
+    end
+    % check success
+    if status
+      disp(sprintf('(mlrAnatDBPut) Could not link/copy file to repo: %s',result));
+      return
+    end
+  else
+    disp(sprintf('(mlrAnatDBPut) Copying %s to %s',filePath{iFile},destDir));
+    success = copyfile(filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile})),'f');
+    % check success
+    if ~success,return,end
+  end
   % get where it was copied to
   toPath{iFile} = fullfile(fileDir,getLastDir(filePath{iFile}));
 end
@@ -165,16 +193,21 @@ end
 
 % now do the commit part
 if largefiles
-  % add/commit/push to large files repo
+  % add and commit to large files repo
   cd(localRepoLargeFiles);
-  comments = addCommitPush(toPath,largefiles,comments,verbose);
+  comments = addCommit(toPath,largefiles,comments,verbose);
 else
-  % add/commit/push to the repo
+  % add and commit to the repo
   cd(localRepo);
-  addCommitPush(toPath,false,comments,verbose);
+  addCommit(toPath,false,comments,verbose);
 end
 
 cd(curpwd);
+
+% ask if the user wants to push
+if ~verbose || isequal(questdlg(sprintf('Do you want to push to the central repo: %s? This can take several minutes depending on your connection. If you choose no now, you will need to push using mlrAnatDBPush later.',mrGetPref('mlrAnatDBCentralRepo')),'Do push?','Yes','No','Yes'),'Yes')
+  mlrAnatDBPush(subjectID);
+end
 
 % for freesurfer, go and add the surfRelax directory as surfaces
 if strcmp(lower(fileType),'freesurfer') && ~isempty(surfRelaxDir)
@@ -185,10 +218,10 @@ end
 % success.
 tf = true;
 
-%%%%%%%%%%%%%%%%%%%%%%%
-%    addCommitPush    %
-%%%%%%%%%%%%%%%%%%%%%%%
-function comments = addCommitPush(toPath,largefiles,comments,verbose)
+%%%%%%%%%%%%%%%%%%%
+%    addCommit    %
+%%%%%%%%%%%%%%%%%%%
+function comments = addCommit(toPath,largefiles,comments,verbose)
 
 % commit to repo
 if largefiles
@@ -215,14 +248,6 @@ end
 [status,result] = mysystem(sprintf('hg commit -m ''%s''',comments));
 if largefiles,disppercent(inf);,end
 
-% and push
-if ~verbose || isequal(questdlg(sprintf('Do you want to push to the central repo: %s? This can take several minutes depending on your connection. You will be able to work while this occurs (it will push in the background), but you should not shut off your matlab/computer. If you choose no now, you will need to push manually later.',mrGetPref('mlrAnatDBCentralRepo')),'Do push?','Yes','No','Yes'),'Yes')
-  disppercent(-inf,sprintf('(mlrAnatDBAddCommitPush) Pushing repo %s',pwd));
-  mysystem(sprintf('hg push --new-branch'));
-  disppercent(inf);
-end
-
-
 %%%%%%%%%%%%%%%%%%%%%%
 %    getFilenames    %
 %%%%%%%%%%%%%%%%%%%%%%
@@ -240,6 +265,88 @@ for iMatch = 1:length(matchStr)
   end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getBaseFilenames   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function filePath = getBaseFilenames(v)
+
+% get list of ROIs to save
+baseList = selectInList(v,'bases','Select MLR Base Anatomies to save');
+
+% list of extensions that might be generated
+extList = {'hdr','img','nii','mat'};
+
+% default to no files
+filePath = {};
+
+% save each anat locally, getting the filenames as the ones to put into the repo
+for iBase = baseList
+  thisAnat = saveAnat(v,iBase,false,false);
+  [thisAnatPath thisAnatFilename] = fileparts(thisAnat);
+  % get all the files associated with thisAnat
+  for iExt = 1:length(extList)
+    filename = fullfile(thisAnatPath,setext(thisAnatFilename,extList{iExt}));
+    if isfile(filename)
+      filePath{end+1} = filename;
+    end
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getROIFilenames   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function filePath = getROIFilenames(v,subjectID)
+
+% default to no files
+filePath = {};
+
+% get list of ROIs to save
+roiList = selectInList(v,'rois','Select ROI(s) to save');
+if isempty(roiList),return,end
+
+% get the branch number
+branchNum = mlrAnatDBGetBranchNum(mlrAnatDBGetRepo(subjectID));
+
+% session name
+sessionName = getLastDir(viewGet(v,'homeDir'));
+baseName = viewGet(v,'baseName');
+
+% get username
+[status,userName] = system('hg config ui.username');
+userName = strtrim(userName);
+
+% and save them
+for iRoi = roiList
+  % get the roi
+  roi = viewGet(v,'roi',iRoi);
+  % set user who is saving this
+  v = viewSet(v,'roiCreatedBy',userName,iRoi);
+  % set session if not already
+  if isempty(roi.createdFromSession)
+    % set that the ROI is created from this session
+    v = viewSet(v,'roiCreatedFromSession',sessionName,iRoi);
+  end
+  % if createdOnBase is not set
+  if isempty(roi.createdOnBase)
+    % set to current base name
+    v = viewSet(v,'roiCreatedOnBase',baseName,iRoi);
+  end
+  % if displayOnBase is not set
+  if isempty(roi.displayOnBase)
+    % set to current base name
+    v = viewSet(v,'roiDisplayOnBase',baseName,iRoi);
+  end
+  % set the branch num of repo
+  if isempty(roi.branchNum)
+    % set that the ROI is created from this session
+    v = viewSet(v,'roiBranchNum',branchNum+1,iRoi);
+  end
+  % save it  
+  filePath{end+1} = saveROI(v,iRoi,false);
+  % set the .mat extension
+  filePath{end} = fullfile(fileparts(filePath{end}),setext(getLastDir(filePath{end}),'mat'));
+end
+m
 %%%%%%%%%%%%%%%%%%
 %    mysystem    %
 %%%%%%%%%%%%%%%%%%
@@ -247,3 +354,4 @@ function [status,result] = mysystem(command)
 
 disp(sprintf('(mlrAnatDBPut): %s',command));
 [status,result] = system(command,'-echo');
+

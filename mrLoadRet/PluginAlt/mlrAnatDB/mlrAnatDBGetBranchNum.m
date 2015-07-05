@@ -24,7 +24,7 @@ branchNameLoc = regexp(result,'v\d');
 if ~isempty(branchNameLoc)
   branchNum = str2num(result(branchNameLoc+1:end));
 else
-  mrWarnDlg(sprintf('(mlrAnatDbPlugin) Could not figure out version number. This should be the current branch of the git repository and should be in the format vXXXX where XXX is a number (e.g. v0001). Not able to commit changes. Aborting. you can fix by going to repo %s and assiging a valid version number as the branch name'));
+  mrWarnDlg(sprintf('(mlrAnatDbGetBranchNum) Could not figure out version number. This should be the current branch of the repository and should be in the format vXXXX where XXX is a number (e.g. v0001). You can fix by going to repo %s and assiging a valid version number as the branch name'));
   cd(curpwd);
   return
 end

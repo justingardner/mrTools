@@ -27,14 +27,6 @@ if status ~= 0
   mrWarnDlg(sprintf('(mlrAnatDBPlugin) Your hg config needs to have your username and email address for you to commit. Use "hg config --edit" to fix this.'));
   return
 end
-[status,result] = system('hg config web.cacerts');
-if status ~= 0
-  oneTimeWarning('cacerts',sprintf('(mlrAnatDBPlugin) Your hg config does not have web.cacerts specified - this is useful so that it will allow committing to a self-certified https:// site.'));
-end
-[status,result] = system('hg config auth');
-if status ~= 0
-  oneTimeWarning('auth',sprintf('(mlrAnatDBPlugin) Your hg config does not have any authorizations specified. You may want to add auth for the site so that you do not have to keep putting in your username password.'));
-end
   
 tf = true;
 
