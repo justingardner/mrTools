@@ -102,37 +102,6 @@ else
   end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatDBPreferences    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatDBPreferences(hObject,eventdata)
-
-% code-snippet to get the view from the hObject variable. Not needed for this callback.
-v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
-
-% get repo locations
-centralRepo = mrGetPref('mlrAnatDBCentralRepo');
-localRepoTop = mrGetPref('mlrAnatDBLocalRepo');
-
-% set defaults
-if isempty(centralRepo),centralRepo = '';end
-if isempty(localRepoTop),localRepoTop = '~/data/mlrAnatDB';end
-
-% setup params info for mrParamsDialog
-paramsInfo = {...
-    {'mlrAnatDBCentralRepo',centralRepo,'Location of central repo, Typically on a shared server with an https address, but could be on a shared drive in the file structure.'}...
-    {'mlrAnatDBLocalRepo',localRepoTop,'Location of local repo which is typically under a data directory - this will have local copies of ROIs and other data but can be removed the file system as copies will be stored in the central repo'}...
-};
-
-% and display the dialog
-params = mrParamsDialog(paramsInfo);
-
-% save params, if user did not hit cancel
-if ~isempty(params)
-  mrSetPref('mlrAnatDBCentralRepo',params.mlrAnatDBCentralRepo,false);
-  mrSetPref('mlrAnatDBLocalRepo',params.mlrAnatDBLocalRepo,false);
-end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatDBAddSession    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
