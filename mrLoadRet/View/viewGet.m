@@ -2286,7 +2286,11 @@ switch lower(param)
     r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
-      val = view.ROIs(r).name;
+      if length(r) == 1
+	val = view.ROIs(r).name;
+      else
+	val = {view.ROIs(r).name};
+      end
     end
   case{'roicoords'}
     % roiCoords = viewGet(view,'roiCoords',[roiNum])

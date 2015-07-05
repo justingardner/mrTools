@@ -38,50 +38,8 @@ subjectID = mlrAnatDBSubjectID(subjectID);
 getArgs(varargin,{'fileDir=[]','largefiles=[]','verbose=0','comments=[]','freesurfer=[]','useHardLinks=1'});
 
 % check file
-if ~isview(filePath) && (~isfile(filePath) && ~isdir(filePath))
+if ~iscell(filePath) && ~isview(filePath) && (~isfile(filePath) && ~isdir(filePath))
   disp(sprintf('(mlrAnatDBPut) Could not find: %s',filePath));
-  return
-end
-
-% figure out what path to put it under and whether it is a large file or not
-if isempty(fileDir)
-  switch lower(fileType)
-   case {'roi','rois'}
-    fileDir = 'mlrROIs';
-    if isempty(largefiles),largefiles = false;end
-    if isview(filePath)
-      % if a view then have user select which bases to get
-      filePath = getROIFilenames(filePath,subjectID);
-    elseif isdir(filePath)
-      filePath = getFilenames(filePath,'*.mat');
-    end
-   case 'freesurfer'
-    fileDir = 'anatomy';
-    if isempty(largefiles),largefiles = true;end
-   case {'3d','canonical','anatomy','anat'}
-    fileDir = 'anatomy';
-    if isempty(largefiles),largefiles = false;end
-   case {'baseanat','mlrbaseanat','mlrbaseanatomy','mlrbaseanatomies'}
-    fileDir = 'mlrBaseAnatomies';
-    if isempty(largefiles),largefiles = false;end
-    if isview(filePath)
-      % if a view then have user select which bases to get
-      filePath = getBaseFilenames(filePath);
-    elseif isdir(filePath)
-      filePath = getFilenames(filePath,'*.mat');
-    end
-   case {'surfaces','surface'}
-    fileDir = 'surfaces';
-    if isempty(largefiles),largefiles = false;end
-    if isdir(filePath),filePath = getFilenames(filePath,{'*.off','*.vff','*.hdr','*.img','*.nii'});end
-   case {'localizer','localizers'}
-    fileDir = 'localizers';
-    if isempty(largefiles),largefiles = true;end
-  end    
-end
-if isempty(filePath),return,end
-if isempty(fileDir)
-  disp(sprintf('(mlrAnatDBPut) Must specify a vaild fileType or fileDir'));
   return
 end
 
@@ -94,6 +52,72 @@ if isempty(comments)
   else
     comments = '';
   end
+end
+
+
+% figure out what path to put it under and whether it is a large file or not
+if isempty(fileDir)
+  switch lower(fileType)
+   % Add ROIs to DB
+   case {'roi','rois'}
+    fileDir = 'mlrROIs';
+    if isempty(largefiles),largefiles = false;end
+    if isview(filePath)
+      % if a view then have user select which bases to get
+      [filePath filePathNiftiROIs filePathScreenShots]= getROIFilenames(filePath,subjectID);
+      % put the niftis and screen shots into database
+      mlrAnatDBPut(subjectID,filePathNiftiROIs,'niftiROIs','comments',comments);
+      mlrAnatDBPut(subjectID,filePathScreenShots,'screenShots','comments',comments);
+    elseif isdir(filePath)
+      filePath = getFilenames(filePath,'*.mat');
+    end
+   % Add Nifti ROIs to DB
+   case {'niftiroi','niftirois'}
+    fileDir = 'niftiROIs';
+    if isempty(largefiles),largefiles = false;end
+    if ~iscell(filePath) && isdir(filePath)
+      filePath = getFilenames(filePath,'*.mat');
+    end
+   % Add Screen shots to DB
+   case {'screenshot','screenshots'}
+    fileDir = 'screenShots';
+    if isempty(largefiles),largefiles = false;end
+    if ~iscell(filePath) && isdir(filePath)
+      filePath = getFilenames(filePath,'*.png');
+    end
+   % Add freesurfer directory to DB
+   case 'freesurfer'
+    fileDir = 'anatomy';
+    if isempty(largefiles),largefiles = true;end
+   % Add canonical to DB
+   case {'3d','canonical','anatomy','anat'}
+    fileDir = 'anatomy';
+    if isempty(largefiles),largefiles = false;end
+   % Add mlrBase Anatomies to DB
+   case {'baseanat','mlrbaseanat','mlrbaseanatomy','mlrbaseanatomies'}
+    fileDir = 'mlrBaseAnatomies';
+    if isempty(largefiles),largefiles = false;end
+    if isview(filePath)
+      % if a view then have user select which bases to get
+      filePath = getBaseFilenames(filePath);
+    elseif isdir(filePath)
+      filePath = getFilenames(filePath,'*.mat');
+    end
+   % Add surfaces to DB
+   case {'surfaces','surface'}
+    fileDir = 'surfaces';
+    if isempty(largefiles),largefiles = false;end
+    if isdir(filePath),filePath = getFilenames(filePath,{'*.off','*.vff','*.hdr','*.img','*.nii'});end
+   % Add localizer sessions to DB
+   case {'localizer','localizers'}
+    fileDir = 'localizers';
+    if isempty(largefiles),largefiles = true;end
+  end    
+end
+if isempty(filePath),return,end
+if isempty(fileDir)
+  disp(sprintf('(mlrAnatDBPut) Must specify a vaild fileType or fileDir'));
+  return
 end
 
 % get local repo
@@ -123,25 +147,28 @@ curpwd = pwd;
 
 % hard link or copy each file using force
 for iFile = 1:length(filePath)
-  if useHardLinks
-    disp(sprintf('(mlrAnatDBPut) Hard linking %s to %s',filePath{iFile},destDir));
-    if isdir(filePath{iFile})
-      % rsync if a directory
-      [status,result] = system(sprintf('rsync -a --link-dest=%s %s/ %s',filePath{iFile},filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile}))));
+  % check if we are trying to copy onto ourself, then don't bother
+  if ~strcmp(fileparts(filePath{iFile}),destDir)
+    if useHardLinks
+      disp(sprintf('(mlrAnatDBPut) Hard linking %s to %s',filePath{iFile},destDir));
+      if isdir(filePath{iFile})
+	% rsync if a directory
+	[status,result] = system(sprintf('rsync -a --link-dest=%s %s/ %s',filePath{iFile},filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile}))));
+      else
+	% link if a file
+	[status,result] = system(sprintf('ln -f %s %s',filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile}))));
+      end
+      % check success
+      if status
+	disp(sprintf('(mlrAnatDBPut) Could not link/copy file to repo: %s',result));
+	return
+      end
     else
-      % link if a file
-      [status,result] = system(sprintf('ln -f %s %s',filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile}))));
+      disp(sprintf('(mlrAnatDBPut) Copying %s to %s',filePath{iFile},destDir));
+      success = copyfile(filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile})),'f');
+      % check success
+      if ~success,return,end
     end
-    % check success
-    if status
-      disp(sprintf('(mlrAnatDBPut) Could not link/copy file to repo: %s',result));
-      return
-    end
-  else
-    disp(sprintf('(mlrAnatDBPut) Copying %s to %s',filePath{iFile},destDir));
-    success = copyfile(filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile})),'f');
-    % check success
-    if ~success,return,end
   end
   % get where it was copied to
   toPath{iFile} = fullfile(fileDir,getLastDir(filePath{iFile}));
@@ -295,17 +322,22 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%   getROIFilenames   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
-function filePath = getROIFilenames(v,subjectID)
+function [filePath niftiFilePath screenShotsFilePath] = getROIFilenames(v,subjectID)
 
 % default to no files
 filePath = {};
+niftiFilePath = {};
+screenShotsFilePath = {};
 
 % get list of ROIs to save
 roiList = selectInList(v,'rois','Select ROI(s) to save');
 if isempty(roiList),return,end
 
-% get the branch number
-branchNum = mlrAnatDBGetBranchNum(mlrAnatDBGetRepo(subjectID));
+% get info about the repo
+localRepo = mlrAnatDBGetRepo(subjectID);
+branchNum = mlrAnatDBGetBranchNum(localRepo);
+localRepoNiftiROI = fullfile(localRepo,'niftiROIs');
+localRepoScreenShots = fullfile(localRepo,'screenShots');
 
 % session name
 sessionName = getLastDir(viewGet(v,'homeDir'));
@@ -315,7 +347,16 @@ baseName = viewGet(v,'baseName');
 [status,userName] = system('hg config ui.username');
 userName = strtrim(userName);
 
-% and save them
+% current settings
+curROI = viewGet(v,'curROI');
+curBase = viewGet(v,'curBase');
+curROIGroup = viewGet(v,'roiGroup');
+showROI = viewGet(v,'showROIs');
+
+% start list
+displayOnBase = {};
+
+% go through the list of chosen ROIS
 for iRoi = roiList
   % get the roi
   roi = viewGet(v,'roi',iRoi);
@@ -347,7 +388,68 @@ for iRoi = roiList
   filePath{end+1} = saveROI(v,iRoi,false);
   % set the .mat extension
   filePath{end} = fullfile(fileparts(filePath{end}),setext(getLastDir(filePath{end}),'mat'));
+  
+  % now convert into a nifti file and save that into the repo
+  roiName = viewGet(v,'roiName',iRoi);
+  createdOnBase = viewGet(v,'roiCreatedOnBase',iRoi);
+  if ~isempty(createdOnBase)
+    baseNum = first(viewGet(v,'baseNum',createdOnBase));
+    % if the base exists
+    if isempty(baseNum)
+      % does not exist
+      disp(sprintf('(mlrAnatDBPut) Could not find base %s which ROI %s was created on. Not exporting to Nifti',createdOnBase,viewGet(v,'roiName',iRoi)));
+    else
+      % does exist, so try to export as nifti
+      v = viewSet(v,'curBase',baseNum);
+      v = viewSet(v,'curROI',iRoi);
+      niftiFilePath{end+1} = fullfile(localRepoNiftiROI,setext(roiName,'nii'));
+      % export the ROI to nifti
+      mlrExportROI(v,niftiFilePath{end});
+    end
+  end
+
+  % remember which displayOnBases have been seen
+  displayOnBase{end+1} = viewGet(v,'roiDisplayOnBase',iRoi);
+  if isempty(displayOnBase{end})
+    displayOnBase = displayOnBase{1:end-1};
+  end
 end
+
+% now try to big up base images with the rois drawn on them for saving
+uniqueDisplayOnBase = unique(displayOnBase);
+% for each base, see if it is loaded
+for iBase = 1:length(uniqueDisplayOnBase)
+  % get base num and make sure that it exists
+  baseNum = viewGet(v,'baseNum',uniqueDisplayOnBase{iBase});
+  if isempty(baseNum)
+    disp(sprintf('(mlrAnatDBPut) Base %s is not loaded, so cannot make snapshot on base',uniqueDisplayOnBase{iBase}));
+    continue;
+  end
+  % ok. Now load the base into the view
+  v = viewSet(v,'curBase',baseNum);
+  % set the roi group to all rois that have this base as their displayOnBase
+  v = viewSet(v,'roiGroup',viewGet(v,'roiName',roiList(strcmp(uniqueDisplayOnBase{iBase},displayOnBase))));
+  v = viewSet(v,'showROIs','group perimeter');
+  % make screen shot
+  mrPrint(v,'useDefault=1');
+  % ask whether user wants to save screen shot
+  paramsInfo = {{'saveScreenShot',uniqueDisplayOnBase{iBase},'Save this image as a screen shot to DB'}};
+  params = mrParamsDialog(paramsInfo,'Do you want to save this screen shot?');
+  if ~isempty(params)
+    
+    screenShotsFilePath{end+1} = fullfile(localRepoScreenShots,setext(params.saveScreenShot,'png'));
+    print(selectGraphWin(true),'-dpng',screenShotsFilePath{end});
+  end
+  closeGraphWin;
+end
+
+% set back
+v = viewSet(v,'curROI',curROI);
+v = viewSet(v,'curBase',curBase);
+v = viewSet(v,'roiGroup',curROIGroup);
+v = viewSet(v,'showROIs',showROI);
+refreshMLRDisplay(v);
+
 
 %%%%%%%%%%%%%%%%%%
 %    mysystem    %

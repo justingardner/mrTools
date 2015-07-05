@@ -6,15 +6,18 @@
 %       date: 10/04/07
 %    purpose: puts a printable version of the data into the graph win
 %
-function retval = mrPrint(v)
+function retval = mrPrint(v,varargin)
 
 % check arguments
-if ~any(nargin == [1])
+if nargin < 1
   help mrPrint
   return
 end
 
 mrGlobals;
+
+% get input arguments
+getArgs(varargin,{'useDefault=0'});
 
 % get base type
 baseType = viewGet(v,'baseType');
@@ -77,7 +80,12 @@ else
   paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
 end
 
-params = mrParamsDialog(paramsInfo,'Print figure options');;
+if useDefault
+  params = mrParamsDefault(paramsInfo);
+else
+  params = mrParamsDialog(paramsInfo,'Print figure options');
+end
+  
 if isempty(params),return,end
 
 % just so the code won't break. smoothROI is only fro baseType = 1
