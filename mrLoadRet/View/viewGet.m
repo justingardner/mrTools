@@ -2506,11 +2506,65 @@ switch lower(param)
       end
     end
   case{'roinotes'}
-    % roinotesm = viewGet(view,'roinotes',[roiNum])
+    % roiNotes = viewGet(view,'roinotes',[roiNum])
     r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).notes;
+    else
+      val = '';
+    end
+  case{'roicreatedby'}
+    % roiCreatedBy = viewGet(view,'roiCreatedBy',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).createdBy;
+    else
+      val = '';
+    end
+  case{'roicreatedonbase'}
+    % roiCreatedOnBase = viewGet(view,'roiCreatedOnBase',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).createdOnBase;
+    else
+      val = '';
+    end
+  case{'roidisplayonbase'}
+    % roiDisplayOnBase = viewGet(view,'roiDisplayOnBase',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).displayOnBase;
+    else
+      val = '';
+    end
+  case{'roicreatedfromsession'}
+    % roiCreatedFromSession = viewGet(view,'roiCreatedFromSession',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).createdFromSession;
+    else
+      val = '';
+    end
+  case{'roibranchnum'}
+    % roiBranchNum = viewGet(view,'roiBranchNum',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).branchNum;
+    else
+      val = '';
+    end
+  case{'roisubjectid'}
+    % roiSubjectID = viewGet(view,'roiSubjectID',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).subjectID;
     else
       val = '';
     end

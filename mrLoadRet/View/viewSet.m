@@ -2094,6 +2094,19 @@ switch lower(param)
       view.ROIs(roiNum).displayOnBase = val;
     end
 
+ case {'roisubjectid'}
+    % v = viewSet(v,'roiSubjectID',subjectID,[roiNum]);
+    % sets the displayOnBase filed of roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).subjectID = val;
+    end
+
   case {'roiname'}
     % view = viewSet(view,'roiName',nameString,[roiNum]);
     curRoi = viewGet(view,'currentRoi');

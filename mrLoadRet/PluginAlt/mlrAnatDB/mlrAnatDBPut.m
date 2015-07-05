@@ -321,6 +321,8 @@ for iRoi = roiList
   roi = viewGet(v,'roi',iRoi);
   % set user who is saving this
   v = viewSet(v,'roiCreatedBy',userName,iRoi);
+  % set subjectID
+  v = viewSet(v,'roiSubjectID',subjectID,iRoi);
   % set session if not already
   if isempty(roi.createdFromSession)
     % set that the ROI is created from this session
@@ -346,7 +348,7 @@ for iRoi = roiList
   % set the .mat extension
   filePath{end} = fullfile(fileparts(filePath{end}),setext(getLastDir(filePath{end}),'mat'));
 end
-m
+
 %%%%%%%%%%%%%%%%%%
 %    mysystem    %
 %%%%%%%%%%%%%%%%%%

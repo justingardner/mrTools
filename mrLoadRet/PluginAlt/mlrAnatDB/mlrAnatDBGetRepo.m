@@ -59,6 +59,7 @@ curpwd = pwd;
 % get where the anatomy database lives
 localRepoTop = mlrReplaceTilde(mrGetPref('mlrAnatDBLocalRepo'));
 centralRepoTop = mlrReplaceTilde(mrGetPref('mlrAnatDBCentralRepo'));
+lockLocal = mrGetPref('mlrAnatDBLockLocal');
 
 % check existence of local repo
 if isempty(localRepoTop)
@@ -97,22 +98,25 @@ if noPull
 else
   disp(sprintf('(mlrAnatDBGetRepo) Getting local repo for %s',subjectID));
   if isdir(localRepo)
-    % update it
-    cd(localRepo);
-    [status,result] = mysystem(sprintf('hg pull'));
-    [status,result] = mysystem(sprintf('hg update'));
-    cd(curpwd);
-    if status ~= 0
-      % if this is because the branch does not exist yet, then ignore
-      if isempty(strfind(result,'branch'))
-	mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepo));
-	localRepo = [];
-	return
+    % only update if lockLocal is not true
+    if ~isequal(lockLocal,1);
+      % update it
+      cd(localRepo);
+      [status,result] = mysystem(sprintf('hg pull'));
+      [status,result] = mysystem(sprintf('hg update'));
+      cd(curpwd);
+      if status ~= 0
+	% if this is because the branch does not exist yet, then ignore
+	if isempty(strfind(result,'branch'))
+	  mrWarnDlg(sprintf('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepo));
+	  localRepo = [];
+	  return
+	else
+	  disp(sprintf('(mlrAnatDBGetRepo) Branch not yet pushed but otherwise succesful update of %s',localRepo));
+	end      
       else
-	disp(sprintf('(mlrAnatDBGetRepo) Branch not yet pushed but otherwise succesful update of %s',localRepo));
-      end      
-    else
-      disp(sprintf('(mlrAnatDBGetRepo) Successful update of %s',localRepo));
+	disp(sprintf('(mlrAnatDBGetRepo) Successful update of %s',localRepo));
+      end
     end
   else
     disp(sprintf('(mlrAnatDBGetRepo) This may take a few minutes...'));
@@ -146,22 +150,25 @@ if noPull
 else
   disp(sprintf('(mlrAnatDBGetRepo) Getting local session repo for %s',subjectID));
   if isdir(localRepoLargeFiles)
-    % update it
-    cd(localRepoLargeFiles);
-    [status,result] = mysystem(sprintf('hg pull'));
-    [status,result] = mysystem(sprintf('hg update'));
-    cd(curpwd);
-    if status ~= 0
-      % if this is because the branch does not exist yet, then ignore
-      if isempty(strfind(result,'branch'))
-	mrWarnDlg('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepoLargeFiles);
-	localRepoLargeFiles = [];
-	return
+    % only update if lockLocal is not true
+    if ~isequal(lockLocal,1);
+      % update it
+      cd(localRepoLargeFiles);
+      [status,result] = mysystem(sprintf('hg pull'));
+      [status,result] = mysystem(sprintf('hg update'));
+      cd(curpwd);
+      if status ~= 0
+	% if this is because the branch does not exist yet, then ignore
+	if isempty(strfind(result,'branch'))
+	  mrWarnDlg('(mlrAnatDBPlugin) Unable to update local Repo %s',localRepoLargeFiles);
+	  localRepoLargeFiles = [];
+	  return
+	else
+	  disp(sprintf('(mlrAnatDBGetRepo) Branch not yet pushed but otherwise succesful update of %s',localRepoLargeFiles));
+	end      
       else
-	disp(sprintf('(mlrAnatDBGetRepo) Branch not yet pushed but otherwise succesful update of %s',localRepoLargeFiles));
-      end      
-    else
-      disp(sprintf('(mlrAnatDBGetRepo) Successful update of %s',localRepoLargeFiles));
+	disp(sprintf('(mlrAnatDBGetRepo) Successful update of %s',localRepoLargeFiles));
+      end
     end
   else
     centralRepoLargeFiles = fullfile(centralRepoTop,sprintf('%sd',subjectID));
@@ -175,28 +182,32 @@ else
     end
   end
 
-  % now make links in local repo
-  curpwd = pwd;
-  cd(localRepo);
-  linkList = {'anatomy','localizers'};
-  for iLink = 1:length(linkList)
-    linkFrom = fullfile('..',getLastDir(localRepoLargeFiles),linkList{iLink});
-    system(sprintf('ln -sfh %s %s',linkFrom,linkList{iLink}));
-  end
-  % make links within surfaces to proper anatomy
-  cd('surfaces');
-  % check for .freesurfer file which contains correct link
-  if isfile('.freesurfer')
-    freesurfer = textread('.freesurfer','%s');
-    if length(freesurfer) == 1
-      % then make the link
-      linkFrom = fullfile('..','..',getLastDir(localRepoLargeFiles),freesurfer{1});
-      if isdir(linkFrom)
-	mysystem(sprintf('ln -sfh %s freesurfer',linkFrom));
+
+  % only update if lockLocal is not true
+  if ~isequal(lockLocal,1);
+    % now make links in local repo
+    curpwd = pwd;
+    cd(localRepo);
+    linkList = {'anatomy','localizers'};
+    for iLink = 1:length(linkList)
+      linkFrom = fullfile('..',getLastDir(localRepoLargeFiles),linkList{iLink});
+      system(sprintf('ln -sfh %s %s',linkFrom,linkList{iLink}));
+    end
+    % make links within surfaces to proper anatomy
+    cd('surfaces');
+    % check for .freesurfer file which contains correct link
+    if isfile('.freesurfer')
+      freesurfer = textread('.freesurfer','%s');
+      if length(freesurfer) == 1
+	% then make the link
+	linkFrom = fullfile('..','..',getLastDir(localRepoLargeFiles),freesurfer{1});
+	if isdir(linkFrom)
+	  mysystem(sprintf('ln -sfh %s freesurfer',linkFrom));
+	end
       end
     end
+    cd(curpwd);
   end
-  cd(curpwd);
 end
 
 %%%%%%%%%%%%%%%%%%
