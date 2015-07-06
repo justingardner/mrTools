@@ -54,17 +54,19 @@ if isempty(comments)
   end
 end
 
-
+v = [];
 % figure out what path to put it under and whether it is a large file or not
 if isempty(fileDir)
   switch lower(fileType)
    % Add ROIs to DB
    case {'roi','rois'}
+    fileType = 'rois';
     fileDir = 'mlrROIs';
     if isempty(largefiles),largefiles = false;end
     if isview(filePath)
+      v = filePath;
       % if a view then have user select which bases to get
-      [filePath filePathNiftiROIs filePathScreenShots]= getROIFilenames(filePath,subjectID);
+      [filePath filePathNiftiROIs filePathScreenShots]= getROIFilenames(v,subjectID);
       % put the niftis and screen shots into database
       mlrAnatDBPut(subjectID,filePathNiftiROIs,'niftiROIs','comments',comments);
       mlrAnatDBPut(subjectID,filePathScreenShots,'screenShots','comments',comments);
@@ -73,6 +75,7 @@ if isempty(fileDir)
     end
    % Add Nifti ROIs to DB
    case {'niftiroi','niftirois'}
+    fileType = 'niftirois';
     fileDir = 'niftiROIs';
     if isempty(largefiles),largefiles = false;end
     if ~iscell(filePath) && isdir(filePath)
@@ -80,6 +83,7 @@ if isempty(fileDir)
     end
    % Add Screen shots to DB
    case {'screenshot','screenshots'}
+    fileType = 'screenshots';
     fileDir = 'screenShots';
     if isempty(largefiles),largefiles = false;end
     if ~iscell(filePath) && isdir(filePath)
@@ -87,6 +91,7 @@ if isempty(fileDir)
     end
    % Add freesurfer directory to DB
    case 'freesurfer'
+    fileType = 'freesurfer';
     fileDir = 'anatomy';
     if isempty(largefiles),largefiles = true;end
    % Add canonical to DB
@@ -95,6 +100,7 @@ if isempty(fileDir)
     if isempty(largefiles),largefiles = false;end
    % Add mlrBase Anatomies to DB
    case {'baseanat','mlrbaseanat','mlrbaseanatomy','mlrbaseanatomies'}
+    fileType = 'mlrbaseanat';
     fileDir = 'mlrBaseAnatomies';
     if isempty(largefiles),largefiles = false;end
     if isview(filePath)
@@ -110,6 +116,7 @@ if isempty(fileDir)
     if isdir(filePath),filePath = getFilenames(filePath,{'*.off','*.vff','*.hdr','*.img','*.nii'});end
    % Add localizer sessions to DB
    case {'localizer','localizers'}
+    fileType = 'localizers';
     fileDir = 'localizers';
     if isempty(largefiles),largefiles = true;end
   end    
@@ -245,6 +252,192 @@ end
 % success.
 tf = true;
 
+% wiki info
+mlrAnatDBWikiHostname = mrGetPref('mlrAnatDBWikiHostname');
+mlrAnatDBWikiDirname = mrGetPref('mlrAnatDBWikiDirname');
+if isempty(mlrAnatDBWikiHostname) || isempty(mlrAnatDBWikiDirname),return,end
+
+% get the index page
+indexPageLoc = sprintf('%s/pages/mlranatdb/index.txt',mlrAnatDBWikiDirname);
+[status,indexPage] = system(sprintf('ssh %s ''cat %s''',mlrAnatDBWikiHostname,indexPageLoc));
+if status ~= 0
+  disp(sprintf('(mlrAnatDBPut) Could not update wiki. Unable to get index file from ssh://%s/%s',mlrAnatDBWikiHostname,indexPageLoc));
+  return
+end
+% parse entries
+indexPageScan = textscan(indexPage,'%s%s%s%s%s%s%s%s','Headerlines',1,'Delimiter','|');
+% go look for this subjectID
+matchLine = [];
+for iSubject = 1:length(indexPageScan{1})
+  if ~isempty(findstr(subjectID,indexPageScan{2}{iSubject}))
+    matchLine = iSubject;
+  end
+end
+% if it is empty then need to add a line
+if isempty(matchLine)
+  indexPageScan{1}{end+1} = '';
+  indexPageScan{2}{end+1} = sprintf('[[%s',subjectID);
+  indexPageScan{3}{end+1} = sprintf('%s]]',subjectID);
+  indexPageScan{4}{end+1} = '';
+  indexPageScan{5}{end+1} = '';
+  indexPageScan{6}{end+1} = '';
+  indexPageScan{7}{end+1} = '';
+  indexPageScan{8}{end+1} = '';
+  matchLine = length(indexPageScan{1});
+end
+% if this is a segmentation or an roi then update that
+if strcmp(fileType,'freesurfer')
+  indexPageScan{4}{matchLine} = mlrAnatDBGetUsername;
+  indexPageScan{5}{matchLine} = datestr(now);
+elseif strcmp(fileType,'rois')
+  indexPageScan{6}{matchLine} = mlrAnatDBGetUsername;
+  indexPageScan{7}{matchLine} = datestr(now);
+end
+% set the last update field
+indexPageScan{8}{matchLine} = datestr(now);
+
+% write temporary file
+indexTempFilename = fullfile(mrGetPref('mlrAnatDBLocalRepo'),'index.txt');
+f = fopen(indexTempFilename,'w');
+if f == -1
+  disp(sprintf('(mlrAnatDBPut) Could not open temporary index file %s',indexTempFilename));
+  return
+end
+fprintf(f,'^SubjectID^Segmentation by^Segmentation date^ROIs by^ROIs date^Last updated^\n');
+for iLine = 1:length(indexPageScan{1})
+  fprintf(f,'|%s |%s |%s |%s |%s |%s |%s |\n',indexPageScan{2}{iLine},indexPageScan{3}{iLine},indexPageScan{4}{iLine},indexPageScan{5}{iLine},indexPageScan{6}{iLine},indexPageScan{7}{iLine},indexPageScan{8}{iLine});
+end
+fclose(f);
+% write it back
+[status,result] = system(sprintf('scp %s %s:%s',indexTempFilename,mlrAnatDBWikiHostname,fullfile(mlrAnatDBWikiDirname,'pages','mlranatdb','index.txt')));
+if (status~=0)
+  disp(sprintf('(mlrAnatDBPut) Could not write wiki index file: %s',result));
+  return
+end
+% remove temporary file
+mysystem(sprintf('rm -f %s',indexTempFilename));
+
+% get branchNumber
+branchNum = mlrAnatDBGetBranchNum(localRepo);
+
+% now that we have written the index page to the wiki, read the individual subject page
+subjectPageLoc = sprintf('%s/pages/mlranatdb/%s.txt',mlrAnatDBWikiDirname,subjectID);
+[status,subjectPage] = system(sprintf('ssh %s ''cat %s''',mlrAnatDBWikiHostname,subjectPageLoc));
+% parse entries
+if ~isequal(status,0)
+  % start a new page
+  for i = 1:6
+    subjectPageScan{i} = {};
+  end
+  restOfPage = '';
+else
+  % find out where log ends
+  endLogPos = findstr('end log',subjectPage);
+  if isempty(endLogPos)
+    endLogPos = length(subjectPage);
+  else
+    endLogPos = endLogPos-1;
+  end
+  restOfPage = subjectPage(endLogPos+9:end);
+  % convert [[ and ]] to quotes
+  replaceLoc = findstr('[[',subjectPage(1:endLogPos));
+  for iReplaceLoc = 1:length(replaceLoc)
+    subjectPage(replaceLoc(iReplaceLoc))='"';
+  end
+  replaceLoc = findstr(']]',subjectPage(1:endLogPos));
+  for iReplaceLoc = 1:length(replaceLoc)
+    subjectPage(replaceLoc(iReplaceLoc)+1)='"';
+  end
+  % read the page in
+  subjectPageScan = textscan(subjectPage(1:endLogPos),'%q%q%q%q%q%d','Headerlines',2,'Delimiter','|');
+end
+% write temporary file
+subjectTempFilename = fullfile(mrGetPref('mlrAnatDBLocalRepo'),sprintf('%s.txt',subjectID));
+f = fopen(subjectTempFilename,'w');
+if f == -1
+  disp(sprintf('(mlrAnatDBPut) Could not open temporary subject file %s',subjectTempFilename));
+  return
+end
+% write header
+fprintf(f,sprintf('====== %s log ======\n',subjectID));
+% write header of table
+fprintf(f,'^Updated by^Update type^Update time^Comments^branchNum^\n');
+% write new entries
+dateStrNow = datestr(now);
+if strcmp(fileType,'rois')
+  fprintf(f,'|%s |[[#%s_%s|%s]] |%s |%s |%i |\n',mlrAnatDBGetUsername,'ROIs',fixBadChars(dateStrNow,{' ','_'}),fileType,dateStrNow,comments,branchNum);
+elseif strcmp(fileType,'screenshots')
+  fprintf(f,'|%s |[[#%s_%s|%s]] |%s |%s |%i |\n',mlrAnatDBGetUsername,'ScreenShots',fixBadChars(dateStrNow,{' ','_'}),fileType,dateStrNow,comments,branchNum);
+else
+  fprintf(f,'|%s |%s |%s |%s |%i |\n',mlrAnatDBGetUsername,fileType,datestr(now),comments,branchNum);
+end
+% write old entries
+for iLine = 1:length(subjectPageScan{1})
+  if subjectPageScan{3}{iLine}(1) == '['
+    % print with a link: [[ ]]
+    fprintf(f,'|%s |[%s] |%s |%s |%i |\n',subjectPageScan{2}{iLine},strtrim(subjectPageScan{3}{iLine}),subjectPageScan{4}{iLine},subjectPageScan{5}{iLine},subjectPageScan{6}(iLine));
+  else
+    % print a normal field
+    fprintf(f,'|%s |%s |%s |%s |%i |\n',subjectPageScan{2}{iLine},subjectPageScan{3}{iLine},subjectPageScan{4}{iLine},subjectPageScan{5}{iLine},subjectPageScan{6}(iLine));
+  end
+end
+fprintf(f,'end log\n');
+% write out rois into log
+if strcmp(fileType,'rois')
+  fprintf(f,'\n====== ROIs %s ======\n',dateStrNow);
+  % cycle through ROIs and put information into table
+  if isview(v)
+    fprintf(f,'Created by: %s\n\n',mlrAnatDBGetUsername);
+    fprintf(f,'^roiName ^date ^createdFromSession ^createdOnBase ^voxelSize ^numVoxels ^volume (mmxmmxmm) ^\n');
+    for iROI = 1:length(filePath)
+      % get roi name
+      [roiPath roiName] = fileparts(filePath{iROI});
+      roiName = stripext(roiName);
+      % get roi number
+      roiNum = viewGet(v,'roiNum',roiName);
+      if ~isempty(roiNum)
+	roi = viewGet(v,'roi',roiNum);
+	fprintf(f,'|%s |%s |%s |%s |%s |%i |%f |\n',roi.name,roi.date,roi.createdFromSession,roi.createdOnBase,mlrnum2str(roi.voxelSize),size(roi.coords,2),size(roi.coords,2)*prod(roi.voxelSize));
+      end
+    end
+  end
+% write out screenshots
+elseif strcmp(fileType,'screenshots')
+  fprintf(f,'\n====== ScreenShots %s ======\n',dateStrNow);
+  fprintf(f,'Created by: %s\n\n',mlrAnatDBGetUsername);
+  for iFile = 1:length(filePath)
+    filename = getLastDir(filePath{iFile});
+    filename = sprintf('%s_%s_%s.%s',subjectID,stripext(filename),fixBadChars(dateStrNow),getext(filename));
+    fprintf(f,'<html><div></html>\n');
+    % get image size if we have imread
+    if exist('imread') > 0
+      im = imread(filePath{iFile});
+      imSize = size(im);
+      imageRatio = imSize(1)/imSize(2);
+      fprintf(f,'{{%s?600x%i|}}\n',filename,round(600*imageRatio));
+    else
+      % just write it without any scale factor
+      fprintf(f,'{{%s|}}',filename);
+    end
+    fprintf(f,'<html></div></html>\n');
+    % write the png file
+    [status,result] = system(sprintf('scp %s %s:%s',filePath{iFile},mlrAnatDBWikiHostname,fullfile(mlrAnatDBWikiDirname,'media','mlranatdb',filename)));
+    if (status~=0)
+      disp(sprintf('(mlrAnatDBPut) !!! Could not write wiki image file: %s !!!',filename));
+    end
+  end
+end
+% print rest of file
+fprintf(f,'%s',restOfPage);
+fclose(f);
+% write it back
+[status,result] = system(sprintf('scp %s %s:%s',subjectTempFilename,mlrAnatDBWikiHostname,fullfile(mlrAnatDBWikiDirname,'pages','mlranatdb',sprintf('%s.txt',subjectID))));
+if (status~=0)
+  disp(sprintf('(mlrAnatDBPut) Could not write wiki subject file: %s',result));
+  return
+end
+% remove temporary file
+mysystem(sprintf('rm -f %s',subjectTempFilename));
 %%%%%%%%%%%%%%%%%%%
 %    addCommit    %
 %%%%%%%%%%%%%%%%%%%
@@ -344,8 +537,7 @@ sessionName = getLastDir(viewGet(v,'homeDir'));
 baseName = viewGet(v,'baseName');
 
 % get username
-[status,userName] = system('hg config ui.username');
-userName = strtrim(userName);
+userName = mlrAnatDBGetUsername;
 
 % current settings
 curROI = viewGet(v,'curROI');

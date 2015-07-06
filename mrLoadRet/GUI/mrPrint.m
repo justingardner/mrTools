@@ -70,7 +70,7 @@ else
     paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
     paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
     paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
-    paramsInfo{end+1} = {'roiLabels',0,'type=checkbox','Print ROI name at center coordinate of ROI'};
+    paramsInfo{end+1} = {'roiLabels',1,'type=checkbox','Print ROI name at center coordinate of ROI'};
     if baseType == 1
       paramsInfo{end+1} = {'smoothROI',1,'type=checkbox','Smooth the ROI boundaries'};
       paramsInfo{end+1} = {'whichROIisMask',0,'incdec=[-1 1]', 'minmax=[0 inf]', 'Which ROI to use as a mask. 0 does no masking'};
