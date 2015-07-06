@@ -164,6 +164,12 @@ for iFile = 1:length(filePath)
       else
 	% link if a file
 	[status,result] = system(sprintf('ln -f %s %s',filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile}))));
+	% if failed, then..
+	if status
+	  % try copy
+	  success = copyfile(filePath{iFile},fullfile(destDir,getLastDir(filePath{iFile})),'f');
+	  status = ~success;
+	end
       end
       % check success
       if status
@@ -251,6 +257,8 @@ end
 
 % success.
 tf = true;
+
+% the code after this is just to put stuff on to the wiki page...
 
 % wiki info
 mlrAnatDBWikiHostname = mrGetPref('mlrAnatDBWikiHostname');
@@ -397,7 +405,7 @@ if strcmp(fileType,'rois')
       roiNum = viewGet(v,'roiNum',roiName);
       if ~isempty(roiNum)
 	roi = viewGet(v,'roi',roiNum);
-	fprintf(f,'|%s |%s |%s |%s |%s |%i |%f |\n',roi.name,roi.date,roi.createdFromSession,roi.createdOnBase,mlrnum2str(roi.voxelSize),size(roi.coords,2),size(roi.coords,2)*prod(roi.voxelSize));
+	fprintf(f,'|%s |%s |%s |%s |%s |%i |%0.1f |\n',roi.name,roi.date,roi.createdFromSession,roi.createdOnBase,mlrnum2str(roi.voxelSize),size(roi.coords,2),size(roi.coords,2)*prod(roi.voxelSize));
       end
     end
   end
