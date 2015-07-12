@@ -61,6 +61,20 @@ viout = [];
 facevout = [];
 faceiout = [];
 
+if ~verLessThan('matlab','8.4')
+  userData = get(obj,'UserData');
+  % if data has been stored in the object (via our callback function surfClickLogger
+  % which is in refreshMLRDisplay) then return that, otherwise we will return empty
+  % since otherwise the code will crash below when it tries to grab undocumented
+  % view transforms from the figure 
+  if ~isempty(userData) && isfield(userData,'pos')
+    pout = userData.pos;
+    vout = userData.vertex;
+    viout = userData.vertexIndex;
+  end
+  return
+end
+
 % other variables
 ERRMSG = 'Input argument must be a valid graphics handle';
 isline = logical(0);

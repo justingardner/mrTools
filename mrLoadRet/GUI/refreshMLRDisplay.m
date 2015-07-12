@@ -24,6 +24,9 @@ baseType = viewGet(v,'baseType');
 %curCoords = viewGet(v,'curCoords');
 %disp(sprintf('(refreshMLRDisplay) DEBUG: [%i %i %i]',curCoords(1),curCoords(2),curCoords(3)));
 
+% set display surface to empty
+mlrGuiSet(v,'displaySurface',[]);
+
 % if no base then clear axis and return
 if isempty(baseNum)
   if ~isempty(fig)
@@ -424,7 +427,13 @@ else
   % get alpha
   baseAlpha = viewGet(v,'baseAlpha',baseNum);
   % display the surface
-  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
+  hSurface = patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
+  % keep the surface handle
+  mlrGuiSet(v,'displaySurface',hSurface);
+  % if the interrogator is on, then we need to reinitialize it
+  if ~verLessThan('matlab','8.4') && mrInterrogator('isactive',viewGet(v,'viewNum'))
+    mrInterrogator('init',viewGet(v,'viewNum'));
+  end
   % make sure x direction is normal to make right/right
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');
@@ -862,5 +871,4 @@ end
 
 if verbose>1,disppercent(inf);,end
 return;
-
 

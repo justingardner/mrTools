@@ -1,34 +1,54 @@
 % drawSurfaceROI.m
 %
 %        $Id$ 
-%      usage: drawSurfaceROI()
+%      usage: coords = drawSurfaceROI(v)
 %         by: Luke Robot Hospadaruk <hospada1@msu.edu>
 %       date: 11/28/09
 %    purpose: draw an ROI on 3D surface
 %
 function coords = drawSurfaceROI(view)
 
+coords = [];
 %use modified getpts function to grab the correct screen locations
 %TODO figure out how to draw stuff on the screen
 
-oneTimeWarning('drawROIOnSurface','(drawROI) Click on each boundary vertex of ROI. To finish making the ROI double click on a point that you want inside the ROI boundary',-1)
-
-hold(get(view.figure, 'CurrentAxes'), 'on');
-[xi, yi] = mlr_getpts_3d(view.figure);
-hold(get(view.figure, 'CurrentAxes'), 'off');
-
-disp('(drawSurfaceROI) Calculating key vertices');
-
-cmap = view.baseVolumes(view.curBase).coordMap;
+% get figure and make sure hold is on
+fig = viewGet(view,'figureNumber');
+hold(get(fig, 'CurrentAxes'), 'on');
 roiKeyVertices = [];
-%calculate vertex index of each clicked location
-for i=1:(numel(xi))
-	[x y s xBase yBase sBase xT yT sT vi] = getMouseCoords(view.viewNum, [xi(i) yi(i)]);
-	roiKeyVertices = [roiKeyVertices vi];
+% for surfaces in matlab past 8.4 select3d is busted, so need a new
+% method to get points which is implemented mlrGetptsSurface
+if ~verLessThan('matlab','8.4') && (viewGet(view,'baseType') == 2)
+  % tell the user what to do
+  oneTimeWarning('drawROIOnSurface','(drawROI) Click on each boundary vertex of ROI. To finish making the ROI control-click (click while holding down the control key) on a point that you want inside the ROI boundary',-1);
+  % get the display surface
+  handles = guidata(viewGet(view,'figureNumber'));
+  if isfield(handles,'displaySurface');
+    % and get user points that are clicked on
+    roiKeyVertices = mlrGetptsSurface(view,handles.displaySurface(1));
+  else
+    disp(sprintf('(drawSurfaceROI) Could not find surface'));
+    return
+  end
+else
+  % tell the user what to do
+  oneTimeWarning('drawROIOnSurface','(drawROI) Click on each boundary vertex of ROI. To finish making the ROI double click on a point that you want inside the ROI boundary',-1);
+  % old style (before mathworks broke select3d)
+  [xi, yi] = mlr_getpts_3d(view.figure);
+  % calculate key vertices from list of x, y points
+  disp('(drawSurfaceROI) Calculating key vertices');
+  for i=1:(numel(xi))
+    [x y s xBase yBase sBase xT yT sT vi] = getMouseCoords(view.viewNum, [xi(i) yi(i)]);
+    roiKeyVertices = [roiKeyVertices vi];
+  end
 end
+hold(get(fig, 'CurrentAxes'), 'off');
+
+% get coord map for base
+cmap = viewGet(view,'baseCoordMap');
 %make sure there are at least 3 perimiter and 1 interior vertices
 if(numel(roiKeyVertices) < 4)
-	mrWarnDlg('(drawSurfaceROI) Not enough vertices selected, you need at least 4');
+  mrWarnDlg('(drawSurfaceROI) Not enough vertices selected, you need at least 4');
   coords = [];
   return
 end
@@ -52,10 +72,31 @@ distances = sqrt(sum([...
 %bi-directional edges
 edgeDistances = sparse([edges(:,2);edges(:,3)], [edges(:,3);edges(:,2)], [distances;distances], size(cmap.coords, 2), size(cmap.coords, 2));
 
-
+% tell the user what is going on
 disp('(drawSurfaceROI) Searching for boundary vertices');
 
+% get shortest paths between roiKeyVertices
 [dist pred] = dijkstrap(edgeDistances, roiKeyVertices);
+
+% display vertices
+hold(get(fig, 'CurrentAxes'), 'on');
+% get the base surface
+baseSurface = viewGet(view,'baseSurface');
+% set up the list of vertices to draw - to draw back to the original
+drawVertices = [roiKeyVertices(1:end-1) roiKeyVertices(1)];
+for vertexIndex = 2:length(drawVertices)
+  % get the initial vertex to draw
+  thisVertex = drawVertices(vertexIndex);
+  % now until we find the start vertex in the predecessor list, keep drawing points
+  while(thisVertex ~= drawVertices(vertexIndex-1))
+    % plot it
+    plot3(baseSurface.vtcs(thisVertex,1),baseSurface.vtcs(thisVertex,2),baseSurface.vtcs(thisVertex,3),'r.');
+    % look up the next one in the predecessor list
+    thisVertex = pred(vertexIndex-1,thisVertex);
+  end
+end
+hold(get(fig, 'CurrentAxes'), 'off');
+drawnow
 pred(pred == -1) = 0;
 
 boundaryVertices = [];
@@ -460,13 +501,12 @@ hobj = get(get(view.figure, 'CurrentAxes'),'Children');
 % last. But if this is not always the case, then we may need
 % to do a little more work here to find the correct object
 [pos v vi] = select3d(hobj(end));
+if isempty(pos),return,end
 % convert the index to the coordinates
 
-if ~isempty(pos)
-	line_points =[line_points pos];
-	if(numel(line_points) > 3)
-		plot3(line_points(1,:), line_points(2,:), line_points(3,:),'Parent', get(view.figure, 'CurrentAxes'));
-	end
+line_points =[line_points pos];
+if(numel(line_points) > 3)
+  plot3(line_points(1,:), line_points(2,:), line_points(3,:),'Parent', get(view.figure, 'CurrentAxes'));
 end
 set([GETPTS_H1 GETPTS_H2], ...
 	'XData', x, ...

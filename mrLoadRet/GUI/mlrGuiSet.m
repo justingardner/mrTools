@@ -115,6 +115,19 @@ switch lower(field)
     set(handles.roiDisplayModePopup,'value',roiDisplayMode);
   end
   
+ case {'displaysurface'}
+  % mlrGuiSet(view,'displaySurface',h);
+  % where h is a handle to a surface. If h is empty, clears the field
+  % otherwise adds to the array of surfaces
+  if isempty(value)
+    handles.displaySurface = [];
+  else
+    if isfield(handles,'displaySurface')
+      handles.displaySurface(end+1) = value;
+    else
+      handles.displaySurface = value;
+    end
+  end
  case {'basetype'}
   % mlrGuiSet(view,'baseType',value);
   % value = 0 for regular or 1 for flat, 2 for surface
