@@ -351,8 +351,12 @@ elseif isstruct(stimfile)
     end
     % set myscreen field
     s.myscreen = stimfile;
-  elseif isfield(stimfile,'myscreen')
-    s.myscreen = stimfile.myscreen;
+  % else a variable with myscreen, task and stimulus or pRFStimImage
+  elseif isfield(stimfile,'myscreen') || isfield(stimfile,'pRFStimImage')
+    % copy fields over
+    if isfield(stimfile,'myscreen')
+      s.myscreen = stimfile.myscreen;
+    end
     if isfield(stimfile,'task')
       s.task = stimfile.task;
     end
@@ -365,17 +369,20 @@ elseif isstruct(stimfile)
   end
 end
 
-% check fields
-checkFields = {'myscreen','task','stimulus'};
-for i = 1:length(checkFields)
-  if ~isfield(s,checkFields{i})
-    stimfileName = '';
-    if isfield(s,'myscreen') && isfield(s.myscreen,'stimfile')
-      stimfileName = getLastDir(s.myscreen.stimfile);
+% if you have a pRFStimImage then don't bother with the rest of the fields
+if ~isfield(s,'pRFStimImage')
+  % check fields
+  checkFields = {'myscreen','task','stimulus'};
+  for i = 1:length(checkFields)
+    if ~isfield(s,checkFields{i})
+      stimfileName = '';
+      if isfield(s,'myscreen') && isfield(s.myscreen,'stimfile')
+	stimfileName = getLastDir(s.myscreen.stimfile);
+      end
+      disp(sprintf('(pRFGetStimImageFromStimfile) !!! Missing variable: %s in stimfile %s !!!',checkFields{i},stimfileName));
+      s = [];
+      return
     end
-    disp(sprintf('(pRFGetStimImageFromStimfile) !!! Missing variable: %s in stimfile %s !!!',checkFields{i},stimfileName));
-    s = [];
-    return
   end
 end
 
@@ -397,6 +404,10 @@ for i = 1:length(s)
     disp(sprintf('(pRFGetStimImageFromStimfile) Missing stimfile'));
     tf = false;
     return
+  end
+  % if this has a pRFStimImage then we are ok
+  if isfield(thiss,'pRFStimImage')
+    continue;
   end
   dispstr = sprintf('%s: vols=%i',thiss.myscreen.stimfile,thiss.myscreen.volnum);
   % first check if this is a retinotpy stimfile - it should
