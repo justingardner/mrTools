@@ -33,6 +33,7 @@ hdr = [];
 % replace with a mlrImageLoad call
 mlrHdr = mlrImageHeaderLoad(fname);
 hdr = mlrImageGetNiftiHeader(mlrHdr);
+if isempty(hdr),return,end
 
 % add some fields for filenames
 if strcmp(mlrHdr.ext,'hdr')

@@ -25,6 +25,10 @@ end
 
 % parse arguments
 [imageArgs otherArgs] = mlrImageParseArgs(varargin);
+if length(imageArgs) == 0
+  disp(sprintf('(mlrImageHeaderLoad) No images specified to load'));
+  return
+end
 verbose = [];
 getArgs(otherArgs,{'verbose=0'});
 

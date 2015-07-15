@@ -223,8 +223,14 @@ if isempty(anat)
   anat{1} = filename;
 end
 if isfile(anat{1})
-  initAnatomy(anat{1});
-  gSurfViewer = xformSurfaces(gSurfViewer);
+  if initAnatomy(anat{1});
+    % opened file, so xform surfaces
+    gSurfViewer = xformSurfaces(gSurfViewer);
+  else
+    % could not open file.
+    anat = {anat{2:end}};
+    gSurfViewer.anat = [];
+  end
 else
   gSurfViewer.anat = [];
 end
@@ -653,9 +659,13 @@ end
 
 % load the anatomy and view
 disppercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
-initAnatomy(params.anatomy);
+if initAnatomy(params.anatomy);
+  gSurfViewer = xformSurfaces(gSurfViewer);
+else
+  disppercent(inf);
+  return
+end
 
-gSurfViewer = xformSurfaces(gSurfViewer);
 % switch to 3D anatomy view
 global gParams
 gSurfViewer.whichSurface = 5;
@@ -992,14 +1002,19 @@ dispVolume(sliceNum);
 %%%%%%%%%%%%%%%%%%%%%
 %    initAnatomy    %
 %%%%%%%%%%%%%%%%%%%%%
-function initAnatomy(filename)
+function tf = initAnatomy(filename)
 
-
-
+tf = true;
 global gSurfViewer
 
 gSurfViewer.anat.filename = filename;
 [gSurfViewer.anat.data gSurfViewer.anat.hdr] = mlrImageReadNifti(filename);
+% could not open anat file
+if isempty(gSurfViewer.anat.data) || isempty(gSurfViewer.anat.hdr)
+  disp(sprintf('(mrSurfViewer) Unable to open canonical antomy file %s',filename));
+  tf = false;
+  return
+end
 gSurfViewer.anat.min = min(gSurfViewer.anat.data(:));
 gSurfViewer.anat.max = max(gSurfViewer.anat.data(:));
 gSurfViewer.anat.permutationMatrix = getPermutationMatrix(gSurfViewer.anat.hdr);

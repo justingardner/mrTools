@@ -45,6 +45,11 @@ if isempty(params1),cd(thispwd);return,end
 
 % Create the base
 base.hdr = mlrImageReadNiftiHeader(params1.anatomy);
+if isempty(base.hdr)
+  mrWarnDlg(sprintf('(imortSurfaceOFF) Could not load anatomy file: %s',params1.anatomy));
+  base = [];
+  return
+end
 base.name = filename;
 base.permutationMatrix = getPermutationMatrix(base.hdr);
 base.range = [-1.5 1.5];
