@@ -386,7 +386,7 @@ if baseType <= 1
     image(img,'Parent',hAxis);
     % get rotation matrix for image so that we can fix the data
     % aspect ratio properlybelow
-    theta = d2r(rotate);
+    theta = pi*rotate/180;
     m = [cos(theta) sin(theta);-sin(theta) cos(theta)];
   else  
     % for multi axis, we want to have them roated by 270
