@@ -143,6 +143,7 @@ if (baseType == 0) && (baseMultiAxis>0)
   % this hard-coded value also appears in dispBase
   camva(gui.axis,9);
   axis(gui.axis,'equal');
+  daspect(gui.axis,1./viewGet(v,'baseVoxelSize'))
   setMLRViewAngle(v,gui.axis);
   
 else
