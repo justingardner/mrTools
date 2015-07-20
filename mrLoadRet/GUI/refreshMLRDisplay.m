@@ -384,6 +384,10 @@ if baseType <= 1
   if isequal(0,viewGet(v,'baseMultiAxis',baseNum))
     set(fig,'Renderer','painters')
     image(img,'Parent',hAxis);
+    % get rotation matrix for image so that we can fix the data
+    % aspect ratio properlybelow
+    theta = d2r(rotate);
+    m = [cos(theta) sin(theta);-sin(theta) cos(theta)];
   else  
     % for multi axis, we want to have them roated by 270
     % which apparently cannot be done using view with 2D images. 
@@ -391,13 +395,24 @@ if baseType <= 1
     % all the images in the correct orientation
     % without having to manually rotate 270 degrees
     % so we display them as textures on planer surfaces and
-    % display those rotated correctly usinv view
+    % display those rotated correctly using view
     set(fig,'Renderer','OpenGL');
     imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
     set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
     view(hAxis,-90,90);
     set(hAxis,'yDir','reverse');
+    % set the rotation matrix for the data aspect ratio to identity
+    % since we do not do any rotation here.
+    m = eye(2);
   end
+  % get data aspect ratio from voxel sizes
+  baseVoxelSize = viewGet(v,'baseVoxelSize',baseNum);
+  baseVoxelSize = baseVoxelSize(setdiff([1 2 3],sliceIndex));
+  % rotate according to the rotation of the image
+  baseVoxelSize = abs(m*baseVoxelSize(:));
+  % now set the data aspect ratio so that images showup
+  % with the aspect ratio appropriately for the voxel size
+  daspect(hAxis,[baseVoxelSize(:)'/min(baseVoxelSize) 1]);
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms
@@ -448,11 +463,11 @@ else
   camva(hAxis,9);
   % set the view angle
   setMLRViewAngle(v);
+  axis(hAxis,'image');
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(hAxis,'off');
-axis(hAxis,'image');
 if verbose>1,disppercent(inf);,end
 
 % Display colorbar
