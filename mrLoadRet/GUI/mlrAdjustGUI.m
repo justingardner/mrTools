@@ -110,7 +110,7 @@ switch command
  case {'remove'}
   switch varargin{1}
     case {'menu'}
-     removeMenu(varargin{2},menuControls,verbose);
+     removeMenu(cellArray(varargin{2}),menuControls,verbose);
   end
  case {'get'}
   % return handle, check menu items and ui controls
