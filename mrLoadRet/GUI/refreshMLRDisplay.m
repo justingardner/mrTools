@@ -406,14 +406,18 @@ if baseType <= 1
     % since we do not do any rotation here.
     m = eye(2);
   end
-  % get data aspect ratio from voxel sizes
-  baseVoxelSize = viewGet(v,'baseVoxelSize',baseNum);
-  baseVoxelSize = baseVoxelSize(setdiff([1 2 3],sliceIndex));
-  % rotate according to the rotation of the image
-  baseVoxelSize = abs(m*baseVoxelSize(:));
-  % now set the data aspect ratio so that images showup
-  % with the aspect ratio appropriately for the voxel size
-  daspect(hAxis,[baseVoxelSize(:)'/min(baseVoxelSize) 1]);
+  % for anatomies to respect their rotation aspect ratios
+  % this code fixes things - but should not do this for flats
+  if baseType == 0
+    % get data aspect ratio from voxel sizes
+    baseVoxelSize = viewGet(v,'baseVoxelSize',baseNum);
+    baseVoxelSize = baseVoxelSize(setdiff([1 2 3],sliceIndex));
+    % rotate according to the rotation of the image
+    baseVoxelSize = abs(m*baseVoxelSize(:));
+    % now set the data aspect ratio so that images showup
+    % with the aspect ratio appropriately for the voxel size
+    daspect(hAxis,[baseVoxelSize(:)'/min(baseVoxelSize) 1]);
+  end
 else
   % set the renderer to OpenGL, this makes rendering
   % *much* faster -- from about 30 seconds to 30ms

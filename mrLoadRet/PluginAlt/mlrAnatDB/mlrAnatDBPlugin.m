@@ -25,7 +25,8 @@ switch action
     mlrAdjustGUI(v,'add','menu','Anat DB Preferences','/File/Anat DB/','Callback',@mlrAnatDBPreferences);
     mlrAdjustGUI(v,'add','menu','Load ROIs from Anat DB','/File/Anat DB/Anat DB Preferences','Callback',@mlrAnatDBLoadROIs,'Separator','on');
     mlrAdjustGUI(v,'add','menu','Load Base Anatomies from Anat DB','/File/Anat DB/Load ROIs from Anat DB','Callback',@mlrAnatDBLoadBaseAnatomies);
-    mlrAdjustGUI(v,'add','menu','Add Session to Anat DB','/File/Anat DB/Load Base Anatomies from Anat DB','Callback',@mlrAnatDBAddSession,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Import Surface from Anat DB','/File/Anat DB/Load Base Anatomies from Anat DB','Callback',@mlrAnatDBImportSurface,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Add Session to Anat DB','/File/Anat DB/Import Surface from Anat DB','Callback',@mlrAnatDBAddSession,'Separator','on');
     mlrAdjustGUI(v,'add','menu','Add ROIs to Anat DB','/File/Anat DB/Add Session to Anat DB','Callback',@mlrAnatDBAddROIs);
     mlrAdjustGUI(v,'add','menu','Add Base Anatomies to Anat DB','/File/Anat DB/Add ROIs to Anat DB','Callback',@mlrAnatDBAddBaseAnatomies);
     mlrAdjustGUI(v,'add','menu','Examine ROI in Anat DB','/File/Anat DB/Add Base Anatomies to Anat DB','Callback',@mlrAnatDBExamineROI,'Separator','on');
@@ -280,6 +281,42 @@ v = loadAnat(v,[],fullfile(localRepoSubject,'mlrBaseAnatomies'));
 
 % and refresh
 refreshMLRDisplay(v);
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatDBImportSurface    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatDBImportSurface(hObject,eventdata)
+
+% code-snippet to get the view from the hObject variable. 
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% Check that we have mercurial installed correctly
+if ~mlrAnatDBCheckHg,return,end
+
+% get subject ID
+subjectID = mlrAnatDBSubjectID(v);
+if isempty(subjectID),return,end
+
+% get the local repos
+localRepoSubject = mlrAnatDBGetRepo(subjectID);
+if isempty(localRepoSubject),return,end
+
+% get the surface
+filterspec = {'*.off','Off Surface file (*.off)'};
+title = 'Choose outer surface file';
+pathStr = mlrGetPathStrDialog(fullfile(localRepoSubject,'surfaces'),title,filterspec,'off');
+
+% open the path up
+if ~isempty(pathStr)
+  base = importSurfaceOFF(pathStr);
+  if ~isempty(base)
+    v = viewSet(v, 'newbase', base);
+    refreshMLRDisplay(v);
+  end
+end
+
 
 
 %%%%%%%%%%%%%%%%%%
