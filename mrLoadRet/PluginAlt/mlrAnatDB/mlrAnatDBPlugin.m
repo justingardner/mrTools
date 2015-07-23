@@ -59,6 +59,7 @@ if isempty(centralRepo) || isempty(localRepoTop)
   % preferences set
   mlrAdjustGUI(v,'set','Load ROIs from Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Load Base Anatomies from Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Import Surface from Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','off');
@@ -71,6 +72,7 @@ if ~mlrAnatDBInLocalRepo(v)
   % if not, then only allow add session and examine ROI
   mlrAdjustGUI(v,'set','Load ROIs from Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Load Base Anatomies from Anat DB','Enable','on');
+  mlrAdjustGUI(v,'set','Import Surface from Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
   mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','off');
@@ -84,6 +86,7 @@ else
   % contingent on whether there are ROIs loaded and so forth
   mlrAdjustGUI(v,'set','Load ROIs from Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Load Base Anatomies from Anat DB','Enable','on');
+  mlrAdjustGUI(v,'set','Import Surface from Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','off');
 
   % see if any bases are loaded
