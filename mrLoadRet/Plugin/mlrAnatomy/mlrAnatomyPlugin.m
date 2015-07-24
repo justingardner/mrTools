@@ -46,6 +46,9 @@ switch action
     % ROI controls
     %mlrAdjustGUI(v,'add','control','roiBaseListBox','panel','Multiple base display','style','listbox','position', [0.02    0.1    0.96   0.38 ],'Callback',@roiListboxSelect,'Max',2);
 
+    % add a menu item to import rois from freesurfer
+    mlrAdjustGUI(v,'add','menu','Import Freesurfer Label','/File/ROI/Import','Callback',@mlrAnatomyImportFreesurferLabel);
+    
     % add the callback that will tell the above listbox when new
     % bases have been added
     v = viewSet(v,'callback','baseChange',@mlrAnatomyBaseChange);
@@ -374,3 +377,14 @@ roiListbox = hObject;
 
 % get current selection
 selectedBases = get(roiListbox,'Value');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mlrAnatomyImportFreesurferLabel   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomyImportFreesurferLabel(hObject,eventdata)
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+disp(sprintf('(mlrAnatomyImportFreesurferLabel) Not yet implemented'));
+return
