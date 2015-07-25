@@ -283,9 +283,9 @@ end
 % for surface mode and new matlab turn off callback on display surface
 if ~verLessThan('matlab','8.4') && (viewGet(v,'baseType') == 2)
   % get the handle for the patch
-  handles = guidata(fignum);
-  if isfield(handles,'displaySurface')
-    set(handles.displaySurface(1),'ButtonDownFcn',[]);
+  h = viewGet(v,'baseHandle');
+  if ~isempty(h)
+    set(h,'ButtonDownFcn',[]);
   end
 end
 
@@ -359,17 +359,17 @@ end
 % section here, remove the endHandler section which unlinks this handler.
 if ~verLessThan('matlab','8.4') && (viewGet(v,'baseType') == 2)
   % get the handle for the patch
-  handles = guidata(fignum);
-  if isfield(handles,'displaySurface');
+  h = viewGet(v,'baseHandle');
+  if ~isempty(h)
     % set the first in the list - note that there may be more if 
     % we are displaying multiple bases at once, but for now we ignore
     % all those "alt bases" and just respond to clicks on the main base
-    set(handles.displaySurface(1),'ButtonDownFcn',@mrInterrogatorSurfaceCallback);
+    set(h,'ButtonDownFcn',@mrInterrogatorSurfaceCallback);
     % set the viewNum in the handles
-    userData = get(handles.displaySurface(1),'UserData');
+    userData = get(h,'UserData');
     userData.viewNum = viewNum;
-    set(handles.displaySurface(1),'UserData',userData);
-    guidata(fignum,handles);
+    set(h,'UserData',userData);
+    v = viewSet(v,'baseHandle',h);
   end
   % set the other callbacks
   set(fignum,'WindowButtonMotionFcn',sprintf('mrInterrogator(''mouseMove'',%i)',viewNum));

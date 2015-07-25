@@ -24,9 +24,6 @@ baseType = viewGet(v,'baseType');
 %curCoords = viewGet(v,'curCoords');
 %disp(sprintf('(refreshMLRDisplay) DEBUG: [%i %i %i]',curCoords(1),curCoords(2),curCoords(3)));
 
-% set display surface to empty
-mlrGuiSet(v,'displaySurface',[]);
-
 % if no base then clear axis and return
 if isempty(baseNum)
   if ~isempty(fig)
@@ -384,7 +381,8 @@ if baseType <= 1
   % Just draw with img for regular image,
   if isequal(0,viewGet(v,'baseMultiAxis',baseNum))
     set(fig,'Renderer','painters')
-    image(img,'Parent',hAxis);
+    h = image(img,'Parent',hAxis);
+    v = viewSet(v,'baseHandle',h,baseNum);
     % get rotation matrix for image so that we can fix the data
     % aspect ratio properlybelow
     theta = pi*rotate/180;
@@ -400,6 +398,7 @@ if baseType <= 1
     set(fig,'Renderer','OpenGL');
     imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
     set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
+    v = viewSet(v,'baseHandle',imgSurface,baseNum);
     view(hAxis,-90,90);
     set(hAxis,'yDir','reverse');
     % set the rotation matrix for the data aspect ratio to identity
@@ -456,7 +455,7 @@ else
   % display the surface
   hSurface = patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
   % keep the surface handle
-  mlrGuiSet(v,'displaySurface',hSurface);
+  v = viewSet(v,'baseHandle',hSurface,baseNum);
   % if the interrogator is on, then we need to reinitialize it
   if ~verLessThan('matlab','8.4') && mrInterrogator('isactive',viewGet(v,'viewNum'))
     mrInterrogator('init',viewGet(v,'viewNum'));

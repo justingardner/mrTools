@@ -21,10 +21,10 @@ if ~verLessThan('matlab','8.4') && (viewGet(v,'baseType') == 2)
   % tell the user what to do
   oneTimeWarning('drawROIOnSurface','(drawROI) Click on each boundary vertex of ROI. To finish making the ROI control-click (click while holding down the control key) on a point that you want inside the ROI boundary',-1);
   % get the display surface
-  handles = guidata(viewGet(v,'figureNumber'));
-  if isfield(handles,'displaySurface');
+  h = viewGet(v,'baseHandle');
+  if ~isempty(h)
     % and get user points that are clicked on
-    roiKeyVertices = mlrGetptsSurface(v,handles.displaySurface(1));
+    roiKeyVertices = mlrGetptsSurface(v,h);
   else
     disp(sprintf('(drawSurfaceROI) Could not find surface'));
     return

@@ -91,7 +91,7 @@ if (userData.n && (userData.x(end) == e.IntersectionPoint(1)) && (userData.y(end
     % plot the points
     userData.h = plot3(userData.x([1:end-1 1]),userData.y([1:end-1 1]),userData.z([1:end-1 1]),'wo','Parent', get(userData.f, 'CurrentAxes'),'MarkerSize',6,'Color','w','MarkerFaceColor','w');
     % plot the path between this point and the first point
-    pathVertices = mlrGetPathBetween(userData.baseSurface.tris,userData.vertices(end-1),userData.vertices(1));
+    pathVertices = mlrGetPathBetween(userData.baseSurface,userData.vertices(end-1),userData.vertices(1));
     userData.hPath = plot3(userData.baseSurface.vtcs(pathVertices,1),userData.baseSurface.vtcs(pathVertices,2),userData.baseSurface.vtcs(pathVertices,3),'w-');
     drawnow;
   end
@@ -102,7 +102,7 @@ else
   userData.h = plot3(userData.x,userData.y,userData.z,'wo','Parent', get(userData.f, 'CurrentAxes'),'MarkerSize',6,'Color','w','MarkerFaceColor','w');
   if userData.n > 1
     % plot the path between this point and the last point
-    pathVertices = mlrGetPathBetween(userData.baseSurface.tris,userData.vertices(end-1),userData.vertices(end));
+    pathVertices = mlrGetPathBetween(userData.baseSurface,userData.vertices(end-1),userData.vertices(end));
     userData.hPath = plot3(userData.baseSurface.vtcs(pathVertices,1),userData.baseSurface.vtcs(pathVertices,2),userData.baseSurface.vtcs(pathVertices,3),'w-');
     drawnow;
   end

@@ -1458,6 +1458,15 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).data;
     end
+  case {'basehandle'}
+    % basedata = viewGet(view,'baseHandle',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).h;
+      % set to empty if handle is stale 
+      if ~ishandle(val),val = [];end
+    end
   case {'basehdr'}
     % basedata = viewGet(view,'basehdr',[baseNum])
     b = getBaseNum(view,varargin);

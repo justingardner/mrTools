@@ -1015,6 +1015,15 @@ switch lower(param)
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).alpha = alpha;
     end
+ 
+ case{'basehandle'}
+    % view = viewSet(view,'baseHandle',h,[baseNum]);
+    h = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).h = h;
+    end
 
  case{'basemultidisplay'}
     % view = viewSet(view,'baseMultiDisplay',multiDisplay,[baseNum]);
