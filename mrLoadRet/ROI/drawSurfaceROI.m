@@ -10,7 +10,6 @@ function coords = drawSurfaceROI(v)
 
 coords = [];
 %use modified getpts function to grab the correct screen locations
-%TODO figure out how to draw stuff on the screen
 
 % get figure and make sure hold is on
 fig = viewGet(v,'figureNumber');

@@ -4029,6 +4029,8 @@ switch lower(param)
     if ~isempty(fig)
       handles = guidata(fig);
       val = handles.coords;
+      % never let coords be 0
+      val(val==0) = 1;
     else
       val = [];
     end

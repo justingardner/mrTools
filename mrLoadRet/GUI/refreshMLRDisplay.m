@@ -412,11 +412,18 @@ if baseType <= 1
     % get data aspect ratio from voxel sizes
     baseVoxelSize = viewGet(v,'baseVoxelSize',baseNum);
     baseVoxelSize = baseVoxelSize(setdiff([1 2 3],sliceIndex));
-    % rotate according to the rotation of the image
-    baseVoxelSize = abs(m*baseVoxelSize(:));
+    % rotate axis according to the rotation of the image
+    xAxisRotated = m*[baseVoxelSize(1) 0]';
+    yAxisRotated = m*[0 baseVoxelSize(2)]';
+    % get aspect ratio in rotated frame. Still not quite sure
+    % this works but the idea is to take the unit vectors for the
+    % x and y axis rotated (from above) and see which is larger the
+    % spread between them, or the distance from 0. And take that
+    % as how much you have to scale each axis by.
+    aspectRatio = max(abs(max(xAxisRotated,yAxisRotated)),abs(xAxisRotated-yAxisRotated));
     % now set the data aspect ratio so that images showup
     % with the aspect ratio appropriately for the voxel size
-    daspect(hAxis,[baseVoxelSize(:)'/min(baseVoxelSize) 1]);
+    daspect(hAxis,[aspectRatio' 1]);
   end
 else
   % set the renderer to OpenGL, this makes rendering
