@@ -61,10 +61,12 @@ drawVertices = [roiKeyVertices(1:end-1) roiKeyVertices(1)];
 % list of all edge vertices
 edgeVertices = [];
 for vertexIndex = 2:length(drawVertices)
-  pathVertices = mlrGetPathBetween(baseSurface.tris,drawVertices(vertexIndex-1),drawVertices(vertexIndex));
+  pathVertices = mlrGetPathBetween(baseSurface,drawVertices(vertexIndex-1),drawVertices(vertexIndex));
   % keep list of all vertices
   edgeVertices = [edgeVertices pathVertices];
 end
+% plot the edge
+plot3(baseSurface.vtcs(edgeVertices,1),baseSurface.vtcs(edgeVertices,2),baseSurface.vtcs(edgeVertices,3),'r.');
 
 % start list
 vList = roiKeyVertices(end);
@@ -83,11 +85,13 @@ while(length(vList)>lastLen)
   [intersectTris,dummy] = ind2sub(trisSize,intersectTris);
   intersectTris = unique(intersectTris);
   % now we know all triangles that intersect so find all neighboring points
+  oldVList = vList;
   vList = unique(tris(sub2ind(trisSize,repmat(intersectTris,1,3),repmat([1 2 3],length(intersectTris),1))));
   % remove edge vertices
   vList = setdiff(vList,edgeVertices);
   % plot
-  plot3(baseSurface.vtcs(vList,1),baseSurface.vtcs(vList,2),baseSurface.vtcs(vList,3),'w.');
+  drawList = setdiff(vList,oldVList);
+  plot3(baseSurface.vtcs(drawList,1),baseSurface.vtcs(drawList,2),baseSurface.vtcs(drawList,3),'w.');
   drawnow;
 end
 % add back edge vertices

@@ -497,22 +497,25 @@ b.coordMap.innerVtcs = coords;
 b.coordMap.outerVtcs = coords;
 b.type = 2;
 
-% now make all the triangles
-tris = [];triNum = 0;
-for iRow = 1:canonicalDims(1)-1
-  for iCol = 1:canonicalDims(2)-1
-    triNum = triNum+1;
-    tris(triNum,1) = (iRow-1)*canonicalDims(2) + iCol;
-    tris(triNum,2) = (iRow-1)*canonicalDims(2) + iCol+1;
-    tris(triNum,3) = iRow*canonicalDims(2) + iCol;
-    triNum = triNum+1;
-    tris(triNum,1) = (iRow-1)*canonicalDims(2) + iCol+1;
-    tris(triNum,2) = iRow*canonicalDims(2) + iCol;
-    tris(triNum,3) = iRow*canonicalDims(2) + iCol+1;
-  end
-  disppercent(iRow/canonicalDims(1));
-end
-b.coordMap.tris = tris;
+% now connect all these vertices with appropriat triangles
+width = canonicalDims(1);
+height = canonicalDims(2);
+
+% from all the triangles that are the upper/left corners
+triCoords1a = repmat(1:height-1,width-1,1)+repmat((0:width-2)*height,height-1,1)';
+triCoords2a = repmat(2:height,width-1,1)+repmat((0:width-2)*height,height-1,1)';
+triCoords3a = repmat(1:height-1,width-1,1)+repmat((1:width-1)*height,height-1,1)';
+
+% from all the triangles that are the bottom/right corners
+triCoords1b = repmat(2:height,width-1,1)+repmat((0:width-2)*height,height-1,1)';
+triCoords2b = repmat(1:height-1,width-1,1)+repmat((1:width-1)*height,height-1,1)';
+triCoords3b = repmat(2:height,width-1,1)+repmat((1:width-1)*height,height-1,1)';
+
+% now put those into the coordmap
+b.coordMap.tris = [];
+b.coordMap.tris(:,1) = [triCoords1a(:);triCoords1b(:)];
+b.coordMap.tris(:,2) = [triCoords2a(:);triCoords2b(:)];
+b.coordMap.tris(:,3) = [triCoords3a(:);triCoords3b(:)];
 
 % now get the data for the points
 b.data = interp3(canonical.data,coords(:,2),coords(:,1),coords(:,3),'linear',0);
