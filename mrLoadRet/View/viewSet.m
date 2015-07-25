@@ -782,7 +782,7 @@ switch lower(param)
     if (curBase > 0) & (curBase <= numBases)
       % surfaces (or 3D's when multiaxis are shown) 
       % are the ones that can be tilted.
-      if (baseType == 2) || ((baseType==0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy')))
+      if (baseType == 2) || ((baseType==0) && (viewGet(view,'baseMultiAxis')>0))
 	view.baseVolumes(curBase).tilt = val;
 	mlrGuiSet(view,'baseTilt',val);
       end
@@ -1033,6 +1033,8 @@ switch lower(param)
       view.baseVolumes(baseNum).multiAxis = val;
       % update the rotate slider
       mlrGuiSet(view,'rotate',viewGet(view,'baseRotate',curBase));
+      % update the tilt slider
+      mlrGuiSet(view,'baseTilt',viewGet(view,'baseTilt',curBase));
     end
 
   case{'basedisplayoverlay'}

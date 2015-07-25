@@ -4143,7 +4143,7 @@ switch lower(param)
       val = 0;
       % normally does not apply to inplanes, but if we are displaying
       % all planes of anatomy then it applies to the 3D slice view
-      if isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+      if viewGet(view,'baseMultiAxis')>0
 	fig = viewGet(view,'fignum');
 	if ~isempty(fig)
 	  handles = guidata(fig);

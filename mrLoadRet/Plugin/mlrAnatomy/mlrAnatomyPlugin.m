@@ -48,6 +48,9 @@ switch action
 
     % add a menu item to import rois from freesurfer
     mlrAdjustGUI(v,'add','menu','Import Freesurfer Label','/File/ROI/Import','Callback',@mlrAnatomyImportFreesurferLabel);
+
+    % add a menu item to make a planer base anatomy
+    mlrAdjustGUI(v,'add','menu','Make plane base','/File/Base anatomy/Import surface','Callback',@mlrAnatomyMakePlaneBase,'Separator','on');
     
     % add the callback that will tell the above listbox when new
     % bases have been added
@@ -388,3 +391,134 @@ v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
 disp(sprintf('(mlrAnatomyImportFreesurferLabel) Not yet implemented'));
 return
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mlrAnatomMakePlaneBase   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomyMakePlaneBase(hObject,eventdata)
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% find possible canonicals
+baseNames = {};
+baseNumVoxels = [];
+for iBase = 1:viewGet(v,'numBase')
+  if viewGet(v,'baseType',iBase) == 0
+    baseNames{end+1} = viewGet(v,'baseName',iBase);
+    baseNumVoxels(end+1) = prod(viewGet(v,'baseDims',iBase));
+  end
+end
+if isempty(baseNames)
+  mrWarnDlg('(mlrAnatomyMakePlaneBase) Could not find any volume anatomies to make a plane base from.');
+  return
+end
+
+% put the base with the largest number of voxels on top of list (this should
+% be the canonical)
+[maxVoxels maxIndex] = max(baseNumVoxels);
+baseNames = putOnTopOfList(baseNames{maxIndex},baseNames);
+
+if length(baseNames) > 1
+  % now put up a dialog box for subject to select parameters of plane
+  paramsInfo = {};
+  paramsInfo{end+1} = {'baseName',baseNames,'Select the name of the base that you want to use to create the plane base from. This will reslice that base to make the desired plane'};
+
+  % choose parameters
+  params = mrParamsDialog(paramsInfo,'Choose base to make plane from');
+  if isempty(params),return,end
+else
+  params.baseName = baseNames{1};
+end
+
+disppercent(-inf,'(mlrAnatomyMakePlaneBase) Making plane');
+
+% get the base that we are going to make this plane from
+canonical = viewGet(v,'base',viewGet(v,'baseNum',params.baseName));
+canonicalDims = size(canonical.data);
+
+% copy info into to create this new base
+b = canonical;
+b.coordMap.dims = canonicalDims;
+b.coordMap.innerSurfaceFileName = '';
+b.coordMap.innerCoordsFileName = '';
+b.coordMap.outerSurfaceFileName = '';
+b.coordMap.outerCoordsFileName = '';
+b.coordMap.curvFileName = '';
+b.coordMap.anatFileName = canonical.name;
+b.coordMap.path = '';
+
+% get center
+xCenter = 0;yCenter = 00;zCenter = 0;
+
+% make rotation matrix
+params.xyRot = 0;
+params.yzRot = 00;
+params.xzRot = 0;
+c = cos(d2r(params.xyRot));
+s = sin(d2r(params.xyRot));
+rotxy = [c -s 0 0;s  c 0 0;0  0 1 0;0  0 0 1];
+c = cos(d2r(params.yzRot));
+s = sin(d2r(params.yzRot));
+rotyz = [1  0  0 0;0  c -s 0;0  s  c 0;0  0  0 1];
+c = cos(d2r(params.xzRot));
+s = sin(d2r(params.xzRot));
+rotxz = [c  0 -s 0;0  1  0 0;s  0  c 0;0  0  0  1];
+r = rotxy*rotyz*rotxz;
+
+% now we make the surface positions
+x = 1:canonicalDims(2);
+y = 1:canonicalDims(1);
+[x y] = meshgrid(x,y);
+z = ones(size(x))*round(canonicalDims(3)/2);
+x = x';y = y';z = z';
+
+% now get coordinates (xy swaping because of image coordinates)
+% also move center to user specified center
+coords = [y(:)+xCenter x(:)+yCenter z(:)+zCenter];
+% make homogenous and rotate according to rotation matrix
+coords(:,1) = coords(:,1) - canonicalDims(1)/2;
+coords(:,2) = coords(:,2) - canonicalDims(2)/2;
+coords(:,3) = coords(:,3) - canonicalDims(3)/2;
+coords(:,4) = 1;
+coords = r * coords';
+coords = coords(1:3,:)';
+coords(:,1) = coords(:,1) + canonicalDims(1)/2;
+coords(:,2) = coords(:,2) + canonicalDims(2)/2;
+coords(:,3) = coords(:,3) + canonicalDims(3)/2;
+
+% and put them into the coordMap strucutre
+b.coordMap.coords(1,:,1,1) = coords(:,1);
+b.coordMap.coords(1,:,1,2) = coords(:,2);
+b.coordMap.coords(1,:,1,3) = coords(:,3);
+b.coordMap.outerCoords = b.coordMap.coords;
+b.coordMap.innerCoords = b.coordMap.coords;
+b.coordMap.innerVtcs = coords;
+b.coordMap.outerVtcs = coords;
+b.type = 2;
+
+% now make all the triangles
+tris = [];triNum = 0;
+for iRow = 1:canonicalDims(1)-1
+  for iCol = 1:canonicalDims(2)-1
+    triNum = triNum+1;
+    tris(triNum,1) = (iRow-1)*canonicalDims(2) + iCol;
+    tris(triNum,2) = (iRow-1)*canonicalDims(2) + iCol+1;
+    tris(triNum,3) = iRow*canonicalDims(2) + iCol;
+    triNum = triNum+1;
+    tris(triNum,1) = (iRow-1)*canonicalDims(2) + iCol+1;
+    tris(triNum,2) = iRow*canonicalDims(2) + iCol;
+    tris(triNum,3) = iRow*canonicalDims(2) + iCol+1;
+  end
+  disppercent(iRow/canonicalDims(1));
+end
+b.coordMap.tris = tris;
+
+% now get the data for the points
+b.data = interp3(canonical.data,coords(:,2),coords(:,1),coords(:,3),'linear',0);
+b.data = b.data(:)';
+b.name = 'plane';
+v = viewSet(v,'newBase',b);
+refreshMLRDisplay(v);
+disppercent(inf);
+
