@@ -41,7 +41,22 @@ switch action
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaText','panel','Multiple base display','style','text','position', [0.01    0.6    0.2   0.07 ],'String','Overlay Alpha');
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaSlider','panel','Multiple base display','style','slider','position', [0.22    0.6    0.57   0.07 ],'String','Alpha','SliderStep',[0.1 0.25],'Callback',@multiBaseOverlayAlpha);
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaEdit','panel','Multiple base display','style','edit','position', [0.8    0.6    0.19   0.07 ],'Callback',@multiBaseOverlayAlpha);
-    
+
+    % add plane rotation
+    mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundText','panel','Multiple base display','style','text','position', [0.01    0.48    0.2   0.07 ],'String','Rotate around');
+    mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundX','panel','Multiple base display','style','radio','position', [0.22    0.52    0.15   0.07 ],'String','X','Callback',@mlrAnatomyRotateAround);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundY','panel','Multiple base display','style','radio','position', [0.42    0.52    0.15   0.07 ],'String','Y','Callback',@mlrAnatomyRotateAround);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundZ','panel','Multiple base display','style','radio','position', [0.62    0.52    0.15   0.07 ],'String','Z','Callback',@mlrAnatomyRotateAround);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundSlider','panel','Multiple base display','style','slider','position', [0.22    0.44    0.57   0.07 ],'String','Rotate','SliderStep',[1 15]/360,'Callback',@mlrAnatomyRotateAround,'Max',360,'Min',0);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundEdit','panel','Multiple base display','style','edit','position', [0.8    0.44    0.19   0.07 ],'Callback',@mlrAnatomyRotateAround);
+
+    % add plane center position
+    mlrAdjustGUI(v,'add','control','mlrAnatomyCenterText','panel','Multiple base display','style','text','position', [0.01    0.3    0.2   0.07 ],'String','Center');
+    mlrAdjustGUI(v,'add','control','mlrAnatomyCenterX','panel','Multiple base display','style','radio','position', [0.22    0.36    0.15   0.07 ],'String','X','Callback',@mlrAnatomyCenter);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyCenterY','panel','Multiple base display','style','radio','position', [0.42    0.36    0.15   0.07 ],'String','Y','Callback',@mlrAnatomyCenter);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyCenterZ','panel','Multiple base display','style','radio','position', [0.62    0.36    0.15   0.07 ],'String','Z','Callback',@mlrAnatomyCenter);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyCenterSlider','panel','Multiple base display','style','slider','position', [0.22    0.28    0.57   0.07 ],'String','Rotate','SliderStep',[1 10]/200,'Callback',@mlrAnatomyCenter,'Max',100,'Min',-100);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyCenterEdit','panel','Multiple base display','style','edit','position', [0.8    0.28    0.19   0.07 ],'Callback',@mlrAnatomyCenter);
 
     % ROI controls
     %mlrAdjustGUI(v,'add','control','roiBaseListBox','panel','Multiple base display','style','listbox','position', [0.02    0.1    0.96   0.38 ],'Callback',@roiListboxSelect,'Max',2);
@@ -50,7 +65,7 @@ switch action
     mlrAdjustGUI(v,'add','menu','Import Freesurfer Label','/File/ROI/Import','Callback',@mlrAnatomyImportFreesurferLabel);
 
     % add a menu item to make a planer base anatomy
-    mlrAdjustGUI(v,'add','menu','Make plane base','/File/Base anatomy/Import surface','Callback',@mlrAnatomyMakePlaneBase,'Separator','on');
+    mlrAdjustGUI(v,'add','menu','Make plane','/File/Base anatomy/Import surface','Callback',@mlrAnatomyMakePlaneBase,'Separator','on');
     
     % add the callback that will tell the above listbox when new
     % bases have been added
@@ -160,6 +175,49 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
   % get base properties
   base = viewGet(v,'base',baseNum);
 
+  %  if the base is not a plane, then turn off all the plane controls
+  if isempty(base.plane)
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundText','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundX','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundY','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundZ','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundSlider','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundEdit','Visible','off');
+  
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterText','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterX','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterY','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterZ','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterSlider','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterEdit','Visible','off');
+else
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundText','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundX','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundY','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundZ','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundSlider','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundEdit','Visible','on');
+    % set the radio to default to x
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundX','Value',1);
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundY','Value',0);
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundZ','Value',0);
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundSlider','Value',base.plane.xRot);
+    mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundEdit','String',sprintf('%0.1f',base.plane.xRot));
+  
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterText','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterX','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterY','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterZ','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterSlider','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterEdit','Visible','on');
+    % set the radio to default to x
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterX','Value',1);
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterY','Value',0);
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterZ','Value',0);
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterSlider','Value',base.plane.x);
+    mlrAdjustGUI(v,'set','mlrAnatomyCenterEdit','String',sprintf('%0.1f',base.plane.x));
+end
+  
   % set the various properties
   mlrAdjustGUI(v,'set','multiBaseCheckbox','Value',base.multiDisplay);
   % set alpha
@@ -431,14 +489,13 @@ else
   params.baseName = baseNames{1};
 end
 
-disppercent(-inf,'(mlrAnatomyMakePlaneBase) Making plane');
-
 % get the base that we are going to make this plane from
 canonical = viewGet(v,'base',viewGet(v,'baseNum',params.baseName));
-canonicalDims = size(canonical.data);
 
 % copy info into to create this new base
 b = canonical;
+b.plane.canonical = canonical.data;
+canonicalDims = size(b.plane.canonical);
 b.coordMap.dims = canonicalDims;
 b.coordMap.innerSurfaceFileName = '';
 b.coordMap.innerCoordsFileName = '';
@@ -447,35 +504,53 @@ b.coordMap.outerCoordsFileName = '';
 b.coordMap.curvFileName = '';
 b.coordMap.anatFileName = canonical.name;
 b.coordMap.path = '';
+b.type = 2;
 
-% get center
-xCenter = 0;yCenter = 00;zCenter = 0;
+% set default position and rotation
+b.plane.x = 0;b.plane.y = 0;b.plane.z = 0;
+b.plane.zRot = 0;b.plane.yRot = 0;b.plane.xRot = 0;
+b.plane.width = canonicalDims(2);
+b.plane.height = canonicalDims(1);
+
+% calculate the coordinates and get resliced data
+b = calcPlaneCoords(b);
+
+% set name
+b.name = sprintf('%sPlane',canonical.name);
+
+% and install the base
+v = viewSet(v,'newBase',b);
+refreshMLRDisplay(v);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%    calcPlaneCoords    %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function b = calcPlaneCoords(b)
+
+% get dimensions of canonical
+canonicalDims = size(b.plane.canonical);
 
 % make rotation matrix
-params.xyRot = 0;
-params.yzRot = 00;
-params.xzRot = 0;
-c = cos(d2r(params.xyRot));
-s = sin(d2r(params.xyRot));
+c = cos(d2r(b.plane.zRot));
+s = sin(d2r(b.plane.zRot));
 rotxy = [c -s 0 0;s  c 0 0;0  0 1 0;0  0 0 1];
-c = cos(d2r(params.yzRot));
-s = sin(d2r(params.yzRot));
+c = cos(d2r(b.plane.xRot));
+s = sin(d2r(b.plane.xRot));
 rotyz = [1  0  0 0;0  c -s 0;0  s  c 0;0  0  0 1];
-c = cos(d2r(params.xzRot));
-s = sin(d2r(params.xzRot));
+c = cos(d2r(b.plane.yRot));
+s = sin(d2r(b.plane.yRot));
 rotxz = [c  0 -s 0;0  1  0 0;s  0  c 0;0  0  0  1];
 r = rotxy*rotyz*rotxz;
 
 % now we make the surface positions
-x = 1:canonicalDims(2);
-y = 1:canonicalDims(1);
+x = 1:b.plane.width;
+y = 1:b.plane.height;
 [x y] = meshgrid(x,y);
 z = ones(size(x))*round(canonicalDims(3)/2);
 x = x';y = y';z = z';
 
 % now get coordinates (xy swaping because of image coordinates)
-% also move center to user specified center
-coords = [y(:)+xCenter x(:)+yCenter z(:)+zCenter];
+coords = [y(:) x(:) z(:)];
 % make homogenous and rotate according to rotation matrix
 coords(:,1) = coords(:,1) - canonicalDims(1)/2;
 coords(:,2) = coords(:,2) - canonicalDims(2)/2;
@@ -487,6 +562,11 @@ coords(:,1) = coords(:,1) + canonicalDims(1)/2;
 coords(:,2) = coords(:,2) + canonicalDims(2)/2;
 coords(:,3) = coords(:,3) + canonicalDims(3)/2;
 
+% also move center to user specified center
+coords(:,1) = coords(:,1) + b.plane.x;
+coords(:,2) = coords(:,2) + b.plane.y;
+coords(:,3) = coords(:,3) + b.plane.z;
+
 % and put them into the coordMap strucutre
 b.coordMap.coords(1,:,1,1) = coords(:,1);
 b.coordMap.coords(1,:,1,2) = coords(:,2);
@@ -495,9 +575,8 @@ b.coordMap.outerCoords = b.coordMap.coords;
 b.coordMap.innerCoords = b.coordMap.coords;
 b.coordMap.innerVtcs = coords;
 b.coordMap.outerVtcs = coords;
-b.type = 2;
 
-% now connect all these vertices with appropriat triangles
+% now connect all these vertices with appropriate triangles
 width = canonicalDims(1);
 height = canonicalDims(2);
 
@@ -518,10 +597,182 @@ b.coordMap.tris(:,2) = [triCoords2a(:);triCoords2b(:)];
 b.coordMap.tris(:,3) = [triCoords3a(:);triCoords3b(:)];
 
 % now get the data for the points
-b.data = interp3(canonical.data,coords(:,2),coords(:,1),coords(:,3),'linear',0);
+b.data = interp3(b.plane.canonical,coords(:,2),coords(:,1),coords(:,3),'linear',0);
 b.data = b.data(:)';
-b.name = 'plane';
-v = viewSet(v,'newBase',b);
-refreshMLRDisplay(v);
-disppercent(inf);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatomyRotateAround    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomyRotateAround(hObject,eventdata)
+
+recompute = false;
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% get radio button control values
+hX = mlrAdjustGUI(v,'get','mlrAnatomyRotateAroundX');
+hY = mlrAdjustGUI(v,'get','mlrAnatomyRotateAroundY');
+hZ = mlrAdjustGUI(v,'get','mlrAnatomyRotateAroundZ');
+
+% get selected base  
+baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
+baseList = get(baseListbox,'String');
+baseValue = get(baseListbox,'Value');
+if baseValue < 1,return,end
+baseNum = viewGet(v,'baseNum',baseList{baseValue});
+b = viewGet(v,'base',baseNum);
+
+% see if this was a change in the radio button control
+if any(hObject == [hX hY hZ])
+  set(hX,'Value',0);
+  set(hY,'Value',0);
+  set(hZ,'Value',0);
+  set(hObject,'Value',1);
+  
+  if hObject==hX
+    val = b.plane.xRot;
+  elseif hObject==hY
+    val = b.plane.yRot;
+  else
+    val = b.plane.zRot;
+  end
+  
+  % set the edit and the slider
+  mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundSlider','Value',val);
+  mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundEdit','String',sprintf('%i',val));
+% slider control
+elseif hObject==mlrAdjustGUI(v,'get','mlrAnatomyRotateAroundSlider')
+  % get value
+  val = round(get(hObject,'Value'));
+  % set edit
+  mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundEdit','String',sprintf('%0.1f',val));
+  % set rotation in base
+  if get(hX,'Value')
+    b.plane.xRot = val;
+  elseif get(hY,'Value')
+    b.plane.yRot = val;
+  else
+    b.plane.zRot = val;
+  end
+  recompute = true;
+% must be edit control then
+else
+  % get value
+  val = round(mrStr2num(get(hObject,'String'))*10)/10;
+  val = min(max(0,val),360);
+  % set edit and slider
+  mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundSlider','Value',val);
+  mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundEdit','String',sprintf('%0.1f',val));
+  % set rotation in base
+  if get(hX,'Value')
+    b.plane.xRot = val;
+  elseif get(hY,'Value')
+    b.plane.yRot = val;
+  else
+    b.plane.zRot = val;
+  end
+  recompute = true;
+end
+
+% recompute and redisplay
+if recompute  
+  % recompute
+  b = calcPlaneCoords(b);
+  % reset the base and cache
+  v = viewSet(v,'base',b,baseNum);
+  v = viewSet(v,'baseCache','clear',b.name);
+  v = viewSet(v,'overlayCache','clear',b.name);
+  v = viewSet(v,'roiCache','clear',b.name);
+  % and redisplay
+  refreshMLRDisplay(v);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatomyCenter    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomyCenter(hObject,eventdata)
+
+recompute = false;
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% get radio button control values
+hX = mlrAdjustGUI(v,'get','mlrAnatomyCenterX');
+hY = mlrAdjustGUI(v,'get','mlrAnatomyCenterY');
+hZ = mlrAdjustGUI(v,'get','mlrAnatomyCenterZ');
+
+% get selected base  
+baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
+baseList = get(baseListbox,'String');
+baseValue = get(baseListbox,'Value');
+if baseValue < 1,return,end
+baseNum = viewGet(v,'baseNum',baseList{baseValue});
+b = viewGet(v,'base',baseNum);
+
+% see if this was a change in the radio button control
+if any(hObject == [hX hY hZ])
+  set(hX,'Value',0);
+  set(hY,'Value',0);
+  set(hZ,'Value',0);
+  set(hObject,'Value',1);
+  
+  if hObject==hX
+    val = b.plane.x;
+  elseif hObject==hY
+    val = b.plane.y;
+  else
+    val = b.plane.z;
+  end
+  
+  % set the edit and the slider
+  mlrAdjustGUI(v,'set','mlrAnatomyCenterSlider','Value',val);
+  mlrAdjustGUI(v,'set','mlrAnatomyCenterEdit','String',sprintf('%0.1f',val));
+% slider control
+elseif hObject==mlrAdjustGUI(v,'get','mlrAnatomyCenterSlider')
+  % get value
+  val = round(get(hObject,'Value'));
+  % set edit
+  mlrAdjustGUI(v,'set','mlrAnatomyCenterEdit','String',sprintf('%0.1f',val));
+  % set rotation in base
+  if get(hX,'Value')
+    b.plane.x = val;
+  elseif get(hY,'Value')
+    b.plane.y = val;
+  else
+    b.plane.z = val;
+  end
+  recompute = true;
+% if this is the edit control
+else
+  % get value
+  val = round(mrStr2num(get(hObject,'String'))*10)/10;
+  val = min(max(-100,val),100);
+  % set edit and slider
+  mlrAdjustGUI(v,'set','mlrAnatomyCenterSlider','Value',val);
+  mlrAdjustGUI(v,'set','mlrAnatomyCenterEdit','String',sprintf('%0.1f',val));
+  % set rotation in base
+  if get(hX,'Value')
+    b.plane.x = val;
+  elseif get(hY,'Value')
+    b.plane.y = val;
+  else
+    b.plane.z = val;
+  end
+  recompute = true;
+end
+
+% recompute and redisplay
+if recompute  
+  % recompute
+  b = calcPlaneCoords(b);
+  % reset the base and cache
+  v = viewSet(v,'base',b,baseNum);
+  v = viewSet(v,'baseCache','clear',b.name);
+  v = viewSet(v,'overlayCache','clear',b.name);
+  v = viewSet(v,'roiCache','clear',b.name);
+  % and redisplay
+  refreshMLRDisplay(v);
+end
 

@@ -974,6 +974,14 @@ switch lower(param)
       view.baseVolumes(baseNum).range = range;
     end
 
+  case{'base'}
+    % view = viewSet(view,'base',base,[baseNum]);
+    b = val;
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum) = b;
+    end
+
   case{'basegamma'}
     % view = viewSet(view,'baseGamma',gamma,[baseNum]);
     gamma = val;

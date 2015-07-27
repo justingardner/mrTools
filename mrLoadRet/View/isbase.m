@@ -43,11 +43,12 @@ if (nargout == 2)
 		    'overlayAlpha',0.5;
 		    'overlays',{};
 		    'curCorticalDepth',[];
-		    'h',[]};
+		    'h',[];
+		    'plane',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
-  requiredFields = {'clip','coordMap','curCoords','data','hdr','name','permutationMatrix','range','rotate','surfaceRotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag','talInfo','originalOrient','xformFromOriginal','alpha','displayOverlay','multiDisplay','multiAxis','overlay','overlayAlpha','overlays','h'};
+  requiredFields = {'clip','coordMap','curCoords','data','hdr','name','permutationMatrix','range','rotate','surfaceRotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag','talInfo','originalOrient','xformFromOriginal','alpha','displayOverlay','multiDisplay','multiAxis','overlay','overlayAlpha','overlays','h','plane'};
   optionalFields = {'curCorticalDepth'};
 end
 
