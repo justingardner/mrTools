@@ -249,13 +249,19 @@ disppercent(inf);
 fascicleBase.coordMap.outerCoords = fascicleBase.coordMap.innerCoords;
 fascicleBase.coordMap.outerVtcs = fascicleBase.coordMap.innerVtcs;
 
+% save the individual fascicles so we can rebuild later
+fascicleBase.fascicles.patches = fasciclePatches;
+fascicleBase.fascicles.n = length(fasciclePatches);
+fascicleBase.fascicles.nTotalVertices = nTotalVertices;
+fascicleBase.fascicles.nTotalTris = nTotalTris;
+
 % make it a full base
 [tf fascicleBase] = isbase(fascicleBase);
 
 % add it to the view
 v = viewSet(v,'newBase',fascicleBase);
 
+% refresh the display to draw it
 refreshMLRDisplay(v);
 
-keyboard
 

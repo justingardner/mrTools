@@ -218,8 +218,9 @@ if strcmp(switchToName,mlrName)
   pathNames = {'mrDiffusion','mrMesh','utilities','mrBOLD/Utilities','fileFilters','mrAnatomy','mrBOLD/UI','external/pyrTools'};
   addpath(vistaRoot);
   for i = 1:length(pathNames)
-    if isdir(pathNames{i})
-      addpath(genpath(fullfile(vistaRoot,pathNames{i})));
+    thisPath = fullfile(vistaRoot,pathNames{i});
+    if isdir(thisPath)
+      addpath(genpath(thisPath));
     end
   end
 elseif strcmp(switchToName,vistaName)

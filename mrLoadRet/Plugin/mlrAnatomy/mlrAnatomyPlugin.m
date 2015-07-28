@@ -42,6 +42,10 @@ switch action
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaSlider','panel','Multiple base display','style','slider','position', [0.22    0.6    0.57   0.07 ],'String','Alpha','SliderStep',[0.1 0.25],'Callback',@multiBaseOverlayAlpha);
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaEdit','panel','Multiple base display','style','edit','position', [0.8    0.6    0.19   0.07 ],'Callback',@multiBaseOverlayAlpha);
 
+    % add controls for fascicles
+    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleCombine','panel','Multiple base display','style','pushbutton','position', [0.01    0.52    0.98   0.07 ],'String','Fascicle combine','Callback',@mlrAnatomyFascicleCombine);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleN','panel','Multiple base display','style','text','position', [0.01    0.44    0.98   0.07 ],'HorizontalAlignment','Center');
+    
     % add plane rotation
     mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundText','panel','Multiple base display','style','text','position', [0.01    0.48    0.2   0.07 ],'String','Rotate around');
     mlrAdjustGUI(v,'add','control','mlrAnatomyRotateAroundX','panel','Multiple base display','style','radio','position', [0.22    0.52    0.15   0.07 ],'String','X','Callback',@mlrAnatomyRotateAround);
@@ -175,6 +179,16 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
   % get base properties
   base = viewGet(v,'base',baseNum);
 
+  % fascicle controls
+  if isempty(base.fascicles)
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleCombine','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','off');
+  else
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleCombine','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','String',sprintf('N=%i',base.fascicles.n));
+  end
+  
   %  if the base is not a plane, then turn off all the plane controls
   if isempty(base.plane)
     mlrAdjustGUI(v,'set','mlrAnatomyRotateAroundText','Visible','off');
@@ -776,3 +790,13 @@ if recompute
   refreshMLRDisplay(v);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatomyFascicleCombine    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomyFascicleCombine(hObject,eventdata)
+
+% get view
+v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% make combine dialog
+keyboard
