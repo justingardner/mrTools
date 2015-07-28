@@ -31,6 +31,7 @@ function v = mlrPlugin(varargin)
 
 v = [];
 altPlugins = 0;
+mlrPath('mrTools');
 
 % check arguments
 if ~any(nargin == [0 1 2])

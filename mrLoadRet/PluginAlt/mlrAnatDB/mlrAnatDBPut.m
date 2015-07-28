@@ -553,8 +553,50 @@ curBase = viewGet(v,'curBase');
 curROIGroup = viewGet(v,'roiGroup');
 showROI = viewGet(v,'showROIs');
 
-% start list
-displayOnBase = {};
+% go through list of chosen ROIs and make sure that
+% see if they all have valid createdOnBase and displayOnBase
+paramsInfo = {};
+baseNames = putOnTopOfList('None',viewGet(v,'baseNames'));
+missingCreatedOn = {};
+missingDisplayOn = {};
+for iROI = roiList
+  % get the roi
+  roi = viewGet(v,'roi',iROI);
+  % check createdOnBase
+  if isempty(viewGet(v,'baseNum',roi.createdOnBase)) 
+    % mark as missing
+    missingCreatedOn{end+1} = roi.name;
+    paramsInfo{end+1} = {sprintf('%s_createdOnBase',fixBadChars(roi.name)),baseNames,sprintf('Choose a base to use for createdOn for %s. If you set to none then will not be able to export a Nifit ROI but otherwise will be ok',roi.name)};
+  end
+  % check displayOnBase
+  if isempty(viewGet(v,'baseNum',roi.displayOnBase))
+    % mark as missing
+    missingDisplayOn{end+1} = roi.name;
+    paramsInfo{end+1} = {sprintf('%s_displayOnBase',fixBadChars(roi.name)),baseNames,sprintf('Choose a base to use for displayOn for %s. If you set to none then will not be able to make a snapshot for uploading to the wiki but otherwise will be ok',roi.name)};
+  end
+end
+% if there are bases that are missing then put up the dialog to choose
+if ~isempty(paramsInfo)
+  mrWarnDlg('Some ROIs for export to mlrAnatDB are missing createdOnBase or displayOnBase - if createdOnBase is missing then the ROIs will not be exported as Nifti. If displayOnBase is missing will not be able to export a snapshot to the wiki. Otherwise export will be fine. If you want to fix the bases you can set them in the dialog');
+  params = mrParamsDialog(paramsInfo,'Fix ROI created/displayOnBase');
+  if isempty(params),return,end
+  % now fix them
+  for iROI = 1:length(missingCreatedOn)
+    val = params.(sprintf('%s_createdOnBase',missingCreatedOn{iROI}));
+    % fix createdOnBase if not set to none
+    if ~isequal(val,'None')
+      v = viewSet(v,'roiCreatedOnBase',val,viewGet(v,'roiNum',missingCreatedOn{iROI}));
+    end
+  end
+  % now fix displayOnBase
+  for iROI = 1:length(missingDisplayOn)
+    val = params.(sprintf('%s_displayOnBase',missingDisplayOn{iROI}));
+    % fix displayOnBase if not set to None
+    if ~isequal(val,'None')
+      v = viewSet(v,'roiDisplayOnBase',val,viewGet(v,'roiNum',missingDisplayOn{iROI}));
+    end
+  end
+end
 
 % go through the list of chosen ROIS
 for iRoi = roiList
@@ -598,6 +640,8 @@ for iRoi = roiList
     if isempty(baseNum)
       % does not exist
       disp(sprintf('(mlrAnatDBPut) Could not find base %s which ROI %s was created on. Not exporting to Nifti',createdOnBase,viewGet(v,'roiName',iRoi)));
+      % put up a list of currently loaded bases
+      baseNames = viewGet(v,'baseNames');
     else
       % does exist, so try to export as nifti
       v = viewSet(v,'curBase',baseNum);

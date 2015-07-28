@@ -866,7 +866,7 @@ for iFascicle = 1:f.n
   v1z = repmat(v1(:,3)',v2n,1);
   % take difference, then square and sum to get distance
   d = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
-  disp(sprintf('%i: min = %0.2f',min(d(:))));
+  disp(sprintf('%i: min = %0.2f',iFascicle,min(d(:))));
 end
 
 
