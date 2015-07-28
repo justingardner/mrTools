@@ -545,14 +545,14 @@ function b = calcPlaneCoords(b)
 canonicalDims = size(b.plane.canonical);
 
 % make rotation matrix
-c = cos(d2r(b.plane.zRot));
-s = sin(d2r(b.plane.zRot));
+c = cos(pi*b.plane.zRot/180);
+s = sin(pi*b.plane.zRot/180);
 rotxy = [c -s 0 0;s  c 0 0;0  0 1 0;0  0 0 1];
-c = cos(d2r(b.plane.xRot));
-s = sin(d2r(b.plane.xRot));
+c = cos(pi*b.plane.xRot/180);
+s = sin(pi*b.plane.xRot/180);
 rotyz = [1  0  0 0;0  c -s 0;0  s  c 0;0  0  0 1];
-c = cos(d2r(b.plane.yRot));
-s = sin(d2r(b.plane.yRot));
+c = cos(pi*b.plane.yRot/180);
+s = sin(pi*b.plane.yRot/180);
 rotxz = [c  0 -s 0;0  1  0 0;s  0  c 0;0  0  0  1];
 r = rotxy*rotyz*rotxz;
 
@@ -841,6 +841,36 @@ baseNum = viewGet(v,'baseNum',params.fascicle);
 b = viewGet(v,'base',baseNum);
 bOrig = b;
 f = b.fascicles;
+
+% get intersection surface
+intersectBaseNum = viewGet(v,'baseNum',params.intersectSurface);
+intersect = viewGet(v,'baseSurface',intersectBaseNum);
+
+
+keyboard
+
+% get vertices of intersection surface
+v2 = intersect.vtcs;
+v2n = size(v2,1);
+for iFascicle = 1:f.n
+  % get vertices of this fascicle
+  v1 = f.patches{iFascicle}.vertices;
+  v1n = size(v1,1);
+  % now make a v1nxv2n matrix putting each x,y and z of v2 into rows
+  v2x = repmat(v2(:,1),1,v1n);
+  v2y = repmat(v2(:,2),1,v1n);
+  v2z = repmat(v2(:,3),1,v1n);
+  % same for v1, except put x,y and z into columns
+  v1x = repmat(v1(:,1)',v2n,1);
+  v1y = repmat(v1(:,2)',v2n,1);
+  v1z = repmat(v1(:,3)',v2n,1);
+  % take difference, then square and sum to get distance
+  d = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
+  disp(sprintf('%i: min = %0.2f',min(d(:))));
+end
+
+
+keyboard
 
 % now put all fascicles vertices and triangles into one coordMap
 nRunningTotalVertices = 0;
