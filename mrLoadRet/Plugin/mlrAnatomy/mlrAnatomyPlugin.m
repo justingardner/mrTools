@@ -43,7 +43,7 @@ switch action
     mlrAdjustGUI(v,'add','control','multiBaseOverlayAlphaEdit','panel','Multiple base display','style','edit','position', [0.8    0.6    0.19   0.07 ],'Callback',@multiBaseOverlayAlpha);
 
     % add controls for fascicles
-    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleCombine','panel','Multiple base display','style','pushbutton','position', [0.01    0.52    0.98   0.07 ],'String','Fascicle combine','Callback',@mlrAnatomyFascicleCombine);
+    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleIntersect','panel','Multiple base display','style','pushbutton','position', [0.01    0.52    0.98   0.07 ],'String','Fascicle intersect','Callback',@mlrAnatomyFascicleIntersect);
     mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleN','panel','Multiple base display','style','text','position', [0.01    0.44    0.98   0.07 ],'HorizontalAlignment','Center');
     
     % add plane rotation
@@ -181,10 +181,10 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
 
   % fascicle controls
   if isempty(base.fascicles)
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleCombine','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleIntersect','Visible','off');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','off');
   else
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleCombine','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleIntersect','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','String',sprintf('N=%i',base.fascicles.n));
   end
@@ -791,12 +791,103 @@ if recompute
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    mlrAnatomyFascicleCombine    %
+%    mlrAnatomyFascicleIntersect    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mlrAnatomyFascicleCombine(hObject,eventdata)
+function mlrAnatomyFascicleIntersect(hObject,eventdata)
 
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
+% get all bases in the list box
+baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
+baseSurfaces = get(baseListbox,'String');
+
+% get which one is selected and put it on top of list
+selectedVal = get(baseListbox,'Value');
+if ~isempty(selectedVal) && (selectedVal>=1) && (selectedVal<=length(baseSurfaces))
+  baseSurfaces = putOnTopOfList(baseSurfaces{selectedVal},baseSurfaces);
+end
+
+% just get ones that have fascicles
+fascicles = {};
+for iBase = 1:length(baseSurfaces)
+  b = viewGet(v,'base',viewGet(v,'baseNum',baseSurfaces{iBase}));
+  if ~isempty(b.fascicles)
+    fascicles{end+1} = baseSurfaces{iBase};
+  end
+end
+if isempty(fascicles)
+  mrWarnDlg('(mlrAnatomyPluginFascicleIntersect) Could not find any fasicile anatomies');
+  return
+end
+
 % make combine dialog
-keyboard
+paramsInfo = {};
+paramsInfo{end+1} = {'fascicle',fascicles,'Fascicle base to compute intersection on. That is, this is the one whose fascicles will change dependent on what action we take below'};
+paramsInfo{end+1} = {'intersectSurface',baseSurfaces,'Fascicle base to check intersection with.'};
+paramsInfo{end+1} = {'intersectionType',{'intersect','does not intersect'},'Choose what type of intersection to check'};
+paramsInfo{end+1} = {'doIntersection',0,'type=pushbutton','buttonString=Do intersection','Press to do the intersection','callback',@mlrAnatomyPluginDoFascicleIntersect,'callbackArg',v,'passParams=1'};
+
+% put up dialog
+params = mrParamsDialog(paramsInfo,'Fascicle intersection tool');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatomyPluginDoFasicleIntersect    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function params = mlrAnatomyPluginDoFascicleIntersect(v,params)
+
+% get the base we are going to modify
+baseNum = viewGet(v,'baseNum',params.fascicle);
+b = viewGet(v,'base',baseNum);
+bOrig = b;
+f = b.fascicles;
+
+% now put all fascicles vertices and triangles into one coordMap
+nRunningTotalVertices = 0;
+nRunningTotalTris = 0;
+
+disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
+for iFascicle = 1:f.n
+  % number of vertices and triangles
+  nVertices = size(f.patches{iFascicle}.vertices,1);
+  nTris = size(f.patches{iFascicle}.faces,1);
+  % the data which is the grayscale value to color the fascicles with (rand for now)
+  b.data = [b.data rand(1,nVertices)];
+  % convert vertices to a coord map which has one x,y,z element for each possible
+  % location on the surface (which actually is just a 1xnVerticesx1 image)
+  % add these vertices to existing vertices
+  b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,1) = f.patches{iFascicle}.vertices(:,1);
+  b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,2) = f.patches{iFascicle}.vertices(:,2);
+  b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,3) = f.patches{iFascicle}.vertices(:,3);
+  % these are the display vertices which are the same as the coords
+  b.coordMap.innerVtcs(nRunningTotalVertices+1:nRunningTotalVertices+nVertices,:) = f.patches{iFascicle}.vertices;
+  % triangle faces
+  b.coordMap.tris(nRunningTotalTris+1:nRunningTotalTris+nTris,:) = (f.patches{iFascicle}.faces + nRunningTotalVertices);
+  % update runing totals
+  nRunningTotalVertices = nRunningTotalVertices + nVertices;
+  nRunningTotalTris= nRunningTotalTris + nTris;
+  disppercent(iFascicle/f.n);
+end
+disppercent(inf);
+
+% make right length
+b.coordMap.tris = b.coordMap.tris(1:nRunningTotalTris,:);
+b.coordMap.innerCoords = b.coordMap.innerCoords(:,1:nRunningTotalVertices,:,:,:);
+b.coordMap.innerVtcs = b.coordMap.innerVtcs(1:nRunningTotalVertices,:);
+b.data = b.data(:,1:nRunningTotalVertices);
+
+% copy the inner to outer since they are all the same for fascicles
+b.coordMap.outerCoords = b.coordMap.innerCoords;
+b.coordMap.outerVtcs = b.coordMap.innerVtcs;
+
+% make sure it is still a base
+[tf b] = isbase(b);
+
+% reset the base
+%v = viewSet(v,'base',b,baseNum);
+v = viewSet(v,'base',b,baseNum);
+v = viewSet(v,'baseCache','clear',b.name);
+v = viewSet(v,'overlayCache','clear',b.name);
+v = viewSet(v,'roiCache','clear',b.name);
+refreshMLRDisplay(v);
+
