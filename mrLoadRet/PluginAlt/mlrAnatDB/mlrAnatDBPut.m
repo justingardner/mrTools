@@ -225,10 +225,17 @@ if strcmp(lower(fileType),'freesurfer')
   else
     surfRelaxDir = '';
   end
+end
+
+if any(strcmp(lower(fileType),{'freesurfer','localizers'}))
   % update the branch numbers for both the small and large files
   branchNum = mlrAnatDBGetBranchNum(localRepo);
   mlrAnatDBSetBranchNum(localRepo,branchNum+1);
   mlrAnatDBSetBranchNum(localRepoLargeFiles,branchNum+1);
+elseif any(strcmp(lower(fileType),{'rois','mlrbaseanat'}))
+  % update the branch numbers for small files
+  branchNum = mlrAnatDBGetBranchNum(localRepo);
+  mlrAnatDBSetBranchNum(localRepo,branchNum+1);
 end
 
 % now do the commit part
@@ -553,6 +560,9 @@ curBase = viewGet(v,'curBase');
 curROIGroup = viewGet(v,'roiGroup');
 showROI = viewGet(v,'showROIs');
 
+% start some lists
+displayOnBase = {};
+
 % go through list of chosen ROIs and make sure that
 % see if they all have valid createdOnBase and displayOnBase
 paramsInfo = {};
@@ -640,15 +650,19 @@ for iRoi = roiList
     if isempty(baseNum)
       % does not exist
       disp(sprintf('(mlrAnatDBPut) Could not find base %s which ROI %s was created on. Not exporting to Nifti',createdOnBase,viewGet(v,'roiName',iRoi)));
-      % put up a list of currently loaded bases
-      baseNames = viewGet(v,'baseNames');
     else
-      % does exist, so try to export as nifti
-      v = viewSet(v,'curBase',baseNum);
+      % does exist, so try to export as nifti. Get the header
+      hdr = viewGet(v,'baseHdr',baseNum);
+      % make it have the dimensions of the anatomy it was created from
+      coordMap = viewGet(v,'baseCoordMap',baseNum);
+      if ~isempty(coordMap)
+	hdr.dim(1:4) = [3 coordMap.dims];
+      end
+      % set the current roi (to export)
       v = viewSet(v,'curROI',iRoi);
       niftiFilePath{end+1} = fullfile(localRepoNiftiROI,setext(roiName,'nii'));
       % export the ROI to nifti
-      mlrExportROI(v,niftiFilePath{end});
+      mlrExportROI(v,niftiFilePath{end},'hdr',hdr);
     end
   end
 
