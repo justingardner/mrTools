@@ -846,13 +846,29 @@ f = b.fascicles;
 intersectBaseNum = viewGet(v,'baseNum',params.intersectSurface);
 intersect = viewGet(v,'baseSurface',intersectBaseNum);
 
+% get xform from intersection base to fascicles
+base2base = viewGet(v,'base2base',baseNum,intersectBaseNum);
+swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
 
-keyboard
+d = -inf(1,f.n);
+
 
 % get vertices of intersection surface
 v2 = intersect.vtcs;
+v2(:,4) = 1;
+v2 = swapXY*base2base*swapXY*v2';
+v2 = v2(1:3,:)';
 v2n = size(v2,1);
-for iFascicle = 1:f.n
+
+%surf1 = f.patches{1};
+%surf2.vertices = v2;
+%surf2.faces = intersect.tris;
+%mlrSmartfig('mlrAnatomyPluginHuh','reuse');clf;
+%patch('vertices',surf1.vertices,'faces',surf1.faces);
+%hold on
+%patch('vertices',surf2.vertices,'faces',surf2.faces);
+
+for iFascicle = 1:50 %f.n
   % get vertices of this fascicle
   v1 = f.patches{iFascicle}.vertices;
   v1n = size(v1,1);
@@ -861,16 +877,14 @@ for iFascicle = 1:f.n
   v2y = repmat(v2(:,2),1,v1n);
   v2z = repmat(v2(:,3),1,v1n);
   % same for v1, except put x,y and z into columns
-  v1x = repmat(v1(:,1)',v2n,1);
-  v1y = repmat(v1(:,2)',v2n,1);
+  v1x = repmat(v1(:,2)',v2n,1);
+  v1y = repmat(v1(:,1)',v2n,1);
   v1z = repmat(v1(:,3)',v2n,1);
   % take difference, then square and sum to get distance
-  d = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
-  disp(sprintf('%i: min = %0.2f',iFascicle,min(d(:))));
+  dist = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
+  d(iFascicle) = min(dist(:));
+  disp(sprintf('%i: min = %0.2f',iFascicle,d(iFascicle)));
 end
-
-
-keyboard
 
 % now put all fascicles vertices and triangles into one coordMap
 nRunningTotalVertices = 0;
@@ -878,24 +892,26 @@ nRunningTotalTris = 0;
 
 disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
 for iFascicle = 1:f.n
-  % number of vertices and triangles
-  nVertices = size(f.patches{iFascicle}.vertices,1);
-  nTris = size(f.patches{iFascicle}.faces,1);
-  % the data which is the grayscale value to color the fascicles with (rand for now)
-  b.data = [b.data rand(1,nVertices)];
-  % convert vertices to a coord map which has one x,y,z element for each possible
-  % location on the surface (which actually is just a 1xnVerticesx1 image)
-  % add these vertices to existing vertices
-  b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,1) = f.patches{iFascicle}.vertices(:,1);
-  b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,2) = f.patches{iFascicle}.vertices(:,2);
-  b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,3) = f.patches{iFascicle}.vertices(:,3);
-  % these are the display vertices which are the same as the coords
-  b.coordMap.innerVtcs(nRunningTotalVertices+1:nRunningTotalVertices+nVertices,:) = f.patches{iFascicle}.vertices;
-  % triangle faces
-  b.coordMap.tris(nRunningTotalTris+1:nRunningTotalTris+nTris,:) = (f.patches{iFascicle}.faces + nRunningTotalVertices);
-  % update runing totals
-  nRunningTotalVertices = nRunningTotalVertices + nVertices;
-  nRunningTotalTris= nRunningTotalTris + nTris;
+  if d(iFascicle) > 1
+    % number of vertices and triangles
+    nVertices = size(f.patches{iFascicle}.vertices,1);
+    nTris = size(f.patches{iFascicle}.faces,1);
+    % the data which is the grayscale value to color the fascicles with (rand for now)
+    b.data = [b.data rand(1,nVertices)];
+    % convert vertices to a coord map which has one x,y,z element for each possible
+    % location on the surface (which actually is just a 1xnVerticesx1 image)
+    % add these vertices to existing vertices
+    b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,1) = f.patches{iFascicle}.vertices(:,1);
+    b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,2) = f.patches{iFascicle}.vertices(:,2);
+    b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,3) = f.patches{iFascicle}.vertices(:,3);
+    % these are the display vertices which are the same as the coords
+    b.coordMap.innerVtcs(nRunningTotalVertices+1:nRunningTotalVertices+nVertices,:) = f.patches{iFascicle}.vertices;
+    % triangle faces
+    b.coordMap.tris(nRunningTotalTris+1:nRunningTotalTris+nTris,:) = (f.patches{iFascicle}.faces + nRunningTotalVertices);
+    % update runing totals
+    nRunningTotalVertices = nRunningTotalVertices + nVertices;
+    nRunningTotalTris= nRunningTotalTris + nTris;
+  end
   disppercent(iFascicle/f.n);
 end
 disppercent(inf);
