@@ -868,6 +868,11 @@ v2n = size(v2,1);
 %hold on
 %patch('vertices',surf2.vertices,'faces',surf2.faces);
 
+mlrSmartfig('mlrAnatomyPlugin','reuse');clf;
+% draw the intersection surface
+patch('Vertices',v2,'Faces',intersect.tris);
+hold on
+h = [];
 for iFascicle = 1:50 %f.n
   % get vertices of this fascicle
   v1 = f.patches{iFascicle}.vertices;
@@ -884,6 +889,14 @@ for iFascicle = 1:50 %f.n
   dist = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
   d(iFascicle) = min(dist(:));
   disp(sprintf('%i: min = %0.2f',iFascicle,d(iFascicle)));
+  if d(iFascicle)<1,c = 'g';else c='r';end
+  if ~isempty(h),set(h,'edgealpha',0);set(h,'facealpha',0.4);end
+  h = patch('Vertices',v1,'Faces',f.patches{iFascicle}.faces,'facecolor',c,'edgecolor',c,'facealpha',1,'edgealpha',1);
+  if iFascicle==1
+    keyboard
+  else
+    drawnow;
+  end
 end
 
 % now put all fascicles vertices and triangles into one coordMap
