@@ -2236,7 +2236,7 @@ switch lower(param)
   case{'roigroupnames','currentroigroupnames'}
     % roiNum = viewGet(view,'roigroup')
     % gets the roiNames of the current roi group.
-    if isnumeric(val)
+    if isnumeric(view.roiGroup)
       % roiGroupNames should be names not numbers (not
       % sure how this gets wrong, but fixing here
       val = {};
@@ -2307,6 +2307,22 @@ switch lower(param)
   case{'roiname'}
     % roiName = viewGet(view,'roiName',[roiNum])
     r = getRoiNum(view,varargin);
+    % handle cell arrays
+    if iscell(r)
+      for i = 1:length(r)
+        val(end+1) = viewGet(view,'roiName',r{i});
+      end
+      return
+    end
+    % if a string, just validate that it really is an roi
+    if isstr(r)
+      if ~isempty(viewGet(view,'roiNum',r))
+        val = r;
+      else
+        val = [];
+      end
+      return
+    end
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       if length(r) == 1
