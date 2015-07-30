@@ -2236,7 +2236,21 @@ switch lower(param)
   case{'roigroupnames','currentroigroupnames'}
     % roiNum = viewGet(view,'roigroup')
     % gets the roiNames of the current roi group.
-    val = view.roiGroup;
+    if isnumeric(val)
+      % roiGroupNames should be names not numbers (not
+      % sure how this gets wrong, but fixing here
+      val = {};
+      for i = 1:length(view.roiGroup)
+        roiName = viewGet(view,'roiName',view.roiGroup(i));
+        if ~isempty(roiName)
+          val{end+1} = roiName;
+        end
+      end
+      % fix it back in the view
+      view.roiGroup = val;
+    else	
+      val = view.roiGroup;
+    end
   case{'roinum'}
     % roiNum = viewGet(view,'roiNum',roiName)
     % This will return the roiNum that correspondes
