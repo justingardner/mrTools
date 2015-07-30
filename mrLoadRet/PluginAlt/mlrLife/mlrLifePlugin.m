@@ -45,6 +45,9 @@ function mlrLifeLoadDt6(hObject,eventdata)
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
+% check system
+if ~mlrLifeSystemCheck,return,end
+
 % bring up file dialog to select dt6 file
 global mlrLifePluginStartPathStr;
 if isempty(mlrLifePluginStartPathStr)
@@ -135,6 +138,9 @@ function mlrLifeImportFascicles(hObject,eventdata)
 
 % code-snippet to get the view from the hObject variable. Not needed for this callback.
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
+
+% check system
+if ~mlrLifeSystemCheck,return,end
 
 % Load the fascicles from disk
 [fg, fgFilename] = fgRead;
@@ -264,4 +270,21 @@ v = viewSet(v,'newBase',fascicleBase);
 % refresh the display to draw it
 refreshMLRDisplay(v);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mlrLifeSystemCheck   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function tf = mlrLifeSystemCheck 
 
+tf = false;
+% check if we have fgRead from vistasoft
+if exist('fgRead') ~= 2
+  mrWarnDlg(sprintf('(mlrLifePlugin) You need to have vista installed to access function fgRead.\ngit clone https://github.com/vistalab/vistasoft.git vistasoft'));
+  return
+end
+
+% check if we have mbaBuildFascicleFrame from mba
+if exist('mbaBuildFascicleFrame') ~= 2
+  mrWarnDlg(sprintf('(mlrLifePlugin) You need to have mba installed to access function mbaBuildFascicleFrame.\ngit clone https://github.com/francopestilli/mba.git mba'));
+  return
+end
+ tf = true;
