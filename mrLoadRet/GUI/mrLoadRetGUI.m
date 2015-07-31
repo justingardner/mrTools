@@ -1534,7 +1534,7 @@ if ~isempty(params)
     v = viewSet(v,'roiColor',params.(sprintf('%sColor',roiName)),roinum);
     v = viewSet(v,'roiName',params.(sprintf('%sName',roiName)),roinum);
     v = viewSet(v,'roiNotes',params.(sprintf('%sNotes',roiName)),roinum);
-    v = viewSet(v,'roiDisplayOnBase',params.(sprintf('%sNotes',roiName)),roinum);
+    v = viewSet(v,'roiDisplayOnBase',params.(sprintf('%sDisplayOnBase',roiName)),roinum);
   end
   refreshMLRDisplay(viewNum);
 end
