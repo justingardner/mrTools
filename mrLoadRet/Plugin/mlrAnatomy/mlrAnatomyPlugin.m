@@ -1056,47 +1056,41 @@ if isempty(baseNum),'return',end
 % get the selected value
 val = get(hObject,'Value');
 
+% get the selected base
+b = viewGet(v,'base',baseNum);
+  
 % then particular fascicle has been selected
 if val > 2
+  % set the sliders to this fascicle
   val = val-2;
   mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',val);
   mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%i',val));
   mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',val);
   mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%i',val));
 
-  % get the selected base
-  b = viewGet(v,'base',baseNum);
-  f = b.fascicles;
+  % set base to display just the one fascicle
+  dispList = zeros(1,b.fascicles.n);
+  dispList(val)=1;
+  b = mlrAnatomySetFascicles(b,dispList);
+elseif val == 1
+  % set the sliders to all
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',1);
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%i',1));
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',b.fascicles.n);
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%i',b.fascicles.n));
 
-  iFascicle = val;
-  % number of vertices and triangles
-  nVertices = size(f.patches{iFascicle}.vertices,1);
-  nTris = size(f.patches{iFascicle}.faces,1);
-  b.coordMap.innerCoords = [];
-  b.coordMap.innerVtcs = [];
-  % the data which is the grayscale value to color the fascicles with (rand for now)
-  b.data = rand(1,nVertices);
-  % convert vertices to a coord map which has one x,y,z element for each possible
-  % location on the surface (which actually is just a 1xnVerticesx1 image)
-  % add these vertices to existing vertices
-  b.coordMap.innerCoords(1,1:nVertices,1,1) = f.patches{iFascicle}.vertices(:,1);
-  b.coordMap.innerCoords(1,1:nVertices,1,2) = f.patches{iFascicle}.vertices(:,2);
-  b.coordMap.innerCoords(1,1:nVertices,1,3) = f.patches{iFascicle}.vertices(:,3);
-  b.coordMap.outerCoords = b.coordMap.innerCoords;
-  % these are the display vertices which are the same as the coords
-  b.coordMap.innerVtcs(1:nVertices,:) = f.patches{iFascicle}.vertices;
-  b.coordMap.outerVtcs = b.coordMap.innerVtcs;
-  % triangle faces
-  b.coordMap.tris = f.patches{iFascicle}.faces;
-
-  % reset the base and cache
-  v = viewSet(v,'base',b,baseNum);
-  v = viewSet(v,'baseCache','clear',b.name);
-  v = viewSet(v,'overlayCache','clear',b.name);
-  v = viewSet(v,'roiCache','clear',b.name);
-  % and redisplay
-  refreshMLRDisplay(v);
+  % set base to display all fascicles
+  dispList = ones(1,b.fascicles.n);
+  b = mlrAnatomySetFascicles(b,dispList);
 end
+
+% reset the base and cache
+v = viewSet(v,'base',b,baseNum);
+v = viewSet(v,'baseCache','clear',b.name);
+v = viewSet(v,'overlayCache','clear',b.name);
+v = viewSet(v,'roiCache','clear',b.name);
+% and redisplay
+refreshMLRDisplay(v);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatomyFascicleMinmax    %
@@ -1107,3 +1101,56 @@ function mlrAnatomyFascicleMinmax(hObject,eventdata)
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
 keyboard
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatomySetFascicles    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function b = mlrAnatomySetFascicles(b,dispList)
+
+% shortcut to fascicles
+f = b.fascicles;
+
+% put all fascicles vertices and triangles into one coordMap
+b.data = [];
+nRunningTotalVertices = 0;
+nRunningTotalTris = 0;
+
+disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
+for iFascicle = 1:f.n
+  if dispList(iFascicle)
+    % number of vertices and triangles
+    nVertices = size(f.patches{iFascicle}.vertices,1);
+    nTris = size(f.patches{iFascicle}.faces,1);
+    % the data which is the grayscale value to color the fascicles with (rand for now)
+    b.data = [b.data rand(1,nVertices)];
+    % convert vertices to a coord map which has one x,y,z element for each possible
+    % location on the surface (which actually is just a 1xnVerticesx1 image)
+    % add these vertices to existing vertices
+    b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,1) = f.patches{iFascicle}.vertices(:,1);
+    b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,2) = f.patches{iFascicle}.vertices(:,2);
+    b.coordMap.innerCoords(1,nRunningTotalVertices+1:nRunningTotalVertices+nVertices,1,3) = f.patches{iFascicle}.vertices(:,3);
+    % these are the display vertices which are the same as the coords
+    b.coordMap.innerVtcs(nRunningTotalVertices+1:nRunningTotalVertices+nVertices,:) = f.patches{iFascicle}.vertices;
+    % triangle faces
+    b.coordMap.tris(nRunningTotalTris+1:nRunningTotalTris+nTris,:) = (f.patches{iFascicle}.faces + nRunningTotalVertices);
+    % update runing totals
+    nRunningTotalVertices = nRunningTotalVertices + nVertices;
+    nRunningTotalTris= nRunningTotalTris + nTris;
+  end
+  disppercent(iFascicle/f.n);
+end
+disppercent(inf);
+
+% make right length
+b.coordMap.tris = b.coordMap.tris(1:nRunningTotalTris,:);
+b.coordMap.innerCoords = b.coordMap.innerCoords(:,1:nRunningTotalVertices,:,:,:);
+b.coordMap.innerVtcs = b.coordMap.innerVtcs(1:nRunningTotalVertices,:);
+b.data = b.data(:,1:nRunningTotalVertices);
+
+% copy the inner to outer since they are all the same for fascicles
+b.coordMap.outerCoords = b.coordMap.innerCoords;
+b.coordMap.outerVtcs = b.coordMap.innerVtcs;
+
+% make sure it is still a base
+[tf b] = isbase(b);
+
