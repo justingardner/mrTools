@@ -201,26 +201,6 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Visible','off');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','off');
   else
-    % set display range if not set
-    if ~isfield(base.fascicles,'displayMin');
-      base.fascicles.displayMin = 1;
-      base.fascicles.displayMax = base.fascicles.n;
-    end
-    % check to see if we are doing a subset
-    restrictValue = 1;
-    if (base.fascicles.displayMin > 1) || (base.fascicles.displayMax > base.fascicles.n)
-      % see if we are doing one fascicle
-      if base.fascicles.displayMin == base.fascicles.displayMax
-	restrictValue = 2+base.fascicles.displayMin;
-      else
-	restrictValue = 2;
-      end
-    end
-    % set GUI for fascicles
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleIntersect','Visible','on');
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','on');
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','String',sprintf('N=%i',base.fascicles.n));
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','Visible','on');
     % add into display any intersections we have
     displayList = {'Fascicle'};
     if isfield(base.fascicles,'intersect')
@@ -230,29 +210,18 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     end
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','String',displayList);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','Value',1);
+    % set up other gui items
+    mlrAnatomySetFascicleGUI(v,base);
+    % turn on gui for fascicles
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleIntersect','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Visible','on');
-    % make a restriction list with all possible fascicles
-    restrictList = {'All','Subset'};
-    for iFascicle = 1:base.fascicles.n
-      restrictList{end+1}= sprintf('fascicle %04i',iFascicle');
-    end
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','String',restrictList);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Value',restrictValue);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinText','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','on');
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Min',1);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Max',base.fascicles.n);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','SliderStep',[1 10]./base.fascicles.n);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',base.fascicles.displayMin);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','on');
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%i',base.fascicles.displayMin));
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxText','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Visible','on');
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Min',1);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Max',base.fascicles.n);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','SliderStep',[1 10]./base.fascicles.n);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',base.fascicles.displayMax);
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%i',base.fascicles.displayMax));
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','on');
   end
   
@@ -1018,7 +987,19 @@ function mlrAnatomyFascicleDisplay(hObject,eventdata)
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-keyboard
+% get selected base  
+[b baseNum] = mlrAnatomyGetSelectedBase(v);
+
+% get what display type this is set to
+val = get(hObject,'Value');
+displayType = get(hObject,'String');
+displayType = displayType{val};
+
+if isequal(displayType,'Fascicle')
+  mlrAnatomySetFascicleGUI(v,b);
+else
+  keyboard
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatomyFascicleRestrict    %
@@ -1237,3 +1218,47 @@ if isempty(baseNum),return,end
 % get the selected base
 b = viewGet(v,'base',baseNum);
   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatomySetFascicleGUI    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomySetFascicleGUI(v,b);
+
+% set display range if not set
+if ~isfield(b.fascicles,'displayMin');
+  b.fascicles.displayMin = 1;
+  b.fascicles.displayMax = b.fascicles.n;
+end
+
+% check to see if we are doing a subset
+restrictValue = 1;
+if (b.fascicles.displayMin > 1) || (b.fascicles.displayMax < b.fascicles.n)
+  % see if we are doing one fascicle
+  if b.fascicles.displayMin == b.fascicles.displayMax
+    restrictValue = 2+b.fascicles.displayMin;
+  else
+    restrictValue = 2;
+  end
+end
+
+% set GUI for fascicles
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','String',sprintf('N=%i',b.fascicles.n));
+% make a restriction list with all possible fascicles
+restrictList = {'All','Subset'};
+for iFascicle = 1:b.fascicles.n
+  restrictList{end+1}= sprintf('fascicle %04i',iFascicle');
+end
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','String',restrictList);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Value',restrictValue);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',b.fascicles.displayMin);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%i',b.fascicles.displayMin));
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',b.fascicles.displayMax);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%i',b.fascicles.displayMax));
+
+% set up min/max sliders
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Min',1);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Max',b.fascicles.n);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','SliderStep',[1 10]./b.fascicles.n);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Min',1);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Max',b.fascicles.n);
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','SliderStep',[1 10]./b.fascicles.n);
