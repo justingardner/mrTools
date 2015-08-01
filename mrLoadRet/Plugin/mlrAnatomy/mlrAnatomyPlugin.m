@@ -913,11 +913,11 @@ v2n = size(v2,1);
 %hold on
 %patch('vertices',surf2.vertices,'faces',surf2.faces);
 
-mlrSmartfig('mlrAnatomyPlugin','reuse');clf;
-% draw the intersection surface
-patch('Vertices',v2,'Faces',intersect.tris);
-hold on
-h = [];
+% start up workers
+n = mlrNumWorkers;
+disp(sprintf('(mlrAnatomyPlugin) Calculating minimum distance between surfaces. This may take some time. Running on %i cores',n));
+
+% compute for each fascicle
 for iFascicle = 1:f.n
   % get vertices of this fascicle
   v1 = f.patches{iFascicle}.vertices;
@@ -933,15 +933,7 @@ for iFascicle = 1:f.n
   % take difference, then square and sum to get distance
   dist = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
   d(iFascicle) = min(dist(:));
-  disp(sprintf('%i: min = %0.2f',iFascicle,d(iFascicle)));
-  if d(iFascicle)<1,c = 'g';else c='r';end
-  if ~isempty(h),set(h,'edgealpha',0);set(h,'facealpha',0.1);end
- h = patch('Vertices',v1,'Faces',f.patches{iFascicle}.faces,'facecolor',c,'edgecolor',c,'facealpha',1,'edgealpha',1);
-  if iFascicle==1
-    keyboard
-  else
-    drawnow;
-  end
+  fprintf('(mlrAnatomyPlugin) Minimum distance between fascicle %i/%i and %s is %0.2f\n',iFascicle,f.n,params.intersectSurface,d(iFascicle));
 end
 
 % now put all fascicles vertices and triangles into one coordMap

@@ -32,7 +32,13 @@ end
 toolboxVersions = ver;
 n = 1;
 if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
-  n = matlabpool('size');
+  % get the pool size
+  if verLessThan('matlab','8.4')
+    n = matlabpool('size');
+  else
+    pool = gcp;
+    n = pool.NumWorkers;
+  end
   if n == 0
     n = 1;
     if askToStart
@@ -49,9 +55,15 @@ if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
 	  if isempty(params),return,end
 	  clusterProfile = params.matlabpoolType;
 	end
-	matlabpool('open',clusterProfile);
-	% get number of processors
-	n = matlabpool('size');
+	if verLessThan('matlab','8.4')
+	  matlabpool('open',clusterProfile);
+	  % get number of processors
+	  n = matlabpool('size');
+	else
+	  pool = parpool(clusterProfile);
+	  % get number of processors
+	  n = pool.NumWorkers
+	end
       end
     else
       disp(sprintf('(mlrNumWorkers) You can speed up performance by starting a matlab pool of workers using the parallel computing toolbox. Type: matlabpool open'));
