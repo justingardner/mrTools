@@ -988,9 +988,35 @@ displayType = get(hObject,'String');
 displayType = displayType{val};
 
 if isequal(displayType,'Fascicle')
+  % if we are doing fascicle selection then set up the gui
   mlrAnatomySetFascicleGUI(v,b);
+  % now set the slider to visible
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinText','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxText','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','on');
 else
-  keyboard
+  % otherwise we are doing an intersect, so figure out which intersect we are doing
+  intersectNum = find(strcmp(displayType,b.fascicles.intersect(:).intersectWith));
+  if isempty(intersectNum),return,end
+  intersect = b.fascicles.intersect(intersectNum);
+  % get what we can restrict against and set up controls
+  restrictList = {'None'};
+  if isfield(intersect,'d')
+    restrictList{end+1} = 'Distance';
+  end
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','String',restrictList);
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Value',1);
+  
+  % now set the slider to invisible
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinText','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxText','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','off');
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1001,8 +1027,76 @@ function mlrAnatomyFascicleRestrict(hObject,eventdata)
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
+% get what display type we are set to
+hDisplay = mlrAdjustGUI(v,'get','mlrAnatomyFascicleDisplay');
+val = get(hDisplay,'Value');
+displayType = get(hDisplay,'String');
+displayType = displayType{val};
+
 % get selected base  
 [b baseNum] = mlrAnatomyGetSelectedBase(v);
+
+% see if we are doing fascicles or intersection
+if isequal(displayType,'Fascicle')
+  mlrAnatomyFascicleRestrictFascicle(v,hObject,b,baseNum);
+else
+  % we are doing an intersect, so figure out which intersect we are doing
+  intersectNum = find(strcmp(displayType,b.fascicles.intersect(:).intersectWith));
+  if isempty(intersectNum),return,end
+  intersect = b.fascicles.intersect(intersectNum);
+  % call function to do restriction with intersect
+  mlrAnatomyFascicleRestrictIntersect(v,hObject,b,intersect);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mlrAnatomyFascicleRestrictIntersect   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomyFascicleRestrictIntersect(v,hObject,b,intersect)
+
+% get the selected value
+val = get(hObject,'Value');
+restrictType = get(hObject,'String');
+restrictType = restrictType{val};
+
+if strcmp(restrictType,'None')
+  % now set the slider to invisible
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinText','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxText','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Visible','off');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','off');
+elseif strcmp(restrictType,'Distance')
+  % set the slider min and max values
+  dMax = ceil(max(intersect.d));
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Min',0);
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Max',dMax);
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Min',0);
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Max',dMax);
+  % see if we have a restriction already
+  if isfield(intersect,'dRestrict')
+    dRestrict = intersect.dRestrict;
+  else
+    dRestrict = [0 dMax];
+  end
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',dRestrict(1));
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',dRestrict(2));
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%0.1f',dRestrict(1)));
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%0.1f',dRestrict(2)));
+  
+  % now set the slider to visible
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinText','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxText','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Visible','on');
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','on');
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   mlrAnatomyFascicleRestrictFascicle   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function mlrAnatomyFascicleRestrictFascicle(v,hObject,b,baseNum)
 
 % get the selected value
 val = get(hObject,'Value');
