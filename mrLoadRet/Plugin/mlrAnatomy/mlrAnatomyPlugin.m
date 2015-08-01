@@ -216,12 +216,19 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
 	restrictValue = 2;
       end
     end
-    % set gui
+    % set GUI for fascicles
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleIntersect','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','String',sprintf('N=%i',base.fascicles.n));
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','Visible','on');
-    mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','String',{'Fascicle'});
+    % add into display any intersections we have
+    displayList = {'Fascicle'};
+    if isfield(base.fascicles,'intersect')
+      for i = 1:length(base.fascicles.intersect)
+	displayList{end+1} = base.fascicles.intersect.intersectWith;
+      end
+    end
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','String',displayList);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','Value',1);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Visible','on');
     % make a restriction list with all possible fascicles
@@ -235,6 +242,7 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Min',1);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Max',base.fascicles.n);
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','SliderStep',[1 10]./base.fascicles.n);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',base.fascicles.displayMin);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%i',base.fascicles.displayMin));
@@ -242,6 +250,7 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Min',1);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Max',base.fascicles.n);
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','SliderStep',[1 10]./base.fascicles.n);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',base.fascicles.displayMax);
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%i',base.fascicles.displayMax));
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','on');
@@ -447,54 +456,44 @@ function multiBaseOverlayAlpha(hObject,eventdata)
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
 % get the multiBaselistbox and figure out what base is selected
-multiBaseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
-baseNames = get(multiBaseListbox,'String');
-selectedVal = get(multiBaseListbox,'Value');
+[b baseNum] = mlrAnatomyGetSelectedBase(v);
+if isempty(b),return,end
 
-% validate selection val
-if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames))
-  % get base num
-  baseNum = viewGet(v,'baseNum',baseNames{selectedVal});
+% now see whether we are being called from slider or edit box
+if isequal(get(hObject,'Style'),'edit')
+  % get baseOverlayAlpha from edit
+  baseOverlayAlpha = str2num(get(hObject,'String'));
+else
+  % get baseOverlayAlpha from slider
+  baseOverlayAlpha = get(hObject,'Value');
+  % round to nearest 1/100
+  baseOverlayAlpha = round(baseOverlayAlpha*100)/100;
+end
 
-  % now see whether we are being called from slider or edit box
+% validate value
+if ~isempty(baseOverlayAlpha) && (baseOverlayAlpha>=0) && (baseOverlayAlpha<=1)
+  % set baseOverlayAlpha
+  v = viewSet(v,'baseOverlayAlpha',baseOverlayAlpha,baseNum);
+  % update the controls (depends on who changed)
   if isequal(get(hObject,'Style'),'edit')
-    % get baseOverlayAlpha from edit
-    baseOverlayAlpha = str2num(get(hObject,'String'));
+    % set slider
+    mlrAdjustGUI(v,'set','multiBaseOverlayAlphaSlider','Value',baseOverlayAlpha);
   else
-    % get baseOverlayAlpha from slider
-    baseOverlayAlpha = get(hObject,'Value');
-    % round to nearest 1/100
-    baseOverlayAlpha = round(baseOverlayAlpha*100)/100;
+    % or edit
+    mlrAdjustGUI(v,'set','multiBaseOverlayAlphaEdit','String',baseOverlayAlpha);
   end
   
-  % set value
-  v = viewSet(v,'baseOverlayAlpha',baseOverlayAlpha);
-  
-  % validate value
-  if ~isempty(baseOverlayAlpha) && (baseOverlayAlpha>=0) && (baseOverlayAlpha<=1)
-    % set baseOverlayAlpha
-    v = viewSet(v,'baseOverlayAlpha',baseOverlayAlpha,baseNum);
-    % update the controls (depends on who changed)
-    if isequal(get(hObject,'Style'),'edit')
-      % set slider
-      mlrAdjustGUI(v,'set','multiBaseOverlayAlphaSlider','Value',baseOverlayAlpha);
-    else
-      % or edit
-      mlrAdjustGUI(v,'set','multiBaseOverlayAlphaEdit','String',baseOverlayAlpha);
-    end
-      
-    % redisplay
-    refreshMLRDisplay(v);
+  % redisplay
+  refreshMLRDisplay(v);
+else
+  % bad value, reset
+  baseOverlayAlpha = viewGet(v,'baseOverlayAlpha',baseNum);
+  if isequal(get(hObject,'Style'),'edit')
+    set(hObject,'String',baseOverlayAlpha);
   else
-    % bad value, reset
-    baseOverlayAlpha = viewGet(v,'baseOverlayAlpha',baseNum);
-    if isequal(get(hObject,'Style'),'edit')
-      set(hObject,'String',baseOverlayAlpha);
-    else
-      set(hObject,'Value',baseOverlayAlpha);
-    end
-      
+    set(hObject,'Value',baseOverlayAlpha);
   end
+  
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -688,12 +687,7 @@ hY = mlrAdjustGUI(v,'get','mlrAnatomyRotateAroundY');
 hZ = mlrAdjustGUI(v,'get','mlrAnatomyRotateAroundZ');
 
 % get selected base  
-baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
-baseList = get(baseListbox,'String');
-baseValue = get(baseListbox,'Value');
-if baseValue < 1,return,end
-baseNum = viewGet(v,'baseNum',baseList{baseValue});
-b = viewGet(v,'base',baseNum);
+[b baseNum] = mlrAnatomyGetSelectedBase(v);
 
 % see if this was a change in the radio button control
 if any(hObject == [hX hY hZ])
@@ -776,12 +770,7 @@ hY = mlrAdjustGUI(v,'get','mlrAnatomyCenterY');
 hZ = mlrAdjustGUI(v,'get','mlrAnatomyCenterZ');
 
 % get selected base  
-baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
-baseList = get(baseListbox,'String');
-baseValue = get(baseListbox,'Value');
-if baseValue < 1,return,end
-baseNum = viewGet(v,'baseNum',baseList{baseValue});
-b = viewGet(v,'base',baseNum);
+[b baseNum] = mlrAnatomyGetSelectedBase(v);
 
 % see if this was a change in the radio button control
 if any(hObject == [hX hY hZ])
@@ -1039,26 +1028,12 @@ function mlrAnatomyFascicleRestrict(hObject,eventdata)
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-% get control
-baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
-
-% get the current selected base
-baseListboxNames = get(baseListbox,'String');
-baseListboxValue = get(baseListbox,'Value');
-if ~isempty(baseListboxValue) && (baseListboxValue>=1) && (baseListboxValue<=length(baseListboxNames))
-  selectedBaseName = baseListboxNames{baseListboxValue};
-else
-  selectedBaseName = '';
-end
-baseNum = viewGet(v,'baseNum',selectedBaseName);
-if isempty(baseNum),'return',end
+% get selected base  
+[b baseNum] = mlrAnatomyGetSelectedBase(v);
 
 % get the selected value
 val = get(hObject,'Value');
 
-% get the selected base
-b = viewGet(v,'base',baseNum);
-  
 % then particular fascicle has been selected
 if val > 2
   % set the sliders to this fascicle
@@ -1072,6 +1047,8 @@ if val > 2
   dispList = zeros(1,b.fascicles.n);
   dispList(val)=1;
   b = mlrAnatomySetFascicles(b,dispList);
+  b.fascicles.displayMin = val;
+  b.fascicles.displayMax = val;
 elseif val == 1
   % set the sliders to all
   mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',1);
@@ -1082,6 +1059,18 @@ elseif val == 1
   % set base to display all fascicles
   dispList = ones(1,b.fascicles.n);
   b = mlrAnatomySetFascicles(b,dispList);
+  b.fascicles.displayMin = 1;
+  b.fascicles.displayMax = b.fascicles.n;
+elseif val == 2
+  % this is subset. Check if there was an already existing
+  % subset and set sliders to that
+  if isfield(b.fascicles,'subsetList')
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Value',b.fascicles.subsetList(1));
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%i',b.fascicles.subsetList(1)));
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',b.fascicles.subsetList(2));
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%i',b.fascicles.subsetList(2)));
+    mlrAnatomyFascicleMinmax(mlrAdjustGUI(v,'get','mlrAnatomyFascicleMinSlider'),eventdata);
+  end
 end
 
 % reset the base and cache
@@ -1100,7 +1089,76 @@ function mlrAnatomyFascicleMinmax(hObject,eventdata)
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-keyboard
+% get selected base  
+[b baseNum] = mlrAnatomyGetSelectedBase(v);
+
+% get sliders and edits
+hMinSlider = mlrAdjustGUI(v,'get','mlrAnatomyFascicleMinSlider');
+hMinEdit = mlrAdjustGUI(v,'get','mlrAnatomyFascicleMinEdit');
+hMaxSlider = mlrAdjustGUI(v,'get','mlrAnatomyFascicleMaxSlider');
+hMaxEdit = mlrAdjustGUI(v,'get','mlrAnatomyFascicleMaxEdit');
+
+% see which one called us
+if isequal(hMinSlider,hObject)
+  % set edit to slider value
+  set(hMinEdit,'String',sprintf('%i',round(get(hMinSlider,'Value'))));
+elseif isequal(hMinEdit,hObject)
+  % get value from edit and validate
+  val = round(mrStr2num(get(hMinEdit,'String')));
+  if isempty(val),val = 1;end
+  if val < 1, val = 1;end
+  if val > b.fascicles.n,val = b.fascicles.n;end
+  % now set slider to that value
+  set(hMinSlider,'Value',val);
+  set(hMinEdit,'String',sprintf('%i',val));
+elseif isequal(hMaxSlider,hObject)
+  % set edit to slider value
+  set(hMaxEdit,'String',sprintf('%i',round(get(hMaxSlider,'Value'))));
+elseif isequal(hMaxEdit,hObject)
+  % get value from edit and validate
+  val = round(mrStr2num(get(hMaxEdit,'String')));
+  if isempty(val),val = b.fascicles.n;end
+  if val < 1, val = 1;end
+  if val > b.fascicles.n,val = b.fascicles.n;end
+  % now set slider to that value
+  set(hMaxSlider,'Value',val);
+  set(hMaxEdit,'String',sprintf('%i',val));
+end
+
+% set the control to say subset
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Value',2);
+
+% now reget values and restrict
+minFascicle = round(get(hMinSlider,'Value'));
+maxFascicle = round(get(hMaxSlider,'Value'));
+
+% make dispList
+dispList = zeros(1,b.fascicles.n);
+if minFascicle <= maxFascicle
+  % usual case, restrict to show between these values [inclusive].
+  dispList(minFascicle:maxFascicle) = 1;
+else
+  % swapped case, then display everything but
+  dispList(1:maxFascicle) = 1;
+  dispList(minFascicle:end) = 1;
+end
+
+% now set them and display
+b = mlrAnatomySetFascicles(b,dispList);
+
+% remember subset list
+b.fascicles.subsetList = [minFascicle maxFascicle];
+b.fascicles.displayMin = minFascicle;
+b.fascicles.displayMax = maxFascicle;
+
+% reset the base and cache
+v = viewSet(v,'base',b,baseNum);
+v = viewSet(v,'baseCache','clear',b.name);
+v = viewSet(v,'overlayCache','clear',b.name);
+v = viewSet(v,'roiCache','clear',b.name);
+
+% and redisplay
+refreshMLRDisplay(v);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatomySetFascicles    %
@@ -1154,3 +1212,28 @@ b.coordMap.outerVtcs = b.coordMap.innerVtcs;
 % make sure it is still a base
 [tf b] = isbase(b);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrAnatomyGetSelectedBase    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [b baseNum] = mlrAnatomyGetSelectedBase(v)
+
+b = [];
+baseNum = 0;
+
+% get control
+baseListbox = mlrAdjustGUI(v,'get','multiBaseListbox');
+
+% get the current selected base
+baseListboxNames = get(baseListbox,'String');
+baseListboxValue = get(baseListbox,'Value');
+if ~isempty(baseListboxValue) && (baseListboxValue>=1) && (baseListboxValue<=length(baseListboxNames))
+  selectedBaseName = baseListboxNames{baseListboxValue};
+else
+  selectedBaseName = '';
+end
+baseNum = viewGet(v,'baseNum',selectedBaseName);
+if isempty(baseNum),return,end
+
+% get the selected base
+b = viewGet(v,'base',baseNum);
+  
