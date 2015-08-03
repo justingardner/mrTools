@@ -1156,6 +1156,19 @@ function mlrAnatomyFascicleMinmax(hObject,eventdata)
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
+% get what display type we are set to
+hDisplay = mlrAdjustGUI(v,'get','mlrAnatomyFascicleDisplay');
+val = get(hDisplay,'Value');
+displayType = get(hDisplay,'String');
+displayType = displayType{val};
+
+% see if we need to round or not
+if isequal(displayType,'Fascicles')
+  doRound = true;
+else
+  doRound = false;
+end
+  
 % get selected base  
 [b baseNum] = mlrAnatomyGetSelectedBase(v);
 
@@ -1167,56 +1180,92 @@ hMaxEdit = mlrAdjustGUI(v,'get','mlrAnatomyFascicleMaxEdit');
 
 % see which one called us
 if isequal(hMinSlider,hObject)
+  % get slider value
+  val = round(get(hMinSlider,'Value'));
+  % round
+  if doRound,val=round(val);end
   % set edit to slider value
-  set(hMinEdit,'String',sprintf('%i',round(get(hMinSlider,'Value'))));
+  set(hMinEdit,'String',sprintf('%i',val));
 elseif isequal(hMinEdit,hObject)
   % get value from edit and validate
-  val = round(mrStr2num(get(hMinEdit,'String')));
-  if isempty(val),val = 1;end
-  if val < 1, val = 1;end
-  if val > b.fascicles.n,val = b.fascicles.n;end
+  val = mrStr2num(get(hMinEdit,'String'));
+  if isequal(displayType,'Fascicles')
+    % round
+    val=round(val);
+    % check bounds
+    if isempty(val),val = 1;end
+    if val < 1, val = 1;end
+    if val > b.fascicles.n,val = b.fascicles.n;end
+  end
   % now set slider to that value
   set(hMinSlider,'Value',val);
-  set(hMinEdit,'String',sprintf('%i',val));
+  set(hMinEdit,'String',sprintf('%s',mlrnum2str(val)));
 elseif isequal(hMaxSlider,hObject)
   % set edit to slider value
-  set(hMaxEdit,'String',sprintf('%i',round(get(hMaxSlider,'Value'))));
+  val = get(hMaxSlider,'Value');
+  if isequal(displayType,'Fascicles'),val=round(val);,end
+  set(hMaxEdit,'String',sprintf('%i',val));
 elseif isequal(hMaxEdit,hObject)
   % get value from edit and validate
-  val = round(mrStr2num(get(hMaxEdit,'String')));
-  if isempty(val),val = b.fascicles.n;end
-  if val < 1, val = 1;end
-  if val > b.fascicles.n,val = b.fascicles.n;end
+  val = mrStr2num(get(hMaxEdit,'String'));
+  if isequal(displayType,'Fascicles')
+    % round
+    val=round(val);
+    if isempty(val),val = b.fascicles.n;end
+    if val < 1, val = 1;end
+    if val > b.fascicles.n,val = b.fascicles.n;end
+  end
   % now set slider to that value
   set(hMaxSlider,'Value',val);
-  set(hMaxEdit,'String',sprintf('%i',val));
+  set(hMaxEdit,'String',sprintf('%s',mlrnum2str(val)));
 end
 
-% set the control to say subset
-mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Value',2);
+% if we are resticting based on fascicles
+if isequal(displayType,'Fascicle')
+  % set the control to say subset
+  mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Value',2);
 
-% now reget values and restrict
-minFascicle = round(get(hMinSlider,'Value'));
-maxFascicle = round(get(hMaxSlider,'Value'));
+  % now reget values and restrict
+  minFascicle = round(get(hMinSlider,'Value'));
+  maxFascicle = round(get(hMaxSlider,'Value'));
 
-% make dispList
-dispList = zeros(1,b.fascicles.n);
-if minFascicle <= maxFascicle
-  % usual case, restrict to show between these values [inclusive].
-  dispList(minFascicle:maxFascicle) = 1;
+  % make dispList
+  dispList = zeros(1,b.fascicles.n);
+  if minFascicle <= maxFascicle
+    % usual case, restrict to show between these values [inclusive].
+    dispList(minFascicle:maxFascicle) = 1;
+  else
+    % swapped case, then display everything but
+    dispList(1:maxFascicle) = 1;
+    dispList(minFascicle:end) = 1;
+  end
+
+  % remember subset list
+  b.fascicles.subsetList = [minFascicle maxFascicle];
+  b.fascicles.displayMin = minFascicle;
+  b.fascicles.displayMax = maxFascicle;
+
 else
-  % swapped case, then display everything but
-  dispList(1:maxFascicle) = 1;
-  dispList(minFascicle:end) = 1;
+  % get which intersect we are doing
+  intersectNum = find(strcmp(displayType,b.fascicles.intersect(:).intersectWith));
+  if isempty(intersectNum),return,end
+  intersect = b.fascicles.intersect(intersectNum);
+  % now get min and max values
+  minDistance = get(hMinSlider,'Value');
+  maxDistance = get(hMaxSlider,'Value');
+  % make dispList
+  dispList = zeros(1,b.fascicles.n);
+  if minDistance <= maxDistance
+    % usual case, restrict to show between these values [inclusive].
+    dispList((intersect.d >= minDistance) & (intersect.d <= maxDistance)) = 1;
+  else
+    % swapped case, then display everything but
+    dispList((intersect.d < maxDistance) | (intersect.d > minDistance)) = 1;
+  end
 end
 
 % now set them and display
 b = mlrAnatomySetFascicles(b,dispList);
-
-% remember subset list
-b.fascicles.subsetList = [minFascicle maxFascicle];
-b.fascicles.displayMin = minFascicle;
-b.fascicles.displayMax = maxFascicle;
 
 % reset the base and cache
 v = viewSet(v,'base',b,baseNum);
@@ -1243,6 +1292,7 @@ nRunningTotalTris = 0;
 disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
 for iFascicle = 1:f.n
   if dispList(iFascicle)
+
     % number of vertices and triangles
     nVertices = size(f.patches{iFascicle}.vertices,1);
     nTris = size(f.patches{iFascicle}.faces,1);
