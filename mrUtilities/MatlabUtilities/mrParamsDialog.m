@@ -82,7 +82,7 @@ end
 % it means that we have been passed in a "getArgs" type. Otherwise
 % it is the old calling convention in which the order determines what
 % variable is being set
-buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];modal=[];
+buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];modal=[];fullWidth = false;
 if (length(otherParams) > 2)
   if ~ischar(otherParams{3})
     % get the arguments the old way, by order
@@ -280,6 +280,11 @@ end
 [figurePosition,dParams,uiParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,uiParams);
 figWidth = figurePosition(3);
 figHeight = figurePosition(4);
+
+% make all entries full width if called for
+if fullWidth
+  dParams.entryWidth(:) = max(dParams.entryWidth);
+end
 
 %cap widths that are more than the max
 dParams.entryWidth(dParams.entryWidth>dParams.allEntriesWidth)=dParams.allEntriesWidth;
@@ -1200,7 +1205,6 @@ set(fignum,'Position',figurePosition);
 
 %replace non-set widths by the max width
 dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
-
 
 %modified num2str to increase the number of decimals for reals
 function value = thisNum2str(value)
