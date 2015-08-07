@@ -66,7 +66,7 @@ if isempty(s),return,end
 
 % check that we have a stimfile that is interpretable
 % by this program
-[tf s] = checkStimfile(s);
+[tf s taskNum] = checkStimfile(s);
 if ~tf,return,end
 
 % check to see if a stimImage exists
@@ -75,16 +75,16 @@ if ~isfield(s,'pRFStimImage') || recomputeStimImage
   s.myscreen = makeTraces(s.myscreen,verbose);
 
   % get task variables
-  e = getTaskParameters(s.myscreen,s.task{2});
+  e = getTaskParameters(s.myscreen,s.task{taskNum});
 
   % get some traces of things of interest
   s.time = s.myscreen.time;
-  s.maskPhase = s.myscreen.traces(s.task{2}{1}.maskPhaseTrace,:);
-  s.blank = s.myscreen.traces(s.task{2}{1}.blankTrace,:);
+  s.maskPhase = s.myscreen.traces(s.task{taskNum}{1}.maskPhaseTrace,:);
+  s.blank = s.myscreen.traces(s.task{taskNum}{1}.blankTrace,:);
   s.vol = s.myscreen.traces(1,:);
   s.trialVol = e.trialVolume;
   s.blank = e.randVars.blank;
-  if s.stimulus.stimulusType == 3
+  if any(s.stimulus.stimulusType == [3 4])
     s.barAngle = e.parameter.barAngle;
     s.elementAngle = e.randVars.elementAngle;
   end
@@ -273,7 +273,8 @@ maskImage = maskImage(:,:,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function stimulus = updateRetinotopyStimulus(stimulus,myscreen)
 
-if stimulus.stimulusType == 3
+if any(stimulus.stimulusType == [3 4])
+
   % update the phase of the sliding wedges
   stimulus.phaseNumRect = 1+mod(stimulus.phaseNumRect,stimulus.nRect);
 
@@ -389,7 +390,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%
 %    checkStimfile    %
 %%%%%%%%%%%%%%%%%%%%%%%
-function [tf s] = checkStimfile(s)
+function [tf s taskNum] = checkStimfile(s)
 
 tf = true;
 s = cellArray(s);
@@ -411,17 +412,23 @@ for i = 1:length(s)
   end
   dispstr = sprintf('%s: vols=%i',thiss.myscreen.stimfile,thiss.myscreen.volnum);
   % first check if this is a retinotpy stimfile - it should
-  % have two tasks the second of which is the mglRetinotopy
-  if (length(thiss.task) < 2) || (~isequal(thiss.task{2}{1}.taskFilename,'mglRetinotopy.m') && ~isequal(thiss.task{2}{1}.taskFilename,'gruRetinotopy.m'))
-    disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
-    disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by mglRetinotopy'));
-    tf = false;
+  % have a task which is mglRetinotopy
+  taskNum = [];
+  for iTask = 1:2
+    if (length(thiss.task) >= iTask) && (isequal(thiss.task{iTask}{1}.taskFilename,'mglRetinotopy.m') || isequal(thiss.task{iTask}{1}.taskFilename,'gruRetinotopy.m'))
+      taskNum = iTask;
+    end
+    if isempty(taskNum)
+      disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
+      disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by mglRetinotopy'));
+      return
+    end
   end
 
   % check for proper saved fields
   missing = '';
-  if ~isfield(thiss.task{2}{1},'randVars') missing = 'randVars';end
-  if ~isfield(thiss.task{2}{1},'parameter') missing = 'parameter';end
+  if ~isfield(thiss.task{taskNum}{1},'randVars') missing = 'randVars';end
+  if ~isfield(thiss.task{taskNum}{1},'parameter') missing = 'parameter';end
   if ~any(strcmp('maskPhase',thiss.myscreen.traceNames)) missing = 'maskPhase';end
   if ~any(strcmp('blank',thiss.myscreen.traceNames)) missing = 'blank';end
   if ~isempty(missing)
@@ -432,7 +439,7 @@ for i = 1:length(s)
   end
 
   % check for necessary variables
-  e = getTaskParameters(thiss.myscreen,thiss.task{2}{1});
+  e = getTaskParameters(thiss.myscreen,thiss.task{taskNum}{1});
 
   % now check for each variable that we need
   varnames = {'blank'};
@@ -450,7 +457,7 @@ for i = 1:length(s)
   if ~isempty(stimulusType) && (stimulusType ~= thiss.stimulusType)
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) !!! Stimfile %s does not match previous one !!! Have you averaged together scans with different stimulus conditions?'));
   end
-  if thiss.stimulus.stimulusType == 3
+  if any(thiss.stimulus.stimulusType == [3 4])
     varval = getVarFromParameters('barAngle',e);
     if ~isempty(barAngle) && ~isequal(varval,barAngle)
       disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) !!! Stimfile %s does not match previous one !!! The barAngles are different! Have you averaged together scans with different stimulus conditions?'));
