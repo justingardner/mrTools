@@ -34,7 +34,7 @@ if ieNotDefined('anatFileName')
     else
         startPathStr = anatFilePath;
     end
-    filterspec = {'*.img;*.nii','Nifti/Analyze files'};
+    filterspec = {'*.img;*.nii;*.nii.gz','Nifti/Analyze files'};
     title = 'Choose anatomy file';
     pathStr = mlrGetPathStrDialog(startPathStr,title,filterspec,'on');
 elseif ieNotDefined('anatFilePath')
@@ -114,6 +114,15 @@ for pathNum = 1:length(pathStr)
     % if 3D file just load
     [vol hdr] = mlrImageLoad(pathStr{pathNum});
     if isempty(vol),return,end
+  end
+
+  % add in a missing qform based on voxel dimensios. This
+  % won't have correct info, but will allow the rest of the
+  % code to run and can be fixed by a correct alignment
+  if isempty(hdr.qform)
+    mrWarnDlg(sprinf('(loadAnat) !!!! Missing qform, making one based only on voxel dimensiosn !!!!'));
+    hdr.qform = diag(hdr.pixdim);
+    hdr.qform(4,4) = 1;
   end
   
   % now check for an assoicated .mat file, this is created by
