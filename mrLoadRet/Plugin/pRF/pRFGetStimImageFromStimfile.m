@@ -418,11 +418,12 @@ for i = 1:length(s)
     if (length(thiss.task) >= iTask) && (isequal(thiss.task{iTask}{1}.taskFilename,'mglRetinotopy.m') || isequal(thiss.task{iTask}{1}.taskFilename,'gruRetinotopy.m'))
       taskNum = iTask;
     end
-    if isempty(taskNum)
-      disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
-      disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by mglRetinotopy'));
-      return
-    end
+  end
+  if isempty(taskNum)
+    disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
+    disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by mglRetinotopy'));
+    tf = false;
+    return
   end
 
   % check for proper saved fields
