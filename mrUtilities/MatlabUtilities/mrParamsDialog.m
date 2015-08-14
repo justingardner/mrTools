@@ -739,6 +739,11 @@ if get(fignum,'userdata')
 else  
   global gParams
 
+  % display to text buffer
+  for i = 1:length(gParams.varinfo)
+    disp(sprintf('%s: %s\n',gParams.varinfo{i}.name,gParams.varinfo{i}.description));
+  end
+  
   % turn off menu/title etc.
   set(fignum,'MenuBar','none');
   set(fignum,'NumberTitle','off');
