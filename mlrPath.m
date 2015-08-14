@@ -215,7 +215,7 @@ if strcmp(switchToName,mlrName)
   % add mrTools
   addpath(genpath(mlrRoot));
   % selectively add some paths from vista
-  pathNames = {'mrDiffusion','mrMesh','utilities','mrBOLD/Utilities','fileFilters','mrBOLD/UI','external/pyrTools'};
+  pathNames = {'mrDiffusion','mrMesh','utilities','mrBOLD/Utilities','fileFilters','external/pyrTools'};
   addpath(vistaRoot);
   for i = 1:length(pathNames)
     thisPath = fullfile(vistaRoot,pathNames{i});
