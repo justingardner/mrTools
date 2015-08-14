@@ -35,5 +35,11 @@ dotloc = findstr(filename,delimiter);
 % doesn't work for something stranget like file.name.ext
 % it will return file instead of file.name 
 if length(dotloc) > 0
-  retval = filename(1:dotloc(length(dotloc))-1);
+  % make sure it does not occur before the last
+  % file separator (which would occur if a directory
+  % has the dot in it (i.e. hidden directory)
+  fileseploc = findstr(filename,filesep);
+  if isempty(fileseploc) || (dotloc(end)>fileseploc(end))
+    retval = filename(1:dotloc(length(dotloc))-1);
+  end
 end
