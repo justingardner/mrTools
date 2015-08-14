@@ -29,10 +29,13 @@ d = [];
 % a version number in case we make major changes
 pRFVersion = 1;
 
+% params defaults to empty
+if nargin < 2,params =[];end
+
 % other arguments
-justGetParams=[];defaultParams=[];scanList=[];params=[];
+justGetParams=[];defaultParams=[];scanList=[];
 groupNum=[];
-getArgs(varargin,{'justGetParams=0','defaultParams=0','scanList=[]','params=[]','groupNum=[]'});
+getArgs(varargin,{'justGetParams=0','defaultParams=0','scanList=[]','groupNum=[]'});
 
 % first get parameters
 if isempty(params)
