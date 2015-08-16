@@ -26,12 +26,6 @@ if ~isbase(roiSurf) || (roiSurf.type ~= 2)
   return 
 end
 
-keyboard
-% FIX, FIX, FIX this is not yet working
-%patch('vertices', roiSurf.vtcs, 'faces', roiSurf.tris,'facecolor','interp','edgecolor','none','FaceAlpha',0.4);
-%keyboard
-% FIX, FIX, FIX need to check conversion of coordinates from roi to roiSurf
-
 % get vertices and some information
 vtcs = getSurfVerticesAtCorticalDepth(roiSurf,0.5);
 nVertices = size(vtcs,1);
@@ -75,17 +69,9 @@ end
 % get the vertices
 surf.vtcs = vtcs(vertexIndices,:);
 
-patch('vertices', vtcs, 'faces', roiSurf.coordMap.tris,'facecolor','interp','edgecolor','none','FaceAlpha',1,'FaceVertexCData',roiSurf.data');
-patch('vertices',surf.vtcs,'faces',surf.tris,'facecolor','interp','FaceVertexCData',repmat([1 0 0],size(surf.vtcs,1),1),'edgecolor','none');
-
-% find vertices in surface that match this ROI points
-%for iVox = 1:size(roi.coords,2)
-  % replicate this coord for each vertex
-%  thisCoord = repmat(roi.coords(1:3,iVox)',nVertices,1);
-  % and compute distance to each one
-%  d = sqrt(sum((roiSurf.vtcs-thisCoord)'.^2));
-  
-%end
+% debug code to draw surface and roi surface to visualize what is going on
+%patch('vertices', vtcs, 'faces', roiSurf.coordMap.tris,'facecolor','interp','edgecolor','none','FaceAlpha',1,'FaceVertexCData',roiSurf.data');
+%patch('vertices',surf.vtcs,'faces',surf.tris,'facecolor','interp','FaceVertexCData',repmat([1 0 0],size(surf.vtcs,1),1),'edgecolor','none');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getSurfVerticesAtCorticalDepth    %
