@@ -825,11 +825,14 @@ if ~isempty(selectedVal) && (selectedVal>=1) && (selectedVal<=length(baseSurface
 end
 
 % just get ones that have fascicles
-fascicles = {};
+fascicles = {};intersectSurfaces = {};roiSurfaces = {};
 for iBase = 1:length(baseSurfaces)
   b = viewGet(v,'base',viewGet(v,'baseNum',baseSurfaces{iBase}));
   if ~isempty(b.fascicles)
     fascicles{end+1} = baseSurfaces{iBase};
+  else
+    intersectSurfaces{end+1} = baseSurfaces{iBase};
+    roiSurfaces{end+1} = {'N/A'};
   end
 end
 if isempty(fascicles)
@@ -837,15 +840,23 @@ if isempty(fascicles)
   return
 end
 
+% add list of rois to possible surface to compute intersection with
+nonFascicleSurfaces = intersectSurfaces;
+for iROI = 1:viewGet(v,'numROIs')
+  intersectSurfaces{end+1} = viewGet(v,'roiName',iROI);
+  roiSurfaces{end+1} = nonFascicleSurfaces;
+end
+
 % make combine dialog
 paramsInfo = {};
 paramsInfo{end+1} = {'fascicle',fascicles,'Fascicle base to compute intersection on. That is, this is the one whose fascicles will change dependent on what action we take below'};
-paramsInfo{end+1} = {'intersectSurface',baseSurfaces,'Fascicle base to check intersection with.'};
-paramsInfo{end+1} = {'intersectionType',{'intersect','does not intersect'},'Choose what type of intersection to check'};
+paramsInfo{end+1} = {'intersectWith',1,'round=1','incdec=[-1 1]',sprintf('minmax=[1 %i]',length(intersectSurfaces)),'Base or ROI to calculate intersection with.'};
+paramsInfo{end+1} = {'intersectSurface',intersectSurfaces,'Fascicle base to check intersection with.','type=string','editable=0','contingent=intersectWith'};
+paramsInfo{end+1} = {'roiSurface',roiSurfaces,'If intersectSurface above is an ROI this will be a surface to use for the conversion. ROIs are lists of coordinates and to do these intersections we convert to a surface. To convert to a surface you need to have a surface structure to base that on, so choose here the surface that you want to use for that. It can be any surface for which the ROI shows up on.','type=popupmenu','contingent=intersectWith'};
 paramsInfo{end+1} = {'doIntersection',0,'type=pushbutton','buttonString=Do intersection','Press to do the intersection','callback',@mlrAnatomyPluginDoFascicleIntersect,'callbackArg',v,'passParams=1'};
 
 % put up dialog
-params = mrParamsDialog(paramsInfo,'Fascicle intersection tool');
+params = mrParamsDialog(paramsInfo,'Fascicle intersection tool','fullWidth=1');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatomyPluginDoFasicleIntersect    %
@@ -857,14 +868,23 @@ baseNum = viewGet(v,'baseNum',params.fascicle);
 b = viewGet(v,'base',baseNum);
 f = b.fascicles;
 
-% get intersection surface
-intersectBaseNum = viewGet(v,'baseNum',params.intersectSurface);
-intersect = viewGet(v,'baseSurface',intersectBaseNum);
+% see if the intersect is with a ROI
+roiNum = viewGet(v,'roiNum',params.intersectSurface);
+if ~isempty(roiNum)
+  % turn roi into a surface
+  roiSurface = viewGet(v,'base',viewGet(v,'baseNum',params.roiSurface));
+  intersect = mlrROI2surf(viewGet(v,'roi',roiNum),roiSurface);
+else
+  % get intersection surface
+  intersectBaseNum = viewGet(v,'baseNum',params.intersectSurface);
+  intersect = viewGet(v,'baseSurface',intersectBaseNum);
+end
 
 % get xform from intersection base to fascicles
 base2base = viewGet(v,'base2base',baseNum,intersectBaseNum);
 swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
 
+% initialize distance
 d = -inf(1,f.n);
 
 % get vertices of intersection surface
@@ -874,13 +894,9 @@ v2 = swapXY*base2base*swapXY*v2';
 v2 = v2(1:3,:)';
 v2n = size(v2,1);
 
-%surf1 = f.patches{1};
-%surf2.vertices = v2;
-%surf2.faces = intersect.tris;
-%mlrSmartfig('mlrAnatomyPluginHuh','reuse');clf;
-%patch('vertices',surf1.vertices,'faces',surf1.faces);
-%hold on
-%patch('vertices',surf2.vertices,'faces',surf2.faces);
+% make the intersection Surface
+intersectSurface.vertices = v2;
+intersectSurface.faces = intersect.tris;
 
 % start up workers
 n = mlrNumWorkers;
@@ -903,6 +919,7 @@ for iFascicle = 1:f.n
   dist = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
   d(iFascicle) = min(dist(:));
   fprintf('(mlrAnatomyPlugin) Minimum distance between fascicle %i/%i and %s is %0.2f\n',iFascicle,f.n,params.intersectSurface,d(iFascicle));
+  keyboard
 end
 
 % now put all fascicles vertices and triangles into one coordMap
