@@ -105,7 +105,7 @@ for corticalDepth = corticalDepths(1):0.1:corticalDepths(end)
   % get the cortical slice index
   corticalSlice = find(cmap.corticalDepths == (round(corticalDepth*10)/10));
   % read off coordinates for this depth
-  coords = [coords;round(squeeze(cmap.coords(1,vList,1,:,corticalSlice)))];
+  coords = [coords;squeeze(cmap.coords(1,vList,1,:,corticalSlice))];
 end
 % return unique coords
 coords = unique(coords,'rows');
