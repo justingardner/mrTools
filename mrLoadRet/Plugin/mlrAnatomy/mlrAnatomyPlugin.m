@@ -205,7 +205,7 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     displayList = {'Fascicle'};
     if isfield(base.fascicles,'intersect')
       for i = 1:length(base.fascicles.intersect)
-	displayList{end+1} = base.fascicles.intersect.intersectWith;
+	displayList{end+1} = base.fascicles.intersect(i).intersectWith;
       end
     end
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','String',displayList);
@@ -844,7 +844,15 @@ end
 nonFascicleSurfaces = intersectSurfaces;
 for iROI = 1:viewGet(v,'numROIs')
   intersectSurfaces{end+1} = viewGet(v,'roiName',iROI);
-  roiSurfaces{end+1} = nonFascicleSurfaces;
+  % get what base this was created on
+  createdOnBase = viewGet(v,'roiCreatedOnBase',iROI);
+  if ismember(createdOnBase,nonFascicleSurfaces)
+    % if we have that base then make that the first choice
+    roiSurfaces{end+1} = putOnTopOfList(createdOnBase,nonFascicleSurfaces);
+  else
+    % otherwise just show possible choices
+    roiSurfaces{end+1} = nonFascicleSurfaces;
+  end
 end
 
 % make combine dialog
@@ -863,6 +871,8 @@ params = mrParamsDialog(paramsInfo,'Fascicle intersection tool','fullWidth=1');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function params = mlrAnatomyPluginDoFascicleIntersect(v,params)
 
+disp(sprintf('(mlrAnatomyPlugin) Computing fascicle intersection...'));
+
 % get the base we are going to modify
 baseNum = viewGet(v,'baseNum',params.fascicle);
 b = viewGet(v,'base',baseNum);
@@ -872,8 +882,14 @@ f = b.fascicles;
 roiNum = viewGet(v,'roiNum',params.intersectSurface);
 if ~isempty(roiNum)
   % turn roi into a surface
-  roiSurface = viewGet(v,'base',viewGet(v,'baseNum',params.roiSurface));
+  intersectBaseNum = viewGet(v,'baseNum',params.roiSurface);
+  roiSurface = viewGet(v,'base',intersectBaseNum);
   intersect = mlrROI2surf(viewGet(v,'roi',roiNum),roiSurface);
+  % swapXY to make same as what baseSurface returns
+  vtcs(:,1) = intersect.vtcs(:,2);
+  vtcs(:,2) = intersect.vtcs(:,1);
+  vtcs(:,3) = intersect.vtcs(:,3);
+  intersect.vtcs = vtcs;
 else
   % get intersection surface
   intersectBaseNum = viewGet(v,'baseNum',params.intersectSurface);
@@ -883,7 +899,7 @@ end
 % get xform from intersection base to fascicles
 base2base = viewGet(v,'base2base',baseNum,intersectBaseNum);
 swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-
+%base2base = eye(4);
 % initialize distance
 d = -inf(1,f.n);
 
@@ -919,7 +935,6 @@ for iFascicle = 1:f.n
   dist = sqrt((v2x-v1x).^2 + (v2y-v1y).^2 +(v2z-v1z).^2);
   d(iFascicle) = min(dist(:));
   fprintf('(mlrAnatomyPlugin) Minimum distance between fascicle %i/%i and %s is %0.2f\n',iFascicle,f.n,params.intersectSurface,d(iFascicle));
-  keyboard
 end
 
 % now put all fascicles vertices and triangles into one coordMap
@@ -1016,7 +1031,7 @@ if isequal(displayType,'Fascicle')
   mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','Visible','on');
 else
   % otherwise we are doing an intersect, so figure out which intersect we are doing
-  intersectNum = find(strcmp(displayType,b.fascicles.intersect(:).intersectWith));
+  intersectNum = find(strcmp(displayType,{b.fascicles.intersect(:).intersectWith}));
   if isempty(intersectNum),return,end
   intersect = b.fascicles.intersect(intersectNum);
   % get what we can restrict against and set up controls
@@ -1058,7 +1073,7 @@ if isequal(displayType,'Fascicle')
   mlrAnatomyFascicleRestrictFascicle(v,hObject,b,baseNum);
 else
   % we are doing an intersect, so figure out which intersect we are doing
-  intersectNum = find(strcmp(displayType,b.fascicles.intersect(:).intersectWith));
+  intersectNum = find(strcmp(displayType,{b.fascicles.intersect(:).intersectWith}));
   if isempty(intersectNum),return,end
   intersect = b.fascicles.intersect(intersectNum);
   % call function to do restriction with intersect
@@ -1185,7 +1200,7 @@ if isequal(displayType,'Fascicles')
 else
   doRound = false;
 end
-  
+
 % get selected base  
 [b baseNum] = mlrAnatomyGetSelectedBase(v);
 
@@ -1214,6 +1229,9 @@ elseif isequal(hMinEdit,hObject)
     if val < 1, val = 1;end
     if val > b.fascicles.n,val = b.fascicles.n;end
   end
+  % keep in bounds
+  val = min(val,get(hMinSlider,'Max'));
+  val = max(val,get(hMinSlider,'Min'));
   % now set slider to that value
   set(hMinSlider,'Value',val);
   set(hMinEdit,'String',sprintf('%s',mlrnum2str(val)));
@@ -1232,6 +1250,9 @@ elseif isequal(hMaxEdit,hObject)
     if val < 1, val = 1;end
     if val > b.fascicles.n,val = b.fascicles.n;end
   end
+  % keep in bounds
+  val = min(val,get(hMaxSlider,'Max'));
+  val = max(val,get(hMaxSlider,'Min'));
   % now set slider to that value
   set(hMaxSlider,'Value',val);
   set(hMaxEdit,'String',sprintf('%s',mlrnum2str(val)));
@@ -1264,7 +1285,7 @@ if isequal(displayType,'Fascicle')
 
 else
   % get which intersect we are doing
-  intersectNum = find(strcmp(displayType,b.fascicles.intersect(:).intersectWith));
+  intersectNum = find(strcmp(displayType,{b.fascicles.intersect(:).intersectWith}));
   if isempty(intersectNum),return,end
   intersect = b.fascicles.intersect(intersectNum);
   % now get min and max values
