@@ -1614,6 +1614,8 @@ switch lower(param)
 	  val.vtcs(:,1) = vtcs(:,2);
 	  val.vtcs(:,2) = vtcs(:,1);
 	  val.vtcs(:,3) = vtcs(:,3);
+	else
+	  val.vtcs = [];
 	end
       else
 	val = [];
