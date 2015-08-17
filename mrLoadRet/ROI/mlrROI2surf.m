@@ -70,20 +70,18 @@ end
 surf.vtcs = vtcs(vertexIndices,:);
 
 % debug code to draw surface and roi surface to visualize what is going on
-%patch('vertices', vtcs, 'faces', roiSurf.coordMap.tris,'facecolor','interp','edgecolor','none','FaceAlpha',1,'FaceVertexCData',roiSurf.data');
-%patch('vertices',surf.vtcs,'faces',surf.tris,'facecolor','interp','FaceVertexCData',repmat([1 0 0],size(surf.vtcs,1),1),'edgecolor','none');
+if 0
+  mlrSmartfig('mlrROI2surf','reuse');clf;
+  patch('vertices', roiSurf.coordMap.innerVtcs + (roiSurf.coordMap.outerVtcs-roiSurf.coordMap.innerVtcs)*0, 'faces', roiSurf.coordMap.tris,'facecolor','interp','edgecolor','none','FaceAlpha',1,'FaceVertexCData',roiSurf.data');
+  hold on
+  patch('vertices',surf.vtcs,'faces',surf.tris,'facecolor','interp','FaceVertexCData',repmat([1 0 0],size(surf.vtcs,1),1),'edgecolor','none');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getSurfVerticesAtCorticalDepth    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function vtcs = getSurfVerticesAtCorticalDepth(s,corticalDepth)
 
-% FIX, FIX, FIX this should interpolate outside of 0 and 1
-if (corticalDepth < 0) || (corticalDepth > 1)
-  disp(sprintf('Interpolation out of depth not implemented yet'));
-  keyboard
-end
-
 % interpoate coordinates. 
-vtcs = (s.coordMap.innerVtcs * corticalDepth) + s.coordMap.outerVtcs * (1-corticalDepth);
+vtcs = s.coordMap.innerVtcs + (s.coordMap.outerVtcs - s.coordMap.innerVtcs) * corticalDepth;
 vtcs = squeeze(vtcs);
