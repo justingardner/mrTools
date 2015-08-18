@@ -689,7 +689,7 @@ for iBase = 1:length(uniqueDisplayOnBase)
   v = viewSet(v,'roiGroup',viewGet(v,'roiName',roiList(strcmp(uniqueDisplayOnBase{iBase},displayOnBase))));
   v = viewSet(v,'showROIs','group perimeter');
   % make screen shot
-  mrPrint(v,'useDefault=1');
+  mrPrint(v,'useDefault=1','roiSmooth=0');
   % ask whether user wants to save screen shot
   paramsInfo = {{'saveScreenShot',uniqueDisplayOnBase{iBase},'Save this image as a screen shot to DB'}};
   params = mrParamsDialog(paramsInfo,'Do you want to save this screen shot?');
