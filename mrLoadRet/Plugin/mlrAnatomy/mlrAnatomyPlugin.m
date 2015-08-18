@@ -825,7 +825,7 @@ if ~isempty(selectedVal) && (selectedVal>=1) && (selectedVal<=length(baseSurface
 end
 
 % just get ones that have fascicles
-fascicles = {};intersectSurfaces = {};roiSurfaces = {};
+fascicles = {};intersectSurfaces = {};roiSurfaces = {};corticalDepth = {};
 for iBase = 1:length(baseSurfaces)
   b = viewGet(v,'base',viewGet(v,'baseNum',baseSurfaces{iBase}));
   if ~isempty(b.fascicles)
@@ -833,6 +833,13 @@ for iBase = 1:length(baseSurfaces)
   else
     intersectSurfaces{end+1} = baseSurfaces{iBase};
     roiSurfaces{end+1} = {'N/A'};
+    % check if plane
+    if isfield(b,'plane') && ~isempty(b.plane)
+      % planes do not have cortical depth
+      corticalDepth{end+1} = nan;
+    else
+      corticalDepth{end+1} = 0;
+    end
   end
 end
 if isempty(fascicles)
@@ -853,6 +860,8 @@ for iROI = 1:viewGet(v,'numROIs')
     % otherwise just show possible choices
     roiSurfaces{end+1} = nonFascicleSurfaces;
   end
+  % default cortical depth to white matter boundary
+  corticalDepth{end+1} = 0;
 end
 
 % make combine dialog
@@ -861,6 +870,7 @@ paramsInfo{end+1} = {'fascicle',fascicles,'Fascicle base to compute intersection
 paramsInfo{end+1} = {'intersectWith',1,'round=1','incdec=[-1 1]',sprintf('minmax=[1 %i]',length(intersectSurfaces)),'Base or ROI to calculate intersection with.'};
 paramsInfo{end+1} = {'intersectSurface',intersectSurfaces,'Fascicle base to check intersection with.','type=string','editable=0','contingent=intersectWith'};
 paramsInfo{end+1} = {'roiSurface',roiSurfaces,'If intersectSurface above is an ROI this will be a surface to use for the conversion. ROIs are lists of coordinates and to do these intersections we convert to a surface. To convert to a surface you need to have a surface structure to base that on, so choose here the surface that you want to use for that. It can be any surface for which the ROI shows up on.','type=popupmenu','contingent=intersectWith'};
+paramsInfo{end+1} = {'corticalDepth',corticalDepth,'At what cortical depth to compute intersection statistics. 0 is lower and 1 is upper surface of gray matter. To extend into the white matter, set this value negative. Values are relative to the depth of cortex - so a value of -0.5 is half the gray matter depth into the white matter. For some surfaces like planes this value is not used and defaults to Nan','type=numeric','incdec=[-0.1 0.1]','contingent=intersectWith'};
 paramsInfo{end+1} = {'doIntersection',0,'type=pushbutton','buttonString=Do intersection','Press to do the intersection','callback',@mlrAnatomyPluginDoFascicleIntersect,'callbackArg',v,'passParams=1'};
 
 % put up dialog
@@ -884,7 +894,7 @@ if ~isempty(roiNum)
   % turn roi into a surface
   intersectBaseNum = viewGet(v,'baseNum',params.roiSurface);
   roiSurface = viewGet(v,'base',intersectBaseNum);
-  intersect = mlrROI2surf(viewGet(v,'roi',roiNum),roiSurface);
+  intersect = mlrROI2surf(viewGet(v,'roi',roiNum),roiSurface,'corticalDepth',params.corticalDepth);
   % swapXY to make same as what baseSurface returns
   vtcs(:,1) = intersect.vtcs(:,2);
   vtcs(:,2) = intersect.vtcs(:,1);
@@ -893,7 +903,12 @@ if ~isempty(roiNum)
 else
   % get intersection surface
   intersectBaseNum = viewGet(v,'baseNum',params.intersectSurface);
-  intersect = viewGet(v,'baseSurface',intersectBaseNum);
+  % get a surface at the right cortical depth
+  if ~isnan(params.corticalDepth)
+    intersect = viewGet(v,'baseSurface',intersectBaseNum,params.corticalDepth);
+  else
+    intersect = viewGet(v,'baseSurface',intersectBaseNum);
+  end
 end
 
 % get xform from intersection base to fascicles
@@ -903,7 +918,7 @@ swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
 % initialize distance
 d = -inf(1,f.n);
 
-% get vertices of intersection surface
+% get vertices of intersection surface and convert coordinates
 v2 = intersect.vtcs;
 v2(:,4) = 1;
 v2 = swapXY*base2base*swapXY*v2';
@@ -1145,7 +1160,7 @@ if val > 2
   % set base to display just the one fascicle
   dispList = zeros(1,b.fascicles.n);
   dispList(val)=1;
-  b = mlrAnatomySetFascicles(b,dispList);
+  b = mlrAnatomySetFascicles(v,b,dispList);
   b.fascicles.displayMin = val;
   b.fascicles.displayMax = val;
 elseif val == 1
@@ -1157,7 +1172,7 @@ elseif val == 1
 
   % set base to display all fascicles
   dispList = ones(1,b.fascicles.n);
-  b = mlrAnatomySetFascicles(b,dispList);
+  b = mlrAnatomySetFascicles(v,b,dispList);
   b.fascicles.displayMin = 1;
   b.fascicles.displayMax = b.fascicles.n;
 elseif val == 2
@@ -1303,7 +1318,7 @@ else
 end
 
 % now set them and display
-b = mlrAnatomySetFascicles(b,dispList);
+b = mlrAnatomySetFascicles(v,b,dispList);
 
 % reset the base and cache
 v = viewSet(v,'base',b,baseNum);
@@ -1317,7 +1332,7 @@ refreshMLRDisplay(v);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatomySetFascicles    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function b = mlrAnatomySetFascicles(b,dispList)
+function b = mlrAnatomySetFascicles(v,b,dispList)
 
 % shortcut to fascicles
 f = b.fascicles;
@@ -1366,6 +1381,9 @@ b.coordMap.outerVtcs = b.coordMap.innerVtcs;
 
 % make sure it is still a base
 [tf b] = isbase(b);
+
+% set display of how many fascicles are being shown
+mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','String',sprintf('N=%i/%i',sum(dispList),b.fascicles.n));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatomyGetSelectedBase    %

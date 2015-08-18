@@ -1,19 +1,28 @@
 % mlrROI2surf.m
 %
 %        $Id:$ 
-%      usage: surf = mlrROI2surf(roi,roiSurf)
+%      usage: surf = mlrROI2surf(roi,roiSurf,<corticalDepth=0.5>)
 %         by: justin gardner
 %       date: 07/30/15
 %    purpose: function that will convert an mlr ROI into a surf (triangulated mesh with
-%             vertices and triangles)
+%             vertices and triangles). The roi is the roi you want to convert
+%             and roiSurf is the surface you want to base the conversion
+%             on (i.e. it will pull out the piece of roiSurf that
+%             corresponds to roi)
 %
 %             v = newView;
 %             v = loadROI(v,'l_mt.mat');
 %             roi = viewGet(v,'roi','l_mt');
-%             surf = mlrROI2surf(roi);
+%             v = loadAnat(v,'jg_left_GM');
+%             roiSurf = view(v,'base');
+%             surf = mlrROI2surf(roi,roiSurf);
 %
+%             Will default to getting the surface at cortical depth 0f 0.5
+%             Can get at different depths by doing
 %
-function surf = mlrROI2surf(roi,roiSurf)
+%             surf = mlrROI2surf(roi,roiSurf,'corticalDepth=0');
+%
+function surf = mlrROI2surf(roi,roiSurf,varargin)
 
 % check arguments
 if nargin < 2
@@ -21,13 +30,16 @@ if nargin < 2
   return
 end
 
+% get arguments
+getArgs(varargin,{'corticalDepth=0.5'});
+
 if ~isbase(roiSurf) || (roiSurf.type ~= 2)
   disp(sprintf('(mlrROI2surf) Invalid surface passed in'));
   return 
 end
 
 % get vertices and some information
-vtcs = getSurfVerticesAtCorticalDepth(roiSurf,0.5);
+vtcs = getSurfVerticesAtCorticalDepth(roiSurf,corticalDepth);
 nVertices = size(vtcs,1);
 baseDims = roiSurf.coordMap.dims;
 
@@ -82,6 +94,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function vtcs = getSurfVerticesAtCorticalDepth(s,corticalDepth)
 
+disp(sprintf('corticalDepth: %f',corticalDepth));
 % interpoate coordinates. 
 vtcs = s.coordMap.innerVtcs + (s.coordMap.outerVtcs - s.coordMap.innerVtcs) * corticalDepth;
 vtcs = squeeze(vtcs);
