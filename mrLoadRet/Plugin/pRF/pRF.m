@@ -283,14 +283,15 @@ if strncmp(params.restrict,'Base: ',6)
   end
   if any(base.type == [1 2])
     % get base coordinates from the coordMap
-    baseCoords = base.coordMap.coords;
-    % convert to 4xn array
-    sizeBaseCoords = size(baseCoords);
-    baseCoords = reshape(baseCoords,prod(sizeBaseCoords(1:3)),3)';
-    baseCoords(4,:) = 1;
-    % and convert to scan coordinates
-    base2scan = viewGet(v,'base2scan',scanNum,params.groupName,baseNum);
-    scanCoords = round(base2scan*baseCoords);
+    scanCoords = [];
+    for corticalDepth = 0:0.1:1
+      baseCoords = (base.coordMap.innerVtcs + corticalDepth * (base.coordMap.outerVtcs-base.coordMap.innerVtcs))';
+      % convert to 4xn array
+      baseCoords(4,:) = 1;
+      % and convert to scan coordinates
+      base2scan = viewGet(v,'base2scan',scanNum,params.groupName,baseNum);
+      scanCoords = [scanCoords round(base2scan*baseCoords)];
+    end
     % check against scandims
     scanDims = viewGet(v,'scanDims',scanNum,params.groupName);
     scanCoords = mrSub2ind(scanDims,scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
