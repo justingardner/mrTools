@@ -50,24 +50,35 @@ if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
     if askToStart
       % get number of workers to use
       if any(numWorkers == [0 1]);
-	paramsInfo = {};
+	% find maximum number of workers
 	if exist('parcluster') == 2
-	  % check local cluster for maximum workers
+	  % check using parcluster
 	  myCluster = parcluster('local');
 	  maxWorkers = myCluster.NumWorkers;
-	  % put up dialog to select number of workers
-	  paramsInfo{end+1} = {'numWorkers',min(max(maxWorkers-2,2),maxWorkers),'type=numeric','minmax',[1 maxWorkers],'incdec=[-1 1]','Set to how many workers you want to use for parallel computing'};
+	  recommendedWorkers = min(max(maxWorkers-2,2),maxWorkers);
+	elseif exist('findResource') == 2
+	  % check using findResource if parcluster unavailable
+	  myCluster = findResource;
+	  maxWorkers = myCluster.ClusterSize;
+	  recommendedWorkers = min(max(maxWorkers-2,2),maxWorkers);
 	else
-	  paramsInfo{end+1} = {'numWorkers',4,'type=numeric','minmax=[1 inf]','incdec=[-1 1]','Set to how many workers you want to use for parallel computing'};
+	  % put up a reasonable guess
+	  maxWorkers = inf;
+	  recommendedWorkers = 4;
 	end
-	% put up dialog box
+	
+	% put up dialog to select number of workers
+	paramsInfo{1} = {'numWorkers',recommendedWorkers,'type=numeric','minmax',[1 maxWorkers],'incdec=[-1 1]','Set to how many workers you want to use for parallel computing'};
+
+	% put up the dialog box
 	if numWorkers
 	  params = mrParamsDialog(paramsInfo,'Start a pool of workers?');
 	  if isempty(params),return,end
 	else
-	  % use default parameters
+	  % use default parameters if numWorkers was set to 0
 	  params = mrParamsDefault(paramsInfo);
 	end
+	% get the number of workers
 	numWorkers = params.numWorkers;
       end
 
