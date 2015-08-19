@@ -126,8 +126,10 @@ switch lower(param)
       return
     end
     if (view.curGroup ~= val)
-      % save loaded analysis if there are any
+      % save loaded analysis if there are any - ordering by which one is current
       view = viewSet(view,'loadedAnalyses',view.analyses,view.curGroup);
+      % save the current displayed analysis
+      view.groupSettings(viewGet(view,'curgroup')).curAnalysis = viewGet(view,'curAnalysis');
       % save the current scan number
       view = viewSet(view,'groupScanNum',viewGet(view,'curScan'),view.curGroup);
       MLR.views{view.viewNum} = view;
@@ -156,6 +158,12 @@ switch lower(param)
       loadedAnalyses = viewGet(view,'loadedAnalyses',val);
       for i = 1:length(loadedAnalyses)
 	view = viewSet(view,'newAnalysis',loadedAnalyses{i});
+      end
+      % set the analysis number back to the last setting if we have one
+      if isfield(view,'groupSettings') && (length(view.groupSettings) >= val) && isfield(view.groupSettings(val),'curAnalysis') && ~isempty(view.groupSettings(val).curAnalysis)
+	view = viewSet(view,'curAnalysis',view.groupSettings(val).curAnalysis);
+      else
+	view = viewSet(view,'curAnalysis',1);
       end
       % delete the analyses from the loaded cache
       view = viewSet(view,'loadedAnalyses',{},view.curGroup);
