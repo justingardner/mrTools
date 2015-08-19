@@ -271,38 +271,57 @@ x = [];y = [];z = [];
 if strncmp(params.restrict,'Base: ',6)
   % get the base name
   baseName = params.restrict(7:end);
-  baseNum = viewGet(v,'baseNum',baseName);
-  if isempty(baseNum)
-    disp(sprintf('(pRF) Could not find base to restrict to: %s',params.restrict));
-    return;
-  end
-  base = viewGet(v,'base',baseNum);
-  if isempty(base)
-    disp(sprintf('(pRF) Could not find base to restrict to: %s',params.restrict));
-    return;
-  end
-  if any(base.type == [1 2])
-    % get base coordinates from the coordMap
-    scanCoords = [];
-    for corticalDepth = 0:0.1:1
-      baseCoords = (base.coordMap.innerVtcs + corticalDepth * (base.coordMap.outerVtcs-base.coordMap.innerVtcs))';
-      % convert to 4xn array
-      baseCoords(4,:) = 1;
-      % and convert to scan coordinates
-      base2scan = viewGet(v,'base2scan',scanNum,params.groupName,baseNum);
-      scanCoords = [scanCoords round(base2scan*baseCoords)];
+  baseNums = [];
+  if strcmp(baseName,'ALL')
+    for iBase = 1:viewGet(v,'numBase')
+      % if the base is a surface or flat then add to the list
+      if any(viewGet(v,'baseType',iBase) == [1 2])
+	baseNums(end+1) = iBase;
+      end
     end
-    % check against scandims
-    scanDims = viewGet(v,'scanDims',scanNum,params.groupName);
-    scanCoords = mrSub2ind(scanDims,scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
-    % remove duplicates and nans
-    scanCoords = scanCoords(~isnan(scanCoords));
-    scanCoords = unique(scanCoords);
-    % convert back to x,y,z coordinates
-    [x y z] = ind2sub(scanDims,scanCoords);
   else
-    keyboard
+    baseNums = viewGet(v,'baseNum',baseName);
   end
+  % cycle through all bases that we are going to run on
+  scanCoords = [];
+  for iBase = 1:length(baseNums)
+    baseNum = baseNums(iBase);
+    if isempty(baseNum)
+      disp(sprintf('(pRF) Could not find base to restrict to: %s',params.restrict));
+      continue
+    end
+    base = viewGet(v,'base',baseNum);
+    if isempty(base)
+      disp(sprintf('(pRF) Could not find base to restrict to: %s',params.restrict));
+      return;
+    end
+    if any(base.type == [1 2])
+      % get base coordinates from the coordMap
+      for corticalDepth = 0:0.1:1
+	if base.type == 1
+	  % flat map
+	  baseCoords = (base.coordMap.innerCoords + corticalDepth * (base.coordMap.outerCoords-base.coordMap.innerCoords));
+	  baseCoords = reshape(baseCoords,prod(size(base.data)),3)';
+	else
+	  % surface
+	  baseCoords = (base.coordMap.innerVtcs + corticalDepth * (base.coordMap.outerVtcs-base.coordMap.innerVtcs))';
+	end
+	% convert to 4xn array
+	baseCoords(4,:) = 1;
+	% and convert to scan coordinates
+	base2scan = viewGet(v,'base2scan',scanNum,params.groupName,baseNum);
+	scanCoords = [scanCoords round(base2scan*baseCoords)];
+      end
+    end
+  end
+  % check against scandims
+  scanDims = viewGet(v,'scanDims',scanNum,params.groupName);
+  scanCoords = mrSub2ind(scanDims,scanCoords(1,:),scanCoords(2,:),scanCoords(3,:));
+  % remove duplicates and nans
+  scanCoords = scanCoords(~isnan(scanCoords));
+  scanCoords = unique(scanCoords);
+  % convert back to x,y,z coordinates
+  [x y z] = ind2sub(scanDims,scanCoords);
 elseif strncmp(params.restrict,'ROI: ',5)
   % get the roi name
   roiName = params.restrict(6:end);

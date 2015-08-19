@@ -28,16 +28,24 @@ groupNames = putOnTopOfList(viewGet(v,'groupName',groupNum),viewGet(v,'groupName
 
 % get possible restrictions of the analysis (i.e. restrict only to volumes
 % in base coordinates, rois, etc.)
-restrict = {'None'};putOnTop='';
+restrict = {'None'};putOnTop='';nBases = 0;
 curBase = viewGet(v,'curbase');
 for iBase = 1:viewGet(v,'numbase')
   b = viewGet(v,'base',iBase);
   if b.type > 0
+    % add any surface or flat map to base list
     restrict{end+1} = sprintf('Base: %s',b.name);
     if isequal(iBase,curBase)
       putOnTop{1} = restrict{end};
     end
+    % update number of bases we have found
+    nBases = nBases+1;
   end
+end
+% if we have found more than 1 base then add the possibility of
+% running on all bases
+if nBases >= 2
+  restrict{end+1} = sprintf('Base: ALL');
 end
 % get rois
 roiNames = viewGet(v,'roiNames');
