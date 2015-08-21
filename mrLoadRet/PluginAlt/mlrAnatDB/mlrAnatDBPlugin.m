@@ -75,7 +75,7 @@ if ~mlrAnatDBInLocalRepo(v)
   mlrAdjustGUI(v,'set','Import Surface from Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add Session to Anat DB','Enable','on');
   mlrAdjustGUI(v,'set','Add ROIs to Anat DB','Enable','off');
-  mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','off');
+  mlrAdjustGUI(v,'set','Add Base Anatomies to Anat DB','Enable','on');
   if viewGet(v,'nROIs')
     mlrAdjustGUI(v,'set','Examine ROI in Anat DB','Enable','on');
   else
