@@ -44,6 +44,9 @@ if ieNotDefined('params')
   end
 end
 
+% check params (and possibly reformat to latest version)
+params = checkEventRelatedParams(params);
+  
 % just return parameters
 if justGetParams
   d = params;
@@ -120,7 +123,7 @@ for scanNum = params.scanNum
       thisRows = [currentRow min(dims(1),currentRow+numRowsAtATime-1)];
       d = loadScan(view,scanNum,[],thisSlices,precision,thisRows);
       % get the stim volumes, if empty then abort
-      d = getStimvol(d,params.scanParams{scanNum});
+      d = getStimvol(d,params.scanParams{scanNum}.stimvolVarInfo);
       if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
       % do any called for preprocessing
       d = eventRelatedPreProcess(d,params.scanParams{scanNum}.preprocess);
@@ -217,3 +220,25 @@ if nargout > 1
   end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    checkEventRelatedParams    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function params = checkEventRelatedParams(params)
+  
+% convert scanParams if necessary from old to new style. New style
+% has one field call stimvolVarInfo which contains the varname, taskNum, segmentNum and phaseNum
+% for computing stimvols using getStimvol. This was done so that stimvolVarInfo can
+% be a cell array with multiple variable settings in it (which will get concatenated)
+for scanNum = params.scanNum
+  if ~isempty(params.scanParams{scanNum}) && ~isfield(params.scanParams{scanNum},'stimvolVarInfo')
+    fieldsToMove = {'phaseNum','taskNum','segmentNum','varname'};
+    for iField = 1:length(fieldsToMove)
+      if isfield(params.scanParams{scanNum},fieldsToMove{iField})
+	% copy into the combined stimvolVarInfo field
+	params.scanParams{scanNum}.stimvolVarInfo.(fieldsToMove{iField}) = params.scanParams{scanNum}.(fieldsToMove{iField});
+	% and remove from original location
+	params.scanParams{scanNum} = rmfield(params.scanParams{scanNum},fieldsToMove{iField});
+      end
+    end
+  end
+end

@@ -32,6 +32,44 @@ if (nargin < 1)
   return
 end
 
+% handle a cell array of stimVariables which means to concatenate
+% each of the stimvariables into one stimvol array. So the following
+% code is just a recursive run of getStimvol on each element of stimVariable
+if (nargin >= 2) && iscell(stimVariable)
+  stimvol = {};stimNames = {};var = {};
+  % if input is a structure we need to return that
+  if isstruct(d)
+    stimvol = d;
+    structFields = {'trialNum','stimNames','stimvol','stimDurations'};
+  end
+  for iVar = 1:length(stimVariable)
+    % go throuch each part of cell array and run
+    [iStimvol iStimNames iVarOutput] = getStimvol(d,stimVariable{iVar},varargin{:});
+    % now concatenate
+    if iVar == 1
+      stimvol = iStimvol;
+    else
+      % concatenate 
+      if iscell(iStimvol)
+	% when returning a cell array, simply return cell concat
+	stimvol = {stimvol{:} iStimvol{:}};
+      else
+	% for a structure then concat fields
+	stimvol.trialNum{1} = {stimvol.trialNum{1}{:} iStimvol.trialNum{1}{:}};
+	stimvol.stimNames = {stimvol.stimNames{:} iStimvol.stimNames{:}};
+	stimvol.stimvol = {stimvol.stimvol{:} iStimvol.stimvol{:}};
+	stimvol.stimDurations = {stimvol.stimDurations{:} iStimvol.stimDurations{:}};
+	stimvol.varname(end+1) = iStimvol.varname;
+      end
+    end
+    % stim names and var just get concatenated
+    stimNames = {stimNames{:} iStimNames{:}};
+    var{end+1} = iVarOutput;
+  end
+  d = stimvol;
+  return
+end
+
 % evaluate other arguments
 taskNum=[];phaseNum=[];segmentNum=[];stimfile=[];tr=[];nFrames=[];concatInfo=[];
 junkFrames=[];returnOnlyStimvol=[];
