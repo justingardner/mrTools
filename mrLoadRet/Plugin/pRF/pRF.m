@@ -75,7 +75,7 @@ r2.colormap = r2.colormap(end-255:end,:);
 r2.alpha = 1;
 r2.colormapType = 'setRangeToMax';
 r2.interrogator = 'pRFPlot';
-r2.mergeFunction = 'defaultMergeParams';
+r2.mergeFunction = 'pRFMergeParams';
 
 % create the parameters for the polarAngle overlay
 polarAngle = r2;
@@ -232,19 +232,20 @@ pRFAnal.type = 'pRFAnal';
 pRFAnal.groupName = params.groupName;
 pRFAnal.function = 'pRF';
 pRFAnal.reconcileFunction = 'defaultReconcileParams';
-pRFAnal.mergeFunction = 'defaultMergeParams';
+pRFAnal.mergeFunction = 'pRFMergeParams';
 pRFAnal.guiFunction = 'pRFGUI';
 pRFAnal.params = params;
 pRFAnal.overlays = [r2 polarAngle eccentricity rfHalfWidth];
 pRFAnal.curOverlay = 1;
 pRFAnal.date = dateString;
 v = viewSet(v,'newAnalysis',pRFAnal);
-if ~isempty(viewGet(v,'fignum'))
-  refreshMLRDisplay(viewGet(v,'viewNum'));
-end
 
 % Save it
 saveAnalysis(v,pRFAnal.name);
+
+if ~isempty(viewGet(v,'fignum'))
+  refreshMLRDisplay(viewGet(v,'viewNum'));
+end
 
 %set(viewGet(v,'figNum'),'Pointer','arrow');drawnow
 
