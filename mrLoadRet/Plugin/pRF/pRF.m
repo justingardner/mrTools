@@ -240,8 +240,17 @@ pRFAnal.curOverlay = 1;
 pRFAnal.date = dateString;
 v = viewSet(v,'newAnalysis',pRFAnal);
 
+% if we are going to merge, temporarily set overwritePolicy
+if isfield(params,'mergeAnalysis') && params.mergeAnalysis
+  saveMethod = mrGetPref('overwritePolicy');
+  mrSetPref('overwritePolicy','Merge');
+end
 % Save it
 saveAnalysis(v,pRFAnal.name);
+% now set policy back
+if isfield(params,'mergeAnalysis') && params.mergeAnalysis
+  mrSetPref('overwritePolicy',saveMethod);
+end
 
 if ~isempty(viewGet(v,'fignum'))
   refreshMLRDisplay(viewGet(v,'viewNum'));

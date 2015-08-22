@@ -62,12 +62,46 @@ if ~isempty(putOnTop)
   end
 end
 
+% check if we have an old pRF analysis loaded which
+% the user might want to continue running (i.e. add voxels to)
+analysisNames = viewGet(v,'analysisNAmes');
+pRFAnalyses = {};
+for i = 1:length(analysisNames)
+  if isequal(viewGet(v,'analysisType',i),'pRFAnal')
+    pRFAnalyses{end+1} = analysisNames{i};
+  end
+end
+
 % set the parameter string
 paramsInfo = {};
 if ~pRFFitParamsOnly
   paramsInfo{end+1} = {'groupName',groupNames,'Name of group from which to do pRF analysis'};
   paramsInfo{end+1} = {'saveName','pRF','File name to try to save as'};
   paramsInfo{end+1} = {'restrict',restrict,'Restrict to the analysis to some subset of voxels. If you choose a base anatomy then it will restrict to the voxels that are on the base. If you choose an roi it will restrict the analysis to the voxels in the roi'};
+
+  % if we give the option to continue an analysis
+  if ~isempty(pRFAnalyses) && ~defaultParams
+    continueParamsInfo{1} = {'continueAnalysis',0,'type=checkbox','Continue running a previously run analysis with same parameters. This is usually done on a different restriction set and will look at the old analysis to make sure not to compute voxels that have already been run. In the end will merge the analyses'};
+    continueParamsInfo{2} = {'continueWhich',pRFAnalyses,'Which analysis to continue','contingent=continueAnalysis'};
+    % add on restrict
+    for i = 3:length(paramsInfo)
+      continueParamsInfo{2+i-2} = paramsInfo{i};
+    end
+    for i = 3:length(continueParamsInfo)
+      continueParamsInfo{i}{end+1} = 'contingent=continueAnalysis';
+    end
+    % put up dialog box with possibility to continue analysis
+    continueParams = mrParamsDialog(continueParamsInfo,'Continue existing analysis?');
+    if ~isempty(continueParams) && continueParams.continueAnalysis
+      % get the parameters to continue from
+      params = viewGet(v,'analysisParams',viewGet(v,'analysisNum',continueParams.continueWhich));
+      % copy relevant ones (i.e. what new thing to restrict on)
+      params.restrict =  continueParams.restrict;
+      % tell pRF to set merge analysis instead of asking
+      params.mergeAnalysis = true;
+      return
+    end
+  end
 end
 
 %all of these parameters are for pRFFit
