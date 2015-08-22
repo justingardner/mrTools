@@ -603,9 +603,19 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
       for i = gParams.varinfo{varnum}.controls
         % enable or disable all the controlled fields
         if (val == 0)
-          set(gParams.ui.varentry{i},'Enable','off');
+	  % if set to not, then when this is off the controls is on
+	  if gParams.varinfo{varnum}.controlsNot
+	    set(gParams.ui.varentry{i},'Enable','on');
+	  else
+	    set(gParams.ui.varentry{i},'Enable','off');
+	  end
         else
-          set(gParams.ui.varentry{i},'Enable','on');
+	  % if set to not, then when this is off the controls is on
+	  if gParams.varinfo{varnum}.controlsNot
+	    set(gParams.ui.varentry{i},'Enable','off');
+	  else
+	    set(gParams.ui.varentry{i},'Enable','on');
+	  end
         end
         % now store the value currently being displayed
         if gParams.varinfo{i}.oldControlVal
