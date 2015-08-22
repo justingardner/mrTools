@@ -17,6 +17,7 @@ if ~any(nargin == [0 1])
   return
 end
 
+try
 % ask the user what to do
 askToStart = true;
 
@@ -96,4 +97,8 @@ if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
       disp(sprintf('(mlrNumWorkers) You can speed up performance by starting a matlab pool of workers using the parallel computing toolbox. Type: matlabpool open'));
     end
   end
+end
+
+catch
+  disp(sprintf('(mlrNumWorkers) !!! Error starting a parallel pool. Will only use 1 processor !!!'));
 end
