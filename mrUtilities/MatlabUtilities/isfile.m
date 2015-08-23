@@ -23,8 +23,9 @@ if (fid ~= -1)
   % check to see if this is the correct path (cause matlab can open
   % files anywhere in the path)
   if (length(filename)>=1) && ~isequal(filename(1),filesep)
-    openname = fopen(fid);
-    if ~strcmp(fullfile(pwd,filename),openname)
+%     openname = fopen(fid);
+%     if ~strcmp(fullfile(pwd,filename),openname)
+    if ~isempty(which(filename)) && ~strcmp(fullfile(pwd,filename),which(filename)) %using which instead of fopen, because older versions of matlab didn't return the full path
       %disp(sprintf('(isfile) Found file %s, but not in current path',openname));
       isit = false;
       fclose(fid);
