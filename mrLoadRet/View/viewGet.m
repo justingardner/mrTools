@@ -3837,10 +3837,7 @@ switch lower(param)
         val = analysis.overlays(overlayNum).interrogator;
       end
     end
-    if isempty(val)
-      val = 'timecoursePlot';
-    end
-  case {'overlaygroupname'}
+   case {'overlaygroupname'}
     % groupName = viewGet(view,'overlayGroupName',[overlayNum],[analysisNum])
     % groupName = viewGet(view,'overlayGroupName',overlayNum,[])
     % groupName = viewGet(view,'overlayGroupName',[],analysisNum)
