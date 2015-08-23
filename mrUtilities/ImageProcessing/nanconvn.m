@@ -35,7 +35,7 @@ mask = ~isnan(A);
 A(isnan(A))=0;
 
 %convolve thsi new A with B and divide by the weights
-weights=convn(mask,B,shape);
+weights=convn(mask,abs(B),shape);
 C = convn(A,B,shape)./weights;
 
 %Note that some points will be undefined (those that don't receive any contribution from any point of A)
