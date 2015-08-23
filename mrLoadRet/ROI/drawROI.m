@@ -81,7 +81,11 @@ else
       hold on;
       key=1;
       while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) && key==1
-        [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
+        if ~isempty(selectionY)
+          [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
+        else
+          index=0;
+        end
         if index
           delete(hSelection(:,index));
           hSelection(:,index)=[];
