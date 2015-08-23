@@ -408,14 +408,19 @@ global ALIGN
 initPath = pwd;
 pathStr = mlrGetPathStrDialog(initPath,'Choose inplane anatomy file',{'*.img;*.nii','NIFTI Files'});
 if isempty(pathStr),return,end
-ALIGN.inplanePath = pathStr;
 
 % Load inplane file and header
 h = mrMsgBox('Loading inplanes. Please wait');
-[vData,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
+[vData,hdr] = mlrImageReadNifti(pathStr);
 mrCloseDlg(h);
 if isempty(vData),return,end
 
+if size(vData,3)==1
+  mrWarnDlg('(mrAlignGUI) Single-slice images are not supported');
+  return
+end
+
+ALIGN.inplanePath = pathStr;
 % Load associated .mat file for the inplanes (used in mrLR for bases,
 % and needed here for keeping track of Talairach information). If
 % no such .mat file exists, create it. (If user doesn't use mrLR,
