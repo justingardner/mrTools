@@ -81,7 +81,7 @@ switch(kernelType)
   case 'sphere'
     [sphereX,sphereY,sphereZ] = ndgrid(-margin(1):margin(1),-margin(2):margin(2),-margin(3):margin(3));
     kernel = zeros(2*margin(1)+1,2*margin(2)+1,2*margin(3)+1);
-    kernel(abs(sphereX)<margin(1) & abs(sphereY)<margin(2) & abs(sphereZ)<margin(3))=1;
+    kernel(sqrt((sphereX./margin(1)).^2 + (sphereY./margin(2)).^2 + (sphereZ./margin(3)).^2)<1)=1;
   case 'cube'
     kernel = ones(2*margin(1),2*margin(2),2*margin(3));
   case 'square'
@@ -89,7 +89,7 @@ switch(kernelType)
   case 'disc'
     [discX,discY] = ndgrid(-margin(1):margin(1),-margin(2):margin(2));
     kernel = zeros(2*margin(1)+1,2*margin(2)+1);
-    kernel(abs(discX)<margin(1) & abs(discY)<margin(2))=1;
+    kernel(sqrt((discX./margin(1)).^2 + (discY./margin(2)).^2)<1)=1;
 end
 
 volume = logical(convn(volume,kernel,'same'));
