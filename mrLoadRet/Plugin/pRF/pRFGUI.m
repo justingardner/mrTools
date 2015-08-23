@@ -99,6 +99,15 @@ if ~pRFFitParamsOnly
       params.restrict =  continueParams.restrict;
       % tell pRF to set merge analysis instead of asking
       params.mergeAnalysis = true;
+      % now get a list of all finished voxels
+      a = viewGet(v,'analysis',viewGet(v,'analysisNum',continueParams.continueWhich));
+      if isfield(a,'d')
+	for i = 1:length(a.d)
+	  if isfield(a.d{i},'linearCoords')
+	    params.computedVoxels{i} = a.d{i}.linearCoords;
+	  end
+	end
+      end
       return
     end
   end

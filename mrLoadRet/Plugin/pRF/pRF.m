@@ -345,3 +345,19 @@ elseif strncmp(params.restrict,'None',4)
 else
   keyboard
 end
+
+%check if we have already computed Voxels
+if isfield(params,'computedVoxels') && (length(params.computedVoxels)>=scanNum) && ~isempty(params.computedVoxels{scanNum})
+  % get scan dims
+  scanDims = viewGet(v,'scanDims',scanNum,params.groupName);
+  % convert x, y, z to linear coords
+  linearCoords = sub2ind(scanDims,x,y,z);
+  % get new ones
+  newLinearCoords = setdiff(linearCoords,params.computedVoxels{scanNum});
+  if length(newLinearCoords) ~= length(linearCoords)
+    % show what we are doing
+    disp(sprintf('(pRF) Dropping %i voxels that have been already computed',length(linearCoords)-length(newLinearCoords)));
+    % convert back to x, y, z
+    [x y z] = ind2sub(scanDims,newLinearCoords);
+  end
+end
