@@ -55,6 +55,9 @@ params = defaultReconcileParams([],params);
 % Abort if params empty
 if isempty(params),return,end
 
+% check the params
+params = checkPRFparams(params);
+
 % set the group
 v = viewSet(v,'curGroup',params.groupName);
 
@@ -359,5 +362,18 @@ if isfield(params,'computedVoxels') && (length(params.computedVoxels)>=scanNum) 
     disp(sprintf('(pRF) Dropping %i voxels that have been already computed',length(linearCoords)-length(newLinearCoords)));
     % convert back to x, y, z
     [x y z] = ind2sub(scanDims,newLinearCoords);
+  end
+end
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    checkPRFparams    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function params = checkPRFparams(params)
+
+checkFields = {{'stimImageDiffTolerance',5}};
+
+% set defaults
+for iField = 1:length(checkFields)
+  if ~isfield(params,checkFields{iField}{1})
+    params.(checkFields{iField}{1}) = checkFields{iField}{2};
   end
 end

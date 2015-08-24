@@ -812,7 +812,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    checkStimForAverages    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNum,stim,concatInfo,ignoreMismatchStimfiles)
+function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNum,stim,concatInfo,stimImageDiffTolerance)
 
 % this function will check for some bad casses (like concat of concats etc)
 % it will also check that all the component scans of an average have the
@@ -883,6 +883,7 @@ else
     % and warn if there are any inconsistencies
     for i = 1:length(stim)
       if ~isequalwithequalnans(stim{1}.im,stim{i}.im)    
+	dispHeader
 	disp(sprintf('(pRFFit:checkStimForAverages) !!! Average for %s:%i component scan %i does not match stimulus for other scans. If you wish to continue then this will use the stimfile associated with the first scan in the average !!!',viewGet(v,'groupName',groupNum),scanNum,originalScanNum(i)));
 	% display which volumes are different
 	diffVols = [];
@@ -891,21 +892,18 @@ else
 	    diffVols(end+1) = iVol;
 	  end
 	end
-	if length(diffVols) < 10
-	  disp(sprintf('(pRFFit) Stimulus files are different at %i vols: %s',length(diffVols),num2str(diffVols)));
-	end
-	% ask user if they want to continue (only if there is a difference of more than 10 vols
-	if ~ignoreMismatchStimfiles && (length(diffVols) > 10)
+	disp(sprintf('(pRFFit) Stimulus files are different at %i of %i vols (%0.1f%%): %s',length(diffVols),size(stim{1}.im,3),100*length(diffVols)/size(stim{1}.im,3),num2str(diffVols)));
+	if 100*(length(diffVols)/size(stim{1}.im,3)) < stimImageDiffTolerance
+	  disp(sprintf('(pRFFit) This could be for minor timing inconsistencies, so igorning. Set stimImageDiffTolerance lower if you want to stop the code when this happens'));
+	else
+	  % ask user if they want to continue (only if there is a difference of more than 10 vols	  
 	  ignoreMismatchStimfiles = askuser('Do you wish to continue',1);
 	  if ~ignoreMismatchStimfiles
 	    stim = [];
 	    return;
 	  end
 	end
-	% ask user next time around if this happens
-	if ignoreMismatchStimfiles == 1
-	  ignoreMismatchStimfiles = 0;
-	end
+	dispHeader
       end
     end
     % if we passed the above, this is an average of identical
@@ -931,7 +929,7 @@ if (isfield(fitParams,'recomputeStimImage') && fitParams.recomputeStimImage) || 
   % if no save stim then create one
   stim = pRFGetStimImageFromStimfile(stimfile,'volTrigRatio',volTrigRatio,'xFlip',fitParams.xFlipStimulus,'yFlip',fitParams.yFlipStimulus,'timeShift',fitParams.timeShiftStimulus,'verbose',fitParams.verbose,'saveStimImage',fitParams.saveStimImage,'recomputeStimImage',fitParams.recomputeStimImage);
   % check for averages
-  stim = checkStimForAverages(v,scanNum,viewGet(v,'curGroup'),stim,fitParams.concatInfo);
+  stim = checkStimForAverages(v,scanNum,viewGet(v,'curGroup'),stim,fitParams.concatInfo,fitParams.stimImageDiffTolerance);
   if isempty(stim),return,end
   % make into cell array
   stim = cellArray(stim);
