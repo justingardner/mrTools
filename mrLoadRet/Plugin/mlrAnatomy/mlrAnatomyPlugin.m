@@ -45,8 +45,10 @@ switch action
     % add controls for fascicles
     mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleIntersect','panel','Multiple base display','style','pushbutton','position', [0.01    0.52    0.98   0.07 ],'String','Calculate intersect','Callback',@mlrAnatomyFascicleIntersect,'Visible','off');
     mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleN','panel','Multiple base display','style','text','position', [0.01    0.44    0.98   0.07 ],'HorizontalAlignment','Center','Visible','off');
-    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleDisplay','panel','Multiple base display','style','popupmenu','position', [0.01    0.36    0.98   0.07 ],'HorizontalAlignment','Center','Callback',@mlrAnatomyFascicleDisplay,'Visible','off');
-    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleRestrict','panel','Multiple base display','style','popupmenu','position', [0.01    0.28    0.98   0.07 ],'HorizontalAlignment','Center','Callback',@mlrAnatomyFascicleRestrict,'Visible','off');
+    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleDisplayText','panel','Multiple base display','style','text','position', [0.01    0.36    0.33   0.07 ],'HorizontalAlignment','Center','Visible','off','String','Restrict with');
+    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleDisplay','panel','Multiple base display','style','popupmenu','position', [0.35   0.36    0.64   0.07 ],'HorizontalAlignment','Center','Callback',@mlrAnatomyFascicleDisplay,'Visible','off');
+    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleRestrictText','panel','Multiple base display','style','text','position', [0.01    0.28    0.33   0.07 ],'HorizontalAlignment','Center','Visible','off','String','Restrict type');
+    mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleRestrict','panel','Multiple base display','style','popupmenu','position', [0.35    0.28    0.64   0.07 ],'HorizontalAlignment','Center','Callback',@mlrAnatomyFascicleRestrict,'Visible','off');
     mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleMinText','panel','Multiple base display','style','text','position', [0.01    0.20    0.1   0.07 ],'HorizontalAlignment','Center','String','Min','Visible','off');
     mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleMinSlider','panel','Multiple base display','style','slider','position', [0.11    0.20    0.25   0.07 ],'HorizontalAlignment','Center','Callback',@mlrAnatomyFascicleMinmax,'Visible','off');
     mlrAdjustGUI(v,'add','control','mlrAnatomyFascicleMinEdit','panel','Multiple base display','style','edit','position', [0.37    0.20    0.12   0.07 ],'HorizontalAlignment','Center','Callback',@mlrAnatomyFascicleMinmax,'Visible','off');
@@ -193,6 +195,8 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','off');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','Visible','off');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplayText','Visible','off');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrictText','Visible','off');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinText','Visible','off');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','off');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','Visible','off');
@@ -216,6 +220,8 @@ if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames)
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleN','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplay','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrict','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleDisplayText','Visible','on');
+    mlrAdjustGUI(v,'set','mlrAnatomyFascicleRestrictText','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinText','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinSlider','Visible','on');
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxText','Visible','on');
@@ -1182,7 +1188,7 @@ elseif val == 2
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMinEdit','String',sprintf('%i',b.fascicles.subsetList(1)));
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxSlider','Value',b.fascicles.subsetList(2));
     mlrAdjustGUI(v,'set','mlrAnatomyFascicleMaxEdit','String',sprintf('%i',b.fascicles.subsetList(2)));
-    mlrAnatomyFascicleMinmax(mlrAdjustGUI(v,'get','mlrAnatomyFascicleMinSlider'),eventdata);
+    mlrAnatomyFascicleMinmax(mlrAdjustGUI(v,'get','mlrAnatomyFascicleMinSlider'),[]);
   end
 end
 
