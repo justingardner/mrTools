@@ -369,11 +369,16 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%
 function params = checkPRFparams(params)
 
-checkFields = {{'stimImageDiffTolerance',5}};
 
-% set defaults
-for iField = 1:length(checkFields)
-  if ~isfield(params,checkFields{iField}{1})
-    params.(checkFields{iField}{1}) = checkFields{iField}{2};
+% check the pRFFit params
+checkFields = {{'stimImageDiffTolerance',5}};
+for iFit = 1:length(params.pRFFit)
+
+  % set defaults
+  for iField = 1:length(checkFields)
+    if ~isfield(params.pRFFit(iFit),checkFields{iField}{1})
+      params.pRFFit(iFit).(checkFields{iField}{1}) = checkFields{iField}{2};
+    end
   end
 end
+

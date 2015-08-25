@@ -814,6 +814,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNum,stim,concatInfo,stimImageDiffTolerance)
 
+ignoreMismatchStimfiles = false;  
+
 % this function will check for some bad casses (like concat of concats etc)
 % it will also check that all the component scans of an average have the
 % same stim image and warn if they do not. It will then replace the stim cell
@@ -822,10 +824,6 @@ function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNu
 
 % if not a cell, then ok, return
 if ~iscell(stim),return,end
-
-if nargin < 6
-  ignoreMismatchStimfiles = false;  
-end
 
 % first check for bad shiftList or refverseLIst
 p = viewGet(v,'params',scanNum,groupNum);
@@ -852,7 +850,9 @@ if ~isempty(concatInfo) && (concatInfo.isConcat)
       return;
     end
     % check this next scan
-    [stim{i} ignoreMismatchStimfiles] = checkStimForAverages(v,originalScanNum(i),originalGroupNum(i),stim{i},concatInfo,ignoreMismatchStimfiles);
+    [stim{i} ignoreMismatchStimfiles] = checkStimForAverages(v,originalScanNum(i),originalGroupNum(i),stim{i},concatInfo,stimImageDiffTolerance);
+    % if user has accepted all then set stimImageDiffTOlerance to infinity
+    if isinf(ignoreMismatchStimfiles),stimImageDiffTolerance = inf;end
     if isempty(stim{i}),stim = [];return,end
   end
 else

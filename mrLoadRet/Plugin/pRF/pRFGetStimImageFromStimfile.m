@@ -394,6 +394,7 @@ function [tf s taskNum] = checkStimfile(s)
 
 tf = true;
 s = cellArray(s);
+taskNum = [];
 
 stimulusType = [];
 barAngle = [];
