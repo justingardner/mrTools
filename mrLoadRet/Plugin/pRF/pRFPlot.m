@@ -309,7 +309,7 @@ if length(roi)
     eccLimit = 6;
     ind = thisEccentricity <= eccLimit;
     if any(ind)
-      regfit = myregress(thisEccentricity(ind),thisRfHalfWidth(ind),0,0);
+%      regfit = myregress(thisEccentricity(ind),thisRfHalfWidth(ind),0,0);
       w = diag(thisr2(ind));
       x = thisEccentricity(ind);
       x = [x(:) ones(size(x(:)))];
@@ -323,7 +323,7 @@ if length(roi)
       end
       xlabel('Eccentricity (deg)');
       ylabel('RF half width (deg)');
-      title(sprintf('slope: %0.2f (%s) offset: %0.2f (%s) (r2=%0.2f)',beta(1),pvaldisp(regfit.pm),beta(2),pvaldisp(regfit.pb),regfit.r2));
+%      title(sprintf('slope: %0.2f (%s) offset: %0.2f (%s) (r2=%0.2f)',beta(1),pvaldisp(regfit.pm),beta(2),pvaldisp(regfit.pb),regfit.r2));
       axis square
     else
       disp(sprintf('(pRFPlot) No matching fits to plot with eccentricity less than %f',eccLimit));
@@ -369,3 +369,4 @@ end
 while (sum(degrees<-360))
   degrees = degrees + (degrees<-360)*360;
 end
+
