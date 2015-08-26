@@ -65,7 +65,7 @@ switch lower(field)
     callbacks = viewGet(view,'callback','baseChange');
     % and call them
     for iCallback = 1:length(callbacks)
-      feval(callbacks{1},view);
+      view = feval(callbacks{iCallback},view);
     end
   end
  case {'labelrois'}

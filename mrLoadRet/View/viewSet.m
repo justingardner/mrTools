@@ -740,6 +740,14 @@ switch lower(param)
     mlrGuiSet(view,'basePopup',stringList);
     % Set it to be the current base Volume
     view = viewSet(view,'curBase',newBaseNum);
+    % see if there are any registered callbacks
+    if ~isempty(viewGet(view,'figNum'))
+      callbacks = viewGet(view,'callback','newBase');
+      % and call them
+      for iCallback = 1:length(callbacks)
+	view = feval(callbacks{iCallback},view);
+      end
+    end
 
   case {'deletebase'}
     % view = viewSet(view,'deletebase',baseNum);
@@ -940,7 +948,7 @@ switch lower(param)
       callbacks = viewGet(view,'callback','curBaseChange');
       % and call them
       for iCallback = 1:length(callbacks)
-	feval(callbacks{1},view);
+	view = feval(callbacks{iCallback},view);
       end
     end
   case{'basecoordmappath'}
@@ -2362,7 +2370,7 @@ switch lower(param)
     % will be called when any of the base information has been updated
     % call viewSet(v,'callback') for a list of valid callbackNames
 
-    callbackNames = {'baseChange','curBaseChange'};
+    callbackNames = {'baseChange','curBaseChange','newBase'};
 
     if length(varargin) ~= 1
       disp(sprintf('(viewSet:callback) Registering callback requires two arguments: callbackName and callback function handle. callbackName can be any of: '));

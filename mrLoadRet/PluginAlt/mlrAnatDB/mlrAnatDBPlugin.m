@@ -31,6 +31,11 @@ switch action
     mlrAdjustGUI(v,'add','menu','Add Base Anatomies to Anat DB','/File/Anat DB/Add ROIs to Anat DB','Callback',@mlrAnatDBAddBaseAnatomies);
     mlrAdjustGUI(v,'add','menu','Examine ROI in Anat DB','/File/Anat DB/Add Base Anatomies to Anat DB','Callback',@mlrAnatDBExamineROI,'Separator','on');
 
+    % add the callback that will tell mlrAnatDB that a base has been added
+    % this is so that we can update the fields that point to the 
+    % surfaces from which the anatomy was built (so that flatViewer and
+    % makeFlat work)
+    v = viewSet(v,'callback','newBase',@mlrAnatDBBaseChange);
     % return true to indicate successful plugin
     retval = true;
    end
@@ -330,3 +335,26 @@ function [status,result] = mysystem(command)
 disp(sprintf('(mlrAnatDBPlugin): %s',command));
 [status,result] = system(command,'-echo');
 
+
+%%%%%%%%%%%%%%%%%%%%
+%    baseChange    %
+%%%%%%%%%%%%%%%%%%%%
+function v = mlrAnatDBBaseChange(v)
+
+% get the base coord map for the new base
+baseCoordMap = viewGet(v,'baseCoordMap');
+% if not empty, we will check to see if its file
+% pointers point to mlrAnatDB correctly
+if ~isempty(baseCoordMap)
+  % check path
+  subjectID = getLastDir(fileparts(baseCoordMap.path));
+  % update the path if it was already pointing to a subjectID directory
+  if ~isempty(subjectID) && (subjectID(1) == 's')
+    % change the path to point to the local mlrAnatDB
+    baseCoordMap.path = mlrReplaceTilde(fullfile(mrGetPref('mlrAnatDBLocalRepo'),subjectID,getLastDir(baseCoordMap.path)));
+    % and update
+    v = viewSet(v,'baseCoordMap',baseCoordMap);
+    % and get the repo
+    mlrAnatDBGetRepo(subjectID);
+  end
+end
