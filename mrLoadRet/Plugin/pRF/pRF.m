@@ -218,7 +218,7 @@ for scanNum = params.scanNum
     y(blockStart:blockEnd) = loadROI.scanCoords(2,1:blockSize);
     z(blockStart:blockEnd) = loadROI.scanCoords(3,1:blockSize);
     % keep the linear coords
-    pRFAnal.d{scanNum}.linearCoords = [pRFAnal.d{scanNum}.linearCoords sub2ind(scanDims,x,y,z)];
+    pRFAnal.d{scanNum}.linearCoords = [pRFAnal.d{scanNum}.linearCoords sub2ind(scanDims,x(blockStart:blockEnd),y(blockStart:blockEnd),z(blockStart:blockEnd))];
 
     if blockStart ~= 1
       % display time update
