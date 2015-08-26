@@ -144,7 +144,7 @@ for scanNum = params.scanNum
   
   % save pRF parameters
   pRFAnal.d{scanNum}.ver = pRFVersion;
-  pRFAnal.d{scanNum}.linearCoords = sub2ind(scanDims,x,y,z);
+  pRFAnal.d{scanNum}.linearCoords = [];
   pRFAnal.d{scanNum}.params = [];
 
   % get some information from pRFFit that will be used again in
@@ -183,8 +183,15 @@ for scanNum = params.scanNum
   disp(sprintf('(pRF) Scan %s:%i (restrict %s) running on %i processor(s)',params.groupName,scanNum,params.restrict,nProcessors));
   disp(sprintf('(pRF) Computing %s fits using %s for %i voxels',params.pRFFit.rfType,algorithm,n));
   dispHeader;
-  
-  blockSize = n;
+
+  % this is a bit arbitrary but is the number of voxels to read in at a time.
+  % should probably be either calculated based on memory demands or a
+  % user settings. The bigger the number the less overhead and will run faster
+  % but consume more memory. The overhead is not terribly significant though
+  % as tested on my machine - maybe a few percent faster with full n, but
+  % on many machines without enough memory that will crash it so keeping
+  % this preliminary value in for now.
+  blockSize = 240;
   tic;
   % break into blocks of voxels to go easy on memory
   % if blockSize = n then this just does on block at a time.
@@ -206,6 +213,13 @@ for scanNum = params.scanNum
     % too large for memory then you can comment this out and not
     % pass it into pRFFit and pRFFit will load the tSeries itself
     loadROI = loadROITSeries(v,loadROI,scanNum,params.groupName);
+    % reorder x,y,z coordinates since they can get scrambled in loadROITSeries
+    x(blockStart:blockEnd) = loadROI.scanCoords(1,1:blockSize);
+    y(blockStart:blockEnd) = loadROI.scanCoords(2,1:blockSize);
+    z(blockStart:blockEnd) = loadROI.scanCoords(3,1:blockSize);
+    % keep the linear coords
+    pRFAnal.d{scanNum}.linearCoords = [pRFAnal.d{scanNum}.linearCoords sub2ind(scanDims,x,y,z)];
+
     if blockStart ~= 1
       % display time update
       dispHeader(sprintf('(pRF) %0.1f%% done in %s (Estimated time remaining: %s)',100*blockStart/n,mlrDispElapsedTime(toc),mlrDispElapsedTime((toc*n/blockStart) - toc)));
@@ -323,16 +337,19 @@ if strncmp(params.restrict,'Base: ',6)
   % cycle through all bases that we are going to run on
   scanCoords = [];
   for iBase = 1:length(baseNums)
+    % get the baseNum
     baseNum = baseNums(iBase);
     if isempty(baseNum)
       disp(sprintf('(pRF) Could not find base to restrict to: %s',params.restrict));
       continue
     end
+    % get the base
     base = viewGet(v,'base',baseNum);
     if isempty(base)
       disp(sprintf('(pRF) Could not find base to restrict to: %s',params.restrict));
       return;
     end
+    % if flat or surface
     if any(base.type == [1 2])
       % get base coordinates from the coordMap
       for corticalDepth = 0:0.1:1
