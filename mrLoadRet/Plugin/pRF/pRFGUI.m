@@ -64,12 +64,14 @@ end
 
 % check if we have an old pRF analysis loaded which
 % the user might want to continue running (i.e. add voxels to)
-analysisNames = viewGet(v,'analysisNAmes');
+analysisNames = viewGet(v,'analysisNames');
 pRFAnalyses = {};
 for i = 1:length(analysisNames)
   if isequal(viewGet(v,'analysisType',i),'pRFAnal')
     pRFAnalyses{end+1} = analysisNames{i};
   end
+  % put current analysis on top of list
+  pRFAnalyses = putOnTopOfList(viewGet(v,'analysisName'),pRFAnalyses);
 end
 
 % set the parameter string
