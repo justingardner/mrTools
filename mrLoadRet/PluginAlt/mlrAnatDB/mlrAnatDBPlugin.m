@@ -354,7 +354,9 @@ if ~isempty(baseCoordMap)
     baseCoordMap.path = mlrReplaceTilde(fullfile(mrGetPref('mlrAnatDBLocalRepo'),subjectID,getLastDir(baseCoordMap.path)));
     % and update
     v = viewSet(v,'baseCoordMap',baseCoordMap);
-    % and get the repo
-    mlrAnatDBGetRepo(subjectID);
+    % and see if the repo exists
+    if isempty(mlrAnatDBGetRepo(subjectID,'noPull=1'))
+      mlrAnatDBGetRepo(subjectID);
+    end
   end
 end
