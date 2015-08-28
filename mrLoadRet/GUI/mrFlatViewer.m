@@ -91,7 +91,7 @@ if isstr(flat{1})
   % remove any paths
   gFlatViewer.flat.parentSurfaceName = getLastDir(gFlatViewer.flat.parentSurfaceName);
 
-else
+elseif isfield(flat{1},'radius')
   % if this is a structure, then we are being called from makeFlat
   % with coordinates and a radius
   flatdir = [];
@@ -100,6 +100,13 @@ else
   gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,flat{1}.startPoint,flat{1}.parentSurfaceName);
   if isempty(gFlatViewer.flat),return,end
   flat{1} = gFlatViewer.flat.name;
+elseif isfield(flat{1},'vtcs')
+  % is a passed in flat 
+  gFlatViewer.flat = flat{1};
+  flat{1} = gFlatViewer.flat.filename;
+  flatdir = [];
+  gFlatViewer.path = gFlatViewer.flat.path;
+  flatPath = gFlatViewer.path;
 end
 
 % look for flats with same parent

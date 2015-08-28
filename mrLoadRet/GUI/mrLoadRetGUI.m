@@ -2645,11 +2645,67 @@ thispwd = pwd;
 if isdir(flatPath) && isfile(fullfile(flatPath,filename))
   cd(flatPath);
 else
-  mrWarnDlg(sprintf('(mrLoadRetGUI) File %s does not exist, please find the anatomy folder for this surface/flat',fullfile(flatPath,filename)));
-  pathStr = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy folder from which this flat was created');
-  if pathStr == 0,return,end
-  cd(pathStr);
-  viewSet(v,'baseCoordMapPath',pathStr);
+  if baseType ~= 1
+    mrWarnDlg(sprintf('(mrLoadRetGUI) File %s does not exist, please find the anatomy folder for this surface/flat',fullfile(flatPath,filename)));
+    pathStr = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy folder from which this flat was created');
+    if pathStr == 0,return,end
+    cd(pathStr);
+    viewSet(v,'baseCoordMapPath',pathStr);
+  else
+    % try to create the off for a flat
+    flatParentSurf = fullfile(params.path,params.innerCoordsFileName);
+    if isfile(flatParentSurf)
+      disp('(mrLoadRetGUI) Creating missing flat off surface');
+      disppercent(-inf,sprintf('(mrLoadRetGUI) Note this will create a quick flat surface good enough for rough visualization of location but is not exactly correct'));
+      % load the parent surface 
+      flatParentSurfOFF = loadSurfOFF(flatParentSurf);
+      if ~isempty(flatParentSurfOFF)
+	% find all vtcs that intersect
+	flatVtcs = [];
+	for corticalDepth = -0.5:0.05:1.5
+	  flatVtcs = [flatVtcs ; reshape(params.innerCoords + (params.outerCoords-params.innerCoords)*corticalDepth,size(params.innerCoords,1)*size(params.innerCoords,2),3)];
+	end
+	% match coordinate to find vertices that this was made from
+	%vtcs = assignToNearest(flatVtcs,flatParentSurfOFF.vtcs);
+	% round and linearize the vertices
+	flatVtcs = round(flatVtcs);
+	flatLinear = mrSub2ind(params.dims,flatVtcs(:,1), flatVtcs(:,2),flatVtcs(:,3));
+	parentVtcs = round(flatParentSurfOFF.vtcs);
+	flatParentLinear = mrSub2ind(params.dims,parentVtcs(:,1),parentVtcs(:,2),parentVtcs(:,3));
+	% find ones that match - note that this is an approximation
+	% by finding vertices that are wihtin a rounded mm to
+	% each other - also above we add across cortical depths.
+	% Could be more precise - but that might be slower
+	% and for this purposes (visualization of roughly
+	% where the surface is, seems good enough)
+	vtcs = find(ismember(flatParentLinear,flatLinear));
+	% find tris that these vtcs are associated with
+	matchingTris = flatParentSurfOFF.tris;
+	[triNum edgeNum] = find(ismember(matchingTris,vtcs));
+	tris = flatParentSurfOFF.tris(triNum,:);
+	% now reget the vertices that are in all the triangles
+	vtcs = unique(tris(:));
+	% and renumber the vtcs in the tris 
+	[dummy tris(:)] = ismember(tris(:),vtcs);
+	% ok, put it all togehter
+	flatSurf.filename = '';
+	flatSurf.nParent = [flatParentSurfOFF.Nvtcs flatParentSurfOFF.Ntris 1]; 
+	flatSurf.nPatch = [length(vtcs) size(tris,1) 1];
+	flatSurf.vtcs = flatParentSurfOFF.vtcs(vtcs,:);
+	flatSurf.tris = tris;
+	flatSurf.parentSurfaceName = flatParentSurf;
+	flatSurf.Nvtcs = length(vtcs);
+	flatSurf.Ntris = size(tris,1);
+	flatSurf.edges = 0;
+	flatSurf.patch2parent(:,1) = (1:length(vtcs))';
+	flatSurf.patch2parent(:,2) = vtcs';
+	flatSurf.path = params.path;
+	% put it into the params field
+	params.flatFileName = flatSurf;
+	disppercent(inf);
+      end
+    end
+  end
 end
 
 if baseType == 1
