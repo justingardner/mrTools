@@ -187,6 +187,55 @@ for iFile = 1:length(filePath)
   toPath{iFile} = fullfile(fileDir,getLastDir(filePath{iFile}));
 end
 
+% check base anatomies for flat off files that should
+% get put in the repo as well.
+if strcmp(lower(fileType),'mlrbaseanat')
+  % look for base matfiles
+  for iFile = 1:length(filePath)
+    % now look for any with .mat which contain the base structures
+    if strcmp(getext(filePath{iFile}),'mat');
+      % look for any flats with a flatFileName  
+      b = load(filePath{iFile});
+      if isfield(b,'base') && isfield(b.base,'coordMap') && isfield(b.base.coordMap,'flatFileName');
+	% get the flat file
+	flatFile = fullfile(b.base.coordMap.path,b.base.coordMap.flatFileName);
+	% if it exists then put it into the list, and make a new name for it
+	if isfile(flatFile)
+	  % get the original name and check that it is a file
+	  flatFrom = fullfile(b.base.coordMap.path,b.base.coordMap.flatFileName);
+	  if isfile(flatFrom)
+	    % make the new name
+	    flatFileSaveName = setext(b.base.name,'off');
+	    % and also change the name in this base
+	    b.base.coordMap.flatFileName = flatFileSaveName;
+	    % and save the base
+	    cd(localRepo);
+	    save(toPath{iFile},'-struct','b','base');
+	    % now link the flat off file into surfaces
+	    flatTo = fullfile('surfaces',flatFileSaveName);
+	    [status,result] = system(sprintf('ln -f %s %s',flatFrom,flatTo));
+            % if failed, then..
+	    if status
+	      % try copy
+	      success = copyfile(flatFrom,flatTo,'f');
+	      status = ~success;
+	    end
+	    cd(curpwd);
+	    if status
+	      disp(sprintf('(mlrAnatDBPut) Could not save off file for flat %s',flatFrom));
+	    else
+	      % put it in the list of stuff to commit
+	      toPath{end+1} = flatTo;
+	    end
+	  else
+	    disp(sprintf('(mlrAnatDBPut) Could not find off file for flat: %s',flatFrom));
+	  end
+	end
+      end
+    end
+  end
+end
+
 % make links to canonical for surfaces
 if strcmp(lower(fileType),'surfaces')
   % get list of nifti files in directory - these should be canonical
