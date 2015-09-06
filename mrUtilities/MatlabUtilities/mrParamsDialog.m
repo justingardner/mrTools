@@ -813,7 +813,9 @@ function helpcloseHandler(varargin)
 global gParams;
 
 set(gParams.fignum(2),'visible','off')
-set(gParams.helpButton,'string','Show Help');
+if ishandle(gParams.helpButton)
+  set(gParams.helpButton,'string','Show Help');
+end
 
 %%%%%%%%%%%%%%%%%%%%
 % callback for close
