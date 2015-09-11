@@ -77,7 +77,18 @@ for fnum = 1:length(paramFields)
       end	  
     % checkbox
     elseif strcmp(gParams.varinfo{match}.type,'checkbox')
-      set(gParams.ui.varentry{match},'Value',params.(paramFields{fnum}));
+      if ~isfield(gParams.varinfo{match},'group')
+	set(gParams.ui.varentry{match},'Value',params.(paramFields{fnum}));
+      else
+	groupVar = gParams.varinfo{match}.group;
+	% keep values for each one of the group
+	for i = 1:length(params.(paramFields{fnum}))
+	  gParams.varinfo{match}.allValues{i} = params.(paramFields{fnum})(i);
+	end
+	% and set the current value in the gui
+	currentVal = params.(paramFields{fnum})(params.(groupVar));
+	set(gParams.ui.varentry{match},'Value',currentVal);
+      end
       % array
     elseif strcmp(gParams.varinfo{match}.type,'array')
       if isequal(size(gParams.varinfo{match}.value),size(params.(paramFields{fnum})))

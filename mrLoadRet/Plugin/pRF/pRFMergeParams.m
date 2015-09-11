@@ -95,8 +95,14 @@ if ~isempty(scanListName)
     else
       % does exist, so merge the two, get which points are missing
       [dump missingPoints] = setdiff(oldData{thisScanNum}.linearCoords,newData{thisScanNum}.linearCoords);
+      % grab old and new linear coords and make sure that they are both row
+      % vectors
+      oldLinearCoords = oldData{thisScanNum}.linearCoords(missingPoints);
+      oldLinearCoords = oldLinearCoords(:)';
+      newLinearCoords = newData{thisScanNum}.linearCoords;
+      newLinearCoords = newLinearCoords(:)';
       % and combine
-      mergedData{thisScanNum}.linearCoords = [newData{thisScanNum}.linearCoords oldData{thisScanNum}.linearCoords(missingPoints)];
+      mergedData{thisScanNum}.linearCoords = [newLinearCoords oldLinearCoords];
       mergedData{thisScanNum}.params = [newData{thisScanNum}.params oldData{thisScanNum}.params(:,missingPoints)];
       mergedData{thisScanNum}.r = [newData{thisScanNum}.r' oldData{thisScanNum}.r(missingPoints,:)']';
     end
