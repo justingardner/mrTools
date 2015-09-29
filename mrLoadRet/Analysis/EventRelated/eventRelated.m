@@ -225,13 +225,18 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function params = checkEventRelatedParams(params)
   
+if isempty(params)
+  disp(sprintf('(eventRelated:checkEventRelatedParams) Empty params'));
+  return
+end
+
 % convert scanParams if necessary from old to new style. New style
 % has one field call stimvolVarInfo which contains the varname, taskNum, segmentNum and phaseNum
 % for computing stimvols using getStimvol. This was done so that stimvolVarInfo can
 % be a cell array with multiple variable settings in it (which will get concatenated)
 for scanNum = params.scanNum
   if ~isempty(params.scanParams{scanNum}) && ~isfield(params.scanParams{scanNum},'stimvolVarInfo')
-    fieldsToMove = {'phaseNum','taskNum','segmentNum','varname'};
+    fieldsToMove = {'phaseNum','taskNum','segmentNum','varname','stimtrace'};
     for iField = 1:length(fieldsToMove)
       if isfield(params.scanParams{scanNum},fieldsToMove{iField})
 	% copy into the combined stimvolVarInfo field
@@ -240,5 +245,12 @@ for scanNum = params.scanNum
 	params.scanParams{scanNum} = rmfield(params.scanParams{scanNum},fieldsToMove{iField});
       end
     end
+  end
+  % check for old style
+  if ~isfield(params.scanParams{scanNum},'stimvolVarInfo')
+    % this should not happen - it means that none of the usual fields for
+    % what stimulus event to trigger off of have been set.
+    mrWarnDlg(sprintf('(eventRelated:checkEventRelatedParams) No stimulus information available?'));
+    params.scanParams{scanNum}.stimvolVarInfo = [];
   end
 end
