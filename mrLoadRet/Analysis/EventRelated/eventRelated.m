@@ -250,7 +250,7 @@ for scanNum = params.scanNum
   if ~isfield(params.scanParams{scanNum},'stimvolVarInfo')
     % this should not happen - it means that none of the usual fields for
     % what stimulus event to trigger off of have been set.
-    mrWarnDlg(sprintf('(eventRelated:checkEventRelatedParams) No stimulus information available?'));
+    disp(sprintf('(eventRelated:checkEventRelatedParams) No mgl stimfile information available.'));
     params.scanParams{scanNum}.stimvolVarInfo = [];
   end
 end
