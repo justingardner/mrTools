@@ -57,6 +57,8 @@ hdr.pixdim(2:4) = info.voxsize(1:3);
 
 % set the tr
 hdr.pixdim(5) = info.tr*1000;
+hdr.xyzt_units = 18;
+
 
 
 
