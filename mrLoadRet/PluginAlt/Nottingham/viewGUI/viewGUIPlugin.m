@@ -94,6 +94,7 @@ switch action
    
     %Create Anatomy Menu and move appropriate menu items
     mlrAdjustGUI(thisView,'add','menu','anatomyMenu','/Scan','label','Anatomy','tag','anatomyMenu');
+    mlrAdjustGUI(thisView,'set','Multiple base display','location','/Anatomy/');
     mlrAdjustGUI(thisView,'add','menu','removeAnatomyMenu','/Anatomy/','label','Remove','tag','removeAnatomyMenu');
     mlrAdjustGUI(thisView,'set','deleteAllBasesMenuItem','location','/Anatomy/Remove/');
     mlrAdjustGUI(thisView,'set','deleteManyBasesMenuItem','location','/Anatomy/Remove/');
@@ -105,6 +106,7 @@ switch action
     mlrAdjustGUI(thisView,'set','editBaseMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','infoBaseAnatomyMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'remove','menu','exportAnatomyMenuItem'); %this is not implemented/would be the same as 'Save as ...
+    mlrAdjustGUI(thisView,'set','Make plane','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','importSurfaceMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','importFlatMenuItem','location','/Anatomy/');
     mlrAdjustGUI(thisView,'set','SaveAsMenuItem','location','/Anatomy/');
@@ -196,6 +198,8 @@ switch action
     mlrAdjustGUI(thisView,'set','editRoiMenu','location','/ROI/');
     mlrAdjustGUI(thisView,'set','infoROIMenuItem','location','/ROI/');
     mlrAdjustGUI(thisView,'set','exportROIMenuItem','location','/ROI/');
+    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','location','/ROI/');
+    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','separator','off');
     mlrAdjustGUI(thisView,'set','importROIMenuItem','location','/ROI/');
     mlrAdjustGUI(thisView,'set','fileRoiMenu','location','/ROI/');
     mlrAdjustGUI(thisView,'set','loadFromVolumeDirectoryROIMenuItem','location','/ROI/');
