@@ -339,6 +339,8 @@ if verbose>1,disppercent(inf);,end
 if ieNotDefined('img')
   return
 end
+img=double(img); %in case data are stored as singles (later instances of surf/set don't work with singles)
+
 
 % if no figure, then just return, this is being called just to create the overlays
 fig = viewGet(v,'figNum');
