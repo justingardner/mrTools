@@ -425,6 +425,8 @@ if baseType <= 1
     % now set the data aspect ratio so that images showup
     % with the aspect ratio appropriately for the voxel size
     daspect(hAxis,[aspectRatio' 1]);
+  else
+    axis(hAxis,'image'); %set aspect ratio to 1:1 for flat maps
   end
 else
   % set the renderer to OpenGL, this makes rendering
