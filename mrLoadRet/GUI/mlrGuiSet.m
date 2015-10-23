@@ -119,6 +119,9 @@ switch lower(field)
   % mlrGuiSet(view,'baseType',value);
   % value = 0 for regular or 1 for flat, 2 for surface
   if value == 0
+    set(handles.sliceText,'Visible','on');
+    set(handles.sliceSlider,'Visible','on');
+    set(handles.slice,'Visible','on');    
     set(handles.sagittalRadioButton,'Visible','on');
     set(handles.coronalRadioButton,'Visible','on');
     set(handles.axialRadioButton,'Visible','on');
@@ -137,6 +140,9 @@ switch lower(field)
       set(handles.linkMinMaxDepthCheck,'Visible','off');
     end
   elseif value >= 1
+    set(handles.sliceText,'Visible','off');
+    set(handles.sliceSlider,'Visible','off');
+    set(handles.slice,'Visible','off');    
     set(handles.sagittalRadioButton,'Visible','off');
     set(handles.coronalRadioButton,'Visible','off');
     set(handles.axialRadioButton,'Visible','off');
