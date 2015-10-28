@@ -80,7 +80,7 @@ while askForParams
   
   if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
     mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively.');
-  elseif isempty(params.combineFunction) && isempty(params.customCombineFunction)
+  elseif isempty(params.combineFunction) || (strcmp(params.combineFunction,'User Defined') && isempty(params.customCombineFunction))
     mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function.');
   elseif (params.clip || params.alphaClip) && params.baseSpace
     mrWarnDlg('(combineTransformOverlays) Base space conversion is not yet compatible with using (alpha) masking.');
