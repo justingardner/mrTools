@@ -26,7 +26,7 @@ sliceInfo.base2overlay = base2overlay;
 sliceInfo.baseCoordsHomogeneous = baseCoordsHomogeneous;
 sliceInfo.baseDims = [baseDims 1];
 
-if ~isempty(curOverlays) && viewGet(thisView,'nscans') % there needs to be at least one scan in the group
+if ~isempty(curOverlays) && scan && viewGet(thisView,'nscans') % there needs to be at least one scan in the group
   curAlphaOverlays = zeros(1,nCurOverlays);
   for iOverlay = 1:nCurOverlays
     thisNum = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',curOverlays(iOverlay)));

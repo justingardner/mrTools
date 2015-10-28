@@ -4057,7 +4057,7 @@ switch lower(param)
     val = view.figure;
   case {'curscan','currentscan'}
     % scan = viewGet(view,'currentScan');
-    val = min(view.curScan,viewGet(view,'nscans'));
+    val = view.curScan;
     if isempty(val),val = 1;end
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');
