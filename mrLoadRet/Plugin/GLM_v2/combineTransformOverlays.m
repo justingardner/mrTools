@@ -41,7 +41,7 @@ while askForParams
    {'customCombineFunction',params.customCombineFunction,'name of the function to apply. You can use any type of matlab function (including custom) that accepts either scalars or multidimensional arrays. Any string beginning with an @ will be considered an anonymous function and shoulde be of the form @(x)func(x), @(x,y)func(x,y) ..., where the number of variables equals the number of overlay inputs and additional arguments. '},...
    {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' is faster but not all functions accept multidimensional arrays as inputs. Choose ''Structure'' to pass the whole overlay structure'},...
    {'combinationMode',combinationModeMenu,'type=popupmenu', 'How the selected overlays are input ot the combineFunction. If ''all'', all the selected overlays are given as input at once (the number of inputs expected by the function must match the number of selected overlays). If ''each'', the combine function is run separately for each overlay and must accept only one input overlay). If ''pair'', the combineFunction is run on pairs of consecutive selected overlays and must accept two input overlays.'},...
-   {'nOutputOverlays',params.nOutputOverlays,'incdec=[-1 1]','round=1','minmax=[1 Inf]','Number of outputs of the combineFunction'},...
+   {'nOutputOverlays',params.nOutputOverlays,'incdec=[-1 1]','round=1','minmax=[0 Inf]','Number of outputs of the combineFunction'},...
    {'additionalArrayArgs',params.additionalArrayArgs,'constant arguments for functions that accept them. Arguments must be separated by commas. for Array input/output type, each argument will be repeated in a matrix of same dimensions of the overlay '},...
    {'additionalArgs',params.additionalArgs,'constant scalar arguments for functions that take both arrays and scalars. These arguments will be input at the end of each function call. They must be separated by commas. If using vector argument, do not use commas inside square brackets. '},...
    {'passView',params.passView,'type=checkbox','Check this if the function requires the current mrLoadRet view'},...
@@ -204,17 +204,21 @@ combineFunctionHandle = str2func(combineFunctionString);
 
 %-----------------------------construct function call
 %output arguments
-functionString = '[';
-for iOutput = 1:params.nOutputOverlays
-   functionString = [functionString 'outputData{iScan,' num2str(iOutput) ',iOperations},'];
+if params.nOutputOverlays
+  functionString = '[';
+  for iOutput = 1:params.nOutputOverlays
+     functionString = [functionString 'outputData{iScan,' num2str(iOutput) ',iOperations},'];
+  end
+  functionString(end:end+3)='] = ';
+else
+  functionString='';
 end
-functionString(end)=']';
 
 %array operator
 if strcmp(params.inputOutputType,'Scalar') %if function operates on scalar
-   functionString = [functionString ' = cellfun(combineFunctionHandle,']; %we'll use cellfun to apply the function to each voxel
+   functionString = [functionString 'cellfun(combineFunctionHandle,']; %we'll use cellfun to apply the function to each voxel
 else                                       %if it operates on arrays
-   functionString = [functionString ' = feval(combineFunctionHandle,'];
+   functionString = [functionString 'feval(combineFunctionHandle,'];
 end
 
 %input arguments
@@ -290,179 +294,181 @@ for iOperations = 1:size(overlayData,3)
   end
 end
 
-%name of output overlays
-for iOutput=1:params.nOutputOverlays
-   if params.nOutputOverlays>1
-      name = ['Ouput ' num2str(iOutput) ' - '];
-   else
-      name = '';
-   end
-   if ~isempty(params.outputName)
-      name = [name params.outputName '('];
-   else
-      name = [name params.combineFunction '('];
-   end
-   for iOperations = 1:size(overlayData,3)
-      if size(overlayData,3)>1
-         outputOverlayNames{iOutput,iOperations} = [name overlayNames{iOperations} ','];
-      else
-         outputOverlayNames{iOutput,iOperations} = name;
-         for iInput = 1:size(overlayData,2)
-            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} overlayNames{iInput} ','];
-         end
-      end
-      for iInput = 1:length(additionalArrayArgs)
-         if isnumeric(additionalArrayArgs{iInput})
-            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} num2str(additionalArrayArgs{iInput}) ','];
-         else
-            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} additionalArrayArgs{iInput} ','];
-         end
-      end
-      for iInput = 1:length(additionalArgs)
-         if isnumeric(additionalArgs{iInput})
-            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} mat2str(additionalArgs{iInput}) ','];
-         elseif isa(additionalArgs{iInput},'function_handle')
-            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} func2str(additionalArgs{iInput}) ','];
-         else
-            outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} additionalArgs{iInput} ','];
-         end
-      end
-      outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations}(1:end-1) ')'];
-   end
-end
-
-if size(overlayData,3)>1 %reshape the overlay cell array
-   outputData = cellReshape(outputData,size(outputData,1),size(outputData,2)*size(outputData,3));
-   outputOverlayNames = cellReshape(outputOverlayNames,numel(outputOverlayNames),1);
-end
-         
-%pre-compute coordinates map to put values back from base space to overlay space
-if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) 
-  overlayIndexMap=cell(nScans,1);
-  overlayCoordsMap=cell(nScans,1);
-  baseCoordsOverlay=cell(nScans,1);
-  for iScan=1:nScans
-    %make a coordinate map of which overlay voxel each base map voxel corresponds to (convert base coordmap to overlay coord map)
-    baseCoordsMap{iScan} = reshape(baseCoordsMap{iScan},numel(baseCoordsMap{iScan})/3,3);
-    overlayCoordsMap{iScan} = (base2scan*[baseCoordsMap{iScan}';ones(1,size(baseCoordsMap{iScan},1))])';
-    overlayCoordsMap{iScan} = overlayCoordsMap{iScan}(:,1:3);
-    overlayCoordsMap{iScan}(all(~overlayCoordsMap{iScan},2),:)=NaN;
-    overlayCoordsMap{iScan} = round(overlayCoordsMap{iScan});
-    scanDims = viewGet(thisView,'dims',iScan);
-    overlayCoordsMap{iScan}(any(overlayCoordsMap{iScan}>repmat(scanDims,size(overlayCoordsMap{iScan},1),1)|overlayCoordsMap{iScan}<1,2),:)=NaN;
-    %convert overlay coordinates to overlay indices for manipulation ease
-    overlayIndexMap{iScan} = sub2ind(scanDims, overlayCoordsMap{iScan}(:,1), overlayCoordsMap{iScan}(:,2), overlayCoordsMap{iScan}(:,3));
-
-    %now make a coordinate map of which base map voxels each overlay index corresponds to
-    %(there will be several maps because each overlay voxels might correspond to several base voxels)
-
-% %       %METHOD 1
-% %       %sort base indices
-% %       [sortedOverlayIndices,whichBaseIndices] = sort(overlayIndexMap{iScan});
-% %       %remove NaNs (which should be at the end of the vector)
-% %       whichBaseIndices(isnan(sortedOverlayIndices))=[];
-% %       sortedOverlayIndices(isnan(sortedOverlayIndices))=[];
-% %       %find the first instance of each unique index
-% %       firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
-% %       firstInstances = [true;firstInstances];
-% %       %get the unique overlay indices
-% %       uniqueOverlayIndices = sortedOverlayIndices(firstInstances);
-% %       %compute the number of instances for each  unique overlay index (= number
-% %       %of base different indices for each unique overlay index)
-% %       numberInstances = diff(find([firstInstances;true]));
-% %       maxInstances = max(numberInstances);
-% %       baseCoordsOverlay2{iScan} = sparse(prod(scanDims),maxInstances);
-% %       hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
-% %       %for each unique overlay index, find all the corresponding base indices
-% %       for i = 1:length(uniqueOverlayIndices)
-% %         mrWaitBar( i/length(uniqueOverlayIndices), hWaitBar);
-% %         theseBaseIndices = whichBaseIndices(sortedOverlayIndices==uniqueOverlayIndices(i));
-% %         baseCoordsOverlay2{iScan}(uniqueOverlayIndices(i),1:length(theseBaseIndices))=theseBaseIndices';
-% %       end
-% %       mrCloseDlg(hWaitBar);
-
-    %METHOD 2 (faster)
-    %first find the maximum number of base voxels corresponding to a single overlay voxel (this is modified from function 'unique')
-    %sort base non-NaN indices
-    sortedIndices = sort(overlayIndexMap{iScan}(~isnan(overlayIndexMap{iScan})));
-    %find the first instance of each unique index
-    firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
-    firstInstances = [true;firstInstances];
-    %compute the number of instances for each unique overlay index 
-    %(= number of base different indices for each unique overlay index)
-    numberInstances = diff(find([firstInstances;true]));
-    maxInstances = max(numberInstances);
-    baseCoordsOverlay{iScan} = sparse(prod(scanDims),maxInstances);
-    %Now for each set of unique overlay indices, find the corresponding base indices
-    hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
-    for i=1:maxInstances
-      mrWaitBar( i/maxInstances, hWaitBar);
-      %find set of unique instances of overlay indices
-      [uniqueOverlayIndices, whichBaseIndices]= unique(overlayIndexMap{iScan});
-      %remove NaNs
-      whichBaseIndices(isnan(uniqueOverlayIndices))=[];
-      uniqueOverlayIndices(isnan(uniqueOverlayIndices))=[];
-      %for each overlay voxel found, set the corresponding base index
-      baseCoordsOverlay{iScan}(uniqueOverlayIndices,i)=whichBaseIndices;
-      %remove instances that were found from the overlay index map before going throught the loop again
-      overlayIndexMap{iScan}(whichBaseIndices)=NaN;
-    end
-    mrCloseDlg(hWaitBar);
-  end
-end
-
-%save the output
-defaultOverlay.groupName = viewGet(thisView,'groupName');
-defaultOverlay.function = 'combineTransformOverlays';
-defaultOverlay.interrogator = '';
-defaultOverlay.type = 'combination';
-defaultOverlay.params = params;
-defaultOverlay.clip = [];
-defaultOverlay.range = [];
-defaultOverlay.name = [];
-defaultOverlay.data = [];
-for iOverlay = 1:size(outputData,2)
-  switch(params.inputOutputType)
-    case {'3D Array','Scalar'}
-      outputOverlay(iOverlay) = defaultOverlay;
-      outputOverlay(iOverlay).data = outputData(:,iOverlay);
-      for iOutput = 1:size(outputData,1)
-        isNotEmpty(iOutput) = ~isempty(outputData{iOutput,iOverlay});
-      end
-      allScansData = cell2mat(outputData(isNotEmpty,iOverlay));
-    case 'Structure'
-      outputOverlay(iOverlay) = copyFields(defaultOverlay,outputData{iOverlay});
-      allScansData = cell2mat(outputOverlay(iOverlay).data);
-  end
-  if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) %put back into scan/overlay space
-    for iScan=1:nScans
-      if ~isempty(outputOverlay(iOverlay).data{iScan}) 
-        if viewGet(thisView,'basetype')==1
-          data = zeros(scanDims);
-          datapoints=zeros(prod(scanDims),1);;
-          for i=1:size(baseCoordsOverlay{iScan},2)
-            thisBaseCoordsMap = full(baseCoordsOverlay{iScan}(:,i));
-            data(logical(thisBaseCoordsMap)) = data(logical(thisBaseCoordsMap)) + ...
-                  outputOverlay(iOverlay).data{iScan}(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
-            datapoints = datapoints+logical(thisBaseCoordsMap);
-          end
-          datapoints = reshape(datapoints,scanDims);
-          outputOverlay(iOverlay).data{iScan} = data ./datapoints;
+if params.nOutputOverlays 
+  %name of output overlays
+  for iOutput=1:params.nOutputOverlays
+     if params.nOutputOverlays>1
+        name = ['Ouput ' num2str(iOutput) ' - '];
+     else
+        name = '';
+     end
+     if ~isempty(params.outputName)
+        name = [name params.outputName '('];
+     else
+        name = [name params.combineFunction '('];
+     end
+     for iOperations = 1:size(overlayData,3)
+        if size(overlayData,3)>1
+           outputOverlayNames{iOutput,iOperations} = [name overlayNames{iOperations} ','];
         else
-          keyboard %not implemented
+           outputOverlayNames{iOutput,iOperations} = name;
+           for iInput = 1:size(overlayData,2)
+              outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} overlayNames{iInput} ','];
+           end
+        end
+        for iInput = 1:length(additionalArrayArgs)
+           if isnumeric(additionalArrayArgs{iInput})
+              outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} num2str(additionalArrayArgs{iInput}) ','];
+           else
+              outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} additionalArrayArgs{iInput} ','];
+           end
+        end
+        for iInput = 1:length(additionalArgs)
+           if isnumeric(additionalArgs{iInput})
+              outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} mat2str(additionalArgs{iInput}) ','];
+           elseif isa(additionalArgs{iInput},'function_handle')
+              outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} func2str(additionalArgs{iInput}) ','];
+           else
+              outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations} additionalArgs{iInput} ','];
+           end
+        end
+        outputOverlayNames{iOutput,iOperations} = [outputOverlayNames{iOutput,iOperations}(1:end-1) ')'];
+     end
+  end
+
+  if size(overlayData,3)>1 %reshape the overlay cell array
+     outputData = cellReshape(outputData,size(outputData,1),size(outputData,2)*size(outputData,3));
+     outputOverlayNames = cellReshape(outputOverlayNames,numel(outputOverlayNames),1);
+  end
+
+  %pre-compute coordinates map to put values back from base space to overlay space
+  if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) 
+    overlayIndexMap=cell(nScans,1);
+    overlayCoordsMap=cell(nScans,1);
+    baseCoordsOverlay=cell(nScans,1);
+    for iScan=1:nScans
+      %make a coordinate map of which overlay voxel each base map voxel corresponds to (convert base coordmap to overlay coord map)
+      baseCoordsMap{iScan} = reshape(baseCoordsMap{iScan},numel(baseCoordsMap{iScan})/3,3);
+      overlayCoordsMap{iScan} = (base2scan*[baseCoordsMap{iScan}';ones(1,size(baseCoordsMap{iScan},1))])';
+      overlayCoordsMap{iScan} = overlayCoordsMap{iScan}(:,1:3);
+      overlayCoordsMap{iScan}(all(~overlayCoordsMap{iScan},2),:)=NaN;
+      overlayCoordsMap{iScan} = round(overlayCoordsMap{iScan});
+      scanDims = viewGet(thisView,'dims',iScan);
+      overlayCoordsMap{iScan}(any(overlayCoordsMap{iScan}>repmat(scanDims,size(overlayCoordsMap{iScan},1),1)|overlayCoordsMap{iScan}<1,2),:)=NaN;
+      %convert overlay coordinates to overlay indices for manipulation ease
+      overlayIndexMap{iScan} = sub2ind(scanDims, overlayCoordsMap{iScan}(:,1), overlayCoordsMap{iScan}(:,2), overlayCoordsMap{iScan}(:,3));
+
+      %now make a coordinate map of which base map voxels each overlay index corresponds to
+      %(there will be several maps because each overlay voxels might correspond to several base voxels)
+
+  % %       %METHOD 1
+  % %       %sort base indices
+  % %       [sortedOverlayIndices,whichBaseIndices] = sort(overlayIndexMap{iScan});
+  % %       %remove NaNs (which should be at the end of the vector)
+  % %       whichBaseIndices(isnan(sortedOverlayIndices))=[];
+  % %       sortedOverlayIndices(isnan(sortedOverlayIndices))=[];
+  % %       %find the first instance of each unique index
+  % %       firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
+  % %       firstInstances = [true;firstInstances];
+  % %       %get the unique overlay indices
+  % %       uniqueOverlayIndices = sortedOverlayIndices(firstInstances);
+  % %       %compute the number of instances for each  unique overlay index (= number
+  % %       %of base different indices for each unique overlay index)
+  % %       numberInstances = diff(find([firstInstances;true]));
+  % %       maxInstances = max(numberInstances);
+  % %       baseCoordsOverlay2{iScan} = sparse(prod(scanDims),maxInstances);
+  % %       hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
+  % %       %for each unique overlay index, find all the corresponding base indices
+  % %       for i = 1:length(uniqueOverlayIndices)
+  % %         mrWaitBar( i/length(uniqueOverlayIndices), hWaitBar);
+  % %         theseBaseIndices = whichBaseIndices(sortedOverlayIndices==uniqueOverlayIndices(i));
+  % %         baseCoordsOverlay2{iScan}(uniqueOverlayIndices(i),1:length(theseBaseIndices))=theseBaseIndices';
+  % %       end
+  % %       mrCloseDlg(hWaitBar);
+
+      %METHOD 2 (faster)
+      %first find the maximum number of base voxels corresponding to a single overlay voxel (this is modified from function 'unique')
+      %sort base non-NaN indices
+      sortedIndices = sort(overlayIndexMap{iScan}(~isnan(overlayIndexMap{iScan})));
+      %find the first instance of each unique index
+      firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
+      firstInstances = [true;firstInstances];
+      %compute the number of instances for each unique overlay index 
+      %(= number of base different indices for each unique overlay index)
+      numberInstances = diff(find([firstInstances;true]));
+      maxInstances = max(numberInstances);
+      baseCoordsOverlay{iScan} = sparse(prod(scanDims),maxInstances);
+      %Now for each set of unique overlay indices, find the corresponding base indices
+      hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
+      for i=1:maxInstances
+        mrWaitBar( i/maxInstances, hWaitBar);
+        %find set of unique instances of overlay indices
+        [uniqueOverlayIndices, whichBaseIndices]= unique(overlayIndexMap{iScan});
+        %remove NaNs
+        whichBaseIndices(isnan(uniqueOverlayIndices))=[];
+        uniqueOverlayIndices(isnan(uniqueOverlayIndices))=[];
+        %for each overlay voxel found, set the corresponding base index
+        baseCoordsOverlay{iScan}(uniqueOverlayIndices,i)=whichBaseIndices;
+        %remove instances that were found from the overlay index map before going throught the loop again
+        overlayIndexMap{iScan}(whichBaseIndices)=NaN;
+      end
+      mrCloseDlg(hWaitBar);
+    end
+  end
+
+  %save the output
+  defaultOverlay.groupName = viewGet(thisView,'groupName');
+  defaultOverlay.function = 'combineTransformOverlays';
+  defaultOverlay.interrogator = '';
+  defaultOverlay.type = 'combination';
+  defaultOverlay.params = params;
+  defaultOverlay.clip = [];
+  defaultOverlay.range = [];
+  defaultOverlay.name = [];
+  defaultOverlay.data = [];
+  for iOverlay = 1:size(outputData,2)
+    switch(params.inputOutputType)
+      case {'3D Array','Scalar'}
+        outputOverlay(iOverlay) = defaultOverlay;
+        outputOverlay(iOverlay).data = outputData(:,iOverlay);
+        for iOutput = 1:size(outputData,1)
+          isNotEmpty(iOutput) = ~isempty(outputData{iOutput,iOverlay});
+        end
+        allScansData = cell2mat(outputData(isNotEmpty,iOverlay));
+      case 'Structure'
+        outputOverlay(iOverlay) = copyFields(defaultOverlay,outputData{iOverlay});
+        allScansData = cell2mat(outputOverlay(iOverlay).data);
+    end
+    if params.baseSpace && any(any((base2scan - eye(4))>1e-6)) %put back into scan/overlay space
+      for iScan=1:nScans
+        if ~isempty(outputOverlay(iOverlay).data{iScan}) 
+          if viewGet(thisView,'basetype')==1
+            data = zeros(scanDims);
+            datapoints=zeros(prod(scanDims),1);;
+            for i=1:size(baseCoordsOverlay{iScan},2)
+              thisBaseCoordsMap = full(baseCoordsOverlay{iScan}(:,i));
+              data(logical(thisBaseCoordsMap)) = data(logical(thisBaseCoordsMap)) + ...
+                    outputOverlay(iOverlay).data{iScan}(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
+              datapoints = datapoints+logical(thisBaseCoordsMap);
+            end
+            datapoints = reshape(datapoints,scanDims);
+            outputOverlay(iOverlay).data{iScan} = data ./datapoints;
+          else
+            keyboard %not implemented
+          end
         end
       end
     end
+    maxValue = max(allScansData(allScansData<inf));
+    minValue = min(allScansData(allScansData>-inf));
+    outputOverlay(iOverlay).clip = [minValue maxValue];
+    outputOverlay(iOverlay).range = [minValue maxValue];
+    outputOverlay(iOverlay).name = outputOverlayNames{iOverlay};
   end
-  maxValue = max(allScansData(allScansData<inf));
-  minValue = min(allScansData(allScansData>-inf));
-  outputOverlay(iOverlay).clip = [minValue maxValue];
-  outputOverlay(iOverlay).range = [minValue maxValue];
-  outputOverlay(iOverlay).name = outputOverlayNames{iOverlay};
-end
-thisView = viewSet(thisView,'newoverlay',outputOverlay);
+  thisView = viewSet(thisView,'newoverlay',outputOverlay);
 
-refreshMLRDisplay(thisView.viewNum);
+  refreshMLRDisplay(thisView.viewNum);
+end
 set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
 
 function [arguments, nArgs] = parseArguments(argumentString, separator)
