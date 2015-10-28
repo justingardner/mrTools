@@ -7,7 +7,7 @@ function combineTransformOverlays(thisView)
 %
 % $Id$
 
-inputOutputTypeMenu = {'3D Array','Scalar','Structure'};%,'Anonymous (Scalar)', 'Anonymous (Array)'};
+inputOutputTypeMenu = {'3D Array','4D Array','Scalar','Structure'};
 combinationModeMenu = {'Apply function to all overlays','Apply function to each overlay','Recursively apply to overlay pairs'};
 
 %default params
@@ -41,7 +41,7 @@ while askForParams
   params = {...
    {'combineFunction',combineFunctionsMenu,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
    {'customCombineFunction',params.customCombineFunction,'name of the function to apply. You can use any type of matlab function (including custom) that accepts either scalars or multidimensional arrays. Any string beginning with an @ will be considered an anonymous function and shoulde be of the form @(x)func(x), @(x,y)func(x,y) ..., where the number of variables equals the number of overlay inputs and additional arguments. '},...
-   {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' is faster but not all functions accept multidimensional arrays as inputs. Choose ''Structure'' to pass the whole overlay structure'},...
+   {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' will pass each input overlay as a 3D array. ''Scalar'' will apply the function to each element of the input overlay(s). ''4D Array'' wil concatenate overlays on the 4th dimension and pass the 4D array as a single argument to the function. 3D and 4D array are faster that but not all functions accept multidimensional arrays as inputs. Use ''4D Array'' for functions that operate on one dimension of an array (e.g. mean) and specify the dimension as an additional scalar argument (usually 4). Choose ''Structure'' to pass the whole overlay structure'},...
    {'combinationMode',combinationModeMenu,'type=popupmenu', 'How the selected overlays are input ot the combineFunction. If ''all'', all the selected overlays are given as input at once (the number of inputs expected by the function must match the number of selected overlays). If ''each'', the combine function is run separately for each overlay and must accept only one input overlay). If ''pair'', the combineFunction is run on pairs of consecutive selected overlays and must accept two input overlays.'},...
    {'nOutputOverlays',params.nOutputOverlays,'incdec=[-1 1]','round=1','minmax=[0 Inf]','Number of outputs of the combineFunction'},...
    {'additionalArrayArgs',params.additionalArrayArgs,'constant arguments for functions that accept them. Arguments must be separated by commas. for Array input/output type, each argument will be repeated in a matrix of same dimensions of the overlay '},...
@@ -153,7 +153,7 @@ end
 switch(params.inputOutputType)
   case 'Structure'
     overlayData = num2cell(overlayData);
-  case {'3D Array','Scalar'}
+  case {'3D Array','4D Array','Scalar'}
     newOverlayData = cell(nScans,length(overlayList));
     for iOverlay = 1:length(overlayList)
       for iScan = 1:nScans
@@ -166,7 +166,7 @@ end
 %parse additional array inputs
 additionalArrayArgs = parseArguments(params.additionalArrayArgs,',');
 if ~isempty(additionalArrayArgs)
-   if all(cellfun(@isnumeric,additionalArrayArgs)) && strcmp(params.inputOutputType,'3D Array') %if all arguments are numeric and the input type is Array
+   if all(cellfun(@isnumeric,additionalArrayArgs)) && ismember(params.inputOutputType,{'3D Array','4D Array'}) %if all arguments are numeric and the input type is Array
       additionalArrayInputs = cellfun(@(x)repmat(x,[size(overlayData{1}) 1]),additionalArrayArgs,'UniformOutput',false); %convert additional arguments to arrays
    else %if any additional argument is not a number
       additionalArrayInputs = cellfun(@(x)num2cell(repmat(x,[size(overlayData{1}) 1])),additionalArrayArgs,'UniformOutput',false); %convert additional arguments to cell arrays
@@ -227,9 +227,12 @@ else
 end
 
 %array operator
-if strcmp(params.inputOutputType,'Scalar') %if function operates on scalar
+switch(params.inputOutputType)
+  case 'Scalar' %if function operates on scalar
    functionString = [functionString 'cellfun(combineFunctionHandle,']; %we'll use cellfun to apply the function to each voxel
-else                                       %if it operates on arrays
+  case '4D Array'                                       %if it operates on 4D arrays
+   functionString = [functionString 'feval(combineFunctionHandle,cat(4,']; %we'll concatenate the inputs
+  otherwise                                       %if it operates on arrays
    functionString = [functionString 'feval(combineFunctionHandle,'];
 end
 
@@ -237,10 +240,12 @@ end
 for iInput = 1:size(overlayData,2)
    functionString = [functionString 'overlayData{iScan,' num2str(iInput) ',iOperations},'];
 end
-   
 %additional arguments
 for iInput = 1:length(additionalArrayInputs)
    functionString = [functionString 'additionalArrayInputs{' num2str(iInput) '},'];
+end
+if strcmp(params.inputOutputType,'4D Array')
+  functionString(end:end+1) = '),'; %add closing bracket to end function cat
 end
 
 %additional scalar arguments
@@ -263,7 +268,7 @@ for iOperations = 1:size(overlayData,3)
   for iScan = 1:size(overlayData,1)
     %check for empty overlays (only if 3D array or scalar)
     emptyInput=false;
-    if ismember(params.inputOutputType,{'3D Array','Scalar'})
+    if ismember(params.inputOutputType,{'3D Array','4D Array','Scalar'})
       for iInput = 1:size(overlayData,2)
         if isempty(overlayData{iScan,iInput,iOperations})
           emptyInput=true;
@@ -294,7 +299,7 @@ for iOperations = 1:size(overlayData,3)
             for jScan = 1:nScans
               outputData{iScan,iOutput,iOperations}.data{jScan} = outputData{iScan,iOutput,iOperations}.data{jScan}+0;
             end
-          case {'3D Array','Scalar'}
+          case {'3D Array','4D Array','Scalar'}
            outputData{iScan,iOutput,iOperations} = outputData{iScan,iOutput,iOperations}+0;
         end
         %check that the size is compatible
@@ -506,7 +511,7 @@ if params.nOutputOverlays
   defaultOverlay.data = [];
   for iOverlay = 1:size(outputData,2)
     switch(params.inputOutputType)
-      case {'3D Array','Scalar'}
+      case {'3D Array','4D Array','Scalar'}
         outputOverlay(iOverlay) = defaultOverlay;
         outputOverlay(iOverlay).data = outputData(:,iOverlay);
         for iOutput = 1:size(outputData,1)
