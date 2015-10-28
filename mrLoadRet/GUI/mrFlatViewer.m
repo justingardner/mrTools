@@ -97,7 +97,18 @@ elseif isfield(flat{1},'radius')
   flatdir = [];
   gFlatViewer.path = flat{1}.path;
   flatPath = flat{1}.path;
-  gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,flat{1}.startPoint,flat{1}.parentSurfaceName);
+  %first convert coordinates from current base to the surface base 
+  if isempty(anat)
+    [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Select 3D Anatomy File',flat{1}.path);
+    anat{1} = [pathname filename];
+    anatomyFile=anat{1};
+  else
+  % (we assume the base anatomy is in the same folder as the parent surface)
+    anatomyFile=fullfile(flat{1}.path,anat{1});
+   end
+  hdr= cbiReadNiftiHeader(anatomyFile);
+  baseStartPoint = hdr.sform44 \ viewGet(viewNum,'basexform') * [flat{1}.startPoint';1];
+  gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,baseStartPoint(1:3)',flat{1}.parentSurfaceName);
   if isempty(gFlatViewer.flat),return,end
   flat{1} = gFlatViewer.flat.name;
 elseif isfield(flat{1},'vtcs')
