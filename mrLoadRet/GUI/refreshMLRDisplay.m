@@ -348,6 +348,25 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       end
       % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
        img = img+(1-alpha).*base.RGB;
+       
+    case 'Contours'
+      if size(overlays.RGB,4)==1
+        img=base.RGB; %only display base in the background
+        contours=overlays.overlayIm;  %display first overlay as contours 
+        contours(~overlays.alphaMaps(:,:,1,1))=NaN;   % use non-zero alpha map as mask
+        contourCscale=overlays.range(1,:); 
+        contourCmap = overlays.cmap(:,:,1);
+      else
+        %combine first overlay and base
+        img=overlays.alphaMaps(:,:,:,1).*overlays.RGB(:,:,:,1)+(1-overlays.alphaMaps(:,:,:,1)).*base.RGB;
+        contours=overlays.overlayIm(:,:,2); %display second overlay as contours
+        contours(~overlays.alphaMaps(:,:,1,2))=NaN;   % use non-zero alpha map as mask
+        contourCscale=overlays.range(2,:);
+        contourCmap = overlays.cmap(:,:,2);
+      end
+      if size(overlays.RGB,4)>2
+        mrWarnDlg('(refreshMLRDisplay) Number of overlays limited to 2 for ''Contours'' display option');
+      end
   end
   cmap = overlays.cmap;
   cbarRange = overlays.range;
@@ -419,6 +438,16 @@ if baseType <= 1
     set(fig,'Renderer','painters')
     h = image(img,'Parent',hAxis);
     v = viewSet(v,'baseHandle',h,baseNum);
+    if ~isempty(overlays.RGB) && strcmp(mrGetPref('colorBlending'),'Contours') 
+      hold(hAxis,'on');
+      nContours = 9;
+      contourStepSize =diff(contourCscale)/(nContours-1);
+      minContourStep = ceil(min(min(contours))/contourStepSize)*contourStepSize;
+      maxContourStep = floor(max(max(contours))/contourStepSize)*contourStepSize;
+      contour(hAxis,contours,minContourStep:contourStepSize:maxContourStep,'cdatamapping','scaled')
+      caxis(hAxis,contourCscale);
+      colormap(contourCmap);
+    end
     % get rotation matrix for image so that we can fix the data
     % aspect ratio properlybelow
     theta = pi*rotate/180;
