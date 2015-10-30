@@ -36,11 +36,9 @@ function editOverlayGUI(viewNum)
     return;
   end
   overlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
-%   overlayUsefulRange = viewGet(thisView,'overlayRange', overlayNum, analysisNum);
-%   overlayColorRange = viewGet(thisView,'overlayColorRange', overlayNum, analysisNum);
-  overlayRange = viewGet(thisView,'overlayRange', overlayNum, analysisNum);
-%   overlayClipRange = viewGet(thisView,'overlayClip', overlayNum, analysisNum);
-  overlayClip = viewGet(thisView,'overlayClip', overlayNum, analysisNum);
+  overlayUsefulRange = viewGet(thisView,'overlayRange', overlayNum, analysisNum);
+  overlayColorRange = viewGet(thisView,'overlayColorRange', overlayNum, analysisNum);
+  overlayClipRange = viewGet(thisView,'overlayClip', overlayNum, analysisNum);
   overlayName = viewGet(thisView, 'overlayName', overlayNum, analysisNum);
   overlayType = viewGet(thisView, 'overlayType', overlayNum,analysisNum);
   alphaOverlay = viewGet(thisView,'alphaOverlay');
@@ -72,17 +70,13 @@ function editOverlayGUI(viewNum)
   paramsInfo{end+1} = {'shiftColormap', 0, 'incdec=[-16 16]', 'shift the colormap -- this can be useful for retinotopy scans with circular colormaps'}; 
   paramsInfo{end+1} = {'overlayColormapType',overlayColormapTypeMenu , 'type=popupmenu',...
       '''normal'' scales the colormap to the value specified by colormap range; ''setRangeToMax'' scales the colormap to the min amnd max of the displayed overlay slice and ignores the color range (like R2 maps)'};
-%   paramsInfo{end+1} = {'overlayColorRange', overlayColorRange, 'The lower and upper bound on the colormap when overlayColormapType=''normal'''};
-%   paramsInfo{end+1} = {'overlayClipRange', overlayClipRange, 'callback',{@checkCmapParams,'cliprange'},'passCallbackOutput=1','passValue=1','passParams=1',...
-%       'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range. If clip(1)>clip(2), then values inside the clip range are masked.'};
-%   paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, 'callback',{@checkCmapParams,'usefulrange'},'passCallbackOutput=1','passValue=1','passParams=1',...
-%       'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
-%   paramsInfo{end+1} = {'setUsefulRange', 0, 'type=pushbutton','callback',@mrCmapSetUsefulRange,'callbackArg',viewNum,'buttonString=Set useful range to overlay min/max','passParams=1','passCallbackOutput=0',...
-%       'Sets the useful range to the min/max values of this overlay accross scans'};
-  paramsInfo{end+1} = {'overlayRange', overlayRange, 'callback',{@checkCmapParams,'range'},'passCallbackOutput=1','passValue=1','passParams=1',...
-      'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
-  paramsInfo{end+1} = {'overlayClip', overlayClip, 'callback',{@checkCmapParams,'clip'},'passCallbackOutput=1','passValue=1','passParams=1',...
+  paramsInfo{end+1} = {'overlayColorRange', overlayColorRange, 'callback',{@checkCmapParams,'colorrange'},'passCallbackOutput=1','passValue=1','passParams=1', 'The lower and upper bound on the colormap when overlayColormapType=''normal'''};
+  paramsInfo{end+1} = {'overlayClipRange', overlayClipRange, 'callback',{@checkCmapParams,'cliprange'},'passCallbackOutput=1','passValue=1','passParams=1',...
       'The lower and upper clip points beyond which the overlay is masked. These should be inside the useful range. If clip(1)>clip(2), then values inside the clip range are masked.'};
+  paramsInfo{end+1} = {'overlayUsefulRange', overlayUsefulRange, 'callback',{@checkCmapParams,'usefulrange'},'passCallbackOutput=1','passValue=1','passParams=1',...
+      'The lower and upper bound on the clip slider. These should be lower/higher than the clip values'};
+  paramsInfo{end+1} = {'setUsefulRange', 0, 'type=pushbutton','callback',@mrCmapSetUsefulRange,'callbackArg',viewNum,'buttonString=Set useful range to overlay min/max','passParams=1','passCallbackOutput=0',...
+      'Sets the useful range to the min/max values of this overlay accross scans'};
   paramsInfo{end+1} = {'overlayType', overlayType, 'The type of overlay (ph, amp, co ...'};
   paramsInfo{end+1} = {'interrogator', interrogator, 'Sets the overlay default interrogator function'};
   paramsInfo{end+1} = {'alphaOverlay', alphaOverlayMenu, 'You can specify the name of another overlay in the analysis to use as an alpha map. For instance, you might want to display one overlay with the alpha set to the r2 or the coherence value.'};
@@ -108,18 +102,13 @@ maxOverlayData = ceil(double(viewGet(thisView,'maxOverlayData'))*1e6)/1e6;
 
 if isempty(maxOverlayData) || isempty(minOverlayData)
   mrWarnDlg('(editOverlayGUI) overlay seems to be empty');
-% elseif all(abs(params.overlayUsefulRange-[minOverlayData maxOverlayData])<5e-7)
-%   mrWarnDlg('(editOverlayGUI) Useful range is already set to min/max');
-elseif all(abs(params.overlayRange-[minOverlayData maxOverlayData])<5e-7)
+elseif all(abs(params.overlayUsefulRange-[minOverlayData maxOverlayData])<5e-7)
   mrWarnDlg('(editOverlayGUI) Useful range is already set to min/max');
 else
-%   params.overlayUsefulRange = [minOverlayData maxOverlayData];
-  params.overlayRange = [minOverlayData maxOverlayData];
+  params.overlayUsefulRange = [minOverlayData maxOverlayData];
   %make sure clip values are within this range
-%   params.overlayClipRange(1) = max(params.overlayClipRange(1),minOverlayData);
-%   params.overlayClipRange(2) = min(params.overlayClipRange(2),maxOverlayData);
-  params.overlayClip(1) = max(params.overlayClip(1),minOverlayData);
-  params.overlayClip(2) = min(params.overlayClip(2),maxOverlayData);
+  params.overlayClipRange(1) = max(params.overlayClipRange(1),minOverlayData);
+  params.overlayClipRange(2) = min(params.overlayClipRange(2),maxOverlayData);
   mrParamsSet(params,1);
 end
 
@@ -151,19 +140,21 @@ end
 function value = checkCmapParams(params,value,whichParam)
 
 switch(whichParam)
+  case 'colorrange'
+    if diff(params.overlayColorRange)<=0
+      mrWarnDlg('(editOverlayGUI) colorange values cannot be equal or decreasing.');
+      value=[];
+    end  
   case 'cliprange'
     %we don't know what value we got so we need to find out first
-%     indexInArray = find(params.overlayClipRange==value);
-    indexInArray = find(params.overlayClip==value);
+    indexInArray = find(params.overlayClipRange==value);
     switch(indexInArray)
       case 1
-%         if params.overlayClipRange(indexInArray)<params.overlayUsefulRange(1)
-        if params.overlayClip(indexInArray)<params.overlayRange(1)
+        if params.overlayClipRange(indexInArray)<params.overlayUsefulRange(1)
           value = [];
         end
       case 2
-%         if params.overlayClipRange(indexInArray)>params.overlayUsefulRange(2)
-        if params.overlayClip(indexInArray)>params.overlayRange(2)
+        if params.overlayClipRange(indexInArray)>params.overlayUsefulRange(2)
           value = [];
         end
     end
@@ -172,17 +163,14 @@ switch(whichParam)
     end
   case 'usefulrange'
     %we don't know what value we got so we need to find out first
-%     indexInArray = find(params.overlayUsefulRange==value);
-    indexInArray = find(params.overlayRange==value);
+    indexInArray = find(params.overlayUsefulRange==value);
     switch(indexInArray)
       case 1
-%         if params.overlayUsefulRange(indexInArray)>params.overlayClipRange(1)
-        if params.overlayRange(indexInArray)>params.overlayClip(1)
+        if params.overlayUsefulRange(indexInArray)>params.overlayClipRange(1)
           value = [];
         end
       case 2
-%         if params.overlayUsefulRange(indexInArray)<params.overlayClipRange(2)
-        if params.overlayRange(indexInArray)<params.overlayClip(2)
+        if params.overlayUsefulRange(indexInArray)<params.overlayClipRange(2)
           value = [];
         end
     end
@@ -190,8 +178,7 @@ switch(whichParam)
       mrWarnDlg('(editOverlayGUI) useful range must contain clip range');
     end  
     %check that min<max
-%     if diff(params.overlayUsefulRange)<0
-    if diff(params.overlayRange)<0
+    if diff(params.overlayUsefulRange)<0
       mrWarnDlg('(editOverlayGUI) useful range must be increasing');
       value=[];
     end
@@ -228,21 +215,20 @@ function mrCmapCallback(params,viewNum)
     return;
   end
   % set the overlay useful range 
-%   newOverlay.range = [params.overlayUsefulRange(1) params.overlayUsefulRange(2)];
-  newOverlay.range = [params.overlayRange(1) params.overlayRange(2)];
+  newOverlay.range = [params.overlayUsefulRange(1) params.overlayUsefulRange(2)];
   %if the range has changed, we only need to update the slider
   if any(abs(newOverlay.range-currentOverlay.range)>5e-7)
     viewSet(thisView,'overlayRange',newOverlay.range, overlayNum);
     refreshMLRDisplay(viewNum);
     return;
   end
-%   % set the overlay color range 
-%   newOverlay.colorRange = [params.overlayColorRange(1) params.overlayColorRange(2)];
-%   if any(abs(newOverlay.colorRange-currentOverlay.colorRange)>5e-7)% && ~strcmp(newOverlay.colormapType,'normal')
-%     viewSet(thisView,'overlayColorRange',newOverlay.colorRange, overlayNum);
-%     refreshMLRDisplay(viewNum);
-%     return;
-%   end
+  % set the overlay color range 
+  newOverlay.colorRange = [params.overlayColorRange(1) params.overlayColorRange(2)];
+  if any(abs(newOverlay.colorRange-currentOverlay.colorRange)>5e-7)% && ~strcmp(newOverlay.colormapType,'normal')
+    viewSet(thisView,'overlayColorRange',newOverlay.colorRange, overlayNum);
+    refreshMLRDisplay(viewNum);
+    return;
+  end
   
   %parameters for which the overlay has to be recomputed as a whole (this should be changed by adding cases to viewSet)
   % set which color cmap to use
@@ -292,8 +278,7 @@ function mrCmapCallback(params,viewNum)
   newOverlay.colormapType = params.overlayColormapType;
 
   % set the overlay clip
-%   newOverlay.clip = [params.overlayClipRange(1) params.overlayClipRange(2)];
-  newOverlay.clip = [params.overlayClip(1) params.overlayClip(2)];
+  newOverlay.clip = [params.overlayClipRange(1) params.overlayClipRange(2)];
   
 
 %   % set the name of the overlay

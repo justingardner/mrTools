@@ -356,14 +356,14 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
         img=base.RGB; %only display base in the background
         contours=overlays.overlayIm;  %display first overlay as contours 
         contours(~overlays.alphaMaps(:,:,1,1))=NaN;   % use non-zero alpha map as mask
-        contourCscale=overlays.range(1,:); 
+        contourCscale=overlays.colorRange(1,:); 
         contourCmap = overlays.cmap(:,:,1);
       else
         %combine first overlay and base
         img=overlays.alphaMaps(:,:,:,1).*overlays.RGB(:,:,:,1)+(1-overlays.alphaMaps(:,:,:,1)).*base.RGB;
         contours=overlays.overlayIm(:,:,2); %display second overlay as contours
         contours(~overlays.alphaMaps(:,:,1,2))=NaN;   % use non-zero alpha map as mask
-        contourCscale=overlays.range(2,:);
+        contourCscale=overlays.colorRange(2,:);
         contourCmap = overlays.cmap(:,:,2);
       end
       if size(overlays.RGB,4)>2
@@ -377,7 +377,7 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       img = reshape(img,[base.dims 3]);
   end
   cmap = overlays.cmap;
-  cbarRange = overlays.range;
+  cbarRange = overlays.colorRange;
 elseif ~isempty(base.RGB)
   img = base.RGB;
   cmap = base.cmap;
