@@ -97,7 +97,9 @@ elseif isfield(flat{1},'radius')
   flatdir = [];
   gFlatViewer.path = flat{1}.path;
   flatPath = flat{1}.path;
-  %first convert coordinates from current base to the surface base 
+  % convert start point from base space to world coordinates (the surfRelax
+  % space) because that's the space used by makeFlatFromRadius
+  % first convert coordinates from current base to the surface base 
   if isempty(anat)
     [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Select 3D Anatomy File',flat{1}.path);
     anat{1} = [pathname filename];
@@ -108,9 +110,17 @@ elseif isfield(flat{1},'radius')
    end
   hdr= cbiReadNiftiHeader(anatomyFile);
   baseStartPoint = hdr.sform44 \ viewGet(viewNum,'basexform') * [flat{1}.startPoint';1];
-  gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,baseStartPoint(1:3)',flat{1}.parentSurfaceName);
+  array2worldXform = mlrXFormFromHeader(anatomyFile,'array2world');
+  worldStartPoint = array2worldXform*baseStartPoint;
+  gFlatViewer.flat = makeFlatFromRadius(flat{1},flat{1}.radius,worldStartPoint(1:3)',flat{1}.parentSurfaceName);
   if isempty(gFlatViewer.flat),return,end
+  % convert start point back to base coordinates to print flat name
+  arrayStartPoint = round(array2worldXform\[gFlatViewer.flat.startPoint';1]);
+  % set the name of the patch
+  gFlatViewer.flat.name = sprintf('%s_Flat_%i_%i_%i_Rad%i.off',stripext(flat{1}.parentSurfaceName),round(arrayStartPoint(1)),round(arrayStartPoint(2)),round(arrayStartPoint(3)),gFlatViewer.flat.radius);
+  gFlatViewer.flat.array2worldXform = array2worldXform;
   flat{1} = gFlatViewer.flat.name;
+
 elseif isfield(flat{1},'vtcs')
   % is a passed in flat 
   gFlatViewer.flat = flat{1};
@@ -383,9 +393,9 @@ paramsInfo{end+1} = {'path', flatPath,'editable=0','The directory path to the fl
 if isfield(gFlatViewer.flat,'radius')
   paramsInfo{end+1} = {'flatFileName',flat{1},'editable=1','The flat patch file'};
   paramsInfo{end+1} = {'radius',gFlatViewer.flat.radius,'incdec=[-5 5]','minmax=[1 inf]','callback',@setFlatRadius,'Set the radius in mm of the flat patch'};
-  paramsInfo{end+1} = {'x',gFlatViewer.flat.startPoint(1),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start x position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
-  paramsInfo{end+1} = {'y',gFlatViewer.flat.startPoint(2),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start y position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
-  paramsInfo{end+1} = {'z',gFlatViewer.flat.startPoint(3),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start z position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
+  paramsInfo{end+1} = {'x',arrayStartPoint(1),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start x position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
+  paramsInfo{end+1} = {'y',arrayStartPoint(2),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start y position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
+  paramsInfo{end+1} = {'z',arrayStartPoint(3),'incdec=[-10 10]','minmax=[1 inf]','callback',@setFlatStartPoint,'Set the start z position of patch. Note that if you modify this field it will get reset to the closest [x y s] point that is on the surface.'};
 elseif ~editable && (length(flat) == 1)
   paramsInfo{end+1} = {'flatFileName',flat{1},'editable=0','The flat patch file'};
 else
@@ -1341,8 +1351,8 @@ if nargin == 4
   mesh.uniqueVertices = surf.vtcs;
   mesh.uniqueFaceIndexList = surf.tris;
   mesh.connectionMatrix = findConnectionMatrix(mesh);
-  % note that here, we could pass in a scaling. As long
-  % as the volume is 1x1x1 mm, the scaling is in mm though.
+  % note that here, we could pass in a scaling if the volume is not 1x1x1 mm.
+  % instead we converted the startPoint in millimeters (world coordinates)
   flat.distanceMatrix = find3DNeighbourDists(mesh);
   % keep the parent name
   flat.parentSurfaceName = surfFileName;
@@ -1379,8 +1389,6 @@ flat.vtcs = flat.parent.vtcs(flat.patch2parent(:,2),:);
 % fill out rest of fields
 flat.Nedges = flat.Nvtcs+flat.Ntris-1;
 flat.nPatch = [flat.Nvtcs flat.Ntris flat.Nedges];
-% set the name of the patch
-flat.name = sprintf('%s_Flat_%i_%i_%i_Rad%i.off',stripext(flat.parentSurfaceName),flat.startPoint(1),flat.startPoint(2),flat.startPoint(3),flat.radius);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   setFlatRadius   %%
@@ -1397,6 +1405,8 @@ end
 
 % reset the patch for the current selected radius
 gFlatViewer.flat = makeFlatFromRadius(gFlatViewer.flat,params.radius);
+% set the name of the patch
+gFlatViewer.flat.name = sprintf('%s_Flat_%i_%i_%i_Rad%i.off',stripext(gFlatViewer.flat.parentSurfaceName),params.x,params.y,params.z,gFlatViewer.flat.radius);
 
 % and update name
 if (updateName)
@@ -1422,15 +1432,19 @@ if isempty(params.flatFileName) || strcmp(gFlatViewer.flat.name,params.flatFileN
   updateName = 1;
 end
 
-% reset the patch for the current selected radius
-gFlatViewer.flat = makeFlatFromRadius(gFlatViewer.flat,params.radius,[params.x params.y params.z]);
+% reset the patch for the current selected start point
+worldStartPoint = gFlatViewer.flat.array2worldXform*[params.x;params.y;params.z;1]; %convert start point from base to world coordinates
+gFlatViewer.flat = makeFlatFromRadius(gFlatViewer.flat,params.radius,worldStartPoint(1:3)');
 
 % and update location of startPoint
-params.x = gFlatViewer.flat.startPoint(1);
-params.y = gFlatViewer.flat.startPoint(2);
-params.z = gFlatViewer.flat.startPoint(3);
+arrayStartPoint = gFlatViewer.flat.array2worldXform\[gFlatViewer.flat.startPoint';1];
+params.x = round(arrayStartPoint(1));
+params.y = round(arrayStartPoint(2));
+params.z = round(arrayStartPoint(3));
+% set the name of the patch
+gFlatViewer.flat.name = sprintf('%s_Flat_%i_%i_%i_Rad%i.off',stripext(gFlatViewer.flat.parentSurfaceName),params.x,params.y,params.z,gFlatViewer.flat.radius);
 
-% and update name
+% and update name in GUI
 if (updateName)
   params.flatFileName = gFlatViewer.flat.name;
 end
