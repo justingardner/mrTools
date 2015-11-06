@@ -435,25 +435,7 @@ else
   % renderer (order of 5-10 ms)
   set(fig,'Renderer','OpenGL')
   % get the base surface
-  baseSurface = viewGet(v,'baseSurface',baseNum);
-  % if this is not the current base then we need to xform
-  % coordinates so that it will display in the same space
-  % as the current one
-  if baseNum ~= viewGet(v,'currentBase')
-    % get xform that xforms coordinates from this base to
-    % the current base
-    base2base = inv(viewGet(v,'base2base',baseNum));
-    % remove some sigfigs so that the isequal check works
-    if ~isequal(round(base2base*100000)/100000,eye(4))
-      % homogenous coordinates
-      baseSurface.vtcs(:,4) = 1;
-      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-      % xform to current base coordinates
-      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
-      % and remove the homogenous 1
-      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
-    end
-  end
+  baseSurface = getBaseSurface(v,baseNum); %get baseSurface coordinates, convert to different base space if necessary
   % get alpha
   baseAlpha = viewGet(v,'baseAlpha',baseNum);
   % display the surface
@@ -525,6 +507,33 @@ if nROIs
 else
   roi = [];
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% getBaseSurface: gets baseSurface using viewGet, but converts vertices coordinates to
+% the current base space (in case surface is overlaid onto different base in 3D view
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function baseSurface = getBaseSurface(v,baseNum)
+  
+  baseSurface = viewGet(v,'baseSurface',baseNum);
+  % if this is not the current base then we need to xform
+  % coordinates so that it will display in the same space
+  % as the current one
+  if baseNum ~= viewGet(v,'currentBase')
+    % get xform that xforms coordinates from this base to
+    % the current base
+    base2base = inv(viewGet(v,'base2base',baseNum));
+    % remove some sigfigs so that the isequal check works
+    if ~isequal(round(base2base*100000)/100000,eye(4))
+      % homogenous coordinates
+      baseSurface.vtcs(:,4) = 1;
+      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+      % xform to current base coordinates
+      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
+      % and remove the homogenous 1
+      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
+    end
+  end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
@@ -656,7 +665,7 @@ option = viewGet(view,'showROIs');
 % Loop through ROIs in order
 for r = order
   % look in cache for roi
-  roiCache = viewGet(view,'ROICache',r);
+  roiCache = viewGet(view,'ROICache',r,baseNum);
   % if not found
   if isempty(roiCache)
     if verbose
@@ -740,7 +749,7 @@ for r = order
   % decide whether we are drawing perimeters or not
   doPerimeter = ismember(option,{'all perimeter','selected perimeter','group perimeter'});
   if baseType == 2
-    baseSurface = viewGet(view,'baseSurface',baseNum);
+    baseSurface = getBaseSurface(view,baseNum); %get baseSurface coordinates, converted to different base space if necessary
     if 0 %%doPerimeter
       if verbose, disppercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
