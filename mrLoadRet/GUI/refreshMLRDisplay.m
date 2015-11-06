@@ -74,10 +74,10 @@ if (baseType == 0) && (baseMultiAxis>0)
     % if we are displaying all slice dimenons and the #d
     if baseMultiAxis == 1
       % display each slice index
-      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,false,verbose,iSliceIndex,curCoords(iSliceIndex));
     else
       % display each slice index
-      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,false,verbose,iSliceIndex,curCoords(iSliceIndex));
     end
   end
 
@@ -172,7 +172,7 @@ if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
     if viewGet(v,'baseType',iBase)>=2
       if viewGet(v,'baseMultiDisplay',iBase)
 	% display the base and keep the information about what is drawn for functions like mrPrint
-	[v altBase(iBase).img altBase(iBase).base altBase(iBase).roi altBase(iBase).overlays] = dispBase(gui.axis,v,iBase,gui,false,verbose);
+	[v altBase(iBase).img altBase(iBase).base altBase(iBase).roi altBase(iBase).overlays] = dispBase(gui.axis,v,iBase,gui,true,verbose);
       end
     end
   end
