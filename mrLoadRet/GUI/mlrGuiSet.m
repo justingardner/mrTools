@@ -496,6 +496,13 @@ switch lower(field)
     colorbarPosition = get(handles.colorbar,'Position');
     colorbarPosition(3) = 1-colorbarPosition(1)-0.25-handles.marginSize;
     set(handles.colorbar,'Position',colorbarPosition);
+    if isfield(handles,'colorbarRightBorder')
+      widthBorder = 0.001;
+      borderPosition = colorbarPosition;
+      borderPosition(1) = borderPosition(1)+borderPosition(3)-widthBorder;
+      borderPosition(3) = widthBorder;
+      set(handles.colorbarRightBorder,'Position',borderPosition);
+    end
     refreshMLRDisplay(viewGet(view,'viewNum'));
     for iPanel = 1:length(MLR.panels)
       % if panel is visible, then shift panelY accordingly
@@ -544,7 +551,19 @@ switch lower(field)
     guidata(viewGet(view,'figNum'),handles);
     % make the colorbar display shorter
     colorbarPosition = get(handles.colorbar,'Position');
-    colorbarPosition(3) = 1-colorbarPosition(1)-handles.marginSize;
+    if ~isfield(handles,'colorbarRightBorder')
+      colorbarPosition(3) = 1-colorbarPosition(1)-handles.marginSize;
+    else
+      %if there is a right colorscale border, this means that multiple colorbar will be displayed 
+      %and we need a bit more space on the right for the scale value 
+      colorbarPosition(3) = 1-colorbarPosition(1)-0.05-handles.marginSize;
+      %now change the position of the right colorscale border
+      widthBorder = 0.001;
+      borderPosition = colorbarPosition;
+      borderPosition(1) = borderPosition(1)+borderPosition(3)-widthBorder;
+      borderPosition(3) = widthBorder;
+      set(handles.colorbarRightBorder,'Position',borderPosition);
+    end
     set(handles.colorbar,'Position',colorbarPosition);
     refreshMLRDisplay(viewGet(view,'viewNum'));
  case {'nscans'}
