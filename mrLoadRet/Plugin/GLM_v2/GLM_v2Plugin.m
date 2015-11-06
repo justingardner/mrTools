@@ -205,7 +205,7 @@ switch action
     mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.105   0.58   0.08 ]);
     mlrAdjustGUI(thisView,'set','colorbar','fontSize',10);
     mlrAdjustGUI(thisView,'add','axes','colorbarRightBorder',...
-      'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.105   0.001  0.08 ]);
+      'YaxisLocation','right','XTick',[],'box','off','color','none','position',  [0.929   0.105   0.001  0.08 ]);
     mlrAdjustGUI(thisView,'set','axis','position',                [0.285   0.195   0.71   0.8]);
     
 
