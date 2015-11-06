@@ -495,12 +495,12 @@ if dispColorbar
     if verbose>1,disppercent(-inf,'colorbar');,end
     cbar = permute(NaN(size(cmap)),[3 1 2]);
     for iOverlay = 1:size(cmap,3)
-      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,256],1); 
+      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,size(cmap,1)],1); 
     end
     image(cbar,'Parent',gui.colorbar);
     if size(cbar,1)==1
       set(gui.colorbar,'YTick',[]);
-      set(gui.colorbar,'XTick',[1 64 128 192 256]);
+      set(gui.colorbar,'XTick',linspace(0.5,size(cmap,1)+0.5,5));
       set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
       if isfield(gui,'colorbarRightBorder')
 	set(gui.colorbarRightBorder,'YTick',[]);
