@@ -460,7 +460,9 @@ else
   camva(hAxis,9);
   % set the view angle
   setMLRViewAngle(v);
-  axis(hAxis,'image');
+  if baseNum == viewGet(v,'currentBase') % set aspect ratio to 1:1:1, but only if this is the current base
+    axis(hAxis,'image');                 % (if not, the aspect has already been set for the current base)
+  end
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
