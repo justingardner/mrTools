@@ -188,20 +188,26 @@ delete(hObject);
 % --- Sagittal
 function sagittalRadioButton_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
-view = viewSet(viewNum,'sliceOrientation','sagittal');
-refreshMLRDisplay(viewNum);
+viewSet(viewNum,'sliceOrientation','sagittal');
+if ~viewGet(viewNum,'baseMultiAxis') %only in single slice view
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Coronal
 function coronalRadioButton_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
-view = viewSet(viewNum,'sliceOrientation','coronal');
-refreshMLRDisplay(viewNum);
+viewSet(viewNum,'sliceOrientation','coronal');
+if ~viewGet(viewNum,'baseMultiAxis') %only in single slice view
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Axial
 function axialRadioButton_Callback(hObject, eventdata, handles)
 viewNum = handles.viewNum;
-view = viewSet(viewNum,'sliceOrientation','axial');
-refreshMLRDisplay(viewNum);
+viewSet(viewNum,'sliceOrientation','axial');
+if ~viewGet(viewNum,'baseMultiAxis') %only in single slice view
+  refreshMLRDisplay(viewNum);
+end
 
 % --- Left
 function leftRadioButton_Callback(hObject, eventdata, handles)
