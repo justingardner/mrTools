@@ -135,9 +135,29 @@ if ~isfield(s,'pRFStimImage') || recomputeStimImage
   [stim.x stim.y] = ndgrid(-imageWidth/2:imageWidth/(screenWidth-1):imageWidth/2,-imageHeight/2:imageHeight/(screenHeight-1):imageHeight/2);
 
   if verbose,disppercent(-inf,'(pRFGetStimImageFromStimfile) Computing stimulus images');end
+  warnOnStimfileMissingInfo = true;
   for iImage = 1:length(stim.t)
     im = createMaskImage(s,stim.t(iImage));
-    if isempty(im),stim=[];return,end
+    % if no image, that probably means the stimfile ended early
+    if isempty(im)
+      % check to see if we are within (arbitrarily) 5% of the end
+      % and use that as a cutoff for asking the user if something drastically
+      % wrong has occurred.
+      if warnOnStimfileMissingInfo
+	if (1-iImage/length(stim.t)) > 0.05
+	  if askuser('Your stimfile is missing information for volume %i of %i. This might be because you have linked the wrong stimfile or that the stim program ended before the scan or that there is some other problem with the stimfile. It would be a good idea to try to fix this cause this may now be generating the wrong stimulus. Continue anyway?',0,1)
+	    warnOnStimfileMissingInfo = false;
+	  else
+	    % user did not agree to continue, bail out
+            stim=[];
+	    return
+	  end
+	end
+      end
+      % just put up the warning
+      disp(sprintf('(pRFGetStimImageFromStimfile) !!! Missing stimulus info for volume %i of %i. Setting to blank image. !!!',iImage,length(stim.t)));
+      im = zeros(screenWidth,screenHeight);
+    end
     stim.im(1:screenWidth,1:screenHeight,iImage) = im;
     if verbose,disppercent(iImage/length(stim.t));end
   end
@@ -190,7 +210,7 @@ firstTimepoint = firstTimepoint(1);
 thisTimepoint = s.time(firstTimepoint)+t;
 thisTimepoint = find(thisTimepoint <= s.time);
 if isempty(thisTimepoint)
-  disp(sprintf('(pRFGetStimImageFromStimfile) Timepoint %0.1fs does not exist in stimfile. This might have happened if you have linked the wrong stimfile with the scan - in which case, setStimfile to change',t));
+  disp(sprintf('(pRFGetStimImageFromStimfile) Timepoint %0.1fs does not exist in stimfile. This might have happened if you have linked the wrong stimfile with the scan - in which case, setStimfile to change stimfile linking',t));
   maskImage = [];
   return
 end
