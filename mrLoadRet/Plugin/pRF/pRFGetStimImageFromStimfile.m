@@ -83,6 +83,7 @@ if ~isfield(s,'pRFStimImage') || recomputeStimImage
   s.blank = s.myscreen.traces(s.task{taskNum}{1}.blankTrace,:);
   s.vol = s.myscreen.traces(1,:);
   s.trialVol = e.trialVolume;
+  s.trialTicknum = e.trialTicknum;
   s.blank = e.randVars.blank;
   if any(s.stimulus.stimulusType == [3 4])
     s.barAngle = e.parameter.barAngle;
@@ -214,6 +215,7 @@ if isempty(thisTimepoint)
   maskImage = [];
   return
 end
+% get timepoint
 thisTimepoint = thisTimepoint(1);
 
 % get current volume number
@@ -228,6 +230,12 @@ if isempty(thisTrial)
   return;
 end
 thisTrial = thisTrial(end);
+
+% make sure that the timepoint is valid for the trial
+thisTimepoint = max(thisTimepoint,s.trialTicknum(thisTrial));
+if length(s.trialTicknum) > thisTrial
+  thisTimepoint = min(thisTimepoint,s.trialTicknum(thisTrial+1));
+end
 
 % pull out stimulus variable
 global stimulus;
@@ -283,6 +291,13 @@ maskImage = mglFrameGrab;
 maskImage((maskImage > 0.51) | (maskImage < 0.49)) = 1;
 maskImage((maskImage < 0.51) & (maskImage > 0.49)) = 0;
 maskImage = maskImage(:,:,1);
+
+% DEBUG CODE - will draw each frame of the stimulus to a figure
+
+%disp(sprintf('Trial %i maskPhase: %i',thisTrial,stimulus.currentMask))
+%mlrSmartfig('pRF','reuse');clf;imagesc(maskImage);
+%title(sprintf('Trial %i maskPhase: %i',thisTrial,stimulus.currentMask))
+%drawnow
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to draw retinotopy stimulus to screen
