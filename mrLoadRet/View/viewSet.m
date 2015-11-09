@@ -2295,12 +2295,12 @@ switch lower(param)
       view.sliceOrientation = sliceOrientation;
       % Update slice and nSlices
       baseNum = viewGet(view,'currentBase');
-      if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum'))
+      if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum')) && ~viewGet(view,'baseType',baseNum)
 	mlrGuiSet(view,'sliceOrientation',sliceOrientation);
 	baseDims = viewGet(view,'basedims',baseNum);
 	sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 	nSlices = baseDims(sliceIndex);
-	coords = viewGet(view,'curCoords');
+	coords = viewGet(view,'baseCurCoords',baseNum);
 	slice = coords(sliceOrientation);
 	view = viewSet(view,'curSlice',min(slice,nSlices));
 %	view = viewSet(view,'curSlice',slice);
