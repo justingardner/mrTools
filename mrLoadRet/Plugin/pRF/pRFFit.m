@@ -126,7 +126,7 @@ for iScan = 1:fit.concatInfo.n
   sLength = fit.concatInfo.runTransition(iScan,2) - fit.concatInfo.runTransition(iScan,1) + 1;
   if sLength ~= size(fitParams.stim{iScan}.im,3)
     mrWarnDlg(sprintf('(pRFFit) Data length of %i for scan %i (concatNum:%i) does not match stimfile length %i',fit.concatInfo.runTransition(iScan,2),scanNum,iScan,size(fitParams.stim{iScan}.im,3)));
-    tf = false;
+    %tf = false;
   end
 end
 
@@ -372,7 +372,8 @@ modelResponse = [];residual = [];
 % create the model for each concat
 for i = 1:fitParams.concatInfo.n
   % get model response
-  thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i});
+  nFrames = fitParams.concatInfo.runTransition(i,2);
+  thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
 
   % get a model hrf
   hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
@@ -545,15 +546,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   convolveModelWithStimulus   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function modelResponse = convolveModelWithStimulus(rfModel,stim)
+function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
 
 % get number of frames
-nFrames = size(stim.im,3);
+nStimFrames = size(stim.im,3);
 
 % preallocate memory
 modelResponse = zeros(1,nFrames);
 
-for frameNum = 1:nFrames
+for frameNum = 1:nStimFrames
   % multipy the stimulus frame by frame with the rfModel
   % and take the sum
   modelResponse(frameNum) = sum(sum(rfModel.*stim.im(:,:,frameNum)));
