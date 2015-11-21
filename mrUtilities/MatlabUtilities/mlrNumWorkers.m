@@ -37,6 +37,7 @@ end
 % check existence of Parallel Computing Toolbox
 toolboxVersions = ver;
 n = 1;
+
 if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
   % get the pool size
   if verLessThan('matlab','8.4')

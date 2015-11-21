@@ -61,51 +61,22 @@ params = checkPRFparams(params);
 % set the group
 v = viewSet(v,'curGroup',params.groupName);
 
-% create the parameters for the r2 overlay
-dateString = datestr(now);
-r2.name = 'r2';
-r2.groupName = params.groupName;
-r2.function = 'pRF';
-r2.reconcileFunction = 'defaultReconcileParams';
-r2.data = cell(1,viewGet(v,'nScans'));
-r2.date = dateString;
-r2.params = cell(1,viewGet(v,'nScans'));
-r2.range = [0 1];
-r2.clip = [0 1];
-% colormap is made with a little bit less on the dark end
-r2.colormap = hot(312);
-r2.colormap = r2.colormap(end-255:end,:);
-r2.alpha = 1;
-r2.colormapType = 'setRangeToMax';
-r2.interrogator = 'pRFPlot';
-r2.mergeFunction = 'pRFMergeParams';
-
-% create the parameters for the polarAngle overlay
-polarAngle = r2;
-polarAngle.name = 'polarAngle';
-polarAngle.range = [-pi pi];
-polarAngle.clip = [-pi pi];
-polarAngle.colormapType = 'normal';
-polarAngle.colormap = hsv(256);
-
-% create the parameters for the eccentricity overlay
-eccentricity = r2;
-eccentricity.name = 'eccentricity';
-eccentricity.range = [0 15];
-eccentricity.clip = [0 inf];
-eccentricity.colormapType = 'normal';
-eccentricity.colormap = copper(256);
-
-% create the paramteres for the rfHalfWidth overlay
-rfHalfWidth = r2;
-rfHalfWidth.name = 'rfHalfWidth';
-rfHalfWidth.range = [0 15];
-rfHalfWidth.clip = [0 inf];
-rfHalfWidth.colormapType = 'normal';
-rfHalfWidth.colormap = pink(256);
-
 % get number of workers 
 nProcessors = mlrNumWorkers;
+
+% create a default overlay
+dateString = datestr(now);
+defaultOverlay.groupName = params.groupName;
+defaultOverlay.function = 'pRF';
+defaultOverlay.reconcileFunction = 'defaultReconcileParams';
+defaultOverlay.data = cell(1,viewGet(v,'nScans'));
+defaultOverlay.date = dateString;
+defaultOverlay.params = cell(1,viewGet(v,'nScans'));
+defaultOverlay.interrogator = 'pRFPlot';
+defaultOverlay.mergeFunction = 'pRFMergeParams';
+
+% now get the model types
+overlays = initOverlays(defaultOverlay);
 
 % code snippet for clearing precomputed prefit
 %global gpRFFitStimImage;gpRFFitStimImage = [];
@@ -131,10 +102,15 @@ for scanNum = params.scanNum
   scanDims = viewGet(v,'scanDims',scanNum);
   
   % init overlays
-  r2.data{scanNum} = nan(scanDims);
-  polarAngle.data{scanNum} = nan(scanDims);
-  eccentricity.data{scanNum} = nan(scanDims);
-  rfHalfWidth.data{scanNum} = nan(scanDims);
+  overlayNames = fieldnames(overlays);
+  nOverlays = length(overlayNames);
+  for iOverlay = 1:nOverlays
+    % initialize the overlay
+    overlays.(overlayNames{iOverlay}).data{scanNum} = nan(scanDims);
+    % and initialze the overlaysTemp variable which
+    % will hold values in the parfor loop
+    overlaysTemp.(overlayNames{iOverlay}) = nan(1,n);
+  end
 
   % default all variables that will be returned
   % by pRFFIt, so that we can call it the
@@ -164,11 +140,8 @@ for scanNum = params.scanNum
   % grab all these fields and stick them onto a structure called paramsInfo
   % preallocate some space
   rawParams = nan(fit.nParams,n);
+  overlayParams = nan(nOverlays,n);
   r = nan(n,fit.concatInfo.n);
-  thisr2 = nan(1,n);
-  thisPolarAngle = nan(1,n);
-  thisEccentricity = nan(1,n);
-  thisRfHalfWidth = nan(1,n);
 
   % get some info about the scan to pass in (which prevents
   % pRFFit from calling viewGet - which is problematic for distributed computing
@@ -225,29 +198,24 @@ for scanNum = params.scanNum
       dispHeader(sprintf('(pRF) %0.1f%% done in %s (Estimated time remaining: %s)',100*blockStart/n,mlrDispElapsedTime(toc),mlrDispElapsedTime((toc*n/blockStart) - toc)));
     end
 
-    % now loop over each voxel
-    parfor i = blockStart:blockEnd
+    % now parfor loop over each voxel
+    for i = blockStart:blockEnd
       fit = pRFFit(v,scanNum,x(i),y(i),z(i),'stim',stim,'concatInfo',concatInfo,'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',i,'dispN',n,'tSeries',loadROI.tSeries(i-blockStart+1,:)','framePeriod',framePeriod,'junkFrames',junkFrames,'paramsInfo',paramsInfo);
       if ~isempty(fit)
 	% keep data, note that we are keeping temporarily in
 	% a vector here so that parfor won't complain
 	% then afterwords we put it into the actual overlay struct
-	thisr2(i) = fit.r2;
-	thisPolarAngle(i) = fit.polarAngle;
-	thisEccentricity(i) = fit.eccentricity;
-	thisRfHalfWidth(i) = fit.std;
+	overlayParams(:,i) = fit.overlayParams(:);
 	% keep parameters
 	rawParams(:,i) = fit.params(:);
 	r(i,:) = fit.r;
       end
     end
-      
     % set overlays
-    for i = 1:n
-      r2.data{scanNum}(x(i),y(i),z(i)) = thisr2(i);
-      polarAngle.data{scanNum}(x(i),y(i),z(i)) = thisPolarAngle(i);
-      eccentricity.data{scanNum}(x(i),y(i),z(i)) = thisEccentricity(i);
-      rfHalfWidth.data{scanNum}(x(i),y(i),z(i)) = thisRfHalfWidth(i);
+    for iVoxel = 1:n
+      for iOverlay = 1:nOverlays
+	overlays.(overlayNames{iOverlay}).data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = overlayParams(iOverlay,iVoxel);
+      end
     end
   end
   % display time update
@@ -260,10 +228,9 @@ for scanNum = params.scanNum
 
   iScan = find(params.scanNum == scanNum);
   thisParams.scanNum = params.scanNum(iScan);
-  r2.params{scanNum} = thisParams;
-  polarAngle.params{scanNum} = thisParams;
-  eccentricity.params{scanNum} = thisParams;
-  rfHalfWidth.params{scanNum} = thisParams; 
+  for iOverlay = 1:nOverlays
+    overlays.(overlayNames{iOverlay}).params{scanNum} = thisParams;
+  end
   % display how long it took
   disp(sprintf('(pRF) Fitting for %s:%i took in total: %s',params.groupName,scanNum,mlrDispElapsedTime(toc)));
 end
@@ -277,7 +244,7 @@ pRFAnal.reconcileFunction = 'defaultReconcileParams';
 pRFAnal.mergeFunction = 'pRFMergeParams';
 pRFAnal.guiFunction = 'pRFGUI';
 pRFAnal.params = params;
-pRFAnal.overlays = [r2 polarAngle eccentricity rfHalfWidth];
+pRFAnal.overlays = overlays;
 pRFAnal.curOverlay = 1;
 pRFAnal.date = dateString;
 v = viewSet(v,'newAnalysis',pRFAnal);
@@ -303,7 +270,11 @@ end
 % for output
 if nargout > 1
   for i = 1:length(d)
-    pRFAnal.d{i}.r2 = r2.data{i};
+    if isfield(overlays,'r2')
+      pRFAnal.d{i}.r2 = overlays.r2.data{i};
+    else
+      pRFAnal.d{i}.r2 = [];
+    end
   end
   % make d strucutre
   if length(pRFAnal.d) == 1
@@ -423,4 +394,44 @@ for iFit = 1:length(params.pRFFit)
     end
   end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%
+%    initOverlays    %
+%%%%%%%%%%%%%%%%%%%%%%
+function overlays = initOverlays(defaultOverlay);
+
+% create the overlays
+overlays.r2 = defaultOverlay;
+overlays.r2.name = 'r2';
+overlays.r2.range = [0 1];
+overlays.r2.clip = [0 1];
+% colormap is made with a little bit less on the dark end
+overlays.r2.colormap = hot(312);
+overlays.r2.colormap = overlays.r2.colormap(end-255:end,:);
+overlays.r2.alpha = 1;
+overlays.r2.colormapType = 'setRangeToMax';
+
+% create the parameters for the polarAngle overlay
+overlays.polarAngle = defaultOverlay;
+overlays.polarAngle.name = 'polarAngle';
+overlays.polarAngle.range = [-pi pi];
+overlays.polarAngle.clip = [-pi pi];
+overlays.polarAngle.colormapType = 'normal';
+overlays.polarAngle.colormap = hsv(256);
+
+% create the parameters for the eccentricity overlay
+overlays.eccentricity = defaultOverlay;
+overlays.eccentricity.name = 'eccentricity';
+overlays.eccentricity.range = [0 15];
+overlays.eccentricity.clip = [0 inf];
+overlays.eccentricity.colormapType = 'normal';
+overlays.eccentricity.colormap = copper(256);
+
+% create the paramteres for the rfHalfWidth overlay
+overlays.rfHalfWidth = defaultOverlay;
+overlays.rfHalfWidth.name = 'rfHalfWidth';
+overlays.rfHalfWidth.range = [0 15];
+overlays.rfHalfWidth.clip = [0 inf];
+overlays.rfHalfWidth.colormapType = 'normal';
+overlays.rfHalfWidth.colormap = pink(256);
 
