@@ -52,7 +52,7 @@ if ieNotDefined('params')
       mrWarnDlg('(importOverlay) Specify a filename when using option defaultParams');
       return
     end
-    [filename, pathname] = uigetfile({sprintf('*%s',mrGetPref('niftiFileExtension')),'Nifti files'},'Select nifti file that you want to import');
+    [filename, pathname] = uigetfile({'*.img;*.nii;*.nii.gz','Nifti/Analyze files'},'Select nifti file that you want to import');
     if (filename==0)
       return
     end
