@@ -21,7 +21,7 @@ function retval = pRFModel()
 
 % register the two models - one which just fits
 % a guasssian receptive field 
-pRFRegisterModel('gaussian',@initFit,@getStim,@initScan,@initVoxel,@getModel,@dispFit);
+pRFRegisterModel('gaussian',@initFit,@getStim,@initScan,@initVoxel,@getModel,@endScan,@endFit);
 
 %%%%%%%%%%%%%%%%%
 %    initFit    %
@@ -29,7 +29,8 @@ pRFRegisterModel('gaussian',@initFit,@getStim,@initScan,@initVoxel,@getModel,@di
 function [fitParams overlays] = initFit(fitParams,defaultOverlay)
 
 % function does initial processing. Should set up
-% overlays that will get filled by the analysis.
+% overlays that will get filled by the analysis and
+% set some info in fitParams (see below)
 
 % init the overlays
 overlays = initOverlays(defaultOverlay);
@@ -65,7 +66,7 @@ function [fitParams prefitParams] = initScan(fitParams)
 %%%%%%%%%%%%%%%%%%%
 function [fitParams tSeries initParams] = initVoxel(fitParams,tSeries,initParams)
 
-% function does initial processing for each voxle.
+% optional: function does initial processing for each voxle.
 % Any preprocessing of tSeries can happen here.
 
 % also, if not using prefit, then set the initParams here
@@ -105,11 +106,23 @@ for i = 1:fitParams.concatInfo.n
 end
 
 %%%%%%%%%%%%%%%%%
-%    dispFit    %
+%    endScan    %
 %%%%%%%%%%%%%%%%%
-function dispFit(params,fitParams)
+function [overlayParams d] = endScan(fitParams,overlayParams,d)
 
-% function to display the fit 
+% optional: for each scan before, do any final
+% processing of params before they go into the 
+% overlay. Also, can change d structure if necessary
+
+% change from cartesian to polar angle
+[overlayParams(:,1) overlayParams(:,2)] = cart2pol(overlayParams(:,1),overlayParams(:,2));
+
+%%%%%%%%%%%%%%%%
+%    endFit    %
+%%%%%%%%%%%%%%%%
+function a = endFit(fitParams,a)
+
+% optional: do any final processing of analysis before it gets saved
 
 %%%%%%%%%%%%%%%%%%%%%%
 %    initOverlays    %

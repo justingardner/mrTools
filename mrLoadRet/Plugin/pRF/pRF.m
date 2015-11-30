@@ -195,7 +195,7 @@ for scanNum = params.scanNum
   pRFAnal.d{scanNum}.params = [];
 
   % preallocate some space
-  rawParams = nan(params.pRFFit.nParams,n);
+  rawParams = nan(n,params.pRFFit.nParams);
   r = nan(n,params.pRFFit.concatInfo.n);
 
   % get some info about the scan to pass in (which prevents
@@ -294,38 +294,44 @@ for scanNum = params.scanNum
 	disp(sprintf('%04i/%04i [%i %i %i] params=[%s] r2=%0.3f',i,n,x(i),y(i),z(i),mlrnum2str(best.params),best.r^2));
       end
       % keep parameters
-      rawParams(:,i) = best.params(:);
+      rawParams(i,:) = best.params(:);
       r(i,:) = best.r;
     end
-    % set overlays
-    for iVoxel = 1:n
-      % set r2 overlay
-      overlays.r2.data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = r(iVoxel,1)^2;
-      % set other overlays
-      for iOverlay = 1:(nOverlays-1)
-	overlays.(overlayNames{iOverlay}).data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = rawParams(params.pRFFit.overlayParamNum(iOverlay),iVoxel);
-      end
+  end
+
+  % keep best parameters and r value
+  pRFAnal.d{scanNum}.params = rawParams;
+  pRFAnal.d{scanNum}.r = r;
+
+  % call end scan, to do any last processing on overlays and d
+  [overlayParams pRFAnal.d{scanNum}] = feval(gPRFModels(params.pRFFit.modelNum).endScan,params.pRFFit,rawParams,pRFAnal.d{scanNum});
+
+  % set overlays
+  for iVoxel = 1:n
+    % set r2 overlay
+    overlays.r2.data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = r(iVoxel,1)^2;
+    % set other overlays
+    for iOverlay = 1:(nOverlays-1)
+      overlays.(overlayNames{iOverlay}).data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = overlayParams(iVoxel,params.pRFFit.overlayParamNum(iOverlay));
     end
   end
+
   % display time update
   dispHeader;
   disp(sprintf('(pRF) Fitting %i voxels took %s.',n,mlrDispElapsedTime(toc)));
   dispHeader;
   
-  % keep best parameters and r value
-  pRFAnal.d{scanNum}.params = rawParams;
-  pRFAnal.d{scanNum}.r = r;
-
   iScan = find(params.scanNum == scanNum);
   thisParams.scanNum = params.scanNum(iScan);
   for iOverlay = 1:nOverlays
     overlays.(overlayNames{iOverlay}).params{scanNum} = thisParams;
   end
+  
   % display how long it took
   disp(sprintf('(pRF) Fitting for %s:%i took in total: %s',params.groupName,scanNum,mlrDispElapsedTime(toc)));
 end
 
-% convert overlays to validated array of overlays
+% convert overlays with fields to validated array of overlays
 clear o;
 for iOverlay = 1:nOverlays
   [tf thisOverlay] = isoverlay(overlays.(overlayNames{iOverlay}));
@@ -336,7 +342,7 @@ for iOverlay = 1:nOverlays
   end
 end
 
-% install analysis
+% set up analysis
 pRFAnal.name = params.saveName;
 pRFAnal.type = 'pRFAnal';
 pRFAnal.groupName = params.groupName;
@@ -348,6 +354,11 @@ pRFAnal.params = params;
 pRFAnal.overlays = o;
 pRFAnal.curOverlay = 1;
 pRFAnal.date = dateString;
+
+% call endFit
+pRFAnal = feval(gPRFModels(params.pRFFit.modelNum).endFit,params.pRFFit,pRFAnal);
+
+
 v = viewSet(v,'newAnalysis',pRFAnal);
 
 % if we are going to merge, temporarily set overwritePolicy

@@ -68,9 +68,6 @@ global gPRFModels;
 
 % do prefit.
   % normalize tSeries to 0 mean unit length
-%  tSeriesNorm = (tSeries-mean(tSeries))/sqrt(sum(tSeries.^2));
-  % calculate r for all modelResponse by taking inner product
-%  r = fitParams.prefit.modelResponse*tSeriesNorm;
   % get best r2 for all the models
 %  [maxr bestModel] = max(r);
 %  fitParams.initParams(1) = fitParams.prefit.x(bestModel);
@@ -93,15 +90,6 @@ global gPRFModels;
 %  end
 %%%%%end
 
-% now do nonlinear fit
-if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
-  [params resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
-elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
-  [params fval exitflag] = fminsearch(@getModelResidual,fitParams.initParams,fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
-else
-  disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
-  return
-end
 
 % set output arguments
 fit = getFitParams(params,fitParams);
