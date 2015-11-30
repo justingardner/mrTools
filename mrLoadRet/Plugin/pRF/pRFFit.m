@@ -13,48 +13,6 @@ fit = [];
 [v scanNum x y z fitParams tSeries] = parseArgs(varargin);
 if isempty(v),return,end
  
-% get concat info
-if ~isfield(fitParams,'concatInfo') || isempty(fitParams.concatInfo)
-  fitParams.concatInfo = viewGet(v,'concatInfo',scanNum);
-end
-
-% if there is no concatInfo, then make one that will
-% treat the scan as a single scan
-if isempty(fitParams.concatInfo)
-  nFrames = viewGet(v,'nFrames',scanNum);
-  fitParams.concatInfo.isConcat = false;
-  fitParams.concatInfo.n = 1;
-  fitParams.concatInfo.whichScan = ones(1,nFrames);
-  fitParams.concatInfo.whichVolume = 1:nFrames;
-  fitParams.concatInfo.runTransition = [1 nFrames];
-  fitParams.concatInfo.totalJunkedFrames = viewGet(v,'totalJunkedFrames',scanNum);
-  if length(fitParams.concatInfo.totalJunkedFrames > 1)
-    % first check for consistency in totalJunkedFrames
-    if length(unique(fitParams.concatInfo.totalJunkedFrames)) > 1
-      disp(sprintf('(pRFFit) totalJunkedFrames are different for different members of component scans - could be an average in which different scans with different number of junked frames were removed. This could cause a problem in computing what the stimulus was for the average. The total junked frames count was: %s, but we will use %i as the actual value for computing the stimulus',num2str(fitParams.concatInfo.totalJunkedFrames),floor(median(fitParams.concatInfo.totalJunkedFrames))));
-    end
-    fitParams.concatInfo.totalJunkedFrames = floor(median(fitParams.concatInfo.totalJunkedFrames));
-  end
-else
-  fitParams.concatInfo.isConcat = true;
-  if ~isfield(fitParams.concatInfo,'totalJunkedFrames')
-    fitParams.concatInfo.totalJunkedFrames = viewGet(v,'totalJunkedFrames',scanNum);
-  end
-end
-
-% get the stimulus movie if it wasn't passed in
-if ~isfield(fitParams,'stim') || isempty(fitParams.stim)
-  fitParams.stim = getStim(v,scanNum,fitParams);
-end
-if isempty(fitParams.stim),return,end
-
-% if we are being called to just return the stim image 
-% then return it here
-if fitParams.justGetStimImage
-  fit = fitParams.stim;
-  return
-end
-
 % get the tSeries
 if ~isempty(x)
   % if tSeries was not passed in then load it
@@ -92,34 +50,6 @@ if ~isempty(fitParams.junkFrames) && ~isequal(fitParams.junkFrames,0)
   end
 end
 
-
-% set up the fit routine params
-fitParams = setFitParams(fitParams);
-
-% just return model response for already calcualted params
-if fitParams.getModelResponse
-  % get model fit
-  [residual fit.modelResponse fit.rfModel] = getModelResidual(fitParams.params,tSeries,fitParams);
-  % get the canonical
-  fit.p = getFitParams(fitParams.params,fitParams);
-  fit.canonical = getCanonicalHRF(fit.p.canonical,fitParams.framePeriod);
-  % return tSeries
-  fit.tSeries = tSeries;
-  return;
-end
-
-% return some fields
-fit.stim = fitParams.stim;
-fit.stimX = fitParams.stimX;
-fit.stimY = fitParams.stimY;
-fit.stimT = fitParams.stimT;
-fit.concatInfo = fitParams.concatInfo;
-fit.nParams = fitParams.nParams;
-paramsInfoFields = {'minParams','maxParams','initParams','paramNames','paramDescriptions'};
-for iField = 1:length(paramsInfoFields)
-  fit.paramsInfo.(paramsInfoFields{iField}) = fitParams.(paramsInfoFields{iField});
-end
-
 % test to see if scan lengths and stim lengths match
 tf = true;
 for iScan = 1:fit.concatInfo.n
@@ -132,71 +62,36 @@ end
 
 if ~tf,fit = [];return,end
 
-% do prefit. This computes (or is passed in precomputed) model responses
-% for a variety of parameters and calculates the correlation between
-% the models and the time series. The one that has the best correlation
-% is then used as the initial parameters for the nonlinear fit. This
-% helps prevent getting stuck in local minima
-if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
-  params = fitParams.initParams;
-  % calculate model if not already calculated
-  if ~isfield(fitParams.prefit,'modelResponse')
-    % get number of workers
-    nProcessors = mlrNumWorkers;
-    disppercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
-    % first convert the x/y and width parameters into sizes
-    % on the actual screen
-    fitParams.prefit.x = fitParams.prefit.x*fitParams.stimWidth;
-    fitParams.prefit.y = fitParams.prefit.y*fitParams.stimHeight;
-    fitParams.prefit.rfHalfWidth = fitParams.prefit.rfHalfWidth*max(fitParams.stimWidth,fitParams.stimHeight);
-    % init modelResponse
-    allModelResponse = nan(fitParams.prefit.n,fitParams.concatInfo.runTransition(end,end));
-    % compute all the model response, using parfor loop
-    parfor i = 1:fitParams.prefit.n
-      % fit the model with these parameters
-      [residual modelResponse rfModel] = getModelResidual([fitParams.prefit.x(i) fitParams.prefit.y(i) fitParams.prefit.rfHalfWidth(i) params(4:end)],tSeries,fitParams,1);
-      % normalize to 0 mean unit length
-      allModelResponse(i,:) = (modelResponse-mean(modelResponse))./sqrt(sum(modelResponse.^2))';
-      if fitParams.verbose
-	disp(sprintf('(pRFFit) Computing prefit model response %i/%i: Center [%6.2f,%6.2f] rfHalfWidth=%5.2f',i,fitParams.prefit.n,fitParams.prefit.x(i),fitParams.prefit.y(i),fitParams.prefit.rfHalfWidth(i)));
-      end
-    end
-    disppercent(inf);
-    fitParams.prefit.modelResponse = allModelResponse;
-    clear allModelResponse;
-  end
-  % save in global, so that when called as an interrogator
-  % we don't have to keep computing fitParams
-  global gpRFFitTypeParams
-  gpRFFitTypeParams.prefit = fitParams.prefit;
-  % return some computed fields
-  fit.prefit = fitParams.prefit;
-  if fitParams.returnPrefit,return,end
+keyboard
+global gPRFModels;
+[params.pRFFit tSeries] = feval(gPRFModels(params.modelNum).initVoxel,params.pRFFit,tSeries);
+
+% do prefit.
   % normalize tSeries to 0 mean unit length
-  tSeriesNorm = (tSeries-mean(tSeries))/sqrt(sum(tSeries.^2));
+%  tSeriesNorm = (tSeries-mean(tSeries))/sqrt(sum(tSeries.^2));
   % calculate r for all modelResponse by taking inner product
-  r = fitParams.prefit.modelResponse*tSeriesNorm;
+%  r = fitParams.prefit.modelResponse*tSeriesNorm;
   % get best r2 for all the models
-  [maxr bestModel] = max(r);
-  fitParams.initParams(1) = fitParams.prefit.x(bestModel);
-  fitParams.initParams(2) = fitParams.prefit.y(bestModel);
-  fitParams.initParams(3) = fitParams.prefit.rfHalfWidth(bestModel);
-  if fitParams.prefitOnly
+%  [maxr bestModel] = max(r);
+%  fitParams.initParams(1) = fitParams.prefit.x(bestModel);
+%  fitParams.initParams(2) = fitParams.prefit.y(bestModel);
+%  fitParams.initParams(3) = fitParams.prefit.rfHalfWidth(bestModel);
+%  if fitParams.prefitOnly
     % return if we are just doing a prefit
-    fit = getFitParams(fitParams.initParams,fitParams);
-    fit.rfType = fitParams.rfType;
-    fit.params = fitParams.initParams;
-    fit.r2 = maxr^2;
-    fit.r = maxr;
-    [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
-    fit.overlayParams = [fit.r2 fit.polarAngle fit.eccentricity fit.std];
+%    fit = getFitParams(fitParams.initParams,fitParams);
+%n    fit.rfType = fitParams.rfType;
+%    fit.params = fitParams.initParams;
+%    fit.r2 = maxr^2;
+%    fit.r = maxr;
+%    [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
+%    fit.overlayParams = [fit.r2 fit.polarAngle fit.eccentricity fit.std];
     % display
-    if fitParams.verbose
-      disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
-    end
-    return
-  end
-end
+%    if fitParams.verbose
+%      disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
+%    end
+%    return
+%  end
+%%%%%end
 
 % now do nonlinear fit
 if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
@@ -323,7 +218,7 @@ if ~isfield(fitParams,'initParams')
 	  fitParams.maxParams(iParam) = params.(sprintf('max%s',fitParams.paramNames{iParam}));
 	end
       end
-    end
+`    end
     % Now display parameter constraints
     for iParam = 1:length(fitParams.paramNames)
       disp(sprintf('(pRFFit) Parameter %s [min:%f max:%f] (%i:%s)',fitParams.paramNames{iParam},fitParams.minParams(iParam),fitParams.maxParams(iParam),iParam,fitParams.paramDescriptions{iParam}));
@@ -361,86 +256,6 @@ function [residual modelResponse rfModel r] = getModelResidual(params,tSeries,fi
 residual = [];
 if nargin < 4, justGetModel = 0;end
 
-% get the model response
-% convert parameter array into a parameter strucutre
-p = getFitParams(params,fitParams);
-
-% compute an RF
-rfModel = getRFModel(p,fitParams);
-
-% init model response
-modelResponse = [];residual = [];
-
-% create the model for each concat
-for i = 1:fitParams.concatInfo.n
-  % get model response
-  nFrames = fitParams.concatInfo.runTransition(i,2);
-  thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
-
-  % get a model hrf
-  hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
-
-  % and convolve in time.
-  thisModelResponse = convolveModelResponseWithHRF(thisModelResponse,hrf);
-
-  % drop junk frames here
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
-
-  % apply concat filtering
-  if isfield(fitParams,'applyFiltering') && fitParams.applyFiltering
-    thisModelResponse = applyConcatFiltering(thisModelResponse,fitParams.concatInfo,i);
-  else
-    % with no filtering, just remove mean
-    thisModelResponse = thisModelResponse - mean(thisModelResponse);
-  end
-  
-  if ~justGetModel
-    % compute correlation of this portion of the model response with time series
-    thisTSeries = tSeries(fitParams.concatInfo.runTransition(i,1):fitParams.concatInfo.runTransition(i,2));
-    thisTSeries = thisTSeries - mean(thisTSeries);
-    
-    % check here for length
-    if length(thisTSeries) ~= length(thisModelResponse)
-      disp(sprintf('(pRFFit:getModelResidual) Voxel tSeries length of %i does not match model length of %i. This can happen, for instance, if the tSense factor was not set correctly or junk frames was not set correctly.',length(thisTSeries),length(thisModelResponse)));
-      keyboard
-    end
-  
-    r(i) = corr(thisTSeries(:),thisModelResponse(:));
-
-    if fitParams.betaEachScan
-      % scale and offset the model to best match the tSeries
-      [thisModelResponse thisResidual] = scaleAndOffset(thisModelResponse',thisTSeries(:));
-    else
-      thisResidual = [];
-    end
-  else
-    thisResidual = [];
-  end
-  
-  % make into a column array
-  modelResponse = [modelResponse;thisModelResponse(:)];
-  residual = [residual;thisResidual(:)];
-end
-
-% return model only
-if justGetModel,return,end
-
-% scale the whole time series
-if ~fitParams.betaEachScan
-  [modelResponse residual] = scaleAndOffset(modelResponse,tSeries(:));
-end
-
-
-% display the fit
-if fitParams.dispFit
-  dispModelFit(params,fitParams,modelResponse,tSeries,rfModel);
-end
-
-% for nelder-mead just compute correlation and return 1-4
-if strcmp(lower(fitParams.algorithm),'nelder-mead')
-  residual = -corr(modelResponse,tSeries);
-%  disp(sprintf('(pRFFit:getModelResidual) r: %f',residual));
-end
 
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -496,145 +311,6 @@ if ~any(isnan(modelResponse))
 else
   residual = tSeries;
 end
-
-%%%%%%%%%%%%%%%%%%%%%%
-%%   getFitParams   %%
-%%%%%%%%%%%%%%%%%%%%%%
-function p = getFitParams(params,fitParams)
-
-p.rfType = fitParams.rfType;
-
-switch (fitParams.rfType)
-  case 'gaussian'
-    p.x = params(1);
-    p.y = params(2);
-    p.std = params(3);
-    % use a fixed single gaussian
-    p.canonical.type = 'gamma';
-    p.canonical.lengthInSeconds = 25;
-    p.canonical.timelag = fitParams.timelag;
-    p.canonical.tau = fitParams.tau;
-    p.canonical.exponent = fitParams.exponent;
-    p.canonical.offset = 0;
-    p.canonical.diffOfGamma = fitParams.diffOfGamma;
-    p.canonical.amplitudeRatio = fitParams.amplitudeRatio;
-    p.canonical.timelag2 = fitParams.timelag2;
-    p.canonical.tau2 = fitParams.tau2;
-    p.canonical.exponent2 = fitParams.exponent2;
-    p.canonical.offset2 = 0;
-  case 'gaussian-hdr'
-    p.x = params(1);
-    p.y = params(2);
-    p.std = params(3);
-    % use a fixed single gaussian
-    p.canonical.type = 'gamma';
-    p.canonical.lengthInSeconds = 25;
-    p.canonical.timelag = params(4);
-    p.canonical.tau = params(5);
-    p.canonical.exponent = fitParams.exponent;
-    p.canonical.offset = 0;
-    p.canonical.diffOfGamma = fitParams.diffOfGamma;
-    if fitParams.diffOfGamma
-      p.canonical.amplitudeRatio = params(6);
-      p.canonical.timelag2 = params(7);
-      p.canonical.tau2 = params(8);
-      p.canonical.exponent2 = fitParams.exponent2;
-      p.canonical.offset2 = 0;
-    end
-otherwise 
-    disp(sprintf('(pRFFit) Unknown rfType %s',rfType));
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   convolveModelWithStimulus   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
-
-% get number of frames
-nStimFrames = size(stim.im,3);
-
-% preallocate memory
-modelResponse = zeros(1,nFrames);
-
-for frameNum = 1:nStimFrames
-  % multipy the stimulus frame by frame with the rfModel
-  % and take the sum
-  modelResponse(frameNum) = sum(sum(rfModel.*stim.im(:,:,frameNum)));
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   convolveModelResponseWithHRF   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function modelTimecourse = convolveModelResponseWithHRF(modelTimecourse,hrf)
-
-n = length(modelTimecourse);
-modelTimecourse = conv(modelTimecourse,hrf.hrf);
-modelTimecourse = modelTimecourse(1:n);
-
-%%%%%%%%%%%%%%%%%%%%%
-%%   getGammaHRF   %%
-%%%%%%%%%%%%%%%%%%%%%
-function fun = getGammaHRF(time,p)
-
-fun = thisGamma(time,1,p.timelag,p.offset,p.tau,p.exponent)/100;
-% add second gamma if this is a difference of gammas fit
-if p.diffOfGamma
-  fun = fun - thisGamma(time,p.amplitudeRatio,p.timelag2,p.offset2,p.tau2,p.exponent2)/100;
-end
-
-%%%%%%%%%%%%%%%%%%%
-%%   thisGamma   %%
-%%%%%%%%%%%%%%%%%%%
-function gammafun = thisGamma(time,amplitude,timelag,offset,tau,exponent)
-
-exponent = round(exponent);
-% gamma function
-gammafun = (((time-timelag)/tau).^(exponent-1).*exp(-(time-timelag)/tau))./(tau*factorial(exponent-1));
-
-% negative values of time are set to zero,
-% so that the function always starts at zero
-gammafun(find((time-timelag) < 0)) = 0;
-
-% normalize the amplitude
-if (max(gammafun)-min(gammafun))~=0
-  gammafun = (gammafun-min(gammafun)) ./ (max(gammafun)-min(gammafun));
-end
-gammafun = (amplitude*gammafun+offset);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   getCanonicalHRF   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%
-function hrf = getCanonicalHRF(params,sampleRate)
-
-hrf.time = 0:sampleRate:params.lengthInSeconds;
-hrf.hrf = getGammaHRF(hrf.time,params);
-
-% normalize to amplitude of 1
-hrf.hrf = hrf.hrf / max(hrf.hrf);
-
-%%%%%%%%%%%%%%%%%%%%
-%%   getRFModel   %%
-%%%%%%%%%%%%%%%%%%%%
-function rfModel = getRFModel(params,fitParams)
-
-rfModel = [];
-
-% now gernerate the rfModel
-if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr'}))
-  rfModel = makeRFGaussian(params,fitParams);
-else
-  disp(sprintf('(pRFFit:getRFModel) Unknown rfType: %s',fitParams.rfType));
-end
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%
-%%   makeRFGaussian   %%
-%%%%%%%%%%%%%%%%%%%%%%%%
-function rfModel = makeRFGaussian(params,fitParams)
-
-% compute rf
-rfModel = exp(-(((fitParams.stimX-params.x).^2)/(2*(params.std^2))+((fitParams.stimY-params.y).^2)/(2*(params.std^2))));
 
 %%%%%%%%%%%%%%%%%%%
 %    parseArgs    %
@@ -790,201 +466,6 @@ if ~isfield(fitParams,'junkFrames') || isempty(fitParams.junkFrames)
 end
 
 
-if isempty(fitParams.prefit) || (fitParams.prefit.quickPrefit ~= fitParams.quickPrefit)
-  % set the values over which to first prefit
-  % the best of these parameters will then be used 
-  % to init the non-linear optimization. Note that the
-  % values here are expressed as a factor of the screen
-  % dimensions (1 being the width/height of the screen)
-  % Later when the prefit is calculated, they will be multiplied
-  % by the screenWidth and screenHeight
-  if fitParams.quickPrefit
-    if fitParams.verbose,disp(sprintf('(pRFFit) Doing quick prefit'));end
-    % make sure here that x and y points go through 0 symmetrically
-    [prefitx prefity prefitrfHalfWidth] = ndgrid(-0.375:0.125:0.375,-0.375:0.125:0.375,[0.025 0.05 0.15 0.4]);
-  else
-    [prefitx prefity prefitrfHalfWidth] = ndgrid(-0.4:0.025:0.4,-0.4:0.025:0.4,[0.0125 0.025 0.05 0.1 0.25 0.5 0.75]);
-  end
-  fitParams.prefit.quickPrefit = fitParams.quickPrefit;
-  fitParams.prefit.n = length(prefitx(:));
-  fitParams.prefit.x = prefitx(:);
-  fitParams.prefit.y = prefity(:);
-  fitParams.prefit.rfHalfWidth = prefitrfHalfWidth(:);
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    checkStimForAverages    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNum,stim,concatInfo,stimImageDiffTolerance)
-
-ignoreMismatchStimfiles = false;  
-
-% this function will check for some bad casses (like concat of concats etc)
-% it will also check that all the component scans of an average have the
-% same stim image and warn if they do not. It will then replace the stim cell
-% array for the average with a single stim file, so that processing
-% can continue as normal for pRFFit
-
-% if not a cell, then ok, return
-if ~iscell(stim),return,end
-
-% first check for bad shiftList or refverseLIst
-p = viewGet(v,'params',scanNum,groupNum);
-if isfield(p,'params') && isfield(p.params,'shiftList') && any(p.params.shiftList~=0)
-  disp(sprintf('(pRFFit) Component scan %s:%i has a shiftList that is non-zero (%s). pRFFit does not handle non-zero shifts in averages.',viewGet(v,'groupName',groupNum),scanNum,mlrnum2str(p.params.shiftList)));
-  keyboard
-end
-if isfield(p,'params') && isfield(p.params,'reverseList') && any(p.params.reverseList~=0)
-  disp(sprintf('(pRFFit) Component scan %s:%i has a reverseList that is non-zero (%s). pRFFit does not handle time-reversed time series in averages.',viewGet(v,'groupName',groupNum),scanNum,mlrnum2str(p.params.shiftList)));
-  keyboard
-end
-
-% if is a cell, check to see if this is a concat or not
-if ~isempty(concatInfo) && (concatInfo.isConcat)
-  % this is a concat, so check each one of the elements
-  [originalScanNum originalGroupNum] = viewGet(v,'originalScanNum',scanNum,groupNum);
-  for i = 1:length(stim)
-    % get concatInfo for original scan
-    concatInfo = viewGet(v,'concatInfo',originalScanNum(i),originalGroupNum(i));
-    if ~isempty(concatInfo)
-      disp(sprintf('(pRFFit:checkStimForAverages) Detected concatenation of concatenations. pRFFit not implemented yet to handle this'));
-      stim = [];
-      keyboard
-      return;
-    end
-    % check this next scan
-    [stim{i} ignoreMismatchStimfiles] = checkStimForAverages(v,originalScanNum(i),originalGroupNum(i),stim{i},concatInfo,stimImageDiffTolerance);
-    % if user has accepted all then set stimImageDiffTOlerance to infinity
-    if isinf(ignoreMismatchStimfiles),stimImageDiffTolerance = inf;end
-    if isempty(stim{i}),stim = [];return,end
-  end
-else
-  % this for orignals
-  [originalScanNum originalGroupNum] = viewGet(v,'originalScanNum',scanNum,groupNum);
-  % if it is an original than check each element
-  if ~isempty(originalScanNum)
-    % check that this is not an average of a concat
-    for i = 1:length(stim)
-      % get concatInfo for original scan
-      concatInfo = viewGet(v,'concatInfo',originalScanNum(i),originalGroupNum(i));
-      if ~isempty(concatInfo)
-	disp(sprintf('(pRFFit:checkStimForAverages) Detected average of a concatenations. pRFFit not implemented yet to handle this'));
-	keyboard
-	stim = [];
-	return;
-      end
-      % see if it is an average of an average
-      originalOfOriginalScanNum = viewGet(v,'originalScanNum',originalScanNum(i),originalGroupNum(i));
-      if length(originalOfOriginalScanNum) > 1
-	disp(sprintf('(pRFFit:checkStimForAverages) Detected average of an average. pRFFit not implemented yet to handle this'));
-	keyboard
-	stim = [];
-	return;
-      end
-    end
-    % ok, not an average of a concatenation/average so check all the stim files 
-    % and warn if there are any inconsistencies
-    for i = 1:length(stim)
-      if ~isequalwithequalnans(stim{1}.im,stim{i}.im)    
-	dispHeader
-	disp(sprintf('(pRFFit:checkStimForAverages) !!! Average for %s:%i component scan %i does not match stimulus for other scans. If you wish to continue then this will use the stimfile associated with the first scan in the average !!!',viewGet(v,'groupName',groupNum),scanNum,originalScanNum(i)));
-	% display which volumes are different
-	diffVols = [];
-	for iVol = 1:size(stim{1}.im,3)
-	  if ~isequalwithequalnans(stim{1}.im(:,:,iVol),stim{i}.im(:,:,iVol))
-	    diffVols(end+1) = iVol;
-	  end
-	end
-	disp(sprintf('(pRFFit) Stimulus files are different at %i of %i vols (%0.1f%%): %s',length(diffVols),size(stim{1}.im,3),100*length(diffVols)/size(stim{1}.im,3),num2str(diffVols)));
-	if 100*(length(diffVols)/size(stim{1}.im,3)) < stimImageDiffTolerance
-	  disp(sprintf('(pRFFit) This could be for minor timing inconsistencies, so igorning. Set stimImageDiffTolerance lower if you want to stop the code when this happens'));
-	else
-	  % ask user if they want to continue (only if there is a difference of more than 10 vols	  
-	  ignoreMismatchStimfiles = askuser('Do you wish to continue',1);
-	  if ~ignoreMismatchStimfiles
-	    stim = [];
-	    return;
-	  end
-	end
-	dispHeader
-      end
-    end
-    % if we passed the above, this is an average of identical
-    % scans, so just keep the first stim image since they are all the same
-    stim = stim{1};
-  end
-end
-
-%%%%%%%%%%%%%%%%%
-%    getStim    %
-%%%%%%%%%%%%%%%%%
-function stim = getStim(v,scanNum,fitParams)
-
-% get stimfile
-stimfile = viewGet(v,'stimfile',scanNum);
-% get volume to trigger ratio
-volTrigRatio = viewGet(v,'auxParam','volTrigRatio',scanNum);
-% check if global matches
-groupNum = viewGet(v,'curGroup');
-global gpRFFitStimImage
-if (isfield(fitParams,'recomputeStimImage') && fitParams.recomputeStimImage) || isempty(gpRFFitStimImage) || (gpRFFitStimImage.scanNum ~= scanNum)  || (gpRFFitStimImage.groupNum ~= groupNum) || (gpRFFitStimImage.xFlip ~= fitParams.xFlipStimulus) || (gpRFFitStimImage.yFlip ~= fitParams.yFlipStimulus) || (gpRFFitStimImage.timeShift ~= fitParams.timeShiftStimulus)
-  disp(sprintf('(pRFFit) Computing stim image'));
-  % if no save stim then create one
-  stim = pRFGetStimImageFromStimfile(stimfile,'volTrigRatio',volTrigRatio,'xFlip',fitParams.xFlipStimulus,'yFlip',fitParams.yFlipStimulus,'timeShift',fitParams.timeShiftStimulus,'verbose',fitParams.verbose,'saveStimImage',fitParams.saveStimImage,'recomputeStimImage',fitParams.recomputeStimImage);
-  % check for averages
-  stim = checkStimForAverages(v,scanNum,viewGet(v,'curGroup'),stim,fitParams.concatInfo,fitParams.stimImageDiffTolerance);
-  if isempty(stim),return,end
-  % make into cell array
-  stim = cellArray(stim);
-  % save stim image in global
-  gpRFFitStimImage.scanNum = scanNum;
-  gpRFFitStimImage.groupNum = groupNum;
-  gpRFFitStimImage.xFlip = fitParams.xFlipStimulus;
-  gpRFFitStimImage.yFlip = fitParams.yFlipStimulus;
-  gpRFFitStimImage.timeShift = fitParams.timeShiftStimulus;
-  gpRFFitStimImage.stim = stim;
-else
-  % otherwise load from global
-  disp(sprintf('(pRFFit) Using precomputed stim image'));
-  stim = gpRFFitStimImage.stim;
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    applyConcatFiltering    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function tSeries = applyConcatFiltering(tSeries,concatInfo,runnum)
-
-% apply the same filter as original data
-% check for what filtering was done
-tSeries = tSeries(:);
-
-% apply detrending (either if concatInfo does not say what it did or if
-% the filterType field has detrend in it)
-if ~isfield(concatInfo,'filterType') || ~isempty(findstr('detrend',lower(concatInfo.filterType)))
-  tSeries = eventRelatedDetrend(tSeries);
-end
-
-% apply hipass filter
-if isfield(concatInfo,'hipassfilter') && ~isempty(concatInfo.hipassfilter{runnum})
-  % check for length match
-  if ~isequal(length(tSeries),length(concatInfo.hipassfilter{runnum}))
-    disp(sprintf('(pRFFit:applyConcatFiltering) Mismatch dimensions of tSeries (length: %i) and concat filter (length: %i)',length(tSeries),length(concatInfo.hipassfilter{runnum})));
-  else
-    tSeries = real(ifft(fft(tSeries) .* repmat(concatInfo.hipassfilter{runnum}', 1, size(tSeries,2)) ));
-  end
-end
-
-% project out the mean vector
-if isfield(concatInfo,'projection') && ~isempty(concatInfo.projection{runnum})
-  projectionWeight = concatInfo.projection{runnum}.sourceMeanVector * tSeries;
-  tSeries = tSeries - concatInfo.projection{runnum}.sourceMeanVector'*projectionWeight;
-end
-
-% now remove mean
-tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
-
-% make back into the right dimensions
-tSeries = tSeries(:)';
 
 %%%%%%%%%%%%%
 %%   r2d   %%
@@ -1004,3 +485,72 @@ end
 while (sum(degrees<-360))
   degrees = degrees + (degrees<-360)*360;
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   convolveModelWithStimulus   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
+
+% get number of frames
+nStimFrames = size(stim.im,3);
+
+% preallocate memory
+modelResponse = zeros(1,nFrames);
+
+for frameNum = 1:nStimFrames
+  % multipy the stimulus frame by frame with the rfModel
+  % and take the sum
+  modelResponse(frameNum) = sum(sum(rfModel.*stim.im(:,:,frameNum)));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   convolveModelResponseWithHRF   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function modelTimecourse = convolveModelResponseWithHRF(modelTimecourse,hrf)
+
+n = length(modelTimecourse);
+modelTimecourse = conv(modelTimecourse,hrf.hrf);
+modelTimecourse = modelTimecourse(1:n);
+
+%%%%%%%%%%%%%%%%%%%%%
+%%   getGammaHRF   %%
+%%%%%%%%%%%%%%%%%%%%%
+function fun = getGammaHRF(time,p)
+
+fun = thisGamma(time,1,p.timelag,p.offset,p.tau,p.exponent)/100;
+% add second gamma if this is a difference of gammas fit
+if p.diffOfGamma
+  fun = fun - thisGamma(time,p.amplitudeRatio,p.timelag2,p.offset2,p.tau2,p.exponent2)/100;
+end
+
+%%%%%%%%%%%%%%%%%%%
+%%   thisGamma   %%
+%%%%%%%%%%%%%%%%%%%
+function gammafun = thisGamma(time,amplitude,timelag,offset,tau,exponent)
+
+exponent = round(exponent);
+% gamma function
+gammafun = (((time-timelag)/tau).^(exponent-1).*exp(-(time-timelag)/tau))./(tau*factorial(exponent-1));
+
+% negative values of time are set to zero,
+% so that the function always starts at zero
+gammafun(find((time-timelag) < 0)) = 0;
+
+% normalize the amplitude
+if (max(gammafun)-min(gammafun))~=0
+  gammafun = (gammafun-min(gammafun)) ./ (max(gammafun)-min(gammafun));
+end
+gammafun = (amplitude*gammafun+offset);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getCanonicalHRF   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function hrf = getCanonicalHRF(params,sampleRate)
+
+hrf.time = 0:sampleRate:params.lengthInSeconds;
+hrf.hrf = getGammaHRF(hrf.time,params);
+
+% normalize to amplitude of 1
+hrf.hrf = hrf.hrf / max(hrf.hrf);
+

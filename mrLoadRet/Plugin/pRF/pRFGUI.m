@@ -115,8 +115,13 @@ if ~pRFFitParamsOnly
   end
 end
 
+% get models that have been registered by pRFRegisterModels
+global gPRFModels
+modelNames = {gPRFModels.modelName};
+
 % model specific parameters
-paramsInfo{end+1} = {'rfType',{'gaussian','gaussian-hdr'},'Type of pRF fit. Gaussian fits a gaussian with x,y,width as parameters to each voxel. gaussian-hdr fits also the hemodynamic response with the parameters of the hdr as below.'};
+paramsInfo{end+1} = {'rfType',modelNames,'Type of pRF fit. Gaussian fits a gaussian with x,y,width as parameters to each voxel. gaussian-hdr fits also the hemodynamic response with the parameters of the hdr as below.'};
+paramsInfo{end+1} = {'fitHemodynamic',false,'type=checkbox','Select true if you also want to fit the hemodynamic parameters. Doing this allows you to customize the hemodynamic response to better fit the individual subject, but also means there are more paramters to fit and can give bad results if the hemodynamic response is not fit correctly'};
 paramsInfo{end+1} = {'betaEachScan',false,'type=checkbox','Compute a separate beta weight (scaling) for each scan in the concanetation. This may be useful if there is some reason to believe that different scans have different magnitude responses, this will allow the fit to scale the magnitude for each scan'};
 paramsInfo{end+1} = {'algorithm',{'nelder-mead','levenberg-marquardt'},'Which algorithm to use for optimization. Levenberg-marquardt seems to get stuck in local minimum, so the default is nelder-mead. However, levenberg-marquardt can set bounds for parameters, so may be better for when you are trying to fit the hdr along with the rf, since the hdr parameters can fly off to strange values.'};
 paramsInfo{end+1} = {'defaultConstraints',1,'type=checkbox','Sets how to constrain the search (i.e. what are the allowed range of stimulus parameters). The default is to constrain so that the x,y of the RF has to be within the stimulus extents (other parameter constrains will print to the matlab window). If you click this off a dialog box will come up after the stimulus has been calculated from the stimfiles allowing you to specify the constraints on the parameters of the model. You may want to custom constrain the parameters if you know something about the RFs you are trying to model (like how big they are) to keep the nonlinear fits from finding unlikely parameter estimates. Note that nelder-mead is an unconstrained fit so this will not do anything.'};
@@ -140,7 +145,7 @@ paramsInfo{end+1} = {'tau2',1.2,'minmax=[0 inf]','incdec=[-0.1 0.1]','The tau (w
 paramsInfo{end+1} = {'exponent2',6,'minmax=[0 inf]','incdec=[-1 1]','The exponent of the 2nd gamma function.','contingent=diffOfGamma'};
 paramsInfo{end+1} = {'dispHDR',0,'type=pushbutton','buttonString=Display HDR','Display the HDR with the current parameters','callback',@pRFGUIDispHDR,'passParams=1'};
 paramsInfo{end+1} = {'saveStimImage',0,'type=checkbox','Save the stim image back to the stimfile. This is useful in that the next time the stim image will not have to be recomputed but can be directly read from the file (it will get saved as a variable called stimImage'};
-paramsInfo{end+1} = {'recomputeStimImage',0,'type=checkbox','Even if there is an already computed stim image (see saveStimImage) above, this will force a recompute of the image. This is useful if there is an update to the code that creates the stim images and need to make sure that the stim image is recreated'};
+paramsInfo{end+1} = {'recomputeStimImageAndPrefit',0,'type=checkbox','Even if there is an already computed stim image (see saveStimImage) above, this will force a recompute of the image. This is useful if there is an update to the code that creates the stim images and need to make sure that the stim image is recreated. Will also recompute prefit'};
 paramsInfo{end+1} = {'applyFiltering',1,'type=checkbox','If set to 1 then applies the same filtering that concatenation does to the model. Does not do any filtering applied by averages. If this is not a concat then does nothing besides mean subtraction. If turned off, will still do mean substraction on model.'};
 paramsInfo{end+1} = {'stimImageDiffTolerance',5,'minmax=[0 100]','incdec=[-1 1]','When averaging the stim images should be the same, but some times we are off by a frame here and there due to inconsequential timing inconsistenices. Set this to a small value, like 5 to ignore that percentage of frames of the stimulus that differ within an average. If this threshold is exceeded, the code will ask you if you want to continue - otherwise it will just print out to the buffer the number of frames that have the problem'};
 
@@ -150,6 +155,9 @@ if defaultParams
 else
   params = mrParamsDialog(paramsInfo,'Set pRF parameters');
 end
+
+% get which model was selected
+params.modelNum = find(strcmp(params.rfType,modelNames));
 
 % if empty user hit cancel
 if isempty(params)
@@ -179,6 +187,7 @@ if deleteViewOnExit,deleteView(v);end
 
 % if we go here, split out the params that get passed to pRFFit
 pRFFitParams = false;
+paramsInfo{end+1}{1} = 'modelNum';
 for i = 1:length(paramsInfo)
   % Everything after the rfType is a param for pRFFit
   if pRFFitParams || strcmp(paramsInfo{i}{1},'rfType')
@@ -194,6 +203,7 @@ for i = 1:length(paramsInfo)
     end
   end
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % just display parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%

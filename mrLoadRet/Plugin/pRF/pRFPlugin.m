@@ -35,7 +35,9 @@ switch action
 
     % This is a command that could be used to set a property of an existing menu item
     %mlrAdjustGUI(v,'set','Plots/Mean Time Series','Separator','on');
-
+    % register the basic models
+    global gPRFModels;gPRFModels = [];
+    pRFModel;
     % return true to indicate successful plugin
     retval = true;
    end

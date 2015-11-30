@@ -75,11 +75,42 @@ defaultOverlay.params = cell(1,viewGet(v,'nScans'));
 defaultOverlay.interrogator = 'pRFPlot';
 defaultOverlay.mergeFunction = 'pRFMergeParams';
 
-% now get the model types
-overlays = initOverlays(defaultOverlay);
+% initialize the model - this primarily should set the overlay parameters
+global gPRFModels;
+[params.pRFFit overlays] = feval(gPRFModels(params.pRFFit.modelNum).initFit,params.pRFFit,defaultOverlay);
 
-% code snippet for clearing precomputed prefit
-%global gpRFFitStimImage;gpRFFitStimImage = [];
+% check for some fields that should have been set
+fieldCheck = {'nParams','paramNames'};
+fields = fieldnames(params.pRFFit);
+missingFields = setdiff(fieldCheck,fields);
+if ~isempty(missingFields)
+  mrWarnDlg(sprintf('(pRF) The following fields need to be set in initFit function for model: %s',params.pRFFit.rfType));
+  for iField = 1:length(missingFields)
+    disp(sprintf('   ** %s **',missingFields{iField}));
+  end
+  keyboard
+end
+
+% count overlays added and make sure we have 
+% which parameter they go with
+if ~isempty(overlays)
+  nOverlays = length(fieldnames(overlays));
+  if ~isfield(params.pRFFit,'overlayParamNum') || ~isequal(length(params.pRFFit.overlayParamNum),nOverlays)
+    disp(sprintf('(pRF) initFit for %s has to set overlayParamNum to an array that tells which parameter number corresponds with which overlay',params.pRFFit.rfType));
+    keyboard
+  end
+end
+
+% add an overlay for r2
+overlays.r2 = defaultOverlay;
+overlays.r2.name = 'r2';
+overlays.r2.range = [0 1];
+overlays.r2.clip = [0 1];
+% colormap is made with a little bit less on the dark end
+overlays.r2.colormap = hot(312);
+overlays.r2.colormap = overlays.r2.colormap(end-255:end,:);
+overlays.r2.alpha = 1;
+overlays.r2.colormapType = 'setRangeToMax';
 
 dispHeader
 disp(sprintf('(pRF) Running on scans %s:%s (restrict %s)',params.groupName,num2str(params.scanNum,'%i '),params.restrict ));
@@ -112,36 +143,60 @@ for scanNum = params.scanNum
     overlaysTemp.(overlayNames{iOverlay}) = nan(1,n);
   end
 
-  % default all variables that will be returned
-  % by pRFFIt, so that we can call it the
-  % second time and save some time
-  concatInfo = [];
-  stim = [];
+  % get concatInfo and other scan related info
+  params.pRFFit.concatInfo = pRFGetConcatInfo(v,scanNum);
+  params.pRFFit.framePeriod = viewGet(v,'framePeriod',scanNum);
+  params.pRFFit.junkFrames = viewGet(v,'junkFrames',scanNum);
   
+  % call init function for model to get stim
+  [tf cachedVal] = pRFFitGlobalStimAndPrefit(params.pRFFit,params.groupName,scanNum);
+  if tf
+    % get saved one - this saves some time by
+    % caching an already computed stim and prefit
+    disp(sprintf('(pRF) Using cached stim and prefit (check recomputeStimImageAndPrefit if you want to recompute instead)'));
+    params.pRFFit = cachedVal;
+  else
+    % compute the stim
+    [params.pRFFit params.pRFFit.stim] = feval(gPRFModels(params.pRFFit.modelNum).getStim,params.pRFFit,v,scanNum);
+
+    % check for inability to compute stim
+    if isempty(params.pRFFit.stim),return,end
+    
+    % init the scan, (which will return prefit parameters)
+    [params.pRFFit prefitParams]= feval(gPRFModels(params.pRFFit.modelNum).initScan,params.pRFFit);
+    
+    % see if we were passed back prefit parameters
+    if ~isempty(prefitParams)
+      % check that size is correct
+      if size(prefitParams,2) ~= params.pRFFit.nParams
+	disp(sprintf('(pRF) Prefit parameters should be nxk where n is number of prefit models to compute and k is number of parameters: %i',params.pRFFit.nParams));
+	keyboard
+      end
+      % compute prefit
+      params.pRFFit = computePrefit(params.pRFFit,prefitParams);
+    end
+    % save in global
+    pRFFitGlobalStimAndPrefit(params.pRFFit,params.groupName,scanNum);
+  end
+
+  % see if we should do the prefit. If so, we should have the
+  % fields prefit.params and prefit.modelResponse these
+  % fields will be used to find the highest correlation with
+  % the prefit modelResponse and using those parameters as
+  % initial parameters
+  doPrefit = false;
+  if isfield(params.pRFFit,'prefit') && isfield(params.pRFFit.prefit,'params')  && isfield(params.pRFFit.prefit,'modelResponse')
+    doPrefit = true;
+  end
+
   % save pRF parameters
   pRFAnal.d{scanNum}.ver = pRFVersion;
   pRFAnal.d{scanNum}.linearCoords = [];
   pRFAnal.d{scanNum}.params = [];
 
-  % get some information from pRFFit that will be used again in
-  % the fits, including concatInfo, stim, prefit, etc.
-  fit = pRFFit(v,scanNum,[],[],[],'fitTypeParams',params.pRFFit,'returnPrefit',true);
-  if isempty(fit),return,end
-  stim = fit.stim;
-  pRFAnal.d{scanNum}.stim = cellArray(stim);
-  pRFAnal.d{scanNum}.stimX = fit.stimX;
-  pRFAnal.d{scanNum}.stimY = fit.stimY;
-  pRFAnal.d{scanNum}.stimT = fit.stimT;
-  concatInfo = fit.concatInfo;
-  pRFAnal.d{scanNum}.concatInfo = fit.concatInfo;
-  prefit = fit.prefit;
-  paramsInfo = fit.paramsInfo;
-  pRFAnal.d{scanNum}.paramsInfo = paramsInfo;
-  % grab all these fields and stick them onto a structure called paramsInfo
   % preallocate some space
-  rawParams = nan(fit.nParams,n);
-  overlayParams = nan(nOverlays,n);
-  r = nan(n,fit.concatInfo.n);
+  rawParams = nan(params.pRFFit.nParams,n);
+  r = nan(n,params.pRFFit.concatInfo.n);
 
   % get some info about the scan to pass in (which prevents
   % pRFFit from calling viewGet - which is problematic for distributed computing
@@ -199,22 +254,56 @@ for scanNum = params.scanNum
     end
 
     % now parfor loop over each voxel
+    % Fix this to parfor
     for i = blockStart:blockEnd
-      fit = pRFFit(v,scanNum,x(i),y(i),z(i),'stim',stim,'concatInfo',concatInfo,'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',i,'dispN',n,'tSeries',loadROI.tSeries(i-blockStart+1,:)','framePeriod',framePeriod,'junkFrames',junkFrames,'paramsInfo',paramsInfo);
-      if ~isempty(fit)
-	% keep data, note that we are keeping temporarily in
-	% a vector here so that parfor won't complain
-	% then afterwords we put it into the actual overlay struct
-	overlayParams(:,i) = fit.overlayParams(:);
-	% keep parameters
-	rawParams(:,i) = fit.params(:);
-	r(i,:) = fit.r;
+      % load tSeries
+      tSeries = squeeze(loadTSeries(v,scanNum,z(i),[],x(i),y(i)));
+      % Normalize tSeries (since we are going to computer r)
+      tSeriesNorm = tSeries-mean(tSeries);
+      tSeriesNorm = tSeriesNorm/sqrt(sum(tSeriesNorm.^2));
+      % do prefit if we have it for getting initial parameters
+      initParams = [];
+      if doPrefit
+	% calculate r for all modelResponse by taking inner product
+	prefitr = params.pRFFit.prefit.modelResponse*tSeriesNorm;
+	[maxr bestModel] = max(prefitr);
+	% get the parameters that match that modelResponse
+	initParams = params.pRFFit.prefit.params(bestModel,:);
       end
+
+      % now run model specific initVoxel which can be used
+      % to preprocess tSeries and set initParams
+      [params.pRFFit tSeries initParams] = feval(gPRFModels(params.pRFFit.modelNum).initVoxel,params.pRFFit,tSeriesNorm,initParams);
+      % now optimize parameters to fit
+      % now do nonlinear fit
+      if strcmp(lower(params.pRFFit.algorithm),'levenberg-marquardt')
+	disp(sprintf('!!! Not implemented yet'));
+	keyboard
+%	[bestParams resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
+
+      elseif strcmp(lower(params.pRFFit.algorithm),'nelder-mead')
+	% set optimParams
+	optimParams = optimset('MaxIter',inf);
+	% run fminsearch
+	[best.params best.r exitflag] = fminsearch(@getModelResidual,initParams,optimParams,tSeriesNorm,params.pRFFit);
+      else
+	disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
+	return
+      end
+      if params.pRFFit.verbose
+	disp(sprintf('%04i/%04i [%i %i %i] params=[%s] r2=%0.3f',i,n,x(i),y(i),z(i),mlrnum2str(best.params),best.r^2));
+      end
+      % keep parameters
+      rawParams(:,i) = best.params(:);
+      r(i,:) = best.r;
     end
     % set overlays
     for iVoxel = 1:n
-      for iOverlay = 1:nOverlays
-	overlays.(overlayNames{iOverlay}).data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = overlayParams(iOverlay,iVoxel);
+      % set r2 overlay
+      overlays.r2.data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = r(iVoxel,1)^2;
+      % set other overlays
+      for iOverlay = 1:(nOverlays-1)
+	overlays.(overlayNames{iOverlay}).data{scanNum}(x(iVoxel),y(iVoxel),z(iVoxel)) = rawParams(params.pRFFit.overlayParamNum(iOverlay),iVoxel);
       end
     end
   end
@@ -223,6 +312,7 @@ for scanNum = params.scanNum
   disp(sprintf('(pRF) Fitting %i voxels took %s.',n,mlrDispElapsedTime(toc)));
   dispHeader;
   
+  % keep best parameters and r value
   pRFAnal.d{scanNum}.params = rawParams;
   pRFAnal.d{scanNum}.r = r;
 
@@ -254,13 +344,16 @@ if isfield(params,'mergeAnalysis') && params.mergeAnalysis
   saveMethod = mrGetPref('overwritePolicy');
   mrSetPref('overwritePolicy','Merge');
 end
-% Save it
+
+% save the analysis
 saveAnalysis(v,pRFAnal.name);
+
 % now set policy back
 if isfield(params,'mergeAnalysis') && params.mergeAnalysis
   mrSetPref('overwritePolicy',saveMethod);
 end
 
+% redisplay
 if ~isempty(viewGet(v,'fignum'))
   refreshMLRDisplay(viewGet(v,'viewNum'));
 end
@@ -384,9 +477,11 @@ function params = checkPRFparams(params)
 
 
 % check the pRFFit params
-checkFields = {{'stimImageDiffTolerance',5}};
+checkFields = {{'stimImageDiffTolerance',5}...
+	       {'recomputeStimImageAndPrefit',0}...
+	       {'fitHemodynamic',false}...
+	       {'applyFiltering',true}};
 for iFit = 1:length(params.pRFFit)
-
   % set defaults
   for iField = 1:length(checkFields)
     if ~isfield(params.pRFFit(iFit),checkFields{iField}{1})
@@ -395,43 +490,300 @@ for iFit = 1:length(params.pRFFit)
   end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%
-%    initOverlays    %
-%%%%%%%%%%%%%%%%%%%%%%
-function overlays = initOverlays(defaultOverlay);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    pRFFitGlobalStimAndPrefit    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [tf cachedVal] = pRFFitGlobalStimAndPrefit(fitParams,groupName,scanNum)
 
-% create the overlays
-overlays.r2 = defaultOverlay;
-overlays.r2.name = 'r2';
-overlays.r2.range = [0 1];
-overlays.r2.clip = [0 1];
-% colormap is made with a little bit less on the dark end
-overlays.r2.colormap = hot(312);
-overlays.r2.colormap = overlays.r2.colormap(end-255:end,:);
-overlays.r2.alpha = 1;
-overlays.r2.colormapType = 'setRangeToMax';
+tf = false;cachedVal = [];
 
-% create the parameters for the polarAngle overlay
-overlays.polarAngle = defaultOverlay;
-overlays.polarAngle.name = 'polarAngle';
-overlays.polarAngle.range = [-pi pi];
-overlays.polarAngle.clip = [-pi pi];
-overlays.polarAngle.colormapType = 'normal';
-overlays.polarAngle.colormap = hsv(256);
+% recompute if asked for
+if fitParams.recomputeStimImageAndPrefit && (nargout ~=0)
+  return
+end
 
-% create the parameters for the eccentricity overlay
-overlays.eccentricity = defaultOverlay;
-overlays.eccentricity.name = 'eccentricity';
-overlays.eccentricity.range = [0 15];
-overlays.eccentricity.clip = [0 inf];
-overlays.eccentricity.colormapType = 'normal';
-overlays.eccentricity.colormap = copper(256);
+global gPRFFitStimAndPrefit;
 
-% create the paramteres for the rfHalfWidth overlay
-overlays.rfHalfWidth = defaultOverlay;
-overlays.rfHalfWidth.name = 'rfHalfWidth';
-overlays.rfHalfWidth.range = [0 15];
-overlays.rfHalfWidth.clip = [0 inf];
-overlays.rfHalfWidth.colormapType = 'normal';
-overlays.rfHalfWidth.colormap = pink(256);
+% make a variable that will be checked for matching
+% should contain all fields that could potentially 
+% change and force a recompute
+fitHash.groupName = groupName;
+fitHash.scanNum = scanNum;
+fitHash.quickPrefit = fitParams.quickPrefit;
+fitHash.xFlipStimulus = fitParams.xFlipStimulus;
+fitHash.yFlipStimulus = fitParams.yFlipStimulus;
+fitHash.timeShiftStimulus = fitParams.timeShiftStimulus;
+
+% look in cached list 
+for iCached = 1:length(gPRFFitStimAndPrefit)
+  if isequal(gPRFFitStimAndPrefit(iCached).fitHash,fitHash)
+    tf = true;
+    break
+  end
+end
+
+% put in cache, with no output arguments
+if nargout == 0
+  % keep at most three in cache - so as not to get too big
+  iCached = mod(length(gPRFFitStimAndPrefit)+1,3)+1;
+  gPRFFitStimAndPrefit(iCached).fitHash = fitHash;
+  gPRFFitStimAndPrefit(iCached).val = fitParams;
+end
+
+% return value if found
+if tf
+  cachedVal = gPRFFitStimAndPrefit(iCached).val;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    getModelResidual    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function r = getModelResidual(params,tSeries,fitParams)
+
+% get model response
+global gPRFModels;
+[rfModel modelResponse] = feval(gPRFModels(fitParams.modelNum).getModel,params,fitParams);
+
+% normalize response
+modelResponse = preProcess(params,fitParams,modelResponse);
+
+% compute residual or r
+if strcmp(fitParams.algorithm,'nelder-mead')
+  % calculate correlation of normalized responses
+  % Subtract from one since this is a search for minimum
+  r = (1-modelResponse * tSeries);
+else
+  % calculate residual
+  residual = tSeries-modelResponse;
+end
+
+if fitParams.verbose > 1
+  disp(sprintf('r=%f params=[%s]',1-r,mlrnum2str(params)));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%    computePrefit    %
+%%%%%%%%%%%%%%%%%%%%%%%
+function fitParams = computePrefit(fitParams,prefitParams)
+
+% set some variables
+fitParams.prefit.n = size(prefitParams,1);
+fitParams.prefit.params = prefitParams;
+
+% get number of workers
+nProcessors = mlrNumWorkers;
+
+% now start computing prefit
+disppercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
+
+% init modelResponse
+modelResponse = nan(fitParams.prefit.n,fitParams.concatInfo.runTransition(end,end));
+
+% get hemodynamic parameters
+if fitParams.fitHemodynamic
+  hemo = pRFGetHemodynamicParams(fitParams);
+else
+  % not a hemodynamic fit, so hemo parameters get sent to empty
+  hemo.initParams = [];
+end
+
+% get global that has model function handles
+global gPRFModels;
+  
+% compute all the model response, using parfor loop
+parfor i = 1:fitParams.prefit.n
+  % get model parameters for this prefit
+  params = [fitParams.prefit.params(i,:) hemo.initParams];
+  % compute model
+  [rfModel modelResponse(i,:)] = feval(gPRFModels(fitParams.modelNum).getModel,params,fitParams);
+  % normalize
+  modelResponse(i,:) = preProcess(params,fitParams,modelResponse(i,:));
+  % if verbose then print what we are doing
+  if fitParams.verbose
+    disp(sprintf('(pRFFit) Computing prefit model response %i/%i: [%s]',i,fitParams.prefit.n,mlrnum2str(params)));
+  end
+end
+disppercent(inf);
+
+% keep modelResponses
+fitParams.prefit.modelResponse = modelResponse;
+
+%%%%%%%%%%%%%%%%%%%%
+%    preProcess    %
+%%%%%%%%%%%%%%%%%%%%
+function response = preProcess(params,fitParams,response)
+
+% FIX, FIX, FIX - concatInfo stuff and beta each scan stuff
+% also handle short time series
+
+% check here for response shorter then expected
+if length(response) ~= fitParams.concatInfo.runTransition(end,end)
+  % make up a concat info for this length run 
+  concatInfo.n = 1;
+  concatInfo.runTransition = [1 length(response)];
+  concatInfo.totalJunkedFrames = 0;
+  fitParams.applyFiltering = false;
+else
+  % normal processing use real concatInfo
+  concatInfo = fitParams.concatInfo;
+end
+
+% get the parameters for the hemodynamic function
+p = getHemodynamicFitParams(params,fitParams);
+
+% for each scan in the concat
+for iScan = 1:concatInfo.n
+  % get this scan of the response
+  thisResponse = response(concatInfo.runTransition(iScan,1):concatInfo.runTransition(iScan,2));
+
+  % get a model hrf
+  hrf = getCanonicalHRF(p,fitParams.framePeriod);
+
+  % and convolve in time.
+  thisModelResponse = convolveModelResponseWithHRF(thisResponse,hrf);
+
+  % drop junk frames here
+  thisResponse = thisResponse(concatInfo.totalJunkedFrames(iScan)+1:end);
+
+  % apply concat filtering
+  if fitParams.applyFiltering
+    thisResponse = applyConcatFiltering(thisResponse,concatInfo,iScan);
+  else
+    % with no filtering, just remove mean
+    thisResponse = thisResponse - mean(thisResponse);
+  end
+  
+  % put back into response
+  response(concatInfo.runTransition(iScan,1):concatInfo.runTransition(iScan,2)) = thisResponse;
+end
+
+% normalize
+response = response(:)'-mean(response);
+response = response/sqrt(response*response');
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getHemodynamicFitParams   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function p = getHemodynamicFitParams(params,fitParams)
+
+if fitParams.fitHemodynamic
+  % get the hemodynamic parameters
+  hemoParams = params(fitParams.nParams+1:end);
+  % canonical is being fit
+  p.lengthInSeconds = 25;
+  p.timelag = hemoParams(1);
+  p.tau = hemoParams(2);
+  p.exponent = fitParams.exponent;
+  p.offset = 0;
+  p.diffOfGamma = fitParams.diffOfGamma;
+  if fitParams.diffOfGamma
+    p.amplitudeRatio = hemoParams(3);
+    p.timelag2 = hemoParams(4);
+    p.tau2 = hemoParams(5);
+    p.exponent2 = fitParams.exponent2;
+    p.offset2 = 0;
+  end
+else
+  % use a fixed single gaussian
+  p.lengthInSeconds = 25;
+  p.timelag = fitParams.timelag;
+  p.tau = fitParams.tau;
+  p.exponent = fitParams.exponent;
+  p.offset = 0;
+  p.diffOfGamma = fitParams.diffOfGamma;
+  p.amplitudeRatio = fitParams.amplitudeRatio;
+  p.timelag2 = fitParams.timelag2;
+  p.tau2 = fitParams.tau2;
+  p.exponent2 = fitParams.exponent2;
+  p.offset2 = 0;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   convolveModelResponseWithHRF   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function modelTimecourse = convolveModelResponseWithHRF(modelTimecourse,hrf)
+
+n = length(modelTimecourse);
+modelTimecourse = conv(modelTimecourse,hrf.hrf);
+modelTimecourse = modelTimecourse(1:n);
+
+%%%%%%%%%%%%%%%%%%%%%
+%%   getGammaHRF   %%
+%%%%%%%%%%%%%%%%%%%%%
+function fun = getGammaHRF(time,p)
+
+fun = thisGamma(time,1,p.timelag,p.offset,p.tau,p.exponent)/100;
+% add second gamma if this is a difference of gammas fit
+if p.diffOfGamma
+  fun = fun - thisGamma(time,p.amplitudeRatio,p.timelag2,p.offset2,p.tau2,p.exponent2)/100;
+end
+
+%%%%%%%%%%%%%%%%%%%
+%%   thisGamma   %%
+%%%%%%%%%%%%%%%%%%%
+function gammafun = thisGamma(time,amplitude,timelag,offset,tau,exponent)
+
+exponent = round(exponent);
+% gamma function
+gammafun = (((time-timelag)/tau).^(exponent-1).*exp(-(time-timelag)/tau))./(tau*factorial(exponent-1));
+
+% negative values of time are set to zero,
+% so that the function always starts at zero
+gammafun(find((time-timelag) < 0)) = 0;
+
+% normalize the amplitude
+if (max(gammafun)-min(gammafun))~=0
+  gammafun = (gammafun-min(gammafun)) ./ (max(gammafun)-min(gammafun));
+end
+gammafun = (amplitude*gammafun+offset);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   getCanonicalHRF   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+function hrf = getCanonicalHRF(params,sampleRate)
+
+hrf.time = 0:sampleRate:params.lengthInSeconds;
+hrf.hrf = getGammaHRF(hrf.time,params);
+
+% normalize to amplitude of 1
+hrf.hrf = hrf.hrf / max(hrf.hrf);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    applyConcatFiltering    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function tSeries = applyConcatFiltering(tSeries,concatInfo,runnum)
+
+% apply the same filter as original data
+% check for what filtering was done
+tSeries = tSeries(:);
+
+% apply detrending (either if concatInfo does not say what it did or if
+% the filterType field has detrend in it)
+if ~isfield(concatInfo,'filterType') || ~isempty(findstr('detrend',lower(concatInfo.filterType)))
+  tSeries = eventRelatedDetrend(tSeries);
+end
+
+% apply hipass filter
+if isfield(concatInfo,'hipassfilter') && ~isempty(concatInfo.hipassfilter{runnum})
+  % check for length match
+  if ~isequal(length(tSeries),length(concatInfo.hipassfilter{runnum}))
+    disp(sprintf('(pRFFit:applyConcatFiltering) Mismatch dimensions of tSeries (length: %i) and concat filter (length: %i)',length(tSeries),length(concatInfo.hipassfilter{runnum})));
+  else
+    tSeries = real(ifft(fft(tSeries) .* repmat(concatInfo.hipassfilter{runnum}', 1, size(tSeries,2)) ));
+  end
+end
+
+% project out the mean vector
+if isfield(concatInfo,'projection') && ~isempty(concatInfo.projection{runnum})
+  projectionWeight = concatInfo.projection{runnum}.sourceMeanVector * tSeries;
+  tSeries = tSeries - concatInfo.projection{runnum}.sourceMeanVector'*projectionWeight;
+end
+
+% now remove mean
+tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
+
+% make back into the right dimensions
+tSeries = tSeries(:)';
 
