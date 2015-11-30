@@ -325,6 +325,17 @@ for scanNum = params.scanNum
   disp(sprintf('(pRF) Fitting for %s:%i took in total: %s',params.groupName,scanNum,mlrDispElapsedTime(toc)));
 end
 
+% convert overlays to validated array of overlays
+clear o;
+for iOverlay = 1:nOverlays
+  [tf thisOverlay] = isoverlay(overlays.(overlayNames{iOverlay}));
+  if tf
+    o(iOverlay) = thisOverlay;
+  else
+    disp(sprintf('(pRF) Overlay %s is invalid',overlayNames{iOverlay}));
+  end
+end
+
 % install analysis
 pRFAnal.name = params.saveName;
 pRFAnal.type = 'pRFAnal';
@@ -334,7 +345,7 @@ pRFAnal.reconcileFunction = 'defaultReconcileParams';
 pRFAnal.mergeFunction = 'pRFMergeParams';
 pRFAnal.guiFunction = 'pRFGUI';
 pRFAnal.params = params;
-pRFAnal.overlays = overlays;
+pRFAnal.overlays = o;
 pRFAnal.curOverlay = 1;
 pRFAnal.date = dateString;
 v = viewSet(v,'newAnalysis',pRFAnal);
