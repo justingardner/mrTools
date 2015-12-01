@@ -35,26 +35,26 @@ if isempty(r2)
   disp(sprintf('(pRFPlot) pRF analysis has not been run on this scan'));
   return
 end
-thisR2 = r2(x,y,z);
-polarAngle = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','polarAngle'));
-thisPolarAngle = polarAngle(x,y,z);
-eccentricity = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','eccentricity'));
-thisEccentricity = eccentricity(x,y,z);
-rfHalfWidth = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','rfHalfWidth'));
-thisRfHalfWidth = rfHalfWidth(x,y,z);
+r2 = r2(x,y,z);
 
-% roi
-if ~shiftDown
-  pRFPlotROI(v,roi,d,a,r2,eccentricity,polarAngle,rfHalfWidth);
+% get linear coords
+linearCoord = sub2ind(viewGet(v,'scanDims'),x,y,z);
+whichVoxel = find(d.linearCoords==linearCoord);
+if isempty(whichVoxel)
+  disp(sprintf('(pRFPlot) Could not find params for voxel: [%i %i %i]',x,y,z));
+  return
 end
 
-% get the params that have been run
-scanDims = viewGet(v,'scanDims',scanNum);
-whichVoxel = find(d.linearCoords == sub2ind(scanDims,x,y,z));
-r = d.r(whichVoxel,:);
+% roi
+%if ~shiftDown
+%  pRFPlotROI(v,roi,d,a,r2,eccentricity,polarAngle,rfHalfWidth);
+%end
 
 % if no voxel has been found in precomputed analysis then do fit (or if shift is down)
 if isempty(whichVoxel) || shiftDown
+  % Fix, Fix, Fix
+  disp(sprintf('Recompute not implemented yet!!!'));
+  return
   % check if shift is being held down, in which case we reget parameters
   if shiftDown
     fit = pRFFit(v,overlayNum,scanNum,x,y,z,roi);
@@ -76,16 +76,45 @@ if isempty(whichVoxel) || shiftDown
   refreshMLRDisplay(viewGet(v,'viewNum'));
   return
 end
+% version 1 code
+if d.ver == 1
+  % get parameters
+  params = d.params(:,whichVoxel);
 
-params = d.params(:,whichVoxel);
-if isfield(d,'paramsInfo')
-  paramsInfo = d.paramsInfo;
+  if isfield(d,'paramsInfo')
+    paramsInfo = d.paramsInfo;
+  else
+    paramsInfo = [];
+  end
+
+  % get params
+  m = pRFFit(v,scanNum,x,y,z,'stim',d.stim,'getModelResponse=1','params',params,'concatInfo',d.concatInfo,'fitTypeParams',a.params.pRFFit,'paramsInfo',paramsInfo);
 else
-  paramsInfo = [];
+  % version >1 code
+  % get parameters
+  params = d.params(whichVoxel,:);
+
+  % get tSeries
+  m.tSeries = squeeze(loadTSeries(v,scanNum,z,[],x,y));
+  m.tSeries = m.tSeries - mean(m.tSeries);
+  
+  % process tSeries
+  global gPRFModels;initParams = params;
+  [a.params.fitParams m.tSeries initParams] = feval(gPRFModels(a.params.fitParams.modelNum).initVoxel,a.params.fitParams,m.tSeries,initParams);
+
+  % pre process model
+  m.modelResponse = pRFPreProcess(params,a.params.fitParams,m.modelResponse);
+  
+  % get model
+  [m.rfModel m.modelResponse] = feval(gPRFModels(a.params.fitParams.modelNum).getModel,params,a.params.fitParams);
+
+  % get concatInfo
+  d.concatInfo = a.params.fitParams.concatInfo;
+  d.stimX = a.params.fitParams.stimX;
+  d.stimY = a.params.fitParams.stimY;
+  d.stim = a.params.fitParams.stim;
 end
 
-% get params
-m = pRFFit(v,scanNum,x,y,z,'stim',d.stim,'getModelResponse=1','params',params,'concatInfo',d.concatInfo,'fitTypeParams',a.params.pRFFit,'paramsInfo',paramsInfo);
 % and plot, set a global so that we can use the mouse to display
 % different time points
 global gpRFPlot;
@@ -116,8 +145,8 @@ end
 xlabel('Time (volumes)');
 ylabel('BOLD (%)');
 % convert coordinates back to x,y for display
-[thisx thisy] = pol2cart(thisPolarAngle,thisEccentricity);
-title(sprintf('[%i %i %i] r^2=%0.2f polarAngle=%0.2f eccentricity=%0.2f rfHalfWidth=%0.2f %s [x=%0.2f y=%0.2f]\n%s',x,y,z,thisR2,r2d(thisPolarAngle),thisEccentricity,thisRfHalfWidth,a.params.pRFFit.rfType,thisx,thisy,num2str(r,'%0.2f ')));
+%[thisx thisy] = pol2cart(thisPolarAngle,thisEccentricity);
+%title(sprintf('[%i %i %i] r^2=%0.2f polarAngle=%0.2f eccentricity=%0.2f rfHalfWidth=%0.2f %s [x=%0.2f y=%0.2f]\n%s',x,y,z,thisR2,r2d(thisPolarAngle),thisEccentricity,thisRfHalfWidth,a.params.pRFFit.rfType,thisx,thisy,num2str(r,'%0.2f ')));
 % plot the rf
 a = subplot(5,5,[10 15 20]);
 imagesc(d.stimX(:,1),d.stimY(1,:),flipud(m.rfModel'));
@@ -131,7 +160,7 @@ hline(0,'w:');vline(0,'w:');
 % plot the canonical
 subplot(5,5,5);cla
 plot(m.canonical.time,m.canonical.hrf,'k-');
-title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
+%title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
 
 % display the stimulus images
 plotStim(gpRFPlot.t);

@@ -9,8 +9,8 @@
 function params = pRFGUI(varargin)
 
 % get the arguments
-params=[];groupNum=[];defaultParams=[];scanList = [];v = [];pRFFitParamsOnly=[];
-getArgs(varargin,{'params=[]','groupNum=[]','defaultParams=0','scanList=[]','v=[]','pRFFitParamsOnly=0'});
+params=[];groupNum=[];defaultParams=[];scanList = [];v = [];fitParamsParamsOnly=[];
+getArgs(varargin,{'params=[]','groupNum=[]','defaultParams=0','scanList=[]','v=[]','fitParamsParamsOnly=0'});
 
 % if called with params, then just display
 if ~isempty(params)
@@ -76,7 +76,7 @@ end
 
 % set the parameter string
 paramsInfo = {};
-if ~pRFFitParamsOnly
+if ~fitParamsParamsOnly
   paramsInfo{end+1} = {'groupName',groupNames,'Name of group from which to do pRF analysis'};
   paramsInfo{end+1} = {'saveName','pRF','File name to try to save as'};
   paramsInfo{end+1} = {'restrict',restrict,'Restrict to the analysis to some subset of voxels. If you choose a base anatomy then it will restrict to the voxels that are on the base. If you choose an roi it will restrict the analysis to the voxels in the roi'};
@@ -166,7 +166,7 @@ if isempty(params)
 end
 
 % just getting pRFFItParams, so we are done
-if pRFFitParamsOnly,return,end
+if fitParamsParamsOnly,return,end
 
 % get scans
 v = viewSet(v,'groupName',params.groupName);
@@ -185,21 +185,21 @@ end
 
 if deleteViewOnExit,deleteView(v);end
 
-% if we go here, split out the params that get passed to pRFFit
-pRFFitParams = false;
+% if we go here, split out the params that get passed to fitParams
+fitParamsParams = false;
 paramsInfo{end+1}{1} = 'modelNum';
 for i = 1:length(paramsInfo)
-  % Everything after the rfType is a param for pRFFit
-  if pRFFitParams || strcmp(paramsInfo{i}{1},'rfType')
-    % move params into pRFFit field
-    params.pRFFit.(paramsInfo{i}{1}) = params.(paramsInfo{i}{1});
+  % Everything after the rfType is a param for fitParams
+  if fitParamsParams || strcmp(paramsInfo{i}{1},'rfType')
+    % move params into fitParams field
+    params.fitParams.(paramsInfo{i}{1}) = params.(paramsInfo{i}{1});
     params = rmfield(params,paramsInfo{i}{1});
     % all the next fields will be moved as well
-    pRFFitParams = true;
+    fitParamsParams = true;
     % remove these from the paramsInfo field
     if strcmp(paramsInfo{i}{1},'rfType')
       params.paramInfo = {params.paramInfo{1:i-1}};
-      params.pRFFit.paramInfo = {params.paramInfo{i:end}};
+      params.fitParams.paramInfo = {params.paramInfo{i:end}};
     end
   end
 end
@@ -228,13 +228,13 @@ if isfield(params,'paramInfo')
   end
 end
 
-% add the pRFFit
-if isfield(params,'pRFFit')
-  pRFFitFieldNames = fieldnames(params.pRFFit);
-  for iField = 1:length(pRFFitFieldNames)
-    fieldName = pRFFitFieldNames{iField};
+% add the fitParams
+if isfield(params,'fitParams')
+  fitParamsFieldNames = fieldnames(params.fitParams);
+  for iField = 1:length(fitParamsFieldNames)
+    fieldName = fitParamsFieldNames{iField};
     if ~any(strcmp(fieldName,{'paramInfo','dispHDR','dispStim'}))
-      paramsInfo{end+1} = {fieldName,params.pRFFit.(fieldName),'editable=0'};
+      paramsInfo{end+1} = {fieldName,params.fitParams.(fieldName),'editable=0'};
     end
   end
 end
