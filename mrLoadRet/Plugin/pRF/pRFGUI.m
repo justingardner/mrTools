@@ -156,14 +156,14 @@ else
   params = mrParamsDialog(paramsInfo,'Set pRF parameters');
 end
 
-% get which model was selected
-params.modelNum = find(strcmp(params.rfType,modelNames));
-
 % if empty user hit cancel
 if isempty(params)
   if deleteViewOnExit,deleteView(v);end
   return
 end
+
+% get which model was selected
+params.modelNum = find(strcmp(params.rfType,modelNames));
 
 % just getting pRFFItParams, so we are done
 if fitParamsParamsOnly,return,end

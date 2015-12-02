@@ -102,12 +102,13 @@ else
   global gPRFModels;initParams = params;
   [a.params.fitParams m.tSeries initParams] = feval(gPRFModels(a.params.fitParams.modelNum).initVoxel,a.params.fitParams,m.tSeries,initParams);
 
-  % pre process model
-  m.modelResponse = pRFPreProcess(params,a.params.fitParams,m.modelResponse,m.tSeries);
-  
   % get model
   [m.rfModel m.modelResponse] = feval(gPRFModels(a.params.fitParams.modelNum).getModel,params,a.params.fitParams);
 
+  % pre process model 
+  keyboard
+  m.modelResponse = pRFPreProcess(params,a.params.fitParams,m.modelResponse,m.tSeries);
+  
   % get concatInfo
   d.concatInfo = a.params.fitParams.concatInfo;
   d.stimX = a.params.fitParams.stimX;
@@ -159,7 +160,7 @@ hold on
 hline(0,'w:');vline(0,'w:');
 % plot the canonical
 subplot(5,5,5);cla
-plot(m.canonical.time,m.canonical.hrf,'k-');
+%plot(m.canonical.time,m.canonical.hrf,'k-');
 %title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
 
 % display the stimulus images

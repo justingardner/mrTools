@@ -8,7 +8,7 @@
 %             hemodynamic response, apply concat filtering and apply beta
 %             weights
 %
-function response = pRFPreProcess(params,fitParams,response)
+function response = pRFPreProcess(params,fitParams,response,tSeries)
 
 % FIX, FIX, FIX - concatInfo stuff and beta each scan stuff
 % also handle short time series
@@ -49,6 +49,15 @@ for iScan = 1:concatInfo.n
     % with no filtering, just remove mean
     thisResponse = thisResponse - mean(thisResponse);
   end
+
+  % If we have been passed in tSeries and need to scale
+  % each scan, then do that here.
+  if (nargin>=4) && fitParams.betaEachScan
+    % scale and offset the model to best match the tSeries
+    [thisResponse thisResidual] = scaleAndOffset(thisResponse,thisTSeries);
+  else
+    thisResidual = [];
+  end
   
   % put back into response
   response(concatInfo.runTransition(iScan,1):concatInfo.runTransition(iScan,2)) = thisResponse;
@@ -57,6 +66,11 @@ end
 % normalize
 response = response(:)'-mean(response);
 response = response/sqrt(response*response');
+
+% scale the whole time series if we have been passed in tSeries
+if (nargin>=4) && ~fitParams.betaEachScan
+  [response residual] = scaleAndOffset(response,tSeries);
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,4 +197,25 @@ tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
 
 % make back into the right dimensions
 tSeries = tSeries(:)';
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%    scaleAndOffset    %
+%%%%%%%%%%%%%%%%%%%%%%%%
+function [modelResponse residual] = scaleAndOffset(modelResponse,tSeries)
+
+modelResponse = modelResponse(:);
+tSeries = tSeries(:);
+
+designMatrix = modelResponse;
+designMatrix(:,2) = 1;
+
+% get beta weight for the modelResponse
+if ~any(isnan(modelResponse))
+  beta = pinv(designMatrix)*tSeries;
+  beta(1) = max(beta(1),0);
+  modelResponse = designMatrix*beta;
+  residual = tSeries-modelResponse;
+else
+  residual = tSeries;
+end
 
