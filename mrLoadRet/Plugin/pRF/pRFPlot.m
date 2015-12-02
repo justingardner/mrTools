@@ -103,7 +103,7 @@ else
   [a.params.fitParams m.tSeries initParams] = feval(gPRFModels(a.params.fitParams.modelNum).initVoxel,a.params.fitParams,m.tSeries,initParams);
 
   % pre process model
-  m.modelResponse = pRFPreProcess(params,a.params.fitParams,m.modelResponse);
+  m.modelResponse = pRFPreProcess(params,a.params.fitParams,m.modelResponse,m.tSeries);
   
   % get model
   [m.rfModel m.modelResponse] = feval(gPRFModels(a.params.fitParams.modelNum).getModel,params,a.params.fitParams);
