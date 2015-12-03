@@ -286,6 +286,7 @@ for scanNum = params.scanNum
 	optimParams = optimset('MaxIter',inf);
 	% run fminsearch
 	[best.params best.r exitflag] = fminsearch(@getModelResidual,initParams,optimParams,tSeriesNorm,params.fitParams);
+	best.r = 1-best.r;
       else
 	disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
 	return

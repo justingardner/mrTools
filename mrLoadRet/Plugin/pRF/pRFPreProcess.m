@@ -8,7 +8,7 @@
 %             hemodynamic response, apply concat filtering and apply beta
 %             weights
 %
-function response = pRFPreProcess(params,fitParams,response,tSeries)
+function [response p hrf] = pRFPreProcess(params,fitParams,response,tSeries)
 
 % FIX, FIX, FIX - concatInfo stuff and beta each scan stuff
 % also handle short time series

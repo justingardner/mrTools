@@ -106,14 +106,30 @@ else
   [m.rfModel m.modelResponse] = feval(gPRFModels(a.params.fitParams.modelNum).getModel,params,a.params.fitParams);
 
   % pre process model 
-  keyboard
-  m.modelResponse = pRFPreProcess(params,a.params.fitParams,m.modelResponse,m.tSeries);
+  [m.modelResponse m.p.canonical m.canonical] = pRFPreProcess(params,a.params.fitParams,m.modelResponse,m.tSeries);
   
   % get concatInfo
   d.concatInfo = a.params.fitParams.concatInfo;
   d.stimX = a.params.fitParams.stimX;
   d.stimY = a.params.fitParams.stimY;
   d.stim = a.params.fitParams.stim;
+  
+  % get overlay data
+  overlayNames = viewGet(v,'overlayNames');
+  for iOverlay = 1:length(overlayNames)
+    v = viewSet(v,'curOverlay',overlayNames{iOverlay});
+    o.(overlayNames{iOverlay}) = viewGet(v,'overlayDataVal',x,y,z);
+  end
+
+  % deal with overlay params
+  if strcmp(a.params.fitParams.rfType,'gaussian')
+    thisPolarAngle = o.polarAngle;
+    thisEccentricity = o.eccentricity;
+    thisR2 = o.r2;
+    thisRfHalfWidth = o.rfHalfWidth;
+  end
+  a.params.pRFFit = a.params.fitParams;
+  r = sqrt(thisR2);
 end
 
 % and plot, set a global so that we can use the mouse to display
@@ -146,8 +162,8 @@ end
 xlabel('Time (volumes)');
 ylabel('BOLD (%)');
 % convert coordinates back to x,y for display
-%[thisx thisy] = pol2cart(thisPolarAngle,thisEccentricity);
-%title(sprintf('[%i %i %i] r^2=%0.2f polarAngle=%0.2f eccentricity=%0.2f rfHalfWidth=%0.2f %s [x=%0.2f y=%0.2f]\n%s',x,y,z,thisR2,r2d(thisPolarAngle),thisEccentricity,thisRfHalfWidth,a.params.pRFFit.rfType,thisx,thisy,num2str(r,'%0.2f ')));
+[thisx thisy] = pol2cart(thisPolarAngle,thisEccentricity);
+title(sprintf('[%i %i %i] r^2=%0.2f polarAngle=%0.2f eccentricity=%0.2f rfHalfWidth=%0.2f %s [x=%0.2f y=%0.2f]\n%s',x,y,z,thisR2,r2d(thisPolarAngle),thisEccentricity,thisRfHalfWidth,a.params.pRFFit.rfType,thisx,thisy,num2str(r,'%0.2f ')));
 % plot the rf
 a = subplot(5,5,[10 15 20]);
 imagesc(d.stimX(:,1),d.stimY(1,:),flipud(m.rfModel'));
@@ -160,8 +176,8 @@ hold on
 hline(0,'w:');vline(0,'w:');
 % plot the canonical
 subplot(5,5,5);cla
-%plot(m.canonical.time,m.canonical.hrf,'k-');
-%title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
+plot(m.canonical.time,m.canonical.hrf,'k-');
+title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
 
 % display the stimulus images
 plotStim(gpRFPlot.t);
