@@ -103,7 +103,11 @@ if ~isempty(scanListName)
       newLinearCoords = newLinearCoords(:)';
       % and combine
       mergedData{thisScanNum}.linearCoords = [newLinearCoords oldLinearCoords];
-      mergedData{thisScanNum}.params = [newData{thisScanNum}.params oldData{thisScanNum}.params(:,missingPoints)];
+      if oldData{thisScanNum}.ver == 1
+	mergedData{thisScanNum}.params = [newData{thisScanNum}.params ;oldData{thisScanNum}.params(:,missingPoints)'];
+      else
+	mergedData{thisScanNum}.params = [newData{thisScanNum}.params oldData{thisScanNum}.params(missingPoints,:)'];
+      end
       mergedData{thisScanNum}.r = [newData{thisScanNum}.r' oldData{thisScanNum}.r(missingPoints,:)']';
     end
   end

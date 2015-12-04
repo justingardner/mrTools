@@ -98,7 +98,7 @@ modelResponse = [];
 for i = 1:fitParams.concatInfo.n
 
   % get model response
-  nFrames = fitParams.concatInfo.runTransition(i,2);
+  nFrames = fitParams.concatInfo.runTransition(i,2)-fitParams.concatInfo.runTransition(i,1)+1;
   thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
 
   % make into a column array
@@ -269,7 +269,7 @@ else
 	disp(sprintf('(pRFFit:checkStimForAverages) !!! Average for %s:%i component scan %i does not match stimulus for other scans. If you wish to continue then this will use the stimfile associated with the first scan in the average !!!',viewGet(v,'groupName',groupNum),scanNum,originalScanNum(i)));
 	% display which volumes are different
 	diffVols = [];
-	for iVol = 1:size(stim{1}.im,3)
+	for iVol = 1:min(size(stim{1}.im,3),size(stim{i}.im,3))
 	  if ~isequalwithequalnans(stim{1}.im(:,:,iVol),stim{i}.im(:,:,iVol))
 	    diffVols(end+1) = iVol;
 	  end

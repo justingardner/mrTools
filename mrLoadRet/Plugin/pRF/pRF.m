@@ -255,6 +255,9 @@ for scanNum = params.scanNum
 
     % now parfor loop over each voxel
     % Fix this to parfor
+    modelNum = params.fitParams.modelNum;
+    fitParams = params.fitParams;
+    getModel = gPRFModels(modelNum).getModel;
     for i = blockStart:blockEnd
       % load tSeries
       tSeries = squeeze(loadTSeries(v,scanNum,z(i),[],x(i),y(i)));
@@ -269,11 +272,14 @@ for scanNum = params.scanNum
 	[maxr bestModel] = max(prefitr);
 	% get the parameters that match that modelResponse
 	initParams = params.fitParams.prefit.params(bestModel,:);
+	if params.fitParams.verbose
+	  disp(sprintf('%04i/%04i [%i %i %i] params=[%s] r2=%0.3f',i,n,x(i),y(i),z(i),mlrnum2str(initParams),maxr^2));
+	end
       end
-
+      bestParams = [];bestR = nan;
       % now run model specific initVoxel which can be used
       % to preprocess tSeries and set initParams
-      [params.fitParams tSeries initParams] = feval(gPRFModels(params.fitParams.modelNum).initVoxel,params.fitParams,tSeriesNorm,initParams);
+      [fitParams tSeries initParams] = feval(gPRFModels(modelNum).initVoxel,params.fitParams,tSeriesNorm,initParams);
       % now optimize parameters to fit
       % now do nonlinear fit
       if strcmp(lower(params.fitParams.algorithm),'levenberg-marquardt')
@@ -285,18 +291,19 @@ for scanNum = params.scanNum
 	% set optimParams
 	optimParams = optimset('MaxIter',inf);
 	% run fminsearch
-	[best.params best.r exitflag] = fminsearch(@getModelResidual,initParams,optimParams,tSeriesNorm,params.fitParams);
-	best.r = 1-best.r;
+	[bestParams bestR exitflag] = fminsearch(@getModelResidual,initParams,optimParams,tSeriesNorm,fitParams,getModel);
+	bestR = 1-bestR;
       else
-	disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
-	return
+	% Fix, check outside parfor loop
+	%disp(sprintf('(pRFFit) Unknown optimization algorithm'));
+	%return
       end
       if params.fitParams.verbose
-	disp(sprintf('%04i/%04i [%i %i %i] params=[%s] r2=%0.3f',i,n,x(i),y(i),z(i),mlrnum2str(best.params),best.r^2));
+	disp(sprintf('%04i/%04i [%i %i %i] params=[%s] r2=%0.3f',i,n,x(i),y(i),z(i),mlrnum2str(bestParams),bestR^2));
       end
       % keep parameters
-      rawParams(i,:) = best.params(:);
-      r(i,:) = best.r;
+      rawParams(i,:) = bestParams(:);
+      r(i,:) = bestR;
     end
   end
 
@@ -561,11 +568,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %    getModelResidual    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function r = getModelResidual(params,tSeries,fitParams)
+function r = getModelResidual(params,tSeries,fitParams,getModel)
 
 % get model response
-global gPRFModels;
-[rfModel modelResponse] = feval(gPRFModels(fitParams.modelNum).getModel,params,fitParams);
+[rfModel modelResponse] = feval(getModel,params,fitParams);
 
 % normalize response
 modelResponse = pRFPreProcess(params,fitParams,modelResponse);

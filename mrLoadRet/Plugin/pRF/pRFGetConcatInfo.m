@@ -8,7 +8,7 @@
 %
 function concatInfo = pRFGetConcatInfo(v,scanNum)
 
-concatInfo = viewGet(v,'conatInfo',scanNum);
+concatInfo = viewGet(v,'concatInfo',scanNum);
 
 % if there is no concatInfo, then make one that will
 % treat the scan as a single scan
