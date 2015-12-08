@@ -205,7 +205,7 @@ switch action
     mlrAdjustGUI(thisView,'set','colorbar','position',            [0.35    0.105   0.58   0.08 ]);
     mlrAdjustGUI(thisView,'set','colorbar','fontSize',10);
     mlrAdjustGUI(thisView,'add','axes','colorbarRightBorder',...
-      'YaxisLocation','right','XTick',[],'box','off','position',  [0.929   0.105   0.001  0.08 ]);
+      'YaxisLocation','right','XTick',[],'box','off','color','none','position',  [0.929   0.105   0.001  0.08 ]);
     mlrAdjustGUI(thisView,'set','axis','position',                [0.285   0.195   0.71   0.8]);
     
 
@@ -221,9 +221,11 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/','callback',@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
     mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/','callback',@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
     mlrAdjustGUI(thisView,'set','editOverlayMenuItem','Callback',@editOverlayCallback);
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Copy Overlay','Callback',@copyOverlayCallback);
-    mlrAdjustGUI(thisView,'set','/Edit/Overlay/Paste Overlay','Callback',@pasteOverlayCallback);
+    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','Callback',@copyOverlayCallback);
+    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','label','Copy overlay(s)...');
+    mlrAdjustGUI(thisView,'set','pasteOverlayMenuItem','Callback',@pasteOverlayCallback);
     mlrAdjustGUI(thisView,'set','copyScanMenuItem','Callback',@copyScanCallback);
+    mlrAdjustGUI(thisView,'set','copyScanMenuItem','label','Copy scan(s)...');
     mlrAdjustGUI(thisView,'set','pasteScanMenuItem','Callback',@pasteScanCallback);
 
     % Analysis menu

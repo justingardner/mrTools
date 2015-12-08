@@ -1321,6 +1321,7 @@ switch lower(param)
     end
     if ~isempty(analysisNum)
       view.analyses{analysisNum}.clipAcrossOverlays=val;
+      mlrGuiSet(view,'clipAcrossOverlays',val);
     end
 
   case{'analysisname'}
