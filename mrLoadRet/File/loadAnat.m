@@ -22,9 +22,9 @@ function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
 if nargin == 0,help loadAnat,return,end
-  
+
 if ieNotDefined('anatFilePath')
-    anatFilePath = ''; 
+    anatFilePath = '';
 end
 
 % Open dialog box to have user choose the file
@@ -120,11 +120,11 @@ for pathNum = 1:length(pathStr)
   % won't have correct info, but will allow the rest of the
   % code to run and can be fixed by a correct alignment
   if isempty(hdr.qform)
-    mrWarnDlg(sprinf('(loadAnat) !!!! Missing qform, making one based only on voxel dimensiosn !!!!'));
+    mrWarnDlg(sprintf('(loadAnat) !!!! Missing qform, making one based only on voxel dimensiosn !!!!'));
     hdr.qform = diag(hdr.pixdim);
     hdr.qform(4,4) = 1;
   end
-  
+
   % now check for an assoicated .mat file, this is created by
   % mrLoadRet and contains parameters for the base anatomy.
   % (it is the base structure minus the data and hdr) This is
@@ -189,7 +189,7 @@ for pathNum = 1:length(pathStr)
   base.data = vol;
   base.hdr = hdr;
   base.permutationMatrix = permutationMatrix;
-  
+
   % Add it to the list of base volumes and select it
   view = viewSet(view,'newBase',base);
 end
