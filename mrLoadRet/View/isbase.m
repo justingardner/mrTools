@@ -85,7 +85,7 @@ for f = 1:length(requiredFields)
 end
 
 %convert curSlice to curCoords for backward compatibility pre-multiaxis (up to commit 7266921 on Nov 9th 2014)
-if ~base.type && isfield(base,'curSlice') && isfield(base,'sliceOrientation') 
+if isfield(base,'type') && ~base.type && isfield(base,'curSlice') && isfield(base,'sliceOrientation') 
     base.curCoords = ceil(size(base.data)/2);
     %this is taken from the old version of viewGet(..,'baseSliceIndex')
     switch base.sliceOrientation %find the saved view orientation and get slice index
