@@ -238,8 +238,8 @@ if ~isempty(restrictions)
     if ~approximate_value
       traceRV = NaN(d.dim(1:3));
     end
-    scm_h = cell(1:numberFtests);
-    eig_residualForming_f_tests = cell(1:numberFtests);
+    scm_h = cell(1,numberFtests);
+    eig_residualForming_f_tests = cell(1,numberFtests);
     for iR = 1:numberFtests
       scm_h{iR} = d.scm*complementaryRestriction{iR}';           
       residualForming_h(:,:,iR) = eye(nFrames) - scm_h{iR}*((scm_h{iR}'*scm_h{iR})^-1)*scm_h{iR}';       %TO REMOVE EVENTUALLY
@@ -249,7 +249,7 @@ if ~isempty(restrictions)
     end
   end
   
-  R_invCovEV_Rp = cell(1:numberFtests);
+  R_invCovEV_Rp = cell(1,numberFtests);
   for iR = 1:numberFtests         %the degrees of freedom for the F-tests are the number of contrasts
     restrictions{iR} = restrictions{iR}(any(restrictions{iR},2),:); %remove lines of 0
     d.mdf(iR) = size(restrictions{iR},1); %this is provided that contrasts are independent and that they are no more than (regressors -1)
