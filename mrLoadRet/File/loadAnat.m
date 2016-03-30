@@ -163,8 +163,7 @@ for pathNum = 1:length(pathStr)
       if ~isempty(sliceOrientation) && any(sliceOrientation == [1 2 3])
 	% set current slice to the slice half way through the volume
 	voldim = size(vol);
-	base.curSlice = max(1,floor(voldim(sliceOrientation)/2));
-	base.curCoords = round(voldim/2);
+	base.curCoords = ceil(voldim/2);
       end
     end
   else
