@@ -130,9 +130,6 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       if viewGet(view,'baseType') && isfield(mrLastView.curslice,'corticalDepth')
         view = viewSet(view,'corticalDepth',mrLastView.curslice.corticalDepth);
       end
-      if isfield(mrLastView.curslice,'sliceNum')
-        view = viewSet(view,'curSlice',mrLastView.curslice.sliceNum);
-      end
       view = viewSet(view,'surfaceOnVolume',viewGet(mrLastView,'surfaceOnVolume'));
     end
     % read analyses
