@@ -792,10 +792,10 @@ switch lower(param)
       % need to set the appropriate field
       if (baseType == 1) || ((baseType==0) && (baseMultiAxis==0))
 	view.baseVolumes(curBase).rotate = val;
-	mlrGuiSet(view,'rotate',val);
       else
 	view.baseVolumes(curBase).surfaceRotate = val;
       end
+	mlrGuiSet(view,'rotate',val);
       
     end
       
