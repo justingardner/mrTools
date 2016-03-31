@@ -47,7 +47,6 @@ switch(baseType)
    [Ycoords,Xcoords,Zcoords] = meshgrid(1:basedims(2),1:basedims(1),1:basedims(3));
    
    case 1   %the base is a flat map
-      sliceNum = viewGet(thisView,'curslice');
       sliceIndex = viewGet(thisView,'baseSliceIndex',baseNum);
       if ieNotDefined('depthBins')
          depthBins = viewGet(thisView,'corticalDepthBins');
@@ -61,19 +60,19 @@ switch(baseType)
       baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum,0:1/(depthBins-1):1);
       if ~isempty(baseCoordMap)
         % only use the baseCoordMap for when the slice
-        % in the third dimension (no other thisView of a 
+        % in the third dimension (no other view of a 
         % flat map is really valid).
         if sliceIndex == 3
-          Xcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
-          Ycoords0 = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
-          Zcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
+          Xcoords0 = permute(baseCoordMap.coords(:,:,1,1,:),[1 2 5 3 4]);
+          Ycoords0 = permute(baseCoordMap.coords(:,:,1,2,:),[1 2 5 3 4]);
+          Zcoords0 = permute(baseCoordMap.coords(:,:,1,3,:),[1 2 5 3 4]);
         else
           oneTimeWarning('badSliceIndex',sprintf('(getBaseSpaceOverlay) Trying to display a flat/surface with the sliceIndex set to %i instead of 3. This is probably because there is something wrong with the Nifti Qforms at your site -- specifically you should check in mrAlign whether your volume displays correctly for when you have click the saggital, coronal and axial buttons. If not, you will need to swap dimensions until they do and then make sure all of your qforms have their dimensions in the same order. Your overlays will not display correctly on this volume.',sliceIndex));
           %attempt to do it anyway
           try
-            Xcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,1,:),[1 2 5 3 4]);
-            Ycoords0 = permute(baseCoordMap.coords(:,:,sliceNum,2,:),[1 2 5 3 4]);
-            Zcoords0 = permute(baseCoordMap.coords(:,:,sliceNum,3,:),[1 2 5 3 4]);
+            Xcoords0 = permute(baseCoordMap.coords(:,:,1,1,:),[1 2 5 3 4]);
+            Ycoords0 = permute(baseCoordMap.coords(:,:,1,2,:),[1 2 5 3 4]);
+            Zcoords0 = permute(baseCoordMap.coords(:,:,1,3,:),[1 2 5 3 4]);
           catch errorId
             mrErrorDlg(errorId.message)
           end
