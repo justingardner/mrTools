@@ -870,22 +870,10 @@ switch lower(param)
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
     numBases = viewGet(view,'numberofBaseVolumes');
-    % first save rotation, curSlice and sliceIndex
-    % for this base image
     curBase = viewGet(view,'curBase');
-    rotate = viewGet(view,'rotate');
-    curSlice = viewGet(view,'curSlice');
-    curCoords = viewGet(view,'curCoords');
-    %if there was not base loaded, curSlice could be empty, set default to 1
-    if isempty(curSlice)
-      curSlice =1;
-    end
     sliceOrientation = viewGet(view,'sliceOrientation');
     % set the current state of the gui in the base
     if (curBase > 0) & (curBase <= numBases)
-      view.baseVolumes(curBase).rotate = rotate;
-      % save the full 3D coords that are being viewed 
-      view.baseVolumes(curBase).curCoords = curCoords;
       view.baseVolumes(curBase).sliceOrientation = sliceOrientation;
       if viewGet(view,'baseType');
         view.baseVolumes(curBase).curCorticalDepth = viewGet(view,'corticalDepth');
@@ -913,26 +901,12 @@ switch lower(param)
       if baseType
 	baseSliceOrientation = 1;
       end
-      % set the slice orientation if there is a valid one saved
-      if ~isempty(baseSliceOrientation)
-	view = viewSet(view,'sliceOrientation',baseSliceOrientation);
+      if isempty(baseSliceOrientation) %a new volume base might have an empty slice orientation
+        baseSliceOrientation = sliceOrientation; %in this case, use the previous one 
       end
+      % set the slice orientation if there is a valid one saved
+      view = viewSet(view,'sliceOrientation',baseSliceOrientation);
       if baseType==0
-        % update nSlices and reset slice to be within range
-        baseCurSlice = viewGet(view,'baseCurSlice',baseNum);
-        sliceIndex = viewGet(view,'basesliceindex',baseNum);
-        nSlices = baseDims(sliceIndex);
-	mlrGuiSet(view,'nSlices',nSlices);
-        % if the base has a current slice set, then use that
-        if isempty(baseCurSlice) || (baseCurSlice > nSlices)
-          if length(curSlice)==1 && curSlice >=1
-            view = viewSet(view,'curSlice',min(curSlice,nSlices));
-          else
-            view = viewSet(view,'curSlice',round(nSlices/2));
-          end
-        else
-          view = viewSet(view,'curSlice',min(baseCurSlice,nSlices));
-        end
 	% set the current coordinates
 	mlrGuiSet(view,'curCoords',viewGet(view,'baseCurCoords',baseNum));
 	% set the multiAxis
