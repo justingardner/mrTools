@@ -1656,7 +1656,7 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).tilt;
     end
-  case {'basecurslice','baseslice'}
+  case {'basecurslice','baseslice','curslice','currentslice'}
     % baseslice = viewGet(view,'baseslice',[baseNum])
     val = 1;
     b = getBaseNum(view,varargin);
@@ -4075,14 +4075,6 @@ switch lower(param)
     % scan = viewGet(view,'currentScan');
     val = view.curScan;
     if isempty(val),val = 1;end
-  case {'curslice','currentslice'}
-    % slice = viewGet(view,'currentSlice');
-    if isfield(view.curslice,'sliceNum')
-      val = view.curslice.sliceNum;
-    elseif viewGet(view,'baseMultiAxis')==0
-      % default to 1
-      val = 1;
-    end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
     fig = viewGet(view,'fignum');
