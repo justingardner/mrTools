@@ -4152,21 +4152,12 @@ switch lower(param)
     % same way, they are rotated through
     % rotateSurface
     if baseType <= 1
-      fig = viewGet(view,'fignum');
-      if ~isempty(fig)
-        handles = guidata(fig);
-	% adding 90 because this puts a typical base
-	% in the most natural orientation
-        val = get(handles.rotateSlider,'Value');
-      else
-        % otherwise gui is not running get from the structure
         curBase = viewGet(view,'curBase');
         if ~isempty(curBase)
           val = view.baseVolumes(curBase).rotate;
         else
           val = 0;
         end
-      end
     else
       val = 0;
     end
