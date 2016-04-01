@@ -35,7 +35,6 @@ view.showROIs = 'all';
 % Initialize curGroup
 view.curGroup = 1;
 view.curScan = 1;
-view.sliceOrientation = 1;
 
 % Figure handle
 view.figure = [];
