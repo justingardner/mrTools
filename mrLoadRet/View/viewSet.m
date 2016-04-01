@@ -860,17 +860,6 @@ switch lower(param)
         mlrGuiSet(view,'corticalMaxDepth',val);
       end
       
-  case{'curcoords'}
-    % view = viewSet(view,'curcoords');
-    curBase = viewGet(view,'curBase');
-    numBases = viewGet(view,'numberofBaseVolumes');
-    if (curBase > 0) & (curBase <= numBases)
-      % set curCoords in base
-      view.baseVolumes(curBase).curCoords = val;
-    end
-    % update gui
-    mlrGuiSet(view,'curCoords',val);
-    
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
@@ -958,6 +947,18 @@ switch lower(param)
         mrWarnDlg(['(viewSet:surfaceOnVolume) base ' num2str(iBase) ' is not a surface'])
       end
     end
+    
+  case{'basecurcoords','curcoords'}
+    % view = viewSet(view,'basecurcoords',[baseNum]);
+    % view = viewSet(view,'curcoords',[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    numBases = viewGet(view,'numberofBaseVolumes');
+    if (baseNum > 0) && (baseNum <= numBases)
+      % set curCoords in base
+      view.baseVolumes(baseNum).curCoords = val;
+    end
+    % update gui
+    mlrGuiSet(view,'curCoords',val);
     
   case{'basecoordmappath'}
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);

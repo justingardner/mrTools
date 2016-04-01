@@ -1829,10 +1829,10 @@ switch lower(param)
         val(3) = 1;
       end
     end
-  case {'basecurcoords'}
+  case {'basecurcoords','curcoords','currentcoordinates'}
     % baseCurCoords = viewGet(view,'baseCurCoords',[baseNum])
-    % baseCurCoords = viewGet(view,'baseCurCoords',[])
-    % baseCurCoords = viewGet(view,'baseCurCoords')
+    % baseCurCoords = viewGet(view,'curCoords',[baseNum])
+    % baseCurCoords = viewGet(view,'currentcoordinates',[baseNum])
     b = getBaseNum(view,varargin);
     if ~isempty(b)
       val = view.baseVolumes(b).curCoords;
@@ -4095,17 +4095,6 @@ switch lower(param)
     % scan = viewGet(view,'currentScan');
     val = view.curScan;
     if isempty(val),val = 1;end
-  case {'curcoords','currentcoordinates'}
-    % coords = viewGet(view,'currentCoordinates');
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      val = handles.coords;
-      % never let coords be 0
-      val(val==0) = 1;
-    else
-      val = [];
-    end
   case {'alpha'}
     % alpha = viewGet(view,'alpha',[overlaynum]);
     if isempty(varargin) || isempty(varargin{1})
