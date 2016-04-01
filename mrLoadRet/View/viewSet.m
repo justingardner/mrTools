@@ -823,15 +823,10 @@ switch lower(param)
       end
     end
     
-  case {'corticaldepth'}
+  case {'corticaldepth','curcorticaldepth','basecorticaldepth'}
     % corticaldepth = viewSet(view,'corticaldepth',value);
-    fig = viewGet(view,'fignum');
-    if ~isempty(fig)
-      handles = guidata(fig);
-      if ~isfield(handles,'corticalMaxDepthSlider')
-        val = val(1);
-      end
-    end
+    % corticaldepth = viewSet(view,'curcorticaldepth',value);
+    % corticaldepth = viewSet(view,'basecorticaldepth',value);
     if length(val)==1
       view = viewSet(view,'corticalMinDepth',val);
       view = viewSet(view,'corticalMaxDepth',val);
@@ -841,19 +836,29 @@ switch lower(param)
       view = viewSet(view,'corticalMaxDepth',corticalDepth(2));
     end
     
-  case {'corticalmindepth'}
+  case {'corticalmindepth','curcorticalmindepth','basecorticalmindepth'}
     % corticalmindepth = viewSet(view,'corticalmindepth',value);
-      corticalDepthBins = viewGet(view,'corticalDepthBins');
-      val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
-      view.curslice.corticalDepth(1) = val;
-      mlrGuiSet(view,'corticalMinDepth',val);
+    % corticaldepth = viewSet(view,'curcorticalmindepth',value);
+    % corticaldepth = viewSet(view,'basecorticalmindepth',value);
+      curBase = viewGet(view,'curBase');
+      if (curBase > 0) 
+        corticalDepthBins = mrGetPref('corticalDepthBins');
+        val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
+        view.baseVolumes(curBase).curCorticalDepth(1) = val;
+        mlrGuiSet(view,'corticalMinDepth',val);
+      end
     
-  case {'corticalmaxdepth'}
+  case {'corticalmaxdepth','curcorticalmaxdepth','basecorticalmaxdepth'}
     % corticalmaxdepth = viewSet(view,'corticalmaxdepth',value);
-      corticalDepthBins = viewGet(view,'corticalDepthBins');
-      val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
-      view.curslice.corticalDepth(2) = val;
-      mlrGuiSet(view,'corticalMaxDepth',val);
+    % corticaldepth = viewSet(view,'curcorticalmaxdepth',value);
+    % corticaldepth = viewSet(view,'basecorticalmaxdepth',value);
+      curBase = viewGet(view,'curBase');
+      if (curBase > 0) 
+        corticalDepthBins = mrGetPref('corticalDepthBins');
+        val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
+        view.baseVolumes(curBase).curCorticalDepth(2) = val;
+        mlrGuiSet(view,'corticalMaxDepth',val);
+      end
       
   case{'curcoords'}
     % view = viewSet(view,'curcoords');
@@ -870,14 +875,7 @@ switch lower(param)
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
     numBases = viewGet(view,'numberofBaseVolumes');
-    curBase = viewGet(view,'curBase');
     sliceOrientation = viewGet(view,'sliceOrientation');
-    % set the current state of the gui in the base
-    if (curBase > 0) & (curBase <= numBases)
-      if viewGet(view,'baseType');
-        view.baseVolumes(curBase).curCorticalDepth = viewGet(view,'corticalDepth');
-      end
-    end
     % now switch to new base
     if (baseNum > 0) & (baseNum <= numBases)
       view.curBase = baseNum;
@@ -916,9 +914,10 @@ switch lower(param)
 	mlrGuiSet(view,'multiAxis',viewGet(view,'baseMultiAxis',baseNum));
       else %flat and surfaces
         baseCorticalDepth = viewGet(view,'baseCorticalDepth',baseNum);
-        if isempty(baseCorticalDepth)
-          corticalDepthBins=viewGet(view,'corticaldepthbins');
-          baseCorticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
+        if isempty(baseCorticalDepth) %a new base might have an empty cortical depth field
+          %set the cortical depth to the centre of the cortical ribbon
+          corticalDepthBins=mrGetPref('corticalDepthBins');
+          baseCorticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1); 
         end
         view = viewSet(view,'corticalDepth',baseCorticalDepth);
       end

@@ -49,7 +49,7 @@ switch(baseType)
    case 1   %the base is a flat map
       sliceIndex = viewGet(thisView,'baseSliceIndex',baseNum);
       if ieNotDefined('depthBins')
-         depthBins = viewGet(thisView,'corticalDepthBins');
+         depthBins = mrGetPref('corticalDepthBins');
       end
       if ieNotDefined('rotateAngle')
          rotateAngle = viewGet(thisView,'rotate');

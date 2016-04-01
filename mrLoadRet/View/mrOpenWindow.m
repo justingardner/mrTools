@@ -125,10 +125,7 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       view = viewSet(view,'curBase',mrLastView.curBase);
       % change scan
       view = viewSet(view,'curScan',mrLastView.curScan);
-      % change slice/corticalDepth
-      if viewGet(view,'baseType') && isfield(mrLastView.curslice,'corticalDepth')
-        view = viewSet(view,'corticalDepth',mrLastView.curslice.corticalDepth);
-      end
+      % set surfaceOnVolume on/off
       view = viewSet(view,'surfaceOnVolume',viewGet(mrLastView,'surfaceOnVolume'));
     end
     % read analyses

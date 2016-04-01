@@ -1570,7 +1570,7 @@ switch lower(param)
     n = viewGet(view,'numberofbasevolumes');
     % get number of cortical depth bins
     if ieNotDefined('varargin') || (length(varargin)<2)
-      corticalDepths = 0:1/(viewGet(view,'corticalDepthBins')-1):1;
+      corticalDepths = 0:1/(mrGetPref('corticalDepthBins')-1):1;
     else
       corticalDepths = varargin{2};
     end
@@ -1699,12 +1699,32 @@ switch lower(param)
     else
       disp(sprintf('(viewGet:baseRawSlice) baseNum: %i out of range',b));
     end
-  case {'basecorticaldepth'}
-    % baseslice = viewGet(view,'baseCorticalDepth',[baseNum])
+  case {'basecorticaldepth','corticaldepth','curcorticaldepth'}
+    % corticaldepth = viewGet(view,'corticaldepth',[baseNum]);
+    % corticaldepth = viewGet(view,'basecorticaldepth',[baseNum]);
+    % corticaldepth = viewGet(view,'curcorticaldepth',[baseNum]);
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
-      val = view.baseVolumes(b).curCorticalDepth;
+      val = sort(view.baseVolumes(b).curCorticalDepth);
+    end
+  case {'corticalmindepth','basecorticalmindepth','mincorticaldepth'}
+    % corticalmindepth = viewGet(view,'corticalmindepth',[baseNum])
+    % corticalmindepth = viewGet(view,'basecorticalmindepth',[baseNum])
+    % corticalmindepth = viewGet(view,'mincorticaldepth',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = min(view.baseVolumes(b).curCorticalDepth);
+    end
+  case {'corticalmaxdepth','basecorticalmaxdepth','maxcorticaldepth'}
+    % corticalmaxdepth = viewGet(view,'corticalmaxdepth',[baseNum]);
+    % corticalmaxdepth = viewGet(view,'basecorticalmaxdepth',[baseNum]);
+    % corticalmaxdepth = viewGet(view,'maxcorticaldepth',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = max(view.baseVolumes(b).curCorticalDepth);
     end
   case {'basesliceorientation','sliceorientation'}
     % basesliceOrientation = viewGet(view,'baseSliceOrientation',[baseNum])
@@ -2726,7 +2746,7 @@ switch lower(param)
     baseNaNsColor = mrGetPref('baseNaNsColor');
     % only use the corticalDepth if this is a flat
     if viewGet(view,'baseType')
-      corticalDepthBins = viewGet(view,'corticalDepthBins');
+      corticalDepthBins = mrGetPref('corticalDepthBins');
     else
       corticalDepthBins = 0;
     end
@@ -4195,47 +4215,6 @@ switch lower(param)
 	  val = 360-get(handles.rotateSlider,'Value');
 	end
       end	  
-    end
-    
-  case {'corticaldepthbins'}
-    % corticaldepthBins = viewGet(view,'corticaldepthBins');
-    val = mrGetPref('corticalDepthBins');
-    
-  case {'corticaldepth'}
-    % corticaldepth = viewGet(view,'corticaldepth');
-    val = sort([viewGet(view,'corticalMinDepth') viewGet(view,'corticalMaxDepth')]);
-    
-  case {'corticalmindepth'}
-    % corticalmindepth = viewGet(view,'corticalmindepth');
-    if isfield(view.curslice,'corticalDepth')
-      val = min(view.curslice.corticalDepth);
-    else
-      fig = viewGet(view,'fignum');
-      if ~isempty(fig)
-        handles = guidata(fig);
-        val = get(handles.corticalDepthSlider,'Value');
-    else
-      corticalDepthBins=viewGet(view,'corticaldepthbins');
-      val=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
-      end
-    end
-    
-  case {'corticalmaxdepth'}
-    % corticalmaxdepth = viewGet(view,'corticalmaxdepth');
-    if isfield(view.curslice,'corticalDepth')
-      val = max(view.curslice.corticalDepth);
-    else
-      fig = viewGet(view,'fignum');
-      if ~isempty(fig)
-        handles = guidata(fig);
-        if isfield(handles,'corticalMaxDepthSlider')
-          val = get(handles.corticalMaxDepthSlider,'Value');
-        else
-          val = [];
-        end
-      else
-        val = [];
-      end
     end
     
   case {'cursliceoverlaycoords'}

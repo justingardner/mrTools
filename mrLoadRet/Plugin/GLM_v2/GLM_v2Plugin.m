@@ -81,13 +81,13 @@ switch action
     mlrAdjustGUI(thisView,'set','corticalDepth','position',       [0.02    0.815   0.07   0.055 ]);
     mlrAdjustGUI(thisView,'set','corticalDepth','fontSize',checkFontSize);
     mlrAdjustGUI(thisView,'set','corticalDepthSlider','position', [0.095   0.845   0.135  sliderHeight ]);
-    mlrAdjustGUI(thisView,'set','corticalDepthSlider','SliderStep',min(1/viewGet(thisView,'corticalDepthBins')*[1 3],1));
+    mlrAdjustGUI(thisView,'set','corticalDepthSlider','SliderStep',min(1/mrGetPref('corticalDepthBins')*[1 3],1));
     mlrAdjustGUI(thisView,'set','corticalDepthText','position',   [0.24    0.845   0.04   textEditHeight]);
     mlrAdjustGUI(thisView,'set','corticalDepthText','fontSize',controlFontSize);
     mlrAdjustGUI(thisView,'set','corticalDepthText','BackgroundColor', get(0,'defaultUicontrolBackgroundColor'));
-    corticalDepthBins=viewGet(thisView,'corticaldepthbins');
+    corticalDepthBins=mrGetPref('corticalDepthBins');
     corticalDepth=round((corticalDepthBins-1)/2)/(corticalDepthBins-1);
-    mlrAdjustGUI(thisView,'add','control','corticalMaxDepthSlider','SliderStep',min(1/(viewGet(thisView,'corticalDepthBins')-1)*[1 3],1),...
+    mlrAdjustGUI(thisView,'add','control','corticalMaxDepthSlider','SliderStep',min(1/(mrGetPref('corticalDepthBins')-1)*[1 3],1),...
         'Callback',@corticalMaxDepthSlider_Callback,'visible',corticalDepthVisibility,'value',corticalDepth,...
                                      'style','slider','position', [0.095   0.82    0.135  sliderHeight ]);
     mlrAdjustGUI(thisView,'add','control','corticalMaxDepthText',...
@@ -499,7 +499,7 @@ if viewGet(thisView,'basetype')
     case 'as displayed'
       sliceList = [];
     case 'one image per depth'
-      depthBin = 1/(viewGet(thisView,'corticaldepthBins')-1);
+      depthBin = 1/(mrGetPref('corticalDepthBins')-1);
       depth(1) = viewGet(thisView,'corticalmindepth');
       depth(2) = viewGet(thisView,'corticalmaxdepth');
       depth = sort(depth);

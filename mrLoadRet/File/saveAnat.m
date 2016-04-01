@@ -49,7 +49,7 @@ switch viewGet(view,'baseType',anatomyNum)
   case 1
     %if flat, rotate and repeat map number-of-depths times
     repeatVector = [1 1 1];
-    repeatVector(viewGet(view,'basesliceindex',anatomyNum))= viewGet(view,'corticaldepthBins',anatomyNum);
+    repeatVector(viewGet(view,'basesliceindex',anatomyNum))= mrGetPref('corticalDepthBins');
     nanData=isnan(baseVolume.data);
     data = repmat(imrotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop'),repeatVector);
     data(repmat(nanData,repeatVector))=NaN;

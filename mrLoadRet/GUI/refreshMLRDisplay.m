@@ -295,7 +295,7 @@ end
 if size(base.coords,4)>1
   % code allows for averaging across cortical depth
   corticalDepth = viewGet(v,'corticalDepth');
-  corticalDepthBins = viewGet(v,'corticalDepthBins');
+  corticalDepthBins = mrGetPref('corticalDepthBins');
   corticalDepths = 0:1/(corticalDepthBins-1):1;
   slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
   curSliceBaseCoords = mean(base.coords(:,:,:,slices),4);
@@ -685,7 +685,7 @@ if ~isempty(roiBaseCoords)
     
     if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
       corticalDepth = viewGet(view,'corticalDepth');
-      corticalDepthBins = viewGet(view,'corticalDepthBins');
+      corticalDepthBins = mrGetPref('corticalDepthBins');
       corticalDepths = 0:1/(corticalDepthBins-1):1;
       slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
       nDepths = nnz(slices);
