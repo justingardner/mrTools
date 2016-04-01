@@ -4182,39 +4182,24 @@ switch lower(param)
     % since surfaces aren't rotated in the
     % same way, they are rotated through
     % rotateSurface
+    val = 0;
     if baseType <= 1
-        curBase = viewGet(view,'curBase');
-        if ~isempty(curBase)
-          val = view.baseVolumes(curBase).rotate;
-        else
-          val = 0;
-        end
-    else
-      val = 0;
-    end
-  case {'rotatesurface'}
-    % rotate = viewGet(view,'rotateSurface');
-    baseType = viewGet(view,'baseType');
-    if baseType == 2
-      fig = viewGet(view,'fignum');
-      if ~isempty(fig)
-        handles = guidata(fig);
-        % 360- is so that the anatomy rotates correct direction
-        val = 360-get(handles.rotateSlider,'Value');
-      else
-        val = 0;
+      curBase = viewGet(view,'curBase');
+      if ~isempty(curBase)
+        val = view.baseVolumes(curBase).rotate;
       end
-    elseif baseType == 0
-      val = 0;
-      % normally does not apply to inplanes, but if we are displaying
-      % all planes of anatomy then it applies to the 3D slice view
-      if viewGet(view,'baseMultiAxis')>0
-	fig = viewGet(view,'fignum');
-	if ~isempty(fig)
-	  handles = guidata(fig);
-	  val = 360-get(handles.rotateSlider,'Value');
-	end
-      end	  
+    end
+  case {'rotatesurface','surfacerotate'}
+    % rotate = viewGet(view,'rotateSurface');
+    % rotate = viewGet(view,'surfacerotate');
+    baseType = viewGet(view,'baseType');
+    % surfacerotate applies to surfaces or volumes in 3D or multislice view
+    val = 0;
+    if baseType == 2 || (baseType == 0 && viewGet(view,'baseMultiAxis')>0)
+      curBase = viewGet(view,'curBase');
+      if ~isempty(curBase)
+        val = view.baseVolumes(curBase).surfaceRotate;
+      end
     end
     
   case {'cursliceoverlaycoords'}

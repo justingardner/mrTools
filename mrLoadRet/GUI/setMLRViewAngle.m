@@ -35,7 +35,7 @@ if baseTilt == 90,baseTilt = 89;end
 if baseTilt == 270,baseTilt = 279;end
 
 % rotate the view, using the *function* view
-view(axisHandle,viewGet(v,'rotateSurface'),-baseTilt);
+view(axisHandle,360-viewGet(v,'rotateSurface'),-baseTilt);
 
 % change the camera position to avoid the volume
 % flipping back and forth, another strange matlab thing
