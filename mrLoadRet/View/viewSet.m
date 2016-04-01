@@ -789,77 +789,6 @@ switch lower(param)
     end
     mlrGuiSet(view,'basePopup',stringList);
 
-  case{'rotate'}
-    % view = viewSet(view,'rotate',rotation);
-    curBase = viewGet(view,'curBase');
-    numBases = viewGet(view,'numberofBaseVolumes');
-    baseType = viewGet(view,'baseType');
-    baseMultiAxis = viewGet(view,'baseMultiAxis');
-    if (curBase > 0) & (curBase <= numBases)
-      % surfaces (and 3D multiBase) are rotated differently, 
-      % the rotate field causes surfaceRotate to
-      % change rather than rotate. So we
-      % need to set the appropriate field
-      if (baseType == 1) || ((baseType==0) && (baseMultiAxis==0))
-	view.baseVolumes(curBase).rotate = val;
-      else
-	view.baseVolumes(curBase).surfaceRotate = val;
-      end
-	mlrGuiSet(view,'rotate',val);
-      
-    end
-      
-  case{'tilt'}
-    % view = viewSet(view,'tilt',tilt);
-    curBase = viewGet(view,'curBase');
-    numBases = viewGet(view,'numberofBaseVolumes');
-    baseType = viewGet(view,'baseType');
-    if (curBase > 0) & (curBase <= numBases)
-      % surfaces (or 3D's when multiaxis are shown) 
-      % are the ones that can be tilted.
-      if (baseType == 2) || ((baseType==0) && (viewGet(view,'baseMultiAxis')>0))
-	view.baseVolumes(curBase).tilt = val;
-	mlrGuiSet(view,'baseTilt',val);
-      end
-    end
-    
-  case {'corticaldepth','curcorticaldepth','basecorticaldepth'}
-    % corticaldepth = viewSet(view,'corticaldepth',value);
-    % corticaldepth = viewSet(view,'curcorticaldepth',value);
-    % corticaldepth = viewSet(view,'basecorticaldepth',value);
-    if length(val)==1
-      view = viewSet(view,'corticalMinDepth',val);
-      view = viewSet(view,'corticalMaxDepth',val);
-    elseif length(val)==2
-      corticalDepth=sort(val);
-      view = viewSet(view,'corticalMinDepth',corticalDepth(1));
-      view = viewSet(view,'corticalMaxDepth',corticalDepth(2));
-    end
-    
-  case {'corticalmindepth','curcorticalmindepth','basecorticalmindepth'}
-    % corticalmindepth = viewSet(view,'corticalmindepth',value);
-    % corticaldepth = viewSet(view,'curcorticalmindepth',value);
-    % corticaldepth = viewSet(view,'basecorticalmindepth',value);
-      curBase = viewGet(view,'curBase');
-      if (curBase > 0) 
-        corticalDepthBins = mrGetPref('corticalDepthBins');
-        val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
-        view.baseVolumes(curBase).curCorticalDepth(1) = val;
-        mlrGuiSet(view,'corticalMinDepth',val);
-      end
-    
-  case {'corticalmaxdepth','curcorticalmaxdepth','basecorticalmaxdepth'}
-    % corticalmaxdepth = viewSet(view,'corticalmaxdepth',value);
-    % corticaldepth = viewSet(view,'curcorticalmaxdepth',value);
-    % corticaldepth = viewSet(view,'basecorticalmaxdepth',value);
-      curBase = viewGet(view,'curBase');
-      if (curBase > 0) 
-        corticalDepthBins = mrGetPref('corticalDepthBins');
-        val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
-        view.baseVolumes(curBase).curCorticalDepth(2) = val;
-        mlrGuiSet(view,'corticalMaxDepth',val);
-      end
-      
   case{'currentbase','curbase','curanat'}
     % view = viewSet(view,'currentbase',baseNum);
     baseNum = val;
@@ -948,17 +877,185 @@ switch lower(param)
       end
     end
     
+  case {'basecurslice','baseslice','curslice', 'currentslice'}
+    % view = viewSet(view,'basecurslice',sliceNum,[baseNum]);
+    % view = viewSet(view,'baseslice',sliceNum,[baseNum]);
+    % view = viewSet(view,'curSlice',sliceNum,[baseNum]);
+    % view = viewSet(view,'currentslice',sliceNum,[baseNum]);
+    baseDims = viewGet(view,'baseDims');
+    sliceIndex = viewGet(view,'basesliceindex');
+    if ~isempty(baseDims)
+      nSlices = baseDims(sliceIndex);
+    else
+      nSlices = 0;
+    end
+    if (val > 0) && (val <= nSlices)
+      curSlice = viewGet(view,'curSlice');
+      if isempty(curSlice) || curSlice ~= val
+	mlrGuiSet(view,'slice',val);
+	% set in base
+	baseNum = getBaseNum(view,varargin);
+	numBases = viewGet(view,'numberofBaseVolumes');
+	if (baseNum > 0) & (baseNum <= numBases)
+	  % set curCoords in base
+	  view.baseVolumes(baseNum).curCoords(sliceIndex) = val;
+	end
+      end
+    else
+      disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,nSlices));
+    end
+    
+  case {'basesliceorientation','sliceorientation','basesliceindex'}
+   % view = viewSet(view,'basesliceorientation',n,[baseNum]);
+   % view = viewSet(view,'sliceorientation',n,[baseNum]);
+   % view = viewSet(view,'basesliceindex',n,[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum)
+      if ~isscalar(val)
+        switch val
+          case 'sagittal'
+            val = 1;
+          case 'coronal'
+            val = 2;
+          case 'axial'
+            val = 3;
+        end
+      end
+      if isequal(lower(param),'basesliceindex') %if setting the baseslice index, 
+        %then need to take the base permutation into account
+        permutation = viewGet(view,'baseVolPermutation',baseNum);
+        switch val
+          case 1   % Sagittal
+            [m,sliceOrientation] = max(permutation' * [1 0 0]');
+          case 2   % Coronal
+            [m,sliceOrientation] = max(permutation' * [0 1 0]');
+          case 3   % Axial
+            [m,sliceOrientation] = max(permutation' * [0 0 1]');
+        end
+      else
+        sliceOrientation = val;
+      end
+      if (sliceOrientation > 0) && (sliceOrientation <= 3)
+        %set slice orientation in base
+        view.baseVolumes(baseNum).sliceOrientation = sliceOrientation;
+        % Update slice and nSlices
+        if ~isempty(viewGet(view,'fignum')) && ~viewGet(view,'baseType',baseNum)
+          mlrGuiSet(view,'sliceOrientation',sliceOrientation);
+          baseDims = viewGet(view,'basedims',baseNum);
+          sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+          nSlices = baseDims(sliceIndex);
+          coords = viewGet(view,'baseCurCoords',baseNum);
+          slice = coords(sliceOrientation);
+          view = viewSet(view,'curSlice',min(slice,nSlices));
+        %	view = viewSet(view,'curSlice',slice);
+          mlrGuiSet(view,'nSlices',nSlices);
+          mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
+        end
+      end
+    end
+    
+  case{'baserotate','rotate'}
+    % view = viewSet(view,'rotate',rotation,[baseNum]);
+    % view = viewSet(view,'baserotate',rotation,[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    numBases = viewGet(view,'numberofBaseVolumes');
+    baseType = viewGet(view,'baseType');
+    baseMultiAxis = viewGet(view,'baseMultiAxis');
+    if (baseNum > 0) & (baseNum <= numBases)
+      % surfaces (and 3D multiBase) are rotated differently, 
+      % the rotate field causes surfaceRotate to
+      % change rather than rotate. So we
+      % need to set the appropriate field
+      if (baseType == 1) || ((baseType==0) && (baseMultiAxis==0))
+	view.baseVolumes(baseNum).rotate = val;
+      else
+	view.baseVolumes(baseNum).surfaceRotate = val;
+      end
+	mlrGuiSet(view,'rotate',val);
+      
+    end
+      
+  case{'basetilt','tilt'}
+    % view = viewSet(view,'tilt',tilt,[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    numBases = viewGet(view,'numberofBaseVolumes');
+    baseType = viewGet(view,'baseType');
+    if (baseNum > 0) & (baseNum <= numBases)
+      % surfaces (or 3D's when multiaxis are shown) 
+      % are the ones that can be tilted.
+      if (baseType == 2) || ((baseType==0) && (viewGet(view,'baseMultiAxis')>0))
+	view.baseVolumes(baseNum).tilt = val;
+	mlrGuiSet(view,'baseTilt',val);
+      end
+    end
+    
+  case {'basecorticaldepth','corticaldepth','curcorticaldepth'}
+    % corticaldepth = viewSet(view,'corticaldepth',value,[baseNum]);
+    % corticaldepth = viewSet(view,'curcorticaldepth',value,[baseNum]);
+    % corticaldepth = viewSet(view,'basecorticaldepth',value,[baseNum]);
+    if isempty(varargin)
+      if length(val)==1
+        view = viewSet(view,'corticalMinDepth',val);
+        view = viewSet(view,'corticalMaxDepth',val);
+      elseif length(val)==2
+        corticalDepth=sort(val);
+        view = viewSet(view,'corticalMinDepth',corticalDepth(1));
+        view = viewSet(view,'corticalMaxDepth',corticalDepth(2));
+      end
+    else
+      if length(val)==1
+        view = viewSet(view,'corticalMinDepth',val,varargin{1});
+        view = viewSet(view,'corticalMaxDepth',val,varargin{1});
+      elseif length(val)==2
+        corticalDepth=sort(val);
+        view = viewSet(view,'corticalMinDepth',corticalDepth(1),varargin{1});
+        view = viewSet(view,'corticalMaxDepth',corticalDepth(2),varargin{1});
+      end
+    end     
+    
+  case {'basecorticalmindepth','basemincorticaldepth','corticalmindepth','curcorticalmindepth'}
+    % corticalmindepth = viewSet(view,'corticalmindepth',value,[baseNum]);
+    % corticalmindepth = viewSet(view,'curcorticalmindepth',value,[baseNum]);
+    % corticalmindepth = viewSet(view,'basecorticalmindepth',value,[baseNum]);
+    % corticalmindepth = viewSet(view,'basemincorticaldepth',value,[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    if (baseNum > 0) 
+      corticalDepthBins = mrGetPref('corticalDepthBins');
+      val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
+      view.baseVolumes(baseNum).curCorticalDepth(1) = val;
+      if (baseNum == viewGet(view, 'curBase'))
+        mlrGuiSet(view,'corticalMinDepth',val);
+      end
+    end
+    
+  case {'basecorticalmaxdepth','basemaxcorticaldepth','corticalmaxdepth','curcorticalmaxdepth'}
+    % corticalmaxdepth = viewSet(view,'corticalmaxdepth',value,[baseNum]);
+    % corticalmaxdepth = viewSet(view,'curcorticalmaxdepth',value,[baseNum]);
+    % corticalmaxdepth = viewSet(view,'basecorticalmaxdepth',value,[baseNum]);
+    % corticalmaxdepth = viewSet(view,'basemaxcorticaldepth',value,[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    if (baseNum > 0) 
+      corticalDepthBins = mrGetPref('corticalDepthBins');
+      val = round(val*(corticalDepthBins-1))/(corticalDepthBins-1);
+      view.baseVolumes(baseNum).curCorticalDepth(2) = val;
+      if (baseNum == viewGet(view, 'curBase'))
+        mlrGuiSet(view,'corticalMaxDepth',val);
+      end
+    end
+      
   case{'basecurcoords','curcoords'}
-    % view = viewSet(view,'basecurcoords',[baseNum]);
-    % view = viewSet(view,'curcoords',[baseNum]);
+    % view = viewSet(view,'basecurcoords',value,[baseNum]);
+    % view = viewSet(view,'curcoords',value,[baseNum]);
     baseNum = getBaseNum(view,varargin);
     numBases = viewGet(view,'numberofBaseVolumes');
     if (baseNum > 0) && (baseNum <= numBases)
       % set curCoords in base
       view.baseVolumes(baseNum).curCoords = val;
+      % update gui
+      if (baseNum == viewGet(view, 'curBase'))
+        mlrGuiSet(view,'curCoords',val);
+      end
     end
-    % update gui
-    mlrGuiSet(view,'curCoords',val);
     
   case{'basecoordmappath'}
     % view = viewSet(view,'basecoordmapdir',baseCoordMapPath,[baseNum]);
@@ -1025,7 +1122,6 @@ switch lower(param)
     % or can be a triplet [1 0 0]
     % or can be a different triplet color for each voxel in the base
     c = val;
-    curBase = viewGet(view, 'curBase');
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).overlay = c;
@@ -1034,7 +1130,6 @@ switch lower(param)
   case{'baseoverlayalpha'}
     % view = viewSet(view,'baseOverlayAlpha',alpha,[baseNum]);
     overlayAlpha = val;
-    curBase = viewGet(view, 'curBase');
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).overlayAlpha = overlayAlpha;
@@ -1043,7 +1138,6 @@ switch lower(param)
   case{'basealpha'}
     % view = viewSet(view,'baseAlpha',alpha,[baseNum]);
     alpha = val;
-    curBase = viewGet(view, 'curBase');
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).alpha = alpha;
@@ -1052,7 +1146,6 @@ switch lower(param)
  case{'basehandle'}
     % view = viewSet(view,'baseHandle',h,[baseNum]);
     h = val;
-    curBase = viewGet(view, 'curBase');
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).h = h;
@@ -1060,7 +1153,6 @@ switch lower(param)
 
  case{'basemultidisplay'}
     % view = viewSet(view,'baseMultiDisplay',multiDisplay,[baseNum]);
-    curBase = viewGet(view, 'curBase');
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).multiDisplay = val;
@@ -1081,7 +1173,6 @@ switch lower(param)
 
   case{'basedisplayoverlay'}
     % view = viewSet(view,'baseDisplayOverlay',displayOverlay,[baseNum]);
-    curBase = viewGet(view, 'curBase');
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).displayOverlay = val;
@@ -2282,30 +2373,6 @@ switch lower(param)
     % view = viewSet(view,'figure',handle);
     view.figure = val;
 
-  case {'curslice', 'currentslice','basecurslice','baseslice'}
-    % view = viewSet(view,'curSlice',sliceNum);
-    baseDims = viewGet(view,'baseDims');
-    sliceIndex = viewGet(view,'basesliceindex');
-    if ~isempty(baseDims)
-      nSlices = baseDims(sliceIndex);
-    else
-      nSlices = 0;
-    end
-    if (val > 0) && (val <= nSlices)
-      curSlice = viewGet(view,'curSlice');
-      if isempty(curSlice) || curSlice ~= val
-	mlrGuiSet(view,'slice',val);
-	% set in base
-	curBase = viewGet(view,'curBase');
-	numBases = viewGet(view,'numberofBaseVolumes');
-	if (curBase > 0) & (curBase <= numBases)
-	  % set curCoords in base
-	  view.baseVolumes(curBase).curCoords(sliceIndex) = val;
-	end
-      end
-    else
-      disp(sprintf('(viewSet) Slice %i out of range: [1 %i]',val,nSlices));
-    end
   case {'curslicebasecoords'}
     % view = viewSet(view,'curslicebasecoords',array);
     view.curslice.baseCoords = val;
@@ -2313,53 +2380,6 @@ switch lower(param)
  case {'cursliceoverlaycoords'}
     % view = viewSet(view,'cursliceoverlaycoords',array);
     view.curslice.overlayCoords = val;
-
-  case {'basesliceorientation','sliceorientation','basesliceindex'}
-   % view = viewSet(view,'basesliceorientation','sliceOrientation',n);
-    baseNum = viewGet(view,'currentBase');
-    if ~isempty(baseNum)
-      if ~isscalar(val)
-        switch val
-          case 'sagittal'
-            val = 1;
-          case 'coronal'
-            val = 2;
-          case 'axial'
-            val = 3;
-        end
-      end
-      if isequal(lower(param),'basesliceindex') %if setting the baseslice index, 
-        %then need to take the base permutation into account
-        permutation = viewGet(view,'baseVolPermutation',baseNum);
-        switch val
-          case 1   % Sagittal
-            [m,sliceOrientation] = max(permutation' * [1 0 0]');
-          case 2   % Coronal
-            [m,sliceOrientation] = max(permutation' * [0 1 0]');
-          case 3   % Axial
-            [m,sliceOrientation] = max(permutation' * [0 0 1]');
-        end
-      else
-        sliceOrientation = val;
-      end
-      if (sliceOrientation > 0) && (sliceOrientation <= 3)
-        %set slice orientation in base
-        view.baseVolumes(baseNum).sliceOrientation = sliceOrientation;
-        % Update slice and nSlices
-        if ~isempty(viewGet(view,'fignum')) && ~viewGet(view,'baseType',baseNum)
-          mlrGuiSet(view,'sliceOrientation',sliceOrientation);
-          baseDims = viewGet(view,'basedims',baseNum);
-          sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
-          nSlices = baseDims(sliceIndex);
-          coords = viewGet(view,'baseCurCoords',baseNum);
-          slice = coords(sliceOrientation);
-          view = viewSet(view,'curSlice',min(slice,nSlices));
-        %	view = viewSet(view,'curSlice',slice);
-          mlrGuiSet(view,'nSlices',nSlices);
-          mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
-        end
-      end
-    end
 
  case {'defaultinterrogators'}
     % view = viewSet(view,'defaultInterrogators',defaultInterrogators,<replaceCurrentDefaultInterrogators>)

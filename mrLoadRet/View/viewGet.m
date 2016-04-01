@@ -1522,7 +1522,7 @@ switch lower(param)
 	    end
 	    % not found, give up
 	    if isempty(subjectDir)
-	      disp(sprintf('(viewGet:baseCoordMapPath) Could not find a matchind subjectDir in %s',volumeDirectory));
+	      disp(sprintf('(viewGet:baseCoordMapPath) Could not find a matching subjectDir in %s',volumeDirectory));
 	    else
 	      % set to return subjectDir in case we don't find the surfRelax directory
 	      val = subjectDir;
@@ -1647,6 +1647,32 @@ switch lower(param)
         val = view.baseVolumes(b).rotate;
       else
 	val = view.baseVolumes(b).surfaceRotate;
+      end
+    end
+  case {'rotate'} 
+    % rotate = viewGet(view,'rotate');
+    baseType = viewGet(view,'baseType');
+    % rotation is dependent on the base type
+    % since surfaces aren't rotated in the
+    % same way, they are rotated through
+    % rotateSurface
+    val = 0;
+    if baseType <= 1
+      curBase = viewGet(view,'curBase');
+      if ~isempty(curBase)
+        val = view.baseVolumes(curBase).rotate;
+      end
+    end
+  case {'rotatesurface','surfacerotate'}
+    % rotate = viewGet(view,'rotateSurface');
+    % rotate = viewGet(view,'surfacerotate');
+    baseType = viewGet(view,'baseType');
+    % surfacerotate applies to surfaces or volumes in 3D or multislice view
+    val = 0;
+    if baseType == 2 || (baseType == 0 && viewGet(view,'baseMultiAxis')>0)
+      curBase = viewGet(view,'curBase');
+      if ~isempty(curBase)
+        val = view.baseVolumes(curBase).surfaceRotate;
       end
     end
   case {'basetilt'}
@@ -4162,32 +4188,6 @@ switch lower(param)
         val = view.analyses{analysisNum}.overlays(overlayNum).clip(2);
       else
         val = 1;
-      end
-    end
-  case {'rotate'}
-    % rotate = viewGet(view,'rotate');
-    baseType = viewGet(view,'baseType');
-    % rotation is dependent on the base type
-    % since surfaces aren't rotated in the
-    % same way, they are rotated through
-    % rotateSurface
-    val = 0;
-    if baseType <= 1
-      curBase = viewGet(view,'curBase');
-      if ~isempty(curBase)
-        val = view.baseVolumes(curBase).rotate;
-      end
-    end
-  case {'rotatesurface','surfacerotate'}
-    % rotate = viewGet(view,'rotateSurface');
-    % rotate = viewGet(view,'surfacerotate');
-    baseType = viewGet(view,'baseType');
-    % surfacerotate applies to surfaces or volumes in 3D or multislice view
-    val = 0;
-    if baseType == 2 || (baseType == 0 && viewGet(view,'baseMultiAxis')>0)
-      curBase = viewGet(view,'curBase');
-      if ~isempty(curBase)
-        val = view.baseVolumes(curBase).surfaceRotate;
       end
     end
     
