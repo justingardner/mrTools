@@ -1706,7 +1706,7 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).curCorticalDepth;
     end
-  case {'basesliceorientation'}
+  case {'basesliceorientation','sliceorientation'}
     % basesliceOrientation = viewGet(view,'baseSliceOrientation',[baseNum])
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
@@ -4238,9 +4238,6 @@ switch lower(param)
       end
     end
     
-  case {'sliceorientation'}
-    % sliceorientation = viewGet(view,'sliceorientation');
-    val = view.sliceOrientation;
   case {'cursliceoverlaycoords'}
     % overlayCoords = viewGet(view,'cursliceoverlaycoords');
     val = view.curslice.overlayCoords;

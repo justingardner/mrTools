@@ -874,7 +874,6 @@ switch lower(param)
     sliceOrientation = viewGet(view,'sliceOrientation');
     % set the current state of the gui in the base
     if (curBase > 0) & (curBase <= numBases)
-      view.baseVolumes(curBase).sliceOrientation = sliceOrientation;
       if viewGet(view,'baseType');
         view.baseVolumes(curBase).curCorticalDepth = viewGet(view,'corticalDepth');
       end
@@ -902,7 +901,11 @@ switch lower(param)
 	baseSliceOrientation = 1;
       end
       if isempty(baseSliceOrientation) %a new volume base might have an empty slice orientation
-        baseSliceOrientation = sliceOrientation; %in this case, use the previous one 
+        if ~isempty(sliceOrientation)
+          baseSliceOrientation = sliceOrientation; %in this case, use the previous one 
+        else
+          baseSliceOrientation = 3; %this is the first loaded base, set to axial
+        end
       end
       % set the slice orientation if there is a valid one saved
       view = viewSet(view,'sliceOrientation',baseSliceOrientation);
@@ -2311,36 +2314,50 @@ switch lower(param)
     % view = viewSet(view,'cursliceoverlaycoords',array);
     view.curslice.overlayCoords = val;
 
-  case {'sliceorientation','basesliceindex'}
-   % view = viewSet(view,'sliceOrientation',n);
-    if ~isscalar(val)
-      switch val
-        case 'sagittal'
-          sliceOrientation = 1;
-        case 'coronal'
-          sliceOrientation = 2;
-        case 'axial'
-          sliceOrientation = 3;
+  case {'basesliceorientation','sliceorientation','basesliceindex'}
+   % view = viewSet(view,'basesliceorientation','sliceOrientation',n);
+    baseNum = viewGet(view,'currentBase');
+    if ~isempty(baseNum)
+      if ~isscalar(val)
+        switch val
+          case 'sagittal'
+            val = 1;
+          case 'coronal'
+            val = 2;
+          case 'axial'
+            val = 3;
+        end
       end
-    else
-      sliceOrientation = val;
-    end
-    if ((sliceOrientation > 0) && (sliceOrientation <= 3))
-      % set slice orientation in view
-      view.sliceOrientation = sliceOrientation;
-      % Update slice and nSlices
-      baseNum = viewGet(view,'currentBase');
-      if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum')) && ~viewGet(view,'baseType',baseNum)
-	mlrGuiSet(view,'sliceOrientation',sliceOrientation);
-	baseDims = viewGet(view,'basedims',baseNum);
-	sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
-	nSlices = baseDims(sliceIndex);
-	coords = viewGet(view,'baseCurCoords',baseNum);
-	slice = coords(sliceOrientation);
-	view = viewSet(view,'curSlice',min(slice,nSlices));
-%	view = viewSet(view,'curSlice',slice);
-	mlrGuiSet(view,'nSlices',nSlices);
-	mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
+      if isequal(lower(param),'basesliceindex') %if setting the baseslice index, 
+        %then need to take the base permutation into account
+        permutation = viewGet(view,'baseVolPermutation',baseNum);
+        switch val
+          case 1   % Sagittal
+            [m,sliceOrientation] = max(permutation' * [1 0 0]');
+          case 2   % Coronal
+            [m,sliceOrientation] = max(permutation' * [0 1 0]');
+          case 3   % Axial
+            [m,sliceOrientation] = max(permutation' * [0 0 1]');
+        end
+      else
+        sliceOrientation = val;
+      end
+      if (sliceOrientation > 0) && (sliceOrientation <= 3)
+        %set slice orientation in base
+        view.baseVolumes(baseNum).sliceOrientation = sliceOrientation;
+        % Update slice and nSlices
+        if ~isempty(viewGet(view,'fignum')) && ~viewGet(view,'baseType',baseNum)
+          mlrGuiSet(view,'sliceOrientation',sliceOrientation);
+          baseDims = viewGet(view,'basedims',baseNum);
+          sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+          nSlices = baseDims(sliceIndex);
+          coords = viewGet(view,'baseCurCoords',baseNum);
+          slice = coords(sliceOrientation);
+          view = viewSet(view,'curSlice',min(slice,nSlices));
+        %	view = viewSet(view,'curSlice',slice);
+          mlrGuiSet(view,'nSlices',nSlices);
+          mlrGuiSet(view,'slice',max(1,min(slice,nSlices)));
+        end
       end
     end
 

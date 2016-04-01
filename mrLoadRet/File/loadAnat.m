@@ -158,13 +158,10 @@ for pathNum = 1:length(pathStr)
     if ~isfield(base,'rotate') || isempty(base.rotate)
       base.rotate = 90;
     end
-    if ~isfield(base,'curSlice') || isempty(base.curSlice)
-      sliceOrientation = viewGet(view,'sliceOrientation');
-      if ~isempty(sliceOrientation) && any(sliceOrientation == [1 2 3])
+    if ~isfield(base,'curCoords') || isempty(base.curSlice)
 	% set current slice to the slice half way through the volume
 	voldim = size(vol);
 	base.curCoords = ceil(voldim/2);
-      end
     end
   else
     % get the nifti header from the mlrImage header
