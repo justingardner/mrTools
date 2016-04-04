@@ -281,9 +281,9 @@ if ~isfield(fitParams,'initParams')
       % parameter names/descriptions and other information for allowing user to set them
       fitParams.paramNames = {fitParams.paramNames{:} 'amp2' 'timelag2','tau2'};
       fitParams.paramDescriptions = {fitParams.paramDescriptions{:} 'Amplitude of second gamma for HDR' 'Timelag for second gamma for HDR','tau for second gamma for HDR'};
-      fitParams.paramIncDec = [fitParams.paramsIncDec(:) 0.1 0.1 0.5];
-      fitParams.paramMin = [fitParams.paramMin(:) 0 0 0];
-      fitParams.paramMax = [fitParams.paramMax(:) inf inf inf];
+      fitParams.paramIncDec = [fitParams.paramIncDec(:)' 0.1 0.1 0.5];
+      fitParams.paramMin = [fitParams.paramMin(:)' 0 0 0];
+      fitParams.paramMax = [fitParams.paramMax(:)' inf inf inf];
       % set min/max and init
       fitParams.minParams = [fitParams.minParams 0 0 0];
       fitParams.maxParams = [fitParams.maxParams inf 6 inf];
