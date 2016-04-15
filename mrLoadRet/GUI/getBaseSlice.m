@@ -54,9 +54,9 @@ if ~isempty(volSize)
   % Rotate coordinates
   if (rotate ~= 0)
     for iDepth = 1:size(x,3) %this is if we're taking several depth bins in a flat map (there will only be one "depth" for volumes)
-      newX(:,:,iDepth) = imrotate(x(:,:,iDepth),rotate,'bilinear',cropType);
-      newY(:,:,iDepth) = imrotate(y(:,:,iDepth),rotate,'bilinear',cropType);
-      newZ(:,:,iDepth) = imrotate(z(:,:,iDepth),rotate,'bilinear',cropType);
+      newX(:,:,iDepth) = imrotate(x(:,:,iDepth),rotate,'nearest',cropType);
+      newY(:,:,iDepth) = imrotate(y(:,:,iDepth),rotate,'nearest',cropType);
+      newZ(:,:,iDepth) = imrotate(z(:,:,iDepth),rotate,'nearest',cropType);
     end
     x=newX;
     y=newY;
