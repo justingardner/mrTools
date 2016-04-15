@@ -54,6 +54,10 @@ if ~isempty(volSize)
   % Rotate coordinates
   if (rotate ~= 0)
     for iDepth = 1:size(x,3) %this is if we're taking several depth bins in a flat map (there will only be one "depth" for volumes)
+      % this is nearest neighbor interpolation for a reason - if we draw ROIs on this, we want
+      % the coordinates to match no matter what rotation is specified. If we use nearest, then we
+      % always keep actualy coordinates from the base anatomy. If we interpolate, all bets are off
+      % and you get little broken pixels in the ROI when you rotate (or convertROICorticalDepth)
       newX(:,:,iDepth) = imrotate(x(:,:,iDepth),rotate,'nearest',cropType);
       newY(:,:,iDepth) = imrotate(y(:,:,iDepth),rotate,'nearest',cropType);
       newZ(:,:,iDepth) = imrotate(z(:,:,iDepth),rotate,'nearest',cropType);
