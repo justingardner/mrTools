@@ -2,7 +2,8 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin)
 % loadROITSeries.m
 %
 %      usage: rois = loadROITSeries(view,<roiname>,<scanList>,<groupNum>,<varargin>)
-%         by: justin gardner
+%         by: justin gardner  
+%             modified by steeve laquitaine  
 %       date: 03/22/07
 %    purpose: load the time series for a roi, without roiname
 %             specified, brings up selection dialog. roiname
@@ -42,8 +43,11 @@ function rois = loadROITSeries(view,roiname,scanList,groupNum,varargin)
 %             of ROI size) see getROICoordinates for more info. Defaults to 0.
 %
 % rois = loadROITSeries(v,[],1,1,'keepNAN',true,'straightXform=1');
-%   
+% 
+%             You can also set the roi directory manually [Steeve 160420]
 %
+% rois = loadROITSeries(v,'V1',[],[],'~/mydir')
+
 % see also tseriesROI
 rois = {};
 
@@ -62,7 +66,12 @@ if ~isview(view)
     return
 end
 % get the roi directory
-roidir = viewGet(view,'roidir');
+getArgs(varargin,{'roidir'});
+
+%when directory is not input get current
+if ieNotDefined('roidir')
+    roidir = viewGet(view,'roidir');
+end
 
 % get group and scan
 if ieNotDefined('groupNum')
@@ -81,8 +90,24 @@ if ieNotDefined('roiname')
   roiname = mlrGetPathStrDialog(viewGet(view,'roiDir'),'Choose one or more ROIs','*.mat','on');
 end
 
-%make into a cell array
-roiname = cellArray(roiname);
+%make cell
+if ~iscell(roiname)
+    roiname = cellArray(roiname);
+end
+
+%make roi name paths
+for i = 1 :length(roiname)  
+    %make absolute roi paths
+    keepcd = cd;
+    cd(roidir)
+    roidir = pwd;              
+    cd(keepcd)
+    roiname{i} = fullfile(roidir,roiname{i});    
+    %add extension if needed
+    if ~strcmp(roiname{i}(end-3:end),'.mat')
+        roiname{i} = [roiname{i} '.mat'];        
+    end        
+end
 
 % set the default arguments. loadType
 % sets the way to load the time series
@@ -103,7 +128,6 @@ getArgs(varargin,{'loadType=block','keepNAN',false,'matchScanNum=[]','matchGroup
 if ~isempty(matchScanNum) && isempty(matchGroupNum)
   matchgroupNum = groupNum;
 end
-
 
 % load the rois in turn
 for roinum = 1:length(roiname)
