@@ -183,15 +183,13 @@ function mlrAnatDBMergeCheck(hObject,eventdata)
 % code-snippet to get the view from the hObject variable. 
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-disp('(mlrAnatDBMergeCheck) Searching for ROIs that fit standards');
+disp(sprintf('\n\n\n\n\n\n\n\n(mlrAnatDBMergeCheck) Searching for ROIs that fit standards'));
 pfxs = {'l','r'};
-% standards = {'V1','V2','V3','V4','V3a','V3b','V7','LO1','LO2','MT'};
-standards = {'V1'};
+standards = {'V1','V2','V3','V4','V3a','V3b','V7','LO1','LO2','MT'};
 % alternates = {'hV4','hMT+'};
 
 % Check for all l/r ROIs and ask to rename
 roiNames = viewGet(v,'roiNames');
-roiNames = {'lV1','lV2','rV1','rv3a','v3b'};
 if isempty(roiNames)
     disp('(mlrAnatDBMergeCheck) No ROIs to check'); return
 end
@@ -206,8 +204,12 @@ for pi = 1:length(pfxs)
             nofind{end+1} = searchfor;
         elseif found==2
             disp(sprintf('(mlrAnatDBMergeCheck) ROI %s appears to be mislabeled as %s.',searchfor,roiNames{idx}));
+                        nofind{end+1} = searchfor;
+
         elseif found==3               
             disp(sprintf('(mlrAnatDBMergeCheck) You have no ROI: %s, you have %s which is similar...',searchfor,roiNames{idx}));
+                        nofind{end+1} = searchfor;
+
         end
     end
 end
@@ -216,16 +218,25 @@ if ~isempty(nofind)
     disp(sprintf('\n(mlrAnatDBMergeCheck) Please define the missing ROIs.\n\t\t\tYour ROIs may be mis-named.'));
     return
 end
+disp(sprintf('(mlrAnatDBMergeCheck) Found all standards'));
+
 
 % Merge lV1+rV1 into V1, etc...
 for si = 1:length(standards)
     cur = standards{si};
     curL = sprintf('%s%s',pfxs{1},standards{si});
     curR = sprintf('%s%s',pfxs{2},standards{si});
-    [found, ~] = checkROIs(roiNames,standards{si},'','');
+    [found, ~] = checkROIs(roiNames,cur,'','');
+    [foundL, ~] = checkROIs(roiNames,curL,'','');
+    [foundR, ~] = checkROIs(roiNames,curR,'','');
     if ~(found==1)
-        disp(sprintf('(mlrAnatDBMergeCheck) No ROI %s found. Computing the union of %s and %s',cur,curL,curR));
-        v = combineROIs(v,curL,curR,'Union',cur);
+        if foundL&&foundR
+            disp(sprintf('(mlrAnatDBMergeCheck) No ROI %s found. Computing the union of %s and %s',cur,curL,curR));
+            v = combineROIs(v,curL,curR,'Union',cur);
+        else
+            disp('Something went wrong...');
+            keyboard
+        end
     else
         disp(sprintf('(mlrAnatDBMergeCheck) ROI %s already exists, skipping',cur));
     end
