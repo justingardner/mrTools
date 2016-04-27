@@ -63,9 +63,11 @@ roiCoords2 = round(xformROIcoords(roiCoords2,roi2roi,roiVoxelSize2,roiVoxelSize1
 coords1 = roiCoords1';
 coords2 = roiCoords2';
 
+action = lower(action);
+
 % Combine
 switch action
-  case 'Intersection'
+  case 'intersection'
      if isempty(coords1)
        newCoords = coords1;
      elseif isempty(coords2)
@@ -73,7 +75,7 @@ switch action
      else       
        newCoords = intersect(coords1,coords2,'rows');
      end
-  case 'Union'
+  case 'union'
      if isempty(coords1)
        newCoords = coords2;
      elseif isempty(coords2)
@@ -81,7 +83,7 @@ switch action
      else       
        newCoords = union(coords1,coords2,'rows');
      end
-  case 'XOR'
+  case 'xor'
      if isempty(coords1)
        newCoords = coords2;
      elseif isempty(coords2)
@@ -89,7 +91,7 @@ switch action
      else       
        newCoords = setxor(coords1,coords2,'rows');
      end
-  case 'A not B'
+  case 'a not b'
      if isempty(coords1)
        newCoords = coords1;
      elseif isempty(coords2)
