@@ -356,6 +356,13 @@ if isempty(fig)
   return;
 end 
 
+% Display colorbar (this should be done before returning when there is a
+% figure, but the slice is not drawn (3D view), otherwise the colorbar
+% won't get drwan/updated
+if dispColorbar
+  displayColorbar(gui,cmap,cbarRange,verbose)
+end
+
 % if we are not displaying then, just return
 % after computing rois
 if isempty(hAxis)
@@ -469,8 +476,18 @@ if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(hAxis,'off');
 if verbose>1,disppercent(inf);,end
 
-% Display colorbar
-if dispColorbar
+% Display ROIs
+nROIs = viewGet(v,'numberOfROIs');
+if nROIs
+  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+else
+  roi = [];
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% displayColorbar 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function displayColorbar(gui,cmap,cbarRange,verbose)
   if isempty(cmap)
     set(gui.colorbar,'Visible','off');
   else
@@ -500,16 +517,6 @@ if dispColorbar
     end
     if verbose>1,disppercent(inf);,end
   end
-end
-
-% Display ROIs
-nROIs = viewGet(v,'numberOfROIs');
-if nROIs
-  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
-else
-  roi = [];
-end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getBaseSurface: gets baseSurface using viewGet, but converts vertices coordinates to
