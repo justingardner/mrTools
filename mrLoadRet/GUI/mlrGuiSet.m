@@ -627,11 +627,11 @@ switch lower(field)
     set(handles.sliceSlider,'Value',value);
     set(handles.sliceText,'String',num2str(value));
   end
+  
  case {'slicetext'}
   % mlrGuiSet(view,'sliceText',value);
   handles.coords(handles.sliceOrientation) = value;
   set(handles.sliceText,'String',num2str(value));
-  view = viewSet(view,'curSlice',value);
 
  case {'corticaldepth'} %this sets a single cortical depth, whether there are one or two sliders
   % mlrGuiSet(view,'corticalDepth',value);
