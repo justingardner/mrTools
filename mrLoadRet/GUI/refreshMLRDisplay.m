@@ -74,10 +74,10 @@ if (baseType == 0) && (baseMultiAxis>0)
     % if we are displaying all slice dimenons and the #d
     if baseMultiAxis == 1
       % display each slice index
-      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,false,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,iSliceIndex==3,verbose,iSliceIndex,curCoords(iSliceIndex));
     else
       % display each slice index
-      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,false,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,iSliceIndex==3,verbose,iSliceIndex,curCoords(iSliceIndex));
     end
   end
 
