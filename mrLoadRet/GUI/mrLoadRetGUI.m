@@ -370,10 +370,8 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(get(hObject,'Value'));
-mlrGuiSet(viewNum,'sliceText',value);
-% set the current slice (get the value from the slider
-% since that will be properly clipped by the mlrGuiSet call above)
-viewSet(view,'curSlice',get(handles.sliceSlider,'Value'));
+mlrGuiSet(viewNum,'sliceText',value); %set slice edit box value
+viewSet(view,'curSlice',value); % set the current slice
 refreshMLRDisplay(viewNum);
 
 function sliceText_Callback(hObject, eventdata, handles)
@@ -386,9 +384,9 @@ view = MLR.views{viewNum};
 value = round(str2num(get(hObject,'String')));
 if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.sliceSlider,'value')));
-else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'slice',value);
-  viewSet(view,'curSlice',value);
+else %otherwise, set the new value in the GUI and then in the view
+  mlrGuiSet(viewNum,'slice',value); %doing this first ensures that the value is not outside the values permitted by the slider
+  viewSet(view,'curSlice',get(handles.sliceSlider,'Value')); %use the value from the slider since it might have been changed by mlrGuiSet
   refreshMLRDisplay(viewNum);
 end
 
