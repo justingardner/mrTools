@@ -194,23 +194,23 @@ if ~isempty(overlayImages)
       case 'normal'
         overlays.range(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
       case 'setRangeToMax'
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
-          overlays.range(1) = max(overlays.range(1),min(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
-          overlays.range(2) = min(max(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(2));
+          overlays.range(iOverlay,1) = max(overlays.range(1),min(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
+          overlays.range(iOverlay,2) = min(max(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(2));
         end
       case 'setRangeToMaxAroundZero'
        if (viewGet(thisView,'baseType') == 0) && viewGet(thisView,'baseMultiAxis')
 	 oneTimeWarning('setRangeToMaxWithMultiAxis','(computeOverlay) !!! Overlay set to setRangeToMaxAroundZero and you are displaying with multiple axis. Note that the colorbar will only be accurate for the axial view. Consider setting Edit/Overlay/Edit OVerlay to setRangeToMaxAcrossSlices. !!!',1);
        end
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
           maxval = max(abs(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
           overlays.range(iOverlay,1) = -maxval;
           overlays.range(iOverlay,2) = maxval;
         end
-      case 'setRangeToMaxAcrossSlices' %this doesn't take into account voxels that would be masked in other slices than the one displayed 
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+      case 'setRangeToMaxAcrossSlices' %this doesn't take into account voxels that would be masked in other slices than the one displayed
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum,scan); 
         maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum,scan);
         if ~isempty(minOverlay)
@@ -220,7 +220,7 @@ if ~isempty(overlayImages)
           overlays.range(iOverlay,2) = min(maxOverlay,overlays.range(2));
         end
       case 'setRangeToMaxAcrossSlicesAndScans' %same here
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum); 
         maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum);
         if ~isempty(minOverlay)
