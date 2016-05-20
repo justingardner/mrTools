@@ -570,10 +570,14 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   end
   % check for minmax violations
   if isfield(gParams.varinfo{varnum},'minmax')
-    if (val < gParams.varinfo{varnum}.minmax(1))
+    % check minimum value (second check is to make sure it has exceeded minimum by more
+    % than a tiny round-off problem)
+    if (val < gParams.varinfo{varnum}.minmax(1)) && ((gParams.varinfo{varnum}.minmax(1)-val) > 10e-12)
       disp(sprintf('(mrParamsDialog) Value %f lower than minimum %f',val,gParams.varinfo{varnum}.minmax(1)));
       val = [];
-    elseif (val > gParams.varinfo{varnum}.minmax(2))
+    % check maximum value (second check is to make sure it has exceeded minimum by more
+    % than a tiny round-off problem)
+    elseif (val > gParams.varinfo{varnum}.minmax(2)) && ((val - gParams.varinfo{varnum}.minmax(1)) > 10e-12)
       disp(sprintf('(mrParamsDialog) Value %f greater than maximum %f',val,gParams.varinfo{varnum}.minmax(2)));
       val = [];
     end
