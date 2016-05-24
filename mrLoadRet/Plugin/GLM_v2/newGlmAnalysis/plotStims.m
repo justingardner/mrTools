@@ -34,7 +34,11 @@ if ieNotDefined('colors')
   colors = randomColors(size(stimOnsets,2));
 end
 
-set(axesHandle,'drawMode','fast');
+if verLessThan('matlab','8.4')
+  set(axesHandle,'drawMode','fast');
+else
+  set(axesHandle,'SortMethod','childorder');
+end
 hold(axesHandle,'on');
 Ylims = get(axesHandle,'Ylim');
 bottom = Ylims(1) - diff(Ylims);
