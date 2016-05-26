@@ -604,10 +604,7 @@ if isempty(pathStr)
 end
 
 % Reload
-%[data,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
-% do not reload data to save memory usage %JB
-data = ALIGN.inplanes;
-hdr = mlrImageReadNiftiHeader(ALIGN.inplanePath);
+[data,hdr] = mlrImageReadNifti(ALIGN.inplanePath);
 
 % Compose xform
 xform = ALIGN.guiXform * ALIGN.xform;
@@ -638,7 +635,7 @@ hdr = cbiSetNiftiSform(hdr,ALIGN.volumeHdr.sform44);
 hdr = cbiSetNiftiQform(hdr,ALIGN.volumeHdr.qform44);
 
 % Save and clear
-[byteswritten,hdr] = mlrImageWriteNifti(pathStr,interpData,hdr);
+mlrImageWriteNifti(pathStr,interpData,hdr);
 clear interpData data
 
 % also save the base structure with the appropriate vol2mag and vol2tal
