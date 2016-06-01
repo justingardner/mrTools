@@ -1,16 +1,16 @@
-% editOverlayGUImrParams.m
+% editOverlayGUI.m
 %
-%        $Id: editOverlayGUImrParams.m 2511 2012-05-11 12:19:53Z julien $	
-%      usage: editOverlayGUImrParams(viewNum)
-%         by: eli merriam
-%       date: 09/04/07
+%        $Id: editOverlayGUI.m 2511 2012-05-11 12:19:53Z julien $	
+%      usage: editOverlayGUI(viewNum)
+%         by: modified from editOverlayGUImrParams by julien besle
+%       date: ca 2010
 %    purpose: 
 %
 function editOverlayGUI(viewNum)
 
 % check arguments
   if ~any(nargin == [1])
-    help editOverlayGuimrParams
+    help editOverlayGUI
     return
   end
   
@@ -107,11 +107,11 @@ minOverlayData = floor(double(viewGet(thisView,'minOverlayData'))*1e6)/1e6;
 maxOverlayData = ceil(double(viewGet(thisView,'maxOverlayData'))*1e6)/1e6;
 
 if isempty(maxOverlayData) || isempty(minOverlayData)
-  mrWarnDlg('(editOverlayGUImrParams) overlay seems to be empty');
+  mrWarnDlg('(editOverlayGUI) overlay seems to be empty');
 % elseif all(abs(params.overlayUsefulRange-[minOverlayData maxOverlayData])<5e-7)
-%   mrWarnDlg('(editOverlayGUImrParams) Useful range is already set to min/max');
+%   mrWarnDlg('(editOverlayGUI) Useful range is already set to min/max');
 elseif all(abs(params.overlayRange-[minOverlayData maxOverlayData])<5e-7)
-  mrWarnDlg('(editOverlayGUImrParams) Useful range is already set to min/max');
+  mrWarnDlg('(editOverlayGUI) Useful range is already set to min/max');
 else
 %   params.overlayUsefulRange = [minOverlayData maxOverlayData];
   params.overlayRange = [minOverlayData maxOverlayData];
@@ -136,7 +136,7 @@ currentOverlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
 
 %iff the overlay has changed, put the old overlay params back
 if ~isequalwithequalnans(oldOverlay,currentOverlay)
-  disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
+  disppercent(-inf,'(editOverlayGUI) Recomputing overlay');
   % set the new overlay
   thisView = viewSet(thisView,'newOverlay', oldOverlay);
   % and refresh
@@ -168,7 +168,7 @@ switch(whichParam)
         end
     end
     if isempty(value)
-      mrWarnDlg('(editOverlayGUImrParams) clip range must be within useful range');
+      mrWarnDlg('(editOverlayGUI) clip range must be within useful range');
     end
   case 'usefulrange'
     %we don't know what value we got so we need to find out first
@@ -187,12 +187,12 @@ switch(whichParam)
         end
     end
     if isempty(value)
-      mrWarnDlg('(editOverlayGUImrParams) useful range must contain clip range');
+      mrWarnDlg('(editOverlayGUI) useful range must contain clip range');
     end  
     %check that min<max
 %     if diff(params.overlayUsefulRange)<0
     if diff(params.overlayRange)<0
-      mrWarnDlg('(editOverlayGUImrParams) useful range must be increasing');
+      mrWarnDlg('(editOverlayGUI) useful range must be increasing');
       value=[];
     end
 end
@@ -308,7 +308,7 @@ function mrCmapCallback(params,viewNum)
   
   %iff the overlay has changed, 
   if ~isequalwithequalnans(newOverlay,currentOverlay)
-    disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
+    disppercent(-inf,'(editOverlayGUI) Recomputing overlay');
     % set the new overlay
     thisView = viewSet(thisView,'newOverlay', newOverlay);
     % and refresh

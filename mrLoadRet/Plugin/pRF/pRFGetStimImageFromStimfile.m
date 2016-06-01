@@ -66,7 +66,7 @@ if isempty(s),return,end
 
 % check that we have a stimfile that is interpretable
 % by this program
-[tf s] = checkStimfile(s);
+[tf s taskNum] = checkStimfile(s);
 if ~tf,return,end
 
 % check to see if a stimImage exists
@@ -75,16 +75,17 @@ if ~isfield(s,'pRFStimImage') || recomputeStimImage
   s.myscreen = makeTraces(s.myscreen,verbose);
 
   % get task variables
-  e = getTaskParameters(s.myscreen,s.task{2});
+  e = getTaskParameters(s.myscreen,s.task{taskNum});
 
   % get some traces of things of interest
   s.time = s.myscreen.time;
-  s.maskPhase = s.myscreen.traces(s.task{2}{1}.maskPhaseTrace,:);
-  s.blank = s.myscreen.traces(s.task{2}{1}.blankTrace,:);
+  s.maskPhase = s.myscreen.traces(s.task{taskNum}{1}.maskPhaseTrace,:);
+  s.blank = s.myscreen.traces(s.task{taskNum}{1}.blankTrace,:);
   s.vol = s.myscreen.traces(1,:);
   s.trialVol = e.trialVolume;
+  s.trialTicknum = e.trialTicknum;
   s.blank = e.randVars.blank;
-  if s.stimulus.stimulusType == 3
+  if any(s.stimulus.stimulusType == [3 4])
     s.barAngle = e.parameter.barAngle;
     s.elementAngle = e.randVars.elementAngle;
   end
@@ -135,9 +136,29 @@ if ~isfield(s,'pRFStimImage') || recomputeStimImage
   [stim.x stim.y] = ndgrid(-imageWidth/2:imageWidth/(screenWidth-1):imageWidth/2,-imageHeight/2:imageHeight/(screenHeight-1):imageHeight/2);
 
   if verbose,disppercent(-inf,'(pRFGetStimImageFromStimfile) Computing stimulus images');end
+  warnOnStimfileMissingInfo = true;
   for iImage = 1:length(stim.t)
     im = createMaskImage(s,stim.t(iImage));
-    if isempty(im),stim=[];return,end
+    % if no image, that probably means the stimfile ended early
+    if isempty(im)
+      % check to see if we are within (arbitrarily) 5% of the end
+      % and use that as a cutoff for asking the user if something drastically
+      % wrong has occurred.
+      if warnOnStimfileMissingInfo
+	if (1-iImage/length(stim.t)) > 0.05
+	  if askuser('Your stimfile is missing information for volume %i of %i. This might be because you have linked the wrong stimfile or that the stim program ended before the scan or that there is some other problem with the stimfile. It would be a good idea to try to fix this cause this may now be generating the wrong stimulus. Continue anyway?',0,1)
+	    warnOnStimfileMissingInfo = false;
+	  else
+	    % user did not agree to continue, bail out
+            stim=[];
+	    return
+	  end
+	end
+      end
+      % just put up the warning
+      disp(sprintf('(pRFGetStimImageFromStimfile) !!! Missing stimulus info for volume %i of %i. Setting to blank image. !!!',iImage,length(stim.t)));
+      im = zeros(screenWidth,screenHeight);
+    end
     stim.im(1:screenWidth,1:screenHeight,iImage) = im;
     if verbose,disppercent(iImage/length(stim.t));end
   end
@@ -190,10 +211,11 @@ firstTimepoint = firstTimepoint(1);
 thisTimepoint = s.time(firstTimepoint)+t;
 thisTimepoint = find(thisTimepoint <= s.time);
 if isempty(thisTimepoint)
-  disp(sprintf('(pRFGetStimImageFromStimfile) Timepoint %0.1fs does not exist in stimfile. This might have happened if you have linked the wrong stimfile with the scan - in which case, setStimfile to change',t));
+  disp(sprintf('(pRFGetStimImageFromStimfile) Timepoint %0.1fs does not exist in stimfile. This might have happened if you have linked the wrong stimfile with the scan - in which case, setStimfile to change stimfile linking',t));
   maskImage = [];
   return
 end
+% get timepoint
 thisTimepoint = thisTimepoint(1);
 
 % get current volume number
@@ -208,6 +230,12 @@ if isempty(thisTrial)
   return;
 end
 thisTrial = thisTrial(end);
+
+% make sure that the timepoint is valid for the trial
+thisTimepoint = max(thisTimepoint,s.trialTicknum(thisTrial));
+if length(s.trialTicknum) > thisTrial
+  thisTimepoint = min(thisTimepoint,s.trialTicknum(thisTrial+1));
+end
 
 % pull out stimulus variable
 global stimulus;
@@ -264,6 +292,13 @@ maskImage((maskImage > 0.51) | (maskImage < 0.49)) = 1;
 maskImage((maskImage < 0.51) & (maskImage > 0.49)) = 0;
 maskImage = maskImage(:,:,1);
 
+% DEBUG CODE - will draw each frame of the stimulus to a figure
+
+%disp(sprintf('Trial %i maskPhase: %i',thisTrial,stimulus.currentMask))
+%mlrSmartfig('pRF','reuse');clf;imagesc(maskImage);
+%title(sprintf('Trial %i maskPhase: %i',thisTrial,stimulus.currentMask))
+%drawnow
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to draw retinotopy stimulus to screen
 % this function has been taken out of mglRetinotopy
@@ -273,7 +308,8 @@ maskImage = maskImage(:,:,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function stimulus = updateRetinotopyStimulus(stimulus,myscreen)
 
-if stimulus.stimulusType == 3
+if any(stimulus.stimulusType == [3 4])
+
   % update the phase of the sliding wedges
   stimulus.phaseNumRect = 1+mod(stimulus.phaseNumRect,stimulus.nRect);
 
@@ -351,8 +387,12 @@ elseif isstruct(stimfile)
     end
     % set myscreen field
     s.myscreen = stimfile;
-  elseif isfield(stimfile,'myscreen')
-    s.myscreen = stimfile.myscreen;
+  % else a variable with myscreen, task and stimulus or pRFStimImage
+  elseif isfield(stimfile,'myscreen') || isfield(stimfile,'pRFStimImage')
+    % copy fields over
+    if isfield(stimfile,'myscreen')
+      s.myscreen = stimfile.myscreen;
+    end
     if isfield(stimfile,'task')
       s.task = stimfile.task;
     end
@@ -365,27 +405,31 @@ elseif isstruct(stimfile)
   end
 end
 
-% check fields
-checkFields = {'myscreen','task','stimulus'};
-for i = 1:length(checkFields)
-  if ~isfield(s,checkFields{i})
-    stimfileName = '';
-    if isfield(s,'myscreen') && isfield(s.myscreen,'stimfile')
-      stimfileName = getLastDir(s.myscreen.stimfile);
+% if you have a pRFStimImage then don't bother with the rest of the fields
+if ~isfield(s,'pRFStimImage')
+  % check fields
+  checkFields = {'myscreen','task','stimulus'};
+  for i = 1:length(checkFields)
+    if ~isfield(s,checkFields{i})
+      stimfileName = '';
+      if isfield(s,'myscreen') && isfield(s.myscreen,'stimfile')
+	stimfileName = getLastDir(s.myscreen.stimfile);
+      end
+      disp(sprintf('(pRFGetStimImageFromStimfile) !!! Missing variable: %s in stimfile %s !!!',checkFields{i},stimfileName));
+      s = [];
+      return
     end
-    disp(sprintf('(pRFGetStimImageFromStimfile) !!! Missing variable: %s in stimfile %s !!!',checkFields{i},stimfileName));
-    s = [];
-    return
   end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %    checkStimfile    %
 %%%%%%%%%%%%%%%%%%%%%%%
-function [tf s] = checkStimfile(s)
+function [tf s taskNum] = checkStimfile(s)
 
 tf = true;
 s = cellArray(s);
+taskNum = [];
 
 stimulusType = [];
 barAngle = [];
@@ -398,19 +442,30 @@ for i = 1:length(s)
     tf = false;
     return
   end
+  % if this has a pRFStimImage then we are ok
+  if isfield(thiss,'pRFStimImage')
+    continue;
+  end
   dispstr = sprintf('%s: vols=%i',thiss.myscreen.stimfile,thiss.myscreen.volnum);
   % first check if this is a retinotpy stimfile - it should
-  % have two tasks the second of which is the mglRetinotopy
-  if (length(thiss.task) < 2) || (~isequal(thiss.task{2}{1}.taskFilename,'mglRetinotopy.m') && ~isequal(thiss.task{2}{1}.taskFilename,'gruRetinotopy.m'))
+  % have a task which is mglRetinotopy
+  taskNum = [];
+  for iTask = 1:2
+    if (length(thiss.task) >= iTask) && (isequal(thiss.task{iTask}{1}.taskFilename,'mglRetinotopy.m') || isequal(thiss.task{iTask}{1}.taskFilename,'gruRetinotopy.m'))
+      taskNum = iTask;
+    end
+  end
+  if isempty(taskNum)
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by mglRetinotopy'));
     tf = false;
+    return
   end
 
   % check for proper saved fields
   missing = '';
-  if ~isfield(thiss.task{2}{1},'randVars') missing = 'randVars';end
-  if ~isfield(thiss.task{2}{1},'parameter') missing = 'parameter';end
+  if ~isfield(thiss.task{taskNum}{1},'randVars') missing = 'randVars';end
+  if ~isfield(thiss.task{taskNum}{1},'parameter') missing = 'parameter';end
   if ~any(strcmp('maskPhase',thiss.myscreen.traceNames)) missing = 'maskPhase';end
   if ~any(strcmp('blank',thiss.myscreen.traceNames)) missing = 'blank';end
   if ~isempty(missing)
@@ -421,7 +476,7 @@ for i = 1:length(s)
   end
 
   % check for necessary variables
-  e = getTaskParameters(thiss.myscreen,thiss.task{2}{1});
+  e = getTaskParameters(thiss.myscreen,thiss.task{taskNum}{1});
 
   % now check for each variable that we need
   varnames = {'blank'};
@@ -439,7 +494,7 @@ for i = 1:length(s)
   if ~isempty(stimulusType) && (stimulusType ~= thiss.stimulusType)
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) !!! Stimfile %s does not match previous one !!! Have you averaged together scans with different stimulus conditions?'));
   end
-  if thiss.stimulus.stimulusType == 3
+  if any(thiss.stimulus.stimulusType == [3 4])
     varval = getVarFromParameters('barAngle',e);
     if ~isempty(barAngle) && ~isequal(varval,barAngle)
       disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) !!! Stimfile %s does not match previous one !!! The barAngles are different! Have you averaged together scans with different stimulus conditions?'));

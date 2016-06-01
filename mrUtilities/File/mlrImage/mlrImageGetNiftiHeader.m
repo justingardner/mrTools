@@ -70,7 +70,7 @@ if isfield(h,'hdr')
   % seem a bit strange (why recreate the nifti header if
   % it already exists as a field) but this is done so that
   % we can get a clean header
-  fieldsToCopyFromOriginalNiftiHeader = {'datatype','endian','bitpix','vox_offset'};
+  fieldsToCopyFromOriginalNiftiHeader = {'datatype','endian','bitpix','vox_offset','xyzt_units'};
   for iField = 1:length(fieldsToCopyFromOriginalNiftiHeader)
     if isfield(h.hdr,fieldsToCopyFromOriginalNiftiHeader{iField})
       hdr.(fieldsToCopyFromOriginalNiftiHeader{iField}) = h.hdr.(fieldsToCopyFromOriginalNiftiHeader{iField});

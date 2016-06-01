@@ -82,7 +82,7 @@ end
 % it means that we have been passed in a "getArgs" type. Otherwise
 % it is the old calling convention in which the order determines what
 % variable is being set
-buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];modal=[];
+buttonWidth = [];callback = [];callbackArg = [];okCallback = [];cancelCallback = [];modal=[];fullWidth = false;
 if (length(otherParams) > 2)
   if ~ischar(otherParams{3})
     % get the arguments the old way, by order
@@ -207,7 +207,12 @@ for i = 1:length(gParams.vars)
       if isnumeric(gParams.varinfo{i}.value)
         dParams.entryValue(i) = gParams.varinfo{i}.value;
       else
-        dParams.entryValue(i) = str2num(gParams.varinfo{i}.value);
+	entryValue = str2num(gParams.varinfo{i}.value);
+	if isempty(entryValue)
+	  dParams.entryValue(i) = 0;
+	else
+	  dParams.entryValue(i) = entryValue;
+	end
       end
       dParams.entryStyle{i} = 'checkbox';
       if isfield(gParams.varinfo{i},'buttonString')
@@ -275,6 +280,11 @@ end
 [figurePosition,dParams,uiParams] = optimizeFigure(gParams.fignum,gParams.figlocstr{1},dParams,uiParams);
 figWidth = figurePosition(3);
 figHeight = figurePosition(4);
+
+% make all entries full width if called for
+if fullWidth
+  dParams.entryWidth(:) = max(dParams.entryWidth);
+end
 
 %cap widths that are more than the max
 dParams.entryWidth(dParams.entryWidth>dParams.allEntriesWidth)=dParams.allEntriesWidth;
@@ -593,9 +603,19 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
       for i = gParams.varinfo{varnum}.controls
         % enable or disable all the controlled fields
         if (val == 0)
-          set(gParams.ui.varentry{i},'Enable','off');
+	  % if set to not, then when this is off the controls is on
+	  if gParams.varinfo{varnum}.controlsNot
+	    set(gParams.ui.varentry{i},'Enable','on');
+	  else
+	    set(gParams.ui.varentry{i},'Enable','off');
+	  end
         else
-          set(gParams.ui.varentry{i},'Enable','on');
+	  % if set to not, then when this is off the controls is on
+	  if gParams.varinfo{varnum}.controlsNot
+	    set(gParams.ui.varentry{i},'Enable','off');
+	  else
+	    set(gParams.ui.varentry{i},'Enable','on');
+	  end
         end
         % now store the value currently being displayed
         if gParams.varinfo{i}.oldControlVal
@@ -729,6 +749,11 @@ if get(fignum,'userdata')
 else  
   global gParams
 
+  % display to text buffer
+  for i = 1:length(gParams.varinfo)
+    disp(sprintf('%s: %s\n',gParams.varinfo{i}.name,gParams.varinfo{i}.description));
+  end
+  
   % turn off menu/title etc.
   set(fignum,'MenuBar','none');
   set(fignum,'NumberTitle','off');
@@ -788,7 +813,9 @@ function helpcloseHandler(varargin)
 global gParams;
 
 set(gParams.fignum(2),'visible','off')
-set(gParams.helpButton,'string','Show Help');
+if ishandle(gParams.helpButton)
+  set(gParams.helpButton,'string','Show Help');
+end
 
 %%%%%%%%%%%%%%%%%%%%
 % callback for close
@@ -1195,7 +1222,6 @@ set(fignum,'Position',figurePosition);
 
 %replace non-set widths by the max width
 dParams.entryWidth(dParams.entryWidth<0)= dParams.allEntriesWidth;
-
 
 %modified num2str to increase the number of decimals for reals
 function value = thisNum2str(value)

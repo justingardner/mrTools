@@ -126,7 +126,7 @@ for iScan = 1:fit.concatInfo.n
   sLength = fit.concatInfo.runTransition(iScan,2) - fit.concatInfo.runTransition(iScan,1) + 1;
   if sLength ~= size(fitParams.stim{iScan}.im,3)
     mrWarnDlg(sprintf('(pRFFit) Data length of %i for scan %i (concatNum:%i) does not match stimfile length %i',fit.concatInfo.runTransition(iScan,2),scanNum,iScan,size(fitParams.stim{iScan}.im,3)));
-    tf = false;
+    %tf = false;
   end
 end
 
@@ -281,9 +281,9 @@ if ~isfield(fitParams,'initParams')
       % parameter names/descriptions and other information for allowing user to set them
       fitParams.paramNames = {fitParams.paramNames{:} 'amp2' 'timelag2','tau2'};
       fitParams.paramDescriptions = {fitParams.paramDescriptions{:} 'Amplitude of second gamma for HDR' 'Timelag for second gamma for HDR','tau for second gamma for HDR'};
-      fitParams.paramIncDec = [fitParams.paramsIncDec(:) 0.1 0.1 0.5];
-      fitParams.paramMin = [fitParams.paramMin(:) 0 0 0];
-      fitParams.paramMax = [fitParams.paramMax(:) inf inf inf];
+      fitParams.paramIncDec = [fitParams.paramIncDec(:)' 0.1 0.1 0.5];
+      fitParams.paramMin = [fitParams.paramMin(:)' 0 0 0];
+      fitParams.paramMax = [fitParams.paramMax(:)' inf inf inf];
       % set min/max and init
       fitParams.minParams = [fitParams.minParams 0 0 0];
       fitParams.maxParams = [fitParams.maxParams inf 6 inf];
@@ -372,7 +372,8 @@ modelResponse = [];residual = [];
 % create the model for each concat
 for i = 1:fitParams.concatInfo.n
   % get model response
-  thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i});
+  nFrames = fitParams.concatInfo.runTransition(i,2);
+  thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
 
   % get a model hrf
   hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
@@ -545,15 +546,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   convolveModelWithStimulus   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function modelResponse = convolveModelWithStimulus(rfModel,stim)
+function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
 
 % get number of frames
-nFrames = size(stim.im,3);
+nStimFrames = size(stim.im,3);
 
 % preallocate memory
 modelResponse = zeros(1,nFrames);
 
-for frameNum = 1:nFrames
+for frameNum = 1:nStimFrames
   % multipy the stimulus frame by frame with the rfModel
   % and take the sum
   modelResponse(frameNum) = sum(sum(rfModel.*stim.im(:,:,frameNum)));
@@ -812,7 +813,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    checkStimForAverages    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNum,stim,concatInfo,ignoreMismatchStimfiles)
+function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNum,stim,concatInfo,stimImageDiffTolerance)
+
+ignoreMismatchStimfiles = false;  
 
 % this function will check for some bad casses (like concat of concats etc)
 % it will also check that all the component scans of an average have the
@@ -822,10 +825,6 @@ function [stim ignoreMismatchStimfiles] = checkStimForAverages(v,scanNum,groupNu
 
 % if not a cell, then ok, return
 if ~iscell(stim),return,end
-
-if nargin < 6
-  ignoreMismatchStimfiles = false;  
-end
 
 % first check for bad shiftList or refverseLIst
 p = viewGet(v,'params',scanNum,groupNum);
@@ -852,7 +851,9 @@ if ~isempty(concatInfo) && (concatInfo.isConcat)
       return;
     end
     % check this next scan
-    [stim{i} ignoreMismatchStimfiles] = checkStimForAverages(v,originalScanNum(i),originalGroupNum(i),stim{i},concatInfo,ignoreMismatchStimfiles);
+    [stim{i} ignoreMismatchStimfiles] = checkStimForAverages(v,originalScanNum(i),originalGroupNum(i),stim{i},concatInfo,stimImageDiffTolerance);
+    % if user has accepted all then set stimImageDiffTOlerance to infinity
+    if isinf(ignoreMismatchStimfiles),stimImageDiffTolerance = inf;end
     if isempty(stim{i}),stim = [];return,end
   end
 else
@@ -883,6 +884,7 @@ else
     % and warn if there are any inconsistencies
     for i = 1:length(stim)
       if ~isequalwithequalnans(stim{1}.im,stim{i}.im)    
+	dispHeader
 	disp(sprintf('(pRFFit:checkStimForAverages) !!! Average for %s:%i component scan %i does not match stimulus for other scans. If you wish to continue then this will use the stimfile associated with the first scan in the average !!!',viewGet(v,'groupName',groupNum),scanNum,originalScanNum(i)));
 	% display which volumes are different
 	diffVols = [];
@@ -891,21 +893,18 @@ else
 	    diffVols(end+1) = iVol;
 	  end
 	end
-	if length(diffVols) < 10
-	  disp(sprintf('(pRFFit) Stimulus files are different at %i vols: %s',length(diffVols),num2str(diffVols)));
-	end
-	% ask user if they want to continue (only if there is a difference of more than 10 vols
-	if ~ignoreMismatchStimfiles && (length(diffVols) > 10)
+	disp(sprintf('(pRFFit) Stimulus files are different at %i of %i vols (%0.1f%%): %s',length(diffVols),size(stim{1}.im,3),100*length(diffVols)/size(stim{1}.im,3),num2str(diffVols)));
+	if 100*(length(diffVols)/size(stim{1}.im,3)) < stimImageDiffTolerance
+	  disp(sprintf('(pRFFit) This could be for minor timing inconsistencies, so igorning. Set stimImageDiffTolerance lower if you want to stop the code when this happens'));
+	else
+	  % ask user if they want to continue (only if there is a difference of more than 10 vols	  
 	  ignoreMismatchStimfiles = askuser('Do you wish to continue',1);
 	  if ~ignoreMismatchStimfiles
 	    stim = [];
 	    return;
 	  end
 	end
-	% ask user next time around if this happens
-	if ignoreMismatchStimfiles == 1
-	  ignoreMismatchStimfiles = 0;
-	end
+	dispHeader
       end
     end
     % if we passed the above, this is an average of identical
@@ -931,7 +930,7 @@ if (isfield(fitParams,'recomputeStimImage') && fitParams.recomputeStimImage) || 
   % if no save stim then create one
   stim = pRFGetStimImageFromStimfile(stimfile,'volTrigRatio',volTrigRatio,'xFlip',fitParams.xFlipStimulus,'yFlip',fitParams.yFlipStimulus,'timeShift',fitParams.timeShiftStimulus,'verbose',fitParams.verbose,'saveStimImage',fitParams.saveStimImage,'recomputeStimImage',fitParams.recomputeStimImage);
   % check for averages
-  stim = checkStimForAverages(v,scanNum,viewGet(v,'curGroup'),stim,fitParams.concatInfo);
+  stim = checkStimForAverages(v,scanNum,viewGet(v,'curGroup'),stim,fitParams.concatInfo,fitParams.stimImageDiffTolerance);
   if isempty(stim),return,end
   % make into cell array
   stim = cellArray(stim);

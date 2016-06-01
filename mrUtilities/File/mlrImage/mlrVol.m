@@ -472,6 +472,7 @@ function refreshDisplay(sysNum)
 
 global gVol;
 
+
 % get current figure
 f = gcf;
 
@@ -494,6 +495,7 @@ for iVol = 1:gVol{sysNum}.n
 
   % draw
   drawnow
+  if isempty(gVol{sysNum}),return,end
 end
 
 % update the display of other coordinates

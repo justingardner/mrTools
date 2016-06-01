@@ -109,21 +109,23 @@ else
   % for a quick check to see if we are in the volume
   if all(pointerLoc(1,:) >= 0)
     % then use select3d which is slooow, but accurate
-    hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
-    % make sure we are using the correct object (should be the 3D
-    % brain). Use end here because with searchForVoxel we plot a
-    % point on the image and the brain object always seems to be
-    % last. But if this is not always the case, then we may need
-    % to do a little more work here to find the correct object
-    [pos vertex vertexIndex] = select3d(hobj(end));
-    % convert the index to the coordinates
-    if ~isempty(pos)
-      baseCoordMap = viewGet(v,'baseCoordMap');
-      %we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
-      corticalSlice = max(1,ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5)));
-      pos = round(squeeze(baseCoordMap.coords(1,vertexIndex,1,:,corticalSlice)));
-      %pos = round(squeeze(baseCoordMap.coords(1,vertexIndex,1,:)));
-      coords.base.x = pos(1);coords.base.y = pos(2);coords.base.z = pos(3);
+    if isfield(MLR.interrogator{viewNum},'axesnum')
+      hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
+      % make sure we are using the correct object (should be the 3D
+      % brain). Use end here because with searchForVoxel we plot a
+      % point on the image and the brain object always seems to be
+      % last. But if this is not always the case, then we may need
+      % to do a little more work here to find the correct object
+      [pos vertex vertexIndex] = select3d(hobj(end));
+      % convert the index to the coordinates
+      if ~isempty(pos)
+	baseCoordMap = viewGet(v,'baseCoordMap');
+	%we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+	corticalSlice = max(1,ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5)));
+	pos = round(squeeze(baseCoordMap.coords(1,vertexIndex,1,:,corticalSlice)));
+	%pos = round(squeeze(baseCoordMap.coords(1,vertexIndex,1,:)));
+	coords.base.x = pos(1);coords.base.y = pos(2);coords.base.z = pos(3);
+      end
     end
   end      
 end
@@ -135,7 +137,7 @@ if isempty(coords.base),return,end
 base2tal = viewGet(v,'base2tal'); % keyboard
 if(~isempty(base2tal))
   talCoords = round(base2tal * [coords.base.x coords.base.y coords.base.z 1]');
-  coords.tal.x = talCoords(1); coords.tal.y = talCoords(2); coords.tal.x = talCoords(3);
+  coords.tal.x = talCoords(1); coords.tal.y = talCoords(2); coords.tal.z = talCoords(3);
 end
 
 % transform from base coordinates into scan coordinates

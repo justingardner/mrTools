@@ -541,6 +541,7 @@ if ~isfield(ALIGN,'inplaneHdr') || isempty(ALIGN.inplaneHdr)
   mrWarnDlg('(mrAlign) You have not yet loaded an inplane - no alignement to save');
   return
 else
+  disp('(mrAlign) Saving alignment to file...');
   sform = ALIGN.volumeHdr.sform44 * ALIGN.guiXform * ALIGN.xform;
   ALIGN.inplaneHdr = cbiSetNiftiSform(ALIGN.inplaneHdr,sform);
   ALIGN.inplaneHdr.sform_code = ALIGN.volumeHdr.sform_code;

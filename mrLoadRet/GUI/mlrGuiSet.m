@@ -65,7 +65,7 @@ switch lower(field)
     callbacks = viewGet(view,'callback','baseChange');
     % and call them
     for iCallback = 1:length(callbacks)
-      feval(callbacks{1},view);
+      view = feval(callbacks{iCallback},view);
     end
   end
  case {'labelrois'}
@@ -669,7 +669,7 @@ guidata(MLR.views{viewNum}.figure,handles);
 
 
 function value = clipToSlider(slider,value,integerFlag)
-% Clips value so that it doesn't exceed slider limits.
+% Clips value so that it doesn' texceed slider limits.
 % slider is a slider handle
 % value must be a number (otherwise, use current slider value)
 % integerFlag forces value to be an integer

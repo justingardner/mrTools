@@ -1458,6 +1458,15 @@ switch lower(param)
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).data;
     end
+  case {'basehandle'}
+    % basedata = viewGet(view,'baseHandle',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).h;
+      % set to empty if handle is stale 
+      if ~ishandle(val),val = [];end
+    end
   case {'basehdr'}
     % basedata = viewGet(view,'basehdr',[baseNum])
     b = getBaseNum(view,varargin);
@@ -1605,6 +1614,8 @@ switch lower(param)
 	  val.vtcs(:,1) = vtcs(:,2);
 	  val.vtcs(:,2) = vtcs(:,1);
 	  val.vtcs(:,3) = vtcs(:,3);
+	else
+	  val.vtcs = [];
 	end
       else
 	val = [];
@@ -2227,7 +2238,21 @@ switch lower(param)
   case{'roigroupnames','currentroigroupnames'}
     % roiNum = viewGet(view,'roigroup')
     % gets the roiNames of the current roi group.
-    val = view.roiGroup;
+    if isnumeric(view.roiGroup)
+      % roiGroupNames should be names not numbers (not
+      % sure how this gets wrong, but fixing here
+      val = {};
+      for i = 1:length(view.roiGroup)
+        roiName = viewGet(view,'roiName',view.roiGroup(i));
+        if ~isempty(roiName)
+          val{end+1} = roiName;
+        end
+      end
+      % fix it back in the view
+      view.roiGroup = val;
+    else	
+      val = view.roiGroup;
+    end
   case{'roinum'}
     % roiNum = viewGet(view,'roiNum',roiName)
     % This will return the roiNum that correspondes
@@ -2284,9 +2309,29 @@ switch lower(param)
   case{'roiname'}
     % roiName = viewGet(view,'roiName',[roiNum])
     r = getRoiNum(view,varargin);
+    % handle cell arrays
+    if iscell(r)
+      for i = 1:length(r)
+        val(end+1) = viewGet(view,'roiName',r{i});
+      end
+      return
+    end
+    % if a string, just validate that it really is an roi
+    if isstr(r)
+      if ~isempty(viewGet(view,'roiNum',r))
+        val = r;
+      else
+        val = [];
+      end
+      return
+    end
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
-      val = view.ROIs(r).name;
+      if length(r) == 1
+	val = view.ROIs(r).name;
+      else
+	val = {view.ROIs(r).name};
+      end
     end
   case{'roicoords'}
     % roiCoords = viewGet(view,'roiCoords',[roiNum])
@@ -2506,11 +2551,65 @@ switch lower(param)
       end
     end
   case{'roinotes'}
-    % roinotesm = viewGet(view,'roinotes',[roiNum])
+    % roiNotes = viewGet(view,'roinotes',[roiNum])
     r = getRoiNum(view,varargin);
     n = viewGet(view,'numberofROIs');
     if r & (r > 0) & (r <= n)
       val = view.ROIs(r).notes;
+    else
+      val = '';
+    end
+  case{'roicreatedby'}
+    % roiCreatedBy = viewGet(view,'roiCreatedBy',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).createdBy;
+    else
+      val = '';
+    end
+  case{'roicreatedonbase'}
+    % roiCreatedOnBase = viewGet(view,'roiCreatedOnBase',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).createdOnBase;
+    else
+      val = '';
+    end
+  case{'roidisplayonbase'}
+    % roiDisplayOnBase = viewGet(view,'roiDisplayOnBase',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).displayOnBase;
+    else
+      val = '';
+    end
+  case{'roicreatedfromsession'}
+    % roiCreatedFromSession = viewGet(view,'roiCreatedFromSession',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).createdFromSession;
+    else
+      val = '';
+    end
+  case{'roibranchnum'}
+    % roiBranchNum = viewGet(view,'roiBranchNum',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).branchNum;
+    else
+      val = '';
+    end
+  case{'roisubjectid'}
+    % roiSubjectID = viewGet(view,'roiSubjectID',[roiNum])
+    r = getRoiNum(view,varargin);
+    n = viewGet(view,'numberofROIs');
+    if r & (r > 0) & (r <= n)
+      val = view.ROIs(r).subjectID;
     else
       val = '';
     end
@@ -3971,6 +4070,8 @@ switch lower(param)
     if ~isempty(fig)
       handles = guidata(fig);
       val = handles.coords;
+      % never let coords be 0
+      val(val==0) = 1;
     else
       val = [];
     end
@@ -4085,7 +4186,7 @@ switch lower(param)
       val = 0;
       % normally does not apply to inplanes, but if we are displaying
       % all planes of anatomy then it applies to the 3D slice view
-      if isequal(true,mrGetPref('dispAllPlanesOfAnatomy'))
+      if viewGet(view,'baseMultiAxis')>0
 	fig = viewGet(view,'fignum');
 	if ~isempty(fig)
 	  handles = guidata(fig);

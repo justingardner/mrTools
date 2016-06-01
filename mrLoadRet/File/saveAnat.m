@@ -1,4 +1,4 @@
-function saveAnat(view,anatomyName,confirm,saveAs,savePath)
+function pathStr = saveAnat(view,anatomyName,confirm,saveAs,savePath)
 %
 % saveAnat(view,[anatomyName],[confirm],[saveAs],[savePath])
 %
@@ -16,6 +16,7 @@ function saveAnat(view,anatomyName,confirm,saveAs,savePath)
 % djh, 7/2006
 % $Id$	
 
+pathStr = [];
 if ieNotDefined('anatomyName')
   anatomyNum = viewGet(view,'currentBase');
   anatomyName = viewGet(view,'baseName',anatomyNum);

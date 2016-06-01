@@ -223,7 +223,7 @@ d.filename = filename;
 
 % get full path of fid
 if (isfield(d,'fidName'))
-  d.fidName = [getpath(filename) getlastdir(d.fidName)];
+  d.fidName = [fileparts(filename) getLastDir(d.fidName)];
 else
   d.fidName = '';
 end

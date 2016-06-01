@@ -126,8 +126,10 @@ switch lower(param)
       return
     end
     if (view.curGroup ~= val)
-      % save loaded analysis if there are any
+      % save loaded analysis if there are any - ordering by which one is current
       view = viewSet(view,'loadedAnalyses',view.analyses,view.curGroup);
+      % save the current displayed analysis
+      view.groupSettings(viewGet(view,'curgroup')).curAnalysis = viewGet(view,'curAnalysis');
       % save the current scan number
       view = viewSet(view,'groupScanNum',viewGet(view,'curScan'),view.curGroup);
       MLR.views{view.viewNum} = view;
@@ -156,6 +158,12 @@ switch lower(param)
       loadedAnalyses = viewGet(view,'loadedAnalyses',val);
       for i = 1:length(loadedAnalyses)
 	view = viewSet(view,'newAnalysis',loadedAnalyses{i});
+      end
+      % set the analysis number back to the last setting if we have one
+      if isfield(view,'groupSettings') && (length(view.groupSettings) >= val) && isfield(view.groupSettings(val),'curAnalysis') && ~isempty(view.groupSettings(val).curAnalysis)
+	view = viewSet(view,'curAnalysis',view.groupSettings(val).curAnalysis);
+      else
+	view = viewSet(view,'curAnalysis',1);
       end
       % delete the analyses from the loaded cache
       view = viewSet(view,'loadedAnalyses',{},view.curGroup);
@@ -732,6 +740,14 @@ switch lower(param)
     mlrGuiSet(view,'basePopup',stringList);
     % Set it to be the current base Volume
     view = viewSet(view,'curBase',newBaseNum);
+    % see if there are any registered callbacks
+    if ~isempty(viewGet(view,'figNum'))
+      callbacks = viewGet(view,'callback','newBase');
+      % and call them
+      for iCallback = 1:length(callbacks)
+	view = feval(callbacks{iCallback},view);
+      end
+    end
 
   case {'deletebase'}
     % view = viewSet(view,'deletebase',baseNum);
@@ -782,7 +798,7 @@ switch lower(param)
     if (curBase > 0) & (curBase <= numBases)
       % surfaces (or 3D's when multiaxis are shown) 
       % are the ones that can be tilted.
-      if (baseType == 2) || ((baseType==0) && isequal(true,mrGetPref('dispAllPlanesOfAnatomy')))
+      if (baseType == 2) || ((baseType==0) && (viewGet(view,'baseMultiAxis')>0))
 	view.baseVolumes(curBase).tilt = val;
 	mlrGuiSet(view,'baseTilt',val);
       end
@@ -932,7 +948,7 @@ switch lower(param)
       callbacks = viewGet(view,'callback','curBaseChange');
       % and call them
       for iCallback = 1:length(callbacks)
-	feval(callbacks{1},view);
+	view = feval(callbacks{iCallback},view);
       end
     end
   case{'basecoordmappath'}
@@ -972,6 +988,14 @@ switch lower(param)
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).range = range;
+    end
+
+  case{'base'}
+    % view = viewSet(view,'base',base,[baseNum]);
+    b = val;
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum) = b;
     end
 
   case{'basegamma'}
@@ -1015,6 +1039,15 @@ switch lower(param)
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).alpha = alpha;
     end
+ 
+ case{'basehandle'}
+    % view = viewSet(view,'baseHandle',h,[baseNum]);
+    h = val;
+    curBase = viewGet(view, 'curBase');
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).h = h;
+    end
 
  case{'basemultidisplay'}
     % view = viewSet(view,'baseMultiDisplay',multiDisplay,[baseNum]);
@@ -1033,6 +1066,8 @@ switch lower(param)
       view.baseVolumes(baseNum).multiAxis = val;
       % update the rotate slider
       mlrGuiSet(view,'rotate',viewGet(view,'baseRotate',curBase));
+      % update the tilt slider
+      mlrGuiSet(view,'baseTilt',viewGet(view,'baseTilt',curBase));
     end
 
   case{'basedisplayoverlay'}
@@ -1286,6 +1321,7 @@ switch lower(param)
     end
     if ~isempty(analysisNum)
       view.analyses{analysisNum}.clipAcrossOverlays=val;
+      mlrGuiSet(view,'clipAcrossOverlays',val);
     end
 
   case{'analysisname'}
@@ -2031,7 +2067,7 @@ switch lower(param)
  
  case {'roicreatedby'}
     % v = viewSet(v,'roiCreatedBy',createdByPerson,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the createdby field in the roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};
@@ -2041,10 +2077,23 @@ switch lower(param)
     if ~isempty(roiNum)
       view.ROIs(roiNum).createdBy = val;
     end
+ 
+ case {'roibranchnum'}
+    % v = viewSet(v,'roiBranchNum',branchNumInRepo,[roiNum]);
+    % sets the branch num in repo
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).branchNum = val;
+    end
 
  case {'roicreatedonbase'}
     % v = viewSet(v,'roiCreatedOnBase',baseName,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the created on base field of roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};
@@ -2057,7 +2106,7 @@ switch lower(param)
 
  case {'roicreatedfromsession'}
     % v = viewSet(v,'roiCreatedFromSession',sessionName,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the created from session field in roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};
@@ -2070,7 +2119,7 @@ switch lower(param)
 
  case {'roidisplayonbase'}
     % v = viewSet(v,'roiDisplayOnBase',baseName,[roiNum]);
-    % sets the voxel size for the roi
+    % sets the displayOnBase filed of roi
     curRoi = viewGet(view,'currentRoi');
     if ~isempty(varargin)
       roiNum = varargin{1};
@@ -2079,6 +2128,19 @@ switch lower(param)
     end
     if ~isempty(roiNum)
       view.ROIs(roiNum).displayOnBase = val;
+    end
+
+ case {'roisubjectid'}
+    % v = viewSet(v,'roiSubjectID',subjectID,[roiNum]);
+    % sets the displayOnBase filed of roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).subjectID = val;
     end
 
   case {'roiname'}
@@ -2309,7 +2371,7 @@ switch lower(param)
     % will be called when any of the base information has been updated
     % call viewSet(v,'callback') for a list of valid callbackNames
 
-    callbackNames = {'baseChange','curBaseChange'};
+    callbackNames = {'baseChange','curBaseChange','newBase'};
 
     if length(varargin) ~= 1
       disp(sprintf('(viewSet:callback) Registering callback requires two arguments: callbackName and callback function handle. callbackName can be any of: '));

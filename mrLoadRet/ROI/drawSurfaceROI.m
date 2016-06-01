@@ -1,128 +1,115 @@
 % drawSurfaceROI.m
 %
 %        $Id$ 
-%      usage: drawSurfaceROI()
+%      usage: coords = drawSurfaceROI(v)
 %         by: Luke Robot Hospadaruk <hospada1@msu.edu>
 %       date: 11/28/09
 %    purpose: draw an ROI on 3D surface
 %
-function coords = drawSurfaceROI(view)
+function coords = drawSurfaceROI(v)
 
+coords = [];
 %use modified getpts function to grab the correct screen locations
-%TODO figure out how to draw stuff on the screen
 
-oneTimeWarning('drawROIOnSurface','(drawROI) Click on each boundary vertex of ROI. To finish making the ROI double click on a point that you want inside the ROI boundary',-1)
-
-hold(get(view.figure, 'CurrentAxes'), 'on');
-[xi, yi] = mlr_getpts_3d(view.figure);
-hold(get(view.figure, 'CurrentAxes'), 'off');
-
-disp('(drawSurfaceROI) Calculating key vertices');
-
-cmap = view.baseVolumes(view.curBase).coordMap;
+% get figure and make sure hold is on
+fig = viewGet(v,'figureNumber');
+hold(get(fig, 'CurrentAxes'), 'on');
 roiKeyVertices = [];
-%calculate vertex index of each clicked location
-for i=1:(numel(xi))
-	[x y s xBase yBase sBase xT yT sT vi] = getMouseCoords(view.viewNum, [xi(i) yi(i)]);
-	roiKeyVertices = [roiKeyVertices vi];
+% for surfaces in matlab past 8.4 select3d is busted, so need a new
+% method to get points which is implemented mlrGetptsSurface
+if ~verLessThan('matlab','8.4') && (viewGet(v,'baseType') == 2)
+  % tell the user what to do
+  oneTimeWarning('drawROIOnSurface','(drawROI) Click on each boundary vertex of ROI. To finish making the ROI control-click (click while holding down the control key) on a point that you want inside the ROI boundary',-1);
+  % get the display surface
+  h = viewGet(v,'baseHandle');
+  if ~isempty(h)
+    % and get user points that are clicked on
+    roiKeyVertices = mlrGetptsSurface(v,h);
+  else
+    disp(sprintf('(drawSurfaceROI) Could not find surface'));
+    return
+  end
+else
+  % tell the user what to do
+  oneTimeWarning('drawROIOnSurface','(drawROI) Click on each boundary vertex of ROI. To finish making the ROI double click on a point that you want inside the ROI boundary',-1);
+  % old style (before mathworks broke select3d)
+  [xi, yi] = mlr_getpts_3d(fig);
+  % calculate key vertices from list of x, y points
+  disp('(drawSurfaceROI) Calculating key vertices');
+  for i=1:(numel(xi))
+    [x y s xBase yBase sBase xT yT sT vi] = getMouseCoords(viewGet(v,'viewNum'), [xi(i) yi(i)]);
+    roiKeyVertices = [roiKeyVertices vi];
+  end
 end
+
 %make sure there are at least 3 perimiter and 1 interior vertices
 if(numel(roiKeyVertices) < 4)
-	mrWarnDlg('(drawSurfaceROI) Not enough vertices selected, you need at least 4');
+  mrWarnDlg('(drawSurfaceROI) Not enough vertices selected, you need at least 4');
   coords = [];
   return
 end
 
+% get coord map for baseqw
+cmap = viewGet(v,'baseCoordMap');
+
+% get all vertices in boundary
 disp('(drawSurfaceROI) Setting up boundary search');
-%We need to generate a list of connections
-nodes = [(1:size(cmap.coords, 2))' squeeze(cmap.coords(1,:,1,1))' squeeze(cmap.coords(1,:,1,2))' squeeze(cmap.coords(1,:,1,2))'];
-edges = [(1:size(cmap.tris, 1))' cmap.tris(:,1) cmap.tris(:,2)];
-edges = [edges;(1:size(cmap.tris, 1))'+size(cmap.tris, 1) cmap.tris(:,2) cmap.tris(:,3)];
-edges = [edges;(1:size(cmap.tris, 1))'+size(cmap.tris, 1)+size(cmap.tris, 1) cmap.tris(:,1) cmap.tris(:,3)];
-[tr loc1] = ismember(edges(:,2), nodes(:,1));
-[tr loc2] = ismember(edges(:,3), nodes(:,1));
-nodes1 = nodes(loc1,2:end);
-nodes2 = nodes(loc2,2:end);
-distances = sqrt(sum([...
-	(nodes1(:,1)-nodes2(:,1)).^2 ...
-	(nodes1(:,2)-nodes2(:,2)).^2 ...
-	(nodes1(:,3)-nodes2(:,3)).^2], 2));
-
-%make the edges go in both directions, from a-b and b-a to guarantee
-%bi-directional edges
-edgeDistances = sparse([edges(:,2);edges(:,3)], [edges(:,3);edges(:,2)], [distances;distances], size(cmap.coords, 2), size(cmap.coords, 2));
-
-
-disp('(drawSurfaceROI) Searching for boundary vertices');
-
-[dist pred] = dijkstrap(edgeDistances, roiKeyVertices);
-pred(pred == -1) = 0;
-
-boundaryVertices = [];
-for i=1:(numel(roiKeyVertices)-1)
-	v1 = roiKeyVertices(i);
-	v2 = roiKeyVertices(i+1);
-	%if we're at the last boundary point, connect the loop
-	if i == (numel(roiKeyVertices)-1)
-		v2 = roiKeyVertices(1);
-	end
-	boundaryVertices = [boundaryVertices pred2path(pred(i,:),v1,v2)];
+% get the base surface
+baseSurface = viewGet(v,'baseSurface');
+% set up the list of vertices to go around back to the first in the list
+drawVertices = [roiKeyVertices(1:end-1) roiKeyVertices(1)];
+% list of all edge vertices
+edgeVertices = [];
+for vertexIndex = 2:length(drawVertices)
+  pathVertices = mlrGetPathBetween(baseSurface,drawVertices(vertexIndex-1),drawVertices(vertexIndex));
+  % keep list of all vertices
+  edgeVertices = [edgeVertices pathVertices];
 end
-%make sure there are no duplicates
-boundaryVertices = unique(boundaryVertices);
-seed = roiKeyVertices(end);
-%grow the ROI, this will return all vertices, including the boundary
-roiVertices = growROI(edgeDistances, boundaryVertices, seed);
+% plot the edge
+plot3(baseSurface.vtcs(edgeVertices,1),baseSurface.vtcs(edgeVertices,2),baseSurface.vtcs(edgeVertices,3),'r.');
 
-baseCoordMap = viewGet(view,'baseCoordMap');
-%we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
-corticalSlice = ceil(mean(viewGet(view,'corticalDepth'))*size(baseCoordMap.coords,5));
-pos = round(squeeze(baseCoordMap.coords(1,roiVertices,1,:,corticalSlice)));
-xBase = pos(:,1);yBase = pos(:,2);sBase = pos(:,3);
-
-base2scan = viewGet(view,'base2scan');
-if isempty(base2scan), x = nan; y=nan; s=nan; return,  end
-transformed = round(base2scan*[xBase yBase sBase ones(length(xBase),1)]');
-
-coords = [xBase yBase sBase ones(length(xBase),1)]';
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%given the distance matrix passed into dijkstra, the boundary vertices
-%(which include any previously visited vertices) grow the roi and return
-%all vertices.  edge matrix must be bi-directional;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function roiVertices = growROI(edges, boundaryVertices, seed)
-%add the seed and the boundary to the list of visited nodes
-roiVertices = [seed boundaryVertices];
-
-%get all vertices connected to seed
-seedEdges = find(edges(seed,:));
-
-%select only unvisited, non-boundary edges
-seedEdges = seedEdges(~ismember(seedEdges, roiVertices));
-
-disp('(drawSurfaceROI) Growing ROI from interior point');
-disppercent(-inf,'(drawSurfaceROI) Growing ROI from interior point. If this is taking a long time, you may have put your interior point on the outside of the boundary. In this case abort with ctrl-c. growROI percentage of total edges: ');
-%loop until we can't find any more unvisited nodes
-while numel(seedEdges) > 0
-  disppercent(length(roiVertices)/length(edges));
-	%add the current list of seeds to the return
-	roiVertices = [roiVertices seedEdges];
-	newSeedEdges = [];
-	%for each edge, find all it's connecting edges
-	for i=1:numel(seedEdges)
-		newSeedEdges = [newSeedEdges find(edges(seedEdges(i),:))];
-	end
-	%select only those edges which are unvisited
-	seedEdges = newSeedEdges(~ismember(newSeedEdges, roiVertices));
-	%throw out non-unique nodes
-	seedEdges = unique(seedEdges);
-	
+% start list
+vList = roiKeyVertices(end);
+% get surface
+baseSurface = viewGet(v,'baseSurface');
+tris = baseSurface.tris(:);
+trisSize = size(baseSurface.tris);
+lastLen = -inf;
+% find all neighboring vertices, by getting the location
+% of all current vertex in (linearized) tris list
+while(length(vList)>lastLen)
+  % keep the last length to make sure we are growing
+  lastLen = length(vList);
+  % find all the triangles that intersect with the current list
+  intersectTris = find(ismember(tris,vList));
+  [intersectTris,dummy] = ind2sub(trisSize,intersectTris);
+  intersectTris = unique(intersectTris);
+  % now we know all triangles that intersect so find all neighboring points
+  oldVList = vList;
+  vList = unique(tris(sub2ind(trisSize,repmat(intersectTris,1,3),repmat([1 2 3],length(intersectTris),1))));
+  % remove edge vertices
+  vList = setdiff(vList,edgeVertices);
+  % plot
+  drawList = setdiff(vList,oldVList);
+  plot3(baseSurface.vtcs(drawList,1),baseSurface.vtcs(drawList,2),baseSurface.vtcs(drawList,3),'w.');
+  drawnow;
 end
-disppercent(inf);
-%make sure we arn't returning duplicates
-roiVertices = unique(roiVertices);
+% add back edge vertices
+vList = union(vList,edgeVertices);
+hold(get(fig, 'CurrentAxes'), 'off');
+
+coords = [];
+% cycle over cortical depths and add points
+corticalDepths = viewGet(v,'corticalDepth');
+for corticalDepth = corticalDepths(1):0.1:corticalDepths(end)
+  % get the cortical slice index
+  corticalSlice = find(cmap.corticalDepths == (round(corticalDepth*10)/10));
+  % read off coordinates for this depth
+  coords = [coords;squeeze(cmap.coords(1,vList,1,:,corticalSlice))];
+end
+% return unique coords
+coords = unique(coords,'rows');
+coords = [coords ones(size(coords,1),1)]';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get current mouse position in image coordinates
@@ -460,13 +447,12 @@ hobj = get(get(view.figure, 'CurrentAxes'),'Children');
 % last. But if this is not always the case, then we may need
 % to do a little more work here to find the correct object
 [pos v vi] = select3d(hobj(end));
+if isempty(pos),return,end
 % convert the index to the coordinates
 
-if ~isempty(pos)
-	line_points =[line_points pos];
-	if(numel(line_points) > 3)
-		plot3(line_points(1,:), line_points(2,:), line_points(3,:),'Parent', get(view.figure, 'CurrentAxes'));
-	end
+line_points =[line_points pos];
+if(numel(line_points) > 3)
+  plot3(line_points(1,:), line_points(2,:), line_points(3,:),'Parent', get(view.figure, 'CurrentAxes'));
 end
 set([GETPTS_H1 GETPTS_H2], ...
 	'XData', x, ...
@@ -555,3 +541,5 @@ pointerShape = [ ...
 	NaN NaN NaN NaN NaN   1   2 NaN   2   1 NaN NaN NaN NaN NaN NaN
 	NaN NaN NaN NaN NaN   1   2 NaN   2   1 NaN NaN NaN NaN NaN NaN
 	NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN];
+
+

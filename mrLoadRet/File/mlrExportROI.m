@@ -1,18 +1,23 @@
 % mlrExportROI.m
 %
 %        $Id$ 
-%      usage: mlrExportROI(v,saveFilename)
+%      usage: mlrExportROI(v,saveFilename,<hdr>)
 %         by: justin gardner
 %       date: 07/14/09
-%    purpose: Export an ROI to a nifti image
+%    purpose: Export an ROI to a nifti image. Uses current roi
+%             and current base in view to export. Pass in a nifti
+%             header as hdr argument if you want to use a different header
 %
-function mlrExportROI(v,saveFilename)
+function mlrExportROI(v,saveFilename,varargin)
 
 % check arguments
-if ~any(nargin == [2])
+if nargin < 2
   help mlrExportROI
   return
 end
+
+% optional arguments
+getArgs(varargin,{'hdr=[]'});
 
 % get the roi we are being asked to export
 roiNum = viewGet(v,'currentroi');
@@ -23,10 +28,15 @@ end
   
 
 % get the base nifti header
-hdr = viewGet(v,'basehdr');
-if isempty(hdr)
-  mrWarnDlg('(mlrExportROI) Could not get base anatomy header');
-  return
+passedInHeader = false;
+if ~isempty(hdr)
+  passedInHeader = true;
+else
+  hdr = viewGet(v,'basehdr');
+  if isempty(hdr)
+    mrWarnDlg('(mlrExportROI) Could not get base anatomy header');
+    return
+  end
 end
 % tell the user what is going on
 disp(sprintf('(mlrExportROI) Exporting ROI to %s with dimensions set to match base %s: [%i %i %i]',saveFilename,viewGet(v,'baseName'),hdr.dim(2),hdr.dim(3),hdr.dim(4)));
@@ -57,15 +67,17 @@ roiBaseCoordsLinear = sub2ind(hdr.dim(2:4)',roiBaseCoords(1,:),roiBaseCoords(2,:
 % set all the roi coordinates to 1
 d(roiBaseCoordsLinear) = 1;
 
-b = viewGet(v,'base');
-% if the orientation has been changed in loadAnat, undo that here.
-if ~isempty(b.originalOrient)
-  % convert into mlrImage
-  [d h] = mlrImageLoad(d,hdr);
-  % convert the orientation back to original
-  [d h] = mlrImageOrient(b.originalOrient,d,h);
-  % covert back to nifti
-  hdr = mlrImageGetNiftiHeader(h);
+if ~passedInHeader
+  b = viewGet(v,'base');
+  % if the orientation has been changed in loadAnat, undo that here.
+  if ~isempty(b.originalOrient)
+    % convert into mlrImage
+    [d h] = mlrImageLoad(d,hdr);
+    % convert the orientation back to original
+    [d h] = mlrImageOrient(b.originalOrient,d,h);
+    % covert back to nifti
+    hdr = mlrImageGetNiftiHeader(h);
+  end
 end
 
 % now save the nifti file

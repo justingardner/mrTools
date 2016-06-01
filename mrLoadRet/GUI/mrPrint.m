@@ -6,15 +6,18 @@
 %       date: 10/04/07
 %    purpose: puts a printable version of the data into the graph win
 %
-function retval = mrPrint(v)
+function retval = mrPrint(v,varargin)
 
 % check arguments
-if ~any(nargin == [1])
+if nargin < 1
   help mrPrint
   return
 end
 
 mrGlobals;
+
+% get input arguments
+getArgs(varargin,{'useDefault=0','roiSmooth=1','roiLabels=1'});
 
 % get base type
 baseType = viewGet(v,'baseType');
@@ -67,21 +70,26 @@ else
     paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
     paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
     paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
-    paramsInfo{end+1} = {'roiLabels',0,'type=checkbox','Print ROI name at center coordinate of ROI'};
+    paramsInfo{end+1} = {'roiLabels',roiLabels,'type=checkbox','Print ROI name at center coordinate of ROI'};
     if baseType == 1
-      paramsInfo{end+1} = {'smoothROI',1,'type=checkbox','Smooth the ROI boundaries'};
+      paramsInfo{end+1} = {'roiSmooth',roiSmooth,'type=checkbox','Smooth the ROI boundaries'};
       paramsInfo{end+1} = {'whichROIisMask',0,'incdec=[-1 1]', 'minmax=[0 inf]', 'Which ROI to use as a mask. 0 does no masking'};
-      paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=smoothROI'};
+      paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=roiSmooth'};
     end
   end
   paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
 end
 
-params = mrParamsDialog(paramsInfo,'Print figure options');;
+if useDefault
+  params = mrParamsDefault(paramsInfo);
+else
+  params = mrParamsDialog(paramsInfo,'Print figure options');
+end
+  
 if isempty(params),return,end
 
-% just so the code won't break. smoothROI is only fro baseType = 1
-if ~isfield(params,'smoothROI') params.smoothROI = 0;end
+% just so the code won't break. roiSmooth is only fro baseType = 1
+if ~isfield(params,'roiSmooth') params.roiSmooth = 0;end
 
 % get the gui, so that we can extract colorbar
 fig = viewGet(v,'figNum');
@@ -168,7 +176,7 @@ if isfield(params,'upSampleFactor')
   end
 end
 
-if (baseType == 1) && ~isempty(roi) && params.smoothROI
+if (baseType == 1) && ~isempty(roi) && params.roiSmooth
   % get the roiImage and mask
   [roiImage roiMask dataMask] = getROIPerimeterRGB(v,roi,size(img),params);
   % now set img correctly
@@ -351,6 +359,7 @@ if baseType ~= 2
   sliceNum = viewGet(v,'currentSlice');
   label = {};
   disppercent(-inf,'(mrPrint) Rendering ROIs');
+  visibleROIs = viewGet(v,'visibleROIs');
   for rnum = 1:length(roi)
     % check for lines
     if params.roiLineWidth > 0
@@ -373,7 +382,7 @@ if baseType ~= 2
 	      y = roi{rnum}.lines.y;
 	      label{end+1}.x = median(x(~isnan(x)));
 	      label{end}.y = median(y(~isnan(y)));
-	      label{end}.str = viewGet(v,'roiName',rnum);
+	      label{end}.str = viewGet(v,'roiName',visibleROIs(rnum));
 	      label{end}.color = color;
 	    end
 	    % if we have a circular apertuer then we need to
@@ -407,7 +416,7 @@ if baseType ~= 2
 		roi{rnum}.lines.y = y+yCenter;
 	      end
 	    end
-	    if ~params.smoothROI
+	    if ~params.roiSmooth
 	      % draw the lines
 	      line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth);
 	    end

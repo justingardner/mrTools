@@ -36,6 +36,11 @@ if isview(d)
   v = d;d = [];
   d.concatInfo = viewGet(v,'concatInfo');
   d.dim = viewGet(v,'scanDims');
+  % get the length of scan
+  d.dim(end+1) = viewGet(v,'nFrames');
+  d.concatInfo = viewGet(v,'concatInfo');
+  d.nframes = viewGet(v,'nFrames');
+
   if isempty(stimvol)
     disp(sprintf('(makescm) Must pass in stimvol'));
     return
@@ -119,3 +124,4 @@ d.volumes = 1:d.dim(end);
 if returnOnlySCM
   d = d.scm;
 end
+

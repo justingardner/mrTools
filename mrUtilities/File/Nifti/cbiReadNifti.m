@@ -154,7 +154,10 @@ end
 
 % Open file and move to beginning of data
 fPtr=fopen(hdr.img_name,'r',hdr.endian);
-if fPtr==-1,data=[];hdr=[];return;end
+if fPtr==-1
+  disp(sprintf('(cbiReadNifti) Could not find file %s',hdr.img_name));
+  data=[];hdr=[];return;
+end
 % If single-file format, offset beyond header
 if (hdr.single_file)
   fseek(fPtr,hdr.vox_offset,'bof');

@@ -1518,9 +1518,11 @@ for roinum = roiList
   roiNames{roinum} = viewGet(v,'roiName',roinum);
   roiNotes = viewGet(v,'roiNotes',roinum);
   colors = putOnTopOfList(viewGet(v,'roiColor',roinum),color2RGB);
+  displayOn = putOnTopOfList(viewGet(v,'roiDisplayOnBase'),viewGet(v,'baseNames'));
   paramsInfo{end+1} = {sprintf('%sName',fixBadChars(roiNames{roinum})),roiNames{roinum},'Name of roi, avoid using punctuation and space'};
   paramsInfo{end+1} = {sprintf('%sColor',fixBadChars(roiNames{roinum})),colors,'type=popupmenu',sprintf('The color that roi %s will display in',roiNames{roinum})};
   paramsInfo{end+1} = {sprintf('%sNotes',fixBadChars(roiNames{roinum})),roiNotes,sprintf('Note for roi %s',roiNames{roinum})};
+  paramsInfo{end+1} = {sprintf('%sDisplayOnBase',fixBadChars(roiNames{roinum})),displayOn,sprintf('Base that roi %s is best displayed on',roiNames{roinum})};
 end
 if isempty(paramsInfo),return,end
 params = mrParamsDialog(paramsInfo,'Edit Many ROIs');
@@ -1532,6 +1534,7 @@ if ~isempty(params)
     v = viewSet(v,'roiColor',params.(sprintf('%sColor',roiName)),roinum);
     v = viewSet(v,'roiName',params.(sprintf('%sName',roiName)),roinum);
     v = viewSet(v,'roiNotes',params.(sprintf('%sNotes',roiName)),roinum);
+    v = viewSet(v,'roiDisplayOnBase',params.(sprintf('%sDisplayOnBase',roiName)),roinum);
   end
   refreshMLRDisplay(viewNum);
 end
@@ -1701,7 +1704,6 @@ selectedROIColor = mrGetPref('selectedROIColor');
 roiContourWidth = mrGetPref('roiContourWidth');
 corticalDepthBins = mrGetPref('corticalDepthBins');
 roiCorticalDepthDisplayRatio = mrGetPref('roiCorticalDepthDisplayRatio');
-dispAllPlanesOfAnatomy = mrGetPref('dispAllPlanesOfAnatomy');
 
 % remember old cache sizes
 roiCacheSize = mrGetPref('roiCacheSize');
@@ -1751,10 +1753,6 @@ if ~isempty(prefParams)
     refreshMLRDisplay(v.viewNum);
   end
 
-  if (dispAllPlanesOfAnatomy ~= mrGetPref('dispAllPlanesOfAnatomy')) && isequal(viewGet(v,'baseType'),1)
-    % refresh the display so as to draw the multiplanes
-    refreshMLRDisplay(v.viewNum);
-  end
 end
 
 
@@ -2647,11 +2645,67 @@ thispwd = pwd;
 if isdir(flatPath) && isfile(fullfile(flatPath,filename))
   cd(flatPath);
 else
-  mrWarnDlg(sprintf('(mrLoadRetGUI) File %s does not exist, please find the anatomy folder for this surface/flat',fullfile(flatPath,filename)));
-  pathStr = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy folder from which this flat was created');
-  if pathStr == 0,return,end
-  cd(pathStr);
-  viewSet(v,'baseCoordMapPath',pathStr);
+  if baseType ~= 1
+    mrWarnDlg(sprintf('(mrLoadRetGUI) File %s does not exist, please find the anatomy folder for this surface/flat',fullfile(flatPath,filename)));
+    pathStr = uigetdir(mrGetPref('volumeDirectory'),'Find anatomy folder from which this flat was created');
+    if pathStr == 0,return,end
+    cd(pathStr);
+    viewSet(v,'baseCoordMapPath',pathStr);
+  else
+    % try to create the off for a flat
+    flatParentSurf = fullfile(params.path,params.innerCoordsFileName);
+    if isfile(flatParentSurf)
+      disp('(mrLoadRetGUI) Creating missing flat off surface');
+      disppercent(-inf,sprintf('(mrLoadRetGUI) Note this will create a quick flat surface good enough for rough visualization of location but is not exactly correct'));
+      % load the parent surface 
+      flatParentSurfOFF = loadSurfOFF(flatParentSurf);
+      if ~isempty(flatParentSurfOFF)
+	% find all vtcs that intersect
+	flatVtcs = [];
+	for corticalDepth = -0.5:0.05:1.5
+	  flatVtcs = [flatVtcs ; reshape(params.innerCoords + (params.outerCoords-params.innerCoords)*corticalDepth,size(params.innerCoords,1)*size(params.innerCoords,2),3)];
+	end
+	% match coordinate to find vertices that this was made from
+	%vtcs = assignToNearest(flatVtcs,flatParentSurfOFF.vtcs);
+	% round and linearize the vertices
+	flatVtcs = round(flatVtcs);
+	flatLinear = mrSub2ind(params.dims,flatVtcs(:,1), flatVtcs(:,2),flatVtcs(:,3));
+	parentVtcs = round(flatParentSurfOFF.vtcs);
+	flatParentLinear = mrSub2ind(params.dims,parentVtcs(:,1),parentVtcs(:,2),parentVtcs(:,3));
+	% find ones that match - note that this is an approximation
+	% by finding vertices that are wihtin a rounded mm to
+	% each other - also above we add across cortical depths.
+	% Could be more precise - but that might be slower
+	% and for this purposes (visualization of roughly
+	% where the surface is, seems good enough)
+	vtcs = find(ismember(flatParentLinear,flatLinear));
+	% find tris that these vtcs are associated with
+	matchingTris = flatParentSurfOFF.tris;
+	[triNum edgeNum] = find(ismember(matchingTris,vtcs));
+	tris = flatParentSurfOFF.tris(triNum,:);
+	% now reget the vertices that are in all the triangles
+	vtcs = unique(tris(:));
+	% and renumber the vtcs in the tris 
+	[dummy tris(:)] = ismember(tris(:),vtcs);
+	% ok, put it all togehter
+	flatSurf.filename = '';
+	flatSurf.nParent = [flatParentSurfOFF.Nvtcs flatParentSurfOFF.Ntris 1]; 
+	flatSurf.nPatch = [length(vtcs) size(tris,1) 1];
+	flatSurf.vtcs = flatParentSurfOFF.vtcs(vtcs,:);
+	flatSurf.tris = tris;
+	flatSurf.parentSurfaceName = flatParentSurf;
+	flatSurf.Nvtcs = length(vtcs);
+	flatSurf.Ntris = size(tris,1);
+	flatSurf.edges = 0;
+	flatSurf.patch2parent(:,1) = (1:length(vtcs))';
+	flatSurf.patch2parent(:,2) = vtcs';
+	flatSurf.path = params.path;
+	% put it into the params field
+	params.flatFileName = flatSurf;
+	disppercent(inf);
+      end
+    end
+  end
 end
 
 if baseType == 1

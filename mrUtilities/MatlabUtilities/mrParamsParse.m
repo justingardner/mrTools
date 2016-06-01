@@ -265,24 +265,35 @@ for i = 1:length(varinfo)
   if isfield(varinfo{i},'group')
     varinfo{i}.contingent = varinfo{i}.group;
   end
-  if isfield(varinfo{i},'contingent')
+  if any(isfield(varinfo{i},{'contingent','contingentNot'}))
+    % get the name of the variable this one is contingent/or contingentNot on
+    if isfield(varinfo{i},'contingent')
+      contingent = varinfo{i}.contingent;
+      contingentNot = false;
+    else
+      contingent = varinfo{i}.contingentNot;
+      contingentNot = true;
+    end
+    if isempty(contingent),break,end
     % go look for the control variable and set it to
     % have a pointer to this variable
     foundControlVariable = 0;
     for j = 1:length(varinfo)
-      if strcmp(varinfo{i}.contingent,varinfo{j}.name)
+      if strcmp(contingent,varinfo{j}.name)
         foundControlVariable = 1;
         varinfo{i}.contingentOn = j;
         if ~isfield(varinfo{j},'controls')
           varinfo{j}.controls = i;
+	  varinfo{j}.controlsNot = contingentNot;
         else
           varinfo{j}.controls(end+1) = i;
+	  varinfo{j}.controlsNot(end+1) = contingentNot;
         end
       end
     end
     % if not found, then complain
     if ~foundControlVariable
-      disp(sprintf('Control variable for %s (%s) not found, ignoring contingency',varinfo{i}.name,varinfo{i}.contingent));
+      disp(sprintf('Control variable for %s (%s) not found, ignoring contingency',varinfo{i}.name,contingent));
       % otherwise set up the variable to be contingent.
       % that is keep an allValues field of all possible
       % values

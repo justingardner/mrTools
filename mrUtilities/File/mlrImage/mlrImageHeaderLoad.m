@@ -25,6 +25,10 @@ end
 
 % parse arguments
 [imageArgs otherArgs] = mlrImageParseArgs(varargin);
+if length(imageArgs) == 0
+  disp(sprintf('(mlrImageHeaderLoad) No images specified to load'));
+  return
+end
 verbose = [];
 getArgs(otherArgs,{'verbose=0'});
 
@@ -348,6 +352,7 @@ function header = setHeaderBasedOnNifti(header,hdr);
 if hdr.qform_code == 1
   header.qform = hdr.qform44;
 elseif hdr.qform_code ~= 0
+  header.qform = hdr.qform44;
   disp(sprintf('(mlrImageHeaderLoad) Unrecognized qform_code: %i',hdr.qform_code));
 end
 
@@ -355,6 +360,7 @@ end
 if hdr.sform_code == 1
   header.sform = hdr.sform44;
 elseif hdr.sform_code ~= 0
+  header.sform = hdr.sform44;
   disp(sprintf('(mlrImageHeaderLoad) Unrecognized sform_code: %i',hdr.sform_code));
 end  
 

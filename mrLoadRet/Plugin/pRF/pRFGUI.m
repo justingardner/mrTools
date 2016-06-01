@@ -28,16 +28,24 @@ groupNames = putOnTopOfList(viewGet(v,'groupName',groupNum),viewGet(v,'groupName
 
 % get possible restrictions of the analysis (i.e. restrict only to volumes
 % in base coordinates, rois, etc.)
-restrict = {'None'};putOnTop='';
+restrict = {'None'};putOnTop='';nBases = 0;
 curBase = viewGet(v,'curbase');
 for iBase = 1:viewGet(v,'numbase')
   b = viewGet(v,'base',iBase);
   if b.type > 0
+    % add any surface or flat map to base list
     restrict{end+1} = sprintf('Base: %s',b.name);
     if isequal(iBase,curBase)
       putOnTop{1} = restrict{end};
     end
+    % update number of bases we have found
+    nBases = nBases+1;
   end
+end
+% if we have found more than 1 base then add the possibility of
+% running on all bases
+if nBases >= 2
+  restrict{end+1} = sprintf('Base: ALL');
 end
 % get rois
 roiNames = viewGet(v,'roiNames');
@@ -54,12 +62,57 @@ if ~isempty(putOnTop)
   end
 end
 
+% check if we have an old pRF analysis loaded which
+% the user might want to continue running (i.e. add voxels to)
+analysisNames = viewGet(v,'analysisNames');
+pRFAnalyses = {};
+for i = 1:length(analysisNames)
+  if isequal(viewGet(v,'analysisType',i),'pRFAnal')
+    pRFAnalyses{end+1} = analysisNames{i};
+  end
+  % put current analysis on top of list
+  pRFAnalyses = putOnTopOfList(viewGet(v,'analysisName'),pRFAnalyses);
+end
+
 % set the parameter string
 paramsInfo = {};
 if ~pRFFitParamsOnly
   paramsInfo{end+1} = {'groupName',groupNames,'Name of group from which to do pRF analysis'};
   paramsInfo{end+1} = {'saveName','pRF','File name to try to save as'};
   paramsInfo{end+1} = {'restrict',restrict,'Restrict to the analysis to some subset of voxels. If you choose a base anatomy then it will restrict to the voxels that are on the base. If you choose an roi it will restrict the analysis to the voxels in the roi'};
+
+  % if we give the option to continue an analysis
+  if ~isempty(pRFAnalyses) && ~defaultParams
+    continueParamsInfo{1} = {'continueAnalysis',0,'type=checkbox','Continue running a previously run analysis with same parameters. This is usually done on a different restriction set and will look at the old analysis to make sure not to compute voxels that have already been run. In the end will merge the analyses'};
+    continueParamsInfo{2} = {'continueWhich',pRFAnalyses,'Which analysis to continue','contingent=continueAnalysis'};
+    % add on restrict
+    for i = 3:length(paramsInfo)
+      continueParamsInfo{2+i-2} = paramsInfo{i};
+    end
+    for i = 3:length(continueParamsInfo)
+      continueParamsInfo{i}{end+1} = 'contingent=continueAnalysis';
+    end
+    % put up dialog box with possibility to continue analysis
+    continueParams = mrParamsDialog(continueParamsInfo,'Continue existing analysis?');
+    if ~isempty(continueParams) && continueParams.continueAnalysis
+      % get the parameters to continue from
+      params = viewGet(v,'analysisParams',viewGet(v,'analysisNum',continueParams.continueWhich));
+      % copy relevant ones (i.e. what new thing to restrict on)
+      params.restrict =  continueParams.restrict;
+      % tell pRF to set merge analysis instead of asking
+      params.mergeAnalysis = true;
+      % now get a list of all finished voxels
+      a = viewGet(v,'analysis',viewGet(v,'analysisNum',continueParams.continueWhich));
+      if isfield(a,'d')
+	for i = 1:length(a.d)
+	  if isfield(a.d{i},'linearCoords')
+	    params.computedVoxels{i} = a.d{i}.linearCoords;
+	  end
+	end
+      end
+      return
+    end
+  end
 end
 
 %all of these parameters are for pRFFit
@@ -89,6 +142,7 @@ paramsInfo{end+1} = {'dispHDR',0,'type=pushbutton','buttonString=Display HDR','D
 paramsInfo{end+1} = {'saveStimImage',0,'type=checkbox','Save the stim image back to the stimfile. This is useful in that the next time the stim image will not have to be recomputed but can be directly read from the file (it will get saved as a variable called stimImage'};
 paramsInfo{end+1} = {'recomputeStimImage',0,'type=checkbox','Even if there is an already computed stim image (see saveStimImage) above, this will force a recompute of the image. This is useful if there is an update to the code that creates the stim images and need to make sure that the stim image is recreated'};
 paramsInfo{end+1} = {'applyFiltering',1,'type=checkbox','If set to 1 then applies the same filtering that concatenation does to the model. Does not do any filtering applied by averages. If this is not a concat then does nothing besides mean subtraction. If turned off, will still do mean substraction on model.'};
+paramsInfo{end+1} = {'stimImageDiffTolerance',5,'minmax=[0 100]','incdec=[-1 1]','When averaging the stim images should be the same, but some times we are off by a frame here and there due to inconsequential timing inconsistenices. Set this to a small value, like 5 to ignore that percentage of frames of the stimulus that differ within an average. If this threshold is exceeded, the code will ask you if you want to continue - otherwise it will just print out to the buffer the number of frames that have the problem'};
 
 % Get parameter values
 if defaultParams

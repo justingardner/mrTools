@@ -34,7 +34,7 @@ if ieNotDefined('anatFileName')
     else
         startPathStr = anatFilePath;
     end
-    filterspec = {'*.img;*.nii','Nifti/Analyze files'};
+    filterspec = {'*.img;*.nii;*.nii.gz','Nifti/Analyze files'};
     title = 'Choose anatomy file';
     pathStr = mlrGetPathStrDialog(startPathStr,title,filterspec,'on');
 elseif ieNotDefined('anatFilePath')
@@ -115,6 +115,15 @@ for pathNum = 1:length(pathStr)
     [vol hdr] = mlrImageLoad(pathStr{pathNum});
     if isempty(vol),return,end
   end
+
+  % add in a missing qform based on voxel dimensios. This
+  % won't have correct info, but will allow the rest of the
+  % code to run and can be fixed by a correct alignment
+  if isempty(hdr.qform)
+    mrWarnDlg(sprinf('(loadAnat) !!!! Missing qform, making one based only on voxel dimensiosn !!!!'));
+    hdr.qform = diag(hdr.pixdim);
+    hdr.qform(4,4) = 1;
+  end
   
   % now check for an assoicated .mat file, this is created by
   % mrLoadRet and contains parameters for the base anatomy.
@@ -153,8 +162,9 @@ for pathNum = 1:length(pathStr)
       sliceOrientation = viewGet(view,'sliceOrientation');
       if ~isempty(sliceOrientation) && any(sliceOrientation == [1 2 3])
 	% set current slice to the slice half way through the volume
-	voldim = fliplr(size(vol));
+	voldim = size(vol);
 	base.curSlice = max(1,floor(voldim(sliceOrientation)/2));
+	base.curCoords = round(voldim/2);
       end
     end
   else

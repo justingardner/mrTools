@@ -140,6 +140,7 @@ if (baseType == 0) && (baseMultiAxis>0)
   % this hard-coded value also appears in dispBase
   camva(gui.axis,9);
   axis(gui.axis,'equal');
+  daspect(gui.axis,1./viewGet(v,'baseVoxelSize'))
   setMLRViewAngle(v,gui.axis);
   
 else
@@ -380,7 +381,12 @@ if baseType <= 1
   % Just draw with img for regular image,
   if isequal(0,viewGet(v,'baseMultiAxis',baseNum))
     set(fig,'Renderer','painters')
-    image(img,'Parent',hAxis);
+    h = image(img,'Parent',hAxis);
+    v = viewSet(v,'baseHandle',h,baseNum);
+    % get rotation matrix for image so that we can fix the data
+    % aspect ratio properlybelow
+    theta = pi*rotate/180;
+    m = [cos(theta) sin(theta);-sin(theta) cos(theta)];
   else  
     % for multi axis, we want to have them roated by 270
     % which apparently cannot be done using view with 2D images. 
@@ -388,12 +394,35 @@ if baseType <= 1
     % all the images in the correct orientation
     % without having to manually rotate 270 degrees
     % so we display them as textures on planer surfaces and
-    % display those rotated correctly usinv view
+    % display those rotated correctly using view
     set(fig,'Renderer','OpenGL');
     imgSurface = surf(hAxis,zeros(size(img,1),size(img,2)));
     set(imgSurface,'CData',img,'FaceColor','texturemap','EdgeAlpha',0);
+    v = viewSet(v,'baseHandle',imgSurface,baseNum);
     view(hAxis,-90,90);
     set(hAxis,'yDir','reverse');
+    % set the rotation matrix for the data aspect ratio to identity
+    % since we do not do any rotation here.
+    m = eye(2);
+  end
+  % for anatomies to respect their rotation aspect ratios
+  % this code fixes things - but should not do this for flats
+  if baseType == 0
+    % get data aspect ratio from voxel sizes
+    baseVoxelSize = viewGet(v,'baseVoxelSize',baseNum);
+    baseVoxelSize = baseVoxelSize(setdiff([1 2 3],sliceIndex));
+    % rotate axis according to the rotation of the image
+    xAxisRotated = m*[baseVoxelSize(1) 0]';
+    yAxisRotated = m*[0 baseVoxelSize(2)]';
+    % get aspect ratio in rotated frame. Still not quite sure
+    % this works but the idea is to take the unit vectors for the
+    % x and y axis rotated (from above) and see which is larger the
+    % spread between them, or the distance from 0. And take that
+    % as how much you have to scale each axis by.
+    aspectRatio = max(abs(max(xAxisRotated,yAxisRotated)),abs(xAxisRotated-yAxisRotated));
+    % now set the data aspect ratio so that images showup
+    % with the aspect ratio appropriately for the voxel size
+    daspect(hAxis,[aspectRatio' 1]);
   end
 else
   % set the renderer to OpenGL, this makes rendering
@@ -424,7 +453,13 @@ else
   % get alpha
   baseAlpha = viewGet(v,'baseAlpha',baseNum);
   % display the surface
-  patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
+  hSurface = patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
+  % keep the surface handle
+  v = viewSet(v,'baseHandle',hSurface,baseNum);
+  % if the interrogator is on, then we need to reinitialize it
+  if ~verLessThan('matlab','8.4') && mrInterrogator('isactive',viewGet(v,'viewNum'))
+    mrInterrogator('init',viewGet(v,'viewNum'));
+  end
   % make sure x direction is normal to make right/right
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');
@@ -439,11 +474,11 @@ else
   camva(hAxis,9);
   % set the view angle
   setMLRViewAngle(v);
+  axis(hAxis,'image');
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(hAxis,'off');
-axis(hAxis,'image');
 if verbose>1,disppercent(inf);,end
 
 % Display colorbar
@@ -862,5 +897,4 @@ end
 
 if verbose>1,disppercent(inf);,end
 return;
-
 
