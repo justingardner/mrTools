@@ -182,17 +182,82 @@ mlrAnatDBPut(v,v,'mlrBaseAnat');
 %    mlrAnatDBgetReversedpRF    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mlrAnatDBgetReversedpRF(hObject,eventdata)
-
+%%
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-stop = 1;
+curpwd = pwd;
 
-% go load 
 % get subjectID
 subjectID = mlrAnatDBSubjectID(v);
 
-% everything went ok, switch directories and start up over there
+% pull repos, note we need the large file repo (unfortunately), because
+% otherwise we don't have access to the pRF analysis
 [localRepo, localRepoLargeFiles] = mlrAnatDBGetRepo(subjectID);
+
+% try to find the pRF analysis automatically
+pRFloc = '';
+locdir = fullfile(localRepoLargeFiles,'localizers',sprintf('%s*',subjectID));
+localizers = dir(locdir);
+if length(localizers)>1
+    warning('Implement choosing between multiple localizers');
+    keyboard
+elseif isempty(localizers)
+    warning('Did not find any localizers for this subject.');
+    return
+else
+    pRFloc = fullfile(localRepoLargeFiles,'localizers',localizers(1).name);
+end
+
+if strcmp(questdlg(sprintf('(mlrAnatDBPlugin) I need to close your current session while I load the overlays from the pRF session. Is that okay?'),'mlrAnatDBPlugin','Ok','Cancel','Cancel'),'Cancel')
+  return
+end
+
+mrQuit;
+
+cd(pRFloc);
+
+v = newView();
+questdlg('Please pick the analysis you want to load overlays from.','Choose Analysis','OK');
+v = loadAnalysis(v);
+overlays = v.analyses{1}.overlays;
+
+opts = [];
+chosen = [];
+while isempty(chosen)
+    disp(sprintf('\nAll overlays available'));
+    for i = 1:length(overlays)
+        cOver = overlays(i);
+        disp(sprintf('Overlay %i: %s',i,cOver.name));
+        if strfind(cOver.name,'Overlap')
+            chosen = [chosen i];
+        end
+        opts = [opts i];
+    end
+    disp(sprintf('\nOverlays currently selected'));
+    for ci = chosen
+        disp(sprintf('Overlay %i: %s',ci,overlays(ci).name));
+    end
+    nchosen = input('Input a new array (e.g. [1 3]) or hit enter to continue: ');
+    if ~isempty(nchosen)
+        chosen = nchosen;
+    end
+end
+
+scan2magFrom = viewGet(v,'scan2mag');
+
+cOverlays = overlays(chosen);
+
+% reopen the original mlr directory
+mrQuit(0);
+cd(curpwd)
+v = mrLoadRet;
+
+% transform cOverlays into the current scan space
+scan2magTo = viewGet(v,'scan2mag');
+
+scan2scan = inv(scan2magTo) * scan2magFrom;
+
+stop = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatDBReversepRF    %
@@ -233,10 +298,10 @@ end
 
 knownAnalyses = {'cohcon'};
 knownCoords = {{[3.5 12 -7 7],[-12 -3.5 -7 7]}};
-knownNames = {{'Right','Left'}};
+knownNames = {{'right','left'}};
 knownStr = knownAnalyses{1};
 for ki = 2:length(knownAnalyses)
-    knownStr = [knownStr,', ',knownAnalyses{ki}];
+    knownStr = [knownStr,', ',sprintf('''%s''',knownAnalyses{ki})];
 end
 
 anName = '';
@@ -308,6 +373,8 @@ end
 [v, analysis] = mrDispOverlay(stimulusOverlap(:,:,:,2),viewGet(v,'curscan'),analysis,v,sprintf('overlayName=%sOverlap%s',names{2},anName));
 
 refreshMLRDisplay(viewGet(v,'viewNum'));
+
+saveAnalysis(v,analysis.name);
 
 function overlap = computeOverlap(data,stimulusCoords,x,y,z,f)
 
