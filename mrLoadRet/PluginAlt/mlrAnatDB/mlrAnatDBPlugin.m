@@ -192,7 +192,7 @@ subjectID = mlrAnatDBSubjectID(v);
 
 % pull repos, note we need the large file repo (unfortunately), because
 % otherwise we don't have access to the pRF analysis
-[localRepo, localRepoLargeFiles] = mlrAnatDBGetRepo(subjectID);
+[~, localRepoLargeFiles] = mlrAnatDBGetRepo(subjectID);
 
 % try to find the pRF analysis automatically
 pRFloc = '';
@@ -208,6 +208,9 @@ else
     pRFloc = fullfile(localRepoLargeFiles,'localizers',localizers(1).name);
 end
 
+if strcmp(questdlg(sprintf('(mlrAnatDBPlugin) Before you run this make sure you selected the analysis and scan you want the new overlays to be added to!!!'),'mlrAnatDBPlugin','Ok','Cancel','Cancel'),'Cancel')
+  return
+end
 if strcmp(questdlg(sprintf('(mlrAnatDBPlugin) I need to close your current session while I load the overlays from the pRF session. Is that okay?'),'mlrAnatDBPlugin','Ok','Cancel','Cancel'),'Cancel')
   return
 end
@@ -217,7 +220,13 @@ mrQuit;
 cd(pRFloc);
 
 v = newView();
-questdlg('Please pick the analysis you want to load overlays from.','Choose Analysis','OK');
+if strcmp(questdlg(sprintf('(mlrAnatDBPlugin) Please pick the analysis you want to load overlays from.'),'mlrAnatDBPlugin','Ok','Cancel','Cancel'),'Cancel')
+    mrQuit
+    mrQuit(0);
+    cd(curpwd)
+    mrLoadRet;
+    return
+end
 v = loadAnalysis(v);
 overlays = v.analyses{1}.overlays;
 
@@ -269,7 +278,6 @@ for ci = 1:length(cOverlays)
 end
 
 refreshMLRDisplay(viewGet(v,'viewNum'));
-stop = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatDBReversepRF    %
