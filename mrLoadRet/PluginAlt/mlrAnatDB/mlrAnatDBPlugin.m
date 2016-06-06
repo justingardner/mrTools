@@ -265,7 +265,7 @@ v = mrLoadRet;
 scan2magTo = viewGet(v,'scan2mag');
 
 scan2scan = inv(scan2magFrom) * scan2magTo;
-
+analysis = viewGet(v,'analysis');
 toDims = viewGet(v,'scandims');
 [x,y,z] = ind2sub(toDims,1:(toDims(1)*toDims(2)*toDims(3)));
 out = scan2scan*[x;y;z;ones(size(x))];
@@ -274,10 +274,11 @@ for ci = 1:length(cOverlays)
     dat = cOverlays(ci).data{3};
     lOverlay = interp3(dat,out(2,:),out(1,:),out(3,:),'nearest');
     lOverlaydat = reshape(lOverlay,toDims);
-    v = mrDispOverlay(lOverlaydat,1,viewGet(v,'analysis'),v,sprintf('overlayName=%s',cOverlays(ci).name));
+    v = mrDispOverlay(lOverlaydat,1,analysis,v,sprintf('overlayName=%s',cOverlays(ci).name));
 end
 
 refreshMLRDisplay(viewGet(v,'viewNum'));
+saveAnalysis(v,analysis.name);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrAnatDBReversepRF    %
