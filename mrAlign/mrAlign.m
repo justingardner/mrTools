@@ -67,7 +67,7 @@ ALIGN.ignoreZeroVoxels = 1;      % specifies if zero voxels should be ignored wh
 ALIGN.displayAlignmentSteps = 1; % specifies if alignment optimization steps are displayed
 
 ALIGN.minCoarseVoxelSize = 3;    % minimum size of inplanes/volume voxels to compute coarse alignment
-ALIGN.minFineVoxelSize = 1;      % minimum size of inplanes voxels to compute fine alignment
+ALIGN.minFineVoxelSize = .5;      % minimum size of inplanes voxels to compute fine alignment
 ALIGN.minEPICoarseVoxelSize = 2; % minimum size of inplanes/volume voxels to compute coarse EPI alignment
 ALIGN.minEPIFineVoxelSize = .5;  % minimum size of inplanes voxels to compute fine EPI alignment
 
