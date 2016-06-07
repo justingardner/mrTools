@@ -27,30 +27,36 @@ else
 end
 nVoxels = length(indices);
 
+if fieldIsNotDefined(d,'estimationSupersampling')
+  d.estimationSupersampling =1;
+end
+if fieldIsNotDefined(d,'designSupersampling')
+  d.designSupersampling=1;
+end
+if fieldIsNotDefined(d,'acquisitionDelay')
+  d.acquisitionDelay=d.tr/2;
+end
+
 betas = permute(d.ehdr,[4 5 1 2 3]);
 betas = betas(:,:,indices);
 noValue = isnan(squeeze(betas(1,1,:)));
 
-if fieldIsNotDefined(d,'hrf')
-  hrf = eye(size(betas,2));
-  params.componentsToTest = ones(1,size(betas,2));
+if fieldIsNotDefined(d,'actualhrf')
+  if fieldIsNotDefined(d,'hrf')
+    hrf = eye(size(betas,2));
+    params.componentsToTest = ones(1,size(betas,2));
+  else
+    hrf = d.hrf;
+  end
 else
-  hrf = d.hrf;
+  hrf = d.actualhrf;
 end
 hrfLength = size(hrf,1);
-  
-hdr = NaN(hrfLength,d.nhdr,nVoxels);
-for iVoxel = 1:nVoxels
-  hdr(:,:,iVoxel) = hrf*betas(:,:,iVoxel)';
-end
 
 if fieldIsNotDefined(d,'nHrfComponents')
   d.nHrfComponents = size(hrf,2);
 end
 
-
-% Compute estimate std error (see for example Seber & Lee, Linear Regression Analysis, 1977, p42,67)
-betaSte = NaN(size(betas));
 if isfield(params,'componentsCombination')
   nComponents = d.nHrfComponents*d.nhdr;
   nHrfComponents = d.nHrfComponents;
@@ -59,13 +65,30 @@ else
   nHrfComponents = 1;
 end
 
+extendedHrf = kron(eye(d.nhdr),hrf);
+betas = reshape(permute(betas,[2 1 3]),nComponents,nVoxels);
+if fieldIsNotDefined(d,'emptyEVcomponents')
+  hdr = extendedHrf*betas;
+else
+  nonEmptyEVcomponents = setdiff(1:d.nHrfComponents*d.nhdr,d.emptyEVcomponents);
+  extendedHrf(:,d.emptyEVcomponents)=[];
+  hdr = extendedHrf*betas(nonEmptyEVcomponents,:);
+end
+betas = permute(reshape(betas,[nHrfComponents d.nhdr nVoxels]),[2 1 3]);
+hdr = reshape(hdr,[hrfLength,d.nhdr,nVoxels]);
+
+% Compute estimate std error (see for example Seber & Lee, Linear Regression Analysis, 1977, p42,67)
 hdrSte = NaN(size(hdr));
 if ~fieldIsNotDefined(d,'s2')
+  %remove empty components if any
+  if ~fieldIsNotDefined(d,'emptyEVcomponents')
+    d.scm(:,d.emptyEVcomponents)=[];
+  end
   [invCovEVs,pinv_X]=computeNormalEquations(d.scm);
   s2 = permute(d.s2(indices),[2 3 1]);
   %for hdrSte:
-  thisHrf = kron(eye(d.nhdr),hrf);
   if params.covCorrection && ~fieldIsNotDefined(d,'autoCorrelationParameters')
+    betaSte = NaN(size(betas));
     acfParams = permute(d.autoCorrelationParameters,[4 1 2 3]);
     acfParams = acfParams(:,indices);
     invCorrectedCovEV = NaN(size(d.scm,2),size(d.scm,2),nVoxels);
@@ -81,14 +104,26 @@ if ~fieldIsNotDefined(d,'s2')
           case 'varianceCorrection' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
             invCorrectedCovEV(:,:,iVoxel) = pinv_X * residualsAcm * pinv_X'; 
         end
-        betaSte(:,:,iVoxel) = reshape(diag(invCorrectedCovEV(:,:,iVoxel)),nHrfComponents,d.nhdr)';  
+        if ~fieldIsNotDefined(d,'emptyEVcomponents')
+          thisBetaSte = nan(nHrfComponents*d.nhdr,1);
+          thisBetaSte(nonEmptyEVcomponents)=diag(invCorrectedCovEV(:,:,iVoxel));
+        else
+          thisBetaSte = diag(invCorrectedCovEV(:,:,iVoxel));
+        end
+        betaSte(:,:,iVoxel) = reshape(thisBetaSte,nHrfComponents,d.nhdr)';
         % according to Friston et al. 1998 Neuroimage 7 p30-40:
-        hdrSte(:,:,iVoxel) = reshape(diag(thisHrf*invCorrectedCovEV(:,:,iVoxel)*thisHrf'),hrfLength,d.nhdr);  
+        hdrSte(:,:,iVoxel) = reshape(diag(extendedHrf*invCorrectedCovEV(:,:,iVoxel)*extendedHrf'),hrfLength,d.nhdr);
       end
     end
   else %OLS 
-    betaSte = repmat(reshape(diag(invCovEVs),nHrfComponents,d.nhdr)',[1 1 nVoxels]);  
-    hdrSte = repmat(reshape(diag(thisHrf*invCovEVs*thisHrf'),hrfLength,d.nhdr),[1 1 nVoxels]);  
+    if ~fieldIsNotDefined(d,'emptyEVcomponents')
+      betaSte = nan(nHrfComponents*d.nhdr,1);
+      betaSte(nonEmptyEVcomponents) = diag(invCovEVs);
+    else
+      betaSte = diag(invCovEVs);
+    end
+    betaSte = repmat(reshape(betaSte,nHrfComponents,d.nhdr)',[1 1 nVoxels]);
+    hdrSte = repmat(reshape(diag(extendedHrf*invCovEVs*extendedHrf'),hrfLength,d.nhdr),[1 1 nVoxels]);
   end
   betaSte = sqrt(betaSte.*repmat(s2,[d.nhdr,nHrfComponents 1]));  
   hdrSte = sqrt(hdrSte.*repmat(s2,[hrfLength d.nhdr 1]));  
@@ -135,10 +170,15 @@ if ~fieldIsNotDefined(params,'contrasts')
     end
 
     betas = reshape(permute(betas,[2 1 3]),nComponents,nVoxels);
-    contrastBetas = extendedContrasts*betas;
-
-    contrastHdr = reshape(hdrContrasts*betas,hrfLength,nContrasts,nVoxels);
-
+    if ~fieldIsNotDefined(d,'emptyEVcomponents')
+      extendedContrasts = extendedContrasts(:,nonEmptyEVcomponents);
+      hdrContrasts = hdrContrasts(:,nonEmptyEVcomponents);
+      contrastBetas = extendedContrasts*betas(nonEmptyEVcomponents,:);
+      contrastHdr = reshape(hdrContrasts*betas(nonEmptyEVcomponents,:),hrfLength,nContrasts,nVoxels);
+    else
+      contrastBetas = extendedContrasts*betas;
+      contrastHdr = reshape(hdrContrasts*betas,hrfLength,nContrasts,nVoxels);
+    end
     betas = permute(reshape(betas,[nHrfComponents d.nhdr nVoxels]),[2 1 3]);
 
     contrastBetaSte = NaN(size(contrastBetas));
@@ -179,6 +219,9 @@ end
 outputIndices = indices(~noValue);
 estimates.betas = betas(:,:,~noValue);
 estimates.betaSte = betaSte(:,:,~noValue);
+%set any null estimate to NaN
+hdr(hdr==0)=NaN;
+hdrSte(hdrSte==0)=NaN;
 estimates.hdr = hdr(:,:,~noValue);
 estimates.hdrSte = hdrSte(:,:,~noValue);
 
@@ -196,16 +239,7 @@ if isfield(d,'ehdrBootstrapCIs')
 end
 
 % Time vector
-if fieldIsNotDefined(d,'estimationSupersampling')
-  d.estimationSupersampling =1;
-end
-% if fieldIsNotDefined(d,'acquisitionSubsample')
-%   d.acquisitionSubsample=1;
-% end
-if fieldIsNotDefined(d,'acquisitionDelay')
-  d.acquisitionDelay=d.tr/2;
-end
-tr = d.tr/d.estimationSupersampling;
+tr = d.tr/max(d.estimationSupersampling,d.designSupersampling);
 % estimates.time = ((d.acquisitionSubsample-.5)*tr:tr:(hrfLength+d.acquisitionSubsample-1.5)*tr)';
 estimates.time = rem(d.acquisitionDelay,tr)+tr*(0:hrfLength-1);
 

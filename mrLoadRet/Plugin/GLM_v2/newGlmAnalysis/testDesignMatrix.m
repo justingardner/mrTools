@@ -7,7 +7,7 @@
 %    purpose: test for any zero-column in designMatrix (taken out of makeDesignMatrix)
 %
 
-function retval = testDesignMatrix(designMatrix,nHdr,nHrfComponents,EVnames)
+function nullComponents = testDesignMatrix(designMatrix,nHdr,nHrfComponents,EVnames)
 
 if any(all(~designMatrix,1))
   nullComponents = find((all(~designMatrix,1)));
@@ -18,7 +18,6 @@ if any(all(~designMatrix,1))
       fprintf('EV ''%s'': Components %s\n',EVnames{iEV},mat2str(whichComponents));
     end
   end
-  retval = false;
 else
-  retval = true;
+  nullComponents = [];
 end

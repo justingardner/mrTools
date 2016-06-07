@@ -160,13 +160,16 @@ else
 end
 
 %--------------------------------------------------- INITIALIZATION ------------------------------------%
+%remove empty components if any
+scm=d.scm;
+scm(:,d.emptyEVcomponents)=[];
 % precalculate the normal equation for Ordinary Least Squares
-[invCovEVs,pinv_X]=computeNormalEquations(d.scm);
+[invCovEVs,pinv_X]=computeNormalEquations(scm);
 
 nFrames = size(d.volumes,2);
 
-residualForming = eye(nFrames) - d.scm*pinv_X; %this matrix computes the residuals directly
-d.rdf = nFrames-size(d.scm,2)-1; %degrees of freedom for the residual          %SHOULD BE nFrames-size(d.scm,2)
+residualForming = eye(nFrames) - scm*pinv_X; %this matrix computes the residuals directly
+d.rdf = nFrames-size(scm,2)-1; %degrees of freedom for the residual          %SHOULD BE nFrames-size(scm,2)
 
 if ((params.covCorrection && params.covEstimationAreaSize>1) || params.spatialSmoothing)  && isfield(d,'roiPositionInBox') 
   d.dim(1) = nnz(d.roiPositionInBox);
@@ -210,9 +213,13 @@ numberFtests = length(restrictions);
 %expand restriction matrices using kronecker products
 for iR = 1:numberFtests
   restrictions{iR} = kron(restrictions{iR},params.componentsToTest);
+  %remove empty EV components
+  restrictions{iR}(:,d.emptyEVcomponents)=[];
 end
 for iContrast = 1:length(contrasts)
   contrasts{iContrast} = kron(contrasts{iContrast},params.componentsToTest);
+  %remove empty EV components
+  contrasts{iContrast}(:,d.emptyEVcomponents)=[];
 end
 
 
@@ -241,7 +248,7 @@ if ~isempty(restrictions)
     scm_h = cell(1,numberFtests);
     eig_residualForming_f_tests = cell(1,numberFtests);
     for iR = 1:numberFtests
-      scm_h{iR} = d.scm*complementaryRestriction{iR}';           
+      scm_h{iR} = scm*complementaryRestriction{iR}';      
       residualForming_h(:,:,iR) = eye(nFrames) - scm_h{iR}*((scm_h{iR}'*scm_h{iR})^-1)*scm_h{iR}';       %TO REMOVE EVENTUALLY
       residualForming_f_tests(:,:,iR) = residualForming_h(:,:,iR) - residualForming; 
       V = eig(residualForming_f_tests(:,:,iR));
@@ -273,15 +280,15 @@ numberTests = numberTtests+numberFtests;
 dInfo = whos('d');
 totalBytes = dInfo.bytes; %keep track of big variables, including the raw data
 
-[betas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),precision,totalBytes);
+[betas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(1),precision,totalBytes);
 [thisS2,totalBytes] = alloc('NaN',d.dim(1),1,precision,totalBytes);
 [thisResiduals,totalBytes] = alloc('NaN',d.dim(4),d.dim(1),precision,totalBytes);
 if actualData 
   if bootstrapIntervals
-    [sortedBetas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),nResamples,precision,totalBytes);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
-    [d.ehdrBootstrapCIs,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision,totalBytes);
+    [sortedBetas,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(1),nResamples,precision,totalBytes);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+    [d.ehdrBootstrapCIs,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(1),d.dim(2),d.dim(3),precision,totalBytes);
   end
-  [d.ehdr,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(1),d.dim(2),d.dim(3),precision,totalBytes);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
+  [d.ehdr,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(1),d.dim(2),d.dim(3),precision,totalBytes);    %JB: replaces: d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
   [rss,totalBytes] = alloc('NaN',d.dim(1),d.dim(2),d.dim(3),precision,totalBytes); %JB: this is to store the sum of square of the residual error term
   [tss,totalBytes] = alloc('NaN',d.dim(1),d.dim(2),d.dim(3),precision,totalBytes); %JB: this is to store the total sum of square
   [d.s2,totalBytes] = alloc('NaN',d.dim(1),d.dim(2),d.dim(3),precision,totalBytes); %JB: this is to store the estimated variance
@@ -337,16 +344,16 @@ if numberFtests || params.computeTtests
     switch(params.covCorrectionMethod)
       case 'generalizedLeastSquares'
         %pre allocate temporary variables
-        [corrected_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of values on the first dimension
+        [corrected_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of values on the first dimension
         if actualData || numberTests
-          [invCorrectedCovEV,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes);
+          [invCorrectedCovEV,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(1),'double',totalBytes);
         end
       case 'varianceCorrection' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
-        [invCorrectedCovEV,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes);
+        [invCorrectedCovEV,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(1),'double',totalBytes);
         [correctedRdf,totalBytes] = alloc('NaN',d.dim(1),1,'double',totalBytes);
       case 'preWhitening' %see Woolrich et al. (2001) NeuroImage, 14(6), p1370
-        [white_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents,d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
-        [white_scm,totalBytes] = alloc('NaN',d.dim(4),d.nhdr*d.nHrfComponents,d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
+        [white_pinv_X,totalBytes] = alloc('NaN',d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(4),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
+        [white_scm,totalBytes] = alloc('NaN',d.dim(4),d.nhdr*d.nHrfComponents-length(d.emptyEVcomponents),d.dim(1),'double',totalBytes); %this array might become a bit large if a lot of voxels on the first dimension
         [correctedRdf,totalBytes] = alloc('NaN',d.dim(1),1,'double',totalBytes);
     end
   end
@@ -431,7 +438,7 @@ for z = slices
     % get OLS residuals
 %     for iX = 1:ceil(d.dim(1)/optimalXLength)
 %        xSubset = (iX-1)*optimalXLength+1 : min(iX*optimalXLength,d.dim(1));
-%        residuals(:,xSubset,y) = residualForming*timeseries(:,xSubset,y); %JB resplaces residuals = timeseries-d.scm*d.ehdr(:,:,y,z);
+%        residuals(:,xSubset,y) = residualForming*timeseries(:,xSubset,y); %JB resplaces residuals = timeseries-scm*d.ehdr(:,:,y,z);
 %     end
     residuals(:,:,y) = residualForming*timeseries(:,:,y); %This is too long if X dim is large ?? (when calling with all data on the first dimension)
   end
@@ -531,13 +538,13 @@ for z = slices
           switch(params.covCorrectionMethod)
           
             case 'generalizedLeastSquares' %see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
-              correctedCovEV = d.scm' / residualsAcm * d.scm;
-              %corrected_pinv_X(:,:,x) = correctedCovEV \ d.scm';
+              correctedCovEV = scm' / residualsAcm * scm;
+              %corrected_pinv_X(:,:,x) = correctedCovEV \ scm';
               %betas(:,x) = corrected_pinv_X(:,:,x)  / residualsAcm * timeseries(:,x,y);
-              corrected_pinv_X(:,:,x) = correctedCovEV \ d.scm' / residualsAcm;
+              corrected_pinv_X(:,:,x) = correctedCovEV \ scm' / residualsAcm;
               betas(:,x) = corrected_pinv_X(:,:,x)   * timeseries(:,x,y);
               %these are the new GLS residuals (but we don't need the OLS ones anymore, so just replace)
-              residuals(:,x,y) = timeseries(:,x,y) - d.scm*betas(:,x);
+              residuals(:,x,y) = timeseries(:,x,y) - scm*betas(:,x);
               if numberFtests || (numberTtests && params.computeTtests)
                 invCorrectedCovEV(:,:,x) = inv(correctedCovEV); 
               end
@@ -566,7 +573,7 @@ for z = slices
                   end
               end
               if ~isempty(preFilter)
-                white_scm(:,:,x) = preFilter * d.scm;                 %%%% IS IT POSSIBLE TO SKIP THE FACTORIZATION BY ONLY USING (COV)^-1 LATER ON ??
+                white_scm(:,:,x) = preFilter * scm;                 %%%% IS IT POSSIBLE TO SKIP THE FACTORIZATION BY ONLY USING (COV)^-1 LATER ON ??
                 timeseries(:,x,y) = preFilter * timeseries(:,x,y);    %%%% NOT ACCORDING TO Kruggel et al. 2002...
                 white_pinv_X(:,:,x) = (white_scm(:,:,x)'*white_scm(:,:,x))\white_scm(:,:,x)';
                 white_residualForming = eye(nFrames) - white_scm(:,:,x)*white_pinv_X(:,:,x);
@@ -576,7 +583,7 @@ for z = slices
                 end
                 if numberFtests || (numberTtests&&params.computeTtests)
                   correctedRdf(x) = trace(white_residualForming * preFilter * residualsAcm * preFilter');
-                  invCorrectedCovEV(:,:,x) = inv(d.scm' * invResidualsAcm * d.scm); 
+                  invCorrectedCovEV(:,:,x) = inv(scm' * invResidualsAcm * scm);
                 end
               end
           end
@@ -637,13 +644,13 @@ for z = slices
               %estimate the OLS beta weights 
               betas = pinv_X*timeseries(:,:,y); 
               %and we replace the residuals for this y by the bootstrap residuals
-              thisResiduals = timeseries(:,:,y)-d.scm*betas;
+              thisResiduals = timeseries(:,:,y)-scm*betas;
 
             case 'generalizedLeastSquares' %see Wicker & Fonlupt (2003) NeuroImage, 18, p589 and Burock & Dale (2000) Human Brain Mapping, 11, p249
               for x = xvals
                 if verbose,mrWaitBar( passesCounter/totalPasses, hWaitBar);end
                 betas(:,x) = corrected_pinv_X(:,:,x) * timeseries(:,x,y);
-                thisResiduals(:,x) = timeseries(:,x,y) - d.scm*betas(:,x);
+                thisResiduals(:,x) = timeseries(:,x,y) - scm*betas(:,x);
                 passesCounter = thisPassesCounter+x/2;
               end
               passesCounter = thisPassesCounter+passesInBootstrap/2;
@@ -901,7 +908,7 @@ for z = slices
           if ~any(isnan(timeseries(:,x,y))) && ~any(isnan(autoCorrelation(:,x)))
                        residualsAcm = makeAcm(autoCorrelationParameters(:,x,y,z),d.dim(4),params.covEstimation); 
             if approximate_value 
-               effective_rdf(x,y,z) = d.dim(4)*(d.dim(4)-d.nhdr*d.nHrfComponents)/trace(residualsAcm*residualsAcm);
+               effective_rdf(x,y,z) = d.dim(4)*(d.dim(4)-d.nhdr*d.nHrfComponents+length(d.emptyEVcomponents))/trace(residualsAcm*residualsAcm);
             else %this is the exact value (longer and not very different for large N, which is usually the case for fMRI data)
                RV = residualForming*residualsAcm;           
                traceRV(x,y,z) = trace(RV);       
@@ -963,12 +970,23 @@ end
 if actualData
   % calculate variance accounted for by the estimated hdr
   out.r2 = 1 - rss./tss;     %JB: replaces: r2{y,z} = (1-sumOfSquaresResidual./sum(timeseries.^2));
+  if ~isempty(d.emptyEVcomponents) %replace empty EV parameter estimates by nans
+    nonEmptyEVcomponents = setdiff(1:d.nHrfComponents*d.nhdr,d.emptyEVcomponents);
+    ehdr = nan(d.nHrfComponents*d.nhdr, d.dim(1), d.dim(2), d.dim(3));
+    ehdr(nonEmptyEVcomponents,:,:,:) = d.ehdr;
+    d.ehdr=ehdr;
+  end
   %reshape nhdr and nhdrlen on two dimensions, put bootstrap dimension last, and swap nHrfComponents and nhdr order
   d.ehdr = permute(reshape(d.ehdr, d.nHrfComponents, d.nhdr, d.dim(1), d.dim(2), d.dim(3)),[3 4 5 2 1]);    
   if params.covCorrection
     d.autoCorrelationParameters = permute(autoCorrelationParameters,[2 3 4 1]);
   end
   if bootstrapIntervals
+    if ~isempty(d.emptyEVcomponents)
+      ehdrBootstrapCIs = nan(d.nHrfComponents*d.nhdr, d.dim(1), d.dim(2), d.dim(3));
+      ehdrBootstrapCIs(nonEmptyEVcomponents,:,:,:) = d.ehdrBootstrapCIs;
+      d.ehdrBootstrapCIs=ehdrBootstrapCIs;
+    end
     d.ehdrBootstrapCIs = permute(reshape(d.ehdrBootstrapCIs, d.nHrfComponents, d.nhdr, d.dim(1), d.dim(2), d.dim(3)),[3 4 5 2 1]);
     if ~isempty(contrasts)
       d.contrastBootstrapCIs = permute(d.contrastBootstrapCIs,[2 3 4 1]);
