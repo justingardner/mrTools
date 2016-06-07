@@ -616,7 +616,11 @@ set(handle,'position',get(hLegend,'position'));
 
 function plotModelTSeries(handle,eventData,hActualTSeries,actualTSeries,hModelTSeries,scm,ehdr,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT)
 %get which EV are checked (note that children of the uipanel are ordered from bottom to top, so we flipud
-whichEVs = logical(flipud(cell2mat(get(get(hPanel,'children'),'value'))));
+whichEVs = get(get(hPanel,'children'),'value');
+if ~isnumeric(whichEVs)
+  whichEVs = flipud(cell2mat(whichEVs));
+end
+whichEVs = logical(whichEVs);
 evHdr = ehdr;
 evHdr(~whichEVs,:) = 0;
 if size(scm,2)==numel(ehdr)
