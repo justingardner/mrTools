@@ -250,7 +250,7 @@ while keepAsking
     mrWarnDlg('Please set a stim duration value');
   elseif length(tempParams.EVnames)~=tempParams.numberEVs
     mrWarnDlg('Please enter a name for all the EVs');
-  elseif ~isequal(tempParams.EVnames,unique(tempParams.EVnames))
+  elseif ~isequal(sort(tempParams.EVnames),unique(tempParams.EVnames))
     mrWarnDlg('All the EV names must be different');
   else
     keepAsking = 0;
