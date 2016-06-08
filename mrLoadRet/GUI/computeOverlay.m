@@ -161,9 +161,9 @@ if ~isempty(overlayImages)
       range = viewGet(thisView,'overlayRange',curAlphaOverlays(iOverlay));
       % handle setRangeToMax
       if strcmp(viewGet(thisView,'overlayCtype',curAlphaOverlays(iOverlay)),'setRangeToMax')
-        maxRange = max(clip(1),min(alphaOverlayImage(mask)));
+        maxRange = max(clip(1),min(alphaOverlayImage(overlayMasks(:,:,:,iOverlay))));
         if ~isempty(maxRange),range(1) = maxRange;end
-        minRange = min(max(alphaOverlayImage(mask)),clip(2));
+        minRange = min(max(alphaOverlayImage(overlayMasks(:,:,:,iOverlay))),clip(2));
         if ~isempty(minRange),range(2) = minRange;end
       end
       % now compute the alphaOverlay as a number from
