@@ -269,15 +269,23 @@ analysis = viewGet(v,'analysis');
 toDims = viewGet(v,'scandims');
 [x,y,z] = ind2sub(toDims,1:(toDims(1)*toDims(2)*toDims(3)));
 out = scan2scan*[x;y;z;ones(size(x))];
-lOverlays = {};
+
 for ci = 1:length(cOverlays)
-    dat = cOverlays(ci).data{3};
+    if length(cOverlays(ci).data)>1
+        %
+        disp('(mlrAnatDBPlugin) I don''t know which scan to pull from. Please choose...');
+        warning('NOT IMPLEMENTED');
+        keyboard
+    else
+        dat = cOverlays(ci).data{1};
+    end
     lOverlay = interp3(dat,out(2,:),out(1,:),out(3,:),'nearest');
     lOverlaydat = reshape(lOverlay,toDims);
-    v = mrDispOverlay(lOverlaydat,1,analysis,v,sprintf('overlayName=%s',cOverlays(ci).name));
+    [v,analysis] = mrDispOverlay(lOverlaydat,1,analysis,v,sprintf('overlayName=%s',cOverlays(ci).name));
+    refreshMLRDisplay(viewGet(v,'viewNum'));
+    mglWaitSecs(1); % I don't know what's wrong here but sometimes this code doesn't work, this might fix it??
 end
 
-refreshMLRDisplay(viewGet(v,'viewNum'));
 saveAnalysis(v,analysis.name);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
