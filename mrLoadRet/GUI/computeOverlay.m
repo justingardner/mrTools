@@ -196,8 +196,9 @@ if ~isempty(overlayImages)
       case 'setRangeToMax'
         overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
-          overlays.range(iOverlay,1) = max(overlays.range(1),min(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
-          overlays.range(iOverlay,2) = min(max(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(2));
+          thisOverlayIm=overlays.overlayIm(:,:,iOverlay);
+          overlays.range(iOverlay,1) = max(overlays.range(iOverlay,1),min(thisOverlayIm(overlayMasks(:,:,:,iOverlay))));
+          overlays.range(iOverlay,2) = min(max(thisOverlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(iOverlay,2));
         end
       case 'setRangeToMaxAroundZero'
        if (viewGet(thisView,'baseType') == 0) && viewGet(thisView,'baseMultiAxis')
