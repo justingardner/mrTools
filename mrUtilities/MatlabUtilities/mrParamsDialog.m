@@ -323,16 +323,6 @@ for i = 1:length(gParams.varinfo)
       end
     end
   end
-  % check enable/visible options
-  if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
-      set(gParams.ui.varentry{i},'enable','off');
-  end
-  if isfield(gParams.varinfo{i},'visible') && isequal(gParams.varinfo{i}.visible,0)
-    set(gParams.ui.varentry{i},'visible','off');
-    set(gParams.ui.varname(i),'visible','off');
-    set(gParams.ui.incdec{i}{1},'visible','off');
-    set(gParams.ui.incdec{i}{2},'visible','off');
-  end
 end
 
 % set ok and cancel callback
@@ -354,6 +344,19 @@ end
 for i = 1:length(gParams.varinfo)
   if isfield(gParams.varinfo{i},'controls')
     buttonHandler(i,1,1);
+  end
+end
+
+% check enable/visible options
+for i = 1:length(gParams.varinfo)
+  if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
+      set(gParams.ui.varentry{i},'enable','off');
+  end
+  if isfield(gParams.varinfo{i},'visible') && isequal(gParams.varinfo{i}.visible,0)
+    set(gParams.ui.varentry{i},'visible','off');
+    set(gParams.ui.varname(i),'visible','off');
+    set(gParams.ui.incdec{i}{1},'visible','off');
+    set(gParams.ui.incdec{i}{2},'visible','off');
   end
 end
 

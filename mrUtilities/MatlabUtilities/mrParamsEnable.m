@@ -28,13 +28,33 @@ end
 
 for i = 1:length(gParams.varinfo)
   if strcmp(gParams.varinfo{i}.name,paramname)
-    for j = 1:length(gParams.ui.varentry{i})
-      set(gParams.ui.varentry{i}(j),'enable',enable);
+    % check for contingentOn
+    thisEnable = enable;
+    if strcmp(enable,'on') && isfield(gParams.varinfo{i},'contingentOn')
+      % if it is contingent on something that has a value of 0, then
+      % keep it off
+      params = mrParamsGet('getUnenabled=1','paramNum',gParams.varinfo{i}.contingentOn);
+      controlName = gParams.varinfo{gParams.varinfo{i}.contingentOn}.name;
+      if isfield(params,controlName) && isequal(params.(controlName),0)
+	thisEnable = 'off';
+      end
     end
+    for j = 1:length(gParams.ui.varentry{i})
+      % set enable on main field
+      set(gParams.ui.varentry{i}(j),'enable',thisEnable);
+    end
+    % set enable on inc/dec
+    for j = 1:length(gParams.ui.incdec{i})
+      if ~isempty(gParams.ui.incdec{i}{j})
+	set(gParams.ui.incdec{i}{j},'enable',thisEnable);
+      end
+    end
+    drawnow
     return
   end
 end
 
 disp(sprintf('(mrParamsEnable) Could not find parameter %s',paramname));
+
 
 
