@@ -158,7 +158,7 @@ for pathNum = 1:length(pathStr)
     if ~isfield(base,'rotate') || isempty(base.rotate)
       base.rotate = 90;
     end
-    if ~isfield(base,'curCoords') || isempty(base.curSlice)
+    if ~isfield(base,'curCoords') || isempty(base.curCoords)
 	% set current slice to the slice half way through the volume
 	voldim = size(vol);
 	base.curCoords = ceil(voldim/2);
