@@ -372,12 +372,7 @@ modelResponse = [];residual = [];
 % create the model for each concat
 for i = 1:fitParams.concatInfo.n
   % get model response
- % nFrames = fitParams.concatInfo.runTransition(i,2);
-  % MA- Error with sizes of thisModelResponse and thisTSeries not being equal 
-  % during the loop. Not sure if this is right, haven't looked at overall
-  % code. Problem with scaling now... 
-  % MA- Fixed! Issue was in pRF_somatoPlot, removed +1 and it works fine.
-  nFrames = length(fitParams.concatInfo.runTransition(i,1):fitParams.concatInfo.runTransition(i,2)); 
+  nFrames = fitParams.concatInfo.runTransition(i,2);
   thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
 
   % get a model hrf
@@ -405,7 +400,7 @@ for i = 1:fitParams.concatInfo.n
     % check here for length
     if length(thisTSeries) ~= length(thisModelResponse)
       disp(sprintf('(pRFFit:getModelResidual) Voxel tSeries length of %i does not match model length of %i. This can happen, for instance, if the tSense factor was not set correctly or junk frames was not set correctly.',length(thisTSeries),length(thisModelResponse)));
-      %keyboard
+      keyboard
     end
   
     r(i) = corr(thisTSeries(:),thisModelResponse(:));
