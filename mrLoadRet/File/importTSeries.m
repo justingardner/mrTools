@@ -33,7 +33,8 @@ weirdFramePeriods = 0;
 for iFile = 1:length(filename)
   
   if ~isempty(strfind(stripext(filename{iFile}),'.'))
-    mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename{iFile},setext(fixBadChars(stripext(filename{iFile}),{'.','_'}),'hdr')));
+    [~,name,extension] = fileparts(filename{iFile});
+    mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename{iFile},setext(fixBadChars(name,{'.','_'}),extension)));
     return
   end
 
