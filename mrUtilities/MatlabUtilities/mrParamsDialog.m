@@ -323,16 +323,6 @@ for i = 1:length(gParams.varinfo)
       end
     end
   end
-  % check enable/visible options
-  if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
-      set(gParams.ui.varentry{i},'enable','off');
-  end
-  if isfield(gParams.varinfo{i},'visible') && isequal(gParams.varinfo{i}.visible,0)
-    set(gParams.ui.varentry{i},'visible','off');
-    set(gParams.ui.varname(i),'visible','off');
-    set(gParams.ui.incdec{i}{1},'visible','off');
-    set(gParams.ui.incdec{i}{2},'visible','off');
-  end
 end
 
 % set ok and cancel callback
@@ -354,6 +344,19 @@ end
 for i = 1:length(gParams.varinfo)
   if isfield(gParams.varinfo{i},'controls')
     buttonHandler(i,1,1);
+  end
+end
+
+% check enable/visible options
+for i = 1:length(gParams.varinfo)
+  if isfield(gParams.varinfo{i},'enable') && isequal(gParams.varinfo{i}.enable,0)
+      set(gParams.ui.varentry{i},'enable','off');
+  end
+  if isfield(gParams.varinfo{i},'visible') && isequal(gParams.varinfo{i}.visible,0)
+    set(gParams.ui.varentry{i},'visible','off');
+    set(gParams.ui.varname(i),'visible','off');
+    set(gParams.ui.incdec{i}{1},'visible','off');
+    set(gParams.ui.incdec{i}{2},'visible','off');
   end
 end
 
@@ -570,10 +573,14 @@ if ~any(strcmp(gParams.varinfo{varnum}.type,{'string','stringarray'}))
   end
   % check for minmax violations
   if isfield(gParams.varinfo{varnum},'minmax')
-    if (val < gParams.varinfo{varnum}.minmax(1))
+    % check minimum value (second check is to make sure it has exceeded minimum by more
+    % than a tiny round-off problem)
+    if (val < gParams.varinfo{varnum}.minmax(1)) && ((gParams.varinfo{varnum}.minmax(1)-val) > 10e-12)
       disp(sprintf('(mrParamsDialog) Value %f lower than minimum %f',val,gParams.varinfo{varnum}.minmax(1)));
       val = [];
-    elseif (val > gParams.varinfo{varnum}.minmax(2))
+    % check maximum value (second check is to make sure it has exceeded minimum by more
+    % than a tiny round-off problem)
+    elseif (val > gParams.varinfo{varnum}.minmax(2)) && ((val - gParams.varinfo{varnum}.minmax(1)) > 10e-12)
       disp(sprintf('(mrParamsDialog) Value %f greater than maximum %f',val,gParams.varinfo{varnum}.minmax(2)));
       val = [];
     end

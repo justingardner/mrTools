@@ -5,19 +5,39 @@
 %         by: justin gardner
 %       date: 09/23/10
 %    purpose: get the current settings of the mrParamsDialog
+%             unenabled parameters will return as empty, unless you specify:
+%             mrParamsGet('getUnenabled=1');
 %
-function params = mrParamsGet(vars)
+function params = mrParamsGet(varargin)
 
-% check arguments
-if ~any(nargin == [0 1])
-  help mrParamsGet
-  return
+% if first argument is not a string, then we are passing in the vars structure
+vars = [];
+args = varargin;
+if nargin > 0
+  if ~isstr(varargin{1})
+    vars = varargin{1};
+    args = {varargin{2:end}};
+  end
 end
-  
+
+% parse args
+getArgs(args,{'getUnenabled=0','paramNum=[]'});
+
 global gParams;
-if nargin == 0,vars = gParams.vars;end
+if isempty(vars),vars = gParams.vars;end
+
+% if paramNum is empty, get all parameters
+if isempty(paramNum)
+  paramNum = 1:length(gParams.varinfo);
+else
+  % only try to get paramNums that exist
+  paramNum = intersect(paramNum,1:length(gParams.varinfo));
+end
+
+params = [];
+
 % return the var entries
-for i = 1:length(gParams.varinfo)
+for i = paramNum
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % for checkboxes, just return 0 or 1
   if strcmp(gParams.varinfo{i}.type,'checkbox')
@@ -136,9 +156,11 @@ for i = 1:length(gParams.varinfo)
     end
   end
   % not enabled then set parameter to empty
-  if strcmp(get(gParams.ui.varentry{i},'Enable'),'off'); %JB: it would make more sense to leave disabled parameters as they are
-    params.(gParams.varinfo{i}.name) = [];                % and not set them to empty
-  end                                                     % functions that use these parameters should know what to do
+  if ~getUnenabled
+    if strcmp(get(gParams.ui.varentry{i},'Enable'),'off');
+      params.(gParams.varinfo{i}.name) = [];
+    end                 
+  end
 end
 params.paramInfo = vars;
 
