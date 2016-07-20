@@ -94,20 +94,39 @@ elseif hdr.dim(5) >= 1
 end
 nFrames = length(params.frameList);
 
-
-for i_scan = params.scanlist
-scan_dims = viewGet(thisView,'datasize',i_scan);
-   if any(hdr.dim([2 3 4])'~= scan_dims)
-      mrWarnDlg(sprintf('(importOverlay) Could not import image because it is not compatible with scan (%s vs %s)', num2str(hdr.dim([2 3 4])'),num2str(scan_dims)) );
-      return
-   end
+if fieldIsNotDefined(params,'useSform')
+  params.useSform = false;
+end
+useSformEdit = 'enable=1';
+dimensionMismatch=false;
+emptySform = false;
+for iScan = params.scanlist
+  scanDims = viewGet(thisView,'datasize',iScan);
+  if any(hdr.dim([2 3 4])'~= scanDims)
+    dimensionMismatch=true;
+    thisScanDims = scanDims;
+  elseif isempty(hdr.sform44)
+    emptySform = true;
+  end
+end
+if dimensionMismatch && emptySform
+  mrWarnDlg(sprintf('(importOverlay) Could not import overlay because dimensions differ (%s vs %s) and overlay sform is empty', num2str(hdr.dim([2 3 4])'),num2str(thisScanDims)) );
+  return
+elseif dimensionMismatch
+  params.useSform=true;
+  useSformEdit = 'enable=0';
+elseif emptySform
+  params.useSform=false;
+  useSformEdit = 'enable=0';
 end
 
 maxFrames=20;
 if fieldIsNotDefined(params,'nameFrame') && fieldIsNotDefined(params,'nameFrame1')
   [~,filename,ext]=fileparts(params.pathname);
   filename = [filename ext];
-  paramsInfo = {{'filename',filename,'The name of the nifti file that you are importing','editable=0'}};
+  paramsInfo = {{'filename',filename,'editable=0','The name of the nifti file that you are importing'}};
+  paramsInfo{end+1} = {'useSform',params.useSform,'type=checkbox',useSformEdit,'Whether to use the sForm rotation matrix. If yes, the overlay will be interpolated using its (sform) transformation relative to the destination scan(s). If not, the overlay''s original sform will be ignored and set to that of the destination scan(s)'};
+  paramsInfo{end+1} = {'interpMethod',putOnTopOfList(mrGetPref('interpMethod'),{'nearest','linear','spline'}),'type=popupmenu','contingent=useSform','Interpolation method if sform is used'};
   if nFrames<=maxFrames
     for iFrame = 1:nFrames
       numFrame = num2str(params.frameList(iFrame));
@@ -122,6 +141,9 @@ if fieldIsNotDefined(params,'nameFrame') && fieldIsNotDefined(params,'nameFrame1
     tempParams = mrParamsDialog(paramsInfo);
   end
   if isempty(tempParams),return,end
+  if isequal(useSformEdit, 'enable=0')
+    tempParams.useSform = params.useSform; %because mrParamsDialog returns empty if the field is not enabled
+  end
   params = copyFields(tempParams,params);
   params = rmfield(params,{'paramInfo'});
 end
@@ -158,7 +180,25 @@ for iFrame=1:nFrames
   numFrame = params.frameList(iFrame);
   overlays(iFrame) = defaultOverlay;
   overlays(iFrame).name = [params.(['nameFrame' num2str(numFrame)]) ' (' params.filename ')']; 
-  overlays(iFrame).data(params.scanlist) = squeeze(num2cell(repmat(data(:,:,:,numFrame),[1 1 1 length(params.scanlist)]),[1 2 3]))';
+  if params.useSform
+    set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
+    cScan=0;
+    for iScan = params.scanlist
+      cScan=cScan+1;
+      scanDims = viewGet(thisView,'datasize',iScan);
+      scan2overlay = (hdr.sform44 * shiftOriginXform)\(viewGet(thisView,'scansform',iScan) * shiftOriginXform);
+      if ~all(all(abs(scan2overlay - eye(4))<1e-6)) %check if we're already in scan space
+        %transform values in scan space
+        [Ycoords,Xcoords,Zcoords] = meshgrid(1:scanDims(2),1:scanDims(1),1:scanDims(3));
+        overlays(iFrame).data{iScan} = getNewSpaceOverlay(data(:,:,:,numFrame), scan2overlay,Xcoords,Ycoords,Zcoords,params.interpMethod);
+      else
+        overlays(iFrame).data{iScan} = data(:,:,:,numFrame);
+      end
+    end
+    set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
+  else
+    overlays(iFrame).data(params.scanlist) = squeeze(num2cell(repmat(data(:,:,:,numFrame),[1 1 1 length(params.scanlist)]),[1 2 3]))';
+  end
 end
 
 thisView = viewSet(thisView,'newoverlay',overlays);
