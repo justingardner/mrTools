@@ -518,19 +518,20 @@ pos(4) = MLR.interrogator{viewNum}.buttonHeight;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get default interrogators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function interrogatorList = getDefaultInterrogators(v);
+function interrogatorList = getDefaultInterrogators(v)
 
 interrogatorList = mrGetPref('defaultInterrogators');
 if isstr(interrogatorList)
   interrogatorList = commaDelimitedToCell(interrogatorList);
 end
 
-%get names of interrogators in interrogators directory
-interrogatorsDirectory = which('mrLoadRetGUI');
-interrogatorsDirectory = [interrogatorsDirectory(1:strfind(interrogatorsDirectory,'GUI/mrLoadRetGUI.m')-1) 'Plugins/Interrogators/'];
-interrogatorFiles =  dir([interrogatorsDirectory '*.m']);
-for iFile=1:length(interrogatorFiles)
-   interrogatorList{end+1} = stripext(interrogatorFiles(iFile).name);
+%get names of interrogators in interrogator folder(s)
+interrogatorPaths = commaDelimitedToCell(mrGetPref('interrogatorPaths'));
+for i = 1:length(interrogatorPaths)
+  interrogatorFiles =  dir([interrogatorPaths{i} '/*.m']);
+  for iFile=1:length(interrogatorFiles)
+     interrogatorList{end+1} = stripext(interrogatorFiles(iFile).name);
+  end
 end
 
 % put the interrogator associated with this overlay on the list
