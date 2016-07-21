@@ -31,6 +31,16 @@ if ieNotDefined('params')
     combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
   end
 
+  %get names of combine functions in additional folder(s)
+  overlayCombineTransformPaths = commaDelimitedToCell(mrGetPref('overlayCombineTransformPaths'));
+  for i = 1:length(overlayCombineTransformPaths)
+    overlayCombineTransformFiles =  dir([overlayCombineTransformPaths{i} '/*.m']);
+    for iFile=1:length(overlayCombineTransformFiles)
+       combineFunctions{end+1} = stripext(overlayCombineTransformFiles(iFile).name);
+    end
+  end
+
+  combineFunctions = sort(combineFunctions);
   combineFunctionsMenu = [{'User Defined'} combineFunctions];
   if defaultParams
     combineFunctionsMenu = putOnTopOfList(combineFunctionsMenu{2},combineFunctionsMenu);
