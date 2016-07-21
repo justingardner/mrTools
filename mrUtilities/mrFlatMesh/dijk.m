@@ -50,7 +50,7 @@ function [D,P] = dijk(A,s,t)
 % Matlog Version 9 13-Jan-2006 (http://www.ie.ncsu.edu/kay/matlog)
 
 % Input Error Checking ****************************************************
-error(nargchk(1,3,nargin))
+narginchk(1,3)
 
 [n,cA] = size(A);
 
