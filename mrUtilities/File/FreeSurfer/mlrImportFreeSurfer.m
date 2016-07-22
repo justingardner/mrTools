@@ -22,7 +22,11 @@ end
 mriConvert = 'mri_convert';
 [retval retstr] = system('which mri_convert');
 if retval == 1
-  mrWarnDlg('(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path. See instructions on wiki http://gru.stanford.edu/doku.php/mrTools/howTo#installation','Yes');
+  warnMessage = '(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path. See instructions on wiki http://gru.stanford.edu/doku.php/mrTools/howTo#installation';
+  if ispc
+    warnMessage = [warnMessage '. This is probably because you''re running mrTools on a Windows PC.'];
+  end
+  mrWarnDlg(warnMessage,'Yes');
   mriConvert = [];
 end
 
@@ -47,18 +51,22 @@ outDir    = fullfile(pwd,'surfRelax');
 if ~exist('volumeCropSize')
   volumeCropSize = [176 256 256];
 end
+defaultPixelSize = [1 1 1];
 
 paramsInfo = {...
     {'freeSurferDir',pwd,'directory where the freeSurfer files live'}, ...
     {'outDir', outDir,'directory that OFF surfaces will be written to'}, ...
-    {'wmFile', wmFile, 'name of the surface defining the white/gray boundry'}, ...
-    {'gmFile', gmFile, 'name of the surface defining the gray/pial boundry'}, ...
+    {'wmFile', wmFile, 'name of the surface defining the white/gray boundary'}, ...
+    {'gmFile', gmFile, 'name of the surface defining the gray/pial boundary'}, ...
     {'curvFile', curvFile, 'name of the file specifing the curvature'}, ...
     {'infFile', infFile, 'name of the inflated surface'}, ...
     {'anatFile', anatFile, 'name of the base anatomy file'}, ...
     {'baseName', baseName, 'subject initials'}, ...
-    {'volumeCropSize',volumeCropSize, 'Size to crop the volume anatomy to (in voxels)'},...
+    {'volumeCropSize',volumeCropSize, 'Size to crop the volume anatomy to (in voxels).'},...
              };
+if isempty(mriConvert) %if mri_convert wasn't found, ask for the resolution
+  paramsInfo{end+1} = {'pixelSize',defaultPixelSize,'Resolution of the volume anatomy (in mm). This is normally read from the converted anatomy file, but mri_convert is not available.'};
+end
 
 % get the parameters from the user
 if defaultParams
@@ -88,27 +96,32 @@ switch niftiExt
 end
 outFile = fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt));
 if isfile(anatFile)
+  commandString = sprintf('%s --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',mriConvert,out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile);
   if ~isempty(mriConvert)
     disp(sprintf('(mlrImportFreeSurfer) Converting the volume anatomy to nifti format'))
     setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
-    system(sprintf('%s --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',mriConvert,out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile));
+    system(commandString);
   else
-    disp(sprintf('(mlrImportFreeSurfer) !!!! No mlr_convert command available, so not making canonical anatomy !!!!'));
-  end
-  if ~isfile(outFile)
+    disp(sprintf('\n(mlrImportFreeSurfer) To convert the canonical anatomy from Freesurfer to NIFTI format, run: \n\t mri_convert%s \nin the appropriate terminal\n',commandString));
     mrWarnDlg(sprintf('(mlrImportFreeSurfer) !!!! Canonical anatomy not created !!!!'));
   end
-
+end
+if ~isfile(outFile)
+  if fieldIsNotDefined(params,'pixelSize')
+    disp('(mlrImportFreeSurfer) Could not determine voxel size. Assuming 1x1x1 mm.');
+    pixelSize = defautPixelSize;
+  else
+    pixelSize = params.pixelSize;
+  end
+else
   hdr = cbiReadNiftiHeader(outFile);
   pixelSize=hdr.pixdim(2:4);
+end
 %   h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 %   h.qform44(1,4) = -(h.dim(2)-1)/2;
 %   h = cbiSetNiftiQform(h, h.qform44);
 %   h = cbiSetNiftiSform(h, h.qform44);
 %   cbiWriteNiftiHeader(h, fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
-else
-  disp(sprintf('(mlrImportFreeSurfer) Could not find volume %s. Assuming voxel size is 1x1x1.',getLastDir(anatFile,2)));
-end
 
 % import the white and gray matter surface, as well as the inflated surface and curvature
 disp(sprintf('(mlrImportFreeSurfer) Converting FreeSurfer surfaces to OFF format'))
