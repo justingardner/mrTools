@@ -96,13 +96,36 @@ switch niftiExt
 end
 outFile = fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt));
 if isfile(anatFile)
-  commandString = sprintf('%s --out_type %s --out_orientation RAS --cropsize %i %i %i %s %s',mriConvert,out_type,params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),anatFile,outFile);
+  commandString = sprintf('%s --out_type %s --out_orientation RAS %s %s',mriConvert,out_type,anatFile,outFile);
   if ~isempty(mriConvert)
     disp(sprintf('(mlrImportFreeSurfer) Converting the volume anatomy to nifti format'))
+    % Because of a bug in mri_convert (well actually, not really a bug, freesurfer is not meant to deal with resolutions < 1mm),
+    % we first need to convert without cropping to get the full dimensions of the freesurfer T1 volume
     setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
     system(commandString);
+    %read the dimensions
+    hdr = cbiReadNiftiHeader(outFile);
+    volumeSize = hdr.dim(2:4);
+    if all(iseven(volumeSize))
+      %now run mri_convert again specifying the centre of the crop volume in the full volume
+      % (otherwise the centre of the crop volume will be assumed to be (128,128,128) by mri_convert
+      % + the qform/sform will be incorrect (this is the "bug")
+      commandString = sprintf('%s --cropsize %i %i %i --crop %i %i %i',commandString,...
+        params.volumeCropSize(1),params.volumeCropSize(2),params.volumeCropSize(3),...
+        round(volumeSize(1)/2),round(volumeSize(2)/2),round(volumeSize(3)/2) ...
+        );
+    else
+      % note that if the full volume size is an odd number of voxels, the qform/sform will be wrong
+      % because the crop should happen at non-integer cenre coordinates, which mri_convert does not allow
+      % in this case, do not crop
+      disp(sprintf('(mlrImportFreeSurfer) Odd number of voxels in original freesurfer anatomical volume (%s), not going to crop...',mat2str(volumeSize)));
+      params.volumeCropSize = volumeSize;
+    end
+    system(commandString);
   else
-    disp(sprintf('\n(mlrImportFreeSurfer) To convert the canonical anatomy from Freesurfer to NIFTI format, run: \n\t mri_convert%s \nin the appropriate terminal\n',commandString));
+    disp(sprintf('\n(mlrImportFreeSurfer) To convert the canonical anatomy from Freesurfer to NIFTI format, run:  \n\t mri_convert%s \nin the appropriate terminal\n',commandString));
+    disp('Note that if the original freesurfer anatomical volume is not ...x256x256 x 1mm, there will likely be a mismatch between the volume and the surfaces.');
+    disp('If you know the dimensions of the freesurfer volume (in voxels), you are strongly encouraged to re-run mlrImportFreesurfer with these values as the cropSize field and to check for any mismatch between the converted volume and the converted surfaces.\n');
     mrWarnDlg(sprintf('(mlrImportFreeSurfer) !!!! Canonical anatomy not created !!!!'));
   end
 end
@@ -114,7 +137,6 @@ if ~isfile(outFile)
     pixelSize = params.pixelSize;
   end
 else
-  hdr = cbiReadNiftiHeader(outFile);
   pixelSize=hdr.pixdim(2:4);
 end
 %   h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
