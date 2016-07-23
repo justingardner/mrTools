@@ -1092,23 +1092,23 @@ secondIntersection(:,1) = vertices(loneVertices,axes2D(1)) + b .* (vertices(pair
 secondIntersection(:,2) = vertices(loneVertices,axes2D(2)) + b .* (vertices(pairVertices(:,2),axes2D(2)) - vertices(loneVertices,axes2D(2)));
 
 %apply rotation to 2D coordinates (only working for rotations that are multiples of 90 deg)
-switch rotate
+switch mod(rotate,360)
   case 0
     %do nothing
-  case 90
+  case {90,-270}
     %flip x coordinates
     firstIntersection(:,1) = sliceDims(1)+1 - firstIntersection(:,1);
     secondIntersection(:,1) = sliceDims(1)+1 - secondIntersection(:,1);
     %swap x and y
     firstIntersection = firstIntersection * [0 1 ;1 0];
     secondIntersection = secondIntersection * [0 1 ;1 0];
-  case 180
+  case {180,-180}
     %flip x and y coordinates
     firstIntersection(:,1) = sliceDims(1)+1 - firstIntersection(:,1);
     firstIntersection(:,2) = sliceDims(2)+1 - firstIntersection(:,2);
     secondIntersection(:,1) = sliceDims(1)+1 - secondIntersection(:,1);
     secondIntersection(:,2) = sliceDims(2)+1 - secondIntersection(:,2);
-  case 270
+  case {270,-90}
     %flip y coordinates
     firstIntersection(:,2) = sliceDims(2)+1 - firstIntersection(:,2);
     secondIntersection(:,2) = sliceDims(2)+1 - secondIntersection(:,2);
