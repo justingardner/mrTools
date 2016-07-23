@@ -537,12 +537,8 @@ value = str2num(get(hObject,'String'));
 if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.baseTiltSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
-  if value < 0,value = 0;end
-  if value > 360,value = 360;end
   viewSet(viewNum,'tilt',value);
   v = viewGet([],'view',viewNum);
-  fig = viewGet(v,'figNum');
-  gui = guidata(fig);
 
   if (viewGet(v,'baseType') == 2)
     setMLRViewAngle(v);

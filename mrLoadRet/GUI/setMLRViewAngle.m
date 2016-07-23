@@ -31,15 +31,17 @@ end
 baseTilt = viewGet(v,'baseTilt');
 
 % careful not to make rotation and cam angle align
-if baseTilt == 90,baseTilt = 89;end
-if baseTilt == 270,baseTilt = 279;end
+if ismember(rem(baseTilt,180),[-90 90])
+  baseTilt = baseTilt-0.1;
+end
+
 
 % rotate the view, using the *function* view
 view(axisHandle,360-viewGet(v,'rotateSurface'),-baseTilt);
 
 % change the camera position to avoid the volume
 % flipping back and forth, another strange matlab thing
-if (baseTilt > 90) && baseTilt < 270
+if cos(baseTilt/180*pi)<0
   camup(axisHandle,[0 0 -1]);
 else
   camup(axisHandle,[0 0 1]);
