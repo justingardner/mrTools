@@ -1055,15 +1055,19 @@ end
 %     computeIntersection     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [firstIntersection,secondIntersection]=computeIntersection(triangles,vertices,currentSlice,sliceIndex,rotate, sliceDims)
-
 axes2D=fliplr(setdiff([1 2 3],sliceIndex)); %axes of the display depending on the base slice index (slice orientation)
                                              %(this is set in getBaseSlice and axes are switched for unknown reasons)
-% axes2D=setdiff([1 2 3],sliceIndex);
+switch(mod(rotate,360))   % the order of the slice dimensions depends on the set rotation
+  case {-180,0,180}       % (not sure why, but didn't look into it too much)
+    sliceDims = fliplr(sliceDims);
+  case {-270,-90,90,270}
+end
+
 %look at x and y coordinates of each triangles vertices and keep those
 %that have at least one vertex within sliceDims (irrespective of the z coordinates)
 isWithinSlice = reshape(vertices(triangles,axes2D),[size(triangles) 2]);
-isWithinSlice = any(isWithinSlice(:,:,1)>0.5 & isWithinSlice(:,:,1)<sliceDims(2)+0.5 & ...
-                isWithinSlice(:,:,2)>0.5 & isWithinSlice(:,:,2)<sliceDims(1)+0.5,2);
+isWithinSlice = any(isWithinSlice(:,:,1)>0.5 & isWithinSlice(:,:,1)<sliceDims(1)+0.5 & ...
+                isWithinSlice(:,:,2)>0.5 & isWithinSlice(:,:,2)<sliceDims(2)+0.5,2);
 triangles = triangles(isWithinSlice,:);
 % axes2D=fliplr(setdiff([1 2 3],sliceIndex));
 %look at the z coordinates of each triangle's vertices and see if it is above (1) or below (-1) the centre of the current slice
