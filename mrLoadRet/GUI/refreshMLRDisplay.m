@@ -1139,7 +1139,9 @@ switch mod(rotate,360)
     firstIntersection(:,2) = sliceDims(2)/2 + firstIntersection(:,2);
     secondIntersection(:,1) = sliceDims(1)/2 + secondIntersection(:,1);
     secondIntersection(:,2) = sliceDims(2)/2 + secondIntersection(:,2);
-
+    
+    % update 22/07/2016: now that imrotate has been replaced by mrImRotate, should be easy to
+    % look inside mrImrotate and take the padding code (probably not worth bothering though)
 end
 
 function kernel = gaussianKernel2D(FWHM)

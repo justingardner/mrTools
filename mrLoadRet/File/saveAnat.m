@@ -51,7 +51,7 @@ switch viewGet(view,'baseType',anatomyNum)
     repeatVector = [1 1 1];
     repeatVector(viewGet(view,'basesliceindex',anatomyNum))= mrGetPref('corticalDepthBins');
     nanData=isnan(baseVolume.data);
-    data = repmat(imrotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop'),repeatVector);
+    data = repmat(mrImRotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop'),repeatVector);
     data(repmat(nanData,repeatVector))=NaN;
   case 2
     %surface
