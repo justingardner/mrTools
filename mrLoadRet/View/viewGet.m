@@ -4063,6 +4063,9 @@ switch lower(param)
     % slice = viewGet(view,'currentSlice');
     if isfield(view.curslice,'sliceNum')
       val = view.curslice.sliceNum;
+    elseif viewGet(view,'baseMultiAxis')==0
+      % default to 1
+      val = 1;
     end
   case {'curcoords','currentcoordinates'}
     % coords = viewGet(view,'currentCoordinates');
