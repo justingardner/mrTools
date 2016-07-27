@@ -294,7 +294,7 @@ end
 % for surfaces and flats calculate things based on cortical depth
 if size(base.coords,4)>1
   % code allows for averaging across cortical depth
-  corticalDepth = viewGet(v,'corticalDepth');
+  corticalDepth = viewGet(v,'corticalDepth',baseNum);
   corticalDepthBins = mrGetPref('corticalDepthBins');
   corticalDepths = 0:1/(corticalDepthBins-1):1;
   slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
@@ -313,7 +313,7 @@ if isempty(overlays)
   % get the transform from the base to the scan
   base2scan = viewGet(v,'base2scan',[],[],baseNum);
   % compute the overlays
-  overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims);
+  overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims,[],baseNum);
   overlays = addBaseOverlays(v,baseNum,overlays);
   % save in cache
   v = viewSet(v,'overlayCache',overlays,baseNum,slice,sliceIndex,rotate);
@@ -684,7 +684,7 @@ if ~isempty(roiBaseCoords)
     % are important to match
     
     if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
-      corticalDepth = viewGet(view,'corticalDepth');
+      corticalDepth = viewGet(view,'corticalDepth',baseNum);
       corticalDepthBins = mrGetPref('corticalDepthBins');
       corticalDepths = 0:1/(corticalDepthBins-1):1;
       slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros

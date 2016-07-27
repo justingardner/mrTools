@@ -138,7 +138,7 @@ interpFnctn = viewGet(thisView,'overlayInterpFunction',analysisNum);
 if ~isempty(base2overlay) & ~isempty(baseCoordsHomogeneous) 
   % Transform coordinates
   if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
-    corticalDepth = viewGet(thisView,'corticalDepth');
+    corticalDepth = viewGet(thisView,'corticalDepth',boxInfo.baseNum);
     corticalDepthBins = mrGetPref('corticalDepthBins');
     corticalDepths = 0:1/(corticalDepthBins-1):1;
     slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros

@@ -1596,7 +1596,7 @@ switch lower(param)
     b = getBaseNum(view,varargin);
     % get cortical depth
     if ieNotDefined('varargin') || (length(varargin)<2)
-      corticalDepth = viewGet(view,'corticalDepth');
+      corticalDepth = viewGet(view,'corticalDepth',b);
     else
       corticalDepth = varargin{2};
     end
