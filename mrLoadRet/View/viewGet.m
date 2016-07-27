@@ -1593,6 +1593,10 @@ switch lower(param)
     end
   case {'basesurface'}
     % basedata = viewGet(view,'baseSurface',[baseNum],[corticalDepth])
+    % 
+    % This is to get the coordinates of the surface to display. 
+    % To get the actual coordinates of the surface in the base space, 
+    % use: viewGet(view,'baseSurfaceCoords',[baseNum],[corticalDepth])
     b = getBaseNum(view,varargin);
     % get cortical depth
     if ieNotDefined('varargin') || (length(varargin)<2)
@@ -1606,7 +1610,7 @@ switch lower(param)
       coordMap = view.baseVolumes(b).coordMap;
       if ~isempty(coordMap)
 	if isfield(coordMap,'innerVtcs') && isfield(coordMap,'outerVtcs')
-	  % find intermideate values
+	  % find intermediate values
 	  vtcs = coordMap.innerVtcs + mean(corticalDepth)*(coordMap.outerVtcs-coordMap.innerVtcs);
 	  val.tris = coordMap.tris;
 	elseif isfield(coordMap,'innerVtcs')
@@ -1629,6 +1633,52 @@ switch lower(param)
 	val = [];
       end
     end
+  case {'basesurfacecoords'}
+    % basedata = viewGet(view,'baseSurfaceCoords',[baseNum],[corticalDepth])
+    % 
+    % This is to get the coordinates of the surface in the base space. 
+    % To get the actual coordinates of the surface to display, 
+    % use: viewGet(view,'baseSurface',[baseNum],[corticalDepth])
+    b = getBaseNum(view,varargin);
+    % get cortical depth
+    if ieNotDefined('varargin') || (length(varargin)<2)
+      corticalDepth = viewGet(view,'corticalDepth',b);
+    else
+      corticalDepth = varargin{2};
+    end
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      % get coordmap
+      coordMap = view.baseVolumes(b).coordMap;
+      if ~isempty(coordMap)
+	if isfield(coordMap,'innerCoords')
+    innerCoords = permute(coordMap.innerCoords,[2 4 1 3]);
+    if  isfield(coordMap,'outerVtcs')
+      outerCoords = permute(coordMap.outerCoords,[2 4 1 3]);
+      % find intermediate values
+      vtcs = innerCoords + mean(corticalDepth)*(outerCoords-innerCoords);
+    else
+      % if only inner is present then just return that
+      vtcs = coordMap.innerVtcs;
+   end
+	  val.tris = coordMap.tris;
+	else
+	  vtcs = [];
+	  val.tris = [];
+	end
+	% center surface
+	if ~isempty(vtcs)
+	  val.vtcs(:,1) = vtcs(:,2);
+	  val.vtcs(:,2) = vtcs(:,1);
+	  val.vtcs(:,3) = vtcs(:,3);
+	else
+	  val.vtcs = [];
+	end
+      else
+	val = [];
+      end
+    end
+    
   case {'baseclip'}
     % baseclip = viewGet(view,'baseclip',[baseNum])
     b = getBaseNum(view,varargin);
