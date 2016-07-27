@@ -47,6 +47,15 @@ d.ehdr = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
 d.ehdrste = zeros(d.dim(1),d.dim(2),d.dim(3),d.nhdr,d.hdrlen);
 d.r2 = zeros(d.dim(1),d.dim(2),d.dim(3));
 
+% check for image dimensions that this code will choke on
+% this should not normally happen, but can happen if you
+% are using maxBlocksize to limit the size of images that
+% are brought in at a time
+  if isequal(d.dim(1),1) && isequal(d.dim(3),1)
+    mrWarnDlg(sprintf('(getr2) Dimensions of image are degenerate: %i x %i x %i (should have more than one dimension with size greater than 1. This may be caused by your maxBlocksize setting in Preferences. Try setting it larger to allow larger parts of your data to be loaded into memory at the same time',d.dim(1),d.dim(2),d.dim(3)));
+    keyboard
+  end
+
 % turn off warnings to avoid divide by zero warning
 warning('off','MATLAB:divideByZero');
 
