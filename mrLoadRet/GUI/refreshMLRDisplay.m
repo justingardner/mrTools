@@ -152,7 +152,7 @@ else
   v = viewSet(v,'cursliceBaseCoords',curSliceBaseCoords);
 end
 
-% turn on 3D free roate if we are just displaying the one 3D axis
+% turn on 3D free rotate if we are just displaying the one 3D axis
 if ~mrInterrogator('isactive',viewNum)
   if (baseType == 2) || (baseMultiAxis == 2)
     mlrSetRotate3d(v,'on');
@@ -179,7 +179,7 @@ if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
 end
 
 if (baseType == 0) && (baseMultiAxis>0)
-  % set the camera taret to center of the volume
+  % set the camera target to center of the volume
   camtarget(gui.axis,baseDims([2 1 3])/2)
 end
 
@@ -600,29 +600,32 @@ function displayColorbar(gui,cmap,cbarRange,verbose)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function baseSurface = getBaseSurface(v,baseNum)
   
+if baseNum == viewGet(v,'currentBase')
   baseSurface = viewGet(v,'baseSurface',baseNum);
-  % if this is not the current base then we need to xform
-  % coordinates so that it will display in the same space
+else
+  % if this is not the current base, this means we're using mutlibase
+  % we need to get the actual surface coordinates
+  % and xform them so that it will display in the same space
   % as the current one
-  if baseNum ~= viewGet(v,'currentBase')
-    % get xform that xforms coordinates from this base to
-    % the current base
-    base2base = inv(viewGet(v,'base2base',baseNum));
-    if isempty(base2base)
-      disp(sprintf('(refreshMLRDisplay:getBaseSurface) Could not compute base2base xform'));
-      return
-    end
-    % remove some sigfigs so that the isequal check works
-    if ~isequal(round(base2base*100000)/100000,eye(4))
-      % homogenous coordinates
-      baseSurface.vtcs(:,4) = 1;
-      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-      % xform to current base coordinates
-      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
-      % and remove the homogenous 1
-      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
-    end
+  baseSurface = viewGet(v,'baseSurfaceCoords',baseNum);
+  % get xform that xforms coordinates from this base to
+  % the current base
+  base2base = inv(viewGet(v,'base2base',baseNum));
+  if isempty(base2base)
+    disp(sprintf('(refreshMLRDisplay:getBaseSurface) Could not compute base2base xform'));
+    return
   end
+  % remove some sigfigs so that the isequal check works
+  if ~isequal(round(base2base*100000)/100000,eye(4))
+    % homogenous coordinates
+    baseSurface.vtcs(:,4) = 1;
+    swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+    % xform to current base coordinates
+    baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
+    % and remove the homogenous 1
+    baseSurface.vtcs = baseSurface.vtcs(:,1:3);
+  end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
@@ -687,7 +690,7 @@ if ~isempty(roiBaseCoords)
       corticalDepth = viewGet(view,'corticalDepth',baseNum);
       corticalDepthBins = mrGetPref('corticalDepthBins');
       corticalDepths = 0:1/(corticalDepthBins-1):1;
-      slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
+      slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off errors
       nDepths = nnz(slices);
       baseCoordsHomogeneous = reshape(baseCoordsHomogeneous(:,:,slices),[4 prod(imageDims)*nDepths]);
       
