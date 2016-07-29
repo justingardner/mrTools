@@ -276,6 +276,8 @@ if isempty(base)
       mask = repmat(permute(backgroundColor,[1 3 2]),[base.dims(1) base.dims(2) 1]);
       base.RGB = base.RGB.*alpha+(1-alpha).*mask;
       base.RGB=min(1,max(0,base.RGB));
+      base.gyrusSulcusBoundary = edge(base.im>0.5+0)&edge(base.im<0.5+0); %we assume that 0.5 represents 
+      % the curvature boundary, which should be the case for flat maps made from freesurfer-imported surfaces 
     else
       base.RGB = reshape(base.RGB,base.dims(1)*base.dims(2),3);
       base.RGB(isnan(base.im),:)=repmat(backgroundColor,[nnz(isnan(base.im)) 1]);
@@ -367,6 +369,12 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       if size(overlays.RGB,4)>2
         mrWarnDlg('(refreshMLRDisplay) Number of overlays limited to 2 for ''Contours'' display option');
       end
+  end
+  displayGyrusSulcusBoundary = viewGet(v,'displayGyrusSulcusBoundary');
+  if baseType==1 && ~isempty(displayGyrusSulcusBoundary) && displayGyrusSulcusBoundary
+      img = reshape(img,[prod(base.dims) 3]);
+      img(base.gyrusSulcusBoundary>0,:) = repmat([0 0 0],nnz(base.gyrusSulcusBoundary>0),1);
+      img = reshape(img,[base.dims 3]);
   end
   cmap = overlays.cmap;
   cbarRange = overlays.range;
@@ -1014,6 +1022,8 @@ colors = [.9 .4 .9;... % color of first inner surface
           .4 .9 .7;... % color of second outer surface
           .9 .9 .4;... % color of third inner surface
           .6 .4 .9];   % color of third outer surface
+% colors = [.4 .4 .4;... % color of first inner surface GREY
+%           .2 .2 .2]; % color of first outer surface GREY
 numberDifferentColors=1; %maximum number of inner+outer with different colors (up to 3)
 cSurf=0;        
 for iSurf=surfaceNum

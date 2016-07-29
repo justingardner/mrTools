@@ -206,6 +206,14 @@ switch lower(field)
     end
     set(handles.rotateSlider,'SliderStep',[1 45]./360);
   end		  
+  if isfield(handles,'displayGyrusSulcusBoundaryCheck')
+    if value == 1
+      set(handles.displayGyrusSulcusBoundaryCheck,'Visible','on');
+    else
+      set(handles.displayGyrusSulcusBoundaryCheck,'Visible','off');
+    end
+  end
+  
  case {'basevolume'}
   % Choose the baseVolume
   set(handles.basePopup,'Value',value);
@@ -233,6 +241,12 @@ switch lower(field)
   set(handles.baseTiltSlider,'Value',value);
   set(handles.baseTiltText,'String',num2str(value));
 
+ case {'displaygyrussulcusboundary'}
+  % mlrGuiSet(view,'displaygyrussulcusboundary',value);
+  if isfield(handles,'displayGyrusSulcusBoundaryCheck')
+    set(handles.displayGyrusSulcusBoundaryCheck,'value',value);
+  end
+  
  case {'analysispopup'}
   % mlrGuiSet(view,'analysisPopup',strings);
   set(handles.analysisPopup,'String',value);

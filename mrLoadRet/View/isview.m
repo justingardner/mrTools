@@ -29,14 +29,17 @@ if (nargout >= 2)
 		    'roiGroup',{};
         'groupSettings',[];
         'surfaceOnVolume',[];
-       };
+        'displayGyrusSulcusBoundary',0;
+		   };
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the view structure it is invalid).
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
 		    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan','roiGroup',...
         'groupSettings'};
-  optionalFields = {'surfaceOnVolume',[]};
+  optionalFields = {'surfaceOnVolume',[];
+                    'displayGyrusSulcusBoundary',0;
+                    };
 end
 
 % Initialize return value

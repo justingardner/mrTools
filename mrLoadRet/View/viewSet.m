@@ -877,6 +877,12 @@ switch lower(param)
       end
     end
     
+  case {'displaygyrussulcusboundary'}
+    % baseNum = viewSet(view,'displayGyrusSulcusBoundary',val[0/1])
+    % whether to display the gyrus/sulcus boundary on flat maps
+    view.displayGyrusSulcusBoundary=val;
+    mlrGuiSet(view,'displayGyrusSulcusBoundary',val)
+    
   case {'basecurslice','baseslice','curslice', 'currentslice'}
     % view = viewSet(view,'basecurslice',sliceNum,[baseNum]);
     % view = viewSet(view,'baseslice',sliceNum,[baseNum]);

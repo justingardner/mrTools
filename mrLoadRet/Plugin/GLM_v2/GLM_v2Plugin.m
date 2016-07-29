@@ -34,6 +34,7 @@ switch action
             '                 - New item in menu Analysis/Motioncomp to appy existing motion compensation parameters to another set of scans',...
             '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
             '                 - New item in menu View/ to overlay surface contours on volume base anatomy',...
+            '                 - New GUI checkbox to display gyrus/sulcus boundary on flat maps',...
             ];
    retval ='Adds new functionalities to GUI, including improved GLM analysis';
    
@@ -104,6 +105,9 @@ switch action
     mlrAdjustGUI(thisView,'set','axialRadioButton','fontSize',checkFontSize);
     mlrAdjustGUI(thisView,'set','coronalRadioButton','position',  [0.19    0.815   0.1    0.025]);
     mlrAdjustGUI(thisView,'set','coronalRadioButton','fontSize',checkFontSize);
+    mlrAdjustGUI(thisView,'add','control','displayGyrusSulcusBoundaryCheck','style','checkbox','value',0,...
+        'fontSize', checkFontSize,'visible','off','Callback',@displayGyrusSulcusBoundaryCheck_Callback,...
+        'String','Show Gyrus/Sulcus Boundaries','position',       [0.04   0.7    0.24   checkBoxHeight]);
 
     % change multiAxis control position and fontSize
     mlrAdjustGUI(thisView,'set','axisSingle','position',  [0.01    0.788   0.1    checkBoxHeight]);
@@ -917,3 +921,11 @@ function transformROIsCallback(hObject,dump)
 thisView = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 transformROIs(thisView);
 
+
+%------------- displayGyrusSulcusBoundaryCheck_Callback Function --------------------------%
+function displayGyrusSulcusBoundaryCheck_Callback(hObject,dump)
+
+viewNum = getfield(guidata(hObject),'viewNum');
+thisView = viewGet(viewNum,'view');
+thisView = viewSet(thisView,'displayGyrusSulcusBoundary',get(hObject,'value'));
+refreshMLRDisplay(thisView.viewNum);

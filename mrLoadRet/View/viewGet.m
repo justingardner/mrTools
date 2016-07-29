@@ -1405,6 +1405,14 @@ switch lower(param)
     else
       val=[];
     end
+  case {'displaygyrussulcusboundary'}
+    % val = viewGet(view,'displaygyrussulcusboundary')
+    % whether to display the gyrus/sulcus boundary on flat maps
+    if isfield(view,'displayGyrusSulcusBoundary')
+      val = view.displayGyrusSulcusBoundary;
+    else
+      val = 0;
+    end
   case{'basenum'}
     % baseNum = viewGet(view,'baseNum',baseName)
     baseName = varargin{1};

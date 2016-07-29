@@ -127,6 +127,8 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       view = viewSet(view,'curScan',mrLastView.curScan);
       % set surfaceOnVolume on/off
       view = viewSet(view,'surfaceOnVolume',viewGet(mrLastView,'surfaceOnVolume'));
+      % set surfaceOnVolume on/off
+      view = viewSet(view,'displayGyrusSulcusBoundary',viewGet(mrLastView,'displayGyrusSulcusBoundary'));
     end
     % read analyses
     if isfield(mrLastView,'analyses')
