@@ -903,6 +903,7 @@ switch lower(param)
         baseCurSlice = viewGet(view,'baseCurSlice',baseNum);
         sliceIndex = viewGet(view,'basesliceindex',baseNum);
         nSlices = baseDims(sliceIndex);
+	mlrGuiSet(view,'nSlices',nSlices);
         % if the base has a current slice set, then use that
         if isempty(baseCurSlice) || (baseCurSlice > nSlices)
           if length(curSlice)==1 && curSlice >=1
@@ -915,7 +916,6 @@ switch lower(param)
         end
 	% set the current coordinates
 	mlrGuiSet(view,'curCoords',viewGet(view,'baseCurCoords',baseNum));
-	mlrGuiSet(view,'nSlices',nSlices);
 	% set the multiAxis
 	mlrGuiSet(view,'multiAxis',viewGet(view,'baseMultiAxis',baseNum));
       else %flat and surfaces
@@ -2295,12 +2295,12 @@ switch lower(param)
       view.sliceOrientation = sliceOrientation;
       % Update slice and nSlices
       baseNum = viewGet(view,'currentBase');
-      if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum'))
+      if ~isempty(baseNum) && ~isempty(viewGet(view,'fignum')) && ~viewGet(view,'baseType',baseNum)
 	mlrGuiSet(view,'sliceOrientation',sliceOrientation);
 	baseDims = viewGet(view,'basedims',baseNum);
 	sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
 	nSlices = baseDims(sliceIndex);
-	coords = viewGet(view,'curCoords');
+	coords = viewGet(view,'baseCurCoords',baseNum);
 	slice = coords(sliceOrientation);
 	view = viewSet(view,'curSlice',min(slice,nSlices));
 %	view = viewSet(view,'curSlice',slice);

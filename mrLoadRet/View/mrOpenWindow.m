@@ -81,25 +81,25 @@ if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
 baseLoaded = 0;
 if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
-  mrLastView=mlrLoadLastView(mrLastView);
+  [mrLastView, lastViewSettings]=mlrLoadLastView(mrLastView);
   disppercent(inf);
   % if the old one exists, then set up fields
 %   disppercent(-inf,'(mrOpenWindow) Restoring last view');
-  if isfield(mrLastView,'view')
+  if ~isempty(mrLastView)
     % open up base anatomy from last session
-    if isfield(mrLastView.view,'baseVolumes')
+    if isfield(mrLastView,'baseVolumes')
       disppercent(-inf,sprintf('(mrOpenWindow) installing Base Anatomies'));
-      if length(mrLastView.view.baseVolumes) >= 1
+      if length(mrLastView.baseVolumes) >= 1
         baseLoaded = 1;
         % Add it to the list of base volumes and select it
-	for i = 1:length(mrLastView.view.baseVolumes)
+	for i = 1:length(mrLastView.baseVolumes)
 	  % make sure sliceOrientation is not 0
-	  if ~isfield(mrLastView.view.baseVolumes(i),'sliceOrientation') ...
-		|| isequal(mrLastView.view.baseVolumes(i).sliceOrientation,0)
-	    mrLastView.view.baseVolumes(i).sliceOrientation = 1;
+	  if ~isfield(mrLastView.baseVolumes(i),'sliceOrientation') ...
+		|| isequal(mrLastView.baseVolumes(i).sliceOrientation,0)
+	    mrLastView.baseVolumes(i).sliceOrientation = 1;
 	  end
 	  % install the base
-	  view = viewSet(view,'newBase',mrLastView.view.baseVolumes(i));
+	  view = viewSet(view,'newBase',mrLastView.baseVolumes(i));
 	end
       else
         %try to load 
@@ -108,67 +108,68 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
       disppercent(inf);
     end
     % change group
-    view = viewSet(view,'curGroup',mrLastView.view.curGroup);
+    view = viewSet(view,'curGroup',mrLastView.curGroup);
     nScans = viewGet(view,'nScans');
     mlrGuiSet(view,'nScans',nScans);
     if baseLoaded
       % slice orientation from last run
-      view = viewSet(view,'curBase',mrLastView.view.curBase);
+      view = viewSet(view,'curBase',mrLastView.curBase);
+      view = viewSet(view,'sliceOrientation',mrLastView.sliceOrientation);
       % change scan
-      view = viewSet(view,'curScan',mrLastView.view.curScan);
+      view = viewSet(view,'curScan',mrLastView.curScan);
       % change slice/corticalDepth
-      if viewGet(view,'baseType') && isfield(mrLastView.view.curslice,'corticalDepth')
-        view = viewSet(view,'corticalDepth',mrLastView.view.curslice.corticalDepth);
+      if viewGet(view,'baseType') && isfield(mrLastView.curslice,'corticalDepth')
+        view = viewSet(view,'corticalDepth',mrLastView.curslice.corticalDepth);
       end
-      if isfield(mrLastView.view.curslice,'sliceNum')
-        view = viewSet(view,'curSlice',mrLastView.view.curslice.sliceNum);
+      if isfield(mrLastView.curslice,'sliceNum')
+        view = viewSet(view,'curSlice',mrLastView.curslice.sliceNum);
       end
     end
     % read analyses
-    if isfield(mrLastView.view,'analyses')
-      for anum = 1:length(mrLastView.view.analyses)
-        view = viewSet(view,'newAnalysis',mrLastView.view.analyses{anum});
-%         disppercent(anum /length(mrLastView.view.analyses));
+    if isfield(mrLastView,'analyses')
+      for anum = 1:length(mrLastView.analyses)
+        view = viewSet(view,'newAnalysis',mrLastView.analyses{anum});
+%         disppercent(anum /length(mrLastView.analyses));
       end
-      view = viewSet(view,'curAnalysis',mrLastView.view.curAnalysis);
+      view = viewSet(view,'curAnalysis',mrLastView.curAnalysis);
     end
     % read loaded analyses
-    if isfield(mrLastView.view,'loadedAnalyses')
-      for g = 1:length(mrLastView.view.loadedAnalyses)
-	view = viewSet(view,'loadedAnalyses', mrLastView.view.loadedAnalyses{g},g);
+    if isfield(mrLastView,'loadedAnalyses')
+      for g = 1:length(mrLastView.loadedAnalyses)
+	view = viewSet(view,'loadedAnalyses', mrLastView.loadedAnalyses{g},g);
       end
     end
     % read which scan we were on in for each group
-    if isfield(mrLastView.view,'groupScanNum')
-      for g = 1:length(mrLastView.view.groupScanNum)
-	view = viewSet(view,'groupScanNum', mrLastView.view.groupScanNum(g),g);
+    if isfield(mrLastView,'groupScanNum')
+      for g = 1:length(mrLastView.groupScanNum)
+	view = viewSet(view,'groupScanNum', mrLastView.groupScanNum(g),g);
       end
     end
     
     % read ROIs into current view
-    if isfield(mrLastView.view,'ROIs')
+    if isfield(mrLastView,'ROIs')
       disppercent(-inf,sprintf('(mrOpenWindow) installing ROIs'));
-      for roinum = 1:length(mrLastView.view.ROIs)
-        view = viewSet(view,'newROI',mrLastView.view.ROIs(roinum));
+      for roinum = 1:length(mrLastView.ROIs)
+        view = viewSet(view,'newROI',mrLastView.ROIs(roinum));
       end
-      view = viewSet(view,'currentROI',mrLastView.view.curROI);
-      if ~fieldIsNotDefined(mrLastView.view,'showROIs')
-	view = viewSet(view,'showROIs',mrLastView.view.showROIs);
+      view = viewSet(view,'currentROI',mrLastView.curROI);
+      if ~fieldIsNotDefined(mrLastView,'showROIs')
+	view = viewSet(view,'showROIs',mrLastView.showROIs);
       end
-      if ~fieldIsNotDefined(mrLastView.view,'labelROIs')
-	view = viewSet(view,'labelROIs',mrLastView.view.labelROIs);
+      if ~fieldIsNotDefined(mrLastView,'labelROIs')
+	view = viewSet(view,'labelROIs',mrLastView.labelROIs);
       end
-      if ~fieldIsNotDefined(mrLastView.view,'roiGroup')
-	view = viewSet(view,'roiGroup',mrLastView.view.roiGroup);
+      if ~fieldIsNotDefined(mrLastView,'roiGroup')
+	view = viewSet(view,'roiGroup',mrLastView.roiGroup);
       end
       disppercent(inf);
     end
     % check panels that need to be hidden
-    if isfield(mrLastView,'viewSettings') && isfield(mrLastView.viewSettings,'panels')
-      for iPanel = 1:length(mrLastView.viewSettings.panels)
+    if ~isempty(lastViewSettings) && isfield(lastViewSettings,'panels')
+      for iPanel = 1:length(lastViewSettings.panels)
 	% if it is not displaying then turn it off
-	if ~mrLastView.viewSettings.panels{iPanel}{4}
-	  panelName = mrLastView.viewSettings.panels{iPanel}{1};
+	if ~lastViewSettings.panels{iPanel}{4}
+	  panelName = lastViewSettings.panels{iPanel}{1};
 	  mlrGuiSet(view,'hidePanel',panelName);
 	  % turn off check
 	  mlrAdjustGUI(view,'set',panelName,'Checked','off');

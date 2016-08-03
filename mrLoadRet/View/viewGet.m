@@ -2173,11 +2173,11 @@ switch lower(param)
     sliceOrientation = viewGet(view,'sliceOrientation');
     permutation = viewGet(view,'baseVolPermutation',b);
     switch sliceOrientation
-      case 1   % Axial
+      case 1   % Sagittal
         [m,index] = max(permutation * [1 0 0]');
       case 2   % Coronal
         [m,index] = max(permutation * [0 1 0]');
-      case 3   % Sagittal
+      case 3   % Axial
         [m,index] = max(permutation * [0 0 1]');
     end
     val = index;
@@ -2643,12 +2643,18 @@ switch lower(param)
   case{'roicacheid'}
     % cacheID = viewGet(view,'ROICacheID')
     % cacheID = viewGet(view,'ROICacheID',roinum)
-    if ieNotDefined('varargin')
+    % cacheID = viewGet(view,'ROICacheID',roinum,basenum)
+    if length(varargin)<1
       % if we are not passed in a specific ROI, then
       % we are doing all ROIs
       roiNums = 1:length(view.ROIs);
     else
       roiNums = varargin{1};
+    end
+    if length(varargin)<2
+      baseNum = viewGet(view,'curBase');
+    else
+      baseNum = varargin{2};
     end
     rotate = viewGet(view,'rotate');
     % go through all the bases and look for
@@ -2657,9 +2663,8 @@ switch lower(param)
     % all have the same baseXform and voxle size
     % and so there is no need to recompute them
     % for each base map
-    baseXform = viewGet(view,'baseXform');
-    baseVoxelSize = viewGet(view,'baseVoxelSize');
-    baseMatch = viewGet(view,'curbase');
+    baseXform = viewGet(view,'baseXform',baseNum);
+    baseVoxelSize = viewGet(view,'baseVoxelSize',baseNum);
     for bnum = 1:viewGet(view,'numBase')
       if (isequal(baseXform,viewGet(view,'baseXform',bnum)) && ...
           isequal(baseVoxelSize,viewGet(view,'baseVoxelSize',bnum)))
@@ -2675,13 +2680,8 @@ switch lower(param)
   case{'roicache'}
     % cacheVal = viewGet(view,'ROICache')
     % cacheVal = viewGet(view,'ROICache',roinum)
-    if ieNotDefined('varargin')
-      % if we are not passed in a specific ROI, then
-      % we are doing all ROIs
-      roiID = viewGet(view,'ROICacheID');
-    else
-      roiID = viewGet(view,'ROICacheID',varargin{1});
-    end
+    % cacheVal = viewGet(view,'ROICache',roinum,basenum)
+    roiID = viewGet(view,'ROICacheID',varargin{:});
     % and retrieve from the cache
     [val MLR.caches{view.viewNum}.roiCache] = ...
       mrCache('find',MLR.caches{view.viewNum}.roiCache,roiID);
@@ -4152,21 +4152,12 @@ switch lower(param)
     % same way, they are rotated through
     % rotateSurface
     if baseType <= 1
-      fig = viewGet(view,'fignum');
-      if ~isempty(fig)
-        handles = guidata(fig);
-	% adding 90 because this puts a typical base
-	% in the most natural orientation
-        val = get(handles.rotateSlider,'Value');
-      else
-        % otherwise gui is not running get from the structure
         curBase = viewGet(view,'curBase');
         if ~isempty(curBase)
           val = view.baseVolumes(curBase).rotate;
         else
           val = 0;
         end
-      end
     else
       val = 0;
     end

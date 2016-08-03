@@ -74,10 +74,10 @@ if (baseType == 0) && (baseMultiAxis>0)
     % if we are displaying all slice dimenons and the #d
     if baseMultiAxis == 1
       % display each slice index
-      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,iSliceIndex==3,verbose,iSliceIndex,curCoords(iSliceIndex));
     else
       % display each slice index
-      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,true,verbose,iSliceIndex,curCoords(iSliceIndex));
+      [v img{iSliceIndex} base roi{iSliceIndex}] = dispBase([],v,baseNum,gui,iSliceIndex==3,verbose,iSliceIndex,curCoords(iSliceIndex));
     end
   end
 
@@ -172,7 +172,7 @@ if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
     if viewGet(v,'baseType',iBase)>=2
       if viewGet(v,'baseMultiDisplay',iBase)
 	% display the base and keep the information about what is drawn for functions like mrPrint
-	[v altBase(iBase).img altBase(iBase).base altBase(iBase).roi altBase(iBase).overlays] = dispBase(gui.axis,v,iBase,gui,false,verbose);
+	[v altBase(iBase).img altBase(iBase).base altBase(iBase).roi altBase(iBase).overlays] = dispBase(gui.axis,v,iBase,gui,true,verbose);
       end
     end
   end
@@ -339,6 +339,8 @@ if verbose>1,disppercent(inf);,end
 if ieNotDefined('img')
   return
 end
+img=double(img); %in case data are stored as singles (later instances of surf/set don't work with singles)
+
 
 % if no figure, then just return, this is being called just to create the overlays
 fig = viewGet(v,'figNum');
@@ -353,6 +355,13 @@ if isempty(fig)
   end
   return;
 end 
+
+% Display colorbar (this should be done before returning when there is a
+% figure, but the slice is not drawn (3D view), otherwise the colorbar
+% won't get drwan/updated
+if dispColorbar
+  displayColorbar(gui,cmap,cbarRange,verbose)
+end
 
 % if we are not displaying then, just return
 % after computing rois
@@ -423,6 +432,8 @@ if baseType <= 1
     % now set the data aspect ratio so that images showup
     % with the aspect ratio appropriately for the voxel size
     daspect(hAxis,[aspectRatio' 1]);
+  else
+    axis(hAxis,'image'); %set aspect ratio to 1:1 for flat maps
   end
 else
   % set the renderer to OpenGL, this makes rendering
@@ -431,25 +442,7 @@ else
   % renderer (order of 5-10 ms)
   set(fig,'Renderer','OpenGL')
   % get the base surface
-  baseSurface = viewGet(v,'baseSurface',baseNum);
-  % if this is not the current base then we need to xform
-  % coordinates so that it will display in the same space
-  % as the current one
-  if baseNum ~= viewGet(v,'currentBase')
-    % get xform that xforms coordinates from this base to
-    % the current base
-    base2base = inv(viewGet(v,'base2base',baseNum));
-    % remove some sigfigs so that the isequal check works
-    if ~isequal(round(base2base*100000)/100000,eye(4))
-      % homogenous coordinates
-      baseSurface.vtcs(:,4) = 1;
-      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-      % xform to current base coordinates
-      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
-      % and remove the homogenous 1
-      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
-    end
-  end
+  baseSurface = getBaseSurface(v,baseNum); %get baseSurface coordinates, convert to different base space if necessary
   % get alpha
   baseAlpha = viewGet(v,'baseAlpha',baseNum);
   % display the surface
@@ -474,15 +467,27 @@ else
   camva(hAxis,9);
   % set the view angle
   setMLRViewAngle(v);
-  axis(hAxis,'image');
+  if baseNum == viewGet(v,'currentBase') % set aspect ratio to 1:1:1, but only if this is the current base
+    axis(hAxis,'image');                 % (if not, the aspect has already been set for the current base)
+  end
 end
 if verbose>1,disppercent(inf);,end
 if verbose>1,disppercent(-inf,'Setting axis');,end
 axis(hAxis,'off');
 if verbose>1,disppercent(inf);,end
 
-% Display colorbar
-if dispColorbar
+% Display ROIs
+nROIs = viewGet(v,'numberOfROIs');
+if nROIs
+  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+else
+  roi = [];
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% displayColorbar 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function displayColorbar(gui,cmap,cbarRange,verbose)
   if isempty(cmap)
     set(gui.colorbar,'Visible','off');
   else
@@ -491,12 +496,12 @@ if dispColorbar
     if verbose>1,disppercent(-inf,'colorbar');,end
     cbar = permute(NaN(size(cmap)),[3 1 2]);
     for iOverlay = 1:size(cmap,3)
-      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,256],1); 
+      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,size(cmap,1)],1); 
     end
     image(cbar,'Parent',gui.colorbar);
     if size(cbar,1)==1
       set(gui.colorbar,'YTick',[]);
-      set(gui.colorbar,'XTick',[1 64 128 192 256]);
+      set(gui.colorbar,'XTick',linspace(0.5,size(cmap,1)+0.5,5));
       set(gui.colorbar,'XTicklabel',num2str(linspace(cbarRange(1),cbarRange(2),5)',3));
       if isfield(gui,'colorbarRightBorder')
 	set(gui.colorbarRightBorder,'YTick',[]);
@@ -512,15 +517,32 @@ if dispColorbar
     end
     if verbose>1,disppercent(inf);,end
   end
-end
 
-% Display ROIs
-nROIs = viewGet(v,'numberOfROIs');
-if nROIs
-  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
-else
-  roi = [];
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% getBaseSurface: gets baseSurface using viewGet, but converts vertices coordinates to
+% the current base space (in case surface is overlaid onto different base in 3D view
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function baseSurface = getBaseSurface(v,baseNum)
+  
+  baseSurface = viewGet(v,'baseSurface',baseNum);
+  % if this is not the current base then we need to xform
+  % coordinates so that it will display in the same space
+  % as the current one
+  if baseNum ~= viewGet(v,'currentBase')
+    % get xform that xforms coordinates from this base to
+    % the current base
+    base2base = inv(viewGet(v,'base2base',baseNum));
+    % remove some sigfigs so that the isequal check works
+    if ~isequal(round(base2base*100000)/100000,eye(4))
+      % homogenous coordinates
+      baseSurface.vtcs(:,4) = 1;
+      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+      % xform to current base coordinates
+      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
+      % and remove the homogenous 1
+      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
+    end
+  end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
@@ -652,7 +674,7 @@ option = viewGet(view,'showROIs');
 % Loop through ROIs in order
 for r = order
   % look in cache for roi
-  roiCache = viewGet(view,'ROICache',r);
+  roiCache = viewGet(view,'ROICache',r,baseNum);
   % if not found
   if isempty(roiCache)
     if verbose
@@ -736,7 +758,7 @@ for r = order
   % decide whether we are drawing perimeters or not
   doPerimeter = ismember(option,{'all perimeter','selected perimeter','group perimeter'});
   if baseType == 2
-    baseSurface = viewGet(view,'baseSurface',baseNum);
+    baseSurface = getBaseSurface(view,baseNum); %get baseSurface coordinates, converted to different base space if necessary
     if 0 %%doPerimeter
       if verbose, disppercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
