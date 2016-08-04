@@ -141,13 +141,16 @@ switch lower(param)
       mlrGuiSet(view,'group',val);
       nScans = viewGet(view,'nScans',val);
       mlrGuiSet(view,'nScans',nScans);
-      %get the current scan numnb for this group
+      %get the current scan number for this group
       % however, we want the current scan to be no more than the number of scans in the group
       scanNum = min(viewGet(view,'groupScanNum',view.curGroup),nScans); 
       % but we  don't want it to be 0 if there is at least one scan in the group
       if ~scanNum && nScans
         scanNum=1;
       end
+      if ~verLessThan('matlab','8.3') %for matlab version 2014a, the number of scans on the slider doesn't seem
+        drawnow;  % to be updated until the slider is drawn, and therefore if new scanNum > previous nScans, the 
+      end         % slider position is not updated either
       mlrGuiSet(view,'scan',scanNum);
       view.curScan = scanNum;
       mlrGuiSet(view,'analysis',1);
