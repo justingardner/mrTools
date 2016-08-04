@@ -251,24 +251,32 @@ for iPlot = 1:length(roi)+1
   end
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Prepare axes
+  if verLessThan('matlab','8.4')
+    drawModeProperty = 'drawMode';
+    drawModeValue='fast';
+  else
+    drawModeProperty = 'SortMethod';
+    drawModeValue='childorder';
+  end
+
   if plotBetaWeights
-    betaAxes = axes('parent',fignum,'outerposition',betaSubplotPosition(iPlot,:),'DrawMode','fast');
+    betaAxes = axes('parent',fignum,'outerposition',betaSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
     hold on
     %hold(betaAxes);
     title(titleString,'Interpreter','none');
     if numberContrasts
-      contrastAxes = axes('parent',fignum,'outerposition',contrastSubplotPosition(iPlot,:),'DrawMode','fast');
+      contrastAxes = axes('parent',fignum,'outerposition',contrastSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
       hold on
       %hold(contrastAxes);
     end
   end
-  ehdrAxes = axes('parent',fignum,'outerposition',ehdrSubplotPosition(iPlot,:),'DrawMode','fast');
+  ehdrAxes = axes('parent',fignum,'outerposition',ehdrSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
   hold on
   %hold(ehdrAxes);
   %plot baseline
   plot(ehdrAxes,[0 (glmData.hdrlen+1)*framePeriod],[0 0],'--k','lineWidth',1);
   if numberContrasts
-    hdrContrastAxes = axes('parent',fignum,'outerposition',contrastEhdrSubplotPosition(iPlot,:),'DrawMode','fast');
+    hdrContrastAxes = axes('parent',fignum,'outerposition',contrastEhdrSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
     hold on
     %hold(hdrContrastAxes);
     %plot baseline
