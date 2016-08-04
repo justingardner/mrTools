@@ -579,6 +579,7 @@ switch lower(field)
   else
     set(handles.scanSlider,'Min',0.9);
     set(handles.scanSlider,'Max',1.1);
+    set(handles.scanSlider,'Value',1); %this wasn't needed until matlab ver 2014a, but now, visible[off] doesn't seem to work when 'value' is not within 'range' and therefore the slider is not rendered 
     set(handles.scanSlider,'Visible','off');
   end
   mlrGuiSet(view,'scan',curScan);
