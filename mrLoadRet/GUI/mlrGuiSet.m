@@ -270,6 +270,11 @@ switch lower(field)
   else
     set(handles.overlayPopup,'value',1);
   end
+  % for matlab version 2014a and above, the listboxtop property is not
+  % correctly updated when setting the value or the strings
+  if ~verLessThan('matlab','8.3') && strcmp(get(handles.overlayPopup,'style'),'listbox')
+    set(handles.overlayPopup,'ListboxTop',1) %need to set it manually otherwise a warning will be issued
+  end
   set(handles.overlayPopup,'String',value);
 
  case {'overlay'}
