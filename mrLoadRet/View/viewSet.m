@@ -1742,8 +1742,8 @@ switch lower(param)
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMin',val);        
       end
-      %identify the overlay name in the list if any voxel is clipped 
-      mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
+%       %identify the overlay name in the list if any voxel is clipped 
+%       mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       %refresh clipping overlay list
       clippingOverlayList=viewGet(view,'clippingOverlayList');
       mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
@@ -1764,7 +1764,7 @@ switch lower(param)
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMax',val);
       end
-      mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
+%       mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       %refresh clipping overlay list
       clippingOverlayList=viewGet(view,'clippingOverlayList');
       mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
