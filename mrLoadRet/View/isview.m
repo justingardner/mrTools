@@ -28,12 +28,14 @@ if (nargout >= 2)
 		    'labelROIs',0;
 		    'roiGroup',{};
 		    'sliceOrientation',1;
+        'groupSettings',[];
        };
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the view structure it is invalid).
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
-		    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan','sliceOrientation','roiGroup'};
+		    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan','sliceOrientation','roiGroup',...
+        'groupSettings'};
   optionalFields = {};
 end
 
