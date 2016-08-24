@@ -945,15 +945,20 @@ end
 
 % get current roi name
 roiName = viewGet(v,'roiname');
-
-% put up dialog to select filename
-pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext(roiName,mrGetPref('niftiFileExtension')));
-
-% pathstr = [] if aborted
-if ~isempty(pathstr)
-  mlrExportROI(v, pathstr);
+if ischar(roiName)
+  roiName={roiName};
 end
 
+pathstr = cell(0);
+for iRoi = 1:length(roiName)
+  % put up dialog to select filename
+  pathstr{iRoi} = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext(roiName{iRoi},mrGetPref('niftiFileExtension')));
+  if isempty(pathstr{iRoi})
+    return
+  end
+end
+
+mlrExportROI(v, pathstr);
 
 % --------------------------------------------------------------------
 function exportImageMenuItem_Callback(hObject, eventdata, handles)
@@ -963,7 +968,6 @@ if ~isempty(pathstr)
     img = refreshMLRDisplay(handles.viewNum);
     imwrite(img, pathstr, 'tif');
 end
-
 
 % --------------------------------------------------------------------
 function readmeMenuItem_Callback(hObject, eventdata, handles)
