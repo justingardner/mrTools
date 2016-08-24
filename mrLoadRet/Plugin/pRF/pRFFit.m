@@ -253,46 +253,51 @@ fitParams.stimHeight = fitParams.stimExtents(4)-fitParams.stimExtents(2);
 
 if ~isfield(fitParams,'initParams')
   % check the rfType to get the correct min/max arrays
-  switch (fitParams.rfType)
-   case 'gaussian'
-    % parameter names/descriptions and other information for allowing user to set them
-    fitParams.paramNames = {'x','y','rfWidth'};
-    fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)'};
-    fitParams.paramIncDec = [1 1 1];
-    fitParams.paramMin = [-inf -inf 0];
-    fitParams.paramMax = [inf inf inf];
-    % set min/max and init
-    fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0];
-    fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf];
-    fitParams.initParams = [0 0 4];
-   case 'gaussian-hdr'
-    % parameter names/descriptions and other information for allowing user to set them
-    fitParams.paramNames = {'x','y','rfWidth','timelag','tau'};
-    fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)','Time before start of rise of hemodynamic function','Width of the hemodynamic function (tau parameter of gamma)'};
-    fitParams.paramIncDec = [1 1 1 0.1 0.5];
-    fitParams.paramMin = [-inf -inf 0 0 0];
-    fitParams.paramMax = [inf inf inf inf inf];
-    % set min/max and init
-    fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 0 0];
-    fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf 3 inf];
-    fitParams.initParams = [0 0 4 fitParams.timelag fitParams.tau];
-    % add on parameters for difference of gamma
-    if fitParams.diffOfGamma
-      % parameter names/descriptions and other information for allowing user to set them
-      fitParams.paramNames = {fitParams.paramNames{:} 'amp2' 'timelag2','tau2'};
-      fitParams.paramDescriptions = {fitParams.paramDescriptions{:} 'Amplitude of second gamma for HDR' 'Timelag for second gamma for HDR','tau for second gamma for HDR'};
-      fitParams.paramIncDec = [fitParams.paramIncDec(:)' 0.1 0.1 0.5];
-      fitParams.paramMin = [fitParams.paramMin(:)' 0 0 0];
-      fitParams.paramMax = [fitParams.paramMax(:)' inf inf inf];
-      % set min/max and init
-      fitParams.minParams = [fitParams.minParams 0 0 0];
-      fitParams.maxParams = [fitParams.maxParams inf 6 inf];
-      fitParams.initParams = [fitParams.initParams fitParams.amplitudeRatio fitParams.timelag2 fitParams.tau2];
-    end
-   otherwise
-    disp(sprintf('(pRFFit:setFitParams) Unknown rfType %s',rfType));
-    return
-  end
+
+  %%%%%%%%%%%%%%%%%%%
+  fitParams = pRFModelTemplate('setParams', fitParams)
+  %%%%%%%%%%%%%%%%%%%
+  
+  % switch (fitParams.rfType)
+  %  case 'gaussian'
+  %   % parameter names/descriptions and other information for allowing user to set them
+  %   fitParams.paramNames = {'x','y','rfWidth'};
+  %   fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)'};
+  %   fitParams.paramIncDec = [1 1 1];
+  %   fitParams.paramMin = [-inf -inf 0];
+  %   fitParams.paramMax = [inf inf inf];
+  %   % set min/max and init
+  %   fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0];
+  %   fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf];
+  %   fitParams.initParams = [0 0 4];
+  %  case 'gaussian-hdr'
+  %   % parameter names/descriptions and other information for allowing user to set them
+  %   fitParams.paramNames = {'x','y','rfWidth','timelag','tau'};
+  %   fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)','Time before start of rise of hemodynamic function','Width of the hemodynamic function (tau parameter of gamma)'};
+  %   fitParams.paramIncDec = [1 1 1 0.1 0.5];
+  %   fitParams.paramMin = [-inf -inf 0 0 0];
+  %   fitParams.paramMax = [inf inf inf inf inf];
+  %   % set min/max and init
+  %   fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 0 0];
+  %   fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf 3 inf];
+  %   fitParams.initParams = [0 0 4 fitParams.timelag fitParams.tau];
+  %   % add on parameters for difference of gamma
+  %   if fitParams.diffOfGamma
+  %     % parameter names/descriptions and other information for allowing user to set them
+  %     fitParams.paramNames = {fitParams.paramNames{:} 'amp2' 'timelag2','tau2'};
+  %     fitParams.paramDescriptions = {fitParams.paramDescriptions{:} 'Amplitude of second gamma for HDR' 'Timelag for second gamma for HDR','tau for second gamma for HDR'};
+  %     fitParams.paramIncDec = [fitParams.paramIncDec(:)' 0.1 0.1 0.5];
+  %     fitParams.paramMin = [fitParams.paramMin(:)' 0 0 0];
+  %     fitParams.paramMax = [fitParams.paramMax(:)' inf inf inf];
+  %     % set min/max and init
+  %     fitParams.minParams = [fitParams.minParams 0 0 0];
+  %     fitParams.maxParams = [fitParams.maxParams inf 6 inf];
+  %     fitParams.initParams = [fitParams.initParams fitParams.amplitudeRatio fitParams.timelag2 fitParams.tau2];
+  %   end
+  %  otherwise
+  %   disp(sprintf('(pRFFit:setFitParams) Unknown rfType %s',rfType));
+  %   return
+  % end
   
   % round constraints
   fitParams.minParams = round(fitParams.minParams*10)/10;
@@ -372,17 +377,21 @@ modelResponse = [];residual = [];
 % create the model for each concat
 for i = 1:fitParams.concatInfo.n
   % get model response
-  nFrames = fitParams.concatInfo.runTransition(i,2);
-  thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
+  %nFrames = fitParams.concatInfo.runTransition(i,2);
+  %thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
 
   % get a model hrf
   hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
 
   % and convolve in time.
-  thisModelResponse = convolveModelResponseWithHRF(thisModelResponse,hrf);
+  %thisModelResponse = convolveModelResponseWithHRF(thisModelResponse,hrf);
 
   % drop junk frames here
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
+  %thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
+
+  %%%%%%%%%%%%%%%%%%%
+  thisModelResponse = pRFModelTemplate('getModelResponse', fitParams, rfModel, hrf, i);
+  %%%%%%%%%%%%%%%%%%%
 
   % apply concat filtering
   if isfield(fitParams,'applyFiltering') && fitParams.applyFiltering
@@ -502,46 +511,50 @@ function p = getFitParams(params,fitParams)
 
 p.rfType = fitParams.rfType;
 
-switch (fitParams.rfType)
-  case 'gaussian'
-    p.x = params(1);
-    p.y = params(2);
-    p.std = params(3);
-    % use a fixed single gaussian
-    p.canonical.type = 'gamma';
-    p.canonical.lengthInSeconds = 25;
-    p.canonical.timelag = fitParams.timelag;
-    p.canonical.tau = fitParams.tau;
-    p.canonical.exponent = fitParams.exponent;
-    p.canonical.offset = 0;
-    p.canonical.diffOfGamma = fitParams.diffOfGamma;
-    p.canonical.amplitudeRatio = fitParams.amplitudeRatio;
-    p.canonical.timelag2 = fitParams.timelag2;
-    p.canonical.tau2 = fitParams.tau2;
-    p.canonical.exponent2 = fitParams.exponent2;
-    p.canonical.offset2 = 0;
-  case 'gaussian-hdr'
-    p.x = params(1);
-    p.y = params(2);
-    p.std = params(3);
-    % use a fixed single gaussian
-    p.canonical.type = 'gamma';
-    p.canonical.lengthInSeconds = 25;
-    p.canonical.timelag = params(4);
-    p.canonical.tau = params(5);
-    p.canonical.exponent = fitParams.exponent;
-    p.canonical.offset = 0;
-    p.canonical.diffOfGamma = fitParams.diffOfGamma;
-    if fitParams.diffOfGamma
-      p.canonical.amplitudeRatio = params(6);
-      p.canonical.timelag2 = params(7);
-      p.canonical.tau2 = params(8);
-      p.canonical.exponent2 = fitParams.exponent2;
-      p.canonical.offset2 = 0;
-    end
-otherwise 
-    disp(sprintf('(pRFFit) Unknown rfType %s',rfType));
-end
+%%%%%%%%%%%%%%%%%%%
+p = pRFModelTemplate('getFitParams', fitParams, params);
+%%%%%%%%%%%%%%%%%%%
+
+% switch (fitParams.rfType)
+%   case 'gaussian'
+%     p.x = params(1);
+%     p.y = params(2);
+%     p.std = params(3);
+%     % use a fixed single gaussian
+%     p.canonical.type = 'gamma';
+%     p.canonical.lengthInSeconds = 25;
+%     p.canonical.timelag = fitParams.timelag;
+%     p.canonical.tau = fitParams.tau;
+%     p.canonical.exponent = fitParams.exponent;
+%     p.canonical.offset = 0;
+%     p.canonical.diffOfGamma = fitParams.diffOfGamma;
+%     p.canonical.amplitudeRatio = fitParams.amplitudeRatio;
+%     p.canonical.timelag2 = fitParams.timelag2;
+%     p.canonical.tau2 = fitParams.tau2;
+%     p.canonical.exponent2 = fitParams.exponent2;
+%     p.canonical.offset2 = 0;
+%   case 'gaussian-hdr'
+%     p.x = params(1);
+%     p.y = params(2);
+%     p.std = params(3);
+%     % use a fixed single gaussian
+%     p.canonical.type = 'gamma';
+%     p.canonical.lengthInSeconds = 25;
+%     p.canonical.timelag = params(4);
+%     p.canonical.tau = params(5);
+%     p.canonical.exponent = fitParams.exponent;
+%     p.canonical.offset = 0;
+%     p.canonical.diffOfGamma = fitParams.diffOfGamma;
+%     if fitParams.diffOfGamma
+%       p.canonical.amplitudeRatio = params(6);
+%       p.canonical.timelag2 = params(7);
+%       p.canonical.tau2 = params(8);
+%       p.canonical.exponent2 = fitParams.exponent2;
+%       p.canonical.offset2 = 0;
+%     end
+% otherwise 
+%     disp(sprintf('(pRFFit) Unknown rfType %s',rfType));
+% end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   convolveModelWithStimulus   %%
