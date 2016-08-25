@@ -1668,7 +1668,7 @@ switch lower(param)
       view.analyses{analysisNum}.overlays = ...
          view.analyses{analysisNum}.overlays(setdiff(1:numoverlays,overlayNum) ); %JB: allows deleting several overlays at once
       numoverlays = viewGet(view,'numberofoverlays',analysisNum);                %
-      if (curoverlay > numoverlays)                                              % JB: does not change current overlay, unless not enough overlays         
+      if any(curoverlay > numoverlays)                                              % JB: does not change current overlay, unless not enough overlays         
          view = viewSet(view,'currentOverlay',numoverlays);                      % in which case set the last overlay
       end
       % Update the gui
