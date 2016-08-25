@@ -580,7 +580,7 @@ function displayColorbar(gui,cmap,cbarRange,verbose)
     if verbose>1,disppercent(-inf,'colorbar');,end
     cbar = permute(NaN(size(cmap)),[3 1 2]);
     for iOverlay = 1:size(cmap,3)
-      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,size(cmap,1)],1); 
+      cbar(iOverlay,:,:) = rescale2rgb(1:size(cmap,1),cmap(:,:,iOverlay),[1,size(cmap,1)],1); 
     end
     image(cbar,'Parent',gui.colorbar);
     if size(cbar,1)==1
