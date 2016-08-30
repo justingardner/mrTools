@@ -1,4 +1,4 @@
-function [dist]=find3DNeighbourDists(mesh,scaling);
+function [dist]=find3DNeighbourDists(mesh,scaling)
 % function [dist]=find3DNeighbourDists(mesh,scaling);
 % AUTHOR: WADE
 % DATE : 062700
@@ -7,8 +7,9 @@ function [dist]=find3DNeighbourDists(mesh,scaling);
 % See also find2DNeighboutDists - does the same thing with the 2d mesh. 
 % ARW 031201 - Now takes a scaling argument (equiv of dimdist for mrManDist)
 % This scales distances along the appropriate matrix dimensions
-% ARW 082702 - Now returns the abs distance not the squared one.
-if (~exist('scaling'))
+% ARW 082702 - Now returns the abs distance not the squared one. 
+% steeve 160830 - make sure scaling is a variable and not a directory
+if (~exist('scaling','var'))
 	scaling=[1 1 1];
 end
 
