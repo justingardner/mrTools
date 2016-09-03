@@ -42,6 +42,9 @@ else
   end
 end
 
+% specify the model file here (e.g. pRFModelTemplate)
+prfModel = @pRF_exp
+
 % get the stimulus movie if it wasn't passed in
 if ~isfield(fitParams,'stim') || isempty(fitParams.stim)
   fitParams.stim = getStim(v,scanNum,fitParams);
@@ -255,7 +258,7 @@ if ~isfield(fitParams,'initParams')
   % check the rfType to get the correct min/max arrays
 
   %%%%%%%%%%%%%%%%%%%
-  fitParams = pRFModelTemplate('setParams', fitParams)
+  fitParams = prfModel('setParams', fitParams)
   %%%%%%%%%%%%%%%%%%%
   
   % switch (fitParams.rfType)
@@ -390,7 +393,7 @@ for i = 1:fitParams.concatInfo.n
   %thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
 
   %%%%%%%%%%%%%%%%%%%
-  thisModelResponse = pRFModelTemplate('getModelResponse', fitParams, rfModel, hrf, i);
+  thisModelResponse = prfModel('getModelResponse', fitParams, rfModel, hrf, i);
   %%%%%%%%%%%%%%%%%%%
 
   % apply concat filtering
@@ -512,7 +515,7 @@ function p = getFitParams(params,fitParams)
 p.rfType = fitParams.rfType;
 
 %%%%%%%%%%%%%%%%%%%
-p = pRFModelTemplate('getFitParams', fitParams, params);
+p = prfModel('getFitParams', fitParams, params);
 %%%%%%%%%%%%%%%%%%%
 
 % switch (fitParams.rfType)
