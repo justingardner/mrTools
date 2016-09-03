@@ -1,9 +1,9 @@
-% pRFModelTemplate.m
+% pRF_gaussian.m
 %
 %        $Id:$ 
-%      usage: pRFModelTemplate(varargin)
+%      usage: pRF_gaussian(varargin)
 %         by: akshay jagadeesh
-%       date: 08/23/16
+%       date: 09/02/16
 %    purpose: Template file to create new models
 %
 %             - Allows you to create a new model type 
@@ -13,7 +13,7 @@
 %
 %     This model template is set up for the standard Gaussian model.
 
-function output = pRFModelTemplate(varargin)
+function output = pRF_gaussian(varargin)
 
 if nargin <=2
   disp(sprintf('Not enough arguments'));
@@ -21,7 +21,7 @@ if nargin <=2
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%pRFModelTemplate(command, fitParams, rfModel, hrf, i)%%%%%
+%%%%pRF_gaussian('getModelResponse', fitParams, rfModel, hrf, i)%%%%%
 %%%%          Called from getModelResidual               %%%%%
 if strcmp(varargin{1}, 'getModelResponse')
 
@@ -41,11 +41,10 @@ if strcmp(varargin{1}, 'getModelResponse')
 
   % return the calculated model response
   output = thisModelResponse;
-%end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%pRFModelTemplate(command, fitParams)%%%%%
-%%%%    Called from setFitParams    %%%%%
+%%%%pRF_gaussian('setParams', fitParams)%%%%%
+%%%%    Called from setParams    %%%%%
 
 elseif strcmp(varargin{1}, 'setParams')
 
@@ -63,10 +62,9 @@ elseif strcmp(varargin{1}, 'setParams')
 
   % return fitParams with modified values
   output = fitParams;
-%end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%pRFModelTemplate(command, fitParams, params)%%%%%
+%%%%pRF_gaussian(command, fitParams, params)%%%%%
 %%%%         Called from getFitParams           %%%%% 
 
 elseif strcmp(varargin{1}, 'getFitParams')
