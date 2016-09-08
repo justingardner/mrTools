@@ -12,7 +12,7 @@
 
 function output = pRF_exp(varargin)
 
-if nargin <=2
+if nargin < 2
   disp(sprintf('Not enough arguments'));
   return
 end
@@ -25,7 +25,8 @@ if strcmp(varargin{1}, 'getModelResponse')
   fitParams = varargin{2};
   rfModel = varargin{3};
   hrf = varargin{4};
-  i = varargin{5};
+  p = varargin{5};
+  i = varargin{6};
 
   nFrames = fitParams.concatInfo.runTransition(i,2);
   thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
@@ -43,14 +44,11 @@ if strcmp(varargin{1}, 'getModelResponse')
 
   % return the calculated model response
   output = thisModelResponse;
-
-  disp(sprintf('fitParams.rfType is %s', fitParams.rfType));
-
 %end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%pRF_exp(command, fitParams)%%%%%
-%%%%    Called from getModelResidual    %%%%%
+%%%%    Called from setFitParams %%%%%
 
 elseif strcmp(varargin{1}, 'setParams')
 
@@ -67,7 +65,7 @@ elseif strcmp(varargin{1}, 'setParams')
   fitParams.initParams = [0 0 4 1]; %Initialize exponent to 1 (linear)
 
   % return fitParams with modified values
-  output = fitParams;
+  output = struct(fitParams);
 %end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,6 +97,8 @@ elseif strcmp(varargin{1}, 'getFitParams')
   p.canonical.tau2 = fitParams.tau2;
   p.canonical.exponent2 = fitParams.exponent2;
   p.canonical.offset2 = 0;
+
+  output = struct(p);
 
 
 else
