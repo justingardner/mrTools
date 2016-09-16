@@ -34,7 +34,7 @@ baseType = viewGet(thisView,'baseType',baseNum);
 
 baseVoxelSize = viewGet(thisView,'basevoxelsize',baseNum);
 
-if all(all(abs(base2scan - eye(4))<1e-6)) %check if we're in the scan space
+if all(all(abs(base2scan - eye(4))<1e-6)) && viewGet(thisView,'basetype')==0 %check if we're in the scan space
    disp('(getBaseSpaceOverlay) Overlay already in the base space, skipping resampling...');
    newOverlayData = overlayData;
    return;
