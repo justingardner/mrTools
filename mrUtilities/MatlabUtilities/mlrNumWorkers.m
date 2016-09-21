@@ -101,4 +101,7 @@ end
 
 catch
   disp(sprintf('(mlrNumWorkers) !!! Error starting a parallel pool. Will only use 1 processor !!!'));
+  % return -1 so that the user knows not to run a parallel loop
+  n = -1;
+  return
 end
