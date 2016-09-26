@@ -107,6 +107,7 @@ elseif strcmp(varargin{1}, 'getFitParams')
     p.canonical.exponent2 = fitParams.exponent2;
     p.canonical.offset2 = 0;
   end
+  output = struct(p);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
