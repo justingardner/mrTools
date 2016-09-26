@@ -224,9 +224,10 @@ end
 [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
 
 % display
-if fitParams.verbose
-  disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
-  disp(sprintf('Params: exp is %f', fit.exp));
+if fitParams.verbose && strcmp(fitParams.rfType, 'gaussian-exp')
+  disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f exp=%f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std, fit.exp));
+elseif fitParams.verbose
+  disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f', fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -446,7 +447,7 @@ designMatrix = modelResponse;
 designMatrix(:,2) = 1;
 
 % get beta weight for the modelResponse
-if ~any(isnan(modelResponse))
+if ~any(isnan(modelResponse)) && ~any(isinf(modelResponse))
   beta = pinv(designMatrix)*tSeries;
   beta(1) = max(beta(1),0);
   modelResponse = designMatrix*beta;
@@ -553,12 +554,12 @@ function output = prfModel(varargin)
 fitParams = varargin{2};
 switch (fitParams.rfType)
   case 'gaussian'
-    output = pRF_gaussian(varargin);
+    output = pRF_gaussian(varargin{:});
   case 'gaussian-hdr'
-    output = pRF_gaussianhdr(varargin);
+    output = pRF_gaussianhdr(varargin{:});
   otherwise
     testModel = @pRF_exp; %%% Only need to change this line to specify a new model.
-    output = testModel(varargin);
+    output = testModel(varargin{:});
 end
 
 

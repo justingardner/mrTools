@@ -17,6 +17,8 @@ function output = pRF_gaussian(varargin)
 
 if nargin < 2
   disp(sprintf('Not enough arguments'));
+  disp(sprintf('Number of argumnets: %d', nargin));
+  celldisp(varargin)
   return
 end
 
@@ -92,6 +94,8 @@ elseif strcmp(varargin{1}, 'getFitParams')
   p.canonical.tau2 = fitParams.tau2;
   p.canonical.exponent2 = fitParams.exponent2;
   p.canonical.offset2 = 0;
+
+  output = struct(p);
 
 end
 

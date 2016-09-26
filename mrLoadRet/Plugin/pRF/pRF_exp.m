@@ -14,6 +14,8 @@ function output = pRF_exp(varargin)
 
 if nargin < 2
   disp(sprintf('Not enough arguments'));
+  disp(sprintf('Number of arguments: %d', nargin));
+  celldisp(varargin)
   return
 end
 
@@ -33,7 +35,9 @@ if strcmp(varargin{1}, 'getModelResponse')
   
   % FOR GAUSSIAN-EXP ONLY: include exponent non-linearity
   if strcmp(fitParams.rfType, 'gaussian-exp')
-    thisModelResponse = power(thisModelResponse, p.exp);
+    if ~isnan(thisModelResponse)
+      thisModelResponse = power(thisModelResponse, p.exp);
+    end
   end
 
   % and convolve in time.
@@ -61,7 +65,7 @@ elseif strcmp(varargin{1}, 'setParams')
   fitParams.paramMax = [inf inf inf inf];
   % set min/max and init
   fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 0];
-  fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf inf];
+  fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf 5]; % Set max exponent to 5
   fitParams.initParams = [0 0 4 1]; %Initialize exponent to 1 (linear)
 
   % return fitParams with modified values
