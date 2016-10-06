@@ -46,20 +46,6 @@ else
   end
 end
 
-if ~passedInHeader
-  b = viewGet(v,'base');
-  % if the orientation has been changed in loadAnat, undo that here.
-  if ~isempty(b.originalOrient)
-    % convert into mlrImage
-    [d h] = mlrImageLoad(d,hdr);
-    % convert the orientation back to original
-    [d h] = mlrImageOrient(b.originalOrient,d,h);
-    % covert back to nifti
-    hdr = mlrImageGetNiftiHeader(h);
-  end
-end
-
-
 baseCoordMap = viewGet(v,'basecoordmap');
 baseType = viewGet(v,'basetype');
 if ~isempty(baseCoordMap) && baseType==1  %for flats, use basecoordmap 
@@ -94,6 +80,21 @@ if ~isempty(baseCoordMap) && baseType==1  %for flats, use basecoordmap
   
 else
   baseDims = hdr.dim(2:4)';
+end
+
+if ~passedInHeader
+  b = viewGet(v,'base');
+  % if the orientation has been changed in loadAnat, undo that here.
+  if ~isempty(b.originalOrient)
+    % create a data structure that has all 0's
+    d = zeros(baseDims);
+    % convert into mlrImage
+    [d h] = mlrImageLoad(d,hdr);
+    % convert the orientation back to original
+    [d h] = mlrImageOrient(b.originalOrient,d,h);
+    % covert back to nifti
+    hdr = mlrImageGetNiftiHeader(h);
+  end
 end
 
 for iRoi = 1:length(roiNum)
