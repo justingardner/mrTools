@@ -71,9 +71,12 @@ for i = 1:numScans
          %%% scanNum: scan number on which analysis was conducted
   [residual, covMat, tSeries, modelResponse] = pRFNoise(v, scanNum, coordinates, analysisFileName)
 
+  %%
+  %% TO DO: Get the time series data for the left-out scan
+  %%
+
   %Save residual, covariance matrix, time series, and model response into a structure
   save(sprintf('SaveData/pRF_fold%i_%s', i, scanListStr), 'residual', 'covMat', 'tSeries', 'modelResponse')
-  %Test pRF Analysis on the left-out scan
   
 end
 
