@@ -367,13 +367,15 @@ for iScan = params.scanNum
 
       %compute the design matrix for this permutation
       d = makeDesignMatrix(d,params,verbose, iScan);
-      if ~testDesignMatrix(d.scm,d.nhdr,d.nHrfComponents,params.EVnames)
-        mrErrorDlg(sprintf('(glmAnalysis) Not enough data in scan %i to estimate all EV components',iScan));
+      d.emptyEVcomponents = testDesignMatrix(d.scm,d.nhdr,d.nHrfComponents,params.EVnames);
+      if ~isempty(d.emptyEVcomponents)
+        % for deconvolution with design supersampling, some components might be impossible to estimate
+        mrWarnDlg(sprintf('(glmAnalysis) Not enough data in scan %i to estimate all EV components, ignoring empty components (This has not been tested...)',iScan));
+        %they will be removed from the design matrix in getGlmStatistics and their parameter estimates replaced by NaNs
       end
 
       % compute estimates and statistics
       [d, out] = getGlmStatistics(d, params, verbose, precision, actualData);%, computeTtests,computeBootstrap);
-       
       
     
       if iPerm==1

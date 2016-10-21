@@ -2777,6 +2777,8 @@ switch lower(param)
         overlayRange = view.analyses{analysisNum}.overlays(curOverlay).range;
         scanNum = viewGet(view,'curScan');
         alpha = viewGet(view,'alpha');
+        alphaOverlay = char(viewGet(view,'alphaOverlay'))';
+        alphaOverlayExponent = viewGet(view,'alphaOverlayExponent');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
         % need to recalculate overlay if this is aflat
@@ -2803,7 +2805,7 @@ switch lower(param)
 	  baseOverlay = sprinf('%f',sum(baseOverlay(:)));
 	end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay);
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay,alphaOverlay(:)',mat2str(alphaOverlayExponent));
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
@@ -3592,7 +3594,7 @@ switch lower(param)
       end
     end
   case {'alphaoverlay'}
-    % alphaoverlay = viewGet(view,'alphaOverlay',[overlaynumn])
+    % alphaoverlay = viewGet(view,'alphaOverlay',[overlaynum])
     analysisNum = viewGet(view,'currentAnalysis');
     if isempty(varargin) || isempty(varargin{1})
       overlayNum = viewGet(view,'currentOverlay',analysisNum);
@@ -3603,22 +3605,28 @@ switch lower(param)
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
       if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = {analysis.overlays(overlayNum).alphaOverlay};
+        for iOverlay=1:length(overlayNum)
+          val{iOverlay} = char(analysis.overlays(overlayNum(iOverlay)).alphaOverlay);
+        end
       end
       if length(val)==1
         val = val{1};
       end
     end
   case {'alphaoverlayexponent'}
-    % overlayclip = viewGet(view,'alphaOverlayExponent')
+    % overlayclip = viewGet(view,'alphaOverlayExponent',[overlaynum])
     val = 1;
     analysisNum = viewGet(view,'currentAnalysis');
-    overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    if isempty(varargin) || isempty(varargin{1})
+      overlayNum = viewGet(view,'currentOverlay',analysisNum);
+    else
+      overlayNum = varargin{1};
+    end
     analysis = viewGet(view,'analysis',analysisNum);
     if ~isempty(analysis) & ~isempty(analysis.overlays)
       n = viewGet(view,'numberofOverlays',analysisNum);
-      if overlayNum & (overlayNum > 0) & (overlayNum <= n)
-        val = analysis.overlays(overlayNum).alphaOverlayExponent;
+      if overlayNum & all(overlayNum > 0) & all(overlayNum <= n)
+        val = [analysis.overlays(overlayNum).alphaOverlayExponent];
       end
     end
   case {'overlaycmap'}
@@ -4057,7 +4065,7 @@ switch lower(param)
     val = view.figure;
   case {'curscan','currentscan'}
     % scan = viewGet(view,'currentScan');
-    val = min(view.curScan,viewGet(view,'nscans'));
+    val = view.curScan;
     if isempty(val),val = 1;end
   case {'curslice','currentslice'}
     % slice = viewGet(view,'currentSlice');

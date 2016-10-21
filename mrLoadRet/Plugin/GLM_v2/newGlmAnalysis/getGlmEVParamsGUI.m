@@ -248,6 +248,10 @@ while keepAsking
     disp('User changed the number of EVs')
   elseif strcmp(scanParams{params.scanNum(1)}.stimDurationMode,'Set value') && isempty(scanParams{params.scanNum(1)}.stimDuration)
     mrWarnDlg('Please set a stim duration value');
+  elseif length(tempParams.EVnames)~=tempParams.numberEVs
+    mrWarnDlg('Please enter a name for all the EVs');
+  elseif ~isequal(sort(tempParams.EVnames),unique(tempParams.EVnames))
+    mrWarnDlg('All the EV names must be different');
   else
     keepAsking = 0;
   end

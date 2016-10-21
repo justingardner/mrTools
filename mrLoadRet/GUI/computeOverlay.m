@@ -26,7 +26,7 @@ sliceInfo.base2overlay = base2overlay;
 sliceInfo.baseCoordsHomogeneous = baseCoordsHomogeneous;
 sliceInfo.baseDims = [baseDims 1];
 
-if ~isempty(curOverlays) && viewGet(thisView,'nscans') % there needs to be at least one scan in the group
+if ~isempty(curOverlays) && scan && viewGet(thisView,'nscans') % there needs to be at least one scan in the group
   curAlphaOverlays = zeros(1,nCurOverlays);
   for iOverlay = 1:nCurOverlays
     thisNum = viewGet(thisView,'overlayNum',viewGet(thisView,'alphaOverlay',curOverlays(iOverlay)));
@@ -147,6 +147,7 @@ if ~isempty(overlayImages)
   % overlays has an alphaOverlay field set to the name
   % of another overlays, then we will use the values in
   % that overlays to set the alpha
+  alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
   for iOverlay = 1:nCurOverlays
     if nargin == 4
       alpha = viewGet(thisView,'alpha',curOverlays(iOverlay));
@@ -160,20 +161,19 @@ if ~isempty(overlayImages)
       range = viewGet(thisView,'overlayRange',curAlphaOverlays(iOverlay));
       % handle setRangeToMax
       if strcmp(viewGet(thisView,'overlayCtype',curAlphaOverlays(iOverlay)),'setRangeToMax')
-        maxRange = max(clip(1),min(alphaOverlayImage(mask)));
+        maxRange = max(clip(1),min(alphaOverlayImage(overlayMasks(:,:,:,iOverlay))));
         if ~isempty(maxRange),range(1) = maxRange;end
-        minRange = min(max(alphaOverlayImage(mask)),clip(2));
+        minRange = min(max(alphaOverlayImage(overlayMasks(:,:,:,iOverlay))),clip(2));
         if ~isempty(minRange),range(2) = minRange;end
       end
       % now compute the alphaOverlay as a number from
       % 0 to 1 of the range
       alphaOverlayImage = ((alphaOverlayImage-range(1))./diff(range));
-      alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
-      if alphaOverlayExponent<0   % if the alpha overlays exponent is negative, set it positive and take the 1-alpha for the alpha map
-         alphaOverlayExponent = -alphaOverlayExponent;
+      if alphaOverlayExponent(iOverlay)<0   % if the alpha overlays exponent is negative, set it positive and take the 1-alpha for the alpha map
+         alphaOverlayExponent(iOverlay) = -alphaOverlayExponent(iOverlay);
          alphaOverlayImage = 1-alphaOverlayImage;
       end
-      alphaOverlayImage = alpha*(alphaOverlayImage.^alphaOverlayExponent);
+      alphaOverlayImage = alpha*(alphaOverlayImage.^alphaOverlayExponent(iOverlay));
       alphaOverlayImage(isnan(alphaOverlayImage)) = 0;
       alphaOverlayImage(alphaOverlayImage>alpha) = alpha;
       alphaOverlayImage(alphaOverlayImage<0) = 0;
@@ -194,23 +194,24 @@ if ~isempty(overlayImages)
       case 'normal'
         overlays.range(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
       case 'setRangeToMax'
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
-          overlays.range(1) = max(overlays.range(1),min(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
-          overlays.range(2) = min(max(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(2));
+          thisOverlayIm=overlays.overlayIm(:,:,iOverlay);
+          overlays.range(iOverlay,1) = max(overlays.range(iOverlay,1),min(thisOverlayIm(overlayMasks(:,:,:,iOverlay))));
+          overlays.range(iOverlay,2) = min(max(thisOverlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(iOverlay,2));
         end
       case 'setRangeToMaxAroundZero'
        if (viewGet(thisView,'baseType') == 0) && viewGet(thisView,'baseMultiAxis')
 	 oneTimeWarning('setRangeToMaxWithMultiAxis','(computeOverlay) !!! Overlay set to setRangeToMaxAroundZero and you are displaying with multiple axis. Note that the colorbar will only be accurate for the axial view. Consider setting Edit/Overlay/Edit OVerlay to setRangeToMaxAcrossSlices. !!!',1);
        end
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
           maxval = max(abs(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
           overlays.range(iOverlay,1) = -maxval;
           overlays.range(iOverlay,2) = maxval;
         end
-      case 'setRangeToMaxAcrossSlices' %this doesn't take into account voxels that would be masked in other slices than the one displayed 
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+      case 'setRangeToMaxAcrossSlices' %this doesn't take into account voxels that would be masked in other slices than the one displayed
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum,scan); 
         maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum,scan);
         if ~isempty(minOverlay)
@@ -220,7 +221,7 @@ if ~isempty(overlayImages)
           overlays.range(iOverlay,2) = min(maxOverlay,overlays.range(2));
         end
       case 'setRangeToMaxAcrossSlicesAndScans' %same here
-        overlays.range = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum); 
         maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum);
         if ~isempty(minOverlay)

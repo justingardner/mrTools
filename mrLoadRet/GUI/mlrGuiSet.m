@@ -270,6 +270,11 @@ switch lower(field)
   else
     set(handles.overlayPopup,'value',1);
   end
+  % for matlab version 2014a and above, the listboxtop property is not
+  % correctly updated when setting the value or the strings
+  if ~verLessThan('matlab','8.3') && strcmp(get(handles.overlayPopup,'style'),'listbox')
+    set(handles.overlayPopup,'ListboxTop',1) %need to set it manually otherwise a warning will be issued
+  end
   set(handles.overlayPopup,'String',value);
 
  case {'overlay'}
@@ -569,7 +574,7 @@ switch lower(field)
  case {'nscans'}
   % mlrGuiSet(view,'nscans',value);
   nScans = round(value);
-  curScan = round(get(handles.scanSlider,'Value'));
+  curScan = round(str2num(get(handles.scanText,'String')));
   if (nScans > 1)
     set(handles.scanSlider,'Min',1);
     set(handles.scanSlider,'Max',nScans);
@@ -579,15 +584,14 @@ switch lower(field)
   else
     set(handles.scanSlider,'Min',0.9);
     set(handles.scanSlider,'Max',1.1);
+    set(handles.scanSlider,'Value',1); %this wasn't needed until matlab ver 2014a, but now, visible[off] doesn't seem to work when 'value' is not within 'range' and therefore the slider is not rendered 
     set(handles.scanSlider,'Visible','off');
-    curScan = 1;
   end
   mlrGuiSet(view,'scan',curScan);
 
  case {'scan'}
   % mlrGuiSet(view,'scan',value);
-  value = clipToSlider(handles.scanSlider,value,1);
-  set(handles.scanSlider,'Value',value);
+  set(handles.scanSlider,'Value',clipToSlider(handles.scanSlider,value,1));
   set(handles.scanText,'String',num2str(value));
   % description
   description = viewGet(view,'description',value);
@@ -676,13 +680,14 @@ switch lower(field)
     set(handles.coronalRadioButton,'Value',0);
     set(handles.axialRadioButton,'Value',1);
   end
+  
  case {'rotate'}
   % mlrGuiSet(view,'rotate',value);
   
   value = clipToSlider(handles.rotateSlider,value);
   set(handles.rotateText,'String',num2str(value));
   set(handles.rotateSlider,'Value',value);
-  viewSet(view,'rotate',value);
+
  case {'viewnum'}
   % mlrGuiSet(view,'viewnum',value);
   handles.viewNum = value;

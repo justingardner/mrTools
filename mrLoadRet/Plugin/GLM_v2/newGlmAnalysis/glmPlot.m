@@ -251,24 +251,32 @@ for iPlot = 1:length(roi)+1
   end
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Prepare axes
+  if verLessThan('matlab','8.4')
+    drawModeProperty = 'drawMode';
+    drawModeValue='fast';
+  else
+    drawModeProperty = 'SortMethod';
+    drawModeValue='childorder';
+  end
+
   if plotBetaWeights
-    betaAxes = axes('parent',fignum,'outerposition',betaSubplotPosition(iPlot,:),'DrawMode','fast');
+    betaAxes = axes('parent',fignum,'outerposition',betaSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
     hold on
     %hold(betaAxes);
     title(titleString,'Interpreter','none');
     if numberContrasts
-      contrastAxes = axes('parent',fignum,'outerposition',contrastSubplotPosition(iPlot,:),'DrawMode','fast');
+      contrastAxes = axes('parent',fignum,'outerposition',contrastSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
       hold on
       %hold(contrastAxes);
     end
   end
-  ehdrAxes = axes('parent',fignum,'outerposition',ehdrSubplotPosition(iPlot,:),'DrawMode','fast');
+  ehdrAxes = axes('parent',fignum,'outerposition',ehdrSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
   hold on
   %hold(ehdrAxes);
   %plot baseline
   plot(ehdrAxes,[0 (glmData.hdrlen+1)*framePeriod],[0 0],'--k','lineWidth',1);
   if numberContrasts
-    hdrContrastAxes = axes('parent',fignum,'outerposition',contrastEhdrSubplotPosition(iPlot,:),'DrawMode','fast');
+    hdrContrastAxes = axes('parent',fignum,'outerposition',contrastEhdrSubplotPosition(iPlot,:),drawModeProperty,drawModeValue);
     hold on
     %hold(hdrContrastAxes);
     %plot baseline
@@ -364,7 +372,7 @@ for iPlot = 1:length(roi)+1
       plot(betaAxes,get(betaAxes,'Xlim'),[0 0],'--k','lineWidth',1);
         maxSte = max(e.betaSte,[],3);
         makeScaleEditButton(fignum,betaAxes,...
-        [min(min((e.betas-maxSte))),max(max((e.betas+maxSte)))]);
+        [nanmin(nanmin((e.betas-maxSte))),nanmax(nanmax((e.betas+maxSte)))]);
       if iPlot==1
         ylabel(betaAxes,{'Beta' 'Estimates'});
         lhandle = legend(hBeta,EVnames,'position',legendBetaPosition);
@@ -378,7 +386,7 @@ for iPlot = 1:length(roi)+1
           maxSte = 0;
         end
         makeScaleEditButton(fignum,contrastAxes,...
-          [min(min(e.contrastBetas-maxSte)),max(max(e.contrastBetas+maxSte))]);
+          [nanmin(nanmin(e.contrastBetas-maxSte)),nanmax(nanmax(e.contrastBetas+maxSte))]);
         if iPlot==1
           ylabel(contrastAxes,{'Contrast' 'Estimates'});
           lhandle = legend(hContrastBeta,contrastNames,'position',legendContrastsPosition);
@@ -389,7 +397,7 @@ for iPlot = 1:length(roi)+1
     set(ehdrAxes,'xLim',[0,max(eDeconv.time(end),e.time(end))+framePeriod/2]);
     maxSte = abs(max(e.hdrSte,[],3));
     makeScaleEditButton(fignum,ehdrAxes,...
-      [min(min((e.hdr-maxSte))),max(max((e.hdr+maxSte)))]);
+      [nanmin(nanmin((e.hdr-maxSte))),nanmax(nanmax((e.hdr+maxSte)))]);
     if iPlot==1
       ylabel(ehdrAxes,{'Scaled HRF','% Signal change'});
       lhandle = legend(hHdr,EVnames,'position',legendEhdrPosition);
@@ -402,7 +410,7 @@ for iPlot = 1:length(roi)+1
         maxSte = 0;
       end
       makeScaleEditButton(fignum,hdrContrastAxes,...
-        [min(min(e.contrastHdr-maxSte)),max(max(e.contrastHdr+maxSte))]);
+        [nanmin(nanmin(e.contrastHdr-maxSte)),nanmax(nanmax(e.contrastHdr+maxSte))]);
       if iPlot==1
         ylabel(hdrContrastAxes,{'Scaled Contrast HRF','% Signal change'});
         lhandle = legend(hContrastHdr,contrastNames,'position',legendHdrContrastPosition);
@@ -559,10 +567,17 @@ plot(tSeriesAxes,time,zeros(size(time)),'--','linewidth',1,'color',[.5 .5 .5]);
 h(end+1) = plot(tSeriesAxes,time,actualTSeries,'k.-');
 hActualTSeries = h(end);
 
-
-if size(d.scm,2)==numel(ehdr)
+nComponents = size(d.scm,2);
+if nComponents==numel(ehdr)
   %compute model time series
-  modelTSeries = d.scm*reshape(ehdr',numel(ehdr),1);
+  extendedEhdr = reshape(ehdr',numel(ehdr),1);
+  if fieldIsNotDefined(d,'emptyEVcomponents')
+    d.emptyEVcomponents = [];
+  else
+    d.scm(:,d.emptyEVcomponents)=[];
+    extendedEhdr(d.emptyEVcomponents)=[];
+  end
+  modelTSeries = d.scm*extendedEhdr;
   h(end+1) = plot(tSeriesAxes,time,modelTSeries,'--r');
   hModelTSeries = h(end);
 end
@@ -579,7 +594,7 @@ xlim(tSeriesAxes,[0 ceil(time(end)+1)]);
 actualFFT = abs(fft(actualTSeries));
 actualFFT = actualFFT(1:floor(end/2));
 hActualFFT = plot(fftAxes,frequencies,actualFFT,'k.-');
-if size(d.scm,2)==numel(ehdr)
+if nComponents==numel(ehdr)
   modelFFT = abs(fft(modelTSeries));
   modelFFT = modelFFT(1:floor(end/2));
   hModelFFT = plot(fftAxes,frequencies,modelFFT,'--r');
@@ -594,7 +609,7 @@ legendPosition = getSubplotPosition(2,2,[1 1 4],[1 1],0,.2);
 hPanel = uipanel(fignum,'position',legendPosition,'backgroundcolor',get(fignum,'color'),'bordertype','none');
 hSubtractFromTseries = uicontrol(fignum,'unit','normalized','style','check','position',[.1 .47 .9 .03],...
   'string','Subtract unchecked EVs from actual timeseries','value',1);
-set(hSubtractFromTseries,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT});
+set(hSubtractFromTseries,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,d.emptyEVcomponents,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT});
 
 lhandle = legend(h,legendString,'position',legendPosition);
 set(lhandle,'Interpreter','none','box','off');
@@ -603,7 +618,7 @@ set(hPanel,'resizeFcn',{@resizePanel,lhandle});
 for iEV = 1:nEVs
   thisPosition = get(findobj(lhandle,'string',legendString{iEV}),'position')';
   uicontrol(hPanel,'style','check','unit','normalized','position',[thisPosition(1) thisPosition(2) .1 .1],...
-    'value',1,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT});
+    'value',1,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,d.emptyEVcomponents,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT});
 end
 
 disppercent(inf);
@@ -614,20 +629,28 @@ function resizePanel(handle,eventData,hLegend)
 
 set(handle,'position',get(hLegend,'position'));
 
-function plotModelTSeries(handle,eventData,hActualTSeries,actualTSeries,hModelTSeries,scm,ehdr,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT)
+function plotModelTSeries(handle,eventData,hActualTSeries,actualTSeries,hModelTSeries,scm,ehdr,emptyEVcomponents,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT)
 %get which EV are checked (note that children of the uipanel are ordered from bottom to top, so we flipud
-whichEVs = logical(flipud(cell2mat(get(get(hPanel,'children'),'value'))));
+whichEVs = get(get(hPanel,'children'),'value');
+if ~isnumeric(whichEVs)
+  whichEVs = flipud(cell2mat(whichEVs));
+end
+whichEVs = logical(whichEVs);
 evHdr = ehdr;
 evHdr(~whichEVs,:) = 0;
-if size(scm,2)==numel(ehdr)
-  modelTSeries = scm*reshape(evHdr',[],1);
+evHdr = reshape(evHdr',[],1);
+evHdr(emptyEVcomponents)=[];
+if size(scm,2)==numel(evHdr)
+  modelTSeries = scm*evHdr;
   modelFFT = abs(fft(modelTSeries));
   modelFFT = modelFFT(1:floor(end/2));
   set(hModelTSeries,'Ydata',modelTSeries);
   set(hModelFFT,'Ydata',modelFFT)
   if get(hSubtractFromTseries,'value')
     ehdr(whichEVs,:) = 0;
-    actualTSeries = actualTSeries - scm*reshape(ehdr',[],1);
+    extendedHdr = reshape(ehdr',[],1);
+    extendedHdr(emptyEVcomponents)=[];
+    actualTSeries = actualTSeries - scm*extendedHdr;
   end
   set(hActualTSeries,'Ydata',actualTSeries);
   actualFFT = abs(fft(actualTSeries));

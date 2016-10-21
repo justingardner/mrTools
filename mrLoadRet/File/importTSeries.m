@@ -33,7 +33,8 @@ weirdFramePeriods = 0;
 for iFile = 1:length(filename)
   
   if ~isempty(strfind(stripext(filename{iFile}),'.'))
-    mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename{iFile},setext(fixBadChars(stripext(filename{iFile}),{'.','_'}),'hdr')));
+    [~,name,extension] = fileparts(filename{iFile});
+    mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename{iFile},setext(fixBadChars(name,{'.','_'}),extension)));
     return
   end
 
@@ -44,11 +45,14 @@ for iFile = 1:length(filename)
   hdr = mlrImageReadNiftiHeader(fullFilename);
   if isempty(hdr),return,end
   % make sure it is 4 dimensional and then get the number of frames
-%   if hdr.dim(1) ~= 4
-%     mrWarnDlg(sprintf('(importTSeries) Could not import tSeries because it is a %i dimensional and not 4 dimensional file',hdr.dim(1)));
-%     return
-%   end
-  nFrames = hdr.dim(5);
+  if ~ismember(hdr.dim(1),[3 4])
+    mrWarnDlg(sprintf('(importTSeries) Could not import tSeries because it is a %i dimensional file',hdr.dim(1)));
+    return
+  elseif hdr.dim(1)==3
+    nFrames = 1;
+  else
+    nFrames = hdr.dim(5);
+  end
 
   paramsInfo = {{'filename',filename{iFile},'The name of the nifti file that you are importing','editable=0'}};
   paramsInfo{end+1} = {'description','','A description for the nifti tSeries you are imporint'};
@@ -74,9 +78,7 @@ for iFile = 1:length(filename)
     cScan=cScan+1;
     scanNum(cScan)=newScanNum;
     scanParams(cScan) = viewGet(v,'scanparams',newScanNum);
-    if scanParams(cScan).framePeriod>maxFramePeriod 
-      weirdFramePeriods(cScan) = scanParams(cScan).framePeriod;
-    elseif scanParams(cScan).framePeriod<minFramePeriod
+    if scanParams(cScan).nFrames>1 && (scanParams(cScan).framePeriod>maxFramePeriod || scanParams(cScan).framePeriod<minFramePeriod)
       weirdFramePeriods(cScan) = scanParams(cScan).framePeriod;
     else
       weirdFramePeriods(cScan) = 0;

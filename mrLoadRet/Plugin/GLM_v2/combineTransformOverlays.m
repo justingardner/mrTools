@@ -285,8 +285,9 @@ for iOperations = 1:size(overlayData,3)
          eval(functionString);
 %          toc
       catch exception
-         mrWarnDlg(sprintf('There was an error evaluating function %s:\n%s',combineFunctionString,getReport(exception,'basic')));
-         return
+        mrWarnDlg(sprintf('There was an error evaluating function %s:\n%s',combineFunctionString,getReport(exception,'basic')));
+        set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
+        return
       end
       for iOutput = 1:params.nOutputOverlays
     %          if  strcmp(params.inputOutputType,'Scalar')

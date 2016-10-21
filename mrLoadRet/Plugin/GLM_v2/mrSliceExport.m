@@ -148,7 +148,7 @@ for iScan = scanList
     img = refreshMLRDisplay(viewNum);
     reducedim = img(newy(1):newy(2),newx(1):newx(2),:);
 
-    imwrite(reducedim, imageFilename, 'tif');
+    imwrite(double(reducedim), imageFilename, 'tif');
   end
 end
 

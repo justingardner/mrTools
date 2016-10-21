@@ -102,7 +102,7 @@ switch lower(param)
   case{'currentscan','curscan'}
     % view = viewSet(view,'currentScan',n);
     nScans = viewGet(view,'nScans');
-    if ((val > 0) && (val <= nScans))
+    if ((val >= 0) && (val <= nScans))
       if viewGet(view,'curScan') ~= val
 	view.curScan = val;
 	mlrGuiSet(view,'scan',val);
@@ -141,7 +141,16 @@ switch lower(param)
       mlrGuiSet(view,'group',val);
       nScans = viewGet(view,'nScans',val);
       mlrGuiSet(view,'nScans',nScans);
-      scanNum = max(min(viewGet(view,'groupScanNum',view.curGroup),nScans),1);
+      %get the current scan number for this group
+      % however, we want the current scan to be no more than the number of scans in the group
+      scanNum = min(viewGet(view,'groupScanNum',view.curGroup),nScans); 
+      % but we  don't want it to be 0 if there is at least one scan in the group
+      if ~scanNum && nScans
+        scanNum=1;
+      end
+      if ~verLessThan('matlab','8.3') %for matlab version 2014a, the number of scans on the slider doesn't seem
+        drawnow;  % to be updated until the slider is drawn, and therefore if new scanNum > previous nScans, the 
+      end         % slider position is not updated either
       mlrGuiSet(view,'scan',scanNum);
       view.curScan = scanNum;
       mlrGuiSet(view,'analysis',1);
@@ -571,7 +580,7 @@ switch lower(param)
     else % for old Analyze files
       scanParams.framePeriod = hdr.pixdim(5)./1000;
     end
-    disp(sprintf('(viewSet) framePeriod set to: %f seconds',scanParams.framePeriod))
+    disp(sprintf('(viewSet) framePeriod set to: %f',scanParams.framePeriod))
     if strcmp(lower(mrGetPref('verbose')),'yes')
       % 8 -> 10^0, 16 -> 10^3, 32-> 10^6
       disp(sprintf('(viewSet) Timing. Pixdim(5) units: %d. Scaling by 10e%d',niftiTimeUnit, 3*(log2(niftiTimeUnit)-3)));
@@ -602,6 +611,8 @@ switch lower(param)
         % struct([]) to create an empty structure do not
         % behave well.
         MLR.groups(curgroup).auxParams = struct('auxParams',1);
+        %set the current scan to this scan
+        view=viewSet(view,'curscan',1);
       else
         MLR.groups(curgroup).scanParams(nscans+1) = scanParams;
         % get an empty auxParams
@@ -652,7 +663,6 @@ switch lower(param)
     scannum = val;
     numscans = viewGet(view,'nscans');
     curgroup = viewGet(view,'currentGroup');
-    curGroupName = viewGet(view,'groupName',curgroup);
     curscan = viewGet(view,'currentScan');
     % Remove it and reset curscan
     MLR.groups(curgroup).scanParams = MLR.groups(curgroup).scanParams(scannum ~= [1:numscans]);
@@ -661,7 +671,7 @@ switch lower(param)
     view = reconcileAnalyses(view);
     % Update GUI
     mlrGuiSet(view,'nScans',max(numscans-1,0));
-    if (curscan >= scannum)
+    if curscan > scannum || curscan==numscans
       view = viewSet(view,'curscan',max(curscan-1,0));
       mlrGuiSet(view,'scan',max(curscan-1,0));
     end
@@ -788,6 +798,8 @@ switch lower(param)
       else
 	view.baseVolumes(curBase).surfaceRotate = val;
       end
+	mlrGuiSet(view,'rotate',val);
+      
     end
       
   case{'tilt'}
@@ -1730,8 +1742,8 @@ switch lower(param)
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMin',val);        
       end
-      %identify the overlay name in the list if any voxel is clipped 
-      mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
+%       %identify the overlay name in the list if any voxel is clipped 
+%       mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       %refresh clipping overlay list
       clippingOverlayList=viewGet(view,'clippingOverlayList');
       mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
@@ -1752,7 +1764,7 @@ switch lower(param)
       if (overlayNum == viewGet(view,'currentClippingOverlay'))
         mlrGuiSet(view,'overlayMax',val);
       end
-      mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
+%       mlrGuiSet(view,'overlayPopup',{viewGet(view,'overlayName',overlayNum,analysisNum)},overlayNum); 
       %refresh clipping overlay list
       clippingOverlayList=viewGet(view,'clippingOverlayList');
       mlrGuiSet(view,'clippingOverlays',clippingOverlayList);
@@ -1823,6 +1835,36 @@ switch lower(param)
     end
     if isequal(overlayNum,curOverlay)
       mlrGuiSet(view,'alpha',val);
+    end
+    
+  case {'alphaoverlay'}
+    % view = viewSet(view,'alphaoverlay',alphaOverlayNum,[overlayNum]);
+    curOverlay = viewGet(view,'currentOverlay');
+    if ~isempty(varargin)
+      overlayNum = varargin{1};
+    else
+      overlayNum = curOverlay;
+    end
+    analysisNum = viewGet(view,'currentAnalysis');
+    for iOverlay = overlayNum
+      if ~isempty(analysisNum)  & ~isempty(view.analyses{analysisNum}.overlays)
+        view.analyses{analysisNum}.overlays(iOverlay).alphaOverlay = viewGet(view,'overlayName',val);
+      end
+    end
+
+  case {'alphaoverlayexponent'}
+    % view = viewSet(view,'alphaoverlayexponent',value,[overlayNum]);
+    curOverlay = viewGet(view,'currentOverlay');
+    if ~isempty(varargin)
+      overlayNum = varargin{1};
+    else
+      overlayNum = curOverlay;
+    end
+    analysisNum = viewGet(view,'currentAnalysis');
+    for iOverlay = overlayNum
+      if ~isempty(analysisNum)  & ~isempty(view.analyses{analysisNum}.overlays)
+        view.analyses{analysisNum}.overlays(iOverlay).alphaOverlayExponent = val;
+      end
     end
 
 

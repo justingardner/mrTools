@@ -336,12 +336,13 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(str2num(get(hObject,'String')));
-if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
-  set(hObject,'String',num2str(get(handles.scanSlider,'value')));
+if length(value)~=1 %if the user just erased the value, get it from the view and do nothing
+  set(hObject,'String',num2str(viewGet(view,'curScan')));
 else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'scan',value);
+  %set the current scan in the view
   view = viewSet(view,'curScan',value);
-  viewSet(view,'curScan',get(handles.scanSlider,'Value'));
+  %set the current scan on slider
+  mlrGuiSet(viewNum,'scan',viewGet(view,'curScan'));
   refreshMLRDisplay(viewNum);
 end
 
@@ -369,10 +370,8 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 
 value = round(get(hObject,'Value'));
-mlrGuiSet(viewNum,'sliceText',value);
-% set the current slice (get the value from the slider
-% since that will be properly clipped by the mlrGuiSet call above)
-viewSet(view,'curSlice',get(handles.sliceSlider,'Value'));
+mlrGuiSet(viewNum,'sliceText',value); %set slice edit box value
+viewSet(view,'curSlice',value); % set the current slice
 refreshMLRDisplay(viewNum);
 
 function sliceText_Callback(hObject, eventdata, handles)
@@ -385,9 +384,9 @@ view = MLR.views{viewNum};
 value = round(str2num(get(hObject,'String')));
 if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.sliceSlider,'value')));
-else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'slice',value);
-  viewSet(view,'curSlice',value);
+else %otherwise, set the new value in the GUI and then in the view
+  mlrGuiSet(viewNum,'slice',value); %doing this first ensures that the value is not outside the values permitted by the slider
+  viewSet(view,'curSlice',get(handles.sliceSlider,'Value')); %use the value from the slider since it might have been changed by mlrGuiSet
   refreshMLRDisplay(viewNum);
 end
 
@@ -668,8 +667,8 @@ function rotateSlider_Callback(hObject, eventdata, handles)
 
 viewNum = handles.viewNum;
 value = get(hObject,'Value');
-mlrGuiSet(viewNum,'rotate',value);
 v = viewGet([],'view',viewNum);
+v = viewSet(v,'rotate',value);
 
 if (viewGet(v,'baseType') == 2)
   setMLRViewAngle(v);
@@ -683,9 +682,9 @@ value = str2num(get(hObject,'String'));
 if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.rotateSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
-  mlrGuiSet(viewNum,'rotate',value);
   v = viewGet([],'view',viewNum);
-
+  v = viewSet(v,'rotate',value);
+  
   if (viewGet(v,'baseType') == 2)
     setMLRViewAngle(v);
   else
@@ -1270,20 +1269,9 @@ viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 userInput = inputdlg('Enter name for new analysis: ','New analysis');
 if ~isempty(userInput)
-    analysis.name = userInput{1};
-    analysis.type = 'dummy';
-    analysis.groupName = viewGet(view,'groupName',viewGet(view,'currentGroup'));
-    analysis.function = 'dummyAnalysis';
-    analysis.reconcileFunction = 'dummyAnalysisReconcileParams';
-    analysis.reconcileFunction = 'dummyAnalysisMergeParams';
-    analysis.guiFunction = 'dummyAnalysisGUI';
-    analysis.params = [];
-    analysis.overlays =[];
-    analysis.curOverlay = [];
-    analysis.date = datestr(now);
-    view = viewSet(view,'newanalysis',analysis);
+  newAnalysis(view,userInput{1});
+  refreshMLRDisplay(viewNum);
 end
-refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function copyAnalysisMenuItem_Callback(hObject, eventdata, handles)
@@ -2155,9 +2143,20 @@ mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
 roiNames = viewGet(view,'roiNames');
+selectedRoiNames = viewGet(view,'roiName');
+if ischar(selectedRoiNames) || isempty(selectedRoiNames)
+  roiNames1 = putOnTopOfList(selectedRoiNames,roiNames);
+else
+  roiNames1 = putOnTopOfList(selectedRoiNames{1},roiNames);
+end
+if iscell(selectedRoiNames) && length(selectedRoiNames)>1
+  roiNames2 = putOnTopOfList(selectedRoiNames{2},roiNames);
+else
+  roiNames2=roiNames;
+end
 paramInfo = {...
-  {'combineROI',putOnTopOfList(viewGet(view,'roiName'),viewGet(view,'roiNames')),'type=popupmenu','The ROI that will be combined with the otherROI'},...
-  {'otherROI',roiNames,'type=popupmenu','The otherROI is combined with the combineROI and the result is put into combineROI.'},...
+  {'combineROI',roiNames1,'type=popupmenu','The ROI that will be combined with the otherROI'},...
+  {'otherROI',roiNames2,'type=popupmenu','The otherROI is combined with the combineROI and the result is put into combineROI.'},...
   {'action',{'A not B', 'Intersection', 'Union', 'XOR'},'type=popupmenu','Select action for combining ROIs.'},...
   {'newName','','Add a name here if you want to make the combination have a new roi name. Otherwise it will rewrite the combineROI.'},...
   {'combine',0,'type=pushbutton','callback',@doCombine,'passParams=1','callbackArg',viewNum,'buttonString=Do combination','Click this button to do the combination. This is the same as hitting OK but won''t close the dialog so you can continue to do more combinations'}};
