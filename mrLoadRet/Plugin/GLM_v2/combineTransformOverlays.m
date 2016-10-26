@@ -107,7 +107,7 @@ if ieNotDefined('params')
       mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively.');
     elseif isempty(params.combineFunction) || (strcmp(params.combineFunction,'User Defined') && isempty(params.customCombineFunction))
       mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function.');
-    elseif (params.clip || params.alphaClip) && params.baseSpace
+    elseif (params.clip || params.alphaClip) && params.baseSpace && viewGet(thisView,'basetype')~=1
       mrWarnDlg('(combineTransformOverlays) Base space conversion is not yet compatible with using (alpha) masking.');
     %elseif
       %other controls here
@@ -150,7 +150,8 @@ overlayData = viewGet(thisView,'overlays');
 overlayData = overlayData(params.overlayList);
 if params.baseSpace
   base2scan = viewGet(thisView,'base2scan');
-  if any(any(abs(base2scan - eye(4))>1e-6)) || viewGet(thisView,'basetype')>0 %check if we're in the scan space
+  baseType = viewGet(thisView,'basetype');
+  if any(any(abs(base2scan - eye(4))>1e-6)) || baseType > 0 %check if we're in the scan space
     baseCoordsMap=cell(nScans,1);
     %if not, transform the overlay to the base space
     for iScan = 1:nScans
@@ -167,8 +168,25 @@ end
 %   Rk: to implement conversion to base space with masking/clip masking, it would be better
 %   to get both the overlays and masks at the same time and use maskoverlay
 %   with the boxInfo option
+if params.clip || params.alphaClip
+  if params.baseSpace && baseType==1  %this will only work for flat maps (because for volumes, getBaseSlice only gets one slice, unless base2scan is the identity)
+    boxInfo.baseNum = viewGet(thisView,'curbase');
+    [~,~,boxInfo.baseCoordsHomogeneous] = getBaseSlice(thisView,viewGet(thisView,'curslice'),viewGet(thisView,'baseSliceIndex'),viewGet(thisView,'rotate'),boxInfo.baseNum,baseType);
+    boxInfo.base2overlay = base2scan;
+    boxInfo.baseDims = viewGet(thisView,'basedims');
+    boxInfo.interpMethod = baseSpaceInterp;
+    boxInfo.interpExtrapVal = NaN;
+    boxInfo.corticalDepth = [0 1];
+  elseif ~params.baseSpace
+    boxInfo=[];
+  else
+    mrWarnDlg('(combineTransformOverlays) (Alpha) masking is not yet implemented for conversion to bases other than flat.');
+    return
+  end
+end
+  
 if params.clip
-   mask = maskOverlay(thisView,params.overlayList);
+   mask = maskOverlay(thisView,params.overlayList,1:nScans,boxInfo);
    for iScan = 1:length(mask)
       for iOverlay = 1:length(overlayData)
         if ~isempty(overlayData(iOverlay).data{iScan})
@@ -182,7 +200,7 @@ if params.alphaClip
   for iOverlay = 1:length(overlayData)
     alphaOverlayNum(iOverlay) = viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay);
   end
-  mask = maskOverlay(thisView,alphaOverlayNum);
+  mask = maskOverlay(thisView,alphaOverlayNum,1:nScans,boxInfo);
   for iScan = 1:length(mask)
     for iOverlay = 1:length(overlayData)
       if alphaOverlayNum(iOverlay) &&  ~isempty(overlayData(iOverlay).data{iScan})

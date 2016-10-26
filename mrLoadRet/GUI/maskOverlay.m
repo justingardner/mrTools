@@ -45,6 +45,9 @@ if ~ieNotDefined('boxInfo')
   end
   boxInfo.interpExtrapVal = NaN;
   overlayCoords = cell(1,length(scanList));
+  if fieldIsNotDefined(boxInfo,'corticalDepth')
+    boxInfo.corticalDepth = viewGet(thisView,'corticalDepth',boxInfo.baseNum);
+  end
 end
 
 cScan = 0;
@@ -138,10 +141,9 @@ interpFnctn = viewGet(thisView,'overlayInterpFunction',analysisNum);
 if ~isempty(base2overlay) & ~isempty(baseCoordsHomogeneous) 
   % Transform coordinates
   if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
-    corticalDepth = viewGet(thisView,'corticalDepth',boxInfo.baseNum);
     corticalDepthBins = mrGetPref('corticalDepthBins');
     corticalDepths = 0:1/(corticalDepthBins-1):1;
-    slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
+    slices = corticalDepths>=boxInfo.corticalDepth(1)-eps & corticalDepths<=boxInfo.corticalDepth(end)+eps; %here I added eps to account for round-off erros
     baseCoordsHomogeneous = baseCoordsHomogeneous(:,:,slices);
     nDepths = nnz(slices);
   else
