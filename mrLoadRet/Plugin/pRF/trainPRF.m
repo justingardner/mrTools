@@ -9,12 +9,16 @@
 %             It generates and saves time series, model response, residuals,
 %             and covariance matrices for each fold.
 %
+%
+%     input:  roiName  - Name of the ROI we want to run this analysis on
+%             analysis - Name of analysis file to load
+%                      - This must be the Concat of Average of N scans
 
-function trainPRF(view, roiName)
+function trainPRF(view, roiName, analysis)
 
 % Currently hardcoding number and names of scan.
 numScans = 6
-roiName = 'xVal'
+roiName = 'lV1'
 
 for i = 1:numScans
   v = newView;
@@ -23,7 +27,7 @@ for i = 1:numScans
   scanList = [1:i-1 i+1:numScans]
 
   %Average the other n-1 scans together
-  v = viewSet(v, 'currentGroup', 'MotionComp');
+  v = viewSet(v, 'currentGroup', 'Concatenation');
   scanstr = sprintf('scanList=%s', mat2str(scanList));
   [v params] = averageTSeries(v, [], 'justGetParams=1', 'defaultParams=1', scanstr)
   %Filename of averaged scan is: tseries-avg-<SCANLIST>.nii
@@ -44,15 +48,11 @@ for i = 1:numScans
   v = newView;
   v = viewSet(v, 'currentGroup', 'Averages');
 
-  % Two ways of calculating ROI coordinates
+  % Two ways of calculating ROI coordinates --> neither work right now.
   % Method 1: loadROI.coords
   v = loadROI(v, sprintf('%s.mat', roiName))
-  roiCoords = v.ROIs(1).coords.'
-  roiCoords = roiCoords(:, 1:3)
-
-  % Method 2: loadROITSeries.scancoords
-  roiCoords2 = loadROITSeries(v, 'xVal')
-  roiCoords2 = roiCoords2.scanCoords.'
+  % roiCoords = v.ROIs(1).coords.'
+  % roiCoords = roiCoords(:, 1:3)
 
   %Run pRF Analysis on average of n-1 scans
   %pRF(v, params)
@@ -63,22 +63,21 @@ for i = 1:numScans
   pRF(v, params)
 
   % Load analysis by filename
-  analysisFileName = sprintf('pRF_%s_%s_.mat', roiName, scanListStr)
-  v = loadAnalysis(v, ['pRFAnal/' analysisFileName])
+  analysisFileName = sprintf('pRF_%s_%s_.mat', roiName, scanListStr);
+  v = loadAnalysis(v, ['pRFAnal/' analysisFileName]);
   scanNum = v.analyses{1}.params.scanNum;
+
+  % Get the time series data for the left-out scan
+  v2 = newView;
+  testTSeries = loadROITSeries(v2, roiName, i, 2, 'straightXform=1'); 
+  roiCoords = testTSeries.scanCoords.';
+  testTSeries = testTSeries.tSeries;
  
   %Get the residual and covariance matrix
          %%% scanNum: scan number on which analysis was conducted
-  [residual, covMat, tSeries, modelResponse] = pRFNoise(v, scanNum, coordinates, analysisFileName)
-
-  %%
-  %% TO DO: Get the time series data for the left-out scan
-  %%
+  [residual, covMat, tSeries, modelResponse] = pRFNoise(v, scanNum, roiCoords, analysisFileName);
 
   %Save residual, covariance matrix, time series, and model response into a structure
-  save(sprintf('SaveData/pRF_fold%i_%s', i, scanListStr), 'residual', 'covMat', 'tSeries', 'modelResponse')
+  save(sprintf('SaveData/pRF_fold%i_%s_%s', i, scanListStr, roiName), 'residual', 'covMat', 'modelResponse', 'testScanCoords', 'testTSeries')
   
 end
-
-
-function test
