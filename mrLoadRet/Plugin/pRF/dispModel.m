@@ -1,7 +1,8 @@
-function display = dispModel(voxels)
+function display = dispModel(fit, voxels)
 
-%
-voxels = [47 74 24; 37 67 25];
+if ieNotDefined('voxels')
+  voxels = [47 74 24; 37 67 25];
+end
 analysis = 'pRF_lV1_123456.mat';
 scanNum = 7;
 
@@ -38,7 +39,7 @@ hold on
 hline(0,'w:');vline(0,'w:');
 title('Voxel 1 Receptive Field Position');
 
-%% (2) Voxel 2 Receptive Field
+%% (4) Voxel 2 Receptive Field
 rf2 = subplot(2, 3, 4);
 x=voxels(2,1); y=voxels(2,2); z=voxels(2,3);
 whichVoxel = find(d.linearCoords == sub2ind(viewGet(v, 'scanDims', scanNum), x, y, z));
@@ -55,7 +56,7 @@ hold on
 hline(0, 'w:');vline(0,'w:');
 title('Voxel 2 Receptive Field Position');
 
-%% (3) Stimulus position
+%% (2) Stimulus position
 
 [thisT, modelT] = makeStim(100, 50);
 
@@ -95,6 +96,7 @@ plot((1:477), m.modelResponse, 'r');
 hold on; plot((1:477), m.tSeries, 'black');
 hold on; vl1m = vline(1); tl1m = text(0,0,'');
 hold on; vl1t = vline(1); tl1t = text(0,0,'');
+xlim([1 477])
 title('Voxel 1 Model Response and Time Series');
 
 % Plot voxel 2 model timecourse and timeseries
@@ -103,10 +105,11 @@ plot((1:477), m2.modelResponse, 'r');
 hold on; plot((1:477), m2.tSeries, 'black');
 hold on; vl2m = vline(1); tl2m = text(0,0,'');
 hold on; vl2t = vline(1); tl2t = text(0,0,'');
+xlim([1 477])
 title('Voxel 2 model response and time series');
 
 
-%% (4) 2D Gaussian model + tSeries
+%% (5) 2D Gaussian model + tSeries
 p4 = subplot(2, 3, 5);
 
 timepoint = 100;
@@ -130,7 +133,7 @@ title('Voxel 1 vs Voxel 2: Percent Signal Change');
 timeSlider = uicontrol('Style', 'slider', 'Min', 1, 'Max', length(m.tSeries),...
                        'SliderStep', [1/477, 10/477],...
                        'Value', timepoint, 'Callback', @slider1Callback,...
-                       'Parent', f, 'Position', [.05, .05, .5, .1], 'Units', 'normalized');
+                       'Parent', f, 'Units', 'normalized', 'Position', [.25, .45, .5, .1]);
 function slider1Callback(hObject, eventdata)
   newVal = round(get(hObject, 'Value'));
   % Move the * around
@@ -156,7 +159,7 @@ end
 
 modelSlider = uicontrol('Style', 'slider', 'Min', 1, 'Max', length(m.modelResponse),...
                         'SliderStep', [1/477 10/477], 'Value', modelTime, 'Callback', @slider2Callback,...
-                        'Parent', f, 'Units', 'normalized', 'Position', [.05, .15, .5, .1]);
+                        'Parent', f, 'Units', 'normalized', 'Position', [.25, -.05, .5, .1]);
 function slider2Callback(hObject, eventdata)
   newVal = round(get(hObject, 'Value'));
   % Move the circle around
@@ -191,4 +194,14 @@ function cPlot = circle(x, y)
   cPlot = plot(x+xp, y+yp, 'g');
 end
 
+
+
+figure; subplot(3, 1, 1); 
+plot((1:477), m.tSeries, 'black');
+hold on; plot((1:477), m.modelResponse, 'blue'); 
+subplot(3, 1, 2); plot((1:477), m2.tSeries, 'red'); hold on; plot((1:477), m2.modelResponse, 'magenta')
+xlim([1 477])
+if ~ieNotDefined('fit')
+  subplot(3, 1, 3); imagesc(log(fit.probTable)); axis ij; 
+end
 end
