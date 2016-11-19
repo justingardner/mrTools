@@ -540,7 +540,7 @@ function rfModel = getRFModel(params,fitParams)
 rfModel = [];
 
 % now gernerate the rfModel
-if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr', 'gaussian-exp'}))
+if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr', 'gaussian-exp', 'gaussian-diffs'}))
   rfModel = makeRFGaussian(params,fitParams);
 else
   disp(sprintf('(pRFFit:getRFModel) Unknown rfType: %s',fitParams.rfType));
@@ -557,6 +557,8 @@ switch (fitParams.rfType)
     output = pRF_gaussian(varargin{:});
   case 'gaussian-hdr'
     output = pRF_gaussianhdr(varargin{:});
+  case 'gaussian-diffs'
+    output = pRF_diffGaussian(varargin{:});
   otherwise
     testModel = @pRF_exp; %%% Only need to change this line to specify a new model.
     output = testModel(varargin{:});
