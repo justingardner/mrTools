@@ -1,8 +1,8 @@
-%%  pRF_crossValidate.m
+%%  pRFCrossVal.m
 %%
-%%      usage: fits = pRF_crossValidate(newCoords, [], analysis) --> run on specified coordinates
-%%             fits = pRF_crossValidate([], roiName, analysis) --> run on specified ROI
-%%             fits = pRF_crossValidate('best', roiName, analysis) --> run on best N voxels in specified ROI
+%%      usage: fits = pRFCrossVal(newCoords, [], analysis) --> run on specified coordinates
+%%             fits = pRFCrossVal([], roiName, analysis) --> run on specified ROI
+%%             fits = pRFCrossVal('best', roiName, analysis) --> run on best N voxels in specified ROI
 %%         by: akshay jagadeesh
 %%       date: 10/04/16
 %%    purpose: Given n MotionComp runs, this function computes a n-fold cross validation, running the pRF 
@@ -17,7 +17,7 @@
 %%                      - This must be the Concat of Average of N scans
 %%             newCoords - array of scan coordinates in the form [x1 y1 z1 1; x2 y2 z2 1]'
 
-function fits = pRF_crossValidate(newCoords, roiName, analysis)
+function fits = pRFCrossVal(newCoords, roiName, analysis)
 
 %%%%%%% Default inputs %%%%%%%%%
 newCoords = 'best';
