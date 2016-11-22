@@ -1,15 +1,27 @@
-function display = dispModel(fit, voxels)
+%%  plot2voxels.m
+%%
+%%      usage: plot2voxels(fit, voxels)
+%%    purpose: plots 2 voxels' receptive fields and time courses
+%% 
+%%      input: analysis - filename of analysis file
+%%             fit    - struct containing fields to plot probTable
+%%             voxels - list of two voxels in format [x1 y1 z1; x2 y2 z2]
+%%
+
+function display = plot2voxels(analysis, voxels, fit)
 
 if ieNotDefined('voxels')
-  voxels = [47 74 24; 37 67 25];
+  voxels = [44 74 21; 43 74 21];
 end
-analysis = 'pRF_lV1_123456.mat';
-scanNum = 7;
+if ieNotDefined('analysis')
+  analysis = 'pRF_lV1_123456.mat';
+end
 
 % Set curr group to Concat and load the Analysis
 v = newView;
 v = viewSet(v, 'currentGroup', 'Concatenation');
 v = loadAnalysis(v, ['pRFAnal/' analysis]);
+scanNum = v.analyses{1}.params.scanNum;
 a = viewGet(v, 'Analysis');
 d = viewGet(v, 'd', scanNum);
 
@@ -91,21 +103,22 @@ radius = covMat(1, 2);
 
 %%%% (3) and (6): Plot voxels' model response time course and time series
 % Plot voxel 1 model timecourse and timeseries
+tLen = length(m.modelResponse);
 subplot(2, 3, 3);
-plot((1:477), m.modelResponse, 'r');
-hold on; plot((1:477), m.tSeries, 'black');
+plot((1:tLen), m.modelResponse, 'r');
+hold on; plot((1:tLen), m.tSeries, 'black');
 hold on; vl1m = vline(1); tl1m = text(0,0,'');
 hold on; vl1t = vline(1); tl1t = text(0,0,'');
-xlim([1 477])
+xlim([1 tLen])
 title('Voxel 1 Model Response and Time Series');
 
 % Plot voxel 2 model timecourse and timeseries
 subplot(2, 3, 6);
-plot((1:477), m2.modelResponse, 'r');
-hold on; plot((1:477), m2.tSeries, 'black');
+plot((1:tLen), m2.modelResponse, 'r');
+hold on; plot((1:tLen), m2.tSeries, 'black');
 hold on; vl2m = vline(1); tl2m = text(0,0,'');
 hold on; vl2t = vline(1); tl2t = text(0,0,'');
-xlim([1 477])
+xlim([1 tLen])
 title('Voxel 2 model response and time series');
 
 
@@ -131,7 +144,7 @@ ylabel(sprintf('Voxel 2: (%d, %d, %d)', voxels(2,1), voxels(2,2), voxels(2,3)));
 title('Voxel 1 vs Voxel 2: Percent Signal Change');
 
 timeSlider = uicontrol('Style', 'slider', 'Min', 1, 'Max', length(m.tSeries),...
-                       'SliderStep', [1/477, 10/477],...
+                       'SliderStep', [1/tLen, 10/tLen],...
                        'Value', timepoint, 'Callback', @slider1Callback,...
                        'Parent', f, 'Units', 'normalized', 'Position', [.25, .45, .5, .1]);
 function slider1Callback(hObject, eventdata)
@@ -158,7 +171,7 @@ function slider1Callback(hObject, eventdata)
 end
 
 modelSlider = uicontrol('Style', 'slider', 'Min', 1, 'Max', length(m.modelResponse),...
-                        'SliderStep', [1/477 10/477], 'Value', modelTime, 'Callback', @slider2Callback,...
+                        'SliderStep', [1/tLen 10/tLen], 'Value', modelTime, 'Callback', @slider2Callback,...
                         'Parent', f, 'Units', 'normalized', 'Position', [.25, -.05, .5, .1]);
 function slider2Callback(hObject, eventdata)
   newVal = round(get(hObject, 'Value'));
@@ -197,10 +210,10 @@ end
 
 
 figure; subplot(3, 1, 1); 
-plot((1:477), m.tSeries, 'black');
-hold on; plot((1:477), m.modelResponse, 'blue'); 
-subplot(3, 1, 2); plot((1:477), m2.tSeries, 'red'); hold on; plot((1:477), m2.modelResponse, 'magenta')
-xlim([1 477])
+plot((1:tLen), m.tSeries, 'black');
+hold on; plot((1:tLen), m.modelResponse, 'blue'); 
+subplot(3, 1, 2); plot((1:tLen), m2.tSeries, 'red'); hold on; plot((1:tLen), m2.modelResponse, 'magenta')
+xlim([1 tLen])
 if ~ieNotDefined('fit')
   subplot(3, 1, 3); imagesc(log(fit.probTable)); axis ij; 
 end
