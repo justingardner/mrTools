@@ -1,7 +1,25 @@
-function plotFigs(fits, d)
+%%  predictStimulus.m
+%%
+%%
+%%      usage: predictStimulus(fits, d) --> plot figs for avg (last element of fits)
+%%             predictStimulus(fits, d, index) --> plot figs for i'th fold in fits
+%%         by: akshay jagadeesh
+%%       date: 11/20/2016
+%%    purpose: Given model fits, this function predicts the stimulus most likely to have elicited
+%%             the given model response and compares this to the actual observed stimulus. Outputs the
+%%             percentage of timepoints that are correctly predicted (within 5) using maximum likelihood. 
+%%
+
+
+function predictStimulus(fits, d, index)
 
 numFolds = length(fits)-1;
-fit = fits(numFolds+1);
+if(ieNotDefined('index'))
+  fit = fits(numFolds+1);
+else
+  disp(sprintf('getting %d th fit', index)); 
+  fit = fits(index);
+end
 
 timeLen = size(fit.modelResponse, 2);
 

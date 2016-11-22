@@ -1,33 +1,35 @@
 %%  pRF_crossValidate.m
 %%
-%%        $Id:$
-%%      usage: pRF_crossValidate(view, roiName, analysis)
+%%      usage: fits = pRF_crossValidate(newCoords, [], analysis) --> run on specified coordinates
+%%             fits = pRF_crossValidate([], roiName, analysis) --> run on specified ROI
+%%             fits = pRF_crossValidate('best', roiName, analysis) --> run on best N voxels in specified ROI
 %%         by: akshay jagadeesh
 %%       date: 10/04/16
-%%    purpose: Given n MotionComp runs, this function computes a n-fold
-%%             cross validation, running the pRF analysis n times.
-%%             It generates and saves time series, model response, residuals,
-%%             and covariance matrices for each fold.
+%%    purpose: Given n MotionComp runs, this function computes a n-fold cross validation, running the pRF 
+%%             analysis n times. It generates and saves time series, model response, residuals, and covariance 
+%%             matrices for each fold.
+%%             We then calculate the probability that each point in the observed time series is predicted
+%%             by the pRF model response.
 %%
 %%
 %%     input:  roiName  - Name of the ROI we want to run this analysis on
 %%             analysis - Name of analysis file to load
 %%                      - This must be the Concat of Average of N scans
-%%             newCoords - in the form [x1 y1 z1 1; x2 y2 z2 1].'
+%%             newCoords - array of scan coordinates in the form [x1 y1 z1 1; x2 y2 z2 1]'
 
 function fits = pRF_crossValidate(newCoords, roiName, analysis)
 
-%% Plot Figures flag (set to [] if you don't want to plot)
-plotFigs = 1;
+%%%%%%% Default inputs %%%%%%%%%
+newCoords = 'best';
+roiName = 'bothV1';
+analysis = 'pRF_v1.mat';
+nBest = 5;
+plotFigs = []; % set to [] to turn off plots, set to 1 to turn on plots
 
-roiName = 'V1';
-%analysis = 'pRF_lV1_123456.mat';
-analysis = 'pRF.mat';
 
 % Set current group to Concat and load the Analysis file
 v = newView;
 v = viewSet(v, 'currentGroup', 'Concatenation');
-%v = viewSet(v, 'currentGroup', 'Averages');
 v = loadAnalysis(v, ['pRFAnal/' analysis]);
 analParams = v.analyses{1}.params;
 analScanNum = analParams.scanNum;
@@ -43,16 +45,14 @@ d = viewGet(v, 'd', analScanNum);
 scanDims = viewGet(v, 'scanDims');
 
 % Get the N original scans & their tSeries
-%keyboard
 if ~ieNotDefined('newCoords')
+  tempRoi = makeEmptyROI(v, sprintf('scanNum=%i',osn2(1)), 'groupNum', ogn2{1});
   if(strmatch(newCoords, 'best'))
-    disp(sprintf('(crossValidate) Getting 90 best defined voxels in ROI %s', roiName));
-    coords = getBestVoxels(analScanNum, 85, roiName, analysis);
-    tempRoi = makeEmptyROI(v, sprintf('scanNum=%i',osn2(1)), 'groupNum', ogn2{1});
+    disp(sprintf('(crossValidate) Getting %d best defined voxels in ROI %s', nBest, roiName));
+    coords = getBestVoxels(v, analScanNum, nBest, roiName, analysis);
     tempRoi.coords = coords;
   else
     disp(sprintf('(crossValidate) Getting tSeries for provided coordinates'));
-    tempRoi = makeEmptyROI(v, sprintf('scanNum=%i',osn2(1)), 'groupNum', ogn2{1});
     tempRoi.coords = newCoords;
   end
   scans = loadROITSeries(v, tempRoi, osn2, ogn2{1}, 'straightXform=1');
@@ -101,7 +101,9 @@ for i=1:numFolds;
       disp(sprintf('Encountered voxel, (%d, %d, %d), not included in d.linearCoords', x, y, z));
       continue 
     end
-    modelFit = pRFFit(v,[],x,y,z, 'tSeries', filteredAvg(h, :).', 'stim', d.stim, 'getModelResponse=1', 'params', d.params(:, linVox), 'fitTypeParams', analParams.pRFFit, 'paramsInfo', d.paramsInfo, 'concatInfo', concatInfo);
+    modelFit = pRFFit(v,[],x,y,z, 'tSeries', filteredAvg(h, :).', 'stim', d.stim, 'getModelResponse=1',...
+                      'params', d.params(:, linVox), 'fitTypeParams', analParams.pRFFit, 'paramsInfo', ...
+                      d.paramsInfo, 'concatInfo', concatInfo);
     modelResponse(h, :) = modelFit.modelResponse;
     residual(h, :) = modelFit.tSeries - modelFit.modelResponse;
     fitParams(h, :) = [x, y, z, modelFit.p.x, modelFit.p.y, modelFit.p.std];
@@ -111,22 +113,14 @@ for i=1:numFolds;
   modelResponse(all(modelResponse==0, 2), :) = [];
   residual(all(residual==0,2), :) = [];
   numSuccess = size(modelResponse, 1);
-  disp(sprintf('(crossVal) Successfully fit model to %d voxels', numSuccess)); 
   disppercent(inf);
+  disp(sprintf('\t(crossVal) Successfully fit model to %d voxels', numSuccess));
 
   %Calculate covariance matrix of voxels on our calculated residual
   covMat = residual*residual';
 
-  % Calculate covariance matrix of voxels using pRFNoise's method
-  %[residual, covMat, tSeries, modelResponse] = pRFNoise(v, analysisScanNum, coordinates, analysis);
-  %[resid, covMat2, tS, modResp] = pRFNoise([], analScanNum, coords, analysis);
-  %noise.resid = resid;
-  %noise.covMat = covMat2;
-  %noise.tSeries = tS;
-  %noise.modelResponse = modResp;
-
   % Compare model response to left-out timeseries
-  probTable = testPRF(leftOut, modelResponse, diag(diag(covMat)));
+  probTable = calcProb(leftOut, modelResponse, diag(diag(covMat)));
   fit.modelResponse = modelResponse;
   fit.residual = residual;
   fit.leftOut = leftOut;
@@ -137,61 +131,66 @@ for i=1:numFolds;
   eval(sprintf('fits(%d)=fit;', i))
   timeLen = size(fit.modelResponse, 2);
   if ~ieNotDefined('plotFigs')
-    figure; subplot(2, 1, 1); imagesc(log(fit.probTable)); axis ij; colorbar; title(sprintf('Fold %d of %d', i, numFolds));
-    subplot(2, 1, 2); plot((1:timeLen), fit.leftOut, 'k');
-    hold on; plot((1:timeLen), fit.modelResponse, 'r'); xlim([1 timeLen]); title('Left out time series + Model response');
+    figure; 
+    subplot(2, 1, 1); imagesc(log(fit.probTable)); axis ij; colorbar; title(sprintf('Fold %d of %d', i, numFolds));
+    subplot(2, 1, 2); plot((1:timeLen), fit.leftOut, 'k'); hold on; 
+    plot((1:timeLen), fit.modelResponse, 'r'); xlim([1 timeLen]); title('Left out time series + Model response');
   end
 
 end
 
-% Average together probability tables
-pTable = zeros(timeLen, timeLen);
-modResp = zeros(numSuccess, timeLen);
-resid = zeros(numSuccess, timeLen);
-leftOut = zeros(numSuccess, timeLen);
-covMat = zeros(numSuccess, numSuccess);
-fp = zeros(
-for i = 1:length(fits)
-  fit = fits(i);
-  pTable = pTable + fit.probTable;
-  modResp = modResp + fit.modelResponse;
-  leftOut = leftOut + fit.leftOut;
-  covMat = covMat + fit.covMat;
-  resid = resid + fit.residual;
-end
+% Average across folds and store in fits struct array
 fit = [];
-fit.modelResponse = modResp / length(fits);
-fit.residual = resid / length(fits);
-fit.leftOut = leftOut / length(fits);
-fit.covMat = covMat / length(fits);
-fit.probTable = pTable / length(fits);
-fit.fitParams = [];
-eval(sprintf('fits(%d)=fit;', numFolds+1));
-%if ~ieNotDefined('plotFigs')
-  %fit = fits(numFolds+1);
-  %plotFigs(fit, d);
-%end
+fit.modelResponse = meanStruct(fits, 'modelResponse');
+fit.residual = meanStruct(fits, 'residual');
+fit.leftOut = meanStruct(fits, 'leftOut');
+fit.covMat = meanStruct(fits, 'covMat');
+fit.probTable = meanStruct(fits, 'probTable');
+fit.fitParams = meanStruct(fits, 'fitParams');
+fits(numFolds+1) = fit;
+
+
+              %  -- end main program --  %
+
+
+%%%%%%%%%%%%%%%%%%%%%% Helper Methods %%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%         meanStruct         %
+%                            %
+function avg = meanStruct(structArr, field, notI)
+
+if(ieNotDefined('notI'))
+  notI = -1;
+else
+  disp(sprintf('Averaging across all but the %d th fold', notI));
+end
+eval(sprintf('avg = zeros(size(structArr(1).%s));', field));
+
+for i = 1:length(structArr)
+  if i~=notI
+    avg = avg + eval(sprintf('structArr(i).%s', field));
+  end
+end
+avg = avg / length(structArr);
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    applyConcatFiltering    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            %
 function tSeries = applyConcatFiltering(tSeries,concatInfo,runnum)
 
-% apply the same filter as original data
-% check for what filtering was done
 tSeries = tSeries(:);
 
-% apply detrending (either if concatInfo does not say what it did or if
-% the filterType field has detrend in it)
+% apply detrending 
 if ~isfield(concatInfo,'filterType') || ~isempty(findstr('detrend',lower(concatInfo.filterType)))
-  %disp(sprintf('(pRFFit:applyConcatFiltering) Apply detrending'));
   tSeries = eventRelatedDetrend(tSeries);
 end
 
 % apply hipass filter
 if isfield(concatInfo,'hipassfilter') && ~isempty(concatInfo.hipassfilter{runnum})
-  % check for length match
   if ~isequal(length(tSeries),length(concatInfo.hipassfilter{runnum}))
-    disp(sprintf('(pRFFit:applyConcatFiltering) Mismatch dimensions of tSeries (length: %i) and concat filter (length: %i)',length(tSeries),length(concatInfo.hipassfilter{runnum})));
+    disp(sprintf('(applyConcatFiltering) Mismatch dimensions of tSeries (length: %i) and concat filter (length: %i)',length(tSeries),length(concatInfo.hipassfilter{runnum})));
   else
     tSeries = real(ifft(fft(tSeries) .* repmat(concatInfo.hipassfilter{runnum}', 1, size(tSeries,2)) ));
   end
@@ -205,6 +204,49 @@ end
 
 % now remove mean
 tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
-
-% make back into the right dimensions
 tSeries = tSeries(:)';
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%        getBestVoxels        %
+%                             %
+function cords = getBestVoxels(v, scanNum, bestN, roiName, analysis)
+
+groupNum = viewGet(v, 'currentGroup');
+roi = loadROITSeries(v, roiName, scanNum, groupNum, 'straightXform=1', 'loadType=none');
+
+r2 = viewGet(v, 'overlaydata', scanNum, 1, 1);
+roi = getSortIndex(v, roi, r2);
+
+% Get sort index based on r2 and list of linear coords
+sortIndex = roi{1}.sortindex;
+scanLinCoords = roi{1}.scanLinearCoords;
+scanDims = viewGet(v, 'scanDims');
+% get the linear coords with highest sortIndex and convert to 3d coords
+[i,j,k] = ind2sub(scanDims, scanLinCoords(sortIndex(1:bestN)));
+cords = [i;j;k;ones(1, bestN)];
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%         calcProb            %
+
+function probTable = calcProb(testTSeries, modelResponse, covarMat)
+
+numTimePoints = size(modelResponse, 2);
+probTable = zeros(numTimePoints, numTimePoints);
+
+disppercent(-inf, sprintf('\t(calcProb) Calculating prediction likelihoods'));
+for i = 1:numTimePoints
+  model_i = modelResponse(:, i);
+  tSeries_i = testTSeries(:, i);
+
+  for j = 1:numTimePoints
+    tSeries_j = testTSeries(:, j);
+    probTable(j, i) = mvnpdf(tSeries_j, model_i, covarMat);
+    if probTable(j, i) == 0
+      disp(sprintf('\n(calcProb) mvnpdf at index(%i, %i) returning 0; Exiting.', j, i));
+      return;
+    end
+  end
+  disppercent(i/numTimePoints);
+end
+disppercent(inf);
