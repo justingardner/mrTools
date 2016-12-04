@@ -563,7 +563,7 @@ if ~baseType
       if ~isfield(gui,'surfOnVolGUIXform')
         gui.surfOnVolGUIXform = eye(4);
       end
-      displaySurfaceOnVolume(v,surfaceOnVolume,hAxis,slice,sliceIndex,gui.surfOnVolGUIXform,rotate, base.dims);
+      v = displaySurfaceOnVolume(v,surfaceOnVolume,hAxis,slice,sliceIndex,gui.surfOnVolGUIXform,rotate,base.dims,slice,baseNum);
     end
   end
 end
@@ -1014,7 +1014,7 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    displaySurfaceOnVolume    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function displaySurfaceOnVolume(view,surfaceNum,axis,currentSlice,sliceIndex,surfOnVolGUIXform,rotate, sliceDims)
+function view = displaySurfaceOnVolume(view,surfaceNum,axis,currentSlice,sliceIndex,surfOnVolGUIXform,rotate,sliceDims,slice,baseNum)
 
 colors = [.9 .4 .9;... % color of first inner surface
           .4 .7 .9;... % color of first outer surface
@@ -1025,49 +1025,72 @@ colors = [.9 .4 .9;... % color of first inner surface
 % colors = [.4 .4 .4;... % color of first inner surface GREY
 %           .2 .2 .2]; % color of first outer surface GREY
 numberDifferentColors=1; %maximum number of inner+outer with different colors (up to 3)
+
 cSurf=0;        
 for iSurf=surfaceNum
   if viewGet(view,'baseType',iSurf)~=2
     mrWarnDlg(['(refreshMLRDisplay:displaySurfaceOnVolume) Base anatomy ''' viewGet(view,'baseName',iSurf) ''' is not a surface']);
   else
-    cSurf=cSurf+1;
-    baseCoordMap = viewGet(view,'baseCoordmap',iSurf,0);
+    surfSlice = viewGet(view,'baseCache',baseNum,slice,sliceIndex,rotate,iSurf);
+    if isempty(surfSlice)
 
-    innerCoords = permute(baseCoordMap.innerCoords,[2 4 1 3]);
-    outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
-    %convert surface coordinates to base coordinates
-    base2surf=viewGet(view,'base2base',iSurf);
-    innerCoords = (surfOnVolGUIXform * inv(base2surf)*[innerCoords ones(size(innerCoords,1),1)]')';
-    outerCoords = (surfOnVolGUIXform * inv(base2surf)*[outerCoords ones(size(outerCoords,1),1)]')';
+      cSurf=cSurf+1;
+      baseCoordMap = viewGet(view,'baseCoordmap',iSurf,0);
 
-    % %switch x and y because that's the way everything is plotted in the GUI
-    % innerCoords = innerCoords(:,[2 1 3]);
-    % outerCoords = outerCoords(:,[2 1 3]);
+      innerCoords = permute(baseCoordMap.innerCoords,[2 4 1 3]);
+      outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
+      %convert surface coordinates to base coordinates
+      base2surf=viewGet(view,'base2base',iSurf);
+      innerCoords = (surfOnVolGUIXform * base2surf\[innerCoords ones(size(innerCoords,1),1)]')';
+      outerCoords = (surfOnVolGUIXform * base2surf\[outerCoords ones(size(outerCoords,1),1)]')';
 
-    %compute the intersection of the surface mesh with the slice
-    %each triangle intersects with the current slice plane along a segment defined by two intersections
-    %first the WM/GM boundary
-    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+      % %switch x and y because that's the way everything is plotted in the GUI
+      % innerCoords = innerCoords(:,[2 1 3]);
+      % outerCoords = outerCoords(:,[2 1 3]);
 
-    %plot all the segments between the first and second intersections
-    h = line([firstIntersection(:,1) secondIntersection(:,1)]',...
-          [firstIntersection(:,2) secondIntersection(:,2)]',...
-          'color',colors(2*rem(cSurf-1,numberDifferentColors)+1,:),'Parent',axis);
+      %compute the intersection of the surface mesh with the slice
+      %each triangle intersects with the current slice plane along a segment defined by two intersections
+      %first the WM/GM boundary
+%       [surfSlice.firstIntersectionWM,surfSlice.secondIntersectionWM]=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+%       %and the GM/CSF boundary
+%       [surfSlice.firstIntersectionGM,surfSlice.secondIntersectionGM]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+      surfSlice.contoursWM=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+      %and the GM/CSF boundary
+      surfSlice.contoursGM=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
 
-    %and the GM/CSF boundary
-    [firstIntersection,secondIntersection]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+      view = viewSet(view,'baseCache',surfSlice,baseNum,slice,sliceIndex,rotate,iSurf);
+    end
 
-    %plot all the segments between the first and second intersections
-    h = line([firstIntersection(:,1) secondIntersection(:,1)]',...
-          [firstIntersection(:,2) secondIntersection(:,2)]',...
-          'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
+    %plot intersection contours for WM/GM
+    if ~isempty(surfSlice.contoursWM)
+      for i=1:length(surfSlice.contoursWM)
+        line(surfSlice.contoursWM{i}(:,1), surfSlice.contoursWM{i}(:,2),...
+            'color',colors(2*rem(cSurf-1,numberDifferentColors)+1,:),'Parent',axis);
+      end
+    end
+    %and for GM/CSF
+    if ~isempty(surfSlice.contoursWM)
+      for i=1:length(surfSlice.contoursGM)
+        line(surfSlice.contoursGM{i}(:,1), surfSlice.contoursGM{i}(:,2),...
+            'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
+      end
+    end
+%     %plot all the segments between the first and second intersections for WM/GM 
+%     %(this is much slower than plotting connected contours as above)
+%     h = line([surfSlice.firstIntersectionWM(:,1) surfSlice.secondIntersectionWM(:,1)]',...
+%           [surfSlice.firstIntersectionWM(:,2) surfSlice.secondIntersectionWM(:,2)]',...
+%           'color',colors(2*rem(cSurf-1,numberDifferentColors)+1,:),'Parent',axis);
+%     h = line([surfSlice.firstIntersectionGM(:,1) surfSlice.secondIntersectionGM(:,1)]',...
+%           [surfSlice.firstIntersectionGM(:,2) surfSlice.secondIntersectionGM(:,2)]',...
+%           'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
   end
 end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     computeIntersection     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [firstIntersection,secondIntersection]=computeIntersection(triangles,vertices,currentSlice,sliceIndex,rotate, sliceDims)
+function contours=computeIntersection(triangles,vertices,currentSlice,sliceIndex,rotate, sliceDims)
 axes2D=fliplr(setdiff([1 2 3],sliceIndex)); %axes of the display depending on the base slice index (slice orientation)
                                              %(this is set in getBaseSlice and axes are switched for unknown reasons)
 switch(mod(rotate,360))   % the order of the slice dimensions depends on the set rotation
@@ -1155,6 +1178,42 @@ switch mod(rotate,360)
     
     % update 22/07/2016: now that imrotate has been replaced by mrImRotate, should be easy to
     % look inside mrImrotate and take the padding code (probably not worth bothering though)
+end 
+
+%now connect contiguous segments to speed-up plotting
+c=0;
+contours = [];
+while ~isempty(firstIntersection)
+  c=c+1;
+  contours{c} = [firstIntersection(1,:);secondIntersection(1,:)]; % start from first segment coords
+  firstIntersection(1,:)=[];  %remove this segment from  both the first and second intersection segment coords
+  secondIntersection(1,:)=[];
+  % find segment sharing one intersection with first segment
+  % this intersection could be found either in the remaing first or second intersections
+  [~,nextSegment] =  ismember(contours{c}(end,:),firstIntersection,'rows'); 
+  if ~nextSegment
+    [~,nextSegment] =  ismember(contours{c}(end,:),secondIntersection,'rows');
+    foundInFirst = false;
+  else
+    foundInFirst = true;
+  end
+  while nextSegment %repeat while a shared intersection is found
+    if foundInFirst %if the shared intersection is in the first intersections,  
+      %then the next intersection in the contour is in the second
+      contours{c}(end+1,:) = secondIntersection(nextSegment,:); %add it to the list of contour coordinates
+    else %and vice versa
+      contours{c}(end+1,:) = firstIntersection(nextSegment,:);
+    end      
+    firstIntersection(nextSegment,:)=[]; %remove current segment from both
+    secondIntersection(nextSegment,:)=[];  %the first and second intersection coords
+    [~,nextSegment] =  ismember(contours{c}(end,:),firstIntersection,'rows');  % ..etc..
+    if ~nextSegment
+      [~,nextSegment] =  ismember(contours{c}(end,:),secondIntersection,'rows');
+      foundInFirst = false;
+    else
+      foundInFirst = true;
+    end
+  end
 end
 
 function kernel = gaussianKernel2D(FWHM)

@@ -2804,6 +2804,7 @@ switch lower(param)
     % cacheID = viewGet(view,'baseCacheID',baseNum);
     % cacheID = viewGet(view,'baseCacheID',baseNum,sliceNum);
     % cacheID = viewGet(view,'baseCacheID',baseNum,sliceNum,sliceIndex);
+    % cacheID = viewGet(view,'baseCacheID',baseNum,sliceNum,sliceIndex,surfaceNum);
     if length(varargin)<1
       baseNum = viewGet(view,'curBase');
     else
@@ -2824,17 +2825,27 @@ switch lower(param)
     else
       rotate = viewGet(view,'rotate');
     end
-    baseName = viewGet(view,'baseName',baseNum);
-    clip = viewGet(view,'baseClip',baseNum);
-    gamma = viewGet(view,'baseGamma',baseNum);
-    baseNaNsColor = mrGetPref('baseNaNsColor');
-    % only use the corticalDepth if this is a flat
-    if viewGet(view,'baseType')
-      corticalDepthBins = mrGetPref('corticalDepthBins');
+    if length(varargin)>=5 %fifth argument is for the intersection of a surface base with a volume base
+      surfaceName = ['_' viewGet(view,'baseName',varargin{5})];
+      clipString = ''; %the intersection doesn't change with clip values,
+      gammaString = ''; % gamma values
+      baseNaNsColor = ''; % baseNaNsColor preference
+      corticalDepthBinsString = ''; % or number of cortical depth bins
     else
-      corticalDepthBins = 0;
+      surfaceName = ''; %for normal bases, this is unspecified
+      clip = viewGet(view,'baseClip',baseNum);
+      clipString = ['_' num2str(clip(1)) '_' num2str(clip(end))];
+      gammaString = ['_' num2str(viewGet(view,'baseGamma',baseNum))];
+      baseNaNsColor = ['_' mrGetPref('baseNaNsColor')];
+      % only use the corticalDepth if this is a flat base
+      if viewGet(view,'baseType')
+        corticalDepthBinsString = ['_' num2str(mrGetPref('corticalDepthBins'))];
+      else
+        corticalDepthBinsString = '';
+      end
     end
-    val = sprintf('%s_%i_%i_%i_%s_%s_%0.2f_%0.2f_%s',baseName,currentSlice,sliceIndex,rotate,num2str(clip(1)),num2str(clip(end)),gamma,corticalDepthBins,baseNaNsColor);
+    baseName = viewGet(view,'baseName',baseNum);
+    val = sprintf('%s_%i_%i_%i%s%s%s%s%s',baseName,currentSlice,sliceIndex,rotate,clipString,gammaString,corticalDepthBinsString,baseNaNsColor,surfaceName);
   case{'basecache'}
     % cacheVal = viewGet(view,'baseCache')
     % cacheVal = viewGet(view,'baseCache',baseNum)
