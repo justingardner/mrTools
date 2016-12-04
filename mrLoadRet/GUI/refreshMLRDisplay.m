@@ -551,19 +551,13 @@ end
 %Display Surface contours on volume
 if ~baseType
   surfaceOnVolume = viewGet(v,'surfaceOnVolume');
-  if ~isfield(gui,'surfOnVolGUIXform')
-    gui.surfOnVolGUIXform = eye(4);
-  end
   if ~isempty(surfaceOnVolume)
     if  mod(rotate,90)
       mrWarnDlg('(refreshMLRDisplay) DisplaySurfaceOnVolume not implemented for rotations that are not 0 or multiples of 90');
     elseif isempty(viewGet(v,'base2mag')) 
       mrWarnDlg('(refreshMLRDisplay) Cannot display surface contours because the base coordinate system is not defined');
     else
-      if ~isfield(gui,'surfOnVolGUIXform')
-        gui.surfOnVolGUIXform = eye(4);
-      end
-      v = displaySurfaceOnVolume(v,surfaceOnVolume,hAxis,slice,sliceIndex,gui.surfOnVolGUIXform,rotate,base.dims,slice,baseNum);
+      v = displaySurfaceOnVolume(v,surfaceOnVolume,hAxis,slice,sliceIndex,rotate,base.dims,slice,baseNum);
     end
   end
 end
@@ -1014,7 +1008,7 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    displaySurfaceOnVolume    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function view = displaySurfaceOnVolume(view,surfaceNum,axis,currentSlice,sliceIndex,surfOnVolGUIXform,rotate,sliceDims,slice,baseNum)
+function view = displaySurfaceOnVolume(view,surfaceNum,axis,currentSlice,sliceIndex,rotate,sliceDims,slice,baseNum)
 
 colors = [.9 .4 .9;... % color of first inner surface
           .4 .7 .9;... % color of first outer surface
@@ -1041,8 +1035,8 @@ for iSurf=surfaceNum
       outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
       %convert surface coordinates to base coordinates
       base2surf=viewGet(view,'base2base',iSurf);
-      innerCoords = (surfOnVolGUIXform * base2surf\[innerCoords ones(size(innerCoords,1),1)]')';
-      outerCoords = (surfOnVolGUIXform * base2surf\[outerCoords ones(size(outerCoords,1),1)]')';
+      innerCoords = (base2surf\[innerCoords ones(size(innerCoords,1),1)]')';
+      outerCoords = (base2surf\[outerCoords ones(size(outerCoords,1),1)]')';
 
       % %switch x and y because that's the way everything is plotted in the GUI
       % innerCoords = innerCoords(:,[2 1 3]);
