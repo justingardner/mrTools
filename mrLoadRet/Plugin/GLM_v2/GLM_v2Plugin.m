@@ -33,7 +33,6 @@ switch action
             '                 - Improved Export Images function',...
             '                 - New item in menu Analysis/Motioncomp to appy existing motion compensation parameters to another set of scans',...
             '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
-            '                 - New item in menu View/ to overlay surface contours on volume base anatomy',...
             '                 - New GUI checkbox to display gyrus/sulcus boundary on flat maps',...
             ];
    retval ='Adds new functionalities to GUI, including improved GLM analysis';
@@ -268,7 +267,6 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','Transform','/ROI/Combine','callback',@transformROIsCallback,'label','Transform','tag','transformRoiMenuItem');
     
     %View menu
-    mlrAdjustGUI(thisView,'add','menu','Show Surface on Volume...','/View/Remove All Overlays','callback',@displaySurfaceOnVolume,'tag','displaySurfaceOnVolumeMenuItem','separator','on');
     
     %Plot menu
     %add 3D render viewer
@@ -517,52 +515,6 @@ end
 scanList = eval(params.scanList);
 mrSliceExport(thisView, [params.horizontalRange params.verticalRange], sliceList, params.tifFileName, params.nRows, scanList)
 
-
-% --------------------------------------------------------------------
-function displaySurfaceOnVolume(hObject, dump)
-
-handles = guidata(hObject);
-viewNum = handles.viewNum;
-thisView = viewGet(viewNum,'view');
-baseNames = viewGet(thisView,'baseNames');
-for iBase = 1:viewGet(thisView,'numberOfBaseVolumes')
-  isSurface(iBase) = viewGet(thisView,'baseType',iBase)==2;
-end
-isSurface = find(isSurface);
-selected = viewGet(thisView,'surfaceOnVolume');
-
-paramsInfo = {};
-for iSurf=1:length(isSurface)
-  paramsInfo{end+1}={fixBadChars(baseNames{isSurface(iSurf)}),ismember(isSurface(iSurf),selected),'type=checkbox','callback',{@refreshSurfOnVol,viewNum, hObject},'passParams=1',...
-                                'passCallbackOutput=0','Check to display surface'};
-end
-mrParamsDialog(paramsInfo,'Select surface(s) to display','modal=0');
-
-% --------------------------------------------------------------------
-function refreshSurfOnVol(params, viewNum, hObject)
-
-newSelection=getSelectedSurfaces(params,viewNum);
-if isempty(newSelection)
-  set(hObject,'checked','off');
-else
-  set(hObject,'checked','on');
-end
-viewSet(viewNum,'surfaceOnVolume',newSelection);
-
-refreshMLRDisplay(viewNum);
-
-% --------------------------------------------------------------------
-function selection = getSelectedSurfaces(params,viewNum)
-
-baseNames = viewGet(viewNum,'baseNames');
-surfNames = fieldnames(params);
-selection=[];
-for iSurf=1:length(surfNames)-1
-  if params.(surfNames{iSurf})
-    [~,surfNum]= ismember(surfNames{iSurf},baseNames);
-    selection=[selection surfNum];
-  end
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Edit Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

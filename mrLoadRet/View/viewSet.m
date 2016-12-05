@@ -775,13 +775,6 @@ switch lower(param)
     else
       view.curBase = [];
     end
-    %remove from surfaces on volume and update the base numbers
-    surfaceOnVolume = viewGet(view,'surfaceOnVolume');
-    if any(surfaceOnVolume>=basenum)
-      surfaceOnVolume(surfaceOnVolume==basenum)=[];
-      surfaceOnVolume(surfaceOnVolume>basenum) = surfaceOnVolume(surfaceOnVolume>basenum)-1;
-    end
-    view=viewSet(view,'surfaceOnVolume',surfaceOnVolume);
     % Update the gui
     stringList = {view.baseVolumes(:).name};
     if isempty(stringList)
@@ -865,18 +858,6 @@ switch lower(param)
       end
     end
 
-  case {'surfaceonvolume'}
-    % baseNum = viewSet(view,'surfaceonvolume',baselist)
-    % sets the indices of the surfaces (in the base anatomy list) that are to be displayed on the volume
-    view.surfaceOnVolume=[];
-    for iBase = val
-      if viewGet(view,'baseType',iBase)==2
-        view.surfaceOnVolume=[view.surfaceOnVolume iBase];
-      else
-        mrWarnDlg(['(viewSet:surfaceOnVolume) base ' num2str(iBase) ' is not a surface'])
-      end
-    end
-    
   case {'displaygyrussulcusboundary'}
     % baseNum = viewSet(view,'displayGyrusSulcusBoundary',val[0/1])
     % whether to display the gyrus/sulcus boundary on flat maps
@@ -1162,6 +1143,13 @@ switch lower(param)
     baseNum = getBaseNum(view,varargin);
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).multiDisplay = val;
+    end
+
+ case{'basemultidisplaycontours'}
+    % view = viewSet(view,'baseMultiDisplayContours',multiDisplayContours,[baseNum]);
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).multiDisplayContours = val;
     end
 
  case{'basemultiaxis'}

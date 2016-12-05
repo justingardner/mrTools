@@ -28,7 +28,6 @@ if (nargout >= 2)
 		    'labelROIs',0;
 		    'roiGroup',{};
         'groupSettings',[];
-        'surfaceOnVolume',[];
         'displayGyrusSulcusBoundary',0;
 		   };
 else
@@ -37,8 +36,7 @@ else
   requiredFields = {'viewNum','viewType','baseVolumes','curBase','curGroup',...
 		    'analyses','curAnalysis','ROIs','curROI','prevROIcoords','showROIs','figure','curslice','loadedAnalyses','groupScanNum','labelROIs','curScan','roiGroup',...
         'groupSettings'};
-  optionalFields = {'surfaceOnVolume',[];
-                    'displayGyrusSulcusBoundary',0;
+  optionalFields = {'displayGyrusSulcusBoundary',0;
                     };
 end
 

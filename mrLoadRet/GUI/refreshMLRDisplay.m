@@ -550,16 +550,7 @@ end
 
 %Display Surface contours on volume
 if ~baseType
-  surfaceOnVolume = viewGet(v,'surfaceOnVolume');
-  if ~isempty(surfaceOnVolume)
-    if  mod(rotate,90)
-      mrWarnDlg('(refreshMLRDisplay) DisplaySurfaceOnVolume not implemented for rotations that are not 0 or multiples of 90');
-    elseif isempty(viewGet(v,'base2mag')) 
-      mrWarnDlg('(refreshMLRDisplay) Cannot display surface contours because the base coordinate system is not defined');
-    else
-      v = displaySurfaceOnVolume(v,surfaceOnVolume,hAxis,slice,sliceIndex,rotate,base.dims,slice,baseNum);
-    end
-  end
+  v = displaySurfaceOnVolume(v,hAxis,slice,sliceIndex,rotate,base.dims,slice,baseNum);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1008,7 +999,7 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    displaySurfaceOnVolume    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function view = displaySurfaceOnVolume(view,surfaceNum,axis,currentSlice,sliceIndex,rotate,sliceDims,slice,baseNum)
+function view = displaySurfaceOnVolume(view,axis,currentSlice,sliceIndex,rotate,sliceDims,slice,baseNum)
 
 colors = [.9 .4 .9;... % color of first inner surface
           .4 .7 .9;... % color of first outer surface
@@ -1021,20 +1012,25 @@ colors = [.9 .4 .9;... % color of first inner surface
 numberDifferentColors=1; %maximum number of inner+outer with different colors (up to 3)
 
 cSurf=0;        
-for iSurf=surfaceNum
-  if viewGet(view,'baseType',iSurf)~=2
-    mrWarnDlg(['(refreshMLRDisplay:displaySurfaceOnVolume) Base anatomy ''' viewGet(view,'baseName',iSurf) ''' is not a surface']);
-  else
-    surfSlice = viewGet(view,'baseCache',baseNum,slice,sliceIndex,rotate,iSurf);
+for iBase = 1:viewGet(view,'numbase')
+  if viewGet(view,'basetype',iBase)==2 && viewGet(view,'baseMultiDisplayContours',iBase)
+    if  mod(rotate,90)
+      mrWarnDlg('(refreshMLRDisplay) Surface contours not displayed for rotations that are not 0 or multiples of 90');
+      return
+    elseif isempty(viewGet(view,'base2mag'))
+      mrWarnDlg('(refreshMLRDisplay) Cannot display surface contours because the base coordinate system is not defined');
+      return
+    end
+    surfSlice = viewGet(view,'baseCache',baseNum,slice,sliceIndex,rotate,iBase);
     if isempty(surfSlice)
 
       cSurf=cSurf+1;
-      baseCoordMap = viewGet(view,'baseCoordmap',iSurf,0);
+      baseCoordMap = viewGet(view,'baseCoordmap',iBase,0);
 
       innerCoords = permute(baseCoordMap.innerCoords,[2 4 1 3]);
       outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
       %convert surface coordinates to base coordinates
-      base2surf=viewGet(view,'base2base',iSurf);
+      base2surf=viewGet(view,'base2base',iBase);
       innerCoords = (base2surf\[innerCoords ones(size(innerCoords,1),1)]')';
       outerCoords = (base2surf\[outerCoords ones(size(outerCoords,1),1)]')';
 
@@ -1052,7 +1048,7 @@ for iSurf=surfaceNum
       %and the GM/CSF boundary
       surfSlice.contoursGM=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
 
-      view = viewSet(view,'baseCache',surfSlice,baseNum,slice,sliceIndex,rotate,iSurf);
+      view = viewSet(view,'baseCache',surfSlice,baseNum,slice,sliceIndex,rotate,iBase);
     end
 
     %plot intersection contours for WM/GM
@@ -1079,7 +1075,6 @@ for iSurf=surfaceNum
 %           'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
   end
 end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     computeIntersection     %

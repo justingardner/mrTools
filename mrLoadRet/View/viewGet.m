@@ -1397,14 +1397,6 @@ switch lower(param)
   case {'curbase','currentbase'}
     % baseNum = viewGet(view,'currentBase')
     val = view.curBase;
-  case {'surfaceonvolume'}
-    % baseNum = viewGet(view,'surfaceonvolume')
-    % returns the indices of the surfaces (in the base anatomy list) that are to be displayed on the volume
-    if isfield(view,'surfaceOnVolume')
-      val = view.surfaceOnVolume;
-    else
-      val=[];
-    end
   case {'displaygyrussulcusboundary'}
     % val = viewGet(view,'displaygyrussulcusboundary')
     % whether to display the gyrus/sulcus boundary on flat maps
@@ -1873,11 +1865,20 @@ switch lower(param)
   case {'basemultidisplay'}
     % baseMultiDisplay = viewGet(view,'baseMultiDisplay',[baseNum])
     % sets whether the base will display even if it is not the
-    % current basy
+    % current base
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     if b & (b > 0) & (b <= n)
       val = view.baseVolumes(b).multiDisplay;
+    end
+  case {'basemultidisplaycontours'}
+    % baseMultiDisplayContours = viewGet(view,'baseMultiDisplayContours',[baseNum])
+    % sets whether the (surface) base will be displayed
+    % on top of the current (volume) base
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      val = view.baseVolumes(b).multiDisplayContours;
     end
   case {'basemultiaxis'}
     % baseMultiAxis = viewGet(view,'baseMultiDisplay',[baseNum])
