@@ -2294,6 +2294,8 @@ switch lower(param)
     % Figure and GUI
   case {'roicache'}
     % view = viewSet(view,'ROICache',roidata,[roiNum]);
+    % view = viewSet(view,'ROICache',roidata,[roiNum],[baseName]);
+    % view = viewSet(view,'ROICache',roidata,[roiNum],[baseName],[rotate]);
     % view = viewSet(view,'ROICache','clear',roiName);
     if isstr(val)
       if strcmp(val,'clear')
@@ -2308,12 +2310,17 @@ switch lower(param)
       end
       % add to the cache
     else
-      if ~isempty(varargin)
-	% with another argument, then we set the roi cache for
-	% a specific ROI
-	roiID = viewGet(view,'ROICacheID',varargin{1});
-      else
+      if isempty(varargin)
 	roiID = viewGet(view,'ROICacheID');
+      elseif length(varargin)==1
+	% with another argument, then we set the roi cache for a specific ROI
+	roiID = viewGet(view,'ROICacheID',varargin{1});
+      elseif length(varargin)==2
+	% with two other arguments, then we set the roi cache for a specific ROI and a specific base
+	roiID = viewGet(view,'ROICacheID',varargin{1},varargin{2});
+      elseif length(varargin)==3
+	% with three other arguments, then we set the roi cache for a specific ROI, base and baseRotate
+	roiID = viewGet(view,'ROICacheID',varargin{1},varargin{2},varargin{3});
       end
       MLR.caches{view.viewNum}.roiCache = ...
         mrCache('add',MLR.caches{view.viewNum}.roiCache,roiID,val);

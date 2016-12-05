@@ -402,7 +402,7 @@ if isempty(fig)
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
     %  if baseType <= 1
-    roi = displayROIs(v,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(v,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
     %  end
   else
     roi = [];
@@ -425,7 +425,7 @@ if isempty(hAxis)
   % drawing the coordinates into the multiAxis 3D
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
-    roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
   else
     roi = [];
   end
@@ -461,7 +461,7 @@ if baseType <= 1
     theta = pi*rotate/180;
     m = [cos(theta) sin(theta);-sin(theta) cos(theta)];
   else  
-    % for multi axis, we want to have them roated by 270
+    % for multi axis, we want to have them rotated by 270
     % which apparently cannot be done using view with 2D images. 
     % We want 270 rotation since This way we can display
     % all the images in the correct orientation
@@ -543,7 +543,7 @@ if verbose>1,disppercent(inf);,end
 % Display ROIs
 nROIs = viewGet(v,'numberOfROIs');
 if nROIs
-  roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,verbose);
+  roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
 else
   roi = [];
 end
@@ -726,7 +726,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 %    displayROIs    %
 %%%%%%%%%%%%%%%%%%%%%
-function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims,verbose);
+function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims,rotate,verbose)
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -750,7 +750,7 @@ option = viewGet(view,'showROIs');
 % Loop through ROIs in order
 for r = order
   % look in cache for roi
-  roiCache = viewGet(view,'ROICache',r,baseNum);
+  roiCache = viewGet(view,'ROICache',r,baseNum,rotate);
   % if not found
   if isempty(roiCache)
     if verbose
@@ -759,7 +759,7 @@ for r = order
     % Get ROI coords transformed to the base dimensions
     roi{r}.roiBaseCoords = getROIBaseCoords(view,baseNum,r);
     % save to cache
-    view = viewSet(view,'ROICache',roi{r},r);
+    view = viewSet(view,'ROICache',roi{r},r,baseNum,rotate);
     if verbose,disppercent(inf);end
   else
     roi{r} = roiCache;
@@ -822,7 +822,7 @@ for r = order
     roi{r}.(baseName){sliceIndex}.s = s;
     if verbose, disppercent(inf); end
     % save in cache
-    view = viewSet(view,'ROICache',roi{r},r);
+    view = viewSet(view,'ROICache',roi{r},r,baseNum,rotate);
   else
     % just get the coordinates out of the cached ones
     x = roi{r}.(baseName){sliceIndex}.x;
@@ -960,7 +960,7 @@ for r = order
     roi{r}.lines.x = [vty-0.5 hly-0.5;vby+0.5 hry-0.5];
     roi{r}.lines.y = [vtx-0.5 hlx-0.5;vbx-0.5 hrx+0.5];
     % save to cache (since other functions like mrPrint need this
-    view = viewSet(view,'ROICache',roi{r},r);
+    view = viewSet(view,'ROICache',roi{r},r,baseNum,rotate);
     % now render those lines
     if ~isempty(hAxis)
       line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',hAxis);

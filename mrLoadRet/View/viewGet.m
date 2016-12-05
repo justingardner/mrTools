@@ -2759,6 +2759,7 @@ switch lower(param)
     % cacheID = viewGet(view,'ROICacheID')
     % cacheID = viewGet(view,'ROICacheID',roinum)
     % cacheID = viewGet(view,'ROICacheID',roinum,basenum)
+    % cacheID = viewGet(view,'ROICacheID',roinum,basenum,rotate)
     if length(varargin)<1
       % if we are not passed in a specific ROI, then
       % we are doing all ROIs
@@ -2771,7 +2772,11 @@ switch lower(param)
     else
       baseNum = varargin{2};
     end
-    rotate = viewGet(view,'rotate');
+    if length(varargin)<3
+      rotate = viewGet(view,'rotate');
+    else
+      rotate = varargin{3};
+    end
     % go through all the bases and look for
     % the first one with a matching xform and
     % voxel size. We do this because flat maps
@@ -2796,6 +2801,7 @@ switch lower(param)
     % cacheVal = viewGet(view,'ROICache')
     % cacheVal = viewGet(view,'ROICache',roinum)
     % cacheVal = viewGet(view,'ROICache',roinum,basenum)
+    % cacheVal = viewGet(view,'ROICache',roinum,basenum,rotate)
     roiID = viewGet(view,'ROICacheID',varargin{:});
     % and retrieve from the cache
     [val MLR.caches{view.viewNum}.roiCache] = ...
