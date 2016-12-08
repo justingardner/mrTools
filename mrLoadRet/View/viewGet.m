@@ -2907,7 +2907,8 @@ switch lower(param)
         for i = 1:length(view.analyses{analysisNum}.overlays)
           clip = [clip view.analyses{analysisNum}.overlays(i).clip];
         end
-        overlayRange = view.analyses{analysisNum}.overlays(curOverlay).colorRange;
+        overlayRange = viewGet(view,'overlayRange');
+        overlayColorRange = viewGet(view,'overlayColorRange');
         scanNum = viewGet(view,'curScan');
         alpha = viewGet(view,'alpha');
         alphaOverlay = char(viewGet(view,'alphaOverlay'))';
@@ -2938,7 +2939,7 @@ switch lower(param)
 	  baseOverlay = sprinf('%f',sum(baseOverlay(:)));
 	end
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay,alphaOverlay(:)',mat2str(alphaOverlayExponent));
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),mat2str(overlayColorRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay,alphaOverlay(:)',mat2str(alphaOverlayExponent));
       end
     end
     %    val = curSlice*analysisNum*curOverlay;

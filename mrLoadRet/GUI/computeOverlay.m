@@ -196,7 +196,12 @@ if ~isempty(overlayImages)
     end
     switch(overlayCType)
       case 'normal'
-        overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayColorRange',curOverlays(iOverlay));
+        switch(mrGetPref('overlayRangeBehaviour'))
+          case 'Classic'
+            overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
+          case 'New'
+            overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayColorRange',curOverlays(iOverlay));
+        end
       case 'setRangeToMax'
         overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))

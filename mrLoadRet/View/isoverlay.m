@@ -99,7 +99,7 @@ for f = 1:size(optionalFields,1)
 end
 overlay = orderfields(overlay);
 
-%Do not allow empty clip and color ranges and force range to include clip range
+%Do not allow empty clip and color ranges and force range to include clip range (for 'New' overlay range behaviour only)
 if tf
   if isempty(overlay.clip) || any(size(overlay.clip)~=[1 2])
     overlay.clip = overlay.range;
@@ -107,7 +107,9 @@ if tf
   if isempty(overlay.colorRange) || any(size(overlay.colorRange)~=[1 2])
     overlay.colorRange = overlay.range;
   end
-  overlay.range(1) = min(overlay.clip(1),overlay.range(1));
-  overlay.range(2) = max(overlay.clip(2),overlay.range(2));
+  if strcmp(mrGetPref('overlayRangeBehaviour'),'New')
+    overlay.range(1) = min(overlay.clip(1),overlay.range(1));
+    overlay.range(2) = max(overlay.clip(2),overlay.range(2));
+  end
 end
   
