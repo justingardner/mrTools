@@ -202,6 +202,8 @@ if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
   [params resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
 elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
   [params fval exitflag] = fminsearch(@getModelResidual,fitParams.initParams,fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
+elseif strcmp(lower(fitParams.algorithm), 'nelder-mead-bnd')
+  [params fval exitflag] = fminsearchbnd(@getModelResidual, fitParams.initParams, fitParams.minParams, fitParams.maxParams, fitParams.optimParams, (tSeries-mean(tSeries))/var(tSeries.^2), fitParams);
 else
   disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
   return
@@ -217,6 +219,8 @@ fit.params = params;
 if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
   fit.r2 = 1-sum((residual-mean(residual)).^2)/sum((tSeries-mean(tSeries)).^2);
 elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
+  fit.r2 = residual^2;
+elseif strcmp(lower(fitParams.algorithm), 'nelder-mead-bnd')
   fit.r2 = residual^2;
 end
 
@@ -266,7 +270,7 @@ if ~isfield(fitParams,'initParams')
 
   % handle constraints here
   % Check if fit algorithm is one that allows constraints
-  algorithmsWithConstraints = {'levenberg-marquardt'};
+  algorithmsWithConstraints = {'levenberg-marquardt', 'nelder-mead-bnd'};
   if any(strcmp(fitParams.algorithm,algorithmsWithConstraints))
     % if constraints allowed then allow user to adjust them here (if they set defaultConstraints)
     if isfield(fitParams,'defaultConstraints') && ~fitParams.defaultConstraints
@@ -302,7 +306,8 @@ fitParams.nParams = length(fitParams.initParams);
 
 % optimization parameters
 if ~isfield(fitParams,'algorithm') || isempty(fitParams.algorithm)
-  fitParams.algorithm = 'nelder-mead';
+  fitParams.algorithm = 'nelder-mead-bnd';
+  disp('(pRFFit) No algorithm provided. Using Default: Nelder-Mead-Bnd');
 end
 fitParams.optimParams = optimset('MaxIter',inf,'Display',fitParams.optimDisplay);
 
@@ -396,7 +401,7 @@ if fitParams.dispFit
 end
 
 % for nelder-mead just compute correlation and return 1-4
-if strcmp(lower(fitParams.algorithm),'nelder-mead')
+if strcmp(lower(fitParams.algorithm),'nelder-mead') || strcmp(lower(fitParams.algorithm), 'nelder-mead-bnd')
   residual = -corr(modelResponse,tSeries);
 %  disp(sprintf('(pRFFit:getModelResidual) r: %f',residual));
 end
@@ -540,7 +545,7 @@ function rfModel = getRFModel(params,fitParams)
 rfModel = [];
 
 % now gernerate the rfModel
-if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr', 'gaussian-exp', 'gaussian-diffs'}))
+if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr', 'gaussian-exp', 'gaussian-diffs', 'gaussian-divs', 'gaussian-DoG-CSS'}))
   rfModel = makeRFGaussian(params,fitParams);
 else
   disp(sprintf('(pRFFit:getRFModel) Unknown rfType: %s',fitParams.rfType));
@@ -559,8 +564,12 @@ switch (fitParams.rfType)
     output = pRF_gaussianhdr(varargin{:});
   case 'gaussian-diffs'
     output = pRF_diffGaussian(varargin{:});
-  otherwise
-    testModel = @pRF_exp; %%% Only need to change this line to specify a new model.
+  case 'gaussian-divs'
+    output = pRF_divGaussian(varargin{:});
+  case 'gaussian-exp'
+    output = pRF_exp(varargin{:});
+  otherwise % 'gaussian-DoG-CSS'
+    testModel = @pRF_DoG_CSS; %%% Only need to change this line to specify a new model.
     output = testModel(varargin{:});
 end
 
