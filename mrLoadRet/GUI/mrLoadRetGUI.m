@@ -1423,10 +1423,6 @@ evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,',''
 
 eval(evalstring);
 
-
-% --------------------------------------------------------------------
-function editOverlayMenu_Callback(hObject, eventdata, handles)
-
 % --------------------------------------------------------------------
 function copyOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
@@ -1454,10 +1450,6 @@ function editOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 editOverlayGUImrParams(viewNum);
-% view = MLR.views{viewNum};
-% view = editOverlayGUI(view);
-% view = viewSet(view,'overlayCache','init');
-% refreshMLRDisplay(viewNum);
 
 % --------------------------------------------------------------------
 function overlayInfoMenuItem_Callback(hObject, eventdata, handles)

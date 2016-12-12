@@ -22,14 +22,12 @@ switch action
             '                  - average/projection over a range of cortical depths\n',...
             '                  - multiple ROI selection\n',... 
             '                  - folder mrLoadRet/Plugin/interrogatorFolder/interrogatorFunctions is scanned at MLR startup and functions to the default interrogator list',...
-            '                  - folder mrLoadRet/Plugin/colormapFolder/colormapFunctions is scanned at MLR startup and adds functions to the default colormap list',...
             '                  - copy/paste several scans/overlay simultaneously',...
             'Added functions: - New item in menu Edit/Scan menu to unlink stimfiles',...
             '                 - New item in menu ROIs to transform ROIs with pre-defined or custom transformation functions',...
             '                 - Improved GLM analysis that subsumes event-related and "GLM" analyses in a common GLM framework with statistical inference tests (see http://www.psychology.nottingham.ac.uk/staff/ds1/lab/doku.php?id=analysis:glm_statistics_in_mrtools',...
             '                 - New item in Plot that calls a 3D viewer',...
             '                 - New item in menu Overlays to combine/transform overlays using virtually any type of function',...
-            '                 - Improved Edit/Overlay dialog',...
             '                 - Improved Export Images function',...
             '                 - New item in menu Analysis/Motioncomp to appy existing motion compensation parameters to another set of scans',...
             '                 - New item in menu edit/Base Anatomy/transforms to copy and paste sform',...
@@ -225,7 +223,6 @@ switch action
     mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
     mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/','callback',@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
     mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/','callback',@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
-    mlrAdjustGUI(thisView,'set','editOverlayMenuItem','Callback',@editOverlayCallback);
     mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','Callback',@copyOverlayCallback);
     mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','label','Copy overlay(s)...');
     mlrAdjustGUI(thisView,'set','pasteOverlayMenuItem','Callback',@pasteOverlayCallback);
@@ -273,7 +270,7 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','3D Viewer','flatViewerMenuItem','callback',@renderIn3D,'tag','viewIn3DMenuItem');
 
     
-    %---------------------------- Add colormaps and interrogators
+    %---------------------------- Add interrogators
   
     %get interrogators in the interrogatorFunctions directory
     interrogatorsFolder = [fileparts(which('GLM_v2Plugin')) '/interrogatorFunctions/'];
@@ -289,22 +286,7 @@ switch action
     else
       disp('(interrogatorFolderPlugin) No interrogator function found in folder');
     end
-    
-    %get colormaps in the colormapFunctions directory
-    colorMapsFolder = [fileparts(which('GLM_v2Plugin')) '/colormapFunctions/'];
-    colorMapFiles =  dir([colorMapsFolder '*.m']);
-    if ~isempty(colorMapFiles)
-      colorMapList = cell(1,length(colorMapFiles));
-      for iFile=1:length(colorMapFiles)
-         colorMapList{iFile} = stripext(colorMapFiles(iFile).name);
-      end
-      % install default colormaps
-      % that will show up when you do /Edit/Overlay
-      mlrAdjustGUI(thisView,'add','colormap',colorMapList);
-    else
-      disp('(colormapFolderPlugin) No colormap function found in folder');
-    end
-   
+       
     % return view
     retval = thisView;
   end
@@ -615,13 +597,6 @@ else
     mrErrorDlg('(paste base sform) Cannot paste. Clipboard does not contain a valid transformation matrix. Use Edit -> Base Anatomy -> Transforms -> Copy sform.')
 end
 refreshMLRDisplay(viewNum);
-
-
-% --------------------------------------------------------------------
-function editOverlayCallback(hObject, dump)
-handles = guidata(hObject);
-viewNum = handles.viewNum;
-editOverlayGUI(viewNum);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Analysis Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

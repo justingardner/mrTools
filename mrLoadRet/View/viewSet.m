@@ -1712,10 +1712,7 @@ switch lower(param)
         if ~isequal(curOverlay,overlayNum)
           global gParams
           if ~isempty(gParams)
-            %see which version of editOverlayGUI(mrParams) we need to relaunch
             if strcmp(gParams.figlocstr{1},'mrParamsDialog_Edit_overlay_parameters')
-              editOverlayGUI(view);
-            elseif strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
               editOverlayGUImrParams(view);
             end
           end
