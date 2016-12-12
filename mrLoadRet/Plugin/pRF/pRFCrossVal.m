@@ -17,15 +17,16 @@
 %%                      - This must be the Concat of Average of N scans
 %%             newCoords - array of scan coordinates in the form [x1 y1 z1 1; x2 y2 z2 1]'
 
-function fits = pRFCrossVal(newCoords, roiName, analysis)
+function [fits, d] = pRFCrossVal(newCoords, roiName, analysis)
 
 %%%%%%% Default inputs %%%%%%%%%
 newCoords = 'best';
-roiName = 'bothV1';
-analysis = 'pRF_v1.mat';
-nBest = 5;
+roiName = 'goodV1';
+analysis = 'pRF_gV1_RoG.mat'; % change to pRF_v1_DoG.mat to run for Diff of Gaussians model
+nBest = 85;
 plotFigs = []; % set to [] to turn off plots, set to 1 to turn on plots
-
+%rfType = 'gaussian-exp';
+algorithm = 'nelder-mead-bnd';
 
 % Set current group to Concat and load the Analysis file
 v = newView;
@@ -33,6 +34,8 @@ v = viewSet(v, 'currentGroup', 'Concatenation');
 v = loadAnalysis(v, ['pRFAnal/' analysis]);
 analParams = v.analyses{1}.params;
 analScanNum = analParams.scanNum;
+rfType = analParams.pRFFit.rfType;
+disp(sprintf('(pRFCrossVal) Using model %s, with fitting algorithm %s', rfType, algorithm));
 
 ogn = viewGet(v, 'originalgroupname', analScanNum); % Get the average group scan
 osn = viewGet(v, 'originalscannum', analScanNum);
@@ -103,10 +106,18 @@ for i=1:numFolds;
     end
     modelFit = pRFFit(v,[],x,y,z, 'tSeries', filteredAvg(h, :).', 'stim', d.stim, 'getModelResponse=1',...
                       'params', d.params(:, linVox), 'fitTypeParams', analParams.pRFFit, 'paramsInfo', ...
-                      d.paramsInfo, 'concatInfo', concatInfo);
+                      d.paramsInfo, 'concatInfo', concatInfo, 'rfType', rfType);
     modelResponse(h, :) = modelFit.modelResponse;
     residual(h, :) = modelFit.tSeries - modelFit.modelResponse;
-    fitParams(h, :) = [x, y, z, modelFit.p.x, modelFit.p.y, modelFit.p.std];
+    if strmatch(rfType, 'gaussian-diffs')
+      fitParams(h, :) = [x, y, z, modelFit.p.x, modelFit.p.y, modelFit.p.std, modelFit.p.std2, modelFit.p.B1, modelFit.p.B2];
+    elseif strmatch(rfType, 'gaussian-exp')
+      fitParams(h, :) = [x, y, z, modelFit.p.x, modelFit.p.y, modelFit.p.std, modelFit.p.exp];
+    elseif strmatch(rfType, 'gaussian-DoG-CSS')
+      fitParams(h, :) = [x, y, z, modelFit.p.x, modelFit.p.y, modelFit.p.std, modelFit.p.std2, modelFit.p.B1, modelFit.p.B2, modelFit.p.exp];
+    else
+      fitParams(h, :) = [x, y, z, modelFit.p.x, modelFit.p.y, modelFit.p.std];
+    end
     disppercent(h/numVoxels);
   end
   leftOut(all(modelResponse==0, 2), :) = [];
@@ -148,8 +159,7 @@ fit.covMat = meanStruct(fits, 'covMat');
 fit.probTable = meanStruct(fits, 'probTable');
 fit.fitParams = meanStruct(fits, 'fitParams');
 fits(numFolds+1) = fit;
-
-
+return
               %  -- end main program --  %
 
 
@@ -205,6 +215,7 @@ end
 % now remove mean
 tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
 tSeries = tSeries(:)';
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %        getBestVoxels        %
