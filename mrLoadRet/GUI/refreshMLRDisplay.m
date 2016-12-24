@@ -532,6 +532,10 @@ function baseSurface = getBaseSurface(v,baseNum)
     % get xform that xforms coordinates from this base to
     % the current base
     base2base = inv(viewGet(v,'base2base',baseNum));
+    if isempty(base2base)
+      disp(sprintf('(refreshMLRDisplay:getBaseSurface) Could not compute base2base xform'));
+      return
+    end
     % remove some sigfigs so that the isequal check works
     if ~isequal(round(base2base*100000)/100000,eye(4))
       % homogenous coordinates

@@ -1871,7 +1871,9 @@ switch lower(param)
           end
           baseqform = viewGet(view,'baseqform');
           val = baseqform * shiftOriginXform;
-        end
+        else
+	  disp(sprintf('(viewSet:base2mag) Unknown sform_code: %i',sform_code));
+	end
       end
       % if we are being asked for baseXform
       if strcmp(lower(param),'basexform') && ~isempty(val)
