@@ -63,17 +63,18 @@ v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 % check system
 if ~mlrLifeSystemCheck,return,end
 
-% load the anatomy file which has the header
-% FIX, FIX, FIX this is just a place-holder - as
-% we should figure out a process for getting the right
-% xform from the header.
+% load the diffusion weighted image from which the tracts
+% were made to get the header.
 disp(sprintf('(mlrLifePlugin) Choose diffusion weighted image from which the tracts were made'));
 h = mlrImageHeaderLoad('.');
 if isempty(h),return,end
 
-% cooordinates of tracts are in magnet, so set xform appropriately
-h.qform = eye(4);
-h.sform = eye(4);
+% cooordinates of tracts are in magnet, so set the sform
+% to convert back to the image coordinates (inverse of qform)
+% and then into the aligned magnet coordiates (sform)
+h.sform = h.sform*inv(h.qform);
+
+% set the codes for magnet coordinates
 h.hdr.qform_code = 1;
 h.hdr.sform_code = 1;
 
