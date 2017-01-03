@@ -15,9 +15,10 @@
 %             If straightXform is set to 1 then the roi is just xform'd
 %             without using xfromROIcoords - i.e. it does a straight
 %             xform of the coordinates.
-function scanCoords = getROICoordinates(view,roiNum,scanNum,groupNum,varargin)
+function [scanCoords scan2roi] = getROICoordinates(view,roiNum,scanNum,groupNum,varargin)
 
 scanCoords = [];
+scan2roi = [];
 % check arguments
 if nargin < 2
   help getROICoordinates
