@@ -409,6 +409,15 @@ switch lower(param)
     if (nscans >= s) & (s > 0)
       MLR.groups(g).auxParams(s).spikeinfo = val;
     end
+    
+  case {'frameperiod'}
+    % view = viewSet(view,'framePeriod',framePeriod,scanNum,groupNum);
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).scanParams(s).framePeriod = val;
+    end
+
   case {'niftihdr'}
     % view = viewSet(view,'niftiHdr',hdr,scanNum,groupNum);
     [s g] = getScanAndGroup(view,varargin,param);
