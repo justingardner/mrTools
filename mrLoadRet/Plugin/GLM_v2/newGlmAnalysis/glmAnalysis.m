@@ -86,7 +86,10 @@ if params.spatialSmoothing  %we'll also need a margin if we're spatially smoothi
   end
 end
 %--------------------------------------------------------- Main loop over scans ---------------------------------------------------
-set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
+figNum = viewGet(thisView,'figNum');
+if ~isempty(figNum)
+  set(figNum,'Pointer','watch');drawnow;
+end
 %initialize the data we're keeping for output overlays
 precision = mrGetPref('defaultPrecision');
 r2 = cell(1,params.scanNum(end));
@@ -1024,8 +1027,10 @@ saveAnalysis(thisView,glmAnal.name);
 
 oneTimeWarning('nonZeroHrfStart',0);
 oneTimeWarning('tfceOutputsZeros',0);
-set(viewGet(thisView,'figNum'),'Pointer','arrow');
-refreshMLRDisplay(viewGet(thisView,'viewNum'));
+if ~isempty(figNum)
+  set(figNum,'Pointer','arrow');
+  refreshMLRDisplay(viewGet(thisView,'viewNum'));
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% sub routines
