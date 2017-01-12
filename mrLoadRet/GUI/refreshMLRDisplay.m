@@ -16,7 +16,9 @@ if verbose,tic,end
 v = viewGet(viewNum,'view');
 viewNum = viewGet(v,'viewNum');
 fig = viewGet(v,'figNum');
-gui = guidata(fig);
+if ~isempty(fig)
+  gui = guidata(fig);
+end
 baseNum = viewGet(v,'currentBase');
 baseType = viewGet(v,'baseType');
 
@@ -51,7 +53,7 @@ if verbose>1,disppercent(-inf,'Clearing figure');,end
 % note: This cla here is VERY important. Otherwise
 % we keep drawing over old things on the axis and
 % the rendering gets impossibly slow... -j.
-cla(gui.axis);
+if ~isempty(fig), cla(gui.axis);end
 if verbose>1,disppercent(inf);,end
 
 % check if these are inplanes (not flats or surfaces)
@@ -71,7 +73,7 @@ if (baseType == 0) && (baseMultiAxis>0)
   % display the images, but if we are set to 3D just compute
   % the images, so that we can display the 3D.
   for iSliceIndex = 1:3
-    % if we are displaying all slice dimenons and the #d
+    % if we are displaying all slice dimensions and the #d
     if baseMultiAxis == 1
       % display each slice index
       [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,iSliceIndex==3,verbose,iSliceIndex,curCoords(iSliceIndex));
