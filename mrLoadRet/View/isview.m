@@ -17,7 +17,7 @@ function [tf, view, unknownFields] =  isview(view)
 % djh, 2007
 
 mrGlobals
-
+unknownFields = [];
 if (nargout >= 2)
   % Add optional fields and return true if the view with optional fields is
   % valid.
