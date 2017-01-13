@@ -1423,6 +1423,14 @@ evalstring = ['params = ',guiFunction,'(','''','groupName','''',',groupName,',''
 
 eval(evalstring);
 
+
+% --------------------------------------------------------------------
+function editOverlayMenu_Callback(hObject, eventdata, handles)
+% this doesn't do anything, but avoids a bug due to this function name
+% being associated with the Edit/Overlay menu in the GUI
+% in order to remove this, mrLoadRetGUI.guide would have to be modified
+% (same for other similar empty callbacks in this file)
+
 % --------------------------------------------------------------------
 function copyOverlayMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
