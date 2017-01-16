@@ -101,13 +101,15 @@ elseif isfield(flat{1},'radius')
   % space) because that's the space used by makeFlatFromRadius
   if isempty(anat)
     [filename, pathname] = uigetfile({'*.hdr;*.nii','Nifti file (*.hdr/*.nii)'},'Select 3D Anatomy File',flat{1}.path);
-    anat{1} = [pathname filename];
-    anatomyFile=anat{1};
+    anat{1} = filename;
+    anatomyFile=[pathname filename];
   elseif isempty(fileparts(anat{1}))
   % if there is no path, we assume the base anatomy is in the same folder as the parent surface
     anatomyFile=fullfile(flat{1}.path,anat{1});
   else
     anatomyFile=anat{1};
+    [~,anat{1},ext] = fileparts(anat{1}); %remove the path from anat{1}
+    anat{1} = [anat{1} ext];
   end
   %first convert coordinates from current base to the surface base 
   hdr= cbiReadNiftiHeader(anatomyFile);
