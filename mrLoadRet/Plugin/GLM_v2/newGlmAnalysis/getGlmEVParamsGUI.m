@@ -64,6 +64,9 @@ if ~isfield(params,'numberFtests') || isempty(params.numberFtests)
     params.numberFtests = 0;
   end
 end
+if ~isfield(params,'outputEstimatesAsOverlays') || isempty(params.outputEstimatesAsOverlays)
+  params.outputEstimatesAsOverlays = 0;
+end
 
 while keepAsking
     
@@ -223,6 +226,7 @@ while keepAsking
     {'numberContrasts',params.numberContrasts,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus', 'Number of contrasts on which to perform a T-test. Both contrast values and inference test outcomes will be ouput as overlays.'},...
     {'computeTtests', params.computeTtests,'type=checkbox', 'visible=0', 'Whether contrasts are tested for significance using T-tests'},...
     {'numberFtests',params.numberFtests,'minmax=[0 inf]','incdec=[-1 1]','incdecType=plusMinus','Number of F-tests to be computed and output as overlays. An F-test tests the overall significance of a collection of contrasts. A collection of contrast is defined by a restriction matrix (one contrast per row) '},...
+    {'outputEstimatesAsOverlays',params.outputEstimatesAsOverlays,'type=checkbox','If this is checked, all model parameter estimates will be output as overlays in addition to any contrast estimate.'},...
      }];
 
   % now we have all the dialog information, ask the user to set parameters

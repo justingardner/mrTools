@@ -756,18 +756,7 @@ if steOnly
 end
 
 if ~ieNotDefined('econtste')
-  hold on
-  %if ~ishold(hAxes),hold(hAxes);end;
-  hSte = zeros(size(h));
-  for i=1:length(h)
-    % location of the bar
-    x = get(get(h(i),'Children'),'XData');
-    % find the center of the bar
-    x = (x(2,:)+x(3,:))/2;
-    hSte(i) = errorbar(hAxes,x, econt(i,:), econtste(i,:), 'k','lineStyle','none');
-%         temp = get(hSte(i), 'Children');
-%         set(temp(1), 'visible', 'off');
-  end
+  hSte = errorbar(hAxes,(1:size(econt,1))', econt, econtste, 'k','lineStyle','none');
 end
 
 

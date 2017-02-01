@@ -14,17 +14,12 @@ function [orderedPoints,biggest]=orderMeshPerimeterPointsAll(mesh,perimeterEdges
 % AUTHOR:  Wade
 % DATE: 200-06-21
 
-foundAllPerimeters=0; % Flag to say we've finished
 nVerts=length(mesh.connectionMatrix); % Total number of vertices in the full connection matrix
-
-edgePoints=unique(perimeterEdges(:)); % List of nodes that are on the perimeter
-[y x]=size(mesh.connectionMatrix); % = nVerts
 
 % Generate a connection matrix using only the edges - make sure it's symmetric
 ec=sparse(perimeterEdges(:,1),perimeterEdges(:,2),1,nVerts,nVerts);
 ec=ec+ec';
 edgeConMat=(ec~=0);
-%nnz(edgeConMat)
 
 % Used for checking which perimeter is biggest
 biggest=-Inf;
@@ -32,10 +27,8 @@ biggestSize=-Inf;
 
 
 thisPerim=1; % Index of the current perimeter
-nextRow=-99999; % Dummy
 
-
-while (~foundAllPerimeters)
+while nnz(edgeConMat)
     counter=1;
     [startRow startCol]=find(edgeConMat);
     if (~isempty(startRow)) % If there is one...
@@ -46,7 +39,6 @@ while (~foundAllPerimeters)
         
         thisRow=startRow;
         deleteCol=startCol;
-        nextRow=-Inf;
         foundEnd=0;
         edgeConMat(thisRow,deleteCol)=0; % Zero one of the entries in this row 
         
@@ -92,12 +84,7 @@ while (~foundAllPerimeters)
         
     end % End if anything found to start with
     
-    %keyboard;
-    %nnz(edgeConMat)
-    foundAllPerimeters=(x*y)-nnz(edgeConMat); %(sum(sum(edgeConMat==0)));
     thisPerim=thisPerim+1;
-    %     disp(thisPerim);
-    %     disp(nnz(edgeConMat));
     
 end % End while not all perims found
 

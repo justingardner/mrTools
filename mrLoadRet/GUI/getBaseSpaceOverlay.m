@@ -34,7 +34,7 @@ baseType = viewGet(thisView,'baseType',baseNum);
 
 baseVoxelSize = viewGet(thisView,'basevoxelsize',baseNum);
 
-if all(all(abs(base2scan - eye(4))<1e-6)) %check if we're in the scan space
+if all(all(abs(base2scan - eye(4))<1e-6)) && viewGet(thisView,'basetype')==0 %check if we're in the scan space
    disp('(getBaseSpaceOverlay) Overlay already in the base space, skipping resampling...');
    newOverlayData = overlayData;
    return;
@@ -49,7 +49,7 @@ switch(baseType)
    case 1   %the base is a flat map
       sliceIndex = viewGet(thisView,'baseSliceIndex',baseNum);
       if ieNotDefined('depthBins')
-         depthBins = viewGet(thisView,'corticalDepthBins');
+         depthBins = mrGetPref('corticalDepthBins');
       end
       if ieNotDefined('rotateAngle')
          rotateAngle = viewGet(thisView,'rotate');
@@ -80,9 +80,9 @@ switch(baseType)
         %rotate coordinates
         if  rotateAngle
           for iDepth = 1:depthBins
-             Xcoords(:,:,iDepth) = imrotate(Xcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
-             Ycoords(:,:,iDepth) = imrotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
-             Zcoords(:,:,iDepth) = imrotate(Zcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+             Xcoords(:,:,iDepth) = mrImRotate(Xcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+             Ycoords(:,:,iDepth) = mrImRotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
+             Zcoords(:,:,iDepth) = mrImRotate(Zcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
           end
         else
           Xcoords=Xcoords0;
@@ -92,7 +92,7 @@ switch(baseType)
       end
       
       %just as an indication, the voxel size is the mean distance between voxels consecutive in the 3 directions
-      %mask coordinates with non-rotated coordinates (to avoid edges introduced by imrotate)
+      %mask coordinates with non-rotated coordinates (to avoid edges introduced by mrImRotate)
       Xcoords0Mask = Xcoords0==0;
       Xcoords0Mask = convn(Xcoords0Mask,ones(5,5,5),'same'); %expand the mask a bit to make sure we don't include any edge voxels
       XcoordsNaN = Xcoords; 

@@ -54,7 +54,7 @@ if isequal(clipMax-clipMin,0)
 else
   indices = round((size(cmap,1)-1) * ((result-clipMin)/(clipMax-clipMin)).^gamma) + 1;
 end
-indices = max(1,min(indices,size(cmap,1)));
+indices = min(size(cmap,1),max(indices,1)); %this replaces NaNs by the lowest index (as it says it should in the header)
 
 % Extract r,g,b components
 r = zeros(size(image));

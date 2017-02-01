@@ -83,18 +83,18 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
   disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
   [mrLastView, lastViewSettings]=mlrLoadLastView(mrLastView);
   disppercent(inf);
-  %Add any missing field to make sure things don't crash
-  [~,mrLastView,unknownFields]=isview(mrLastView);
-  if ~isempty(unknownFields) %warn if there are any unknown fields
-    fprintf('(mrOpenWindow) Unknown view field(s):')
-    for i = unknownFields'
-      fprintf(' %s',i{1});
-    end
-    fprintf('\n');
-  end
   % if the old one exists, then set up fields
 %   disppercent(-inf,'(mrOpenWindow) Restoring last view');
   if ~isempty(mrLastView)
+    %Add any missing field to make sure things don't crash
+    [~,mrLastView,unknownFields]=isview(mrLastView);
+    if ~isempty(unknownFields) %warn if there are any unknown fields
+      fprintf('(mrOpenWindow) Unknown view field(s):')
+      for i = unknownFields'
+        fprintf(' %s',i{1});
+      end
+      fprintf('\n');
+    end
     % open up base anatomy from last session
     if isfield(mrLastView,'baseVolumes')
       disppercent(-inf,sprintf('(mrOpenWindow) installing Base Anatomies'));
@@ -123,16 +123,10 @@ if ~isempty(mrLastView) && isfile(sprintf('%s.mat',stripext(mrLastView)))
     if baseLoaded
       % slice orientation from last run
       view = viewSet(view,'curBase',mrLastView.curBase);
-      view = viewSet(view,'sliceOrientation',mrLastView.sliceOrientation);
       % change scan
       view = viewSet(view,'curScan',mrLastView.curScan);
-      % change slice/corticalDepth
-      if viewGet(view,'baseType') && isfield(mrLastView.curslice,'corticalDepth')
-        view = viewSet(view,'corticalDepth',mrLastView.curslice.corticalDepth);
-      end
-      if isfield(mrLastView.curslice,'sliceNum')
-        view = viewSet(view,'curSlice',mrLastView.curslice.sliceNum);
-      end
+      % set displayGyrusSulcusBoundary on/off
+      view = viewSet(view,'displayGyrusSulcusBoundary',viewGet(mrLastView,'displayGyrusSulcusBoundary'));
     end
     % read analyses
     if isfield(mrLastView,'analyses')

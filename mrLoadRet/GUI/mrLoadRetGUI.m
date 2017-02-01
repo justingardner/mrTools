@@ -239,11 +239,6 @@ mrGlobals
 viewNum = handles.viewNum;
 % Update the group number
 viewSet(viewNum,'curGroup',get(hObject,'Value'));
-% Delete the overlays
-%MLR.views{viewNum}.analyses = [];
-%MLR.views{viewNum}.curAnalysis = [];
-% Update nScans
-mlrGuiSet(viewNum,'nScans',viewGet(viewNum,'nScans'));
 % Refresh the display
 refreshMLRDisplay(viewNum);
 
@@ -537,12 +532,8 @@ value = str2num(get(hObject,'String'));
 if length(value)~=1 %if the user just erased the value, get it from the slider and do nothing
   set(hObject,'String',num2str(get(handles.baseTiltSlider,'value')));
 else %otherwise, set the new value in the view and the GUI
-  if value < 0,value = 0;end
-  if value > 360,value = 360;end
   viewSet(viewNum,'tilt',value);
   v = viewGet([],'view',viewNum);
-  fig = viewGet(v,'figNum');
-  gui = guidata(fig);
 
   if (viewGet(v,'baseType') == 2)
     setMLRViewAngle(v);
@@ -954,15 +945,20 @@ end
 
 % get current roi name
 roiName = viewGet(v,'roiname');
-
-% put up dialog to select filename
-pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext(roiName,mrGetPref('niftiFileExtension')));
-
-% pathstr = [] if aborted
-if ~isempty(pathstr)
-  mlrExportROI(v, pathstr);
+if ischar(roiName)
+  roiName={roiName};
 end
 
+pathstr = cell(0);
+for iRoi = 1:length(roiName)
+  % put up dialog to select filename
+  pathstr{iRoi} = putPathStrDialog(pwd,'Specify name of Nifti file to export ROI to',setext(roiName{iRoi},mrGetPref('niftiFileExtension')));
+  if isempty(pathstr{iRoi})
+    return
+  end
+end
+
+mlrExportROI(v, pathstr);
 
 % --------------------------------------------------------------------
 function exportImageMenuItem_Callback(hObject, eventdata, handles)
@@ -972,7 +968,6 @@ if ~isempty(pathstr)
     img = refreshMLRDisplay(handles.viewNum);
     imwrite(img, pathstr, 'tif');
 end
-
 
 % --------------------------------------------------------------------
 function readmeMenuItem_Callback(hObject, eventdata, handles)

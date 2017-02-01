@@ -152,7 +152,7 @@ else
   v = viewSet(v,'cursliceBaseCoords',curSliceBaseCoords);
 end
 
-% turn on 3D free roate if we are just displaying the one 3D axis
+% turn on 3D free rotate if we are just displaying the one 3D axis
 if ~mrInterrogator('isactive',viewNum)
   if (baseType == 2) || (baseMultiAxis == 2)
     mlrSetRotate3d(v,'on');
@@ -179,7 +179,7 @@ if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
 end
 
 if (baseType == 0) && (baseMultiAxis>0)
-  % set the camera taret to center of the volume
+  % set the camera target to center of the volume
   camtarget(gui.axis,baseDims([2 1 3])/2)
 end
 
@@ -236,12 +236,13 @@ if nargin < 7
 else
   rotate = 0;
 end
-if verbose>1,disppercent(inf);,end
+if verbose>1,disppercent(inf);end
 
+fig = viewGet(v,'figNum');
 %disp(sprintf('(refreshMLRDIsplay:dispBase) DEBUG: sliceIndex: %i slice: %i',sliceIndex,slice));
 
 % Compute base coordinates and extract baseIm for the current slice
-if verbose,disppercent(-inf,'extract base image');,end
+if verbose,disppercent(-inf,'extract base image');end
 base = viewGet(v,'baseCache',baseNum,slice,sliceIndex,rotate);
 if isempty(base)
   [base.im,base.coords,base.coordsHomogeneous] = ...
@@ -253,6 +254,35 @@ if isempty(base)
     base.cmap = gray(256);
     base.clip = viewGet(v,'baseClip',baseNum);
     base.RGB = rescale2rgb(base.im,base.cmap,base.clip,baseGamma);
+    switch lower(mrGetPref('baseNaNsColor'))
+      case 'transparent' %display NaNs the same color as figure background
+        if ~isempty(fig) 
+          backgroundColor = get(fig,'color');
+        else
+          backgroundColor = [0 0 0];
+        end
+      case 'black'
+        backgroundColor = [0 0 0];
+      case 'white'
+        backgroundColor = [1 1 1];
+    end
+    if baseType==1 %make smooth transition beetween figure background and flat map
+      alpha = zeros(base.dims(1),base.dims(2));
+      alpha(isnan(base.im))=1;
+      kernel = gaussianKernel2D(3)   ;     
+      alpha = conv2(alpha,ones(4,4),'same');
+      alpha = conv2(1-(alpha>0),kernel,'same');
+      alpha = repmat(alpha,[1 1 3]);
+      mask = repmat(permute(backgroundColor,[1 3 2]),[base.dims(1) base.dims(2) 1]);
+      base.RGB = base.RGB.*alpha+(1-alpha).*mask;
+      base.RGB=min(1,max(0,base.RGB));
+      base.gyrusSulcusBoundary = edge(base.im>0.5+0)&edge(base.im<0.5+0); %we assume that 0.5 represents 
+      % the curvature boundary, which should be the case for flat maps made from freesurfer-imported surfaces 
+    else
+      base.RGB = reshape(base.RGB,base.dims(1)*base.dims(2),3);
+      base.RGB(isnan(base.im),:)=repmat(backgroundColor,[nnz(isnan(base.im)) 1]);
+      base.RGB = reshape(base.RGB,[base.dims 3]);
+    end
   else
     base.RGB = [];
   end
@@ -266,8 +296,8 @@ end
 % for surfaces and flats calculate things based on cortical depth
 if size(base.coords,4)>1
   % code allows for averaging across cortical depth
-  corticalDepth = viewGet(v,'corticalDepth');
-  corticalDepthBins = viewGet(v,'corticalDepthBins');
+  corticalDepth = viewGet(v,'corticalDepth',baseNum);
+  corticalDepthBins = mrGetPref('corticalDepthBins');
   corticalDepths = 0:1/(corticalDepthBins-1):1;
   slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
   curSliceBaseCoords = mean(base.coords(:,:,:,slices),4);
@@ -285,7 +315,7 @@ if isempty(overlays)
   % get the transform from the base to the scan
   base2scan = viewGet(v,'base2scan',[],[],baseNum);
   % compute the overlays
-  overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims);
+  overlays = computeOverlay(v,base2scan,base.coordsHomogeneous,base.dims,[],baseNum);
   overlays = addBaseOverlays(v,baseNum,overlays);
   % save in cache
   v = viewSet(v,'overlayCache',overlays,baseNum,slice,sliceIndex,rotate);
@@ -320,6 +350,31 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       end
       % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
        img = img+(1-alpha).*base.RGB;
+       
+    case 'Contours'
+      if size(overlays.RGB,4)==1
+        img=base.RGB; %only display base in the background
+        contours=overlays.overlayIm;  %display first overlay as contours 
+        contours(~overlays.alphaMaps(:,:,1,1))=NaN;   % use non-zero alpha map as mask
+        contourCscale=overlays.range(1,:); 
+        contourCmap = overlays.cmap(:,:,1);
+      else
+        %combine first overlay and base
+        img=overlays.alphaMaps(:,:,:,1).*overlays.RGB(:,:,:,1)+(1-overlays.alphaMaps(:,:,:,1)).*base.RGB;
+        contours=overlays.overlayIm(:,:,2); %display second overlay as contours
+        contours(~overlays.alphaMaps(:,:,1,2))=NaN;   % use non-zero alpha map as mask
+        contourCscale=overlays.range(2,:);
+        contourCmap = overlays.cmap(:,:,2);
+      end
+      if size(overlays.RGB,4)>2
+        mrWarnDlg('(refreshMLRDisplay) Number of overlays limited to 2 for ''Contours'' display option');
+      end
+  end
+  displayGyrusSulcusBoundary = viewGet(v,'displayGyrusSulcusBoundary');
+  if baseType==1 && ~isempty(displayGyrusSulcusBoundary) && displayGyrusSulcusBoundary
+      img = reshape(img,[prod(base.dims) 3]);
+      img(base.gyrusSulcusBoundary>0,:) = repmat([0 0 0],nnz(base.gyrusSulcusBoundary>0),1);
+      img = reshape(img,[base.dims 3]);
   end
   cmap = overlays.cmap;
   cbarRange = overlays.range;
@@ -343,12 +398,11 @@ img=double(img); %in case data are stored as singles (later instances of surf/se
 
 
 % if no figure, then just return, this is being called just to create the overlays
-fig = viewGet(v,'figNum');
 if isempty(fig)
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
     %  if baseType <= 1
-    roi = displayROIs(v,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(v,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
     %  end
   else
     roi = [];
@@ -371,7 +425,7 @@ if isempty(hAxis)
   % drawing the coordinates into the multiAxis 3D
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
-    roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+    roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
   else
     roi = [];
   end
@@ -392,12 +446,22 @@ if baseType <= 1
     set(fig,'Renderer','painters')
     h = image(img,'Parent',hAxis);
     v = viewSet(v,'baseHandle',h,baseNum);
+    if ~isempty(overlays.RGB) && strcmp(mrGetPref('colorBlending'),'Contours') 
+      hold(hAxis,'on');
+      nContours = 9;
+      contourStepSize =diff(contourCscale)/(nContours-1);
+      minContourStep = ceil(min(min(contours))/contourStepSize)*contourStepSize;
+      maxContourStep = floor(max(max(contours))/contourStepSize)*contourStepSize;
+      contour(hAxis,contours,minContourStep:contourStepSize:maxContourStep,'cdatamapping','scaled')
+      caxis(hAxis,contourCscale);
+      colormap(contourCmap);
+    end
     % get rotation matrix for image so that we can fix the data
     % aspect ratio properlybelow
     theta = pi*rotate/180;
     m = [cos(theta) sin(theta);-sin(theta) cos(theta)];
   else  
-    % for multi axis, we want to have them roated by 270
+    % for multi axis, we want to have them rotated by 270
     % which apparently cannot be done using view with 2D images. 
     % We want 270 rotation since This way we can display
     % all the images in the correct orientation
@@ -457,7 +521,7 @@ else
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');
   set(hAxis,'ZDir','normal');
-  % set the camera taret to center of surface (but only if curBase)
+  % set the camera target to center of surface (but only if curBase)
   if isequal(viewGet(v,'curBase'),baseNum)
     camtarget(hAxis,mean(baseSurface.vtcs))
   end
@@ -479,9 +543,14 @@ if verbose>1,disppercent(inf);,end
 % Display ROIs
 nROIs = viewGet(v,'numberOfROIs');
 if nROIs
-  roi = displayROIs(v,hAxis,slice,sliceIndex,rotate,baseNum,base.coordsHomogeneous,base.dims,verbose);
+  roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
 else
   roi = [];
+end
+
+%Display Surface contours on volume
+if ~baseType
+  v = displaySurfaceOnVolume(v,hAxis,slice,sliceIndex,rotate,base.dims,slice,baseNum);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -496,7 +565,7 @@ function displayColorbar(gui,cmap,cbarRange,verbose)
     if verbose>1,disppercent(-inf,'colorbar');,end
     cbar = permute(NaN(size(cmap)),[3 1 2]);
     for iOverlay = 1:size(cmap,3)
-      cbar(iOverlay,:,:) = rescale2rgb(1:length(cmap),cmap(:,:,iOverlay),[1,size(cmap,1)],1); 
+      cbar(iOverlay,:,:) = rescale2rgb(1:size(cmap,1),cmap(:,:,iOverlay),[1,size(cmap,1)],1); 
     end
     image(cbar,'Parent',gui.colorbar);
     if size(cbar,1)==1
@@ -524,29 +593,32 @@ function displayColorbar(gui,cmap,cbarRange,verbose)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function baseSurface = getBaseSurface(v,baseNum)
   
+if baseNum == viewGet(v,'currentBase')
   baseSurface = viewGet(v,'baseSurface',baseNum);
-  % if this is not the current base then we need to xform
-  % coordinates so that it will display in the same space
+else
+  % if this is not the current base, this means we're using mutlibase
+  % we need to get the actual surface coordinates
+  % and xform them so that it will display in the same space
   % as the current one
-  if baseNum ~= viewGet(v,'currentBase')
-    % get xform that xforms coordinates from this base to
-    % the current base
-    base2base = inv(viewGet(v,'base2base',baseNum));
-    if isempty(base2base)
-      disp(sprintf('(refreshMLRDisplay:getBaseSurface) Could not compute base2base xform'));
-      return
-    end
-    % remove some sigfigs so that the isequal check works
-    if ~isequal(round(base2base*100000)/100000,eye(4))
-      % homogenous coordinates
-      baseSurface.vtcs(:,4) = 1;
-      swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
-      % xform to current base coordinates
-      baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
-      % and remove the homogenous 1
-      baseSurface.vtcs = baseSurface.vtcs(:,1:3);
-    end
+  baseSurface = viewGet(v,'baseSurfaceCoords',baseNum);
+  % get xform that xforms coordinates from this base to
+  % the current base
+  base2base = inv(viewGet(v,'base2base',baseNum));
+  if isempty(base2base)
+    disp(sprintf('(refreshMLRDisplay:getBaseSurface) Could not compute base2base xform'));
+    return
   end
+  % remove some sigfigs so that the isequal check works
+  if ~isequal(round(base2base*100000)/100000,eye(4))
+    % homogenous coordinates
+    baseSurface.vtcs(:,4) = 1;
+    swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
+    % xform to current base coordinates
+    baseSurface.vtcs = (swapXY * base2base * swapXY * baseSurface.vtcs')';
+    % and remove the homogenous 1
+    baseSurface.vtcs = baseSurface.vtcs(:,1:3);
+  end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % getROIBaseCoords: extracts ROI coords transformed to the base image
@@ -608,10 +680,10 @@ if ~isempty(roiBaseCoords)
     % are important to match
     
     if size(baseCoordsHomogeneous,3)>1%if it is a flat map with more than one depth
-      corticalDepth = viewGet(view,'corticalDepth');
-      corticalDepthBins = viewGet(view,'corticalDepthBins');
+      corticalDepth = viewGet(view,'corticalDepth',baseNum);
+      corticalDepthBins = mrGetPref('corticalDepthBins');
       corticalDepths = 0:1/(corticalDepthBins-1):1;
-      slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off erros
+      slices = corticalDepths>=corticalDepth(1)-eps & corticalDepths<=corticalDepth(end)+eps; %here I added eps to account for round-off errors
       nDepths = nnz(slices);
       baseCoordsHomogeneous = reshape(baseCoordsHomogeneous(:,:,slices),[4 prod(imageDims)*nDepths]);
       
@@ -639,7 +711,7 @@ if ~isempty(roiBaseCoords)
       %but which voxel is displayed is actually not used later because we can only display one depth at a time
       %(roiIndices used to go into s, which was not used for flat maps)
       %so let's just forget about roiIndices 
-      %(this also avoid having to think about at what deptht o take the base coords)
+      %(this also avoids having to think about at what depth to take the base coords)
     end
     baseIndices = find(baseIndices);
 %     roiIndices = roiIndices(baseIndices);
@@ -652,9 +724,9 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%
-%%   displayROIs   %%
+%    displayROIs    %
 %%%%%%%%%%%%%%%%%%%%%
-function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,rotate,baseNum,baseCoordsHomogeneous,imageDims,verbose);
+function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims,rotate,verbose)
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -678,7 +750,7 @@ option = viewGet(view,'showROIs');
 % Loop through ROIs in order
 for r = order
   % look in cache for roi
-  roiCache = viewGet(view,'ROICache',r,baseNum);
+  roiCache = viewGet(view,'ROICache',r,baseNum,rotate);
   % if not found
   if isempty(roiCache)
     if verbose
@@ -687,7 +759,7 @@ for r = order
     % Get ROI coords transformed to the base dimensions
     roi{r}.roiBaseCoords = getROIBaseCoords(view,baseNum,r);
     % save to cache
-    view = viewSet(view,'ROICache',roi{r},r);
+    view = viewSet(view,'ROICache',roi{r},r,baseNum,rotate);
     if verbose,disppercent(inf);end
   else
     roi{r} = roiCache;
@@ -750,7 +822,7 @@ for r = order
     roi{r}.(baseName){sliceIndex}.s = s;
     if verbose, disppercent(inf); end
     % save in cache
-    view = viewSet(view,'ROICache',roi{r},r);
+    view = viewSet(view,'ROICache',roi{r},r,baseNum,rotate);
   else
     % just get the coordinates out of the cached ones
     x = roi{r}.(baseName){sliceIndex}.x;
@@ -888,7 +960,7 @@ for r = order
     roi{r}.lines.x = [vty-0.5 hly-0.5;vby+0.5 hry-0.5];
     roi{r}.lines.y = [vtx-0.5 hlx-0.5;vbx-0.5 hrx+0.5];
     % save to cache (since other functions like mrPrint need this
-    view = viewSet(view,'ROICache',roi{r},r);
+    view = viewSet(view,'ROICache',roi{r},r,baseNum,rotate);
     % now render those lines
     if ~isempty(hAxis)
       line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',hAxis);
@@ -923,4 +995,225 @@ end
 
 if verbose>1,disppercent(inf);,end
 return;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    displaySurfaceOnVolume    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function view = displaySurfaceOnVolume(view,axis,currentSlice,sliceIndex,rotate,sliceDims,slice,baseNum)
+
+colors = [.9 .4 .9;... % color of first inner surface
+          .4 .7 .9;... % color of first outer surface
+          .9 .4 .4;... % color of second inner surface
+          .4 .9 .7;... % color of second outer surface
+          .9 .9 .4;... % color of third inner surface
+          .6 .4 .9];   % color of third outer surface
+% colors = [.4 .4 .4;... % color of first inner surface GREY
+%           .2 .2 .2]; % color of first outer surface GREY
+numberDifferentColors=1; %maximum number of inner+outer with different colors (up to 3)
+
+cSurf=0;        
+for iBase = 1:viewGet(view,'numbase')
+  if viewGet(view,'basetype',iBase)==2 && viewGet(view,'baseMultiDisplayContours',iBase)
+    if  mod(rotate,90)
+      mrWarnDlg('(refreshMLRDisplay) Surface contours not displayed for rotations that are not 0 or multiples of 90');
+      return
+    elseif isempty(viewGet(view,'base2mag'))
+      mrWarnDlg('(refreshMLRDisplay) Cannot display surface contours because the base coordinate system is not defined');
+      return
+    end
+    surfSlice = viewGet(view,'baseCache',baseNum,slice,sliceIndex,rotate,iBase);
+    if isempty(surfSlice)
+
+      cSurf=cSurf+1;
+      baseCoordMap = viewGet(view,'baseCoordmap',iBase,0);
+
+      innerCoords = permute(baseCoordMap.innerCoords,[2 4 1 3]);
+      outerCoords = permute(baseCoordMap.outerCoords,[2 4 1 3]);
+      %convert surface coordinates to base coordinates
+      base2surf=viewGet(view,'base2base',iBase);
+      innerCoords = (base2surf\[innerCoords ones(size(innerCoords,1),1)]')';
+      outerCoords = (base2surf\[outerCoords ones(size(outerCoords,1),1)]')';
+
+      % %switch x and y because that's the way everything is plotted in the GUI
+      % innerCoords = innerCoords(:,[2 1 3]);
+      % outerCoords = outerCoords(:,[2 1 3]);
+
+      %compute the intersection of the surface mesh with the slice
+      %each triangle intersects with the current slice plane along a segment defined by two intersections
+      %first the WM/GM boundary
+%       [surfSlice.firstIntersectionWM,surfSlice.secondIntersectionWM]=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+%       %and the GM/CSF boundary
+%       [surfSlice.firstIntersectionGM,surfSlice.secondIntersectionGM]=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+      surfSlice.contoursWM=computeIntersection(baseCoordMap.tris,innerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+      %and the GM/CSF boundary
+      surfSlice.contoursGM=computeIntersection(baseCoordMap.tris,outerCoords,currentSlice,sliceIndex,rotate, sliceDims);
+
+      view = viewSet(view,'baseCache',surfSlice,baseNum,slice,sliceIndex,rotate,iBase);
+    end
+
+    %plot intersection contours for WM/GM
+    if ~isempty(surfSlice.contoursWM)
+      for i=1:length(surfSlice.contoursWM)
+        line(surfSlice.contoursWM{i}(:,1), surfSlice.contoursWM{i}(:,2),...
+            'color',colors(2*rem(cSurf-1,numberDifferentColors)+1,:),'Parent',axis);
+      end
+    end
+    %and for GM/CSF
+    if ~isempty(surfSlice.contoursWM)
+      for i=1:length(surfSlice.contoursGM)
+        line(surfSlice.contoursGM{i}(:,1), surfSlice.contoursGM{i}(:,2),...
+            'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
+      end
+    end
+%     %plot all the segments between the first and second intersections for WM/GM 
+%     %(this is much slower than plotting connected contours as above)
+%     h = line([surfSlice.firstIntersectionWM(:,1) surfSlice.secondIntersectionWM(:,1)]',...
+%           [surfSlice.firstIntersectionWM(:,2) surfSlice.secondIntersectionWM(:,2)]',...
+%           'color',colors(2*rem(cSurf-1,numberDifferentColors)+1,:),'Parent',axis);
+%     h = line([surfSlice.firstIntersectionGM(:,1) surfSlice.secondIntersectionGM(:,1)]',...
+%           [surfSlice.firstIntersectionGM(:,2) surfSlice.secondIntersectionGM(:,2)]',...
+%           'color',colors(2*rem(cSurf-1,numberDifferentColors)+2,:),'Parent',axis);
+  end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     computeIntersection     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function contours=computeIntersection(triangles,vertices,currentSlice,sliceIndex,rotate, sliceDims)
+axes2D=fliplr(setdiff([1 2 3],sliceIndex)); %axes of the display depending on the base slice index (slice orientation)
+                                             %(this is set in getBaseSlice and axes are switched for unknown reasons)
+switch(mod(rotate,360))   % the order of the slice dimensions depends on the set rotation
+  case {-180,0,180}       % (not sure why, but didn't look into it too much)
+    sliceDims = fliplr(sliceDims);
+  case {-270,-90,90,270}
+end
+
+%look at x and y coordinates of each triangles vertices and keep those
+%that have at least one vertex within sliceDims (irrespective of the z coordinates)
+isWithinSlice = reshape(vertices(triangles,axes2D),[size(triangles) 2]);
+isWithinSlice = any(isWithinSlice(:,:,1)>0.5 & isWithinSlice(:,:,1)<sliceDims(1)+0.5 & ...
+                isWithinSlice(:,:,2)>0.5 & isWithinSlice(:,:,2)<sliceDims(2)+0.5,2);
+triangles = triangles(isWithinSlice,:);
+% axes2D=fliplr(setdiff([1 2 3],sliceIndex));
+%look at the z coordinates of each triangle's vertices and see if it is above (1) or below (-1) the centre of the current slice
+isAboveCurrentSlice = reshape(vertices(triangles,sliceIndex),size(triangles))>currentSlice;
+% we can use this to find
+%1) which triangles to keep (those whose vertices are both above and below the current slice)
+trianglesToKeep = find(any(isAboveCurrentSlice,2) & ~all(isAboveCurrentSlice,2));
+triangles = triangles(trianglesToKeep,:);
+isAboveCurrentSlice = isAboveCurrentSlice(trianglesToKeep,:);
+%2) which sides of the triangles intersect with the current slice (those between vertices that are on both sides of the current slice)
+%find the vertices that are alone on one side of the slice
+loneVertices = [isAboveCurrentSlice(:,1)~=isAboveCurrentSlice(:,2) & isAboveCurrentSlice(:,1)~=isAboveCurrentSlice(:,3) ...
+                isAboveCurrentSlice(:,2)~=isAboveCurrentSlice(:,1) & isAboveCurrentSlice(:,2)~=isAboveCurrentSlice(:,3) ...
+                isAboveCurrentSlice(:,3)~=isAboveCurrentSlice(:,1) & isAboveCurrentSlice(:,3)~=isAboveCurrentSlice(:,2)]';
+triangles = triangles'; %transpose so that we can index more easily
+pairVertices = reshape(triangles(~loneVertices),2,size(triangles,2))';
+loneVertices = triangles(loneVertices);
+%find the intersection between each of these segments and the centre of the current slice
+% firstIntersection = currentSlice*ones(size(triangles,2),3);
+a = (currentSlice-vertices(loneVertices,sliceIndex))./(vertices(pairVertices(:,1),sliceIndex) - vertices(loneVertices,sliceIndex));
+firstIntersection(:,1) = vertices(loneVertices,axes2D(1)) + a .* (vertices(pairVertices(:,1),axes2D(1)) - vertices(loneVertices,axes2D(1)));
+firstIntersection(:,2) = vertices(loneVertices,axes2D(2)) + a .* (vertices(pairVertices(:,1),axes2D(2)) - vertices(loneVertices,axes2D(2)));
+% secondIntersection = currentSlice*ones(size(triangles,2),3);
+b = (currentSlice-vertices(loneVertices,sliceIndex))./(vertices(pairVertices(:,2),sliceIndex) - vertices(loneVertices,sliceIndex));
+secondIntersection(:,1) = vertices(loneVertices,axes2D(1)) + b .* (vertices(pairVertices(:,2),axes2D(1)) - vertices(loneVertices,axes2D(1)));
+secondIntersection(:,2) = vertices(loneVertices,axes2D(2)) + b .* (vertices(pairVertices(:,2),axes2D(2)) - vertices(loneVertices,axes2D(2)));
+
+%apply rotation to 2D coordinates (only working for rotations that are multiples of 90 deg)
+switch mod(rotate,360)
+  case 0
+    %do nothing
+  case {90,-270}
+    %flip x coordinates
+    firstIntersection(:,1) = sliceDims(1)+1 - firstIntersection(:,1);
+    secondIntersection(:,1) = sliceDims(1)+1 - secondIntersection(:,1);
+    %swap x and y
+    firstIntersection = firstIntersection * [0 1 ;1 0];
+    secondIntersection = secondIntersection * [0 1 ;1 0];
+  case {180,-180}
+    %flip x and y coordinates
+    firstIntersection(:,1) = sliceDims(1)+1 - firstIntersection(:,1);
+    firstIntersection(:,2) = sliceDims(2)+1 - firstIntersection(:,2);
+    secondIntersection(:,1) = sliceDims(1)+1 - secondIntersection(:,1);
+    secondIntersection(:,2) = sliceDims(2)+1 - secondIntersection(:,2);
+  case {270,-90}
+    %flip y coordinates
+    firstIntersection(:,2) = sliceDims(2)+1 - firstIntersection(:,2);
+    secondIntersection(:,2) = sliceDims(2)+1 - secondIntersection(:,2);
+    %swap x and y
+    firstIntersection = firstIntersection * [0 1 ;1 0];
+    secondIntersection = secondIntersection * [0 1 ;1 0];
+  otherwise
+    %the more general case would require to figure out how exactly imrotate pads the rotated image
+    %(see getBaseSlice.m). No time to do that + not very useful
+    %However, this is a start, but has not been tested
+    %first need to center the coordinates at the centre of the original (non-rotated) slice 
+    %(not available in this function at the moment)
+    
+    %then rotate the coordinates
+    rotateRad = rotate/180*pi;
+    xform = eye(3);
+    xform(1:2,1:2) = [cos(rotateRad) -sin(rotateRad); sin(rotateRad) cos(rotateRad)];
+    firstIntersection = (xform * [firstIntersection ones(size(firstIntersection,1),1)]')';
+    secondIntersection = (xform * [secondIntersection ones(size(secondIntersection,1),1)]')';
+    
+    %then would need to de-center the coordinates using the dimensions of the rotated image output by imrotate
+    %this depends on how exactly imrotate pads the rotated image and is probably wrong
+    firstIntersection(:,1) = sliceDims(1)/2 + firstIntersection(:,1);
+    firstIntersection(:,2) = sliceDims(2)/2 + firstIntersection(:,2);
+    secondIntersection(:,1) = sliceDims(1)/2 + secondIntersection(:,1);
+    secondIntersection(:,2) = sliceDims(2)/2 + secondIntersection(:,2);
+    
+    % update 22/07/2016: now that imrotate has been replaced by mrImRotate, should be easy to
+    % look inside mrImrotate and take the padding code (probably not worth bothering though)
+end 
+
+%now connect contiguous segments to speed-up plotting
+c=0;
+contours = [];
+while ~isempty(firstIntersection)
+  c=c+1;
+  contours{c} = [firstIntersection(1,:);secondIntersection(1,:)]; % start from first segment coords
+  firstIntersection(1,:)=[];  %remove this segment from  both the first and second intersection segment coords
+  secondIntersection(1,:)=[];
+  % find segment sharing one intersection with first segment
+  % this intersection could be found either in the remaing first or second intersections
+  [~,nextSegment] =  ismember(contours{c}(end,:),firstIntersection,'rows'); 
+  if ~nextSegment
+    [~,nextSegment] =  ismember(contours{c}(end,:),secondIntersection,'rows');
+    foundInFirst = false;
+  else
+    foundInFirst = true;
+  end
+  while nextSegment %repeat while a shared intersection is found
+    if foundInFirst %if the shared intersection is in the first intersections,  
+      %then the next intersection in the contour is in the second
+      contours{c}(end+1,:) = secondIntersection(nextSegment,:); %add it to the list of contour coordinates
+    else %and vice versa
+      contours{c}(end+1,:) = firstIntersection(nextSegment,:);
+    end      
+    firstIntersection(nextSegment,:)=[]; %remove current segment from both
+    secondIntersection(nextSegment,:)=[];  %the first and second intersection coords
+    [~,nextSegment] =  ismember(contours{c}(end,:),firstIntersection,'rows');  % ..etc..
+    if ~nextSegment
+      [~,nextSegment] =  ismember(contours{c}(end,:),secondIntersection,'rows');
+      foundInFirst = false;
+    else
+      foundInFirst = true;
+    end
+  end
+end
+
+function kernel = gaussianKernel2D(FWHM)
+
+sigma_d = FWHM/2.35482;
+w = ceil(FWHM); %deals with resolutions that are not integer
+%make the gaussian kernel large enough for FWHM
+kernelDims = 2*[w w]+1;
+kernelCenter = ceil(kernelDims/2);
+[X,Y] = meshgrid(1:kernelDims(1),1:kernelDims(2));
+kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2)/(2*sigma_d^2)); %Gaussian function
+kernel = kernel./sum(kernel(:));
+
 

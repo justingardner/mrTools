@@ -1,4 +1,4 @@
-function [ver, expectedMatlabVersion,expectedToolboxNames] = mrLoadRetVersion
+function [ver, expectedMatlabVersion,expectedToolboxNames,expectedToolboxIncrements] = mrLoadRetVersion
 %     $Id$	
 
 ver = 4.7;
@@ -13,4 +13,5 @@ else
   expectedToolboxNames = {'Statistics and Machine Learning Toolbox','Image Processing Toolbox','Optimization Toolbox'};
 end
 
+expectedToolboxIncrements = {'statistics_toolbox','image_toolbox','optimization_toolbox'};
 

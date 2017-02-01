@@ -35,8 +35,8 @@ stddev = sqrt( sum( array .* (indices - repmat(average,[1 1 1 nOverlays]) ).^2, 
 
 %correct partial-sampling bias
 if nargout == 4
-  popMean = 0:.1:10 ;
-  popStddev = .1:.1:5 ;
+  popMean = 0:.1:round(nOverlays*1.25) ;
+  popStddev = .1:.1:nOverlays;
   nMeans = length(popMean);
   nStddevs = length(popStddev);
   [sampleAverage,sampleStddev] = meanEstimationBias(popMean,popStddev,1:nOverlays);

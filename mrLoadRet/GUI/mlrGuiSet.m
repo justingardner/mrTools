@@ -206,6 +206,14 @@ switch lower(field)
     end
     set(handles.rotateSlider,'SliderStep',[1 45]./360);
   end		  
+  if isfield(handles,'displayGyrusSulcusBoundaryCheck')
+    if value == 1
+      set(handles.displayGyrusSulcusBoundaryCheck,'Visible','on');
+    else
+      set(handles.displayGyrusSulcusBoundaryCheck,'Visible','off');
+    end
+  end
+  
  case {'basevolume'}
   % Choose the baseVolume
   set(handles.basePopup,'Value',value);
@@ -229,9 +237,16 @@ switch lower(field)
   
  case {'basetilt'}
   % mlrGuiSet(view,'baseMax',value);
+  value = clipToSlider(handles.baseTiltSlider,value,0,1);
   set(handles.baseTiltSlider,'Value',value);
-  set(handles.baseTiltText,'String',thisNum2str(value));
+  set(handles.baseTiltText,'String',num2str(value));
 
+ case {'displaygyrussulcusboundary'}
+  % mlrGuiSet(view,'displaygyrussulcusboundary',value);
+  if isfield(handles,'displayGyrusSulcusBoundaryCheck')
+    set(handles.displayGyrusSulcusBoundaryCheck,'value',value);
+  end
+  
  case {'analysispopup'}
   % mlrGuiSet(view,'analysisPopup',strings);
   set(handles.analysisPopup,'String',value);
@@ -627,11 +642,11 @@ switch lower(field)
     set(handles.sliceSlider,'Value',value);
     set(handles.sliceText,'String',num2str(value));
   end
+  
  case {'slicetext'}
   % mlrGuiSet(view,'sliceText',value);
   handles.coords(handles.sliceOrientation) = value;
   set(handles.sliceText,'String',num2str(value));
-  view = viewSet(view,'curSlice',value);
 
  case {'corticaldepth'} %this sets a single cortical depth, whether there are one or two sliders
   % mlrGuiSet(view,'corticalDepth',value);
@@ -683,8 +698,7 @@ switch lower(field)
   
  case {'rotate'}
   % mlrGuiSet(view,'rotate',value);
-  
-  value = clipToSlider(handles.rotateSlider,value);
+  value = clipToSlider(handles.rotateSlider,value,0,1);
   set(handles.rotateText,'String',num2str(value));
   set(handles.rotateSlider,'Value',value);
 
@@ -698,30 +712,41 @@ end
 guidata(MLR.views{viewNum}.figure,handles);
 
 
-function value = clipToSlider(slider,value,integerFlag)
+function value = clipToSlider(slider,value,integerFlag,loopFlag)
 % Clips value so that it doesn' texceed slider limits.
 % slider is a slider handle
 % value must be a number (otherwise, use current slider value)
 % integerFlag forces value to be an integer
+% loopFlag adds/subtracts the slider range so that the value
+% falls into the range (e.g. for rotate)
 if ieNotDefined('integerFlag')
   integerFlag = 0;
+end
+if ieNotDefined('loopFlag')
+  loopFlag = 0;
 end
 if ~isnumeric(value)
   value = get(slider,'Value');
 end
-if integerFlag
-  if (value < get(slider,'Min'))
-    value = ceil(get(slider,'Min'));
-  end
-  if (value > get(slider,'Max'))
-    value = floor(get(slider,'Max'));
-  end
+if loopFlag
+  modulo = (get(slider,'Max')-get(slider,'Min'));
+  %using complex unit circle to loop:
+  value = (angle(exp(1i*((value-get(slider,'Min'))/modulo*2*pi-pi)))+pi)/2/pi*modulo+get(slider,'Min'); 
 else
   if (value < get(slider,'Min'))
     value = get(slider,'Min');
   end
   if (value > get(slider,'Max'))
     value = get(slider,'Max');
+  end
+end
+if integerFlag
+  value = round(value);
+  if (value < get(slider,'Min'))
+    value = ceil(get(slider,'Min'));
+  elseif (value > get(slider,'Max'))
+    value = floor(get(slider,'Max'));
+  else
   end
 end
 

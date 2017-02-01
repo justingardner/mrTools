@@ -1,19 +1,22 @@
 % computeOverlay.m
 %
 %        $Id$
-%      usage: overlays = computeOverlay(thisView,base2overlay,baseCoordsHomogeneous,baseDims,<alpha>)
+%      usage: overlays = computeOverlay(thisView,base2overlay,baseCoordsHomogeneous,baseDims,<alpha>,<baseNum>)
 %         by: David Heeger
 %       date: 10/16/07
 %    purpose: this used to live within the refreshMLRDisplay
 %             function, but has been pulled out so that it
 %             can be called by other functions (e.g. mrPrint)-jg
 %
-function overlays = computeOverlay(thisView,base2overlay,baseCoordsHomogeneous,baseDims,alpha)
+function overlays = computeOverlay(thisView,base2overlay,baseCoordsHomogeneous,baseDims,alpha,baseNum)
 
 % check arguments
-if ~any(nargin == [4 5])
+if ~any(nargin == [4 5 6])
   help computeOverlay
   return
+end
+if ieNotDefined('baseNum')
+  baseNum = viewGet(thisView,'curbase');
 end
 
 % viewGet some stuff
@@ -25,6 +28,7 @@ scan = viewGet(thisView,'curscan');
 sliceInfo.base2overlay = base2overlay;
 sliceInfo.baseCoordsHomogeneous = baseCoordsHomogeneous;
 sliceInfo.baseDims = [baseDims 1];
+sliceInfo.baseNum = baseNum;
 
 if ~isempty(curOverlays) && scan && viewGet(thisView,'nscans') % there needs to be at least one scan in the group
   curAlphaOverlays = zeros(1,nCurOverlays);
@@ -149,7 +153,7 @@ if ~isempty(overlayImages)
   % that overlays to set the alpha
   alphaOverlayExponent = viewGet(thisView,'alphaOverlayExponent');
   for iOverlay = 1:nCurOverlays
-    if nargin == 4
+    if ieNotDefined('alpha')
       alpha = viewGet(thisView,'alpha',curOverlays(iOverlay));
     end
     if ~curAlphaOverlays(iOverlay)
@@ -235,7 +239,7 @@ if ~isempty(overlayImages)
       
   end
   %alpha based on the alpha slider
-  if nargin == 4
+  if ieNotDefined('alpha')
     alpha = viewGet(thisView,'alpha');
   end
   overlays.alphaMap = alpha*any(overlays.alphaMaps,4);
