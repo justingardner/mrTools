@@ -5,7 +5,7 @@
 %    - stim: struct containing fields x (192x108), y (192x108), and im (192x108x time)
 %    - numVox: number of voxels we want to simulate
 %
-function [simulation, fits_gauss,fits_norm, r2_gauss, r2_norm] = pRFSimulate(stim)
+function [sim, fits_gauss,fits_norm] = pRFSimulate(stim)
 
 % stimImage = stim.im;
 % numVols = size(stimImage, 2);
@@ -34,6 +34,7 @@ end
 if(plotFigs == 1); plot(xVals, yVals, '*'); end
 
 simulation = [];
+disppercent(-inf, sprintf('Creating simulation receptive fields for %d voxels', numVox));
 for i=1:numVox
 
   x_sim = xVals(i); y_sim = yVals(i);
@@ -67,7 +68,13 @@ for i=1:numVox
   %gaussian(i,:) = convolveModelResponseWithHRF(resp, hrf);
   %simulation(i,:) = addWhiteNoise(convolveModelResponseWithHRF(resp./(max(resp) - min(resp)), hrf));
   %simulation(i,:) = convolveModelResponseWithHRF(resp./(max(resp) - min(resp)),hrf);
+
+  disppercent(i/numVox);
 end
+disppercent(inf);
+sim.x = xVals; sim.y = yVals;
+sim.rfWidth = rfWidth;
+sim.tSeries = simulation;
 
 %%% To Do:
 % 1. Compute stimulus image with 464 volumes (equal to s0315 retinotopy)
@@ -75,7 +82,6 @@ end
 % 2. Figure out how to map the huge number of prefit computed voxels to my simulated voxels
 %     -- Prefit computes 7623 (33x33x7) voxels using [prefitx prefity prefitrfHalfWidth] = ndgrid(-0.4:0.025:0.4,-0.4:0.025:0.4,[0.0125 0.025 0.05 0.1 0.25 0.5 0.75]);
 %     so just map my simulated voxels to values from -0.4 to +0.4 in intervals of 0.025
-
 %%% Model Fit: now fit the pRF model to the simulation using 2 different models (rftypes)
 v = newView;
 v = viewSet(v, 'currentGroup', 'Concatenation');
@@ -83,7 +89,7 @@ v = loadAnalysis(v, ['pRFAnal/' 'pRF_v1.mat']);
 analParams = v.analyses{1}.params;
 analParams.pRFFit.quickPrefit=1; % Use quick prefit for 196 voxels instead of 7623
 analParams.pRFFit.verbose = 0; %set verbose to 0 to silence all that annoying printing
-analParams.pRFFit.prefitOnly=1;
+analParams.pRFFit.prefitOnly=0;
 analParams2 = analParams;
 analParams2.pRFFit.rfType='gaussian-divs';
 d = viewGet(v, 'd', analParams.scanNum);
@@ -92,23 +98,21 @@ v = newView;
 
 stimA{1} = stim;
 numVoxels = numVox;
+%numVoxels = 20;
 
 % Compute prefit for all voxels
 disppercent(-inf, sprintf('(pRFSimulate) Computing fits for %d simulated voxels', numVoxels));
 for i = 1:numVoxels
   tSeries = applyConcatFiltering(simulation(i,:), concatInfo);
-  disp(sprintf('Voxel %d', i));
-
+  sim.filteredTSeries(i,:) = tSeries;
   % Run for gaussian model
   fit = pRFFit(v, [], 1, [], [], 'stim', stimA, 'tSeries', tSeries, 'concatInfo', concatInfo, 'fitTypeParams', analParams.pRFFit, 'quickPrefit', true, 'verbose=0');
-  r2_gauss(i) = fit.r2;
   fits_gauss{i} = fit;
 
   % Run for normalization model
   fit2 = pRFFit(v, [], 1, [], [], 'stim', stimA, 'tSeries', tSeries, 'concatInfo', concatInfo, 'fitTypeParams', analParams2.pRFFit, 'quickPrefit', true, 'verbose=0');
-  r2_norm(i) = fit2.r2;
   fits_norm{i} = fit2;
-  disppercent(i/numVoxels);
+  disppercent(i/numVoxels, sprintf('Voxel %d', i));
 end
 disppercent(inf);
 disp(sprintf('(pRFSimulate) Successfully fit model to %d simulated voxels', numVoxels));
@@ -117,25 +121,20 @@ disp(sprintf('(pRFSimulate) Successfully fit model to %d simulated voxels', numV
 
 return
 
-%% Do full pRFFits
-%for i = 1:numVoxels
-%  fit = pRFFit(v, [], [], [], [], 'fitTypeParams', analParams.pRFFit, 'returnPrefit', true);
-%  keyboard
-%  modelFit1(i,:) = pRFFit(v, [], [],[],[], 'stim', stim, 'tSeries', simulation(i,:), 'getModelResponse=1', 'rfType=gaussian',...
-%                          'fitTypeParams', analParams.pRFFit, 'paramsInfo', d.paramsInfo);
-%  modelFit2(i,:) = pRFFit(v, [], [],[],[], 'stim', stim, 'tSeries', simulation(i,:), 'getModelResponse=1', 'rfType=gaussian_divs',...
-%                          'fitTypeParams', analParams.pRFFit, 'paramsInfo', d.paramsInfo);
-%end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% < end of main section > %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%   helper methods below  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%--------------------------------------------
+%----------------------------------------
 %      addWhiteNoise
 % adds gaussian white noise to the signal
+%---------------------------------------
 function response = addWhiteNoise(signal, noiseAmplitude)
 response=signal+sqrt(noiseAmplitude).*randn(1,size(signal,2));
 
-%----------------------------------------------
-%           getCanonicalHRF
+%---------------------------------------
+% getCanonicalHRF
 %   Gets the canonical hrf given params and sample rate
+%---------------------------------------
 function hrf = getCanonicalHRF()
 
 offset = 0;
@@ -159,9 +158,10 @@ gammafun = (amplitude*gammafun+offset);
 hrf.hrf = gammafun;
 hrf.hrf = hrf.hrf / max(hrf.hrf);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%    ~~~ convolveModelWithStimulus ~~~    %%
-
+%---------------------------------------
+% convolveModelWithStimulus
+%      convolve the model response with the stimulus
+%----------------------------------------
 function modelResponse = convolveModelWithStimulus(rfModel, stim)
 
 nStimFrames = size(stim, 3);
@@ -170,10 +170,10 @@ for frameNum = 1:nStimFrames
   modelResponse(frameNum) = sum(sum(rfModel.*stim(:,:,frameNum)));
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%   convolveModelResponseWithHRF   %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%---------------------------------------
+% convolveModelResponseWithHRF
+%      convolve the model response with the HRF
+%----------------------------------------
 function modelTimecourse = convolveModelResponseWithHRF(modelTimecourse,hrf)
 
 n = length(modelTimecourse);
@@ -204,3 +204,8 @@ if isfield(concatInfo,'hipassfilter') && ~isempty(concatInfo.hipassfilter{runnum
 end
 
 % project out the mean vector
+
+% remove the mean
+tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
+
+%tSeries = tSeries(:)';
