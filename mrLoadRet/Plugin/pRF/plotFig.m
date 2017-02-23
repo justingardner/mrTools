@@ -30,12 +30,32 @@ end
 if any(num==7)
   dispWorstModelResponse = 1;
 end
+if any(num==8)
+  drawR2excludingoffscreen = 1;
+end
 
 paramsG = getFieldArrFromStruct(fitsGauss, 'params');
 paramsN = getFieldArrFromStruct(fitsNorm, 'params');
 r2G = getFieldArrFromStruct(fitsGauss, 'r2');
 r2N = getFieldArrFromStruct(fitsNorm, 'r2');
 
+if ~ieNotDefined('drawR2excludingoffscreen')
+  xMin = min(stim.x(:));
+  xMax = max(stim.x(:));
+  yMin = min(stim.y(:));
+  yMax = max(stim.y(:));
+  r2g_1 = []; r2n_1 = []; 
+  for i = 1:196
+    if fitsGauss{i}.x > xMin && fitsGauss{i}.x < xMax && fitsGauss{i}.y > yMin && fitsGauss{i}.y<yMax
+      r2g_1(i) = r2G(i);
+    end
+    if fitsNorm{i}.x > xMin && fitsNorm{i}.x < xMax && fitsNorm{i}.y > yMin && fitsNorm{i}.y<yMax
+      r2n_1(i) = r2N(i);
+    end
+  end
+  figure; plot(r2n_1, 'g'); hold on; plot(r2g_1, 'b'); title('Model r2 plotted by each voxel, excluding bad fits'); xlabel('Voxel Number'); ylabel('R-squared'); legend('Normalization', 'Gaussian');
+  figure; plot(r2n_1(r2n_1(:)~=0), 'g'); hold on; plot(r2g_1(r2g_1(:)~=0), 'b'); title('Model r2 plotted by each voxel, excluding bad fits'); xlabel('Voxel Number'); ylabel('R-squared');
+end
 if ~ieNotDefined('dispTrueRFs') 
   figure;
   for i = 1:196

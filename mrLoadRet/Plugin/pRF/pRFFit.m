@@ -54,7 +54,6 @@ if fitParams.justGetStimImage
   fit = fitParams.stim;
   return
 end
-
 % get the tSeries
 if ~isempty(x)
   % if tSeries was not passed in then load it
@@ -67,7 +66,7 @@ if ~isempty(x)
   % but useful for raw/motionCorrected time series. Also, it is very important that
   % the tSeries is properly mean subtracted
   if ~isfield(fitParams.concatInfo,'hipassfilter')
-    tSeries = percentTSeries(tSeries,'detrend','Linear','spatialNormalization','Divide by mean','subtractMean', 'Yes', 'temporalNormalization', 'No');
+    tSeries = percentTSeries(tSeries,'detrend','spatialNormalization','Divide by mean','subtractMean', 'Yes', 'temporalNormalization', 'No');
   end
   
   % if there are any nans in the tSeries then don't fit
@@ -80,7 +79,6 @@ if ~isempty(x)
 else
   tSeries = [];
 end
-
 % handle junk frames (i.e. ones that have not already been junked)
 if ~isempty(fitParams.junkFrames) && ~isequal(fitParams.junkFrames,0)
   % drop junk frames
@@ -143,7 +141,9 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
   if ~isfield(fitParams.prefit,'modelResponse')
     % get number of workers
     nProcessors = mlrNumWorkers;
-    disppercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
+    if fitParams.verbose==1
+      disppercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
+    end
     % first convert the x/y and width parameters into sizes
     % on the actual screen
     fitParams.prefit.x = fitParams.prefit.x*fitParams.stimWidth;
@@ -184,10 +184,13 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
   if fitParams.prefitOnly
     % return if we are just doing a prefit
     fit = getFitParams(fitParams.initParams,fitParams);
+    fit.modelResponse = fitParams.prefit.modelResponse;
+    fit.tSeries = tSeries;
     fit.rfType = fitParams.rfType;
     fit.params = fitParams.initParams;
     fit.r2 = maxr^2;
     fit.r = maxr;
+    fit.bestFitVoxel = bestModel;
     [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
     % display
     if fitParams.verbose
@@ -298,7 +301,9 @@ if ~isfield(fitParams,'initParams')
     end
   else
     % no constraints allowed
-    disp(sprintf('(pRFFit) !!! Fit constraints ignored for algorithm: %s (if you want to constrain the fits, then use: %s) !!!',fitParams.algorithm,cell2mat(algorithmsWithConstraints)));
+    if fitParams.verbose==1
+      disp(sprintf('(pRFFit) !!! Fit constraints ignored for algorithm: %s (if you want to constrain the fits, then use: %s) !!!',fitParams.algorithm,cell2mat(algorithmsWithConstraints)));
+    end
   end
 end
 
@@ -349,6 +354,11 @@ for i = 1:fitParams.concatInfo.n
   % Get model response, which involves convolving model with stimulus, and with HRF and dropping junk frames.
   thisModelResponse = prfModel('getModelResponse', fitParams, rfModel, hrf, p, i);
   %%%%%%%%%%%%%%%%%%%
+
+  %~~~~~~~~~~
+  %keyboard
+  %~~~~~~~~~~
+
 
   % apply concat filtering
   if isfield(fitParams,'applyFiltering') && fitParams.applyFiltering
@@ -478,7 +488,7 @@ function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
 nStimFrames = size(stim.im,3);
 
 % preallocate memory
-modelResponse = zeros(1,nFrames);
+modelResponse = zeros(1,nStimFrames);
 
 for frameNum = 1:nStimFrames
   % multipy the stimulus frame by frame with the rfModel
