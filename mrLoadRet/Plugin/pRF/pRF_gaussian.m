@@ -107,7 +107,7 @@ function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
 nStimFrames = size(stim.im,3);
 
 % preallocate memory
-modelResponse = zeros(1,nFrames);
+modelResponse = zeros(1,nStimFrames);
 
 for frameNum = 1:nStimFrames
   % multipy the stimulus frame by frame with the rfModel
