@@ -56,7 +56,12 @@ if isstruct(flatFile);
     surf.inner = loadSurfOFF(fullfile(params.path, params.innerCoordsFileName));
     surf.outer = loadSurfOFF(fullfile(params.path, params.outerCoordsFileName));
     surf.curv = loadVFF(fullfile(params.path, params.curvFileName));
-    anat.hdr = mlrImageReadNiftiHeader(fullfile(params.path, params.anatFileName));
+    if isempty(fileparts(params.anatFileName))
+      anatFileName=fullfile(params.path,params.anatFileName);
+    else
+      anatFileName=params.anatFileName;
+    end
+    anat.hdr = mlrImageReadNiftiHeader(anatFileName);
     % now do necessary world2array xformation here
     surf.outer = xformSurfaceWorld2Array(surf.outer,anat.hdr);
     surf.inner = xformSurfaceWorld2Array(surf.inner,anat.hdr);
@@ -69,12 +74,13 @@ if ieNotDefined('params');
 end
 
 
-% get two additional parameters if they were not passed in before
-if ~any(isfield(params, {'threshold', 'flatRes'}));
+% get additional parameters if they were not passed in before
+if ~any(isfield(params, {'threshold', 'flatRes','baseValues'}));
   paramsInfo = {};
+  paramsInfo{end+1} = {'baseValues', {'curvature','thickness'},  'What values to use for the flat patch base amplitudes'};
   paramsInfo{end+1} = {'threshold', 1, 'type=checkbox', 'Whether or not to threshold the flat patch'};
   paramsInfo{end+1} = {'flipFlag', 0, 'type=checkbox', 'Some patches come out flipped.  Use this option to correct this problem'};
-  paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factore by which the resolution of the flat patch is increased'};
+  paramsInfo{end+1} = {'flatRes', 2, 'incdec=[-1 1]', 'Factor by which the resolution of the flat patch is increased'};
   paramsInfo{end+1} = {'flatBaseName', stripext(getLastDir(params.flatFileName)), 'Name of the flat base anatomy'};
   flatParams = mrParamsDialog(paramsInfo,'Flat patch parameters');
   % check for cancel
@@ -82,9 +88,26 @@ if ~any(isfield(params, {'threshold', 'flatRes'}));
     return;
   end
 else
-  flatParams.threshold = params.threshold;
-  flatParams.flatRes = params.flatRes;
-  flatParams.flipFlag = 0;
+  if isfield(params,'baseValues')
+    flatParams.baseValues = params.baseValues;
+  else
+    flatParams.baseValues = 'curvature';
+  end
+  if isfield(params,'threshold')
+    flatParams.threshold = params.threshold;
+  else
+    flatParams.threshold = 1;
+  end
+  if isfield(params,'flatRes')
+    flatParams.flatRes = params.flatRes;
+  else
+    flatParams.flatRes = 2;
+  end
+  if isfield(params,'flipFlag')
+    flatParams.flipFlag = params.flipFlag;
+  else
+    flatParams.flipFlag = 0;
+  end
   flatParams.flatBaseName = stripext(getLastDir(params.flatFileName));
 end
 
@@ -137,7 +160,14 @@ yi = [1:(1/flatParams.flatRes):imSize(2)]';
 yi = flipud(yi);
 
 warning off
-flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
+switch(flatParams.baseValues)
+  case 'curvature'
+    flat.map = griddata(x,y,flat.curvature,xi,yi,'linear');
+  case 'thickness'
+    %compute thickness as the distance between corresponding inner and outer vertices
+    flat.map= sqrt(sum(((flat.locsInner-flat.locsOuter).*repmat(flat.hdr.pixdim(2:4)',size(flat.locsInner,1),1)).^2,2));
+    flat.map = griddata(x,y,flat.map,xi,yi,'linear');
+end
 
 % grid the 3d coords
 for i=1:3
@@ -159,23 +189,28 @@ flat.baseCoordsOuter(~isfinite(flat.baseCoordsOuter)) = 0;
 % now blur image
 flat.blurMap(:,:) = blur(flat.map(:,:));
 % threshold image
-flat.thresholdMap(:,:) = (flat.blurMap(:,:)>nanmedian(flat.blurMap(:)))*0.5+0.25;
+flat.thresholdMap(:,:) = (flat.map(:,:)>nanmedian(flat.map(:)))*0.5+0.25;
 % flat.medianVal = nanmedian(flat.blurMap(:));
 % flat.blurMap(flat.blurMap<flat.medianVal) = -1;
 % flat.blurMap(flat.blurMap>flat.medianVal) = 1;
 flat.thresholdMap = blur(flat.thresholdMap);
-flat.thresholdMap(isnan(flat.map)) = 0;
+flat.thresholdMap(isnan(flat.map)) = NaN;
 
 % now load the anatomy file, so that we can get the vol2mag/vol2tal fields
 v = newView;
-%if extension is hdr, change to img
-[~,~,anatFileExtension] = fileparts(params.anatFileName);
-if strcmp(anatFileExtension,'hdr')
-  anatfileName = setext(params.anatFileName,'img');
+if isempty(fileparts(params.anatFileName))
+  anatFileName=fullfile(params.path,params.anatFileName);
 else
-  anatfileName = params.anatFileName;
+  anatFileName=params.anatFileName;
 end
-v = loadAnat(v,anatfileName,params.path);
+%if extension is hdr, change to img
+[anatPath,anatFileName,anatFileExtension] = fileparts(anatFileName);
+if strcmp(anatFileExtension,'hdr')
+  anatFileName = setext(anatFileName,'img');
+else
+  anatFileName = setext(anatFileName,anatFileExtension);
+end
+v = loadAnat(v,anatFileName,anatPath);
 b = viewGet(v,'base');
 deleteView(v);
 
@@ -205,10 +240,16 @@ if flatParams.threshold
   base.range = [0 1];
   base.clip = [0 1];
 else
-  flat.map(flat.map>1) = 1;
-  flat.map(flat.map<-1) = -1;
-  flat.map = 32*(flat.map+1);
+  switch(flatParams.baseValues)
+    case 'curvature'
+      flat.map(flat.map>1) = 1;
+      flat.map(flat.map<-1) = -1;
+      flat.map = 32*(flat.map+1); %JB: why multiply by 32 ?
+    case 'thickness'   
+  end
   base.data(:,:,1) = flat.map;
+  base.range = [min(min(base.data)) max(max(base.data))];
+  base.clip = [min(min(base.data)) max(max(base.data))];
 end    
 
 % start of coords as inner coords 
@@ -228,8 +269,6 @@ base.coordMap.outerCoords(:,:,1,3) = flat.baseCoordsOuter(:,:,3);
 base.coordMap.dims = flat.hdr.dim([2 3 4])';
 
 % set base
-base.range = [min(min(base.data)) max(max(base.data))];
-base.clip = [0 1.5];
 base.type = 1;
 
 clear global gFlatViewer;

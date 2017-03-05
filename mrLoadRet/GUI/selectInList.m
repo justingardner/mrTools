@@ -92,7 +92,9 @@ if numberInView>1
 end
 
 preselection = zeros(1,numberInView);
-preselection(preselected) = 1;
+if ~nnz(~preselected)
+  preselection(preselected) = 1;
+end
 
 iSel = buttondlg(title, names,preselection);
 if isempty(iSel)

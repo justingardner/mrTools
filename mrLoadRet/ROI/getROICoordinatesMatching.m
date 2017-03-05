@@ -12,8 +12,12 @@
 %             you want to have the same voxels from different sessions. If matchGroupNum
 %             is not specified it is assumed to be the same as the groupNum. This would
 %             usually be run on two scans that have been imported from different sessions
-function scanCoords = getROICoordinatesMatching(v,roiNum,scanNum,matchScanNum,groupNum,matchGroupNum)
+function [scanCoords scan2roi] = getROICoordinatesMatching(v,roiNum,scanNum,matchScanNum,groupNum,matchGroupNum)
 
+% setting scan2roi to [] - JG: this should later
+% add the correct xform (maybe the one from getROICoordinates)
+% didnt have a test for this - so just set to empty for now.
+scan2roi = [];
 scanCoords = [];
 % check arguments
 if ~any(nargin == [4 5 6])
@@ -30,7 +34,7 @@ if ieNotDefined('matchGroupNum')
 end
 
 % get the source coordinates
-matchScanCoords = getROICoordinates(v,roiNum,matchScanNum,matchGroupNum);
+matchScanCoords= getROICoordinates(v,roiNum,matchScanNum,matchGroupNum);
 if size(matchScanCoords,1) == 3
   matchScanCoords(4,:) = 1;
 end

@@ -42,7 +42,7 @@ switch(d.baseType)
   case 1 %if the base is a flat map
     baseCoordMap = viewGet(thisView,'baseCoordMap',baseNum);
     baseDims = viewGet(thisView,'basedims',baseNum);
-    corticalDepthBins = viewGet(thisView,'corticalDepthBins');
+    corticalDepthBins = mrGetPref('corticalDepthBins');
     corticalDepths = viewGet(thisView,'corticaldepth');
     corticalDepthIndices = find((0:1/(corticalDepthBins-1):1)>=corticalDepths(1)-eps & (0:1/(corticalDepthBins-1):1)<=corticalDepths(end)+eps);
     baseDims(3) = length(corticalDepthIndices);

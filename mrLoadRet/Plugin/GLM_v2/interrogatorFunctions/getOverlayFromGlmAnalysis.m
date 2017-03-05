@@ -26,7 +26,23 @@ end
 
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
 
-d = analysis.d{scan};
+nScans=viewGet(thisView,'nscans');
+preSelect = zeros(1,nScans);
+for iScan = 1:nScans
+  if ~isempty(analysis.d{iScan})
+    preSelect(iScan)=1;
+  end
+end
+if sum(preSelect)>1
+  scanlist = selectInList(thisView,'scan','Select scans to include');
+else
+  scanlist = find(preSelect);
+end
+if isempty(scanlist)
+    return;
+end
+
+d = analysis.d{scanlist(1)};
 params.sampleRange = ['1:' num2str(size(d.ehdr,5))];
 valuteTypeMenu = {'er2beta','average','dotProduct','max','delay','diffGammaDelay'};
 
@@ -44,8 +60,9 @@ params.sampleRange = eval(params.sampleRange);
 stimNames = d.stimNames;
 maxNumberConditions = 0;
 
-for iScan = 1:length(analysis.d)
-   d = analysis.d{scan};
+singleValue = cell(1,nScans);
+for iScan = scanlist
+   d = analysis.d{iScan};
    if ~isempty(d)
       dimensions = size(d.ehdr);
       maxNumberConditions = max (maxNumberConditions,dimensions(4)); %this is in case there are different number of conditions between scans
@@ -69,13 +86,14 @@ for iScan = 1:length(analysis.d)
                end
             end
             singleValue{iScan} = NaN(dimensions(1:4));
-            h_wait = waitbar(0,['Computing ' params.valueType 'for scan ' num2str(iScan)]);
+            h_wait = waitbar(0,['Computing ' params.valueType ' for scan ' num2str(iScan)]);
             for z = 1:dimensions(3)
                waitbar(z/dimensions(3),h_wait);
 
                if strcmp(params.valueType,'er2beta')
                    tseries = squeeze(loadTSeries(thisView,iScan,z));
                    tseries = tseries - repmat(mean(tseries,3),[1 1 size(tseries,3)]);
+                   deconvolution_matrix = nan(number_of_samples,dimensions(4));
                end
 
                for x = 1:dimensions(1)
@@ -109,6 +127,8 @@ for iScan = 1:length(analysis.d)
             return
 
       end
+   else
+       mrWarnDlg(sprintf('(getOverlayFromGlmAnalysis) skipping scan %i because analysis is empty',iScan));
    end
 
 end
@@ -126,10 +146,12 @@ outputOverlay.type = 'combination';
 outputOverlay.params = params;
 for iOverlay = 1:dimensions(4)
    outputOverlay.name = [params.valueType '(' stimNames{iOverlay} ')'];
-   outputOverlay.data = cell(1,length(singleValue));
+   outputOverlay.data = cell(1,nScans);
 
-   for iScan = length(singleValue) 
+   for iScan = 1:nScans
+     if ~isempty(singleValue{iScan})
       outputOverlay.data{iScan} = singleValue{iScan}(:,:,:,iOverlay);
+     end
    end
 
    outputOverlay.type = 'beta';

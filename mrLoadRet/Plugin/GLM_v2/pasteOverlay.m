@@ -36,7 +36,7 @@ for iOverlay = 1:length(overlays)
    scan2scan = viewGet(thisView,'scan2scan',1,curGroupNum,1,fromGroupNum);
    scandims = viewGet(thisView, 'scandims', 1);
    overlays(iOverlay).data = cell(1,nScans);
-   if ~all(all((scan2scan - eye(4))<1e-6)) %check if we're in the scan space
+   if ~all(all(abs(scan2scan - eye(4))<1e-6)) %check if we're in the scan space
       %transform values in current scan space
       [Ycoords,Xcoords,Zcoords] = meshgrid(1:scandims(2),1:scandims(1),1:scandims(3));
       for iScan = 1:length(scanList)

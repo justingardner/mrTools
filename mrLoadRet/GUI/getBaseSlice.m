@@ -58,9 +58,9 @@ if ~isempty(volSize)
       % the coordinates to match no matter what rotation is specified. If we use nearest, then we
       % always keep actualy coordinates from the base anatomy. If we interpolate, all bets are off
       % and you get little broken pixels in the ROI when you rotate (or convertROICorticalDepth)
-      newX(:,:,iDepth) = imrotate(x(:,:,iDepth),rotate,'nearest',cropType);
-      newY(:,:,iDepth) = imrotate(y(:,:,iDepth),rotate,'nearest',cropType);
-      newZ(:,:,iDepth) = imrotate(z(:,:,iDepth),rotate,'nearest',cropType);
+      newX(:,:,iDepth) = mrImRotate(x(:,:,iDepth),rotate,'nearest',cropType);
+      newY(:,:,iDepth) = mrImRotate(y(:,:,iDepth),rotate,'nearest',cropType);
+      newZ(:,:,iDepth) = mrImRotate(z(:,:,iDepth),rotate,'nearest',cropType);
     end
     x=newX;
     y=newY;
@@ -90,7 +90,10 @@ if ~isempty(baseData)
       baseIm = squeeze(baseData(:,:,sliceNum));
   end
   if (rotate ~= 0)
-    baseIm = imrotate(baseIm,rotate,'bilinear',cropType);
+    mask = mrImRotate(ones(size(baseIm)),rotate,'bilinear',cropType);
+    baseIm = mrImRotate(baseIm,rotate,'bilinear',cropType);
+    %replace non-existent voxels by NaNs
+    baseIm(~mask)=NaN;
   end
 end
 

@@ -207,11 +207,16 @@ function [surf, params] = loadSurfHandler(params)
 % now load the rest of the surfaces
 
 % read in the anatomy file
-[surf.anat.data  surf.anat.hdr] = mlrImageReadNifti(fullfile(params.path, params.anatFileName));
+if isempty(fileparts(params.anatFileName))
+  anatFileName = fullfile(params.path, params.anatFileName);
+else
+  anatFileName = params.anatFileName;
+end
+[surf.anat.data  surf.anat.hdr] = mlrImageReadNifti(anatFileName);
 % get vol2tal and vol2mag from the anatomy file
-matFileName = [stripext(params.anatFileName) '.mat'];
-if(exist([params.path '/' matFileName]))
-  load([params.path '/' matFileName]);
+matFileName = [stripext(anatFileName) '.mat'];
+if(exist(matFileName))
+  load(matFileName);
   [tf base] = isbase(base);
   params.vol2mag = base.vol2mag;
   params.vol2tal = base.vol2tal;
@@ -256,10 +261,19 @@ mesh.faceIndexList  = surf.inner.tris;
 mesh.rgba           = surf.curv;
 mesh.normal = surf.inner.vtcs - surf.outer.vtcs;
 
+%get base anatomy voxel size
+if isempty(fileparts(params.anatFileName))
+  anatFileName = fullfile(params.path, params.anatFileName);
+else
+  anatFileName = params.anatFileName;
+end
+hdr = cbiReadNiftiHeader(anatFileName);
+voxelSize=hdr.pixdim(2:4);
+
 % run a modified version of the mrFlatMesh code
 % this outputs and flattened surface
 disppercent(-inf,'(makeFlat) Calling flattenSurfaceMFM');
-surf.flat = flattenSurfaceMFM(mesh, [params.x params.y params.z], params.radius);
+surf.flat = flattenSurfaceMFM(mesh, [params.x params.y params.z], params.radius,voxelSize');
 disppercent(inf);
 
 % we need to figure out whether the flattened patch has been flipped

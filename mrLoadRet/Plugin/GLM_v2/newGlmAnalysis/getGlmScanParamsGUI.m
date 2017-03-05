@@ -200,7 +200,7 @@ while keepAsking
 
     %%%%%%%%%%%%%%%%%%%%%%%
     % now we have all the dialog information, ask the user to set parameters
-    if useDefault || (isempty(strfind(stimfile{1}.filetype,'mgl')) && ~strcmp(params.analysisVolume,'Subset box') && ~concatenationOptions)
+    if useDefault
        tempParams = mrParamsDefault(paramsInfo);
     else
        tempParams = mrParamsDialog(paramsInfo,'Set Scan Parameters');
@@ -285,6 +285,7 @@ function preprocess = tryPreProcess(scanParams,d)
 % Try the pre-processing function
 preProcessFailure = 0;
 if ~isempty(scanParams.preprocess)
+  d = getStimvol(d,scanParams);
   [d, preProcessFailure] = eventRelatedPreProcess(d,scanParams.preprocess);
 end
 

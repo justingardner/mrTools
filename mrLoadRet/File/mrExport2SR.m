@@ -44,7 +44,13 @@ if any(new_base_voxel_size ~= viewGet(view,'basevoxelsize',baseNum))
    hdr.sform44 = hdr.qform44;
 end
    
-cbiWriteNifti(sprintf('%s.hdr',stripext(pathstr)), new_overlay_data,hdr);
+% set the file extension
+niftiFileExtension = mrGetPref('niftiFileExtension');
+if isempty(niftiFileExtension)
+  niftiFileExtension = '.img';
+end
+
+cbiWriteNifti(sprintf('%s%s',stripext(pathstr),niftiFileExtension), new_overlay_data,hdr);
 
 return
 

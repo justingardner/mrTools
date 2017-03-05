@@ -26,7 +26,10 @@ switch action
     mlrAdjustGUI(v,'add','menu','Load Dt6','/File/Diffusion/','Callback',@mlrLifeLoadDt6);
     % this menu item allows importation of fascicles as a surface
     mlrAdjustGUI(v,'add','menu','Import fascicles','/File/Base anatomy/Import surface','Callback',@mlrLifeImportFascicles);
-
+    
+    % make sure vista is in path
+    mlrPath mrTools+vista
+    
     % return true to indicate successful plugin
     retval = true;
    end
@@ -48,88 +51,6 @@ v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 % check system
 if ~mlrLifeSystemCheck,return,end
 
-% bring up file dialog to select dt6 file
-global mlrLifePluginStartPathStr;
-if isempty(mlrLifePluginStartPathStr)
-  mlrLifePluginStartPathStr = pwd;
-end
-filterspec = {'dt6.mat','Diffusion tensor 6 parameter file';'*.*','All files'};
-title = 'Choose diffusion tensor 6 parameter file';
-dt6Filename = mlrGetPathStrDialog(mlrLifePluginStartPathStr,title,filterspec,'off');
-if isempty(dt6Filename),return,end
-
-% use mrDiffusion functions to load dti
-[dt, t1, o] = dtiLoadDt6(dt6Filename);
-if isempty(dt),return,end
-
-% save the path
-mlrLifePluginStartPathStr = fileparts(dt6Filename);
-
-% now bring up selection dialog
-paramsInfo = {{'groupName','Diffusion'},...
-	      {'analysisName','Dt6'}};
-params = mrParamsDialog(paramsInfo);
-if isempty(params),return,end
-
-% convert t1 into a MLR anatomy
-% Set required structure fields (additional fields are set to default
-% values when viewSet calls isbase).
-base.name = stripext(stripext(getLastDir(dt.files.t1)));
-base.data = double(t1.img);
-% create a header
-h.dim = size(t1.img);
-[tf h] = mlrImageIsHeader(h);
-h.pixdim = t1.mmPerVoxel;
-h.qform = diag([h.pixdim 1]);
-h.sform = t1.xformToAcpc;
-
-% set nifti header and permutation matrix in base structure
-base.hdr = mlrImageGetNiftiHeader(h);
-base.permutationMatrix = getPermutationMatrix(base.hdr);
-
-% make it a full base
-[tf base] = isbase(base);
-
-% add it to the view
-v = viewSet(v,'newBase',base);
-
-% make group
-v = viewSet(v,'newGroup',params.groupName);
-v = viewSet(v,'curGroup',params.groupName);
-
-% make nifti header for DTI
-h = [];hdr = [];
-h.dim = size(dt.dt6);
-[tf h] = mlrImageIsHeader(h);
-h.pixdim = dt.mmPerVoxel;
-h.qform = diag([h.pixdim 1]);
-h.sform = dt.xformToAcpc;
-hdr = mlrImageGetNiftiHeader(h);
-
-% save tseries
-saveNewTSeries(v,dt.dt6,[],hdr);
-scanNum = viewGet(v,'nScans');
-v = viewSet(v,'curScan',scanNum);
-
-% make the analysis
-a = mlrMakeAnalysis(v,params.analysisName);
-% add the b0 Overlay
-a = mlrMakeAnalysis(v,a,double(o.b0),'overlayName','b0','overlayColormap',hot(312));
-
-% convert RGB image into an indexed image
-cmap = [gray(16);hsv(48);hsv(48)*0.8;hsv(48)*0.6;hsv(48)*0.4;hsv(48)*0.2];
-RGB = reshape(o.vectorRGB,prod(h.dim(1:2)),h.dim(3),3);
-[RGB cmap] = rgb2ind(RGB,cmap,'nodither');
-RGB = reshape(RGB,h.dim(1:3));
-% add it as an overlay
-a = mlrMakeAnalysis(v,a,double(RGB)/size(cmap,1),'overlayName','vectorRGB','overlayColormap',cmap,'overlayRange',[0 1]);
-
-% set the analysis in the view
-v = viewSet(v,'newAnalysis',a);
-% save it
-saveAnalysis(v,a.name);
-% and refresh the display
-refreshMLRDisplay(v);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrLifeImportFascicles    %
@@ -142,59 +63,71 @@ v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 % check system
 if ~mlrLifeSystemCheck,return,end
 
-% Load the fascicles from disk
-[fg, fgFilename] = fgRead;
+% load the diffusion weighted image from which the tracts
+% were made to get the header.
+disp(sprintf('(mlrLifePlugin) Choose diffusion weighted image from which the tracts were made'));
+h = mlrImageHeaderLoad('.');
+if isempty(h),return,end
+
+% cooordinates of tracts are in magnet, so set the sform
+% to convert back to the image coordinates (inverse of qform)
+% and then into the aligned magnet coordiates (sform)
+h.sform = h.sform*inv(h.qform);
+
+% set the codes for magnet coordinates
+h.hdr.qform_code = 1;
+h.hdr.sform_code = 1;
+
+% Put up dialog to choose tractography file
+startPathStr = '.';
+filterspec = {'*.tck','Tractography file'};
+title = 'Choose tractography file to load';
+fgFilename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
+if isempty(fgFilename),return,end
+
+% read the file
+fg = fgRead(fgFilename);
 if isempty(fg), return,end
 
-% bring up file dialog to select dt6 file
-% this is so that we can get the T1 file
-% FIX, FIX, FIX - should find some way to automatically
-% load the T1 file without having the user have to go find it.
-startPathStr = fullfile(fileparts(fgFilename),'..');
-filterspec = {'dt6.mat','Diffusion tensor 6 parameter file';'*.*','All files'};
-title = 'Choose diffusion tensor 6 parameter file';
-dt6Filename = mlrGetPathStrDialog(startPathStr,title,filterspec,'off');
-
-% use mrDiffusion functions to load dti
-[dt, t1, o] = dtiLoadDt6(dt6Filename);
-if isempty(dt),return,end
-
-% Get the header from the T1 so that we have the correct sform etc
-h.dim = size(t1.img);
-[tf h] = mlrImageIsHeader(h);
-h.pixdim = t1.mmPerVoxel;
-h.qform = diag([h.pixdim 1]);
-h.sform = t1.xformToAcpc;
-
-% convert the X, Y, Z coordinates which are in AC/PC back to 3D image coordinates
-huh = h.sform;
-h.sform = eye(4);
-%huh(1,1) = 1*t1.mmPerVoxel(1);
-%huh(2,2) = 1*t1.mmPerVoxel(2);
-%huh(3,3) = 1*t1.mmPerVoxel(3);
-%huh(1,4) = huh(1,4)*t1.mmPerVoxel(1);
-%huh(2,4) = huh(2,4)*t1.mmPerVoxel(2);
-%huh(3,4) = huh(3,4)*t1.mmPerVoxel(3);
-%scaleXform = diag([t1.mmPerVoxel 1]);
-%fg = dtiXformFiberCoords(fg,scaleXform);
-%huh = huh*inv(scaleXform);
-%fg = dtiXformFiberCoords(fg,inv(huh));
+% extract random subset of fibers
+% FOR TESTING ONLY
+nFibers = length(fg.fibers);
+disp(sprintf('(mlrLifePlugin) Found %i fibers',nFibers));
+params = mrParamsDialog({{'nFibersForTesting',5000,'Number of fibers to test on','min',1,'max',nFibers,'incdec',[-1000 1000]}},'Choose number of random fibers to load - this is for testing only');
+if isempty(params),return,end
+fg = fgExtract(fg, randsample(1:length(fg.fibers), params.nFibersForTesting),'keep');
 
 % Build frames from the fascicles
 [X, Y, Z] = mbaBuildFascicleFrame(fg.fibers);
-%[Y, X, Z] = mbaBuildFascicleFrame(fg.fibers);
 
 % number of fascicles
 nFascicles = length(X);
 
+% initialize bounding box
+xMin= inf;yMin = inf;zMin = inf;
+xMax = -inf;yMax = -inf;zMax = -inf;
+
 % Build a patch from the frame
 nTotalVertices = 0;nTotalTris = 0;
+disppercent(-inf,'(mlrLifeImportFascicles) Making fascicle surface');
 for i = 1:nFascicles
   fasciclePatches{i} = surf2patch(X{i},Y{i},Z{i},'triangles');
   % compute how many vertices and tris we have all together
   nTotalVertices = size(fasciclePatches{i}.vertices,1) + nTotalVertices;
   nTotalTris = size(fasciclePatches{i}.faces,1) + nTotalTris;
+  disppercent(i/nFascicles);
+  % calculate bounding box
+  xMin = min(xMin,min(fasciclePatches{i}.vertices(:,1)));
+  xMax = max(xMax,max(fasciclePatches{i}.vertices(:,1)));
+  yMin = min(yMin,min(fasciclePatches{i}.vertices(:,2)));
+  yMax = max(yMax,max(fasciclePatches{i}.vertices(:,2)));
+  zMin = min(zMin,min(fasciclePatches{i}.vertices(:,3)));
+  zMax = max(zMax,max(fasciclePatches{i}.vertices(:,3)));
 end
+disppercent(inf);
+
+% display bounding box of coordinates
+disp(sprintf('(mlrLifePlugin) Bounding box x: %0.1f %0.1f y: %0.1f %0.1f z: %0.1f %0.1f',xMin,xMax,yMin,yMax,zMin,zMax));
 
 % create an MLR base structure
 fascicleBase.name = fixBadChars(fg.name);
@@ -214,7 +147,7 @@ fascicleBase.coordMap.outerSurfaceFileName = getLastDir(fgFilename);
 fascicleBase.coordMap.innerCoordsFileName = getLastDir(fgFilename);
 fascicleBase.coordMap.outerCoordsFileName = getLastDir(fgFilename);
 fascicleBase.coordMap.curvFileName = '';
-fascicleBase.coordMap.anatFileName = dt.files.t1;
+fascicleBase.coordMap.anatFileName = fgFilename;
 
 % initalize fields
 fascicleBase.data = [];

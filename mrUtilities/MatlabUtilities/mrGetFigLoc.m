@@ -40,7 +40,7 @@ if isunix && strcmp(version,'7.14.0.739 (R2012a)') %some bugs in that version, d
 %   disp(['Position ' mat2str(get(h,'position'))]);
 end
 
-if ~verLessThan('matlab','8.4') && ~isempty(pos)
+if ~verLessThan('matlab','8.4') && ~ispc && ~isunix && ~isempty(pos)  
   pos(2) = pos(2)+30;
 end
   

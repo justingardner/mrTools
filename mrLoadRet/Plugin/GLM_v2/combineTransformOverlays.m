@@ -1,108 +1,157 @@
-function combineTransformOverlays(thisView)
-% combineTransformOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
+function [thisView,params] = combineTransformOverlays(thisView,params,varargin)
+% [thisView,params] = combineTransformOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
 %
 %   combines (masked) Overlays according to matlab or custom operators  in current view and current analysis
 %
 % jb 07/07/2010
+%             to just get a default parameter structure:
+% 
+%             v = newView;
+%             [v params] = combineTransformOverlays(v,[],'justGetParams=1');
+%             [v params] = combineTransformOverlays(v,[],'justGetParams=1','defaultParams=1');
+%             [v params] = combineTransformOverlays(v,[],'justGetParams=1','defaultParams=1','overlayList=[1 2]');
 %
 % $Id$
 
 inputOutputTypeMenu = {'3D Array','4D Array','Scalar','Structure'};
 combinationModeMenu = {'Apply function to all overlays','Apply function to each overlay','Recursively apply to overlay pairs'};
 
+% other arguments
+eval(evalargs(varargin));
+if ieNotDefined('justGetParams'),justGetParams = 0;end
+if ieNotDefined('defaultParams'),defaultParams = 0;end
+
 %default params
-%get names of combine Functions in combineFunctions directory
-functionsDirectory = [fileparts(which('combineTransformOverlays')) '/combineTransformOverlayFunctions/'];
-combineFunctionFiles =  dir([functionsDirectory '*.m']);
-for iFile=1:length(combineFunctionFiles)
-  combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
-end
+% First get parameters
+if ieNotDefined('params')
+  %get names of combine Functions in combineFunctions directory
+  functionsDirectory = [fileparts(which('combineTransformOverlays')) '/combineTransformOverlayFunctions/'];
+  combineFunctionFiles =  dir([functionsDirectory '*.m']);
+  for iFile=1:length(combineFunctionFiles)
+    combineFunctions{iFile} = stripext(combineFunctionFiles(iFile).name);
+  end
 
-combineFunctionsMenu = [{'User Defined'} combineFunctions];
-params.customCombineFunction = '';%(''@(x)max(0,-norminv(x))';
-params.nOutputOverlays = 1;
-params.additionalArrayArgs = '';
-params.additionalArgs = '';
-params.clip = 0;
-params.alphaClip = 0;
-params.passView = 0;
-params.baseSpace = 0;
-baseSpaceInterpMenu = {'Same as display','nearest','linear','spline','cubic'};
-params.exportToNewGroup = 0;
-params.outputName = '';
-if viewGet(thisView,'basetype')~=1
-  baseSpaceOption='enable=0';
-else
-  baseSpaceOption='enable=1';
-end
+  %get names of combine functions in additional folder(s)
+  overlayCombineTransformPaths = commaDelimitedToCell(mrGetPref('overlayCombineTransformPaths'));
+  for i = 1:length(overlayCombineTransformPaths)
+    overlayCombineTransformFiles =  dir([overlayCombineTransformPaths{i} '/*.m']);
+    for iFile=1:length(overlayCombineTransformFiles)
+       combineFunctions{end+1} = stripext(overlayCombineTransformFiles(iFile).name);
+    end
+  end
 
-askForParams = 1;
-while askForParams
-  params = {...
-   {'combineFunction',combineFunctionsMenu,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
-   {'customCombineFunction',params.customCombineFunction,'name of the function to apply. You can use any type of matlab function (including custom) that accepts either scalars or multidimensional arrays. Any string beginning with an @ will be considered an anonymous function and shoulde be of the form @(x)func(x), @(x,y)func(x,y) ..., where the number of variables equals the number of overlay inputs and additional arguments. '},...
-   {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' will pass each input overlay as a 3D array. ''Scalar'' will apply the function to each element of the input overlay(s). ''4D Array'' wil concatenate overlays on the 4th dimension and pass the 4D array as a single argument to the function. 3D and 4D array are faster that but not all functions accept multidimensional arrays as inputs. Use ''4D Array'' for functions that operate on one dimension of an array (e.g. mean) and specify the dimension as an additional scalar argument (usually 4). Choose ''Structure'' to pass the whole overlay structure'},...
-   {'combinationMode',combinationModeMenu,'type=popupmenu', 'How the selected overlays are input ot the combineFunction. If ''all'', all the selected overlays are given as input at once (the number of inputs expected by the function must match the number of selected overlays). If ''each'', the combine function is run separately for each overlay and must accept only one input overlay). If ''pair'', the combineFunction is run on pairs of consecutive selected overlays and must accept two input overlays.'},...
-   {'nOutputOverlays',params.nOutputOverlays,'incdec=[-1 1]','round=1','minmax=[0 Inf]','Number of outputs of the combineFunction'},...
-   {'additionalArrayArgs',params.additionalArrayArgs,'constant arguments for functions that accept them. Arguments must be separated by commas. for Array input/output type, each argument will be repeated in a matrix of same dimensions of the overlay '},...
-   {'additionalArgs',params.additionalArgs,'constant scalar arguments for functions that take both arrays and scalars. These arguments will be input at the end of each function call. They must be separated by commas. If using vector argument, do not use commas inside square brackets. '},...
-   {'passView',params.passView,'type=checkbox','Check this if the function requires the current mrLoadRet view'},...
-   {'clip',params.clip,'type=checkbox','Mask overlays according to clip values'},...
-   {'alphaClip',params.alphaClip,'type=checkbox','Mask overlays according to alpha overlay clip values'},...
-   {'baseSpace',params.baseSpace,'type=checkbox',baseSpaceOption,'Transforms overlays into the current base volume before applying the transform/combine function, and back into overlay space afterwards. Only implemented for flat maps (all cortical depths are used).'},...
-   {'baseSpaceInterp',baseSpaceInterpMenu,'type=popupmenu','contingent=baseSpace','Type of base space interpolation '},...
-   {'exportToNewGroup',params.exportToNewGroup,'type=checkbox','contingent=baseSpace','Exports results in base sapce to new group, scan and analysis. Warning: for flat maps, the data is exported to a volume in an arbitrary space. ROIs and overlays defined outside this new group will not be in register.'},...
-   {'outputName',params.outputName,'radical of the output overlay names'},...
-   {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
-          };
-  params = mrParamsDialog(params, 'Overlay Combination parameters');
-  % Abort if params empty
-  if ieNotDefined('params'),return,end
-  if strcmp(params.combineFunction,'User Defined')
-    params.combineFunction = params.customCombineFunction;
-  end 
-  if isempty(params.baseSpace)
-    params.baseSpace=0;
+  combineFunctions = sort(combineFunctions);
+  combineFunctionsMenu = [{'User Defined'} combineFunctions];
+  if defaultParams
+    combineFunctionsMenu = putOnTopOfList(combineFunctionsMenu{2},combineFunctionsMenu);
   end
-  if isempty(params.exportToNewGroup)
-    params.exportToNewGroup=0;
-  end
-  if strcmp(params.baseSpaceInterp,'Same as display')
-    baseSpaceInterp='';
+  params.customCombineFunction = '';%(''@(x)max(0,-norminv(x))';
+  params.nOutputOverlays = 1;
+  params.additionalArrayArgs = '';
+  params.additionalArgs = '';
+  params.clip = 0;
+  params.alphaClip = 0;
+  params.passView = 0;
+  params.baseSpace = 0;
+  baseSpaceInterpMenu = {'Same as display','nearest','linear','spline','cubic'};
+  params.exportToNewGroup = 0;
+  params.outputName = '';
+  if viewGet(thisView,'basetype')~=1
+    baseSpaceOption='enable=0';
   else
-    baseSpaceInterp=params.baseSpaceInterp;
+    baseSpaceOption='enable=1';
   end
-  
-  inputOutputTypeMenu = putOnTopOfList(params.inputOutputType,inputOutputTypeMenu);
-  combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
-  combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
-  baseSpaceInterpMenu = putOnTopOfList(params.baseSpaceInterp,baseSpaceInterpMenu);
-  
-  if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
-    mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively.');
-  elseif isempty(params.combineFunction) || (strcmp(params.combineFunction,'User Defined') && isempty(params.customCombineFunction))
-    mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function.');
-  elseif (params.clip || params.alphaClip) && params.baseSpace
-    mrWarnDlg('(combineTransformOverlays) Base space conversion is not yet compatible with using (alpha) masking.');
-  %elseif
-    %other controls here
-  else
-    askForParams = 0;
-    overlayList = selectInList(thisView,'overlays');
-    if isempty(overlayList)
-       askForParams = 1;
+
+  askForParams = 1;
+  while askForParams
+    params = {...
+     {'combineFunction',combineFunctionsMenu,'type=popupmenu','name of the function to apply. This is a list of existing combine functions in the combineFunctions directory. To use another function, select ''User Defined'' and type the function name below'},...
+     {'customCombineFunction',params.customCombineFunction,'name of the function to apply. You can use any type of matlab function (including custom) that accepts either scalars or multidimensional arrays. Any string beginning with an @ will be considered an anonymous function and shoulde be of the form @(x)func(x), @(x,y)func(x,y) ..., where the number of variables equals the number of overlay inputs and additional arguments. '},...
+     {'inputOutputType',inputOutputTypeMenu,'type=popupmenu','Type of arguments accepted by the combination function. ''3D Array'' will pass each input overlay as a 3D array. ''Scalar'' will apply the function to each element of the input overlay(s). ''4D Array'' wil concatenate overlays on the 4th dimension and pass the 4D array as a single argument to the function. 3D and 4D array are faster that but not all functions accept multidimensional arrays as inputs. Use ''4D Array'' for functions that operate on one dimension of an array (e.g. mean) and specify the dimension as an additional scalar argument (usually 4). Choose ''Structure'' to pass the whole overlay structure'},...
+     {'combinationMode',combinationModeMenu,'type=popupmenu', 'How the selected overlays are input ot the combineFunction. If ''all'', all the selected overlays are given as input at once (the number of inputs expected by the function must match the number of selected overlays). If ''each'', the combine function is run separately for each overlay and must accept only one input overlay). If ''pair'', the combineFunction is run on pairs of consecutive selected overlays and must accept two input overlays.'},...
+     {'nOutputOverlays',params.nOutputOverlays,'incdec=[-1 1]','round=1','minmax=[0 Inf]','Number of outputs of the combineFunction'},...
+     {'additionalArrayArgs',params.additionalArrayArgs,'constant arguments for functions that accept them. Arguments must be separated by commas. for Array input/output type, each argument will be repeated in a matrix of same dimensions of the overlay '},...
+     {'additionalArgs',params.additionalArgs,'constant scalar arguments for functions that take both arrays and scalars. These arguments will be input at the end of each function call. They must be separated by commas. If using vector argument, do not use commas inside square brackets. '},...
+     {'passView',params.passView,'type=checkbox','Check this if the function requires the current mrLoadRet view'},...
+     {'clip',params.clip,'type=checkbox','Mask overlays according to clip values'},...
+     {'alphaClip',params.alphaClip,'type=checkbox','Mask overlays according to alpha overlay clip values'},...
+     {'baseSpace',params.baseSpace,'type=checkbox',baseSpaceOption,'Transforms overlays into the current base volume before applying the transform/combine function, and back into overlay space afterwards. Only implemented for flat maps (all cortical depths are used).'},...
+     {'baseSpaceInterp',baseSpaceInterpMenu,'type=popupmenu','contingent=baseSpace','Type of base space interpolation '},...
+     {'exportToNewGroup',params.exportToNewGroup,'type=checkbox','contingent=baseSpace','Exports results in base sapce to new group, scan and analysis. Warning: for flat maps, the data is exported to a volume in an arbitrary space. ROIs and overlays defined outside this new group will not be in register.'},...
+     {'outputName',params.outputName,'radical of the output overlay names'},...
+     {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
+            };
+          
+    % Initialize analysis parameters with default values
+    if defaultParams
+      params = mrParamsDefault(params);
+    else
+      params = mrParamsDialog(params, 'Overlay Combination parameters');
+    end
+
+    % Abort if params empty
+    if ieNotDefined('params'),return,end
+    if isempty(params.baseSpace)
+      params.baseSpace=0;
+    end
+    if isempty(params.exportToNewGroup)
+      params.exportToNewGroup=0;
+    end
+
+    inputOutputTypeMenu = putOnTopOfList(params.inputOutputType,inputOutputTypeMenu);
+    combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
+    combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
+    baseSpaceInterpMenu = putOnTopOfList(params.baseSpaceInterp,baseSpaceInterpMenu);
+
+    if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
+      mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively.');
+    elseif isempty(params.combineFunction) || (strcmp(params.combineFunction,'User Defined') && isempty(params.customCombineFunction))
+      mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function.');
+    elseif (params.clip || params.alphaClip) && params.baseSpace && viewGet(thisView,'basetype')~=1
+      mrWarnDlg('(combineTransformOverlays) Base space conversion is not yet compatible with using (alpha) masking.');
+    %elseif
+      %other controls here
+    else
+      askForParams = 0;
+      if defaultParams
+        params.overlayList = viewGet(thisView,'curOverlay');
+      else
+        params.overlayList = selectInList(thisView,'overlays');
+        if isempty(params.overlayList)
+           askForParams = 1;
+        end
+      end
     end
   end
 end
+
+if ~ieNotDefined('overlayList')
+  params.overlayList = overlayList;
+end
+if strcmp(params.combineFunction,'User Defined')
+  params.combineFunction = params.customCombineFunction;
+end 
+
+% if just getting params then return
+if justGetParams,return,end
+
 set(viewGet(thisView,'figNum'),'Pointer','watch');drawnow;
+
+if strcmp(params.baseSpaceInterp,'Same as display')
+  baseSpaceInterp='';
+else
+  baseSpaceInterp=params.baseSpaceInterp;
+end
+
 
 %get the overlay data
 nScans = viewGet(thisView,'nScans');   
 overlayData = viewGet(thisView,'overlays');
-overlayData = overlayData(overlayList);
+overlayData = overlayData(params.overlayList);
 if params.baseSpace
   base2scan = viewGet(thisView,'base2scan');
-  if any(any(abs(base2scan - eye(4))>1e-6)) || viewGet(thisView,'basetype')>0 %check if we're in the scan space
+  baseType = viewGet(thisView,'basetype');
+  if any(any(abs(base2scan - eye(4))>1e-6)) || baseType > 0 %check if we're in the scan space
     baseCoordsMap=cell(nScans,1);
     %if not, transform the overlay to the base space
     for iScan = 1:nScans
@@ -119,8 +168,25 @@ end
 %   Rk: to implement conversion to base space with masking/clip masking, it would be better
 %   to get both the overlays and masks at the same time and use maskoverlay
 %   with the boxInfo option
+if params.clip || params.alphaClip
+  if params.baseSpace && baseType==1  %this will only work for flat maps (because for volumes, getBaseSlice only gets one slice, unless base2scan is the identity)
+    boxInfo.baseNum = viewGet(thisView,'curbase');
+    [~,~,boxInfo.baseCoordsHomogeneous] = getBaseSlice(thisView,viewGet(thisView,'curslice'),viewGet(thisView,'baseSliceIndex'),viewGet(thisView,'rotate'),boxInfo.baseNum,baseType);
+    boxInfo.base2overlay = base2scan;
+    boxInfo.baseDims = viewGet(thisView,'basedims');
+    boxInfo.interpMethod = baseSpaceInterp;
+    boxInfo.interpExtrapVal = NaN;
+    boxInfo.corticalDepth = [0 1];
+  elseif ~params.baseSpace
+    boxInfo=[];
+  else
+    mrWarnDlg('(combineTransformOverlays) (Alpha) masking is not yet implemented for conversion to bases other than flat.');
+    return
+  end
+end
+  
 if params.clip
-   mask = maskOverlay(thisView,overlayList);
+   mask = maskOverlay(thisView,params.overlayList,1:nScans,boxInfo);
    for iScan = 1:length(mask)
       for iOverlay = 1:length(overlayData)
         if ~isempty(overlayData(iOverlay).data{iScan})
@@ -134,7 +200,7 @@ if params.alphaClip
   for iOverlay = 1:length(overlayData)
     alphaOverlayNum(iOverlay) = viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay);
   end
-  mask = maskOverlay(thisView,alphaOverlayNum);
+  mask = maskOverlay(thisView,alphaOverlayNum,1:nScans,boxInfo);
   for iScan = 1:length(mask)
     for iOverlay = 1:length(overlayData)
       if alphaOverlayNum(iOverlay) &&  ~isempty(overlayData(iOverlay).data{iScan})
@@ -145,7 +211,7 @@ if params.alphaClip
 end
 
 %overlay names
-for iOverlay = 1:length(overlayList)
+for iOverlay = 1:length(params.overlayList)
   overlayNames{iOverlay} = overlayData(iOverlay).name;
 end
 
@@ -154,8 +220,8 @@ switch(params.inputOutputType)
   case 'Structure'
     overlayData = num2cell(overlayData);
   case {'3D Array','4D Array','Scalar'}
-    newOverlayData = cell(nScans,length(overlayList));
-    for iOverlay = 1:length(overlayList)
+    newOverlayData = cell(nScans,length(params.overlayList));
+    for iOverlay = 1:length(params.overlayList)
       for iScan = 1:nScans
         newOverlayData{iScan,iOverlay} = overlayData(iOverlay).data{iScan};
       end
@@ -182,7 +248,7 @@ additionalArgs = parseArguments(params.additionalArgs,',');
 %convert overlays to cell arrays if scalar function
 if strcmp(params.inputOutputType,'Scalar')
    for iScan = 1:nScans
-      for iOverlay = 1:length(overlayList)
+      for iOverlay = 1:length(params.overlayList)
          overlayData{iScan,iOverlay} = num2cell(overlayData{iScan,iOverlay}); %convert overlays to cell arrays
       end
    end
@@ -285,8 +351,9 @@ for iOperations = 1:size(overlayData,3)
          eval(functionString);
 %          toc
       catch exception
-         mrWarnDlg(sprintf('There was an error evaluating function %s:\n%s',combineFunctionString,getReport(exception,'basic')));
-         return
+        mrWarnDlg(sprintf('There was an error evaluating function %s:\n%s',combineFunctionString,getReport(exception,'basic')));
+        set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
+        return
       end
       for iOutput = 1:params.nOutputOverlays
     %          if  strcmp(params.inputOutputType,'Scalar')

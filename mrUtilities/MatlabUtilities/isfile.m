@@ -20,11 +20,14 @@ fid = fopen(filename,'r');
 
 % check to see if there was an error
 if (fid ~= -1)
-  % check to see if this is the correct path (cause matlab can open
-  % files anywhere in the path)
-  if (length(filename)>=1) && ~isequal(filename(1),filesep)
-    openname = fopen(fid);
-    if ~strcmp(fullfile(pwd,filename),openname)
+  % check to see if this is the correct path 
+  if (~ispc && length(filename)>=1 && ~isequal(filename(1),filesep)) ... %checks whether filename was given as absolute or relative path
+      || (ispc && length(filename)>=2 && (~isequal(filename(2),':') && ~ismember(filename(2),'/\'))) %on windows, an absolute path can include the disk identifier or use different separators 
+      %if relative path, matlab might have opened a file with this name because it exists
+      %somewhere in the path and not because it exists in the current directory (which is what we want to know)
+%     openname = fopen(fid);
+%     if ~strcmp(fullfile(pwd,filename),openname)
+    if ~isempty(which(filename)) && ~strcmp(fullfile(pwd,filename),which(filename)) %using which instead of fopen, because older versions of matlab didn't return the full path
       %disp(sprintf('(isfile) Found file %s, but not in current path',openname));
       isit = false;
       fclose(fid);

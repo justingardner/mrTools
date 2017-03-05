@@ -81,7 +81,11 @@ else
       hold on;
       key=1;
       while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) && key==1
-        [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
+        if ~isempty(selectionY)
+          [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
+        else
+          index=0;
+        end
         if index
           delete(hSelection(:,index));
           hSelection(:,index)=[];
@@ -156,11 +160,11 @@ else
         mask = any(all(mask,5),4);
 
         base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
-        if any(any((base2scan - eye(4))>1e-6)) %check if we're in the scan space
+        if any(any((base2scan - eye(4))>1e-6)) || baseType>0 %check if we're in the scan space
            %if not, transform the mask to the base space
            mrWarnDlg('This would be faster and more accurate if the base space was identical to the scan space');
            interpMethod = 'nearest';
-           [mask, dump, maskBaseCoords] = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum,interpMethod,[],viewGet(thisView,'rotate'));
+           [mask, dump, maskBaseCoords] = getBaseSpaceOverlay(thisView, double(mask), scanNum, baseNum, interpMethod);
            mask(isnan(mask))=0;
            
            %Rk: may be would be better to apply the transformation when computeing the mask

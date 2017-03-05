@@ -27,7 +27,9 @@ switch action
     % add the popup with the names of bases
     mlrAdjustGUI(v,'add','control','multiBaseListbox','panel','Multiple base display','style','popupmenu','position', [0.01    0.92    0.98   0.07 ],'Callback',@multiBaseListboxSelect,'String',{'empty'},'Value',1);
     % add checkbox for multi base viewing
-    mlrAdjustGUI(v,'add','control','multiBaseCheckbox','panel','Multiple base display','style','checkbox','position', [0.01    0.84    0.98   0.07 ],'String','MultiDisplay','Callback',@multiBaseCheckbox);
+    mlrAdjustGUI(v,'add','control','multiBaseCheckbox','panel','Multiple base display','style','checkbox','position', [0.01    0.84    0.48   0.07 ],'String','MultiDisplay','Callback',{@multiBaseCheckbox,'base'});
+    % add checkbox for multi base contour viewing
+    mlrAdjustGUI(v,'add','control','multiBaseContoursCheckbox','panel','Multiple base display','style','checkbox','position', [0.51    0.84    0.48   0.07 ],'String','Contours','Callback',{@multiBaseCheckbox,'contours'});
     % add slider for alpha
     mlrAdjustGUI(v,'add','control','multiBaseAlphaText','panel','Multiple base display','style','text','position', [0.01    0.76    0.2   0.07 ],'String','Alpha');
     mlrAdjustGUI(v,'add','control','multiBaseAlphaSlider','panel','Multiple base display','style','slider','position', [0.22    0.76    0.57   0.07 ],'String','Alpha','SliderStep',[0.1 0.25],'Callback',@multiBaseAlpha);
@@ -92,8 +94,12 @@ switch action
    end
  % return a help string
  case {'help','h','?'}
-   retval = 'This is an example plugin, it just installs a menu item to Select Plugins.';
- otherwise
+   retval = ['The mlrAnatomy plugin adds the following base anatomy display features:',...
+             '     - Multiple base display (e.g. surface overlayd on 3D view of volume slices)',...
+             '     - 3D Fascicle display',...
+             '     - reslicing of volumes in any plane',...
+             '     - display of surface intersection with volume slice'];
+ otherwise 
    disp(sprintf('(mlrAnatomyPlugin) Unknown command %s',action));
 end
 
@@ -275,6 +281,7 @@ end
   
   % set the various properties
   mlrAdjustGUI(v,'set','multiBaseCheckbox','Value',base.multiDisplay);
+  mlrAdjustGUI(v,'set','multiBaseContoursCheckbox','Value',base.multiDisplayContours);
   % set alpha
   if isempty(base.alpha) alpha = 1;else alpha = base.alpha;end
   mlrAdjustGUI(v,'set','multiBaseAlphaSlider','Value',alpha);
@@ -315,7 +322,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    multiBaseCheckbox    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-function multiBaseCheckbox(hObject,eventdata)
+function multiBaseCheckbox(hObject,eventdata,option)
 
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
@@ -329,9 +336,15 @@ selectedVal = get(multiBaseListbox,'Value');
 if ~isempty(selectedVal) && (selectedVal>0) && (selectedVal <= length(baseNames))
   % get base num
   baseNum = viewGet(v,'baseNum',baseNames{selectedVal});
-
-  % set the base multiBase
-  v = viewSet(v,'baseMultiDisplay',get(hObject,'Value'),baseNum);
+  
+  switch(option)
+    case 'base'
+      % set the base multiBase
+      v = viewSet(v,'baseMultiDisplay',get(hObject,'Value'),baseNum);
+    case 'contours'
+      % set the base multiDisplayContours
+      v = viewSet(v,'baseMultiDisplayContours',get(hObject,'Value'),baseNum);
+  end
 
   % redisplay
   refreshMLRDisplay(v);

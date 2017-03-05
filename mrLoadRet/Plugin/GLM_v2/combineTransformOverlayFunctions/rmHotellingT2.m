@@ -9,7 +9,8 @@
 
 function [P,N,T2] = rmHotellingT2(varargin)
 
-justDoCentralSlice=true;
+justDoCentralSlice=false;
+average5CentralSlices = false;
 
 amplitudePhase=false;
 
@@ -51,6 +52,11 @@ if justDoCentralSlice
   oldKkk=kkk;
   kkk=1;
   X = X(:,:,ceil(oldKkk/2),:,:);
+elseif average5CentralSlices
+  mrWarnDlg('(rmHotellingT2) Averaging 5 central slices and restricting analysis to this');
+  oldKkk=kkk;
+  kkk=1;
+  X = nanmean(X(:,:,ceil(oldKkk/2)+(-2:2),:,:),3);
 end
 
 X=reshape(X,[k*kk*kkk n p]);
@@ -96,7 +102,7 @@ T2=reshape(T2,[k kk kkk]);
 P=reshape(P,[k kk kkk]);
 N=reshape(N,[k kk kkk]);
 
-if justDoCentralSlice
+if justDoCentralSlice || average5CentralSlices
     T2=repmat(T2,[1 1 oldKkk]);
     T2(:,:,[1:ceil(oldKkk/2)-1 ceil(oldKkk/2)+1:11])=NaN;
     P=repmat(P,[1 1 oldKkk]);    

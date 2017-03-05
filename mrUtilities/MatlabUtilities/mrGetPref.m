@@ -30,16 +30,17 @@ function [value prefDefaults] = mrGetPref(pref)
 % with no arguments, return a list of possible preferences
 prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'...
    'maxBlocksize','roiCacheSize','baseCacheSize','overlayCacheSize','defaultPrecision',...
-   'defaultInterrogators','systemInterrogators',...,
+   'defaultInterrogators','systemInterrogators','interrogatorPaths',...,
    'importROIPath','volumeDirectory','niftiFileExtension','fslPath',...
    'selectedROIColor','roiContourWidth','roiPolygonMethod',...,
-   'interpMethod','corticalDepthBins','roiCorticalDepthDisplayRatio', 'multiSliceProjectionMethod','colorBlending',...
+   'interpMethod','corticalDepthBins','roiCorticalDepthDisplayRatio', 'multiSliceProjectionMethod','colorBlending','baseNaNsColor',...
    'pluginPaths','selectedPlugins',...
    'statisticalTestOutput',...
    'site','magnet','coil','pulseSequence',...
    'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
    'mlrVolDisplayControls','mlrVolOverlayAlpha','motionCompDefaultParams','colorNames',...
-    'mlrPath','vistaPath','lastPath'...
+   'mlrPath','vistaPath','lastPath'...
+   'overlayCombineTransformPaths','roiTransformPaths',...
 	    };
 
 % set the defaults for preference we have defaults for. Note that the "find" in
@@ -54,6 +55,7 @@ prefDefaults{find(strcmp('roiCacheSize',prefNames))} = 100;
 prefDefaults{find(strcmp('baseCacheSize',prefNames))} = 50;
 prefDefaults{find(strcmp('overlayCacheSize',prefNames))} = 50;
 prefDefaults{find(strcmp('defaultPrecision',prefNames))} = 'double';
+prefDefaults{find(strcmp('interrogatorPaths',prefNames))} = '';
 prefDefaults{find(strcmp('volumeDirectory',prefNames))} = '';
 prefDefaults{find(strcmp('niftiFileExtension',prefNames))} = {'.img','.nii'};
 prefDefaults{find(strcmp('fslPath',prefNames))} = 'FSL not installed';
@@ -65,7 +67,8 @@ prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'getpts','roipoly','
 prefDefaults{find(strcmp('interpMethod',prefNames))} = {'nearest','linear','spline','cubic'};
 prefDefaults{find(strcmp('corticalDepthBins',prefNames))} = 11;
 prefDefaults{find(strcmp('multiSliceProjectionMethod',prefNames))} = {'Average','Maximum Intensity Projection'};
-prefDefaults{find(strcmp('colorBlending',prefNames))} = {'Additive','Alpha blend'};
+prefDefaults{find(strcmp('colorBlending',prefNames))} = {'Additive','Alpha blend','Contours'};
+prefDefaults{find(strcmp('baseNaNsColor',prefNames))} = {'Black','White','Transparent'};
 prefDefaults{find(strcmp('pluginPaths',prefNames))} = '';
 prefDefaults{find(strcmp('selectedPlugins',prefNames))} = '';
 prefDefaults{find(strcmp('statisticalTestOutput',prefNames))} = {'P value','Z value','-log10(P) value'};
@@ -82,6 +85,8 @@ prefDefaults{find(strcmp('colorNames',prefNames))} = {};
 prefDefaults{find(strcmp('mlrPath',prefNames))} = '';
 prefDefaults{find(strcmp('vistaPath',prefNames))} = '';
 prefDefaults{find(strcmp('lastPath',prefNames))} = '';
+prefDefaults{find(strcmp('overlayCombineTransformPaths',prefNames))} = '';
+prefDefaults{find(strcmp('roiTransformPaths',prefNames))} = '';
 
 if nargin == 0
   if nargout > 0

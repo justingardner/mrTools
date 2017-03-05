@@ -15,6 +15,16 @@ for iFile=1:length(transformFunctionFiles)
    transformFunctions{iFile} = stripext(transformFunctionFiles(iFile).name);
 end
 
+%get names of transform functions in additional folder(s)
+roiTransformPaths = commaDelimitedToCell(mrGetPref('roiTransformPaths'));
+for i = 1:length(roiTransformPaths)
+  roiTransformFiles =  dir([roiTransformPaths{i} '/*.m']);
+  for iFile=1:length(roiTransformFiles)
+     transformFunctions{end+1} = stripext(roiTransformFiles(iFile).name);
+  end
+end
+transformFunctions = sort(transformFunctions); %re-order in alphabetical order
+
 params.transformFunction = [{'User Defined'} transformFunctions];
 params.customTransformFunction = '';
 

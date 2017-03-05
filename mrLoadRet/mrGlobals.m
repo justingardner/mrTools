@@ -20,7 +20,7 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     mrDEFAULTS = loadMrDefaults;
 
     % Check Matlab version number
-    [mlrVersion, expectedMatlabVersion, expectedToolboxNames] = mrLoadRetVersion;
+    [mlrVersion, expectedMatlabVersion, expectedToolboxNames,expectedToolboxIncrements] = mrLoadRetVersion;
     version = ver('Matlab');
     matlabVersion = str2num(version.Version(1:min(length(version.Version),4)));
     if ~ismember(matlabVersion, expectedMatlabVersion);
@@ -32,6 +32,8 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     for iToolbox = 1:length(expectedToolboxNames)
       if ~any(strcmp(expectedToolboxNames{iToolbox},{versionAll.Name}))
 	oneTimeWarning(sprintf('mrToolsMissing%s',expectedToolboxNames{iToolbox}),sprintf('(mrGlobals) mrTools uses the %s which you do not have installed - functions that rely on this toolbox may fail to work.',expectedToolboxNames{iToolbox}));
+      elseif ~license('test',expectedToolboxIncrements{iToolbox})  %to really make sure that the license is valid, here we should use 'checkout' instead of 'test', but that prints too much text if the  checkout fails
+	oneTimeWarning(sprintf('mrToolsMissing%sLicense',expectedToolboxNames{iToolbox}),sprintf('(mrGlobals) mrTools uses the %s for which you don''t seem to have a license - functions that rely on this toolbox may fail to work.',expectedToolboxNames{iToolbox}));
       end
     end
     

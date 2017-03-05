@@ -38,6 +38,7 @@ if (nargout == 2)
 		    'alpha',1;
 		    'displayOverlay',true;
 		    'multiDisplay',false;
+		    'multiDisplayContours',false;
 		    'multiAxis',0;
 		    'overlay',[];
 		    'overlayAlpha',0.5;
@@ -49,7 +50,12 @@ if (nargout == 2)
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
-  requiredFields = {'clip','coordMap','curCoords','data','hdr','name','permutationMatrix','range','rotate','surfaceRotate','sliceOrientation','type','gamma','tilt','vol2tal','vol2mag','talInfo','originalOrient','xformFromOriginal','alpha','displayOverlay','multiDisplay','multiAxis','overlay','overlayAlpha','overlays','h','plane','fascicles'};
+  requiredFields = {'clip','coordMap','curCoords','data','hdr','name',...
+                    'permutationMatrix','range','rotate','surfaceRotate',...
+                    'sliceOrientation','type','gamma','tilt','vol2tal',...
+                    'vol2mag','talInfo','originalOrient','xformFromOriginal',...
+                    'alpha','displayOverlay','multiDisplay','multiDisplayContours',...
+                    'multiAxis''overlay','overlayAlpha','overlays','h','plane','fascicles'};
   optionalFields = {'curCorticalDepth',0};
 end
 
@@ -150,11 +156,17 @@ base.name = getLastDir(base.name);
 %%%%%%%%%%%%%%%%%%%%%
 function clip = defaultClip(image)
 % Choose default clipping based on histogram
-histThresh = length(image(:))/1000;
-[cnt, val] = hist(image(:),100);
+histThresh = length(image(~isnan(image)))/1000;
+[cnt, val] = hist(image(~isnan(image)),100);
 goodVals = find(cnt>histThresh);
 clipMin = val(min(goodVals));
 clipMax = val(max(goodVals));
+%if that doesn't work, take the 5th and 95th percentiles
+if clipMin==clipMax
+  im = sort(image(~isnan(image)));
+  clipMin = im(round(0.05*length(im)));
+  clipMax = im(round(0.95*length(im)));
+end
 clip = [clipMin,clipMax];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%

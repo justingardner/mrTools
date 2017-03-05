@@ -34,28 +34,29 @@ mrGlobals;
 v = MLR.views{viewNum};
 currentChar = get(MLR.views{viewNum}.figure,'CurrentCharacter');
 
-switch double(currentChar)
- % left arrow
- case 28
-  curSlice = viewGet(v,'curSlice');
-  mlrGuiSet(viewNum,'slice',max(curSlice-1,1));
-  refreshMLRDisplay(viewNum);
- % right arrow
- case 29
-  curScan = viewGet(v,'curScan');
-  curSlice = viewGet(v,'curSlice');
-  mlrGuiSet(viewNum,'slice',min(curSlice+1,viewGet(v,'nSlices',curScan)));
-  refreshMLRDisplay(viewNum);
- % up arrow
- case 30
-  curScan = viewGet(v,'curScan');
-  mlrGuiSet(viewNum,'scan',min(viewGet(v,'nScans'),curScan+1));
-  refreshMLRDisplay(viewNum);
- % down arrow
- case 31
-  curScan = viewGet(MLR.views{viewNum},'curScan');
-  mlrGuiSet(viewNum,'scan',max(1,curScan-1));
-  refreshMLRDisplay(viewNum);
+if ~isempty(currentChar)
+  switch double(currentChar)
+   % left arrow
+   case 28
+    curSlice = viewGet(v,'curSlice');
+    viewSet(viewNum,'curslice',curSlice-1);
+    refreshMLRDisplay(viewNum);
+   % right arrow
+   case 29
+    curSlice = viewGet(v,'curSlice');
+    viewSet(viewNum,'curslice',curSlice+1);
+    refreshMLRDisplay(viewNum);
+   % up arrow
+   case 30
+    curScan = viewGet(v,'curScan');
+    viewSet(viewNum,'curscan',curScan+1);
+    refreshMLRDisplay(viewNum);
+   % down arrow
+   case 31
+    curScan = viewGet(MLR.views{viewNum},'curScan');
+    viewSet(viewNum,'curscan',max(1,curScan-1));
+    refreshMLRDisplay(viewNum);
+  end
 end
 
 

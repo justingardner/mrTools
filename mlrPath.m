@@ -29,6 +29,10 @@
 %
 %             mlrPath revert
 %
+%             You can get the paths for mlr and vista if they exist
+%             vistaPath = mrGetPref('vistaPath');
+%             mlrPath = mrGetPref('mlrPath');
+%
 %
 function mlrPath(switchTo)
 
@@ -77,7 +81,7 @@ else
   if ~isempty(which('mrLoadRet')),hasBothPaths = true;end
   otherPath = mlrRoot;
 end
-  
+
 % decide which one to switch to.
 if (nargin <= 0) || isempty(switchTo)
   if strcmp(whichMLR,vistaRoot) 
@@ -121,6 +125,14 @@ end
 if any(strcmp(switchToName,{'vista','vistasoft'}))
   switchToName = vistaName;
   switchTo = vistaRoot;
+end
+% see if we are switching
+vistasoftSelectPaths = {};
+if any(strcmp(lower(switchToName),{'mrtools+vista'}))
+  % vistasoft paths to add
+  vistasoftSelectPaths = {'mrDiffusion','mrMesh','utilities','mrBOLD/Utilities','fileFilters','external/pyrTools'};
+  switchToName = mlrName;
+  switchTo = mlrRoot;
 end
 
 % user wants to revert to original path that was set
@@ -171,7 +183,17 @@ end
 % already have correct path (and there is only one path)
 % so nothing to do
 if isequal(whichMLRName,switchToName) && ~hasBothPaths && isempty(addOtherPath)
-  return
+  % check that the vista paths needed are also loaded
+  missingPath = false;
+  for i = 1:length(vistasoftSelectPaths)
+    if exist(vistasoftSelectPaths{i}) == 0
+      missingPath = true;
+    end
+  end
+  % if all paths are there, then just return
+  if ~missingPath
+    return
+  end
 end
 
 % display what we are going to do
@@ -180,7 +202,11 @@ if verbose
   if hasBothPaths
     disp(sprintf('(mlrPath) Had both %s and %s leaving only %s',whichMLR,otherPath,switchTo));
   else
-    disp(sprintf('(mlrPath) Switching from %s to %s',whichMLR,switchTo));
+    if ~isempty(vistasoftSelectPaths)
+      disp(sprintf('(mlrPath) Switching from %s to %s with select vistasoft paths',whichMLR,switchTo));
+    else
+      disp(sprintf('(mlrPath) Switching from %s to %s',whichMLR,switchTo));
+    end
   end
 end
 
@@ -214,11 +240,10 @@ end
 if strcmp(switchToName,mlrName)
   % add mrTools
   addpath(genpath(mlrRoot));
-  % selectively add some paths from vista
-  pathNames = {'mrDiffusion','mrMesh','utilities','mrBOLD/Utilities','fileFilters','external/pyrTools'};
   addpath(vistaRoot);
-  for i = 1:length(pathNames)
-    thisPath = fullfile(vistaRoot,pathNames{i});
+  % add vistasoft paths that do not conflict
+  for i = 1:length(vistasoftSelectPaths)
+    thisPath = fullfile(vistaRoot,vistasoftSelectPaths{i});
     if isdir(thisPath)
       addpath(genpath(thisPath));
     end

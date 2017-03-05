@@ -21,7 +21,12 @@ end
 % load the defaults or set them to default values
 defaultsFilename = mrDefaultsFilename;
 if isfile(defaultsFilename)
+  % this started warning about unresolved function handle
+  % did some code try to add a function handle to defaults?
+  % suppressing warning
+  warning('off','MATLAB:dispatcher:UnresolvedFunctionHandle');
   mrDefaults = load(defaultsFilename);
+  warning('on','MATLAB:dispatcher:UnresolvedFunctionHandle');
 else
     mrDefaults.prefs = [];
     mrDefaults.figloc = [];

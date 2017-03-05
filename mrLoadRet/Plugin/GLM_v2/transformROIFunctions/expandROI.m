@@ -33,18 +33,20 @@ if numel(margin)==1
     case {'sphere','cube'}
       margin = [margin margin margin];
     case {'disc','square'}
-      margin = [margin margin];
+      margin = [margin margin 0];
   end
 elseif numel(margin)==2
-  if ~ismember(kernelType,{'disc','square'})
-    margin = margin(1:2);
-    mrWarnDlg('(expandROI) Ignoring third element of margin');
-  end
-elseif numel(margin)==3
-  if ~ismember(kernelType,{'sphere','cube'})
-    mrWarnDlg('(expandROI) margin must be a 1 or 2 element vector');
+  if ismember(kernelType,{'disc','square'})
+    margin = [margin 0];
+  else
+    mrWarnDlg('(expandROI) margin must be a 1 or 3 element vector');
     roi=[];
     return
+  end
+elseif numel(margin)==3
+  if ismember(kernelType,{'disc','square'})
+    margin = margin(1:2);
+    mrWarnDlg('(expandROI) Ignoring third element of margin');
   end
 else
   mrWarnDlg('(expandROI) margin must be a 1, 2 or 3 element vector');
@@ -83,6 +85,8 @@ switch(kernelType)
     kernel = zeros(2*margin(1)+1,2*margin(2)+1,2*margin(3)+1);
     kernel(sqrt((sphereX./margin(1)).^2 + (sphereY./margin(2)).^2 + (sphereZ./margin(3)).^2)<1)=1;
   case 'cube'
+%     kernel = zeros(2*margin(1)+2,2*margin(2)+2,2*margin(3)+2);
+%     kernel(2:end-1,2:end-1,2:end-1)=1;
     kernel = ones(2*margin(1),2*margin(2),2*margin(3));
   case 'square'
     kernel = ones(2*margin(1),2*margin(2));
