@@ -41,13 +41,14 @@ if strcmp(varargin{1}, 'getModelResponse')
   rMinus = convolveModelWithStimulus(rfModel2, fitParams.stim{i}, nFrames);
 
   % Apply divisive normalization
-  resp = p.b1*rPlus ./ (1 + p.b2*rMinus);
+  resp = rPlus ./ (1 + p.b1*rMinus);
   
   % Convolve response with hemodynamic response function
   thisModelResponse = convolveModelResponseWithHRF(resp, hrf);
 
   % drop junk frames here
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
+  %thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
+  thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
 
   % return the calculated model response
   output = thisModelResponse;
@@ -60,15 +61,15 @@ elseif strcmp(varargin{1}, 'setParams')
 
   fitParams = varargin{2};
 
-  fitParams.paramNames = {'x','y','rfWidth', 'surroundRatio', 'centerGain', 'surroundGain'};
-  fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)', 'Ratio of surround width to center width', 'Center Gain', 'Surround Gain'};
-  fitParams.paramIncDec = [1 1 1 1 1 1];
-  fitParams.paramMin = [-inf -inf 0 0 -inf -inf];
-  fitParams.paramMax = [inf inf inf inf inf -inf];
+  fitParams.paramNames = {'x','y','rfWidth', 'surroundRatio', 'surroundGain'};
+  fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)', 'Ratio of surround width to center width', 'Surround Gain'};
+  fitParams.paramIncDec = [1 1 1 1 1];
+  fitParams.paramMin = [-inf -inf 0 0 -inf];
+  fitParams.paramMax = [inf inf inf inf -inf];
   % set min/max and init
-  fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 1 -inf -inf];
-  fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf inf inf inf];
-  fitParams.initParams = [0 0 4 2 1 1];
+  fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 1 0];
+  fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf inf inf];
+  fitParams.initParams = [0 0 4 2 1];
 
   % return fitParams with modified values
   output = fitParams;
@@ -90,7 +91,7 @@ elseif strcmp(varargin{1}, 'getFitParams')
   p.std = params(3);
   p.stdRatio = params(4);
   p.b1 = params(5);
-  p.b2 = params(6);
+  %p.b2 = params(6);
   % use a fixed single gaussian
   p.canonical.type = 'gamma';
   p.canonical.lengthInSeconds = 25;
