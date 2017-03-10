@@ -66,7 +66,7 @@ if ~isempty(x)
   % but useful for raw/motionCorrected time series. Also, it is very important that
   % the tSeries is properly mean subtracted
   if ~isfield(fitParams.concatInfo,'hipassfilter')
-    tSeries = percentTSeries(tSeries,'detrend','spatialNormalization','Divide by mean','subtractMean', 'Yes', 'temporalNormalization', 'No');
+    tSeries = percentTSeries(tSeries,'detrend','Linear', 'spatialNormalization','Divide by mean','subtractMean', 'Yes', 'temporalNormalization', 'No');
   end
   
   % if there are any nans in the tSeries then don't fit

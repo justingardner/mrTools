@@ -467,7 +467,7 @@ for i = 1:length(s)
   if ~isfield(thiss.task{taskNum}{1},'randVars') missing = 'randVars';end
   if ~isfield(thiss.task{taskNum}{1},'parameter') missing = 'parameter';end
   if ~any(strcmp('maskPhase',thiss.myscreen.traceNames)) missing = 'maskPhase';end
-  %if ~any(strcmp('blank',thiss.myscreen.traceNames)) missing = 'blank';end
+  if ~any(strcmp('blank',thiss.myscreen.traceNames)) && isequal(thiss.task{iTask}{1}.taskFilename,'mglRetinotopy.m') missing = 'blank';end
   if ~isempty(missing)
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by the latest version of mglRetinotopy which contains the field %s necessary for reconstructing the stimulus. Consider running a dummy run with a newer version of mglRetinotpy with the same parameters (see mglSimulateRun to simulate backticks) and then use that stimfile instead of this one.',missing));
