@@ -16,7 +16,9 @@ if verbose,tic,end
 v = viewGet(viewNum,'view');
 viewNum = viewGet(v,'viewNum');
 fig = viewGet(v,'figNum');
-gui = guidata(fig);
+if ~isempty(fig)
+  gui = guidata(fig);
+end
 baseNum = viewGet(v,'currentBase');
 baseType = viewGet(v,'baseType');
 
@@ -51,7 +53,7 @@ if verbose>1,disppercent(-inf,'Clearing figure');,end
 % note: This cla here is VERY important. Otherwise
 % we keep drawing over old things on the axis and
 % the rendering gets impossibly slow... -j.
-cla(gui.axis);
+if ~isempty(fig), cla(gui.axis);end
 if verbose>1,disppercent(inf);,end
 
 % check if these are inplanes (not flats or surfaces)
@@ -71,7 +73,7 @@ if (baseType == 0) && (baseMultiAxis>0)
   % display the images, but if we are set to 3D just compute
   % the images, so that we can display the 3D.
   for iSliceIndex = 1:3
-    % if we are displaying all slice dimenons and the #d
+    % if we are displaying all slice dimensions and the #d
     if baseMultiAxis == 1
       % display each slice index
       [v img{iSliceIndex} base roi{iSliceIndex} overlays curSliceBaseCoords] = dispBase(gui.sliceAxis(iSliceIndex),v,baseNum,gui,iSliceIndex==3,verbose,iSliceIndex,curCoords(iSliceIndex));
@@ -356,14 +358,14 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
         img=base.RGB; %only display base in the background
         contours=overlays.overlayIm;  %display first overlay as contours 
         contours(~overlays.alphaMaps(:,:,1,1))=NaN;   % use non-zero alpha map as mask
-        contourCscale=overlays.range(1,:); 
+        contourCscale=overlays.colorRange(1,:); 
         contourCmap = overlays.cmap(:,:,1);
       else
         %combine first overlay and base
         img=overlays.alphaMaps(:,:,:,1).*overlays.RGB(:,:,:,1)+(1-overlays.alphaMaps(:,:,:,1)).*base.RGB;
         contours=overlays.overlayIm(:,:,2); %display second overlay as contours
         contours(~overlays.alphaMaps(:,:,1,2))=NaN;   % use non-zero alpha map as mask
-        contourCscale=overlays.range(2,:);
+        contourCscale=overlays.colorRange(2,:);
         contourCmap = overlays.cmap(:,:,2);
       end
       if size(overlays.RGB,4)>2
@@ -377,7 +379,7 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       img = reshape(img,[base.dims 3]);
   end
   cmap = overlays.cmap;
-  cbarRange = overlays.range;
+  cbarRange = overlays.colorRange;
 elseif ~isempty(base.RGB)
   img = base.RGB;
   cmap = base.cmap;

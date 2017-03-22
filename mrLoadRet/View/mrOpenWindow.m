@@ -74,6 +74,21 @@ mlrGuiSet(view,'nSlices',0);
 view = viewSet(view,'showROIs','all perimeter');
 view = viewSet(view,'labelROIs',1);
 
+%get colormaps in the colormapFunctions directory
+colorMapsFolder = [fileparts(which('mrLoadRet')) '/colormapFunctions/'];
+colorMapFiles =  dir([colorMapsFolder '*.m']);
+if ~isempty(colorMapFiles)
+  colorMapList = cell(1,length(colorMapFiles));
+  for iFile=1:length(colorMapFiles)
+     colorMapList{iFile} = stripext(colorMapFiles(iFile).name);
+  end
+  % install default colormaps
+  % that will show up when you do /Edit/Overlay
+  mlrAdjustGUI(view,'add','colormap',colorMapList);
+else
+  disp(['(mrOpenWindow) No colormap found in folder ' colorMapsFolder]);
+end
+
 
 % Add plugins
 if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end

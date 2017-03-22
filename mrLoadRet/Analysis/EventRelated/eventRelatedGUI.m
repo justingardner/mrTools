@@ -53,15 +53,15 @@ else
   params = mrParamsDialog(paramsInfo,'Event Related Parameters');
 end
 
-% removed this old setting since it is not going to be maintained and superceded by the standard concat
-params.inplaceConcat = false;
-%{'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
-
 % if empty user hit cancel
 if isempty(params)
   deleteView(view);
   return
 end
+
+% removed this old setting since it is not going to be maintained and superceded by the standard concat
+params.inplaceConcat = false;
+%{'inplaceConcat',0,'type=checkbox','Concatenate all data and design matrices in memory. This runs a differrent processing stream (ask Farshad for details). If you are using a Concatenation time series do not check this.'},...
 
 % get scans
 view = viewSet(view,'groupName',params.groupName);

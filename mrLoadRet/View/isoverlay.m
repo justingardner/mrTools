@@ -20,33 +20,7 @@ function [tf overlay] =  isoverlay(overlay)
 if (nargout == 2)
   % Add optional fields and return true if the overlay with optional
   % fields is valid.
-  requiredFields = {'function','groupName','name','params','range'};
-  % get some defaults, if the required fields exist to make the defaults
-  % then take from there, otherwise put in empty and the code will
-  % later catch that the defaults are missing.
-  if isfield(overlay,'name') 
-    defaultType = overlay.name;
-  else
-    defaultType = '';
-  end
-  if isfield(overlay,'range')
-    defaultClip = overlay.range;
-  else
-    defaultClip = [];
-  end
-  optionalFields = {'date',datestr(now);
-                    'type',defaultType,
-                    'alpha',1;
-                    'clip',defaultClip;
-                    'colormap',jet(256);
-                    'interrogator','timecoursePlot';
-                    'reconcileFunction','defaultReconcileParams';
-                    'mergeFunction','defaultMergeParams';
-                    'colormapType', 'normal';
-                    'data',[];
-		    'alphaOverlay',[];
-		    'alphaOverlayExponent',1;
-		   };
+  requiredFields = {'groupName','name','params','range'};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
@@ -54,7 +28,6 @@ else
                     'date','type','alpha','clip','colormap',...
                     'interrogator','reconcileFunction','mergeFunction',...
 		    'data','alphaOverlay','alphaOverlayExponent'};
-  optionalFields = {};
 end
 
 % Initialize return value
@@ -77,6 +50,42 @@ for f = 1:length(requiredFields)
   end
 end
 
+%if not valid, no point in trying to make it valid
+if ~tf
+  return
+end
+
+%do not allow empty range
+if isempty(overlay.range) || any(size(overlay.range)~=[1 2])
+  overlay.range(1) = -1;  
+  overlay.range(2) = 1; 
+end
+
+%only set optional fields once required fields have been checked
+if (nargout == 2)
+  % Add optional fields and return true if the overlay with optional
+  % fields is valid.
+  optionalFields = {'function','unknown';
+                    'date',datestr(now);
+                    'type',overlay.name;
+                    'alpha',1;
+                    'clip',overlay.range;
+                    'colorRange',overlay.range;
+                    'colormap',jet(256);
+                    'interrogator','timecoursePlot';
+                    'reconcileFunction','defaultReconcileParams';
+                    'mergeFunction','defaultMergeParams';
+                    'colormapType', 'normal';
+                    'data',[];
+		    'alphaOverlay',[];
+		    'alphaOverlayExponent',1;
+		   };
+else
+  % Return 0 if the overlay structure is missing any fields required or
+  % optional (since w/out changing the analysis structure it is invalid).
+  optionalFields = {'colorRange',overlay.range};
+end
+
 % Optional fields and defaults
 for f = 1:size(optionalFields,1)
   fieldName = optionalFields{f,1};
@@ -89,3 +98,18 @@ for f = 1:size(optionalFields,1)
   end
 end
 overlay = orderfields(overlay);
+
+%Do not allow empty clip and color ranges and force range to include clip range (for 'New' overlay range behaviour only)
+if tf
+  if isempty(overlay.clip) || any(size(overlay.clip)~=[1 2])
+    overlay.clip = overlay.range;
+  end
+  if isempty(overlay.colorRange) || any(size(overlay.colorRange)~=[1 2])
+    overlay.colorRange = overlay.range;
+  end
+  if strcmp(mrGetPref('overlayRangeBehaviour'),'New')
+    overlay.range(1) = min(overlay.clip(1),overlay.range(1));
+    overlay.range(2) = max(overlay.clip(2),overlay.range(2));
+  end
+end
+  

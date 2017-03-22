@@ -196,47 +196,52 @@ if ~isempty(overlayImages)
     end
     switch(overlayCType)
       case 'normal'
-        overlays.range(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
+        switch(mrGetPref('overlayRangeBehaviour'))
+          case 'Classic'
+            overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayRange',curOverlays(iOverlay));
+          case 'New'
+            overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayColorRange',curOverlays(iOverlay));
+        end
       case 'setRangeToMax'
-        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
           thisOverlayIm=overlays.overlayIm(:,:,iOverlay);
-          overlays.range(iOverlay,1) = max(overlays.range(iOverlay,1),min(thisOverlayIm(overlayMasks(:,:,:,iOverlay))));
-          overlays.range(iOverlay,2) = min(max(thisOverlayIm(overlayMasks(:,:,:,iOverlay))),overlays.range(iOverlay,2));
+          overlays.colorRange(iOverlay,1) = max(overlays.colorRange(iOverlay,1),min(thisOverlayIm(overlayMasks(:,:,:,iOverlay))));
+          overlays.colorRange(iOverlay,2) = min(max(thisOverlayIm(overlayMasks(:,:,:,iOverlay))),overlays.colorRange(iOverlay,2));
         end
       case 'setRangeToMaxAroundZero'
        if (viewGet(thisView,'baseType') == 0) && viewGet(thisView,'baseMultiAxis')
 	 oneTimeWarning('setRangeToMaxWithMultiAxis','(computeOverlay) !!! Overlay set to setRangeToMaxAroundZero and you are displaying with multiple axis. Note that the colorbar will only be accurate for the axial view. Consider setting Edit/Overlay/Edit OVerlay to setRangeToMaxAcrossSlices. !!!',1);
        end
-        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         if ~isempty(overlays.overlayIm(overlayMasks(:,:,:,iOverlay)))
           maxval = max(abs(overlays.overlayIm(overlayMasks(:,:,:,iOverlay))));
-          overlays.range(iOverlay,1) = -maxval;
-          overlays.range(iOverlay,2) = maxval;
+          overlays.colorRange(iOverlay,1) = -maxval;
+          overlays.colorRange(iOverlay,2) = maxval;
         end
       case 'setRangeToMaxAcrossSlices' %this doesn't take into account voxels that would be masked in other slices than the one displayed
-        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum,scan); 
         maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum,scan);
         if ~isempty(minOverlay)
-          overlays.range(iOverlay,1) = max(minOverlay,overlays.range(1));
+          overlays.colorRange(iOverlay,1) = max(minOverlay,overlays.colorRange(1));
         end
         if ~isempty(maxOverlay)
-          overlays.range(iOverlay,2) = min(maxOverlay,overlays.range(2));
+          overlays.colorRange(iOverlay,2) = min(maxOverlay,overlays.colorRange(2));
         end
       case 'setRangeToMaxAcrossSlicesAndScans' %same here
-        overlays.range(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
+        overlays.colorRange(iOverlay,:) = viewGet(thisView,'overlayClip',curOverlays(iOverlay));
         minOverlay = viewGet(thisView,'minOverlaydata',curOverlays(iOverlay),analysisNum); 
         maxOverlay = viewGet(thisView,'maxOverlaydata',curOverlays(iOverlay),analysisNum);
         if ~isempty(minOverlay)
-          overlays.range(iOverlay,1) = max(minOverlay,overlays.range(1));
+          overlays.colorRange(iOverlay,1) = max(minOverlay,overlays.colorRange(1));
         end
         if ~isempty(maxOverlay)
-          overlays.range(iOverlay,2) = min(maxOverlay,overlays.range(2));
+          overlays.colorRange(iOverlay,2) = min(maxOverlay,overlays.colorRange(2));
         end
     end
-    overlays.RGB(:,:,:,iOverlay) = rescale2rgb(overlayImages(:,:,:,iOverlay),overlays.cmap(:,:,iOverlay),overlays.range(iOverlay,:));
-      
+    overlays.RGB(:,:,:,iOverlay) = rescale2rgb(overlayImages(:,:,:,iOverlay),overlays.cmap(:,:,iOverlay),overlays.colorRange(iOverlay,:));
+
   end
   %alpha based on the alpha slider
   if ieNotDefined('alpha')

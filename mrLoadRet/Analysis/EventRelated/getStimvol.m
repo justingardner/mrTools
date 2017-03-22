@@ -246,6 +246,9 @@ for i = 1:length(d.stimfile)
       [stimvol stimNames d.trialNum{i}] = getStimvolFromVarname(var,d.stimfile{i}.myscreen,d.stimfile{i}.task);
     end
    case 'eventtimes',
+    if isfield(var,'stimDurationMode') && strcmp(var.stimDurationMode,'From file')
+      var.stimDuration = []; % if duration has to be read from the stim file, ignore the stimDuration parameter
+    end
     [stimvol,stimDurations] = getStimvolFromEventTimes(d.stimfile{i}.mylog, d.tr/designSupersampling, var.stimDuration);
     if isfield(d.stimfile{i}, 'stimNames')
       stimNames = d.stimfile{i}.stimNames;

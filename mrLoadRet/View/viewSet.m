@@ -409,6 +409,15 @@ switch lower(param)
     if (nscans >= s) & (s > 0)
       MLR.groups(g).auxParams(s).spikeinfo = val;
     end
+    
+  case {'frameperiod'}
+    % view = viewSet(view,'framePeriod',framePeriod,scanNum,groupNum);
+    [s g] = getScanAndGroup(view,varargin,param);
+    nscans = viewGet(view,'nscans',g);
+    if (nscans >= s) & (s > 0)
+      MLR.groups(g).scanParams(s).framePeriod = val;
+    end
+
   case {'niftihdr'}
     % view = viewSet(view,'niftiHdr',hdr,scanNum,groupNum);
     [s g] = getScanAndGroup(view,varargin,param);
@@ -1696,12 +1705,6 @@ switch lower(param)
         % set overlay min and max sliders
         overlayClip = viewGet(view,'overlayClip',curClippingOverlay,analysisNum);
         overlayRange = viewGet(view,'overlayRange',curClippingOverlay,analysisNum); 
-        if isempty(overlayClip)
-          overlayClip = [0 1];
-        end
-        if isempty(overlayRange)
-          overlayRange = [0 1];
-        end
         mlrGuiSet(view,'overlayMinRange',overlayRange);
         mlrGuiSet(view,'overlayMaxRange',overlayRange);
         mlrGuiSet(view,'overlayMin',overlayClip(1));
@@ -1718,10 +1721,7 @@ switch lower(param)
         if ~isequal(curOverlay,overlayNum)
           global gParams
           if ~isempty(gParams)
-            %see which version of editOverlayGUI(mrParams) we need to relaunch
             if strcmp(gParams.figlocstr{1},'mrParamsDialog_Edit_overlay_parameters')
-              editOverlayGUI(view);
-            elseif strcmp(gParams.figlocstr{1},'mrParamsDialog_Change_overlay_colormap')
               editOverlayGUImrParams(view);
             end
           end
@@ -1898,6 +1898,22 @@ switch lower(param)
         clip = view.analyses{analysisNum}.overlays(overlayNum).clip;
         mlrGuiSet(view,'overlayMin',clip(1));
         mlrGuiSet(view,'overlayMax',clip(2));
+      end
+    end
+    
+  case {'overlaycolorrange'}
+    % view = viewSet(view,'overlaycolorrange',[min max],[overlayNum]);
+    curOverlay = viewGet(view,'currentOverlay');
+    if ieNotDefined('varargin')
+      overlayNum = curOverlay;
+    else
+      overlayNum = varargin{1};
+    end
+    analysisNum = viewGet(view,'currentAnalysis');
+    if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+        ~isempty(view.analyses{analysisNum}.overlays)
+      for iOverlay = overlayNum
+        view.analyses{analysisNum}.overlays(iOverlay).colorRange = val;
       end
     end
 

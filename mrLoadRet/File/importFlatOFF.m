@@ -65,6 +65,8 @@ if isstruct(flatFile);
     % now do necessary world2array xformation here
     surf.outer = xformSurfaceWorld2Array(surf.outer,anat.hdr);
     surf.inner = xformSurfaceWorld2Array(surf.inner,anat.hdr);
+  else
+    mrErrorDlg(['(importFlatOFF) Could not find flat file: ' params.flatFileName]);
   end
 end
 
