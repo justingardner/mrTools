@@ -847,20 +847,26 @@ switch lower(param)
     if isempty(dicom)
       return
     end
+    missingDicoms = false;
     for i = 1:length(dicom)
       if isfield(dicom{i},'MRAcquisitionType')
 	thisval = dicom{i}.MRAcquisitionType;
       elseif isfield(dicom{i},'ACQ') && isfield(dicom{i}.ACQ,'MR_Acquisition_Type_')
         thisval = strcmp(dicom{i}.ACQ.MR_Acquisition_Type_,'3D');
       else
-	thisval = [];
+          % no dicom
+          missingDicoms = true;
+	      thisval = [];
       end
       if (isempty(val))
         val = thisval;
-      elseif (val ~= thisval)
+      elseif ~isempty(thisval) && ~isequal(val,thisval)
         disp(sprintf('(viewGet:3D) Data collected with both 3D and 2D sequence types'))
       end
     end
+    if missingDicoms && ~isempty(val)
+      disp(sprintf('(viewGet:3D) Missing dicom headers for some component scans. Assuming all scans are %s',val))
+    end   
   case {'tr'}
     % TR is the TR of the pulse sequence. It is *not* necessarily
     % the time between volumes (framePeriod). The TR is extracted
