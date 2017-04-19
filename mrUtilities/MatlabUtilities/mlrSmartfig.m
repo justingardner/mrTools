@@ -32,7 +32,9 @@ global gMLRSmartfig;
 if isnumeric(figname)
   entryNum = figname;
   if ~isempty(gMLRSmartfig) && ~isequal(gMLRSmartfig(entryNum).fignum,-1)
-    % remember position
+    % make sure units are correct
+    set(gMLRSmartfig(entryNum).fignum,'Units','pixels');
+    % remember position 
     mrSetFigLoc(gMLRSmartfig(entryNum).figname,get(gMLRSmartfig(entryNum).fignum,'Position'));
     % close the figure
     delete(gMLRSmartfig(entryNum).fignum);
