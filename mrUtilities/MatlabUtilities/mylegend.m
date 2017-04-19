@@ -13,6 +13,9 @@
 %
 %             You can specify the axis to make the legend for with the a arg
 %             mylegend({'name 1','name 2'},{'ko','r+'},'a',gca);
+% 
+%             You can specify no box with boxoff
+%             mylegend({'name 1','name 2'},{'ko','r+'},'a',gca,'boxoff=1');
 %
 %       e.g.: mylegend({'name 1','name 2'},{'ko','r+'})
 %             mylegend({'name 1','name 2'},2);
@@ -32,7 +35,7 @@ if nargin < 1,help mylegend,return,end
 
 % parse optionalArgs
 a = [];
-getArgs(optionalArgs,{'a=[]'});
+getArgs(optionalArgs,{'a=[]','boxoff=0'});
 
 % use gca if no axis specified
 if isempty(a),a = gca;end
@@ -49,6 +52,13 @@ end
 
 % now fixup the legend (set color of text appropriately and turn off tex interpreting)
 fixLegend(hLegend,h,names,symbols);
+
+% turn off box if called for
+if boxoff
+  set(hLegend,'Box','off');
+  set(hLegend,'Color','none');
+end
+
 
 %%%%%%%%%%%%%%%%%%%
 %%   fixLegend   %%
