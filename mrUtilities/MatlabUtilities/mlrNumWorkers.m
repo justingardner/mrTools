@@ -95,7 +95,7 @@ if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
       else
 	pool = parpool(numWorkers);
 	% get number of processors
-	n = pool.NumWorkers
+	n = pool.NumWorkers;
       end
     else
       disp(sprintf('(mlrNumWorkers) You can speed up performance by starting a matlab pool of workers using the parallel computing toolbox. Type: matlabpool open'));
