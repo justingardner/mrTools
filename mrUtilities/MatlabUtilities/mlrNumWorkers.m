@@ -33,7 +33,6 @@ if nargin < 1
   mlrNumWorkersAskToStart = false;
   numWorkers = 1;
 end
-keyboard
 
 % check existence of Parallel Computing Toolbox
 toolboxVersions = ver;
