@@ -33,6 +33,7 @@ if nargin < 1
   mlrNumWorkersAskToStart = false;
   numWorkers = 1;
 end
+keyboard
 
 % check existence of Parallel Computing Toolbox
 toolboxVersions = ver;
@@ -42,8 +43,12 @@ if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
   if verLessThan('matlab','8.4')
     n = matlabpool('size');
   else
-    pool = gcp;
-    n = pool.NumWorkers;
+    pool = gcp('nocreate');
+    if isempty(pool)
+      n = 0;
+    else
+      n = pool.NumWorkers;
+    end
   end
   % if not already running
   if n == 0
