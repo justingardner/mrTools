@@ -2913,12 +2913,18 @@ switch lower(param)
         for i = 1:length(view.analyses{analysisNum}.overlays)
           clip = [clip view.analyses{analysisNum}.overlays(i).clip];
         end
-        overlayRange = viewGet(view,'overlayRange');
-        overlayColorRange = viewGet(view,'overlayColorRange');
+        % get overlay ranges for each selected overlay
+        overlayRange = [];
+        overlayColorRange = [];
+        alphaOverlayExponent = [];
+        for i = 1:length(curOverlay)
+          overlayRange = [overlayRange viewGet(view,'overlayRange',curOverlay(i))];
+          overlayColorRange = [overlayColorRange viewGet(view,'overlayColorRange',curOverlay(i))];
+          alphaOverlayExponent = [alphaOverlayExponent viewGet(view,'alphaOverlayExponent')];
+        end
         scanNum = viewGet(view,'curScan');
         alpha = viewGet(view,'alpha');
         alphaOverlay = char(viewGet(view,'alphaOverlay'))';
-        alphaOverlayExponent = viewGet(view,'alphaOverlayExponent');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
         % need to recalculate overlay if this is a flat
