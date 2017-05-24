@@ -101,11 +101,9 @@ hold(get(fig, 'CurrentAxes'), 'off');
 coords = [];
 % cycle over cortical depths and add points
 corticalDepths = viewGet(v,'corticalDepth');
-for corticalDepth = corticalDepths(1):0.1:corticalDepths(end)
-  % get the cortical slice index
-  corticalSlice = find(cmap.corticalDepths == (round(corticalDepth*10)/10));
+for corticalDepth = cmap.corticalDepths(cmap.corticalDepths>=corticalDepths(1) & cmap.corticalDepths<=corticalDepths(end))
   % read off coordinates for this depth
-  coords = [coords;squeeze(cmap.coords(1,vList,1,:,corticalSlice))];
+  coords = [coords;squeeze(cmap.coords(1,vList,1,:,cmap.corticalDepths == corticalDepth))];
 end
 % return unique coords
 coords = unique(coords,'rows');
