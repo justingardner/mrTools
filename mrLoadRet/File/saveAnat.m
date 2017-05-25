@@ -55,8 +55,9 @@ switch viewGet(view,'baseType',anatomyNum)
     data(repmat(nanData,repeatVector))=NaN;
   case 2
     %surface
-    mrErrorDlg('(saveAnat) Cannot save surface as volume (not implemented)')
-    return;
+    %mrErrorDlg('(saveAnat) Cannot save surface as volume (not implemented)')
+    %return;
+    data = baseVolume.data;
 end
 hdr = baseVolume.hdr;
 
