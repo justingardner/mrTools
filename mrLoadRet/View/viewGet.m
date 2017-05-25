@@ -2949,9 +2949,17 @@ switch lower(param)
 	  % the sum - again, this could fail be to unique, but
 	  % likely will be ok in most situations
 	  baseOverlay = sprinf('%f',sum(baseOverlay(:)));
-	end
+  end
+  % need to identify the colormap (in case it is changed using viewSet).
+  % will use the sum, which should work in most cases
+  overlaycmap = sum(sum(viewGet(view,'overlaycmap')));
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),mat2str(overlayColorRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay,alphaOverlay(:)',mat2str(alphaOverlayExponent));
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s_%s_%i_%f.1',...
+                      scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),...
+                      mat2str(clip),mat2str(overlayRange),mat2str(overlayColorRange),rotate,...
+                      alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,...
+                      baseOverlayAlpha,baseOverlay,alphaOverlay(:)',mat2str(alphaOverlayExponent),...
+                      overlaycmap);
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
