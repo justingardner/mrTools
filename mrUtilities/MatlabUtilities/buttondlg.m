@@ -20,8 +20,6 @@ function reply = buttondlg(headerStr,optionStr,defaultValue)
 % 2002.07.24  rfd & fwc: fixed minor bug where short checkbox labels were invisible.
 % 2010/08/27 jb adapt widht of each column to max length string
 
-OptionsPerColumn=25; % max number of options in one column
-
 if nargin<2
     disp('Error: "bottondlg" requires two inputs');
     return
@@ -54,6 +52,17 @@ if ~isempty(figloc)
   figurePosition(1:2) = figloc(1:2);
 end  
 
+% find which monitor the figure is displayed in and its size in order to compute
+% the max figure height and the max number of options per columns
+monitorPositions = getMonitorPositions;
+[whichMonitor,figurePosition]=getMonitorNumber(figurePosition,monitorPositions);
+screenSize = monitorPositions(whichMonitor,:);
+maxFigureWidth = screenSize(3);
+%Compute the max number of options in one column:
+thisExtent = getStringDimensions(hFigure,'Anything',fontSize,fontName);
+optionHeight = thisExtent(4);
+OptionsPerColumn=(screenSize(4)-margin*2)/optionHeight-1;
+
 if ischar(optionStr)
    optionStr = cellstr(optionStr);
 end
@@ -69,14 +78,11 @@ for iColumn=1:nMultiCols
    %convert to char to find max length more easily
    tempOptionStrings = optionStr((iColumn-1)*nOptionsPerColumn+1:min(iColumn*nOptionsPerColumn,nOptions));
   for iOption = 1:length(tempOptionStrings)
-      h = uicontrol(hFigure,'Style','text','String',tempOptionStrings{iOption},'FontSize',fontSize,'FontName',fontName);
-      thisExtent = get(h,'extent');
-      maxOptionWidth(iColumn) = max(maxOptionWidth(iColumn),thisExtent(3)+checkBoxWidth);
-      delete(h);
+    thisExtent = getStringDimensions(hFigure,tempOptionStrings{iOption},fontSize,fontName);
+    maxOptionWidth(iColumn) = max(maxOptionWidth(iColumn),min(thisExtent(3)+checkBoxWidth,(maxFigureWidth/nMultiCols)));
   end
 end
-optionHeight = thisExtent(4);
-maxOptionWidth = maxOptionWidth*max(1,minFigureWidth/sum(maxOptionWidth));
+maxOptionWidth = maxOptionWidth*min(max(1,minFigureWidth/sum(maxOptionWidth)),(maxFigureWidth -(nMultiCols+1)*margin - checkBoxWidth)/sum(maxOptionWidth));
 
 % set the figure position
 figureWidth = sum(maxOptionWidth)+(nMultiCols+1)*margin+checkBoxWidth;
@@ -114,9 +120,8 @@ for optionNum=1:nOptions
       'FontSize',fontSize);
   y = y-optionHeight;
 end
-if rem(nOptions,nOptionsPerColumn)
-  y = y-optionHeight;
-end
+y = y-(cMultiCol*nOptionsPerColumn - nOptions)*optionHeight;
+
 %Display the OK/Cancel buttons
 buttonWidth = min(130,(figurePosition(3)-2*margin)/3);
 intervalBetweenButtons = (figurePosition(3) - buttonWidth*2)/3;
@@ -162,3 +167,11 @@ if ishandle(hFigure)
   close(hFigure)
   drawnow;
 end
+
+function thisExtent = getStringDimensions(hFigure,string,fontSize,fontName)
+
+h = uicontrol(hFigure,'Style','text','String',string,'FontSize',fontSize,'FontName',fontName);
+thisExtent = get(h,'extent');
+delete(h);
+
+

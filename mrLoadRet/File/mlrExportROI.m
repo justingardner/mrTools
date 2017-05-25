@@ -84,17 +84,6 @@ end
 
 if ~passedInHeader
   b = viewGet(v,'base');
-  % if the orientation has been changed in loadAnat, undo that here.
-  if ~isempty(b.originalOrient)
-    % create a data structure that has all 0's
-    d = zeros(baseDims);
-    % convert into mlrImage
-    [d h] = mlrImageLoad(d,hdr);
-    % convert the orientation back to original
-    [d h] = mlrImageOrient(b.originalOrient,d,h);
-    % covert back to nifti
-    hdr = mlrImageGetNiftiHeader(h);
-  end
 end
 
 for iRoi = 1:length(roiNum)
@@ -131,8 +120,21 @@ for iRoi = 1:length(roiNum)
   % set all the roi coordinates to 1
   d(roiBaseCoordsLinear) = 1;
 
+  % if the orientation has been changed in loadAnat, undo that here.
+  if ~isempty(b.originalOrient)
+  end
   % now save the nifti file
-  cbiWriteNifti(saveFilename{iRoi},d,hdr);
+  if ~passedInHeader && ~isempty(b.originalOrient)
+    % convert into mlrImage
+    [d, h] = mlrImageLoad(d,hdr);
+    % convert the orientation back to original
+    [d, h] = mlrImageOrient(b.originalOrient,d,h);
+    % convert back to nifti
+    reorientedHdr = mlrImageGetNiftiHeader(h);
+    cbiWriteNifti(saveFilename{iRoi},d,reorientedHdr);
+  else
+    cbiWriteNifti(saveFilename{iRoi},d,hdr);
+  end
 end
   
   
