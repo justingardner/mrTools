@@ -1481,6 +1481,17 @@ switch lower(param)
       % set to empty if handle is stale 
       if ~ishandle(val),val = [];end
     end
+  case {'surfaceroihandle'}
+    % basedata = viewGet(view,'baseHandle',[baseNum])
+    b = getBaseNum(view,varargin);
+    n = viewGet(view,'numberofbasevolumes');
+    if b & (b > 0) & (b <= n)
+      if isfield(view.baseVolumes(b),'hROI')
+        val = view.baseVolumes(b).hROI;
+      end
+      % set to empty if handle is stale 
+      if ~ishandle(val),val = [];end
+    end
   case {'basehdr'}
     % basedata = viewGet(view,'basehdr',[baseNum])
     b = getBaseNum(view,varargin);
