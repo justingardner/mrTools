@@ -2913,12 +2913,18 @@ switch lower(param)
         for i = 1:length(view.analyses{analysisNum}.overlays)
           clip = [clip view.analyses{analysisNum}.overlays(i).clip];
         end
-        overlayRange = viewGet(view,'overlayRange');
-        overlayColorRange = viewGet(view,'overlayColorRange');
+        % get overlay ranges for each selected overlay
+        overlayRange = [];
+        overlayColorRange = [];
+        alphaOverlayExponent = [];
+        for i = 1:length(curOverlay)
+          overlayRange = [overlayRange viewGet(view,'overlayRange',curOverlay(i))];
+          overlayColorRange = [overlayColorRange viewGet(view,'overlayColorRange',curOverlay(i))];
+          alphaOverlayExponent = [alphaOverlayExponent viewGet(view,'alphaOverlayExponent')];
+        end
         scanNum = viewGet(view,'curScan');
         alpha = viewGet(view,'alpha');
         alphaOverlay = char(viewGet(view,'alphaOverlay'))';
-        alphaOverlayExponent = viewGet(view,'alphaOverlayExponent');
         clipAcrossOverlays = viewGet(view,'clipAcrossOverlays');
         multiSliceProjection = mrGetPref('multiSliceProjectionMethod');
         % need to recalculate overlay if this is a flat
@@ -2943,9 +2949,17 @@ switch lower(param)
 	  % the sum - again, this could fail be to unique, but
 	  % likely will be ok in most situations
 	  baseOverlay = sprinf('%f',sum(baseOverlay(:)));
-	end
+  end
+  % need to identify the colormap (in case it is changed using viewSet).
+  % will use the sum, which should work in most cases
+  overlaycmap = sum(sum(viewGet(view,'overlaycmap')));
         % calculate string
-        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s_%s_%i',scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),mat2str(clip),mat2str(overlayRange),mat2str(overlayColorRange),rotate,alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,baseOverlayAlpha,baseOverlay,alphaOverlay(:)',mat2str(alphaOverlayExponent));
+        val = sprintf('%i_%s_%i_%i_%i_%s_%s_%s_%s_%i_%i_%s_%i_%s_%f_%s_%s_%i_%f.1',...
+                      scanNum,baseName,curSlice,sliceIndex,analysisNum,mat2str(curOverlay),...
+                      mat2str(clip),mat2str(overlayRange),mat2str(overlayColorRange),rotate,...
+                      alpha,mat2str(corticalDepth),clipAcrossOverlays,multiSliceProjection,...
+                      baseOverlayAlpha,baseOverlay,alphaOverlay(:)',mat2str(alphaOverlayExponent),...
+                      overlaycmap);
       end
     end
     %    val = curSlice*analysisNum*curOverlay;
