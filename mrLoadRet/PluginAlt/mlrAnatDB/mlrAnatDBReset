@@ -1,0 +1,90 @@
+#!/usr/bin/python
+#
+#      usage: mlrAnatDBReset
+#         by: justin gardner
+#       date: 07/06/2015
+#    purpose: python script to reset a subject in the mlrAnatDB back to the initial
+#             state. This will erase all data for that subject including the data
+#             in the wiki. Be careful!
+#             run sudo:
+#
+#             sudo mlrAnatDBReset s0015
+#
+
+# import necessary interfaces
+import os, sys, urllib, re, time, smtplib, getopt, socket, glob, shutil
+
+# display usage function
+def usage():
+    print "USAGE: mlrAnatDBReset subjectID"
+    sys.exit(0)
+
+# display a list of what will be deleted
+def displayFilesToDelete(subjectPath):
+    if os.path.exists(subjectPath):
+        for subdir in glob.glob(subjectPath+'/*/'):
+            print '========== ' + subjectID + ' ' + subdir + ' =========='
+            if os.path.exists(subdir):
+                for file in os.listdir(subdir):
+                    if not file.startswith('.'):
+                        print file
+
+# display wiki files to delete
+def displayWikiFilesToDelete(wikiPath,subjectID):
+    if os.path.exists(wikiPath):
+        print '========== ' + wikiPath + ' =========='
+        for file in glob.glob(wikiPath+'/'+subjectID+'*.*'):
+            if not file.startswith('.'):
+                os.remove(file)
+
+# delete wiki files
+def deleteWikiFiles(wikiPath,subjectID):
+    if os.path.exists(wikiPath):
+        for file in glob.glob(wikiPath+'/'+subjectID+'*.*'):
+            if not file.startswith('.'):
+                print('Deleting: '+ file)
+
+# delete directories
+def deletePath(delPath):
+    if os.path.exists(delPath):
+        print('Deleting: '+delPath)
+        shutil.rmtree(delPath)
+
+
+# verbose mode
+verbose=True
+
+if len(sys.argv) >= 2:
+    subjectID = sys.argv[1]
+else:
+    usage()
+
+if not os.path.exists("mlrAnatDB"):
+    print "Could not find mlrAnatDB"
+    usage()
+
+if not os.path.exists("mlrAnatDBWiki"):
+    print "Could not find mlrAnatDBWiki"
+    usage()
+
+# list what will be removed
+print '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-'
+displayFilesToDelete("mlrAnatDB/"+subjectID)
+displayFilesToDelete("mlrAnatDB/"+subjectID+"d/localizers")
+displayFilesToDelete("mlrAnatDB/"+subjectID+"d/anatomy")
+displayWikiFilesToDelete("mlrAnatDBWiki/media/mlranatdb",subjectID)
+displayWikiFilesToDelete("mlrAnatDBWiki/pages/mlranatdb",subjectID)
+print '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-'
+user_input = raw_input('Really delete mlrAnatDB data and mlrAnatDBWiki entries for ' + subjectID + ' (enter Yes if you are sure)?: ')
+if user_input == 'Yes':
+    print '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-'
+    deleteWikiFiles("mlrAnatDBWiki/media/mlranatdb",subjectID)
+    deleteWikiFiles("mlrAnatDBWiki/pages/mlranatdb",subjectID)
+    deletePath('mlrAnatDB/'+subjectID)
+    deletePath('mlrAnatDB/'+subjectID+'d')
+    # remake the directory
+    os.system('mlrAnatDBInit '+subjectID[1:])
+else:
+    print 'mlrAnatDBReset aborted'
+
+

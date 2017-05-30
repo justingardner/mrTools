@@ -1,0 +1,70 @@
+#!/usr/bin/python
+#
+#      usage: mlrAnatDBInit
+#         by: justin gardner
+#       date: 12/31/2014
+#    purpose: python script to make empty mercurial repos to subject repo
+#             run sudo:
+#
+#             sudo mlrAnatDBInit
+#
+#             By default this will initialize 99 subject databases - to do
+#             more (you can do this after you have already started a databse
+#             since it will just skip over already initialized subject dirs)
+#             e.g. to extend to 250 ids:
+#
+#             sudo mlrAnatDBInit 250
+
+# import necessary interfaces
+import os, sys, urllib, re, time, smtplib, getopt, socket
+
+# display usage function
+def usage():
+    print "USAGE: mlrAnatDBInit <n>"
+    sys.exit(0)
+
+# verbose mode
+verbose=True
+
+if len(sys.argv) >= 2:
+    maxSubjectID = int(sys.argv[1])+1
+else:
+    maxSubjectID = 99
+
+if not os.path.exists("mlrAnatDB"):
+    os.mkdir("mlrAnatDB")
+
+# go through all subject id numbers 
+for i in range(1, maxSubjectID):
+    # make subject ID database
+    subjectID = "mlrAnatDB/s%04i" % i
+    if not os.path.exists(subjectID):
+        print "===================== s%04i =====================" % i
+        os.mkdir(subjectID)
+        os.system("hg init %s" % subjectID)
+        os.system("cd %s; hg branch v0000;" % subjectID)
+        os.system("cd %s; mkdir mlrROIs;touch mlrROIs/.mlrAnatDB" % subjectID)
+        os.system("cd %s; mkdir niftiROIs; touch niftiROIs/.mlrAnatDB" % subjectID)
+        os.system("cd %s; mkdir mlrBaseAnatomies; touch mlrBaseAnatomies/.mlrAnatDB" % subjectID)
+        os.system("cd %s; mkdir surfaces; touch surfaces/.mlrAnatDB" % subjectID)
+        os.system("cd %s; mkdir screenShots; touch screenShots/.mlrAnatDB" % subjectID)
+        os.system("cd %s; touch .mlrAnatDB;" % subjectID)
+        os.system("cd %s; echo anatomy > .hgignore" % subjectID)
+        os.system("cd %s; echo localizers >> .hgignore" % subjectID)
+        os.system("cd %s; echo surfaces/freesurfer >> .hgignore" % subjectID)
+        os.system("cd %s; hg add;" % subjectID)
+        os.system("cd %s; hg commit -m 'Initial setup';" % subjectID)
+    # make subject ID data database
+    subjectID = "mlrAnatDB/s%04id" % i
+    if not os.path.exists(subjectID):
+        os.mkdir(subjectID)
+        os.system("hg init %s" % subjectID)
+        os.system("cd %s; hg branch v0000;" % subjectID)
+        os.system("cd %s; mkdir localizers; touch localizers/.mlrAnatDB" % subjectID)
+        os.system("cd %s; mkdir anatomy; touch anatomy/.mlrAnatDB" % subjectID)
+        os.system("cd %s; touch .mlrAnatDB;" % subjectID)
+        os.system("cd %s; hg add --large;" % subjectID)
+        os.system("cd %s; hg commit -m 'Initial setup';" % subjectID)
+os.system("chown -R gru mlrAnatDB")
+
+
