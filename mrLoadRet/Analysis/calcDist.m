@@ -120,7 +120,7 @@ for i=1:length(distances)
 end
 
 % find the distance of all vertices from their neighbours 
-scaleFactor = [1 1 1];
+scaleFactor = baseHdr.pixdim(2:4)'; % use the actual voxel dimensions of the base instead of assuming 1 mm isotropic
 D = find3DNeighbourDists(mesh,scaleFactor); 
 
 dijkstraDistance = [];
@@ -130,21 +130,21 @@ switch lower(method)
     for p=1:length(nearestVtcs)-1
       dist = dijkstra(D, nearestVtcs(p))';
       dijkstraDistance(p) = dist(nearestVtcs(p+1));
-      euclideanDistance(p) = norm(diff(coords(p:p+1,:)));
+      euclideanDistance(p) = norm(diff(coords(p:p+1,:)).*scaleFactor);
     end 
  case {'pairs'}
     % calculate lengths of a bunch of pairs (1-2, 3-4, 5-6)
     for p=1:2:length(nearestVtcs)
       dist = dijkstra(D, nearestVtcs(p))';
       dijkstraDistance(end+1) = dist(nearestVtcs(p+1));
-      euclideanDistance(end+1) = norm(diff(coords(p:p+1,:)));
+      euclideanDistance(end+1) = norm(diff(coords(p:p+1,:)).*scaleFactor);
     end
   case {'roi'}
     % calculate lengths of each point from the first coordinate
     dist = dijkstra(D, nearestVtcs(1))';
     dijkstraDistance = dist(nearestVtcs);
     % JC - euclidean distance between first coord and all others
-    normcoords = bsxfun(@minus,coords,coords(1,:));
+    normcoords = bsxfun(@minus,coords,coords(1,:));  % JB (06/06/2017): NEED TO ADD SCALING FACTOR SOMEWHERE HERE
     euclideanDistance = sqrt(sum(normcoords.^2,2));
   otherwise
     mesh.dist = dijkstra(D, nearestVtcs(1))';
