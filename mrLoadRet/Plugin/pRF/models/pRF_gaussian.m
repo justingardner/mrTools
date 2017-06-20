@@ -40,7 +40,9 @@ if strcmp(varargin{1}, 'getModelResponse')
   thisModelResponse = convolveModelResponseWithHRF(thisModelResponse,hrf);
 
   % drop junk frames here
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
+  if fitParams.concatInfo.isConcat
+    thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
+  end
   %%%% Maybe uncomment this later:
   %thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
 
