@@ -45,8 +45,9 @@ if strcmp(varargin{1}, 'getModelResponse')
 
   % drop junk frames here
   %thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
-
+  if fitParams.concatInfo.isConcat
+    thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
+  end
   % return the calculated model response
   output = thisModelResponse;
 %end
@@ -120,7 +121,7 @@ function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
 nStimFrames = size(stim.im,3);
 
 % preallocate memory
-modelResponse = zeros(1,nFrames);
+modelResponse = zeros(1,nStimFrames);
 
 for frameNum = 1:nStimFrames
   % multipy the stimulus frame by frame with the rfModel

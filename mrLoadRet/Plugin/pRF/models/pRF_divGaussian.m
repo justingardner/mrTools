@@ -48,8 +48,9 @@ if strcmp(varargin{1}, 'getModelResponse')
 
   % drop junk frames here
   %thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
-
+  if fitParams.concatInfo.isConcat
+    thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
+  end
   % return the calculated model response
   output = thisModelResponse;
 
@@ -91,7 +92,7 @@ elseif strcmp(varargin{1}, 'getFitParams')
   p.std = params(3);
   p.stdRatio = params(4);
   p.b1 = params(5);
-  %p.b2 = params(6);
+  p.b2 = params(6);
   % use a fixed single gaussian
   p.canonical.type = 'gamma';
   p.canonical.lengthInSeconds = 25;

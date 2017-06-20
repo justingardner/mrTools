@@ -33,20 +33,27 @@ if strcmp(varargin{1}, 'getModelResponse')
   p = varargin{5};
   i = varargin{6};
 
-  rfModel2 = exp(-(((fitParams.stimX - p.x).^2)/(2*(p.std2^2))+((fitParams.stimY-p.y).^2)/(2*(p.std2^2)))); 
+  rfModel2 = exp(-(((fitParams.stimX - p.x).^2)/(2*((p.std*p.stdRatio)^2))+((fitParams.stimY-p.y).^2)/(2*((p.std*p.stdRatio)^2)))); 
   nFrames = fitParams.concatInfo.runTransition(i,2);
   rPlus = convolveModelWithStimulus(rfModel1,fitParams.stim{i},nFrames);
   rMinus = convolveModelWithStimulus(rfModel2, fitParams.stim{i}, nFrames);
 
+  thisModelResponse = rPlus*p.B1 - rMinus*p.B2;
+  thisModelResponse = convolveModelResponseWithHRF(thisModelResponse, hrf);
+  
   % and convolve in time.
-  pPlus = convolveModelResponseWithHRF(rPlus,hrf);
-  pMinus = convolveModelResponseWithHRF(rMinus,hrf);
+  %pPlus = convolveModelResponseWithHRF(rPlus,hrf);
+  %pMinus = convolveModelResponseWithHRF(rMinus,hrf);
   
   % Model response is the difference of Gaussians, weighted by Beta amplitudes
-  thisModelResponse = pPlus*p.B1 + pMinus*p.B2; 
+  %thisModelResponse = pPlus*p.B1 + pMinus*p.B2;
 
   % drop junk frames here
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
+  %thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
+  if fitParams.concatInfo.isConcat
+    thisModelResponse = thisModelResponse(fitParams.concatInfo.junkFrames(i)+1:end);
+  end
+
 
   % return the calculated model response
   output = thisModelResponse;
@@ -59,15 +66,16 @@ elseif strcmp(varargin{1}, 'setParams')
 
   fitParams = varargin{2};
 
-  fitParams.paramNames = {'x','y','rfWidth', 'surroundWidth', 'centerAmplitude', 'surroundAmplitude'};
-  fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)', 'RF width of surround pool', 'Beta weight amplitude of positive Gaussian', 'Beta weight amplitude for negative Gaussian'};
+  fitParams.paramNames = {'x','y','rfWidth', 'surroundRatio', 'centerGain', 'surroundGain'};
+  fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)', 'Ratio of surround width to center width', 'Center Gain', 'Surround Gain'};
+
   fitParams.paramIncDec = [1 1 1 1 1 1];
   fitParams.paramMin = [-inf -inf 0 0 -inf -inf];
   fitParams.paramMax = [inf inf inf inf inf inf];
   % set min/max and init
-  fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 0 -inf -inf];
+  fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 1 0 0];
   fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf inf inf inf];
-  fitParams.initParams = [0 0 4 4 1 0];
+  fitParams.initParams = [0 0 4 2 1 1];
 
   % return fitParams with modified values
   output = fitParams;
@@ -87,7 +95,7 @@ elseif strcmp(varargin{1}, 'getFitParams')
   p.x = params(1);
   p.y = params(2);
   p.std = params(3);
-  p.std2 = params(4);
+  p.stdRatio = params(4);
   p.B1 = params(5);
   p.B2 = params(6);
   % use a fixed single gaussian
@@ -116,7 +124,7 @@ function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
 nStimFrames = size(stim.im,3);
 
 % preallocate memory
-modelResponse = zeros(1,nFrames);
+modelResponse = zeros(1,nStimFrames);
 
 for frameNum = 1:nStimFrames
   % multipy the stimulus frame by frame with the rfModel
