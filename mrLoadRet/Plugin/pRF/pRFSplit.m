@@ -34,6 +34,8 @@ for blockStart = 1:blockSize:n
   split.concatInfo = fit.concatInfo;
   split.prefit = fit.prefit;
   split.pRFFitParams = params.pRFFit;
+  split.paramsInfo = fit.paramsInfo;
+  split.scanNum = scanNum;
 
   save(sprintf('Splits/split%d.mat', whichSplit), 'split');
   disp(sprintf('Data split %d saved to Splits/split%d.mat', whichSplit, whichSplit));
