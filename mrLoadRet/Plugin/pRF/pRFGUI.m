@@ -143,6 +143,9 @@ paramsInfo{end+1} = {'saveStimImage',0,'type=checkbox','Save the stim image back
 paramsInfo{end+1} = {'recomputeStimImage',0,'type=checkbox','Even if there is an already computed stim image (see saveStimImage) above, this will force a recompute of the image. This is useful if there is an update to the code that creates the stim images and need to make sure that the stim image is recreated'};
 paramsInfo{end+1} = {'applyFiltering',1,'type=checkbox','If set to 1 then applies the same filtering that concatenation does to the model. Does not do any filtering applied by averages. If this is not a concat then does nothing besides mean subtraction. If turned off, will still do mean substraction on model.'};
 paramsInfo{end+1} = {'stimImageDiffTolerance',5,'minmax=[0 100]','incdec=[-1 1]','When averaging the stim images should be the same, but some times we are off by a frame here and there due to inconsequential timing inconsistenices. Set this to a small value, like 5 to ignore that percentage of frames of the stimulus that differ within an average. If this threshold is exceeded, the code will ask you if you want to continue - otherwise it will just print out to the buffer the number of frames that have the problem'};
+paramsInfo{end+1} = {'splitData', true, 'type=checkbox', 'Check this to split the data into chunks'};
+paramsInfo{end+1} = {'numSplits', 10, 'minmax=[0 inf]','incdec=[-1 1]', 'Number of chunks to split the data into', 'contingent=splitData'};
+paramsInfo{end+1} = {'splitOnly', false, 'type=checkbox', 'Check this to save the splits and then quit without running the pRF right now'};
 
 % Get parameter values
 if defaultParams
