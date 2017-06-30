@@ -8,18 +8,26 @@
 %
 function splits = pRFSplit(v, scanNum, params, x,y,z, n, fit)
 
-splitDir = '~/Google Drive/data/mgldoublebars/s036020170331/Splits';
-splitDir = './Splits';
+%% User specific params
+sherlockSessionPath = '/share/PI/jlg/data/mgldoublebars/s036020170331';
+suid = 'akshayj';
+
+% Set split directory and scripts directory
+splitDir = 'Splits';
+scriptsDir = 'Splits/Scripts'
 numSplits = params.pRFFit.numSplits;
 blockSize = ceil(n/numSplits);
 whichSplit = 1;
 
+% Make directory 
 if exist(splitDir) ~= 7
   mkdir(splitDir);
 end
-if exist('Splits/Scripts') ~=7
-  mkdir('Splits/Scripts');
+if exist(scriptsDir) ~=7
+  mkdir(scriptsDir);
 end
+
+system('echo "#\!/bin/bash"> Splits/Scripts/runAll.sh');
 
 for blockStart = 1:blockSize:n
   blockEnd = min(blockStart+blockSize-1,n);
@@ -54,12 +62,12 @@ for blockStart = 1:blockSize:n
 
   % Call bash script to output a .sbatch file
   disp('Generating bash scripts');
-  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/generateBatchScripts.sh "%s"',filename));
+  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/generateBatchScripts.sh "%s" "%s"',filename,sherlockSessionPath));
 
   splits{whichSplit} = split;
   whichSplit = whichSplit+1;
 
 end
 disp('Copying split structs (.mat) and batch scripts to sherlock server');
-system('rsync -q Splits/* akshayj@sherlock.stanford.edu:/share/PI/jlg/data/mgldoublebars/s036020170331/Splits/');
-system('rsync -q Splits/Scripts/* akshayj@sherlock.stanford.edu:/share/PI/jlg/data/mgldoublebars/s036020170331/Splits/Scripts/');
+system(sprintf('rsync -q Splits/* %s@sherlock.stanford.edu:%s/Splits/', suid, sherlockSessionPath));
+system(sprintf('rsync -q %s/* %s@sherlock.stanford.edu:%s/%s', scriptsDir, suid, sherlockSessionPath, scriptsDir));
