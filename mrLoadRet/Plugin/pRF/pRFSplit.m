@@ -55,7 +55,7 @@ for blockStart = 1:blockSize:n
   split.scanNum = scanNum;
 
   % Save split struct to the specified directory
-  filename = sprintf('%ssplit%d', params.saveName, whichSplit);
+  filename = sprintf('%s_split%d', params.saveName, whichSplit);
   saveFile = sprintf('%s/%s.mat', splitDir, filename);
   save(saveFile, 'split');
   disp(sprintf('Data split %d saved to %s', whichSplit, saveFile));
@@ -68,6 +68,11 @@ for blockStart = 1:blockSize:n
   whichSplit = whichSplit+1;
 
 end
+% Use rsync to transfer split structs to Sherlock
 disp('Copying split structs (.mat) and batch scripts to sherlock server');
 system(sprintf('rsync -q Splits/* %s@sherlock.stanford.edu:%s/Splits/', suid, sherlockSessionPath));
 system(sprintf('rsync -q %s/* %s@sherlock.stanford.edu:%s/%s', scriptsDir, suid, sherlockSessionPath, scriptsDir));
+
+% Call batch submission scripts on Sherlock
+disp('Submitting batch scripts...');
+system(sprintf('ssh %s@sherlock.stanford.edu "cd %s/%s/; sh runAll.sh', suid, sherlockSessionPath, scriptsDir));
