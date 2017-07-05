@@ -8,6 +8,7 @@ function merged = pRFMergeSplits(analysisName)
 
 %User specific parameters
 sherlockSessionPath = '/share/PI/jlg/data/mgldoublebars/s036020170331';
+suid = 'akshayj'
 
 %% First, pull the analyses into the local directory.
 
@@ -19,7 +20,7 @@ end
 % use rsync to get the data from sherlock
 if ~exist(sprintf('Splits/Analysis/%s_split1_Anal.mat', analysisName))
   disp('Pulling pRF analysis results from Sherlock server');
-  system(sprintf('rsync akshayj@sherlock.stanford.edu:"%s/Splits/Analysis/%s*.mat" Splits/Analysis/', sherlockSessionPath, analysisName));
+  system(sprintf('rsync %s@sherlock.stanford.edu:"%s/Splits/Analysis/%s*.mat" Splits/Analysis/', suid, sherlockSessionPath, analysisName));
 else
   disp('Files already exist locally, so not pulling from server.');
 end

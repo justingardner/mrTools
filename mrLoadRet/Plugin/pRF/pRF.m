@@ -200,10 +200,8 @@ for scanNum = params.scanNum
     overlays.rfHalfWidth = rfHalfWidth;
     overlays.pRFAnal = pRFAnal;
     splits = pRFSplit(v, scanNum, params, x,y,z,n, fit, overlays);
-    if params.pRFFit.splitOnly
-      return
-    end
     blockSize = ceil(n/numSplits);
+    return
   else
     blockSize = 240;
   end
