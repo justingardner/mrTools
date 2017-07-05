@@ -194,7 +194,12 @@ for scanNum = params.scanNum
 
   % Set blocksize according to the user specified number of chunks to split data into.
   if params.pRFFit.splitData
-    splits = pRFSplit(v, scanNum, params, x,y,z,n, fit);
+    overlays.r2 = r2;
+    overlays.polarAngle = polarAngle;
+    overlays.eccentricity = eccentricity;
+    overlays.rfHalfWidth = rfHalfWidth;
+    overlays.pRFAnal = pRFAnal;
+    splits = pRFSplit(v, scanNum, params, x,y,z,n, fit, overlays);
     if params.pRFFit.splitOnly
       return
     end

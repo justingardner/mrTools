@@ -6,7 +6,7 @@
 %     purpose: Split pRF data into chunks of voxels, so that they can be more easily computed.
 %
 %
-function splits = pRFSplit(v, scanNum, params, x,y,z, n, fit)
+function splits = pRFSplit(v, scanNum, params, x,y,z, n, fit, overlays)
 
 %% User specific params
 sherlockSessionPath = '/share/PI/jlg/data/mgldoublebars/s036020170331';
@@ -27,7 +27,7 @@ if exist(scriptsDir) ~=7
   mkdir(scriptsDir);
 end
 
-system('echo "#\!/bin/bash"> Splits/Scripts/runAll.sh');
+system('echo "#\!/bin/bash" >! "Splits/Scripts/runAll.sh"');
 
 for blockStart = 1:blockSize:n
   blockEnd = min(blockStart+blockSize-1,n);
@@ -68,6 +68,13 @@ for blockStart = 1:blockSize:n
   whichSplit = whichSplit+1;
 
 end
+
+% Save master split struct locally
+disp('Saving master struct');
+pRFAnal = overlays.pRFAnal;
+save(sprintf('Splits/%s_master.mat', params.saveName), 'fit', 'x', 'y', 'z', 'scanNum', 'overlays', 'pRFAnal', 'v', 'params');
+
+
 % Use rsync to transfer split structs to Sherlock
 disp('Copying split structs (.mat) and batch scripts to sherlock server');
 system(sprintf('rsync -q Splits/* %s@sherlock.stanford.edu:%s/Splits/', suid, sherlockSessionPath));
@@ -75,4 +82,4 @@ system(sprintf('rsync -q %s/* %s@sherlock.stanford.edu:%s/%s', scriptsDir, suid,
 
 % Call batch submission scripts on Sherlock
 disp('Submitting batch scripts...');
-system(sprintf('ssh %s@sherlock.stanford.edu "cd %s/%s/; sh runAll.sh', suid, sherlockSessionPath, scriptsDir));
+system(sprintf('ssh %s@sherlock.stanford.edu "cd %s/%s/; sh runAll.sh"', suid, sherlockSessionPath, scriptsDir));
