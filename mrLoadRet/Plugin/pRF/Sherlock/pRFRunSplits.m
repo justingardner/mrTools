@@ -33,6 +33,7 @@ for i = 1:s.nVoxels
 
 end
 toc
+splits.scanCoords = s.scanCoords;
 splits.r2 = thisR2;
 splits.polarAngle = thisPolarAngle;
 splits.eccentricity = thisEccentricity;
