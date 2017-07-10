@@ -12,6 +12,9 @@ s = l.split;
 % split contains: nVoxels, scanCoords, tSeries, stim, concatInfo, prefit, pRFFitParams
 
 % Call pRFFit on the voxels
+if exist('Splits/Analysis')~=7
+  mkdir('Splits/Analysis');
+end
 
 tic
 for i = 1:s.nVoxels
