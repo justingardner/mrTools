@@ -8,9 +8,10 @@
 %
 function splits = pRFSplit(v, scanNum, params, x,y,z, n, fit, overlays)
 
-%% User specific params
-sherlockSessionPath = '/share/PI/jlg/data/mgldoublebars/s036020170331';
-suid = 'akshayj';
+%% Get current user and current session dir
+curPath = pwd;
+sherlockSessionPath = ['/share/PI/jlg/' curPath(findstr(curPath, 'data'):end)];
+suid = params.pRFFit.suid;
 
 % Set split directory and scripts directory
 splitDir = 'Splits';
@@ -19,7 +20,7 @@ numSplits = params.pRFFit.numSplits;
 blockSize = ceil(n/numSplits);
 whichSplit = 1;
 
-% Make directory 
+% Make Splits directory if it doesn't exist 
 if exist(splitDir) ~= 7
   mkdir(splitDir);
 end
@@ -62,7 +63,7 @@ for blockStart = 1:blockSize:n
 
   % Call bash script to output a .sbatch file
   disp('Generating bash scripts');
-  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/generateBatchScripts.sh "%s" "%s"',filename,sherlockSessionPath));
+  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/generateBatchScripts.sh "%s" "%s" "%s"',filename,sherlockSessionPath, suid));
 
   splits{whichSplit} = split;
   whichSplit = whichSplit+1;
@@ -72,12 +73,21 @@ end
 % Save master split struct locally
 disp('Saving master struct');
 pRFAnal = overlays.pRFAnal;
-save(sprintf('Splits/%s_master.mat', params.saveName), 'fit', 'x', 'y', 'z', 'scanNum', 'overlays', 'pRFAnal', 'v', 'params');
+save(sprintf('Splits/%s_master.mat', params.saveName), 'fit', 'x', 'y', 'z', 'scanNum', 'overlays', 'pRFAnal', 'v', 'params', 'sherlockSessionPath', 'suid');
 
+% Check if session directory exists on Sherlock - and make it otherwise.
+[~,out] = system(sprintf('ssh %s@sherlock.stanford.edu "[ -d %s ] && echo exists || echo does not exist"', suid, sherlockSessionPath));
+if ~strcmp(out, 'exists')
+  disp('Session directory does not exist on Sherlock. Transferring session dir to Sherlock');
+  system(sprintf('ssh %s@sherlock.stanford.edu "mkdir %s"', suid, sherlockSessionPath));
+  system(sprintf('rsync -q %s/Anatomy/* %s@sherlock.stanford.edu:%s/Anatomy/', curPath, suid, sherlockSessionPath));
+  system(sprintf('rsync -q %s/Etc/* %s@sherlock.stanford.edu:%s/Etc/', curPath, suid, sherlockSessionPath));
+  system(sprintf('rsync -q %s/%s/* %s@sherlock.stanford.edu:%s/%s/', curPath, params.groupName, suid, sherlockSessionPath, params.groupName)); 
+end
 
 % Use rsync to transfer split structs to Sherlock
 disp('Copying split structs (.mat) and batch scripts to sherlock server');
-system(sprintf('rsync -q Splits/* %s@sherlock.stanford.edu:%s/Splits/', suid, sherlockSessionPath));
+system(sprintf('rsync -q Splits/%s*.mat %s@sherlock.stanford.edu:%s/Splits/', params.saveName, suid, sherlockSessionPath));
 system(sprintf('rsync -q %s/* %s@sherlock.stanford.edu:%s/%s', scriptsDir, suid, sherlockSessionPath, scriptsDir));
 
 % Call batch submission scripts on Sherlock

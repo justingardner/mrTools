@@ -6,9 +6,10 @@
 %
 function merged = pRFMergeSplits(analysisName)
 
-%User specific parameters
-sherlockSessionPath = '/share/PI/jlg/data/mgldoublebars/s036020170331';
-suid = 'akshayj'
+%Load master struct
+m = load(sprintf('Splits/%s_master.mat', analysisName));
+suid = m.suid;
+sherlockSessionPath = m.sherlockSessionPath;
 
 %% First, pull the analyses into the local directory.
 
@@ -28,8 +29,7 @@ end
 splits = dir('Splits/');
 analyses = dir(sprintf('Splits/Analysis/%s_split*_Anal.mat', analysisName));
 
-% Load the master struct
-m = load(sprintf('Splits/%s_master.mat', analysisName));
+% Load the overlays from the master struct
 r2 = m.overlays.r2;
 polarAngle = m.overlays.polarAngle;
 eccentricity = m.overlays.eccentricity;
@@ -40,9 +40,10 @@ scanNum = m.scanNum;
 fit = m.fit;
 params = m.params;
 v = m.v;
+scanDims = viewGet(m.v, 'scanDims');
 
 % replace 3 with fit.nParams
-rawParams = nan(3, length(x));
+rawParams = nan(fit.nParams, length(x));
 r = nan(length(x), 1);
 
 for ai = 1:length(analyses)
@@ -65,6 +66,7 @@ for ai = 1:length(analyses)
 
 end
 
+pRFAnal.d{scanNum}.linearCoords = sub2ind(scanDims, x, y, z);
 pRFAnal.d{scanNum}.params = rawParams;
 pRFAnal.d{scanNum}.r = r;
 iScan = find(params.scanNum == scanNum);
