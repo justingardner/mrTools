@@ -63,7 +63,7 @@ for blockStart = 1:blockSize:n
 
   % Call bash script to output a .sbatch file
   disp('Generating bash scripts');
-  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/generateBatchScripts.sh "%s" "%s" "%s"',filename,sherlockSessionPath, suid));
+  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/Sherlock/generateBatchScripts.sh "%s" "%s" "%s"',filename,sherlockSessionPath, suid));
 
   splits{whichSplit} = split;
   whichSplit = whichSplit+1;
@@ -79,7 +79,7 @@ save(sprintf('Splits/%s_master.mat', params.saveName), 'fit', 'x', 'y', 'z', 'sc
 [~,out] = system(sprintf('ssh %s@sherlock.stanford.edu "[ -d %s ] && echo exists || echo does not exist"', suid, sherlockSessionPath));
 if ~strcmp(out, 'exists')
   disp('Session directory does not exist on Sherlock. Transferring session dir to Sherlock');
-  system(sprintf('ssh %s@sherlock.stanford.edu "mkdir %s"', suid, sherlockSessionPath));
+  system(sprintf('ssh %s@sherlock.stanford.edu "mkdir -p %s"', suid, sherlockSessionPath));
   system(sprintf('rsync -q %s/Anatomy/* %s@sherlock.stanford.edu:%s/Anatomy/', curPath, suid, sherlockSessionPath));
   system(sprintf('rsync -q %s/Etc/* %s@sherlock.stanford.edu:%s/Etc/', curPath, suid, sherlockSessionPath));
   system(sprintf('rsync -q %s/%s/* %s@sherlock.stanford.edu:%s/%s/', curPath, params.groupName, suid, sherlockSessionPath, params.groupName)); 
