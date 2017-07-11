@@ -83,6 +83,7 @@ if ~strcmp(out, 'exists')
   system(sprintf('rsync -q %s/Anatomy/* %s@sherlock.stanford.edu:%s/Anatomy/', curPath, suid, sherlockSessionPath));
   system(sprintf('rsync -q %s/Etc/* %s@sherlock.stanford.edu:%s/Etc/', curPath, suid, sherlockSessionPath));
   system(sprintf('rsync -q %s/%s/* %s@sherlock.stanford.edu:%s/%s/', curPath, params.groupName, suid, sherlockSessionPath, params.groupName)); 
+  system(sprintf('rsync -q %s/mrSession.mat %s@sherlock.stanford.edu:%s/.', curPath, suid, sherlockSessionPath));
 end
 
 % Use rsync to transfer split structs to Sherlock
