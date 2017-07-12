@@ -53,13 +53,13 @@ for blockStart = 1:blockSize:n
   pRFAnal.d{scanNum}.linearCoords = [pRFAnal.d{scanNum}.linearCoords sub2ind(scanDims,x(blockStart:blockEnd),y(blockStart:blockEnd),z(blockStart:blockEnd))];
 
   % Add all the needed fields to a split struct
-  split.v = v;
+  %split.v = v;
   split.nVoxels = blockSize;
   split.scanCoords = loadROI.scanCoords;
   split.tSeries = loadROI.tSeries;
   split.stim = fit.stim;
   split.concatInfo = fit.concatInfo;
-  split.prefit = fit.prefit;
+  %split.prefit = fit.prefit;
   split.pRFFitParams = params.pRFFit;
   split.paramsInfo = fit.paramsInfo;
   split.scanNum = scanNum;
@@ -72,7 +72,7 @@ for blockStart = 1:blockSize:n
 
   % Call bash script to output a .sbatch file
   disp('Generating bash scripts');
-  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/Sherlock/generateBatchScripts.sh "%s" "%s" "%s"',filename,sherlockSessionPath, suid));
+  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/Sherlock/generateBatchScripts.sh "%s" "%s" "%s" "%d"',params.saveName,sherlockSessionPath, suid, whichSplit));
 
   splits{whichSplit} = split;
   whichSplit = whichSplit+1;
@@ -80,8 +80,9 @@ for blockStart = 1:blockSize:n
 end
 
 % Save master split struct locally
+prefit = fit.prefit;
 disp('Saving master struct');
-save(sprintf('Splits/%s_master.mat', params.saveName), 'fit', 'x', 'y', 'z', 'scanNum', 'overlays', 'pRFAnal', 'v', 'params', 'sherlockSessionPath', 'suid');
+save(sprintf('Splits/%s_master.mat', params.saveName), 'fit', 'x', 'y', 'z', 'scanNum', 'overlays', 'pRFAnal', 'v', 'params', 'sherlockSessionPath', 'suid', 'prefit');
 
 % Check if session directory exists on Sherlock - and make it otherwise.
 [~,out] = system(sprintf('ssh %s@sherlock.stanford.edu "[ -d %s ] && echo exists || echo does not exist"', suid, sherlockSessionPath));

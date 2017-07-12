@@ -46,6 +46,9 @@ scanDims = viewGet(m.v, 'scanDims');
 rawParams = nan(fit.nParams, length(x));
 r = nan(length(x), 1);
 
+keyboard
+pRFAnal.d{scanNum}.linearCoords = [];
+
 for ai = 1:length(analyses)
   l1 = load(sprintf('Splits/Analysis/%s_split%d_Anal.mat', analysisName, ai));
   nVox = length(l1.splits.r2);
@@ -55,6 +58,8 @@ for ai = 1:length(analyses)
   
   %Get scan coords
   x = l1.splits.scanCoords(1,:); y = l1.splits.scanCoords(2,:); z = l1.splits.scanCoords(3,:);
+
+  pRFAnal.d{scanNum}.linearCoords = [pRFAnal.d{scanNum}.linearCoords sub2ind(scanDims,x,y,z)];
  
   % Set overlays
   for vi = 1:nVox
@@ -67,6 +72,7 @@ for ai = 1:length(analyses)
   end
 
 end
+
 
 pRFAnal.d{scanNum}.params = rawParams;
 pRFAnal.d{scanNum}.r = r;
@@ -102,4 +108,3 @@ end
 if ~isempty(viewGet(v, 'fignum'))
   refreshMLRDisplay(viewGet(v, 'viewNum'));
 end
-keyboard
