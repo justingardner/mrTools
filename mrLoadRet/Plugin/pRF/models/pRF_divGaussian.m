@@ -92,7 +92,7 @@ elseif strcmp(varargin{1}, 'getFitParams')
   p.std = params(3);
   p.stdRatio = params(4);
   p.b1 = params(5);
-  p.b2 = params(6);
+%  p.b2 = params(6);
   % use a fixed single gaussian
   p.canonical.type = 'gamma';
   p.canonical.lengthInSeconds = 25;
