@@ -15,10 +15,12 @@ suid = params.pRFFit.suid;
 
 % Set split directory and scripts directory
 splitDir = 'Splits';
-scriptsDir = 'Splits/Scripts'
+scriptsDir = 'Splits/Scripts';
 numSplits = params.pRFFit.numSplits;
 blockSize = ceil(n/numSplits);
 whichSplit = 1;
+scanDims = viewGet(v, 'scanDims');
+pRFAnal = overlays.pRFAnal;
 
 % Make Splits directory if it doesn't exist 
 if exist(splitDir) ~= 7
@@ -42,6 +44,13 @@ for blockStart = 1:blockSize:n
 
   % Load time series
   loadROI = loadROITSeries(v, loadROI, scanNum, params.groupName);
+
+  % reorder x,y,z coordinates since they can get scrambled in loadROITSeries
+  x(blockStart:blockEnd) = loadROI.scanCoords(1,1:blockSize);
+  y(blockStart:blockEnd) = loadROI.scanCoords(2,1:blockSize);
+  z(blockStart:blockEnd) = loadROI.scanCoords(3,1:blockSize);
+  % Keep the linear coords
+  pRFAnal.d{scanNum}.linearCoords = [pRFAnal.d{scanNum}.linearCoords sub2ind(scanDims,x(blockStart:blockEnd),y(blockStart:blockEnd),z(blockStart:blockEnd))];
 
   % Add all the needed fields to a split struct
   split.v = v;
@@ -72,12 +81,11 @@ end
 
 % Save master split struct locally
 disp('Saving master struct');
-pRFAnal = overlays.pRFAnal;
 save(sprintf('Splits/%s_master.mat', params.saveName), 'fit', 'x', 'y', 'z', 'scanNum', 'overlays', 'pRFAnal', 'v', 'params', 'sherlockSessionPath', 'suid');
 
 % Check if session directory exists on Sherlock - and make it otherwise.
 [~,out] = system(sprintf('ssh %s@sherlock.stanford.edu "[ -d %s ] && echo exists || echo does not exist"', suid, sherlockSessionPath));
-if ~strcmp(out, 'exists')
+if ~strcmp(deblank(out), 'exists')
   disp('Session directory does not exist on Sherlock. Transferring session dir to Sherlock');
   system(sprintf('ssh %s@sherlock.stanford.edu "mkdir -p %s"', suid, sherlockSessionPath));
   system(sprintf('rsync -q %s/Anatomy/* %s@sherlock.stanford.edu:%s/Anatomy/', curPath, suid, sherlockSessionPath));

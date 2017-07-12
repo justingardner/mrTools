@@ -51,22 +51,23 @@ for ai = 1:length(analyses)
   nVox = length(l1.splits.r2);
 
   startIndex = ceil(length(x) / length(analyses))*(ai-1);
-
   rawParams(:,startIndex+1:(startIndex+nVox)) = l1.splits.params;
+  
+  %Get scan coords
+  x = l1.splits.scanCoords(1,:); y = l1.splits.scanCoords(2,:); z = l1.splits.scanCoords(3,:);
  
   % Set overlays
   for vi = 1:nVox
     iMaster = startIndex+vi;
-    r2.data{scanNum}(x(iMaster), y(iMaster), z(iMaster)) = l1.splits.r2(vi);
-    polarAngle.data{scanNum}(x(iMaster), y(iMaster), z(iMaster)) = l1.splits.polarAngle(vi);
-    eccentricity.data{scanNum}(x(iMaster), y(iMaster), z(iMaster)) = l1.splits.eccentricity(vi);
-    rfHalfWidth.data{scanNum}(x(iMaster), y(iMaster), z(iMaster)) = l1.splits.rfHalfWidth(vi);
+    r2.data{scanNum}(x(vi), y(vi), z(vi)) = l1.splits.r2(vi);
+    polarAngle.data{scanNum}(x(vi), y(vi), z(vi)) = l1.splits.polarAngle(vi);
+    eccentricity.data{scanNum}(x(vi), y(vi), z(vi)) = l1.splits.eccentricity(vi);
+    rfHalfWidth.data{scanNum}(x(vi), y(vi), z(vi)) = l1.splits.rfHalfWidth(vi);
     r(iMaster) = l1.splits.r(vi);
   end
 
 end
 
-pRFAnal.d{scanNum}.linearCoords = sub2ind(scanDims, x, y, z);
 pRFAnal.d{scanNum}.params = rawParams;
 pRFAnal.d{scanNum}.r = r;
 iScan = find(params.scanNum == scanNum);
@@ -101,3 +102,4 @@ end
 if ~isempty(viewGet(v, 'fignum'))
   refreshMLRDisplay(viewGet(v, 'viewNum'));
 end
+keyboard
