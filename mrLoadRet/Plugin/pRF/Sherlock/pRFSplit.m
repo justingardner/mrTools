@@ -71,8 +71,8 @@ for blockStart = 1:blockSize:n
   disp(sprintf('Data split %d saved to %s', whichSplit, saveFile));
 
   % Call bash script to output a .sbatch file
-  disp('Generating bash scripts');
-  system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/Sherlock/generateBatchScripts.sh "%s" "%s" "%s" "%d"',params.saveName,sherlockSessionPath, suid, whichSplit));
+  %disp('Generating bash scripts');
+  %system(sprintf('sh ~/proj/mrTools/mrLoadRet/Plugin/pRF/Sherlock/generateBatchScripts.sh "%s" "%s" "%s" "%d"',params.saveName,sherlockSessionPath, suid, whichSplit));
 
   splits{whichSplit} = split;
   whichSplit = whichSplit+1;
@@ -101,5 +101,5 @@ system(sprintf('rsync -q Splits/%s*.mat %s@sherlock.stanford.edu:%s/Splits/', pa
 system(sprintf('rsync -q %s/* %s@sherlock.stanford.edu:%s/%s', scriptsDir, suid, sherlockSessionPath, scriptsDir));
 
 % Call batch submission scripts on Sherlock
-disp('Submitting batch scripts...');
-system(sprintf('ssh %s@sherlock.stanford.edu "cd %s/%s/; sh runAll.sh"', suid, sherlockSessionPath, scriptsDir));
+%disp('Submitting batch scripts...');
+%system(sprintf('ssh %s@sherlock.stanford.edu "cd %s/%s/; sh runAll.sh"', suid, sherlockSessionPath, scriptsDir));
