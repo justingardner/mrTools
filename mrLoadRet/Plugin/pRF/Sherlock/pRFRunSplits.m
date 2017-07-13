@@ -22,7 +22,7 @@ if exist('Splits/Analysis')~=7
 end
 
 tic
-for i = 1:s.nVoxels
+parfor i = 1:s.nVoxels
   x = s.scanCoords(1,:); y = s.scanCoords(2,:); z = s.scanCoords(3,:);
 
   fit = pRFFit(m.v, s.scanNum, x(i),y(i),z(i), 'stim', s.stim, 'concatInfo', s.concatInfo, 'prefit', m.prefit, 'fitTypeParams', s.pRFFitParams, 'tSeries', s.tSeries(i,:)', 'paramsInfo', s.paramsInfo);
