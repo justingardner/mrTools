@@ -515,10 +515,6 @@ else
   hSurface = patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(img),'facecolor','interp','edgecolor','none','Parent',hAxis,'FaceAlpha',baseAlpha);
   % keep the surface handle
   v = viewSet(v,'baseHandle',hSurface,baseNum);
-  % if the interrogator is on, then we need to reinitialize it
-  if ~verLessThan('matlab','8.4') && mrInterrogator('isactive',viewGet(v,'viewNum'))
-    mrInterrogator('init',viewGet(v,'viewNum'));
-  end
   % make sure x direction is normal to make right/right
   set(hAxis,'XDir','reverse');
   set(hAxis,'YDir','normal');
@@ -545,7 +541,7 @@ if verbose>1,disppercent(inf);,end
 % Display ROIs
 nROIs = viewGet(v,'numberOfROIs');
 if nROIs
-  roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
+  [roi,v] = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
 else
   roi = [];
 end
@@ -554,6 +550,12 @@ end
 if ~baseType
   v = displaySurfaceOnVolume(v,hAxis,slice,sliceIndex,rotate,base.dims,slice,baseNum);
 end
+
+% if the interrogator is on, then we need to reinitialize it
+if baseType==2 && ~verLessThan('matlab','8.4') && mrInterrogator('isactive',viewGet(v,'viewNum'))
+  mrInterrogator('init',viewGet(v,'viewNum'));
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % displayColorbar 
@@ -728,7 +730,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 %    displayROIs    %
 %%%%%%%%%%%%%%%%%%%%%
-function roi = displayROIs(view,hAxis,sliceNum,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims,rotate,verbose)
+function [roi,view] = displayROIs(view,hAxis,sliceNum,sliceIndex,baseNum,baseCoordsHomogeneous,imageDims,rotate,verbose)
 %
 % displayROIs: draws the ROIs in the current slice.
 %
@@ -783,7 +785,9 @@ if verbose>1,disppercent(-inf,'Drawing ROI');,end
 selectedROIColor = mrGetPref('selectedROIColor');
 if isempty(selectedROIColor),selectedROIColor = [1 1 1];end
 
+c=0;
 for r = order
+  c = c+1;
   if (r == selectedROI)
     % Selected ROI: set color
     if strcmp(selectedROIColor,'none')
@@ -869,7 +873,7 @@ for r = order
     roi{r}.vertices=y;
     roi{r}.overlayImage = roiColors;
     if ~isempty(fig) && ~isempty(hAxis)
-      patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',hAxis);
+      hSurface(c) = patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',hAxis);
     end
     continue
   end
@@ -972,7 +976,12 @@ for r = order
     roi{r}.lines.y = [];
   end
 end
-if baseType == 2,return,end
+if baseType == 2
+  if ~isempty(order) % store surface ROI handles for use in mrInterogator
+    view = viewSet(view,'surfaceROIHandle',hSurface,baseNum);
+  end
+  return
+end
 
 % label them, if labelROIs is set
 if labelROIs && ~isempty(hAxis)

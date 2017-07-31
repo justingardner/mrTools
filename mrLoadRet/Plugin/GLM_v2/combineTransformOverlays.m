@@ -636,7 +636,7 @@ while ~isempty(remain)
    try
       arguments{nArgs} = eval(token);
    catch exception
-      if strcmp(exception.identifier,'MATLAB:UndefinedFunction')
+      if ismember(exception.identifier,{'MATLAB:UndefinedFunction','MATLAB:minrhs'})
          arguments{nArgs} = token;
       else
          mrErrorDlg(['(parseArguments) could not read argument: ' exception.message]);

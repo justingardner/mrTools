@@ -110,17 +110,23 @@ else
   if all(pointerLoc(1,:) >= 0)
     % then use select3d which is slooow, but accurate
     if isfield(MLR.interrogator{viewNum},'axesnum')
-      hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
+      if verLessThan('matlab','8.4')
+        hobj = get(MLR.interrogator{viewNum}.axesnum,'Children');
+        hobj = hobj(end);
       % make sure we are using the correct object (should be the 3D
       % brain). Use end here because with searchForVoxel we plot a
       % point on the image and the brain object always seems to be
       % last. But if this is not always the case, then we may need
       % to do a little more work here to find the correct object
-      [pos vertex vertexIndex] = select3d(hobj(end));
+      else %from  matlab version 8.5a, the handle to the base has been 
+        %stored in the view, so use that
+        hobj = viewGet(v,'baseHandle');
+      end
+      [pos vertex vertexIndex] = select3d(hobj);
       % convert the index to the coordinates
       if ~isempty(pos)
 	baseCoordMap = viewGet(v,'baseCoordMap');
-	%we'll take the coordinates of the middle of whatever range of cortical depth is currenlty selected
+	%we'll take the coordinates of the middle of whatever range of cortical depth is currently selected
 	corticalSlice = max(1,ceil(mean(viewGet(v,'corticalDepth'))*size(baseCoordMap.coords,5)));
 	pos = round(squeeze(baseCoordMap.coords(1,vertexIndex,1,:,corticalSlice)));
 	%pos = round(squeeze(baseCoordMap.coords(1,vertexIndex,1,:)));

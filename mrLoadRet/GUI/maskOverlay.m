@@ -39,13 +39,17 @@ else
 end
 
 if ~ieNotDefined('boxInfo')
-  boxInfo.interpMethod = mrGetPref('interpMethod');
-  if isempty(boxInfo.interpMethod)
-    boxInfo.interpMethod = 'linear';
+  if fieldIsNotDefined(boxInfo,'interpMethod')
+    boxInfo.interpMethod = mrGetPref('interpMethod');
+    if isempty(boxInfo.interpMethod)
+      boxInfo.interpMethod = 'linear';
+    end
   end
-  boxInfo.interpExtrapVal = NaN;
+  if fieldIsNotDefined(boxInfo,'interpExtrapVal')
+    boxInfo.interpExtrapVal = NaN;
+  end
   overlayCoords = cell(1,length(scanList));
-  if fieldIsNotDefined(boxInfo,'corticalDepth')
+  if fieldIsNotDefined(boxInfo,'corticalDepth') && ~fieldIsNotDefined(boxInfo,'baseNum')
     boxInfo.corticalDepth = viewGet(thisView,'corticalDepth',boxInfo.baseNum);
   end
 end
