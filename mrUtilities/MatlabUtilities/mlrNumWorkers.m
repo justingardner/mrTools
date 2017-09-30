@@ -73,13 +73,16 @@ if any(strcmp({toolboxVersions.Name},'Parallel Computing Toolbox'))
 	end
 	
 	% put up dialog to select number of workers
-	paramsInfo{1} = {'numWorkers',recommendedWorkers,'type=numeric','minmax',[1 maxWorkers],'incdec=[-1 1]','Set to how many workers you want to use for parallel computing'};
+	paramsInfo{1} = {'numWorkers',recommendedWorkers,'type=numeric','minmax',[-1 maxWorkers],'incdec=[-1 1]','Set to how many workers you want to use for parallel computing'};
 
 	% put up the dialog box
 	if numWorkers
 	  params = mrParamsDialog(paramsInfo,'Start a pool of workers?');
 	  if isempty(params),return,end
-	else
+    elseif numWorkers<0
+      disp('Not using parallel processing');
+      n = -1; return;
+    else
 	  % use default parameters if numWorkers was set to 0
 	  params = mrParamsDefault(paramsInfo);
 	end
