@@ -744,8 +744,6 @@ switch lower(param)
     if newBaseNum==1
       view.baseVolumes = baseAnatomy;   
     else
-      % temporary fix for failure here:
-      if ~isfield(baseAnatomy,'hROI'), baseAnatomy.hROI = []; end
       view.baseVolumes(newBaseNum) = baseAnatomy;   
     end
     
