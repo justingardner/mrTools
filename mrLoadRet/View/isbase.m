@@ -46,7 +46,8 @@ if (nargout == 2)
 		    'curCorticalDepth',[];
 		    'h',[];
 		    'plane',[];
-		    'fascicles',[]};
+		    'fascicles',[];
+            'hROI',[]};
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the base structure it is invalid).
@@ -55,7 +56,7 @@ else
                     'sliceOrientation','type','gamma','tilt','vol2tal',...
                     'vol2mag','talInfo','originalOrient','xformFromOriginal',...
                     'alpha','displayOverlay','multiDisplay','multiDisplayContours',...
-                    'multiAxis''overlay','overlayAlpha','overlays','h','plane','fascicles'};
+                    'multiAxis''overlay','overlayAlpha','overlays','h','plane','fascicles','hROI'};
   optionalFields = {'curCorticalDepth',0};
 end
 
