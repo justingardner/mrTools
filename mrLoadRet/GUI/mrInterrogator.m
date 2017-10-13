@@ -228,7 +228,7 @@ if ~isempty(coords.scan)
   % set in the global
   MLR.interrogator{viewNum}.mouseDownScanCoords = [coords.scan.x coords.scan.y coords.scan.z];
   global MLR;
-  if isempty(which(MLR.interrogator{viewNum}.interrogator))
+  if isempty(MLR.interrogator{viewNum}.interrogator) || isempty(which(MLR.interrogator{viewNum}.interrogator))
     disp(sprintf('(mrInterrogator) Cannot find interrogator function'));
     return
   end
