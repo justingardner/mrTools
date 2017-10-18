@@ -191,7 +191,20 @@ for scanNum = params.scanNum
   % as tested on my machine - maybe a few percent faster with full n, but
   % on many machines without enough memory that will crash it so keeping
   % this preliminary value in for now.
-  blockSize = 240;
+
+  % Set blocksize according to the user specified number of chunks to split data into.
+  if params.pRFFit.splitData
+    overlays.r2 = r2;
+    overlays.polarAngle = polarAngle;
+    overlays.eccentricity = eccentricity;
+    overlays.rfHalfWidth = rfHalfWidth;
+    overlays.pRFAnal = pRFAnal;
+    splits = pRFSplit(v, scanNum, params, x,y,z,n, fit, overlays);
+    return
+  else
+    blockSize = 240;
+  end
+
   tic;
   % break into blocks of voxels to go easy on memory
   % if blockSize = n then this just does on block at a time.
@@ -229,16 +242,16 @@ for scanNum = params.scanNum
     parfor i = blockStart:blockEnd
       fit = pRFFit(v,scanNum,x(i),y(i),z(i),'stim',stim,'concatInfo',concatInfo,'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',i,'dispN',n,'tSeries',loadROI.tSeries(i-blockStart+1,:)','framePeriod',framePeriod,'junkFrames',junkFrames,'paramsInfo',paramsInfo);
       if ~isempty(fit)
-	% keep data, note that we are keeping temporarily in
-	% a vector here so that parfor won't complain
-	% then afterwords we put it into the actual overlay struct
-	thisr2(i) = fit.r2;
-	thisPolarAngle(i) = fit.polarAngle;
-	thisEccentricity(i) = fit.eccentricity;
-	thisRfHalfWidth(i) = fit.std;
-	% keep parameters
-	rawParams(:,i) = fit.params(:);
-	r(i,:) = fit.r;
+        % keep data, note that we are keeping temporarily in
+        % a vector here so that parfor won't complain
+        % then afterwords we put it into the actual overlay struct
+        thisr2(i) = fit.r2;
+        thisPolarAngle(i) = fit.polarAngle;
+        thisEccentricity(i) = fit.eccentricity;
+        thisRfHalfWidth(i) = fit.std;
+        % keep parameters
+        rawParams(:,i) = fit.params(:);
+        r(i,:) = fit.r;
       end
     end
       

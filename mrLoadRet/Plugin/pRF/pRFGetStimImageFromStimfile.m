@@ -451,7 +451,7 @@ for i = 1:length(s)
   % have a task which is mglRetinotopy
   taskNum = [];
   for iTask = 1:2
-    if (length(thiss.task) >= iTask) && (isequal(thiss.task{iTask}{1}.taskFilename,'mglRetinotopy.m') || isequal(thiss.task{iTask}{1}.taskFilename,'gruRetinotopy.m'))
+    if (length(thiss.task) >= iTask) && (isequal(thiss.task{iTask}{1}.taskFilename,'mglRetinotopy.m') || isequal(thiss.task{iTask}{1}.taskFilename,'gruRetinotopy.m') || isequal(thiss.task{iTask}{1}.taskFilename, 'mglDoubleBars.m'))
       taskNum = iTask;
     end
   end
@@ -467,7 +467,7 @@ for i = 1:length(s)
   if ~isfield(thiss.task{taskNum}{1},'randVars') missing = 'randVars';end
   if ~isfield(thiss.task{taskNum}{1},'parameter') missing = 'parameter';end
   if ~any(strcmp('maskPhase',thiss.myscreen.traceNames)) missing = 'maskPhase';end
-  if ~any(strcmp('blank',thiss.myscreen.traceNames)) missing = 'blank';end
+  if ~any(strcmp('blank',thiss.myscreen.traceNames)) && isequal(thiss.task{iTask}{1}.taskFilename,'mglRetinotopy.m') missing = 'blank';end
   if ~isempty(missing)
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) Stimfile: %s',dispstr));
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) The stimfile does not appear to have been created by the latest version of mglRetinotopy which contains the field %s necessary for reconstructing the stimulus. Consider running a dummy run with a newer version of mglRetinotpy with the same parameters (see mglSimulateRun to simulate backticks) and then use that stimfile instead of this one.',missing));
@@ -480,6 +480,9 @@ for i = 1:length(s)
 
   % now check for each variable that we need
   varnames = {'blank'};
+  if isequal(thiss.task{taskNum}{1}.taskFilename, 'mglDoubleBars.m') % mglDoubleBars doesn't use blanks
+    varnames = {};
+  end
   for i = 1:length(varnames)
     varval = getVarFromParameters(varnames{i},e);
     if isempty(varval)
@@ -494,12 +497,15 @@ for i = 1:length(s)
   if ~isempty(stimulusType) && (stimulusType ~= thiss.stimulusType)
     disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) !!! Stimfile %s does not match previous one !!! Have you averaged together scans with different stimulus conditions?'));
   end
-  if any(thiss.stimulus.stimulusType == [3 4])
+  if ~isequal(thiss.task{taskNum}{1}.taskFilename, 'mglDoubleBars.m') && any(thiss.stimulus.stimulusType == [3 4])
     varval = getVarFromParameters('barAngle',e);
     if ~isempty(barAngle) && ~isequal(varval,barAngle)
       disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) !!! Stimfile %s does not match previous one !!! The barAngles are different! Have you averaged together scans with different stimulus conditions?'));
     end
     barAngle = varval;
+  elseif isequal(thiss.task{taskNum}{1}.taskFilename, 'mglDoubleBars.m')
+    varval = getVarFromParameters('conditionNum', e);
+    barAngle = thiss.stimulus.conditions(varval, 3:4);
   else
     if ~isempty(direction) && (thiss.stimulus.direction ~= direction)
       disp(sprintf('(pRFGetStimImageFromStimfile:checkStimfile) !!! Stimfile %s does not match previous one !!! The directions are different! Have you averaged together scans with different stimulus conditions?'));

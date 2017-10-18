@@ -54,7 +54,6 @@ if fitParams.justGetStimImage
   fit = fitParams.stim;
   return
 end
-
 % get the tSeries
 if ~isempty(x)
   % if tSeries was not passed in then load it
@@ -67,7 +66,7 @@ if ~isempty(x)
   % but useful for raw/motionCorrected time series. Also, it is very important that
   % the tSeries is properly mean subtracted
   if ~isfield(fitParams.concatInfo,'hipassfilter')
-    tSeries = percentTSeries(tSeries,'detrend','Linear','spatialNormalization','Divide by mean','subtractMean', 'Yes', 'temporalNormalization', 'No');
+    tSeries = percentTSeries(tSeries,'detrend','Linear', 'spatialNormalization','Divide by mean','subtractMean', 'Yes', 'temporalNormalization', 'No');
   end
   
   % if there are any nans in the tSeries then don't fit
@@ -80,7 +79,6 @@ if ~isempty(x)
 else
   tSeries = [];
 end
-
 % handle junk frames (i.e. ones that have not already been junked)
 if ~isempty(fitParams.junkFrames) && ~isequal(fitParams.junkFrames,0)
   % drop junk frames
@@ -143,7 +141,9 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
   if ~isfield(fitParams.prefit,'modelResponse')
     % get number of workers
     nProcessors = mlrNumWorkers;
-    disppercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
+    if fitParams.verbose==1
+      disppercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
+    end
     % first convert the x/y and width parameters into sizes
     % on the actual screen
     fitParams.prefit.x = fitParams.prefit.x*fitParams.stimWidth;
@@ -184,10 +184,13 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
   if fitParams.prefitOnly
     % return if we are just doing a prefit
     fit = getFitParams(fitParams.initParams,fitParams);
+    fit.modelResponse = fitParams.prefit.modelResponse;
+    fit.tSeries = tSeries;
     fit.rfType = fitParams.rfType;
     fit.params = fitParams.initParams;
     fit.r2 = maxr^2;
     fit.r = maxr;
+    fit.bestFitVoxel = bestModel;
     [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
     % display
     if fitParams.verbose
@@ -202,6 +205,8 @@ if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
   [params resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
 elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
   [params fval exitflag] = fminsearch(@getModelResidual,fitParams.initParams,fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
+elseif strcmp(lower(fitParams.algorithm), 'nelder-mead-bnd')
+  [params fval exitflag] = fminsearchbnd(@getModelResidual, fitParams.initParams, fitParams.minParams, fitParams.maxParams, fitParams.optimParams, (tSeries-mean(tSeries))/var(tSeries.^2), fitParams);
 else
   disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
   return
@@ -218,15 +223,20 @@ if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
   fit.r2 = 1-sum((residual-mean(residual)).^2)/sum((tSeries-mean(tSeries)).^2);
 elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
   fit.r2 = residual^2;
+elseif strcmp(lower(fitParams.algorithm), 'nelder-mead-bnd')
+  fit.r2 = residual^2;
 end
 
 % compute polar coordinates
 [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
 
 % display
-if fitParams.verbose
-  disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
+if fitParams.verbose && strcmp(fitParams.rfType, 'gaussian-exp')
+  disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f exp=%f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std, fit.exp));
+elseif fitParams.verbose
+  disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f', fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
 end
+%keyboard
 
 %%%%%%%%%%%%%%%%%%%%%%
 %    setFitParams    %
@@ -253,46 +263,10 @@ fitParams.stimHeight = fitParams.stimExtents(4)-fitParams.stimExtents(2);
 
 if ~isfield(fitParams,'initParams')
   % check the rfType to get the correct min/max arrays
-  switch (fitParams.rfType)
-   case 'gaussian'
-    % parameter names/descriptions and other information for allowing user to set them
-    fitParams.paramNames = {'x','y','rfWidth'};
-    fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)'};
-    fitParams.paramIncDec = [1 1 1];
-    fitParams.paramMin = [-inf -inf 0];
-    fitParams.paramMax = [inf inf inf];
-    % set min/max and init
-    fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0];
-    fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf];
-    fitParams.initParams = [0 0 4];
-   case 'gaussian-hdr'
-    % parameter names/descriptions and other information for allowing user to set them
-    fitParams.paramNames = {'x','y','rfWidth','timelag','tau'};
-    fitParams.paramDescriptions = {'RF x position','RF y position','RF width (std of gaussian)','Time before start of rise of hemodynamic function','Width of the hemodynamic function (tau parameter of gamma)'};
-    fitParams.paramIncDec = [1 1 1 0.1 0.5];
-    fitParams.paramMin = [-inf -inf 0 0 0];
-    fitParams.paramMax = [inf inf inf inf inf];
-    % set min/max and init
-    fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 0 0];
-    fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf 3 inf];
-    fitParams.initParams = [0 0 4 fitParams.timelag fitParams.tau];
-    % add on parameters for difference of gamma
-    if fitParams.diffOfGamma
-      % parameter names/descriptions and other information for allowing user to set them
-      fitParams.paramNames = {fitParams.paramNames{:} 'amp2' 'timelag2','tau2'};
-      fitParams.paramDescriptions = {fitParams.paramDescriptions{:} 'Amplitude of second gamma for HDR' 'Timelag for second gamma for HDR','tau for second gamma for HDR'};
-      fitParams.paramIncDec = [fitParams.paramIncDec(:)' 0.1 0.1 0.5];
-      fitParams.paramMin = [fitParams.paramMin(:)' 0 0 0];
-      fitParams.paramMax = [fitParams.paramMax(:)' inf inf inf];
-      % set min/max and init
-      fitParams.minParams = [fitParams.minParams 0 0 0];
-      fitParams.maxParams = [fitParams.maxParams inf 6 inf];
-      fitParams.initParams = [fitParams.initParams fitParams.amplitudeRatio fitParams.timelag2 fitParams.tau2];
-    end
-   otherwise
-    disp(sprintf('(pRFFit:setFitParams) Unknown rfType %s',rfType));
-    return
-  end
+
+  %%%%%%%%%%%%%%%%%%%
+  fitParams = prfModel('setParams', fitParams);
+  %%%%%%%%%%%%%%%%%%%
   
   % round constraints
   fitParams.minParams = round(fitParams.minParams*10)/10;
@@ -300,7 +274,7 @@ if ~isfield(fitParams,'initParams')
 
   % handle constraints here
   % Check if fit algorithm is one that allows constraints
-  algorithmsWithConstraints = {'levenberg-marquardt'};
+  algorithmsWithConstraints = {'levenberg-marquardt', 'nelder-mead-bnd'};
   if any(strcmp(fitParams.algorithm,algorithmsWithConstraints))
     % if constraints allowed then allow user to adjust them here (if they set defaultConstraints)
     if isfield(fitParams,'defaultConstraints') && ~fitParams.defaultConstraints
@@ -328,7 +302,9 @@ if ~isfield(fitParams,'initParams')
     end
   else
     % no constraints allowed
-    disp(sprintf('(pRFFit) !!! Fit constraints ignored for algorithm: %s (if you want to constrain the fits, then use: %s) !!!',fitParams.algorithm,cell2mat(algorithmsWithConstraints)));
+    if fitParams.verbose==1
+      disp(sprintf('(pRFFit) !!! Fit constraints ignored for algorithm: %s (if you want to constrain the fits, then use: %s) !!!',fitParams.algorithm,cell2mat(algorithmsWithConstraints)));
+    end
   end
 end
 
@@ -336,7 +312,8 @@ fitParams.nParams = length(fitParams.initParams);
 
 % optimization parameters
 if ~isfield(fitParams,'algorithm') || isempty(fitParams.algorithm)
-  fitParams.algorithm = 'nelder-mead';
+  fitParams.algorithm = 'nelder-mead-bnd';
+  disp('(pRFFit) No algorithm provided. Using Default: Nelder-Mead-Bnd');
 end
 fitParams.optimParams = optimset('MaxIter',inf,'Display',fitParams.optimDisplay);
 
@@ -371,18 +348,18 @@ modelResponse = [];residual = [];
 
 % create the model for each concat
 for i = 1:fitParams.concatInfo.n
-  % get model response
-  nFrames = fitParams.concatInfo.runTransition(i,2);
-  thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
-
   % get a model hrf
   hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
 
-  % and convolve in time.
-  thisModelResponse = convolveModelResponseWithHRF(thisModelResponse,hrf);
+  %%%%%%%%%%%%%%%%%%%
+  % Get model response, which involves convolving model with stimulus, and with HRF and dropping junk frames.
+  thisModelResponse = prfModel('getModelResponse', fitParams, rfModel, hrf, p, i);
+  %%%%%%%%%%%%%%%%%%%
 
-  % drop junk frames here
-  thisModelResponse = thisModelResponse(fitParams.concatInfo.totalJunkedFrames(i)+1:end);
+  %~~~~~~~~~~
+  %keyboard
+  %~~~~~~~~~~
+
 
   % apply concat filtering
   if isfield(fitParams,'applyFiltering') && fitParams.applyFiltering
@@ -435,7 +412,7 @@ if fitParams.dispFit
 end
 
 % for nelder-mead just compute correlation and return 1-4
-if strcmp(lower(fitParams.algorithm),'nelder-mead')
+if strcmp(lower(fitParams.algorithm),'nelder-mead') || strcmp(lower(fitParams.algorithm), 'nelder-mead-bnd')
   residual = -corr(modelResponse,tSeries);
 %  disp(sprintf('(pRFFit:getModelResidual) r: %f',residual));
 end
@@ -486,7 +463,7 @@ designMatrix = modelResponse;
 designMatrix(:,2) = 1;
 
 % get beta weight for the modelResponse
-if ~any(isnan(modelResponse))
+if ~any(isnan(modelResponse)) && ~any(isinf(modelResponse))
   beta = pinv(designMatrix)*tSeries;
   beta(1) = max(beta(1),0);
   modelResponse = designMatrix*beta;
@@ -501,47 +478,7 @@ end
 function p = getFitParams(params,fitParams)
 
 p.rfType = fitParams.rfType;
-
-switch (fitParams.rfType)
-  case 'gaussian'
-    p.x = params(1);
-    p.y = params(2);
-    p.std = params(3);
-    % use a fixed single gaussian
-    p.canonical.type = 'gamma';
-    p.canonical.lengthInSeconds = 25;
-    p.canonical.timelag = fitParams.timelag;
-    p.canonical.tau = fitParams.tau;
-    p.canonical.exponent = fitParams.exponent;
-    p.canonical.offset = 0;
-    p.canonical.diffOfGamma = fitParams.diffOfGamma;
-    p.canonical.amplitudeRatio = fitParams.amplitudeRatio;
-    p.canonical.timelag2 = fitParams.timelag2;
-    p.canonical.tau2 = fitParams.tau2;
-    p.canonical.exponent2 = fitParams.exponent2;
-    p.canonical.offset2 = 0;
-  case 'gaussian-hdr'
-    p.x = params(1);
-    p.y = params(2);
-    p.std = params(3);
-    % use a fixed single gaussian
-    p.canonical.type = 'gamma';
-    p.canonical.lengthInSeconds = 25;
-    p.canonical.timelag = params(4);
-    p.canonical.tau = params(5);
-    p.canonical.exponent = fitParams.exponent;
-    p.canonical.offset = 0;
-    p.canonical.diffOfGamma = fitParams.diffOfGamma;
-    if fitParams.diffOfGamma
-      p.canonical.amplitudeRatio = params(6);
-      p.canonical.timelag2 = params(7);
-      p.canonical.tau2 = params(8);
-      p.canonical.exponent2 = fitParams.exponent2;
-      p.canonical.offset2 = 0;
-    end
-otherwise 
-    disp(sprintf('(pRFFit) Unknown rfType %s',rfType));
-end
+p = prfModel('getFitParams', fitParams, params);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   convolveModelWithStimulus   %%
@@ -552,7 +489,7 @@ function modelResponse = convolveModelWithStimulus(rfModel,stim,nFrames)
 nStimFrames = size(stim.im,3);
 
 % preallocate memory
-modelResponse = zeros(1,nFrames);
+modelResponse = zeros(1,nStimFrames);
 
 for frameNum = 1:nStimFrames
   % multipy the stimulus frame by frame with the rfModel
@@ -619,10 +556,32 @@ function rfModel = getRFModel(params,fitParams)
 rfModel = [];
 
 % now gernerate the rfModel
-if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr'}))
+if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr', 'gaussian-exp', 'gaussian-diffs', 'gaussian-divs', 'gaussian-DoG-CSS'}))
   rfModel = makeRFGaussian(params,fitParams);
 else
   disp(sprintf('(pRFFit:getRFModel) Unknown rfType: %s',fitParams.rfType));
+end
+
+%%%%%%%%%%%%%%%%%%%
+%%  prfModel     %%
+%%%%%%%%%%%%%%%%%%%
+function output = prfModel(varargin)
+
+fitParams = varargin{2};
+switch (fitParams.rfType)
+  case 'gaussian'
+    output = pRF_gaussian(varargin{:});
+  case 'gaussian-hdr'
+    output = pRF_gaussianhdr(varargin{:});
+  case 'gaussian-diffs'
+    output = pRF_diffGaussian(varargin{:});
+  case 'gaussian-divs'
+    output = pRF_divGaussian(varargin{:});
+  case 'gaussian-exp'
+    output = pRF_exp(varargin{:});
+  otherwise % 'gaussian-DoG-CSS'
+    testModel = @pRF_DoG_CSS; %%% Only need to change this line to specify a new model.
+    output = testModel(varargin{:});
 end
 
 
