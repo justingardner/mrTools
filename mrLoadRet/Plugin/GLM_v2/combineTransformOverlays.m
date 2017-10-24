@@ -615,8 +615,24 @@ if params.nOutputOverlays
     outputOverlay(iOverlay).range = [minValue maxValue];
     outputOverlay(iOverlay).name = outputOverlayNames{iOverlay};
   end
+  
+  % if we're exporting to a new group and there are several scans, we split the different scans of each overlay into separate overlays 
+  if params.exportToNewGroup && nScans>1
+    cOverlay = 0;
+    for iOverlay = 1:size(outputData,2)
+      for iScan = 1:nScans
+        cOverlay = cOverlay+1;
+        outputOverlay2(cOverlay) = defaultOverlay;
+        outputOverlay2(cOverlay).data{1} = outputOverlay(iOverlay).data{iScan};
+        outputOverlay2(cOverlay).clip = outputOverlay(iOverlay).clip;
+        outputOverlay2(cOverlay).range = outputOverlay(iOverlay).range;
+        outputOverlay2(cOverlay).name = ['Scan ' num2str(iScan) ' - ' outputOverlay(iOverlay).name];
+      end
+    end
+    outputOverlay = outputOverlay2;
+  end
+  
   thisView = viewSet(thisView,'newoverlay',outputOverlay);
-
   refreshMLRDisplay(thisView.viewNum);
 end
 set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
