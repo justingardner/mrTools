@@ -539,7 +539,13 @@ if params.nOutputOverlays
       tseriesDir = viewGet(thisView,'tseriesDir');
       scanFileName = [baseName mrGetPref('niftiFileExtension')];
       newPathStr = fullfile(tseriesDir,scanFileName);
-      [bytes,hdr] = cbiWriteNifti(newPathStr,repmat(base.im,[1 1 size(outputData{1},3)]),hdr);
+      %find an non-empty scan to get the size of the third dimension of overlays
+      for iScan = 1:length(outputData)
+        if ~isempty(outputData{iScan})
+          firstNonEmptyScan = iScan;
+        end
+      end
+      [bytes,hdr] = cbiWriteNifti(newPathStr,repmat(base.im,[1 1 size(outputData{firstNonEmptyScan},3)]),hdr);
       % Add it
       scanParams.fileName = scanFileName;
       thisView = viewSet(thisView,'newScan',scanParams);
