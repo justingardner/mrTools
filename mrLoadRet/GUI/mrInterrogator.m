@@ -228,7 +228,7 @@ if ~isempty(coords.scan)
   % set in the global
   MLR.interrogator{viewNum}.mouseDownScanCoords = [coords.scan.x coords.scan.y coords.scan.z];
   global MLR;
-  if isempty(which(MLR.interrogator{viewNum}.interrogator))
+  if isempty(MLR.interrogator{viewNum}.interrogator) || isempty(which(MLR.interrogator{viewNum}.interrogator))
     disp(sprintf('(mrInterrogator) Cannot find interrogator function'));
     return
   end
@@ -359,28 +359,30 @@ end
 % section here, remove the endHandler section which unlinks this handler.
 if ~verLessThan('matlab','8.4') && (viewGet(v,'baseType') == 2)
   % get the handle for the patch
-  h = viewGet(v,'baseHandle');
-  if ~isempty(h)
-    % set the first in the list - note that there may be more if 
+  hBase = viewGet(v,'baseHandle');
+  hROI = viewGet(v,'surfaceROIHandle');
+  for h = [hBase hROI]
+    % set the first base in the list - note that there may be more if 
     % we are displaying multiple bases at once, but for now we ignore
     % all those "alt bases" and just respond to clicks on the main base
-    set(h,'ButtonDownFcn',@mrInterrogatorSurfaceCallback);
+    set(h,'ButtonDownFcn',{@mrInterrogatorSurfaceCallback,hBase});
     % set the viewNum in the handles
     userData = get(h,'UserData');
     userData.viewNum = viewNum;
     set(h,'UserData',userData);
-    v = viewSet(v,'baseHandle',h);
   end
-  % set the other callbacks
-  set(fignum,'WindowButtonMotionFcn',sprintf('mrInterrogator(''mouseMove'',%i)',viewNum));
-  set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'',%i)',viewNum));
+  if ~isempty(hBase)  
+    v = viewSet(v,'baseHandle',hBase);
+  end
+  if ~isempty(hROI)  
+    v = viewSet(v,'surfaceROIHandle',hROI);
+  end
 else
-  
-  % set the callbacks appropriately
-  set(fignum,'WindowButtonMotionFcn',sprintf('mrInterrogator(''mouseMove'',%i)',viewNum));
   set(fignum,'WindowButtonDownFcn',sprintf('mrInterrogator(''mouseDown'',%i)',viewNum));
-  set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'',%i)',viewNum));
 end
+% set the other callbacks
+set(fignum,'WindowButtonMotionFcn',sprintf('mrInterrogator(''mouseMove'',%i)',viewNum));
+set(fignum,'WindowButtonUpFcn',sprintf('mrInterrogator(''mouseUp'',%i)',viewNum));
 
 % set pointer to crosshairs
 MLR.interrogator{viewNum}.pointer = get(fignum,'pointer');
@@ -553,8 +555,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mrInterrogatorSurfaceCallback(hObject,e,handles,varargin)
 
-% get viewNum
-userData = get(hObject,'UserData');
+% get viewNum from the surface base handle (even if called from another surface,
+% which might be a surface ROI.
+userData = get(handles,'UserData');
 % if no viewNum set then, something is wrong
 % since this should have been set when mrInterrogator was initialized
 % so giveup
@@ -568,13 +571,13 @@ click.viewNum = userData.viewNum;
 % to replace the broken select3d
 % get the point that the user clicked
 click.pos = e.IntersectionPoint;
-% compute distance to every vertex and pick the vertex that is closest to the intersectoin point
+% compute distance to every vertex and pick the vertex that is closest to the intersection point
 [minDist click.vertexIndex] = min(sum((e.Source.Vertices-repmat(click.pos',1,size(e.Source.Vertices,1))').^2,2));
 % now get the vertex position
 click.vertex = e.Source.Vertices(click.vertexIndex,:);
 
 % set the user data to include this latest click information
-set(hObject,'UserData',click);
+set(handles,'UserData',click);
 
 % call mouse down - note that the handler will get the click location
 % because we have stored in the userdata for the surface. This

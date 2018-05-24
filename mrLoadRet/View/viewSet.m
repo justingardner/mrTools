@@ -1146,7 +1146,15 @@ switch lower(param)
     if ~isempty(baseNum) & ~isempty(view.baseVolumes)
       view.baseVolumes(baseNum).h = h;
     end
-
+    
+case{'surfaceroihandle'}
+    % view = viewSet(view,'baseHandle',h,[baseNum]);
+    h = val;
+    baseNum = getBaseNum(view,varargin);
+    if ~isempty(baseNum) & ~isempty(view.baseVolumes)
+      view.baseVolumes(baseNum).hROI = h;
+    end
+   
  case{'basemultidisplay'}
     % view = viewSet(view,'baseMultiDisplay',multiDisplay,[baseNum]);
     baseNum = getBaseNum(view,varargin);
