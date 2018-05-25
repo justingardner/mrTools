@@ -17,24 +17,47 @@ end
 % get the mrTools directory
 mlrTop = fileparts(fileparts(which('mrLoadRet')));
 
-% list of functions that need compiling
-compiledFunctionList = {...
-    '/mrUtilities/MatlabUtilities/mrDisp.c',...
-    '/mrLoadRet/ROI/dijkstrap.cpp',...
-	};	    
+% find filenames that need compiling
+cFiles = findFiles(mlrTop,'.c');
+ccFiles = findFiles(mlrTop,'.cc');
+compiledFunctionList = {cFiles{:} ccFiles{:}};
 
 for iFile = 1:length(compiledFunctionList)
-  % get filename
-  filename = fullfile(mlrTop,compiledFunctionList{iFile});
   % check for file
-  if isfile(filename)
+  if isfile(compiledFunctionList{iFile})
     % display what we are doing
-    disp(sprintf('(mlrMake) mex: %s',filename));
+    disp(sprintf('(mlrMake) mex: %s',compiledFunctionList{iFile}));
     % mex the file
-    mex(filename);
+    keyboard
+    mex(compiledFunctionList{iFile});
   else 
     % display that we can't find file
-    disp(sprintf('(mlrMake) Could not find file: %s', filename));
+    disp(sprintf('(mlrMake) Could not find file: %s', compiledFunctionList{iFile}));
   end
 end
 
+
+%%%%%%%%%%%%%%%%%%%
+%    findFiles    %
+%%%%%%%%%%%%%%%%%%%
+function filenames = findFiles(dirname,extMatch)
+
+filenames = {};
+d = dir(dirname);
+for iFile = 1:length(d)
+  if d(iFile).isdir && ~any(strcmp(d(iFile).name,{'.','..'}))
+    % recursively search
+    subdirMatch = findFiles(fullfile(dirname,d(iFile).name),extMatch);
+    % concat if not empty
+    if ~isempty(subdirMatch)
+      filenames = {filenames{:} subdirMatch{:}};
+    end
+  else
+    % get filename parts
+    [pathsr,name,ext] = fileparts(d(iFile).name);
+    % check extension
+    if strcmp(lower(extMatch),ext)
+      filenames{end+1} = fullfile(dirname,d(iFile).name);
+    end
+  end
+end
