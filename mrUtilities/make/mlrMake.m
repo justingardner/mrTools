@@ -28,6 +28,9 @@ else
   compiledFunctionList = findFiles(mlrTop,varargin{1})
 end
 
+% some files that don't seem to need to be compiled
+skipFiles = {'convolve.c','corrDn.c','edges.c','upConv.c','wrap.c','fibheap.cpp','dijkstrap.cpp'};
+
 % set mexopts file
 optf = sprintf('-Dchar16_t=uint16_T -f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
 
@@ -36,7 +39,7 @@ successfullyCompiled = {};
 failedToCompile = {};
 for iFile = 1:length(compiledFunctionList)
   % check for file
-  if isfile(compiledFunctionList{iFile})
+  if ~any(strcmp(getLastDir(compiledFunctionList{iFile}),skipFiles)) && isfile(compiledFunctionList{iFile}) 
     % display what we are doing
     disp(sprintf('(mlrMake) mex: %s',compiledFunctionList{iFile}));
     % mex the file
@@ -54,15 +57,19 @@ for iFile = 1:length(compiledFunctionList)
 end
 
 % list files that were not ok
-disp(sprintf('(mglMake) Failed to compile'));
-for iFile = 1:length(failedToCompile)
-  disp(sprintf('%s',failedToCompile{iFile}));
+if ~isempty(failedToCompile)
+  dispHeader(sprintf('(mlrMake) Failed to compile'));
+  for iFile = 1:length(failedToCompile)
+    disp(sprintf('%s',failedToCompile{iFile}));
+  end
 end
 
 % list files that were ok
-disp(sprintf('(mglMake) Successfully compiled'));
-for iFile = 1:length(successfullyCompiled)
-  disp(sprintf('%s',successfullyCompiled{iFile}));
+if ~isempty(successfullyCompiled)
+  dispHeader(sprintf('(mlrMake) Successfully compiled'));
+  for iFile = 1:length(successfullyCompiled)
+    disp(sprintf('%s',successfullyCompiled{iFile}));
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%
