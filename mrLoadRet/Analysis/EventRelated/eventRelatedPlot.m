@@ -96,7 +96,8 @@ if isfield(d,'peak') & isfield(d.peak,'fit') & ~any(isnan(d.peak.amp(x,y,s,:)))
 else
   plotEhdr(time,ehdr,ehdrste);
 end
-title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,analysis.overlays(1).data{scan}(x,y,s)));
+r2 = analysis.overlays(1).data{scan}(x,y,s);
+title(sprintf('Voxel (%i,%i,%i): r2=%0.3f',x,y,s,r2));
 xaxis(0,max(time));
 % add peaks if they exist to the legend
 if isfield(d,'stimNames')
@@ -133,6 +134,13 @@ gEventRelatedPlot.time = time;
 gEventRelatedPlot.cutoffr2 = cutoffr2;
 gEventRelatedPlot.computingErrorBars = 0;
 gEventRelatedPlot.loadingTimecourse = 0;
+gEventRelatedPlot.tSeries = [];
+gEventRelatedPlot.er = [];
+gEventRelatedPlot.voxel.vox = [x y s];
+gEventRelatedPlot.voxel.time = time;
+gEventRelatedPlot.voxel.ehdr = ehdr;
+gEventRelatedPlot.voxel.ehdrste = ehdrste;
+gEventRelatedPlot.voxel.r2 = r2;
 
 % set the delete function, so that we can delete the global we create
 set(fignum,'DeleteFcn',@eventRelatedCloseWindow);
@@ -198,25 +206,108 @@ drawnow;
 % when it is clicked but only if this is a long scan
 if viewGet(view,'nFrames') > 500
   figpos = get(fignum,'position');
-  gEventRelatedPlot.plotTSeriesHandle = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotTSeries,'String','Plot the time series','Position',[figpos(3)/20 5*figpos(4)/8 9*figpos(3)/10 figpos(4)/4]);
+  gEventRelatedPlot.plotTSeriesHandle = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotTSeries,'String','Plot the time series','Position',[figpos(3)/20 5*figpos(4)/8 9*figpos(3)/10 5*figpos(4)/16]);
 else
   eventRelatedPlotTSeries;
 end
-  zoom on
+
+% put up a button to save data to desktop
+gEventRelatedPlot.saveToWorkspace = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedSaveToWorkspace,'String','Save data to workspace','Position',[figpos(3)/20 15*figpos(4)/16 9*figpos(3)/10 figpos(4)/16]);
+
+zoom on
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    function to save data to desktop    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function eventRelatedSaveToWorkspace(varargin)
+
+global gEventRelatedPlot
+
+% get data (the one in gEventRelatedPlot has some fields removed to save space)
+% so re get it here.
+analysis = viewGet(getMLRView,'analysis');
+eventRelated.d = analysis.d{gEventRelatedPlot.scan};
+concatInfo = viewGet(getMLRView,'concatInfo');
+
+% get info for this voxel
+eventRelated.voxel = gEventRelatedPlot.voxel;
+eventRelated.voxel.tSeries = eventRelatedPlotTSeries;
+
+% get stimvol
+eventRelated.stimvol = eventRelated.d.stimvol;
+
+% get the roi 
+if isempty(gEventRelatedPlot.roi)
+  eventRelated.roi = [];
+else
+  eventRelated.roi = eventRelatedPlotComputeErrorBars;
+end
+
+% resort time series as time from stimvol
+% first pull out some variables from structures
+hdrlen = eventRelated.d.hdrlen;
+stimvol = eventRelated.stimvol;
+% get run transitions
+if ~isempty(concatInfo) && isfield(concatInfo,'runTransition') && ~isempty(concatInfo.runTransition)
+  runTransition = concatInfo.runTransition;
+else
+  runTransition = [1 length(eventRelated.voxel.tSeries)];
+end
+for iStimType = 1:length(stimvol)
+  % start trace event time
+  transitionNum = 1;
+  for iStim = 1:length(stimvol{iStimType})
+    % get the start of the event
+    eventStart = stimvol{iStimType}(iStim);
+    % check transition
+    if eventStart > runTransition(transitionNum,2)
+      % if we are passed a scan boundary go to next scan
+      transitionNum = min(size(runTransition,1),transitionNum+1);
+    end
+    % get end of event 
+    eventEnd = min(eventStart + hdrlen-1,runTransition(transitionNum,2));
+    % now get the relevant part of the time series
+    eventTSeries = eventRelated.voxel.tSeries(eventStart:eventEnd);
+    % pack to end with nan if we are missing data
+    eventTSeries(end+1:hdrlen) = nan;
+    % and stick in the field for voxel
+    eventRelated.voxel.tSeriesByStim{iStimType}(iStim,1:hdrlen) = eventTSeries;
+    % if we have to do this for roi
+    if ~isempty(eventRelated.roi)
+      % get roi event related tSeries
+      roiEventTSeries = eventRelated.roi.roi.tSeries(:,eventStart:eventEnd);
+      roiEventTSeries(:,end+1:hdrlen) = nan;
+      % and stick in the roi field
+      eventRelated.roi.roi.tSeriesByStim{iStimType}(iStim,:,1:hdrlen) = roiEventTSeries;
+    end
+  end
+end
+
+% assign in base workspace
+disp(sprintf('(eventRelatedPlot) Saving data from figure to variable eventRelated'));
+assignin('base','eventRelated',eventRelated);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   function to plot the time series for the voxel   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function eventRelatedPlotTSeries(varargin)
+function tSeries = eventRelatedPlotTSeries(varargin)
 
+tSeries = [];
 global gEventRelatedPlot
 if gEventRelatedPlot.loadingTimecourse
   disp(sprintf('(eventRelatedPlot) Still loading timecourse. Please wait.'));
   return
 end
-gEventRelatedPlot.loadingTimecourse = 1;
+
+% if tSeries is already loaded then just return
+if ~isempty(gEventRelatedPlot.tSeries);
+  tSeries = gEventRelatedPlot.tSeries;
+  return
+end
 
 disppercent(-inf,'(eventRelatedPlot) Plotting time series');
+gEventRelatedPlot.loadingTimecourse = 1;
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(gEventRelatedPlot.v,gEventRelatedPlot.scan,gEventRelatedPlot.vox(3),[],gEventRelatedPlot.vox(1),gEventRelatedPlot.vox(2)));
 junkFrames = viewGet(gEventRelatedPlot.v, 'junkFrames', gEventRelatedPlot.scan);
@@ -252,16 +343,28 @@ if ~isempty(gEventRelatedPlot.plotTSeriesHandle)
   set(gEventRelatedPlot.plotTSeriesHandle,'Visible','off');
 end
 
+% save time series in global in case user wants to save to workspace
+gEventRelatedPlot.tSeries = tSeries;
+
+% done
 disppercent(inf);
+gEventRelatedPlot.loadingTimecourse = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   eventRelatedPlotComputeErrorBars   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function eventRelatedPlotComputeErrorBars(varargin)
+function er = eventRelatedPlotComputeErrorBars(varargin)
 
+er = [];
 global gEventRelatedPlot
 if gEventRelatedPlot.computingErrorBars
   disp(sprintf('(eventRelatedPlot) Still computing error bars. Please wait.'));
+  return
+end
+
+% if already computed, return
+if ~isempty(gEventRelatedPlot.er)
+  er = gEventRelatedPlot.er;
   return
 end
 
@@ -305,6 +408,15 @@ plotEhdr(er.time,er.ehdr,er.ehdrste);
 if ~isempty(gEventRelatedPlot.computeErrorBarsHandle)
   set(gEventRelatedPlot.computeErrorBarsHandle,'Visible','off');
 end
+
+% keep some things for saving to desktop
+er.roiName = roi.name;
+er.roi = roi;
+er.meanTimecourse = meanTimecourse;
+gEventRelatedPlot.er = er;
+
+% done
+gEventRelatedPlot.computingErrorBars = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % function to plot ehdr
