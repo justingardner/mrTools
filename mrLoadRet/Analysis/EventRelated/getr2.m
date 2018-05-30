@@ -88,7 +88,8 @@ for j = yvals
     ehdr{j,k} = precalcmatrix*timeseries;
     % calculate error bars, first get sum-of-squares of residual
     % (in percent signal change)
-    sumOfSquaresResidual = sum((timeseries-d.scm*ehdr{j,k}).^2);
+    resid{j,k} = timeseries-d.scm*ehdr{j,k};
+    sumOfSquaresResidual = sum(resid{j,k}.^2);
     % now calculate the sum-of-squares of that error
     % and divide by the degrees of freedom (n-k where n
     % is the number of timepoints in the scan and k is 
@@ -124,6 +125,8 @@ for i = xvals
   end
   if verbose,disppercent((i-min(xvals))/xvaln);end
 end
+% reshape residuals into a matrix
+d.resid = resid;
 
 % display time took
 if verbose,disppercent(inf);end
