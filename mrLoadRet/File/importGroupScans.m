@@ -25,7 +25,7 @@ end
 
 % now look for that sessions mrSession
 mrSessionPath = fullfile(pathStr,'mrSession.mat');
-if ~isfile(mrSessionPath)
+if ~mlrIsFile(mrSessionPath)
   disp(sprintf('(importGroupScans) Could not find mrSession in %s',fileparts(pathStr)));
   disp(sprintf('                   Make sure you clicked on the directory'));
   disp(sprintf('                   with the mrSession.mat file (not the group'))
@@ -173,11 +173,11 @@ for scanNum = 1:length(fromScanParams)
     fromStimFileName = fullfile(pathStr, 'Etc', getLastDir(stimFileName{scanNum}{stimFileNum}));
     toStimFileName = fullfile(viewGet(toView,'EtcDir'),getLastDir(stimFileName{scanNum}{stimFileNum}));
     % if it doesn't exist already, then copy it over
-    if isfile(toStimFileName)
+    if mlrIsFile(toStimFileName)
       disp(sprintf('(importGroupScans) Stimfile %s already exists',toStimFileName));
     else
       %      system(sprintf('cp %s %s',fromStimFileName,toStimFileName));
-      if ~isfile(fromStimFileName)
+      if ~mlrIsFile(fromStimFileName)
 	mrWarnDlg(sprintf('(importGroupScans) !!! Missing stimfile: %s !!!',fromStimFileName));
       else
 	copyfile(fromStimFileName,toStimFileName);

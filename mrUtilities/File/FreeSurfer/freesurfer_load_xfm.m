@@ -24,7 +24,7 @@ if nargin < 2
 end
 
 xform = [];
-if ~isfile(filename)
+if ~mlrIsFile(filename)
   disp(sprintf('(loadXformFromFile) Could not find xform file %s',filename));
   return
 end

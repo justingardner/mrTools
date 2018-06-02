@@ -38,7 +38,7 @@ subjectID = mlrAnatDBSubjectID(subjectID);
 getArgs(varargin,{'fileDir=[]','largefiles=[]','verbose=0','comments=[]','freesurfer=[]','useHardLinks=1'});
 
 % check file
-if ~iscell(filePath) && ~isview(filePath) && (~isfile(filePath) && ~isdir(filePath))
+if ~iscell(filePath) && ~isview(filePath) && (~mlrIsFile(filePath) && ~isdir(filePath))
   disp(sprintf('(mlrAnatDBPut) Could not find: %s',filePath));
   return
 end
@@ -200,10 +200,10 @@ if strcmp(lower(fileType),'mlrbaseanat')
 	% get the flat file
 	flatFile = fullfile(b.base.coordMap.path,b.base.coordMap.flatFileName);
 	% if it exists then put it into the list, and make a new name for it
-	if isfile(flatFile)
+	if mlrIsFile(flatFile)
 	  % get the original name and check that it is a file
 	  flatFrom = fullfile(b.base.coordMap.path,b.base.coordMap.flatFileName);
-	  if isfile(flatFrom)
+	  if mlrIsFile(flatFrom)
 	    % make the new name
 	    flatFileSaveName = setext(b.base.name,'off');
 	    % and also change the name in this base
@@ -253,7 +253,7 @@ if strcmp(lower(fileType),'surfaces')
   linkFrom = fullfile('..','anatomy',freesurfer);
   mysystem(sprintf('ln -sfh %s freesurfer',linkFrom));
   % and also make a text file that contains the freesurfer link
-  if isfile('.freesurfer')
+  if mlrIsFile('.freesurfer')
     mysystem(sprintf('rm -f .freesurfer'));
   end
   % store what the file links to in the .freesurfer file
@@ -570,7 +570,7 @@ for iBase = baseList
   % get all the files associated with thisAnat
   for iExt = 1:length(extList)
     filename = fullfile(thisAnatPath,setext(thisAnatFilename,extList{iExt}));
-    if isfile(filename)
+    if mlrIsFile(filename)
       filePath{end+1} = filename;
     end
   end

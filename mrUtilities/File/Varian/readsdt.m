@@ -27,15 +27,15 @@ inputFilename = filename;
 ext = getext(filename);
 if ~any(strcmp({'sdt' 'spr' 'edt' 'epr'},ext)) 
   filename = setext(filename,'spr',0);
-  if ~isfile(filename)
+  if ~mlrIsFile(filename)
     filename = setext(filename,'epr');
-    if ~isfile(filename)
+    if ~mlrIsFile(filename)
       disp(sprintf('(readsdt) Could not find file %s',inputFilename));
       return
     end
   end
 end
-if ~isfile(filename)
+if ~mlrIsFile(filename)
   disp(sprintf('(readsdt) Could not find file %s',inputFilename));
   return
 end

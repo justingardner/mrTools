@@ -44,7 +44,7 @@ if ieNotDefined('loadOnlyHeader'),loadOnlyHeader = 0;end
 % put on .off
 surffile = sprintf('%s.off',stripext(surffile));
 
-if ~isfile(surffile)
+if ~mlrIsFile(surffile)
   surf = [];
   disp(sprintf('(loadSurfOFF) Could not find surface file %s',surffile));
   return

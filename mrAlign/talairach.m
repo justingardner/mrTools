@@ -343,7 +343,7 @@ if ~getext(talinfo.filename,'nii')
   talinfo.filename = sprintf('%s.img',stripext(talinfo.filename));
 end
 % check for file
-if isfile(talinfo.filename)
+if mlrIsFile(talinfo.filename)
   % read header
   hdr = mlrImageReadNiftiHeader(talinfo.filename);
   % check to see if this is an LPI volume

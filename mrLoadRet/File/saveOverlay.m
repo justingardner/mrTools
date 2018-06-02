@@ -52,7 +52,7 @@ filename = [analysisName,'-',overlayName,'.mat'];
 pathStr = viewGet(view,'overlayDir');
 
 % Check for over-writing
-if isfile(fullfile(pathStr,filename))
+if mlrIsFile(fullfile(pathStr,filename))
 
   % get overwrite preference or ask user
   saveMethod = mrGetPref('overwritePolicy');

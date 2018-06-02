@@ -78,11 +78,11 @@ while iArg <= nArgs
       % put on the default extension
       filenameWithDefaultExt = setext(args{iArg},mrGetPref('niftiFileExtension'));
       % and see if that exists
-      if isfile(filenameWithDefaultExt) 
+      if mlrIsFile(filenameWithDefaultExt) 
 	imageArgs{end+1} = filenameWithDefaultExt;
 	iArg = iArg+1;
       % or the filename w/out any extension
-      elseif isfile(args{iArg}) || (~strcmp(args{iArg},'.') && isdir(args{iArg}))
+      elseif mlrIsFile(args{iArg}) || (~strcmp(args{iArg},'.') && isdir(args{iArg}))
 	disp(sprintf('(mlrImageParseArgs) Unknown filetype for %s (missing extension)',args{iArg}));
 	iArg = iArg+1;
       % get from canonical directory, if the name is any one of the following

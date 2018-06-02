@@ -37,7 +37,7 @@ getArgs(varargin,{'nSmooth=2','vertexList=[]'});
 % load the inner surfaces
 if isstr(innerSurfaceName)
   innerSurfaceName = sprintf('%s.off',stripext(innerSurfaceName));
-  if isfile(innerSurfaceName)
+  if mlrIsFile(innerSurfaceName)
     innerSurf = loadSurfOFF(innerSurfaceName);
   else
     disp(sprintf('(calcCurvature) Could not find file %s',innerSurfaceName));
@@ -52,7 +52,7 @@ end
 if ~ieNotDefined('outerSurfaceName')
   if isstr(outerSurfaceName)
     outerSurfaceName = sprintf('%s.off',stripext(outerSurfaceName));
-    if isfile(outerSurfaceName)
+    if mlrIsFile(outerSurfaceName)
       outerSurf = loadSurfOFF(outerSurfaceName);
     else
       disp(sprintf('(calcCurvature) Could not find file %s',outerSurfaceName));

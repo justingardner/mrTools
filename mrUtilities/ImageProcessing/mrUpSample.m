@@ -42,7 +42,7 @@ end
 
 if isstr(data)
   % Input is a file
-  isfile = 1;
+  inputIsFile = 1;
   [data, hdr] = mlrImageReadNifti(data);
 else
   % Input is a Matlab data array
@@ -117,7 +117,7 @@ if ~ieNotDefined('hdr')
 end
 
 % save, if the input was a file
-if ~ieNotDefined('isfile') & ~ieNotDefined('hdr')
+if ~ieNotDefined('inputIsFile') & ~ieNotDefined('hdr')
     % set the file extension
     niftiFileExtension = mrGetPref('niftiFileExtension');
     if isempty(niftiFileExtension)

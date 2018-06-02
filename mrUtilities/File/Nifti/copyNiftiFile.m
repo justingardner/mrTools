@@ -35,7 +35,7 @@ else
 end
 
 % check for an associated mat file
-if isfile([stripext(fromFilename) '.mat'])
+if mlrIsFile([stripext(fromFilename) '.mat'])
   extensions{end+1} = 'mat';
 end
 
@@ -43,7 +43,7 @@ end
 for extensionNum = 1:length(extensions)
   ext = extensions{extensionNum};
   filename = sprintf('%s.%s',stripext(fromFilename),ext);
-  if ~isfile(filename)
+  if ~mlrIsFile(filename)
     mrWarnDlg(sprintf('(%s) Could not find nifti file %s',callingFunction,fromFilename));
     return
   end
@@ -56,7 +56,7 @@ for extensionNum = 1:length(extensions)
   thisToFilename = sprintf('%s.%s',stripext(toFilename),ext);
   % check if toFile exists
   r = 0;
-  if (extensionNum == 1) && isfile(thisToFilename)
+  if (extensionNum == 1) && mlrIsFile(thisToFilename)
     if ~isinf(r)
       r = askuser(sprintf('(%s) File %s already exists, overwrite',callingFunction,getLastDir(toFilename)),1);
     end

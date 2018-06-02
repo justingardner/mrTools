@@ -129,7 +129,7 @@ for iImage = 1:nImages
 	% filename looks ok, so try to decompress
 	% first try to decompress
 	uncompressedExists = false;
-	if ~isfile(uncompressedFilename)
+	if ~mlrIsFile(uncompressedFilename)
 	  % uncompress the file first
 	  system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
 	else
