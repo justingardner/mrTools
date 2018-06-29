@@ -8,7 +8,7 @@ Full documentation can be found here: [http://gru.stanford.edu/mrTools](http://g
 
 # mrTools Citation
 
-Gardner, J.L., Merriam E.P., Schluppeck, D., Besle, J., Liu, T., Laquitaine, S., Birman, D., Jagadeesh, A., Lee, M. and Heeger, D.J. (2018) mrTools: Analysis and visualization package for functional magnetic resonance imaging data. Available from: http://gru.stanford.edu/mgl DOI: http://dx.doi.org/10.5281/zenodo.1299483
+Gardner, Justin L., Merriam, Elisha P., Schluppeck, Denis, Besle, Julien, & Heeger, David J. (2018, June 28). mrTools: Analysis and visualization package for functional magnetic resonance imaging data (Version 4.7). Zenodo. http://doi.org/10.5281/zenodo.1299483
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1299483.svg)](https://doi.org/10.5281/zenodo.1299483)
 
