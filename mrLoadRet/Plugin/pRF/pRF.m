@@ -212,7 +212,7 @@ for scanNum = params.scanNum
     % can't load each voxel's time series one at a time. If this is
     % too large for memory then you can comment this out and not
     % pass it into pRFFit and pRFFit will load the tSeries itself
-    loadROI = loadROITSeries(v,loadROI,scanNum,params.groupName);
+    loadROI = loadROITSeries(v,loadROI,scanNum,params.groupName,'keepNAN',true);
     % reorder x,y,z coordinates since they can get scrambled in loadROITSeries
     x(blockStart:blockEnd) = loadROI.scanCoords(1,1:blockSize);
     y(blockStart:blockEnd) = loadROI.scanCoords(2,1:blockSize);
