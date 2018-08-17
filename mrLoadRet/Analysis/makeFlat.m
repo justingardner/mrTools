@@ -33,7 +33,7 @@ if ~isempty(baseCoordMap)
   innerCoordsFileName = setext(baseCoordMap.innerCoordsFileName,'off');
 
   % now see if user has to go find file;
-  if ~isfile(fullfile(baseCoordMapPath,innerCoordsFileName))
+  if ~mlrIsFile(fullfile(baseCoordMapPath,innerCoordsFileName))
     startPathStr = baseCoordMapPath;
     filterspec = {'*.off','SurfRelax off file';'*WM*.off', 'SurfRelax OFF WM file'; '*.*','All files'};
     title = 'Choose inner (WM) OFF surface file';    
@@ -131,7 +131,7 @@ if ~isempty(flatBase)
   % later - but is it worth storing this some place in the
   % structure rather than as a file which migth get lost)? -jg
   %tempFileName = fullfile(params.path,params.flatFileName);
-  %if isfile(tempFileName),delete(tempFileName);end
+  %if mlrIsFile(tempFileName),delete(tempFileName);end
 end
 
 return;
@@ -191,7 +191,7 @@ else
 end
 
 % remove the 3d patch, b/c it isn't need for anything
-if isfile(fullfile(params.path, params.patchFileName))
+if mlrIsFile(fullfile(params.path, params.patchFileName))
   system(sprintf('rm -rf %s', fullfile(params.path, params.patchFileName)));
 end
 

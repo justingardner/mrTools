@@ -37,7 +37,7 @@ filename = [analysisName,'.mat'];
 pathStr = analysisdir;
 
 % Write, though check for over-writing
-if isfile(fullfile(pathStr,filename))
+if mlrIsFile(fullfile(pathStr,filename))
   % get the preference how to deal with what to do with over-writing
   saveMethod = mrGetPref('overwritePolicy');
   saveMethodTypes = {'Merge','Rename','Overwrite'};

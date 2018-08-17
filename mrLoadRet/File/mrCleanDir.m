@@ -96,13 +96,13 @@ for g = 1:length(groups)
 	if ~tseriesDir(i).match
 	  [path baseFilename] = fileparts(tseriesDir(i).name);
 	  filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
-	  if isfile(filename),delete(filename),end;
+	  if mlrIsFile(filename),delete(filename),end;
 	  filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
-	  if isfile(filename),delete(filename),end;
+	  if mlrIsFile(filename),delete(filename),end;
 	  filename = sprintf('%s/%s.nii',tseriesDirName,baseFilename);
-	  if isfile(filename),delete(filename),end;
+	  if mlrIsFile(filename),delete(filename),end;
 	  filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
-	  if isfile(filename),delete(filename),end;
+	  if mlrIsFile(filename),delete(filename),end;
 	  
   end
       end
@@ -125,7 +125,7 @@ function [recoverable scanParams] = dispParams(tseriesDirName,baseFilename,match
 recoverable = 0;scanParams = [];
 % see if there is a mat file
 filename = fullfile(tseriesDirName,sprintf('%s.mat',baseFilename));
-if isfile(filename)
+if mlrIsFile(filename)
   matfile = load(filename);
   % first see if we can match the tseriesFileName with
   % the one we have here
@@ -138,7 +138,7 @@ if isfile(filename)
       tseriesHdrFileName = sprintf('%s.hdr',fullfile(tseriesDirName,baseFilename));
     end
     % check if they are there
-    if isfile(tseriesFileName) && isfile(tseriesHdrFileName)
+    if mlrIsFile(tseriesFileName) && mlrIsFile(tseriesHdrFileName)
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % if this is a motionComp then display its parameters
       % and see if we can recover it
@@ -179,13 +179,13 @@ if isfile(filename)
 	  % or as a set of files
 	  else 
 	    filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
-	    if isfile(filename),disp(filename),end
+	    if mlrIsFile(filename),disp(filename),end
 	    filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
-	    if isfile(filename),disp(filename),end
+	    if mlrIsFile(filename),disp(filename),end
 	    filename = sprintf('%s/%s.nii',tseriesDirName,baseFilename);
-	    if isfile(filename),disp(filename),end
+	    if mlrIsFile(filename),disp(filename),end
 	    filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
-	    if isfile(filename),disp(filename),end
+	    if mlrIsFile(filename),disp(filename),end
 	  end
 	  % read the image header
 	  hdr = mlrImageReadNiftiHeader(tseriesHdrFileName);
@@ -226,13 +226,13 @@ end
 % if we don't know how to recover then just show files for deleting
 if ~recoverable && ~match
   filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
-  if isfile(filename),disp(filename),end
+  if mlrIsFile(filename),disp(filename),end
   filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);
-  if isfile(filename),disp(filename),end
+  if mlrIsFile(filename),disp(filename),end
   filename = sprintf('%s/%s.nii',tseriesDirName,baseFilename);
-  if isfile(filename),disp(filename),end
+  if mlrIsFile(filename),disp(filename),end
   filename = sprintf('%s/%s.mat',tseriesDirName,baseFilename);
-  if isfile(filename),disp(filename),end
+  if mlrIsFile(filename),disp(filename),end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

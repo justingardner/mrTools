@@ -112,7 +112,7 @@ if doCurvature
     % left curvature filename
     leftCurvatureFile = fullfile(atlasDir,'leftAtlasCurvature.vff');
     % see if we can load it
-    if isfile(leftCurvatureFile) && (doCurvature <= 1)
+    if mlrIsFile(leftCurvatureFile) && (doCurvature <= 1)
       d.leftAtlasCurvature = loadVFF(leftCurvatureFile);
     else
       % otherwise compute it
@@ -124,7 +124,7 @@ if doCurvature
     % left curvature filename
     rightCurvatureFile = fullfile(atlasDir,'rightAtlasCurvature.vff');
     % see if we can load it
-    if isfile(rightCurvatureFile) && (doCurvature <= 1)
+    if mlrIsFile(rightCurvatureFile) && (doCurvature <= 1)
       d.rightAtlasCurvature = loadVFF(rightCurvatureFile);
     else
       % otherwise compute it
@@ -278,7 +278,7 @@ stemName = sprintf('%s%s',coordFile.name(1:matchLoc-1),matchStr);
 % the Caret 711-2B space.
 caretName = sprintf('%s_711-2B.coord',stemName);
 caretName = fullfile(caretFileDir,caretName);
-if ~isfile(caretName)
+if ~mlrIsFile(caretName)
   disp(sprintf('(mlrImportCaret) Could not find file %s',caretName));
   return
 end

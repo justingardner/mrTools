@@ -745,7 +745,7 @@ v = MLR.views{viewNum};
 % get the tseries path/filename
 tSeriesPathStr = viewGet(v,'tSeriesPathStr',viewGet(v,'curScan'));
 % load that as an anatome
-if isfile(tSeriesPathStr)
+if mlrIsFile(tSeriesPathStr)
     v = loadAnat(MLR.views{viewNum},getLastDir(tSeriesPathStr),fileparts(tSeriesPathStr));
     refreshMLRDisplay(viewNum);
 else
@@ -2663,7 +2663,7 @@ end
 % switch directories to the flatDir, asking
 % the user to find it if it does not exist
 thispwd = pwd;
-if isdir(flatPath) && isfile(fullfile(flatPath,filename))
+if isdir(flatPath) && mlrIsFile(fullfile(flatPath,filename))
   cd(flatPath);
 else
   if baseType ~= 1
@@ -2675,7 +2675,7 @@ else
   else
     % try to create the off for a flat
     flatParentSurf = fullfile(params.path,params.innerCoordsFileName);
-    if isfile(flatParentSurf)
+    if mlrIsFile(flatParentSurf)
       disp('(mrLoadRetGUI) Creating missing flat off surface');
       disppercent(-inf,sprintf('(mrLoadRetGUI) Note this will create a quick flat surface good enough for rough visualization of location but is not exactly correct'));
       % load the parent surface 

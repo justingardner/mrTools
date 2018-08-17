@@ -56,7 +56,7 @@ end
 if isempty(getext(fname))
   fname = setext(fname,'hdr');
 end
-if ~isfile(fname)
+if ~mlrIsFile(fname)
   disp(sprintf('(cbiReadNifti) UHOH! Could not find file %s',fname));
   data =[];hdr=[];
   return
@@ -290,7 +290,7 @@ end
 % the file now as a valid nifti image with width = 2^15-1 and
 % enough rows to fit the image, by calling cbiWriteNifti
 if needsRewrite
-  [tf permissions] = isfile(fname);
+  [tf permissions] = mlrIsFile(fname);
   if tf && permissions.UserWrite
     if strcmp(questdlg(sprintf('(cbiReadNifti) %s is an old style surface curvature file. Answer yes to update the format of the surface (recommended).',getLastDir(fname)),'Yes','No'),'Yes')
       if verbose, disp(sprintf('(cbiReadNifti) Fixing 1D image dimensions by rewriting %s',fname));end;

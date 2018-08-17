@@ -35,7 +35,7 @@ if isempty(info),return,end
 
 % look for fid file
 fidFilename = fullfile(filename,'fid');
-if ~isfile(fidFilename)
+if ~mlrIsFile(fidFilename)
   disp(sprintf('(getfidk) Could not find fid file: %s', fidFilename));
   return
 end

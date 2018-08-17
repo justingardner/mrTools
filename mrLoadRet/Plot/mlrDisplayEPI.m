@@ -42,7 +42,7 @@ if ~ieNotDefined('v') && ~isview(v)
   % check for a file
   if isstr(v)
     filename = setext(v,'hdr');
-    if isfile(filename)
+    if mlrIsFile(filename)
       [v hdr] = mlrImageReadNifti(filename);
       if isempty(v),return,end
       gMLRDisplayEPI.hdr = hdr;

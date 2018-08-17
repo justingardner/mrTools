@@ -86,7 +86,7 @@ for iImage = 1:nImages
   elseif isstr(imageArgs{iImage})
     filename = imageArgs{iImage};
     %check for file
-    if ~isfile(filename) && ~isdir(filename)
+    if ~mlrIsFile(filename) && ~isdir(filename)
       disp(sprintf('(mlrImageHeaderLoad) Could not find file %s',filename));
       if nImages > 1,allHeaders{end+1} = [];end
       continue
@@ -269,7 +269,7 @@ if ~any(strcmp(getext(uncompressedFilename),{'nii'}))
 end
 
 uncompressedExists = false;
-if ~isfile(uncompressedFilename)
+if ~mlrIsFile(uncompressedFilename)
   % uncompress the file first
   system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
 else
@@ -389,7 +389,7 @@ function base = loadAssociatedMatlabHeader(filename)
 
 base = [];
 matlabFilename = setext(filename,'mat');
-if isfile(matlabFilename)
+if mlrIsFile(matlabFilename)
   % load the header
   matHeader = load(matlabFilename);
   % check for field

@@ -17,7 +17,7 @@ end
 dirPermission = '775';
 filePermission = '664';
 
-if ~isfile(fullfile(dirname,'mrSession.mat'))
+if ~mlrIsFile(fullfile(dirname,'mrSession.mat'))
   if ~askuser(sprintf('(mlrFixPermissions) Directory %s is not an MLR session, continue anyway?',dirname))
     return
   end

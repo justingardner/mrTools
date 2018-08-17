@@ -34,7 +34,7 @@ maxFramePeriod = 100;  % that something weird's goin on
 % get session params
 if ieNotDefined('sessionParams')
   % get some defaults
-  if isfile('mrSession.mat')
+  if mlrIsFile('mrSession.mat')
     load mrSession
     magnet = putOnTopOfList(session.magnet,mrGetPref('magnet'));
     coil = putOnTopOfList(session.coil,mrGetPref('coil'));
@@ -90,7 +90,7 @@ end
 % get scan params
 if ieNotDefined('groupParams')
   % check for already existing mrSession
-  if isfile('mrSession.mat')
+  if mlrIsFile('mrSession.mat')
     load mrSession;
     nScans = length(groups(1).scanParams);
     for i = 1:nScans
@@ -260,7 +260,7 @@ if ~justGetParams
     end
     
     % check for mrSession
-    if isfile('mrSession.mat')
+    if mlrIsFile('mrSession.mat')
       if askuser('(mrInit) mrSession.mat already exists. Overwrite?');
 	disp(sprintf('(mrInit) Copying old mrSession.mat mrSession.old.mat'));
 	movefile('mrSession.mat','mrSession.old.mat');

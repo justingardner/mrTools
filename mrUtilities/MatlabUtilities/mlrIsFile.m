@@ -1,16 +1,16 @@
-% isfile.m
+% mlrIsFile.m
 %
-%      usage: isfile(filename)
+%      usage: mlrIsFile(filename)
 %         by: justin gardner
 %       date: 08/20/03
-%       e.g.: isfile('filename')
+%       e.g.: mlrIsFile('filename')
 %    purpose: function to check whether file exists
 %
-function [isit permission] = isfile(filename)
+function [isit permission] = mlrIsFile(filename)
 
 isit = 0;permission = [];
 if (nargin ~= 1)
-  help isfile;
+  help mlrIsFile;
   return
 end
 if isempty(filename),isit = 0;,return,end
@@ -28,7 +28,7 @@ if (fid ~= -1)
 %     openname = fopen(fid);
 %     if ~strcmp(fullfile(pwd,filename),openname)
     if ~isempty(which(filename)) && ~strcmp(fullfile(pwd,filename),which(filename)) %using which instead of fopen, because older versions of matlab didn't return the full path
-      %disp(sprintf('(isfile) Found file %s, but not in current path',openname));
+      %disp(sprintf('(mlrIsFile) Found file %s, but not in current path',openname));
       isit = false;
       fclose(fid);
       return;

@@ -20,13 +20,13 @@ end
 % if passed in a string check to see if
 % it needs an extension
 if isstr(outerSurface)
-  if isfile(sprintf('%s.off',stripext(outerSurface)));
+  if mlrIsFile(sprintf('%s.off',stripext(outerSurface)));
     outerSurface = sprintf('%s.off',stripext(outerSurface));
   end
 end
 
 % see how we are being called
-if (nargin == 1) && isstr(outerSurface) && ~isfile(outerSurface)
+if (nargin == 1) && isstr(outerSurface) && ~mlrIsFile(outerSurface)
   event = outerSurface;
 elseif (nargin == 1) && isstr(outerSurface)
   if ~isempty(strfind(outerSurface,'WM'))
@@ -105,7 +105,7 @@ disppercent(-inf,'(mrSurfViewer) Loading surfaces');
 % load the surface
 gSurfViewer.outerSurface = loadSurfOFF(sprintf('%s.off',stripext(outerSurface{1})));
 if isempty(gSurfViewer.outerSurface)
-  if isfile(gSurfViewer.outerSurface)
+  if mlrIsFile(gSurfViewer.outerSurface)
     mrWarnDlg(sprintf('(mrSurfViewer) %s is not a surface file',outerSurface{1}));
   else
     mrWarnDlg(sprintf('(mrSurfViewer) Could not find %s',outerSurface{1}));
@@ -222,7 +222,7 @@ if isempty(anat)
   end
   anat{1} = filename;
 end
-if isfile(anat{1})
+if mlrIsFile(anat{1})
   if initAnatomy(anat{1});
     % opened file, so xform surfaces
     gSurfViewer = xformSurfaces(gSurfViewer);

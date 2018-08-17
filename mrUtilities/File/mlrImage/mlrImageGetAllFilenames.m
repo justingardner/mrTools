@@ -49,7 +49,7 @@ for i = 1:length(d)
       % check for valid filenames, also in this check here
       % do not use files in which there exists an uncompressed filename
       thisFilename = fullfile(dirname,d(i).name);
-      if ~isfile(stripext(thisFilename)) &&  mlrImageIsImage(thisFilename)
+      if ~mlrIsFile(stripext(thisFilename)) &&  mlrImageIsImage(thisFilename)
 	imageFilenames{end+1} = d(i).name;
       end
     end

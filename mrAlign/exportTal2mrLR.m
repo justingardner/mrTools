@@ -20,7 +20,7 @@ end
 
 % first check this directory for mrSession.m
 path = '';
-if isfile('mrSession.mat')
+if mlrIsFile('mrSession.mat')
   % if there is a session then ask if the user wants to export to this directory
   answer = questdlg(sprintf('Save Talairach information to %s?',getLastDir(pwd)),'Export');
   if strcmp(answer,'Cancel'),return,end % Cancel~=No; if they return No, the next 'if' loop takes over.
@@ -362,7 +362,7 @@ function saveTalWithCode3
               v = viewSet(v,'scansform',newSform,iScan,iGroup); % change in session parameters
                                                                 % also need to save it to the nifti header
               filename = viewGet(v,'tseriespath',iScan,iGroup);
-              if isfile(filename)
+              if mlrIsFile(filename)
                 hdr = mlrImageReadNiftiHeader(filename);
                 hdr = cbiSetNiftiSform(hdr,newSform);
                 % unfortunately that code sets sform_code to 1 so need to undo that!

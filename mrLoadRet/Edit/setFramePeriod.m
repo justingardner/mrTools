@@ -22,7 +22,7 @@ end
 
 % first check this directory for mrSession.m
 path = '';
-if isfile('mrSession.mat')
+if mlrIsFile('mrSession.mat')
   % if there is a session then ask if the user wants to export to this directory
   answer = questdlg(sprintf('Save frame period to %s?',getLastDir(pwd)),'setFramePeriod');
   if strcmp(answer,'Cancel'),return,end
@@ -84,7 +84,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       % get the nifti filename
       filename = viewGet(v, 'tseriesPath', iScan, iGroup);
       % check if it is there
-      if isfile(filename)
+      if mlrIsFile(filename)
 	% load the header
 	hdr = mlrImageReadNiftiHeader(filename);
 	newUnits = bitand(hdr.xyzt_units,7)+16;

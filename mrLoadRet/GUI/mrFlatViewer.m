@@ -31,13 +31,13 @@ end
 % if passed in a string check to see if
 % it needs an extension
 if isstr(flat)
-  if isfile(sprintf('%s.off',stripext(flat)));
+  if mlrIsFile(sprintf('%s.off',stripext(flat)));
     flat = sprintf('%s.off',stripext(flat));
   end
 end
 
 % see how we are being called
-if (nargin == 1) && isstr(flat) && ~isfile(flat)
+if (nargin == 1) && isstr(flat) && ~mlrIsFile(flat)
   event = flat;
 else
   event = 'init';
@@ -152,7 +152,7 @@ end
 checkForMore = 1;
 if isempty(inner)
   % guess the names
-  if isfile(fullfile(flatPath,gFlatViewer.flat.parentSurfaceName))
+  if mlrIsFile(fullfile(flatPath,gFlatViewer.flat.parentSurfaceName))
     inner{1} = gFlatViewer.flat.parentSurfaceName;
   else
     % go look for it
@@ -202,7 +202,7 @@ inner{end+1} = 'Find file';
 if isempty(outer)
   % if we weren't passed in anything try to find them
   filename = sprintf('%sGM.off',stripext(stripext(inner{1}),'WM'));
-  if isfile(fullfile(flatPath,filename))
+  if mlrIsFile(fullfile(flatPath,filename))
     outer{1} = filename;
   else
     % go look for it
@@ -248,9 +248,9 @@ checkForMore = 1;
 if isempty(curv)
   curvGuess = sprintf('%s_Curv.vff', fullfile(flatPath, stripext(inner{1})));
   secondCurvGuess = sprintf('%sCurv.vff', fullfile(flatPath, stripext(stripext(inner{1}),'WM')));
-  if isfile(curvGuess)
+  if mlrIsFile(curvGuess)
     curv{1} = getLastDir(curvGuess);
-  elseif isfile(secondCurvGuess)
+  elseif mlrIsFile(secondCurvGuess)
     curv{1} = getLastDir(secondCurvGuess);
   else
     % go look for it
@@ -324,7 +324,7 @@ for iAnat = 1:length(anat)
   % assume not valid at first
   validAnat(iAnat) = false;
   % check for file
-  if isfile(thisAnatName)
+  if mlrIsFile(thisAnatName)
     [gFlatViewer.anat.data gFlatViewer.anat.hdr] = mlrImageReadNifti(thisAnatName);
     % if no data, then there was a failure to load
     if isempty(gFlatViewer.anat.data)

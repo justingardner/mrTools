@@ -23,7 +23,7 @@ possiblePaths = {'.',petablePath,'/usr4/justin/vnmrsys/tablib'};
 foundpetable = false;
 for iPath  = 1:length(possiblePaths)
   % see if petable exists
-  if isfile(fullfile(possiblePaths{iPath},filename))
+  if mlrIsFile(fullfile(possiblePaths{iPath},filename))
     foundfile = true;
     petablePath = possiblePaths{iPath};
     continue;

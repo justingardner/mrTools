@@ -196,7 +196,7 @@ else
     % make links within surfaces to proper anatomy
     cd('surfaces');
     % check for .freesurfer file which contains correct link
-    if isfile('.freesurfer')
+    if mlrIsFile('.freesurfer')
       freesurfer = textread('.freesurfer','%s');
       if length(freesurfer) == 1
 	% then make the link

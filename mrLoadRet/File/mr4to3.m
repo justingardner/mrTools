@@ -37,7 +37,7 @@ bestRotFilename = 'bestRotVol.mat';
 oldSessionFilename = 'mrSESSION3.mat';
 
 % first make sure we have a session file
-if ~isfile(sessionFilename)
+if ~mlrIsFile(sessionFilename)
   disp('(mr4to3) Could not find mrSession.mat file');
   return
 end
@@ -57,7 +57,7 @@ end
 % if called with one argument, all we need to do is swap
 % the mrSession file
 if (nargin == 1)
-  if isfile('mrSession4.mat') && isfile('mrSESSION3.mat')
+  if mlrIsFile('mrSession4.mat') && mlrIsFile('mrSESSION3.mat')
     if (currentMrSessionVersion == 3) && (vernum == 4)
 	disp(sprintf('Swapping in mrSession 4 file'));
 	mysystem('mv -f mrSession.mat mrSESSION3.mat');
@@ -148,7 +148,7 @@ end
 
 % load the alignment file
 alignment = [];
-if isfile(bestRotFilename)
+if mlrIsFile(bestRotFilename)
   printBlockBegin(sprintf('Alignment file (%s)',bestRotFilename));
   load(bestRotFilename);
   % make the alignment
@@ -166,7 +166,7 @@ end
 
 % check for an old mrSESSION (3.1) file
 moveOldSessionFile = 0;
-if isfile(oldSessionFilename)
+if mlrIsFile(oldSessionFilename)
   moveOldSessionFile = 1;
   printBlockBegin('Old mrSession.mat');
   newMrSessionName = sprintf('%s_%s.mat',stripext(oldSessionFilename),datestr(now,'yymmdd_HH:MM:SS'));
@@ -222,7 +222,7 @@ if averagesGroup
 end    
 printBlockEnd;
 
-if ~isfile('Inplane/Inplane.hdr') && anatnum
+if ~mlrIsFile('Inplane/Inplane.hdr') && anatnum
   printBlockBegin('Saving anatomy file');
   [anatimg anathdr] = mlrImageReadNifti(fullfile('Anatomy',anatdir(anatnum).name));
   cbiWriteNifti('Inplane/Inplane.hdr',anatimg,anathdr);
@@ -371,9 +371,9 @@ for i = 1:length(scanParams)
       destFilename = strcat('Scan', num2str(i), '.img');
   end
   % check to see if the img file is already there
-  if isfile(destFilename)
+  if mlrIsFile(destFilename)
     disp(sprintf('%s already exists',destFilename));
-  elseif ~isfile(sourceFilename)
+  elseif ~mlrIsFile(sourceFilename)
     disp(sprintf('(mr4to3) Could not find original file %s',sourceFilename));
   else
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
@@ -382,9 +382,9 @@ for i = 1:length(scanParams)
   % now move the hdr file
   destFilename = sprintf('%s.hdr',stripext(destFilename));
   sourceFilename = sprintf('%s.hdr',stripext(sourceFilename));
-  if isfile(destFilename)
+  if mlrIsFile(destFilename)
     disp(sprintf('%s already exists',destFilename));
-  elseif ~isfile(sourceFilename)
+  elseif ~mlrIsFile(sourceFilename)
     disp(sprintf('(mr4to3) Could not find original file %s',sourceFilename));
   else
     disp(sprintf('Linking %s to %s',sourceFilename,destFilename));
@@ -396,7 +396,7 @@ printBlockEnd;
 fprintf(sprintf('Returning to %s \n', origDir));
 cd(origDir)
 
-if ~isfile('mrSession4.mat')
+if ~mlrIsFile('mrSession4.mat')
   mysystem('cp mrSession.mat mrSession4.mat');
 end
 

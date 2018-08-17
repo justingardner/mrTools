@@ -29,7 +29,7 @@ else
 end
 
 % check to make sure fromFilename exists
-if ~isfile(fromFilename)
+if ~mlrIsFile(fromFilename)
   disp(sprintf('(linkFile) %s does not exist',fromFilename));
   return
 end
