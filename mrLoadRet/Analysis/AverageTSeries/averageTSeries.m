@@ -102,6 +102,19 @@ end
 % if just getting params then return
 if justGetParams,return,end
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% re-select scans using the list version
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if ~ieNotDefined('scanList')
+    params.scanList = scanList;
+elseif defaultParams
+    params.scanList = 1:viewGet(view,'nScans');
+else
+    params.scanList = selectInList(view,'scans','Select Scans',params.scanList);
+end
+if isempty(params.scanList),return,end
+
 % Retrieve parameters
 scanList = params.scanList;
 reverseList = params.reverseList;
