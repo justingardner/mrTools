@@ -90,7 +90,7 @@ nScans = viewGet([],'nscans',groupNum);
 if ieNotDefined('params')
     params = averageTSeriesReconcileParams(groupName);
 else
-    params = averageTSeriesReconcileParams(groupName,params)
+    params = averageTSeriesReconcileParams(groupName,params);
 end
 
 % Initialize handles. Store the parameters in the GUI until user
@@ -108,7 +108,7 @@ end
 
 % Initialize include (scanList)
 handles.include = zeros(1,nScans);
-handles.include(params.scanList) = 1;
+handles.include(params.scanList) = 0; % include none by default
 
 % Initalize shift and revers
 handles.shift = zeros(1,nScans);

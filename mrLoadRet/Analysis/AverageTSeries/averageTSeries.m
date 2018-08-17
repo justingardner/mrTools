@@ -111,8 +111,17 @@ if ~ieNotDefined('scanList')
 elseif defaultParams
     params.scanList = 1:viewGet(view,'nScans');
 else
+    prevScanList = params.scanList;
     params.scanList = selectInList(view,'scans','Select Scans',params.scanList);
+    if length(prevScanList)~=length(params.scanList) || any(prevScanList~=params.scanList)
+        % resolve
+        disp('Erasing shifts and reversals -- you changed scan selections in a mode where we can''t resolve which scans were shfited/reversed');
+        params.shiftList = zeros(size(params.scanList));
+        params.reverseList = zeros(size(params.scanList));
+        params.description = sprintf('Average from %s of scans:%s',params.groupName,sprintf(' %d',params.scanList));
+    end
 end
+
 if isempty(params.scanList),return,end
 
 % Retrieve parameters
