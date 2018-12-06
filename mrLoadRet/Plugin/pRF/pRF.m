@@ -124,6 +124,15 @@ for scanNum = params.scanNum
     return
   end
 
+  % if we are saving out for export, do that here
+  if params.pRFFit.saveForExport
+    % get stim image
+    fit = pRFFit(v,scanNum,[],[],[],'fitTypeParams',params.pRFFit,'justGetStimImage',true);
+    % and save
+    pRFSaveForExport(v,params,fit,scanNum,x,y,z);
+    continue;
+  end
+  
   % get total number of voxels
   n = length(x);
 
@@ -212,7 +221,7 @@ for scanNum = params.scanNum
     % can't load each voxel's time series one at a time. If this is
     % too large for memory then you can comment this out and not
     % pass it into pRFFit and pRFFit will load the tSeries itself
-    loadROI = loadROITSeries(v,loadROI,scanNum,params.groupName);
+    loadROI = loadROITSeries(v,loadROI,scanNum,params.groupName,'keepNAN',true);
     % reorder x,y,z coordinates since they can get scrambled in loadROITSeries
     x(blockStart:blockEnd) = loadROI.scanCoords(1,1:blockSize);
     y(blockStart:blockEnd) = loadROI.scanCoords(2,1:blockSize);
@@ -266,6 +275,11 @@ for scanNum = params.scanNum
   rfHalfWidth.params{scanNum} = thisParams; 
   % display how long it took
   disp(sprintf('(pRF) Fitting for %s:%i took in total: %s',params.groupName,scanNum,mlrDispElapsedTime(toc)));
+end
+
+% if we were just saving for export, then return
+if params.pRFFit.saveForExport
+  return
 end
 
 % install analysis
@@ -423,4 +437,70 @@ for iFit = 1:length(params.pRFFit)
     end
   end
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    pRFSaveForExport    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+function pRFSaveForExport(v,params,fit,scanNum,x,y,z)
+
+% get location for export and make it if necessary
+exportDir = fullfile(viewGet(v,'dataDir'),params.saveName);
+if ~isdir(exportDir),mkdir(exportDir);end
+
+% make a subdirectory for export
+exportDir = fullfile(exportDir,'Export');
+if ~isdir(exportDir),mkdir(exportDir);end
+
+% get the tseries name to save as directory
+tSeriesName = stripext(params.tseriesFile{find(params.scanNum == scanNum)});
+exportDir = fullfile(exportDir,tSeriesName);
+if ~isdir(exportDir),mkdir(exportDir);end
+
+% tell what we are doing
+dispHeader(sprintf('(pRF) Exporting data for %s:%i to: %s',params.groupName,scanNum,exportDir));
+
+% concat the stim image
+stimImage = [];
+for iConcat = 1:length(fit)
+  stimImage = cat(3,stimImage,fit{iConcat}.im);
+end
+
+% save the stim image
+stimFilename = fullfile(exportDir,'stim.nii.gz');
+if isfile(stimFilename)
+  disp(sprintf('(pRF) Removing already existing %s',getLastDir(stimFilename)));
+  system(sprintf('rm -f %s',stimFilename));
+end
+mlrImageSave(stimFilename,stimImage);
+
+% now make restriction mask image
+scanDims = viewGet(v,'scanDims',scanNum);
+mask = zeros(scanDims);
+mask(sub2ind(scanDims,x,y,z)) = 1;
+
+% and save it
+maskFilename = fullfile(exportDir,'mask.nii.gz');
+if isfile(maskFilename)
+  disp(sprintf('(pRF) Removing already existing %s',getLastDir(maskFilename)));
+  system(sprintf('rm -f %s',maskFilename));
+end
+mlrImageSave(maskFilename,mask);
+
+% load data
+tSeriesFilename = viewGet(v,'tSeriesPath',scanNum);
+[d h] = mlrImageLoad(tSeriesFilename);
+
+% save data
+boldFilename = fullfile(exportDir,'bold.nii.gz');
+if isfile(boldFilename)
+  disp(sprintf('(pRF) Removing already existing %s',getLastDir(boldFilename)));
+  system(sprintf('rm -f %s',boldFilename));
+end
+mlrImageSave(boldFilename,d,h);
+
+% save parameters
+params.stimImage = fit;
+paramsFilename = fullfile(exportDir,'pRFparams');
+save(paramsFilename,'params');
 

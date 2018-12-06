@@ -1,4 +1,3 @@
-usage
 %
 %      % loadMrDefaults: loadMrDefaults()
 %         by: justin gardner
