@@ -46,7 +46,7 @@ switch(baseType)
    % Generate coordinates with meshgrid
    [Ycoords,Xcoords,Zcoords] = meshgrid(1:basedims(2),1:basedims(1),1:basedims(3));
    
-   case 1   %the base is a flat map
+   case {1,2}   %the base is a flat map or a surface
       sliceIndex = viewGet(thisView,'baseSliceIndex',baseNum);
       if ieNotDefined('depthBins')
          depthBins = mrGetPref('corticalDepthBins');
@@ -106,11 +106,16 @@ switch(baseType)
       baseVoxelSize(3) = baseVoxelSize(3)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,3).^2 + diff(YcoordsNaN,1,3).^2 + diff(ZcoordsNaN,1,3).^2))));
 
    otherwise
-      mrWarnDlg('(getBaseSpaceOverlay) This function is not implemented for surfaces')
+
       
 end
 
 newOverlayData = getNewSpaceOverlay(overlayData, base2scan, Xcoords, Ycoords, Zcoords, interpMethod);
+if baseType==2
+  mrWarnDlg('(getBaseSpaceOverlay) This function has not been tested for surfaces')
+  %average cortical depth dimension for surface
+  newOverlayData = nanmean(newOverlayData,3);
+end
 
 if nargout==3
    baseCoords = cat(4,Xcoords, Ycoords);
