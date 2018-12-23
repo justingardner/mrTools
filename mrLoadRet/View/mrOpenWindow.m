@@ -92,6 +92,11 @@ end
 % add a menu item to export analysis struct
 mlrAdjustGUI(view,'add','menu','Export for Analysis','/File/Export/','Callback',@mlrExportForAnalysis);
 
+% add a menu item to export surfaces to wavefront off
+mlrAdjustGUI(view,'add','menu','Export surface','/File/Base anatomy/Use current scan','Callback',@mlrExportSurface,'Separator','on');
+mlrAdjustGUI(view,'set','Export surface','Enable','off');
+
+
 % Add plugins
 if ~isempty(which('mlrPlugin')), view = mlrPlugin(view);end
 
