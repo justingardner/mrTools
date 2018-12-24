@@ -27,81 +27,92 @@ else
   return
 end
 
-% get group name and scan
+% start to create paramsInfo for choosing what to save
+paramsInfo = {{'fullTimeSeries',0,'type=checkbox','Save full time series'}};
+
+% get what ROIs are loaded
+if viewGet(v,'nROIs') > 0
+  paramsInfo{end+1} = {'roi',1,'type=checkbox','Save roi'};
+  paramsInfo{end+1} = {'roiFullTimeSeries',1,'type=checkbox','contingent=roi','Save full time series for all the voxels in the rois. If unclicked, will still the average roi time series'};
+else
+  paramsInfo{end+1} = {'roi',0,'type=checkbox','visible=0'};
+  paramsInfo{end+1} = {'roiTimeSeries',0,'type=checkbox','visible=0'};
+end
+
+% check if there is an analysis
+analysis = viewGet(v,'analysis');
+
+% check for event-related
+if ~isempty(analysis) &&  strcmp(analysis.type,'erAnal')
+  paramsInfo{end+1} = {'eventRelatedAnalysis',1,'type=checkbox','Save event-related analysis'};
+else
+  paramsInfo{end+1} = {'eventRelatedAnalysis',0,'visible=0'};
+end
+  
+% put up dialog for choice on what to save
+params = mrParamsDialog(paramsInfo,'Choose export options');
+if isempty(params),return,end
+
+% get save name
+filename = sprintf('%s_%s_%i.mat',getLastDir(viewGet(v,'homeDir')),viewGet(v,'groupName'),viewGet(v,'curScan'));
+[filename,pathname] = uiputfile({'*.mat','Matlab file'},'Save as',filename);
+if isequal(filename,0) || isequal(pathname,0)
+  return
+end
+
+% save experiment info
+output.experimentName = getLastDir(viewGet(v,'homeDir'));
 output.groupName = viewGet(v,'groupName');
 output.scanNum = viewGet(v,'curScan');
+output.description = viewGet(v,'description');
 
 % load the time series
-disppercent(-inf,'(mlrExportForAnalysis) Loading time series');
-output.tSeries = loadTSeries(v);
-disppercent(inf);
-output.dims = size(output.tSeries);
+if params.fullTimeSeries
+  disppercent(-inf,'(mlrExportForAnalysis) Loading time series');
+  output.tSeries = loadTSeries(v);
+  disppercent(inf);
+else
+  output.tSeries = [];
+end
 
-% check what type of analysis is here
-analysis = viewGet(v,'analysis');
-if ~isempty(analysis)
-  if strcmp(analysis.type,'erAnal')
-    output = getEventRelatedData(v,analysis,output);
+% set dimensions
+output.dims = viewGet(v,'scanDims');
+output.dims(end+1) = viewGet(v,'totalFrames');
+output.framePeriod = viewGet(v,'framePeriod');
+output.concatInfo = viewGet(v,'concatInfo');
+
+% load the rois
+if params.roi
+  % get how many rois
+  output.nroi = viewGet(v,'nrois');
+  % and read in each one
+  for iROI = 1:output.nroi
+    % load the roi
+    output.roi(iROI) = loadROITSeries(v,iROI,output.scanNum,output.groupName);
+    % compute mean of time series is we are not saving full
+    if ~params.roiFullTimeSeries
+      output.roi(iROI).tSeries = mean(output.roi(iROI).tSeries);
+    end
   end
+else
+  output.nroi = 0;
+  output.roi = [];
+end
+
+% save event related analysis if it is there
+if params.eventRelatedAnalysis
+  output.eventRelated = analysis.d{output.scanNum};
+end
+
+% load overlays
+nOverlays = viewGet(v,'nOverlays');
+for iOverlay = 1:nOverlays
+  % get the overlay
+  output.overlay(iOverlay) = viewGet(v,'overlay',iOverlay);
+  % extract only the data for this scan
+  output.overlay(iOverlay).data = viewGet(v,'overlayData',output.scanNum,iOverlay);
 end
 
 % save file
-[filename,pathname] = uiputfile({'*.mat','Matlab file'},'Save as');
-if isequal(filename,0) || isequal(pathname,0)
-  return
-else
-  save(fullfile(pathname,filename),output,'-v7.3');
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    getEventRelatedData    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function output = getEventRelatedData(v,analysis,output)
-
-
-% get data (the one in gEventRelatedPlot has some fields removed to save space)
-% so re get it here.
-output.eventRelated.d = analysis.d{output.scanNum};
-concatInfo = viewGet(v,'concatInfo');
-keyboard
-% get stimvol
-output.eventRelated.stimvol = output.eventRelated.d.stimvol;
-
-% resort time series as time from stimvol
-% first pull out some variables from structures
-hdrlen = output.eventRelated.d.hdrlen;
-stimvol = output.eventRelated.stimvol;
-% get run transitions
-if ~isempty(concatInfo) && isfield(concatInfo,'runTransition') && ~isempty(concatInfo.runTransition)
-  runTransition = concatInfo.runTransition;
-else
-  runTransition = [1 size(output.tSeries,4)];
-end
-
-disppercent(-inf,'(mlrExportForAnalysis) Exporting tSeries sorted by events');
-for iStimType = 1:length(stimvol)
-  % start trace event time
-  transitionNum = 1;
-  % init
-  output.eventRelated.tSeriesByStim{iStimType} = nan(output.dims(1),output.dims(2),output.dims(3),hdrlen);
-  for iStim = 1:length(stimvol{iStimType})
-    % get the start of the event
-    eventStart = stimvol{iStimType}(iStim);
-    % check transition
-    if eventStart > runTransition(transitionNum,2)
-      % if we are passed a scan boundary go to next scan
-      transitionNum = min(size(runTransition,1),transitionNum+1);
-    end
-    % get end of event 
-    eventEnd = min(eventStart + hdrlen-1,runTransition(transitionNum,2));
-    % now get the relevant part of the time series
-    eventTSeries = output.tSeries(:,:,:,eventStart:eventEnd);
-    % pack to end with nan if we are missing data
-    eventTSeries(:,:,:,end+1:hdrlen) = nan;
-    % and stick in the field for voxel
-    output.eventRelated.tSeriesByStim{iStimType}(:,:,:,iStim,1:hdrlen) = eventTSeries;
-    disppercent(calcPercentDone(iStimType,length(stimvol),iStim,length(stimvol{iStimType})));
-  end
-end
-disppercent(inf);
+save(fullfile(pathname,filename),output,'-v7.3');
 
