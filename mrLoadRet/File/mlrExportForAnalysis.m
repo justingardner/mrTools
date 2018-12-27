@@ -45,6 +45,33 @@ analysis = viewGet(v,'analysis');
 % check for event-related
 if ~isempty(analysis) &&  strcmp(analysis.type,'erAnal')
   paramsInfo{end+1} = {'eventRelatedAnalysis',1,'type=checkbox','Save event-related analysis'};
+
+  if viewGet(v,'nROIs') > 0
+    % check to see if we have the function getInstances
+    if ~isempty(which('getInstances'))
+      % put up params for doing instances
+      paramsInfo{end+1} = {'getInstances',1,'type=checkbox','Compute and save instances that can be used for doing classification and other analyses '};
+      % parameters for average instances computation
+      paramsInfo{end+1} = {'computeAverageInstances',1,'type=checkbox','contingent=getInstances','Compute instances using averaging method - fast and dirty method that just takes the average using the below parameter of timepoints after each stimulus presentation. See getInstances for more info'};
+      paramsInfo{end+1} = {'startLag',0,'type=numeric','incdec=[-1 1]','minmax=[0 inf]','round=1','contingent=computeAverageInstances','Starglag in volumes to start after timulus presentation when computing averages. 0 is to use default. See getInstances for more info'};
+      paramsInfo{end+1} = {'blockLen',0,'type=numeric','incdec=[-1 1]','minmax=[0 inf]','round=1','contingent=computeAverageInstances','Blocklen in volumes to compute average over. 0 is to use default. See getInstances for more info'};
+      paramsInfo{end+1} = {'groupTrials',1,'type=numeric','incdec=[-1 1]','minmax=[0 inf]','round=1','contingent=computeAverageInstances','Group trials into k trials and average. Default is 1. See getInstances for more info.'};
+      paramsInfo{end+1} = {'minResponseLen',0,'type=numeric','incdec=[-1 1]','minmax=[0 inf]','round=1','contingent=computeAverageInstances','Minimum length a trial must be to be used in averages. Use 0 to default. See getInstances for more info.'};
+      % parameters for deconv instnaces
+      paramsInfo{end+1} = {'computeDeconvInstances',1,'type=checkbox','contingent=getInstances','Compute instances using deconvolution method. See getInstances for more info.'};
+      paramsInfo{end+1} = {'canonicalType',{'allfit2','allfit1','all'},'type=popupmenu','contingent=computeDeconvInstances','How to compute the canonical response for making deconv instances. All is the average deconvolution across all stimulus types and all voxels. Allfit1 fits that with a single gamma and Allfit2 fits that with a difference of gammas. See getCanonical for more info.'};
+      paramsInfo{end+1} = {'canonicalR2cutoff',0,'type=numeric','minmax=[0 1]','incdec=[-0.01 0.01]','contingent=computeDeconvInstances','r2 cutoff for voxels to be used in computing canonical'};
+    else
+      % put up params for doing instances
+      paramsInfo{end+1} = {'getInstances',0,'type=checkbox','enable=0','Compute and save instances that can be used for doing classification and other analyses. Not available - download from https://github.com/justingardner/gru.git'};
+      disp(sprintf('(mlrExportForAnalysis) Git repo wigh getInstances not available. If you wish to compute instances, download from: https://github.com/justingardner/gru.git'));
+    end
+  else
+    % put up params for doing instances
+    paramsInfo{end+1} = {'getInstances',0,'type=checkbox','enable=0','No ROIs are loaded, so it is not possible to compute instances. '};
+    disp(sprintf('(mlrExportForAnalysis) No ROIs found. Skipping getInstances'));
+  end
+  
 else
   paramsInfo{end+1} = {'eventRelatedAnalysis',0,'visible=0'};
 end
@@ -88,19 +115,20 @@ if params.roi
   % and read in each one
   for iROI = 1:output.nroi
     % load the roi
-    output.roi(iROI) = loadROITSeries(v,iROI,output.scanNum,output.groupName);
+    output.roi{iROI} = loadROITSeries(v,iROI,output.scanNum,output.groupName);
     % compute mean of time series is we are not saving full
     if ~params.roiFullTimeSeries
-      output.roi(iROI).tSeries = mean(output.roi(iROI).tSeries);
+      output.roi{iROI}.tSeries = mean(output.roi(iROI).tSeries);
     end
   end
 else
   output.nroi = 0;
-  output.roi = [];
+  output.roi = {};
 end
 
 % save event related analysis if it is there
 if params.eventRelatedAnalysis
+  % get event related
   output.eventRelated = analysis.d{output.scanNum};
 end
 
@@ -113,6 +141,34 @@ for iOverlay = 1:nOverlays
   output.overlay(iOverlay).data = viewGet(v,'overlayData',output.scanNum,iOverlay);
 end
 
+% now run instances
+if params.eventRelatedAnalysis
+  if isequal(params.getInstances,1) && (params.computeAverageInstances || params.computeDeconvInstances)
+    % get r2
+    r2 = viewGet(v,'overlayData',viewGet(v,'overlayNum','r2'));
+    % get sort index, sets r2 for the roi and can be used for sorting voxel order
+    output.roi = getSortIndex(v,output.roi,r2);
+
+    % compute average instnaces
+    if params.computeAverageInstances
+      % set default arguments
+      if params.startLag == 0, params.startLag = [];end
+      if params.blockLen == 0, params.blockLen = [];end
+      if params.minResponseLen == 0, params.minResponseLen = [];end
+      % getInstances using average method      
+      output.roi = getInstances(v,output.roi,output.eventRelated.stimvol,'startLag',params.startLag,'blockLen',params.blockLen,'groupTrials',params.groupTrials,'minResponseLen',params.minResponseLen,'fieldName=averageInstances','n=inf');
+    end
+
+    % compute deconv instnaces
+    if params.computeDeconvInstances
+      % set default agruments
+      if params.canonicalR2cutoff == 0,params.canonicalR2cutoff = [];end
+      % getInstances using deconvmethod      
+      output.roi = getInstances(v,output.roi,output.eventRelated.stimvol,'type=deconv','canonicalType',params.canonicalType,'r2cutoff',params.canonicalR2cutoff,'fieldName=deconvInstances','n=inf');
+    end
+  end
+end
+
 % save file
-save(fullfile(pathname,filename),output,'-v7.3');
+save(fullfile(pathname,filename),'output','-v7.3');
 
