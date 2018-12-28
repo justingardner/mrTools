@@ -75,7 +75,12 @@ if ~isempty(analysis) &&  strcmp(analysis.type,'erAnal')
 else
   paramsInfo{end+1} = {'eventRelatedAnalysis',0,'visible=0'};
 end
-  
+
+% prf analysis
+if ~isempty(analysis) &&  strcmp(analysis.type,'pRFAnal')
+  paramsInfo{end+1} = {'pRFAnalysis',1,'type=checkbox','Save pRF analysis'};
+end
+
 % put up dialog for choice on what to save
 params = mrParamsDialog(paramsInfo,'Choose export options');
 if isempty(params),return,end
@@ -129,7 +134,23 @@ end
 % save event related analysis if it is there
 if params.eventRelatedAnalysis
   % get event related
-  output.eventRelated = analysis.d{output.scanNum};
+  if length(analysis.d) >= output.scanNum
+    output.eventRelated = analysis.d{output.scanNum};
+  else
+    disp(sprintf('(mlrExportForAnalysis) No event related analysis for %i',output.scanNum));
+    output.eventRelated = [];
+  end
+end
+
+% save pRF Analysis
+if params.pRFAnalysis
+  % get pRF 
+  if length(analysis.d) >= output.scanNum
+    output.pRF = analysis.d{output.scanNum};
+  else
+    disp(sprintf('(mlrExportForAnalysis) No pRF analysis for %i',output.scanNum));
+    output.pRF = [];
+  end
 end
 
 % load overlays
