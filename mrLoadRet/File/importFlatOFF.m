@@ -33,7 +33,7 @@ end
 
 if isstr(flatFile);
   % check to see if we are passed in a file name
-  if ~isfile(flatFile);
+  if ~mlrIsFile(flatFile);
     disp(sprintf('(importFlatOFF) %s does not exist', flatFile));
     return;
   end
@@ -51,7 +51,7 @@ end
 % this is the case when importFlatOFF is called from makeFlat
 if isstruct(flatFile);
   params = flatFile;
-  if isfile(fullfile(params.path, params.flatFileName));
+  if mlrIsFile(fullfile(params.path, params.flatFileName));
     flatFile = loadSurfOFF(fullfile(params.path, params.flatFileName));
     surf.inner = loadSurfOFF(fullfile(params.path, params.innerCoordsFileName));
     surf.outer = loadSurfOFF(fullfile(params.path, params.outerCoordsFileName));

@@ -75,7 +75,7 @@ for i = 1:length(analysisNames)
 end
 
 % set the parameter string
-paramsInfo = {};
+paramsInfo = {};continueParams = [];
 if ~pRFFitParamsOnly
   paramsInfo{end+1} = {'groupName',groupNames,'Name of group from which to do pRF analysis'};
   paramsInfo{end+1} = {'saveName','pRF','File name to try to save as'};
@@ -110,7 +110,11 @@ if ~pRFFitParamsOnly
 	  end
 	end
       end
-      return
+      % even though we are countinuing and could return
+      % here, we next setup the rest of the paramsInfo dialog
+      % so that we can add any parameters to pRF params that
+      % aren't in the stored parameters (this will only occur
+      % for pRF analyses which are old and don't have all new params)
     end
   end
 end
@@ -143,6 +147,26 @@ paramsInfo{end+1} = {'saveStimImage',0,'type=checkbox','Save the stim image back
 paramsInfo{end+1} = {'recomputeStimImage',0,'type=checkbox','Even if there is an already computed stim image (see saveStimImage) above, this will force a recompute of the image. This is useful if there is an update to the code that creates the stim images and need to make sure that the stim image is recreated'};
 paramsInfo{end+1} = {'applyFiltering',1,'type=checkbox','If set to 1 then applies the same filtering that concatenation does to the model. Does not do any filtering applied by averages. If this is not a concat then does nothing besides mean subtraction. If turned off, will still do mean substraction on model.'};
 paramsInfo{end+1} = {'stimImageDiffTolerance',5,'minmax=[0 100]','incdec=[-1 1]','When averaging the stim images should be the same, but some times we are off by a frame here and there due to inconsequential timing inconsistenices. Set this to a small value, like 5 to ignore that percentage of frames of the stimulus that differ within an average. If this threshold is exceeded, the code will ask you if you want to continue - otherwise it will just print out to the buffer the number of frames that have the problem'};
+paramsInfo{end+1} = {'saveForExport',0,'type=checkbox','Creates files for export to do the pRF on systems like BrainLife. This will save a stim.nii file containing the stimulus images, a bold.nii file with the time series a mask.nii file that contains the voxel mask over which to the analysis and a pRFparams.mat file which contains various parameters'};
+
+% if we are continuing, then just add on any parameters that
+% are needed (i.e. ones that are not included in the old
+% analysis)
+if ~isempty(continueParams) && continueParams.continueAnalysis
+  % get default prams
+  defaultParams = mrParamsDefault(paramsInfo);
+  defaultParamNames = fieldnames(defaultParams);
+  % check to see which ones are missing
+  for iFieldName = 1:length(defaultParamNames)
+    % check if field exists in old params to continue from
+    if ~isfield(params.pRFFit,defaultParamNames{iFieldName}) && ~isfield(params,defaultParamNames{iFieldName})
+      % if not, then add it with default value
+      params.pRFFit.(defaultParamNames{iFieldName}) = defaultParams.(defaultParamNames{iFieldName});
+    end
+  end
+  % send back the params
+  return
+end
 
 % Get parameter values
 if defaultParams

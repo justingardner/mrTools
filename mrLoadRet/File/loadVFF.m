@@ -15,7 +15,7 @@ hdr.byteorder='b';
 
 data=[];hdr=[];
 filename = sprintf('%s.vff',stripext(filename));
-if ~isfile(filename)
+if ~mlrIsFile(filename)
   disp(sprintf('(loadVFF) Could not open %s',filename));
   return
 end

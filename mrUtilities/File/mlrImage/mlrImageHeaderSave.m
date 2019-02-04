@@ -36,7 +36,7 @@ compressFile = false;
 if strcmp(ext,'gz')
   compressFile = true;
   % need to uncompress the file (so that we can just write the header)
-  if isfile(filename)
+  if mlrIsFile(filename)
     system(sprintf('gunzip %s',filename));
   end
   % strip off the gz

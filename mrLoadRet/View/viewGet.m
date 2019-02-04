@@ -674,7 +674,7 @@ switch lower(param)
     [tseriesPath,tseriesFile] = fileparts(viewGet(view,'tseriesPath',s,g));
     % check for mat file
     matFileName = fullfile(tseriesPath,sprintf('%s.mat',tseriesFile));
-    if isfile(matFileName)
+    if mlrIsFile(matFileName)
       load(matFileName);
       if exist('concatInfo')
         val = concatInfo;
@@ -694,7 +694,7 @@ switch lower(param)
     if ~isempty(stimFileName)
       for j = 1:length(stimFileName)
         % load this stimfile
-        if ~isfile(stimFileName{j})
+        if ~mlrIsFile(stimFileName{j})
           mrErrorDlg(sprintf('viewGet %s: Could not find stimfile %s',param,stimFileName{j}));
         else
           val{j}=load(stimFileName{j});
@@ -794,7 +794,7 @@ switch lower(param)
     if ~isempty(eyeposFileName)
       for j = 1:length(eyeposFileName)
         % load this eyepos file
-        if ~isfile(sprintf('%s.mat',stripext(eyeposFileName{j})))
+        if ~mlrIsFile(sprintf('%s.mat',stripext(eyeposFileName{j})))
           mrErrorDlg(sprintf('viewGet %s: Could not find eyepos file %s',param,eyeposFileName{j}));
         else
           eyepos=load(eyeposFileName{j});
@@ -921,7 +921,7 @@ switch lower(param)
     [tseriesPath,tseriesFile] = fileparts(viewGet(view,'tseriesPath',s,g));
     dicomName{1} = fullfile(tseriesPath,sprintf('%s-header.txt',tseriesFile));
     % if the file does not exist, then check original
-    if ~isfile(dicomName{1})
+    if ~mlrIsFile(dicomName{1})
       dicomName = {};
       [os og] = viewGet(view,'originalScanNum',s,g);
       if ~isempty(os)
@@ -987,7 +987,7 @@ switch lower(param)
     [s g] = getScanAndGroup(view,varargin,param);
     % get the tseries name
     [tSeriesPath tSeriesName] = fileparts(viewGet(view,'tSeriesPathStr',s,g));
-    if isfile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
+    if mlrIsFile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
       load(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)));
       if exist('transforms') == 1
         val = transforms;
@@ -999,7 +999,7 @@ switch lower(param)
     [s g] = getScanAndGroup(view,varargin,param);
     % get the tseries name
     [tSeriesPath tSeriesName] = fileparts(viewGet(view,'tSeriesPathStr',s,g));
-    if isfile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
+    if mlrIsFile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
       val = load(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)));
     end
   case{'niftihdr'}
@@ -1549,7 +1549,7 @@ switch lower(param)
 		if isdir(fullfile(subjectDir,possibleSurfDirNames{i}))
 		  % then return that, if it contains the WM surface file
 		  val = fullfile(subjectDir,possibleSurfDirNames{i});
-		  if isfile(fullfile(val,innerCoordsFilename)),return,end
+		  if mlrIsFile(fullfile(val,innerCoordsFilename)),return,end
 		end
 	      end
 	      % look for the FreeSurfer directory, which should either directly contain the innerCoordsFilename
@@ -1558,7 +1558,7 @@ switch lower(param)
 	      for i = 1:length(subjectDirListing)
 		if subjectDirListing(i).isdir
 		  % see if the file is directly here
-		  if isfile(fullfile(subjectDir,subjectDirListing(i).name,innerCoordsFilename))
+		  if mlrIsFile(fullfile(subjectDir,subjectDirListing(i).name,innerCoordsFilename))
 		    % found it, return the directory
 		    val = fullfile(subjectDir,subjectDirListing(i).name);
 		    return
@@ -1570,7 +1570,7 @@ switch lower(param)
 		    val = surfRelaxDir;
 		    % return this one if we find the innerCoords - it is likely correct, if not
 		    % will continue searching to see if we find the file in some other directory
-		    if isfile(fullfile(val,innerCoordsFilename))
+		    if mlrIsFile(fullfile(val,innerCoordsFilename))
 		      return
 		    end
 		  end
@@ -4776,7 +4776,7 @@ function stimFile = viewGetLoadStimFile(view,stimFileName)
 stimFileName = fullfile(viewGet(view,'etcDir'),stimFileName);
 
 % load this stimfile
-if ~isfile(stimFileName)
+if ~mlrIsFile(stimFileName)
   mrErrorDlg(sprintf('(viewGet:viewGetLoadStimfile): Could not find stimfile %s',stimFileName));
 else
   stimFile = load(stimFileName);

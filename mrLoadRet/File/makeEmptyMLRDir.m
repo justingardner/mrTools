@@ -28,7 +28,7 @@ getArgs(varargin, {'defaultGroup=Raw','description=','subject=','operator=','def
 directories = {defaultGroup fullfile(defaultGroup,'TSeries') 'Anatomy' 'Etc'};
 
 % dirname is a file, abort
-if isfile(dirname)
+if mlrIsFile(dirname)
   mrWarnDlg(sprintf('(makeEmptyMLRDir) %s exists. Aborting',dirname));
   return
 end
@@ -44,7 +44,7 @@ else
 end
 
 % check for existing mrSession
-if isfile(fullfile(dirname,'mrSession.mat'))
+if mlrIsFile(fullfile(dirname,'mrSession.mat'))
   disp(sprintf('(makeEmptyMLRDir) %s already has an mrSession.mat. Aborting',dirname));
   return
 end

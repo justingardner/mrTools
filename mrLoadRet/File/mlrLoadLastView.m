@@ -29,7 +29,7 @@ if nargin == 0;
 end
 filename = setext(filename,'mat');
 
-if ~isfile(filename);
+if ~mlrIsFile(filename);
   mrWarnDlg('(mlrLoadLastView) Could not find %s',filename);
   return
 end

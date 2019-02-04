@@ -26,11 +26,11 @@ function varargout=cbiSwapNiftiDimensions(varargin);
   
 % File or data input?
 
-isfile=0;
+inputIsFile=0;
 isarray=0;
 if (isstr(varargin{1}) & isstr(varargin{2}))
   % Input is a file
-  isfile=1;
+  inputIsFile=1;
   [data,hdr]=cbiReadNifti(varargin{1});
   datasize=size(data);
 else

@@ -129,7 +129,7 @@ for iImage = 1:nImages
 	% filename looks ok, so try to decompress
 	% first try to decompress
 	uncompressedExists = false;
-	if ~isfile(uncompressedFilename)
+	if ~mlrIsFile(uncompressedFilename)
 	  % uncompress the file first
 	  system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
 	else
@@ -160,6 +160,20 @@ for iImage = 1:nImages
       end
      case {'fid'}
       data = fid2nifti(filename,verbose,'loadArgs',loadArgs);
+      % get dimensions
+      header.dim = size(d.(dFieldNames{1}));
+      data = fid2nifti(filename,verbose,'loadArgs',loadArgs);
+     case {'mat'}
+      % matlab files are just a matrix;
+      data = load(filename);
+
+      % figure out how many variables we have
+      dataFieldNames = fieldnames(data);
+      if length(dataFieldNames) ~= 1
+	disp(sprintf('(mlrImageLoad) File %s has %i variables in it. Should have one variable that contains the image array',filename,length(dataFieldNames)));
+	data = [];
+      end
+      data = data.(dataFieldNames{1});
     end
   end
 

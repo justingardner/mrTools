@@ -235,7 +235,7 @@ for i = 1:length(pluginDir)
     pluginName = sprintf('%sPlugin',pluginDir(i).name);
     pluginFullName = fullfile(pluginPath,pluginDir(i).name,sprintf('%s.m',pluginName));
     pluginFullName = mlrReplaceTilde(pluginFullName);
-    if isfile(pluginFullName)
+    if mlrIsFile(pluginFullName)
       % Make sure plugin function exists
       if isempty(which(pluginName))
 	if warnMissingPluginFunction

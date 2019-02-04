@@ -94,7 +94,7 @@ saveSession;
 
 % also remove any base anatomies from mrLastView if it is
 % there since those might have a different sform
-if isfile('mrLastView.mat')
+if mlrIsFile('mrLastView.mat')
   disp(sprintf('(mrUpdateNiftiHdr) Removing base anatomies from mrLastView'));
   [view viewSettings] = mlrLoadLastView;
   view.baseVolumes = [];

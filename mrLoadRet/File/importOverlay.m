@@ -52,7 +52,7 @@ if ieNotDefined('params')
       mrWarnDlg('(importOverlay) Specify a filename when using option defaultParams');
       return
     end
-    [filename, pathname] = uigetfile({'*.img;*.nii;*.nii.gz','Nifti/Analyze files'},'Select nifti file that you want to import');
+    [filename, pathname] = uigetfile({'*.img;*.nii;*.nii.gz;*.mat','Image files (Nifti or Mat) files'},'Select image file that you want to import');
     if (filename==0)
       return
     end
@@ -64,28 +64,32 @@ if ieNotDefined('params')
   end
 end
 
+
 % read the nifti header
-[data,hdr] = mlrImageReadNifti(params.pathname);
+[data,hdr] = mlrImageLoad(params.pathname);
+
 if isempty(hdr),return,end
 
 % make sure it has only 1 frame
-if hdr.dim(1)==3
-   hdr.dim(5)=1;
+if hdr.nDim == 3
+   hdr.nDim = 4;
+   hdr.dim(4) = 1;
 end
-if hdr.dim(5) < 1
-  mrWarnDlg(sprintf('(importOverlay) Could not import image because it has %d frames',hdr.dim(5)));
+
+if hdr.dim(4) < 1
+  mrWarnDlg(sprintf('(importOverlay) Could not import image because it has %d frames',hdr.dim(4)));
   return
-elseif hdr.dim(5) >= 1
+elseif hdr.dim(4) >= 1
   if fieldIsNotDefined(params,'frameList')
-    if defaultParams || hdr.dim(5)==1
-      params.frameList=1:hdr.dim(5);
+    if defaultParams || hdr.dim(4)==1
+      params.frameList=1:hdr.dim(4);
     else
-      params.frameList = buttondlg('Choose the frames to import', [cellstr(int2str((1:hdr.dim(5))'));{'All'}]);
+      params.frameList = buttondlg('Choose the frames to import', [cellstr(int2str((1:hdr.dim(4))'));{'All'}]);
       if isempty(params.frameList)
         return
       end
       if params.frameList(end)
-        params.frameList = 1:hdr.dim(5);
+        params.frameList = 1:hdr.dim(4);
       else
         params.frameList = find(params.frameList);
       end
@@ -102,15 +106,15 @@ dimensionMismatch=false;
 emptySform = false;
 for iScan = params.scanlist
   scanDims = viewGet(thisView,'datasize',iScan);
-  if any(hdr.dim([2 3 4])'~= scanDims)
+  if ~isequal(hdr.dim(1:3)',scanDims(:))
     dimensionMismatch=true;
     thisScanDims = scanDims;
-  elseif isempty(hdr.sform44)
+  elseif isempty(hdr.sform)
     emptySform = true;
   end
 end
 if dimensionMismatch && emptySform
-  mrWarnDlg(sprintf('(importOverlay) Could not import overlay because dimensions differ (%s vs %s) and overlay sform is empty', num2str(hdr.dim([2 3 4])'),num2str(thisScanDims)) );
+  mrWarnDlg(sprintf('(importOverlay) Could not import overlay because dimensions differ (%s vs %s) and overlay sform is empty', num2str(hdr.dim([1 2 3])'),num2str(thisScanDims)) );
   return
 elseif dimensionMismatch
   params.useSform=true;
@@ -186,7 +190,7 @@ for iFrame=1:nFrames
     for iScan = params.scanlist
       cScan=cScan+1;
       scanDims = viewGet(thisView,'datasize',iScan);
-      scan2overlay = (hdr.sform44 * shiftOriginXform)\(viewGet(thisView,'scansform',iScan) * shiftOriginXform);
+      scan2overlay = (hdr.sform * shiftOriginXform)\(viewGet(thisView,'scansform',iScan) * shiftOriginXform);
       if ~all(all(abs(scan2overlay - eye(4))<1e-6)) %check if we're already in scan space
         %transform values in scan space
         [Ycoords,Xcoords,Zcoords] = meshgrid(1:scanDims(2),1:scanDims(1),1:scanDims(3));

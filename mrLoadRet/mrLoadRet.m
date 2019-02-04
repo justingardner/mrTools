@@ -22,7 +22,7 @@ function [v]= mrLoadRet(mrLastView)
 if nargin < 1
   mrLastView = 'mrLastView.mat';
 end
-if ~isfile('mrSession.mat')
+if ~mlrIsFile('mrSession.mat')
   disp('(mrLoadRet) No mrSession.mat found in current directory');
   return
 end

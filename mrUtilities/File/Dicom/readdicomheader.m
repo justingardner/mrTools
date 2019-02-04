@@ -12,7 +12,7 @@ if (nargin ~= 1)
 end
 
 % check if file exists
-if (~isfile(filename))
+if (~mlrIsFile(filename))
   disp(sprintf('UHOH: Could not find file %s',filename));
   return
 end

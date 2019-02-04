@@ -367,7 +367,7 @@ end
 % load stimfile
 if isstr(stimfile)
   stimfile = setext(stimfile,'mat');
-  if ~isfile(stimfile)
+  if ~mlrIsFile(stimfile)
     disp(sprintf('(pRFGetStimImageFromStimfile) Could not open stimfile: %s',stimfile));
     return
   end

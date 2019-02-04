@@ -24,7 +24,7 @@ end
 
 % first check this directory for mrSession.m
 path = '';
-if isfile('mrSession.mat')
+if mlrIsFile('mrSession.mat')
   % if there is a session then ask if the user wants to export to this directory
   answer = questdlg(sprintf('Save alignment to %s?',getLastDir(pwd)),'Export');
   if strcmp(answer,'Cancel'),return,end
@@ -88,7 +88,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
       % get the nifti filename
       filename = viewGet(v, 'tseriesPath', iScan, iGroup);
       % check if it is there
-      if isfile(filename)
+      if mlrIsFile(filename)
 	% load the header
 	hdr = mlrImageReadNiftiHeader(filename);
 	% set the sform
@@ -133,7 +133,7 @@ saveSession
 
 % also remove any base anatomies from mrLastView if it is
 % there since those might have a different sform
-if isfile('mrLastView.mat')
+if mlrIsFile('mrLastView.mat')
   try
     [view viewSettings] = mlrLoadLastView;
     if isempty(view),return,end

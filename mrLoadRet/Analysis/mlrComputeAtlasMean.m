@@ -162,7 +162,7 @@ for iSession = 1:sessions.nSessions
     return
   end
   % next make sure it has a session
-  if ~isfile(fullfile(sessions.sessionPath{iSession},'mrSession.mat'))
+  if ~mlrIsFile(fullfile(sessions.sessionPath{iSession},'mrSession.mat'))
     disp(sprintf('(mlrComputeAtlasMean:loadROIs) Cound not find mrSession.mat in %s',sessions.sessionPath{iSession}));
     return
   end
@@ -301,7 +301,7 @@ for iSession = 1:sessions.nSessions
     return
   end
   % next make sure it has a session
-  if ~isfile(fullfile(sessions.sessionPath{iSession},'mrSession.mat'))
+  if ~mlrIsFile(fullfile(sessions.sessionPath{iSession},'mrSession.mat'))
     disp(sprintf('(mlrComputeAtlasMean:loadOverlays) Cound not find mrSession.mat in %s',sessions.sessionPath{iSession}));
     return
   end

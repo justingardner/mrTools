@@ -86,7 +86,7 @@ for iImage = 1:nImages
   elseif isstr(imageArgs{iImage})
     filename = imageArgs{iImage};
     %check for file
-    if ~isfile(filename) && ~isdir(filename)
+    if ~mlrIsFile(filename) && ~isdir(filename)
       disp(sprintf('(mlrImageHeaderLoad) Could not find file %s',filename));
       if nImages > 1,allHeaders{end+1} = [];end
       continue
@@ -111,6 +111,8 @@ for iImage = 1:nImages
       header = mlrImageHeaderLoadCompressedNifti(filename,header);
      case {'sdt','spr','edt','epr'}
       header = mlrImageHeaderLoadSDT(filename,header);
+     case {'mat'}
+      header = mlrImageHeaderLoadMAT(filename,header);
      case {'fid'}
       header = mlrImageHeaderLoadFid(filename,header,verbose,loadArgs);
      otherwise
@@ -125,7 +127,11 @@ for iImage = 1:nImages
     end
 
     % load the associated matlab header
-    header.base = loadAssociatedMatlabHeader(filename);
+    if ~strcmp(getext(filename) ,'mat')
+      header.base = loadAssociatedMatlabHeader(filename);
+    else
+      header.base = [];
+    end
 
     % set the vol2mag field - get it from the base 
     % struture if it has not already been set
@@ -175,7 +181,24 @@ else
   [tf retval] = mlrImageIsHeader(header);
 end
   
-   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    mlrImageHeaderLoadMAT    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function header = mlrImageHeaderLoadMAT(filename,header,verbose)
+
+% matlab files are just arrays, so we need to generate the header
+d = load(filename);
+
+% figure out how many variables we have
+dFieldNames = fieldnames(d);
+if length(dFieldNames) ~= 1
+  disp(sprintf('(mlrImageHeaderLoad:mlrImageHeaderLoadMAT) File %s has %i variables in it. Should have one variable that contains the image array',filename,length(dFieldNames)));
+  header = [];
+  return
+end
+
+% get dimensions
+header.dim = size(d.(dFieldNames{1}));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    mlrImageHeaderLoadFDF    %
@@ -269,7 +292,7 @@ if ~any(strcmp(getext(uncompressedFilename),{'nii'}))
 end
 
 uncompressedExists = false;
-if ~isfile(uncompressedFilename)
+if ~mlrIsFile(uncompressedFilename)
   % uncompress the file first
   system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
 else
@@ -389,7 +412,7 @@ function base = loadAssociatedMatlabHeader(filename)
 
 base = [];
 matlabFilename = setext(filename,'mat');
-if isfile(matlabFilename)
+if mlrIsFile(matlabFilename)
   % load the header
   matHeader = load(matlabFilename);
   % check for field

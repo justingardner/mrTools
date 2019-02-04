@@ -37,7 +37,7 @@ end
 
 % check no_overwrite
 if (nargin >= 3) && no_overwrite
-  if isfile(fname) 
+  if mlrIsFile(fname) 
     disp(sprintf('(mlrImageWriteNiftiHeader) File %s exists. Not overwritng',fname));
     return
   end

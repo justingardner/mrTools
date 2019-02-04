@@ -131,7 +131,7 @@ for pathNum = 1:length(pathStr)
   % essential for flat files
   base = [];
   matFilename = sprintf('%s.mat',stripext(pathStr{pathNum}));
-  if isfile(matFilename)
+  if mlrIsFile(matFilename)
     l = load(matFilename);
     if isfield(l,'base')
       base = l.base;
