@@ -96,7 +96,11 @@ if ~isempty(whichROI)
 	if isempty(baseNum)
 	  disp(sprintf('(convertROICorticalDepth) Converting %s based on base:%s because base:%s which this roi was created on is not loaded',roinames{roinum},viewGet(v,'baseName'),roiCreatedOnBase));
 	  baseNum = viewGet(v,'curBase');
-	end
+    end
+    if viewGet(v,'basetype',baseNum)==0
+	  disp(sprintf('(convertROICorticalDepth) Converting %s based on base:%s because base:%s which this roi was created on is not a surface or a flat map',roinames{roinum},viewGet(v,'baseName'),roiCreatedOnBase));
+	  baseNum = viewGet(v,'curBase');
+    end
       end
       % get the roi transformation in order to set the coordinates later
       base2roi = viewGet(v,'base2roi',roinum,baseNum);
@@ -107,6 +111,7 @@ if ~isempty(whichROI)
         mrWarnDlg(sprintf('(convertROICorticalDepth) %s has no coordinates on this flat',roinames{roinum}));
         continue;
       end
+      nVoxelsOriginalROI = size(roiBaseCoords,2);
       % get base info
       baseVoxelSize = viewGet(v,'baseVoxelSize',baseNum);
       baseCoordMap = viewGet(v,'baseCoordMap',baseNum,params.referenceDepth);
@@ -171,6 +176,7 @@ if ~isempty(whichROI)
         v = viewSet(v,'prevROIcoords',curROICoords);
       end
       disppercent(inf);
+      fprintf(1,'Number of voxels in original ROI: %d\t Number of voxels in modified ROI: %d\n',nVoxelsOriginalROI,size(roiBaseCoords,2));
     end
   end
   v = viewSet(v,'currentROI',currentROI);
