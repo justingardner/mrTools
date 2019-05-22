@@ -761,13 +761,17 @@ if numberContrasts && (nnz(params.componentsToTest)==1 || strcmp(params.componen
     ordered_abs_betas = [ordered_abs_betas; contrast{iScan}(:)];
   end
   ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
-  min_beta = min(min(min(min(min(ordered_abs_betas)))));
-  max_beta = max(max(max(max(max(ordered_abs_betas)))));
-  ordered_abs_betas = sort(abs(ordered_abs_betas));
-  beta_perc95 = 0; 
-  beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
-  thisOverlay.range = [-beta_perc95 beta_perc95];
-  thisOverlay.clip = [min_beta max_beta];
+  if ~isempty(ordered_abs_betas)
+    min_beta = min(min(min(min(min(ordered_abs_betas)))));
+    max_beta = max(max(max(max(max(ordered_abs_betas)))));
+    ordered_abs_betas = sort(abs(ordered_abs_betas));
+    beta_perc95 = 0; 
+    beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
+    thisOverlay.range = [-beta_perc95 beta_perc95];
+    thisOverlay.clip = [min_beta max_beta];
+  else
+    mrWarnDlg('(glmAnalysis) Analysis results are all NaNs. Check the Raw/motion compensated scans');
+  end
   thisOverlay.colormap = jet(256);
   for iContrast = 1:numberContrasts
     overlays(end+1)=thisOverlay;
