@@ -846,6 +846,9 @@ switch lower(param)
       end
       baseTilt = viewGet(view,'baseTilt',baseNum);
       if baseType == 2
+	% allow export
+	mlrAdjustGUI(view,'set','Export surface','Enable','on');
+	% allow tilt
 	mlrGuiSet(view,'baseTilt',baseTilt);
 	if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
 	  % turn on free rotation
@@ -854,6 +857,8 @@ switch lower(param)
 	  mlrSetRotate3d(view,0);
 	end
       else
+	% do not allow export
+	mlrAdjustGUI(view,'set','Export surface','Enable','off');
 	% otherwise turn off free rotation
 	mlrSetRotate3d(view,0);
       end
