@@ -396,20 +396,24 @@ for iPlot = 1:length(roi)+1
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Finalize axes
   if ~isempty(e.betas)
-    %plot baselines of histograms
     if plotBetaWeights
-      plot(betaAxes,get(betaAxes,'Xlim'),[0 0],'--k','lineWidth',1);
+      if verLessThan('matlab','8.4') %only plot baseline in case it has been deleted before (if ver<8.4)
+        %plot baseline of first histogram
+        plot(betaAxes,get(betaAxes,'Xlim'),[0 0],'--k','lineWidth',1);
         maxSte = max(e.betaSte,[],3);
         makeScaleEditButton(fignum,betaAxes,...
         [nanmin(nanmin((e.betas-maxSte))),nanmax(nanmax((e.betas+maxSte)))]);
+      end
       if iPlot==1
         ylabel(betaAxes,{'Beta' 'Estimates'});
         lhandle = legend(hBeta,EVnames,'position',legendBetaPosition);
         set(lhandle,'Interpreter','none','box','off');
       end
       if numberContrasts
-        %plot baseline
-        plot(contrastAxes,get(contrastAxes,'Xlim'),[0 0],'--k','lineWidth',1);
+        if verLessThan('matlab','8.4') %only plot baseline in case it has been deleted before (if ver<8.4)
+          %plot baseline of second histogram
+          plot(contrastAxes,get(contrastAxes,'Xlim'),[0 0],'--k','lineWidth',1);
+        end
         maxSte = max(e.contrastBetaSte,[],3);
         if isnan(maxSte)
           maxSte = 0;
@@ -764,12 +768,20 @@ if ieNotDefined('steOnly'),steOnly = 0;,end
 % 
 if size(econt,2)==1
   set(hAxes,'nextPlot','add');
-  h=zeros(size(econt,1),1);
+  if verLessThan('matlab','8.4')
+    h=zeros(size(econt,1),1);
+  else
+    h=gobjects(size(econt,1),1);
+  end
   for iEv = 1:size(econt,1)
      h(iEv) = bar(hAxes,iEv,econt(iEv),'faceColor',colorOrder(iEv,:),'edgecolor','none');
   end
-  %delete baseline
-  delete(get(h(iEv),'baseline'));
+  if verLessThan('matlab','8.4')
+    %delete baseline
+    delete(get(h(iEv),'baseline'));
+  else
+    set(get(h(iEv),'baseline'),'LineStyle','--','lineWidth',1);
+  end
   set(hAxes,'xTickLabel',{})
   set(hAxes,'xTick',[])
 else
