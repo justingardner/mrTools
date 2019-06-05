@@ -116,7 +116,6 @@ initializeFigure(fignum,max(numberEVs,numberContrasts))
 set(fignum,'Name',['glmPlot: ' analysisParams.saveName]);
 
 %set plotting dimension
-maxNumberSte = 3;
 subplotXgrid = [1.1 ones(1,length(roi)) .1 .4];
 subplotYgrid = [.8*plotBetaWeights .6*logical(numberContrasts)*plotBetaWeights 1 logical(numberContrasts) .1 .1];
 xMargin = .05;
@@ -153,7 +152,6 @@ end
 hEhdr = [];
 hDeconv = [];
 for iPlot = 1:length(roi)+1
-  hEhdrSte = zeros(numberEVs+numberContrasts,plotBetaWeights+1,maxNumberSte);
   if iPlot==1 %this is the voxel data
     titleString{1}=sprintf('Voxel (%i,%i,%i)',x,y,s);
     titleString{2}=sprintf('r2=%0.3f',r2data(x,y,s));
@@ -285,16 +283,35 @@ for iPlot = 1:length(roi)+1
   
       
   %&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& PLOT DATA &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-  
+  if verLessThan('matlab','8.4')
+    hEhdrSte = zeros(numberEVs+numberContrasts,plotBetaWeights+1,size(e.betaSte,3));
+  else
+    if ~isfield(analysisParams,'componentsToTest')
+      nComponents = 1;
+    else
+      nComponents = length(analysisParams.componentsToTest);
+    end
+    plotContrasts = 1*(numberContrasts>0);
+    hEhdrSte = gobjects(nComponents*(plotBetaWeights+plotContrasts)+numberEVs+numberContrasts,size(e.betaSte,3));
+  end
+
   for iSte = 1:size(e.betaSte,3)
     if plotBetaWeights
       % plot the beta weights
-      [h,hEhdrSte(1:numberEVs,1,iSte)] = plotBetas(betaAxes,e.betas,e.betaSte(:,:,iSte),iSte~=1);
+      if verLessThan('matlab','8.4')
+        [h,hEhdrSte(1:numberEVs,1,iSte)] = plotBetas(betaAxes,e.betas,e.betaSte(:,:,iSte),iSte~=1);
+      else
+        [h,hEhdrSte(1:nComponents,iSte)] = plotBetas(betaAxes,e.betas,e.betaSte(:,:,iSte),iSte~=1);
+      end
       if iSte==1 && iPlot==1,hBeta=h;end;
 
       if numberContrasts
         % plot the contrast estimates
-        [h,hEhdrSte(numberEVs+1:numberEVs+numberContrasts,1,iSte)] = plotBetas(contrastAxes,e.contrastBetas,e.contrastBetaSte(:,:,iSte),iSte~=1);
+        if verLessThan('matlab','8.4')
+          [h,hEhdrSte(numberEVs+1:numberEVs+numberContrasts,1,iSte)] = plotBetas(contrastAxes,e.contrastBetas,e.contrastBetaSte(:,:,iSte),iSte~=1);
+        else
+          [h,hEhdrSte(nComponents*plotBetaWeights+(1:nComponents),iSte)] = plotBetas(contrastAxes,e.contrastBetas,e.contrastBetaSte(:,:,iSte),iSte~=1);
+        end
         if iSte==1 && iPlot==1,hContrastBeta=h;end;
 %         if iPlot>1 && iSte ==1
 %           disp(titleString{1});
@@ -303,15 +320,27 @@ for iPlot = 1:length(roi)+1
       end
     end  
     % plot the hemodynamic response for voxel
-    [h,hEhdrSte(1:numberEVs,plotBetaWeights+1,iSte)]=plotEhdr(ehdrAxes,e.time,e.hdr,e.hdrSte(:,:,iSte),[],[],iSte~=1);
+    if verLessThan('matlab','8.4')
+      [h,hEhdrSte(1:numberEVs,plotBetaWeights+1,iSte)]=plotEhdr(ehdrAxes,e.time,e.hdr,e.hdrSte(:,:,iSte),[],[],iSte~=1);
+    else
+      [h,hEhdrSte(nComponents*(plotBetaWeights+plotContrasts)+(1:numberEVs),iSte)]=plotEhdr(ehdrAxes,e.time,e.hdr,e.hdrSte(:,:,iSte),[],[],iSte~=1);
+    end      
     if iSte==1, hHdr = h; hEhdr = [hEhdr;h];end
     if numberContrasts
-      [h,hEhdrSte(numberEVs+1:numberEVs+numberContrasts,plotBetaWeights+1,iSte)] = plotEhdr(hdrContrastAxes,e.time,e.contrastHdr, e.contrastHdrSte(:,:,iSte),'','',iSte~=1);
+      if verLessThan('matlab','8.4')
+        [h,hEhdrSte(numberEVs+(1:numberContrasts),plotBetaWeights+1,iSte)] = plotEhdr(hdrContrastAxes,e.time,e.contrastHdr, e.contrastHdrSte(:,:,iSte),'','',iSte~=1);
+      else
+        [h,hEhdrSte(nComponents*(plotBetaWeights+plotContrasts)+numberEVs+(1:numberContrasts),iSte)] = plotEhdr(hdrContrastAxes,e.time,e.contrastHdr, e.contrastHdrSte(:,:,iSte),'','',iSte~=1);
+      end
       if iSte==1, hContrastHdr =h; hEhdr = [hEhdr;h];end;
     end
     
     if iSte~=1
-      set(hEhdrSte(:,:,iSte),'visible','off');
+      if verLessThan('matlab','8.4')
+        set(hEhdrSte(:,:,iSte),'visible','off');
+      else
+        set(hEhdrSte(:,iSte),'visible','off');
+      end
     end
 
   end
@@ -756,7 +785,13 @@ if steOnly
 end
 
 if ~ieNotDefined('econtste')
-  hSte = errorbar(hAxes,(1:size(econt,1))', econt, econtste, 'k','lineStyle','none');
+  if size(econt,2)==1
+    hSte = errorbar(hAxes,(1:size(econt,1))', econt, econtste, 'k','lineStyle','none');
+  else
+    scaling = 0.79;
+    barXpositions = repmat(1:size(econt,2),size(econt,1),1) + repmat( (0:size(econt,1)-1)'/size(econt,1)*scaling ,1,size(econt,2)) - (size(econt,1)-1)/size(econt,1)*scaling/2; 
+    hSte = errorbar(hAxes,barXpositions, econt, econtste, 'k','lineStyle','none')';
+  end
 end
 
 
@@ -803,8 +838,12 @@ switch(get(handle,'style'))
   case 'popupmenu'
     set(hAxes,'visible','off')
     handleNum = get(handle,'value');
-    if handleNum ~= length(get(handle,'string'));
-      set(hAxes(:,:,handleNum),'visible','on');
+    if handleNum ~= length(get(handle,'string'))
+      if verLessThan('matlab','8.4')
+        set(hAxes(:,:,handleNum),'visible','on');
+      else
+        set(hAxes(:,handleNum),'visible','on');
+      end
     end
 end
 
