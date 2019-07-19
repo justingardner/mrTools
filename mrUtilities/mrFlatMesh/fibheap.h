@@ -18,8 +18,9 @@
 // software or has any feedback about it.
 // Email: jboyer@gulf.csc.uvic.ca
 //***************************************************************************
-
+#ifndef OK
 #define OK      0
+#endif
 #define NOTOK   -1
 
 //======================================================

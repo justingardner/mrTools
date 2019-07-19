@@ -31,15 +31,24 @@ end
 % some files that don't seem to need to be compiled
 skipFiles = {'convolve.c','corrDn.c','edges.c','upConv.c','wrap.c','fibheap.cpp','dijkstrap.cpp'};
 
-% set mexopts file
-optf = sprintf('-Dchar16_t=uint16_T -f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
+if verLessThan('matlab','8.5')
+  % set mexopts file
+  optf = sprintf('-Dchar16_t=uint16_T -f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
+else
+  % no longer need to have the char_16_t definition - which seems to break compile of dijkstra.cpp
+  optf = sprintf('-f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
+end
 
 % list of files that were compiled ok
 successfullyCompiled = {};
 failedToCompile = {};
+skippedFiles = {};
 for iFile = 1:length(compiledFunctionList)
+  if any(strcmp(getLastDir(compiledFunctionList{iFile}),skipFiles))
+    disp(sprintf('(mlrMake) Skipping: %s because files is not in use',compiledFunctionList{iFile}));
+    skippedFiles{end+1} = compiledFunctionList{iFile};
   % check for file
-  if ~any(strcmp(getLastDir(compiledFunctionList{iFile}),skipFiles)) && isfile(compiledFunctionList{iFile}) 
+  elseif isfile(compiledFunctionList{iFile}) 
     % display what we are doing
     disp(sprintf('(mlrMake) mex: %s',compiledFunctionList{iFile}));
     % mex the file
@@ -56,11 +65,11 @@ for iFile = 1:length(compiledFunctionList)
   end
 end
 
-% list files that were not ok
-if ~isempty(failedToCompile)
-  dispHeader(sprintf('(mlrMake) Failed to compile'));
-  for iFile = 1:length(failedToCompile)
-    disp(sprintf('%s',failedToCompile{iFile}));
+% list files that were ok
+if ~isempty(skippedFiles)
+  dispHeader(sprintf('(mlrMake) Skipped because file is not in use'));
+  for iFile = 1:length(skippedFiles)
+    disp(sprintf('%s',skippedFiles{iFile}));
   end
 end
 
@@ -71,6 +80,15 @@ if ~isempty(successfullyCompiled)
     disp(sprintf('%s',successfullyCompiled{iFile}));
   end
 end
+
+% list files that were not ok
+if ~isempty(failedToCompile)
+  dispHeader(sprintf('(mlrMake) Failed to compile'));
+  for iFile = 1:length(failedToCompile)
+    disp(sprintf('%s',failedToCompile{iFile}));
+  end
+end
+
 
 %%%%%%%%%%%%%%%%%%%
 %    findFiles    %
