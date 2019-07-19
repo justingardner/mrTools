@@ -18,6 +18,7 @@ end
 
 % get the mrTools directory
 mlrTop = fileparts(fileparts(which('mrLoadRet')));
+curpwd = pwd;
 
 % find filenames that need compiling
 if nargin == 0
@@ -53,7 +54,9 @@ for iFile = 1:length(compiledFunctionList)
     disp(sprintf('(mlrMake) mex: %s',compiledFunctionList{iFile}));
     % mex the file
     try
-      eval(sprintf('mex %s %s',optf,compiledFunctionList{iFile}));
+      cd(fileparts(compiledFunctionList{iFile}));
+      eval(sprintf('mex %s %s',optf,getLastDir(compiledFunctionList{iFile})));
+      cd(curpwd);
       successfullyCompiled{end+1} = compiledFunctionList{iFile};
     catch
       disp(sprintf('(mlrMake) Error making %s',compiledFunctionList{iFile}));
