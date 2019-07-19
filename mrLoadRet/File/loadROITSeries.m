@@ -211,6 +211,16 @@ for roinum = 1:length(roiname)
         end
     end
 end
+% add some fields
+if isview(view)
+  for iROI = 1:length(rois)
+    if isfield(rois{iROI},'scanNum') && isfield(rois{iROI},'groupNum')
+      rois{iROI}.concatInfo = viewGet(view,'concatInfo',rois{iROI}.scanNum,rois{iROI}.groupNum);
+      rois{iROI}.framePeriod = viewGet(view,'framePeriod',rois{iROI}.scanNum,rois{iROI}.groupNum);
+      rois{iROI}.nFrames = viewGet(view,'nFrames',rois{iROI}.scanNum,rois{iROI}.groupNum);
+    end
+  end
+end
 if length(rois) == 1
     rois = rois{1};
 end

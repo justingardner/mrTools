@@ -75,7 +75,7 @@ for i = 1:length(analysisNames)
 end
 
 % set the parameter string
-paramsInfo = {};
+paramsInfo = {};continueParams = [];
 if ~pRFFitParamsOnly
   paramsInfo{end+1} = {'groupName',groupNames,'Name of group from which to do pRF analysis'};
   paramsInfo{end+1} = {'saveName','pRF','File name to try to save as'};
