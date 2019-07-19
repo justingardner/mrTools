@@ -95,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // create the output structure 
   const char *fieldNames[] = {"name","nblocks","ntraces","np","ebytes","tbytes","bbytes","vers_id","status","nbheaders","real","imag"};
-  int dims[2] = {1, 1};
+  mwSize dims[2] = {1, 1};
   plhs[0] = mxCreateStructArray(2, dims, 12, fieldNames);
 
   // put filename in output structure
@@ -237,7 +237,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (verbose)
     mexPrintf("(getfidkraw) Allocating space for %ix%i data\n",(int)(header.nblocks),(int)(header.np/2));
 
-  int dataDims[2] = {header.ntraces*header.np/2,header.nblocks};
+  mwSize dataDims[2] = {header.ntraces*header.np/2,header.nblocks};
   if ((mxdatar = mxCreateNumericArray(2,dataDims,dataType,mxREAL)) == NULL) {
     errorExit(plhs);
     return;

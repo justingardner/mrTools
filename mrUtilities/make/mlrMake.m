@@ -35,9 +35,15 @@ skipFiles = {'convolve.c','corrDn.c','edges.c','upConv.c','wrap.c','fibheap.cpp'
 if verLessThan('matlab','8.2')
   % set mexopts file
   optf = sprintf('-Dchar16_t=uint16_T -f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
-else
+elseif verLessThan('matlab','9.0')
   % no longer need to have the char_16_t definition - which seems to break compile of dijkstra.cpp
   optf = sprintf('-f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
+else
+  dispHeader;
+  dispHeader(sprintf('(mlrMake) Matlab versions over 9 not yet supported'));
+  dispHeader('The mex options probably need to be fixed!!!');
+  dispHeader;
+  optf = 'GCC=gcc COMPFLAGS=''$COMPFLAGS --prefix=/Applications/Xcode.app/Contents/Developer//usr --with-gxx-include-dir=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/usr/include/c++/4.2.1''';
 end
 
 % list of files that were compiled ok
