@@ -31,7 +31,7 @@ end
 % some files that don't seem to need to be compiled
 skipFiles = {'convolve.c','corrDn.c','edges.c','upConv.c','wrap.c','fibheap.cpp','dijkstrap.cpp'};
 
-if verLessThan('matlab','8.5')
+if verLessThan('matlab','8.2')
   % set mexopts file
   optf = sprintf('-Dchar16_t=uint16_T -f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
 else
