@@ -197,6 +197,8 @@ switch action
     mlrAdjustGUI(thisView,'add','menu','duplicateROIMenuItem','/ROI/','label','Duplicate selected','tag','duplicateROIMenuItem','callback',@duplicateRoiMenuItem_Callback);
     mlrAdjustGUI(thisView,'set','editRoiMenu','location','/ROI/');
     mlrAdjustGUI(thisView,'set','infoROIMenuItem','location','/ROI/');
+    mlrAdjustGUI(thisView,'set','exportROIfreesurferMenuItem','location','/ROI/');
+    mlrAdjustGUI(thisView,'set','exportROIfreesurferMenuItem','label','Export to Freesurfer Label');
     mlrAdjustGUI(thisView,'set','exportROIMenuItem','location','/ROI/');
     mlrAdjustGUI(thisView,'set','Import Freesurfer Label','location','/ROI/');
     mlrAdjustGUI(thisView,'set','Import Freesurfer Label','separator','off');

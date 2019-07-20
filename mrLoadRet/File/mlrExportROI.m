@@ -1,7 +1,7 @@
 % mlrExportROI.m
 %
 %        $Id$ 
-%      usage: mlrExportROI(v,saveFilename,<hdr>)
+%      usage: mlrExportROI(v,saveFilename,<'hdr',hdr>,<'exportToFreesurferLabel',true/false>,)
 %         by: justin gardner
 %       date: 07/14/09
 %    purpose: Export an ROI to a nifti image. Uses current roi
@@ -17,7 +17,7 @@ if nargin < 2
 end
 
 % optional arguments
-getArgs(varargin,{'hdr=[]'});
+getArgs(varargin,{'hdr=[]','exportToFreesurferLabel=0'});
 
 % get the roi we are being asked to export
 roiNum = viewGet(v,'currentroi');
@@ -48,18 +48,30 @@ end
 
 baseCoordMap = viewGet(v,'basecoordmap');
 baseType = viewGet(v,'basetype');
-if ~isempty(baseCoordMap) && baseType==1  %for flats, use basecoordmap 
-  [~,baseCoords,baseCoordsHomogeneous] = getBaseSlice(v,1,3,viewGet(v,'baseRotate'),viewGet(v,'curBase'),baseType);
-  % make sure that baseCoords are rounded (they may not be
-  % if we are working with a baseCoordMap's flat map
+if baseType ~= 2 && exportToFreesurferLabel
+  mrWarnDlg('Load a surface in order to export to freesurfer label format');
+  return;
+end
+if ~isempty(baseCoordMap) && (baseType==1 || exportToFreesurferLabel) %for flats, or when exporting to freesurfer label file, use basecoordmap 
+  
+  switch(baseType)
+    case 1
+      [~,baseCoords,baseCoordsHomogeneous] = getBaseSlice(v,1,3,viewGet(v,'baseRotate'),viewGet(v,'curBase'),baseType);
+    case 2 
+      
+  end
+    
   baseDims = size(baseCoords);
   baseDims = baseDims ([1 2 4]);
-  
+  if baseType==1
+    mrWarnDlg(sprintf('(mlrExportROI) Exporting ROI(s) to flat space (%d x %d x %d voxels). If you do not want this, load base volume or surface',baseDims(1),baseDims(2),baseDims(3)));
+  end
+  % make sure that baseCoords are rounded (they may not be if we are working with a baseCoordMap's flat map)
   baseCoordsHomogeneous = reshape(baseCoordsHomogeneous,4,prod(baseDims));
   baseCoordsHomogeneous = round(baseCoordsHomogeneous);
   baseCoordsLinear = mrSub2ind(baseCoordMap.dims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
 
-  % estimate voxel size (taken from getBaseOverlay, assuming mask is invarioant to rotation, which it should be since it is a flat map)
+  % estimate voxel size (taken from getBaseOverlay, assuming mask is invariant to rotation, which it should be since it is a flat map)
   oldBaseVoxelSize=viewGet(v,'basevoxelsize',viewGet(v,'curBase'));
   Xcoords0Mask = permute(baseCoords(:,:,1,:)==0,[1 2 4 3]);
   Xcoords0Mask = convn(Xcoords0Mask,ones(5,5,5),'same'); %expand the mask a bit to make sure we don't include any edge voxels
