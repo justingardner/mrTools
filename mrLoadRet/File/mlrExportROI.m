@@ -48,22 +48,26 @@ end
 
 baseCoordMap = viewGet(v,'basecoordmap');
 baseType = viewGet(v,'basetype');
-if baseType ~= 2 && exportToFreesurferLabel
+if ~ismember(baseType,[2]) && exportToFreesurferLabel
   mrWarnDlg('Load a surface in order to export to freesurfer label format');
+  % for surfaces, the required list of surface vertices is in baseCoordMap
+  % for flat maps (or volumes), there is no easy access to the corresponding surface vertices, so returning
   return;
 end
 if ~isempty(baseCoordMap) && (baseType==1 || exportToFreesurferLabel) %for flats, or when exporting to freesurfer label file, use basecoordmap 
   
-  switch(baseType)
-    case 1
+  if baseType == 1 && ~exportToFreesurferLabel 
       [~,baseCoords,baseCoordsHomogeneous] = getBaseSlice(v,1,3,viewGet(v,'baseRotate'),viewGet(v,'curBase'),baseType);
-    case 2 
-      
+  else  
+      baseCoords = permute(baseCoordMap.coords,[1 2 4 5 3]);
+      baseCoordsHomogeneous = [permute(reshape(baseCoordMap.coords, ...
+        [size(baseCoordMap.coords,1)*size(baseCoordMap.coords,2) size(baseCoordMap.coords,3) size(baseCoordMap.coords,4) size(baseCoordMap.coords,5)]),...
+        [3 1 4 2]); ones(1,size(baseCoordMap.coords,1)*size(baseCoordMap.coords,2),size(baseCoordMap.coords,5))];
   end
     
   baseDims = size(baseCoords);
   baseDims = baseDims ([1 2 4]);
-  if baseType==1
+  if baseType==1 && ~exportToFreesurferLabel
     mrWarnDlg(sprintf('(mlrExportROI) Exporting ROI(s) to flat space (%d x %d x %d voxels). If you do not want this, load base volume or surface',baseDims(1),baseDims(2),baseDims(3)));
   end
   % make sure that baseCoords are rounded (they may not be if we are working with a baseCoordMap's flat map)
@@ -71,81 +75,108 @@ if ~isempty(baseCoordMap) && (baseType==1 || exportToFreesurferLabel) %for flats
   baseCoordsHomogeneous = round(baseCoordsHomogeneous);
   baseCoordsLinear = mrSub2ind(baseCoordMap.dims,baseCoordsHomogeneous(1,:),baseCoordsHomogeneous(2,:),baseCoordsHomogeneous(3,:));
 
-  % estimate voxel size (taken from getBaseOverlay, assuming mask is invariant to rotation, which it should be since it is a flat map)
-  oldBaseVoxelSize=viewGet(v,'basevoxelsize',viewGet(v,'curBase'));
-  Xcoords0Mask = permute(baseCoords(:,:,1,:)==0,[1 2 4 3]);
-  Xcoords0Mask = convn(Xcoords0Mask,ones(5,5,5),'same'); %expand the mask a bit to make sure we don't include any edge voxels
-  XcoordsNaN = permute(baseCoords(:,:,1,:),[1 2 4 3]); 
-  XcoordsNaN(Xcoords0Mask>0)=NaN;
-  YcoordsNaN = permute(baseCoords(:,:,2,:),[1 2 4 3]);
-  YcoordsNaN(Xcoords0Mask>0)=NaN;
-  ZcoordsNaN = permute(baseCoords(:,:,3,:),[1 2 4 3]);
-  ZcoordsNaN(Xcoords0Mask>0)=NaN;
-  newBaseVoxelSize(1) = oldBaseVoxelSize(1)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,1).^2 + diff(YcoordsNaN,1,1).^2 + diff(ZcoordsNaN,1,1).^2))));
-  newBaseVoxelSize(2) = oldBaseVoxelSize(2)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,2).^2 + diff(YcoordsNaN,1,2).^2 + diff(ZcoordsNaN,1,2).^2))));
-  newBaseVoxelSize(3) = oldBaseVoxelSize(3)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,3).^2 + diff(YcoordsNaN,1,3).^2 + diff(ZcoordsNaN,1,3).^2))));
-  if any(newBaseVoxelSize ~= oldBaseVoxelSize)
-   hdr.pixdim = [0 newBaseVoxelSize 0 0 0 0]';        % all pix dims must be specified here
-   hdr.qform44 = diag([newBaseVoxelSize 0]);
-   hdr.sform44 = hdr.qform44;
+  if baseType==1 && ~exportToFreesurferLabel
+    % estimate voxel size (taken from getBaseOverlay, assuming mask is invariant to rotation, which it should be since it is a flat map)
+    oldBaseVoxelSize=viewGet(v,'basevoxelsize',viewGet(v,'curBase'));
+    Xcoords0Mask = permute(baseCoords(:,:,1,:)==0,[1 2 4 3]);
+    Xcoords0Mask = convn(Xcoords0Mask,ones(5,5,5),'same'); %expand the mask a bit to make sure we don't include any edge voxels
+    XcoordsNaN = permute(baseCoords(:,:,1,:),[1 2 4 3]); 
+    XcoordsNaN(Xcoords0Mask>0)=NaN;
+    YcoordsNaN = permute(baseCoords(:,:,2,:),[1 2 4 3]);
+    YcoordsNaN(Xcoords0Mask>0)=NaN;
+    ZcoordsNaN = permute(baseCoords(:,:,3,:),[1 2 4 3]);
+    ZcoordsNaN(Xcoords0Mask>0)=NaN;
+    newBaseVoxelSize(1) = oldBaseVoxelSize(1)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,1).^2 + diff(YcoordsNaN,1,1).^2 + diff(ZcoordsNaN,1,1).^2))));
+    newBaseVoxelSize(2) = oldBaseVoxelSize(2)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,2).^2 + diff(YcoordsNaN,1,2).^2 + diff(ZcoordsNaN,1,2).^2))));
+    newBaseVoxelSize(3) = oldBaseVoxelSize(3)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,3).^2 + diff(YcoordsNaN,1,3).^2 + diff(ZcoordsNaN,1,3).^2))));
+    if any(newBaseVoxelSize ~= oldBaseVoxelSize)
+     hdr.pixdim = [0 newBaseVoxelSize 0 0 0 0]';        % all pix dims must be specified here
+     hdr.qform44 = diag([newBaseVoxelSize 0]);
+     hdr.sform44 = hdr.qform44;
+    end
   end
-  
 else
   baseDims = hdr.dim(2:4)';
 end
 
-if ~passedInHeader
+if ~passedInHeader && ~exportToFreesurferLabel
   b = viewGet(v,'base');
 end
 
 for iRoi = 1:length(roiNum)
+  roiName = viewGet(v,'roiName',roiNum(iRoi));
   % tell the user what is going on
-  disp(sprintf('(mlrExportROI) Exporting ROI to %s with dimensions set to match base %s: [%i %i %i]',saveFilename{iRoi},viewGet(v,'baseName'),baseDims(1),baseDims(2),baseDims(3)));
-
-  % create a data structure that has all 0's
-  d = zeros(baseDims);
+  fprintf('(mlrExportROI) Exporting ROI %s to %s with dimensions set to match base %s: [%i %i %i]\n',roiName, saveFilename{iRoi},viewGet(v,'baseName'),baseDims(1),baseDims(2),baseDims(3));
 
   % get  roi coordinates in base coordinates
   roiBaseCoords = getROICoordinates(v,roiNum(iRoi),0);
 
-  % check roiBaseCoords
-  if isempty(roiBaseCoords)
-    mrWarnDlg('(mlrExportROI) This ROI does not have any coordinates in the base');
-    return
+  if ~exportToFreesurferLabel
+    % create a data structure that has all 0's
+    d = zeros(baseDims);
+
+
+    % make sure we are inside the base dimensions
+    xCheck = (roiBaseCoords(1,:) >= 1) & (roiBaseCoords(1,:) <= hdr.dim(2));
+    yCheck = (roiBaseCoords(2,:) >= 1) & (roiBaseCoords(2,:) <= hdr.dim(3));
+    sCheck = (roiBaseCoords(3,:) >= 1) & (roiBaseCoords(3,:) <= hdr.dim(4));
+
+    % only use ones that are in bounds
+    roiBaseCoords = roiBaseCoords(:,xCheck & yCheck & sCheck);
   end
-
-  % make sure we are inside the base dimensions
-  xCheck = (roiBaseCoords(1,:) >= 1) & (roiBaseCoords(1,:) <= hdr.dim(2));
-  yCheck = (roiBaseCoords(2,:) >= 1) & (roiBaseCoords(2,:) <= hdr.dim(3));
-  sCheck = (roiBaseCoords(3,:) >= 1) & (roiBaseCoords(3,:) <= hdr.dim(4));
-
-  % only use ones that are in bounds
-  roiBaseCoords = roiBaseCoords(:,xCheck & yCheck & sCheck);
-
+  
   % convert to linear coordinates
   roiBaseCoordsLinear = mrSub2ind(hdr.dim(2:4)',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
 
-  if ~isempty(baseCoordMap) && baseType==1  %for flats, use basecoordmap to transform ROI from canonical base to multi-depth flat map
+  if ~isempty(baseCoordMap) && (baseType==1 || exportToFreesurferLabel)  %for flats and surfaces, use basecoordmap to transform ROI from canonical base to multi-depth flat map
     roiBaseCoordsLinear = ismember(baseCoordsLinear,roiBaseCoordsLinear);
   end
-  
-  % set all the roi coordinates to 1
-  d(roiBaseCoordsLinear) = 1;
 
-  % if the orientation has been changed in loadAnat, undo that here.
-  if ~isempty(b.originalOrient)
-  end
-  % now save the nifti file
-  if ~passedInHeader && ~isempty(b.originalOrient)
-    % convert into mlrImage
-    [d, h] = mlrImageLoad(d,hdr);
-    % convert the orientation back to original
-    [d, h] = mlrImageOrient(b.originalOrient,d,h);
-    % convert back to nifti
-    reorientedHdr = mlrImageGetNiftiHeader(h);
-    cbiWriteNifti(saveFilename{iRoi},d,reorientedHdr);
+  % check roiBaseCoords
+  if isempty(roiBaseCoords) || ~nnz(roiBaseCoordsLinear)
+    mrWarnDlg(sprintf('(mlrExportROI) This ROI (%s) does not have any coordinates in the base',roiName));
+    
   else
-    cbiWriteNifti(saveFilename{iRoi},d,hdr);
+    
+    if exportToFreesurferLabel
+      % in order to export to label format, select vertices that are within the ROI
+
+      % reshape to vertices * depths
+      roiBaseCoordsLinear = reshape(roiBaseCoordsLinear, [size(baseCoordMap.coords,1)*size(baseCoordMap.coords,2) size(baseCoordMap.coords,5)]);
+      % Multiple cortical depths are not taken into account: a vertex can be in the ROI at any depth:   
+      roiBaseCoordsLinear = find(any(roiBaseCoordsLinear,2));
+      %actual coordinates in label file will be midway between inner and outer surface
+      vertexCoords = (baseCoordMap.innerVtcs(roiBaseCoordsLinear,:)+baseCoordMap.outerVtcs(roiBaseCoordsLinear,:))/2;
+
+      % a Freesurfer label file is text file with a list of vertex numbers and coordinates
+      fileID = fopen(saveFilename{iRoi},'w');
+      freesurferName = extractBetween(baseCoordMap.path,'subjects\','\surfRelax');
+      if isempty(freesurferName)
+        freesurferName= '[????]';
+      end
+      fprintf(fileID,'#!ascii label, ROI exported from subject %s using mrTools (mrLoadRet v%.1f)\n', freesurferName, mrLoadRetVersion);
+      fprintf(fileID,'%d %f %f %f 1\n', [roiBaseCoordsLinear-1, vertexCoords]');
+      fclose(fileID);
+    else
+      % set all the roi coordinates to 1
+      d(roiBaseCoordsLinear) = 1;
+
+      % if the orientation has been changed in loadAnat, undo that here.
+      if ~isempty(b.originalOrient)
+      end
+      % now save the nifti file
+      if ~passedInHeader && ~isempty(b.originalOrient)
+        % convert into mlrImage
+        [d, h] = mlrImageLoad(d,hdr);
+        % convert the orientation back to original
+        [d, h] = mlrImageOrient(b.originalOrient,d,h);
+        % convert back to nifti
+        reorientedHdr = mlrImageGetNiftiHeader(h);
+        cbiWriteNifti(saveFilename{iRoi},d,reorientedHdr);
+      else
+        cbiWriteNifti(saveFilename{iRoi},d,hdr);
+      end
+    end
   end
 end
   
