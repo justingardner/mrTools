@@ -49,7 +49,7 @@ end
 baseCoordMap = viewGet(v,'basecoordmap');
 baseType = viewGet(v,'basetype');
 if ~ismember(baseType,[2]) && exportToFreesurferLabel
-  mrWarnDlg('Load a surface in order to export to freesurfer label format');
+  mrWarnDlg('(mlrExportROI) Load a surface in order to export to freesurfer label format');
   % for surfaces, the required list of surface vertices is in baseCoordMap
   % for flat maps (or volumes), there is no easy access to the corresponding surface vertices, so returning
   return;
@@ -69,6 +69,8 @@ if ~isempty(baseCoordMap) && (baseType==1 || exportToFreesurferLabel) %for flats
   baseDims = baseDims ([1 2 4]);
   if baseType==1 && ~exportToFreesurferLabel
     mrWarnDlg(sprintf('(mlrExportROI) Exporting ROI(s) to flat space (%d x %d x %d voxels). If you do not want this, load base volume or surface',baseDims(1),baseDims(2),baseDims(3)));
+  elseif exportToFreesurferLabel
+    mrWarnDlg('(mlrExportROI) Vertex coordinates in label file might be incorrect.');
   end
   % make sure that baseCoords are rounded (they may not be if we are working with a baseCoordMap's flat map)
   baseCoordsHomogeneous = reshape(baseCoordsHomogeneous,4,prod(baseDims));
@@ -147,6 +149,10 @@ for iRoi = 1:length(roiNum)
       roiBaseCoordsLinear = find(any(roiBaseCoordsLinear,2));
       %actual coordinates in label file will be midway between inner and outer surface
       vertexCoords = (baseCoordMap.innerVtcs(roiBaseCoordsLinear,:)+baseCoordMap.outerVtcs(roiBaseCoordsLinear,:))/2;
+      % change vertex coordinates to freesurfer system: 0 is in the middle of the volume and coordinates are in mm
+      % (this does not seem to give the correct coordinates, but coordinates are usually not needed in label files)
+      vertexCoords = (vertexCoords - repmat(baseCoordMap.dims/2 ,size(vertexCoords,1),1)) ./ repmat(hdr.pixdim([2 3 4])',size(vertexCoords,1),1);
+      % (this assumes that the base volume for this surface is either the original Freesurfer volume, or has been cropped symmetrically, which is usually the case)
 
       % a Freesurfer label file is text file with a list of vertex numbers and coordinates
       fileID = fopen(saveFilename{iRoi},'w');
@@ -157,6 +163,7 @@ for iRoi = 1:length(roiNum)
         freesurferName = freesurferName{1};
       end
       fprintf(fileID,'#!ascii label, ROI exported from subject %s using mrTools (mrLoadRet v%.1f)\n', freesurferName, mrLoadRetVersion);
+      fprintf(fileID,'%d\n', size(vertexCoords,1));
       fprintf(fileID,'%d %f %f %f 1\n', [roiBaseCoordsLinear-1, vertexCoords]');
       fclose(fileID);
     else
