@@ -4,8 +4,8 @@
 %      usage: mlrExportROI(v,saveFilename,<'hdr',hdr>,<'exportToFreesurferLabel',true/false>,)
 %         by: justin gardner
 %       date: 07/14/09
-%    purpose: Export an ROI to a nifti image. Uses current roi
-%             and current base in view to export. Pass in a nifti
+%    purpose: Export ROI(s) to a nifti image or Freesurfer label file. Uses
+%             current roi(s) and current base in view to export. Pass in a nifti
 %             header as hdr argument if you want to use a different header
 %
 function mlrExportROI(v,saveFilename,varargin)
@@ -27,7 +27,7 @@ if isempty(roiNum)
 end
   
 if ischar(saveFilename)
-  saveFileName = {saveFilename};
+  saveFilename = {saveFilename};
 end
 if ~isequal(length(roiNum),length(saveFilename))
   mrWarnDlg('(mlrExportROI) number of file names must be identical to number of ROIs');
