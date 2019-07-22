@@ -153,6 +153,8 @@ for iRoi = 1:length(roiNum)
       freesurferName = extractBetween(baseCoordMap.path,'subjects\','\surfRelax');
       if isempty(freesurferName)
         freesurferName= '[????]';
+      elseif iscell(freesurferName)   %in newer versions of Matlab, extractBetween may reutrn a cell array
+        freesurferName = freesurferName{1};
       end
       fprintf(fileID,'#!ascii label, ROI exported from subject %s using mrTools (mrLoadRet v%.1f)\n', freesurferName, mrLoadRetVersion);
       fprintf(fileID,'%d %f %f %f 1\n', [roiBaseCoordsLinear-1, vertexCoords]');
