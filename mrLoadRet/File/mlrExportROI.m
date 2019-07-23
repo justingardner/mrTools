@@ -1,7 +1,7 @@
 % mlrExportROI.m
 %
 %        $Id$ 
-%      usage: mlrExportROI(v,saveFilename,<'hdr',hdr>,<'exportToFreesurferLabel',true/false>,)
+%      usage: mlrExportROI(v,saveFilename,<'hdr',hdr>,<'exportToFreesurferLabel',true/false>)
 %         by: justin gardner
 %       date: 07/14/09
 %    purpose: Export ROI(s) to a nifti image or Freesurfer label file. Uses
