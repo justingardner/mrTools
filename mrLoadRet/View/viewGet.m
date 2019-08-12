@@ -1938,6 +1938,8 @@ switch lower(param)
     b = getBaseNum(view,varargin);
     if ~isempty(b)
       val = view.baseVolumes(b).curCoords;
+      % for a 2D image, make sure that the 3rd value is set to one
+      if length(val) == 2,val(3) = 1;end
     end
   case{'base2tal'}
     % xform = viewGet(view,'base2tal',[baseNum])

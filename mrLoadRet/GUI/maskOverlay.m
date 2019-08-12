@@ -182,10 +182,23 @@ else
     if iOverlay
       overlayData = viewGet(thisView,'overlayData',scanNum,iOverlay,analysisNum);
       if ~isempty(overlayData) & ~isempty(overlayCoords)
-        % Extract the slice
-        overlayImages(:,cOverlay) = interp3(overlayData,...
-          overlayCoords(:,2),overlayCoords(:,1),overlayCoords(:,3),...
-          interpMethod,interpExtrapVal);
+        % Extract the slice. 
+	if length(size(overlayData)) == 2
+	  % If this is a 2D overlay (i.e. base has only 2 dimensions) then use interp2
+	  if ~all(overlayCoords(:,3)==1)
+	    % put up a warning if the 3rd dimension is not 1
+	    disp(sprintf('(maskOverlay) This is a 2D image, but asked for coordinates have z that is not one'));
+	  end
+	  % interpolate in 2D to get overlay image (ignoring 3rd dimension)
+	  overlayImages(:,cOverlay) = interp2(overlayData,...
+					      overlayCoords(:,2),overlayCoords(:,1),...
+					      interpMethod,interpExtrapVal);
+	else
+	  % otherwise interpolate in 3D to get image
+	  overlayImages(:,cOverlay) = interp3(overlayData,...
+					      overlayCoords(:,2),overlayCoords(:,1),overlayCoords(:,3),...
+					      interpMethod,interpExtrapVal);
+	end
       else
         overlayImages(:,cOverlay) = NaN;
       end
