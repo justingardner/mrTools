@@ -13,7 +13,6 @@ if ~any(nargin == [1 2])
   return
 end
 
-
 % generate params
 if ieNotDefined('params')
   params.groupName = groupName;
@@ -25,7 +24,9 @@ if ieNotDefined('params')
   end
   params.newGroupName = 'Concatenation';
   params.baseScan = params.scanList(1);
-  params.description = sprintf('Concatenation from %s of scans: %s',params.groupName,num2str(params.scanList));
+  % see if params.scanList can be shortened to a brief list
+  params.description = 'Concatenation of [x...x]';
+  params = mlrFixDescriptionInParams(params);
   % set to one to use highpass filter
   params.filterType = 'Detrend and highpass';
   params.filterCutoff = 0.01;
