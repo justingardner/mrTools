@@ -161,7 +161,12 @@ for scanNum = params.scanNum
 
   % get the actual size of the data (not just the size of the last
   % slice/set of rows we were working on).
-  d.dim(1:3) = size(d.r2);
+  % check if this a single slice
+  r2size = size(d.r2);
+  if length(r2size) == 2
+    r2size(3) = 1;
+  end
+  d.dim(1:3) = r2size;
 
   % save the r2 overlay
   r2.data{scanNum} = d.r2;

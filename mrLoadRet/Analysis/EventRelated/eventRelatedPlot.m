@@ -158,7 +158,6 @@ for roinum = 1:length(roi)
   % and average them. 
   disppercent(-inf,'(eventRelatedPlot) Computing mean hdr');
   for voxnum = 1:size(roi{roinum}.scanCoords,2)
-    disppercent(voxnum,size(roi{roinum}.scanCoords,2));
     x = roi{roinum}.scanCoords(1,voxnum);
     y = roi{roinum}.scanCoords(2,voxnum);
     s = roi{roinum}.scanCoords(3,voxnum);
@@ -204,8 +203,8 @@ drawnow;
 
 % now put up a button that will call gEventRelatedPlotTSeries below
 % when it is clicked but only if this is a long scan
+figpos = get(fignum,'position');
 if viewGet(view,'nFrames') > 500
-  figpos = get(fignum,'position');
   gEventRelatedPlot.plotTSeriesHandle = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotTSeries,'String','Plot the time series','Position',[figpos(3)/20 5*figpos(4)/8 9*figpos(3)/10 5*figpos(4)/16]);
 else
   eventRelatedPlotTSeries;
