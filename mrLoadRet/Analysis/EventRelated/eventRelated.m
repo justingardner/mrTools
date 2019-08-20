@@ -94,7 +94,7 @@ r2.colormapType = 'setRangeToMax';
 r2.interrogator = 'eventRelatedPlot';
 r2.mergeFunction = 'defaultMergeParams';
 
-tic
+startTime = mglGetSecs;
 set(viewGet(view,'figNum'),'Pointer','watch');drawnow;
 for scanNum = params.scanNum
   % decide how many slices to do at a time, this is done
@@ -120,8 +120,15 @@ for scanNum = params.scanNum
     sliceEhdr = [];sliceEhdrste = [];sliceR2 = [];
     for j = 1:ceil(dims(1)/numRowsAtATime)
       % load the scan
+      loadStartTime = mglGetSecs;
       thisRows = [currentRow min(dims(1),currentRow+numRowsAtATime-1)];
       d = loadScan(view,scanNum,[],thisSlices,precision,thisRows);
+      % display how long that took
+      if (mglGetSecs-loadStartTime) > 30
+	disp(sprintf('(eventRelated) Load took: %s',mlrDispElapsedTime(mglGetSecs-loadStartTime)));
+      end
+      % clock how long the rest takes
+      analStartTime = mglGetSecs;
       % get the stim volumes, if empty then abort
       d = getStimvol(d,params.scanParams{scanNum}.stimvolVarInfo);
       if isempty(d.stimvol),mrWarnDlg('No stim volumes found');return,end
@@ -144,6 +151,10 @@ for scanNum = params.scanNum
 	sliceEhdr = cat(1,sliceEhdr,d.ehdr);
 	sliceEhdrste = cat(1,sliceEhdrste,d.ehdrste);
 	sliceR2 = cat(1,sliceR2,d.r2);
+      end
+      % display how long that took
+      if (mglGetSecs-analStartTime) > 30
+	disp(sprintf('(eventRelated) Analysis took: %s',mlrDispElapsedTime(mglGetSecs-analStartTime)));
       end
     end
     % update the current slice we are working on
@@ -188,7 +199,8 @@ for scanNum = params.scanNum
   erAnal.d{scanNum}.expname = d.expname;
   erAnal.d{scanNum}.fullpath = d.fullpath;
 end
-toc
+disp(sprintf('(eventRelated) Analysis took: %s',mlrDispElapsedTime(mglGetSecs-startTime)));
+
 
 % install analysis
 erAnal.name = params.saveName;
