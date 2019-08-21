@@ -18,9 +18,13 @@
 %             where n is the number of vertices and can be either
 %             grayscale color of vertex (0-1) or color [R G B] also
 %             in values of 0 - 1.
-%
+% 
 %             e.g.
 %             mlrExportOff('ouptut.obj','jg_left.off');
+%
+%             vertexColors can also be a vff file:
+%             mlrExportOff('jg_left_GM.obj','jg_left_GM.off','jg_left_Curv.vff');
+%
 %
 function retval = mlrExportOFF(filename,off,vertexColors)
 
@@ -37,7 +41,7 @@ end
 % check to see if off is a string in which case it should be loaded as a file
 if isstr(off)
   if ~mlrIsFile(off)
-    disp(sprintf('(mlrExportOFF) OFF surface file %s not found'));
+    disp(sprintf('(mlrExportOFF) OFF surface file %s not found',off));
     return
   else
     % load the surface
@@ -80,6 +84,17 @@ end
 
 % check vertexColors
 if ~isempty(vertexColors)
+  % check if it is a filename
+  if isstr(vertexColors)
+    if isfile(vertexColors)
+      [data hdr] = loadVFF(vertexColors);
+      if isempty(data),return,end
+      vertexColors = data(:);
+    else
+      disp(sprintf('(mlrExportOFF) %s is not a vff file',vertexColors));
+      return
+    end
+  end
   if strcmp(filetype,'stl')
     disp(sprintf('(mlrExportOFF) STL format cannot handle vertex colors. Ignoring'));
     vertexColors = [];
