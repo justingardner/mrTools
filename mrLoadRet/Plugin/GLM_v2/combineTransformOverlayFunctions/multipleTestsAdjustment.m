@@ -5,12 +5,20 @@
 % jb 15/03/2012
 %
 % $Id: maskAwithB.m 2172 2011-06-20 12:49:44Z julien $ 
-function [fdrAdjustedP,fweAdjustedP] = multipleTestsAdjustment(p)
+function [fdrAdjustedP,fweAdjustedP] = multipleTestsAdjustment(p, fdrAdjust, fweAdjust)
 
 
-if ~ismember(nargin,[1])
+if ~ismember(nargin,[1 2 3])
    help multipleTestsAdjustment;
    return
 end
-
-[~, fdrAdjustedP, fweAdjustedP] = transformStatistic(p);
+if ieNotDefined('fdrAdjust')
+  fdrAdjust=1;
+end
+if ieNotDefined('fweAdjust')
+  fweAdjust=1;
+end
+ params.fdrAdjustment= fdrAdjust;
+ params.fweAdjustment= fweAdjust;
+ 
+[~, fdrAdjustedP, fweAdjustedP] = transformStatistic(p,[],params);
