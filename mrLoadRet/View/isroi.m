@@ -34,11 +34,13 @@ if (nargout == 2)
 		    'createdFromSession','';
 		    'branchNum',[];
 		    'subjectID',[];
+        'pRFparams', [];
+        'scan2roi', [];
 		   };
 else
   % Return 0 if the overlay structure is missing any fields required or
   % optional (since w/out changing the analysis structure it is invalid).
-  requiredFields = {'color','coords','date','name','viewType','voxelSize','xform','sformCode','vol2mag','vol2tal','createdBy','createdOnBase','displayOnBase','createdFromSession','branchNum','subjectID'};
+  requiredFields = {'color','coords','date','name','viewType','voxelSize','xform','sformCode','vol2mag','vol2tal','createdBy','createdOnBase','displayOnBase','createdFromSession','branchNum','subjectID', 'pRFparams', 'scan2roi'};
   optionalFields = {};
 end
 

@@ -23,7 +23,7 @@ function [view tf] = viewSet(view,param,val,varargin)
 % view = viewSet(view,'basemin',number,[baseNum]);
 % view = viewSet(view,'basemax',number,[baseNum]);
 %
-% view = viewSet(view,'newanalysis',analysisStructure);
+% view = viewSet(view,'newanalysis',analysisStructure); 
 % view = viewSet(view,'deleteAnalysis',analysisNum);
 % view = viewSet(view,'currentAnalysis',analysisNum);
 %
@@ -2243,7 +2243,21 @@ switch lower(param)
     if ~isempty(roiNum)
       view.ROIs(roiNum).createdOnBase = val;
     end
-
+    
+ case {'roiprfparams'}
+    % v = viewSet(v,'roiCreatedOnBase',baseName,[roiNum]);
+    % sets the created on base field of roi
+    curRoi = viewGet(view,'currentRoi');
+    if ~isempty(varargin)
+      roiNum = varargin{1};
+    else
+      roiNum = curRoi;
+    end
+    if ~isempty(roiNum)
+      view.ROIs(roiNum).pRFparams = val{1}; % x y 
+      view.ROIs(roiNum).scan2roi = val{2};
+    end
+    
  case {'roicreatedfromsession'}
     % v = viewSet(v,'roiCreatedFromSession',sessionName,[roiNum]);
     % sets the created from session field in roi
@@ -2493,7 +2507,7 @@ switch lower(param)
 	MLR.callbacks{2}{end+1} = {varargin{1}};
       end
     end
-	
+	    
  otherwise
    mrWarnDlg(sprintf('(viewSet) Unknown parameter %s',param));
 end

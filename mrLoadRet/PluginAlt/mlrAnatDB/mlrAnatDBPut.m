@@ -685,6 +685,26 @@ for iRoi = roiList
     % set that the ROI is created from this session
     v = viewSet(v,'roiBranchNum',branchNum+1,iRoi);
   end
+  % Add the pRF Params if they exist
+  if ~isfield(roi, 'pRFparams')  || isempty(roi.pRFparams)
+    % Check if there is a pRF analysis loaded
+    analysis = viewGet(v, 'analysis');
+    if ~isempty(analysis) && strcmp(analysis.type, 'pRFAnal')
+      % if so, extract the pRF params for this roi
+      d = viewGet(v, 'd');
+      [scanCoords scan2roi] = getROICoordinates(v,iRoi);
+      linScanCoords = sub2ind(viewGet(v, 'scanDims'), scanCoords(1,:), scanCoords(2,:), scanCoords(3,:));
+      [~,idx] = ismember(linScanCoords, d.linearCoords); % 
+      idx = idx(idx~=0);
+      roipRFparams = [d.params(:, idx); d.r(idx)']; % 4 x nVoxels
+      
+      % and call viewSet to set the "roipRFparams" field of the roi
+      val = {}; val{1} = roipRFparams;
+      val{2} = viewGet(v, 'scan2roi');
+      v = viewSet(v, 'roipRFparams', val, iRoi);
+    end
+  end
+  
   % save it  
   filePath{end+1} = saveROI(v,iRoi,false);
   % set the .mat extension
