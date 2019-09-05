@@ -28,7 +28,6 @@ if ~checkExpectedFields(rh,{'varea','eccen','angle','sigma'}),return,end
 
 % make the overlays
 [lOverlays lOverlayNames] = makeOverlays(lh);
-keyboard
 
 mrSurfViewer('jg_left_GM.off','','','','','',lOverlays,lOverlayNames);
 keyboard
@@ -42,37 +41,34 @@ function [overlays overlayNames] = makeOverlays(x)
 nVertex = length(x.varea);
 
 % make visual area overlay
+% first get all area labels
 areaLabels = setdiff(unique(x.varea),0);
+% make a color table for each of these areas
 areaColors = hsv(length(areaLabels));
+% addisgn name
 overlayNames{1} = 'Visual area';
-disppercent(-inf,'(mlrImportNeuropythy) Making visual area overlay');
+% default to nan for the color
 overlays{1} = nan(nVertex,3);
-for iVertex = 1:nVertex
-  % set the overlay to have the color from area colors
-  if x.varea(iVertex) ~= 0
-    overlays{1}(iVertex,:) = areaColors(x.varea(iVertex),:);
-  end
-  % update diplay percent
-  disppercent(iVertex/nVertex);
-end
-disppercent(inf);
+% set all values in overlay approriately
+visualAreaVertices = find(x.varea~=0);
+overlays{1}(visualAreaVertices,:) = areaColors(x.varea(visualAreaVertices),:);
 
 % make eccentricity overlay
 overlayNames{2} = 'eccentricity';
-overlays{2} = makeOverlay(x.eccen,x.varea,'hot');
+overlays{2} = makeOverlay(x.eccen,visualAreaVertices,'parula');
 
 % polar angle
 overlayNames{3} = 'polar angle';
-overlays{3} = makeOverlay(x.angle,x.varea,'hsv');
+overlays{3} = makeOverlay(x.angle,visualAreaVertices,'hsv');
 
 % sigma
 overlayNames{4} = 'sigma';
-overlays{4} = makeOverlay(x.sigma,x.varea,'hot');
+overlays{4} = makeOverlay(x.sigma,visualAreaVertices,'parula');
 
 %%%%%%%%%%%%%%%%%%%%%
 %    makeOverlay    %
 %%%%%%%%%%%%%%%%%%%%%
-function overlay = makeOverlay(data,varea,colorMapName)
+function overlay = makeOverlay(data,visualAreaVertices,colorMapName)
 
 % get number of vertices
 nVertex = length(data);
@@ -82,21 +78,14 @@ nColors = 1024;
 colorMap = eval(sprintf('%s(%i)',colorMapName,nColors));
 
 % get min and max
-minVal = min(data(varea~=0));
-maxVal = max(data(varea~=0));
+minVal = min(data(visualAreaVertices));
+maxVal = max(data(visualAreaVertices));
 valRange = maxVal - minVal;
 
-disppercent(-inf,'(mlrImportNeuropythy) Making overlay');
+% set overlay
 overlay = nan(nVertex,3);
-for iVertex = 1:nVertex
-  % set the overlay to have the color from area colors
-  if varea(iVertex) ~= 0
-    overlay(iVertex,:) = colorMap(max(1,round(nColors*(data(iVertex)-minVal)/valRange)),:);
-  end
-  % update diplay percent
-  disppercent(iVertex/nVertex);
-end
-disppercent(inf);
+overlay(visualAreaVertices,:) = colorMap(max(1,round(nColors*(data(visualAreaVertices)-minVal)/valRange)),:);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    checkExpectedFields    %
