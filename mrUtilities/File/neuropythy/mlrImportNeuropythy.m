@@ -4,7 +4,9 @@
 %         by: justin gardner
 %       date: 09/04/19
 %    purpose: Import anatomy predicted retinotopy from neuropythy into
-%             mlr rois and overlays. See: http://gru.stanford.edu/doku.php/mrtools/atlas
+%             mlr rois and overlays. 
+%
+%             See: http://gru.stanford.edu/doku.php/mrtools/atlas#benson_visual_field_atlas
 %
 function [lh rh] = mlrImportNeuropythy(lh_retino,rh_retino,varargin)
 
@@ -15,7 +17,7 @@ if nargin < 2
 end
 
 % parse arguments
-getArgs(varargin,{'surfPath',[],'labels',{'V1','V2','V3','hV4','V01','V02','LO1','LO2','TO1','TO2','V3b','V3a'},'lh_labels','','rh_labels','','doTestInMLR=0'});
+getArgs(varargin,{'surfPath',[],'labels',{'V1','V2','V3','hV4','V01','V02','LO1','LO2','TO1','TO2','V3b','V3a'},'lh_labels','','rh_labels','','doTestInMLR=0','saveDir=[]'});
 
 % check names
 [tf lh_retino] = checkNames(lh_retino);if ~tf,return,end
@@ -78,6 +80,10 @@ if doTestInMLR
   mlrTestROIsInMLR({lh.rois{:} rh.rois{:}},{lh.surfaces rh.surfaces});
 end
 
+% save to a directory
+if ~isempty(saveDir)
+  saveROI(saveDir,{lh.rois{:} rh.rois{:}});
+end
 
 %%%%%%%%%%%%%%%%%%
 %    makeROIs    %
@@ -261,3 +267,23 @@ end
 tf = 1;
 
 
+%%%%%%%%%%%%%%%%%
+%    saveROI    %
+%%%%%%%%%%%%%%%%%
+function saveROI(saveDir,roi)
+
+% make into cell array
+roi = cellArray(roi);
+
+% make the directory if it does not exist
+if ~isdir(saveDir)
+  mkdir(saveDir);
+end
+
+% for each roi, go and save
+for iROI = 1:length(roi)
+  % get the save name
+  savename = fixBadChars(roi{iROI}.name,[],{'.','_'});
+  eval(sprintf('%s = roi{iROI};',savename));
+  save(fullfile(saveDir,savename),savename);
+end

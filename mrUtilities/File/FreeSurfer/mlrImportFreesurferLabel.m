@@ -25,7 +25,7 @@ end
 roi = [];
 
 % parse arguments
-getArgs(varargin,{'leftSurfaceNames=[]','rightSurfaceNames=[]','hemi=[]','doTestInMLR=0'});
+getArgs(varargin,{'leftSurfaceNames=[]','rightSurfaceNames=[]','hemi=[]','doTestInMLR=0','saveDir=[]'});
 
 % check if this is a directory, and if so import all labels found in directory
 if isdir(filename)
@@ -63,6 +63,8 @@ if isdir(filename)
   if doTestInMLR
     mlrTestROIsInMLR(roi,{leftSurfaceNames rightSurfaceNames});
   end
+  % if we are asked to save
+  if ~isempty(saveDir),saveROI(saveDir,roi),end
   % all done
   return
 end
@@ -131,3 +133,25 @@ roiVertices(vertex(:,1)+1) = 1;
 roi = mlrMakeROIFromSurfaceVertices(roiVertices,surfaceNames);
 roi.name = getLastDir(filename);
 
+if ~isempty(saveDir),saveROI(saveDir,roi),end
+
+%%%%%%%%%%%%%%%%%
+%    saveROI    %
+%%%%%%%%%%%%%%%%%
+function saveROI(saveDir,roi)
+
+% make into cell array
+roi = cellArray(roi);
+
+% make the directory if it does not exist
+if ~isdir(saveDir)
+  mkdir(saveDir);
+end
+
+% for each roi, go and save
+for iROI = 1:length(roi)
+  % get the save name
+  savename = fixBadChars(roi{iROI}.name,[],{'.','_'});
+  eval(sprintf('%s = roi{iROI}',savename));
+  save(fullfile(saveDir,savename),savename);
+end
