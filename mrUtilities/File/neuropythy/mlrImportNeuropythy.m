@@ -1,21 +1,21 @@
 % mlrImportNeuropythy.m
 %
-%      usage: mlrImportNeuropythy(lh_retino,rh_retino)
+%      usage: [lh rh] = mlrImportNeuropythy(lh_retino,rh_retino)
 %         by: justin gardner
 %       date: 09/04/19
 %    purpose: Import anatomy predicted retinotopy from neuropythy into
 %             mlr rois and overlays. See: http://gru.stanford.edu/doku.php/mrtools/atlas
 %
-function retval = mlrImportNeuropythy(lh_retino,rh_retino,varargin)
+function [lh rh] = mlrImportNeuropythy(lh_retino,rh_retino,varargin)
 
 % check arguments
-if ~any(nargin == [2])
+if nargin < 2
   help mlrImportNeuropythy
   return
 end
 
 % parse arguments
-getArgs(varargin,{'surfPath',[]});
+getArgs(varargin,{'surfPath',[],'labels',{'V1','V2','V3','hV4','V01','V02','LO1','LO2','TO1','TO2','V3b','V3a'},'lh_labels','','rh_labels','','doTestInMLR=0'});
 
 % check names
 [tf lh_retino] = checkNames(lh_retino);if ~tf,return,end
@@ -29,9 +29,13 @@ rh = load(rh_retino);rh.name = rh_retino;
 if ~checkExpectedFields(lh,{'varea','eccen','angle','sigma'}),return,end
 if ~checkExpectedFields(rh,{'varea','eccen','angle','sigma'}),return,end
 
+% check labels
+[tf lh.labels rh.labels] = checkLabels(labels,lh_labels,rh_labels);
+if ~tf,return,end
+
 % make the overlays
-[lOverlays lOverlayNames] = makeOverlays(lh);
-[rOverlays rOverlayNames] = makeOverlays(rh);
+lh = makeOverlays(lh);
+rh = makeOverlays(rh);
 
 % get volume directory
 if isempty(surfPath)
@@ -47,22 +51,34 @@ surfPath = fileparts(surfPath);
 surfFilename = replaceStr(surfFilename,'WM.','GM.');
 surfFilename = replaceStr(surfFilename,'Inf.','GM.');
 
-% make this into a left
+% Make names for left surfaces
 leftSurfFilename = replaceStr(surfFilename,'right','left');
+lh.surfaces.outerSurface = replaceStr(leftSurfFilename,'GM.','Inf.');
+lh.surfaces.outerCoords = leftSurfFilename;
+lh.surfaces.innerSurface = replaceStr(leftSurfFilename,'GM.','WM.');
+lh.surfaces.innerCoords = replaceStr(leftSurfFilename,'GM.','WM.');
+
+% Make names for right surfaces
 rightSurfFilename = replaceStr(surfFilename,'left','right');
+rh.surfaces.outerSurface = replaceStr(rightSurfFilename,'GM.','Inf.');
+rh.surfaces.outerCoords = rightSurfFilename;
+rh.surfaces.innerSurface = replaceStr(rightSurfFilename,'GM.','WM.');
+rh.surfaces.innerCoords = replaceStr(rightSurfFilename,'GM.','WM.');
 
 % bring up in viewer
 curpwd = pwd;
 try
   cd(surfPath);
-  leftSurfaces = mrSurfViewer(leftSurfFilename,'','','','','',lOverlays,lOverlayNames);
-  if isempty(leftSurfaces),
+  % left surface
+  lh.surfaces = mrSurfViewer(lh.surfaces.outerSurface,lh.surfaces.outerCoords,lh.surfaces.innerSurface,lh.surfaces.innerCoords,'','',lh.overlays,lh.overlayNames);
+  if isempty(lh.surfaces)
     disp(sprintf('(mlrImportNeuropythy) Left overlays have been rejected. Quitting'));
     cd(curpwd);
     return;
   end
-  rightSurfaces = mrSurfViewer(rightSurfFilename,'','','','','',rOverlays,rOverlayNames);
-  if isempty(rightSurfaces),
+  % right surface
+  rh.surfaces = mrSurfViewer(rh.surfaces.outerSurface,rh.surfaces.outerCoords,rh.surfaces.innerSurface,rh.surfaces.innerCoords,'','',rh.overlays,rh.overlayNames);
+  if isempty(rh.surfaces)
     disp(sprintf('(mlrImportNeuropythy) Right overlays have been rejected. Quitting'));
     cd(curpwd);
     return;
@@ -71,10 +87,88 @@ catch
   cd(curpwd);
   keyboard
 end
-
 cd(curpwd);
 
+% set path in surfaces structure
+lh.surfaces.path = surfPath;
+rh.surfaces.path = surfPath;
+
+% ok. Now make the ROIS
+lh.rois = makeROIs(lh);
+rh.rois = makeROIs(rh);
+
+% test in MLR
+if doTestInMLR
+  testInMLR(lh,rh)
+end
+
+%%%%%%%%%%%%%%%%%%%
+%    testInMLR    %
+%%%%%%%%%%%%%%%%%%%
+function testInMLR(lh,rh)
+
+% try out in an empty MLR directory
+mrQuit(0);
+testDirname = sprintf('importNeuropythyTest_%s%s',datestr(now,'YYMMDD'),datestr(now,'HHMMSS'));
+makeEmptyMLRDir(testDirname,'defaultParams=1');
+curpwd = pwd;
+cd(testDirname)
+
+% open up the view
+mrLoadRet;
+% import the surface and save
+base = importSurfaceOFF(lh.surfaces);
+viewSet(getMLRView,'newBase',base);
+%saveAnat(getMLRView);
+
+% import the rois and save
+for iROI = 1:length(lh.rois)
+  viewSet(getMLRView,'newROI',lh.rois{iROI});
+  viewSet(getMLRView,'currentROI',viewGet(getMLRView,'nrois'));
+  %saveROI(getMLRView);
+end
+% import right surface
+base = importSurfaceOFF(rh.surfaces);
+viewSet(getMLRView,'newBase',base);
+%saveAnat(getMLRView);
+
+% import the rois and save
+for iROI = 1:length(rh.rois)
+  viewSet(getMLRView,'newROI',rh.rois{iROI});
+  viewSet(getMLRView,'currentROI',viewGet(getMLRView,'nrois'));
+  %saveROI(getMLRView);
+end
+refreshMLRDisplay(viewGet(getMLRView,'viewNum'));
+
+dispHeader(sprintf('(mlrImportNeuropythy) Type dbcont when you are done checking ROIs in MLR'));
 keyboard
+
+% quit and remove the temporary MLR directory
+mrQuit(0);
+cd(curpwd);
+system(sprintf('rm -rf %s',testDirname));
+
+
+%%%%%%%%%%%%%%%%%%
+%    makeROIs    %
+%%%%%%%%%%%%%%%%%%
+function roi = makeROIs(x)
+
+% colors for rois
+areaColors = hsv(length(x.areas));
+
+roi = {};
+for iArea = x.areas
+  roi{iArea} = mlrMakeROIFromSurfaceVertices(x.varea==iArea,x.surfaces);
+  % make a label
+  if length(x.labels) >= iArea
+    roi{iArea}.name = x.labels{iArea};
+  else
+    roi{iArea}.name = 'Unknown';
+  end
+  % set color
+  roi{iArea}.color = areaColors(iArea,:);
+end
 
 %%%%%%%%%%%%%%%%%%%%
 %    replaceStr    %
@@ -89,35 +183,35 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %    makeOverlays    %
 %%%%%%%%%%%%%%%%%%%%%%
-function [overlays overlayNames] = makeOverlays(x)
+function x = makeOverlays(x)
 
 % number of vertices
-nVertex = length(x.varea);
+x.nVertex = length(x.varea);
 
 % make visual area overlay
 % first get all area labels
-areaLabels = setdiff(unique(x.varea),0);
+x.areas = setdiff(unique(x.varea),0);
 % make a color table for each of these areas
-areaColors = hsv(length(areaLabels));
+areaColors = hsv(length(x.areas));
 % addisgn name
-overlayNames{1} = 'Visual area';
+x.overlayNames{1} = 'Visual area';
 % default to nan for the color
-overlays{1} = nan(nVertex,3);
+x.overlays{1} = nan(x.nVertex,3);
 % set all values in overlay approriately
-visualAreaVertices = find(x.varea~=0);
-overlays{1}(visualAreaVertices,:) = areaColors(x.varea(visualAreaVertices),:);
+x.visualAreaVertices = find(x.varea~=0);
+x.overlays{1}(x.visualAreaVertices,:) = areaColors(x.varea(x.visualAreaVertices),:);
 
 % make eccentricity overlay
-overlayNames{2} = 'eccentricity';
-overlays{2} = makeOverlay(x.eccen,visualAreaVertices,'parula',true);
+x.overlayNames{2} = 'eccentricity';
+x.overlays{2} = makeOverlay(x.eccen,x.visualAreaVertices,'parula',true);
 
 % polar angle
-overlayNames{3} = 'polar angle';
-overlays{3} = makeOverlay(x.angle,visualAreaVertices,'hsv',false);
+x.overlayNames{3} = 'polar angle';
+x.overlays{3} = makeOverlay(x.angle,x.visualAreaVertices,'hsv',false);
 
 % sigma
-overlayNames{4} = 'sigma';
-overlays{4} = makeOverlay(x.sigma,visualAreaVertices,'parula',true);
+x.overlayNames{4} = 'sigma';
+x.overlays{4} = makeOverlay(x.sigma,x.visualAreaVertices,'parula',true);
 
 %%%%%%%%%%%%%%%%%%%%%
 %    makeOverlay    %
@@ -192,4 +286,58 @@ end
 
 tf = 1;
   
+%%%%%%%%%%%%%%%%%%%%%
+%    checkLabels    %
+%%%%%%%%%%%%%%%%%%%%%
+function [tf lh_labels rh_labels] = checkLabels(labels,lh_labels,rh_labels)
+
+tf = 0;
+
+% first check whether lh_labels was passed in
+if ~isempty(lh_labels)
+  % if it is a string, then it should be a filename
+  if isstr(lh_labels)
+    % replace tilde if it is there
+    lh_labels = mlrReplaceTilde(lh_labels);
+    % check if it is afile
+    if ~isfile(lh_labels)
+      disp(sprintf('(mlrImportNeuropythy) %s is not a text file with the area labels in it',lh_labels));
+      return
+    end
+    % if so, read it
+    lh_labels = textread(lh_labels,'%s');
+  end
+else
+  % use default labels
+  lh_labels = labels;
+end
+
+% now do the same for rh_labels
+if ~isempty(rh_labels)
+  % if it is a string, then it should be a filename
+  if isstr(rh_labels)
+    % replace tilde if it is there
+    rh_labels = mlrReplaceTilde(rh_labels);
+    % check if it is afile
+    if ~isfile(rh_labels)
+      disp(sprintf('(mlrImportNeuropythy) %s is not a text file with the area labels in it',lh_labels));
+      return
+    end
+    % if so, read it
+    rh_labels = textread(rh_labels,'%s');
+  end
+else
+  rh_labels = labels;
+end
+
+% now make sure that the labels have l and r properly set
+for i = 1:length(lh_labels)
+  lh_labels{i} = sprintf('l%s',lh_labels{i});
+end
+for i = 1:length(rh_labels)
+  rh_labels{i} = sprintf('r%s',rh_labels{i});
+end
+
+tf = 1;
+
 
