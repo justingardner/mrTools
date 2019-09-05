@@ -164,7 +164,7 @@ end
 
 if ~exist('innerCoords') || isempty(innerCoords)
   innerCoords = putOnTopOfList('Same as surface',allSurfaces);
-  gSurfViewer.innerCoords = gSurfViewer.innerSurface
+  gSurfViewer.innerCoords = gSurfViewer.innerSurface;
 else
   innerCoords = cellArray(innerCoords);
   innerCoords = putOnTopOfList(innerCoords{1},allSurfaces);
@@ -285,21 +285,38 @@ end
 % set they we are viewing white matter
 gSurfViewer.whichSurface = 1;
 
+% remove overlays field if it exists from a previous run
+if isfield(gSurfViewer,'overlays')
+  gSurfViewer = rmfield(gSurfViewer,'overlays');
+end
+
+% check overlays
 if ~isempty(overlays)
+  goodOverlays = [];
   for iOverlay = 1:length(overlays)
-    % make sure overlay has appropriat enumber of vertices
-    if length(overlays{iOverlay}) ~= gSurfViewer.outerCoords.Nvtcs
-      disp(sprintf('(mrSurfViewer) Overlay has %i vertices, but should have %i',length(overlays{iOverlay}),gSurfViewer.outerCoords.Nvtcs));
-      keyboard
-    end
     % first check whether we have as many overlayNames as overlays
     if (iOverlay > length(overlayNames)) || ~isstr(overlayNames{iOverlay})
       overlayNames{iOverlay} = sprintf('Overlay %i',iOverlay);
     end
+    % make sure overlay has appropriat enumber of vertices
+    if length(overlays{iOverlay}) ~= gSurfViewer.outerCoords.Nvtcs
+      disp(sprintf('(mrSurfViewer) Overlay %s has %i vertices, but should have %i. Removing from overlay list.',overlayNames{iOverlay},length(overlays{iOverlay}),gSurfViewer.outerCoords.Nvtcs));
+    else
+      % keep track of good overlays
+      goodOverlays(end+1) = iOverlay;
+    end
   end
+
   % make sure overlayNames is not too long either
   overlayNames = {overlayNames{1:length(overlays)}};
 
+  % truncate to only good overlays
+  overlays = {overlays{goodOverlays}};
+  overlayNames = {overlayNames{goodOverlays}};
+
+  % if no overlays exist anymore, then quit
+  if isempty(overlays),close;return,end
+  
   % set the one to display
   gSurfViewer.overlayNames = overlayNames;
   gSurfViewer.overlays = overlays;
