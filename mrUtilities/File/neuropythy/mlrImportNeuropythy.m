@@ -37,33 +37,9 @@ if ~tf,return,end
 lh = makeOverlays(lh);
 rh = makeOverlays(rh);
 
-% get volume directory
-if isempty(surfPath)
-  titleStr = 'Choose left gray matter (outer) surface for this subject';
-  disp(sprintf('(mlrImportNeuropythy) %s',titleStr));
-  surfPath = mlrGetPathStrDialog(mrGetPref('volumeDirectory'),titleStr,'*.off');
-  if isempty(surfPath),return,end
-end
-
-% make sure this is a GM (not WM or Inf)
-surfFilename = getLastDir(surfPath);
-surfPath = fileparts(surfPath);
-surfFilename = replaceStr(surfFilename,'WM.','GM.');
-surfFilename = replaceStr(surfFilename,'Inf.','GM.');
-
-% Make names for left surfaces
-leftSurfFilename = replaceStr(surfFilename,'right','left');
-lh.surfaces.outerSurface = replaceStr(leftSurfFilename,'GM.','Inf.');
-lh.surfaces.outerCoords = leftSurfFilename;
-lh.surfaces.innerSurface = replaceStr(leftSurfFilename,'GM.','WM.');
-lh.surfaces.innerCoords = replaceStr(leftSurfFilename,'GM.','WM.');
-
-% Make names for right surfaces
-rightSurfFilename = replaceStr(surfFilename,'left','right');
-rh.surfaces.outerSurface = replaceStr(rightSurfFilename,'GM.','Inf.');
-rh.surfaces.outerCoords = rightSurfFilename;
-rh.surfaces.innerSurface = replaceStr(rightSurfFilename,'GM.','WM.');
-rh.surfaces.innerCoords = replaceStr(rightSurfFilename,'GM.','WM.');
+% get surface names
+[lh.surfaces rh.surfaces] = mlrGetSurfaceNames('surfPath',surfPath);
+surfPath = lh.surfaces.path;
 
 % bring up in viewer
 curpwd = pwd;
@@ -99,54 +75,8 @@ rh.rois = makeROIs(rh);
 
 % test in MLR
 if doTestInMLR
-  testInMLR(lh,rh)
+  mlrTestROIsInMLR({lh.rois{:} rh.rois{:}},{lh.surfaces rh.surfaces});
 end
-
-%%%%%%%%%%%%%%%%%%%
-%    testInMLR    %
-%%%%%%%%%%%%%%%%%%%
-function testInMLR(lh,rh)
-
-% try out in an empty MLR directory
-mrQuit(0);
-testDirname = sprintf('importNeuropythyTest_%s%s',datestr(now,'YYMMDD'),datestr(now,'HHMMSS'));
-makeEmptyMLRDir(testDirname,'defaultParams=1');
-curpwd = pwd;
-cd(testDirname)
-
-% open up the view
-mrLoadRet;
-% import the surface and save
-base = importSurfaceOFF(lh.surfaces);
-viewSet(getMLRView,'newBase',base);
-%saveAnat(getMLRView);
-
-% import the rois and save
-for iROI = 1:length(lh.rois)
-  viewSet(getMLRView,'newROI',lh.rois{iROI});
-  viewSet(getMLRView,'currentROI',viewGet(getMLRView,'nrois'));
-  %saveROI(getMLRView);
-end
-% import right surface
-base = importSurfaceOFF(rh.surfaces);
-viewSet(getMLRView,'newBase',base);
-%saveAnat(getMLRView);
-
-% import the rois and save
-for iROI = 1:length(rh.rois)
-  viewSet(getMLRView,'newROI',rh.rois{iROI});
-  viewSet(getMLRView,'currentROI',viewGet(getMLRView,'nrois'));
-  %saveROI(getMLRView);
-end
-refreshMLRDisplay(viewGet(getMLRView,'viewNum'));
-
-dispHeader(sprintf('(mlrImportNeuropythy) Type dbcont when you are done checking ROIs in MLR'));
-keyboard
-
-% quit and remove the temporary MLR directory
-mrQuit(0);
-cd(curpwd);
-system(sprintf('rm -rf %s',testDirname));
 
 
 %%%%%%%%%%%%%%%%%%
@@ -168,16 +98,6 @@ for iArea = x.areas
   end
   % set color
   roi{iArea}.color = areaColors(iArea,:);
-end
-
-%%%%%%%%%%%%%%%%%%%%
-%    replaceStr    %
-%%%%%%%%%%%%%%%%%%%%
-function s = replaceStr(s,searchstr,replacestr)
-
-foundloc = strfind(s,searchstr);
-if ~isempty(foundloc)
-  s = sprintf('%s%s%s',s(1:(foundloc(1)-1)),replacestr,s((foundloc(1)+length(searchstr)):end));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%

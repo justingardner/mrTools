@@ -50,8 +50,8 @@ roi.surface.vertexNums = vertexNums;
 if ~tf,keyboard,end
 
 % get inner and outer coordinates
-innerCoords = squeeze(base.coordMap.innerCoords(1,vertexNums,1,:));
-outerCoords = squeeze(base.coordMap.outerCoords(1,vertexNums,1,:));
+innerCoords = squeeze(base.coordMap.innerCoords(1,find(vertexNums),1,:));
+outerCoords = squeeze(base.coordMap.outerCoords(1,find(vertexNums),1,:));
 
 % cycle over cotical depth
 coords = [];
@@ -61,8 +61,11 @@ for iCorticalDepth = corticalDepth
 end
 
 % get unique coords
-coordsIndex = unique(sub2ind(base.coordMap.dims,coords(:,1),coords(:,2),coords(:,3)));
-[uniqueCoords(:,1) uniqueCoords(:,2) uniqueCoords(:,3)] = ind2sub(base.coordMap.dims,coordsIndex);
+dims(1) = base.coordMap.dims(2);
+dims(2) = base.coordMap.dims(1);
+dims(3) = base.coordMap.dims(3);
+coordsIndex = unique(sub2ind(dims,coords(:,1),coords(:,2),coords(:,3)));
+[uniqueCoords(:,1) uniqueCoords(:,2) uniqueCoords(:,3)] = ind2sub(dims,coordsIndex);
 
 % put these coords into the roi
 roi.coords = uniqueCoords';
