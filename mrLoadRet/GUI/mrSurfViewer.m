@@ -1,15 +1,17 @@
 % mrSurfViewer.m
 %
 %       $Id$	
-%      usage: mrSurfViewer(outerSurface,<outerCoords>,<innerSurface>,<innerCoords>,<curv>,<anat>)
+%      usage: mrSurfViewer(outerSurface,<outerCoords>,<innerSurface>,<innerCoords>,<curv>,<anat>,<overlays>,<overlayNames>)
 %         by: justin gardner
 %       date: 10/09/07
 %    purpose: Display and select surface files
+%             optional arguments overlays should be a (cell array of) nx3 rgb values with n = number of vertices
+%             overlayNames is a (cell array of) strings that contain the names of the overlays
 %
-function retval = mrSurfViewer(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat)
+function retval = mrSurfViewer(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat,overlays,overlayNames)
 
 % check arguments
-if ~any(nargin == [1 2 3 4 5 6])
+if nargin < 1
   help mrSurfViewer
   return
 end
@@ -51,6 +53,8 @@ elseif (nargin == 1) && isstr(outerSurface)
   outerCoords = {};
   curv = {};
   anat = {};
+  overlays = {};
+  overlayNames = {};
 else
   event = 'init';
   % set defaults
@@ -60,6 +64,8 @@ else
   if ieNotDefined('innerCoords'),innerCoords = {};end
   if ieNotDefined('curv'),curv = {};end
   if ieNotDefined('anat'),anat = {};end
+  if ieNotDefined('overlays'),overlays = {};end
+  if ieNotDefined('overlayNames'),overlayNames = {};end
   % make everybody a cell array
   outerSurface = cellArray(outerSurface);
   outerCoords = cellArray(outerCoords);
@@ -67,11 +73,13 @@ else
   innerCoords = cellArray(innerCoords);
   curv = cellArray(curv);
   anat = cellArray(anat);
+  overlays = cellArray(overlays);
+  overlayNames = cellArray(overlayNames);
 end
 
 switch (event)
  case 'init'
-  retval = initHandler(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat);
+  retval = initHandler(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat,overlays,overlayNames);
  case {'vSlider','hSlider'}
   sliderHandler;
  case {'sliceOrientation'}
@@ -85,7 +93,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %%   init handler   %%
 %%%%%%%%%%%%%%%%%%%%%%
-function retval = initHandler(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat);
+function retval = initHandler(outerSurface,outerCoords,innerSurface,innerCoords,curv,anat,overlays,overlayNames)
 
 retval = [];
 global gSurfViewer;
@@ -277,6 +285,27 @@ end
 % set they we are viewing white matter
 gSurfViewer.whichSurface = 1;
 
+if ~isempty(overlays)
+  for iOverlay = 1:length(overlays)
+    % make sure overlay has appropriat enumber of vertices
+    if length(overlays{iOverlay}) ~= gSurfViewer.outerCoords.Nvtcs
+      disp(sprintf('(mrSurfViewer) Overlay has %i vertices, but should have %i',length(overlays{iOverlay}),gSurfViewer.outerCoords.Nvtcs));
+      keyboard
+    end
+    % first check whether we have as many overlayNames as overlays
+    if (iOverlay > length(overlayNames)) || ~isstr(overlayNames{iOverlay})
+      overlayNames{iOverlay} = sprintf('Overlay %i',iOverlay);
+    end
+  end
+  % make sure overlayNames is not too long either
+  overlayNames = {overlayNames{1:length(overlays)}};
+
+  % set the one to display
+  gSurfViewer.overlayNames = overlayNames;
+  gSurfViewer.overlays = overlays;
+  gSurfViewer.overlayNum = 1;
+end
+
 % and display surface
 dispSurface;
 setViewAngle(0,0);
@@ -295,6 +324,10 @@ paramsInfo{end+1} = {'innerCoords',innerCoords,'The inner (white matter) coords 
 paramsInfo{end+1} = {'curv',curv,'The curvature file. This is a file that is usually created by Jonas'' TFI command surffilt: surffilt -mcurv -iter 1 whiteMatter.off curvFileName.vff.','callback',@switchFile,'callbackArg=curv'};
 paramsInfo{end+1} = {'anatomy',anat,'The 3D anatomy file','callback',@switchAnatomy};
 
+if ~isempty(overlays)
+  % add to the params
+  paramsInfo{end+1} = {'overlay',overlayNames,'Which overlay to display','callback',@switchOverlay};
+end
 
 % put up dialog
 params = mrParamsDialog(paramsInfo,'View surface');
@@ -542,6 +575,14 @@ vtcs(:,3) = vtcs(:,3)-mean(vtcs(:,3));
 % the axis so that right is right...
 imagesc(0);
 
+if isfield(gSurfViewer,'overlays')
+  % make color into grayscale
+  c = [c c c];
+  % and put overlay on top of that
+  overlay = gSurfViewer.overlays{gSurfViewer.overlayNum};
+  c(~isnan(overlay)) = overlay(~isnan(overlay));
+end
+
 % draw the surface
 patch('vertices', vtcs, 'faces', tris, ...
       'FaceVertexCData', c, ...
@@ -672,6 +713,19 @@ gSurfViewer.whichSurface = 5;
 set(gParams.ui.varentry{1},'Value',gSurfViewer.whichSurface)
 refreshFlatViewer([],1);
 disppercent(inf);
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%   switchOverlays   %%
+%%%%%%%%%%%%%%%%%%%%%%%%
+function switchOverlay(params)
+ 
+global gSurfViewer;
+
+% find new overlayNum
+gSurfViewer.overlayNum = find(strcmp(gSurfViewer.overlayNames,params.overlay));
+
+% and redisplay
+dispSurface;
 
 %%%%%%%%%%%%%%%%%%%%
 %%   switchFile   %%
