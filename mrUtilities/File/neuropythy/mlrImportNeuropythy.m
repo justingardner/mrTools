@@ -204,7 +204,7 @@ if ~isstr(name)
   return
 else
   name = setext(name,'mat');
-  if ~isfile(name)
+  if ~mlrIsFile(name)
     disp(sprintf('(mlrImortNeuropythy) Could not find file %s',name));
     return
   end
@@ -226,7 +226,7 @@ if ~isempty(lh_labels)
     % replace tilde if it is there
     lh_labels = mlrReplaceTilde(lh_labels);
     % check if it is afile
-    if ~isfile(lh_labels)
+    if ~mlrIsFile(lh_labels)
       disp(sprintf('(mlrImportNeuropythy) %s is not a text file with the area labels in it',lh_labels));
       return
     end
@@ -245,7 +245,7 @@ if ~isempty(rh_labels)
     % replace tilde if it is there
     rh_labels = mlrReplaceTilde(rh_labels);
     % check if it is afile
-    if ~isfile(rh_labels)
+    if ~mlrIsFile(rh_labels)
       disp(sprintf('(mlrImportNeuropythy) %s is not a text file with the area labels in it',lh_labels));
       return
     end

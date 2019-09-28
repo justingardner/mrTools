@@ -126,7 +126,7 @@ if mlrIsFile(anatFile)
     end
     system(commandString);
   else
-    if isfile(outFile)
+    if mlrIsFile(outFile)
       fprintf('\n(mlrImportFreesurfer) Getting voxel and volume dimensions from existing %s file\n', strcat(params.baseName, '_', 'mprage_pp', niftiExt));
       hdr = cbiReadNiftiHeader(outFile);
       params.volumeCropSize = hdr.dim(2:4);

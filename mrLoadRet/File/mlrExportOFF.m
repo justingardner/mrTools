@@ -86,7 +86,7 @@ end
 if ~isempty(vertexColors)
   % check if it is a filename
   if isstr(vertexColors)
-    if isfile(vertexColors)
+    if mlrIsFile(vertexColors)
       [data hdr] = loadVFF(vertexColors);
       if isempty(data),return,end
       vertexColors = data(:);

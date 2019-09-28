@@ -70,7 +70,7 @@ if isdir(filename)
 end
 
 % check the file
-if ~isfile(filename)
+if ~mlrIsFile(filename)
   disp(sprintf('(mlrImportFreesurferLabel) Could not find file %s',filename));
   return
 end
