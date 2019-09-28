@@ -505,7 +505,24 @@ function mlrAnatomyImportFreesurferLabel(hObject,eventdata)
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-disp(sprintf('(mlrAnatomyImportFreesurferLabel) Not yet implemented'));
+%get file names
+[labelFilenames,pathname] = uigetfile({'*.label','Freesurfer label files'},'Select Freesurfer label file(s)', '*.*','multiselect','on');
+if isnumeric(labelFilenames)
+  return
+elseif ischar(labelFilenames)
+  labelFilenames = {labelFilenames};
+end
+
+for iROI = 1:length(labelFilenames)
+  %create volume ROI from label file
+  roi = mlrImportFreesurferLabel(fullfile(pathname,labelFilenames{iROI}));
+  % Add ROI to view
+  v = viewSet(v,'newROI',roi);
+  v = viewSet(v,'currentROI',viewGet(getMLRView,'nrois'));
+end
+
+refreshMLRDisplay(v);
+
 return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
