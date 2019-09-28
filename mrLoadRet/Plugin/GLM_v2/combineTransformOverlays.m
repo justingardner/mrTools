@@ -13,10 +13,7 @@ function [thisView,params] = combineTransformOverlays(thisView,params,varargin)
 %
 % $Id$
 
-inputOutputTypeMenu = {'3D Array','4D Array','Scalar','Structure'};
-combinationModeMenu = {'Apply function to all overlays','Apply function to each overlay','Recursively apply to overlay pairs'};
 
-% other arguments
 eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
@@ -46,12 +43,15 @@ if ieNotDefined('params')
     combineFunctionsMenu = putOnTopOfList(combineFunctionsMenu{2},combineFunctionsMenu);
   end
   params.customCombineFunction = '';%(''@(x)max(0,-norminv(x))';
+  inputOutputTypeMenu = {'3D Array','4D Array','Scalar','Structure'};
+  combinationModeMenu = {'Apply function to all overlays','Apply function to each overlay','Recursively apply to overlay pairs'};
   params.nOutputOverlays = 1;
   params.additionalArrayArgs = '';
   params.additionalArgs = '';
+  params.passView = 0;
   params.clip = 0;
   params.alphaClip = 0;
-  params.passView = 0;
+  roiMaskMenu = {'None','Union','Intersection'};
   params.baseSpace = 0;
   baseSpaceInterpMenu = {'Same as display','nearest','linear','spline','cubic'};
   params.exportToNewGroup = 0;
@@ -61,6 +61,8 @@ if ieNotDefined('params')
   else
     baseSpaceOption='enable=1';
   end
+  overlayList = viewGet(thisView,'curOverlay');
+  roiList = viewGet(thisView,'curROI');
 
   askForParams = 1;
   while askForParams
@@ -75,6 +77,7 @@ if ieNotDefined('params')
      {'passView',params.passView,'type=checkbox','Check this if the function requires the current mrLoadRet view'},...
      {'clip',params.clip,'type=checkbox','Mask overlays according to clip values'},...
      {'alphaClip',params.alphaClip,'type=checkbox','Mask overlays according to alpha overlay clip values'},...
+     {'roiMask',roiMaskMenu,'type=popupmenu','Whether to mask the overlay(s) with one or several ROIs. ''None'' will not mask. ''Union'' and ''Interssection'' will mask the overlay with the union or intersection of select ROIs. Check whether this option is compatible with ''baseSpace'''},...
      {'baseSpace',params.baseSpace,'type=checkbox',baseSpaceOption,'Transforms overlays into the current base volume before applying the transform/combine function, and back into overlay space afterwards. Only implemented for flat maps (all cortical depths are used).'},...
      {'baseSpaceInterp',baseSpaceInterpMenu,'type=popupmenu','contingent=baseSpace','Type of base space interpolation '},...
      {'exportToNewGroup',params.exportToNewGroup,'type=checkbox','contingent=baseSpace','Exports results in base sapce to new group, scan and analysis. Warning: for flat maps, the data is exported to a volume in an arbitrary space. ROIs and overlays defined outside this new group will not be in register.'},...
@@ -102,23 +105,41 @@ if ieNotDefined('params')
     combinationModeMenu = putOnTopOfList(params.combinationMode,combinationModeMenu);
     combineFunctionsMenu = putOnTopOfList(params.combineFunction,combineFunctionsMenu);
     baseSpaceInterpMenu = putOnTopOfList(params.baseSpaceInterp,baseSpaceInterpMenu);
+    roiMaskMenu = putOnTopOfList(params.roiMask,roiMaskMenu);
 
     if strcmp(params.combinationMode,'Recursively apply to overlay pairs') && params.combineFunction(1)=='@'
       mrWarnDlg('(combineTransformOverlays) Anonymous functions cannot be applied recursively.');
     elseif isempty(params.combineFunction) || (strcmp(params.combineFunction,'User Defined') && isempty(params.customCombineFunction))
       mrWarnDlg('(combineTransformOverlays) Please choose a combination/transformation function.');
     elseif (params.clip || params.alphaClip) && params.baseSpace && viewGet(thisView,'basetype')~=1
-      mrWarnDlg('(combineTransformOverlays) Base space conversion is not yet compatible with using (alpha) masking.');
+      mrWarnDlg('(combineTransformOverlays) Base space conversion for bases other than flat maps is not yet compatible with using (alpha) masking.');
+    elseif ~strcmp(params.roiMask,'None') && params.baseSpace
+      mrWarnDlg('(combineTransformOverlays) Base space conversion is not yet compatible with ROI masking.');
     %elseif
       %other controls here
     else
       askForParams = 0;
       if defaultParams
-        params.overlayList = viewGet(thisView,'curOverlay');
+        params.overlayList = overlayList;
+        params.roiList = roiList;
       else
-        params.overlayList = selectInList(thisView,'overlays');
-        if isempty(params.overlayList)
-           askForParams = 1;
+        askForOverlays = 1;
+        while askForOverlays
+          askForOverlays = 0;
+          params.overlayList = selectInList(thisView,'overlays','',overlayList);
+          if isempty(params.overlayList)
+             askForParams = 1;
+          else
+            overlayList=params.overlayList;
+            if ~strcmp(params.roiMask,'None')
+              params.roiList = selectInList(thisView,'rois','',roiList);
+              if isempty(params.roiList)
+                askForOverlays = 1;
+              else
+                roiList = params.roiList;
+              end
+            end
+          end
         end
       end
     end
@@ -155,7 +176,7 @@ if params.baseSpace
     baseCoordsMap=cell(nScans,1);
     %if not, transform the overlay to the base space
     for iScan = 1:nScans
-      %here could probably put all overlays of a single scan in a 4D array, but the would have to put it back 
+      %here could probably put all overlays of a single scan in a 4D array, but then would have to put it back 
       % into the overlays structure array if inputOutputType is 'structure' 
       for iOverlay = 1:length(overlayData) 
         if ~isempty(overlayData(iOverlay).data{iScan})
@@ -183,6 +204,7 @@ if params.clip || params.alphaClip
     boxInfo=[];
   else
     mrWarnDlg('(combineTransformOverlays) (Alpha) masking is not yet implemented for conversion to bases other than flat.');
+    set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
     return
   end
 end
@@ -208,6 +230,38 @@ if params.alphaClip
       if alphaOverlayNum(iOverlay) &&  ~isempty(overlayData(iOverlay).data{iScan})
         overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
       end
+    end
+  end
+end
+
+% mask overlay using ROI(s)
+if ~strcmp(params.roiMask,'None') && ~isempty(params.roiList)
+  for iScan = 1:nScans
+    mask = false(size(overlayData(1).data{iScan}));
+    roiCoords = getROICoordinates(thisView, params.roiList(1),iScan)';
+    for iRoi = params.roiList(2:end)
+      thisRoiCoords = getROICoordinates(thisView, iRoi,iScan)';
+      switch(params.roiMask)
+        case 'Union'
+          roiCoords = union(roiCoords,thisRoiCoords,'rows');
+        case 'Intersection'
+          roiCoords = intersect(roiCoords,thisRoiCoords,'rows');
+      end
+    end
+    roiCoordsLinear = sub2ind(size(mask),roiCoords(:,1),roiCoords(:,2),roiCoords(:,3));
+    if params.baseSpace
+      mrWarnDlg('(combineTransformOverlays) ROI masking is not yet implemented for operations in base space');
+      %convert ROI coordinates from scan to base space. This will be done differenty depending on the base type
+      set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
+      return
+    elseif isempty(roiCoordsLinear)
+      mrWarnDlg('(combineTransformOverlays) ROI mask is empty');
+      set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
+      return
+    end
+    mask(roiCoordsLinear) = true;
+    for iOverlay = 1:length(overlayData)
+        overlayData(iOverlay).data{iScan}(~mask)=NaN;
     end
   end
 end
