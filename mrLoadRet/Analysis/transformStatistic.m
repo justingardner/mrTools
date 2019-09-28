@@ -1,5 +1,11 @@
-function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 %[convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
+%
+%   converts p values to corresponding Z values or -log10(p) and in addition corrects for multiple tests
+%   across all existing values using False Discovery Rate Step-up method and Hommel Bonferroni correction
+%
+% jb ??/??/2011?
+%
+function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 
 if ieNotDefined('outputPrecision')
   outputPrecision='double';
