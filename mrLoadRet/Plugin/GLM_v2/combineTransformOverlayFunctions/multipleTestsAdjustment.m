@@ -1,6 +1,7 @@
-% [fdrAdjustedP,fweAdjustedP] = multipleTestsAdjustment(p)
+% [fdrAdjustedP,fweAdjustedP] = multipleTestsAdjustment(p, <fdrAdjust, fweAdjust>)
 %
 %   adjusts p values using False Discovery Rate Step-up method and Hommel Bonferroni correction
+%   optional inputs: set fdrAdjust or fweAdjust to 0 to skip either method
 %     
 % jb 15/03/2012
 %
