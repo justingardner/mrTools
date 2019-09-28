@@ -75,7 +75,7 @@ paramsInfo{end+1} = {'projectOutMeanVector',0,'type=checkbox','Project out a mea
 if offerNotchFilter
   paramsInfo{end+1} = {'notchFilterForTSense',defaultNotchFilterSetting,'type=checkbox','This is used to notch out the highest frequency for tSense data'};
 end
-    
+
 % First get parameters
 if ieNotDefined('params')
   % Initialize analysis parameters with default values

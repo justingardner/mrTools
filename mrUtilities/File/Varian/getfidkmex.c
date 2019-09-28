@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <memory.h>
+#include <unistd.h>
+#include <ctype.h>
 #include "mex.h"
 #include "vnmrdata.h"
 
@@ -50,7 +52,7 @@ typedef struct {
   int navechoes;                  // number of naviagtor echoes
   int accFactor;                   // acceleration factor
   int ndim;                       // number of dimensions
-  int dims[5];                    // size of those dimensions
+  mwSize dims[5];                    // size of those dimensions
   int numimages;                  // number of images = slices*volumes*receivers
   int imagesize;                  // number of voxels in each image
   mxClassID datatype;             // matlab type of data
@@ -80,7 +82,7 @@ const char *fieldNames[] = {"name","filepath","data"};
 #define NUMFIELDS 3
 const char *originalFormatFieldNames[] = {"name","filepath","real","imag"};
 #define ORIGINAL_FORMAT_NUMFIELDS 4
-int dims[2] = {1, 1};
+const mwSize dims[2] = {1, 1};
 
 //////////////////////////////////////////
 // function mexFunction called by matlab
@@ -325,7 +327,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   swapFlag = 0;
   // then make sure fid is in big endian
-  if ( isLittleEndianPlatform & header.nbheaders > 9 ) {
+  if ( isLittleEndianPlatform & (header.nbheaders > 9) ) {
     swapFlag = 1;
     if (verbose)
       mexPrintf("(getfidkmex) Running on little endian platform and data is big endian (default), will swap bytes\n");
@@ -446,6 +448,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     case mxINT32_CLASS:
       data_int32 = (INT32 *)mxGetPr(mxGetField(plhs[0],0,"real"));
       datai_int32 = (INT32 *)mxGetPr(mxGetField(plhs[0],0,"imag"));
+      break;
+    default:
+      mexPrintf("(getfidkmex) Unknown data class\n");
+      errorExit(plhs);
+      return;
       break;
     }
   }
@@ -631,6 +638,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	      datai[j*info.imagesize+i*info.linelen+k/2] = (double)(((INT32*)block)[k+1]);
 	    }
 	  }
+	  break;
+	default:
+	  mexPrintf("(getfidkmex) Unknown data class\n");
+	  errorExit(plhs);
+	  return;
 	  break;
 	}
       }

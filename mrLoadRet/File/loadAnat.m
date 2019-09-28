@@ -89,6 +89,12 @@ for pathNum = 1:length(pathStr)
   % so this check seems to work
   volumeDimension = sum((hdr.dim(2:end)~=1)&(hdr.dim(2:end)~=0));
 
+  % check for 4D file in which there are no slices (i.e. an X x Y x 1 x N volume)
+  if (hdr.dim(1) == 4) & (hdr.dim(4) == 1) & (hdr.dim(5) ~= 1)
+    % this should also be treated as 4D
+    volumeDimension = 4;
+  end
+  
   % Error if it dimension is greater than 4D.
   if (volumeDimension > 4)
     mrErrorDlg(['(loadAnat) Volume must be 3D or 4D. This file contains a ',num2str(volumeDimension),'D array.']);

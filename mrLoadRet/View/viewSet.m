@@ -818,6 +818,11 @@ switch lower(param)
       if baseType
 	baseSliceOrientation = 1;
       end
+      % if the 3rd dimension is 1, then this is a 2D image. Note that baseDims is set
+      % by viewGet and should always have a 1 as third element for 2D images
+      if baseDims(3) == 1
+	baseSliceOrientation = 3;
+      end
       if isempty(baseSliceOrientation) %a new volume base might have an empty slice orientation
         if ~isempty(sliceOrientation)
           baseSliceOrientation = sliceOrientation; %in this case, use the previous one 

@@ -18,6 +18,7 @@ end
 
 % get the mrTools directory
 mlrTop = fileparts(fileparts(which('mrLoadRet')));
+curpwd = pwd;
 
 % find filenames that need compiling
 if nargin == 0
@@ -31,20 +32,37 @@ end
 % some files that don't seem to need to be compiled
 skipFiles = {'convolve.c','corrDn.c','edges.c','upConv.c','wrap.c','fibheap.cpp','dijkstrap.cpp'};
 
-% set mexopts file
-optf = sprintf('-Dchar16_t=uint16_T -f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
+if verLessThan('matlab','8.2')
+  % set mexopts file
+  optf = sprintf('-Dchar16_t=uint16_T -f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
+elseif verLessThan('matlab','9.0')
+  % no longer need to have the char_16_t definition - which seems to break compile of dijkstra.cpp
+  optf = sprintf('-f %s',fullfile(mlrTop,'mrUtilities','make','mexopts.sh'));
+else
+  dispHeader;
+  dispHeader(sprintf('(mlrMake) Matlab versions over 9 not yet supported'));
+  dispHeader('The mex options probably need to be fixed!!!');
+  dispHeader;
+  optf = 'GCC=gcc COMPFLAGS=''$COMPFLAGS --prefix=/Applications/Xcode.app/Contents/Developer//usr --with-gxx-include-dir=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/usr/include/c++/4.2.1''';
+end
 
 % list of files that were compiled ok
 successfullyCompiled = {};
 failedToCompile = {};
+skippedFiles = {};
 for iFile = 1:length(compiledFunctionList)
+  if any(strcmp(getLastDir(compiledFunctionList{iFile}),skipFiles))
+    disp(sprintf('(mlrMake) Skipping: %s because files is not in use',compiledFunctionList{iFile}));
+    skippedFiles{end+1} = compiledFunctionList{iFile};
   % check for file
-  if ~any(strcmp(getLastDir(compiledFunctionList{iFile}),skipFiles)) && isfile(compiledFunctionList{iFile}) 
+  elseif isfile(compiledFunctionList{iFile}) 
     % display what we are doing
     disp(sprintf('(mlrMake) mex: %s',compiledFunctionList{iFile}));
     % mex the file
     try
-      eval(sprintf('mex %s %s',optf,compiledFunctionList{iFile}));
+      cd(fileparts(compiledFunctionList{iFile}));
+      eval(sprintf('mex %s %s',optf,getLastDir(compiledFunctionList{iFile})));
+      cd(curpwd);
       successfullyCompiled{end+1} = compiledFunctionList{iFile};
     catch
       disp(sprintf('(mlrMake) Error making %s',compiledFunctionList{iFile}));
@@ -56,11 +74,11 @@ for iFile = 1:length(compiledFunctionList)
   end
 end
 
-% list files that were not ok
-if ~isempty(failedToCompile)
-  dispHeader(sprintf('(mlrMake) Failed to compile'));
-  for iFile = 1:length(failedToCompile)
-    disp(sprintf('%s',failedToCompile{iFile}));
+% list files that were ok
+if ~isempty(skippedFiles)
+  dispHeader(sprintf('(mlrMake) Skipped because file is not in use'));
+  for iFile = 1:length(skippedFiles)
+    disp(sprintf('%s',skippedFiles{iFile}));
   end
 end
 
@@ -71,6 +89,15 @@ if ~isempty(successfullyCompiled)
     disp(sprintf('%s',successfullyCompiled{iFile}));
   end
 end
+
+% list files that were not ok
+if ~isempty(failedToCompile)
+  dispHeader(sprintf('(mlrMake) Failed to compile'));
+  for iFile = 1:length(failedToCompile)
+    disp(sprintf('%s',failedToCompile{iFile}));
+  end
+end
+
 
 %%%%%%%%%%%%%%%%%%%
 %    findFiles    %

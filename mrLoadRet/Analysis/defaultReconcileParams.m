@@ -77,7 +77,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % look for a description, and see if it has something like [x...x], that should be replaced by the scan numbers selected in scanList and groupName 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-params = fixDescription(params);
+params = mlrFixDescriptionInParams(params);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Next we do the meat of this program, we match scanNumbers
@@ -260,33 +260,3 @@ if isfield(params,'paramInfo')
   end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function to fix description field to contain
-% info about group and scans
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function params = fixDescription(params)
-
-if isfield(params,'description') && ~isempty(strfind(params.description,'[x...x]'))
-  swaploc = strfind(params.description,'[x...x]');
-  swaploc = swaploc(1);
-  % get the group name
-  if isfield(params,'groupName')
-    groupName = params.groupName;
-  else
-    groupName = '';
-  end
-  % scan numbers
-  if isfield(params,'scanList')
-    scanNames = num2str(params.scanList);
-  elseif isfield(params,'scanNum')
-    scanNames = num2str(params.scanNum);
-  else
-    scanNames = '';
-  end
-  % now make the description string
-  if ~isempty(groupName)
-    params.description = sprintf('%s%s:%s%s',params.description(1:swaploc-1),groupName,scanNames,params.description(swaploc+7:end));
-  else
-    params.description = sprintf('%s%s%s',params.description(1:swaploc-1),scanNames,params.description(swaploc+7:end));
-  end
-end

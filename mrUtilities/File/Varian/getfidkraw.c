@@ -95,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // create the output structure 
   const char *fieldNames[] = {"name","nblocks","ntraces","np","ebytes","tbytes","bbytes","vers_id","status","nbheaders","real","imag"};
-  int dims[2] = {1, 1};
+  mwSize dims[2] = {1, 1};
   plhs[0] = mxCreateStructArray(2, dims, 12, fieldNames);
 
   // put filename in output structure
@@ -129,7 +129,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   swapFlag = 0;
   // then make sure fid is in big endian
-  if ( isLittleEndianPlatform & header.nbheaders > 9 ) {
+  if ( isLittleEndianPlatform & (header.nbheaders > 9) ) {
     swapFlag = 1;
     if (verbose)
       mexPrintf("(getfidkraw) Running on little endian platform and data is big endian (default), will swap bytes\n");
@@ -237,7 +237,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (verbose)
     mexPrintf("(getfidkraw) Allocating space for %ix%i data\n",(int)(header.nblocks),(int)(header.np/2));
 
-  int dataDims[2] = {header.ntraces*header.np/2,header.nblocks};
+  mwSize dataDims[2] = {header.ntraces*header.np/2,header.nblocks};
   if ((mxdatar = mxCreateNumericArray(2,dataDims,dataType,mxREAL)) == NULL) {
     errorExit(plhs);
     return;
@@ -266,6 +266,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     case mxINT32_CLASS:
       data_int32 = (INT32 *)mxGetPr(mxGetField(plhs[0],0,"real"));
       datai_int32 = (INT32 *)mxGetPr(mxGetField(plhs[0],0,"imag"));
+      break;
+    default:
+      mexPrintf("(getfidkmex) Unknown data class\n");
+      errorExit(plhs);
+      return;
       break;
   }
 
@@ -360,6 +365,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	  // save data in ouput array
 	  *data_int32++ = ((INT32*)block)[k];
 	  *datai_int32++ = ((INT32*)block)[k+1];
+	  break;
+        default:
+	  mexPrintf("(getfidkmex) Unknown data class\n");
+	  errorExit(plhs);
+	  return;
 	  break;
       }
     }
