@@ -78,7 +78,7 @@ switch(baseType)
           end
         end
         %rotate coordinates
-        if  rotateAngle
+        if  rotateAngle  %what happens if this is not 0 for a surface?
           for iDepth = 1:depthBins
              Xcoords(:,:,iDepth) = mrImRotate(Xcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
              Ycoords(:,:,iDepth) = mrImRotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
@@ -90,6 +90,8 @@ switch(baseType)
           Zcoords=Zcoords0;
         end
       end
+      
+      % THERE SEEMS TO BE A PROBLEM FOR SURFACES IN THE FOLLOWING
       
       %just as an indication, the voxel size is the mean distance between voxels consecutive in the 3 directions
       %mask coordinates with non-rotated coordinates (to avoid edges introduced by mrImRotate)
