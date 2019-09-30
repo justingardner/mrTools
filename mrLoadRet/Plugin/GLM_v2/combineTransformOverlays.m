@@ -61,8 +61,12 @@ if ieNotDefined('params')
   else
     baseSpaceOption='enable=1';
   end
-  overlayList = viewGet(thisView,'curOverlay');
-  roiList = viewGet(thisView,'curROI');
+  if ieNotDefined('overlayList')
+    overlayList = viewGet(thisView,'curOverlay');
+  end
+  if ieNotDefined('roiList')
+    roiList = viewGet(thisView,'curROI');
+  end
 
   askForParams = 1;
   while askForParams
