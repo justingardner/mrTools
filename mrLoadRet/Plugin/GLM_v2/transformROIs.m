@@ -161,7 +161,7 @@ for iCall = 1:length(rois)
   try
     roi = eval([params.transformFunction '(rois{iCall}' functionString]);
   catch exception
-     mrWarnDlg(sprintf('(transformROI) There was an error evaluating function %s:\n%s',functionString,getReport(exception,'basic')));
+     mrWarnDlg(sprintf('(transformROI) There was an error evaluating function %s:\n%s\n',functionString,getReport(exception)));
      return
   end
   for iRoi = 1:length(roi)
