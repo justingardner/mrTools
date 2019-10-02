@@ -60,6 +60,7 @@ if ieNotDefined('params')
   paramsInfo{end+1} = {'depthStep',depthStep,'min=0','max=1',incdecString,'The depth step (i.e. we will go from minDepth:depthStep:maxDepth (skipping the reference depth), including or excluding voxels'};
   paramsInfo{end+1} = {'maxDepth',maxDepth,'min=0','max=1',incdecString,'The maximum depth'};
   paramsInfo{end+1} = {'excludeOtherVoxels',1,'type=checkbox','If ROI voxels exist oustide the projected surface, they will be removed. Uncheck to keep them. This option is ignored if restriction is selected'};
+  paramsInfo{end+1} = {'allowProjectionThroughSulci',1,'type=checkbox','Voxels will be kept even if they also belong to another part of the cortical surface through a sulcus. Uncheck to exclude these voxels. Note that voxels projected to another part of the cortex through white matter (for instance in case minDepth is negative) will be excluded too. If the ROI is projected based on a flat map, only voxels on the flat map, not the whole surface, will be excluded. This option is ignored if restriction is selected'};
   if defaultParams
     params = mrParamsDefault(paramsInfo);
   else
@@ -159,6 +160,14 @@ for roinum = params.roiList
       roiBaseCoordsLinear = union(roiBaseCoordsLinear,baseCoords(isInROI));
     end
     roiBaseCoordsLinear = roiBaseCoordsLinear(~isnan(roiBaseCoordsLinear));
+    % exclude any projected voxel that ends up in a different part of cortex either through a sulcus or through white matter
+    if ~params.allowProjectionThroughSulci
+      % get the (rounded) base coordinates at all depths between 0 and 1
+      baseCoords = round(baseCoordMap.coords(:,:,:,:,corticalDepths>=0 & corticalDepths<=1));
+      baseCoords = mrSub2ind(baseDims,baseCoords(:,:,:,1,:),baseCoords(:,:,:,2,:),baseCoords(:,:,:,3,:));
+      baseCoords = reshape(baseCoords,size(baseCoords,1)*size(baseCoords,2)*size(baseCoords,3),size(baseCoords,5));
+      roiBaseCoordsLinear = setdiff(roiBaseCoordsLinear,baseCoords(~isInROI,:));
+    end
     % now convert back to regular coords
     additionalRoiBaseCoords = [];
     [additionalRoiBaseCoords(1,:), additionalRoiBaseCoords(2,:), additionalRoiBaseCoords(3,:)] = ind2sub(baseDims,roiBaseCoordsLinear);
