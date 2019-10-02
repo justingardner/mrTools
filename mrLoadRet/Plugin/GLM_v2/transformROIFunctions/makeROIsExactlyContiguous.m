@@ -36,23 +36,25 @@ for iRoi = 1:length(rois)
     coords1 = rois(iRoi).coords';
     coords2 = rois(jRoi).coords';
     [commonCoordinates, indexROI1, indexROI2] = intersect(coords1,coords2,'rows');
-    %remove common coordinates from ROIs 1 and 2
-    coords1 = setdiff(coords1,commonCoordinates,'rows');
-    coords2 = setdiff(coords2,commonCoordinates,'rows');
-    %attribute common coordinates to one or the other ROI depending on distance
-    belongsToROI1 = false(size(commonCoordinates,1),1);
-    for iCoords = 1:size(commonCoordinates,1)
-      %compute distance between these coordinates and all coordinates unique to either both ROI
-      distanceCoords1 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords1,1),1) - coords1(:,1:3)).^2,2));
-      distanceCoords2 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords2,1),1) - coords2(:,1:3)).^2,2));
-      %identify closest ROI
-      if min(distanceCoords1) < min(distanceCoords2)
-        belongsToROI1(iCoords) = true;
+    if ~isempty(commonCoordinates)
+      %remove common coordinates from ROIs 1 and 2
+      coords1 = setdiff(coords1,commonCoordinates,'rows');
+      coords2 = setdiff(coords2,commonCoordinates,'rows');
+      %attribute common coordinates to one or the other ROI depending on distance
+      belongsToROI1 = false(size(commonCoordinates,1),1);
+      for iCoords = 1:size(commonCoordinates,1)
+        %compute distance between these coordinates and all coordinates unique to either both ROI
+        distanceCoords1 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords1,1),1) - coords1(:,1:3)).^2,2));
+        distanceCoords2 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords2,1),1) - coords2(:,1:3)).^2,2));
+        %identify closest ROI
+        if min(distanceCoords1) < min(distanceCoords2)
+          belongsToROI1(iCoords) = true;
+        end
       end
+      % delete coords that belong to the other ROI
+      rois(iRoi).coords(:,indexROI1(~belongsToROI1'))=[];
+      rois(jRoi).coords(:,indexROI2(belongsToROI1'))=[];
     end
-    % delete coords that belong to the other ROI
-    rois(iRoi).coords(:,indexROI1(~belongsToROI1'))=[];
-    rois(jRoi).coords(:,indexROI2(belongsToROI1'))=[];
   end
 end
 
