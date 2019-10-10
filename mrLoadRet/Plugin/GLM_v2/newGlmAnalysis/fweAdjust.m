@@ -1,7 +1,7 @@
 % fweAdjust.m
 %
 %        $Id$
-%      usage: adjustedP = fweAdjust(p,params,)
+%      usage: adjustedP = fweAdjust(p,params,<numberTrueH0, lambda>)
 %         by: julien besle, 
 %       date: 17/01/2011
 %    purpose: adjusts p-values for various familywise error control procedure
@@ -14,6 +14,14 @@
 
 function adjustedPdata = fweAdjust(p, params, numberTrueH0, lambda)
 
+%this function assumes that p is a column vector
+%if this is not the case, transpose
+if size(p,1)==1
+  p=p';
+  transposed=true;
+else
+  transposed=false;
+end
 
 isNotNan = ~isnan(p);
 sizePdata = size(p);
@@ -49,13 +57,17 @@ switch(params.fweMethod)
     
   case 'Hommel' 
     % Hommel (1988) Biometrika (1988), 75, 2, pp. 383-6
-%%%    % p-adjustment algorithm provided by Wright (1992)
-% % % %     adjustedP=p;
-% % % %     for m=numberH0:-1:2
-% % % %       cMin = min(m*p(numberH0-m+1:numberH0)./(m+(numberH0-m+1:numberH0)-numberH0));
-% % % %       adjustedP(numberH0-m+1:numberH0) = max(adjustedP(numberH0-m+1:numberH0),cMin);
-% % % %       adjustedP(1:numberH0-m) = max(adjustedP(1:numberH0-m),min(cMin,m*p(1:numberH0-m)));
-% % % %     end
+    % p-adjustment algorithm provided by Wright (1992)
+%    % original version (note that this version assumes that p is a column vector)
+%     p=p';
+%     adjustedP=p;
+%     for m=numberH0:-1:2
+%       cMin = min(m*p(numberH0-m+1:numberH0)./(m+(numberH0-m+1:numberH0)-numberH0));
+%       adjustedP(numberH0-m+1:numberH0) = max(adjustedP(numberH0-m+1:numberH0),cMin);
+%       adjustedP(1:numberH0-m) = max(adjustedP(1:numberH0-m),min(cMin,m*p(1:numberH0-m)));
+%     end
+%     p=p';
+%     adjustedP = adjustedP';
     
     %I think this version is clearer:
     adjustedP=p;
@@ -73,3 +85,7 @@ adjustedP = min(adjustedP,1); %bound with 1
 adjustedP(sortingIndex) = adjustedP;
 adjustedPdata = NaN(sizePdata);
 adjustedPdata(isNotNan) = adjustedP;
+
+if transposed
+  adjustedPdata = adjustedPdata';
+end
