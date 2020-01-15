@@ -73,7 +73,7 @@ switch action
      elseif isempty(coords2)
        newCoords = coords2;
      else       
-       newCoords = intersect(coords1,coords2,'rows');
+       newCoords = intersect(round(coords1),round(coords2),'rows');
      end
   case 'union'
      if isempty(coords1)
@@ -89,7 +89,7 @@ switch action
      elseif isempty(coords2)
        newCoords = coords1;
      else       
-       newCoords = setxor(coords1,coords2,'rows');
+       newCoords = setxor(round(coords1),round(coords2),'rows');
      end
   case 'a not b'
      if isempty(coords1)
@@ -97,7 +97,7 @@ switch action
      elseif isempty(coords2)
        newCoords = coords1;
      else       
-       newCoords = setdiff(coords1,coords2,'rows');
+       newCoords = setdiff(round(coords1),round(coords2),'rows');
      end
    otherwise
      error('unknown action: %s',action);
