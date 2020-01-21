@@ -16,6 +16,12 @@ if ieNotDefined('sampleDelay')
   sampleDelay=sampleDuration/2;
 end
 
+if sampleDuration == 1000
+    sampleDuration = sampleDuration ./ 1000; 
+    sampleDelay = sampleDelay ./ 1000; 
+end% [ma] magic fix
+
+
 if ieNotDefined('params')
   params = struct;
 end
