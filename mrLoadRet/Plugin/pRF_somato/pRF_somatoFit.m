@@ -432,9 +432,9 @@ switch fit.rfType
         [~,index2] = max(thisZ);
         
         % weird buglet here wrt colormaps for base/tips pRF - ma jan2020
-        %fit.prefDigit = thisX(index2); % original
-        prefDigit_tmp = thisX(index2);
-        fit.prefDigit = abs(prefDigit_tmp - (size(rfModel,2)+1) );
+        fit.prefDigit = thisX(index2); % original
+        %prefDigit_tmp = thisX(index2);
+        %fit.prefDigit = abs(prefDigit_tmp - (size(rfModel,2)+1) );
         
         
         % ignore this for base/tips pRF fitting
