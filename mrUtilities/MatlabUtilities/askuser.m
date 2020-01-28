@@ -1,13 +1,16 @@
 % askuser.m
 %
-%      usage: askuser(question,<toall>,<useDialog>)
+%      usage: askuser(question,<askOption>,<useDialog>)
 %         by: justin gardner
 %       date: 02/08/06
 %    purpose: ask the user a yes/no question. Question is a string or a cell arry of strings with the question. This
-%             function will return 1 for yes and 0 for no. If toall is set to 1, then
+%             function will return 1 for yes and 0 for no. If askOption is set to 1, then
 %             'Yes to all' will be an option, which if selected will return inf
 %
-function r = askuser(question,toall,useDialog)
+%             If askOption is set to -1 then there will be a default answer of Y
+%             If askOption is set to -2 then there will be a default answer of N
+%
+function r = askuser(question,askOption,useDialog)
 
 % check arguments
 if ~any(nargin == [1 2 3])
@@ -15,7 +18,7 @@ if ~any(nargin == [1 2 3])
   return
 end
 
-if ieNotDefined('toall'),toall = 0;,end
+if ieNotDefined('askOption'),askOption = 0;,end
 if ieNotDefined('useDialog'),useDialog=0;end
 
 % if explicitly set to useDialog then use dialog, otherwise
@@ -40,15 +43,21 @@ while isempty(r)
     for iLine = 1:length(question)-1
       fprintf([question{iLine} '\n']);
     end
-    if toall
-      % ask the question (with option for all)
+    if askOption==1
+      % ask the question (with askOption for all)
       r = input([question{end} ' (y/n or a for Yes to all)? '],'s');
+    elseif askOption==-1
+      % ask the question (with default to Y)
+      r = input([question{end} ' (y/n [default: y])? '],'s');
+    elseif askOption==-2
+      % ask the question (with default to Y)
+      r = input([question{end} ' (y/n [default: n])? '],'s');
     else
-      % ask question (without option for all)
+      % ask question (without askOption for all)
       r = input([question{end} ' (y/n)? '],'s');
     end
   else
-    if toall
+    if askOption==1
       % verbose, use dialog
       r = questdlg(question,'','Yes','No','All','Yes');
       r = lower(r(1));
@@ -62,10 +71,21 @@ while isempty(r)
     r = 0;
   elseif (lower(r) == 'y')
     r = 1;
-  elseif (lower(r) == 'a') & toall
+  elseif (lower(r) == 'a') & (askOption==1)
     r = inf;
   else
-    r =[];
+    % if empty then can apply defaults if asked for
+    if isempty(r)
+      % default answer is yes
+      if askOption==-1
+	r = 1;
+	% default answer is no
+      elseif askOption==-2
+	r = 0;
+      end
+    else
+      r =[];
+    end
   end
 end
 

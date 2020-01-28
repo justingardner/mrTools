@@ -47,16 +47,17 @@ switch viewGet(view,'baseType',anatomyNum)
   case 0
     data = baseVolume.data;
   case 1
+   % jg: The code below this line does not work - and I don't know why it was added or what
+   % it is supposed to do (is this Julien's addition?), so commenting out as it crashes in r2015a. Replacing
+   % with a more straightforward call
+    data = baseVolume.data;
     %if flat, rotate and repeat map number-of-depths times
-    repeatVector = [1 1 1];
-    repeatVector(viewGet(view,'basesliceindex',anatomyNum))= mrGetPref('corticalDepthBins');
-    nanData=isnan(baseVolume.data);
-    data = repmat(mrImRotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop'),repeatVector);
-    data(repmat(nanData,repeatVector))=NaN;
+%    repeatVector = [1 1 1];
+%    repeatVector(viewGet(view,'basesliceindex',anatomyNum))= mrGetPref('corticalDepthBins');
+%    nanData=isnan(baseVolume.data);
+%    data = repmat(mrImRotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop'),repeatVector);
+%    data(repmat(nanData,repeatVector))=NaN;
   case 2
-    %surface
-    %mrErrorDlg('(saveAnat) Cannot save surface as volume (not implemented)')
-    %return;
     data = baseVolume.data;
 end
 hdr = baseVolume.hdr;
