@@ -649,13 +649,18 @@ if params.nOutputOverlays
       case {'3D Array','4D Array','Scalar'}
         outputOverlay(iOverlay) = defaultOverlay;
         outputOverlay(iOverlay).data = outputData(:,iOverlay);
+        maxValue = -inf;
+        minValue = inf;
         for iOutput = 1:size(outputData,1)
-          isNotEmpty(iOutput) = ~isempty(outputData{iOutput,iOverlay});
+          if ~isempty(outputData{iOutput,iOverlay})
+            maxValue = max(maxValue,max(outputData{iOutput,iOverlay}(outputData{iOutput,iOverlay}<inf)));
+            minValue = min(minValue,min(outputData{iOutput,iOverlay}(outputData{iOutput,iOverlay}>-inf)));
+          end
         end
-        allScansData = cell2mat(outputData(isNotEmpty,iOverlay));
       case 'Structure'
         outputOverlay(iOverlay) = copyFields(defaultOverlay,outputData{iOverlay});
-        allScansData = cell2mat(outputOverlay(iOverlay).data);
+        maxValue = max(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data<inf));
+        minValue = min(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data>-inf));
     end
     if ~params.exportToNewGroup && params.baseSpace && any(any((base2scan - eye(4))>1e-6)) %put back into scan/overlay space
       for iScan=1:nScans
@@ -677,8 +682,6 @@ if params.nOutputOverlays
         end
       end
     end
-    maxValue = max(allScansData(allScansData<inf));
-    minValue = min(allScansData(allScansData>-inf));
     outputOverlay(iOverlay).clip = [minValue maxValue];
     outputOverlay(iOverlay).range = [minValue maxValue];
     outputOverlay(iOverlay).name = outputOverlayNames{iOverlay};
