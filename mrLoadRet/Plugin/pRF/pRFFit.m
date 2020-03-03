@@ -372,7 +372,7 @@ modelResponse = [];residual = [];
 % create the model for each concat
 for i = 1:fitParams.concatInfo.n
   % get model response
-  nFrames = fitParams.concatInfo.runTransition(i,2);
+  nFrames = fitParams.concatInfo.runTransition(i,2) - fitParams.concatInfo.runTransition(i,1) + 1 ;
   thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
 
   % get a model hrf
