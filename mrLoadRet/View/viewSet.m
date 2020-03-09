@@ -1738,7 +1738,7 @@ case{'surfaceroihandle'}
         %check if an Edit Overlay Menu is open and relaunch if current overlay has changed
         if ~isequal(curOverlay,overlayNum)
           global gParams
-          if ~isempty(gParams)
+          if ~isempty(gParams) && isfield(gParams,'figlocstr')
             if strcmp(gParams.figlocstr{1},'mrParamsDialog_Edit_overlay_parameters')
               editOverlayGUImrParams(view);
             end
