@@ -284,12 +284,26 @@ switch lower(param)
     nScans = viewGet(view,'nScans');
     % confirm with user
     if nScans > 0
-      queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
+        queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
+        % adding this sub if to check if we want to delete the group in a
+        % script, without having a questdlg pop up. Pass varargin 'quiet',
+        % sets answer to 'Yes'
+    elseif ~isempty(varargin)
+        if strcmpi(varargin{1},'quiet') || nScans == 0
+            disp('Caught quiet flag, deleting empty group...')
+            queststr = 'Yes';
+        end
     else
       queststr = sprintf('Are you sure you want to delete empty group: %s?',groupName);
     end
-    if ~strcmp(questdlg(queststr,'Delete group'),'Yes')
-      return
+    % Check the queststr again, if we are verbose, then it will pop up
+    % with another questdlg (as in previous version), but if it's 'Yes',
+    % then no pop up, and carry on.
+    if ~strcmpi(queststr,'Yes')
+        deleteGroup = questdlg(queststr);
+        if ~strcmp(deleteGroup,'Yes')
+            return
+        end
     end
     if strcmp(groupName,'Raw')
       mrWarnDlg('Cannot delete Raw group');
