@@ -76,8 +76,8 @@ r2.clip = [0 1];
 r2.colormap = hot(312);
 r2.colormap = r2.colormap(end-255:end,:);
 r2.alpha = 1;
-r2.colormapType = 'normal';
-r2.interrogator = 'myOverlayStats';
+r2.colormapType = 'setRangeToMax';
+r2.interrogator = 'pRFPlot';
 r2.mergeFunction = 'pRFMergeParams';
 
 % create the parameters for the polarAngle overlay
@@ -178,12 +178,6 @@ for scanNum = params.scanNum
   thisPolarAngle = nan(1,n);
   thisEccentricity = nan(1,n);
   thisRfHalfWidth = nan(1,n);
-  
-  %thisr2 = nan(1,n);
-  thisRawParamsCoords = nan(3,n);
-  thisResid = nan(numel(concatInfo.whichScan),n);
-  thistSeries = nan(numel(concatInfo.whichScan),n);
-  thismodelResponse = nan(numel(concatInfo.whichScan),n);
 
   % get some info about the scan to pass in (which prevents
   % pRFFit from calling viewGet - which is problematic for distributed computing
@@ -206,8 +200,7 @@ for scanNum = params.scanNum
   % as tested on my machine - maybe a few percent faster with full n, but
   % on many machines without enough memory that will crash it so keeping
   % this preliminary value in for now.
-  %blockSize = 240;
-  blockSize = n;
+  blockSize = 240;
   tic;
   % break into blocks of voxels to go easy on memory
   % if blockSize = n then this just does on block at a time.
@@ -230,11 +223,6 @@ for scanNum = params.scanNum
     % pass it into pRFFit and pRFFit will load the tSeries itself
     loadROI = loadROITSeries(v,loadROI,scanNum,params.groupName,'keepNAN',true);
     % reorder x,y,z coordinates since they can get scrambled in loadROITSeries
-    
-    blockEnd = size(loadROI.scanCoords,2); % HACK TO STOP NANS
-    blockSize = blockEnd;
-    n = blockEnd;
-    
     x(blockStart:blockEnd) = loadROI.scanCoords(1,1:blockSize);
     y(blockStart:blockEnd) = loadROI.scanCoords(2,1:blockSize);
     z(blockStart:blockEnd) = loadROI.scanCoords(3,1:blockSize);
@@ -245,149 +233,30 @@ for scanNum = params.scanNum
       % display time update
       dispHeader(sprintf('(pRF) %0.1f%% done in %s (Estimated time remaining: %s)',100*blockStart/n,mlrDispElapsedTime(toc),mlrDispElapsedTime((toc*n/blockStart) - toc)));
     end
-    
-    if params.pRFFit.HRFpRF == 1
-        disp('Give me your HRFs. Remember, these should be outputted from prfhrfRefit and then ideally from deconvRealDataWiener')
-        myfilename_hrf = uigetfile;
-        thehrfs = load(myfilename_hrf);
-        
-        myVar = thehrfs.hrf_struct.yf;
-        %myVar = thehrfs.hrf_struct.voxHRFs; % smoothed version of hrfprf?
-        
-    end
-    
-    if params.pRFFit.HRFpRF == 1
-        %keyboard
-        parfor ii = blockStart:blockEnd
-            myVoxel = find(thehrfs.hrf_struct.volumeIndices == sub2ind(scanDims,x(ii),y(ii),z(ii)));
-            if isempty(myVoxel)
-                fprintf('\ncaught an empty, x %d y %d z %d, idx %f\n', x(ii), y(ii), z(ii), myVoxel);
-                
-                fit = [];
-            elseif myVoxel > length(thehrfs.hrf_struct.yf)
-                disp('caught one')
-                fit = [];
-            else
-                
-                fit = pRFFit(v,scanNum,x(ii),y(ii),z(ii),'stim',stim,'concatInfo',concatInfo,...
-                    'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',ii,'dispN',n,...
-                    'tSeries',loadROI.tSeries(ii-blockStart+1,:)','framePeriod',framePeriod,'junkFrames',junkFrames,...
-                    'paramsInfo',paramsInfo, 'hrfprf', myVar(:,myVoxel));
-            end
-            if ~isempty(fit)
-                
-                thisr2(ii) = fit.r2;
-                thisPolarAngle(ii) = fit.polarAngle;
-                thisEccentricity(ii) = fit.eccentricity;
-                thisRfHalfWidth(ii) = fit.std;
-                % keep parameters
-                rawParams(:,ii) = fit.params(:);
-                r(ii,:) = fit.r;
-                thisr2(ii) = fit.r2;
-                thisRawParamsCoords(:,ii) = [x(ii) y(ii) z(ii)];
-                thisResid(:,ii) = fit.residual;
-                thistSeries(:,ii) = fit.tSeries;
-                thismodelResponse(:,ii) = fit.modelResponse;
-%                 tempVar = zeros(length(overlayNames),1);
-%                 for iOverlay = 1:numel(overlayNames)
-%                     
-%                     test = strcmpi(fieldnames(fit), overlayNames(iOverlay) );
-%                     %pos = find(test==1);
-%                     bla = struct2cell(fit);
-%                     val = cell2mat(bla(test==1));
-%                     % this is temporary, gets overwritten each time
-%                     tempVar(iOverlay,1) = val;
-%                 end
-%                 % now put the values for this voxel into some sort of order :)
-%                 thisData(:,ii) = tempVar;
-%                 
-%                 % keep parameters
-%                 rawParams(:,ii) = fit.params(:);
-%                 r(ii,:) = fit.r;
-%                 thisr2(ii) = fit.r2;
-%                 thisRawParamsCoords(:,ii) = [x(ii) y(ii) z(ii)];
-                %myrawHrfs(:,ii) = fit.myhrf.hrf; %save out prfs hrfs
-            end
-        end
-        
-    else
-        
-        
-        
-        
-        % regular prf fitting
-        parfor ii = blockStart:blockEnd
-
-            fit = pRFFit(v,scanNum,x(ii),y(ii),z(ii),'stim',stim,'concatInfo',concatInfo,...
-                'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',ii,'dispN',n,...
-                'tSeries',loadROI.tSeries(ii-blockStart+1,:)','framePeriod',framePeriod,'junkFrames',junkFrames,...
-                'paramsInfo',paramsInfo);
-
-            
-            if ~isempty(fit)
-                
-                thisr2(ii) = fit.r2;
-                thisPolarAngle(ii) = fit.polarAngle;
-                thisEccentricity(ii) = fit.eccentricity;
-                thisRfHalfWidth(ii) = fit.std;
-                % keep parameters
-                rawParams(:,ii) = fit.params(:);
-                r(ii,:) = fit.r;
-                thisr2(ii) = fit.r2;
-                thisRawParamsCoords(:,ii) = [x(ii) y(ii) z(ii)];
-                thisResid(:,ii) = fit.residual;
-                thistSeries(:,ii) = fit.tSeries;
-                thismodelResponse(:,ii) = fit.modelResponse;
-                %keyboard
-                
-%                 tempVar = zeros(length(overlayNames),1);
-%                 
-%                 for iOverlay = 1:numel(overlayNames)
-%                    
-%                     test = strcmpi(fieldnames(fit), overlayNames(iOverlay) );
-%                    
-%                     bla = struct2cell(fit);
-%                     val = cell2mat(bla(test==1));
-%                     % this is temporary, gets overwritten each time
-%                     tempVar(iOverlay,1) = val;
-%                 end
-%                 % now put the values for this voxel into some sort of order :)
-%                 thisData(:,ii) = tempVar;
-%                 
-%                 % keep parameters
-%                 rawParams(:,ii) = fit.params(:);
-%                 r(ii,:) = fit.r;
-%                 thisr2(ii) = fit.r2;
-%                 thisRawParamsCoords(:,ii) = [x(ii) y(ii) z(ii)];
-
-            end
-        end
-        
-    end
 
     % now loop over each voxel
-%     parfor i = blockStart:blockEnd
-%       fit = pRFFit(v,scanNum,x(i),y(i),z(i),'stim',stim,'concatInfo',concatInfo,'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',i,'dispN',n,'tSeries',loadROI.tSeries(i-blockStart+1,:)','framePeriod',framePeriod,'junkFrames',junkFrames,'paramsInfo',paramsInfo);
-%       if ~isempty(fit)
-% 	% keep data, note that we are keeping temporarily in
-% 	% a vector here so that parfor won't complain
-% 	% then afterwords we put it into the actual overlay struct
-% 	thisr2(i) = fit.r2;
-% 	thisPolarAngle(i) = fit.polarAngle;
-% 	thisEccentricity(i) = fit.eccentricity;
-% 	thisRfHalfWidth(i) = fit.std;
-% 	% keep parameters
-% 	rawParams(:,i) = fit.params(:);
-% 	r(i,:) = fit.r;
-%       end
-%     end
+    parfor i = blockStart:blockEnd
+      fit = pRFFit(v,scanNum,x(i),y(i),z(i),'stim',stim,'concatInfo',concatInfo,'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',i,'dispN',n,'tSeries',loadROI.tSeries(i-blockStart+1,:)','framePeriod',framePeriod,'junkFrames',junkFrames,'paramsInfo',paramsInfo);
+      if ~isempty(fit)
+	% keep data, note that we are keeping temporarily in
+	% a vector here so that parfor won't complain
+	% then afterwords we put it into the actual overlay struct
+	thisr2(i) = fit.r2;
+	thisPolarAngle(i) = fit.polarAngle;
+	thisEccentricity(i) = fit.eccentricity;
+	thisRfHalfWidth(i) = fit.std;
+	% keep parameters
+	rawParams(:,i) = fit.params(:);
+	r(i,:) = fit.r;
+      end
+    end
       
     % set overlays
-    for ii = 1:n
-      r2.data{scanNum}(x(ii),y(ii),z(ii)) = thisr2(ii);
-      polarAngle.data{scanNum}(x(ii),y(ii),z(ii)) = thisPolarAngle(ii);
-      eccentricity.data{scanNum}(x(ii),y(ii),z(ii)) = thisEccentricity(ii);
-      rfHalfWidth.data{scanNum}(x(ii),y(ii),z(ii)) = thisRfHalfWidth(ii);
+    for i = 1:n
+      r2.data{scanNum}(x(i),y(i),z(i)) = thisr2(i);
+      polarAngle.data{scanNum}(x(i),y(i),z(i)) = thisPolarAngle(i);
+      eccentricity.data{scanNum}(x(i),y(i),z(i)) = thisEccentricity(i);
+      rfHalfWidth.data{scanNum}(x(i),y(i),z(i)) = thisRfHalfWidth(i);
     end
   end
   % display time update
@@ -397,11 +266,6 @@ for scanNum = params.scanNum
   
   pRFAnal.d{scanNum}.params = rawParams;
   pRFAnal.d{scanNum}.r = r;
-  pRFAnal.d{scanNum}.r2 = thisr2;
-  pRFAnal.d{scanNum}.rawCoords = thisRawParamsCoords;
-  pRFAnal.d{scanNum}.myresid = thisResid;
-  pRFAnal.d{scanNum}.mytSeries = thistSeries;
-  pRFAnal.d{scanNum}.mymodelResp = thismodelResponse;
 
   iScan = find(params.scanNum == scanNum);
   thisParams.scanNum = params.scanNum(iScan);
@@ -604,7 +468,7 @@ end
 
 % save the stim image
 stimFilename = fullfile(exportDir,'stim.nii.gz');
-if isfile(stimFilename)
+if mlrIsFile(stimFilename)
   disp(sprintf('(pRF) Removing already existing %s',getLastDir(stimFilename)));
   system(sprintf('rm -f %s',stimFilename));
 end
@@ -617,7 +481,7 @@ mask(sub2ind(scanDims,x,y,z)) = 1;
 
 % and save it
 maskFilename = fullfile(exportDir,'mask.nii.gz');
-if isfile(maskFilename)
+if mlrIsFile(maskFilename)
   disp(sprintf('(pRF) Removing already existing %s',getLastDir(maskFilename)));
   system(sprintf('rm -f %s',maskFilename));
 end
@@ -629,7 +493,7 @@ tSeriesFilename = viewGet(v,'tSeriesPath',scanNum);
 
 % save data
 boldFilename = fullfile(exportDir,'bold.nii.gz');
-if isfile(boldFilename)
+if mlrIsFile(boldFilename)
   disp(sprintf('(pRF) Removing already existing %s',getLastDir(boldFilename)));
   system(sprintf('rm -f %s',boldFilename));
 end

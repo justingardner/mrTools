@@ -149,9 +149,6 @@ paramsInfo{end+1} = {'applyFiltering',1,'type=checkbox','If set to 1 then applie
 paramsInfo{end+1} = {'stimImageDiffTolerance',5,'minmax=[0 100]','incdec=[-1 1]','When averaging the stim images should be the same, but some times we are off by a frame here and there due to inconsequential timing inconsistenices. Set this to a small value, like 5 to ignore that percentage of frames of the stimulus that differ within an average. If this threshold is exceeded, the code will ask you if you want to continue - otherwise it will just print out to the buffer the number of frames that have the problem'};
 paramsInfo{end+1} = {'saveForExport',0,'type=checkbox','Creates files for export to do the pRF on systems like BrainLife. This will save a stim.nii file containing the stimulus images, a bold.nii file with the time series a mask.nii file that contains the voxel mask over which to the analysis and a pRFparams.mat file which contains various parameters'};
 
-paramsInfo{end+1} = {'HRFpRF',false,'type=checkbox','Set to true if you want to load in pre-computed HRFs using prfhrfRefit'};
-
-
 % if we are continuing, then just add on any parameters that
 % are needed (i.e. ones that are not included in the old
 % analysis)

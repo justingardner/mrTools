@@ -10,19 +10,12 @@ function fit = pRFFit(varargin)
 fit = [];
 % parse input arguments - note that this is set
 % up so that it can also be called as an interrogator
-[v, scanNum, x, y, z, fitParams, tSeries,hrfprf] = parseArgs(varargin);
+[v scanNum x y z fitParams tSeries] = parseArgs(varargin);
 if isempty(v),return,end
  
 % get concat info
 if ~isfield(fitParams,'concatInfo') || isempty(fitParams.concatInfo)
   fitParams.concatInfo = viewGet(v,'concatInfo',scanNum);
-end
-
-% adding own params...
-if ~ieNotDefined('hrfprf')
-    hrfprfcheck = 1;
-else 
-    hrfprfcheck = 0;
 end
 
 % if there is no concatInfo, then make one that will
@@ -104,43 +97,15 @@ end
 fitParams = setFitParams(fitParams);
 
 % just return model response for already calcualted params
-% if fitParams.getModelResponse
-%   % get model fit
-%   [residual fit.modelResponse fit.rfModel] = getModelResidual(fitParams.params,tSeries,fitParams);
-%   % get the canonical
-%   fit.p = getFitParams(fitParams.params,fitParams);
-%   fit.canonical = getCanonicalHRF(fit.p.canonical,fitParams.framePeriod);
-%   % return tSeries
-%   fit.tSeries = tSeries;
-%   return;
-% end
-
 if fitParams.getModelResponse
-    
-    if ~ieNotDefined('hrfprf')
-        %params = hrfprf;
-        
-        fitParams.hrfprf = hrfprf;
-        % get model fit
-        [residual, fit.modelResponse, fit.rfModel, ~, realhrf] = getModelResidual(fitParams.params,tSeries,fitParams, [], hrfprfcheck);
-        % get the real hrf from the inputted ones
-        fit.p = getFitParams(fitParams.params,fitParams);
-        fit.canonical = realhrf;
-        %fit.canonical = getCanonicalHRF(fit.p.canonical,fitParams.framePeriod);
-        % return tSeries
-        fit.tSeries = tSeries;
-        return;
-        
-    else
-        [residual, fit.modelResponse, fit.rfModel] = getModelResidual(fitParams.params,tSeries,fitParams, [], hrfprfcheck);
-        % get the canonical
-        fit.p = getFitParams(fitParams.params,fitParams);
-        fit.canonical = getCanonicalHRF(fit.p.canonical,fitParams.framePeriod);
-        % return tSeries
-        fit.tSeries = tSeries;
-        return;
-        
-    end
+  % get model fit
+  [residual fit.modelResponse fit.rfModel] = getModelResidual(fitParams.params,tSeries,fitParams);
+  % get the canonical
+  fit.p = getFitParams(fitParams.params,fitParams);
+  fit.canonical = getCanonicalHRF(fit.p.canonical,fitParams.framePeriod);
+  % return tSeries
+  fit.tSeries = tSeries;
+  return;
 end
 
 % return some fields
@@ -212,7 +177,7 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
   % calculate r for all modelResponse by taking inner product
   r = fitParams.prefit.modelResponse*tSeriesNorm;
   % get best r2 for all the models
-  [maxr, bestModel] = max(r);
+  [maxr bestModel] = max(r);
   fitParams.initParams(1) = fitParams.prefit.x(bestModel);
   fitParams.initParams(2) = fitParams.prefit.y(bestModel);
   fitParams.initParams(3) = fitParams.prefit.rfHalfWidth(bestModel);
@@ -223,7 +188,7 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
     fit.params = fitParams.initParams;
     fit.r2 = maxr^2;
     fit.r = maxr;
-    [fit.polarAngle, fit.eccentricity] = cart2pol(fit.x,fit.y);
+    [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
     % display
     if fitParams.verbose
       disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
@@ -232,46 +197,15 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
   end
 end
 
-if ~ieNotDefined('hrfprf')
-    %params = hrfprf;
-    
-    fitParams.hrfprf = hrfprf;
-    
-    if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
-        [params resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
-    elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
-        [params fval exitflag] = fminsearch(@getModelResidual,fitParams.initParams,fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
-        %[params fval exitflag] = fmincon(@getModelResidual,fitParams.initParams,[],[],[],[],[-5 -5 -5],[5 5 5],[],fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
-    else
-        disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
-        return
-    end    
-    % possibly we need to send to getCanonicalHRF to make sure the
-    % offsets/scaling line up...
-
-else
-    
-    % now do nonlinear fit
-    if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
-        [params resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
-    elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
-        [params fval exitflag] = fminsearch(@getModelResidual,fitParams.initParams,fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
-    else
-        disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
-        return
-    end
-    
-end
-
 % now do nonlinear fit
-% if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
-%   [params resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
-% elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
-%   [params fval exitflag] = fminsearch(@getModelResidual,fitParams.initParams,fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
-% else
-%   disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
-%   return
-% end
+if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
+  [params resnorm residual exitflag output lambda jacobian] = lsqnonlin(@getModelResidual,fitParams.initParams,fitParams.minParams,fitParams.maxParams,fitParams.optimParams,tSeries,fitParams);
+elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
+  [params fval exitflag] = fminsearch(@getModelResidual,fitParams.initParams,fitParams.optimParams,(tSeries-mean(tSeries))/var(tSeries.^2),fitParams);
+else
+  disp(sprintf('(pRFFit) Unknown optimization algorithm: %s',fitParams.algorithm));
+  return
+end
 
 % set output arguments
 fit = getFitParams(params,fitParams);
@@ -279,7 +213,7 @@ fit.rfType = fitParams.rfType;
 fit.params = params;
 
 % compute r^2
-[residual modelResponse rfModel fit.r] = getModelResidual(params,tSeries,fitParams,[],hrfprfcheck);
+[residual modelResponse rfModel fit.r] = getModelResidual(params,tSeries,fitParams);
 if strcmp(lower(fitParams.algorithm),'levenberg-marquardt')
   fit.r2 = 1-sum((residual-mean(residual)).^2)/sum((tSeries-mean(tSeries)).^2);
 elseif strcmp(lower(fitParams.algorithm),'nelder-mead')
@@ -289,15 +223,9 @@ end
 % compute polar coordinates
 [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
 
-fit.residual = residual;
-fit.tSeries = tSeries;
-fit.modelResponse = modelResponse;
-
 % display
 if fitParams.verbose
   disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
-end
-
 end
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -423,11 +351,10 @@ for i = 1:length(params)
   end
 end
 
-end
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   getModelResidual   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function [residual, modelResponse, rfModel, r, hrf] = getModelResidual(params,tSeries,fitParams,justGetModel, hrfprfcheck)
+function [residual modelResponse rfModel r] = getModelResidual(params,tSeries,fitParams,justGetModel)
 
 residual = [];
 if nargin < 4, justGetModel = 0;end
@@ -439,32 +366,17 @@ p = getFitParams(params,fitParams);
 % compute an RF
 rfModel = getRFModel(p,fitParams);
 
-if ieNotDefined('hrfprfcheck')
-    hrfprfcheck = 0;
-end
-
 % init model response
 modelResponse = [];residual = [];
 
 % create the model for each concat
 for i = 1:fitParams.concatInfo.n
   % get model response
-  nFrames = (fitParams.concatInfo.runTransition(i,2)-fitParams.concatInfo.runTransition(i,2)+1);
+  nFrames = fitParams.concatInfo.runTransition(i,2);
   thisModelResponse = convolveModelWithStimulus(rfModel,fitParams.stim{i},nFrames);
-  
-  if isfield(fitParams, 'hrfprf')
-      %keyboard
-      hrf.hrf = fitParams.hrfprf;
-      hrf.time = 0:fitParams.framePeriod:p.canonical.lengthInSeconds; % this if 24 seconds, tr 2s fyi...
-      % normalize to amplitude of 1
-      hrf.hrf = hrf.hrf / max(hrf.hrf);
-  else
-      
-      hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
-  end
 
   % get a model hrf
-  %hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
+  hrf = getCanonicalHRF(p.canonical,fitParams.framePeriod);
 
   % and convolve in time.
   thisModelResponse = convolveModelResponseWithHRF(thisModelResponse,hrf);
@@ -480,10 +392,8 @@ for i = 1:fitParams.concatInfo.n
     thisModelResponse = thisModelResponse - mean(thisModelResponse);
   end
   
-  if isempty(justGetModel), justGetModel = 0; end
-  %if ~justGetModel
+  if ~justGetModel
     % compute correlation of this portion of the model response with time series
-  if justGetModel == 0
     thisTSeries = tSeries(fitParams.concatInfo.runTransition(i,1):fitParams.concatInfo.runTransition(i,2));
     thisTSeries = thisTSeries - mean(thisTSeries);
     
@@ -510,53 +420,12 @@ for i = 1:fitParams.concatInfo.n
   residual = [residual;thisResidual(:)];
 end
 
-
 % return model only
 if justGetModel,return,end
 
 % scale the whole time series
-% if ~fitParams.betaEachScan
-%   [modelResponse residual] = scaleAndOffset(modelResponse,tSeries(:));
-% end
-
-if ~isfield(fitParams, 'hrfprf')
-    if ~fitParams.betaEachScan
-        [modelResponse residual] = scaleAndOffset(modelResponse,tSeries(:));
-    end
-end
-% 
-% if fitParams.getModelResponse == 1
-%     
-%     if ~any(isnan(modelResponse))
-%         mref = mean(tSeries);
-%         stdRef = std(tSeries);
-%         mSig = mean(modelResponse);
-%         stdSig = std(modelResponse);
-%         modelResponse = ((modelResponse - mSig)/stdSig) * stdRef + mref;
-%         
-%         residual = tSeries-modelResponse;
-%     else
-%         residual = tSeries;
-%     end
-%     
-if fitParams.getModelResponse ~= 1
-    %if hrfprfcheck == 1
-    if isfield(fitParams, 'hrfprf')
-        if ~any(isnan(modelResponse))
-            %disp('bloop')
-            %     warning('off', 'MATLAB:rankDeficientMatrix');
-            X = modelResponse(:);
-            X(:,2) = 1;
-            
-            b = X \ tSeries; % backslash linear regression
-            %b = pinv(X) * tSeries;
-            modelResponse = X * b;
-            residual = tSeries-modelResponse;
-        else
-            residual = tSeries;
-        end
-        %modelResponse = newSig;
-    end
+if ~fitParams.betaEachScan
+  [modelResponse residual] = scaleAndOffset(modelResponse,tSeries(:));
 end
 
 
@@ -571,7 +440,7 @@ if strcmp(lower(fitParams.algorithm),'nelder-mead')
 %  disp(sprintf('(pRFFit:getModelResidual) r: %f',residual));
 end
 
-end
+
 %%%%%%%%%%%%%%%%%%%%%%
 %    dispModelFit    %
 %%%%%%%%%%%%%%%%%%%%%%
@@ -607,7 +476,7 @@ p = getFitParams(params,fitParams);
 canonical = getCanonicalHRF(p.canonical,fitParams.framePeriod);
 plot(canonical.time,canonical.hrf,'k-')
 if exist('myaxis') == 2,myaxis;end
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 %    scaleAndOffset    %
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -625,7 +494,7 @@ if ~any(isnan(modelResponse))
 else
   residual = tSeries;
 end
-end
+
 %%%%%%%%%%%%%%%%%%%%%%
 %%   getFitParams   %%
 %%%%%%%%%%%%%%%%%%%%%%
@@ -673,7 +542,7 @@ switch (fitParams.rfType)
 otherwise 
     disp(sprintf('(pRFFit) Unknown rfType %s',rfType));
 end
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   convolveModelWithStimulus   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -690,7 +559,7 @@ for frameNum = 1:nStimFrames
   % and take the sum
   modelResponse(frameNum) = sum(sum(rfModel.*stim.im(:,:,frameNum)));
 end
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   convolveModelResponseWithHRF   %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -699,7 +568,7 @@ function modelTimecourse = convolveModelResponseWithHRF(modelTimecourse,hrf)
 n = length(modelTimecourse);
 modelTimecourse = conv(modelTimecourse,hrf.hrf);
 modelTimecourse = modelTimecourse(1:n);
-end
+
 %%%%%%%%%%%%%%%%%%%%%
 %%   getGammaHRF   %%
 %%%%%%%%%%%%%%%%%%%%%
@@ -709,7 +578,6 @@ fun = thisGamma(time,1,p.timelag,p.offset,p.tau,p.exponent)/100;
 % add second gamma if this is a difference of gammas fit
 if p.diffOfGamma
   fun = fun - thisGamma(time,p.amplitudeRatio,p.timelag2,p.offset2,p.tau2,p.exponent2)/100;
-end
 end
 
 %%%%%%%%%%%%%%%%%%%
@@ -730,7 +598,6 @@ if (max(gammafun)-min(gammafun))~=0
   gammafun = (gammafun-min(gammafun)) ./ (max(gammafun)-min(gammafun));
 end
 gammafun = (amplitude*gammafun+offset);
-end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -743,7 +610,7 @@ hrf.hrf = getGammaHRF(hrf.time,params);
 
 % normalize to amplitude of 1
 hrf.hrf = hrf.hrf / max(hrf.hrf);
-end
+
 %%%%%%%%%%%%%%%%%%%%
 %%   getRFModel   %%
 %%%%%%%%%%%%%%%%%%%%
@@ -757,7 +624,6 @@ if any(strcmp(fitParams.rfType,{'gaussian','gaussian-hdr'}))
 else
   disp(sprintf('(pRFFit:getRFModel) Unknown rfType: %s',fitParams.rfType));
 end
-end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -767,13 +633,13 @@ function rfModel = makeRFGaussian(params,fitParams)
 
 % compute rf
 rfModel = exp(-(((fitParams.stimX-params.x).^2)/(2*(params.std^2))+((fitParams.stimY-params.y).^2)/(2*(params.std^2))));
-end
+
 %%%%%%%%%%%%%%%%%%%
 %    parseArgs    %
 %%%%%%%%%%%%%%%%%%%
-function [v, scanNum, x, y, s, fitParams, tSeries, hrfprf] = parseArgs(args)
+function [v scanNum x y s fitParams tSeries] = parseArgs(args);
 
-v = [];scanNum=[];x=[];y=[];s=[];fitParams=[];tSeries = []; hrfprf=[];
+v = [];scanNum=[];x=[];y=[];s=[];fitParams=[];tSeries = [];
 
 % check for calling convention from interrogator
 if (length(args) >= 7) && isnumeric(args{6})
@@ -847,12 +713,7 @@ elseif length(args) >= 5
   xFlip=[];yFlip=[];timeShiftStimulus=[];rfType=[];betaEachScan=[];fitTypeParams = [];
   dispIndex = [];dispN = [];returnPrefit = [];tSeries=[];quickPrefit=[];junkFrames=[];
   verbose = [];justGetStimImage = [];framePeriod = [];
-  getArgs({args{6:end}},{'dispFit=0','stim=[]','getModelResponse=0','params=[]',...
-      'concatInfo=[]','prefit=[]','xFlipStimulus=0','yFlipStimulus=0',...
-      'timeShiftStimulus=0','rfType=gaussian','betaEachScan=0','fitTypeParams=[]',...
-      'justGetStimImage=[]','verbose=1','dispIndex=[]','dispN=[]','returnPrefit=0',...
-      'quickPrefit=0','tSeries=[]','junkFrames=[]','framePeriod=[]','paramsInfo=[]',...
-      'hrfprf=[]'});
+  getArgs({args{6:end}},{'dispFit=0','stim=[]','getModelResponse=0','params=[]','concatInfo=[]','prefit=[]','xFlipStimulus=0','yFlipStimulus=0','timeShiftStimulus=0','rfType=gaussian','betaEachScan=0','fitTypeParams=[]','justGetStimImage=[]','verbose=1','dispIndex=[]','dispN=[]','returnPrefit=0','quickPrefit=0','tSeries=[]','junkFrames=[]','framePeriod=[]','paramsInfo=[]'});
   % default to display fit
   fitParams.dispFit = dispFit;
   fitParams.stim = stim;
@@ -948,7 +809,7 @@ if isempty(fitParams.prefit) || (fitParams.prefit.quickPrefit ~= fitParams.quick
   fitParams.prefit.y = prefity(:);
   fitParams.prefit.rfHalfWidth = prefitrfHalfWidth(:);
 end
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    checkStimForAverages    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1052,7 +913,6 @@ else
   end
 end
 
-end
 %%%%%%%%%%%%%%%%%
 %    getStim    %
 %%%%%%%%%%%%%%%%%
@@ -1086,7 +946,7 @@ else
   disp(sprintf('(pRFFit) Using precomputed stim image'));
   stim = gpRFFitStimImage.stim;
 end
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %    applyConcatFiltering    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1123,7 +983,7 @@ tSeries = tSeries-repmat(mean(tSeries,1),size(tSeries,1),1);
 
 % make back into the right dimensions
 tSeries = tSeries(:)';
-end
+
 %%%%%%%%%%%%%
 %%   r2d   %%
 %%%%%%%%%%%%%
@@ -1141,5 +1001,4 @@ end
 % 360 degrees
 while (sum(degrees<-360))
   degrees = degrees + (degrees<-360)*360;
-end
 end
