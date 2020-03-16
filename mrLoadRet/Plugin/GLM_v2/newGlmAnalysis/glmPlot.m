@@ -207,6 +207,8 @@ for iPlot = 1:length(roi)+1
       e.hdrSte(:,:,3) = sqrt(mean(f.hdrSte.^2,3));
       e.contrastHdrSte(:,:,3) = sqrt(mean(f.contrastHdrSte.^2,3));
       
+      
+      
       % 4) as the std error of an estimate from the mean time-series (by rerunning the glm analysis)
       %buttonString{4} = 'ROI estimate standard error from ROI time-series';
       %later...
