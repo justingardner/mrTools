@@ -49,7 +49,7 @@ hemi      = {'lh', 'rh'};
 hemiNames = {'left', 'right'};
 outDir    = fullfile(pwd,'surfRelax');
 if ~exist('volumeCropSize')
-  volumeCropSize = [256 256 256];
+  volumeCropSize = [176 256 256];
 end
 defaultPixelSize = [1 1 1];
 if ~exist('pixelSize')
@@ -126,7 +126,7 @@ if mlrIsFile(anatFile)
     end
     system(commandString);
   else
-    if isfile(outFile)
+    if mlrIsFile(outFile)
       fprintf('\n(mlrImportFreesurfer) Getting voxel and volume dimensions from existing %s file\n', strcat(params.baseName, '_', 'mprage_pp', niftiExt));
       hdr = cbiReadNiftiHeader(outFile);
       params.volumeCropSize = hdr.dim(2:4);
