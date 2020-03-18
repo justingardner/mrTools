@@ -85,7 +85,7 @@ for p = 1:length(pathStr)
         s = load(pathStr{p});
         varNames = fieldnames(s);
         roi = eval(['s.',varNames{1}]);
-        %roi.name = varNames{1};
+        roi.name = varNames{1};
         % Add it to the view
         [view tf] = viewSet(view,'newROI',roi,replaceDuplicates);
 	if tf
