@@ -16,10 +16,16 @@ if ieNotDefined('sampleDelay')
   sampleDelay=sampleDuration/2;
 end
 
-if sampleDuration == 1000
+% this is to check for a bug whereby the ms to s conversion hasn't occurred
+% correctly. The manifestation of this bug hasn't been extensively tested,
+% but has been identified in multiple datasets involving TRs of 1s, or
+% after manually altering the framePeriod using setFramePeriod.m
+mytmp = ceil(log10(abs(sampleDuration)));
+if mytmp >= 3
+    disp('caught a sampleDuration bug, converting to seconds...')
     sampleDuration = sampleDuration ./ 1000; 
     sampleDelay = sampleDelay ./ 1000; 
-end% [ma] magic fix
+end
 
 
 if ieNotDefined('params')
