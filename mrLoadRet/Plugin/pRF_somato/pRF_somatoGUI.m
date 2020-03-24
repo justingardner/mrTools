@@ -1,12 +1,13 @@
-% pRFGUI.m
+% pRFGUI_somato.m
 %
-%        $Id:$ 
-%      usage: pRFGUI()
-%         by: justin gardner
+%        $Id:$
+%      usage: pRFGUI_somato()
+%         by: justin gardner / adapted for somatosensory
 %       date: 11/20/11
 %    purpose: GUI for getting params for pRF
 %
-function params = pRFGUI(varargin)
+%%
+function params = pRF_somatoGUI(varargin)
 
 % get the arguments
 params=[];groupNum=[];defaultParams=[];scanList = [];v = [];pRFFitParamsOnly=[];
@@ -75,10 +76,10 @@ for i = 1:length(analysisNames)
 end
 
 % set the parameter string
-paramsInfo = {};continueParams = [];
+paramsInfo = {};
 if ~pRFFitParamsOnly
   paramsInfo{end+1} = {'groupName',groupNames,'Name of group from which to do pRF analysis'};
-  paramsInfo{end+1} = {'saveName','pRF','File name to try to save as'};
+  paramsInfo{end+1} = {'saveName','pRF_somato','File name to try to save as'};
   paramsInfo{end+1} = {'restrict',restrict,'Restrict to the analysis to some subset of voxels. If you choose a base anatomy then it will restrict to the voxels that are on the base. If you choose an roi it will restrict the analysis to the voxels in the roi'};
 
   % if we give the option to continue an analysis
@@ -110,25 +111,23 @@ if ~pRFFitParamsOnly
 	  end
 	end
       end
-      % even though we are countinuing and could return
-      % here, we next setup the rest of the paramsInfo dialog
-      % so that we can add any parameters to pRF params that
-      % aren't in the stored parameters (this will only occur
-      % for pRF analyses which are old and don't have all new params)
+      return
     end
   end
 end
 
 %all of these parameters are for pRFFit
-paramsInfo{end+1} = {'rfType',{'gaussian','gaussian-hdr'},'Type of pRF fit. Gaussian fits a gaussian with x,y,width as parameters to each voxel. gaussian-hdr fits also the hemodynamic response with the parameters of the hdr as below.'};
+paramsInfo{end+1} = {'rfType',...
+    {'gaussian-1D','gaussian-1D-transpose', 'nine-param-hdr','sixteen-hdr','gaussian','gaussian-hdr','gaussian-surround','six-param','nine-param', 'gaussian-1D-orthotips', 'five-hdr', 'four-hdr'},...
+    'Type of pRF fit. Gaussian fits a gaussian with x,y,width as parameters to each voxel. gaussian-hdr fits also the hemodynamic response with the parameters of the hdr as below.'};
 paramsInfo{end+1} = {'betaEachScan',false,'type=checkbox','Compute a separate beta weight (scaling) for each scan in the concanetation. This may be useful if there is some reason to believe that different scans have different magnitude responses, this will allow the fit to scale the magnitude for each scan'};
-paramsInfo{end+1} = {'algorithm',{'nelder-mead','levenberg-marquardt'},'Which algorithm to use for optimization. Levenberg-marquardt seems to get stuck in local minimum, so the default is nelder-mead. However, levenberg-marquardt can set bounds for parameters, so may be better for when you are trying to fit the hdr along with the rf, since the hdr parameters can fly off to strange values.'};
+paramsInfo{end+1} = {'algorithm',{'levenberg-marquardt','nelder-mead'},'Which algorithm to use for optimization. Levenberg-marquardt seems to get stuck in local minimum, so the default is nelder-mead. However, levenberg-marquardt can set bounds for parameters, so may be better for when you are trying to fit the hdr along with the rf, since the hdr parameters can fly off to strange values.'};
 paramsInfo{end+1} = {'defaultConstraints',1,'type=checkbox','Sets how to constrain the search (i.e. what are the allowed range of stimulus parameters). The default is to constrain so that the x,y of the RF has to be within the stimulus extents (other parameter constrains will print to the matlab window). If you click this off a dialog box will come up after the stimulus has been calculated from the stimfiles allowing you to specify the constraints on the parameters of the model. You may want to custom constrain the parameters if you know something about the RFs you are trying to model (like how big they are) to keep the nonlinear fits from finding unlikely parameter estimates. Note that nelder-mead is an unconstrained fit so this will not do anything.'};
 paramsInfo{end+1} = {'prefitOnly',false,'type=checkbox','Check this if you want to ONLY do a prefit and not optimize further. The prefit computes a preset set of model parameters (x,y,rfHalfWidth) and picks the one that produces a mdoel with the highest correlation with the time series. You may want to do this to get a quick but accurate fit so that you can draw a set of ROIs for a full analysis'};
 paramsInfo{end+1} = {'quickPrefit',false,'type=checkbox','Check this if you want to do a quick prefit - this samples fewer x,y and rfWidth points. It is faster (especially if coupled with prefitOnly for a fast check), but the optimization routines may be more likely to get trapped into local minima or have to search a long time for the minimum'};
 paramsInfo{end+1} = {'verbose',true,'type=checkbox','Display verbose information during fits'};
-paramsInfo{end+1} = {'yFlipStimulus',0,'type=checkbox','Flip the stimulus image in the y-dimension. Useful if the subject viewed a stimulus through a mirror which caused the stimulus to be upside down in the y-dimension'};
-paramsInfo{end+1} = {'xFlipStimulus',0,'type=checkbox','Flip the stimulus image in the x-dimension. Useful if the subject viewed a stimulus which was flipped in the x-dimension'};
+%paramsInfo{end+1} = {'yFlipStimulus',0,'type=checkbox','Flip the stimulus image in the y-dimension. Useful if the subject viewed a stimulus through a mirror which caused the stimulus to be upside down in the y-dimension'};
+%paramsInfo{end+1} = {'xFlipStimulus',0,'type=checkbox','Flip the stimulus image in the x-dimension. Useful if the subject viewed a stimulus which was flipped in the x-dimension'};
 paramsInfo{end+1} = {'timeShiftStimulus',0,'incdec=[-1 1]','Time shift the stimulus, this is useful if the stimulus created is not correct and needs to be shifted in time (i.e. number of volumes)'};
 if ~isempty(v)
   paramsInfo{end+1} = {'dispStim',0,'type=pushbutton','buttonString=Display stimulus','Display the stimulus for scan number: dispStimScan with the current parameters','callback',@pRFGUIDispStimulus,'passParams=1','callbackArg',v};
@@ -137,7 +136,7 @@ end
 paramsInfo{end+1} = {'timelag',1,'minmax=[0 inf]','incdec=[-0.5 0.5]','The timelag of the gamma function used to model the HDR. If using gaussian-hdr, this is just the initial value and the actual value will be fit.'};
 paramsInfo{end+1} = {'tau',0.6,'minmax=[0 inf]','incdec=[-0.1 0.1]','The tau (width) of the gamma function used to model the HDR. If using gaussian-hdr, this is just the initial value and the actual value will be fit.'};
 paramsInfo{end+1} = {'exponent',6,'minmax=[0 inf]','incdec=[-1 1]','The exponent of the gamma function used to model the HDR. This is always a fixed param.'};
-paramsInfo{end+1} = {'diffOfGamma',false,'type=checkbox','Set to true if you want the HDR to be a difference of gamma functions - i.e. have a positive and a delayed negative component'};
+paramsInfo{end+1} = {'diffOfGamma',true,'type=checkbox','Set to true if you want the HDR to be a difference of gamma functions - i.e. have a positive and a delayed negative component'};
 paramsInfo{end+1} = {'amplitudeRatio',0.3,'minmax=[0 inf]','incdec=[-0.1 0.1]','Ratio of amplitude of 1st gamma to second gamma','contingent=diffOfGamma'};
 paramsInfo{end+1} = {'timelag2',2,'minmax=[0 inf]','incdec=[-0.5 0.5]','Time lag of 2nd ggamma for when you are using a difference of gamma functions','contingent=diffOfGamma'};
 paramsInfo{end+1} = {'tau2',1.2,'minmax=[0 inf]','incdec=[-0.1 0.1]','The tau (width) of the second gamma function.','contingent=diffOfGamma'};
@@ -147,26 +146,9 @@ paramsInfo{end+1} = {'saveStimImage',0,'type=checkbox','Save the stim image back
 paramsInfo{end+1} = {'recomputeStimImage',0,'type=checkbox','Even if there is an already computed stim image (see saveStimImage) above, this will force a recompute of the image. This is useful if there is an update to the code that creates the stim images and need to make sure that the stim image is recreated'};
 paramsInfo{end+1} = {'applyFiltering',1,'type=checkbox','If set to 1 then applies the same filtering that concatenation does to the model. Does not do any filtering applied by averages. If this is not a concat then does nothing besides mean subtraction. If turned off, will still do mean substraction on model.'};
 paramsInfo{end+1} = {'stimImageDiffTolerance',5,'minmax=[0 100]','incdec=[-1 1]','When averaging the stim images should be the same, but some times we are off by a frame here and there due to inconsequential timing inconsistenices. Set this to a small value, like 5 to ignore that percentage of frames of the stimulus that differ within an average. If this threshold is exceeded, the code will ask you if you want to continue - otherwise it will just print out to the buffer the number of frames that have the problem'};
-paramsInfo{end+1} = {'saveForExport',0,'type=checkbox','Creates files for export to do the pRF on systems like BrainLife. This will save a stim.nii file containing the stimulus images, a bold.nii file with the time series a mask.nii file that contains the voxel mask over which to the analysis and a pRFparams.mat file which contains various parameters'};
 
-% if we are continuing, then just add on any parameters that
-% are needed (i.e. ones that are not included in the old
-% analysis)
-if ~isempty(continueParams) && continueParams.continueAnalysis
-  % get default prams
-  defaultParams = mrParamsDefault(paramsInfo);
-  defaultParamNames = fieldnames(defaultParams);
-  % check to see which ones are missing
-  for iFieldName = 1:length(defaultParamNames)
-    % check if field exists in old params to continue from
-    if ~isfield(params.pRFFit,defaultParamNames{iFieldName}) && ~isfield(params,defaultParamNames{iFieldName})
-      % if not, then add it with default value
-      params.pRFFit.(defaultParamNames{iFieldName}) = defaultParams.(defaultParamNames{iFieldName});
-    end
-  end
-  % send back the params
-  return
-end
+paramsInfo{end+1} = {'HRFpRF',false,'type=checkbox','Set to true if you want to load in pre-computed HRFs using prfhrfRefit'};
+%paramsInfo{end+1} = {'Modality',{'somato'}};
 
 % Get parameter values
 if defaultParams
@@ -234,7 +216,7 @@ if isfield(params,'paramInfo')
     if isfield(params,topParamsInfo{i}{1})
       % and it to paramInfo
       paramsInfo{end+1} = params.paramInfo{i};
-      % add the value from params 
+      % add the value from params
       paramsInfo{end}{2} = params.(topParamsInfo{i}{1});
       % make it non editable
       paramsInfo{end}{end+1} = 'editable=0';
@@ -322,4 +304,3 @@ if ~isempty(stim)
   im = mlrImageXform(im,'flipY');
   mlrVol(im,'imageOrientation=1');
 end
-

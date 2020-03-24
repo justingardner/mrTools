@@ -1,18 +1,21 @@
-% pRFPlot.m
+% pRF_somatoPlot.m
 %
-%        $Id:$ 
-%      usage: pRFPlot(v,overlayNum,scanNum,x,y,z,,roi)
-%         by: justin gardner
-%       date: 11/22/11
+%       
+%      usage: pRF_somatoPlot(v,overlayNum,scanNum,x,y,z,,roi)
+%         originally by: justin gardner, mods by asghar / schluppeck
+%       date: 11/22/11 , 2016
 %    purpose: plot function for displaying results of pRF analysis
 %
-function pRFPlot(v,overlayNum,scanNum,x,y,z,roi)
+function pRF_somatoPlot(v,overlayNum,scanNum,x,y,z,roi)
 
 % check arguments
 if ~any(nargin == [7])
   help pRFPlot
   return
 end
+
+% load in the hrfs here...
+%thehrfs = load('hrf_grt_concat.mat');
 
 % see if the shift key is down
 %shiftDown = any(strcmp(get(viewGet(v,'figureNumber'),'CurrentModifier'),'shift'));
@@ -21,37 +24,42 @@ shiftDown = any(strcmp(get(viewGet(v,'figureNumber'),'SelectionType'),'extend'))
 % check if pRF has been run
 a = viewGet(v,'Analysis');
 if ~isfield(a,'type') || ~strcmp(a.type,'pRFAnal')
-  disp(sprintf('(pRFPlot) pRF analysis has not been run on this scan'));
+  disp(sprintf('(pRF_somatoPlot) pRF analysis has not been run on this scan'));
   return
 end
 
 % get the d
 d = viewGet(v,'d',scanNum);
-if isempty(d),disp(sprintf('(pRFPlot) Could not find d structure for this scan'));return,end
+if isempty(d),disp(sprintf('(pRF_somatoPlot) Could not find d structure for this scan'));return,end
 
 % get the parametrs of the pRF fit
 r2 = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','r2'));
 if isempty(r2)
-  disp(sprintf('(pRFPlot) pRF analysis has not been run on this scan'));
+  disp(sprintf('(pRF_somatoPlot) pRF analysis has not been run on this scan'));
   return
 end
 thisR2 = r2(x,y,z);
-polarAngle = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','polarAngle'));
-thisPolarAngle = polarAngle(x,y,z);
-eccentricity = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','eccentricity'));
-thisEccentricity = eccentricity(x,y,z);
+%polarAngle = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','polarAngle'));
+%thisPolarAngle = polarAngle(x,y,z);
+%eccentricity = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','eccentricity'));
+%thisEccentricity = eccentricity(x,y,z);
 rfHalfWidth = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','rfHalfWidth'));
 thisRfHalfWidth = rfHalfWidth(x,y,z);
+%hrfDelay = viewGet(v,'overlayData',scanNum,viewGet(v,'overlayNum','hrfDelay'));
+%thisHrfDelay = hrfDelay(x,y,z);
+
 
 % roi
 if ~shiftDown
-  pRFPlotROI(v,roi,d,a,r2,eccentricity,polarAngle,rfHalfWidth);
+  %pRFPlotROI(v,roi,d,a,r2,eccentricity,polarAngle,rfHalfWidth,hrfDelay);
+  pRFPlotROI(v,roi,d,a,r2,rfHalfWidth);
 end
 
 % get the params that have been run
 scanDims = viewGet(v,'scanDims',scanNum);
 whichVoxel = find(d.linearCoords == sub2ind(scanDims,x,y,z));
-r = d.r(whichVoxel,:);
+%r = d.r(whichVoxel,:);
+r = d.r(whichVoxel);
 
 % if no voxel has been found in precomputed analysis then do fit (or if shift is down)
 if isempty(whichVoxel) || shiftDown
@@ -64,14 +72,16 @@ if isempty(whichVoxel) || shiftDown
   if isempty(fit),return,end
   % set the overlays
   r2(x,y,z) = fit.r2;
-  polarAngle(x,y,z) = fit.polarAngle;
-  eccentricity(x,y,z) = fit.eccentricity;
+  %polarAngle(x,y,z) = fit.polarAngle;
+  %eccentricity(x,y,z) = fit.eccentricity;
   rfHalfWidth(x,y,z) = fit.std;
+  %hrfDelay(x,y,z) = fit.params(10);
   % reset the overlays
   v = viewSet(v,'overlayDataReplace',r2,'r2');
-  v = viewSet(v,'overlayDataReplace',polarAngle,'polarAngle');
-  v = viewSet(v,'overlayDataReplace',eccentricity,'eccentricity');
+  %v = viewSet(v,'overlayDataReplace',polarAngle,'polarAngle');
+  %v = viewSet(v,'overlayDataReplace',eccentricity,'eccentricity');
   v = viewSet(v,'overlayDataReplace',rfHalfWidth,'rfHalfWidth');
+  %v = viewSet(v,'overlayDataReplace',hrfDelay,'hrfDelay');
   % now refresh the display
   refreshMLRDisplay(viewGet(v,'viewNum'));
   return
@@ -84,10 +94,25 @@ else
   paramsInfo = [];
 end
 
-% get params
-m = pRFFit(v,scanNum,x,y,z,'stim',d.stim,'getModelResponse=1','params',params,'concatInfo',d.concatInfo,'fitTypeParams',a.params.pRFFit,'paramsInfo',paramsInfo);
-% and plot, set a global so that we can use the mouse to display
-% different time points
+if exist('thehrfs', 'var')
+    hrfprf = 1;
+    
+    sliceFix = 128.*128.*12;
+    thehrfs.idx_empty = thehrfs.idx_empty + sliceFix;
+        
+    whichVoxel_hrf = find(thehrfs.idx_empty == sub2ind(scanDims,x,y,z));
+    myVar = thehrfs.clean_lkj;
+    m = pRF_somatoFit(v,scanNum,x,y,z,'stim',d.stim,'getModelResponse=1','params',params,'concatInfo',d.concatInfo,'fitTypeParams',a.params.pRFFit,'paramsInfo',paramsInfo, 'hrfprf', myVar(:,whichVoxel_hrf));
+    
+else
+    % get params
+    %m = pRF_somatoFit(v,scanNum,x,y,z,'stim',d.stim,'getModelResponse=1','params',params,'concatInfo',d.concatInfo,'fitTypeParams',a.params.pRFFit,'paramsInfo',paramsInfo, 'crossVal', crossVal);
+    m = pRF_somatoFit(v,scanNum,x,y,z,'stim',d.stim,'getModelResponse=1','params',params,'concatInfo',d.concatInfo,'fitTypeParams',a.params.pRFFit,'paramsInfo',paramsInfo);
+    % and plot, set a global so that we can use the mouse to display
+    % different time points
+    
+end
+
 global gpRFPlot;
 gpRFPlot.fignum = selectGraphWin;
 
@@ -109,18 +134,27 @@ hold on
 plot(m.tSeries,'k.-');
 axis tight
 % plot model
-plot(m.modelResponse,'r-');
-if d.concatInfo.n > 1
+% DS -- need to figure out what's going on here..
+if mean(m.modelResponse(:)) < 0.1
+   plot(m.modelResponse+1,'r-');
+   disp('de-meaned data! beta each scan problems...')
+else
+   plot(m.modelResponse,'r-');
+end
+    if d.concatInfo.n > 1
   vline(d.concatInfo.runTransition(2:end,1));
 end
 xlabel('Time (volumes)');
 ylabel('BOLD (%)');
 % convert coordinates back to x,y for display
-[thisx thisy] = pol2cart(thisPolarAngle,thisEccentricity);
-title(sprintf('[%i %i %i] r^2=%0.2f polarAngle=%0.2f eccentricity=%0.2f rfHalfWidth=%0.2f %s [x=%0.2f y=%0.2f]\n%s',x,y,z,thisR2,r2d(thisPolarAngle),thisEccentricity,thisRfHalfWidth,a.params.pRFFit.rfType,thisx,thisy,num2str(r,'%0.2f ')));
+%[thisx thisy] = pol2cart(thisPolarAngle,thisEccentricity);
+%title(sprintf('[%i %i %i] r^2=%0.2f polarAngle=%0.2f eccentricity=%0.2f rfHalfWidth=%0.2f hrfDelay=%0.2f %s [x=%0.2f y=%0.2f]\n%s',x,y,z,thisR2,r2d(thisPolarAngle),thisEccentricity,thisRfHalfWidth,thisHrfDelay,a.params.pRFFit.rfType,thisx,thisy,num2str(r,'%0.2f ')));
+title(sprintf('[%i %i %i] r^2=%0.2f rfHalfWidth=%0.2f %s\n%s',x,y,z,thisR2,thisRfHalfWidth,a.params.pRFFit.rfType,num2str(r,'%0.2f ')));
 % plot the rf
 a = subplot(5,5,[10 15 20]);
 imagesc(d.stimX(:,1),d.stimY(1,:),flipud(m.rfModel'));
+colormap gray
+%colorbar
 set(a,'Box','off');
 set(a,'Color',[0.8 0.8 0.8]);
 set(a,'TickDir','out');
@@ -130,7 +164,8 @@ hold on
 hline(0,'w:');vline(0,'w:');
 % plot the canonical
 subplot(5,5,5);cla
-plot(m.canonical.time,m.canonical.hrf,'k-');
+%plot(m.canonical.time,m.canonical.hrf,'k-');
+plot(m.canonical.hrf, 'k-')
 title(sprintf('lag: %0.2f tau: %0.2f',m.p.canonical.timelag,m.p.canonical.tau));
 
 % display the stimulus images
@@ -176,9 +211,12 @@ for i = 1:5
     thisScan = gpRFPlot.d.concatInfo.whichScan(thist);
     thisVolume = gpRFPlot.d.concatInfo.whichVolume(thist);
     junkFrames = gpRFPlot.d.concatInfo.totalJunkedFrames(thisScan);
-    im(:,:,3) = flipud(0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames)');
-    im(:,:,2) = flipud(0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames)');
-    im(:,:,1) = flipud(0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames)'+0.3*gpRFPlot.rfModel');
+    % im(:,:,3) = flipud(0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames)')
+    im(:,:,3) = 0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames); %remove ticks. WD still swapped...
+    im(:,:,2) = 0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames);
+    %tempfix crossVal
+    %im(:,:,1) = 0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames)+0.3*gpRFPlot.rfModel';
+    im(:,:,1) = 0.7*gpRFPlot.d.stim{thisScan}.im(:,:,thisVolume+junkFrames)+0.3*gpRFPlot.rfModel;
     % swap and flip so that it will display correctly
     image(gpRFPlot.d.stimX(:,1),gpRFPlot.d.stimY(1,:),im,'Parent',a);
     axis image
@@ -191,7 +229,7 @@ end
 %%%%%%%%%%%%%%%%%%%%
 %    pRFPlotROI    %
 %%%%%%%%%%%%%%%%%%%%
-function pRFPlotROI(v,roi,d,a,r2,eccentricity,polarAngle,rfHalfWidth)
+function pRFPlotROI(v,roi,d,a,r2,rfHalfWidth)
 
 if length(roi)
   % check for already plotted
@@ -255,79 +293,80 @@ if length(roi)
     roiCoordsLinear = roiCoordsLinear(r2index);
     % get values for these voxels
     thisr2 = r2(roiCoordsLinear);
-    thisEccentricity = eccentricity(roiCoordsLinear);
-    thisPolarAngle = polarAngle(roiCoordsLinear);
+    %thisEccentricity = eccentricity(roiCoordsLinear);
+    %thisPolarAngle = polarAngle(roiCoordsLinear);
     thisRfHalfWidth = rfHalfWidth(roiCoordsLinear);
+    %thisHrfDelay = hrfDelay(roiCoordsLinear);
     % convert to cartesian
-    [thisX thisY] = pol2cart(thisPolarAngle,thisEccentricity);
+    %[thisX thisY] = pol2cart(thisPolarAngle,thisEccentricity);
     c = [1 1 1];
     
     % plot RF coverage
-    subplot(length(roi)*numRowsPerROI,numCols,1+(roiNum-1)*numCols*numRowsPerROI);
-    for i = 1:length(thisX)
-      if ~isnan(thisr2(i))
-        plotCircle(thisX(i),thisY(i),thisRfHalfWidth(i),1-c*thisr2(i)/max(thisr2));
-        hold on
-      end
-    end
-    xaxis(minX,maxX);
-    yaxis(minY,maxY);
-    axis square
-    hline(0);
-    vline(0);
-    xlabel('x (deg)');
-    ylabel('y (deg)');
-    title(sprintf('%s rf (r2 cutoff: %0.2f)',roi{roiNum}.name,minr2));
-    
-    % plot RF centers
-    subplot(length(roi)*numRowsPerROI,numCols,2+(roiNum-1)*numCols*numRowsPerROI);
-    for i = 1:length(thisX)
-      if ~isnan(thisr2(i))
-        plot(thisX(i),thisY(i),'k.','Color',1-c*thisr2(i)/max(thisr2), 'markersize', 10);
-        hold on
-      end
-    end
-    xaxis(minX,maxX);
-    yaxis(minY,maxY);
-    axis square
-    hline(0);
-    vline(0);
-    xlabel('x (deg)');
-    ylabel('y (deg)');
-    title(sprintf('%s centers',roi{roiNum}.name));
+%     subplot(length(roi)*numRowsPerROI,numCols,1+(roiNum-1)*numCols*numRowsPerROI);
+%     for i = 1:length(thisX)
+%       if ~isnan(thisr2(i))
+%         plotCircle(thisX(i),thisY(i),thisRfHalfWidth(i),1-c*thisr2(i)/max(thisr2));
+%         hold on
+%       end
+%     end
+%     xaxis(minX,maxX);
+%     yaxis(minY,maxY);
+%     axis square
+%     hline(0);
+%     vline(0);
+%     xlabel('x (deg)');
+%     ylabel('y (deg)');
+%     title(sprintf('%s rf (r2 cutoff: %0.2f)',roi{roiNum}.name,minr2));
+%     
+%     % plot RF centers
+%     subplot(length(roi)*numRowsPerROI,numCols,2+(roiNum-1)*numCols*numRowsPerROI);
+%     for i = 1:length(thisX)
+%       if ~isnan(thisr2(i))
+%         plot(thisX(i),thisY(i),'k.','Color',1-c*thisr2(i)/max(thisr2), 'markersize', 10);
+%         hold on
+%       end
+%     end
+%     xaxis(minX,maxX);
+%     yaxis(minY,maxY);
+%     axis square
+%     hline(0);
+%     vline(0);
+%     xlabel('x (deg)');
+%     ylabel('y (deg)');
+%     title(sprintf('%s centers',roi{roiNum}.name));
     
     % plot eccentricity vs. rfHalfWidth
-    subplot(length(roi)*numRowsPerROI,numCols,3+(roiNum-1)*numCols*numRowsPerROI);
-    for i = 1:length(thisX)
-      if ~isnan(thisr2(i))
-        plot(thisEccentricity(i),thisRfHalfWidth(i),'k.','Color',1-c*thisr2(i)/max(thisr2), 'markersize', 10);
-        hold on
-      end
-    end
-    hold on
+    %subplot(length(roi)*numRowsPerROI,numCols,3+(roiNum-1)*numCols*numRowsPerROI);
+    %for i = 1:length(thisX)
+    %  if ~isnan(thisr2(i))
+    %    plot(thisEccentricity(i),thisRfHalfWidth(i),'k.','Color',1-c*thisr2(i)/max(thisr2), 'markersize', 10);
+    %    hold on
+    %  end
+    %end
+    %hold on
     % limit the fit to the central 6 deg (b/c it is often off for higher eccentricities)
-    eccLimit = 6;
-    ind = thisEccentricity <= eccLimit;
-    if any(ind)
+    %eccLimit = 6;
+    %ind = thisEccentricity <= eccLimit;
+    %if any(ind)
 %      regfit = myregress(thisEccentricity(ind),thisRfHalfWidth(ind),0,0);
-      w = diag(thisr2(ind));
-      x = thisEccentricity(ind);
-      x = [x(:) ones(size(x(:)))];
-      y = thisRfHalfWidth(ind);
-      beta = ((x'*w*x)^-1)*(x'*w)*y';
-      maxXaxis = min(maxX,maxY);
-      xaxis(0,maxXaxis);
-      yaxis(0,maxXaxis);
-      if ~isempty(beta)
-	plot([0 maxXaxis],[0 maxXaxis]*beta(1)+beta(2),'k-');
-      end
-      xlabel('Eccentricity (deg)');
-      ylabel('RF half width (deg)');
+    %  w = diag(thisr2(ind));
+    %  x = thisEccentricity(ind);
+     % x = [x(:) ones(size(x(:)))];
+     % y = thisRfHalfWidth(ind);
+     % beta = ((x'*w*x)^-1)*(x'*w)*y';
+     % maxXaxis = min(maxX,maxY);
+     % xaxis(0,maxXaxis);
+     % yaxis(0,maxXaxis);
+     % if ~isempty(beta)
+	%plot([0 maxXaxis],[0 maxXaxis]*beta(1)+beta(2),'k-');
+    %  end
+    %  xlabel('Eccentricity (deg)');
+    %  ylabel('RF half width (deg)');
 %      title(sprintf('slope: %0.2f (%s) offset: %0.2f (%s) (r2=%0.2f)',beta(1),pvaldisp(regfit.pm),beta(2),pvaldisp(regfit.pb),regfit.r2));
-      axis square
-    else
-      disp(sprintf('(pRFPlot) No matching fits to plot with eccentricity less than %f',eccLimit));
-    end
+    %  axis square
+    %else
+    %  disp(sprintf('(pRFPlot) No matching fits to plot with eccentricity less than %f',eccLimit));
+    %end
     % plot hdr parameters, first get the voxels to plot
     [temp dCoords] = intersect(d.linearCoords,roiCoordsLinear);
     for i = 1:length(plotParams)
