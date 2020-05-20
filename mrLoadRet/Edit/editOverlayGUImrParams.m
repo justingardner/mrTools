@@ -60,6 +60,13 @@ function editOverlayGUImrParams(viewNum)
   if ~isempty(altColormaps)
     colormaps = {colormaps{:} altColormaps{:}};
   end
+  % Also, get all colormap functions located in the mrLoadRet colormap folder
+  functionsDirectory = [fileparts(which('mrLoadRet')) '/colormapFunctions/'];
+  colormapFunctionFiles =  dir([functionsDirectory '*.m']);
+  for iFile=1:length(colormapFunctionFiles)
+    colormapFunctions{iFile} = stripext(colormapFunctionFiles(iFile).name);
+  end
+  colormaps = union(colormaps,colormapFunctions,'stable');
   
   % set up params dialog
   paramsInfo = {};
