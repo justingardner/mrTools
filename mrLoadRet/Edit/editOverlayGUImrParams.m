@@ -64,7 +64,7 @@ function editOverlayGUImrParams(viewNum)
   % set up params dialog
   paramsInfo = {};
   paramsInfo{end+1} = {'overlayCmap', colormaps,'type=popupmenu','List of possible colormaps'};
-  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overlap colormap. You can specify additional input arguments after the function name, separating with commas. The user-defined function must be on the path, accept an integer representing the number of colors as its last input argument, and output a params.numColors*3 RGB colormap'};
+  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overlap colormap. The user-defined function must output a params.numColors x 3 RGB colormap and can be either an anonymous function accepting the number of color as single input argument or a function on the Matlab path accepting the number of colors as its last argument. In the latter case, additional input arguments must be specified after the function name, separated with commas. '};
   paramsInfo{end+1} = {'numColors', numColors, 'first argument to the colormap function'};
   paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function'};
   paramsInfo{end+1} = {'flipColormap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap'};
@@ -272,26 +272,34 @@ function mrCmapCallback(params,viewNum)
   % see if we need to call a function
   if ~isempty(params.userDefinedCmap)
     %parse the function name and its arguments
-    cMapFunction=textscan(params.userDefinedCmap,'%s','delimiter',',');
-    cMapFunction=cMapFunction{1};
-    
-    % look for the m function
-    if exist(sprintf('%s.m',cMapFunction{1}),'file')
-      cMapFunction{1} = str2func(cMapFunction{1}); %convert function string fo function handl
-      for iArg =2:length(cMapFunction) %if there are additional arguments, convert numerical ones
-        if ~isempty(str2num(cMapFunction{iArg}))
-          cMapFunction{iArg} = str2num(cMapFunction{iArg});
-        end
+    if params.userDefinedCmap(1)=='@' % if this is an anonyous function
+      try
+        cMapfunction = str2func(params.userDefinedCmap);
+        colormap = cMapfunction(params.numColors);
+      catch
+        fprintf('(editOverlay) Anonymous function %s returned an error\n',params.userDefinedCmap);
       end
-      cMapFunction{end+1}=params.numColors; %add number of colors as last argument
-      colormap = callbackEval(cMapFunction);
-      if isequal(size(colormap),[params.numColors 3])
-	newOverlay.colormap = colormap;
-      else
-	disp(sprintf('(editOverlay) Function %s must return a %ix%i array',params.userDefinedCmap,params.numColors,3));
+    else
+      cMapFunction=textscan(params.userDefinedCmap,'%s','delimiter',',');
+      cMapFunction=cMapFunction{1};
+      % look for the m function
+      if exist(sprintf('%s.m',cMapFunction{1}),'file')
+        cMapFunction{1} = str2func(cMapFunction{1}); %convert function string fo function handle
+        for iArg =2:length(cMapFunction) %if there are additional arguments, convert numerical ones
+          if ~isempty(str2num(cMapFunction{iArg}))
+            cMapFunction{iArg} = str2num(cMapFunction{iArg});
+          end
+        end
+        cMapFunction{end+1}=params.numColors; %add number of colors as last argument
+        colormap = callbackEval(cMapFunction);
       end
     end
-  end
+    if isequal(size(colormap),[params.numColors 3])
+      newOverlay.colormap = colormap;
+    else
+      fsprintf('(editOverlay) Function %s must return a %ix%i array\n',params.userDefinedCmap,params.numColors,3);
+    end
+ end
     
   % flip the cmap
   if params.flipColormap
