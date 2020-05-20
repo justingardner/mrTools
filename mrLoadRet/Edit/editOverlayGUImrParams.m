@@ -262,7 +262,7 @@ function mrCmapCallback(params,viewNum)
   %parameters for which the overlay has to be recomputed as a whole (this should be changed by adding cases to viewSet)
   % set which color cmap to use
   if ~strcmp(params.overlayCmap, 'default')
-    if sum(strcmp(params.overlayCmap, {'hsvDoubleCmap','cmapExtendedHSV','cmapHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap','coolCmap'}))
+    if sum(strcmp(params.overlayCmap, {'hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap','coolCmap'}))
       newOverlay.colormap = eval(sprintf('%s(%i,%i)', params.overlayCmap, params.numGrays, params.numColors));
     else
       newOverlay.colormap = eval(sprintf('%s(%i)', params.overlayCmap, params.numColors));
