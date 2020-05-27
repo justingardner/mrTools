@@ -164,12 +164,14 @@ switch action
     mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','location','/Overlays/');
     mlrAdjustGUI(thisView,'set','editOverlayMenuItem','location','/Overlays/');
     mlrAdjustGUI(thisView,'set','overlayInfoMenuItem','location','/Overlays/');
+    drawnow; % this is needed for the below menu to appear in the correct location
+    mlrAdjustGUI(thisView,'add','menu','exportOverlayScanMenuItem','/Overlays/','label','Export to NIFTI (scan space)','tag','exportOverlayScanMenuItem','callback',@exportOverlayScanMenuItem_Callback);
     mlrAdjustGUI(thisView,'set','exportOverlayMenuItem','location','/Overlays/');
     mlrAdjustGUI(thisView,'set','importOverlayMenuItem','location','/Overlays/');
     mlrAdjustGUI(thisView,'set','fileOverlayMenu','location','/Overlays/');
     mlrAdjustGUI(thisView,'set','loadOverlayMenuItem','location','/Overlays/');
     %rename menu items
-    mlrAdjustGUI(thisView,'set','exportOverlayMenuItem','label','Export');
+    mlrAdjustGUI(thisView,'set','exportOverlayMenuItem','label','Export to NIFTI (base space)');
     mlrAdjustGUI(thisView,'set','importOverlayMenuItem','label','Import');
     mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','label','Copy...');
     mlrAdjustGUI(thisView,'set','pasteOverlayMenuItem','label','Paste');
@@ -302,6 +304,16 @@ viewNum = handles.viewNum;
 v = MLR.views{viewNum};
 
 mrSaveView(v);
+
+% --------------------------------------------------------------------
+function exportOverlayScanMenuItem_Callback(hObject, eventdata, handles) %not sure why the third input argument is needed
+pathstr = putPathStrDialog(pwd,'Specify name of Nifti file to export overlay to',mrGetPref('niftiFileExtension'));
+if ~isempty(pathstr)
+  mrGlobals;
+  handles = guidata(hObject); % somehow this fails if "handles" is not an input to this function, even though it gets overwritten here
+  viewNum = handles.viewNum;
+  mrExport2SR(viewNum, pathstr,0);
+end
 
 
 
