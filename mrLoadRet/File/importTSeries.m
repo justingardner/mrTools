@@ -38,7 +38,7 @@ if ieNotDefined('params')
     end
 
     % go find the file that user wants to load here
-    [filename, pathname] = uigetfile({'*.nii;*.img','Nifti files'},'Select nifti tSeries that you want to import','multiselect','on');
+    [filename, pathname] = uigetfile({'*.nii;*.img;*.nii.gz','Nifti files'},'Select nifti tSeries that you want to import','multiselect','on');
 
     if isnumeric(filename)
       return
@@ -64,7 +64,7 @@ weirdFramePeriods = 0;
 
 for iFile = 1:length(filename)
   
-  if ~isempty(strfind(stripext(filename{iFile}),'.'))
+  if contains(stripext(filename{iFile}),'.') && ~contains(filename{iFile},'.nii.gz') %make an exception for gziped NIFTI files
     [~,name,extension] = fileparts(filename{iFile});
     mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename{iFile},setext(fixBadChars(name,{'.','_'}),extension)));
   else
