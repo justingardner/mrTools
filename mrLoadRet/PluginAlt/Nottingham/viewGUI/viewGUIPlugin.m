@@ -203,20 +203,21 @@ switch action
     mlrAdjustGUI(thisView,'set','exportROIfreesurferMenuItem','location','/ROI/Export/');
     mlrAdjustGUI(thisView,'set','exportROIMenuItem','location','/ROI/Export/');
     mlrAdjustGUI(thisView,'add','menu','importROIMenu','/ROI/','label','Import','tag','importROIMenu','separator','on');
-    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','location','/ROI/Import/');
-    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','separator','off');
     mlrAdjustGUI(thisView,'set','importROIMenuItem','location','/ROI/Import/');
     mlrAdjustGUI(thisView,'set','importROIMenuItem','separator','off');
+    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','location','/ROI/Import/');
+    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','separator','off');
+    mlrAdjustGUI(thisView,'add','menu','importROIfromNiftiMenuItem','/ROI/Import/','label','from Nifti file','tag','importROIfromNiftiMenuItem','callback',@importROIfromNifti_Callback);
     mlrAdjustGUI(thisView,'set','fileRoiMenu','location','/ROI/');
     mlrAdjustGUI(thisView,'set','loadFromVolumeDirectoryROIMenuItem','location','/ROI/');
     mlrAdjustGUI(thisView,'set','loadROIMenuItem','location','/ROI/');
     mlrAdjustGUI(thisView,'set','createRoiMenu','location','/ROI/');
     mlrAdjustGUI(thisView,'set','convertCorticalDepthRoiMenuItem','location','/ROI/Restrict');
     %rename menu items
+    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','label','from Freesurfer label file');
+    mlrAdjustGUI(thisView,'set','importROIMenuItem','label','from mrLoadRet v3.1-v4.5');
     mlrAdjustGUI(thisView,'set','exportROIfreesurferMenuItem','label','to Freesurfer Label format');
     mlrAdjustGUI(thisView,'set','exportROIMenuItem','label','to NIFTI format');
-    mlrAdjustGUI(thisView,'set','Import Freesurfer Label','label','from Freesurfer label file');
-    mlrAdjustGUI(thisView,'set','importROIMenuItem','label','from NIFTI file');
 %     mlrAdjustGUI(thisView,'set','copyRoiMenuItem','label','Copy selected');
 %     mlrAdjustGUI(thisView,'set','pasteRoiMenuItem','label','Paste');
     mlrAdjustGUI(thisView,'set','editRoiMenu','label','Edit');
@@ -314,6 +315,15 @@ if ~isempty(pathstr)
   viewNum = handles.viewNum;
   mrExport2SR(viewNum, pathstr,0);
 end
+
+% --------------------------------------------------------------------
+function importROIfromNifti_Callback(hObject, eventdata)
+mrGlobals;
+handles = guidata(hObject);
+viewNum = handles.viewNum;
+v = MLR.views{viewNum};
+params.from = 'nifti';
+importROI(v,params);
 
 
 

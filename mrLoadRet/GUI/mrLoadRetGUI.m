@@ -877,7 +877,7 @@ function importROIMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-view = importROI(view);
+importROI(view);
 
 % --------------------------------------------------------------------
 function saveROIMenuItem_Callback(hObject, eventdata, handles)
