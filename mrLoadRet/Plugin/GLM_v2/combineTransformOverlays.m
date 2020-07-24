@@ -226,7 +226,9 @@ end
 if params.alphaClip
   alphaOverlayNum = zeros(1,length(overlayData));
   for iOverlay = 1:length(overlayData)
-    alphaOverlayNum(iOverlay) = viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay);
+    if ~isempty(viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay))
+      alphaOverlayNum(iOverlay) = viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay);
+    end
   end
   mask = maskOverlay(thisView,alphaOverlayNum,1:nScans,boxInfo);
   for iScan = 1:length(mask)
@@ -486,79 +488,18 @@ if params.nOutputOverlays
   end
 
   %pre-compute coordinates map to put values back from base space to overlay space
-  if params.baseSpace && ~params.exportToNewGroup && any(any((base2scan - eye(4))>1e-6)) 
-    overlayIndexMap=cell(nScans,1);
-    overlayCoordsMap=cell(nScans,1);
-    baseCoordsOverlay=cell(nScans,1);
-    for iScan=1:nScans
-      if ~isempty(baseCoordsMap{iScan})
-        %make a coordinate map of which overlay voxel each base map voxel corresponds to (convert base coordmap to overlay coord map)
-        baseCoordsMap{iScan} = reshape(baseCoordsMap{iScan},numel(baseCoordsMap{iScan})/3,3);
-        overlayCoordsMap{iScan} = (base2scan*[baseCoordsMap{iScan}';ones(1,size(baseCoordsMap{iScan},1))])';
-        overlayCoordsMap{iScan} = overlayCoordsMap{iScan}(:,1:3);
-        overlayCoordsMap{iScan}(all(~overlayCoordsMap{iScan},2),:)=NaN;
-        overlayCoordsMap{iScan} = round(overlayCoordsMap{iScan});
-        scanDims = viewGet(thisView,'dims',iScan);
-        overlayCoordsMap{iScan}(any(overlayCoordsMap{iScan}>repmat(scanDims,size(overlayCoordsMap{iScan},1),1)|overlayCoordsMap{iScan}<1,2),:)=NaN;
-        %convert overlay coordinates to overlay indices for manipulation ease
-        overlayIndexMap{iScan} = sub2ind(scanDims, overlayCoordsMap{iScan}(:,1), overlayCoordsMap{iScan}(:,2), overlayCoordsMap{iScan}(:,3));
-
-        %now make a coordinate map of which base map voxels each overlay index corresponds to
-        %(there will be several maps because each overlay voxels might correspond to several base voxels)
-
-    % %       %METHOD 1
-    % %       %sort base indices
-    % %       [sortedOverlayIndices,whichBaseIndices] = sort(overlayIndexMap{iScan});
-    % %       %remove NaNs (which should be at the end of the vector)
-    % %       whichBaseIndices(isnan(sortedOverlayIndices))=[];
-    % %       sortedOverlayIndices(isnan(sortedOverlayIndices))=[];
-    % %       %find the first instance of each unique index
-    % %       firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
-    % %       firstInstances = [true;firstInstances];
-    % %       %get the unique overlay indices
-    % %       uniqueOverlayIndices = sortedOverlayIndices(firstInstances);
-    % %       %compute the number of instances for each  unique overlay index (= number
-    % %       %of base different indices for each unique overlay index)
-    % %       numberInstances = diff(find([firstInstances;true]));
-    % %       maxInstances = max(numberInstances);
-    % %       baseCoordsOverlay2{iScan} = sparse(prod(scanDims),maxInstances);
-    % %       hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
-    % %       %for each unique overlay index, find all the corresponding base indices
-    % %       for i = 1:length(uniqueOverlayIndices)
-    % %         mrWaitBar( i/length(uniqueOverlayIndices), hWaitBar);
-    % %         theseBaseIndices = whichBaseIndices(sortedOverlayIndices==uniqueOverlayIndices(i));
-    % %         baseCoordsOverlay2{iScan}(uniqueOverlayIndices(i),1:length(theseBaseIndices))=theseBaseIndices';
-    % %       end
-    % %       mrCloseDlg(hWaitBar);
-
-        %METHOD 2 (faster)
-        %first find the maximum number of base voxels corresponding to a single overlay voxel (this is modified from function 'unique')
-        %sort base non-NaN indices
-        sortedIndices = sort(overlayIndexMap{iScan}(~isnan(overlayIndexMap{iScan})));
-        %find the first instance of each unique index
-        firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
-        firstInstances = [true;firstInstances];
-        %compute the number of instances for each unique overlay index 
-        %(= number of base different indices for each unique overlay index)
-        numberInstances = diff(find([firstInstances;true]));
-        maxInstances = max(numberInstances);
-        baseCoordsOverlay{iScan} = sparse(prod(scanDims),maxInstances);
-        %Now for each set of unique overlay indices, find the corresponding base indices
-        hWaitBar = mrWaitBar(-inf,'(combineTransformOverlays) Creating base coordinates overlay map for scan');
-        for i=1:maxInstances
-          mrWaitBar( i/maxInstances, hWaitBar);
-          %find set of unique instances of overlay indices
-          [uniqueOverlayIndices, whichBaseIndices]= unique(overlayIndexMap{iScan});
-          %remove NaNs
-          whichBaseIndices(isnan(uniqueOverlayIndices))=[];
-          uniqueOverlayIndices(isnan(uniqueOverlayIndices))=[];
-          %for each overlay voxel found, set the corresponding base index
-          baseCoordsOverlay{iScan}(uniqueOverlayIndices,i)=whichBaseIndices;
-          %remove instances that were found from the overlay index map before going through the loop again
-          overlayIndexMap{iScan}(whichBaseIndices)=NaN;
+  if params.baseSpace && ~params.exportToNewGroup && (any(any((base2scan - eye(4))>1e-6)) || baseType > 0)
+    if viewGet(thisView,'basetype')==1
+      baseCoordsOverlay=cell(nScans,1);
+      for iScan=1:nScans
+        scanDims{iScan} = viewGet(thisView,'dims',iScan);
+        if ~isempty(baseCoordsMap{iScan})
+          %make a coordinate map of which overlay voxel each base map voxel corresponds to (convert base coordmap to overlay coord map)
+          baseCoordsOverlay{iScan} = inverseBaseCoordMap(baseCoordsMap{iScan},scanDims{iScan},base2scan);
         end
       end
-      mrCloseDlg(hWaitBar);
+    else
+      keyboard %not implemented
     end
   end
 
@@ -662,20 +603,21 @@ if params.nOutputOverlays
         maxValue = max(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data<inf));
         minValue = min(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data>-inf));
     end
-    if ~params.exportToNewGroup && params.baseSpace && any(any((base2scan - eye(4))>1e-6)) %put back into scan/overlay space
+    if ~params.exportToNewGroup && params.baseSpace && (any(any((base2scan - eye(4))>1e-6)) || baseType > 0) %put back into scan/overlay space
       for iScan=1:nScans
         if ~isempty(outputOverlay(iOverlay).data{iScan}) 
           if viewGet(thisView,'basetype')==1
-            data = zeros(scanDims);
-            datapoints=zeros(prod(scanDims),1);
-            for i=1:size(baseCoordsOverlay{iScan},2)
-              thisBaseCoordsMap = full(baseCoordsOverlay{iScan}(:,i));
-              data(logical(thisBaseCoordsMap)) = data(logical(thisBaseCoordsMap)) + ...
-                    outputOverlay(iOverlay).data{iScan}(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
-              datapoints = datapoints+logical(thisBaseCoordsMap);
-            end
-            datapoints = reshape(datapoints,scanDims);
-            outputOverlay(iOverlay).data{iScan} = data ./datapoints;
+%             data = zeros(scanDims{iScan});
+%             datapoints=zeros(prod(scanDims{iScan}),1);
+%             for i=1:size(baseCoordsOverlay{iScan},2)
+%               thisBaseCoordsMap = full(baseCoordsOverlay{iScan}(:,i));
+%               data(logical(thisBaseCoordsMap)) = data(logical(thisBaseCoordsMap)) + ...
+%                     outputOverlay(iOverlay).data{iScan}(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
+%               datapoints = datapoints+logical(thisBaseCoordsMap);
+%             end
+%             datapoints = reshape(datapoints,scanDims{iScan});
+%             outputOverlay(iOverlay).data{iScan} = data ./datapoints;
+            outputOverlay(iOverlay).data{iScan} = applyInverseBaseCoordMap(baseCoordsOverlay{iScan},scanDims{iScan},outputOverlay(iOverlay).data{iScan});
           else
             keyboard %not implemented
           end
