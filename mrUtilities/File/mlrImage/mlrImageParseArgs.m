@@ -131,7 +131,7 @@ while iArg <= nArgs
 	[iArg imageArgs{end}.altArgs] = getOtherArgs(args,iArg,altArgs,imageArgs{end}.altArgs);
       end
     end
-  elseif isview(args{iArg})
+  elseif isview(args{iArg},false)
     % if we have a view then collect any additional qualifying
     % arguments-look for scanNum and groupNum args that can get passed to getArgs
     jArg = iArg+1;
