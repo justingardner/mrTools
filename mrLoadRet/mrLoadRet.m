@@ -16,12 +16,19 @@
 % to load a different mrLastView
 % mrLoadRet('mrLastView2');
 %
-function [v]= mrLoadRet(mrLastView)
+% to load without the GUI
+% mrLoadRet([],'No GUI');
+
+function [v]= mrLoadRet(mrLastView,mode)
 
 % default to 
-if nargin < 1
+if ieNotDefined('mrLastView')
   mrLastView = 'mrLastView.mat';
 end
+if ieNotDefined('mode')
+  mode = 'normal';
+end
+
 if ~mlrIsFile('mrSession.mat')
   disp('(mrLoadRet) No mrSession.mat found in current directory');
   return
@@ -48,4 +55,4 @@ if isempty(strfind(pwd,viewGet([],'homeDir')))
 end
 
 % Open inplane window
-v = mrOpenWindow('Volume',mrLastView);
+v = mrOpenWindow('Volume',mrLastView,strcmp(mode,'No GUI'));

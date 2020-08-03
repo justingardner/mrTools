@@ -18,6 +18,10 @@ viewNum = viewGet(v,'viewNum');
 fig = viewGet(v,'figNum');
 if ~isempty(fig)
   gui = guidata(fig);
+elseif nargout>0
+  gui.axis = [];
+else
+  return  % if there is no GUI and no output arguments, then there is nothing to do
 end
 baseNum = viewGet(v,'currentBase');
 baseType = viewGet(v,'baseType');
@@ -155,7 +159,7 @@ else
 end
 
 % turn on 3D free rotate if we are just displaying the one 3D axis
-if ~mrInterrogator('isactive',viewNum)
+if ~isempty(fig) && ~mrInterrogator('isactive',viewNum)
   if (baseType == 2) || (baseMultiAxis == 2)
     mlrSetRotate3d(v,'on');
   else
@@ -163,7 +167,9 @@ if ~mrInterrogator('isactive',viewNum)
   end
 end
 
-axes(gui.axis);
+if ~isempty(gui.axis)
+  axes(gui.axis);
+end
 
 % draw any other base that has multiDisplay set
 % do this for surfaces for now or for 3D anatomies
@@ -180,27 +186,33 @@ if (baseType >= 2) || ((baseType == 0) && (baseMultiAxis>0))
   end
 end
 
-if (baseType == 0) && (baseMultiAxis>0)
-  % set the camera target to center of the volume
-  camtarget(gui.axis,baseDims([2 1 3])/2)
+if ~isempty(gui.axis)
+  if (baseType == 0) && (baseMultiAxis>0)
+    % set the camera target to center of the volume
+    camtarget(gui.axis,baseDims([2 1 3])/2)
+  end
 end
 
 if verbose>1,disppercent(-inf,'rendering');end
-%this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
-%In cases where it is more than the number of overlay names in the box
-%it has to be changed, but it is necessary to wait until drawnow before changing it  
-%otherwise the change is not taken into account
-%Even in this case, It still outputs a warning, that has to be disabled
-if strcmp(get(gui.overlayPopup,'style'),'listbox')
-  warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
-  set(gui.overlayPopup,'ListboxTop',min(get(gui.overlayPopup,'ListboxTop'),length(get(gui.overlayPopup,'string'))));
+
+if ~isempty(fig)
+  %this is really stupid: the ListboxTop property of listbox controls seems to be updated only when the control is drawn
+  %In cases where it is more than the number of overlay names in the box
+  %it has to be changed, but it is necessary to wait until drawnow before changing it
+  %otherwise the change is not taken into account
+  %Even in this case, It still outputs a warning, that has to be disabled
+  if strcmp(get(gui.overlayPopup,'style'),'listbox')
+    warning('off','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+    set(gui.overlayPopup,'ListboxTop',min(get(gui.overlayPopup,'ListboxTop'),length(get(gui.overlayPopup,'string'))));
+  end
+
+  %draw the figure
+  drawnow('update');
+  if strcmp(get(gui.overlayPopup,'style'),'listbox')
+    warning('on','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
+  end
 end
 
-%draw the figure
-drawnow('update');
-if strcmp(get(gui.overlayPopup,'style'),'listbox')
-  warning('on','MATLAB:hg:uicontrol:ListboxTopMustBeWithinStringRange');
-end
 if verbose>1,disppercent(inf);end
 if verbose,toc,end
 
@@ -404,7 +416,7 @@ if isempty(fig)
   nROIs = viewGet(v,'numberOfROIs');
   if nROIs
     %  if baseType <= 1
-    roi = displayROIs(v,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
+    roi = displayROIs(v,hAxis,slice,sliceIndex,baseNum,base.coordsHomogeneous,base.dims,rotate,verbose);
     %  end
   else
     roi = [];
@@ -419,8 +431,8 @@ if dispColorbar
   displayColorbar(gui,cmap,cbarRange,verbose)
 end
 
-% if we are not displaying then, just return
-% after computing rois
+% if we are not displaying then, just return    %JB: this seems redundant with the previous, identical, block of code
+% after computing rois                          %     Does it ever happen that there is a figure, but the axis is empty? (a figure with just a color bar?)
 if isempty(hAxis)
   % just compute the axis (displayROIs will not draw
   % if hAxis is set to empty. We need the ROI x,y for
