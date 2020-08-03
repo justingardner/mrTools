@@ -191,6 +191,12 @@ while iArg <= nArgs
 	iArg = iArg+1;
       end
     end
+  elseif iscell(args{iArg})
+    % expand cell into args cell array
+    args = [args(1:iArg-1) args{iArg} args(iArg+1:end)];
+    nArgs = length(args);
+  else
+    mrErrorDlg('(mlrImageParseArg) Unknown argument type)');
   end
 end
 
