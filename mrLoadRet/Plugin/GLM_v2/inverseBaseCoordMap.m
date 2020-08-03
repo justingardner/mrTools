@@ -12,22 +12,23 @@
 %   Taken out of combineTransformOverlays.m (22/07/2020)
 
 
-function flat2volumeMap = inverseBaseCoordMap(baseCoordsMap,volumeDims,xform)
+function flat2volumeMap = inverseBaseCoordMap(coordsMap,volumeDims,xform)
 
 if ieNotDefined('xform')
   xform = eye(4);
 end
-baseCoordsMap = reshape(baseCoordsMap,numel(baseCoordsMap)/3,3);
-overlayCoordsMap = (xform*[baseCoordsMap';ones(1,size(baseCoordsMap,1))])';
-overlayCoordsMap = overlayCoordsMap(:,1:3);
-overlayCoordsMap(all(~overlayCoordsMap,2),:)=NaN;
-overlayCoordsMap = round(overlayCoordsMap);
-overlayCoordsMap(any(overlayCoordsMap>repmat(volumeDims,size(overlayCoordsMap,1),1)|overlayCoordsMap<1,2),:)=NaN;
-%convert overlay coordinates to overlay indices for manipulation ease
-overlayIndexMap = sub2ind(volumeDims, overlayCoordsMap(:,1), overlayCoordsMap(:,2), overlayCoordsMap(:,3));
+coordsMap = reshape(coordsMap,numel(coordsMap)/3,3);
+coordsMap = (xform*[coordsMap';ones(1,size(coordsMap,1))])';
+coordsMap = coordsMap(:,1:3);
+coordsMap(all(~coordsMap,2),:)=NaN;
+coordsMap = round(coordsMap);
+coordsMap(any(coordsMap>repmat(volumeDims,size(coordsMap,1),1)|coordsMap<1,2),:)=NaN;
+% convert overlay coordinates to overlay indices for manipulation ease
+overlayIndexMap = sub2ind(volumeDims, coordsMap(:,1), coordsMap(:,2), coordsMap(:,3));
+clearvars('coordsMap'); % save memory
 
-%now make a coordinate map of which base map voxels each overlay index corresponds to
-%(there will be several maps because each overlay voxels might correspond to several base voxels)
+% now make a coordinate map of which base map voxels each overlay index corresponds to
+% (there will be several maps because each overlay voxels might correspond to several base voxels)
 
 % %       %METHOD 1
 % %       %sort base indices
@@ -54,30 +55,45 @@ overlayIndexMap = sub2ind(volumeDims, overlayCoordsMap(:,1), overlayCoordsMap(:,
 % %       end
 % %       mrCloseDlg(hWaitBar);
 
-%METHOD 2 (faster)
-%first find the maximum number of base voxels corresponding to a single overlay voxel (this is modified from function 'unique')
-%sort base non-NaN indices
+% METHOD 2 (faster)
+% first find the maximum number of base voxels corresponding to a single overlay voxel (this is modified from function 'unique')
+% sort base non-NaN indices
 sortedIndices = sort(overlayIndexMap(~isnan(overlayIndexMap)));
-%find the first instance of each unique index
+nBaseVoxels = numel(sortedIndices);
+% find the first instance of each unique index
 firstInstances = sortedIndices(1:end-1) ~= sortedIndices(2:end);
 firstInstances = [true;firstInstances];
-%compute the number of instances for each unique overlay index
-%(= number of base different indices for each unique overlay index)
+% compute the number of instances for each unique overlay index
+% (= number of different base indices for each unique overlay index)
 numberInstances = diff(find([firstInstances;true]));
 maxInstances = max(numberInstances);
-flat2volumeMap = sparse(prod(volumeDims),maxInstances);
-%Now for each set of unique overlay indices, find the corresponding base indices
-hWaitBar = mrWaitBar(-inf,'(inverseBaseCoordMap) Computing inverse baseCoordMap');
+% Now for each set of unique overlay indices, find the corresponding base indices
+hWaitBar = mrWaitBar(-inf,'(inverseBaseCoordMap) Inverting baseCoordMap');
+% flat2volumeMap = sparse(prod(volumeDims),maxInstances); % I used to create the sparse mapping matrix,
+% % but supposedly it's faster to first gather the matrix's indices and data and create it later (doesn't
+% % make much of a difference though, presumably because I minimized the number of iteratiosnin the loop)
+allUniqueOverlayIndices = zeros(nBaseVoxels,1);
+allWhichBaseIndices = zeros(nBaseVoxels,1);
+allInstances = zeros(nBaseVoxels,1);
+n = 0;
 for i=1:maxInstances
   mrWaitBar( i/maxInstances, hWaitBar);
-  %find set of unique instances of overlay indices
+  % find set of unique instances of overlay indices
   [uniqueOverlayIndices, whichBaseIndices]= unique(overlayIndexMap);
-  %remove NaNs
+  % remove NaNs
   whichBaseIndices(isnan(uniqueOverlayIndices))=[];
   uniqueOverlayIndices(isnan(uniqueOverlayIndices))=[];
-  %for each overlay voxel found, set the corresponding base index
-  flat2volumeMap(uniqueOverlayIndices,i)=whichBaseIndices;
-  %remove instances that were found from the overlay index map before going through the loop again
+  nUniqueIndices = length(whichBaseIndices);
+  % keep aside to fill sparse matrix later
+  allUniqueOverlayIndices(n+(1:nUniqueIndices)) = uniqueOverlayIndices;
+  allWhichBaseIndices(n+(1:nUniqueIndices)) = whichBaseIndices;
+  allInstances(n+(1:nUniqueIndices)) = i;
+%   % for each overlay voxel found, set the corresponding base index
+%   flat2volumeMap(uniqueOverlayIndices,i)=whichBaseIndices;
+  % remove instances that were found from the overlay index map before going through the loop again
   overlayIndexMap(whichBaseIndices)=NaN;
+  n = n+nUniqueIndices;
 end
+% fill the sparse matrix
+flat2volumeMap = sparse(allUniqueOverlayIndices,allInstances,allWhichBaseIndices,prod(volumeDims),maxInstances);
 mrCloseDlg(hWaitBar);
