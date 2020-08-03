@@ -92,8 +92,8 @@ session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pu
 % create groups variables
 groups.name = defaultGroup;
 groups.scanParams = [];
-[tf groups] = isgroup(groups);
+[tf, groups] = isgroup(groups);
 
 % save the mrSession
-eval(sprintf('save %s session groups',fullfile(dirname,'mrSession.mat')));
+save(fullfile(dirname,'mrSession.mat'), 'session', 'groups');
 
