@@ -1,3 +1,6 @@
+%
+% function smoothed = spatialSmooth(overlay,FWHM)
+%
 % spatialSmooth.m: spatially smooth overlay with a 3D gaussian of given FWHM (in voxels)
 %
 %        $Id: spatialSmooth.m 2733 2013-05-13 11:47:54Z julien $
