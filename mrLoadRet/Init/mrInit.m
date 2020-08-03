@@ -1,6 +1,6 @@
 % mrInit.m
 %
-%      usage: mrInit(<sessionParams>,<groupParams>,<justGetParams=1>,<defaultParams=1>)
+%      usage: mrInit(<sessionParams>,<groupParams>,<justGetParams=1>,<defaultParams=1>,<'makeReadme=0'>,<'noPrompt=1'>)
 %         by: justin gardner
 %       date: 06/09/08
 %    purpose: Init the session variables. usually just call with no arguments
@@ -20,13 +20,15 @@
 %             and then call mrInit again to set the parameters (useful for scripting)
 %             mrInit(sessionParams,groupParams);
 %
+%             Setting noPrompt=1 will replace any existing mrSession.mat without prompting (for scripting)
+%             
 %             You can use mrSetPref to set preferences for magnet/coil and pulseSequence names
 %             that will come down as choices in the GUI
 %
-function [sessionParams groupParams] = mrInit(sessionParams,groupParams,varargin)
+function [sessionParams, groupParams] = mrInit(sessionParams,groupParams,varargin)
 
 % check arguments
-getArgs(varargin,{'justGetParams=0','defaultParams=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]','stimfileMatchList=[]'});
+getArgs(varargin,{'justGetParams=0','defaultParams=0','noPrompt=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]','stimfileMatchList=[]'});
 
 minFramePeriod = .01;  %frame period in sec outside which the user is prompted
 maxFramePeriod = 100;  % that something weird's goin on
@@ -277,15 +279,15 @@ if ~justGetParams
     
     % check for mrSession
     if mlrIsFile('mrSession.mat')
-      if askuser('(mrInit) mrSession.mat already exists. Overwrite?');
-	disp(sprintf('(mrInit) Copying old mrSession.mat mrSession.old.mat'));
-	movefile('mrSession.mat','mrSession.old.mat');
-	disp(sprintf('(mrInit) Saving new mrSession'));
-	save mrSession session groups;
-	% disp(sprintf('(mrInit) Creating new Readme'));
-	if makeReadme
-	  mrReadme(session, groups);
-	end
+      if noPrompt || askuser('(mrInit) mrSession.mat already exists. Replace?');
+        disp(sprintf('(mrInit) Copying old mrSession.mat mrSession.old.mat'));
+        movefile('mrSession.mat','mrSession.old.mat');
+        disp(sprintf('(mrInit) Saving new mrSession'));
+        save mrSession session groups;
+        % disp(sprintf('(mrInit) Creating new Readme'));
+        if makeReadme
+          mrReadme(session, groups);
+        end
       end
     else
       disp(sprintf('(mrInit) Saving new mrSession'));
