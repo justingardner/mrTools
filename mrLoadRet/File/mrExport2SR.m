@@ -1,4 +1,4 @@
-function[] = mrExport2SR(viewNum, pathstr, baseNum)
+function [overlayData,hdr] = mrExport2SR(viewNum, pathstr, baseNum)
 % mrExport2SR.m
 %
 %      usage: [] = mrExprt2SR(viewNum, pathstr)
@@ -51,5 +51,7 @@ if isempty(niftiFileExtension)
   niftiFileExtension = '.img';
 end
 
-%write nifti file
-mlrImageSave(sprintf('%s%s',stripext(pathstr),niftiFileExtension),overlayData,hdr)
+if ~ieNotDefined('pathstr') || nargout>0
+  %write nifti file
+  mlrImageSave(sprintf('%s%s',stripext(pathstr),niftiFileExtension),overlayData,hdr)
+end
