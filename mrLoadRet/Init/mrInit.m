@@ -93,19 +93,30 @@ if ieNotDefined('groupParams')
   if mlrIsFile('mrSession.mat')
     load mrSession;
     nScans = length(groups(1).scanParams);
-    for i = 1:nScans
-      scanNames{i} = groups(1).scanParams(i).fileName;
-      descriptions{i} = groups(1).scanParams(i).description;
-      totalFrames{i} = groups(1).scanParams(i).totalFrames;
-      nFrames{i} = groups(1).scanParams(i).nFrames;
-      junkFrames{i} = groups(1).scanParams(i).junkFrames;
+    if nScans>0
+      for i = 1:nScans
+        scanNames{i} = groups(1).scanParams(i).fileName;
+        descriptions{i} = groups(1).scanParams(i).description;
+        totalFrames{i} = groups(1).scanParams(i).totalFrames;
+        nFrames{i} = groups(1).scanParams(i).nFrames;
+        junkFrames{i} = groups(1).scanParams(i).junkFrames;
+      end
+      populateScanParams = false;
+    else
+      populateScanParams = true;
     end
+    defaultGroupName = groups(1).name;
   else
+    populateScanParams = true;
+    defaultGroupName = 'Raw';
+  end
+  
+  if populateScanParams
     % get info about scans that live in Raw/TSeries
-    scanDirName = fullfile('Raw','TSeries');
+    scanDirName = fullfile(defaultGroupName,'TSeries');
     scanFilenames = mlrImageGetAllFilenames(scanDirName,'mustNotHaveDotInFilename=1');
     nScans=0;scanNames = {};descriptions = {};totalFrames = {};nFrames = {};junkFrames = {};
-    for i = 1:length(scanFilenames);
+    for i = 1:length(scanFilenames)
       % read the nifti header
       imageHeader = mlrImageHeaderLoad(fullfile(scanDirName,scanFilenames{i}));
       if ismember(imageHeader.nDim,[3 4])
@@ -135,7 +146,8 @@ if ieNotDefined('groupParams')
   
   % setup params dialog
   paramsInfo = {};
-  paramsInfo{end+1} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'The scanNumber','editable=0'};
+  paramsInfo{end+1} = {'defaultGroupName',defaultGroupName,'type=string','The default MLR group','editable=0'};
+  paramsInfo{end+1} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'Number of scans in the default group','editable=0'};
   paramsInfo{end+1} = {'name',scanNames,'group=scanNum','type=string','editable=0','Names of scans'};
   paramsInfo{end+1} = {'totalFrames',totalFrames,'group=scanNum','type=numeric','Number of frames in scan','editable=0'};
   paramsInfo{end+1} = {'description',descriptions,'group=scanNum','type=string','Description of scans'};
@@ -198,9 +210,13 @@ if ~justGetParams
     session.coil = sessionParams.coil;
     session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pulseSequenceText);
     % create groups variables
-    groups(1).name = 'Raw';
+    if fieldIsNotDefined(groupParams,'defaultGroupName')
+      groups(1).name = 'Raw';
+    else
+      groups(1).name = groupParams.defaultGroupName;
+    end
     scanParams = [];
-    tseriesDir = 'Raw/TSeries';
+    tseriesDir = fullfile(groups(1).name,'TSeries');
     for iScan=1:length(groupParams.totalFrames)
       name = fullfile(tseriesDir, groupParams.name{iScan});
       hdr = mlrImageReadNiftiHeader(name);
