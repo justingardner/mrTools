@@ -13,7 +13,7 @@
 %     output: left and right GM and WM surfaces with mesh of one subject
 %             and coordinates of the other, and vice-versa
 
-function [subjPath,fsaveragePath] = remapSurfaces(fssubject,fsaverage,force)
+function [subjPath,fsaveragePath] = remapSurfaces(fssubject,fsaverage,force, dryRun)
 
 freesurferSubjdir = [];
 subjPath = [];
@@ -24,12 +24,17 @@ end
 if ieNotDefined('force')
   force = false;
 end
+if ieNotDefined('dryRun')
+  dryRun = false;
+end
 
 if isempty(freesurferSubjdir) || ispc
   freesurferSubjdir = mrGetPref('volumeDirectory');
   if isempty(freesurferSubjdir)
     mrWarnDlg('(remapSurfaces) Cannot find the location of Freesurfer subject directory. Check your MR preferences using mrGetPref, or set Freesurfer''s environment variable SUBJECTS_DIR (Linux or Mac)');
-    return
+    if ~dryRun
+      return
+    end
   end
   fprintf('(remapSurfaces) Assuming that the Freesurfer subject directory is %s\n',freesurferSubjdir);
 end
@@ -38,111 +43,122 @@ subjPath = [freesurferSubjdir '/' fssubject];
 if isempty(dir(subjPath))
   mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fssubject ' does not exist']);
   subjPath = [];
-  return
+  if ~dryRun
+    return
+  end
 end
 fsaveragePath = [freesurferSubjdir '/' fsaverage];
 if isempty(dir(fsaveragePath))
   mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fsaverage ' does not exist']);
   fsaveragePath = [];
-  return
+  if ~dryRun
+    return
+  end
 end
 
 if isempty(dir([subjPath '/surfRelax']))
   mrWarnDlg(['(remapSurfaces) surfRelax folder does not exist in ' subjPath '. You must first run mlrImportFreesurfer.']);
   subjPath = [];
-  return
+  if ~dryRun
+    return
+  end
 end
 
 if isempty(dir([fsaveragePath '/surfRelax']))
   mrWarnDlg(['(remapSurfaces) surfRelax folder does not exist in ' fsaveragePath '. You must first run mlrImportFreesurfer.']);
   fsaveragePath = [];
-  return
+  if ~dryRun
+    return
+  end
 end
         
 if exist(fullfile(subjPath,'/surfRelax/',[fssubject '_left_GM_' fsaverage '.off']),'file') && ~force
   mrWarnDlg(sprintf('(remapSurfaces) Mapping between Freesurfer subjects %s and %s already exists, use optional argument <force> to recompute',fssubject,fsaverage));
-  return
+  if ~dryRun
+    return
+  end
+end
   
-else
+if dryRun
+  return
+end
 
-  side = {'left','right'};
-  surfs = {'GM','WM'};
-  fsSide = {'lh','rh'};
+side = {'left','right'};
+surfs = {'GM','WM'};
+fsSide = {'lh','rh'};
 
-  disp('(remapSurfaces) Will process:');
-  for iSide=1:2
-    for iSurf = 1:2
-      %find all OFF files for a given side and surface (WM or GM)
-      subjFiles{iSide,iSurf} = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off']);
-      %find OFF files to exclude (already processed or flat maps)
-      toExclude = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Colin*.off']);
-      toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*MNI*.off'])];
-      toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Flat*.off'])];
+disp('(remapSurfaces) Will process:');
+for iSide=1:2
+  for iSurf = 1:2
+    %find all OFF files for a given side and surface (WM or GM)
+    subjFiles{iSide,iSurf} = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off']);
+    %find OFF files to exclude (already processed or flat maps)
+    toExclude = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Colin*.off']);
+    toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*MNI*.off'])];
+    toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Flat*.off'])];
 
-      [~,toKeep]=setdiff({subjFiles{iSide,iSurf}(:).name},{toExclude(:).name});
-      subjFiles{iSide,iSurf} = {subjFiles{iSide,iSurf}(toKeep).name};
-      disp(subjFiles{iSide,iSurf}');
-  %     if length(subjFiles{iSide,iSurf})>2
-  %       dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off'])
-  %       filelist = input('Which files do you wish to transform (input index vector) ?')
-  %       subjFiles{iSide,iSurf} = subjFiles{iSide,iSurf}(filelist);
-  %     end
+    [~,toKeep]=setdiff({subjFiles{iSide,iSurf}(:).name},{toExclude(:).name});
+    subjFiles{iSide,iSurf} = {subjFiles{iSide,iSurf}(toKeep).name};
+    disp(subjFiles{iSide,iSurf}');
+%     if length(subjFiles{iSide,iSurf})>2
+%       dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off'])
+%       filelist = input('Which files do you wish to transform (input index vector) ?')
+%       subjFiles{iSide,iSurf} = subjFiles{iSide,iSurf}(filelist);
+%     end
+  end
+  disp([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])
+end
+
+for iSide=1:2
+  %get reg sphere surfaces
+  [vertSphereSubj, triSphereSubj] = freesurfer_read_surf([subjPath '/surf/' fsSide{iSide} '.sphere.reg']);
+  [vertSphereAverage, triSphereAverage] = freesurfer_read_surf([fsaveragePath '/surf/' fsSide{iSide} '.sphere.reg']);
+
+  % compute re-gridding matrix (expresses the vertices coordinates in one
+  % sphere as a linear combination of face vertices in the other)
+  [averageToSubj,subjToAverage] = findCorrespondingVertices(vertSphereSubj,vertSphereAverage,triSphereSubj,triSphereAverage);
+
+  for iSurf = 1:2
+    %get surfaces in OFF format
+    averageSurf = loadSurfOFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_' surfs{iSurf} '.off']);
+
+    for jSurf = subjFiles{iSide,iSurf}
+      pattern = ['_' side{iSide} '_' surfs{iSurf}];
+      fssubjectPrefix = jSurf{1}([1:strfind(jSurf{1},pattern)-1 strfind(jSurf{1},pattern)+length(pattern):end-4]);
+      subjSurf = loadSurfOFF(fullfile(subjPath,'/surfRelax/',jSurf{1}));
+
+      %apply regridding matrix to surfaces
+      thisAverageSurf = averageSurf;
+      tmpVtcs = averageToSubj*thisAverageSurf.vtcs;
+      thisAverageSurf.vtcs = subjToAverage*subjSurf.vtcs; % same mesh as average surface, but coordinates of the subject's surface
+      subjSurf.vtcs = tmpVtcs; % same mesh as subject's surface, but coordinates of the average surface
+
+      %change file name
+      [path,filename,extension]=fileparts(subjSurf.filename);
+      subjSurf.filename = [path '/' filename '_' fsaverage extension];
+      [path,filename,extension]=fileparts(thisAverageSurf.filename);
+      thisAverageSurf.filename = [path '/' filename '_' fssubjectPrefix extension];
+
+      %save file
+      disp(['(remapSurfaces) Writing ' subjSurf.filename]);
+      writeOFF(subjSurf, subjSurf.filename);
+      disp(['(remapSurfaces) Writing ' thisAverageSurf.filename]);
+      writeOFF(thisAverageSurf, thisAverageSurf.filename);
+
     end
-    disp([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])
   end
 
-  for iSide=1:2
-    %get reg sphere surfaces
-    [vertSphereSubj, triSphereSubj] = freesurfer_read_surf([subjPath '/surf/' fsSide{iSide} '.sphere.reg']);
-    [vertSphereAverage, triSphereAverage] = freesurfer_read_surf([fsaveragePath '/surf/' fsSide{iSide} '.sphere.reg']);
-    
-    % compute re-gridding matrix (expresses the vertices coordinates in one
-    % sphere as a linear combination of face vertices in the other)
-    [averageToSubj,subjToAverage] = findCorrespondingVertices(vertSphereSubj,vertSphereAverage,triSphereSubj,triSphereAverage);
-    
-    for iSurf = 1:2
-      %get surfaces in OFF format
-      averageSurf = loadSurfOFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_' surfs{iSurf} '.off']);
-      
-      for jSurf = subjFiles{iSide,iSurf}
-        pattern = ['_' side{iSide} '_' surfs{iSurf}];
-        fssubjectPrefix = jSurf{1}([1:strfind(jSurf{1},pattern)-1 strfind(jSurf{1},pattern)+length(pattern):end-4]);
-        subjSurf = loadSurfOFF(fullfile(subjPath,'/surfRelax/',jSurf{1}));
-        
-        %apply regridding matrix to surfaces
-        thisAverageSurf = averageSurf;
-        tmpVtcs = averageToSubj*thisAverageSurf.vtcs;
-        thisAverageSurf.vtcs = subjToAverage*subjSurf.vtcs; % same mesh as average surface, but coordinates of the subject's surface
-        subjSurf.vtcs = tmpVtcs; % same mesh as subject's surface, but coordinates of the average surface
-        
-        %change file name
-        [path,filename,extension]=fileparts(subjSurf.filename);
-        subjSurf.filename = [path '/' filename '_' fsaverage extension];
-        [path,filename,extension]=fileparts(thisAverageSurf.filename);
-        thisAverageSurf.filename = [path '/' filename '_' fssubjectPrefix extension];
-        
-        %save file
-        disp(['(remapSurfaces) Writing ' subjSurf.filename]);
-        writeOFF(subjSurf, subjSurf.filename);
-        disp(['(remapSurfaces) Writing ' thisAverageSurf.filename]);
-        writeOFF(thisAverageSurf, thisAverageSurf.filename);
-        
-      end
-    end
-    
-    %interpolate curvature data
-    subjCurv = loadVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])';
-    subjToAverageCurv = subjToAverage*subjCurv;
-    subjToAverageCurv(subjToAverageCurv>max(subjCurv))=max(subjCurv); %clip the data to original min/max (because saveVFF normalizes them)
-    subjToAverageCurv(subjToAverageCurv<min(subjCurv))=min(subjCurv);
-    saveVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv_' fssubject '.vff'], subjToAverageCurv');
-    averageCurv = loadVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv.vff'])';
-    averageToSubjCurv = averageToSubj*averageCurv;
-    averageToSubjCurv(averageToSubjCurv>max(averageCurv))=max(subjCurv);
-    averageToSubjCurv(averageToSubjCurv<min(averageCurv))=min(averageCurv);
-    saveVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv_' fsaverage '.vff'], averageToSubjCurv');
-    
-  end
+  %interpolate curvature data
+  subjCurv = loadVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])';
+  subjToAverageCurv = subjToAverage*subjCurv;
+  subjToAverageCurv(subjToAverageCurv>max(subjCurv))=max(subjCurv); %clip the data to original min/max (because saveVFF normalizes them)
+  subjToAverageCurv(subjToAverageCurv<min(subjCurv))=min(subjCurv);
+  saveVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv_' fssubject '.vff'], subjToAverageCurv');
+  averageCurv = loadVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv.vff'])';
+  averageToSubjCurv = averageToSubj*averageCurv;
+  averageToSubjCurv(averageToSubjCurv>max(averageCurv))=max(subjCurv);
+  averageToSubjCurv(averageToSubjCurv<min(averageCurv))=min(averageCurv);
+  saveVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv_' fsaverage '.vff'], averageToSubjCurv');
 
 end
 
