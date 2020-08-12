@@ -9,8 +9,9 @@
 %         Optionally computes the group-average using mrLoadRet timeseries analysis.
 %
 %   usage:
-%     params = mlrSphericalNormGroup(params,'justGetParams') %returns default parameters which need to be modified
-%     mlrSphericalNormGroup(params) % run function with modified params
+%     params = mlrSphericalNormGroup(params,'justGetParams') %returns default parameters
+%     ... % modify parameters
+%     mlrSphericalNormGroup(params) % runs function with modified params
 %
 %   parameters:
 %       params.studyDir:                      This is the folder in which subject-specific mrLoadRet folders are located (default: current folder)
@@ -147,6 +148,8 @@ end
 mrQuit(0); % make sure there are no open MLR views
 
 % export subject overlays to subject-specific scan spaces
+cOverlayConcat = 0;
+cOverlayConcatLRcombined = 0;
 for iSubj = 1:nSubjects
   fprintf('\n(mlrSphericalNormGroup) Exporting scan data for subject %s ...\n',params.mrLoadRetSubjectIDs{iSubj});
   % some OSs don't deal with files that have more than 259 characters (including path)
@@ -157,9 +160,8 @@ for iSubj = 1:nSubjects
   thisView = mrLoadRet(params.mrLoadRetSubjectLastView,'No GUI');
   
   cOverlay = 0;
-  exportNames{iSubj} = cell(0);
-  convertNames{iSubj} = cell(0);
-  convertFlippedNames{iSubj} = cell(0);
+  exportNames = cell(0);
+  convertNames = cell(0,1+params.combineLeftAndRight);
   for iOverlay = 1:nOverlays
     thisView = viewSet(thisView,'curGroup',params.subjectOverlayGroups(iOverlay));
     thisView = viewSet(thisView,'curAnalysis',params.subjectOverlayAnalyses(iOverlay));
@@ -192,13 +194,13 @@ for iSubj = 1:nSubjects
         end
       end
       % export overlays to NIFTI in scan space
-      exportNames{iSubj}{cOverlay} = fullfile(templateTseriesFolder,sprintf('%s_%s.nii',overlayBaseName{iOverlay},params.mrLoadRetSubjectIDs{iSubj}));
-      convertNames{iSubj}{cOverlay} = fullfile(templateTseriesFolder,sprintf('%s_%s_%s.nii',overlayBaseName{iOverlay},params.mrLoadRetSubjectIDs{iSubj},params.freesurferTemplateID));
+      exportNames{cOverlay} = fullfile(templateTseriesFolder,sprintf('%s_%s.nii',overlayBaseName{iOverlay},params.mrLoadRetSubjectIDs{iSubj}));
+      convertNames{cOverlay,1} = fullfile(templateTseriesFolder,sprintf('%s_%s_%s.nii',overlayBaseName{iOverlay},params.mrLoadRetSubjectIDs{iSubj},params.freesurferTemplateID));
       if params.combineLeftAndRight
-        convertFlippedNames{iSubj}{cOverlay} = fullfile(templateTseriesFolder,sprintf('%s_%s_%s.nii',overlayBaseName{iOverlay},params.mrLoadRetSubjectIDs{iSubj},params.lrFlippedFreesurferTemplateID));
+        convertNames{cOverlay,2} = fullfile(templateTseriesFolder,sprintf('%s_%s_%s.nii',overlayBaseName{iOverlay},params.mrLoadRetSubjectIDs{iSubj},params.lrFlippedFreesurferTemplateID));
       end
       if ~params.dryRun
-        mrExport2SR(thisView,exportNames{iSubj}{cOverlay},0);
+        mrExport2SR(thisView,exportNames{cOverlay},0);
       end
     end
   end
@@ -207,75 +209,80 @@ for iSubj = 1:nSubjects
   % transform subject scans to group space
   fprintf('(mlrSphericalNormGroup) Converting data to %s template space ...\n',params.freesurferTemplateID);
   fsSphericalParams = freesurferSphericalNormalizationVolumes([],'justGetParams');
-  fsSphericalParams.sourceVol = exportNames{iSubj};
+  fsSphericalParams.sourceVol = exportNames;
   fsSphericalParams.fsSourceSubj = params.freesurferSubjectIDs{iSubj};
   fsSphericalParams.fsDestSubj = params.freesurferTemplateID;
-  fsSphericalParams.destVol = convertNames{iSubj};
+  fsSphericalParams.destVol = convertNames(:,1);
   fsSphericalParams.interpMethod = 'linear';
   fsSphericalParams.dryRun = params.dryRun;
   fsSphericalParamsOut = freesurferSphericalNormalizationVolumes(fsSphericalParams);
-  fsSphericalParamsOut.destSurfRelaxVolume = fullfile(mrGetPref('volumeDirectory'),params.freesurferTemplateID,'surfRelax',[params.freesurferTemplateID '_mprage_pp.nii']); % DELETE
   if params.combineLeftAndRight
     fprintf('(mlrSphericalNormGroup) Converting data to %s template space ...\n',params.lrFlippedFreesurferTemplateID);
     fsSphericalParams.fsDestSubj = params.lrFlippedFreesurferTemplateID;
-    fsSphericalParams.destVol = convertFlippedNames{iSubj};
+    fsSphericalParams.destVol = convertNames(:,2);
     freesurferSphericalNormalizationVolumes(fsSphericalParams);
+  end
+
+  if ~params.dryRun
+
+    % delete subject-space exported NIFTI files
+    for iOverlay = 1:nOverlays
+      delete(exportNames{iOverlay});
+    end
+
+    % Concatenate normalized subject data
+    fprintf('\n(mlrSphericalNormGroup) Concatenating transformed data for subject %s...\n',params.mrLoadRetSubjectIDs{iSubj});
+    for iOverlay = 1:nOverlays
+      cOverlayConcat = cOverlayConcat+1;
+      cOverlayConcatLRcombined = cOverlayConcatLRcombined+1;
+      if iSubj==1 && iOverlay == 1
+        templateScanName{1} = sprintf('Concatenation of overlays-analyses-groups %s-%s-%s',mat2str(params.subjectOverlays),mat2str(params.subjectOverlayAnalyses),mat2str(params.subjectOverlayGroups));
+        if params.combineLeftAndRight
+          templateScanName{2} = [templateScanName{1} '_LRcombined'];
+        end
+      end
+      [data,hdr] = cbiReadNifti(convertNames{iOverlay,1});
+      hdr.time_units = 'subjects/conditions'; % I dont think this is is doing anything
+      cbiWriteNifti(fullfile(templateTseriesFolder,[templateScanName{1} '.nii']),data,hdr,'',{[],[],[],cOverlayConcat});
+      % for log file
+      logfile.overlay{cOverlayConcat,1} = params.templateOverlayNewNames{iOverlay};
+      logfile.subject{cOverlayConcat,1} = params.mrLoadRetSubjectIDs{iSubj};
+
+      if params.combineLeftAndRight
+        cbiWriteNifti(fullfile(templateTseriesFolder,[templateScanName{2} '.nii']),data,hdr,'',{[],[],[],cOverlayConcatLRcombined});
+        logfileCombined.overlay{cOverlayConcatLRcombined,1} = params.templateOverlayNewNames{iOverlay};
+        logfileCombined.leftRightDirection{cOverlayConcatLRcombined,1} = 'normal';
+        logfileCombined.subject{cOverlayConcatLRcombined,1} = params.mrLoadRetSubjectIDs{iSubj};
+        cOverlayConcatLRcombined = cOverlayConcatLRcombined+1;
+        [data,hdr] = cbiReadNifti(convertNames{iOverlay,2});
+        hdr.time_units = 'subjects/conditions'; % I dont think this is is doing anything
+        cbiWriteNifti(fullfile(templateTseriesFolder,[templateScanName{2} '.nii']),data,hdr,'',{[],[],[],cOverlayConcatLRcombined});
+        logfileCombined.overlay{cOverlayConcatLRcombined,1} = params.templateOverlayNewNames{iOverlay};
+        logfileCombined.leftRightDirection{cOverlayConcatLRcombined,1} = 'reversed';
+        logfileCombined.subject{cOverlayConcatLRcombined,1} = params.mrLoadRetSubjectIDs{iSubj};
+      end
+    end
+    
+    % delete temporary converted subject files
+    for iOverlay = 1:nOverlays
+      for iCombine = 1:1+params.combineLeftAndRight
+        delete(convertNames{iOverlay,iCombine});
+      end
+    end
   end
 end
 
 if ~params.dryRun
-
-  % delete subject-space exported NIFTI files
-  for iSubj =1:nSubjects
-    for iOverlay = 1:nOverlays
-      delete(exportNames{iSubj}{iOverlay});
-    end
-  end
-
-  % Concatenate normalized subject data
-  cOverlay = 0;
-  for iOverlay = 1:nOverlays
-    cOverlay = cOverlay+1;
-    templateOverlayName{cOverlay} = params.templateOverlayNewNames{iOverlay};
-    fprintf('\n(mlrSphericalNormGroup) Concatenating subject data for overlay %s\n',templateOverlayName{cOverlay});
-    for iSubj = 1:nSubjects
-      [data(:,:,:,iSubj),hdr] = mlrImageLoad(convertNames{iSubj}{iOverlay});
-    end
-    hdr.dim = [hdr.dim nSubjects];
-    hdr.filename = fullfile(templateTseriesFolder,[templateOverlayName{cOverlay} '.nii']);
-    mlrImageSave(hdr.filename,data,hdr);
-    if params.combineLeftAndRight
-      cOverlay = cOverlay+1;
-      templateOverlayName{cOverlay} = [params.templateOverlayNewNames{iOverlay} '_LRcombined'];
-      fprintf('\n(mlrSphericalNormGroup) Concatenating hemisphere and subject data for overlay %s\n',templateOverlayName{cOverlay});
-      for iSubj = 1:nSubjects
-        [data(:,:,:,nSubjects+iSubj),hdr] = mlrImageLoad(convertFlippedNames{iSubj}{iOverlay});
-      end
-      hdr.dim = [hdr.dim nSubjects*2];
-      hdr.filename = fullfile(templateTseriesFolder,[templateOverlayName{cOverlay} '.nii']);
-      mlrImageSave(hdr.filename,data,hdr);
-    end
-    clear('data');
-  end
-  % delete temporary converted subject files
-  for iSubj =1:nSubjects
-    for iOverlay = 1:nOverlays
-      delete(convertNames{iSubj}{iOverlay});
-      if params.combineLeftAndRight
-        delete(convertFlippedNames{iSubj}{iOverlay});
-      end
-    end
-  end
-
   fprintf('(mlrSphericalNormGroup) Importing group data into MLR folder %s\n',params.mrLoadRetTemplateID);
-  nTemplateOverlays = length(templateOverlayName);
+  nScans = length(templateScanName);
   % initialize mrLoadRet view/import group
   cd(mrLoadRetTemplateFolder);
   if initMrLoadRetGroup
+    scanList = 1:nScans;
     subjectSessionParams = load(fullfile(params.studyDir,params.mrLoadRetSubjectIDs{1},'mrSession.mat'));
     [sessionParams, groupParams] = mrInit([],[],'justGetParams=1','defaultParams=1');
-    for iScan = 1:nTemplateOverlays
-      groupParams.description{iScan} = templateOverlayName{iScan};
+    for iScan = scanList
+      groupParams.description{iScan} = templateScanName{iScan};
     end
     sessionParams.magnet = subjectSessionParams.session.magnet;
     sessionParams.coil = subjectSessionParams.session.coil;
@@ -304,36 +311,36 @@ if ~params.dryRun
       thisView = viewSet(thisView,'corticalDepth',[0.2 0.8]); %set the range of of cortical depths used for displaying the overlays
     end
 
-  else
+  else %%%%%%%%%%%%% NOT TESTED
     thisView = mrLoadRet(params.mrLoadRetTemplateLastView,'No GUI');
     thisView = viewSet(thisView,'newGroup',params.templateOverlaysGroup);
-    [~,params] = importTSeries(thisView,[],'justGetParams=1','defaultParams=1');
-    for iOverlay = 1:nOverlays
-      params.pathname = fullfile(templateTseriesFolder,[overlayBaseName{iOverlay} '.nii']);
-      [~,params] = importTSeries(thisView,params);
-      if params.combineLeftAndRight
-        params.pathname = fullfile(templateTseriesFolder,[overlayBaseName{iOverlay} '_LRcombined.nii']);
-        [~,params] = importTSeries(thisView,params);
-      end
+    [~,importParams] = importTSeries(thisView,[],'justGetParams=1','defaultParams=1');
+    for iCombine = 1:1+params.combineLeftAndRight
+      importParams.pathname = templateFileName{iCombine};
+      importTSeries(thisView,importParams);
     end
+    scanList = viewGet(thisView,'nScans')-[nScans:-1:1]+1;
+  end
+  
+  % create log files indicating which volumes correspond to which overlays and subjects
+  for iCombine = 1:1+params.combineLeftAndRight
+    if iCombine==2
+      logfile = logfileCombined;
+    end
+    logFilename = [templateScanName{iCombine} '.mat'];
+    save(fullfile(mrLoadRetTemplateFolder,'Etc',logFilename),'-struct','logfile');
+    % link log file to concatenated scan
+    fprintf('Linking %s to scan %d\n',logFilename,scanList(iCombine));
+    viewSet(thisView,'stimfilename',logFilename, scanList(iCombine));
   end
 
   if params.computeGroupAverage
-    statsParams.groupName = params.templateOverlaysGroup;
-    statsParams.scanList = 1:nTemplateOverlays;
-    thisView = timeSeriesStats(thisView,statsParams);
-    % replace 0s by NaNs (because NaNs are written out in the Nifti files as 0; this is probably an MLR problem that can be fixed in mlrImageSave)
-    [~,params] = combineTransformOverlays(thisView,[],'justGetParams=1','defaultParams=1');
-    params.combineFunction = '@(x)replaceByNaNs(x,0)';
-    for iOverlay = 1:3 % only do the first 3 overlays (mean, median and std-deviation)
-      params.outputName = ' ';
-      params.overlayList = iOverlay;
-      thisView = combineTransformOverlays(thisView,params);
-    end
-    thisView = viewSet(thisView,'deleteOverlay',1:6); % remove first 6 overlays
-    thisView = viewSet(thisView,'curOverlay',1); % mean
+    [~,averageParams] = mlrGroupAverage(thisView,[],'justGetParams');
+    averageParams.factors = {'overlay'};
+    averageParams.scanList = scanList;
+    thisView = mlrGroupAverage(thisView,averageParams);
+    thisView = viewSet(thisView,'curOverlay',1);
     thisView = viewSet(thisView,'clipAcrossOverlays',false);
-
   end
 
   mrSaveView(thisView);
