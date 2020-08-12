@@ -219,6 +219,7 @@ end
 if ~params.dryRun
   destHdr = mlrImageReadNiftiHeader(params.destVolTemplate);
   destXform = getXform(destHdr);
+  destHdr.datatype = 16; % make sure data get exported as float32 (single) and that NaNs get saved as NaNs
 end
 
 if params.dryRun
