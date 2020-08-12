@@ -37,9 +37,9 @@ else
   hdr.dim(5) = length(overlayNum);
 end
 
-hdr.datatype = 16; % make sure data are written with 32 bits per value to avoid surprises
-hdr.bitpix = 32;   
+hdr.datatype = 16; % make sure data are written as float32 (single)
 hdr.scl_slope = 1;
+hdr.scl_inter = 0;
 if viewGet(thisView,'baseType',baseNum)==2 %for surfaces, leave as it was in the original mrExport2SR
   hdr.is_analyze = 1;
   hdr.endian = 'l';
@@ -53,5 +53,5 @@ end
 
 if ~ieNotDefined('pathstr') || nargout>0
   %write nifti file
-  mlrImageSave(sprintf('%s%s',stripext(pathstr),niftiFileExtension),overlayData,hdr)
+  mlrImageWriteNifti(sprintf('%s%s',stripext(pathstr),niftiFileExtension),overlayData,hdr)
 end
