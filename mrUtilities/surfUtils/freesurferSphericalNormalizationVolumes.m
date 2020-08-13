@@ -22,6 +22,7 @@
 %         params.hemisphere (optional): 'left','right or 'both' (default: 'both')
 %         params.interpMethod (optional): interpolation method for ressampling the source volume to the source surface (default from mrGetPref)
 %         params.recomputeRemapping (optional): whether to recompute the mapping between the source and destination surfaces (default: false)
+%         params.cropDestVolume (optional): whether to crop the destination volume to the smallest volume containing the surfaces (default = true)
 %         params.dryRun (optional): if true, just checks that the input files exist (default: false)
 %
 %   author: julien besle (24/07/2020)
@@ -64,6 +65,9 @@ if ieNotDefined('interpMethod')
 end
 if ieNotDefined('recomputeRemapping')
   params.recomputeRemapping = false;
+end
+if ieNotDefined('cropDestVolume')
+  params.cropDestVolume = true;
 end
 if fieldIsNotDefined(params,'dryRun')
   params.dryRun = false;
@@ -220,6 +224,7 @@ if ~params.dryRun
   destHdr = mlrImageReadNiftiHeader(params.destVolTemplate);
   destXform = getXform(destHdr);
   destHdr.datatype = 16; % make sure data get exported as float32 (single) and that NaNs get saved as NaNs
+  uncroppedDestDims = destHdr.dim(2:4)';
 end
 
 if params.dryRun
@@ -235,12 +240,14 @@ switch(params.hemisphere)
 end
 surfs = {'WM','GM'};
 nSides = length(side);
+if params.cropDestVolume
+  cropBox = [inf -inf; inf -inf; inf -inf];
+end
 for iSide=1:nSides
   for iSurf = 1:2
     %get surfaces in OFF format
     sourceSurf{iSurf,iSide} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} '.off']);
     destSurf{iSurf} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} '_' params.fsDestSubj '.off']); % same surface mesh as source, but with destination coordinates
-    
     % convert vertices coordinates to surfRelax volume array coordinates
     sourceSurf{iSurf,iSide} = xformSurfaceWorld2Array(sourceSurf{iSurf,iSide},sourceSurfRelaxHdr);
     destSurf{iSurf} = xformSurfaceWorld2Array(destSurf{iSurf},destSurfRelaxHdr);
@@ -255,19 +262,40 @@ for iSide=1:nSides
     sourceSurf{iSurf,iSide}.vtcs = sourceSurf{iSurf,iSide}.vtcs(:,1:3);
     destSurf{iSurf}.vtcs = destSurf{iSurf}.vtcs(:,1:3);
   end
+  if params.cropDestVolume
+    % get original (not-remapped) destination surfaces and apply same transformations as above (except subdividing)
+    originalDestGMsurf = loadSurfOFF([destPath '/surfRelax/' params.fsDestSubj '_' side{iSide} '_GM.off']);
+    originalDestGMsurf = xformSurfaceWorld2Array(originalDestGMsurf,destSurfRelaxHdr);
+    originalDestGMsurf.vtcs = (destXform\destSurfRelaxXform*[originalDestGMsurf.vtcs';ones(1,originalDestGMsurf.Nvtcs)])';
+    originalDestGMsurf.vtcs = originalDestGMsurf.vtcs(:,1:3);
+  end
     
   % compute intermediate depth coordinates for destination mesh
-  destCoords = zeros(destSurf{1}.Nvtcs,3,nDepths,nSides);
+  destCoords = zeros(destSurf{1}.Nvtcs,3,nDepths);
   for iDepth = 1:nDepths
     destCoords(:,:,iDepth) = (1-corticalDepths(iDepth))*destSurf{1}.vtcs + corticalDepths(iDepth)*destSurf{2}.vtcs;
   end
+  
+  if params.cropDestVolume % find smallest volume including the outer surface
+    cropBox(:,1) = min(cropBox(:,1),floor(min(originalDestGMsurf.vtcs))');
+    cropBox(:,2) = max(cropBox(:,2),ceil(max(originalDestGMsurf.vtcs))');
+  end
 
-  % compute mapping between source surface and destination volume
+  % compute mapping between destination surface and destination volume
   destCoords = permute(destCoords,[1 4 3 2]);
-  flat2volumeMap{iSide} = inverseBaseCoordMap(destCoords,destHdr.dim(2:4)');
+  surf2volumeMap{iSide} = inverseBaseCoordMap(destCoords,uncroppedDestDims);
 
 end
 clearvars('destCoords'); %save memory
+
+if params.cropDestVolume % crop destination volume
+  destHdr.dim(2:4) = diff(cropBox,[],2)+1;
+  cropXform = eye(4);
+  cropXform(1:3,4) = -cropBox(:,1)+1;
+  destHdr.qform44 = cropXform\destHdr.qform44;
+  destHdr.sform44 = cropXform\destHdr.sform44;
+end
+
 
 % compute intermediate depth coordinates for source mesh
 for iSide = 1:nSides
@@ -280,14 +308,14 @@ end
 
 % interpolate data to destination volume
 for iSource = 1:nSources
-  destData = nan(destHdr.dim(2:4)');
+  destData = nan(uncroppedDestDims);
   % get source volume data
   [sourceData,sourceHdr] = mlrImageReadNifti(params.sourceVol{iSource});
   for iSide = 1:nSides %for each hemisphere
     % get surface data from source volume
     surfData = interpn((1:sourceHdr.dim(2))',(1:sourceHdr.dim(3))',(1:sourceHdr.dim(4))',sourceData,sourceCoords{iSide}(:,1),sourceCoords{iSide}(:,2),sourceCoords{iSide}(:,3),params.interpMethod);
     % transform surface data to destination volume
-    thisData = applyInverseBaseCoordMap(flat2volumeMap{iSide},destHdr.dim(2:4)',surfData);
+    thisData = applyInverseBaseCoordMap(surf2volumeMap{iSide},uncroppedDestDims,surfData);
     destData(~isnan(thisData)) = thisData(~isnan(thisData)); % we assume left and right surfaces sample exclusive sets of voxels, which is not exactly true at the midline
   end
   % write out the data
@@ -299,6 +327,9 @@ for iSource = 1:nSources
     else
       return;
     end
+  end
+  if params.cropDestVolume
+    destData = destData(cropBox(1,1):cropBox(1,2),cropBox(2,1):cropBox(2,2),cropBox(3,1):cropBox(3,2));
   end
   mlrImageWriteNifti(params.destVol{iSource},destData,destHdr);
 end
