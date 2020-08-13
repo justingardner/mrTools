@@ -30,6 +30,7 @@
 %       params.lrFlippedFreesurferTemplateID  If combineLeftAndRight is true, name of the Freesurfer folder containing the left-right flipped surfaces of the left-right-flipped template
 %       params.computeGroupAverage            If true, normalized overlays will be averaged across subjects (optionally hemispheres) (default: true)
 %       params.templateOverlayNewNames        New names of the converted overlays
+%       params.cropScans                      Whether to crop concatenated scans to smallest volume including all subject's data (default = true)
 %       params.dryRun                         If true, just check whether the overlays and surfaces exist (default: false)
 %
 %   author: julien besle (28/07/2020)
@@ -92,6 +93,9 @@ if fieldIsNotDefined(params,'computeGroupAverage')
 end
 if fieldIsNotDefined(params,'templateOverlayNewNames')
   params.templateOverlayNewNames = {}; % New names of the converted overlays
+end
+if fieldIsNotDefined(params,'cropScans')
+  params.cropScans = true;
 end
 if fieldIsNotDefined(params,'dryRun')
   params.dryRun = false; % if true, just check whether the overlays and surfaces exist
@@ -207,7 +211,7 @@ for iSubj = 1:nSubjects
   deleteView(thisView); % close view without saving (note that because there should be only one view in global variable MLR, this deletes MLR too
   
   % transform subject scans to group space
-  fprintf('(mlrSphericalNormGroup) Converting data to %s template space ...\n',params.freesurferTemplateID);
+  fprintf('\n(mlrSphericalNormGroup) Converting %s data to %s template space ...\n',params.mrLoadRetSubjectIDs{iSubj},params.freesurferTemplateID);
   fsSphericalParams = freesurferSphericalNormalizationVolumes([],'justGetParams');
   fsSphericalParams.sourceVol = exportNames;
   fsSphericalParams.fsSourceSubj = params.freesurferSubjectIDs{iSubj};
@@ -217,7 +221,7 @@ for iSubj = 1:nSubjects
   fsSphericalParams.dryRun = params.dryRun;
   fsSphericalParamsOut = freesurferSphericalNormalizationVolumes(fsSphericalParams);
   if params.combineLeftAndRight
-    fprintf('(mlrSphericalNormGroup) Converting data to %s template space ...\n',params.lrFlippedFreesurferTemplateID);
+    fprintf('\n(mlrSphericalNormGroup) Converting %s data to %s template space ...\n',params.mrLoadRetSubjectIDs{iSubj},params.lrFlippedFreesurferTemplateID);
     fsSphericalParams.fsDestSubj = params.lrFlippedFreesurferTemplateID;
     fsSphericalParams.destVol = convertNames(:,2);
     freesurferSphericalNormalizationVolumes(fsSphericalParams);
@@ -237,26 +241,28 @@ for iSubj = 1:nSubjects
       cOverlayConcatLRcombined = cOverlayConcatLRcombined+1;
       if iSubj==1 && iOverlay == 1
         templateScanName{1} = sprintf('Concatenation of overlays-analyses-groups %s-%s-%s',mat2str(params.subjectOverlays),mat2str(params.subjectOverlayAnalyses),mat2str(params.subjectOverlayGroups));
+        scanFileName{1} = fullfile(templateTseriesFolder,[templateScanName{1} '.nii']);
         if params.combineLeftAndRight
           templateScanName{2} = [templateScanName{1} '_LRcombined'];
+          scanFileName{2} = fullfile(templateTseriesFolder,[templateScanName{2} '.nii']);
         end
       end
       [data,hdr] = cbiReadNifti(convertNames{iOverlay,1});
       hdr.time_units = 'subjects/conditions'; % I dont think this is is doing anything
-      cbiWriteNifti(fullfile(templateTseriesFolder,[templateScanName{1} '.nii']),data,hdr,'',{[],[],[],cOverlayConcat});
+      cbiWriteNifti(scanFileName{1},data,hdr,'',{[],[],[],cOverlayConcat});
       % for log file
       logfile.overlay{cOverlayConcat,1} = params.templateOverlayNewNames{iOverlay};
       logfile.subject{cOverlayConcat,1} = params.mrLoadRetSubjectIDs{iSubj};
 
       if params.combineLeftAndRight
-        cbiWriteNifti(fullfile(templateTseriesFolder,[templateScanName{2} '.nii']),data,hdr,'',{[],[],[],cOverlayConcatLRcombined});
+        cbiWriteNifti(scanFileName{2},data,hdr,'',{[],[],[],cOverlayConcatLRcombined});
         logfileCombined.overlay{cOverlayConcatLRcombined,1} = params.templateOverlayNewNames{iOverlay};
         logfileCombined.leftRightDirection{cOverlayConcatLRcombined,1} = 'normal';
         logfileCombined.subject{cOverlayConcatLRcombined,1} = params.mrLoadRetSubjectIDs{iSubj};
         cOverlayConcatLRcombined = cOverlayConcatLRcombined+1;
         [data,hdr] = cbiReadNifti(convertNames{iOverlay,2});
         hdr.time_units = 'subjects/conditions'; % I dont think this is is doing anything
-        cbiWriteNifti(fullfile(templateTseriesFolder,[templateScanName{2} '.nii']),data,hdr,'',{[],[],[],cOverlayConcatLRcombined});
+        cbiWriteNifti(scanFileName{2},data,hdr,'',{[],[],[],cOverlayConcatLRcombined});
         logfileCombined.overlay{cOverlayConcatLRcombined,1} = params.templateOverlayNewNames{iOverlay};
         logfileCombined.leftRightDirection{cOverlayConcatLRcombined,1} = 'reversed';
         logfileCombined.subject{cOverlayConcatLRcombined,1} = params.mrLoadRetSubjectIDs{iSubj};
@@ -273,8 +279,35 @@ for iSubj = 1:nSubjects
 end
 
 if ~params.dryRun
-  fprintf('(mlrSphericalNormGroup) Importing group data into MLR folder %s\n',params.mrLoadRetTemplateID);
+  
   nScans = length(templateScanName);
+  
+  if params.cropScans
+    for iScan = 1:nScans
+      fprintf('\n(mlrSphericalNormGroup) Cropping scan %d\n',iScan);
+      cropBox = [inf -inf;inf -inf;inf -inf];
+      croppedScanFileName = fullfile(templateTseriesFolder,[templateScanName{iScan} '_cropped.nii']);
+      scanHdr = cbiReadNiftiHeader(scanFileName{iScan});
+      for iVolume = 1:scanHdr.dim(5)
+        data = cbiReadNifti(scanFileName{iScan},{[],[],[],iVolume});
+        [X,Y,Z] = ind2sub(scanHdr.dim(2:4)',find(~isnan(data)));                                    % can probably do better than this by finding main axes
+        cropBox(:,1) = min(cropBox(:,1), floor([min(X);min(Y);min(Z)])); % of coordinates by svd and applying rotation before cropping
+        cropBox(:,2) = max(cropBox(:,2), floor([max(X);max(Y);max(Z)])); % but this would involve resampling the data
+      end
+      scanHdr.dim(2:4) = diff(cropBox,[],2)+1;
+      cropXform = eye(4);
+      cropXform(1:3,4) = -cropBox(:,1)+1;
+      scanHdr.qform44 = cropXform\scanHdr.qform44;
+      scanHdr.sform44 = cropXform\scanHdr.sform44;
+      for iVolume = 1:scanHdr.dim(5)
+        data = cbiReadNifti(scanFileName{iScan},{cropBox(1,:),cropBox(2,:),cropBox(3,:),iVolume});
+        cbiWriteNifti(croppedScanFileName,data,scanHdr,'',{[],[],[],iVolume});
+      end
+      movefile(croppedScanFileName,scanFileName{iScan});
+    end
+  end
+  
+  fprintf('\n(mlrSphericalNormGroup) Importing group data into MLR folder %s\n',params.mrLoadRetTemplateID);
   % initialize mrLoadRet view/import group
   cd(mrLoadRetTemplateFolder);
   if initMrLoadRetGroup
