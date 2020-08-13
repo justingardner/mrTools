@@ -97,6 +97,10 @@ for n=1:4
     subsetIndices(n,:) = subset{n};
   end
 end
+subsetSize = diff(subsetIndices,1,2)+1;
+if any(subsetSize'~=dataSize)
+  mrErrorDlg(sprintf('(cbiWriteNifti) Mistmatch between data and subset dimensions (%s vs %s)',mat2str(dataSize),mat2str(subsetSize')));
+end
 
 if ~isequal(subsetIndices,[ones(4,1) dataSize']) % if writing a subset or appending volumes, need to check header of existing file
   hdrDestination = cbiReadNiftiHeader(fname);
