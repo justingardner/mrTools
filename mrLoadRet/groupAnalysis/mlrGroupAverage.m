@@ -25,6 +25,8 @@
 %   params.averagingMode: how levels will be combined. Options are 'marginal' (default) or 'interaction'
 %                         'marginal': all marginal means corresponding to each level of each facotr will be computed
 %                         'interaction': means corresponding to all level combinations across all factors will be computed
+%   params.outputNonNaNcount :  whether to output a map of the the voxelwise number of subjects entering in the average for
+%                               each average overlay (non-NaN values in subject overlays) (default = false)
 %
 %   author: julien besle (10/08/2020)
 
@@ -77,6 +79,9 @@ if fieldIsNotDefined(params,'averagingMode')
   params.averagingMode = 'marginal';  % options are 'marginal' or 'interaction'
 elseif ~ismember(params.averagingMode,{'marginal','interaction'})
   mrErrorDlg(sprintf('(mlrGroupAverage)Unknown combination mode ''%s''',params.averagingMode));
+end
+if fieldIsNotDefined(params,'outputNonNaNcount')
+  params.outputNonNaNcount = false;
 end
 
 if justGetParams, return; end
@@ -142,39 +147,48 @@ for iFactor = 1:length(whichFactors) % for each factor or combination of factors
   nLevels = nLevels + size(uniqueLevelNums,1);
 end
 
-% initialize scans with zeros
-for iOverlay = 1:nLevels
-  for iScan = 1:length(params.scanList)
-    overlays(iOverlay).data{params.scanList(iScan)} = zeros(hdr{iScan}.dim(2:4)');
-  end
-end
+
 
 minOverlay = inf(nLevels,1);
 maxOverlay = -1*inf(nLevels,1);
+maxCount = 0;
 for iScan = 1:length(params.scanList)
-  volumeCount = zeros(nLevels,1);
-  for iVolume = 1:hdr{iScan}.dim(5) %for each volume in the scan
-    data = cbiReadNifti(tseriesPath{iScan},{[],[],[],iVolume},'double'); % read the data
-    for iFactor = 1:length(whichFactors) % add it to the appropriate overlay(s)
-      overlays(whichOverlay{iScan}(iVolume,iFactor)).data{params.scanList(iScan)} = overlays(whichOverlay{iScan}(iVolume,iFactor)).data{params.scanList(iScan)} + data;
-      volumeCount(whichOverlay{iScan}(iVolume,iFactor)) = volumeCount(whichOverlay{iScan}(iVolume,iFactor)) + 1;
-    end
-  end
   for iOverlay = 1:nLevels %for each overlay
+    overlays(iOverlay).data{params.scanList(iScan)} = zeros(hdr{iScan}.dim(2:4)'); % initialize scans with zeros
+    volumeCount = zeros(hdr{iScan}.dim(2:4)');
+    for iVolume = find(whichOverlay{iScan}(:,iFactor)==iOverlay)' %for each volume in the scan matching this (combination of) condition(s)
+      data = cbiReadNifti(tseriesPath{iScan},{[],[],[],iVolume},'double'); % read the data
+      isNotNaN = ~isnan(data);
+      for iFactor = 1:length(whichFactors)
+        % add non-NaN values to the appropriate overlay(s)
+        overlays(iOverlay).data{params.scanList(iScan)}(isNotNaN) = ...
+          overlays(iOverlay).data{params.scanList(iScan)}(isNotNaN) + data(isNotNaN);
+        volumeCount = volumeCount + isNotNaN;
+      end
+    end
     % divide by the number of added overlays
-    overlays(iOverlay).data{params.scanList(iScan)} = cast(overlays(iOverlay).data{params.scanList(iScan)}/volumeCount(iOverlay),mrGetPref('defaultPrecision'));
+    overlays(iOverlay).data{params.scanList(iScan)} = cast(overlays(iOverlay).data{params.scanList(iScan)}./volumeCount,mrGetPref('defaultPrecision'));
     % get min and max
     minOverlay(iOverlay) = min(minOverlay(iOverlay),min(overlays(iOverlay).data{params.scanList(iScan)}(:)));
     maxOverlay(iOverlay) = max(maxOverlay(iOverlay),max(overlays(iOverlay).data{params.scanList(iScan)}(:)));
+    if params.outputNonNaNcount
+      overlays(nLevels+iOverlay).data{params.scanList(iScan)} = volumeCount;
+      maxCount = max(maxCount,max(volumeCount(:)));
+    end
   end
 end
 
 %add overlays' missing fields
-for iOverlay = 1:nLevels
-  overlays(iOverlay).name = uniqueLevels{iOverlay};
+for iOverlay = 1:nLevels*(1+params.outputNonNaNcount)
+  if iOverlay<=nLevels
+    overlays(iOverlay).name = uniqueLevels{iOverlay};
+    overlays(iOverlay).range = [minOverlay(iOverlay) maxOverlay(iOverlay)];
+  else
+    overlays(iOverlay).name = sprintf('N (%s)',uniqueLevels{iOverlay-nLevels});
+    overlays(iOverlay).range = [0 maxCount];
+  end
   overlays(iOverlay).groupName = viewGet(thisView,'groupName');
   overlays(iOverlay).params = params;
-  overlays(iOverlay).range = [minOverlay(iOverlay) maxOverlay(iOverlay)];
   overlays(iOverlay).type = 'Group average';
   overlays(iOverlay).function = 'mlrGroupAverage';
   overlays(iOverlay).interrogator = '';
