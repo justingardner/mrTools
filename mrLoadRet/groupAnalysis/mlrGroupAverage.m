@@ -70,9 +70,13 @@ end
 
 if fieldIsNotDefined(params,'factors')
   params.factors = allFactors;
+elseif ischar(params.factors)
+  params.factors = {params.factors};
 end
 if fieldIsNotDefined(params,'averagingMode')
   params.averagingMode = 'marginal';  % options are 'marginal' or 'interaction'
+elseif ~ismember(params.averagingMode,{'marginal','interaction'})
+  mrErrorDlg(sprintf('(mlrGroupAverage)Unknown combination mode ''%s''',params.averagingMode));
 end
 
 if justGetParams, return; end
@@ -82,11 +86,9 @@ if strcmp(params.averagingMode,'interaction')
   if ~all(ismember(params.factors,commonFactors))
     mrErrorDlg('(mlrGroupAverage) Cannot compute averages because factors are missing in some scans');
   end
-  factorNames{1} = params.factors;
+  whichFactors = {1: length(params.factors)};
 else
-  for iFactor = 1:length(params.factors)
-    factorNames{iFactor} = params.factors(iFactor);
-  end
+  whichFactors = num2cell(1:length(params.factors));
 end
 
 thisView = viewSet(thisView,'curGroup',params.groupNum);
@@ -94,28 +96,53 @@ thisView = viewSet(thisView,'curGroup',params.groupNum);
 for iScan = 1:length(params.scanList)
   tseriesPath{iScan} = viewGet(thisView,'tseriespathstr',params.scanList(iScan));
   hdr{iScan} = cbiReadNiftiHeader(tseriesPath{iScan});
-  for iFactor = 1:length(factorNames)
-    levels{iScan} = [];
-    for jFactor = 1:length(factorNames{iFactor})
-      % check that the number of volumes matches the number of elements in the factor variables
-      if length(factors{iScan}.(factorNames{iFactor}{jFactor})) ~= hdr{iScan}.dim(5)
-        mrErrorDlg(sprintf('(mlrGroupAverage) Scan %d: Mismatched number of volumes between .mat variable ''%s'' (%d) and time series file (%d)', ...
-                            params.scanList(iScan),factorNames{iFactor}{jFactor},length(factors{iScan}.(factorNames{iFactor}{jFactor})),hdr{iScan}.dim(5)));
-      end
-      if size(factors{iScan}.(factorNames{iFactor}{jFactor}),1)==1
-        factors{iScan}.(factorNames{iFactor}{jFactor}) = factors{iScan}.(factorNames{iFactor}{jFactor})'; % make sure the factor is a column cell array
-      end
-      levels{iScan} = [levels{iScan} factors{iScan}.(factorNames{iFactor}{jFactor})];
+  for iFactor = 1:length(params.factors)
+    % check that the field exists for this scan
+    if ~isfield(factors{iScan},params.factors{iFactor})
+      mrErrorDlg(sprintf('(mlrGroupAverage) Variable ''%s'' does not exist in scan %d', params.factors{iFactor}, params.scanList(iScan)));
     end
-    if iFactor == 1 &&  iScan ==1
-      uniqueLevels = unique(levels{iScan},'rows','stable');
-    else
-      uniqueLevels = union(uniqueLevels,levels{iScan},'rows','stable');
+    % check that the number of volumes matches the number of elements in the factor variables
+    if length(factors{iScan}.(params.factors{iFactor})) ~= hdr{iScan}.dim(5)
+      mrErrorDlg(sprintf('(mlrGroupAverage) Scan %d: Mismatched number of volumes between .mat variable ''%s'' (%d) and time series file (%d)', ...
+                          params.scanList(iScan),params.factors{iFactor},length(params.factors{iFactor}),hdr{iScan}.dim(5)));
     end
+    if size(factors{iScan}.(params.factors{iFactor}),1)==1
+      factors{iScan}.(params.factors{iFactor}) = factors{iScan}.(params.factors{iFactor})'; % make sure the factor is a column cell array
+    end
+    levels{iScan}(:,iFactor) = factors{iScan}.(params.factors{iFactor});
+  end
+  if iScan ==1
+    allLevels = levels{iScan};
+  else
+    allLevels = [allLevels; levels{iScan}];
   end
 end
 
-nLevels = size(uniqueLevels,1);
+for iFactor = 1:length(params.factors)
+  % get unique level numbers for each factor. This is necessary because unique.m with option 'rows'
+  [~,~,allFactorLevelNums(:,iFactor)]= unique(allLevels(:,iFactor),'stable'); % do not support cell arrays
+  % get corresponding unique level numbers for all volumes of each scan
+  for iScan = 1:length(params.scanList)
+    [~,levelNums{iScan}(:,iFactor)] = ismember(levels{iScan}(:,iFactor),unique(allLevels(:,iFactor),'stable'));
+  end
+end
+nLevels = 0;
+for iFactor = 1:length(whichFactors) % for each factor or combination of factors
+  % count the unique levels or combination of levels
+  [uniqueLevelNums,uniqueLevelIndices]=unique(allFactorLevelNums(:,whichFactors{iFactor}),'rows');
+  % find the unique overlay number for each volume in each scan
+  for iScan = 1:length(params.scanList)
+    [~,~,whichOverlay{iScan}(:,iFactor)] = unique(levelNums{iScan}(:,whichFactors{iFactor}),'rows');
+    whichOverlay{iScan}(:,iFactor) = whichOverlay{iScan}(:,iFactor) + nLevels;
+  end
+  % get corresponding unique level names
+  for iLevel = 1:size(uniqueLevelNums,1)
+    uniqueLevels{nLevels+iLevel} = [allLevels{uniqueLevelIndices(iLevel),whichFactors{iFactor}}];
+  end
+  nLevels = nLevels + size(uniqueLevelNums,1);
+end
+
+% initialize scans with zeros
 for iOverlay = 1:nLevels
   for iScan = 1:length(params.scanList)
     overlays(iOverlay).data{params.scanList(iScan)} = zeros(hdr{iScan}.dim(2:4)');
@@ -126,14 +153,17 @@ minOverlay = inf(nLevels,1);
 maxOverlay = -1*inf(nLevels,1);
 for iScan = 1:length(params.scanList)
   volumeCount = zeros(nLevels,1);
-  for iVolume = 1:hdr{iScan}.dim(5)
-    [~,whichOverlay] = ismember(levels{iScan}(iVolume),uniqueLevels);
-    % add data
-    overlays(whichOverlay).data{params.scanList(iScan)} = overlays(whichOverlay).data{params.scanList(iScan)} + cbiReadNifti(tseriesPath{iScan},{[],[],[],iVolume},'double');
-    volumeCount(whichOverlay) = volumeCount(whichOverlay) + 1;
+  for iVolume = 1:hdr{iScan}.dim(5) %for each volume in the scan
+    data = cbiReadNifti(tseriesPath{iScan},{[],[],[],iVolume},'double'); % read the data
+    for iFactor = 1:length(whichFactors) % add it to the appropriate overlay(s)
+      overlays(whichOverlay{iScan}(iVolume,iFactor)).data{params.scanList(iScan)} = overlays(whichOverlay{iScan}(iVolume,iFactor)).data{params.scanList(iScan)} + data;
+      volumeCount(whichOverlay{iScan}(iVolume,iFactor)) = volumeCount(whichOverlay{iScan}(iVolume,iFactor)) + 1;
+    end
   end
-  for iOverlay = 1:nLevels
-    overlays(iOverlay).data{params.scanList(iScan)} = cast(overlays(iOverlay).data{params.scanList(iScan)}/volumeCount(whichOverlay),mrGetPref('defaultPrecision'));
+  for iOverlay = 1:nLevels %for each overlay
+    % divide by the number of added overlays
+    overlays(iOverlay).data{params.scanList(iScan)} = cast(overlays(iOverlay).data{params.scanList(iScan)}/volumeCount(iOverlay),mrGetPref('defaultPrecision'));
+    % get min and max
     minOverlay(iOverlay) = min(minOverlay(iOverlay),min(overlays(iOverlay).data{params.scanList(iScan)}(:)));
     maxOverlay(iOverlay) = max(maxOverlay(iOverlay),max(overlays(iOverlay).data{params.scanList(iScan)}(:)));
   end
