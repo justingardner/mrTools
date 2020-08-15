@@ -51,23 +51,29 @@ end
 
 %read log files associated with scans
 cScan = 0;
+noLinkedFile=false;
 for iScan = params.scanList
   cScan= cScan+1;
   logFileName = viewGet(thisView,'stimfilename',iScan);
-  if isempty(logFileName{1})
+  if isempty(logFileName)
     mrWarnDlg(sprintf('(mlrGroupAverage) No mat file linked to scan %d', iScan));
-  end
-  factors{cScan} = load(logFileName{1});
-  if isempty(factors{cScan})
-    mrWarnDlg(sprintf('(mlrGroupAverage) Cannot open file %s for scan %d', logFileName, iScan));
-  end
-  if iScan == 1
-    commonFactors = fieldnames(factors{cScan});
-    allFactors = commonFactors;
+    noLinkedFile = true;
   else
-    commonFactors = intersect(commonFactors,fieldnames(factors{cScan}));
-    allFactors = union(allFactors,fieldnames(factors{cScan}));
+    factors{cScan} = load(logFileName{1});
+    if isempty(factors{cScan})
+      mrWarnDlg(sprintf('(mlrGroupAverage) Cannot open file %s for scan %d', logFileName, iScan));
+    end
+    if iScan == 1
+      commonFactors = fieldnames(factors{cScan});
+      allFactors = commonFactors;
+    else
+      commonFactors = intersect(commonFactors,fieldnames(factors{cScan}));
+      allFactors = union(allFactors,fieldnames(factors{cScan}));
+    end
   end
+end
+if noLinkedFile
+  return;
 end
 
 if fieldIsNotDefined(params,'factors')
