@@ -8,20 +8,22 @@
 %             checks for file existence. If makeLink is set to 1, will
 %             link the files rather than copy them. makeLink set to 2 will make a hard link.
 %             If there is an associated .mat file (i.e. same name) that will be copied as well
+%             Set overwrite to 1 to overwrite existing files without asking
 %
-function success = copyNiftiFile(fromFilename,toFilename,makeLink)
+function success = copyNiftiFile(fromFilename,toFilename,makeLink,overwrite)
 
 % set initial return value
 success = 0;
 
 % check arguments
-if ~any(nargin == [2 3])
+if ~any(nargin == [2 3 4])
   help copyNiftiFile
   return
 end
 
 % default to copy
 if ieNotDefined('makeLink'),makeLink = 0;end
+if ieNotDefined('overwrite'),overwrite = 0;end
 
 % get calling function name
 [st,i] = dbstack;
@@ -55,7 +57,11 @@ for extensionNum = 1:length(extensions)
   thisFromFilename = sprintf('%s.%s',stripext(fromFilename),ext);
   thisToFilename = sprintf('%s.%s',stripext(toFilename),ext);
   % check if toFile exists
-  r = 0;
+  if overwrite
+    r = inf;
+  else
+    r = 0;
+  end
   if (extensionNum == 1) && mlrIsFile(thisToFilename)
     if ~isinf(r)
       r = askuser(sprintf('(%s) File %s already exists, overwrite',callingFunction,getLastDir(toFilename)),1);

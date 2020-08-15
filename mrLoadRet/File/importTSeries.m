@@ -94,6 +94,7 @@ for iFile = 1:length(filename)
       paramsInfo{end+1} = {'description','','A description for the nifti tSeries you are imporint'};
       paramsInfo{end+1} = {'nFrames',nFrames,'incdec=[-1 1]',sprintf('minmax=[0 %i]',nFrames),'Number of total frames in your nfiti tSeries'};
       paramsInfo{end+1} = {'junkFrames',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',nFrames),'How many frames should be junked at the beginning'};
+      paramsInfo{end+1} = {'overwrite',0,'type=checkbox','If checked, existing tseries with the same name is overwritten without prompt'};
 
       if defaultParams
         params = mrParamsDefault(paramsInfo);
@@ -111,7 +112,7 @@ for iFile = 1:length(filename)
     % now read the file
     %tSeries = mlrImageReadNifti(fullFilename);
 
-    v = saveNewTSeries(v,fullFilename,thisScanParams);
+    v = saveNewTSeries(v,fullFilename,thisScanParams,[],[],params.overwrite);
 
     %get the new scan params and check that frame period is a reasonable value
     newScanNum = viewGet(v,'nScans');
