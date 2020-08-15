@@ -64,12 +64,14 @@ for extensionNum = 1:length(extensions)
       return
     end
   end
-  if makeLink
-    disp(sprintf('(%s) Linking file %s to %s',callingFunction,thisFromFilename,thisToFilename));
-    linkFile(thisFromFilename,thisToFilename,makeLink);
-  else
-    disp(sprintf('(%s) Copying file %s to %s',callingFunction,thisFromFilename,thisToFilename));
-    copyfile(thisFromFilename,thisToFilename);
+  if ~isequal(thisFromFilename,thisToFilename)
+    if makeLink
+      disp(sprintf('(%s) Linking file %s to %s',callingFunction,thisFromFilename,thisToFilename));
+      linkFile(thisFromFilename,thisToFilename,makeLink);
+    else
+      disp(sprintf('(%s) Copying file %s to %s',callingFunction,thisFromFilename,thisToFilename));
+      copyfile(thisFromFilename,thisToFilename);
+    end
   end
 end
 success = 1;
