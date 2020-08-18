@@ -86,7 +86,7 @@ end
 nSources = length(params.sourceVol);
 for iSource = 1:nSources
   if ~exist(params.sourceVol{iSource},'file')
-    mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find destination volume %s',params.sourceVol{iSource}));
+    mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find source volume %s',params.sourceVol{iSource}));
     if ~params.dryRun
       return;
     end
@@ -152,7 +152,7 @@ if fieldIsNotDefined(params,'sourceSurfRelaxVolume')
       sourceSurfRelaxVolumes = [dir(fullfile(sourcePath,'surfRelax','*.nii')); dir(fullfile(sourcePath,'surfRelax','*.img'))];
       switch(length(sourceSurfRelaxVolumes))
         case 0
-          mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find destination volume in %s',fullfile(destPath,'surfRelax')));
+          mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find source surfRelax volume in %s',fullfile(destPath,'surfRelax')));
           if ~params.dryRun
             return;
           end
@@ -215,7 +215,7 @@ end
 if fieldIsNotDefined(params,'destVolTemplate')
   params.destVolTemplate = params.destSurfRelaxVolume;
 elseif ~exist(params.destVolTemplate,'file')
-  mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Cannot find destination volume %s',params.destVolTemplate));
+  mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Cannot find destination volume template %s',params.destVolTemplate));
   if ~params.dryRun
     return;
   end
