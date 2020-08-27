@@ -1,47 +1,47 @@
-% disppercent.m
+% mlrDispPercent.m
 %
 %         by: justin gardner
 %       date: 10/05/04
-%      usage: disppercent(percentdone,message)
+%      usage: mlrDispPercent(percentdone,message)
 %    purpose: display percent done
 %             Start by calling with a negative value:
-%             disppercent(-inf,'Message to display');
+%             mlrDispPercent(-inf,'Message to display');
 %
 %             Update by calling with percent done:
-%             disppercent(0.5);
+%             mlrDispPercent(0.5);
 % 
 %             Finish by calling with inf (elapsedTime is in seconds):
-%             elapsedTime = disppercent(inf);
+%             elapsedTime = mlrDispPercent(inf);
 %
 %             If you want to change the message before calling with inf:
-%             disppercent(0.5,'New message to display');
+%             mlrDispPercent(0.5,'New message to display');
 % 
 %             Also, if you have an inner loop within an outer loop, you
 %             can call like the following:
 %             n1 = 15;n2 = 10;
-%             disppercent(-1/n1); % init with how much the outer loop increments
+%             mlrDispPercent(-1/n1); % init with how much the outer loop increments
 %             for i = 1:n1
 %               for j = 1:n2
 %                  pause(0.1);
-%                  disppercent((i-1)/n1,j/n2);
+%                  mlrDispPercent((i-1)/n1,j/n2);
 %               end
-%               disppercent(i/n1,sprintf('Made it through %i/%i iterations of outer loop',i,n1));
+%               mlrDispPercent(i/n1,sprintf('Made it through %i/%i iterations of outer loop',i,n1));
 %             end
-%             disppercent(inf);
+%             mlrDispPercent(inf);
 %
 %       e.g.:
 %
-%disppercent(-inf,'Doing stuff');for i =  1:30;pause(0.1);disppercent(i/30);end;elapsedTime = disppercent(inf);
-function retval = disppercent(percentdone,mesg)
+%mlrDispPercent(-inf,'Doing stuff');for i =  1:30;pause(0.1);mlrDispPercent(i/30);end;elapsedTime = mlrDispPercent(inf);
+function retval = mlrDispPercent(percentdone,mesg)
 
 retval = nan;
 % check command line arguments
 if ((nargin ~= 1) && (nargin ~= 2))
-  help disppercent;
+  help mlrDispPercent;
   return
 end
 
-% global for disppercent
+% global for mlrDispPercent
 global gDisppercent;
 
 % if this is an init then remember time

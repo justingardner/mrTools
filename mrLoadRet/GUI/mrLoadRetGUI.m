@@ -1347,7 +1347,7 @@ v = MLR.views{viewNum};
 % no current anatomy, just return
 if isempty(viewGet(v,'curAnalysis')),return;end
 
-disppercent(-inf,'Gathering analysis info');
+mlrDispPercent(-inf,'Gathering analysis info');
 % get the current analysis
 a = viewGet(v,'Analysis',viewGet(v,'curAnalysis'));
 
@@ -1388,7 +1388,7 @@ else
   paramsInfo{end+1} = {'params',[],'View analysis parameters','type=pushbutton','buttonString=View analysis parameters','callback',@viewAnalysisParams,'callbackArg',v};
 end
 
-disppercent(inf);
+mlrDispPercent(inf);
 
 % display parameters
 mrParamsDialog(paramsInfo,'Analysis Info');
@@ -2677,7 +2677,7 @@ else
     flatParentSurf = fullfile(params.path,params.innerCoordsFileName);
     if mlrIsFile(flatParentSurf)
       disp('(mrLoadRetGUI) Creating missing flat off surface');
-      disppercent(-inf,sprintf('(mrLoadRetGUI) Note this will create a quick flat surface good enough for rough visualization of location but is not exactly correct'));
+      mlrDispPercent(-inf,sprintf('(mrLoadRetGUI) Note this will create a quick flat surface good enough for rough visualization of location but is not exactly correct'));
       % load the parent surface 
       flatParentSurfOFF = loadSurfOFF(flatParentSurf);
       if ~isempty(flatParentSurfOFF)
@@ -2723,7 +2723,7 @@ else
 	flatSurf.path = params.path;
 	% put it into the params field
 	params.flatFileName = flatSurf;
-	disppercent(inf);
+	mlrDispPercent(inf);
       end
     end
   end

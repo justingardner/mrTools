@@ -515,7 +515,7 @@ h=uicontrol('parent',fignum,'unit','normalized','style','text',...
 %in this case, we want it because it is useful to zoom on the time-series
 set(fignum,'toolbar','figure');
 drawnow;
-disppercent(-inf,'(glmPlot) Plotting time series');
+mlrDispPercent(-inf,'(glmPlot) Plotting time series');
 
 if isnumeric(roi) %if roi is numeric, it's the coordinates of a single voxel
   actualTSeries = squeeze(loadTSeries(thisView,[],roi(3),[],roi(1),roi(2)));
@@ -656,7 +656,7 @@ for iEV = 1:nEVs
     'value',1,'callback',{@plotModelTSeries,hActualTSeries,actualTSeries,hModelTSeries,d.scm,ehdr,d.emptyEVcomponents,hPanel,hSubtractFromTseries,hActualFFT,hModelFFT});
 end
 
-disppercent(inf);
+mlrDispPercent(inf);
 %delete(handle); %don't delete the button to plot the time-series
 
 

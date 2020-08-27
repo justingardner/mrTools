@@ -380,18 +380,18 @@ data.std = analysis.overlays(4).data{whichDim};
 
 % f = figure;
 stimulusOverlap = zeros(dims(1),dims(2),dims(3),length(stimulusCoords));
-disppercent(-inf,sprintf('Computing %i voxels...',total));
+mlrDispPercent(-inf,sprintf('Computing %i voxels...',total));
 count = 0;
 for x = 1:dims(1)
     for y = 1:dims(2)
         for z = 1:dims(3)
             stimulusOverlap(x,y,z,:) = computeOverlap(data,stimulusCoords,x,y,z,0);
             count = count+1;
-            disppercent(count/total);
+            mlrDispPercent(count/total);
         end
     end
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 if isempty(names)
     warning('implement me!');

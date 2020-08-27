@@ -110,11 +110,11 @@ end
 
 baseLoaded = 0;
 if ~isempty(mrLastView) && mlrIsFile(sprintf('%s.mat',stripext(mrLastView)))
-  disppercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
+  mlrDispPercent(-inf,sprintf('(mrOpenWindow) Loading %s',mrLastView));
   [mrLastView, lastViewSettings]=mlrLoadLastView(mrLastView);
-  disppercent(inf);
+  mlrDispPercent(inf);
   % if the old one exists, then set up fields
-%   disppercent(-inf,'(mrOpenWindow) Restoring last view');
+%   mlrDispPercent(-inf,'(mrOpenWindow) Restoring last view');
   if ~isempty(mrLastView)
     %Add any missing field to make sure things don't crash
     [~,mrLastView,unknownFields]=isview(mrLastView);
@@ -127,7 +127,7 @@ if ~isempty(mrLastView) && mlrIsFile(sprintf('%s.mat',stripext(mrLastView)))
     end
     % open up base anatomy from last session
     if isfield(mrLastView,'baseVolumes')
-      disppercent(-inf,sprintf('(mrOpenWindow) installing Base Anatomies'));
+      mlrDispPercent(-inf,sprintf('(mrOpenWindow) installing Base Anatomies'));
       if length(mrLastView.baseVolumes) >= 1
         baseLoaded = 1;
         % Add it to the list of base volumes and select it
@@ -144,7 +144,7 @@ if ~isempty(mrLastView) && mlrIsFile(sprintf('%s.mat',stripext(mrLastView)))
         %try to load 
 	[view,baseLoaded] = loadAnatomy(view);
       end
-      disppercent(inf);
+      mlrDispPercent(inf);
     end
     % change group
     view = viewSet(view,'curGroup',mrLastView.curGroup);
@@ -165,7 +165,7 @@ if ~isempty(mrLastView) && mlrIsFile(sprintf('%s.mat',stripext(mrLastView)))
     if isfield(mrLastView,'analyses')
       for anum = 1:length(mrLastView.analyses)
         view = viewSet(view,'newAnalysis',mrLastView.analyses{anum});
-%         disppercent(anum /length(mrLastView.analyses));
+%         mlrDispPercent(anum /length(mrLastView.analyses));
       end
       view = viewSet(view,'curAnalysis',mrLastView.curAnalysis);
     end
@@ -184,7 +184,7 @@ if ~isempty(mrLastView) && mlrIsFile(sprintf('%s.mat',stripext(mrLastView)))
     
     % read ROIs into current view
     if isfield(mrLastView,'ROIs')
-      disppercent(-inf,sprintf('(mrOpenWindow) installing ROIs'));
+      mlrDispPercent(-inf,sprintf('(mrOpenWindow) installing ROIs'));
       for roinum = 1:length(mrLastView.ROIs)
         view = viewSet(view,'newROI',mrLastView.ROIs(roinum));
       end
@@ -198,7 +198,7 @@ if ~isempty(mrLastView) && mlrIsFile(sprintf('%s.mat',stripext(mrLastView)))
       if ~fieldIsNotDefined(mrLastView,'roiGroup')
 	view = viewSet(view,'roiGroup',mrLastView.roiGroup);
       end
-      disppercent(inf);
+      mlrDispPercent(inf);
     end
     
     if noGUI
@@ -218,9 +218,9 @@ if ~isempty(mrLastView) && mlrIsFile(sprintf('%s.mat',stripext(mrLastView)))
       end
       % add here, to load more info...
       % and refresh
-      disppercent(-inf,sprintf('(mrOpenWindow) Refreshing MLR display'));
+      mlrDispPercent(-inf,sprintf('(mrOpenWindow) Refreshing MLR display'));
       refreshMLRDisplay(view.viewNum);
-      disppercent(inf);
+      mlrDispPercent(inf);
     end
   end
 

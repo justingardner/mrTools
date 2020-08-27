@@ -119,13 +119,13 @@ if strcmp(runtype,'both') || strcmp(runtype,'filter')
   hipassfilter = d.hipassfilter;
   if isfield(d,'hipasscutoff')
     % go through the data, detrend and apply filter in fourier domain
-    disppercent(-inf,sprintf('(eventRelatedHighpass) Applying temporal hipass filter (cutoff=%0.03f Hz)',d.hipasscutoff));
+    mlrDispPercent(-inf,sprintf('(eventRelatedHighpass) Applying temporal hipass filter (cutoff=%0.03f Hz)',d.hipasscutoff));
   else
-    disppercent(-inf,sprintf('(eventRelatedHighpass) Applying temporal hipass filter'))
+    mlrDispPercent(-inf,sprintf('(eventRelatedHighpass) Applying temporal hipass filter'))
   end    
   if (0)
     for i = 1:d.dim(1)
-      disppercent(i/d.dim(1));
+      mlrDispPercent(i/d.dim(1));
       for j = 1:d.dim(2)
 	for k = 1:d.dim(3)
 	  timecourse = squeeze(d.data(i,j,k,:));
@@ -143,7 +143,7 @@ if strcmp(runtype,'both') || strcmp(runtype,'filter')
     end
     % detrend and high pass filter
     for k = 1:d.dim(3)
-      disppercent(k/d.dim(3));
+      mlrDispPercent(k/d.dim(3));
       for j = 1:d.dim(2)
 	timecourses = squeeze(d.data(:,j,k,:));
 	timecourses = eventRelatedDetrend(timecourses')';
@@ -153,14 +153,14 @@ if strcmp(runtype,'both') || strcmp(runtype,'filter')
     end
   elseif (isfield(d,'roidata'))
     for i = 1:size(d.roidata,1)
-      disppercent(i/size(d.roidata,1))
+      mlrDispPercent(i/size(d.roidata,1))
       timecourse = squeeze(d.roidata(i,:));
       timecourse = eventRelatedDetrend(timecourse);
       timecourse = ifft(fft(timecourse) .* hipassfilter');
       d.roidata(i,:) = real(timecourse);
     end
   end
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 

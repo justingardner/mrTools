@@ -46,7 +46,7 @@ if (scanNum < 1) || (scanNum > viewGet(view,'nScans'))
 end
 
 % grab info
-disppercent(-inf,'(scanInfo) Gathering scan info');
+mlrDispPercent(-inf,'(scanInfo) Gathering scan info');
 description = viewGet(view,'description',scanNum,groupNum);
 scanVoxelSize = viewGet(view,'scanVoxelSize',scanNum,groupNum);
 tr = viewGet(view,'TR',scanNum,groupNum);
@@ -138,14 +138,14 @@ if displayInDialog | (nargout == 1)
     paramsInfo{end+1} = {extraFields{i} extraFieldsValue{i} 'editable=0','Parameter from associated mat file'};
   end
 
-  disppercent(inf);
+  mlrDispPercent(inf);
   if (nargout == 1)
     retval = mrParamsDefault(paramsInfo);
   else
     mrParamsDialog(paramsInfo,'Scan info',nCols);
   end
 else
-  disppercent(inf);
+  mlrDispPercent(inf);
   disp(sprintf('%s',description));
   disp(sprintf('Filename: %s GroupName: %s',filename,groupName));
   for i = 1:length(originalFilename)

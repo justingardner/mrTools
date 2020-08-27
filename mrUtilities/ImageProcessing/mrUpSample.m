@@ -77,31 +77,31 @@ if (nLevels >= 1)
         
         [nrows ncols nslices nframes] = size(data);
 
-        disppercent(-inf,'(mrUpSample) upsampling the rows');
+        mlrDispPercent(-inf,'(mrUpSample) upsampling the rows');
         data = reshape(data,[nrows ncols*nslices*nframes]);
         data = upConv(data, filt, 'zero', [2 1]);
         nrows = nrows*2;
         data = reshape(data,[nrows ncols nslices nframes]);
-        disppercent(inf);
+        mlrDispPercent(inf);
 
-        disppercent(-inf,'(mrUpSample) upsampling the columns');
+        mlrDispPercent(-inf,'(mrUpSample) upsampling the columns');
         data = permute(data,[2 1 3 4]);
         data = reshape(data,[ncols nrows*nslices*nframes]);
         data = upConv(data, filt, 'zero', [2 1]);
         ncols = ncols*2;
         data = reshape(data,[ncols nrows nslices nframes]);
         data = permute(data,[2 1 3 4]);
-        disppercent(inf);
+        mlrDispPercent(inf);
         
         if size(data,3) > 1
-          disppercent(-inf,'(mrUpSample) upsampling the slices');
+          mlrDispPercent(-inf,'(mrUpSample) upsampling the slices');
           data = permute(data,[3 2 1 4]);
           data = reshape(data,[nslices ncols*nrows*nframes]);
           data = upConv(data, filt, 'zero', [2 1]);
           nslices = nslices*2;
           data = reshape(data,[nslices ncols nrows nframes]);
           data = permute(data,[3 2 1 4]);
-          disppercent(inf);
+          mlrDispPercent(inf);
         end
     end
 else

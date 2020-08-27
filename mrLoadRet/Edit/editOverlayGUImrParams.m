@@ -142,12 +142,12 @@ currentOverlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
 
 %iff the overlay has changed, put the old overlay params back
 if ~isequalwithequalnans(oldOverlay,currentOverlay)
-  disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
+  mlrDispPercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
   % set the new overlay
   thisView = viewSet(thisView,'newOverlay', oldOverlay);
   % and refresh
   refreshMLRDisplay(thisView.viewNum);
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 
@@ -342,12 +342,12 @@ function mrCmapCallback(params,viewNum)
   
   %if the overlay has changed, 
   if ~isequalwithequalnans(newOverlay,currentOverlay)
-    disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
+    mlrDispPercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
     % set the new overlay
     thisView = viewSet(thisView,'newOverlay', newOverlay);
     % and refresh
     refreshMLRDisplay(thisView.viewNum);
-    disppercent(inf);
+    mlrDispPercent(inf);
   end
 
 

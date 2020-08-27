@@ -104,7 +104,7 @@ currentROI = viewGet(v,'currentROI');
 % now go through and convert anything the user selected
 for roinum = params.roiList
   roiName = viewGet(v,'roiname', roinum);
-  disppercent(-inf,sprintf('(convertROICorticalDepth) Processing ROI %i:%s',roinum,roiName));
+  mlrDispPercent(-inf,sprintf('(convertROICorticalDepth) Processing ROI %i:%s',roinum,roiName));
   % get the roi
   v = viewSet(v,'curROI',roinum);
   % now try to figure out what base this was created on
@@ -136,7 +136,7 @@ for roinum = params.roiList
   % get the roiBaseCoords
   roiBaseCoords = getROICoordinates(v,roinum,[],[],'baseNum',baseNum);
   if isempty(roiBaseCoords)
-    disppercent(inf);
+    mlrDispPercent(inf);
     mrWarnDlg(sprintf('(convertROICorticalDepth) %s has no coordinates on this flat',roiName));
     continue;
   end
@@ -160,7 +160,7 @@ for roinum = params.roiList
   % if we don't find most of the coordinates, then
   % probably good to complain and give up
   if (length(roiInBase)/length(roiBaseCoordsLinear)) < 0.1
-    disppercent(inf);
+    mlrDispPercent(inf);
     mrWarnDlg(sprintf('(convertROICorticalDepth) !!! %s has less than %0.0f%% coordinates on surface %s. Perhaps you need to load the base that it was orignally created on. !!!',roiName,ceil(100*(length(roiInBase)/length(roiBaseCoordsLinear))),viewGet(v,'baseName',baseNum)));
     continue;
   end
@@ -250,7 +250,7 @@ for roinum = params.roiList
     % modifyROI to do it since we have called modifyROI twice)
     v = viewSet(v,'prevROIcoords',curROICoords);
   end
-  disppercent(inf);
+  mlrDispPercent(inf);
   fprintf(1,'(convertROICorticalDepth) Number of voxels in original ROI: %d\t Number of voxels in modified ROI: %d\n',nVoxelsOriginalROI,size(additionalRoiBaseCoords,2));
 end
 v = viewSet(v,'currentROI',currentROI);

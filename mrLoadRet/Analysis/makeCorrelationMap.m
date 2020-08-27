@@ -38,7 +38,7 @@ if ismember(viewGet(v,'analysisType'),{'erAnal','deconvAnal');
     % keep name of roi
     roiName = roi{1}.name;
     % for this case, we get all the ehdrs for the roi
-    disppercent(-inf,sprintf('(makeCorrelationMap) Using roi %s as source',roiName));
+    mlrDispPercent(-inf,sprintf('(makeCorrelationMap) Using roi %s as source',roiName));
     roi{1}.scanCoords = getROICoordinates(v,roi{1});
     roiN = size(roi{1}.scanCoords,2); 
     for i = 1:roiN
@@ -46,9 +46,9 @@ if ismember(viewGet(v,'analysisType'),{'erAnal','deconvAnal');
       yi = roi{1}.scanCoords(2,i);
       si = roi{1}.scanCoords(3,i);
       sourceHDR(i,:) = reshape(squeeze(d.ehdr(xi,yi,si,:,:)),1,d.nhdr*d.hdrlen);
-      disppercent(i/roiN);
+      mlrDispPercent(i/roiN);
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
   end
   
   % now reshape the ehdr matrix as a matrix where the first dimension

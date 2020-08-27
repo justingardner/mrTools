@@ -143,7 +143,7 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
   if ~isfield(fitParams.prefit,'modelResponse')
     % get number of workers
     nProcessors = mlrNumWorkers;
-    disppercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
+    mlrDispPercent(-inf,sprintf('(pRFFit) Computing %i prefit model responses using %i processors',fitParams.prefit.n,nProcessors));
     % first convert the x/y and width parameters into sizes
     % on the actual screen
     fitParams.prefit.x = fitParams.prefit.x*fitParams.stimWidth;
@@ -161,7 +161,7 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
 	disp(sprintf('(pRFFit) Computing prefit model response %i/%i: Center [%6.2f,%6.2f] rfHalfWidth=%5.2f',i,fitParams.prefit.n,fitParams.prefit.x(i),fitParams.prefit.y(i),fitParams.prefit.rfHalfWidth(i)));
       end
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
     fitParams.prefit.modelResponse = allModelResponse;
     clear allModelResponse;
   end

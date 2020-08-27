@@ -1006,7 +1006,7 @@ b.fascicles.intersect(iIntersect).intersectWith = params.intersectSurface;
 b.fascicles.intersect(iIntersect).d = d;
 v = viewSet(v,'base',b,baseNum);
 
-disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
+mlrDispPercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
 for iFascicle = 1:f.n
   if d(iFascicle) > 1
     % number of vertices and triangles
@@ -1028,9 +1028,9 @@ for iFascicle = 1:f.n
     nRunningTotalVertices = nRunningTotalVertices + nVertices;
     nRunningTotalTris= nRunningTotalTris + nTris;
   end
-  disppercent(iFascicle/f.n);
+  mlrDispPercent(iFascicle/f.n);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % make right length
 b.coordMap.tris = b.coordMap.tris(1:nRunningTotalTris,:);
@@ -1377,7 +1377,7 @@ b.data = [];
 nRunningTotalVertices = 0;
 nRunningTotalTris = 0;
 
-disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
+mlrDispPercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
 for iFascicle = 1:f.n
   if dispList(iFascicle)
 
@@ -1400,9 +1400,9 @@ for iFascicle = 1:f.n
     nRunningTotalVertices = nRunningTotalVertices + nVertices;
     nRunningTotalTris= nRunningTotalTris + nTris;
   end
-  disppercent(iFascicle/f.n);
+  mlrDispPercent(iFascicle/f.n);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % make right length
 b.coordMap.tris = b.coordMap.tris(1:nRunningTotalTris,:);

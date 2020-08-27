@@ -37,7 +37,7 @@ end
 
 homeDir = viewGet(v,'homeDir');
 try
-  disppercent(-inf,sprintf('(mrSaveView) Saving %s/%s',homeDir,lastViewFile));
+  mlrDispPercent(-inf,sprintf('(mrSaveView) Saving %s/%s',homeDir,lastViewFile));
         % save the view in the current directory
   view = v;
   % replace view.figure with figure number (to prevent opening on loading
@@ -56,8 +56,8 @@ try
     save(fullfile(homeDir,lastViewFile), 'view', 'viewSettings', '-v7.3');
   end
   % save .mrDefaults in the home directory
-  disppercent(inf);
+  mlrDispPercent(inf);
 catch
-  disppercent(inf);
+  mlrDispPercent(inf);
   mrErrorDlg(sprintf('(mrQuit) Could not save %s',lastViewFile));
 end

@@ -82,9 +82,9 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     fprintf('(mrQuit) Closing %i open views',viewCount);
   end
   drawnow
-  disppercent(-inf,sprintf('(mrQuit) Saving %s',mrDefaultsFilename));
+  mlrDispPercent(-inf,sprintf('(mrQuit) Saving %s',mrDefaultsFilename));
   saveMrDefaults;
-  disppercent(inf);
+  mlrDispPercent(inf);
 else
   if ~isempty(v)
     closereq;

@@ -1569,7 +1569,7 @@ case{'surfaceroihandle'}
       analysisNum = varargin{1};
     end
     analysis = viewGet(view,'analysis',analysisNum);
-    disppercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
+    mlrDispPercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
 
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
     newOverlayNum = nOverlays;
@@ -1663,9 +1663,9 @@ case{'surfaceroihandle'}
           end
         end
       end
-      disppercent(iOverlay/length(val));
+      mlrDispPercent(iOverlay/length(val));
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
 
     % Update the gui
     overlayNames = viewGet(view,'overlayNames',analysisNum);
