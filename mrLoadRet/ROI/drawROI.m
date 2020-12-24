@@ -302,7 +302,11 @@ else
 
    case 'line'
     % grab two points from the image;
-    [xi yi] = getpts(fig);
+    if strcmp(mrGetPref('roiPolygonMethod'),'getptsNoDoubleClick')
+      [xi, yi] = getptsNoDoubleClick(fig);
+    else
+      [xi, yi] = getpts(fig);
+    end
 
     xii=[]; yii=[];
     for p=1:length(xi)-1
