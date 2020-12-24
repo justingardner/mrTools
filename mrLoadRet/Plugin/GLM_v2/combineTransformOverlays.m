@@ -1,5 +1,5 @@
 function [thisView,params] = combineTransformOverlays(thisView,params,varargin)
-% [thisView,params] = combineTransformOverlays(thisView,thisView,overlayNum,scanNum,x,y,z)
+% [thisView,params] = combineTransformOverlays(thisView,params,overlayNum,scanNum,x,y,z)
 %
 %   combines (masked) Overlays according to matlab or custom operators  in current view and current analysis
 %
