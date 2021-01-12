@@ -108,7 +108,7 @@ gSurfViewer.redo.value = [];
 
 filepath = '';
 
-disppercent(-inf,'(mrSurfViewer) Loading surfaces');
+mlrDispPercent(-inf,'(mrSurfViewer) Loading surfaces');
 
 % load the surface
 gSurfViewer.outerSurface = loadSurfOFF(sprintf('%s.off',stripext(outerSurface{1})));
@@ -200,7 +200,7 @@ end
 if isempty(gSurfViewer.curv)
   return
 end
-disppercent(inf);
+mlrDispPercent(inf);
 curv{end+1} = 'Find file';
 
 % guess any nifti file for anatomy
@@ -716,11 +716,11 @@ if strcmp(params.anatomy,'Find file')
 end
 
 % load the anatomy and view
-disppercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
+mlrDispPercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
 if initAnatomy(params.anatomy);
   gSurfViewer = xformSurfaces(gSurfViewer);
 else
-  disppercent(inf);
+  mlrDispPercent(inf);
   return
 end
 
@@ -729,7 +729,7 @@ global gParams
 gSurfViewer.whichSurface = 5;
 set(gParams.ui.varentry{1},'Value',gSurfViewer.whichSurface)
 refreshFlatViewer([],1);
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   switchOverlays   %%
@@ -771,7 +771,7 @@ else
 end
 
 % try to load it
-disppercent(-inf,sprintf('(mrSurfViewer) Loading %s',filename));
+mlrDispPercent(-inf,sprintf('(mrSurfViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curv')
     file = myLoadCurvature(filename);
@@ -818,7 +818,7 @@ end
 gSurfViewer = xformSurfaces(gSurfViewer);
 refreshFlatViewer([],1);
 
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   myLoadSurface   %%

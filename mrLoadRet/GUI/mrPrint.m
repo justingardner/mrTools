@@ -25,9 +25,9 @@ baseType = viewGet(v,'baseType');
 
 
 % grab the image
-disppercent(-inf,'(mrPrint) Rerendering image');
+mlrDispPercent(-inf,'(mrPrint) Rerendering image');
 [img base roi overlays altBase] = refreshMLRDisplay(viewGet(v,'viewNum'));
-disppercent(inf);
+mlrDispPercent(inf);
 
 % validate rois
 validROIs = {};
@@ -363,7 +363,7 @@ drawnow;
 if baseType ~= 2
   sliceNum = viewGet(v,'currentSlice');
   label = {};
-  disppercent(-inf,'(mrPrint) Rendering ROIs');
+  mlrDispPercent(-inf,'(mrPrint) Rendering ROIs');
   visibleROIs = viewGet(v,'visibleROIs');
   for rnum = 1:length(roi)
     % check for lines
@@ -440,7 +440,7 @@ if baseType ~= 2
     set(h,'FontSize',10);
     set(h,'HorizontalAlignment','center');
   end
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 % bring up print dialog
@@ -495,7 +495,7 @@ if viewGet(v,'baseType')
   baseName = sprintf('%s%s',baseName,fixBadChars(corticalDepth,{'.','_'}));
 end
 
-disppercent(-inf,'(mrPrint) Calculating smoothed ROIs');
+mlrDispPercent(-inf,'(mrPrint) Calculating smoothed ROIs');
 for r=1:length(roi)
   if ~isempty(roi{r})
     % get the x and y image coordinates
@@ -589,9 +589,9 @@ for r=1:length(roi)
       roiRGB(:,:,2) = roiRGB(:,:,2) + roiBits.*color(2);
       roiRGB(:,:,3) = roiRGB(:,:,3) + roiBits.*color(3);
       roiMask = roiMask | roiBits;
-      disppercent(r/length(roi));
+      mlrDispPercent(r/length(roi));
     end 
   end
 end    
-disppercent(inf);
+mlrDispPercent(inf);
 

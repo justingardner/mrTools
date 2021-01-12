@@ -135,7 +135,7 @@ if ~isfield(s,'pRFStimImage') || recomputeStimImage
   imageHeight = s.myscreen.imageHeight;
   [stim.x stim.y] = ndgrid(-imageWidth/2:imageWidth/(screenWidth-1):imageWidth/2,-imageHeight/2:imageHeight/(screenHeight-1):imageHeight/2);
 
-  if verbose,disppercent(-inf,'(pRFGetStimImageFromStimfile) Computing stimulus images');end
+  if verbose,mlrDispPercent(-inf,'(pRFGetStimImageFromStimfile) Computing stimulus images');end
   warnOnStimfileMissingInfo = true;
   for iImage = 1:length(stim.t)
     im = createMaskImage(s,stim.t(iImage));
@@ -160,9 +160,9 @@ if ~isfield(s,'pRFStimImage') || recomputeStimImage
       im = zeros(screenWidth,screenHeight);
     end
     stim.im(1:screenWidth,1:screenHeight,iImage) = im;
-    if verbose,disppercent(iImage/length(stim.t));end
+    if verbose,mlrDispPercent(iImage/length(stim.t));end
   end
-  if verbose,disppercent(inf);end
+  if verbose,mlrDispPercent(inf);end
 
   % close screen
   mglSetParam('offscreenContext',0);

@@ -9,11 +9,22 @@
 %             many workers. If it is set to 1 then it will ask user to
 %             choose
 %
+%             If you want to always avoid using the parallel toolbox in mlr
+%             then set the global mlrNoParallel to 0
+%
 function n = mlrNumWorkers(numWorkers)
 
 % check arguments
 if ~any(nargin == [0 1])
   help mlrNumWorkers
+  return
+end
+
+% check to see if we do not want to use parallel
+global mlrNoParallel
+if mlrNoParallel
+  disp(sprintf('(mlrNumWorkers) mlrNoParallel has been set to not run multiple workers'));
+  n = 1;
   return
 end
 

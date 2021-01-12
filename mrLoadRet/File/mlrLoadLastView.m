@@ -24,12 +24,12 @@ if ~any(nargin == [0 1])
   return
 end
 
-if nargin == 0;
+if nargin == 0
   filename = 'mrLastView.mat';
 end
 filename = setext(filename,'mat');
 
-if ~mlrIsFile(filename);
+if ~mlrIsFile(filename)
   mrWarnDlg('(mlrLoadLastView) Could not find %s',filename);
   return
 end
@@ -46,15 +46,7 @@ if ~verLessThan('matlab','8.1')
   if isfield(check,'viewSettings') && isfield(check.viewSettings,'version') && (check.viewSettings.version>=2.0)
     % then we are ok, load the view part
     l = load(filename,'view');
-    % return them both
-    if nargout == 1
-      % return as single argument
-      v = l;
-    else
-      % or as two
-      v = l.view;
-      viewSettings = check.viewSettings;
-    end
+    l.viewSettings = check.viewSettings;
   else
     if verLessThan('matlab','8.4')
       % it can load, but will give lots of warnings, so tell user what is going on 
@@ -65,22 +57,13 @@ if ~verLessThan('matlab','8.1')
 %       mrWarnDlg(sprintf('(mlrLoadLastView) The mrLastView found: %s is from an older version of matlab, you will likely see a bunch of weird warnings here, but ignore them - they have to do with the latest matlab not having the ability to load old mat files that had figure handles in them. Send complaints to Mathworks!',filename));
       % this causes lots of weird warnings, but doesn't seem to crash
       if isfield(l,'view') && isfield(l.view,'figure')
-	if ishandle(l.view.figure)
-	  close(l.view.figure);
-	end
-	l.view.figure = [];
-      end
-      % return as either one or two arguments
-      if nargout == 1
-	% return as single argument
-	v = l;
-      else
-	% or as two
-	v = l.view;
-	viewSettings = l.viewSettings;
+        if ishandle(l.view.figure)
+          close(l.view.figure);
+        end
+        l.view.figure = [];
       end
     else
-      % serious problems occur in 8.5
+      % serious problems occur starting at 8.5
       mrWarnDlg(sprintf('(mlrLoadLastView) The mrLastView found: %s is from an older version of matlab which allowed saving figure handles. The geniuses at Mathworks have busted that, so loading this file will no longer work. Moving mrLastView.mat to mrLastView.mat.old You will lose any rois that were loaded but not saved and mrLoadRet will start up without bases and analyses loaded. If you really need what was in the viewer we suggest running on an earlier version of matlab - you just then need to copy mrLastView.mat.old back to mrLastView.mat, open mrLoadRet and then quit - this will save the file back w/out the offending figure handles. Once this is done, you should be able to run the newer version of matlab with the new mrLastView.',filename),'Yes');
       movefile(filename,sprintf('%s.old',filename));
       return
@@ -92,12 +75,16 @@ if ~verLessThan('matlab','8.1')
 else
   % otherwise just load
   l = load('mrLastView');
-  if nargout == 1
-    v = l;
-  else
-    v = l.view;
-    viewSettings = l.viewSettings;
-  end
+end
+
+% return as either one or two arguments
+if nargout == 1
+  % return as single argument
+  v = l;
+else
+  % or as two
+  v = l.view;
+  viewSettings = l.viewSettings;
 end
 
 

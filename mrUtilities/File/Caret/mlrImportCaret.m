@@ -292,9 +292,9 @@ filenames{2} = caretName;
 function checkAllCaretFiles(surfRelaxDir,caretFileDir)
 
 % check directory
-disppercent(-inf,sprintf('(mlrImportCaret) Checking %s directory for topo and coord files',caretFileDir));
+mlrDispPercent(-inf,sprintf('(mlrImportCaret) Checking %s directory for topo and coord files',caretFileDir));
 [topoFiles coordFiles] = listCaretDir(sprintf('dirname=%s',caretFileDir),'noDisplay=1');
-disppercent(inf);
+mlrDispPercent(inf);
 
 % return if files not found
 if isempty(topoFiles)

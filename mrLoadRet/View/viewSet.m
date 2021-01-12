@@ -864,22 +864,24 @@ switch lower(param)
 	mlrGuiSet(view,'rotate',baseRotate);
       end
       baseTilt = viewGet(view,'baseTilt',baseNum);
-      if baseType == 2
-	% allow export
-	mlrAdjustGUI(view,'set','Export surface','Enable','on');
-	% allow tilt
-	mlrGuiSet(view,'baseTilt',baseTilt);
-	if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
-	  % turn on free rotation
-	  mlrSetRotate3d(view,1);
-	else
-	  mlrSetRotate3d(view,0);
-	end
-      else
-	% do not allow export
-	mlrAdjustGUI(view,'set','Export surface','Enable','off');
-	% otherwise turn off free rotation
-	mlrSetRotate3d(view,0);
+      if ~isempty(viewGet(view,'fignum'))
+        if baseType == 2
+          % allow export
+          mlrAdjustGUI(view,'set','Export surface','Enable','on');
+          % allow tilt
+          mlrGuiSet(view,'baseTilt',baseTilt);
+          if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
+            % turn on free rotation
+            mlrSetRotate3d(view,1);
+          else
+            mlrSetRotate3d(view,0);
+          end
+        else
+          % do not allow export
+          mlrAdjustGUI(view,'set','Export surface','Enable','off');
+          % otherwise turn off free rotation
+          mlrSetRotate3d(view,0);
+        end
       end
     end
     % see if there are any registered callbacks
@@ -1567,7 +1569,7 @@ case{'surfaceroihandle'}
       analysisNum = varargin{1};
     end
     analysis = viewGet(view,'analysis',analysisNum);
-    disppercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
+    mlrDispPercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
 
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
     newOverlayNum = nOverlays;
@@ -1661,9 +1663,9 @@ case{'surfaceroihandle'}
           end
         end
       end
-      disppercent(iOverlay/length(val));
+      mlrDispPercent(iOverlay/length(val));
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
 
     % Update the gui
     overlayNames = viewGet(view,'overlayNames',analysisNum);
@@ -1752,7 +1754,7 @@ case{'surfaceroihandle'}
         %check if an Edit Overlay Menu is open and relaunch if current overlay has changed
         if ~isequal(curOverlay,overlayNum)
           global gParams
-          if ~isempty(gParams)
+          if ~isempty(gParams) && isfield(gParams,'figlocstr')
             if strcmp(gParams.figlocstr{1},'mrParamsDialog_Edit_overlay_parameters')
               editOverlayGUImrParams(view);
             end

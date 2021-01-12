@@ -159,7 +159,7 @@ for i = 1:length(fidnames)
 	disp(sprintf('(fid2nifti) Num receivers (%i) does not match data dim (%i)',numReceivers,fid.dim(end)));
       end
       % display what we are doing
-      if verbose,disppercent(-inf,sprintf('(fid2nifti) Taking sum of squares of %i coils',numReceivers));end
+      if verbose,mlrDispPercent(-inf,sprintf('(fid2nifti) Taking sum of squares of %i coils',numReceivers));end
       % merge the coils
       for volNum = 1:size(fid.data,4)
 	sumOfSquares = zeros(fid.dim(1:3));
@@ -167,9 +167,9 @@ for i = 1:length(fidnames)
 	  sumOfSquares = sumOfSquares+fid.data(:,:,:,volNum,receiverNum).^2;
 	end
 	data(:,:,:,volNum) = sqrt(sumOfSquares);
-	if verbose,disppercent(volNum/size(fid.data,4));end
+	if verbose,mlrDispPercent(volNum/size(fid.data,4));end
       end
-      if verbose,disppercent(inf);end
+      if verbose,mlrDispPercent(inf);end
       fid.data = data;
       fid.dim = size(data);
     end
