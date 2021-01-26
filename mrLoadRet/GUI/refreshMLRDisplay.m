@@ -1,4 +1,4 @@
-function [img base roi overlays altBase] = refreshMLRDisplay(viewNum)
+function [img, base, roi, overlays, altBase, v] = refreshMLRDisplay(viewNum)
 %	$Id: refreshMLRDisplay.m 2838 2013-08-12 12:52:20Z julien $
 
 mrGlobals
