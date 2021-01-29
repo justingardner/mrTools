@@ -662,17 +662,13 @@ nArgs = 0;
 arguments = cell(0);
 remain = argumentString;
 while ~isempty(remain)
-   nArgs = nArgs+1;
-   [token,remain] = strtok(remain, separator);
-   try
-      arguments{nArgs} = eval(token);
-   catch exception
-      if ismember(exception.identifier,{'MATLAB:UndefinedFunction','MATLAB:minrhs'})
-         arguments{nArgs} = token;
-      else
-         mrErrorDlg(['(parseArguments) could not read argument: ' exception.message]);
-      end
-   end
+  nArgs = nArgs+1;
+  [token,remain] = strtok(remain, separator);
+  try
+    arguments{nArgs} = eval(token);
+  catch
+    arguments{nArgs} = token;
+  end
       
 end
 
