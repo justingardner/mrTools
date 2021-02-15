@@ -436,7 +436,8 @@ else
   fprintf(f,'|%s |%s |%s |%s |%i |\n',mlrAnatDBGetUsername,fileType,datestr(now),comments,branchNum);
 end
 % write old entries
-for iLine = 1:length(subjectPageScan{1})
+%start from line 2 because line 1 entries are empty
+for iLine = 2:length(subjectPageScan{1})
   if subjectPageScan{3}{iLine}(1) == '['
     % print with a link: [[ ]]
     fprintf(f,'|%s |[%s] |%s |%s |%i |\n',subjectPageScan{2}{iLine},strtrim(subjectPageScan{3}{iLine}),subjectPageScan{4}{iLine},subjectPageScan{5}{iLine},subjectPageScan{6}(iLine));
