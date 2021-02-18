@@ -35,7 +35,7 @@ if isdir(filename)
   % look for label files in directory
   for iFile = 1:length(listing)
     % see if it is a label
-    if strcmp('label',getext(listing(iFile).name));
+    if strcmp('label',getext(listing(iFile).name))
       labelNames{end+1} = listing(iFile).name;
     end
   end
@@ -75,23 +75,7 @@ if ~mlrIsFile(filename)
   return
 end
 
-
-% open file
-f = fopen(filename);
-
-% get header
-header = fgetl(f);
-
-% get number of vertices
-nVertices = str2num(fgetl(f));
-% get each vertex row-by-row
-for iVertex = 1:nVertices
-  vertex(iVertex,:) = str2num(fgetl(f));
-end
-
-% close file
-fclose(f);
-
+[vertex,header] = mlrReadFreesurferLabel(filename);
 
 % decide if this is left or right
 if isempty(hemi)
