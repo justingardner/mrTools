@@ -147,8 +147,10 @@ for iRoi = 1:length(roiNum)
 
       % reshape to vertices * depths
       roiBaseCoordsLinear = reshape(roiBaseCoordsLinear, [size(baseCoordMap.coords,1)*size(baseCoordMap.coords,2) size(baseCoordMap.coords,5)]);
-      % Multiple cortical depths are not taken into account: a vertex can be in the ROI at any depth:   
-      roiBaseCoordsLinear = find(any(roiBaseCoordsLinear,2));
+      % Multiple cortical depths are not taken into account: a vertex can be in the ROI at any depth:
+      % but let's be conservative and consider only ROI voxels in the central part of cortical ribbon
+      nDepths = size(roiBaseCoordsLinear,2);
+      roiBaseCoordsLinear = find(any(roiBaseCoordsLinear(:,ceil((nDepths-1)/4)+1:floor(3*(nDepths-1)/4)+1),2));
       %actual coordinates in label file will be midway between inner and outer surface
       vertexCoords = (baseCoordMap.innerVtcs(roiBaseCoordsLinear,:)+baseCoordMap.outerVtcs(roiBaseCoordsLinear,:))/2;
       % change vertex coordinates to freesurfer system: 0 is in the middle of the volume and coordinates are in mm
