@@ -157,19 +157,21 @@ for iRoi = 1:length(roiNum)
       % (this does not seem to give the correct coordinates, but coordinates are usually not needed in label files)
       vertexCoords = (vertexCoords - repmat(baseCoordMap.dims/2 ,size(vertexCoords,1),1)) ./ repmat(hdr.pixdim([2 3 4])',size(vertexCoords,1),1);
       % (this assumes that the base volume for this surface is either the original Freesurfer volume, or has been cropped symmetrically, which is usually the case)
-
-      % a Freesurfer label file is text file with a list of vertex numbers and coordinates
-      fileID = fopen(saveFilename{iRoi},'w');
-      freesurferName = extractBetween(baseCoordMap.path,'subjects\','\surfRelax');
-      if isempty(freesurferName)
-        freesurferName= '[????]';
-      elseif iscell(freesurferName)   %in newer versions of Matlab, extractBetween may reutrn a cell array
-        freesurferName = freesurferName{1};
+      
+      % find freesurfer subject name
+      if isempty(which('extractBetween'))
+        freesurferName = viewGet(v,'subject'); % this is an old version of Matlab and I can't be bothered to find a replacement for extractBetween()
+      else
+        freesurferName = extractBetween(baseCoordMap.path,'subjects\','\surfRelax');
+        if isempty(freesurferName)
+          freesurferName= viewGet(v,'subject');
+        elseif iscell(freesurferName)   %in newer versions of Matlab, extractBetween may return a cell array
+          freesurferName = freesurferName{1};
+        end
       end
-      fprintf(fileID,'#!ascii label, ROI exported from subject %s using mrTools (mrLoadRet v%.1f)\n', freesurferName, mrLoadRetVersion);
-      fprintf(fileID,'%d\n', size(vertexCoords,1));
-      fprintf(fileID,'%d %f %f %f 1\n', [roiBaseCoordsLinear-1, vertexCoords]');
-      fclose(fileID);
+      labelHeader = sprintf('#!ascii label, ROI exported from subject %s using mrTools (mrLoadRet v%.1f)\n', freesurferName, mrLoadRetVersion);
+      % a Freesurfer label file is text file with a list of vertex numbers and coordinates
+      mlrWriteFreesurferLabel(saveFilename{iRoi},labelHeader,[roiBaseCoordsLinear-1, vertexCoords, ones(size(vertexCoords,1),1)])
     else
       % set all the roi coordinates to 1
       d(roiBaseCoordsLinear) = 1;
