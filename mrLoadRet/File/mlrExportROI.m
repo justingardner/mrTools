@@ -127,11 +127,13 @@ for iRoi = 1:length(roiNum)
     roiBaseCoords = roiBaseCoords(:,xCheck & yCheck & sCheck);
   end
   
-  % convert to linear coordinates
-  roiBaseCoordsLinear = mrSub2ind(hdr.dim(2:4)',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
 
   if ~isempty(baseCoordMap) && (baseType==1 || exportToFreesurferLabel)  %for flats and surfaces, use basecoordmap to transform ROI from canonical base to multi-depth flat map
+    roiBaseCoordsLinear = mrSub2ind(baseCoordMap.dims',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
     roiBaseCoordsLinear = ismember(baseCoordsLinear,roiBaseCoordsLinear);
+  else
+    % convert to linear coordinates
+    roiBaseCoordsLinear = mrSub2ind(hdr.dim(2:4)',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
   end
 
   % check roiBaseCoords
