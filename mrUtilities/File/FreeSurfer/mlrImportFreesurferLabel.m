@@ -14,7 +14,7 @@
 %
 %             See: http://gru.stanford.edu/doku.php/mrtools/atlas#freesurfer_labels
 %
-function roi = mlrImportFreesurferLabel(filename,varargin)
+function [roi,leftSurfaceNames,rightSurfaceNames] = mlrImportFreesurferLabel(filename,varargin)
 
 % check arguments
 if nargin < 1
@@ -97,15 +97,18 @@ end
 
 % choose which surface names to use
 if strcmp(hemi,'rh')
+  if isempty(rightSurfaceNames)
+    [~,rightSurfaceNames] = mlrGetSurfaceNames;
+  end
   surfaceNames = rightSurfaceNames;
-  if isempty(surfaceNames)
-    [~,surfaceNames] = mlrGetSurfaceNames;
-  end
 else
-  surfaceNames = leftSurfaceNames;
-  if isempty(surfaceNames)
-    [surfaceNames,~] = mlrGetSurfaceNames;
+  if isempty(leftSurfaceNames)
+    [leftSurfaceNames,~] = mlrGetSurfaceNames;
   end
+  surfaceNames = leftSurfaceNames;
+end
+if isempty(surfaceNames);
+  return;
 end
 
 % load the surface

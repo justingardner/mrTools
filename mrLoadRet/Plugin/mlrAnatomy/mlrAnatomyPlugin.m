@@ -506,19 +506,30 @@ function mlrAnatomyImportFreesurferLabel(hObject,eventdata)
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
 %get file names
-[labelFilenames,pathname] = uigetfile({'*.label','Freesurfer label files'},'Select Freesurfer label file(s)', '*.*','multiselect','on');
+[labelFilenames,pathname] = uigetfile({'*.label','Freesurfer label files'; '*.*',  'All Files (*.*)'},'Select Freesurfer label file(s)', '*.label','multiselect','on');
 if isnumeric(labelFilenames)
   return
 elseif ischar(labelFilenames)
   labelFilenames = {labelFilenames};
 end
 
+leftSurfaceNames = [];
+rightSurfaceNames = [];
 for iROI = 1:length(labelFilenames)
   %create volume ROI from label file
-  roi = mlrImportFreesurferLabel(fullfile(pathname,labelFilenames{iROI}));
-  % Add ROI to view
-  v = viewSet(v,'newROI',roi);
-  v = viewSet(v,'currentROI',viewGet(getMLRView,'nrois'));
+  % we assume that all labels correspond to the same surface to avoid asking for the surface paths for each ROI
+  [roi,leftSurfaceNames,rightSurfaceNames] = mlrImportFreesurferLabel(fullfile(pathname,labelFilenames{iROI}),...
+                                            'leftSurfaceNames',leftSurfaceNames,'rightSurfaceNames',rightSurfaceNames);
+  if isempty(roi)
+    mrWarnDlg(sprintf('Could not import label file %s',labelFilenames{iROI}));
+    if isempty(leftSurfaceNames) && isempty(rightSurfaceNames)
+      return;
+    end
+  else % Add ROI to view
+    v = viewSet(v,'newROI',roi);
+    v = viewSet(v,'currentROI',viewGet(getMLRView,'nrois'));
+  end
+  
 end
 
 refreshMLRDisplay(v);
