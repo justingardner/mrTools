@@ -94,15 +94,19 @@ if ~isfield(params,'roiSmooth') params.roiSmooth = 0;end
 
 % get the gui, so that we can extract colorbar
 fig = viewGet(v,'figNum');
-gui = guidata(fig);
+if ~isempty(fig) % this won't work with the view doesn't have a GUI figure associated with it
+  gui = guidata(fig);
 
-% grab the colorbar data
-H = get(gui.colorbar,'children');
-cmap = get(H(end),'CData');
-if size(cmap,1)>1
-  mrWarnDlg('(mrPrint) printing colorbar for multiple overlays is not implemented');
+  % grab the colorbar data
+  H = get(gui.colorbar,'children');
+  cmap = get(H(end),'CData');
+  if size(cmap,1)>1
+    mrWarnDlg('(mrPrint) printing colorbar for multiple overlays is not implemented');
+  end
+  cmap=squeeze(cmap(1,:,:));
+else
+  cmap = [];
 end
-cmap=squeeze(cmap(1,:,:));
 
 % display in graph window
 f = selectGraphWin;
@@ -217,7 +221,9 @@ end
 img(img<0) = 0;img(img>1) = 1;
 
 % set the colormap
-colormap(cmap);
+if ~isempty(cmap)
+  colormap(cmap);
+end
 
 % now display the images
 if baseType == 2
@@ -330,7 +336,7 @@ if params.plotDirections
 end
 
 % display the colormap
-if ~strcmp(params.colorbarLoc,'None')
+if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
   H = colorbar(params.colorbarLoc);
   % set the colorbar ticks, making sure to switch
   % them if we have a vertical as opposed to horizontal bar
