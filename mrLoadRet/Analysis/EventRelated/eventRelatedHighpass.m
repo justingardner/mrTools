@@ -60,7 +60,7 @@ if strcmp(runtype,'both') || strcmp(runtype,'init')
   end  
 
   % notch out highest frequency that we get with sense processing
-  if d.notchFilterForTSense
+  if ~fieldIsNotDefined(d,'notchFilterForTSense') && d.notchFilterForTSense
     if iseven(n)
       if d.notchFilterForTSense == 2
 	hipassfilter((n/2)+1) = 0;
