@@ -1,12 +1,12 @@
 % mrPrint.m
 %
 %        $Id$
-%      usage: mrPrint(v)
+%      usage: mrPrint(v,<'useDefault=1'>,<'roiSmooth=0'>,<'roiLabels=0'>)
 %         by: justin gardner
 %       date: 10/04/07
 %    purpose: puts a printable version of the data into the graph win
 %
-function retval = mrPrint(v,varargin)
+function f = mrPrint(v,varargin)
 
 % check arguments
 if nargin < 1
@@ -68,7 +68,7 @@ if baseType == 2
 else
   % ROI options for flatmaps and images  
   if ~isempty(roi)
-    paramsInfo{end+1} = {'roiLineWidth',1,'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
+    paramsInfo{end+1} = {'roiLineWidth',mrGetPref('roiContourWidth'),'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
     paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
     paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
     paramsInfo{end+1} = {'roiLabels',roiLabels,'type=checkbox','Print ROI name at center coordinate of ROI'};
