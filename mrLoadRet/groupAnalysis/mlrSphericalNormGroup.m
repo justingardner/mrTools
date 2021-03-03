@@ -313,7 +313,7 @@ for iSubj = 1:nSubjects
         end
 
         if overlayExists(iOverlay)
-          if endsWith(groupName,'Volume')
+          if length(groupName) > 6 && isequal(groupName(end-5:end),'Volume')
             mrWarnDlg(sprintf('(mlrSphericalNormGrousprintf) Subject %s: group %s seems to be a volume version of a flat base and needs to be converted using flatVol2OriginalVolume',...
                               params.mrLoadRetSubjectIDs{iSubj},groupName));
           end
