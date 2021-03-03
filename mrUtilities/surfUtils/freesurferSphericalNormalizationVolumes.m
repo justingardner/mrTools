@@ -86,8 +86,8 @@ end
 nSources = length(params.sourceVol);
 for iSource = 1:nSources
   if ~exist(params.sourceVol{iSource},'file')
-    mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find source volume %s',params.sourceVol{iSource}));
     if ~params.dryRun
+      mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find source volume %s',params.sourceVol{iSource}));
       return;
     end
   else
