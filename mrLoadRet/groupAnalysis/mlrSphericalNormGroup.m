@@ -320,9 +320,9 @@ for iSubj = 1:nSubjects
           overlayBaseName{iOverlay} = fixBadChars(viewGet(thisView,'overlayName'),badCharFixlist,[],maxNcharacters);
           if iSubj==1
             if isempty(params.templateOverlayNewNames)
-              params.templateOverlayNewNames{iOverlay} = overlayBaseName{iOverlay};
+              templateOverlayNewNames{iOverlay} = overlayBaseName{iOverlay};
             else
-              params.templateOverlayNewNames{iOverlay} = fixBadChars(params.templateOverlayNewNames{iOverlay},badCharFixlist,[],maxNcharacters);
+              templateOverlayNewNames{iOverlay} = fixBadChars(params.templateOverlayNewNames{iOverlay},badCharFixlist,[],maxNcharacters);
             end
           end
           % export overlays to NIFTI in scan space
@@ -388,12 +388,12 @@ for iSubj = 1:nSubjects
         hdr.time_units = 'subjects/conditions'; % I dont think this is is doing anything
         cbiWriteNifti(scanFileName{iGroup,1},data,hdr,'',{[],[],[],cOverlayConcat(iGroup)});
         % for log file
-        logfile{iGroup,1}.overlay{cOverlayConcat(iGroup),1} = params.templateOverlayNewNames{iOverlay};
+        logfile{iGroup,1}.overlay{cOverlayConcat(iGroup),1} = templateOverlayNewNames{iOverlay};
         logfile{iGroup,1}.subject{cOverlayConcat(iGroup),1} = params.mrLoadRetSubjectIDs{iSubj};
 
         if params.combineLeftAndRight
           cbiWriteNifti(scanFileName{iGroup,2},data,hdr,'',{[],[],[],cOverlayConcatLRcombined(iGroup)});
-          logfile{iGroup,2}.overlay{cOverlayConcatLRcombined(iGroup),1} = params.templateOverlayNewNames{iOverlay};
+          logfile{iGroup,2}.overlay{cOverlayConcatLRcombined(iGroup),1} = templateOverlayNewNames{iOverlay};
           logfile{iGroup,2}.leftRightDirection{cOverlayConcatLRcombined(iGroup),1} = 'normal';
           logfile{iGroup,2}.subject{cOverlayConcatLRcombined(iGroup),1} = params.mrLoadRetSubjectIDs{iSubj};
           cOverlayConcatLRcombined(iGroup) = cOverlayConcatLRcombined(iGroup)+1;
@@ -403,7 +403,7 @@ for iSubj = 1:nSubjects
           end
           hdr.time_units = 'subjects/conditions'; % I dont think this is is doing anything
           cbiWriteNifti(scanFileName{iGroup,2},data,hdr,'',{[],[],[],cOverlayConcatLRcombined(iGroup)});
-          logfile{iGroup,2}.overlay{cOverlayConcatLRcombined(iGroup),1} = params.templateOverlayNewNames{iOverlay};
+          logfile{iGroup,2}.overlay{cOverlayConcatLRcombined(iGroup),1} = templateOverlayNewNames{iOverlay};
           logfile{iGroup,2}.leftRightDirection{cOverlayConcatLRcombined(iGroup),1} = 'reversed';
           logfile{iGroup,2}.subject{cOverlayConcatLRcombined(iGroup),1} = params.mrLoadRetSubjectIDs{iSubj};
         end
