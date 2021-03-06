@@ -1,23 +1,36 @@
-% function volumeData = applyInverseBaseCoordMap(flat2volumeMap,flatData)
+% function volumeData = applyInverseBaseCoordMap(surf2volumeMap,volumeDims,surfData)
 %
-%   Transforms data from flattened cortical patch space to volume space
-%   according to the mapping in flat2volumeMap.
+%   Transforms data from surface or flattened cortical patch space
+%   to volume space according to the mapping in surf2volumeMap.
 %   The mapping must first be computed using function inverseBaseCoordMap:
-%     (e.g. flat2volumeMap = inverseBaseCoordMap(baseCoordsMap,volumeDims,<xform>) )
+%     (e.g. surf2volumeMap = inverseBaseCoordMap(baseCoordsMap,volumeDims,<xform>) )
 %
 %   Taken out of combineTransformOverlays.m (22/07/2020)
 %
 
-function volumeData = applyInverseBaseCoordMap(flat2volumeMap,volumeDims,flatData)
+function volumeData = applyInverseBaseCoordMap(surf2volumeMap,volumeDims,surfData)
+
+hWaitBar = mrWaitBar(-inf,'(applyInverseBaseCoordMap) Converting from surface to volume');
 
 volumeData = zeros(volumeDims);
 datapoints = zeros(volumeDims);
-hWaitBar = mrWaitBar(-inf,'(applyInverseBaseCoordMap) Converting from surface to volume');
-maxInstances = size(flat2volumeMap,2);
+
+% first find the longest non-zero row of the sparse flat2volumeMap matrix,
+% as it is often much longer than the other rows and so time can be saved by treating it differently
+longestRow = find(surf2volumeMap(:,end));
+for iRow = longestRow % in case there are several such rows (unlikely)
+  volumeData(iRow) = volumeData(iRow) + sum(surfData(surf2volumeMap(iRow,:)));
+  datapoints(iRow) = size(surf2volumeMap,2);
+end
+surf2volumeMap(longestRow,:) = 0;
+surf2volumeMap(:,sum(surf2volumeMap>0)==0) = [];
+
+% now do the rest colum by column
+maxInstances = size(surf2volumeMap,2);
 for i=1:maxInstances
   mrWaitBar( i/maxInstances, hWaitBar);
-  thisBaseCoordsMap = full(flat2volumeMap(:,i));
-  newData = flatData(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
+  thisBaseCoordsMap = surf2volumeMap(:,i);
+  newData = surfData(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
   indices = find(thisBaseCoordsMap);
   notNaN = ~isnan(newData);
   volumeData(indices(notNaN)) = volumeData(indices(notNaN)) + newData(notNaN);
