@@ -65,7 +65,7 @@ for iScan = scanList
 %     %put slices on 4th dimensions
 %     overlayData{cScan} = permute(overlayData{cScan},[1 2 4 3]);
   else
-    scanDims = viewGet(thisView,'scandims');
+    scanDims = viewGet(thisView,'scandims',iScan);
     overlayData{cScan}=NaN([scanDims nOverlaysInAnalysis]);
     cOverlay=0;
     for iOverlay = overlaysToGet

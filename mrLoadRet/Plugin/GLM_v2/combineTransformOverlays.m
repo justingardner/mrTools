@@ -84,7 +84,7 @@ if ieNotDefined('params')
      {'roiMask',roiMaskMenu,'type=popupmenu','Whether to mask the overlay(s) with one or several ROIs. ''None'' will not mask. ''Union'' and ''Interssection'' will mask the overlay with the union or intersection of select ROIs. Check whether this option is compatible with ''baseSpace'''},...
      {'baseSpace',params.baseSpace,'type=checkbox',baseSpaceOption,'Transforms overlays into the current base volume before applying the transform/combine function, and back into overlay space afterwards. Only implemented for flat maps (all cortical depths are used).'},...
      {'baseSpaceInterp',baseSpaceInterpMenu,'type=popupmenu','contingent=baseSpace','Type of base space interpolation '},...
-     {'exportToNewGroup',params.exportToNewGroup,'type=checkbox','contingent=baseSpace','Exports results in base sapce to new group, scan and analysis. Warning: for flat maps, the data is exported to a volume in an arbitrary space. ROIs and overlays defined outside this new group will not be in register.'},...
+     {'exportToNewGroup',params.exportToNewGroup,'type=checkbox','contingent=baseSpace','Exports results in base space to new group, scan and analysis. Warning: for flat maps, the data is exported to a volume in an arbitrary space. ROIs and overlays defined outside this new group will not be in register.'},...
      {'outputName',params.outputName,'radical of the output overlay names'},...
      {'printHelp',0,'type=pushbutton','callback',@printHelp,'passParams=1','buttonString=Print combineFunction Help','Prints combination function help in command window'},...
             };
@@ -174,17 +174,17 @@ nScans = viewGet(thisView,'nScans');
 overlayData = viewGet(thisView,'overlays');
 overlayData = overlayData(params.overlayList);
 if params.baseSpace
-  base2scan = viewGet(thisView,'base2scan');
   baseType = viewGet(thisView,'basetype');
-  if any(any(abs(base2scan - eye(4))>1e-6)) || baseType > 0 %check if we're in the scan space
-    baseCoordsMap=cell(nScans,1);
-    %if not, transform the overlay to the base space
-    for iScan = 1:nScans
+  baseCoordsMap=cell(nScans,1);
+  for iScan = 1:nScans
+    base2scan{iScan} = viewGet(thisView,'base2scan',iScan);
+    if any(any(abs(base2scan{iScan} - eye(4))>1e-6)) || baseType > 0 %check if we're in the scan space
+      %if not, transform the overlay to the base space
       %here could probably put all overlays of a single scan in a 4D array, but then would have to put it back 
       % into the overlays structure array if inputOutputType is 'structure' 
       for iOverlay = 1:length(overlayData) 
         if ~isempty(overlayData(iOverlay).data{iScan})
-          [overlayData(iOverlay).data{iScan}, voxelSize, baseCoordsMap{iScan}] = getBaseSpaceOverlay(thisView, overlayData(iOverlay).data{iScan},[],[],baseSpaceInterp);
+          [overlayData(iOverlay).data{iScan}, voxelSize, baseCoordsMap{iScan}] = getBaseSpaceOverlay(thisView, overlayData(iOverlay).data{iScan},iScan,[],baseSpaceInterp);
         end
       end
     end
@@ -199,7 +199,6 @@ if params.clip || params.alphaClip
   if params.baseSpace && baseType==1  %this will only work for flat maps (because for volumes, getBaseSlice only gets one slice, unless base2scan is the identity)
     boxInfo.baseNum = viewGet(thisView,'curbase');
     [~,~,boxInfo.baseCoordsHomogeneous] = getBaseSlice(thisView,viewGet(thisView,'curslice'),viewGet(thisView,'baseSliceIndex'),viewGet(thisView,'rotate'),boxInfo.baseNum,baseType);
-    boxInfo.base2overlay = base2scan;
     boxInfo.baseDims = viewGet(thisView,'basedims');
     boxInfo.interpMethod = baseSpaceInterp;
     boxInfo.interpExtrapVal = NaN;
@@ -214,14 +213,17 @@ if params.clip || params.alphaClip
 end
   
 if params.clip
-   mask = maskOverlay(thisView,params.overlayList,1:nScans,boxInfo);
-   for iScan = 1:length(mask)
-      for iOverlay = 1:length(overlayData)
-        if ~isempty(overlayData(iOverlay).data{iScan})
-          overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
-        end
+  for iScan = 1:nScans
+    if params.baseSpace && baseType==1
+      boxInfo.base2overlay = base2scan{iScan};
+    end
+    mask = maskOverlay(thisView,params.overlayList,iScan,boxInfo);
+    for iOverlay = 1:length(overlayData)
+      if ~isempty(overlayData(iOverlay).data{iScan})
+        overlayData(iOverlay).data{iScan}(~mask{1}(:,:,:,iOverlay))=NaN;
       end
-   end
+    end
+  end
 end
 if params.alphaClip
   alphaOverlayNum = zeros(1,length(overlayData));
@@ -230,11 +232,14 @@ if params.alphaClip
       alphaOverlayNum(iOverlay) = viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay);
     end
   end
-  mask = maskOverlay(thisView,alphaOverlayNum,1:nScans,boxInfo);
-  for iScan = 1:length(mask)
+  for iScan = 1:nScans
+    if params.baseSpace && baseType==1
+      boxInfo.base2overlay = base2scan{iScan};
+    end
+    mask = maskOverlay(thisView,alphaOverlayNum,iScan,boxInfo);
     for iOverlay = 1:length(overlayData)
       if alphaOverlayNum(iOverlay) &&  ~isempty(overlayData(iOverlay).data{iScan})
-        overlayData(iOverlay).data{iScan}(~mask{iScan}(:,:,:,iOverlay))=NaN;
+        overlayData(iOverlay).data{iScan}(~mask{1}(:,:,:,iOverlay))=NaN;
       end
     end
   end
@@ -488,18 +493,18 @@ if params.nOutputOverlays
   end
 
   %pre-compute coordinates map to put values back from base space to overlay space
-  if params.baseSpace && ~params.exportToNewGroup && (any(any((base2scan - eye(4))>1e-6)) || baseType > 0)
-    if viewGet(thisView,'basetype')==1
-      baseCoordsOverlay=cell(nScans,1);
-      for iScan=1:nScans
+  baseCoordsOverlay=cell(nScans,1);
+  for iScan=1:nScans
+    if params.baseSpace && ~params.exportToNewGroup && (any(any((base2scan{iScan} - eye(4))>1e-6)) || baseType > 0)
+      if viewGet(thisView,'basetype')==1
         scanDims{iScan} = viewGet(thisView,'dims',iScan);
         if ~isempty(baseCoordsMap{iScan})
           %make a coordinate map of which overlay voxel each base map voxel corresponds to (convert base coordmap to overlay coord map)
-          baseCoordsOverlay{iScan} = inverseBaseCoordMap(baseCoordsMap{iScan},scanDims{iScan},base2scan);
+          baseCoordsOverlay{iScan} = inverseBaseCoordMap(baseCoordsMap{iScan},scanDims{iScan},base2scan{iScan});
         end
+      else
+        keyboard %not implemented
       end
-    else
-      keyboard %not implemented
     end
   end
 
@@ -603,20 +608,10 @@ if params.nOutputOverlays
         maxValue = max(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data<inf));
         minValue = min(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data>-inf));
     end
-    if ~params.exportToNewGroup && params.baseSpace && (any(any((base2scan - eye(4))>1e-6)) || baseType > 0) %put back into scan/overlay space
-      for iScan=1:nScans
+    for iScan=1:nScans
+      if ~params.exportToNewGroup && params.baseSpace && (any(any((base2scan{iScan} - eye(4))>1e-6)) || baseType > 0) %put back into scan/overlay space
         if ~isempty(outputOverlay(iOverlay).data{iScan}) 
           if viewGet(thisView,'basetype')==1
-%             data = zeros(scanDims{iScan});
-%             datapoints=zeros(prod(scanDims{iScan}),1);
-%             for i=1:size(baseCoordsOverlay{iScan},2)
-%               thisBaseCoordsMap = full(baseCoordsOverlay{iScan}(:,i));
-%               data(logical(thisBaseCoordsMap)) = data(logical(thisBaseCoordsMap)) + ...
-%                     outputOverlay(iOverlay).data{iScan}(thisBaseCoordsMap(logical(thisBaseCoordsMap)));
-%               datapoints = datapoints+logical(thisBaseCoordsMap);
-%             end
-%             datapoints = reshape(datapoints,scanDims{iScan});
-%             outputOverlay(iOverlay).data{iScan} = data ./datapoints;
             outputOverlay(iOverlay).data{iScan} = applyInverseBaseCoordMap(baseCoordsOverlay{iScan},scanDims{iScan},outputOverlay(iOverlay).data{iScan});
           else
             keyboard %not implemented
