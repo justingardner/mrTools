@@ -1,15 +1,23 @@
 %
-% function smoothed = spatialSmooth(overlay,FWHM)
+% function smoothed = spatialSmooth(overlay,FWHM,keepNaNs)
 %
 % spatialSmooth.m: spatially smooth overlay with a 3D gaussian of given FWHM (in voxels)
 %
-%        $Id: spatialSmooth.m 2733 2013-05-13 11:47:54Z julien $
-%           
+%                  If keepNaNs is true (default), existing NaNs will be preserved. If keepNaNs is false
+%                  NaNs will be replaced by interpolated values due to smoothing from neighbouring
+%                  voxels (when they exist)
+%
 
-function smoothed = spatialSmooth(overlay,FWHM)
+function smoothed = spatialSmooth(overlay,FWHM,keepNaNs)
+
+if ieNotDefined('keepNaNs')
+  keepNaNs = true;
+end
 
 smoothed = nanconvn(overlay,gaussianKernel(FWHM),'same');
-smoothed(isnan(overlay))=NaN;
+if keepNaNs
+  smoothed(isnan(overlay))=NaN;
+end
 
 function kernel = gaussianKernel(FWHM)
 
