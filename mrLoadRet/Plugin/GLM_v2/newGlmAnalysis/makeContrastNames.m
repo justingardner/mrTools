@@ -23,17 +23,17 @@ for iContrast = 1:size(contrasts,1)
   elseif nnz(contrasts(iContrast,:))==2 && sum(contrasts(iContrast,:))==0 %if the contrast is a comparison of 2 EVs
     EV1 = find(contrasts(iContrast,:),1,'first');
     EV2 = find(contrasts(iContrast,:),1,'last');
-    switch(tTestSide)
-      case 'Both'
+    switch(lower(tTestSide))
+      case 'both'
         connector = ' VS ';
-      case 'Right'
+      case 'right'
         if contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
           connector = ' > ';
         else    
           connector = ' < ';
         end
         
-      case 'Left'
+      case 'left'
         if contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
           connector = ' < ';
         else    
