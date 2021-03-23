@@ -1527,10 +1527,21 @@ for roinum = roiList
   % get name and colors for each roi
   roiNames{roinum} = viewGet(v,'roiName',roinum);
   roiNotes = viewGet(v,'roiNotes',roinum);
-  colors = putOnTopOfList(viewGet(v,'roiColor',roinum),color2RGB);
+  roiColor = viewGet(v,'roiColor',roinum);
+  if ischar(roiColor)
+    topRoiColor = roiColor;
+    rgbColor = [0 0 0];
+  elseif isnumeric(roiColor) && length(roiColor)==3
+    topRoiColor = 'User-defined RGB color';
+    rgbColor = roiColor;
+  else
+    mrErrorDlg('(editManyROIs) Unknown ROI color value');
+  end
+  colors = putOnTopOfList(topRoiColor,[color2RGB 'User-defined RGB color']);
   displayOn = putOnTopOfList(viewGet(v,'roiDisplayOnBase'),viewGet(v,'baseNames'));
   paramsInfo{end+1} = {sprintf('%sName',fixBadChars(roiNames{roinum})),roiNames{roinum},'Name of roi, avoid using punctuation and space'};
   paramsInfo{end+1} = {sprintf('%sColor',fixBadChars(roiNames{roinum})),colors,'type=popupmenu',sprintf('The color that roi %s will display in',roiNames{roinum})};
+  paramsInfo{end+1} = {sprintf('%sRGBcolor',fixBadChars(roiNames{roinum})),rgbColor,'type=array','minmax=[0 1]',sprintf('The RGB color triplet that roi %s will display in. This will be superseded by any string selected above.',roiNames{roinum})};
   paramsInfo{end+1} = {sprintf('%sNotes',fixBadChars(roiNames{roinum})),roiNotes,sprintf('Note for roi %s',roiNames{roinum})};
   paramsInfo{end+1} = {sprintf('%sDisplayOnBase',fixBadChars(roiNames{roinum})),displayOn,sprintf('Base that roi %s is best displayed on',roiNames{roinum})};
 end
@@ -1541,7 +1552,12 @@ params = mrParamsDialog(paramsInfo,'Edit Many ROIs');
 if ~isempty(params)
   for roinum = roiList
     roiName = fixBadChars(roiNames{roinum});
-    v = viewSet(v,'roiColor',params.(sprintf('%sColor',roiName)),roinum);
+    if strcmp(params.(sprintf('%sColor',roiName)), 'User-defined RGB color')
+      newRoiColor = params.(sprintf('%sRGBcolor',roiName));
+    else
+      newRoiColor = params.(sprintf('%sColor',roiName));
+    end
+    v = viewSet(v,'roiColor',newRoiColor,roinum);
     v = viewSet(v,'roiName',params.(sprintf('%sName',roiName)),roinum);
     v = viewSet(v,'roiNotes',params.(sprintf('%sNotes',roiName)),roinum);
     v = viewSet(v,'roiDisplayOnBase',params.(sprintf('%sDisplayOnBase',roiName)),roinum);
