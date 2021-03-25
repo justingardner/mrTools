@@ -182,14 +182,27 @@ innerSurface{end+1} = 'Find file';
 % load any vff file
 curv = {};
 curvDir = dir('*.vff');
+nMaxCommonCharacters = 0;
 for i = 1:length(curvDir)
   if ~any(strcmp(curvDir(i).name,curv))
     % check length of file matches our patch
     vffhdr = myLoadCurvature(curvDir(i).name, filepath, 1);
     if ~isempty(vffhdr)
       curv{end+1} = curvDir(i).name;
+      % check if the filename matches the outer surface that was put on top of the list
+      outerString = stripext(outerSurface{1});
+      curvString = stripext(curv{end});
+      nMaxChars = min(numel(outerString),numel(curvString));
+      nCommonCharacters = sum(cumprod(outerString(end:-1:end-nMaxChars+1)==curvString(end:-1:end-nMaxChars+1)));
+      if nCommonCharacters>nMaxCommonCharacters
+        topCurvatureFile = numel(curv);
+        nMaxCommonCharacters = nCommonCharacters;
+      end
     end
   end
+end
+if nMaxCommonCharacters
+  curv = putOnTopOfList(curv{topCurvatureFile},curv);
 end
 
 % check to see if we have any possible curvatures
