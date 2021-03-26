@@ -1,5 +1,4 @@
 function [thisView,params] = combineTransformOverlays(thisView,params,varargin)
-% [thisView,params] = combineTransformOverlays(thisView,params,overlayNum,scanNum,x,y,z)
 %
 %   combines (masked) Overlays according to matlab or custom operators  in current view and current analysis
 %
@@ -20,9 +19,20 @@ eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
 
-%default params
+nScans = viewGet(thisView,'nScans');
+
 % First get parameters
 if ieNotDefined('params')
+  if ieNotDefined('scanList')
+    scanList = 1:nScans;
+  end
+  if ieNotDefined('overlayList')
+    overlayList = viewGet(thisView,'curOverlay');
+  end
+  if ieNotDefined('roiList')
+    roiList = viewGet(thisView,'curROI');
+  end
+
   %get names of combine Functions in combineFunctions directory
   functionsDirectory = [fileparts(which('combineTransformOverlays')) '/combineTransformOverlayFunctions/'];
   combineFunctionFiles =  dir([functionsDirectory '*.m']);
@@ -58,20 +68,10 @@ if ieNotDefined('params')
   baseSpaceInterpMenu = {'Same as display','nearest','linear','spline','cubic'};
   params.exportToNewGroup = 0;
   params.outputName = '';
-  nScans = viewGet(thisView,'nScans');
   if viewGet(thisView,'basetype')~=1
     baseSpaceOption='enable=0';
   else
     baseSpaceOption='enable=1';
-  end
-  if ieNotDefined('overlayList')
-    overlayList = viewGet(thisView,'curOverlay');
-  end
-  if ieNotDefined('scanList')
-    scanList = 1:nScans;
-  end
-  if ieNotDefined('roiList')
-    roiList = viewGet(thisView,'curROI');
   end
 
   askForParams = 1;
@@ -131,7 +131,7 @@ if ieNotDefined('params')
       askForParams = 0;
       if defaultParams
         params.overlayList = overlayList;
-        params.scanlist = scanList;
+        params.scanList = scanList;
         params.roiList = roiList;
       else
         askForOverlays = 1;
@@ -163,13 +163,16 @@ if ieNotDefined('params')
       end
     end
   end
-end
-
-if ~ieNotDefined('overlayList')
-  params.overlayList = overlayList;
-end
-if ~ieNotDefined('scanList')
-  params.scanList = scanList;
+else
+  if ~ieNotDefined('scanList')
+    params.scanList = scanList;
+  end
+  if ~ieNotDefined('overlayList')
+    params.overlayList = overlayList;
+  end
+  if ~ieNotDefined('roiList')
+    params.roiList = roiList;
+  end
 end
 
 if strcmp(params.combineFunction,'User Defined')
@@ -194,7 +197,7 @@ overlayData = overlayData(params.overlayList);
 if params.baseSpace
   baseType = viewGet(thisView,'basetype');
   baseCoordsMap=cell(nScans,1);
-  for iScan = scanList
+  for iScan = params.scanList
     base2scan{iScan} = viewGet(thisView,'base2scan',iScan);
     if any(any(abs(base2scan{iScan} - eye(4))>1e-6)) || baseType > 0 %check if we're in the scan space
       %if not, transform the overlay to the base space
@@ -231,7 +234,7 @@ if params.clip || params.alphaClip
 end
   
 if params.clip
-  for iScan = scanList
+  for iScan = params.scanList
     if params.baseSpace && baseType==1
       boxInfo.base2overlay = base2scan{iScan};
     end
@@ -250,7 +253,7 @@ if params.alphaClip
       alphaOverlayNum(iOverlay) = viewGet(thisView,'overlaynum',overlayData(iOverlay).alphaOverlay);
     end
   end
-  for iScan = scanList
+  for iScan = params.scanList
     if params.baseSpace && baseType==1
       boxInfo.base2overlay = base2scan{iScan};
     end
@@ -265,7 +268,7 @@ end
 
 % mask overlay using ROI(s)
 if ~strcmp(params.roiMask,'None') && ~isempty(params.roiList)
-  for iScan = scanList
+  for iScan = params.scanList
     mask = false(size(overlayData(1).data{iScan}));
     roiCoords = getROICoordinates(thisView, params.roiList(1),iScan)';
     for iRoi = params.roiList(2:end)
@@ -307,7 +310,7 @@ switch(params.inputOutputType)
   case {'3D Array','4D Array','Scalar'}
     newOverlayData = cell(nScans,length(params.overlayList));
     for iOverlay = 1:length(params.overlayList)
-      for iScan = scanList
+      for iScan = params.scanList
         newOverlayData{iScan,iOverlay} = overlayData(iOverlay).data{iScan};
       end
     end
@@ -332,7 +335,7 @@ additionalArgs = parseArguments(params.additionalArgs,',');
 
 %convert overlays to cell arrays if scalar function
 if strcmp(params.inputOutputType,'Scalar')
-   for iScan = scanList
+   for iScan = params.scanList
       for iOverlay = 1:length(params.overlayList)
          overlayData{iScan,iOverlay} = num2cell(overlayData{iScan,iOverlay}); %convert overlays to cell arrays
       end
@@ -448,7 +451,7 @@ for iOperations = 1:size(overlayData,3)
          %add 0 to all the results to convert logical to doubles, because mrLoadRet doesn't like logical overlays
         switch(params.inputOutputType)
           case 'Structure'
-            for jScan = scanList
+            for jScan = params.scanList
               outputData{iScan,iOutput,iOperations}.data{jScan} = outputData{iScan,iOutput,iOperations}.data{jScan}+0;
             end
           case {'3D Array','4D Array','Scalar'}
@@ -512,7 +515,7 @@ if params.nOutputOverlays
 
   %pre-compute coordinates map to put values back from base space to overlay space
   baseCoordsOverlay=cell(nScans,1);
-  for iScan=scanList
+  for iScan=params.scanList
     if params.baseSpace && ~params.exportToNewGroup && (any(any((base2scan{iScan} - eye(4))>1e-6)) || baseType > 0)
       if viewGet(thisView,'basetype')==1
         scanDims{iScan} = viewGet(thisView,'dims',iScan);
@@ -626,7 +629,7 @@ if params.nOutputOverlays
         maxValue = max(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data<inf));
         minValue = min(outputOverlay(iOverlay).data(outputOverlay(iOverlay).data>-inf));
     end
-    for iScan=scanList
+    for iScan=params.scanList
       if ~params.exportToNewGroup && params.baseSpace && (any(any((base2scan{iScan} - eye(4))>1e-6)) || baseType > 0) %put back into scan/overlay space
         if ~isempty(outputOverlay(iOverlay).data{iScan}) 
           if viewGet(thisView,'basetype')==1
@@ -646,7 +649,7 @@ if params.nOutputOverlays
   if params.exportToNewGroup && nScans>1
     cOverlay = 0;
     for iOverlay = 1:size(outputData,2)
-      for iScan = scanList
+      for iScan = params.scanList
         if ~isempty(outputOverlay(iOverlay).data{iScan})
           cOverlay = cOverlay+1;
           outputOverlay2(cOverlay) = defaultOverlay;
