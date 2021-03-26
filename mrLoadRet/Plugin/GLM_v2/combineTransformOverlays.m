@@ -619,7 +619,7 @@ if params.nOutputOverlays
         maxValue = -inf;
         minValue = inf;
         for iOutput = 1:size(outputData,1)
-          if ~isempty(outputData{iOutput,iOverlay})
+          if ~isempty(outputData{iOutput,iOverlay}) && ~all(isnan(outputData{iOutput,iOverlay}(:)))
             maxValue = max(maxValue,max(outputData{iOutput,iOverlay}(outputData{iOutput,iOverlay}<inf)));
             minValue = min(minValue,min(outputData{iOutput,iOverlay}(outputData{iOutput,iOverlay}>-inf)));
           end
