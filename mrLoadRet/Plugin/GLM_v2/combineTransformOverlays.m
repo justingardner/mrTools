@@ -320,12 +320,16 @@ end
 %parse additional array inputs
 additionalArrayArgs = parseArguments(params.additionalArrayArgs,',');
 if ~isempty(additionalArrayArgs)
-   if all(cellfun(@isnumeric,additionalArrayArgs)) && ismember(params.inputOutputType,{'3D Array','4D Array'}) %if all arguments are numeric and the input type is Array
-      additionalArrayInputs = cellfun(@(x)repmat(x,[size(overlayData{1}) 1]),additionalArrayArgs,'UniformOutput',false); %convert additional arguments to arrays
-   else %if any additional argument is not a number
-      additionalArrayInputs = cellfun(@(x)num2cell(repmat(x,[size(overlayData{1}) 1])),additionalArrayArgs,'UniformOutput',false); %convert additional arguments to cell arrays
-      params.inputOutputType = 'Scalar';  %and force scalar
-   end
+  for iArg  = 1:length(additionalArrayArgs)
+     for iScan = params.scanList
+       if all(cellfun(@isnumeric,additionalArrayArgs)) && ismember(params.inputOutputType,{'3D Array','4D Array'}) %if all arguments are numeric and the input type is Array
+          additionalArrayInputs(iScan,iArg) = cellfun(@(x)repmat(x,[size(overlayData{iScan,1}) 1]),additionalArrayArgs(iArg),'UniformOutput',false); %convert additional arguments to arrays
+       else %if any additional argument is not a number
+          additionalArrayInputs(iScan,iArg) = cellfun(@(x)num2cell(repmat(x,[size(overlayData{iScan,1}) 1])),additionalArrayArgs(iArg),'UniformOutput',false); %convert additional arguments to cell arrays
+          params.inputOutputType = 'Scalar';  %and force scalar
+       end
+     end
+  end
 else
    additionalArrayInputs = {};
 end
@@ -349,7 +353,7 @@ end
 
 
 if strcmp(params.combinationMode,'Recursively apply to overlay pairs') %should add additional non-array arguments also ?
-   nTotalargs = size(overlayData,2)+length(additionalArrayArgs);
+   nTotalargs = size(overlayData,2)+size(additionalArrayArgs,2);
    combineFunctionString = '@(x1';
    for iInput = 2:nTotalargs
       combineFunctionString = [combineFunctionString ',x' num2str(iInput)];
@@ -395,8 +399,8 @@ for iInput = 1:size(overlayData,2)
    functionString = [functionString 'overlayData{iScan,' num2str(iInput) ',iOperations},'];
 end
 %additional arguments
-for iInput = 1:length(additionalArrayInputs)
-   functionString = [functionString 'additionalArrayInputs{' num2str(iInput) '},'];
+for iInput = 1:size(additionalArrayInputs,2)
+   functionString = [functionString 'additionalArrayInputs{iScan,' num2str(iInput) '},'];
 end
 if strcmp(params.inputOutputType,'4D Array')
   functionString(end:end+1) = '),'; %add closing bracket to end function cat
