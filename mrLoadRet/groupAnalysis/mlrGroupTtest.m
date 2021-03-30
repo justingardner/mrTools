@@ -115,15 +115,13 @@ if fieldIsNotDefined(params,'outputContrastEstimates')
   params.outputContrastEstimates = true;
 end
 if fieldIsNotDefined(params,'outputContrastSte')
-  params.outputContrastSte = true;
+  params.outputContrastSte = false;
 end
 if fieldIsNotDefined(params,'outputSampleSize')
   params.outputSampleSize = false;
 end
 
 uniqueLevels = {};
-
-if justGetParams && fieldIsNotDefined(params,'factors'), return; end
 
 %read log files associated with scans
 cScan = 0;
@@ -169,12 +167,15 @@ end
 
 if strcmp(params.combinationMode,'interaction')
   if ~all(ismember(params.factors,commonFactors))
-    mrErrorDlg('(mlrGroupTtest) Cannot run t-tests because factors are missing in some scans');
+    mrWarnDlg('(mlrGroupTtest) Cannot run t-tests because factors are missing in some scans');
+    return;
   end
   whichFactors = {1: length(params.factors)};
 else
   whichFactors = num2cell(1:length(params.factors));
 end
+
+if justGetParams && fieldIsNotDefined(params,'factors'), return; end
 
 % CHECK THAT THERE IS EQUAL N FOR ALL LEVELS AND COMBINATION OF LEVELS HERE?
 

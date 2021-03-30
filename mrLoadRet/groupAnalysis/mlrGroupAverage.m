@@ -90,7 +90,8 @@ end
 if fieldIsNotDefined(params,'averagingMode')
   params.averagingMode = 'marginal';  % options are 'marginal' or 'interaction'
 elseif ~ismember(params.averagingMode,{'marginal','interaction'})
-  mrErrorDlg(sprintf('(mlrGroupAverage)Unknown combination mode ''%s''',params.averagingMode));
+  mrWarnDlg(sprintf('(mlrGroupAverage)Unknown combination mode ''%s''',params.averagingMode));
+  return;
 end
 if fieldIsNotDefined(params,'outputSampleSize')
   params.outputSampleSize = false;
@@ -101,7 +102,8 @@ if justGetParams, return; end
 
 if strcmp(params.averagingMode,'interaction')
   if ~all(ismember(params.factors,commonFactors))
-    mrErrorDlg('(mlrGroupAverage) Cannot compute averages because factors are missing in some scans');
+    mrWarnDlg('(mlrGroupAverage) Cannot compute averages because factors are missing in some scans');
+    return;
   end
   whichFactors = {1: length(params.factors)};
 else
