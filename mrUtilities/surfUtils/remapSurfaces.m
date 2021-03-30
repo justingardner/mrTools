@@ -1,7 +1,7 @@
 % remapSurfaces.m
 %
 %       $Id: remapSurfaces.m 1833 2010-11-13 18:37:14Z julien $	
-%      usage: remapSurfaces(fssubject,fsaverage,<force>)
+%      usage: remapSurfaces(fssubject,fsaverage,<force>, <dryRun>, <fsSubjectSuffix>)
 %         by: julien besle
 %       date: 15/05/2014
 %    purpose: remaps surface vertices of one Freesurfer subject to another 
@@ -9,11 +9,13 @@
 %             registration output of recon-all (subj/surf/?h.sphere.reg)%
 %             Existing remapping will no be re-computed and overwritten
 %             unless optional argument force is set to true
+%             Set dryRun to true to check that all necessary files exist without actually computing anything
+%             Optionally check specifically for surfaces with suffix fsSubjectSuffix in filename
 %
 %     output: left and right GM and WM surfaces with mesh of one subject
 %             and coordinates of the other, and vice-versa
 
-function [subjPath,fsaveragePath] = remapSurfaces(fssubject,fsaverage,force, dryRun)
+function [subjPath,fsaveragePath] = remapSurfaces(fsSubject,fsAverage,force, dryRun, fsSubjectSuffix)
 
 freesurferSubjdir = [];
 subjPath = [];
@@ -27,6 +29,9 @@ end
 if ieNotDefined('dryRun')
   dryRun = false;
 end
+if ieNotDefined('fsSubjectSuffix')
+  fsSubjectSuffix = '';
+end
 
 if isempty(freesurferSubjdir) || ispc
   freesurferSubjdir = mrGetPref('volumeDirectory');
@@ -39,17 +44,17 @@ if isempty(freesurferSubjdir) || ispc
   fprintf('(remapSurfaces) Assuming that the Freesurfer subject directory is %s\n',freesurferSubjdir);
 end
 
-subjPath = [freesurferSubjdir '/' fssubject];
+subjPath = [freesurferSubjdir '/' fsSubject];
 if isempty(dir(subjPath))
-  mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fssubject ' does not exist']);
+  mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fsSubject ' does not exist']);
   subjPath = [];
   if ~dryRun
     return
   end
 end
-fsaveragePath = [freesurferSubjdir '/' fsaverage];
+fsaveragePath = [freesurferSubjdir '/' fsAverage];
 if isempty(dir(fsaveragePath))
-  mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fsaverage ' does not exist']);
+  mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fsAverage ' does not exist']);
   fsaveragePath = [];
   if ~dryRun
     return
@@ -71,15 +76,15 @@ if isempty(dir([fsaveragePath '/surfRelax']))
     return
   end
 end
-        
-if exist(fullfile(subjPath,'/surfRelax/',[fssubject '_left_GM_' fsaverage '.off']),'file') && ~force
-  mrWarnDlg(sprintf('(remapSurfaces) Mapping between Freesurfer subjects %s and %s already exists, use optional argument <force> to recompute',fssubject,fsaverage));
+
+surfaceToCheck = [fsSubject '_left_GM' fsSubjectSuffix '_' fsAverage '.off'];
+if exist(fullfile(subjPath,'/surfRelax/',surfaceToCheck),'file') && ~force
+  mrWarnDlg(sprintf('(remapSurfaces) Mapping between surface %s and Freesurfer subject %s already exists, use optional argument <force> to recompute',surfaceToCheck,fsAverage));
   if ~dryRun
     return
   end
 end
-  
-if dryRun
+if dryRun && ~force
   return
 end
 
@@ -87,26 +92,25 @@ side = {'left','right'};
 surfs = {'GM','WM'};
 fsSide = {'lh','rh'};
 
-disp('(remapSurfaces) Will process:');
+disp('(remapSurfaces) Will remap following surfaces:');
 for iSide=1:2
   for iSurf = 1:2
     %find all OFF files for a given side and surface (WM or GM)
-    subjFiles{iSide,iSurf} = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off']);
+    subjFiles{iSide,iSurf} = dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*.off']);
     %find OFF files to exclude (already processed or flat maps)
-    toExclude = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Colin*.off']);
-    toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*MNI*.off'])];
-    toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Flat*.off'])];
+    toExclude = dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*Colin*.off']);
+    toExclude = [toExclude; dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*MNI*.off'])];
+    toExclude = [toExclude; dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*Flat*.off'])];
 
     [~,toKeep]=setdiff({subjFiles{iSide,iSurf}(:).name},{toExclude(:).name});
     subjFiles{iSide,iSurf} = {subjFiles{iSide,iSurf}(toKeep).name};
     disp(subjFiles{iSide,iSurf}');
-%     if length(subjFiles{iSide,iSurf})>2
-%       dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off'])
-%       filelist = input('Which files do you wish to transform (input index vector) ?')
-%       subjFiles{iSide,iSurf} = subjFiles{iSide,iSurf}(filelist);
-%     end
   end
-  disp([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])
+  disp([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_Curv.vff'])
+end
+
+if dryRun
+  return
 end
 
 for iSide=1:2
@@ -120,7 +124,7 @@ for iSide=1:2
 
   for iSurf = 1:2
     %get surfaces in OFF format
-    averageSurf = loadSurfOFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_' surfs{iSurf} '.off']);
+    averageSurf = loadSurfOFF([fsaveragePath '/surfRelax/' fsAverage '_' side{iSide} '_' surfs{iSurf} '.off']);
 
     for jSurf = subjFiles{iSide,iSurf}
       pattern = ['_' side{iSide} '_' surfs{iSurf}];
@@ -135,7 +139,7 @@ for iSide=1:2
 
       %change file name
       [path,filename,extension]=fileparts(subjSurf.filename);
-      subjSurf.filename = [path '/' filename '_' fsaverage extension];
+      subjSurf.filename = [path '/' filename '_' fsAverage extension];
       [path,filename,extension]=fileparts(thisAverageSurf.filename);
       thisAverageSurf.filename = [path '/' filename '_' fssubjectPrefix extension];
 
@@ -149,16 +153,16 @@ for iSide=1:2
   end
 
   %interpolate curvature data
-  subjCurv = loadVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])';
+  subjCurv = loadVFF([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_Curv.vff'])';
   subjToAverageCurv = subjToAverage*subjCurv;
   subjToAverageCurv(subjToAverageCurv>max(subjCurv))=max(subjCurv); %clip the data to original min/max (because saveVFF normalizes them)
   subjToAverageCurv(subjToAverageCurv<min(subjCurv))=min(subjCurv);
-  saveVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv_' fssubject '.vff'], subjToAverageCurv');
-  averageCurv = loadVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv.vff'])';
+  saveVFF([fsaveragePath '/surfRelax/' fsAverage '_' side{iSide} '_Curv_' fsSubject '.vff'], subjToAverageCurv');
+  averageCurv = loadVFF([fsaveragePath '/surfRelax/' fsAverage '_' side{iSide} '_Curv.vff'])';
   averageToSubjCurv = averageToSubj*averageCurv;
   averageToSubjCurv(averageToSubjCurv>max(averageCurv))=max(subjCurv);
   averageToSubjCurv(averageToSubjCurv<min(averageCurv))=min(averageCurv);
-  saveVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv_' fsaverage '.vff'], averageToSubjCurv');
+  saveVFF([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_Curv_' fsAverage '.vff'], averageToSubjCurv');
 
 end
 
