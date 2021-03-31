@@ -12,6 +12,7 @@
 %   input parameters:
 %         params.sourceVol (mandatory): volume to convert (source)
 %         params.fsSourceSubj (mandatory): freesurfer subject ID cooresponding to source volume
+%         params.fsSourceSurfSuffix (optional): suffix to add to the surface file names (e.g. fsSourceSubj_left_GMsuffix.off) (default = '')
 %         params.fsDestSubj (optional): Freesurfer subject ID corresponding to destination volume (default: 'fsaverage')
 %         params.destVol (mandatory): name of destination file(default: surfRelax anatomical scan of destination Freesurfer subject)
 %         params.destVolTemplate (optional): template volume for destination space (default: surfRelax anatomical scan of source Freesurfer subject)
@@ -42,6 +43,9 @@ if fieldIsNotDefined(params,'sourceVol')
 end
 if fieldIsNotDefined(params,'fsSourceSubj')
   params.fsSourceSubj = '';
+end
+if fieldIsNotDefined(params,'fsSourceSurfSuffix')
+  params.fsSourceSurfSuffix = '';
 end
 if fieldIsNotDefined(params,'fsDestSubj')
   params.fsDestSubj = 'fsaverage';
@@ -142,7 +146,7 @@ if length(params.destVol) ~= nSources
 end
 
 % first (re)compute mapping between source and destination surfaces (if needed)
-[sourcePath, destPath] = remapSurfaces(params.fsSourceSubj,params.fsDestSubj,params.recomputeRemapping,params.dryRun);
+[sourcePath, destPath] = remapSurfaces(params.fsSourceSubj,params.fsDestSubj,params.recomputeRemapping,params.dryRun,params.fsSourceSurfSuffix);
 if (isempty(sourcePath) || isempty(destPath)) && params.dryRun
   return;
 end
@@ -250,8 +254,8 @@ end
 for iSide=1:nSides
   for iSurf = 1:2
     %get surfaces in OFF format
-    sourceSurf{iSurf,iSide} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} '.off']);
-    destSurf{iSurf} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} '_' params.fsDestSubj '.off']); % same surface mesh as source, but with destination coordinates
+    sourceSurf{iSurf,iSide} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} params.fsSourceSurfSuffix '.off']);
+    destSurf{iSurf} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} params.fsSourceSurfSuffix '_' params.fsDestSubj '.off']); % same surface mesh as source, but with destination coordinates
     % convert vertices coordinates to surfRelax volume array coordinates
     sourceSurf{iSurf,iSide} = xformSurfaceWorld2Array(sourceSurf{iSurf,iSide},sourceSurfRelaxHdr);
     destSurf{iSurf} = xformSurfaceWorld2Array(destSurf{iSurf},destSurfRelaxHdr);

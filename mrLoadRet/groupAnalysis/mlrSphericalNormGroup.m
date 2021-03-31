@@ -19,8 +19,9 @@
 %       params.mrLoadRetSubjectLastView       Name of the last saved view in each subject's MLR folder (default: mrLastView.mat)
 %       params.freesurferSubjectsFolder       Location of the Freesurfer subjects directory (default: from mrGetPref)
 %       params.freesurferSubjectIDs           Freesurfer subject IDs corresponding to the mrLoadRet subject IDs
-%       params.freesurferTemplateID           Freesurfer subject IF of the destination template (could be one of the subjects) (default: fsaverage)
-%       params.mrLoadRetTemplateID            Name of the mrLoadRet directory where the normalized data will be located (deafult: 'Spherical Normalization')
+%       params.fsSubjectSurfSuffix            Suffix(es) to add to the Freesurfer subject surface file names. Can be a single string or a cell array of strings (default: '')
+%       params.freesurferTemplateID           Freesurfer subject ID of the destination template (could be one of the subjects) (default: fsaverage)
+%       params.mrLoadRetTemplateID            Name of the mrLoadRet directory where the normalized data will be located (default: 'Spherical Normalization')
 %       params.mrLoadRetTemplateLastView      Name of the saved last view in the template MLR folder (default: mrLastView.mat)
 %       params.subjectOverlayGroups           Group names or numbers of the overlays to normalize
 %       params.subjectOverlayAnalyses         Analysis names numbers of the overlays to normalize
@@ -68,6 +69,9 @@ if fieldIsNotDefined(params,'freesurferSubjectsFolder')
 end
 if fieldIsNotDefined(params,'freesurferSubjectIDs')
   params.freesurferSubjectIDs = {''}; % Freesurfer subject IDs corresponding to the mrLoadRet subject IDs
+end
+if fieldIsNotDefined(params,'fsSubjectSurfSuffix')
+  params.fsSubjectSurfSuffix = {''}; % Suffix(es) to add to the Freesurfer subject surfaces
 end
 if fieldIsNotDefined(params,'freesurferTemplateID')
   params.freesurferTemplateID = 'fsaverage'; % Freesurfer subject IF of the destination template (could be one of the subjects)
@@ -155,6 +159,10 @@ end
 if ischar(params.subjectROIbase)
   params.subjectROIbase = {params.subjectROIbase};
 end
+if ischar(params.fsSubjectSurfSuffix)
+  params.fsSubjectSurfSuffix = {params.fsSubjectSurfSuffix};
+end
+
 
 nSubjects = length(params.mrLoadRetSubjectIDs);
 nOverlays = length(params.subjectOverlays);
@@ -179,6 +187,9 @@ end
 if numel(params.subjectROIbase)==1
   params.subjectROIbase = repmat(params.subjectROIbase,1,nSubjects);
 end
+if numel(params.fsSubjectSurfSuffix)==1
+  params.fsSubjectSurfSuffix = repmat(params.fsSubjectSurfSuffix,1,nSubjects);
+end
 if numel(params.lrFlipTransform)==1
   params.lrFlipTransform = repmat(params.lrFlipTransform,1,nOverlays);
 end
@@ -190,6 +201,10 @@ end
 
 if nSubjects ~= length(params.freesurferSubjectIDs)
   mrWarnDlg('(mlrSphericalNormGroup) There must be the same number of mrLoadRet and freesurfer subject IDs')
+  return;
+end
+if nSubjects ~= length(params.fsSubjectSurfSuffix)
+  mrWarnDlg('(mlrSphericalNormGroup) The subject surface suffix must be a single string or a cells of strings of length equal to the number of subjects')
   return;
 end
 if nOverlays ~= length(params.subjectOverlayGroups)
@@ -281,7 +296,7 @@ if params.combineLeftAndRight
 end
 
 if params.dryRun
-  fprintf('\n(mlrSphericalNormGroup) THIS IS A DRY RUN: not data will be exported or written to disc');
+  fprintf('\n(mlrSphericalNormGroup) THIS IS A DRY RUN: no data will be exported or written to disc\n');
 end
 
 % create mrLoadRet group folder
@@ -534,6 +549,7 @@ for iSubj = 1:nSubjects
     fsSphericalParams = freesurferSphericalNormalizationVolumes([],'justGetParams');
     fsSphericalParams.sourceVol = exportNames;
     fsSphericalParams.fsSourceSubj = params.freesurferSubjectIDs{iSubj};
+    fsSphericalParams.fsSourceSurfSuffix = params.fsSubjectSurfSuffix{iSubj};
     fsSphericalParams.fsDestSubj = params.freesurferTemplateID;
     fsSphericalParams.destVol = convertNames(:,1);
     fsSphericalParams.interpMethod = 'linear';
