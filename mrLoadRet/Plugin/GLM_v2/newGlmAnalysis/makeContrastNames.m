@@ -32,13 +32,14 @@ for iContrast = 1:size(contrasts,1)
         else    
           connector = ' < ';
         end
-        
       case 'left'
         if contrasts(iContrast,EV1)>contrasts(iContrast,EV2)
           connector = ' < ';
         else    
           connector = ' > ';
         end
+      case 'no test'
+        connector = ' - ';
     end
 
     contrastNames{iContrast} = [EVnames{EV1} connector EVnames{EV2}];

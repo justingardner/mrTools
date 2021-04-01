@@ -1,8 +1,10 @@
 
-%   [thisView,params] = mlrGroupAverage(thisView,params,<'justGetParams'>)
+%   [thisView, params, uniqueLevels] = mlrGroupAverage(thisView,params,<'justGetParams'>)
 %
 %   goal: averages volumes in "group" scan across subjects according to conditions
-%         specified in .mat file linked to the scan.
+%         (or combination of conditions) specified in .mat file linked to the scan.
+%         Optionally, computes averages only for a subset of (combinations of) conditions,
+%         or linear combinations of these averages (using contrasts parameter)
 %         A "group" scan is a scan in which each volume corresponds to some
 %         single-subject estimate map for a given condition, concatenated across
 %         multiple subjects and normalized to a common template space.
@@ -15,6 +17,8 @@
 %   usage:
 %     [~,params] = mlrGroupAverage(thisView, [],'justGetParams') %returns default parameters
 %     ... % modify parameters
+%     [~, params, uniqueLevels] = mlrGroupAverage(thisView,params,'justGetParams') % get levels (optional)
+%     ... % modify params.contrasts
 %     thisView = mlrSphericalNormGroup(thisView, params) % runs function with modified params
 %
 %   parameters:
@@ -25,12 +29,15 @@
 %   params.averagingMode: how levels will be combined. Options are 'marginal' (default) or 'interaction'
 %                         'marginal': all marginal means corresponding to each level of each facotr will be computed
 %                         'interaction': means corresponding to all level combinations across all factors will be computed
+%   params.contrasts: each row specifies which levels (or combination of levels) to include in the corresponding contrast, with
+%                     each column corresponding to a given level or combination thereof, according to the combinationMode parameter
+%                     using the order in which factors were specified, the order in which levels appear within each factor across scans
 %   params.outputSampleSize :  whether to output a map of the the voxelwise number of subjects entering in the average for
 %                               each average overlay (non-NaN values in subject overlays) (default = false)
 %
 %   author: julien besle (10/08/2020)
 
-function [thisView,params] = mlrGroupAverage(thisView,params,varargin)
+function [thisView, params, uniqueLevels] = mlrGroupAverage(thisView,params,varargin)
 
 eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
@@ -49,6 +56,20 @@ end
 if fieldIsNotDefined(params,'scanList')
   params.scanList = 1:nScans;
 end
+if fieldIsNotDefined(params,'factors')
+  params.factors = {};
+end
+if fieldIsNotDefined(params,'averagingMode')
+  params.averagingMode = 'marginal';  % options are 'marginal' or 'interaction'
+end
+if fieldIsNotDefined(params,'contrasts')
+  params.contrasts = [];
+end
+if fieldIsNotDefined(params,'outputSampleSize')
+  params.outputSampleSize = false;
+end
+
+uniqueLevels = {};
 
 %read log files associated with scans
 cScan = 0;
@@ -87,18 +108,10 @@ if fieldIsNotDefined(params,'factors')
 elseif ischar(params.factors)
   params.factors = {params.factors};
 end
-if fieldIsNotDefined(params,'averagingMode')
-  params.averagingMode = 'marginal';  % options are 'marginal' or 'interaction'
-elseif ~ismember(params.averagingMode,{'marginal','interaction'})
+if ~ismember(params.averagingMode,{'marginal','interaction'})
   mrWarnDlg(sprintf('(mlrGroupAverage)Unknown combination mode ''%s''',params.averagingMode));
   return;
 end
-if fieldIsNotDefined(params,'outputSampleSize')
-  params.outputSampleSize = false;
-end
-
-if justGetParams, return; end
-
 
 if strcmp(params.averagingMode,'interaction')
   if ~all(ismember(params.factors,commonFactors))
@@ -109,6 +122,8 @@ if strcmp(params.averagingMode,'interaction')
 else
   whichFactors = num2cell(1:length(params.factors));
 end
+
+if justGetParams && fieldIsNotDefined(params,'factors'), return; end
 
 currentGroup = viewGet(thisView,'curGroup');
 thisView = viewSet(thisView,'curGroup',params.groupNum);
@@ -173,76 +188,107 @@ for iFactor = 1:length(whichFactors) % for each factor or combination of factors
   nLevelsAcrossFactors = nLevelsAcrossFactors + nLevels(iFactor);
 end
 
+if fieldIsNotDefined(params,'contrasts') || size(params.contrasts,2)~=sum(nLevels)
+  params.contrasts = eye(sum(nLevels));
+end
 
-minOverlay = inf(sum(nLevels),1);
-maxOverlay = -1*inf(sum(nLevels),1);
-maxCount = 0;
+if justGetParams
+  thisView = viewSet(thisView,'curGroup',currentGroup);
+  return;
+end
+
+
+%-------------------------------------- Compute averages (or contrasts)
+contrastNames = makeContrastNames(params.contrasts,uniqueLevels,'no test');
+nContrasts = size(params.contrasts,1);
+nonZeroContrastLevels = find(any(params.contrasts~=0));
+nnzContrastLevels = numel(nonZeroContrastLevels);
+minOverlay = inf(nContrasts+nnzContrastLevels,1);
+maxOverlay = -1*minOverlay;
 cScan = 0;
+outputPrecision = mrGetPref('defaultPrecision');
 for iScan = 1:viewGet(thisView,'nScans')
   if ismember(iScan,params.scanList)
-    fprintf('(mlrGroupAverage) Computing averages for scan %d... ',iScan);
+    hWaitBar = mrWaitBar(-inf,sprintf('(mlrGroupAverage) Computing averages for scan %d... ',iScan));
+
     cScan = cScan+1;
-  end
-  cOverlay = 0;
-  for iFactor = 1:length(whichFactors)
-    for iOverlay = 1:nLevels(iFactor) %for each overlay
-      cOverlay = cOverlay + 1;
-      if ismember(iScan,params.scanList)
-        overlays(cOverlay).data{iScan} = zeros(hdr{cScan}.dim(2:4)'); % initialize scans with zeros
-        volumeCount = zeros(hdr{cScan}.dim(2:4)');
-        for iVolume = find(ismember(whichOverlay{cScan}(:,iFactor),cOverlay,'rows'))' %for each volume in the scan matching this (combination of) condition(s)
-          data = cbiReadNifti(tseriesPath{cScan},{[],[],[],iVolume},'double'); % read the data
-          isNotNaN = ~isnan(data);
-          % add non-NaN values to the appropriate overlay(s)
-          overlays(cOverlay).data{iScan}(isNotNaN) = ...
-            overlays(cOverlay).data{iScan}(isNotNaN) + data(isNotNaN);
-          volumeCount = volumeCount + isNotNaN;
-        end
-        % divide by the number of added overlays
-        overlays(cOverlay).data{iScan} = cast(overlays(cOverlay).data{iScan}./volumeCount,mrGetPref('defaultPrecision'));
-        % get min and max
-        minOverlay(cOverlay) = min(minOverlay(cOverlay),min(overlays(cOverlay).data{iScan}(:)));
-        maxOverlay(cOverlay) = max(maxOverlay(cOverlay),max(overlays(cOverlay).data{iScan}(:)));
-        if params.outputSampleSize
-          overlays(sum(nLevels)+cOverlay).data{iScan} = volumeCount;
-          maxCount = max(maxCount,max(volumeCount(:)));
-        end
-      else
-        overlays(cOverlay).data{iScan} = [];
-        if params.outputSampleSize
-          overlays(sum(nLevels)+cOverlay).data{iScan} = [];
+  
+    levelsData = zeros(prod(hdr{cScan}.dim(2:4)),nnzContrastLevels);
+    sampleSize = zeros(prod(hdr{cScan}.dim(2:4)),nnzContrastLevels);
+    cLevel = 0;
+    dLevel = 0;
+    for iFactor = 1:length(whichFactors)
+      for iLevel = 1:nLevels(iFactor) %for each overlay
+        cLevel = cLevel + 1;
+        if ismember(cLevel,nonZeroContrastLevels)
+          dLevel = dLevel+1;
+          mrWaitBar( dLevel/nnzContrastLevels, hWaitBar);
+          for iVolume = find(ismember(whichOverlay{cScan}(:,iFactor),cLevel,'rows'))' %for each volume in the scan matching this (combination of) condition(s)
+            data = cbiReadNifti(tseriesPath{cScan},{[],[],[],iVolume},'double'); % read the data
+            isNotNaN = ~isnan(data);
+            % add non-NaN values to the appropriate overlay(s)
+            levelsData(isNotNaN,dLevel) = levelsData(isNotNaN,dLevel) + data(isNotNaN);
+            sampleSize(:,dLevel) = sampleSize(:,dLevel) + isNotNaN(:);
+          end
+          % divide by the number of added overlays
+          levelsData(:,dLevel) = levelsData(:,dLevel)./sampleSize(:,dLevel);
         end
       end
     end
+    
   end
+
+  for iContrast = 1:nContrasts
+    if ismember(iScan,params.scanList)
+      nonZeroLevels = find(params.contrasts(iContrast,nonZeroContrastLevels)); % need to only use levels involved in this particular contrast to avoid NaNs in the other levels 
+      overlays(iContrast).data{iScan} = cast(reshape(levelsData(:,nonZeroLevels)*params.contrasts(iContrast,nonZeroContrastLevels(nonZeroLevels))',...
+                                                                 hdr{cScan}.dim(2:4)'),outputPrecision);
+      overlays(iContrast).name = contrastNames{iContrast};
+      % get min and max
+      minOverlay(iContrast) = min(minOverlay(iContrast),min(overlays(iContrast).data{iScan}(:)));
+      maxOverlay(iContrast) = max(maxOverlay(iContrast),max(overlays(iContrast).data{iScan}(:)));
+    else
+      overlays(iContrast).data{iScan} = [];
+    end
+  end
+  
+  if params.outputSampleSize
+    for iLevel = 1:nnzContrastLevels
+      if ismember(iScan,params.scanList)
+        overlays(nContrasts+iLevel).data{iScan} = cast(reshape(sampleSize(:,iLevel),hdr{cScan}.dim(2:4)'),outputPrecision);
+        overlays(nContrasts+iLevel).name = ['N: ' uniqueLevels{nonZeroContrastLevels(iLevel)}];
+        % get min and max
+        minOverlay(nContrasts+iLevel) = min(minOverlay(nContrasts+iLevel),min(overlays(nContrasts+iLevel).data{iScan}(:)));
+        maxOverlay(nContrasts+iLevel) = max(maxOverlay(nContrasts+iLevel),max(overlays(nContrasts+iLevel).data{iScan}(:)));
+      else
+        overlays(nContrasts+iLevel).data{iScan} = [];
+      end
+    end
+  end
+
   if ismember(iScan,params.scanList)
-    fprintf('Done\n');
+    mrCloseDlg(hWaitBar);
   end
+
 end
 
 %add overlays' missing fields
-for iOverlay = 1:sum(nLevels)*(1+params.outputSampleSize)
-  
-  if iOverlay<=sum(nLevels)
-    overlays(iOverlay).name = uniqueLevels{iOverlay};
-    overlays(iOverlay).range = [minOverlay(iOverlay) maxOverlay(iOverlay)];
-  else
-    overlays(iOverlay).name = sprintf('N (%s)',uniqueLevels{iOverlay-sum(nLevels)});
-    overlays(iOverlay).range = [0 maxCount];
+for iOutput = 1:nContrasts + params.outputSampleSize*nnzContrastLevels
+  overlays(iOutput).range = [minOverlay(iOutput) maxOverlay(iOutput)];
+  overlays(iOutput).groupName = viewGet(thisView,'groupName');
+  overlays(iOutput).params = params;
+  overlays(iOutput).type = 'Group average';
+  overlays(iOutput).function = 'mlrGroupAverage';
+  overlays(iOutput).interrogator = '';
+
+  if iOutput<=nContrasts
+    allScanData = []; % determine the 1st-99th percentile range
+    for iScan = params.scanList
+      allScanData = [allScanData;overlays(iOutput).data{iScan}(~isnan(overlays(iOutput).data{iScan}))];
+    end
+    allScanData = sort(allScanData);
+    overlays(iOutput).colorRange = allScanData(round([0.01 0.99]*numel(allScanData)))';
   end
-  overlays(iOverlay).groupName = viewGet(thisView,'groupName');
-  overlays(iOverlay).params = params;
-  overlays(iOverlay).type = 'Group average';
-  overlays(iOverlay).function = 'mlrGroupAverage';
-  overlays(iOverlay).interrogator = '';
-  
-  allScanData = []; % determine the 1st-99th percentile range
-  for iScan = params.scanList
-    allScanData = [allScanData;overlays(iOverlay).data{iScan}(~isnan(overlays(iOverlay).data{iScan}))];
-  end
-  allScanData = sort(allScanData);
-  overlays(iOverlay).colorRange = allScanData(round([0.01 0.99]*numel(allScanData)))';
-  
 end
 
 % set or create analysis
