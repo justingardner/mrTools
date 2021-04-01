@@ -243,7 +243,7 @@ for iFactor = 1:length(whichFactors) % for each factor or combination of factors
   nLevelsAcrossFactors = nLevelsAcrossFactors + nLevels(iFactor);
 end
 
-if fieldIsNotDefined(params,'contrasts')
+if fieldIsNotDefined(params,'contrasts') || size(params.contrasts,2)~=sum(nLevels)
   params.contrasts = eye(sum(nLevels));
 end
 
@@ -270,8 +270,9 @@ end
 %-------------------------------------- Compute contrasts and run t-tests
 contrastNames = makeContrastNames(params.contrasts,uniqueLevels,params.testSide);
 nContrasts = size(params.contrasts,1);
-minOverlay = inf(nContrasts* (1 + params.fweAdjustment + params.fdrAdjustment + ...
-             params.outputStatistic + params.outputContrastEstimates + params.outputContrastSte + params.outputSampleSize),1);
+nOverlays = nContrasts* (1 + params.fweAdjustment + params.fdrAdjustment + ...
+             params.outputStatistic + params.outputContrastEstimates + params.outputContrastSte + params.outputSampleSize);
+minOverlay = inf(nOverlays,1);
 maxOverlay = -1*minOverlay;
 cScan = 0;
 for iScan = 1:viewGet(thisView,'nScans')
@@ -288,7 +289,7 @@ for iScan = 1:viewGet(thisView,'nScans')
           maxSampleSize = sampleSize;
         else
           if maxSampleSize~=sampleSize
-            mrWarnDlg('(mlrGroupTtest) the number of subject overlays should be identical at all levels or combinations of levels');
+            mrWarnDlg('(mlrGroupTtest) The number of subject overlays should be identical at all levels or combinations of levels');
             return;
           end
         end
@@ -302,7 +303,7 @@ for iScan = 1:viewGet(thisView,'nScans')
       hWaitBar = mrWaitBar(-inf,waitString);
     end
     
-    % compute the contrast estiamtes, statistics and p values
+    % compute the contrast estimates, statistics and p values
     for iContrast = 1:nContrasts % for each contrast, need to read the data in
       if params.smoothingSpace == 0 || baseType ~= 1
         mrWaitBar( iContrast/nContrasts, hWaitBar);
@@ -313,7 +314,7 @@ for iScan = 1:viewGet(thisView,'nScans')
       cLevel = 0;
       dLevel = 0;
       for iFactor = 1:length(whichFactors)
-        for iOverlay = 1:nLevels(iFactor)
+        for iLevel = 1:nLevels(iFactor)
           cLevel = cLevel+1;
           if ismember(cLevel,nonZeroContrastLevels)
             dLevel = dLevel+1;
@@ -329,12 +330,16 @@ for iScan = 1:viewGet(thisView,'nScans')
         end
       end
       if numel(nonZeroContrastLevels)>1
+        sampleSizesDiffer = false;
         for i = 2:dLevel
           if nnz(diff(sampleSize(:,[1 i]),1,2))
-            keyboard % Ns are not equal across levels at all voxels
+            sampleSizesDiffer = true;
           end
         end
-        sampleSize = sampleSize(:,1);
+        if sampleSizesDiffer
+          keyboard % Ns are not equal across levels at all voxels
+        end
+        sampleSize = reshape(sampleSize(:,1),hdr{cScan}.dim(2:4)');
       end
       subjectContrastEstimates(subjectContrastEstimates==0)=NaN; % replace zeros by NaNs to avoid infinite values later on
 
@@ -403,8 +408,8 @@ for iScan = 1:viewGet(thisView,'nScans')
         overlays(nOutputs*nContrasts+iContrast).data{iScan} = cast(contrastEstimates,outputPrecision);
         overlays(nOutputs*nContrasts+iContrast).name = contrastNames{iContrast};
         % get min and max
-        minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(iLevel),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
-        maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(iLevel),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(nOutputs*nContrasts+iContrast),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(nOutputs*nContrasts+iContrast),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
         nOutputs = nOutputs+1;
         nOutputContrast = nOutputs;
       else
@@ -415,16 +420,16 @@ for iScan = 1:viewGet(thisView,'nScans')
         overlays(nOutputs*nContrasts+iContrast).data{iScan} = cast(contrastSte,outputPrecision);
         overlays(nOutputs*nContrasts+iContrast).name = ['Std error: ' contrastNames{iContrast}];
         % get min and max
-        minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(iLevel),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
-        maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(iLevel),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(nOutputs*nContrasts+iContrast),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(nOutputs*nContrasts+iContrast),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
         nOutputs = nOutputs+1;
       end
 
       overlays(nOutputs*nContrasts+iContrast).data{iScan} = p;
       overlays(nOutputs*nContrasts+iContrast).name = [params.testOutput ': ' contrastNames{iContrast}];
       % get min and max
-      minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(iLevel),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
-      maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(iLevel),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+      minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(nOutputs*nContrasts+iContrast),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+      maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(nOutputs*nContrasts+iContrast),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
       nOutputs = nOutputs+1;
       nOutputP = nOutputs;
 
@@ -432,8 +437,8 @@ for iScan = 1:viewGet(thisView,'nScans')
         overlays(nOutputs*nContrasts+iContrast).data{iScan} = fweAdjustedP;
         overlays(nOutputs*nContrasts+iContrast).name = ['FWE-corrected ' params.testOutput ': ' contrastNames{iContrast}];
         % get min and max
-        minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(iLevel),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
-        maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(iLevel),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(nOutputs*nContrasts+iContrast),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(nOutputs*nContrasts+iContrast),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
         nOutputs = nOutputs+1;
         nOutputFweP = nOutputs;
       else
@@ -473,10 +478,15 @@ for iScan = 1:viewGet(thisView,'nScans')
         nOutputSampleSize = 0;
       end
     end
+
     if params.smoothingSpace == 0 || baseType ~= 1
       mrCloseDlg(hWaitBar);
     else
      fprintf('(mlrGroupTtest) Scan %d done\n\n',iScan);
+    end
+  else
+    for iOverlay = 1:nOverlays
+      overlays(iOverlay).data{iScan} = [];
     end
   end
 end
@@ -501,7 +511,7 @@ for iOutput = 1:nOutputs
     overlays(iOverlay).range = [minOverlay(iOverlay) maxOverlay(iOverlay)];
     overlays(iOverlay).groupName = viewGet(thisView,'groupName');
     overlays(iOverlay).params = params;
-    overlays(iOverlay).type = 'Group average';
+    overlays(iOverlay).type = 'Group t-test';
     overlays(iOverlay).function = 'mlrGroupTtest';
     overlays(iOverlay).interrogator = '';
     switch(iOutput)
