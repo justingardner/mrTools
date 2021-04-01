@@ -93,12 +93,10 @@ for iScan = 1:length(scanList)
     if ~isempty(thisOverlayData) && ~all(isnan(thisOverlayData(:)))  %if there is some data in the overlay
       clip = viewGet(thisView,'overlayClip',iOverlay);
       
-      if diff(clip) > 0 % Find defined pixels that are within clip
+      if diff(clip) >= 0 % Find defined pixels that are within clip
         maskOverlayData(:,:,:,cOverlay) = ((thisOverlayData >= clip(1) & thisOverlayData <= clip(2))) | isnan(thisOverlayData);
       elseif diff(clip) < 0 % Find defined pixels that are outside clip
         maskOverlayData(:,:,:,cOverlay) = (thisOverlayData >= clip(1) | thisOverlayData <= clip(2)) | isnan(thisOverlayData) ;
-      else
-        maskOverlayData(:,:,:,cOverlay) = false(size(thisOverlayData)) | isnan(thisOverlayData);
       end
     end
   end
