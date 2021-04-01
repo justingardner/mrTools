@@ -1934,7 +1934,7 @@ function deleteManyBasesMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-numBases =  selectInList(view,'bases','Select bases to remove');
+numBases =  selectInList(view,'bases','Select bases to remove',[]);
 if ~isempty(numBases)
   for baseNum = fliplr(numBases);
       view = viewSet(view,'deleteBase',baseNum);
@@ -1956,7 +1956,7 @@ function deleteManyAnalysisMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-numAnalyses =  selectInList(view,'analyses','Select analyses to remove');
+numAnalyses =  selectInList(view,'analyses','Select analyses to remove',[]);
 if ~isempty(numAnalyses)
    view = viewSet(view,'deleteAnalysis',numAnalyses);
    refreshMLRDisplay(viewNum);
@@ -1990,7 +1990,7 @@ function deleteManyOverlaysMenuItem_Callback(hObject, eventdata, handles)
 mrGlobals;
 viewNum = handles.viewNum;
 view = MLR.views{viewNum};
-numOverlays = selectInList(view,'overlays','Select overlays to remove');
+numOverlays = selectInList(view,'overlays','Select overlays to remove',[]);
 if ~isempty(numOverlays)
    view = viewSet(view,'deleteOverlay',numOverlays);
    refreshMLRDisplay(viewNum);
