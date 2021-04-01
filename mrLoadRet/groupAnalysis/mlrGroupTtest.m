@@ -33,8 +33,9 @@
 %   params.contrasts: each row specify which levels (or combination of levels) to include in the corresponding contrast, with
 %                     each column corresponding to a given level or combination thereof, according to the combinationMode parameter
 %                     using the order in which factors were specified, the order in which levels appear within each factor across scans
-%   params.smoothingFWHM: FWHM of the Gaussian smoothing kernel in voxels of the specified base/scan space (default = [1 1 1]. Set to 0 for no smoothing.
-%   params.smoothingSpace: space in which to smooth the data, 0 = current scan, any other number: base number (default: current base)
+%   params.smoothingFWHM: FWHM of the Gaussian smoothing kernel in voxels of the specified base/scan space. Set to 0 for no smoothing (default).
+%   params.smoothingSpace: space in which to smooth the data, 0 = current scan, any other number: base number (default: current base,
+%                          unless smoothingFWHM>0, in which case, current base)
 %                          This is only implemented for flat bases. Any other base (surface or volume) will be ignored and everything will be done in scan space
 %   params.testSide: 'both', 'left' or 'right'
 %   params.pThreshold: criterion for masking overlays, expressed as a probability value (default = 0.05)
@@ -56,7 +57,7 @@
 %
 %   author: julien besle (17/03/2021)
 
-function [thisView,params, uniqueLevels] = mlrGroupTtest(thisView,params,varargin)
+function [thisView, params, uniqueLevels] = mlrGroupTtest(thisView,params,varargin)
 
 eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
@@ -85,7 +86,7 @@ if fieldIsNotDefined(params,'contrasts')
   params.contrasts = [];
 end
 if fieldIsNotDefined(params,'smoothingFWHM')
-  params.smoothingFWHM = [1 1 1];
+  params.smoothingFWHM = 0;
 end
 if fieldIsNotDefined(params,'smoothingSpace')
   params.smoothingSpace = viewGet(thisView,'curbase');
@@ -251,19 +252,20 @@ if justGetParams
   return;
 end
 
-
+if all(params.smoothingFWHM==0) && params.smoothingSpace~=0
+  mrWarnDlg('(mlrGroupTtest) Smoothing is set to 0, so all analyses will be done in current scan space');
+  params.smoothingSpace = 0;
+end
 baseType = viewGet(thisView,'baseType',params.smoothingSpace);
 if any(params.smoothingFWHM>0)
   if baseType==0
     mrWarnDlg('(mlrGroupTtest) Smoothing will be done in current scan space');
     params.smoothingSpace = 0;
   elseif baseType==2
-    mrWarnDlg('(mlrGroupTtest) Smoothing not implemented for surfaces or vol, swithing smoothing space to current scan');
+    mrWarnDlg('(mlrGroupTtest) Smoothing not implemented for surfaces or vol, switching smoothing space to current scan');
     params.smoothingSpace = 0;
   end
 end
-
-
 
 %-------------------------------------- Compute contrasts and run t-tests
 contrastNames = makeContrastNames(params.contrasts,uniqueLevels,params.testSide);
