@@ -27,6 +27,9 @@
 %       params.subjectOverlayAnalyses         Analysis names numbers of the overlays to normalize
 %       params.subjectOverlays                Names or numbers or the overlay to normalize
 %       params.subjectROIs                    Names or numbers or the ROIs to normalize
+%       params.subjectROIsides                What hemisphere the ROI is in (1 = left, 2 = right). When averaging across left and right hemispheres, left and right ROIs should be matched and given in the same order.
+%       params.subjectROIbase                 Export space of the ROI (by default, same as the overlay scan space)
+%       params.binarizeROIs                   Binarize ROIs after resampling to template space, or keep interpolated values (default = false)
 %       params.templateOverlayGroupNums       In what new group(s) of the template mrLoadRet folder the group-normalized overlays (concatenated in a scan) will be imported.
 %                                             (must be an index into params.templateOverlayGroupNames)
 %       params.templateOverlayGroupNames      Name(s) of the template group(s) (must not already exist)
@@ -102,6 +105,9 @@ if fieldIsNotDefined(params,'subjectROIsides')
 end
 if fieldIsNotDefined(params,'subjectROIbase')
   params.subjectROIbase = []; % export space of the ROI (by default, same as the overlay scan space)
+end
+if fieldIsNotDefined(params,'binarizeROIs')
+  params.binarizeROIs = false; % Binarize ROIs after resampling to template space, or keep interpolated values (default = false)
 end
 if fieldIsNotDefined(params,'templateOverlayGroupNums')
   params.templateOverlayGroupNums = []; % in what group of the group mrLoadRet folder the group-normalized overlays (concatenated in a scan) will be imported
@@ -553,7 +559,7 @@ for iSubj = 1:nSubjects
     fsSphericalParams.fsDestSubj = params.freesurferTemplateID;
     fsSphericalParams.destVol = convertNames(:,1);
     fsSphericalParams.interpMethod = 'linear';
-    fsSphericalParams.outputBinaryData = false;  % UNCLEAR IF THIS SHOULD BE TRUE OR FALSE (ONLY MATTERS FOR ROIs)
+    fsSphericalParams.outputBinaryData = params.binarizeROIs;
     fsSphericalParams.dryRun = params.dryRun;
     fsSphericalParamsOut = freesurferSphericalNormalizationVolumes(fsSphericalParams);
     if params.combineLeftAndRight
@@ -763,6 +769,9 @@ if ~params.dryRun
     if ( iGroup>nTemplateGroups && params.computeROIprobabilityMaps ) || params.computeGroupAverage(iGroup)
       thisView = viewSet(thisView,'curGroup',templateGroupNums{iGroup});
       [~,averageParams] = mlrGroupAverage(thisView,[],'justGetParams');
+      if iGroup>nTemplateGroups
+        averageParams.analysisName = 'ROI probability maps';
+      end
       averageParams.factors = {'overlay'};
       averageParams.scanList = scanList{iGroup};
       thisView = mlrGroupAverage(thisView,averageParams);
