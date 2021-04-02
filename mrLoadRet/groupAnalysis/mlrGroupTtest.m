@@ -42,7 +42,7 @@
 %   params.testOutput: '-10log(P)' (default), 'P', 'Z'. P values are not corrected for multiple tests
 %   params.fweAdjustment: default = false (uses default method in transformStatistic.m)
 %   params.fdrAdjustment: default = true (uses default method in transformStatistic.m)
-%   params.thresholdEstimates: whether to clip contrast estimate overlays using corresponding p-value (using most conservative correction)
+%   params.thresholdCorrection: which p-value to use to set the transparency and clip contrast estimates: 'FDR' (default),'FWE','Uncorrected','None'
 %   params.outputContrastEstimates: output contrast estimates in addition to statistics (default = true)
 %   params.outputContrastSte: output contrast standard errors in addition to statistics (default = false)
 %   params.outputStatistic: output T statistic in addition to statistics (default = false)
@@ -106,8 +106,8 @@ end
 if fieldIsNotDefined(params,'fdrAdjustment')
   params.fdrAdjustment= true;
 end
-if fieldIsNotDefined(params,'thresholdEstimates')
-  params.thresholdEstimates = true;
+if fieldIsNotDefined(params,'thresholdCorrection')
+  params.thresholdCorrection = 'FDR';
 end
 if fieldIsNotDefined(params,'outputStatistic')
   params.outputStatistic = false;
@@ -532,16 +532,25 @@ for iOutput = 1:nOutputs
             overlays(iOverlay).colorRange = [0 -log10(1e-16)];
         end
       case nOutputContrast
-        if params.thresholdEstimates
-          if params.fweAdjustment
-            overlays(iOverlay).alphaOverlay = overlays((nOutputFweP-1)*nContrasts + iContrast).name;
-          elseif params.fdrAdjustment
-            overlays(iOverlay).alphaOverlay = overlays((nOutputFdrP-1)*nContrasts + iContrast).name;
-          else
+        switch params.thresholdCorrection
+          case 'FWE'
+            if params.fweAdjustment
+              overlays(iOverlay).alphaOverlay = overlays((nOutputFweP-1)*nContrasts + iContrast).name;
+            elseif params.fdrAdjustment
+              overlays(iOverlay).alphaOverlay = overlays((nOutputFdrP-1)*nContrasts + iContrast).name;
+            else
+              overlays(iOverlay).alphaOverlay = overlays((nOutputP-1)*nContrasts + iContrast).name;
+            end
+          case 'FDR'
+            if params.fdrAdjustment
+              overlays(iOverlay).alphaOverlay = overlays((nOutputFdrP-1)*nContrasts + iContrast).name;
+            else
+              overlays(iOverlay).alphaOverlay = overlays((nOutputP-1)*nContrasts + iContrast).name;
+            end
+          case 'Uncorrected'
             overlays(iOverlay).alphaOverlay = overlays((nOutputP-1)*nContrasts + iContrast).name;
-          end
-          overlays(iOverlay).alphaOverlayExponent = alphaOverlayExponent;
         end
+        overlays(iOverlay).alphaOverlayExponent = alphaOverlayExponent;
     end
     if ~ismember(iOutput, [nOutputP nOutputFweP nOutputFdrP nOutputSampleSize]) % for overlays other and P-values and sample size
       allScanData = []; % determine the 1st-99th percentile range
