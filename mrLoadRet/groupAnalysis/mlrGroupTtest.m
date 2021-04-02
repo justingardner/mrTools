@@ -375,8 +375,8 @@ for iScan = 1:viewGet(thisView,'nScans')
 
       % compute contrast estimates and std error
       contrastEstimates = nansum(subjectContrastEstimates,4)./sampleSize;
-      contrastSte = nansum((subjectContrastEstimates-repmat(contrastEstimates,[1 1 1 maxSampleSize])).^2,4) ./ ... % sum of squared errors
-                               (sampleSize-1) ./ ... % divided by N-1
+      contrastSte = sqrt(nansum((subjectContrastEstimates-repmat(contrastEstimates,[1 1 1 maxSampleSize])).^2,4) ./ ... % sum of squared errors
+                               (sampleSize-1)) ./ ... % divided by N-1
                                sqrt(sampleSize);    % divided by sqrt(N)
       %compute p
       t = contrastEstimates./contrastSte;
