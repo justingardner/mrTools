@@ -268,6 +268,7 @@ if any(params.smoothingFWHM>0)
 end
 
 %-------------------------------------- Compute contrasts and run t-tests
+sampleSizesDiffer = false;
 contrastNames = makeContrastNames(params.contrasts,uniqueLevels,params.testSide);
 nContrasts = size(params.contrasts,1);
 nOverlays = nContrasts* (1 + params.fweAdjustment + params.fdrAdjustment + ...
@@ -330,7 +331,6 @@ for iScan = 1:viewGet(thisView,'nScans')
         end
       end
       if numel(nonZeroContrastLevels)>1
-        sampleSizesDiffer = false;
         for i = 2:dLevel
           if nnz(diff(sampleSize(:,[1 i]),1,2))
             sampleSizesDiffer = true;
@@ -467,11 +467,17 @@ for iScan = 1:viewGet(thisView,'nScans')
       end
 
       if params.outputSampleSize
-        overlays(nOutputs*nContrasts+iContrast).data{iScan} = cast(sampleSize,outputPrecision);
-        overlays(nOutputs*nContrasts+iContrast).name = ['N: ' contrastNames{iContrast}];
-        % get min and max
-        minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(iLevel),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
-        maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(iLevel),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        if sampleSizesDiffer || iContrast == 1
+          if ~sampleSizesDiffer
+            overlays(nOutputs*nContrasts+iContrast).name = 'Sample size';
+          else
+            overlays(nOutputs*nContrasts+iContrast).name = ['N: ' contrastNames{iContrast}];
+          end
+          overlays(nOutputs*nContrasts+iContrast).data{iScan} = cast(sampleSize,outputPrecision);
+          % get min and max
+          minOverlay(nOutputs*nContrasts+iContrast) = min(minOverlay(iLevel),min(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+          maxOverlay(nOutputs*nContrasts+iContrast) = max(maxOverlay(iLevel),max(overlays(nOutputs*nContrasts+iContrast).data{iScan}(:)));
+        end
         nOutputs = nOutputs+1;
         nOutputSampleSize = nOutputs;
       else
@@ -491,6 +497,7 @@ for iScan = 1:viewGet(thisView,'nScans')
   end
 end
 
+%add overlays' missing fields
 switch(params.testOutput)
   case 'P'
     clipThreshold = [0 params.pThreshold];
@@ -502,9 +509,6 @@ switch(params.testOutput)
     clipThreshold = [-log10(params.pThreshold) inf];
     alphaOverlayExponent = .5;
 end
-
-
-%add overlays' missing fields
 for iOutput = 1:nOutputs
   for iContrast = 1:nContrasts
     iOverlay = (iOutput-1)*nContrasts + iContrast;
@@ -549,6 +553,9 @@ for iOutput = 1:nOutputs
     end
   end
 end
+
+% remove any overlay with no data (this happens when asking for sample sizes and they are identical at all levels)
+overlays(isinf(minOverlay)) = [];
 
 % set or create analysis
 analysisNum = viewGet(thisView,'analysisNum',params.analysisName);
