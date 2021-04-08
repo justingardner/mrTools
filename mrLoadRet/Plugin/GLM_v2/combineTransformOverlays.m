@@ -318,7 +318,7 @@ switch(params.inputOutputType)
 end
 
 %parse additional array inputs
-additionalArrayArgs = parseArguments(params.additionalArrayArgs,',');
+additionalArrayArgs = mlrParseAdditionalArguments(params.additionalArrayArgs,',');
 if ~isempty(additionalArrayArgs)
   for iArg  = 1:length(additionalArrayArgs)
      for iScan = params.scanList
@@ -335,7 +335,7 @@ else
 end
 
 %parse other additional inputs
-additionalArgs = parseArguments(params.additionalArgs,',');
+additionalArgs = mlrParseAdditionalArguments(params.additionalArgs,',');
 
 %convert overlays to cell arrays if scalar function
 if strcmp(params.inputOutputType,'Scalar')
@@ -474,7 +474,7 @@ if params.nOutputOverlays
   %name of output overlays
   for iOutput=1:params.nOutputOverlays
      if params.nOutputOverlays>1
-        name = ['Ouput ' num2str(iOutput) ' - '];
+        name = ['Output ' num2str(iOutput) ' - '];
      else
         name = '';
      end
@@ -671,26 +671,6 @@ if params.nOutputOverlays
   refreshMLRDisplay(thisView.viewNum);
 end
 set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
-
-function [arguments, nArgs] = parseArguments(argumentString, separator)
-   
-%parse string of arguments separated by separator and put them into a cell array of numerical and string arguments
-%non-numerical values that are not between quotes are converted into strings
-%
-% Julien Besle, 08/07/2010
-nArgs = 0;
-arguments = cell(0);
-remain = argumentString;
-while ~isempty(remain)
-  nArgs = nArgs+1;
-  [token,remain] = strtok(remain, separator);
-  try
-    arguments{nArgs} = eval(token);
-  catch
-    arguments{nArgs} = token;
-  end
-      
-end
 
 function printHelp(params)
 
