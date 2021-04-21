@@ -339,14 +339,17 @@ if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
   H = colorbar(params.colorbarLoc);
   % set the colorbar ticks, making sure to switch
   % them if we have a vertical as opposed to horizontal bar
+  yTicks = get(gui.colorbar,'YTick');
+  xTicks = (get(gui.colorbar,'XTick')-0.5)/length(colormap);
+  xTickLabels = get(gui.colorbar,'XTicklabel');
   if ismember(params.colorbarLoc,{'EastOutside','WestOutside'})
-    set(H,'XTick',get(gui.colorbar,'YTick'));
-    set(H,'Ytick',get(gui.colorbar,'XTick'));
-    set(H,'YTickLabel',get(gui.colorbar,'XTicklabel'));
+    set(H,'XTick',yTicks);
+    set(H,'Ytick',xTicks);
+    set(H,'YTickLabel',xTickLabels);
   else
-    set(H,'YTick',get(gui.colorbar,'YTick'));
-    set(H,'Xtick',get(gui.colorbar,'XTick'));
-    set(H,'XTickLabel',get(gui.colorbar,'XTicklabel'));
+    set(H,'YTick',yTicks);
+    set(H,'Xtick',xTicks);
+    set(H,'XTickLabel',xTickLabels);
   end    
   set(H,'XColor',foregroundColor);
   set(H,'YColor',foregroundColor);
