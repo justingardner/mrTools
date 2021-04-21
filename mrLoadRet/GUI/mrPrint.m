@@ -28,6 +28,17 @@ getArgs(varargin,{'params=[]','useDefault=0','justGetParams=0','roiSmooth=0','ro
 % get base type
 baseType = viewGet(v,'baseType');
 visibleROIs = viewGet(v,'visibleROIs');
+if baseType<2
+  imageDimensions = viewGet(v,'baseDims');
+  switch(baseType)
+    case 0
+      sliceIndex = viewGet(v,'baseSliceIndex');
+      imageDimensions = imageDimensions(setdiff(1:3,sliceIndex));
+      imageDimensions = imageDimensions([2 1]);
+    case 1
+      imageDimensions  = imageDimensions(1:2);
+  end
+end
 
 if ieNotDefined('params')
   % first get parameters that the user wants to display
@@ -58,6 +69,9 @@ if ieNotDefined('params')
       paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
     end
   else
+    paramsInfo{end+1} = {'cropX',[1 imageDimensions(2)],sprintf('minmax=[1 %d]',imageDimensions(2)),'incdec=[-10 10]','type=array','X coordinates of a rectangle in pixels to crop the image ([xOrigin width]), before upsampling. X origin is on the left of the image. Not implemented for surfaces'};
+    paramsInfo{end+1} = {'cropY',[1 imageDimensions(1)],sprintf('minmax=[1 %d]',imageDimensions(1)),'incdec=[-10 10]','type=array','Y coordinates of a rectangle in pixels to crop the image ([yOrigin height]), before upsampling. Y origin is at the top of the image. Not implemented for surfaces'};
+    paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[0 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
     % ROI options for flatmaps and images
     if ~isempty(visibleROIs)
       paramsInfo{end+1} = {'roiLineWidth',mrGetPref('roiContourWidth'),'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
@@ -70,7 +84,6 @@ if ieNotDefined('params')
         paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=roiSmooth'};
       end
     end
-    paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
   end
 
   if useDefault
@@ -81,6 +94,9 @@ if ieNotDefined('params')
 end
 
 if isempty(params) || justGetParams,return,end
+
+cropX = params.cropX;
+cropY = params.cropY;
 
 % grab the image
 mlrDispPercent(-inf,'(mrPrint) Rerendering image');
@@ -161,26 +177,31 @@ end
 
 if isfield(params,'upSampleFactor')
   % convert upSampleFactor into power of 2
-  params.upSampleFactor = 2^params.upSampleFactor;
+  upSampleFactor = 2^params.upSampleFactor;
   % up sample if called for
-  if params.upSampleFactor > 1
-    upSampImage(:,:,1) = upSample(img(:,:,1),log2(params.upSampleFactor));
-    upSampImage(:,:,2) = upSample(img(:,:,2),log2(params.upSampleFactor));
-    upSampImage(:,:,3) = upSample(img(:,:,3),log2(params.upSampleFactor));
-    upSampMask(:,:,1) = upBlur(double(mask(:,:,1)),log2(params.upSampleFactor));
-    upSampMask(:,:,2) = upBlur(double(mask(:,:,2)),log2(params.upSampleFactor));
-    upSampMask(:,:,3) = upBlur(double(mask(:,:,3)),log2(params.upSampleFactor));
+  if upSampleFactor > 1
+    upSampImage(:,:,1) = upSample(img(:,:,1),params.upSampleFactor);
+    upSampImage(:,:,2) = upSample(img(:,:,2),params.upSampleFactor);
+    upSampImage(:,:,3) = upSample(img(:,:,3),params.upSampleFactor);
+    upSampMask(:,:,1) = upBlur(double(mask(:,:,1)),params.upSampleFactor);
+    upSampMask(:,:,2) = upBlur(double(mask(:,:,2)),params.upSampleFactor);
+    upSampMask(:,:,3) = upBlur(double(mask(:,:,3)),params.upSampleFactor);
     img = upSampImage;
-    mask = upSampMask/max(upSampMask(:));
+    upSampMask(upSampMask>0) = upSampMask(upSampMask>0)/max(upSampMask(:));
+    mask = upSampMask;
     % make sure we clip to 0 and 1
     mask(mask<0) = 0;mask(mask>1) = 1;
     img(img<0) = 0;img(img>1) = 1;
     % fix the parameters that are used for clipping to a circular aperture
     if exist('circd','var')
-      circd = circd*params.upSampleFactor;
-      xCenter = xCenter*params.upSampleFactor;
-      yCenter = yCenter*params.upSampleFactor;
+      circd = circd*upSampleFactor;
+      xCenter = xCenter*upSampleFactor;
+      yCenter = yCenter*upSampleFactor;
     end
+    cropX(1) = (cropX(1)-1)*upSampleFactor+1;
+    cropY(1) = (cropY(1)-1)*upSampleFactor+1;
+    cropX(2) = cropX(2)*upSampleFactor;
+    cropY(2) = cropY(2)*upSampleFactor;
   end
 end
 
@@ -275,6 +296,16 @@ if baseType == 2
     end
   end
 else
+  
+  %crop image
+  cropX(1) = min(cropX(1),size(img,2));
+  cropY(1) = min(cropY(1),size(img,1));
+  cropX(2) = min(cropX(2), size(img,2) - cropX(1))+1;
+  cropY(2) = min(cropY(2), size(img,1) - cropY(1))+1;
+  if cropX(1)>1 || cropY(1)>1 || cropX(2)<size(img,2) || cropY(2)<size(img,1)
+    img = img( cropY(1)+(0:cropY(2)-1) , cropX(1)+(0:cropX(2)-1) ,:);
+  end
+
   % display the image (this is for flat maps and images)
   image(img);
 end
@@ -285,7 +316,7 @@ axis(axisHandle,'off');
 axis(axisHandle,'tight');
 hold(axisHandle,'on');
 
-% calcuate directions
+% calculate directions
 params.plotDirections = 0;
 if params.plotDirections
   % calculate gradient on baseCoords
@@ -386,8 +417,8 @@ if baseType ~= 2
 	      color = color2RGB(params.roiColor);
 	    end
 	    % deal with upSample factor
-	    roi{rnum}.lines.x = roi{rnum}.lines.x*params.upSampleFactor;
-	    roi{rnum}.lines.y = roi{rnum}.lines.y*params.upSampleFactor;
+	    roi{rnum}.lines.x = roi{rnum}.lines.x*upSampleFactor;
+	    roi{rnum}.lines.y = roi{rnum}.lines.y*upSampleFactor;
 	    % labels for rois, just create here
 	    % and draw later so they are always on top
 	    if params.roiLabels
@@ -428,7 +459,24 @@ if baseType ~= 2
 		roi{rnum}.lines.x = x+xCenter;
 		roi{rnum}.lines.y = y+yCenter;
 	      end
-	    end
+      end
+      
+      % if cropping, correct x and y coordinates and remove lines falling outside the crop box
+      roi{rnum}.lines.x = roi{rnum}.lines.x - cropX(1) + 1;
+      roi{rnum}.lines.y(:,all(roi{rnum}.lines.x > cropX(2)+0.5)) = [];
+      roi{rnum}.lines.x(:,all(roi{rnum}.lines.x > cropX(2)+0.5)) = [];
+      roi{rnum}.lines.x(roi{rnum}.lines.x > cropX(2)+0.5) = cropX(2)+0.5;
+      roi{rnum}.lines.y(:,all(roi{rnum}.lines.x < 0.5)) = [];
+      roi{rnum}.lines.x(:,all(roi{rnum}.lines.x < 0.5)) = [];
+      roi{rnum}.lines.x(roi{rnum}.lines.x < 0.5) = 0.5;
+      roi{rnum}.lines.y = roi{rnum}.lines.y - cropY(1) + 1;
+      roi{rnum}.lines.x(:,all(roi{rnum}.lines.y > cropY(2)+0.5)) = [];
+      roi{rnum}.lines.y(:,all(roi{rnum}.lines.y > cropY(2)+0.5)) = [];
+      roi{rnum}.lines.y(roi{rnum}.lines.y > cropY(2)+0.5) = cropY(2)+0.5;
+      roi{rnum}.lines.x(:,all(roi{rnum}.lines.y < 0.5)) = [];
+      roi{rnum}.lines.y(:,all(roi{rnum}.lines.y < 0.5)) = [];
+      roi{rnum}.lines.y(roi{rnum}.lines.y < 0.5) = 0.5;
+      
 	    if ~params.roiSmooth
 	      % draw the lines
 	      line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth);
@@ -486,7 +534,8 @@ if ~exist('lineWidth', 'var')
 end
 
 % make sure the image size is 2D
-upSampImSize = imageSize(1:2)*params.upSampleFactor;
+upsampleFactor = 2^params.upsampleFactor;
+upSampImSize = imageSize(1:2)*upSampleFactor;
 
 % Initialize the output RGB image
 roiRGB = zeros([upSampImSize 3]);
@@ -521,20 +570,20 @@ for r=1:length(roi)
     end
     
     % upSample the coords
-    x = x.*params.upSampleFactor;
-    y = y.*params.upSampleFactor;
+    x = x.*upSampleFactor;
+    y = y.*upSampleFactor;
     
-    upSampSq = params.upSampleFactor^2;
+    upSampSq = upSampleFactor^2;
     n = length(x)*upSampSq;
     hiResX = zeros(1,n);
     hiResY = zeros(1,n);
     
-    for ii=1:params.upSampleFactor
-      offsetX = (ii-params.upSampleFactor-.5)+params.upSampleFactor/2;
-      for jj=1:params.upSampleFactor
-        offsetY = (jj-params.upSampleFactor-.5)+params.upSampleFactor/2;
-        hiResX((ii-1)*params.upSampleFactor+jj:upSampSq:end) = x+offsetX;
-        hiResY((ii-1)*params.upSampleFactor+jj:upSampSq:end) = y+offsetY;
+    for ii=1:upSampleFactor
+      offsetX = (ii-upSampleFactor-.5)+upSampleFactor/2;
+      for jj=1:upSampleFactor
+        offsetY = (jj-upSampleFactor-.5)+upSampleFactor/2;
+        hiResX((ii-1)*upSampleFactor+jj:upSampSq:end) = x+offsetX;
+        hiResY((ii-1)*upSampleFactor+jj:upSampSq:end) = y+offsetY;
       end
     end
     
@@ -552,7 +601,7 @@ for r=1:length(roi)
 
     % blur it some, but only need to do this
     % if we haven't already upsampled
-    if params.upSampleFactor <= 2
+    if upSampleFactor <= 2
       roiBits = blur(roiBits,2);
       roiBits(roiBits<median(roiBits(:)))=0;
       roiBits(roiBits~=0) = 1;
