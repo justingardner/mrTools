@@ -1,13 +1,19 @@
 % mrPrint.m
 %
 %        $Id$
-%      usage: mrPrint(v,<'useDefault=1'>,<'roiSmooth=0'>,<'roiLabels=0'>)
+%      usage: mrPrint(v,<'params', params>,<'useDefault=1'>,<'justGetParams=1'>)
 %         by: justin gardner
 %       date: 10/04/07
 %    purpose: puts a printable version of the data into the graph win
 %
-function f = mrPrint(v,varargin)
+%    To change any default parameter within a script:
+%       [~,printParams] = mrPrint(thisView,'justGetParams=1','useDefault=1');
+%       % change parameters...
+%       mrPrint(thisView,'params',printParams)
+%
+function [f,params] = mrPrint(v,varargin)
 
+f=gobjects(0);
 % check arguments
 if nargin < 1
   help mrPrint
@@ -17,77 +23,70 @@ end
 mrGlobals;
 
 % get input arguments
-%getArgs(varargin,{'useDefault=1','roiSmooth=0','roiLabels=0'});
-getArgs(varargin,{'useDefault=0','roiSmooth=1','roiLabels=1'});
+getArgs(varargin,{'params=[]','useDefault=0','justGetParams=0','roiSmooth=0','roiLabels=0'});
 
 % get base type
 baseType = viewGet(v,'baseType');
+visibleROIs = viewGet(v,'visibleROIs');
 
+if ieNotDefined('params')
+  % first get parameters that the user wants to display
+  paramsInfo = {};
+  paramsInfo{end+1} = {'title',sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,'description')),'Title of figure'};
+  paramsInfo{end+1} = {'backgroundColor',{'white','black'},'type=popupmenu','Background color, either white or black'};
+  paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
+  paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
+  if baseType == 1
+    paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'type=popupmenu','Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
+  end
+  % options for surfaces
+  if baseType == 2
+    % if this surface has inf in the name, then guess that it is inflated and default to thresholding
+    baseName = viewGet(v,'baseName');
+    if ~isempty(strfind(lower(baseName),'inf')) thresholdCurvature = 1;else thresholdCurvature = 0;end
+    paramsInfo{end+1} = {'thresholdCurvature',thresholdCurvature,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
+
+    % compute a good threshold value
+    grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
+    thresholdValue = mean(img(1,grayscalePoints,1));
+    thresholdValue = round(thresholdValue*100)/100;
+
+    paramsInfo{end+1} = {'thresholdValue',thresholdValue,'minmax=[0 1]','incdec=[-0.01 0.01]','contingent=thresholdCurvature','Threshold point - all values below this will turn to the thresholdMin value and all values above this will turn to thresholdMax if thresholdCurvature is turned on.'};
+    paramsInfo{end+1} = {'thresholdMin',0.2,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values less than thresholdValue will turn to if thresholdCurvature is set.'};
+    paramsInfo{end+1} = {'thresholdMax',0.5,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values greater than thresholdValue will turn to if thresholdCurvature is set.'};
+    if ~isempty(visibleROIs)
+      paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
+    end
+  else
+    % ROI options for flatmaps and images
+    if ~isempty(visibleROIs)
+      paramsInfo{end+1} = {'roiLineWidth',mrGetPref('roiContourWidth'),'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
+      paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
+      paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
+      paramsInfo{end+1} = {'roiLabels',roiLabels,'type=checkbox','Print ROI name at center coordinate of ROI'};
+      if baseType == 1
+        paramsInfo{end+1} = {'roiSmooth',roiSmooth,'type=checkbox','Smooth the ROI boundaries'};
+        paramsInfo{end+1} = {'whichROIisMask',0,'incdec=[-1 1]', sprintf('minmax=%s',mat2str([0 length(visibleROIs)])) 'Which ROI to use as a mask. 0 does no masking'};
+        paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=roiSmooth'};
+      end
+    end
+    paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
+  end
+
+  if useDefault
+    params = mrParamsDefault(paramsInfo);
+  else
+    params = mrParamsDialog(paramsInfo,'Print figure options');
+  end
+end
+
+if isempty(params) || justGetParams,return,end
 
 % grab the image
 mlrDispPercent(-inf,'(mrPrint) Rerendering image');
-[img base roi overlays altBase] = refreshMLRDisplay(viewGet(v,'viewNum'));
+[img, base, roi, overlays, altBase] = refreshMLRDisplay(viewGet(v,'viewNum'));
 mlrDispPercent(inf);
-
-% validate rois
-validROIs = {};
-for roiNum = 1:length(roi)
-  if ~isempty(roi{roiNum})
-    validROIs{end+1} = roi{roiNum};
-  end
-end
-roi = validROIs;
-
-% first get parameters that the user wants to display
-paramsInfo = {};
-paramsInfo{end+1} = {'title',sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,'description')),'Title of figure'};
-paramsInfo{end+1} = {'backgroundColor',{'white','black'},'type=popupmenu','Background color, either white or black'};
-paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
-paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
-if baseType == 1
-  paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'type=popupmenu','Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
-end
-% options for surfaces
-if baseType == 2
-  % if this surface has inf in the name, then guess that it is inflated and default to thresholding
-  baseName = viewGet(v,'baseName');
-  if ~isempty(strfind(lower(baseName),'inf')) thresholdCurvature = 1;else thresholdCurvature = 0;end
-  paramsInfo{end+1} = {'thresholdCurvature',thresholdCurvature,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
-
-  % compute a good threshold value
-  grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
-  thresholdValue = mean(img(1,grayscalePoints,1));
-  thresholdValue = round(thresholdValue*100)/100;
-
-  paramsInfo{end+1} = {'thresholdValue',thresholdValue,'minmax=[0 1]','incdec=[-0.01 0.01]','contingent=thresholdCurvature','Threshold point - all values below this will turn to the thresholdMin value and all values above this will turn to thresholdMax if thresholdCurvature is turned on.'};
-  paramsInfo{end+1} = {'thresholdMin',0.2,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values less than thresholdValue will turn to if thresholdCurvature is set.'};
-  paramsInfo{end+1} = {'thresholdMax',0.5,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values greater than thresholdValue will turn to if thresholdCurvature is set.'};
-  if ~isempty(roi)
-    paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
-  end
-else
-  % ROI options for flatmaps and images  
-  if ~isempty(roi)
-    paramsInfo{end+1} = {'roiLineWidth',mrGetPref('roiContourWidth'),'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
-    paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
-    paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
-    paramsInfo{end+1} = {'roiLabels',roiLabels,'type=checkbox','Print ROI name at center coordinate of ROI'};
-    if baseType == 1
-      paramsInfo{end+1} = {'roiSmooth',roiSmooth,'type=checkbox','Smooth the ROI boundaries'};
-      paramsInfo{end+1} = {'whichROIisMask',0,'incdec=[-1 1]', 'minmax=[0 inf]', 'Which ROI to use as a mask. 0 does no masking'};
-      paramsInfo{end+1} = {'filledPerimeter',1,'type=numeric','round=1','minmax=[0 1]','incdec=[-1 1]','Fills the perimeter of the ROI when drawing','contingent=roiSmooth'};
-    end
-  end
-  paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[1 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
-end
-
-if useDefault
-  params = mrParamsDefault(paramsInfo);
-else
-  params = mrParamsDialog(paramsInfo,'Print figure options');
-end
-  
-if isempty(params),return,end
+roi = roi(visibleROIs);
 
 % just so the code won't break. roiSmooth is only fro baseType = 1
 if ~isfield(params,'roiSmooth') params.roiSmooth = 0;end
@@ -135,7 +134,7 @@ elseif strcmp(params.maskType,'Circular')
   yCenter = (size(base.im,1)/2);
   x = (1:size(base.im,2))-xCenter;
   y = (1:size(base.im,1))-yCenter;
-  [x y] = meshgrid(x,y);
+  [x, y] = meshgrid(x,y);
   % now compute the distance from the center for
   % every point
   d = sqrt(x.^2+y.^2);
@@ -172,7 +171,7 @@ if isfield(params,'upSampleFactor')
     upSampMask(:,:,2) = upBlur(double(mask(:,:,2)),log2(params.upSampleFactor));
     upSampMask(:,:,3) = upBlur(double(mask(:,:,3)),log2(params.upSampleFactor));
     img = upSampImage;
-    mask = upSampMask/max(upSampMask(:));;
+    mask = upSampMask/max(upSampMask(:));
     % make sure we clip to 0 and 1
     mask(mask<0) = 0;mask(mask>1) = 1;
     img(img<0) = 0;img(img>1) = 1;
@@ -187,9 +186,9 @@ end
 
 if (baseType == 1) && ~isempty(roi) && params.roiSmooth
   % get the roiImage and mask
-  [roiImage roiMask dataMask] = getROIPerimeterRGB(v,roi,size(img),params);
+  [roiImage, roiMask, dataMask] = getROIPerimeterRGB(v,roi,size(img),params);
   % now set img correctly
-  [roiY roiX] = find(roiMask);
+  [roiY, roiX] = find(roiMask);
   for i = 1:length(roiX)
     for j = 1:3
       if (roiX(i) <= size(img,1)) && (roiY(i) <= size(img,2))
