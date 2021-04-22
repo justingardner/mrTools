@@ -70,9 +70,9 @@ if ieNotDefined('params')
       paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'type=popupmenu','Masks out anatomy image for flat maps. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
     end
   end
-  paramsInfo{end+1} = {'colorbarLoc',{'South','North','East','West','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
-  paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
   if nOverlays==1
+    paramsInfo{end+1} = {'colorbarLoc',{'South','North','East','West','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
+    paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
     paramsInfo{end+1} = {'colorbarScale',viewGet(v,'overlayColorRange'),'type=array','Lower and upper limits of the color scale to display on the color bar'};
     paramsInfo{end+1} = {'colorbarScaleFunction','@(x)x','type=string','Anonymous function to apply to the colorbar scale values [e.g. @(x)exp(x) for data on a logarithmic scale]. This will be applied after applying the colorbarScale parameter. The function must accept and return a one-dimensional array of color scale values.'};
     paramsInfo{end+1} = {'colorbarTickNumber',4,'type=numeric','round=1','incdec=[-1 1]','minmax=[2 inf]','Number of ticks on the colorbar'};
@@ -118,15 +118,14 @@ if ~isfield(params,'roiSmooth') params.roiSmooth = 0;end
 
 % get the gui, so that we can extract colorbar
 fig = viewGet(v,'figNum');
-if ~isempty(fig) % this won't work with the view doesn't have a GUI figure associated with it
+if nOverlays>1
+    mrWarnDlg('(mrPrint) printing colorbar for multiple overlays is not implemented');
+    cmap = [];
+elseif ~isempty(fig) % this won't work with the view doesn't have a GUI figure associated with it
   gui = guidata(fig);
-
   % grab the colorbar data
   H = get(gui.colorbar,'children');
   cmap = get(H(end),'CData');
-  if size(cmap,1)>1
-    mrWarnDlg('(mrPrint) printing colorbar for multiple overlays is not implemented');
-  end
   cmap=squeeze(cmap(1,:,:));
 else
   cmap = [];
@@ -375,7 +374,7 @@ if params.plotDirections
 end
 
 % display the colormap
-if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
+if ~isempty(cmap) && ~strcmp(params.colorbarLoc,'None')
   
   if baseType == 2 && ismember(lower(params.colorbarLoc),{'south','north','east'})
     colorbarLoc = params.colorbarLoc; % put the color bar inside the axes for a tighter figure
@@ -407,7 +406,10 @@ if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
   totalColNum = size(xTickLabels,2);
   for iTick = 1:size(xTickLabels,1)
     colNum = totalColNum;
-    while xTickLabels(iTick,colNum)=='0' || xTickLabels(iTick,colNum)=='.'
+    while xTickLabels(iTick,colNum)=='0'
+      colNum=colNum-1;
+    end
+    if xTickLabels(iTick,colNum)=='.'
       colNum=colNum-1;
     end
     xTickLabels(iTick,:) = circshift(xTickLabels(iTick,:),-colNum);
