@@ -20,6 +20,11 @@ if nargin < 1
   return
 end
 
+if viewGet(getMLRView,'baseMultiAxis')>0
+  mrWarnDlg('(mrPrint) Not implemented for multi-axes display');
+  return;
+end
+
 mrGlobals;
 
 % get input arguments
