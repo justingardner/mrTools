@@ -54,8 +54,9 @@ if ieNotDefined('params')
     paramsInfo{end+1} = {'thresholdCurvature',thresholdCurvature,'type=checkbox','Thresholds curvature so that the surface is two tones rather than has smooth tones'};
 
     % compute a good threshold value
-    grayscalePoints = find((img(1,:,1)==img(1,:,2))&(img(1,:,3)==img(1,:,2)));
-    thresholdValue = mean(img(1,grayscalePoints,1));
+    [base.im,base.coords,base.coordsHomogeneous] = getBaseSlice(v); % get the base surface
+    baseImg = rescale2rgb(base.im,gray(256),viewGet(v,'baseClip'),viewGet(v,'baseGamma')); % and compute mesh (gray) RGB value like in refreshMLRDisplay
+    thresholdValue = mean(baseImg(1,(baseImg(1,:,1)==baseImg(1,:,2))&(baseImg(1,:,3)==baseImg(1,:,2)),1));
     thresholdValue = round(thresholdValue*100)/100;
 
     paramsInfo{end+1} = {'thresholdValue',thresholdValue,'minmax=[0 1]','incdec=[-0.01 0.01]','contingent=thresholdCurvature','Threshold point - all values below this will turn to the thresholdMin value and all values above this will turn to thresholdMax if thresholdCurvature is turned on.'};
@@ -69,7 +70,7 @@ if ieNotDefined('params')
       paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'type=popupmenu','Masks out anatomy image for flat maps. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
     end
   end
-  paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
+  paramsInfo{end+1} = {'colorbarLoc',{'South','North','East','West','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
   paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
   if nOverlays==1
     paramsInfo{end+1} = {'colorbarScale',viewGet(v,'overlayColorRange'),'type=array','Lower and upper limits of the color scale to display on the color bar'};
@@ -101,8 +102,10 @@ end
 
 if isempty(params) || justGetParams,return,end
 
-cropX = params.cropX;
-cropY = params.cropY;
+if baseType<2
+  cropX = params.cropX;
+  cropY = params.cropY;
+end
 
 % grab the image
 mlrDispPercent(-inf,'(mrPrint) Rerendering image');
@@ -373,7 +376,15 @@ end
 
 % display the colormap
 if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
-  H = colorbar(params.colorbarLoc);
+  
+  if baseType == 2 && ismember(lower(params.colorbarLoc),{'south','north','east'})
+    colorbarLoc = params.colorbarLoc; % put the color bar inside the axes for a tighter figure
+  else
+    colorbarLoc = [params.colorbarLoc 'Outside'];
+  end
+  H = colorbar(colorbarLoc);
+  set(H,'axisLocation','out'); %make sure ticks and labels are pointing away from the figure (not the case by default when colorbar is inside the axes)
+
   % set the colorbar ticks, making sure to switch
   % them if we have a vertical as opposed to horizontal bar
   yTicks = get(gui.colorbar,'YTick');
@@ -402,7 +413,7 @@ if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
     xTickLabels(iTick,:) = circshift(xTickLabels(iTick,:),-colNum);
     xTickLabels(iTick,1:totalColNum-colNum) = repmat(' ',1,totalColNum-colNum);
   end
-  if ismember(params.colorbarLoc,{'EastOutside','WestOutside'})
+  if ismember(lower(params.colorbarLoc),{'east','west'})
     set(H,'XTick',yTicks);
     set(H,'Ytick',xTicks);
     set(H,'YTickLabel',xTickLabels);
@@ -413,17 +424,18 @@ if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
   end    
   set(H,'XColor',foregroundColor);
   set(H,'YColor',foregroundColor);
+  
   %color bar title (label)
   set(get(H,'Label'),'String',params.colorbarTitle);
   set(get(H,'Label'),'Interpreter','none');
   set(get(H,'Label'),'Color',foregroundColor);
   set(get(H,'Label'),'FontSize',params.fontSize-4);
   switch(lower(params.colorbarLoc)) % change default position of label depending on location of colorbar
-    case 'southoutside'
+    case 'south'
       set(get(H,'Label'),'position',[0.5 2])
-    case 'northoutside'
+    case 'north'
 %       do nothing
-    case 'eastoutside'
+    case 'east'
       set(get(H,'Label'),'position',[-1 0.5]);
       imagePosition = get(axisHandle,'position');
       imagePosition(1) = imagePosition(1)-0.01;
@@ -431,8 +443,7 @@ if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
       labelPosition = get(H,'position');
       labelPosition(1) = labelPosition(1)+0.01;
       set(H,'position',labelPosition);
-    case 'westoutside'
-%       set(H,'axisLocation','in')
+    case 'west'
       set(get(H,'Label'),'position',[1 0.5])
       set(get(H,'Label'),'rotation',270)
   end
