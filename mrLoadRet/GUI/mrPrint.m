@@ -39,19 +39,15 @@ if baseType<2
       imageDimensions  = imageDimensions(1:2);
   end
 end
+nOverlays = numel(viewGet(v,'curOverlay'));
 
 if ieNotDefined('params')
   % first get parameters that the user wants to display
   paramsInfo = {};
   paramsInfo{end+1} = {'title',sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,'description')),'Title of figure'};
+  paramsInfo{end+1} = {'fontSize',16,'Font size of the title and colorbar title'};
   paramsInfo{end+1} = {'backgroundColor',{'white','black'},'type=popupmenu','Background color, either white or black'};
-  paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
-  paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
-  if baseType == 1
-    paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'type=popupmenu','Masks out anatomy image. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
-  end
-  % options for surfaces
-  if baseType == 2
+  if baseType == 2 % options for surfaces
     % if this surface has inf in the name, then guess that it is inflated and default to thresholding
     baseName = viewGet(v,'baseName');
     if ~isempty(strfind(lower(baseName),'inf')) thresholdCurvature = 1;else thresholdCurvature = 0;end
@@ -65,15 +61,25 @@ if ieNotDefined('params')
     paramsInfo{end+1} = {'thresholdValue',thresholdValue,'minmax=[0 1]','incdec=[-0.01 0.01]','contingent=thresholdCurvature','Threshold point - all values below this will turn to the thresholdMin value and all values above this will turn to thresholdMax if thresholdCurvature is turned on.'};
     paramsInfo{end+1} = {'thresholdMin',0.2,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values less than thresholdValue will turn to if thresholdCurvature is set.'};
     paramsInfo{end+1} = {'thresholdMax',0.5,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values greater than thresholdValue will turn to if thresholdCurvature is set.'};
-    if ~isempty(visibleROIs)
-      paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
-    end
-  else
+  else % options for flat maps and volume slices
     paramsInfo{end+1} = {'cropX',[1 imageDimensions(2)],sprintf('minmax=[1 %d]',imageDimensions(2)),'incdec=[-10 10]','type=array','X coordinates of a rectangle in pixels to crop the image ([xOrigin width]), before upsampling. X origin is on the left of the image. Not implemented for surfaces'};
     paramsInfo{end+1} = {'cropY',[1 imageDimensions(1)],sprintf('minmax=[1 %d]',imageDimensions(1)),'incdec=[-10 10]','type=array','Y coordinates of a rectangle in pixels to crop the image ([yOrigin height]), before upsampling. Y origin is at the top of the image. Not implemented for surfaces'};
     paramsInfo{end+1} = {'upSampleFactor',0,'type=numeric','round=1','incdec=[-1 1]','minmax=[0 inf]','How many to upsample image by. Each time the image is upsampled it increases in dimension by a factor of 2. So, for example, setting this to 2 will increase the image size by 4'};
-    % ROI options for flatmaps and images
-    if ~isempty(visibleROIs)
+    if baseType == 1
+      paramsInfo{end+1} = {'maskType',{'Circular','Remove black','None'},'type=popupmenu','Masks out anatomy image for flat maps. Circular finds the largest circular aperture to view the anatomy through. Remove black keeps the patch the same shape, but removes pixels at the edge that are black.'};
+    end
+  end
+  paramsInfo{end+1} = {'colorbarLoc',{'SouthOutside','NorthOutside','EastOutside','WestOutside','None'},'type=popupmenu','Location of colorbar, select None if you do not want a colorbar'};
+  paramsInfo{end+1} = {'colorbarTitle',viewGet(v,'overlayName'),'Title of the colorbar'};
+  if nOverlays==1
+    paramsInfo{end+1} = {'colorbarScale',viewGet(v,'overlayColorRange'),'type=array','Lower and upper limits of the color scale to display on the color bar'};
+    paramsInfo{end+1} = {'colorbarScaleFunction','@(x)x','type=string','Anonymous function to apply to the colorbar scale values [e.g. @(x)exp(x) for data on a logarithmic scale]. This will be applied after applying the colorbarScale parameter. The function must accept and return a one-dimensional array of color scale values.'};
+    paramsInfo{end+1} = {'colorbarTickNumber',4,'type=numeric','round=1','incdec=[-1 1]','minmax=[2 inf]','Number of ticks on the colorbar'};
+  end
+  if ~isempty(visibleROIs)
+    if baseType == 2 % ROI options for surfaces
+      paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
+    else % ROI options for flatmaps and images
       paramsInfo{end+1} = {'roiLineWidth',mrGetPref('roiContourWidth'),'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
       paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
       paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
@@ -372,7 +378,30 @@ if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
   % them if we have a vertical as opposed to horizontal bar
   yTicks = get(gui.colorbar,'YTick');
   xTicks = (get(gui.colorbar,'XTick')-0.5)/length(colormap);
-  xTickLabels = get(gui.colorbar,'XTicklabel');
+  xTickLabels = str2num(get(gui.colorbar,'XTicklabel'));
+  if ~fieldIsNotDefined(params,'colorbarTickNumber')
+    xTicks = linspace(xTicks(1),xTicks(end),params.colorbarTickNumber);
+    xTickLabels = linspace(xTickLabels(1),xTickLabels(end),params.colorbarTickNumber)';
+  end
+  if ~fieldIsNotDefined(params,'colorbarScale')
+    colorScale = viewGet(v,'overlayColorRange');
+    xTickLabels =(xTickLabels-colorScale(1))/diff(colorScale)*diff(params.colorbarScale)+params.colorbarScale(1);
+  end
+  if ~fieldIsNotDefined(params,'colorbarScaleFunction')
+    colorbarScaleFunction = str2func(params.colorbarScaleFunction);
+    xTickLabels = colorbarScaleFunction(xTickLabels);
+  end
+  xTickLabels = num2str( xTickLabels, '%.3f');
+  % remove trailing zeros (can't use %g or %f to directly get both a fixed number of decimal points and no trailing zeros)
+  totalColNum = size(xTickLabels,2);
+  for iTick = 1:size(xTickLabels,1)
+    colNum = totalColNum;
+    while xTickLabels(iTick,colNum)=='0' || xTickLabels(iTick,colNum)=='.'
+      colNum=colNum-1;
+    end
+    xTickLabels(iTick,:) = circshift(xTickLabels(iTick,:),-colNum);
+    xTickLabels(iTick,1:totalColNum-colNum) = repmat(' ',1,totalColNum-colNum);
+  end
   if ismember(params.colorbarLoc,{'EastOutside','WestOutside'})
     set(H,'XTick',yTicks);
     set(H,'Ytick',xTicks);
@@ -384,17 +413,38 @@ if ~strcmp(params.colorbarLoc,'None') && ~isempty(cmap)
   end    
   set(H,'XColor',foregroundColor);
   set(H,'YColor',foregroundColor);
-  set(get(H,'Title'),'String',params.colorbarTitle);
-  set(get(H,'Title'),'Interpreter','none');
-  set(get(H,'Title'),'Color',foregroundColor);
-  set(get(H,'Title'),'FontSize',14);
+  %color bar title (label)
+  set(get(H,'Label'),'String',params.colorbarTitle);
+  set(get(H,'Label'),'Interpreter','none');
+  set(get(H,'Label'),'Color',foregroundColor);
+  set(get(H,'Label'),'FontSize',params.fontSize-4);
+  switch(lower(params.colorbarLoc)) % change default position of label depending on location of colorbar
+    case 'southoutside'
+      set(get(H,'Label'),'position',[0.5 2])
+    case 'northoutside'
+%       do nothing
+    case 'eastoutside'
+      set(get(H,'Label'),'position',[-1 0.5]);
+      imagePosition = get(axisHandle,'position');
+      imagePosition(1) = imagePosition(1)-0.01;
+      set(axisHandle,'position',imagePosition);
+      labelPosition = get(H,'position');
+      labelPosition(1) = labelPosition(1)+0.01;
+      set(H,'position',labelPosition);
+    case 'westoutside'
+%       set(H,'axisLocation','in')
+      set(get(H,'Label'),'position',[1 0.5])
+      set(get(H,'Label'),'rotation',270)
+  end
 end
 
 % create a title
-H = title(params.title);
-set(H,'Interpreter','none');
-set(H,'Color',foregroundColor);
-set(H,'FontSize',16);
+if ~isempty(params.title)
+  H = title(params.title);
+  set(H,'Interpreter','none');
+  set(H,'Color',foregroundColor);
+  set(H,'FontSize',params.fontSize);
+end
 
 drawnow;
 
