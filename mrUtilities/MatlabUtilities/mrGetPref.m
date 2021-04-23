@@ -41,54 +41,55 @@ prefNames = {'overwritePolicy','verbose','graphWindow','checkParamsConsistency'.
    'maxArrayWidthForParamsDialog','maxArrayHeightForParamsDialog',...
    'mlrVolDisplayControls','mlrVolOverlayAlpha','motionCompDefaultParams','colorNames',...
    'mlrPath','vistaPath','lastPath'...
-   'overlayCombineTransformPaths','roiTransformPaths',...
+   'overlayCombineTransformPaths','roiTransformPaths','colormapPaths'...
 	    };
 
 % set the defaults for preference we have defaults for. Note that the "find" in
 % here is to make sure that the prefDefaults list matches the prefNames order
 prefDefaults{length(prefNames)} = [];
-prefDefaults{find(strcmp('overwritePolicy',prefNames))} = {'Ask','Merge','Rename','Overwrite'};
-prefDefaults{find(strcmp('verbose',prefNames))} = {'No','Yes'};
-prefDefaults{find(strcmp('graphWindow',prefNames))} = {'Replace','Make new'};
-prefDefaults{find(strcmp('checkParamsConsistency',prefNames))} = {'Yes','No'};
-prefDefaults{find(strcmp('maxBlocksize',prefNames))} = 250000000;
-prefDefaults{find(strcmp('roiCacheSize',prefNames))} = 100;
-prefDefaults{find(strcmp('baseCacheSize',prefNames))} = 50;
-prefDefaults{find(strcmp('overlayCacheSize',prefNames))} = 50;
-prefDefaults{find(strcmp('defaultPrecision',prefNames))} = 'double';
-prefDefaults{find(strcmp('interrogatorPaths',prefNames))} = '';
-prefDefaults{find(strcmp('volumeDirectory',prefNames))} = '';
-prefDefaults{find(strcmp('niftiFileExtension',prefNames))} = {'.img','.nii'};
-prefDefaults{find(strcmp('fslPath',prefNames))} = 'FSL not installed';
-prefDefaults{find(strcmp('selectedROIColor',prefNames))} = color2RGB;
-prefDefaults{find(strcmp('selectedROIColor',prefNames))}{end+1} = 'none';
-prefDefaults{find(strcmp('roiContourWidth',prefNames))} = 1;
-prefDefaults{find(strcmp('roiCorticalDepthDisplayRatio',prefNames))} = .5;
-prefDefaults{find(strcmp('roiPolygonMethod',prefNames))} = {'getpts','roipoly','getptsNoDoubleClick'};
-prefDefaults{find(strcmp('interpMethod',prefNames))} = {'nearest','linear','spline','cubic'};
-prefDefaults{find(strcmp('corticalDepthBins',prefNames))} = 11;
-prefDefaults{find(strcmp('multiSliceProjectionMethod',prefNames))} = {'Average','Maximum Intensity Projection'};
-prefDefaults{find(strcmp('colorBlending',prefNames))} = {'Additive','Alpha blend','Contours'};
-prefDefaults{find(strcmp('overlayRangeBehaviour',prefNames))} = {'Classic','New'};
-prefDefaults{find(strcmp('baseNaNsColor',prefNames))} = {'Black','White','Transparent'};
-prefDefaults{find(strcmp('pluginPaths',prefNames))} = '';
-prefDefaults{find(strcmp('selectedPlugins',prefNames))} = '';
-prefDefaults{find(strcmp('statisticalTestOutput',prefNames))} = {'P value','Z value','-log10(P) value'};
-prefDefaults{find(strcmp('site',prefNames))} = 'NYU';
-prefDefaults{find(strcmp('magnet',prefNames))} = {{'Allegra 3T','other'}};
-prefDefaults{find(strcmp('coil',prefNames))} = {{'LifeService','Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
-prefDefaults{find(strcmp('pulseSequence',prefNames))} = {{'cbi_ep2d_bold','other'}};
-prefDefaults{find(strcmp('maxArrayWidthForParamsDialog',prefNames))} = 25;
-prefDefaults{find(strcmp('maxArrayHeightForParamsDialog',prefNames))} = 50;
-prefDefaults{find(strcmp('mlrVolDisplayControls',prefNames))} = false;
-prefDefaults{find(strcmp('mlrVolOverlayAlpha',prefNames))} = 0.8;
-prefDefaults{find(strcmp('motionCompDefaultParams',prefNames))} = [];
-prefDefaults{find(strcmp('colorNames',prefNames))} = {};
-prefDefaults{find(strcmp('mlrPath',prefNames))} = '';
-prefDefaults{find(strcmp('vistaPath',prefNames))} = '';
-prefDefaults{find(strcmp('lastPath',prefNames))} = '';
-prefDefaults{find(strcmp('overlayCombineTransformPaths',prefNames))} = '';
-prefDefaults{find(strcmp('roiTransformPaths',prefNames))} = '';
+prefDefaults{strcmp('overwritePolicy',prefNames)} = {'Ask','Merge','Rename','Overwrite'};
+prefDefaults{strcmp('verbose',prefNames)} = {'No','Yes'};
+prefDefaults{strcmp('graphWindow',prefNames)} = {'Replace','Make new'};
+prefDefaults{strcmp('checkParamsConsistency',prefNames)} = {'Yes','No'};
+prefDefaults{strcmp('maxBlocksize',prefNames)} = 250000000;
+prefDefaults{strcmp('roiCacheSize',prefNames)} = 100;
+prefDefaults{strcmp('baseCacheSize',prefNames)} = 50;
+prefDefaults{strcmp('overlayCacheSize',prefNames)} = 50;
+prefDefaults{strcmp('defaultPrecision',prefNames)} = 'double';
+prefDefaults{strcmp('interrogatorPaths',prefNames)} = '';
+prefDefaults{strcmp('volumeDirectory',prefNames)} = '';
+prefDefaults{strcmp('niftiFileExtension',prefNames)} = {'.img','.nii'};
+prefDefaults{strcmp('fslPath',prefNames)} = 'FSL not installed';
+prefDefaults{strcmp('selectedROIColor',prefNames)} = color2RGB;
+prefDefaults{strcmp('selectedROIColor',prefNames)}{end+1} = 'none';
+prefDefaults{strcmp('roiContourWidth',prefNames)} = 1;
+prefDefaults{strcmp('roiCorticalDepthDisplayRatio',prefNames)} = .5;
+prefDefaults{strcmp('roiPolygonMethod',prefNames)} = {'getpts','roipoly','getptsNoDoubleClick'};
+prefDefaults{strcmp('interpMethod',prefNames)} = {'nearest','linear','spline','cubic'};
+prefDefaults{strcmp('corticalDepthBins',prefNames)} = 11;
+prefDefaults{strcmp('multiSliceProjectionMethod',prefNames)} = {'Average','Maximum Intensity Projection'};
+prefDefaults{strcmp('colorBlending',prefNames)} = {'Additive','Alpha blend','Contours'};
+prefDefaults{strcmp('overlayRangeBehaviour',prefNames)} = {'Classic','New'};
+prefDefaults{strcmp('baseNaNsColor',prefNames)} = {'Black','White','Transparent'};
+prefDefaults{strcmp('pluginPaths',prefNames)} = '';
+prefDefaults{strcmp('selectedPlugins',prefNames)} = '';
+prefDefaults{strcmp('statisticalTestOutput',prefNames)} = {'P value','Z value','-log10(P) value'};
+prefDefaults{strcmp('site',prefNames)} = 'NYU';
+prefDefaults{strcmp('magnet',prefNames)} = {{'Allegra 3T','other'}};
+prefDefaults{strcmp('coil',prefNames)} = {{'LifeService','Siemens birdcage','Nova birdcage','Nova surface','Nova quadrapus','Nova visual array','other'}};
+prefDefaults{strcmp('pulseSequence',prefNames)} = {{'cbi_ep2d_bold','other'}};
+prefDefaults{strcmp('maxArrayWidthForParamsDialog',prefNames)} = 25;
+prefDefaults{strcmp('maxArrayHeightForParamsDialog',prefNames)} = 50;
+prefDefaults{strcmp('mlrVolDisplayControls',prefNames)} = false;
+prefDefaults{strcmp('mlrVolOverlayAlpha',prefNames)} = 0.8;
+prefDefaults{strcmp('motionCompDefaultParams',prefNames)} = [];
+prefDefaults{strcmp('colorNames',prefNames)} = {};
+prefDefaults{strcmp('mlrPath',prefNames)} = '';
+prefDefaults{strcmp('vistaPath',prefNames)} = '';
+prefDefaults{strcmp('lastPath',prefNames)} = '';
+prefDefaults{strcmp('overlayCombineTransformPaths',prefNames)} = '';
+prefDefaults{strcmp('roiTransformPaths',prefNames)} = '';
+prefDefaults{strcmp('colormapPaths',prefNames)} = '';
 
 if nargin == 0
   if nargout > 0
