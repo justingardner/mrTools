@@ -47,6 +47,14 @@ end
 overlayList = viewGet(v,'curOverlay');
 nOverlays = numel(overlayList);
 
+% display in graph window
+f = selectGraphWin;
+set(f,'Name','Print figure');
+clf(f);
+set(f,'NumberTitle','off');
+set(f,'unit','normalized');
+figurePosition = get(f,'position');
+
 if ieNotDefined('params')
   % default parameters
   defaultTitle = sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,'description'));
@@ -63,8 +71,9 @@ if ieNotDefined('params')
   % first get parameters that the user wants to display
   paramsInfo = {};
   paramsInfo{end+1} = {'title',defaultTitle,'Title of figure'};
-  paramsInfo{end+1} = {'fontSize',defaultFontSize,'Font size of the title and colorbar title'};
+  paramsInfo{end+1} = {'fontSize',defaultFontSize,'Font size of the title. Colorbar title will be set to this value minus 2'};
   paramsInfo{end+1} = {'backgroundColor',{'white','black'},'type=popupmenu','Background color, either white or black'};
+  paramsInfo{end+1} = {'figurePosition',figurePosition,'minmax=[0 1]','Position and size of the figure from bottom left, normalized to the screen size ([leftborder, bottom, width, height]).'};
   if baseType == 2 % options for surfaces
     % if this surface has inf in the name, then guess that it is inflated and default to thresholding
     baseName = viewGet(v,'baseName');
@@ -152,7 +161,16 @@ if ieNotDefined('params')
   end
 end
 
-if isempty(params) || justGetParams,return,end
+if ~isempty(params) && ~justGetParams
+  set(f,'color',params.backgroundColor);
+  set(f,'position',params.figurePosition);
+end
+set(f,'unit','pixels'); % set units back to pixels because this is what selectGraphWin assumes
+
+if isempty(params) || justGetParams
+  close(f);
+  return
+end
 
 if baseType<2
   cropX = params.cropX;
@@ -199,18 +217,11 @@ if nOverlays>1 && params.mosaic
 end
 mlrDispPercent(inf);
 
-% just so the code won't break. roiSmooth is only fro baseType = 1
-if ~isfield(params,'roiSmooth') params.roiSmooth = 0;end
-
-
-% display in graph window
-f = selectGraphWin;
-clf(f);drawnow;
+figure(f); % bring figure to the foreground
 set(f,'Pointer','watch');drawnow;
 
-set(f,'Name','Print figure');
-set(f,'NumberTitle','off');
-set(f,'color',params.backgroundColor)
+% just so the code won't break. roiSmooth is only fro baseType = 1
+if ~isfield(params,'roiSmooth') params.roiSmooth = 0;end
 
 % value to consider to be "black" in image
 blackValue = 0;
