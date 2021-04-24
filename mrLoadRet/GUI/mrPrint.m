@@ -365,11 +365,6 @@ for iImage = 1:nImages
     axisHandle{iImage} = gca(f);
   end
 
-  % set the colormap
-  if ~isempty(cmap{iImage})
-    colormap(cmap{iImage});
-  end
-
   % now display the images
   if baseType == 2
     % this is the surface display
@@ -491,13 +486,15 @@ for iImage = 1:nImages
   end
 
   % display the colormap
-  if ~isempty(cmap{1}) && ~strcmpi(params.colorbarLoc,'None')
+  if ~isempty(cmap{iImage}) && ~strcmpi(params.colorbarLoc,'None')
     if baseType == 2 && ismember(lower(params.colorbarLoc),{'south','north','east'})
       colorbarLoc = params.colorbarLoc; % put the color bar inside the axes for a tighter figure
     else
       colorbarLoc = [params.colorbarLoc 'Outside'];
     end
     H = colorbar(colorbarLoc);
+    % set the colormap
+    colormap(axisHandle{iImage},cmap{iImage});
     set(H,'axisLocation','out'); %make sure ticks and labels are pointing away from the figure (not the case by default when colorbar is inside the axes)
 
     % set the colorbar ticks, making sure to switch
