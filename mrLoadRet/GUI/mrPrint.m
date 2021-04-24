@@ -70,7 +70,7 @@ if ieNotDefined('params')
   
   % first get parameters that the user wants to display
   paramsInfo = {};
-  paramsInfo{end+1} = {'title',defaultTitle,'Title of figure'};
+  paramsInfo{end+1} = {'title',defaultTitle,'Title(s) of image(s). When calling mrPrint from a script and printing multiple overlays as separate images, this can be a cell array of string of same size as the number of overlays'};
   paramsInfo{end+1} = {'fontSize',defaultFontSize,'Font size of the title. Colorbar title will be set to this value minus 2'};
   paramsInfo{end+1} = {'backgroundColor',{'white','black'},'type=popupmenu','Background color, either white or black'};
   paramsInfo{end+1} = {'figurePosition',figurePosition,'minmax=[0 1]','Position and size of the figure from bottom left, normalized to the screen size ([leftborder, bottom, width, height]).'};
@@ -108,7 +108,7 @@ if ieNotDefined('params')
     colorbarTitle = viewGet(v,'overlayName');
   end
   paramsInfo{end+1} = {'colorbarLoc',colobarLocs,'type=popupmenu',contingentString,'Location of colorbar, select ''None'' if you do not want a colorbar'};
-  paramsInfo{end+1} = {'colorbarTitle',colorbarTitle,contingentString,'Title of the colorbar'};
+  paramsInfo{end+1} = {'colorbarTitle',colorbarTitle,contingentString,'Title of the colorbar. When calling mrPrint from a script and printing multiple overlays as separate images, this can be a cell array of string of same size as the number of overlays'};
   if nOverlays==1
     paramsInfo{end+1} = {'colorbarScale',viewGet(v,'overlayColorRange'),'type=array',contingentString,'Lower and upper limits of the color scale to display on the color bar'};
   end
@@ -169,7 +169,30 @@ set(f,'unit','pixels'); % set units back to pixels because this is what selectGr
 
 if isempty(params) || justGetParams
   close(f);
-  return
+  return;
+end
+
+if ischar(params.colorbarTitle)
+  params.colorbarTitle = {params.colorbarTitle};
+end
+if params.mosaic
+  if length(params.colorbarTitle)>1 && length(params.colorbarTitle)~=nOverlays
+    mrWarnDlg('(mrPrint) The number of colorbar titles must match the number of overlays')
+    close(f)
+    return;
+  elseif length(params.colorbarTitle)==1
+    params.colorbarTitle = repmat(params.colorbarTitle,1,nOverlays);
+  end
+end
+if ischar(params.title)
+  params.title = {params.title};
+end
+if params.mosaic
+  if length(params.title)>1 && length(params.title)~=nOverlays
+    mrWarnDlg('(mrPrint) The number of colorbar titles must match the number of overlays')
+    close(f)
+    return;
+  end
 end
 
 if baseType<2
@@ -541,7 +564,7 @@ for iImage = 1:nImages
     end
 
     %color bar title (label)
-    set(get(H,'Label'),'String',params.colorbarTitle);
+    set(get(H,'Label'),'String',params.colorbarTitle{iImage});
     set(get(H,'Label'),'Interpreter','none');
     set(get(H,'Label'),'Color',foregroundColor);
     set(get(H,'Label'),'FontSize',params.fontSize-4);
@@ -565,8 +588,8 @@ for iImage = 1:nImages
   end
 
   % create a title
-  if ~isempty(params.title) && iImage==1
-    H = title(params.title);
+  if ~isempty(params.title{iImage}) && (iImage==1 || length(params.title{iImage})>1)
+    H = title(params.title{iImage});
     set(H,'Interpreter','none');
     set(H,'Color',foregroundColor);
     set(H,'FontSize',params.fontSize);
