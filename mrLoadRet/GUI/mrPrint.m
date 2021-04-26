@@ -62,9 +62,9 @@ if ieNotDefined('params')
   defaultMosaicNrows = 0;
   defaultMosaicMargins = [.1 .1];
   defaultColorbarScaleFunction = '@(x)x';
-  colobarLocs = {'South','North','East','West','None'};
+  colorbarLocs = {'South','North','East','West','OutsideSN','OutsideEW','None'};
   if nOverlays>1
-    colobarLocs = putOnTopOfList('None',colobarLocs);
+    colorbarLocs = putOnTopOfList('None',colorbarLocs);
   end
   defaultColorbarTickNumber = 4;
   
@@ -107,7 +107,7 @@ if ieNotDefined('params')
     contingentString = '';
     colorbarTitle = viewGet(v,'overlayName');
   end
-  paramsInfo{end+1} = {'colorbarLoc',colobarLocs,'type=popupmenu',contingentString,'Location of colorbar, select ''None'' if you do not want a colorbar'};
+  paramsInfo{end+1} = {'colorbarLoc',colorbarLocs,'type=popupmenu',contingentString,'Location of colorbar, select ''None'' if you do not want a colorbar. ''OutsideSN'' and ''OutsideEW'' only work for mosaic=true and place the colorbar next at the outermost or innermost locations (South-North or East-West) across all images.'};
   paramsInfo{end+1} = {'colorbarTitle',colorbarTitle,contingentString,'Title of the colorbar. When calling mrPrint from a script and printing multiple overlays as separate images, this can be a cell array of string of same size as the number of overlays'};
   if nOverlays==1
     paramsInfo{end+1} = {'colorbarScale',viewGet(v,'overlayColorRange'),'type=array',contingentString,'Lower and upper limits of the color scale to display on the color bar'};
@@ -172,6 +172,12 @@ if isempty(params) || justGetParams
   return;
 end
 
+% ------------------- Checks on parameters
+
+if nOverlays>1 && ~params.mosaic
+  mrWarnDlg('(mrPrint) Printing colorbar for multiple overlays is not implemented');
+end
+
 if ischar(params.colorbarTitle)
   params.colorbarTitle = {params.colorbarTitle};
 end
@@ -195,19 +201,27 @@ if params.mosaic
   end
 end
 
+if params.mosaic==0
+  switch(lower(params.colorbarLoc))
+    case 'outsideew'
+      mrWarndDlg('(mrPrint) Switching to colorbarLoc = ''East'' because this is not an image mosaic');
+      params.colorbarLoc = 'East';
+    case 'outsidesn'
+      mrWarndDlg('(mrPrint) Switching to colorbarLoc = ''South'' because this is not an image mosaic');
+      params.colorbarLoc = 'South';
+  end
+end
+
+% ----------------------- Grab the image(s)
 if baseType<2
   cropX = params.cropX;
   cropY = params.cropY;
 end
-% grab the image(s)
+
 if params.mosaic
   nImages = nOverlays;
 else
   nImages = 1;
-end
-
-if nOverlays>1 && ~params.mosaic
-  mrWarnDlg('(mrPrint) Printing colorbar for multiple overlays is not implemented');
 end
 
 mlrDispPercent(-inf,'(mrPrint) Rerendering image');
@@ -239,6 +253,9 @@ if nOverlays>1 && params.mosaic
   refreshMLRDisplay(viewGet(v,'viewNum'));
 end
 mlrDispPercent(inf);
+
+
+% ----------------------- Print the images
 
 figure(f); % bring figure to the foreground
 set(f,'Pointer','watch');drawnow;
@@ -366,6 +383,7 @@ for iImage = 1:nImages
   img{iImage}(img{iImage}<0) = 0;img{iImage}(img{iImage}>1) = 1;
 end
 
+% ------------- Display the images
 if nImages>1
   if params.mosaicNrows==0
     figPosition = get(f,'position');
@@ -380,18 +398,19 @@ end
 
 for iImage = 1:nImages
   if nImages>1
-    subplotPosition = getSubplotPosition(1+ceil(iImage/nRows),1+iImage-floor((iImage-1)/nRows)*nRows,...
+    curCol = ceil(iImage/nRows);
+    curRow = iImage-floor((iImage-1)/nRows)*nRows;
+    subplotPosition = getSubplotPosition(1+curCol,1+curRow,...
                       [xOuterMargin ones(1,nCols) xOuterMargin],[yOuterMargin ones(1,nRows) yOuterMargin],...
                       params.mosaicMargins(1),params.mosaicMargins(2));
     axisHandle{iImage} = axes('parent',f,'position',subplotPosition);
   else
+    curCol = 1;
+    curRow = 1;
     axisHandle{iImage} = gca(f);
   end
 
-  % now display the images
-  if baseType == 2
-    % this is the surface display
-
+  if baseType == 2 % this is the surface display
     curBase = viewGet(v,'curBase');
     for iBase = 1:viewGet(v,'numBase')
       if viewGet(v,'baseType',iBase)>=2
@@ -509,11 +528,35 @@ for iImage = 1:nImages
   end
 
   % display the colormap
-  if ~isempty(cmap{iImage}) && ~strcmpi(params.colorbarLoc,'None')
-    if baseType == 2 && ismember(lower(params.colorbarLoc),{'south','north','east'})
-      colorbarLoc = params.colorbarLoc; % put the color bar inside the axes for a tighter figure
+  switch(lower(params.colorbarLoc))
+    case 'outsidesn'
+      if nRows==1
+        colorbarLoc = 'South';
+      elseif curRow==1
+        colorbarLoc = 'North';
+      elseif curRow==nRows
+        colorbarLoc = 'South';
+      else
+        colorbarLoc = 'None';
+      end
+    case 'outsideew'
+      if nRows==1
+        colorbarLoc = 'East';
+      elseif curCol==1
+        colorbarLoc = 'West';
+      elseif curCol==nCols
+        colorbarLoc = 'East';
+      else
+        colorbarLoc = 'None';
+      end
+    otherwise
+      colorbarLoc = params.colorbarLoc;
+  end
+  if ~isempty(cmap{iImage}) && ~strcmpi(colorbarLoc,'None')
+    if baseType == 2 && ismember(lower(colorbarLoc),{'south','north','east'})
+      % leave as is to put the color bar inside the axes for a tighter figure
     else
-      colorbarLoc = [params.colorbarLoc 'Outside'];
+      colorbarLoc = [colorbarLoc 'Outside'];
     end
     H = colorbar(colorbarLoc);
     % set the colormap
@@ -548,7 +591,7 @@ for iImage = 1:nImages
       xTickLabels{iImage}(iTick,:) = circshift(xTickLabels{iImage}(iTick,:),-colNum);
       xTickLabels{iImage}(iTick,1:totalColNum-colNum) = repmat(' ',1,totalColNum-colNum);
     end
-    if ismember(lower(params.colorbarLoc),{'east','west'})
+    if ismember(lower(colorbarLoc),{'east','west','eastoutside','westoutside'})
       set(H,'XTick',yTicks{iImage});
       set(H,'Ytick',xTicks{iImage});
       set(H,'YTickLabel',xTickLabels{iImage});
@@ -567,13 +610,13 @@ for iImage = 1:nImages
     set(get(H,'Label'),'String',params.colorbarTitle{iImage});
     set(get(H,'Label'),'Interpreter','none');
     set(get(H,'Label'),'Color',foregroundColor);
-    set(get(H,'Label'),'FontSize',params.fontSize-4);
-    switch(lower(params.colorbarLoc)) % change default position of label depending on location of colorbar
-      case 'south'
-        set(get(H,'Label'),'position',[0.5 2])
-      case 'north'
+    set(get(H,'Label'),'FontSize',params.fontSize-2);
+    switch(lower(colorbarLoc)) % change default position of label depending on location of colorbar
+      case {'south','southoutside'}
+        set(get(H,'Label'),'position',[0.5 3])
+      case {'north','northoutside'}
   %       do nothing
-      case 'east'
+      case {'east','eastoutside'}
         set(get(H,'Label'),'position',[-1 0.5]);
         imagePosition = get(axisHandle{iImage},'position');
         imagePosition(1) = imagePosition(1)-0.01;
@@ -581,7 +624,7 @@ for iImage = 1:nImages
         labelPosition = get(H,'position');
         labelPosition(1) = labelPosition(1)+0.01;
         set(H,'position',labelPosition);
-      case 'west'
+      case {'west','westoutside'}
         set(get(H,'Label'),'position',[1 0.5])
         set(get(H,'Label'),'rotation',270)
     end
@@ -595,7 +638,7 @@ for iImage = 1:nImages
     set(H,'FontSize',params.fontSize);
   end
   
-  % draw the roi
+  % --------------- Draw the ROIs
   if baseType ~= 2
     if iImage==1
       sliceNum = viewGet(v,'currentSlice');
