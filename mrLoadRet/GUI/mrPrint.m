@@ -58,7 +58,7 @@ figurePosition = get(f,'position');
 if ieNotDefined('params')
   % default parameters
   defaultTitle = sprintf('%s: %s',getLastDir(MLR.homeDir),viewGet(v,'description'));
-  defaultFontSize = 16;
+  defaultFontSize = 14;
   defaultMosaicNrows = 0;
   defaultMosaicMargins = [.1 .1];
   defaultColorbarScaleFunction = '@(x)x';
@@ -66,12 +66,14 @@ if ieNotDefined('params')
   if nOverlays>1
     colorbarLocs = putOnTopOfList('None',colorbarLocs);
   end
+  imageTitleLocs = {'South','North','East','West','OutsideSN','OutsideEW','None'};
   defaultColorbarTickNumber = 4;
   
   % first get parameters that the user wants to display
   paramsInfo = {};
-  paramsInfo{end+1} = {'title',defaultTitle,'Title(s) of image(s). When calling mrPrint from a script and printing multiple overlays as separate images, this can be a cell array of string of same size as the number of overlays'};
-  paramsInfo{end+1} = {'fontSize',defaultFontSize,'Font size of the title. Colorbar title will be set to this value minus 2'};
+  paramsInfo{end+1} = {'imageTitle',defaultTitle,'Title(s) of image(s). When calling mrPrint from a script and printing multiple overlays as separate images, this can be a cell array of string of same size as the number of overlays'};
+  paramsInfo{end+1} = {'imageTitleLoc',imageTitleLocs,'Location of title(s). ''OutsideSN'' and ''OutsideEW'' only work for mosaic=true and place the title next at the outermost or innermost locations (South-North or East-West) across all images.'};
+  paramsInfo{end+1} = {'fontSize',defaultFontSize,'Font size of the image title(s). Colorbar title(s) will be set to this value minus 2'};
   paramsInfo{end+1} = {'backgroundColor',{'white','black'},'type=popupmenu','Background color, either white or black'};
   paramsInfo{end+1} = {'figurePosition',figurePosition,'minmax=[0 1]','Position and size of the figure from bottom left, normalized to the screen size ([leftborder, bottom, width, height]).'};
   if baseType == 2 % options for surfaces
@@ -190,11 +192,11 @@ if params.mosaic
     params.colorbarTitle = repmat(params.colorbarTitle,1,nOverlays);
   end
 end
-if ischar(params.title)
-  params.title = {params.title};
+if ischar(params.imageTitle)
+  params.imageTitle = {params.imageTitle};
 end
 if params.mosaic
-  if length(params.title)>1 && length(params.title)~=nOverlays
+  if length(params.imageTitle)>1 && length(params.imageTitle)~=nOverlays
     mrWarnDlg('(mrPrint) The number of colorbar titles must match the number of overlays')
     close(f)
     return;
@@ -210,6 +212,15 @@ if params.mosaic==0
       mrWarndDlg('(mrPrint) Switching to colorbarLoc = ''South'' because this is not an image mosaic');
       params.colorbarLoc = 'South';
   end
+  switch(lower(params.imageTitleLoc))
+    case 'outsideew'
+      mrWarndDlg('(mrPrint) Switching to imageTitleLoc = ''East'' because this is not an image mosaic');
+      params.imageTitleLoc = 'East';
+    case 'outsidesn'
+      mrWarndDlg('(mrPrint) Switching to imageTitleLoc = ''South'' because this is not an image mosaic');
+      params.imageTitleLoc = 'South';
+  end
+
 end
 
 % ----------------------- Grab the image(s)
@@ -631,8 +642,46 @@ for iImage = 1:nImages
   end
 
   % create a title
-  if ~isempty(params.title{iImage}) && (iImage==1 || length(params.title{iImage})>1)
-    H = title(params.title{iImage});
+  switch(lower(params.imageTitleLoc))
+    case 'outsidesn'
+      if nRows==1
+        imageTitleLoc = 'South';
+      elseif curRow==1
+        imageTitleLoc = 'North';
+      elseif curRow==nRows
+        imageTitleLoc = 'South';
+      else
+        imageTitleLoc = 'None';
+      end
+    case 'outsideew'
+      if nRows==1
+        imageTitleLoc = 'East';
+      elseif curCol==1
+        imageTitleLoc = 'West';
+      elseif curCol==nCols
+        imageTitleLoc = 'East';
+      else
+        imageTitleLoc = 'None';
+      end
+    otherwise
+      imageTitleLoc = params.imageTitleLoc;
+  end
+  if ~strcmpi(imageTitleLoc,'none') && ~isempty(params.imageTitle{iImage}) && (iImage==1 || length(params.imageTitle{iImage})>1)
+    H = title(params.imageTitle{iImage});
+    switch(lower(imageTitleLoc))
+      case 'north'
+        % don't change the default position
+      case 'south'
+        titlePosition = get(H,'Position');
+        titlePosition(2) = size(img{iImage},1)*1.1;
+        set(H,'Position',titlePosition);
+      case 'west'
+        set(H,'Position',[-0.03*size(img{iImage},2) size(img{iImage},1)/2 0]);
+        set(H,'rotation',90)
+      case 'east'
+        set(H,'Position',[size(img{iImage},2)*1.03 size(img{iImage},1)/2 0]);
+        set(H,'rotation',270)
+    end
     set(H,'Interpreter','none');
     set(H,'Color',foregroundColor);
     set(H,'FontSize',params.fontSize);
