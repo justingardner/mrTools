@@ -66,7 +66,7 @@ if ieNotDefined('params')
   if nOverlays>1
     colorbarLocs = putOnTopOfList('None',colorbarLocs);
   end
-  imageTitleLocs = {'South','North','East','West','OutsideSN','OutsideEW','None'};
+  imageTitleLocs = {'North','South','East','West','OutsideSN','OutsideEW','None'};
   defaultColorbarTickNumber = 4;
   
   % first get parameters that the user wants to display
@@ -227,6 +227,9 @@ end
 if baseType<2
   cropX = params.cropX;
   cropY = params.cropY;
+else
+  cropX = [0 1];
+  cropY = [0 1];
 end
 
 if params.mosaic
@@ -395,31 +398,66 @@ for iImage = 1:nImages
 end
 
 % ------------- Display the images
-if nImages>1
-  if params.mosaicNrows==0
-    figPosition = get(f,'position');
-    [nRows,nCols] = getArrayDimensions(nImages,figPosition(4)/figPosition(3));
-  else
-    nRows = params.mosaicNrows;
-    nCols = ceil(nImages/nRows);
-  end
-  xOuterMargin = .2;
-  yOuterMargin = .2;
+if params.mosaicNrows==0
+  figPosition = get(f,'position');
+  [nImageRows,nImageCols] = getArrayDimensions(nImages,figPosition(4)/figPosition(3));
+else
+  nImageRows = params.mosaicNrows;
+  nImageCols = ceil(nImages/nImageRows);
 end
+xOuterMargin = .2;
+yOuterMargin = .2;
+colorbarColWidth = .15*cropY(2)/cropX(2); % adjust width of colorbar axes according
+colorbarRowWidth = .15*cropX(2)/cropY(2); % to aspect ratio of image
 
+switch(lower(params.colorbarLoc)) % column and row indices of image and colorbar axes
+  case 'outsideew'
+    imageCols = 3:2:nImageCols*2+1;
+    colorbarCols = [2 nImageCols*2+2];
+    imageRows = 2:2:nImageRows*2;
+    colorbarRows = [];
+  case 'west'
+    imageCols = 3:3:nImageCols*3;
+    colorbarCols = 2:3:nImageCols*3-1;
+    imageRows = 2:2:nImageRows*2;
+    colorbarRows = [];
+  case 'east'
+    imageCols = 2:3:nImageCols*3-1;
+    colorbarCols = 3:3:nImageCols*3;
+    imageRows = 2:2:nImageRows*2;
+    colorbarRows = [];
+  case 'outsidesn'
+    imageCols = 2:2:nImageCols*2;
+    colorbarCols = [];
+    imageRows = 3:2:nImageRows*2+1;
+    colorbarRows = [2 nImageRows*2+2];
+  case 'south'
+    imageCols = 2:2:nImageCols*2;
+    colorbarCols = [];
+    imageRows = 2:3:nImageRows*3-1;
+    colorbarRows = 3:3:nImageRows*3;
+  case 'north'
+    imageCols = 2:2:nImageCols*2;
+    colorbarCols = [];
+    imageRows = 3:3:nImageRows*3;
+    colorbarRows = 2:3:nImageRows*3-1;
+  case 'none'
+    imageCols = 2;
+    colorbarCols = [];
+    imageRows = 2;
+    colorbarRows = [];
+end
 for iImage = 1:nImages
-  if nImages>1
-    curCol = ceil(iImage/nRows);
-    curRow = iImage-floor((iImage-1)/nRows)*nRows;
-    subplotPosition = getSubplotPosition(1+curCol,1+curRow,...
-                      [xOuterMargin ones(1,nCols) xOuterMargin],[yOuterMargin ones(1,nRows) yOuterMargin],...
-                      params.mosaicMargins(1),params.mosaicMargins(2));
-    axisHandle{iImage} = axes('parent',f,'position',subplotPosition);
-  else
-    curCol = 1;
-    curRow = 1;
-    axisHandle{iImage} = gca(f);
-  end
+  curImageCol = ceil(iImage/nImageRows);
+  curImageRow = iImage-floor((iImage-1)/nImageRows)*nImageRows;
+  colWidths = [xOuterMargin params.mosaicMargins(1)*ones(1,numel(imageCols)*2-1+numel(colorbarCols)) xOuterMargin];
+  colWidths(imageCols)=1;
+  colWidths(colorbarCols) = colorbarColWidth;
+  rowWidths = [yOuterMargin params.mosaicMargins(2)*ones(1,numel(imageRows)*2-1+numel(colorbarRows)) yOuterMargin];
+  rowWidths(imageRows)=1;
+  rowWidths(colorbarRows) = colorbarRowWidth;
+  imagePosition = getSubplotPosition(imageCols(curImageCol),imageRows(curImageRow),colWidths,rowWidths,0,0);
+  hImage = axes('parent',f,'position',imagePosition);
 
   if baseType == 2 % this is the surface display
     curBase = viewGet(v,'curBase');
@@ -448,22 +486,22 @@ for iImage = 1:nImages
       thisimg(1,hiThresholdPoints,:) = params.thresholdMax;
     end
     % display the surface
-    patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(thisimg),'facecolor','interp','edgecolor','none','Parent',axisHandle{iImage});
+    patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', squeeze(thisimg),'facecolor','interp','edgecolor','none','Parent',hImage);
     hold on
     % make sure x direction is normal to make right/right
-    set(axisHandle{iImage},'XDir','reverse');
-    set(axisHandle{iImage},'YDir','normal');
-    set(axisHandle{iImage},'ZDir','normal');
+    set(hImage,'XDir','reverse');
+    set(hImage,'YDir','normal');
+    set(hImage,'ZDir','normal');
     % set the camera taret to center of surface
-    camtarget(axisHandle{iImage},mean(baseSurface.vtcs))
+    camtarget(hImage,mean(baseSurface.vtcs))
     % set the size of the field of view in degrees
     % i.e. 90 would be very wide and 1 would be ver
     % narrow. 9 seems to fit the whole brain nicely
-    camva(axisHandle{iImage},9);
-    setMLRViewAngle(v,axisHandle{iImage});
+    camva(hImage,9);
+    setMLRViewAngle(v,hImage);
     % draw the rois
     for roiNum = 1:length(roi)
-      patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roi{roiNum}.overlayImage,'facecolor','interp','edgecolor','none','FaceAlpha',params.roiAlpha,'Parent',axisHandle{iImage});
+      patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roi{roiNum}.overlayImage,'facecolor','interp','edgecolor','none','FaceAlpha',params.roiAlpha,'Parent',hImage);
     end
         end
       end
@@ -484,10 +522,10 @@ for iImage = 1:nImages
   end
 
   % set axis
-  axis(axisHandle{iImage},'equal');
-  axis(axisHandle{iImage},'off');
-  axis(axisHandle{iImage},'tight');
-  hold(axisHandle{iImage},'on');
+  axis(hImage,'equal');
+  axis(hImage,'off');
+  axis(hImage,'tight');
+  hold(hImage,'on');
 
   % calculate directions
   params.plotDirections = 0;
@@ -541,38 +579,85 @@ for iImage = 1:nImages
   % display the colormap
   switch(lower(params.colorbarLoc))
     case 'outsidesn'
-      if nRows==1
+      if nImageRows==1
+        colorbarPosition = getSubplotPosition(imageCols(curImageCol),colorbarRows(2),colWidths,rowWidths,0,0);
         colorbarLoc = 'South';
-      elseif curRow==1
+      elseif curImageRow==1
+        colorbarPosition = getSubplotPosition(imageCols(curImageCol),colorbarRows(1),colWidths,rowWidths,0,0);
         colorbarLoc = 'North';
-      elseif curRow==nRows
+      elseif curImageRow==nImageRows
+        colorbarPosition = getSubplotPosition(imageCols(curImageCol),colorbarRows(2),colWidths,rowWidths,0,0);
         colorbarLoc = 'South';
       else
+        colorbarPosition = [];
         colorbarLoc = 'None';
       end
+    case {'south','north'}
+      colorbarPosition = getSubplotPosition(imageCols(curImageCol),colorbarRows(curImageRow),colWidths,rowWidths,0,0);
+      colorbarLoc = params.colorbarLoc;
     case 'outsideew'
-      if nRows==1
+      if nImageRows==1
+        colorbarPosition = getSubplotPosition(colorbarCols(2),imageRows(curImageRow),colWidths,rowWidths,0,0);
         colorbarLoc = 'East';
-      elseif curCol==1
+      elseif curImageCol==1
+        colorbarPosition = getSubplotPosition(colorbarCols(1),imageRows(curImageRow),colWidths,rowWidths,0,0);
         colorbarLoc = 'West';
-      elseif curCol==nCols
+      elseif curImageCol==nImageCols
+        colorbarPosition = getSubplotPosition(colorbarCols(2),imageRows(curImageRow),colWidths,rowWidths,0,0);
         colorbarLoc = 'East';
       else
+        colorbarPosition = [];
         colorbarLoc = 'None';
       end
-    otherwise
+    case {'east','west'}
+      colorbarPosition = getSubplotPosition(colorbarCols(curImageCol),imageRows(curImageRow),colWidths,rowWidths,0,0);
       colorbarLoc = params.colorbarLoc;
   end
-  if ~isempty(cmap{iImage}) && ~strcmpi(colorbarLoc,'None')
-    if baseType == 2 && ismember(lower(colorbarLoc),{'south','north','east'})
-      % leave as is to put the color bar inside the axes for a tighter figure
-    else
-      colorbarLoc = [colorbarLoc 'Outside'];
+  if ~isempty(cmap{iImage}) && ~isempty(colorbarPosition)
+    hColorbar = axes('parent',f,'Position',colorbarPosition);
+    if baseType < 2
+      switch(lower(colorbarLoc))
+        case {'north','south'}
+          xlim([1 size(img{iImage},2)]);
+          ylim([1 round(size(img{iImage},1)*colorbarRowWidth)]);
+        case {'east','west'}
+          xlim([1 round(size(img{iImage},2)*colorbarColWidth)]);
+          xlim([1 size(img{iImage},1)]);
+      end
     end
-    H = colorbar(colorbarLoc);
+    set(hColorbar,'visible','off')
+    axis(hColorbar,'off');
+    axis(hColorbar,'equal');
+    
+    % adjust the colorbar to be 40% of the width/height of the colorbar axis (depending on the orientation)
+    colorbarWidth = .4;
+    colorbarLength = .8;
+    switch(lower(colorbarLoc))
+      case 'north'
+        colorbarPosition(1) = colorbarPosition(1) + colorbarPosition(3)*(1-.8)/2;
+        colorbarPosition(3) = colorbarPosition(3) * colorbarLength;
+        colorbarPosition(2) = colorbarPosition(2) + colorbarPosition(4)*.1;
+        colorbarPosition(4) = colorbarPosition(4) * colorbarWidth;
+      case 'south'
+        colorbarPosition(1) = colorbarPosition(1) + colorbarPosition(3)*(1-.8)/2;
+        colorbarPosition(3) = colorbarPosition(3) * colorbarLength;
+        colorbarPosition(2) = colorbarPosition(2) + colorbarPosition(4)*.5;
+        colorbarPosition(4) = colorbarPosition(4) * colorbarWidth;
+      case 'west'
+        colorbarPosition(1) = colorbarPosition(1) + colorbarPosition(3)*.5;
+        colorbarPosition(3) = colorbarPosition(3) * colorbarWidth;
+        colorbarPosition(2) = colorbarPosition(2) + colorbarPosition(4)*(1-.8)/2;
+        colorbarPosition(4) = colorbarPosition(4) * colorbarLength;
+      case 'east'
+        colorbarPosition(1) = colorbarPosition(1) + colorbarPosition(3)*.1;
+        colorbarPosition(3) = colorbarPosition(3) * colorbarWidth;
+        colorbarPosition(2) = colorbarPosition(2) + colorbarPosition(4)*(1-.8)/2;
+        colorbarPosition(4) = colorbarPosition(4) * colorbarLength;
+    end
+    H = colorbar(hColorbar,colorbarLoc,'Position',colorbarPosition);
     % set the colormap
-    colormap(axisHandle{iImage},cmap{iImage});
-    set(H,'axisLocation','out'); %make sure ticks and labels are pointing away from the figure (not the case by default when colorbar is inside the axes)
+    colormap(hColorbar,cmap{iImage});
+    set(H,'axisLocation','in'); %make sure ticks and labels are pointing away from the image (i.e. towards the inside of the colorbar axes)
 
     % set the colorbar ticks, making sure to switch
     % them if we have a vertical as opposed to horizontal bar
@@ -624,41 +709,35 @@ for iImage = 1:nImages
     set(get(H,'Label'),'FontSize',params.fontSize-2);
     switch(lower(colorbarLoc)) % change default position of label depending on location of colorbar
       case {'south','southoutside'}
-        set(get(H,'Label'),'position',[0.5 3])
+        set(get(H,'Label'),'position',[0.5 -1])
       case {'north','northoutside'}
-  %       do nothing
+        set(get(H,'Label'),'position',[0.5 2])
       case {'east','eastoutside'}
-        set(get(H,'Label'),'position',[-1 0.5]);
-        imagePosition = get(axisHandle{iImage},'position');
-        imagePosition(1) = imagePosition(1)-0.01;
-        set(axisHandle{iImage},'position',imagePosition);
-        labelPosition = get(H,'position');
-        labelPosition(1) = labelPosition(1)+0.01;
-        set(H,'position',labelPosition);
-      case {'west','westoutside'}
-        set(get(H,'Label'),'position',[1 0.5])
         set(get(H,'Label'),'rotation',270)
+        set(get(H,'Label'),'position',[4.4 0.5]);
+      case {'west','westoutside'}
+        set(get(H,'Label'),'position',[-1.9 0.5])
     end
   end
 
   % create a title
   switch(lower(params.imageTitleLoc))
     case 'outsidesn'
-      if nRows==1
+      if nImageRows==1
         imageTitleLoc = 'South';
-      elseif curRow==1
+      elseif curImageRow==1
         imageTitleLoc = 'North';
-      elseif curRow==nRows
+      elseif curImageRow==nImageRows
         imageTitleLoc = 'South';
       else
         imageTitleLoc = 'None';
       end
     case 'outsideew'
-      if nRows==1
+      if nImageRows==1
         imageTitleLoc = 'East';
-      elseif curCol==1
+      elseif curImageCol==1
         imageTitleLoc = 'West';
-      elseif curCol==nCols
+      elseif curImageCol==nImageCols
         imageTitleLoc = 'East';
       else
         imageTitleLoc = 'None';
@@ -667,7 +746,7 @@ for iImage = 1:nImages
       imageTitleLoc = params.imageTitleLoc;
   end
   if ~strcmpi(imageTitleLoc,'none') && ~isempty(params.imageTitle{iImage}) && (iImage==1 || length(params.imageTitle{iImage})>1)
-    H = title(params.imageTitle{iImage});
+    H = title(params.imageTitle{iImage},'parent',hImage);
     switch(lower(imageTitleLoc))
       case 'north'
         % don't change the default position
@@ -772,13 +851,13 @@ for iImage = 1:nImages
     % draw the lines
     for rnum = 1:length(roi)
       if params.roiLineWidth > 0 && ~isempty(roi{rnum}) && isfield(roi{rnum},'lines') && ~isempty(roi{rnum}.lines.x) && ~params.roiSmooth
-        line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth);
+        line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth,'parent',hImage);
       end
     end
     
     % draw the labels
     for i = 1:length(label)
-      h = text(label{i}.x,label{i}.y,label{i}.str);
+      h = text(label{i}.x,label{i}.y,label{i}.str,'parent',hImage);
       set(h,'Color',foregroundColor);
       set(h,'Interpreter','None');
       set(h,'EdgeColor',label{i}.color);
@@ -788,6 +867,7 @@ for iImage = 1:nImages
     end
     
   end
+  drawnow;
 end
 set(f,'Pointer','arrow');
 
