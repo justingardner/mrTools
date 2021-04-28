@@ -658,9 +658,8 @@ for iImage = 1:nImages
     % set the colormap
     colormap(hColorbar,cmap{iImage});
     set(H,'axisLocation','in'); %make sure ticks and labels are pointing away from the image (i.e. towards the inside of the colorbar axes)
-
-    % set the colorbar ticks, making sure to switch
-    % them if we have a vertical as opposed to horizontal bar
+    
+    % apply scaling to ticks and tick labels
     if ~fieldIsNotDefined(params,'colorbarTickNumber')
       xTicks{iImage} = linspace(xTicks{iImage}(1),xTicks{iImage}(end),params.colorbarTickNumber);
       xTickLabels{iImage} = linspace(xTickLabels{iImage}(1),xTickLabels{iImage}(end),params.colorbarTickNumber)';
@@ -674,6 +673,7 @@ for iImage = 1:nImages
       xTickLabels{iImage} = colorbarScaleFunction(xTickLabels{iImage});
     end
     xTickLabels{iImage} = num2str( xTickLabels{iImage}, '%.3f');
+    
     % remove trailing zeros (can't use %g or %f to directly get both a fixed number of decimal points and no trailing zeros)
     totalColNum = size(xTickLabels{iImage},2);
     for iTick = 1:size(xTickLabels{iImage},1)
@@ -687,7 +687,38 @@ for iImage = 1:nImages
       xTickLabels{iImage}(iTick,:) = circshift(xTickLabels{iImage}(iTick,:),-colNum);
       xTickLabels{iImage}(iTick,1:totalColNum-colNum) = repmat(' ',1,totalColNum-colNum);
     end
-    if ismember(lower(colorbarLoc),{'east','west','eastoutside','westoutside'})
+    
+    % remove spaces and align characters depending on the location of the colorbar
+    minLeftSpacesEnd = totalColNum;
+    maxRightSpacesStart = 1;
+    for iTick = 1:size(xTickLabels{iImage},1)
+      startCol = find(~isspace(xTickLabels{iImage}(iTick,:)),1,'first');
+      switch(lower(colorbarLoc))
+        case 'west'
+          leftSpacesEnd = startCol-1;
+          rightSpacesStart = totalColNum+1;
+        case {'north','south'}
+          leftSpacesEnd = round((startCol-1)/2);
+          rightSpacesStart = totalColNum-(startCol-1-leftSpacesEnd)+1;
+          xTickLabels{iImage}(iTick,leftSpacesEnd+1:rightSpacesStart-1) = xTickLabels{iImage}(iTick,startCol:end);
+          xTickLabels{iImage}(iTick,1:leftSpacesEnd) = ' ';
+          xTickLabels{iImage}(iTick,rightSpacesStart:end) = ' ';
+        case 'east'
+          xTickLabels{iImage}(iTick,1:totalColNum-startCol+1) = xTickLabels{iImage}(iTick,startCol:end);
+          xTickLabels{iImage}(iTick,totalColNum-startCol+2:end) = ' ';
+          leftSpacesEnd = 0;
+          rightSpacesStart = totalColNum-startCol+2;
+      end
+      minLeftSpacesEnd = min(minLeftSpacesEnd,leftSpacesEnd);
+      maxRightSpacesStart = max(maxRightSpacesStart,rightSpacesStart);
+    end
+    % remove unnecessary spaces (altough this it not in fact necessary, as they seem to be ignored)
+    xTickLabels{iImage}(:,maxRightSpacesStart:end) = [];
+    xTickLabels{iImage}(:,1:minLeftSpacesEnd) = [];
+
+    % set the colorbar ticks, making sure to switch
+    % them if we have a vertical as opposed to horizontal bar
+    if ismember(lower(colorbarLoc),{'east','west'})
       set(H,'XTick',yTicks{iImage});
       set(H,'Ytick',xTicks{iImage});
       set(H,'YTickLabel',xTickLabels{iImage});
@@ -708,14 +739,14 @@ for iImage = 1:nImages
     set(get(H,'Label'),'Color',foregroundColor);
     set(get(H,'Label'),'FontSize',params.fontSize-2);
     switch(lower(colorbarLoc)) % change default position of label depending on location of colorbar
-      case {'south','southoutside'}
+      case 'south'
         set(get(H,'Label'),'position',[0.5 -1])
-      case {'north','northoutside'}
+      case 'north'
         set(get(H,'Label'),'position',[0.5 2])
-      case {'east','eastoutside'}
+      case 'east'
         set(get(H,'Label'),'rotation',270)
         set(get(H,'Label'),'position',[4.4 0.5]);
-      case {'west','westoutside'}
+      case 'west'
         set(get(H,'Label'),'position',[-1.9 0.5])
     end
   end
@@ -795,7 +826,7 @@ for iImage = 1:nImages
             label{end}.str = viewGet(v,'roiName',visibleROIs(rnum));
             label{end}.color = color;
           end
-          % if we have a circular apertuer then we need to
+          % if we have a circular aperture then we need to
           % fix all the x and y points so they don't go off the end
           if strcmp(params.maskType,'Circular')
             % get the distance from center
