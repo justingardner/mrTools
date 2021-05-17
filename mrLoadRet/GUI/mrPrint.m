@@ -197,7 +197,7 @@ if ischar(params.imageTitle)
 end
 if params.mosaic
   if length(params.imageTitle)>1 && length(params.imageTitle)~=nOverlays
-    mrWarnDlg('(mrPrint) The number of colorbar titles must match the number of overlays')
+    mrWarnDlg('(mrPrint) The number of overlay titles must match the number of overlays')
     close(f)
     return;
   end
@@ -809,9 +809,9 @@ for iImage = 1:nImages
         if params.roiLineWidth > 0 && ~isempty(roi{rnum}) && isfield(roi{rnum},'lines') && ~isempty(roi{rnum}.lines.x)
           % get color
           if strcmp(params.roiColor,'default')
-            color = roi{rnum}.color;
+            color{rnum} = roi{rnum}.color;
           else
-            color = color2RGB(params.roiColor);
+            color{rnum} = color2RGB(params.roiColor);
           end
           % deal with upSample factor
           roi{rnum}.lines.x = roi{rnum}.lines.x*upSampleFactor;
@@ -824,7 +824,7 @@ for iImage = 1:nImages
             label{end+1}.x = median(x(~isnan(x)));
             label{end}.y = median(y(~isnan(y)));
             label{end}.str = viewGet(v,'roiName',visibleROIs(rnum));
-            label{end}.color = color;
+            label{end}.color = color{rnum};
           end
           % if we have a circular aperture then we need to
           % fix all the x and y points so they don't go off the end
@@ -882,7 +882,7 @@ for iImage = 1:nImages
     % draw the lines
     for rnum = 1:length(roi)
       if params.roiLineWidth > 0 && ~isempty(roi{rnum}) && isfield(roi{rnum},'lines') && ~isempty(roi{rnum}.lines.x) && ~params.roiSmooth
-        line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color,'LineWidth',params.roiLineWidth,'parent',hImage);
+        line(roi{rnum}.lines.x,roi{rnum}.lines.y,'Color',color{rnum},'LineWidth',params.roiLineWidth,'parent',hImage);
       end
     end
     
