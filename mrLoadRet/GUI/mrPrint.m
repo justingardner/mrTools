@@ -68,12 +68,14 @@ if ieNotDefined('params')
   end
   imageTitleLocs = {'North','South','East','West','OutsideSN','OutsideEW','None'};
   defaultColorbarTickNumber = 4;
+  interpreterList = {'none','tex','latex'};
   
   % first get parameters that the user wants to display
   paramsInfo = {};
   paramsInfo{end+1} = {'imageTitle',defaultTitle,'Title(s) of image(s). When calling mrPrint from a script and printing multiple overlays as separate images, this can be a cell array of string of same size as the number of overlays'};
   paramsInfo{end+1} = {'imageTitleLoc',imageTitleLocs,'Location of title(s). ''OutsideSN'' and ''OutsideEW'' only work for mosaic=true and place the title next at the outermost or innermost locations (South-North or East-West) across all images.'};
   paramsInfo{end+1} = {'fontSize',defaultFontSize,'Font size of the image title(s). Colorbar title(s) will be set to this value minus 2'};
+  paramsInfo{end+1} = {'interpreter',interpreterList,'How to interpret special characters (default: no interpreter)'};
   paramsInfo{end+1} = {'backgroundColor',{'white','black'},'type=popupmenu','Background color, either white or black'};
   paramsInfo{end+1} = {'figurePosition',figurePosition,'minmax=[0 1]','Position and size of the figure from bottom left, normalized to the screen size ([leftborder, bottom, width, height]).'};
   if baseType == 2 % options for surfaces
@@ -735,7 +737,7 @@ for iImage = 1:nImages
 
     %color bar title (label)
     set(get(H,'Label'),'String',params.colorbarTitle{iImage});
-    set(get(H,'Label'),'Interpreter','none');
+    set(get(H,'Label'),'Interpreter',params.interpreter);
     set(get(H,'Label'),'Color',foregroundColor);
     set(get(H,'Label'),'FontSize',params.fontSize-2);
     switch(lower(colorbarLoc)) % change default position of label depending on location of colorbar
@@ -792,7 +794,7 @@ for iImage = 1:nImages
         set(H,'Position',[size(img{iImage},2)*1.03 size(img{iImage},1)/2 0]);
         set(H,'rotation',270)
     end
-    set(H,'Interpreter','none');
+    set(H,'Interpreter',params.interpreter);
     set(H,'Color',foregroundColor);
     set(H,'FontSize',params.fontSize);
   end
