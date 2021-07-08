@@ -31,11 +31,11 @@ if ishandle(t)
     waitbar(x,t,newMessage);
   end
   drawnow;
-elseif isfield(t,'disppercent')
+elseif isfield(t,'mlrDispPercent')
   if ieNotDefined('newMessage')
-    disppercent(x);
+    mlrDispPercent(x);
   else
-    disppercent(x,newMessage);
+    mlrDispPercent(x,newMessage);
   end
     
 % initial call
@@ -59,13 +59,13 @@ elseif ischar(t)
     end
     drawnow;
   else
-    % otherwise use disppercent
+    % otherwise use mlrDispPercent
     if ieNotDefined('newMessage')
-      disppercent(-inf,t);
+      mlrDispPercent(-inf,t);
     else
-      disppercent(-inf,[t '; ' newMessage]);
+      mlrDispPercent(-inf,[t '; ' newMessage]);
     end 
-    h.disppercent = 1;
+    h.mlrDispPercent = 1;
   end
 end
 return

@@ -284,12 +284,26 @@ switch lower(param)
     nScans = viewGet(view,'nScans');
     % confirm with user
     if nScans > 0
-      queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
+        queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
+        % adding this sub if to check if we want to delete the group in a
+        % script, without having a questdlg pop up. Pass varargin 'quiet',
+        % sets answer to 'Yes'
+    elseif ~isempty(varargin)
+        if strcmpi(varargin{1},'quiet') || nScans == 0
+            disp('Caught quiet flag, deleting empty group...')
+            queststr = 'Yes';
+        end
     else
       queststr = sprintf('Are you sure you want to delete empty group: %s?',groupName);
     end
-    if ~strcmp(questdlg(queststr,'Delete group'),'Yes')
-      return
+    % Check the queststr again, if we are verbose, then it will pop up
+    % with another questdlg (as in previous version), but if it's 'Yes',
+    % then no pop up, and carry on.
+    if ~strcmpi(queststr,'Yes')
+        deleteGroup = questdlg(queststr);
+        if ~strcmp(deleteGroup,'Yes')
+            return
+        end
     end
     if strcmp(groupName,'Raw')
       mrWarnDlg('Cannot delete Raw group');
@@ -850,22 +864,24 @@ switch lower(param)
 	mlrGuiSet(view,'rotate',baseRotate);
       end
       baseTilt = viewGet(view,'baseTilt',baseNum);
-      if baseType == 2
-	% allow export
-	mlrAdjustGUI(view,'set','Export surface','Enable','on');
-	% allow tilt
-	mlrGuiSet(view,'baseTilt',baseTilt);
-	if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
-	  % turn on free rotation
-	  mlrSetRotate3d(view,1);
-	else
-	  mlrSetRotate3d(view,0);
-	end
-      else
-	% do not allow export
-	mlrAdjustGUI(view,'set','Export surface','Enable','off');
-	% otherwise turn off free rotation
-	mlrSetRotate3d(view,0);
+      if ~isempty(viewGet(view,'fignum'))
+        if baseType == 2
+          % allow export
+          mlrAdjustGUI(view,'set','Export surface','Enable','on');
+          % allow tilt
+          mlrGuiSet(view,'baseTilt',baseTilt);
+          if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
+            % turn on free rotation
+            mlrSetRotate3d(view,1);
+          else
+            mlrSetRotate3d(view,0);
+          end
+        else
+          % do not allow export
+          mlrAdjustGUI(view,'set','Export surface','Enable','off');
+          % otherwise turn off free rotation
+          mlrSetRotate3d(view,0);
+        end
       end
     end
     % see if there are any registered callbacks
@@ -1553,7 +1569,7 @@ case{'surfaceroihandle'}
       analysisNum = varargin{1};
     end
     analysis = viewGet(view,'analysis',analysisNum);
-    disppercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
+    mlrDispPercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
 
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
     newOverlayNum = nOverlays;
@@ -1647,9 +1663,9 @@ case{'surfaceroihandle'}
           end
         end
       end
-      disppercent(iOverlay/length(val));
+      mlrDispPercent(iOverlay/length(val));
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
 
     % Update the gui
     overlayNames = viewGet(view,'overlayNames',analysisNum);
@@ -1815,18 +1831,29 @@ case{'surfaceroihandle'}
 
   case {'overlaycmap'}
     % view = viewSet(view,'overlaycmap',cmapName,[overlayNum]);
-    if ieNotDefined('varargin')
-      overlayNum = viewGet(view,'currentOverlay');
-    else
-      overlayNum = varargin{1};
-    end
-    analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
-        ~isempty(view.analyses{analysisNum}.overlays)
-      evalstr = [val,'(256)'];
-      view.analyses{analysisNum}.overlays(overlayNum).colormap = eval(evalstr);
-    end
 
+      if ieNotDefined('varargin')
+        overlayNum = viewGet(view,'currentOverlay');
+      else
+        overlayNum = varargin{1};
+      end
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ischar(val)% if the cMap is an already defined one
+        if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+            ~isempty(view.analyses{analysisNum}.overlays)
+          evalstr = [val,'(256)'];
+          for iOverlay = 1:length(overlayNum)
+            view.analyses{analysisNum}.overlays(overlayNum(iOverlay)).colormap = eval(evalstr);
+          end
+        end
+      elseif ~ischar(val) && size(val,2)==3 % if you want to add a new user defined color map
+         for iOverlay = 1:length(overlayNum)
+           view.analyses{analysisNum}.overlays(overlayNum(iOverlay)).colormap = val;
+         end
+      else
+        mrWarnDlg(sprintf('Unknown Color Map'));
+      end
+    
   case {'overlaymin'}
     % view = viewSet(view,'overlaymin',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');

@@ -372,7 +372,7 @@ for scanNum = params.scanNum
             end
         end
         if params.nonParaTest
-            disppercent(-inf,sprintf('(roiClassification) Shufflling %s from scan %i',viewGet(view,'roiname',roi_n(r)),scanNum));
+            mlrDispPercent(-inf,sprintf('(roiClassification) Shufflling %s from scan %i',viewGet(view,'roiname',roi_n(r)),scanNum));
             for s=1:params.numShuff
                 s_lab=lab{scanNum}(randperm(length(lab{scanNum})));
                 for i=1:size(d.concatInfo.runTransition,1)
@@ -381,9 +381,9 @@ for scanNum = params.scanNum
                 end
                 sm_acc{scanNum}{r}(s)=mean(s_acc);
                 th_95{scanNum}{r} = prctile(sm_acc{scanNum}{r},95);
-                disppercent(s/params.numShuff);
+                mlrDispPercent(s/params.numShuff);
             end
-            disppercent(inf);
+            mlrDispPercent(inf);
         end
     end
     roiClass.d{scanNum}=d;

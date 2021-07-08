@@ -1,100 +1,145 @@
 % remapSurfaces.m
 %
 %       $Id: remapSurfaces.m 1833 2010-11-13 18:37:14Z julien $	
-%      usage: remapSurfaces(fssubject,fsaverage)
+%      usage: remapSurfaces(fssubject,fsaverage,<force>, <dryRun>, <fsSubjectSuffix>)
 %         by: julien besle
 %       date: 15/05/2014
 %    purpose: remaps surface vertices of one Freesurfer subject to another 
 %             (usually fsaverage, but not necessarily) using the spherical
-%             registration output of recon-all (subj/surf/?h.sphere.reg)%        
+%             registration output of recon-all (subj/surf/?h.sphere.reg)%
+%             Existing remapping will no be re-computed and overwritten
+%             unless optional argument force is set to true
+%             Set dryRun to true to check that all necessary files exist without actually computing anything
+%             Optionally check specifically for surfaces with suffix fsSubjectSuffix in filename
+%
 %     output: left and right GM and WM surfaces with mesh of one subject
 %             and coordinates of the other, and vice-versa
 
-function remapSurface(fssubject,fsaverage)
+function [subjPath,fsaveragePath] = remapSurfaces(fsSubject,fsAverage,force, dryRun, fsSubjectSuffix)
 
+freesurferSubjdir = [];
+subjPath = [];
+fsaveragePath = [];
 if isunix || ismac
-  if isempty(getenv('SUBJECTS_DIR'))
-    mrErrorDlg('(remapSurfaces) FreeSurfer environment variable SUBJECTS_DIR is not set');
-  % implement another way to get the subjects folder
+  freesurferSubjdir = getenv('SUBJECTS_DIR');
+end
+if ieNotDefined('force')
+  force = false;
+end
+if ieNotDefined('dryRun')
+  dryRun = false;
+end
+if ieNotDefined('fsSubjectSuffix')
+  fsSubjectSuffix = '';
+end
+
+if isempty(freesurferSubjdir) || ispc
+  freesurferSubjdir = mrGetPref('volumeDirectory');
+  if isempty(freesurferSubjdir)
+    mrWarnDlg('(remapSurfaces) Cannot find the location of Freesurfer subject directory. Check your MR preferences using mrGetPref, or set Freesurfer''s environment variable SUBJECTS_DIR (Linux or Mac)');
+    if ~dryRun
+      return
+    end
   end
-  subjPath = [getenv('SUBJECTS_DIR') '/' fssubject];
-  if isempty(dir(subjPath))
-    mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fssubject ' does not exist']);
+  fprintf('(remapSurfaces) Assuming that the Freesurfer subject directory is %s\n',freesurferSubjdir);
+end
+
+subjPath = [freesurferSubjdir '/' fsSubject];
+if isempty(dir(subjPath))
+  mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fsSubject ' does not exist']);
+  subjPath = [];
+  if ~dryRun
     return
   end
-  fsaveragePath = [getenv('SUBJECTS_DIR') '/' fsaverage];
-  if isempty(dir(fsaveragePath))
-    mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fsaverage ' does not exist']);
+end
+fsaveragePath = [freesurferSubjdir '/' fsAverage];
+if isempty(dir(fsaveragePath))
+  mrWarnDlg(['(remapSurfaces) Freesurfer subject ' fsAverage ' does not exist']);
+  fsaveragePath = [];
+  if ~dryRun
     return
   end
-else
-  mrErrorDlg('(remapSurfaces) Not implemented for platforms other than Unix or Mac');
-  % implement another way to get the subjects folder
 end
 
 if isempty(dir([subjPath '/surfRelax']))
   mrWarnDlg(['(remapSurfaces) surfRelax folder does not exist in ' subjPath '. You must first run mlrImportFreesurfer.']);
-  return
+  subjPath = [];
+  if ~dryRun
+    return
+  end
 end
 
 if isempty(dir([fsaveragePath '/surfRelax']))
   mrWarnDlg(['(remapSurfaces) surfRelax folder does not exist in ' fsaveragePath '. You must first run mlrImportFreesurfer.']);
+  fsaveragePath = [];
+  if ~dryRun
+    return
+  end
+end
+
+surfaceToCheck = [fsSubject '_left_GM' fsSubjectSuffix '_' fsAverage '.off'];
+if exist(fullfile(subjPath,'/surfRelax/',surfaceToCheck),'file') && ~force
+  mrWarnDlg(sprintf('(remapSurfaces) Mapping between surface %s and Freesurfer subject %s already exists, use optional argument <force> to recompute',surfaceToCheck,fsAverage));
+  if ~dryRun
+    return
+  end
+end
+if dryRun && ~force
   return
 end
-        
+
 side = {'left','right'};
 surfs = {'GM','WM'};
 fsSide = {'lh','rh'};
 
-disp('(remapSurfaces) Will process:');
+disp('(remapSurfaces) Will remap following surfaces:');
 for iSide=1:2
   for iSurf = 1:2
     %find all OFF files for a given side and surface (WM or GM)
-    subjFiles{iSide,iSurf} = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off']);
+    subjFiles{iSide,iSurf} = dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*.off']);
     %find OFF files to exclude (already processed or flat maps)
-    toExclude = dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Colin*.off']);
-    toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*MNI*.off'])];
-    toExclude = [toExclude; dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*Flat*.off'])];
-    
+    toExclude = dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*Colin*.off']);
+    toExclude = [toExclude; dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*MNI*.off'])];
+    toExclude = [toExclude; dir([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_' surfs{iSurf} '*Flat*.off'])];
+
     [~,toKeep]=setdiff({subjFiles{iSide,iSurf}(:).name},{toExclude(:).name});
     subjFiles{iSide,iSurf} = {subjFiles{iSide,iSurf}(toKeep).name};
     disp(subjFiles{iSide,iSurf}');
-%     if length(subjFiles{iSide,iSurf})>2
-%       dir([subjPath '/surfRelax/' fssubject '_' side{iSide} '_' surfs{iSurf} '*.off'])
-%       filelist = input('Which files do you wish to transform (input index vector) ?')
-%       subjFiles{iSide,iSurf} = subjFiles{iSide,iSurf}(filelist);
-%     end
   end
-  disp([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])
+  disp([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_Curv.vff'])
+end
+
+if dryRun
+  return
 end
 
 for iSide=1:2
   %get reg sphere surfaces
   [vertSphereSubj, triSphereSubj] = freesurfer_read_surf([subjPath '/surf/' fsSide{iSide} '.sphere.reg']);
   [vertSphereAverage, triSphereAverage] = freesurfer_read_surf([fsaveragePath '/surf/' fsSide{iSide} '.sphere.reg']);
-  
+
   % compute re-gridding matrix (expresses the vertices coordinates in one
   % sphere as a linear combination of face vertices in the other)
   [averageToSubj,subjToAverage] = findCorrespondingVertices(vertSphereSubj,vertSphereAverage,triSphereSubj,triSphereAverage);
 
   for iSurf = 1:2
     %get surfaces in OFF format
-    averageSurf = loadSurfOFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_' surfs{iSurf} '.off']);
-    
+    averageSurf = loadSurfOFF([fsaveragePath '/surfRelax/' fsAverage '_' side{iSide} '_' surfs{iSurf} '.off']);
+
     for jSurf = subjFiles{iSide,iSurf}
       pattern = ['_' side{iSide} '_' surfs{iSurf}];
       fssubjectPrefix = jSurf{1}([1:strfind(jSurf{1},pattern)-1 strfind(jSurf{1},pattern)+length(pattern):end-4]);
-      subjSurf = loadSurfOFF([subjPath '/surfRelax/' jSurf{1}]);
+      subjSurf = loadSurfOFF(fullfile(subjPath,'/surfRelax/',jSurf{1}));
 
       %apply regridding matrix to surfaces
       thisAverageSurf = averageSurf;
       tmpVtcs = averageToSubj*thisAverageSurf.vtcs;
-      thisAverageSurf.vtcs = subjToAverage*subjSurf.vtcs;
-      subjSurf.vtcs = tmpVtcs;
+      thisAverageSurf.vtcs = subjToAverage*subjSurf.vtcs; % same mesh as average surface, but coordinates of the subject's surface
+      subjSurf.vtcs = tmpVtcs; % same mesh as subject's surface, but coordinates of the average surface
 
       %change file name
       [path,filename,extension]=fileparts(subjSurf.filename);
-      subjSurf.filename = [path '/' filename '_' fsaverage extension];
+      subjSurf.filename = [path '/' filename '_' fsAverage extension];
       [path,filename,extension]=fileparts(thisAverageSurf.filename);
       thisAverageSurf.filename = [path '/' filename '_' fssubjectPrefix extension];
 
@@ -106,22 +151,21 @@ for iSide=1:2
 
     end
   end
-  
+
   %interpolate curvature data
-  subjCurv = loadVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv.vff'])';
+  subjCurv = loadVFF([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_Curv.vff'])';
   subjToAverageCurv = subjToAverage*subjCurv;
   subjToAverageCurv(subjToAverageCurv>max(subjCurv))=max(subjCurv); %clip the data to original min/max (because saveVFF normalizes them)
   subjToAverageCurv(subjToAverageCurv<min(subjCurv))=min(subjCurv);
-  saveVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv_' fssubject '.vff'], subjToAverageCurv');
-  averageCurv = loadVFF([fsaveragePath '/surfRelax/' fsaverage '_' side{iSide} '_Curv.vff'])';
+  saveVFF([fsaveragePath '/surfRelax/' fsAverage '_' side{iSide} '_Curv_' fsSubject '.vff'], subjToAverageCurv');
+  averageCurv = loadVFF([fsaveragePath '/surfRelax/' fsAverage '_' side{iSide} '_Curv.vff'])';
   averageToSubjCurv = averageToSubj*averageCurv;
   averageToSubjCurv(averageToSubjCurv>max(averageCurv))=max(subjCurv);
   averageToSubjCurv(averageToSubjCurv<min(averageCurv))=min(averageCurv);
-  saveVFF([subjPath '/surfRelax/' fssubject '_' side{iSide} '_Curv_' fsaverage '.vff'], averageToSubjCurv');
+  saveVFF([subjPath '/surfRelax/' fsSubject '_' side{iSide} '_Curv_' fsAverage '.vff'], averageToSubjCurv');
 
 end
-    
-    
+
 
 % function [vert2to1,vert1to2]=findCorrespondingVertices(vert1,vert2,tri1,tri2)
 function [vert2to1,vert1to2]=findCorrespondingVertices(vert1,vert2,tri1,tri2)
@@ -251,12 +295,12 @@ for iEl = 1:length(elevations)-1
     thisVert2 = vert2(elaz2Indices,:);
     elaztri2Indices=find(eltri2Indices & aztri2Indices);
     thisTri2=tri2(elaztri2Indices,:);
-
+    
     nThisTris1=size(thisTri1,1);
     nThisTris2=size(thisTri2,1);
     nThisVerts1=size(thisVert1,1);
     nThisVerts2=size(thisVert2,1);
-
+    
 % %     %now loop over the subsets of triangles and for each, find which
 % %     %vertices in the other mesh they can best model (as a linear combination of their vertices)
 % %     %(this is adapted from Dave Langers' code)
@@ -311,7 +355,7 @@ for iEl = 1:length(elevations)-1
 % mrCloseDlg(hWaitbar);
     vert1to2(elaz2Indices,:)=thisTri1(triIndex,:);
     weights1to2(elaz2Indices,:)=weights;
-  
+    
     triIndex=nan(nThisVerts1,1);
     weights=nan(nThisVerts1,3);
     for iVert=1:nThisVerts1
@@ -323,7 +367,7 @@ for iEl = 1:length(elevations)-1
     end
     vert2to1(elaz1Indices,:)=thisTri2(triIndex,:);
     weights2to1(elaz1Indices,:)=weights;
-
+    
     
 % % %older version not using the triangles
 %%%%% (2 min for single closest vertex and 6 min for several closest)
@@ -331,7 +375,7 @@ for iEl = 1:length(elevations)-1
 % %     thisVert1Margin = vert1(elaz1IndicesMargin,:);
 % %     elaz2IndicesMargin=find(el2IndicesMargin & az2IndicesMargin);
 % %     thisVert2Margin = vert2(elaz2IndicesMargin,:);
-
+    
 % %     %now loop over the subsets of vertices, compute distances and select
 % %     %closest  corresponding vertex 
 % %     nThisVerts1=size(thisVert1,1);
@@ -357,11 +401,11 @@ for iEl = 1:length(elevations)-1
 % %     
 % %     vert2to1(elaz1Indices,:)=elaz2IndicesMargin(thisVert2to1);
 % %     vert1to2(elaz2Indices,:)=elaz1IndicesMargin(thisVert1to2);
-
+    
     mrWaitBar(counter/totalCount,hWaitbar)
-
-  end
   
+  end
+
 end
 mrCloseDlg(hWaitbar);
 
@@ -412,5 +456,3 @@ vert2to1=sparse(repmat((1:nVerts1)', 1, 3), vert2to1, weights2to1, nVerts1, nVer
 % % figure;hist(toto,100);
 % % fprintf('(remapSurfaces) Using nearest neighbour interpolation for %d/%d vertices.\n',nnz(toofar),size(sphereVert1,1));
 % % outvert1(toofar,:)= nnoutvert1(toofar,:);
-
-

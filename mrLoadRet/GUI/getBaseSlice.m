@@ -12,6 +12,23 @@ baseCoords = [];
 baseCoordsHomogeneous = [];
 baseIm = [];
 
+%get defaults in put arguments
+if ieNotDefined('baseNum')
+  baseNum = viewGet(view,'curBase');
+end
+if ieNotDefined('baseType')
+  baseType = viewGet(view,'baseType',baseNum);
+end
+if ieNotDefined('rotate')
+  rotate = viewGet(view,'rotate');
+end
+if ieNotDefined('sliceNum')
+  sliceNum = viewGet(view,'curslice',baseNum);
+end
+if ieNotDefined('sliceIndex')
+  sliceIndex = viewGet(view,'baseSliceIndex',baseNum);
+end
+
 % viewGet
 volSize = viewGet(view,'baseDims',baseNum);
 baseData = viewGet(view,'baseData',baseNum);

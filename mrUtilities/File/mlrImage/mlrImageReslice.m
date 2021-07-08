@@ -59,13 +59,13 @@ if ~mlrImageIsImage(imageArgs{1}) || ~mlrImageIsImage(imageArgs{2})
 end
   
 % load the images
-disppercent(-inf,'Loading images');
+mlrDispPercent(-inf,'Loading images');
 [fromData fromHeader] = mlrImageLoad(imageArgs{1});
 if isempty(fromData),return,end
-disppercent(0.5);
+mlrDispPercent(0.5);
 [toData toHeader] = mlrImageLoad(imageArgs{2});
 if isempty(toData),return,end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % xform according to sforms if both exist
 if ~isempty(fromHeader.sform) && ~isempty(toHeader.sform)

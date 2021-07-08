@@ -196,14 +196,33 @@ if (loadSize(1:3)==headerdim(1:3))
 else
   % Use fseek to load segments into array 
   volSize=prod(headerdim(1:3));
-  % Initialize data array
-  if ( prod(loadSize(1:3))>1 & (loadSize(1)<headerdim(1) | loadSize(2)<headerdim(2)))
-    data=zeros(loadSize');
+  if ( prod(loadSize(1:3))>1 && (loadSize(1)<headerdim(1) || loadSize(2)<headerdim(2)))
     % 1) Non-contiguous data (restrictions in x or y): read a volume at a time and restrict
+    % Determine file read origin from first voxel index
+    readOrigin=sub2ind(headerdim(1:4)',1,1,1,subset{4}(1))-1; % now we're in C-land, hence 0-offset
     readSize=volSize;
-    if (strfind(hdr.matlab_datatype,'complex'))
-      readSize=readSize*2;
-    end
+  else
+    % 2) Single voxel over time: fseek to voxel index and start time and read a voxel every volOffset
+    % 3) Single or multiple slices over time: fseek to slice index and start time and read a block every volOffset
+    % Determine file read origin from first voxel index
+    readOrigin=sub2ind(headerdim(1:4)',subset{1}(1),subset{2}(1),subset{3}(1),subset{4}(1))-1; % now we're in C-land, hence 0-offset
+    % Elements to read every time point
+    readSize=prod(loadSize(1:3));
+  end
+  % Difference between volSize and readSize => offset to seek after every read
+  readOffset=volSize-readSize;
+  if (strfind(hdr.matlab_datatype,'complex'))
+    % Every voxel corresponds to two elements in the file
+    readOrigin=readOrigin*2;
+    readSize=readSize*2;
+    readOffset=readOffset*2;
+  end
+  % Position file at first voxel
+  fseek(fPtr,readOrigin*bytesPerElement,'cof');
+  if ( prod(loadSize(1:3))>1 && (loadSize(1)<headerdim(1) || loadSize(2)<headerdim(2)))
+    % 1) Non-contiguous data (restrictions in x or y): read a volume at a time and restrict
+    % Initialize data array
+    data=zeros(loadSize');
     for t=subset{4}(1):subset{4}(2)
       % load single volume
       [d,count]=fread(fPtr,readSize,readformat);
@@ -218,31 +237,17 @@ else
       if (strfind(hdr.matlab_datatype,'complex'))
 	% Convert real and imaginary parts into complex representation
 	cd=complex(d(1:2:readSize/2-1),d(2:2:readSize/2));	
-	data(xsub-subset{1}(1)+1,ysub-subset{2}(1)+1,zsub-subset{3}(1)+1,t)=cd(xsub,ysub,zsub);
+	data(xsub-subset{1}(1)+1,ysub-subset{2}(1)+1,zsub-subset{3}(1)+1,t-subset{4}(1)+1)=cd(xsub,ysub,zsub);
       else      
-	data(xsub-subset{1}(1)+1,ysub-subset{2}(1)+1,zsub-subset{3}(1)+1,t)=d(xsub,ysub,zsub);
+	data(xsub-subset{1}(1)+1,ysub-subset{2}(1)+1,zsub-subset{3}(1)+1,t-subset{4}(1)+1)=d(xsub,ysub,zsub);
       end
     end    
   else
-    data=zeros(prod(loadSize),1);
     % 2) Single voxel over time: fseek to voxel index and start time and read a voxel every volOffset
     % 3) Single or multiple slices over time: fseek to slice index and start time and read a block every volOffset
-    % Determine file read origin from first voxel index
-    readOrigin=sub2ind(headerdim(1:4)',subset{1}(1),subset{2}(1),subset{3}(1),subset{4}(1))-1; % now we're in C-land, hence 0-offset
-    % Elements to read every time point
-    readSize=prod(loadSize(1:3));
-    % Difference between volSize and readSize => offset to seek after every read
-    readOffset=volSize-readSize;
+    data=zeros(prod(loadSize),1);
     % Current position in data array
     currPos=1;
-    if (strfind(hdr.matlab_datatype,'complex'))
-      % Every voxel corresponds to two elements in the file
-      readOrigin=readOrigin*2;
-      readSize=readSize*2;
-      readOffset=readOffset*2;
-    end
-    % Position file at first voxel
-    fseek(fPtr,readOrigin*bytesPerElement,'cof');
     for t=subset{4}(1):subset{4}(2)
       % Read one temporal chunk of data
       [d,count]=fread(fPtr,readSize,readformat);

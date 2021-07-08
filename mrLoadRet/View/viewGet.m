@@ -289,9 +289,6 @@ switch lower(param)
       groupName = varargin{1};
       groupNames = {MLR.groups(:).name};
       val = find(strcmp(groupName,groupNames));
-      if isempty(val)
-        disp(sprintf('(viewGet) Could not find group: %s',groupName));
-      end
       % if passed in a valid number just return that number
     elseif isnumeric(varargin{1}) && isequal(size(varargin{1}),[1 1])
       if (varargin{1} >= 1) && (varargin{1} <= viewGet(view,'nGroups'))

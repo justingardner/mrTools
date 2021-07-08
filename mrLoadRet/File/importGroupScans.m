@@ -149,7 +149,7 @@ switchSession;
 toView = viewSet(toView,'currentGroup',toGroup);
 
 % now cycle over all scans in group
-disppercent(-inf,'Copying group scans');
+mlrDispPercent(-inf,'Copying group scans');
 r = 0;
 for scanNum = 1:length(fromScanParams)
   startTime = clock;
@@ -199,9 +199,9 @@ for scanNum = 1:length(fromScanParams)
     disp(sprintf('(importGroupScans) Pause for one second to avoid having same exact timestamps'));
     pause(1);
   end
-  disppercent(scanNum/length(fromScanParams));
+  mlrDispPercent(scanNum/length(fromScanParams));
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 deleteView(toView);
 saveSession;

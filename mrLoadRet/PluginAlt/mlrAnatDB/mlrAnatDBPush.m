@@ -36,28 +36,28 @@ curpwd = pwd;
 if ~isempty(localRepo)
   cd(localRepo)
   if isequal(pushType,'background')
-    disppercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s in the background. You should be able to work immediately, but if you shutdown matlab before the push has finished it may fail (in which case you should run mlrAnatDBPush again.',localRepoLargeFiles));
+    mlrDispPercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s in the background. You should be able to work immediately, but if you shutdown matlab before the push has finished it may fail (in which case you should run mlrAnatDBPush again.',localRepoLargeFiles));
     mysystem(sprintf('hg push --new-branch &'));
   else
-    disppercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s',localRepo));
+    mlrDispPercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s',localRepo));
     mysystem(sprintf('hg push --new-branch'));
   end
   cd(curpwd);
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 % push them if they exist
 if ~isempty(localRepoLargeFiles)
   cd(localRepoLargeFiles)
   if isequal(pushType,'background')
-    disppercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s in the background. You should be able to work immediately, but if you shutdown matlab before the push has finished it may fail (in which case you should run mlrAnatDBPush again.',localRepoLargeFiles));
+    mlrDispPercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s in the background. You should be able to work immediately, but if you shutdown matlab before the push has finished it may fail (in which case you should run mlrAnatDBPush again.',localRepoLargeFiles));
     mysystem(sprintf('hg push --new-branch &'));
   else
-    disppercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s. This may take a few minutes',localRepoLargeFiles));
+    mlrDispPercent(-inf,sprintf('(mlrAnatDBPush) Pushing repo %s. This may take a few minutes',localRepoLargeFiles));
     mysystem(sprintf('hg push --new-branch'));
   end
   cd(curpwd);
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 

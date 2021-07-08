@@ -279,9 +279,9 @@ else
       % to see the lines connecting the points.
       [x y a] = getimage;
       if strcmp(roiPolygonMethod,'getptsNoDoubleClick')
-	[xi yi] = getptsNoDoubleClick;
+	[xi yi] = getptsNoDoubleClick(fig);
       else
-	[xi yi] = getpts;
+	[xi yi] = getpts(fig);
       end
       % draw the lines temporarily
       if ~isempty(xi)
@@ -302,7 +302,11 @@ else
 
    case 'line'
     % grab two points from the image;
-    [xi yi] = getpts;
+    if strcmp(mrGetPref('roiPolygonMethod'),'getptsNoDoubleClick')
+      [xi, yi] = getptsNoDoubleClick(fig);
+    else
+      [xi, yi] = getpts(fig);
+    end
 
     xii=[]; yii=[];
     for p=1:length(xi)-1
@@ -312,7 +316,7 @@ else
     end
 
     if ~isempty(xii)
-      line(xii, yii);
+      line(xii, yii,'parent',gui.axis);
       drawnow;
     end
 

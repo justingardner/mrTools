@@ -38,7 +38,7 @@ if ieNotDefined('params')
     end
 
     % go find the file that user wants to load here
-    [filename, pathname] = uigetfile({'*.nii;*.img','Nifti files'},'Select nifti tSeries that you want to import','multiselect','on');
+    [filename, pathname] = uigetfile({'*.nii;*.img;*.nii.gz','Nifti files'},'Select nifti tSeries that you want to import','multiselect','on');
 
     if isnumeric(filename)
       return
@@ -64,7 +64,7 @@ weirdFramePeriods = 0;
 
 for iFile = 1:length(filename)
   
-  if ~isempty(strfind(stripext(filename{iFile}),'.'))
+  if ~isempty(strfind(stripext(filename{iFile}),'.')) && isempty(strfind(filename{iFile},'.nii.gz')) %make an exception for gziped NIFTI files
     [~,name,extension] = fileparts(filename{iFile});
     mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename{iFile},setext(fixBadChars(name,{'.','_'}),extension)));
   else
@@ -94,6 +94,7 @@ for iFile = 1:length(filename)
       paramsInfo{end+1} = {'description','','A description for the nifti tSeries you are imporint'};
       paramsInfo{end+1} = {'nFrames',nFrames,'incdec=[-1 1]',sprintf('minmax=[0 %i]',nFrames),'Number of total frames in your nfiti tSeries'};
       paramsInfo{end+1} = {'junkFrames',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',nFrames),'How many frames should be junked at the beginning'};
+      paramsInfo{end+1} = {'overwrite',0,'type=checkbox','If checked, existing tseries with the same name is overwritten without prompt'};
 
       if defaultParams
         params = mrParamsDefault(paramsInfo);
@@ -111,7 +112,7 @@ for iFile = 1:length(filename)
     % now read the file
     %tSeries = mlrImageReadNifti(fullFilename);
 
-    v = saveNewTSeries(v,fullFilename,thisScanParams);
+    v = saveNewTSeries(v,fullFilename,thisScanParams,[],[],params.overwrite);
 
     %get the new scan params and check that frame period is a reasonable value
     newScanNum = viewGet(v,'nScans');

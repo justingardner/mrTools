@@ -96,7 +96,7 @@ end
 % read the data from fid block structure
 kNum = 1;clear i;
 d.data = nan(info.dim(1),numPhaseEncodeLines,numSlices,numReceivers,numVolumes);
-if verbose,disppercent(-inf,'(getfidk) Reordering data');end
+if verbose,mlrDispPercent(-inf,'(getfidk) Reordering data');end
 if info.compressedFid
   % if intlv is set to y then it means that shots are interleaved - i.e. a shot is taken on
   % each slice and then you come back. Thus each block contains the data from all slices
@@ -134,7 +134,7 @@ if info.compressedFid
 	  d.data(:,lineorder((shotNum-1)*etl+1:shotNum*etl),:,receiverNum,volNum) = reshape(blockData((shotNum-1)*subblockSize+1:shotNum*subblockSize),info.dim(1),etl,numSlices);
 	end
       end
-      if verbose,disppercent(calcPercentDone(volNum,numVolumes,receiverNum,numReceivers));end
+      if verbose,mlrDispPercent(calcPercentDone(volNum,numVolumes,receiverNum,numReceivers));end
     end
   else
     % do processing for non itls compressed data
@@ -147,7 +147,7 @@ if info.compressedFid
 	  kNum = kNum+1;
 	end
       end
-      if verbose,disppercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
+      if verbose,mlrDispPercent(calcPercentDone(sliceNum,numSlices,receiverNum,numReceivers,volNum,numVolumes));end
     end
   end
 else
@@ -163,7 +163,7 @@ else
 	end
       end
     end
-    if verbose,disppercent(calcPercentDone(kLine,numPhaseEncodeLines,volNum,numVolumes,receiverNum,numReceivers,sliceNum,numSlices));end
+    if verbose,mlrDispPercent(calcPercentDone(kLine,numPhaseEncodeLines,volNum,numVolumes,receiverNum,numReceivers,sliceNum,numSlices));end
   end
 end
 
@@ -171,5 +171,5 @@ end
 d = rmfield(d,'real');
 d = rmfield(d,'imag');
 
-if verbose,disppercent(inf);end
+if verbose,mlrDispPercent(inf);end
 

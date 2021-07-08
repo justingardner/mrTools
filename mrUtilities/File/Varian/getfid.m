@@ -46,9 +46,9 @@ end
 getArgs(varargin,{'verbose=0','zeropad=0','movepro=0','kspace=0','swapReceiversAndSlices=1','movepss=0'});
 
 % read the k-space data from the fid
-if (verbose),disppercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
+if (verbose),mlrDispPercent(-inf,sprintf('(getfid) Reading %s...',fidname));end
 d = getfidk(fidname,'verbose',verbose);
-if (verbose),disppercent(inf,sprintf('done.\n',fidname));end
+if (verbose),mlrDispPercent(inf,sprintf('done.\n',fidname));end
 % if it is empty then something has failed
 if (isempty(d.data))
   return
@@ -105,7 +105,7 @@ if movepss ~= 0
 end
 
 % everything is ok, then transform data
-if(verbose),disppercent(-inf,'(getfid) Transforming data');end
+if(verbose),mlrDispPercent(-inf,'(getfid) Transforming data');end
 
 % preallocate space for data
 if zeropad
@@ -143,7 +143,7 @@ else
 	end
       end
       % percent done
-      if (verbose) disppercent(calcPercentDone(i,size(d.data,3),j,size(d.data,4)));end
+      if (verbose) mlrDispPercent(calcPercentDone(i,size(d.data,3),j,size(d.data,4)));end
     end
   end
 end
@@ -159,7 +159,7 @@ d.zeropad = zeropad;
 
 d.info = info;
 
-if (verbose), disppercent(inf); end
+if (verbose), mlrDispPercent(inf); end
 
 %%%%%%%%%%%%%%%
 %    myfft    %
