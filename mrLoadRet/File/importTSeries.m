@@ -64,7 +64,7 @@ weirdFramePeriods = 0;
 
 for iFile = 1:length(filename)
   
-  if contains(stripext(filename{iFile}),'.') && ~contains(filename{iFile},'.nii.gz') %make an exception for gziped NIFTI files
+  if ~isempty(strfind(stripext(filename{iFile}),'.')) && isempty(strfind(filename{iFile},'.nii.gz')) %make an exception for gziped NIFTI files
     [~,name,extension] = fileparts(filename{iFile});
     mrWarnDlg(sprintf('(importTSeries) Ignoring file %s because it has a . in the filename that does not mark the file extension. If you want to use this file, consider renaming to %s',filename{iFile},setext(fixBadChars(name,{'.','_'}),extension)));
   else

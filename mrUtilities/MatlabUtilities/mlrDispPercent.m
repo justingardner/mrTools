@@ -145,6 +145,7 @@ else
     mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%s%05.2f%% (%s)',newmesg,floor(10000*percentdone)/100,disptime(elapsedTime*(1/percentdone - 1))));
   % display only if we have update by a least a percent or if at least 1 second has elapsed since last display
   elseif (gDisppercent.percentdone ~= floor(100*percentdone)) || floor(elapsedTime)~=gDisppercent.elapsedTime
+    pause(0.0001); % a brief pause is necessary to correctly display the message and counter (tested on Windows and Linux)
     mrDisp(sprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%05.2f%% (%s)',floor(10000*percentdone)/100,disptime(elapsedTime*(1/percentdone - 1))));
   end
 end

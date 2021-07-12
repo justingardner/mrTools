@@ -1831,18 +1831,29 @@ case{'surfaceroihandle'}
 
   case {'overlaycmap'}
     % view = viewSet(view,'overlaycmap',cmapName,[overlayNum]);
-    if ieNotDefined('varargin')
-      overlayNum = viewGet(view,'currentOverlay');
-    else
-      overlayNum = varargin{1};
-    end
-    analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
-        ~isempty(view.analyses{analysisNum}.overlays)
-      evalstr = [val,'(256)'];
-      view.analyses{analysisNum}.overlays(overlayNum).colormap = eval(evalstr);
-    end
 
+      if ieNotDefined('varargin')
+        overlayNum = viewGet(view,'currentOverlay');
+      else
+        overlayNum = varargin{1};
+      end
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ischar(val)% if the cMap is an already defined one
+        if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+            ~isempty(view.analyses{analysisNum}.overlays)
+          evalstr = [val,'(256)'];
+          for iOverlay = 1:length(overlayNum)
+            view.analyses{analysisNum}.overlays(overlayNum(iOverlay)).colormap = eval(evalstr);
+          end
+        end
+      elseif ~ischar(val) && size(val,2)==3 % if you want to add a new user defined color map
+         for iOverlay = 1:length(overlayNum)
+           view.analyses{analysisNum}.overlays(overlayNum(iOverlay)).colormap = val;
+         end
+      else
+        mrWarnDlg(sprintf('Unknown Color Map'));
+      end
+    
   case {'overlaymin'}
     % view = viewSet(view,'overlaymin',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');

@@ -12,6 +12,7 @@
 %   input parameters:
 %         params.sourceVol (mandatory): volume to convert (source)
 %         params.fsSourceSubj (mandatory): freesurfer subject ID cooresponding to source volume
+%         params.fsSourceSurfSuffix (optional): suffix to add to the surface file names (e.g. fsSourceSubj_left_GMsuffix.off) (default = '')
 %         params.fsDestSubj (optional): Freesurfer subject ID corresponding to destination volume (default: 'fsaverage')
 %         params.destVol (mandatory): name of destination file(default: surfRelax anatomical scan of destination Freesurfer subject)
 %         params.destVolTemplate (optional): template volume for destination space (default: surfRelax anatomical scan of source Freesurfer subject)
@@ -21,6 +22,7 @@
 %                                  volumes in the surfRelax folder (default: surfRelax anatomical scan of destination Freesurfer subject)
 %         params.hemisphere (optional): 'left','right or 'both' (default: 'both')
 %         params.interpMethod (optional): interpolation method for ressampling the source volume to the source surface (default from mrGetPref)
+%         params.outputBinaryData (optional): whether to binarize resampled data if the source data were binary, useful for ROI masks (default = false)
 %         params.recomputeRemapping (optional): whether to recompute the mapping between the source and destination surfaces (default: false)
 %         params.cropDestVolume (optional): whether to crop the destination volume to the smallest volume containing the surfaces (default = true)
 %         params.dryRun (optional): if true, just checks that the input files exist (default: false)
@@ -42,6 +44,9 @@ end
 if fieldIsNotDefined(params,'fsSourceSubj')
   params.fsSourceSubj = '';
 end
+if fieldIsNotDefined(params,'fsSourceSurfSuffix')
+  params.fsSourceSurfSuffix = '';
+end
 if fieldIsNotDefined(params,'fsDestSubj')
   params.fsDestSubj = 'fsaverage';
 end
@@ -60,13 +65,16 @@ end
 if fieldIsNotDefined(params,'hemisphere')
   params.hemisphere = 'both';
 end
-if ieNotDefined('interpMethod')
+if fieldIsNotDefined(params,'interpMethod')
   params.interpMethod = mrGetPref('interpMethod');
 end
-if ieNotDefined('recomputeRemapping')
+if fieldIsNotDefined(params,'outputBinaryData')
+  params.outputBinaryData = false;
+end
+if fieldIsNotDefined(params,'recomputeRemapping')
   params.recomputeRemapping = false;
 end
-if ieNotDefined('cropDestVolume')
+if fieldIsNotDefined(params,'cropDestVolume')
   params.cropDestVolume = true;
 end
 if fieldIsNotDefined(params,'dryRun')
@@ -86,8 +94,8 @@ end
 nSources = length(params.sourceVol);
 for iSource = 1:nSources
   if ~exist(params.sourceVol{iSource},'file')
-    mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find source volume %s',params.sourceVol{iSource}));
     if ~params.dryRun
+      mrWarnDlg(sprintf('(freesurferSphericalNormalizationVolumes) Could not find source volume %s',params.sourceVol{iSource}));
       return;
     end
   else
@@ -138,7 +146,7 @@ if length(params.destVol) ~= nSources
 end
 
 % first (re)compute mapping between source and destination surfaces (if needed)
-[sourcePath, destPath] = remapSurfaces(params.fsSourceSubj,params.fsDestSubj,params.recomputeRemapping,params.dryRun);
+[sourcePath, destPath] = remapSurfaces(params.fsSourceSubj,params.fsDestSubj,params.recomputeRemapping,params.dryRun,params.fsSourceSurfSuffix);
 if (isempty(sourcePath) || isempty(destPath)) && params.dryRun
   return;
 end
@@ -246,8 +254,8 @@ end
 for iSide=1:nSides
   for iSurf = 1:2
     %get surfaces in OFF format
-    sourceSurf{iSurf,iSide} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} '.off']);
-    destSurf{iSurf} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} '_' params.fsDestSubj '.off']); % same surface mesh as source, but with destination coordinates
+    sourceSurf{iSurf,iSide} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} params.fsSourceSurfSuffix '.off']);
+    destSurf{iSurf} = loadSurfOFF([sourcePath '/surfRelax/' params.fsSourceSubj '_' side{iSide} '_' surfs{iSurf} params.fsSourceSurfSuffix '_' params.fsDestSubj '.off']); % same surface mesh as source, but with destination coordinates
     % convert vertices coordinates to surfRelax volume array coordinates
     sourceSurf{iSurf,iSide} = xformSurfaceWorld2Array(sourceSurf{iSurf,iSide},sourceSurfRelaxHdr);
     destSurf{iSurf} = xformSurfaceWorld2Array(destSurf{iSurf},destSurfRelaxHdr);
@@ -311,11 +319,23 @@ for iSource = 1:nSources
   destData = nan(uncroppedDestDims);
   % get source volume data
   [sourceData,sourceHdr] = mlrImageReadNifti(params.sourceVol{iSource});
+  dataAreBinary = isequal(unique(sourceData(~isnan(sourceData))),[0 1]');
+  if dataAreBinary
+    interpMethod = 'linear'; % nearest doesn't work well for binary masks
+  else
+    interpMethod = params.interpMethod;
+  end
   for iSide = 1:nSides %for each hemisphere
     % get surface data from source volume
-    surfData = interpn((1:sourceHdr.dim(2))',(1:sourceHdr.dim(3))',(1:sourceHdr.dim(4))',sourceData,sourceCoords{iSide}(:,1),sourceCoords{iSide}(:,2),sourceCoords{iSide}(:,3),params.interpMethod);
+    surfData = interpn((1:sourceHdr.dim(2))',(1:sourceHdr.dim(3))',(1:sourceHdr.dim(4))',...
+               sourceData,sourceCoords{iSide}(:,1),sourceCoords{iSide}(:,2),sourceCoords{iSide}(:,3),interpMethod);
     % transform surface data to destination volume
     thisData = applyInverseBaseCoordMap(surf2volumeMap{iSide},uncroppedDestDims,surfData);
+    if dataAreBinary && params.outputBinaryData % re-binarize binary data
+      binaryThreshold = 0; %empirical (and conservative) threshold
+      thisData(thisData<=binaryThreshold)=0;
+      thisData(thisData>binaryThreshold)=1;
+    end
     destData(~isnan(thisData)) = thisData(~isnan(thisData)); % we assume left and right surfaces sample exclusive sets of voxels, which is not exactly true at the midline
   end
   % write out the data

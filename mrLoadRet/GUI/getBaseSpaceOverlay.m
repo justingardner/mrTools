@@ -11,8 +11,11 @@
 %                         (useful to remap interpolated values into 3D space for flat maps)
 %
 
-function [newOverlayData, baseVoxelSize, baseCoords] = getBaseSpaceOverlay(thisView,overlayData,scanNum,baseNum,interpMethod, depthBins, rotateAngle)
+function [newOverlayData, baseVoxelSize, baseCoords] = getBaseSpaceOverlay(thisView,overlayData,scanNum,baseNum,interpMethod, depthBins, rotateAngle, groupNum)
 
+if ieNotDefined('groupNum')
+  groupNum = viewGet(thisView,'curGroup');
+end
 if ieNotDefined('scanNum')
     scanNum = viewGet(thisView,'curscan');
 end
@@ -29,7 +32,7 @@ if ieNotDefined('interpMethod')
 end
 
 basedims = viewGet(thisView, 'basedims', baseNum);
-base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
+base2scan = viewGet(thisView,'base2scan',scanNum,groupNum,baseNum);
 baseType = viewGet(thisView,'baseType',baseNum);
 
 baseVoxelSize = viewGet(thisView,'basevoxelsize',baseNum);

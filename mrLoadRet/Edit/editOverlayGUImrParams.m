@@ -55,10 +55,27 @@ function editOverlayGUImrParams(viewNum)
     {'normal', 'setRangeToMax', 'setRangeToMaxAroundZero', 'setRangeToMaxAcrossSlices', 'setRangeToMaxAcrossSlicesAndScans'});
   
   % colormaps
-  colormaps = {'default','hot','hsv','pink','cool','bone','copper','flag','gray','jet'};
+  % first try to get all the predefined matlab color maps
+  fid = fopen(fullfile(matlabroot,'\toolbox\matlab\graph3d\contents.m'));
+  if fid
+    colormaps = textscan(fid,'%% %s %s %*[^\n]');
+    fclose(fid);
+    if ~isempty(colormaps)
+      colormapStart = find(ismember(colormaps{1},'Color') & ismember(colormaps{2},'maps.'))+1;
+      colormapEnd = find(ismember(colormaps{1},'') & ismember(colormaps{2},''));
+      colormapEnd = colormapEnd(find(colormapEnd>colormapStart,1,'first'))-1;
+      colormaps = colormaps{1}(colormapStart:colormapEnd)';
+    end
+  else
+    colormaps = {};
+  end
+  if isempty(colormaps)
+    colormaps = {'default','hot','hsv','pink','cool','bone','copper','flag','gray','jet'};
+  end
+  % then get the colormaps saved in global variable MLR
   altColormaps = viewGet(thisView,'colormaps');
   if ~isempty(altColormaps)
-    colormaps = {colormaps{:} altColormaps{:}};
+    colormaps = [colormaps(:)' altColormaps(:)'];
   end
   % Also, get all colormap functions located in the mrLoadRet colormap folder
   functionsDirectory = [fileparts(which('mrLoadRet')) '/colormapFunctions/'];
@@ -67,6 +84,27 @@ function editOverlayGUImrParams(viewNum)
     colormapFunctions{iFile} = stripext(colormapFunctionFiles(iFile).name);
   end
   colormaps = union(colormaps,colormapFunctions,'stable');
+  % and finally, add user-specified colormap folder
+  cmapFolders = mrGetPref('colormapPaths');
+  if ~isempty(cmapFolders)
+    cmapFolders = mlrParseAdditionalArguments(cmapFolders,',');
+    for i=1:length(cmapFolders)
+      colormapFunctionFiles =  dir(fullfile(cmapFolders{i}, '*.m'));
+      colormapFunctions = cell(0);
+      cFile = 0;
+      for iFile=1:length(colormapFunctionFiles)
+        try %make sure this is a colormap function
+          colormap = eval(sprintf('%s(%i)', stripext(colormapFunctionFiles(iFile).name), 256));
+          if size(colormap,1)==256 && size(colormap,2)==3
+            cFile = cFile+1;
+            colormapFunctions{cFile} = stripext(colormapFunctionFiles(iFile).name);
+          end
+        catch
+        end
+      end
+      colormaps = union(colormaps,colormapFunctions,'stable');
+    end
+  end
   
   % set up params dialog
   paramsInfo = {};
@@ -272,7 +310,12 @@ function mrCmapCallback(params,viewNum)
     if sum(strcmp(params.overlayCmap, {'hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap','coolCmap'}))
       newOverlay.colormap = eval(sprintf('%s(%i,%i)', params.overlayCmap, params.numGrays, params.numColors));
     else
-      newOverlay.colormap = eval(sprintf('%s(%i)', params.overlayCmap, params.numColors));
+      try
+        newOverlay.colormap = eval(sprintf('%s(%i)', params.overlayCmap, params.numColors));
+      catch exception
+        mrWarnDlg(sprintf('(editOverlay) There was an error evaluating function %s.m:\n%s\n',params.overlayCmap,getReport(exception)));
+        return
+      end
     end
   end
 

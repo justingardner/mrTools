@@ -32,17 +32,23 @@ if (nargin == 1) && isstr(outerSurface) && ~mlrIsFile(outerSurface)
   event = outerSurface;
 elseif (nargin == 1) && isstr(outerSurface)
   if ~isempty(strfind(outerSurface,'WM'))
-    innerSurface{1} = outerSurface;
+    [token,remain] = strtok(stripext(outerSurface),'WM');
+    remain = remain(3:end);
     clear outerSurface;
-    outerSurface{1} = sprintf('%sGM.off',stripext(stripext(innerSurface{1}),'WM'));
+    innerSurface{1} = sprintf('%sGM%s.off',token,remain);
+    outerSurface{1} = sprintf('%sGM%s.off',token,remain);
   elseif ~isempty(strfind(outerSurface,'GM'))
-    innerSurface{1} = sprintf('%sWM.off',stripext(stripext(outerSurface),'GM'));
+    [token,remain] = strtok(stripext(outerSurface),'GM');
+    remain = remain(3:end);
     clear outerSurface;
-    outerSurface{1} = sprintf('%sGM.off',stripext(stripext(innerSurface{1}),'WM'));
+    innerSurface{1} = sprintf('%sWM%s.off',token,remain);
+    outerSurface{1} = sprintf('%sGM%s.off',token,remain);
   elseif ~isempty(strfind(outerSurface,'Outer'))
-    innerSurface{1} = sprintf('%sInner.off',stripext(stripext(outerSurface),'Outer'));
+    [token,remain] = strtok(stripext(outerSurface),'Outer');
+    remain = remain(3:end);
     clear outerSurface;
-    outerSurface{1} = sprintf('%sOuter.off',stripext(stripext(innerSurface{1}),'Inner'));
+    innerSurface{1} = sprintf('%sInner%s.off',token,remain);
+    outerSurface{1} = sprintf('%sOuter%s.off',token,remain);
   else
     innerSurface{1} = outerSurface;
     clear outerSurface;
@@ -176,14 +182,27 @@ innerSurface{end+1} = 'Find file';
 % load any vff file
 curv = {};
 curvDir = dir('*.vff');
+nMaxCommonCharacters = 0;
 for i = 1:length(curvDir)
   if ~any(strcmp(curvDir(i).name,curv))
     % check length of file matches our patch
     vffhdr = myLoadCurvature(curvDir(i).name, filepath, 1);
     if ~isempty(vffhdr)
       curv{end+1} = curvDir(i).name;
+      % check if the filename matches the outer surface that was put on top of the list
+      outerString = stripext(outerSurface{1});
+      curvString = stripext(curv{end});
+      nMaxChars = min(numel(outerString),numel(curvString));
+      nCommonCharacters = sum(cumprod(outerString(end:-1:end-nMaxChars+1)==curvString(end:-1:end-nMaxChars+1)));
+      if nCommonCharacters>nMaxCommonCharacters
+        topCurvatureFile = numel(curv);
+        nMaxCommonCharacters = nCommonCharacters;
+      end
     end
   end
+end
+if nMaxCommonCharacters
+  curv = putOnTopOfList(curv{topCurvatureFile},curv);
 end
 
 % check to see if we have any possible curvatures
