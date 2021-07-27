@@ -37,7 +37,8 @@ function result = upConv(im,filt,edges,step,start,stop,res)
 
 %% THIS CODE IS NOT ACTUALLY USED! (MEX FILE IS CALLED INSTEAD)
 global upConvWarning
-if ieNotDefined('upConvWarning')
+%if ieNotDefined('upConvWarning')
+if false
   fprintf(1,'===================================================================\n');
   fprintf(1,'(upConv) Warning: You should compile the MEX code for "upConv", found in the MEX subdirectory.  It is much faster.\n');
   fprintf(1,'===================================================================\n');
