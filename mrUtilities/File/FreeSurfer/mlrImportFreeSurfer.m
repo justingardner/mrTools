@@ -19,14 +19,18 @@ if ~exist('mrParamsDialog')
   return
 end
 
-mriConvert = 'mri_convert';
-[retval retstr] = system('which mri_convert');
-if retval == 1
-  warnMessage = '(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path. See instructions on wiki http://gru.stanford.edu/doku.php/mrTools/howTo#installation';
-  if ispc
-    warnMessage = [warnMessage '. This is probably because you''re running mrTools on a Windows PC.'];
+if ~ispc
+  mriConvert = 'mri_convert';
+  [retval retstr] = system('which mri_convert');
+  if retval == 1
+    warnMessage = '(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path. See instructions on wiki http://gru.stanford.edu/doku.php/mrTools/howTo#installation';
+    if ispc
+      warnMessage = [warnMessage '. This is probably because you''re running mrTools on a Windows PC.'];
+    end
+    mrWarnDlg(warnMessage,'Yes');
+    mriConvert = [];
   end
-  mrWarnDlg(warnMessage,'Yes');
+else
   mriConvert = [];
 end
 
