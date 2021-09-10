@@ -177,6 +177,11 @@ for i = 1:length(hemi)
   % convert outer surface
   surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.gmFile));
   outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_GM.off'));
+  if ispc && ~mlrIsFile(surfFile)
+    if mlrIsFile([surfFile '.T1'])
+      surfFile = [surfFile '.T1'];
+    end
+  end
   if mlrIsFile(surfFile)
     freeSurfer2off(surfFile, outFile, params.volumeCropSize, pixelSize);
   else
