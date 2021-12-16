@@ -146,8 +146,7 @@ for iRoi=params.roiList
 end
 
 %parse other additional inputs
-additionalArgs = mlrParseAdditionalArguments(params.additionalArgs,',');
-%construct function call
+additionalArgs = parseArguments(params.additionalArgs,','); %construct function call
 functionString='';
 for iArg = 1:length(additionalArgs)
   functionString = [functionString ',' additionalArgs{iArg}];
@@ -182,6 +181,25 @@ if needToRefresh
   refreshMLRDisplay(viewGet(thisView,'viewNum'));
 end
 
+function [arguments, nArgs] = parseArguments(argumentString, separator)
+
+%parse string of arguments separated by separator and put them into a cell array of
+%  - strings if numerical
+%  - strings with double quotes for non-numerical values
+% so that it can be used with eval
+% Julien Besle, 08/07/2010
+nArgs = 0;
+arguments = cell(0);
+remain = argumentString;
+while ~isempty(remain)
+   nArgs = nArgs+1;
+   [token,remain] = strtok(remain, separator);
+   if ~isempty(str2num(token))
+      arguments{nArgs} = token;
+   else
+     arguments{nArgs} = ['''' token ''''];
+   end
+end
 
 function printHelp(params)
 
