@@ -149,6 +149,8 @@ if ieNotDefined('params')
               else
                 scanList = params.scanList;
               end
+            else
+              params.scanList = 1;
             end
             if ~strcmp(params.roiMask,'None')
               params.roiList = selectInList(thisView,'rois','',roiList);
