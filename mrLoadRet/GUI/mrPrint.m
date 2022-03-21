@@ -182,7 +182,7 @@ if nOverlays>1 && ~params.mosaic
   mrWarnDlg('(mrPrint) Printing colorbar for multiple overlays is not implemented');
 end
 
-if ischar(params.colorbarTitle)
+if isempty(params.colorbarTitle)  || ischar(params.colorbarTitle)
   params.colorbarTitle = {params.colorbarTitle};
 end
 if params.mosaic
