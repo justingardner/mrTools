@@ -141,7 +141,7 @@ if ieNotDefined('groupParams')
   
   % check to see if we got any good scans
   if nScans == 0
-    disp(sprintf('(mrInit) Could not find any valid scans in Raw/TSeries'));
+    disp(sprintf('(mrInit) Could not find any valid scans in %s/TSeries',defaultGroupName));
     sessionParams = [];groupParams = [];
     return
   end
