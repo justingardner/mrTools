@@ -63,7 +63,7 @@ if isempty(params1),cd(thispwd);return,end
 % Create the base
 base.hdr = mlrImageReadNiftiHeader(params1.anatomy);
 if isempty(base.hdr)
-  mrWarnDlg(sprintf('(imortSurfaceOFF) Could not load anatomy file: %s',params1.anatomy));
+  mrWarnDlg(sprintf('(importSurfaceOFF) Could not load anatomy file: %s',params1.anatomy));
   base = [];
   return
 end
