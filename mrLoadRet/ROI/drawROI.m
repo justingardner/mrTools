@@ -72,7 +72,9 @@ else
      
     case 'single voxels'
       disp('Use mouse left button to add/remove a voxel. End selection with Alt, Command key or right-click')
-      [mouseY,mouseX] = ginput(1);
+      region = getrect(fig);
+      mouseX = region(2);
+      mouseY = region(1);
       voxelXcoords = [.5 .5;-.5 -.5; -.5 .5; -.5 .5]'; 
       voxelYcoords = [.5 -.5;.5 -.5; .5 .5; -.5 -.5]'; 
       selectionY=[];
@@ -97,7 +99,9 @@ else
           index = length(selectionY);
           hSelection(:,index)=plot(selectionY(index)+voxelXcoords,selectionX(index)+voxelYcoords,'w');%,'linewidth',mrGetPref('roiContourWidth'));
         end
-        [mouseY,mouseX,key] = ginput(1);
+        region = getrect(fig);
+        mouseX = region(2);
+        mouseY = region(1);
       end
       
       baseX = baseCoords(:,:,1);
@@ -115,8 +119,10 @@ else
       
     case 'contiguous'
       disp('Hold Alt or Command key to select all connected regions')
-      [mouseY,mouseX] = ginput(1);
-     
+      region = getrect(fig);
+      mouseX = region(2);
+      mouseY = region(1);
+
       if any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) 
         selectAcrossVolume=true;
       else
@@ -236,9 +242,10 @@ else
       
    case 'rectangle'
     % Get region from user.
-    region = round(ginput(2));
+    region = getrect(fig);
+    region = round([region(1:2);region(1:2)+region(3:4)]);
     
-    % Note: ginput hands them back in x, y order (1st col is x and 2nd col is
+    % Note: getrect hands them back in x, y order (1st col is x and 2nd col is
     % y). But we use them in the opposite order (y then x), so flip 'em.
     region = fliplr(region);
     % Check if outside image
@@ -271,13 +278,13 @@ else
       % this is sometimes very slow if you have a lot
       % of lines already drawn on the figure.
       % i.e. if you have rois already being displayed
-      polyIm = roipoly;
+      polyIm = roipoly; % this might not work if drawROI is called from a script. The current image in the current figure would have to be specified somehow
     else
       % this doesn't have to redraw lines all the time
       % so it is faster
       % but has the disadvantage that you don't get
       % to see the lines connecting the points.
-      [x y a] = getimage;
+      [x y a] = getimage(fig);
       if strcmp(roiPolygonMethod,'getptsNoDoubleClick')
 	[xi yi] = getptsNoDoubleClick(fig);
       else
