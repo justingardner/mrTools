@@ -38,11 +38,13 @@ set(fig,'CurrentAxes',gui.axis);
 
 % baseCoords contains the mapping from pixels in the displayed slice to
 % voxels in the current base volume.
+[~,~,~,~,~,thisView] = refreshMLRDisplay(thisView);% first run refreshMLRDisplay to update view field 'curslicebasecoords'
+% (ideally this field should be updated when changing the slice/cortical depth WITHOUT a call to refreshMLRDisplay)
 baseCoords = viewGet(thisView,'cursliceBaseCoords');
-baseSliceDims = [size(baseCoords,1),size(baseCoords,2)];
 if isempty(baseCoords)
-  mrWarnDlg('Load base anatomy before drawing an ROI');
+  mrErrorDlg('Load base anatomy before drawing an ROI');
 end
+baseSliceDims = [size(baseCoords,1),size(baseCoords,2)];
 
 % turn off 3d rotate
 if viewGet(thisView,'baseType') == 2
