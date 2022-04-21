@@ -3,20 +3,22 @@ function [thisView,params] = transformROIs(thisView,params,varargin)
 %
 %   transforms  ROI(s) using pre-defined or custom functions
 %
-% jb 11/01/2011
-%
-%             To just get a default parameter structure:
-% 
+%   To just get a default parameter structure:
 %             v = newView;
 %             [v params] = transformROIs(v,[],'justGetParams=1');
 %             [v params] = transformROIs(v,[],'justGetParams=1','defaultParams=1');
 %             [v params] = transformROIs(v,[],'justGetParams=1','defaultParams=1','roiList=[1 2]');
 %
-% $Id: transformROIs.m 1982 2010-12-20 21:12:20Z julien $
+%   To run:
+%             v = transformROIs(v,params)
+%             v = transformROIs(v,params,'noPrompt') % to overwrite the ROI(s) without asking
+%
+% jb 11/01/2011
 
 eval(evalargs(varargin));
 if ieNotDefined('justGetParams'),justGetParams = 0;end
 if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('noPrompt'),noPrompt = 0;end
 
 currentBaseString = ['Current Base (' viewGet(thisView,'basename') ')'];
 
@@ -173,7 +175,7 @@ for iCall = 1:length(rois)
     if ~fieldIsNotDefined(params,'roiNameSuffix')
       roi(iRoi).name = [roi(iRoi).name params.roiNameSuffix];
     end
-    thisView = viewSet(thisView,'newROI',roi(iRoi));
+    thisView = viewSet(thisView,'newROI',roi(iRoi),noPrompt);
     needToRefresh = 1;
   end
 end
