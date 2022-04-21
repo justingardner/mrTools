@@ -100,8 +100,8 @@ end
 % if just getting params then return
 if justGetParams,return,end
 
-switch(params.roiSpace)
-  case currentBaseString
+switch(lower(params.roiSpace))
+  case {lower(currentBaseString),'current base'}
       baseNum = viewGet(thisView,'currentbase');
       newXform = viewGet(thisView,'baseXform',baseNum);
       newSformCode = viewGet(thisView,'baseSformCode',baseNum);
@@ -110,7 +110,7 @@ switch(params.roiSpace)
       newVoxelSize = viewGet(thisView,'baseVoxelSize',baseNum);
       whichVolume = 0;
     
-  case 'Current scan'
+  case 'current scan'
       newXform = viewGet(thisView,'scanXform');
       newSformCode = viewGet(thisView,'scanSformCode');
       newVol2mag = viewGet(thisView,'scanVol2mag');
