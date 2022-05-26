@@ -84,16 +84,16 @@ if bothHemiFlag
   % was a left hemisphere passed?
   leftFlag = strfind(lower(params1.innerSurface), 'left');
   if leftFlag
-    prefix = params1.innerSurface(1:leftFlag-1);
-    postfix = params1.innerSurface(leftFlag+4:end);
+    prefix = params1.outerCoords(1:leftFlag-1);
+    postfix = params1.outerCoords(leftFlag+4:end);
     rightFilename = sprintf('%sright%s', prefix, postfix);
     params2 = mrSurfViewer(rightFilename);  
   end
   % or was it a right hemispehre
   rightFlag = strfind(lower(params1.innerSurface), 'right');
   if rightFlag
-    prefix = params1.innerSurface(1:rightFlag-1);
-    postfix = params1.innerSurface(rightFlag+5:end);
+    prefix = params1.outerCoords(1:rightFlag-1);
+    postfix = params1.outerCoords(rightFlag+5:end);
     leftFilename = sprintf('%sleft%s', prefix, postfix);
     params2 = mrSurfViewer(leftFilename);  
   end
@@ -122,7 +122,7 @@ if bothHemiFlag
   else
     outer1 = loadSurfOFF(params1.outerCoords);
     outer2 = loadSurfOFF(params2.outerCoords);
-    outer = combineSurfaces(inner1,inner2);
+    outer = combineSurfaces(outer1,outer2);
   end
 
 else                                    
