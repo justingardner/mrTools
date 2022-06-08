@@ -1,14 +1,21 @@
 % importGroupScans.m
 %
-%      usage: importGroupScans()
+%      usage: importGroupScans(params)
 %         by: justin gardner
 %       date: 04/11/07
-%    purpose: 
+%    purpose: import scans into a group in the current mrTools sesssion, from a group in a different (or the same) mrTools session.
+%             params is a structure with the following fields:
+%             - fromSession:  path to the source mrTools session
+%             - fromGroup:    Name of the source group
+%             - scanList:     Scan numbers of scans to import
+%             - toGroup:      Name of the destination group
+%             - linkFiles:    Whether to link scan files instead of copying them (not availale on Windows)
+%             - hardLink:     Whether to use a hard link instead of a soft link (not availale on Windows)
 %
-function retval = importGroupScans()
+function importGroupScans(params)
 
 % check arguments
-if ~any(nargin == [0])
+if ~ismember(nargin, [0, 1])
   help importGroupScans
   return
 end
@@ -16,17 +23,24 @@ end
 % new view
 toView = newView;
 
-% go find the group that user wants to load here
-pathStr = uigetdir(viewGet(toView,'homeDir'),'Select session you want to import from');
-if (pathStr==0)
-  deleteView(toView);
-  return
+if ieNotDefined('params')
+  params = struct();
 end
 
+if fieldIsNotDefined(params,'fromSession')
+  % go find the group that user wants to load here
+  params.fromSession = uigetdir(viewGet(toView,'homeDir'),'Select session you want to import from');
+  if (params.fromSession==0)
+    deleteView(toView);
+    return
+  end
+end
+
+
 % now look for that sessions mrSession
-mrSessionPath = fullfile(pathStr,'mrSession.mat');
+mrSessionPath = fullfile(params.fromSession,'mrSession.mat');
 if ~mlrIsFile(mrSessionPath)
-  disp(sprintf('(importGroupScans) Could not find mrSession in %s',fileparts(pathStr)));
+  disp(sprintf('(importGroupScans) Could not find mrSession in %s',fileparts(params.fromSession)));
   disp(sprintf('                   Make sure you clicked on the directory'));
   disp(sprintf('                   with the mrSession.mat file (not the group'))
   disp(sprintf('                   directory you wanted to import)'))
@@ -37,13 +51,13 @@ end
 % check for MLR 4 session
 mrSession = load(mrSessionPath);
 if ~isfield(mrSession,'session') || ~isfield(mrSession,'groups')
-  mrWarnDlg(sprintf('(importGroupScans) Unknown format for mrSession in %s',fileparts(pathStr)));
+  mrWarnDlg(sprintf('(importGroupScans) Unknown format for mrSession in %s',fileparts(params.fromSession)));
   deleteView(toView);
   return
 end
 clear mrSession
 
-% get info from to group
+% get info from destination group
 toHomeDir = viewGet(toView,'homeDir');
 toGroupNames = viewGet(toView,'groupNames');
 
@@ -52,31 +66,48 @@ toGroupNames = viewGet(toView,'groupNames');
 % we will then set back to the old MLR. Note that
 % while we have switch the MLR session we cannot
 % get info from the toView
-fromView = switchSession(pathStr);
+switchSession(params.fromSession);
 fromView = newView;
 
-% get the groups in the import session
-for gNum = 1:viewGet(fromView,'numGroups')
-  fromGroups{gNum} = sprintf('%s:%s (%i scans)',getLastDir(pathStr),viewGet(fromView,'groupName',gNum),viewGet(fromView,'numScans',gNum));
-end
+if fieldIsNotDefined(params,'fromGroup')
 
-% get from which and to which group we are doing
-paramsInfo = {...
-    {'fromGroup',fromGroups,'type=popupmenu','The group to import from'},...
-    {'toGroup',toGroupNames,'type=popupmenu','The group to import into'},...
-    {'linkFiles',1,'type=checkbox','Link rather than copy the files. This will make a soft link rather than copying the files which saves disk space.'},...
-    {'hardLink',0,'type=checkbox','contingent=linkFiles','Use hard links when linking files instead of soft links.'}};
-    
-params = mrParamsDialog(paramsInfo);
-if isempty(params)
-  switchSession;
-  deleteView(toView);
-  return
+  % get the groups in the import session
+  for gNum = 1:viewGet(fromView,'numGroups')
+    fromGroups{gNum} = sprintf('%s:%s (%i scans)',getLastDir(params.fromSession),viewGet(fromView,'groupName',gNum),viewGet(fromView,'numScans',gNum));
+  end
+
+  % get from which and to which group we are doing
+  paramsInfo = {...
+      {'fromGroup',fromGroups,'type=popupmenu','The group to import from'},...
+      {'toGroup',toGroupNames,'type=popupmenu','The group to import into'},...
+      {'linkFiles',~ispc,'type=checkbox',sprintf('enable=%d',~ispc),'Link rather than copy the files (Mac/Linux only). This will make a soft link rather than copying the files which saves disk space.'},...
+      {'hardLink',0,'type=checkbox',sprintf('enable=%d',~ispc),'contingent=linkFiles','(Mac/Linux only) Use hard links when linking files instead of soft links.'}};
+  
+  inputParams = params;
+  params = mrParamsDialog(paramsInfo);
+  if isempty(params)
+    switchSession;
+    deleteView(toView);
+    return
+  end
+  
+  params.fromSession = inputParams.fromSession;
+  fromGroupNum = find(strcmp(params.fromGroup,fromGroups));
+  
+else
+  fromGroupNum = viewGet(fromView,'groupNum',params.fromGroup);
 end
 
 % get whether to link or not
 linkType = 0;
 if params.linkFiles
+  if ispc
+    mrWarnDlg('(importGroupScans) Linking scan files is not implemented on Windows');
+    switchSession;
+    deleteView(toView);
+    return
+  end
+
   % for hard links, pass 2
   if params.hardLink
     linkType = 2;
@@ -86,10 +117,9 @@ if params.linkFiles
 end
 
 % now set up some variables
-fromGroupNum = find(strcmp(params.fromGroup,fromGroups));
 fromGroup = viewGet(fromView,'groupName',fromGroupNum);
 toGroup = params.toGroup;
-fromDir = fullfile(fullfile(pathStr,fromGroup),'TSeries');
+fromDir = fullfile(fullfile(params.fromSession,fromGroup),'TSeries');
 if ~isdir(fromDir)
   mrWarnDlg(sprintf('(importGroupScans) Could not find directory %s',fromDir));
   switchSession;
@@ -104,23 +134,27 @@ if ~isdir(toDir)
   deleteView(toView);
   return
 end
-fromName = getLastDir(pathStr);
+fromName = getLastDir(params.fromSession);
+
 
 % set the group
 fromView = viewSet(fromView,'curGroup',fromGroupNum);
 
-% choose the scans to import
-selectedScans = selectInList(fromView,'scans','Choose scans to import');
-if isempty(selectedScans)
+if fieldIsNotDefined(params,'scanList')
+  % choose the scans to import
+  params.scanList = selectInList(fromView,'scans','Choose scans to import');
+end
+
+if isempty(params.scanList)
   switchSession;
   deleteView(toView);
   return
 end
 
 % get the scan and aux paramters for the chosen scans
-for i = 1:length(selectedScans)
-  fromScanParams(i) = viewGet(fromView,'scanParams',selectedScans(i));
-  fromAuxParams(i) = viewGet(fromView,'auxParams',selectedScans(i));
+for i = 1:length(params.scanList)
+  fromScanParams(i) = viewGet(fromView,'scanParams',params.scanList(i));
+  fromAuxParams(i) = viewGet(fromView,'auxParams',params.scanList(i));
   % go through auxParams and get all fields
   if ~isempty(fromAuxParams(i))
     % get names of aux params
@@ -138,12 +172,12 @@ end
 
 
 % get the stimfiles for the selected scans
-for scanNum = 1:length(selectedScans)
-  stimFileName{scanNum} = viewGet(fromView,'stimFileName',selectedScans(scanNum));
+for scanNum = 1:length(params.scanList)
+  stimFileName{scanNum} = viewGet(fromView,'stimFileName',params.scanList(scanNum));
 end
 
 % now switch back to old MLR session
-switchSession;
+toView = switchSession;
 
 % set the group
 toView = viewSet(toView,'currentGroup',toGroup);
@@ -170,7 +204,7 @@ for scanNum = 1:length(fromScanParams)
   toStimFileNames = {};
   for stimFileNum = 1:length(stimFileName{scanNum})
     % get the from and to stim file names
-    fromStimFileName = fullfile(pathStr, 'Etc', getLastDir(stimFileName{scanNum}{stimFileNum}));
+    fromStimFileName = fullfile(params.fromSession, 'Etc', getLastDir(stimFileName{scanNum}{stimFileNum}));
     toStimFileName = fullfile(viewGet(toView,'EtcDir'),getLastDir(stimFileName{scanNum}{stimFileNum}));
     % if it doesn't exist already, then copy it over
     if mlrIsFile(toStimFileName)
@@ -212,7 +246,7 @@ saveSession;
 %%%%%%%%%%%%%%%%%%%%%%%
 function v = switchSession(pathStr)
 
-% switch to the MLR session found at "pathStr"
+% switch to the MLR session found at "inputParams.fromSession"
 if (nargin == 1)
   % switch the path and globals
   mrGlobals;
@@ -232,6 +266,7 @@ else
   global MLR;
   global oldMLR;
   MLR = oldMLR;
+  clear global oldMLR
 end
 
 
