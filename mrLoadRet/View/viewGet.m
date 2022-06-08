@@ -1414,7 +1414,7 @@ switch lower(param)
     % if numeric there is nothing to do, just return value
     if isnumeric(baseName)
       val = baseName;
-    else
+    elseif ~isempty(view.baseVolumes)
       % otherwise look up the baseNum
       baseNames = {view.baseVolumes(:).name};
       val = find(strcmp(baseName,baseNames));
