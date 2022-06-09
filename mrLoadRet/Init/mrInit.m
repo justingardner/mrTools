@@ -141,7 +141,7 @@ if ieNotDefined('groupParams')
   
   % check to see if we got any good scans
   if nScans == 0
-    disp(sprintf('(mrInit) Could not find any valid scans in Raw/TSeries'));
+    disp(sprintf('(mrInit) Could not find any valid scans in %s/TSeries',defaultGroupName));
     sessionParams = [];groupParams = [];
     return
   end
@@ -222,6 +222,14 @@ if ~justGetParams
     for iScan=1:length(groupParams.totalFrames)
       name = fullfile(tseriesDir, groupParams.name{iScan});
       hdr = mlrImageReadNiftiHeader(name);
+      % add in a missing qform based on voxel dimensions. This won't have correct info, but will allow the rest of the code to run
+      % if the sform is set, the qform shouldn't matter
+      if isempty(hdr.qform44)
+        mrWarnDlg(sprintf('(mrInit) !!!! Missing qform for scan %d (%s), making one based only on voxel dimensions !!!!',iScan,groupParams.name{iScan}));
+        hdr.qform44 = diag(hdr.pixdim(2:5));
+        hdr.qform44(4,4) = 1;
+      end
+
       scanParams(iScan).dataSize = hdr.dim([2,3,4])';
       scanParams(iScan).description = groupParams.description{iScan};
       scanParams(iScan).fileName = groupParams.name{iScan};

@@ -33,11 +33,9 @@ function [x,y] = getptsNoDoubleClick(varargin)
 %       getpts('FirstButtonDown')
 %       getpts('NextButtonDown')
 
-%   Copyright 1993-2004 The MathWorks, Inc.
-%   $Revision$  $Date$
+%   Copyright 1993-2011 The MathWorks, Inc.
 
 global GETPTS_FIG GETPTS_AX GETPTS_H1 GETPTS_H2
-global GETPTS_PT1 
 
 if ((nargin >= 1) && (ischar(varargin{1})))
     % Callback invocation: 'KeyPress', 'FirstButtonDown', or 
@@ -53,9 +51,8 @@ if (nargin < 1)
     GETPTS_AX = gca;
     GETPTS_FIG = ancestor(GETPTS_AX, 'figure');
 else
-    if (~ishandle(varargin{1}))
-        eid = 'Images:getpts:expectedHandle';
-        error(eid, '%s', 'First argument is not a valid handle');
+    if (~ishghandle(varargin{1}))
+        error(message('images:getpts:expectedHandle'));
     end
     
     switch get(varargin{1}, 'Type')
@@ -71,13 +68,13 @@ else
         GETPTS_FIG = ancestor(GETPTS_AX, 'figure');
 
     otherwise
-        eid = 'Images:getpts:expectedFigureOrAxesHandle';
-        error(eid, '%s', 'First argument should be a figure or axes handle');
+        error(message('images:getpts:expectedFigureOrAxesHandle'));
 
     end
 end
 
 % Bring target figure forward
+GETPTS_FIG.Visible = 'on'; % make sure Live Editor figures are shown
 figure(GETPTS_FIG);
 
 % Remember initial figure state
@@ -102,8 +99,7 @@ GETPTS_H1 = line('Parent', GETPTS_AX, ...
                   'Color', 'c', ...
                   'LineStyle', 'none', ...
                   'Marker', '+', ...
-                  'MarkerSize', markerSize, ...
-                  'EraseMode', 'xor');
+                  'MarkerSize', markerSize);
 
 GETPTS_H2 = line('Parent', GETPTS_AX, ...
                   'XData', [], ...
@@ -113,8 +109,7 @@ GETPTS_H2 = line('Parent', GETPTS_AX, ...
                   'Color', 'm', ...
                   'LineStyle', 'none', ...
                   'Marker', 'x', ...
-                  'MarkerSize', markerSize, ...
-                  'EraseMode', 'xor');
+                  'MarkerSize', markerSize);
 
 % We're ready; wait for the user to do the drag
 % Wrap the call to waitfor in try-catch so we'll
@@ -135,7 +130,7 @@ end
 if (errCatch == 1)
     errStatus = 'trap';
     
-elseif (~ishandle(GETPTS_H1) || ...
+elseif (~ishghandle(GETPTS_H1) || ...
             ~strcmp(get(GETPTS_H1, 'UserData'), 'Completed'))
     errStatus = 'unknown';
     
@@ -157,15 +152,15 @@ else
 end
 
 % Delete the animation objects
-if (ishandle(GETPTS_H1))
+if (ishghandle(GETPTS_H1))
     delete(GETPTS_H1);
 end
-if (ishandle(GETPTS_H2))
+if (ishghandle(GETPTS_H2))
     delete(GETPTS_H2);
 end
 
 % Restore the figure state
-if (ishandle(GETPTS_FIG))
+if (ishghandle(GETPTS_FIG))
     uirestore(state);
 end
 
@@ -181,15 +176,13 @@ case 'ok'
     
 case 'trap'
     % An error was trapped during the waitfor
-    eid = 'Images:getpts:interruptedMouseSelection';
-    error(eid, '%s', 'Interruption during mouse point selection.');
+    error(message('images:getpts:interruptedMouseSelection'));
     
 case 'unknown'
     % User did something to cause the point selection to
     % terminate abnormally.  For example, we would get here
     % if the user closed the figure in the middle of the selection.
-    eid = 'Images:getpts:interruptedMouseSelection';
-    error(eid, '%s', 'Interruption during mouse point selection.');
+    error(message('images:getpts:interruptedMouseSelection'));
 end
 
 
@@ -198,8 +191,7 @@ end
 %--------------------------------------------------
 function KeyPress %#ok
 
-global GETPTS_FIG GETPTS_AX GETPTS_H1 GETPTS_H2
-global GETPTS_PT1 
+global GETPTS_FIG GETPTS_H1 GETPTS_H2
 
 key = get(GETPTS_FIG, 'CurrentCharacter');
 switch key
@@ -245,13 +237,13 @@ set([GETPTS_H1 GETPTS_H2], ...
         'Visible', 'on');
 
 % jg: never interpret double click
-%if (~strcmp(get(GETPTS_FIG, 'SelectionType'), 'normal'))
-    % We're done!
-%    set(GETPTS_H1, 'UserData', 'Completed');
-%else
+% if (~strcmp(get(GETPTS_FIG, 'SelectionType'), 'normal'))
+%     % We're done!
+%     set(GETPTS_H1, 'UserData', 'Completed');
+% else
 % jg: call getptsNoDoubleClick
     set(GETPTS_FIG, 'WindowButtonDownFcn', 'getptsNoDoubleClick(''NextButtonDown'');');
-%end
+% end
 
 %--------------------------------------------------
 % Subfunction NextButtonDown
@@ -278,10 +270,10 @@ if (~strcmp(selectionType, 'open'))
 end
 
 % jg: never interpret double click
-%if (~strcmp(get(GETPTS_FIG, 'SelectionType'), 'normal'))
-    % We're done!
-%    set(GETPTS_H1, 'UserData', 'Completed');
-%end
+% if (~strcmp(get(GETPTS_FIG, 'SelectionType'), 'normal'))
+%     % We're done!
+%     set(GETPTS_H1, 'UserData', 'Completed');
+% end
 
 
 
@@ -309,7 +301,7 @@ pointerShape = [ ...
             NaN NaN NaN NaN NaN   1   2 NaN   2   1 NaN NaN NaN NaN NaN NaN
             NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN];
 
-        
+
 function [x,y] = getcurpt(axHandle)
 %GETCURPT Get current point.
 %   [X,Y] = GETCURPT(AXHANDLE) gets the x- and y-coordinates of
@@ -321,7 +313,6 @@ function [x,y] = getcurpt(axHandle)
 %   pixel that the user clicked on.
 
 %   Copyright 1993-2003 The MathWorks, Inc.  
-%   $Revision$  $Date$
 
 pt = get(axHandle, 'CurrentPoint');
 x = pt(1,1);
