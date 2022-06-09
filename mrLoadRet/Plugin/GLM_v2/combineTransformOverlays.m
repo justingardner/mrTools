@@ -190,6 +190,12 @@ else
   baseSpaceInterp=params.baseSpaceInterp;
 end
 
+if ~strcmp(params.roiMask,'None') && ~isempty(params.roiList) && params.baseSpace
+  mrWarnDlg('(combineTransformOverlays) ROI masking is not yet implemented for operations in base space');
+  %convert ROI coordinates from scan to base space. This will be done differenty depending on the base type
+  set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
+  return
+end
 
 %get the overlay data
 overlayData = viewGet(thisView,'overlays');
@@ -281,12 +287,7 @@ if ~strcmp(params.roiMask,'None') && ~isempty(params.roiList)
       end
     end
     roiCoordsLinear = sub2ind(size(mask),roiCoords(:,1),roiCoords(:,2),roiCoords(:,3));
-    if params.baseSpace
-      mrWarnDlg('(combineTransformOverlays) ROI masking is not yet implemented for operations in base space');
-      %convert ROI coordinates from scan to base space. This will be done differenty depending on the base type
-      set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
-      return
-    elseif isempty(roiCoordsLinear)
+    if isempty(roiCoordsLinear)
       mrWarnDlg('(combineTransformOverlays) ROI mask is empty');
       set(viewGet(thisView,'figNum'),'Pointer','arrow');drawnow;
       return
