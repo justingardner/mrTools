@@ -209,12 +209,12 @@ if strcmp(params.inputOutputType,'4D Array (multiple scans)') && length(params.s
     scanDims{iScan} = viewGet(thisView,'scanDims',iScan);
     base2scan{iScan} = viewGet(thisView,'base2scan',iScan);
     if iScan > params.scanList(1)
-      if ~isequal(scanDims{iScan},scanDims{1})
-        mrWarnDlg(sprintf('(combineTransformOverlays) Scan 1 and %d have different dimensions.',iScan));
+      if ~isequal(scanDims{iScan},scanDims{params.scanList(1)})
+        mrWarnDlg(sprintf('(combineTransformOverlays) Scan %d and %d have different dimensions.',params.scanList(1),iScan));
         dimensionsDiffer = true;
       end
-      if ~isequal(base2scan{iScan},base2scan{1})
-        mrWarnDlg(sprintf('(combineTransformOverlays) Scan 1 and %d have different sforms.',iScan));
+      if ~isequal(base2scan{iScan},base2scan{params.scanList(1)})
+        mrWarnDlg(sprintf('(combineTransformOverlays) Scan %d and %d have different sforms.',params.scanList(1),iScan));
         dimensionsDiffer = true;
       end
     end
