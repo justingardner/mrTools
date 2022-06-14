@@ -1958,7 +1958,9 @@ case{'surfaceroihandle'}
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
       for iOverlay = overlayNum
-        view.analyses{analysisNum}.overlays(iOverlay).colorRange = val;
+        if iOverlay > 0 && iOverlay <= length(view.analyses{analysisNum}.overlays)
+          view.analyses{analysisNum}.overlays(iOverlay).colorRange = val;
+        end
       end
     end
 
