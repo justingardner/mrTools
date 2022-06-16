@@ -17,17 +17,17 @@ function surf2volumeMap = inverseBaseCoordMap(coordsMap,volumeDims,xform)
 if ieNotDefined('xform')
   xform = eye(4);
 end
-coordsMap = reshape(coordsMap,numel(coordsMap)/3,3);
-coordsMap = (xform*[coordsMap';ones(1,size(coordsMap,1))])';
+coordsMap = reshape(coordsMap,numel(coordsMap)/3,3); % reshape into a simple coordinate matrix
+coordsMap = (xform*[coordsMap';ones(1,size(coordsMap,1))])'; % convert coordinates from flat/surf base anatomy to requested volume coordinates
 coordsMap = coordsMap(:,1:3);
-coordsMap(all(~coordsMap,2),:)=NaN;
+coordsMap(all(~coordsMap,2),:)=NaN; % ignore any row that has at least one zero
 coordsMap = round(coordsMap);
-coordsMap(any(coordsMap>repmat(volumeDims,size(coordsMap,1),1)|coordsMap<1,2),:)=NaN;
+coordsMap(any(coordsMap>repmat(volumeDims,size(coordsMap,1),1)|coordsMap<1,2),:)=NaN; % ignore any row that's outside the requested volume
 % convert volume coordinates to linear indices for manipulation ease
 volIndexMap = sub2ind(volumeDims, coordsMap(:,1), coordsMap(:,2), coordsMap(:,3));
 clearvars('coordsMap'); % save memory
 
-% now make a coordinate map of which volume index correspond to which surface voxels/vertices indices
+% now make an inverse coordinate map of which surface voxels/vertices indices correspond to each volume index
 % (there will be several maps because each volume voxels might correspond to several surface voxel/vertex indices)
 
 % first find the maximum number of surface points corresponding to a single volume voxel (this is modified from function 'unique')
