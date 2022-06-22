@@ -509,7 +509,7 @@ for iOperations = 1:size(overlayData,3)
 end
 
 if strcmp(params.inputOutputType,'4D Array (multiple scans)')
-  newOutputData = cell(max(params.scanList), params.nOutputOverlays, size(overlayData,3));
+  newOutputData = cell(nScans, params.nOutputOverlays, size(overlayData,3));
   for iOperations = 1:size(overlayData,3)
     for iScan = 1:length(params.scanList)
       for iOutput = 1:params.nOutputOverlays
@@ -585,7 +585,7 @@ if params.nOutputOverlays
           baseCoordsOverlay{iScan} = inverseBaseCoordMap(baseCoordsMap{iScan},scanDims{iScan},base2scan{iScan});
         end
       else
-        keyboard %not implemented
+        keyboard %not implemented (actually it might work for surfaces)
       end
     end
   end
@@ -671,12 +671,12 @@ if params.nOutputOverlays
   defaultOverlay.clip = [];
   defaultOverlay.range = [];
   defaultOverlay.name = [];
-  defaultOverlay.data = [];
+  defaultOverlay.data = cell(1,nScans);
   for iOverlay = 1:size(outputData,2)
     switch(params.inputOutputType)
       case {'3D Array','4D Array','Scalar','4D Array (multiple scans)'}
         outputOverlay(iOverlay) = defaultOverlay;
-        outputOverlay(iOverlay).data = outputData(:,iOverlay);
+        outputOverlay(iOverlay).data = outputData(:,iOverlay)';
         maxValue = -inf;
         minValue = inf;
         for iOutput = 1:size(outputData,1)
@@ -742,4 +742,3 @@ else
     disp(helpString);
   end
 end
-
