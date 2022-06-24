@@ -281,7 +281,7 @@ switch lower(param)
     % view = viewSet(view,'deleteGroup',groupNum);
     groupnum = viewGet(view,'groupNum',val);
     groupName = viewGet(view,'groupName',groupnum);
-    nScans = viewGet(view,'nScans');
+    nScans = viewGet(view,'nScans', groupnum);
     % confirm with user
     if nScans > 0
         queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
