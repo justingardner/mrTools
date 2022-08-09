@@ -30,7 +30,7 @@ if length(w)==1
 end
 kernelDims = 2*w+1;
 kernelCenter = ceil(kernelDims/2);
-[X,Y,Z] = meshgrid(1:kernelDims(1),1:kernelDims(2),1:kernelDims(3));
+[X,Y,Z] = meshgrid(1:kernelDims(1),1:kernelDims(2),1:kernelDims(3)); % should I use ndgrid instead of meshgrid here? (for most cases it wouldn't matter because X and Y very often have the same pixel size and require the same amount of smoothing)
 if all(sigma_d == 0)
   kernel = 1; % no smoothing
 elseif sigma_d(2) == 0 && sigma_d(3) == 0

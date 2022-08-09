@@ -6,7 +6,11 @@ function thisView = drawROI(thisView,descriptor,sgn)
 %
 % descriptor: option for how the new coordinates are to be specified.
 % Current options are:
-%    'rectangle'[default]
+%    'rectangle'[default]: rectangle defined from two opposite voxels
+%    'single voxels': list of single voxels
+%    'contiguous': all contiguous unmasked voxels
+%    'polygon': area enclosed within a list of voxels/vertices
+%    'line': connected line of voxels
 %
 % sgn: If sgn~=0 [default, adds user-specified coordinates to selected ROI
 % in current slice. If sgn==0, removes those coordinates from the ROI.
