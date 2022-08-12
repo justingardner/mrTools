@@ -31,21 +31,25 @@ end
 if (nargin == 1) && isstr(outerSurface) && ~mlrIsFile(outerSurface)
   event = outerSurface;
 elseif (nargin == 1) && isstr(outerSurface)
+  outerSurface = stripext(outerSurface);
   if ~isempty(strfind(outerSurface,'WM'))
-    [token,remain] = strtok(stripext(outerSurface),'WM');
-    remain = remain(3:end);
+    stringIndex = strfind((outerSurface),'WM');
+    token = outerSurface(1:stringIndex-1);
+    remain = outerSurface(stringIndex+2:end);
     clear outerSurface;
-    innerSurface{1} = sprintf('%sGM%s.off',token,remain);
+    innerSurface{1} = sprintf('%sWM%s.off',token,remain);
     outerSurface{1} = sprintf('%sGM%s.off',token,remain);
   elseif ~isempty(strfind(outerSurface,'GM'))
-    [token,remain] = strtok(stripext(outerSurface),'GM');
-    remain = remain(3:end);
+    stringIndex = strfind((outerSurface),'GM');
+    token = outerSurface(1:stringIndex-1);
+    remain = outerSurface(stringIndex+2:end);
     clear outerSurface;
     innerSurface{1} = sprintf('%sWM%s.off',token,remain);
     outerSurface{1} = sprintf('%sGM%s.off',token,remain);
   elseif ~isempty(strfind(outerSurface,'Outer'))
-    [token,remain] = strtok(stripext(outerSurface),'Outer');
-    remain = remain(3:end);
+    stringIndex = strfind((outerSurface),'Outer');
+    token = outerSurface(1:stringIndex-1);
+    remain = outerSurface(stringIndex+5:end);
     clear outerSurface;
     innerSurface{1} = sprintf('%sInner%s.off',token,remain);
     outerSurface{1} = sprintf('%sOuter%s.off',token,remain);
