@@ -56,8 +56,8 @@ function editOverlayGUImrParams(viewNum)
   
   % colormaps
   % first try to get all the predefined matlab color maps
-  fid = fopen(fullfile(matlabroot,'\toolbox\matlab\graph3d\contents.m'));
-  if fid
+  fid = fopen(fullfile(matlabroot,'toolbox','matlab','graph3d','Contents.m'));
+  if fid>0
     colormaps = textscan(fid,'%% %s %s %*[^\n]');
     fclose(fid);
     if ~isempty(colormaps)
