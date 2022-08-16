@@ -29,7 +29,7 @@ end
 baseType = viewGet(view,'baseType');
 
 % some other variables
-defaultRadius = 75;
+defaultRadius = 60;
 viewNum = viewGet(view, 'viewNum');
 
 % parse the parameters
