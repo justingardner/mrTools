@@ -10,7 +10,7 @@
 %             If makeFlat is called from a script AND the interrogator was never used in this MLR session (i.e. mouseDownBaseCoords is empty)
 %             then x, y, z inputs should be coordinates in the current base (which should be the surface base anatomy)
 %
-function retval = makeFlat(view, overlayNum, scan, x, y, s, roi) 
+function view = makeFlat(view, overlayNum, scan, x, y, s, roi)
 
 
 % check arguments
@@ -130,7 +130,7 @@ if ~isempty(flatBase)
 
   % install it
   disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
-  viewSet(view, 'newBase', flatBase);
+  view = viewSet(view, 'newBase', flatBase);
   refreshMLRDisplay(viewNum);
 
   % remove the temporary off file (actually we should leave the
