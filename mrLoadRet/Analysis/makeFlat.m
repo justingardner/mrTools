@@ -4,7 +4,11 @@
 %      usage: makeFlat()
 %         by: eli merriam
 %       date: 09/27/07
-%    purpose: 
+%    purpose: Make a flat map centered on the clicked coordinates
+%             This is normally called from mrLoadRet's interrogator window
+%             with the surface base anatomy as the current base
+%             If makeFlat is called from a script AND the interrogator was never used in this MLR session (i.e. mouseDownBaseCoords is empty)
+%             then x, y, z inputs should be coordinates in the current base (which should be the surface base anatomy)
 %
 function retval = makeFlat(view, overlayNum, scan, x, y, s, roi) 
 
@@ -19,6 +23,9 @@ end
 baseCoordMap = viewGet(view,'baseCoordMap');
 baseCoordMapPath = viewGet(view,'baseCoordMapPath');
 startPoint = viewGet(view,'mouseDownBaseCoords');
+if isempty(startPoint) % if there are no mouse click coordinates, this means that makeFlat was called from the command line or a script
+  startPoint = [x y s]; % in this case, we assume that passed-in coordinates are in the current base
+end
 baseType = viewGet(view,'baseType');
 
 % some other variables
