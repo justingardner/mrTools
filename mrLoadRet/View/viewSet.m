@@ -1964,8 +1964,9 @@ case{'surfaceroihandle'}
       end
     end
 
-  case {'alpha'}
+  case {'alpha','overlayalpha'}
     % view = viewSet(view,'alpha',number,[overlayNum]);
+    % view = viewSet(view,'overlayalpha',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');
     if ~isempty(varargin)
       overlayNum = varargin{1};
