@@ -1,4 +1,4 @@
-function pathStr = saveAnat(view,anatomyName,confirm,saveAs,savePath)
+function pathStr = saveAnat(view,anatomyName,confirm,saveAs,savePath,exportCorticalDepths)
 %
 % saveAnat(view,[anatomyName],[confirm],[saveAs],[savePath])
 %
@@ -10,6 +10,7 @@ function pathStr = saveAnat(view,anatomyName,confirm,saveAs,savePath)
 %          Default: uses 'overwritePolicy' preference.
 %  saveAs: If 1, then asks user for where to put anatomy (default=0)
 % savePath: If set then saves the anatomy to the specified path
+% exportCorticalDepths: if true, repeat the exported values number of cortical depth steps (only for flat maps)
 % 
 % 
 %
@@ -41,24 +42,41 @@ if ieNotDefined('savePath')
   savePath = [];
 end
 
+if ieNotDefined('exportCorticalDepths')
+  exportCorticalDepths = false;
+end
+
 % Extract data and hdr
 baseVolume = viewGet(view,'baseVolume',anatomyNum);
 switch viewGet(view,'baseType',anatomyNum)
   case 0
     data = baseVolume.data;
+    
   case 1
-   % jg: The code below this line does not work - and I don't know why it was added or what
-   % it is supposed to do (is this Julien's addition?), so commenting out as it crashes in r2015a. Replacing
-   % with a more straightforward call
-    data = baseVolume.data;
-    %if flat, rotate and repeat map number-of-depths times
-%    repeatVector = [1 1 1];
-%    repeatVector(viewGet(view,'basesliceindex',anatomyNum))= mrGetPref('corticalDepthBins');
-%    nanData=isnan(baseVolume.data);
-%    data = repmat(mrImRotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop'),repeatVector);
-%    data(repmat(nanData,repeatVector))=NaN;
+% %    % jg: The code below this line does not work - and I don't know why it was added or what
+% %    % it is supposed to do (is this Julien's addition?), so commenting out as it crashes in r2015a. Replacing
+% %    % with a more straightforward call
+% %     data = baseVolume.data;
+
+% % jb, 24/08/2022: the code below repeats the flat base values (e.g. curvature) as many times as there are cortical depth steps
+% % (now only if exportCorticalDepths is true)
+% % it also applies the flat rotation value before exporting so that the exported volume matches what is shown in mrLoadRet
+% % the latter behaviour is consistent with how mrExport2SR exports overlays on flat maps
+
+    %if flat, rotate asccording to the current rotate value
+    data = mrImRotate(baseVolume.data,viewGet(view,'rotate'),'bilinear','crop');
+    
+    if exportCorticalDepths % repeat map number-of-depths times
+      repeatVector = [1 1 1];
+      repeatVector(viewGet(view,'basesliceindex',anatomyNum))= mrGetPref('corticalDepthBins');
+      data = repmat(data,repeatVector);
+      nanData=isnan(baseVolume.data);
+      data(repmat(nanData,repeatVector))=NaN;
+    end
+    
   case 2
     data = baseVolume.data;
+    
 end
 hdr = baseVolume.hdr;
 
