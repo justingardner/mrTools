@@ -274,9 +274,18 @@ for iOverlay = overlayList
 
     if ~isempty(overlayData) && ~isempty(overlayCoords)
       % Extract the slice
-      overlayImages(:,cOverlay) = interp3(overlayData,...
-        overlayCoords(:,2),overlayCoords(:,1),overlayCoords(:,3),...
-        interpMethod,interpExtrapVal);
+      if size(overlayData,3) == 1
+	% check that the coords are all one in the 3rd dimension
+	if any(overlayCoords(:,3) ~= 1)
+	  disp(sprintf('(maskOverlay) 2D overlayData and overlayCoords has coordinates that are not z=1'));
+	  keyboard
+	end
+	% do a 2D interp
+	overlayImages(:,cOverlay) = interp2(overlayData,overlayCoords(:,2),overlayCoords(:,1),interpMethod,interpExtrapVal);
+      else
+	% do a 3D interp
+	overlayImages(:,cOverlay) = interp3(overlayData,overlayCoords(:,2),overlayCoords(:,1),overlayCoords(:,3),interpMethod,interpExtrapVal);
+      end
       switch(overlayType)
         case 'amp'
           overlayImages(:,cOverlay) = abs(overlayImages(:,cOverlay));
