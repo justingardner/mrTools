@@ -473,7 +473,7 @@ uiwait;
 % this can happen if we have opened up (and closed a second
 % mrParamsDialog--this should be removed when this function
 % is fixed to be able to run multiple simultaneous mrParamsDialogs;
-if ieNotDefined('gParams'),params=[];params2=[];return,end
+if ieNotDefined('gParams')||(~isfield(gParams,'ok')),params=[];params2=[];return,end
 
 % check return value
 switch(gParams.ok)

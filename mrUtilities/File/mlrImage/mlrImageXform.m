@@ -174,6 +174,7 @@ for iImage = 1:length(imageArgs)
   [d h xform] = adjustDims(d,h,xMin,xMax,yMin,yMax,zMin,zMax,applyToHeader,applyToData,xform);
   % make sure dim is correct
   h.dim = size(d);
+  h.dim(end+1:h.nDim) = 1; 
   % fix pixdim - thus if we have anisotropic voxels and we swap
   % dims or rotate this will fix the dimensions to be appropriate
   if applyToHeader

@@ -118,6 +118,13 @@ if ~isfield(h,'nDim')
   h.nDim = length(h.dim);
 end
 
+% check for a 2 dim image and make it 3D by adding 1 to the end
+if h.nDim == 2
+  disp(sprintf('(mlrImageIsHeader) Header shows a 2D (%ix%i) image, converting to a 3D (%ix%ix1) image',h.dim(1),h.dim(2),h.dim(1),h.dim(2)));
+  h.nDim = 3;
+  h.dim(3) = 1;
+end
+
 % set pixdim to same length as dim with all ones
 if ~isfield(h,'pixdim')
   h.pixdim = nan(size(h.dim));
