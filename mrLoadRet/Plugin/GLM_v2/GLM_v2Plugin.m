@@ -213,29 +213,30 @@ switch action
     
 
     %----------------------------  Add menus --------------------------------
-
+    menuCallbackName = 'MenuSelectedFcn';
+    menuLabel = 'Text';
     % File menu
-    mlrAdjustGUI(thisView,'set','exportImageMenuItem','callback',@exportImage_Callback);
-    mlrAdjustGUI(thisView,'set','exportImageMenuItem','label','Export Images');
+    mlrAdjustGUI(thisView,'set','exportImageMenuItem',menuCallbackName,@exportImage_Callback);
+    mlrAdjustGUI(thisView,'set','exportImageMenuItem',menuLabel,'Export Images');
 
     % Edit menu
-    mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile','callback',@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');
+    mlrAdjustGUI(thisView,'add','menu','Unlink Stimfile','/Edit/Scan/Link Stimfile',menuCallbackName,@unlinkStimfileMenuItem_Callback,'tag','unlinkStimfileMenuItem');
     mlrAdjustGUI(thisView,'set','/Edit/Scan/Link Stimfile','separator','on');
-    mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/','callback',@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
-    mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/','callback',@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
-    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','Callback',@copyOverlayCallback);
-    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem','label','Copy overlay(s)...');
-    mlrAdjustGUI(thisView,'set','pasteOverlayMenuItem','Callback',@pasteOverlayCallback);
-    mlrAdjustGUI(thisView,'set','copyScanMenuItem','Callback',@copyScanCallback);
-    mlrAdjustGUI(thisView,'set','copyScanMenuItem','label','Copy scan(s)...');
-    mlrAdjustGUI(thisView,'set','pasteScanMenuItem','Callback',@pasteScanCallback);
+    mlrAdjustGUI(thisView,'add','menu','Copy sform','/Edit/Base Anatomy/Transforms/',menuCallbackName,@copyBaseSformCallBack,'tag','copyBaseSformMenuItem');
+    mlrAdjustGUI(thisView,'add','menu','Paste sform','/Edit/Base Anatomy/Transforms/',menuCallbackName,@pasteBaseSformCallBack,'tag','pasteBaseSformMenuItem');
+    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem',menuCallbackName,@copyOverlayCallback);
+    mlrAdjustGUI(thisView,'set','copyOverlayMenuItem',menuLabel,'Copy overlay(s)...');
+    mlrAdjustGUI(thisView,'set','pasteOverlayMenuItem',menuCallbackName,@pasteOverlayCallback);
+    mlrAdjustGUI(thisView,'set','copyScanMenuItem',menuCallbackName,@copyScanCallback);
+    mlrAdjustGUI(thisView,'set','copyScanMenuItem',menuLabel,'Copy scan(s)...');
+    mlrAdjustGUI(thisView,'set','pasteScanMenuItem',menuCallbackName,@pasteScanCallback);
 
     % Analysis menu
     mlrAdjustGUI(thisView,'add','menu','Apply MotionComp Transforms','/Analysis/Motion Compensation/Slice Time Correction (only)','callback',@applyMotionCompTransformsCallBack,'tag','applyMotionCompTransformMenuItem');
     %mlrAdjustGUI(thisView,'remove','menu','eventRelatedMenuItem');
-    mlrAdjustGUI(thisView,'set','glmMenuItem','Callback',@glmAnalysisCallback);
-    mlrAdjustGUI(thisView,'set','glmMenuItem','label','GLM analysis (v2)');
-    mlrAdjustGUI(thisView,'set','recomputeAnalysisMenuItem','Callback',@recomputeAnalysisCallback);
+    mlrAdjustGUI(thisView,'set','glmMenuItem',menuCallbackName,@glmAnalysisCallback);
+    mlrAdjustGUI(thisView,'set','glmMenuItem',menuLabel,'GLM analysis (v2)');
+    mlrAdjustGUI(thisView,'set','recomputeAnalysisMenuItem',menuCallbackName,@recomputeAnalysisCallback);
 
     % Overlay menu
     mlrAdjustGUI(thisView,'add','menu','overlaysMenu','/Analysis','label','Overlays','tag','overlaysMenu');
@@ -251,12 +252,12 @@ switch action
     mlrAdjustGUI(thisView,'set','undoRoiMenuItem','location','/ROI/Restrict');
     mlrAdjustGUI(thisView,'set','convertRoiMenuItem','separator','off');
     mlrAdjustGUI(thisView,'set','deleteRoiMenu','separator','on');
-    mlrAdjustGUI(thisView,'set','restrictRoiMenuItem','label','Selected ROI(s)');
-    mlrAdjustGUI(thisView,'set','deleteRoiMenuItem','label','Selected ROI(s)');
-    mlrAdjustGUI(thisView,'set','saveROIMenuItem','label','Save selected ROI(s)');
-    mlrAdjustGUI(thisView,'set','copyRoiMenuItem','label','Copy selected ROI(s)');
-    mlrAdjustGUI(thisView,'set','pasteRoiMenuItem','label','Paste ROI(s)');
-    mlrAdjustGUI(thisView,'set','editRoiMenuItem','label','Edit selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','restrictRoiMenuItem',menuLabel,'Selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','deleteRoiMenuItem',menuLabel,'Selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','saveROIMenuItem',menuLabel,'Save selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','copyRoiMenuItem',menuLabel,'Copy selected ROI(s)');
+    mlrAdjustGUI(thisView,'set','pasteRoiMenuItem',menuLabel,'Paste ROI(s)');
+    mlrAdjustGUI(thisView,'set','editRoiMenuItem',menuLabel,'Edit selected ROI(s)');
     %add functions
     mlrAdjustGUI(thisView,'add','menu','Single Voxels','/ROI/Create/Contiguous Voxels','callback',@createSingleVoxelsCallBack,'label','Single Voxels','tag','createSingleVoxelsRoiMenuItem','accelerator','T');
     mlrAdjustGUI(thisView,'add','menu','Single Voxels2','/ROI/Add/Contiguous Voxels','callback',@addSingleVoxelsCallBack,'label','Single Voxels','tag','addSingleVoxelsRoiMenuItem','accelerator','N');
