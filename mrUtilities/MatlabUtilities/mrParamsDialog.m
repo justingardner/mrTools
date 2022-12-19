@@ -257,7 +257,8 @@ for i = 1:length(gParams.vars)
       dParams.entryNumCols(i) = size(dParams.entryString{i},2);
       dParams.entryNumRows(i) = size(dParams.entryString{i},1);
 
-    otherwise
+      otherwise
+        disp(sprintf('(mrParamsDialog) Unknown type: %s',gParams.varinfo{i}.type));
        keyboard %unknown type...
 %         dParams.entryString{i} = gParams.varinfo{i}.value;
 %         dParams.entryStyle{i} = gParams.varinfo{i}.type;
