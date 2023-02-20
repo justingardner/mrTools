@@ -1505,7 +1505,7 @@ switch lower(param)
       [tf val] = isbase(val);
     end
   case {'basecoordmappath'}
-    % basedata = viewGet(view,'baseCoordMapPath',[baseNum],[corticalDepth])
+    % basedata = viewGet(view,'baseCoordMapPath',[baseNum])
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     val = [];
@@ -1522,16 +1522,17 @@ switch lower(param)
 	    subjectDir = '';
 	    % tell user what we are doing
 	    disp(sprintf('(viewGet:baseCoordMapPath) Surface directory %s for base %s does not exist, searching in volumeDirectory: %s',val,viewGet(view,'baseName',b),volumeDirectory));
-	    for i = 1:length(volumeDirectoryList)
+	    maxChars = 0;
+      for i = 1:length(volumeDirectoryList)
 	      % for each volume directory in the list, see if the directory name
 	      % matches the first part of the baseVolumes anatomy (this assumes
 	      % that people use a convention like calling the directory s001 and
 	      % calling the anatomy file s001anatomy or something like that.
 	      matchName = strfind(view.baseVolumes(b).coordMap.anatFileName,volumeDirectoryList(i).name);
-	      if ~isempty(matchName) && isequal(matchName(1),1)
-		% we have a match, for the subject directory under the volume direcotry
-		subjectDir = fullfile(volumeDirectory,volumeDirectoryList(i).name);
-		break;
+	      if ~isempty(matchName) && isequal(matchName(1),1) ... % we have a match, for the subject directory under the volume directory
+           && length(volumeDirectoryList(i).name)>maxChars % and this name has more characters than any previous match
+          maxChars = length(volumeDirectoryList(i).name);
+		      subjectDir = fullfile(volumeDirectory,volumeDirectoryList(i).name);
 	      end
 	    end
 	    % not found, give up
