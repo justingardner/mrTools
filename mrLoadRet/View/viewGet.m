@@ -1589,21 +1589,25 @@ switch lower(param)
     else
       corticalDepths = varargin{2};
     end
-    if b & (b > 0) & (b <= n)
+    if b && (b > 0) && (b <= n)
       val = view.baseVolumes(b).coordMap;
-      % see if the coordMap is calculated for the correct number of cortical depth bins
-      if ~isempty(val) && (~isfield(val,'corticalDepths') || ~isequal(val.corticalDepths,corticalDepths))
-        if isfield(val,'innerCoords') && isfield(val,'outerCoords')
-          % if not, then we have to do it
-          %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
-          val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
-          cDepth=0;
-          for iDepth = corticalDepths;
-            cDepth=cDepth+1;
-            val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
+      if ~isempty(val)
+        % see if the coordMap is calculated for the correct number of cortical depth bins
+        if (~isfield(val,'corticalDepths') || ~isequal(val.corticalDepths,corticalDepths))
+          if isfield(val,'innerCoords') && isfield(val,'outerCoords')
+            % if not, then we have to do it
+            %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
+            val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
+            cDepth=0;
+            for iDepth = corticalDepths
+              cDepth=cDepth+1;
+              val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
+            end
+            val.corticalDepths = corticalDepths;
           end
-          val.corticalDepths = corticalDepths;
         end
+        % Correct path if necessary
+        val.path = viewGet(view,'basecoordmappath',varargin{:});
       end
     end
   case {'basesurface'}
