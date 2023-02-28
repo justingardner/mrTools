@@ -317,7 +317,7 @@ end
 % compute polar coordinates
 % [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
 switch fit.rfType
-    case {'gaussian-1D'}
+    case {'gaussian-1D'} % WITHIN DIGIT MODEL
         
         
         % hang on, this is stupid
@@ -395,7 +395,7 @@ switch fit.rfType
         fit.prefPD = thisX(index2); % this is trickier, because we need to rewrap the PD values onto a 1-4 grid
         %fit.prefDigit = thisX(index2);
         %%%%%fit.prefPD = mean(rfModel(:,index)); % mean of that digit = PD
-        fit.prefPD = abs(fit.prefPD - (size(rfModel,2)+1) );
+        fit.prefPD = abs(fit.prefPD - (size(rfModel,2)+1) ); % I'm not sure why this is necessary, but it needs to be unflipped outside of mrTools
         %fit.prefDigit = abs(fit.prefDigit - (size(rfModel,2)+1));
         
         
@@ -403,7 +403,7 @@ switch fit.rfType
         %fit.rfHalfWidth = std(rfModel(:,index)); % std of digit Gaussian
         fit.rfHalfWidth = thisStd;
         
-    case {'gaussian-1D-transpose'}
+    case {'gaussian-1D-transpose'} % BETWEEN DIGIT MODEL
         
         
         
@@ -452,7 +452,21 @@ switch fit.rfType
     case {'gaussian','gaussian-hdr'}
         fit.prefDigit = fit.y;
         fit.prefPD = fit.x;
+        
         fit.rfHalfWidth = fit.std;
+    case {'gaussian-hdr-double'}
+        
+        % test
+%         stimsY = meshgrid(1:0.03:4,1:0.03:4);
+%         stimsX = transpose(stimsY);
+%         bloop = exp(-(((stimsX-fit.x).^2)/(2*(fit.stdx^2))+((stimsY-fit.y).^2)/(2*(fit.stdy^2))));
+%         figure, imagesc(bloop)
+        
+        fit.prefDigit = fit.y;
+        fit.prefPD = fit.x; % for some reason this is flipped top to bottom.
+        
+        fit.rfHalfWidthX = fit.stdx;
+        fit.rfHalfWidthY = fit.stdy;
         
     case {'gaussian-1D-orthotips'}
         
@@ -483,8 +497,15 @@ end
 % display
 if fitParams.verbose
     
-    % disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
-    disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f prefDigit=%6.1f prefPD=%6.1f rfHalfWidth=%6.1f ',fitParams.dispstr,x,y,z,fit.r2,fit.prefDigit,fit.prefPD,fit.rfHalfWidth ));
+    if strcmpi(fit.rfType,'gaussian-hdr-double')
+        disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f prefDigit=%6.1f prefPD=%6.1f STDX=%6.1f STDY=%6.1f ',fitParams.dispstr,x,y,z,fit.r2,fit.prefDigit,fit.prefPD,fit.rfHalfWidthX, fit.rfHalfWidthY ));
+
+    else
+        
+        % disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f polarAngle=%6.1f eccentricity=%6.1f rfHalfWidth=%6.1f',fitParams.dispstr,x,y,z,fit.r2,r2d(fit.polarAngle),fit.eccentricity,fit.std));
+        disp(sprintf('%s[%2.f %2.f %2.f] r2=%0.2f prefDigit=%6.1f prefPD=%6.1f rfHalfWidth=%6.1f ',fitParams.dispstr,x,y,z,fit.r2,fit.prefDigit,fit.prefPD,fit.rfHalfWidth ));
+    end
+    
     
 end
 
@@ -553,6 +574,32 @@ if ~isfield(fitParams,'initParams')
                 fitParams.maxParams = [fitParams.maxParams 20 20 20 ];
                 fitParams.initParams = [fitParams.initParams fitParams.amplitudeRatio fitParams.timelag2 fitParams.tau2];
             end
+            
+        case 'gaussian-hdr-double'
+            fitParams.paramNames = {'x','y','stdx','stdy','timelag','tau'};
+            fitParams.paramDescriptions = {'RF x position (digit)','RF y position (PD)','stdx','stdy','Time before start of rise of hemodynamic function','Width of the hemodynamic function (tau parameter of gamma)'};
+            fitParams.paramIncDec = [1 1 1 1 0.1 0.5];
+            fitParams.paramMin = [-inf -inf 0 0 0 0];
+            fitParams.paramMax = [inf inf inf inf 10 10];
+            % set min/max and init
+            fitParams.minParams = [fitParams.stimExtents(1) fitParams.stimExtents(2) 0 0 0 0];
+            fitParams.maxParams = [fitParams.stimExtents(3) fitParams.stimExtents(4) inf inf 10 10];
+            fitParams.initParams = [0 0 1 1 fitParams.timelag fitParams.tau];
+            % add on parameters for difference of gamma
+            if fitParams.diffOfGamma
+                % parameter names/descriptions and other information for allowing user to set them
+                fitParams.paramNames = {fitParams.paramNames{:} 'amp2' 'timelag2','tau2'};
+                fitParams.paramDescriptions = {fitParams.paramDescriptions{:} 'Amplitude of second gamma for HDR' 'Timelag for second gamma for HDR','tau for second gamma for HDR'};
+                fitParams.paramIncDec = [fitParams.paramIncDec(:)' 0.1 0.1 0.5];
+                fitParams.paramMin = [fitParams.paramMin(:)' 0 0 0];
+                fitParams.paramMax = [fitParams.paramMax(:)' 20 20 20 ];
+                % set min/max and init
+                fitParams.minParams = [fitParams.minParams 0 0 0];
+                fitParams.maxParams = [fitParams.maxParams 20 20 20 ];
+                fitParams.initParams = [fitParams.initParams fitParams.amplitudeRatio fitParams.timelag2 fitParams.tau2];
+            end
+            
+            
         case 'gaussian-surround'
             fitParams.paramNames = {'x','y','rfWidth','timelag','tau','surrAmp', 'surrWidth'};
             fitParams.paramDescriptions = {'RF x position (digit)','RF y position (PD)','RF width (std of gaussian)','Time before start of rise of hemodynamic function','Width of the hemodynamic function (tau parameter of gamma)','amplitude of the surround', 'width of the surround'};
@@ -1287,6 +1334,26 @@ switch (fitParams.rfType)
             p.canonical.exponent2 = fitParams.exponent2;
             p.canonical.offset2 = 0;
         end
+    case 'gaussian-hdr-double'
+        p.x = params(1);
+        p.y = params(2);
+        p.stdx = params(3);
+        p.stdy = params(4);
+        % use a fixed single gaussian
+        p.canonical.type = 'gamma';
+        p.canonical.lengthInSeconds = 25;
+        p.canonical.timelag = params(5);
+        p.canonical.tau = params(6);
+        p.canonical.exponent = fitParams.exponent;
+        p.canonical.offset = 0;
+        p.canonical.diffOfGamma = fitParams.diffOfGamma;
+        if fitParams.diffOfGamma
+            p.canonical.amplitudeRatio = params(7);
+            p.canonical.timelag2 = params(8);
+            p.canonical.tau2 = params(9);
+            p.canonical.exponent2 = fitParams.exponent2;
+            p.canonical.offset2 = 0;
+        end
     case 'gaussian-surround'
         p.x = params(1);
         p.y = params(2);
@@ -1714,7 +1781,7 @@ rfModel = [];
 
 % now gernerate the rfModel
 switch fitParams.rfType
-    case {'gaussian','gaussian-hdr','gaussian-1D','gaussian-1D-transpose','gaussian-surround', 'gaussian-1D-orthotips'}
+    case {'gaussian','gaussian-hdr','gaussian-hdr-double','gaussian-1D','gaussian-1D-transpose','gaussian-surround', 'gaussian-1D-orthotips'}
         rfModel = makeRFGaussian(params,fitParams);
     case {'nine-param','nine-param-hdr'}
         rfModel = makeRFNineParam(params,fitParams);
@@ -1885,9 +1952,15 @@ switch fitParams.rfType
         
         %figure; plot(R,Z)
         
+    case {'gaussian-hdr-double'}
+        rfModel = exp(-(((fitParams.stimX-params.x).^2)/(2*(params.stdx^2))+((fitParams.stimY-params.y).^2)/(2*(params.stdy^2))));
+        % do we need to flip this top to bottom?
         
     otherwise
         rfModel = exp(-(((fitParams.stimX-params.x).^2)/(2*(params.std^2))+((fitParams.stimY-params.y).^2)/(2*(params.std^2))));
+        % try adding std
+        
+        
 end
 
 end
@@ -2129,7 +2202,7 @@ if isempty(fitParams.prefit) || (fitParams.prefit.quickPrefit ~= fitParams.quick
                 prefitrfHalfWidth = [1 1 1 1 ];
             end
             
-        case {'gaussian','gaussian-hdr','gaussian-1D','gaussian-surround','gaussian-1D-transpose'}
+        case {'gaussian','gaussian-hdr','gaussian-hdr-double','gaussian-1D','gaussian-surround','gaussian-1D-transpose'}
             if fitParams.verbose,fprintf('\n(pRF_somatoFit) Doing quick prefit');end
             % set the values over which to first prefit
             % the best of these parameters will then be used

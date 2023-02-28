@@ -98,29 +98,50 @@ r2.mergeFunction = 'pRFMergeParams';
 prefDigit = r2;
 prefDigit.name = 'prefDigit';
 
-prefDigit.range = [1 5];
-prefDigit.clip = [1 5];
+prefDigit.range = [1 4];
+prefDigit.clip = [1 4];
 prefDigit.colormapType = 'normal';
 %prefDigit.colormap = rainbow_colors(4); %This colour map and 1-3 range look much better when delineating 3 fingers. Change for more fingers!
-prefDigit.colormap = digits(256);
+prefDigit.colormap = digits(4);
 
 prefPD = r2;
 prefPD.name = 'prefPD';
-prefPD.range = [1 5];
-prefPD.clip = [1 5];
+prefPD.range = [1 4];
+prefPD.clip = [1 4];
 prefPD.colormapType = 'normal';
 %prefPD.colormap = rainbow_colors(4);
-prefPD.colormap = digits(5);
+prefPD.colormap = digits(256);
 
 
 % create the paramteres for the rfHalfWidth overlay
 % deal with the sigma.
-rfHalfWidth = r2;
-rfHalfWidth.name = 'rfHalfWidth';
-rfHalfWidth.range = [0 5];
-rfHalfWidth.clip = [0 5];
-rfHalfWidth.colormapType = 'normal';
-rfHalfWidth.colormap = pink(256);
+
+if strcmpi(params.pRFFit.rfType,'gaussian-hdr-double')
+    rfHalfWidthX = r2;
+    rfHalfWidthX.name = 'rfHalfWidthX';
+    rfHalfWidthX.range = [0 5];
+    rfHalfWidthX.clip = [0 5];
+    rfHalfWidthX.colormapType = 'normal';
+    rfHalfWidthX.colormap = pink(256);
+    
+    rfHalfWidthY = r2;
+    rfHalfWidthY.name = 'rfHalfWidthY';
+    rfHalfWidthY.range = [0 5];
+    rfHalfWidthY.clip = [0 5];
+    rfHalfWidthY.colormapType = 'normal';
+    rfHalfWidthY.colormap = pink(256);
+else
+    rfHalfWidth = r2;
+    rfHalfWidth.name = 'rfHalfWidth';
+    rfHalfWidth.range = [0 5];
+    rfHalfWidth.clip = [0 5];
+    rfHalfWidth.colormapType = 'normal';
+    rfHalfWidth.colormap = pink(256);
+    
+end
+
+
+
 
 % % consider creating other parameters for the somatosensory
 % % Maybe get the haemodynamic delay?
@@ -166,8 +187,12 @@ for scanNum = params.scanNum
   r2.data{scanNum} = nan(scanDims);
   prefDigit.data{scanNum} = nan(scanDims);
   prefPD.data{scanNum} = nan(scanDims);
-  rfHalfWidth.data{scanNum} = nan(scanDims);
-
+  if strcmpi(params.pRFFit.rfType,'gaussian-hdr-double')
+      rfHalfWidthX.data{scanNum} = nan(scanDims);
+      rfHalfWidthY.data{scanNum} = nan(scanDims);
+  else
+      rfHalfWidth.data{scanNum} = nan(scanDims);
+  end
   
 %   for iOverlay = 1:numel(overlayNames)
 %       %
@@ -219,7 +244,14 @@ for scanNum = params.scanNum
   r = nan(n,fit.concatInfo.n);
   thisr2 = nan(1,n);
   
-  thisRfHalfWidth = nan(1,n);
+  if strcmpi(params.pRFFit.rfType,'gaussian-hdr-double')
+      thisRfHalfWidthX = nan(1,n);
+      thisRfHalfWidthY = nan(1,n);
+      
+  else
+      thisRfHalfWidth = nan(1,n);
+  end
+  
   thisResid = nan(numel(concatInfo.whichScan),n); % this may break if using Nelder-Mead
   thistSeries = nan(numel(concatInfo.whichScan),n);
   thismodelResponse = nan(numel(concatInfo.whichScan),n); 
@@ -353,7 +385,7 @@ for scanNum = params.scanNum
         
     else
         
-        parfor ii = blockStart:blockEnd
+        for ii = blockStart:blockEnd
             
             fit = pRF_somatoFit(v,scanNum,x(ii),y(ii),z(ii),'stim',stim,'concatInfo',concatInfo, ...
                 'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',ii,'dispN',n,...
@@ -364,31 +396,38 @@ for scanNum = params.scanNum
             
             
             if ~isempty(fit)
-%                 tempVar = zeros(length(overlayNames),1);
-%                 for iOverlay = 1:numel(overlayNames)
-%                     
-%                     test = strcmpi(fieldnames(fit), overlayNames(iOverlay) );
-%                     %pos = find(test==1);
-%                     bla = struct2cell(fit);
-%                     val = cell2mat(bla(test==1));
-%                     % this is temporary, gets overwritten each time
-%                     tempVar(iOverlay,1) = val;
-%                 end
-%                 % now put the values for this voxel into some sort of order :)
-%                 thisData(:,ii) = tempVar;
+                %                 tempVar = zeros(length(overlayNames),1);
+                %                 for iOverlay = 1:numel(overlayNames)
+                %
+                %                     test = strcmpi(fieldnames(fit), overlayNames(iOverlay) );
+                %                     %pos = find(test==1);
+                %                     bla = struct2cell(fit);
+                %                     val = cell2mat(bla(test==1));
+                %                     % this is temporary, gets overwritten each time
+                %                     tempVar(iOverlay,1) = val;
+                %                 end
+                %                 % now put the values for this voxel into some sort of order :)
+                %                 thisData(:,ii) = tempVar;
                 
                 thisr2(ii) = fit.r2;
                 thisPrefDigit(ii) = fit.prefDigit;
                 thisPrefPD(ii) = fit.prefPD;
-                thisRfHalfWidth(ii) = fit.rfHalfWidth;
-
+                if strcmpi(params.pRFFit.rfType,'gaussian-hdr-double')
+                    thisRfHalfWidthX(ii) = fit.rfHalfWidthX;
+                    thisRfHalfWidthY(ii) = fit.rfHalfWidthY;
+                else
+                    thisRfHalfWidth(ii) = fit.rfHalfWidth;
+                end
+                
                 
                 % keep parameters
                 rawParams(:,ii) = fit.params(:);
                 r(ii,:) = fit.r;
                 %thisr2(ii) = fit.r2;
                 thisRawParamsCoords(:,ii) = [x(ii) y(ii) z(ii)];
-                thisResid(:,ii) = fit.residual;
+                if ~strcmpi(algorithm,'nelder-mead')
+                    thisResid(:,ii) = fit.residual;
+                end
                 thistSeries(:,ii) = fit.tSeries;
                 thismodelResponse(:,ii) = fit.modelResponse;
                 %myrawHrfs(:,ii) = fit.myhrf.hrf; %save out prfs hrfs
@@ -428,7 +467,12 @@ for scanNum = params.scanNum
               r2.data{scanNum}(x(ii),y(ii),z(ii)) = thisr2(ii);
               prefDigit.data{scanNum}(x(ii),y(ii),z(ii)) = thisPrefDigit(ii);
               prefPD.data{scanNum}(x(ii),y(ii),z(ii)) = thisPrefPD(ii);
-              rfHalfWidth.data{scanNum}(x(ii),y(ii),z(ii)) = thisRfHalfWidth(ii);
+              if strcmpi(params.pRFFit.rfType,'gaussian-hdr-double')
+                  rfHalfWidthX.data{scanNum}(x(ii),y(ii),z(ii)) = thisRfHalfWidthX(ii);
+                  rfHalfWidthY.data{scanNum}(x(ii),y(ii),z(ii)) = thisRfHalfWidthY(ii);
+              else
+                  rfHalfWidth.data{scanNum}(x(ii),y(ii),z(ii)) = thisRfHalfWidth(ii);
+              end
              
 %         for iOverlay = 1:length(overlayNames)
 %             theOverlays{iOverlay}.data{scanNum}(x(ii),y(ii),z(ii)) = thisData(iOverlay,ii);
@@ -449,7 +493,9 @@ for scanNum = params.scanNum
   pRFAnal.d{scanNum}.maxr2 = max(thisr2); % saves out maximum voxel peak (for curiosity)
   pRFAnal.d{scanNum}.rawCoords = thisRawParamsCoords; % this is where we save it, so we can access it via the d structure
   %pRFAnal.d{scanNum}.weights = thisWeights;
-  pRFAnal.d{scanNum}.myresid = thisResid;
+  if ~strcmpi(algorithm,'nelder-mead')
+      pRFAnal.d{scanNum}.myresid = thisResid;
+  end
   pRFAnal.d{scanNum}.mytSeries = thistSeries;
   pRFAnal.d{scanNum}.mymodelResp = thismodelResponse;
   
@@ -463,7 +509,15 @@ for scanNum = params.scanNum
   r2.params{scanNum} = thisParams;
   prefDigit.params{scanNum} = thisParams;
   prefPD.params{scanNum} = thisParams;
-  rfHalfWidth.params{scanNum} = thisParams;
+  if strcmpi(params.pRFFit.rfType,'gaussian-hdr-double')
+      rfHalfWidthX.params{scanNum} = thisParams;
+      rfHalfWidthY.params{scanNum} = thisParams;
+      
+  else
+      rfHalfWidth.params{scanNum} = thisParams;
+      
+  end
+  
 
   % display how long it took
   disp(sprintf('(pRF_somato) Fitting for %s:%i took in total: %s',params.groupName,scanNum,mlrDispElapsedTime(toc)));
@@ -478,7 +532,12 @@ pRFAnal.reconcileFunction = 'defaultReconcileParams';
 pRFAnal.mergeFunction = 'pRFMergeParams';
 pRFAnal.guiFunction = 'pRF_somatoGUI';
 pRFAnal.params = params;
-pRFAnal.overlays = [r2 prefDigit prefPD rfHalfWidth ];
+
+if strcmpi(params.pRFFit.rfType,'gaussian-hdr-double')
+    pRFAnal.overlays = [r2 prefDigit prefPD rfHalfWidthX rfHalfWidthY];
+else
+    pRFAnal.overlays = [r2 prefDigit prefPD rfHalfWidth ];
+end
 %pRFAnal.overlays = [];
 % for iOverlay = 1:numel(theOverlays)
 %     eval(sprintf('%s = struct(theOverlays{iOverlay});',overlayNames{iOverlay}));    
