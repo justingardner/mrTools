@@ -1521,7 +1521,8 @@ switch lower(param)
 	    innerCoordsFilename = view.baseVolumes(b).coordMap.innerCoordsFileName;
 	    subjectDir = '';
 	    % tell user what we are doing
-	    disp(sprintf('(viewGet:baseCoordMapPath) Surface directory %s for base %s does not exist, searching in volumeDirectory: %s',val,viewGet(view,'baseName',b),volumeDirectory));
+      baseName = viewGet(view,'baseName',b);
+	    oneTimeWarning(['viewGetBaseCoordMap_' baseName],sprintf('(viewGet:baseCoordMapPath) Surface directory %s for base %s does not exist, searching in volumeDirectory: %s',val,baseName,volumeDirectory));
 	    maxChars = 0;
       for i = 1:length(volumeDirectoryList)
 	      % for each volume directory in the list, see if the directory name
