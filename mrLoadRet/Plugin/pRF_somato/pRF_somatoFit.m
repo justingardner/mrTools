@@ -318,12 +318,12 @@ end
 % [fit.polarAngle fit.eccentricity] = cart2pol(fit.x,fit.y);
 switch fit.rfType
     case {'gaussian-1D'} % WITHIN DIGIT MODEL
-        
-        
+
+
         % hang on, this is stupid
         % this is ignoring the fact that we made the rf model Gaussian in
         % the first place!!!
-        
+
         %         if size(fitParams.stimX,1) == 4
         %             [~, index] = max([fit.amp1 fit.amp2 fit.amp3 fit.amp4]);
         %             fit.prefDigit = index;
@@ -341,16 +341,22 @@ switch fit.rfType
         %         end
         %keyboard
         %[ma] 2019
-        [~,index] = max(max(rfModel)); % max digit amp of Gaussian
+
+        if size(fitParams.stimX,2) == 5 % for TW Touchmap
+            [~,index] = max(rfModel);
+        else
+            [~,index] = max(max(rfModel)); % max digit amp of Gaussian
+        end
         % ds thinks.. this is the correct way to read off the "other" direction
         % reason the above is not quite correct is that at this point the RF model is flipped.
         % so other way of changing this would be to apply rules to transpose(rfModel) ?!
         %[~,index] = max(max(rfModel,[],2),[], 1); % max digit amp of Gaussian
-        
+
         fit.prefDigit = index;
-        
+        %figure, plot(rfModel)
+        %disp(fit.prefDigit)
         %fit.prefPD = index;
-        
+
         %          %keyboard
         %          % this finds prefPD from X, not y axis!
         %          % problem: r2 for 1D Gaussian is wrong, because it's using a
@@ -358,23 +364,32 @@ switch fit.rfType
         %          % just for outputs.
         %          % You'd have to change the stimfile to have 100 x points.
         thisX = linspace(1,size(rfModel,2),100);
-        if fit.prefDigit == 1
+
+        if size(fitParams.stimX,2) == 5
             Pone = [fit.amp1 fit.meanOne fit.stdOne 0];
             thisStd = fit.stdOne;
-        elseif fit.prefDigit == 2
-            Pone = [fit.amp2 fit.meanTwo fit.stdTwo 0];
-            thisStd = fit.stdTwo;
-        elseif fit.prefDigit == 3
-            Pone = [fit.amp3 fit.meanThr fit.stdThr 0];
-            thisStd = fit.stdThr;
-        elseif fit.prefDigit == 4
-            Pone = [fit.amp4 fit.meanFour fit.stdFour 0];
-            thisStd = fit.stdFour;
-        elseif fit.prefDigit == 5
-            Pone = [fit.amp5 fit.meanFive fit.stdFive 0];
-            thisStd = fit.stdFive;
+        else
+
+
+            if fit.prefDigit == 1
+                Pone = [fit.amp1 fit.meanOne fit.stdOne 0];
+                thisStd = fit.stdOne;
+            elseif fit.prefDigit == 2
+                Pone = [fit.amp2 fit.meanTwo fit.stdTwo 0];
+                thisStd = fit.stdTwo;
+            elseif fit.prefDigit == 3
+                Pone = [fit.amp3 fit.meanThr fit.stdThr 0];
+                thisStd = fit.stdThr;
+            elseif fit.prefDigit == 4
+                Pone = [fit.amp4 fit.meanFour fit.stdFour 0];
+                thisStd = fit.stdFour;
+            elseif fit.prefDigit == 5
+                Pone = [fit.amp5 fit.meanFive fit.stdFive 0];
+                thisStd = fit.stdFive;
+            end
+
         end
-        
+
         %          if fit.prefPD == 1
         %              Pone = [fit.amp1 fit.meanOne fit.stdOne 0];
         %              thisStd = fit.stdOne;
@@ -388,7 +403,7 @@ switch fit.rfType
         %              Pone = [fit.amp4 fit.meanFour fit.stdFour 0];
         %              thisStd = fit.stdFour;
         %          end
-        
+
         thisZ = gauss(Pone,thisX)';
         %thisZ = gauss(Pone,thisX);
         [~,index2] = max(thisZ);
@@ -397,16 +412,16 @@ switch fit.rfType
         %%%%%fit.prefPD = mean(rfModel(:,index)); % mean of that digit = PD
         fit.prefPD = abs(fit.prefPD - (size(rfModel,2)+1) ); % I'm not sure why this is necessary, but it needs to be unflipped outside of mrTools
         %fit.prefDigit = abs(fit.prefDigit - (size(rfModel,2)+1));
-        
-        
-        
+
+
+
         %fit.rfHalfWidth = std(rfModel(:,index)); % std of digit Gaussian
         fit.rfHalfWidth = thisStd;
-        
+
     case {'gaussian-1D-transpose'} % BETWEEN DIGIT MODEL
-        
-        
-        
+
+
+
         [~,index] = max(max(rfModel,[],2),[], 1); % max digit amp of Gaussian
         fit.prefPD = index;
         thisX = linspace(1,size(rfModel,2),100);
@@ -425,20 +440,20 @@ switch fit.rfType
         elseif fit.prefPD == 5
             Pone = [fit.amp5 fit.meanFive fit.stdFive 0];
             thisStd = fit.stdFive;
-            
-            
+
+
         end
         thisZ = gauss(Pone,thisX)';
         [~,index2] = max(thisZ);
-        
+
         % weird buglet here wrt colormaps for base/tips pRF - ma jan2020
         fit.prefDigit = thisX(index2); % original
         %prefDigit_tmp = thisX(index2);
         %fit.prefDigit = abs(prefDigit_tmp - (size(rfModel,2)+1) );
-        
-        
+
+
         % ignore this for base/tips pRF fitting
-        
+
         % this is trickier, because we need to rewrap the PD values onto a 1-4 grid
         if size(fitParams.stimX,2) == 5
             fit.prefPD = fit.prefPD;
@@ -446,35 +461,41 @@ switch fit.rfType
             fit.prefPD = abs(fit.prefPD - (size(rfModel,2)+1) );
         end
         fit.rfHalfWidth = thisStd;
-        
-        
-        
+
+
+
     case {'gaussian','gaussian-hdr'}
         fit.prefDigit = fit.y;
         fit.prefPD = fit.x;
-        
+
         fit.rfHalfWidth = fit.std;
     case {'gaussian-hdr-double'}
-        
+
         % test
-%         stimsY = meshgrid(1:0.03:4,1:0.03:4);
-%         stimsX = transpose(stimsY);
-%         bloop = exp(-(((stimsX-fit.x).^2)/(2*(fit.stdx^2))+((stimsY-fit.y).^2)/(2*(fit.stdy^2))));
-%         figure, imagesc(bloop)
-        
-        fit.prefDigit = fit.y;
-        fit.prefPD = fit.x; % for some reason this is flipped top to bottom.
-        
+        %         stimsY = meshgrid(1:0.03:4,1:0.03:4);
+        %         stimsX = transpose(stimsY);
+        %         bloop = exp(-(((stimsX-fit.x).^2)/(2*(fit.stdx^2))+((stimsY-fit.y).^2)/(2*(fit.stdy^2))));
+        %         figure, imagesc(bloop)
+        if size(fitParams.stimX,2) == 5
+            fit.prefDigit = fit.x;
+            fit.prefPD = fit.y;
+        else
+
+
+            fit.prefDigit = fit.y;
+            fit.prefPD = fit.x; % for some reason this is flipped top to bottom.
+        end
+
         fit.rfHalfWidthX = fit.stdx;
         fit.rfHalfWidthY = fit.stdy;
-        
+
     case {'gaussian-1D-orthotips'}
-        
-        
+
+
         fit.prefDigit = mean(rfModel);
         fit.prefPD = fit.y;
         fit.rfHalfWidth = std(rfModel);
-        
+
         %     case {'gaussian-tips', 'gaussian-tips-hdr'}
         %         fit.prefDigit = fit.meanOne;
         %         fit.prefPD = fit.y;
@@ -490,7 +511,7 @@ switch fit.rfType
         fit.prefDigit = fit.x; %Flipped this, otherwise prefPD and prefDigit are incorrectly labelled in GUI, i.e. fit.prefDigit = fit.y
         fit.prefPD = fit.y;
         fit.rfHalfWidth = fit.std;
-        
+
 end
 
 
