@@ -6,7 +6,7 @@
 %       date: 14/06/07, 09/02/2010
 %    purpose: returns a canonical hrf that's a difference of two gamma distribution function
 %
-function [params, hrf] = hrfDoubleGamma(params, sampleDuration, sampleDelay, defaultParams)
+function [params, hrf] = hrfDoubleGamma(params, sampleDuration, sampleDelay, defaultParams, ~)
 
 threshold = 1e-3; %threshold for removing trailing zeros at the end of the model
 

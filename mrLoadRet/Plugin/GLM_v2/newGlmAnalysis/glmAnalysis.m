@@ -334,7 +334,7 @@ for iScan = params.scanNum
       end
 
       %create model HRF
-      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,scanParams{iScan}.acquisitionDelay,1);
+      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,scanParams{iScan}.acquisitionDelay,1,d.tr/d.estimationSupersampling);
 
       d.volumes = 1:d.dim(4);
       %make a copy of d
