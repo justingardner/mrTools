@@ -8,7 +8,7 @@
 %
 function [params, hrf] = hrfFslFlobs(params, sampleDuration, sampleDelay, defaultParams, ~)
 
-if ~any(nargin == [1 2 3 4])% 5])
+if ~any(nargin == [1 2 3 4 5])
   help hrfDoubleGamma
   return
 end

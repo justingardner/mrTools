@@ -8,7 +8,7 @@
 %
 function [params,hrf] = hrfBoxcar(params, sampleDuration, ~, defaultParams, ~)
 
-if ~any(nargin == [1 2 3 4])% 5])
+if ~any(nargin == [1 2 3 4 5])
   help hrfBoxcar
   return
 end
