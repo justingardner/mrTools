@@ -210,16 +210,17 @@ if strcmp(params.inputOutputType,'4D Array (multiple scans)') && length(params.s
     base2scan{iScan} = viewGet(thisView,'base2scan',iScan);
     if iScan > params.scanList(1)
       if ~isequal(scanDims{iScan},scanDims{params.scanList(1)})
-        mrWarnDlg(sprintf('(combineTransformOverlays) Scan %d and %d have different dimensions.',params.scanList(1),iScan));
+        mrWarnDlg(sprintf('(combineTransformOverlays) Scans %d and %d have different dimensions.',params.scanList(1),iScan));
         dimensionsDiffer = true;
       end
       if ~isequal(base2scan{iScan},base2scan{params.scanList(1)})
-        mrWarnDlg(sprintf('(combineTransformOverlays) Scan %d and %d have different sforms.',params.scanList(1),iScan));
+        mrWarnDlg(sprintf('(combineTransformOverlays) Scans %d and %d have different sforms.',params.scanList(1),iScan));
         dimensionsDiffer = true;
       end
     end
   end
-  if dimensionsDiffer
+  if dimensionsDiffer && ~params.baseSpace % won't work if computations are supposed to be in scan space, but scan spaces differ
+    fprintf('(combineTransformOverlays) Some scans are in different spaces and so cannot be combined unless the baseScan option is set to true. Aborting...')
     return
   end
 end
