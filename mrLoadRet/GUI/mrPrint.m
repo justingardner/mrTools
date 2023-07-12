@@ -198,7 +198,9 @@ if ischar(params.imageTitle)
   params.imageTitle = {params.imageTitle};
 end
 if params.mosaic
-  if length(params.imageTitle)>1 && length(params.imageTitle)~=nOverlays
+  if length(params.imageTitle) == 1
+    params.imageTitle = repmat(params.imageTitle,nOverlays); % ensure that the number of titles matches the number of overlays 
+  elseif length(params.imageTitle)~=nOverlays
     mrWarnDlg('(mrPrint) The number of overlay titles must match the number of overlays')
     close(f)
     return;
@@ -444,9 +446,9 @@ switch(lower(params.colorbarLoc)) % column and row indices of image and colorbar
     imageRows = 3:3:nImageRows*3;
     colorbarRows = 2:3:nImageRows*3-1;
   case 'none'
-    imageCols = 2;
+    imageCols = 2:2:nImageCols*2;
     colorbarCols = [];
-    imageRows = 2;
+    imageRows = 2:2:nImageRows*2;
     colorbarRows = [];
 end
 for iImage = 1:nImages
@@ -614,6 +616,8 @@ for iImage = 1:nImages
     case {'east','west'}
       colorbarPosition = getSubplotPosition(colorbarCols(curImageCol),imageRows(curImageRow),colWidths,rowWidths,0,0);
       colorbarLoc = params.colorbarLoc;
+    otherwise
+      colorbarPosition = [];
   end
   if ~isempty(cmap{iImage}) && ~isempty(colorbarPosition)
     hColorbar = axes('parent',f,'Position',colorbarPosition);
