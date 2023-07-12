@@ -2170,7 +2170,9 @@ case{'surfaceroihandle'}
       roiNum = curRoi;
     end
     if ~isempty(roiNum)
-      view.ROIs(roiNum).color = val;
+      for iRoi = roiNum
+        view.ROIs(iRoi).color = val;
+      end
     end
 
   case {'roinotes'}
