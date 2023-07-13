@@ -803,6 +803,25 @@ for iImage = 1:nImages
     set(H,'FontSize',params.fontSize);
   end
   
+  % --------------- Draw gyrus/sulcus boundary
+  if baseType == 1 && ~isempty(base.gyrusSulcusBoundary)
+    for iBoundary = 1:length(base.gyrusSulcusBoundary)
+      nPoints = size(base.gyrusSulcusBoundary{iBoundary},1);
+      % crop if necessary
+      boundaryCoords = base.gyrusSulcusBoundary{iBoundary} - repmat([cropX(1)-1 cropY(1)-1],nPoints,1);
+      boundaryCoords = boundaryCoords(boundaryCoords(:,1)>0 & boundaryCoords(:,2)>0 & boundaryCoords(:,1)<cropX(2)+1 & boundaryCoords(:,2)<cropY(2)+1,:);
+      if ~isempty(boundaryCoords)
+        % cropping might have interrupted the boundary, so we plot segment by segment
+        distances = [sum((boundaryCoords(1:end-1,:) - boundaryCoords(2:end,:)).^2,2); inf]; % distances between consecutive points
+        interruptions = [0;find(distances>2)];
+        for iSegment = 1:length(interruptions)-1
+          pointsToPlot = interruptions(iSegment)+1:interruptions(iSegment+1);
+          line(boundaryCoords(pointsToPlot,1), boundaryCoords(pointsToPlot,2),'Color',[0.05 0.05 0.05],'LineWidth',mrGetPref('roiContourWidth'),'Parent',hImage); % don't plot in black to make it easier to uniquely select in an SVG editor (e.g. Inkscape)
+        end
+      end
+    end
+  end
+
   % --------------- Draw the ROIs
   if baseType ~= 2
     if iImage==1

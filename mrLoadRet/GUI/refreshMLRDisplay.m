@@ -280,7 +280,7 @@ if isempty(base)
       case 'white'
         backgroundColor = [1 1 1];
     end
-    if baseType==1 %make smooth transition beetween figure background and flat map
+    if baseType==1 %make smooth transition between figure background and flat map
       alpha = zeros(base.dims(1),base.dims(2));
       alpha(isnan(base.im))=1;
       kernel = gaussianKernel2D(3)   ;     
@@ -290,8 +290,6 @@ if isempty(base)
       mask = repmat(permute(backgroundColor,[1 3 2]),[base.dims(1) base.dims(2) 1]);
       base.RGB = base.RGB.*alpha+(1-alpha).*mask;
       base.RGB=min(1,max(0,base.RGB));
-      base.gyrusSulcusBoundary = edge(base.im>0.5+0)&edge(base.im<0.5+0); %we assume that 0.5 represents 
-      % the curvature boundary, which should be the case for flat maps made from freesurfer-imported surfaces 
     else
       base.RGB = reshape(base.RGB,base.dims(1)*base.dims(2),3);
       base.RGB(isnan(base.im),:)=repmat(backgroundColor,[nnz(isnan(base.im)) 1]);
@@ -384,12 +382,24 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
         mrWarnDlg('(refreshMLRDisplay) Number of overlays limited to 2 for ''Contours'' display option');
       end
   end
+
   displayGyrusSulcusBoundary = viewGet(v,'displayGyrusSulcusBoundary');
+  base.gyrusSulcusBoundary = []; % this will be needed if the bounady need to be replotted outside of refreshMLRDisplay (e.g. in mrPrint)
   if baseType==1 && ~isempty(displayGyrusSulcusBoundary) && displayGyrusSulcusBoundary
+    
+    gyrusSulcusBoundaryMask = edge(base.im>0.5+0)&edge(base.im<0.5+0); %we assume that 0.5 represents
+    % the curvature boundary, which should be the case for flat maps made from freesurfer-imported surfaces
+
+    if isempty(which('bwconncomp')) || ~license('test','Image_Toolbox') % if bwconncomp is not available, we'll plot the gyrus/sulcus boundary as pixels on the image (in which case we're not setting the line width)
+      alreadyPlottedGSboundary = true;
       img = reshape(img,[prod(base.dims) 3]);
-      img(base.gyrusSulcusBoundary>0,:) = repmat([0 0 0],nnz(base.gyrusSulcusBoundary>0),1);
+      img(gyrusSulcusBoundaryMask>0,:) = repmat([0 0 0],nnz(gyrusSulcusBoundaryMask>0),1);
       img = reshape(img,[base.dims 3]);
+    else
+      alreadyPlottedGSboundary = false; % otherwise it will be plotted as lines on top of the image later
+    end
   end
+  
   cmap = overlays.cmap;
   cbarRange = overlays.colorRange;
 elseif ~isempty(base.RGB)
@@ -549,6 +559,41 @@ if verbose>1,mlrDispPercent(inf);,end
 if verbose>1,mlrDispPercent(-inf,'Setting axis');,end
 axis(hAxis,'off');
 if verbose>1,mlrDispPercent(inf);,end
+
+% display gyrus/sulcus boundary (only if flat)
+displayGyrusSulcusBoundary = viewGet(v,'displayGyrusSulcusBoundary');
+if baseType==1 && ~isempty(displayGyrusSulcusBoundary) && displayGyrusSulcusBoundary && ~alreadyPlottedGSboundary
+
+  % get connected boundaries and plot them separately
+  cc = bwconncomp(gyrusSulcusBoundaryMask,8);
+  flatDims = size(gyrusSulcusBoundaryMask);
+  for iBoundary = 1:cc.NumObjects
+    [boundaryCoordsY, boundaryCoordsX] = ind2sub(size(gyrusSulcusBoundaryMask),cc.PixelIdxList{iBoundary});
+    % now we have to order these points so that we can plot them as a single line
+    % start from the point that is furthest away from the center of the flat map, because that will be an extremity (in the case of an open boundary finishing at the edge of the map)
+    [~,startingPointIndex] = max((boundaryCoordsX-flatDims(2)/2).^2 + (boundaryCoordsY-flatDims(1)/2).^2);
+    % then we find consecutive points along the boundary by taking the closest point each time
+    nPoints = size(boundaryCoordsX,1);
+    sortedCoords = nan(nPoints,2);
+%     distances = nan(nPoints,1);
+    remainingCoords = [boundaryCoordsX boundaryCoordsY];
+    sortedCoords(1,:) = remainingCoords(startingPointIndex,:);
+    remainingCoords(startingPointIndex,:) = []; % remove the starting point
+    for iPoint = 2:nPoints
+      % find next closest point
+      startingPointCoords = sortedCoords(iPoint-1,:);
+      [~,nextPoint] = min((remainingCoords(:,1)-startingPointCoords(1)).^2 + (remainingCoords(:,2)-startingPointCoords(2)).^2);
+      sortedCoords(iPoint,:) = remainingCoords(nextPoint,:);
+      remainingCoords(nextPoint,:) = [];
+    end
+    if sum((sortedCoords(1,:)-sortedCoords(end,:)).^2) <= 2 % if the last point is one pixel (or less) away from the first point, then we have a closed boundary
+      sortedCoords(end+1,:) = sortedCoords(1,:); % so, we close the loop
+    end
+    base.gyrusSulcusBoundary{iBoundary} = sortedCoords;
+    line(sortedCoords(:,1), sortedCoords(:,2),'Color',[0 0 0],'LineWidth',mrGetPref('roiContourWidth'),'Parent',hAxis);
+  end
+  
+end
 
 % Display ROIs
 nROIs = viewGet(v,'numberOfROIs');
