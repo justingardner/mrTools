@@ -8,7 +8,7 @@
 %             checks that times correspond to actual TR and acquistion time (sampleDuration and sampleDelay)
 %             otherwise, assumes that HRF sample times correspond to those TR and acquisition times
 %
-function [params,hrf] = hrfCustom(params, sampleDuration,sampleDelay, defaultParams)
+function [params,hrf] = hrfCustom(params, sampleDuration, sampleDelay, defaultParams, ~)
 
 if ~any(nargin == [1 2 3 4])% 5])
   help hrfCustom
