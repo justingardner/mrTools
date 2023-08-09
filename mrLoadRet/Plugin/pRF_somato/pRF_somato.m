@@ -98,16 +98,16 @@ r2.mergeFunction = 'pRFMergeParams';
 prefDigit = r2;
 prefDigit.name = 'prefDigit';
 
-prefDigit.range = [1 4];
-prefDigit.clip = [1 4];
+prefDigit.range = [1 5];
+prefDigit.clip = [1 5];
 prefDigit.colormapType = 'normal';
 %prefDigit.colormap = rainbow_colors(4); %This colour map and 1-3 range look much better when delineating 3 fingers. Change for more fingers!
-prefDigit.colormap = digits(4);
+prefDigit.colormap = digits(256);
 
 prefPD = r2;
 prefPD.name = 'prefPD';
-prefPD.range = [1 4];
-prefPD.clip = [1 4];
+prefPD.range = [1 5];
+prefPD.clip = [1 5];
 prefPD.colormapType = 'normal';
 %prefPD.colormap = rainbow_colors(4);
 prefPD.colormap = digits(256);
@@ -385,7 +385,7 @@ for scanNum = params.scanNum
         
     else
         
-        for ii = blockStart:blockEnd
+        parfor ii = blockStart:blockEnd
             
             fit = pRF_somatoFit(v,scanNum,x(ii),y(ii),z(ii),'stim',stim,'concatInfo',concatInfo, ...
                 'prefit',prefit,'fitTypeParams',params.pRFFit,'dispIndex',ii,'dispN',n,...

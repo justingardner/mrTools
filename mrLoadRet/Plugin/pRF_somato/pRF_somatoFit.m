@@ -421,26 +421,41 @@ switch fit.rfType
     case {'gaussian-1D-transpose'} % BETWEEN DIGIT MODEL
 
 
+        if size(fitParams.stimX,2) == 5 % for TW Touchmap
+            [~,index] = max(rfModel);
+        else
+            [~,index] = max(max(rfModel,[],2),[], 1); % max digit amp of Gaussian
+        end
 
-        [~,index] = max(max(rfModel,[],2),[], 1); % max digit amp of Gaussian
+
+        %[~,index] = max(max(rfModel,[],2),[], 1); % max digit amp of Gaussian
         fit.prefPD = index;
+
         thisX = linspace(1,size(rfModel,2),100);
-        if fit.prefPD == 1
+
+        if size(fitParams.stimX,2) == 5
             Pone = [fit.amp1 fit.meanOne fit.stdOne 0];
             thisStd = fit.stdOne;
-        elseif fit.prefPD == 2
-            Pone = [fit.amp2 fit.meanTwo fit.stdTwo 0];
-            thisStd = fit.stdTwo;
-        elseif fit.prefPD == 3
-            Pone = [fit.amp3 fit.meanThr fit.stdThr 0];
-            thisStd = fit.stdThr;
-        elseif fit.prefPD == 4
-            Pone = [fit.amp4 fit.meanFour fit.stdFour 0];
-            thisStd = fit.stdFour;
-        elseif fit.prefPD == 5
-            Pone = [fit.amp5 fit.meanFive fit.stdFive 0];
-            thisStd = fit.stdFive;
+        else
 
+
+            if fit.prefPD == 1
+                Pone = [fit.amp1 fit.meanOne fit.stdOne 0];
+                thisStd = fit.stdOne;
+            elseif fit.prefPD == 2
+                Pone = [fit.amp2 fit.meanTwo fit.stdTwo 0];
+                thisStd = fit.stdTwo;
+            elseif fit.prefPD == 3
+                Pone = [fit.amp3 fit.meanThr fit.stdThr 0];
+                thisStd = fit.stdThr;
+            elseif fit.prefPD == 4
+                Pone = [fit.amp4 fit.meanFour fit.stdFour 0];
+                thisStd = fit.stdFour;
+            elseif fit.prefPD == 5
+                Pone = [fit.amp5 fit.meanFive fit.stdFive 0];
+                thisStd = fit.stdFive;
+
+            end
 
         end
         thisZ = gauss(Pone,thisX)';
