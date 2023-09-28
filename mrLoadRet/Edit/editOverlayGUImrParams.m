@@ -56,21 +56,30 @@ function editOverlayGUImrParams(viewNum)
   
   % colormaps
   % first try to get all the predefined matlab color maps
+  % the following method only works up to Matlab v9.13 (2022b)
+  colormaps = cell(1,0);
   fid = fopen(fullfile(matlabroot,'toolbox','matlab','graph3d','Contents.m'));
   if fid>0
-    colormaps = textscan(fid,'%% %s %s %*[^\n]');
+    contents = textscan(fid,'%% %s %s %*[^\n]');
     fclose(fid);
-    if ~isempty(colormaps)
-      colormapStart = find(ismember(colormaps{1},'Color') & ismember(colormaps{2},'maps.'))+1;
-      colormapEnd = find(ismember(colormaps{1},'') & ismember(colormaps{2},''));
-      colormapEnd = colormapEnd(find(colormapEnd>colormapStart,1,'first'))-1;
-      colormaps = colormaps{1}(colormapStart:colormapEnd)';
+    if ~isempty(contents)
+      colormapStart = find(ismember(contents{1},'Color') & ismember(contents{2},'maps.'))+1;
+      colormapEnd = find(ismember(contents{1},'') & ismember(contents{2},''));
+      if ~isempty(colormapStart) && ~isempty(colormapEnd)
+        colormapEnd = colormapEnd(find(colormapEnd>colormapStart,1,'first'))-1;
+        colormaps = contents{1}(colormapStart:colormapEnd)';
+      end
     end
-  else
-    colormaps = {};
   end
+  % here's another method that still works after v9.13 (but I don't know since what version)
+  % however colormaps are listed in alphabetical order rather than the above (usual) order
+  colorMapFiles = dir(fullfile(matlabroot,'toolbox','matlab','graphics','color')); % this the folder containing .m colormap files
+  colormaps = union(colormaps,regexprep({colorMapFiles.name}, '\.m', ''),'stable'); % we add the names after removing the extension
+  colormaps = setdiff(colormaps,{'resources','colororder','validatecolor','.','..'},'stable'); % remove matlab function names that are not colormaps
   if isempty(colormaps)
     colormaps = {'default','hot','hsv','pink','cool','bone','copper','flag','gray','jet'};
+  else
+    colormaps = [{'default'},colormaps];
   end
   % then get the colormaps saved in global variable MLR
   altColormaps = viewGet(thisView,'colormaps');
