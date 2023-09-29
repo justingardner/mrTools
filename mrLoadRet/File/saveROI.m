@@ -47,6 +47,11 @@ else
 	myErrorDlg(['Bad ROI name: ',roiName]);
 end
 
+if isempty(roiNum)
+  mrWarnDlg(sprintf('(saveROI) Could not find ROI %s',roiName));
+  return;
+end
+
 % Assign local variable with roiName = roi
 roi = viewGet(view,'roi',roiNum);
 % fix characters that are not allowed in variable names

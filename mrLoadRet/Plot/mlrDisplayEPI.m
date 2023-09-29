@@ -359,10 +359,10 @@ if isempty(epiImage)
 	for rownum = 1:4
 	  disp(sprintf('[%0.2f %0.2f %0.2f %0.2f]',M(rownum,1),M(rownum,2),M(rownum,3),M(rownum,4)));
 	end
-	disppercent(-inf,sprintf('Warping scan %i to match scan %i with transformation using %s',params.scanNum,params.warpBaseScan,gMLRDisplayEPI.interpMethod));
+	mlrDispPercent(-inf,sprintf('Warping scan %i to match scan %i with transformation using %s',params.scanNum,params.warpBaseScan,gMLRDisplayEPI.interpMethod));
 	epiVolume = warpAffine3(epiVolume,M,NaN,0,gMLRDisplayEPI.interpMethod,warpBaseScanDims);
 
-	disppercent(inf);
+	mlrDispPercent(inf);
 	  epiImage = epiVolume(:,:,sliceNum(1):sliceNum(2));
       else
 	% scan2scan was identity, so no warping is necessary

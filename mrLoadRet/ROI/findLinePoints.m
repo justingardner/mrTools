@@ -1,4 +1,4 @@
-function [x, y] = findLinePoints(p1,p2);
+function [x, y] = findLinePoints(p1,p2)
 % 
 %   [x, y] = findLinePoints(p1,p2)
 %
@@ -16,18 +16,15 @@ function [x, y] = findLinePoints(p1,p2);
 x1 = p1(1); y1 = p1(2);
 x2 = p2(1); y2 = p2(2);
 
-if y2 == y1
-  if x1 == x2
-    error;
-    return;
-  end
-  x = [x1:x2];  y = y1*ones(1,length(x));
+if y2 == y1 && x1 == x2
+  x = x1;
+  y = y1;
+elseif y2 == y1
+  x = [x1:x2];
+  y = y1*ones(1,length(x));
 elseif x1 == x2
-  if y1 == y2
-    error;
-    return;
-  end
-  y = [y1:y2];  x = x1*ones(1,length(y));
+  y = [y1:y2];
+  x = x1*ones(1,length(y));
 else
   slope = (y2-y1)/(x2-x1);
   b = y1 - slope*x1;   

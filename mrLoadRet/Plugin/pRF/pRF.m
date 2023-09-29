@@ -468,7 +468,7 @@ end
 
 % save the stim image
 stimFilename = fullfile(exportDir,'stim.nii.gz');
-if isfile(stimFilename)
+if mlrIsFile(stimFilename)
   disp(sprintf('(pRF) Removing already existing %s',getLastDir(stimFilename)));
   system(sprintf('rm -f %s',stimFilename));
 end
@@ -481,7 +481,7 @@ mask(sub2ind(scanDims,x,y,z)) = 1;
 
 % and save it
 maskFilename = fullfile(exportDir,'mask.nii.gz');
-if isfile(maskFilename)
+if mlrIsFile(maskFilename)
   disp(sprintf('(pRF) Removing already existing %s',getLastDir(maskFilename)));
   system(sprintf('rm -f %s',maskFilename));
 end
@@ -493,7 +493,7 @@ tSeriesFilename = viewGet(v,'tSeriesPath',scanNum);
 
 % save data
 boldFilename = fullfile(exportDir,'bold.nii.gz');
-if isfile(boldFilename)
+if mlrIsFile(boldFilename)
   disp(sprintf('(pRF) Removing already existing %s',getLastDir(boldFilename)));
   system(sprintf('rm -f %s',boldFilename));
 end

@@ -509,7 +509,7 @@ function comments = addCommit(toPath,largefiles,comments,verbose)
 
 % commit to repo
 if largefiles
-  disppercent(-inf,sprintf('(mlrAnatDBAddCommitPush) Committing files to repo %s. This may take a minute or two...',pwd));
+  mlrDispPercent(-inf,sprintf('(mlrAnatDBAddCommitPush) Committing files to repo %s. This may take a minute or two...',pwd));
 else
   disp(sprintf('(mlrAnatDBAddCommitPush) Committing files to repo %s',pwd));
 end
@@ -530,7 +530,7 @@ end
 
 % commit
 [status,result] = mysystem(sprintf('hg commit -m ''%s''',comments));
-if largefiles,disppercent(inf);,end
+if largefiles,mlrDispPercent(inf);,end
 
 %%%%%%%%%%%%%%%%%%%%%%
 %    getFilenames    %

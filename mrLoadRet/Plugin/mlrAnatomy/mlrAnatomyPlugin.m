@@ -505,7 +505,35 @@ function mlrAnatomyImportFreesurferLabel(hObject,eventdata)
 % get view
 v = viewGet(getfield(guidata(hObject),'viewNum'),'view');
 
-disp(sprintf('(mlrAnatomyImportFreesurferLabel) Not yet implemented'));
+%get file names
+[labelFilenames,pathname] = uigetfile({'*.label','Freesurfer label files'; '*.*',  'All Files (*.*)'},'Select Freesurfer label file(s)', '*.label','multiselect','on');
+if isnumeric(labelFilenames)
+  return
+elseif ischar(labelFilenames)
+  labelFilenames = {labelFilenames};
+end
+
+leftSurfaceNames = [];
+rightSurfaceNames = [];
+for iROI = 1:length(labelFilenames)
+  %create volume ROI from label file
+  % we assume that all labels correspond to the same surface to avoid asking for the surface paths for each ROI
+  [roi,leftSurfaceNames,rightSurfaceNames] = mlrImportFreesurferLabel(fullfile(pathname,labelFilenames{iROI}),...
+                                            'leftSurfaceNames',leftSurfaceNames,'rightSurfaceNames',rightSurfaceNames);
+  if isempty(roi)
+    mrWarnDlg(sprintf('Could not import label file %s',labelFilenames{iROI}));
+    if isempty(leftSurfaceNames) && isempty(rightSurfaceNames)
+      return;
+    end
+  else % Add ROI to view
+    v = viewSet(v,'newROI',roi);
+    v = viewSet(v,'currentROI',viewGet(getMLRView,'nrois'));
+  end
+  
+end
+
+refreshMLRDisplay(v);
+
 return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -989,7 +1017,7 @@ b.fascicles.intersect(iIntersect).intersectWith = params.intersectSurface;
 b.fascicles.intersect(iIntersect).d = d;
 v = viewSet(v,'base',b,baseNum);
 
-disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
+mlrDispPercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
 for iFascicle = 1:f.n
   if d(iFascicle) > 1
     % number of vertices and triangles
@@ -1011,9 +1039,9 @@ for iFascicle = 1:f.n
     nRunningTotalVertices = nRunningTotalVertices + nVertices;
     nRunningTotalTris= nRunningTotalTris + nTris;
   end
-  disppercent(iFascicle/f.n);
+  mlrDispPercent(iFascicle/f.n);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % make right length
 b.coordMap.tris = b.coordMap.tris(1:nRunningTotalTris,:);
@@ -1360,7 +1388,7 @@ b.data = [];
 nRunningTotalVertices = 0;
 nRunningTotalTris = 0;
 
-disppercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
+mlrDispPercent(-inf,sprintf('(mlrAnatomyPlugin) Converting %i fascicles',f.n));
 for iFascicle = 1:f.n
   if dispList(iFascicle)
 
@@ -1383,9 +1411,9 @@ for iFascicle = 1:f.n
     nRunningTotalVertices = nRunningTotalVertices + nVertices;
     nRunningTotalTris= nRunningTotalTris + nTris;
   end
-  disppercent(iFascicle/f.n);
+  mlrDispPercent(iFascicle/f.n);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % make right length
 b.coordMap.tris = b.coordMap.tris(1:nRunningTotalTris,:);

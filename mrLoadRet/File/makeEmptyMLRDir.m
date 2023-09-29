@@ -10,7 +10,7 @@
 %             the default group made. 
 %
 %             You can also run this without bringing up a dialog with:
-%             makeEmptyMLRDir(dirname,'description=empty dir','subject=me','operator=you','defaultParams=1');
+%             makeEmptyMLRDir(dirname,'description=empty dir','subject=me','operator=you','defaultParams=1','noPrompt=1');
 %
 function retval = makeEmptyMLRDir(dirname,varargin)
 
@@ -24,7 +24,7 @@ description = '';
 subject = '';
 operator = '';
 defaultParams = [];
-getArgs(varargin, {'defaultGroup=Raw','description=','subject=','operator=','defaultParams=0'});
+getArgs(varargin, {'defaultGroup=Raw','description=','subject=','operator=','defaultParams=0','noPrompt=0'});
 directories = {defaultGroup fullfile(defaultGroup,'TSeries') 'Anatomy' 'Etc'};
 
 % dirname is a file, abort
@@ -33,8 +33,8 @@ if mlrIsFile(dirname)
   return
 end
 
-% existing directory. Ask user what to do
-if isdir(dirname)
+% existing directory. Ask user what to do (unless called with 'noPrompt=1')
+if isdir(dirname) && ~noPrompt
   if ~askuser(sprintf('(makeEmptyMLRDir) Directory %s exists, continue?',dirname))
     return
   end
@@ -92,8 +92,8 @@ session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pu
 % create groups variables
 groups.name = defaultGroup;
 groups.scanParams = [];
-[tf groups] = isgroup(groups);
+[tf, groups] = isgroup(groups);
 
 % save the mrSession
-eval(sprintf('save %s session groups',fullfile(dirname,'mrSession.mat')));
+save(fullfile(dirname,'mrSession.mat'), 'session', 'groups');
 

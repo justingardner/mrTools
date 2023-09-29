@@ -1,6 +1,6 @@
 % getGlmStatistics.m
 %
-%      usage: [d, out] = getGlmStatistics(d, params, verbose, precision, actualData, computeTtests)
+%      usage: [d, out] = getGlmStatistics(d, params, verbose, precision, actualData, smoothingVoxels)
 %         by: Julien Besle
 %       date: 18/01/10
 %        $Id$
@@ -21,7 +21,7 @@
 %             reference for bootstrap and FWE adjustment testing
 %                - Westfall, P.H., and S.S. Young. Resampling-based multiple testing. Wiley-Interscience, 1993
 
-function [d, out] = getGlmStatistics(d, params, verbose, precision, actualData)
+function [d, out] = getGlmStatistics(d, params, verbose, precision, actualData, smoothingVoxels)
 
 %DEBUG
 % lastwarn('','');
@@ -404,16 +404,7 @@ for z = slices
     if isfield(d,'roiPositionInBox') %if the data are not spatially organized, we need to temporarily put them in a volume
       timeseries = reshapeToRoiBox(timeseries,d.roiPositionInBox|d.marginVoxels,precision);
     end
-    switch params.smoothingPlane %planes other than sagittal will only work for ROIs because it's the only case in which the data is 3D at this point in the loop
-      case {'Sagittal'}
-        timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[4 3 1 2]),'same');
-      case {'Axial'}
-        timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[4 1 2 3]),'same');
-      case {'Coronal'}
-        timeseries = convn(timeseries,permute(gaussianKernel2D(params.spatialSmoothing),[4 1 3 2]),'same');
-      case '3D'
-        timeseries = convn(timeseries,permute(gaussianKernel(params.spatialSmoothing),[4 1 2 3]),'same');
-    end
+    timeseries = convn(timeseries,permute(gaussianKernel(smoothingVoxels),[4 1 2 3]),'same');
     if isfield(d,'roiPositionInBox') %if the data are not spatially organized
       %put the data back in a new matrix with only the voxels of interest
       timeseries = reshape(timeseries,d.dim(4), numel(d.roiPositionInBox));
@@ -1094,6 +1085,7 @@ function p = computeBootstrapP(count,nResamples)
 p = max(count/nResamples,1/(nResamples+1));
 p(isnan(count)) = NaN; %NaNs must remain NaNs (they became 1e-16 when using max)
 
+
 function tfceS = applyTfce(S,roiPositionInBox,precision)
   %reshape to volume to apply TFCE and then reshape back to one dimension
   tfceS = applyFslTFCE(permute(reshapeToRoiBox(S',roiPositionInBox,precision),[2 3 4 1]),'',0);
@@ -1102,36 +1094,42 @@ function tfceS = applyTfce(S,roiPositionInBox,precision)
   %put NaNs back
   tfceS(isnan(S)) = NaN;
 
+
 %this function computes the sum of squared errors between the dampened oscillator
 %model (for xdata) and the sample autocorrelation function (ydata)
 function sse = minimizeDampenedOscillator(params, xdata,ydata)
   FittedCurve = params(1)^2 - exp(params(2) * xdata) .* cos(params(3)*xdata);
   ErrorVector = FittedCurve - ydata;
   sse = sum(ErrorVector.^2);
-  
- 
-  
+
+
 function kernel = gaussianKernel(FWHM)
 
 sigma_d = FWHM/2.35482;
 w = ceil(FWHM); %deals with resolutions that are not integer
 %make the gaussian kernel large enough for FWHM
-kernelDims = 2*[w w w]+1;
+if length(w)==1
+  w = [w w w];
+  sigma_d = [sigma_d sigma_d sigma_d];
+end
+kernelDims = 2*w+1;
 kernelCenter = ceil(kernelDims/2);
-[X,Y,Z] = meshgrid(1:kernelDims(1),1:kernelDims(2),1:kernelDims(3));
-kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2+(Z-kernelCenter(3)).^2)/(2*sigma_d^2)); %Gaussian function
+[X,Y,Z] = ndgrid(1:kernelDims(1),1:kernelDims(2),1:kernelDims(3)); % using ndgrid here and not meshgrid because the first dimension represents the L/R axis
+if all(sigma_d == 0)
+  kernel = 1; % no smoothing
+elseif sigma_d(2) == 0 && sigma_d(3) == 0
+  kernel = exp(-((X-kernelCenter(1)).^2/(2*sigma_d(1)^2))); % 1D Gaussian function along X
+elseif sigma_d(1) == 0 && sigma_d(3) == 0
+  kernel = exp(-((Y-kernelCenter(2)).^2/(2*sigma_d(2)^2))); % 1D Gaussian function along Y
+elseif sigma_d(1) == 0 && sigma_d(2) == 0
+  kernel = exp(-((Z-kernelCenter(3)).^2/(2*sigma_d(3)^2))); % 1D Gaussian function along Z
+elseif sigma_d(3) == 0
+  kernel = exp(-((X-kernelCenter(1)).^2/(2*sigma_d(1)^2)+(Y-kernelCenter(2)).^2/(2*sigma_d(2)^2))); % 2D Gaussian function in XY plane
+elseif sigma_d(2) == 0
+  kernel = exp(-((X-kernelCenter(1)).^2/(2*sigma_d(1)^2)+(Z-kernelCenter(3)).^2/(2*sigma_d(3)^2))); % 2D Gaussian function in XZ plane
+elseif sigma_d(1) == 0
+  kernel = exp(-((Y-kernelCenter(2)).^2/(2*sigma_d(2)^2)+(Z-kernelCenter(3)).^2/(2*sigma_d(3)^2))); % 2D Gaussian function in YZ plane
+else
+  kernel = exp(-((X-kernelCenter(1)).^2/(2*sigma_d(1)^2)+(Y-kernelCenter(2)).^2/(2*sigma_d(2)^2)+(Z-kernelCenter(3)).^2/(2*sigma_d(3)^2))); % 3D Gaussian function
+end
 kernel = kernel./sum(kernel(:));
-
-
-function kernel = gaussianKernel2D(FWHM)
-
-sigma_d = FWHM/2.35482;
-w = ceil(FWHM); %deals with resolutions that are not integer
-%make the gaussian kernel large enough for FWHM
-kernelDims = 2*[w w]+1;
-kernelCenter = ceil(kernelDims/2);
-[X,Y] = meshgrid(1:kernelDims(1),1:kernelDims(2));
-kernel = exp(-((X-kernelCenter(1)).^2+(Y-kernelCenter(2)).^2)/(2*sigma_d^2)); %Gaussian function
-kernel = kernel./sum(kernel(:));
- 
-

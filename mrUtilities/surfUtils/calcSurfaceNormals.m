@@ -20,7 +20,7 @@ end
 
 % % % %---------- LOOP VERSION
 % % % triNormals = zeros(surf.Ntris,3);
-% % % disppercent(-inf,'(calcSurfaceNormal) Computing triangle normals');
+% % % mlrDispPercent(-inf,'(calcSurfaceNormal) Computing triangle normals');
 % % % for iTri = 1:surf.Ntris
 % % %   % get the three vertices of this triangle
 % % %   vertex1 = surf.vtcs(surf.tris(iTri,1),:);
@@ -29,9 +29,9 @@ end
 % % %   % and compute the surface normal using the cross product
 % % %   triNormals(iTri,:) = cross(vertex2-vertex1,vertex2-vertex3);
 % % %   triNormals(iTri,:) = triNormals(iTri,:)/norm(triNormals(iTri,:));
-% % %   disppercent(iTri/surf.Ntris);
+% % %   mlrDispPercent(iTri/surf.Ntris);
 % % % end
-% % % disppercent(inf);
+% % % mlrDispPercent(inf);
 
 %----------- VECTORIZED VERSION (much faster)
 % get 2 vector sides for all triangles
@@ -71,14 +71,14 @@ vertexNormals = vertexNormals./repmat(numberTriangles,1,3);
 
     
 % % % %---------- LOOP VERSION
-% % % disppercent(-inf,'(calcSurfaceNormal) Computing vertex normals');
+% % % mlrDispPercent(-inf,'(calcSurfaceNormal) Computing vertex normals');
 % % % vertexNormals = zeros(surf.Nvtcs,3);
 % % % for iVtx = 1:surf.Nvtcs
 % % %   % get which triangles this vertex belongs to
 % % %   [triNums edgeNums] = find(iVtx == surf.tris);
 % % %   % and then get the mean of the normals to those triangls
 % % %   vertexNormals(iVtx,:) = mean(triNormals(triNums,:));
-% % %   disppercent(iVtx/surf.Nvtcs);
+% % %   mlrDispPercent(iVtx/surf.Nvtcs);
 % % % end
-% % % disppercent(inf);
+% % % mlrDispPercent(inf);
 

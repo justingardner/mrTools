@@ -1,4 +1,4 @@
-function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr,makeLink)
+function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr,makeLink,overwrite)
 %
 % view = saveNewTSeries(view,tseries,[scanParams],[hdr],[makeLink])
 %
@@ -22,12 +22,12 @@ function [view,filename] = saveNewTSeries(view,tseries,scanParams,hdr,makeLink)
 % makeLink: Optional, if tseries is passed as a filename then setting
 % this to 1 will cause the tseries to be linked rather than copied
 % defaults to 0
-%
-% $Id$
+% overwrite: Optional, if tseries with identical name already exists in
+% folder, setting this to 1 will overwrite without user prompt
 %
 
 % check arguments
-if ~any(nargin == [1:5])
+if ~any(nargin == [1:6])
   help saveNewTSeries
   return
 end
@@ -43,6 +43,7 @@ if ieNotDefined('hdr')
   hdr = [];
 end
 if ieNotDefined('makeLink'),makeLink=0;end
+if ieNotDefined('overwrite'),overwrite=0;end
 
 if isempty(scanParams.fileName)
   if ischar(tseries)
@@ -61,7 +62,7 @@ path = fullfile(tseriesdir,scanParams.fileName);
 % see if the tseries is actually a string in which case we should
 % copy the nifti file.
 if ischar(tseries)
-  success = copyNiftiFile(tseries,path,makeLink);
+  success = copyNiftiFile(tseries,path,makeLink,overwrite);
   if ~success,return,end
 
   % get the number of frames

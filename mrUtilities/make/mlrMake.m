@@ -55,7 +55,7 @@ for iFile = 1:length(compiledFunctionList)
     disp(sprintf('(mlrMake) Skipping: %s because files is not in use',compiledFunctionList{iFile}));
     skippedFiles{end+1} = compiledFunctionList{iFile};
   % check for file
-  elseif isfile(compiledFunctionList{iFile}) 
+  elseif mlrIsFile(compiledFunctionList{iFile})
     % display what we are doing
     disp(sprintf('(mlrMake) mex: %s',compiledFunctionList{iFile}));
     % mex the file

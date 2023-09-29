@@ -131,7 +131,11 @@ for iImage = 1:nImages
 	uncompressedExists = false;
 	if ~mlrIsFile(uncompressedFilename)
 	  % uncompress the file first
-	  system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
+    if ~ispc
+      system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
+    else
+      gunzip(filename);
+    end
 	else
 	  % uncompressed file already exists, so no need to gunzip
 	  uncompressedExists = true;
@@ -141,7 +145,11 @@ for iImage = 1:nImages
 	volNum = [];
 	% remove uncompressed (but only if it wasn't preexistent)
 	if ~uncompressedExists
-	  system(sprintf('rm -f %s',uncompressedFilename));
+    if ~ispc
+      system(sprintf('rm -f %s',uncompressedFilename));
+    else
+      delete(uncompressedFilename)
+    end
 	end
       end
      case {'hdr','nii'}

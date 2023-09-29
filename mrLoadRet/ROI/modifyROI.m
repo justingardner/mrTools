@@ -88,7 +88,7 @@ function coords = removeCoords(coords1,coords2)
 % djh, 2/2001, dumped coords2Indices & replaced with setdiff(coords1',coords2','rows')
 
 if ~isempty(coords1) && ~isempty(coords2)
-    coords = setdiff(coords2',coords1','rows');
+    coords = setdiff(round(coords2'),round(coords1'),'rows');  % JB (01/05/2019): added rounding in case ROI coordinates are not integers (which can happen, but does not make sense)
     coords = coords';
 else
     coords=coords2;

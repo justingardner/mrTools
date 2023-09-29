@@ -10,7 +10,7 @@ function mrCloseDlg(h)
 
 if ishandle(h)
 	close(h);
-elseif isfield(h,'disppercent')
-  disppercent(inf);
+elseif isfield(h,'mlrDispPercent')
+  mlrDispPercent(inf);
 end
 

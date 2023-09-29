@@ -72,7 +72,7 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
   viewCount = 0;
   for viewNum = 1:length(views)
     view = views{viewNum};
-    if isview(view)
+    if isview(view) && ~isempty(view.figure)
       viewCount = viewCount+1;
       delete(view.figure); % deletes object, but apparently we still need
       closereq;            % a closereq to remove the window in r2014b
@@ -82,9 +82,9 @@ if isfield(MLR,'views') && ~isempty(MLR.views)
     fprintf('(mrQuit) Closing %i open views',viewCount);
   end
   drawnow
-  disppercent(-inf,sprintf('(mrQuit) Saving %s',mrDefaultsFilename));
+  mlrDispPercent(-inf,sprintf('(mrQuit) Saving %s',mrDefaultsFilename));
   saveMrDefaults;
-  disppercent(inf);
+  mlrDispPercent(inf);
 else
   if ~isempty(v)
     closereq;

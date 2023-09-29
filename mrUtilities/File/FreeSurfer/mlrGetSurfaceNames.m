@@ -5,7 +5,7 @@
 %       date: 09/05/19
 %    purpose: uses mrSurfViewer to have user select surfaces
 %
-function [leftSurfaces rightSurfaces] = mlrGetSurfaceNames(varargin)
+function [leftSurfaces, rightSurfaces] = mlrGetSurfaceNames(varargin)
 
 getArgs(varargin,{'surfPath=[]'});
 
@@ -14,7 +14,11 @@ if isempty(surfPath)
   titleStr = 'Choose left gray matter (outer) surface for this subject';
   disp(sprintf('(mlrImportFreesurferLAbel) %s',titleStr));
   surfPath = mlrGetPathStrDialog(mrGetPref('volumeDirectory'),titleStr,'*.off');
-  if isempty(surfPath),return,end
+  if isempty(surfPath)
+    leftSurfaces = [];
+    rightSurfaces = [];
+    return;
+  end
 end
 
 % make sure this is a GM (not WM or Inf)
