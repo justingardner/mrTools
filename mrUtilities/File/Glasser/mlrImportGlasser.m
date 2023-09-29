@@ -23,10 +23,6 @@ end
 
 getArgs(varargin,{'doTestInMLR=0','saveDir=[]'});
 
-if isempty(saveDir)
-    saveDir = '/Users/gru/data/tex_att/s0423/s042320210518/glasserROIs';
-end
-
 
 % check the file
 if ~isfile(filename)

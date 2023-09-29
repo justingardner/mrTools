@@ -561,6 +561,7 @@ else %if the property is not 'location', then we just set the property using set
     % if not, warn and continue
     if isstr(propertyName)
         disp(sprintf('(mlrAdjustGUI) *** Could not find property %s of %s %s ***',propertyName,controlType,controlName));
+        keyboard
     else
       disp(sprintf('(mlrAdjustGUI) *** Could not find correct property of %s %s. Did you pass in a string indicating a property to set ***',controlType,controlName));
     end

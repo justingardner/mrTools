@@ -33,7 +33,8 @@ hdr.dim(end+1:8) = 0;
 hdr.dim = hdr.dim(:);
 hdr.dim = hdr.dim(1:8);
 hdr.pixdim = [h.nDim h.pixdim];
-hdr.pixdim(end+1:8) = 0;
+hdr.pixdim(end+1) = 3; % specify ndims of origin
+hdr.pixdim(end+1:8) = 1; % specify origin; nifti headers seem to default to [1 1 1]
 hdr.pixdim = hdr.pixdim(:);
 hdr.pixdim = hdr.pixdim(1:8);
 
@@ -70,11 +71,10 @@ if isfield(h,'hdr')
   % seem a bit strange (why recreate the nifti header if
   % it already exists as a field) but this is done so that
   % we can get a clean header
-  fieldsToCopyFromOriginalNiftiHeader = {'datatype','endian','bitpix','vox_offset','xyzt_units'};
+  fieldsToCopyFromOriginalNiftiHeader = {'datatype','endian','bitpix','vox_offset','xyzt_units','pixdim'};
   for iField = 1:length(fieldsToCopyFromOriginalNiftiHeader)
     if isfield(h.hdr,fieldsToCopyFromOriginalNiftiHeader{iField})
       hdr.(fieldsToCopyFromOriginalNiftiHeader{iField}) = h.hdr.(fieldsToCopyFromOriginalNiftiHeader{iField});
     end
   end
 end
-  

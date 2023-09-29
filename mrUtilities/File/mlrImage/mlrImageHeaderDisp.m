@@ -45,10 +45,18 @@ disp(sprintf('pixdim: [%s]',mlrnum2str(h.pixdim(:)')));
 if ~isempty(h.qform)
   disp(sprintf('qform:'));
   disp(sprintf('%s',mlrnum2str(h.qform,'compact=0','sigfigs=-1')));
+  % display qform_code if it exists
+  if isfield(h,'hdr') && isfield(h.hdr,'qform_code')
+      disp(sprintf('qform_code: %i',h.hdr.qform_code));
+  end
 end
 if ~isempty(h.sform)
   disp(sprintf('sform:'));
   disp(sprintf('%s',mlrnum2str(h.sform,'compact=0','sigfigs=-1')));
+  % display sform_code if it exists
+  if isfield(h,'hdr') && isfield(h.hdr,'sform_code')
+      disp(sprintf('sform_code: %i',h.hdr.sform_code));
+  end
 end
 if ~isempty(h.vol2mag)
   disp(sprintf('vol2mag:'));
