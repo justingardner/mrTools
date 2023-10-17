@@ -183,7 +183,7 @@ if isfield(fitParams,'prefit') && ~isempty(fitParams.prefit)
         % compute all the model response, using parfor loop
         % parfor i = 1:fitParams.prefit.n
         
-        parfor i = 1:fitParams.prefit.n
+        parfor i = 1:fitParams.prefit.n %parfor
             % fit the model with these parameters
             %[residual modelResponse rfModel] = getModelResidual([fitParams.prefit.x(i) fitParams.prefit.y(i) fitParams.prefit.rfHalfWidth(i) fitParams.prefit.hrfDelay(i) params(4:end)],tSeries,fitParams,1);
             %[residual modelResponse rfModel] = getModelResidual([fitParams.prefit.x(i) fitParams.prefit.y(i) fitParams.prefit.rfHalfWidth(i) params(4:end)],tSeries,fitParams,1, crossValcheck);
@@ -421,7 +421,7 @@ switch fit.rfType
     case {'gaussian-1D-transpose'} % BETWEEN DIGIT MODEL
 
 
-        if size(fitParams.stimX,2) == 5 % for TW Touchmap
+        if size(fitParams.stimX,2) == 5 || size(fitParams.stimX,2) == 4 % for TW Touchmap
             [~,index] = max(rfModel);
         else
             [~,index] = max(max(rfModel,[],2),[], 1); % max digit amp of Gaussian
@@ -433,7 +433,7 @@ switch fit.rfType
 
         thisX = linspace(1,size(rfModel,2),100);
 
-        if size(fitParams.stimX,2) == 5
+        if size(fitParams.stimX,2) == 5 || size(fitParams.stimX,2) == 4
             Pone = [fit.amp1 fit.meanOne fit.stdOne 0];
             thisStd = fit.stdOne;
         else
@@ -470,7 +470,7 @@ switch fit.rfType
         % ignore this for base/tips pRF fitting
 
         % this is trickier, because we need to rewrap the PD values onto a 1-4 grid
-        if size(fitParams.stimX,2) == 5
+        if size(fitParams.stimX,2) == 5 || size(fitParams.stimX,2) == 4
             fit.prefPD = fit.prefPD;
         else
             fit.prefPD = abs(fit.prefPD - (size(rfModel,2)+1) );
@@ -795,7 +795,7 @@ if ~isfield(fitParams,'initParams')
                     fitParams.initParams = [fitParams.initParams fitParams.amplitudeRatio fitParams.timelag2 fitParams.tau2];
                 end
                 
-            elseif size(fitParams.stimX,2) == 5 % pRF on patients TW
+            elseif size(fitParams.stimX,2) == 5 || size(fitParams.stimX,2) == 4% pRF on patients TW
                 
                 %                 fitParams.paramNames = {'mean1', 'mean2', 'mean3', 'mean4', 'mean5',...
                 %                     'sd1', 'sd2', 'sd3','sd4', 'sd5',...
@@ -1525,7 +1525,7 @@ switch (fitParams.rfType)
                 p.canonical.offset2 = 0;
             end
             
-        elseif size(fitParams.stimX,2) == 5
+        elseif size(fitParams.stimX,2) == 5 || size(fitParams.stimX,2) == 4 
             %             p.meanOne = params(1);
             %             p.meanTwo = params(2);
             %             p.meanThr = params(3);
@@ -1815,7 +1815,7 @@ function rfModel = getRFModel(params,fitParams)
 
 rfModel = [];
 
-% now gernerate the rfModel
+% now generate the rfModel
 switch fitParams.rfType
     case {'gaussian','gaussian-hdr','gaussian-hdr-double','gaussian-1D','gaussian-1D-transpose','gaussian-surround', 'gaussian-1D-orthotips'}
         rfModel = makeRFGaussian(params,fitParams);
@@ -1901,7 +1901,7 @@ switch fitParams.rfType
             % direction!
             
             
-        elseif size(fitParams.stimX,2) == 5
+        elseif size(fitParams.stimX,2) == 5 || size(fitParams.stimX,2) == 4
 %             X = linspace(1,5,5);
 %             params.amp1 = 1;
 %             pone = [params.amp1 params.meanOne params.stdOne 0];
@@ -1917,7 +1917,7 @@ switch fitParams.rfType
 %             else
 %                 rfModel = Z;
 %             end
-            X = linspace(1,5,5);
+            X = linspace(1,size(fitParams.stimX,2),size(fitParams.stimX,2));
             %params.amp1 = 1;
             pone = [params.amp1 params.meanOne params.stdOne 0];
             %ptwo = [params.amp2 params.meanTwo params.stdTwo 0];
