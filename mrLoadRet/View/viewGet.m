@@ -102,6 +102,10 @@ switch lower(param)
   case {'protocol'}
     % subject = viewGet(view,'protocol')
     val = MLR.session.protocol;
+
+  case {'mniinfo'}
+    % mniInfo = viewGet(view,'mniInfo')
+    val = MLR.mniInfo;
     
     % subdirectories
   case {'homedir','homedirectory','sessiondirectory'}
@@ -764,6 +768,26 @@ switch lower(param)
       if length(MLR.interrogator) >= viewNum
         if isfield(MLR.interrogator{viewNum},'mouseDownBaseCoords')
           val = MLR.interrogator{viewNum}.mouseDownBaseCoords;
+        end
+      end
+    end
+  case{'mousedowntalcoords'}
+    % talCoords = viewGet(view,'mouseDownTalCoords')
+    viewNum = viewGet(view,'viewNum');
+    if isfield(MLR,'interrogator')
+      if length(MLR.interrogator) >= viewNum
+        if isfield(MLR.interrogator{viewNum},'mouseDownTalCoords')
+          val = MLR.interrogator{viewNum}.mouseDownTalCoords;
+        end
+      end
+    end
+  case{'mousedownmnicoords'}
+    % mniCoords = viewGet(view,'mouseDownMniCoords')
+    viewNum = viewGet(view,'viewNum');
+    if isfield(MLR,'interrogator')
+      if length(MLR.interrogator) >= viewNum
+        if isfield(MLR.interrogator{viewNum},'mouseDownMniCoords')
+          val = MLR.interrogator{viewNum}.mouseDownMniCoords;
         end
       end
     end
@@ -2322,9 +2346,9 @@ switch lower(param)
     % basevoxelsize = viewGet(view,'basevoxelsize',[baseNum])
     [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
-      val = baseVolume.hdr.pixdim([2,3,4])';;
+      val = baseVolume.hdr.pixdim([2,3,4])';
     end
-    
+
     % ROI
   case {'visiblerois'}
     % roiList = viewGet(view,'visiblerois')

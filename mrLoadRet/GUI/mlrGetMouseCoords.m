@@ -15,6 +15,7 @@ coords.inAxis = -1;
 coords.scan = [];
 coords.base = [];
 coords.tal = [];
+coords.mni = [];
 
 % get the viewNum, globals and test for fig
 mrGlobals;
@@ -122,7 +123,7 @@ else
         %stored in the view, so use that
         hobj = viewGet(v,'baseHandle');
       end
-      [pos vertex vertexIndex] = select3d(hobj);
+      [pos, vertex, vertexIndex] = select3d(hobj);
       % convert the index to the coordinates
       if ~isempty(pos)
 	baseCoordMap = viewGet(v,'baseCoordMap');
@@ -144,6 +145,22 @@ base2tal = viewGet(v,'base2tal'); % keyboard
 if(~isempty(base2tal))
   talCoords = round(base2tal * [coords.base.x coords.base.y coords.base.z 1]');
   coords.tal.x = talCoords(1); coords.tal.y = talCoords(2); coords.tal.z = talCoords(3);
+end
+
+% transform from base coordinates to MNI coordinates. This uses deformation maps computed using SPM
+mniInfo = viewGet(v,'mniInfo');
+if ~isempty(mniInfo)
+  % convert coords from base to T1w volume that was use to compute the deformation coords map
+  base2mag = viewGet(v,'base2mag');
+  coordsT1w = mniInfo.mag2T1w * base2mag * [coords.base.x coords.base.y coords.base.z 1]';
+  % non-linear registration from T1w volume space to mni
+  [T1wGridX,T1wGridY,T1wGridZ] = ndgrid(1:size(mniInfo.T1w2mniCoordMap,1),1:size(mniInfo.T1w2mniCoordMap,2),1:size(mniInfo.T1w2mniCoordMap,3));
+  coords.mni.x = interpn(T1wGridX,T1wGridY,T1wGridZ, mniInfo.T1w2mniCoordMap(:,:,:,1), coordsT1w(1), coordsT1w(2), coordsT1w(3));
+  coords.mni.y = interpn(T1wGridX,T1wGridY,T1wGridZ, mniInfo.T1w2mniCoordMap(:,:,:,2), coordsT1w(1), coordsT1w(2), coordsT1w(3));
+  coords.mni.z = interpn(T1wGridX,T1wGridY,T1wGridZ, mniInfo.T1w2mniCoordMap(:,:,:,3), coordsT1w(1), coordsT1w(2), coordsT1w(3));
+%   coords.mni.x = mniInfo.T1w2mniCoordMap(round(coordsT1w(1)),round(coordsT1w(2)),round(coordsT1w(3)),1); %
+%   coords.mni.y = mniInfo.T1w2mniCoordMap(round(coordsT1w(1)),round(coordsT1w(2)),round(coordsT1w(3)),2); % less accurate but faster?
+%   coords.mni.z = mniInfo.T1w2mniCoordMap(round(coordsT1w(1)),round(coordsT1w(2)),round(coordsT1w(3)),3); %
 end
 
 % transform from base coordinates into scan coordinates

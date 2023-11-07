@@ -96,6 +96,9 @@ switch lower(param)
     % view = viewSet(view,'viewtype',string);
     view.viewType = val;
 
+  case {'mniinfo'}
+    MLR.mniInfo = val;
+
     % -------------------------------------------
     % Group
 
