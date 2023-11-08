@@ -31,6 +31,8 @@ if ischar(subjectNames)
   subjectNames = {subjectNames};
 end
 
+cwd = pwd;
+
 for subject = subjectNames
 
   fprintf(sprintf('(mlrImportSPMnormalization) Importing MNI normalization info for %s...\n',subject{1}));
@@ -83,3 +85,5 @@ for subject = subjectNames
   disp(['(mlrImportSPMnormalization) Imported MNI registration info for ', subject{1}]) % add a print statement saying which subject has been processed
   
 end
+
+cd(cwd);
