@@ -43,8 +43,10 @@ if sgn<0
   coords=newCoords;
 elseif sgn==0
   coords = removeCoords(newCoords,curCoords);
+  fprintf('(modifROI) Removed %d voxels (%.1f mm^3) from %s\n', size(curCoords,2) - size(coords,2), (size(curCoords,2) - size(coords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
 elseif sgn>0
   coords = mergeCoords(curCoords,newCoords);
+  fprintf('(modifROI) Added %d voxels (%.1f mm^3) to %s\n', size(coords,2) - size(curCoords,2), (size(coords,2) - size(curCoords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
 end
 view = viewSet(view,'ROIcoords',coords);
 
@@ -64,7 +66,7 @@ function coords = mergeCoords(coords1,coords2)
 % djh, 7/98
 % djh, 2/2001, dumped coords2Indices & replaced with union(coords1',coords2','rows')
 
-if ~isempty(coords1) & ~isempty(coords2)
+if ~isempty(coords1) && ~isempty(coords2)
     coords = union(coords1',coords2','rows');
     coords = coords';
 else
