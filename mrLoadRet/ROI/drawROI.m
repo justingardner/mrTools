@@ -77,7 +77,7 @@ else
   switch descriptor
      
     case 'single voxels'
-      disp('Use mouse left button to add/remove a voxel. End selection with Alt, Command key or right-click')
+      disp('(drawROI) Use mouse left button to add/remove a voxel. End selection with Alt, Command key or right-click')
       region = getrect(fig);
       mouseX = region(2);
       mouseY = region(1);
@@ -87,8 +87,7 @@ else
       selectionX=[];
       hSelection=[];
       hold on;
-      key=1;
-      while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) && key==1
+      while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) && strcmp(get(fig,'SelectionType'),'normal')
         if ~isempty(selectionY)
           [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
         else
