@@ -41,13 +41,15 @@ newCoords = xformROIcoords(coords,xform,voxelSize,roiVoxelSize);
 % Merge/remove coordinates
 if sgn<0
   coords=newCoords;
+  fprintf('(modifyROI) ');
 elseif sgn==0
   coords = removeCoords(newCoords,curCoords);
-  fprintf('(modifROI) Removed %d voxels (%.1f mm^3) from %s\n', size(curCoords,2) - size(coords,2), (size(curCoords,2) - size(coords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
+  fprintf('(modifROI) Removed %d voxels (%.1f mm^3) from %s. ', size(curCoords,2) - size(coords,2), (size(curCoords,2) - size(coords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
 elseif sgn>0
   coords = mergeCoords(curCoords,newCoords);
-  fprintf('(modifROI) Added %d voxels (%.1f mm^3) to %s\n', size(coords,2) - size(curCoords,2), (size(coords,2) - size(curCoords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
+  fprintf('(modifyROI) Added %d voxels (%.1f mm^3) to %s. ', size(coords,2) - size(curCoords,2), (size(coords,2) - size(curCoords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
 end
+fprintf('New ROI size is %d voxels (%.1f mm^3).\n',size(coords,2), size(coords,2) * prod(roiVoxelSize));
 view = viewSet(view,'ROIcoords',coords);
 
 return;
