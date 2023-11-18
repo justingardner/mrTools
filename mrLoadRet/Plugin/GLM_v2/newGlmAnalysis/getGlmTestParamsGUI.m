@@ -207,7 +207,7 @@ while keepAsking
   end
   
   %check consistency of parameters
-  if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
+  if params.numberContrasts && params.computeTtests  && ~strcmp(lower(params.tTestSide),'both') && ...
       nnz(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
   elseif ~orthogonal %if there is at least one restriction matrix with non-orthogonal contrasts

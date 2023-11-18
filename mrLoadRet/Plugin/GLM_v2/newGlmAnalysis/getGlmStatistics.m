@@ -711,10 +711,10 @@ for z = slices
             end
             thisContrastBetaSte = sqrt(thisContrastBetaSte);
             thisStatistic(:,1:numberTtests) = thisContrastBetas ./ thisContrastBetaSte;   
-            switch(params.tTestSide)
-             case 'Both'
+            switch(lower(params.tTestSide))
+             case 'both'
                 thisStatistic(:,1:numberTtests) = abs(thisStatistic(:,1:numberTtests));
-             case 'Left'
+             case 'left'
                 thisStatistic(:,1:numberTtests) = -1 *thisStatistic(:,1:numberTtests);
             end
             thisParametricP(:,1:numberTtests) = T2p(thisStatistic(:,1:numberTtests),d.rdf,params);
@@ -1062,7 +1062,7 @@ outputData = reshape(outputData,[size(inputData,1) size(dataPosition)]);
 
 function p = T2p(T,rdf,params)
 p = 1 - cdf('t', double(T), rdf); %here use doubles to deal with small Ps
-if strcmp(params.tTestSide,'Both')
+if strcmp(lower(params.tTestSide),'both')
   p = 2*p;
 end
 %we do not allow probabilities of 0 and replace them by minP
