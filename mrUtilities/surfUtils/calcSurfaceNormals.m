@@ -15,6 +15,16 @@ if ~any(nargin == [1])
   return
 end
 
+if ~isfield(surf,'tris') && isfield(surf,'faces')
+  surf = renameStructField(surf,'faces','tris');
+end
+if ~isfield(surf,'vtcs') && isfield(surf,'vertices')
+  surf = renameStructField(surf,'vertices','vtcs');
+end
+if ~isfield(surf,'Nvtcs')
+  surf.Nvtcs = size(surf.vtcs,1);
+end
+
 % first compute the normals to each triangle face.
 % this is done with the cross product of two edge vectors
 
