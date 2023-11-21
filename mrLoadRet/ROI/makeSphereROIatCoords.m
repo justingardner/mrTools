@@ -100,12 +100,21 @@ end
 [allBaseCoordsX,allBaseCoordsY,allBaseCoordsZ] = ndgrid(1:baseDims(1),1:baseDims(2),1:baseDims(3));
 allMagCoords = base2mag * [allBaseCoordsX(:) allBaseCoordsY(:) allBaseCoordsZ(:) ones(prod(baseDims),1)]';
 whichCoords = sqrt((allMagCoords(1,:) - magCenterCoords(1)).^2 + (allMagCoords(2,:)- magCenterCoords(2)).^2 +(allMagCoords(3,:) - magCenterCoords(3)).^2 ) < params.radius;
-roi.coords = unique(round(base2mag \ allMagCoords(:,whichCoords))','rows')';
-
-if isempty(roi.coords)
-  mrWarnDlg('(makeSphereROIatCoords) The sphere has no coordinates in the current base volume. No ROI was added to the view.');
-  return;
+if ~nnz(whichCoords) % If we get no voxel, this may be because the radius is smaller than the mean distance between voxels
+  % the maximum distance between the center of a voxel and any point within that voxel is the distance between the centre and one corner of that voxels
+  voxelDistanceToCorner = sqrt(sum((viewGet(thisView,'baseVoxelSize')/2).^2));
+  % check whether the center of the sphere falls within this distance from any voxel
+  whichCoords = sqrt((allMagCoords(1,:) - magCenterCoords(1)).^2 + (allMagCoords(2,:)- magCenterCoords(2)).^2 +(allMagCoords(3,:) - magCenterCoords(3)).^2 ) < voxelDistanceToCorner;
+  if nnz(whichCoords) % if yes
+    % Find the closet voxel and use that as the ROI
+    [~,whichCoords] = min(sqrt((allMagCoords(1,:) - magCenterCoords(1)).^2 + (allMagCoords(2,:)- magCenterCoords(2)).^2 +(allMagCoords(3,:) - magCenterCoords(3)).^2 ));
+    mrWarnDlg('(makeSphereROIatCoords) The specified radius is small compared to the voxel size of the current base. Returning single voxel closest to the specified center coordinates.');
+  else % otherwise, the entire sphere must be outside the base volume
+    mrWarnDlg('(makeSphereROIatCoords) The sphere has no coordinates in the current base volume. No ROI was added to the view.');
+    return;
+  end
 end
+roi.coords = unique(round(base2mag \ allMagCoords(:,whichCoords))','rows')';
 
 % Add it to the view
 thisView= viewSet(thisView,'newROI',roi);
