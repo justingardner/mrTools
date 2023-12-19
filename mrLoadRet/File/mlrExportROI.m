@@ -4,16 +4,19 @@
 %      usage: mlrExportROI(v,saveFilename,<'baseNum',baseNum>,<'scanNum',scanNum>,<'groupNum',groupNum>,<'hdr',hdr>,<'exportToFreesurferLabel',true/false>)
 %         by: justin gardner
 %       date: 07/14/09
-%    purpose: Export ROI(s) to a nifti image or Freesurfer label file. Uses
+%    purpose: Export current ROI(s) to a nifti image or Freesurfer label file. Uses
 %             current roi(s) and current base in view to export. To use a different
 %             base, specify 'baseNum'. To use a scan, specify 'scanNum' and 'groupNum'.
 %             Pass in a nifti header as hdr argument if you want to use a different header
 %             'baseNum', 'scanNum', 'groupNum' and 'hdr' are ignored if exportToFreesurferLabel is true
+%             If saveFileName is empty, the data are not exported, but the ROI indices into the
+%             export volume are returned, along with the volume dimensions (useful to create an ROI mask
+%             in flat volume space, and maybe other spaces not handled by getROICoordinates).
 %
-function mlrExportROI(v,saveFilename,varargin)
+function [roiBaseCoordsLinear,volDims] = mlrExportROI(v,saveFilename,varargin)
 
 % check arguments
-if nargin < 2
+if nargin < 1
   help mlrExportROI
   return
 end
@@ -28,12 +31,16 @@ if isempty(roiNum)
   return
 end
   
-if ischar(saveFilename)
-  saveFilename = {saveFilename};
-end
-if ~isequal(length(roiNum),length(saveFilename))
-  mrWarnDlg('(mlrExportROI) number of file names must be identical to number of ROIs');
-  return
+if ~ieNotDefined('saveFilename')
+  if ischar(saveFilename)
+    saveFilename = {saveFilename};
+  end
+  if ~isequal(length(roiNum),length(saveFilename))
+    mrWarnDlg('(mlrExportROI) number of file names must be identical to number of ROIs');
+    return
+  end
+else
+  saveFilename = [];
 end
 
 if ~isempty(scanNum) && ~isempty(groupNum)
@@ -127,7 +134,12 @@ end
 for iRoi = 1:length(roiNum)
   roiName = viewGet(v,'roiName',roiNum(iRoi));
   % tell the user what is going on
-  fprintf('(mlrExportROI) Exporting ROI %s to %s with dimensions set to match %s: [%i %i %i]\n',roiName, saveFilename{iRoi},exportVolumeString,volDims(1),volDims(2),volDims(3));
+  if ~isempty(saveFilename)
+    fileString = sprintf('to %s ',saveFilename{iRoi});
+  else
+    fileString = '';
+  end
+  fprintf('(mlrExportROI) Exporting ROI %s %swith dimensions set to match %s: [%i %i %i]\n',roiName,fileString,exportVolumeString,volDims(1),volDims(2),volDims(3));
 
   % get  roi coordinates in base/scan coordinates
   if exportToScanSpace
@@ -152,30 +164,30 @@ for iRoi = 1:length(roiNum)
   
 
   if ~isempty(baseCoordMap) && (baseType==1 || exportToFreesurferLabel)  %for flats and surfaces, use basecoordmap to transform ROI from canonical base to multi-depth flat map
-    roiBaseCoordsLinear = mrSub2ind(baseCoordMap.dims',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
-    roiBaseCoordsLinear = ismember(baseCoordsLinear,roiBaseCoordsLinear);
+    roiBaseCoordsLinear{iRoi} = mrSub2ind(baseCoordMap.dims',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
+    roiBaseCoordsLinear{iRoi} = ismember(baseCoordsLinear,roiBaseCoordsLinear{iRoi});
   else
     % convert to linear coordinates
-    roiBaseCoordsLinear = mrSub2ind(hdr.dim(2:4)',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
+    roiBaseCoordsLinear{iRoi} = mrSub2ind(hdr.dim(2:4)',roiBaseCoords(1,:),roiBaseCoords(2,:),roiBaseCoords(3,:));
   end
 
   % check roiBaseCoords
-  if isempty(roiBaseCoords) || ~nnz(roiBaseCoordsLinear)
+  if isempty(roiBaseCoords) || ~nnz(roiBaseCoordsLinear{iRoi})
     mrWarnDlg(sprintf('(mlrExportROI) This ROI (%s) does not have any coordinates in the %s',roiName,exportVolumeString));
     
-  else
+  elseif ~isempty(saveFilename)
     
     if exportToFreesurferLabel
       % in order to export to label format, select vertices that are within the ROI
 
       % reshape to vertices * depths
-      roiBaseCoordsLinear = reshape(roiBaseCoordsLinear, [size(baseCoordMap.coords,1)*size(baseCoordMap.coords,2) size(baseCoordMap.coords,5)]);
+      roiBaseCoordsLinear{iRoi} = reshape(roiBaseCoordsLinear{iRoi}, [size(baseCoordMap.coords,1)*size(baseCoordMap.coords,2) size(baseCoordMap.coords,5)]);
       % Multiple cortical depths are not taken into account: a vertex can be in the ROI at any depth:
       % but let's be conservative and consider only ROI voxels in the central part of cortical ribbon
-      nDepths = size(roiBaseCoordsLinear,2);
-      roiBaseCoordsLinear = find(any(roiBaseCoordsLinear(:,ceil((nDepths-1)/4)+1:floor(3*(nDepths-1)/4)+1),2));
+      nDepths = size(roiBaseCoordsLinear{iRoi},2);
+      roiBaseCoordsLinear{iRoi} = find(any(roiBaseCoordsLinear{iRoi}(:,ceil((nDepths-1)/4)+1:floor(3*(nDepths-1)/4)+1),2));
       %actual coordinates in label file will be midway between inner and outer surface
-      vertexCoords = (baseCoordMap.innerVtcs(roiBaseCoordsLinear,:)+baseCoordMap.outerVtcs(roiBaseCoordsLinear,:))/2;
+      vertexCoords = (baseCoordMap.innerVtcs(roiBaseCoordsLinear{iRoi},:)+baseCoordMap.outerVtcs(roiBaseCoordsLinear{iRoi},:))/2;
       % change vertex coordinates to freesurfer system: 0 is in the middle of the volume and coordinates are in mm
       % (this does not seem to give the correct coordinates, but coordinates are usually not needed in label files)
       vertexCoords = (vertexCoords - repmat(baseCoordMap.dims/2 ,size(vertexCoords,1),1)) ./ repmat(hdr.pixdim([2 3 4])',size(vertexCoords,1),1);
@@ -194,10 +206,10 @@ for iRoi = 1:length(roiNum)
       end
       labelHeader = sprintf('#!ascii label, ROI exported from subject %s using mrTools (mrLoadRet v%.1f)\n', freesurferName, mrLoadRetVersion);
       % a Freesurfer label file is text file with a list of vertex numbers and coordinates
-      mlrWriteFreesurferLabel(saveFilename{iRoi},labelHeader,[roiBaseCoordsLinear-1, vertexCoords, ones(size(vertexCoords,1),1)])
+      mlrWriteFreesurferLabel(saveFilename{iRoi},labelHeader,[roiBaseCoordsLinear{iRoi}-1, vertexCoords, ones(size(vertexCoords,1),1)])
     else
       % set all the roi coordinates to 1
-      d(roiBaseCoordsLinear) = 1;
+      d(roiBaseCoordsLinear{iRoi}) = 1;
 
       % if the orientation has been changed in loadAnat, undo that here.
       if ~passedInHeader && ~isempty(b.originalOrient)
