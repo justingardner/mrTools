@@ -340,8 +340,8 @@ v = viewSet(v,'cursliceOverlayCoords',overlays.coords);
 % Combine base and overlays
 if verbose>1,mlrDispPercent(-inf,'combine base and overlays');,end
 if ~isempty(base.RGB) & ~isempty(overlays.RGB)
-  switch(mrGetPref('colorBlending'))
-    case 'Alpha blend'
+  switch(lower(mrGetPref('colorBlending')))
+    case 'alpha blend'
       % alpha blending (non-commutative 'over' operator, each added overlay is another layer on top)
       % since commutative, depends on order
       img = base.RGB;
@@ -349,7 +349,7 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
         img = overlays.alphaMaps(:,:,:,iOverlay).*overlays.RGB(:,:,:,iOverlay)+(1-overlays.alphaMaps(:,:,:,iOverlay)).*img;
       end
   
-    case 'Additive'
+    case 'additive'
       %additive method (commutative: colors are blended in additive manner and then added as a layer on top of the base)
       % 1) additively multiply colors weighted by their alpha
       RGB = overlays.alphaMaps.*overlays.RGB;
@@ -363,7 +363,7 @@ if ~isempty(base.RGB) & ~isempty(overlays.RGB)
       % 2) overlay result on base  using the additively computed alpha (but not for the blended overlays because pre-multiplied)
        img = img+(1-alpha).*base.RGB;
        
-    case 'Contours'
+    case 'contours'
       if size(overlays.RGB,4)==1
         img=base.RGB; %only display base in the background
         contours=overlays.overlayIm;  %display first overlay as contours 
