@@ -119,10 +119,12 @@ if ieNotDefined('params')
   paramsInfo{end+1} = {'colorbarScaleFunction',defaultColorbarScaleFunction,'type=string',contingentString,'Anonymous function to apply to the colorbar scale values [e.g. @(x)exp(x) for data on a logarithmic scale]. This will be applied after applying the colorbarScale parameter. The function must accept and return a one-dimensional array of color scale values.'};
   paramsInfo{end+1} = {'colorbarTickNumber',defaultColorbarTickNumber,'type=numeric','round=1','incdec=[-1 1]','minmax=[2 inf]',contingentString,'Number of ticks on the colorbar'};
   if ~isempty(visibleROIs)
-    if baseType == 2 % ROI options for surfaces
-      paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
-    else % ROI options for flatmaps and images
+    if ismember(viewGet(v,'showROIs'),{'all perimeter','selected perimeter','group perimeter'}) || baseType < 2 % ROI options if plotted as outline
       paramsInfo{end+1} = {'roiLineWidth',mrGetPref('roiContourWidth'),'incdec=[-1 1]','minmax=[0 inf]','Line width for drawing ROIs. Set to 0 if you don''t want to display ROIs.'};
+    end
+    if baseType == 2 % ROI options for surfaces if plotted as patch
+      paramsInfo{end+1} = {'roiAlpha',0.4,'minmax=[0 1]','incdec=[-0.1 0.1]','Sets the alpha of the ROIs'};
+    else % other ROI options for flatmaps and images
       paramsInfo{end+1} = {'roiColor',putOnTopOfList('default',color2RGB),'type=popupmenu','Color to use for drawing ROIs. Select default to use the color currently being displayed.'};
       paramsInfo{end+1} = {'roiOutOfBoundsMethod',{'Remove','Max radius'},'type=popupmenu','If there is an ROI that extends beyond the circular aperture, you can either not draw the lines (Remove) or draw them at the edge of the circular aperture (Max radius). This is only important if you are using a circular aperture.'};
       paramsInfo{end+1} = {'roiLabels',roiLabels,'type=checkbox','Print ROI name at center coordinate of ROI'};
@@ -505,7 +507,11 @@ for iImage = 1:nImages
     setMLRViewAngle(v,hImage);
     % draw the rois
     for roiNum = 1:length(roi)
-      patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roi{roiNum}.overlayImage,'facecolor','interp','edgecolor','none','FaceAlpha',params.roiAlpha,'Parent',hImage);
+      if isfield(roi{roiNum},'edgeSegmentCoords')
+        plot3(roi{roiNum}.edgeSegmentCoords(:,:,1),roi{roiNum}.edgeSegmentCoords(:,:,2),roi{roiNum}.edgeSegmentCoords(:,:,3),'color',roi{roiNum}.color,'lineWidth',params.roiLineWidth);
+      else
+        patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roi{roiNum}.overlayImage,'facecolor','interp','edgecolor','none','FaceAlpha',params.roiAlpha,'Parent',hImage);
+      end
     end
         end
       end

@@ -803,6 +803,7 @@ roi = {};
 
 selectedROI = viewGet(view,'currentroi');
 labelROIs = viewGet(view,'labelROIs');
+roiContourWidth = mrGetPref('roiContourWidth');
 
 % Order in which to draw the ROIs
 order = viewGet(view,'visibleROIs');
@@ -898,30 +899,49 @@ for r = order
   doPerimeter = ismember(option,{'all perimeter','selected perimeter','group perimeter'});
   if baseType == 2
     baseSurface = getBaseSurface(view,baseNum); %get baseSurface coordinates, converted to different base space if necessary
-    if 0 %%doPerimeter
+    if doPerimeter % draw lines linking outer vertices of the ROI
+      % find all triangles involving at least 2 of the ROI vertices. These will be the edges of the any group of contiguous vertices
+      % (voxels that are not connected to any other voxels will not be represented using this method)
+      edgeTriangleIndices = sum(ismember(baseSurface.tris,y),2) == 2;
+      edgeTriangles = baseSurface.tris(edgeTriangleIndices,:)'; % (transpose so that the indices of two linked vertices are consecutive when indexing below)
+      edgeSegments = reshape(edgeTriangles(ismember(edgeTriangles,y)),2,[])'; % keep only the 2 vertices corresponding to the ROI edges
+      edgeSegments = sort(edgeSegments,2); % sort the edge vertices order of all segments so identical segments can be identified
+      edgeSegments = unique(edgeSegments,'rows'); % and removed
+      roi{r}.edgeSegmentCoords = reshape(baseSurface.vtcs(edgeSegments',:),2,[],3); % get the coordinates of the segment vertices (and keep for further use in e.g. mrPrint)
+      % (a more accurate method would be to compute the intersection of the volume voxels with the surface, but this is good enough for large enough ROIs)
+      % plot ROI outline
+      hAxis.NextPlot = 'add';
+      hOutline = plot3(hAxis,roi{r}.edgeSegmentCoords(:,:,1),roi{r}.edgeSegmentCoords(:,:,2),roi{r}.edgeSegmentCoords(:,:,3),'color',roi{r}.color,'lineWidth',roiContourWidth);
+
+      roiAlpha = 0; % we will draw the ROI as surface as well, for compatibility with mrInterrogator (and maybe others), but make it fully invisivble
+    else
+      roiAlpha = 0.4;
+    end
+    if 0  % this is a previous attempt at drawing a perimeter on the surface: by drawing the outer vertices as patches
+          % it is too long (probably because of the loop) and the result does not look so great
       if verbose, mlrDispPercent(-inf,'(refreshMLRDisplay) Computing perimeter'); end
       baseCoordMap = viewGet(view,'baseCoordMap');
       newy = [];
       for i = 1:length(y)
-	% find all the triangles that this vertex belongs to
-	[row col] = find(ismember(baseCoordMap.tris,y(i)));
-	% get all the neighboring vertices
-	neighboringVertices = baseCoordMap.tris(row,:);
-	neighboringVertices = setdiff(neighboringVertices(:),y(i));
-	% if there are any neighboring vertices that are 
-	% not in he roi then this vertex is an edge
-	numNeighbors(i) = length(neighboringVertices);
-	numROINeighbors(i) = sum(ismember(neighboringVertices,y));
-	if numNeighbors(i) ~= numROINeighbors(i)
-	  newy = union(newy,baseCoordMap.tris(row(1),:));
-	end
-	if verbose, mlrDispPercent(i/length(y)); end;
+        % find all the triangles that this vertex belongs to
+        [row col] = find(ismember(baseCoordMap.tris,y(i)));
+        % get all the neighboring vertices
+        neighboringVertices = baseCoordMap.tris(row,:);
+        neighboringVertices = setdiff(neighboringVertices(:),y(i));
+        % if there are any neighboring vertices that are
+        % not in he roi then this vertex is an edge
+        numNeighbors(i) = length(neighboringVertices);
+        numROINeighbors(i) = sum(ismember(neighboringVertices,y));
+        if numNeighbors(i) ~= numROINeighbors(i)
+          newy = union(newy,baseCoordMap.tris(row(1),:));
+        end
+        if verbose, mlrDispPercent(i/length(y)); end;
       end
       if verbose, mlrDispPercent(-inf); end;
-      disp(sprintf('%i/%i edges',length(newy),length(y)));
+      disp(sprintf('%i/%i edges',length(newy),length(y)));q
       y = newy;
     end
-    % display the surface
+    % display the ROI as a colored/transparent mask patch
     roiColors = zeros(size(baseSurface.vtcs));
     roiColors(:) = nan;
     roiColors(y,1) = roi{r}.color(1);
@@ -930,7 +950,7 @@ for r = order
     roi{r}.vertices=y;
     roi{r}.overlayImage = roiColors;
     if ~isempty(fig) && ~isempty(hAxis)
-      hSurface(c) = patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',0.4,'Parent',hAxis);
+      hSurface(c) = patch('vertices', baseSurface.vtcs, 'faces', baseSurface.tris,'FaceVertexCData', roiColors,'facecolor','interp','edgecolor','none','FaceAlpha',roiAlpha,'Parent',hAxis);
     end
     continue
   end
@@ -1026,7 +1046,7 @@ for r = order
     view = viewSet(view,'ROICache',roi{r},r,baseNum,rotate);
     % now render those lines
     if ~isempty(hAxis)
-      line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',mrGetPref('roiContourWidth'),'Parent',hAxis);
+      line(roi{r}.lines.x,roi{r}.lines.y,'Color',roi{r}.color,'LineWidth',roiContourWidth,'Parent',hAxis);
     end
   else
     roi{r}.lines.x = [];
