@@ -83,7 +83,7 @@ switch lower(field)
   % mlrGuiSet(view,'showrois',value);
   
   % figure out which menu item should be checked
-  onItem = find(strcmp(value,{'all','all perimeter','selected','selected perimeter','group','group perimeter','hide'}));
+  onItem = find(strcmpi(value,{'all','all perimeter','selected','selected perimeter','group','group perimeter','hide'}));
   onOrOff = {'off','off','off','off','off','off','off'};
   onOrOff{onItem} = 'on';
   % turn the check marks on/off
