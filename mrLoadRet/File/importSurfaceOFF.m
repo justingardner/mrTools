@@ -1,13 +1,16 @@
 % importSurfaceOFF.m
 %
-%      usage: v = importSurfaceOFF
+%      usage: v = importSurfaceOFF(<path or params>,<bothHemiFlag or params2>)
 %         by: justin gardner
 %       date: 10/24/07
-%    purpose: Import a pair of inner and outer cortical surfaces in OFF format
+%    purpose: Import a pair of inner and outer cortical surfaces in OFF format,
+%             for one or both hemispheres
 %
-%    base = importSurfaceOFF('/path/to/surfaces/subject_left_WM.off', bothHemiFlag);
-%    or [base = importSurfaceOFF(params, bothHemiFlag); %where params is a structure similar to the output of mrSurfViewer with added field 'path']
-%    viewSet(getMLRView, 'newbase', base);
+%         base = importSurfaceOFF  % gets all surface parameters from a GUI, loads only one hemisphere (default bothHemiFlag = 0)
+%    or:  base = importSurfaceOFF('/path/to/surfaces/subject_left_WM.off', true); % uses path as default for surface parameters in GUI, loads both hemispheres
+%    or:  base = importSurfaceOFF(params); % where params is a structure similar to the output of mrSurfViewer with added field 'path', no GUI used
+%    or:  base = importSurfaceOFF(paramsLeft,paramsRight); % where paramsLeft and paramsRight are params structures for left and right hemispheres respectively , no GUI used
+%         viewSet(getMLRView, 'newbase', base);
 %
 function base = importSurfaceOFF(pathStr,bothHemiFlag)
 
@@ -22,6 +25,10 @@ if ieNotDefined('bothHemiFlag')
   disp(sprintf('Only loading surfaces for one hemisphere'))
 else
   disp(sprintf('Loading surfaces for both hemispheres'))
+  if isstruct(bothHemiFlag)
+    params2 = bothHemiFlag;
+    bothHemiFlag = true;
+  end
 end
 
 if ieNotDefined('pathStr')
@@ -42,10 +49,6 @@ if isstr(pathStr)
   if ~isempty(filepath),cd(filepath);end
   params1 = mrSurfViewer(filename);
 elseif isstruct(pathStr) %if pathStr is a parameter structure
-  if bothHemiFlag
-    mrWarnDlg('(importSurfaceOFF) option bothHemiFlag not implemented for parameter structure input')
-    return;
-  end
   params1=pathStr;
   filepath=pathStr.path;
   if strcmp(params1.outerCoords,'Same as surface')
@@ -80,22 +83,24 @@ base.vol2mag = getBaseField(anatomyMatFile,'vol2mag');
 
 % load both hemispheres
 if bothHemiFlag
-  % get the params for the other hemisphere
-  % was a left hemisphere passed?
+  % was a left hemisphere passed first?
   leftFlag = strfind(lower(params1.innerSurface), 'left');
-  if leftFlag
-    prefix = params1.outerCoords(1:leftFlag-1);
-    postfix = params1.outerCoords(leftFlag+4:end);
-    rightFilename = sprintf('%sright%s', prefix, postfix);
-    params2 = mrSurfViewer(rightFilename);  
-  end
-  % or was it a right hemispehre
+  % or was it a right hemispehre?
   rightFlag = strfind(lower(params1.innerSurface), 'right');
-  if rightFlag
-    prefix = params1.outerCoords(1:rightFlag-1);
-    postfix = params1.outerCoords(rightFlag+5:end);
-    leftFilename = sprintf('%sleft%s', prefix, postfix);
-    params2 = mrSurfViewer(leftFilename);  
+  if ieNotDefined('params2')
+    % get the params for the other hemisphere
+    if leftFlag
+      prefix = params1.outerCoords(1:leftFlag-1);
+      postfix = params1.outerCoords(leftFlag+4:end);
+      rightFilename = sprintf('%sright%s', prefix, postfix);
+      params2 = mrSurfViewer(rightFilename);
+    end
+    if rightFlag
+      prefix = params1.outerCoords(1:rightFlag-1);
+      postfix = params1.outerCoords(rightFlag+5:end);
+      leftFilename = sprintf('%sleft%s', prefix, postfix);
+      params2 = mrSurfViewer(leftFilename);
+    end
   end
   % and add the second curvature
   data1(1,:,1) = loadVFF(params1.curv);
