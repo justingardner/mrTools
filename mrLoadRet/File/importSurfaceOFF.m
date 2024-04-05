@@ -146,12 +146,33 @@ if bothHemiFlag
       keyboard % something is weird
     end
   end
+  if ~isempty(strfind(params1.innerSurface,'_Inf'))
+    if leftFlag
+      medialMostXCoord = max(outer1.vtcs(:,1)); %medialmost X of left hemisphere
+      innerSurface1.vtcs(:,1) = innerSurface1.vtcs(:,1) - max(innerSurface1.vtcs(:,1)) + medialMostXCoord;
+    elseif rightFlag
+      medialMostXCoord = min(outer1.vtcs(:,1)); %medialmost X of right hemisphere
+      innerSurface1.vtcs(:,1) = innerSurface1.vtcs(:,1) - min(innerSurface1.vtcs(:,1)) + medialMostXCoord;
+    else
+      keyboard % something is weird
+    end
+  end
+  if ~isempty(strfind(params2.innerSurface,'_Inf'))
+    if leftFlag
+      medialMostXCoord = min(outer2.vtcs(:,1)); %medialmost X of right hemisphere
+      innerSurface2.vtcs(:,1) = innerSurface2.vtcs(:,1) - min(innerSurface2.vtcs(:,1)) + medialMostXCoord;
+    elseif rightFlag
+      medialMostXCoord = max(outer2.vtcs(:,1)); %medialmost X of left hemisphere
+      innerSurface2.vtcs(:,1) = innerSurface2.vtcs(:,1) - max(innerSurface2.vtcs(:,1)) + medialMostXCoord;
+    else
+      keyboard % something is weird
+    end
+  end
   % combine left and right surfaces
   innerSurface = combineSurfaces(innerSurface1, innerSurface2);
   outerSurface = combineSurfaces(outerSurface1, outerSurface2);
   inner = combineSurfaces(inner1,inner2);
   outer = combineSurfaces(outer1,outer2);
-
 
 else                                    
   % or else a single hemisphere...
