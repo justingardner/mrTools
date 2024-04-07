@@ -179,11 +179,6 @@ if isempty(params) || justGetParams
 end
 
 % ------------------- Checks on parameters
-
-if nOverlays>1 && ~params.mosaic
-  mrWarnDlg('(mrPrint) Printing colorbar for multiple overlays is not implemented');
-end
-
 if isempty(params.colorbarTitle)  || ischar(params.colorbarTitle)
   params.colorbarTitle = {params.colorbarTitle};
 end
@@ -249,20 +244,22 @@ for iImage = 1:nImages
   if nOverlays>1 && params.mosaic
     v = viewSet(v,'curOverlay',overlayList(iImage)); % set each overlay in the view one by one
   end
-  [img{iImage}, base, roi, ~, altBase{iImage}] = refreshMLRDisplay(viewGet(v,'viewNum'));
-  % get the gui, so that we can extract colorbar
+  [img{iImage}, base, roi, overlays, altBase{iImage}] = refreshMLRDisplay(viewGet(v,'viewNum'));
   fig = viewGet(v,'figNum');
-  if nOverlays>1 && ~params.mosaic
-      cmap{iImage} = [];
-  elseif ~isempty(fig) % this won't work with the view doesn't have a GUI figure associated with it
+  % get the gui, so that we can get colorbar data
+  if ~isempty(fig) % this won't work with the view doesn't have a GUI figure associated with it
     gui = guidata(fig);
-    % grab the colorbar data
-    H = get(gui.colorbar,'children');
-    cmap{iImage} = get(H(end),'CData');
-    cmap{iImage}=squeeze(cmap{iImage}(1,:,:));
-    yTicks{iImage} = get(gui.colorbar,'YTick');
-    xTicks{iImage} = (get(gui.colorbar,'XTick')-0.5)/length(colormap);
-    xTickLabels{iImage} = str2num(get(gui.colorbar,'XTicklabel'));
+    if size(overlays.cmap,3)>1 % if there are multiple overlays
+      cmap{iImage} = overlays.cmap; % we get the colormaps for the overlays structure, not the GUI
+    else  % othewrise, get the colorbar data from the GUI (we do this to ensure we have the same ticks as in the mrLoadRet figure)
+      % grab the colorbar data
+      H = get(gui.colorbar,'children');
+      cmap{iImage} = get(H(end),'CData');
+      cmap{iImage} = squeeze(cmap{iImage}(1,:,:));
+      yTicks{iImage} = get(gui.colorbar,'YTick');
+      xTicks{iImage} = (get(gui.colorbar,'XTick')-0.5)/length(colormap);
+      xTickLabels{iImage} = str2num(get(gui.colorbar,'XTicklabel'));
+    end
   else
     cmap{iImage} = [];
   end
@@ -666,83 +663,111 @@ for iImage = 1:nImages
         colorbarPosition(2) = colorbarPosition(2) + colorbarPosition(4)*(1-.8)/2;
         colorbarPosition(4) = colorbarPosition(4) * colorbarLength;
     end
-    H = colorbar(hColorbar,colorbarLoc,'Position',colorbarPosition);
-    % set the colormap
-    colormap(hColorbar,cmap{iImage});
-    set(H,'axisLocation','in'); %make sure ticks and labels are pointing away from the image (i.e. towards the inside of the colorbar axes)
-    
-    % apply scaling to ticks and tick labels
-    if ~fieldIsNotDefined(params,'colorbarTickNumber')
-      xTicks{iImage} = linspace(xTicks{iImage}(1),xTicks{iImage}(end),params.colorbarTickNumber);
-      xTickLabels{iImage} = linspace(xTickLabels{iImage}(1),xTickLabels{iImage}(end),params.colorbarTickNumber)';
-    end
-    if ~fieldIsNotDefined(params,'colorbarScale')
-      colorScale = viewGet(v,'overlayColorRange');
-      xTickLabels{iImage} =(xTickLabels{iImage}-colorScale(1))/diff(colorScale)*diff(params.colorbarScale)+params.colorbarScale(1);
-    end
-    if ~fieldIsNotDefined(params,'colorbarScaleFunction')
-      colorbarScaleFunction = str2func(params.colorbarScaleFunction);
-      xTickLabels{iImage} = colorbarScaleFunction(xTickLabels{iImage});
-    end
-    xTickLabels{iImage} = num2str( xTickLabels{iImage}, '%.3f');
-    
-    % remove trailing zeros (can't use %g or %f to directly get both a fixed number of decimal points and no trailing zeros)
-    totalColNum = size(xTickLabels{iImage},2);
-    for iTick = 1:size(xTickLabels{iImage},1)
-      colNum = totalColNum;
-      while xTickLabels{iImage}(iTick,colNum)=='0'
-        colNum=colNum-1;
-      end
-      if xTickLabels{iImage}(iTick,colNum)=='.'
-        colNum=colNum-1;
-      end
-      xTickLabels{iImage}(iTick,:) = circshift(xTickLabels{iImage}(iTick,:),-colNum);
-      xTickLabels{iImage}(iTick,1:totalColNum-colNum) = repmat(' ',1,totalColNum-colNum);
-    end
-    
-    % remove spaces and align characters depending on the location of the colorbar
-    minLeftSpacesEnd = totalColNum;
-    maxRightSpacesStart = 1;
-    for iTick = 1:size(xTickLabels{iImage},1)
-      startCol = find(~isspace(xTickLabels{iImage}(iTick,:)),1,'first');
-      switch(lower(colorbarLoc))
-        case 'west'
-          leftSpacesEnd = startCol-1;
-          rightSpacesStart = totalColNum+1;
-        case {'north','south'}
-          leftSpacesEnd = round((startCol-1)/2);
-          rightSpacesStart = totalColNum-(startCol-1-leftSpacesEnd)+1;
-          xTickLabels{iImage}(iTick,leftSpacesEnd+1:rightSpacesStart-1) = xTickLabels{iImage}(iTick,startCol:end);
-          xTickLabels{iImage}(iTick,1:leftSpacesEnd) = ' ';
-          xTickLabels{iImage}(iTick,rightSpacesStart:end) = ' ';
-        case 'east'
-          xTickLabels{iImage}(iTick,1:totalColNum-startCol+1) = xTickLabels{iImage}(iTick,startCol:end);
-          xTickLabels{iImage}(iTick,totalColNum-startCol+2:end) = ' ';
-          leftSpacesEnd = 0;
-          rightSpacesStart = totalColNum-startCol+2;
-      end
-      minLeftSpacesEnd = min(minLeftSpacesEnd,leftSpacesEnd);
-      maxRightSpacesStart = max(maxRightSpacesStart,rightSpacesStart);
-    end
-    % remove unnecessary spaces (altough this it not in fact necessary, as they seem to be ignored)
-    xTickLabels{iImage}(:,maxRightSpacesStart:end) = [];
-    xTickLabels{iImage}(:,1:minLeftSpacesEnd) = [];
 
-    % set the colorbar ticks, making sure to switch
-    % them if we have a vertical as opposed to horizontal bar
-    if ismember(lower(colorbarLoc),{'east','west'})
-      set(H,'XTick',yTicks{iImage});
-      set(H,'Ytick',xTicks{iImage});
-      set(H,'YTickLabel',xTickLabels{iImage});
+    H = colorbar(hColorbar,colorbarLoc,'Position',colorbarPosition);
+    set(H,'axisLocation','in'); %make sure ticks and labels are pointing away from the image (i.e. towards the inside of the colorbar axes)
+    % (this also places the labels away from the image)
+    if size(cmap{iImage},3) == 1
+      % set the colormap
+      colormap(hColorbar,cmap{iImage});
+      
+      % apply scaling to ticks and tick labels
+      if ~fieldIsNotDefined(params,'colorbarTickNumber')
+        xTicks{iImage} = linspace(xTicks{iImage}(1),xTicks{iImage}(end),params.colorbarTickNumber);
+        xTickLabels{iImage} = linspace(xTickLabels{iImage}(1),xTickLabels{iImage}(end),params.colorbarTickNumber)';
+      end
+      if ~fieldIsNotDefined(params,'colorbarScale')
+        colorScale = viewGet(v,'overlayColorRange');
+        xTickLabels{iImage} =(xTickLabels{iImage}-colorScale(1))/diff(colorScale)*diff(params.colorbarScale)+params.colorbarScale(1);
+      end
+      if ~fieldIsNotDefined(params,'colorbarScaleFunction')
+        colorbarScaleFunction = str2func(params.colorbarScaleFunction);
+        xTickLabels{iImage} = colorbarScaleFunction(xTickLabels{iImage});
+      end
+      xTickLabels{iImage} = num2str( xTickLabels{iImage}, '%.3f');
+      
+      % remove trailing zeros (can't use %g or %f to directly get both a fixed number of decimal points and no trailing zeros)
+      totalColNum = size(xTickLabels{iImage},2);
+      for iTick = 1:size(xTickLabels{iImage},1)
+        colNum = totalColNum;
+        while xTickLabels{iImage}(iTick,colNum)=='0'
+          colNum=colNum-1;
+        end
+        if xTickLabels{iImage}(iTick,colNum)=='.'
+          colNum=colNum-1;
+        end
+        xTickLabels{iImage}(iTick,:) = circshift(xTickLabels{iImage}(iTick,:),-colNum);
+        xTickLabels{iImage}(iTick,1:totalColNum-colNum) = repmat(' ',1,totalColNum-colNum);
+      end
+      
+      % remove spaces and align characters depending on the location of the colorbar
+      minLeftSpacesEnd = totalColNum;
+      maxRightSpacesStart = 1;
+      for iTick = 1:size(xTickLabels{iImage},1)
+        startCol = find(~isspace(xTickLabels{iImage}(iTick,:)),1,'first');
+        switch(lower(colorbarLoc))
+          case 'west'
+            leftSpacesEnd = startCol-1;
+            rightSpacesStart = totalColNum+1;
+          case {'north','south'}
+            leftSpacesEnd = round((startCol-1)/2);
+            rightSpacesStart = totalColNum-(startCol-1-leftSpacesEnd)+1;
+            xTickLabels{iImage}(iTick,leftSpacesEnd+1:rightSpacesStart-1) = xTickLabels{iImage}(iTick,startCol:end);
+            xTickLabels{iImage}(iTick,1:leftSpacesEnd) = ' ';
+            xTickLabels{iImage}(iTick,rightSpacesStart:end) = ' ';
+          case 'east'
+            xTickLabels{iImage}(iTick,1:totalColNum-startCol+1) = xTickLabels{iImage}(iTick,startCol:end);
+            xTickLabels{iImage}(iTick,totalColNum-startCol+2:end) = ' ';
+            leftSpacesEnd = 0;
+            rightSpacesStart = totalColNum-startCol+2;
+        end
+        minLeftSpacesEnd = min(minLeftSpacesEnd,leftSpacesEnd);
+        maxRightSpacesStart = max(maxRightSpacesStart,rightSpacesStart);
+      end
+      % remove unnecessary spaces (altough this it not in fact necessary, as they seem to be ignored)
+      xTickLabels{iImage}(:,maxRightSpacesStart:end) = [];
+      xTickLabels{iImage}(:,1:minLeftSpacesEnd) = [];
+  
+      % set the colorbar ticks, making sure to switch
+      % them if we have a vertical as opposed to horizontal bar
+      if ismember(lower(colorbarLoc),{'east','west'})
+        set(H,'XTick',yTicks{iImage});
+        set(H,'Ytick',xTicks{iImage});
+        set(H,'YTickLabel',xTickLabels{iImage});
+      else
+        set(H,'YTick',yTicks{iImage});
+        set(H,'Xtick',xTicks{iImage});
+        set(H,'XTickLabel',xTickLabels{iImage});
+      end
+      set(H,'XColor',foregroundColor);
+      set(H,'YColor',foregroundColor);
+      if nImages>1 && params.mosaic
+        set(H,'tickDirection','out'); % for mosaic display, colorbars are smaller, so orient the ticks outwards
+      end
+  
     else
-      set(H,'YTick',yTicks{iImage});
-      set(H,'Xtick',xTicks{iImage});
-      set(H,'XTickLabel',xTickLabels{iImage});
-    end
-    set(H,'XColor',foregroundColor);
-    set(H,'YColor',foregroundColor);
-    if nImages>1 && params.mosaic
-      set(H,'tickDirection','out'); % for mosaic display, colorbars are smaller, so orient the ticks outwards
+      % copied/adapted from refresMLRDisplay to handle color bars for multiple overlays
+      cbar = permute(NaN(size(cmap{iImage})),[3 1 2]);
+      for iOverlay = 1:size(cmap{iImage},3)
+        cbar(iOverlay,:,:) = rescale2rgb(1:size(cmap{iImage},1),cmap{iImage}(:,:,iOverlay),[1,size(cmap{iImage},1)],1);
+      end
+      hColorbar = axes('Position',H.Position);
+      image(hColorbar,cbar);
+      hColorbarRightBorder = axes('Position',H.Position, ...
+        'YaxisLocation','right','XTick',[],'box','off','color','none');
+      H.TickLabels = []; % hide the original colorbar's tick labels
+      if size(cbar,1)==1 % not currently used. This could be used to draw a colorbar for a single overlay, instead of the above (with changes needed)
+        set(hColorbar,'YTick',[]);
+        set(hColorbar,'XTick',linspace(0.5,size(cmap{iImage},1)+0.5,5));
+        set(hColorbar,'XTicklabel',num2str(linspace(overlays.colorRange(1),overlays.colorRange(2),5)',3));
+        set(hColorbarRightBorder,'YTick',[]);
+      else % multiple color bars
+        set(hColorbar,'XTick',[]);
+        set(hColorbar,'YTick',(1:size(cbar,1)));
+        set(hColorbar,'YTickLabel',overlays.colorRange(:,1));
+        set(hColorbarRightBorder,'Ylim',[.5 size(cbar,1)+.5],'YTick',(1:size(cbar,1)));
+        set(hColorbarRightBorder,'YTickLabel',flipud(overlays.colorRange(:,2)));
+      end
     end
 
     %color bar title (label)
