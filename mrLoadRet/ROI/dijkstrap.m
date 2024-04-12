@@ -35,4 +35,5 @@
 % Licensed under the Lesser GPL [see external/lgpl.txt]
 function [D P] = dijkstrap(g,S)
 
-mrErrorDlg('(dijkstrap) You need to compile dijkstrap in mrTools/ROI -- mex -largeArrayDims dijkstrap.cpp fibheap.cpp');
+dispHeader('(dijkstrap) You need to compile dijkstrap in mrTools/ROI -- mex -largeArrayDims dijkstrap.cpp fibheap.cpp');
+keyboard

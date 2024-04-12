@@ -19,3 +19,8 @@
 % Similar to dsearchn. Except much faster for this particular (specialized)
 % task.
 % 
+function [nearest, distances] = assignToNearest(toPoints, fromPoints)
+
+nearest = [];distances= [];
+dispHeader('(assignToNearest) You need to compile assignToNearest in mrTools/mrUtilities/mrFlatMesh -- mex -largeArrayDims assignToNearest.cpp');
+keyboard
