@@ -1,19 +1,15 @@
 % makeROIsExactlyContiguous.m
 %
-%      usage: transformedRois = makeROIsExactlyContiguous(rois,margin,<kernelType>)
+%      usage: transformedRois = makeROIsExactlyContiguous(rois)
 %         by: julien besle
 %       date: 11/01/2011
 %
-%    purpose: attribute voxels shared by two ROIs to the closest of these two ROIs, with 
-%             the two resulting two ROIs then becoming exactly contiguous.
-%             This function will run with more than two ROIs and will apply to all pairs of ROIs
-%             This assumes that no voxel is shared by more than two ROIs. If this is the case,  
-%             then results will depend on the order in which the ROIs are passed
-
+%    purpose: make two or more ROIs mutually exclusive
+%
 function rois = makeROIsExactlyContiguous(rois)
 
 if ~ismember(nargin,[1])
-  help expandROI;
+  help makeROIsExactlyContiguous;
   return
 end
 
@@ -31,34 +27,36 @@ for iRoi = 2:length(rois)
 end
 
 for iRoi = 1:length(rois)
-  for jRoi = iRoi+1:length(rois)
-    % first ensure that all voxel coordinates are rounded and unique
-    coords1 = unique(round(rois(iRoi).coords'),'rows');
-    coords2 = unique(round(rois(jRoi).coords'),'rows');
-    [commonCoordinates, indexROI1, indexROI2] = intersect(coords1,coords2,'rows'); % indexROI1, indexROI2 used to be used below
-    if ~isempty(commonCoordinates)
-      %remove common coordinates from ROIs 1 and 2
-      coords1 = setdiff(coords1,commonCoordinates,'rows');
-      coords2 = setdiff(coords2,commonCoordinates,'rows');
-      %attribute common coordinates to one or the other ROI depending on distance
-      belongsToROI1 = false(size(commonCoordinates,1),1);
-      for iCoords = 1:size(commonCoordinates,1)
-        %compute distance between these coordinates and all coordinates unique to either both ROI
-        distanceCoords1 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords1,1),1) - coords1(:,1:3)).^2,2));
-        distanceCoords2 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords2,1),1) - coords2(:,1:3)).^2,2));
-        %identify closest ROI
-        if min(distanceCoords1) < min(distanceCoords2)
-          belongsToROI1(iCoords) = true;
+  for jRoi = 1:length(rois)
+    if iRoi ~= jRoi
+      % first ensure that all voxel coordinates are rounded and unique
+      coords1 = unique(round(rois(iRoi).coords'),'rows');
+      coords2 = unique(round(rois(jRoi).coords'),'rows');
+      [commonCoordinates, indexROI1, indexROI2] = intersect(coords1,coords2,'rows'); % indexROI1, indexROI2 used to be used below
+      if ~isempty(commonCoordinates)
+        %remove common coordinates from ROIs 1 and 2
+        coords1 = setdiff(coords1,commonCoordinates,'rows');
+        coords2 = setdiff(coords2,commonCoordinates,'rows');
+        %attribute common coordinates to one or the other ROI depending on distance
+        belongsToROI1 = false(size(commonCoordinates,1),1);
+        for iCoords = 1:size(commonCoordinates,1)
+          %compute distance between these coordinates and all coordinates unique to either both ROI
+          distanceCoords1 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords1,1),1) - coords1(:,1:3)).^2,2));
+          distanceCoords2 = sqrt(sum((repmat(commonCoordinates(iCoords,1:3),size(coords2,1),1) - coords2(:,1:3)).^2,2));
+          %identify closest ROI
+          if min(distanceCoords1) < min(distanceCoords2)
+            belongsToROI1(iCoords) = true;
+          end
         end
+  %       % delete coords that belong to the other ROI
+  %       rois(iRoi).coords(:,indexROI1(~belongsToROI1'))=[];
+  %       rois(jRoi).coords(:,indexROI2(belongsToROI1'))=[];
+          % instead of deleting common voxels, replace all voxels in each ROI by its unique voxels
+          % and the common voxels that have been attributed to it
+          % (replacing is necessary because coordinates might have been rounded and duplicates removed)
+          rois(iRoi).coords = [coords1; commonCoordinates(belongsToROI1,:)]';
+          rois(jRoi).coords = [coords2; commonCoordinates(~belongsToROI1,:)]';
       end
-%       % delete coords that belong to the other ROI
-%       rois(iRoi).coords(:,indexROI1(~belongsToROI1'))=[];
-%       rois(jRoi).coords(:,indexROI2(belongsToROI1'))=[];
-        % instead of deleting common voxels, replace all voxels in each ROI by its unique voxels
-        % and the common voxels that have been attributed to it
-        % (replacing is necessary because coordinates might have been rounded and duplciates removed)
-        rois(iRoi).coords = [coords1; commonCoordinates(belongsToROI1,:)]';
-        rois(jRoi).coords = [coords2; commonCoordinates(~belongsToROI1,:)]';
     end
   end
 end
