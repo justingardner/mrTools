@@ -449,7 +449,12 @@ global MLR;
 view = MLR.views{viewNum};
 overlayNum = viewGet(view,'currentOverlay');
 analysisNum = viewGet(view,'currentAnalysis');
-MLR.interrogator{viewNum}.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+if restart % if this is a restart, get the currently set interrogator and check that it's still in the interrogator list (not sure the latter is really necessary: what if it was manually set?)
+  MLR.interrogator{viewNum}.interrogator = intersect(MLR.interrogator{viewNum}.interrogator,interrogatorList);
+end
+if isempty(MLR.interrogator{viewNum}.interrogator)
+  MLR.interrogator{viewNum}.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+end
 set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -150,7 +150,7 @@ end
 % transform from base coordinates to MNI coordinates. This uses deformation maps computed using SPM
 mniInfo = viewGet(v,'mniInfo');
 if ~isempty(mniInfo)
-  % convert coords from base to T1w volume that was use to compute the deformation coords map
+  % convert coords from base to T1w volume that was used to compute the deformation coords map
   base2mag = viewGet(v,'base2mag');
   coordsT1w = mniInfo.mag2T1w * base2mag * [coords.base.x coords.base.y coords.base.z 1]';
   % non-linear registration from T1w volume space to mni
