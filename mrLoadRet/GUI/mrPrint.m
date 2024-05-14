@@ -93,6 +93,9 @@ if ieNotDefined('params')
     paramsInfo{end+1} = {'thresholdValue',thresholdValue,'minmax=[0 1]','incdec=[-0.01 0.01]','contingent=thresholdCurvature','Threshold point - all values below this will turn to the thresholdMin value and all values above this will turn to thresholdMax if thresholdCurvature is turned on.'};
     paramsInfo{end+1} = {'thresholdMin',0.2,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values less than thresholdValue will turn to if thresholdCurvature is set.'};
     paramsInfo{end+1} = {'thresholdMax',0.5,'minmax=[0 1]','incdec=[-0.1 0.1]','contingent=thresholdCurvature','The color that all values greater than thresholdValue will turn to if thresholdCurvature is set.'};
+    paramsInfo{end+1} = {'camLight',false,'type=checkbox','Adds a light shining onto the surface to accentuate its 3D shape. Light position is fixed with respect to the surface'};
+    paramsInfo{end+1} = {'camLightAz',0,'incdec=[-10 10]','contingent=camLight','Azimuth coordinate of the light. Default = 0, corresponding to light coming from behind the viewer.'};
+    paramsInfo{end+1} = {'camLightEl',0,'incdec=[-10 10]','contingent=camLight','Elevation coordinate of the light. Default = 0, corresponding to light coming from behind the viewer.'};
   else % options for flat maps and volume slices
     paramsInfo{end+1} = {'cropX',[1 imageDimensions(2)],sprintf('minmax=[1 %d]',imageDimensions(2)),'incdec=[-10 10]','type=array','X coordinates of a rectangle in pixels to crop the image ([xOrigin width]), before upsampling. X origin is on the left of the image. Not implemented for surfaces'};
     paramsInfo{end+1} = {'cropY',[1 imageDimensions(1)],sprintf('minmax=[1 %d]',imageDimensions(1)),'incdec=[-10 10]','type=array','Y coordinates of a rectangle in pixels to crop the image ([yOrigin height]), before upsampling. Y origin is at the top of the image. Not implemented for surfaces'};
@@ -495,6 +498,7 @@ for iImage = 1:nImages
     set(hImage,'XDir','reverse');
     set(hImage,'YDir','normal');
     set(hImage,'ZDir','normal');
+
     % set the camera taret to center of surface
     camtarget(hImage,mean(baseSurface.vtcs))
     % set the size of the field of view in degrees
@@ -513,6 +517,13 @@ for iImage = 1:nImages
         end
       end
     end
+    
+    if params.camLight % add a light
+      material dull
+      lighting phong
+      camlight(params.camLightAz,params.camLightEl);
+    end
+
   else
 
     %crop image
