@@ -178,7 +178,11 @@ defaultOverlay.interrogator = '';
 defaultOverlay.mergeFunction = 'defaultMergeParams';
 defaultOverlay.colormapType = 'normal';
 defaultOverlay.range = [min_overlay max_overlay];
-defaultOverlay.clip = [min_overlay max_overlay];
+if isfield(params,'min_overlay')
+    defaultOverlay.clip = [params.min_overlay max_overlay];
+else
+    defaultOverlay.clip = [min_overlay max_overlay];
+end
 
 for iFrame=1:nFrames
   numFrame = params.frameList(iFrame);

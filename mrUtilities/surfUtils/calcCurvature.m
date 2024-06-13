@@ -82,7 +82,7 @@ clear surf;
 % allocate space for m
 m = zeros(1,innerSurf.Nvtcs);
 
-disppercent(-inf,'(calcCurvature) Calculating curvature');
+mlrDispPercent(-inf,'(calcCurvature) Calculating curvature');
 if isempty(vertexList),vertexList = 1:innerSurf.Nvtcs;end
 for iVertex = vertexList
   % find neighbors of this vertex.
@@ -151,9 +151,9 @@ for iVertex = vertexList
   pCurvature = eig(A);
   % get the mean curvature
   m(iVertex) = mean(pCurvature);
-  disppercent(iVertex/length(vertexList));
+  mlrDispPercent(iVertex/length(vertexList));
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % invert colors
 m = -m;

@@ -9,6 +9,6 @@ function mrDisp(str)
 
 % if this is being called it means the mex file doesn't exist,
 % so just print out (this won't flush though--preventing updating
-% text print outs like for disppercent)
+% text print outs like for mlrDispPercent)
 fprintf(1,str);
 

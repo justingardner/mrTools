@@ -164,16 +164,16 @@ for roinum = 1:length(roiname)
                 % set the n
                 rois{end}.n = length(x);
                 % load the tseries, voxel-by-voxel
-                disppercent(-inf,sprintf('(loadROITSeries) Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
+                mlrDispPercent(-inf,sprintf('(loadROITSeries) Loading tSeries for %s from %s: %i',rois{end}.name,groupName,scanNum));
 		% for now we always load by block, but if memory is an issue, we can
                 % switch this if statement and load voxels indiviudally from file
                 if strcmp(loadType,'vox')
                     % load each voxel time series indiviudally
                     for voxnum = 1:rois{end}.n
                         rois{end}.tSeries(voxnum,:) = squeeze(loadTSeries(view,scanNum,s(voxnum),[],x(voxnum),y(voxnum)));
-                        disppercent(voxnum/rois{end}.n);
+                        mlrDispPercent(voxnum/rois{end}.n);
                     end
-                    disppercent(inf);
+                    mlrDispPercent(inf);
                 elseif strcmp(loadType,'block');
                     % load the whole time series as a block (i.e. a block including the min and max voxels)
                     % this is usually faster then going back and loading each time series individually
@@ -184,12 +184,12 @@ for roinum = 1:length(roiname)
                     % now go through and pick out the voxels that we need.
                     for voxnum = 1:rois{end}.n
                         rois{end}.tSeries(voxnum,:) = squeeze(tSeriesBlock(x(voxnum)-min(x)+1,y(voxnum)-min(y)+1,s(voxnum)-min(s)+1,:));
-                        disppercent(voxnum/rois{end}.n);
+                        mlrDispPercent(voxnum/rois{end}.n);
                     end
                     clear tSeriesBlock;
-                    disppercent(inf);
+                    mlrDispPercent(inf);
                 else
-                    disppercent(inf);
+                    mlrDispPercent(inf);
                     disp(sprintf('(loadROITSeries) Not loading time series (loadType=%s)',loadType));
                 end
                 if ~strcmp(loadType, 'none')

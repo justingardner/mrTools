@@ -1,7 +1,7 @@
-function [session, groups, version] = loadSession(dirPathStr)
-% function [session, groups, mrLoadRetVersion] = loadSession([dirPathStr])
+function [session, groups, version, mniInfo] = loadSession(dirPathStr)
+% function [session, groups, mrLoadRetVersion, mniInfo] = loadSession([dirPathStr])
 %
-% Loads the mrSESSION and groups structures from mrSESSION.mat.
+% Loads the mrSESSION and groups structures from mrSESSION.mat, + MNI non-linear transform info.
 %
 % dirPathStr: directory that contains the mrSESSION.mat file
 % defaults to current directory (pwd)
@@ -37,6 +37,9 @@ else
 %    mrErrorDlg(['No mrSESSION.mat file in directory: ',dirPathStr]);
     session = [];
     groups = [];
+end
+if ieNotDefined('mniInfo')
+  mniInfo = []; % This optional field contains linear transformation matrix and non-linear coordinate maps to go from the "magnet" coordinates (i.e. canonical base coordinates) to MNI152 coordinates
 end
 
 % check that all scanParams are valid. This is useful if the

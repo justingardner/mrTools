@@ -1,5 +1,11 @@
-function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 %[convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
+%
+%   converts p values to corresponding Z values or -log10(p) and in addition corrects for multiple tests
+%   across all existing values using False Discovery Rate Step-up method and Hommel Bonferroni correction
+%
+% jb ??/??/2011?
+%
+function [convertedStatistic, fdrAdjustedStatistic, fweAdjustedStatistic] = transformStatistic(p, outputPrecision, params)
 
 if ieNotDefined('outputPrecision')
   outputPrecision='double';
@@ -31,7 +37,7 @@ end
 
 convertedStatistic = convertStatistic(p, params.testOutput, outputPrecision);
 
-if params.fdrAdjustment
+if nargout>1 && params.fdrAdjustment
   fdrAdjustedP = p;
   for iTest = 1:size(p,4)
     fdrAdjustedP(:,:,:,iTest) = fdrAdjust(p(:,:,:,iTest),params);
@@ -41,7 +47,7 @@ else
   fdrAdjustedStatistic = [];
 end
 
-if params.fweAdjustment
+if nargout>2 && params.fweAdjustment
   fweAdjustedP = p;
   for iTest = 1:size(p,4)
     if ismember(params.fweMethod,{'Adaptive Step-down','Adaptive Single-step'})
@@ -60,7 +66,7 @@ end
 function p = convertStatistic(p, outputStatistic, outputPrecision)
 
 switch(outputStatistic)
-  case 'Z value'
+  case {'Z value','Z'}
     p = double(p);
     % replace zeros by epsilon to avoid infinite values
     p(p==0) = 1e-16;
@@ -70,7 +76,7 @@ switch(outputStatistic)
     %if there was no round-off error from cdf, we could do the following:
     %Z = max(-norminv(p),0);  %because the left side of norminv seems to be less sensitive to round-off errors,
     %we get -norminv(x) instead of norminv(1-x). also we'renot interested in negative Z value
-  case '-log10(P) value'
+  case {'-log10(P) value', '-log10(P)'}
     p = double(p);
     % replace zeros by epsilon to avoid infinite values
     p(p==0) = 1e-16;

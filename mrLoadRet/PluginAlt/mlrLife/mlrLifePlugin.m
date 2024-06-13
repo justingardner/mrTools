@@ -109,13 +109,13 @@ xMax = -inf;yMax = -inf;zMax = -inf;
 
 % Build a patch from the frame
 nTotalVertices = 0;nTotalTris = 0;
-disppercent(-inf,'(mlrLifeImportFascicles) Making fascicle surface');
+mlrDispPercent(-inf,'(mlrLifeImportFascicles) Making fascicle surface');
 for i = 1:nFascicles
   fasciclePatches{i} = surf2patch(X{i},Y{i},Z{i},'triangles');
   % compute how many vertices and tris we have all together
   nTotalVertices = size(fasciclePatches{i}.vertices,1) + nTotalVertices;
   nTotalTris = size(fasciclePatches{i}.faces,1) + nTotalTris;
-  disppercent(i/nFascicles);
+  mlrDispPercent(i/nFascicles);
   % calculate bounding box
   xMin = min(xMin,min(fasciclePatches{i}.vertices(:,1)));
   xMax = max(xMax,max(fasciclePatches{i}.vertices(:,1)));
@@ -124,7 +124,7 @@ for i = 1:nFascicles
   zMin = min(zMin,min(fasciclePatches{i}.vertices(:,3)));
   zMax = max(zMax,max(fasciclePatches{i}.vertices(:,3)));
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % display bounding box of coordinates
 disp(sprintf('(mlrLifePlugin) Bounding box x: %0.1f %0.1f y: %0.1f %0.1f z: %0.1f %0.1f',xMin,xMax,yMin,yMax,zMin,zMax));
@@ -160,7 +160,7 @@ nRunningTotalVertices = 0;
 nRunningTotalTris = 0;
 
 % now put all fascicles vertices and triangles into one coordMap
-disppercent(-inf,sprintf('(mlrLifePlugin) Converting %i fascicles',nFascicles));
+mlrDispPercent(-inf,sprintf('(mlrLifePlugin) Converting %i fascicles',nFascicles));
 for iFascicle = 1:nFascicles
   % number of vertices and triangles
   nVertices = size(fasciclePatches{iFascicle}.vertices,1);
@@ -180,9 +180,9 @@ for iFascicle = 1:nFascicles
   % update runing totals
   nRunningTotalVertices = nRunningTotalVertices + nVertices;
   nRunningTotalTris= nRunningTotalTris + nTris;
-  disppercent(iFascicle/nFascicles);
+  mlrDispPercent(iFascicle/nFascicles);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % copy the inner to outer since they are all the same for fascicles
 fascicleBase.coordMap.outerCoords = fascicleBase.coordMap.innerCoords;

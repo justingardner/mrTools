@@ -2,7 +2,7 @@ function position = getSubplotPosition(X,Y,horizontalGrid,verticalGrid,xMargin,y
 % getSubplotPosition.m
 %
 %        $Id$
-%      usage: position  =getSubplotPosition(X,Y,verticalGrid,horizontalGrid,xMargin,yMargin)
+%      usage: position = getSubplotPosition(X,Y,verticalGrid,horizontalGrid,xMargin,yMargin)
 %         by: julien besle
 %       date: 28/11/2010
 %    purpose: returns normalized position for subplot or uicontrol in a virtual grid  of given dimensions
@@ -10,8 +10,8 @@ function position = getSubplotPosition(X,Y,horizontalGrid,verticalGrid,xMargin,y
 %             - horizontalGrid and verticalGrid are vector specifying the relative dimensions of the rows and columns 
 %                 in the grid (in arbitrary units,from left to right and top to bottom)
 %             - xMargin and yMargin are the width left blank between the rows and columns of the grid (same units as horizontal and vertical Grid). 
-%                 They are independent from the dimensions of the grid and are removed from it
-%     output: - position vector [left bottom width height] to use as input to subplot or uicontrol 'position' property. 
+%                 They are independent from the dimensions of the grid and are removed from it. Right and top outside margins are set to xMargin/2 and yMargin/2.
+%     output: - position vector [left bottom width height] to use as input to axes or uicontrol 'position' property. 
 %               if no margin is specified, it is better to use this position as 'outerposition'
 %
 %   example: h = axes('outerposition',getSubplotPosition(2,2:3,[1 1 .5],[.5 1 1 .5],.1)) 
@@ -32,12 +32,12 @@ end
 if ieNotDefined('yMargin')
   yMargin = 0;
 end
-figureWidth= sum(horizontalGrid);
-figureHeigth= sum(verticalGrid);
+figureWidth= sum(horizontalGrid) + xMargin*(length(horizontalGrid)+0.5);
+figureHeigth= sum(verticalGrid) + yMargin*(length(verticalGrid)+0.5);
 
-position(1) = (sum(horizontalGrid(1:X(1)-1))+xMargin/2)/ figureWidth;
-position(3) = (sum(horizontalGrid(X(1):X(end))) + (X(end)-X(1)-1)*xMargin)/ figureWidth;
+position(1) = (sum(horizontalGrid(1:X(1)-1)) + (X(1)) * xMargin)/ figureWidth;
+position(3) = (sum(horizontalGrid(X(1):X(end))) + (X(end)-X(1))*xMargin)/ figureWidth;
 
-position(2) = 1 - (sum(verticalGrid(1:Y(end)))-yMargin/2) / figureHeigth;
-position(4) = (sum(verticalGrid(Y(1):Y(end))) + (Y(end)-Y(1)-1)*yMargin) / figureHeigth;
+position(2) = 1 - (sum(verticalGrid(1:Y(end))) + (Y(end)-0.5) * yMargin) / figureHeigth;
+position(4) = (sum(verticalGrid(Y(1):Y(end))) + (Y(end)-Y(1))*yMargin) / figureHeigth;
 

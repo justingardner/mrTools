@@ -4,9 +4,13 @@
 %      usage: makeFlat()
 %         by: eli merriam
 %       date: 09/27/07
-%    purpose: 
+%    purpose: Make a flat map centered on the clicked coordinates
+%             This is normally called from mrLoadRet's interrogator window
+%             with the surface base anatomy as the current base
+%             If makeFlat is called from a script AND the interrogator was never used in this MLR session (i.e. mouseDownBaseCoords is empty)
+%             then x, y, z inputs should be coordinates in the current base (which should be the surface base anatomy)
 %
-function retval = makeFlat(view, overlayNum, scan, x, y, s, roi) 
+function view = makeFlat(view, overlayNum, scan, x, y, s, roi)
 
 
 % check arguments
@@ -25,10 +29,13 @@ end
 baseCoordMap = viewGet(view,'baseCoordMap');
 baseCoordMapPath = viewGet(view,'baseCoordMapPath');
 startPoint = viewGet(view,'mouseDownBaseCoords');
+if isempty(startPoint) % if there are no mouse click coordinates, this means that makeFlat was called from the command line or a script
+  startPoint = [x y s]; % in this case, we assume that passed-in coordinates are in the current base
+end
 baseType = viewGet(view,'baseType');
 
 % some other variables
-defaultRadius = 75;
+defaultRadius = 60;
 viewNum = viewGet(view, 'viewNum');
 
 % parse the parameters
@@ -129,7 +136,7 @@ if ~isempty(flatBase)
 
   % install it
   disp(sprintf('(makeFlat) installing new flat base anatomy: %s', params.flatFileName));
-  viewSet(view, 'newBase', flatBase);
+  view = viewSet(view, 'newBase', flatBase);
   refreshMLRDisplay(viewNum);
 
   % remove the temporary off file (actually we should leave the
@@ -173,15 +180,15 @@ else
                    params.startVertex-1, params.radius+distanceInc, ... 
                    fullfile(params.path, params.innerCoordsFileName), ...
                    fullfile(params.path, params.patchFileName)));
-    disppercent(inf);
+    mlrDispPercent(inf);
     
     % flatten the patch
-    disppercent(-inf, sprintf('(makeFlat) Flattening surface'));
+    mlrDispPercent(-inf, sprintf('(makeFlat) Flattening surface'));
     [degenFlag result] = system(sprintf('FlattenSurface.tcl %s %s %s', ...
                                         fullfile(params.path, params.outerCoordsFileName), ...
                                         fullfile(params.path, params.patchFileName), ...
                                         fullfile(params.path, params.flatFileName)));
-    disppercent(inf);
+    mlrDispPercent(inf);
     
     % if FlattenSurface failed, most likely b/c surfcut made a bad patch
     % increase the distance by one and try again.
@@ -278,9 +285,9 @@ voxelSize=hdr.pixdim(2:4);
 
 % run a modified version of the mrFlatMesh code
 % this outputs and flattened surface
-disppercent(-inf,'(makeFlat) Calling flattenSurfaceMFM');
+mlrDispPercent(-inf,'(makeFlat) Calling flattenSurfaceMFM');
 surf.flat = flattenSurfaceMFM(mesh, [params.x params.y params.z], params.radius,voxelSize');
-disppercent(inf);
+mlrDispPercent(inf);
 
 % we need to figure out whether the flattened patch has been flipped
 % during flattening
@@ -294,7 +301,7 @@ f     = surf.flat.uniqueFaceIndexList;
 %hp = patch('vertices', v, 'faces', f, 'facecolor','none','edgecolor','black');
 
 % loop through all of the faces
-disppercent(-inf,'Checking winding direction');
+mlrDispPercent(-inf,'Checking winding direction');
 wrapDir = zeros(1,length(f));wrapDirFlat = zeros(1,length(f));
 for iFace = 1:length(f);
   % grab a triangle for inner 3D suface
@@ -321,9 +328,9 @@ for iFace = 1:length(f);
   triFlatNorm = [0 0 1];
   % same formula as above
   wrapDirFlat(iFace) = det([cat(2,triFlat, [1 1 1]'); triFlatNorm 1]);
-  disppercent(iFace/length(f));
+  mlrDispPercent(iFace/length(f));
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % now check to see if the winding directions for the flat patch and 3D
 % surface are the same or different. Note that because of the

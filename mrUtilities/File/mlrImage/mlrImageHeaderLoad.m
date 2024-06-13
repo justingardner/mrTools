@@ -294,7 +294,11 @@ end
 uncompressedExists = false;
 if ~mlrIsFile(uncompressedFilename)
   % uncompress the file first
-  system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
+  if ~ispc
+    system(sprintf('gunzip -c %s > %s',filename,uncompressedFilename));
+  else
+    gunzip(filename);
+  end
 else
   % uncompressed file already exists, so no need to gunzip
   uncompressedExists = true;
@@ -305,7 +309,11 @@ nifti = cbiReadNiftiHeader(uncompressedFilename);
 
 % remove uncompressed (but only if it wasn't preexistent)
 if ~uncompressedExists
-  system(sprintf('rm -f %s',uncompressedFilename));
+  if ~ispc
+    system(sprintf('rm -f %s',uncompressedFilename));
+  else
+    delete(uncompressedFilename)
+  end
 end
 
 % check that it was loaded properly

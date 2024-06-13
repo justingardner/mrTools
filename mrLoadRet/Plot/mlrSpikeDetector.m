@@ -75,7 +75,7 @@ end
   
 % load file
 v = viewSet(v,'curGroup',groupNum);
-disppercent(-inf,sprintf('(mlrSpikeDetector) Loading time series for scan %i, group %i',scanNum,groupNum));
+mlrDispPercent(-inf,sprintf('(mlrSpikeDetector) Loading time series for scan %i, group %i',scanNum,groupNum));
 data = loadTSeries(v,scanNum);
 % Dump junk frames
 junkFrames = viewGet(v, 'junkframes', scanNum);
@@ -83,7 +83,7 @@ nFrames = viewGet(v, 'nFrames', scanNum);
 data = data(:,:,:,junkFrames+1:junkFrames+nFrames);
 
 spikeInfo.dim = size(data);
-disppercent(inf);
+mlrDispPercent(inf);
 
 % compute timecourse means for later 
 for slicenum = 1:spikeInfo.dim(3)
@@ -95,7 +95,7 @@ end
 
 % compute fourier transform of data
 % calculating fourier transform of data
-disppercent(-inf,'(mlrSpikeDetector) Calculating FFT');
+mlrDispPercent(-inf,'(mlrSpikeDetector) Calculating FFT');
 % skip some frames in the beginning to account
 % for saturation
 if junkFrames < 5
@@ -105,7 +105,7 @@ else
 end
 data = data(:,:,:,startframe:spikeInfo.dim(4));
 for i = 1:size(data,4)
-  disppercent(i/size(data,4));
+  mlrDispPercent(i/size(data,4));
   for j = 1:size(data,3)
     %first need to remove NaNs from data
     %let's replace them by the mean of each image
@@ -115,32 +115,32 @@ for i = 1:size(data,4)
     data(:,:,j,i) = abs(fftshift(fft2(thisData)));
   end
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % get mean and std
 if params.useMedian
-    disppercent(-inf,'(mlrSpikeDetector) Calculating median and iqr');
+    mlrDispPercent(-inf,'(mlrSpikeDetector) Calculating median and iqr');
     for slicenum = 1:spikeInfo.dim(3)
-        disppercent(slicenum/spikeInfo.dim(3));
+        mlrDispPercent(slicenum/spikeInfo.dim(3));
         meandata(:,:,slicenum) = squeeze(median(data(:,:,slicenum,:),4));
         stddata(:,:,slicenum) = squeeze(iqr(data(:,:,slicenum,:),4));
     end
 else
-    disppercent(-inf,'(mlrSpikeDetector) Calculating mean and std');
+    mlrDispPercent(-inf,'(mlrSpikeDetector) Calculating mean and std');
     for slicenum = 1:spikeInfo.dim(3)
         meandata(:,:,slicenum) = squeeze(mean(data(:,:,slicenum,:),4));
         stddata(:,:,slicenum) = squeeze(std(data(:,:,slicenum,:),0,4));
     end
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 
 % now subtract off mean and see
 % if there are any points above std criterion
 slice = [];time = [];numspikes = [];spikelocs = {};meanZvalue=[];
-disppercent(-inf,'(mlrSpikeDetector) Looking for spikes');
+mlrDispPercent(-inf,'(mlrSpikeDetector) Looking for spikes');
 for i = 1:size(data,4)
-  disppercent(i/spikeInfo.dim(4));
+  mlrDispPercent(i/spikeInfo.dim(4));
   data(:,:,:,i) = squeeze(data(:,:,:,i))-meandata;
   % see if any voxels are larger then expected
   for slicenum = 1:spikeInfo.dim(3)
@@ -159,7 +159,7 @@ for i = 1:size(data,4)
     end
   end
 end
-disppercent(inf);
+mlrDispPercent(inf);
 if length(slice)
   disp(sprintf('======================================================'));
   disp(sprintf('(mlrSpikeDetector) Found %i spikes at z>%.2f in scan %i, group %i',length(slice),params.criterion,scanNum,groupNum));

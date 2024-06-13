@@ -131,7 +131,7 @@ while iArg <= nArgs
 	[iArg imageArgs{end}.altArgs] = getOtherArgs(args,iArg,altArgs,imageArgs{end}.altArgs);
       end
     end
-  elseif isview(args{iArg})
+  elseif isview(args{iArg},false)
     % if we have a view then collect any additional qualifying
     % arguments-look for scanNum and groupNum args that can get passed to getArgs
     jArg = iArg+1;
@@ -191,6 +191,12 @@ while iArg <= nArgs
 	iArg = iArg+1;
       end
     end
+  elseif iscell(args{iArg})
+    % expand cell into args cell array
+    args = [args(1:iArg-1) args{iArg} args(iArg+1:end)];
+    nArgs = length(args);
+  else
+    mrErrorDlg('(mlrImageParseArg) Unknown argument type)');
   end
 end
 

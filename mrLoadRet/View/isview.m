@@ -1,5 +1,5 @@
-function [tf, view, unknownFields] =  isview(view)
-% function [tf view] =  isview(view)
+function [tf, view, unknownFields] =  isview(view,mlrGlobals)
+% function [tf view] =  isview(view,,<mlrGlobals>)
 %
 % Checks to see if it is a valid view structure. Can be called with
 % either one or two output arguments:
@@ -13,10 +13,18 @@ function [tf, view, unknownFields] =  isview(view)
 % If called with two output arguments then an attempt is made to make it
 % into a valid view structure by setting optional fields to default
 % values.
+%
+% if optional argument mlrGlobals is true (default), checks for consistency with
+% the view saved in global variable MLR
 % 
 % djh, 2007
 
-mrGlobals
+if ieNotDefined('mlrGlobals')
+  mlrGlobals = true;
+end
+if mlrGlobals
+  mrGlobals
+end
 unknownFields = [];
 if (nargout >= 2)
   % Add optional fields and return true if the view with optional fields is
@@ -95,19 +103,21 @@ if ~isfield(view,'viewNum') || ~isnumeric(view.viewNum);
   return
 end
 
-% confirm that there is view in MLR.views with the viewNum
-if isempty(view.viewNum) || (view.viewNum < 1) || (view.viewNum > length(MLR.views)) || isempty(MLR.views{view.viewNum})
-  tf = false;
-  return
-end
+if mlrGlobals
+  % confirm that there is view in MLR.views with the viewNum
+  if isempty(view.viewNum) || (view.viewNum < 1) || (view.viewNum > length(MLR.views)) || isempty(MLR.views{view.viewNum})
+    tf = false;
+    return
+  end
 
-% Confirm that MLR.views{viewNum} and view have the same fields
-names1 = fieldnames(orderfields(MLR.views{view.viewNum}));
-names2 = fieldnames(view);
-if length(names1) == length(names2)
-  tf = all(strcmp(names1,names2));
-else
-  tf = false;
+  % Confirm that MLR.views{viewNum} and view have the same fields
+  names1 = fieldnames(orderfields(MLR.views{view.viewNum}));
+  names2 = fieldnames(view);
+  if length(names1) == length(names2)
+    tf = all(strcmp(names1,names2));
+  else
+    tf = false;
+  end
 end
 
 %see if there are any unknown fields

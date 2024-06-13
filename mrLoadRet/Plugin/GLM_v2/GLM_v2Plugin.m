@@ -259,6 +259,7 @@ switch action
     mlrAdjustGUI(thisView,'set','pasteRoiMenuItem',menuLabel,'Paste ROI(s)');
     mlrAdjustGUI(thisView,'set','editRoiMenuItem',menuLabel,'Edit selected ROI(s)');
     %add functions
+    mlrAdjustGUI(thisView,'add','menu','Export to Freesurfer Label','/File/Export/ROI','callback',@exportROIfreesurferMenuItem_Callback,'label','ROI (Freesurfer Label)','tag','exportROIfreesurferMenuItem');
     mlrAdjustGUI(thisView,'add','menu','Single Voxels','/ROI/Create/Contiguous Voxels','callback',@createSingleVoxelsCallBack,'label','Single Voxels','tag','createSingleVoxelsRoiMenuItem','accelerator','T');
     mlrAdjustGUI(thisView,'add','menu','Single Voxels2','/ROI/Add/Contiguous Voxels','callback',@addSingleVoxelsCallBack,'label','Single Voxels','tag','addSingleVoxelsRoiMenuItem','accelerator','N');
     mlrAdjustGUI(thisView,'add','menu','Single Voxels3','/ROI/Subtract/Contiguous Voxels','callback',@removeSingleVoxelsCallBack,'label','Single Voxels','tag','removeSingleVoxelsRoiMenuItem','accelerator','U');
@@ -666,6 +667,36 @@ combineTransformOverlays(thisView);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ROI Menu Callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------
+function exportROIfreesurferMenuItem_Callback(hObject, dump)
+
+viewNum = getfield(guidata(hObject),'viewNum');
+thisView = viewGet(viewNum,'view');
+
+% get the roi we are being asked to export
+roiNum = viewGet(thisView,'currentroi');
+if isempty(roiNum)
+  mrWarnDlg('(mlrExportROI) No current ROI to export');
+  return
+end
+
+% get current roi name
+roiName = viewGet(thisView,'roiname');
+if ischar(roiName)
+  roiName={roiName};
+end
+
+pathstr = cell(0);
+for iRoi = 1:length(roiName)
+  % put up dialog to select filename
+  pathstr{iRoi} = putPathStrDialog(pwd,'Specify name of Freesurfer label file to export ROI to',setext(roiName{iRoi},'.label'));
+  if isempty(pathstr{iRoi})
+    return
+  end
+end
+
+mlrExportROI(thisView, pathstr, 'exportToFreesurferLabel', true);
+
 % --------------------------------------------------------------------
 function createSingleVoxelsCallBack(hObject,dump)
 

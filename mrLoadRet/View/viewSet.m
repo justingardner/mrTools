@@ -96,6 +96,9 @@ switch lower(param)
     % view = viewSet(view,'viewtype',string);
     view.viewType = val;
 
+  case {'mniinfo'}
+    MLR.mniInfo = val;
+
     % -------------------------------------------
     % Group
 
@@ -281,15 +284,29 @@ switch lower(param)
     % view = viewSet(view,'deleteGroup',groupNum);
     groupnum = viewGet(view,'groupNum',val);
     groupName = viewGet(view,'groupName',groupnum);
-    nScans = viewGet(view,'nScans');
+    nScans = viewGet(view,'nScans', groupnum);
     % confirm with user
     if nScans > 0
-      queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
+        queststr = sprintf('There are %i scans in group %s. Are you sure you want to delete?',nScans,groupName);
+        % adding this sub if to check if we want to delete the group in a
+        % script, without having a questdlg pop up. Pass varargin 'quiet',
+        % sets answer to 'Yes'
+    elseif ~isempty(varargin)
+        if strcmpi(varargin{1},'quiet') || nScans == 0
+            disp('Caught quiet flag, deleting empty group...')
+            queststr = 'Yes';
+        end
     else
       queststr = sprintf('Are you sure you want to delete empty group: %s?',groupName);
     end
-    if ~strcmp(questdlg(queststr,'Delete group'),'Yes')
-      return
+    % Check the queststr again, if we are verbose, then it will pop up
+    % with another questdlg (as in previous version), but if it's 'Yes',
+    % then no pop up, and carry on.
+    if ~strcmpi(queststr,'Yes')
+        deleteGroup = questdlg(queststr);
+        if ~strcmp(deleteGroup,'Yes')
+            return
+        end
     end
     if strcmp(groupName,'Raw')
       mrWarnDlg('Cannot delete Raw group');
@@ -850,22 +867,24 @@ switch lower(param)
 	mlrGuiSet(view,'rotate',baseRotate);
       end
       baseTilt = viewGet(view,'baseTilt',baseNum);
-      if baseType == 2
-	% allow export
-	mlrAdjustGUI(view,'set','Export surface','Enable','on');
-	% allow tilt
-	mlrGuiSet(view,'baseTilt',baseTilt);
-	if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
-	  % turn on free rotation
-	  mlrSetRotate3d(view,1);
-	else
-	  mlrSetRotate3d(view,0);
-	end
-      else
-	% do not allow export
-	mlrAdjustGUI(view,'set','Export surface','Enable','off');
-	% otherwise turn off free rotation
-	mlrSetRotate3d(view,0);
+      if ~isempty(viewGet(view,'fignum'))
+        if baseType == 2
+          % allow export
+          mlrAdjustGUI(view,'set','Export surface','Enable','on');
+          % allow tilt
+          mlrGuiSet(view,'baseTilt',baseTilt);
+          if ~mrInterrogator('isactive',viewGet(view,'viewNum'));
+            % turn on free rotation
+            mlrSetRotate3d(view,1);
+          else
+            mlrSetRotate3d(view,0);
+          end
+        else
+          % do not allow export
+          mlrAdjustGUI(view,'set','Export surface','Enable','off');
+          % otherwise turn off free rotation
+          mlrSetRotate3d(view,0);
+        end
       end
     end
     % see if there are any registered callbacks
@@ -1553,7 +1572,7 @@ case{'surfaceroihandle'}
       analysisNum = varargin{1};
     end
     analysis = viewGet(view,'analysis',analysisNum);
-    disppercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
+    mlrDispPercent(-inf,['(viewSet:newOverlay) Installing overlays for ' analysis.name]);
 
     nOverlays = viewGet(view,'numberofOverlays',analysisNum);
     newOverlayNum = nOverlays;
@@ -1647,9 +1666,9 @@ case{'surfaceroihandle'}
           end
         end
       end
-      disppercent(iOverlay/length(val));
+      mlrDispPercent(iOverlay/length(val));
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
 
     % Update the gui
     overlayNames = viewGet(view,'overlayNames',analysisNum);
@@ -1815,18 +1834,29 @@ case{'surfaceroihandle'}
 
   case {'overlaycmap'}
     % view = viewSet(view,'overlaycmap',cmapName,[overlayNum]);
-    if ieNotDefined('varargin')
-      overlayNum = viewGet(view,'currentOverlay');
-    else
-      overlayNum = varargin{1};
-    end
-    analysisNum = viewGet(view,'currentAnalysis');
-    if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
-        ~isempty(view.analyses{analysisNum}.overlays)
-      evalstr = [val,'(256)'];
-      view.analyses{analysisNum}.overlays(overlayNum).colormap = eval(evalstr);
-    end
 
+      if ieNotDefined('varargin')
+        overlayNum = viewGet(view,'currentOverlay');
+      else
+        overlayNum = varargin{1};
+      end
+      analysisNum = viewGet(view,'currentAnalysis');
+      if ischar(val)% if the cMap is an already defined one
+        if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
+            ~isempty(view.analyses{analysisNum}.overlays)
+          evalstr = [val,'(256)'];
+          for iOverlay = 1:length(overlayNum)
+            view.analyses{analysisNum}.overlays(overlayNum(iOverlay)).colormap = eval(evalstr);
+          end
+        end
+      elseif ~ischar(val) && size(val,2)==3 % if you want to add a new user defined color map
+         for iOverlay = 1:length(overlayNum)
+           view.analyses{analysisNum}.overlays(overlayNum(iOverlay)).colormap = val;
+         end
+      else
+        mrWarnDlg(sprintf('Unknown Color Map'));
+      end
+    
   case {'overlaymin'}
     % view = viewSet(view,'overlaymin',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');
@@ -1931,12 +1961,15 @@ case{'surfaceroihandle'}
     if ~isempty(analysisNum) & ~isempty(overlayNum) & ...
         ~isempty(view.analyses{analysisNum}.overlays)
       for iOverlay = overlayNum
-        view.analyses{analysisNum}.overlays(iOverlay).colorRange = val;
+        if iOverlay > 0 && iOverlay <= length(view.analyses{analysisNum}.overlays)
+          view.analyses{analysisNum}.overlays(iOverlay).colorRange = val;
+        end
       end
     end
 
-  case {'alpha'}
+  case {'alpha','overlayalpha'}
     % view = viewSet(view,'alpha',number,[overlayNum]);
+    % view = viewSet(view,'overlayalpha',number,[overlayNum]);
     curOverlay = viewGet(view,'currentOverlay');
     if ~isempty(varargin)
       overlayNum = varargin{1};
@@ -2077,7 +2110,8 @@ case{'surfaceroihandle'}
       roinums = val;
       numrois = viewGet(view,'numberofrois');
       curroi = viewGet(view,'currentROI');
-      % Remove it and reset currentROI
+      roinums = intersect(roinums,1:numrois,'stable'); %make sure all ROIs to delete actually exist in the view
+      % Remove it/them and reset currentROI
       remainingRois = setdiff(1:numrois,roinums);
       curroi = find(ismember(remainingRois,curroi));
       view.ROIs=view.ROIs(remainingRois);
@@ -2105,7 +2139,8 @@ case{'surfaceroihandle'}
     currentRoi = viewGet(view,'currentRoi');
     if ~isequal(roiNum,currentRoi);
       numROIs = viewGet(view,'numberofROIs');
-      if (roiNum > 0) & (roiNum <= numROIs)
+      roiNum = intersect(roiNum,1:numROIs,'stable'); %make sure all ROIs to select actually exist in the view
+      if ~isempty(roiNum)
         view.curROI = roiNum;
         % update popup menu
         mlrGuiSet(view,'roi',roiNum);
@@ -2122,6 +2157,7 @@ case{'surfaceroihandle'}
     else
       ROInum = viewGet(view,'currentROI');
     end
+    ROInum = intersect(ROInum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(ROInum)
       view.ROIs(ROInum).coords = val;
       view.ROIs(ROInum).date = datestr(now);
@@ -2139,8 +2175,11 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
-      view.ROIs(roiNum).color = val;
+      for iRoi = roiNum
+        view.ROIs(iRoi).color = val;
+      end
     end
 
   case {'roinotes'}
@@ -2151,6 +2190,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).notes = val;
     end
@@ -2166,6 +2206,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).vol2mag = val;
     end
@@ -2181,6 +2222,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).vol2tal = val;
     end
@@ -2194,6 +2236,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).sformCode = val;
     end
@@ -2207,6 +2250,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).xform = val;
     end
@@ -2219,6 +2263,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).voxelSize = val;
     end
@@ -2232,6 +2277,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).createdBy = val;
     end
@@ -2245,6 +2291,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).branchNum = val;
     end
@@ -2258,6 +2305,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).createdOnBase = val;
     end
@@ -2271,6 +2319,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).createdFromSession = val;
     end
@@ -2284,6 +2333,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).displayOnBase = val;
     end
@@ -2297,6 +2347,7 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
       view.ROIs(roiNum).subjectID = val;
     end
@@ -2309,20 +2360,21 @@ case{'surfaceroihandle'}
     else
       roiNum = curRoi;
     end
-    % check to make sure the name is unique
-    roiNames = viewGet(view,'roiNames');
-    nameMatch = find(strcmp(val,roiNames));
-    while ~isempty(nameMatch) && (nameMatch~=roiNum)
-      paramsInfo{1} = {'roiName',val,'Change the name to a unique ROI name'};
-      params = mrParamsDialog(paramsInfo,'Non unique ROI name, please change');
-      if isempty(params),tf=0;return,end
-      val = params.roiName;
-      nameMatch = find(strcmp(val,roiNames));
-    end
+    roiNum = intersect(roiNum,1:viewGet(view,'numberofrois'),'stable'); %make sure all ROIs to set actually exist in the view
     if ~isempty(roiNum)
+      % check to make sure the name is unique
+      roiNames = viewGet(view,'roiNames');
+      nameMatch = find(strcmp(val,roiNames));
+      while ~isempty(nameMatch) && (nameMatch~=roiNum)
+        paramsInfo{1} = {'roiName',val,'Change the name to a unique ROI name'};
+        params = mrParamsDialog(paramsInfo,'Non unique ROI name, please change');
+        if isempty(params),tf=0;return,end
+        val = params.roiName;
+        nameMatch = find(strcmp(val,roiNames));
+      end
       view.ROIs(roiNum).name = val;
+      mlrGuiSet(view,'roipopup',{view.ROIs(:).name});
     end
-    mlrGuiSet(view,'roipopup',{view.ROIs(:).name});
 
     % -------------------------------------------
     % Figure and GUI

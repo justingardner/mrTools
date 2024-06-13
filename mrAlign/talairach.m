@@ -239,12 +239,12 @@ refreshTalairachDisplay;
 function viewVol = vol2viewVol(vol,view2vol);
 % warp the volume
 if ~isequal(view2vol,eye(4))
-  disppercent(-inf,'Warping volume');
+  mlrDispPercent(-inf,'Warping volume');
   swapXY = [0 1 0 0;1 0 0 0;0 0 1 0;0 0 0 1];
   % warpAffine3 uses yx, not xy
   viewVol = warpAffine3(vol,swapXY*view2vol*swapXY,nan,[],'linear');
   %viewVol = warpAffine3(vol,swapXY*view2vol*swapXY,nan,[],'nearest');
-  disppercent(inf);
+  mlrDispPercent(inf);
 else
   viewVol = vol;
 end
@@ -371,14 +371,14 @@ if mlrIsFile(talinfo.filename)
     end
   end
   % read it
-  disppercent(-inf,sprintf('Loading %s',talinfo.filename));
+  mlrDispPercent(-inf,sprintf('Loading %s',talinfo.filename));
   if ~isempty(subset)
     [vol hdr] = mlrImageReadNifti(talinfo.filename,subset);
   else
     [vol hdr] = mlrImageReadNifti(talinfo.filename);
   end
   if doMean,vol = mean(vol,4);end
-  disppercent(inf);
+  mlrDispPercent(inf);
 else
   disp(sprintf('(talairach) Could not open file %s',talinfo.filename));
   return

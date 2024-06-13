@@ -65,7 +65,7 @@ for iScan = scanList
 %     %put slices on 4th dimensions
 %     overlayData{cScan} = permute(overlayData{cScan},[1 2 4 3]);
   else
-    scanDims = viewGet(thisView,'scandims');
+    scanDims = viewGet(thisView,'scandims',iScan);
     overlayData{cScan}=NaN([scanDims nOverlaysInAnalysis]);
     cOverlay=0;
     for iOverlay = overlaysToGet
@@ -93,12 +93,10 @@ for iScan = 1:length(scanList)
     if ~isempty(thisOverlayData) && ~all(isnan(thisOverlayData(:)))  %if there is some data in the overlay
       clip = viewGet(thisView,'overlayClip',iOverlay);
       
-      if diff(clip) > 0 % Find defined pixels that are within clip
+      if diff(clip) >= 0 % Find defined pixels that are within clip
         maskOverlayData(:,:,:,cOverlay) = ((thisOverlayData >= clip(1) & thisOverlayData <= clip(2))) | isnan(thisOverlayData);
       elseif diff(clip) < 0 % Find defined pixels that are outside clip
         maskOverlayData(:,:,:,cOverlay) = (thisOverlayData >= clip(1) | thisOverlayData <= clip(2)) | isnan(thisOverlayData) ;
-      else
-        maskOverlayData(:,:,:,cOverlay) = false(size(thisOverlayData)) | isnan(thisOverlayData);
       end
     end
   end

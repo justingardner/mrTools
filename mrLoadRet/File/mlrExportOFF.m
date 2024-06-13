@@ -86,7 +86,7 @@ end
 if ~isempty(vertexColors)
   % check if it is a filename
   if isstr(vertexColors)
-    if isfile(vertexColors)
+    if mlrIsFile(vertexColors)
       [data hdr] = loadVFF(vertexColors);
       if isempty(data),return,end
       vertexColors = data(:);
@@ -134,38 +134,38 @@ vtcs(:,1) = 256-vtcs(:,1);
 if ~isempty(vertexColors)
   if size(vertexColors,2) == 1
     % write vertices with grayscale
-    disppercent(-inf,'(mlrExportOFF) Writing vertices with grayscale');
+    mlrDispPercent(-inf,'(mlrExportOFF) Writing vertices with grayscale');
     for iVertex = 1:nVtcs
       fprintf(outfile,'v %f %f %f %f\n',vtcs(iVertex,1),vtcs(iVertex,2),vtcs(iVertex,3),vertexColors(iVertex,1));
-      if mod(iVertex,5000) == 1,disppercent(iVertex/nVtcs);end
+      if mod(iVertex,5000) == 1,mlrDispPercent(iVertex/nVtcs);end
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
   else
     % write vertices with rgb
-    disppercent(-inf,'(mlrExportOFF) Writing vertices with color');
+    mlrDispPercent(-inf,'(mlrExportOFF) Writing vertices with color');
     for iVertex = 1:nVtcs
       fprintf(outfile,'v %f %f %f %f %f %f\n',vtcs(iVertex,1),vtcs(iVertex,2),vtcs(iVertex,3),vertexColors(iVertex,1),vertexColors(iVertex,2),vertexColors(iVertex,3));
-      if mod(iVertex,5000) == 1,disppercent(iVertex/nVtcs);end
+      if mod(iVertex,5000) == 1,mlrDispPercent(iVertex/nVtcs);end
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
   end    
 else
   % write vertices with no colors
-  disppercent(-inf,'(mlrExportOFF) Writing vertices');
+  mlrDispPercent(-inf,'(mlrExportOFF) Writing vertices');
   for iVertex = 1:nVtcs
     fprintf(outfile,'v %f %f %f\n',vtcs(iVertex,1),vtcs(iVertex,2),vtcs(iVertex,3));
-    if mod(iVertex,5000) == 1,disppercent(iVertex/nVtcs);end
+    if mod(iVertex,5000) == 1,mlrDispPercent(iVertex/nVtcs);end
   end
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 % write faces
-disppercent(-inf,'(mlrExportOFF) Writing faces');
+mlrDispPercent(-inf,'(mlrExportOFF) Writing faces');
 for iTri = 1:nTris
   fprintf(outfile,'f %i %i %i\n',tris(iTri,1),tris(iTri,2),tris(iTri,3));
-  if mod(iTri,5000) == 1,disppercent(iTri/nTris);end
+  if mod(iTri,5000) == 1,mlrDispPercent(iTri/nTris);end
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%
 %    writeSTL    %
@@ -176,7 +176,7 @@ function writeSTL(outfile,vtcs,tris,surfaceName)
 fprintf(outfile,'solid %s\n',surfaceName);
 
 
-disppercent(-inf,'(mlrExportOFF) Converting triangles');
+mlrDispPercent(-inf,'(mlrExportOFF) Converting triangles');
 nTris = size(tris,1);
 for iTri = 1:nTris
   % get vertices
@@ -194,9 +194,9 @@ for iTri = 1:nTris
   fprintf(outfile,'        vertex %f %f %f\n',v3(1),v3(2),v3(3));
   fprintf(outfile,'    endloop\n');
   fprintf(outfile,'endfacet\n');
-  disppercent(iTri/nTris);
+  mlrDispPercent(iTri/nTris);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 fprintf(outfile,'endsolid %s\n',surfaceName);
 

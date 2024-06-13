@@ -42,13 +42,14 @@ if isempty(MLR) || (isfield(MLR,'session') && isempty(MLR.session))
     MLR.homeDir = pwd;
 
     % Load session and groups structures from mrSESSION.mat
-    [session, groups] = loadSession(MLR.homeDir);
+    [session, groups, ~, mniInfo] = loadSession(MLR.homeDir);
     % check session
     if isempty(session)
       oneTimeWarning(sprintf('mrSession_%s',fixBadChars(MLR.homeDir)),sprintf('(mrGlobals) Could not find mrSession in %s',MLR.homeDir));
     end
     MLR.session = session;
     MLR.groups = groups;
+    MLR.mniInfo = mniInfo;
 
     % Initialize MLR.views
     MLR.views = {};
