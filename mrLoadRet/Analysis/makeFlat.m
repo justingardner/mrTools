@@ -19,6 +19,12 @@ if ~any(nargin == [4 5 6 7])
   return
 end
 
+% check for edge command
+if ~exist('edge')
+  dispHeader('(makeFlat) You do not have the edge function, you will need to download the Image Proessing Toolbox for Matlab - can be done from the Matlab GUI from Home tab / Add-ons / Get Add-ons');
+  keyboard
+end
+
 % get base info
 baseCoordMap = viewGet(view,'baseCoordMap');
 baseCoordMapPath = viewGet(view,'baseCoordMapPath');

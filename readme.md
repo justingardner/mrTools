@@ -4,7 +4,7 @@ mrTools provides a set of Matlab tools to analyze fMRI data. It can do basic ana
 
 # mrTools Documentation
 
-Full documentation can be found here: [http://gru.stanford.edu/mrTools](http://gru.stanford.edu/mrTools)
+Full documentation can be found here: [https://gru.stanford.edu/doku.php/mrtools/overview](https://gru.stanford.edu/doku.php/mrtools/overview)
 
 # mrTools Citation
 
