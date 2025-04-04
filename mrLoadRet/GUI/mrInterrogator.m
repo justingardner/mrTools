@@ -154,7 +154,12 @@ else
   set(MLR.interrogator{viewNum}.hPosBase,'String','');
 end
 
-if ~isempty(coords.tal)
+if ~isempty(coords.mni)
+  set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
+  set(MLR.interrogator{viewNum}.hPosTalLabel,'String','MNI');
+  set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
+  set(MLR.interrogator{viewNum}.hPosTal,'String',sprintf('[%0.1f %0.1f %0.1f]',coords.mni.x,coords.mni.y,coords.mni.z));
+elseif ~isempty(coords.tal)
   set(MLR.interrogator{viewNum}.hPosTalLabel,'visible','on');
   set(MLR.interrogator{viewNum}.hPosTalLabel,'String','Tal');
   set(MLR.interrogator{viewNum}.hPosTal,'visible','on');
@@ -263,6 +268,20 @@ if ~isempty(coords.scan)
   feval(MLR.interrogator{viewNum}.interrogator,view,overlayNum,scanNum,coords.scan.x,coords.scan.y,coords.scan.z,roi);
 else
   MLR.interrogator{viewNum}.mouseDownScanCoords = [nan nan nan];
+end
+
+% see if we have valid Talairach coordinates
+if ~isempty(coords.tal)
+  MLR.interrogator{viewNum}.mouseDownTalCoords = [coords.tal.x coords.tal.y coords.tal.z];
+else
+  MLR.interrogator{viewNum}.mouseDownTalCoords = [nan nan nan];
+end
+
+% see if we have valid mni coordinates
+if ~isempty(coords.mni)
+  MLR.interrogator{viewNum}.mouseDownMniCoords = [coords.mni.x coords.mni.y coords.mni.z];
+else
+  MLR.interrogator{viewNum}.mouseDownMniCoords = [nan nan nan];
 end
 
 
@@ -430,7 +449,12 @@ global MLR;
 view = MLR.views{viewNum};
 overlayNum = viewGet(view,'currentOverlay');
 analysisNum = viewGet(view,'currentAnalysis');
-MLR.interrogator{viewNum}.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+if restart % if this is a restart, get the currently set interrogator and check that it's still in the interrogator list (not sure the latter is really necessary: what if it was manually set?)
+  MLR.interrogator{viewNum}.interrogator = intersect(MLR.interrogator{viewNum}.interrogator,interrogatorList);
+end
+if isempty(MLR.interrogator{viewNum}.interrogator)
+  MLR.interrogator{viewNum}.interrogator = viewGet(view,'interrogator',overlayNum,analysisNum);
+end
 set(MLR.interrogator{viewNum}.hInterrogator,'String',MLR.interrogator{viewNum}.interrogator);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

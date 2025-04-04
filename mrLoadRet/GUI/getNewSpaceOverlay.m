@@ -30,7 +30,7 @@ newOverlayData = NaN([size(newXCoords) nOverlays]);
 epsilon = 1e-7;
 xform = round(xform./epsilon).*epsilon;
 
-hWaitbar = mrWaitBar(0,'Resampling overlay to new space');
+hWaitbar = mrWaitBar(0,'(getNewSpaceOverlay) Resampling overlay to new space');
 % Compute new overlay data by base slice
 nSlices = size(newXCoords,3);
 scanDims = size(overlayData(:,:,:,1));

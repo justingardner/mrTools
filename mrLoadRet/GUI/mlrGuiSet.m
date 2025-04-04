@@ -83,7 +83,7 @@ switch lower(field)
   % mlrGuiSet(view,'showrois',value);
   
   % figure out which menu item should be checked
-  onItem = find(strcmp(value,{'all','all perimeter','selected','selected perimeter','group','group perimeter','hide'}));
+  onItem = find(strcmpi(value,{'all','all perimeter','selected','selected perimeter','group','group perimeter','hide'}));
   onOrOff = {'off','off','off','off','off','off','off'};
   onOrOff{onItem} = 'on';
   % turn the check marks on/off
@@ -285,9 +285,9 @@ switch lower(field)
   else
     set(handles.overlayPopup,'value',1);
   end
-  % for matlab version 2014a and above, the listboxtop property is not
-  % correctly updated when setting the value or the strings
-  if ~verLessThan('matlab','8.3') && strcmp(get(handles.overlayPopup,'style'),'listbox')
+  % From matlab version 2014a, the listboxtop property is not correctly updated when
+  % setting the value or the strings. However, this seems to have been fixed in later versions (not sure when exactly)
+  if ~verLessThan('matlab','8.3') && verLessThan('matlab','9.7') && strcmp(get(handles.overlayPopup,'style'),'listbox')
     set(handles.overlayPopup,'ListboxTop',1) %need to set it manually otherwise a warning will be issued
   end
   set(handles.overlayPopup,'String',value);

@@ -6,7 +6,11 @@ function thisView = drawROI(thisView,descriptor,sgn)
 %
 % descriptor: option for how the new coordinates are to be specified.
 % Current options are:
-%    'rectangle'[default]
+%    'rectangle'[default]: rectangle defined from two opposite voxels
+%    'single voxels': list of single voxels
+%    'contiguous': all contiguous unmasked voxels
+%    'polygon': area enclosed within a list of voxels/vertices
+%    'line': connected line of voxels
 %
 % sgn: If sgn~=0 [default, adds user-specified coordinates to selected ROI
 % in current slice. If sgn==0, removes those coordinates from the ROI.
@@ -38,11 +42,13 @@ set(fig,'CurrentAxes',gui.axis);
 
 % baseCoords contains the mapping from pixels in the displayed slice to
 % voxels in the current base volume.
+[~,~,~,~,~,thisView] = refreshMLRDisplay(thisView);% first run refreshMLRDisplay to update view field 'curslicebasecoords'
+% (ideally this field should be updated when changing the slice/cortical depth WITHOUT a call to refreshMLRDisplay)
 baseCoords = viewGet(thisView,'cursliceBaseCoords');
-baseSliceDims = [size(baseCoords,1),size(baseCoords,2)];
 if isempty(baseCoords)
-  mrWarnDlg('Load base anatomy before drawing an ROI');
+  mrErrorDlg('Load base anatomy before drawing an ROI');
 end
+baseSliceDims = [size(baseCoords,1),size(baseCoords,2)];
 
 % turn off 3d rotate
 if viewGet(thisView,'baseType') == 2
@@ -71,16 +77,17 @@ else
   switch descriptor
      
     case 'single voxels'
-      disp('Use mouse left button to add/remove a voxel. End selection with Alt, Command key or right-click')
-      [mouseY,mouseX] = ginput(1);
+      disp('(drawROI) Use mouse left button to add/remove a voxel. End selection with Alt, Command key or right-click')
+      region = getrect(fig);
+      mouseX = region(2);
+      mouseY = region(1);
       voxelXcoords = [.5 .5;-.5 -.5; -.5 .5; -.5 .5]'; 
       voxelYcoords = [.5 -.5;.5 -.5; .5 .5; -.5 -.5]'; 
       selectionY=[];
       selectionX=[];
       hSelection=[];
       hold on;
-      key=1;
-      while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) && key==1
+      while ~any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) && strcmp(get(fig,'SelectionType'),'normal')
         if ~isempty(selectionY)
           [dump,index] = ismember(round([mouseY mouseX]), [selectionY' selectionX'],'rows');
         else
@@ -97,7 +104,9 @@ else
           index = length(selectionY);
           hSelection(:,index)=plot(selectionY(index)+voxelXcoords,selectionX(index)+voxelYcoords,'w');%,'linewidth',mrGetPref('roiContourWidth'));
         end
-        [mouseY,mouseX,key] = ginput(1);
+        region = getrect(fig);
+        mouseX = region(2);
+        mouseY = region(1);
       end
       
       baseX = baseCoords(:,:,1);
@@ -115,8 +124,10 @@ else
       
     case 'contiguous'
       disp('Hold Alt or Command key to select all connected regions')
-      [mouseY,mouseX] = ginput(1);
-     
+      region = getrect(fig);
+      mouseX = region(2);
+      mouseY = region(1);
+
       if any(ismember(get(fig,'CurrentModifier'),{'command','alt'})) 
         selectAcrossVolume=true;
       else
@@ -236,9 +247,10 @@ else
       
    case 'rectangle'
     % Get region from user.
-    region = round(ginput(2));
+    region = getrect(fig);
+    region = round([region(1:2);region(1:2)+region(3:4)]);
     
-    % Note: ginput hands them back in x, y order (1st col is x and 2nd col is
+    % Note: getrect hands them back in x, y order (1st col is x and 2nd col is
     % y). But we use them in the opposite order (y then x), so flip 'em.
     region = fliplr(region);
     % Check if outside image
@@ -271,17 +283,17 @@ else
       % this is sometimes very slow if you have a lot
       % of lines already drawn on the figure.
       % i.e. if you have rois already being displayed
-      polyIm = roipoly;
+      polyIm = roipoly; % this might not work if drawROI is called from a script. The current image in the current figure would have to be specified somehow
     else
       % this doesn't have to redraw lines all the time
       % so it is faster
       % but has the disadvantage that you don't get
       % to see the lines connecting the points.
-      [x y a] = getimage;
+      [x y a] = getimage(fig);
       if strcmp(roiPolygonMethod,'getptsNoDoubleClick')
-	[xi yi] = getptsNoDoubleClick;
+	[xi yi] = getptsNoDoubleClick(fig);
       else
-	[xi yi] = getpts;
+	[xi yi] = getpts(fig);
       end
       % draw the lines temporarily
       if ~isempty(xi)
@@ -302,7 +314,11 @@ else
 
    case 'line'
     % grab two points from the image;
-    [xi yi] = getpts;
+    if strcmp(mrGetPref('roiPolygonMethod'),'getptsNoDoubleClick')
+      [xi, yi] = getptsNoDoubleClick(fig);
+    else
+      [xi, yi] = getpts(fig);
+    end
 
     xii=[]; yii=[];
     for p=1:length(xi)-1
@@ -312,7 +328,7 @@ else
     end
 
     if ~isempty(xii)
-      line(xii, yii);
+      line(xii, yii,'parent',gui.axis);
       drawnow;
     end
 

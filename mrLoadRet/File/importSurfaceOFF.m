@@ -1,13 +1,16 @@
 % importSurfaceOFF.m
 %
-%      usage: v = importSurfaceOFF
+%      usage: v = importSurfaceOFF(<path or params>,<bothHemiFlag or params2>)
 %         by: justin gardner
 %       date: 10/24/07
-%    purpose: Import a pair of inner and outer cortical surfaces in OFF format
+%    purpose: Import a pair of inner and outer cortical surfaces in OFF format,
+%             for one or both hemispheres
 %
-%    base = importSurfaceOFF('/path/to/surfaces/subject_left_WM.off', bothHemiFlag);
-%    or [base = importSurfaceOFF(params, bothHemiFlag); %where params is a structure similar to the output of mrSurfViewer with added field 'path']
-%    viewSet(getMLRView, 'newbase', base);
+%         base = importSurfaceOFF  % gets all surface parameters from a GUI, loads only one hemisphere (default bothHemiFlag = 0)
+%    or:  base = importSurfaceOFF('/path/to/surfaces/subject_left_WM.off', true); % uses path as default for surface parameters in GUI, loads both hemispheres
+%    or:  base = importSurfaceOFF(params); % where params is a structure similar to the output of mrSurfViewer with added field 'path', no GUI used
+%    or:  base = importSurfaceOFF(paramsLeft,paramsRight); % where paramsLeft and paramsRight are params structures for left and right hemispheres respectively , no GUI used
+%         viewSet(getMLRView, 'newbase', base);
 %
 function base = importSurfaceOFF(pathStr,bothHemiFlag)
 
@@ -17,11 +20,15 @@ if ~any(nargin == [0 1 2])
   return
 end
 base = [];
-if ieNotDefined('bothHemiFlag'), 
+if ieNotDefined('bothHemiFlag')
   bothHemiFlag = 0;
   disp(sprintf('Only loading surfaces for one hemisphere'))
 else
   disp(sprintf('Loading surfaces for both hemispheres'))
+  if isstruct(bothHemiFlag)
+    params2 = bothHemiFlag;
+    bothHemiFlag = true;
+  end
 end
 
 if ieNotDefined('pathStr')
@@ -35,17 +42,13 @@ end
 % Aborted
 if ieNotDefined('pathStr'),return,end
 
-if isstr(pathStr);
+if isstr(pathStr)
   % get surface name using mrSurfViewer
   [filepath filename] = fileparts(pathStr);
   thispwd = pwd;
   if ~isempty(filepath),cd(filepath);end
   params1 = mrSurfViewer(filename);
 elseif isstruct(pathStr) %if pathStr is a parameter structure
-  if bothHemiFlag
-    mrWarnDlg('(importSurfaceOFF) option bothHemiFlag not implemented for parameter structure input')
-    return;
-  end
   params1=pathStr;
   filepath=pathStr.path;
   if strcmp(params1.outerCoords,'Same as surface')
@@ -63,7 +66,7 @@ if isempty(params1),cd(thispwd);return,end
 % Create the base
 base.hdr = mlrImageReadNiftiHeader(params1.anatomy);
 if isempty(base.hdr)
-  mrWarnDlg(sprintf('(imortSurfaceOFF) Could not load anatomy file: %s',params1.anatomy));
+  mrWarnDlg(sprintf('(importSurfaceOFF) Could not load anatomy file: %s',params1.anatomy));
   base = [];
   return
 end
@@ -80,22 +83,24 @@ base.vol2mag = getBaseField(anatomyMatFile,'vol2mag');
 
 % load both hemispheres
 if bothHemiFlag
-  % get the params for the other hemisphere
-  % was a left hemisphere passed?
+  % was a left hemisphere passed first?
   leftFlag = strfind(lower(params1.innerSurface), 'left');
-  if leftFlag
-    prefix = params1.innerSurface(1:leftFlag-1);
-    postfix = params1.innerSurface(leftFlag+4:end);
-    rightFilename = sprintf('%sright%s', prefix, postfix);
-    params2 = mrSurfViewer(rightFilename);  
-  end
-  % or was it a right hemispehre
+  % or was it a right hemispehre?
   rightFlag = strfind(lower(params1.innerSurface), 'right');
-  if rightFlag
-    prefix = params1.innerSurface(1:rightFlag-1);
-    postfix = params1.innerSurface(rightFlag+5:end);
-    leftFilename = sprintf('%sleft%s', prefix, postfix);
-    params2 = mrSurfViewer(leftFilename);  
+  if ieNotDefined('params2')
+    % get the params for the other hemisphere
+    if leftFlag
+      prefix = params1.outerCoords(1:leftFlag-1);
+      postfix = params1.outerCoords(leftFlag+4:end);
+      rightFilename = sprintf('%sright%s', prefix, postfix);
+      params2 = mrSurfViewer(rightFilename);
+    end
+    if rightFlag
+      prefix = params1.outerCoords(1:rightFlag-1);
+      postfix = params1.outerCoords(rightFlag+5:end);
+      leftFilename = sprintf('%sleft%s', prefix, postfix);
+      params2 = mrSurfViewer(leftFilename);
+    end
   end
   % and add the second curvature
   data1(1,:,1) = loadVFF(params1.curv);
@@ -104,26 +109,75 @@ if bothHemiFlag
   % load both inner surfaces
   innerSurface1 = loadSurfOFF(params1.innerSurface);
   innerSurface2 = loadSurfOFF(params2.innerSurface);
-  innerSurface = combineSurfaces(innerSurface1, innerSurface2);
   % load both outer surfaces
   outerSurface1 = loadSurfOFF(params1.outerSurface);
   outerSurface2 = loadSurfOFF(params2.outerSurface);
-  outerSurface = combineSurfaces(outerSurface1, outerSurface2);
   % load the inner coords   
   if strcmp(params1.innerCoords,'Same as surface')
-    inner = innerSurface;
+    inner1 = innerSurface1;
+    inner2 = innerSurface2;
   else
     inner1 = loadSurfOFF(params1.innerCoords);
     inner2 = loadSurfOFF(params2.innerCoords);
-    inner = combineSurfaces(inner1,inner2);
   end
   if strcmp(params1.outerCoords,'Same as surface')
-    outer = outerSurface;
+    outer1 = outerSurface1;
+    outer2 = outerSurface2;
   else
     outer1 = loadSurfOFF(params1.outerCoords);
     outer2 = loadSurfOFF(params2.outerCoords);
-    outer = combineSurfaces(inner1,inner2);
   end
+  % if loading inflated surfaces, shift them along X axis so that their medialmost vertex
+  % aligns with the medialmost vertex of the outer coordinates
+  if ~isempty(strfind(params1.outerSurface,'_Inf'))
+    if leftFlag
+      medialMostXCoord = max(outer1.vtcs(:,1)); %medialmost X of left hemisphere
+      outerSurface1.vtcs(:,1) = outerSurface1.vtcs(:,1) - max(outerSurface1.vtcs(:,1)) + medialMostXCoord;
+    elseif rightFlag
+      medialMostXCoord = min(outer1.vtcs(:,1)); %medialmost X of right hemisphere
+      outerSurface1.vtcs(:,1) = outerSurface1.vtcs(:,1) - min(outerSurface1.vtcs(:,1)) + medialMostXCoord;
+    else
+      keyboard % something is weird
+    end
+  end
+  if ~isempty(strfind(params2.outerSurface,'_Inf'))
+    if leftFlag
+      medialMostXCoord = min(outer2.vtcs(:,1)); %medialmost X of right hemisphere
+      outerSurface2.vtcs(:,1) = outerSurface2.vtcs(:,1) - min(outerSurface2.vtcs(:,1)) + medialMostXCoord;
+    elseif rightFlag
+      medialMostXCoord = max(outer2.vtcs(:,1)); %medialmost X of left hemisphere
+      outerSurface2.vtcs(:,1) = outerSurface2.vtcs(:,1) - max(outerSurface2.vtcs(:,1)) + medialMostXCoord;
+    else
+      keyboard % something is weird
+    end
+  end
+  if ~isempty(strfind(params1.innerSurface,'_Inf'))
+    if leftFlag
+      medialMostXCoord = max(outer1.vtcs(:,1)); %medialmost X of left hemisphere
+      innerSurface1.vtcs(:,1) = innerSurface1.vtcs(:,1) - max(innerSurface1.vtcs(:,1)) + medialMostXCoord;
+    elseif rightFlag
+      medialMostXCoord = min(outer1.vtcs(:,1)); %medialmost X of right hemisphere
+      innerSurface1.vtcs(:,1) = innerSurface1.vtcs(:,1) - min(innerSurface1.vtcs(:,1)) + medialMostXCoord;
+    else
+      keyboard % something is weird
+    end
+  end
+  if ~isempty(strfind(params2.innerSurface,'_Inf'))
+    if leftFlag
+      medialMostXCoord = min(outer2.vtcs(:,1)); %medialmost X of right hemisphere
+      innerSurface2.vtcs(:,1) = innerSurface2.vtcs(:,1) - min(innerSurface2.vtcs(:,1)) + medialMostXCoord;
+    elseif rightFlag
+      medialMostXCoord = max(outer2.vtcs(:,1)); %medialmost X of left hemisphere
+      innerSurface2.vtcs(:,1) = innerSurface2.vtcs(:,1) - max(innerSurface2.vtcs(:,1)) + medialMostXCoord;
+    else
+      keyboard % something is weird
+    end
+  end
+  % combine left and right surfaces
+  innerSurface = combineSurfaces(innerSurface1, innerSurface2);
+  outerSurface = combineSurfaces(outerSurface1, outerSurface2);
+  inner = combineSurfaces(inner1,inner2);
+  outer = combineSurfaces(outer1,outer2);
 
 else                                    
   % or else a single hemisphere...
@@ -176,6 +230,7 @@ base.type = 2;
 
 cd(thispwd);
 
+
 function val = getBaseField(matFilename,fieldname)
 if ~exist(matFilename,'file') % if the anatomy doesn't have these fields set
   val = [];
@@ -185,7 +240,7 @@ else % if the volume anatomy has the fields, use them
 end
 
 
-function surf = combineSurfaces(surf1, surf2);
+function surf = combineSurfaces(surf1, surf2)
 surf.filename = sprintf('%_%s', surf1.filename, surf2.filename);
 surf.Nvtcs = surf1.Nvtcs + surf2.Nvtcs;
 surf.Ntris = surf1.Ntris + surf2.Ntris;

@@ -31,18 +31,28 @@ end
 if (nargin == 1) && isstr(outerSurface) && ~mlrIsFile(outerSurface)
   event = outerSurface;
 elseif (nargin == 1) && isstr(outerSurface)
+  outerSurface = stripext(outerSurface);
   if ~isempty(strfind(outerSurface,'WM'))
-    innerSurface{1} = outerSurface;
+    stringIndex = strfind((outerSurface),'WM');
+    token = outerSurface(1:stringIndex-1);
+    remain = outerSurface(stringIndex+2:end);
     clear outerSurface;
-    outerSurface{1} = sprintf('%sGM.off',stripext(stripext(innerSurface{1}),'WM'));
+    innerSurface{1} = sprintf('%sWM%s.off',token,remain);
+    outerSurface{1} = sprintf('%sGM%s.off',token,remain);
   elseif ~isempty(strfind(outerSurface,'GM'))
-    innerSurface{1} = sprintf('%sWM.off',stripext(stripext(outerSurface),'GM'));
+    stringIndex = strfind((outerSurface),'GM');
+    token = outerSurface(1:stringIndex-1);
+    remain = outerSurface(stringIndex+2:end);
     clear outerSurface;
-    outerSurface{1} = sprintf('%sGM.off',stripext(stripext(innerSurface{1}),'WM'));
+    innerSurface{1} = sprintf('%sWM%s.off',token,remain);
+    outerSurface{1} = sprintf('%sGM%s.off',token,remain);
   elseif ~isempty(strfind(outerSurface,'Outer'))
-    innerSurface{1} = sprintf('%sInner.off',stripext(stripext(outerSurface),'Outer'));
+    stringIndex = strfind((outerSurface),'Outer');
+    token = outerSurface(1:stringIndex-1);
+    remain = outerSurface(stringIndex+5:end);
     clear outerSurface;
-    outerSurface{1} = sprintf('%sOuter.off',stripext(stripext(innerSurface{1}),'Inner'));
+    innerSurface{1} = sprintf('%sInner%s.off',token,remain);
+    outerSurface{1} = sprintf('%sOuter%s.off',token,remain);
   else
     innerSurface{1} = outerSurface;
     clear outerSurface;
@@ -108,7 +118,7 @@ gSurfViewer.redo.value = [];
 
 filepath = '';
 
-disppercent(-inf,'(mrSurfViewer) Loading surfaces');
+mlrDispPercent(-inf,'(mrSurfViewer) Loading surfaces');
 
 % load the surface
 gSurfViewer.outerSurface = loadSurfOFF(sprintf('%s.off',stripext(outerSurface{1})));
@@ -176,14 +186,27 @@ innerSurface{end+1} = 'Find file';
 % load any vff file
 curv = {};
 curvDir = dir('*.vff');
+nMaxCommonCharacters = 0;
 for i = 1:length(curvDir)
   if ~any(strcmp(curvDir(i).name,curv))
     % check length of file matches our patch
     vffhdr = myLoadCurvature(curvDir(i).name, filepath, 1);
     if ~isempty(vffhdr)
       curv{end+1} = curvDir(i).name;
+      % check if the filename matches the outer surface that was put on top of the list
+      outerString = stripext(outerSurface{1});
+      curvString = stripext(curv{end});
+      nMaxChars = min(numel(outerString),numel(curvString));
+      nCommonCharacters = sum(cumprod(outerString(end:-1:end-nMaxChars+1)==curvString(end:-1:end-nMaxChars+1)));
+      if nCommonCharacters>nMaxCommonCharacters
+        topCurvatureFile = numel(curv);
+        nMaxCommonCharacters = nCommonCharacters;
+      end
     end
   end
+end
+if nMaxCommonCharacters
+  curv = putOnTopOfList(curv{topCurvatureFile},curv);
 end
 
 % check to see if we have any possible curvatures
@@ -200,7 +223,7 @@ end
 if isempty(gSurfViewer.curv)
   return
 end
-disppercent(inf);
+mlrDispPercent(inf);
 curv{end+1} = 'Find file';
 
 % guess any nifti file for anatomy
@@ -716,11 +739,11 @@ if strcmp(params.anatomy,'Find file')
 end
 
 % load the anatomy and view
-disppercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
+mlrDispPercent(-inf,sprintf('(mrSurfViewer) Load %s',params.anatomy));
 if initAnatomy(params.anatomy);
   gSurfViewer = xformSurfaces(gSurfViewer);
 else
-  disppercent(inf);
+  mlrDispPercent(inf);
   return
 end
 
@@ -729,7 +752,7 @@ global gParams
 gSurfViewer.whichSurface = 5;
 set(gParams.ui.varentry{1},'Value',gSurfViewer.whichSurface)
 refreshFlatViewer([],1);
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%   switchOverlays   %%
@@ -771,7 +794,7 @@ else
 end
 
 % try to load it
-disppercent(-inf,sprintf('(mrSurfViewer) Loading %s',filename));
+mlrDispPercent(-inf,sprintf('(mrSurfViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curv')
     file = myLoadCurvature(filename);
@@ -818,7 +841,7 @@ end
 gSurfViewer = xformSurfaces(gSurfViewer);
 refreshFlatViewer([],1);
 
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   myLoadSurface   %%

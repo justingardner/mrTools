@@ -11,8 +11,11 @@
 %                         (useful to remap interpolated values into 3D space for flat maps)
 %
 
-function [newOverlayData, baseVoxelSize, baseCoords] = getBaseSpaceOverlay(thisView,overlayData,scanNum,baseNum,interpMethod, depthBins, rotateAngle)
+function [newOverlayData, baseVoxelSize, baseCoords] = getBaseSpaceOverlay(thisView,overlayData,scanNum,baseNum,interpMethod, depthBins, rotateAngle, groupNum)
 
+if ieNotDefined('groupNum')
+  groupNum = viewGet(thisView,'curGroup');
+end
 if ieNotDefined('scanNum')
     scanNum = viewGet(thisView,'curscan');
 end
@@ -29,7 +32,7 @@ if ieNotDefined('interpMethod')
 end
 
 basedims = viewGet(thisView, 'basedims', baseNum);
-base2scan = viewGet(thisView,'base2scan',scanNum,[],baseNum);
+base2scan = viewGet(thisView,'base2scan',scanNum,groupNum,baseNum);
 baseType = viewGet(thisView,'baseType',baseNum);
 
 baseVoxelSize = viewGet(thisView,'basevoxelsize',baseNum);
@@ -46,7 +49,7 @@ switch(baseType)
    % Generate coordinates with meshgrid
    [Ycoords,Xcoords,Zcoords] = meshgrid(1:basedims(2),1:basedims(1),1:basedims(3));
    
-   case 1   %the base is a flat map
+   case {1,2}   %the base is a flat map or a surface
       sliceIndex = viewGet(thisView,'baseSliceIndex',baseNum);
       if ieNotDefined('depthBins')
          depthBins = mrGetPref('corticalDepthBins');
@@ -78,7 +81,7 @@ switch(baseType)
           end
         end
         %rotate coordinates
-        if  rotateAngle
+        if  rotateAngle  %what happens if this is not 0 for a surface?
           for iDepth = 1:depthBins
              Xcoords(:,:,iDepth) = mrImRotate(Xcoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
              Ycoords(:,:,iDepth) = mrImRotate(Ycoords0(:,:,iDepth),rotateAngle,'bilinear','crop');
@@ -90,6 +93,8 @@ switch(baseType)
           Zcoords=Zcoords0;
         end
       end
+      
+      % THERE SEEMS TO BE A PROBLEM FOR SURFACES IN THE FOLLOWING
       
       %just as an indication, the voxel size is the mean distance between voxels consecutive in the 3 directions
       %mask coordinates with non-rotated coordinates (to avoid edges introduced by mrImRotate)
@@ -106,11 +111,16 @@ switch(baseType)
       baseVoxelSize(3) = baseVoxelSize(3)*nanmean(nanmean(nanmean(sqrt(diff(XcoordsNaN,1,3).^2 + diff(YcoordsNaN,1,3).^2 + diff(ZcoordsNaN,1,3).^2))));
 
    otherwise
-      mrWarnDlg('(getBaseSpaceOverlay) This function is not implemented for surfaces')
+
       
 end
 
 newOverlayData = getNewSpaceOverlay(overlayData, base2scan, Xcoords, Ycoords, Zcoords, interpMethod);
+if baseType==2
+  mrWarnDlg('(getBaseSpaceOverlay) This function has not been tested for surfaces')
+  %average cortical depth dimension for surface
+  newOverlayData = nanmean(newOverlayData,3);
+end
 
 if nargout==3
    baseCoords = cat(4,Xcoords, Ycoords);

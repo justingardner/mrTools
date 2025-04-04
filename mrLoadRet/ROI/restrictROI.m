@@ -25,14 +25,14 @@ ROIcoords = viewGet(thisView,'roiCoords',ROInum);
 % Save prevCoords for undo
 thisView = viewSet(thisView,'prevROIcoords',ROIcoords);
 
-% Transform ROI roiScanCoords to overlay
-roiScanCoords = round( viewGet(thisView,'scan2roi',ROInum,scan) \ ROIcoords); 
+% Transform ROI coords (in ROI space) to overlay (in overlay/scan space)
+roiScanCoords = round( viewGet(thisView,'scan2roi',ROInum,scan) \ ROIcoords);
 
 coordsInfo.base2overlay = eye(4);
 coordsInfo.baseCoordsHomogeneous = roiScanCoords;
 coordsInfo.baseDims = [size(ROIcoords,2) 1 1];
 
-%find which voxels are not clipped in the current overlay(s) and overlayAlpha (in overlay space)
+%find which voxels are not clipped in the current overlay(s) and overlayAlpha (in overlay/scan space)
 overlayList  = viewGet(thisView,'curOverlay');
 nOverlays = length(overlayList);
 cOverlay=0;
@@ -44,7 +44,7 @@ for iOverlay=overlayList
     alphaOverlayList(cOverlay) = thisAlphaOverlay;
   end
 end
-roiMask = maskOverlay(thisView,[overlayList alphaOverlayList],scan,coordsInfo);
+roiMask = maskOverlay(thisView,[overlayList alphaOverlayList],scan,coordsInfo); % this returns a mask in ROI space, for the coordinates specified in coordsInfo (in overlay/scan space)
 roiMask = reshape(roiMask{1},[size(roiMask{1},1) nOverlays, 2]);
 % keep the corresponding voxels in ROI space
 cOverlay=0;
@@ -55,10 +55,16 @@ for iOverlay=overlayList
   end
 end    
 %Keep voxels that are non-zero in any of the overlays, but non-zero both in overlay and alphaOverlay, 
-ROIcoords = ROIcoords(:,any(all(roiMask,3),2));
-
-
-thisView = viewSet(thisView,'roiCoords',ROIcoords,ROInum);
+% we'll do this differently depending on whether this is the (unique) currently selected ROI or not
+if isequal(ROInum, viewGet(thisView,'curRoi')) % in this is the current ROI and only one ROi is selected, we use modifyROI to remove the voxels
+  % This will update the old ROI coordinates in the view and allows the user to use Undo
+  ROIcoordsToRemove = ROIcoords(:,~any(all(roiMask,3),2));
+  ROIvoxelSize = viewGet(thisView,'roiVoxelSize',ROInum);
+  thisView = modifyROI(thisView,ROIcoordsToRemove,eye(4),ROIvoxelSize,0);
+else % if there either are several selected ROIs or we're restricting an ROI that is not currently selected, we change the ROI coordinates in the view (no Undo possible)
+  ROIcoords = ROIcoords(:,any(all(roiMask,3),2));
+  thisView = viewSet(thisView,'roiCoords',ROIcoords,ROInum);
+end
 
 return
 

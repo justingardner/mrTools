@@ -6,9 +6,9 @@
 %       date: 13/04/2010
 %    purpose: returns a canonical hrf modeled as a boxcar function
 %
-function [params,hrf] = hrfBoxcar(params, sampleDuration, notUsed, defaultParams)
+function [params,hrf] = hrfBoxcar(params, sampleDuration, ~, defaultParams, ~)
 
-if ~any(nargin == [1 2 3 4])% 5])
+if ~any(nargin == [1 2 3 4 5])
   help hrfBoxcar
   return
 end

@@ -28,7 +28,13 @@ compressFile = false;
 if strcmp(ext,'gz')
   compressFile = true;
   % remove the file if it already exists
-  if mlrIsFile(filename),system(sprintf('rm -f %s',filename));end
+  if mlrIsFile(filename)
+    if ~ispc
+      system(sprintf('rm -f %s',filename));
+    else
+      delete(filename);
+    end
+  end
   % strip off the gz
   filename = stripext(filename);
   % get the extension
@@ -86,6 +92,11 @@ end
 
 % now compress if asked for
 if compressFile
-  system(sprintf('gzip -f %s',filename));
+  if ~ispc
+    system(sprintf('gzip -f %s',filename));
+  else
+    gzip(filename);
+    delete(filename); % delete the uncompressed file
+  end
 end
 

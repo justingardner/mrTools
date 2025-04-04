@@ -146,7 +146,7 @@ clear sourceROI
 
 % cycle over each segment of a concat. If this is a single
 % scan then we will be doing the whole thing in one pass
-disppercent(-inf,sprintf('(projectOutMeanVector) Projecting out vector.'));
+mlrDispPercent(-inf,sprintf('(projectOutMeanVector) Projecting out vector.'));
 for i = 1:length(frameNums)
 
   % get this mean vector
@@ -197,9 +197,9 @@ for i = 1:length(frameNums)
     end
   end
   targetROI.sourceMeanVector(i,:) = meanVector;
-  disppercent(i/length(frameNums));
+  mlrDispPercent(i/length(frameNums));
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % and clear the tseries in the targetROI if we are passing back the
 % data as an array
@@ -301,14 +301,14 @@ roi.scanCoords = roi.coords;
 % and load the data
 roi.n = prod(dims);
 if isempty(tSeries)
-  disppercent(-inf,sprintf('(projectOutMeanVector) Loading tSeries for scan %s:%i',viewGet(v,'groupName'),viewGet(v,'curScan')));
+  mlrDispPercent(-inf,sprintf('(projectOutMeanVector) Loading tSeries for scan %s:%i',viewGet(v,'groupName'),viewGet(v,'curScan')));
   roi.tSeries = loadTSeries(v);
 else
-  disppercent(-inf,sprintf('(projectOutMeanVector) Using passed in tSeries for scan %s:%i',viewGet(v,'groupName'),viewGet(v,'curScan')));
+  mlrDispPercent(-inf,sprintf('(projectOutMeanVector) Using passed in tSeries for scan %s:%i',viewGet(v,'groupName'),viewGet(v,'curScan')));
   roi.tSeries = tSeries;
 end
 roi.tSeries = reshape(roi.tSeries,prod(dims(1:3)),size(roi.tSeries,4));
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   thisLoadROITSeries   %%
@@ -322,13 +322,13 @@ else
   % get it from the passed in tSeries
   roi = loadROITSeries(v,roi,[],[],'loadType=none');
   % get roi linear coords
-  disppercent(-inf,sprintf('(projectOutMeanVector) Extracting data for roi %s from passed in data',roi.name));
+  mlrDispPercent(-inf,sprintf('(projectOutMeanVector) Extracting data for roi %s from passed in data',roi.name));
   for frameNum = 1:size(tSeries,4)
     linearCoords = sub2ind(size(tSeries),roi.scanCoords(1,:),roi.scanCoords(2,:),roi.scanCoords(3,:),frameNum*ones(1,roi.n));
     roi.tSeries(:,frameNum) = tSeries(linearCoords);
-    disppercent(frameNum/size(tSeries,4));
+    mlrDispPercent(frameNum/size(tSeries,4));
   end
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%

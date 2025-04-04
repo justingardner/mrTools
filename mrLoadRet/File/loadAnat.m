@@ -1,4 +1,4 @@
-function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
+function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath,frameNum)
 %
 %        $Id$
 % view = loadAnat(view,[anatFileName],[anatFilePath])
@@ -13,6 +13,9 @@ function [view anatFilePath] = loadAnat(view,anatFileName,anatFilePath)
 % anatFilePath is the path of where to open up the dialog. This
 % will bey returned so that the GUI can open up in the same
 % place each time.
+% 
+% frame (optional): if the volume is 4D, the frame number can be specified.
+% frame = 0 will average all frames 
 %
 % djh, 1/9/98
 % 5/2005, djh, update to mrLoadRet-4.0
@@ -99,21 +102,25 @@ for pathNum = 1:length(pathStr)
 
   % Handle 4D file
   if (volumeDimension == 4)
-    paramsInfo = {{'frameNum',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',hdr.dim(5)),'This volume is a 4D file, to display it as an anatomy you need to choose a particular time point or take the mean over all time points. Setting this value to 0 will compute the mean, otherwise you can select a particular timepoint to display'}};
-    params = mrParamsDialog(paramsInfo,'Choose which frame of 4D file. 0 for mean');
-    drawnow
-    if isempty(params)
-      return
+    if ieNotDefined('frameNum') || frameNum < 0 || frameNum > hdr.dim(5)
+      paramsInfo = {{'frameNum',0,'incdec=[-1 1]',sprintf('minmax=[0 %i]',hdr.dim(5)),'This volume is a 4D file, to display it as an anatomy you need to choose a particular time point or take the mean over all time points. Setting this value to 0 will compute the mean, otherwise you can select a particular timepoint to display'}};
+      params = mrParamsDialog(paramsInfo,'Choose which frame of 4D file. 0 for mean');
+      drawnow
+      if isempty(params)
+        return
+      end
+      frameNum = params.frameNum;
     end
+      
     % if frameNum is set to 0, take the mean
-    if params.frameNum == 0
+    if frameNum == 0
       % load the whole thing and average across volumes
       [vol hdr] = mlrImageLoad(pathStr{pathNum});
       if isempty(vol),return,end
       vol = nanmean(vol,4);
     else
       % load a single volume
-      [vol hdr] = mlrImageLoad(pathStr{pathNum},'volNum',params.frameNum);
+      [vol hdr] = mlrImageLoad(pathStr{pathNum},'volNum',frameNum);
       if isempty(vol),return,end
     end
   else
