@@ -64,7 +64,11 @@ if length(size(num))>2
 elseif length(size(num)) == 2
   num = num';
   % compute maxnumdigits on the left side of decimal excluding inf and nan
-  maxnumdigits = length(sprintf('%i',floor(nanmax(abs(num(~isinf(num(:))))))));
+  if exist('nanmax') %#ok<EXIST> new version of MATLAB does not have function nanmax
+    maxnumdigits = length(sprintf('%i',floor(nanmax(abs(num(~isinf(num(:))))))));
+  else
+    maxnumdigits = length(sprintf('%i',floor(max(abs(num(~isinf(num(:)))),[],1,'omitnan'))));
+  end
   % if there is an inf or nan, account for that
   if any(isnan(num(:))) | any(isinf(num(:)))
     % if sigfigs is zero then Inf and Nan cannot line up with decimal, so shift over by a space
