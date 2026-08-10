@@ -264,7 +264,7 @@ if strcmp(params.noiseMode,'No noise')
 end
 scanParams.vol2mag = viewGet(thisView,'scanVol2mag',curScan);
 scanParams.vol2tal = viewGet(thisView,'scanVol2tal',curScan);
-hdr = cbiReadNiftiHeader(viewGet(thisView,'tseriesPath',curScan));
+hdr = mlrImageReadNiftiHeader(viewGet(thisView,'tseriesPath',curScan));
 
 
 %the following has to be done in this specific order:

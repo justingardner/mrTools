@@ -215,7 +215,7 @@ for s = 1:length(targetScans)
   
   % Save evalstring for recomputing and params
   evalstr = ['view = newView(','''','Volume','''','); view = motionCompBetweenScans(view,params);'];
-  [pathstr,filename,ext] = fileparts(tseriesFileName);
+  [pathstr,filename,ext] = mrFileParts(tseriesFileName);
   tseriesdir = viewGet(viewMotionComp,'tseriesdir');
   save(fullfile(tseriesdir,filename),'evalstr','params','transform','tseriesFileName');
   

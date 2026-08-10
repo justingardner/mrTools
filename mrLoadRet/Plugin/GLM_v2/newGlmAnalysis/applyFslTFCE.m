@@ -37,7 +37,7 @@ if strcmp(mrGetPref('fslPath'),'FSL not installed')
   mrErrorDlg('(applyFslTFCE) No path was provided for FSL. Please set MR preference ''fslPath'' by running mrSetPref(''fslPath'',''yourpath'')')
 end
 
-cbiWriteNifti(tempFilename, newData,[],[],[],[],verbose);
+mlrImageWriteNifti(tempFilename, newData,[],[],[],[],verbose);
 tfce_H = 2.0;
 tfce_E = 0.5;
 tfce_connectivity = 6;

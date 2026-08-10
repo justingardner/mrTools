@@ -424,7 +424,7 @@ function	[p,msg]=set_opt(otbl,p,varargin)
 		o.fpat{i}=cd;
 	end
 	if	~exist(o.files{i},'dir')
-		[o.fpat{i},o.fnam{i},o.fext{i}]=fileparts(o.files{i});
+		[o.fpat{i},o.fnam{i},o.fext{i}]=mrFileParts(o.files{i});
 	if	isempty(o.fpat{i})
 		o.fpat{i}=cd;
 	end

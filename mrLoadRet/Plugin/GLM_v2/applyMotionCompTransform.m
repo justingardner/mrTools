@@ -200,7 +200,7 @@ for s = 1:length(params.targetScanList)
 
     % Save evalstring for recomputing and params
     evalstr = ['thisView = newView(','''','Volume','''','); thisView = applyMotionCompTransform(thisView,params);'];
-    [pathstr,filename] = fileparts(tseriesFileName);
+    [pathstr,filename] = mrFileParts(tseriesFileName);
     tseriesdir = viewGet(viewDestination,'tseriesdir');
     save(fullfile(tseriesdir,filename),'evalstr','params','transforms','tseriesFileName');
 

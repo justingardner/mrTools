@@ -156,7 +156,7 @@ for roinum = 1:length(roi)
   % first go for the quick and dirty way, which is
   % to load up the computed hemodynamic responses
   % and average them. 
-  disppercent(-inf,'(eventRelatedPlot) Computing mean hdr');
+  mlrDispPercent(-inf,'(eventRelatedPlot) Computing mean hdr');
   for voxnum = 1:size(roi{roinum}.scanCoords,2)
     x = roi{roinum}.scanCoords(1,voxnum);
     y = roi{roinum}.scanCoords(2,voxnum);
@@ -171,7 +171,7 @@ for roinum = 1:length(roi)
 	end
       end
     end
-    disppercent(voxnum/size(roi{roinum}.scanCoords,2));
+    mlrDispPercent(voxnum/size(roi{roinum}.scanCoords,2));
   end
   % plot the average of the ehdrs that beat the r2 cutoff
   if roin
@@ -196,7 +196,7 @@ for roinum = 1:length(roi)
   % put up button whose call back will be to compute the error bars
   figpos = get(fignum,'position');
   gEventRelatedPlot.computeErrorBarsHandle = uicontrol('Parent',fignum,'Style','pushbutton','Callback',@eventRelatedPlotComputeErrorBars,'String','Compute error bars','Position',[figpos(3)/2+figpos(3)/20 figpos(4)/24 figpos(3)/2-figpos(3)/8 figpos(4)/14]);
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 drawnow;
@@ -305,7 +305,7 @@ if ~isempty(gEventRelatedPlot.tSeries);
   return
 end
 
-disppercent(-inf,'(eventRelatedPlot) Plotting time series');
+mlrDispPercent(-inf,'(eventRelatedPlot) Plotting time series');
 gEventRelatedPlot.loadingTimecourse = 1;
 subplot(2,2,1:2)
 tSeries = squeeze(loadTSeries(gEventRelatedPlot.v,gEventRelatedPlot.scan,gEventRelatedPlot.vox(3),[],gEventRelatedPlot.vox(1),gEventRelatedPlot.vox(2)));
@@ -346,7 +346,7 @@ end
 gEventRelatedPlot.tSeries = tSeries;
 
 % done
-disppercent(inf);
+mlrDispPercent(inf);
 gEventRelatedPlot.loadingTimecourse = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -37,5 +37,4 @@ if isempty(prefs) | (length(fields(prefs)) <= 5)
   mrWarnDlg('(saveMrDefaults) Preference variable mrDEFAULTS.prefs does not appear to have any preferences set. Save cancelled');
   return
 end
-eval(sprintf('save %s figloc prefs -V6;',mrDefaultsFilename));
-
+eval(sprintf('save ''%s'' figloc prefs -V6;',mrDefaultsFilename));

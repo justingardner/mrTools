@@ -6,7 +6,7 @@
 %       date: 04/02/07
 %    purpose: get roi coordinates in scan coordinates
 %             if scanNum is 0, then will compute in the current base
-%             coordinates, unless basenum is specified, in which case. 
+%             coordinates, unless basenum is specified.
 %             if roinum is a structure, works on the structure
 %             rather than the roinum
 %             if roinum is a string, will load the roi from

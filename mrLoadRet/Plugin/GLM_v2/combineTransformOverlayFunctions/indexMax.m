@@ -14,7 +14,7 @@ array = varargin{1};
 for i = 2:nargin
   %first check that all inputs have the same size
   if ~isequal(size(varargin{i}),size(varargin{1}))
-    error('All inputs must have the same size')
+    mrErrorDlg('All inputs must have the same size')
   else
     %concatenate
     array=cat(nDims+1,array,varargin{i});

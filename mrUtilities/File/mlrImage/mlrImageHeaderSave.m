@@ -33,14 +33,18 @@ end
 
 % check for compressed file
 compressFile = false;
-if strcmp(ext,'gz')
+if strcmp(ext,'nii.gz')
   compressFile = true;
   % need to uncompress the file (so that we can just write the header)
   if mlrIsFile(filename)
-    system(sprintf('gunzip %s',filename));
+    if ~ispc
+      system(sprintf('gunzip %s',filename));
+    else
+      gunzip(filename); %might need to delete the compressed file
+    end
   end
   % strip off the gz
-  filename = stripext(filename);
+  filename = filename(1:end-3);
   % get the extension
   ext = getext(stripext(filename));
   % if the extension is empty then, we should set it to nii
@@ -74,7 +78,12 @@ end
 
 % now compress if asked for
 if compressFile
-  system(sprintf('gzip %s',filename));
+  if ~ispc
+    system(sprintf('gzip %s',filename));
+  else
+    gzip(filename);
+    delete(filename); % delete the uncompressed file
+  end
 end
 
 % see if we need to save out a matlab extension

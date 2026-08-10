@@ -31,4 +31,5 @@ end
 
 session = MLR.session;
 groups = MLR.groups;
-save(pathStr,'session','groups');
+mniInfo = MLR.mniInfo;
+save(pathStr,'session','groups','mniInfo');

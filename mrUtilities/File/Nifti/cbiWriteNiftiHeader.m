@@ -16,6 +16,7 @@ function [hdr,fid] = cbiWriteNiftiHeader(hdr,fname,no_overwrite,leave_open)
 %  be deleted. (Use no_overwrite to replace the header data without destroying the
 %  image data in a .nii file). This flag is ignored for dual file types (.img file is
 %  not affected by this function).
+% JB (28/07/2026: no_overwrite is NOT used and the data in a .nii file is never overwritten)
 %
 % If fname is a file pointer: the data will be written to the file
 % pointer at the current location (pointer should be at BOF)

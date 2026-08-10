@@ -17,4 +17,8 @@ retval = '';
 dotloc = findstr(filename,separator);
 if (length(dotloc) > 0) && (dotloc(length(dotloc)) ~= length(filename))
   retval = filename(dotloc(length(dotloc))+1:length(filename));
+  % special case for .nii.gz, which is considered a single extension
+  if strcmp(retval,'gz') && length(dotloc)>1 && strcmp(filename(dotloc(length(dotloc)-1)+1:dotloc(length(dotloc))-1),'nii')
+    retval = filename(dotloc(length(dotloc)-1)+1:length(filename));
+  end
 end

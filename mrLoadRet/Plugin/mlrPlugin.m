@@ -149,7 +149,7 @@ if isempty(v)
 	selectedPlugins{end+1} = plugins(i).name;
       end
     end
-    if ~isempty(getMLRView) && ~isequal(previousSelectedPlugins,selectedPlugins)
+    if ismember('MLR', who('MLR')) && ~isequal(previousSelectedPlugins,selectedPlugins)
       mrWarnDlg(sprintf('(mlrPlugin) Restart of MLR is required for change in plugin list to take effect'));
     end
     % save the choices

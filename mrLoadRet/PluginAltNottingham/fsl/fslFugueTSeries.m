@@ -104,7 +104,7 @@ tseriesdir = viewGet(baseView,'tseriesdir');
 
 if useMask
   [mask view] = motionCompGetMask(view,params,scanNum,groupNum);
-  cbiWriteNifti(tempFieldMapFileName, mask, hdr);
+  mlrImageWriteNifti(tempFieldMapFileName, mask, hdr);
   %mask the field map with the ROI mask using fslmaths
   command =  sprintf('fslmaths %s -mas %s %s',...
   fieldMapFile, tempFieldMapFileName, tempFieldMapFileName);
@@ -161,14 +161,14 @@ for iScan = 1:length(targetScans)
     end
     fprintf('(fslfugueTSeries) Changing frame period from %f %s to %f sec in file %s\n',newFramePeriod,timeUnit,scanParams.framePeriod,tseriesFileName);
     newHdr.pixdim(5)=scanParams.framePeriod;
-    cbiWriteNiftiHeader(newHdr,fullfile(B0correctedTseriesdir,tseriesFileName));
+    mlrImageWriteNiftiHeader(newHdr,fullfile(B0correctedTseriesdir,tseriesFileName));
     scanParams.fileName=tseriesFileName;
     viewSet(fslFugueView,'updateScan',scanParams, viewGet(fslFugueView,'nscans'));
   end
 
   % Save evalstring for recomputing and params
   evalstr = ['view = newView(','''','Volume','''','); view = fslFugueTSeries(view,params);'];
-  [~,filename] = fileparts(tseriesFileName);
+  [~,filename] = mrFileParts(tseriesFileName);
   save(fullfile(B0correctedTseriesdir,filename),'evalstr','params');
 
 end

@@ -184,7 +184,7 @@ for scanNum = analysisParams.scanNum
       fTests = analysisParams.testParams.fTests;
       contrasts = analysisParams.testParams.contrasts;
       %-------------- get the HRF model --------------
-      [analysisParams.hrfParams,d.hrf] = feval(analysisParams.hrfModel, analysisParams.hrfParams, d.tr/d.designSupersampling,0,1);
+      [analysisParams.hrfParams,d.hrf] = feval(analysisParams.hrfModel, analysisParams.hrfParams, d.tr/d.designSupersampling,d.tr/d.estimationSupersampling,1);
       nEstimates = size(d.hrf,2);
       
    case 'Deconvolution'

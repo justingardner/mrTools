@@ -9,9 +9,9 @@
 %             cbiWriteNifti to mlrImage. You should use mlrImageSave 
 %             directly in most cases and only use this function if you are 
 %             replacing an old  call to cbiWriteNifti. This Just transforms
-%             inputs to way that mlrImage can handle and returns what
+%             inputs to a way that mlrImage can handle and returns what
 %             cbiWriteNifti would have. Ideally we would get rid of
-%             cbiWriteNifti all together and work with mlrImage
+%             cbiWriteNifti altogether and work with mlrImage
 %             structures which are meant to be file format independent
 %             but I don't want to risk breaking everything... just yet.
 %
@@ -51,7 +51,7 @@ if ~isempty(short_nan)
 end
 
 % call mlrImageSave
-mlrImageSave(fname,data,hdr);
+byteswritten = mlrImageSave(fname,data,hdr);
   
   
   

@@ -6,9 +6,9 @@
 %       date: 13/04/2010
 %    purpose: returns a deconvolution matrix given the design sampling period and the estimation sampling period
 %
-function [params,hrf] = hrfDeconvolution(params, sampleDuration, notUsed, defaultParams)
+function [params,hrf] = hrfDeconvolution(params, designSamplingPeriod, ~, defaultParams, estimationSamplingPeriod)
 
-if ~any(nargin == [1 2 3 4])% 5])
+if ~any(nargin == [1 2 3 4 5])
   help hrfDeconvolution
   return
 end
@@ -16,6 +16,7 @@ end
 %estimationSampling = varargin{1};
 
 if ieNotDefined('defaultParams'),defaultParams = 0;end
+if ieNotDefined('estimationSamplingPeriod'),estimationSamplingPeriod = designSamplingPeriod;end
 
 if ieNotDefined('params')
   params = struct;
@@ -42,4 +43,8 @@ if nargout==1
    return
 end
 
-hrf = eye(round(params.hdrlenS/sampleDuration));
+hrf = eye(round(params.hdrlenS/designSamplingPeriod));
+
+% if the estimation sampling period is a multiple of the design sampling period
+downsamplingFactor = round(estimationSamplingPeriod/designSamplingPeriod); % downsampling factor from design to estimation sampling rates
+hrf = hrf(:,1:downsamplingFactor:end);                                     % (although this is rounded, we generally assume that the estimation sampling period is a multiple of the design sampling period)

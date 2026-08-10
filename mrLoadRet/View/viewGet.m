@@ -102,6 +102,10 @@ switch lower(param)
   case {'protocol'}
     % subject = viewGet(view,'protocol')
     val = MLR.session.protocol;
+
+  case {'mniinfo'}
+    % mniInfo = viewGet(view,'mniInfo')
+    val = MLR.mniInfo;
     
     % subdirectories
   case {'homedir','homedirectory','sessiondirectory'}
@@ -289,9 +293,6 @@ switch lower(param)
       groupName = varargin{1};
       groupNames = {MLR.groups(:).name};
       val = find(strcmp(groupName,groupNames));
-      if isempty(val)
-        disp(sprintf('(viewGet) Could not find group: %s',groupName));
-      end
       % if passed in a valid number just return that number
     elseif isnumeric(varargin{1}) && isequal(size(varargin{1}),[1 1])
       if (varargin{1} >= 1) && (varargin{1} <= viewGet(view,'nGroups'))
@@ -559,7 +560,7 @@ switch lower(param)
     if ieNotDefined('varargin')
       mrErrorDlg('(viewGet) scanNum: Must specify tseriesFileName.');
     end
-    [tseriesFilePath,tseriesFileName] = fileparts(varargin{1});
+    [tseriesFilePath,tseriesFileName] = mrFileParts(varargin{1});
     if length(varargin) > 1
       groupNums = viewGet(view,'groupNum',varargin{2});
       if isempty(groupNums)
@@ -572,7 +573,7 @@ switch lower(param)
     scanNumMatch = [];groupNumMatch = [];
     for groupNum = groupNums
       for scanNum = 1:length(MLR.groups(groupNum).scanParams)
-        [scanFilePath,scanFileName] = fileparts(MLR.groups(groupNum).scanParams(scanNum).fileName);
+        [scanFilePath,scanFileName] = mrFileParts(MLR.groups(groupNum).scanParams(scanNum).fileName);
         if strcmp(scanFileName,tseriesFileName)
           scanNumMatch(end+1) = scanNum;
           groupNumMatch(end+1) = groupNum;
@@ -671,7 +672,7 @@ switch lower(param)
   case {'concatinfo'}
     % concatInfo = viewGet(view,'concatInfo',[scanNum],[groupNum]);
     [s g] = getScanAndGroup(view,varargin,param);
-    [tseriesPath,tseriesFile] = fileparts(viewGet(view,'tseriesPath',s,g));
+    [tseriesPath,tseriesFile] = mrFileParts(viewGet(view,'tseriesPath',s,g));
     % check for mat file
     matFileName = fullfile(tseriesPath,sprintf('%s.mat',tseriesFile));
     if mlrIsFile(matFileName)
@@ -767,6 +768,26 @@ switch lower(param)
       if length(MLR.interrogator) >= viewNum
         if isfield(MLR.interrogator{viewNum},'mouseDownBaseCoords')
           val = MLR.interrogator{viewNum}.mouseDownBaseCoords;
+        end
+      end
+    end
+  case{'mousedowntalcoords'}
+    % talCoords = viewGet(view,'mouseDownTalCoords')
+    viewNum = viewGet(view,'viewNum');
+    if isfield(MLR,'interrogator')
+      if length(MLR.interrogator) >= viewNum
+        if isfield(MLR.interrogator{viewNum},'mouseDownTalCoords')
+          val = MLR.interrogator{viewNum}.mouseDownTalCoords;
+        end
+      end
+    end
+  case{'mousedownmnicoords'}
+    % mniCoords = viewGet(view,'mouseDownMniCoords')
+    viewNum = viewGet(view,'viewNum');
+    if isfield(MLR,'interrogator')
+      if length(MLR.interrogator) >= viewNum
+        if isfield(MLR.interrogator{viewNum},'mouseDownMniCoords')
+          val = MLR.interrogator{viewNum}.mouseDownMniCoords;
         end
       end
     end
@@ -918,7 +939,7 @@ switch lower(param)
     % associated with the scan
     [s g] = getScanAndGroup(view,varargin,param);
     % create name of file, by putting -header.txt on to the filename
-    [tseriesPath,tseriesFile] = fileparts(viewGet(view,'tseriesPath',s,g));
+    [tseriesPath,tseriesFile] = mrFileParts(viewGet(view,'tseriesPath',s,g));
     dicomName{1} = fullfile(tseriesPath,sprintf('%s-header.txt',tseriesFile));
     % if the file does not exist, then check original
     if ~mlrIsFile(dicomName{1})
@@ -986,7 +1007,7 @@ switch lower(param)
     % returns motion correction transformation matrices if they exists
     [s g] = getScanAndGroup(view,varargin,param);
     % get the tseries name
-    [tSeriesPath tSeriesName] = fileparts(viewGet(view,'tSeriesPathStr',s,g));
+    [tSeriesPath tSeriesName] = mrFileParts(viewGet(view,'tSeriesPathStr',s,g));
     if mlrIsFile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
       load(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)));
       if exist('transforms') == 1
@@ -998,7 +1019,7 @@ switch lower(param)
     % gets the .mat params file associated with this scan if it exists
     [s g] = getScanAndGroup(view,varargin,param);
     % get the tseries name
-    [tSeriesPath tSeriesName] = fileparts(viewGet(view,'tSeriesPathStr',s,g));
+    [tSeriesPath tSeriesName] = mrFileParts(viewGet(view,'tSeriesPathStr',s,g));
     if mlrIsFile(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)))
       val = load(fullfile(tSeriesPath,sprintf('%s.mat',tSeriesName)));
     end
@@ -1417,7 +1438,7 @@ switch lower(param)
     % if numeric there is nothing to do, just return value
     if isnumeric(baseName)
       val = baseName;
-    else
+    elseif ~isempty(view.baseVolumes)
       % otherwise look up the baseNum
       baseNames = {view.baseVolumes(:).name};
       val = find(strcmp(baseName,baseNames));
@@ -1508,7 +1529,7 @@ switch lower(param)
       [tf val] = isbase(val);
     end
   case {'basecoordmappath'}
-    % basedata = viewGet(view,'baseCoordMapPath',[baseNum],[corticalDepth])
+    % basedata = viewGet(view,'baseCoordMapPath',[baseNum])
     b = getBaseNum(view,varargin);
     n = viewGet(view,'numberofbasevolumes');
     val = [];
@@ -1524,17 +1545,19 @@ switch lower(param)
 	    innerCoordsFilename = view.baseVolumes(b).coordMap.innerCoordsFileName;
 	    subjectDir = '';
 	    % tell user what we are doing
-	    disp(sprintf('(viewGet:baseCoordMapPath) Surface directory %s for base %s does not exist, searching in volumeDirectory: %s',val,viewGet(view,'baseName',b),volumeDirectory));
-	    for i = 1:length(volumeDirectoryList)
+      baseName = viewGet(view,'baseName',b);
+	    oneTimeWarning(['viewGetBaseCoordMap_' baseName],sprintf('(viewGet:baseCoordMapPath) Surface directory %s for base %s does not exist, searching in volumeDirectory: %s',val,baseName,volumeDirectory));
+	    maxChars = 0;
+      for i = 1:length(volumeDirectoryList)
 	      % for each volume directory in the list, see if the directory name
 	      % matches the first part of the baseVolumes anatomy (this assumes
 	      % that people use a convention like calling the directory s001 and
 	      % calling the anatomy file s001anatomy or something like that.
 	      matchName = strfind(view.baseVolumes(b).coordMap.anatFileName,volumeDirectoryList(i).name);
-	      if ~isempty(matchName) && isequal(matchName(1),1)
-		% we have a match, for the subject directory under the volume direcotry
-		subjectDir = fullfile(volumeDirectory,volumeDirectoryList(i).name);
-		break;
+	      if ~isempty(matchName) && isequal(matchName(1),1) ... % we have a match, for the subject directory under the volume directory
+           && length(volumeDirectoryList(i).name)>maxChars % and this name has more characters than any previous match
+          maxChars = length(volumeDirectoryList(i).name);
+		      subjectDir = fullfile(volumeDirectory,volumeDirectoryList(i).name);
 	      end
 	    end
 	    % not found, give up
@@ -1591,21 +1614,25 @@ switch lower(param)
     else
       corticalDepths = varargin{2};
     end
-    if b & (b > 0) & (b <= n)
+    if b && (b > 0) && (b <= n)
       val = view.baseVolumes(b).coordMap;
-      % see if the coordMap is calculated for the correct number of cortical depth bins
-      if ~isempty(val) && (~isfield(val,'corticalDepths') || ~isequal(val.corticalDepths,corticalDepths))
-        if isfield(val,'innerCoords') && isfield(val,'outerCoords')
-          % if not, then we have to do it
-          %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
-          val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
-          cDepth=0;
-          for iDepth = corticalDepths;
-            cDepth=cDepth+1;
-            val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
+      if ~isempty(val)
+        % see if the coordMap is calculated for the correct number of cortical depth bins
+        if (~isfield(val,'corticalDepths') || ~isequal(val.corticalDepths,corticalDepths))
+          if isfield(val,'innerCoords') && isfield(val,'outerCoords')
+            % if not, then we have to do it
+            %	  val.coords = (1-corticalDepth)*val.innerCoords + corticalDepth*val.outerCoords;
+            val.coords = NaN([size(val.innerCoords) length(corticalDepths)]);
+            cDepth=0;
+            for iDepth = corticalDepths
+              cDepth=cDepth+1;
+              val.coords(:,:,:,:,cDepth) = val.innerCoords + iDepth*(val.outerCoords-val.innerCoords);
+            end
+            val.corticalDepths = corticalDepths;
           end
-          val.corticalDepths = corticalDepths;
         end
+        % Correct path if necessary
+        val.path = viewGet(view,'basecoordmappath',varargin{:});
       end
     end
   case {'basesurface'}
@@ -2319,9 +2346,9 @@ switch lower(param)
     % basevoxelsize = viewGet(view,'basevoxelsize',[baseNum])
     [b baseVolume] = getBaseNum(view,varargin);
     if ~isempty(baseVolume)
-      val = baseVolume.hdr.pixdim([2,3,4])';;
+      val = baseVolume.hdr.pixdim([2,3,4])';
     end
-    
+
     % ROI
   case {'visiblerois'}
     % roiList = viewGet(view,'visiblerois')
@@ -3011,13 +3038,20 @@ switch lower(param)
     % n = viewGet(view,'currentAnalysis')
     val = view.curAnalysis;
   case{'analysisnum'}
-    % n = viewGet(view,'analysisNum',analysisName)
+    % n = viewGet(view,'analysisNum',analysisName,[groupNum])
     if ieNotDefined('varargin')
       mrErrorDlg('viewGet analysisNum: must specify analysisName');
     end
+    % if the user passed in group num, then that
+    % means to retrieve the analysis number for that group
+    if length(varargin) <= 1
+      groupNum = viewGet(view,'curGroup');
+    else
+      groupNum = varargin{2};
+    end
     analysisName = varargin{1};
     if ~isempty(view.analyses)
-      analysisNames = viewGet(view,'analysisnames');
+      analysisNames = viewGet(view,'analysisnames',groupNum);
       val = find(strcmp(analysisName,analysisNames));
     end
   case {'analysis'}

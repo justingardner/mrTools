@@ -101,7 +101,7 @@ newy =  ceil(imrange(3:4)*(basedims(2)-1))+1;
 
 fprintf(1,'Image coordinates: X: %d -> %d - Y: %d -> %d \n',newx(1),newx(2),newy(1),newy(2));
 
-[pathname, fname, extension] = fileparts(fname);
+[pathname, fname, extension] = mrFileParts(fname);
 fname = [fname extension];
 
 % check that the directory exists

@@ -61,29 +61,40 @@ numberTests = numberFtests+numberContrasts;
 computePermutations = numberTests && (params.permutationTests || (params.parametricTests && params.permutationFweAdjustment));
 
 if params.covCorrection   %number of voxels to get around the ROI/subset box in case the covariance matrix is estimated
-  voxelsMargin = repmat(floor(params.covEstimationAreaSize/2),1,3);
+  % Parameter covEstimationAreaSize is specified in voxels, so we assume that data are isometric (unlike for spatial smoothing below)
+  voxelsMargin = repmat(floor(params.covEstimationAreaSize/2),length(params.scanNum),3);
   switch(params.covEstimationPlane)
     case {'Sagittal'}
-      voxelsMargin(1)=0;
+      voxelsMargin(:,1)=0;
     case {'Axial'}
-      voxelsMargin(3)=0;
+      voxelsMargin(:,3)=0;
     case {'Coronal'}
-      voxelsMargin(2)=0;
+      voxelsMargin(:,2)=0;
   end
 else
-   voxelsMargin = [0 0 0];
+   voxelsMargin = zeros(length(params.scanNum),3);
 end
-if params.spatialSmoothing  %we'll also need a margin if we're spatially smoothing
-  switch(params.smoothingPlane)
+
+if params.spatialSmoothing  
+  % calculate smoothing size parameter in voxels in each of the three dimensions
+  cScan = 0;
+  for iScan = params.scanNum
+    cScan = cScan+1;
+    smoothingVoxels(cScan,:) = params.spatialSmoothing./viewGet(thisView,'scanvoxelsize',iScan);
+    switch(params.smoothingPlane)
       case {'Sagittal'}
-        voxelsMargin = max(voxelsMargin, [0 params.spatialSmoothing params.spatialSmoothing]);
+        smoothingVoxels(cScan,1) = 0;
       case {'Axial'}
-        voxelsMargin = max(voxelsMargin,[params.spatialSmoothing params.spatialSmoothing 0]);
+        smoothingVoxels(cScan,3) = 0;
       case {'Coronal'}
-        voxelsMargin = max(voxelsMargin,[params.spatialSmoothing 0 params.spatialSmoothing]);
-      case '3D'
-        voxelsMargin = max(voxelsMargin,repmat(params.spatialSmoothing,1,3));
+        smoothingVoxels(cScan,2) = 0;
+    end
   end
+  
+  %we'll also need a margin if we're spatially smoothing
+  voxelsMargin = max(voxelsMargin,ceil(smoothingVoxels));
+else
+  smoothingVoxels = zeros(length(params.scanNum),3);
 end
 %--------------------------------------------------------- Main loop over scans ---------------------------------------------------
 figNum = viewGet(thisView,'figNum');
@@ -147,8 +158,9 @@ if numberTests
   end
 end
 
-
+cScan = 0;
 for iScan = params.scanNum
+  cScan = cScan+1;
   numVolumes = viewGet(thisView,'nFrames',iScan);
   scanDims{iScan} = viewGet(thisView,'dims',iScan);
 
@@ -163,7 +175,7 @@ for iScan = params.scanNum
       else
         roiList = 1:viewGet(thisView,'numberOfRois');
       end
-      [subsetBox{iScan}, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,voxelsMargin,roiList);
+      [subsetBox{iScan}, whichRoi, marginVoxels] = getRoisBox(thisView,iScan,voxelsMargin(cScan,:),roiList);
       usedVoxelsInBox = marginVoxels | any(whichRoi,4);
       %clear('whichRoi','marginVoxels');
       if params.covCorrection && ~strcmp(params.covEstimationBrainMask,'None')
@@ -322,7 +334,7 @@ for iScan = params.scanNum
       end
 
       %create model HRF
-      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,scanParams{iScan}.acquisitionDelay,1);
+      [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,scanParams{iScan}.acquisitionDelay,1,d.tr/d.estimationSupersampling);
 
       d.volumes = 1:d.dim(4);
       %make a copy of d
@@ -378,7 +390,7 @@ for iScan = params.scanNum
       end
 
       % compute estimates and statistics
-      [d, out] = getGlmStatistics(d, params, verbose, precision, actualData);%, computeTtests,computeBootstrap);
+      [d, out] = getGlmStatistics(d, params, verbose, precision, actualData, smoothingVoxels(cScan,:));%, computeTtests,computeBootstrap);
       
     
       if iPerm==1
@@ -761,13 +773,17 @@ if numberContrasts && (nnz(params.componentsToTest)==1 || strcmp(params.componen
     ordered_abs_betas = [ordered_abs_betas; contrast{iScan}(:)];
   end
   ordered_abs_betas = ordered_abs_betas(~isnan(ordered_abs_betas));
-  min_beta = min(min(min(min(min(ordered_abs_betas)))));
-  max_beta = max(max(max(max(max(ordered_abs_betas)))));
-  ordered_abs_betas = sort(abs(ordered_abs_betas));
-  beta_perc95 = 0; 
-  beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
-  thisOverlay.range = [-beta_perc95 beta_perc95];
-  thisOverlay.clip = [min_beta max_beta];
+  if ~isempty(ordered_abs_betas)
+    min_beta = min(min(min(min(min(ordered_abs_betas)))));
+    max_beta = max(max(max(max(max(ordered_abs_betas)))));
+    ordered_abs_betas = sort(abs(ordered_abs_betas));
+    beta_perc95 = 0; 
+    beta_perc95 = max(beta_perc95,ordered_abs_betas(round(numel(ordered_abs_betas)*.95))); %take the 95th percentile for the min/max
+    thisOverlay.range = [-beta_perc95 beta_perc95];
+    thisOverlay.clip = [min_beta max_beta];
+  else
+    mrWarnDlg('(glmAnalysis) Analysis results are all NaNs. Check the Raw/motion compensated scans');
+  end
   thisOverlay.colormap = jet(256);
   for iContrast = 1:numberContrasts
     overlays(end+1)=thisOverlay;

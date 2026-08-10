@@ -19,24 +19,24 @@ if ~exist('mrParamsDialog')
   return
 end
 
-mriConvert = 'mri_convert';
-[retval retstr] = system('which mri_convert');
-if retval == 1
-  warnMessage = '(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path. See instructions on wiki http://gru.stanford.edu/doku.php/mrTools/howTo#installation';
-  if ispc
-    warnMessage = [warnMessage '. This is probably because you''re running mrTools on a Windows PC.'];
+if ~ispc
+  mriConvert = 'mri_convert';
+  [retval retstr] = system('which mri_convert');
+  if retval == 1
+    warnMessage = '(mlrImportFreeSurfer) Could not find FreeSurfer command mri_convert which is needed to convert the FreeSurfer anatomy file to a nifti file. This is usually in the bin directory under your freesurfer installation. You may need to install freesurfer and add that to your path. See instructions on wiki http://gru.stanford.edu/doku.php/mrTools/howTo#installation';
+    if ispc
+      warnMessage = [warnMessage '. This is probably because you''re running mrTools on a Windows PC.'];
+    end
+    mrWarnDlg(warnMessage,'Yes');
+    mriConvert = [];
   end
-  mrWarnDlg(warnMessage,'Yes');
+else
   mriConvert = [];
 end
 
 % evaluate the arguments
 eval(evalargs(varargin));
 if ieNotDefined('defaultParams'),defaultParams = 0;end
-
-% check directories
-if ~isdir('surf'),disp(sprintf('(mlrImportFreeSurfer) Could not find surf directory'));return,end
-if ~isdir('mri'),disp(sprintf('(mlrImportFreeSurfer) Could not find mri directory'));return,end
 
 if ieNotDefined('baseName'), baseName = getLastDir(pwd);end
 
@@ -47,14 +47,22 @@ curvFile  = 'curv';
 anatFile  = 'T1.mgz';
 hemi      = {'lh', 'rh'};
 hemiNames = {'left', 'right'};
-outDir    = fullfile(pwd,'surfRelax');
+if ~exist('freeSurferDir')
+  freeSurferDir = pwd;
+end
+if ~exist('outdir')
+  outDir = fullfile(freeSurferDir,'surfRelax');
+end
 if ~exist('volumeCropSize')
   volumeCropSize = [176 256 256];
 end
 defaultPixelSize = [1 1 1];
+if ~exist('pixelSize')
+  pixelSize = defaultPixelSize;
+end
 
 paramsInfo = {...
-    {'freeSurferDir',pwd,'directory where the freeSurfer files live'}, ...
+    {'freeSurferDir',freeSurferDir,'directory where the freeSurfer files live'}, ...
     {'outDir', outDir,'directory that OFF surfaces will be written to'}, ...
     {'wmFile', wmFile, 'name of the surface defining the white/gray boundary'}, ...
     {'gmFile', gmFile, 'name of the surface defining the gray/pial boundary'}, ...
@@ -65,7 +73,7 @@ paramsInfo = {...
     {'volumeCropSize',volumeCropSize, 'Size to crop the volume anatomy to (in voxels).'},...
              };
 if isempty(mriConvert) %if mri_convert wasn't found, ask for the resolution
-  paramsInfo{end+1} = {'pixelSize',defaultPixelSize,'Resolution of the volume anatomy (in mm). This is normally read from the converted anatomy file, but mri_convert is not available.'};
+  paramsInfo{end+1} = {'pixelSize',pixelSize,'Resolution of the volume anatomy (in mm). This is normally read from the converted anatomy file, but mri_convert is not available.'};
 end
 
 % get the parameters from the user
@@ -80,8 +88,12 @@ if isempty(params)
   return
 end
 
-if ~isdir(outDir)
-  mkdir(outDir);
+% check directories
+if ~isfolder(fullfile(freeSurferDir,'surf')),fprintf('(mlrImportFreeSurfer) Could not find surf directory\n');return,end
+if ~isfolder(fullfile(freeSurferDir,'mri')),fprintf('(mlrImportFreeSurfer) Could not find mri directory\n');return,end
+
+if ~isfolder(params.outDir)
+  mkdir(params.outDir);
 end
 
 
@@ -104,7 +116,7 @@ if mlrIsFile(anatFile)
     setenv('LD_LIBRARY_PATH', '/usr/pubsw/packages/tiffjpegglut/current/lib:/opt/local/lib:/usr/local/lib:/opt/local/lib')
     system(commandString);
     %read the dimensions
-    hdr = cbiReadNiftiHeader(outFile);
+    hdr = mlrImageReadNiftiHeader(outFile);
     volumeSize = hdr.dim(2:4);
     if all(iseven(volumeSize))
       %now run mri_convert again specifying the centre of the crop volume in the full volume
@@ -116,19 +128,29 @@ if mlrIsFile(anatFile)
         );
     else
       % note that if the full volume size is an odd number of voxels, the qform/sform will be wrong
-      % because the crop should happen at non-integer cenre coordinates, which mri_convert does not allow
+      % because the crop should happen at non-integer centre coordinates, which mri_convert does not allow
       % in this case, do not crop
       disp(sprintf('(mlrImportFreeSurfer) Odd number of voxels in original freesurfer anatomical volume (%s), not going to crop...',mat2str(volumeSize)));
       params.volumeCropSize = volumeSize;
     end
     system(commandString);
   else
-    disp(sprintf('\n(mlrImportFreeSurfer) To convert the canonical anatomy from Freesurfer to NIFTI format, run:  \n\t mri_convert%s \nin the appropriate terminal\n',commandString));
-    disp('Note that if the original freesurfer anatomical volume is not ...x256x256 x 1mm, there will likely be a mismatch between the volume and the surfaces.');
-    disp('If you know the dimensions of the freesurfer volume (in voxels), you are strongly encouraged to re-run mlrImportFreesurfer with these values as the cropSize field and to check for any mismatch between the converted volume and the converted surfaces.\n');
-    mrWarnDlg(sprintf('(mlrImportFreeSurfer) !!!! Canonical anatomy not created !!!!'));
+    if mlrIsFile(outFile)
+      fprintf('\n(mlrImportFreesurfer) Getting voxel and volume dimensions from existing %s file\n', strcat(params.baseName, '_', 'mprage_pp', niftiExt));
+      hdr = mlrImageReadNiftiHeader(outFile);
+      params.volumeCropSize = hdr.dim(2:4);
+      fprintf('Voxel dimensions = %s\n',mat2str(hdr.pixdim(2:4)))
+      fprintf('Volume dimensions = %s\n',mat2str(hdr.dim(2:4)))
+    else
+      disp(sprintf('\n(mlrImportFreeSurfer) To convert the canonical anatomy from Freesurfer to NIFTI format, run:  \n\t mri_convert%s \nin the appropriate terminal\n',commandString));
+      disp('Note that if the original freesurfer anatomical volume is not ...x256x256 x 1mm, there will likely be a mismatch between the volume and the surfaces.');
+      disp('If you know the dimensions of the freesurfer volume (in voxels), you are strongly encouraged to re-run mlrImportFreesurfer with these values as the cropSize field and to check for any mismatch between the converted volume and the converted surfaces.\n');
+      mrWarnDlg(sprintf('(mlrImportFreeSurfer) !!!! Canonical anatomy not created !!!!'));
+    end
   end
+  
 end
+
 if ~mlrIsFile(outFile)
   if fieldIsNotDefined(params,'pixelSize')
     disp('(mlrImportFreeSurfer) Could not determine voxel size. Assuming 1x1x1 mm.');
@@ -139,11 +161,11 @@ if ~mlrIsFile(outFile)
 else
   pixelSize=hdr.pixdim(2:4);
 end
-%   h = cbiReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
+%   h = mlrImageReadNiftiHeader(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 %   h.qform44(1,4) = -(h.dim(2)-1)/2;
 %   h = cbiSetNiftiQform(h, h.qform44);
 %   h = cbiSetNiftiSform(h, h.qform44);
-%   cbiWriteNiftiHeader(h, fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
+%   mlrImageWriteNiftiHeader(h, fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp', niftiExt)));
 
 % import the white and gray matter surface, as well as the inflated surface and curvature
 disp(sprintf('(mlrImportFreeSurfer) Converting FreeSurfer surfaces to OFF format'))
@@ -160,6 +182,11 @@ for i = 1:length(hemi)
   % convert outer surface
   surfFile = fullfile(params.freeSurferDir, 'surf', strcat(hemi{i}, '.', params.gmFile));
   outFile = fullfile(params.outDir, strcat(params.baseName, '_', hemiNames{i}, '_GM.off'));
+  if ispc && ~mlrIsFile(surfFile)
+    if mlrIsFile([surfFile '.T1'])
+      surfFile = [surfFile '.T1'];
+    end
+  end
   if mlrIsFile(surfFile)
     freeSurfer2off(surfFile, outFile, params.volumeCropSize, pixelSize);
   else
@@ -206,5 +233,5 @@ return;
 % h.qform44(1,4) = (h.dim(2)-1)/2;
 % h.qoffset_x = -1*(h.dim(2)-1)/2;
 % h.sform_code = 0;
-% cbiWriteNiftiHeader(h, sprintf(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr'))));
+% mlrImageWriteNiftiHeader(h, sprintf(fullfile(params.outDir, strcat(params.baseName, '_', 'mprage_pp.hdr'))));
 

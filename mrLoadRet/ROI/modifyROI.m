@@ -41,11 +41,15 @@ newCoords = xformROIcoords(coords,xform,voxelSize,roiVoxelSize);
 % Merge/remove coordinates
 if sgn<0
   coords=newCoords;
+  fprintf('(modifyROI) ');
 elseif sgn==0
   coords = removeCoords(newCoords,curCoords);
+  fprintf('(modifROI) Removed %d voxels (%.1f mm^3) from %s. ', size(curCoords,2) - size(coords,2), (size(curCoords,2) - size(coords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
 elseif sgn>0
   coords = mergeCoords(curCoords,newCoords);
+  fprintf('(modifyROI) Added %d voxels (%.1f mm^3) to %s. ', size(coords,2) - size(curCoords,2), (size(coords,2) - size(curCoords,2)) * prod(roiVoxelSize), viewGet(view,'roiName'));
 end
+fprintf('New ROI size is %d voxels (%.1f mm^3).\n',size(coords,2), size(coords,2) * prod(roiVoxelSize));
 view = viewSet(view,'ROIcoords',coords);
 
 return;
@@ -64,7 +68,7 @@ function coords = mergeCoords(coords1,coords2)
 % djh, 7/98
 % djh, 2/2001, dumped coords2Indices & replaced with union(coords1',coords2','rows')
 
-if ~isempty(coords1) & ~isempty(coords2)
+if ~isempty(coords1) && ~isempty(coords2)
     coords = union(coords1',coords2','rows');
     coords = coords';
 else
@@ -88,7 +92,7 @@ function coords = removeCoords(coords1,coords2)
 % djh, 2/2001, dumped coords2Indices & replaced with setdiff(coords1',coords2','rows')
 
 if ~isempty(coords1) && ~isempty(coords2)
-    coords = setdiff(coords2',coords1','rows');
+    coords = setdiff(round(coords2'),round(coords1'),'rows');  % JB (01/05/2019): added rounding in case ROI coordinates are not integers (which can happen, but does not make sense)
     coords = coords';
 else
     coords=coords2;

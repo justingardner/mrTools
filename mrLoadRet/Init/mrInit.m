@@ -1,6 +1,6 @@
 % mrInit.m
 %
-%      usage: mrInit(<sessionParams>,<groupParams>,<justGetParams=1>,<defaultParams=1>)
+%      usage: mrInit(<sessionParams>,<groupParams>,<justGetParams=1>,<defaultParams=1>,<'makeReadme=0'>,<'noPrompt=1'>)
 %         by: justin gardner
 %       date: 06/09/08
 %    purpose: Init the session variables. usually just call with no arguments
@@ -20,13 +20,15 @@
 %             and then call mrInit again to set the parameters (useful for scripting)
 %             mrInit(sessionParams,groupParams);
 %
+%             Setting noPrompt=1 will replace any existing mrSession.mat without prompting (for scripting)
+%             
 %             You can use mrSetPref to set preferences for magnet/coil and pulseSequence names
 %             that will come down as choices in the GUI
 %
-function [sessionParams groupParams] = mrInit(sessionParams,groupParams,varargin)
+function [sessionParams, groupParams] = mrInit(sessionParams,groupParams,varargin)
 
 % check arguments
-getArgs(varargin,{'justGetParams=0','defaultParams=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]','stimfileMatchList=[]'});
+getArgs(varargin,{'justGetParams=0','defaultParams=0','noPrompt=0','makeReadme=1','magnet=[]','coil=[]','pulseSequence=[]','subject=[]','operator=[]','description=[]','stimfileMatchList=[]'});
 
 minFramePeriod = .01;  %frame period in sec outside which the user is prompted
 maxFramePeriod = 100;  % that something weird's goin on
@@ -93,19 +95,30 @@ if ieNotDefined('groupParams')
   if mlrIsFile('mrSession.mat')
     load mrSession;
     nScans = length(groups(1).scanParams);
-    for i = 1:nScans
-      scanNames{i} = groups(1).scanParams(i).fileName;
-      descriptions{i} = groups(1).scanParams(i).description;
-      totalFrames{i} = groups(1).scanParams(i).totalFrames;
-      nFrames{i} = groups(1).scanParams(i).nFrames;
-      junkFrames{i} = groups(1).scanParams(i).junkFrames;
+    if nScans>0
+      for i = 1:nScans
+        scanNames{i} = groups(1).scanParams(i).fileName;
+        descriptions{i} = groups(1).scanParams(i).description;
+        totalFrames{i} = groups(1).scanParams(i).totalFrames;
+        nFrames{i} = groups(1).scanParams(i).nFrames;
+        junkFrames{i} = groups(1).scanParams(i).junkFrames;
+      end
+      populateScanParams = false;
+    else
+      populateScanParams = true;
     end
+    defaultGroupName = groups(1).name;
   else
+    populateScanParams = true;
+    defaultGroupName = 'Raw';
+  end
+  
+  if populateScanParams
     % get info about scans that live in Raw/TSeries
-    scanDirName = fullfile('Raw','TSeries');
+    scanDirName = fullfile(defaultGroupName,'TSeries');
     scanFilenames = mlrImageGetAllFilenames(scanDirName,'mustNotHaveDotInFilename=1');
     nScans=0;scanNames = {};descriptions = {};totalFrames = {};nFrames = {};junkFrames = {};
-    for i = 1:length(scanFilenames);
+    for i = 1:length(scanFilenames)
       % read the nifti header
       imageHeader = mlrImageHeaderLoad(fullfile(scanDirName,scanFilenames{i}));
       if ismember(imageHeader.nDim,[3 4])
@@ -128,14 +141,15 @@ if ieNotDefined('groupParams')
   
   % check to see if we got any good scans
   if nScans == 0
-    disp(sprintf('(mrInit) Could not find any valid scans in Raw/TSeries'));
+    disp(sprintf('(mrInit) Could not find any valid scans in %s/TSeries',defaultGroupName));
     sessionParams = [];groupParams = [];
     return
   end
   
   % setup params dialog
   paramsInfo = {};
-  paramsInfo{end+1} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'The scanNumber','editable=0'};
+  paramsInfo{end+1} = {'defaultGroupName',defaultGroupName,'type=string','The default MLR group','editable=0'};
+  paramsInfo{end+1} = {'scanNum',1,'incdec=[-1 1]',sprintf('minmax=[1 %i]',nScans),'Number of scans in the default group','editable=0'};
   paramsInfo{end+1} = {'name',scanNames,'group=scanNum','type=string','editable=0','Names of scans'};
   paramsInfo{end+1} = {'totalFrames',totalFrames,'group=scanNum','type=numeric','Number of frames in scan','editable=0'};
   paramsInfo{end+1} = {'description',descriptions,'group=scanNum','type=string','Description of scans'};
@@ -198,12 +212,24 @@ if ~justGetParams
     session.coil = sessionParams.coil;
     session.protocol = sprintf('%s: %s',sessionParams.pulseSequence,sessionParams.pulseSequenceText);
     % create groups variables
-    groups(1).name = 'Raw';
+    if fieldIsNotDefined(groupParams,'defaultGroupName')
+      groups(1).name = 'Raw';
+    else
+      groups(1).name = groupParams.defaultGroupName;
+    end
     scanParams = [];
-    tseriesDir = 'Raw/TSeries';
+    tseriesDir = fullfile(groups(1).name,'TSeries');
     for iScan=1:length(groupParams.totalFrames)
       name = fullfile(tseriesDir, groupParams.name{iScan});
       hdr = mlrImageReadNiftiHeader(name);
+      % add in a missing qform based on voxel dimensions. This won't have correct info, but will allow the rest of the code to run
+      % if the sform is set, the qform shouldn't matter
+      if isempty(hdr.qform44)
+        mrWarnDlg(sprintf('(mrInit) !!!! Missing qform for scan %d (%s), making one based only on voxel dimensions !!!!',iScan,groupParams.name{iScan}));
+        hdr.qform44 = diag(hdr.pixdim(2:5));
+        hdr.qform44(4,4) = 1;
+      end
+
       scanParams(iScan).dataSize = hdr.dim([2,3,4])';
       scanParams(iScan).description = groupParams.description{iScan};
       scanParams(iScan).fileName = groupParams.name{iScan};
@@ -261,15 +287,15 @@ if ~justGetParams
     
     % check for mrSession
     if mlrIsFile('mrSession.mat')
-      if askuser('(mrInit) mrSession.mat already exists. Overwrite?');
-	disp(sprintf('(mrInit) Copying old mrSession.mat mrSession.old.mat'));
-	movefile('mrSession.mat','mrSession.old.mat');
-	disp(sprintf('(mrInit) Saving new mrSession'));
-	save mrSession session groups;
-	% disp(sprintf('(mrInit) Creating new Readme'));
-	if makeReadme
-	  mrReadme(session, groups);
-	end
+      if noPrompt || askuser('(mrInit) mrSession.mat already exists. Replace?');
+        disp(sprintf('(mrInit) Copying old mrSession.mat mrSession.old.mat'));
+        movefile('mrSession.mat','mrSession.old.mat');
+        disp(sprintf('(mrInit) Saving new mrSession'));
+        save mrSession session groups;
+        % disp(sprintf('(mrInit) Creating new Readme'));
+        if makeReadme
+          mrReadme(session, groups);
+        end
       end
     else
       disp(sprintf('(mrInit) Saving new mrSession'));

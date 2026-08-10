@@ -196,7 +196,7 @@ for i = 1:length(preMCScanParams)
       end
     end
     if ~isempty(expnum)
-      [pathstr m.groups(1).auxParams(i).stimFileName] = fileparts(m.mrSESSION.doer.exp{expnum}.stimfilename);
+      [pathstr m.groups(1).auxParams(i).stimFileName] = mrFileParts(m.mrSESSION.doer.exp{expnum}.stimfilename);
       m.groups(1).auxParams(i).stimFileName = sprintf('%s.mat',stripext(m.groups(1).auxParams(i).stimFileName));
     end
   end

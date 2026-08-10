@@ -545,6 +545,15 @@ if strcmp(propertyName,'location')
   
 else %if the property is not 'location', then we just set the property using set
 
+  if ~verLessThan('matlab','9.4') && strcmp(get(h,'Type'),'uimenu') % some menu property names changed starting at version 9.4 (or possibly before)
+    switch(propertyName)
+      case 'callback' 
+        propertyName = 'menuselectedfcn';
+      case 'label'
+        propertyName = 'text';
+    end
+  end
+  
   % check if the property exists
   fieldNames = lower(fieldnames(get(h)));
 

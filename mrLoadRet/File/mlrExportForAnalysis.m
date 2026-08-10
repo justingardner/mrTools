@@ -100,9 +100,9 @@ output.description = viewGet(v,'description');
 
 % load the time series
 if params.fullTimeSeries
-  disppercent(-inf,'(mlrExportForAnalysis) Loading time series');
+  mlrDispPercent(-inf,'(mlrExportForAnalysis) Loading time series');
   output.tSeries = loadTSeries(v);
-  disppercent(inf);
+  mlrDispPercent(inf);
 else
   output.tSeries = [];
 end

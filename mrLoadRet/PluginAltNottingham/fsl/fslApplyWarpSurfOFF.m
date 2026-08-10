@@ -114,7 +114,7 @@ end
 %first save surfaces
 for iSurf = find(~isFlat)
   surf{iSurf}.vtcs = warpedCoords(1:3,coordsIndices(iSurf,1):coordsIndices(iSurf,2))';
-  [pathname,filename,extension] = fileparts(surfFileNames{iSurf});
+  [pathname,filename,extension] = mrFileParts(surfFileNames{iSurf});
   if ieNotDefined('suffix')
     outputFilename =  [pathname,'/',filename,'_invFNIRT',extension];
     [filename,pathname]=uiputfile('*.off',['Save surface converted from ' filename],outputFilename);
@@ -134,7 +134,7 @@ end
 % % for iSurf = find(isFlat)
 % %   saveFile = true;
 % %   [isconverted,whichSurface] = ismember(surf{iSurf}.parentSurfaceName,surfFileNames);
-% %   [pathname,filename,extension] = fileparts(surfFileNames{iSurf});
+% %   [pathname,filename,extension] = mrFileParts(surfFileNames{iSurf});
 % %   if ~isconverted
 % %     surf{iSurf}.parentSurfaceName = mlrGetPathStrDialog(startPathStr,['Choose new parent surface (WM) for flat file converted from ' filename],{'*WM*.off','Inner surface OFF file'});
 % %     if isempty(surf{iSurf}.parentSurfaceName)

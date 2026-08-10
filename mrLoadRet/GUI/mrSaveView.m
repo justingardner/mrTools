@@ -1,12 +1,13 @@
 % mrSaveView.m
 %
 %        $Id: mrQuit.m 1942 2010-12-16 18:14:41Z julien $ 
-%      usage: mrSaveView(v)
+%      usage: mrSaveView(v,<lastViewFile>)
 %         by: justin gardner, taken out from mrQuit by julien besle
 %       date: 07/11/08, 2011/08/05
 %    purpose: saves view and view settings in session directory
+%
 
-function mrSaveView(v)
+function mrSaveView(v,lastViewFile)
 
 % remember figure location
 try
@@ -22,6 +23,10 @@ catch
     end
 end
 
+if ieNotDefined('lastViewFile')
+  lastViewFile = 'mrLastView';
+end
+
 % remember settings that are not in view
 mrGlobals;
 if isfield(MLR,'panels')
@@ -32,7 +37,7 @@ end
 
 homeDir = viewGet(v,'homeDir');
 try
-  disppercent(-inf,sprintf('(mrSaveView) Saving %s/mrLastView',homeDir));
+  mlrDispPercent(-inf,sprintf('(mrSaveView) Saving %s/%s',homeDir,lastViewFile));
         % save the view in the current directory
   view = v;
   % replace view.figure with figure number (to prevent opening on loading
@@ -45,14 +50,14 @@ try
   viewSettings.version = 2.0;
   
   if getfield(whos('view'),'bytes')<2e9
-    save(fullfile(homeDir,'mrLastView'), 'view','viewSettings', '-V6');
+    save(fullfile(homeDir,lastViewFile), 'view','viewSettings', '-V6');
   else
     mrWarnDlg('(mrSaveView) Variable view is more than 2Gb, using option -v7.3 to save');
-    save(fullfile(homeDir,'mrLastView'), 'view', 'viewSettings', '-v7.3');
+    save(fullfile(homeDir,lastViewFile), 'view', 'viewSettings', '-v7.3');
   end
   % save .mrDefaults in the home directory
-  disppercent(inf);
+  mlrDispPercent(inf);
 catch
-  disppercent(inf);
-  mrErrorDlg('(mrQuit) Could not save mrLastView.mat');
+  mlrDispPercent(inf);
+  mrErrorDlg(sprintf('(mrQuit) Could not save %s',lastViewFile));
 end

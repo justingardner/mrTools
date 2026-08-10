@@ -46,7 +46,7 @@ end
 
 % changed to the directory of the toFilename and get its path
 initPath = pwd;
-[toPath toName toExt] = fileparts(toFilename);
+[toPath toName toExt] = mrFileParts(toFilename);
 toName = [toName toExt];
 if ~isempty(toPath)
   cd(toPath);
@@ -54,7 +54,7 @@ end
 toPath = pwd;
 
 % break up the fromFilename
-[fromPath fromName fromExt] = fileparts(fromFilename);
+[fromPath fromName fromExt] = mrFileParts(fromFilename);
 fromName = [fromName fromExt];
 
 % now make toFilename relative

@@ -51,7 +51,7 @@ if yes
       % set in scanParams
       scanParams(iScan).niftiHdr = hdr;
       % and save back the header
-      cbiWriteNiftiHeader(hdr,filename);
+      mlrImageWriteNiftiHeader(hdr,filename);
     end
   end
 end

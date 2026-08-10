@@ -367,7 +367,7 @@ function saveTalWithCode3
                 hdr = cbiSetNiftiSform(hdr,newSform);
                 % unfortunately that code sets sform_code to 1 so need to undo that!
                 hdr.sform_code = 3;
-                hdr = cbiWriteNiftiHeader(hdr,filename);
+                hdr = mlrImageWriteNiftiHeader(hdr,filename);
                 hdr = mlrImageReadNiftiHeader(filename); %have to do this again for some reason;
                 v = viewSet(v,'niftiHdr',hdr,iScan,iGroup); %also save to session params
               else

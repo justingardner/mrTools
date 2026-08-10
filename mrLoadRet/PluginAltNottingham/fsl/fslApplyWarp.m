@@ -25,7 +25,7 @@ if ieNotDefined('verbose')
    verbose = true;
 end
 
-cbiWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
+mlrImageWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
 
 
 %convert matlab flags to FNIRT flags

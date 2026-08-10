@@ -225,7 +225,7 @@ printBlockEnd;
 if ~mlrIsFile('Inplane/Inplane.hdr') && anatnum
   printBlockBegin('Saving anatomy file');
   [anatimg anathdr] = mlrImageReadNifti(fullfile('Anatomy',anatdir(anatnum).name));
-  cbiWriteNifti('Inplane/Inplane.hdr',anatimg,anathdr);
+  mlrImageWriteNifti('Inplane/Inplane.hdr',anatimg,anathdr);
   printBlockEnd;
 else
   [anatimg anathdr] = mlrImageReadNifti('Inplane/Inplane.hdr');

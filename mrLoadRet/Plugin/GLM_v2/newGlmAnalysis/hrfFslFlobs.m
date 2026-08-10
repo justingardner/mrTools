@@ -6,9 +6,9 @@
 %       date: 14/06/07, 09/02/2010
 %    purpose: reads a basis set from a flobs file
 %
-function [params, hrf] = hrfFslFlobs(params, sampleDuration, sampleDelay, defaultParams)
+function [params, hrf] = hrfFslFlobs(params, sampleDuration, sampleDelay, defaultParams, ~)
 
-if ~any(nargin == [1 2 3 4])% 5])
+if ~any(nargin == [1 2 3 4 5])
   help hrfDoubleGamma
   return
 end

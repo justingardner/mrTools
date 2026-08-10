@@ -246,7 +246,7 @@ hdr = mlrImageReadNiftiHeader(viewGet(view,'tseriesPath',baseScan));
 
 % Save evalstring for recomputing and params
 evalstr = ['view = newView(','''','Volume','''','); view = averageTSeries(view,params);'];
-[pathstr,filename] = fileparts(tseriesFileName);
+[pathstr,filename] = mrFileParts(tseriesFileName);
 tseriesdir = viewGet(viewAverage,'tseriesdir');
 save(fullfile(tseriesdir,filename),'evalstr','params','tseriesFileName');
 

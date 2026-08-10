@@ -166,13 +166,13 @@ for scanNum = params.scanNum
 %     
     % works out which roi coords are indexed by the spotlights
     mm=nan([viewGet(thisView,'scanDims',scanNum),length(lab)]);
-    disppercent(-inf, '(searchlightClassification) Creating 4D TSeries....');
+    mlrDispPercent(-inf, '(searchlightClassification) Creating 4D TSeries....');
     for i=1:length(d.roiCoords{1})
         mm(d.roiCoords{1}(1,i),d.roiCoords{1}(2,i),d.roiCoords{1}(3,i),:) = m_(i,:);
-        disppercent(i/length(d.roiCoords{1}));
+        mlrDispPercent(i/length(d.roiCoords{1}));
     end
     clear m_
-    disppercent(inf);
+    mlrDispPercent(inf);
     d.data=[];
     
     %initialise overlays per scan
@@ -211,7 +211,7 @@ for scanNum = params.scanNum
         display('Matabpool already open/No paralell computing')
     end
     
-    disppercent(-inf,'(searchlightClassification) Classifying based on spotlight....');
+    mlrDispPercent(-inf,'(searchlightClassification) Classifying based on spotlight....');
     
     for i_sphere=1:size(d.roiCoords{1},2)
     
@@ -250,10 +250,10 @@ for scanNum = params.scanNum
         svmCorr(i_sphere,:)=svmLab(:)'==lab;
         
     
-        disppercent(i_sphere/length(d.roiCoords{1}));
+        mlrDispPercent(i_sphere/length(d.roiCoords{1}));
     end
     
-    disppercent(inf);  
+    mlrDispPercent(inf);  
     
     clear mm_
     

@@ -41,5 +41,9 @@ if length(dotloc) > 0
   fileseploc = findstr(filename,filesep);
   if isempty(fileseploc) || (dotloc(end)>fileseploc(end))
     retval = filename(1:dotloc(length(dotloc))-1);
+    % special case for .nii.gz, which is considered a single extension
+    if strcmp(retval(max(1,end-3):end),'.nii')
+      retval = stripext(retval);
+    end
   end
 end

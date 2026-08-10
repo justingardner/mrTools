@@ -31,7 +31,7 @@ function res = corrDn(im, filt, edges, step, start, stop)
 
 %% NOTE: THIS CODE IS NOT ACTUALLY USED! (MEX FILE IS CALLED INSTEAD)
 
-fprintf(1,'Warning: You should compile the MEX code for "corrDn", found in the MEX subdirectory.  It is MUCH faster.\n');
+%fprintf(1,'Warning: You should compile the MEX code for "corrDn", found in the MEX subdirectory.  It is MUCH faster.\n');
 
 %------------------------------------------------------------
 %% OPTIONAL ARGS:

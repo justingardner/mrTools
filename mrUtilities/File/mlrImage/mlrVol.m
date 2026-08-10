@@ -1428,7 +1428,7 @@ for iVol = gVol{sysNum}.n
       gVol{sysNum}.vols(iVol).data = angle(gVol{sysNum}.vols(iVol).complexData);
      case {'fft2 magnitude','fft2 phase'}
       % nDims hard coded to 5 here
-      disppercent(-inf,'(mlrVol) Transforming data');
+      mlrDispPercent(-inf,'(mlrVol) Transforming data');
       nSlice = size(gVol{sysNum}.vols(iVol).data,3);
       nVolume = size(gVol{sysNum}.vols(iVol).data,4);
       nReceiver = size(gVol{sysNum}.vols(iVol).data,5);
@@ -1444,14 +1444,14 @@ for iVol = gVol{sysNum}.n
 	      gVol{sysNum}.vols(iVol).data(:,:,iSlice,iVolume,iReceiver) = abs(fftSlice);
 	    end
 	    % percent correct
-	    disppercent(calcPercentDone(iSlice,nSlice,iVolume,nVolume,iReceiver,nReceiver));
+	    mlrDispPercent(calcPercentDone(iSlice,nSlice,iVolume,nVolume,iReceiver,nReceiver));
 	  end
 	end
       end
-      disppercent(inf);
+      mlrDispPercent(inf);
      case {'fft3 magnitude','fft3 phase'}
       % nDims hard coded to 5 here
-      disppercent(-inf,'(mlrVol) Transforming data');
+      mlrDispPercent(-inf,'(mlrVol) Transforming data');
       nVolume = size(gVol{sysNum}.vols(iVol).data,4);
       nReceiver = size(gVol{sysNum}.vols(iVol).data,5);
       for iVolume = 1:nVolume
@@ -1465,10 +1465,10 @@ for iVol = gVol{sysNum}.n
 	    gVol{sysNum}.vols(iVol).data(:,:,:,iVolume,iReceiver) = abs(fftVolume);
 	  end
 	  % percent done
-	  disppercent(calcPercentDone(iVolume,nVolume,iReceiver,nReceiver));
+	  mlrDispPercent(calcPercentDone(iVolume,nVolume,iReceiver,nReceiver));
 	end
       end
-      disppercent(inf);
+      mlrDispPercent(inf);
     end      
     % clear cache
     gVol{sysNum}.vols(iVol).c = mrCache('init',2*max(gVol{sysNum}.vols(iVol).h.dim(1:3)));

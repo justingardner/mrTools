@@ -28,7 +28,7 @@ hdr.pixdim(2:4) = hdr.pixdim(2:4)./scalingFactor';
 hdr.sform44 = hdr.sform44*diag([1./scalingFactor 1]);
 hdr.qform44 = hdr.qform44*diag([1./scalingFactor 1]);
 
-cbiWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
+mlrImageWriteNifti(tempFilename, data, hdr,[],[],[],verbose);
 clear data
 
 try

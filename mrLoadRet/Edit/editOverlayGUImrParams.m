@@ -55,16 +55,70 @@ function editOverlayGUImrParams(viewNum)
     {'normal', 'setRangeToMax', 'setRangeToMaxAroundZero', 'setRangeToMaxAcrossSlices', 'setRangeToMaxAcrossSlicesAndScans'});
   
   % colormaps
-  colormaps = {'default','hot','hsv','pink','cool','bone','copper','flag','gray','jet'};
+  % first try to get all the predefined matlab color maps
+  % the following method only works up to Matlab v9.13 (2022b)
+  colormaps = cell(1,0);
+  fid = fopen(fullfile(matlabroot,'toolbox','matlab','graph3d','Contents.m'));
+  if fid>0
+    contents = textscan(fid,'%% %s %s %*[^\n]');
+    fclose(fid);
+    if ~isempty(contents)
+      colormapStart = find(ismember(contents{1},'Color') & ismember(contents{2},'maps.'))+1;
+      colormapEnd = find(ismember(contents{1},'') & ismember(contents{2},''));
+      if ~isempty(colormapStart) && ~isempty(colormapEnd)
+        colormapEnd = colormapEnd(find(colormapEnd>colormapStart,1,'first'))-1;
+        colormaps = contents{1}(colormapStart:colormapEnd)';
+      end
+    end
+  end
+  % here's another method that still works after v9.13 (but I don't know since what version)
+  % however colormaps are listed in alphabetical order rather than the above (usual) order
+  colorMapFiles = dir(fullfile(matlabroot,'toolbox','matlab','graphics','color')); % this the folder containing .m colormap files
+  colormaps = union(colormaps,regexprep({colorMapFiles.name}, '\.m', ''),'stable'); % we add the names after removing the extension
+  colormaps = setdiff(colormaps,{'resources','colororder','validatecolor','.','..'},'stable'); % remove matlab function names that are not colormaps
+  if isempty(colormaps)
+    colormaps = {'default','hot','hsv','pink','cool','bone','copper','flag','gray','jet'};
+  else
+    colormaps = [{'default'},colormaps];
+  end
+  % then get the colormaps saved in global variable MLR
   altColormaps = viewGet(thisView,'colormaps');
   if ~isempty(altColormaps)
-    colormaps = {colormaps{:} altColormaps{:}};
+    colormaps = [colormaps(:)' altColormaps(:)'];
+  end
+  % Also, get all colormap functions located in the mrLoadRet colormap folder
+  functionsDirectory = [fileparts(which('mrLoadRet')) '/colormapFunctions/'];
+  colormapFunctionFiles =  dir([functionsDirectory '*.m']);
+  for iFile=1:length(colormapFunctionFiles)
+    colormapFunctions{iFile} = stripext(colormapFunctionFiles(iFile).name);
+  end
+  colormaps = union(colormaps,colormapFunctions,'stable');
+  % and finally, add user-specified colormap folder
+  cmapFolders = mrGetPref('colormapPaths');
+  if ~isempty(cmapFolders)
+    cmapFolders = mlrParseAdditionalArguments(cmapFolders,',');
+    for i=1:length(cmapFolders)
+      colormapFunctionFiles =  dir(fullfile(cmapFolders{i}, '*.m'));
+      colormapFunctions = cell(0);
+      cFile = 0;
+      for iFile=1:length(colormapFunctionFiles)
+        try %make sure this is a colormap function
+          colormap = eval(sprintf('%s(%i)', stripext(colormapFunctionFiles(iFile).name), 256));
+          if size(colormap,1)==256 && size(colormap,2)==3
+            cFile = cFile+1;
+            colormapFunctions{cFile} = stripext(colormapFunctionFiles(iFile).name);
+          end
+        catch
+        end
+      end
+      colormaps = union(colormaps,colormapFunctions,'stable');
+    end
   end
   
   % set up params dialog
   paramsInfo = {};
   paramsInfo{end+1} = {'overlayCmap', colormaps,'type=popupmenu','List of possible colormaps'};
-  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overlap colormap. You can specify additional input arguments after the function name, separating with commas. The user-defined function must be on the path, accept an integer representing the number of colors as its last input argument, and output a params.numColors*3 RGB colormap'};
+  paramsInfo{end+1} = {'userDefinedCmap','','Allows you to call a user defined function to set the overlap colormap. The user-defined function must output a params.numColors x 3 RGB colormap and can be either an anonymous function accepting the number of color as single input argument or a function on the Matlab path accepting the number of colors as its last argument. In the latter case, additional input arguments must be specified after the function name, separated with commas. '};
   paramsInfo{end+1} = {'numColors', numColors, 'first argument to the colormap function'};
   paramsInfo{end+1} = {'numGrays', 0, 'second argument to the colormap function'};
   paramsInfo{end+1} = {'flipColormap', 0, 'type=checkbox', 'check this box to reverse the direction of the colormap'};
@@ -135,12 +189,12 @@ currentOverlay = viewGet(thisView, 'overlay', overlayNum, analysisNum);
 
 %iff the overlay has changed, put the old overlay params back
 if ~isequalwithequalnans(oldOverlay,currentOverlay)
-  disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
+  mlrDispPercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
   % set the new overlay
   thisView = viewSet(thisView,'newOverlay', oldOverlay);
   % and refresh
   refreshMLRDisplay(thisView.viewNum);
-  disppercent(inf);
+  mlrDispPercent(inf);
 end
 
 
@@ -262,36 +316,49 @@ function mrCmapCallback(params,viewNum)
   %parameters for which the overlay has to be recomputed as a whole (this should be changed by adding cases to viewSet)
   % set which color cmap to use
   if ~strcmp(params.overlayCmap, 'default')
-    if sum(strcmp(params.overlayCmap, {'hsvDoubleCmap','cmapExtendedHSV','cmapHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap','coolCmap'}))
+    if sum(strcmp(params.overlayCmap, {'hsvDoubleCmap','cmapExtendedHSV','overlapCmap','redGreenCmap','rygbCmap','bicolorCmap','coolCmap'}))
       newOverlay.colormap = eval(sprintf('%s(%i,%i)', params.overlayCmap, params.numGrays, params.numColors));
     else
-      newOverlay.colormap = eval(sprintf('%s(%i)', params.overlayCmap, params.numColors));
+      try
+        newOverlay.colormap = eval(sprintf('%s(%i)', params.overlayCmap, params.numColors));
+      catch exception
+        mrWarnDlg(sprintf('(editOverlay) There was an error evaluating function %s.m:\n%s\n',params.overlayCmap,getReport(exception)));
+        return
+      end
     end
   end
 
   % see if we need to call a function
   if ~isempty(params.userDefinedCmap)
     %parse the function name and its arguments
-    cMapFunction=textscan(params.userDefinedCmap,'%s','delimiter',',');
-    cMapFunction=cMapFunction{1};
-    
-    % look for the m function
-    if exist(sprintf('%s.m',cMapFunction{1}),'file')
-      cMapFunction{1} = str2func(cMapFunction{1}); %convert function string fo function handl
-      for iArg =2:length(cMapFunction) %if there are additional arguments, convert numerical ones
-        if ~isempty(str2num(cMapFunction{iArg}))
-          cMapFunction{iArg} = str2num(cMapFunction{iArg});
-        end
+    if params.userDefinedCmap(1)=='@' % if this is an anonyous function
+      try
+        cMapfunction = str2func(params.userDefinedCmap);
+        colormap = cMapfunction(params.numColors);
+      catch
+        fprintf('(editOverlay) Anonymous function %s returned an error\n',params.userDefinedCmap);
       end
-      cMapFunction{end+1}=params.numColors; %add number of colors as last argument
-      colormap = callbackEval(cMapFunction);
-      if isequal(size(colormap),[params.numColors 3])
-	newOverlay.colormap = colormap;
-      else
-	disp(sprintf('(editOverlay) Function %s must return a %ix%i array',params.userDefinedCmap,params.numColors,3));
+    else
+      cMapFunction=textscan(params.userDefinedCmap,'%s','delimiter',',');
+      cMapFunction=cMapFunction{1};
+      % look for the m function
+      if exist(sprintf('%s.m',cMapFunction{1}),'file')
+        cMapFunction{1} = str2func(cMapFunction{1}); %convert function string fo function handle
+        for iArg =2:length(cMapFunction) %if there are additional arguments, convert numerical ones
+          if ~isempty(str2num(cMapFunction{iArg}))
+            cMapFunction{iArg} = str2num(cMapFunction{iArg});
+          end
+        end
+        cMapFunction{end+1}=params.numColors; %add number of colors as last argument
+        colormap = callbackEval(cMapFunction);
       end
     end
-  end
+    if isequal(size(colormap),[params.numColors 3])
+      newOverlay.colormap = colormap;
+    else
+      fsprintf('(editOverlay) Function %s must return a %ix%i array\n',params.userDefinedCmap,params.numColors,3);
+    end
+ end
     
   % flip the cmap
   if params.flipColormap
@@ -327,12 +394,12 @@ function mrCmapCallback(params,viewNum)
   
   %if the overlay has changed, 
   if ~isequalwithequalnans(newOverlay,currentOverlay)
-    disppercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
+    mlrDispPercent(-inf,'(editOverlayGUImrParams) Recomputing overlay');
     % set the new overlay
     thisView = viewSet(thisView,'newOverlay', newOverlay);
     % and refresh
     refreshMLRDisplay(thisView.viewNum);
-    disppercent(inf);
+    mlrDispPercent(inf);
   end
 
 

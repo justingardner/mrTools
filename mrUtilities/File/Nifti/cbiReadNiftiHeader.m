@@ -27,7 +27,7 @@ switch (ext)
   hdr.single_file=0;
   hdr.hdr_name=fullfile(pathstr,[bname '.hdr']);
   hdr.img_name=fullfile(pathstr,[bname '.img']);
- case '.gz','.Z' % zipped
+ case {'.gz','.Z'} % zipped
   disp(sprintf('(cbiReadNifitHeader) No support for zipped NIFTI-1 format under Matlab.'));
   hdr = [];
   return

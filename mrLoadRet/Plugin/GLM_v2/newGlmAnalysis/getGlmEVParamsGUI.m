@@ -360,7 +360,7 @@ for iScan = params.scanNum
   
   d = loadScan(thisView, iScan, viewGet(thisView,'groupNum',params.groupName), 0);
   d = getStimvol(d,params.scanParams{iScan});
-  [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,params.scanParams{iScan}.acquisitionDelay,1);
+  [params.hrfParams,d.hrf] = feval(params.hrfModel, params.hrfParams, d.tr/d.designSupersampling,params.scanParams{iScan}.acquisitionDelay,1,d.tr/d.estimationSupersampling);
   d = eventRelatedPreProcess(d,params.scanParams{iScan}.preprocess);
   d = makeDesignMatrix(d,params,1,iScan);
   if  strcmp(params.EVnames{end},'Not used')

@@ -55,7 +55,7 @@ for iFile = 1:length(compiledFunctionList)
     disp(sprintf('(mlrMake) Skipping: %s because files is not in use',compiledFunctionList{iFile}));
     skippedFiles{end+1} = compiledFunctionList{iFile};
   % check for file
-  elseif isfile(compiledFunctionList{iFile}) 
+  elseif mlrIsFile(compiledFunctionList{iFile})
     % display what we are doing
     disp(sprintf('(mlrMake) mex: %s',compiledFunctionList{iFile}));
     % mex the file
@@ -118,7 +118,7 @@ for iFile = 1:length(d)
     % if it is an extension we are matching
     if (matchName(1) == '.')
       % get filename parts
-      [pathsr,name,ext] = fileparts(d(iFile).name);
+      [pathsr,name,ext] = mrFileParts(d(iFile).name);
       % check extension
       if strcmp(lower(matchName),ext)
 	filenames{end+1} = fullfile(dirname,d(iFile).name);

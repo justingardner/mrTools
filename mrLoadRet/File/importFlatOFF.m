@@ -206,7 +206,7 @@ else
   anatFileName=params.anatFileName;
 end
 %if extension is hdr, change to img
-[anatPath,anatFileName,anatFileExtension] = fileparts(anatFileName);
+[anatPath,anatFileName,anatFileExtension] = mrFileParts(anatFileName);
 if strcmp(anatFileExtension,'hdr')
   anatFileName = setext(anatFileName,'img');
 else

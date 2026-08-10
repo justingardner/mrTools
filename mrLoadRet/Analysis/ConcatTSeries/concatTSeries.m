@@ -342,21 +342,21 @@ for iscan = 1:length(params.scanList)
     % for means that are zero, divide by nan
     d.mean(d.mean==0) = nan;
 
-    disppercent(-inf, '(concatTSeries) Converting to percent signal change');
+    mlrDispPercent(-inf, '(concatTSeries) Converting to percent signal change');
     for i = 1:d.dim(4)
       d.data(:,:,:,i) = (d.data(:,:,:,i)./d.mean);
       if params.percentSignal == 2           % scale it to mean of 1,000
           params.scaleFactor = 10000;
           d.data(:,:,:,i) = d.data(:,:,:,i) * params.scaleFactor;
       end
-      disppercent(i/d.dim(4));
+      mlrDispPercent(i/d.dim(4));
     end
-    disppercent(inf);
+    mlrDispPercent(inf);
   end
   warning on
 
   % get the path and filename
-  [path,filename,ext] = fileparts(viewGet(viewBase,'tseriesPath',scanNum));
+  [path,filename,ext] = mrFileParts(viewGet(viewBase,'tseriesPath',scanNum));
   baseGroupName = viewGet(viewBase,'groupName');
 
   % Save TSeries (using header of 1st scan on scanList as the template for
@@ -479,7 +479,7 @@ end
 % Save evalstring for recomputing and params
 evalstr = ['view = newView; view = concatTSeries(view,params);'];
 tseriesdir = viewGet(viewConcat,'tseriesdir');
-[pathstr,filename,ext] = fileparts(fullfile(tseriesdir,tseriesFileName));
+[pathstr,filename,ext] = mrFileParts(fullfile(tseriesdir,tseriesFileName));
 save(fullfile(pathstr,filename),'evalstr','params','concatInfo');
 
 % Delete temporary viewBase and viewConcat
@@ -516,9 +516,9 @@ concatInfo.traces(:,putnewacqpos) = newTraces(:,newacqpos);
 %%%%%%%%%%%%%%%%%%%%%%%%%
 function d = detrendTSeries(d)
 
-disppercent(-inf,sprintf('(concatTSeries:detrendTSeries) Detrending data'));
+mlrDispPercent(-inf,sprintf('(concatTSeries:detrendTSeries) Detrending data'));
 d.data = reshape(eventRelatedDetrend(reshape(d.data,prod(d.dim(1:3)),d.dim(4))')',d.dim(1),d.dim(2),d.dim(3),d.dim(4));
-disppercent(inf);
+mlrDispPercent(inf);
 
 
 

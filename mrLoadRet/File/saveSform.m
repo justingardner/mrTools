@@ -97,7 +97,7 @@ for iGroup = 1:viewGet(v, 'numberofGroups')
 	hdr.sform_code = basesformcode;
 	
 	% and write it back
-	hdr = cbiWriteNiftiHeader(hdr,filename);
+	hdr = mlrImageWriteNiftiHeader(hdr,filename);
 	% read it back, (I think there is a slight numerical
 	% difference in the sform44 from when it is
 	% written to when it is read). This doesn't

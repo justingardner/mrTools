@@ -39,12 +39,7 @@ outputVoxSizeRound = round(outputVoxSize*roundVal)/roundVal;
 if isequal(xformRound,eye(4)) && isequal(inputVoxSizeRound,outputVoxSizeRound)
   % This is where coordinates get rounded - may need to change
   % this if we keep roi coordinates at finer than 1x1x1 mm resolution
-  coords = round(coords);
-  % get unique coordinates, do it as a linear array since it is faster
-  maxCoord = repmat(max(coords(:)),1,3);
-  coordsLinear = unique(mrSub2ind(maxCoord,coords(1,:),coords(2,:),coords(3,:)));
-  [newcoords(1,:) newcoords(2,:) newcoords(3,:)] = ind2sub(maxCoord,coordsLinear);
-  newcoords(4,:) = 1;
+  newcoords = unique(round(coords)','rows','stable')';
   return
 end
 

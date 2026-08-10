@@ -558,8 +558,8 @@ else
   base = ALIGN.inplaneBase;
   matFilename = sprintf('%s.mat',stripext(base.name));
   base.data = [];base.hdr = [];
-  inplanePath=fileparts(ALIGN.inplanePath);
-  eval(sprintf('save %s base',fullfile(inplanePath,matFilename)));
+  inplanePath=mrFileParts(ALIGN.inplanePath);
+  eval(sprintf('save ''%s''  base',fullfile(inplanePath,matFilename)));
   clear base
 end
 % --------------------------------------------------------------------
@@ -645,7 +645,7 @@ ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
 base = ALIGN.inplaneBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
 base.data = [];base.hdr = [];
-eval(sprintf('save %s base',matFilename))
+eval(sprintf('save ''%s'' base',matFilename))
 clear base
 % --------------------------------------------------------------------
 function saveResampledDestination_Callback(hObject, eventdata, handles)
@@ -705,7 +705,7 @@ ALIGN.inplaneBase.vol2tal = ALIGN.volBase.vol2tal; % inherit from the volume
 base = ALIGN.inplaneBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
 base.data = [];base.hdr = [];
-eval(sprintf('save %s base',matFilename))
+eval(sprintf('save ''%s'' base',matFilename))
 clear base
 
 % --------------------------------------------------------------------
@@ -950,8 +950,8 @@ base = ALIGN.volBase;
 matFilename = sprintf('%s.mat',stripext(base.name));
 base.data = [];base.hdr = [];
 disp(sprintf('(mrAlignGUI) Saving %s file',matFilename));
-volumePath=fileparts(ALIGN.volumePath);
-eval(sprintf('save %s base',fullfile(volumePath,matFilename)));
+volumePath=mrFileParts(ALIGN.volumePath);
+eval(sprintf('save ''%s'' base',fullfile(volumePath,matFilename)));
 clear base % so don't get confused with the inplane base
 
 
@@ -1581,7 +1581,7 @@ if ~isempty(talInfo)
   [tf base] = isbase(ALIGN.volBase);
   matFilename = sprintf('%s.mat',stripext(ALIGN.volumePath));
   base.data = [];base.hdr = []; 
-  eval(sprintf('save %s base',matFilename));
+  eval(sprintf('save ''%s'' base',matFilename));
   clear base 
   
   % once the vol2tal Xform has been defined, allow subjects to export it

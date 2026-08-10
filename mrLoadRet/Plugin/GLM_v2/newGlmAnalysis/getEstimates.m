@@ -165,7 +165,7 @@ if ~fieldIsNotDefined(params,'contrasts')
           extendedContrasts = extendedContrasts(any(extendedContrasts,2),:);
       end
     else
-      hdrContrasts = params.contrasts;
+      hdrContrasts = kron(params.contrasts,hrf);
       extendedContrasts = params.contrasts;
     end
 

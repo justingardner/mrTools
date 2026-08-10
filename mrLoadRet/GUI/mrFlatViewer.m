@@ -75,11 +75,11 @@ global gFlatViewer;
 gFlatViewer = [];
 gFlatViewer.mismatchWarning = 0;
 retval = [];
-disppercent(-inf,'(mrFlatViewer) Loading surfaces');
+mlrDispPercent(-inf,'(mrFlatViewer) Loading surfaces');
 
 % load the flat
 if isstr(flat{1})
-  [flatPath flat{1}] = fileparts(sprintf('%s.off',stripext(flat{1})));
+  [flatPath flat{1}] = mrFileParts(sprintf('%s.off',stripext(flat{1})));
   flatdir = dir(fullfile(flatPath,'*.off'));
   gFlatViewer.path = flatPath;
 
@@ -108,11 +108,11 @@ elseif isfield(flat{1},'radius')
     anatomyFile=fullfile(flat{1}.path,anat{1});
   else
     anatomyFile=anat{1};
-    [~,anat{1},ext] = fileparts(anat{1}); %remove the path from anat{1}
+    [~,anat{1},ext] = mrFileParts(anat{1}); %remove the path from anat{1}
     anat{1} = [anat{1} ext];
   end
   %first convert coordinates from current base to the surface base 
-  hdr= cbiReadNiftiHeader(anatomyFile);
+  hdr= mlrImageReadNiftiHeader(anatomyFile);
   baseStartPoint = hdr.sform44 \ viewGet(viewNum,'basexform') * [flat{1}.startPoint';1];
   array2worldXform = mlrXFormFromHeader(anatomyFile,'array2world');
   worldStartPoint = array2worldXform*baseStartPoint;
@@ -288,7 +288,7 @@ if isempty(gFlatViewer.curv)
 else
   curv = putOnTopOfList(curv{i},curv);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 % from now on, complain for mismatch of surface nodes and patches
 gFlatViewer.mismatchWarning = 1;
@@ -1089,7 +1089,7 @@ function roiOverlay = computeROIOverlay(baseCoords);
 
 global gFlatViewer;
 roiOverlay = [];
-disppercent(-inf,'(mrFlatViewer) Computing ROI Overlay');
+mlrDispPercent(-inf,'(mrFlatViewer) Computing ROI Overlay');
 
 % get view information
 v = viewGet([],'view',gFlatViewer.viewNum);
@@ -1137,9 +1137,9 @@ for roinum = rois
   roiOverlay(roiVertices,1) = roiColorRGB(1);
   roiOverlay(roiVertices,2) = roiColorRGB(2);
   roiOverlay(roiVertices,3) = roiColorRGB(3);
-  disppercent(roinum/numROIs);
+  mlrDispPercent(roinum/numROIs);
 end
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   switchAnatomy   %%
@@ -1168,7 +1168,7 @@ if strcmp(params.anatFileName,'Find file')
 end
 
 % load the anatomy and view
-disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatFileName));
+mlrDispPercent(-inf,sprintf('(mrFlatViewer) Load %s',params.anatFileName));
 if isempty(fileparts(params.anatFileName))
   anatFileName=fullfile(gFlatViewer.path,params.anatFileName);
 else
@@ -1181,7 +1181,7 @@ global gParams
 gFlatViewer.whichSurface = 3;
 set(gParams.ui.varentry{1},'Value',gFlatViewer.whichSurface)
 refreshFlatViewer([],[],1);
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%
 %%   switchFlat   %%
@@ -1191,12 +1191,12 @@ function switchFlat(params)
 global gFlatViewer;
 
 % load the anatomy and view
-disppercent(-inf,sprintf('(mrFlatViewer) Load %s',params.flatFileName));
+mlrDispPercent(-inf,sprintf('(mrFlatViewer) Load %s',params.flatFileName));
 gFlatViewer.flat = loadSurfOFF(fullfile(params.path, params.flatFileName));
 % switch to flat view
 global gParams
 refreshFlatViewer([],[],1);
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%
 %%   switchFile   %%
@@ -1222,7 +1222,7 @@ else
 end
 
 % try to load it
-disppercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
+mlrDispPercent(-inf,sprintf('(mrFlatViewer) Loading %s',filename));
 if filename ~= 0
   if strcmp(whichSurface,'curvFileName')
     file = myLoadCurvature(fullfile(params.path, filename));
@@ -1275,7 +1275,7 @@ else
 end
 refreshFlatViewer([],[],1);
 
-disppercent(inf);
+mlrDispPercent(inf);
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%   myLoadSurface   %%

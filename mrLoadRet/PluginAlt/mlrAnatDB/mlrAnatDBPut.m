@@ -455,7 +455,7 @@ if strcmp(fileType,'rois')
     fprintf(f,'^roiName ^date ^createdFromSession ^createdOnBase ^voxelSize ^numVoxels ^volume (mmxmmxmm) ^\n');
     for iROI = 1:length(filePath)
       % get roi name
-      [roiPath roiName] = fileparts(filePath{iROI});
+      [roiPath roiName] = mrFileParts(filePath{iROI});
       roiName = stripext(roiName);
       % get roi number
       roiNum = viewGet(v,'roiNum',roiName);
@@ -509,7 +509,7 @@ function comments = addCommit(toPath,largefiles,comments,verbose)
 
 % commit to repo
 if largefiles
-  disppercent(-inf,sprintf('(mlrAnatDBAddCommitPush) Committing files to repo %s. This may take a minute or two...',pwd));
+  mlrDispPercent(-inf,sprintf('(mlrAnatDBAddCommitPush) Committing files to repo %s. This may take a minute or two...',pwd));
 else
   disp(sprintf('(mlrAnatDBAddCommitPush) Committing files to repo %s',pwd));
 end
@@ -530,7 +530,7 @@ end
 
 % commit
 [status,result] = mysystem(sprintf('hg commit -m ''%s''',comments));
-if largefiles,disppercent(inf);,end
+if largefiles,mlrDispPercent(inf);,end
 
 %%%%%%%%%%%%%%%%%%%%%%
 %    getFilenames    %
@@ -566,7 +566,7 @@ filePath = {};
 % save each anat locally, getting the filenames as the ones to put into the repo
 for iBase = baseList
   thisAnat = saveAnat(v,iBase,false,false);
-  [thisAnatPath thisAnatFilename] = fileparts(thisAnat);
+  [thisAnatPath thisAnatFilename] = mrFileParts(thisAnat);
   % get all the files associated with thisAnat
   for iExt = 1:length(extList)
     filename = fullfile(thisAnatPath,setext(thisAnatFilename,extList{iExt}));

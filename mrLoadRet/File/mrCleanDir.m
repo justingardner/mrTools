@@ -48,9 +48,9 @@ for g = 1:length(groups)
   % look for unmatched files
   for scanNum = 1:nScans
     tseriesFilename = viewGet(view,'tseriesPath',scanNum,groupNum);
-    [thisDirName thisFilename] = fileparts(tseriesFilename);
+    [thisDirName thisFilename] = mrFileParts(tseriesFilename);
     for filenum = 1:length(tseriesDir)
-      [dirname,filename] = fileparts(tseriesDir(filenum).name);
+      [dirname,filename] = mrFileParts(tseriesDir(filenum).name);
       if strcmp(filename,thisFilename) && strcmp(tseriesDirName,thisDirName)
 	tseriesDir(filenum).match = 1;
       end
@@ -72,7 +72,7 @@ for g = 1:length(groups)
     % display the names of the hdr/img/mat files that are not matched
     for i = 1:length(tseriesDir)
       disp(sprintf('================ScanNum %i =============================',i));
-      [path baseFilename] = fileparts(tseriesDir(i).name);
+      [path baseFilename] = mrFileParts(tseriesDir(i).name);
       [recoverable(i) scanParams{i}] = dispParams(tseriesDirName,baseFilename,tseriesDir(i).match);
       if tseriesDir(i).match
 	disp(sprintf('Matched'));
@@ -94,7 +94,7 @@ for g = 1:length(groups)
     if force | askuser(sprintf('Delete files from group %s',groups{g}))
       for i = 1:length(tseriesDir)
 	if ~tseriesDir(i).match
-	  [path baseFilename] = fileparts(tseriesDir(i).name);
+	  [path baseFilename] = mrFileParts(tseriesDir(i).name);
 	  filename = sprintf('%s/%s.hdr',tseriesDirName,baseFilename);
 	  if mlrIsFile(filename),delete(filename),end;
 	  filename = sprintf('%s/%s.img',tseriesDirName,baseFilename);

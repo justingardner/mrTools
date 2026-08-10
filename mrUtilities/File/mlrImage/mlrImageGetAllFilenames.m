@@ -29,10 +29,7 @@ if ieNotDefined('dirname'),dirname = pwd;end
 d = dir(dirname);
 
 % list of valid extensions
-validExtensions = {'hdr','nii'};
-
-% list of valid extensions that have been gzip'd
-validZippedExtensions = {'nii'};
+validExtensions = {'hdr','nii','nii.gz'};
 
 for i = 1:length(d)
   % check for valid extension
@@ -40,18 +37,6 @@ for i = 1:length(d)
     % check for valid filename
     if mlrImageIsImage(fullfile(dirname,d(i).name))
       imageFilenames{end+1} = d(i).name;
-    end
-  % check for valid gz extension
-  elseif strcmp(getext(d(i).name),'gz')
-    uncompressedFilename = stripext(d(i).name);
-    % check if the extension (stripped of gz matches validZIppedExtensions
-    if any(strcmp(getext(uncompressedFilename),validZippedExtensions))
-      % check for valid filenames, also in this check here
-      % do not use files in which there exists an uncompressed filename
-      thisFilename = fullfile(dirname,d(i).name);
-      if ~mlrIsFile(stripext(thisFilename)) &&  mlrImageIsImage(thisFilename)
-	imageFilenames{end+1} = d(i).name;
-      end
     end
   end
 end
@@ -61,11 +46,8 @@ end
 if mustNotHaveDotInFilename
   imageFilenamesWithoutDot = {};
   for i = 1:length(imageFilenames)
-    % check for a ziped extension
+    % check for a zipped extension
     thisFilename = imageFilenames{i};
-    if strcmp(getext(thisFilename),'gz')
-      thisFilename = stripext(thisFilename);
-    end
     % now check for imageFilenames with multiple dots
     if isempty(strfind(stripext(thisFilename),'.'))
       imageFilenamesWithoutDot{end+1} = imageFilenames{i};

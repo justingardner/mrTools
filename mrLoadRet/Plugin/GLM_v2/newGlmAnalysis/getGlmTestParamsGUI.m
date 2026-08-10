@@ -49,9 +49,9 @@ while keepAsking
   %here we assume that all scans in this group have the same sampling parameters 
   %(which are needed to determine the number of components in the deconvolution case) 
   framePeriod = viewGet(thisView,'framePeriod',params.scanNum(1),viewGet(thisView,'groupNum',params.groupName));
-  [hrfParams,hrf] = feval(params.hrfModel, params.hrfParams,framePeriod/params.scanParams{params.scanNum(1)}.estimationSupersampling,[],1);
+  [~,hrf] = feval(params.hrfModel, params.hrfParams,framePeriod/params.scanParams{params.scanNum(1)}.designSupersampling,[],1,framePeriod/params.scanParams{params.scanNum(1)}.estimationSupersampling);
   nComponents = size(hrf,2);
-  if fieldIsNotDefined(params, 'componentsToTest') || ~isequal(nComponents,length(params.componentsToTest));
+  if fieldIsNotDefined(params, 'componentsToTest') || ~isequal(nComponents,length(params.componentsToTest))
     params.componentsToTest = ones(1,nComponents);
   end
   if fieldIsNotDefined(params, 'componentsCombination')
@@ -207,7 +207,7 @@ while keepAsking
   end
   
   %check consistency of parameters
-  if params.numberContrasts && params.computeTtests  && ~strcmp(params.tTestSide,'Both') && ...
+  if params.numberContrasts && params.computeTtests  && ~strcmp(lower(params.tTestSide),'both') && ...
       nnz(params.componentsToTest)>1 && strcmp(params.componentsCombination,'Or')
     mrWarnDlg('(getTestParamsGUI) One-sided T-tests on several EV components with ''Or'' combination are not implemented','Yes');
   elseif ~orthogonal %if there is at least one restriction matrix with non-orthogonal contrasts

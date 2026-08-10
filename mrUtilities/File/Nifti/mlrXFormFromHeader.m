@@ -28,6 +28,10 @@ function xform=mlrXFormFromHeader( filename, convtype )
 % Note, that one change was made from Jonas' original code, in that
 % filename can be a passed in hdr -jlg
 % 
+% Note (JB, 25/07/2020): this function assumes that the data are in LPI orientation, which might
+% not be the case for volumes outside of mrLoadRet. So it should only be used with conversion type
+% 'array2world' or 'world2array' (to convert surfRelax coordinates to mrLoadRet volumes coordinates).
+% For any other use, see shiftOriginXform, which correctly takes into account the actual orientation.
 
 if (nargin<2)
   help(mfilename)
@@ -49,7 +53,7 @@ switch (convtype)
  case {'array2nifti', 'a2n', 'array2qform', 'a2q'}
   xform = hdr.qform44;
   % Add -1 for Matlab 1-offset
-  xform(1:3,4)=xform(1:3,4) - 1;
+  xform(1:3,4)=xform(1:3,4) - 1; % this assumes LPI orientation
  
  case {'world2array', 'w2a'}
   xform = inv(array2world(hdr));
@@ -57,18 +61,18 @@ switch (convtype)
  case {'nifti2array', 'n2a', 'qform2array', 'q2a'}
   xform = hdr.qform44;
   % Add -1 for Matlab 1-offset
-  xform(1:3,4)=xform(1:3,4) - 1;
+  xform(1:3,4)=xform(1:3,4) - 1; % this assumes LPI orientation
   xform=inv(xform);
   
  case {'array2sform', 'a2s'}
   xform = hdr.sform44;
   % Add -1 for Matlab 1-offset
-  xform(1:3,4)=xform(1:3,4) - 1;
+  xform(1:3,4)=xform(1:3,4) - 1; % this assumes LPI orientation
 
  case {'sform2array', 's2a'}
   xform = hdr.sform44;
   % Add -1 for Matlab 1-offset
-  xform(1:3,4)=xform(1:3,4) - 1;
+  xform(1:3,4)=xform(1:3,4) - 1; % this assumes LPI orientation
   xform = inv(xform);
   
  otherwise

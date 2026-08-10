@@ -23,7 +23,7 @@ if length(pathStr) && (pathStr(end) == filesep)
 end
 
 % get last dir
-[pathStr lastDir ext] = fileparts(pathStr);
+[pathStr lastDir ext] = mrFileParts(pathStr);
 
 % paste back on extension
 lastDir = [lastDir ext];

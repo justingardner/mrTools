@@ -16,7 +16,7 @@ function [view] = saveTSeries(view,tseries,scanNum,scanParams,hdr,append)
 % append: (1 or 0) Append the passed in time series to the existing time
 %    series. Default: 0.
 % hdr: template for nifti header. The header is always passed through
-%    cbiCreateNiftiHeader to ensure consistency with the data. Default: [].
+%    mlrImageWriteNiftiHeader to ensure consistency with the data. Default: [].
 
 % check to make sure the scan exists
 % get the old one
@@ -31,9 +31,9 @@ if ieNotDefined('hdr'),hdr = [];end
 if ieNotDefined('append'),append = 0;end
 
 % default filename
-ext = mrGetPref('niftiFileExtension');
 if isempty(scanParams.fileName)
-    scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),ext];
+  ext = mrGetPref('niftiFileExtension');
+  scanParams.fileName = ['tseries-',datestr(now,'yymmdd-HHMMSS'),ext];
 end
 filename = scanParams.fileName;
 
@@ -43,7 +43,7 @@ path = fullfile(tseriesdir,scanParams.fileName);
 
 if ~append
     % Save tseries
-    [byteswritten,hdr] = cbiWriteNifti(path,tseries,hdr);
+    [byteswritten,hdr] = mlrImageWriteNifti(path,tseries,hdr);
     scanParams.niftiHdr = hdr;
 else
     % append time series to what is already there.
@@ -58,22 +58,34 @@ else
     hdr.dim(5) = newNFrames;
     scanParams.totalFrames = newNFrames;
     scanParams.nFrames = newNFrames;
-    % now write out that header
-    hdr = cbiWriteNiftiHeader(hdr,path);
+
+    % check for compressed file
+    compressFile = false;
+    if strcmp(getext(path),'nii.gz')
+      compressFile = true;
+      compressedPath = path;
+      path = path(1:end-3); % remove .gz
+	    % uncompress the file
+      if ~ispc
+        system(sprintf('gunzip -c %s > %s',compressedPath,path));
+      else
+        gunzip(compressedPath);
+        delete(compressedPath);
+      end
+    end
+
+    % now write out that header into the old file
+    hdr = mlrImageWriteNiftiHeader(hdr,path);
     scanParams.niftiHdr = hdr;
     % now write out the new data
     tempFilename = fullfile(tseriesdir,'___saveTSeriesAppendTemp___.img');
-    cbiWriteNifti(tempFilename,tseries,hdr);
+    mlrImageWriteNifti(tempFilename,tseries,hdr);
     % now append that file to the end of the old one
-    % make sure to get the filename with .img appended
-    [oldpath,oldname,oldext] = fileparts(path);
-    oldImgFilename = fullfile(oldpath,sprintf('%s%s',oldname,oldext));
-    % now append the files together
     fNew = fopen(tempFilename);
     if (fNew == -1)
         error(sprintf('saveTSeries: Could not open temporary file %s',tempFilename));
     end
-    fOld = fopen(oldImgFilename,'a');
+    fOld = fopen(path,'a');
     if (fOld == -1)
         error(sprintf('saveTSeries: Could not open file %s',oldImgFilename));
     end
@@ -88,8 +100,19 @@ else
     fclose(fNew);fclose(fOld);
     % and delete temporary file
     delete(tempFilename);
-    [tempPath tempFilename] = fileparts(tempFilename);
+    [tempPath tempFilename] = mrFileParts(tempFilename);
     delete(fullfile(tempPath,sprintf('%s.hdr',tempFilename)));
+
+    % now compress if necessary
+    if compressFile
+      if ~ispc
+        system(sprintf('gzip -f %s',path));
+      else
+        gzip(path);
+        delete(path); % delete the uncompressed file
+      end
+    end
+
 end
 
 % Save scan params
