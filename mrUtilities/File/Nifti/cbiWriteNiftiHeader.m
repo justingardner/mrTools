@@ -97,12 +97,12 @@ end
 % Write header with minimal checking
 
 c=fwrite(fid,348,'int32');                  % sizeof_hdr
-c=fwrite(fid,zeros(10,1),'char');           % data_type (unused)
-c=fwrite(fid,zeros(18,1),'char');           % db_name (unused)
+c=fwrite(fid,zeros(10,1),'uint8');           % data_type (unused)
+c=fwrite(fid,zeros(18,1),'uint8');           % db_name (unused)
 c=fwrite(fid,0,'int32');                    % extents (unused)
 c=fwrite(fid,0,'short');                    % session_error (unused)
-c=fwrite(fid,0,'char');                     % regular (unused)
-c=fwrite(fid,hdr.dim_info,'char');          % dim_info (MRI slice ordering)
+c=fwrite(fid,0,'uint8');                     % regular (unused)
+c=fwrite(fid,hdr.dim_info,'uint8');          % dim_info (MRI slice ordering)
 if (c~=1) mrErrorDlg(['hdr.dim_info must be a single char (' num2str(c) ' written)']); end
 c=fwrite(fid,hdr.dim,'short');               % data array dimensions
 if (c~=8) mrErrorDlg(['hdr.dim must be 8 shorts (' num2str(c) ' written)']); end
@@ -126,9 +126,9 @@ c=fwrite(fid,hdr.scl_inter,'float');
 if (c~=1) mrErrorDlg(['hdr.scl_inter must be a single float (' num2str(c) ' written)']); end
 c=fwrite(fid,hdr.slice_end,'short');
 if (c~=1) mrErrorDlg(['hdr.slice_end must be a single short (' num2str(c) ' written)']); end
-c=fwrite(fid,hdr.slice_code,'char');
+c=fwrite(fid,hdr.slice_code,'uint8');
 if (c~=1) mrErrorDlg(['hdr.slice_code must be a single char (' num2str(c) ' written)']); end
-c=fwrite(fid,hdr.xyzt_units,'char');
+c=fwrite(fid,hdr.xyzt_units,'uint8');
 if (c~=1) mrErrorDlg(['hdr.xyzt_units must be a single char (' num2str(c) ' written)']); end
 c=fwrite(fid,hdr.cal_max,'float');
 if (c~=1) mrErrorDlg(['hdr.cal_max must be a single float (' num2str(c) ' written)']); end
@@ -139,9 +139,9 @@ if (c~=1) mrErrorDlg(['hdr.slice_duration must be a single float (' num2str(c) '
 c=fwrite(fid,hdr.toffset,'float');
 if (c~=1) mrErrorDlg(['hdr.toffset must be a single float (' num2str(c) ' written)']); end
 c=fwrite(fid,zeros(2,1),'int32');                % glmax, glmin (unused)
-c=fwrite(fid,hdr.descrip,'char');
+c=fwrite(fid,hdr.descrip,'uint8');
 if (c~=80) mrErrorDlg(['hdr.descrip must be 80 chars (' num2str(c) ' written)']); end
-c=fwrite(fid,hdr.aux_file,'char');
+c=fwrite(fid,hdr.aux_file,'uint8');
 if (c~=24) mrErrorDlg(['hdr.aux_file must be 24 chars (' num2str(c) ' written)']); end
 c=fwrite(fid,hdr.qform_code,'short');
 if (c~=1) mrErrorDlg(['hdr.qform_code must be a single short (' num2str(c) ' written)']); end
@@ -165,9 +165,9 @@ c=fwrite(fid,hdr.srow_y,'float');
 if (c~=4) mrErrorDlg(['hdr.srow_y must be 4 floats (' num2str(c) ' written)']); end
 c=fwrite(fid,hdr.srow_z,'float');
 if (c~=4) mrErrorDlg(['hdr.srow_z must be 4 floats (' num2str(c) ' written)']); end
-c=fwrite(fid,hdr.intent_name,'char');
+c=fwrite(fid,hdr.intent_name,'uint8');
 if (c~=16) mrErrorDlg(['hdr.intent_name must be 16 chars (' num2str(c) ' written)']); end
-c=fwrite(fid,hdr.magic,'char');
+c=fwrite(fid,hdr.magic,'uint8');
 if (c~=4) mrErrorDlg(['hdr.magic must be 4 chars (' num2str(c) ' written)']); end
 
 if (~leave_open)

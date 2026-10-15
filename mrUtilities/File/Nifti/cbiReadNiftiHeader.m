@@ -57,8 +57,9 @@ end
 
 %% --- was header_key substruct ---
 hdr.sizeof_hdr = testval;
-dummy = fread(fid,35,'char');	% ditch the remaining initial header stuff
-hdr.dim_info = fread(fid,1,'char');
+% NIfTI fields are fixed-width bytes; avoid text-encoding detection.
+dummy = fread(fid,35,'uint8');	% ditch the remaining initial header stuff
+hdr.dim_info = fread(fid,1,'uint8');
 %% --- was image_dimension substruct ---
 hdr.dim = fread(fid,8,'int16');
 hdr.intent_ps = fread(fid,3,'float');
@@ -71,16 +72,16 @@ hdr.vox_offset = fread(fid,1,'float');
 hdr.scl_slope = fread(fid,1,'float');
 hdr.scl_inter = fread(fid,1,'float');
 hdr.slice_end = fread(fid,1,'int16');
-hdr.slice_code = fread(fid,1,'char');
-hdr.xyzt_units = fread(fid,1,'char');
+hdr.slice_code = fread(fid,1,'uint8');
+hdr.xyzt_units = fread(fid,1,'uint8');
 hdr.cal_max = fread(fid,1,'float');
 hdr.cal_min = fread(fid,1,'float');
 hdr.slice_duration = fread(fid,1,'float');
 hdr.toffset = fread(fid,1,'float');
 dummy = fread(fid,2,'int32');
 %% --- was data_history substruct ---
-hdr.descrip = char(transpose(fread(fid,80,'char')));
-hdr.aux_file = char(transpose(fread(fid,24,'char')));
+hdr.descrip = char(transpose(fread(fid,80,'uint8')));
+hdr.aux_file = char(transpose(fread(fid,24,'uint8')));
 
 hdr.qform_code = fread(fid,1,'int16');
 hdr.sform_code = fread(fid,1,'int16');
@@ -93,8 +94,8 @@ hdr.qoffset_z = fread(fid,1,'float');
 hdr.srow_x    = fread(fid,4,'float')';
 hdr.srow_y    = fread(fid,4,'float')';
 hdr.srow_z    = fread(fid,4,'float')';
-hdr.intent_name  = char(transpose(fread(fid,16,'char')));
-hdr.magic        = char(transpose(fread(fid,4,'char')));
+hdr.intent_name  = char(transpose(fread(fid,16,'uint8')));
+hdr.magic        = char(transpose(fread(fid,4,'uint8')));
 
 fclose(fid);
 
